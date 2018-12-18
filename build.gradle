@@ -1,0 +1,17 @@
+allprojects {
+  apply plugin: 'java-library'
+
+  version = rootProject.version
+
+  sourceCompatibility = '1.8'
+  targetCompatibility = '1.8'
+
+  dependencies {
+    testImplementation 'junit:junit:4.12'
+    testImplementation 'org.assertj:assertj-core:3.11.1'
+  }
+
+  repositories {
+    jcenter()
+  }
+}
