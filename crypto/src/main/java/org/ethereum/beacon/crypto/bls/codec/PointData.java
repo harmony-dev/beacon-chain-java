@@ -1,10 +1,17 @@
 package org.ethereum.beacon.crypto.bls.codec;
 
+import com.google.common.base.MoreObjects;
+import com.google.common.base.Objects;
+import java.util.Arrays;
+import tech.pegasys.pantheon.util.bytes.BytesValue;
+
 public interface PointData {
 
   boolean isInfinity();
 
   int getSign();
+
+  BytesValue encode();
 
   class G1 implements PointData {
     private final Flags flags;
@@ -39,6 +46,31 @@ public interface PointData {
     @Override
     public int getSign() {
       return flags.test(Flags.SIGN);
+    }
+
+    @Override
+    public BytesValue encode() {
+      return Codec.G1.encode(this);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      G1 g1 = (G1) o;
+      return Objects.equal(flags, g1.flags) && Arrays.equals(x, g1.x);
+    }
+
+    @Override
+    public String toString() {
+      return MoreObjects.toStringHelper(this)
+          .add("flags", flags)
+          .add("x", BytesValue.wrap(x))
+          .toString();
     }
   }
 
@@ -87,6 +119,36 @@ public interface PointData {
     @Override
     public int getSign() {
       return flags1.test(Flags.SIGN);
+    }
+
+    @Override
+    public BytesValue encode() {
+      return Codec.G2.encode(this);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      G2 data = (G2) o;
+      return Objects.equal(flags1, data.flags1)
+          && Objects.equal(flags2, data.flags2)
+          && Arrays.equals(x1, data.x1)
+          && Arrays.equals(x2, data.x2);
+    }
+
+    @Override
+    public String toString() {
+      return MoreObjects.toStringHelper(this)
+          .add("flags1", flags1)
+          .add("flags2", flags2)
+          .add("x1", BytesValue.wrap(x1))
+          .add("x2", BytesValue.wrap(x2))
+          .toString();
     }
   }
 }

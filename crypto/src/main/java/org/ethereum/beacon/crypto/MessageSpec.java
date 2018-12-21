@@ -8,4 +8,24 @@ public interface MessageSpec {
   Bytes32 getHash();
 
   BytesValue getDomain();
+
+  class Impl implements MessageSpec {
+    private final Bytes32 hash;
+    private final BytesValue domain;
+
+    public Impl(Bytes32 hash, BytesValue domain) {
+      this.hash = hash;
+      this.domain = domain;
+    }
+
+    @Override
+    public Bytes32 getHash() {
+      return hash;
+    }
+
+    @Override
+    public BytesValue getDomain() {
+      return domain;
+    }
+  }
 }

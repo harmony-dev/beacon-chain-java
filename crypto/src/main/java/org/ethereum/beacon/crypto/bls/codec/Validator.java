@@ -10,8 +10,17 @@ public interface Validator {
 
   Validator G1 =
       new Validator() {
+        static final int ENCODED_SIZE = 48;
+
         @Override
         public Result validate(BytesValue encoded) {
+          if (encoded.size() != ENCODED_SIZE) {
+            return Result.invalid(
+                String.format(
+                    "unexpected length of encoded G1, should be %d got %d",
+                    ENCODED_SIZE, encoded.size()));
+          }
+
           PointData.G1 data = Codec.G1.decode(encoded);
 
           int aFlag = data.getFlags().test(Flags.A);
@@ -33,7 +42,7 @@ public interface Validator {
             }
           }
 
-          if (BCParameters.Q.compareTo(x) < 0) {
+          if (BCParameters.Q.compareTo(x) <= 0) {
             return Result.invalid("invalid x, should be < Q");
           }
 
@@ -43,8 +52,16 @@ public interface Validator {
 
   Validator G2 =
       new Validator() {
+        static final int ENCODED_SIZE = 96;
+
         @Override
         public Result validate(BytesValue encoded) {
+          if (encoded.size() != ENCODED_SIZE) {
+            return Result.invalid(
+                String.format(
+                    "unexpected length of encoded G2, should be %d got %d",
+                    ENCODED_SIZE, encoded.size()));
+          }
 
           PointData.G2 data = Codec.G2.decode(encoded);
 
@@ -76,10 +93,10 @@ public interface Validator {
             }
           }
 
-          if (BCParameters.Q.compareTo(x1) < 0) {
+          if (BCParameters.Q.compareTo(x1) <= 0) {
             return Result.invalid("invalid x1, should be < Q");
           }
-          if (BCParameters.Q.compareTo(x2) < 0) {
+          if (BCParameters.Q.compareTo(x2) <= 0) {
             return Result.invalid("invalid x2, should be < Q");
           }
 

@@ -21,10 +21,13 @@ import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPublicKey;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.jce.spec.ECParameterSpec;
 import org.bouncycastle.math.ec.ECPoint;
+import org.bouncycastle.util.BigIntegers;
 import org.ethereum.beacon.crypto.bls.bc.BCParameters;
 import org.ethereum.beacon.crypto.bls.codec.Validator;
 import org.ethereum.beacon.crypto.bls.milagro.BIGs;
-import org.ethereum.beacon.crypto.bls.milagro.MilagroParameters;
+import org.ethereum.beacon.crypto.bls.milagro.ECP2s;
+import org.ethereum.beacon.crypto.bls.milagro.MilagroParameters.Fp2;
+import tech.pegasys.pantheon.util.bytes.Bytes32;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
 import tech.pegasys.pantheon.util.bytes.BytesValues;
 
@@ -71,10 +74,10 @@ public class BLS381 {
 
   public static boolean verify(MessageSpec spec, Signature signature, PublicKey publicKey) {
     ECP2 messagePoint = mapMessageSpecToG2(spec);
-    FP12 leftProduct = pairingProduct(publicKey.asEcPoint(), messagePoint);
-    FP12 rightProduct = pairingProduct(ECP.generator(), signature.asEcPoint());
+    FP12 lhs = pairingProduct(publicKey.asEcPoint(), messagePoint);
+    FP12 rhs = pairingProduct(ECP.generator(), signature.asEcPoint());
 
-    return leftProduct.equals(rightProduct);
+    return lhs.equals(rhs);
   }
 
   private static FP12 pairingProduct(ECP g1, ECP2 g2) {
@@ -92,11 +95,11 @@ public class BLS381 {
     FP2 x = new FP2(reX, imX);
     ECP2 point = new ECP2(x);
     while (point.is_infinity()) {
-      x.add(MilagroParameters.FP2.ONE);
+      x.add(Fp2.ONE);
       point = new ECP2(x);
     }
 
-    return point.mul(MilagroParameters.G2.COFACTOR);
+    return ECP2s.mulByCofactor(point);
   }
 
   public static class Signature {
@@ -130,14 +133,17 @@ public class BLS381 {
 
   public static class PrivateKey implements java.security.PrivateKey {
 
-    private final BytesValue encoded;
+    private static final int SIZE = 32;
 
-    private PrivateKey(BytesValue encoded) {
+    private final Bytes32 encoded;
+
+    private PrivateKey(Bytes32 encoded) {
       this.encoded = encoded;
     }
 
     public static PrivateKey create(BigInteger value) {
-      return new PrivateKey(BytesValue.wrap(value.toByteArray()));
+      byte[] rawBytes = BigIntegers.asUnsignedByteArray(SIZE, value);
+      return new PrivateKey(Bytes32.wrap(rawBytes));
     }
 
     @Override
@@ -155,7 +161,7 @@ public class BLS381 {
       return encoded.getArrayUnsafe();
     }
 
-    public BytesValue getEncodedBytes() {
+    public Bytes32 getEncodedBytes() {
       return encoded;
     }
 

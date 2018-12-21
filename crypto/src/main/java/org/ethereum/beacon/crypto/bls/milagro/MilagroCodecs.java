@@ -39,7 +39,7 @@ public abstract class MilagroCodecs {
           byte[] x = BIGs.toByteArray(point.getX());
           int sign = BIGs.getSign(point.getY(), Q);
           PointData.G1 data = PointData.G1.create(x, point.is_infinity(), sign);
-          return Codec.G1.encode(data);
+          return data.encode();
         }
       };
 
@@ -56,6 +56,7 @@ public abstract class MilagroCodecs {
 
             FP2 x = new FP2(re, im);
             FP2 y = ECP2.RHS(x);
+            y.sqrt();
 
             if (BIGs.getSign(y.getB(), Q) == g2.getSign()) {
               return new ECP2(x, y);
@@ -68,11 +69,11 @@ public abstract class MilagroCodecs {
 
         @Override
         public BytesValue encode(ECP2 point) {
-          byte[] im = BIGs.toByteArray(point.getX().getA());
-          byte[] re = BIGs.toByteArray(point.getX().getB());
+          byte[] re = BIGs.toByteArray(point.getX().getA());
+          byte[] im = BIGs.toByteArray(point.getX().getB());
           int sign = BIGs.getSign(point.getY().getB(), Q);
           PointData.G2 data = PointData.G2.create(im, re, point.is_infinity(), sign);
-          return Codec.G2.encode(data);
+          return data.encode();
         }
       };
 }

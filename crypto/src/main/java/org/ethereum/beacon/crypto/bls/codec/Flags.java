@@ -1,5 +1,8 @@
 package org.ethereum.beacon.crypto.bls.codec;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.MoreObjects;
+
 public class Flags {
 
   static final int A = 1;
@@ -16,28 +19,27 @@ public class Flags {
   }
 
   static Flags create(boolean infinity, int sign) {
-    int bits = C;
     if (infinity) {
-      bits |= INFINITY;
+      return new Flags(C | INFINITY);
+    } else if (sign > 0) {
+      return new Flags(C | SIGN);
+    } else {
+      return new Flags(C);
     }
-    if (sign > 0) {
-      bits |= SIGN;
-    }
-
-    return new Flags(bits);
   }
 
   static Flags empty() {
     return new Flags(0);
   }
 
-  static Flags read(byte[] stream) {
+  @VisibleForTesting
+  public static Flags read(byte[] stream) {
     return read(stream, 0);
   }
 
   static Flags read(byte[] stream, int idx) {
     assert stream.length > idx;
-    return new Flags(stream[idx] >> 5);
+    return new Flags((stream[idx] >> 5) & 0x7);
   }
 
   static byte[] erase(byte[] stream) {
@@ -61,7 +63,33 @@ public class Flags {
     return bits == 0;
   }
 
-  int test(int flag) {
+  public int test(int flag) {
     return (bits & flag) > 0 ? 1 : 0;
+  }
+
+  @VisibleForTesting
+  public boolean isSignSet() {
+    return test(SIGN) > 0;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    Flags flags = (Flags) o;
+    return bits == flags.bits;
+  }
+
+  @Override
+  public String toString() {
+    return MoreObjects.toStringHelper(this)
+        .add("c", test(C))
+        .add("inf", test(INFINITY))
+        .add("sign", test(SIGN))
+        .toString();
   }
 }

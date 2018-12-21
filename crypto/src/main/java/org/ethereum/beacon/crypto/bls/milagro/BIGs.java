@@ -2,6 +2,7 @@ package org.ethereum.beacon.crypto.bls.milagro;
 
 import java.math.BigInteger;
 import org.apache.milagro.amcl.BLS381.BIG;
+import org.apache.milagro.amcl.BLS381.DBIG;
 import org.apache.milagro.amcl.BLS381.FP;
 import org.bouncycastle.util.Arrays;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
@@ -26,7 +27,7 @@ public abstract class BIGs {
   }
 
   public static BIG fromByteArray(byte[] bytes, boolean bigEndian) {
-    assert bytes.length <= BIG.MODBYTES;
+    assert bytes.length <= BIG.BASEBITS;
 
     byte[] fixed = fixEndiannes(bytes, bigEndian);
     byte[] prepended = prependWithZeros(fixed, BIG.MODBYTES);
@@ -47,7 +48,9 @@ public abstract class BIGs {
   }
 
   public static int getSign(BIG value, BIG modulus) {
-    return BIG.sqr(value).div(modulus).bit(0);
+    DBIG d = new DBIG(value);
+    d.add(d);
+    return d.div(modulus).bit(0);
   }
 
   public static BIG neg(BIG value) {
