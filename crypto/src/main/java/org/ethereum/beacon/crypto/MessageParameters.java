@@ -3,13 +3,13 @@ package org.ethereum.beacon.crypto;
 import tech.pegasys.pantheon.util.bytes.Bytes32;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
 
-public interface MessageSpec {
+public interface MessageParameters {
 
   Bytes32 getHash();
 
   BytesValue getDomain();
 
-  class Impl implements MessageSpec {
+  class Impl implements MessageParameters {
     private final Bytes32 hash;
     private final BytesValue domain;
 

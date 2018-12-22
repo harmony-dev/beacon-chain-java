@@ -66,13 +66,13 @@ public class BLS381 {
     }
   }
 
-  public static Signature sign(MessageSpec spec, KeyPair keyPair) {
+  public static Signature sign(MessageParameters spec, KeyPair keyPair) {
     ECP2 messagePoint = mapMessageSpecToG2(spec);
     ECP2 product = messagePoint.mul(keyPair.privateKey.asFieldElement());
     return Signature.create(product);
   }
 
-  public static boolean verify(MessageSpec spec, Signature signature, PublicKey publicKey) {
+  public static boolean verify(MessageParameters spec, Signature signature, PublicKey publicKey) {
     ECP2 messagePoint = mapMessageSpecToG2(spec);
     FP12 lhs = pairingProduct(publicKey.asEcPoint(), messagePoint);
     FP12 rhs = pairingProduct(ECP.generator(), signature.asEcPoint());
@@ -85,7 +85,7 @@ public class BLS381 {
     return PAIR.fexp(ateProduct);
   }
 
-  private static ECP2 mapMessageSpecToG2(MessageSpec spec) {
+  private static ECP2 mapMessageSpecToG2(MessageParameters spec) {
     BytesValue reBytes = spec.getDomain().concat(BYTES_ONE).concat(spec.getHash());
     BytesValue imBytes = spec.getDomain().concat(BYTES_TWO).concat(spec.getHash());
 

@@ -7,7 +7,7 @@ import java.util.Random;
 import org.ethereum.beacon.crypto.BLS381.KeyPair;
 import org.ethereum.beacon.crypto.BLS381.PublicKey;
 import org.ethereum.beacon.crypto.BLS381.Signature;
-import org.ethereum.beacon.crypto.MessageSpec.Impl;
+import org.ethereum.beacon.crypto.MessageParameters.Impl;
 import org.junit.Test;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
 
@@ -19,7 +19,7 @@ public class BLS381Test {
     BytesValue message = randomMessage();
     BytesValue domain = randomDomain();
 
-    MessageSpec spec = new Impl(Hashes.keccack256(message), domain);
+    MessageParameters spec = new Impl(Hashes.keccack256(message), domain);
     Signature signature = BLS381.sign(spec, keyPair);
     boolean verified = BLS381.verify(spec, signature, keyPair.getPublic());
 
@@ -30,8 +30,8 @@ public class BLS381Test {
   public void failToVerifyIfMessageIsWrong() {
     KeyPair keyPair = BLS381.KeyPair.generate();
 
-    MessageSpec rightMessage = new Impl(Hashes.keccack256(randomMessage()), randomDomain());
-    MessageSpec wrongMessage = new Impl(Hashes.keccack256(randomMessage()), randomDomain());
+    MessageParameters rightMessage = new Impl(Hashes.keccack256(randomMessage()), randomDomain());
+    MessageParameters wrongMessage = new Impl(Hashes.keccack256(randomMessage()), randomDomain());
 
     Signature signature = BLS381.sign(rightMessage, keyPair);
     boolean verified = BLS381.verify(wrongMessage, signature, keyPair.getPublic());
@@ -43,8 +43,8 @@ public class BLS381Test {
   public void failToVerifyIfSignatureIsWrong() {
     KeyPair keyPair = BLS381.KeyPair.generate();
 
-    MessageSpec rightMessage = new Impl(Hashes.keccack256(randomMessage()), randomDomain());
-    MessageSpec wrongMessage = new Impl(Hashes.keccack256(randomMessage()), randomDomain());
+    MessageParameters rightMessage = new Impl(Hashes.keccack256(randomMessage()), randomDomain());
+    MessageParameters wrongMessage = new Impl(Hashes.keccack256(randomMessage()), randomDomain());
 
     Signature wrongSignature = BLS381.sign(wrongMessage, keyPair);
     boolean verified = BLS381.verify(rightMessage, wrongSignature, keyPair.getPublic());
@@ -57,7 +57,7 @@ public class BLS381Test {
     KeyPair rightKeyPair = BLS381.KeyPair.generate();
     KeyPair wrongKeyPair = BLS381.KeyPair.generate();
 
-    MessageSpec message = new Impl(Hashes.keccack256(randomMessage()), randomDomain());
+    MessageParameters message = new Impl(Hashes.keccack256(randomMessage()), randomDomain());
     Signature signature = BLS381.sign(message, rightKeyPair);
     boolean verified = BLS381.verify(message, signature, wrongKeyPair.getPublic());
 
@@ -69,7 +69,7 @@ public class BLS381Test {
     KeyPair bob = BLS381.KeyPair.generate();
     KeyPair alice = BLS381.KeyPair.generate();
 
-    MessageSpec message = new Impl(Hashes.keccack256(randomMessage()), randomDomain());
+    MessageParameters message = new Impl(Hashes.keccack256(randomMessage()), randomDomain());
 
     Signature bobSignature = BLS381.sign(message, bob);
     Signature aliceSignature = BLS381.sign(message, alice);
@@ -88,8 +88,8 @@ public class BLS381Test {
     KeyPair bob = BLS381.KeyPair.generate();
     KeyPair alice = BLS381.KeyPair.generate();
 
-    MessageSpec message = new Impl(Hashes.keccack256(randomMessage()), randomDomain());
-    MessageSpec wrongMessage = new Impl(Hashes.keccack256(randomMessage()), randomDomain());
+    MessageParameters message = new Impl(Hashes.keccack256(randomMessage()), randomDomain());
+    MessageParameters wrongMessage = new Impl(Hashes.keccack256(randomMessage()), randomDomain());
 
     Signature bobSignature = BLS381.sign(message, bob);
     Signature wrongSignature = BLS381.sign(wrongMessage, alice);
@@ -109,7 +109,7 @@ public class BLS381Test {
     KeyPair alice = BLS381.KeyPair.generate();
     KeyPair wrongKeyPair = BLS381.KeyPair.generate();
 
-    MessageSpec message = new Impl(Hashes.keccack256(randomMessage()), randomDomain());
+    MessageParameters message = new Impl(Hashes.keccack256(randomMessage()), randomDomain());
 
     Signature bobSignature = BLS381.sign(message, bob);
     Signature wrongSignature = BLS381.sign(message, wrongKeyPair);
@@ -129,7 +129,7 @@ public class BLS381Test {
     KeyPair alice = BLS381.KeyPair.generate();
     KeyPair wrongKeyPair = BLS381.KeyPair.generate();
 
-    MessageSpec message = new Impl(Hashes.keccack256(randomMessage()), randomDomain());
+    MessageParameters message = new Impl(Hashes.keccack256(randomMessage()), randomDomain());
 
     Signature bobSignature = BLS381.sign(message, bob);
     Signature aliceSignature = BLS381.sign(message, alice);
