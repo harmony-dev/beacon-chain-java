@@ -19,9 +19,9 @@ public class BLS381Test {
     BytesValue message = randomMessage();
     BytesValue domain = randomDomain();
 
-    MessageParameters spec = new Impl(Hashes.keccack256(message), domain);
-    Signature signature = BLS381.sign(spec, keyPair);
-    boolean verified = BLS381.verify(spec, signature, keyPair.getPublic());
+    MessageParameters params = new Impl(Hashes.keccack256(message), domain);
+    Signature signature = BLS381.sign(params, keyPair);
+    boolean verified = BLS381.verify(params, signature, keyPair.getPublic());
 
     assertThat(verified).isTrue();
   }

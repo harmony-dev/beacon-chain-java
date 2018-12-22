@@ -14,7 +14,6 @@ import org.apache.milagro.amcl.BLS381.BIG;
 import org.apache.milagro.amcl.BLS381.ECP;
 import org.apache.milagro.amcl.BLS381.ECP2;
 import org.apache.milagro.amcl.BLS381.FP12;
-import org.apache.milagro.amcl.BLS381.FP2;
 import org.apache.milagro.amcl.BLS381.PAIR;
 import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPrivateKey;
 import org.bouncycastle.jcajce.provider.asymmetric.ec.BCECPublicKey;
@@ -25,11 +24,9 @@ import org.bouncycastle.util.BigIntegers;
 import org.ethereum.beacon.crypto.bls.bc.BCParameters;
 import org.ethereum.beacon.crypto.bls.codec.Validator;
 import org.ethereum.beacon.crypto.bls.milagro.BIGs;
-import org.ethereum.beacon.crypto.bls.milagro.ECP2s;
-import org.ethereum.beacon.crypto.bls.milagro.MilagroParameters.Fp2;
+import org.ethereum.beacon.crypto.bls.milagro.MilagroMessageMapper;
 import tech.pegasys.pantheon.util.bytes.Bytes32;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
-import tech.pegasys.pantheon.util.bytes.BytesValues;
 
 public class BLS381 {
 
@@ -38,10 +35,8 @@ public class BLS381 {
   private static final String KEY_GENERATOR_ALGORITHM = "ECDSA";
   private static final String KEY_GENERATOR_PROVIDER = "BC";
 
-  private static final BytesValue BYTES_ONE = BytesValues.ofUnsignedByte(1);
-  private static final BytesValue BYTES_TWO = BytesValues.ofUnsignedByte(2);
-
   private static final KeyPairGenerator KEY_PAIR_GENERATOR;
+  private static final MessageParametersMapper<ECP2> MESSAGE_MAPPER;
 
   static {
     Security.addProvider(new BouncyCastleProvider());
@@ -64,16 +59,18 @@ public class BLS381 {
     } catch (InvalidAlgorithmParameterException e) {
       throw new RuntimeException(e);
     }
+
+    MESSAGE_MAPPER = new MilagroMessageMapper();
   }
 
-  public static Signature sign(MessageParameters spec, KeyPair keyPair) {
-    ECP2 messagePoint = mapMessageSpecToG2(spec);
+  public static Signature sign(MessageParameters message, KeyPair keyPair) {
+    ECP2 messagePoint = MESSAGE_MAPPER.map(message);
     ECP2 product = messagePoint.mul(keyPair.privateKey.asFieldElement());
     return Signature.create(product);
   }
 
-  public static boolean verify(MessageParameters spec, Signature signature, PublicKey publicKey) {
-    ECP2 messagePoint = mapMessageSpecToG2(spec);
+  public static boolean verify(MessageParameters message, Signature signature, PublicKey publicKey) {
+    ECP2 messagePoint = MESSAGE_MAPPER.map(message);
     FP12 lhs = pairingProduct(publicKey.asEcPoint(), messagePoint);
     FP12 rhs = pairingProduct(ECP.generator(), signature.asEcPoint());
 
@@ -83,23 +80,6 @@ public class BLS381 {
   private static FP12 pairingProduct(ECP g1, ECP2 g2) {
     FP12 ateProduct = PAIR.ate(g2, g1);
     return PAIR.fexp(ateProduct);
-  }
-
-  private static ECP2 mapMessageSpecToG2(MessageParameters spec) {
-    BytesValue reBytes = spec.getDomain().concat(BYTES_ONE).concat(spec.getHash());
-    BytesValue imBytes = spec.getDomain().concat(BYTES_TWO).concat(spec.getHash());
-
-    BIG reX = BIGs.fromBytes(Hashes.keccack384(reBytes));
-    BIG imX = BIGs.fromBytes(Hashes.keccack384(imBytes));
-
-    FP2 x = new FP2(reX, imX);
-    ECP2 point = new ECP2(x);
-    while (point.is_infinity()) {
-      x.add(Fp2.ONE);
-      point = new ECP2(x);
-    }
-
-    return ECP2s.mulByCofactor(point);
   }
 
   public static class Signature {
