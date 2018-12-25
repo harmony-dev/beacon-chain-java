@@ -20,7 +20,7 @@ public interface BCParameters {
    * An order of cyclic groups <code>G<sub>1</sub></code>, <code>G<sub>2</sub></code> and <code>
    * G<sub>T</sub></code>.
    */
-  BigInteger G_ORDER =
+  BigInteger ORDER =
       new BigInteger("73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001", 16);
 
   /** Parameter {@code a} in Weierstrass equation that defines {@code BLS12} curves. */
@@ -45,7 +45,7 @@ public interface BCParameters {
     public static final ECPoint G;
 
     static {
-      CURVE = new ECCurve.Fp(Q, A, B, G_ORDER, COFACTOR);
+      CURVE = new ECCurve.Fp(Q, A, B, ORDER, COFACTOR);
       G =
           CURVE.createPoint(
               new BigInteger(

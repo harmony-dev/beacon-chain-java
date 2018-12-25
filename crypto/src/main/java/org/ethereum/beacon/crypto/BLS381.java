@@ -3,6 +3,7 @@ package org.ethereum.beacon.crypto;
 import static com.google.common.base.Preconditions.checkArgument;
 import static org.ethereum.beacon.crypto.bls.milagro.MilagroCodecs.G1;
 import static org.ethereum.beacon.crypto.bls.milagro.MilagroCodecs.G2;
+import static org.ethereum.beacon.crypto.bls.milagro.MilagroParameters.ORDER;
 
 import java.math.BigInteger;
 import java.security.InvalidAlgorithmParameterException;
@@ -22,6 +23,7 @@ import org.bouncycastle.jce.spec.ECParameterSpec;
 import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.util.BigIntegers;
 import org.ethereum.beacon.crypto.bls.bc.BCParameters;
+import org.ethereum.beacon.crypto.bls.codec.Codec;
 import org.ethereum.beacon.crypto.bls.codec.Validator;
 import org.ethereum.beacon.crypto.bls.milagro.BIGs;
 import org.ethereum.beacon.crypto.bls.milagro.MilagroMessageMapper;
@@ -145,7 +147,21 @@ public class BLS381 {
      */
     private Signature(BytesValue encoded) {
       Validator.Result result = Validator.G2.validate(encoded);
-      checkArgument(result.isValid(), "Signature is invalid %s", result.getMessage());
+      checkArgument(result.isValid(), "Failed to instantiate signature, %s", result.getMessage());
+
+      if (!Codec.G2.decode(encoded).isInfinity()) {
+        ECP2 point = G2.decode(encoded);
+        checkArgument(
+            !point.is_infinity(),
+            "Failed to instantiate signature, given point is not a G2 member");
+
+        // Multiply point by group order to check whether this point belongs to G2
+        ECP2 orderCheck = point.mul(ORDER);
+        checkArgument(
+            orderCheck.is_infinity(),
+            "Failed to instantiate signature, given point is not a G2 member");
+      }
+
       this.encoded = encoded;
     }
 
@@ -157,6 +173,16 @@ public class BLS381 {
      */
     public static Signature create(ECP2 ecPoint) {
       return new Signature(G2.encode(ecPoint));
+    }
+
+    /**
+     * Creates signature from encoded <code>G<sub>2</sub></code> point.
+     *
+     * @param encoded encoded point.
+     * @return an instance of signature.
+     */
+    public static Signature create(BytesValue encoded) {
+      return new Signature(encoded);
     }
 
     /**
@@ -191,8 +217,8 @@ public class BLS381 {
   /**
    * {@code BLS12-381} private key.
    *
-   * <p>Represented as a scalar with max value capped by {@link BCParameters#G_ORDER}. Hence,
-   * private keys are {@code 32-bytes} length.
+   * <p>Represented as a scalar with max value capped by {@link BCParameters#ORDER}. Hence, private
+   * keys are {@code 32-bytes} length.
    */
   public static class PrivateKey implements java.security.PrivateKey {
 
@@ -213,6 +239,16 @@ public class BLS381 {
     public static PrivateKey create(BigInteger value) {
       byte[] rawBytes = BigIntegers.asUnsignedByteArray(SIZE, value);
       return new PrivateKey(Bytes32.wrap(rawBytes));
+    }
+
+    /**
+     * Creates private key from a byte sequence.
+     *
+     * @param encoded byte sequence.
+     * @return an instance of private key.
+     */
+    public static PrivateKey create(Bytes32 encoded) {
+      return new PrivateKey(encoded);
     }
 
     @Override
@@ -253,7 +289,22 @@ public class BLS381 {
      */
     private PublicKey(BytesValue encoded) {
       Validator.Result result = Validator.G1.validate(encoded);
-      checkArgument(result.isValid(), "Public key is invalid %s", result.getMessage());
+      checkArgument(result.isValid(), "Failed to instantiate public key, %s", result.getMessage());
+
+      if (!Codec.G1.decode(encoded).isInfinity()) {
+        ECP point = G1.decode(encoded);
+
+        checkArgument(
+            !point.is_infinity(),
+            "Failed to instantiate public key, given point is not a G1 member");
+
+        // Multiply point by group order to check whether this point belongs to G1
+        ECP orderCheck = point.mul(ORDER);
+        checkArgument(
+            orderCheck.is_infinity(),
+            "Failed to instantiate public key, given point is not a G1 member");
+      }
+
       this.encoded = encoded;
     }
 

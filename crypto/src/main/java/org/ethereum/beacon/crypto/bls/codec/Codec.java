@@ -68,7 +68,7 @@ public interface Codec<P> {
 
         @Override
         public BytesValue encode(PointData.G1 point) {
-          assert point.getX().length == ENCODED_SIZE;
+          assert point.getX().length <= ENCODED_SIZE;
 
           byte[] x = point.getX();
           byte[] encoded = new byte[ENCODED_SIZE];
@@ -104,8 +104,8 @@ public interface Codec<P> {
 
         @Override
         public BytesValue encode(PointData.G2 point) {
-          assert point.getX1().length == X_SIZE;
-          assert point.getX2().length == X_SIZE;
+          assert point.getX1().length <= X_SIZE;
+          assert point.getX2().length <= X_SIZE;
 
           byte[] x1 = point.getX1();
           byte[] x2 = point.getX2();

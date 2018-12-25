@@ -1,6 +1,7 @@
 package org.ethereum.beacon.crypto;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.Arrays;
 import java.util.Random;
@@ -8,8 +9,10 @@ import org.ethereum.beacon.crypto.BLS381.KeyPair;
 import org.ethereum.beacon.crypto.BLS381.PublicKey;
 import org.ethereum.beacon.crypto.BLS381.Signature;
 import org.ethereum.beacon.crypto.MessageParameters.Impl;
+import org.ethereum.beacon.crypto.bls.codec.PointData;
 import org.junit.Test;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
+import tech.pegasys.pantheon.util.bytes.MutableBytesValue;
 
 public class BLS381Test {
 
@@ -21,7 +24,11 @@ public class BLS381Test {
 
     MessageParameters params = new Impl(Hashes.keccack256(message), domain);
     Signature signature = BLS381.sign(params, keyPair);
-    boolean verified = BLS381.verify(params, signature, keyPair.getPublic());
+
+    PublicKey decodedPublicKey = PublicKey.create(keyPair.getPublic().getEncodedBytes());
+    Signature decodedSignature = Signature.create(signature.getEncoded());
+
+    boolean verified = BLS381.verify(params, decodedSignature, decodedPublicKey);
 
     assertThat(verified).isTrue();
   }
@@ -141,6 +148,52 @@ public class BLS381Test {
     boolean verified = BLS381.verify(message, aggregatedSignature, aggregatedKeys);
 
     assertThat(verified).isFalse();
+  }
+
+  @Test
+  public void throwIfSignatureIsInvalidPoint() {
+    byte[] x1 =
+        BytesValue.fromHexString(
+                "0x074752311471f52ffd86405410eb65ab9cf09cc67496e11b6706e1e25c35898c6021fdb9dffa908b5981d21211a9350a")
+            .getArrayUnsafe();
+    byte[] x2 =
+        BytesValue.fromHexString(
+                "0x04b93f0c13abd2a249b267ca11fd3b207eb2de5189f6015f0a9b915fcf1e047057f3ba85216850e1255598657502411f")
+            .getArrayUnsafe();
+
+    BytesValue notInG2Point = PointData.G2.create(x1, x2, false, 0).encode();
+    MutableBytesValue wrongEncoding = MutableBytesValue.wrap(notInG2Point.extractArray());
+    wrongEncoding.set(0, (byte) (wrongEncoding.get(0) & 0x7F));
+
+    assertThatThrownBy(() -> Signature.create(wrongEncoding))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage(
+            "Failed to instantiate signature, invalid c_flag, should always be 1 but got 0");
+
+    assertThatThrownBy(() -> Signature.create(notInG2Point))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("Failed to instantiate signature, given point is not a G2 member");
+  }
+
+  @Test
+  public void throwIfPublicKeyIsInvalidPoint() {
+    byte[] x =
+        BytesValue.fromHexString(
+                "0x074752311471f52ffd86405410eb65ab9cf09cc67496e11b6706e1e25c35898c6021fdb9dffa908b5981d21211a9350a")
+            .getArrayUnsafe();
+
+    BytesValue notInG1Point = PointData.G1.create(x, false, 0).encode();
+    MutableBytesValue wrongEncoding = MutableBytesValue.wrap(notInG1Point.extractArray());
+    wrongEncoding.set(0, (byte) (wrongEncoding.get(0) & 0x7F));
+
+    assertThatThrownBy(() -> PublicKey.create(wrongEncoding))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage(
+            "Failed to instantiate public key, invalid c_flag, should always be 1 but got 0");
+
+    assertThatThrownBy(() -> PublicKey.create(notInG1Point))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage("Failed to instantiate public key, given point is not a G1 member");
   }
 
   BytesValue randomMessage() {
