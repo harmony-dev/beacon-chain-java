@@ -2,12 +2,36 @@ package org.ethereum.beacon.crypto.bls.codec;
 
 import java.util.Arrays;
 import org.ethereum.beacon.crypto.bls.bc.BCParameters;
+import org.ethereum.beacon.crypto.bls.milagro.MilagroCodecs;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
 
+/**
+ * An interface with its implementations to work with representation format of elliptic curve points
+ * that is described by bls signature spec. This format is based on compressed representation of the
+ * points.
+ *
+ * <p>Designed to make an abstraction layer between representation format and a certain
+ * implementation of elliptic curve math.
+ *
+ * <p>To stick with specific EC math implementation it assumed to build yet another codec layer on
+ * top of this one. See {@link MilagroCodecs}, for example.
+ *
+ * @param <P> an implementation of type that holds decoded point elements.
+ * @see PointData
+ * @see <a
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/bls_signature.md#point-representations">https://github.com/ethereum/eth2.0-specs/blob/master/specs/bls_signature.md#point-representations</a>
+ */
 public interface Codec<P> {
 
+  /** Number of bytes occupied by {@code x} point coordinate. */
   int X_SIZE = BCParameters.Q_BYTE_LENGTH;
 
+  /**
+   * Decodes a byte sequence representing
+   *
+   * @param encoded
+   * @return
+   */
   P decode(BytesValue encoded);
 
   BytesValue encode(P data);
@@ -19,10 +43,10 @@ public interface Codec<P> {
         @Override
         public PointData.G1 decode(BytesValue encoded) {
           assert encoded.size() == ENCODED_SIZE;
-          byte[] unwrapped = encoded.getArrayUnsafe();
+          byte[] x = encoded.extractArray();
 
-          Flags flags = Flags.read(unwrapped);
-          byte[] x = Flags.erase(unwrapped);
+          Flags flags = Flags.read(encoded.get(0));
+          x[0] = Flags.erase(encoded.get(0));
           return new PointData.G1(flags, x);
         }
 
@@ -46,12 +70,13 @@ public interface Codec<P> {
         @Override
         public PointData.G2 decode(BytesValue encoded) {
           assert encoded.size() == ENCODED_SIZE;
-          byte[] unwrapped = encoded.getArrayUnsafe();
 
-          Flags flags1 = Flags.read(unwrapped);
-          Flags flags2 = Flags.read(unwrapped, X_SIZE);
-          byte[] x1 = Flags.erase(Arrays.copyOf(unwrapped, X_SIZE));
-          byte[] x2 = Arrays.copyOfRange(unwrapped, X_SIZE, unwrapped.length);
+          Flags flags1 = Flags.read(encoded.get(0));
+          Flags flags2 = Flags.read(encoded.get(X_SIZE));
+
+          byte[] x1 = Arrays.copyOf(encoded.getArrayUnsafe(), X_SIZE);
+          x1[0] = Flags.erase(encoded.get(0));
+          byte[] x2 = Arrays.copyOfRange(encoded.getArrayUnsafe(), X_SIZE, encoded.size());
 
           return new PointData.G2(flags1, flags2, x1, x2);
         }

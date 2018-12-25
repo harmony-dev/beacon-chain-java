@@ -69,7 +69,8 @@ public class BLS381 {
     return Signature.create(product);
   }
 
-  public static boolean verify(MessageParameters message, Signature signature, PublicKey publicKey) {
+  public static boolean verify(
+      MessageParameters message, Signature signature, PublicKey publicKey) {
     ECP2 messagePoint = MESSAGE_MAPPER.map(message);
     FP12 lhs = pairingProduct(publicKey.asEcPoint(), messagePoint);
     FP12 rhs = pairingProduct(ECP.generator(), signature.asEcPoint());

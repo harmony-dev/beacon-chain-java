@@ -16,14 +16,15 @@ public class CodecTest {
     byte[] stream = new byte[1];
     Flags origin = Flags.create(false, 1);
 
-    byte[] flagged = origin.write(stream);
+    byte[] flagged = stream.clone();
+    flagged[0] = origin.write(stream[0]);
     assertThat(flagged[0]).isEqualTo((byte) 0xA0);
 
-    Flags read = Flags.read(flagged);
+    Flags read = Flags.read(flagged[0]);
     assertThat(read).isEqualTo(origin);
 
-    byte[] cleaned = Flags.erase(flagged);
-    assertThat(cleaned[0]).isEqualTo((byte) 0x00);
+    byte highestByte = Flags.erase(flagged[0]);
+    assertThat(highestByte).isEqualTo((byte) 0x00);
   }
 
   @Test
@@ -31,13 +32,14 @@ public class CodecTest {
     byte[] x = randomX();
 
     BytesValue encoded = Codec.G1.encode(PointData.G1.create(x, true, 1));
-    Flags flags = Flags.read(encoded.getArrayUnsafe());
+    Flags flags = Flags.read(encoded.get(0));
 
     assertThat(flags.test(Flags.C)).isEqualTo(1);
     assertThat(flags.test(Flags.INFINITY)).isEqualTo(1);
     assertThat(flags.test(Flags.SIGN)).isEqualTo(0);
 
-    byte[] withoutFlags = Flags.erase(encoded.getArrayUnsafe());
+    byte[] withoutFlags = encoded.extractArray();
+    withoutFlags[0] = Flags.erase(encoded.get(0));
     assertThat(withoutFlags).isEqualTo(new byte[BCParameters.Q_BYTE_LENGTH]);
 
     PointData.G1 decoded = Codec.G1.decode(encoded);
@@ -50,13 +52,14 @@ public class CodecTest {
     byte[] x = randomX();
 
     BytesValue encoded = Codec.G1.encode(PointData.G1.create(x, false, 1));
-    Flags flags = Flags.read(encoded.getArrayUnsafe());
+    Flags flags = Flags.read(encoded.get(0));
 
     assertThat(flags.test(Flags.C)).isEqualTo(1);
     assertThat(flags.test(Flags.INFINITY)).isEqualTo(0);
     assertThat(flags.test(Flags.SIGN)).isEqualTo(1);
 
-    byte[] withoutFlags = Flags.erase(encoded.getArrayUnsafe());
+    byte[] withoutFlags = encoded.extractArray();
+    withoutFlags[0] = Flags.erase(encoded.get(0));
     assertThat(withoutFlags).isEqualTo(x);
 
     PointData.G1 decoded = Codec.G1.decode(encoded);
@@ -70,13 +73,14 @@ public class CodecTest {
     byte[] x2 = randomX();
 
     BytesValue encoded = Codec.G2.encode(PointData.G2.create(x1, x2, true, 1));
-    Flags flags = Flags.read(encoded.getArrayUnsafe());
+    Flags flags = Flags.read(encoded.get(0));
 
     assertThat(flags.test(Flags.C)).isEqualTo(1);
     assertThat(flags.test(Flags.INFINITY)).isEqualTo(1);
     assertThat(flags.test(Flags.SIGN)).isEqualTo(0);
 
-    byte[] withoutFlags = Flags.erase(encoded.getArrayUnsafe());
+    byte[] withoutFlags = encoded.extractArray();
+    withoutFlags[0] = Flags.erase(encoded.get(0));
     assertThat(withoutFlags).isEqualTo(new byte[BCParameters.Q_BYTE_LENGTH * 2]);
 
     PointData.G2 decoded = Codec.G2.decode(encoded);
@@ -92,13 +96,14 @@ public class CodecTest {
     byte[] x2 = randomX();
 
     BytesValue encoded = Codec.G2.encode(PointData.G2.create(x1, x2, false, 1));
-    Flags flags = Flags.read(encoded.getArrayUnsafe());
+    Flags flags = Flags.read(encoded.get(0));
 
     assertThat(flags.test(Flags.C)).isEqualTo(1);
     assertThat(flags.test(Flags.INFINITY)).isEqualTo(0);
     assertThat(flags.test(Flags.SIGN)).isEqualTo(1);
 
-    byte[] withoutFlags = Flags.erase(encoded.getArrayUnsafe());
+    byte[] withoutFlags = encoded.extractArray();
+    withoutFlags[0] = Flags.erase(encoded.get(0));
     assertThat(withoutFlags).isEqualTo(Arrays.concatenate(x1, x2));
 
     PointData.G2 decoded = Codec.G2.decode(encoded);
@@ -134,7 +139,7 @@ public class CodecTest {
 
     if (!infinity) {
       random.nextBytes(x);
-      x = Flags.erase(x);
+      x[0] = Flags.erase(x[0]);
     }
 
     return PointData.G1.create(x, infinity, sign);
@@ -149,10 +154,10 @@ public class CodecTest {
 
     if (!infinity) {
       random.nextBytes(x1);
-      x1 = Flags.erase(x1);
+      x1[0] = Flags.erase(x1[0]);
 
       random.nextBytes(x2);
-      x2 = Flags.erase(x2);
+      x2[0] = Flags.erase(x2[0]);
     }
 
     return PointData.G2.create(x1, x2, infinity, sign);

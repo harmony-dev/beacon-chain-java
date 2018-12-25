@@ -35,7 +35,9 @@ public interface PointData {
     }
 
     byte[] writeFlags(byte[] stream) {
-      return flags.write(stream);
+      byte[] withFlags = stream.clone();
+      withFlags[0] = flags.write(stream[0]);
+      return withFlags;
     }
 
     @Override
@@ -108,7 +110,9 @@ public interface PointData {
     }
 
     byte[] writeFlags(byte[] stream) {
-      return flags1.write(stream);
+      byte[] withFlags = stream.clone();
+      withFlags[0] = flags1.write(stream[0]);
+      return withFlags;
     }
 
     @Override

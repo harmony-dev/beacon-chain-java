@@ -43,13 +43,13 @@ public class MilagroCodecsTest {
   public void encodeSignInG1() {
     ECP withSign = ECP.generator().mul(BIGs.fromBigInteger(G1_SCALAR_FOR_SET_SIGN));
     BytesValue encoded = G1.encode(withSign);
-    Flags flags = Flags.read(encoded.getArrayUnsafe());
+    Flags flags = Flags.read(encoded.getArrayUnsafe()[0]);
 
     assertThat(flags.isSignSet()).isTrue();
 
     ECP withoutSign = ECP.generator().mul(BIGs.fromBigInteger(G1_SCALAR_FOR_UNSET_SIGN));
     encoded = G1.encode(withoutSign);
-    flags = Flags.read(encoded.getArrayUnsafe());
+    flags = Flags.read(encoded.getArrayUnsafe()[0]);
 
     assertThat(flags.isSignSet()).isFalse();
   }
@@ -58,13 +58,13 @@ public class MilagroCodecsTest {
   public void encodeSignInG2() {
     ECP2 withSign = ECP2.generator().mul(BIGs.fromBigInteger(G2_SCALAR_FOR_SET_SIGN));
     BytesValue encoded = G2.encode(withSign);
-    Flags flags = Flags.read(encoded.getArrayUnsafe());
+    Flags flags = Flags.read(encoded.getArrayUnsafe()[0]);
 
     assertThat(flags.isSignSet()).isTrue();
 
     ECP2 withoutSign = ECP2.generator().mul(BIGs.fromBigInteger(G2_SCALAR_FOR_UNSET_SIGN));
     encoded = G2.encode(withoutSign);
-    flags = Flags.read(encoded.getArrayUnsafe());
+    flags = Flags.read(encoded.get(0));
 
     assertThat(flags.isSignSet()).isFalse();
   }
