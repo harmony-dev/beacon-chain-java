@@ -3,7 +3,7 @@ package org.ethereum.beacon.crypto.bls.codec;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import org.apache.milagro.amcl.BLS381.BIG;
-import org.ethereum.beacon.crypto.bls.milagro.BIGs;
+import org.ethereum.beacon.crypto.bls.milagro.FPs;
 
 /**
  * A class to work with flags which are a part of representation format of elliptic curve points.
@@ -21,7 +21,7 @@ public class Flags {
   /**
    * A bit that holds a sign of {@code y} coordinate.
    *
-   * <p>Check {@link BIGs#getSign(BIG, BIG)} to get the idea of what sign is.
+   * <p>Check {@link FPs#getSign(BIG, BIG)} to get the idea of what sign is.
    */
   static final int A = 1;
   /**
@@ -62,7 +62,7 @@ public class Flags {
   }
 
   /**
-   * Creates flags instance with all flags set to {@code 0}.
+   * Creates an instance with all flags set to {@code 0}.
    *
    * @return the instance.
    */
@@ -70,27 +70,61 @@ public class Flags {
     return new Flags(0);
   }
 
+  /**
+   * Reads flag values from a byte.
+   *
+   * @param value a byte to read values from.
+   * @return an instance.
+   */
   @VisibleForTesting
   public static Flags read(byte value) {
     return new Flags((value >> 5) & 0x7);
   }
 
+  /**
+   * Erases flags from given byte value.
+   *
+   * @param value a value.
+   * @return given value with its three highest bits set to {@code 0}.
+   */
   static byte erase(byte value) {
     return (byte) (value & 0x1F);
   }
 
+  /**
+   * Writes flags to given byte value.
+   *
+   * @param value a value.
+   * @return given byte value with written flags in it.
+   */
   byte write(byte value) {
-    return  (byte) ((value | (bits << 5)) & 0xFF);
+    return (byte) ((value | (bits << 5)) & 0xFF);
   }
 
+  /**
+   * Zero check.
+   *
+   * @return {@code true} if all flags are set to {@code 0}, {@code false} otherwise.
+   */
   boolean isZero() {
     return bits == 0;
   }
 
+  /**
+   * Returns a value of a given flag.
+   *
+   * @param flag bit mask of a flag.
+   * @return {@code 1} if flag is set, {@code 0} otherwise.
+   */
   public int test(int flag) {
     return (bits & flag) > 0 ? 1 : 0;
   }
 
+  /**
+   * Checks for sign flag value.
+   *
+   * @return {@code true} if sign flag is set, {@code false} otherwise.
+   */
   @VisibleForTesting
   public boolean isSignSet() {
     return test(SIGN) > 0;

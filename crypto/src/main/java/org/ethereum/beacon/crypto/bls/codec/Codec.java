@@ -13,10 +13,11 @@ import tech.pegasys.pantheon.util.bytes.BytesValue;
  * <p>Designed to make an abstraction layer between representation format and a certain
  * implementation of elliptic curve math.
  *
- * <p>To stick with specific EC math implementation it assumed to build yet another codec layer on
- * top of this one. See {@link MilagroCodecs}, for example.
+ * <p>To stick with specific EC math implementation it assumed to implement yet another codec layer
+ * on top of the implementation that this interface contains. See {@link MilagroCodecs}, for
+ * example.
  *
- * @param <P> an implementation of type that holds decoded point elements.
+ * @param <P> a type that represents decoded point.
  * @see PointData
  * @see <a
  *     href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/bls_signature.md#point-representations">https://github.com/ethereum/eth2.0-specs/blob/master/specs/bls_signature.md#point-representations</a>
@@ -27,15 +28,30 @@ public interface Codec<P> {
   int X_SIZE = BCParameters.Q_BYTE_LENGTH;
 
   /**
-   * Decodes a byte sequence representing
+   * Decodes point data from a byte sequence. It's assumed that sequence is a point representation
+   * format described by the spec.
    *
-   * @param encoded
-   * @return
+   * <p><b>Note:</b> this method is not assumed to check validity of encoded data against the
+   * format. There is a {@link Validator} interface for this purpose.
+   *
+   * @param encoded an encoded point data.
+   * @return a structure representing decoded point.
    */
   P decode(BytesValue encoded);
 
-  BytesValue encode(P data);
+  /**
+   * Encodes point data.
+   *
+   * @param point a point.
+   * @return a sequence of bytes that represents a point.
+   */
+  BytesValue encode(P point);
 
+  /**
+   * An implementation that works with intermediate format of <code>G<sub>1</sub></code> points.
+   *
+   * @see PointData.G1
+   */
   Codec<PointData.G1> G1 =
       new Codec<PointData.G1>() {
         final int ENCODED_SIZE = X_SIZE;
@@ -51,18 +67,23 @@ public interface Codec<P> {
         }
 
         @Override
-        public BytesValue encode(PointData.G1 data) {
-          assert data.getX().length == ENCODED_SIZE;
+        public BytesValue encode(PointData.G1 point) {
+          assert point.getX().length == ENCODED_SIZE;
 
-          byte[] x = data.getX();
+          byte[] x = point.getX();
           byte[] encoded = new byte[ENCODED_SIZE];
-          if (!data.isInfinity()) {
+          if (!point.isInfinity()) {
             System.arraycopy(x, 0, encoded, X_SIZE - x.length, x.length);
           }
-          return BytesValue.wrap(data.writeFlags(encoded));
+          return BytesValue.wrap(point.writeFlags(encoded));
         }
       };
 
+  /**
+   * An implementation that works with intermediate format of <code>G<sub>2</sub></code> points.
+   *
+   * @see PointData.G2
+   */
   Codec<PointData.G2> G2 =
       new Codec<PointData.G2>() {
         final int ENCODED_SIZE = 2 * X_SIZE;
@@ -82,19 +103,19 @@ public interface Codec<P> {
         }
 
         @Override
-        public BytesValue encode(PointData.G2 data) {
-          assert data.getX1().length == X_SIZE;
-          assert data.getX2().length == X_SIZE;
+        public BytesValue encode(PointData.G2 point) {
+          assert point.getX1().length == X_SIZE;
+          assert point.getX2().length == X_SIZE;
 
-          byte[] x1 = data.getX1();
-          byte[] x2 = data.getX2();
+          byte[] x1 = point.getX1();
+          byte[] x2 = point.getX2();
           byte[] encoded = new byte[ENCODED_SIZE];
-          if (!data.isInfinity()) {
+          if (!point.isInfinity()) {
             System.arraycopy(x1, 0, encoded, X_SIZE - x1.length, x1.length);
             System.arraycopy(x2, 0, encoded, 2 * X_SIZE - x2.length, x2.length);
           }
 
-          return BytesValue.wrap(data.writeFlags(encoded));
+          return BytesValue.wrap(point.writeFlags(encoded));
         }
       };
 }

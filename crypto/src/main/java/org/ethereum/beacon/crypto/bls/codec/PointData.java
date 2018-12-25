@@ -3,16 +3,63 @@ package org.ethereum.beacon.crypto.bls.codec;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import java.util.Arrays;
+import org.ethereum.beacon.crypto.bls.milagro.MilagroCodecs;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
 
+/**
+ * An interface and implementations of intermediate format for <code>G<sub>1</sub></code> and <code>
+ * G<sub>2</sub></code> points.
+ *
+ * <p>Such an intermediary has been introduced to make point format abstract from implementation of
+ * elliptic curve math that uses these points on a higher layer of abstraction.
+ *
+ * <p>Point representation that is defined within this interface is encoded/decoded by codecs
+ * defined in {@link Codec}. To make an end-to-math codecs it's assumed that yet another layer of
+ * codecs to be introduced that is based on {@link Codec} implementations and stick with a certain
+ * elliptic curve math. Check {@link MilagroCodecs} as an example.
+ *
+ * <p>Use {@link Validator} interface and its implementations to check the validity of arbitrary
+ * byte sequence against the format described by the spec.
+ *
+ * @see Codec
+ * @see Validator
+ * @see Flags
+ * @see <a
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/bls_signature.md#point-representations">Format
+ *     specification</a>
+ */
 public interface PointData {
 
+  /**
+   * Should check whether point is the point at infinity.
+   *
+   * @return {@code true} if point is the point at infinity, {@code false} otherwise.
+   */
   boolean isInfinity();
 
+  /**
+   * Should return a value of sign flag.
+   *
+   * @return {@code 1} if sign flag is set, {@code 0} if it's unset.
+   */
   int getSign();
 
+  /**
+   * Should return a byte sequence of encoded point.
+   *
+   * @return encoded point.
+   */
   BytesValue encode();
 
+  /**
+   * Represents a point belonging to <code>G<sub>1</sub></code> subgroup.
+   *
+   * <p>Point is encoded as its {@code x} coordinate with highest bits set to {@link Flags} bits.
+   *
+   * @see Flags
+   * @see Validator#G1
+   * @see Codec#G1
+   */
   class G1 implements PointData {
     private final Flags flags;
     private final byte[] x;
@@ -76,6 +123,16 @@ public interface PointData {
     }
   }
 
+  /**
+   * Represents a point belonging to <code>G<sub>2</sub></code> subgroup.
+   *
+   * <p>Point is encoded as its {@code x1} coordinate with highest bits set to {@link Flags} bits,
+   * followed by {@code x2} coordinate with highest three bits set to {@code 0}.
+   *
+   * @see Flags
+   * @see Validator#G2
+   * @see Codec#G2
+   */
   class G2 implements PointData {
     private final Flags flags1;
     private final Flags flags2;

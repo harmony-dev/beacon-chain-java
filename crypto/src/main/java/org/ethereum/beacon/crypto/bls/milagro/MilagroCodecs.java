@@ -5,16 +5,30 @@ import org.apache.milagro.amcl.BLS381.ECP;
 import org.apache.milagro.amcl.BLS381.ECP2;
 import org.apache.milagro.amcl.BLS381.FP;
 import org.apache.milagro.amcl.BLS381.FP2;
-import org.apache.milagro.amcl.BLS381.ROM;
 import org.ethereum.beacon.crypto.bls.codec.Codec;
 import org.ethereum.beacon.crypto.bls.codec.PointData;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
 
+/**
+ * Codec implementations that work with Milagro point implementation.
+ *
+ * <p>Built on top of {@link Codec}. Encode and decode {@link ECP} and {@link ECP2} types to/from
+ * byte sequence using point representation described in the spec.
+ *
+ * @see Codec
+ * @see ECP
+ * @see ECP2
+ * @see <a
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/bls_signature.md#point-representations">https://github.com/ethereum/eth2.0-specs/blob/master/specs/bls_signature.md#point-representations</a>
+ */
 public abstract class MilagroCodecs {
   private MilagroCodecs() {}
 
-  private static final BIG Q = new BIG(ROM.Modulus);
-
+  /**
+   * Encodes/decodes byte sequence to/from {@link ECP}.
+   *
+   * @see Codec#G1
+   */
   public static final Codec<ECP> G1 =
       new Codec<ECP>() {
         @Override
@@ -26,10 +40,10 @@ public abstract class MilagroCodecs {
             BIG x = BIGs.fromByteArray(g1.getX());
             BIG y = ECP.RHS(new FP(x)).sqrt().redc();
 
-            if (BIGs.getSign(y, Q) == g1.getSign()) {
+            if (FPs.getSign(y) == g1.getSign()) {
               return new ECP(x, y);
             } else {
-              return new ECP(x, BIGs.neg(y));
+              return new ECP(x, FPs.neg(y));
             }
           }
         }
@@ -37,12 +51,17 @@ public abstract class MilagroCodecs {
         @Override
         public BytesValue encode(ECP point) {
           byte[] x = BIGs.toByteArray(point.getX());
-          int sign = BIGs.getSign(point.getY(), Q);
+          int sign = FPs.getSign(point.getY());
           PointData.G1 data = PointData.G1.create(x, point.is_infinity(), sign);
           return data.encode();
         }
       };
 
+  /**
+   * Encodes/decodes byte sequence to/from {@link ECP2}.
+   *
+   * @see Codec#G2
+   */
   public static final Codec<ECP2> G2 =
       new Codec<ECP2>() {
         @Override
@@ -58,7 +77,7 @@ public abstract class MilagroCodecs {
             FP2 y = ECP2.RHS(x);
             y.sqrt();
 
-            if (BIGs.getSign(y.getB(), Q) == g2.getSign()) {
+            if (FPs.getSign(y.getB()) == g2.getSign()) {
               return new ECP2(x, y);
             } else {
               y.neg();
@@ -71,7 +90,7 @@ public abstract class MilagroCodecs {
         public BytesValue encode(ECP2 point) {
           byte[] re = BIGs.toByteArray(point.getX().getA());
           byte[] im = BIGs.toByteArray(point.getX().getB());
-          int sign = BIGs.getSign(point.getY().getB(), Q);
+          int sign = FPs.getSign(point.getY().getB());
           PointData.G2 data = PointData.G2.create(im, re, point.is_infinity(), sign);
           return data.encode();
         }

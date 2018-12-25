@@ -1,5 +1,6 @@
 package org.ethereum.beacon.crypto.bls.milagro;
 
+/** Various {@code BLS12} elliptic curve parameters written with Milagro types and classes. */
 public interface MilagroParameters {
 
   abstract class Fp2 {

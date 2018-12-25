@@ -4,10 +4,29 @@ import java.math.BigInteger;
 import org.ethereum.beacon.crypto.bls.bc.BCParameters;
 import tech.pegasys.pantheon.util.bytes.BytesValue;
 
+/**
+ * Validates byte sequence against point format described in the spec <a
+ * href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/bls_signature.md#point-representations">https://github.com/ethereum/eth2.0-specs/blob/master/specs/bls_signature.md#point-representations</a>
+ *
+ * @see PointData
+ * @see Codec
+ */
 public interface Validator {
 
+  /**
+   * Runs validations.
+   *
+   * @param encoded byte sequence that represents and encoded point.
+   * @return result of the validation.
+   * @see Result
+   */
   Result validate(BytesValue encoded);
 
+  /**
+   * Validator for <code>G<sub>1</sub></code> points.
+   *
+   * @see PointData.G1
+   */
   Validator G1 =
       new Validator() {
         static final int ENCODED_SIZE = 48;
@@ -50,6 +69,11 @@ public interface Validator {
         }
       };
 
+  /**
+   * Validator for <code>G<sub>2</sub></code> points.
+   *
+   * @see PointData.G2
+   */
   Validator G2 =
       new Validator() {
         static final int ENCODED_SIZE = 96;
@@ -104,6 +128,11 @@ public interface Validator {
         }
       };
 
+  /**
+   * Keeps result of the validation.
+   *
+   * <p>Contains a flag and a message describing an error.
+   */
   class Result {
     private static final Result Valid = new Result(true, "");
 

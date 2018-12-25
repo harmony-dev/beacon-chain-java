@@ -5,8 +5,8 @@ import org.bouncycastle.math.ec.ECCurve;
 import org.bouncycastle.math.ec.ECPoint;
 
 /**
- * Various parameters that belong to BLS12-381 signature scheme written with usage of Bouncy Castle
- * models and types.
+ * Various parameters that belong to {@code BLS12-381} signature scheme written with usage of Bouncy
+ * Castle models and types.
  */
 public interface BCParameters {
 
@@ -23,9 +23,9 @@ public interface BCParameters {
   BigInteger G_ORDER =
       new BigInteger("73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001", 16);
 
-  /** Parameter {@code a} in Weierstrass equation that defines BLS12 curves. */
+  /** Parameter {@code a} in Weierstrass equation that defines {@code BLS12} curves. */
   BigInteger A = BigInteger.ZERO;
-  /** Parameter {@code b} in Weierstrass equation that defines BLS12 curves. */
+  /** Parameter {@code b} in Weierstrass equation that defines {@code BLS12} curves. */
   BigInteger B = BigInteger.valueOf(4);
 
   /** Length of the modulus {@link #Q} in bytes. */
@@ -39,7 +39,7 @@ public interface BCParameters {
     public static final BigInteger COFACTOR =
         new BigInteger("396c8c005555e1568c00aaab0000aaab", 16);
 
-    /** A BLS12 curve defined over <code>F<sub>q</sub></code> field. */
+    /** A {@code BLS12} curve defined over <code>F<sub>q</sub></code> field. */
     public static final ECCurve CURVE;
     /** A generator point of <code>G<sub>1</sub></code> subgroup. */
     public static final ECPoint G;

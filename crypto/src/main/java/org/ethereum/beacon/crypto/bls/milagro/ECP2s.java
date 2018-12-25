@@ -4,6 +4,12 @@ import org.apache.milagro.amcl.BLS381.BIG;
 import org.apache.milagro.amcl.BLS381.ECP2;
 import org.ethereum.beacon.crypto.bls.bc.BCParameters.G2;
 
+/**
+ * Various utility methods to work with Milagro implementation of {@code BLS12} elliptic curve
+ * defined over a field <code>F<sub>q<sup>2</sup></sub></code>.
+ *
+ * @see ECP2
+ */
 public abstract class ECP2s {
   private ECP2s() {}
 
@@ -27,7 +33,22 @@ public abstract class ECP2s {
     COFACTOR_SHIFT.shl(lowPart.length * 8);
   }
 
-  public static ECP2 mulByCofactor(ECP2 point) {
+  /**
+   * Multiplies point by a cofactor of <code>G<sub>2</sub></code> subgroup.
+   *
+   * <p>Milagro big number implementation handles numbers up to {@code 58} bytes length, it's
+   * defined by a constant {@link BIG#BASEBITS}. Since <code>G<sub>2</sub></code> cofactor occupies
+   * {@code 64} bytes there is no way to directly multiply point by the cofactor.
+   *
+   * <p>This workaround uses simple arithmetic trick: {@code res = p * COFACTOR_HIGH *
+   * COFACTOR_SHIFT + p * COFACTOR_LOW}. Where {@code COFACTOR_HIGH} represents a high ordered word
+   * of cofactor and {@code COFACTOR_LOW} is a low word. {@code COFACTOR_SHIFT} shifts high ordered
+   * word.
+   *
+   * @param point a point.
+   * @return a new point that is a result of multiplying given point by the cofactor.
+   */
+  public static ECP2 mulByG2Cofactor(ECP2 point) {
     ECP2 product = point.mul(COFACTOR_HIGH).mul(COFACTOR_SHIFT);
     product.add(point.mul(COFACTOR_LOW));
     return product;
