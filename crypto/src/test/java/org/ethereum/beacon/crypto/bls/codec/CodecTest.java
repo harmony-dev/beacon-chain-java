@@ -7,7 +7,7 @@ import java.util.Random;
 import org.bouncycastle.util.Arrays;
 import org.ethereum.beacon.crypto.bls.bc.BCParameters;
 import org.junit.Test;
-import tech.pegasys.pantheon.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.bytes.BytesValue;
 
 public class CodecTest {
 

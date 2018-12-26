@@ -7,8 +7,8 @@ import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.crypto.MessageParameters;
 import org.ethereum.beacon.crypto.MessageParametersMapper;
 import org.ethereum.beacon.crypto.bls.milagro.MilagroParameters.Fp2;
-import tech.pegasys.pantheon.util.bytes.BytesValue;
-import tech.pegasys.pantheon.util.bytes.BytesValues;
+import tech.pegasys.artemis.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.bytes.BytesValues;
 
 /**
  * Message mapper that works with Milagro implementation of points of elliptic curve defined over

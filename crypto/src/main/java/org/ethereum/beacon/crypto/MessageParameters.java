@@ -1,7 +1,7 @@
 package org.ethereum.beacon.crypto;
 
-import tech.pegasys.pantheon.util.bytes.Bytes32;
-import tech.pegasys.pantheon.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.bytes.Bytes32;
+import tech.pegasys.artemis.util.bytes.BytesValue;
 
 /**
  * An interface of message parameters that are used by BLS381 signature scheme.

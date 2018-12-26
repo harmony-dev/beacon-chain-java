@@ -11,8 +11,8 @@ import org.ethereum.beacon.crypto.BLS381.Signature;
 import org.ethereum.beacon.crypto.MessageParameters.Impl;
 import org.ethereum.beacon.crypto.bls.codec.PointData;
 import org.junit.Test;
-import tech.pegasys.pantheon.util.bytes.BytesValue;
-import tech.pegasys.pantheon.util.bytes.MutableBytesValue;
+import tech.pegasys.artemis.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.bytes.MutableBytesValue;
 
 public class BLS381Test {
 

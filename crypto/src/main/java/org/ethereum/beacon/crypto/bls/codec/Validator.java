@@ -2,7 +2,7 @@ package org.ethereum.beacon.crypto.bls.codec;
 
 import java.math.BigInteger;
 import org.ethereum.beacon.crypto.bls.bc.BCParameters;
-import tech.pegasys.pantheon.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.bytes.BytesValue;
 
 /**
  * Validates byte sequence against point format described in the spec <a

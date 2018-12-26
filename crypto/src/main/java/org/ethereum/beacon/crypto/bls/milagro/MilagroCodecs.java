@@ -7,7 +7,7 @@ import org.apache.milagro.amcl.BLS381.FP;
 import org.apache.milagro.amcl.BLS381.FP2;
 import org.ethereum.beacon.crypto.bls.codec.Codec;
 import org.ethereum.beacon.crypto.bls.codec.PointData;
-import tech.pegasys.pantheon.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.bytes.BytesValue;
 
 /**
  * Codec implementations that work with Milagro point implementation.

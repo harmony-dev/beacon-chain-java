@@ -15,7 +15,7 @@ import org.apache.milagro.amcl.RAND;
 import org.ethereum.beacon.crypto.bls.codec.Flags;
 import org.ethereum.beacon.crypto.bls.milagro.BIGs;
 import org.junit.Test;
-import tech.pegasys.pantheon.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.bytes.BytesValue;
 
 public class MilagroCodecsTest {
 

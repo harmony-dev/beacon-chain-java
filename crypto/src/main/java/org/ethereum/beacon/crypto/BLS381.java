@@ -27,8 +27,8 @@ import org.ethereum.beacon.crypto.bls.codec.Codec;
 import org.ethereum.beacon.crypto.bls.codec.Validator;
 import org.ethereum.beacon.crypto.bls.milagro.BIGs;
 import org.ethereum.beacon.crypto.bls.milagro.MilagroMessageMapper;
-import tech.pegasys.pantheon.util.bytes.Bytes32;
-import tech.pegasys.pantheon.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.bytes.Bytes32;
+import tech.pegasys.artemis.util.bytes.BytesValue;
 
 /**
  * An implementation of {@code BLS12-381} signature scheme.

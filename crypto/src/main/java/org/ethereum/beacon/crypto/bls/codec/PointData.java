@@ -4,7 +4,7 @@ import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import java.util.Arrays;
 import org.ethereum.beacon.crypto.bls.milagro.MilagroCodecs;
-import tech.pegasys.pantheon.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.bytes.BytesValue;
 
 /**
  * An interface and implementations of intermediate format for <code>G<sub>1</sub></code> and <code>

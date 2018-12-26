@@ -3,7 +3,7 @@ package org.ethereum.beacon.crypto.bls.milagro;
 import java.math.BigInteger;
 import org.apache.milagro.amcl.BLS381.BIG;
 import org.bouncycastle.util.Arrays;
-import tech.pegasys.pantheon.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.bytes.BytesValue;
 
 /**
  * Various utility methods to work with Milagro big number implementation.

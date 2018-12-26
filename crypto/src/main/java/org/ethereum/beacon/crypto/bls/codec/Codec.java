@@ -3,7 +3,7 @@ package org.ethereum.beacon.crypto.bls.codec;
 import java.util.Arrays;
 import org.ethereum.beacon.crypto.bls.bc.BCParameters;
 import org.ethereum.beacon.crypto.bls.milagro.MilagroCodecs;
-import tech.pegasys.pantheon.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.bytes.BytesValue;
 
 /**
  * An interface with its implementations to work with representation format of elliptic curve points
