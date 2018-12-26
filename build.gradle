@@ -1,5 +1,12 @@
+plugins {
+  id "io.spring.dependency-management" version "1.0.6.RELEASE"
+}
+
 allprojects {
   apply plugin: 'java-library'
+  apply plugin: 'io.spring.dependency-management'
+
+  apply from: "${rootDir}/versions.gradle"
 
   version = rootProject.version
 
@@ -14,4 +21,5 @@ allprojects {
   repositories {
     jcenter()
   }
+
 }
