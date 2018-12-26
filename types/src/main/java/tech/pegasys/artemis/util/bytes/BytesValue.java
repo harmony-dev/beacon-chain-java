@@ -527,6 +527,10 @@ public interface BytesValue extends Comparable<BytesValue> {
     return Integer.compare(size(), other.size());
   }
 
+  default BytesValue concat(final BytesValue value) {
+    return wrap(this, value);
+  }
+
   /**
    * Returns the hexadecimal string representation of this value.
    *
