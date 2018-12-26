@@ -1,6 +1,7 @@
 package org.ethereum.beacon.crypto;
 
 import tech.pegasys.artemis.util.bytes.Bytes32;
+import tech.pegasys.artemis.util.bytes.Bytes8;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 /**
@@ -26,14 +27,14 @@ public interface MessageParameters {
    *
    * @return domain value.
    */
-  BytesValue getDomain();
+  Bytes8 getDomain();
 
   /** A straightforward implementation of {@link MessageParameters}. */
   class Impl implements MessageParameters {
     private final Bytes32 hash;
-    private final BytesValue domain;
+    private final Bytes8 domain;
 
-    public Impl(Bytes32 hash, BytesValue domain) {
+    public Impl(Bytes32 hash, Bytes8 domain) {
       this.hash = hash;
       this.domain = domain;
     }
@@ -44,7 +45,7 @@ public interface MessageParameters {
     }
 
     @Override
-    public BytesValue getDomain() {
+    public Bytes8 getDomain() {
       return domain;
     }
   }

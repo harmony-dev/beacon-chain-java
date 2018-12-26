@@ -11,6 +11,7 @@ import org.ethereum.beacon.crypto.BLS381.Signature;
 import org.ethereum.beacon.crypto.MessageParameters.Impl;
 import org.ethereum.beacon.crypto.bls.codec.PointData;
 import org.junit.Test;
+import tech.pegasys.artemis.util.bytes.Bytes8;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.bytes.MutableBytesValue;
 
@@ -20,7 +21,7 @@ public class BLS381Test {
   public void checkSignAndVerifyFlow() {
     KeyPair keyPair = BLS381.KeyPair.generate();
     BytesValue message = randomMessage();
-    BytesValue domain = randomDomain();
+    Bytes8 domain = randomDomain();
 
     MessageParameters params = new Impl(Hashes.keccack256(message), domain);
     Signature signature = BLS381.sign(params, keyPair);
@@ -203,10 +204,10 @@ public class BLS381Test {
     return BytesValue.wrap(message);
   }
 
-  BytesValue randomDomain() {
+  Bytes8 randomDomain() {
     Random random = new Random();
     byte[] domain = new byte[8];
     random.nextBytes(domain);
-    return BytesValue.wrap(domain);
+    return Bytes8.wrap(domain);
   }
 }
