@@ -23,6 +23,8 @@ public class UInt64 implements Comparable<UInt64> {
   public static final UInt64 MAX_VALUE = valueOf(-1);
   public static final UInt64 MIN_VALUE = valueOf(0);
 
+  public static final UInt64 ZERO = MIN_VALUE;
+
   private final long value;
 
   private UInt64(long value) {
