@@ -1,3 +1,2 @@
 dependencies {
-    compile 'com.google.code.findbugs:jsr305'
 }
