@@ -4,7 +4,7 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.uint.UInt64;
 
-public class BeaconBlock implements Hashable {
+public class BeaconBlock implements Hashable<Hash32> {
 
   private final UInt64 slot;
   private final Hash32 parentRoot;
