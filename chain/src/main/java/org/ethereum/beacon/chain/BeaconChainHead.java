@@ -1,23 +1,37 @@
 package org.ethereum.beacon.chain;
 
+import org.ethereum.beacon.chain.storage.BeaconTuple;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
+import org.ethereum.beacon.consensus.types.Score;
 
 public class BeaconChainHead {
 
-  private final BeaconBlock block;
-  private final BeaconState state;
+  private final BeaconTuple tuple;
+  private final Score score;
 
-  public BeaconChainHead(BeaconBlock block, BeaconState state) {
-    this.block = block;
-    this.state = state;
+  public BeaconChainHead(BeaconTuple tuple, Score score) {
+    this.tuple = tuple;
+    this.score = score;
+  }
+
+  public static BeaconChainHead of(BeaconTuple tuple, Score score) {
+    return new BeaconChainHead(tuple, score);
+  }
+
+  public BeaconTuple getTuple() {
+    return tuple;
+  }
+
+  public Score getScore() {
+    return score;
   }
 
   public BeaconBlock getBlock() {
-    return block;
+    return tuple.getBlock();
   }
 
   public BeaconState getState() {
-    return state;
+    return tuple.getState();
   }
 }

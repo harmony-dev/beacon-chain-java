@@ -18,7 +18,7 @@ public class BeaconTupleStorage implements Hash32KeyStorage<BeaconTuple> {
     if (block.isPresent()) {
       Optional<BeaconState> state = stateStorage.get(hash);
       checkArgument(state.isPresent(), "State inconsistency for block %s", block);
-      return Optional.of(BeaconTuple.create(block.get(), state.get()));
+      return Optional.of(BeaconTuple.of(block.get(), state.get()));
     } else {
       return Optional.empty();
     }

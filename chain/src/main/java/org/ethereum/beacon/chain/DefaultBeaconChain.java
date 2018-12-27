@@ -7,6 +7,7 @@ import org.ethereum.beacon.chain.storage.BeaconBlockStorage;
 import org.ethereum.beacon.chain.storage.BeaconStateStorage;
 import org.ethereum.beacon.chain.storage.BeaconTuple;
 import org.ethereum.beacon.chain.storage.BeaconTupleStorage;
+import org.ethereum.beacon.consensus.ScoreFunction;
 import org.ethereum.beacon.consensus.validator.BeaconBlockValidator.Context;
 import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.consensus.validator.BeaconBlockValidator;
@@ -15,7 +16,8 @@ import org.ethereum.beacon.consensus.validator.ValidationResult;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlocks;
 import org.ethereum.beacon.core.BeaconState;
-import org.ethereum.beacon.db.DBFlusher;
+import org.ethereum.beacon.db.Database;
+import org.ethereum.beacon.consensus.types.Score;
 
 public class DefaultBeaconChain implements MutableBeaconChain {
 
@@ -29,30 +31,30 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   BeaconBlockValidator blockValidator;
   BeaconStateValidator stateValidator;
 
-  DBFlusher dbFlusher;
+  ScoreFunction scoreFunction;
 
-  BeaconTuple head;
+  Database database;
+
+  BeaconChainHead head;
 
   @Override
   public void init() {
-    Optional<BeaconTuple> head = tupleStorage.getCanonicalHead();
-    if (!head.isPresent()) {
-      initializeStorage();
-      this.head = initializeStorage();
-    } else {
-      this.head = head.get();
-    }
+    Optional<BeaconTuple> aTuple = tupleStorage.getCanonicalHead();
+    BeaconTuple headTuple = aTuple.orElseGet(this::initializeStorage);
+
+    Score headScore = scoreFunction.apply(headTuple.getBlock(), headTuple.getState());
+    this.head = BeaconChainHead.of(headTuple, headScore);
   }
 
   private BeaconTuple initializeStorage() {
     BeaconState initialState =
-        initialTransition.applyBlock(BeaconBlocks.createGenesis(), BeaconState.createEmpty());
+        initialTransition.apply(BeaconBlocks.createGenesis(), BeaconState.createEmpty());
     BeaconBlock genesis = BeaconBlocks.createGenesis().withStateRoot(initialState.getHash());
 
-    BeaconTuple tuple = BeaconTuple.create(genesis, initialState);
+    BeaconTuple tuple = BeaconTuple.of(genesis, initialState);
     tupleStorage.put(tuple);
 
-    dbFlusher.flushSync();
+    database.flushSync();
 
     return tuple;
   }
@@ -66,20 +68,24 @@ public class DefaultBeaconChain implements MutableBeaconChain {
       return;
     }
 
-    BeaconState preState = pullParentState(block);
-    BeaconState postState = stateTransition.applyBlock(block, preState);
+    BeaconState parentState = pullParentState(block);
+    BeaconState newState = stateTransition.apply(block, parentState);
 
-    ValidationResult stateValidation = stateValidator.validate(block, postState);
+    ValidationResult stateValidation = stateValidator.validate(block, newState);
     if (!stateValidation.isPassed()) {
       return;
     }
 
-    BeaconTuple newTuple = BeaconTuple.create(block, postState);
-
+    BeaconTuple newTuple = BeaconTuple.of(block, newState);
     tupleStorage.put(newTuple);
-    dbFlusher.commit();
 
-    this.head = newTuple;
+    Score newScore = scoreFunction.apply(block, newState);
+    if (head.getScore().compareTo(newScore) < 0) {
+      blockStorage.reorgTo(newTuple.getBlock());
+      this.head = BeaconChainHead.of(newTuple, newScore);
+    }
+
+    database.commit();
   }
 
   private BeaconState pullParentState(BeaconBlock block) {

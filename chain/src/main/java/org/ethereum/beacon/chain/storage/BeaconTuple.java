@@ -15,7 +15,7 @@ public class BeaconTuple implements Hashable {
     this.state = state;
   }
 
-  public static BeaconTuple create(BeaconBlock block, BeaconState state) {
+  public static BeaconTuple of(BeaconBlock block, BeaconState state) {
     return new BeaconTuple(block, state);
   }
 

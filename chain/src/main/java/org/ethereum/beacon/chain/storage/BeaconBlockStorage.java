@@ -6,4 +6,6 @@ import org.ethereum.beacon.core.BeaconBlock;
 public interface BeaconBlockStorage extends Hash32KeyStorage<BeaconBlock> {
 
   Optional<BeaconBlock> getCanonicalHead();
+
+  void reorgTo(BeaconBlock block);
 }

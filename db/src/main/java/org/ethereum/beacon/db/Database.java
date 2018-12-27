@@ -1,6 +1,6 @@
 package org.ethereum.beacon.db;
 
-public interface DBFlusher {
+public interface Database {
 
   void flushSync();
 
