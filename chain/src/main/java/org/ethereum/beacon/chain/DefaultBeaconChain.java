@@ -5,13 +5,18 @@ import static com.google.common.base.Preconditions.checkArgument;
 import java.util.Optional;
 import org.ethereum.beacon.chain.storage.BeaconBlockStorage;
 import org.ethereum.beacon.chain.storage.BeaconStateStorage;
+import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.BeaconBlocks;
+import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.db.DBFlusher;
 
 public class DefaultBeaconChain implements MutableBeaconChain {
 
   BeaconBlockStorage blockStorage;
   BeaconStateStorage stateStorage;
+
+  StateTransition<BeaconState> initialTransition;
 
   DBFlusher dbFlusher;
 
@@ -30,7 +35,13 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   }
 
   private void initializeStorage() {
-    // TODO store genesis with initial state
+    BeaconState initialState =
+        initialTransition.applyBlock(BeaconBlocks.createGenesis(), BeaconState.createEmpty());
+    BeaconBlock genesis = BeaconBlocks.createGenesis().withStateRoot(initialState.getHash());
+
+    stateStorage.put(initialState.getHash(), initialState);
+    blockStorage.put(genesis.getHash(), genesis);
+
     dbFlusher.flushSync();
   }
 
