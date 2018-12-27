@@ -4,8 +4,9 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import java.util.Optional;
 import org.ethereum.beacon.core.BeaconBlock;
-import org.ethereum.beacon.core.BeaconState;
 import tech.pegasys.artemis.ethereum.core.Hash32;
+
+import javax.annotation.Nonnull;
 
 public class BeaconTupleStorage implements Hash32KeyStorage<BeaconTuple> {
 
@@ -14,14 +15,11 @@ public class BeaconTupleStorage implements Hash32KeyStorage<BeaconTuple> {
 
   @Override
   public Optional<BeaconTuple> get(Hash32 hash) {
-    Optional<BeaconBlock> block = blockStorage.get(hash);
-    if (block.isPresent()) {
-      Optional<BeaconState> state = stateStorage.get(hash);
-      checkArgument(state.isPresent(), "State inconsistency for block %s", block);
-      return Optional.of(BeaconTuple.of(block.get(), state.get()));
-    } else {
-      return Optional.empty();
-    }
+    return blockStorage.get(hash).map(block ->
+        stateStorage.get(hash)
+            .map(state -> BeaconTuple.of(block, state))
+            .orElseThrow(() -> new IllegalStateException("State inconsistency for block "+ block))
+    );
   }
 
   @Override
@@ -30,6 +28,18 @@ public class BeaconTupleStorage implements Hash32KeyStorage<BeaconTuple> {
 
     blockStorage.put(tuple.getBlock());
     stateStorage.put(tuple.getState());
+  }
+
+  @Override
+  public void remove(@Nonnull Hash32 key) {
+    blockStorage.remove(key);
+    stateStorage.remove(key);
+  }
+
+  @Override
+  public void flush() {
+    blockStorage.flush();
+    stateStorage.flush();
   }
 
   public Optional<BeaconTuple> getCanonicalHead() {
