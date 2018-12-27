@@ -48,7 +48,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
 
   private BeaconTuple initializeStorage() {
     BeaconState initialState =
-        initialTransition.apply(BeaconBlocks.createGenesis(), BeaconState.createEmpty());
+        initialTransition.apply(BeaconBlocks.createGenesis(), BeaconState.EMPTY);
     BeaconBlock genesis = BeaconBlocks.createGenesis().withStateRoot(initialState.getHash());
 
     BeaconTuple tuple = BeaconTuple.of(genesis, initialState);
