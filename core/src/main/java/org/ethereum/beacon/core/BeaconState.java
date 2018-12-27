@@ -2,8 +2,9 @@ package org.ethereum.beacon.core;
 
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
-public class BeaconState {
+public class BeaconState implements Hashable {
 
+  @Override
   public Hash32 getHash() {
     return Hash32.ZERO;
   }

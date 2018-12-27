@@ -2,7 +2,7 @@ package org.ethereum.beacon.core;
 
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
-public class BeaconBlock {
+public class BeaconBlock implements Hashable {
 
   private final Hash32 stateRoot;
 
@@ -14,8 +14,17 @@ public class BeaconBlock {
     return stateRoot;
   }
 
+  @Override
   public Hash32 getHash() {
     return Hash32.ZERO;
+  }
+
+  public Hash32 getParentRoot() {
+    return Hash32.ZERO;
+  }
+
+  public boolean isParentOf(BeaconBlock other) {
+    return true;
   }
 
   public BeaconBlock withStateRoot(Hash32 hash) {
