@@ -4,6 +4,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.Security;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
@@ -47,9 +48,9 @@ public abstract class Hashes {
    * @param input input message.
    * @return the hash.
    */
-  public static Bytes32 keccack256(BytesValue input) {
+  public static Hash32 keccack256(BytesValue input) {
     byte[] output = digestUsingAlgorithm(input, KECCAK256);
-    return Bytes32.wrap(output);
+    return Hash32.wrap(Bytes32.wrap(output));
   }
 
   /**
