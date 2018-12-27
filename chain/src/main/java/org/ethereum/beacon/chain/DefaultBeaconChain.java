@@ -6,7 +6,7 @@ import java.util.Optional;
 import org.ethereum.beacon.chain.storage.BeaconBlockStorage;
 import org.ethereum.beacon.chain.storage.BeaconStateStorage;
 import org.ethereum.beacon.chain.storage.BeaconTuple;
-import org.ethereum.beacon.chain.storage.BeaconTupleStorage;
+import org.ethereum.beacon.chain.storage.impl.BeaconTupleStorageImpl;
 import org.ethereum.beacon.consensus.ScoreFunction;
 import org.ethereum.beacon.consensus.validator.BeaconBlockValidator.Context;
 import org.ethereum.beacon.consensus.StateTransition;
@@ -23,7 +23,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
 
   BeaconBlockStorage blockStorage;
   BeaconStateStorage stateStorage;
-  BeaconTupleStorage tupleStorage;
+  BeaconTupleStorageImpl tupleStorage;
 
   StateTransition<BeaconState> initialTransition;
   StateTransition<BeaconState> stateTransition;
