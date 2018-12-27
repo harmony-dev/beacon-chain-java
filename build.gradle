@@ -14,8 +14,8 @@ allprojects {
   targetCompatibility = '1.8'
 
   dependencies {
-    testImplementation 'junit:junit:4.12'
-    testImplementation 'org.assertj:assertj-core:3.11.1'
+    testImplementation 'junit:junit'
+    testImplementation 'org.assertj:assertj-core'
   }
 
   repositories {
