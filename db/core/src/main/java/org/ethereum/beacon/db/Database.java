@@ -7,4 +7,9 @@ public interface Database {
    * and it is a safe point to persist the data
    */
   void commit();
+
+  /**
+   * Close underlying database storage
+   */
+  void close();
 }
