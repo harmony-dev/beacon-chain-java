@@ -8,7 +8,7 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.bytes.BytesValue;
-import tech.pegasys.artemis.util.bytes.Hash48;
+import org.ethereum.beacon.types.Hash48;
 
 /** Utility methods to calculate message hashes */
 public abstract class Hashes {

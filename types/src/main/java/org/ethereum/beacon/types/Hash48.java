@@ -1,6 +1,8 @@
-package tech.pegasys.artemis.util.bytes;
+package org.ethereum.beacon.types;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import tech.pegasys.artemis.util.bytes.Bytes48;
+import tech.pegasys.artemis.util.bytes.DelegatingBytes48;
 
 public class Hash48 extends DelegatingBytes48 {
 
