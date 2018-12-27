@@ -1,12 +1,9 @@
 package org.ethereum.beacon.chain.storage;
 
-import static com.google.common.base.Preconditions.checkArgument;
-
-import java.util.Optional;
-import org.ethereum.beacon.core.BeaconBlock;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
 import javax.annotation.Nonnull;
+import java.util.Optional;
 
 public class BeaconTupleStorage implements Hash32KeyStorage<BeaconTuple> {
 
@@ -43,11 +40,6 @@ public class BeaconTupleStorage implements Hash32KeyStorage<BeaconTuple> {
   }
 
   public Optional<BeaconTuple> getCanonicalHead() {
-    Optional<BeaconBlock> canonicalHead = blockStorage.getCanonicalHead();
-    if (canonicalHead.isPresent()) {
-      return get(canonicalHead.get().getHash());
-    } else {
-      return Optional.empty();
-    }
+    return blockStorage.getCanonicalHead().flatMap(head -> get(head.getHash()));
   }
 }
