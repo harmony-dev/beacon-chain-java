@@ -1,3 +1,4 @@
 rootProject.name = 'beacon'
+include 'core'
 include 'crypto'
 include 'types'
