@@ -2,4 +2,7 @@ dependencies {
   implementation project(':types')
   implementation project(':core')
   implementation project(':consensus')
+  implementation project(':db')
+
+  implementation 'com.google.guava:guava'
 }
