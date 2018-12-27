@@ -1,6 +1,8 @@
 dependencyManagement {
   dependencies {
 
+    dependency 'org.ethereum:ethereumj-core:1+'
+
     dependency 'org.bouncycastle:bcprov-jdk15on:1.60'
     dependency 'org.miracl.milagro.amcl:milagro-crypto-java:0.4.0'
     dependency 'com.google.guava:guava:27.0.1-jre'
