@@ -54,8 +54,6 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     BeaconTuple tuple = BeaconTuple.of(genesis, initialState);
     tupleStorage.put(tuple);
 
-    database.flushSync();
-
     return tuple;
   }
 
