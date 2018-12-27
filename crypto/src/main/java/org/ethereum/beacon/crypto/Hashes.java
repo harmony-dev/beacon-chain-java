@@ -6,7 +6,9 @@ import java.security.Security;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
+import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.bytes.Hash48;
 
 /** Utility methods to calculate message hashes */
 public abstract class Hashes {
@@ -16,9 +18,6 @@ public abstract class Hashes {
 
   private static final String KECCAK256 = "KECCAK-256";
   private static final String KECCAK512 = "KECCAK-512";
-
-  /** Size of keccak384 in bytes */
-  private static final int KECCAK384_SIZE = 384 >> 3;
 
   static {
     Security.addProvider(PROVIDER = new BouncyCastleProvider());
@@ -59,8 +58,8 @@ public abstract class Hashes {
    * @param input input message.
    * @return the hash.
    */
-  public static BytesValue keccack384(BytesValue input) {
+  public static Hash48 keccack384(BytesValue input) {
     byte[] output = digestUsingAlgorithm(input, KECCAK512);
-    return BytesValue.wrap(output, 0, KECCAK384_SIZE);
+    return Hash48.wrap(Bytes48.wrap(output, 0));
   }
 }
