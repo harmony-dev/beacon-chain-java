@@ -6,4 +6,3 @@ include 'consensus'
 include 'db'
 include 'chain'
 include 'ssz'
-
