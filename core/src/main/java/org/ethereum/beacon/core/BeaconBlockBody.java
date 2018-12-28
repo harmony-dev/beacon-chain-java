@@ -2,7 +2,6 @@ package org.ethereum.beacon.core;
 
 import static java.util.Collections.emptyList;
 
-import java.util.Collections;
 import java.util.List;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.CasperSlashing;
@@ -13,7 +12,19 @@ import org.ethereum.beacon.core.operations.ProofOfCustodyResponse;
 import org.ethereum.beacon.core.operations.ProofOfCustodySeedChange;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 
+/**
+ * Beacon block body.
+ *
+ * <p>Contains lists of beacon chain operations.
+ *
+ * @see BeaconBlock
+ * @see <a
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md#beaconblockbody">BeaconBlockBody
+ *     in the spec</a>
+ */
 public class BeaconBlockBody {
+
+  /** A body where all lists are empty. */
   public static final BeaconBlockBody EMPTY =
       new BeaconBlockBody(
           emptyList(),
@@ -25,13 +36,21 @@ public class BeaconBlockBody {
           emptyList(),
           emptyList());
 
+  /** A list of proposer slashing challenges. */
   private final List<ProposerSlashing> proposerSlashings;
+  /** A list of Casper slashing challenges. */
   private final List<CasperSlashing> casperSlashings;
+  /** A list of attestations. */
   private final List<Attestation> attestations;
+  /** A list of proof of custody seed changes. */
   private final List<ProofOfCustodySeedChange> pocSeedChanges;
+  /** A list of proof of custody challenges. */
   private final List<ProofOfCustodyChallenge> pocChallenges;
+  /** A list of proof of custody challenge responses. */
   private final List<ProofOfCustodyResponse> pocResponses;
+  /** A list of validator deposit proofs. */
   private final List<Deposit> deposits;
+  /** A list of validator exits. */
   private final List<Exit> exits;
 
   public BeaconBlockBody(
