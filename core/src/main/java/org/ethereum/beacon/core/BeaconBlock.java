@@ -1,5 +1,6 @@
 package org.ethereum.beacon.core;
 
+import java.util.Arrays;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.uint.UInt64;
@@ -49,8 +50,8 @@ public class BeaconBlock implements Hashable {
     this.body = body;
   }
 
-  public boolean isParentOf(BeaconBlock other) {
-    return true;
+  public boolean isParentOf(BeaconBlock ancestor) {
+    return this.getHash().equals(ancestor.parentRoot);
   }
 
   public BeaconBlock withStateRoot(Hash32 stateRoot) {
