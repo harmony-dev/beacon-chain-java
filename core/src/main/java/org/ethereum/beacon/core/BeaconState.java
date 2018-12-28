@@ -6,9 +6,11 @@ import java.util.List;
 import org.ethereum.beacon.core.operations.ProofOfCustodyChallenge;
 import org.ethereum.beacon.core.state.CandidatePowReceiptRootRecord;
 import org.ethereum.beacon.core.state.ForkData;
+import org.ethereum.beacon.core.state.ShardCommittee;
+import org.ethereum.beacon.core.state.ShardReassignmentRecord;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 /**
@@ -30,6 +32,11 @@ public class BeaconState implements Hashable {
           UInt64.ZERO,
           UInt64.ZERO,
           Hash32.ZERO,
+          emptyList(),
+          emptyList(),
+          new ShardCommittee[0][],
+          new UInt24[0][],
+          emptyList(),
           emptyList(),
           UInt64.ZERO,
           UInt64.ZERO,
@@ -59,6 +66,19 @@ public class BeaconState implements Hashable {
   private final UInt64 validatorRegistryExitCount;
   /** A hash of latest validator registry delta. */
   private final Hash32 validatorRegistryDeltaChainTip;
+
+  /* Randomness and committees */
+
+  /** The most recent randao mixes. */
+  private final List<Hash32> latestRandaoMixes;
+  /** The most recent VDF outputs. */
+  private final List<Hash32> latestVdfOutputs;
+  /** Which committee assigned to which shard on which slot. */
+  private final ShardCommittee[][] shardCommitteesAtSlots;
+  /** Validator indices assigned to each shard to produce shard chains. */
+  private final UInt24[][] persistentCommittees;
+  /** Pending changes to {@link #persistentCommittees}. */
+  private final List<ShardReassignmentRecord> persistentCommitteeReassignments;
 
   /** Proof of custody placeholder. */
   private final List<ProofOfCustodyChallenge> pocChallenges;
@@ -90,6 +110,11 @@ public class BeaconState implements Hashable {
       UInt64 validatorRegistryLatestChangeSlot,
       UInt64 validatorRegistryExitCount,
       Hash32 validatorRegistryDeltaChainTip,
+      List<Hash32> latestRandaoMixes,
+      List<Hash32> latestVdfOutputs,
+      ShardCommittee[][] shardCommitteesAtSlots,
+      UInt24[][] persistentCommittees,
+      List<ShardReassignmentRecord> persistentCommitteeReassignments,
       List<ProofOfCustodyChallenge> pocChallenges,
       UInt64 previousJustifiedSlot,
       UInt64 justifiedSlot,
@@ -105,6 +130,11 @@ public class BeaconState implements Hashable {
     this.validatorRegistryLatestChangeSlot = validatorRegistryLatestChangeSlot;
     this.validatorRegistryExitCount = validatorRegistryExitCount;
     this.validatorRegistryDeltaChainTip = validatorRegistryDeltaChainTip;
+    this.latestRandaoMixes = latestRandaoMixes;
+    this.latestVdfOutputs = latestVdfOutputs;
+    this.shardCommitteesAtSlots = shardCommitteesAtSlots;
+    this.persistentCommittees = persistentCommittees;
+    this.persistentCommitteeReassignments = persistentCommitteeReassignments;
     this.pocChallenges = pocChallenges;
     this.previousJustifiedSlot = previousJustifiedSlot;
     this.justifiedSlot = justifiedSlot;
@@ -144,6 +174,26 @@ public class BeaconState implements Hashable {
 
   public Hash32 getValidatorRegistryDeltaChainTip() {
     return validatorRegistryDeltaChainTip;
+  }
+
+  public List<Hash32> getLatestRandaoMixes() {
+    return latestRandaoMixes;
+  }
+
+  public List<Hash32> getLatestVdfOutputs() {
+    return latestVdfOutputs;
+  }
+
+  public ShardCommittee[][] getShardCommitteesAtSlots() {
+    return shardCommitteesAtSlots;
+  }
+
+  public UInt24[][] getPersistentCommittees() {
+    return persistentCommittees;
+  }
+
+  public List<ShardReassignmentRecord> getPersistentCommitteeReassignments() {
+    return persistentCommitteeReassignments;
   }
 
   public List<ProofOfCustodyChallenge> getPocChallenges() {
@@ -193,6 +243,13 @@ public class BeaconState implements Hashable {
     private UInt64 validatorRegistryExitCount;
     private Hash32 validatorRegistryDeltaChainTip;
 
+    /* Randomness and committees */
+    private List<Hash32> latestRandaoMixes;
+    private List<Hash32> latestVdfOutputs;
+    private ShardCommittee[][] shardCommitteesAtSlots;
+    private UInt24[][] persistentCommittees;
+    private List<ShardReassignmentRecord> persistentCommitteeReassignments;
+
     /* Proof of custody placeholder. */
     private List<ProofOfCustodyChallenge> pocChallenges;
 
@@ -221,6 +278,12 @@ public class BeaconState implements Hashable {
       builder.validatorRegistryExitCount = state.validatorRegistryExitCount;
       builder.validatorRegistryDeltaChainTip = state.validatorRegistryDeltaChainTip;
 
+      builder.latestRandaoMixes = state.latestRandaoMixes;
+      builder.latestVdfOutputs = state.latestVdfOutputs;
+      builder.shardCommitteesAtSlots = state.shardCommitteesAtSlots;
+      builder.persistentCommittees = state.persistentCommittees;
+      builder.persistentCommitteeReassignments = state.persistentCommitteeReassignments;
+
       builder.pocChallenges = state.pocChallenges;
 
       builder.previousJustifiedSlot = state.previousJustifiedSlot;
@@ -239,36 +302,15 @@ public class BeaconState implements Hashable {
     }
 
     /**
-     * Creates builder with all fields set to some default values.
+     * A shortcut to {@link #fromState(BeaconState)} with {@code state} parameter set to {@link
+     * #EMPTY} value.
      *
-     * <p><strong>Note:</strong> these defaults are not the defaults from initial state
+     * <p><strong>Note:</strong> these defaults are not the defaults from initial state.
      *
      * @return a builder.
      */
     public static Builder createWithDefaults() {
-      Builder builder = new Builder();
-
-      builder.slot = Slot.INITIAL_NUMBER;
-      builder.genesisTime = UInt64.ZERO;
-      builder.forkData = ForkData.EMPTY;
-
-      builder.validatorRegistry = emptyList();
-      builder.validatorBalances = emptyList();
-      builder.validatorRegistryLatestChangeSlot = Slot.INITIAL_NUMBER;
-      builder.validatorRegistryExitCount = UInt64.ZERO;
-      builder.validatorRegistryDeltaChainTip = Hash32.ZERO;
-
-      builder.pocChallenges = emptyList();
-
-      builder.previousJustifiedSlot = Slot.INITIAL_NUMBER;
-      builder.justifiedSlot = Slot.INITIAL_NUMBER;
-      builder.justificationBitfield = UInt64.ZERO;
-      builder.finalizedSlot = Slot.INITIAL_NUMBER;
-
-      builder.processedPowReceiptRoot = Hash32.ZERO;
-      builder.candidatePowReceiptRoots = emptyList();
-
-      return builder;
+      return fromState(EMPTY);
     }
 
     public BeaconState build() {
@@ -280,6 +322,11 @@ public class BeaconState implements Hashable {
       assert validatorRegistryLatestChangeSlot != null;
       assert validatorRegistryExitCount != null;
       assert validatorRegistryDeltaChainTip != null;
+      assert latestRandaoMixes != null;
+      assert latestVdfOutputs != null;
+      assert shardCommitteesAtSlots != null;
+      assert persistentCommittees != null;
+      assert persistentCommitteeReassignments != null;
       assert pocChallenges != null;
       assert previousJustifiedSlot != null;
       assert justifiedSlot != null;
@@ -297,6 +344,11 @@ public class BeaconState implements Hashable {
           validatorRegistryLatestChangeSlot,
           validatorRegistryExitCount,
           validatorRegistryDeltaChainTip,
+          latestRandaoMixes,
+          latestVdfOutputs,
+          shardCommitteesAtSlots,
+          persistentCommittees,
+          persistentCommitteeReassignments,
           pocChallenges,
           previousJustifiedSlot,
           justifiedSlot,
@@ -343,6 +395,32 @@ public class BeaconState implements Hashable {
 
     public Builder withValidatorRegistryDeltaChainTip(Hash32 validatorRegistryDeltaChainTip) {
       this.validatorRegistryDeltaChainTip = validatorRegistryDeltaChainTip;
+      return this;
+    }
+
+    public Builder withLatestRandaoMixes(List<Hash32> latestRandaoMixes) {
+      this.latestRandaoMixes = latestRandaoMixes;
+      return this;
+    }
+
+    public Builder withLatestVdfOutputs(List<Hash32> latestVdfOutputs) {
+      this.latestVdfOutputs = latestVdfOutputs;
+      return this;
+    }
+
+    public Builder withShardCommitteesAtSlots(ShardCommittee[][] shardCommitteesAtSlots) {
+      this.shardCommitteesAtSlots = shardCommitteesAtSlots;
+      return this;
+    }
+
+    public Builder withPersistentCommittees(UInt24[][] persistentCommittees) {
+      this.persistentCommittees = persistentCommittees;
+      return this;
+    }
+
+    public Builder withPersistentCommitteeReassignments(
+        List<ShardReassignmentRecord> persistentCommitteeReassignments) {
+      this.persistentCommitteeReassignments = persistentCommitteeReassignments;
       return this;
     }
 
