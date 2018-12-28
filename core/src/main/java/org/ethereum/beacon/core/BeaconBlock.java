@@ -50,6 +50,10 @@ public class BeaconBlock implements Hashable {
     this.body = body;
   }
 
+  public boolean isGenesis() {
+    return slot.equals(Slot.INITIAL_NUMBER);
+  }
+
   public boolean isParentOf(BeaconBlock ancestor) {
     return this.getHash().equals(ancestor.parentRoot);
   }

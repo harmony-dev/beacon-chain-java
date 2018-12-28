@@ -8,6 +8,7 @@ import org.ethereum.beacon.core.state.CandidatePowReceiptRootRecord;
 import org.ethereum.beacon.core.state.ForkData;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 /**
@@ -176,5 +177,209 @@ public class BeaconState implements Hashable {
   @Override
   public Hash32 getHash() {
     return Hash32.ZERO;
+  }
+
+  public static class Builder {
+
+    /* Misc */
+    private UInt64 slot;
+    private UInt64 genesisTime;
+    private ForkData forkData;
+
+    /* Validator registry */
+    private List<ValidatorRecord> validatorRegistry;
+    private List<UInt64> validatorBalances;
+    private UInt64 validatorRegistryLatestChangeSlot;
+    private UInt64 validatorRegistryExitCount;
+    private Hash32 validatorRegistryDeltaChainTip;
+
+    /* Proof of custody placeholder. */
+    private List<ProofOfCustodyChallenge> pocChallenges;
+
+    /* Finality */
+    private UInt64 previousJustifiedSlot;
+    private UInt64 justifiedSlot;
+    private UInt64 justificationBitfield;
+    private UInt64 finalizedSlot;
+
+    /* PoW receipt root */
+    private Hash32 processedPowReceiptRoot;
+    private List<CandidatePowReceiptRootRecord> candidatePowReceiptRoots;
+
+    private Builder() {}
+
+    public static Builder fromState(BeaconState state) {
+      Builder builder = new Builder();
+
+      builder.slot = state.slot;
+      builder.genesisTime = state.genesisTime;
+      builder.forkData = state.forkData;
+
+      builder.validatorRegistry = state.validatorRegistry;
+      builder.validatorBalances = state.validatorBalances;
+      builder.validatorRegistryLatestChangeSlot = state.validatorRegistryLatestChangeSlot;
+      builder.validatorRegistryExitCount = state.validatorRegistryExitCount;
+      builder.validatorRegistryDeltaChainTip = state.validatorRegistryDeltaChainTip;
+
+      builder.pocChallenges = state.pocChallenges;
+
+      builder.previousJustifiedSlot = state.previousJustifiedSlot;
+      builder.justifiedSlot = state.justifiedSlot;
+      builder.justificationBitfield = state.justificationBitfield;
+      builder.finalizedSlot = state.finalizedSlot;
+
+      builder.processedPowReceiptRoot = state.processedPowReceiptRoot;
+      builder.candidatePowReceiptRoots = state.candidatePowReceiptRoots;
+
+      return builder;
+    }
+
+    public static Builder createEmpty() {
+      return new Builder();
+    }
+
+    /**
+     * Creates builder with all fields set to some default values.
+     *
+     * <p><strong>Note:</strong> these defaults are not the defaults from initial state
+     *
+     * @return a builder.
+     */
+    public static Builder createWithDefaults() {
+      Builder builder = new Builder();
+
+      builder.slot = Slot.INITIAL_NUMBER;
+      builder.genesisTime = UInt64.ZERO;
+      builder.forkData = ForkData.EMPTY;
+
+      builder.validatorRegistry = emptyList();
+      builder.validatorBalances = emptyList();
+      builder.validatorRegistryLatestChangeSlot = Slot.INITIAL_NUMBER;
+      builder.validatorRegistryExitCount = UInt64.ZERO;
+      builder.validatorRegistryDeltaChainTip = Hash32.ZERO;
+
+      builder.pocChallenges = emptyList();
+
+      builder.previousJustifiedSlot = Slot.INITIAL_NUMBER;
+      builder.justifiedSlot = Slot.INITIAL_NUMBER;
+      builder.justificationBitfield = UInt64.ZERO;
+      builder.finalizedSlot = Slot.INITIAL_NUMBER;
+
+      builder.processedPowReceiptRoot = Hash32.ZERO;
+      builder.candidatePowReceiptRoots = emptyList();
+
+      return builder;
+    }
+
+    public BeaconState build() {
+      assert slot != null;
+      assert genesisTime != null;
+      assert forkData != null;
+      assert validatorRegistry != null;
+      assert validatorBalances != null;
+      assert validatorRegistryLatestChangeSlot != null;
+      assert validatorRegistryExitCount != null;
+      assert validatorRegistryDeltaChainTip != null;
+      assert pocChallenges != null;
+      assert previousJustifiedSlot != null;
+      assert justifiedSlot != null;
+      assert justificationBitfield != null;
+      assert finalizedSlot != null;
+      assert processedPowReceiptRoot != null;
+      assert candidatePowReceiptRoots != null;
+
+      return new BeaconState(
+          slot,
+          genesisTime,
+          forkData,
+          validatorRegistry,
+          validatorBalances,
+          validatorRegistryLatestChangeSlot,
+          validatorRegistryExitCount,
+          validatorRegistryDeltaChainTip,
+          pocChallenges,
+          previousJustifiedSlot,
+          justifiedSlot,
+          justificationBitfield,
+          finalizedSlot,
+          processedPowReceiptRoot,
+          candidatePowReceiptRoots);
+    }
+
+    public Builder withSlot(UInt64 slot) {
+      this.slot = slot;
+      return this;
+    }
+
+    public Builder withGenesisTime(UInt64 genesisTime) {
+      this.genesisTime = genesisTime;
+      return this;
+    }
+
+    public Builder withForkData(ForkData forkData) {
+      this.forkData = forkData;
+      return this;
+    }
+
+    public Builder withValidatorRegistry(List<ValidatorRecord> validatorRegistry) {
+      this.validatorRegistry = validatorRegistry;
+      return this;
+    }
+
+    public Builder withValidatorBalances(List<UInt64> validatorBalances) {
+      this.validatorBalances = validatorBalances;
+      return this;
+    }
+
+    public Builder withValidatorRegistryLatestChangeSlot(UInt64 validatorRegistryLatestChangeSlot) {
+      this.validatorRegistryLatestChangeSlot = validatorRegistryLatestChangeSlot;
+      return this;
+    }
+
+    public Builder withValidatorRegistryExitCount(UInt64 validatorRegistryExitCount) {
+      this.validatorRegistryExitCount = validatorRegistryExitCount;
+      return this;
+    }
+
+    public Builder withValidatorRegistryDeltaChainTip(Hash32 validatorRegistryDeltaChainTip) {
+      this.validatorRegistryDeltaChainTip = validatorRegistryDeltaChainTip;
+      return this;
+    }
+
+    public Builder withPocChallenges(List<ProofOfCustodyChallenge> pocChallenges) {
+      this.pocChallenges = pocChallenges;
+      return this;
+    }
+
+    public Builder withPreviousJustifiedSlot(UInt64 previousJustifiedSlot) {
+      this.previousJustifiedSlot = previousJustifiedSlot;
+      return this;
+    }
+
+    public Builder withJustifiedSlot(UInt64 justifiedSlot) {
+      this.justifiedSlot = justifiedSlot;
+      return this;
+    }
+
+    public Builder withJustificationBitfield(UInt64 justificationBitfield) {
+      this.justificationBitfield = justificationBitfield;
+      return this;
+    }
+
+    public Builder withFinalizedSlot(UInt64 finalizedSlot) {
+      this.finalizedSlot = finalizedSlot;
+      return this;
+    }
+
+    public Builder withProcessedPowReceiptRoot(Hash32 processedPowReceiptRoot) {
+      this.processedPowReceiptRoot = processedPowReceiptRoot;
+      return this;
+    }
+
+    public Builder withCandidatePowReceiptRoots(
+        List<CandidatePowReceiptRootRecord> candidatePowReceiptRoots) {
+      this.candidatePowReceiptRoots = candidatePowReceiptRoots;
+      return this;
+    }
   }
 }
