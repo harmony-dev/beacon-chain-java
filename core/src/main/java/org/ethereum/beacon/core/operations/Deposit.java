@@ -6,7 +6,7 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 /**
- * Requests to add validator to the validator set.
+ * Requests to add validator to the validator registry.
  *
  * @see BeaconBlockBody
  * @see DepositData

@@ -22,9 +22,9 @@ public class BeaconBlock implements Hashable {
   private final Hash32 parentRoot;
   /** A hash of the state that is created by applying a block to the previous state. */
   private final Hash32 stateRoot;
-  /** An image of RANDAO hash onion revealed by the proposer. */
+  /** An image of RANDAO hash onion revealed by proposer. */
   private final Hash32 randaoReveal;
-  /** Receipt root from the PoW chain registration contract that is observed by the proposer. */
+  /** Receipt root from the PoW chain registration contract that is observed by proposer. */
   private final Hash32 candidatePowReceiptRoot;
   /** Proposer's signature. */
   private final Bytes96 signature;

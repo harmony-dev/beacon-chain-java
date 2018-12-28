@@ -6,7 +6,7 @@ import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 /**
- * Requests a quit from validator set.
+ * Requests a quit from validator registry.
  *
  * @see BeaconBlockBody
  * @see <a
