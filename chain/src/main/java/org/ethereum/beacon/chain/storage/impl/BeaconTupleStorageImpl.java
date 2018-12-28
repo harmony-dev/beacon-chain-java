@@ -11,8 +11,14 @@ import java.util.Optional;
 
 public class BeaconTupleStorageImpl implements BeaconTupleStorage {
 
-  BeaconBlockStorage blockStorage;
-  BeaconStateStorage stateStorage;
+  private final BeaconBlockStorage blockStorage;
+  private final BeaconStateStorage stateStorage;
+
+  public BeaconTupleStorageImpl(BeaconBlockStorage blockStorage,
+                                BeaconStateStorage stateStorage) {
+    this.blockStorage = blockStorage;
+    this.stateStorage = stateStorage;
+  }
 
   @Override
   public Optional<BeaconTuple> get(Hash32 hash) {
