@@ -1,5 +1,6 @@
 package org.ethereum.beacon.core.operations;
 
+import org.ethereum.beacon.core.operations.slashing.ProposalSignedData;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.uint.UInt24;
 

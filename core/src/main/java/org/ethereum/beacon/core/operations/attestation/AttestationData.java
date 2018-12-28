@@ -1,16 +1,34 @@
-package org.ethereum.beacon.core.operations;
+package org.ethereum.beacon.core.operations.attestation;
 
+import org.ethereum.beacon.core.operations.Attestation;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
 
+/**
+ * Attestation data that validators are signing off on.
+ *
+ * @see Attestation
+ * @see <a
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md#attestationdata">AttestationData
+ *     in the spec</a>
+ */
 public class AttestationData {
+
+  /** Slot number. */
   private final UInt64 slot;
+  /** Shard number. */
   private final UInt64 shard;
+  /** Hash of signed beacon block. */
   private final Hash32 beaconBlockRoot;
+  /** Hash of beacon block's ancestor at the epoch boundary. */
   private final Hash32 epochBoundaryRoot;
+  /** Hash of shard's block. */
   private final Hash32 shardBlockRoot;
+  /** Hash of last crosslink block. */
   private final Hash32 latestCrosslinkRoot;
+  /** Slot of the last justified beacon block. */
   private final UInt64 justifiedSlot;
+  /** Hash of the last justified beacon block. */
   private final Hash32 justifiedBlockRoot;
 
   public AttestationData(

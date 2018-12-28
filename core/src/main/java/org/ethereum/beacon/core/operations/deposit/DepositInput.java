@@ -1,15 +1,30 @@
-package org.ethereum.beacon.core.operations;
+package org.ethereum.beacon.core.operations.deposit;
 
+import org.ethereum.beacon.core.operations.Deposit;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 
+/**
+ * An input parameters of deposit contract.
+ *
+ * @see DepositData
+ * @see Deposit
+ * @see <a
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md#depositinput">DepositInput
+ *     in the spec</a>
+ */
 public class DepositInput {
+
+  /** BLS public key. */
   private final Bytes48 pubKey;
+  /** Withdrawal credentials. */
   private final Hash32 withdrawalCredentials;
+  /** Initial RANDAO commitment. */
   private final Hash32 randaoCommitment;
+  /** Initial proof of custody commitment. */
   private final Hash32 pocCommitment;
+  /** A BLS signature of this {@link DepositInput} */
   private final Bytes96 proofOfPossession;
 
   public DepositInput(
