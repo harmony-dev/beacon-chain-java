@@ -14,7 +14,15 @@ public class UInt24 implements Comparable<UInt24> {
   private final int value;
 
   private UInt24(int value) {
-    this.value = value;
+    // handle overflows and underflows
+    if (value < 0) {
+      int remainder = Math.abs(value) % MODULO;
+      this.value = MODULO - remainder;
+    } else if (value >= MODULO) {
+      this.value = value % MODULO;
+    } else {
+      this.value = value;
+    }
   }
 
   public UInt24(UInt24 uint) {
@@ -32,15 +40,7 @@ public class UInt24 implements Comparable<UInt24> {
    * @return A new UInt24 instance representing the given unsigned input.
    */
   public static UInt24 valueOf(int unsignedValue) {
-    // handle overflows and underflows
-    if (unsignedValue < 0) {
-      int remainder = Math.abs(unsignedValue) % MODULO;
-      return new UInt24(MODULO - remainder);
-    } else if (unsignedValue >= MODULO) {
-      return new UInt24(unsignedValue % MODULO);
-    } else {
-      return new UInt24(unsignedValue);
-    }
+    return new UInt24(unsignedValue);
   }
 
   /**
