@@ -13,6 +13,7 @@
 package tech.pegasys.artemis.ethereum.core;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import java.util.Random;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.DelegatingBytes32;
 
@@ -46,5 +47,15 @@ public class Hash32 extends DelegatingBytes32 {
 
   public static Hash32 fromHexStringLenient(final String str) {
     return new Hash32(Bytes32.fromHexStringLenient(str));
+  }
+
+  /**
+   * Constructs a randomly generated hash value.
+   *
+   * @param rnd random number generator.
+   * @return random hash value.
+   */
+  public static Hash32 random(Random rnd) {
+    return wrap(Bytes32.random(rnd));
   }
 }

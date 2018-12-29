@@ -14,6 +14,7 @@
 package tech.pegasys.artemis.util.uint;
 
 import java.util.Objects;
+import java.util.Random;
 
 /**
  * An immutable unsigned 64-bit precision integer.
@@ -62,6 +63,16 @@ public class UInt64 implements Comparable<UInt64> {
    */
   public static UInt64 valueOf(String unsignedStringValue) throws NumberFormatException {
     return new UInt64(Long.parseUnsignedLong(unsignedStringValue));
+  }
+
+  /**
+   * Constructs a randomly generated value.
+   *
+   * @param rng random number generator.
+   * @return random value.
+   */
+  public static UInt64 random(Random rng) {
+    return valueOf(rng.nextLong());
   }
 
   /**

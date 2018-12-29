@@ -1,6 +1,7 @@
 package org.ethereum.beacon.core.state;
 
 import org.ethereum.beacon.core.BeaconState;
+import org.ethereum.beacon.core.Slot;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
 
@@ -13,6 +14,8 @@ import tech.pegasys.artemis.util.uint.UInt64;
  *     in the spec</a>
  */
 public class CrosslinkRecord {
+
+  public static final CrosslinkRecord EMPTY = new CrosslinkRecord(Slot.INITIAL_NUMBER, Hash32.ZERO);
 
   /** Slot number. */
   private final UInt64 slot;

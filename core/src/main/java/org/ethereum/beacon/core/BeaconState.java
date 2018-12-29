@@ -2,11 +2,16 @@ package org.ethereum.beacon.core;
 
 import static java.util.Collections.emptyList;
 
+import java.util.ArrayList;
 import java.util.List;
 import org.ethereum.beacon.core.operations.ProofOfCustodyChallenge;
 import org.ethereum.beacon.core.state.CandidatePowReceiptRootRecord;
+import org.ethereum.beacon.core.state.CrosslinkRecord;
 import org.ethereum.beacon.core.state.ForkData;
+import org.ethereum.beacon.core.state.PendingAttestationRecord;
+import org.ethereum.beacon.core.state.PersistentCommittees;
 import org.ethereum.beacon.core.state.ShardCommittee;
+import org.ethereum.beacon.core.state.ShardCommittees;
 import org.ethereum.beacon.core.state.ShardReassignmentRecord;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -22,6 +27,15 @@ import tech.pegasys.artemis.util.uint.UInt64;
  *     in the spec</a>
  */
 public class BeaconState implements Hashable {
+
+  /** Max number of RANDAO mixes kept by {@link #latestRandaoMixes}. */
+  public static final int LATEST_RANDAO_MIXES_LENGTH = 1 << 13; // 8192
+  /**
+   * Max length of {@link #latestBlockRoots} list. After it gets exceeded hash of this list is added
+   * to {@link #batchedBlockRoots}.
+   */
+  public static final int LATEST_BLOCK_ROOTS_LENGTH = 1 << 13; // 8192
+
   public static final BeaconState EMPTY =
       new BeaconState(
           UInt64.ZERO,
@@ -34,14 +48,19 @@ public class BeaconState implements Hashable {
           Hash32.ZERO,
           emptyList(),
           emptyList(),
-          new ShardCommittee[0][],
-          new UInt24[0][],
+          ShardCommittees.EMPTY,
+          PersistentCommittees.EMPTY,
           emptyList(),
           emptyList(),
           UInt64.ZERO,
           UInt64.ZERO,
           UInt64.ZERO,
           UInt64.ZERO,
+          emptyList(),
+          emptyList(),
+          emptyList(),
+          emptyList(),
+          emptyList(),
           Hash32.ZERO,
           emptyList());
 
@@ -94,6 +113,22 @@ public class BeaconState implements Hashable {
   /** Latest finalized slot. */
   private final UInt64 finalizedSlot;
 
+  /* Recent state */
+
+  /** Latest crosslink record for each shard. */
+  private final List<CrosslinkRecord> latestCrosslinks;
+  /** Latest block hashes for each shard. */
+  private final List<Hash32> latestBlockRoots;
+  /** Indices of validators that has been ejected lately. */
+  private final List<UInt64> latestPenalizedExitBalances;
+  /** Attestations that has not been processed yet. */
+  private final List<PendingAttestationRecord> latestAttestations;
+  /**
+   * Latest hashes of {@link #latestBlockRoots} list calculated when its length got exceeded {@link
+   * #LATEST_BLOCK_ROOTS_LENGTH}.
+   */
+  private final List<Hash32> batchedBlockRoots;
+
   /* PoW receipt root */
 
   /** Latest processed receipt root from PoW deposit contract. */
@@ -120,6 +155,11 @@ public class BeaconState implements Hashable {
       UInt64 justifiedSlot,
       UInt64 justificationBitfield,
       UInt64 finalizedSlot,
+      List<CrosslinkRecord> latestCrosslinks,
+      List<Hash32> latestBlockRoots,
+      List<UInt64> latestPenalizedExitBalances,
+      List<PendingAttestationRecord> latestAttestations,
+      List<Hash32> batchedBlockRoots,
       Hash32 processedPowReceiptRoot,
       List<CandidatePowReceiptRootRecord> candidatePowReceiptRoots) {
     this.slot = slot;
@@ -140,6 +180,11 @@ public class BeaconState implements Hashable {
     this.justifiedSlot = justifiedSlot;
     this.justificationBitfield = justificationBitfield;
     this.finalizedSlot = finalizedSlot;
+    this.latestCrosslinks = latestCrosslinks;
+    this.latestBlockRoots = latestBlockRoots;
+    this.latestPenalizedExitBalances = latestPenalizedExitBalances;
+    this.latestAttestations = latestAttestations;
+    this.batchedBlockRoots = batchedBlockRoots;
     this.processedPowReceiptRoot = processedPowReceiptRoot;
     this.candidatePowReceiptRoots = candidatePowReceiptRoots;
   }
@@ -156,11 +201,19 @@ public class BeaconState implements Hashable {
     return forkData;
   }
 
-  public List<ValidatorRecord> getValidatorRegistry() {
+  public List<ValidatorRecord> extractValidatorRegistry() {
+    return new ArrayList<>(validatorRegistry);
+  }
+
+  public List<ValidatorRecord> getValidatorRegistryUnsafe() {
     return validatorRegistry;
   }
 
-  public List<UInt64> getValidatorBalances() {
+  public List<UInt64> extractValidatorBalances() {
+    return new ArrayList<>(validatorBalances);
+  }
+
+  public List<UInt64> getValidatorBalancesUnsafe() {
     return validatorBalances;
   }
 
@@ -176,28 +229,44 @@ public class BeaconState implements Hashable {
     return validatorRegistryDeltaChainTip;
   }
 
-  public List<Hash32> getLatestRandaoMixes() {
+  public List<Hash32> getLatestRandaoMixesUnsafe() {
     return latestRandaoMixes;
   }
 
-  public List<Hash32> getLatestVdfOutputs() {
+  public List<Hash32> extractLatestRandaoMixes() {
+    return new ArrayList<>(latestRandaoMixes);
+  }
+
+  public List<Hash32> getLatestVdfOutputsUnsafe() {
     return latestVdfOutputs;
   }
 
-  public ShardCommittee[][] getShardCommitteesAtSlots() {
+  public List<Hash32> extractLatestVdfOutputs() {
+    return new ArrayList<>(latestVdfOutputs);
+  }
+
+  public ShardCommittee[][] getShardCommitteesAtSlotsUnsafe() {
     return shardCommitteesAtSlots;
   }
 
-  public UInt24[][] getPersistentCommittees() {
+  public UInt24[][] getPersistentCommitteesUnsafe() {
     return persistentCommittees;
   }
 
-  public List<ShardReassignmentRecord> getPersistentCommitteeReassignments() {
+  public List<ShardReassignmentRecord> getPersistentCommitteeReassignmentsUnsafe() {
     return persistentCommitteeReassignments;
   }
 
-  public List<ProofOfCustodyChallenge> getPocChallenges() {
+  public List<ShardReassignmentRecord> extractPersistentCommitteeReassignments() {
+    return new ArrayList<>(persistentCommitteeReassignments);
+  }
+
+  public List<ProofOfCustodyChallenge> getPocChallengesUnsafe() {
     return pocChallenges;
+  }
+
+  public List<ProofOfCustodyChallenge> extractPocChallenges() {
+    return new ArrayList<>(pocChallenges);
   }
 
   public UInt64 getPreviousJustifiedSlot() {
@@ -216,12 +285,56 @@ public class BeaconState implements Hashable {
     return finalizedSlot;
   }
 
+  public List<CrosslinkRecord> getLatestCrosslinksUnsafe() {
+    return latestCrosslinks;
+  }
+
+  public List<CrosslinkRecord> extractLatestCrosslinks() {
+    return new ArrayList<>(latestCrosslinks);
+  }
+
+  public List<Hash32> getLatestBlockRootsUnsafe() {
+    return latestBlockRoots;
+  }
+
+  public List<Hash32> extractLatestBlockRoots() {
+    return new ArrayList<>(latestBlockRoots);
+  }
+
+  public List<UInt64> getLatestPenalizedExitBalancesUnsafe() {
+    return latestPenalizedExitBalances;
+  }
+
+  public List<UInt64> extractLatestPenalizedExitBalances() {
+    return new ArrayList<>(latestPenalizedExitBalances);
+  }
+
+  public List<PendingAttestationRecord> getLatestAttestationsUnsafe() {
+    return latestAttestations;
+  }
+
+  public List<PendingAttestationRecord> extractLatestAttestations() {
+    return new ArrayList<>(latestAttestations);
+  }
+
+  public List<Hash32> getBatchedBlockRootsUnsafe() {
+    return batchedBlockRoots;
+  }
+
+  public List<Hash32> extractBatchedBlockRoots() {
+    return new ArrayList<>(batchedBlockRoots);
+  }
+
   public Hash32 getProcessedPowReceiptRoot() {
     return processedPowReceiptRoot;
   }
 
-  public List<CandidatePowReceiptRootRecord> getCandidatePowReceiptRoots() {
+  public List<CandidatePowReceiptRootRecord> getCandidatePowReceiptRootsUnsafe() {
     return candidatePowReceiptRoots;
+  }
+
+  public List<CandidatePowReceiptRootRecord> extractCandidatePowReceiptRoots() {
+    return new ArrayList<>(candidatePowReceiptRoots);
   }
 
   @Override
@@ -259,6 +372,14 @@ public class BeaconState implements Hashable {
     private UInt64 justificationBitfield;
     private UInt64 finalizedSlot;
 
+    /* Recent state */
+
+    private List<CrosslinkRecord> latestCrosslinks;
+    private List<Hash32> latestBlockRoots;
+    private List<UInt64> latestPenalizedExitBalances;
+    private List<PendingAttestationRecord> latestAttestations;
+    private List<Hash32> batchedBlockRoots;
+
     /* PoW receipt root */
     private Hash32 processedPowReceiptRoot;
     private List<CandidatePowReceiptRootRecord> candidatePowReceiptRoots;
@@ -290,6 +411,12 @@ public class BeaconState implements Hashable {
       builder.justifiedSlot = state.justifiedSlot;
       builder.justificationBitfield = state.justificationBitfield;
       builder.finalizedSlot = state.finalizedSlot;
+
+      builder.latestCrosslinks = state.latestCrosslinks;
+      builder.latestBlockRoots = state.latestBlockRoots;
+      builder.latestPenalizedExitBalances = state.latestPenalizedExitBalances;
+      builder.latestAttestations = state.latestAttestations;
+      builder.batchedBlockRoots = state.batchedBlockRoots;
 
       builder.processedPowReceiptRoot = state.processedPowReceiptRoot;
       builder.candidatePowReceiptRoots = state.candidatePowReceiptRoots;
@@ -332,6 +459,11 @@ public class BeaconState implements Hashable {
       assert justifiedSlot != null;
       assert justificationBitfield != null;
       assert finalizedSlot != null;
+      assert latestCrosslinks != null;
+      assert latestBlockRoots != null;
+      assert latestPenalizedExitBalances != null;
+      assert latestAttestations != null;
+      assert batchedBlockRoots != null;
       assert processedPowReceiptRoot != null;
       assert candidatePowReceiptRoots != null;
 
@@ -354,6 +486,11 @@ public class BeaconState implements Hashable {
           justifiedSlot,
           justificationBitfield,
           finalizedSlot,
+          latestCrosslinks,
+          latestBlockRoots,
+          latestPenalizedExitBalances,
+          latestAttestations,
+          batchedBlockRoots,
           processedPowReceiptRoot,
           candidatePowReceiptRoots);
     }
@@ -446,6 +583,31 @@ public class BeaconState implements Hashable {
 
     public Builder withFinalizedSlot(UInt64 finalizedSlot) {
       this.finalizedSlot = finalizedSlot;
+      return this;
+    }
+
+    public Builder withLatestCrosslinks(List<CrosslinkRecord> latestCrosslinks) {
+      this.latestCrosslinks = latestCrosslinks;
+      return this;
+    }
+
+    public Builder withLatestBlockRoots(List<Hash32> latestBlockRoots) {
+      this.latestBlockRoots = latestBlockRoots;
+      return this;
+    }
+
+    public Builder withLatestPenalizedExitBalances(List<UInt64> latestPenalizedExitBalances) {
+      this.latestPenalizedExitBalances = latestPenalizedExitBalances;
+      return this;
+    }
+
+    public Builder withLatestAttestations(List<PendingAttestationRecord> latestAttestations) {
+      this.latestAttestations = latestAttestations;
+      return this;
+    }
+
+    public Builder withBatchedBlockRoots(List<Hash32> batchedBlockRoots) {
+      this.batchedBlockRoots = batchedBlockRoots;
       return this;
     }
 
