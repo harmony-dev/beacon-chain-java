@@ -3,13 +3,16 @@ package org.ethereum.beacon.consensus.transition;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.nCopies;
 
+import java.util.List;
 import org.ethereum.beacon.consensus.StateTransition;
+import org.ethereum.beacon.consensus.state.ValidatorRegistryUpdater;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconChainSpec;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.BeaconState.Builder;
 import org.ethereum.beacon.core.Epoch;
 import org.ethereum.beacon.core.Slot;
+import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.state.CrosslinkRecord;
 import org.ethereum.beacon.core.state.Fork;
 import org.ethereum.beacon.core.state.ForkData;
@@ -18,6 +21,7 @@ import org.ethereum.beacon.core.state.ShardCommittees;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.pow.DepositContract.ChainStart;
 import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public class InitialStateTransition implements StateTransition<BeaconState> {
@@ -83,6 +87,24 @@ public class InitialStateTransition implements StateTransition<BeaconState> {
         .withProcessedPowReceiptRoot(chainStart.getReceiptRoot())
         .withCandidatePowReceiptRoots(emptyList());
 
-    return builder.build();
+    BeaconState initialState = builder.build();
+
+    // handle initial deposits and activations
+    final List<Deposit> initialDeposits = depositContract.getInitialDeposits();
+    final ValidatorRegistryUpdater registryUpdater =
+        ValidatorRegistryUpdater.fromState(initialState);
+
+    initialDeposits.forEach(
+        deposit -> {
+          UInt24 index = registryUpdater.processDeposit(deposit);
+          UInt64 balance = registryUpdater.getEffectiveBalance(index);
+
+          // initial validators must have a strict deposit value
+          if (DepositContract.MAX_DEPOSIT.toGWei().equals(balance)) {
+            registryUpdater.activate(index);
+          }
+        });
+
+    return registryUpdater.applyTo(initialState);
   }
 }

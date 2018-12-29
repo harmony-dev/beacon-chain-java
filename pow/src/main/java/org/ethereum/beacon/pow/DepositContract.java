@@ -2,10 +2,14 @@ package org.ethereum.beacon.pow;
 
 import java.util.List;
 import org.ethereum.beacon.core.operations.Deposit;
+import org.ethereum.beacon.types.Ether;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public interface DepositContract {
+
+  /** Maximum number of ETH that can be deposited at once. */
+  Ether MAX_DEPOSIT = Ether.valueOf(1 << 5); // 32 ETH
 
   ChainStart getChainStart();
 
