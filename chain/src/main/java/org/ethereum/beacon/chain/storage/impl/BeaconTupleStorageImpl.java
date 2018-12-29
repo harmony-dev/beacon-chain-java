@@ -49,7 +49,8 @@ public class BeaconTupleStorageImpl implements BeaconTupleStorage {
     stateStorage.flush();
   }
 
+  @Override
   public Optional<BeaconTuple> getCanonicalHead() {
-    return blockStorage.getCanonicalHead().flatMap(head -> get(head.getHash()));
+    return blockStorage.getCanonicalHead().flatMap(this::get);
   }
 }
