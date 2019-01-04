@@ -1,4 +1,4 @@
-package net.consensys.cava.ssz;
+package org.ethereum.beacon.util.ssz;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,7 +9,7 @@ import java.util.List;
  */
 public interface SSZSchemeBuilder {
 
-  SSZScheme build();
+  SSZScheme build(Class clazz);
 
   /**
    * <p>Object SSZ scheme.</p>
@@ -20,11 +20,13 @@ public interface SSZSchemeBuilder {
   class SSZScheme {
     List<SSZField> fields = new ArrayList<>();
 
-    static class SSZField {
-      Class type;
-      SSZSerializer.SSZType sszType;
-      String name;
-      String getter;
+    public static class SSZField {
+      public Class type;
+      public boolean isList = false;
+      public String extraType = null;
+      public Integer extraSize = null;
+      public String name;
+      public String getter;
       /**
        * <ul>
        * <li>Container not needed (primitive type) : null</li>
@@ -32,7 +34,7 @@ public interface SSZSchemeBuilder {
        * <li>Container needed but should be omitted: true</li>
        * </ul>
        */
-      Boolean skipContainer = null;
+      public Boolean skipContainer = null;
     }
   }
 }

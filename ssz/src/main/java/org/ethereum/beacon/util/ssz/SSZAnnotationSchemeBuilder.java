@@ -1,18 +1,22 @@
-package net.consensys.cava.ssz;
+package org.ethereum.beacon.util.ssz;
 
-import net.consensys.cava.ssz.annotation.SSZ;
-import net.consensys.cava.ssz.annotation.SSZSerializable;
-import net.consensys.cava.ssz.annotation.SSZTransient;
+import javafx.util.Pair;
+import org.ethereum.beacon.util.ssz.annotation.SSZ;
+import org.ethereum.beacon.util.ssz.annotation.SSZSerializable;
+import org.ethereum.beacon.util.ssz.annotation.SSZTransient;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-
-import static net.consensys.cava.ssz.SSZSerializer.extractType;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * <p>Builds scheme of SSZ serializable model
@@ -36,16 +40,7 @@ import static net.consensys.cava.ssz.SSZSerializer.extractType;
  */
 public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
 
-  private Class clazz;
-  private SSZScheme sszScheme = null;
-
-  /**
-   * <p>Initializes scheme builder with annotated class</p>
-   * @param clazz Java class with SSZ annotations markup
-   */
-  public SSZAnnotationSchemeBuilder(Class clazz) {
-    this.clazz = clazz;
-  }
+  private static final String TYPE_REGEX = "^(\\D+)((\\d+)?)$";
 
   /**
    * <p>Builds scheme and returns result.</p>
@@ -54,11 +49,7 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
    * @return scheme of SSZ model
    */
   @Override
-  public SSZScheme build() {
-    if (sszScheme != null) {
-      return sszScheme;
-    }
-
+  public SSZScheme build(Class clazz) {
     SSZScheme scheme = new SSZScheme();
     SSZSerializable mainAnnotation = (SSZSerializable) clazz.getAnnotation(SSZSerializable.class);
 
@@ -68,7 +59,7 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
     if(!mainAnnotation.encode().isEmpty()) {
       SSZScheme.SSZField encode = new SSZScheme.SSZField();
       encode.type = byte[].class;
-      encode.sszType = SSZSerializer.SSZType.of(SSZSerializer.SSZType.Type.BYTES);
+      encode.extraType = "encode";
       encode.name = "encode";
       encode.getter = mainAnnotation.encode();
       scheme.fields.add(encode);
@@ -119,17 +110,63 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
       newField.type = type;
       String name = field.getName();
       newField.name = name;
-      SSZSerializer.SSZType sszType = extractType(type, typeAnnotation);
-      newField.sszType = sszType;
-      if (sszType.type.equals(SSZSerializer.SSZType.Type.CONTAINER) && newField.skipContainer == null) {
-        newField.skipContainer = false;
+      if (typeAnnotation != null) {
+        Pair<String, Integer> extra = extractType(typeAnnotation, type);
+        newField.extraType = extra.getKey();
+        newField.extraSize = extra.getValue();
+      }
+      if (type.equals(List.class)) {
+        newField.isList = true;
+        newField.type = extractListInternalType(field);
       }
 
       newField.getter = fieldGetters.containsKey(name) ? fieldGetters.get(name).getName() : null;
       scheme.fields.add(newField);
     }
 
-    this.sszScheme = scheme;
     return scheme;
+  }
+
+  private Class extractListInternalType(Field field) {
+    Type genericFieldType = field.getGenericType();
+    Class res = null;
+
+    if(genericFieldType instanceof ParameterizedType){
+      ParameterizedType aType = (ParameterizedType) genericFieldType;
+      Type[] fieldArgTypes = aType.getActualTypeArguments();
+      for(Type fieldArgType : fieldArgTypes){
+        Class fieldArgClass = (Class) fieldArgType;
+        if (res == null) {
+          res = fieldArgClass;
+        } else {
+          String error = String.format("Could not extract list type from field %s", field.getName());
+          throw new RuntimeException(error);
+        }
+      }
+    }
+
+    return res;
+  }
+
+  private static Pair<String, Integer> extractType(String extra, Class clazz) {
+    String extraType;
+    Integer extraSize = null;
+    Pattern pattern = Pattern.compile(TYPE_REGEX);
+    Matcher matcher = pattern.matcher(extra);
+    if (matcher.find()) {
+      String type = matcher.group(1);
+      String endNumber = matcher.group(3);
+      extraType = type;
+
+      if (endNumber != null) {
+        extraSize = Integer.valueOf(endNumber);
+      }
+    } else {
+      String error = String.format("Type annotation \"%s\" for class %s is not correct",
+          extra, clazz.getName());
+      throw new RuntimeException(error);
+    }
+
+    return new Pair<>(extraType, extraSize);
   }
 }

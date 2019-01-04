@@ -8,6 +8,6 @@
  * 'net.consensys.cava:cava-ssz' (cava-ssz.jar).
  */
 @ParametersAreNonnullByDefault
-package net.consensys.cava.ssz;
+package org.ethereum.beacon.util.ssz;
 
 import javax.annotation.ParametersAreNonnullByDefault;

@@ -1,6 +1,6 @@
 package net.consensys.cava.ssz.fixtures;
 
-import net.consensys.cava.ssz.annotation.SSZSerializable;
+import org.ethereum.beacon.util.ssz.annotation.SSZSerializable;
 
 import java.util.*;
 

@@ -1,4 +1,4 @@
-package net.consensys.cava.ssz.annotation;
+package org.ethereum.beacon.util.ssz.annotation;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;

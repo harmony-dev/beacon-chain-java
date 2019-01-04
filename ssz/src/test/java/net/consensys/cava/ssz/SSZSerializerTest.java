@@ -4,6 +4,9 @@ import net.consensys.cava.ssz.fixtures.AttestationRecord;
 import net.consensys.cava.ssz.fixtures.Bitfield;
 import net.consensys.cava.ssz.fixtures.Sign;
 import org.ethereum.beacon.crypto.Hashes;
+import org.ethereum.beacon.util.ssz.SSZAnnotationSchemeBuilder;
+import org.ethereum.beacon.util.ssz.SSZSerializer;
+import org.junit.Before;
 import org.junit.Test;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
@@ -15,6 +18,12 @@ import static com.sun.org.apache.xerces.internal.impl.dv.util.HexBin.decode;
 import static org.junit.Assert.assertEquals;
 
 public class SSZSerializerTest {
+  private SSZSerializer sszSerializer;
+
+  @Before
+  public void setup() {
+    sszSerializer = new SSZSerializer(new SSZAnnotationSchemeBuilder());
+  }
 
   private static byte[] DEFAULT_HASH = Hashes.keccak256(BytesValue.fromHexString("aa")).getArrayUnsafe();
   private static Sign.Signature DEFAULT_SIG = new Sign.Signature();
@@ -34,8 +43,8 @@ public class SSZSerializerTest {
         decode("abcd")
     );
 
-    byte[] encoded = SSZSerializer.encode(expected);
-    Bitfield constructed = (Bitfield) SSZSerializer.decode(encoded, Bitfield.class);
+    byte[] encoded = sszSerializer.encode(expected);
+    Bitfield constructed = (Bitfield) sszSerializer.decode(encoded, Bitfield.class);
 
     assertEquals(expected, constructed);
   }
@@ -46,8 +55,8 @@ public class SSZSerializerTest {
     signature.r = new BigInteger("23452342342342342342342315643768758756967967");
     signature.s = new BigInteger("8713785871");
 
-    byte[] encoded = SSZSerializer.encode(signature);
-    Sign.Signature constructed = (Sign.Signature) SSZSerializer.decode(encoded, Sign.Signature.class);
+    byte[] encoded = sszSerializer.encode(signature);
+    Sign.Signature constructed = (Sign.Signature) sszSerializer.decode(encoded, Sign.Signature.class);
 
     assertEquals(signature, constructed);
   }
@@ -65,8 +74,8 @@ public class SSZSerializerTest {
         DEFAULT_SIG
     );
 
-    byte[] encoded = SSZSerializer.encode(expected);
-    AttestationRecord constructed = (AttestationRecord) SSZSerializer.decode(encoded, AttestationRecord.class);
+    byte[] encoded = sszSerializer.encode(expected);
+    AttestationRecord constructed = (AttestationRecord) sszSerializer.decode(encoded, AttestationRecord.class);
 
     assertEquals(expected, constructed);
   }
@@ -83,8 +92,8 @@ public class SSZSerializerTest {
         DEFAULT_HASH,
         null
     );
-    byte[] encoded1 = SSZSerializer.encode(expected1);
-    AttestationRecord actual1 = (AttestationRecord) SSZSerializer.decode(encoded1, AttestationRecord.class);
+    byte[] encoded1 = sszSerializer.encode(expected1);
+    AttestationRecord actual1 = (AttestationRecord) sszSerializer.decode(encoded1, AttestationRecord.class);
 
     assertEquals(expected1, actual1);
 
@@ -98,8 +107,8 @@ public class SSZSerializerTest {
         DEFAULT_HASH,
         DEFAULT_SIG
     );
-    byte[] encoded2 = SSZSerializer.encode(expected2);
-    AttestationRecord actual2 = (AttestationRecord) SSZSerializer.decode(encoded2, AttestationRecord.class);
+    byte[] encoded2 = sszSerializer.encode(expected2);
+    AttestationRecord actual2 = (AttestationRecord) sszSerializer.decode(encoded2, AttestationRecord.class);
 
     assertEquals(expected2, actual2);
 
@@ -113,8 +122,8 @@ public class SSZSerializerTest {
         DEFAULT_HASH,
         null
     );
-    byte[] encoded3 = SSZSerializer.encode(expected3);
-    AttestationRecord actual3 = (AttestationRecord) SSZSerializer.decode(encoded3, AttestationRecord.class);
+    byte[] encoded3 = sszSerializer.encode(expected3);
+    AttestationRecord actual3 = (AttestationRecord) sszSerializer.decode(encoded3, AttestationRecord.class);
 
     assertEquals(expected3, actual3);
   }
@@ -131,7 +140,7 @@ public class SSZSerializerTest {
         null,
         DEFAULT_SIG
     );
-    SSZSerializer.encode(expected3);
+    sszSerializer.encode(expected3);
   }
 
   @Test(expected = NullPointerException.class)
@@ -146,6 +155,6 @@ public class SSZSerializerTest {
         DEFAULT_HASH,
         DEFAULT_SIG
     );
-    SSZSerializer.encode(expected4);
+    sszSerializer.encode(expected4);
   }
 }

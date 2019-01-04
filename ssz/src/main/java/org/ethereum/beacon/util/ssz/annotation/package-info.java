@@ -3,4 +3,4 @@
  * standard Java class with annotations as SSZ model representation.
  */
 
-package net.consensys.cava.ssz.annotation;
+package org.ethereum.beacon.util.ssz.annotation;

@@ -1,33 +1,34 @@
-package net.consensys.cava.ssz;
+package org.ethereum.beacon.util.ssz;
 
 import javafx.util.Pair;
 import net.consensys.cava.bytes.Bytes;
-import net.consensys.cava.ssz.annotation.SSZ;
-import net.consensys.cava.ssz.annotation.SSZSerializable;
-import net.consensys.cava.ssz.annotation.SSZTransient;
-import javax.annotation.Nullable;
+import net.consensys.cava.ssz.BytesSSZReaderProxy;
+import org.ethereum.beacon.util.ssz.annotation.SSZ;
+import org.ethereum.beacon.util.ssz.annotation.SSZSerializable;
+import org.ethereum.beacon.util.ssz.annotation.SSZTransient;
+import org.ethereum.beacon.util.ssz.type.BooleanPrimitive;
+import org.ethereum.beacon.util.ssz.type.BytesPrimitive;
+import org.ethereum.beacon.util.ssz.type.Container;
+import org.ethereum.beacon.util.ssz.type.SSZEncoderDecoder;
+import org.ethereum.beacon.util.ssz.type.StringPrimitive;
+import org.ethereum.beacon.util.ssz.type.UIntPrimitive;
+import tech.pegasys.artemis.util.bytes.BytesValue;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.io.ByteArrayOutputStream;
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.function.Function.identity;
-import static net.consensys.cava.ssz.SSZSchemeBuilder.SSZScheme;
+import static org.ethereum.beacon.util.ssz.SSZSchemeBuilder.SSZScheme;
 
 /**
  * <p>SSZ serializer/deserializer with automatic model reading
@@ -58,128 +59,24 @@ import static net.consensys.cava.ssz.SSZSchemeBuilder.SSZScheme;
  */
 public class SSZSerializer {
 
-  static int DEFAULT_SHORT_SIZE = 16;
-  static int DEFAULT_INT_SIZE = 32;
-  static int DEFAULT_LONG_SIZE = 64;
-  static int DEFAULT_BIGINT_SIZE = 512;
-  static int LENGTH_PREFIX_BYTE_SIZE = DEFAULT_INT_SIZE / Byte.SIZE;
+  public static int LENGTH_PREFIX_BYTE_SIZE = Integer.SIZE / Byte.SIZE;
   static byte[] EMPTY_PREFIX = new byte[LENGTH_PREFIX_BYTE_SIZE];
 
-  private static final String TYPE_REGEX = "^(\\D+)((\\d+)?)$";
-  private static final Set<SSZType.Type> NUMERIC_TYPES = new HashSet<SSZType.Type>(){{
-    add(SSZType.Type.UINT);
-    add(SSZType.Type.INT);
-    add(SSZType.Type.LONG);
-    add(SSZType.Type.BIGINT);
-  }};
-  private static Map<Class, SSZType> classToSSZType = new HashMap<>();
+  private SSZSchemeBuilder schemeBuilder;
+  private Map<Class, SSZEncoderDecoder> registeredClassHandlers = new HashMap<>();
 
-  static {
-    classToSSZType.put(int.class, SSZType.of(SSZType.Type.INT, DEFAULT_INT_SIZE));
-    classToSSZType.put(Integer.class, SSZType.of(SSZType.Type.INT, DEFAULT_INT_SIZE));
-    classToSSZType.put(short.class, SSZType.of(SSZType.Type.INT, DEFAULT_SHORT_SIZE));
-    classToSSZType.put(Short.class, SSZType.of(SSZType.Type.INT, DEFAULT_SHORT_SIZE));
-    classToSSZType.put(long.class, SSZType.of(SSZType.Type.LONG, DEFAULT_LONG_SIZE));
-    classToSSZType.put(Long.class, SSZType.of(SSZType.Type.LONG, DEFAULT_LONG_SIZE));
-    classToSSZType.put(BigInteger.class, SSZType.of(SSZType.Type.BIGINT, DEFAULT_BIGINT_SIZE));
-    classToSSZType.put(List.class, SSZType.of(SSZType.Type.LIST));
-    classToSSZType.put(byte[].class, SSZType.of(SSZType.Type.BYTES));
-    classToSSZType.put(boolean.class, SSZType.of(SSZType.Type.BOOLEAN));
-    classToSSZType.put(Boolean.class, SSZType.of(SSZType.Type.BOOLEAN));
-    classToSSZType.put(String.class, SSZType.of(SSZType.Type.STRING));
+  public SSZSerializer(SSZSchemeBuilder schemeBuilder) {
+    this.schemeBuilder = schemeBuilder;
+    new UIntPrimitive().registerIn(this);
+    new BytesPrimitive().registerIn(this);
+    new BooleanPrimitive().registerIn(this);
+    new StringPrimitive().registerIn(this);
+    new Container().registerIn(this);
   }
 
-  static class SSZType {
-    Integer size = null;
-    Type type = null;
-
-    public static SSZType of(Type type) {
-      SSZType sszType = new SSZType();
-      sszType.type = type;
-
-      return sszType;
-    }
-
-    public static SSZType of(Type type, Integer size) {
-      SSZType sszType = SSZType.of(type);
-      sszType.size = size;
-
-      return sszType;
-    }
-
-    enum Type {
-      UINT("uint"),
-      INT("int"),
-      LONG("long"),
-      BIGINT("bigint"),
-      BYTES("bytes"),
-      HASH("hash"),
-      BOOLEAN("bool"),
-      ADDRESS("address"),
-      STRING("string"),
-      CONTAINER("container"),
-      LIST("list");
-
-      private String type;
-      private static final Map<String, Type> ENUM_MAP;
-      static {
-        ENUM_MAP = Stream.of(Type.values()).collect(Collectors.toMap(e -> e.type, identity()));
-      }
-
-      Type(String type) {
-        this.type = type;
-      }
-
-      static Type fromValue(String type) {
-        return ENUM_MAP.get(type);
-      }
-
-      @Override
-      public String toString() {
-        return type;
-      }
-    }
-  }
-
-  static SSZType extractType(Class clazz, @Nullable String extra) {
-    if (extra == null) {
-      SSZType res = classToSSZType.get(clazz);
-      if (res != null) {
-        return res;
-      } else {
-        return SSZType.of(SSZType.Type.CONTAINER);  // Default for unknown classes
-      }
-    }
-
-    SSZType res = new SSZType();
-    Pattern pattern = Pattern.compile(TYPE_REGEX);
-    Matcher matcher = pattern.matcher(extra);
-    if (matcher.find()) {
-      String type = matcher.group(1);
-      String endNumber = matcher.group(3);
-      res.type = SSZType.Type.fromValue(type);
-      if (res.type.equals(SSZType.Type.UINT)) {  // Clarify
-        SSZType tmp = classToSSZType.get(clazz);
-        res.type = tmp.type;
-      }
-
-      if (endNumber != null) {
-        int bitLength = Integer.valueOf(endNumber);
-        if (NUMERIC_TYPES.contains(res.type) && bitLength % Byte.SIZE != 0) {
-          String error = String.format("Size of field in bits should match whole bytes, found %s",
-              extra);
-          throw new RuntimeException(error);
-        }
-
-        res.size = bitLength;
-      }
-    } else {
-      String error = String.format("Type annotation \"%s\" for class %s is not correct",
-          extra, clazz.getName());
-      throw new RuntimeException(error);
-    }
-
-    return res;
+  SSZSerializer withSSZEncoderDecoder(SSZEncoderDecoder encoderDecoder) {
+    encoderDecoder.registerIn(this);
+    return this;
   }
 
   /**
@@ -191,7 +88,7 @@ public class SSZSerializer {
    *               {@link SSZAnnotationSchemeBuilder}
    * @return SSZ serialization
    */
-  public static byte[] encode(Object input, Class clazz) {
+  public byte[] encode(Object input, Class clazz) {
     checkSSZSerializableAnnotation(clazz);
 
     // Null check
@@ -229,17 +126,26 @@ public class SSZSerializer {
         throw new RuntimeException(error);
       }
 
-      SSZEncoder.encodeField(value, field, res);
+      SSZEncoderDecoder encoder = resolveEncoderDecoder(field);
+      if (!field.isList) {
+        encoder.encode(value, field, res);
+      } else {
+        encoder.encodeList((List<Object>) value, field, res);
+      }
     }
 
     return res.toByteArray();
+  }
+
+  public BytesValue encode2(Object input) {
+    return BytesValue.wrap(encode(input));
   }
 
   /**
    * <p>Shortcut to {@link #encode(Object, Class)}. Resolves
    * class using input object. Not suitable for null values.</p>
    */
-  public static byte[] encode(Object input) {
+  public byte[] encode(Object input) {
     return encode(input, input.getClass());
   }
 
@@ -251,15 +157,16 @@ public class SSZSerializer {
   }
 
   /**
-   * Builds class scheme using {@link SSZAnnotationSchemeBuilder}
-   * @param clazz type class, should be marked {@link SSZSerializable}
+   * Builds class scheme using {@link SSZSchemeBuilder}
+   * @param clazz type class
    * @return SSZ model scheme
    */
-  private static SSZScheme buildScheme(Class clazz) {
-    SSZAnnotationSchemeBuilder annotationSchemeBuilder =
-        new SSZAnnotationSchemeBuilder(clazz);
+  private SSZScheme buildScheme(Class clazz) {
+    return schemeBuilder.build(clazz);
+  }
 
-    return annotationSchemeBuilder.build();
+  public Object decode(BytesValue data, Class clazz) {
+    return decode(data.getArrayUnsafe(), clazz);
   }
 
   /**
@@ -273,7 +180,7 @@ public class SSZSerializer {
    *                 information about annotation markup, check {@link SSZAnnotationSchemeBuilder}
    * @return deserialized instance of clazz or throws exception
    */
-  public static Object decode(byte[] data, Class clazz) {
+  public Object decode(byte[] data, Class clazz) {
     checkSSZSerializableAnnotation(clazz);
 
     // Fast null handling
@@ -286,13 +193,18 @@ public class SSZSerializer {
     int size = fields.size();
     Class[] params = new Class[size];
     Object[] values = new Object[size];
-    BytesSSZReader reader = new BytesSSZReader(Bytes.of(data));
+    BytesSSZReaderProxy reader = new BytesSSZReaderProxy(Bytes.of(data));
 
     // For each field resolve its type and decode its value
     for (int i = 0; i < size; i++) {
       SSZScheme.SSZField field = fields.get(i);
-      params[i] = field.type;
-      values[i] = SSZDecoder.decodeField(field, reader);
+      params[i] = field.isList ? List.class : field.type;
+      SSZEncoderDecoder decoder = resolveEncoderDecoder(field);
+      if (!field.isList) {
+        values[i] = decoder.decode(field, reader);
+      } else {
+        values[i] = decoder.decodeList(field, reader);
+      }
     }
 
     // Construct clazz instance
@@ -317,6 +229,17 @@ public class SSZSerializer {
     }
 
     return result;
+  }
+
+  private SSZEncoderDecoder resolveEncoderDecoder(SSZScheme.SSZField field) {
+    SSZEncoderDecoder decoder;
+    if (registeredClassHandlers.containsKey(field.type)) {
+      decoder = registeredClassHandlers.get(field.type);
+    } else {
+      decoder = registeredClassHandlers.get(Object.class); // Container
+    }
+
+    return decoder;
   }
 
   private static Pair<Boolean, Object> createInstanceWithConstructor(Class clazz, Class[] params,
@@ -383,5 +306,19 @@ public class SSZSerializer {
     }
 
     return new Pair<>(true, result);
+  }
+
+  public void registerClassTypes(Set<Class> classTypes, SSZEncoderDecoder typeHandler) {
+    for (Class clazz : classTypes) {
+      if (registeredClassHandlers.put(clazz, typeHandler) != null) {
+        String error = String.format("Failed to register type %s handler, "
+            + "this type already has its handler", clazz);
+        throw new RuntimeException(error);
+      };
+    }
+  }
+
+  public void registerTypes(Set<String> types, SSZEncoderDecoder typeHandler) {
+    // TODO: Do wee need this?
   }
 }
