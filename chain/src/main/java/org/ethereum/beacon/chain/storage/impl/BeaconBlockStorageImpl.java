@@ -132,10 +132,14 @@ public class BeaconBlockStorageImpl implements BeaconBlockStorage {
 
   @Override
   public void put(@Nonnull Hash32 key, @Nonnull BeaconBlock value) {
+    boolean genesisInit = isEmpty();
     rawBlocks.put(key, value);
     blockIndex.update(value.getSlot().getValue(),
         blocks -> blocks.addBlock(value.getHash()),
         new SlotBlocks(singletonList(value.getHash()), 0));
+    if (genesisInit) {
+      reorgTo(key);
+    }
   }
 
   @Override
