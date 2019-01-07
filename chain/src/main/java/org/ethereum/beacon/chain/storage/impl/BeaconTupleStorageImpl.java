@@ -50,7 +50,7 @@ public class BeaconTupleStorageImpl implements BeaconTupleStorage {
   }
 
   @Override
-  public Optional<BeaconTuple> getCanonicalHead() {
-    return blockStorage.getCanonicalHead().flatMap(this::get);
+  public BeaconTuple getCanonicalHead() {
+    return get(blockStorage.getCanonicalHead()).get();
   }
 }

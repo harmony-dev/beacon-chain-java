@@ -39,8 +39,10 @@ public class DefaultBeaconChain implements MutableBeaconChain {
 
   @Override
   public void init() {
-    Optional<BeaconTuple> aTuple = tupleStorage.getCanonicalHead();
-    BeaconTuple headTuple = aTuple.orElseGet(this::initializeStorage);
+    if (blockStorage.isEmpty()) {
+      initializeStorage();
+    }
+    BeaconTuple headTuple = tupleStorage.getCanonicalHead();
 
     Score headScore = scoreFunction.apply(headTuple.getBlock(), headTuple.getState());
     this.head = BeaconChainHead.of(headTuple, headScore);

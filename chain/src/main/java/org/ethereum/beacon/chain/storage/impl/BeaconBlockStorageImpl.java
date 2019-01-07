@@ -76,15 +76,15 @@ public class BeaconBlockStorageImpl implements BeaconBlockStorage {
   }
 
   @Override
-  public Optional<Hash32> getCanonicalHead() {
+  public Hash32 getCanonicalHead() {
     for (long i = getMaxSlot(); i >= 0; i--) {
       Optional<Hash32> canonicalHash = blockIndex.get(i)
           .flatMap(SlotBlocks::getCanonicalHash);
       if (canonicalHash.isPresent()) {
-        return canonicalHash;
+        return canonicalHash.get();
       }
     }
-    throw new RuntimeException("Should return at least genesis");
+    throw new IllegalStateException("At least genesis head should exist.");
   }
 
   @Override
@@ -110,7 +110,7 @@ public class BeaconBlockStorageImpl implements BeaconBlockStorage {
 
   @Override
   public long getMaxSlot() {
-    return blockIndex.size();
+    return blockIndex.size() - 1;
   }
 
   @Override

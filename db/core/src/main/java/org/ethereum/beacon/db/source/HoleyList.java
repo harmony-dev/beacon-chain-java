@@ -10,7 +10,7 @@ import java.util.function.Function;
 public interface HoleyList<V> {
 
   /**
-   * Maximal index of inserted element
+   * Maximal index of inserted element + 1
    */
   long size();
 
