@@ -82,6 +82,13 @@ public class BeaconBlockStorageImpl implements BeaconBlockStorage {
     this(rawBlocks, blockIndex, true, true, true);
   }
 
+  /**
+   * @param rawBlocks hash -> block datasource
+   * @param blockIndex slot -> blocks datasource
+   * @param checkBlockExistOnAdd asserts that no duplicate blocks added (adds some overhead)
+   * @param checkParentExistOnAdd asserts that added block parent is already here (adds some overhead)
+   * @param checkReorgWithChild asserts that reorg block is a leaf block (has no children) (adds some overhead)
+   */
   public BeaconBlockStorageImpl(DataSource<Hash32, BeaconBlock> rawBlocks,
                                 HoleyList<SlotBlocks> blockIndex,
                                 boolean checkBlockExistOnAdd,
