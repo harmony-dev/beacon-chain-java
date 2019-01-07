@@ -1,8 +1,11 @@
 package org.ethereum.beacon.core.operations;
 
+import org.ethereum.beacon.util.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
+import java.util.Objects;
 
+@SSZSerializable
 public class Attestation {
   private final AttestationData data;
   private final BytesValue participationBitfield;
@@ -34,5 +37,21 @@ public class Attestation {
 
   public Bytes96 getAggregatedSignature() {
     return aggregatedSignature;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    Attestation that = (Attestation) o;
+    return data.equals(that.data) &&
+        participationBitfield.equals(that.participationBitfield) &&
+        custodyBitfield.equals(that.custodyBitfield) &&
+        aggregatedSignature.equals(that.aggregatedSignature);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(data, participationBitfield, custodyBitfield, aggregatedSignature);
   }
 }

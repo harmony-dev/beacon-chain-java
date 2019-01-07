@@ -77,7 +77,7 @@ public class Container implements SSZEncoderDecoder {
     for (int i = 0; i < values.size(); ++i) {
       byte[] data = sszSerializer.encode(values.get(i), field.type);
       Bytes curValue;
-      if (field.skipContainer) {
+      if (field.skipContainer != null && field.skipContainer) {
         curValue = Bytes.of(data);
       } else {
         Bytes prefix = SSZ.encodeInt32(data.length);

@@ -8,6 +8,7 @@ import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -116,8 +117,11 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
         newField.extraSize = extra.getValue();
       }
       if (type.equals(List.class)) {
-        newField.isList = true;
+        newField.multipleType = SSZScheme.MultipleType.LIST;
         newField.type = extractListInternalType(field);
+      } else if (type.isArray()) {
+        newField.multipleType = SSZScheme.MultipleType.ARRAY;
+        newField.type = type.getComponentType();
       }
 
       newField.getter = fieldGetters.containsKey(name) ? fieldGetters.get(name).getName() : null;

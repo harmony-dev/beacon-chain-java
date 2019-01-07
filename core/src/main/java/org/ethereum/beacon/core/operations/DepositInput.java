@@ -1,10 +1,11 @@
 package org.ethereum.beacon.core.operations;
 
+import org.ethereum.beacon.util.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 
+@SSZSerializable
 public class DepositInput {
   private final Bytes48 pubKey;
   private final Hash32 withdrawalCredentials;
@@ -43,5 +44,17 @@ public class DepositInput {
 
   public Bytes96 getProofOfPossession() {
     return proofOfPossession;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    DepositInput that = (DepositInput) o;
+    return pubKey.equals(that.pubKey) &&
+        withdrawalCredentials.equals(that.withdrawalCredentials) &&
+        randaoCommitment.equals(that.randaoCommitment) &&
+        pocCommitment.equals(that.pocCommitment) &&
+        proofOfPossession.equals(that.proofOfPossession);
   }
 }

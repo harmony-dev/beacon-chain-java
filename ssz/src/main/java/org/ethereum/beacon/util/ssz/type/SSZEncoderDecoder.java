@@ -4,6 +4,7 @@ import net.consensys.cava.ssz.BytesSSZReaderProxy;
 import org.ethereum.beacon.util.ssz.SSZSchemeBuilder;
 import org.ethereum.beacon.util.ssz.SSZSerializer;
 import java.io.OutputStream;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
@@ -21,9 +22,18 @@ public interface SSZEncoderDecoder {
 
   void encodeList(List<Object> value, SSZSchemeBuilder.SSZScheme.SSZField field, OutputStream result);
 
+  default void encodeArray(Object[] value, SSZSchemeBuilder.SSZScheme.SSZField field, OutputStream result){
+    encodeList(Arrays.asList(value), field, result);
+  }
+
   Object decode(SSZSchemeBuilder.SSZScheme.SSZField field, BytesSSZReaderProxy reader);
 
   List<Object> decodeList(SSZSchemeBuilder.SSZScheme.SSZField field, BytesSSZReaderProxy reader);
+
+  default Object[] decodeArray(SSZSchemeBuilder.SSZScheme.SSZField field, BytesSSZReaderProxy reader){
+    List<Object> list = decodeList(field, reader);
+    return list.toArray();
+  }
 
   default void registerIn(SSZSerializer serializer) {
     serializer.registerClassTypes(getSupportedClassTypes(), this);

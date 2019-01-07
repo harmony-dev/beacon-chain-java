@@ -1,14 +1,8 @@
 apply plugin: 'java-library'
 
-ext {
-    // After that version snapshots are compiled with new JDK w/o full backward compatibility
-    cavaVersion = '0.6.0-5618C0-snapshot'
-}
-
 dependencies {
-    implementation "net.consensys.cava:cava-ssz:${cavaVersion}"
-    implementation "net.consensys.cava:cava-units:${cavaVersion}"
-    implementation project(':types')
+    implementation 'net.consensys.cava:cava-ssz'
+    implementation 'net.consensys.cava:cava-units'
 
     testImplementation 'junit:junit'
     testImplementation 'org.assertj:assertj-core'

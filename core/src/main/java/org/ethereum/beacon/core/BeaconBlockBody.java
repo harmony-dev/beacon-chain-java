@@ -2,8 +2,10 @@ package org.ethereum.beacon.core;
 
 import static java.util.Collections.emptyList;
 
+import java.beans.Transient;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.CasperSlashing;
 import org.ethereum.beacon.core.operations.Deposit;
@@ -12,8 +14,12 @@ import org.ethereum.beacon.core.operations.ProofOfCustodyChallenge;
 import org.ethereum.beacon.core.operations.ProofOfCustodyResponse;
 import org.ethereum.beacon.core.operations.ProofOfCustodySeedChange;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
+import org.ethereum.beacon.util.ssz.annotation.SSZSerializable;
+import org.ethereum.beacon.util.ssz.annotation.SSZTransient;
 
+@SSZSerializable
 public class BeaconBlockBody {
+  @SSZTransient
   public static final BeaconBlockBody EMPTY =
       new BeaconBlockBody(
           emptyList(),
@@ -83,5 +89,20 @@ public class BeaconBlockBody {
 
   public List<Exit> getExits() {
     return exits;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    BeaconBlockBody that = (BeaconBlockBody) o;
+    return proposerSlashings.equals(that.proposerSlashings) &&
+        casperSlashings.equals(that.casperSlashings) &&
+        attestations.equals(that.attestations) &&
+        pocSeedChanges.equals(that.pocSeedChanges) &&
+        pocChallenges.equals(that.pocChallenges) &&
+        pocResponses.equals(that.pocResponses) &&
+        deposits.equals(that.deposits) &&
+        exits.equals(that.exits);
   }
 }

@@ -1,9 +1,12 @@
 package org.ethereum.beacon.core;
 
+import org.ethereum.beacon.util.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.uint.UInt64;
+import java.util.Objects;
 
+@SSZSerializable
 public class BeaconBlock implements Hashable {
 
   private final UInt64 slot;
@@ -71,5 +74,19 @@ public class BeaconBlock implements Hashable {
 
   public BeaconBlockBody getBody() {
     return body;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    BeaconBlock that = (BeaconBlock) o;
+    return slot.equals(that.slot) &&
+        parentRoot.equals(that.parentRoot) &&
+        stateRoot.equals(that.stateRoot) &&
+        randaoReveal.equals(that.randaoReveal) &&
+        candidatePowReceiptRoot.equals(that.candidatePowReceiptRoot) &&
+        signature.equals(that.signature) &&
+        body.equals(that.body);
   }
 }

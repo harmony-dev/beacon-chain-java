@@ -22,7 +22,7 @@ public interface SSZSchemeBuilder {
 
     public static class SSZField {
       public Class type;
-      public boolean isList = false;
+      public MultipleType multipleType = MultipleType.NONE;
       public String extraType = null;
       public Integer extraSize = null;
       public String name;
@@ -35,6 +35,10 @@ public interface SSZSchemeBuilder {
        * </ul>
        */
       public Boolean skipContainer = null;
+    }
+
+    public enum MultipleType {
+      NONE, LIST, ARRAY
     }
   }
 }

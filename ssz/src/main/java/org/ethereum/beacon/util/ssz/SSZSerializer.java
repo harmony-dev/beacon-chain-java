@@ -12,11 +12,11 @@ import org.ethereum.beacon.util.ssz.type.Container;
 import org.ethereum.beacon.util.ssz.type.SSZEncoderDecoder;
 import org.ethereum.beacon.util.ssz.type.StringPrimitive;
 import org.ethereum.beacon.util.ssz.type.UIntPrimitive;
-import tech.pegasys.artemis.util.bytes.BytesValue;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.io.ByteArrayOutputStream;
+import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -25,9 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import static java.util.function.Function.identity;
 import static org.ethereum.beacon.util.ssz.SSZSchemeBuilder.SSZScheme;
 
 /**
@@ -74,7 +72,7 @@ public class SSZSerializer {
     new Container().registerIn(this);
   }
 
-  SSZSerializer withSSZEncoderDecoder(SSZEncoderDecoder encoderDecoder) {
+  public SSZSerializer withSSZEncoderDecoder(SSZEncoderDecoder encoderDecoder) {
     encoderDecoder.registerIn(this);
     return this;
   }
@@ -127,18 +125,16 @@ public class SSZSerializer {
       }
 
       SSZEncoderDecoder encoder = resolveEncoderDecoder(field);
-      if (!field.isList) {
+      if (field.multipleType.equals(SSZScheme.MultipleType.NONE)) {
         encoder.encode(value, field, res);
-      } else {
+      } else if (field.multipleType.equals(SSZScheme.MultipleType.LIST))  {
         encoder.encodeList((List<Object>) value, field, res);
+      } else if (field.multipleType.equals(SSZScheme.MultipleType.ARRAY))  {
+        encoder.encodeArray((Object[]) value, field, res);
       }
     }
 
     return res.toByteArray();
-  }
-
-  public BytesValue encode2(Object input) {
-    return BytesValue.wrap(encode(input));
   }
 
   /**
@@ -151,8 +147,8 @@ public class SSZSerializer {
 
   private static void checkSSZSerializableAnnotation(Class clazz) {
     if (!clazz.isAnnotationPresent(SSZSerializable.class)) {
-      throw new RuntimeException("SSZ serializable class should be annotated "
-          + "with SSZSerializable!");
+      String error = String.format("Class %s should be annotated with SSZSerializable!", clazz);
+      throw new RuntimeException(error);
     }
   }
 
@@ -163,10 +159,6 @@ public class SSZSerializer {
    */
   private SSZScheme buildScheme(Class clazz) {
     return schemeBuilder.build(clazz);
-  }
-
-  public Object decode(BytesValue data, Class clazz) {
-    return decode(data.getArrayUnsafe(), clazz);
   }
 
   /**
@@ -198,12 +190,29 @@ public class SSZSerializer {
     // For each field resolve its type and decode its value
     for (int i = 0; i < size; i++) {
       SSZScheme.SSZField field = fields.get(i);
-      params[i] = field.isList ? List.class : field.type;
+      switch (field.multipleType) {
+        case NONE: {
+          params[i] = field.type;
+          break;
+        }
+        case LIST: {
+          params[i] = List.class;
+          break;
+        }
+        case ARRAY: {
+          params[i] = Array.newInstance(field.type, 0).getClass();
+          break;
+        }
+      }
       SSZEncoderDecoder decoder = resolveEncoderDecoder(field);
-      if (!field.isList) {
+      if (field.multipleType.equals(SSZScheme.MultipleType.NONE)) {
         values[i] = decoder.decode(field, reader);
-      } else {
+      } else if (field.multipleType.equals(SSZScheme.MultipleType.LIST)) {
         values[i] = decoder.decodeList(field, reader);
+      } else if (field.multipleType.equals(SSZScheme.MultipleType.ARRAY)) {
+        Object[] uncastedResult = decoder.decodeArray(field, reader);
+        values[i] = Array.newInstance(field.type, uncastedResult.length);
+        System.arraycopy(uncastedResult, 0, ((Object[]) values[i]), 0, uncastedResult.length);
       }
     }
 

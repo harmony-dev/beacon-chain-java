@@ -1,5 +1,8 @@
 package org.ethereum.beacon.core.operations;
 
+import org.ethereum.beacon.util.ssz.annotation.SSZSerializable;
+
+@SSZSerializable
 public class CasperSlashing {
   private final SlashableVoteData slashableVoteData1;
   private final SlashableVoteData slashableVoteData2;
@@ -16,5 +19,14 @@ public class CasperSlashing {
 
   public SlashableVoteData getSlashableVoteData2() {
     return slashableVoteData2;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    CasperSlashing that = (CasperSlashing) o;
+    return slashableVoteData1.equals(that.slashableVoteData1) &&
+        slashableVoteData2.equals(that.slashableVoteData2);
   }
 }

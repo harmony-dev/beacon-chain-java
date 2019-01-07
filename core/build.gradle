@@ -1,3 +1,6 @@
 dependencies {
   implementation project(':types')
+  implementation project(':ssz')
+
+  testImplementation project(':crypto')
 }

@@ -1,7 +1,9 @@
 package org.ethereum.beacon.core.operations;
 
+import org.ethereum.beacon.util.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.util.uint.UInt64;
 
+@SSZSerializable
 public class DepositData {
   private final DepositInput depositInput;
   private final UInt64 value;
@@ -23,5 +25,15 @@ public class DepositData {
 
   public UInt64 getTimestamp() {
     return timestamp;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    DepositData that = (DepositData) o;
+    return depositInput.equals(that.depositInput) &&
+        value.equals(that.value) &&
+        timestamp.equals(that.timestamp);
   }
 }

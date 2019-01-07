@@ -1,8 +1,10 @@
 package org.ethereum.beacon.core.operations;
 
+import org.ethereum.beacon.util.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
 
+@SSZSerializable
 public class AttestationData {
   private final UInt64 slot;
   private final UInt64 shard;
@@ -62,5 +64,20 @@ public class AttestationData {
 
   public Hash32 getJustifiedBlockRoot() {
     return justifiedBlockRoot;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    AttestationData that = (AttestationData) o;
+    return slot.equals(that.slot) &&
+        shard.equals(that.shard) &&
+        beaconBlockRoot.equals(that.beaconBlockRoot) &&
+        epochBoundaryRoot.equals(that.epochBoundaryRoot) &&
+        shardBlockRoot.equals(that.shardBlockRoot) &&
+        latestCrosslinkRoot.equals(that.latestCrosslinkRoot) &&
+        justifiedSlot.equals(that.justifiedSlot) &&
+        justifiedBlockRoot.equals(that.justifiedBlockRoot);
   }
 }

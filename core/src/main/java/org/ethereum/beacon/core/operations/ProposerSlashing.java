@@ -1,8 +1,11 @@
 package org.ethereum.beacon.core.operations;
 
+import org.ethereum.beacon.util.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.uint.UInt24;
+import java.util.Objects;
 
+@SSZSerializable
 public class ProposerSlashing {
   private final UInt24 proposerIndex;
   private final ProposalSignedData proposalData1;
@@ -41,5 +44,17 @@ public class ProposerSlashing {
 
   public Bytes96 getProposalSignature2() {
     return proposalSignature2;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    ProposerSlashing that = (ProposerSlashing) o;
+    return proposerIndex.equals(that.proposerIndex) &&
+        proposalData1.equals(that.proposalData1) &&
+        proposalSignature1.equals(that.proposalSignature1) &&
+        proposalData2.equals(that.proposalData2) &&
+        proposalSignature2.equals(that.proposalSignature2);
   }
 }
