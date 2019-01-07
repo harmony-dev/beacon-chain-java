@@ -13,7 +13,7 @@ import static java.util.Collections.singletonList;
 
 public class BeaconBlockStorageImpl implements BeaconBlockStorage {
 
-  private class SlotBlocks {
+  private static class SlotBlocks {
     private static final int NO_CANONICAL = -1;
 
     private final List<Hash32> blockHashes;
@@ -23,7 +23,7 @@ public class BeaconBlockStorageImpl implements BeaconBlockStorage {
     SlotBlocks(Hash32 blockHash, boolean isCanonical) {
       this(singletonList(blockHash), isCanonical ? 0 : NO_CANONICAL);
     }
-    private SlotBlocks(List<Hash32> blockHashes, int canonicalIndex) {
+    public SlotBlocks(List<Hash32> blockHashes, int canonicalIndex) {
       this.blockHashes = blockHashes;
       this.canonicalIndex = canonicalIndex;
     }
@@ -43,11 +43,6 @@ public class BeaconBlockStorageImpl implements BeaconBlockStorage {
 
     SlotBlocks addBlock(Hash32 newBlock, boolean canonical) {
       ArrayList<Hash32> blocks = new ArrayList<>(getBlockHashes());
-      if (checkBlockExistOnAdd) {
-        if (new HashSet<>(blocks).contains(newBlock)) {
-          throw new IllegalArgumentException("Block with hash already exists in storage: " + newBlock);
-        }
-      }
       blocks.add(newBlock);
       return new SlotBlocks(blocks, canonical ? blocks.size() - 1 : canonicalIndex);
     }
@@ -168,22 +163,28 @@ public class BeaconBlockStorageImpl implements BeaconBlockStorage {
   }
 
   @Override
-  public void put(@Nonnull Hash32 key, @Nonnull BeaconBlock value) {
+  public void put(@Nonnull Hash32 key, @Nonnull BeaconBlock newBlock) {
     // if genesis block is being added: it will be canonical
     // if new block is child of current canonical block: it should be the new canonical block
     // else new block is not canonical
-    boolean isCanonical = isEmpty() || value.getParentRoot().equals(getCanonicalHead());
+    boolean isCanonical = isEmpty() || newBlock.getParentRoot().equals(getCanonicalHead());
 
-    if (!isEmpty() && checkParentExistOnAdd) {
-      if (!get(value.getParentRoot()).isPresent()) {
-        throw new IllegalArgumentException("No parent found for added block: " + value);
+    if (checkBlockExistOnAdd) {
+      if (get(key).isPresent()) {
+        throw new IllegalArgumentException("Block with hash already exists in storage: " + newBlock);
       }
     }
 
-    rawBlocks.put(key, value);
-    blockIndex.update(value.getSlot().getValue(),
-        blocks -> blocks.addBlock(value.getHash(), isCanonical),
-        () -> new SlotBlocks(value.getHash(), isCanonical));
+    if (!isEmpty() && checkParentExistOnAdd) {
+      if (!get(newBlock.getParentRoot()).isPresent()) {
+        throw new IllegalArgumentException("No parent found for added block: " + newBlock);
+      }
+    }
+
+    rawBlocks.put(key, newBlock);
+    blockIndex.update(newBlock.getSlot().getValue(),
+        blocks -> blocks.addBlock(newBlock.getHash(), isCanonical),
+        () -> new SlotBlocks(newBlock.getHash(), isCanonical));
   }
 
   @Override
