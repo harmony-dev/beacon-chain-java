@@ -119,15 +119,15 @@ public class UIntPrimitive implements SSZEncoderDecoder {
     try {
       switch (numericType.type) {
         case BIGINT: {
-          encodeBigIntList(value, result);
+          encodeBigIntList(value, numericType, result);
           break;
         }
         case INT: {
-          encodeIntList(value, result);
+          encodeIntList(value, numericType, result);
           break;
         }
         case LONG: {
-          encodeLongList(value, result);
+          encodeLongList(value, numericType, result);
           break;
         }
         default: {
@@ -141,25 +141,25 @@ public class UIntPrimitive implements SSZEncoderDecoder {
     }
   }
 
-  private void encodeIntList(List<Object> value, OutputStream result) throws IOException {
+  private void encodeIntList(List<Object> value, NumericType type, OutputStream result) throws IOException {
     int[] data = new int[value.size()];
     for (int i = 0; i < value.size(); ++i) {
       data[i] = (int) value.get(i);
     }
-    result.write(SSZ.encodeUIntList(DEFAULT_INT_SIZE, data).toArrayUnsafe());
+    result.write(SSZ.encodeUIntList(type.size, data).toArrayUnsafe());
   }
 
-  private void encodeLongList(List<Object> value, OutputStream result) throws IOException {
+  private void encodeLongList(List<Object> value, NumericType type, OutputStream result) throws IOException {
     long[] data = new long[value.size()];
     for (int i = 0; i < value.size(); ++i) {
       data[i] = (long) value.get(i);
     }
-    result.write(SSZ.encodeLongIntList(DEFAULT_LONG_SIZE, data).toArrayUnsafe());
+    result.write(SSZ.encodeLongIntList(type.size, data).toArrayUnsafe());
   }
 
-  private void encodeBigIntList(List<Object> value, OutputStream result) throws IOException {
+  private void encodeBigIntList(List<Object> value, NumericType type, OutputStream result) throws IOException {
     BigInteger[] data = (BigInteger[]) value.toArray(new BigInteger[0]);
-    result.write(SSZ.encodeBigIntegerList(DEFAULT_BIGINT_SIZE, data).toArrayUnsafe());
+    result.write(SSZ.encodeBigIntegerList(type.size, data).toArrayUnsafe());
   }
 
   @Override
