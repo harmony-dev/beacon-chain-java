@@ -7,16 +7,13 @@ import org.ethereum.beacon.db.source.HoleyList;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
 import javax.annotation.Nonnull;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 import static java.util.Collections.singletonList;
 
 public class BeaconBlockStorageImpl implements BeaconBlockStorage {
 
-  private static class SlotBlocks {
+  private class SlotBlocks {
     private static final int NO_CANONICAL = -1;
 
     private final List<Hash32> blockHashes;
@@ -46,6 +43,11 @@ public class BeaconBlockStorageImpl implements BeaconBlockStorage {
 
     SlotBlocks addBlock(Hash32 newBlock, boolean canonical) {
       ArrayList<Hash32> blocks = new ArrayList<>(getBlockHashes());
+      if (checkBlockExistOnAdd) {
+        if (new HashSet<>(blocks).contains(newBlock)) {
+          throw new IllegalArgumentException("Block with hash already exists in storage: " + newBlock);
+        }
+      }
       blocks.add(newBlock);
       return new SlotBlocks(blocks, canonical ? blocks.size() - 1 : canonicalIndex);
     }
@@ -71,20 +73,23 @@ public class BeaconBlockStorageImpl implements BeaconBlockStorage {
 
   private final DataSource<Hash32, BeaconBlock> rawBlocks;
   private final HoleyList<SlotBlocks> blockIndex;
+  private final boolean checkBlockExistOnAdd;
   private final boolean checkParentExistOnAdd;
   private final boolean checkReorgWithChild;
 
   public BeaconBlockStorageImpl(DataSource<Hash32, BeaconBlock> rawBlocks,
                                 HoleyList<SlotBlocks> blockIndex) {
-    this(rawBlocks, blockIndex, true, true);
+    this(rawBlocks, blockIndex, true, true, true);
   }
 
   public BeaconBlockStorageImpl(DataSource<Hash32, BeaconBlock> rawBlocks,
                                 HoleyList<SlotBlocks> blockIndex,
+                                boolean checkBlockExistOnAdd,
                                 boolean checkParentExistOnAdd,
                                 boolean checkReorgWithChild) {
     this.rawBlocks = rawBlocks;
     this.blockIndex = blockIndex;
+    this.checkBlockExistOnAdd = checkBlockExistOnAdd;
     this.checkParentExistOnAdd = checkParentExistOnAdd;
     this.checkReorgWithChild = checkReorgWithChild;
   }
