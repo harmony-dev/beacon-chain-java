@@ -154,7 +154,7 @@ public class UIntPrimitive implements SSZEncoderDecoder {
     for (int i = 0; i < value.size(); ++i) {
       data[i] = (long) value.get(i);
     }
-    result.write(SSZ.encodeLongIntList(type.size, data).toArrayUnsafe());
+    result.write(SSZ.encodeULongIntList(type.size, data).toArrayUnsafe());
   }
 
   private void encodeBigIntList(List<Object> value, NumericType type, OutputStream result) throws IOException {
@@ -181,15 +181,15 @@ public class UIntPrimitive implements SSZEncoderDecoder {
   }
 
   private Object decodeInt(NumericType type, BytesSSZReaderProxy reader) {
-    return reader.readInt(type.size);
+    return reader.readUInt(type.size);
   }
 
   private Object decodeLong(NumericType type, BytesSSZReaderProxy reader) {
-    return reader.readLong(type.size);
+    return reader.readULong(type.size);
   }
 
   private Object decodeBigInt(NumericType type, BytesSSZReaderProxy reader) {
-    return reader.readBigInteger(type.size);
+    return reader.readUnsignedBigInteger(type.size);
   }
 
   @Override
@@ -198,10 +198,10 @@ public class UIntPrimitive implements SSZEncoderDecoder {
 
     switch (numericType.type) {
       case INT: {
-        return (List<Object>) (List<?>) reader.readIntList(numericType.size);
+        return (List<Object>) (List<?>) reader.readUIntList(numericType.size);
       }
       case LONG: {
-        return (List<Object>) (List<?>)  reader.readLongIntList(numericType.size);
+        return (List<Object>) (List<?>)  reader.readULongIntList(numericType.size);
       }
       case BIGINT: {
         return (List<Object>) (List<?>)  reader.readUnsignedBigIntegerList(numericType.size);
