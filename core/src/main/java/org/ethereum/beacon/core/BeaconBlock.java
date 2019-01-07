@@ -88,6 +88,20 @@ public class BeaconBlock implements Hashable<Hash32> {
 
   @Override
   public Hash32 getHash() {
-    return Hash32.ZERO;
+    // TODO temporary hash for tests
+    return getStateRoot();
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    BeaconBlock that = (BeaconBlock) o;
+    return getHash().equals(that.getHash());
+  }
+
+  @Override
+  public int hashCode() {
+    return getHash().hashCode();
   }
 }
