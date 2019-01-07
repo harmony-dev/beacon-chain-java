@@ -71,11 +71,22 @@ public class BeaconBlockStorageImpl implements BeaconBlockStorage {
 
   private final DataSource<Hash32, BeaconBlock> rawBlocks;
   private final HoleyList<SlotBlocks> blockIndex;
+  private final boolean checkParentExistOnAdd;
+  private final boolean checkReorgWithChild;
 
   public BeaconBlockStorageImpl(DataSource<Hash32, BeaconBlock> rawBlocks,
                                 HoleyList<SlotBlocks> blockIndex) {
+    this(rawBlocks, blockIndex, true, true);
+  }
+
+  public BeaconBlockStorageImpl(DataSource<Hash32, BeaconBlock> rawBlocks,
+                                HoleyList<SlotBlocks> blockIndex,
+                                boolean checkParentExistOnAdd,
+                                boolean checkReorgWithChild) {
     this.rawBlocks = rawBlocks;
     this.blockIndex = blockIndex;
+    this.checkParentExistOnAdd = checkParentExistOnAdd;
+    this.checkReorgWithChild = checkReorgWithChild;
   }
 
   @Override
@@ -91,7 +102,8 @@ public class BeaconBlockStorageImpl implements BeaconBlockStorage {
   }
 
   @Override
-  public void reorgTo(Hash32 newCanonical) {
+  public void reorgTo(Hash32 newCanonicalBlock) {
+    Hash32 newCanonical = newCanonicalBlock;
     for (long slot = getMaxSlot(); slot >= 0; slot--) {
       Optional<SlotBlocks> slotBlocks = blockIndex.get(slot);
       if (slotBlocks.isPresent()) {
@@ -99,6 +111,16 @@ public class BeaconBlockStorageImpl implements BeaconBlockStorage {
         if (curCanonical.isPresent() && newCanonical.equals(curCanonical.get())) {
           break;
         }
+
+        if (checkReorgWithChild) {
+          for (Hash32 hash : slotBlocks.get().getBlockHashes()) {
+            BeaconBlock block = get(hash).orElseThrow(() -> new IllegalStateException("Internal error: hash is in index but missing but missing in raw: " + hash));
+            if (block.getParentRoot().equals(newCanonicalBlock)) {
+              throw new IllegalArgumentException("Reorg to block with children is restricted: newCanonical " + newCanonical + " has child " + block);
+            }
+          }
+        }
+
         SlotBlocks slotBlocksNew = slotBlocks.get().setCanonicalHash(newCanonical);
         blockIndex.put(slot, slotBlocksNew);
         Optional<Hash32> curCanonicalNew = slotBlocksNew.getCanonicalHash();
@@ -139,6 +161,12 @@ public class BeaconBlockStorageImpl implements BeaconBlockStorage {
     // if new block is child of current canonical block: it should be the new canonical block
     // else new block is not canonical
     boolean isCanonical = isEmpty() || value.getParentRoot().equals(getCanonicalHead());
+
+    if (!isEmpty() && checkParentExistOnAdd) {
+      if (!get(value.getParentRoot()).isPresent()) {
+        throw new IllegalArgumentException("No parent found for added block: " + value);
+      }
+    }
 
     rawBlocks.put(key, value);
     blockIndex.update(value.getSlot().getValue(),
