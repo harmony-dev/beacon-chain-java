@@ -16,14 +16,17 @@ import static java.util.Collections.singletonList;
 
 public class BeaconBlockStorageImpl implements BeaconBlockStorage {
 
-  public static class SlotBlocks {
-    public static final int NO_CANONICAL = -1;
+  private static class SlotBlocks {
+    private static final int NO_CANONICAL = -1;
 
     private final List<Hash32> blockHashes;
     // -1: no canonical block
     private final int canonicalIndex;
 
-    SlotBlocks(List<Hash32> blockHashes, int canonicalIndex) {
+    SlotBlocks(Hash32 blockHash, boolean isCanonical) {
+      this(singletonList(blockHash), isCanonical ? 0 : NO_CANONICAL);
+    }
+    private SlotBlocks(List<Hash32> blockHashes, int canonicalIndex) {
       this.blockHashes = blockHashes;
       this.canonicalIndex = canonicalIndex;
     }
@@ -32,7 +35,7 @@ public class BeaconBlockStorageImpl implements BeaconBlockStorage {
       return blockHashes;
     }
 
-    public int getCanonicalIndex() {
+    int getCanonicalIndex() {
       return canonicalIndex;
     }
 
@@ -41,18 +44,18 @@ public class BeaconBlockStorageImpl implements BeaconBlockStorage {
           Optional.of(getBlockHashes().get(getCanonicalIndex()));
     }
 
-    public SlotBlocks addBlock(Hash32 newBlock) {
+    SlotBlocks addBlock(Hash32 newBlock, boolean canonical) {
       ArrayList<Hash32> blocks = new ArrayList<>(getBlockHashes());
       blocks.add(newBlock);
-      return new SlotBlocks(blocks, canonicalIndex);
+      return new SlotBlocks(blocks, canonical ? blocks.size() - 1 : canonicalIndex);
     }
 
-    public SlotBlocks setCanonicalHash(Hash32 newCanonicalHash) {
+    SlotBlocks setCanonicalHash(Hash32 newCanonicalHash) {
       int idx = blockHashes.indexOf(newCanonicalHash);
       return setCanonicalIndex(idx < 0 ? NO_CANONICAL : idx);
     }
 
-    public SlotBlocks setCanonicalIndex(int newCanonicalIdx) {
+    private SlotBlocks setCanonicalIndex(int newCanonicalIdx) {
       return newCanonicalIdx == getCanonicalIndex() ? this :
           new SlotBlocks(getBlockHashes(), newCanonicalIdx);
     }
@@ -132,14 +135,15 @@ public class BeaconBlockStorageImpl implements BeaconBlockStorage {
 
   @Override
   public void put(@Nonnull Hash32 key, @Nonnull BeaconBlock value) {
-    boolean genesisInit = isEmpty();
+    // if genesis block is being added: it will be canonical
+    // if new block is child of current canonical block: it should be the new canonical block
+    // else new block is not canonical
+    boolean isCanonical = isEmpty() || value.getParentRoot().equals(getCanonicalHead());
+
     rawBlocks.put(key, value);
     blockIndex.update(value.getSlot().getValue(),
-        blocks -> blocks.addBlock(value.getHash()),
-        new SlotBlocks(singletonList(value.getHash()), 0));
-    if (genesisInit) {
-      reorgTo(key);
-    }
+        blocks -> blocks.addBlock(value.getHash(), isCanonical),
+        () -> new SlotBlocks(value.getHash(), isCanonical));
   }
 
   @Override
@@ -147,7 +151,8 @@ public class BeaconBlockStorageImpl implements BeaconBlockStorage {
     Optional<BeaconBlock> block = rawBlocks.get(key);
     if (block.isPresent()) {
       rawBlocks.remove(key);
-      SlotBlocks slotBlocks = blockIndex.get(block.get().getSlot().getValue()).get();
+      SlotBlocks slotBlocks = blockIndex.get(block.get().getSlot().getValue()).orElseThrow(
+          () -> new IllegalStateException("Internal error: rawBlocks contains block, but blockIndex misses: " + key));
       int idx = 0;
       for (; idx < slotBlocks.getBlockHashes().size(); idx++) {
         if (slotBlocks.getBlockHashes().get(idx).equals(key)) {

@@ -2,6 +2,7 @@ package org.ethereum.beacon.db.source;
 
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * Add-only list which can miss elements at some positions and its size is the maximal element index
@@ -38,8 +39,8 @@ public interface HoleyList<V> {
    * Handy functional method to update existing value or put a default if no value exists yet
    * @return new value
    */
-  default V update(long idx, Function<V, V> updater, V defaultValue) {
-    V newVal = get(idx).map(updater).orElse(defaultValue);
+  default V update(long idx, Function<V, V> updater, Supplier<V> defaultValue) {
+    V newVal = get(idx).map(updater).orElse(defaultValue.get());
     put(idx, newVal);
     return newVal;
   }
