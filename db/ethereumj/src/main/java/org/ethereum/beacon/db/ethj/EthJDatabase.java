@@ -11,14 +11,14 @@ import java.util.function.Function;
 
 public class EthJDatabase implements Database {
 
-  private final DataSource<BytesValue, BytesValue> beaconDataSource;
+  private final DataSource<BytesValue, BytesValue> backingDataSource;
   private final Function<BytesValue, BytesValue> sourceNameHasher;
 
   public EthJDatabase(Source<byte[], byte[]> ethJDataSource,
                       Function<BytesValue, BytesValue> sourceNameHasher) {
     this.sourceNameHasher = sourceNameHasher;
     EthJDataSourceAdapter<byte[], byte[]> adapter = new EthJDataSourceAdapter<>(ethJDataSource);
-    beaconDataSource = new CodecSource<>(adapter,
+    backingDataSource = new CodecSource<>(adapter,
         BytesValue::extractArray,
         BytesValue::extractArray,
         BytesValue::wrap);
@@ -26,7 +26,7 @@ public class EthJDatabase implements Database {
 
   @Override
   public DataSource<BytesValue, BytesValue> createStorage(String name) {
-    return new XorDataSource<>(beaconDataSource,
+    return new XorDataSource<>(backingDataSource,
         sourceNameHasher.apply(BytesValue.wrap(name.getBytes())));
   }
 
