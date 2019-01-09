@@ -32,6 +32,8 @@ public class BeaconState implements Hashable {
    * to {@link #batchedBlockRoots}.
    */
   public static final int LATEST_BLOCK_ROOTS_LENGTH = 1 << 13; // 8192
+  /** Max length of {@link #latestPenalizedExitBalances} list. */
+  public static final int LATEST_PENALIZED_EXIT_LENGTH = 1 << 13; // 8192
 
   public static final BeaconState EMPTY =
       new BeaconState(

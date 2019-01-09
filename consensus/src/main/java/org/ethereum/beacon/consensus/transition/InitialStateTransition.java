@@ -73,7 +73,8 @@ public class InitialStateTransition implements StateTransition<BeaconState> {
     builder
         .withLatestCrosslinks(nCopies(BeaconChainSpec.SHARD_COUNT, CrosslinkRecord.EMPTY))
         .withLatestBlockRoots(nCopies(BeaconState.LATEST_BLOCK_ROOTS_LENGTH, Hash32.ZERO))
-        .withLatestPenalizedExitBalances(emptyList())
+        .withLatestPenalizedExitBalances(
+            nCopies(BeaconState.LATEST_PENALIZED_EXIT_LENGTH, UInt64.ZERO))
         .withLatestAttestations(emptyList())
         .withBatchedBlockRoots(emptyList());
 
