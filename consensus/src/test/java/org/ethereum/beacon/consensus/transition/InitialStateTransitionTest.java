@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-import org.assertj.core.api.Assertions;
 import org.ethereum.beacon.core.BeaconBlocks;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
@@ -40,6 +39,6 @@ public class InitialStateTransitionTest {
         initialStateTransition.apply(BeaconBlocks.createGenesis(), BeaconState.EMPTY);
 
     assertThat(initialState.getGenesisTime()).isEqualTo(genesisTime);
-    assertThat(initialState.getProcessedPowReceiptRoot()).isEqualTo(receiptRoot);
+    assertThat(initialState.getLatestDepositRoot()).isEqualTo(receiptRoot);
   }
 }

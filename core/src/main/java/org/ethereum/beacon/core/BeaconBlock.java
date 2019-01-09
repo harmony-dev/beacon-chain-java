@@ -26,7 +26,7 @@ public class BeaconBlock implements Hashable {
   /** An image of RANDAO hash onion revealed by proposer. */
   private final Hash32 randaoReveal;
   /** Receipt root from the PoW chain registration contract that is observed by proposer. */
-  private final Hash32 candidatePowReceiptRoot;
+  private final Hash32 depositRoot;
   /** Proposer's signature. */
   private final Bytes96 signature;
 
@@ -38,14 +38,14 @@ public class BeaconBlock implements Hashable {
       Hash32 parentRoot,
       Hash32 stateRoot,
       Hash32 randaoReveal,
-      Hash32 candidatePowReceiptRoot,
+      Hash32 depositRoot,
       Bytes96 signature,
       BeaconBlockBody body) {
     this.slot = slot;
     this.parentRoot = parentRoot;
     this.stateRoot = stateRoot;
     this.randaoReveal = randaoReveal;
-    this.candidatePowReceiptRoot = candidatePowReceiptRoot;
+    this.depositRoot = depositRoot;
     this.signature = signature;
     this.body = body;
   }
@@ -60,7 +60,7 @@ public class BeaconBlock implements Hashable {
 
   public BeaconBlock withStateRoot(Hash32 stateRoot) {
     return new BeaconBlock(
-        slot, parentRoot, stateRoot, randaoReveal, candidatePowReceiptRoot, signature, body);
+        slot, parentRoot, stateRoot, randaoReveal, depositRoot, signature, body);
   }
 
   public UInt64 getSlot() {
@@ -79,8 +79,8 @@ public class BeaconBlock implements Hashable {
     return randaoReveal;
   }
 
-  public Hash32 getCandidatePowReceiptRoot() {
-    return candidatePowReceiptRoot;
+  public Hash32 getDepositRoot() {
+    return depositRoot;
   }
 
   public Bytes96 getSignature() {

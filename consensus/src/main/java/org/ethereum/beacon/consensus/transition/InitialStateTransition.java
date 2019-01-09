@@ -80,8 +80,8 @@ public class InitialStateTransition implements StateTransition<BeaconState> {
 
     // PoW receipt root
     builder
-        .withProcessedPowReceiptRoot(chainStart.getReceiptRoot())
-        .withCandidatePowReceiptRoots(emptyList());
+        .withLatestDepositRoot(chainStart.getReceiptRoot())
+        .withDepositRootVotes(emptyList());
 
     BeaconState initialState = builder.build();
 

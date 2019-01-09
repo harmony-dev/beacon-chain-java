@@ -5,7 +5,7 @@ import static java.util.Collections.emptyList;
 import java.util.ArrayList;
 import java.util.List;
 import org.ethereum.beacon.core.operations.CustodyChallenge;
-import org.ethereum.beacon.core.state.CandidatePowReceiptRootRecord;
+import org.ethereum.beacon.core.state.DepositRootVote;
 import org.ethereum.beacon.core.state.CrosslinkRecord;
 import org.ethereum.beacon.core.state.ForkData;
 import org.ethereum.beacon.core.state.PendingAttestationRecord;
@@ -125,9 +125,9 @@ public class BeaconState implements Hashable {
   /* PoW receipt root */
 
   /** Latest processed receipt root from PoW deposit contract. */
-  private final Hash32 processedPowReceiptRoot;
+  private final Hash32 latestDepositRoot;
   /** Receipt roots that voting is still in progress for. */
-  private final List<CandidatePowReceiptRootRecord> candidatePowReceiptRoots;
+  private final List<DepositRootVote> depositRootVotes;
 
   public BeaconState(
       UInt64 slot,
@@ -151,8 +151,8 @@ public class BeaconState implements Hashable {
       List<UInt64> latestPenalizedExitBalances,
       List<PendingAttestationRecord> latestAttestations,
       List<Hash32> batchedBlockRoots,
-      Hash32 processedPowReceiptRoot,
-      List<CandidatePowReceiptRootRecord> candidatePowReceiptRoots) {
+      Hash32 latestDepositRoot,
+      List<DepositRootVote> depositRootVotes) {
     this.slot = slot;
     this.genesisTime = genesisTime;
     this.forkData = forkData;
@@ -174,8 +174,8 @@ public class BeaconState implements Hashable {
     this.latestPenalizedExitBalances = latestPenalizedExitBalances;
     this.latestAttestations = latestAttestations;
     this.batchedBlockRoots = batchedBlockRoots;
-    this.processedPowReceiptRoot = processedPowReceiptRoot;
-    this.candidatePowReceiptRoots = candidatePowReceiptRoots;
+    this.latestDepositRoot = latestDepositRoot;
+    this.depositRootVotes = depositRootVotes;
   }
 
   public UInt64 getSlot() {
@@ -302,16 +302,16 @@ public class BeaconState implements Hashable {
     return new ArrayList<>(batchedBlockRoots);
   }
 
-  public Hash32 getProcessedPowReceiptRoot() {
-    return processedPowReceiptRoot;
+  public Hash32 getLatestDepositRoot() {
+    return latestDepositRoot;
   }
 
-  public List<CandidatePowReceiptRootRecord> getCandidatePowReceiptRootsUnsafe() {
-    return candidatePowReceiptRoots;
+  public List<DepositRootVote> getDepositRootVotesUnsafe() {
+    return depositRootVotes;
   }
 
-  public List<CandidatePowReceiptRootRecord> extractCandidatePowReceiptRoots() {
-    return new ArrayList<>(candidatePowReceiptRoots);
+  public List<DepositRootVote> extractDepositRootVotes() {
+    return new ArrayList<>(depositRootVotes);
   }
 
   @Override
@@ -356,8 +356,8 @@ public class BeaconState implements Hashable {
     private List<Hash32> batchedBlockRoots;
 
     /* PoW receipt root */
-    private Hash32 processedPowReceiptRoot;
-    private List<CandidatePowReceiptRootRecord> candidatePowReceiptRoots;
+    private Hash32 latestDepositRoot;
+    private List<DepositRootVote> depositRootVotes;
 
     private Builder() {}
 
@@ -391,8 +391,8 @@ public class BeaconState implements Hashable {
       builder.latestAttestations = state.latestAttestations;
       builder.batchedBlockRoots = state.batchedBlockRoots;
 
-      builder.processedPowReceiptRoot = state.processedPowReceiptRoot;
-      builder.candidatePowReceiptRoots = state.candidatePowReceiptRoots;
+      builder.latestDepositRoot = state.latestDepositRoot;
+      builder.depositRootVotes = state.depositRootVotes;
 
       return builder;
     }
@@ -435,8 +435,8 @@ public class BeaconState implements Hashable {
       assert latestPenalizedExitBalances != null;
       assert latestAttestations != null;
       assert batchedBlockRoots != null;
-      assert processedPowReceiptRoot != null;
-      assert candidatePowReceiptRoots != null;
+      assert latestDepositRoot != null;
+      assert depositRootVotes != null;
 
       return new BeaconState(
           slot,
@@ -460,8 +460,8 @@ public class BeaconState implements Hashable {
           latestPenalizedExitBalances,
           latestAttestations,
           batchedBlockRoots,
-          processedPowReceiptRoot,
-          candidatePowReceiptRoots);
+          latestDepositRoot,
+          depositRootVotes);
     }
 
     public Builder withSlot(UInt64 slot) {
@@ -569,14 +569,13 @@ public class BeaconState implements Hashable {
       return this;
     }
 
-    public Builder withProcessedPowReceiptRoot(Hash32 processedPowReceiptRoot) {
-      this.processedPowReceiptRoot = processedPowReceiptRoot;
+    public Builder withLatestDepositRoot(Hash32 latestDepositRoot) {
+      this.latestDepositRoot = latestDepositRoot;
       return this;
     }
 
-    public Builder withCandidatePowReceiptRoots(
-        List<CandidatePowReceiptRootRecord> candidatePowReceiptRoots) {
-      this.candidatePowReceiptRoots = candidatePowReceiptRoots;
+    public Builder withDepositRootVotes(List<DepositRootVote> depositRootVotes) {
+      this.depositRootVotes = depositRootVotes;
       return this;
     }
   }
