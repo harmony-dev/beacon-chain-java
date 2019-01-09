@@ -1,14 +1,14 @@
 package org.ethereum.beacon.core;
 
-import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.ethereum.core.Hash;
 
 /** An interface of a hashable entity. */
-public interface Hashable {
+public interface Hashable<H extends Hash> {
 
   /**
    * Returns a hash of the object.
    *
    * @return a hash.
    */
-  Hash32 getHash();
+  H getHash();
 }

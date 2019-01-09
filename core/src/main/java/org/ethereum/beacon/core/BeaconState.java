@@ -18,7 +18,7 @@ import tech.pegasys.artemis.util.uint.UInt64;
  *     href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md#beaconstate">BeaconState
  *     in the spec</a>
  */
-public class BeaconState implements Hashable {
+public class BeaconState implements Hashable<Hash32> {
   public static final BeaconState EMPTY =
       new BeaconState(
           UInt64.ZERO,

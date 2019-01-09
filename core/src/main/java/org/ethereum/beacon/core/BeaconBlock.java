@@ -14,7 +14,7 @@ import tech.pegasys.artemis.util.uint.UInt64;
  *     href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md#beaconblock">BeaconBlock
  *     in the spec</a>
  */
-public class BeaconBlock implements Hashable {
+public class BeaconBlock implements Hashable<Hash32> {
 
   /** Number of a slot that block does belong to. */
   private final UInt64 slot;
@@ -88,6 +88,20 @@ public class BeaconBlock implements Hashable {
 
   @Override
   public Hash32 getHash() {
-    return Hash32.ZERO;
+    // TODO temporary hash for tests
+    return getStateRoot();
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    BeaconBlock that = (BeaconBlock) o;
+    return getHash().equals(that.getHash());
+  }
+
+  @Override
+  public int hashCode() {
+    return getHash().hashCode();
   }
 }
