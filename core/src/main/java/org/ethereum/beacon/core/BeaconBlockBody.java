@@ -16,7 +16,6 @@ import org.ethereum.beacon.util.ssz.annotation.SSZTransient;
 
 @SSZSerializable
 public class BeaconBlockBody {
-  @SSZTransient
   public static final BeaconBlockBody EMPTY =
       new BeaconBlockBody(
           emptyList(),

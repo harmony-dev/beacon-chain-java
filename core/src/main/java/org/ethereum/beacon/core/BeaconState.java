@@ -1,12 +1,10 @@
 package org.ethereum.beacon.core;
 
 import org.ethereum.beacon.util.ssz.annotation.SSZSerializable;
-import org.ethereum.beacon.util.ssz.annotation.SSZTransient;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
 @SSZSerializable
 public class BeaconState implements Hashable {
-  @SSZTransient
   public static final BeaconState EMPTY = new BeaconState();
 
   @Override

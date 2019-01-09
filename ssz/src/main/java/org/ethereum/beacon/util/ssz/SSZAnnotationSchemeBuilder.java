@@ -8,9 +8,9 @@ import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.HashMap;
@@ -97,6 +97,9 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
       SSZ annotation = null;
       if (field.isAnnotationPresent(SSZ.class)) {
         annotation = field.getAnnotation(SSZ.class);
+      } else {
+        boolean isStatic = Modifier.isStatic(field.getModifiers());
+        if (isStatic) continue;  // Skip static fields if it's no marked by @SSZ annotation
       }
       String typeAnnotation = null;
       if (annotation != null && !annotation.type().isEmpty()) {
