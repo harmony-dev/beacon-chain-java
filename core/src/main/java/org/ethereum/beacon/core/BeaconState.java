@@ -9,13 +9,10 @@ import org.ethereum.beacon.core.state.CandidatePowReceiptRootRecord;
 import org.ethereum.beacon.core.state.CrosslinkRecord;
 import org.ethereum.beacon.core.state.ForkData;
 import org.ethereum.beacon.core.state.PendingAttestationRecord;
-import org.ethereum.beacon.core.state.PersistentCommittees;
 import org.ethereum.beacon.core.state.ShardCommittee;
 import org.ethereum.beacon.core.state.ShardCommittees;
-import org.ethereum.beacon.core.state.ShardReassignmentRecord;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 /**
@@ -49,8 +46,6 @@ public class BeaconState implements Hashable {
           emptyList(),
           emptyList(),
           ShardCommittees.EMPTY,
-          PersistentCommittees.EMPTY,
-          emptyList(),
           emptyList(),
           UInt64.ZERO,
           UInt64.ZERO,
@@ -94,10 +89,6 @@ public class BeaconState implements Hashable {
   private final List<Hash32> latestVdfOutputs;
   /** Which committee assigned to which shard on which slot. */
   private final ShardCommittee[][] shardCommitteesAtSlots;
-  /** Validator indices assigned to each shard to produce shard chains. */
-  private final UInt24[][] persistentCommittees;
-  /** Pending changes to {@link #persistentCommittees}. */
-  private final List<ShardReassignmentRecord> persistentCommitteeReassignments;
 
   /** Proof of custody placeholder. */
   private final List<CustodyChallenge> custodyChallenges;
@@ -148,8 +139,6 @@ public class BeaconState implements Hashable {
       List<Hash32> latestRandaoMixes,
       List<Hash32> latestVdfOutputs,
       ShardCommittee[][] shardCommitteesAtSlots,
-      UInt24[][] persistentCommittees,
-      List<ShardReassignmentRecord> persistentCommitteeReassignments,
       List<CustodyChallenge> custodyChallenges,
       UInt64 previousJustifiedSlot,
       UInt64 justifiedSlot,
@@ -173,8 +162,6 @@ public class BeaconState implements Hashable {
     this.latestRandaoMixes = latestRandaoMixes;
     this.latestVdfOutputs = latestVdfOutputs;
     this.shardCommitteesAtSlots = shardCommitteesAtSlots;
-    this.persistentCommittees = persistentCommittees;
-    this.persistentCommitteeReassignments = persistentCommitteeReassignments;
     this.custodyChallenges = custodyChallenges;
     this.previousJustifiedSlot = previousJustifiedSlot;
     this.justifiedSlot = justifiedSlot;
@@ -247,18 +234,6 @@ public class BeaconState implements Hashable {
 
   public ShardCommittee[][] getShardCommitteesAtSlotsUnsafe() {
     return shardCommitteesAtSlots;
-  }
-
-  public UInt24[][] getPersistentCommitteesUnsafe() {
-    return persistentCommittees;
-  }
-
-  public List<ShardReassignmentRecord> getPersistentCommitteeReassignmentsUnsafe() {
-    return persistentCommitteeReassignments;
-  }
-
-  public List<ShardReassignmentRecord> extractPersistentCommitteeReassignments() {
-    return new ArrayList<>(persistentCommitteeReassignments);
   }
 
   public List<CustodyChallenge> getCustodyChallengesUnsafe() {
@@ -360,8 +335,6 @@ public class BeaconState implements Hashable {
     private List<Hash32> latestRandaoMixes;
     private List<Hash32> latestVdfOutputs;
     private ShardCommittee[][] shardCommitteesAtSlots;
-    private UInt24[][] persistentCommittees;
-    private List<ShardReassignmentRecord> persistentCommitteeReassignments;
 
     /* Proof of custody placeholder. */
     private List<CustodyChallenge> custodyChallenges;
@@ -402,8 +375,6 @@ public class BeaconState implements Hashable {
       builder.latestRandaoMixes = state.latestRandaoMixes;
       builder.latestVdfOutputs = state.latestVdfOutputs;
       builder.shardCommitteesAtSlots = state.shardCommitteesAtSlots;
-      builder.persistentCommittees = state.persistentCommittees;
-      builder.persistentCommitteeReassignments = state.persistentCommitteeReassignments;
 
       builder.custodyChallenges = state.custodyChallenges;
 
@@ -452,8 +423,6 @@ public class BeaconState implements Hashable {
       assert latestRandaoMixes != null;
       assert latestVdfOutputs != null;
       assert shardCommitteesAtSlots != null;
-      assert persistentCommittees != null;
-      assert persistentCommitteeReassignments != null;
       assert custodyChallenges != null;
       assert previousJustifiedSlot != null;
       assert justifiedSlot != null;
@@ -479,8 +448,6 @@ public class BeaconState implements Hashable {
           latestRandaoMixes,
           latestVdfOutputs,
           shardCommitteesAtSlots,
-          persistentCommittees,
-          persistentCommitteeReassignments,
           custodyChallenges,
           previousJustifiedSlot,
           justifiedSlot,
@@ -547,17 +514,6 @@ public class BeaconState implements Hashable {
 
     public Builder withShardCommitteesAtSlots(ShardCommittee[][] shardCommitteesAtSlots) {
       this.shardCommitteesAtSlots = shardCommitteesAtSlots;
-      return this;
-    }
-
-    public Builder withPersistentCommittees(UInt24[][] persistentCommittees) {
-      this.persistentCommittees = persistentCommittees;
-      return this;
-    }
-
-    public Builder withPersistentCommitteeReassignments(
-        List<ShardReassignmentRecord> persistentCommitteeReassignments) {
-      this.persistentCommitteeReassignments = persistentCommitteeReassignments;
       return this;
     }
 

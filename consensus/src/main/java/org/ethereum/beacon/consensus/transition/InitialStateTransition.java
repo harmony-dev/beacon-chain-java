@@ -15,7 +15,6 @@ import org.ethereum.beacon.core.Epoch;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.state.CrosslinkRecord;
 import org.ethereum.beacon.core.state.ForkData;
-import org.ethereum.beacon.core.state.PersistentCommittees;
 import org.ethereum.beacon.core.state.ShardCommittees;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.pow.DepositContract.ChainStart;
@@ -58,9 +57,7 @@ public class InitialStateTransition implements StateTransition<BeaconState> {
         .withLatestRandaoMixes(nCopies(BeaconState.LATEST_RANDAO_MIXES_LENGTH, Hash32.ZERO))
         .withLatestVdfOutputs(
             nCopies(BeaconState.LATEST_RANDAO_MIXES_LENGTH / Epoch.LENGTH, Hash32.ZERO))
-        .withShardCommitteesAtSlots(ShardCommittees.EMPTY)
-        .withPersistentCommittees(PersistentCommittees.EMPTY)
-        .withPersistentCommitteeReassignments(emptyList());
+        .withShardCommitteesAtSlots(ShardCommittees.EMPTY);
 
     // Proof of custody
     builder.withCustodyChallenges(emptyList());
