@@ -18,7 +18,7 @@ import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.DelegatingBytes32;
 
 /** A 32-bytes hash value as used in Ethereum blocks, that is the result of the KEC algorithm. */
-public class Hash32 extends DelegatingBytes32 {
+public class Hash32 extends DelegatingBytes32 implements Hash {
 
   public static final Hash32 ZERO = new Hash32(Bytes32.ZERO);
 
