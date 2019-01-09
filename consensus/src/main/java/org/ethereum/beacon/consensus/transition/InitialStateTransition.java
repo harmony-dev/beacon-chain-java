@@ -22,6 +22,19 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
 
+/**
+ * Produces initial beacon state.
+ *
+ * <p>Requires input {@code block} to be a Genesis block, {@code state} parameter is ignored.
+ * Preferred input for {@code state} parameter is {@link BeaconState#EMPTY}.
+ *
+ * <p>Uses {@link DepositContract} to fetch registration data from the PoW chain.
+ *
+ * @see DepositContract
+ * @see <a
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md#on-startup">On
+ *     startup in the spec</a>
+ */
 public class InitialStateTransition implements StateTransition<BeaconState> {
 
   private DepositContract depositContract;
@@ -79,9 +92,7 @@ public class InitialStateTransition implements StateTransition<BeaconState> {
         .withBatchedBlockRoots(emptyList());
 
     // PoW receipt root
-    builder
-        .withLatestDepositRoot(chainStart.getReceiptRoot())
-        .withDepositRootVotes(emptyList());
+    builder.withLatestDepositRoot(chainStart.getReceiptRoot()).withDepositRootVotes(emptyList());
 
     BeaconState initialState = builder.build();
 
