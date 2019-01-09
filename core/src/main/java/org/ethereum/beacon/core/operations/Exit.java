@@ -4,7 +4,6 @@ import org.ethereum.beacon.util.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
-import java.util.Objects;
 
 @SSZSerializable
 public class Exit {
@@ -38,10 +37,5 @@ public class Exit {
     return slot.equals(exit.slot) &&
         validatorIndex.equals(exit.validatorIndex) &&
         signature.equals(exit.signature);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(slot, validatorIndex, signature);
   }
 }

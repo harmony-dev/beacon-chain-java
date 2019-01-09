@@ -4,7 +4,6 @@ import org.ethereum.beacon.util.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
 import java.util.Arrays;
-import java.util.Objects;
 
 @SSZSerializable
 public class Deposit {

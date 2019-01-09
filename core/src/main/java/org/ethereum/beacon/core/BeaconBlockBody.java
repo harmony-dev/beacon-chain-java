@@ -2,10 +2,7 @@ package org.ethereum.beacon.core;
 
 import static java.util.Collections.emptyList;
 
-import java.beans.Transient;
-import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.CasperSlashing;
 import org.ethereum.beacon.core.operations.Deposit;

@@ -3,7 +3,6 @@ package org.ethereum.beacon.core.operations;
 import org.ethereum.beacon.util.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
-import java.util.Objects;
 
 @SSZSerializable
 public class Attestation {
@@ -48,10 +47,5 @@ public class Attestation {
         participationBitfield.equals(that.participationBitfield) &&
         custodyBitfield.equals(that.custodyBitfield) &&
         aggregatedSignature.equals(that.aggregatedSignature);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(data, participationBitfield, custodyBitfield, aggregatedSignature);
   }
 }
