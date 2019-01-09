@@ -271,6 +271,15 @@ public class UInt64 implements Comparable<UInt64> {
     return new UInt64(Long.remainderUnsigned(this.value, divisor.getValue()));
   }
 
+  /**
+   * Computes bitwise {@code OR} operation.
+   *
+   * @return A new UInt64 containing the result of the {@code OR} operation.
+   */
+  public UInt64 or(UInt64 uint) {
+    return new UInt64(this.value | uint.value);
+  }
+
   @Override
   public int compareTo(UInt64 uint) {
     return Long.compareUnsigned(this.value, uint.getValue());

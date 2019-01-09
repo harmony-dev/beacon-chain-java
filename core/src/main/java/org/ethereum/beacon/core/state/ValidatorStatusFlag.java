@@ -5,6 +5,7 @@ import tech.pegasys.artemis.util.uint.UInt64;
 
 /** Validator statuses. */
 public enum ValidatorStatus {
+  EMPTY(),
   PENDING_ACTIVATION(Codes.PENDING_ACTIVATION),
   ACTIVE(Codes.ACTIVE),
   ACTIVE_PENDING_EXIT(Codes.ACTIVE_PENDING_EXIT),
