@@ -8,12 +8,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static java.util.function.Function.identity;
 
 public class BooleanPrimitive implements SSZEncoderDecoder {
 
@@ -73,62 +68,5 @@ public class BooleanPrimitive implements SSZEncoderDecoder {
   @Override
   public List<Object> decodeList(SSZSchemeBuilder.SSZScheme.SSZField field, BytesSSZReaderProxy reader) {
     return (List<Object>) (List<?>) reader.readBooleanList();
-  }
-
-  static class BytesType {
-    Type type;
-    int size;
-
-    public BytesType() {
-    }
-
-    static BytesType of(Type type, int size) {
-      BytesType res = new BytesType();
-      res.type = type;
-      res.size = size;
-      return res;
-    }
-  }
-
-  enum Type {
-    BYTES("bytes"),
-    HASH("hash"),
-    ADDRESS("address");
-
-    private String type;
-    private static final Map<String, Type> ENUM_MAP;
-    static {
-      ENUM_MAP = Stream.of(Type.values()).collect(Collectors.toMap(e -> e.type, identity()));
-    }
-
-    Type(String type) {
-      this.type = type;
-    }
-
-    static Type fromValue(String type) {
-      return ENUM_MAP.get(type);
-    }
-
-    @Override
-    public String toString() {
-      return type;
-    }
-  }
-
-  private BytesType parseFieldType(SSZSchemeBuilder.SSZScheme.SSZField field) {
-    Type type = Type.fromValue(field.extraType);
-    if (type.equals(Type.ADDRESS)) {
-      if (field.extraSize != null) {
-        throw new RuntimeException("Address is fixed 20 bytes type");
-      } else {
-        return BytesType.of(Type.ADDRESS, 20);
-      }
-    } else {
-      if (field.extraSize == null) {
-        throw new RuntimeException(String.format("Type %s required size information", field.extraType));
-      } else {
-        return BytesType.of(type, field.extraSize);
-      }
-    }
   }
 }
