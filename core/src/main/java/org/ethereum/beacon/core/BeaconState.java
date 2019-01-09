@@ -4,6 +4,7 @@ import static java.util.Collections.emptyList;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.ethereum.beacon.core.BeaconChainSpec.Genesis;
 import org.ethereum.beacon.core.operations.CustodyChallenge;
 import org.ethereum.beacon.core.state.DepositRootVote;
 import org.ethereum.beacon.core.state.CrosslinkRecord;
@@ -37,22 +38,22 @@ public class BeaconState implements Hashable {
 
   public static final BeaconState EMPTY =
       new BeaconState(
-          UInt64.ZERO,
+          Genesis.SLOT,
           UInt64.ZERO,
           ForkData.EMPTY,
           emptyList(),
           emptyList(),
-          UInt64.ZERO,
+          Genesis.SLOT,
           UInt64.ZERO,
           Hash32.ZERO,
           emptyList(),
           emptyList(),
           ShardCommittees.EMPTY,
           emptyList(),
+          Genesis.SLOT,
+          Genesis.SLOT,
           UInt64.ZERO,
-          UInt64.ZERO,
-          UInt64.ZERO,
-          UInt64.ZERO,
+          Genesis.SLOT,
           emptyList(),
           emptyList(),
           emptyList(),

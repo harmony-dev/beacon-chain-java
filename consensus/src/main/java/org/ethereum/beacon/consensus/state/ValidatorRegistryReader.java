@@ -23,8 +23,8 @@ public interface ValidatorRegistryReader {
    */
   static ValidatorRegistryReader fromState(BeaconState state) {
     return new InMemoryValidatorRegistryUpdater(
-        state.getValidatorRegistryUnsafe(),
-        state.getValidatorBalancesUnsafe(),
+        state.extractValidatorRegistry(),
+        state.extractValidatorBalances(),
         state.getValidatorRegistryDeltaChainTip(),
         state.getSlot());
   }

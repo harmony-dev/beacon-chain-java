@@ -16,12 +16,8 @@ import tech.pegasys.artemis.util.uint.UInt64;
  */
 public class ValidatorRecord {
 
-  /**
-   * TTL of validator which balance is equal to 0.
-   *
-   * <p>Set to 4,194,304 slots which is about 291 days
-   */
-  public static final UInt64 ZERO_BALANCE_VALIDATOR_TTL = UInt64.valueOf(1 << 22);
+  /** Number of slots that validator entry/exit is delayed by. */
+  public static final UInt64 ENTRY_EXIT_DELAY = UInt64.valueOf(1 << 8);
 
   /** BLS public key. */
   private final Bytes48 pubKey;
@@ -31,12 +27,18 @@ public class ValidatorRecord {
   private final Hash32 randaoCommitment;
   /** Slots the proposer has skipped (i.e. layers of RANDAO expected). */
   private final UInt64 randaoLayers;
-  /** Status code. */
-  private final UInt64 status;
-  /** Slot when validator last changed status (or 0). */
-  private final UInt64 latestStatusChangeSlot;
+  /** Slot when validator activated */
+  private final UInt64 activationSlot;
+  /** Slot when validator exited */
+  private final UInt64 exitSlot;
+  /** Slot when validator withdrew */
+  private final UInt64 withdrawalSlot;
+  /** Slot when validator was penalized */
+  private final UInt64 penalizedSlot;
   /** Exit counter when validator exited (or 0). */
   private final UInt64 exitCount;
+  /** Status flags. */
+  private final UInt64 statusFlags;
   /** Proof of custody commitment. */
   private final Hash32 custodyCommitment;
   /** Slot the proof of custody seed was last changed. */
@@ -49,9 +51,12 @@ public class ValidatorRecord {
       Hash32 withdrawalCredentials,
       Hash32 randaoCommitment,
       UInt64 randaoLayers,
-      UInt64 status,
-      UInt64 latestStatusChangeSlot,
+      UInt64 activationSlot,
+      UInt64 exitSlot,
+      UInt64 withdrawalSlot,
+      UInt64 penalizedSlot,
       UInt64 exitCount,
+      UInt64 statusFlags,
       Hash32 custodyCommitment,
       UInt64 latestCustodyReseedSlot,
       UInt64 penultimateCustodyReseedSlot) {
@@ -59,9 +64,12 @@ public class ValidatorRecord {
     this.withdrawalCredentials = withdrawalCredentials;
     this.randaoCommitment = randaoCommitment;
     this.randaoLayers = randaoLayers;
-    this.status = status;
-    this.latestStatusChangeSlot = latestStatusChangeSlot;
+    this.activationSlot = activationSlot;
+    this.exitSlot = exitSlot;
+    this.withdrawalSlot = withdrawalSlot;
+    this.penalizedSlot = penalizedSlot;
     this.exitCount = exitCount;
+    this.statusFlags = statusFlags;
     this.custodyCommitment = custodyCommitment;
     this.latestCustodyReseedSlot = latestCustodyReseedSlot;
     this.penultimateCustodyReseedSlot = penultimateCustodyReseedSlot;
@@ -83,16 +91,28 @@ public class ValidatorRecord {
     return randaoLayers;
   }
 
-  public ValidatorStatus getStatus() {
-    return ValidatorStatus.valueOf(status);
+  public UInt64 getActivationSlot() {
+    return activationSlot;
   }
 
-  public UInt64 getLatestStatusChangeSlot() {
-    return latestStatusChangeSlot;
+  public UInt64 getExitSlot() {
+    return exitSlot;
+  }
+
+  public UInt64 getWithdrawalSlot() {
+    return withdrawalSlot;
+  }
+
+  public UInt64 getPenalizedSlot() {
+    return penalizedSlot;
   }
 
   public UInt64 getExitCount() {
     return exitCount;
+  }
+
+  public ValidatorStatusFlag getStatusFlags() {
+    return ValidatorStatusFlag.valueOf(statusFlags);
   }
 
   public Hash32 getCustodyCommitment() {
@@ -113,9 +133,12 @@ public class ValidatorRecord {
     private Hash32 withdrawalCredentials;
     private Hash32 randaoCommitment;
     private UInt64 randaoLayers;
-    private UInt64 status;
-    private UInt64 latestStatusChangeSlot;
+    private UInt64 activationSlot;
+    private UInt64 exitSlot;
+    private UInt64 withdrawalSlot;
+    private UInt64 penalizedSlot;
     private UInt64 exitCount;
+    private UInt64 statusFlags;
     private Hash32 custodyCommitment;
     private UInt64 latestCustodyReseedSlot;
     private UInt64 penultimateCustodyReseedSlot;
@@ -144,9 +167,12 @@ public class ValidatorRecord {
       builder.withdrawalCredentials = record.withdrawalCredentials;
       builder.randaoCommitment = record.randaoCommitment;
       builder.randaoLayers = record.randaoLayers;
-      builder.status = record.status;
-      builder.latestStatusChangeSlot = record.latestStatusChangeSlot;
+      builder.activationSlot = record.activationSlot;
+      builder.exitSlot = record.exitSlot;
+      builder.withdrawalSlot = record.withdrawalSlot;
+      builder.penalizedSlot = record.penalizedSlot;
       builder.exitCount = record.exitCount;
+      builder.statusFlags = record.statusFlags;
       builder.custodyCommitment = record.custodyCommitment;
       builder.latestCustodyReseedSlot = record.latestCustodyReseedSlot;
       builder.penultimateCustodyReseedSlot = record.penultimateCustodyReseedSlot;
@@ -159,9 +185,12 @@ public class ValidatorRecord {
       assert withdrawalCredentials != null;
       assert randaoCommitment != null;
       assert randaoLayers != null;
-      assert status != null;
-      assert latestStatusChangeSlot != null;
+      assert activationSlot != null;
+      assert exitSlot != null;
+      assert withdrawalSlot != null;
+      assert penalizedSlot != null;
       assert exitCount != null;
+      assert statusFlags != null;
       assert custodyCommitment != null;
       assert latestCustodyReseedSlot != null;
       assert penultimateCustodyReseedSlot != null;
@@ -171,9 +200,12 @@ public class ValidatorRecord {
           withdrawalCredentials,
           randaoCommitment,
           randaoLayers,
-          status,
-          latestStatusChangeSlot,
+          activationSlot,
+          exitSlot,
+          withdrawalSlot,
+          penalizedSlot,
           exitCount,
+          statusFlags,
           custodyCommitment,
           latestCustodyReseedSlot,
           penultimateCustodyReseedSlot);
@@ -199,18 +231,37 @@ public class ValidatorRecord {
       return this;
     }
 
-    public Builder withStatus(ValidatorStatus status) {
-      this.status = status.getCode();
+    public Builder withActivationSlot(UInt64 activationSlot) {
+      this.activationSlot = activationSlot;
       return this;
     }
 
-    public Builder withLatestStatusChangeSlot(UInt64 latestStatusChangeSlot) {
-      this.latestStatusChangeSlot = latestStatusChangeSlot;
+    public Builder withExitSlot(UInt64 exitSlot) {
+      this.exitSlot = exitSlot;
+      return this;
+    }
+
+    public Builder withWithdrawalSlot(UInt64 withdrawalSlot) {
+      this.withdrawalSlot = withdrawalSlot;
+      return this;
+    }
+
+    public Builder withPenalizedSlot(UInt64 penalizedSlot) {
+      this.penalizedSlot = penalizedSlot;
       return this;
     }
 
     public Builder withExitCount(UInt64 exitCount) {
       this.exitCount = exitCount;
+      return this;
+    }
+
+    public Builder withStatusFlag(ValidatorStatusFlag flag) {
+      if (flag == ValidatorStatusFlag.EMPTY) {
+        this.statusFlags = ValidatorStatusFlag.EMPTY.getCode();
+      } else {
+        this.statusFlags = this.statusFlags.or(flag.getCode());
+      }
       return this;
     }
 

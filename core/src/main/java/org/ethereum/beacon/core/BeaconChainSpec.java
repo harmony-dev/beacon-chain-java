@@ -12,6 +12,9 @@ public abstract class BeaconChainSpec {
   /** Total number of shards. */
   public static final int SHARD_COUNT = 1 << 10; // 1024
 
+  /** Max slot number. */
+  public static final UInt64 FAR_FUTURE_SLOT = UInt64.MAX_VALUE;
+
   /** Genesis parameters. */
   public abstract static class Genesis {
     private Genesis() {}

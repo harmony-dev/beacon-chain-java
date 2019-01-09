@@ -4,30 +4,25 @@ import java.util.stream.Stream;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 /** Validator statuses. */
-public enum ValidatorStatus {
-  EMPTY(),
-  PENDING_ACTIVATION(Codes.PENDING_ACTIVATION),
-  ACTIVE(Codes.ACTIVE),
-  ACTIVE_PENDING_EXIT(Codes.ACTIVE_PENDING_EXIT),
-  EXITED_WITHOUT_PENALTY(Codes.EXITED_WITHOUT_PENALTY),
-  EXITED_WITH_PENALTY(Codes.EXITED_WITH_PENALTY);
+public enum ValidatorStatusFlag {
+  EMPTY(Codes.EMPTY),
+  INITIATED_EXIT(Codes.INITIATED_EXIT),
+  WITHDRAWABLE(Codes.WITHDRAWABLE);
 
   /** Validator status codes. */
   public abstract static class Codes {
     private Codes() {}
 
-    public static final UInt64 PENDING_ACTIVATION = UInt64.valueOf(0);
-    public static final UInt64 ACTIVE = UInt64.valueOf(1);
-    public static final UInt64 ACTIVE_PENDING_EXIT = UInt64.valueOf(2);
-    public static final UInt64 EXITED_WITHOUT_PENALTY = UInt64.valueOf(3);
-    public static final UInt64 EXITED_WITH_PENALTY = UInt64.valueOf(4);
+    public static final UInt64 EMPTY = UInt64.valueOf(0);
+    public static final UInt64 INITIATED_EXIT = UInt64.valueOf(1);
+    public static final UInt64 WITHDRAWABLE = UInt64.valueOf(2);
 
-    public static final UInt64 MAX_CODE = EXITED_WITH_PENALTY;
+    public static final UInt64 MAX_CODE = WITHDRAWABLE;
   }
 
   private UInt64 code;
 
-  public static ValidatorStatus valueOf(UInt64 code) {
+  public static ValidatorStatusFlag valueOf(UInt64 code) {
     return Stream.of(values())
         .filter(status -> status.getCode() == code)
         .findFirst()
@@ -39,7 +34,7 @@ public enum ValidatorStatus {
                         code, Codes.MAX_CODE)));
   }
 
-  ValidatorStatus(UInt64 code) {
+  ValidatorStatusFlag(UInt64 code) {
     this.code = code;
   }
 

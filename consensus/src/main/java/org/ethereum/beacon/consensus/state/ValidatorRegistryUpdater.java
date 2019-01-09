@@ -2,7 +2,7 @@ package org.ethereum.beacon.consensus.state;
 
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
-import org.ethereum.beacon.core.state.ValidatorStatus;
+import org.ethereum.beacon.core.state.ValidatorStatusFlag;
 import tech.pegasys.artemis.util.uint.UInt24;
 
 /**
@@ -24,8 +24,8 @@ public interface ValidatorRegistryUpdater extends ValidatorRegistryReader {
    */
   static ValidatorRegistryUpdater fromState(BeaconState state) {
     return new InMemoryValidatorRegistryUpdater(
-        state.getValidatorRegistryUnsafe(),
-        state.getValidatorBalancesUnsafe(),
+        state.extractValidatorRegistry(),
+        state.extractValidatorBalances(),
         state.getValidatorRegistryDeltaChainTip(),
         state.getSlot());
   }
@@ -42,9 +42,9 @@ public interface ValidatorRegistryUpdater extends ValidatorRegistryReader {
   UInt24 processDeposit(Deposit deposit);
 
   /**
-   * Sets validator status to {@link ValidatorStatus#ACTIVE}.
+   * Sets validator status to {@link ValidatorStatusFlag#ACTIVE}.
    *
-   * <p><strong>Note:</strong> validator must be in {@link ValidatorStatus#PENDING_ACTIVATION} status.
+   * <p><strong>Note:</strong> validator must be in {@link ValidatorStatusFlag#PENDING_ACTIVATION} status.
    * Otherwise, this method does nothing.
    *
    * @param index validator index.

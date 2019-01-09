@@ -1,17 +1,19 @@
 package org.ethereum.beacon.consensus.state;
 
 import static com.google.common.base.Preconditions.checkElementIndex;
-import static org.ethereum.beacon.core.state.ValidatorRecord.ZERO_BALANCE_VALIDATOR_TTL;
-import static org.ethereum.beacon.core.state.ValidatorStatus.PENDING_ACTIVATION;
+import static org.ethereum.beacon.core.state.ValidatorRecord.ENTRY_EXIT_DELAY;
+import static org.ethereum.beacon.core.state.ValidatorStatusFlag.EMPTY;
 
 import java.util.List;
 import java.util.Optional;
+import org.ethereum.beacon.core.BeaconChainSpec;
+import org.ethereum.beacon.core.BeaconChainSpec.Genesis;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.state.ValidatorRecord.Builder;
-import org.ethereum.beacon.core.state.ValidatorStatus;
+import org.ethereum.beacon.core.state.ValidatorStatusFlag;
 import org.ethereum.beacon.core.state.ValidatorRegistryDeltaBlock;
 import org.ethereum.beacon.core.state.ValidatorRegistryDeltaBlock.FlagCodes;
 import org.ethereum.beacon.pow.DepositContract;
@@ -20,6 +22,10 @@ import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
 
+/**
+ * A straightforward implementation of {@link ValidatorRegistryUpdater} which keeps registry
+ * modifications in memory.
+ */
 public class InMemoryValidatorRegistryUpdater implements ValidatorRegistryUpdater {
 
   /** Validator records. */
@@ -55,6 +61,7 @@ public class InMemoryValidatorRegistryUpdater implements ValidatorRegistryUpdate
     // seek for existing entry or creates a new one and increase its balance
     Entry entry = searchByPubKey(pubKey).orElse(createNewEntry(input));
     Entry toppedUpEntry = entry.increaseBalance(deposit.getDepositData().getValue());
+    toppedUpEntry.commit();
 
     return toppedUpEntry.index;
   }
@@ -64,11 +71,8 @@ public class InMemoryValidatorRegistryUpdater implements ValidatorRegistryUpdate
     rangeCheck(index);
 
     Entry entry = getEntry(index);
-    if (entry.getStatus() != PENDING_ACTIVATION) {
-      return;
-    }
-
     Entry activated = entry.activate();
+    activated.commit();
 
     ValidatorRegistryDeltaBlock delta =
         new ValidatorRegistryDeltaBlock(
@@ -125,9 +129,14 @@ public class InMemoryValidatorRegistryUpdater implements ValidatorRegistryUpdate
   }
 
   /**
-   * Creates new {@link Entry} inserts it into validator record and balance lists.
+   * Creates new {@link Entry} that belongs to a validator registry.
+   *
+   * <p>Allocates new record at the end of the lists.
    *
    * <p><strong>Note:</strong> returns a record with {@code 0} balance.
+   *
+   * <p><strong>Note:</strong> runs {@link Entry#commit()} at the end of the call to force
+   * insertion.
    *
    * @param input deposit input.
    * @return newly created record.
@@ -135,63 +144,22 @@ public class InMemoryValidatorRegistryUpdater implements ValidatorRegistryUpdate
   private Entry createNewEntry(DepositInput input) {
     Builder builder =
         Builder.fromDepositInput(input)
-            .withStatus(PENDING_ACTIVATION)
-            .withLatestStatusChangeSlot(currentSlot)
             .withRandaoLayers(UInt64.ZERO)
+            .withActivationSlot(BeaconChainSpec.FAR_FUTURE_SLOT)
+            .withExitSlot(BeaconChainSpec.FAR_FUTURE_SLOT)
+            .withWithdrawalSlot(BeaconChainSpec.FAR_FUTURE_SLOT)
+            .withPenalizedSlot(BeaconChainSpec.FAR_FUTURE_SLOT)
             .withExitCount(UInt64.ZERO)
-            .withLatestCustodyReseedSlot(UInt64.ZERO)
-            .withPenultimateCustodyReseedSlot(UInt64.ZERO);
+            .withStatusFlag(EMPTY)
+            .withLatestCustodyReseedSlot(Genesis.SLOT)
+            .withPenultimateCustodyReseedSlot(Genesis.SLOT);
 
     Tuple tuple = Tuple.of(builder.build(), UInt64.ZERO);
-
-    Optional<UInt24> emptyIndex = findMinEmptyValidatorIndex();
-    if (emptyIndex.isPresent()) {
-      insert(emptyIndex.get(), tuple);
-      return new Entry(tuple, emptyIndex.get());
-    } else {
-      UInt24 index = append(tuple);
-      return new Entry(tuple, index);
-    }
-  }
-
-  /**
-   * Returns minimum index which corresponds to a record considered as empty.
-   *
-   * @return an index if it exists, otherwise, nothing.
-   */
-  private Optional<UInt24> findMinEmptyValidatorIndex() {
-    for (int idx = 0; idx < records.size(); ++idx) {
-      Entry entry = getEntry(idx);
-      if (entry.isEmpty()) {
-        return Optional.of(entry.index);
-      }
-    }
-    return Optional.empty();
-  }
-
-  /**
-   * Adds validator record and its balance to the end of the lists.
-   *
-   * @param tuple a tuple holding record and balance.
-   * @return index of appended validator record.
-   */
-  private UInt24 append(Tuple tuple) {
     UInt24 index = size();
-    records.add(tuple.record);
-    balances.add(tuple.balance);
-    return index;
-  }
+    Entry newEntry = new Entry(tuple, index);
+    newEntry.commit();
 
-  /**
-   * Inserts validator record and its balance into specified position in the lists.
-   *
-   * @param index index of the position.
-   * @param tuple validator record and balance.
-   */
-  private void insert(UInt24 index, Tuple tuple) {
-    assert index.getValue() < records.size();
-    records.set(index.getValue(), tuple.record);
-    balances.set(index.getValue(), tuple.balance);
+    return newEntry;
   }
 
   /**
@@ -211,7 +179,14 @@ public class InMemoryValidatorRegistryUpdater implements ValidatorRegistryUpdate
     return Optional.empty();
   }
 
-  /** A helper class that contains {@link Tuple} and its index in the registry. */
+  /**
+   * A helper class that contains {@link Tuple} and its index in the registry.
+   *
+   * <p>It provides methods that modify validator entries in the registry.
+   *
+   * <p><strong>Note:</strong> call {@link #commit()} method to apply latest validator state to the
+   * registry.
+   */
   private class Entry {
     private final Tuple tuple;
     private final UInt24 index;
@@ -225,47 +200,63 @@ public class InMemoryValidatorRegistryUpdater implements ValidatorRegistryUpdate
       return UInt64.min(tuple.balance, DepositContract.MAX_DEPOSIT.toGWei());
     }
 
-    /**
-     * Increases validator's balance by given amount.
-     *
-     * @param amount balance increment.
-     * @return new balance.
-     */
-    private Entry increaseBalance(UInt64 amount) {
-      UInt64 newBalance = balances.get(index.getValue()).plus(amount);
-      balances.set(index.getValue(), newBalance);
-      return new Entry(tuple.withBalance(newBalance), index);
-    }
-
-    private ValidatorStatus getStatus() {
-      return tuple.record.getStatus();
+    private ValidatorStatusFlag getStatus() {
+      return tuple.record.getStatusFlags();
     }
 
     private Bytes48 getPubKey() {
       return tuple.record.getPubKey();
     }
 
+    /**
+     * Increases validator's balance by given amount.
+     *
+     * <p><strong>Note:</strong> does not modify the registry. Use {@link #commit()} to apply
+     * balance change.
+     *
+     * @param amount balance increment.
+     * @return entry with new balance.
+     */
+    private Entry increaseBalance(UInt64 amount) {
+      UInt64 newBalance = balances.get(index.getValue()).plus(amount);
+      return new Entry(tuple.withBalance(newBalance), index);
+    }
+
+    /**
+     * Activates validator.
+     *
+     * <p><strong>Note:</strong> does not modify the registry. Use {@link #commit()} to apply status
+     * change.
+     *
+     * @return activated validator entry.
+     */
     private Entry activate() {
+      UInt64 activationSlot =
+          currentSlot.equals(Genesis.SLOT) ? currentSlot : currentSlot.plus(ENTRY_EXIT_DELAY);
+
       ValidatorRecord activated =
           ValidatorRecord.Builder.fromRecord(tuple.record)
-              .withStatus(ValidatorStatus.ACTIVE)
-              .withLatestStatusChangeSlot(currentSlot)
+              .withActivationSlot(activationSlot)
               .build();
       records.set(index.getValue(), activated);
 
       return new Entry(tuple.withRecord(activated), index);
     }
 
-    private boolean isEmpty() {
-      if (!tuple.balance.equals(UInt64.ZERO)) {
-        return false;
-      }
-      UInt64 ttlSlot = tuple.record.getLatestStatusChangeSlot().plus(ZERO_BALANCE_VALIDATOR_TTL);
-      if (ttlSlot.compareTo(currentSlot) > 0) {
-        return false;
-      }
+    /**
+     * Flushes entry state to registry lists {@link #records} and {@link #balances} by updating
+     * already existing index or appending a new one at the end of the lists.
+     */
+    private void commit() {
+      assert index.getValue() <= records.size();
 
-      return true;
+      if (index.getValue() < records.size()) {
+        records.set(index.getValue(), tuple.record);
+        balances.set(index.getValue(), tuple.balance);
+      } else {
+        records.add(tuple.record);
+        balances.add(tuple.balance);
+      }
     }
   }
 
