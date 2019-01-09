@@ -3,7 +3,9 @@ package org.ethereum.beacon.util.ssz.type;
 import net.consensys.cava.bytes.Bytes;
 import net.consensys.cava.ssz.BytesSSZReaderProxy;
 import net.consensys.cava.ssz.SSZ;
+import net.consensys.cava.ssz.SSZException;
 import org.ethereum.beacon.util.ssz.SSZSchemeBuilder;
+import org.ethereum.beacon.util.ssz.SSZSchemeException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.HashSet;
@@ -67,7 +69,7 @@ public class BytesPrimitive implements SSZEncoderDecoder {
       result.write(res.toArrayUnsafe());
     } catch (IOException e) {
       String error = String.format("Failed to write data of type %s to stream", field.type);
-      throw new RuntimeException(error, e);
+      throw new SSZException(error, e);
     }
   }
 
@@ -97,7 +99,7 @@ public class BytesPrimitive implements SSZEncoderDecoder {
     } catch (IOException ex) {
       String error = String.format("Failed to write data from field \"%s\" to stream",
           field.name);
-      throw new RuntimeException(error, ex);
+      throw new SSZException(error, ex);
     }
   }
 
@@ -201,13 +203,13 @@ public class BytesPrimitive implements SSZEncoderDecoder {
 
     if (type.equals(Type.ADDRESS)) {
       if (field.extraSize != null) {
-        throw new RuntimeException("Address is fixed 20 bytes type");
+        throw new SSZSchemeException("Address is fixed 20 bytes type");
       } else {
         return BytesType.of(Type.ADDRESS, 20);
       }
     } else {
       if (field.extraSize == null) {
-        throw new RuntimeException("Hash size is required!");
+        throw new SSZSchemeException("Hash size is required!");
       } else {
         return BytesType.of(Type.HASH, field.extraSize);
       }

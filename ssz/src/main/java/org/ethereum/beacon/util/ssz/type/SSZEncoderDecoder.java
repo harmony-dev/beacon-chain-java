@@ -2,6 +2,7 @@ package org.ethereum.beacon.util.ssz.type;
 
 import net.consensys.cava.ssz.BytesSSZReaderProxy;
 import org.ethereum.beacon.util.ssz.SSZSchemeBuilder;
+import org.ethereum.beacon.util.ssz.SSZSchemeException;
 import org.ethereum.beacon.util.ssz.SSZSerializer;
 import java.io.OutputStream;
 import java.util.Arrays;
@@ -41,10 +42,10 @@ public interface SSZEncoderDecoder {
   }
 
   default Object throwUnsupportedType(SSZSchemeBuilder.SSZScheme.SSZField field) throws RuntimeException {
-    throw new RuntimeException(String.format("Type [%s] is not supported", field.type));
+    throw new SSZSchemeException(String.format("Type [%s] is not supported", field.type));
   }
 
   default List<Object> throwUnsupportedListType(SSZSchemeBuilder.SSZScheme.SSZField field) throws RuntimeException {
-    throw new RuntimeException(String.format("List of types [%s] is not supported", field.type));
+    throw new SSZSchemeException(String.format("List of types [%s] is not supported", field.type));
   }
 }

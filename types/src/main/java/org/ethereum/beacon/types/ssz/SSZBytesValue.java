@@ -3,8 +3,10 @@ package org.ethereum.beacon.types.ssz;
 import net.consensys.cava.bytes.Bytes;
 import net.consensys.cava.ssz.BytesSSZReaderProxy;
 import net.consensys.cava.ssz.SSZ;
+import net.consensys.cava.ssz.SSZException;
 import org.ethereum.beacon.types.Hash48;
 import org.ethereum.beacon.util.ssz.SSZSchemeBuilder;
+import org.ethereum.beacon.util.ssz.SSZSchemeException;
 import org.ethereum.beacon.util.ssz.type.SSZEncoderDecoder;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
@@ -49,7 +51,7 @@ public class SSZBytesValue implements SSZEncoderDecoder {
       result.write(res.toArrayUnsafe());
     } catch (IOException e) {
       String error = String.format("Failed to write data of type %s to stream", field.type);
-      throw new RuntimeException(error, e);
+      throw new SSZException(error, e);
     }
   }
 
@@ -62,7 +64,7 @@ public class SSZBytesValue implements SSZEncoderDecoder {
     } catch (IOException ex) {
       String error = String.format("Failed to write data from field \"%s\" to stream",
           field.name);
-      throw new RuntimeException(error, ex);
+      throw new SSZException(error, ex);
     }
   }
 
@@ -95,7 +97,7 @@ public class SSZBytesValue implements SSZEncoderDecoder {
     } catch (Exception ex) {
       String error = String.format("Failed to read data from stream to field \"%s\"",
           field.name);
-      throw new RuntimeException(error, ex);
+      throw new SSZException(error, ex);
     }
 
     return throwUnsupportedType(field);
@@ -133,7 +135,7 @@ public class SSZBytesValue implements SSZEncoderDecoder {
     } catch (Exception ex) {
       String error = String.format("Failed to read list data from stream to field \"%s\"",
           field.name);
-      throw new RuntimeException(error, ex);
+      throw new SSZException(error, ex);
     }
 
     return (List<Object>) (List<?>)  res;
@@ -161,6 +163,6 @@ public class SSZBytesValue implements SSZEncoderDecoder {
       return new BytesType();
     }
 
-    throw new RuntimeException(String.format("Hash of class %s is not supported", field.type));
+    throw new SSZSchemeException(String.format("Hash of class %s is not supported", field.type));
   }
 }

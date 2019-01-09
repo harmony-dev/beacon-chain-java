@@ -3,7 +3,9 @@ package org.ethereum.beacon.types.ssz;
 import net.consensys.cava.bytes.Bytes;
 import net.consensys.cava.ssz.BytesSSZReaderProxy;
 import net.consensys.cava.ssz.SSZ;
+import net.consensys.cava.ssz.SSZException;
 import org.ethereum.beacon.util.ssz.SSZSchemeBuilder;
+import org.ethereum.beacon.util.ssz.SSZSchemeException;
 import org.ethereum.beacon.util.ssz.type.SSZEncoderDecoder;
 import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
@@ -91,7 +93,7 @@ public class SSZUInt implements SSZEncoderDecoder {
         break;
       }
       default: {
-        throw new RuntimeException(String.format("Failed to write value \"%s\" to stream", value));
+        throw new SSZException(String.format("Failed to write value \"%s\" to stream", value));
       }
     }
   }
@@ -101,7 +103,7 @@ public class SSZUInt implements SSZEncoderDecoder {
     try {
       result.write(res.toArrayUnsafe());
     } catch (IOException e) {
-      throw new RuntimeException(String.format("Failed to write value \"%s\" to stream", value), e);
+      throw new SSZException(String.format("Failed to write value \"%s\" to stream", value), e);
     }
   }
 
@@ -112,7 +114,7 @@ public class SSZUInt implements SSZEncoderDecoder {
     try {
       result.write(res.toArrayUnsafe());
     } catch (IOException e) {
-      throw new RuntimeException(String.format("Failed to write value \"%s\" to stream", value), e);
+      throw new SSZException(String.format("Failed to write value \"%s\" to stream", value), e);
     }
   }
 
@@ -141,7 +143,7 @@ public class SSZUInt implements SSZEncoderDecoder {
     } catch (IOException ex) {
       String error = String.format("Failed to write data from field \"%s\" to stream",
           field.name);
-      throw new RuntimeException(error, ex);
+      throw new SSZException(error, ex);
     }
   }
 
@@ -208,7 +210,7 @@ public class SSZUInt implements SSZEncoderDecoder {
       }
     }
     String error = String.format("Unsupported type \"%s\"", type);
-    throw new RuntimeException(error);
+    throw new SSZSchemeException(error);
   }
 
   private Object decodeBigInt(NumericType type, BytesSSZReaderProxy reader) {

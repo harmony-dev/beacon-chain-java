@@ -3,6 +3,7 @@ package org.ethereum.beacon.util.ssz.type;
 import net.consensys.cava.bytes.Bytes;
 import net.consensys.cava.ssz.BytesSSZReaderProxy;
 import net.consensys.cava.ssz.SSZ;
+import net.consensys.cava.ssz.SSZException;
 import org.ethereum.beacon.util.ssz.SSZSchemeBuilder;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -41,7 +42,7 @@ public class BooleanPrimitive implements SSZEncoderDecoder {
       result.write(res.toArrayUnsafe());
     } catch (IOException e) {
       String error = String.format("Failed to write boolean value \"%s\" to stream", value);
-      throw new RuntimeException(error, e);
+      throw new SSZException(error, e);
     }
   }
 
@@ -56,7 +57,7 @@ public class BooleanPrimitive implements SSZEncoderDecoder {
     } catch (IOException ex) {
       String error = String.format("Failed to write data from field \"%s\" to stream",
           field.name);
-      throw new RuntimeException(error, ex);
+      throw new SSZException(error, ex);
     }
   }
 

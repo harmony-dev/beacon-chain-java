@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -121,7 +122,7 @@ public class SSZSerializer {
       } catch (Exception e) {
         String error = String.format("Failed to get value from field %s, your should "
             + "either have public field or public getter for it", field.name);
-        throw new RuntimeException(error);
+        throw new SSZSchemeException(error);
       }
 
       SSZEncoderDecoder encoder = resolveEncoderDecoder(field);
@@ -229,7 +230,7 @@ public class SSZSerializer {
             + "construction method with params [%s]."
             + "You should either have constructor with all non-transient fields "
             + "or setters/public fields.", clazz.getName(), fieldTypes);
-        throw new RuntimeException(error);
+        throw new SSZSchemeException(error);
       } else {
         result = setterAttempt.getValue();
       }
@@ -297,7 +298,7 @@ public class SSZSerializer {
       }
     } catch (IntrospectionException e) {
       String error = String.format("Couldn't enumerate all setters in class %s", clazz.getName());
-      throw new RuntimeException(error, e);
+      throw new SSZSchemeException(error, e);
     }
 
     // Fill up field by field
@@ -322,7 +323,7 @@ public class SSZSerializer {
       if (registeredClassHandlers.put(clazz, typeHandler) != null) {
         String error = String.format("Failed to register type %s handler, "
             + "this type already has its handler", clazz);
-        throw new RuntimeException(error);
+        throw new SSZSchemeException(error);
       };
     }
   }

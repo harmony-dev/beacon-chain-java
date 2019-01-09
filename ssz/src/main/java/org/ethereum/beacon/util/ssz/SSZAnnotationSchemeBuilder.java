@@ -75,7 +75,7 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
       }
     } catch (IntrospectionException e) {
       String error = String.format("Couldn't enumerate all getters in class %s", clazz.getName());
-      throw new RuntimeException(error, e);
+      throw new SSZSchemeException(error, e);
     }
 
     for (Field field : clazz.getDeclaredFields()) {
@@ -147,7 +147,7 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
           res = fieldArgClass;
         } else {
           String error = String.format("Could not extract list type from field %s", field.getName());
-          throw new RuntimeException(error);
+          throw new SSZSchemeException(error);
         }
       }
     }
@@ -171,7 +171,7 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
     } else {
       String error = String.format("Type annotation \"%s\" for class %s is not correct",
           extra, clazz.getName());
-      throw new RuntimeException(error);
+      throw new SSZSchemeException(error);
     }
 
     return new Pair<>(extraType, extraSize);

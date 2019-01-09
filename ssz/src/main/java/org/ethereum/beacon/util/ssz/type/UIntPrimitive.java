@@ -3,7 +3,9 @@ package org.ethereum.beacon.util.ssz.type;
 import net.consensys.cava.bytes.Bytes;
 import net.consensys.cava.ssz.BytesSSZReaderProxy;
 import net.consensys.cava.ssz.SSZ;
+import net.consensys.cava.ssz.SSZException;
 import org.ethereum.beacon.util.ssz.SSZSchemeBuilder;
+import org.ethereum.beacon.util.ssz.SSZSchemeException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigInteger;
@@ -97,7 +99,7 @@ public class UIntPrimitive implements SSZEncoderDecoder {
     try {
       result.write(res.toArrayUnsafe());
     } catch (IOException e) {
-      throw new RuntimeException(String.format("Failed to write value \"%s\" to stream", value), e);
+      throw new SSZException(String.format("Failed to write value \"%s\" to stream", value), e);
     }
   }
 
@@ -108,7 +110,7 @@ public class UIntPrimitive implements SSZEncoderDecoder {
     try {
       result.write(res.toArrayUnsafe());
     } catch (IOException e) {
-      throw new RuntimeException(String.format("Failed to write value \"%s\" to stream", value), e);
+      throw new SSZException(String.format("Failed to write value \"%s\" to stream", value), e);
     }
   }
 
@@ -137,7 +139,7 @@ public class UIntPrimitive implements SSZEncoderDecoder {
     } catch (IOException ex) {
       String error = String.format("Failed to write data from field \"%s\" to stream",
           field.name);
-      throw new RuntimeException(error, ex);
+      throw new SSZException(error, ex);
     }
   }
 
@@ -256,7 +258,7 @@ public class UIntPrimitive implements SSZEncoderDecoder {
     if (field.extraSize != null && field.extraSize % Byte.SIZE != 0) {
       String error = String.format("Size of numeric field in bits should match whole bytes, found %s",
           field.extraSize);
-      throw new RuntimeException(error);
+      throw new SSZSchemeException(error);
     }
 
     NumericType res = classToNumericType.get(field.type);

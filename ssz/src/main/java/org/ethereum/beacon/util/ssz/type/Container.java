@@ -4,6 +4,7 @@ import javafx.util.Pair;
 import net.consensys.cava.bytes.Bytes;
 import net.consensys.cava.ssz.BytesSSZReaderProxy;
 import net.consensys.cava.ssz.SSZ;
+import net.consensys.cava.ssz.SSZException;
 import org.ethereum.beacon.util.ssz.SSZSchemeBuilder;
 import org.ethereum.beacon.util.ssz.SSZSerializer;
 import java.io.IOException;
@@ -48,7 +49,7 @@ public class Container implements SSZEncoderDecoder {
         // Prepend data with its length
         result.write(SSZ.encodeInt32(data.length).toArrayUnsafe());
       } catch (IOException e) {
-        throw new RuntimeException("Failed to write data length to stream", e);
+        throw new SSZException("Failed to write data length to stream", e);
       }
     }
 
@@ -57,7 +58,7 @@ public class Container implements SSZEncoderDecoder {
     } catch (IOException e) {
       String error = String.format("Failed to write container from field \"%s\" to stream",
           field.name);
-      throw new RuntimeException(error, e);
+      throw new SSZException(error, e);
     }
   }
 
@@ -68,7 +69,7 @@ public class Container implements SSZEncoderDecoder {
         result.write(SSZ.encodeBytesList(data).toArrayUnsafe());
     } catch (IOException ex) {
       String error = String.format("Failed to write data from field \"%s\" to stream", field.name);
-      throw new RuntimeException(error, ex);
+      throw new SSZException(error, ex);
     }
   }
 
