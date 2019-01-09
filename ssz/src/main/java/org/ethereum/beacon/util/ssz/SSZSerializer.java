@@ -58,8 +58,8 @@ import static org.ethereum.beacon.util.ssz.SSZSchemeBuilder.SSZScheme;
  */
 public class SSZSerializer {
 
-  public static int LENGTH_PREFIX_BYTE_SIZE = Integer.SIZE / Byte.SIZE;
-  static byte[] EMPTY_PREFIX = new byte[LENGTH_PREFIX_BYTE_SIZE];
+  public final static int LENGTH_PREFIX_BYTE_SIZE = Integer.SIZE / Byte.SIZE;
+  final static byte[] EMPTY_PREFIX = new byte[LENGTH_PREFIX_BYTE_SIZE];
 
   private SSZSchemeBuilder schemeBuilder;
   private Map<Class, SSZEncoderDecoder> registeredClassHandlers = new HashMap<>();

@@ -20,10 +20,10 @@ import java.util.stream.Stream;
 import static java.util.function.Function.identity;
 
 public class UIntPrimitive implements SSZEncoderDecoder {
-  static int DEFAULT_SHORT_SIZE = 16;
-  static int DEFAULT_INT_SIZE = 32;
-  static int DEFAULT_LONG_SIZE = 64;
-  static int DEFAULT_BIGINT_SIZE = 512;
+  final static int DEFAULT_SHORT_SIZE = 16;
+  final static int DEFAULT_INT_SIZE = 32;
+  final static int DEFAULT_LONG_SIZE = 64;
+  final static int DEFAULT_BIGINT_SIZE = 512;
 
   private static Map<Class, NumericType> classToNumericType = new HashMap<>();
 
