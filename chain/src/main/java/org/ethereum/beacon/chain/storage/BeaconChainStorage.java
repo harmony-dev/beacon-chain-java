@@ -1,11 +1,6 @@
 package org.ethereum.beacon.chain.storage;
 
-import org.ethereum.beacon.db.Database;
-
-/**
- * Created by Anton Nashatyrev on 27.12.2018.
- */
-public interface ChainStorage {
+public interface BeaconChainStorage {
 
   BeaconBlockStorage getBeaconBlockStorage();
 

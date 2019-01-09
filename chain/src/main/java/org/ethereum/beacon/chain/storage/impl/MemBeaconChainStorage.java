@@ -1,12 +1,12 @@
 package org.ethereum.beacon.chain.storage.impl;
 
-import org.ethereum.beacon.chain.storage.AbstractChainStorage;
+import org.ethereum.beacon.chain.storage.AbstractBeaconChainStorage;
 import org.ethereum.beacon.chain.storage.BeaconBlockStorage;
 import org.ethereum.beacon.chain.storage.BeaconStateStorage;
 import org.ethereum.beacon.db.source.impl.HashMapDataSource;
 import org.ethereum.beacon.db.source.impl.HashMapHoleyList;
 
-public class MemChainStorage extends AbstractChainStorage {
+public class MemBeaconChainStorage extends AbstractBeaconChainStorage {
 
   @Override
   public BeaconBlockStorage createBeaconBlockStorage() {

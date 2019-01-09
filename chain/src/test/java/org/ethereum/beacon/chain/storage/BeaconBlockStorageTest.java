@@ -1,6 +1,6 @@
 package org.ethereum.beacon.chain.storage;
 
-import org.ethereum.beacon.chain.storage.impl.MemChainStorage;
+import org.ethereum.beacon.chain.storage.impl.MemBeaconChainStorage;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.junit.Test;
@@ -19,7 +19,7 @@ public class BeaconBlockStorageTest {
   private long counter = 0;
 
   private BeaconBlockStorage create() {
-    return new MemChainStorage().createBeaconBlockStorage();
+    return new MemBeaconChainStorage().createBeaconBlockStorage();
   }
 
   private BeaconBlock createBlock(long slot, BeaconBlock parent) {

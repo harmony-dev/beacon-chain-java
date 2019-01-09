@@ -1,13 +1,8 @@
 package org.ethereum.beacon.chain.storage;
 
-import org.ethereum.beacon.chain.storage.BeaconBlockStorage;
-import org.ethereum.beacon.chain.storage.BeaconStateStorage;
-import org.ethereum.beacon.chain.storage.BeaconTupleStorage;
-import org.ethereum.beacon.chain.storage.ChainStorage;
 import org.ethereum.beacon.chain.storage.impl.BeaconTupleStorageImpl;
-import org.ethereum.beacon.db.Database;
 
-public abstract class AbstractChainStorage implements ChainStorage {
+public abstract class AbstractBeaconChainStorage implements BeaconChainStorage {
 
   private BeaconTupleStorage beaconTupleStorage;
   private BeaconBlockStorage beaconBlockStorage;
