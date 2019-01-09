@@ -63,7 +63,7 @@ public class InitialStateTransition implements StateTransition<BeaconState> {
         .withPersistentCommitteeReassignments(emptyList());
 
     // Proof of custody
-    builder.withPocChallenges(emptyList());
+    builder.withCustodyChallenges(emptyList());
 
     // Finality
     builder

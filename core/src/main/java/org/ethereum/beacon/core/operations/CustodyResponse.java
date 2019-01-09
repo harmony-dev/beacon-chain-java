@@ -1,4 +1,4 @@
 package org.ethereum.beacon.core.operations;
 
 /** Stub for Phase 1. */
-public class ProofOfCustodySeedChange {}
+public class CustodyResponse {}

@@ -7,9 +7,9 @@ import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.CasperSlashing;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.Exit;
-import org.ethereum.beacon.core.operations.ProofOfCustodyChallenge;
-import org.ethereum.beacon.core.operations.ProofOfCustodyResponse;
-import org.ethereum.beacon.core.operations.ProofOfCustodySeedChange;
+import org.ethereum.beacon.core.operations.CustodyChallenge;
+import org.ethereum.beacon.core.operations.CustodyResponse;
+import org.ethereum.beacon.core.operations.CustodyReseed;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 
 /**
@@ -43,11 +43,11 @@ public class BeaconBlockBody {
   /** A list of attestations. */
   private final List<Attestation> attestations;
   /** A list of proof of custody seed changes. */
-  private final List<ProofOfCustodySeedChange> pocSeedChanges;
+  private final List<CustodyReseed> custodyReseeds;
   /** A list of proof of custody challenges. */
-  private final List<ProofOfCustodyChallenge> pocChallenges;
+  private final List<CustodyChallenge> custodyChallenges;
   /** A list of proof of custody challenge responses. */
-  private final List<ProofOfCustodyResponse> pocResponses;
+  private final List<CustodyResponse> custodyResponses;
   /** A list of validator deposit proofs. */
   private final List<Deposit> deposits;
   /** A list of validator exits. */
@@ -57,17 +57,17 @@ public class BeaconBlockBody {
       List<ProposerSlashing> proposerSlashings,
       List<CasperSlashing> casperSlashings,
       List<Attestation> attestations,
-      List<ProofOfCustodySeedChange> pocSeedChanges,
-      List<ProofOfCustodyChallenge> pocChallenges,
-      List<ProofOfCustodyResponse> pocResponses,
+      List<CustodyReseed> custodyReseeds,
+      List<CustodyChallenge> custodyChallenges,
+      List<CustodyResponse> custodyResponses,
       List<Deposit> deposits,
       List<Exit> exits) {
     this.proposerSlashings = proposerSlashings;
     this.casperSlashings = casperSlashings;
     this.attestations = attestations;
-    this.pocSeedChanges = pocSeedChanges;
-    this.pocChallenges = pocChallenges;
-    this.pocResponses = pocResponses;
+    this.custodyReseeds = custodyReseeds;
+    this.custodyChallenges = custodyChallenges;
+    this.custodyResponses = custodyResponses;
     this.deposits = deposits;
     this.exits = exits;
   }
@@ -84,16 +84,16 @@ public class BeaconBlockBody {
     return attestations;
   }
 
-  public List<ProofOfCustodySeedChange> getPocSeedChanges() {
-    return pocSeedChanges;
+  public List<CustodyReseed> getCustodyReseeds() {
+    return custodyReseeds;
   }
 
-  public List<ProofOfCustodyChallenge> getPocChallenges() {
-    return pocChallenges;
+  public List<CustodyChallenge> getCustodyChallenges() {
+    return custodyChallenges;
   }
 
-  public List<ProofOfCustodyResponse> getPocResponses() {
-    return pocResponses;
+  public List<CustodyResponse> getCustodyResponses() {
+    return custodyResponses;
   }
 
   public List<Deposit> getDeposits() {

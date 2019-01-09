@@ -139,8 +139,8 @@ public class InMemoryValidatorRegistryUpdater implements ValidatorRegistryUpdate
             .withLatestStatusChangeSlot(currentSlot)
             .withRandaoLayers(UInt64.ZERO)
             .withExitCount(UInt64.ZERO)
-            .withLastPocChangeSlot(UInt64.ZERO)
-            .withSecondLastPocChangeSlot(UInt64.ZERO);
+            .withLatestCustodyReseedSlot(UInt64.ZERO)
+            .withPenultimateCustodyReseedSlot(UInt64.ZERO);
 
     Tuple tuple = Tuple.of(builder.build(), UInt64.ZERO);
 

@@ -1,7 +1,6 @@
 package org.ethereum.beacon.core.state;
 
 import org.ethereum.beacon.core.BeaconState;
-import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes48;
@@ -39,11 +38,11 @@ public class ValidatorRecord {
   /** Exit counter when validator exited (or 0). */
   private final UInt64 exitCount;
   /** Proof of custody commitment. */
-  private final Hash32 pocCommitment;
+  private final Hash32 custodyCommitment;
   /** Slot the proof of custody seed was last changed. */
-  private final UInt64 lastPocChangeSlot;
+  private final UInt64 latestCustodyReseedSlot;
 
-  private final UInt64 secondLastPocChangeSlot;
+  private final UInt64 penultimateCustodyReseedSlot;
 
   public ValidatorRecord(
       Bytes48 pubKey,
@@ -53,9 +52,9 @@ public class ValidatorRecord {
       UInt64 status,
       UInt64 latestStatusChangeSlot,
       UInt64 exitCount,
-      Hash32 pocCommitment,
-      UInt64 lastPocChangeSlot,
-      UInt64 secondLastPocChangeSlot) {
+      Hash32 custodyCommitment,
+      UInt64 latestCustodyReseedSlot,
+      UInt64 penultimateCustodyReseedSlot) {
     this.pubKey = pubKey;
     this.withdrawalCredentials = withdrawalCredentials;
     this.randaoCommitment = randaoCommitment;
@@ -63,9 +62,9 @@ public class ValidatorRecord {
     this.status = status;
     this.latestStatusChangeSlot = latestStatusChangeSlot;
     this.exitCount = exitCount;
-    this.pocCommitment = pocCommitment;
-    this.lastPocChangeSlot = lastPocChangeSlot;
-    this.secondLastPocChangeSlot = secondLastPocChangeSlot;
+    this.custodyCommitment = custodyCommitment;
+    this.latestCustodyReseedSlot = latestCustodyReseedSlot;
+    this.penultimateCustodyReseedSlot = penultimateCustodyReseedSlot;
   }
 
   public Bytes48 getPubKey() {
@@ -96,16 +95,16 @@ public class ValidatorRecord {
     return exitCount;
   }
 
-  public Hash32 getPocCommitment() {
-    return pocCommitment;
+  public Hash32 getCustodyCommitment() {
+    return custodyCommitment;
   }
 
-  public UInt64 getLastPocChangeSlot() {
-    return lastPocChangeSlot;
+  public UInt64 getLatestCustodyReseedSlot() {
+    return latestCustodyReseedSlot;
   }
 
-  public UInt64 getSecondLastPocChangeSlot() {
-    return secondLastPocChangeSlot;
+  public UInt64 getPenultimateCustodyReseedSlot() {
+    return penultimateCustodyReseedSlot;
   }
 
   public static class Builder {
@@ -117,9 +116,9 @@ public class ValidatorRecord {
     private UInt64 status;
     private UInt64 latestStatusChangeSlot;
     private UInt64 exitCount;
-    private Hash32 pocCommitment;
-    private UInt64 lastPocChangeSlot;
-    private UInt64 secondLastPocChangeSlot;
+    private Hash32 custodyCommitment;
+    private UInt64 latestCustodyReseedSlot;
+    private UInt64 penultimateCustodyReseedSlot;
 
     private Builder() {}
 
@@ -133,7 +132,7 @@ public class ValidatorRecord {
       builder.pubKey = input.getPubKey();
       builder.withdrawalCredentials = input.getWithdrawalCredentials();
       builder.randaoCommitment = input.getRandaoCommitment();
-      builder.pocCommitment = input.getPocCommitment();
+      builder.custodyCommitment = input.getCustodyCommitment();
 
       return builder;
     }
@@ -148,9 +147,9 @@ public class ValidatorRecord {
       builder.status = record.status;
       builder.latestStatusChangeSlot = record.latestStatusChangeSlot;
       builder.exitCount = record.exitCount;
-      builder.pocCommitment = record.pocCommitment;
-      builder.lastPocChangeSlot = record.lastPocChangeSlot;
-      builder.secondLastPocChangeSlot = record.secondLastPocChangeSlot;
+      builder.custodyCommitment = record.custodyCommitment;
+      builder.latestCustodyReseedSlot = record.latestCustodyReseedSlot;
+      builder.penultimateCustodyReseedSlot = record.penultimateCustodyReseedSlot;
 
       return builder;
     }
@@ -163,9 +162,9 @@ public class ValidatorRecord {
       assert status != null;
       assert latestStatusChangeSlot != null;
       assert exitCount != null;
-      assert pocCommitment != null;
-      assert lastPocChangeSlot != null;
-      assert secondLastPocChangeSlot != null;
+      assert custodyCommitment != null;
+      assert latestCustodyReseedSlot != null;
+      assert penultimateCustodyReseedSlot != null;
 
       return new ValidatorRecord(
           pubKey,
@@ -175,9 +174,9 @@ public class ValidatorRecord {
           status,
           latestStatusChangeSlot,
           exitCount,
-          pocCommitment,
-          lastPocChangeSlot,
-          secondLastPocChangeSlot);
+          custodyCommitment,
+          latestCustodyReseedSlot,
+          penultimateCustodyReseedSlot);
     }
 
     public Builder withPubKey(Bytes48 pubKey) {
@@ -215,18 +214,18 @@ public class ValidatorRecord {
       return this;
     }
 
-    public Builder withPocCommitment(Hash32 pocCommitment) {
-      this.pocCommitment = pocCommitment;
+    public Builder withCustodyCommitment(Hash32 custodyCommitment) {
+      this.custodyCommitment = custodyCommitment;
       return this;
     }
 
-    public Builder withLastPocChangeSlot(UInt64 lastPocChangeSlot) {
-      this.lastPocChangeSlot = lastPocChangeSlot;
+    public Builder withLatestCustodyReseedSlot(UInt64 latestCustodyReseedSlot) {
+      this.latestCustodyReseedSlot = latestCustodyReseedSlot;
       return this;
     }
 
-    public Builder withSecondLastPocChangeSlot(UInt64 secondLastPocChangeSlot) {
-      this.secondLastPocChangeSlot = secondLastPocChangeSlot;
+    public Builder withPenultimateCustodyReseedSlot(UInt64 penultimateCustodyReseedSlot) {
+      this.penultimateCustodyReseedSlot = penultimateCustodyReseedSlot;
       return this;
     }
   }

@@ -4,7 +4,7 @@ import static java.util.Collections.emptyList;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.ethereum.beacon.core.operations.ProofOfCustodyChallenge;
+import org.ethereum.beacon.core.operations.CustodyChallenge;
 import org.ethereum.beacon.core.state.CandidatePowReceiptRootRecord;
 import org.ethereum.beacon.core.state.CrosslinkRecord;
 import org.ethereum.beacon.core.state.ForkData;
@@ -100,7 +100,7 @@ public class BeaconState implements Hashable {
   private final List<ShardReassignmentRecord> persistentCommitteeReassignments;
 
   /** Proof of custody placeholder. */
-  private final List<ProofOfCustodyChallenge> pocChallenges;
+  private final List<CustodyChallenge> custodyChallenges;
 
   /* Finality */
 
@@ -150,7 +150,7 @@ public class BeaconState implements Hashable {
       ShardCommittee[][] shardCommitteesAtSlots,
       UInt24[][] persistentCommittees,
       List<ShardReassignmentRecord> persistentCommitteeReassignments,
-      List<ProofOfCustodyChallenge> pocChallenges,
+      List<CustodyChallenge> custodyChallenges,
       UInt64 previousJustifiedSlot,
       UInt64 justifiedSlot,
       UInt64 justificationBitfield,
@@ -175,7 +175,7 @@ public class BeaconState implements Hashable {
     this.shardCommitteesAtSlots = shardCommitteesAtSlots;
     this.persistentCommittees = persistentCommittees;
     this.persistentCommitteeReassignments = persistentCommitteeReassignments;
-    this.pocChallenges = pocChallenges;
+    this.custodyChallenges = custodyChallenges;
     this.previousJustifiedSlot = previousJustifiedSlot;
     this.justifiedSlot = justifiedSlot;
     this.justificationBitfield = justificationBitfield;
@@ -261,12 +261,12 @@ public class BeaconState implements Hashable {
     return new ArrayList<>(persistentCommitteeReassignments);
   }
 
-  public List<ProofOfCustodyChallenge> getPocChallengesUnsafe() {
-    return pocChallenges;
+  public List<CustodyChallenge> getCustodyChallengesUnsafe() {
+    return custodyChallenges;
   }
 
-  public List<ProofOfCustodyChallenge> extractPocChallenges() {
-    return new ArrayList<>(pocChallenges);
+  public List<CustodyChallenge> extractCustodyChallenges() {
+    return new ArrayList<>(custodyChallenges);
   }
 
   public UInt64 getPreviousJustifiedSlot() {
@@ -364,7 +364,7 @@ public class BeaconState implements Hashable {
     private List<ShardReassignmentRecord> persistentCommitteeReassignments;
 
     /* Proof of custody placeholder. */
-    private List<ProofOfCustodyChallenge> pocChallenges;
+    private List<CustodyChallenge> custodyChallenges;
 
     /* Finality */
     private UInt64 previousJustifiedSlot;
@@ -405,7 +405,7 @@ public class BeaconState implements Hashable {
       builder.persistentCommittees = state.persistentCommittees;
       builder.persistentCommitteeReassignments = state.persistentCommitteeReassignments;
 
-      builder.pocChallenges = state.pocChallenges;
+      builder.custodyChallenges = state.custodyChallenges;
 
       builder.previousJustifiedSlot = state.previousJustifiedSlot;
       builder.justifiedSlot = state.justifiedSlot;
@@ -454,7 +454,7 @@ public class BeaconState implements Hashable {
       assert shardCommitteesAtSlots != null;
       assert persistentCommittees != null;
       assert persistentCommitteeReassignments != null;
-      assert pocChallenges != null;
+      assert custodyChallenges != null;
       assert previousJustifiedSlot != null;
       assert justifiedSlot != null;
       assert justificationBitfield != null;
@@ -481,7 +481,7 @@ public class BeaconState implements Hashable {
           shardCommitteesAtSlots,
           persistentCommittees,
           persistentCommitteeReassignments,
-          pocChallenges,
+          custodyChallenges,
           previousJustifiedSlot,
           justifiedSlot,
           justificationBitfield,
@@ -561,8 +561,8 @@ public class BeaconState implements Hashable {
       return this;
     }
 
-    public Builder withPocChallenges(List<ProofOfCustodyChallenge> pocChallenges) {
-      this.pocChallenges = pocChallenges;
+    public Builder withCustodyChallenges(List<CustodyChallenge> custodyChallenges) {
+      this.custodyChallenges = custodyChallenges;
       return this;
     }
 
