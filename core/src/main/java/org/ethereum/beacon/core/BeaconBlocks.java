@@ -1,5 +1,6 @@
 package org.ethereum.beacon.core;
 
+import org.ethereum.beacon.core.BeaconChainSpec.Genesis;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 
@@ -17,7 +18,7 @@ public abstract class BeaconBlocks {
    */
   public static BeaconBlock createGenesis() {
     return new BeaconBlock(
-        Slot.INITIAL_NUMBER,
+        Genesis.SLOT,
         Hash32.ZERO,
         Hash32.ZERO,
         Hash32.ZERO,

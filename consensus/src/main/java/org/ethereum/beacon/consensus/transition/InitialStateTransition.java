@@ -8,13 +8,12 @@ import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.consensus.state.ValidatorRegistryUpdater;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconChainSpec;
+import org.ethereum.beacon.core.BeaconChainSpec.Genesis;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.BeaconState.Builder;
 import org.ethereum.beacon.core.Epoch;
-import org.ethereum.beacon.core.Slot;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.state.CrosslinkRecord;
-import org.ethereum.beacon.core.state.Fork;
 import org.ethereum.beacon.core.state.ForkData;
 import org.ethereum.beacon.core.state.PersistentCommittees;
 import org.ethereum.beacon.core.state.ShardCommittees;
@@ -42,16 +41,15 @@ public class InitialStateTransition implements StateTransition<BeaconState> {
 
     // Misc
     builder
-        .withSlot(Slot.INITIAL_NUMBER)
+        .withSlot(Genesis.SLOT)
         .withGenesisTime(chainStart.getTime())
-        .withForkData(
-            new ForkData(Fork.INITIAL_VERSION, Fork.INITIAL_VERSION, Slot.INITIAL_NUMBER));
+        .withForkData(new ForkData(Genesis.FORK_VERSION, Genesis.FORK_VERSION, Genesis.SLOT));
 
     // Validator registry
     builder
         .withValidatorRegistry(emptyList())
         .withValidatorBalances(emptyList())
-        .withValidatorRegistryLatestChangeSlot(Slot.INITIAL_NUMBER)
+        .withValidatorRegistryLatestChangeSlot(Genesis.SLOT)
         .withValidatorRegistryExitCount(UInt64.ZERO)
         .withValidatorRegistryDeltaChainTip(Hash32.ZERO);
 
@@ -69,10 +67,10 @@ public class InitialStateTransition implements StateTransition<BeaconState> {
 
     // Finality
     builder
-        .withPreviousJustifiedSlot(Slot.INITIAL_NUMBER)
-        .withJustifiedSlot(Slot.INITIAL_NUMBER)
+        .withPreviousJustifiedSlot(Genesis.SLOT)
+        .withJustifiedSlot(Genesis.SLOT)
         .withJustificationBitfield(UInt64.ZERO)
-        .withFinalizedSlot(Slot.INITIAL_NUMBER);
+        .withFinalizedSlot(Genesis.SLOT);
 
     // Recent state
     builder
