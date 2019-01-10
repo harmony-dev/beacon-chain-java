@@ -12,11 +12,11 @@ public interface ChainSpec
         MiscParameters,
         DepositContractParameters,
         TimeParameters,
-        RewardAndPenaltyQuotients {
+        RewardAndPenaltyQuotients,
+        MaxOperationsPerBlock {
 
   ChainSpec DEFAULT =
       new ChainSpec() {
-
         @Override
         public UInt64 getShardCount() {
           return SHARD_COUNT;
@@ -165,6 +165,31 @@ public interface ChainSpec
         @Override
         public UInt64 getInactivityPenaltyQuotient() {
           return INACTIVITY_PENALTY_QUOTIENT;
+        }
+
+        @Override
+        public int getMaxProposerSlashings() {
+          return MAX_PROPOSER_SLASHINGS;
+        }
+
+        @Override
+        public int getMaxCasperSlashings() {
+          return MAX_CASPER_SLASHINGS;
+        }
+
+        @Override
+        public int getMaxAttestations() {
+          return MAX_ATTESTATIONS;
+        }
+
+        @Override
+        public int getMaxDeposits() {
+          return MAX_DEPOSITS;
+        }
+
+        @Override
+        public int getMaxExits() {
+          return MAX_EXITS;
         }
       };
 }
