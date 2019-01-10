@@ -40,6 +40,7 @@ public class UInt64 implements Comparable<UInt64> {
   }
 
   public int getIntValue() {
+    assert value >= 0 && value <= Integer.MAX_VALUE;
     return (int) value;
   }
 
