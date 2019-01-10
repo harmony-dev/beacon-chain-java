@@ -8,10 +8,15 @@ import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public interface ChainSpec
-    extends InitialValues, MiscParameters, DepositContractParameters, TimeParameters {
+    extends InitialValues,
+        MiscParameters,
+        DepositContractParameters,
+        TimeParameters,
+        RewardAndPenaltyQuotients {
 
   ChainSpec DEFAULT =
       new ChainSpec() {
+
         @Override
         public UInt64 getShardCount() {
           return SHARD_COUNT;
@@ -140,6 +145,26 @@ public interface ChainSpec
         @Override
         public UInt64 getMinValidatorWithdrawalTime() {
           return MIN_VALIDATOR_WITHDRAWAL_TIME;
+        }
+
+        @Override
+        public UInt64 getBaseRewardQuotient() {
+          return BASE_REWARD_QUOTIENT;
+        }
+
+        @Override
+        public UInt64 getWhistleblowerRewardQuotient() {
+          return WHISTLEBLOWER_REWARD_QUOTIENT;
+        }
+
+        @Override
+        public UInt64 getIncluderRewardQuotient() {
+          return INCLUDER_REWARD_QUOTIENT;
+        }
+
+        @Override
+        public UInt64 getInactivityPenaltyQuotient() {
+          return INACTIVITY_PENALTY_QUOTIENT;
         }
       };
 }
