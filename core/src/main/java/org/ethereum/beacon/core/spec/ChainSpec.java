@@ -7,7 +7,8 @@ import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
 
-public interface ChainSpec extends InitialValues, MiscParameters, DepositContractParameters {
+public interface ChainSpec
+    extends InitialValues, MiscParameters, DepositContractParameters, TimeParameters {
 
   ChainSpec DEFAULT =
       new ChainSpec() {
@@ -104,6 +105,41 @@ public interface ChainSpec extends InitialValues, MiscParameters, DepositContrac
         @Override
         public Bytes1 getBlsWithdrawalPrefixByte() {
           return BLS_WITHDRAWAL_PREFIX_BYTE;
+        }
+
+        @Override
+        public UInt64 getSlotDuration() {
+          return SLOT_DURATION;
+        }
+
+        @Override
+        public UInt64 getMinAttestationInclusionDelay() {
+          return MIN_ATTESTATION_INCLUSION_DELAY;
+        }
+
+        @Override
+        public UInt64 getEpochLength() {
+          return EPOCH_LENGTH;
+        }
+
+        @Override
+        public UInt64 getSeedLookahead() {
+          return SEED_LOOKAHEAD;
+        }
+
+        @Override
+        public UInt64 getEntryExitDelay() {
+          return ENTRY_EXIT_DELAY;
+        }
+
+        @Override
+        public UInt64 getDepositRootVotingPeriod() {
+          return DEPOSIT_ROOT_VOTING_PERIOD;
+        }
+
+        @Override
+        public UInt64 getMinValidatorWithdrawalTime() {
+          return MIN_VALIDATOR_WITHDRAWAL_TIME;
         }
       };
 }

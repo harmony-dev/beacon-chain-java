@@ -16,9 +16,6 @@ import tech.pegasys.artemis.util.uint.UInt64;
  */
 public class ValidatorRecord {
 
-  /** Number of slots that validator entry/exit is delayed by. */
-  public static final UInt64 ENTRY_EXIT_DELAY = UInt64.valueOf(1 << 8);
-
   /** BLS public key. */
   private final Bytes48 pubKey;
   /** Withdrawal credentials. */

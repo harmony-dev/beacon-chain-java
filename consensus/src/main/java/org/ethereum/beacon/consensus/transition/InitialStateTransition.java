@@ -9,7 +9,6 @@ import org.ethereum.beacon.consensus.state.ValidatorRegistryUpdater;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.BeaconState.Builder;
-import org.ethereum.beacon.core.Epoch;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.CrosslinkRecord;
@@ -76,7 +75,11 @@ public class InitialStateTransition implements StateTransition<BeaconState> {
             nCopies(chainSpec.getLatestRandaoMixesLength().getIntValue(), Hash32.ZERO))
         .withLatestVdfOutputs(
             nCopies(
-                chainSpec.getLatestRandaoMixesLength().getIntValue() / Epoch.LENGTH, Hash32.ZERO))
+                chainSpec
+                    .getLatestRandaoMixesLength()
+                    .dividedBy(chainSpec.getEpochLength())
+                    .getIntValue(),
+                Hash32.ZERO))
         .withShardCommitteesAtSlots(ShardCommittees.EMPTY);
 
     // Proof of custody

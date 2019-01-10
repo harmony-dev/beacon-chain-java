@@ -1,7 +1,6 @@
 package org.ethereum.beacon.consensus.state;
 
 import static com.google.common.base.Preconditions.checkElementIndex;
-import static org.ethereum.beacon.core.state.ValidatorRecord.ENTRY_EXIT_DELAY;
 import static org.ethereum.beacon.core.state.ValidatorStatusFlag.EMPTY;
 
 import java.util.List;
@@ -236,7 +235,7 @@ public class InMemoryValidatorRegistryUpdater implements ValidatorRegistryUpdate
       UInt64 activationSlot =
           currentSlot.equals(chainSpec.getGenesisSlot())
               ? currentSlot
-              : currentSlot.plus(ENTRY_EXIT_DELAY);
+              : currentSlot.plus(chainSpec.getEntryExitDelay());
 
       ValidatorRecord activated =
           ValidatorRecord.Builder.fromRecord(tuple.record)
