@@ -15,6 +15,8 @@ public abstract class BeaconChainSpec {
   /** Max slot number. */
   public static final UInt64 FAR_FUTURE_SLOT = UInt64.MAX_VALUE;
 
+  public static final int TARGET_COMMITTEE_SIZE = 128;
+
   /** Genesis parameters. */
   public abstract static class Genesis {
     private Genesis() {}
