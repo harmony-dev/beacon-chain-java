@@ -108,8 +108,8 @@ public class ValidatorRecord {
     return exitCount;
   }
 
-  public ValidatorStatusFlag getStatusFlags() {
-    return ValidatorStatusFlag.valueOf(statusFlags);
+  public UInt64 getStatusFlags() {
+    return statusFlags;
   }
 
   public Hash32 getCustodyCommitment() {
@@ -254,11 +254,12 @@ public class ValidatorRecord {
     }
 
     public Builder withStatusFlag(ValidatorStatusFlag flag) {
-      if (flag == ValidatorStatusFlag.EMPTY) {
-        this.statusFlags = ValidatorStatusFlag.EMPTY.getCode();
-      } else {
-        this.statusFlags = this.statusFlags.or(flag.getCode());
-      }
+      this.statusFlags = this.statusFlags.or(flag.getValue());
+      return this;
+    }
+
+    public Builder withStatusFlags(UInt64 statusFlags) {
+      this.statusFlags = statusFlags;
       return this;
     }
 

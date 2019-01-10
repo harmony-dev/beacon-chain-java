@@ -1,44 +1,25 @@
 package org.ethereum.beacon.core.state;
 
-import java.util.stream.Stream;
 import tech.pegasys.artemis.util.uint.UInt64;
 
-/** Validator statuses. */
+/**
+ * Validator status flags.
+ *
+ * @see <a
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md#status-flags">Status
+ *     flags</a> in the spec.
+ */
 public enum ValidatorStatusFlag {
-  EMPTY(Codes.EMPTY),
-  INITIATED_EXIT(Codes.INITIATED_EXIT),
-  WITHDRAWABLE(Codes.WITHDRAWABLE);
+  INITIATED_EXIT(UInt64.valueOf(1)),
+  WITHDRAWABLE(UInt64.valueOf(2));
 
-  /** Validator status codes. */
-  public abstract static class Codes {
-    private Codes() {}
+  private UInt64 value;
 
-    public static final UInt64 EMPTY = UInt64.valueOf(0);
-    public static final UInt64 INITIATED_EXIT = UInt64.valueOf(1);
-    public static final UInt64 WITHDRAWABLE = UInt64.valueOf(2);
-
-    public static final UInt64 MAX_CODE = WITHDRAWABLE;
+  ValidatorStatusFlag(UInt64 value) {
+    this.value = value;
   }
 
-  private UInt64 code;
-
-  public static ValidatorStatusFlag valueOf(UInt64 code) {
-    return Stream.of(values())
-        .filter(status -> status.getCode() == code)
-        .findFirst()
-        .orElseThrow(
-            () ->
-                new IllegalArgumentException(
-                    String.format(
-                        "Status code doesn't exist, got %s while MAX_CODE is %s",
-                        code, Codes.MAX_CODE)));
-  }
-
-  ValidatorStatusFlag(UInt64 code) {
-    this.code = code;
-  }
-
-  public UInt64 getCode() {
-    return code;
+  public UInt64 getValue() {
+    return value;
   }
 }

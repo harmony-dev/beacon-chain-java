@@ -1,7 +1,6 @@
 package org.ethereum.beacon.consensus.state;
 
 import static com.google.common.base.Preconditions.checkElementIndex;
-import static org.ethereum.beacon.core.state.ValidatorStatusFlag.EMPTY;
 
 import java.util.List;
 import java.util.Optional;
@@ -11,7 +10,6 @@ import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.state.ValidatorRecord.Builder;
-import org.ethereum.beacon.core.state.ValidatorStatusFlag;
 import org.ethereum.beacon.core.state.ValidatorRegistryDeltaBlock;
 import org.ethereum.beacon.core.state.ValidatorRegistryDeltaBlock.FlagCodes;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -151,7 +149,7 @@ public class InMemoryValidatorRegistryUpdater implements ValidatorRegistryUpdate
             .withWithdrawalSlot(chainSpec.getFarFutureSlot())
             .withPenalizedSlot(chainSpec.getFarFutureSlot())
             .withExitCount(UInt64.ZERO)
-            .withStatusFlag(EMPTY)
+            .withStatusFlags(UInt64.ZERO)
             .withLatestCustodyReseedSlot(chainSpec.getGenesisSlot())
             .withPenultimateCustodyReseedSlot(chainSpec.getGenesisSlot());
 
@@ -199,10 +197,6 @@ public class InMemoryValidatorRegistryUpdater implements ValidatorRegistryUpdate
 
     private UInt64 getEffectiveBalance() {
       return UInt64.min(tuple.balance, chainSpec.getMaxDeposit().toGWei());
-    }
-
-    private ValidatorStatusFlag getStatus() {
-      return tuple.record.getStatusFlags();
     }
 
     private Bytes48 getPubKey() {
