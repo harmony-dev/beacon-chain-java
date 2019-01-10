@@ -105,7 +105,7 @@ public class InitialStateTransition implements StateTransition<BeaconState> {
     // handle initial deposits and activations
     final List<Deposit> initialDeposits = depositContract.getInitialDeposits();
     final ValidatorRegistryUpdater registryUpdater =
-        ValidatorRegistryUpdater.fromState(initialState);
+        ValidatorRegistryUpdater.fromState(initialState, chainSpec);
 
     initialDeposits.forEach(
         deposit -> {
@@ -113,7 +113,7 @@ public class InitialStateTransition implements StateTransition<BeaconState> {
           UInt64 balance = registryUpdater.getEffectiveBalance(index);
 
           // initial validators must have a strict deposit value
-          if (DepositContract.MAX_DEPOSIT.toGWei().equals(balance)) {
+          if (chainSpec.getMaxDeposit().toGWei().equals(balance)) {
             registryUpdater.activate(index);
           }
         });

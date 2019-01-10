@@ -2,6 +2,7 @@ package org.ethereum.beacon.consensus.state;
 
 import java.util.Optional;
 import org.ethereum.beacon.core.BeaconState;
+import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.pow.DepositContract;
 import tech.pegasys.artemis.util.bytes.Bytes48;
@@ -11,7 +12,8 @@ import tech.pegasys.artemis.util.uint.UInt64;
 /**
  * Interface to read from validator registry.
  *
- * <p>Can be instantly created from {@link BeaconState} by {@link #fromState(BeaconState)} method.
+ * <p>Can be instantly created from {@link BeaconState} by {@link #fromState(BeaconState,
+ * ChainSpec)} method.
  */
 public interface ValidatorRegistryReader {
 
@@ -19,18 +21,20 @@ public interface ValidatorRegistryReader {
    * Creates a reader instance by fetching required data from {@link BeaconState}.
    *
    * @param state beacon state.
+   * @param chainSpec beacon chain spec.
    * @return constructed reader.
    */
-  static ValidatorRegistryReader fromState(BeaconState state) {
+  static ValidatorRegistryReader fromState(BeaconState state, ChainSpec chainSpec) {
     return new InMemoryValidatorRegistryUpdater(
         state.extractValidatorRegistry(),
         state.extractValidatorBalances(),
         state.getValidatorRegistryDeltaChainTip(),
-        state.getSlot());
+        state.getSlot(),
+        chainSpec);
   }
 
   /**
-   * Returns validator's balance capped by {@link DepositContract#MAX_DEPOSIT} value.
+   * Returns validator's balance capped by {@link ChainSpec#getMaxDeposit()} value.
    *
    * @param index index of the validator.
    * @return a deposit value in GWei.

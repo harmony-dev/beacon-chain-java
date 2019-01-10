@@ -1,10 +1,11 @@
 package org.ethereum.beacon.core.spec;
 
 import org.ethereum.beacon.types.Ether;
+import tech.pegasys.artemis.ethereum.core.Address;
 import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
 
-public interface ChainSpec extends MiscParameters {
+public interface ChainSpec extends MiscParameters, DepositContractParameters {
 
   ChainSpec DEFAULT =
       new ChainSpec() {
@@ -51,6 +52,26 @@ public interface ChainSpec extends MiscParameters {
         @Override
         public UInt64 getLatestPenalizedExitLength() {
           return LATEST_PENALIZED_EXIT_LENGTH;
+        }
+
+        @Override
+        public Address getDepositContractAddress() {
+          return DEPOSIT_CONTRACT_ADDRESS;
+        }
+
+        @Override
+        public UInt64 getDepositContractTreeDepth() {
+          return DEPOSIT_CONTRACT_TREE_DEPTH;
+        }
+
+        @Override
+        public Ether getMinDeposit() {
+          return MIN_DEPOSIT;
+        }
+
+        @Override
+        public Ether getMaxDeposit() {
+          return MAX_DEPOSIT;
         }
       };
 }

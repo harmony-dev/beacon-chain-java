@@ -8,9 +8,6 @@ import tech.pegasys.artemis.util.uint.UInt64;
 
 public interface DepositContract {
 
-  /** Maximum number of ETH that can be deposited at once. */
-  Ether MAX_DEPOSIT = Ether.valueOf(1 << 5); // 32 ETH
-
   ChainStart getChainStart();
 
   List<Deposit> getInitialDeposits();

@@ -8,8 +8,8 @@ import tech.pegasys.artemis.util.uint.UInt64;
  * Misc beacon chain constants.
  *
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md#misc">Misc
- *     in the spec</a>
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md#misc">Misc</a>
+ *     in the spec.
  */
 public interface MiscParameters {
 
@@ -31,7 +31,7 @@ public interface MiscParameters {
 
   UInt64 getLatestPenalizedExitLength();
 
-  /* Values defined by the spec */
+  /* Values defined in the spec. */
 
   UInt64 SHARD_COUNT = UInt64.valueOf(1 << 10); // 1024 shards
 

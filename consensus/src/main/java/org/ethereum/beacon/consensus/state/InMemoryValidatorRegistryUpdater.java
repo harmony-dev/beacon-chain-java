@@ -11,6 +11,7 @@ import org.ethereum.beacon.core.BeaconChainSpec.Genesis;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
+import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.state.ValidatorRecord.Builder;
 import org.ethereum.beacon.core.state.ValidatorStatusFlag;
@@ -39,18 +40,22 @@ public class InMemoryValidatorRegistryUpdater implements ValidatorRegistryUpdate
   private Hash32 deltaChainTip;
   /** Current slot number in the state. */
   private UInt64 currentSlot;
+  /** Beacon chain parameters. */
+  private ChainSpec chainSpec;
 
   InMemoryValidatorRegistryUpdater(
       List<ValidatorRecord> records,
       List<UInt64> balances,
       Hash32 deltaChainTip,
-      UInt64 currentSlot) {
+      UInt64 currentSlot,
+      ChainSpec chainSpec) {
     assert records.size() == balances.size();
 
     this.records = records;
     this.balances = balances;
     this.deltaChainTip = deltaChainTip;
     this.currentSlot = currentSlot;
+    this.chainSpec = chainSpec;
   }
 
   @Override
@@ -197,7 +202,7 @@ public class InMemoryValidatorRegistryUpdater implements ValidatorRegistryUpdate
     }
 
     private UInt64 getEffectiveBalance() {
-      return UInt64.min(tuple.balance, DepositContract.MAX_DEPOSIT.toGWei());
+      return UInt64.min(tuple.balance, chainSpec.getMaxDeposit().toGWei());
     }
 
     private ValidatorStatusFlag getStatus() {
