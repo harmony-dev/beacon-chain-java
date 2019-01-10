@@ -7,12 +7,12 @@ import java.util.List;
 import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.consensus.state.ValidatorRegistryUpdater;
 import org.ethereum.beacon.core.BeaconBlock;
-import org.ethereum.beacon.core.BeaconChainSpec;
 import org.ethereum.beacon.core.BeaconChainSpec.Genesis;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.BeaconState.Builder;
 import org.ethereum.beacon.core.Epoch;
 import org.ethereum.beacon.core.operations.Deposit;
+import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.CrosslinkRecord;
 import org.ethereum.beacon.core.state.ForkData;
 import org.ethereum.beacon.core.state.ShardCommittees;
@@ -38,9 +38,11 @@ import tech.pegasys.artemis.util.uint.UInt64;
 public class InitialStateTransition implements StateTransition<BeaconState> {
 
   private DepositContract depositContract;
+  private ChainSpec chainSpec;
 
-  public InitialStateTransition(DepositContract depositContract) {
+  public InitialStateTransition(DepositContract depositContract, ChainSpec chainSpec) {
     this.depositContract = depositContract;
+    this.chainSpec = chainSpec;
   }
 
   @Override
@@ -67,9 +69,11 @@ public class InitialStateTransition implements StateTransition<BeaconState> {
 
     // Randomness and committees
     builder
-        .withLatestRandaoMixes(nCopies(BeaconState.LATEST_RANDAO_MIXES_LENGTH, Hash32.ZERO))
+        .withLatestRandaoMixes(
+            nCopies(chainSpec.getLatestRandaoMixesLength().getIntValue(), Hash32.ZERO))
         .withLatestVdfOutputs(
-            nCopies(BeaconState.LATEST_RANDAO_MIXES_LENGTH / Epoch.LENGTH, Hash32.ZERO))
+            nCopies(
+                chainSpec.getLatestRandaoMixesLength().getIntValue() / Epoch.LENGTH, Hash32.ZERO))
         .withShardCommitteesAtSlots(ShardCommittees.EMPTY);
 
     // Proof of custody
@@ -84,10 +88,12 @@ public class InitialStateTransition implements StateTransition<BeaconState> {
 
     // Recent state
     builder
-        .withLatestCrosslinks(nCopies(BeaconChainSpec.SHARD_COUNT, CrosslinkRecord.EMPTY))
-        .withLatestBlockRoots(nCopies(BeaconState.LATEST_BLOCK_ROOTS_LENGTH, Hash32.ZERO))
+        .withLatestCrosslinks(
+            nCopies(chainSpec.getShardCount().getIntValue(), CrosslinkRecord.EMPTY))
+        .withLatestBlockRoots(
+            nCopies(chainSpec.getLatestBlockRootsLength().getIntValue(), Hash32.ZERO))
         .withLatestPenalizedExitBalances(
-            nCopies(BeaconState.LATEST_PENALIZED_EXIT_LENGTH, UInt64.ZERO))
+            nCopies(chainSpec.getLatestPenalizedExitLength().getIntValue(), UInt64.ZERO))
         .withLatestAttestations(emptyList())
         .withBatchedBlockRoots(emptyList());
 
