@@ -13,6 +13,7 @@
 
 package tech.pegasys.artemis.util.uint;
 
+import java.math.BigInteger;
 import java.util.Objects;
 import java.util.Random;
 
@@ -36,6 +37,11 @@ public class UInt64 implements Comparable<UInt64> {
 
   public long getValue() {
     return value;
+  }
+
+  public int getIntValue() {
+    assert value >= 0 && value <= Integer.MAX_VALUE;
+    return (int) value;
   }
 
   /**

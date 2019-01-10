@@ -8,6 +8,7 @@ import java.util.Random;
 import org.ethereum.beacon.core.BeaconBlocks;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
+import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.pow.DepositContract;
 import org.junit.Test;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -33,10 +34,12 @@ public class InitialStateTransitionTest {
               public List<Deposit> getInitialDeposits() {
                 return Collections.emptyList();
               }
-            });
+            },
+            ChainSpec.DEFAULT);
 
     BeaconState initialState =
-        initialStateTransition.apply(BeaconBlocks.createGenesis(), BeaconState.EMPTY);
+        initialStateTransition.apply(
+            BeaconBlocks.createGenesis(ChainSpec.DEFAULT), BeaconState.EMPTY);
 
     assertThat(initialState.getGenesisTime()).isEqualTo(genesisTime);
     assertThat(initialState.getLatestDepositRoot()).isEqualTo(receiptRoot);

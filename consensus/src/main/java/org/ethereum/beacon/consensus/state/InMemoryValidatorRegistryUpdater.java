@@ -1,22 +1,17 @@
 package org.ethereum.beacon.consensus.state;
 
 import static com.google.common.base.Preconditions.checkElementIndex;
-import static org.ethereum.beacon.core.state.ValidatorRecord.ENTRY_EXIT_DELAY;
-import static org.ethereum.beacon.core.state.ValidatorStatusFlag.EMPTY;
 
 import java.util.List;
 import java.util.Optional;
-import org.ethereum.beacon.core.BeaconChainSpec;
-import org.ethereum.beacon.core.BeaconChainSpec.Genesis;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
+import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.spec.ValidatorRegistryDeltaFlags;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.state.ValidatorRecord.Builder;
-import org.ethereum.beacon.core.state.ValidatorStatusFlag;
 import org.ethereum.beacon.core.state.ValidatorRegistryDeltaBlock;
-import org.ethereum.beacon.core.state.ValidatorRegistryDeltaBlock.FlagCodes;
-import org.ethereum.beacon.pow.DepositContract;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.uint.UInt24;
@@ -39,18 +34,22 @@ public class InMemoryValidatorRegistryUpdater implements ValidatorRegistryUpdate
   private Hash32 deltaChainTip;
   /** Current slot number in the state. */
   private UInt64 currentSlot;
+  /** Beacon chain parameters. */
+  private ChainSpec chainSpec;
 
   InMemoryValidatorRegistryUpdater(
       List<ValidatorRecord> records,
       List<UInt64> balances,
       Hash32 deltaChainTip,
-      UInt64 currentSlot) {
+      UInt64 currentSlot,
+      ChainSpec chainSpec) {
     assert records.size() == balances.size();
 
     this.records = records;
     this.balances = balances;
     this.deltaChainTip = deltaChainTip;
     this.currentSlot = currentSlot;
+    this.chainSpec = chainSpec;
   }
 
   @Override
@@ -76,7 +75,7 @@ public class InMemoryValidatorRegistryUpdater implements ValidatorRegistryUpdate
 
     ValidatorRegistryDeltaBlock delta =
         new ValidatorRegistryDeltaBlock(
-            deltaChainTip, index, activated.getPubKey(), FlagCodes.ACTIVATION);
+            deltaChainTip, index, activated.getPubKey(), ValidatorRegistryDeltaFlags.ACTIVATION);
     deltaChainTip = delta.getHash();
   }
 
@@ -145,14 +144,14 @@ public class InMemoryValidatorRegistryUpdater implements ValidatorRegistryUpdate
     Builder builder =
         Builder.fromDepositInput(input)
             .withRandaoLayers(UInt64.ZERO)
-            .withActivationSlot(BeaconChainSpec.FAR_FUTURE_SLOT)
-            .withExitSlot(BeaconChainSpec.FAR_FUTURE_SLOT)
-            .withWithdrawalSlot(BeaconChainSpec.FAR_FUTURE_SLOT)
-            .withPenalizedSlot(BeaconChainSpec.FAR_FUTURE_SLOT)
+            .withActivationSlot(chainSpec.getFarFutureSlot())
+            .withExitSlot(chainSpec.getFarFutureSlot())
+            .withWithdrawalSlot(chainSpec.getFarFutureSlot())
+            .withPenalizedSlot(chainSpec.getFarFutureSlot())
             .withExitCount(UInt64.ZERO)
-            .withStatusFlag(EMPTY)
-            .withLatestCustodyReseedSlot(Genesis.SLOT)
-            .withPenultimateCustodyReseedSlot(Genesis.SLOT);
+            .withStatusFlags(UInt64.ZERO)
+            .withLatestCustodyReseedSlot(chainSpec.getGenesisSlot())
+            .withPenultimateCustodyReseedSlot(chainSpec.getGenesisSlot());
 
     Tuple tuple = Tuple.of(builder.build(), UInt64.ZERO);
     UInt24 index = size();
@@ -197,11 +196,7 @@ public class InMemoryValidatorRegistryUpdater implements ValidatorRegistryUpdate
     }
 
     private UInt64 getEffectiveBalance() {
-      return UInt64.min(tuple.balance, DepositContract.MAX_DEPOSIT.toGWei());
-    }
-
-    private ValidatorStatusFlag getStatus() {
-      return tuple.record.getStatusFlags();
+      return UInt64.min(tuple.balance, chainSpec.getMaxDeposit().toGWei());
     }
 
     private Bytes48 getPubKey() {
@@ -232,7 +227,9 @@ public class InMemoryValidatorRegistryUpdater implements ValidatorRegistryUpdate
      */
     private Entry activate() {
       UInt64 activationSlot =
-          currentSlot.equals(Genesis.SLOT) ? currentSlot : currentSlot.plus(ENTRY_EXIT_DELAY);
+          currentSlot.equals(chainSpec.getGenesisSlot())
+              ? currentSlot
+              : currentSlot.plus(chainSpec.getEntryExitDelay());
 
       ValidatorRecord activated =
           ValidatorRecord.Builder.fromRecord(tuple.record)

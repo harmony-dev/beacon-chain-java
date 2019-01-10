@@ -16,10 +16,13 @@ import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlocks;
 import org.ethereum.beacon.core.BeaconState;
+import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.db.Database;
 import org.ethereum.beacon.consensus.types.Score;
 
 public class DefaultBeaconChain implements MutableBeaconChain {
+
+  ChainSpec chainSpec;
 
   BeaconBlockStorage blockStorage;
   BeaconStateStorage stateStorage;
@@ -50,8 +53,9 @@ public class DefaultBeaconChain implements MutableBeaconChain {
 
   private BeaconTuple initializeStorage() {
     BeaconState initialState =
-        initialTransition.apply(BeaconBlocks.createGenesis(), BeaconState.EMPTY);
-    BeaconBlock genesis = BeaconBlocks.createGenesis().withStateRoot(initialState.getHash());
+        initialTransition.apply(BeaconBlocks.createGenesis(chainSpec), BeaconState.EMPTY);
+    BeaconBlock genesis =
+        BeaconBlocks.createGenesis(chainSpec).withStateRoot(initialState.getHash());
 
     BeaconTuple tuple = BeaconTuple.of(genesis, initialState);
     tupleStorage.put(tuple);

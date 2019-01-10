@@ -4,7 +4,6 @@ import static java.util.Collections.emptyList;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.ethereum.beacon.core.BeaconChainSpec.Genesis;
 import org.ethereum.beacon.core.operations.CustodyChallenge;
 import org.ethereum.beacon.core.state.DepositRootVote;
 import org.ethereum.beacon.core.state.CrosslinkRecord;
@@ -26,34 +25,24 @@ import tech.pegasys.artemis.util.uint.UInt64;
  */
 public class BeaconState implements Hashable<Hash32> {
 
-  /** Max number of RANDAO mixes kept by {@link #latestRandaoMixes}. */
-  public static final int LATEST_RANDAO_MIXES_LENGTH = 1 << 13; // 8192
-  /**
-   * Max length of {@link #latestBlockRoots} list. After it gets exceeded hash of this list is added
-   * to {@link #batchedBlockRoots}.
-   */
-  public static final int LATEST_BLOCK_ROOTS_LENGTH = 1 << 13; // 8192
-  /** Max length of {@link #latestPenalizedExitBalances} list. */
-  public static final int LATEST_PENALIZED_EXIT_LENGTH = 1 << 13; // 8192
-
   public static final BeaconState EMPTY =
       new BeaconState(
-          Genesis.SLOT,
+          UInt64.ZERO,
           UInt64.ZERO,
           ForkData.EMPTY,
           emptyList(),
           emptyList(),
-          Genesis.SLOT,
+          UInt64.ZERO,
           UInt64.ZERO,
           Hash32.ZERO,
           emptyList(),
           emptyList(),
           ShardCommittees.EMPTY,
           emptyList(),
-          Genesis.SLOT,
-          Genesis.SLOT,
           UInt64.ZERO,
-          Genesis.SLOT,
+          UInt64.ZERO,
+          UInt64.ZERO,
+          UInt64.ZERO,
           emptyList(),
           emptyList(),
           emptyList(),
