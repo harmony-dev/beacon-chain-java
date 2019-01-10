@@ -17,11 +17,6 @@ import tech.pegasys.artemis.util.uint.UInt64;
  */
 public class ValidatorRegistryDeltaBlock implements Hashable {
 
-  public static class FlagCodes {
-    public static final UInt64 ACTIVATION = UInt64.valueOf(0);
-    public static final UInt64 EXIT = UInt64.valueOf(1);
-  }
-
   /** A hash of previous registry delta block. */
   private final Hash32 latestRegistryDeltaRoot;
   /** An index of validator that has been changed. */

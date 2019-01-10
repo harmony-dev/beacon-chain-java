@@ -8,10 +8,10 @@ import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.spec.ValidatorRegistryDeltaFlags;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.state.ValidatorRecord.Builder;
 import org.ethereum.beacon.core.state.ValidatorRegistryDeltaBlock;
-import org.ethereum.beacon.core.state.ValidatorRegistryDeltaBlock.FlagCodes;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.uint.UInt24;
@@ -75,7 +75,7 @@ public class InMemoryValidatorRegistryUpdater implements ValidatorRegistryUpdate
 
     ValidatorRegistryDeltaBlock delta =
         new ValidatorRegistryDeltaBlock(
-            deltaChainTip, index, activated.getPubKey(), FlagCodes.ACTIVATION);
+            deltaChainTip, index, activated.getPubKey(), ValidatorRegistryDeltaFlags.ACTIVATION);
     deltaChainTip = delta.getHash();
   }
 

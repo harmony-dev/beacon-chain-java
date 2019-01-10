@@ -253,11 +253,6 @@ public class ValidatorRecord {
       return this;
     }
 
-    public Builder withStatusFlag(ValidatorStatusFlag flag) {
-      this.statusFlags = this.statusFlags.or(flag.getValue());
-      return this;
-    }
-
     public Builder withStatusFlags(UInt64 statusFlags) {
       this.statusFlags = statusFlags;
       return this;
