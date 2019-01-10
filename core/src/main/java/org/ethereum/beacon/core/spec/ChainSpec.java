@@ -2,10 +2,12 @@ package org.ethereum.beacon.core.spec;
 
 import org.ethereum.beacon.types.Ether;
 import tech.pegasys.artemis.ethereum.core.Address;
+import tech.pegasys.artemis.util.bytes.Bytes1;
+import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
 
-public interface ChainSpec extends MiscParameters, DepositContractParameters {
+public interface ChainSpec extends InitialValues, MiscParameters, DepositContractParameters {
 
   ChainSpec DEFAULT =
       new ChainSpec() {
@@ -72,6 +74,36 @@ public interface ChainSpec extends MiscParameters, DepositContractParameters {
         @Override
         public Ether getMaxDeposit() {
           return MAX_DEPOSIT;
+        }
+
+        @Override
+        public UInt64 getGenesisForkVersion() {
+          return GENESIS_FORK_VERSION;
+        }
+
+        @Override
+        public UInt64 getGenesisSlot() {
+          return GENESIS_SLOT;
+        }
+
+        @Override
+        public UInt64 getGenesisStartShard() {
+          return GENESIS_START_SHARD;
+        }
+
+        @Override
+        public UInt64 getFarFutureSlot() {
+          return FAR_FUTURE_SLOT;
+        }
+
+        @Override
+        public Bytes96 getEmptySignature() {
+          return EMPTY_SIGNATURE;
+        }
+
+        @Override
+        public Bytes1 getBlsWithdrawalPrefixByte() {
+          return BLS_WITHDRAWAL_PREFIX_BYTE;
         }
       };
 }

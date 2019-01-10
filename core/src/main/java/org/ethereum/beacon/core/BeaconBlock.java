@@ -1,6 +1,5 @@
 package org.ethereum.beacon.core;
 
-import org.ethereum.beacon.core.BeaconChainSpec.Genesis;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.uint.UInt64;
@@ -50,17 +49,12 @@ public class BeaconBlock implements Hashable<Hash32> {
     this.body = body;
   }
 
-  public boolean isGenesis() {
-    return slot.equals(Genesis.SLOT);
-  }
-
   public boolean isParentOf(BeaconBlock ancestor) {
     return this.getHash().equals(ancestor.parentRoot);
   }
 
   public BeaconBlock withStateRoot(Hash32 stateRoot) {
-    return new BeaconBlock(
-        slot, parentRoot, stateRoot, randaoReveal, depositRoot, signature, body);
+    return new BeaconBlock(slot, parentRoot, stateRoot, randaoReveal, depositRoot, signature, body);
   }
 
   public UInt64 getSlot() {

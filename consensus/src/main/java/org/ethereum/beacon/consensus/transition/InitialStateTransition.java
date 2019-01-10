@@ -7,7 +7,6 @@ import java.util.List;
 import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.consensus.state.ValidatorRegistryUpdater;
 import org.ethereum.beacon.core.BeaconBlock;
-import org.ethereum.beacon.core.BeaconChainSpec.Genesis;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.BeaconState.Builder;
 import org.ethereum.beacon.core.Epoch;
@@ -47,7 +46,7 @@ public class InitialStateTransition implements StateTransition<BeaconState> {
 
   @Override
   public BeaconState apply(BeaconBlock block, BeaconState state) {
-    assert block.isGenesis();
+    assert block.getSlot() == chainSpec.getGenesisSlot();
 
     ChainStart chainStart = depositContract.getChainStart();
 
@@ -55,15 +54,19 @@ public class InitialStateTransition implements StateTransition<BeaconState> {
 
     // Misc
     builder
-        .withSlot(Genesis.SLOT)
+        .withSlot(chainSpec.getGenesisSlot())
         .withGenesisTime(chainStart.getTime())
-        .withForkData(new ForkData(Genesis.FORK_VERSION, Genesis.FORK_VERSION, Genesis.SLOT));
+        .withForkData(
+            new ForkData(
+                chainSpec.getGenesisForkVersion(),
+                chainSpec.getGenesisForkVersion(),
+                chainSpec.getGenesisSlot()));
 
     // Validator registry
     builder
         .withValidatorRegistry(emptyList())
         .withValidatorBalances(emptyList())
-        .withValidatorRegistryLatestChangeSlot(Genesis.SLOT)
+        .withValidatorRegistryLatestChangeSlot(chainSpec.getGenesisSlot())
         .withValidatorRegistryExitCount(UInt64.ZERO)
         .withValidatorRegistryDeltaChainTip(Hash32.ZERO);
 
@@ -81,10 +84,10 @@ public class InitialStateTransition implements StateTransition<BeaconState> {
 
     // Finality
     builder
-        .withPreviousJustifiedSlot(Genesis.SLOT)
-        .withJustifiedSlot(Genesis.SLOT)
+        .withPreviousJustifiedSlot(chainSpec.getGenesisSlot())
+        .withJustifiedSlot(chainSpec.getGenesisSlot())
         .withJustificationBitfield(UInt64.ZERO)
-        .withFinalizedSlot(Genesis.SLOT);
+        .withFinalizedSlot(chainSpec.getGenesisSlot());
 
     // Recent state
     builder
