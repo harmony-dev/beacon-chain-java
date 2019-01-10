@@ -23,7 +23,7 @@ public class DepositInput {
   /** Initial RANDAO commitment. */
   private final Hash32 randaoCommitment;
   /** Initial proof of custody commitment. */
-  private final Hash32 pocCommitment;
+  private final Hash32 custodyCommitment;
   /** A BLS signature of this {@link DepositInput} */
   private final Bytes96 proofOfPossession;
 
@@ -31,12 +31,12 @@ public class DepositInput {
       Bytes48 pubKey,
       Hash32 withdrawalCredentials,
       Hash32 randaoCommitment,
-      Hash32 pocCommitment,
+      Hash32 custodyCommitment,
       Bytes96 proofOfPossession) {
     this.pubKey = pubKey;
     this.withdrawalCredentials = withdrawalCredentials;
     this.randaoCommitment = randaoCommitment;
-    this.pocCommitment = pocCommitment;
+    this.custodyCommitment = custodyCommitment;
     this.proofOfPossession = proofOfPossession;
   }
 
@@ -52,8 +52,8 @@ public class DepositInput {
     return randaoCommitment;
   }
 
-  public Hash32 getPocCommitment() {
-    return pocCommitment;
+  public Hash32 getCustodyCommitment() {
+    return custodyCommitment;
   }
 
   public Bytes96 getProofOfPossession() {

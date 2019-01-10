@@ -1,6 +1,7 @@
 package org.ethereum.beacon.core.state;
 
 import org.ethereum.beacon.core.BeaconState;
+import org.ethereum.beacon.core.Hashable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.uint.UInt24;
@@ -14,7 +15,12 @@ import tech.pegasys.artemis.util.uint.UInt64;
  *     href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md#validatorregistrydeltablock>ValidatorRegistryDeltaBlock
  *     in the spec</a>
  */
-public class ValidatorRegistryDeltaBlock {
+public class ValidatorRegistryDeltaBlock implements Hashable {
+
+  public static class FlagCodes {
+    public static final UInt64 ACTIVATION = UInt64.valueOf(0);
+    public static final UInt64 EXIT = UInt64.valueOf(1);
+  }
 
   /** A hash of previous registry delta block. */
   private final Hash32 latestRegistryDeltaRoot;
@@ -47,5 +53,10 @@ public class ValidatorRegistryDeltaBlock {
 
   public UInt64 getFlag() {
     return flag;
+  }
+
+  @Override
+  public Hash32 getHash() {
+    return Hash32.ZERO;
   }
 }
