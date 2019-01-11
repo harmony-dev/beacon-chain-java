@@ -33,17 +33,20 @@ public class SpecHelpers {
   }
 
   /*
-    earliest_slot_in_array = state.slot - (state.slot % EPOCH_LENGTH) - EPOCH_LENGTH
-    assert earliest_slot_in_array <= slot < earliest_slot_in_array + EPOCH_LENGTH * 2
-    return state.shard_committees_at_slots[slot - earliest_slot_in_array]
+    state_epoch_slot = state.slot - (state.slot % EPOCH_LENGTH)
+    assert state_epoch_slot <= slot + EPOCH_LENGTH
+    assert slot < state_epoch_slot + EPOCH_LENGTH
+    return state.shard_committees_at_slots[slot - state_epoch_slot + EPOCH_LENGTH]
    */
   public ShardCommittee[] get_shard_committees_at_slot(BeaconState state, UInt64 slot) {
-    UInt64 earliest_slot_in_array = state.getSlot()
-        .minus(state.getSlot().modulo(spec.getEpochLength()))
-        .minus(spec.getEpochLength());
-    assertTrue(earliest_slot_in_array.compareTo(slot) <= 0);
-    assertTrue(slot.compareTo(earliest_slot_in_array.plus(spec.getEpochLength().times(2))) < 0);
-    return state.getShardCommitteesAtSlotsUnsafe()[safeInt(slot.minus(earliest_slot_in_array))];
+    UInt64 state_epoch_slot = state.getSlot().minus(state.getSlot().modulo(spec.getEpochLength()));
+    assertTrue(state_epoch_slot.compareTo(slot.plus(spec.getEpochLength())) <= 0);
+    assertTrue(slot.compareTo(state_epoch_slot.plus(spec.getEpochLength())) < 0);
+    return state.getShardCommitteesAtSlotsUnsafe()[safeInt(
+        slot
+            .minus(state_epoch_slot)
+            .plus(spec.getEpochLength()))];
+
   }
 
   /*
@@ -198,9 +201,9 @@ public class SpecHelpers {
   """
   */
   public ShardCommittee[][] get_shuffling(Hash32 seed,
-                                          ValidatorRecord[] validators,
-                                          int crosslinking_start_shard,
-                                          UInt64 _slot) {
+                                                 ValidatorRecord[] validators,
+                                                 int crosslinking_start_shard,
+                                                 UInt64 _slot) {
 
     //     # Normalizes slot to start of epoch boundary
     //    slot -= slot % EPOCH_LENGTH
@@ -209,10 +212,10 @@ public class SpecHelpers {
     //  active_validator_indices = get_active_validator_indices(validators, slot)
     int[] active_validator_indices = get_active_validator_indices(validators, slot);
 
-    return get_shuffling(seed, active_validator_indices, crosslinking_start_shard);
+    return get_active_shuffling(seed, active_validator_indices, crosslinking_start_shard);
   }
 
-  ShardCommittee[][] get_shuffling(Hash32 seed,
+  ShardCommittee[][] get_active_shuffling(Hash32 seed,
                                           int[] active_validator_indices,
                                           int crosslinking_start_shard) {
 
@@ -284,7 +287,7 @@ public class SpecHelpers {
 
   public static int safeInt(UInt64 uint) {
     long lVal = uint.getValue();
-    assertTrue(lVal > 0 && lVal < Integer.MAX_VALUE);
+    assertTrue(lVal >= 0 && lVal < Integer.MAX_VALUE);
     return (int) lVal;
   }
 
