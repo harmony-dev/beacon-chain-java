@@ -15,7 +15,7 @@ import java.util.Set;
  */
 public interface SSZCodec {
 
-  Set<String> getSupportedTypes();
+  Set<String> getSupportedSSZTypes();
 
   Set<Class> getSupportedClasses();
 

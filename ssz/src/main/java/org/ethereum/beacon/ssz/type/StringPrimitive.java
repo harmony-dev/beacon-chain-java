@@ -24,7 +24,7 @@ public class StringPrimitive implements SSZCodec {
   }
 
   @Override
-  public Set<String> getSupportedTypes() {
+  public Set<String> getSupportedSSZTypes() {
     return supportedTypes;
   }
 

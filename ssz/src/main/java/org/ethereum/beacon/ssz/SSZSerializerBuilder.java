@@ -44,7 +44,7 @@ public class SSZSerializerBuilder {
     if (sszCodecResolver == null) {
       throw new RuntimeException("initWith* method should be called first");
     }
-    sszCodecResolver.registerCodec(codec.getSupportedClasses(), codec.getSupportedTypes(), codec);
+    sszCodecResolver.registerCodec(codec.getSupportedClasses(), codec.getSupportedSSZTypes(), codec);
   }
 
   public void addPrimitivesCodecs() {
