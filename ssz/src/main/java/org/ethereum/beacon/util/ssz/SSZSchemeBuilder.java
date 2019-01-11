@@ -34,6 +34,19 @@ public interface SSZSchemeBuilder {
        * should be not wrapped with extra header like container
        */
       public boolean notAContainer = false;
+
+      @Override
+      public String toString() {
+        return "SSZField{" +
+            "type=" + type +
+            ", multipleType=" + multipleType +
+            ", extraType='" + extraType + '\'' +
+            ", extraSize=" + extraSize +
+            ", name='" + name + '\'' +
+            ", getter='" + getter + '\'' +
+            ", notAContainer=" + notAContainer +
+            '}';
+      }
     }
 
     public enum MultipleType {

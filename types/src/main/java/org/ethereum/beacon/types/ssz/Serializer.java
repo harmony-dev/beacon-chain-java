@@ -9,9 +9,9 @@ public class Serializer {
   private final static SSZSerializer ANNOTATION_SERIALIZER;
   static {
     SSZSerializerBuilder builder = SSZSerializerBuilder.getBakedAnnotationBuilder();
-    builder.addEncoderDecoder(new SSZHash());
-    builder.addEncoderDecoder(new SSZUInt());
-    builder.addEncoderDecoder(new SSZBytesValue());
+    builder.addCodec(new SSZHash());
+    builder.addCodec(new SSZUInt());
+    builder.addCodec(new SSZBytesValue());
     ANNOTATION_SERIALIZER = builder.build();
   }
   private final static Serializer INSTANCE = new Serializer();

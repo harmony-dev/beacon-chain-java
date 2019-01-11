@@ -12,9 +12,9 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.Collections;
+import java.util.logging.Logger;
 
 import static com.sun.org.apache.xerces.internal.impl.dv.util.HexBin.decode;
-import static org.junit.Assert.assertEquals;
 
 public class SSZSerializerTest {
   private SSZSerializer sszSerializer;
@@ -77,6 +77,35 @@ public class SSZSerializerTest {
     AttestationRecord constructed = (AttestationRecord) sszSerializer.decode(encoded, AttestationRecord.class);
 
     Assert.assertEquals(expected, constructed);
+  }
+
+  @Test
+  public void explicitAnnotationsAndLoggerTest() {
+    SSZSerializerBuilder builder = new SSZSerializerBuilder();
+    builder.initWithSchemeBuilder(new SSZAnnotationSchemeBuilder().withLogger(Logger.getLogger("test")));
+    builder.addPrimitivesCodecs();
+    SSZSerializer serializer = builder.build();
+
+    AttestationRecord expected = new AttestationRecord(
+        12412L,
+        123,
+        Collections.emptyList(),
+        DEFAULT_HASH,
+        new Bitfield(decode("abcdef45")),
+        12400L,
+        DEFAULT_HASH,
+        DEFAULT_SIG
+    );
+
+    byte[] encoded = serializer.encode(expected);
+    AttestationRecord constructed = (AttestationRecord) serializer.decode(encoded, AttestationRecord.class);
+
+    Assert.assertNotEquals(expected, constructed);
+
+    Assert.assertEquals(expected.getShardId(), constructed.getShardId());
+    Assert.assertEquals(expected.getObliqueParentHashes(), constructed.getObliqueParentHashes());
+    Assert.assertArrayEquals(expected.getShardBlockHash(), constructed.getShardBlockHash());
+    Assert.assertNull(constructed.getAggregateSig());
   }
 
   @Test

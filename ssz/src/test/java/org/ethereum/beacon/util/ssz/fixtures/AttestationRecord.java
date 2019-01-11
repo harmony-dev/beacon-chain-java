@@ -16,7 +16,7 @@ import static com.sun.org.apache.bcel.internal.classfile.Utility.toHexString;
 public class AttestationRecord {
 
   // Slot number
-  private final long slot;
+  private long slot;
   // Shard ID
   @SSZ(type=SSZ.UInt24)
   private final int shardId;
@@ -31,11 +31,11 @@ public class AttestationRecord {
   @SSZ(type=SSZ.Bytes, skipContainer = true)
   private final Bitfield attesterBitfield;
   // Last justified block
-  private final long justifiedSlot;
+  private long justifiedSlot;
   @SSZ(type=SSZ.Hash32)
   private final byte[] justifiedBlockHash;
   // The actual signature
-  private final Sign.Signature aggregateSig;
+  private Sign.Signature aggregateSig;
 
   public AttestationRecord(long slot, int shardId, List<byte[]> obliqueParentHashes, byte[] shardBlockHash,
                            Bitfield attesterBitfield, long justifiedSlot, byte[] justifiedBlockHash,
@@ -48,6 +48,14 @@ public class AttestationRecord {
     this.justifiedSlot = justifiedSlot;
     this.justifiedBlockHash = justifiedBlockHash;
     this.aggregateSig = aggregateSig;
+  }
+
+  public AttestationRecord(int shardId, List<byte[]> obliqueParentHashes, byte[] shardBlockHash, Bitfield attesterBitfield, byte[] justifiedBlockHash) {
+    this.shardId = shardId;
+    this.obliqueParentHashes = obliqueParentHashes;
+    this.shardBlockHash = shardBlockHash;
+    this.attesterBitfield = attesterBitfield;
+    this.justifiedBlockHash = justifiedBlockHash;
   }
 
   public long getSlot() {

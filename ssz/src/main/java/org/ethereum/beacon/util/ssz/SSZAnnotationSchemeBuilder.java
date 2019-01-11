@@ -16,6 +16,7 @@ import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -43,6 +44,31 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
 
   private static final String TYPE_REGEX = "^(\\D+)((\\d+)?)$";
 
+  private Logger logger = null;
+
+  private boolean explicitFieldAnnotation = true;
+
+  public SSZAnnotationSchemeBuilder() {
+  }
+
+  /**
+   * Whether to require {@link SSZ} annotation for field to be included,
+   * non-transient or not.
+   * Default: {@link SSZ} required for each field
+   * When `explicitFieldAnnotation` set to false, all private fields are included,
+   * unless marked with {@link SSZTransient}
+   * @param explicitFieldAnnotation   Require {@link SSZ} annotation
+   *                                  for field to be included in scheme
+   */
+  public SSZAnnotationSchemeBuilder(boolean explicitFieldAnnotation) {
+    this.explicitFieldAnnotation = explicitFieldAnnotation;
+  }
+
+  public SSZAnnotationSchemeBuilder withLogger(Logger logger) {
+    this.logger = logger;
+    return this;
+  }
+
   /**
    * <p>Builds scheme and returns result.</p>
    * <p>Scheme is cached and could be returned again
@@ -64,7 +90,7 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
       encode.name = "encode";
       encode.getter = mainAnnotation.encode();
       scheme.fields.add(encode);
-      return scheme;
+      return logAndReturnScheme(clazz, scheme);
     }
 
     // No encode parameter, build scheme field by field
@@ -98,8 +124,13 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
       if (field.isAnnotationPresent(SSZ.class)) {
         annotation = field.getAnnotation(SSZ.class);
       } else {
+        if (explicitFieldAnnotation) {  // Skip field if explicit annotation is required
+          continue;
+        }
         boolean isStatic = Modifier.isStatic(field.getModifiers());
-        if (isStatic) continue;  // Skip static fields if it's no marked by @SSZ annotation
+        if (isStatic) {  // Skip static fields if it's no marked by @SSZ annotation
+          continue;
+        }
       }
       String typeAnnotation = null;
       if (annotation != null && !annotation.type().isEmpty()) {
@@ -129,6 +160,20 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
 
       newField.getter = fieldGetters.containsKey(name) ? fieldGetters.get(name).getName() : null;
       scheme.fields.add(newField);
+    }
+
+    return logAndReturnScheme(clazz, scheme);
+  }
+
+  private SSZScheme logAndReturnScheme(Class clazz, SSZScheme scheme) {
+    if (logger == null) {
+      return scheme;
+    }
+    String overview = String.format("Scheme for class %s consists of %s field(s)",
+        clazz.getName(), scheme.fields.size());
+    logger.info(overview);
+    for (SSZScheme.SSZField field : scheme.fields) {
+      logger.info(field.toString());
     }
 
     return scheme;

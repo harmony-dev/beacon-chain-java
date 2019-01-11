@@ -7,15 +7,45 @@ import org.ethereum.beacon.util.ssz.type.StringPrimitive;
 import org.ethereum.beacon.util.ssz.type.UIntPrimitive;
 
 public class SSZSerializerBuilder {
-  private SSZSerializer sszSerializer;
+  private SSZSerializer sszSerializer = null;
+
+  public SSZSerializerBuilder() {
+  }
 
   public SSZSerializerBuilder(SSZSchemeBuilder schemeBuilder) {
     this.sszSerializer = new SSZSerializer(schemeBuilder);
   }
 
-  public void addEncoderDecoder(SSZCodec encoderDecoder) {
-    sszSerializer.registerClassTypes(encoderDecoder.getSupportedClassTypes(), encoderDecoder);
-    sszSerializer.registerTypes(encoderDecoder.getSupportedTypes(), encoderDecoder);
+  public SSZSerializerBuilder initWithSchemeBuilder(SSZSchemeBuilder schemeBuilder) {
+    if (sszSerializer != null) {
+      throw new RuntimeException("Already initialized!");
+    }
+
+    this.sszSerializer = new SSZSerializer(schemeBuilder);
+    return this;
+  }
+
+  public SSZSerializerBuilder initWithExplicitAnnotations() {
+    return initWithSchemeBuilder(new SSZAnnotationSchemeBuilder());
+  }
+
+  public SSZSerializerBuilder initWithNonExplicitAnnotations() {
+    return initWithSchemeBuilder(new SSZAnnotationSchemeBuilder(false));
+  }
+
+  public void addCodec(SSZCodec codec) {
+    if (sszSerializer == null) {
+      throw new RuntimeException("initWith* method should be called first");
+    }
+    sszSerializer.registerClassTypes(codec.getSupportedClassTypes(), codec);
+    sszSerializer.registerTypes(codec.getSupportedTypes(), codec);
+  }
+
+  public void addPrimitivesCodecs() {
+    this.addCodec(new UIntPrimitive());
+    this.addCodec(new BytesPrimitive());
+    this.addCodec(new BooleanPrimitive());
+    this.addCodec(new StringPrimitive());
   }
 
   /**
@@ -25,16 +55,17 @@ public class SSZSerializerBuilder {
    * @return almost baked serializer, need to run build only.
    */
   public static SSZSerializerBuilder getBakedAnnotationBuilder() {
-    SSZSerializerBuilder builder = new SSZSerializerBuilder(new SSZAnnotationSchemeBuilder());
-    builder.addEncoderDecoder(new UIntPrimitive());
-    builder.addEncoderDecoder(new BytesPrimitive());
-    builder.addEncoderDecoder(new BooleanPrimitive());
-    builder.addEncoderDecoder(new StringPrimitive());
+    SSZSerializerBuilder builder = new SSZSerializerBuilder().initWithNonExplicitAnnotations();
+    builder.addPrimitivesCodecs();
 
     return builder;
   }
 
   public SSZSerializer build() {
+    if (sszSerializer == null) {
+      throw new RuntimeException("initWith* method should be called first");
+    }
+
     return sszSerializer;
   }
 }
