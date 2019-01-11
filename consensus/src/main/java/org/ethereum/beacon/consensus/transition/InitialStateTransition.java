@@ -12,7 +12,8 @@ import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.consensus.state.ValidatorRegistryUpdater;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
-import org.ethereum.beacon.core.BeaconState.Builder;
+import org.ethereum.beacon.core.BeaconStateImpl;
+import org.ethereum.beacon.core.BeaconStateImpl.Builder;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.*;
@@ -51,7 +52,7 @@ public class InitialStateTransition implements StateTransition<BeaconState> {
 
     ChainStart chainStart = depositContract.getChainStart();
 
-    Builder builder = BeaconState.Builder.createEmpty();
+    Builder builder = BeaconStateImpl.Builder.createEmpty();
 
     // Misc
     builder
@@ -132,7 +133,7 @@ public class InitialStateTransition implements StateTransition<BeaconState> {
     SpecHelpers specHelpers = new SpecHelpers(chainSpec);
     ShardCommittee[][] shuffling = specHelpers.get_shuffling(
         Hash32.ZERO,
-        validatorsState.extractValidatorRegistry().toArray(new ValidatorRecord[0]),
+        validatorsState.getValidatorRegistry().toArray(new ValidatorRecord[0]),
         chainSpec.getGenesisStartShard().getIntValue(),
         chainSpec.getGenesisSlot());
     ShardCommittee[][] doubleShuffling = Stream.concat(
@@ -140,7 +141,7 @@ public class InitialStateTransition implements StateTransition<BeaconState> {
         Arrays.stream(shuffling))
         .toArray(ShardCommittee[][]::new);
 
-    return BeaconState.Builder.fromState(validatorsState)
+    return BeaconStateImpl.Builder.fromState(validatorsState)
         .withShardCommitteesAtSlots(doubleShuffling)
         .build();
   }
