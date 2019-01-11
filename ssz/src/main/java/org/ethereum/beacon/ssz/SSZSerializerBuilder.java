@@ -13,29 +13,31 @@ public class SSZSerializerBuilder {
   public SSZSerializerBuilder() {
   }
 
-  public SSZSerializerBuilder(SSZSchemeBuilder schemeBuilder, SSZCodecResolver codecResolver) {
+  public SSZSerializerBuilder(SSZSchemeBuilder schemeBuilder, SSZCodecResolver codecResolver,
+                              SSZModelFactory sszModelFactory) {
     this.sszCodecResolver = codecResolver;
-    this.sszSerializer = new SSZSerializer(schemeBuilder, codecResolver);
+    this.sszSerializer = new SSZSerializer(schemeBuilder, codecResolver, sszModelFactory);
   }
 
-  public SSZSerializerBuilder initWith(SSZSchemeBuilder schemeBuilder, SSZCodecResolver codecResolver) {
+  public SSZSerializerBuilder initWith(SSZSchemeBuilder schemeBuilder, SSZCodecResolver codecResolver,
+                                       SSZModelFactory sszModelFactory) {
     if (sszSerializer != null) {
       throw new RuntimeException("Already initialized!");
     }
 
-    this.sszSerializer = new SSZSerializer(schemeBuilder, codecResolver);
+    this.sszSerializer = new SSZSerializer(schemeBuilder, codecResolver, sszModelFactory);
     this.sszCodecResolver = codecResolver;
     return this;
   }
 
   public SSZSerializerBuilder initWithExplicitAnnotations() {
     this.sszCodecResolver = new SSZCodecRoulette();
-    return initWith(new SSZAnnotationSchemeBuilder(), sszCodecResolver);
+    return initWith(new SSZAnnotationSchemeBuilder(), sszCodecResolver, new SSZModelCreator());
   }
 
   public SSZSerializerBuilder initWithNonExplicitAnnotations() {
     this.sszCodecResolver = new SSZCodecRoulette();
-    return initWith(new SSZAnnotationSchemeBuilder(false), sszCodecResolver);
+    return initWith(new SSZAnnotationSchemeBuilder(false), sszCodecResolver, new SSZModelCreator());
   }
 
   public void addCodec(SSZCodec codec) {

@@ -80,7 +80,7 @@ public class SSZSerializerTest {
   public void explicitAnnotationsAndLoggerTest() {
     SSZSerializerBuilder builder = new SSZSerializerBuilder();
     builder.initWith(new SSZAnnotationSchemeBuilder().withLogger(Logger.getLogger("test")),
-        new SSZCodecRoulette());
+        new SSZCodecRoulette(), new SSZModelCreator());
     builder.addPrimitivesCodecs();
     SSZSerializer serializer = builder.build();
 
