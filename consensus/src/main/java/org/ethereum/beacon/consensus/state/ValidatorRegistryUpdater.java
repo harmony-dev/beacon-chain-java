@@ -2,7 +2,7 @@ package org.ethereum.beacon.consensus.state;
 
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
-import org.ethereum.beacon.core.state.ValidatorStatusFlag;
+import org.ethereum.beacon.core.spec.ChainSpec;
 import tech.pegasys.artemis.util.uint.UInt24;
 
 /**
@@ -10,9 +10,9 @@ import tech.pegasys.artemis.util.uint.UInt24;
  *
  * <p>Extends {@link ValidatorRegistryReader}, hence, all reader methods are also available.
  *
- * <p>Can be instantly created from {@link BeaconState} by {@link #fromState(BeaconState)} method.
- * When modification is finished there is an {@link #applyTo(BeaconState)} method to produce a new
- * state by applying the changes to the previous one.
+ * <p>Can be instantly created from {@link BeaconState} by {@link #fromState(BeaconState,
+ * ChainSpec)} method. When modification is finished there is an {@link #applyTo(BeaconState)}
+ * method to produce a new state by applying the changes to the previous one.
  */
 public interface ValidatorRegistryUpdater extends ValidatorRegistryReader {
 
@@ -20,14 +20,16 @@ public interface ValidatorRegistryUpdater extends ValidatorRegistryReader {
    * Creates an updater instance by fetching required data from {@link BeaconState}.
    *
    * @param state beacon state.
+   * @param chainSpec beacon chain spec.
    * @return constructed updater.
    */
-  static ValidatorRegistryUpdater fromState(BeaconState state) {
+  static ValidatorRegistryUpdater fromState(BeaconState state, ChainSpec chainSpec) {
     return new InMemoryValidatorRegistryUpdater(
         state.extractValidatorRegistry(),
         state.extractValidatorBalances(),
         state.getValidatorRegistryDeltaChainTip(),
-        state.getSlot());
+        state.getSlot(),
+        chainSpec);
   }
 
   /**
@@ -42,10 +44,7 @@ public interface ValidatorRegistryUpdater extends ValidatorRegistryReader {
   UInt24 processDeposit(Deposit deposit);
 
   /**
-   * Sets validator status to {@link ValidatorStatusFlag#ACTIVE}.
-   *
-   * <p><strong>Note:</strong> validator must be in {@link ValidatorStatusFlag#PENDING_ACTIVATION} status.
-   * Otherwise, this method does nothing.
+   * Activates specified validator.
    *
    * @param index validator index.
    * @throws IndexOutOfBoundsException if index is invalid.

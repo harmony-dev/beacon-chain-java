@@ -16,9 +16,6 @@ import tech.pegasys.artemis.util.uint.UInt64;
  */
 public class ValidatorRecord {
 
-  /** Number of slots that validator entry/exit is delayed by. */
-  public static final UInt64 ENTRY_EXIT_DELAY = UInt64.valueOf(1 << 8);
-
   /** BLS public key. */
   private final Bytes48 pubKey;
   /** Withdrawal credentials. */
@@ -111,8 +108,8 @@ public class ValidatorRecord {
     return exitCount;
   }
 
-  public ValidatorStatusFlag getStatusFlags() {
-    return ValidatorStatusFlag.valueOf(statusFlags);
+  public UInt64 getStatusFlags() {
+    return statusFlags;
   }
 
   public Hash32 getCustodyCommitment() {
@@ -256,12 +253,8 @@ public class ValidatorRecord {
       return this;
     }
 
-    public Builder withStatusFlag(ValidatorStatusFlag flag) {
-      if (flag == ValidatorStatusFlag.EMPTY) {
-        this.statusFlags = ValidatorStatusFlag.EMPTY.getCode();
-      } else {
-        this.statusFlags = this.statusFlags.or(flag.getCode());
-      }
+    public Builder withStatusFlags(UInt64 statusFlags) {
+      this.statusFlags = statusFlags;
       return this;
     }
 
