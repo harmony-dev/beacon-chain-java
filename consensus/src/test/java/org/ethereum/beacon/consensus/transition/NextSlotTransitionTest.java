@@ -3,10 +3,15 @@ package org.ethereum.beacon.consensus.transition;
 import org.ethereum.beacon.core.BeaconBlocks;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
+import org.ethereum.beacon.core.operations.deposit.DepositData;
+import org.ethereum.beacon.core.operations.deposit.DepositInput;
+import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.pow.DepositContract;
 import org.junit.Assert;
 import org.junit.Test;
 import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.bytes.Bytes48;
+import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 import java.util.Collections;
@@ -22,7 +27,13 @@ public class NextSlotTransitionTest {
     Random rnd = new Random();
     UInt64 genesisTime = UInt64.random(rnd);
     Hash32 receiptRoot = Hash32.random(rnd);
+    ChainSpec chainSpec = ChainSpec.DEFAULT;
 
+    Deposit deposit = new Deposit(new Hash32[]{Hash32.random(rnd)}, UInt64.ZERO,
+        new DepositData(
+            new DepositInput(
+                Bytes48.ZERO, Hash32.ZERO, Hash32.ZERO, Hash32.ZERO, Bytes96.ZERO
+            ), chainSpec.getMaxDeposit().toGWei(), UInt64.ZERO));
     InitialStateTransition initialStateTransition =
         new InitialStateTransition(
             new DepositContract() {
@@ -33,15 +44,15 @@ public class NextSlotTransitionTest {
 
               @Override
               public List<Deposit> getInitialDeposits() {
-                return Collections.emptyList();
+                return Collections.singletonList(deposit);
               }
-            });
+            }, chainSpec);
 
     BeaconState initialState =
-        initialStateTransition.apply(BeaconBlocks.createGenesis(), BeaconState.EMPTY);
-    BeaconState s1State = new NextSlotTransition().apply(null, initialState);
-    BeaconState s2State = new NextSlotTransition().apply(null, s1State);
-    BeaconState s3State = new NextSlotTransition().apply(null, s2State);
+        initialStateTransition.apply(BeaconBlocks.createGenesis(chainSpec), BeaconState.EMPTY);
+    BeaconState s1State = new NextSlotTransition(chainSpec).apply(null, initialState);
+    BeaconState s2State = new NextSlotTransition(chainSpec).apply(null, s1State);
+    BeaconState s3State = new NextSlotTransition(chainSpec).apply(null, s2State);
 
     Assert.assertEquals(UInt64.valueOf(3), s3State.getSlot());
   }
