@@ -14,6 +14,7 @@ import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.uint.UInt64;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
@@ -29,11 +30,16 @@ public class NextSlotTransitionTest {
     Hash32 receiptRoot = Hash32.random(rnd);
     ChainSpec chainSpec = ChainSpec.DEFAULT;
 
-    Deposit deposit = new Deposit(new Hash32[]{Hash32.random(rnd)}, UInt64.ZERO,
-        new DepositData(
-            new DepositInput(
-                Bytes48.ZERO, Hash32.ZERO, Hash32.ZERO, Hash32.ZERO, Bytes96.ZERO
-            ), chainSpec.getMaxDeposit().toGWei(), UInt64.ZERO));
+    List<Deposit> deposits = new ArrayList<>();
+    for (int i = 0; i < 8000; i++) {
+      Deposit deposit = new Deposit(new Hash32[]{Hash32.random(rnd)}, UInt64.ZERO,
+          new DepositData(
+              new DepositInput(
+                  Bytes48.intToBytes48(i), Hash32.random(rnd), Hash32.ZERO, Hash32.ZERO, Bytes96.ZERO
+              ), chainSpec.getMaxDeposit().toGWei(), UInt64.ZERO));
+      deposits.add(deposit);
+    }
+
     InitialStateTransition initialStateTransition =
         new InitialStateTransition(
             new DepositContract() {
@@ -44,7 +50,7 @@ public class NextSlotTransitionTest {
 
               @Override
               public List<Deposit> getInitialDeposits() {
-                return Collections.singletonList(deposit);
+                return deposits;
               }
             }, chainSpec);
 

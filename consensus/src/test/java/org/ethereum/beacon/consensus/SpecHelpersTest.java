@@ -65,7 +65,7 @@ public class SpecHelpersTest {
     }
 
     SpecHelpers specHelpers = new SpecHelpers(null);
-    ShardCommittee[][] shuffling = specHelpers.get_shuffling(
+    ShardCommittee[][] shuffling = specHelpers.get_active_shuffling(
         Hash32.fromHexString("0xc0c7f226fbd574a8c63dc26864c27833ea931e7c70b34409ba765f3d2031633d"),
         activeValidatorIndices.stream().mapToInt(i -> i).toArray(),
         210
