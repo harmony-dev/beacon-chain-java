@@ -113,7 +113,7 @@ public class SSZSerializer {
         throw new SSZSchemeException(error);
       }
 
-      SSZCodec encoder = resolveEncoderDecoder(field);
+      SSZCodec encoder = resolveCodec(field);
       if (field.multipleType.equals(SSZScheme.MultipleType.NONE)) {
         if (encoder != null) {
           encoder.encode(value, field, res);
@@ -205,7 +205,7 @@ public class SSZSerializer {
           break;
         }
       }
-      SSZCodec decoder = resolveEncoderDecoder(field);
+      SSZCodec decoder = resolveCodec(field);
       if (field.multipleType.equals(SSZScheme.MultipleType.NONE)) {
         if (decoder != null) {
           values[i] = decoder.decode(field, reader);
@@ -255,7 +255,7 @@ public class SSZSerializer {
     return result;
   }
 
-  private SSZCodec resolveEncoderDecoder(SSZScheme.SSZField field) {
+  private SSZCodec resolveCodec(SSZScheme.SSZField field) {
     SSZCodec decoder = null;
     if (registeredClassHandlers.containsKey(field.type)) {
       decoder = registeredClassHandlers.get(field.type);
