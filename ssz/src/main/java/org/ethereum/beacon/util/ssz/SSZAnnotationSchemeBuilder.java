@@ -122,7 +122,7 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
       if (type.equals(List.class)) {
         newField.multipleType = SSZScheme.MultipleType.LIST;
         newField.type = extractListInternalType(field);
-      } else if (type.isArray()) {
+      } else if (type.isArray() && !type.getComponentType().isPrimitive()) {
         newField.multipleType = SSZScheme.MultipleType.ARRAY;
         newField.type = type.getComponentType();
       }
