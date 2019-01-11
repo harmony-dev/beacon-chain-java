@@ -19,7 +19,7 @@ import java.util.stream.Stream;
 
 import static java.util.function.Function.identity;
 
-public class UIntPrimitive implements SSZEncoderDecoder {
+public class UIntPrimitive implements SSZCodec {
   final static int DEFAULT_SHORT_SIZE = 16;
   final static int DEFAULT_INT_SIZE = 32;
   final static int DEFAULT_LONG_SIZE = 64;

@@ -13,7 +13,7 @@ import java.util.Set;
  * <p>Used for encoding and decoding of SSZ data (restoring instance of class)</p>
  * <p>For more information check {@link SSZSerializer}</p>
  */
-public interface SSZEncoderDecoder {
+public interface SSZCodec {
 
   Set<String> getSupportedTypes();
 

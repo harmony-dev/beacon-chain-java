@@ -7,7 +7,7 @@ import net.consensys.cava.ssz.SSZException;
 import org.ethereum.beacon.types.Hash48;
 import org.ethereum.beacon.util.ssz.SSZSchemeBuilder;
 import org.ethereum.beacon.util.ssz.SSZSchemeException;
-import org.ethereum.beacon.util.ssz.type.SSZEncoderDecoder;
+import org.ethereum.beacon.util.ssz.type.SSZCodec;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes48;
@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class SSZHash implements SSZEncoderDecoder {
+public class SSZHash implements SSZCodec {
 
   private static Set<String> supportedTypes = new HashSet<>();
 

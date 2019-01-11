@@ -17,7 +17,7 @@ import java.util.stream.Stream;
 
 import static java.util.function.Function.identity;
 
-public class BytesPrimitive implements SSZEncoderDecoder {
+public class BytesPrimitive implements SSZCodec {
 
   private static Set<String> supportedTypes = new HashSet<>();
   static {

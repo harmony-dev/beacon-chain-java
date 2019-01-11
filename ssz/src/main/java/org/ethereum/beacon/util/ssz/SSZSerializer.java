@@ -7,7 +7,7 @@ import net.consensys.cava.ssz.SSZException;
 import org.ethereum.beacon.util.ssz.annotation.SSZ;
 import org.ethereum.beacon.util.ssz.annotation.SSZSerializable;
 import org.ethereum.beacon.util.ssz.annotation.SSZTransient;
-import org.ethereum.beacon.util.ssz.type.SSZEncoderDecoder;
+import org.ethereum.beacon.util.ssz.type.SSZCodec;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
@@ -60,7 +60,7 @@ public class SSZSerializer {
   final static byte[] EMPTY_PREFIX = new byte[LENGTH_PREFIX_BYTE_SIZE];
 
   private SSZSchemeBuilder schemeBuilder;
-  private Map<Class, SSZEncoderDecoder> registeredClassHandlers = new HashMap<>();
+  private Map<Class, SSZCodec> registeredClassHandlers = new HashMap<>();
 
   public SSZSerializer(SSZSchemeBuilder schemeBuilder) {
     this.schemeBuilder = schemeBuilder; // TODO: move out schemeBuilder
@@ -113,7 +113,7 @@ public class SSZSerializer {
         throw new SSZSchemeException(error);
       }
 
-      SSZEncoderDecoder encoder = resolveEncoderDecoder(field);
+      SSZCodec encoder = resolveEncoderDecoder(field);
       if (field.multipleType.equals(SSZScheme.MultipleType.NONE)) {
         if (encoder != null) {
           encoder.encode(value, field, res);
@@ -205,7 +205,7 @@ public class SSZSerializer {
           break;
         }
       }
-      SSZEncoderDecoder decoder = resolveEncoderDecoder(field);
+      SSZCodec decoder = resolveEncoderDecoder(field);
       if (field.multipleType.equals(SSZScheme.MultipleType.NONE)) {
         if (decoder != null) {
           values[i] = decoder.decode(field, reader);
@@ -255,8 +255,8 @@ public class SSZSerializer {
     return result;
   }
 
-  private SSZEncoderDecoder resolveEncoderDecoder(SSZScheme.SSZField field) {
-    SSZEncoderDecoder decoder = null;
+  private SSZCodec resolveEncoderDecoder(SSZScheme.SSZField field) {
+    SSZCodec decoder = null;
     if (registeredClassHandlers.containsKey(field.type)) {
       decoder = registeredClassHandlers.get(field.type);
     }
@@ -330,7 +330,7 @@ public class SSZSerializer {
     return new Pair<>(true, result);
   }
 
-  public void registerClassTypes(Set<Class> classTypes, SSZEncoderDecoder typeHandler) {
+  public void registerClassTypes(Set<Class> classTypes, SSZCodec typeHandler) {
     for (Class clazz : classTypes) {
       if (registeredClassHandlers.put(clazz, typeHandler) != null) {
         String error = String.format("Failed to register type %s handler, "
@@ -340,7 +340,7 @@ public class SSZSerializer {
     }
   }
 
-  public void registerTypes(Set<String> types, SSZEncoderDecoder typeHandler) {
+  public void registerTypes(Set<String> types, SSZCodec typeHandler) {
     // TODO: Do wee need this?
   }
 

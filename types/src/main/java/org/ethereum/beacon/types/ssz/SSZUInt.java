@@ -6,7 +6,7 @@ import net.consensys.cava.ssz.SSZ;
 import net.consensys.cava.ssz.SSZException;
 import org.ethereum.beacon.util.ssz.SSZSchemeBuilder;
 import org.ethereum.beacon.util.ssz.SSZSchemeException;
-import org.ethereum.beacon.util.ssz.type.SSZEncoderDecoder;
+import org.ethereum.beacon.util.ssz.type.SSZCodec;
 import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
 import java.io.IOException;
@@ -25,7 +25,7 @@ import static java.util.function.Function.identity;
 /**
  * FIXME: INT and BIGINTs are unused in current implementation
  */
-public class SSZUInt implements SSZEncoderDecoder {
+public class SSZUInt implements SSZCodec {
   private static Map<Class, NumericType> classToNumericType = new HashMap<>();
 
   static {
