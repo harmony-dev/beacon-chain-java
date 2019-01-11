@@ -149,7 +149,7 @@ public class SSZSerializer {
   private static void checkSSZSerializableAnnotation(Class clazz) {
     if (!clazz.isAnnotationPresent(SSZSerializable.class)) {
       String error = String.format("Class %s should be annotated with SSZSerializable!", clazz);
-      throw new RuntimeException(error);
+      throw new SSZSchemeException(error);
     }
   }
 
