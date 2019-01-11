@@ -7,6 +7,7 @@ import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import org.ethereum.beacon.ssz.annotation.SSZTransient;
 import org.javatuples.Triplet;
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
@@ -48,7 +49,7 @@ import static org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme;
  * constructor and set each one by one by appropriate setter.
  * If at least one field is failed to be set, {@link RuntimeException} is thrown.</p>
  */
-public class SSZSerializer {
+public class SSZSerializer implements BytesSerializer {
 
   public final static int LENGTH_PREFIX_BYTE_SIZE = Integer.SIZE / Byte.SIZE;
   final static byte[] EMPTY_PREFIX = new byte[LENGTH_PREFIX_BYTE_SIZE];
@@ -75,6 +76,7 @@ public class SSZSerializer {
    *               {@link SSZAnnotationSchemeBuilder}
    * @return SSZ serialization
    */
+  @Override
   public byte[] encode(@Nullable Object input, Class clazz) {
     checkSSZSerializableAnnotation(clazz);
 
@@ -123,7 +125,8 @@ public class SSZSerializer {
    * <p>Shortcut to {@link #encode(Object, Class)}. Resolves
    * class using input object. Not suitable for null values.</p>
    */
-  public byte[] encode(Object input) {
+  @Override
+  public byte[] encode(@Nonnull Object input) {
     return encode(input, input.getClass());
   }
 
@@ -154,6 +157,7 @@ public class SSZSerializer {
    *                 information about annotation markup, check {@link SSZAnnotationSchemeBuilder}
    * @return deserialized instance of clazz or throws exception
    */
+  @Override
   public Object decode(byte[] data, Class clazz) {
     checkSSZSerializableAnnotation(clazz);
 
