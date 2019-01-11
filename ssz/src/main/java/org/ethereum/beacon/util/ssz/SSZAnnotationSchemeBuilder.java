@@ -109,7 +109,7 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
       // Construct SSZField
       SSZScheme.SSZField newField = new SSZScheme.SSZField();
       if (annotation != null && annotation.skipContainer()) {
-        newField.skipContainer = true;
+        newField.notAContainer = true;
       }
       newField.type = type;
       String name = field.getName();

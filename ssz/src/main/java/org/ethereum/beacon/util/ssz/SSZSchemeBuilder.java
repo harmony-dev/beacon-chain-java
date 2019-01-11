@@ -28,13 +28,12 @@ public interface SSZSchemeBuilder {
       public String name;
       public String getter;
       /**
-       * <ul>
-       * <li>Container not needed (primitive type) : null</li>
-       * <li>Container needed : false</li>
-       * <li>Container needed but should be omitted: true</li>
-       * </ul>
+       * Special type that could look like a container
+       * by using type unhandled with encoder/decoders,
+       * but holds only one standard SSZ value, which
+       * should be not wrapped with extra header like container
        */
-      public Boolean skipContainer = null;
+      public boolean notAContainer = false;
     }
 
     public enum MultipleType {

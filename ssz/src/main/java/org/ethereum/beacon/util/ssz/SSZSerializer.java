@@ -347,7 +347,7 @@ public class SSZSerializer {
   public void encodeContainer(Object value, SSZSchemeBuilder.SSZScheme.SSZField field, OutputStream result) {
     byte[] data = encode(value, field.type);
 
-    if (field.skipContainer == null || field.skipContainer == false) {
+    if (!field.notAContainer) {
       try {
         // Prepend data with its length
         result.write(net.consensys.cava.ssz.SSZ.encodeInt32(data.length).toArrayUnsafe());
@@ -380,7 +380,7 @@ public class SSZSerializer {
     for (int i = 0; i < values.size(); ++i) {
       byte[] data = encode(values.get(i), field.type);
       Bytes curValue;
-      if (field.skipContainer != null && field.skipContainer) {
+      if (field.notAContainer) {
         curValue = Bytes.of(data);
       } else {
         Bytes prefix = net.consensys.cava.ssz.SSZ.encodeInt32(data.length);
@@ -401,7 +401,7 @@ public class SSZSerializer {
     Bytes data = reader.readBytes();
     int dataSize = data.size();
 
-    if (field.skipContainer != null && field.skipContainer) {
+    if (field.notAContainer) {
       Bytes lengthPrefix = net.consensys.cava.ssz.SSZ.encodeUInt32(dataSize);
       byte[] container = Bytes.concatenate(lengthPrefix, data).toArrayUnsafe();
       return new Pair<>(decode(container, field.type), dataSize);
