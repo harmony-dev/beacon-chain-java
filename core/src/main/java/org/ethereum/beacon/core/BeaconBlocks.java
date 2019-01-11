@@ -17,13 +17,14 @@ public abstract class BeaconBlocks {
    * @return a genesis block.
    */
   public static BeaconBlock createGenesis(ChainSpec chainSpec) {
-    return new BeaconBlock(
-        chainSpec.getGenesisSlot(),
-        Hash32.ZERO,
-        Hash32.ZERO,
-        Hash32.ZERO,
-        Hash32.ZERO,
-        chainSpec.getEmptySignature(),
-        BeaconBlockBody.EMPTY);
+    return BeaconBlock.Builder.createEmpty()
+        .withSlot(chainSpec.getGenesisSlot())
+        .withParentRoot(Hash32.ZERO)
+        .withStateRoot(Hash32.ZERO)
+        .withRandaoReveal(Hash32.ZERO)
+        .withDepositRoot(Hash32.ZERO)
+        .withSignature(chainSpec.getEmptySignature())
+        .withBody(BeaconBlockBody.EMPTY)
+        .build();
   }
 }
