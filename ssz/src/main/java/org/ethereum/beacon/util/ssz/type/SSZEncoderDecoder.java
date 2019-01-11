@@ -36,11 +36,6 @@ public interface SSZEncoderDecoder {
     return list.toArray();
   }
 
-  default void registerIn(SSZSerializer serializer) {
-    serializer.registerClassTypes(getSupportedClassTypes(), this);
-    serializer.registerTypes(getSupportedTypes(), this);
-  }
-
   default Object throwUnsupportedType(SSZSchemeBuilder.SSZScheme.SSZField field) throws RuntimeException {
     throw new SSZSchemeException(String.format("Type [%s] is not supported", field.type));
   }

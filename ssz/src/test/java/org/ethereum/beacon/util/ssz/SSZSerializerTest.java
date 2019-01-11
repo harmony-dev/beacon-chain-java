@@ -1,11 +1,10 @@
-package net.consensys.cava.ssz;
+package org.ethereum.beacon.util.ssz;
 
-import net.consensys.cava.ssz.fixtures.AttestationRecord;
-import net.consensys.cava.ssz.fixtures.Bitfield;
-import net.consensys.cava.ssz.fixtures.Sign;
+import org.ethereum.beacon.util.ssz.fixtures.AttestationRecord;
+import org.ethereum.beacon.util.ssz.fixtures.Bitfield;
+import org.ethereum.beacon.util.ssz.fixtures.Sign;
 import org.ethereum.beacon.crypto.Hashes;
-import org.ethereum.beacon.util.ssz.SSZAnnotationSchemeBuilder;
-import org.ethereum.beacon.util.ssz.SSZSerializer;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import tech.pegasys.artemis.util.bytes.BytesValue;
@@ -22,7 +21,7 @@ public class SSZSerializerTest {
 
   @Before
   public void setup() {
-    sszSerializer = new SSZSerializer(new SSZAnnotationSchemeBuilder());
+    sszSerializer = SSZSerializerBuilder.getBakedAnnotationBuilder().build();
   }
 
   private static byte[] DEFAULT_HASH = Hashes.keccak256(BytesValue.fromHexString("aa")).getArrayUnsafe();
@@ -46,7 +45,7 @@ public class SSZSerializerTest {
     byte[] encoded = sszSerializer.encode(expected);
     Bitfield constructed = (Bitfield) sszSerializer.decode(encoded, Bitfield.class);
 
-    assertEquals(expected, constructed);
+    Assert.assertEquals(expected, constructed);
   }
 
   @Test
@@ -58,7 +57,7 @@ public class SSZSerializerTest {
     byte[] encoded = sszSerializer.encode(signature);
     Sign.Signature constructed = (Sign.Signature) sszSerializer.decode(encoded, Sign.Signature.class);
 
-    assertEquals(signature, constructed);
+    Assert.assertEquals(signature, constructed);
   }
 
   @Test
@@ -77,7 +76,7 @@ public class SSZSerializerTest {
     byte[] encoded = sszSerializer.encode(expected);
     AttestationRecord constructed = (AttestationRecord) sszSerializer.decode(encoded, AttestationRecord.class);
 
-    assertEquals(expected, constructed);
+    Assert.assertEquals(expected, constructed);
   }
 
   @Test
@@ -95,7 +94,7 @@ public class SSZSerializerTest {
     byte[] encoded1 = sszSerializer.encode(expected1);
     AttestationRecord actual1 = (AttestationRecord) sszSerializer.decode(encoded1, AttestationRecord.class);
 
-    assertEquals(expected1, actual1);
+    Assert.assertEquals(expected1, actual1);
 
     AttestationRecord expected2 = new AttestationRecord(
         12412L,
@@ -110,7 +109,7 @@ public class SSZSerializerTest {
     byte[] encoded2 = sszSerializer.encode(expected2);
     AttestationRecord actual2 = (AttestationRecord) sszSerializer.decode(encoded2, AttestationRecord.class);
 
-    assertEquals(expected2, actual2);
+    Assert.assertEquals(expected2, actual2);
 
     AttestationRecord expected3 = new AttestationRecord(
         12412L,
@@ -125,7 +124,7 @@ public class SSZSerializerTest {
     byte[] encoded3 = sszSerializer.encode(expected3);
     AttestationRecord actual3 = (AttestationRecord) sszSerializer.decode(encoded3, AttestationRecord.class);
 
-    assertEquals(expected3, actual3);
+    Assert.assertEquals(expected3, actual3);
   }
 
   @Test(expected = NullPointerException.class)
