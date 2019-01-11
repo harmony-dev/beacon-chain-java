@@ -1,8 +1,5 @@
-package org.ethereum.beacon.util.ssz;
+package org.ethereum.beacon.ssz;
 
-import org.ethereum.beacon.util.ssz.fixtures.AttestationRecord;
-import org.ethereum.beacon.util.ssz.fixtures.Bitfield;
-import org.ethereum.beacon.util.ssz.fixtures.Sign;
 import org.ethereum.beacon.crypto.Hashes;
 import org.junit.Assert;
 import org.junit.Before;

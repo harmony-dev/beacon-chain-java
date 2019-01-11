@@ -11,8 +11,7 @@ import org.ethereum.beacon.core.operations.ProofOfCustodyChallenge;
 import org.ethereum.beacon.core.operations.ProofOfCustodyResponse;
 import org.ethereum.beacon.core.operations.ProofOfCustodySeedChange;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
-import org.ethereum.beacon.util.ssz.annotation.SSZSerializable;
-import org.ethereum.beacon.util.ssz.annotation.SSZTransient;
+import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 
 @SSZSerializable
 public class BeaconBlockBody {

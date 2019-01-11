@@ -1,10 +1,10 @@
-package org.ethereum.beacon.util.ssz;
+package org.ethereum.beacon.ssz;
 
-import org.ethereum.beacon.util.ssz.type.BooleanPrimitive;
-import org.ethereum.beacon.util.ssz.type.BytesPrimitive;
-import org.ethereum.beacon.util.ssz.type.SSZCodec;
-import org.ethereum.beacon.util.ssz.type.StringPrimitive;
-import org.ethereum.beacon.util.ssz.type.UIntPrimitive;
+import org.ethereum.beacon.ssz.type.BooleanPrimitive;
+import org.ethereum.beacon.ssz.type.BytesPrimitive;
+import org.ethereum.beacon.ssz.type.SSZCodec;
+import org.ethereum.beacon.ssz.type.StringPrimitive;
+import org.ethereum.beacon.ssz.type.UIntPrimitive;
 
 public class SSZSerializerBuilder {
   private SSZSerializer sszSerializer = null;

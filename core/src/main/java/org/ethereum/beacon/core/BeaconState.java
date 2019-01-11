@@ -1,6 +1,6 @@
 package org.ethereum.beacon.core;
 
-import org.ethereum.beacon.util.ssz.annotation.SSZSerializable;
+import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
 @SSZSerializable

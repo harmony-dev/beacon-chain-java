@@ -1,4 +1,4 @@
-package org.ethereum.beacon.util.ssz;
+package org.ethereum.beacon.ssz;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -3,4 +3,4 @@
  * standard Java class with annotations as SSZ model representation.
  */
 
-package org.ethereum.beacon.util.ssz.annotation;
+package org.ethereum.beacon.ssz.annotation;

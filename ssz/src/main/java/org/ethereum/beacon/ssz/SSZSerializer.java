@@ -1,13 +1,13 @@
-package org.ethereum.beacon.util.ssz;
+package org.ethereum.beacon.ssz;
 
 import org.javatuples.Pair;
 import net.consensys.cava.bytes.Bytes;
 import net.consensys.cava.ssz.BytesSSZReaderProxy;
 import net.consensys.cava.ssz.SSZException;
-import org.ethereum.beacon.util.ssz.annotation.SSZ;
-import org.ethereum.beacon.util.ssz.annotation.SSZSerializable;
-import org.ethereum.beacon.util.ssz.annotation.SSZTransient;
-import org.ethereum.beacon.util.ssz.type.SSZCodec;
+import org.ethereum.beacon.ssz.annotation.SSZ;
+import org.ethereum.beacon.ssz.annotation.SSZSerializable;
+import org.ethereum.beacon.ssz.annotation.SSZTransient;
+import org.ethereum.beacon.ssz.type.SSZCodec;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.ethereum.beacon.util.ssz.SSZSchemeBuilder.SSZScheme;
+import static org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme;
 
 /**
  * <p>SSZ serializer/deserializer with automatic model reading

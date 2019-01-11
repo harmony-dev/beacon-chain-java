@@ -1,7 +1,7 @@
-package org.ethereum.beacon.util.ssz.fixtures;
+package org.ethereum.beacon.ssz;
 
-import org.ethereum.beacon.util.ssz.annotation.SSZ;
-import org.ethereum.beacon.util.ssz.annotation.SSZSerializable;
+import org.ethereum.beacon.ssz.annotation.SSZ;
+import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 
 import java.util.Arrays;
 import java.util.List;

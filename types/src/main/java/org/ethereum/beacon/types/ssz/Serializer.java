@@ -1,7 +1,7 @@
 package org.ethereum.beacon.types.ssz;
 
-import org.ethereum.beacon.util.ssz.SSZSerializer;
-import org.ethereum.beacon.util.ssz.SSZSerializerBuilder;
+import org.ethereum.beacon.ssz.SSZSerializer;
+import org.ethereum.beacon.ssz.SSZSerializerBuilder;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 public class Serializer {

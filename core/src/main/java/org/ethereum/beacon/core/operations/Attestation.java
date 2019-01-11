@@ -1,6 +1,6 @@
 package org.ethereum.beacon.core.operations;
 
-import org.ethereum.beacon.util.ssz.annotation.SSZSerializable;
+import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 

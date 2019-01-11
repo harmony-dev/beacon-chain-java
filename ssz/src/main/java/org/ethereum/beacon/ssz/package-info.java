@@ -6,6 +6,6 @@
  * <p>
  */
 @ParametersAreNonnullByDefault
-package org.ethereum.beacon.util.ssz;
+package org.ethereum.beacon.ssz;
 
 import javax.annotation.ParametersAreNonnullByDefault;

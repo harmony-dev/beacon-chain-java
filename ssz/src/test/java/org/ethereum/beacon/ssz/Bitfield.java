@@ -1,6 +1,6 @@
-package org.ethereum.beacon.util.ssz.fixtures;
+package org.ethereum.beacon.ssz;
 
-import org.ethereum.beacon.util.ssz.annotation.SSZSerializable;
+import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;

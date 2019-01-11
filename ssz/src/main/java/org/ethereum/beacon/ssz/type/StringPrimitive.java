@@ -1,10 +1,10 @@
-package org.ethereum.beacon.util.ssz.type;
+package org.ethereum.beacon.ssz.type;
 
 import net.consensys.cava.bytes.Bytes;
 import net.consensys.cava.ssz.BytesSSZReaderProxy;
 import net.consensys.cava.ssz.SSZ;
 import net.consensys.cava.ssz.SSZException;
-import org.ethereum.beacon.util.ssz.SSZSchemeBuilder;
+import org.ethereum.beacon.ssz.SSZSchemeBuilder;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.HashSet;

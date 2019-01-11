@@ -14,7 +14,7 @@ import org.ethereum.beacon.core.operations.ProposalSignedData;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.SlashableVoteData;
 import org.junit.Test;
-import org.ethereum.beacon.util.ssz.annotation.SSZSerializable;
+import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;

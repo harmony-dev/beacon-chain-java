@@ -1,9 +1,9 @@
-package org.ethereum.beacon.util.ssz.type;
+package org.ethereum.beacon.ssz.type;
 
 import net.consensys.cava.ssz.BytesSSZReaderProxy;
-import org.ethereum.beacon.util.ssz.SSZSchemeBuilder;
-import org.ethereum.beacon.util.ssz.SSZSchemeException;
-import org.ethereum.beacon.util.ssz.SSZSerializer;
+import org.ethereum.beacon.ssz.SSZSchemeBuilder;
+import org.ethereum.beacon.ssz.SSZSchemeException;
+import org.ethereum.beacon.ssz.SSZSerializer;
 import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.List;

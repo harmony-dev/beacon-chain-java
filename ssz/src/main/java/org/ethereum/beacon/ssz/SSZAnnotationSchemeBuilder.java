@@ -1,8 +1,8 @@
-package org.ethereum.beacon.util.ssz;
+package org.ethereum.beacon.ssz;
 
-import org.ethereum.beacon.util.ssz.annotation.SSZ;
-import org.ethereum.beacon.util.ssz.annotation.SSZSerializable;
-import org.ethereum.beacon.util.ssz.annotation.SSZTransient;
+import org.ethereum.beacon.ssz.annotation.SSZ;
+import org.ethereum.beacon.ssz.annotation.SSZSerializable;
+import org.ethereum.beacon.ssz.annotation.SSZTransient;
 import org.javatuples.Pair;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;

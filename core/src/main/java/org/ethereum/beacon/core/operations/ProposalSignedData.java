@@ -1,6 +1,6 @@
 package org.ethereum.beacon.core.operations;
 
-import org.ethereum.beacon.util.ssz.annotation.SSZSerializable;
+import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 
 @SSZSerializable
 public class ProposalSignedData {
