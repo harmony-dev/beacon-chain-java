@@ -1,9 +1,9 @@
 package org.ethereum.beacon.util.ssz;
 
-import javafx.util.Pair;
 import org.ethereum.beacon.util.ssz.annotation.SSZ;
 import org.ethereum.beacon.util.ssz.annotation.SSZSerializable;
 import org.ethereum.beacon.util.ssz.annotation.SSZTransient;
+import org.javatuples.Pair;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
@@ -147,8 +147,8 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
       newField.name = name;
       if (typeAnnotation != null) {
         Pair<String, Integer> extra = extractType(typeAnnotation, type);
-        newField.extraType = extra.getKey();
-        newField.extraSize = extra.getValue();
+        newField.extraType = extra.getValue0();
+        newField.extraSize = extra.getValue1();
       }
       if (type.equals(List.class)) {
         newField.multipleType = SSZScheme.MultipleType.LIST;

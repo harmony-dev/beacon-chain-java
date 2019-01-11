@@ -1,6 +1,6 @@
 package org.ethereum.beacon.util.ssz;
 
-import javafx.util.Pair;
+import org.javatuples.Pair;
 import net.consensys.cava.bytes.Bytes;
 import net.consensys.cava.ssz.BytesSSZReaderProxy;
 import net.consensys.cava.ssz.SSZException;
@@ -235,9 +235,9 @@ public class SSZSerializer {
     // Construct clazz instance
     Object result;
     Pair<Boolean, Object> constructorAttempt = createInstanceWithConstructor(clazz, params, values);
-    if (!constructorAttempt.getKey()) {
+    if (!constructorAttempt.getValue0()) {
       Pair<Boolean, Object> setterAttempt = createInstanceWithSetters(clazz, fields, values);
-      if (!setterAttempt.getKey()) {
+      if (!setterAttempt.getValue0()) {
         String fieldTypes = Arrays.stream(values)
             .map(v -> v.getClass().toString())
             .collect(Collectors.joining(","));
@@ -247,10 +247,10 @@ public class SSZSerializer {
             + "or setters/public fields.", clazz.getName(), fieldTypes);
         throw new SSZSchemeException(error);
       } else {
-        result = setterAttempt.getValue();
+        result = setterAttempt.getValue1();
       }
     } else {
-      result = constructorAttempt.getValue();
+      result = constructorAttempt.getValue1();
     }
 
     return result;
@@ -409,7 +409,7 @@ public class SSZSerializer {
   }
 
   public Object decodeContainer(SSZSchemeBuilder.SSZScheme.SSZField field, BytesSSZReaderProxy reader) {
-    return decodeContainerImpl(field, reader).getKey();
+    return decodeContainerImpl(field, reader).getValue0();
   }
 
   public Pair<Object, Integer> decodeContainerImpl(SSZSchemeBuilder.SSZScheme.SSZField field, BytesSSZReaderProxy reader) {
@@ -432,8 +432,8 @@ public class SSZSerializer {
     List<Object> res = new ArrayList<>();
     while (remainingData > 0) {
       Pair<Object, Integer> decodeRes = decodeContainerImpl(field, reader);
-      res.add(decodeRes.getKey());
-      remainingData -= decodeRes.getValue();
+      res.add(decodeRes.getValue0());
+      remainingData -= decodeRes.getValue1();
     }
     return res;
   }
