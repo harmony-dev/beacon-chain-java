@@ -19,14 +19,6 @@ import org.ethereum.beacon.core.state.ValidatorRecord;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
 
-/**
- * Beacon chain state.
- *
- * @see BeaconBlock
- * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md#beaconstate">BeaconState
- *     in the spec</a>
- */
 public class BeaconStateImpl implements BeaconState {
 
   public static final BeaconState EMPTY =
