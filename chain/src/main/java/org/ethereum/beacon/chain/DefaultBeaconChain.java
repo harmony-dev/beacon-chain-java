@@ -31,8 +31,8 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   StateTransition<BeaconState> initialTransition;
   StateTransition<BeaconState> stateTransition;
 
-  BeaconBlockVerifier blockValidator;
-  BeaconStateVerifier stateValidator;
+  BeaconBlockVerifier blockVerifier;
+  BeaconStateVerifier stateVerifier;
 
   ScoreFunction scoreFunction;
 
@@ -67,16 +67,16 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   public synchronized void insert(BeaconBlock block) {
     assert head != null;
 
-    VerificationResult beaconValidation = blockValidator.validate(block, new Context());
-    if (!beaconValidation.isPassed()) {
+    VerificationResult blockVerification = blockVerifier.validate(block, new Context());
+    if (!blockVerification.isPassed()) {
       return;
     }
 
     BeaconState parentState = pullParentState(block);
     BeaconState newState = stateTransition.apply(block, parentState);
 
-    VerificationResult stateValidation = stateValidator.validate(block, newState);
-    if (!stateValidation.isPassed()) {
+    VerificationResult stateVerification = stateVerifier.verify(block, newState);
+    if (stateVerification.isPassed()) {
       return;
     }
 
