@@ -27,7 +27,7 @@ import tech.pegasys.artemis.util.uint.UInt64;
  * Produces initial beacon state.
  *
  * <p>Requires input {@code block} to be a Genesis block, {@code state} parameter is ignored.
- * Preferred input for {@code state} parameter is {@link BeaconState#EMPTY}.
+ * Preferred input for {@code state} parameter is EMPTY.
  *
  * <p>Uses {@link DepositContract} to fetch registration data from the PoW chain.
  *
@@ -83,7 +83,7 @@ public class InitialStateTransition implements StateTransition<BeaconState> {
                     .dividedBy(chainSpec.getEpochLength())
                     .getIntValue(),
                 Hash32.ZERO))
-        .withShardCommitteesAtSlots(ShardCommittees.EMPTY);
+        .withShardCommitteesAtSlots(emptyList());
 
     // Proof of custody
     builder.withCustodyChallenges(emptyList());

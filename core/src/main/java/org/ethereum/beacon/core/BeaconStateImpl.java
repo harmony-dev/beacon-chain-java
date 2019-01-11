@@ -3,9 +3,11 @@ package org.ethereum.beacon.core;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.unmodifiableList;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
+
 import org.ethereum.beacon.core.operations.CustodyChallenge;
 import org.ethereum.beacon.core.state.DepositRootVote;
 import org.ethereum.beacon.core.state.CrosslinkRecord;
@@ -39,7 +41,7 @@ public class BeaconStateImpl implements BeaconState {
           Hash32.ZERO,
           emptyList(),
           emptyList(),
-          ShardCommittees.EMPTY,
+          emptyList(),
           emptyList(),
           UInt64.ZERO,
           UInt64.ZERO,
@@ -82,7 +84,7 @@ public class BeaconStateImpl implements BeaconState {
   /** The most recent VDF outputs. */
   private final List<Hash32> latestVdfOutputs;
   /** Which committee assigned to which shard on which slot. */
-  private final ShardCommittee[][] shardCommitteesAtSlots;
+  private final List<List<ShardCommittee>> shardCommitteesAtSlots;
 
   /** Proof of custody placeholder. */
   private final List<CustodyChallenge> custodyChallenges;
@@ -132,7 +134,7 @@ public class BeaconStateImpl implements BeaconState {
       Hash32 validatorRegistryDeltaChainTip,
       List<Hash32> latestRandaoMixes,
       List<Hash32> latestVdfOutputs,
-      ShardCommittee[][] shardCommitteesAtSlots,
+      List<List<ShardCommittee>> shardCommitteesAtSlots,
       List<CustodyChallenge> custodyChallenges,
       UInt64 previousJustifiedSlot,
       UInt64 justifiedSlot,
@@ -220,10 +222,10 @@ public class BeaconStateImpl implements BeaconState {
     return unmodifiableList(latestVdfOutputs);
   }
 
-  // TODO
   @Override
-  public ShardCommittee[][] getShardCommitteesAtSlots() {
-    return shardCommitteesAtSlots;
+  public List<List<ShardCommittee>> getShardCommitteesAtSlots() {
+    return unmodifiableList(shardCommitteesAtSlots.stream()
+        .map(Collections::unmodifiableList).collect(Collectors.toList()));
   }
 
   @Override
@@ -308,7 +310,7 @@ public class BeaconStateImpl implements BeaconState {
     /* Randomness and committees */
     private List<Hash32> latestRandaoMixes;
     private List<Hash32> latestVdfOutputs;
-    private ShardCommittee[][] shardCommitteesAtSlots;
+    private List<List<ShardCommittee>> shardCommitteesAtSlots;
 
     /* Proof of custody placeholder. */
     private List<CustodyChallenge> custodyChallenges;
@@ -487,6 +489,13 @@ public class BeaconStateImpl implements BeaconState {
     }
 
     public Builder withShardCommitteesAtSlots(ShardCommittee[][] shardCommitteesAtSlots) {
+      List<List<ShardCommittee>> lists = Arrays.stream(shardCommitteesAtSlots)
+          .map(cArr -> Arrays.stream(cArr).collect(Collectors.toList()))
+          .collect(Collectors.toList());
+      return withShardCommitteesAtSlots(lists);
+    }
+
+    public Builder withShardCommitteesAtSlots(List<List<ShardCommittee>> shardCommitteesAtSlots) {
       this.shardCommitteesAtSlots = shardCommitteesAtSlots;
       return this;
     }

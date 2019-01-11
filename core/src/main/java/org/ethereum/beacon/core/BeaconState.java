@@ -29,7 +29,7 @@ public interface BeaconState extends Hashable<Hash32> {
 
   List<Hash32> getLatestVdfOutputs();
 
-  ShardCommittee[][] getShardCommitteesAtSlots();
+  List<List<ShardCommittee>> getShardCommitteesAtSlots();
 
   List<CustodyChallenge> getCustodyChallenges();
 
