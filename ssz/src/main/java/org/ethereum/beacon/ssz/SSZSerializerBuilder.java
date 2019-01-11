@@ -8,36 +8,41 @@ import org.ethereum.beacon.ssz.type.UIntPrimitive;
 
 public class SSZSerializerBuilder {
   private SSZSerializer sszSerializer = null;
+  private SSZCodecResolver sszCodecResolver = null;
 
   public SSZSerializerBuilder() {
   }
 
-  public SSZSerializerBuilder(SSZSchemeBuilder schemeBuilder) {
-    this.sszSerializer = new SSZSerializer(schemeBuilder);
+  public SSZSerializerBuilder(SSZSchemeBuilder schemeBuilder, SSZCodecResolver codecResolver) {
+    this.sszCodecResolver = codecResolver;
+    this.sszSerializer = new SSZSerializer(schemeBuilder, codecResolver);
   }
 
-  public SSZSerializerBuilder initWithSchemeBuilder(SSZSchemeBuilder schemeBuilder) {
+  public SSZSerializerBuilder initWith(SSZSchemeBuilder schemeBuilder, SSZCodecResolver codecResolver) {
     if (sszSerializer != null) {
       throw new RuntimeException("Already initialized!");
     }
 
-    this.sszSerializer = new SSZSerializer(schemeBuilder);
+    this.sszSerializer = new SSZSerializer(schemeBuilder, codecResolver);
+    this.sszCodecResolver = codecResolver;
     return this;
   }
 
   public SSZSerializerBuilder initWithExplicitAnnotations() {
-    return initWithSchemeBuilder(new SSZAnnotationSchemeBuilder());
+    this.sszCodecResolver = new SSZCodecRoulette();
+    return initWith(new SSZAnnotationSchemeBuilder(), sszCodecResolver);
   }
 
   public SSZSerializerBuilder initWithNonExplicitAnnotations() {
-    return initWithSchemeBuilder(new SSZAnnotationSchemeBuilder(false));
+    this.sszCodecResolver = new SSZCodecRoulette();
+    return initWith(new SSZAnnotationSchemeBuilder(false), sszCodecResolver);
   }
 
   public void addCodec(SSZCodec codec) {
-    if (sszSerializer == null) {
+    if (sszCodecResolver == null) {
       throw new RuntimeException("initWith* method should be called first");
     }
-    sszSerializer.registerCodec(codec.getSupportedClasses(), codec.getSupportedTypes(), codec);
+    sszCodecResolver.registerCodec(codec.getSupportedClasses(), codec.getSupportedTypes(), codec);
   }
 
   public void addPrimitivesCodecs() {
