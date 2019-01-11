@@ -3,7 +3,11 @@ package org.ethereum.beacon.consensus.transition;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.nCopies;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
+
+import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.consensus.state.ValidatorRegistryUpdater;
 import org.ethereum.beacon.core.BeaconBlock;
@@ -11,9 +15,7 @@ import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.BeaconState.Builder;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.spec.ChainSpec;
-import org.ethereum.beacon.core.state.CrosslinkRecord;
-import org.ethereum.beacon.core.state.ForkData;
-import org.ethereum.beacon.core.state.ShardCommittees;
+import org.ethereum.beacon.core.state.*;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.pow.DepositContract.ChainStart;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -124,6 +126,22 @@ public class InitialStateTransition implements StateTransition<BeaconState> {
           }
         });
 
-    return registryUpdater.applyTo(initialState);
+
+    BeaconState validatorsState = registryUpdater.applyTo(initialState);
+
+    SpecHelpers specHelpers = new SpecHelpers(chainSpec);
+    ShardCommittee[][] shuffling = specHelpers.get_shuffling(
+        Hash32.ZERO,
+        validatorsState.extractValidatorRegistry().toArray(new ValidatorRecord[0]),
+        chainSpec.getGenesisStartShard().getIntValue(),
+        chainSpec.getGenesisSlot());
+    ShardCommittee[][] doubleShuffling = Stream.concat(
+        Arrays.stream(shuffling),
+        Arrays.stream(shuffling))
+        .toArray(ShardCommittee[][]::new);
+
+    return BeaconState.Builder.fromState(validatorsState)
+        .withShardCommitteesAtSlots(doubleShuffling)
+        .build();
   }
 }

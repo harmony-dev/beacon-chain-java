@@ -1,5 +1,7 @@
 package org.ethereum.beacon.consensus.state;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.spec.ChainSpec;
@@ -57,6 +59,18 @@ public interface ValidatorRegistryReader {
    * @return a size.
    */
   UInt24 size();
+
+  /**
+   * Returns all validator records
+   */
+  default List<ValidatorRecord> getAll() {
+    int size = size().getValue();
+    List<ValidatorRecord> ret = new ArrayList<>(size);
+    for (int i = 0; i < size; i++) {
+      ret.add(get(UInt24.valueOf(i)));
+    }
+    return ret;
+  }
 
   /**
    * Returns validator record that public key is equal to given one.
