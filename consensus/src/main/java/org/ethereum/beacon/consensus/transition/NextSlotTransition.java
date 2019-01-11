@@ -4,7 +4,7 @@ import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.consensus.SpecHelpers;
-import org.ethereum.beacon.core.BeaconStateImpl;
+import org.ethereum.beacon.core.state.BeaconStateImpl;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import tech.pegasys.artemis.ethereum.core.Hash32;

@@ -5,7 +5,7 @@ import static com.google.common.base.Preconditions.checkElementIndex;
 import java.util.List;
 import java.util.Optional;
 import org.ethereum.beacon.core.BeaconState;
-import org.ethereum.beacon.core.BeaconStateImpl;
+import org.ethereum.beacon.core.state.BeaconStateImpl;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.spec.ChainSpec;
