@@ -11,7 +11,7 @@ import org.ethereum.beacon.core.BeaconState;
 public class BeaconStateRootMatcher implements BeaconStateVerifier {
 
   @Override
-  public VerificationResult verify(BeaconBlock block, BeaconState state) {
+  public VerificationResult verify(BeaconState state, BeaconBlock block) {
     if (block.getStateRoot().equals(state.getHash())) {
       return VerificationResult.PASSED;
     } else {

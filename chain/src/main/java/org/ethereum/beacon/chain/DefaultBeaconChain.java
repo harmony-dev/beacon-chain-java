@@ -75,7 +75,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     BeaconState parentState = pullParentState(block);
     BeaconState newState = stateTransition.apply(block, parentState);
 
-    VerificationResult stateVerification = stateVerifier.verify(block, newState);
+    VerificationResult stateVerification = stateVerifier.verify(newState, block);
     if (stateVerification.isPassed()) {
       return;
     }

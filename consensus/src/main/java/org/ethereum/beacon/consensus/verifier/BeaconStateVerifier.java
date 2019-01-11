@@ -14,9 +14,9 @@ public interface BeaconStateVerifier {
   /**
    * Runs state verifications.
    *
-   * @param block a block that verifying state does relate to.
    * @param state a state to verify.
+   * @param block a block that verifying state does relate to.
    * @return result of verification.
    */
-  VerificationResult verify(BeaconBlock block, BeaconState state);
+  VerificationResult verify(BeaconState state, BeaconBlock block);
 }
