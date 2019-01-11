@@ -3,7 +3,7 @@ package org.ethereum.beacon.consensus.transition;
 import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
-import org.ethereum.beacon.core.SpecHelpers;
+import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -12,7 +12,7 @@ import tech.pegasys.artemis.util.uint.UInt64;
 
 import java.util.List;
 
-import static org.ethereum.beacon.core.SpecHelpers.safeInt;
+import static org.ethereum.beacon.consensus.SpecHelpers.safeInt;
 
 public class NextSlotTransition implements StateTransition<BeaconState> {
   private final ChainSpec spec;

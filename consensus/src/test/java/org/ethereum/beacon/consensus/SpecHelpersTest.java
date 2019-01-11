@@ -1,4 +1,4 @@
-package org.ethereum.beacon.core;
+package org.ethereum.beacon.consensus;
 
 import org.ethereum.beacon.core.state.ShardCommittee;
 import org.ethereum.beacon.crypto.Hashes;
