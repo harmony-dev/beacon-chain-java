@@ -17,7 +17,7 @@ public interface SSZCodec {
 
   Set<String> getSupportedTypes();
 
-  Set<Class> getSupportedClassTypes();
+  Set<Class> getSupportedClasses();
 
   void encode(Object value, SSZSchemeBuilder.SSZScheme.SSZField field, OutputStream result);
 

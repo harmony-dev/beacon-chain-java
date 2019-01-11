@@ -59,7 +59,7 @@ public class UIntPrimitive implements SSZCodec {
   }
 
   @Override
-  public Set<Class> getSupportedClassTypes() {
+  public Set<Class> getSupportedClasses() {
     return supportedClassTypes;
   }
 

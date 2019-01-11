@@ -86,7 +86,7 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
     if(!mainAnnotation.encode().isEmpty()) {
       SSZScheme.SSZField encode = new SSZScheme.SSZField();
       encode.type = byte[].class;
-      encode.extraType = "encode";
+      encode.extraType = "bytes";
       encode.name = "encode";
       encode.getter = mainAnnotation.encode();
       scheme.fields.add(encode);

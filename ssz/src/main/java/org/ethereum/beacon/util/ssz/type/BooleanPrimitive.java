@@ -30,7 +30,7 @@ public class BooleanPrimitive implements SSZCodec {
   }
 
   @Override
-  public Set<Class> getSupportedClassTypes() {
+  public Set<Class> getSupportedClasses() {
     return supportedClassTypes;
   }
 

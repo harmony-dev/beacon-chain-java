@@ -19,6 +19,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -60,7 +61,7 @@ public class SSZSerializer {
   final static byte[] EMPTY_PREFIX = new byte[LENGTH_PREFIX_BYTE_SIZE];
 
   private SSZSchemeBuilder schemeBuilder;
-  private Map<Class, SSZCodec> registeredClassHandlers = new HashMap<>();
+  private Map<Class, List<CodecEntry>> registeredClassHandlers = new HashMap<>();
 
   public SSZSerializer(SSZSchemeBuilder schemeBuilder) {
     this.schemeBuilder = schemeBuilder; // TODO: move out schemeBuilder
@@ -256,12 +257,20 @@ public class SSZSerializer {
   }
 
   private SSZCodec resolveCodec(SSZScheme.SSZField field) {
-    SSZCodec decoder = null;
     if (registeredClassHandlers.containsKey(field.type)) {
-      decoder = registeredClassHandlers.get(field.type);
+      List<CodecEntry> codecs = registeredClassHandlers.get(field.type);
+      if (field.extraType == null || field.extraType.isEmpty()) {
+        return codecs.get(0).codec;
+      } else {
+        for (CodecEntry codecEntry : codecs) {
+          if (codecEntry.types.contains(field.extraType)) {
+            return codecEntry.codec;
+          }
+        }
+      }
     }
 
-    return decoder;
+    return null;
   }
 
   private static Pair<Boolean, Object> createInstanceWithConstructor(Class clazz, Class[] params,
@@ -330,18 +339,24 @@ public class SSZSerializer {
     return new Pair<>(true, result);
   }
 
-  public void registerClassTypes(Set<Class> classTypes, SSZCodec typeHandler) {
-    for (Class clazz : classTypes) {
-      if (registeredClassHandlers.put(clazz, typeHandler) != null) {
-        String error = String.format("Failed to register type %s handler, "
-            + "this type already has its handler", clazz);
-        throw new SSZSchemeException(error);
-      };
+  /**
+   * Registers codecs to be used for
+   * @param classes        Classes, resolving is performed with class at first
+   * @param types          Text type, one class could be interpreted to several types.
+   *                       Several codecs could handle one class.
+   *                       Empty/null type is occupied by first class codec.
+   *                       Type is looked up in codecs one by one.
+   * @param codec          Codec able to encode/decode of specific class/types
+   */
+  public void registerCodec(Set<Class> classes, Set<String> types, SSZCodec codec) {
+    for (Class clazz : classes) {
+      if (registeredClassHandlers.get(clazz) != null) {
+        registeredClassHandlers.get(clazz).add(new CodecEntry(codec, types));
+      } else {
+        registeredClassHandlers.put(clazz,
+            new ArrayList<>(Collections.singletonList(new CodecEntry(codec, types))));
+      }
     }
-  }
-
-  public void registerTypes(Set<String> types, SSZCodec typeHandler) {
-    // TODO: Do wee need this?
   }
 
   public void encodeContainer(Object value, SSZSchemeBuilder.SSZScheme.SSZField field, OutputStream result) {
@@ -421,5 +436,15 @@ public class SSZSerializer {
       remainingData -= decodeRes.getValue();
     }
     return res;
+  }
+
+  class CodecEntry {
+    SSZCodec codec;
+    Set<String> types;
+
+    public CodecEntry(SSZCodec codec, Set<String> types) {
+      this.codec = codec;
+      this.types = types;
+    }
   }
 }
