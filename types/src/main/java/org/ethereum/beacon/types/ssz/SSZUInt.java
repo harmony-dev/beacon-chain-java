@@ -7,7 +7,9 @@ import net.consensys.cava.ssz.SSZException;
 import org.ethereum.beacon.ssz.SSZSchemeBuilder;
 import org.ethereum.beacon.ssz.SSZSchemeException;
 import org.ethereum.beacon.ssz.type.SSZCodec;
+import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt24;
+import tech.pegasys.artemis.util.uint.UInt256;
 import tech.pegasys.artemis.util.uint.UInt64;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -23,14 +25,16 @@ import java.util.stream.Stream;
 import static java.util.function.Function.identity;
 
 /**
- * FIXME: INT and BIGINTs are unused in current implementation
+ * UInts codec. Supported:
+ * {@link UInt24}, {@link UInt64}, {@link UInt256} ...
  */
 public class SSZUInt implements SSZCodec {
   private static Map<Class, NumericType> classToNumericType = new HashMap<>();
 
   static {
-    classToNumericType.put(UInt64.class, NumericType.of(Type.LONG, 64));
     classToNumericType.put(UInt24.class, NumericType.of(Type.LONG, 24));
+    classToNumericType.put(UInt64.class, NumericType.of(Type.LONG, 64));
+    classToNumericType.put(UInt256.class, NumericType.of(Type.BIGINT, 256));
   }
 
   private static Set<String> supportedTypes = new HashSet<>();
@@ -39,8 +43,9 @@ public class SSZUInt implements SSZCodec {
 
   private static Set<Class> supportedClassTypes = new HashSet<>();
   static {
-    supportedClassTypes.add(UInt64.class);
     supportedClassTypes.add(UInt24.class);
+    supportedClassTypes.add(UInt64.class);
+    supportedClassTypes.add(UInt256.class);
   }
 
   @Override
@@ -57,39 +62,22 @@ public class SSZUInt implements SSZCodec {
   public void encode(Object value, SSZSchemeBuilder.SSZScheme.SSZField field, OutputStream result) {
     NumericType numericType = parseFieldType(field);
 
-    switch (numericType.type) {
-      case INT: {
-        encodeInt(value, numericType, result);
-        break;
-      }
-      case LONG: {
-        encodeLong(value, numericType, result);
-        break;
-      }
-      case BIGINT: {
-        encodeBigInt(value, numericType, result);
-        break;
-      }
-      default: {
-        throwUnsupportedType(field);
-      }
-    }
-  }
-
-  private static void encodeInt(Object value, NumericType type, OutputStream result)  {
-    encodeLong((int) value, type.size, result);
-  }
-
-  private void encodeLong(Object value, NumericType type, OutputStream result) {
-    switch (type.size) {
+    switch (numericType.size) {
       case 24: {
         UInt24 uValue = (UInt24) value;
-        encodeLong(uValue.getValue(), type.size, result);
+        Bytes bytes = SSZ.encodeULong(uValue.getValue(), numericType.size);
+        writeBytes(bytes, result);
         break;
       }
       case 64: {
         UInt64 uValue = (UInt64) value;
-        encodeLong(uValue.getValue(), type.size, result);
+        Bytes bytes = SSZ.encodeULong(uValue.getValue(), numericType.size);
+        writeBytes(bytes, result);
+        break;
+      }
+      case 256: {
+        UInt256 uValue = (UInt256) value;
+        writeBytesValue(uValue.bytes(), result);
         break;
       }
       default: {
@@ -98,21 +86,17 @@ public class SSZUInt implements SSZCodec {
     }
   }
 
-  private static void encodeLong(long value, int bitLength, OutputStream result) {
-    Bytes res = SSZ.encodeULong(value, bitLength);
+  private static void writeBytes(Bytes value, OutputStream result)  {
     try {
-      result.write(res.toArrayUnsafe());
+      result.write(value.toArrayUnsafe());
     } catch (IOException e) {
       throw new SSZException(String.format("Failed to write value \"%s\" to stream", value), e);
     }
   }
 
-  private static void encodeBigInt(Object value, NumericType type, OutputStream result)  {
-    BigInteger valueBI = (BigInteger) value;
-    Bytes res = SSZ.encodeBigInteger(valueBI, type.size);
-
+  private static void writeBytesValue(BytesValue value, OutputStream result)  {
     try {
-      result.write(res.toArrayUnsafe());
+      result.write(value.getArrayUnsafe());
     } catch (IOException e) {
       throw new SSZException(String.format("Failed to write value \"%s\" to stream", value), e);
     }
@@ -128,10 +112,6 @@ public class SSZUInt implements SSZCodec {
           encodeBigIntList(value, numericType, result);
           break;
         }
-        case INT: {
-          encodeIntList(value, numericType, result);
-          break;
-        }
         case LONG: {
           encodeLongList(value, numericType, result);
           break;
@@ -145,14 +125,6 @@ public class SSZUInt implements SSZCodec {
           field.name);
       throw new SSZException(error, ex);
     }
-  }
-
-  private void encodeIntList(List<Object> value, NumericType type, OutputStream result) throws IOException {
-    int[] data = new int[value.size()];
-    for (int i = 0; i < value.size(); ++i) {
-      data[i] = (int) value.get(i);
-    }
-    result.write(SSZ.encodeUIntList(type.size, data).toArrayUnsafe());
   }
 
   private void encodeLongList(List<Object> value, NumericType type, OutputStream result) throws IOException {
@@ -173,17 +145,26 @@ public class SSZUInt implements SSZCodec {
   }
 
   private void encodeBigIntList(List<Object> value, NumericType type, OutputStream result) throws IOException {
-    BigInteger[] data = (BigInteger[]) value.toArray(new BigInteger[0]);
-    result.write(SSZ.encodeBigIntegerList(type.size, data).toArrayUnsafe());
+    Bytes[] data = new Bytes[value.size()];
+    for (int i = 0; i < value.size(); ++i) {
+      switch (type.size) {
+        case 256: {
+          data[i] = Bytes.of(((UInt256) value.get(i)).bytes().getArrayUnsafe());
+          break;
+        }
+        default: {
+          String error = String.format("Unsupported type \"%s\"", type);
+          throw new SSZSchemeException(error);
+        }
+      }
+    }
+    result.write(SSZ.encodeBytesList(data).toArrayUnsafe());
   }
 
   @Override
   public Object decode(SSZSchemeBuilder.SSZScheme.SSZField field, BytesSSZReaderProxy reader) {
     NumericType numericType = parseFieldType(field);
     switch (numericType.type) {
-      case INT: {
-        return decodeInt(numericType, reader);
-      }
       case LONG: {
         return decodeLong(numericType, reader);
       }
@@ -195,12 +176,8 @@ public class SSZUInt implements SSZCodec {
     return throwUnsupportedType(field);
   }
 
-  private Object decodeInt(NumericType type, BytesSSZReaderProxy reader) {
-    return reader.readUInt(type.size);
-  }
-
   private Object decodeLong(NumericType type, BytesSSZReaderProxy reader) {
-    // reader.readULong is buggy
+    // XXX: reader.readULong is buggy
     switch (type.size) {
       case 24: {
         return UInt24.valueOf(reader.readUnsignedBigInteger(type.size).intValue());
@@ -214,7 +191,15 @@ public class SSZUInt implements SSZCodec {
   }
 
   private Object decodeBigInt(NumericType type, BytesSSZReaderProxy reader) {
-    return reader.readUnsignedBigInteger(type.size);
+    switch (type.size) {
+      case 256: {
+        return UInt256.wrap(BytesValue.of(reader.readUnsignedBigInteger(type.size).toByteArray()));
+      }
+      default: {
+        String error = String.format("Unsupported type \"%s\"", type);
+        throw new SSZSchemeException(error);
+      }
+    }
   }
 
   @Override
@@ -222,9 +207,6 @@ public class SSZUInt implements SSZCodec {
     NumericType numericType = parseFieldType(field);
 
     switch (numericType.type) {
-      case INT: {
-        return (List<Object>) (List<?>) reader.readUIntList(numericType.size);
-      }
       case LONG: {
         switch (numericType.size) {
           case 24: {
@@ -236,7 +218,9 @@ public class SSZUInt implements SSZCodec {
         }
       }
       case BIGINT: {
-        return (List<Object>) (List<?>)  reader.readUnsignedBigIntegerList(numericType.size);
+        if (numericType.size == 256) {
+          return (List<Object>) (List<?>)  readUInt256List(numericType, reader);
+        }
       }
       default: {
         return throwUnsupportedListType(field);
@@ -264,6 +248,15 @@ public class SSZUInt implements SSZCodec {
     return res;
   }
 
+  private List<UInt256> readUInt256List(NumericType numericType, BytesSSZReaderProxy reader) {
+    List<BigInteger> bigIntList = reader.readBigIntegerList(256);
+    List<UInt256> res = bigIntList.stream()
+        .map(UInt256::of)
+        .collect(Collectors.toList());
+
+    return res;
+  }
+
   static class NumericType {
     Type type;
     int size;
@@ -280,7 +273,6 @@ public class SSZUInt implements SSZCodec {
   }
 
   enum Type {
-    INT("int"),
     LONG("long"),
     BIGINT("bigint");
 
