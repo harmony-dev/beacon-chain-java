@@ -25,9 +25,9 @@ public class ProposerSignatureVerifier implements BeaconBlockVerifier {
   private final ChainSpec chainSpec;
   private final SpecHelpers specHelpers;
 
-  public ProposerSignatureVerifier(ChainSpec chainSpec) {
+  public ProposerSignatureVerifier(ChainSpec chainSpec, SpecHelpers specHelpers) {
     this.chainSpec = chainSpec;
-    this.specHelpers = new SpecHelpers(chainSpec);
+    this.specHelpers = specHelpers;
   }
 
   @Override
@@ -37,14 +37,14 @@ public class ProposerSignatureVerifier implements BeaconBlockVerifier {
 
     ProposalSignedData proposal =
         new ProposalSignedData(
-            block.getSlot(),
+            state.getSlot(),
             chainSpec.getBeaconChainShardNumber(),
             specHelpers.hash_tree_root(blockWithoutSignature));
 
     Hash32 proposalRoot = specHelpers.hash_tree_root(proposal);
-    UInt24 proposerIndex = specHelpers.get_beacon_proposer_index(state, block.getSlot());
+    UInt24 proposerIndex = specHelpers.get_beacon_proposer_index(state, state.getSlot());
     Bytes48 publicKey = state.getValidatorRegistryUnsafe().get(safeInt(proposerIndex)).getPubKey();
-    Bytes8 domain = specHelpers.get_domain(state.getForkData(), block.getSlot(), PROPOSAL);
+    Bytes8 domain = specHelpers.get_domain(state.getForkData(), state.getSlot(), PROPOSAL);
 
     if (specHelpers.bls_verify(publicKey, proposalRoot, block.getSignature(), domain)) {
       return VerificationResult.PASSED;
