@@ -30,6 +30,10 @@ public interface MessageParameters {
    */
   Bytes8 getDomain();
 
+  static MessageParameters create(Hash32 hash, Bytes8 domain) {
+    return new Impl(hash, domain);
+  }
+
   /** A straightforward implementation of {@link MessageParameters}. */
   class Impl implements MessageParameters {
     private final Hash32 hash;
