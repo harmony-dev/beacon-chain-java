@@ -16,6 +16,7 @@ package tech.pegasys.artemis.util.uint;
 import java.math.BigInteger;
 import java.util.Objects;
 import java.util.Random;
+import tech.pegasys.artemis.util.bytes.Bytes8;
 
 /** An immutable unsigned 64-bit precision integer. */
 public class UInt64 implements Comparable<UInt64> {
@@ -294,6 +295,15 @@ public class UInt64 implements Comparable<UInt64> {
    */
   public UInt64 shl(int number) {
     return new UInt64(value << number);
+  }
+
+  /**
+   * Converts value to {@link Bytes8} value. Uses {@link Bytes8#longToBytes8(long)} method.
+   *
+   * @return a {@link Bytes8} value.
+   */
+  public Bytes8 toBytes8() {
+    return Bytes8.longToBytes8(value);
   }
 
   @Override
