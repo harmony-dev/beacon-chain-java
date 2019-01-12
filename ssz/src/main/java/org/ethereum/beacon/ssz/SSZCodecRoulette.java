@@ -117,11 +117,9 @@ public class SSZCodecRoulette implements SSZCodecResolver {
       byte[] data = sszSerializer.encode(values.get(i), field.type);
       Bytes curValue;
       if (field.notAContainer) {
-        curValue = Bytes.of(data);
+        curValue = Bytes.of(data).slice(4);
       } else {
-        Bytes prefix = net.consensys.cava.ssz.SSZ.encodeInt32(data.length);
-        Bytes payload = Bytes.of(data);
-        curValue = Bytes.concatenate(prefix, payload);
+        curValue = Bytes.of(data);
       }
       res[i] = curValue;
     }

@@ -16,7 +16,7 @@ public class BeaconBlock implements Hashable {
   private final Bytes96 signature;
   private final BeaconBlockBody body;
 
-  BeaconBlock(
+  public BeaconBlock(
       UInt64 slot,
       Hash32 parentRoot,
       Hash32 stateRoot,
@@ -43,7 +43,7 @@ public class BeaconBlock implements Hashable {
   }
 
   public Hash32 getParentRoot() {
-    return Hash32.ZERO;
+    return parentRoot;
   }
 
   public boolean isParentOf(BeaconBlock other) {

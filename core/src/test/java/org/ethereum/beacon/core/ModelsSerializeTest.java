@@ -16,7 +16,6 @@ import org.ethereum.beacon.types.ssz.Serializer;
 import org.ethereum.beacon.core.operations.AttestationData;
 import org.ethereum.beacon.crypto.Hashes;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes48;
@@ -306,7 +305,6 @@ public class ModelsSerializeTest {
   }
 
   @Test
-  @Ignore("FIX ME!!!")
   public void beaconBlockBodyTest() {
     BeaconBlockBody expected = createBeaconBlockBody();
     BytesValue encoded = sszSerializer.encode2(expected);
@@ -329,7 +327,6 @@ public class ModelsSerializeTest {
   }
 
   @Test
-  @Ignore("FIX ME!!!")
   public void beaconBlockTest() {
     BeaconBlock expected = createBeaconBlock();
     BytesValue encoded = sszSerializer.encode2(expected);
