@@ -1,6 +1,9 @@
 package org.ethereum.beacon.ssz;
 
+import net.consensys.cava.bytes.Bytes;
+import net.consensys.cava.ssz.SSZ;
 import org.ethereum.beacon.crypto.Hashes;
+import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import org.ethereum.beacon.ssz.fixtures.AttestationRecord;
 import org.ethereum.beacon.ssz.fixtures.Bitfield;
 import org.ethereum.beacon.ssz.fixtures.Sign;
@@ -15,6 +18,9 @@ import java.util.Collections;
 import java.util.logging.Logger;
 
 import static com.sun.org.apache.xerces.internal.impl.dv.util.HexBin.decode;
+import static net.consensys.cava.bytes.Bytes.fromHexString;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 public class SSZSerializerTest {
   private SSZSerializer sszSerializer;
@@ -45,7 +51,7 @@ public class SSZSerializerTest {
     byte[] encoded = sszSerializer.encode(expected);
     Bitfield constructed = (Bitfield) sszSerializer.decode(encoded, Bitfield.class);
 
-    Assert.assertEquals(expected, constructed);
+    assertEquals(expected, constructed);
   }
 
   @Test
@@ -57,7 +63,7 @@ public class SSZSerializerTest {
     byte[] encoded = sszSerializer.encode(signature);
     Sign.Signature constructed = (Sign.Signature) sszSerializer.decode(encoded, Sign.Signature.class);
 
-    Assert.assertEquals(signature, constructed);
+    assertEquals(signature, constructed);
   }
 
   @Test
@@ -76,7 +82,7 @@ public class SSZSerializerTest {
     byte[] encoded = sszSerializer.encode(expected);
     AttestationRecord constructed = (AttestationRecord) sszSerializer.decode(encoded, AttestationRecord.class);
 
-    Assert.assertEquals(expected, constructed);
+    assertEquals(expected, constructed);
   }
 
   @Test
@@ -103,8 +109,8 @@ public class SSZSerializerTest {
 
     Assert.assertNotEquals(expected, constructed);
 
-    Assert.assertEquals(expected.getShardId(), constructed.getShardId());
-    Assert.assertEquals(expected.getObliqueParentHashes(), constructed.getObliqueParentHashes());
+    assertEquals(expected.getShardId(), constructed.getShardId());
+    assertEquals(expected.getObliqueParentHashes(), constructed.getObliqueParentHashes());
     Assert.assertArrayEquals(expected.getShardBlockHash(), constructed.getShardBlockHash());
     Assert.assertNull(constructed.getAggregateSig());
   }
@@ -124,7 +130,7 @@ public class SSZSerializerTest {
     byte[] encoded1 = sszSerializer.encode(expected1);
     AttestationRecord actual1 = (AttestationRecord) sszSerializer.decode(encoded1, AttestationRecord.class);
 
-    Assert.assertEquals(expected1, actual1);
+    assertEquals(expected1, actual1);
 
     AttestationRecord expected2 = new AttestationRecord(
         12412L,
@@ -139,7 +145,7 @@ public class SSZSerializerTest {
     byte[] encoded2 = sszSerializer.encode(expected2);
     AttestationRecord actual2 = (AttestationRecord) sszSerializer.decode(encoded2, AttestationRecord.class);
 
-    Assert.assertEquals(expected2, actual2);
+    assertEquals(expected2, actual2);
 
     AttestationRecord expected3 = new AttestationRecord(
         12412L,
@@ -154,7 +160,7 @@ public class SSZSerializerTest {
     byte[] encoded3 = sszSerializer.encode(expected3);
     AttestationRecord actual3 = (AttestationRecord) sszSerializer.decode(encoded3, AttestationRecord.class);
 
-    Assert.assertEquals(expected3, actual3);
+    assertEquals(expected3, actual3);
   }
 
   @Test(expected = NullPointerException.class)
@@ -185,5 +191,50 @@ public class SSZSerializerTest {
         DEFAULT_SIG
     );
     sszSerializer.encode(expected4);
+  }
+
+  @SSZSerializable
+  public static class SomeObject {
+    private final String name;
+    @org.ethereum.beacon.ssz.annotation.SSZ(type="uint8")
+    private final int number;
+    @org.ethereum.beacon.ssz.annotation.SSZ(type="uint256")
+    private final BigInteger longNumber;
+
+    public SomeObject(String name, int number, BigInteger longNumber) {
+      this.name = name;
+      this.number = number;
+      this.longNumber = longNumber;
+    }
+
+    public String getName() {
+      return name;
+    }
+
+    public int getNumber() {
+      return number;
+    }
+
+    public BigInteger getLongNumber() {
+      return longNumber;
+    }
+  }
+
+  @Test
+  public void shouldWorkLikeCavaWithObjects() {
+    Bytes bytes = fromHexString("0x00000003426F62040000000000000000000000000000000000000000000000000000011F71B70768");
+    SomeObject readObject = SSZ.decode(bytes, r -> new SomeObject(r.readString(), r.readInt8(), r.readBigInteger(256)));
+
+    assertEquals("Bob", readObject.name);
+    assertEquals(4, readObject.number);
+    assertEquals(BigInteger.valueOf(1234563434344L), readObject.longNumber);
+
+    // Now try the same with new SSZSerializer
+    SomeObject readObjectAuto = (SomeObject) sszSerializer.decode(bytes.toArrayUnsafe(), SomeObject.class);
+    assertEquals("Bob", readObjectAuto.name);
+    assertEquals(4, readObjectAuto.number);
+    assertEquals(BigInteger.valueOf(1234563434344L), readObjectAuto.longNumber);
+    // and finally check it backwards
+    assertArrayEquals(bytes.toArrayUnsafe(), sszSerializer.encode(readObjectAuto));
   }
 }
