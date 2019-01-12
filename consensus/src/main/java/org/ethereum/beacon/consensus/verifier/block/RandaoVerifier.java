@@ -19,7 +19,7 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
  */
 public class RandaoVerifier implements BeaconBlockVerifier {
 
-  private final SpecHelpers specHelpers;
+  private SpecHelpers specHelpers;
 
   public RandaoVerifier(SpecHelpers specHelpers) {
     this.specHelpers = specHelpers;

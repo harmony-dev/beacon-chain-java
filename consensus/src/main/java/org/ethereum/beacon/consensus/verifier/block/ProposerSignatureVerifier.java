@@ -24,8 +24,8 @@ import tech.pegasys.artemis.util.uint.UInt24;
  */
 public class ProposerSignatureVerifier implements BeaconBlockVerifier {
 
-  private final ChainSpec chainSpec;
-  private final SpecHelpers specHelpers;
+  private ChainSpec chainSpec;
+  private SpecHelpers specHelpers;
 
   public ProposerSignatureVerifier(ChainSpec chainSpec, SpecHelpers specHelpers) {
     this.chainSpec = chainSpec;
