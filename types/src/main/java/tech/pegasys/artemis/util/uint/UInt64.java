@@ -286,6 +286,16 @@ public class UInt64 implements Comparable<UInt64> {
     return new UInt64(this.value | uint.value);
   }
 
+  /**
+   * Shifts a bit pattern of the value to the left.
+   *
+   * @param number a number of positions to shift.
+   * @return shifted value.
+   */
+  public UInt64 shl(int number) {
+    return new UInt64(value << number);
+  }
+
   @Override
   public int compareTo(UInt64 uint) {
     return Long.compareUnsigned(this.value, uint.getValue());
