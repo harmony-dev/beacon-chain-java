@@ -7,13 +7,17 @@ import net.consensys.cava.ssz.SSZException;
 import org.ethereum.beacon.ssz.SSZSchemeBuilder;
 import org.ethereum.beacon.ssz.SSZSchemeException;
 import org.ethereum.beacon.ssz.type.SSZCodec;
+import tech.pegasys.artemis.ethereum.core.Address;
+import tech.pegasys.artemis.util.bytes.Bytes1;
 import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -26,6 +30,17 @@ public class SSZBytesValue implements SSZCodec {
     supportedClassTypes.add(Bytes48.class);
     supportedClassTypes.add(Bytes96.class);
     supportedClassTypes.add(BytesValue.class);
+    supportedClassTypes.add(Bytes1.class);
+    supportedClassTypes.add(Address.class);
+  }
+  private static Map<Class, BytesType> classToByteType = new HashMap<>();
+
+  static {
+    classToByteType.put(Bytes48.class, BytesType.of(48));
+    classToByteType.put(Bytes96.class, BytesType.of(96));
+    classToByteType.put(BytesValue.class, new BytesType());
+    classToByteType.put(Bytes1.class, BytesType.of(1));
+    classToByteType.put(Address.class, BytesType.of(20));
   }
 
   @Override
@@ -84,6 +99,12 @@ public class SSZBytesValue implements SSZCodec {
     }
     try {
       switch (bytesType.size) {
+        case 1: {
+          return Bytes1.wrap(reader.readBytes(bytesType.size).toArrayUnsafe());
+        }
+        case 20: {
+          return Address.wrap(BytesValue.of(reader.readBytes(bytesType.size).toArrayUnsafe()));
+        }
         case 48: {
           return Bytes48.wrap(reader.readBytes(bytesType.size).toArrayUnsafe());
         }
@@ -114,6 +135,21 @@ public class SSZBytesValue implements SSZCodec {
     List<BytesValue> res = null;
     try {
       switch (bytesType.size) {
+        case 1: {
+          res = bytesList.stream()
+              .map(Bytes::toArrayUnsafe)
+              .map(Bytes1::wrap)
+              .collect(Collectors.toList());
+          break;
+        }
+        case 20: {
+          res = bytesList.stream()
+              .map(Bytes::toArrayUnsafe)
+              .map(BytesValue::wrap)
+              .map(Address::wrap)
+              .collect(Collectors.toList());
+          break;
+        }
         case 48: {
           res = bytesList.stream()
               .map(Bytes::toArrayUnsafe)
@@ -152,12 +188,8 @@ public class SSZBytesValue implements SSZCodec {
   }
 
   private BytesType parseFieldType(SSZSchemeBuilder.SSZScheme.SSZField field) {
-    if (field.type.equals(Bytes48.class)) {
-      return BytesType.of(48);
-    } else if (field.type.equals(Bytes96.class)) {
-      return BytesType.of(96);
-    } else if (field.type.equals(BytesValue.class)) {
-      return new BytesType();
+    if (classToByteType.containsKey(field.type)) {
+      return classToByteType.get(field.type);
     }
 
     throw new SSZSchemeException(String.format("Hash of class %s is not supported", field.type));
