@@ -1,7 +1,7 @@
 dependencies {
   implementation project(':types')
 
-  implementation 'org.bouncycastle:bcprov-jdk15on'
-  implementation 'org.miracl.milagro.amcl:milagro-crypto-java'
+  api 'org.bouncycastle:bcprov-jdk15on'
+  api 'org.miracl.milagro.amcl:milagro-crypto-java'
   implementation 'com.google.guava:guava'
 }
