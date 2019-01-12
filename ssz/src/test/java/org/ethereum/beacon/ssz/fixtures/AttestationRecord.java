@@ -1,4 +1,4 @@
-package org.ethereum.beacon.ssz;
+package org.ethereum.beacon.ssz.fixtures;
 
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
