@@ -2,12 +2,10 @@ package org.ethereum.beacon.core.state;
 
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
-import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.uint.UInt64;
 
-@SSZSerializable
 /**
  * A record denoting a validator in the validator registry.
  *

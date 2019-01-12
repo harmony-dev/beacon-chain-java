@@ -1,12 +1,10 @@
 package org.ethereum.beacon.core.operations;
 
-import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
-@SSZSerializable
 /**
  * Attests on a block linked to particular slot in particular shard.
  *
@@ -52,16 +50,5 @@ public class Attestation {
 
   public Bytes96 getAggregatedSignature() {
     return aggregatedSignature;
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    Attestation that = (Attestation) o;
-    return data.equals(that.data) &&
-        participationBitfield.equals(that.participationBitfield) &&
-        custodyBitfield.equals(that.custodyBitfield) &&
-        aggregatedSignature.equals(that.aggregatedSignature);
   }
 }

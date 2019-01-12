@@ -1,10 +1,8 @@
 package org.ethereum.beacon.core.operations.slashing;
 
-import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
 
-@SSZSerializable
 public class ProposalSignedData {
   private final UInt64 slot;
   private final UInt64 shard;
@@ -26,15 +24,5 @@ public class ProposalSignedData {
 
   public Hash32 getBlockRoot() {
     return blockRoot;
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    ProposalSignedData that = (ProposalSignedData) o;
-    return slot.equals(that.slot) &&
-        shard.equals(that.shard) &&
-        blockRoot.equals(that.blockRoot);
   }
 }

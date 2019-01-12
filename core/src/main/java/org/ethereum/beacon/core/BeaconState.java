@@ -3,7 +3,6 @@ package org.ethereum.beacon.core;
 import static java.util.Collections.emptyList;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import org.ethereum.beacon.core.operations.CustodyChallenge;
 import org.ethereum.beacon.core.state.DepositRootVote;
@@ -13,11 +12,9 @@ import org.ethereum.beacon.core.state.PendingAttestationRecord;
 import org.ethereum.beacon.core.state.ShardCommittee;
 import org.ethereum.beacon.core.state.ShardCommittees;
 import org.ethereum.beacon.core.state.ValidatorRecord;
-import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
 
-@SSZSerializable
 /**
  * Beacon chain state.
  *
@@ -307,85 +304,9 @@ public class BeaconState implements Hashable<Hash32> {
     return new ArrayList<>(depositRootVotes);
   }
 
-  public List<ValidatorRecord> getValidatorRegistry() {
-    return validatorRegistry;
-  }
-
-  public List<UInt64> getValidatorBalances() {
-    return validatorBalances;
-  }
-
-  public List<Hash32> getLatestRandaoMixes() {
-    return latestRandaoMixes;
-  }
-
-  public List<Hash32> getLatestVdfOutputs() {
-    return latestVdfOutputs;
-  }
-
-  public ShardCommittee[][] getShardCommitteesAtSlots() {
-    return shardCommitteesAtSlots;
-  }
-
-  public List<CustodyChallenge> getCustodyChallenges() {
-    return custodyChallenges;
-  }
-
-  public List<CrosslinkRecord> getLatestCrosslinks() {
-    return latestCrosslinks;
-  }
-
-  public List<Hash32> getLatestBlockRoots() {
-    return latestBlockRoots;
-  }
-
-  public List<UInt64> getLatestPenalizedExitBalances() {
-    return latestPenalizedExitBalances;
-  }
-
-  public List<PendingAttestationRecord> getLatestAttestations() {
-    return latestAttestations;
-  }
-
-  public List<Hash32> getBatchedBlockRoots() {
-    return batchedBlockRoots;
-  }
-
-  public List<DepositRootVote> getDepositRootVotes() {
-    return depositRootVotes;
-  }
-
   @Override
   public Hash32 getHash() {
     return Hash32.ZERO;
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    BeaconState that = (BeaconState) o;
-    return slot.equals(that.slot) &&
-        genesisTime.equals(that.genesisTime) &&
-        validatorBalances.equals(that.validatorBalances) &&
-        validatorRegistryLatestChangeSlot.equals(that.validatorRegistryLatestChangeSlot) &&
-        validatorRegistryExitCount.equals(that.validatorRegistryExitCount) &&
-        validatorRegistryDeltaChainTip.equals(that.validatorRegistryDeltaChainTip) &&
-        latestRandaoMixes.equals(that.latestRandaoMixes) &&
-        latestVdfOutputs.equals(that.latestVdfOutputs) &&
-        Arrays.equals(shardCommitteesAtSlots, that.shardCommitteesAtSlots) &&
-        custodyChallenges.equals(that.custodyChallenges) &&
-        previousJustifiedSlot.equals(that.previousJustifiedSlot) &&
-        justifiedSlot.equals(that.justifiedSlot) &&
-        justificationBitfield.equals(that.justificationBitfield) &&
-        finalizedSlot.equals(that.finalizedSlot) &&
-        latestCrosslinks.equals(that.latestCrosslinks) &&
-        latestBlockRoots.equals(that.latestBlockRoots) &&
-        latestPenalizedExitBalances.equals(that.latestPenalizedExitBalances) &&
-        latestAttestations.equals(that.latestAttestations) &&
-        batchedBlockRoots.equals(that.batchedBlockRoots) &&
-        latestDepositRoot.equals(that.latestDepositRoot) &&
-        depositRootVotes.equals(that.depositRootVotes);
   }
 
   public static class Builder {
