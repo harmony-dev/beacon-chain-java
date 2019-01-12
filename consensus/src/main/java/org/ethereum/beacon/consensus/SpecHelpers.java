@@ -2,11 +2,19 @@ package org.ethereum.beacon.consensus;
 
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.state.ForkData;
 import org.ethereum.beacon.core.state.ShardCommittee;
 import org.ethereum.beacon.core.state.ValidatorRecord;
+import org.ethereum.beacon.crypto.BLS381;
+import org.ethereum.beacon.crypto.BLS381.PublicKey;
+import org.ethereum.beacon.crypto.BLS381.Signature;
 import org.ethereum.beacon.crypto.Hashes;
+import org.ethereum.beacon.crypto.MessageParameters;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes3;
+import tech.pegasys.artemis.util.bytes.Bytes48;
+import tech.pegasys.artemis.util.bytes.Bytes8;
+import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
@@ -33,52 +41,49 @@ public class SpecHelpers {
   }
 
   /*
-    state_epoch_slot = state.slot - (state.slot % EPOCH_LENGTH)
-    assert state_epoch_slot <= slot + EPOCH_LENGTH
-    assert slot < state_epoch_slot + EPOCH_LENGTH
-    return state.shard_committees_at_slots[slot - state_epoch_slot + EPOCH_LENGTH]
-   */
+   state_epoch_slot = state.slot - (state.slot % EPOCH_LENGTH)
+   assert state_epoch_slot <= slot + EPOCH_LENGTH
+   assert slot < state_epoch_slot + EPOCH_LENGTH
+   return state.shard_committees_at_slots[slot - state_epoch_slot + EPOCH_LENGTH]
+  */
   public ShardCommittee[] get_shard_committees_at_slot(BeaconState state, UInt64 slot) {
     UInt64 state_epoch_slot = state.getSlot().minus(state.getSlot().modulo(spec.getEpochLength()));
     assertTrue(state_epoch_slot.compareTo(slot.plus(spec.getEpochLength())) <= 0);
     assertTrue(slot.compareTo(state_epoch_slot.plus(spec.getEpochLength())) < 0);
-    return state.getShardCommitteesAtSlotsUnsafe()[safeInt(
-        slot
-            .minus(state_epoch_slot)
-            .plus(spec.getEpochLength()))];
-
+    return state
+        .getShardCommitteesAtSlotsUnsafe()[
+        safeInt(slot.minus(state_epoch_slot).plus(spec.getEpochLength()))];
   }
 
   /*
-    first_committee = get_shard_committees_at_slot(state, slot)[0].committee
-    return first_committee[slot % len(first_committee)]
-   */
+   first_committee = get_shard_committees_at_slot(state, slot)[0].committee
+   return first_committee[slot % len(first_committee)]
+  */
   public UInt24 get_beacon_proposer_index(BeaconState state, UInt64 slot) {
     ShardCommittee[] committees = get_shard_committees_at_slot(state, slot);
     UInt24[] first_committee = committees[0].getCommittee();
     return first_committee[safeInt(slot.modulo(first_committee.length))];
   }
 
-
   /*
-    def is_active_validator(validator: ValidatorRecord, slot: int) -> bool:
-    """
-    Checks if ``validator`` is active.
-    """
-    return validator.activation_slot <= slot < validator.exit_slot
-   */
+   def is_active_validator(validator: ValidatorRecord, slot: int) -> bool:
+   """
+   Checks if ``validator`` is active.
+   """
+   return validator.activation_slot <= slot < validator.exit_slot
+  */
   public boolean is_active_validator(ValidatorRecord validator, UInt64 slot) {
-    return validator.getActivationSlot().compareTo(slot) <= 0 &&
-        slot.compareTo(validator.getExitSlot()) < 0;
+    return validator.getActivationSlot().compareTo(slot) <= 0
+        && slot.compareTo(validator.getExitSlot()) < 0;
   }
 
   /*
-    def get_active_validator_indices(validators: [ValidatorRecord], slot: int) -> List[int]:
-    """
-    Gets indices of active validators from ``validators``.
-    """
-    return [i for i, v in enumerate(validators) if is_active_validator(v, slot)]
-   */
+   def get_active_validator_indices(validators: [ValidatorRecord], slot: int) -> List[int]:
+   """
+   Gets indices of active validators from ``validators``.
+   """
+   return [i for i, v in enumerate(validators) if is_active_validator(v, slot)]
+  */
   public int[] get_active_validator_indices(ValidatorRecord[] validators, UInt64 slot) {
     ArrayList<Integer> ret = new ArrayList<>();
     for (int i = 0; i < validators.length; i++) {
@@ -90,11 +95,11 @@ public class SpecHelpers {
   }
 
   /*
-    def shuffle(values: List[Any], seed: Hash32) -> List[Any]:
-    """
-    Returns the shuffled ``values`` with ``seed`` as entropy.
-    """
-   */
+   def shuffle(values: List[Any], seed: Hash32) -> List[Any]:
+   """
+   Returns the shuffled ``values`` with ``seed`` as entropy.
+   """
+  */
   public int[] shuffle(int[] values, Hash32 seed) {
 
     //    values_count = len(values)
@@ -154,7 +159,8 @@ public class SpecHelpers {
           //    replacement_position = (sample_from_source % remaining) + index
           int replacement_position = (sample_from_source % remaining) + index;
           //    # Swap the current index with the replacement index.
-          //    output[index], output[replacement_position] = output[replacement_position], output[index]
+          //    output[index], output[replacement_position] = output[replacement_position],
+          // output[index]
           //    index += 1
           int tmp = output[index];
           output[index] = output[replacement_position];
@@ -171,16 +177,16 @@ public class SpecHelpers {
   }
 
   /*
-    def split(values: List[Any], split_count: int) -> List[Any]:
-    """
-    Splits ``values`` into ``split_count`` pieces.
-    """
-    list_length = len(values)
-    return [
-        values[(list_length * i // split_count): (list_length * (i + 1) // split_count)]
-        for i in range(split_count)
-    ]
-   */
+   def split(values: List[Any], split_count: int) -> List[Any]:
+   """
+   Splits ``values`` into ``split_count`` pieces.
+   """
+   list_length = len(values)
+   return [
+       values[(list_length * i // split_count): (list_length * (i + 1) // split_count)]
+       for i in range(split_count)
+   ]
+  */
   public int[][] split(int[] values, int split_count) {
     int[][] ret = new int[split_count][];
     for (int i = 0; i < split_count; i++) {
@@ -200,10 +206,8 @@ public class SpecHelpers {
   Shuffles ``validators`` into shard committees seeded by ``randao_mix`` and ``slot``.
   """
   */
-  public ShardCommittee[][] get_shuffling(Hash32 seed,
-                                                 ValidatorRecord[] validators,
-                                                 int crosslinking_start_shard,
-                                                 UInt64 _slot) {
+  public ShardCommittee[][] get_shuffling(
+      Hash32 seed, ValidatorRecord[] validators, int crosslinking_start_shard, UInt64 _slot) {
 
     //     # Normalizes slot to start of epoch boundary
     //    slot -= slot % EPOCH_LENGTH
@@ -215,9 +219,8 @@ public class SpecHelpers {
     return get_active_shuffling(seed, active_validator_indices, crosslinking_start_shard);
   }
 
-  ShardCommittee[][] get_active_shuffling(Hash32 seed,
-                                          int[] active_validator_indices,
-                                          int crosslinking_start_shard) {
+  ShardCommittee[][] get_active_shuffling(
+      Hash32 seed, int[] active_validator_indices, int crosslinking_start_shard) {
 
     //    committees_per_slot = max(
     //        1,
@@ -226,26 +229,25 @@ public class SpecHelpers {
     //            len(active_validator_indices) // EPOCH_LENGTH // TARGET_COMMITTEE_SIZE,
     //        )
     //    )
-    int committees_per_slot = max(1,
-        min(
-            spec.getShardCount()
-                .dividedBy(spec.getEpochLength())
-                .getIntValue(),
-            UInt64.valueOf(active_validator_indices.length)
-                .dividedBy(spec.getEpochLength())
-                .dividedBy(spec.getTargetCommitteeSize().getValue())
-                .getIntValue()
-        )
-    );
+    int committees_per_slot =
+        max(
+            1,
+            min(
+                spec.getShardCount().dividedBy(spec.getEpochLength()).getIntValue(),
+                UInt64.valueOf(active_validator_indices.length)
+                    .dividedBy(spec.getEpochLength())
+                    .dividedBy(spec.getTargetCommitteeSize().getValue())
+                    .getIntValue()));
 
     //    # Shuffle
-    //TODO    seed = xor(randao_mix, bytes32(slot)) - looks obsolete
+    // TODO    seed = xor(randao_mix, bytes32(slot)) - looks obsolete
     //    shuffled_active_validator_indices = shuffle(active_validator_indices, seed)
     int[] shuffled_active_validator_indices = shuffle(active_validator_indices, seed);
 
     //    # Split the shuffled list into epoch_length pieces
     //    validators_per_slot = split(shuffled_active_validator_indices, EPOCH_LENGTH)
-    int[][] validators_per_slot = split(shuffled_active_validator_indices, spec.getEpochLength().getIntValue());
+    int[][] validators_per_slot =
+        split(shuffled_active_validator_indices, spec.getEpochLength().getIntValue());
 
     //    output = []
     List<ShardCommittee[]> output = new ArrayList<>();
@@ -272,10 +274,11 @@ public class SpecHelpers {
       ShardCommittee[] shard_committees = new ShardCommittee[shard_indices.length];
       for (int shard_position = 0; shard_position < shard_indices.length; shard_position++) {
         int[] indices = shard_indices[shard_position];
-        shard_committees[shard_position] = new ShardCommittee(
-            UInt64.valueOf(shard_id_start + shard_position),
-            Arrays.stream(indices).mapToObj(UInt24::valueOf).toArray(UInt24[]::new),
-            UInt64.valueOf(active_validator_indices.length));
+        shard_committees[shard_position] =
+            new ShardCommittee(
+                UInt64.valueOf(shard_id_start + shard_position),
+                Arrays.stream(indices).mapToObj(UInt24::valueOf).toArray(UInt24[]::new),
+                UInt64.valueOf(active_validator_indices.length));
       }
 
       //      output.append(shard_committees)
@@ -285,10 +288,39 @@ public class SpecHelpers {
     return output.toArray(new ShardCommittee[0][]);
   }
 
+  public Hash32 hash_tree_root(Object object) {
+    return Hash32.ZERO;
+  }
+
+  public boolean bls_verify(Bytes48 publicKey, Hash32 message, Bytes96 signature, Bytes8 domain) {
+    MessageParameters messageParameters = MessageParameters.create(message, domain);
+    PublicKey blsPublicKey = PublicKey.create(publicKey);
+    Signature blsSignature = Signature.create(signature);
+    return BLS381.verify(messageParameters, blsSignature, blsPublicKey);
+  }
+
+  public UInt64 get_fork_version(ForkData forkData, UInt64 slot) {
+    if (slot.compareTo(forkData.getForkSlot()) < 0) {
+      return forkData.getPreForkVersion();
+    } else {
+      return forkData.getPostForkVersion();
+    }
+  }
+
+  public Bytes8 get_domain(ForkData forkData, UInt64 slot, UInt64 domainType) {
+    return get_fork_version(forkData, slot).shl(32).plus(domainType).toBytes8();
+  }
+
   public static int safeInt(UInt64 uint) {
     long lVal = uint.getValue();
     assertTrue(lVal >= 0 && lVal < Integer.MAX_VALUE);
     return (int) lVal;
+  }
+
+  public static int safeInt(UInt24 uint) {
+    int lVal = uint.getValue();
+    assertTrue(lVal >= 0 && lVal < (1 << 24));
+    return lVal;
   }
 
   private static void assertTrue(boolean assertion) {

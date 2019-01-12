@@ -1,10 +1,9 @@
 package org.ethereum.beacon.consensus.verifier;
 
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.BeaconState;
 
 public interface BeaconBlockVerifier {
 
-  VerificationResult validate(BeaconBlock block, Context context);
-
-  class Context {}
+  VerificationResult verify(BeaconBlock block, BeaconState state);
 }

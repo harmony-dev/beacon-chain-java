@@ -8,7 +8,6 @@ import org.ethereum.beacon.chain.storage.BeaconStateStorage;
 import org.ethereum.beacon.chain.storage.BeaconTuple;
 import org.ethereum.beacon.chain.storage.BeaconTupleStorage;
 import org.ethereum.beacon.consensus.ScoreFunction;
-import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier.Context;
 import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
 import org.ethereum.beacon.consensus.verifier.BeaconStateVerifier;
@@ -67,7 +66,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   public synchronized void insert(BeaconBlock block) {
     assert head != null;
 
-    VerificationResult blockVerification = blockVerifier.validate(block, new Context());
+    VerificationResult blockVerification = blockVerifier.verify(block, head.getState());
     if (!blockVerification.isPassed()) {
       return;
     }
