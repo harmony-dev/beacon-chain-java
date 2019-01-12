@@ -1,9 +1,11 @@
-package org.ethereum.beacon.consensus.verifier;
+package org.ethereum.beacon.consensus.verifier.block;
 
 import static org.ethereum.beacon.consensus.SpecHelpers.safeInt;
 import static org.ethereum.beacon.core.spec.SignatureDomains.PROPOSAL;
 
 import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
+import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.slashing.ProposalSignedData;

@@ -311,6 +311,10 @@ public class SpecHelpers {
     return get_fork_version(forkData, slot).shl(32).plus(domainType).toBytes8();
   }
 
+  public Hash32 repeat_hash(Hash32 x, int n) {
+    return n == 0 ? x : repeat_hash(x, n - 1);
+  }
+
   public static int safeInt(UInt64 uint) {
     long lVal = uint.getValue();
     assertTrue(lVal >= 0 && lVal < Integer.MAX_VALUE);
