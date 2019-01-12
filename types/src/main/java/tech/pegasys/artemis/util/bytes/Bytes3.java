@@ -16,6 +16,7 @@ package tech.pegasys.artemis.util.bytes;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import tech.pegasys.artemis.util.uint.Int256;
+import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt256;
 import tech.pegasys.artemis.util.uint.UInt256Bytes;
 
@@ -207,5 +208,13 @@ public interface Bytes3 extends BytesValue {
    */
   default Int256 asInt256() {
     return Int256.wrap(this);
+  }
+
+  default UInt24 asUInt24BigEndian() {
+    int value = 0;
+    value |= ((int) get(0) & 0xFF) << 16;
+    value |= ((int) get(1) & 0xFF) << 8;
+    value |= ((int) get(2) & 0xFF);
+    return UInt24.valueOf(value);
   }
 }

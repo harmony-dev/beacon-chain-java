@@ -5,7 +5,7 @@ import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.Hashable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
-public class BeaconTuple implements Hashable {
+public class BeaconTuple implements Hashable<Hash32> {
 
   private final BeaconBlock block;
   private final BeaconState state;

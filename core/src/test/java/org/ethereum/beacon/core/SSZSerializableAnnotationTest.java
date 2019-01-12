@@ -1,18 +1,18 @@
 package org.ethereum.beacon.core;
 
 import org.ethereum.beacon.core.operations.Attestation;
-import org.ethereum.beacon.core.operations.AttestationData;
 import org.ethereum.beacon.core.operations.CasperSlashing;
+import org.ethereum.beacon.core.operations.CustodyChallenge;
+import org.ethereum.beacon.core.operations.CustodyReseed;
+import org.ethereum.beacon.core.operations.CustodyResponse;
 import org.ethereum.beacon.core.operations.Deposit;
-import org.ethereum.beacon.core.operations.DepositData;
-import org.ethereum.beacon.core.operations.DepositInput;
 import org.ethereum.beacon.core.operations.Exit;
-import org.ethereum.beacon.core.operations.ProofOfCustodyChallenge;
-import org.ethereum.beacon.core.operations.ProofOfCustodyResponse;
-import org.ethereum.beacon.core.operations.ProofOfCustodySeedChange;
-import org.ethereum.beacon.core.operations.ProposalSignedData;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
-import org.ethereum.beacon.core.operations.SlashableVoteData;
+import org.ethereum.beacon.core.operations.attestation.AttestationData;
+import org.ethereum.beacon.core.operations.deposit.DepositData;
+import org.ethereum.beacon.core.operations.deposit.DepositInput;
+import org.ethereum.beacon.core.operations.slashing.ProposalSignedData;
+import org.ethereum.beacon.core.operations.slashing.SlashableVoteData;
 import org.junit.Test;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import java.io.File;
@@ -52,9 +52,9 @@ public class SSZSerializableAnnotationTest {
         DepositData.class,
         DepositInput.class,
         Exit.class,
-        ProofOfCustodySeedChange.class,
-        ProofOfCustodyResponse.class,
-        ProofOfCustodyChallenge.class,
+        CustodyReseed.class,
+        CustodyResponse.class,
+        CustodyChallenge.class,
         ProposalSignedData.class,
         ProposerSlashing.class,
         SlashableVoteData.class

@@ -7,14 +7,26 @@ import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.CasperSlashing;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.Exit;
-import org.ethereum.beacon.core.operations.ProofOfCustodyChallenge;
-import org.ethereum.beacon.core.operations.ProofOfCustodyResponse;
-import org.ethereum.beacon.core.operations.ProofOfCustodySeedChange;
+import org.ethereum.beacon.core.operations.CustodyChallenge;
+import org.ethereum.beacon.core.operations.CustodyResponse;
+import org.ethereum.beacon.core.operations.CustodyReseed;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 
 @SSZSerializable
+/**
+ * Beacon block body.
+ *
+ * <p>Contains lists of beacon chain operations.
+ *
+ * @see BeaconBlock
+ * @see <a
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md#beaconblockbody">BeaconBlockBody
+ *     in the spec</a>
+ */
 public class BeaconBlockBody {
+
+  /** A body where all lists are empty. */
   public static final BeaconBlockBody EMPTY =
       new BeaconBlockBody(
           emptyList(),
@@ -26,30 +38,38 @@ public class BeaconBlockBody {
           emptyList(),
           emptyList());
 
+  /** A list of proposer slashing challenges. */
   private final List<ProposerSlashing> proposerSlashings;
+  /** A list of Casper slashing challenges. */
   private final List<CasperSlashing> casperSlashings;
+  /** A list of attestations. */
   private final List<Attestation> attestations;
-  private final List<ProofOfCustodySeedChange> pocSeedChanges;
-  private final List<ProofOfCustodyChallenge> pocChallenges;
-  private final List<ProofOfCustodyResponse> pocResponses;
+  /** A list of proof of custody seed changes. */
+  private final List<CustodyReseed> custodyReseeds;
+  /** A list of proof of custody challenges. */
+  private final List<CustodyChallenge> custodyChallenges;
+  /** A list of proof of custody challenge responses. */
+  private final List<CustodyResponse> custodyResponses;
+  /** A list of validator deposit proofs. */
   private final List<Deposit> deposits;
+  /** A list of validator exits. */
   private final List<Exit> exits;
 
   public BeaconBlockBody(
       List<ProposerSlashing> proposerSlashings,
       List<CasperSlashing> casperSlashings,
       List<Attestation> attestations,
-      List<ProofOfCustodySeedChange> pocSeedChanges,
-      List<ProofOfCustodyChallenge> pocChallenges,
-      List<ProofOfCustodyResponse> pocResponses,
+      List<CustodyReseed> custodyReseeds,
+      List<CustodyChallenge> custodyChallenges,
+      List<CustodyResponse> custodyResponses,
       List<Deposit> deposits,
       List<Exit> exits) {
     this.proposerSlashings = proposerSlashings;
     this.casperSlashings = casperSlashings;
     this.attestations = attestations;
-    this.pocSeedChanges = pocSeedChanges;
-    this.pocChallenges = pocChallenges;
-    this.pocResponses = pocResponses;
+    this.custodyReseeds = custodyReseeds;
+    this.custodyChallenges = custodyChallenges;
+    this.custodyResponses = custodyResponses;
     this.deposits = deposits;
     this.exits = exits;
   }
@@ -66,16 +86,16 @@ public class BeaconBlockBody {
     return attestations;
   }
 
-  public List<ProofOfCustodySeedChange> getPocSeedChanges() {
-    return pocSeedChanges;
+  public List<CustodyReseed> getCustodyReseeds() {
+    return custodyReseeds;
   }
 
-  public List<ProofOfCustodyChallenge> getPocChallenges() {
-    return pocChallenges;
+  public List<CustodyChallenge> getCustodyChallenges() {
+    return custodyChallenges;
   }
 
-  public List<ProofOfCustodyResponse> getPocResponses() {
-    return pocResponses;
+  public List<CustodyResponse> getCustodyResponses() {
+    return custodyResponses;
   }
 
   public List<Deposit> getDeposits() {
@@ -94,9 +114,9 @@ public class BeaconBlockBody {
     return proposerSlashings.equals(that.proposerSlashings) &&
         casperSlashings.equals(that.casperSlashings) &&
         attestations.equals(that.attestations) &&
-        pocSeedChanges.equals(that.pocSeedChanges) &&
-        pocChallenges.equals(that.pocChallenges) &&
-        pocResponses.equals(that.pocResponses) &&
+        custodyReseeds.equals(that.custodyReseeds) &&
+        custodyChallenges.equals(that.custodyChallenges) &&
+        custodyResponses.equals(that.custodyResponses) &&
         deposits.equals(that.deposits) &&
         exits.equals(that.exits);
   }

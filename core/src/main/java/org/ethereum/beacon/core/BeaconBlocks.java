@@ -1,20 +1,29 @@
 package org.ethereum.beacon.core;
 
+import org.ethereum.beacon.core.spec.ChainSpec;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.bytes.Bytes96;
-import tech.pegasys.artemis.util.uint.UInt64;
 
+/** A class holding various utility methods to work with {@link BeaconBlock}. */
 public abstract class BeaconBlocks {
   private BeaconBlocks() {}
 
-  public static BeaconBlock createGenesis() {
+  /**
+   * Creates an instance of Genesis block.
+   *
+   * <p><strong>Note:</strong> it assumed that {@link BeaconBlock#stateRoot} will be set later on,
+   * hence, it's set to {@link Hash32#ZERO}.
+   *
+   * @param chainSpec beacon chain spec.
+   * @return a genesis block.
+   */
+  public static BeaconBlock createGenesis(ChainSpec chainSpec) {
     return new BeaconBlock(
-        UInt64.ZERO,
+        chainSpec.getGenesisSlot(),
         Hash32.ZERO,
         Hash32.ZERO,
         Hash32.ZERO,
         Hash32.ZERO,
-        Bytes96.ZERO,
+        chainSpec.getEmptySignature(),
         BeaconBlockBody.EMPTY);
   }
 }

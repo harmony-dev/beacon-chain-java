@@ -14,9 +14,11 @@ allprojects {
   targetCompatibility = '1.8'
 
   dependencies {
+    implementation 'com.google.code.findbugs:jsr305'
     implementation 'org.javatuples:javatuples'
-    testImplementation 'junit:junit:4.12'
-    testImplementation 'org.assertj:assertj-core:3.11.1'
+
+    testImplementation 'junit:junit'
+    testImplementation 'org.assertj:assertj-core'
   }
 
   repositories {

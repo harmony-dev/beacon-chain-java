@@ -1,4 +1,8 @@
 dependencies {
   implementation project(':types')
   implementation project(':core')
+  implementation project(':crypto')
+  implementation project(':pow')
+
+  implementation 'com.google.guava:guava'
 }

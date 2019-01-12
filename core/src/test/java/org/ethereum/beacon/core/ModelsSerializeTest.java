@@ -2,18 +2,18 @@ package org.ethereum.beacon.core;
 
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.CasperSlashing;
+import org.ethereum.beacon.core.operations.CustodyChallenge;
+import org.ethereum.beacon.core.operations.CustodyReseed;
+import org.ethereum.beacon.core.operations.CustodyResponse;
 import org.ethereum.beacon.core.operations.Deposit;
-import org.ethereum.beacon.core.operations.DepositData;
-import org.ethereum.beacon.core.operations.DepositInput;
 import org.ethereum.beacon.core.operations.Exit;
-import org.ethereum.beacon.core.operations.ProofOfCustodyChallenge;
-import org.ethereum.beacon.core.operations.ProofOfCustodyResponse;
-import org.ethereum.beacon.core.operations.ProofOfCustodySeedChange;
-import org.ethereum.beacon.core.operations.ProposalSignedData;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
-import org.ethereum.beacon.core.operations.SlashableVoteData;
+import org.ethereum.beacon.core.operations.attestation.AttestationData;
+import org.ethereum.beacon.core.operations.deposit.DepositData;
+import org.ethereum.beacon.core.operations.deposit.DepositInput;
+import org.ethereum.beacon.core.operations.slashing.ProposalSignedData;
+import org.ethereum.beacon.core.operations.slashing.SlashableVoteData;
 import org.ethereum.beacon.types.ssz.Serializer;
-import org.ethereum.beacon.core.operations.AttestationData;
 import org.ethereum.beacon.crypto.Hashes;
 import org.junit.Before;
 import org.junit.Test;
@@ -81,7 +81,12 @@ public class ModelsSerializeTest {
   }
 
   private SlashableVoteData createSlashableVoteData() {
-    SlashableVoteData slashableVoteData = new SlashableVoteData();
+    UInt24[] custodyBit0Indices = new UInt24[0];
+    UInt24[] custodyBit1Indices = new UInt24[]{UInt24.valueOf(123), UInt24.MAX_VALUE};
+    AttestationData data = createAttestationData();
+    Bytes96 aggregatedSignature = Bytes96.fromHexString("aabbccdd");
+    SlashableVoteData slashableVoteData = new SlashableVoteData(custodyBit0Indices, custodyBit1Indices,
+        data, aggregatedSignature);
     return slashableVoteData;
   }
 
@@ -200,47 +205,51 @@ public class ModelsSerializeTest {
     assertEquals(expected, reconstructed);
   }
 
-  private ProofOfCustodyChallenge createProofOfCustodyChallenge() {
-    ProofOfCustodyChallenge proofOfCustodyChallenge = new ProofOfCustodyChallenge();
+  private CustodyChallenge createProofOfCustodyChallenge() {
+    CustodyChallenge proofOfCustodyChallenge = new CustodyChallenge();
     return proofOfCustodyChallenge;
   }
 
   @Test
   public void proofOfCustodyChallengeTest() {
-    ProofOfCustodyChallenge expected = createProofOfCustodyChallenge();
+    CustodyChallenge expected = createProofOfCustodyChallenge();
     BytesValue encoded = sszSerializer.encode2(expected);
-    ProofOfCustodyChallenge reconstructed = (ProofOfCustodyChallenge) sszSerializer.decode(encoded, ProofOfCustodyChallenge.class);
+    CustodyChallenge reconstructed = (CustodyChallenge) sszSerializer.decode(encoded, CustodyChallenge.class);
     assertEquals(expected, reconstructed);
   }
 
-  private ProofOfCustodyResponse createProofOfCustodyResponse() {
-    ProofOfCustodyResponse proofOfCustodyResponse = new ProofOfCustodyResponse();
+  private CustodyResponse createProofOfCustodyResponse() {
+    CustodyResponse proofOfCustodyResponse = new CustodyResponse();
     return proofOfCustodyResponse;
   }
 
   @Test
   public void proofOfCustodyResponseTest() {
-    ProofOfCustodyResponse expected = createProofOfCustodyResponse();
+    CustodyResponse expected = createProofOfCustodyResponse();
     BytesValue encoded = sszSerializer.encode2(expected);
-    ProofOfCustodyResponse reconstructed = (ProofOfCustodyResponse) sszSerializer.decode(encoded, ProofOfCustodyResponse.class);
+    CustodyResponse reconstructed = (CustodyResponse) sszSerializer.decode(encoded, CustodyResponse.class);
     assertEquals(expected, reconstructed);
   }
 
-  private ProofOfCustodySeedChange createProofOfCustodySeedChange() {
-    ProofOfCustodySeedChange proofOfCustodySeedChange = new ProofOfCustodySeedChange();
+  private CustodyReseed createProofOfCustodySeedChange() {
+    CustodyReseed proofOfCustodySeedChange = new CustodyReseed();
     return proofOfCustodySeedChange;
   }
 
   @Test
   public void proofOfCustodySeedChangeTest() {
-    ProofOfCustodySeedChange expected = createProofOfCustodySeedChange();
+    CustodyReseed expected = createProofOfCustodySeedChange();
     BytesValue encoded = sszSerializer.encode2(expected);
-    ProofOfCustodySeedChange reconstructed = (ProofOfCustodySeedChange) sszSerializer.decode(encoded, ProofOfCustodySeedChange.class);
+    CustodyReseed reconstructed = (CustodyReseed) sszSerializer.decode(encoded, CustodyReseed.class);
     assertEquals(expected, reconstructed);
   }
 
   private ProposalSignedData createProposalSignedData() {
-    ProposalSignedData proposalSignedData = new ProposalSignedData();
+    ProposalSignedData proposalSignedData = new ProposalSignedData(
+        UInt64.valueOf(12),
+        UInt64.ZERO,
+        Hashes.keccak256(BytesValue.fromHexString("aa"))
+    );
     return proposalSignedData;
   }
 
@@ -280,10 +289,10 @@ public class ModelsSerializeTest {
     casperSlashings.add(createCasperSlashing());
     List<Attestation> attestations = new ArrayList<>();
     attestations.add(createAttestation());
-    List<ProofOfCustodySeedChange> pocSeedChanges = new ArrayList<>();
-    List<ProofOfCustodyChallenge> pocChallenges = new ArrayList<>();
+    List<CustodyReseed> pocSeedChanges = new ArrayList<>();
+    List<CustodyChallenge> pocChallenges = new ArrayList<>();
     pocChallenges.add(createProofOfCustodyChallenge());
-    List<ProofOfCustodyResponse> pocResponses = new ArrayList<>();
+    List<CustodyResponse> pocResponses = new ArrayList<>();
     pocResponses.add(createProofOfCustodyResponse());
     List<Deposit> deposits = new ArrayList<>();
     deposits.add(createDeposit1());
@@ -335,7 +344,7 @@ public class ModelsSerializeTest {
   }
 
   private BeaconState createBeaconState() {
-    BeaconState beaconState = new BeaconState();
+    BeaconState beaconState = BeaconState.EMPTY;
 
     return beaconState;
   }

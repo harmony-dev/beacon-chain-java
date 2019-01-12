@@ -6,9 +6,12 @@ ext {
 dependencyManagement {
   dependencies {
 
+    dependency 'org.ethereum:ethereumj-core:1+'
+
     dependency 'org.bouncycastle:bcprov-jdk15on:1.60'
     dependency 'org.miracl.milagro.amcl:milagro-crypto-java:0.4.0'
     dependency 'com.google.guava:guava:27.0.1-jre'
+    dependency 'com.google.code.findbugs:jsr305:1.3.9'
 
     dependency 'io.vertx:vertx-core:3.5.4'
     dependency 'junit:junit:4.12'
