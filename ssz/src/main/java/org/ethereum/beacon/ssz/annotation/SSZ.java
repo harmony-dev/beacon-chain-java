@@ -8,9 +8,11 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * <p>SSZ model field annotation</p>
+ * <p>SSZ model field annotation. Used at model field definition.</p>
  *
  * <p>Clarifies SSZ encoding/decoding details</p>
+ * <p>Required if {@link org.ethereum.beacon.ssz.SSZAnnotationSchemeBuilder} `explicitFieldAnnotation`
+ * is set to <b>true</b>, otherwise it's optional. </p>
  */
 @Documented
 @Target(ElementType.FIELD)
