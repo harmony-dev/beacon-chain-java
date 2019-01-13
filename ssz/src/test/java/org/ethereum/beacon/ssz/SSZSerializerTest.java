@@ -22,6 +22,9 @@ import static net.consensys.cava.bytes.Bytes.fromHexString;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
+/**
+ * Tests of {@link SSZSerializer}
+ */
 public class SSZSerializerTest {
   private SSZSerializer sszSerializer;
 
@@ -220,6 +223,10 @@ public class SSZSerializerTest {
     }
   }
 
+  /**
+   * Checks that we build objects with {@link SSZSerializer}
+   * in the same way as Consensys's {@link SSZ}
+   */
   @Test
   public void shouldWorkLikeCavaWithObjects() {
     Bytes bytes = fromHexString("0x00000003426F62040000000000000000000000000000000000000000000000000000011F71B70768");
