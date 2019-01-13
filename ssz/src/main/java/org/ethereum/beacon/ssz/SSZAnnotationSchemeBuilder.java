@@ -33,7 +33,9 @@ import java.util.regex.Pattern;
  * annotated with it, any type which is not java.lang.*</li>
  * <li>{@link SSZ} - any field with Java type
  * couldn't be automatically mapped to SSZ type,
- * or with mapping that overrides standard, should be annotated with it. For standard
+ * or if `explicitFieldAnnotation` is set to true,
+ * every field which should be added to the model.
+ * Also cases when mapping that overrides default, should be annotated with it. For standard
  * mappings check {@link SSZ#type()} Javadoc.</li>
  * <li>{@link SSZTransient} - Fields that should not be used in serialization
  * should be marked with such annotation</li>
@@ -55,7 +57,7 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
    * Whether to require {@link SSZ} annotation for field to be included,
    * non-transient or not.
    * Default: {@link SSZ} required for each field
-   * When `explicitFieldAnnotation` set to false, all private fields are included,
+   * When `explicitFieldAnnotation` set to false, all fields are included,
    * unless marked with {@link SSZTransient}
    * @param explicitFieldAnnotation   Require {@link SSZ} annotation
    *                                  for field to be included in scheme
@@ -64,15 +66,19 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
     this.explicitFieldAnnotation = explicitFieldAnnotation;
   }
 
+  /**
+   * Add logger to {@link SSZAnnotationSchemeBuilder}
+   * @param logger  Java logger
+   * @return this
+   */
   public SSZAnnotationSchemeBuilder withLogger(Logger logger) {
     this.logger = logger;
     return this;
   }
 
   /**
-   * <p>Builds scheme and returns result.</p>
-   * <p>Scheme is cached and could be returned again
-   * without additional computation.</p>
+   * <p>Builds SSZ scheme of provided Java class and returns result.</p>
+   * <p>Class should be marked with annotations, check top Javadoc for more info.</p>
    * @return scheme of SSZ model
    */
   @Override

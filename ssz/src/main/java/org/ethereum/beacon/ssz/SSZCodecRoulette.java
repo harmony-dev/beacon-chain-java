@@ -21,6 +21,16 @@ import java.util.function.Function;
 
 import static org.ethereum.beacon.ssz.SSZSerializer.LENGTH_PREFIX_BYTE_SIZE;
 
+/**
+ * <p>Implementation of {@link SSZCodec} which handles unknown classes recursively,
+ * passing it to input {@link SSZSerializer} instance, and prioritizes codec supported
+ * class over supported type.</p>
+ *
+ * <p>So, if handled field class has only one codec registered for, it will be used,
+ * even if field have text marking that matches two codecs. But if several codecs are
+ * registered for one class and it has {@link org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField#extraType} marking,
+ * it will be handled by codec supporting this class and type.</p>
+ */
 public class SSZCodecRoulette implements SSZCodecResolver {
   private Map<Class, List<CodecEntry>> registeredClassHandlers = new HashMap<>();
 

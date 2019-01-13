@@ -13,8 +13,24 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Implementation of {@link SSZModelFactory} which tries to create model
+ * instance by one constructor with all input fields included. If such public constructor
+ * is not found, it tries to instantiate object with empty constructor and set
+ * all fields directly or using standard setter.
+ */
 public class SSZModelCreator implements SSZModelFactory {
 
+  /**
+   * <p>Creates instance of SSZ model class using field -> value data</p>
+   * <p>Tries to create model instance by one constructor with all input fields included.
+   * If such public constructor is not found, it tries to instantiate object with empty constructor
+   * and set all fields directly or using standard setter.
+   * If success is not achieved, {@link SSZSchemeException} is thrown</p>
+   * @param clazz             SSZ model class
+   * @param fieldValuePairs   Field -> value info
+   * @return created instance or {@link net.consensys.cava.ssz.SSZException} if failed to create it
+   */
   public Object create(Class clazz, List<Pair<SSZSchemeBuilder.SSZScheme.SSZField, Object>> fieldValuePairs) {
     Pair<Boolean, Object> constructorAttempt = createInstanceWithConstructor(clazz, fieldValuePairs);
 
