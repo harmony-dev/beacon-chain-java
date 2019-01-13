@@ -19,6 +19,12 @@ import java.util.stream.Stream;
 
 import static java.util.function.Function.identity;
 
+/**
+ * <p>{@link SSZCodec} for all primitive Java integers and their default wrappers</p>
+ *
+ * <p>All numerics are considered unsigned,
+ * bit size could be clarified by {@link org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField#extraSize}</p>
+ */
 public class UIntPrimitive implements SSZCodec {
   final static int DEFAULT_SHORT_SIZE = 16;
   final static int DEFAULT_INT_SIZE = 32;

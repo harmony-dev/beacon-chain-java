@@ -11,6 +11,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * {@link SSZCodec} for {@link Boolean} and {@link boolean}
+ */
 public class BooleanPrimitive implements SSZCodec {
 
   private static Set<String> supportedTypes = new HashSet<>();
