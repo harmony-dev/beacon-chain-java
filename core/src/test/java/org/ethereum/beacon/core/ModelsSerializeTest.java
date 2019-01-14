@@ -13,6 +13,12 @@ import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.operations.slashing.ProposalSignedData;
 import org.ethereum.beacon.core.operations.slashing.SlashableVoteData;
+import org.ethereum.beacon.core.state.BeaconStateImpl;
+import org.ethereum.beacon.core.state.CrosslinkRecord;
+import org.ethereum.beacon.core.state.DepositRootVote;
+import org.ethereum.beacon.core.state.ForkData;
+import org.ethereum.beacon.core.state.PendingAttestationRecord;
+import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.types.ssz.Serializer;
 import org.ethereum.beacon.crypto.Hashes;
 import org.junit.Before;
@@ -353,7 +359,97 @@ public class ModelsSerializeTest {
   public void beaconStateTest() {
     BeaconState expected = createBeaconState();
     BytesValue encoded = sszSerializer.encode2(expected);
-    BeaconState reconstructed = (BeaconState) sszSerializer.decode(encoded, BeaconState.class);
+    BeaconState reconstructed = (BeaconState) sszSerializer.decode(encoded, BeaconStateImpl.class);
+    assertEquals(expected, reconstructed);
+  }
+
+  private CrosslinkRecord createCrosslinkRecord() {
+    CrosslinkRecord crosslinkRecord = CrosslinkRecord.EMPTY;
+
+    return crosslinkRecord;
+  }
+
+  @Test
+  public void crosslinkRecordTest() {
+    CrosslinkRecord expected = createCrosslinkRecord();
+    BytesValue encoded = sszSerializer.encode2(expected);
+    CrosslinkRecord reconstructed = (CrosslinkRecord) sszSerializer.decode(encoded, CrosslinkRecord.class);
+    assertEquals(expected, reconstructed);
+  }
+
+  private DepositRootVote createDepositRootVote() {
+    DepositRootVote depositRootVote = new DepositRootVote(
+        Hash32.ZERO,
+        UInt64.MAX_VALUE
+    );
+
+    return depositRootVote;
+  }
+
+  @Test
+  public void depositRootVoteTest() {
+    DepositRootVote expected = createDepositRootVote();
+    BytesValue encoded = sszSerializer.encode2(expected);
+    DepositRootVote reconstructed = (DepositRootVote) sszSerializer.decode(encoded, DepositRootVote.class);
+    assertEquals(expected, reconstructed);
+  }
+
+  private ForkData createForkData() {
+    ForkData forkData = ForkData.EMPTY;
+
+    return forkData;
+  }
+
+  @Test
+  public void forkDataTest() {
+    ForkData expected = createForkData();
+    BytesValue encoded = sszSerializer.encode2(expected);
+    ForkData reconstructed = (ForkData) sszSerializer.decode(encoded, ForkData.class);
+    assertEquals(expected, reconstructed);
+  }
+
+  private PendingAttestationRecord createPendingAttestationRecord() {
+    PendingAttestationRecord pendingAttestationRecord = new PendingAttestationRecord(
+        createAttestationData(),
+        BytesValue.fromHexString("aa"),
+        BytesValue.fromHexString("bb"),
+        UInt64.ZERO
+    );
+
+    return pendingAttestationRecord;
+  }
+
+  @Test
+  public void pendingAttestationRecordTest() {
+    PendingAttestationRecord expected = createPendingAttestationRecord();
+    BytesValue encoded = sszSerializer.encode2(expected);
+    PendingAttestationRecord reconstructed = (PendingAttestationRecord) sszSerializer.decode(encoded, PendingAttestationRecord.class);
+    assertEquals(expected, reconstructed);
+  }
+
+  private ValidatorRecord createValidatorRecord() {
+    ValidatorRecord validatorRecord = ValidatorRecord.Builder
+        .fromDepositInput(createDepositInput())
+        .withActivationSlot(UInt64.ZERO)
+        .withExitSlot(UInt64.ZERO)
+        .withWithdrawalSlot(UInt64.ZERO)
+        .withPenalizedSlot(UInt64.ZERO)
+        .withExitCount(UInt64.ZERO)
+        .withStatusFlags(UInt64.ZERO)
+        .withCustodyCommitment(Hash32.ZERO)
+        .withLatestCustodyReseedSlot(UInt64.ZERO)
+        .withPenultimateCustodyReseedSlot(UInt64.ZERO)
+        .withRandaoLayers(UInt64.ZERO)
+        .build();
+
+    return validatorRecord;
+  }
+
+  @Test
+  public void validatorRecordTest() {
+    ValidatorRecord expected = createValidatorRecord();
+    BytesValue encoded = sszSerializer.encode2(expected);
+    ValidatorRecord reconstructed = (ValidatorRecord) sszSerializer.decode(encoded, ValidatorRecord.class);
     assertEquals(expected, reconstructed);
   }
 }

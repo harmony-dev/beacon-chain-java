@@ -13,6 +13,12 @@ import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.operations.slashing.ProposalSignedData;
 import org.ethereum.beacon.core.operations.slashing.SlashableVoteData;
+import org.ethereum.beacon.core.state.BeaconStateImpl;
+import org.ethereum.beacon.core.state.CrosslinkRecord;
+import org.ethereum.beacon.core.state.DepositRootVote;
+import org.ethereum.beacon.core.state.ForkData;
+import org.ethereum.beacon.core.state.PendingAttestationRecord;
+import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.junit.Test;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import java.io.File;
@@ -46,7 +52,7 @@ public class SSZSerializableAnnotationTest {
         AttestationData.class,
         BeaconBlock.class,
         BeaconBlockBody.class,
-        BeaconState.class,
+        BeaconStateImpl.class,
         CasperSlashing.class,
         Deposit.class,
         DepositData.class,
@@ -57,7 +63,12 @@ public class SSZSerializableAnnotationTest {
         CustodyChallenge.class,
         ProposalSignedData.class,
         ProposerSlashing.class,
-        SlashableVoteData.class
+        SlashableVoteData.class,
+        CrosslinkRecord.class,
+        DepositRootVote.class,
+        ForkData.class,
+        PendingAttestationRecord.class,
+        ValidatorRecord.class
     ));
     Class[] allClasses = getClasses("org.ethereum.beacon.core");
 

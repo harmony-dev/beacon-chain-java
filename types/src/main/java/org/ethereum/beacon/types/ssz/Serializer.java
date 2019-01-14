@@ -17,7 +17,8 @@ public class Serializer {
 
   private final static SSZSerializer ANNOTATION_SERIALIZER;
   static {
-    SSZSerializerBuilder builder = SSZSerializerBuilder.getBakedAnnotationBuilder();
+    SSZSerializerBuilder builder = new SSZSerializerBuilder();
+    builder.initWithExplicitAnnotations();
     builder.addCodec(new SSZHash());
     builder.addCodec(new SSZUInt());
     builder.addCodec(new SSZBytesValue());

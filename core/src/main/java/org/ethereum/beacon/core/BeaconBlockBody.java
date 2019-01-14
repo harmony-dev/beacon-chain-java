@@ -11,9 +11,9 @@ import org.ethereum.beacon.core.operations.CustodyChallenge;
 import org.ethereum.beacon.core.operations.CustodyResponse;
 import org.ethereum.beacon.core.operations.CustodyReseed;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
+import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 
-@SSZSerializable
 /**
  * Beacon block body.
  *
@@ -24,6 +24,7 @@ import org.ethereum.beacon.ssz.annotation.SSZSerializable;
  *     href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md#beaconblockbody">BeaconBlockBody
  *     in the spec</a>
  */
+@SSZSerializable
 public class BeaconBlockBody {
 
   /** A body where all lists are empty. */
@@ -39,20 +40,28 @@ public class BeaconBlockBody {
           emptyList());
 
   /** A list of proposer slashing challenges. */
+  @SSZ
   private final List<ProposerSlashing> proposerSlashings;
   /** A list of Casper slashing challenges. */
+  @SSZ
   private final List<CasperSlashing> casperSlashings;
   /** A list of attestations. */
+  @SSZ
   private final List<Attestation> attestations;
   /** A list of proof of custody seed changes. */
+  @SSZ
   private final List<CustodyReseed> custodyReseeds;
   /** A list of proof of custody challenges. */
+  @SSZ
   private final List<CustodyChallenge> custodyChallenges;
   /** A list of proof of custody challenge responses. */
+  @SSZ
   private final List<CustodyResponse> custodyResponses;
   /** A list of validator deposit proofs. */
+  @SSZ
   private final List<Deposit> deposits;
   /** A list of validator exits. */
+  @SSZ
   private final List<Exit> exits;
 
   public BeaconBlockBody(

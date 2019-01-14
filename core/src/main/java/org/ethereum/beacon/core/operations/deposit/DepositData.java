@@ -1,10 +1,10 @@
 package org.ethereum.beacon.core.operations.deposit;
 
 import org.ethereum.beacon.core.operations.Deposit;
+import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.util.uint.UInt64;
 
-@SSZSerializable
 /**
  * A data of validator registration deposit.
  *
@@ -13,13 +13,17 @@ import tech.pegasys.artemis.util.uint.UInt64;
  *     href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md#depositdata">DepositData
  *     in the spec</a>
  */
+@SSZSerializable
 public class DepositData {
 
   /** Deposit parameters. */
+  @SSZ
   private final DepositInput depositInput;
   /** Value in Gwei. */
+  @SSZ
   private final UInt64 value;
   /** Timestamp from deposit contract. */
+  @SSZ
   private final UInt64 timestamp;
 
   public DepositData(DepositInput depositInput, UInt64 value, UInt64 timestamp) {

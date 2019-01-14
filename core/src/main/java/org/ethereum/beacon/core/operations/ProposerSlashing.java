@@ -1,5 +1,6 @@
 package org.ethereum.beacon.core.operations;
 
+import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import org.ethereum.beacon.core.operations.slashing.ProposalSignedData;
 import tech.pegasys.artemis.util.bytes.Bytes96;
@@ -7,10 +8,15 @@ import tech.pegasys.artemis.util.uint.UInt24;
 
 @SSZSerializable
 public class ProposerSlashing {
+  @SSZ
   private final UInt24 proposerIndex;
+  @SSZ
   private final ProposalSignedData proposalData1;
+  @SSZ
   private final Bytes96 proposalSignature1;
+  @SSZ
   private final ProposalSignedData proposalData2;
+  @SSZ
   private final Bytes96 proposalSignature2;
 
   public ProposerSlashing(

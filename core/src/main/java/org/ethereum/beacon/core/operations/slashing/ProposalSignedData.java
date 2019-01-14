@@ -1,13 +1,17 @@
 package org.ethereum.beacon.core.operations.slashing;
 
+import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 @SSZSerializable
 public class ProposalSignedData {
+  @SSZ
   private final UInt64 slot;
+  @SSZ
   private final UInt64 shard;
+  @SSZ
   private final Hash32 blockRoot;
 
   public ProposalSignedData(UInt64 slot, UInt64 shard, Hash32 blockRoot) {

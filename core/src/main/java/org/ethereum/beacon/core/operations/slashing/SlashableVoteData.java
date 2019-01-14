@@ -2,12 +2,12 @@ package org.ethereum.beacon.core.operations.slashing;
 
 import org.ethereum.beacon.core.operations.CasperSlashing;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
+import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.uint.UInt24;
 import java.util.Arrays;
 
-@SSZSerializable
 /**
  * Data for Casper slashing operation.
  *
@@ -16,15 +16,20 @@ import java.util.Arrays;
  *     href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md#slashablevotedata">SlashableVoteData
  *     in the spec</a>
  */
+@SSZSerializable
 public class SlashableVoteData {
 
   /** Proof-of-custody indices (0 bits). */
+  @SSZ
   private final UInt24[] custodyBit0Indices;
   /** Proof-of-custody indices (1 bits). */
+  @SSZ
   private final UInt24[] custodyBit1Indices;
   /** Attestation data. */
+  @SSZ
   private final AttestationData data;
   /** Aggregated signature. */
+  @SSZ
   private final Bytes96 aggregatedSignature;
 
   public SlashableVoteData(

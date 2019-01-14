@@ -2,12 +2,12 @@ package org.ethereum.beacon.core.state;
 
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
+import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.uint.UInt64;
 
-@SSZSerializable
 /**
  * A record denoting a validator in the validator registry.
  *
@@ -16,33 +16,47 @@ import tech.pegasys.artemis.util.uint.UInt64;
  *     href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md#validatorrecord">ValidatorRecord
  *     in the spec</a>
  */
+@SSZSerializable
 public class ValidatorRecord {
 
   /** BLS public key. */
+  @SSZ
   private final Bytes48 pubKey;
   /** Withdrawal credentials. */
+  @SSZ
   private final Hash32 withdrawalCredentials;
   /** RANDAO commitment. */
+  @SSZ
   private final Hash32 randaoCommitment;
   /** Slots the proposer has skipped (i.e. layers of RANDAO expected). */
+  @SSZ
   private final UInt64 randaoLayers;
   /** Slot when validator activated */
+  @SSZ
   private final UInt64 activationSlot;
   /** Slot when validator exited */
+  @SSZ
   private final UInt64 exitSlot;
   /** Slot when validator withdrew */
+  @SSZ
   private final UInt64 withdrawalSlot;
   /** Slot when validator was penalized */
+  @SSZ
   private final UInt64 penalizedSlot;
   /** Exit counter when validator exited (or 0). */
+  @SSZ
   private final UInt64 exitCount;
   /** Status flags. */
+  @SSZ
   private final UInt64 statusFlags;
   /** Proof of custody commitment. */
+  @SSZ
   private final Hash32 custodyCommitment;
   /** Slot the proof of custody seed was last changed. */
+  @SSZ
   private final UInt64 latestCustodyReseedSlot;
 
+  @SSZ
   private final UInt64 penultimateCustodyReseedSlot;
 
   public ValidatorRecord(
@@ -274,5 +288,25 @@ public class ValidatorRecord {
       this.penultimateCustodyReseedSlot = penultimateCustodyReseedSlot;
       return this;
     }
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    ValidatorRecord that = (ValidatorRecord) o;
+    return pubKey.equals(that.pubKey) &&
+        withdrawalCredentials.equals(that.withdrawalCredentials) &&
+        randaoCommitment.equals(that.randaoCommitment) &&
+        randaoLayers.equals(that.randaoLayers) &&
+        activationSlot.equals(that.activationSlot) &&
+        exitSlot.equals(that.exitSlot) &&
+        withdrawalSlot.equals(that.withdrawalSlot) &&
+        penalizedSlot.equals(that.penalizedSlot) &&
+        exitCount.equals(that.exitCount) &&
+        statusFlags.equals(that.statusFlags) &&
+        custodyCommitment.equals(that.custodyCommitment) &&
+        latestCustodyReseedSlot.equals(that.latestCustodyReseedSlot) &&
+        penultimateCustodyReseedSlot.equals(that.penultimateCustodyReseedSlot);
   }
 }
