@@ -37,11 +37,11 @@ public class ProposerSlashingVerifier implements OperationVerifier<ProposerSlash
     }
 
     if (operation.getProposalData1().getSlot().equals(operation.getProposalData2().getSlot())) {
-      return createdFailed("proposal slashing proposal_data_1.slot != proposal_data_2.slot");
+      return createdFailed("proposal_data_1.slot != proposal_data_2.slot");
     }
 
     if (operation.getProposalData1().getShard().equals(operation.getProposalData2().getShard())) {
-      return createdFailed("proposal slashing proposal_data_1.shard != proposal_data_2.shard");
+      return createdFailed("proposal_data_1.shard != proposal_data_2.shard");
     }
 
     if (operation
@@ -49,7 +49,7 @@ public class ProposerSlashingVerifier implements OperationVerifier<ProposerSlash
         .getBlockRoot()
         .equals(operation.getProposalData2().getBlockRoot())) {
       return createdFailed(
-          "proposal slashing proposal_data_1.block_root == proposal_data_2.block_root, roots should not be equal");
+          "proposal_data_1.block_root == proposal_data_2.block_root, roots should not be equal");
     }
 
     ValidatorRecord proposer =
@@ -66,7 +66,7 @@ public class ProposerSlashingVerifier implements OperationVerifier<ProposerSlash
         operation.getProposalSignature1(),
         specHelpers.get_domain(
             state.getForkData(), operation.getProposalData1().getSlot(), PROPOSAL))) {
-      return createdFailed("proposer slashing proposal_signature_1 is invalid");
+      return createdFailed("proposal_signature_1 is invalid");
     }
 
     if (specHelpers.bls_verify(
@@ -75,7 +75,7 @@ public class ProposerSlashingVerifier implements OperationVerifier<ProposerSlash
         operation.getProposalSignature2(),
         specHelpers.get_domain(
             state.getForkData(), operation.getProposalData1().getSlot(), PROPOSAL))) {
-      return createdFailed("proposer slashing proposal_signature_1 is invalid");
+      return createdFailed("proposal_signature_1 is invalid");
     }
 
     return PASSED;

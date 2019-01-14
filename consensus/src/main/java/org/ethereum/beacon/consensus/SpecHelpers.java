@@ -1,6 +1,11 @@
 package org.ethereum.beacon.consensus;
 
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.ethereum.beacon.core.BeaconState;
+import org.ethereum.beacon.core.operations.attestation.AttestationData;
+import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustodyBit;
+import org.ethereum.beacon.core.operations.slashing.SlashableVoteData;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.ForkData;
 import org.ethereum.beacon.core.state.ShardCommittee;
@@ -25,6 +30,7 @@ import java.util.List;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
+import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
 
 /**
  * https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md#helper-functions
@@ -293,10 +299,34 @@ public class SpecHelpers {
   }
 
   public boolean bls_verify(Bytes48 publicKey, Hash32 message, Bytes96 signature, Bytes8 domain) {
-    MessageParameters messageParameters = MessageParameters.create(message, domain);
     PublicKey blsPublicKey = PublicKey.create(publicKey);
+    return bls_verify(blsPublicKey, message, signature, domain);
+  }
+
+  public boolean bls_verify(
+      PublicKey blsPublicKey, Hash32 message, Bytes96 signature, Bytes8 domain) {
+    MessageParameters messageParameters = MessageParameters.create(message, domain);
     Signature blsSignature = Signature.create(signature);
     return BLS381.verify(messageParameters, blsSignature, blsPublicKey);
+  }
+
+  public boolean bls_verify_multiple(
+      PublicKey[] publicKeys, Hash32[] messages, Bytes96 signature, Bytes8 domain) {
+    assert publicKeys.length == messages.length;
+
+    for (int i = 0; i < publicKeys.length; i++) {
+      if (!bls_verify(publicKeys[i], messages[i], signature, domain)) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  public PublicKey bls_aggregate_pubkeys(List<Bytes48> publicKeysBytes) {
+    List<PublicKey> publicKeys =
+        publicKeysBytes.stream().map(PublicKey::create).collect(Collectors.toList());
+    return PublicKey.aggregate(publicKeys);
   }
 
   public UInt64 get_fork_version(ForkData forkData, UInt64 slot) {
@@ -313,6 +343,117 @@ public class SpecHelpers {
 
   public Hash32 repeat_hash(Hash32 x, int n) {
     return n == 0 ? x : repeat_hash(x, n - 1);
+  }
+
+  public List<UInt24> indices(UInt24[] custodyBit0Indices, UInt24[] custodyBit1Indices) {
+    List<UInt24> indices = new ArrayList<>();
+    indices.addAll(Arrays.asList(custodyBit0Indices));
+    indices.addAll(Arrays.asList(custodyBit1Indices));
+    return indices;
+  }
+
+  public List<UInt24> intersection(List<UInt24> indices1, List<UInt24> indices2) {
+    List<UInt24> intersection = new ArrayList<>(indices1);
+    intersection.retainAll(indices2);
+    return intersection;
+  }
+
+  /*
+   def is_double_vote(attestation_data_1: AttestationData,
+                  attestation_data_2: AttestationData) -> bool
+     """
+     Assumes ``attestation_data_1`` is distinct from ``attestation_data_2``.
+     Returns True if the provided ``AttestationData`` are slashable
+     due to a 'double vote'.
+     """
+     target_epoch_1 = attestation_data_1.slot // EPOCH_LENGTH
+     target_epoch_2 = attestation_data_2.slot // EPOCH_LENGTH
+     return target_epoch_1 == target_epoch_2
+  */
+  public boolean is_double_vote(
+      AttestationData attestation_data_1, AttestationData attestation_data_2) {
+    UInt64 target_epoch_1 = attestation_data_1.getSlot(); // EPOCH_LENGTH
+    UInt64 target_epoch_2 = attestation_data_2.getSlot(); // EPOCH_LENGTH
+    return target_epoch_1.equals(target_epoch_2);
+  }
+
+  /*
+   def is_surround_vote(attestation_data_1: AttestationData,
+                      attestation_data_2: AttestationData) -> bool:
+     """
+     Assumes ``attestation_data_1`` is distinct from ``attestation_data_2``.
+     Returns True if the provided ``AttestationData`` are slashable
+     due to a 'surround vote'.
+     Note: parameter order matters as this function only checks
+     that ``attestation_data_1`` surrounds ``attestation_data_2``.
+     """
+     source_epoch_1 = attestation_data_1.justified_slot // EPOCH_LENGTH
+     source_epoch_2 = attestation_data_2.justified_slot // EPOCH_LENGTH
+     target_epoch_1 = attestation_data_1.slot // EPOCH_LENGTH
+     target_epoch_2 = attestation_data_2.slot // EPOCH_LENGTH
+     return (
+         (source_epoch_1 < source_epoch_2) and
+         (source_epoch_2 + 1 == target_epoch_2) and
+         (target_epoch_2 < target_epoch_1)
+     )
+  */
+  public boolean is_surround_vote(
+      AttestationData attestation_data_1, AttestationData attestation_data_2) {
+    UInt64 source_epoch_1 = attestation_data_1.getJustifiedSlot(); // EPOCH_LENGTH
+    UInt64 source_epoch_2 = attestation_data_2.getJustifiedSlot(); // EPOCH_LENGTH
+    UInt64 target_epoch_1 = attestation_data_1.getSlot(); // EPOCH_LENGTH
+    UInt64 target_epoch_2 = attestation_data_2.getSlot(); // EPOCH_LENGTH
+
+    return (source_epoch_1.compareTo(source_epoch_2) < 0)
+        && (source_epoch_2.plus(1).equals(target_epoch_2))
+        && (target_epoch_2.compareTo(target_epoch_1) < 0);
+  }
+
+  /*
+   def verify_slashable_vote_data(state: BeaconState, vote_data: SlashableVoteData) -> bool:
+     if len(vote_data.custody_bit_0_indices) + len(vote_data.custody_bit_1_indices) > MAX_CASPER_VOTES:
+         return False
+
+     return bls_verify_multiple(
+         pubkeys=[
+             aggregate_pubkey([state.validators[i].pubkey for i in vote_data.custody_bit_0_indices]),
+             aggregate_pubkey([state.validators[i].pubkey for i in vote_data.custody_bit_1_indices]),
+         ],
+         messages=[
+             hash_tree_root(AttestationDataAndCustodyBit(vote_data.data, False)),
+             hash_tree_root(AttestationDataAndCustodyBit(vote_data.data, True)),
+         ],
+         signature=vote_data.aggregate_signature,
+         domain=get_domain(
+             state.fork_data,
+             state.slot,
+             DOMAIN_ATTESTATION,
+         ),
+     )
+  */
+  public boolean verify_slashable_vote_data(BeaconState state, SlashableVoteData vote_data) {
+    if (vote_data.getCustodyBit0Indices().length + vote_data.getCustodyBit1Indices().length
+        > spec.getMaxCasperVotes()) {
+      return false;
+    }
+
+    List<Bytes48> pubKeys1 =
+        Stream.of(vote_data.getCustodyBit0Indices())
+            .map(index -> state.getValidatorRegistryUnsafe().get(safeInt(index)).getPubKey())
+            .collect(Collectors.toList());
+    List<Bytes48> pubKeys2 =
+        Stream.of(vote_data.getCustodyBit1Indices())
+            .map(index -> state.getValidatorRegistryUnsafe().get(safeInt(index)).getPubKey())
+            .collect(Collectors.toList());
+
+    return bls_verify_multiple(
+        new PublicKey[] {bls_aggregate_pubkeys(pubKeys1), bls_aggregate_pubkeys(pubKeys2)},
+        new Hash32[] {
+          hash_tree_root(new AttestationDataAndCustodyBit(vote_data.getData(), false)),
+          hash_tree_root(new AttestationDataAndCustodyBit(vote_data.getData(), true))
+        },
+        vote_data.getAggregatedSignature(),
+        get_domain(state.getForkData(), state.getSlot(), ATTESTATION));
   }
 
   public static int safeInt(UInt64 uint) {

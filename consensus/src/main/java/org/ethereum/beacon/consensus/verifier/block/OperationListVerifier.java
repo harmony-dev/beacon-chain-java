@@ -1,6 +1,7 @@
 package org.ethereum.beacon.consensus.verifier.block;
 
 import static org.ethereum.beacon.consensus.verifier.VerificationResult.PASSED;
+import static org.ethereum.beacon.consensus.verifier.VerificationResult.createdFailed;
 
 import java.util.List;
 import java.util.function.Function;
@@ -55,10 +56,11 @@ public abstract class OperationListVerifier<T> implements BeaconBlockVerifier {
           getType().getSimpleName(), maxOperationsInList, operations.size());
     }
 
-    for (T operation : operations) {
-      VerificationResult result = operationVerifier.verify(operation, state);
+    for (int i = 0; i < operations.size(); i++) {
+      VerificationResult result = operationVerifier.verify(operations.get(i), state);
       if (result != PASSED) {
-        return result;
+        return createdFailed(
+            "%s with index %d: %s", getType().getSimpleName(), i, result.getMessage());
       }
     }
 
