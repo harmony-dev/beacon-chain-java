@@ -7,6 +7,12 @@ import java.util.List;
  * Creates instance of SSZ model class
  */
 public interface SSZModelFactory {
+
+  /**
+   * Registers object creator which will be used for ssz model instantiation
+   */
+  SSZModelFactory registerObjCreator(ObjectCreator objectCreator);
+
   /**
    * Creates instance of SSZ model class using field -> value data
    * @param clazz             SSZ model class

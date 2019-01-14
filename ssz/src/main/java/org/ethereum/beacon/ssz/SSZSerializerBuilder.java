@@ -64,11 +64,21 @@ public class SSZSerializerBuilder {
   /**
    * <p>{@link SSZSerializer} built with {@link SSZAnnotationSchemeBuilder}
    * which requires {@link SSZ} annotation at each model field</p>
+   * <p>Uses {@link SSZModelFactory} which tries to create model
+   *  instance by one constructor with all input fields included. If such public constructor
+   *  is not found, it tries to instantiate object with empty constructor and set
+   *  all fields directly or using standard setter.</p>
    * @return {@link SSZSerializerBuilder} without codecs
    */
   public SSZSerializerBuilder initWithExplicitAnnotations() {
     this.sszCodecResolver = new SSZCodecRoulette();
-    return initWith(new SSZAnnotationSchemeBuilder(), sszCodecResolver, new SSZModelCreator());
+    return initWith(new SSZAnnotationSchemeBuilder(), sszCodecResolver, createDefaultModelCreator());
+  }
+
+  private SSZModelFactory createDefaultModelCreator() {
+    return new SSZModelCreator()
+        .registerObjCreator(new ConstructorObjCreator())
+        .registerObjCreator(new SettersObjCreator());
   }
 
   /**
@@ -79,7 +89,7 @@ public class SSZSerializerBuilder {
    */
   public SSZSerializerBuilder initWithNonExplicitAnnotations() {
     this.sszCodecResolver = new SSZCodecRoulette();
-    return initWith(new SSZAnnotationSchemeBuilder(false), sszCodecResolver, new SSZModelCreator());
+    return initWith(new SSZAnnotationSchemeBuilder(false), sszCodecResolver, createDefaultModelCreator());
   }
 
   public void addCodec(SSZCodec codec) {
