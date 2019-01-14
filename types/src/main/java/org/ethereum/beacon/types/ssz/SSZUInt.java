@@ -25,8 +25,8 @@ import java.util.stream.Stream;
 import static java.util.function.Function.identity;
 
 /**
- * UInts codec. Supported:
- * {@link UInt24}, {@link UInt64}, {@link UInt256} ...
+ * SSZ Codec designed to work with fixed numeric
+ * data classes, check list in {@link #getSupportedClasses()}
  */
 public class SSZUInt implements SSZCodec {
   private static Map<Class, NumericType> classToNumericType = new HashMap<>();

@@ -9,6 +9,8 @@ import java.lang.annotation.Target;
 
 /**
  * <p>Identifies class that is SSZ serializable</p>
+ *
+ * <p>Required to mark SSZ compatible class</p>
  */
 @Documented
 @Target(ElementType.TYPE)

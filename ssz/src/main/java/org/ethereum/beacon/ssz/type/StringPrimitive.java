@@ -11,6 +11,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * {@link SSZCodec} for {@link String}
+ */
 public class StringPrimitive implements SSZCodec {
 
   private static Set<String> supportedTypes = new HashSet<>();

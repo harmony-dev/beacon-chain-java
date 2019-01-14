@@ -2,12 +2,9 @@ package org.ethereum.beacon.core.operations.slashing;
 
 import org.ethereum.beacon.core.operations.CasperSlashing;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
-import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.uint.UInt24;
-import java.util.Arrays;
 
-@SSZSerializable
 /**
  * Data for Casper slashing operation.
  *
@@ -52,16 +49,5 @@ public class SlashableVoteData {
 
   public Bytes96 getAggregatedSignature() {
     return aggregatedSignature;
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    SlashableVoteData that = (SlashableVoteData) o;
-    return Arrays.equals(custodyBit0Indices, that.custodyBit0Indices) &&
-        Arrays.equals(custodyBit1Indices, that.custodyBit1Indices) &&
-        data.equals(that.data) &&
-        aggregatedSignature.equals(that.aggregatedSignature);
   }
 }

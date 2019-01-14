@@ -19,6 +19,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * SSZ Codec designed to work with fixed size bytes
+ * data classes representing hashes,
+ * check list in {@link #getSupportedClasses()}
+ */
 public class SSZHash implements SSZCodec {
 
   private static Set<String> supportedTypes = new HashSet<>();

@@ -17,6 +17,17 @@ import java.util.stream.Stream;
 
 import static java.util.function.Function.identity;
 
+/**
+ * <p>{@link SSZCodec} for {@link byte[]}</p>
+ * <p>Supports several SSZ types in one byte array container:
+ * <ul>
+ *   <li><b>bytes</b> - just some bytes value</li>
+ *   <li><b>hash</b> - hash with fixed byte size</li>
+ *   <li><b>address</b> - standard 20 bytes/160 bits address</li>
+ * </ul>
+ *
+ * Type could be clarified by {@link org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField#extraType}</p>
+ */
 public class BytesPrimitive implements SSZCodec {
 
   private static Set<String> supportedTypes = new HashSet<>();

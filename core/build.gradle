@@ -1,7 +1,6 @@
 dependencies {
   implementation project(':types')
   implementation project(':crypto')
-  implementation project(':ssz')
 
   implementation 'com.google.guava:guava'
 }

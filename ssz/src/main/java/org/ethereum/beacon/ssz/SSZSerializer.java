@@ -23,31 +23,7 @@ import java.util.Map;
 import static org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme;
 
 /**
- * <p>SSZ serializer/deserializer with automatic model reading
- * using Java class with annotations as model description.</p>
- *
- * <p>{@link SSZAnnotationSchemeBuilder} is used to create SSZ model
- * from Java class with annotations</p>
- * <p>
- * Following annotations are used for this:
- * <ul>
- * <li>{@link SSZSerializable} - Class which stores SSZ serializable data should be
- * annotated with it, any type which is not java.lang.*</li>
- * <li>{@link SSZ} - any field with Java type couldn't be automatically mapped to SSZ type,
- * or with mapping that overrides standard, should be annotated with it. For standard
- * mappings check {@link SSZ#type()} Javadoc.</li>
- * <li>{@link SSZTransient} - Fields that should not be used in serialization
- * should be marked with such annotation</li>
- * </ul>
- * </p>
- *
- * <p>For serialization use {@link #encode(Object)}. SSZ serializer
- * uses getters for all non-transient fields to get current values.</p>
- * <p>For deserialization, to restore instance use {@link #decode(byte[], Class)}.
- * It will try to find constructor with all non-transient field types and the same order,
- * to restore object. If failed, it will try to create empty instance from no-fields
- * constructor and set each one by one by appropriate setter.
- * If at least one field is failed to be set, {@link RuntimeException} is thrown.</p>
+ * <p>SSZ serializer/deserializer</p>
  */
 public class SSZSerializer implements BytesSerializer {
 
@@ -60,6 +36,12 @@ public class SSZSerializer implements BytesSerializer {
 
   private SSZModelFactory sszModelFactory;
 
+  /**
+   * SSZ serializer/deserializer with following helpers
+   * @param schemeBuilder     SSZ model scheme building of type {@link SSZScheme}
+   * @param codecResolver     Resolves field encoder/decoder {@link org.ethereum.beacon.ssz.type.SSZCodec} function
+   * @param sszModelFactory   Instantiates SSZModel with field/data information
+   */
   public SSZSerializer(SSZSchemeBuilder schemeBuilder, SSZCodecResolver codecResolver,
                        SSZModelFactory sszModelFactory) {
     this.schemeBuilder = schemeBuilder;
@@ -68,12 +50,9 @@ public class SSZSerializer implements BytesSerializer {
   }
 
   /**
-   * <p>Serializes input using SSZ serialization and annotations markup</p>
-   * <p>Uses getters for all non-transient fields to get current values.</p>
+   * <p>Serializes input to byte[] data</p>
    * @param input  input value
-   * @param clazz  Class of value, should be marked {@link SSZSerializable}, for more
-   *               information about annotation markup, check scheme builder
-   *               {@link SSZAnnotationSchemeBuilder}
+   * @param clazz  Class of value
    * @return SSZ serialization
    */
   @Override
@@ -121,15 +100,6 @@ public class SSZSerializer implements BytesSerializer {
     return res.toByteArray();
   }
 
-  /**
-   * <p>Shortcut to {@link #encode(Object, Class)}. Resolves
-   * class using input object. Not suitable for null values.</p>
-   */
-  @Override
-  public byte[] encode(@Nonnull Object input) {
-    return encode(input, input.getClass());
-  }
-
   private static void checkSSZSerializableAnnotation(Class clazz) {
     if (!clazz.isAnnotationPresent(SSZSerializable.class)) {
       String error = String.format("Class %s should be annotated with SSZSerializable!", clazz);
@@ -147,14 +117,9 @@ public class SSZSerializer implements BytesSerializer {
   }
 
   /**
-   * <p>Restores data instance from serialization data using model with annotations markup</p>
-   * <p>It will try to find constructor with all non-transient field types and the same order,
-   * to restore object. If failed, it will try to create empty instance from no-fields
-   * constructor and set each one by one by appropriate setter.
-   * If at least one field is failed to be set, {@link RuntimeException} is thrown.</p>
-   * @param data     SSZ serialization data
-   * @param clazz    type class, should be marked {@link SSZSerializable}, for more
-   *                 information about annotation markup, check {@link SSZAnnotationSchemeBuilder}
+   * <p>Restores data instance from serialization data using {@link SSZModelFactory}</p>
+   * @param data     SSZ serialization byte[] data
+   * @param clazz    type class
    * @return deserialized instance of clazz or throws exception
    */
   @Override

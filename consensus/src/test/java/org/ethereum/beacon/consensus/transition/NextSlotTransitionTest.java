@@ -15,7 +15,6 @@ import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
@@ -55,7 +54,7 @@ public class NextSlotTransitionTest {
             }, chainSpec);
 
     BeaconState initialState =
-        initialStateTransition.apply(BeaconBlocks.createGenesis(chainSpec), BeaconState.EMPTY);
+        initialStateTransition.apply(BeaconBlocks.createGenesis(chainSpec), BeaconState.getEmpty());
     BeaconState s1State = new NextSlotTransition(chainSpec).apply(null, initialState);
     BeaconState s2State = new NextSlotTransition(chainSpec).apply(null, s1State);
     BeaconState s3State = new NextSlotTransition(chainSpec).apply(null, s2State);

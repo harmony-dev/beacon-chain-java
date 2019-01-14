@@ -11,9 +11,7 @@ import org.ethereum.beacon.core.operations.CustodyChallenge;
 import org.ethereum.beacon.core.operations.CustodyResponse;
 import org.ethereum.beacon.core.operations.CustodyReseed;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
-import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 
-@SSZSerializable
 /**
  * Beacon block body.
  *
@@ -104,20 +102,5 @@ public class BeaconBlockBody {
 
   public List<Exit> getExits() {
     return exits;
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    BeaconBlockBody that = (BeaconBlockBody) o;
-    return proposerSlashings.equals(that.proposerSlashings) &&
-        casperSlashings.equals(that.casperSlashings) &&
-        attestations.equals(that.attestations) &&
-        custodyReseeds.equals(that.custodyReseeds) &&
-        custodyChallenges.equals(that.custodyChallenges) &&
-        custodyResponses.equals(that.custodyResponses) &&
-        deposits.equals(that.deposits) &&
-        exits.equals(that.exits);
   }
 }

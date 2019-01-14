@@ -21,6 +21,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * SSZ Codec designed to work with fixed size bytes
+ * data classes, check list in {@link #getSupportedClasses()}
+ */
 public class SSZBytesValue implements SSZCodec {
 
   private static Set<String> supportedTypes = new HashSet<>();
