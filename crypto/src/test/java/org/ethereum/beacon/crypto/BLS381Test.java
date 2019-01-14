@@ -23,7 +23,7 @@ public class BLS381Test {
     BytesValue message = randomMessage();
     Bytes8 domain = randomDomain();
 
-    MessageParameters params = new Impl(Hashes.keccack256(message), domain);
+    MessageParameters params = new Impl(Hashes.keccak256(message), domain);
     Signature signature = BLS381.sign(params, keyPair);
 
     PublicKey decodedPublicKey = PublicKey.create(keyPair.getPublic().getEncodedBytes());
@@ -38,8 +38,8 @@ public class BLS381Test {
   public void failToVerifyIfMessageIsWrong() {
     KeyPair keyPair = BLS381.KeyPair.generate();
 
-    MessageParameters rightMessage = new Impl(Hashes.keccack256(randomMessage()), randomDomain());
-    MessageParameters wrongMessage = new Impl(Hashes.keccack256(randomMessage()), randomDomain());
+    MessageParameters rightMessage = new Impl(Hashes.keccak256(randomMessage()), randomDomain());
+    MessageParameters wrongMessage = new Impl(Hashes.keccak256(randomMessage()), randomDomain());
 
     Signature signature = BLS381.sign(rightMessage, keyPair);
     boolean verified = BLS381.verify(wrongMessage, signature, keyPair.getPublic());
@@ -51,8 +51,8 @@ public class BLS381Test {
   public void failToVerifyIfSignatureIsWrong() {
     KeyPair keyPair = BLS381.KeyPair.generate();
 
-    MessageParameters rightMessage = new Impl(Hashes.keccack256(randomMessage()), randomDomain());
-    MessageParameters wrongMessage = new Impl(Hashes.keccack256(randomMessage()), randomDomain());
+    MessageParameters rightMessage = new Impl(Hashes.keccak256(randomMessage()), randomDomain());
+    MessageParameters wrongMessage = new Impl(Hashes.keccak256(randomMessage()), randomDomain());
 
     Signature wrongSignature = BLS381.sign(wrongMessage, keyPair);
     boolean verified = BLS381.verify(rightMessage, wrongSignature, keyPair.getPublic());
@@ -65,7 +65,7 @@ public class BLS381Test {
     KeyPair rightKeyPair = BLS381.KeyPair.generate();
     KeyPair wrongKeyPair = BLS381.KeyPair.generate();
 
-    MessageParameters message = new Impl(Hashes.keccack256(randomMessage()), randomDomain());
+    MessageParameters message = new Impl(Hashes.keccak256(randomMessage()), randomDomain());
     Signature signature = BLS381.sign(message, rightKeyPair);
     boolean verified = BLS381.verify(message, signature, wrongKeyPair.getPublic());
 
@@ -77,7 +77,7 @@ public class BLS381Test {
     KeyPair bob = BLS381.KeyPair.generate();
     KeyPair alice = BLS381.KeyPair.generate();
 
-    MessageParameters message = new Impl(Hashes.keccack256(randomMessage()), randomDomain());
+    MessageParameters message = new Impl(Hashes.keccak256(randomMessage()), randomDomain());
 
     Signature bobSignature = BLS381.sign(message, bob);
     Signature aliceSignature = BLS381.sign(message, alice);
@@ -96,8 +96,8 @@ public class BLS381Test {
     KeyPair bob = BLS381.KeyPair.generate();
     KeyPair alice = BLS381.KeyPair.generate();
 
-    MessageParameters message = new Impl(Hashes.keccack256(randomMessage()), randomDomain());
-    MessageParameters wrongMessage = new Impl(Hashes.keccack256(randomMessage()), randomDomain());
+    MessageParameters message = new Impl(Hashes.keccak256(randomMessage()), randomDomain());
+    MessageParameters wrongMessage = new Impl(Hashes.keccak256(randomMessage()), randomDomain());
 
     Signature bobSignature = BLS381.sign(message, bob);
     Signature wrongSignature = BLS381.sign(wrongMessage, alice);
@@ -117,7 +117,7 @@ public class BLS381Test {
     KeyPair alice = BLS381.KeyPair.generate();
     KeyPair wrongKeyPair = BLS381.KeyPair.generate();
 
-    MessageParameters message = new Impl(Hashes.keccack256(randomMessage()), randomDomain());
+    MessageParameters message = new Impl(Hashes.keccak256(randomMessage()), randomDomain());
 
     Signature bobSignature = BLS381.sign(message, bob);
     Signature wrongSignature = BLS381.sign(message, wrongKeyPair);
@@ -137,7 +137,7 @@ public class BLS381Test {
     KeyPair alice = BLS381.KeyPair.generate();
     KeyPair wrongKeyPair = BLS381.KeyPair.generate();
 
-    MessageParameters message = new Impl(Hashes.keccack256(randomMessage()), randomDomain());
+    MessageParameters message = new Impl(Hashes.keccak256(randomMessage()), randomDomain());
 
     Signature bobSignature = BLS381.sign(message, bob);
     Signature aliceSignature = BLS381.sign(message, alice);

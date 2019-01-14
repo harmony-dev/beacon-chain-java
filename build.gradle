@@ -15,6 +15,7 @@ allprojects {
 
   dependencies {
     implementation 'com.google.code.findbugs:jsr305'
+    implementation 'org.javatuples:javatuples'
 
     testImplementation 'junit:junit'
     testImplementation 'org.assertj:assertj-core'

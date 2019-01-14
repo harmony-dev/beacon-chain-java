@@ -47,7 +47,7 @@ public abstract class Hashes {
    * @param input input message.
    * @return the hash.
    */
-  public static Hash32 keccack256(BytesValue input) {
+  public static Hash32 keccak256(BytesValue input) {
     byte[] output = digestUsingAlgorithm(input, KECCAK256);
     return Hash32.wrap(Bytes32.wrap(output));
   }
@@ -58,7 +58,7 @@ public abstract class Hashes {
    * @param input input message.
    * @return the hash.
    */
-  public static Hash48 keccack384(BytesValue input) {
+  public static Hash48 keccak384(BytesValue input) {
     byte[] output = digestUsingAlgorithm(input, KECCAK512);
     return Hash48.wrap(Bytes48.wrap(output, 0));
   }
