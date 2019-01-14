@@ -13,6 +13,17 @@ import org.ethereum.beacon.core.BeaconState;
 /**
  * An abstract class for a family of beacon chain operation verifiers.
  *
+ * <p>Accepts an instance of {@link OperationVerifier}, operation list extractor and max number of
+ * operations that is allowed to be included in the list.
+ *
+ * <p>Its {@link #verify(BeaconBlock, BeaconState)} method does following things:
+ *
+ * <ul>
+ *   <li>Extracts a list of operations with {@link #operationListExtractor}.
+ *   <li>Verifies that the list has at most {@link #maxOperationsInList} items.
+ *   <li>Verifies each operation in the list by applying {@link #operationVerifier} to it.
+ * </ul>
+ *
  * @param <T> beacon chain operation type.
  * @see OperationVerifier
  * @see <a
