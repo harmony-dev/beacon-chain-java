@@ -100,15 +100,6 @@ public class SSZSerializer implements BytesSerializer {
     return res.toByteArray();
   }
 
-  /**
-   * <p>Shortcut to {@link #encode(Object, Class)}. Resolves
-   * class using input object. Not suitable for null values.</p>
-   */
-  @Override
-  public byte[] encode(@Nonnull Object input) {
-    return encode(input, input.getClass());
-  }
-
   private static void checkSSZSerializableAnnotation(Class clazz) {
     if (!clazz.isAnnotationPresent(SSZSerializable.class)) {
       String error = String.format("Class %s should be annotated with SSZSerializable!", clazz);

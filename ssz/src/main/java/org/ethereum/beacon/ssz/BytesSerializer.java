@@ -19,7 +19,9 @@ public interface BytesSerializer {
    * <p>Shortcut to {@link #encode(Object, Class)}. Resolves
    * class using input object. Not suitable for null values.</p>
    */
-  byte[] encode(@Nonnull Object input);
+  default byte[] encode(@Nonnull Object input) {
+    return encode(input, input.getClass());
+  }
 
   /**
    * <p>Restores data instance from serialization data and constructs instance of class with
