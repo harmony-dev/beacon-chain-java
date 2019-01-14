@@ -42,10 +42,11 @@ public class SpecHelpers {
     UInt64 state_epoch_slot = state.getSlot().minus(state.getSlot().modulo(spec.getEpochLength()));
     assertTrue(state_epoch_slot.compareTo(slot.plus(spec.getEpochLength())) <= 0);
     assertTrue(slot.compareTo(state_epoch_slot.plus(spec.getEpochLength())) < 0);
-    return state.getShardCommitteesAtSlotsUnsafe()[safeInt(
+    return state.getShardCommitteesAtSlots().get(safeInt(
         slot
             .minus(state_epoch_slot)
-            .plus(spec.getEpochLength()))];
+            .plus(spec.getEpochLength())))
+        .toArray(new ShardCommittee[0]);
 
   }
 

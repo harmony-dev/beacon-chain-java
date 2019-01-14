@@ -107,11 +107,11 @@ public class InMemoryValidatorRegistryUpdater implements ValidatorRegistryUpdate
 
   @Override
   public BeaconState applyTo(BeaconState origin) {
-    return BeaconState.Builder.fromState(origin)
+    return origin.createMutableCopy()
         .withValidatorRegistry(records)
         .withValidatorBalances(balances)
         .withValidatorRegistryDeltaChainTip(deltaChainTip)
-        .build();
+        .validate();
   }
 
   private void rangeCheck(UInt24 index) {
