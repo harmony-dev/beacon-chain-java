@@ -1,8 +1,10 @@
 package org.ethereum.beacon.core.operations.deposit;
 
 import org.ethereum.beacon.core.operations.Deposit;
+import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.util.uint.UInt64;
 
+@SSZSerializable
 /**
  * A data of validator registration deposit.
  *
@@ -36,5 +38,15 @@ public class DepositData {
 
   public UInt64 getTimestamp() {
     return timestamp;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    DepositData that = (DepositData) o;
+    return depositInput.equals(that.depositInput) &&
+        value.equals(that.value) &&
+        timestamp.equals(that.timestamp);
   }
 }

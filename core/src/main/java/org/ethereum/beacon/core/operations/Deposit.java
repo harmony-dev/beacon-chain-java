@@ -2,9 +2,12 @@ package org.ethereum.beacon.core.operations;
 
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
+import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
+import java.util.Arrays;
 
+@SSZSerializable
 /**
  * Requests to add validator to the validator registry.
  *
@@ -39,5 +42,15 @@ public class Deposit {
 
   public DepositData getDepositData() {
     return depositData;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    Deposit deposit = (Deposit) o;
+    return Arrays.equals(merkleBranch, deposit.merkleBranch) &&
+        merkleTreeIndex.equals(deposit.merkleTreeIndex) &&
+        depositData.equals(deposit.depositData);
   }
 }

@@ -1,4 +1,14 @@
 package org.ethereum.beacon.core.operations;
 
+import org.ethereum.beacon.ssz.annotation.SSZSerializable;
+
 /** Stub for Phase 1. */
-public class CustodyReseed {}
+@SSZSerializable
+public class CustodyReseed {
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    return true;
+  }
+}

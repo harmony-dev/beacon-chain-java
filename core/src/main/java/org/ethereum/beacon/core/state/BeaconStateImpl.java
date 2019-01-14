@@ -3,6 +3,7 @@ package org.ethereum.beacon.core.state;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.CustodyChallenge;
+import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
 
@@ -14,6 +15,7 @@ import java.util.stream.Collectors;
 
 import static java.util.Collections.unmodifiableList;
 
+@SSZSerializable
 public class BeaconStateImpl implements MutableBeaconState {
 
   /* Misc */

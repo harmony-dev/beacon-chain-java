@@ -2,7 +2,9 @@ package org.ethereum.beacon.core.operations;
 
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.operations.slashing.SlashableVoteData;
+import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 
+@SSZSerializable
 /**
  * Challenges to slash validator violated Casper slashing conditions.
  *
@@ -31,5 +33,14 @@ public class CasperSlashing {
 
   public SlashableVoteData getSlashableVoteData2() {
     return slashableVoteData2;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    CasperSlashing that = (CasperSlashing) o;
+    return slashableVoteData1.equals(that.slashableVoteData1) &&
+        slashableVoteData2.equals(that.slashableVoteData2);
   }
 }
