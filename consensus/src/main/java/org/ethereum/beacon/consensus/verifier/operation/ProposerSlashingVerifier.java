@@ -15,6 +15,7 @@ import org.ethereum.beacon.core.state.ValidatorRecord;
 /**
  * Verifies {@link ProposerSlashing} beacon chain operation.
  *
+ * @see ProposerSlashing
  * @see <a
  *     href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md#proposer-slashings-1">Proposer
  *     slashings</a> in the spec.
