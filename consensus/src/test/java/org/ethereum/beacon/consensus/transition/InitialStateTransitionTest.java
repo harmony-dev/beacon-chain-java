@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Random;
 import org.ethereum.beacon.core.BeaconBlocks;
 import org.ethereum.beacon.core.BeaconState;
-import org.ethereum.beacon.core.state.BeaconStateImpl;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.pow.DepositContract;
@@ -40,7 +39,7 @@ public class InitialStateTransitionTest {
 
     BeaconState initialState =
         initialStateTransition.apply(
-            BeaconBlocks.createGenesis(ChainSpec.DEFAULT), BeaconStateImpl.EMPTY);
+            BeaconBlocks.createGenesis(ChainSpec.DEFAULT), BeaconState.getEmpty());
 
     assertThat(initialState.getGenesisTime()).isEqualTo(genesisTime);
     assertThat(initialState.getLatestDepositRoot()).isEqualTo(receiptRoot);

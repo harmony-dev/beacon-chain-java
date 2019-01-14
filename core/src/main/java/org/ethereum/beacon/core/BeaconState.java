@@ -7,6 +7,8 @@ import tech.pegasys.artemis.util.uint.UInt64;
 
 import java.util.List;
 
+import static java.util.Collections.emptyList;
+
 /**
  * Beacon chain state.
  *
@@ -83,4 +85,89 @@ public interface BeaconState extends Hashable<Hash32> {
   Hash32 getLatestDepositRoot();
   /** Receipt roots that voting is still in progress for. */
   List<DepositRootVote> getDepositRootVotes();
+
+  /**
+   * Returns mutable copy of this state.
+   * Any changes made to returned copy shouldn't affect this instance
+   */
+  MutableBeaconState createMutableCopy();
+
+  static BeaconState getEmpty() {
+    return createNew(
+        UInt64.ZERO,
+        UInt64.ZERO,
+        ForkData.EMPTY,
+        emptyList(),
+        emptyList(),
+        UInt64.ZERO,
+        UInt64.ZERO,
+        Hash32.ZERO,
+        emptyList(),
+        emptyList(),
+        emptyList(),
+        emptyList(),
+        UInt64.ZERO,
+        UInt64.ZERO,
+        UInt64.ZERO,
+        UInt64.ZERO,
+        emptyList(),
+        emptyList(),
+        emptyList(),
+        emptyList(),
+        emptyList(),
+        Hash32.ZERO,
+        emptyList());
+  }
+
+  static BeaconState createNew(
+      UInt64 slot,
+      UInt64 genesisTime,
+      ForkData forkData,
+      List<ValidatorRecord> validatorRegistry,
+      List<UInt64> validatorBalances,
+      UInt64 validatorRegistryLatestChangeSlot,
+      UInt64 validatorRegistryExitCount,
+      Hash32 validatorRegistryDeltaChainTip,
+      List<Hash32> latestRandaoMixes,
+      List<Hash32> latestVdfOutputs,
+      List<List<ShardCommittee>> shardCommitteesAtSlots,
+      List<CustodyChallenge> custodyChallenges,
+      UInt64 previousJustifiedSlot,
+      UInt64 justifiedSlot,
+      UInt64 justificationBitfield,
+      UInt64 finalizedSlot,
+      List<CrosslinkRecord> latestCrosslinks,
+      List<Hash32> latestBlockRoots,
+      List<UInt64> latestPenalizedExitBalances,
+      List<PendingAttestationRecord> latestAttestations,
+      List<Hash32> batchedBlockRoots,
+      Hash32 latestDepositRoot,
+      List<DepositRootVote> depositRootVotes) {
+
+    return MutableBeaconState.createNew()
+        .withSlot(slot)
+        .withGenesisTime(genesisTime)
+        .withForkData(forkData)
+        .withValidatorRegistry(validatorRegistry)
+        .withValidatorBalances(validatorBalances)
+        .withValidatorRegistryLatestChangeSlot(validatorRegistryLatestChangeSlot)
+        .withValidatorRegistryExitCount(validatorRegistryExitCount)
+        .withValidatorRegistryDeltaChainTip(validatorRegistryDeltaChainTip)
+        .withLatestRandaoMixes(latestRandaoMixes)
+        .withLatestVdfOutputs(latestVdfOutputs)
+        .withShardCommitteesAtSlots(shardCommitteesAtSlots)
+        .withCustodyChallenges(custodyChallenges)
+        .withPreviousJustifiedSlot(previousJustifiedSlot)
+        .withJustifiedSlot(justifiedSlot)
+        .withJustificationBitfield(justificationBitfield)
+        .withFinalizedSlot(finalizedSlot)
+        .withLatestCrosslinks(latestCrosslinks)
+        .withLatestBlockRoots(latestBlockRoots)
+        .withLatestPenalizedExitBalances(latestPenalizedExitBalances)
+        .withLatestAttestations(latestAttestations)
+        .withBatchedBlockRoots(batchedBlockRoots)
+        .withLatestDepositRoot(latestDepositRoot)
+        .withDepositRootVotes(depositRootVotes)
+        .validate();
+  }
 }

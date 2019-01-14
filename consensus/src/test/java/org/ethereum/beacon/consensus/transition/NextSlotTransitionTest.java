@@ -2,7 +2,6 @@ package org.ethereum.beacon.consensus.transition;
 
 import org.ethereum.beacon.core.BeaconBlocks;
 import org.ethereum.beacon.core.BeaconState;
-import org.ethereum.beacon.core.state.BeaconStateImpl;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
@@ -55,7 +54,7 @@ public class NextSlotTransitionTest {
             }, chainSpec);
 
     BeaconState initialState =
-        initialStateTransition.apply(BeaconBlocks.createGenesis(chainSpec), BeaconStateImpl.EMPTY);
+        initialStateTransition.apply(BeaconBlocks.createGenesis(chainSpec), BeaconState.getEmpty());
     BeaconState s1State = new NextSlotTransition(chainSpec).apply(null, initialState);
     BeaconState s2State = new NextSlotTransition(chainSpec).apply(null, s1State);
     BeaconState s3State = new NextSlotTransition(chainSpec).apply(null, s2State);

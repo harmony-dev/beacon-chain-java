@@ -5,7 +5,6 @@ import static com.google.common.base.Preconditions.checkElementIndex;
 import java.util.List;
 import java.util.Optional;
 import org.ethereum.beacon.core.BeaconState;
-import org.ethereum.beacon.core.state.BeaconStateImpl;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.spec.ChainSpec;
@@ -108,11 +107,11 @@ public class InMemoryValidatorRegistryUpdater implements ValidatorRegistryUpdate
 
   @Override
   public BeaconState applyTo(BeaconState origin) {
-    return BeaconStateImpl.Builder.fromState(origin)
+    return origin.createMutableCopy()
         .withValidatorRegistry(records)
         .withValidatorBalances(balances)
         .withValidatorRegistryDeltaChainTip(deltaChainTip)
-        .build();
+        .validate();
   }
 
   private void rangeCheck(UInt24 index) {

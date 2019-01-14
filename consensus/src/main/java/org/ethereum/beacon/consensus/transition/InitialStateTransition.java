@@ -1,27 +1,29 @@
 package org.ethereum.beacon.consensus.transition;
 
-import static java.util.Collections.emptyList;
-import static java.util.Collections.nCopies;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Stream;
-
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.consensus.state.ValidatorRegistryUpdater;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
-import org.ethereum.beacon.core.state.BeaconStateImpl;
-import org.ethereum.beacon.core.state.BeaconStateImpl.Builder;
+import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.spec.ChainSpec;
-import org.ethereum.beacon.core.state.*;
+import org.ethereum.beacon.core.state.CrosslinkRecord;
+import org.ethereum.beacon.core.state.ForkData;
+import org.ethereum.beacon.core.state.ShardCommittee;
+import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.pow.DepositContract.ChainStart;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Stream;
+
+import static java.util.Collections.emptyList;
+import static java.util.Collections.nCopies;
 
 /**
  * Produces initial beacon state.
@@ -52,10 +54,10 @@ public class InitialStateTransition implements StateTransition<BeaconState> {
 
     ChainStart chainStart = depositContract.getChainStart();
 
-    Builder builder = BeaconStateImpl.Builder.createEmpty();
+    MutableBeaconState initialState = MutableBeaconState.createNew();
 
     // Misc
-    builder
+    initialState
         .withSlot(chainSpec.getGenesisSlot())
         .withGenesisTime(chainStart.getTime())
         .withForkData(
@@ -65,7 +67,7 @@ public class InitialStateTransition implements StateTransition<BeaconState> {
                 chainSpec.getGenesisSlot()));
 
     // Validator registry
-    builder
+    initialState
         .withValidatorRegistry(emptyList())
         .withValidatorBalances(emptyList())
         .withValidatorRegistryLatestChangeSlot(chainSpec.getGenesisSlot())
@@ -73,7 +75,7 @@ public class InitialStateTransition implements StateTransition<BeaconState> {
         .withValidatorRegistryDeltaChainTip(Hash32.ZERO);
 
     // Randomness and committees
-    builder
+    initialState
         .withLatestRandaoMixes(
             nCopies(chainSpec.getLatestRandaoMixesLength().getIntValue(), Hash32.ZERO))
         .withLatestVdfOutputs(
@@ -86,17 +88,17 @@ public class InitialStateTransition implements StateTransition<BeaconState> {
         .withShardCommitteesAtSlots(emptyList());
 
     // Proof of custody
-    builder.withCustodyChallenges(emptyList());
+    initialState.withCustodyChallenges(emptyList());
 
     // Finality
-    builder
+    initialState
         .withPreviousJustifiedSlot(chainSpec.getGenesisSlot())
         .withJustifiedSlot(chainSpec.getGenesisSlot())
         .withJustificationBitfield(UInt64.ZERO)
         .withFinalizedSlot(chainSpec.getGenesisSlot());
 
     // Recent state
-    builder
+    initialState
         .withLatestCrosslinks(
             nCopies(chainSpec.getShardCount().getIntValue(), CrosslinkRecord.EMPTY))
         .withLatestBlockRoots(
@@ -107,9 +109,7 @@ public class InitialStateTransition implements StateTransition<BeaconState> {
         .withBatchedBlockRoots(emptyList());
 
     // PoW receipt root
-    builder.withLatestDepositRoot(chainStart.getReceiptRoot()).withDepositRootVotes(emptyList());
-
-    BeaconState initialState = builder.build();
+    initialState.withLatestDepositRoot(chainStart.getReceiptRoot()).withDepositRootVotes(emptyList());
 
     // handle initial deposits and activations
     final List<Deposit> initialDeposits = depositContract.getInitialDeposits();
@@ -141,8 +141,8 @@ public class InitialStateTransition implements StateTransition<BeaconState> {
         Arrays.stream(shuffling))
         .toArray(ShardCommittee[][]::new);
 
-    return BeaconStateImpl.Builder.fromState(validatorsState)
+    return initialState
         .withShardCommitteesAtSlots(doubleShuffling)
-        .build();
+        .validate();
   }
 }

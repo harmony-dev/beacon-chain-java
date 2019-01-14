@@ -4,7 +4,7 @@ import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.consensus.SpecHelpers;
-import org.ethereum.beacon.core.state.BeaconStateImpl;
+import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -27,11 +27,11 @@ public class NextSlotTransition implements StateTransition<BeaconState> {
   public BeaconState apply(BeaconBlock block, BeaconState state) {
     SpecHelpers specHelpers = new SpecHelpers(spec);
 
-    BeaconStateImpl.Builder builder = BeaconStateImpl.Builder.fromState(state);
+    MutableBeaconState newState = state.createMutableCopy();
 
     // state.slot += 1
     UInt64 newSlot = state.getSlot().increment();
-    builder.withSlot(newSlot);
+    newState.withSlot(newSlot);
 
     // state.validator_registry[get_beacon_proposer_index(state, state.slot)].randao_layers += 1
     List<ValidatorRecord> newValidatorRegistry = new ArrayList<>(state.getValidatorRegistry());
@@ -42,15 +42,15 @@ public class NextSlotTransition implements StateTransition<BeaconState> {
         .withRandaoLayers(validatorRecord.getRandaoLayers().increment())
         .build();
     newValidatorRegistry.set(idx.getValue(), newValidatorRecord);
-    builder.withValidatorRegistry(newValidatorRegistry);
+    newState.withValidatorRegistry(newValidatorRegistry);
 
     // state.latest_randao_mixes[state.slot % LATEST_RANDAO_MIXES_LENGTH] =
     //   state.latest_randao_mixes[(state.slot - 1) % LATEST_RANDAO_MIXES_LENGTH]
     List<Hash32> newRandaoMixes = new ArrayList<>(state.getLatestRandaoMixes());
     newRandaoMixes.set(safeInt(newSlot.modulo(spec.getLatestRandaoMixesLength())),
         newRandaoMixes.get(safeInt(newSlot.decrement().modulo(spec.getLatestRandaoMixesLength()))));
-    builder.withLatestRandaoMixes(newRandaoMixes);
+    newState.withLatestRandaoMixes(newRandaoMixes);
 
-    return builder.build();
+    return newState.validate();
   }
 }
