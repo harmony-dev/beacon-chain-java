@@ -84,7 +84,7 @@ public class BeaconStateImpl implements MutableBeaconState {
   /** Receipt roots that voting is still in progress for. */
   private List<DepositRootVote> depositRootVotes;
 
-  BeaconStateImpl() {
+  public BeaconStateImpl() {
   }
 
   private BeaconStateImpl(BeaconState state) {
