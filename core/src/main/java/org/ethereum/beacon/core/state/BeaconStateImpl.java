@@ -44,8 +44,13 @@ public class BeaconStateImpl implements MutableBeaconState {
   private List<Hash32> latestRandaoMixes;
   /** The most recent VDF outputs. */
   private List<Hash32> latestVdfOutputs;
-  /** Which committee assigned to which shard on which slot. */
-  private List<List<ShardCommittee>> shardCommitteesAtSlots;
+
+  private UInt64 previousEpochStartShard;
+  private UInt64 currentEpochStartShard;
+  private UInt64 previousEpochCalculationSlot;
+  private UInt64 currentEpochCalculationSlot;
+  private Hash32 previousEpochRandaoMix;
+  private Hash32 currentEpochRandaoMix;
 
   /** Proof of custody placeholder. */
   private List<CustodyChallenge> custodyChallenges;
@@ -101,7 +106,13 @@ public class BeaconStateImpl implements MutableBeaconState {
 
         new ArrayList<>(state.getLatestRandaoMixes()),
         new ArrayList<>(state.getLatestVdfOutputs()),
-        state.getShardCommitteesAtSlots().stream().map(ArrayList::new).collect(Collectors.toList()),
+
+        state.getPreviousEpochStartShard(),
+        state.getCurrentEpochStartShard(),
+        state.getPreviousEpochCalculationSlot(),
+        state.getCurrentEpochCalculationSlot(),
+        state.getPreviousEpochRandaoMix(),
+        state.getCurrentEpochRandaoMix(),
 
         new ArrayList<>(state.getCustodyChallenges()),
 
@@ -132,7 +143,12 @@ public class BeaconStateImpl implements MutableBeaconState {
       Hash32 validatorRegistryDeltaChainTip,
       List<Hash32> latestRandaoMixes,
       List<Hash32> latestVdfOutputs,
-      List<List<ShardCommittee>> shardCommitteesAtSlots,
+      UInt64 previousEpochStartShard,
+      UInt64 currentEpochStartShard,
+      UInt64 previousEpochCalculationSlot,
+      UInt64 currentEpochCalculationSlot,
+      Hash32 previousEpochRandaoMix,
+      Hash32 currentEpochRandaoMix,
       List<CustodyChallenge> custodyChallenges,
       UInt64 previousJustifiedSlot,
       UInt64 justifiedSlot,
@@ -155,7 +171,13 @@ public class BeaconStateImpl implements MutableBeaconState {
     this.validatorRegistryDeltaChainTip = validatorRegistryDeltaChainTip;
     this.latestRandaoMixes = latestRandaoMixes;
     this.latestVdfOutputs = latestVdfOutputs;
-    this.shardCommitteesAtSlots = shardCommitteesAtSlots;
+    this.previousEpochStartShard = previousEpochStartShard;
+    this.currentEpochStartShard = currentEpochStartShard;
+    this.previousEpochCalculationSlot = previousEpochCalculationSlot;
+    this.currentEpochCalculationSlot = currentEpochCalculationSlot;
+    this.previousEpochRandaoMix = previousEpochRandaoMix;
+    this.currentEpochRandaoMix = currentEpochRandaoMix;
+
     this.custodyChallenges = custodyChallenges;
     this.previousJustifiedSlot = previousJustifiedSlot;
     this.justifiedSlot = justifiedSlot;
@@ -229,9 +251,33 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
-  public List<List<ShardCommittee>> getShardCommitteesAtSlots() {
-    return unmodifiableList(shardCommitteesAtSlots.stream()
-        .map(Collections::unmodifiableList).collect(Collectors.toList()));
+  public UInt64 getPreviousEpochStartShard() {
+    return previousEpochStartShard;
+  }
+
+  @Override
+  public UInt64 getCurrentEpochStartShard() {
+    return currentEpochStartShard;
+  }
+
+  @Override
+  public UInt64 getPreviousEpochCalculationSlot() {
+    return previousEpochCalculationSlot;
+  }
+
+  @Override
+  public UInt64 getCurrentEpochCalculationSlot() {
+    return currentEpochCalculationSlot;
+  }
+
+  @Override
+  public Hash32 getPreviousEpochRandaoMix() {
+    return previousEpochRandaoMix;
+  }
+
+  @Override
+  public Hash32 getCurrentEpochRandaoMix() {
+    return currentEpochRandaoMix;
   }
 
   @Override
@@ -350,15 +396,33 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
-  public void setShardCommitteesAtSlots(ShardCommittee[][] shardCommitteesAtSlots) {
-    List<List<ShardCommittee>> lists = Arrays.stream(shardCommitteesAtSlots)
-        .map(cArr -> Arrays.stream(cArr).collect(Collectors.toList()))
-        .collect(Collectors.toList());
+  public void setPreviousEpochStartShard(UInt64 previousEpochStartShard) {
+    this.previousEpochStartShard = previousEpochStartShard;
   }
 
   @Override
-  public void setShardCommitteesAtSlots(List<List<ShardCommittee>> shardCommitteesAtSlots) {
-    this.shardCommitteesAtSlots = shardCommitteesAtSlots;
+  public void setCurrentEpochStartShard(UInt64 currentEpochStartShard) {
+    this.currentEpochStartShard = currentEpochStartShard;
+  }
+
+  @Override
+  public void setPreviousEpochCalculationSlot(UInt64 previousEpochCalculationSlot) {
+    this.previousEpochCalculationSlot = previousEpochCalculationSlot;
+  }
+
+  @Override
+  public void setCurrentEpochCalculationSlot(UInt64 currentEpochCalculationSlot) {
+    this.currentEpochCalculationSlot = currentEpochCalculationSlot;
+  }
+
+  @Override
+  public void setPreviousEpochRandaoMix(Hash32 previousEpochRandaoMix) {
+    this.previousEpochRandaoMix = previousEpochRandaoMix;
+  }
+
+  @Override
+  public void setCurrentEpochRandaoMix(Hash32 currentEpochRandaoMix) {
+    this.currentEpochRandaoMix = currentEpochRandaoMix;
   }
 
   @Override
