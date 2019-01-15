@@ -15,15 +15,19 @@ import org.ethereum.beacon.crypto.BLS381;
 import org.ethereum.beacon.crypto.BLS381.PublicKey;
 import org.ethereum.beacon.crypto.BLS381.Signature;
 import org.ethereum.beacon.crypto.Hashes;
+import org.javatuples.Pair;
 import org.ethereum.beacon.crypto.MessageParameters;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes3;
+import tech.pegasys.artemis.util.bytes.Bytes32;
+import tech.pegasys.artemis.util.bytes.Bytes32s;
 import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.bytes.Bytes8;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
+import tech.pegasys.artemis.util.uint.UInt64s;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -48,28 +52,119 @@ public class SpecHelpers {
   }
 
   /*
-   state_epoch_slot = state.slot - (state.slot % EPOCH_LENGTH)
-   assert state_epoch_slot <= slot + EPOCH_LENGTH
-   assert slot < state_epoch_slot + EPOCH_LENGTH
-   return state.shard_committees_at_slots[slot - state_epoch_slot + EPOCH_LENGTH]
-  */
-  public ShardCommittee[] get_shard_committees_at_slot(BeaconState state, UInt64 slot) {
+    def get_committee_count_per_slot(active_validator_count: int) -> int:
+    return max(
+          1,
+          min(
+              SHARD_COUNT // EPOCH_LENGTH,
+    active_validator_count // EPOCH_LENGTH// TARGET_COMMITTEE_SIZE,
+          )
+      )
+   */
+  int get_committee_count_per_slot(int active_validator_count) {
+    return max(1,
+        min(
+            spec.getShardCount()
+                .dividedBy(spec.getEpochLength()).getIntValue(),
+            UInt64.valueOf(active_validator_count)
+                .dividedBy(spec.getEpochLength())
+                .dividedBy(spec.getTargetCommitteeSize().getValue())
+                .getIntValue()
+        ));
+  }
+
+  /*
+      def get_previous_epoch_committees_per_slot(state: BeaconState) -> int:
+        previous_active_validators = get_active_validator_indices(state.validator_registry, state.previous_epoch_calculation_slot)
+        return get_committee_count_per_slot(len(previous_active_validators))
+   */
+  int get_previous_epoch_committees_per_slot(BeaconState state) {
+    int[] previous_active_validators = get_active_validator_indices(
+        state.getValidatorRegistry().toArray(new ValidatorRecord[0]),
+        state.getPreviousEpochCalculationSlot());
+    return get_committee_count_per_slot(previous_active_validators.length);
+  }
+
+  /*
+    def get_current_epoch_committees_per_slot(state: BeaconState) -> int:
+        current_active_validators = get_active_validator_indices(validators, state.current_epoch_calculation_slot)
+        return get_committee_count_per_slot(len(current_active_validators))
+   */
+  int get_current_epoch_committees_per_slot(BeaconState state) {
+    int[] previous_active_validators = get_active_validator_indices(
+        state.getValidatorRegistry().toArray(new ValidatorRecord[0]),
+        state.getCurrentEpochCalculationSlot());
+    return get_committee_count_per_slot(previous_active_validators.length);
+  }
+
+  /*
+    Returns the list of ``(committee, shard)`` tuples for the ``slot``.
+   */
+  public List<Pair<UInt24[], UInt64>> get_shard_committees_at_slot(BeaconState state, UInt64 slot) {
     UInt64 state_epoch_slot = state.getSlot().minus(state.getSlot().modulo(spec.getEpochLength()));
     assertTrue(state_epoch_slot.compareTo(slot.plus(spec.getEpochLength())) <= 0);
     assertTrue(slot.compareTo(state_epoch_slot.plus(spec.getEpochLength())) < 0);
-    return state
-        .getShardCommitteesAtSlots()
-        .get(safeInt(slot.minus(state_epoch_slot).plus(spec.getEpochLength())))
-        .toArray(new ShardCommittee[0]);
-  }
+
+    //    offset = slot % EPOCH_LENGTH
+    UInt64 offset = slot.modulo(spec.getEpochLength());
+
+    //    if slot < state_epoch_slot:
+    int committees_per_slot;
+    int[][] shuffling;
+    UInt64 slot_start_shard;
+    if (slot.compareTo(state_epoch_slot) < 0) {
+      //      committees_per_slot = get_previous_epoch_committees_per_slot(state)
+      committees_per_slot = get_previous_epoch_committees_per_slot(state);
+      //      shuffling = get_shuffling(state.previous_epoch_randao_mix,
+      //          state.validator_registry,
+      //          state.previous_epoch_calculation_slot)
+      shuffling = get_shuffling(state.getPreviousEpochRandaoMix(),
+          state.getValidatorRegistry().toArray(new ValidatorRecord[0]),
+          state.getPreviousEpochCalculationSlot());
+          //      slot_start_shard = (state.previous_epoch_start_shard + committees_per_slot * offset) % SHARD_COUNT
+      slot_start_shard = state.getPreviousEpochStartShard()
+          .plus(committees_per_slot)
+          .times(offset)
+          .modulo(spec.getShardCount());
+    //    else:
+    } else {
+      //      committees_per_slot = get_current_epoch_committees_per_slot(state)
+      committees_per_slot = get_current_epoch_committees_per_slot(state);
+      //      shuffling = get_shuffling(state.current_epoch_randao_mix,
+      //          state.validator_registry,
+      //          state.current_epoch_calculation_slot)
+      shuffling = get_shuffling(state.getCurrentEpochRandaoMix(),
+          state.getValidatorRegistry().toArray(new ValidatorRecord[0]),
+          state.getCurrentEpochCalculationSlot());
+      //      slot_start_shard = (state.current_epoch_start_shard + committees_per_slot * offset) % SHARD_COUNT
+      slot_start_shard = state.getCurrentEpochStartShard()
+          .plus(committees_per_slot)
+          .times(offset)
+          .modulo(spec.getShardCount());
+    }
+
+    //    return [
+    //    (shuffling[committees_per_slot * offset + i], (slot_start_shard + i) % SHARD_COUNT)
+    //    for i in range(committees_per_slot)
+    //    ]
+    List<Pair<UInt24[], UInt64>> ret = new ArrayList<>();
+    for (int i = 0; i < committees_per_slot; i++) {
+      int[] shuffling1 = shuffling[offset.times(committees_per_slot).plus(i).getIntValue()];
+      UInt24[] shuffling2 = new UInt24[shuffling1.length];
+      for (int i1 = 0; i1 < shuffling1.length; i1++) {
+        shuffling2[i1] = UInt24.valueOf(shuffling1[i1]);
+      }
+      ret.add(Pair.with(shuffling2, slot_start_shard.plus(i).modulo(spec.getShardCount())));
+    }
+    return ret;
+}
 
   /*
    first_committee = get_shard_committees_at_slot(state, slot)[0].committee
    return first_committee[slot % len(first_committee)]
   */
   public UInt24 get_beacon_proposer_index(BeaconState state, UInt64 slot) {
-    ShardCommittee[] committees = get_shard_committees_at_slot(state, slot);
-    UInt24[] first_committee = committees[0].getCommittee();
+    UInt24[] first_committee = get_shard_committees_at_slot(state, slot).get(0).getValue0();
     return first_committee[safeInt(slot.modulo(first_committee.length))];
   }
 
@@ -167,8 +262,7 @@ public class SpecHelpers {
           //    replacement_position = (sample_from_source % remaining) + index
           int replacement_position = (sample_from_source % remaining) + index;
           //    # Swap the current index with the replacement index.
-          //    output[index], output[replacement_position] = output[replacement_position],
-          // output[index]
+          //    output[index], output[replacement_position] = output[replacement_position], output[index]
           //    index += 1
           int tmp = output[index];
           output[index] = output[replacement_position];
@@ -205,95 +299,40 @@ public class SpecHelpers {
     return ret;
   }
 
-  /*
-  def get_shuffling(seed: Hash32,
-                validators: List[ValidatorRecord],
-                crosslinking_start_shard: int,
-                slot: int) -> List[List[ShardCommittee]]:
-  """
-  Shuffles ``validators`` into shard committees seeded by ``randao_mix`` and ``slot``.
-  """
-  */
-  public ShardCommittee[][] get_shuffling(
-      Hash32 seed, ValidatorRecord[] validators, int crosslinking_start_shard, UInt64 _slot) {
+  //  def get_shuffling(randao_mix: Hash32,
+  //              validators: List[ValidatorRecord],
+  //              slot: int) -> List[List[int]]
+  //  """
+  //  Shuffles ``validators`` into shard committees seeded by ``seed`` and ``slot``.
+  //  Returns a list of ``EPOCH_LENGTH * committees_per_slot`` committees where each
+  //  committee is itself a list of validator indices.
+  //  """
+  public int[][] get_shuffling(Hash32 _seed,
+                               ValidatorRecord[] validators,
+                               UInt64 _slot) {
 
-    //     # Normalizes slot to start of epoch boundary
-    //    slot -= slot % EPOCH_LENGTH
+
+    //
+    //      # Normalizes slot to start of epoch boundary
+    //  slot -= slot % EPOCH_LENGTH
     UInt64 slot = _slot.minus(_slot.modulo(spec.getEpochLength()));
-
-    //  active_validator_indices = get_active_validator_indices(validators, slot)
+    //      active_validator_indices = get_active_validator_indices(validators, slot)
     int[] active_validator_indices = get_active_validator_indices(validators, slot);
+    //      committees_per_slot = get_committee_count_per_slot(len(active_validator_indices))
+    int committees_per_slot = get_committee_count_per_slot(active_validator_indices.length);
 
-    return get_active_shuffling(seed, active_validator_indices, crosslinking_start_shard);
-  }
+    //      # Shuffle
+    //      seed = xor(seed, bytes32(slot))
+    Hash32 seed = Hash32.wrap(Bytes32s.xor(_seed, Bytes32.leftPad(slot.toBytesBigEndian())));
 
-  ShardCommittee[][] get_active_shuffling(
-      Hash32 seed, int[] active_validator_indices, int crosslinking_start_shard) {
-
-    //    committees_per_slot = max(
-    //        1,
-    //        min(
-    //            SHARD_COUNT // EPOCH_LENGTH,
-    //            len(active_validator_indices) // EPOCH_LENGTH // TARGET_COMMITTEE_SIZE,
-    //        )
-    //    )
-    int committees_per_slot =
-        max(
-            1,
-            min(
-                spec.getShardCount().dividedBy(spec.getEpochLength()).getIntValue(),
-                UInt64.valueOf(active_validator_indices.length)
-                    .dividedBy(spec.getEpochLength())
-                    .dividedBy(spec.getTargetCommitteeSize().getValue())
-                    .getIntValue()));
-
-    //    # Shuffle
-    // TODO    seed = xor(randao_mix, bytes32(slot)) - looks obsolete
-    //    shuffled_active_validator_indices = shuffle(active_validator_indices, seed)
+    //  shuffled_active_validator_indices = shuffle(active_validator_indices, seed)
     int[] shuffled_active_validator_indices = shuffle(active_validator_indices, seed);
-
-    //    # Split the shuffled list into epoch_length pieces
-    //    validators_per_slot = split(shuffled_active_validator_indices, EPOCH_LENGTH)
-    int[][] validators_per_slot =
-        split(shuffled_active_validator_indices, spec.getEpochLength().getIntValue());
-
-    //    output = []
-    List<ShardCommittee[]> output = new ArrayList<>();
-
-    //    for slot_position, slot_indices in enumerate(validators_per_slot):
-    for (int slot_position = 0; slot_position < validators_per_slot.length; slot_position++) {
-      int[] slot_indices = validators_per_slot[slot_position];
-
-      //      # Split the shuffled list into committees_per_slot pieces
-      //      shard_indices = split(slot_indices, committees_per_slot)
-      int[][] shard_indices = split(slot_indices, committees_per_slot);
-
-      //      shard_id_start = crosslinking_start_shard + slot_position * committees_per_slot
-      int shard_id_start = crosslinking_start_shard + slot_position * committees_per_slot;
-
-      //      shard_committees = [
-      //          ShardCommittee(
-      //              shard=(shard_id_start + shard_position) % SHARD_COUNT,
-      //              committee=indices,
-      //              total_validator_count=len(active_validator_indices),
-      //          )
-      //          for shard_position, indices in enumerate(shard_indices)
-      //      ]
-      ShardCommittee[] shard_committees = new ShardCommittee[shard_indices.length];
-      for (int shard_position = 0; shard_position < shard_indices.length; shard_position++) {
-        int[] indices = shard_indices[shard_position];
-        shard_committees[shard_position] =
-            new ShardCommittee(
-                UInt64.valueOf(shard_id_start + shard_position),
-                Arrays.stream(indices).mapToObj(UInt24::valueOf).toArray(UInt24[]::new),
-                UInt64.valueOf(active_validator_indices.length));
-      }
-
-      //      output.append(shard_committees)
-      output.add(shard_committees);
-    }
-
-    return output.toArray(new ShardCommittee[0][]);
+    //    # Split the shuffled list into epoch_length * committees_per_slot pieces
+    //    return split(shuffled_active_validator_indices, committees_per_slot * EPOCH_LENGTH)
+    return split(shuffled_active_validator_indices,
+        spec.getEpochLength()
+            .times(committees_per_slot)
+            .getIntValue());
   }
 
   public Hash32 hash_tree_root(Object object) {
@@ -491,20 +530,20 @@ public class SpecHelpers {
   */
   public List<UInt24> get_attestation_participants(
       BeaconState state, AttestationData attestation_data, BytesValue participation_bitfield) {
-    ShardCommittee[] shard_committees =
+    List<Pair<UInt24[], UInt64>> shard_committees =
         get_shard_committees_at_slot(state, attestation_data.getSlot());
 
     assertTrue(
-        Stream.of(shard_committees)
-            .map(ShardCommittee::getShard)
+        shard_committees.stream()
+            .map(Pair::getValue1)
             .collect(Collectors.toSet())
             .contains(attestation_data.getShard()));
-    Optional<ShardCommittee> shard_committee =
-        Stream.of(shard_committees)
-            .filter(committee -> committee.getShard().equals(attestation_data.getShard()))
+    Optional<Pair<UInt24[], UInt64>> shard_committee =
+        shard_committees.stream()
+            .filter(committee -> committee.getValue1().equals(attestation_data.getShard()))
             .findFirst();
     assertTrue(shard_committee.isPresent());
-    UInt24[] committee = shard_committee.get().getCommittee();
+    UInt24[] committee = shard_committee.get().getValue0();
     assertTrue(participation_bitfield.size() == (committee.length + 7) / 8);
 
     List<UInt24> participants = new ArrayList<>();

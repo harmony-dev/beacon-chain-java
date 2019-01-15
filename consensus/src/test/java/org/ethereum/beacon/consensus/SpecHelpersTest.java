@@ -65,11 +65,6 @@ public class SpecHelpersTest {
     }
 
     SpecHelpers specHelpers = new SpecHelpers(null);
-    ShardCommittee[][] shuffling = specHelpers.get_active_shuffling(
-        Hash32.fromHexString("0xc0c7f226fbd574a8c63dc26864c27833ea931e7c70b34409ba765f3d2031633d"),
-        activeValidatorIndices.stream().mapToInt(i -> i).toArray(),
-        210
-    );
 
     Map<Integer, Long> map = Arrays.stream(statuses).boxed().collect
         (Collectors.groupingBy(Function.identity(), Collectors.counting()));
