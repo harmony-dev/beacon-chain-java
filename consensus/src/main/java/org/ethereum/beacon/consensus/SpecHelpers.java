@@ -335,6 +335,27 @@ public class SpecHelpers {
             .getIntValue());
   }
 
+  /*
+    def merkle_root(values):
+    """
+    Merkleize ``values`` (where ``len(values)`` is a power of two) and return the Merkle root.
+    """
+    o = [0] * len(values) + values
+    for i in range(len(values) - 1, 0, -1):
+        o[i] = hash(o[i * 2] + o[i * 2 + 1])
+    return o[1]
+   */
+  public Hash32 merkle_root(List<? extends BytesValue> values) {
+    BytesValue[] o = new BytesValue[values.size() * 2];
+    for (int i = 0; i < values.size(); i++) {
+      o[i + values.size()] = values.get(i);
+    }
+    for (int i = values.size() - 1; i > 0; i--) {
+      o[i] = hash(BytesValue.wrap(o[i * 2], o[i * 2 + 1]));
+    }
+    return (Hash32) o[1];
+  }
+
   public Hash32 hash_tree_root(Object object) {
     return Hash32.ZERO;
   }
