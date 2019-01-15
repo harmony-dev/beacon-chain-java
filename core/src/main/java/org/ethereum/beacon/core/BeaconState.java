@@ -1,7 +1,12 @@
 package org.ethereum.beacon.core;
 
 import org.ethereum.beacon.core.operations.CustodyChallenge;
-import org.ethereum.beacon.core.state.*;
+import org.ethereum.beacon.core.state.CrosslinkRecord;
+import org.ethereum.beacon.core.state.DepositRootVote;
+import org.ethereum.beacon.core.state.ForkData;
+import org.ethereum.beacon.core.state.PendingAttestationRecord;
+import org.ethereum.beacon.core.state.ShardCommittee;
+import org.ethereum.beacon.core.state.ValidatorRecord;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
 
