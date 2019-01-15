@@ -88,6 +88,7 @@ public class InitialStateTransition implements StateTransition<BeaconState> {
         .withPreviousEpochStartShard(chainSpec.getGenesisStartShard())
         .withCurrentEpochStartShard(chainSpec.getGenesisStartShard())
         .withPreviousEpochCalculationSlot(chainSpec.getGenesisSlot())
+        .withCurrentEpochCalculationSlot(chainSpec.getGenesisSlot())
         .withPreviousEpochRandaoMix(Hash32.ZERO)
         .withCurrentEpochRandaoMix(Hash32.ZERO);
 
