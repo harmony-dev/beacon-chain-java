@@ -85,7 +85,11 @@ public class InitialStateTransition implements StateTransition<BeaconState> {
                     .dividedBy(chainSpec.getEpochLength())
                     .getIntValue(),
                 Hash32.ZERO))
-        .withShardCommitteesAtSlots(emptyList());
+        .withPreviousEpochStartShard(chainSpec.getGenesisStartShard())
+        .withCurrentEpochStartShard(chainSpec.getGenesisStartShard())
+        .withPreviousEpochCalculationSlot(chainSpec.getGenesisSlot())
+        .withPreviousEpochRandaoMix(Hash32.ZERO)
+        .withCurrentEpochRandaoMix(Hash32.ZERO);
 
     // Proof of custody
     initialState.withCustodyChallenges(emptyList());
@@ -114,7 +118,7 @@ public class InitialStateTransition implements StateTransition<BeaconState> {
     // handle initial deposits and activations
     final List<Deposit> initialDeposits = depositContract.getInitialDeposits();
     final ValidatorRegistryUpdater registryUpdater =
-        ValidatorRegistryUpdater.fromState(initialState, chainSpec);
+        ValidatorRegistryUpdater.fromState(initialState.validate(), chainSpec);
 
     initialDeposits.forEach(
         deposit -> {
@@ -130,19 +134,6 @@ public class InitialStateTransition implements StateTransition<BeaconState> {
 
     BeaconState validatorsState = registryUpdater.applyTo(initialState);
 
-    SpecHelpers specHelpers = new SpecHelpers(chainSpec);
-    ShardCommittee[][] shuffling = specHelpers.get_shuffling(
-        Hash32.ZERO,
-        validatorsState.getValidatorRegistry().toArray(new ValidatorRecord[0]),
-        chainSpec.getGenesisStartShard().getIntValue(),
-        chainSpec.getGenesisSlot());
-    ShardCommittee[][] doubleShuffling = Stream.concat(
-        Arrays.stream(shuffling),
-        Arrays.stream(shuffling))
-        .toArray(ShardCommittee[][]::new);
-
-    return initialState
-        .withShardCommitteesAtSlots(doubleShuffling)
-        .validate();
+    return validatorsState;
   }
 }
