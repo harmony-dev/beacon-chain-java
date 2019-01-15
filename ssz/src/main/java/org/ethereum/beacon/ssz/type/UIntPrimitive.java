@@ -26,10 +26,10 @@ import static java.util.function.Function.identity;
  * bit size could be clarified by {@link org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField#extraSize}</p>
  */
 public class UIntPrimitive implements SSZCodec {
-  final static int DEFAULT_SHORT_SIZE = 16;
-  final static int DEFAULT_INT_SIZE = 32;
-  final static int DEFAULT_LONG_SIZE = 64;
-  final static int DEFAULT_BIGINT_SIZE = 512;
+  private final static int DEFAULT_SHORT_SIZE = 16;
+  private final static int DEFAULT_INT_SIZE = 32;
+  private final static int DEFAULT_LONG_SIZE = 64;
+  private final static int DEFAULT_BIGINT_SIZE = 512;
 
   private static Map<Class, NumericType> classToNumericType = new HashMap<>();
 
