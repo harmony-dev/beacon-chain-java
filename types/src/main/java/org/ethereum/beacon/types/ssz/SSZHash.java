@@ -140,14 +140,14 @@ public class SSZHash implements SSZCodec {
   }
 
   static class HashType {
-    int size;
+    final int size;
 
-    public HashType() {
+    HashType(int size) {
+      this.size = size;
     }
 
     static HashType of(int size) {
-      HashType res = new HashType();
-      res.size = size;
+      HashType res = new HashType(size);
       return res;
     }
   }

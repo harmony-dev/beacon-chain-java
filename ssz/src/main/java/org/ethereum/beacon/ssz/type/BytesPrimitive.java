@@ -166,17 +166,16 @@ public class BytesPrimitive implements SSZCodec {
   }
 
   static class BytesType {
-    Type type;
-    Integer size;
+    final Type type;
+    final Integer size;
 
-    public BytesType() {
+    BytesType(Type type, Integer size) {
+      this.type = type;
+      this.size = size;
     }
 
     static BytesType of(Type type, Integer size) {
-      BytesType res = new BytesType();
-      res.type = type;
-      res.size = size;
-      return res;
+      return new BytesType(type, size);
     }
   }
 

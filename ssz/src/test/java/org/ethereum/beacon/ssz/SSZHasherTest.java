@@ -156,7 +156,7 @@ public class SSZHasherTest {
 
     Bytes hash1 = sszHasher.calc(anotherObject1);
     Bytes hash2 = sszHasher.calc(anotherObject2);
-    assertEquals(Bytes.fromHexString("95DBAD4637B631C083A4BBEEF4E3D609C32941D9997A3AEC4A123AAA0671F41B"), hash1);
-    assertEquals(Bytes.fromHexString("DBC5B7FCA0CFD77A68E44FE301A3B706EC4F12ECD153785297D28A936E64404A"), hash2);
+    assertEquals(Bytes.fromHexString("51F81BCDFC324A0DFF2B5BEC9D92E21CBEBC4D5E29D3A3D30DE3E03FBEAB8D7F"), hash1);
+    assertEquals(Bytes.fromHexString("2EE5F854D076701C8753D72779187E404F9B2FB705C495137D78551250314A46"), hash2);
   }
 }

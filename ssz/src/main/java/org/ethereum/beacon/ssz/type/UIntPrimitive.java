@@ -221,17 +221,16 @@ public class UIntPrimitive implements SSZCodec {
   }
 
   static class NumericType {
-    Type type;
-    int size;
+    final Type type;
+    final int size;
 
-    public NumericType() {
+    NumericType(Type type, int size) {
+      this.type = type;
+      this.size = size;
     }
 
     static NumericType of(Type type, int size) {
-      NumericType res = new NumericType();
-      res.type = type;
-      res.size = size;
-      return res;
+      return new NumericType(type, size);
     }
   }
 
@@ -269,7 +268,7 @@ public class UIntPrimitive implements SSZCodec {
 
     NumericType res = classToNumericType.get(field.type);
     if (field.extraSize != null) {
-      res.size = field.extraSize;
+      res = NumericType.of(res.type, field.extraSize);
     }
 
     return res;

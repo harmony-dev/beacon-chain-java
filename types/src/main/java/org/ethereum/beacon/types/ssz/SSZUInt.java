@@ -258,16 +258,16 @@ public class SSZUInt implements SSZCodec {
   }
 
   static class NumericType {
-    Type type;
-    int size;
+    final Type type;
+    final int size;
 
-    public NumericType() {
+    NumericType(Type type, int size) {
+      this.type = type;
+      this.size = size;
     }
 
     static NumericType of(Type type, int size) {
-      NumericType res = new NumericType();
-      res.type = type;
-      res.size = size;
+      NumericType res = new NumericType(type, size);
       return res;
     }
   }

@@ -42,7 +42,7 @@ public class SSZBytesValue implements SSZCodec {
   static {
     classToByteType.put(Bytes48.class, BytesType.of(48));
     classToByteType.put(Bytes96.class, BytesType.of(96));
-    classToByteType.put(BytesValue.class, new BytesType());
+    classToByteType.put(BytesValue.class, BytesType.FLEXIBLE);
     classToByteType.put(Bytes1.class, BytesType.of(1));
     classToByteType.put(Address.class, BytesType.of(20));
   }
@@ -179,15 +179,15 @@ public class SSZBytesValue implements SSZCodec {
   }
 
   static class BytesType {
-    Integer size = null;
+    final Integer size;
+    public static BytesType FLEXIBLE = new BytesType(null);
 
-    public BytesType() {
+    BytesType(Integer size) {
+      this.size = size;
     }
 
     static BytesType of(Integer size) {
-      BytesType res = new BytesType();
-      res.size = size;
-      return res;
+      return new BytesType(size);
     }
   }
 
