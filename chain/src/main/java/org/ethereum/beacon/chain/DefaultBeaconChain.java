@@ -28,6 +28,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   BeaconTupleStorage tupleStorage;
 
   StateTransition<BeaconState> initialTransition;
+  StateTransition<BeaconState> slotTransition;
   StateTransition<BeaconState> stateTransition;
 
   BeaconBlockVerifier blockVerifier;
@@ -74,13 +75,15 @@ public class DefaultBeaconChain implements MutableBeaconChain {
       return;
     }
 
-    VerificationResult blockVerification = blockVerifier.verify(block, head.getState());
+    BeaconState parentState = pullParentState(block);
+    BeaconState slotTransitedState = slotTransition.apply(block, parentState);
+
+    VerificationResult blockVerification = blockVerifier.verify(block, slotTransitedState);
     if (!blockVerification.isPassed()) {
       return;
     }
 
-    BeaconState parentState = pullParentState(block);
-    BeaconState newState = stateTransition.apply(block, parentState);
+    BeaconState newState = stateTransition.apply(block, slotTransitedState);
 
     VerificationResult stateVerification = stateVerifier.verify(newState, block);
     if (stateVerification.isPassed()) {
