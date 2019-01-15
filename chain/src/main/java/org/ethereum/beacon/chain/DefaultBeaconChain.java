@@ -8,7 +8,6 @@ import org.ethereum.beacon.chain.storage.BeaconStateStorage;
 import org.ethereum.beacon.chain.storage.BeaconTuple;
 import org.ethereum.beacon.chain.storage.BeaconTupleStorage;
 import org.ethereum.beacon.consensus.ScoreFunction;
-import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier.Context;
 import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
 import org.ethereum.beacon.consensus.verifier.BeaconStateVerifier;
@@ -29,10 +28,11 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   BeaconTupleStorage tupleStorage;
 
   StateTransition<BeaconState> initialTransition;
+  StateTransition<BeaconState> slotTransition;
   StateTransition<BeaconState> stateTransition;
 
-  BeaconBlockVerifier blockValidator;
-  BeaconStateVerifier stateValidator;
+  BeaconBlockVerifier blockVerifier;
+  BeaconStateVerifier stateVerifier;
 
   ScoreFunction scoreFunction;
 
@@ -67,16 +67,26 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   public synchronized void insert(BeaconBlock block) {
     assert head != null;
 
-    VerificationResult beaconValidation = blockValidator.validate(block, new Context());
-    if (!beaconValidation.isPassed()) {
+    if (exist(block)) {
+      return;
+    }
+
+    if (!hasParent(block)) {
       return;
     }
 
     BeaconState parentState = pullParentState(block);
-    BeaconState newState = stateTransition.apply(block, parentState);
+    BeaconState slotTransitedState = slotTransition.apply(block, parentState);
 
-    VerificationResult stateValidation = stateValidator.validate(block, newState);
-    if (!stateValidation.isPassed()) {
+    VerificationResult blockVerification = blockVerifier.verify(block, slotTransitedState);
+    if (!blockVerification.isPassed()) {
+      return;
+    }
+
+    BeaconState newState = stateTransition.apply(block, slotTransitedState);
+
+    VerificationResult stateVerification = stateVerifier.verify(newState, block);
+    if (stateVerification.isPassed()) {
       return;
     }
 
@@ -100,5 +110,13 @@ public class DefaultBeaconChain implements MutableBeaconChain {
       checkArgument(parentState.isPresent(), "No parent for block %s", block);
       return parentState.get();
     }
+  }
+
+  private boolean exist(BeaconBlock block) {
+    return blockStorage.get(block.getHash()).isPresent();
+  }
+
+  private boolean hasParent(BeaconBlock block) {
+    return blockStorage.get(block.getParentRoot()).isPresent();
   }
 }

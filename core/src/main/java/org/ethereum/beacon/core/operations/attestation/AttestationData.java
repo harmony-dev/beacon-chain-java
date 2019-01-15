@@ -1,5 +1,6 @@
 package org.ethereum.beacon.core.operations.attestation;
 
+import com.google.common.base.Objects;
 import org.ethereum.beacon.core.operations.Attestation;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
@@ -80,5 +81,24 @@ public class AttestationData {
 
   public Hash32 getJustifiedBlockRoot() {
     return justifiedBlockRoot;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    AttestationData that = (AttestationData) o;
+    return Objects.equal(slot, that.slot)
+        && Objects.equal(shard, that.shard)
+        && Objects.equal(beaconBlockRoot, that.beaconBlockRoot)
+        && Objects.equal(epochBoundaryRoot, that.epochBoundaryRoot)
+        && Objects.equal(shardBlockRoot, that.shardBlockRoot)
+        && Objects.equal(latestCrosslinkRoot, that.latestCrosslinkRoot)
+        && Objects.equal(justifiedSlot, that.justifiedSlot)
+        && Objects.equal(justifiedBlockRoot, that.justifiedBlockRoot);
   }
 }

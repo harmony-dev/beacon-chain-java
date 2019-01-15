@@ -103,4 +103,82 @@ public class BeaconBlock implements Hashable<Hash32> {
   public int hashCode() {
     return getHash().hashCode();
   }
+
+  public static class Builder {
+    private UInt64 slot;
+    private Hash32 parentRoot;
+    private Hash32 stateRoot;
+    private Hash32 randaoReveal;
+    private Hash32 depositRoot;
+    private Bytes96 signature;
+    private BeaconBlockBody body;
+
+    private Builder() {}
+
+    public static Builder createEmpty() {
+      return new Builder();
+    }
+
+    public static Builder fromBlock(BeaconBlock block) {
+      Builder builder = new Builder();
+
+      builder.slot = block.slot;
+      builder.parentRoot = block.parentRoot;
+      builder.stateRoot = block.stateRoot;
+      builder.randaoReveal = block.randaoReveal;
+      builder.depositRoot = block.depositRoot;
+      builder.signature = block.signature;
+      builder.body = block.body;
+
+      return builder;
+    }
+
+    public Builder withSlot(UInt64 slot) {
+      this.slot = slot;
+      return this;
+    }
+
+    public Builder withParentRoot(Hash32 parentRoot) {
+      this.parentRoot = parentRoot;
+      return this;
+    }
+
+    public Builder withStateRoot(Hash32 stateRoot) {
+      this.stateRoot = stateRoot;
+      return this;
+    }
+
+    public Builder withRandaoReveal(Hash32 randaoReveal) {
+      this.randaoReveal = randaoReveal;
+      return this;
+    }
+
+    public Builder withDepositRoot(Hash32 depositRoot) {
+      this.depositRoot = depositRoot;
+      return this;
+    }
+
+    public Builder withSignature(Bytes96 signature) {
+      this.signature = signature;
+      return this;
+    }
+
+    public Builder withBody(BeaconBlockBody body) {
+      this.body = body;
+      return this;
+    }
+
+    public BeaconBlock build() {
+      assert slot != null;
+      assert parentRoot != null;
+      assert stateRoot != null;
+      assert randaoReveal != null;
+      assert depositRoot != null;
+      assert signature != null;
+      assert body != null;
+
+      return new BeaconBlock(
+          slot, parentRoot, stateRoot, randaoReveal, depositRoot, signature, body);
+    }
+  }
 }
