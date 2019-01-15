@@ -68,13 +68,15 @@ public class SSZCodecHasher implements SSZCodecResolver {
         OutputStream res = objects.getValue1();
         Bytes[] elements;
         if (encoder != null) {
-          List<Bytes> listElements = new ArrayList<>();
-          for (Object obj : (List<Object>) value) {
+          List<Object> valuesList = (List<Object>) value;
+          Bytes[] listElements = new Bytes[valuesList.size()];
+          for (int i = 0; i < valuesList.size(); i++) {
+            Object obj = valuesList.get(i);
             ByteArrayOutputStream tmp = new ByteArrayOutputStream();
             encoder.encode(obj, field, tmp);
-            listElements.add(Bytes.wrap(tmp.toByteArray()));
+            listElements[i] = Bytes.wrap(tmp.toByteArray());
           }
-          elements = (Bytes[]) listElements.toArray();
+          elements = listElements;
         } else {
           SSZSerializer sszSerializer = objects.getValue2();
           elements = packContainerList((List<Object>) value, field, sszSerializer);
@@ -91,13 +93,15 @@ public class SSZCodecHasher implements SSZCodecResolver {
         OutputStream res = objects.getValue1();
         Bytes[] elements;
         if (encoder != null) {
-          List<Bytes> listElements = new ArrayList<>();
-          for (Object obj : (Object[]) value) {
+          Object[] valuesArray = (Object[]) value;
+          Bytes[] arrayElements = new Bytes[valuesArray.length];
+          for (int i = 0; i < valuesArray.length; i++) {
+            Object obj = valuesArray[i];
             ByteArrayOutputStream tmp = new ByteArrayOutputStream();
             encoder.encode(obj, field, tmp);
-            listElements.add(Bytes.wrap(tmp.toByteArray()));
+            arrayElements[i] = Bytes.wrap(tmp.toByteArray());
           }
-          elements = (Bytes[]) listElements.toArray();
+          elements = arrayElements;
         } else {
           SSZSerializer sszSerializer = objects.getValue2();
           elements = packContainerList(Arrays.asList((Object[]) value), field, sszSerializer);
@@ -245,7 +249,7 @@ public class SSZCodecHasher implements SSZCodecResolver {
   }
 
   private Bytes hash_tree_root_element(Bytes el) {
-    if (el.size() < SSZ_CHUNK_SIZE) {
+    if (el.size() <= SSZ_CHUNK_SIZE) {
       return el;
     } else {
       return hashFunction.apply(el);

@@ -29,13 +29,8 @@ public class SSZHasherTest {
   private static byte[] DEFAULT_HASH = Hashes.keccak256(BytesValue.fromHexString("aa")).getArrayUnsafe();
   private static Sign.Signature DEFAULT_SIG = new Sign.Signature();
   static {
-    SecureRandom random = new SecureRandom();
-    byte[] r = new byte[20];
-    random.nextBytes(r);
-    DEFAULT_SIG.r = new BigInteger(1, r);
-    byte[] s = new byte[20];
-    random.nextBytes(s);
-    DEFAULT_SIG.s = new BigInteger(1, s);
+    DEFAULT_SIG.r = new BigInteger("23452342342342342342342315643768758756967967");
+    DEFAULT_SIG.s = new BigInteger("8713785871");
   }
 
   @Test
@@ -46,18 +41,14 @@ public class SSZHasherTest {
 
     Bytes hash = sszHasher.calc(bitfield);
 
-    assertEquals(Bytes.fromHexString("aa"), hash);
+    assertEquals(Bytes.fromHexString("DB8971730132CFCB1BFA9A3E5E3DFD79442BDC1A1E8672633B838E29D392C7AD"), hash);
   }
 
   @Test
   public void SignatureTest() {
-    Sign.Signature signature = new Sign.Signature();
-    signature.r = new BigInteger("23452342342342342342342315643768758756967967");
-    signature.s = new BigInteger("8713785871");
+    Bytes hash = sszHasher.calc(DEFAULT_SIG);
 
-    Bytes hash = sszHasher.calc(signature);
-
-    assertEquals(Bytes.fromHexString("aa"), hash);
+    assertEquals(Bytes.fromHexString("D75724A07F4EFB3B456408DD6C36C70A6DF189FAE6A09F7AD0C848F0D3341290"), hash);
   }
 
   @Test
@@ -75,6 +66,6 @@ public class SSZHasherTest {
 
     Bytes hash = sszHasher.calc(attestationRecord);
 
-    assertEquals(Bytes.fromHexString("aa"), hash);
+    assertEquals(Bytes.fromHexString("CC4B9A044445D67276E0FE4B11833912DE98A3BE2382A400383C484C1E424FF7"), hash);
   }
 }

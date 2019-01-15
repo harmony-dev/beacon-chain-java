@@ -14,6 +14,7 @@ public class SSZHasher {
     SSZCodecResolver hasher = new SSZCodecHasher(hashFunction);
     // TODO: we should have explicit annotations alternative
     builder.initWith(new SSZAnnotationSchemeBuilder(false), hasher, createDefaultModelCreator());
+    builder.addPrimitivesCodecs();
     this.hasher = builder.build();
   }
 
