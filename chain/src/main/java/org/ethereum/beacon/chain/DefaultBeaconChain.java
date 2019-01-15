@@ -66,6 +66,14 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   public synchronized void insert(BeaconBlock block) {
     assert head != null;
 
+    if (exist(block)) {
+      return;
+    }
+
+    if (!hasParent(block)) {
+      return;
+    }
+
     VerificationResult blockVerification = blockVerifier.verify(block, head.getState());
     if (!blockVerification.isPassed()) {
       return;
@@ -99,5 +107,13 @@ public class DefaultBeaconChain implements MutableBeaconChain {
       checkArgument(parentState.isPresent(), "No parent for block %s", block);
       return parentState.get();
     }
+  }
+
+  private boolean exist(BeaconBlock block) {
+    return blockStorage.get(block.getHash()).isPresent();
+  }
+
+  private boolean hasParent(BeaconBlock block) {
+    return blockStorage.get(block.getParentRoot()).isPresent();
   }
 }
