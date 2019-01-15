@@ -29,7 +29,7 @@ public class SpecHelpers {
   }
 
   public Hash32 hash(BytesValue data) {
-    return Hashes.keccack256(data);
+    return Hashes.keccak256(data);
   }
 
   /*
