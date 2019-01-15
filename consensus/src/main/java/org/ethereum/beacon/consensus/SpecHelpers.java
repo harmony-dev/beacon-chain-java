@@ -313,16 +313,13 @@ public class SpecHelpers {
   }
 
   public boolean bls_verify_multiple(
-      PublicKey[] publicKeys, Hash32[] messages, Bytes96 signature, Bytes8 domain) {
-    assertTrue(publicKeys.length == messages.length);
-
-    for (int i = 0; i < publicKeys.length; i++) {
-      if (!bls_verify(publicKeys[i], messages[i], signature, domain)) {
-        return false;
-      }
-    }
-
-    return true;
+      List<PublicKey> publicKeys, List<Hash32> messages, Bytes96 signature, Bytes8 domain) {
+    List<MessageParameters> messageParameters =
+        messages.stream()
+            .map(hash -> MessageParameters.create(hash, domain))
+            .collect(Collectors.toList());
+    Signature blsSignature = Signature.create(signature);
+    return BLS381.verifyMultiple(messageParameters, blsSignature, publicKeys);
   }
 
   public PublicKey bls_aggregate_pubkeys(List<Bytes48> publicKeysBytes) {
@@ -442,12 +439,13 @@ public class SpecHelpers {
     List<Bytes48> pubKeys1 = mapIndicesToPubKeys(state, vote_data.getCustodyBit0Indices());
     List<Bytes48> pubKeys2 = mapIndicesToPubKeys(state, vote_data.getCustodyBit1Indices());
 
+    ;
+
     return bls_verify_multiple(
-        new PublicKey[] {bls_aggregate_pubkeys(pubKeys1), bls_aggregate_pubkeys(pubKeys2)},
-        new Hash32[] {
-          hash_tree_root(new AttestationDataAndCustodyBit(vote_data.getData(), false)),
-          hash_tree_root(new AttestationDataAndCustodyBit(vote_data.getData(), true))
-        },
+        Arrays.asList(bls_aggregate_pubkeys(pubKeys1), bls_aggregate_pubkeys(pubKeys2)),
+        Arrays.asList(
+            hash_tree_root(new AttestationDataAndCustodyBit(vote_data.getData(), false)),
+            hash_tree_root(new AttestationDataAndCustodyBit(vote_data.getData(), true))),
         vote_data.getAggregatedSignature(),
         get_domain(state.getForkData(), state.getSlot(), ATTESTATION));
   }
