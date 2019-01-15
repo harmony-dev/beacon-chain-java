@@ -13,6 +13,7 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
 
 import static com.sun.org.apache.xerces.internal.impl.dv.util.HexBin.decode;
 import static org.junit.Assert.assertEquals;
@@ -25,7 +26,8 @@ public class SSZHasherTest {
 
   @Before
   public void setup() {
-    sszHasher = new SSZHasher((data) -> Bytes.wrap(Hashes.keccak256(BytesValue.of(data.toArrayUnsafe())).getArrayUnsafe()));
+    Function<Bytes, Bytes> hashingFunction = (data) -> Bytes.wrap(Hashes.keccak256(BytesValue.of(data.toArrayUnsafe())).getArrayUnsafe());
+    sszHasher = new SSZHasher(SSZHasher.getDefaultBuilder(hashingFunction, false), hashingFunction);
   }
 
   private static byte[] DEFAULT_HASH = Hashes.keccak256(BytesValue.fromHexString("aa")).getArrayUnsafe();
@@ -42,7 +44,7 @@ public class SSZHasherTest {
     );
 
     Bytes hash = sszHasher.calc(bitfield);
-    assertEquals(Bytes.fromHexString("DB8971730132CFCB1BFA9A3E5E3DFD79442BDC1A1E8672633B838E29D392C7AD"), hash);
+    assertEquals(Bytes.fromHexString("A0B1BE2F50398CA7FE11EA48E5AFE9F89F758EC815E5C12BE21315AF6D34FA1D"), hash);
   }
 
   @Test
@@ -65,7 +67,7 @@ public class SSZHasherTest {
     );
 
     Bytes hash = sszHasher.calc(attestationRecord);
-    assertEquals(Bytes.fromHexString("CC4B9A044445D67276E0FE4B11833912DE98A3BE2382A400383C484C1E424FF7"), hash);
+    assertEquals(Bytes.fromHexString("443F16942CE8F1EDC9E1BB6984B0E69FC40271D3E20E7103FFA026068A729379"), hash);
   }
 
   @Test
@@ -86,7 +88,7 @@ public class SSZHasherTest {
     );
 
     Bytes hash = sszHasher.calc(attestationRecord);
-    assertEquals(Bytes.fromHexString("EF30C4DEF04E0DC4D71188C7C99C7A89D953BA2ABC6E9E7CFC438E3EFA62F4F9"), hash);
+    assertEquals(Bytes.fromHexString("14190EBD6C1CFC3244E7BE9ECA0EC0BB52361822A923437A7C99E58A12260E42"), hash);
   }
 
   @Test
@@ -107,7 +109,7 @@ public class SSZHasherTest {
     );
 
     Bytes hash = sszHasher.calc(attestationRecord);
-    assertEquals(Bytes.fromHexString("AC01DF693CF95F1486AF5CEFCB4DD3D55312AF70A52A56E5B2394C00A887DAC7"), hash);
+    assertEquals(Bytes.fromHexString("54BBAAED03788F6A7B5F16CB93CF2D07DEF7BE070ABC11C676086ABC645563F3"), hash);
   }
 
   @SSZSerializable
@@ -156,7 +158,7 @@ public class SSZHasherTest {
 
     Bytes hash1 = sszHasher.calc(anotherObject1);
     Bytes hash2 = sszHasher.calc(anotherObject2);
-    assertEquals(Bytes.fromHexString("51F81BCDFC324A0DFF2B5BEC9D92E21CBEBC4D5E29D3A3D30DE3E03FBEAB8D7F"), hash1);
-    assertEquals(Bytes.fromHexString("2EE5F854D076701C8753D72779187E404F9B2FB705C495137D78551250314A46"), hash2);
+    assertEquals(Bytes.fromHexString("FB5BAAECAB62C516763CEA2DFBA17FBBC24907E4E3B0BE426BDE71BE89AF495F"), hash1);
+    assertEquals(Bytes.fromHexString("B7047395B0D5A9C70336FDE7E40DE2BB369FE67C8E762A35641E209B7338FDD9"), hash2);
   }
 }

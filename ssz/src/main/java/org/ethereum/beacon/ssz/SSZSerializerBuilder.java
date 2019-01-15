@@ -50,6 +50,16 @@ public class SSZSerializerBuilder {
     this.sszSerializer = new SSZSerializer(schemeBuilder, codecResolver, sszModelFactory);
   }
 
+  public SSZSerializerBuilder initWith(SSZSerializer sszSerializer, SSZCodecResolver codecResolver) {
+    if (this.sszSerializer != null) {
+      throw new RuntimeException("Already initialized!");
+    }
+    this.sszSerializer = sszSerializer;
+    this.sszCodecResolver = codecResolver;
+
+    return this;
+  }
+
   public SSZSerializerBuilder initWith(SSZSchemeBuilder schemeBuilder, SSZCodecResolver codecResolver,
                                        SSZModelFactory sszModelFactory) {
     if (sszSerializer != null) {
