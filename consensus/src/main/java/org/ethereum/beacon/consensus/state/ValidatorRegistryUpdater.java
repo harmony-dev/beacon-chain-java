@@ -5,6 +5,8 @@ import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import tech.pegasys.artemis.util.uint.UInt24;
 
+import java.util.ArrayList;
+
 /**
  * Interface to modify validator registry.
  *
@@ -25,8 +27,8 @@ public interface ValidatorRegistryUpdater extends ValidatorRegistryReader {
    */
   static ValidatorRegistryUpdater fromState(BeaconState state, ChainSpec chainSpec) {
     return new InMemoryValidatorRegistryUpdater(
-        state.extractValidatorRegistry(),
-        state.extractValidatorBalances(),
+        new ArrayList<>(state.getValidatorRegistry()),
+        new ArrayList<>(state.getValidatorBalances()),
         state.getValidatorRegistryDeltaChainTip(),
         state.getSlot(),
         chainSpec);

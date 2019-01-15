@@ -45,7 +45,7 @@ public class ProposerSignatureVerifier implements BeaconBlockVerifier {
 
     Hash32 proposalRoot = specHelpers.hash_tree_root(proposal);
     UInt24 proposerIndex = specHelpers.get_beacon_proposer_index(state, state.getSlot());
-    Bytes48 publicKey = state.getValidatorRegistryUnsafe().get(safeInt(proposerIndex)).getPubKey();
+    Bytes48 publicKey = state.getValidatorRegistry().get(safeInt(proposerIndex)).getPubKey();
     Bytes8 domain = specHelpers.get_domain(state.getForkData(), state.getSlot(), PROPOSAL);
 
     if (specHelpers.bls_verify(publicKey, proposalRoot, block.getSignature(), domain)) {

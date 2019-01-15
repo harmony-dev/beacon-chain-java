@@ -82,7 +82,7 @@ public class AttestationVerifier implements OperationVerifier<Attestation> {
     }
 
     Hash32 shardBlockRoot =
-        state.getLatestCrosslinksUnsafe().get(safeInt(data.getShard())).getShardBlockRoot();
+        state.getLatestCrosslinks().get(safeInt(data.getShard())).getShardBlockRoot();
     if (!data.getJustifiedBlockRoot().equals(shardBlockRoot)
         && !data.getShardBlockRoot().equals(shardBlockRoot)) {
       return createdFailed(

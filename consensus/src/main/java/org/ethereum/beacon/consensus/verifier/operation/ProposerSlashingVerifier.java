@@ -57,7 +57,7 @@ public class ProposerSlashingVerifier implements OperationVerifier<ProposerSlash
     }
 
     ValidatorRecord proposer =
-        state.getValidatorRegistryUnsafe().get(safeInt(proposerSlashing.getProposerIndex()));
+        state.getValidatorRegistry().get(safeInt(proposerSlashing.getProposerIndex()));
     if (proposer.getPenalizedSlot().compareTo(state.getSlot()) >= 0) {
       return createdFailed(
           "proposer penalized_slot should be less than state.slot, got penalized_slot=%s, state.slot=%s",

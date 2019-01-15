@@ -1,3 +1,8 @@
+ext {
+  // After that version snapshots are compiled with new JDK w/o full backward compatibility
+  cavaVersion = '0.6.0-5618C0-snapshot'
+}
+
 dependencyManagement {
   dependencies {
 
@@ -12,5 +17,9 @@ dependencyManagement {
     dependency 'junit:junit:4.12'
     dependency 'org.assertj:assertj-core:3.11.1'
     dependency 'org.mockito:mockito-core:2.23.4'
+    dependency 'org.javatuples:javatuples:1.2'
+
+    dependency "net.consensys.cava:cava-ssz:${cavaVersion}"
+    dependency "net.consensys.cava:cava-units:${cavaVersion}"
   }
 }

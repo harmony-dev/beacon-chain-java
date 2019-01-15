@@ -14,8 +14,10 @@
 apply plugin: 'java-library'
 
 dependencies {
+  implementation project(':ssz')
   implementation 'com.google.guava:guava'
   implementation 'io.vertx:vertx-core'
+  implementation 'net.consensys.cava:cava-ssz'
 
   testImplementation 'junit:junit'
   testImplementation 'org.assertj:assertj-core'

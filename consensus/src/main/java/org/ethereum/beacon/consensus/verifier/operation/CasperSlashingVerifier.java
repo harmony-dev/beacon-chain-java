@@ -65,10 +65,10 @@ public class CasperSlashingVerifier implements OperationVerifier<CasperSlashing>
     }
 
     for (UInt24 index : slashableVoteData1.getCustodyBit0Indices()) {
-      if (safeInt(index) >= state.getValidatorRegistryUnsafe().size()) {
+      if (safeInt(index) >= state.getValidatorRegistry().size()) {
         return createdFailed(
             "validator index %s is out of range, registry size %d",
-            index, state.getValidatorRegistryUnsafe().size());
+            index, state.getValidatorRegistry().size());
       }
     }
 

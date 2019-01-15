@@ -29,7 +29,7 @@ public class RandaoVerifier implements BeaconBlockVerifier {
   public VerificationResult verify(BeaconBlock block, BeaconState state) {
     ValidatorRecord proposer =
         state
-            .getValidatorRegistryUnsafe()
+            .getValidatorRegistry()
             .get(safeInt(specHelpers.get_beacon_proposer_index(state, state.getSlot())));
 
     Hash32 actualCommitment =

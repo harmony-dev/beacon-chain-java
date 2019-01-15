@@ -44,7 +44,7 @@ public class SpecHelpers {
   }
 
   public Hash32 hash(BytesValue data) {
-    return Hashes.keccack256(data);
+    return Hashes.keccak256(data);
   }
 
   /*
@@ -58,8 +58,9 @@ public class SpecHelpers {
     assertTrue(state_epoch_slot.compareTo(slot.plus(spec.getEpochLength())) <= 0);
     assertTrue(slot.compareTo(state_epoch_slot.plus(spec.getEpochLength())) < 0);
     return state
-        .getShardCommitteesAtSlotsUnsafe()[
-        safeInt(slot.minus(state_epoch_slot).plus(spec.getEpochLength()))];
+        .getShardCommitteesAtSlots()
+        .get(safeInt(slot.minus(state_epoch_slot).plus(spec.getEpochLength())))
+        .toArray(new ShardCommittee[0]);
   }
 
   /*
@@ -464,9 +465,7 @@ public class SpecHelpers {
   public Hash32 get_block_root(BeaconState state, UInt64 slot) {
     assertTrue(state.getSlot().compareTo(slot.plus(spec.getLatestBlockRootsLength())) <= 0);
     assertTrue(slot.compareTo(state.getSlot()) < 0);
-    return state
-        .getLatestBlockRootsUnsafe()
-        .get(safeInt(slot.modulo(spec.getLatestBlockRootsLength())));
+    return state.getLatestBlockRoots().get(safeInt(slot.modulo(spec.getLatestBlockRootsLength())));
   }
 
   /*
@@ -523,7 +522,7 @@ public class SpecHelpers {
   }
 
   public void checkIndexRange(BeaconState state, UInt24 index) {
-    assertTrue(safeInt(index) < state.getValidatorRegistryUnsafe().size());
+    assertTrue(safeInt(index) < state.getValidatorRegistry().size());
   }
 
   public void checkIndexRange(BeaconState state, UInt24[] indices) {
@@ -542,7 +541,7 @@ public class SpecHelpers {
     List<Bytes48> publicKeys = new ArrayList<>();
     for (UInt24 index : indices) {
       checkIndexRange(state, index);
-      publicKeys.add(state.getValidatorRegistryUnsafe().get(safeInt(index)).getPubKey());
+      publicKeys.add(state.getValidatorRegistry().get(safeInt(index)).getPubKey());
     }
     return publicKeys;
   }
