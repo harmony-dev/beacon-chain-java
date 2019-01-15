@@ -29,52 +29,56 @@ public class ProposerSlashingVerifier implements OperationVerifier<ProposerSlash
   }
 
   @Override
-  public VerificationResult verify(ProposerSlashing operation, BeaconState state) {
-    if (safeInt(operation.getProposerIndex()) >= state.getValidatorRegistryUnsafe().size()) {
-      return createdFailed(
-          "proposer index is out of range: %d while registry size %d",
-          operation.getProposerIndex(), state.getValidatorRegistryUnsafe().size());
-    }
+  public VerificationResult verify(ProposerSlashing proposerSlashing, BeaconState state) {
+    specHelpers.checkIndexRange(state, proposerSlashing.getProposerIndex());
+    specHelpers.checkShardRange(proposerSlashing.getProposalData1().getShard());
+    specHelpers.checkShardRange(proposerSlashing.getProposalData2().getShard());
 
-    if (operation.getProposalData1().getSlot().equals(operation.getProposalData2().getSlot())) {
+    if (proposerSlashing
+        .getProposalData1()
+        .getSlot()
+        .equals(proposerSlashing.getProposalData2().getSlot())) {
       return createdFailed("proposal_data_1.slot != proposal_data_2.slot");
     }
 
-    if (operation.getProposalData1().getShard().equals(operation.getProposalData2().getShard())) {
+    if (proposerSlashing
+        .getProposalData1()
+        .getShard()
+        .equals(proposerSlashing.getProposalData2().getShard())) {
       return createdFailed("proposal_data_1.shard != proposal_data_2.shard");
     }
 
-    if (operation
+    if (proposerSlashing
         .getProposalData1()
         .getBlockRoot()
-        .equals(operation.getProposalData2().getBlockRoot())) {
+        .equals(proposerSlashing.getProposalData2().getBlockRoot())) {
       return createdFailed(
           "proposal_data_1.block_root == proposal_data_2.block_root, roots should not be equal");
     }
 
     ValidatorRecord proposer =
-        state.getValidatorRegistryUnsafe().get(safeInt(operation.getProposerIndex()));
+        state.getValidatorRegistryUnsafe().get(safeInt(proposerSlashing.getProposerIndex()));
     if (proposer.getPenalizedSlot().compareTo(state.getSlot()) >= 0) {
       return createdFailed(
-          "proposer penalized_slot should be less than state.slot, got penalized_slot=%d, state.slot=%d",
+          "proposer penalized_slot should be less than state.slot, got penalized_slot=%s, state.slot=%s",
           proposer.getPenalizedSlot(), state.getSlot());
     }
 
     if (specHelpers.bls_verify(
         proposer.getPubKey(),
-        specHelpers.hash_tree_root(operation.getProposalData1()),
-        operation.getProposalSignature1(),
+        specHelpers.hash_tree_root(proposerSlashing.getProposalData1()),
+        proposerSlashing.getProposalSignature1(),
         specHelpers.get_domain(
-            state.getForkData(), operation.getProposalData1().getSlot(), PROPOSAL))) {
+            state.getForkData(), proposerSlashing.getProposalData1().getSlot(), PROPOSAL))) {
       return createdFailed("proposal_signature_1 is invalid");
     }
 
     if (specHelpers.bls_verify(
         proposer.getPubKey(),
-        specHelpers.hash_tree_root(operation.getProposalData2()),
-        operation.getProposalSignature2(),
+        specHelpers.hash_tree_root(proposerSlashing.getProposalData2()),
+        proposerSlashing.getProposalSignature2(),
         specHelpers.get_domain(
-            state.getForkData(), operation.getProposalData1().getSlot(), PROPOSAL))) {
+            state.getForkData(), proposerSlashing.getProposalData1().getSlot(), PROPOSAL))) {
       return createdFailed("proposal_signature_1 is invalid");
     }
 

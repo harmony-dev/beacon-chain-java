@@ -30,9 +30,16 @@ public class CasperSlashingVerifier implements OperationVerifier<CasperSlashing>
   }
 
   @Override
-  public VerificationResult verify(CasperSlashing operation, BeaconState state) {
-    SlashableVoteData slashableVoteData1 = operation.getSlashableVoteData1();
-    SlashableVoteData slashableVoteData2 = operation.getSlashableVoteData2();
+  public VerificationResult verify(CasperSlashing casperSlashing, BeaconState state) {
+    SlashableVoteData slashableVoteData1 = casperSlashing.getSlashableVoteData1();
+    SlashableVoteData slashableVoteData2 = casperSlashing.getSlashableVoteData2();
+
+    specHelpers.checkIndexRange(state, slashableVoteData1.getCustodyBit0Indices());
+    specHelpers.checkIndexRange(state, slashableVoteData1.getCustodyBit1Indices());
+    specHelpers.checkIndexRange(state, slashableVoteData2.getCustodyBit0Indices());
+    specHelpers.checkIndexRange(state, slashableVoteData2.getCustodyBit1Indices());
+    specHelpers.checkShardRange(slashableVoteData1.getData().getShard());
+    specHelpers.checkShardRange(slashableVoteData2.getData().getShard());
 
     if (slashableVoteData1.getData().equals(slashableVoteData2.getData())) {
       return createdFailed("slashable_vote_data_1 != slashable_vote_data_2");
@@ -65,15 +72,6 @@ public class CasperSlashingVerifier implements OperationVerifier<CasperSlashing>
       }
     }
 
-    VerificationResult result = verifyIndexes(slashableVoteData1, state);
-    if (result != PASSED) {
-      return result;
-    }
-    result = verifyIndexes(slashableVoteData2, state);
-    if (result != PASSED) {
-      return result;
-    }
-
     if (!specHelpers.verify_slashable_vote_data(state, slashableVoteData1)) {
       return createdFailed("slashable_vote_data_1 is incorrect");
     }
@@ -82,29 +80,6 @@ public class CasperSlashingVerifier implements OperationVerifier<CasperSlashing>
       return createdFailed("slashable_vote_data_2 is incorrect");
     }
 
-    return PASSED;
-  }
-
-  private VerificationResult verifyIndexes(SlashableVoteData slashableVoteData, BeaconState state) {
-    VerificationResult result;
-    if (PASSED != (result = verifyIndexesImpl(slashableVoteData.getCustodyBit0Indices(), state))) {
-      return createdFailed("%s, custody_bit_0_indices", result.getMessage());
-    }
-    if (PASSED != (result = verifyIndexesImpl(slashableVoteData.getCustodyBit1Indices(), state))) {
-      return createdFailed("%s, custody_bit_1_indices", result.getMessage());
-    }
-    return PASSED;
-  }
-
-  private VerificationResult verifyIndexesImpl(UInt24[] custodyBitIndices, BeaconState state) {
-    for (int i = 0; i < custodyBitIndices.length; i++) {
-      UInt24 index = custodyBitIndices[i];
-      if (safeInt(index) >= state.getValidatorRegistryUnsafe().size()) {
-        return createdFailed(
-            "validator index %s is out of range, registry size %d, index in array: %d",
-            index, state.getValidatorRegistryUnsafe().size(), i);
-      }
-    }
     return PASSED;
   }
 }

@@ -1,5 +1,6 @@
 package org.ethereum.beacon.consensus;
 
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.ethereum.beacon.core.BeaconState;
@@ -312,7 +313,7 @@ public class SpecHelpers {
 
   public boolean bls_verify_multiple(
       PublicKey[] publicKeys, Hash32[] messages, Bytes96 signature, Bytes8 domain) {
-    assert publicKeys.length == messages.length;
+    assertTrue(publicKeys.length == messages.length);
 
     for (int i = 0; i < publicKeys.length; i++) {
       if (!bls_verify(publicKeys[i], messages[i], signature, domain)) {
@@ -437,14 +438,8 @@ public class SpecHelpers {
       return false;
     }
 
-    List<Bytes48> pubKeys1 =
-        Stream.of(vote_data.getCustodyBit0Indices())
-            .map(index -> state.getValidatorRegistryUnsafe().get(safeInt(index)).getPubKey())
-            .collect(Collectors.toList());
-    List<Bytes48> pubKeys2 =
-        Stream.of(vote_data.getCustodyBit1Indices())
-            .map(index -> state.getValidatorRegistryUnsafe().get(safeInt(index)).getPubKey())
-            .collect(Collectors.toList());
+    List<Bytes48> pubKeys1 = mapIndicesToPubKeys(state, vote_data.getCustodyBit0Indices());
+    List<Bytes48> pubKeys2 = mapIndicesToPubKeys(state, vote_data.getCustodyBit1Indices());
 
     return bls_verify_multiple(
         new PublicKey[] {bls_aggregate_pubkeys(pubKeys1), bls_aggregate_pubkeys(pubKeys2)},
@@ -454,6 +449,106 @@ public class SpecHelpers {
         },
         vote_data.getAggregatedSignature(),
         get_domain(state.getForkData(), state.getSlot(), ATTESTATION));
+  }
+
+  /*
+   def get_block_root(state: BeaconState,
+                    slot: int) -> Hash32:
+     """
+     Returns the block root at a recent ``slot``.
+     """
+     assert state.slot <= slot + LATEST_BLOCK_ROOTS_LENGTH
+     assert slot < state.slot
+     return state.latest_block_roots[slot % LATEST_BLOCK_ROOTS_LENGTH]
+  */
+  public Hash32 get_block_root(BeaconState state, UInt64 slot) {
+    assertTrue(state.getSlot().compareTo(slot.plus(spec.getLatestBlockRootsLength())) <= 0);
+    assertTrue(slot.compareTo(state.getSlot()) < 0);
+    return state
+        .getLatestBlockRootsUnsafe()
+        .get(safeInt(slot.modulo(spec.getLatestBlockRootsLength())));
+  }
+
+  /*
+   def get_attestation_participants(state: BeaconState,
+                                  attestation_data: AttestationData,
+                                  participation_bitfield: bytes) -> List[int]:
+     """
+     Returns the participant indices at for the ``attestation_data`` and ``participation_bitfield``.
+     """
+
+     # Find the committee in the list with the desired shard
+     shard_committees = get_shard_committees_at_slot(state, attestation_data.slot)
+
+     assert attestation.shard in [shard for _, shard in shard_committees]
+     shard_committee = [committee for committee, shard in shard_committees if shard == attestation_data.shard][0]
+     assert len(participation_bitfield) == (len(committee) + 7) // 8
+
+     # Find the participating attesters in the committee
+     participants = []
+     for i, validator_index in enumerate(shard_committee):
+         participation_bit = (participation_bitfield[i//8] >> (7 - (i % 8))) % 2
+         if participation_bit == 1:
+             participants.append(validator_index)
+     return participants
+  */
+  public List<UInt24> get_attestation_participants(
+      BeaconState state, AttestationData attestation_data, BytesValue participation_bitfield) {
+    ShardCommittee[] shard_committees =
+        get_shard_committees_at_slot(state, attestation_data.getSlot());
+
+    assertTrue(
+        Stream.of(shard_committees)
+            .map(ShardCommittee::getShard)
+            .collect(Collectors.toSet())
+            .contains(attestation_data.getShard()));
+    Optional<ShardCommittee> shard_committee =
+        Stream.of(shard_committees)
+            .filter(committee -> committee.getShard().equals(attestation_data.getShard()))
+            .findFirst();
+    assertTrue(shard_committee.isPresent());
+    UInt24[] committee = shard_committee.get().getCommittee();
+    assertTrue(participation_bitfield.size() == (committee.length + 7) / 8);
+
+    List<UInt24> participants = new ArrayList<>();
+    for (int i = 0; i < committee.length; i++) {
+      UInt24 validator_index = committee[i];
+      int participation_bit = (participation_bitfield.get(i / 8) & 0xFF) >> ((7 - (i % 8)) % 2);
+      if (participation_bit == 1) {
+        participants.add(validator_index);
+      }
+    }
+
+    return participants;
+  }
+
+  public void checkIndexRange(BeaconState state, UInt24 index) {
+    assertTrue(safeInt(index) < state.getValidatorRegistryUnsafe().size());
+  }
+
+  public void checkIndexRange(BeaconState state, UInt24[] indices) {
+    checkIndexRange(state, Arrays.asList(indices));
+  }
+
+  public void checkIndexRange(BeaconState state, List<UInt24> indices) {
+    indices.forEach(index -> checkIndexRange(state, index));
+  }
+
+  public void checkShardRange(UInt64 shard) {
+    assertTrue(shard.compareTo(spec.getShardCount()) < 0);
+  }
+
+  public List<Bytes48> mapIndicesToPubKeys(BeaconState state, List<UInt24> indices) {
+    List<Bytes48> publicKeys = new ArrayList<>();
+    for (UInt24 index : indices) {
+      checkIndexRange(state, index);
+      publicKeys.add(state.getValidatorRegistryUnsafe().get(safeInt(index)).getPubKey());
+    }
+    return publicKeys;
+  }
+
+  public List<Bytes48> mapIndicesToPubKeys(BeaconState state, UInt24[] indices) {
+    return mapIndicesToPubKeys(state, Arrays.asList(indices));
   }
 
   public static int safeInt(UInt64 uint) {
