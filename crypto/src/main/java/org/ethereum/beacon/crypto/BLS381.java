@@ -120,6 +120,35 @@ public class BLS381 {
   }
 
   /**
+   * Verifies a signature created by aggregation of signatures for a number of distinct messages.
+   *
+   * <p>Private keys that messages has been signed with could, also, be different. This is handle
+   * with a list of {@code publicKeys}. Index of message in the list must match the index of related
+   * public key.
+   *
+   * @param messages a list of messages.
+   * @param signature an aggregated signature.
+   * @param publicKeys a list of public keys.
+   * @return {@code true} if messages have been signed with given public keys, otherwise, {@code
+   *     false}.
+   * @throws AssertionError if {@code messages.size()} is not equal to {@code * publicKeys.size()}
+   */
+  public static boolean verifyMultiple(
+      List<MessageParameters> messages, Signature signature, List<PublicKey> publicKeys) {
+    assert messages.size() == publicKeys.size();
+
+    FP12 lhs = new FP12(1);
+    for (int i = 0; i < messages.size(); i++) {
+      ECP2 messagePoint = MESSAGE_MAPPER.map(messages.get(i));
+      FP12 product = pairingProduct(publicKeys.get(i).asEcPoint(), messagePoint);
+      lhs.mul(product);
+    }
+    FP12 rhs = pairingProduct(ECP.generator(), signature.asEcPoint());
+
+    return lhs.equals(rhs);
+  }
+
+  /**
    * Calculates ate pairing product for given elliptic curve points.
    *
    * @param g1 elliptic curve point belonging to <code>G<sub>1</sub></code> subgroup.
