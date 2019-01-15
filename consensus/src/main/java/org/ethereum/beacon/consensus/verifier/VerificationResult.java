@@ -30,7 +30,7 @@ public class VerificationResult {
    * @param args args to {@link String#format(String, Object...)}
    * @return failed result with given message
    */
-  public static VerificationResult createdFailed(String format, Object... args) {
+  public static VerificationResult failedResult(String format, Object... args) {
     return new VerificationResult(String.format(format, args), false);
   }
 

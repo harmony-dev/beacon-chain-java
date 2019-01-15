@@ -2,7 +2,7 @@ package org.ethereum.beacon.consensus.verifier.operation;
 
 import static org.ethereum.beacon.consensus.SpecHelpers.safeInt;
 import static org.ethereum.beacon.consensus.verifier.VerificationResult.PASSED;
-import static org.ethereum.beacon.consensus.verifier.VerificationResult.createdFailed;
+import static org.ethereum.beacon.consensus.verifier.VerificationResult.failedResult;
 import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
 
 import java.util.List;
@@ -45,13 +45,13 @@ public class AttestationVerifier implements OperationVerifier<Attestation> {
 
     if (data.getSlot().plus(chainSpec.getMinAttestationInclusionDelay()).compareTo(state.getSlot())
         > 0) {
-      return createdFailed(
+      return failedResult(
           "MIN_ATTESTATION_INCLUSION_DELAY violated, inclusion slot starts from %s but got %s",
           data.getSlot().plus(chainSpec.getMinAttestationInclusionDelay()), state.getSlot());
     }
 
     if (data.getSlot().plus(chainSpec.getEpochLength()).compareTo(state.getSlot()) < 0) {
-      return createdFailed(
+      return failedResult(
           "EPOCH_LENGTH boundary violated, boundary slot %d, attestation slot %s",
           Math.max(0, state.getSlot().getValue() - chainSpec.getEpochLength().getValue()),
           data.getSlot());
@@ -61,13 +61,13 @@ public class AttestationVerifier implements OperationVerifier<Attestation> {
             .compareTo(state.getSlot().minus(state.getSlot().modulo(chainSpec.getEpochLength())))
         >= 0) {
       if (!data.getSlot().equals(state.getJustifiedSlot())) {
-        return createdFailed(
+        return failedResult(
             "attestation_data.slot=%s must be equal to justified_slot=%s",
             data.getSlot(), state.getJustifiedSlot());
       }
     } else {
       if (!data.getSlot().equals(state.getPreviousJustifiedSlot())) {
-        return createdFailed(
+        return failedResult(
             "attestation_data.slot=%s must be equal to previous_justified_slot=%s",
             data.getSlot(), state.getPreviousJustifiedSlot());
       }
@@ -75,7 +75,7 @@ public class AttestationVerifier implements OperationVerifier<Attestation> {
 
     Hash32 blockRootAtJustifiedSlot = specHelpers.get_block_root(state, data.getJustifiedSlot());
     if (!data.getJustifiedBlockRoot().equals(blockRootAtJustifiedSlot)) {
-      return createdFailed(
+      return failedResult(
           "attestation_data.justified_block_root must be equal to block_root at state.justified_slot, "
               + "justified_block_root=%s, block_root=%s",
           data.getJustifiedBlockRoot(), blockRootAtJustifiedSlot);
@@ -85,7 +85,7 @@ public class AttestationVerifier implements OperationVerifier<Attestation> {
         state.getLatestCrosslinks().get(safeInt(data.getShard())).getShardBlockRoot();
     if (!data.getJustifiedBlockRoot().equals(shardBlockRoot)
         && !data.getShardBlockRoot().equals(shardBlockRoot)) {
-      return createdFailed(
+      return failedResult(
           "either attestation_data.justified_block_root or attestation_data.shard_block_root must be "
               + "equal to latest_crosslink.shard_block_root, justified_block_root=%s, "
               + "attestation_data.shard_block_root=%s, latest_crosslink.shard_block_root=%s",
@@ -103,11 +103,11 @@ public class AttestationVerifier implements OperationVerifier<Attestation> {
         specHelpers.hash_tree_root(new AttestationDataAndCustodyBit(data, false)),
         attestation.getAggregatedSignature(),
         specHelpers.get_domain(state.getForkData(), state.getSlot(), ATTESTATION))) {
-      return createdFailed("failed to verify aggregated signature");
+      return failedResult("failed to verify aggregated signature");
     }
 
     if (!Hash32.ZERO.equals(data.getShardBlockRoot())) {
-      return createdFailed(
+      return failedResult(
           "attestation_data.shard_block_root must be equal to zero hash, phase 0 check");
     }
 

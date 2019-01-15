@@ -2,7 +2,7 @@ package org.ethereum.beacon.consensus.verifier.operation;
 
 import static org.ethereum.beacon.consensus.SpecHelpers.safeInt;
 import static org.ethereum.beacon.consensus.verifier.VerificationResult.PASSED;
-import static org.ethereum.beacon.consensus.verifier.VerificationResult.createdFailed;
+import static org.ethereum.beacon.consensus.verifier.VerificationResult.failedResult;
 import static org.ethereum.beacon.core.spec.SignatureDomains.PROPOSAL;
 
 import org.ethereum.beacon.consensus.SpecHelpers;
@@ -38,28 +38,28 @@ public class ProposerSlashingVerifier implements OperationVerifier<ProposerSlash
         .getProposalData1()
         .getSlot()
         .equals(proposerSlashing.getProposalData2().getSlot())) {
-      return createdFailed("proposal_data_1.slot != proposal_data_2.slot");
+      return failedResult("proposal_data_1.slot != proposal_data_2.slot");
     }
 
     if (proposerSlashing
         .getProposalData1()
         .getShard()
         .equals(proposerSlashing.getProposalData2().getShard())) {
-      return createdFailed("proposal_data_1.shard != proposal_data_2.shard");
+      return failedResult("proposal_data_1.shard != proposal_data_2.shard");
     }
 
     if (proposerSlashing
         .getProposalData1()
         .getBlockRoot()
         .equals(proposerSlashing.getProposalData2().getBlockRoot())) {
-      return createdFailed(
+      return failedResult(
           "proposal_data_1.block_root == proposal_data_2.block_root, roots should not be equal");
     }
 
     ValidatorRecord proposer =
         state.getValidatorRegistry().get(safeInt(proposerSlashing.getProposerIndex()));
     if (proposer.getPenalizedSlot().compareTo(state.getSlot()) >= 0) {
-      return createdFailed(
+      return failedResult(
           "proposer penalized_slot should be less than state.slot, got penalized_slot=%s, state.slot=%s",
           proposer.getPenalizedSlot(), state.getSlot());
     }
@@ -70,7 +70,7 @@ public class ProposerSlashingVerifier implements OperationVerifier<ProposerSlash
         proposerSlashing.getProposalSignature1(),
         specHelpers.get_domain(
             state.getForkData(), proposerSlashing.getProposalData1().getSlot(), PROPOSAL))) {
-      return createdFailed("proposal_signature_1 is invalid");
+      return failedResult("proposal_signature_1 is invalid");
     }
 
     if (specHelpers.bls_verify(
@@ -79,7 +79,7 @@ public class ProposerSlashingVerifier implements OperationVerifier<ProposerSlash
         proposerSlashing.getProposalSignature2(),
         specHelpers.get_domain(
             state.getForkData(), proposerSlashing.getProposalData1().getSlot(), PROPOSAL))) {
-      return createdFailed("proposal_signature_1 is invalid");
+      return failedResult("proposal_signature_1 is invalid");
     }
 
     return PASSED;

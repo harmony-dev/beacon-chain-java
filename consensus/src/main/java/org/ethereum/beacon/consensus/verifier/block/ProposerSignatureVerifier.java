@@ -51,7 +51,7 @@ public class ProposerSignatureVerifier implements BeaconBlockVerifier {
     if (specHelpers.bls_verify(publicKey, proposalRoot, block.getSignature(), domain)) {
       return VerificationResult.PASSED;
     } else {
-      return VerificationResult.createdFailed(
+      return VerificationResult.failedResult(
           "Proposer signature verification has failed for block %s", block);
     }
   }

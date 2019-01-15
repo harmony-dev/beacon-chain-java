@@ -2,7 +2,7 @@ package org.ethereum.beacon.consensus.verifier.operation;
 
 import static org.ethereum.beacon.consensus.SpecHelpers.safeInt;
 import static org.ethereum.beacon.consensus.verifier.VerificationResult.PASSED;
-import static org.ethereum.beacon.consensus.verifier.VerificationResult.createdFailed;
+import static org.ethereum.beacon.consensus.verifier.VerificationResult.failedResult;
 
 import java.util.List;
 import org.ethereum.beacon.consensus.SpecHelpers;
@@ -42,7 +42,7 @@ public class CasperSlashingVerifier implements OperationVerifier<CasperSlashing>
     specHelpers.checkShardRange(slashableVoteData2.getData().getShard());
 
     if (slashableVoteData1.getData().equals(slashableVoteData2.getData())) {
-      return createdFailed("slashable_vote_data_1 != slashable_vote_data_2");
+      return failedResult("slashable_vote_data_1 != slashable_vote_data_2");
     }
 
     List<UInt24> indices1 =
@@ -55,29 +55,29 @@ public class CasperSlashingVerifier implements OperationVerifier<CasperSlashing>
     List<UInt24> intersection = specHelpers.intersection(indices1, indices2);
 
     if (intersection.size() < 1) {
-      return createdFailed("there is no intersection between indices of slashable_vote_data");
+      return failedResult("there is no intersection between indices of slashable_vote_data");
     }
 
     if (!(specHelpers.is_double_vote(slashableVoteData1.getData(), slashableVoteData2.getData())
         || specHelpers.is_surround_vote(
             slashableVoteData1.getData(), slashableVoteData2.getData()))) {
-      return createdFailed("no slashing conditions found");
+      return failedResult("no slashing conditions found");
     }
 
     for (UInt24 index : slashableVoteData1.getCustodyBit0Indices()) {
       if (safeInt(index) >= state.getValidatorRegistry().size()) {
-        return createdFailed(
+        return failedResult(
             "validator index %s is out of range, registry size %d",
             index, state.getValidatorRegistry().size());
       }
     }
 
     if (!specHelpers.verify_slashable_vote_data(state, slashableVoteData1)) {
-      return createdFailed("slashable_vote_data_1 is incorrect");
+      return failedResult("slashable_vote_data_1 is incorrect");
     }
 
     if (!specHelpers.verify_slashable_vote_data(state, slashableVoteData2)) {
-      return createdFailed("slashable_vote_data_2 is incorrect");
+      return failedResult("slashable_vote_data_2 is incorrect");
     }
 
     return PASSED;

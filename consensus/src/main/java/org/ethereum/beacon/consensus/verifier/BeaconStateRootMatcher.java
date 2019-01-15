@@ -15,7 +15,7 @@ public class BeaconStateRootMatcher implements BeaconStateVerifier {
     if (block.getStateRoot().equals(state.getHash())) {
       return VerificationResult.PASSED;
     } else {
-      return VerificationResult.createdFailed(
+      return VerificationResult.failedResult(
           "State root doesn't match, expected %s but got %s",
           block.getStateRoot(), state.getHash());
     }

@@ -38,7 +38,7 @@ public class RandaoVerifier implements BeaconBlockVerifier {
     if (actualCommitment.equals(proposer.getRandaoCommitment())) {
       return VerificationResult.PASSED;
     } else {
-      return VerificationResult.createdFailed(
+      return VerificationResult.failedResult(
           "Incorrect RANDAO reveal for block %s, expected commitment %s but got %s",
           block, proposer.getRandaoCommitment(), actualCommitment);
     }
