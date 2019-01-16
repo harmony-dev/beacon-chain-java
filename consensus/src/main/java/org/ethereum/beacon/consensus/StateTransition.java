@@ -5,5 +5,5 @@ import org.ethereum.beacon.core.BeaconState;
 
 public interface StateTransition<S> {
 
-  BeaconState apply(BeaconBlock block, S state);
+  S apply(BeaconBlock block, S state);
 }

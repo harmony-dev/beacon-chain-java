@@ -39,7 +39,7 @@ public class InitialStateTransitionTest {
 
     BeaconState initialState =
         initialStateTransition.apply(
-            BeaconBlocks.createGenesis(ChainSpec.DEFAULT), BeaconState.getEmpty());
+            BeaconBlocks.createGenesis(ChainSpec.DEFAULT)).getCanonicalState();
 
     assertThat(initialState.getGenesisTime()).isEqualTo(genesisTime);
     assertThat(initialState.getLatestDepositRoot()).isEqualTo(receiptRoot);

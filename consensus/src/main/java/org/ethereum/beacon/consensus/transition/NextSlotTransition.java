@@ -16,7 +16,7 @@ import java.util.List;
 
 import static org.ethereum.beacon.consensus.SpecHelpers.safeInt;
 
-public class NextSlotTransition implements StateTransition<BeaconState> {
+public class NextSlotTransition implements StateTransition<BeaconStateEx> {
   private final ChainSpec spec;
 
   public NextSlotTransition(ChainSpec spec) {
@@ -24,14 +24,14 @@ public class NextSlotTransition implements StateTransition<BeaconState> {
   }
 
   @Override
-  public BeaconState apply(BeaconBlock block, BeaconState state) {
+  public BeaconStateEx apply(BeaconBlock block, BeaconStateEx stateEx) {
     SpecHelpers specHelpers = new SpecHelpers(spec);
 
-    MutableBeaconState newState = state.createMutableCopy();
+    MutableBeaconState state = stateEx.getCanonicalState().createMutableCopy();
 
     // state.slot += 1
     UInt64 newSlot = state.getSlot().increment();
-    newState.withSlot(newSlot);
+    state.withSlot(newSlot);
 
     // state.validator_registry[get_beacon_proposer_index(state, state.slot)].randao_layers += 1
     List<ValidatorRecord> newValidatorRegistry = new ArrayList<>(state.getValidatorRegistry());
@@ -42,15 +42,30 @@ public class NextSlotTransition implements StateTransition<BeaconState> {
         .withRandaoLayers(validatorRecord.getRandaoLayers().increment())
         .build();
     newValidatorRegistry.set(idx.getValue(), newValidatorRecord);
-    newState.withValidatorRegistry(newValidatorRegistry);
+    state.withValidatorRegistry(newValidatorRegistry);
 
     // state.latest_randao_mixes[state.slot % LATEST_RANDAO_MIXES_LENGTH] =
     //   state.latest_randao_mixes[(state.slot - 1) % LATEST_RANDAO_MIXES_LENGTH]
     List<Hash32> newRandaoMixes = new ArrayList<>(state.getLatestRandaoMixes());
     newRandaoMixes.set(safeInt(newSlot.modulo(spec.getLatestRandaoMixesLength())),
         newRandaoMixes.get(safeInt(newSlot.decrement().modulo(spec.getLatestRandaoMixesLength()))));
-    newState.withLatestRandaoMixes(newRandaoMixes);
+    state.withLatestRandaoMixes(newRandaoMixes);
 
-    return newState.validate();
+    //  Set state.latest_block_roots[(state.slot - 1) % LATEST_BLOCK_ROOTS_LENGTH] = previous_block_root.
+    ArrayList<Hash32> newLatestBlockRoots = new ArrayList<>(state.getLatestBlockRoots());
+    newLatestBlockRoots.set(state.getSlot().decrement()
+        .modulo(spec.getLatestBlockRootsLength()).getIntValue(),
+        stateEx.getLatestChainBlockHash());
+    state.setLatestBlockRoots(newLatestBlockRoots);
+
+    // If state.slot % LATEST_BLOCK_ROOTS_LENGTH == 0
+    // append merkle_root(state.latest_block_roots) to state.batched_block_roots
+    if (state.getSlot().modulo(spec.getLatestBlockRootsLength()).getIntValue() == 0) {
+      ArrayList<Hash32> newBatchedBlocks = new ArrayList<>(state.getBatchedBlockRoots());
+      newBatchedBlocks.add(specHelpers.merkle_root(state.getLatestBlockRoots()));
+      state.setBatchedBlockRoots(newLatestBlockRoots);
+    }
+
+    return new BeaconStateEx(state.validate(), stateEx.getLatestChainBlockHash());
   }
 }

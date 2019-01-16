@@ -53,12 +53,12 @@ public class NextSlotTransitionTest {
               }
             }, chainSpec);
 
-    BeaconState initialState =
-        initialStateTransition.apply(BeaconBlocks.createGenesis(chainSpec), BeaconState.getEmpty());
-    BeaconState s1State = new NextSlotTransition(chainSpec).apply(null, initialState);
-    BeaconState s2State = new NextSlotTransition(chainSpec).apply(null, s1State);
-    BeaconState s3State = new NextSlotTransition(chainSpec).apply(null, s2State);
+    BeaconStateEx initialState =
+        initialStateTransition.apply(BeaconBlocks.createGenesis(chainSpec));
+    BeaconStateEx s1State = new NextSlotTransition(chainSpec).apply(null, initialState);
+    BeaconStateEx s2State = new NextSlotTransition(chainSpec).apply(null, s1State);
+    BeaconStateEx s3State = new NextSlotTransition(chainSpec).apply(null, s2State);
 
-    Assert.assertEquals(UInt64.valueOf(3), s3State.getSlot());
+    Assert.assertEquals(UInt64.valueOf(3), s3State.getCanonicalState().getSlot());
   }
 }
