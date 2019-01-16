@@ -43,7 +43,7 @@ public interface ChainSpec
         }
 
         @Override
-        public UInt64 getMaxCasperVotes() {
+        public int getMaxCasperVotes() {
           return MAX_CASPER_VOTES;
         }
 

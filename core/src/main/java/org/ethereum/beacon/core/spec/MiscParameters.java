@@ -23,7 +23,7 @@ public interface MiscParameters {
 
   UInt64 getBeaconChainShardNumber();
 
-  UInt64 getMaxCasperVotes();
+  int getMaxCasperVotes();
 
   UInt64 getLatestBlockRootsLength();
 
@@ -43,7 +43,7 @@ public interface MiscParameters {
 
   UInt64 BEACON_CHAIN_SHARD_NUMBER = UInt64.MAX_VALUE; // (1 << 64) - 1
 
-  UInt64 MAX_CASPER_VOTES = UInt64.valueOf(1 << 10); // 1024 votes
+  int MAX_CASPER_VOTES = 1 << 10; // 1024 votes
 
   UInt64 LATEST_BLOCK_ROOTS_LENGTH = UInt64.valueOf(1 << 13); // 8192 block roots
 

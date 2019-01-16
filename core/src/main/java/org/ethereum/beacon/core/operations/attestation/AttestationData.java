@@ -1,5 +1,6 @@
 package org.ethereum.beacon.core.operations.attestation;
 
+import com.google.common.base.Objects;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import org.ethereum.beacon.core.operations.Attestation;
@@ -95,16 +96,20 @@ public class AttestationData {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
     AttestationData that = (AttestationData) o;
-    return slot.equals(that.slot) &&
-        shard.equals(that.shard) &&
-        beaconBlockRoot.equals(that.beaconBlockRoot) &&
-        epochBoundaryRoot.equals(that.epochBoundaryRoot) &&
-        shardBlockRoot.equals(that.shardBlockRoot) &&
-        latestCrosslinkRoot.equals(that.latestCrosslinkRoot) &&
-        justifiedSlot.equals(that.justifiedSlot) &&
-        justifiedBlockRoot.equals(that.justifiedBlockRoot);
+    return Objects.equal(slot, that.slot)
+        && Objects.equal(shard, that.shard)
+        && Objects.equal(beaconBlockRoot, that.beaconBlockRoot)
+        && Objects.equal(epochBoundaryRoot, that.epochBoundaryRoot)
+        && Objects.equal(shardBlockRoot, that.shardBlockRoot)
+        && Objects.equal(latestCrosslinkRoot, that.latestCrosslinkRoot)
+        && Objects.equal(justifiedSlot, that.justifiedSlot)
+        && Objects.equal(justifiedBlockRoot, that.justifiedBlockRoot);
   }
 }
