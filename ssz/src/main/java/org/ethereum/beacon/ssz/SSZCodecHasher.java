@@ -22,7 +22,7 @@ import java.util.function.Function;
 
 /**
  * <p>Implementation of {@link SSZCodecResolver} which implements SSZ Hash function</p>
- * <p>For more info check https://github.com/ethereum/eth2.0-specs/blob/master/specs/simple-serialize.md#tree-hash</p>
+ * <p>For more info check <a href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/simple-serialize.md#tree-hash">SSZ Tree hash</a></p>
  */
 public class SSZCodecHasher implements SSZCodecResolver {
 

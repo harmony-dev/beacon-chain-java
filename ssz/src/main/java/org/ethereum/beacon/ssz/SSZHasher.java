@@ -5,7 +5,7 @@ import java.util.function.Function;
 
 /**
  * <p>SSZ Hashing helper made according to the following specs:
- * https://github.com/ethereum/eth2.0-specs/blob/master/specs/simple-serialize.md#tree-hash</p>
+ * <a href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/simple-serialize.md#tree-hash">SSZ Tree Hash</a></p>
  *
  * <p>It's based on {@link SSZSerializer}, so for setup help, check its Javadoc
  * and {@link SSZSerializerBuilder} documentation</p>
