@@ -5,7 +5,10 @@ import org.ethereum.beacon.core.state.*;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 public interface MutableBeaconState extends BeaconState {
 
@@ -91,9 +94,26 @@ public interface MutableBeaconState extends BeaconState {
     return this;
   }
 
+  default MutableBeaconState withValidatorRecord(int idx,
+      Consumer<ValidatorRecord.Builder> validatorUpdater) {
+    ArrayList<ValidatorRecord> newRegistry = new ArrayList<>(getValidatorRegistry());
+    ValidatorRecord.Builder builder = ValidatorRecord.Builder
+        .fromRecord(getValidatorRegistry().get(idx));
+    validatorUpdater.accept(builder);
+    newRegistry.set(idx, builder.build());
+    return withValidatorRegistry(newRegistry);
+  }
+
   default MutableBeaconState withValidatorBalances(List<UInt64> validatorBalances) {
     setValidatorBalances(validatorBalances);
     return this;
+  }
+
+  default MutableBeaconState withValidatorBalance(int idx,
+      Function<UInt64, UInt64> validatorBalanceUpdater) {
+    ArrayList<UInt64> validatorBalances = new ArrayList<>(getValidatorBalances());
+    validatorBalances.set(idx, validatorBalanceUpdater.apply(validatorBalances.get(idx)));
+    return withValidatorBalances(validatorBalances);
   }
 
   default MutableBeaconState withValidatorRegistryLatestChangeSlot(UInt64 validatorRegistryLatestChangeSlot) {
@@ -191,9 +211,24 @@ public interface MutableBeaconState extends BeaconState {
     return this;
   }
 
+  default MutableBeaconState withLatestPenalizedExitBalance(
+      int idx, Function<UInt64, UInt64> balanceUpdater) {
+    ArrayList<UInt64> latestPenalizedExitBalances =
+        new ArrayList<>(getLatestPenalizedExitBalances());
+    latestPenalizedExitBalances.set(
+        idx, balanceUpdater.apply(latestPenalizedExitBalances.get(idx)));
+    return withLatestPenalizedExitBalances(latestPenalizedExitBalances);
+  }
+
   default MutableBeaconState withLatestAttestations(List<PendingAttestationRecord> latestAttestations) {
     setLatestAttestations(latestAttestations);
     return this;
+  }
+
+  default MutableBeaconState withNewLatestAttestation(PendingAttestationRecord latestAttestation) {
+    ArrayList<PendingAttestationRecord> newRecords = new ArrayList<>(getLatestAttestations());
+    newRecords.add(latestAttestation);
+    return withLatestAttestations(newRecords);
   }
 
   default MutableBeaconState withBatchedBlockRoots(List<Hash32> batchedBlockRoots) {
@@ -209,5 +244,18 @@ public interface MutableBeaconState extends BeaconState {
   default MutableBeaconState withDepositRootVotes(List<DepositRootVote> depositRootVotes) {
     setDepositRootVotes(depositRootVotes);
     return this;
+  }
+
+  default MutableBeaconState withDepositRootVote(
+      int idx, Function<DepositRootVote, DepositRootVote> voteUpdater) {
+    ArrayList<DepositRootVote> newVotes = new ArrayList<>(getDepositRootVotes());
+    newVotes.set(idx, voteUpdater.apply(newVotes.get(idx)));
+    return withDepositRootVotes(newVotes);
+  }
+
+  default MutableBeaconState withNewDepositRootVote(DepositRootVote newVote) {
+    ArrayList<DepositRootVote> newVotes = new ArrayList<>(getDepositRootVotes());
+    newVotes.add(newVote);
+    return withDepositRootVotes(newVotes);
   }
 }

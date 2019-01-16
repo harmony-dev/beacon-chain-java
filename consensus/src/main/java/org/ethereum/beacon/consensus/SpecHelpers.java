@@ -1,30 +1,24 @@
 package org.ethereum.beacon.consensus;
 
-import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.ethereum.beacon.core.BeaconState;
+import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustodyBit;
 import org.ethereum.beacon.core.operations.slashing.SlashableVoteData;
 import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.spec.ValidatorRegistryDeltaFlags;
+import org.ethereum.beacon.core.spec.ValidatorStatusFlags;
 import org.ethereum.beacon.core.state.ForkData;
-import org.ethereum.beacon.core.state.ShardCommittee;
 import org.ethereum.beacon.core.state.ValidatorRecord;
+import org.ethereum.beacon.core.state.ValidatorRegistryDeltaBlock;
 import org.ethereum.beacon.crypto.BLS381;
 import org.ethereum.beacon.crypto.BLS381.PublicKey;
 import org.ethereum.beacon.crypto.BLS381.Signature;
 import org.ethereum.beacon.crypto.Hashes;
-import org.javatuples.Pair;
 import org.ethereum.beacon.crypto.MessageParameters;
+import org.javatuples.Pair;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.bytes.Bytes3;
-import tech.pegasys.artemis.util.bytes.Bytes32;
-import tech.pegasys.artemis.util.bytes.Bytes32s;
-import tech.pegasys.artemis.util.bytes.Bytes48;
-import tech.pegasys.artemis.util.bytes.Bytes8;
-import tech.pegasys.artemis.util.bytes.Bytes96;
-import tech.pegasys.artemis.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.bytes.*;
 import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
 import tech.pegasys.artemis.util.uint.UInt64s;
@@ -32,6 +26,8 @@ import tech.pegasys.artemis.util.uint.UInt64s;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
@@ -354,6 +350,105 @@ public class SpecHelpers {
       o[i] = hash(BytesValue.wrap(o[i * 2], o[i * 2 + 1]));
     }
     return (Hash32) o[1];
+  }
+
+  /*
+   def exit_validator(state: BeaconState, index: int) -> None:
+     validator = state.validator_registry[index]
+
+     # The following updates only occur if not previous exited
+     if validator.exit_slot <= state.slot + ENTRY_EXIT_DELAY:
+         return
+
+     validator.exit_slot = state.slot + ENTRY_EXIT_DELAY
+
+     state.validator_registry_exit_count += 1
+     validator.exit_count = state.validator_registry_exit_count
+     state.validator_registry_delta_chain_tip = hash_tree_root(
+         ValidatorRegistryDeltaBlock(
+             latest_registry_delta_root=state.validator_registry_delta_chain_tip,
+             validator_index=index,
+             pubkey=validator.pubkey,
+             slot=validator.exit_slot,
+             flag=EXIT,
+         )
+     )
+  */
+  public void exit_validator(MutableBeaconState state, int index) {
+    ValidatorRecord validator = state.getValidatorRegistry().get(index);
+    UInt64 exitSlot = state.getSlot().plus(spec.getEntryExitDelay());
+    if (validator.getExitSlot().compareTo(exitSlot) <= 0) {
+      return;
+    }
+
+    state.withValidatorRecord(index, vBuilder -> vBuilder.withExitSlot(exitSlot));
+    state.setValidatorRegistryExitCount(state.getValidatorRegistryExitCount().increment());
+    ValidatorRegistryDeltaBlock deltaBlock =
+        new ValidatorRegistryDeltaBlock(
+            state.getValidatorRegistryDeltaChainTip(),
+            UInt24.valueOf(index),
+            validator.getPubKey(),
+            exitSlot,
+            ValidatorRegistryDeltaFlags.EXIT);
+    state.setValidatorRegistryDeltaChainTip(hash_tree_root(deltaBlock));
+  }
+
+  /*
+   get_effective_balance(state: State, index: int) -> int:
+     """
+     Returns the effective balance (also known as "balance at stake") for a ``validator`` with the given ``index``.
+     """
+     return min(state.validator_balances[index], MAX_DEPOSIT * GWEI_PER_ETH)
+  */
+  UInt64 get_effective_balance(BeaconState state, UInt24 validatorIdx) {
+    return UInt64s.min(
+        state.getValidatorBalances().get(validatorIdx.getValue()),
+        spec.getMaxDeposit().toGWei());
+  }
+
+  /*
+    def penalize_validator(state: BeaconState, index: int) -> None:
+      exit_validator(state, index)
+      validator = state.validator_registry[index]
+      state.latest_penalized_exit_balances[(state.slot // EPOCH_LENGTH) % LATEST_PENALIZED_EXIT_LENGTH]
+          += get_effective_balance(state, index)
+
+      whistleblower_index = get_beacon_proposer_index(state, state.slot)
+      whistleblower_reward = get_effective_balance(state, index) // WHISTLEBLOWER_REWARD_QUOTIENT
+      state.validator_balances[whistleblower_index] += whistleblower_reward
+      state.validator_balances[index] -= whistleblower_reward
+      validator.penalized_slot = state.slot
+    */
+  public void penalize_validator(MutableBeaconState state, int index) {
+    exit_validator(state, index);
+    int exitBalanceIdx =
+        state
+            .getSlot()
+            .dividedBy(spec.getEpochLength())
+            .modulo(spec.getLatestPenalizedExitLength())
+            .getIntValue();
+    state.withLatestPenalizedExitBalance(
+        exitBalanceIdx,
+        balance -> balance.plus(get_effective_balance(state, UInt24.valueOf(index))));
+
+    UInt24 whistleblower_index = get_beacon_proposer_index(state, state.getSlot());
+    UInt64 whistleblower_reward =
+        get_effective_balance(state, UInt24.valueOf(index))
+            .dividedBy(spec.getWhistleblowerRewardQuotient());
+    state.withValidatorBalance(
+        whistleblower_index.getValue(), oldVal -> oldVal.plus(whistleblower_reward));
+    state.withValidatorBalance(index, oldVal -> oldVal.minus(whistleblower_reward));
+    state.withValidatorRecord(index, vb -> vb.withPenalizedSlot(state.getSlot()));
+  }
+
+  /*
+   def initiate_validator_exit(state: BeaconState, index: int) -> None:
+     validator = state.validator_registry[index]
+     validator.status_flags |= INITIATED_EXIT
+  */
+  public void initiate_validator_exit(MutableBeaconState state, int index) {
+    state.withValidatorRecord(
+        index, vb -> vb.withStatusFlags(flags -> flags.or(ValidatorStatusFlags.INITIATED_EXIT)));
   }
 
   public Hash32 hash_tree_root(Object object) {

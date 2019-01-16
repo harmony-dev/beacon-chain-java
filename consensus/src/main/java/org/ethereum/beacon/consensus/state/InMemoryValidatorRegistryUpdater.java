@@ -75,7 +75,11 @@ public class InMemoryValidatorRegistryUpdater implements ValidatorRegistryUpdate
 
     ValidatorRegistryDeltaBlock delta =
         new ValidatorRegistryDeltaBlock(
-            deltaChainTip, index, activated.getPubKey(), ValidatorRegistryDeltaFlags.ACTIVATION);
+            deltaChainTip,
+            index,
+            activated.getPubKey(),
+            activated.getActivationSlot(),
+            ValidatorRegistryDeltaFlags.ACTIVATION);
     deltaChainTip = delta.getHash();
   }
 
@@ -201,6 +205,10 @@ public class InMemoryValidatorRegistryUpdater implements ValidatorRegistryUpdate
 
     private Bytes48 getPubKey() {
       return tuple.record.getPubKey();
+    }
+
+    private UInt64 getActivationSlot() {
+      return tuple.record.getActivationSlot();
     }
 
     /**
