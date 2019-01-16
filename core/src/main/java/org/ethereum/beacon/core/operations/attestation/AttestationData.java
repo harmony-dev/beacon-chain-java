@@ -1,6 +1,8 @@
 package org.ethereum.beacon.core.operations.attestation;
 
 import com.google.common.base.Objects;
+import org.ethereum.beacon.ssz.annotation.SSZ;
+import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import org.ethereum.beacon.core.operations.Attestation;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
@@ -13,23 +15,32 @@ import tech.pegasys.artemis.util.uint.UInt64;
  *     href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md#attestationdata">AttestationData
  *     in the spec</a>
  */
+@SSZSerializable
 public class AttestationData {
 
   /** Slot number. */
+  @SSZ
   private final UInt64 slot;
   /** Shard number. */
+  @SSZ
   private final UInt64 shard;
   /** Hash of signed beacon block. */
+  @SSZ
   private final Hash32 beaconBlockRoot;
   /** Hash of beacon block's ancestor at the epoch boundary. */
+  @SSZ
   private final Hash32 epochBoundaryRoot;
   /** Hash of shard's block. */
+  @SSZ
   private final Hash32 shardBlockRoot;
   /** Hash of last crosslink block. */
+  @SSZ
   private final Hash32 latestCrosslinkRoot;
   /** Slot of the last justified beacon block. */
+  @SSZ
   private final UInt64 justifiedSlot;
   /** Hash of the last justified beacon block. */
+  @SSZ
   private final Hash32 justifiedBlockRoot;
 
   public AttestationData(

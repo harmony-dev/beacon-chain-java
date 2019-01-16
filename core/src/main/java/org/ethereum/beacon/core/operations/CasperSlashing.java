@@ -2,6 +2,8 @@ package org.ethereum.beacon.core.operations;
 
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.operations.slashing.SlashableVoteData;
+import org.ethereum.beacon.ssz.annotation.SSZ;
+import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 
 /**
  * Challenges to slash validator violated Casper slashing conditions.
@@ -12,11 +14,14 @@ import org.ethereum.beacon.core.operations.slashing.SlashableVoteData;
  *     href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md#casperslashing">CasperSlashing
  *     in the spec</a>
  */
+@SSZSerializable
 public class CasperSlashing {
 
   /** First batch of votes. */
+  @SSZ
   private final SlashableVoteData slashableVoteData1;
   /** Second batch of votes. */
+  @SSZ
   private final SlashableVoteData slashableVoteData2;
 
   public CasperSlashing(
@@ -31,5 +36,14 @@ public class CasperSlashing {
 
   public SlashableVoteData getSlashableVoteData2() {
     return slashableVoteData2;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    CasperSlashing that = (CasperSlashing) o;
+    return slashableVoteData1.equals(that.slashableVoteData1) &&
+        slashableVoteData2.equals(that.slashableVoteData2);
   }
 }
