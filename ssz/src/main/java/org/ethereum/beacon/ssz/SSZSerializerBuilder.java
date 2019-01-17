@@ -8,6 +8,8 @@ import org.ethereum.beacon.ssz.type.BytesPrimitive;
 import org.ethereum.beacon.ssz.type.SSZCodec;
 import org.ethereum.beacon.ssz.type.StringPrimitive;
 import org.ethereum.beacon.ssz.type.UIntPrimitive;
+import org.javatuples.Triplet;
+import java.util.function.Function;
 
 
 /**
@@ -38,34 +40,76 @@ import org.ethereum.beacon.ssz.type.UIntPrimitive;
  * If at least one field is failed to be set, {@link SSZSchemeException} is thrown.</p>
  */
 public class SSZSerializerBuilder {
+
   private SSZSerializer sszSerializer = null;
+
   private SSZCodecResolver sszCodecResolver = null;
+
+  private SSZSchemeBuilder sszSchemeBuilder = null;
+
+  private SSZModelFactory sszModelFactory = null;
 
   public SSZSerializerBuilder() {
   }
 
-  public SSZSerializerBuilder(SSZSchemeBuilder schemeBuilder, SSZCodecResolver codecResolver,
-                              SSZModelFactory sszModelFactory) {
-    this.sszCodecResolver = codecResolver;
-    this.sszSerializer = new SSZSerializer(schemeBuilder, codecResolver, sszModelFactory);
-  }
-
-  public SSZSerializerBuilder initWith(SSZSerializer sszSerializer, SSZCodecResolver codecResolver) {
+  private void checkAlreadyInitialized() {
     if (this.sszSerializer != null) {
       throw new RuntimeException("Already initialized!");
     }
-    this.sszSerializer = sszSerializer;
-    this.sszCodecResolver = codecResolver;
+  }
 
+  /**
+   * Final {@link SSZSerializer} will use user provided {@link SSZCodecResolver}
+   * for resolving appropriate ssz codec when {@link SSZSerializerBuilder#build()} called in the end
+   * @param codecResolver   Codec resolver
+   * @return semi-built {@link SSZSerializerBuilder}
+   */
+  public SSZSerializerBuilder withSSZCodecResolver(SSZCodecResolver codecResolver) {
+    checkAlreadyInitialized();
+    this.sszCodecResolver = codecResolver;
     return this;
   }
 
-  public SSZSerializerBuilder initWith(SSZSchemeBuilder schemeBuilder, SSZCodecResolver codecResolver,
-                                       SSZModelFactory sszModelFactory) {
-    if (sszSerializer != null) {
-      throw new RuntimeException("Already initialized!");
-    }
+  /**
+   * Final {@link SSZSerializer} will use user provided {@link SSZSchemeBuilder}
+   * for creating ssz scheme ob objects when {@link SSZSerializerBuilder#build()} called in the end
+   * @param schemeBuilder   Scheme builder
+   * @return semi-built {@link SSZSerializerBuilder}
+   */
+  public SSZSerializerBuilder withSSZSchemeBuilder(SSZSchemeBuilder schemeBuilder) {
+    checkAlreadyInitialized();
+    this.sszSchemeBuilder = schemeBuilder;
+    return this;
+  }
 
+  /**
+   * Final {@link SSZSerializer} will use user provided {@link SSZModelFactory}
+   * for object instantiation when {@link SSZSerializerBuilder#build()} called in the end
+   * @param modelFactory   Model factory
+   * @return semi-built {@link SSZSerializerBuilder}
+   */
+  public SSZSerializerBuilder withSSZModelFactory(SSZModelFactory modelFactory) {
+    checkAlreadyInitialized();
+    this.sszModelFactory = modelFactory;
+    return this;
+  }
+
+  /**
+   * <p>Uses {@link SSZModelCreator} which tries to create model
+   *  instance by one constructor with all input fields included. If such public constructor
+   *  is not found, it tries to instantiate object with empty constructor and set
+   *  all fields directly or using standard setter.</p>
+   * @return semi-built {@link SSZSerializerBuilder}
+   */
+  public SSZSerializerBuilder withDefaultSSZModelFactory() {
+    checkAlreadyInitialized();
+    this.sszModelFactory = createDefaultModelCreator();
+    return this;
+  }
+
+  private SSZSerializerBuilder initWith(SSZSchemeBuilder schemeBuilder, SSZCodecResolver codecResolver,
+                                       SSZModelFactory sszModelFactory) {
+    checkAlreadyInitialized();
     this.sszSerializer = new SSZSerializer(schemeBuilder, codecResolver, sszModelFactory);
     this.sszCodecResolver = codecResolver;
     return this;
@@ -112,11 +156,12 @@ public class SSZSerializerBuilder {
   /**
    * Adds {@link SSZCodec}'s  to handle almost all Java primitive types
    */
-  public void addPrimitivesCodecs() {
+  public SSZSerializerBuilder addPrimitivesCodecs() {
     this.addCodec(new UIntPrimitive());
     this.addCodec(new BytesPrimitive());
     this.addCodec(new BooleanPrimitive());
     this.addCodec(new StringPrimitive());
+    return this;
   }
 
   /**
@@ -138,8 +183,23 @@ public class SSZSerializerBuilder {
    */
   public SSZSerializer build() {
     if (sszSerializer == null) {
-      throw new RuntimeException("initWith* method should be called first");
+      if (sszCodecResolver != null && sszModelFactory != null && sszSchemeBuilder != null) {
+        this.sszSerializer = new SSZSerializer(sszSchemeBuilder, sszCodecResolver, sszModelFactory);
+      } else {
+        throw new RuntimeException("initWith* or all with* methods should be called first");
+      }
     }
+
+    return sszSerializer;
+  }
+
+  /**
+   * Finalizes build of custom extension of {@link SSZSerializer} with builder
+   * @return Custom {@link SSZSerializer}
+   */
+  public SSZSerializer buildCustom(Function<Triplet<SSZSchemeBuilder, SSZCodecResolver, SSZModelFactory>, SSZSerializer> serializerCreator) {
+    checkAlreadyInitialized();
+    this.sszSerializer = serializerCreator.apply(Triplet.with(sszSchemeBuilder, sszCodecResolver, sszModelFactory));
 
     return sszSerializer;
   }

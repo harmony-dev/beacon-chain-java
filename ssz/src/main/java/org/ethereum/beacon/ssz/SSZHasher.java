@@ -1,6 +1,7 @@
 package org.ethereum.beacon.ssz;
 
 import net.consensys.cava.bytes.Bytes;
+import tech.pegasys.artemis.util.bytes.BytesValue;
 import java.util.function.Function;
 
 /**
@@ -10,19 +11,26 @@ import java.util.function.Function;
  * <p>It's based on {@link SSZSerializer}, so for setup help, check its Javadoc
  * and {@link SSZSerializerBuilder} documentation</p>
  */
-public class SSZHasher {
+public class SSZHasher implements Hasher<BytesValue> {
   private SSZSerializer hasher;
 
-  private Function<Bytes, Bytes> hashFunction;
+  private Function<BytesValue, BytesValue> hashFunction;
 
   /**
    * Creates instance of SSZ Hasher with
    * @param builder        Almost baked builder, without {@link SSZSerializerBuilder#build()} method being called
    * @param hashFunction   Function that will be used for hashing
    */
-  public SSZHasher(SSZSerializerBuilder builder, Function<Bytes, Bytes> hashFunction) {
+  public SSZHasher(SSZSerializerBuilder builder, Function<BytesValue, BytesValue> hashFunction) {
     this.hashFunction = hashFunction;
-    this.hasher = builder.build();
+    this.hasher = builder.buildCustom(
+        objects -> {
+          SSZSchemeBuilder schemeBuilder = objects.getValue0();
+          SSZCodecResolver codecResolver = objects.getValue1();
+          SSZModelFactory modelFactory = objects.getValue2();
+          return new SSZHashSerializer(schemeBuilder, codecResolver, modelFactory);
+        }
+    );
   }
 
   /**
@@ -31,23 +39,18 @@ public class SSZHasher {
    * @param explicitAnnotations   Whether to require explicit SSZ annotations at each field
    * @return prebaked SSZHasher builder
    */
-  public static SSZSerializerBuilder getDefaultBuilder(Function<Bytes, Bytes> hashFunction, boolean explicitAnnotations) {
-    SSZSerializerBuilder builder = new SSZSerializerBuilder();
-    SSZCodecResolver hasher = new SSZCodecHasher(hashFunction);
-    SSZSerializer sszSerializer = new SSZHashSerializer(
-        new SSZAnnotationSchemeBuilder(explicitAnnotations),
-        hasher, createDefaultModelCreator()
-    );
-    builder.initWith(sszSerializer, hasher);
-    builder.addPrimitivesCodecs();
+  public static SSZSerializerBuilder getDefaultBuilder(Function<BytesValue, BytesValue> hashFunction, boolean explicitAnnotations) {
+    SSZCodecResolver hasher = new SSZCodecHasher(bytes -> {
+      BytesValue input = BytesValue.of(bytes.toArrayUnsafe());
+      return Bytes.wrap(hashFunction.apply(input).getArrayUnsafe());
+    });
+    SSZSerializerBuilder builder = new SSZSerializerBuilder()
+        .withSSZSchemeBuilder(new SSZAnnotationSchemeBuilder(explicitAnnotations))
+        .withDefaultSSZModelFactory()
+        .withSSZCodecResolver(hasher)
+        .addPrimitivesCodecs();
 
     return builder;
-  }
-
-  private static SSZModelFactory createDefaultModelCreator() {
-    return new SSZModelCreator()
-        .registerObjCreator(new ConstructorObjCreator())
-        .registerObjCreator(new SettersObjCreator());
   }
 
   /**
@@ -55,7 +58,7 @@ public class SSZHasher {
    * @param input   SSZ model instance
    * @return SSZ Hash, 32 bytes wrapped with Bytes type
    */
-  public Bytes calc(Object input) {
-    return hashFunction.apply(Bytes.wrap(hasher.encode(input)));
+  public BytesValue calc(Object input) {
+    return hashFunction.apply(BytesValue.wrap(hasher.encode(input)));
   }
 }
