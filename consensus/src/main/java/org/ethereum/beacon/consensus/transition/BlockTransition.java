@@ -22,15 +22,15 @@ import tech.pegasys.artemis.util.uint.UInt64;
 
 public class BlockTransition implements StateTransition<BeaconStateEx> {
   private final ChainSpec spec;
+  private final SpecHelpers specHelpers;
 
-  public BlockTransition(ChainSpec spec) {
-    this.spec = spec;
+  public BlockTransition(SpecHelpers specHelpers) {
+    this.specHelpers = specHelpers;
+    this.spec = specHelpers.getChainSpec();
   }
 
   @Override
   public BeaconStateEx apply(BeaconBlock block, BeaconStateEx stateEx) {
-    SpecHelpers specHelpers = new SpecHelpers(spec);
-
     MutableBeaconState state = stateEx.getCanonicalState().createMutableCopy();
 
     /*

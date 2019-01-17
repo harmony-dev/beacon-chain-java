@@ -45,6 +45,10 @@ public class SpecHelpers {
     this.spec = spec;
   }
 
+  public ChainSpec getChainSpec() {
+    return spec;
+  }
+
   public Hash32 hash(BytesValue data) {
     return Hashes.keccak256(data);
   }

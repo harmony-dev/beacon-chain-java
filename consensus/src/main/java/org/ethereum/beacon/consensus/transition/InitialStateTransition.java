@@ -41,12 +41,15 @@ import static java.util.Collections.nCopies;
  */
 public class InitialStateTransition implements StateTransition<BeaconStateEx> {
 
-  private DepositContract depositContract;
-  private ChainSpec chainSpec;
+  private final DepositContract depositContract;
+  private final ChainSpec chainSpec;
+  private final SpecHelpers specHelpers;
 
-  public InitialStateTransition(DepositContract depositContract, ChainSpec chainSpec) {
+  public InitialStateTransition(DepositContract depositContract,
+      SpecHelpers specHelpers) {
     this.depositContract = depositContract;
-    this.chainSpec = chainSpec;
+    this.specHelpers = specHelpers;
+    this.chainSpec = specHelpers.getChainSpec();
   }
 
   public BeaconStateEx apply(BeaconBlock block) {
