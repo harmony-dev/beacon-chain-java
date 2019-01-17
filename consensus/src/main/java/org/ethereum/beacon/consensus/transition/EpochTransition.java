@@ -49,7 +49,7 @@ public class EpochTransition implements StateTransition<BeaconStateEx> {
     // Let active_validator_indices =
     //      get_active_validator_indices(state.validator_registry, state.slot).
     List<UInt24> active_validator_indices = specHelpers.get_active_validator_indices(
-        state.getValidatorRegistry().toArray(new ValidatorRecord[0]), state.getSlot());
+        state.getValidatorRegistry(), state.getSlot());
 
     // Let total_balance = sum([get_effective_balance(state, i) for i in active_validator_indices])
     UInt64 total_balance = active_validator_indices.stream()
@@ -643,7 +643,7 @@ public class EpochTransition implements StateTransition<BeaconStateEx> {
      */
 
     for (UInt24 index :specHelpers.get_active_validator_indices(
-            state.getValidatorRegistry().toArray(new ValidatorRecord[0]), state.getSlot())) {
+            state.getValidatorRegistry(), state.getSlot())) {
       if (state.getValidatorBalances().get(index.getValue())
           .compareTo(spec.getEjectionBalance().toGWei()) < 0) {
         specHelpers.exit_validator(state, index);

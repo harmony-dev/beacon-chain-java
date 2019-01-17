@@ -82,7 +82,7 @@ public class SpecHelpers {
    */
   public int get_previous_epoch_committee_count_per_slot(BeaconState state) {
     List<UInt24> previous_active_validators = get_active_validator_indices(
-        state.getValidatorRegistry().toArray(new ValidatorRecord[0]),
+        state.getValidatorRegistry(),
         state.getPreviousEpochCalculationSlot());
     return get_committee_count_per_slot(previous_active_validators.size());
   }
@@ -94,7 +94,7 @@ public class SpecHelpers {
    */
   public int get_current_epoch_committee_count_per_slot(BeaconState state) {
     List<UInt24> previous_active_validators = get_active_validator_indices(
-        state.getValidatorRegistry().toArray(new ValidatorRecord[0]),
+        state.getValidatorRegistry(),
         state.getCurrentEpochCalculationSlot());
     return get_committee_count_per_slot(previous_active_validators.size());
   }
@@ -121,7 +121,7 @@ public class SpecHelpers {
       //          state.validator_registry,
       //          state.previous_epoch_calculation_slot)
       shuffling = get_shuffling(state.getPreviousEpochRandaoMix(),
-          state.getValidatorRegistry().toArray(new ValidatorRecord[0]),
+          state.getValidatorRegistry(),
           state.getPreviousEpochCalculationSlot());
           //      slot_start_shard = (state.previous_epoch_start_shard + committees_per_slot * offset) % SHARD_COUNT
       slot_start_shard = state.getPreviousEpochStartShard()
@@ -136,7 +136,7 @@ public class SpecHelpers {
       //          state.validator_registry,
       //          state.current_epoch_calculation_slot)
       shuffling = get_shuffling(state.getCurrentEpochRandaoMix(),
-          state.getValidatorRegistry().toArray(new ValidatorRecord[0]),
+          state.getValidatorRegistry(),
           state.getCurrentEpochCalculationSlot());
       //      slot_start_shard = (state.current_epoch_start_shard + committees_per_slot * offset) % SHARD_COUNT
       slot_start_shard = state.getCurrentEpochStartShard()
@@ -189,10 +189,10 @@ public class SpecHelpers {
    """
    return [i for i, v in enumerate(validators) if is_active_validator(v, slot)]
   */
-  public List<UInt24>  get_active_validator_indices(ValidatorRecord[] validators, UInt64 slot) {
+  public List<UInt24>  get_active_validator_indices(List<ValidatorRecord> validators, UInt64 slot) {
     ArrayList<UInt24> ret = new ArrayList<>();
-    for (int i = 0; i < validators.length; i++) {
-      if (is_active_validator(validators[i], slot)) {
+    for (int i = 0; i < validators.size(); i++) {
+      if (is_active_validator(validators.get(i), slot)) {
         ret.add(UInt24.valueOf(i));
       }
     }
@@ -324,7 +324,7 @@ public class SpecHelpers {
   //  committee is itself a list of validator indices.
   //  """
   public List<List<UInt24>> get_shuffling(Hash32 _seed,
-                               ValidatorRecord[] validators,
+                               List<ValidatorRecord> validators,
                                UInt64 _slot) {
 
 
@@ -545,7 +545,7 @@ public class SpecHelpers {
     //    active_validator_indices =
     //          get_active_validator_indices(state.validator_registry, state.slot)
     List<UInt24> active_validator_indices = get_active_validator_indices(
-        state.getValidatorRegistry().toArray(new ValidatorRecord[0]), state.getSlot());
+        state.getValidatorRegistry(), state.getSlot());
 
     //      # The total effective balance of active validators
     //      total_balance =
@@ -640,7 +640,7 @@ public class SpecHelpers {
     //    active_validator_indices = get_active_validator_indices(state.validator_registry,
     // state.slot)
     List<UInt24> active_validator_indices = get_active_validator_indices(
-        state.getValidatorRegistry().toArray(new ValidatorRecord[0]), state.getSlot());
+        state.getValidatorRegistry(), state.getSlot());
     //    # The total effective balance of active validators
     //    total_balance = sum([get_effective_balance(state, i) for i in active_validator_indices])
     UInt64 total_balance = active_validator_indices.stream()
