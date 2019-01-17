@@ -11,6 +11,7 @@ import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.spec.ValidatorRegistryDeltaFlags;
 import org.ethereum.beacon.core.spec.ValidatorStatusFlags;
 import org.ethereum.beacon.core.state.ForkData;
+import org.ethereum.beacon.core.state.ShardCommittee;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.state.ValidatorRegistryDeltaBlock;
 import org.ethereum.beacon.crypto.BLS381;
@@ -18,7 +19,6 @@ import org.ethereum.beacon.crypto.BLS381.PublicKey;
 import org.ethereum.beacon.crypto.BLS381.Signature;
 import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.crypto.MessageParameters;
-import org.javatuples.Pair;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.*;
 import tech.pegasys.artemis.util.uint.UInt24;
@@ -102,7 +102,7 @@ public class SpecHelpers {
   /*
     Returns the list of ``(committee, shard)`` tuples for the ``slot``.
    */
-  public List<Pair<UInt24[], UInt64>> get_shard_committees_at_slot(BeaconState state, UInt64 slot) {
+  public List<ShardCommittee> get_shard_committees_at_slot(BeaconState state, UInt64 slot) {
     UInt64 state_epoch_slot = state.getSlot().minus(state.getSlot().modulo(spec.getEpochLength()));
     assertTrue(state_epoch_slot.compareTo(slot.plus(spec.getEpochLength())) <= 0);
     assertTrue(slot.compareTo(state_epoch_slot.plus(spec.getEpochLength())) < 0);
@@ -149,14 +149,10 @@ public class SpecHelpers {
     //    (shuffling[committees_per_slot * offset + i], (slot_start_shard + i) % SHARD_COUNT)
     //    for i in range(committees_per_slot)
     //    ]
-    List<Pair<UInt24[], UInt64>> ret = new ArrayList<>();
+    List<ShardCommittee> ret = new ArrayList<>();
     for (int i = 0; i < committees_per_slot; i++) {
       List<UInt24> shuffling1 = shuffling.get(offset.times(committees_per_slot).plus(i).getIntValue());
-      UInt24[] shuffling2 = new UInt24[shuffling1.size()];
-      for (int i1 = 0; i1 < shuffling1.size(); i1++) {
-        shuffling2[i1] = shuffling1.get(i1);
-      }
-      ret.add(Pair.with(shuffling2, slot_start_shard.plus(i).modulo(spec.getShardCount())));
+      ret.add(new ShardCommittee(shuffling1, slot_start_shard.plus(i).modulo(spec.getShardCount())));
     }
     return ret;
 }
@@ -166,8 +162,9 @@ public class SpecHelpers {
    return first_committee[slot % len(first_committee)]
   */
   public UInt24 get_beacon_proposer_index(BeaconState state, UInt64 slot) {
-    UInt24[] first_committee = get_shard_committees_at_slot(state, slot).get(0).getValue0();
-    return first_committee[safeInt(slot.modulo(first_committee.length))];
+    List<UInt24> first_committee =
+        get_shard_committees_at_slot(state, slot).get(0).getCommittee();
+    return first_committee.get(safeInt(slot.modulo(first_committee.size())));
   }
 
   /*
@@ -931,25 +928,25 @@ public class SpecHelpers {
   */
   public List<UInt24> get_attestation_participants(
       BeaconState state, AttestationData attestation_data, BytesValue participation_bitfield) {
-    List<Pair<UInt24[], UInt64>> shard_committees =
+    List<ShardCommittee> shard_committees =
         get_shard_committees_at_slot(state, attestation_data.getSlot());
 
     assertTrue(
         shard_committees.stream()
-            .map(Pair::getValue1)
+            .map(ShardCommittee::getShard)
             .collect(Collectors.toSet())
             .contains(attestation_data.getShard()));
-    Optional<Pair<UInt24[], UInt64>> shard_committee =
+    Optional<ShardCommittee> shard_committee =
         shard_committees.stream()
-            .filter(committee -> committee.getValue1().equals(attestation_data.getShard()))
+            .filter(committee -> committee.getShard().equals(attestation_data.getShard()))
             .findFirst();
     assertTrue(shard_committee.isPresent());
-    UInt24[] committee = shard_committee.get().getValue0();
-    assertTrue(participation_bitfield.size() == (committee.length + 7) / 8);
+    List<UInt24> committee = shard_committee.get().getCommittee();
+    assertTrue(participation_bitfield.size() == (committee.size() + 7) / 8);
 
     List<UInt24> participants = new ArrayList<>();
-    for (int i = 0; i < committee.length; i++) {
-      UInt24 validator_index = committee[i];
+    for (int i = 0; i < committee.size(); i++) {
+      UInt24 validator_index = committee.get(i);
       int participation_bit = (participation_bitfield.get(i / 8) & 0xFF) >> ((7 - (i % 8)) % 2);
       if (participation_bit == 1) {
         participants.add(validator_index);

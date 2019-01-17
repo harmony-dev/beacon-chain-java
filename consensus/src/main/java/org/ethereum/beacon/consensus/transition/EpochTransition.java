@@ -2,7 +2,6 @@ package org.ethereum.beacon.consensus.transition;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -21,6 +20,7 @@ import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.CrosslinkRecord;
 import org.ethereum.beacon.core.state.DepositRootVote;
 import org.ethereum.beacon.core.state.PendingAttestationRecord;
+import org.ethereum.beacon.core.state.ShardCommittee;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.types.Ether;
 import org.javatuples.Pair;
@@ -224,12 +224,11 @@ public class EpochTransition implements StateTransition<BeaconStateEx> {
     // For every (shard_committee, shard) in shard_committee_at_slot, compute:
     for (UInt64 slot = state.getSlot().minus(spec.getEpochLength().times(2));
         slot.compareTo(state.getSlot()) < 0; slot = slot.increment()) {
-      List<Pair<UInt24[], UInt64>> shard_committees_at_slot = specHelpers
+      List<ShardCommittee> shard_committees_at_slot = specHelpers
           .get_shard_committees_at_slot(state, slot);
-      for (Pair<UInt24[], UInt64> s : shard_committees_at_slot) {
-        UInt24[] shard_committee = s.getValue0();
-        UInt64 shard = s.getValue1();
-        List<UInt24> shard_committee_list = Arrays.asList(shard_committee);
+      for (ShardCommittee s : shard_committees_at_slot) {
+        List<UInt24> shard_committee = s.getCommittee();
+        UInt64 shard = s.getShard();
 
         // Let shard_block_root be state.latest_crosslinks[shard].shard_block_root
         Hash32 shard_block_root = state.getLatestCrosslinks()
@@ -250,7 +249,7 @@ public class EpochTransition implements StateTransition<BeaconStateEx> {
             .collect(Collectors.toSet());
 
         attesting_validator_indices.put(
-            Pair.with(shard_committee_list, shard_block_root),
+            Pair.with(shard_committee, shard_block_root),
             attesting_validator_indices_tmp);
 
         // Let winning_root(shard_committee) be equal to the value of shard_block_root
@@ -263,7 +262,7 @@ public class EpochTransition implements StateTransition<BeaconStateEx> {
             .map(i -> specHelpers.get_effective_balance(state, i))
             .reduce(UInt64::plus)
             .orElse(UInt64.ZERO);
-        winning_root_tmp.compute(shard_committee_list, (k, v) ->
+        winning_root_tmp.compute(shard_committee, (k, v) ->
             v == null || sum.compareTo(v.getValue0()) > 0 ?
                 Pair.with(sum, shard_block_root) : v
         );
@@ -396,15 +395,15 @@ public class EpochTransition implements StateTransition<BeaconStateEx> {
         .mapToObj(i -> state.getSlot().minus(spec.getEpochLength().times(2)).plus(i))
         .flatMap(slot -> specHelpers.get_shard_committees_at_slot(state, slot).stream())
         .filter(shardCom -> {
-          List<UInt24> shard_committee = Arrays.asList(shardCom.getValue0());
+          List<UInt24> shard_committee = shardCom.getCommittee();
           return total_attesting_balance.apply(shard_committee).times(3)
               .compareTo(total_balance_func.apply(shard_committee).times(3)) >= 0;
         })
-        .forEachOrdered(shard -> {
-          newLatestCrosslinks.set(shard.getValue1().getIntValue(),
+        .forEachOrdered(shardCommittee -> {
+          newLatestCrosslinks.set(shardCommittee.getShard().getIntValue(),
               new CrosslinkRecord(
                   state.getSlot(),
-                  winning_root.get(Arrays.asList(shard.getValue0()))));
+                  winning_root.get(shardCommittee.getCommittee())));
         });
     state.withLatestCrosslinks(newLatestCrosslinks);
 
@@ -611,13 +610,12 @@ public class EpochTransition implements StateTransition<BeaconStateEx> {
     for (UInt64 i = state.getSlot().minus(spec.getEpochLength().times(2));
         i.compareTo(state.getSlot().minus(spec.getEpochLength())) < 0;
         i = i.increment()) {
-      List<Pair<UInt24[], UInt64>> shard_committees_at_slot = specHelpers
+      List<ShardCommittee> shard_committees_at_slot = specHelpers
           .get_shard_committees_at_slot(state, i);
       for (int j = 0; j < shard_committees_at_slot.size(); j++) {
-        UInt24[] shard_committee = shard_committees_at_slot.get(j).getValue0();
-        List<UInt24> shard_committee_list = Arrays.asList(shard_committee);
-        Set<UInt24> attesting_validator_set = attesting_validators.apply(shard_committee_list);
-        for (UInt24 index : shard_committee_list) {
+        List<UInt24> shard_committee = shard_committees_at_slot.get(j).getCommittee();
+        Set<UInt24> attesting_validator_set = attesting_validators.apply(shard_committee);
+        for (UInt24 index : shard_committee) {
           if (attesting_validator_set.contains(index)) {
             state.withValidatorBalance(index, vb -> vb.plus(base_reward.apply(index)));
           } else {
