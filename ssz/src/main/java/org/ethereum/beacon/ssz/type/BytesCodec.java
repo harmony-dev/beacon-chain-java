@@ -6,7 +6,6 @@ import net.consensys.cava.ssz.SSZ;
 import net.consensys.cava.ssz.SSZException;
 import org.ethereum.beacon.ssz.SSZSchemeBuilder;
 import org.ethereum.beacon.ssz.SSZSchemeException;
-import org.ethereum.beacon.ssz.type.SSZCodec;
 import tech.pegasys.artemis.ethereum.core.Address;
 import tech.pegasys.artemis.util.bytes.Bytes1;
 import tech.pegasys.artemis.util.bytes.Bytes48;
@@ -42,7 +41,7 @@ public class BytesCodec implements SSZCodec {
   static {
     classToByteType.put(Bytes48.class, BytesType.of(48));
     classToByteType.put(Bytes96.class, BytesType.of(96));
-    classToByteType.put(BytesValue.class, BytesType.FLEXIBLE);
+    classToByteType.put(BytesValue.class, BytesType.DYNAMIC);
     classToByteType.put(Bytes1.class, BytesType.of(1));
     classToByteType.put(Address.class, BytesType.of(20));
   }
@@ -180,7 +179,7 @@ public class BytesCodec implements SSZCodec {
 
   static class BytesType {
     final Integer size;
-    public static BytesType FLEXIBLE = new BytesType(null);
+    public static BytesType DYNAMIC = new BytesType(null);
 
     BytesType(Integer size) {
       this.size = size;
