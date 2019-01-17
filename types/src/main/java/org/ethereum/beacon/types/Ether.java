@@ -27,6 +27,14 @@ public class Ether {
     return new Ether(UInt64.valueOf(unsignedValue));
   }
 
+  public static Ether ofGWeis(UInt64 gWeis) {
+    return new Ether(gWeis.dividedBy(GWEI_IN_ETH));
+  }
+
+  public UInt64 getEthers() {
+    return value;
+  }
+
   public UInt64 toGWei() {
     return value.times(GWEI_IN_ETH);
   }

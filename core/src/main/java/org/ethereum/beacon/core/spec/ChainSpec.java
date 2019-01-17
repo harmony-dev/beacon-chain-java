@@ -63,6 +63,11 @@ public interface ChainSpec
         }
 
         @Override
+        public UInt64 getMaxWithdrawalsPerEpoch() {
+          return MAX_WITHDRAWALS_PER_EPOCH;
+        }
+
+        @Override
         public Address getDepositContractAddress() {
           return DEPOSIT_CONTRACT_ADDRESS;
         }
