@@ -485,7 +485,7 @@ public class SpecHelpers {
          signature=vote_data.aggregate_signature,
          domain=get_domain(
              state.fork_data,
-             state.slot,
+             vote_data.data.slot,
              DOMAIN_ATTESTATION,
          ),
      )
@@ -507,7 +507,7 @@ public class SpecHelpers {
             hash_tree_root(new AttestationDataAndCustodyBit(vote_data.getData(), false)),
             hash_tree_root(new AttestationDataAndCustodyBit(vote_data.getData(), true))),
         vote_data.getAggregatedSignature(),
-        get_domain(state.getForkData(), state.getSlot(), ATTESTATION));
+        get_domain(state.getForkData(), vote_data.getData().getSlot(), ATTESTATION));
   }
 
   /*
