@@ -1,7 +1,12 @@
 package org.ethereum.beacon.core;
 
 import org.ethereum.beacon.core.operations.CustodyChallenge;
-import org.ethereum.beacon.core.state.*;
+import org.ethereum.beacon.core.state.CrosslinkRecord;
+import org.ethereum.beacon.core.state.DepositRootVote;
+import org.ethereum.beacon.core.state.ForkData;
+import org.ethereum.beacon.core.state.PendingAttestationRecord;
+import org.ethereum.beacon.core.state.ShardCommittee;
+import org.ethereum.beacon.core.state.ValidatorRecord;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
 
@@ -47,8 +52,19 @@ public interface BeaconState extends Hashable<Hash32> {
   List<Hash32> getLatestRandaoMixes();
   /** The most recent VDF outputs. */
   List<Hash32> getLatestVdfOutputs();
-  /** Which committee assigned to which shard on which slot. */
-  List<List<ShardCommittee>> getShardCommitteesAtSlots();
+
+  UInt64 getPreviousEpochStartShard();
+
+  UInt64 getCurrentEpochStartShard();
+
+  UInt64 getPreviousEpochCalculationSlot();
+
+  UInt64 getCurrentEpochCalculationSlot();
+
+  Hash32 getPreviousEpochRandaoMix();
+
+  Hash32 getCurrentEpochRandaoMix();
+
   /** Proof of custody placeholder. */
   List<CustodyChallenge> getCustodyChallenges();
 
@@ -104,7 +120,12 @@ public interface BeaconState extends Hashable<Hash32> {
         Hash32.ZERO,
         emptyList(),
         emptyList(),
-        emptyList(),
+        UInt64.ZERO,
+        UInt64.ZERO,
+        UInt64.ZERO,
+        UInt64.ZERO,
+        Hash32.ZERO,
+        Hash32.ZERO,
         emptyList(),
         UInt64.ZERO,
         UInt64.ZERO,
@@ -130,7 +151,12 @@ public interface BeaconState extends Hashable<Hash32> {
       Hash32 validatorRegistryDeltaChainTip,
       List<Hash32> latestRandaoMixes,
       List<Hash32> latestVdfOutputs,
-      List<List<ShardCommittee>> shardCommitteesAtSlots,
+      UInt64 previousEpochStartShard,
+      UInt64 currentEpochStartShard,
+      UInt64 previousEpochCalculationSlot,
+      UInt64 currentEpochCalculationSlot,
+      Hash32 previousEpochRandaoMix,
+      Hash32 currentEpochRandaoMix,
       List<CustodyChallenge> custodyChallenges,
       UInt64 previousJustifiedSlot,
       UInt64 justifiedSlot,
@@ -155,7 +181,12 @@ public interface BeaconState extends Hashable<Hash32> {
         .withValidatorRegistryDeltaChainTip(validatorRegistryDeltaChainTip)
         .withLatestRandaoMixes(latestRandaoMixes)
         .withLatestVdfOutputs(latestVdfOutputs)
-        .withShardCommitteesAtSlots(shardCommitteesAtSlots)
+        .withPreviousEpochStartShard(previousEpochStartShard)
+        .withCurrentEpochStartShard(currentEpochStartShard)
+        .withPreviousEpochCalculationSlot(previousEpochCalculationSlot)
+        .withCurrentEpochCalculationSlot(currentEpochCalculationSlot)
+        .withPreviousEpochRandaoMix(previousEpochRandaoMix)
+        .withCurrentEpochRandaoMix(currentEpochRandaoMix)
         .withCustodyChallenges(custodyChallenges)
         .withPreviousJustifiedSlot(previousJustifiedSlot)
         .withJustifiedSlot(justifiedSlot)

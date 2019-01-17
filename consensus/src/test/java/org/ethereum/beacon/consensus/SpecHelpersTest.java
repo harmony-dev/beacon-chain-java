@@ -26,11 +26,11 @@ public class SpecHelpersTest {
     BytesValue bytes = BytesValue.wrap(new byte[]{(byte) 1, (byte) 256, (byte) 65656});
 
     int expectedInt = 817593;
-    Hash32 hash = Hashes.keccack256(bytes);
+    Hash32 hash = Hashes.keccak256(bytes);
     int res = Bytes3.wrap(hash, 0).asUInt24BigEndian().getValue();
 
 
-    int[] actual = specHelpers.shuffle(sample, Hashes.keccack256(bytes));
+    int[] actual = specHelpers.shuffle(sample, Hashes.keccak256(bytes));
     int[] expected = new int[]{2, 4, 10, 7, 5, 6, 9, 8, 1, 3};
 
     Assert.assertArrayEquals(expected, actual);
@@ -65,11 +65,6 @@ public class SpecHelpersTest {
     }
 
     SpecHelpers specHelpers = new SpecHelpers(null);
-    ShardCommittee[][] shuffling = specHelpers.get_active_shuffling(
-        Hash32.fromHexString("0xc0c7f226fbd574a8c63dc26864c27833ea931e7c70b34409ba765f3d2031633d"),
-        activeValidatorIndices.stream().mapToInt(i -> i).toArray(),
-        210
-    );
 
     Map<Integer, Long> map = Arrays.stream(statuses).boxed().collect
         (Collectors.groupingBy(Function.identity(), Collectors.counting()));

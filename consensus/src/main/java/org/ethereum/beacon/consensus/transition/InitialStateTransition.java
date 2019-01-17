@@ -4,6 +4,7 @@ import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.consensus.state.ValidatorRegistryUpdater;
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.BeaconBlocks;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
@@ -38,7 +39,7 @@ import static java.util.Collections.nCopies;
  *     href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md#on-startup">On
  *     startup in the spec</a>
  */
-public class InitialStateTransition implements StateTransition<BeaconState> {
+public class InitialStateTransition implements StateTransition<BeaconStateEx> {
 
   private DepositContract depositContract;
   private ChainSpec chainSpec;
@@ -48,8 +49,12 @@ public class InitialStateTransition implements StateTransition<BeaconState> {
     this.chainSpec = chainSpec;
   }
 
+  public BeaconStateEx apply(BeaconBlock block) {
+    return apply(block, null);
+  }
+
   @Override
-  public BeaconState apply(BeaconBlock block, BeaconState state) {
+  public BeaconStateEx apply(BeaconBlock block, BeaconStateEx state) {
     assert block.getSlot() == chainSpec.getGenesisSlot();
 
     ChainStart chainStart = depositContract.getChainStart();
@@ -85,7 +90,12 @@ public class InitialStateTransition implements StateTransition<BeaconState> {
                     .dividedBy(chainSpec.getEpochLength())
                     .getIntValue(),
                 Hash32.ZERO))
-        .withShardCommitteesAtSlots(emptyList());
+        .withPreviousEpochStartShard(chainSpec.getGenesisStartShard())
+        .withCurrentEpochStartShard(chainSpec.getGenesisStartShard())
+        .withPreviousEpochCalculationSlot(chainSpec.getGenesisSlot())
+        .withCurrentEpochCalculationSlot(chainSpec.getGenesisSlot())
+        .withPreviousEpochRandaoMix(Hash32.ZERO)
+        .withCurrentEpochRandaoMix(Hash32.ZERO);
 
     // Proof of custody
     initialState.withCustodyChallenges(emptyList());
@@ -114,7 +124,7 @@ public class InitialStateTransition implements StateTransition<BeaconState> {
     // handle initial deposits and activations
     final List<Deposit> initialDeposits = depositContract.getInitialDeposits();
     final ValidatorRegistryUpdater registryUpdater =
-        ValidatorRegistryUpdater.fromState(initialState, chainSpec);
+        ValidatorRegistryUpdater.fromState(initialState.validate(), chainSpec);
 
     initialDeposits.forEach(
         deposit -> {
@@ -130,19 +140,9 @@ public class InitialStateTransition implements StateTransition<BeaconState> {
 
     BeaconState validatorsState = registryUpdater.applyTo(initialState);
 
-    SpecHelpers specHelpers = new SpecHelpers(chainSpec);
-    ShardCommittee[][] shuffling = specHelpers.get_shuffling(
-        Hash32.ZERO,
-        validatorsState.getValidatorRegistry().toArray(new ValidatorRecord[0]),
-        chainSpec.getGenesisStartShard().getIntValue(),
-        chainSpec.getGenesisSlot());
-    ShardCommittee[][] doubleShuffling = Stream.concat(
-        Arrays.stream(shuffling),
-        Arrays.stream(shuffling))
-        .toArray(ShardCommittee[][]::new);
+    Hash32 genesisBlockHash = BeaconBlocks.createGenesis(chainSpec)
+        .withStateRoot(validatorsState.getHash()).getHash();
 
-    return initialState
-        .withShardCommitteesAtSlots(doubleShuffling)
-        .validate();
+    return new BeaconStateEx(validatorsState, genesisBlockHash);
   }
 }

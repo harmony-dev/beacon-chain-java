@@ -197,6 +197,103 @@ public class BLS381Test {
         .hasMessage("Failed to instantiate public key, given point is not a G1 member");
   }
 
+  @Test
+  public void checkSignAndVerifyMultipleFlow() {
+    KeyPair keyPair1 = BLS381.KeyPair.generate();
+    KeyPair keyPair2 = BLS381.KeyPair.generate();
+    BytesValue message1 = randomMessage();
+    BytesValue message2 = randomMessage();
+    Bytes8 domain = randomDomain();
+
+    MessageParameters params1 = new MessageParameters.Impl(Hashes.keccak256(message1), domain);
+    MessageParameters params2 = new MessageParameters.Impl(Hashes.keccak256(message2), domain);
+    Signature signature1 = BLS381.sign(params1, keyPair1);
+    Signature signature2 = BLS381.sign(params2, keyPair2);
+
+    PublicKey decodedPublicKey1 = PublicKey.create(keyPair1.getPublic().getEncodedBytes());
+    PublicKey decodedPublicKey2 = PublicKey.create(keyPair2.getPublic().getEncodedBytes());
+    Signature aggregatedSignature = Signature.aggregate(Arrays.asList(signature1, signature2));
+    Signature decodedSignature = Signature.create(aggregatedSignature.getEncoded());
+
+    boolean verified =
+        BLS381.verifyMultiple(
+            Arrays.asList(params1, params2),
+            decodedSignature,
+            Arrays.asList(decodedPublicKey1, decodedPublicKey2));
+
+    assertThat(verified).isTrue();
+  }
+
+  @Test
+  public void failVerifyMultipleIfPublicKeysAreMixed() {
+    KeyPair keyPair1 = BLS381.KeyPair.generate();
+    KeyPair keyPair2 = BLS381.KeyPair.generate();
+    BytesValue message1 = randomMessage();
+    BytesValue message2 = randomMessage();
+    Bytes8 domain = randomDomain();
+
+    MessageParameters params1 = new MessageParameters.Impl(Hashes.keccak256(message1), domain);
+    MessageParameters params2 = new MessageParameters.Impl(Hashes.keccak256(message2), domain);
+    Signature signature1 = BLS381.sign(params1, keyPair1);
+    Signature signature2 = BLS381.sign(params2, keyPair2);
+
+    PublicKey decodedPublicKey1 = PublicKey.create(keyPair1.getPublic().getEncodedBytes());
+    PublicKey decodedPublicKey2 = PublicKey.create(keyPair2.getPublic().getEncodedBytes());
+    Signature aggregatedSignature = Signature.aggregate(Arrays.asList(signature1, signature2));
+    Signature decodedSignature = Signature.create(aggregatedSignature.getEncoded());
+
+    boolean verified =
+        BLS381.verifyMultiple(
+            Arrays.asList(params1, params2),
+            decodedSignature,
+            Arrays.asList(decodedPublicKey2, decodedPublicKey1));
+
+    assertThat(verified).isFalse();
+  }
+
+  @Test
+  public void checkVerifyMultipleIfPublicKeysAreSame() {
+    KeyPair keyPair = BLS381.KeyPair.generate();
+    BytesValue message1 = randomMessage();
+    BytesValue message2 = randomMessage();
+    Bytes8 domain = randomDomain();
+
+    MessageParameters params1 = new MessageParameters.Impl(Hashes.keccak256(message1), domain);
+    MessageParameters params2 = new MessageParameters.Impl(Hashes.keccak256(message2), domain);
+    Signature signature1 = BLS381.sign(params1, keyPair);
+    Signature signature2 = BLS381.sign(params2, keyPair);
+
+    PublicKey decodedPublicKey = PublicKey.create(keyPair.getPublic().getEncodedBytes());
+    Signature aggregatedSignature = Signature.aggregate(Arrays.asList(signature1, signature2));
+    Signature decodedSignature = Signature.create(aggregatedSignature.getEncoded());
+
+    boolean verified =
+        BLS381.verifyMultiple(
+            Arrays.asList(params1, params2),
+            decodedSignature,
+            Arrays.asList(decodedPublicKey, decodedPublicKey));
+
+    assertThat(verified).isTrue();
+  }
+
+  @Test
+  public void throwIfMessagesAndPublicKeysDoNotMatch() {
+    KeyPair keyPair = BLS381.KeyPair.generate();
+    BytesValue message = randomMessage();
+    Bytes8 domain = randomDomain();
+
+    MessageParameters params = new MessageParameters.Impl(Hashes.keccak256(message), domain);
+    Signature signature = BLS381.sign(params, keyPair);
+
+    assertThatThrownBy(
+            () ->
+                BLS381.verifyMultiple(
+                    Arrays.asList(params),
+                    signature,
+                    Arrays.asList(keyPair.getPublic(), keyPair.getPublic())))
+        .isInstanceOf(AssertionError.class);
+  }
+
   BytesValue randomMessage() {
     Random random = new Random();
     byte[] message = new byte[Math.abs(random.nextInt()) % 32 + 32];

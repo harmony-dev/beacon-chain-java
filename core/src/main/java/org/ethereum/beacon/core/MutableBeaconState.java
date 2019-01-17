@@ -33,9 +33,17 @@ public interface MutableBeaconState extends BeaconState {
 
   void setLatestVdfOutputs(List<Hash32> latestVdfOutputs);
 
-  void setShardCommitteesAtSlots(ShardCommittee[][] shardCommitteesAtSlots);
+  void setPreviousEpochStartShard(UInt64 previousEpochStartShard);
 
-  void setShardCommitteesAtSlots(List<List<ShardCommittee>> shardCommitteesAtSlots);
+  void setCurrentEpochStartShard(UInt64 currentEpochStartShard);
+
+  void setPreviousEpochCalculationSlot(UInt64 previousEpochCalculationSlot);
+
+  void setCurrentEpochCalculationSlot(UInt64 currentEpochCalculationSlot);
+
+  void setPreviousEpochRandaoMix(Hash32 previousEpochRandaoMix);
+
+  void setCurrentEpochRandaoMix(Hash32 currentEpochRandaoMix);
 
   void setCustodyChallenges(List<CustodyChallenge> custodyChallenges);
 
@@ -113,13 +121,33 @@ public interface MutableBeaconState extends BeaconState {
     return this;
   }
 
-  default MutableBeaconState withShardCommitteesAtSlots(ShardCommittee[][] shardCommitteesAtSlots) {
-    setShardCommitteesAtSlots(shardCommitteesAtSlots);
+  default MutableBeaconState withPreviousEpochStartShard(UInt64 previousEpochStartShard) {
+    setPreviousEpochStartShard(previousEpochStartShard);
     return this;
   }
 
-  default MutableBeaconState withShardCommitteesAtSlots(List<List<ShardCommittee>> shardCommitteesAtSlots) {
-    setShardCommitteesAtSlots(shardCommitteesAtSlots);
+  default MutableBeaconState withCurrentEpochStartShard(UInt64 currentEpochStartShard) {
+    setCurrentEpochStartShard(currentEpochStartShard);
+    return this;
+  }
+
+  default MutableBeaconState withPreviousEpochCalculationSlot(UInt64 previousEpochCalculationSlot) {
+    setPreviousEpochCalculationSlot(previousEpochCalculationSlot);
+    return this;
+  }
+
+  default MutableBeaconState withCurrentEpochCalculationSlot(UInt64 currentEpochCalculationSlot) {
+    setCurrentEpochCalculationSlot(currentEpochCalculationSlot);
+    return this;
+  }
+
+  default MutableBeaconState withPreviousEpochRandaoMix(Hash32 previousEpochRandaoMix) {
+    setPreviousEpochRandaoMix(previousEpochRandaoMix);
+    return this;
+  }
+
+  default MutableBeaconState withCurrentEpochRandaoMix(Hash32 currentEpochRandaoMix) {
+    setCurrentEpochRandaoMix(currentEpochRandaoMix);
     return this;
   }
 

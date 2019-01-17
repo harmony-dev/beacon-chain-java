@@ -9,12 +9,15 @@ import org.ethereum.beacon.ssz.fixtures.Bitfield;
 import org.ethereum.beacon.ssz.fixtures.Sign;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import java.math.BigInteger;
 import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.logging.Logger;
 
 import static com.sun.org.apache.xerces.internal.impl.dv.util.HexBin.decode;
@@ -243,5 +246,49 @@ public class SSZSerializerTest {
     assertEquals(BigInteger.valueOf(1234563434344L), readObjectAuto.longNumber);
     // and finally check it backwards
     assertArrayEquals(bytes.toArrayUnsafe(), sszSerializer.encode(readObjectAuto));
+  }
+
+  @SSZSerializable
+  public static class ListListObject {
+    private final List<List<String>> names;
+
+    public ListListObject(List<List<String>> names) {
+      this.names = names;
+    }
+
+    public List<List<String>> getNames() {
+      return names;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      ListListObject that = (ListListObject) o;
+      return names.equals(that.names);
+    }
+  }
+
+  /**
+   * Checks that we could handle list placed inside another list
+   */
+  @Ignore("Implement me!")
+  @Test
+  public void shouldHandleListList() {
+    List<String> list1 = new ArrayList<>();
+    list1.add("aa");
+    list1.add("bb");
+    List<String> list2 = new ArrayList<>();
+    list1.add("cc");
+    list1.add("dd");
+    List<List<String>> listOfLists = new ArrayList<>();
+    listOfLists.add(list1);
+    listOfLists.add(list2);
+    ListListObject expected = new ListListObject(listOfLists);
+    byte[] encoded = sszSerializer.encode(expected);
+    ListListObject actual = (ListListObject) sszSerializer.decode(encoded, ListListObject.class);
+
+    assertEquals(expected, actual);
+
   }
 }

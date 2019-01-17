@@ -13,9 +13,14 @@
 
 package tech.pegasys.artemis.util.uint;
 
+import tech.pegasys.artemis.util.bytes.Bytes8;
+
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Objects;
 import java.util.Random;
+import tech.pegasys.artemis.util.bytes.Bytes8;
 
 /** An immutable unsigned 64-bit precision integer. */
 public class UInt64 implements Comparable<UInt64> {
@@ -286,9 +291,33 @@ public class UInt64 implements Comparable<UInt64> {
     return new UInt64(this.value | uint.value);
   }
 
+  /**
+   * Shifts a bit pattern of the value to the left.
+   *
+   * @param number a number of positions to shift.
+   * @return shifted value.
+   */
+  public UInt64 shl(int number) {
+    return new UInt64(value << number);
+  }
+
+  /**
+   * Converts value to {@link Bytes8} value. Uses {@link Bytes8#longToBytes8(long)} method.
+   *
+   * @return a {@link Bytes8} value.
+   */
+  public Bytes8 toBytes8() {
+    return Bytes8.longToBytes8(value);
+  }
+
   @Override
   public int compareTo(UInt64 uint) {
     return Long.compareUnsigned(this.value, uint.getValue());
+  }
+
+  public Bytes8 toBytesBigEndian() {
+    byte[] array = ByteBuffer.allocate(Long.BYTES).order(ByteOrder.BIG_ENDIAN).putLong(value).array();
+    return Bytes8.wrap(array);
   }
 
   @Override
