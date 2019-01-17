@@ -48,12 +48,12 @@ public class EpochTransition implements StateTransition<BeaconStateEx> {
 
     // Let active_validator_indices =
     //      get_active_validator_indices(state.validator_registry, state.slot).
-    int[] active_validator_indices = specHelpers.get_active_validator_indices(
+    List<UInt24> active_validator_indices = specHelpers.get_active_validator_indices(
         state.getValidatorRegistry().toArray(new ValidatorRecord[0]), state.getSlot());
 
     // Let total_balance = sum([get_effective_balance(state, i) for i in active_validator_indices])
-    UInt64 total_balance = Arrays.stream(active_validator_indices)
-        .mapToObj(i -> specHelpers.get_effective_balance(state, UInt24.valueOf(i)))
+    UInt64 total_balance = active_validator_indices.stream()
+        .map(i -> specHelpers.get_effective_balance(state, i))
         .reduce(UInt64::plus)
         .orElse(UInt64.ZERO);
 
@@ -453,7 +453,7 @@ public class EpochTransition implements StateTransition<BeaconStateEx> {
       //  Any validator index in previous_epoch_justified_attester_indices gains
       //    base_reward(state, index) * previous_epoch_justified_attesting_balance // total_balance.
       for (UInt24 index : previous_epoch_justified_attester_indices) {
-        state.withValidatorBalance(index.getValue(), balance ->
+        state.withValidatorBalance(index, balance ->
             balance
                 .plus(base_reward.apply(index)
                     .times(previous_epoch_justified_attesting_balance)
@@ -462,10 +462,10 @@ public class EpochTransition implements StateTransition<BeaconStateEx> {
       //  Any active validator v not in previous_epoch_justified_attester_indices loses
       //    base_reward(state, index).
       //  FIXME 'active validator' - not exact meaning
-      for (int index : active_validator_indices) {
-        if (!previous_epoch_justified_attester_indices.contains(UInt24.valueOf(index))) {
+      for (UInt24 index : active_validator_indices) {
+        if (!previous_epoch_justified_attester_indices.contains(index)) {
           state.withValidatorBalance(index, balance ->
-              balance.minus(base_reward.apply(UInt24.valueOf(index))));
+              balance.minus(base_reward.apply(index)));
         }
       }
 
@@ -474,7 +474,7 @@ public class EpochTransition implements StateTransition<BeaconStateEx> {
       //  Any validator index in previous_epoch_boundary_attester_indices gains
       //    base_reward(state, index) * previous_epoch_boundary_attesting_balance // total_balance.
       for (UInt24 index : previous_epoch_boundary_attester_indices) {
-        state.withValidatorBalance(index.getValue(), balance ->
+        state.withValidatorBalance(index, balance ->
             balance
                 .plus(base_reward.apply(index)
                     .times(previous_epoch_boundary_attesting_balance)
@@ -482,10 +482,10 @@ public class EpochTransition implements StateTransition<BeaconStateEx> {
       }
       //  Any active validator index not in previous_epoch_boundary_attester_indices loses
       //    base_reward(state, index).
-      for (int index : active_validator_indices) {
-        if (!previous_epoch_boundary_attester_indices.contains(UInt24.valueOf(index))) {
+      for (UInt24 index : active_validator_indices) {
+        if (!previous_epoch_boundary_attester_indices.contains(index)) {
           state.withValidatorBalance(index, balance ->
-              balance.minus(base_reward.apply(UInt24.valueOf(index))));
+              balance.minus(base_reward.apply(index)));
         }
       }
 
@@ -494,7 +494,7 @@ public class EpochTransition implements StateTransition<BeaconStateEx> {
       //  Any validator index in previous_epoch_head_attester_indices gains
       //    base_reward(state, index) * previous_epoch_head_attesting_balance // total_balance).
       for (UInt24 index : previous_epoch_head_attester_indices) {
-        state.withValidatorBalance(index.getValue(), balance ->
+        state.withValidatorBalance(index, balance ->
             balance
                 .plus(base_reward.apply(index)
                     .times(previous_epoch_head_attesting_balance)
@@ -502,10 +502,10 @@ public class EpochTransition implements StateTransition<BeaconStateEx> {
       }
       //  Any active validator index not in previous_epoch_head_attester_indices loses
       //    base_reward(state, index).
-      for (int index : active_validator_indices) {
-        if (!previous_epoch_head_attester_indices.contains(UInt24.valueOf(index))) {
+      for (UInt24 index : active_validator_indices) {
+        if (!previous_epoch_head_attester_indices.contains(index)) {
           state.withValidatorBalance(index, balance ->
-              balance.minus(base_reward.apply(UInt24.valueOf(index))));
+              balance.minus(base_reward.apply(index)));
         }
       }
 
@@ -515,7 +515,7 @@ public class EpochTransition implements StateTransition<BeaconStateEx> {
       //    base_reward(state, index) * MIN_ATTESTATION_INCLUSION_DELAY //
       //        inclusion_distance(state, index)
       for (UInt24 index : previous_epoch_attester_indices) {
-        state.withValidatorBalance(index.getValue(), balance ->
+        state.withValidatorBalance(index, balance ->
             balance
                 .plus(base_reward.apply(index)
                     .times(spec.getMinAttestationInclusionDelay())
@@ -526,38 +526,38 @@ public class EpochTransition implements StateTransition<BeaconStateEx> {
 
       //  Any active validator index not in previous_epoch_justified_attester_indices, loses
       //      inactivity_penalty(state, index, epochs_since_finality).
-      for (int index : active_validator_indices) {
-        if (!previous_epoch_justified_attester_indices.contains(UInt24.valueOf(index))) {
+      for (UInt24 index : active_validator_indices) {
+        if (!previous_epoch_justified_attester_indices.contains(index)) {
           state.withValidatorBalance(index, balance ->
-              balance.minus(inactivity_penalty.apply(UInt24.valueOf(index), epochs_since_finality)));
+              balance.minus(inactivity_penalty.apply(index, epochs_since_finality)));
         }
       }
       //  Any active validator index not in previous_epoch_boundary_attester_indices, loses
       //      inactivity_penalty(state, index, epochs_since_finality).
-      for (int index : active_validator_indices) {
-        if (!previous_epoch_boundary_attester_indices.contains(UInt24.valueOf(index))) {
+      for (UInt24 index : active_validator_indices) {
+        if (!previous_epoch_boundary_attester_indices.contains(index)) {
           state.withValidatorBalance(index, balance ->
-              balance.minus(inactivity_penalty.apply(UInt24.valueOf(index), epochs_since_finality)));
+              balance.minus(inactivity_penalty.apply(index, epochs_since_finality)));
         }
       }
       //  Any active validator index not in previous_epoch_head_attester_indices, loses
       //      base_reward(state, index).
-      for (int index : active_validator_indices) {
-        if (!previous_epoch_head_attester_indices.contains(UInt24.valueOf(index))) {
+      for (UInt24 index : active_validator_indices) {
+        if (!previous_epoch_head_attester_indices.contains(index)) {
           state.withValidatorBalance(index, balance ->
-              balance.minus(base_reward.apply(UInt24.valueOf(index))));
+              balance.minus(base_reward.apply(index)));
         }
       }
       //  Any active_validator index with validator.penalized_slot <= state.slot, loses
       //      2 * inactivity_penalty(state, index, epochs_since_finality) + base_reward(state, index).
-      for (int index : active_validator_indices) {
-        ValidatorRecord validator = state.getValidatorRegistry().get(index);
+      for (UInt24 index : active_validator_indices) {
+        ValidatorRecord validator = state.getValidatorRegistry().get(index.getValue());
         if (validator.getPenalizedSlot().compareTo(state.getSlot()) <= 0) {
           state.withValidatorBalance(index, balance ->
               balance.minus(
-                  inactivity_penalty.apply(UInt24.valueOf(index), epochs_since_finality))
+                  inactivity_penalty.apply(index, epochs_since_finality))
                       .times(2)
-                      .plus(base_reward.apply(UInt24.valueOf(index)))
+                      .plus(base_reward.apply(index))
           );
         }
       }
@@ -565,7 +565,7 @@ public class EpochTransition implements StateTransition<BeaconStateEx> {
       //    base_reward(state, index) - base_reward(state, index) *
       //        MIN_ATTESTATION_INCLUSION_DELAY // inclusion_distance(state, index)
       for (UInt24 index : previous_epoch_attester_indices) {
-        state.withValidatorBalance(index.getValue(), balance -> balance.minus(
+        state.withValidatorBalance(index, balance -> balance.minus(
             base_reward.apply(index).minus(
                 base_reward.apply(index)
                 .times(spec.getMinAttestationInclusionDelay())
@@ -586,7 +586,7 @@ public class EpochTransition implements StateTransition<BeaconStateEx> {
     for (UInt24 index : previous_epoch_attester_indices) {
       UInt24 proposer_index = specHelpers
           .get_beacon_proposer_index(state, inclusion_slot.get(index));
-      state.withValidatorBalance(proposer_index.getValue(), balance ->
+      state.withValidatorBalance(proposer_index, balance ->
           balance
               .plus(base_reward.apply(index))
               .dividedBy(spec.getIncluderRewardQuotient()));
@@ -619,9 +619,9 @@ public class EpochTransition implements StateTransition<BeaconStateEx> {
         Set<UInt24> attesting_validator_set = attesting_validators.apply(shard_committee_list);
         for (UInt24 index : shard_committee_list) {
           if (attesting_validator_set.contains(index)) {
-            state.withValidatorBalance(index.getValue(), vb -> vb.plus(base_reward.apply(index)));
+            state.withValidatorBalance(index, vb -> vb.plus(base_reward.apply(index)));
           } else {
-            state.withValidatorBalance(index.getValue(), vb -> vb.minus(base_reward.apply(index)));
+            state.withValidatorBalance(index, vb -> vb.minus(base_reward.apply(index)));
           }
         }
       }
@@ -642,11 +642,11 @@ public class EpochTransition implements StateTransition<BeaconStateEx> {
               exit_validator(state, index)
      */
 
-    for (int index :specHelpers.get_active_validator_indices(
+    for (UInt24 index :specHelpers.get_active_validator_indices(
             state.getValidatorRegistry().toArray(new ValidatorRecord[0]), state.getSlot())) {
-      if (state.getValidatorBalances().get(index)
+      if (state.getValidatorBalances().get(index.getValue())
           .compareTo(spec.getEjectionBalance().toGWei()) < 0) {
-        specHelpers.exit_validator(state, UInt24.valueOf(index));
+        specHelpers.exit_validator(state, index);
       }
     }
 

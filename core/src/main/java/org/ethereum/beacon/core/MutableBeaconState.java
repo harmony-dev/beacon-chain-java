@@ -3,6 +3,7 @@ package org.ethereum.beacon.core;
 import org.ethereum.beacon.core.operations.CustodyChallenge;
 import org.ethereum.beacon.core.state.*;
 import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 import java.util.ArrayList;
@@ -109,10 +110,11 @@ public interface MutableBeaconState extends BeaconState {
     return this;
   }
 
-  default MutableBeaconState withValidatorBalance(int idx,
+  default MutableBeaconState withValidatorBalance(UInt24 idx,
       Function<UInt64, UInt64> validatorBalanceUpdater) {
     ArrayList<UInt64> validatorBalances = new ArrayList<>(getValidatorBalances());
-    validatorBalances.set(idx, validatorBalanceUpdater.apply(validatorBalances.get(idx)));
+    validatorBalances.set(idx.getValue(),
+        validatorBalanceUpdater.apply(validatorBalances.get(idx.getValue())));
     return withValidatorBalances(validatorBalances);
   }
 

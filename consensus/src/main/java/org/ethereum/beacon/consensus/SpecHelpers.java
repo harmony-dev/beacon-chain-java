@@ -77,10 +77,10 @@ public class SpecHelpers {
         return get_committee_count_per_slot(len(previous_active_validators))
    */
   public int get_previous_epoch_committee_count_per_slot(BeaconState state) {
-    int[] previous_active_validators = get_active_validator_indices(
+    List<UInt24> previous_active_validators = get_active_validator_indices(
         state.getValidatorRegistry().toArray(new ValidatorRecord[0]),
         state.getPreviousEpochCalculationSlot());
-    return get_committee_count_per_slot(previous_active_validators.length);
+    return get_committee_count_per_slot(previous_active_validators.size());
   }
 
   /*
@@ -89,10 +89,10 @@ public class SpecHelpers {
         return get_committee_count_per_slot(len(current_active_validators))
    */
   public int get_current_epoch_committee_count_per_slot(BeaconState state) {
-    int[] previous_active_validators = get_active_validator_indices(
+    List<UInt24> previous_active_validators = get_active_validator_indices(
         state.getValidatorRegistry().toArray(new ValidatorRecord[0]),
         state.getCurrentEpochCalculationSlot());
-    return get_committee_count_per_slot(previous_active_validators.length);
+    return get_committee_count_per_slot(previous_active_validators.size());
   }
 
   /*
@@ -108,7 +108,7 @@ public class SpecHelpers {
 
     //    if slot < state_epoch_slot:
     int committees_per_slot;
-    int[][] shuffling;
+    List<List<UInt24>> shuffling;
     UInt64 slot_start_shard;
     if (slot.compareTo(state_epoch_slot) < 0) {
       //      committees_per_slot = get_previous_epoch_committees_per_slot(state)
@@ -147,10 +147,10 @@ public class SpecHelpers {
     //    ]
     List<Pair<UInt24[], UInt64>> ret = new ArrayList<>();
     for (int i = 0; i < committees_per_slot; i++) {
-      int[] shuffling1 = shuffling[offset.times(committees_per_slot).plus(i).getIntValue()];
-      UInt24[] shuffling2 = new UInt24[shuffling1.length];
-      for (int i1 = 0; i1 < shuffling1.length; i1++) {
-        shuffling2[i1] = UInt24.valueOf(shuffling1[i1]);
+      List<UInt24> shuffling1 = shuffling.get(offset.times(committees_per_slot).plus(i).getIntValue());
+      UInt24[] shuffling2 = new UInt24[shuffling1.size()];
+      for (int i1 = 0; i1 < shuffling1.size(); i1++) {
+        shuffling2[i1] = shuffling1.get(i1);
       }
       ret.add(Pair.with(shuffling2, slot_start_shard.plus(i).modulo(spec.getShardCount())));
     }
@@ -185,14 +185,14 @@ public class SpecHelpers {
    """
    return [i for i, v in enumerate(validators) if is_active_validator(v, slot)]
   */
-  public int[] get_active_validator_indices(ValidatorRecord[] validators, UInt64 slot) {
-    ArrayList<Integer> ret = new ArrayList<>();
+  public List<UInt24>  get_active_validator_indices(ValidatorRecord[] validators, UInt64 slot) {
+    ArrayList<UInt24> ret = new ArrayList<>();
     for (int i = 0; i < validators.length; i++) {
       if (is_active_validator(validators[i], slot)) {
-        ret.add(i);
+        ret.add(UInt24.valueOf(i));
       }
     }
-    return ret.stream().mapToInt(i -> i).toArray();
+    return ret;
   }
 
   /*
@@ -217,10 +217,10 @@ public class SpecHelpers {
    Returns the shuffled ``values`` with ``seed`` as entropy.
    """
   */
-  public int[] shuffle(int[] values, Hash32 seed) {
+  public <T> List<T> shuffle(List<T> values, Hash32 seed) {
 
     //    values_count = len(values)
-    int values_count = values.length;
+    int values_count = values.size();
 
     //    # Entropy is consumed from the seed in 3-byte (24 bit) chunks.
     //        rand_bytes = 3
@@ -237,7 +237,7 @@ public class SpecHelpers {
     //    output = [x for x in values]
     //    source = seed
     //    index = 0
-    int[] output = Arrays.copyOf(values, values_count);
+    List<T> output = new ArrayList<>(values);
     Hash32 source = seed;
     int index = 0;
 
@@ -278,9 +278,7 @@ public class SpecHelpers {
           //    # Swap the current index with the replacement index.
           //    output[index], output[replacement_position] = output[replacement_position], output[index]
           //    index += 1
-          int tmp = output[index];
-          output[index] = output[replacement_position];
-          output[replacement_position] = tmp;
+          Collections.swap(output, index, replacement_position);
           index += 1;
         }
         //    else:
@@ -303,12 +301,12 @@ public class SpecHelpers {
        for i in range(split_count)
    ]
   */
-  public int[][] split(int[] values, int split_count) {
-    int[][] ret = new int[split_count][];
+  public <T> List<List<T>> split(List<T> values, int split_count) {
+    List<List<T>> ret = new ArrayList<>();
     for (int i = 0; i < split_count; i++) {
-      int fromIdx = values.length * i / split_count;
-      int toIdx = min(values.length * (i + 1) / split_count, values.length);
-      ret[i] = Arrays.copyOfRange(values, fromIdx, toIdx);
+      int fromIdx = values.size() * i / split_count;
+      int toIdx = min(values.size() * (i + 1) / split_count, values.size());
+      ret.add(values.subList(fromIdx, toIdx));
     }
     return ret;
   }
@@ -321,7 +319,7 @@ public class SpecHelpers {
   //  Returns a list of ``EPOCH_LENGTH * committees_per_slot`` committees where each
   //  committee is itself a list of validator indices.
   //  """
-  public int[][] get_shuffling(Hash32 _seed,
+  public List<List<UInt24>> get_shuffling(Hash32 _seed,
                                ValidatorRecord[] validators,
                                UInt64 _slot) {
 
@@ -331,16 +329,16 @@ public class SpecHelpers {
     //  slot -= slot % EPOCH_LENGTH
     UInt64 slot = _slot.minus(_slot.modulo(spec.getEpochLength()));
     //      active_validator_indices = get_active_validator_indices(validators, slot)
-    int[] active_validator_indices = get_active_validator_indices(validators, slot);
+    List<UInt24>  active_validator_indices = get_active_validator_indices(validators, slot);
     //      committees_per_slot = get_committee_count_per_slot(len(active_validator_indices))
-    int committees_per_slot = get_committee_count_per_slot(active_validator_indices.length);
+    int committees_per_slot = get_committee_count_per_slot(active_validator_indices.size());
 
     //      # Shuffle
     //      seed = xor(seed, bytes32(slot))
     Hash32 seed = Hash32.wrap(Bytes32s.xor(_seed, Bytes32.leftPad(slot.toBytesBigEndian())));
 
     //  shuffled_active_validator_indices = shuffle(active_validator_indices, seed)
-    int[] shuffled_active_validator_indices = shuffle(active_validator_indices, seed);
+    List<UInt24> shuffled_active_validator_indices = shuffle(active_validator_indices, seed);
     //    # Split the shuffled list into epoch_length * committees_per_slot pieces
     //    return split(shuffled_active_validator_indices, committees_per_slot * EPOCH_LENGTH)
     return split(shuffled_active_validator_indices,
@@ -469,8 +467,8 @@ public class SpecHelpers {
         get_effective_balance(state, UInt24.valueOf(index))
             .dividedBy(spec.getWhistleblowerRewardQuotient());
     state.withValidatorBalance(
-        whistleblower_index.getValue(), oldVal -> oldVal.plus(whistleblower_reward));
-    state.withValidatorBalance(index, oldVal -> oldVal.minus(whistleblower_reward));
+        whistleblower_index, oldVal -> oldVal.plus(whistleblower_reward));
+    state.withValidatorBalance(UInt24.valueOf(index), oldVal -> oldVal.minus(whistleblower_reward));
     state.withValidatorRecord(index, vb -> vb.withPenalizedSlot(state.getSlot()));
   }
 
@@ -542,15 +540,15 @@ public class SpecHelpers {
     //    # The active validators
     //    active_validator_indices =
     //          get_active_validator_indices(state.validator_registry, state.slot)
-    int[] active_validator_indices = get_active_validator_indices(
+    List<UInt24> active_validator_indices = get_active_validator_indices(
         state.getValidatorRegistry().toArray(new ValidatorRecord[0]), state.getSlot());
 
     //      # The total effective balance of active validators
     //      total_balance =
     //          sum([get_effective_balance(state, i) for i in active_validator_indices])
     UInt64 total_balance = UInt64.ZERO;
-    for (int i : active_validator_indices) {
-      total_balance = total_balance.plus(get_effective_balance(state, UInt24.valueOf(i)));
+    for (UInt24 i : active_validator_indices) {
+      total_balance = total_balance.plus(get_effective_balance(state, i));
     }
 
     //    # The maximum balance churn in Gwei (for deposits and exits separately)
@@ -637,12 +635,11 @@ public class SpecHelpers {
     //    # The active validators
     //    active_validator_indices = get_active_validator_indices(state.validator_registry,
     // state.slot)
-    int[] active_validator_indices = get_active_validator_indices(
+    List<UInt24> active_validator_indices = get_active_validator_indices(
         state.getValidatorRegistry().toArray(new ValidatorRecord[0]), state.getSlot());
     //    # The total effective balance of active validators
     //    total_balance = sum([get_effective_balance(state, i) for i in active_validator_indices])
-    UInt64 total_balance = Arrays.stream(active_validator_indices)
-        .mapToObj(UInt24::valueOf)
+    UInt64 total_balance = active_validator_indices.stream()
         .map(i -> get_effective_balance(state, i))
         .reduce(UInt64::plus)
         .orElse(UInt64.ZERO);
@@ -676,7 +673,7 @@ public class SpecHelpers {
             .times(UInt64s.min(total_penalties.times(3), total_balance))
             .dividedBy(total_balance);
         //    state.validator_balances[index] -= penalty
-        state.withValidatorBalance(index, balance -> balance.minus(penalty));
+        state.withValidatorBalance(UInt24.valueOf(index), balance -> balance.minus(penalty));
       }
     }
 
