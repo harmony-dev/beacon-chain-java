@@ -1,7 +1,8 @@
-package org.ethereum.beacon.types.ssz;
+package org.ethereum.beacon.ssz;
 
-import org.ethereum.beacon.ssz.SSZSerializer;
-import org.ethereum.beacon.ssz.SSZSerializerBuilder;
+import org.ethereum.beacon.ssz.type.BytesCodec;
+import org.ethereum.beacon.ssz.type.HashCodec;
+import org.ethereum.beacon.ssz.type.UIntCodec;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 /**
@@ -19,9 +20,9 @@ public class Serializer {
   static {
     SSZSerializerBuilder builder = new SSZSerializerBuilder();
     builder.initWithExplicitAnnotations();
-    builder.addCodec(new SSZHash());
-    builder.addCodec(new SSZUInt());
-    builder.addCodec(new SSZBytesValue());
+    builder.addCodec(new HashCodec());
+    builder.addCodec(new UIntCodec());
+    builder.addCodec(new BytesCodec());
     ANNOTATION_SERIALIZER = builder.build();
   }
   private final static Serializer INSTANCE = new Serializer();

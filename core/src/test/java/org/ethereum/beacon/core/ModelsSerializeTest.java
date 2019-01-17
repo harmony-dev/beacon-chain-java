@@ -19,7 +19,7 @@ import org.ethereum.beacon.core.state.DepositRootVote;
 import org.ethereum.beacon.core.state.ForkData;
 import org.ethereum.beacon.core.state.PendingAttestationRecord;
 import org.ethereum.beacon.core.state.ValidatorRecord;
-import org.ethereum.beacon.types.ssz.Serializer;
+import org.ethereum.beacon.ssz.Serializer;
 import org.ethereum.beacon.crypto.Hashes;
 import org.junit.Before;
 import org.junit.Test;

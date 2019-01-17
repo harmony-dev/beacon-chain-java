@@ -1,4 +1,4 @@
-package org.ethereum.beacon.types.ssz;
+package org.ethereum.beacon.ssz.type;
 
 import net.consensys.cava.bytes.Bytes;
 import net.consensys.cava.ssz.BytesSSZReaderProxy;
@@ -28,7 +28,7 @@ import static java.util.function.Function.identity;
  * SSZ Codec designed to work with fixed numeric
  * data classes, check list in {@link #getSupportedClasses()}
  */
-public class SSZUInt implements SSZCodec {
+public class UIntCodec implements SSZCodec {
   private static Map<Class, NumericType> classToNumericType = new HashMap<>();
 
   static {

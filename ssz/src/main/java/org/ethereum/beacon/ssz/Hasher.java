@@ -1,4 +1,4 @@
-package org.ethereum.beacon.types.ssz;
+package org.ethereum.beacon.ssz;
 
 import net.consensys.cava.bytes.Bytes;
 import org.ethereum.beacon.ssz.ConstructorObjCreator;
