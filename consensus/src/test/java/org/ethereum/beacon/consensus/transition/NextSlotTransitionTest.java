@@ -1,5 +1,6 @@
 package org.ethereum.beacon.consensus.transition;
 
+import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.core.BeaconBlocks;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
@@ -51,7 +52,7 @@ public class NextSlotTransitionTest {
               public List<Deposit> getInitialDeposits() {
                 return deposits;
               }
-            }, chainSpec);
+            }, new SpecHelpers(chainSpec));
 
     BeaconStateEx initialState =
         initialStateTransition.apply(BeaconBlocks.createGenesis(chainSpec));

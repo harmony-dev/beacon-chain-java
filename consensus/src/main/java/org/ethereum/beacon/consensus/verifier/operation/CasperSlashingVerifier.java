@@ -45,14 +45,7 @@ public class CasperSlashingVerifier implements OperationVerifier<CasperSlashing>
       return failedResult("slashable_vote_data_1 != slashable_vote_data_2");
     }
 
-    List<UInt24> indices1 =
-        specHelpers.indices(
-            slashableVoteData1.getCustodyBit0Indices(), slashableVoteData1.getCustodyBit1Indices());
-    List<UInt24> indices2 =
-        specHelpers.indices(
-            slashableVoteData2.getCustodyBit0Indices(), slashableVoteData2.getCustodyBit1Indices());
-
-    List<UInt24> intersection = specHelpers.intersection(indices1, indices2);
+    List<UInt24> intersection = specHelpers.custodyIndexIntersection(casperSlashing);
 
     if (intersection.size() < 1) {
       return failedResult("there is no intersection between indices of slashable_vote_data");

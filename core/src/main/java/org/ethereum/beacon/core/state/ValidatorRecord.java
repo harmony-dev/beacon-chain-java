@@ -8,6 +8,8 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.uint.UInt64;
 
+import java.util.function.Function;
+
 /**
  * A record denoting a validator in the validator registry.
  *
@@ -271,6 +273,11 @@ public class ValidatorRecord {
 
     public Builder withStatusFlags(UInt64 statusFlags) {
       this.statusFlags = statusFlags;
+      return this;
+    }
+
+    public Builder withStatusFlags(Function<UInt64, UInt64> statusFlagsUpdater) {
+      this.statusFlags = statusFlagsUpdater.apply(statusFlags);
       return this;
     }
 

@@ -31,6 +31,8 @@ public interface MiscParameters {
 
   UInt64 getLatestPenalizedExitLength();
 
+  UInt64 getMaxWithdrawalsPerEpoch();
+
   /* Values defined in the spec. */
 
   UInt64 SHARD_COUNT = UInt64.valueOf(1 << 10); // 1024 shards
@@ -50,4 +52,6 @@ public interface MiscParameters {
   UInt64 LATEST_RANDAO_MIXES_LENGTH = UInt64.valueOf(1 << 13); // 8192 randao mixes
 
   UInt64 LATEST_PENALIZED_EXIT_LENGTH = UInt64.valueOf(1 << 13); // 8192 epochs
+
+  UInt64 MAX_WITHDRAWALS_PER_EPOCH = UInt64.valueOf(1 << 2); // 4
 }
