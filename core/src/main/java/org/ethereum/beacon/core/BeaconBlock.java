@@ -20,27 +20,20 @@ import tech.pegasys.artemis.util.uint.UInt64;
 public class BeaconBlock implements Hashable<Hash32> {
 
   /** Number of a slot that block does belong to. */
-  @SSZ
-  private final UInt64 slot;
+  @SSZ private final UInt64 slot;
   /** A hash of parent block. */
-  @SSZ
-  private final Hash32 parentRoot;
+  @SSZ private final Hash32 parentRoot;
   /** A hash of the state that is created by applying a block to the previous state. */
-  @SSZ
-  private final Hash32 stateRoot;
+  @SSZ private final Hash32 stateRoot;
   /** An image of RANDAO hash onion revealed by proposer. */
-  @SSZ
-  private final Hash32 randaoReveal;
+  @SSZ private final Hash32 randaoReveal;
   /** Receipt root from the PoW chain registration contract that is observed by proposer. */
-  @SSZ
-  private final Hash32 depositRoot;
+  @SSZ private final Hash32 depositRoot;
   /** Proposer's signature. */
-  @SSZ
-  private final Bytes96 signature;
+  @SSZ private final Bytes96 signature;
 
   /** Block body. */
-  @SSZ
-  private final BeaconBlockBody body;
+  @SSZ private final BeaconBlockBody body;
 
   public BeaconBlock(
       UInt64 slot,

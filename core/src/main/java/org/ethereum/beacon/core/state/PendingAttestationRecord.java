@@ -20,17 +20,13 @@ import tech.pegasys.artemis.util.uint.UInt64;
 public class PendingAttestationRecord {
 
   /** Signed data. */
-  @SSZ
-  private final AttestationData data;
+  @SSZ private final AttestationData data;
   /** Attester participation bitfield. */
-  @SSZ
-  private final BytesValue participationBitfield;
+  @SSZ private final BytesValue participationBitfield;
   /** Proof of custody bitfield. */
-  @SSZ
-  private final BytesValue custodyBitfield;
+  @SSZ private final BytesValue custodyBitfield;
   /** Slot in which it was included. */
-  @SSZ
-  private final UInt64 slotIncluded;
+  @SSZ private final UInt64 slotIncluded;
 
   public PendingAttestationRecord(
       AttestationData data,
@@ -64,9 +60,9 @@ public class PendingAttestationRecord {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     PendingAttestationRecord that = (PendingAttestationRecord) o;
-    return Objects.equal(data, that.data) &&
-        Objects.equal(participationBitfield, that.participationBitfield) &&
-        Objects.equal(custodyBitfield, that.custodyBitfield) &&
-        Objects.equal(slotIncluded, that.slotIncluded);
+    return Objects.equal(data, that.data)
+        && Objects.equal(participationBitfield, that.participationBitfield)
+        && Objects.equal(custodyBitfield, that.custodyBitfield)
+        && Objects.equal(slotIncluded, that.slotIncluded);
   }
 }

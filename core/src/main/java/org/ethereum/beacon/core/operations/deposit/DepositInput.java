@@ -21,20 +21,15 @@ import tech.pegasys.artemis.util.bytes.Bytes96;
 public class DepositInput {
 
   /** BLS public key. */
-  @SSZ
-  private final Bytes48 pubKey;
+  @SSZ private final Bytes48 pubKey;
   /** Withdrawal credentials. */
-  @SSZ
-  private final Hash32 withdrawalCredentials;
+  @SSZ private final Hash32 withdrawalCredentials;
   /** Initial RANDAO commitment. */
-  @SSZ
-  private final Hash32 randaoCommitment;
+  @SSZ private final Hash32 randaoCommitment;
   /** Initial proof of custody commitment. */
-  @SSZ
-  private final Hash32 custodyCommitment;
+  @SSZ private final Hash32 custodyCommitment;
   /** A BLS signature of this {@link DepositInput} */
-  @SSZ
-  private final Bytes96 proofOfPossession;
+  @SSZ private final Bytes96 proofOfPossession;
 
   public DepositInput(
       Bytes48 pubKey,
@@ -74,10 +69,10 @@ public class DepositInput {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     DepositInput that = (DepositInput) o;
-    return Objects.equal(pubKey, that.pubKey) &&
-        Objects.equal(withdrawalCredentials, that.withdrawalCredentials) &&
-        Objects.equal(randaoCommitment, that.randaoCommitment) &&
-        Objects.equal(custodyCommitment, that.custodyCommitment) &&
-        Objects.equal(proofOfPossession, that.proofOfPossession);
+    return Objects.equal(pubKey, that.pubKey)
+        && Objects.equal(withdrawalCredentials, that.withdrawalCredentials)
+        && Objects.equal(randaoCommitment, that.randaoCommitment)
+        && Objects.equal(custodyCommitment, that.custodyCommitment)
+        && Objects.equal(proofOfPossession, that.proofOfPossession);
   }
 }

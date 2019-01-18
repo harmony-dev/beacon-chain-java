@@ -19,14 +19,11 @@ public class ForkData {
   public static final ForkData EMPTY = new ForkData(UInt64.ZERO, UInt64.ZERO, UInt64.ZERO);
 
   /** Previous fork version. */
-  @SSZ
-  private final UInt64 preForkVersion;
+  @SSZ private final UInt64 preForkVersion;
   /** Post fork version. */
-  @SSZ
-  private final UInt64 postForkVersion;
+  @SSZ private final UInt64 postForkVersion;
   /** Fork slot number. */
-  @SSZ
-  private final UInt64 forkSlot;
+  @SSZ private final UInt64 forkSlot;
 
   public ForkData(UInt64 preForkVersion, UInt64 postForkVersion, UInt64 forkSlot) {
     this.preForkVersion = preForkVersion;
@@ -51,8 +48,8 @@ public class ForkData {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     ForkData forkData = (ForkData) o;
-    return Objects.equal(preForkVersion, forkData.preForkVersion) &&
-        Objects.equal(postForkVersion, forkData.postForkVersion) &&
-        Objects.equal(forkSlot, forkData.forkSlot);
+    return Objects.equal(preForkVersion, forkData.preForkVersion)
+        && Objects.equal(postForkVersion, forkData.postForkVersion)
+        && Objects.equal(forkSlot, forkData.forkSlot);
   }
 }

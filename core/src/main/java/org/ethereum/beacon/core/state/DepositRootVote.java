@@ -19,11 +19,9 @@ import tech.pegasys.artemis.util.uint.UInt64;
 public class DepositRootVote {
 
   /** Receipt root of registration contract on the PoW chain. */
-  @SSZ
-  private final Hash32 depositRoot;
+  @SSZ private final Hash32 depositRoot;
   /** Vote count. */
-  @SSZ
-  private final UInt64 voteCount;
+  @SSZ private final UInt64 voteCount;
 
   public DepositRootVote(Hash32 depositRoot, UInt64 voteCount) {
     this.depositRoot = depositRoot;
@@ -43,7 +41,6 @@ public class DepositRootVote {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     DepositRootVote that = (DepositRootVote) o;
-    return Objects.equal(depositRoot, that.depositRoot) &&
-        Objects.equal(voteCount, that.voteCount);
+    return Objects.equal(depositRoot, that.depositRoot) && Objects.equal(voteCount, that.voteCount);
   }
 }

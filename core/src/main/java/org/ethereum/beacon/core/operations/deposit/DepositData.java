@@ -18,14 +18,11 @@ import tech.pegasys.artemis.util.uint.UInt64;
 public class DepositData {
 
   /** Deposit parameters. */
-  @SSZ
-  private final DepositInput depositInput;
+  @SSZ private final DepositInput depositInput;
   /** Value in Gwei. */
-  @SSZ
-  private final UInt64 value;
+  @SSZ private final UInt64 value;
   /** Timestamp from deposit contract. */
-  @SSZ
-  private final UInt64 timestamp;
+  @SSZ private final UInt64 timestamp;
 
   public DepositData(DepositInput depositInput, UInt64 value, UInt64 timestamp) {
     this.depositInput = depositInput;
@@ -50,8 +47,8 @@ public class DepositData {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     DepositData that = (DepositData) o;
-    return Objects.equal(depositInput, that.depositInput) &&
-        Objects.equal(value, that.value) &&
-        Objects.equal(timestamp, that.timestamp);
+    return Objects.equal(depositInput, that.depositInput)
+        && Objects.equal(value, that.value)
+        && Objects.equal(timestamp, that.timestamp);
   }
 }

@@ -21,17 +21,13 @@ import java.util.Arrays;
 public class SlashableVoteData {
 
   /** Proof-of-custody indices (0 bits). */
-  @SSZ
-  private final UInt24[] custodyBit0Indices;
+  @SSZ private final UInt24[] custodyBit0Indices;
   /** Proof-of-custody indices (1 bits). */
-  @SSZ
-  private final UInt24[] custodyBit1Indices;
+  @SSZ private final UInt24[] custodyBit1Indices;
   /** Attestation data. */
-  @SSZ
-  private final AttestationData data;
+  @SSZ private final AttestationData data;
   /** Aggregated signature. */
-  @SSZ
-  private final Bytes96 aggregatedSignature;
+  @SSZ private final Bytes96 aggregatedSignature;
 
   public SlashableVoteData(
       UInt24[] custodyBit0Indices,
@@ -65,9 +61,9 @@ public class SlashableVoteData {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     SlashableVoteData that = (SlashableVoteData) o;
-    return Arrays.equals(custodyBit0Indices, that.custodyBit0Indices) &&
-        Arrays.equals(custodyBit1Indices, that.custodyBit1Indices) &&
-        Objects.equal(data, that.data) &&
-        Objects.equal(aggregatedSignature, that.aggregatedSignature);
+    return Arrays.equals(custodyBit0Indices, that.custodyBit0Indices)
+        && Arrays.equals(custodyBit1Indices, that.custodyBit1Indices)
+        && Objects.equal(data, that.data)
+        && Objects.equal(aggregatedSignature, that.aggregatedSignature);
   }
 }

@@ -19,8 +19,8 @@ import org.ethereum.beacon.core.state.DepositRootVote;
 import org.ethereum.beacon.core.state.ForkData;
 import org.ethereum.beacon.core.state.PendingAttestationRecord;
 import org.ethereum.beacon.core.state.ValidatorRecord;
-import org.junit.Test;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
+import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -33,65 +33,21 @@ import java.util.Set;
 
 /**
  * Verifies {@link SSZSerializable} model test coverage
- * Check {@link #testAnnotatedClassesHaveTests()} JavaDoc for more info
+ *
+ * <p>Check {@link #testAnnotatedClassesHaveTests()} JavaDoc for more info
  */
 public class SSZSerializableAnnotationTest {
 
   /**
-   * Just add your {@link SSZSerializable}
-   * class to the list to stop this test fail.
-   *
-   * This test notifies user that every {@link SSZSerializable} model should be tested
-   * like in {@link ModelsSerializeTest} to clarify in runtime correctness
-   * of annotation scheme building for each case and test other routines
-   */
-  @Test
-  public void testAnnotatedClassesHaveTests() throws Exception {
-    Set<Class> testedClasses = new HashSet<>(Arrays.asList(
-        Attestation.class,
-        AttestationData.class,
-        BeaconBlock.class,
-        BeaconBlockBody.class,
-        BeaconStateImpl.class,
-        CasperSlashing.class,
-        Deposit.class,
-        DepositData.class,
-        DepositInput.class,
-        Exit.class,
-        CustodyReseed.class,
-        CustodyResponse.class,
-        CustodyChallenge.class,
-        ProposalSignedData.class,
-        ProposerSlashing.class,
-        SlashableVoteData.class,
-        CrosslinkRecord.class,
-        DepositRootVote.class,
-        ForkData.class,
-        PendingAttestationRecord.class,
-        ValidatorRecord.class
-    ));
-    Class[] allClasses = getClasses("org.ethereum.beacon.core");
-
-    for (Class clazz: allClasses) {
-      if (testedClasses.contains(clazz)) continue;
-
-      if (clazz.isAnnotationPresent(SSZSerializable.class)) {
-        throw new RuntimeException(String.format("Class %s is marked with " +
-            "@SSZSerializable annotation but not covered with tests!", clazz.getName()));
-      }
-    }
-  }
-
-  /**
-   * Scans all classes accessible from the context class loader which belong to the given package and subpackages.
+   * Scans all classes accessible from the context class loader which belong to the given package
+   * and subpackages.
    *
    * @param packageName The base package
    * @return The classes
    * @throws ClassNotFoundException
    * @throws IOException
    */
-  private static Class[] getClasses(String packageName)
-      throws ClassNotFoundException, IOException {
+  private static Class[] getClasses(String packageName) throws ClassNotFoundException, IOException {
     ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
     assert classLoader != null;
     String path = packageName.replace('.', '/');
@@ -111,12 +67,13 @@ public class SSZSerializableAnnotationTest {
   /**
    * Recursive method used to find all classes in a given directory and subdirs.
    *
-   * @param directory   The base directory
+   * @param directory The base directory
    * @param packageName The package name for classes found inside the base directory
    * @return The classes
    * @throws ClassNotFoundException
    */
-  private static List<Class> findClasses(File directory, String packageName) throws ClassNotFoundException {
+  private static List<Class> findClasses(File directory, String packageName)
+      throws ClassNotFoundException {
     List<Class> classes = new ArrayList<Class>();
     if (!directory.exists()) {
       return classes;
@@ -127,9 +84,59 @@ public class SSZSerializableAnnotationTest {
         assert !file.getName().contains(".");
         classes.addAll(findClasses(file, packageName + "." + file.getName()));
       } else if (file.getName().endsWith(".class")) {
-        classes.add(Class.forName(packageName + '.' + file.getName().substring(0, file.getName().length() - 6)));
+        classes.add(
+            Class.forName(
+                packageName + '.' + file.getName().substring(0, file.getName().length() - 6)));
       }
     }
     return classes;
+  }
+
+  /**
+   * Just add your {@link SSZSerializable} class to the list to stop this test fail.
+   *
+   * <p>This test notifies user that every {@link SSZSerializable} model should be tested like in
+   * {@link ModelsSerializeTest} to clarify in runtime correctness of annotation scheme building for
+   * each case and test other routines
+   */
+  @Test
+  public void testAnnotatedClassesHaveTests() throws Exception {
+    Set<Class> testedClasses =
+        new HashSet<>(
+            Arrays.asList(
+                Attestation.class,
+                AttestationData.class,
+                BeaconBlock.class,
+                BeaconBlockBody.class,
+                BeaconStateImpl.class,
+                CasperSlashing.class,
+                Deposit.class,
+                DepositData.class,
+                DepositInput.class,
+                Exit.class,
+                CustodyReseed.class,
+                CustodyResponse.class,
+                CustodyChallenge.class,
+                ProposalSignedData.class,
+                ProposerSlashing.class,
+                SlashableVoteData.class,
+                CrosslinkRecord.class,
+                DepositRootVote.class,
+                ForkData.class,
+                PendingAttestationRecord.class,
+                ValidatorRecord.class));
+    Class[] allClasses = getClasses("org.ethereum.beacon.core");
+
+    for (Class clazz : allClasses) {
+      if (testedClasses.contains(clazz)) continue;
+
+      if (clazz.isAnnotationPresent(SSZSerializable.class)) {
+        throw new RuntimeException(
+            String.format(
+                "Class %s is marked with "
+                    + "@SSZSerializable annotation but not covered with tests!",
+                clazz.getName()));
+      }
+    }
   }
 }

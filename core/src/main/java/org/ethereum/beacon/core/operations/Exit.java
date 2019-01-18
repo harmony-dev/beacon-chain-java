@@ -20,14 +20,11 @@ import tech.pegasys.artemis.util.uint.UInt64;
 public class Exit {
 
   /** Minimum slot for processing exit. */
-  @SSZ
-  private final UInt64 slot;
+  @SSZ private final UInt64 slot;
   /** Index of the exiting validator. */
-  @SSZ
-  private final UInt24 validatorIndex;
+  @SSZ private final UInt24 validatorIndex;
   /** Validator signature. */
-  @SSZ
-  private final Bytes96 signature;
+  @SSZ private final Bytes96 signature;
 
   public Exit(UInt64 slot, UInt24 validatorIndex, Bytes96 signature) {
     this.slot = slot;
@@ -52,8 +49,8 @@ public class Exit {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     Exit exit = (Exit) o;
-    return Objects.equal(slot, exit.slot) &&
-        Objects.equal(validatorIndex, exit.validatorIndex) &&
-        Objects.equal(signature, exit.signature);
+    return Objects.equal(slot, exit.slot)
+        && Objects.equal(validatorIndex, exit.validatorIndex)
+        && Objects.equal(signature, exit.signature);
   }
 }

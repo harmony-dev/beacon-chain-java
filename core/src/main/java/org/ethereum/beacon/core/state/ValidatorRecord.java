@@ -8,7 +8,6 @@ import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.uint.UInt64;
-
 import java.util.function.Function;
 
 /**
@@ -23,44 +22,31 @@ import java.util.function.Function;
 public class ValidatorRecord {
 
   /** BLS public key. */
-  @SSZ
-  private final Bytes48 pubKey;
+  @SSZ private final Bytes48 pubKey;
   /** Withdrawal credentials. */
-  @SSZ
-  private final Hash32 withdrawalCredentials;
+  @SSZ private final Hash32 withdrawalCredentials;
   /** RANDAO commitment. */
-  @SSZ
-  private final Hash32 randaoCommitment;
+  @SSZ private final Hash32 randaoCommitment;
   /** Slots the proposer has skipped (i.e. layers of RANDAO expected). */
-  @SSZ
-  private final UInt64 randaoLayers;
+  @SSZ private final UInt64 randaoLayers;
   /** Slot when validator activated */
-  @SSZ
-  private final UInt64 activationSlot;
+  @SSZ private final UInt64 activationSlot;
   /** Slot when validator exited */
-  @SSZ
-  private final UInt64 exitSlot;
+  @SSZ private final UInt64 exitSlot;
   /** Slot when validator withdrew */
-  @SSZ
-  private final UInt64 withdrawalSlot;
+  @SSZ private final UInt64 withdrawalSlot;
   /** Slot when validator was penalized */
-  @SSZ
-  private final UInt64 penalizedSlot;
+  @SSZ private final UInt64 penalizedSlot;
   /** Exit counter when validator exited (or 0). */
-  @SSZ
-  private final UInt64 exitCount;
+  @SSZ private final UInt64 exitCount;
   /** Status flags. */
-  @SSZ
-  private final UInt64 statusFlags;
+  @SSZ private final UInt64 statusFlags;
   /** Proof of custody commitment. */
-  @SSZ
-  private final Hash32 custodyCommitment;
+  @SSZ private final Hash32 custodyCommitment;
   /** Slot the proof of custody seed was last changed. */
-  @SSZ
-  private final UInt64 latestCustodyReseedSlot;
+  @SSZ private final UInt64 latestCustodyReseedSlot;
 
-  @SSZ
-  private final UInt64 penultimateCustodyReseedSlot;
+  @SSZ private final UInt64 penultimateCustodyReseedSlot;
 
   public ValidatorRecord(
       Bytes48 pubKey,
@@ -141,6 +127,26 @@ public class ValidatorRecord {
 
   public UInt64 getPenultimateCustodyReseedSlot() {
     return penultimateCustodyReseedSlot;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    ValidatorRecord that = (ValidatorRecord) o;
+    return Objects.equal(pubKey, that.pubKey)
+        && Objects.equal(withdrawalCredentials, that.withdrawalCredentials)
+        && Objects.equal(randaoCommitment, that.randaoCommitment)
+        && Objects.equal(randaoLayers, that.randaoLayers)
+        && Objects.equal(activationSlot, that.activationSlot)
+        && Objects.equal(exitSlot, that.exitSlot)
+        && Objects.equal(withdrawalSlot, that.withdrawalSlot)
+        && Objects.equal(penalizedSlot, that.penalizedSlot)
+        && Objects.equal(exitCount, that.exitCount)
+        && Objects.equal(statusFlags, that.statusFlags)
+        && Objects.equal(custodyCommitment, that.custodyCommitment)
+        && Objects.equal(latestCustodyReseedSlot, that.latestCustodyReseedSlot)
+        && Objects.equal(penultimateCustodyReseedSlot, that.penultimateCustodyReseedSlot);
   }
 
   public static class Builder {
@@ -296,25 +302,5 @@ public class ValidatorRecord {
       this.penultimateCustodyReseedSlot = penultimateCustodyReseedSlot;
       return this;
     }
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    ValidatorRecord that = (ValidatorRecord) o;
-    return Objects.equal(pubKey, that.pubKey) &&
-        Objects.equal(withdrawalCredentials, that.withdrawalCredentials) &&
-        Objects.equal(randaoCommitment, that.randaoCommitment) &&
-        Objects.equal(randaoLayers, that.randaoLayers) &&
-        Objects.equal(activationSlot, that.activationSlot) &&
-        Objects.equal(exitSlot, that.exitSlot) &&
-        Objects.equal(withdrawalSlot, that.withdrawalSlot) &&
-        Objects.equal(penalizedSlot, that.penalizedSlot) &&
-        Objects.equal(exitCount, that.exitCount) &&
-        Objects.equal(statusFlags, that.statusFlags) &&
-        Objects.equal(custodyCommitment, that.custodyCommitment) &&
-        Objects.equal(latestCustodyReseedSlot, that.latestCustodyReseedSlot) &&
-        Objects.equal(penultimateCustodyReseedSlot, that.penultimateCustodyReseedSlot);
   }
 }

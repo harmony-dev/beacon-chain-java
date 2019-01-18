@@ -8,7 +8,6 @@ import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,106 +19,77 @@ public class BeaconStateImpl implements MutableBeaconState {
   /* Misc */
 
   /** Slot number that this state was calculated in. */
-  @SSZ
-  private UInt64 slot;
+  @SSZ private UInt64 slot;
   /** Timestamp of the genesis. */
-  @SSZ
-  private UInt64 genesisTime;
+  @SSZ private UInt64 genesisTime;
   /** Fork data corresponding to the {@link #slot}. */
-  @SSZ
-  private ForkData forkData;
+  @SSZ private ForkData forkData;
 
   /* Validator registry */
 
   /** Validator registry records. */
-  @SSZ
-  private List<ValidatorRecord> validatorRegistry;
+  @SSZ private List<ValidatorRecord> validatorRegistry;
   /** Validator balances. */
-  @SSZ
-  private List<UInt64> validatorBalances;
+  @SSZ private List<UInt64> validatorBalances;
   /** Slot number of last validator registry change. */
-  @SSZ
-  private UInt64 validatorRegistryLatestChangeSlot;
+  @SSZ private UInt64 validatorRegistryLatestChangeSlot;
   /** A nonce for validator registry exits. */
-  @SSZ
-  private UInt64 validatorRegistryExitCount;
+  @SSZ private UInt64 validatorRegistryExitCount;
   /** A hash of latest validator registry delta. */
-  @SSZ
-  private Hash32 validatorRegistryDeltaChainTip;
+  @SSZ private Hash32 validatorRegistryDeltaChainTip;
 
   /* Randomness and committees */
 
   /** The most recent randao mixes. */
-  @SSZ
-  private List<Hash32> latestRandaoMixes;
+  @SSZ private List<Hash32> latestRandaoMixes;
   /** The most recent VDF outputs. */
-  @SSZ
-  private List<Hash32> latestVdfOutputs;
+  @SSZ private List<Hash32> latestVdfOutputs;
 
-  @SSZ
-  private UInt64 previousEpochStartShard;
-  @SSZ
-  private UInt64 currentEpochStartShard;
-  @SSZ
-  private UInt64 previousEpochCalculationSlot;
-  @SSZ
-  private UInt64 currentEpochCalculationSlot;
-  @SSZ
-  private Hash32 previousEpochRandaoMix;
-  @SSZ
-  private Hash32 currentEpochRandaoMix;
+  @SSZ private UInt64 previousEpochStartShard;
+  @SSZ private UInt64 currentEpochStartShard;
+  @SSZ private UInt64 previousEpochCalculationSlot;
+  @SSZ private UInt64 currentEpochCalculationSlot;
+  @SSZ private Hash32 previousEpochRandaoMix;
+  @SSZ private Hash32 currentEpochRandaoMix;
 
   /** Proof of custody placeholder. */
-  @SSZ
-  private List<CustodyChallenge> custodyChallenges;
+  @SSZ private List<CustodyChallenge> custodyChallenges;
 
   /* Finality */
 
   /** Latest justified slot before {@link #justifiedSlot}. */
-  @SSZ
-  private UInt64 previousJustifiedSlot;
+  @SSZ private UInt64 previousJustifiedSlot;
   /** Latest justified slot. */
-  @SSZ
-  private UInt64 justifiedSlot;
+  @SSZ private UInt64 justifiedSlot;
   /** Bitfield of latest justified slots (epochs). */
-  @SSZ
-  private UInt64 justificationBitfield;
+  @SSZ private UInt64 justificationBitfield;
   /** Latest finalized slot. */
-  @SSZ
-  private UInt64 finalizedSlot;
+  @SSZ private UInt64 finalizedSlot;
 
   /* Recent state */
 
   /** Latest crosslink record for each shard. */
-  @SSZ
-  private List<CrosslinkRecord> latestCrosslinks;
+  @SSZ private List<CrosslinkRecord> latestCrosslinks;
   /** Latest block hashes for each shard. */
-  @SSZ
-  private List<Hash32> latestBlockRoots;
+  @SSZ private List<Hash32> latestBlockRoots;
   /** Indices of validators that has been ejected lately. */
-  @SSZ
-  private List<UInt64> latestPenalizedExitBalances;
+  @SSZ private List<UInt64> latestPenalizedExitBalances;
   /** Attestations that has not been processed yet. */
-  @SSZ
-  private List<PendingAttestationRecord> latestAttestations;
+  @SSZ private List<PendingAttestationRecord> latestAttestations;
   /**
    * Latest hashes of {@link #latestBlockRoots} list calculated when its length got exceeded
    * LATEST_BLOCK_ROOTS_LENGTH.
    */
-  @SSZ
-  private List<Hash32> batchedBlockRoots;
+  @SSZ private List<Hash32> batchedBlockRoots;
 
   /* PoW receipt root */
 
   /** Latest processed receipt root from PoW deposit contract. */
-  @SSZ
-  private Hash32 latestDepositRoot;
+  @SSZ private Hash32 latestDepositRoot;
   /** Receipt roots that voting is still in progress for. */
-  @SSZ
-  private List<DepositRootVote> depositRootVotes;
+  @SSZ private List<DepositRootVote> depositRootVotes;
 
-  public BeaconStateImpl() {
-  }
+  public BeaconStateImpl() {}
 
   private BeaconStateImpl(BeaconState state) {
     this(
@@ -157,10 +127,9 @@ public class BeaconStateImpl implements MutableBeaconState {
         new ArrayList<>(state.getBatchedBlockRoots()),
 
         state.getLatestDepositRoot(),
-        new ArrayList<>(state.getDepositRootVotes())
-    );
+        new ArrayList<>(state.getDepositRootVotes()));
   }
-      
+
   private BeaconStateImpl(
       UInt64 slot,
       UInt64 genesisTime,
@@ -235,148 +204,13 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
-  public UInt64 getGenesisTime() {
-    return genesisTime;
-  }
-
-  @Override
-  public ForkData getForkData() {
-    return forkData;
-  }
-
-  @Override
-  public List<ValidatorRecord> getValidatorRegistry() {
-    return unmodifiableList(validatorRegistry);
-  }
-
-  @Override
-  public List<UInt64> getValidatorBalances() {
-    return unmodifiableList(validatorBalances);
-  }
-
-  @Override
-  public UInt64 getValidatorRegistryLatestChangeSlot() {
-    return validatorRegistryLatestChangeSlot;
-  }
-
-  @Override
-  public UInt64 getValidatorRegistryExitCount() {
-    return validatorRegistryExitCount;
-  }
-
-  @Override
-  public Hash32 getValidatorRegistryDeltaChainTip() {
-    return validatorRegistryDeltaChainTip;
-  }
-
-  @Override
-  public List<Hash32> getLatestRandaoMixes() {
-    return unmodifiableList(latestRandaoMixes);
-  }
-
-  @Override
-  public List<Hash32> getLatestVdfOutputs() {
-    return unmodifiableList(latestVdfOutputs);
-  }
-
-  @Override
-  public UInt64 getPreviousEpochStartShard() {
-    return previousEpochStartShard;
-  }
-
-  @Override
-  public UInt64 getCurrentEpochStartShard() {
-    return currentEpochStartShard;
-  }
-
-  @Override
-  public UInt64 getPreviousEpochCalculationSlot() {
-    return previousEpochCalculationSlot;
-  }
-
-  @Override
-  public UInt64 getCurrentEpochCalculationSlot() {
-    return currentEpochCalculationSlot;
-  }
-
-  @Override
-  public Hash32 getPreviousEpochRandaoMix() {
-    return previousEpochRandaoMix;
-  }
-
-  @Override
-  public Hash32 getCurrentEpochRandaoMix() {
-    return currentEpochRandaoMix;
-  }
-
-  @Override
-  public List<CustodyChallenge> getCustodyChallenges() {
-    return unmodifiableList(custodyChallenges);
-  }
-
-  @Override
-  public UInt64 getPreviousJustifiedSlot() {
-    return previousJustifiedSlot;
-  }
-
-  @Override
-  public UInt64 getJustifiedSlot() {
-    return justifiedSlot;
-  }
-
-  @Override
-  public UInt64 getJustificationBitfield() {
-    return justificationBitfield;
-  }
-
-  @Override
-  public UInt64 getFinalizedSlot() {
-    return finalizedSlot;
-  }
-
-  @Override
-  public List<CrosslinkRecord> getLatestCrosslinks() {
-    return unmodifiableList(latestCrosslinks);
-  }
-
-  @Override
-  public List<Hash32> getLatestBlockRoots() {
-    return unmodifiableList(latestBlockRoots);
-  }
-
-  @Override
-  public List<UInt64> getLatestPenalizedExitBalances() {
-    return unmodifiableList(latestPenalizedExitBalances);
-  }
-
-  @Override
-  public List<PendingAttestationRecord> getLatestAttestations() {
-    return unmodifiableList(latestAttestations);
-  }
-
-  @Override
-  public List<Hash32> getBatchedBlockRoots() {
-    return unmodifiableList(batchedBlockRoots);
-  }
-
-  @Override
-  public Hash32 getLatestDepositRoot() {
-    return latestDepositRoot;
-  }
-
-  @Override
-  public List<DepositRootVote> getDepositRootVotes() {
-    return unmodifiableList(depositRootVotes);
-  }
-
-  @Override
-  public Hash32 getHash() {
-    return Hash32.ZERO;
-  }
-
-  @Override
   public void setSlot(UInt64 slot) {
     this.slot = slot;
+  }
+
+  @Override
+  public UInt64 getGenesisTime() {
+    return genesisTime;
   }
 
   @Override
@@ -385,8 +219,18 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
+  public ForkData getForkData() {
+    return forkData;
+  }
+
+  @Override
   public void setForkData(ForkData forkData) {
     this.forkData = forkData;
+  }
+
+  @Override
+  public List<ValidatorRecord> getValidatorRegistry() {
+    return unmodifiableList(validatorRegistry);
   }
 
   @Override
@@ -395,8 +239,18 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
+  public List<UInt64> getValidatorBalances() {
+    return unmodifiableList(validatorBalances);
+  }
+
+  @Override
   public void setValidatorBalances(List<UInt64> validatorBalances) {
     this.validatorBalances = validatorBalances;
+  }
+
+  @Override
+  public UInt64 getValidatorRegistryLatestChangeSlot() {
+    return validatorRegistryLatestChangeSlot;
   }
 
   @Override
@@ -405,8 +259,18 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
+  public UInt64 getValidatorRegistryExitCount() {
+    return validatorRegistryExitCount;
+  }
+
+  @Override
   public void setValidatorRegistryExitCount(UInt64 validatorRegistryExitCount) {
     this.validatorRegistryExitCount = validatorRegistryExitCount;
+  }
+
+  @Override
+  public Hash32 getValidatorRegistryDeltaChainTip() {
+    return validatorRegistryDeltaChainTip;
   }
 
   @Override
@@ -415,8 +279,18 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
+  public List<Hash32> getLatestRandaoMixes() {
+    return unmodifiableList(latestRandaoMixes);
+  }
+
+  @Override
   public void setLatestRandaoMixes(List<Hash32> latestRandaoMixes) {
     this.latestRandaoMixes = latestRandaoMixes;
+  }
+
+  @Override
+  public List<Hash32> getLatestVdfOutputs() {
+    return unmodifiableList(latestVdfOutputs);
   }
 
   @Override
@@ -425,8 +299,18 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
+  public UInt64 getPreviousEpochStartShard() {
+    return previousEpochStartShard;
+  }
+
+  @Override
   public void setPreviousEpochStartShard(UInt64 previousEpochStartShard) {
     this.previousEpochStartShard = previousEpochStartShard;
+  }
+
+  @Override
+  public UInt64 getCurrentEpochStartShard() {
+    return currentEpochStartShard;
   }
 
   @Override
@@ -435,8 +319,18 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
+  public UInt64 getPreviousEpochCalculationSlot() {
+    return previousEpochCalculationSlot;
+  }
+
+  @Override
   public void setPreviousEpochCalculationSlot(UInt64 previousEpochCalculationSlot) {
     this.previousEpochCalculationSlot = previousEpochCalculationSlot;
+  }
+
+  @Override
+  public UInt64 getCurrentEpochCalculationSlot() {
+    return currentEpochCalculationSlot;
   }
 
   @Override
@@ -445,8 +339,18 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
+  public Hash32 getPreviousEpochRandaoMix() {
+    return previousEpochRandaoMix;
+  }
+
+  @Override
   public void setPreviousEpochRandaoMix(Hash32 previousEpochRandaoMix) {
     this.previousEpochRandaoMix = previousEpochRandaoMix;
+  }
+
+  @Override
+  public Hash32 getCurrentEpochRandaoMix() {
+    return currentEpochRandaoMix;
   }
 
   @Override
@@ -455,8 +359,18 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
+  public List<CustodyChallenge> getCustodyChallenges() {
+    return unmodifiableList(custodyChallenges);
+  }
+
+  @Override
   public void setCustodyChallenges(List<CustodyChallenge> custodyChallenges) {
     this.custodyChallenges = custodyChallenges;
+  }
+
+  @Override
+  public UInt64 getPreviousJustifiedSlot() {
+    return previousJustifiedSlot;
   }
 
   @Override
@@ -465,8 +379,18 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
+  public UInt64 getJustifiedSlot() {
+    return justifiedSlot;
+  }
+
+  @Override
   public void setJustifiedSlot(UInt64 justifiedSlot) {
     this.justifiedSlot = justifiedSlot;
+  }
+
+  @Override
+  public UInt64 getJustificationBitfield() {
+    return justificationBitfield;
   }
 
   @Override
@@ -475,8 +399,18 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
+  public UInt64 getFinalizedSlot() {
+    return finalizedSlot;
+  }
+
+  @Override
   public void setFinalizedSlot(UInt64 finalizedSlot) {
     this.finalizedSlot = finalizedSlot;
+  }
+
+  @Override
+  public List<CrosslinkRecord> getLatestCrosslinks() {
+    return unmodifiableList(latestCrosslinks);
   }
 
   @Override
@@ -485,8 +419,18 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
+  public List<Hash32> getLatestBlockRoots() {
+    return unmodifiableList(latestBlockRoots);
+  }
+
+  @Override
   public void setLatestBlockRoots(List<Hash32> latestBlockRoots) {
     this.latestBlockRoots = latestBlockRoots;
+  }
+
+  @Override
+  public List<UInt64> getLatestPenalizedExitBalances() {
+    return unmodifiableList(latestPenalizedExitBalances);
   }
 
   @Override
@@ -495,8 +439,18 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
+  public List<PendingAttestationRecord> getLatestAttestations() {
+    return unmodifiableList(latestAttestations);
+  }
+
+  @Override
   public void setLatestAttestations(List<PendingAttestationRecord> latestAttestations) {
     this.latestAttestations = latestAttestations;
+  }
+
+  @Override
+  public List<Hash32> getBatchedBlockRoots() {
+    return unmodifiableList(batchedBlockRoots);
   }
 
   @Override
@@ -505,13 +459,28 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
+  public Hash32 getLatestDepositRoot() {
+    return latestDepositRoot;
+  }
+
+  @Override
   public void setLatestDepositRoot(Hash32 latestDepositRoot) {
     this.latestDepositRoot = latestDepositRoot;
   }
 
   @Override
+  public List<DepositRootVote> getDepositRootVotes() {
+    return unmodifiableList(depositRootVotes);
+  }
+
+  @Override
   public void setDepositRootVotes(List<DepositRootVote> depositRootVotes) {
     this.depositRootVotes = depositRootVotes;
+  }
+
+  @Override
+  public Hash32 getHash() {
+    return Hash32.ZERO;
   }
 
   @Override
@@ -524,33 +493,33 @@ public class BeaconStateImpl implements MutableBeaconState {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     BeaconStateImpl that = (BeaconStateImpl) o;
-    return Objects.equal(slot, that.slot) &&
-        Objects.equal(genesisTime, that.genesisTime) &&
-        Objects.equal(forkData, that.forkData) &&
-        Objects.equal(validatorRegistry, that.validatorRegistry) &&
-        Objects.equal(validatorBalances, that.validatorBalances) &&
-        Objects.equal(validatorRegistryLatestChangeSlot, that.validatorRegistryLatestChangeSlot) &&
-        Objects.equal(validatorRegistryExitCount, that.validatorRegistryExitCount) &&
-        Objects.equal(validatorRegistryDeltaChainTip, that.validatorRegistryDeltaChainTip) &&
-        Objects.equal(latestRandaoMixes, that.latestRandaoMixes) &&
-        Objects.equal(latestVdfOutputs, that.latestVdfOutputs) &&
-        Objects.equal(previousEpochStartShard, that.previousEpochStartShard) &&
-        Objects.equal(currentEpochStartShard, that.currentEpochStartShard) &&
-        Objects.equal(previousEpochCalculationSlot, that.previousEpochCalculationSlot) &&
-        Objects.equal(currentEpochCalculationSlot, that.currentEpochCalculationSlot) &&
-        Objects.equal(previousEpochRandaoMix, that.previousEpochRandaoMix) &&
-        Objects.equal(currentEpochRandaoMix, that.currentEpochRandaoMix) &&
-        Objects.equal(custodyChallenges, that.custodyChallenges) &&
-        Objects.equal(previousJustifiedSlot, that.previousJustifiedSlot) &&
-        Objects.equal(justifiedSlot, that.justifiedSlot) &&
-        Objects.equal(justificationBitfield, that.justificationBitfield) &&
-        Objects.equal(finalizedSlot, that.finalizedSlot) &&
-        Objects.equal(latestCrosslinks, that.latestCrosslinks) &&
-        Objects.equal(latestBlockRoots, that.latestBlockRoots) &&
-        Objects.equal(latestPenalizedExitBalances, that.latestPenalizedExitBalances) &&
-        Objects.equal(latestAttestations, that.latestAttestations) &&
-        Objects.equal(batchedBlockRoots, that.batchedBlockRoots) &&
-        Objects.equal(latestDepositRoot, that.latestDepositRoot) &&
-        Objects.equal(depositRootVotes, that.depositRootVotes);
+    return Objects.equal(slot, that.slot)
+        && Objects.equal(genesisTime, that.genesisTime)
+        && Objects.equal(forkData, that.forkData)
+        && Objects.equal(validatorRegistry, that.validatorRegistry)
+        && Objects.equal(validatorBalances, that.validatorBalances)
+        && Objects.equal(validatorRegistryLatestChangeSlot, that.validatorRegistryLatestChangeSlot)
+        && Objects.equal(validatorRegistryExitCount, that.validatorRegistryExitCount)
+        && Objects.equal(validatorRegistryDeltaChainTip, that.validatorRegistryDeltaChainTip)
+        && Objects.equal(latestRandaoMixes, that.latestRandaoMixes)
+        && Objects.equal(latestVdfOutputs, that.latestVdfOutputs)
+        && Objects.equal(previousEpochStartShard, that.previousEpochStartShard)
+        && Objects.equal(currentEpochStartShard, that.currentEpochStartShard)
+        && Objects.equal(previousEpochCalculationSlot, that.previousEpochCalculationSlot)
+        && Objects.equal(currentEpochCalculationSlot, that.currentEpochCalculationSlot)
+        && Objects.equal(previousEpochRandaoMix, that.previousEpochRandaoMix)
+        && Objects.equal(currentEpochRandaoMix, that.currentEpochRandaoMix)
+        && Objects.equal(custodyChallenges, that.custodyChallenges)
+        && Objects.equal(previousJustifiedSlot, that.previousJustifiedSlot)
+        && Objects.equal(justifiedSlot, that.justifiedSlot)
+        && Objects.equal(justificationBitfield, that.justificationBitfield)
+        && Objects.equal(finalizedSlot, that.finalizedSlot)
+        && Objects.equal(latestCrosslinks, that.latestCrosslinks)
+        && Objects.equal(latestBlockRoots, that.latestBlockRoots)
+        && Objects.equal(latestPenalizedExitBalances, that.latestPenalizedExitBalances)
+        && Objects.equal(latestAttestations, that.latestAttestations)
+        && Objects.equal(batchedBlockRoots, that.batchedBlockRoots)
+        && Objects.equal(latestDepositRoot, that.latestDepositRoot)
+        && Objects.equal(depositRootVotes, that.depositRootVotes);
   }
 }

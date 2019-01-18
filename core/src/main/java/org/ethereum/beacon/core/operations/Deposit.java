@@ -22,14 +22,11 @@ import java.util.Arrays;
 public class Deposit {
 
   /** A branch of receipt's Merkle trie of the deposit contract on PoW net. */
-  @SSZ
-  private final Hash32[] merkleBranch;
+  @SSZ private final Hash32[] merkleBranch;
   /** An index of receipt's entry in the trie. */
-  @SSZ
-  private final UInt64 merkleTreeIndex;
+  @SSZ private final UInt64 merkleTreeIndex;
   /** Deposit data. */
-  @SSZ
-  private final DepositData depositData;
+  @SSZ private final DepositData depositData;
 
   public Deposit(Hash32[] merkleBranch, UInt64 merkleTreeIndex, DepositData depositData) {
     this.merkleBranch = merkleBranch;
@@ -54,8 +51,8 @@ public class Deposit {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     Deposit deposit = (Deposit) o;
-    return Arrays.equals(merkleBranch, deposit.merkleBranch) &&
-        Objects.equal(merkleTreeIndex, deposit.merkleTreeIndex) &&
-        Objects.equal(depositData, deposit.depositData);
+    return Arrays.equals(merkleBranch, deposit.merkleBranch)
+        && Objects.equal(merkleTreeIndex, deposit.merkleTreeIndex)
+        && Objects.equal(depositData, deposit.depositData);
   }
 }

@@ -1,19 +1,19 @@
 package org.ethereum.beacon.core;
 
-import static java.util.Collections.emptyList;
-
-import java.util.List;
 import com.google.common.base.Objects;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.CasperSlashing;
+import org.ethereum.beacon.core.operations.CustodyChallenge;
+import org.ethereum.beacon.core.operations.CustodyReseed;
+import org.ethereum.beacon.core.operations.CustodyResponse;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.Exit;
-import org.ethereum.beacon.core.operations.CustodyChallenge;
-import org.ethereum.beacon.core.operations.CustodyResponse;
-import org.ethereum.beacon.core.operations.CustodyReseed;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
+import java.util.List;
+
+import static java.util.Collections.emptyList;
 
 /**
  * Beacon block body.
@@ -41,29 +41,21 @@ public class BeaconBlockBody {
           emptyList());
 
   /** A list of proposer slashing challenges. */
-  @SSZ
-  private final List<ProposerSlashing> proposerSlashings;
+  @SSZ private final List<ProposerSlashing> proposerSlashings;
   /** A list of Casper slashing challenges. */
-  @SSZ
-  private final List<CasperSlashing> casperSlashings;
+  @SSZ private final List<CasperSlashing> casperSlashings;
   /** A list of attestations. */
-  @SSZ
-  private final List<Attestation> attestations;
+  @SSZ private final List<Attestation> attestations;
   /** A list of proof of custody seed changes. */
-  @SSZ
-  private final List<CustodyReseed> custodyReseeds;
+  @SSZ private final List<CustodyReseed> custodyReseeds;
   /** A list of proof of custody challenges. */
-  @SSZ
-  private final List<CustodyChallenge> custodyChallenges;
+  @SSZ private final List<CustodyChallenge> custodyChallenges;
   /** A list of proof of custody challenge responses. */
-  @SSZ
-  private final List<CustodyResponse> custodyResponses;
+  @SSZ private final List<CustodyResponse> custodyResponses;
   /** A list of validator deposit proofs. */
-  @SSZ
-  private final List<Deposit> deposits;
+  @SSZ private final List<Deposit> deposits;
   /** A list of validator exits. */
-  @SSZ
-  private final List<Exit> exits;
+  @SSZ private final List<Exit> exits;
 
   public BeaconBlockBody(
       List<ProposerSlashing> proposerSlashings,
@@ -121,13 +113,13 @@ public class BeaconBlockBody {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     BeaconBlockBody that = (BeaconBlockBody) o;
-    return Objects.equal(proposerSlashings, that.proposerSlashings) &&
-        Objects.equal(casperSlashings, that.casperSlashings) &&
-        Objects.equal(attestations, that.attestations) &&
-        Objects.equal(custodyReseeds, that.custodyReseeds) &&
-        Objects.equal(custodyChallenges, that.custodyChallenges) &&
-        Objects.equal(custodyResponses, that.custodyResponses) &&
-        Objects.equal(deposits, that.deposits) &&
-        Objects.equal(exits, that.exits);
+    return Objects.equal(proposerSlashings, that.proposerSlashings)
+        && Objects.equal(casperSlashings, that.casperSlashings)
+        && Objects.equal(attestations, that.attestations)
+        && Objects.equal(custodyReseeds, that.custodyReseeds)
+        && Objects.equal(custodyChallenges, that.custodyChallenges)
+        && Objects.equal(custodyResponses, that.custodyResponses)
+        && Objects.equal(deposits, that.deposits)
+        && Objects.equal(exits, that.exits);
   }
 }

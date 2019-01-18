@@ -19,8 +19,8 @@ import org.ethereum.beacon.core.state.DepositRootVote;
 import org.ethereum.beacon.core.state.ForkData;
 import org.ethereum.beacon.core.state.PendingAttestationRecord;
 import org.ethereum.beacon.core.state.ValidatorRecord;
-import org.ethereum.beacon.ssz.Serializer;
 import org.ethereum.beacon.crypto.Hashes;
+import org.ethereum.beacon.ssz.Serializer;
 import org.junit.Before;
 import org.junit.Test;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -29,7 +29,6 @@ import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,16 +43,16 @@ public class ModelsSerializeTest {
   }
 
   private AttestationData createAttestationData() {
-    AttestationData expected = new AttestationData(
-        UInt64.valueOf(123),
-        UInt64.valueOf(345),
-        Hashes.keccak256(BytesValue.fromHexString("aa")),
-        Hashes.keccak256(BytesValue.fromHexString("bb")),
-        Hashes.keccak256(BytesValue.fromHexString("cc")),
-        Hashes.keccak256(BytesValue.fromHexString("dd")),
-        UInt64.ZERO,
-        Hash32.ZERO
-    );
+    AttestationData expected =
+        new AttestationData(
+            UInt64.valueOf(123),
+            UInt64.valueOf(345),
+            Hashes.keccak256(BytesValue.fromHexString("aa")),
+            Hashes.keccak256(BytesValue.fromHexString("bb")),
+            Hashes.keccak256(BytesValue.fromHexString("cc")),
+            Hashes.keccak256(BytesValue.fromHexString("dd")),
+            UInt64.ZERO,
+            Hash32.ZERO);
 
     return expected;
   }
@@ -62,18 +61,19 @@ public class ModelsSerializeTest {
   public void attestationDataTest() {
     AttestationData expected = createAttestationData();
     BytesValue encoded = sszSerializer.encode2(expected);
-    AttestationData reconstructed = (AttestationData) sszSerializer.decode(encoded, AttestationData.class);
+    AttestationData reconstructed =
+        (AttestationData) sszSerializer.decode(encoded, AttestationData.class);
     assertEquals(expected, reconstructed);
   }
 
   private Attestation createAttestation() {
     AttestationData attestationData = createAttestationData();
-    Attestation attestation = new Attestation(
-        attestationData,
-        BytesValue.fromHexString("aa"),
-        BytesValue.fromHexString("bb"),
-        Bytes96.fromHexString("cc")
-    );
+    Attestation attestation =
+        new Attestation(
+            attestationData,
+            BytesValue.fromHexString("aa"),
+            BytesValue.fromHexString("bb"),
+            Bytes96.fromHexString("cc"));
 
     return attestation;
   }
@@ -88,11 +88,11 @@ public class ModelsSerializeTest {
 
   private SlashableVoteData createSlashableVoteData() {
     UInt24[] custodyBit0Indices = new UInt24[0];
-    UInt24[] custodyBit1Indices = new UInt24[]{UInt24.valueOf(123), UInt24.MAX_VALUE};
+    UInt24[] custodyBit1Indices = new UInt24[] {UInt24.valueOf(123), UInt24.MAX_VALUE};
     AttestationData data = createAttestationData();
     Bytes96 aggregatedSignature = Bytes96.fromHexString("aabbccdd");
-    SlashableVoteData slashableVoteData = new SlashableVoteData(custodyBit0Indices, custodyBit1Indices,
-        data, aggregatedSignature);
+    SlashableVoteData slashableVoteData =
+        new SlashableVoteData(custodyBit0Indices, custodyBit1Indices, data, aggregatedSignature);
     return slashableVoteData;
   }
 
@@ -100,15 +100,14 @@ public class ModelsSerializeTest {
   public void slashableVoteDataTest() {
     SlashableVoteData expected = createSlashableVoteData();
     BytesValue encoded = sszSerializer.encode2(expected);
-    SlashableVoteData reconstructed = (SlashableVoteData) sszSerializer.decode(encoded, SlashableVoteData.class);
+    SlashableVoteData reconstructed =
+        (SlashableVoteData) sszSerializer.decode(encoded, SlashableVoteData.class);
     assertEquals(expected, reconstructed);
   }
 
   private CasperSlashing createCasperSlashing() {
-    CasperSlashing casperSlashing = new CasperSlashing(
-        createSlashableVoteData(),
-        createSlashableVoteData()
-    );
+    CasperSlashing casperSlashing =
+        new CasperSlashing(createSlashableVoteData(), createSlashableVoteData());
     return casperSlashing;
   }
 
@@ -116,18 +115,19 @@ public class ModelsSerializeTest {
   public void casperSlashingTest() {
     CasperSlashing expected = createCasperSlashing();
     BytesValue encoded = sszSerializer.encode2(expected);
-    CasperSlashing reconstructed = (CasperSlashing) sszSerializer.decode(encoded, CasperSlashing.class);
+    CasperSlashing reconstructed =
+        (CasperSlashing) sszSerializer.decode(encoded, CasperSlashing.class);
     assertEquals(expected, reconstructed);
   }
 
   private DepositInput createDepositInput() {
-    DepositInput depositInput = new DepositInput(
-        Bytes48.TRUE,
-        Hashes.keccak256(BytesValue.fromHexString("aa")),
-        Hashes.keccak256(BytesValue.fromHexString("bb")),
-        Hashes.keccak256(BytesValue.fromHexString("cc")),
-        Bytes96.ZERO
-    );
+    DepositInput depositInput =
+        new DepositInput(
+            Bytes48.TRUE,
+            Hashes.keccak256(BytesValue.fromHexString("aa")),
+            Hashes.keccak256(BytesValue.fromHexString("bb")),
+            Hashes.keccak256(BytesValue.fromHexString("cc")),
+            Bytes96.ZERO);
 
     return depositInput;
   }
@@ -141,11 +141,8 @@ public class ModelsSerializeTest {
   }
 
   private DepositData createDepositData() {
-    DepositData depositData = new DepositData(
-        createDepositInput(),
-        UInt64.ZERO,
-        UInt64.valueOf(123)
-    );
+    DepositData depositData =
+        new DepositData(createDepositInput(), UInt64.ZERO, UInt64.valueOf(123));
 
     return depositData;
   }
@@ -159,11 +156,7 @@ public class ModelsSerializeTest {
   }
 
   private Deposit createDeposit1() {
-    Deposit deposit = new Deposit(
-        new Hash32[0],
-        UInt64.ZERO,
-        createDepositData()
-    );
+    Deposit deposit = new Deposit(new Hash32[0], UInt64.ZERO, createDepositData());
 
     return deposit;
   }
@@ -172,11 +165,7 @@ public class ModelsSerializeTest {
     Hash32[] hashes = new Hash32[2];
     hashes[0] = Hashes.keccak256(BytesValue.fromHexString("aa"));
     hashes[1] = Hashes.keccak256(BytesValue.fromHexString("bb"));
-    Deposit deposit = new Deposit(
-        hashes,
-        UInt64.ZERO,
-        createDepositData()
-    );
+    Deposit deposit = new Deposit(hashes, UInt64.ZERO, createDepositData());
 
     return deposit;
   }
@@ -194,11 +183,7 @@ public class ModelsSerializeTest {
   }
 
   private Exit createExit() {
-    Exit exit = new Exit(
-        UInt64.valueOf(123),
-        UInt24.MAX_VALUE,
-        Bytes96.fromHexString("aa")
-    );
+    Exit exit = new Exit(UInt64.valueOf(123), UInt24.MAX_VALUE, Bytes96.fromHexString("aa"));
 
     return exit;
   }
@@ -220,7 +205,8 @@ public class ModelsSerializeTest {
   public void proofOfCustodyChallengeTest() {
     CustodyChallenge expected = createProofOfCustodyChallenge();
     BytesValue encoded = sszSerializer.encode2(expected);
-    CustodyChallenge reconstructed = (CustodyChallenge) sszSerializer.decode(encoded, CustodyChallenge.class);
+    CustodyChallenge reconstructed =
+        (CustodyChallenge) sszSerializer.decode(encoded, CustodyChallenge.class);
     assertEquals(expected, reconstructed);
   }
 
@@ -233,7 +219,8 @@ public class ModelsSerializeTest {
   public void proofOfCustodyResponseTest() {
     CustodyResponse expected = createProofOfCustodyResponse();
     BytesValue encoded = sszSerializer.encode2(expected);
-    CustodyResponse reconstructed = (CustodyResponse) sszSerializer.decode(encoded, CustodyResponse.class);
+    CustodyResponse reconstructed =
+        (CustodyResponse) sszSerializer.decode(encoded, CustodyResponse.class);
     assertEquals(expected, reconstructed);
   }
 
@@ -246,16 +233,15 @@ public class ModelsSerializeTest {
   public void proofOfCustodySeedChangeTest() {
     CustodyReseed expected = createProofOfCustodySeedChange();
     BytesValue encoded = sszSerializer.encode2(expected);
-    CustodyReseed reconstructed = (CustodyReseed) sszSerializer.decode(encoded, CustodyReseed.class);
+    CustodyReseed reconstructed =
+        (CustodyReseed) sszSerializer.decode(encoded, CustodyReseed.class);
     assertEquals(expected, reconstructed);
   }
 
   private ProposalSignedData createProposalSignedData() {
-    ProposalSignedData proposalSignedData = new ProposalSignedData(
-        UInt64.valueOf(12),
-        UInt64.ZERO,
-        Hashes.keccak256(BytesValue.fromHexString("aa"))
-    );
+    ProposalSignedData proposalSignedData =
+        new ProposalSignedData(
+            UInt64.valueOf(12), UInt64.ZERO, Hashes.keccak256(BytesValue.fromHexString("aa")));
     return proposalSignedData;
   }
 
@@ -263,18 +249,19 @@ public class ModelsSerializeTest {
   public void proposalSignedDataTest() {
     ProposalSignedData expected = createProposalSignedData();
     BytesValue encoded = sszSerializer.encode2(expected);
-    ProposalSignedData reconstructed = (ProposalSignedData) sszSerializer.decode(encoded, ProposalSignedData.class);
+    ProposalSignedData reconstructed =
+        (ProposalSignedData) sszSerializer.decode(encoded, ProposalSignedData.class);
     assertEquals(expected, reconstructed);
   }
 
   private ProposerSlashing createProposerSlashing() {
-    ProposerSlashing proposerSlashing = new ProposerSlashing(
-        UInt24.MAX_VALUE,
-        createProposalSignedData(),
-        Bytes96.fromHexString("aa"),
-        createProposalSignedData(),
-        Bytes96.fromHexString("bb")
-    );
+    ProposerSlashing proposerSlashing =
+        new ProposerSlashing(
+            UInt24.MAX_VALUE,
+            createProposalSignedData(),
+            Bytes96.fromHexString("aa"),
+            createProposalSignedData(),
+            Bytes96.fromHexString("bb"));
 
     return proposerSlashing;
   }
@@ -283,7 +270,8 @@ public class ModelsSerializeTest {
   public void proposerSlashingTest() {
     ProposerSlashing expected = createProposerSlashing();
     BytesValue encoded = sszSerializer.encode2(expected);
-    ProposerSlashing reconstructed = (ProposerSlashing) sszSerializer.decode(encoded, ProposerSlashing.class);
+    ProposerSlashing reconstructed =
+        (ProposerSlashing) sszSerializer.decode(encoded, ProposerSlashing.class);
     assertEquals(expected, reconstructed);
   }
 
@@ -305,16 +293,16 @@ public class ModelsSerializeTest {
     deposits.add(createDeposit2());
     List<Exit> exits = new ArrayList<>();
     exits.add(createExit());
-    BeaconBlockBody beaconBlockBody = new BeaconBlockBody(
-        proposerSlashings,
-        casperSlashings,
-        attestations,
-        pocSeedChanges,
-        pocChallenges,
-        pocResponses,
-        deposits,
-        exits
-    );
+    BeaconBlockBody beaconBlockBody =
+        new BeaconBlockBody(
+            proposerSlashings,
+            casperSlashings,
+            attestations,
+            pocSeedChanges,
+            pocChallenges,
+            pocResponses,
+            deposits,
+            exits);
 
     return beaconBlockBody;
   }
@@ -323,20 +311,21 @@ public class ModelsSerializeTest {
   public void beaconBlockBodyTest() {
     BeaconBlockBody expected = createBeaconBlockBody();
     BytesValue encoded = sszSerializer.encode2(expected);
-    BeaconBlockBody reconstructed = (BeaconBlockBody) sszSerializer.decode(encoded, BeaconBlockBody.class);
+    BeaconBlockBody reconstructed =
+        (BeaconBlockBody) sszSerializer.decode(encoded, BeaconBlockBody.class);
     assertEquals(expected, reconstructed);
   }
 
   private BeaconBlock createBeaconBlock() {
-    BeaconBlock beaconBlock = new BeaconBlock(
-        UInt64.MAX_VALUE,
-        Hashes.keccak256(BytesValue.fromHexString("aa")),
-        Hashes.keccak256(BytesValue.fromHexString("bb")),
-        Hashes.keccak256(BytesValue.fromHexString("cc")),
-        Hashes.keccak256(BytesValue.fromHexString("dd")),
-        Bytes96.fromHexString("aa"),
-        createBeaconBlockBody()
-    );
+    BeaconBlock beaconBlock =
+        new BeaconBlock(
+            UInt64.MAX_VALUE,
+            Hashes.keccak256(BytesValue.fromHexString("aa")),
+            Hashes.keccak256(BytesValue.fromHexString("bb")),
+            Hashes.keccak256(BytesValue.fromHexString("cc")),
+            Hashes.keccak256(BytesValue.fromHexString("dd")),
+            Bytes96.fromHexString("aa"),
+            createBeaconBlockBody());
 
     return beaconBlock;
   }
@@ -373,15 +362,13 @@ public class ModelsSerializeTest {
   public void crosslinkRecordTest() {
     CrosslinkRecord expected = createCrosslinkRecord();
     BytesValue encoded = sszSerializer.encode2(expected);
-    CrosslinkRecord reconstructed = (CrosslinkRecord) sszSerializer.decode(encoded, CrosslinkRecord.class);
+    CrosslinkRecord reconstructed =
+        (CrosslinkRecord) sszSerializer.decode(encoded, CrosslinkRecord.class);
     assertEquals(expected, reconstructed);
   }
 
   private DepositRootVote createDepositRootVote() {
-    DepositRootVote depositRootVote = new DepositRootVote(
-        Hash32.ZERO,
-        UInt64.MAX_VALUE
-    );
+    DepositRootVote depositRootVote = new DepositRootVote(Hash32.ZERO, UInt64.MAX_VALUE);
 
     return depositRootVote;
   }
@@ -390,7 +377,8 @@ public class ModelsSerializeTest {
   public void depositRootVoteTest() {
     DepositRootVote expected = createDepositRootVote();
     BytesValue encoded = sszSerializer.encode2(expected);
-    DepositRootVote reconstructed = (DepositRootVote) sszSerializer.decode(encoded, DepositRootVote.class);
+    DepositRootVote reconstructed =
+        (DepositRootVote) sszSerializer.decode(encoded, DepositRootVote.class);
     assertEquals(expected, reconstructed);
   }
 
@@ -409,12 +397,12 @@ public class ModelsSerializeTest {
   }
 
   private PendingAttestationRecord createPendingAttestationRecord() {
-    PendingAttestationRecord pendingAttestationRecord = new PendingAttestationRecord(
-        createAttestationData(),
-        BytesValue.fromHexString("aa"),
-        BytesValue.fromHexString("bb"),
-        UInt64.ZERO
-    );
+    PendingAttestationRecord pendingAttestationRecord =
+        new PendingAttestationRecord(
+            createAttestationData(),
+            BytesValue.fromHexString("aa"),
+            BytesValue.fromHexString("bb"),
+            UInt64.ZERO);
 
     return pendingAttestationRecord;
   }
@@ -423,24 +411,25 @@ public class ModelsSerializeTest {
   public void pendingAttestationRecordTest() {
     PendingAttestationRecord expected = createPendingAttestationRecord();
     BytesValue encoded = sszSerializer.encode2(expected);
-    PendingAttestationRecord reconstructed = (PendingAttestationRecord) sszSerializer.decode(encoded, PendingAttestationRecord.class);
+    PendingAttestationRecord reconstructed =
+        (PendingAttestationRecord) sszSerializer.decode(encoded, PendingAttestationRecord.class);
     assertEquals(expected, reconstructed);
   }
 
   private ValidatorRecord createValidatorRecord() {
-    ValidatorRecord validatorRecord = ValidatorRecord.Builder
-        .fromDepositInput(createDepositInput())
-        .withActivationSlot(UInt64.ZERO)
-        .withExitSlot(UInt64.ZERO)
-        .withWithdrawalSlot(UInt64.ZERO)
-        .withPenalizedSlot(UInt64.ZERO)
-        .withExitCount(UInt64.ZERO)
-        .withStatusFlags(UInt64.ZERO)
-        .withCustodyCommitment(Hash32.ZERO)
-        .withLatestCustodyReseedSlot(UInt64.ZERO)
-        .withPenultimateCustodyReseedSlot(UInt64.ZERO)
-        .withRandaoLayers(UInt64.ZERO)
-        .build();
+    ValidatorRecord validatorRecord =
+        ValidatorRecord.Builder.fromDepositInput(createDepositInput())
+            .withActivationSlot(UInt64.ZERO)
+            .withExitSlot(UInt64.ZERO)
+            .withWithdrawalSlot(UInt64.ZERO)
+            .withPenalizedSlot(UInt64.ZERO)
+            .withExitCount(UInt64.ZERO)
+            .withStatusFlags(UInt64.ZERO)
+            .withCustodyCommitment(Hash32.ZERO)
+            .withLatestCustodyReseedSlot(UInt64.ZERO)
+            .withPenultimateCustodyReseedSlot(UInt64.ZERO)
+            .withRandaoLayers(UInt64.ZERO)
+            .build();
 
     return validatorRecord;
   }
@@ -449,7 +438,8 @@ public class ModelsSerializeTest {
   public void validatorRecordTest() {
     ValidatorRecord expected = createValidatorRecord();
     BytesValue encoded = sszSerializer.encode2(expected);
-    ValidatorRecord reconstructed = (ValidatorRecord) sszSerializer.decode(encoded, ValidatorRecord.class);
+    ValidatorRecord reconstructed =
+        (ValidatorRecord) sszSerializer.decode(encoded, ValidatorRecord.class);
     assertEquals(expected, reconstructed);
   }
 }
