@@ -93,9 +93,11 @@ public class SSZSerializerTest {
 
   @Test
   public void explicitAnnotationsAndLoggerTest() {
-    SSZSerializerBuilder builder = new SSZSerializerBuilder();
-    builder.initWith(new SSZAnnotationSchemeBuilder().withLogger(Logger.getLogger("test")),
-        new SSZCodecRoulette(), new SSZModelCreator().registerObjCreator(new ConstructorObjCreator()));
+    SSZSerializerBuilder builder = new SSZSerializerBuilder(); //
+    builder
+        .withSSZSchemeBuilder(new SSZAnnotationSchemeBuilder().withLogger(Logger.getLogger("test")))
+        .withSSZCodecResolver(new SSZCodecRoulette())
+        .withSSZModelFactory(new SSZModelCreator().registerObjCreator(new ConstructorObjCreator()));
     builder.addPrimitivesCodecs();
     SSZSerializer serializer = builder.build();
 
