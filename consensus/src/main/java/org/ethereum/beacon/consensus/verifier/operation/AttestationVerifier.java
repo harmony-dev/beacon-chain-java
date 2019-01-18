@@ -102,7 +102,7 @@ public class AttestationVerifier implements OperationVerifier<Attestation> {
         groupPublicKey,
         specHelpers.hash_tree_root(new AttestationDataAndCustodyBit(data, false)),
         attestation.getAggregatedSignature(),
-        specHelpers.get_domain(state.getForkData(), state.getSlot(), ATTESTATION))) {
+        specHelpers.get_domain(state.getForkData(), data.getSlot(), ATTESTATION))) {
       return failedResult("failed to verify aggregated signature");
     }
 
