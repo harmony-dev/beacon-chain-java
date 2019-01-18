@@ -1,30 +1,26 @@
 package org.ethereum.beacon.consensus.transition;
 
+import static java.util.Collections.emptyList;
+import static java.util.Collections.nCopies;
+
+import java.util.List;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.StateTransition;
-import org.ethereum.beacon.consensus.state.ValidatorRegistryUpdater;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlocks;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
+import org.ethereum.beacon.core.operations.deposit.DepositData;
+import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.CrosslinkRecord;
 import org.ethereum.beacon.core.state.ForkData;
-import org.ethereum.beacon.core.state.ShardCommittee;
-import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.pow.DepositContract.ChainStart;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Stream;
-
-import static java.util.Collections.emptyList;
-import static java.util.Collections.nCopies;
 
 /**
  * Produces initial beacon state.
@@ -126,22 +122,29 @@ public class InitialStateTransition implements StateTransition<BeaconStateEx> {
 
     // handle initial deposits and activations
     final List<Deposit> initialDeposits = depositContract.getInitialDeposits();
-    final ValidatorRegistryUpdater registryUpdater =
-        ValidatorRegistryUpdater.fromState(initialState.validate(), chainSpec);
 
     initialDeposits.forEach(
         deposit -> {
-          UInt24 index = registryUpdater.processDeposit(deposit);
-          UInt64 balance = registryUpdater.getEffectiveBalance(index);
+          DepositData depositData = deposit.getDepositData();
+          DepositInput depositInput = depositData.getDepositInput();
+          UInt24 index = specHelpers.process_deposit(initialState,
+              depositInput.getPubKey(),
+              depositData.getValue(),
+              depositInput.getProofOfPossession(),
+              depositInput.getWithdrawalCredentials(),
+              depositInput.getRandaoCommitment(),
+              depositInput.getCustodyCommitment()
+              );
+          UInt64 balance = specHelpers.get_effective_balance(initialState, index);
 
           // initial validators must have a strict deposit value
-          if (chainSpec.getMaxDeposit().toGWei().equals(balance)) {
-            registryUpdater.activate(index);
+          if (chainSpec.getMaxDeposit().toGWei().compareTo(balance) <= 0) {
+            specHelpers.activate_validator(initialState, index, true);
           }
         });
 
 
-    BeaconState validatorsState = registryUpdater.applyTo(initialState);
+    BeaconState validatorsState = initialState.validate();
 
     Hash32 genesisBlockHash = BeaconBlocks.createGenesis(chainSpec)
         .withStateRoot(validatorsState.getHash()).getHash();

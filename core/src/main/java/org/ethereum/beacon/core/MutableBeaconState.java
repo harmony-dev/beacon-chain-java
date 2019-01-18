@@ -95,6 +95,12 @@ public interface MutableBeaconState extends BeaconState {
     return this;
   }
 
+  default MutableBeaconState withNewValidatorRecord(ValidatorRecord newValidatorRecord) {
+    ArrayList<ValidatorRecord> newRegistry = new ArrayList<>(getValidatorRegistry());
+    newRegistry.add(newValidatorRecord);
+    return withValidatorRegistry(newRegistry);
+  }
+
   default MutableBeaconState withValidatorRecord(int idx,
       Consumer<ValidatorRecord.Builder> validatorUpdater) {
     ArrayList<ValidatorRecord> newRegistry = new ArrayList<>(getValidatorRegistry());
@@ -108,6 +114,12 @@ public interface MutableBeaconState extends BeaconState {
   default MutableBeaconState withValidatorBalances(List<UInt64> validatorBalances) {
     setValidatorBalances(validatorBalances);
     return this;
+  }
+
+  default MutableBeaconState withNewValidatorBalance(UInt64 balance) {
+    ArrayList<UInt64> validatorBalances = new ArrayList<>(getValidatorBalances());
+    validatorBalances.add(balance);
+    return withValidatorBalances(validatorBalances);
   }
 
   default MutableBeaconState withValidatorBalance(UInt24 idx,

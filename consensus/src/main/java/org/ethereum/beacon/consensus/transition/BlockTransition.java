@@ -3,7 +3,6 @@ package org.ethereum.beacon.consensus.transition;
 import java.util.List;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.StateTransition;
-import org.ethereum.beacon.consensus.state.ValidatorRegistryUpdater;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
@@ -11,6 +10,8 @@ import org.ethereum.beacon.core.operations.CasperSlashing;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.Exit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
+import org.ethereum.beacon.core.operations.deposit.DepositData;
+import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.DepositRootVote;
 import org.ethereum.beacon.core.state.PendingAttestationRecord;
@@ -136,10 +137,17 @@ public class BlockTransition implements StateTransition<BeaconStateEx> {
            custody_commitment=deposit.deposit_data.deposit_input.custody_commitment,
        )
     */
-    final ValidatorRegistryUpdater registryUpdater =
-        ValidatorRegistryUpdater.fromState(state, spec);
     for (Deposit deposit : block.getBody().getDeposits()) {
-      registryUpdater.processDeposit(deposit);
+      DepositData depositData = deposit.getDepositData();
+      DepositInput depositInput = depositData.getDepositInput();
+      specHelpers.process_deposit(state,
+          depositInput.getPubKey(),
+          depositData.getValue(),
+          depositInput.getProofOfPossession(),
+          depositInput.getWithdrawalCredentials(),
+          depositInput.getRandaoCommitment(),
+          depositInput.getCustodyCommitment()
+      );
     }
 
     /*

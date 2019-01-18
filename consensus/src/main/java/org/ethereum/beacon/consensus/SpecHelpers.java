@@ -2,6 +2,7 @@ package org.ethereum.beacon.consensus;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
+import static java.util.stream.Collectors.toList;
 import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
 
 import java.util.ArrayList;
@@ -16,8 +17,10 @@ import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.CasperSlashing;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustodyBit;
+import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.operations.slashing.SlashableVoteData;
 import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.spec.SignatureDomains;
 import org.ethereum.beacon.core.spec.ValidatorRegistryDeltaFlags;
 import org.ethereum.beacon.core.spec.ValidatorStatusFlags;
 import org.ethereum.beacon.core.state.ForkData;
@@ -412,6 +415,151 @@ public class SpecHelpers {
     return x;
   }
 
+/*
+    def validate_proof_of_possession(state: BeaconState,
+                                     pubkey: int,
+                                     proof_of_possession: bytes,
+                                     withdrawal_credentials: Hash32,
+                                     randao_commitment: Hash32,
+                                     custody_commitment: Hash32) -> bool:
+        proof_of_possession_data = DepositInput(
+            pubkey=pubkey,
+            withdrawal_credentials=withdrawal_credentials,
+            randao_commitment=randao_commitment,
+            custody_commitment=custody_commitment,
+            proof_of_possession=EMPTY_SIGNATURE,
+        )
+
+        return bls_verify(
+            pubkey=pubkey,
+            message=hash_tree_root(proof_of_possession_data),
+            signature=proof_of_possession,
+            domain=get_domain(
+                state.fork,
+                state.slot,
+                DOMAIN_DEPOSIT,
+            )
+        )
+ */
+  public boolean validate_proof_of_possession(
+      MutableBeaconState state,
+      Bytes48 pubkey,
+      Bytes96 proof_of_possession,
+      Hash32 withdrawal_credentials,
+      Hash32 randao_commitment,
+      Hash32 custody_commitment) {
+
+    DepositInput deposit_input = new DepositInput(
+            pubkey, withdrawal_credentials, randao_commitment, custody_commitment, Bytes96.ZERO);
+
+    return bls_verify(
+        pubkey,
+        hash_tree_root(deposit_input),
+        proof_of_possession,
+        get_domain(state.getForkData(), state.getSlot(), SignatureDomains.DEPOSIT));
+  }
+
+  /*
+  def process_deposit(state: BeaconState,
+                    pubkey: int,
+                    amount: int,
+                    proof_of_possession: bytes,
+                    withdrawal_credentials: Hash32,
+                    randao_commitment: Hash32,
+                    custody_commitment: Hash32) -> None:
+    """
+    Process a deposit from Ethereum 1.0.
+    Note that this function mutates ``state``.
+    """
+    */
+  public UInt24 process_deposit(
+      MutableBeaconState state,
+      Bytes48 pubkey,
+      UInt64 amount,
+      Bytes96 proof_of_possession,
+      Hash32 withdrawal_credentials,
+      Hash32 randao_commitment,
+      Hash32 custody_commitment) {
+
+    //  # Validate the given `proof_of_possession`
+    //  assert validate_proof_of_possession(
+    //      state,
+    //      pubkey,
+    //      proof_of_possession,
+    //      withdrawal_credentials,
+    //      randao_commitment,
+    //      custody_commitment,
+    //      )
+    assertTrue(
+        validate_proof_of_possession(
+            state,
+            pubkey,
+            proof_of_possession,
+            withdrawal_credentials,
+            randao_commitment,
+            custody_commitment));
+
+    //  validator_pubkeys = [v.pubkey for v in state.validator_registry]
+    int index = -1;
+    for (int i = 0; i < state.getValidatorRegistry().size(); i++) {
+      if (state.getValidatorRegistry().get(i).getPubKey().equals(pubkey)) {
+        index = i;
+        break;
+      }
+    }
+
+    //  if pubkey not in validator_pubkeys:
+    if (index < 0) {
+      //  # Add new validator
+      //  validator = Validator(
+      //    pubkey=pubkey,
+      //    withdrawal_credentials=withdrawal_credentials,
+      //    randao_commitment=randao_commitment,
+      //    randao_layers=0,
+      //    activation_slot=FAR_FUTURE_SLOT,
+      //    exit_slot=FAR_FUTURE_SLOT,
+      //    withdrawal_slot=FAR_FUTURE_SLOT,
+      //    penalized_slot=FAR_FUTURE_SLOT,
+      //    exit_count=0,
+      //    status_flags=0,
+      //    custody_commitment=custody_commitment,
+      //    latest_custody_reseed_slot=GENESIS_SLOT,
+      //    penultimate_custody_reseed_slot=GENESIS_SLOT,
+      //  )
+      ValidatorRecord validator = new ValidatorRecord(
+          pubkey,
+          withdrawal_credentials,
+          randao_commitment,
+          UInt64.ZERO,
+          spec.getFarFutureSlot(),
+          spec.getFarFutureSlot(),
+          spec.getFarFutureSlot(),
+          spec.getFarFutureSlot(),
+          UInt64.ZERO,
+          UInt64.ZERO,
+          custody_commitment,
+          spec.getGenesisSlot(),
+          spec.getGenesisSlot());
+
+      //  # Note: In phase 2 registry indices that has been withdrawn for a long time will be recycled.
+      //  index = len(state.validator_registry)
+      index = state.getValidatorRegistry().size();
+      //  state.validator_registry.append(validator)
+      state.withNewValidatorRecord(validator);
+      //  state.validator_balances.append(amount)
+      state.withNewValidatorBalance(amount);
+    } else {
+      //  # Increase balance by deposit amount
+      //  index = validator_pubkeys.index(pubkey)
+      //  assert state.validator_registry[index].withdrawal_credentials == withdrawal_credentials
+      assertTrue(state.getValidatorRegistry().get(index).getWithdrawalCredentials()
+          .equals(withdrawal_credentials));
+      //  state.validator_balances[index] += amount
+      state.withValidatorBalance(UInt24.valueOf(index), balance -> balance.plus(amount));
+    }
+    return UInt24.valueOf(index);
+  }
+
   /*
     def activate_validator(state: BeaconState, index: int, genesis: bool) -> None:
       validator = state.validator_registry[index]
@@ -768,7 +916,7 @@ public class SpecHelpers {
 
   public PublicKey bls_aggregate_pubkeys(List<Bytes48> publicKeysBytes) {
     List<PublicKey> publicKeys =
-        publicKeysBytes.stream().map(PublicKey::create).collect(Collectors.toList());
+        publicKeysBytes.stream().map(PublicKey::create).collect(toList());
     return PublicKey.aggregate(publicKeys);
   }
 
