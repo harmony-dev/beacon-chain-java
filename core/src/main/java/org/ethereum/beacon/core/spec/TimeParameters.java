@@ -11,6 +11,16 @@ import tech.pegasys.artemis.util.uint.UInt64;
  */
 public interface TimeParameters {
 
+  UInt64 SLOT_DURATION = UInt64.valueOf(6); // 6 seconds
+  UInt64 MIN_ATTESTATION_INCLUSION_DELAY = UInt64.valueOf(1 << 2); // 4 slots
+  UInt64 EPOCH_LENGTH = UInt64.valueOf(1 << 6); // 64 slots
+  UInt64 SEED_LOOKAHEAD = UInt64.valueOf(1 << 6); // 64 slots
+  UInt64 ENTRY_EXIT_DELAY = UInt64.valueOf(1 << 8); // 256 slots
+  UInt64 DEPOSIT_ROOT_VOTING_PERIOD = UInt64.valueOf(1 << 10); // 1024 slots
+  UInt64 MIN_VALIDATOR_WITHDRAWAL_TIME = UInt64.valueOf(1 << 14); // 16384 slots
+
+  /* Values defined in the spec. */
+
   UInt64 getSlotDuration();
 
   UInt64 getMinAttestationInclusionDelay();
@@ -24,20 +34,4 @@ public interface TimeParameters {
   UInt64 getDepositRootVotingPeriod();
 
   UInt64 getMinValidatorWithdrawalTime();
-
-  /* Values defined in the spec. */
-
-  UInt64 SLOT_DURATION = UInt64.valueOf(6); // 6 seconds
-
-  UInt64 MIN_ATTESTATION_INCLUSION_DELAY = UInt64.valueOf(1 << 2); // 4 slots
-
-  UInt64 EPOCH_LENGTH = UInt64.valueOf(1 << 6); // 64 slots
-
-  UInt64 SEED_LOOKAHEAD = UInt64.valueOf(1 << 6); // 64 slots
-
-  UInt64 ENTRY_EXIT_DELAY = UInt64.valueOf(1 << 8); // 256 slots
-
-  UInt64 DEPOSIT_ROOT_VOTING_PERIOD = UInt64.valueOf(1 << 10); // 1024 slots
-
-  UInt64 MIN_VALIDATOR_WITHDRAWAL_TIME = UInt64.valueOf(1 << 14); // 16384 slots
 }

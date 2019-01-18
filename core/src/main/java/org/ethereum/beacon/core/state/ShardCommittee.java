@@ -1,14 +1,10 @@
 package org.ethereum.beacon.core.state;
 
-import java.util.Arrays;
-import java.util.List;
-import org.ethereum.beacon.core.BeaconState;
 import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
+import java.util.List;
 
-/**
- * Validator committee assigned to a certain shard.
- */
+/** Validator committee assigned to a certain shard. */
 public class ShardCommittee {
 
   /** Validator indices. */
