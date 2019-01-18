@@ -8,14 +8,12 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * <p>Skips field in SSZ representation</p>
+ * Skips field in SSZ representation
  *
- * <p>The field marked with the following annotation will not be included
- * in SSZ data model.</p>
+ * <p>The field marked with the following annotation will not be included in SSZ data model.
  */
 @Documented
 @Target(ElementType.FIELD)
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)
-public @interface SSZTransient {
-}
+public @interface SSZTransient {}

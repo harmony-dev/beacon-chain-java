@@ -2,9 +2,7 @@ package org.ethereum.beacon.ssz;
 
 import net.consensys.cava.ssz.SSZException;
 
-/**
- * Indicates errors associated with SSZ scheme building and type resolving
- */
+/** Indicates errors associated with SSZ scheme building and type resolving */
 public class SSZSchemeException extends SSZException {
   public SSZSchemeException() {
     super("Error in SSZ scheme");

@@ -8,13 +8,12 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Bitfield is bit array where every bit represents status of
- * attester with corresponding index
+ * Bitfield is bit array where every bit represents status of attester with corresponding index
  *
- * All methods that could change payload are cloning source,
- * keeping instances of Bitfield immutable.
+ * <p>All methods that could change payload are cloning source, keeping instances of Bitfield
+ * immutable.
  */
-@SSZSerializable(encode="getData")
+@SSZSerializable(encode = "getData")
 public class Bitfield {
 
   private final BitSet payload;
@@ -32,8 +31,9 @@ public class Bitfield {
 
   /**
    * Calculates attesters bitfield length
-   * @param num  Number of attesters
-   * @return  Bitfield length in bytes
+   *
+   * @param num Number of attesters
+   * @return Bitfield length in bytes
    */
   public static int calcLength(int num) {
     return num == 0 ? 0 : (num - 1) / Byte.SIZE + 1;
@@ -41,45 +41,12 @@ public class Bitfield {
 
   /**
    * Creates empty bitfield for estimated number of attesters
-   * @param validatorsCount   Number of attesters
-   * @return  empty bitfield with correct length
+   *
+   * @param validatorsCount Number of attesters
+   * @return empty bitfield with correct length
    */
   public static Bitfield createEmpty(int validatorsCount) {
     return new Bitfield(validatorsCount);
-  }
-
-  /**
-   * Modifies bitfield to represent attester's vote
-   * Should place its bit on the right place
-   * Doesn't modify original bitfield
-   * @param index     Index number of attester
-   * @return  bitfield with vote in place
-   */
-  public Bitfield markVote(int index) {
-    Bitfield newBitfield = this.clone();
-    newBitfield.payload.set(index);
-    return newBitfield;
-  }
-
-  /**
-   * Checks whether validator with provided index did his vote
-   * @param index     Index number of attester
-   */
-  public boolean hasVoted(int index) {
-    return payload.get(index);
-  }
-
-  /**
-   * Calculate number of votes in provided bitfield
-   * @return  number of votes
-   */
-  public int calcVotes() {
-    int votes = 0;
-    for (int i = 0; i < size(); ++i) {
-      if (hasVoted(i)) ++votes;
-    }
-
-    return votes;
   }
 
   public static Bitfield orBitfield(Bitfield... bitfields) {
@@ -87,9 +54,9 @@ public class Bitfield {
   }
 
   /**
-   * OR aggregation function
-   * OR aggregation of input bitfields
-   * @param bitfields  Bitfields
+   * OR aggregation function OR aggregation of input bitfields
+   *
+   * @param bitfields Bitfields
    * @return All bitfields aggregated using OR
    */
   public static Bitfield orBitfield(List<Bitfield> bitfields) {
@@ -108,6 +75,42 @@ public class Bitfield {
     return aggBitfield;
   }
 
+  /**
+   * Modifies bitfield to represent attester's vote Should place its bit on the right place Doesn't
+   * modify original bitfield
+   *
+   * @param index Index number of attester
+   * @return bitfield with vote in place
+   */
+  public Bitfield markVote(int index) {
+    Bitfield newBitfield = this.clone();
+    newBitfield.payload.set(index);
+    return newBitfield;
+  }
+
+  /**
+   * Checks whether validator with provided index did his vote
+   *
+   * @param index Index number of attester
+   */
+  public boolean hasVoted(int index) {
+    return payload.get(index);
+  }
+
+  /**
+   * Calculate number of votes in provided bitfield
+   *
+   * @return number of votes
+   */
+  public int calcVotes() {
+    int votes = 0;
+    for (int i = 0; i < size(); ++i) {
+      if (hasVoted(i)) ++votes;
+    }
+
+    return votes;
+  }
+
   public int size() {
     return size;
   }
@@ -117,8 +120,7 @@ public class Bitfield {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     Bitfield bitfield = (Bitfield) o;
-    return size == bitfield.size &&
-        Objects.equals(payload, bitfield.payload);
+    return size == bitfield.size && Objects.equals(payload, bitfield.payload);
   }
 
   @Override
@@ -133,5 +135,4 @@ public class Bitfield {
   public Bitfield clone() {
     return new Bitfield(getData());
   }
-
 }

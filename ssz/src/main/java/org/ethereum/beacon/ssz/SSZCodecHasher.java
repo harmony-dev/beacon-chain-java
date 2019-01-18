@@ -21,14 +21,17 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
- * <p>Implementation of {@link SSZCodecResolver} which implements SSZ Hash function</p>
- * <p>For more info check <a href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/simple-serialize.md#tree-hash">SSZ Tree hash</a></p>
+ * Implementation of {@link SSZCodecResolver} which implements SSZ Hash function
+ *
+ * <p>For more info check <a
+ * href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/simple-serialize.md#tree-hash">SSZ
+ * Tree hash</a>
  */
 public class SSZCodecHasher implements SSZCodecResolver {
 
-  private final static int SSZ_CHUNK_SIZE = 32;
+  private static final int SSZ_CHUNK_SIZE = 32;
 
-  private final static Bytes EMPTY_CHUNK = Bytes.of(new byte[SSZ_CHUNK_SIZE]);
+  private static final Bytes EMPTY_CHUNK = Bytes.of(new byte[SSZ_CHUNK_SIZE]);
 
   private Function<Bytes, Bytes> hashFunction;
 
@@ -38,7 +41,8 @@ public class SSZCodecHasher implements SSZCodecResolver {
     this.hashFunction = hashFunction;
   }
 
-  public Consumer<Triplet<Object, OutputStream, SSZSerializer>> resolveEncodeFunction(SSZSchemeBuilder.SSZScheme.SSZField field) {
+  public Consumer<Triplet<Object, OutputStream, SSZSerializer>> resolveEncodeFunction(
+      SSZSchemeBuilder.SSZScheme.SSZField field) {
     SSZCodec encoder = resolveCodec(field);
 
     if (field.multipleType.equals(SSZSchemeBuilder.SSZScheme.MultipleType.NONE)) {
@@ -62,7 +66,7 @@ public class SSZCodecHasher implements SSZCodecResolver {
           encodeContainer(value, field, res, sszSerializer);
         };
       }
-    } else if (field.multipleType.equals(SSZSchemeBuilder.SSZScheme.MultipleType.LIST))  {
+    } else if (field.multipleType.equals(SSZSchemeBuilder.SSZScheme.MultipleType.LIST)) {
       return objects -> {
         Object value = objects.getValue0();
         OutputStream res = objects.getValue1();
@@ -87,7 +91,7 @@ public class SSZCodecHasher implements SSZCodecResolver {
           throw new SSZException("Failed to write data length to stream", e);
         }
       };
-    } else if (field.multipleType.equals(SSZSchemeBuilder.SSZScheme.MultipleType.ARRAY))  {
+    } else if (field.multipleType.equals(SSZSchemeBuilder.SSZScheme.MultipleType.ARRAY)) {
       return objects -> {
         Object value = objects.getValue0();
         OutputStream res = objects.getValue1();
@@ -114,11 +118,15 @@ public class SSZCodecHasher implements SSZCodecResolver {
       };
     }
 
-    throw new SSZSchemeException(String.format("Function not resolved for encoding field %s", field));
+    throw new SSZSchemeException(
+        String.format("Function not resolved for encoding field %s", field));
   }
 
-  private void encodeContainer(Object value, SSZSchemeBuilder.SSZScheme.SSZField field,
-                               OutputStream result, SSZSerializer sszSerializer) {
+  private void encodeContainer(
+      Object value,
+      SSZSchemeBuilder.SSZScheme.SSZField field,
+      OutputStream result,
+      SSZSerializer sszSerializer) {
     byte[] data = sszSerializer.encode(value, field.type);
 
     if (!field.notAContainer) {
@@ -133,14 +141,14 @@ public class SSZCodecHasher implements SSZCodecResolver {
     try {
       result.write(data);
     } catch (IOException e) {
-      String error = String.format("Failed to write container from field \"%s\" to stream",
-          field.name);
+      String error =
+          String.format("Failed to write container from field \"%s\" to stream", field.name);
       throw new SSZException(error, e);
     }
   }
 
-  private Bytes[] packContainerList(List<Object> values, SSZSchemeBuilder.SSZScheme.SSZField field,
-                                    SSZSerializer sszSerializer) {
+  private Bytes[] packContainerList(
+      List<Object> values, SSZSchemeBuilder.SSZScheme.SSZField field, SSZSerializer sszSerializer) {
     Bytes[] res = new Bytes[values.size()];
     for (int i = 0; i < values.size(); ++i) {
       byte[] data = sszSerializer.encode(values.get(i), field.type);
@@ -156,7 +164,8 @@ public class SSZCodecHasher implements SSZCodecResolver {
     return res;
   }
 
-  public Function<Pair<BytesSSZReaderProxy, SSZSerializer>, Object> resolveDecodeFunction(SSZSchemeBuilder.SSZScheme.SSZField field) {
+  public Function<Pair<BytesSSZReaderProxy, SSZSerializer>, Object> resolveDecodeFunction(
+      SSZSchemeBuilder.SSZScheme.SSZField field) {
     throw new SSZException("Decode is not supported for hash");
   }
 
@@ -179,26 +188,27 @@ public class SSZCodecHasher implements SSZCodecResolver {
 
   /**
    * Registers codecs to be used for
-   * @param classes        Classes, resolving is performed with class at first
-   * @param types          Text type, one class could be interpreted to several types.
-   *                       Several codecs could handle one class.
-   *                       Empty/null type is occupied by first class codec.
-   *                       Type is looked up in codecs one by one.
-   * @param codec          Codec able to encode/decode of specific class/types
+   *
+   * @param classes Classes, resolving is performed with class at first
+   * @param types Text type, one class could be interpreted to several types. Several codecs could
+   *     handle one class. Empty/null type is occupied by first class codec. Type is looked up in
+   *     codecs one by one.
+   * @param codec Codec able to encode/decode of specific class/types
    */
   public void registerCodec(Set<Class> classes, Set<String> types, SSZCodec codec) {
     for (Class clazz : classes) {
       if (registeredClassHandlers.get(clazz) != null) {
         registeredClassHandlers.get(clazz).add(new CodecEntry(codec, types));
       } else {
-        registeredClassHandlers.put(clazz,
-            new ArrayList<>(Collections.singletonList(new CodecEntry(codec, types))));
+        registeredClassHandlers.put(
+            clazz, new ArrayList<>(Collections.singletonList(new CodecEntry(codec, types))));
       }
     }
   }
 
   /**
    * Merkle tree hash of a list of homogenous, non-empty items
+   *
    * @param lst
    * @return
    */
@@ -231,7 +241,7 @@ public class SSZCodecHasher implements SSZCodecResolver {
       }
       List<Bytes> tempChunkz = new ArrayList<>();
       for (int i = 0; i < chunkz.size(); i += 2) {
-        Bytes curChunk = hashFunction.apply(Bytes.concatenate(chunkz.get(i), chunkz.get(i+1)));
+        Bytes curChunk = hashFunction.apply(Bytes.concatenate(chunkz.get(i), chunkz.get(i + 1)));
         tempChunkz.add(curChunk);
       }
       chunkz = tempChunkz;

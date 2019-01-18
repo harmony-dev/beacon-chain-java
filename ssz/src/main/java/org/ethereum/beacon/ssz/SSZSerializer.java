@@ -1,13 +1,10 @@
 package org.ethereum.beacon.ssz;
 
-import org.javatuples.Pair;
 import net.consensys.cava.bytes.Bytes;
 import net.consensys.cava.ssz.BytesSSZReaderProxy;
-import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
-import org.ethereum.beacon.ssz.annotation.SSZTransient;
+import org.javatuples.Pair;
 import org.javatuples.Triplet;
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
@@ -22,13 +19,11 @@ import java.util.Map;
 
 import static org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme;
 
-/**
- * <p>SSZ serializer/deserializer</p>
- */
+/** SSZ serializer/deserializer */
 public class SSZSerializer implements BytesSerializer {
 
-  public final static int LENGTH_PREFIX_BYTE_SIZE = Integer.SIZE / Byte.SIZE;
-  final static byte[] EMPTY_PREFIX = new byte[LENGTH_PREFIX_BYTE_SIZE];
+  public static final int LENGTH_PREFIX_BYTE_SIZE = Integer.SIZE / Byte.SIZE;
+  static final byte[] EMPTY_PREFIX = new byte[LENGTH_PREFIX_BYTE_SIZE];
 
   private SSZSchemeBuilder schemeBuilder;
 
@@ -38,21 +33,33 @@ public class SSZSerializer implements BytesSerializer {
 
   /**
    * SSZ serializer/deserializer with following helpers
-   * @param schemeBuilder     SSZ model scheme building of type {@link SSZScheme}
-   * @param codecResolver     Resolves field encoder/decoder {@link org.ethereum.beacon.ssz.type.SSZCodec} function
-   * @param sszModelFactory   Instantiates SSZModel with field/data information
+   *
+   * @param schemeBuilder SSZ model scheme building of type {@link SSZScheme}
+   * @param codecResolver Resolves field encoder/decoder {@link
+   *     org.ethereum.beacon.ssz.type.SSZCodec} function
+   * @param sszModelFactory Instantiates SSZModel with field/data information
    */
-  public SSZSerializer(SSZSchemeBuilder schemeBuilder, SSZCodecResolver codecResolver,
-                       SSZModelFactory sszModelFactory) {
+  public SSZSerializer(
+      SSZSchemeBuilder schemeBuilder,
+      SSZCodecResolver codecResolver,
+      SSZModelFactory sszModelFactory) {
     this.schemeBuilder = schemeBuilder;
     this.codecResolver = codecResolver;
     this.sszModelFactory = sszModelFactory;
   }
 
+  private static void checkSSZSerializableAnnotation(Class clazz) {
+    if (!clazz.isAnnotationPresent(SSZSerializable.class)) {
+      String error = String.format("Class %s should be annotated with SSZSerializable!", clazz);
+      throw new SSZSchemeException(error);
+    }
+  }
+
   /**
-   * <p>Serializes input to byte[] data</p>
-   * @param input  input value
-   * @param clazz  Class of value
+   * Serializes input to byte[] data
+   *
+   * @param input input value
+   * @param clazz Class of value
    * @return SSZ serialization
    */
   @Override
@@ -71,8 +78,7 @@ public class SSZSerializer implements BytesSerializer {
         getters.put(pd.getReadMethod().getName(), pd.getReadMethod());
       }
     } catch (IntrospectionException e) {
-      String error = String.format("Couldn't enumerate all getters in class %s",
-          clazz.getName());
+      String error = String.format("Couldn't enumerate all getters in class %s", clazz.getName());
       throw new RuntimeException(error, e);
     }
 
@@ -83,14 +89,17 @@ public class SSZSerializer implements BytesSerializer {
       Object value;
       Method getter = getters.get(field.getter);
       try {
-        if (getter != null) {   // We have getter
+        if (getter != null) { // We have getter
           value = getter.invoke(input);
-        } else {                // Trying to access field directly
+        } else { // Trying to access field directly
           value = clazz.getField(field.name).get(input);
         }
       } catch (Exception e) {
-        String error = String.format("Failed to get value from field %s, your should "
-            + "either have public field or public getter for it", field.name);
+        String error =
+            String.format(
+                "Failed to get value from field %s, your should "
+                    + "either have public field or public getter for it",
+                field.name);
         throw new SSZSchemeException(error);
       }
 
@@ -100,15 +109,9 @@ public class SSZSerializer implements BytesSerializer {
     return res.toByteArray();
   }
 
-  private static void checkSSZSerializableAnnotation(Class clazz) {
-    if (!clazz.isAnnotationPresent(SSZSerializable.class)) {
-      String error = String.format("Class %s should be annotated with SSZSerializable!", clazz);
-      throw new SSZSchemeException(error);
-    }
-  }
-
   /**
    * Builds class scheme using {@link SSZSchemeBuilder}
+   *
    * @param clazz type class
    * @return SSZ model scheme
    */
@@ -117,9 +120,10 @@ public class SSZSerializer implements BytesSerializer {
   }
 
   /**
-   * <p>Restores data instance from serialization data using {@link SSZModelFactory}</p>
-   * @param data     SSZ serialization byte[] data
-   * @param clazz    type class
+   * Restores data instance from serialization data using {@link SSZModelFactory}
+   *
+   * @param data SSZ serialization byte[] data
+   * @param clazz type class
    * @return deserialized instance of clazz or throws exception
    */
   @Override

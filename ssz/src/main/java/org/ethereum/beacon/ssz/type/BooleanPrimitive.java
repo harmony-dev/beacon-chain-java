@@ -11,17 +11,16 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-/**
- * {@link SSZCodec} for {@link Boolean} and {@link boolean}
- */
+/** {@link SSZCodec} for {@link Boolean} and {@link boolean} */
 public class BooleanPrimitive implements SSZCodec {
 
   private static Set<String> supportedTypes = new HashSet<>();
+  private static Set<Class> supportedClassTypes = new HashSet<>();
+
   static {
     supportedTypes.add("bool");
   }
 
-  private static Set<Class> supportedClassTypes = new HashSet<>();
   static {
     supportedClassTypes.add(Boolean.class);
     supportedClassTypes.add(boolean.class);
@@ -50,7 +49,8 @@ public class BooleanPrimitive implements SSZCodec {
   }
 
   @Override
-  public void encodeList(List<Object> value, SSZSchemeBuilder.SSZScheme.SSZField field, OutputStream result) {
+  public void encodeList(
+      List<Object> value, SSZSchemeBuilder.SSZScheme.SSZField field, OutputStream result) {
     try {
       boolean[] data = new boolean[value.size()];
       for (int i = 0; i < value.size(); ++i) {
@@ -58,8 +58,7 @@ public class BooleanPrimitive implements SSZCodec {
       }
       result.write(SSZ.encodeBooleanList(data).toArrayUnsafe());
     } catch (IOException ex) {
-      String error = String.format("Failed to write data from field \"%s\" to stream",
-          field.name);
+      String error = String.format("Failed to write data from field \"%s\" to stream", field.name);
       throw new SSZException(error, ex);
     }
   }
@@ -70,7 +69,8 @@ public class BooleanPrimitive implements SSZCodec {
   }
 
   @Override
-  public List<Object> decodeList(SSZSchemeBuilder.SSZScheme.SSZField field, BytesSSZReaderProxy reader) {
+  public List<Object> decodeList(
+      SSZSchemeBuilder.SSZScheme.SSZField field, BytesSSZReaderProxy reader) {
     return (List<Object>) (List<?>) reader.readBooleanList();
   }
 }

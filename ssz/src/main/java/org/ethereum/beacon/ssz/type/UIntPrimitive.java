@@ -20,18 +20,20 @@ import java.util.stream.Stream;
 import static java.util.function.Function.identity;
 
 /**
- * <p>{@link SSZCodec} for all primitive Java integers and their default wrappers</p>
+ * {@link SSZCodec} for all primitive Java integers and their default wrappers
  *
- * <p>All numerics are considered unsigned,
- * bit size could be clarified by {@link org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField#extraSize}</p>
+ * <p>All numerics are considered unsigned, bit size could be clarified by {@link
+ * org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField#extraSize}
  */
 public class UIntPrimitive implements SSZCodec {
-  private final static int DEFAULT_SHORT_SIZE = 16;
-  private final static int DEFAULT_INT_SIZE = 32;
-  private final static int DEFAULT_LONG_SIZE = 64;
-  private final static int DEFAULT_BIGINT_SIZE = 512;
+  private static final int DEFAULT_SHORT_SIZE = 16;
+  private static final int DEFAULT_INT_SIZE = 32;
+  private static final int DEFAULT_LONG_SIZE = 64;
+  private static final int DEFAULT_BIGINT_SIZE = 512;
 
   private static Map<Class, NumericType> classToNumericType = new HashMap<>();
+  private static Set<String> supportedTypes = new HashSet<>();
+  private static Set<Class> supportedClassTypes = new HashSet<>();
 
   static {
     classToNumericType.put(int.class, NumericType.of(Type.INT, DEFAULT_INT_SIZE));
@@ -43,12 +45,10 @@ public class UIntPrimitive implements SSZCodec {
     classToNumericType.put(BigInteger.class, NumericType.of(Type.BIGINT, DEFAULT_BIGINT_SIZE));
   }
 
-  private static Set<String> supportedTypes = new HashSet<>();
   static {
     supportedTypes.add("uint");
   }
 
-  private static Set<Class> supportedClassTypes = new HashSet<>();
   static {
     supportedClassTypes.add(int.class);
     supportedClassTypes.add(Integer.class);
@@ -57,6 +57,34 @@ public class UIntPrimitive implements SSZCodec {
     supportedClassTypes.add(long.class);
     supportedClassTypes.add(Long.class);
     supportedClassTypes.add(BigInteger.class);
+  }
+
+  private static void encodeInt(Object value, NumericType type, OutputStream result) {
+    encodeLong((int) value, type.size, result);
+  }
+
+  private static void encodeLong(Object value, NumericType type, OutputStream result) {
+    encodeLong((long) value, type.size, result);
+  }
+
+  private static void encodeLong(long value, int bitLength, OutputStream result) {
+    Bytes res = SSZ.encodeULong(value, bitLength);
+    try {
+      result.write(res.toArrayUnsafe());
+    } catch (IOException e) {
+      throw new SSZException(String.format("Failed to write value \"%s\" to stream", value), e);
+    }
+  }
+
+  private static void encodeBigInt(Object value, NumericType type, OutputStream result) {
+    BigInteger valueBI = (BigInteger) value;
+    Bytes res = SSZ.encodeBigInteger(valueBI, type.size);
+
+    try {
+      result.write(res.toArrayUnsafe());
+    } catch (IOException e) {
+      throw new SSZException(String.format("Failed to write value \"%s\" to stream", value), e);
+    }
   }
 
   @Override
@@ -74,82 +102,63 @@ public class UIntPrimitive implements SSZCodec {
     NumericType numericType = parseFieldType(field);
 
     switch (numericType.type) {
-      case INT: {
-        encodeInt(value, numericType, result);
-        break;
-      }
-      case LONG: {
-        encodeLong(value, numericType, result);
-        break;
-      }
-      case BIGINT: {
-        encodeBigInt(value, numericType, result);
-        break;
-      }
-      default: {
-        throwUnsupportedType(field);
-      }
-    }
-  }
-
-  private static void encodeInt(Object value, NumericType type, OutputStream result)  {
-    encodeLong((int) value, type.size, result);
-  }
-
-  private static void encodeLong(Object value, NumericType type, OutputStream result) {
-    encodeLong((long) value, type.size, result);
-  }
-
-  private static void encodeLong(long value, int bitLength, OutputStream result) {
-    Bytes res = SSZ.encodeULong(value, bitLength);
-    try {
-      result.write(res.toArrayUnsafe());
-    } catch (IOException e) {
-      throw new SSZException(String.format("Failed to write value \"%s\" to stream", value), e);
-    }
-  }
-
-  private static void encodeBigInt(Object value, NumericType type, OutputStream result)  {
-    BigInteger valueBI = (BigInteger) value;
-    Bytes res = SSZ.encodeBigInteger(valueBI, type.size);
-
-    try {
-      result.write(res.toArrayUnsafe());
-    } catch (IOException e) {
-      throw new SSZException(String.format("Failed to write value \"%s\" to stream", value), e);
+      case INT:
+        {
+          encodeInt(value, numericType, result);
+          break;
+        }
+      case LONG:
+        {
+          encodeLong(value, numericType, result);
+          break;
+        }
+      case BIGINT:
+        {
+          encodeBigInt(value, numericType, result);
+          break;
+        }
+      default:
+        {
+          throwUnsupportedType(field);
+        }
     }
   }
 
   @Override
-  public void encodeList(List<Object> value, SSZSchemeBuilder.SSZScheme.SSZField field, OutputStream result) {
+  public void encodeList(
+      List<Object> value, SSZSchemeBuilder.SSZScheme.SSZField field, OutputStream result) {
     NumericType numericType = parseFieldType(field);
 
     try {
       switch (numericType.type) {
-        case BIGINT: {
-          encodeBigIntList(value, numericType, result);
-          break;
-        }
-        case INT: {
-          encodeIntList(value, numericType, result);
-          break;
-        }
-        case LONG: {
-          encodeLongList(value, numericType, result);
-          break;
-        }
-        default: {
-          throwUnsupportedType(field);
-        }
+        case BIGINT:
+          {
+            encodeBigIntList(value, numericType, result);
+            break;
+          }
+        case INT:
+          {
+            encodeIntList(value, numericType, result);
+            break;
+          }
+        case LONG:
+          {
+            encodeLongList(value, numericType, result);
+            break;
+          }
+        default:
+          {
+            throwUnsupportedType(field);
+          }
       }
     } catch (IOException ex) {
-      String error = String.format("Failed to write data from field \"%s\" to stream",
-          field.name);
+      String error = String.format("Failed to write data from field \"%s\" to stream", field.name);
       throw new SSZException(error, ex);
     }
   }
 
-  private void encodeIntList(List<Object> value, NumericType type, OutputStream result) throws IOException {
+  private void encodeIntList(List<Object> value, NumericType type, OutputStream result)
+      throws IOException {
     int[] data = new int[value.size()];
     for (int i = 0; i < value.size(); ++i) {
       data[i] = (int) value.get(i);
@@ -157,7 +166,8 @@ public class UIntPrimitive implements SSZCodec {
     result.write(SSZ.encodeUIntList(type.size, data).toArrayUnsafe());
   }
 
-  private void encodeLongList(List<Object> value, NumericType type, OutputStream result) throws IOException {
+  private void encodeLongList(List<Object> value, NumericType type, OutputStream result)
+      throws IOException {
     long[] data = new long[value.size()];
     for (int i = 0; i < value.size(); ++i) {
       data[i] = (long) value.get(i);
@@ -165,8 +175,9 @@ public class UIntPrimitive implements SSZCodec {
     result.write(SSZ.encodeULongIntList(type.size, data).toArrayUnsafe());
   }
 
-  private void encodeBigIntList(List<Object> value, NumericType type, OutputStream result) throws IOException {
-    BigInteger[] data = (BigInteger[]) value.toArray(new BigInteger[0]);
+  private void encodeBigIntList(List<Object> value, NumericType type, OutputStream result)
+      throws IOException {
+    BigInteger[] data = value.toArray(new BigInteger[0]);
     result.write(SSZ.encodeBigIntegerList(type.size, data).toArrayUnsafe());
   }
 
@@ -174,15 +185,18 @@ public class UIntPrimitive implements SSZCodec {
   public Object decode(SSZSchemeBuilder.SSZScheme.SSZField field, BytesSSZReaderProxy reader) {
     NumericType numericType = parseFieldType(field);
     switch (numericType.type) {
-      case INT: {
-        return decodeInt(numericType, reader);
-      }
-      case LONG: {
-        return decodeLong(numericType, reader);
-      }
-      case BIGINT: {
-        return decodeBigInt(numericType, reader);
-      }
+      case INT:
+        {
+          return decodeInt(numericType, reader);
+        }
+      case LONG:
+        {
+          return decodeLong(numericType, reader);
+        }
+      case BIGINT:
+        {
+          return decodeBigInt(numericType, reader);
+        }
     }
 
     return throwUnsupportedType(field);
@@ -201,37 +215,44 @@ public class UIntPrimitive implements SSZCodec {
   }
 
   @Override
-  public List<Object> decodeList(SSZSchemeBuilder.SSZScheme.SSZField field, BytesSSZReaderProxy reader) {
+  public List<Object> decodeList(
+      SSZSchemeBuilder.SSZScheme.SSZField field, BytesSSZReaderProxy reader) {
     NumericType numericType = parseFieldType(field);
 
     switch (numericType.type) {
-      case INT: {
-        return (List<Object>) (List<?>) reader.readUIntList(numericType.size);
-      }
-      case LONG: {
-        return (List<Object>) (List<?>)  reader.readULongIntList(numericType.size);
-      }
-      case BIGINT: {
-        return (List<Object>) (List<?>)  reader.readUnsignedBigIntegerList(numericType.size);
-      }
-      default: {
-        return throwUnsupportedListType(field);
-      }
+      case INT:
+        {
+          return (List<Object>) (List<?>) reader.readUIntList(numericType.size);
+        }
+      case LONG:
+        {
+          return (List<Object>) (List<?>) reader.readULongIntList(numericType.size);
+        }
+      case BIGINT:
+        {
+          return (List<Object>) (List<?>) reader.readUnsignedBigIntegerList(numericType.size);
+        }
+      default:
+        {
+          return throwUnsupportedListType(field);
+        }
     }
   }
 
-  static class NumericType {
-    final Type type;
-    final int size;
-
-    NumericType(Type type, int size) {
-      this.type = type;
-      this.size = size;
+  private NumericType parseFieldType(SSZSchemeBuilder.SSZScheme.SSZField field) {
+    if (field.extraSize != null && field.extraSize % Byte.SIZE != 0) {
+      String error =
+          String.format(
+              "Size of numeric field in bits should match whole bytes, found %s", field.extraSize);
+      throw new SSZSchemeException(error);
     }
 
-    static NumericType of(Type type, int size) {
-      return new NumericType(type, size);
+    NumericType res = classToNumericType.get(field.type);
+    if (field.extraSize != null) {
+      res = NumericType.of(res.type, field.extraSize);
     }
+
+    return res;
   }
 
   enum Type {
@@ -239,11 +260,13 @@ public class UIntPrimitive implements SSZCodec {
     LONG("long"),
     BIGINT("bigint");
 
-    private String type;
     private static final Map<String, Type> ENUM_MAP;
+
     static {
       ENUM_MAP = Stream.of(Type.values()).collect(Collectors.toMap(e -> e.type, identity()));
     }
+
+    private String type;
 
     Type(String type) {
       this.type = type;
@@ -259,18 +282,17 @@ public class UIntPrimitive implements SSZCodec {
     }
   }
 
-  private NumericType parseFieldType(SSZSchemeBuilder.SSZScheme.SSZField field) {
-    if (field.extraSize != null && field.extraSize % Byte.SIZE != 0) {
-      String error = String.format("Size of numeric field in bits should match whole bytes, found %s",
-          field.extraSize);
-      throw new SSZSchemeException(error);
+  static class NumericType {
+    final Type type;
+    final int size;
+
+    NumericType(Type type, int size) {
+      this.type = type;
+      this.size = size;
     }
 
-    NumericType res = classToNumericType.get(field.type);
-    if (field.extraSize != null) {
-      res = NumericType.of(res.type, field.extraSize);
+    static NumericType of(Type type, int size) {
+      return new NumericType(type, size);
     }
-
-    return res;
   }
 }

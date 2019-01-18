@@ -2,44 +2,47 @@ package org.ethereum.beacon.ssz.fixtures;
 
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
 import static com.sun.org.apache.bcel.internal.classfile.Utility.toHexString;
 
-/**
- * Slot attestation data
- */
+/** Slot attestation data */
 @SSZSerializable
 public class AttestationRecord {
 
-  // Slot number
-  private long slot;
   // Shard ID
-  @SSZ(type=SSZ.UInt24)
+  @SSZ(type = SSZ.UInt24)
   private final int shardId;
   // List of block hashes that this signature is signing over that
   // are NOT part of the current chain, in order of oldest to newest
-  @SSZ(type=SSZ.Hash32)
+  @SSZ(type = SSZ.Hash32)
   private final List<byte[]> obliqueParentHashes;
   // Block hash in the shard that we are attesting to
-  @SSZ(type=SSZ.Hash32)
+  @SSZ(type = SSZ.Hash32)
   private final byte[] shardBlockHash;
   // Who is participating
-  @SSZ(type=SSZ.Bytes, skipContainer = true)
+  @SSZ(type = SSZ.Bytes, skipContainer = true)
   private final Bitfield attesterBitfield;
+  @SSZ(type = SSZ.Hash32)
+  private final byte[] justifiedBlockHash;
+  // Slot number
+  private long slot;
   // Last justified block
   private long justifiedSlot;
-  @SSZ(type=SSZ.Hash32)
-  private final byte[] justifiedBlockHash;
   // The actual signature
   private Sign.Signature aggregateSig;
 
-  public AttestationRecord(long slot, int shardId, List<byte[]> obliqueParentHashes, byte[] shardBlockHash,
-                           Bitfield attesterBitfield, long justifiedSlot, byte[] justifiedBlockHash,
-                           Sign.Signature aggregateSig) {
+  public AttestationRecord(
+      int shardId,
+      List<byte[]> obliqueParentHashes,
+      byte[] shardBlockHash,
+      Bitfield attesterBitfield,
+      byte[] justifiedBlockHash,
+      long slot,
+      long justifiedSlot,
+      Sign.Signature aggregateSig) {
     this.slot = slot;
     this.shardId = shardId;
     this.obliqueParentHashes = obliqueParentHashes;
@@ -50,7 +53,12 @@ public class AttestationRecord {
     this.aggregateSig = aggregateSig;
   }
 
-  public AttestationRecord(int shardId, List<byte[]> obliqueParentHashes, byte[] shardBlockHash, Bitfield attesterBitfield, byte[] justifiedBlockHash) {
+  public AttestationRecord(
+      int shardId,
+      List<byte[]> obliqueParentHashes,
+      byte[] shardBlockHash,
+      Bitfield attesterBitfield,
+      byte[] justifiedBlockHash) {
     this.shardId = shardId;
     this.obliqueParentHashes = obliqueParentHashes;
     this.shardBlockHash = shardBlockHash;
@@ -95,28 +103,39 @@ public class AttestationRecord {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     AttestationRecord that = (AttestationRecord) o;
-    return slot == that.slot &&
-        shardId == that.shardId &&
-        justifiedSlot == that.justifiedSlot &&
-        Objects.equals(obliqueParentHashes, that.obliqueParentHashes) &&
-        Arrays.equals(shardBlockHash, that.shardBlockHash) &&
-        Objects.equals(attesterBitfield, that.attesterBitfield) &&
-        Arrays.equals(justifiedBlockHash, that.justifiedBlockHash) &&
-        Objects.equals(aggregateSig, that.aggregateSig);
+    return slot == that.slot
+        && shardId == that.shardId
+        && justifiedSlot == that.justifiedSlot
+        && Objects.equals(obliqueParentHashes, that.obliqueParentHashes)
+        && Arrays.equals(shardBlockHash, that.shardBlockHash)
+        && Objects.equals(attesterBitfield, that.attesterBitfield)
+        && Arrays.equals(justifiedBlockHash, that.justifiedBlockHash)
+        && Objects.equals(aggregateSig, that.aggregateSig);
   }
 
   @Override
   public String toString() {
-    StringBuilder builder = new StringBuilder()
-        .append("AttestationRecord{")
-        .append("slot=").append(slot)
-        .append(", shardId=").append(shardId)
-        .append(", obliqueParentHashes=[").append(obliqueParentHashes.size()).append(" item(s)]")
-        .append(", shardBlockHash=").append(toHexString(shardBlockHash))
-        .append(", attesterBitfield=").append(attesterBitfield)
-        .append(", justifiedSlot=").append(justifiedSlot)
-        .append(", justifiedBlockHash=").append(toHexString(justifiedBlockHash))
-        .append(", aggregateSig=[").append(aggregateSig).append("}");
+    StringBuilder builder =
+        new StringBuilder()
+            .append("AttestationRecord{")
+            .append("slot=")
+            .append(slot)
+            .append(", shardId=")
+            .append(shardId)
+            .append(", obliqueParentHashes=[")
+            .append(obliqueParentHashes.size())
+            .append(" item(s)]")
+            .append(", shardBlockHash=")
+            .append(toHexString(shardBlockHash))
+            .append(", attesterBitfield=")
+            .append(attesterBitfield)
+            .append(", justifiedSlot=")
+            .append(justifiedSlot)
+            .append(", justifiedBlockHash=")
+            .append(toHexString(justifiedBlockHash))
+            .append(", aggregateSig=[")
+            .append(aggregateSig)
+            .append("}");
 
     return builder.toString();
   }

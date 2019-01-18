@@ -10,23 +10,25 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
- * Resolves {@link SSZCodec} function that should be used for
- * encoding/decoding of SSZ data using {@link org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField} info.
+ * Resolves {@link SSZCodec} function that should be used for encoding/decoding of SSZ data using
+ * {@link org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField} info.
  */
 public interface SSZCodecResolver {
 
   /**
-   * Registers {@link SSZCodec} in resolver
-   * Priorities in codec resolving etc depends on implementation
-   * @param classes   Set of classes to be handled by this codec
-   * @param types     SSZ types to be handled by this codec
-   * @param codec     Codec instance
+   * Registers {@link SSZCodec} in resolver Priorities in codec resolving etc depends on
+   * implementation
+   *
+   * @param classes Set of classes to be handled by this codec
+   * @param types SSZ types to be handled by this codec
+   * @param codec Codec instance
    */
   void registerCodec(Set<Class> classes, Set<String> types, SSZCodec codec);
 
   /**
    * SSZ Encode function matching current field
-   * @param field   Field
+   *
+   * @param field Field
    * @return encode function
    */
   Consumer<Triplet<Object, OutputStream, SSZSerializer>> resolveEncodeFunction(
@@ -34,7 +36,8 @@ public interface SSZCodecResolver {
 
   /**
    * SSZ Decode function matching current field
-   * @param field   Field
+   *
+   * @param field Field
    * @return decode function
    */
   Function<Pair<BytesSSZReaderProxy, SSZSerializer>, Object> resolveDecodeFunction(
