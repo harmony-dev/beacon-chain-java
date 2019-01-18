@@ -13,6 +13,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
+import org.ethereum.beacon.core.operations.CasperSlashing;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustodyBit;
 import org.ethereum.beacon.core.operations.slashing.SlashableVoteData;
@@ -785,6 +786,15 @@ public class SpecHelpers {
 
   public Hash32 repeat_hash(Hash32 x, int n) {
     return n == 0 ? x : repeat_hash(x, n - 1);
+  }
+
+  public List<UInt24> custodyIndexIntersection(CasperSlashing slashing) {
+    return intersection(
+        indices(slashing.getSlashableVoteData1().getCustodyBit0Indices(),
+            slashing.getSlashableVoteData1().getCustodyBit1Indices()),
+        indices(slashing.getSlashableVoteData2().getCustodyBit0Indices(),
+            slashing.getSlashableVoteData2().getCustodyBit1Indices())
+    );
   }
 
   public List<UInt24> indices(UInt24[] custodyBit0Indices, UInt24[] custodyBit1Indices) {
