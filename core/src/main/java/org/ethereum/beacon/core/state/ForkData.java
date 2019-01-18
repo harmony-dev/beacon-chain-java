@@ -1,5 +1,6 @@
 package org.ethereum.beacon.core.state;
 
+import com.google.common.base.Objects;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
@@ -50,8 +51,8 @@ public class ForkData {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     ForkData forkData = (ForkData) o;
-    return preForkVersion.equals(forkData.preForkVersion) &&
-        postForkVersion.equals(forkData.postForkVersion) &&
-        forkSlot.equals(forkData.forkSlot);
+    return Objects.equal(preForkVersion, forkData.preForkVersion) &&
+        Objects.equal(postForkVersion, forkData.postForkVersion) &&
+        Objects.equal(forkSlot, forkData.forkSlot);
   }
 }

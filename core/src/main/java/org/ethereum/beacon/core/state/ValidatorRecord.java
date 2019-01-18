@@ -1,5 +1,6 @@
 package org.ethereum.beacon.core.state;
 
+import com.google.common.base.Objects;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.ssz.annotation.SSZ;
@@ -302,18 +303,18 @@ public class ValidatorRecord {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     ValidatorRecord that = (ValidatorRecord) o;
-    return pubKey.equals(that.pubKey) &&
-        withdrawalCredentials.equals(that.withdrawalCredentials) &&
-        randaoCommitment.equals(that.randaoCommitment) &&
-        randaoLayers.equals(that.randaoLayers) &&
-        activationSlot.equals(that.activationSlot) &&
-        exitSlot.equals(that.exitSlot) &&
-        withdrawalSlot.equals(that.withdrawalSlot) &&
-        penalizedSlot.equals(that.penalizedSlot) &&
-        exitCount.equals(that.exitCount) &&
-        statusFlags.equals(that.statusFlags) &&
-        custodyCommitment.equals(that.custodyCommitment) &&
-        latestCustodyReseedSlot.equals(that.latestCustodyReseedSlot) &&
-        penultimateCustodyReseedSlot.equals(that.penultimateCustodyReseedSlot);
+    return Objects.equal(pubKey, that.pubKey) &&
+        Objects.equal(withdrawalCredentials, that.withdrawalCredentials) &&
+        Objects.equal(randaoCommitment, that.randaoCommitment) &&
+        Objects.equal(randaoLayers, that.randaoLayers) &&
+        Objects.equal(activationSlot, that.activationSlot) &&
+        Objects.equal(exitSlot, that.exitSlot) &&
+        Objects.equal(withdrawalSlot, that.withdrawalSlot) &&
+        Objects.equal(penalizedSlot, that.penalizedSlot) &&
+        Objects.equal(exitCount, that.exitCount) &&
+        Objects.equal(statusFlags, that.statusFlags) &&
+        Objects.equal(custodyCommitment, that.custodyCommitment) &&
+        Objects.equal(latestCustodyReseedSlot, that.latestCustodyReseedSlot) &&
+        Objects.equal(penultimateCustodyReseedSlot, that.penultimateCustodyReseedSlot);
   }
 }

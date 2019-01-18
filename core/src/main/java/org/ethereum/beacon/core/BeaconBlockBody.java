@@ -3,6 +3,7 @@ package org.ethereum.beacon.core;
 import static java.util.Collections.emptyList;
 
 import java.util.List;
+import com.google.common.base.Objects;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.CasperSlashing;
 import org.ethereum.beacon.core.operations.Deposit;
@@ -120,13 +121,13 @@ public class BeaconBlockBody {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     BeaconBlockBody that = (BeaconBlockBody) o;
-    return proposerSlashings.equals(that.proposerSlashings) &&
-        casperSlashings.equals(that.casperSlashings) &&
-        attestations.equals(that.attestations) &&
-        custodyReseeds.equals(that.custodyReseeds) &&
-        custodyChallenges.equals(that.custodyChallenges) &&
-        custodyResponses.equals(that.custodyResponses) &&
-        deposits.equals(that.deposits) &&
-        exits.equals(that.exits);
+    return Objects.equal(proposerSlashings, that.proposerSlashings) &&
+        Objects.equal(casperSlashings, that.casperSlashings) &&
+        Objects.equal(attestations, that.attestations) &&
+        Objects.equal(custodyReseeds, that.custodyReseeds) &&
+        Objects.equal(custodyChallenges, that.custodyChallenges) &&
+        Objects.equal(custodyResponses, that.custodyResponses) &&
+        Objects.equal(deposits, that.deposits) &&
+        Objects.equal(exits, that.exits);
   }
 }

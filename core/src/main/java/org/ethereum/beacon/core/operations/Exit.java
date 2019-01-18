@@ -1,5 +1,6 @@
 package org.ethereum.beacon.core.operations;
 
+import com.google.common.base.Objects;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
@@ -51,8 +52,8 @@ public class Exit {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     Exit exit = (Exit) o;
-    return slot.equals(exit.slot) &&
-        validatorIndex.equals(exit.validatorIndex) &&
-        signature.equals(exit.signature);
+    return Objects.equal(slot, exit.slot) &&
+        Objects.equal(validatorIndex, exit.validatorIndex) &&
+        Objects.equal(signature, exit.signature);
   }
 }

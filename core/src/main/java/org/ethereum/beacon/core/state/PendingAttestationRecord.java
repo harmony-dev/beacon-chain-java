@@ -1,5 +1,6 @@
 package org.ethereum.beacon.core.state;
 
+import com.google.common.base.Objects;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.ssz.annotation.SSZ;
@@ -63,9 +64,9 @@ public class PendingAttestationRecord {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     PendingAttestationRecord that = (PendingAttestationRecord) o;
-    return data.equals(that.data) &&
-        participationBitfield.equals(that.participationBitfield) &&
-        custodyBitfield.equals(that.custodyBitfield) &&
-        slotIncluded.equals(that.slotIncluded);
+    return Objects.equal(data, that.data) &&
+        Objects.equal(participationBitfield, that.participationBitfield) &&
+        Objects.equal(custodyBitfield, that.custodyBitfield) &&
+        Objects.equal(slotIncluded, that.slotIncluded);
   }
 }

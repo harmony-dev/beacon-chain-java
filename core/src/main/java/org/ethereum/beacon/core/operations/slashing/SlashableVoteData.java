@@ -1,5 +1,6 @@
 package org.ethereum.beacon.core.operations.slashing;
 
+import com.google.common.base.Objects;
 import org.ethereum.beacon.core.operations.CasperSlashing;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.ssz.annotation.SSZ;
@@ -66,7 +67,7 @@ public class SlashableVoteData {
     SlashableVoteData that = (SlashableVoteData) o;
     return Arrays.equals(custodyBit0Indices, that.custodyBit0Indices) &&
         Arrays.equals(custodyBit1Indices, that.custodyBit1Indices) &&
-        data.equals(that.data) &&
-        aggregatedSignature.equals(that.aggregatedSignature);
+        Objects.equal(data, that.data) &&
+        Objects.equal(aggregatedSignature, that.aggregatedSignature);
   }
 }

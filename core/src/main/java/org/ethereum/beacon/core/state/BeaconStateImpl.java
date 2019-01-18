@@ -1,5 +1,6 @@
 package org.ethereum.beacon.core.state;
 
+import com.google.common.base.Objects;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.CustodyChallenge;
@@ -9,10 +10,7 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import static java.util.Collections.unmodifiableList;
 
@@ -58,11 +56,17 @@ public class BeaconStateImpl implements MutableBeaconState {
   @SSZ
   private List<Hash32> latestVdfOutputs;
 
+  @SSZ
   private UInt64 previousEpochStartShard;
+  @SSZ
   private UInt64 currentEpochStartShard;
+  @SSZ
   private UInt64 previousEpochCalculationSlot;
+  @SSZ
   private UInt64 currentEpochCalculationSlot;
+  @SSZ
   private Hash32 previousEpochRandaoMix;
+  @SSZ
   private Hash32 currentEpochRandaoMix;
 
   /** Proof of custody placeholder. */
@@ -520,27 +524,33 @@ public class BeaconStateImpl implements MutableBeaconState {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     BeaconStateImpl that = (BeaconStateImpl) o;
-    return slot.equals(that.slot) &&
-        genesisTime.equals(that.genesisTime) &&
-        forkData.equals(that.forkData) &&
-        validatorRegistry.equals(that.validatorRegistry) &&
-        validatorBalances.equals(that.validatorBalances) &&
-        validatorRegistryLatestChangeSlot.equals(that.validatorRegistryLatestChangeSlot) &&
-        validatorRegistryExitCount.equals(that.validatorRegistryExitCount) &&
-        validatorRegistryDeltaChainTip.equals(that.validatorRegistryDeltaChainTip) &&
-        latestRandaoMixes.equals(that.latestRandaoMixes) &&
-        latestVdfOutputs.equals(that.latestVdfOutputs) &&
-        custodyChallenges.equals(that.custodyChallenges) &&
-        previousJustifiedSlot.equals(that.previousJustifiedSlot) &&
-        justifiedSlot.equals(that.justifiedSlot) &&
-        justificationBitfield.equals(that.justificationBitfield) &&
-        finalizedSlot.equals(that.finalizedSlot) &&
-        latestCrosslinks.equals(that.latestCrosslinks) &&
-        latestBlockRoots.equals(that.latestBlockRoots) &&
-        latestPenalizedExitBalances.equals(that.latestPenalizedExitBalances) &&
-        latestAttestations.equals(that.latestAttestations) &&
-        batchedBlockRoots.equals(that.batchedBlockRoots) &&
-        latestDepositRoot.equals(that.latestDepositRoot) &&
-        depositRootVotes.equals(that.depositRootVotes);
+    return Objects.equal(slot, that.slot) &&
+        Objects.equal(genesisTime, that.genesisTime) &&
+        Objects.equal(forkData, that.forkData) &&
+        Objects.equal(validatorRegistry, that.validatorRegistry) &&
+        Objects.equal(validatorBalances, that.validatorBalances) &&
+        Objects.equal(validatorRegistryLatestChangeSlot, that.validatorRegistryLatestChangeSlot) &&
+        Objects.equal(validatorRegistryExitCount, that.validatorRegistryExitCount) &&
+        Objects.equal(validatorRegistryDeltaChainTip, that.validatorRegistryDeltaChainTip) &&
+        Objects.equal(latestRandaoMixes, that.latestRandaoMixes) &&
+        Objects.equal(latestVdfOutputs, that.latestVdfOutputs) &&
+        Objects.equal(previousEpochStartShard, that.previousEpochStartShard) &&
+        Objects.equal(currentEpochStartShard, that.currentEpochStartShard) &&
+        Objects.equal(previousEpochCalculationSlot, that.previousEpochCalculationSlot) &&
+        Objects.equal(currentEpochCalculationSlot, that.currentEpochCalculationSlot) &&
+        Objects.equal(previousEpochRandaoMix, that.previousEpochRandaoMix) &&
+        Objects.equal(currentEpochRandaoMix, that.currentEpochRandaoMix) &&
+        Objects.equal(custodyChallenges, that.custodyChallenges) &&
+        Objects.equal(previousJustifiedSlot, that.previousJustifiedSlot) &&
+        Objects.equal(justifiedSlot, that.justifiedSlot) &&
+        Objects.equal(justificationBitfield, that.justificationBitfield) &&
+        Objects.equal(finalizedSlot, that.finalizedSlot) &&
+        Objects.equal(latestCrosslinks, that.latestCrosslinks) &&
+        Objects.equal(latestBlockRoots, that.latestBlockRoots) &&
+        Objects.equal(latestPenalizedExitBalances, that.latestPenalizedExitBalances) &&
+        Objects.equal(latestAttestations, that.latestAttestations) &&
+        Objects.equal(batchedBlockRoots, that.batchedBlockRoots) &&
+        Objects.equal(latestDepositRoot, that.latestDepositRoot) &&
+        Objects.equal(depositRootVotes, that.depositRootVotes);
   }
 }

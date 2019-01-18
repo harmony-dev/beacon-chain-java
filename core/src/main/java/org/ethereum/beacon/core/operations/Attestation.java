@@ -1,5 +1,6 @@
 package org.ethereum.beacon.core.operations;
 
+import com.google.common.base.Objects;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import org.ethereum.beacon.core.BeaconBlockBody;
@@ -64,9 +65,9 @@ public class Attestation {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     Attestation that = (Attestation) o;
-    return data.equals(that.data) &&
-        participationBitfield.equals(that.participationBitfield) &&
-        custodyBitfield.equals(that.custodyBitfield) &&
-        aggregatedSignature.equals(that.aggregatedSignature);
+    return Objects.equal(data, that.data) &&
+        Objects.equal(participationBitfield, that.participationBitfield) &&
+        Objects.equal(custodyBitfield, that.custodyBitfield) &&
+        Objects.equal(aggregatedSignature, that.aggregatedSignature);
   }
 }

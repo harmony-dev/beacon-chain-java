@@ -1,5 +1,6 @@
 package org.ethereum.beacon.core.state;
 
+import com.google.common.base.Objects;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
@@ -42,7 +43,7 @@ public class DepositRootVote {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     DepositRootVote that = (DepositRootVote) o;
-    return depositRoot.equals(that.depositRoot) &&
-        voteCount.equals(that.voteCount);
+    return Objects.equal(depositRoot, that.depositRoot) &&
+        Objects.equal(voteCount, that.voteCount);
   }
 }

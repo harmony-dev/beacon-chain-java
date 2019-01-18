@@ -1,5 +1,6 @@
 package org.ethereum.beacon.core.operations.deposit;
 
+import com.google.common.base.Objects;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
@@ -49,8 +50,8 @@ public class DepositData {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     DepositData that = (DepositData) o;
-    return depositInput.equals(that.depositInput) &&
-        value.equals(that.value) &&
-        timestamp.equals(that.timestamp);
+    return Objects.equal(depositInput, that.depositInput) &&
+        Objects.equal(value, that.value) &&
+        Objects.equal(timestamp, that.timestamp);
   }
 }

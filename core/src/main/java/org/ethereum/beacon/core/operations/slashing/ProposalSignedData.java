@@ -1,5 +1,6 @@
 package org.ethereum.beacon.core.operations.slashing;
 
+import com.google.common.base.Objects;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -37,8 +38,8 @@ public class ProposalSignedData {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     ProposalSignedData that = (ProposalSignedData) o;
-    return slot.equals(that.slot) &&
-        shard.equals(that.shard) &&
-        blockRoot.equals(that.blockRoot);
+    return Objects.equal(slot, that.slot) &&
+        Objects.equal(shard, that.shard) &&
+        Objects.equal(blockRoot, that.blockRoot);
   }
 }

@@ -1,5 +1,6 @@
 package org.ethereum.beacon.core.operations.deposit;
 
+import com.google.common.base.Objects;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
@@ -73,10 +74,10 @@ public class DepositInput {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     DepositInput that = (DepositInput) o;
-    return pubKey.equals(that.pubKey) &&
-        withdrawalCredentials.equals(that.withdrawalCredentials) &&
-        randaoCommitment.equals(that.randaoCommitment) &&
-        custodyCommitment.equals(that.custodyCommitment) &&
-        proofOfPossession.equals(that.proofOfPossession);
+    return Objects.equal(pubKey, that.pubKey) &&
+        Objects.equal(withdrawalCredentials, that.withdrawalCredentials) &&
+        Objects.equal(randaoCommitment, that.randaoCommitment) &&
+        Objects.equal(custodyCommitment, that.custodyCommitment) &&
+        Objects.equal(proofOfPossession, that.proofOfPossession);
   }
 }
