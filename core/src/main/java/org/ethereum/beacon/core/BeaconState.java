@@ -2,7 +2,13 @@ package org.ethereum.beacon.core;
 
 import org.ethereum.beacon.core.operations.CustodyChallenge;
 import org.ethereum.beacon.core.state.*;
+import org.ethereum.beacon.core.types.Bitfield;
+import org.ethereum.beacon.core.types.GWei;
+import org.ethereum.beacon.core.types.Shard;
+import org.ethereum.beacon.core.types.Slot;
+import org.ethereum.beacon.core.types.ValidatorIndex;
 import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 import java.util.List;
@@ -22,7 +28,7 @@ public interface BeaconState extends Hashable<Hash32> {
   /********* Misc **********/
 
   /** Slot number that this state was calculated in. */
-  UInt64 getSlot();
+  Slot getSlot();
   /** Timestamp of the genesis. */
   UInt64 getGenesisTime();
   /** Fork data corresponding to the {@link #getSlot()}. */
@@ -31,11 +37,11 @@ public interface BeaconState extends Hashable<Hash32> {
   /********* Validator registry **********/
 
   /** Validator registry records. */
-  List<ValidatorRecord> getValidatorRegistry();
+  ReadList<ValidatorIndex, ValidatorRecord> getValidatorRegistry();
   /** Validator balances. */
-  List<UInt64> getValidatorBalances();
+  ReadList<ValidatorIndex, GWei> getValidatorBalances();
   /** Slot number of last validator registry change. */
-  UInt64 getValidatorRegistryLatestChangeSlot();
+  Slot getValidatorRegistryLatestChangeSlot();
   /** A nonce for validator registry exits. */
   UInt64 getValidatorRegistryExitCount();
   /** A hash of latest validator registry delta. */
@@ -44,58 +50,58 @@ public interface BeaconState extends Hashable<Hash32> {
   /********* Randomness and committees **********/
 
   /** The most recent randao mixes. */
-  List<Hash32> getLatestRandaoMixes();
+  ReadList<Integer, Hash32> getLatestRandaoMixes();
   /** The most recent VDF outputs. */
-  List<Hash32> getLatestVdfOutputs();
+  ReadList<Integer, Hash32> getLatestVdfOutputs();
 
-  UInt64 getPreviousEpochStartShard();
+  Shard getPreviousEpochStartShard();
 
-  UInt64 getCurrentEpochStartShard();
+  Shard getCurrentEpochStartShard();
 
-  UInt64 getPreviousEpochCalculationSlot();
+  Slot getPreviousEpochCalculationSlot();
 
-  UInt64 getCurrentEpochCalculationSlot();
+  Slot getCurrentEpochCalculationSlot();
 
   Hash32 getPreviousEpochRandaoMix();
 
   Hash32 getCurrentEpochRandaoMix();
 
   /** Proof of custody placeholder. */
-  List<CustodyChallenge> getCustodyChallenges();
+  ReadList<Integer, CustodyChallenge> getCustodyChallenges();
 
   /********* Finality **********/
 
   /** Latest justified slot before {@link #getJustifiedSlot()}. */
-  UInt64 getPreviousJustifiedSlot();
+  Slot getPreviousJustifiedSlot();
   /** Latest justified slot. */
-  UInt64 getJustifiedSlot();
+  Slot getJustifiedSlot();
   /** Bitfield of latest justified slots (epochs). */
-  UInt64 getJustificationBitfield();
+  Bitfield getJustificationBitfield();
   /** Latest finalized slot. */
-  UInt64 getFinalizedSlot();
+  Slot getFinalizedSlot();
 
   /********* Recent state **********/
 
   /** Latest crosslink record for each shard. */
-  List<CrosslinkRecord> getLatestCrosslinks();
+  ReadList<Shard, CrosslinkRecord> getLatestCrosslinks();
   /** Latest block hashes for each shard. */
-  List<Hash32> getLatestBlockRoots();
+  ReadList<Integer, Hash32> getLatestBlockRoots();
   /** Indices of validators that has been ejected lately. */
-  List<UInt64> getLatestPenalizedExitBalances();
+  ReadList<Integer, GWei> getLatestPenalizedExitBalances();
   /** Attestations that has not been processed yet. */
-  List<PendingAttestationRecord> getLatestAttestations();
+  ReadList<Integer, PendingAttestationRecord> getLatestAttestations();
   /**
    * Latest hashes of {@link #getLatestBlockRoots()} list calculated when
    * its length got exceeded LATEST_BLOCK_ROOTS_LENGTH.
    */
-  List<Hash32> getBatchedBlockRoots();
+  ReadList<Integer, Hash32> getBatchedBlockRoots();
 
   /********* PoW receipt root **********/
 
   /** Latest processed receipt root from PoW deposit contract. */
   Hash32 getLatestDepositRoot();
   /** Receipt roots that voting is still in progress for. */
-  List<DepositRootVote> getDepositRootVotes();
+  ReadList<Integer, DepositRootVote> getDepositRootVotes();
 
   /**
    * Returns mutable copy of this state.

@@ -23,6 +23,8 @@ import org.ethereum.beacon.core.state.ForkData;
 import org.ethereum.beacon.core.state.ShardCommittee;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.state.ValidatorRegistryDeltaBlock;
+import org.ethereum.beacon.core.types.Slot;
+import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.crypto.BLS381;
 import org.ethereum.beacon.crypto.BLS381.PublicKey;
 import org.ethereum.beacon.crypto.BLS381.Signature;
@@ -36,6 +38,7 @@ import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.bytes.Bytes8;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
 import tech.pegasys.artemis.util.uint.UInt64s;
@@ -191,8 +194,9 @@ public class SpecHelpers {
    """
    return [i for i, v in enumerate(validators) if is_active_validator(v, slot)]
   */
-  public List<UInt24>  get_active_validator_indices(List<ValidatorRecord> validators, UInt64 slot) {
-    ArrayList<UInt24> ret = new ArrayList<>();
+  public List<ValidatorIndex>  get_active_validator_indices(
+      ReadList<ValidatorIndex, ValidatorRecord> validators, Slot slot) {
+    ArrayList<ValidatorIndex> ret = new ArrayList<>();
     for (int i = 0; i < validators.size(); i++) {
       if (is_active_validator(validators.get(i), slot)) {
         ret.add(UInt24.valueOf(i));

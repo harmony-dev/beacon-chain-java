@@ -197,7 +197,7 @@ public class BeaconStateImpl implements MutableBeaconState {
   @Override
   public BeaconState validate() {
     // TODO
-    return this;
+    return new BeaconStateImpl(this);
   }
 
   @Override

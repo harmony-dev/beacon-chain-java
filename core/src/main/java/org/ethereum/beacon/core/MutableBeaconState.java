@@ -2,7 +2,13 @@ package org.ethereum.beacon.core;
 
 import org.ethereum.beacon.core.operations.CustodyChallenge;
 import org.ethereum.beacon.core.state.*;
+import org.ethereum.beacon.core.state.ValidatorRecord.Builder;
+import org.ethereum.beacon.core.types.GWei;
+import org.ethereum.beacon.core.types.Shard;
+import org.ethereum.beacon.core.types.ValidatorIndex;
 import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.collections.ReadList;
+import tech.pegasys.artemis.util.collections.WriteList;
 import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
 
@@ -17,15 +23,44 @@ public interface MutableBeaconState extends BeaconState {
     return new BeaconStateImpl();
   }
 
+  @Override
+  WriteList<ValidatorIndex, ValidatorRecord> getValidatorRegistry();
+
+  @Override
+  WriteList<ValidatorIndex, GWei> getValidatorBalances();
+
+  @Override
+  WriteList<Integer, Hash32> getLatestRandaoMixes();
+
+  @Override
+  WriteList<Integer, Hash32> getLatestVdfOutputs();
+
+  @Override
+  WriteList<Integer, CustodyChallenge> getCustodyChallenges();
+
+  @Override
+  WriteList<Shard, CrosslinkRecord> getLatestCrosslinks();
+
+  @Override
+  WriteList<Integer, Hash32> getLatestBlockRoots();
+
+  @Override
+  WriteList<Integer, GWei> getLatestPenalizedExitBalances();
+
+  @Override
+  WriteList<Integer, PendingAttestationRecord> getLatestAttestations();
+
+  @Override
+  WriteList<Integer, Hash32> getBatchedBlockRoots();
+
+  @Override
+  WriteList<Integer, DepositRootVote> getDepositRootVotes();
+
   void setSlot(UInt64 slot);
 
   void setGenesisTime(UInt64 genesisTime);
 
   void setForkData(ForkData forkData);
-
-  void setValidatorRegistry(List<ValidatorRecord> validatorRegistry);
-
-  void setValidatorBalances(List<UInt64> validatorBalances);
 
   void setValidatorRegistryLatestChangeSlot(UInt64 validatorRegistryLatestChangeSlot);
 
@@ -49,8 +84,6 @@ public interface MutableBeaconState extends BeaconState {
 
   void setCurrentEpochRandaoMix(Hash32 currentEpochRandaoMix);
 
-  void setCustodyChallenges(List<CustodyChallenge> custodyChallenges);
-
   void setPreviousJustifiedSlot(UInt64 previousJustifiedSlot);
 
   void setJustifiedSlot(UInt64 justifiedSlot);
@@ -59,205 +92,8 @@ public interface MutableBeaconState extends BeaconState {
 
   void setFinalizedSlot(UInt64 finalizedSlot);
 
-  void setLatestCrosslinks(List<CrosslinkRecord> latestCrosslinks);
-
-  void setLatestBlockRoots(List<Hash32> latestBlockRoots);
-
-  void setLatestPenalizedExitBalances(List<UInt64> latestPenalizedExitBalances);
-
-  void setLatestAttestations(List<PendingAttestationRecord> latestAttestations);
-
-  void setBatchedBlockRoots(List<Hash32> batchedBlockRoots);
-
   void setLatestDepositRoot(Hash32 latestDepositRoot);
 
-  void setDepositRootVotes(List<DepositRootVote> depositRootVotes);
+  BeaconState createImmutable();
 
-  BeaconState validate();
-
-  default MutableBeaconState withSlot(UInt64 slot) {
-    setSlot(slot);
-    return this;
-  }
-
-  default MutableBeaconState withGenesisTime(UInt64 genesisTime) {
-    setGenesisTime(genesisTime);
-    return this;
-  }
-
-  default MutableBeaconState withForkData(ForkData forkData) {
-    setForkData(forkData);
-    return this;
-  }
-
-  default MutableBeaconState withValidatorRegistry(List<ValidatorRecord> validatorRegistry) {
-    setValidatorRegistry(validatorRegistry);
-    return this;
-  }
-
-  default MutableBeaconState withValidatorRecord(int idx,
-      Consumer<ValidatorRecord.Builder> validatorUpdater) {
-    ArrayList<ValidatorRecord> newRegistry = new ArrayList<>(getValidatorRegistry());
-    ValidatorRecord.Builder builder = ValidatorRecord.Builder
-        .fromRecord(getValidatorRegistry().get(idx));
-    validatorUpdater.accept(builder);
-    newRegistry.set(idx, builder.build());
-    return withValidatorRegistry(newRegistry);
-  }
-
-  default MutableBeaconState withValidatorBalances(List<UInt64> validatorBalances) {
-    setValidatorBalances(validatorBalances);
-    return this;
-  }
-
-  default MutableBeaconState withValidatorBalance(UInt24 idx,
-      Function<UInt64, UInt64> validatorBalanceUpdater) {
-    ArrayList<UInt64> validatorBalances = new ArrayList<>(getValidatorBalances());
-    validatorBalances.set(idx.getValue(),
-        validatorBalanceUpdater.apply(validatorBalances.get(idx.getValue())));
-    return withValidatorBalances(validatorBalances);
-  }
-
-  default MutableBeaconState withValidatorRegistryLatestChangeSlot(UInt64 validatorRegistryLatestChangeSlot) {
-    setValidatorRegistryLatestChangeSlot(validatorRegistryLatestChangeSlot);
-    return this;
-  }
-
-  default MutableBeaconState withValidatorRegistryExitCount(UInt64 validatorRegistryExitCount) {
-    setValidatorRegistryExitCount(validatorRegistryExitCount);
-    return this;
-  }
-
-  default MutableBeaconState withValidatorRegistryDeltaChainTip(Hash32 validatorRegistryDeltaChainTip) {
-    setValidatorRegistryDeltaChainTip(validatorRegistryDeltaChainTip);
-    return this;
-  }
-
-  default MutableBeaconState withLatestRandaoMixes(List<Hash32> latestRandaoMixes) {
-    setLatestRandaoMixes(latestRandaoMixes);
-    return this;
-  }
-
-  default MutableBeaconState withLatestVdfOutputs(List<Hash32> latestVdfOutputs) {
-    setLatestVdfOutputs(latestVdfOutputs);
-    return this;
-  }
-
-  default MutableBeaconState withPreviousEpochStartShard(UInt64 previousEpochStartShard) {
-    setPreviousEpochStartShard(previousEpochStartShard);
-    return this;
-  }
-
-  default MutableBeaconState withCurrentEpochStartShard(UInt64 currentEpochStartShard) {
-    setCurrentEpochStartShard(currentEpochStartShard);
-    return this;
-  }
-
-  default MutableBeaconState withPreviousEpochCalculationSlot(UInt64 previousEpochCalculationSlot) {
-    setPreviousEpochCalculationSlot(previousEpochCalculationSlot);
-    return this;
-  }
-
-  default MutableBeaconState withCurrentEpochCalculationSlot(UInt64 currentEpochCalculationSlot) {
-    setCurrentEpochCalculationSlot(currentEpochCalculationSlot);
-    return this;
-  }
-
-  default MutableBeaconState withPreviousEpochRandaoMix(Hash32 previousEpochRandaoMix) {
-    setPreviousEpochRandaoMix(previousEpochRandaoMix);
-    return this;
-  }
-
-  default MutableBeaconState withCurrentEpochRandaoMix(Hash32 currentEpochRandaoMix) {
-    setCurrentEpochRandaoMix(currentEpochRandaoMix);
-    return this;
-  }
-
-  default MutableBeaconState withCustodyChallenges(List<CustodyChallenge> custodyChallenges) {
-    setCustodyChallenges(custodyChallenges);
-    return this;
-  }
-
-  default MutableBeaconState withPreviousJustifiedSlot(UInt64 previousJustifiedSlot) {
-    setPreviousJustifiedSlot(previousJustifiedSlot);
-    return this;
-  }
-
-  default MutableBeaconState withJustifiedSlot(UInt64 justifiedSlot) {
-    setJustifiedSlot(justifiedSlot);
-    return this;
-  }
-
-  default MutableBeaconState withJustificationBitfield(UInt64 justificationBitfield) {
-    setJustificationBitfield(justificationBitfield);
-    return this;
-  }
-
-  default MutableBeaconState withFinalizedSlot(UInt64 finalizedSlot) {
-    setFinalizedSlot(finalizedSlot);
-    return this;
-  }
-
-  default MutableBeaconState withLatestCrosslinks(List<CrosslinkRecord> latestCrosslinks) {
-    setLatestCrosslinks(latestCrosslinks);
-    return this;
-  }
-
-  default MutableBeaconState withLatestBlockRoots(List<Hash32> latestBlockRoots) {
-    setLatestBlockRoots(latestBlockRoots);
-    return this;
-  }
-
-  default MutableBeaconState withLatestPenalizedExitBalances(List<UInt64> latestPenalizedExitBalances) {
-    setLatestPenalizedExitBalances(latestPenalizedExitBalances);
-    return this;
-  }
-
-  default MutableBeaconState withLatestPenalizedExitBalance(
-      int idx, Function<UInt64, UInt64> balanceUpdater) {
-    ArrayList<UInt64> latestPenalizedExitBalances =
-        new ArrayList<>(getLatestPenalizedExitBalances());
-    latestPenalizedExitBalances.set(
-        idx, balanceUpdater.apply(latestPenalizedExitBalances.get(idx)));
-    return withLatestPenalizedExitBalances(latestPenalizedExitBalances);
-  }
-
-  default MutableBeaconState withLatestAttestations(List<PendingAttestationRecord> latestAttestations) {
-    setLatestAttestations(latestAttestations);
-    return this;
-  }
-
-  default MutableBeaconState withNewLatestAttestation(PendingAttestationRecord latestAttestation) {
-    ArrayList<PendingAttestationRecord> newRecords = new ArrayList<>(getLatestAttestations());
-    newRecords.add(latestAttestation);
-    return withLatestAttestations(newRecords);
-  }
-
-  default MutableBeaconState withBatchedBlockRoots(List<Hash32> batchedBlockRoots) {
-    setBatchedBlockRoots(batchedBlockRoots);
-    return this;
-  }
-
-  default MutableBeaconState withLatestDepositRoot(Hash32 latestDepositRoot) {
-    setLatestDepositRoot(latestDepositRoot);
-    return this;
-  }
-
-  default MutableBeaconState withDepositRootVotes(List<DepositRootVote> depositRootVotes) {
-    setDepositRootVotes(depositRootVotes);
-    return this;
-  }
-
-  default MutableBeaconState withDepositRootVote(
-      int idx, Function<DepositRootVote, DepositRootVote> voteUpdater) {
-    ArrayList<DepositRootVote> newVotes = new ArrayList<>(getDepositRootVotes());
-    newVotes.set(idx, voteUpdater.apply(newVotes.get(idx)));
-    return withDepositRootVotes(newVotes);
-  }
-
-  default MutableBeaconState withNewDepositRootVote(DepositRootVote newVote) {
-    ArrayList<DepositRootVote> newVotes = new ArrayList<>(getDepositRootVotes());
-    newVotes.add(newVote);
-    return withDepositRootVotes(newVotes);
-  }
 }

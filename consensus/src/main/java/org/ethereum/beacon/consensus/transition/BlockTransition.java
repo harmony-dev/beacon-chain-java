@@ -17,6 +17,7 @@ import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.DepositRootVote;
 import org.ethereum.beacon.core.state.PendingAttestationRecord;
+import org.ethereum.beacon.core.types.ValidatorIndex;
 import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
 
@@ -89,18 +90,18 @@ public class BlockTransition implements StateTransition<BeaconStateEx> {
            if state.validator_registry[i].penalized_slot > state.slot.
     */
     for (CasperSlashing casper_slashing : block.getBody().getCasperSlashings()) {
-      Set<UInt24> indices_1 = new HashSet<>();
+      Set<ValidatorIndex> indices_1 = new HashSet<>();
       indices_1.addAll(asList(casper_slashing.getSlashableVoteData1().getCustodyBit0Indices()));
       indices_1.addAll(asList(casper_slashing.getSlashableVoteData1().getCustodyBit1Indices()));
-      Set<UInt24> indices_2 = new HashSet<>();
+      Set<ValidatorIndex> indices_2 = new HashSet<>();
       indices_2.addAll(asList(casper_slashing.getSlashableVoteData2().getCustodyBit0Indices()));
       indices_2.addAll(asList(casper_slashing.getSlashableVoteData2().getCustodyBit1Indices()));
-      Set<UInt24> intersection = indices_1;
+      Set<ValidatorIndex> intersection = indices_1;
       intersection.retainAll(indices_2);
-      for (UInt24 index : intersection) {
+      for (ValidatorIndex index : intersection) {
         if (state
                 .getValidatorRegistry()
-                .get(index.getValue())
+                .get(index)
                 .getPenalizedSlot()
                 .compareTo(state.getSlot())
             > 0) {
