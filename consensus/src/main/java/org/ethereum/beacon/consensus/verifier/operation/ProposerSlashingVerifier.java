@@ -78,8 +78,8 @@ public class ProposerSlashingVerifier implements OperationVerifier<ProposerSlash
         specHelpers.hash_tree_root(proposerSlashing.getProposalData2()),
         proposerSlashing.getProposalSignature2(),
         specHelpers.get_domain(
-            state.getForkData(), proposerSlashing.getProposalData1().getSlot(), PROPOSAL))) {
-      return failedResult("proposal_signature_1 is invalid");
+            state.getForkData(), proposerSlashing.getProposalData2().getSlot(), PROPOSAL))) {
+      return failedResult("proposal_signature_2 is invalid");
     }
 
     return PASSED;

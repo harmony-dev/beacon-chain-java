@@ -499,8 +499,6 @@ public class SpecHelpers {
     List<Bytes48> pubKeys1 = mapIndicesToPubKeys(state, vote_data.getCustodyBit0Indices());
     List<Bytes48> pubKeys2 = mapIndicesToPubKeys(state, vote_data.getCustodyBit1Indices());
 
-    ;
-
     return bls_verify_multiple(
         Arrays.asList(bls_aggregate_pubkeys(pubKeys1), bls_aggregate_pubkeys(pubKeys2)),
         Arrays.asList(
