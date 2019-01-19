@@ -22,19 +22,19 @@ import java.util.function.Function;
 import static org.ethereum.beacon.ssz.SSZSerializer.LENGTH_PREFIX_BYTE_SIZE;
 
 /**
- * <p>Implementation of {@link SSZCodec} which handles unknown classes recursively,
- * passing it to input {@link SSZSerializer} instance, and prioritizes codec supported
- * class over supported type.</p>
+ * Implementation of {@link SSZCodec} which handles unknown classes recursively, passing it to input
+ * {@link SSZSerializer} instance, and prioritizes codec supported class over supported type.
  *
- * <p>So, if handled field class has only one codec registered for, it will be used,
- * even if field have text marking that matches two codecs. But if several codecs are
- * registered for one class and it has {@link org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField#extraType} marking,
- * it will be handled by codec supporting this class and type.</p>
+ * <p>So, if handled field class has only one codec registered for, it will be used, even if field
+ * have text marking that matches two codecs. But if several codecs are registered for one class and
+ * it has {@link org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField#extraType} marking, it
+ * will be handled by codec supporting this class and type.
  */
 public class SSZCodecRoulette implements SSZCodecResolver {
   private Map<Class, List<CodecEntry>> registeredClassHandlers = new HashMap<>();
 
-  public Consumer<Triplet<Object, OutputStream, SSZSerializer>> resolveEncodeFunction(SSZSchemeBuilder.SSZScheme.SSZField field) {
+  public Consumer<Triplet<Object, OutputStream, SSZSerializer>> resolveEncodeFunction(
+      SSZSchemeBuilder.SSZScheme.SSZField field) {
     SSZCodec encoder = resolveCodec(field);
 
     if (field.multipleType.equals(SSZSchemeBuilder.SSZScheme.MultipleType.NONE)) {
@@ -52,7 +52,7 @@ public class SSZCodecRoulette implements SSZCodecResolver {
           encodeContainer(value, field, res, sszSerializer);
         };
       }
-    } else if (field.multipleType.equals(SSZSchemeBuilder.SSZScheme.MultipleType.LIST))  {
+    } else if (field.multipleType.equals(SSZSchemeBuilder.SSZScheme.MultipleType.LIST)) {
       if (encoder != null) {
         return objects -> {
           Object value = objects.getValue0();
@@ -64,10 +64,10 @@ public class SSZCodecRoulette implements SSZCodecResolver {
           Object value = objects.getValue0();
           OutputStream res = objects.getValue1();
           SSZSerializer sszSerializer = objects.getValue2();
-          encodeContainerList((List<Object>)value, field, res, sszSerializer);
+          encodeContainerList((List<Object>) value, field, res, sszSerializer);
         };
       }
-    } else if (field.multipleType.equals(SSZSchemeBuilder.SSZScheme.MultipleType.ARRAY))  {
+    } else if (field.multipleType.equals(SSZSchemeBuilder.SSZScheme.MultipleType.ARRAY)) {
       if (encoder != null) {
         return objects -> {
           Object value = objects.getValue0();
@@ -84,11 +84,15 @@ public class SSZCodecRoulette implements SSZCodecResolver {
       }
     }
 
-    throw new SSZSchemeException(String.format("Function not resolved for encoding field %s", field));
+    throw new SSZSchemeException(
+        String.format("Function not resolved for encoding field %s", field));
   }
 
-  private void encodeContainer(Object value, SSZSchemeBuilder.SSZScheme.SSZField field,
-                               OutputStream result, SSZSerializer sszSerializer) {
+  private void encodeContainer(
+      Object value,
+      SSZSchemeBuilder.SSZScheme.SSZField field,
+      OutputStream result,
+      SSZSerializer sszSerializer) {
     byte[] data = sszSerializer.encode(value, field.type);
 
     if (!field.notAContainer) {
@@ -103,14 +107,17 @@ public class SSZCodecRoulette implements SSZCodecResolver {
     try {
       result.write(data);
     } catch (IOException e) {
-      String error = String.format("Failed to write container from field \"%s\" to stream",
-          field.name);
+      String error =
+          String.format("Failed to write container from field \"%s\" to stream", field.name);
       throw new SSZException(error, e);
     }
   }
 
-  private void encodeContainerList(List<Object> value, SSZSchemeBuilder.SSZScheme.SSZField field,
-                                   OutputStream result, SSZSerializer sszSerializer) {
+  private void encodeContainerList(
+      List<Object> value,
+      SSZSchemeBuilder.SSZScheme.SSZField field,
+      OutputStream result,
+      SSZSerializer sszSerializer) {
     try {
       Bytes[] data = packContainerList(value, field, sszSerializer);
       result.write(net.consensys.cava.ssz.SSZ.encodeBytesList(data).toArrayUnsafe());
@@ -120,8 +127,8 @@ public class SSZCodecRoulette implements SSZCodecResolver {
     }
   }
 
-  private Bytes[] packContainerList(List<Object> values, SSZSchemeBuilder.SSZScheme.SSZField field,
-                                    SSZSerializer sszSerializer) {
+  private Bytes[] packContainerList(
+      List<Object> values, SSZSchemeBuilder.SSZScheme.SSZField field, SSZSerializer sszSerializer) {
     Bytes[] res = new Bytes[values.size()];
     for (int i = 0; i < values.size(); ++i) {
       byte[] data = sszSerializer.encode(values.get(i), field.type);
@@ -137,7 +144,8 @@ public class SSZCodecRoulette implements SSZCodecResolver {
     return res;
   }
 
-  public Function<Pair<BytesSSZReaderProxy, SSZSerializer>, Object> resolveDecodeFunction(SSZSchemeBuilder.SSZScheme.SSZField field) {
+  public Function<Pair<BytesSSZReaderProxy, SSZSerializer>, Object> resolveDecodeFunction(
+      SSZSchemeBuilder.SSZScheme.SSZField field) {
     SSZCodec decoder = resolveCodec(field);
     if (field.multipleType.equals(SSZSchemeBuilder.SSZScheme.MultipleType.NONE)) {
       if (decoder != null) {
@@ -145,7 +153,7 @@ public class SSZCodecRoulette implements SSZCodecResolver {
           BytesSSZReaderProxy reader = objects.getValue0();
           return decoder.decode(field, reader);
         };
-      } else  {
+      } else {
         return objects -> {
           BytesSSZReaderProxy reader = objects.getValue0();
           SSZSerializer sszSerializer = objects.getValue1();
@@ -183,16 +191,21 @@ public class SSZCodecRoulette implements SSZCodecResolver {
       };
     }
 
-    throw new SSZSchemeException(String.format("Function not resolved for decoding field %s", field));
+    throw new SSZSchemeException(
+        String.format("Function not resolved for decoding field %s", field));
   }
 
-  private Object decodeContainer(SSZSchemeBuilder.SSZScheme.SSZField field, BytesSSZReaderProxy reader,
-                                 SSZSerializer sszSerializer) {
+  private Object decodeContainer(
+      SSZSchemeBuilder.SSZScheme.SSZField field,
+      BytesSSZReaderProxy reader,
+      SSZSerializer sszSerializer) {
     return decodeContainerImpl(field, reader, sszSerializer).getValue0();
   }
 
-  private Pair<Object, Integer> decodeContainerImpl(SSZSchemeBuilder.SSZScheme.SSZField field,
-                                                    BytesSSZReaderProxy reader, SSZSerializer sszSerializer) {
+  private Pair<Object, Integer> decodeContainerImpl(
+      SSZSchemeBuilder.SSZScheme.SSZField field,
+      BytesSSZReaderProxy reader,
+      SSZSerializer sszSerializer) {
     Bytes data = reader.readBytes();
     int dataSize = data.size();
 
@@ -201,14 +214,16 @@ public class SSZCodecRoulette implements SSZCodecResolver {
       byte[] container = Bytes.concatenate(lengthPrefix, data).toArrayUnsafe();
       return new Pair<>(sszSerializer.decode(container, field.type), dataSize);
     } else {
-      return new Pair<>(sszSerializer.decode(data.toArrayUnsafe(), field.type),
+      return new Pair<>(
+          sszSerializer.decode(data.toArrayUnsafe(), field.type),
           dataSize + LENGTH_PREFIX_BYTE_SIZE);
     }
-
   }
 
-  private List<Object> decodeContainerList(SSZSchemeBuilder.SSZScheme.SSZField field,
-                                           BytesSSZReaderProxy reader, SSZSerializer sszSerializer) {
+  private List<Object> decodeContainerList(
+      SSZSchemeBuilder.SSZScheme.SSZField field,
+      BytesSSZReaderProxy reader,
+      SSZSerializer sszSerializer) {
     int remainingData = reader.readInt32();
     List<Object> res = new ArrayList<>();
     while (remainingData > 0) {
@@ -238,20 +253,20 @@ public class SSZCodecRoulette implements SSZCodecResolver {
 
   /**
    * Registers codecs to be used for
-   * @param classes        Classes, resolving is performed with class at first
-   * @param types          Text type, one class could be interpreted to several types.
-   *                       Several codecs could handle one class.
-   *                       Empty/null type is occupied by first class codec.
-   *                       Type is looked up in codecs one by one.
-   * @param codec          Codec able to encode/decode of specific class/types
+   *
+   * @param classes Classes, resolving is performed with class at first
+   * @param types Text type, one class could be interpreted to several types. Several codecs could
+   *     handle one class. Empty/null type is occupied by first class codec. Type is looked up in
+   *     codecs one by one.
+   * @param codec Codec able to encode/decode of specific class/types
    */
   public void registerCodec(Set<Class> classes, Set<String> types, SSZCodec codec) {
     for (Class clazz : classes) {
       if (registeredClassHandlers.get(clazz) != null) {
         registeredClassHandlers.get(clazz).add(new CodecEntry(codec, types));
       } else {
-        registeredClassHandlers.put(clazz,
-            new ArrayList<>(Collections.singletonList(new CodecEntry(codec, types))));
+        registeredClassHandlers.put(
+            clazz, new ArrayList<>(Collections.singletonList(new CodecEntry(codec, types))));
       }
     }
   }

@@ -101,7 +101,7 @@ public class BytesSSZReaderProxy {
     return reader.readByteArrayList();
   }
 
-  public  List<byte[]> readByteArrayList(int limit) {
+  public List<byte[]> readByteArrayList(int limit) {
     return reader.readByteArrayList(limit);
   }
 

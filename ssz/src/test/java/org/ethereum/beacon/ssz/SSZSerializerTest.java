@@ -12,7 +12,6 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import tech.pegasys.artemis.util.bytes.BytesValue;
-
 import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -25,19 +24,12 @@ import static net.consensys.cava.bytes.Bytes.fromHexString;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
-/**
- * Tests of {@link SSZSerializer}
- */
+/** Tests of {@link SSZSerializer} */
 public class SSZSerializerTest {
-  private SSZSerializer sszSerializer;
-
-  @Before
-  public void setup() {
-    sszSerializer = SSZSerializerBuilder.getBakedAnnotationBuilder().build();
-  }
-
-  private static byte[] DEFAULT_HASH = Hashes.keccak256(BytesValue.fromHexString("aa")).getArrayUnsafe();
+  private static byte[] DEFAULT_HASH =
+      Hashes.keccak256(BytesValue.fromHexString("aa")).getArrayUnsafe();
   private static Sign.Signature DEFAULT_SIG = new Sign.Signature();
+
   static {
     SecureRandom random = new SecureRandom();
     byte[] r = new byte[20];
@@ -48,11 +40,16 @@ public class SSZSerializerTest {
     DEFAULT_SIG.s = new BigInteger(1, s);
   }
 
+  private SSZSerializer sszSerializer;
+
+  @Before
+  public void setup() {
+    sszSerializer = SSZSerializerBuilder.getBakedAnnotationBuilder().build();
+  }
+
   @Test
   public void bitfieldTest() {
-    Bitfield expected = new Bitfield(
-        decode("abcd")
-    );
+    Bitfield expected = new Bitfield(decode("abcd"));
 
     byte[] encoded = sszSerializer.encode(expected);
     Bitfield constructed = (Bitfield) sszSerializer.decode(encoded, Bitfield.class);
@@ -67,26 +64,28 @@ public class SSZSerializerTest {
     signature.s = new BigInteger("8713785871");
 
     byte[] encoded = sszSerializer.encode(signature);
-    Sign.Signature constructed = (Sign.Signature) sszSerializer.decode(encoded, Sign.Signature.class);
+    Sign.Signature constructed =
+        (Sign.Signature) sszSerializer.decode(encoded, Sign.Signature.class);
 
     assertEquals(signature, constructed);
   }
 
   @Test
   public void simpleTest() {
-    AttestationRecord expected = new AttestationRecord(
-        12412L,
-        123,
-        Collections.emptyList(),
-        DEFAULT_HASH,
-        new Bitfield(decode("abcdef45")),
-        12400L,
-        DEFAULT_HASH,
-        DEFAULT_SIG
-    );
+    AttestationRecord expected =
+        new AttestationRecord(
+            123,
+            Collections.emptyList(),
+            DEFAULT_HASH,
+            new Bitfield(decode("abcdef45")),
+            DEFAULT_HASH,
+            12412L,
+            12400L,
+            DEFAULT_SIG);
 
     byte[] encoded = sszSerializer.encode(expected);
-    AttestationRecord constructed = (AttestationRecord) sszSerializer.decode(encoded, AttestationRecord.class);
+    AttestationRecord constructed =
+        (AttestationRecord) sszSerializer.decode(encoded, AttestationRecord.class);
 
     assertEquals(expected, constructed);
   }
@@ -101,19 +100,20 @@ public class SSZSerializerTest {
     builder.addPrimitivesCodecs();
     SSZSerializer serializer = builder.build();
 
-    AttestationRecord expected = new AttestationRecord(
-        12412L,
-        123,
-        Collections.emptyList(),
-        DEFAULT_HASH,
-        new Bitfield(decode("abcdef45")),
-        12400L,
-        DEFAULT_HASH,
-        DEFAULT_SIG
-    );
+    AttestationRecord expected =
+        new AttestationRecord(
+            123,
+            Collections.emptyList(),
+            DEFAULT_HASH,
+            new Bitfield(decode("abcdef45")),
+            DEFAULT_HASH,
+            12412L,
+            12400L,
+            DEFAULT_SIG);
 
     byte[] encoded = serializer.encode(expected);
-    AttestationRecord constructed = (AttestationRecord) serializer.decode(encoded, AttestationRecord.class);
+    AttestationRecord constructed =
+        (AttestationRecord) serializer.decode(encoded, AttestationRecord.class);
 
     Assert.assertNotEquals(expected, constructed);
 
@@ -125,88 +125,132 @@ public class SSZSerializerTest {
 
   @Test
   public void nullableTest() {
-    AttestationRecord expected1 = new AttestationRecord(
-        12412L,
-        123,
-        Collections.emptyList(),
-        DEFAULT_HASH,
-        new Bitfield(decode("abcdef45")),
-        12400L,
-        DEFAULT_HASH,
-        null
-    );
+    AttestationRecord expected1 =
+        new AttestationRecord(
+            123,
+            Collections.emptyList(),
+            DEFAULT_HASH,
+            new Bitfield(decode("abcdef45")),
+            DEFAULT_HASH,
+            12412L,
+            12400L,
+            null);
     byte[] encoded1 = sszSerializer.encode(expected1);
-    AttestationRecord actual1 = (AttestationRecord) sszSerializer.decode(encoded1, AttestationRecord.class);
+    AttestationRecord actual1 =
+        (AttestationRecord) sszSerializer.decode(encoded1, AttestationRecord.class);
 
     assertEquals(expected1, actual1);
 
-    AttestationRecord expected2 = new AttestationRecord(
-        12412L,
-        123,
-        Collections.emptyList(),
-        DEFAULT_HASH,
-        null,
-        12400L,
-        DEFAULT_HASH,
-        DEFAULT_SIG
-    );
+    AttestationRecord expected2 =
+        new AttestationRecord(
+            123,
+            Collections.emptyList(),
+            DEFAULT_HASH,
+            null,
+            DEFAULT_HASH,
+            12412L,
+            12400L,
+            DEFAULT_SIG);
     byte[] encoded2 = sszSerializer.encode(expected2);
-    AttestationRecord actual2 = (AttestationRecord) sszSerializer.decode(encoded2, AttestationRecord.class);
+    AttestationRecord actual2 =
+        (AttestationRecord) sszSerializer.decode(encoded2, AttestationRecord.class);
 
     assertEquals(expected2, actual2);
 
-    AttestationRecord expected3 = new AttestationRecord(
-        12412L,
-        123,
-        Collections.emptyList(),
-        DEFAULT_HASH,
-        null,
-        12400L,
-        DEFAULT_HASH,
-        null
-    );
+    AttestationRecord expected3 =
+        new AttestationRecord(
+            123, Collections.emptyList(), DEFAULT_HASH, null, DEFAULT_HASH, 12412L, 12400L, null);
     byte[] encoded3 = sszSerializer.encode(expected3);
-    AttestationRecord actual3 = (AttestationRecord) sszSerializer.decode(encoded3, AttestationRecord.class);
+    AttestationRecord actual3 =
+        (AttestationRecord) sszSerializer.decode(encoded3, AttestationRecord.class);
 
     assertEquals(expected3, actual3);
   }
 
   @Test(expected = NullPointerException.class)
   public void nullFixedSizeFieldTest() {
-    AttestationRecord expected3 = new AttestationRecord(
-        12412L,
-        123,
-        Collections.emptyList(),
-        null,
-        new Bitfield(decode("abcdef45")),
-        12400L,
-        null,
-        DEFAULT_SIG
-    );
+    AttestationRecord expected3 =
+        new AttestationRecord(
+            123,
+            Collections.emptyList(),
+            null,
+            new Bitfield(decode("abcdef45")),
+            null,
+            12412L,
+            12400L,
+            DEFAULT_SIG);
     sszSerializer.encode(expected3);
   }
 
   @Test(expected = NullPointerException.class)
   public void nullListTest() {
-    AttestationRecord expected4 = new AttestationRecord(
-        12412L,
-        123,
-        null,
-        DEFAULT_HASH,
-        new Bitfield(decode("abcdef45")),
-        12400L,
-        DEFAULT_HASH,
-        DEFAULT_SIG
-    );
+    AttestationRecord expected4 =
+        new AttestationRecord(
+            123,
+            null,
+            DEFAULT_HASH,
+            new Bitfield(decode("abcdef45")),
+            DEFAULT_HASH,
+            12412L,
+            12400L,
+            DEFAULT_SIG);
     sszSerializer.encode(expected4);
+  }
+
+  /**
+   * Checks that we build objects with {@link SSZSerializer} in the same way as Consensys's {@link
+   * SSZ}
+   */
+  @Test
+  public void shouldWorkLikeCavaWithObjects() {
+    Bytes bytes =
+        fromHexString(
+            "0x00000003426F62040000000000000000000000000000000000000000000000000000011F71B70768");
+    SomeObject readObject =
+        SSZ.decode(bytes, r -> new SomeObject(r.readString(), r.readInt8(), r.readBigInteger(256)));
+
+    assertEquals("Bob", readObject.name);
+    assertEquals(4, readObject.number);
+    assertEquals(BigInteger.valueOf(1234563434344L), readObject.longNumber);
+
+    // Now try the same with new SSZSerializer
+    SomeObject readObjectAuto =
+        (SomeObject) sszSerializer.decode(bytes.toArrayUnsafe(), SomeObject.class);
+    assertEquals("Bob", readObjectAuto.name);
+    assertEquals(4, readObjectAuto.number);
+    assertEquals(BigInteger.valueOf(1234563434344L), readObjectAuto.longNumber);
+    // and finally check it backwards
+    assertArrayEquals(bytes.toArrayUnsafe(), sszSerializer.encode(readObjectAuto));
+  }
+
+  /** Checks that we could handle list placed inside another list */
+  @Ignore("Implement me!")
+  @Test
+  public void shouldHandleListList() {
+    List<String> list1 = new ArrayList<>();
+    list1.add("aa");
+    list1.add("bb");
+    List<String> list2 = new ArrayList<>();
+    list1.add("cc");
+    list1.add("dd");
+    List<List<String>> listOfLists = new ArrayList<>();
+    listOfLists.add(list1);
+    listOfLists.add(list2);
+    ListListObject expected = new ListListObject(listOfLists);
+    byte[] encoded = sszSerializer.encode(expected);
+    ListListObject actual = (ListListObject) sszSerializer.decode(encoded, ListListObject.class);
+
+    assertEquals(expected, actual);
   }
 
   @SSZSerializable
   public static class SomeObject {
     private final String name;
-    @org.ethereum.beacon.ssz.annotation.SSZ(type="uint8")
+
+    @org.ethereum.beacon.ssz.annotation.SSZ(type = "uint8")
     private final int number;
-    @org.ethereum.beacon.ssz.annotation.SSZ(type="uint256")
+
+    @org.ethereum.beacon.ssz.annotation.SSZ(type = "uint256")
     private final BigInteger longNumber;
 
     public SomeObject(String name, int number, BigInteger longNumber) {
@@ -228,28 +272,6 @@ public class SSZSerializerTest {
     }
   }
 
-  /**
-   * Checks that we build objects with {@link SSZSerializer}
-   * in the same way as Consensys's {@link SSZ}
-   */
-  @Test
-  public void shouldWorkLikeCavaWithObjects() {
-    Bytes bytes = fromHexString("0x00000003426F62040000000000000000000000000000000000000000000000000000011F71B70768");
-    SomeObject readObject = SSZ.decode(bytes, r -> new SomeObject(r.readString(), r.readInt8(), r.readBigInteger(256)));
-
-    assertEquals("Bob", readObject.name);
-    assertEquals(4, readObject.number);
-    assertEquals(BigInteger.valueOf(1234563434344L), readObject.longNumber);
-
-    // Now try the same with new SSZSerializer
-    SomeObject readObjectAuto = (SomeObject) sszSerializer.decode(bytes.toArrayUnsafe(), SomeObject.class);
-    assertEquals("Bob", readObjectAuto.name);
-    assertEquals(4, readObjectAuto.number);
-    assertEquals(BigInteger.valueOf(1234563434344L), readObjectAuto.longNumber);
-    // and finally check it backwards
-    assertArrayEquals(bytes.toArrayUnsafe(), sszSerializer.encode(readObjectAuto));
-  }
-
   @SSZSerializable
   public static class ListListObject {
     private final List<List<String>> names;
@@ -269,28 +291,5 @@ public class SSZSerializerTest {
       ListListObject that = (ListListObject) o;
       return names.equals(that.names);
     }
-  }
-
-  /**
-   * Checks that we could handle list placed inside another list
-   */
-  @Ignore("Implement me!")
-  @Test
-  public void shouldHandleListList() {
-    List<String> list1 = new ArrayList<>();
-    list1.add("aa");
-    list1.add("bb");
-    List<String> list2 = new ArrayList<>();
-    list1.add("cc");
-    list1.add("dd");
-    List<List<String>> listOfLists = new ArrayList<>();
-    listOfLists.add(list1);
-    listOfLists.add(list2);
-    ListListObject expected = new ListListObject(listOfLists);
-    byte[] encoded = sszSerializer.encode(expected);
-    ListListObject actual = (ListListObject) sszSerializer.decode(encoded, ListListObject.class);
-
-    assertEquals(expected, actual);
-
   }
 }

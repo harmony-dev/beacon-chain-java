@@ -12,25 +12,24 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * Tries to instantiate object with empty constructor and set all fields directly or using standard setter
+ * Tries to instantiate object with empty constructor and set all fields directly or using standard
+ * setter
  */
 public class SettersObjCreator implements ObjectCreator {
 
   /**
-   * <p>Creates instance of object using field -> value data</p>
+   * Creates instance of object using field -> value data
    *
-   * @param clazz           Object class
+   * @param clazz Object class
    * @param fieldValuePairs Field -> value info
    * @return Pair[success or not, created instance if success or null otherwise]
    */
   @Override
-  public Pair<Boolean, Object> createObject(Class clazz, List<Pair<SSZSchemeBuilder.SSZScheme.SSZField, Object>> fieldValuePairs) {
-    List<SSZSchemeBuilder.SSZScheme.SSZField> fields = fieldValuePairs.stream()
-        .map(Pair::getValue0)
-        .collect(Collectors.toList());
-    Object[] values = fieldValuePairs.stream()
-        .map(Pair::getValue1)
-        .toArray();
+  public Pair<Boolean, Object> createObject(
+      Class clazz, List<Pair<SSZSchemeBuilder.SSZScheme.SSZField, Object>> fieldValuePairs) {
+    List<SSZSchemeBuilder.SSZScheme.SSZField> fields =
+        fieldValuePairs.stream().map(Pair::getValue0).collect(Collectors.toList());
+    Object[] values = fieldValuePairs.stream().map(Pair::getValue1).toArray();
     // Find constructor with no params
     Constructor constructor;
     try {
@@ -49,7 +48,7 @@ public class SettersObjCreator implements ObjectCreator {
 
     Map<String, Method> fieldSetters = new HashMap<>();
     try {
-      for (PropertyDescriptor pd: Introspector.getBeanInfo(clazz).getPropertyDescriptors()) {
+      for (PropertyDescriptor pd : Introspector.getBeanInfo(clazz).getPropertyDescriptors()) {
         fieldSetters.put(pd.getName(), pd.getWriteMethod());
       }
     } catch (IntrospectionException e) {
@@ -60,12 +59,12 @@ public class SettersObjCreator implements ObjectCreator {
     // Fill up field by field
     for (int i = 0; i < fields.size(); ++i) {
       SSZSchemeBuilder.SSZScheme.SSZField currentField = fields.get(i);
-      try {   // Try to set by field assignment
+      try { // Try to set by field assignment
         clazz.getField(currentField.name).set(result, values[i]);
       } catch (Exception e) {
-        try {    // Try to set using setter
+        try { // Try to set using setter
           fieldSetters.get(currentField.name).invoke(result, values[i]);
-        } catch (Exception ex) {    // Cannot set the field
+        } catch (Exception ex) { // Cannot set the field
           return new Pair<>(false, null);
         }
       }
