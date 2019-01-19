@@ -1023,7 +1023,7 @@ public class SpecHelpers {
          signature=vote_data.aggregate_signature,
          domain=get_domain(
              state.fork_data,
-             state.slot,
+             vote_data.data.slot,
              DOMAIN_ATTESTATION,
          ),
      )
@@ -1037,15 +1037,13 @@ public class SpecHelpers {
     List<Bytes48> pubKeys1 = mapIndicesToPubKeys(state, vote_data.getCustodyBit0Indices());
     List<Bytes48> pubKeys2 = mapIndicesToPubKeys(state, vote_data.getCustodyBit1Indices());
 
-    ;
-
     return bls_verify_multiple(
         Arrays.asList(bls_aggregate_pubkeys(pubKeys1), bls_aggregate_pubkeys(pubKeys2)),
         Arrays.asList(
             hash_tree_root(new AttestationDataAndCustodyBit(vote_data.getData(), false)),
             hash_tree_root(new AttestationDataAndCustodyBit(vote_data.getData(), true))),
         vote_data.getAggregatedSignature(),
-        get_domain(state.getForkData(), state.getSlot(), ATTESTATION));
+        get_domain(state.getForkData(), vote_data.getData().getSlot(), ATTESTATION));
   }
 
   /*
