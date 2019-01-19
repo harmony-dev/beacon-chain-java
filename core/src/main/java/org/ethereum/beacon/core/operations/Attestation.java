@@ -1,9 +1,10 @@
 package org.ethereum.beacon.core.operations;
 
-import org.ethereum.beacon.ssz.annotation.SSZ;
-import org.ethereum.beacon.ssz.annotation.SSZSerializable;
+import com.google.common.base.Objects;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
+import org.ethereum.beacon.ssz.annotation.SSZ;
+import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
@@ -20,17 +21,13 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
 public class Attestation {
 
   /** Attestation data object. */
-  @SSZ
-  private final AttestationData data;
+  @SSZ private final AttestationData data;
   /** A bitfield where each bit corresponds to a validator attested to the {@link #data}. */
-  @SSZ
-  private final BytesValue participationBitfield;
+  @SSZ private final BytesValue participationBitfield;
   /** Proof of custody bitfield. */
-  @SSZ
-  private final BytesValue custodyBitfield;
+  @SSZ private final BytesValue custodyBitfield;
   /** A product of aggregation of signatures from different validators to {@link #data}. */
-  @SSZ
-  private final Bytes96 aggregatedSignature;
+  @SSZ private final Bytes96 aggregatedSignature;
 
   public Attestation(
       AttestationData data,
@@ -64,9 +61,9 @@ public class Attestation {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     Attestation that = (Attestation) o;
-    return data.equals(that.data) &&
-        participationBitfield.equals(that.participationBitfield) &&
-        custodyBitfield.equals(that.custodyBitfield) &&
-        aggregatedSignature.equals(that.aggregatedSignature);
+    return Objects.equal(data, that.data)
+        && Objects.equal(participationBitfield, that.participationBitfield)
+        && Objects.equal(custodyBitfield, that.custodyBitfield)
+        && Objects.equal(aggregatedSignature, that.aggregatedSignature);
   }
 }

@@ -28,8 +28,12 @@ public class ValidatorRegistryDeltaBlock implements Hashable {
   /** A code denoting an action applied to the validator. */
   private final UInt64 flag;
 
-  public ValidatorRegistryDeltaBlock(Hash32 latestRegistryDeltaRoot, UInt24 validatorIndex,
-      Bytes48 pubKey, UInt64 slot, UInt64 flag) {
+  public ValidatorRegistryDeltaBlock(
+      Hash32 latestRegistryDeltaRoot,
+      UInt24 validatorIndex,
+      Bytes48 pubKey,
+      UInt64 slot,
+      UInt64 flag) {
     this.latestRegistryDeltaRoot = latestRegistryDeltaRoot;
     this.validatorIndex = validatorIndex;
     this.pubKey = pubKey;

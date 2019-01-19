@@ -1,5 +1,6 @@
 package org.ethereum.beacon.core.operations;
 
+import com.google.common.base.Objects;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.operations.slashing.SlashableVoteData;
 import org.ethereum.beacon.ssz.annotation.SSZ;
@@ -18,11 +19,9 @@ import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 public class CasperSlashing {
 
   /** First batch of votes. */
-  @SSZ
-  private final SlashableVoteData slashableVoteData1;
+  @SSZ private final SlashableVoteData slashableVoteData1;
   /** Second batch of votes. */
-  @SSZ
-  private final SlashableVoteData slashableVoteData2;
+  @SSZ private final SlashableVoteData slashableVoteData2;
 
   public CasperSlashing(
       SlashableVoteData slashableVoteData1, SlashableVoteData slashableVoteData2) {
@@ -43,7 +42,7 @@ public class CasperSlashing {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     CasperSlashing that = (CasperSlashing) o;
-    return slashableVoteData1.equals(that.slashableVoteData1) &&
-        slashableVoteData2.equals(that.slashableVoteData2);
+    return Objects.equal(slashableVoteData1, that.slashableVoteData1)
+        && Objects.equal(slashableVoteData2, that.slashableVoteData2);
   }
 }

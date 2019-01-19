@@ -1,11 +1,15 @@
 package org.ethereum.beacon.core;
 
 import org.ethereum.beacon.core.operations.CustodyChallenge;
-import org.ethereum.beacon.core.state.*;
+import org.ethereum.beacon.core.state.BeaconStateImpl;
+import org.ethereum.beacon.core.state.CrosslinkRecord;
+import org.ethereum.beacon.core.state.DepositRootVote;
+import org.ethereum.beacon.core.state.ForkData;
+import org.ethereum.beacon.core.state.PendingAttestationRecord;
+import org.ethereum.beacon.core.state.ValidatorRecord;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -101,11 +105,11 @@ public interface MutableBeaconState extends BeaconState {
     return withValidatorRegistry(newRegistry);
   }
 
-  default MutableBeaconState withValidatorRecord(int idx,
-      Consumer<ValidatorRecord.Builder> validatorUpdater) {
+  default MutableBeaconState withValidatorRecord(
+      int idx, Consumer<ValidatorRecord.Builder> validatorUpdater) {
     ArrayList<ValidatorRecord> newRegistry = new ArrayList<>(getValidatorRegistry());
-    ValidatorRecord.Builder builder = ValidatorRecord.Builder
-        .fromRecord(getValidatorRegistry().get(idx));
+    ValidatorRecord.Builder builder =
+        ValidatorRecord.Builder.fromRecord(getValidatorRegistry().get(idx));
     validatorUpdater.accept(builder);
     newRegistry.set(idx, builder.build());
     return withValidatorRegistry(newRegistry);
@@ -122,15 +126,16 @@ public interface MutableBeaconState extends BeaconState {
     return withValidatorBalances(validatorBalances);
   }
 
-  default MutableBeaconState withValidatorBalance(UInt24 idx,
-      Function<UInt64, UInt64> validatorBalanceUpdater) {
+  default MutableBeaconState withValidatorBalance(
+      UInt24 idx, Function<UInt64, UInt64> validatorBalanceUpdater) {
     ArrayList<UInt64> validatorBalances = new ArrayList<>(getValidatorBalances());
-    validatorBalances.set(idx.getValue(),
-        validatorBalanceUpdater.apply(validatorBalances.get(idx.getValue())));
+    validatorBalances.set(
+        idx.getValue(), validatorBalanceUpdater.apply(validatorBalances.get(idx.getValue())));
     return withValidatorBalances(validatorBalances);
   }
 
-  default MutableBeaconState withValidatorRegistryLatestChangeSlot(UInt64 validatorRegistryLatestChangeSlot) {
+  default MutableBeaconState withValidatorRegistryLatestChangeSlot(
+      UInt64 validatorRegistryLatestChangeSlot) {
     setValidatorRegistryLatestChangeSlot(validatorRegistryLatestChangeSlot);
     return this;
   }
@@ -140,7 +145,8 @@ public interface MutableBeaconState extends BeaconState {
     return this;
   }
 
-  default MutableBeaconState withValidatorRegistryDeltaChainTip(Hash32 validatorRegistryDeltaChainTip) {
+  default MutableBeaconState withValidatorRegistryDeltaChainTip(
+      Hash32 validatorRegistryDeltaChainTip) {
     setValidatorRegistryDeltaChainTip(validatorRegistryDeltaChainTip);
     return this;
   }
@@ -220,7 +226,8 @@ public interface MutableBeaconState extends BeaconState {
     return this;
   }
 
-  default MutableBeaconState withLatestPenalizedExitBalances(List<UInt64> latestPenalizedExitBalances) {
+  default MutableBeaconState withLatestPenalizedExitBalances(
+      List<UInt64> latestPenalizedExitBalances) {
     setLatestPenalizedExitBalances(latestPenalizedExitBalances);
     return this;
   }
@@ -234,7 +241,8 @@ public interface MutableBeaconState extends BeaconState {
     return withLatestPenalizedExitBalances(latestPenalizedExitBalances);
   }
 
-  default MutableBeaconState withLatestAttestations(List<PendingAttestationRecord> latestAttestations) {
+  default MutableBeaconState withLatestAttestations(
+      List<PendingAttestationRecord> latestAttestations) {
     setLatestAttestations(latestAttestations);
     return this;
   }

@@ -1,5 +1,6 @@
 package org.ethereum.beacon.core.state;
 
+import com.google.common.base.Objects;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
@@ -20,11 +21,9 @@ public class CrosslinkRecord {
   public static final CrosslinkRecord EMPTY = new CrosslinkRecord(UInt64.ZERO, Hash32.ZERO);
 
   /** Slot number. */
-  @SSZ
-  private final UInt64 slot;
+  @SSZ private final UInt64 slot;
   /** Shard block hash. */
-  @SSZ
-  private final Hash32 shardBlockRoot;
+  @SSZ private final Hash32 shardBlockRoot;
 
   public CrosslinkRecord(UInt64 slot, Hash32 shardBlockRoot) {
     this.slot = slot;
@@ -44,7 +43,6 @@ public class CrosslinkRecord {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     CrosslinkRecord that = (CrosslinkRecord) o;
-    return slot.equals(that.slot) &&
-        shardBlockRoot.equals(that.shardBlockRoot);
+    return Objects.equal(slot, that.slot) && Objects.equal(shardBlockRoot, that.shardBlockRoot);
   }
 }
