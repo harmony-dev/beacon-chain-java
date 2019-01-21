@@ -1,0 +1,6 @@
+dependencies {
+  implementation project(':types')
+  implementation project(':db')
+
+  implementation 'com.google.guava:guava'
+}
