@@ -9,6 +9,7 @@ import org.ethereum.beacon.chain.storage.BeaconTuple;
 import org.ethereum.beacon.chain.storage.BeaconTupleStorage;
 import org.ethereum.beacon.consensus.ScoreFunction;
 import org.ethereum.beacon.consensus.StateTransition;
+import org.ethereum.beacon.consensus.types.Score;
 import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
 import org.ethereum.beacon.consensus.verifier.BeaconStateVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
@@ -17,7 +18,11 @@ import org.ethereum.beacon.core.BeaconBlocks;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.db.Database;
-import org.ethereum.beacon.consensus.types.Score;
+import org.reactivestreams.Processor;
+import org.reactivestreams.Publisher;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.ReplayProcessor;
+import reactor.core.scheduler.Schedulers;
 
 public class DefaultBeaconChain implements MutableBeaconChain {
 
@@ -39,6 +44,13 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   Database database;
 
   BeaconChainHead head;
+
+  private final Processor<BeaconTuple, BeaconTuple> blockSink = ReplayProcessor.cacheLast();
+  private final Publisher<BeaconTuple> stream = Flux.from(blockSink)
+      .publishOn(Schedulers.single())
+      .onBackpressureError()
+      .name("DefaultBeaconChain.block");
+
 
   @Override
   public void init() {
@@ -100,6 +112,8 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     }
 
     database.commit();
+
+    blockSink.onNext(newTuple);
   }
 
   private BeaconState pullParentState(BeaconBlock block) {
@@ -118,5 +132,10 @@ public class DefaultBeaconChain implements MutableBeaconChain {
 
   private boolean hasParent(BeaconBlock block) {
     return blockStorage.get(block.getParentRoot()).isPresent();
+  }
+
+  @Override
+  public Publisher<BeaconTuple> getBlockStream() {
+    return stream;
   }
 }
