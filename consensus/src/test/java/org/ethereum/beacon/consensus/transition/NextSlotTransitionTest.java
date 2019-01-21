@@ -32,11 +32,19 @@ public class NextSlotTransitionTest {
 
     List<Deposit> deposits = new ArrayList<>();
     for (int i = 0; i < 8000; i++) {
-      Deposit deposit = new Deposit(new Hash32[]{Hash32.random(rnd)}, UInt64.ZERO,
-          new DepositData(
-              new DepositInput(
-                  Bytes48.intToBytes48(i), Hash32.random(rnd), Hash32.ZERO, Hash32.ZERO, Bytes96.ZERO
-              ), chainSpec.getMaxDeposit().toGWei(), UInt64.ZERO));
+      Deposit deposit =
+          new Deposit(
+              new Hash32[] {Hash32.random(rnd)},
+              UInt64.ZERO,
+              new DepositData(
+                  new DepositInput(
+                      Bytes48.intToBytes48(i),
+                      Hash32.random(rnd),
+                      Hash32.ZERO,
+                      Hash32.ZERO,
+                      Bytes96.ZERO),
+                  chainSpec.getMaxDeposit().toGWei(),
+                  UInt64.ZERO));
       deposits.add(deposit);
     }
 
@@ -52,7 +60,18 @@ public class NextSlotTransitionTest {
               public List<Deposit> getInitialDeposits() {
                 return deposits;
               }
-            }, new SpecHelpers(chainSpec));
+
+              @Override
+              public Hash32 getRecentDepositRoot() {
+                return Hash32.ZERO;
+              }
+
+              @Override
+              public boolean isValidatorRegistered(Bytes48 pubKey) {
+                return false;
+              }
+            },
+            new SpecHelpers(chainSpec));
 
     BeaconStateEx initialState =
         initialStateTransition.apply(BeaconBlocks.createGenesis(chainSpec));

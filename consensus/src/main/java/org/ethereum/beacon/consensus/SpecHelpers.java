@@ -1193,6 +1193,22 @@ public class SpecHelpers {
     return value.equals(root);
   }
 
+  public UInt24 get_validator_index_by_pubkey(BeaconState state, Bytes48 pubkey) {
+    UInt24 index = UInt24.MAX_VALUE;
+    for (int i = 0; i < state.getValidatorRegistry().size(); i++) {
+      if (state.getValidatorRegistry().get(i).getPubKey().equals(pubkey)) {
+        index = UInt24.valueOf(i);
+        break;
+      }
+    }
+
+    return index;
+  }
+
+  public boolean is_epoch_transition(UInt64 slot) {
+    return slot.increment().modulo(spec.getEpochLength()).equals(UInt64.ZERO);
+  }
+
   public void checkIndexRange(BeaconState state, UInt24 index) {
     assertTrue(safeInt(index) < state.getValidatorRegistry().size());
   }
