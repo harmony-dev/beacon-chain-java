@@ -3,6 +3,7 @@ package org.ethereum.beacon.consensus.verifier.block;
 import static org.ethereum.beacon.consensus.verifier.VerificationResult.PASSED;
 import static org.ethereum.beacon.consensus.verifier.VerificationResult.failedResult;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
@@ -36,6 +37,7 @@ public abstract class OperationListVerifier<T> implements BeaconBlockVerifier {
   private OperationVerifier<T> operationVerifier;
   private Function<BeaconBlock, List<T>> operationListExtractor;
   private int maxOperationsInList;
+  private List<Function<List<T>, VerificationResult>> customVerifiers;
 
   protected OperationListVerifier(
       OperationVerifier<T> operationVerifier,
@@ -44,6 +46,7 @@ public abstract class OperationListVerifier<T> implements BeaconBlockVerifier {
     this.operationVerifier = operationVerifier;
     this.operationListExtractor = operationListExtractor;
     this.maxOperationsInList = maxOperationsInList;
+    this.customVerifiers = new ArrayList<>();
   }
 
   @Override
@@ -56,6 +59,14 @@ public abstract class OperationListVerifier<T> implements BeaconBlockVerifier {
           getType().getSimpleName(), maxOperationsInList, operations.size());
     }
 
+    for (Function<List<T>, VerificationResult> verifier : customVerifiers) {
+      VerificationResult result = verifier.apply(operations);
+      if (result != PASSED) {
+        return failedResult(
+            "%s list verification failed: %s", getType().getSimpleName(), result.getMessage());
+      }
+    }
+
     for (int i = 0; i < operations.size(); i++) {
       VerificationResult result = operationVerifier.verify(operations.get(i), state);
       if (result != PASSED) {
@@ -65,6 +76,12 @@ public abstract class OperationListVerifier<T> implements BeaconBlockVerifier {
     }
 
     return PASSED;
+  }
+
+  protected OperationListVerifier<T> addCustomVerifier(
+      Function<List<T>, VerificationResult> verifier) {
+    this.customVerifiers.add(verifier);
+    return this;
   }
 
   protected abstract Class<T> getType();
