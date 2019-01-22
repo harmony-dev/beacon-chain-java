@@ -7,10 +7,8 @@ import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.db.Database;
-import org.ethereum.beacon.db.source.DataSource;
 import org.ethereum.beacon.pending.ObservableBeaconState;
 import org.ethereum.beacon.randao.Randao;
-import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
 
@@ -18,14 +16,12 @@ import tech.pegasys.artemis.util.uint.UInt64;
 public class BeaconChainValidator implements ValidatorService {
 
   private static final String RANDAO_SOURCE = "validator_randao_source";
-  private static final int RANDAO_ROUNDS = 1 << 20;
 
   private ValidatorCredentials credentials;
   private Database database;
-  private ValidatorRegistrar registrar;
   private ValidatorTaskManager taskManager;
-  private BeaconBlockProposer proposer;
-  private BeaconBlockAttester attester;
+  private BeaconChainProposer proposer;
+  private BeaconChainAttester attester;
   private MutableBeaconChain beaconChain;
   private SpecHelpers specHelpers;
 
@@ -36,15 +32,13 @@ public class BeaconChainValidator implements ValidatorService {
   public BeaconChainValidator(
       ValidatorCredentials credentials,
       Database database,
-      ValidatorRegistrar registrar,
       ValidatorTaskManager taskManager,
-      BeaconBlockProposer proposer,
-      BeaconBlockAttester attester,
+      BeaconChainProposer proposer,
+      BeaconChainAttester attester,
       MutableBeaconChain beaconChain,
       SpecHelpers specHelpers) {
     this.credentials = credentials;
     this.database = database;
-    this.registrar = registrar;
     this.taskManager = taskManager;
     this.proposer = proposer;
     this.attester = attester;
@@ -54,28 +48,12 @@ public class BeaconChainValidator implements ValidatorService {
 
   @Override
   public void start() {
-    onPoWChainSyncDone(
-        () -> {
-          register(credentials);
-          subscribeToObservableStateUpdates(this::processState);
-        });
+    subscribeToObservableStateUpdates(this::processState);
   }
 
   @Override
   public void stop() {
     this.taskManager.stop();
-  }
-
-  private void register(ValidatorCredentials credentials) {
-    DataSource<BytesValue, BytesValue> randaoSource = database.createStorage(RANDAO_SOURCE);
-    if (!registrar.isRegistered(credentials)) {
-      this.randao = Randao.create(randaoSource, RANDAO_ROUNDS);
-      if (!registrar.register(credentials, this.randao)) {
-        throw new RuntimeException("Unable to register validator " + credentials);
-      }
-    } else {
-      this.randao = Randao.get(randaoSource);
-    }
   }
 
   private void init(BeaconState state) {
@@ -87,6 +65,7 @@ public class BeaconChainValidator implements ValidatorService {
 
     if (index.compareTo(UInt24.MAX_VALUE) < 0) {
       this.index = index;
+      this.randao = Randao.get(database.createStorage(RANDAO_SOURCE));
       this.taskManager.start();
       createTasks(state);
       subscribeToEpochUpdates(this::createTasks);
