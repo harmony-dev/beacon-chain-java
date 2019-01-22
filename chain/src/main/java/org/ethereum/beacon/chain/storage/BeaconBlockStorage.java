@@ -1,9 +1,9 @@
 package org.ethereum.beacon.chain.storage;
 
-import java.util.List;
-import java.util.Optional;
 import org.ethereum.beacon.core.BeaconBlock;
 import tech.pegasys.artemis.ethereum.core.Hash32;
+import java.util.List;
+import java.util.Optional;
 
 public interface BeaconBlockStorage extends HashKeyStorage<Hash32, BeaconBlock> {
 
@@ -28,4 +28,12 @@ public interface BeaconBlockStorage extends HashKeyStorage<Hash32, BeaconBlock> 
 
   Optional<Hash32> getSlotCanonicalBlock(long slot);
 
+  /**
+   * Searches for all children with limit slot distance from parent
+   *
+   * @param parent Start block hash
+   * @param limit Slot limit for forward children search
+   * @return list of children
+   */
+  List<BeaconBlock> getChildren(Hash32 parent, int limit);
 }

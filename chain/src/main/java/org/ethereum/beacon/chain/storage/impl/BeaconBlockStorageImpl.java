@@ -5,9 +5,11 @@ import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.db.source.DataSource;
 import org.ethereum.beacon.db.source.HoleyList;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-
 import javax.annotation.Nonnull;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 
 import static java.util.Collections.singletonList;
 
@@ -208,6 +210,26 @@ public class BeaconBlockStorageImpl implements BeaconBlockStorage {
       newBlocks.remove(idx);
       blockIndex.put(block.get().getSlot().getValue(), new SlotBlocks(newBlocks, newIdx));
     }
+  }
+
+  @Override
+  public List<BeaconBlock> getChildren(@Nonnull Hash32 parent, int limit) {
+    Optional<BeaconBlock> block = get(parent);
+    BeaconBlock start =
+        block.orElseThrow(() -> new RuntimeException("Parent block [" + parent + "] not found"));
+    final List<BeaconBlock> children = new ArrayList<>();
+
+    for (long curSlot = start.getSlot().getValue() + 1;
+        curSlot <= Math.min(start.getSlot().getValue() + limit, getMaxSlot());
+        ++curSlot) {
+      getSlotBlocks(curSlot).stream()
+          .map(this::get)
+          .filter(Optional::isPresent)
+          .filter(b -> start.isParentOf(b.get()))
+          .forEach(b -> children.add(b.get()));
+    }
+
+    return children;
   }
 
   @Override
