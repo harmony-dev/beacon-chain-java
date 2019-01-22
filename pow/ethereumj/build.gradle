@@ -1,0 +1,18 @@
+repositories {
+  maven { url "https://oss.jfrog.org/libs-snapshot/" }
+  maven { url "https://dl.bintray.com/ethereum/maven/" }
+}
+
+dependencies {
+  implementation project(':pow:core')
+  implementation project(':types')
+  implementation project(':core')
+  implementation ("org.ethereum:ethereumj-core") {
+    changing = true
+
+    exclude group: "log4j"
+    exclude group: "org.slf4j", module: "log4j-over-slf4j"
+    exclude group: "org.slf4j", module: "slf4j-log4j12"
+    exclude group: "org.ethereum", module: "solcJ-all"
+  }
+}
