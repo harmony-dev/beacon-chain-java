@@ -12,11 +12,13 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.CasperSlashing;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustodyBit;
+import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.operations.slashing.SlashableVoteData;
 import org.ethereum.beacon.core.spec.ChainSpec;
@@ -1113,6 +1115,54 @@ public class SpecHelpers {
     }
 
     return participants;
+  }
+
+  /*
+    Let serialized_deposit_data be the serialized form of deposit.deposit_data.
+    It should be 8 bytes for deposit_data.amount followed by 8 bytes for deposit_data.timestamp
+    and then the DepositInput bytes. That is, it should match deposit_data in the Ethereum 1.0
+    deposit contract of which the hash was placed into the Merkle tree.
+   */
+  public BytesValue serialized_deposit_data(DepositData data) {
+    DepositInput input = data.getDepositInput();
+    BytesValue inputBytes =
+        input
+            .getPubKey()
+            .concat(input.getWithdrawalCredentials())
+            .concat(input.getRandaoCommitment())
+            .concat(input.getCustodyCommitment())
+            .concat(input.getProofOfPossession());
+
+    return data.getValue()
+        .toBytesBigEndian()
+        .concat(data.getTimestamp().toBytesBigEndian())
+        .concat(inputBytes);
+  }
+
+  /*
+   def verify_merkle_branch(leaf: Bytes32, branch: [Bytes32], depth: int, index: int, root: Bytes32) -> bool:
+     value = leaf
+     for i in range(depth):
+         if index // (2**i) % 2:
+             value = hash(branch[i] + value)
+         else:
+             value = hash(value + branch[i])
+     return value == root
+  */
+  public boolean verify_merkle_branch(
+      Hash32 leaf, Hash32[] branch, UInt64 depth, UInt64 index, Hash32 root) {
+
+    Hash32 value = leaf;
+    for (int i : IntStream.range(0, safeInt(depth)).toArray()) {
+      if (index.dividedBy(UInt64.valueOf(1 << i)).modulo(UInt64.valueOf(2)).compareTo(UInt64.ZERO)
+          > 0) {
+        value = hash(branch[i].concat(value));
+      } else {
+        value = hash(value.concat(branch[i]));
+      }
+    }
+
+    return value.equals(root);
   }
 
   public void checkIndexRange(BeaconState state, UInt24 index) {
