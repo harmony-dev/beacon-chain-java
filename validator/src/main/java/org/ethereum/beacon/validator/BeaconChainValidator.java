@@ -9,7 +9,9 @@ import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
+import org.ethereum.beacon.validator.crypto.MessageSigner;
 import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
 
@@ -20,6 +22,8 @@ public class BeaconChainValidator implements ValidatorService {
   private BeaconChainProposer proposer;
   private BeaconChainAttester attester;
   private SpecHelpers specHelpers;
+  private MessageSigner<Bytes96> messageSigner;
+
   private ScheduledExecutorService executor;
 
   private ObservableBeaconState recentState;
@@ -30,11 +34,13 @@ public class BeaconChainValidator implements ValidatorService {
       ValidatorCredentials credentials,
       BeaconChainProposer proposer,
       BeaconChainAttester attester,
-      SpecHelpers specHelpers) {
+      SpecHelpers specHelpers,
+      MessageSigner<Bytes96> messageSigner) {
     this.credentials = credentials;
     this.proposer = proposer;
     this.attester = attester;
     this.specHelpers = specHelpers;
+    this.messageSigner = messageSigner;
   }
 
   @Override
@@ -92,7 +98,8 @@ public class BeaconChainValidator implements ValidatorService {
     if (recentDepositRoot != null) {
       executor.execute(
           () -> {
-            final BeaconBlock newBlock = proposer.propose(observableState, recentDepositRoot);
+            final BeaconBlock newBlock =
+                proposer.propose(observableState, recentDepositRoot, messageSigner);
             propagateBlock(newBlock);
           });
     }

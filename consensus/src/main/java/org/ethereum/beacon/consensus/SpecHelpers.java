@@ -913,10 +913,6 @@ public class SpecHelpers {
     return get_fork_version(forkData, slot).shl(32).plus(domainType).toBytes8();
   }
 
-  public Hash32 repeat_hash(Hash32 x, int n) {
-    return n == 0 ? x : repeat_hash(x, n - 1);
-  }
-
   public List<UInt24> custodyIndexIntersection(CasperSlashing slashing) {
     return intersection(
         indices(slashing.getSlashableVoteData1().getCustodyBit0Indices(),

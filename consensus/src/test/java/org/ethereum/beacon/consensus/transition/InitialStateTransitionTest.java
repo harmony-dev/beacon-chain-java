@@ -35,6 +35,11 @@ public class InitialStateTransitionTest {
               public List<Deposit> getInitialDeposits() {
                 return Collections.emptyList();
               }
+
+              @Override
+              public List<Deposit> pullDeposits(int count, Hash32 depositRoot, UInt64 fromIndex) {
+                return Collections.emptyList();
+              }
             },
             new SpecHelpers(ChainSpec.DEFAULT));
 
