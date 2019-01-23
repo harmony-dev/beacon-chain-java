@@ -131,9 +131,7 @@ public class InitialStateTransition implements StateTransition<BeaconStateEx> {
               depositInput.getPubKey(),
               depositData.getValue(),
               depositInput.getProofOfPossession(),
-              depositInput.getWithdrawalCredentials(),
-              depositInput.getRandaoCommitment(),
-              depositInput.getCustodyCommitment()
+              depositInput.getWithdrawalCredentials()
               );
           UInt64 balance = specHelpers.get_effective_balance(initialState, index);
 

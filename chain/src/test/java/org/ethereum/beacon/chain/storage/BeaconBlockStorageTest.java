@@ -26,7 +26,7 @@ public class BeaconBlockStorageTest {
     return new BeaconBlock(UInt64.valueOf(slot),
         parent == null ? Hash32.ZERO : parent.getHash(),
         Hash32.wrap(Bytes32.leftPad(BytesValues.toMinimalBytes(counter++))),
-        Hash32.ZERO, Hash32.ZERO, Bytes96.ZERO, BeaconBlockBody.EMPTY);
+        Bytes96.ZERO, Hash32.ZERO, Bytes96.ZERO, BeaconBlockBody.EMPTY);
   }
 
   @Test

@@ -1,5 +1,6 @@
 package org.ethereum.beacon.consensus.transition;
 
+import java.util.ArrayList;
 import java.util.List;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.StateTransition;
@@ -15,6 +16,7 @@ import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.DepositRootVote;
 import org.ethereum.beacon.core.state.PendingAttestationRecord;
+import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
 
@@ -35,15 +37,12 @@ public class BlockTransition implements StateTransition<BeaconStateEx> {
       RANDAO
       Let proposer = state.validator_registry[get_beacon_proposer_index(state, state.slot)].
       Set state.latest_randao_mixes[state.slot % LATEST_RANDAO_MIXES_LENGTH] =
-        hash(xor(state.latest_randao_mixes[state.slot % LATEST_RANDAO_MIXES_LENGTH], block.randao_reveal))
-      Set proposer.randao_commitment = block.randao_reveal.
-      Set proposer.randao_layers = 0.
+      hash(state.latest_randao_mixes[state.slot % LATEST_RANDAO_MIXES_LENGTH] + block.randao_reveal).
     */
-
-    int proposerIdx = specHelpers.get_beacon_proposer_index(state, state.getSlot()).getValue();
-    state.withValidatorRecord(
-        proposerIdx,
-        vb -> vb.withRandaoCommitment(block.getRandaoReveal()).withRandaoLayers(UInt64.ZERO));
+    List<Hash32> newLatestRandaoMixes = new ArrayList<>(state.getLatestRandaoMixes());
+    int randaoMixIdx = SpecHelpers.safeInt(state.getSlot().modulo(spec.getLatestRandaoMixesLength()));
+    newLatestRandaoMixes.set(randaoMixIdx,
+        specHelpers.hash(newLatestRandaoMixes.get(randaoMixIdx).concat(block.getRandaoReveal())));
 
     /*
      Deposit root
@@ -133,8 +132,6 @@ public class BlockTransition implements StateTransition<BeaconStateEx> {
            amount=deposit.deposit_data.amount,
            proof_of_possession=deposit.deposit_data.deposit_input.proof_of_possession,
            withdrawal_credentials=deposit.deposit_data.deposit_input.withdrawal_credentials,
-           randao_commitment=deposit.deposit_data.deposit_input.randao_commitment,
-           custody_commitment=deposit.deposit_data.deposit_input.custody_commitment,
        )
     */
     for (Deposit deposit : block.getBody().getDeposits()) {
@@ -144,9 +141,7 @@ public class BlockTransition implements StateTransition<BeaconStateEx> {
           depositInput.getPubKey(),
           depositData.getValue(),
           depositInput.getProofOfPossession(),
-          depositInput.getWithdrawalCredentials(),
-          depositInput.getRandaoCommitment(),
-          depositInput.getCustodyCommitment()
+          depositInput.getWithdrawalCredentials()
       );
     }
 

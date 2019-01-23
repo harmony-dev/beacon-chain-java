@@ -24,23 +24,15 @@ public class DepositInput {
   @SSZ private final Bytes48 pubKey;
   /** Withdrawal credentials. */
   @SSZ private final Hash32 withdrawalCredentials;
-  /** Initial RANDAO commitment. */
-  @SSZ private final Hash32 randaoCommitment;
-  /** Initial proof of custody commitment. */
-  @SSZ private final Hash32 custodyCommitment;
   /** A BLS signature of this {@link DepositInput} */
   @SSZ private final Bytes96 proofOfPossession;
 
   public DepositInput(
       Bytes48 pubKey,
       Hash32 withdrawalCredentials,
-      Hash32 randaoCommitment,
-      Hash32 custodyCommitment,
       Bytes96 proofOfPossession) {
     this.pubKey = pubKey;
     this.withdrawalCredentials = withdrawalCredentials;
-    this.randaoCommitment = randaoCommitment;
-    this.custodyCommitment = custodyCommitment;
     this.proofOfPossession = proofOfPossession;
   }
 
@@ -50,14 +42,6 @@ public class DepositInput {
 
   public Hash32 getWithdrawalCredentials() {
     return withdrawalCredentials;
-  }
-
-  public Hash32 getRandaoCommitment() {
-    return randaoCommitment;
-  }
-
-  public Hash32 getCustodyCommitment() {
-    return custodyCommitment;
   }
 
   public Bytes96 getProofOfPossession() {
@@ -71,8 +55,6 @@ public class DepositInput {
     DepositInput that = (DepositInput) o;
     return Objects.equal(pubKey, that.pubKey)
         && Objects.equal(withdrawalCredentials, that.withdrawalCredentials)
-        && Objects.equal(randaoCommitment, that.randaoCommitment)
-        && Objects.equal(custodyCommitment, that.custodyCommitment)
         && Objects.equal(proofOfPossession, that.proofOfPossession);
   }
 }

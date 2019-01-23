@@ -13,6 +13,7 @@
 
 package tech.pegasys.artemis.util.uint;
 
+import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes8;
 
 import java.math.BigInteger;
@@ -318,6 +319,13 @@ public class UInt64 implements Comparable<UInt64> {
   public Bytes8 toBytesBigEndian() {
     byte[] array = ByteBuffer.allocate(Long.BYTES).order(ByteOrder.BIG_ENDIAN).putLong(value).array();
     return Bytes8.wrap(array);
+  }
+
+  public Bytes32 toBytes32BigEndian() {
+    byte[] array = ByteBuffer.allocate(Long.BYTES).order(ByteOrder.BIG_ENDIAN).putLong(value).array();
+    byte[] array32 = new byte[Bytes32.SIZE];
+    System.arraycopy(array, 0, array32, Bytes32.SIZE - Long.BYTES, Long.BYTES);
+    return Bytes32.wrap(array32);
   }
 
   @Override

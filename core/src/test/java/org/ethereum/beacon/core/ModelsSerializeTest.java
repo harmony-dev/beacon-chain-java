@@ -125,8 +125,6 @@ public class ModelsSerializeTest {
         new DepositInput(
             Bytes48.TRUE,
             Hashes.keccak256(BytesValue.fromHexString("aa")),
-            Hashes.keccak256(BytesValue.fromHexString("bb")),
-            Hashes.keccak256(BytesValue.fromHexString("cc")),
             Bytes96.ZERO);
 
     return depositInput;
@@ -322,7 +320,7 @@ public class ModelsSerializeTest {
             UInt64.MAX_VALUE,
             Hashes.keccak256(BytesValue.fromHexString("aa")),
             Hashes.keccak256(BytesValue.fromHexString("bb")),
-            Hashes.keccak256(BytesValue.fromHexString("cc")),
+            Bytes96.fromHexString("cc"),
             Hashes.keccak256(BytesValue.fromHexString("dd")),
             Bytes96.fromHexString("aa"),
             createBeaconBlockBody());
@@ -425,10 +423,9 @@ public class ModelsSerializeTest {
             .withPenalizedSlot(UInt64.ZERO)
             .withExitCount(UInt64.ZERO)
             .withStatusFlags(UInt64.ZERO)
-            .withCustodyCommitment(Hash32.ZERO)
             .withLatestCustodyReseedSlot(UInt64.ZERO)
             .withPenultimateCustodyReseedSlot(UInt64.ZERO)
-            .withRandaoLayers(UInt64.ZERO)
+            .withProposerSlots(UInt64.ZERO)
             .build();
 
     return validatorRecord;

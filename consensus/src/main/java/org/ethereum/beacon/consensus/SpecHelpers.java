@@ -421,14 +421,10 @@ public class SpecHelpers {
     def validate_proof_of_possession(state: BeaconState,
                                      pubkey: int,
                                      proof_of_possession: bytes,
-                                     withdrawal_credentials: Hash32,
-                                     randao_commitment: Hash32,
-                                     custody_commitment: Hash32) -> bool:
+                                     withdrawal_credentials: Hash32) -> bool:
         proof_of_possession_data = DepositInput(
             pubkey=pubkey,
             withdrawal_credentials=withdrawal_credentials,
-            randao_commitment=randao_commitment,
-            custody_commitment=custody_commitment,
             proof_of_possession=EMPTY_SIGNATURE,
         )
 
@@ -447,12 +443,9 @@ public class SpecHelpers {
       MutableBeaconState state,
       Bytes48 pubkey,
       Bytes96 proof_of_possession,
-      Hash32 withdrawal_credentials,
-      Hash32 randao_commitment,
-      Hash32 custody_commitment) {
+      Hash32 withdrawal_credentials) {
 
-    DepositInput deposit_input = new DepositInput(
-            pubkey, withdrawal_credentials, randao_commitment, custody_commitment, Bytes96.ZERO);
+    DepositInput deposit_input = new DepositInput(pubkey, withdrawal_credentials, Bytes96.ZERO);
 
     return bls_verify(
         pubkey,
@@ -466,9 +459,7 @@ public class SpecHelpers {
                     pubkey: int,
                     amount: int,
                     proof_of_possession: bytes,
-                    withdrawal_credentials: Hash32,
-                    randao_commitment: Hash32,
-                    custody_commitment: Hash32) -> None:
+                    withdrawal_credentials: Hash32) -> None:
     """
     Process a deposit from Ethereum 1.0.
     Note that this function mutates ``state``.
@@ -479,9 +470,7 @@ public class SpecHelpers {
       Bytes48 pubkey,
       UInt64 amount,
       Bytes96 proof_of_possession,
-      Hash32 withdrawal_credentials,
-      Hash32 randao_commitment,
-      Hash32 custody_commitment) {
+      Hash32 withdrawal_credentials) {
 
     //  # Validate the given `proof_of_possession`
     //  assert validate_proof_of_possession(
@@ -489,17 +478,13 @@ public class SpecHelpers {
     //      pubkey,
     //      proof_of_possession,
     //      withdrawal_credentials,
-    //      randao_commitment,
-    //      custody_commitment,
     //      )
     assertTrue(
         validate_proof_of_possession(
             state,
             pubkey,
             proof_of_possession,
-            withdrawal_credentials,
-            randao_commitment,
-            custody_commitment));
+            withdrawal_credentials));
 
     //  validator_pubkeys = [v.pubkey for v in state.validator_registry]
     int index = -1;
@@ -516,8 +501,7 @@ public class SpecHelpers {
       //  validator = Validator(
       //    pubkey=pubkey,
       //    withdrawal_credentials=withdrawal_credentials,
-      //    randao_commitment=randao_commitment,
-      //    randao_layers=0,
+      //    proposer_slots=0,
       //    activation_slot=FAR_FUTURE_SLOT,
       //    exit_slot=FAR_FUTURE_SLOT,
       //    withdrawal_slot=FAR_FUTURE_SLOT,
@@ -531,7 +515,6 @@ public class SpecHelpers {
       ValidatorRecord validator = new ValidatorRecord(
           pubkey,
           withdrawal_credentials,
-          randao_commitment,
           UInt64.ZERO,
           spec.getFarFutureSlot(),
           spec.getFarFutureSlot(),
@@ -539,7 +522,6 @@ public class SpecHelpers {
           spec.getFarFutureSlot(),
           UInt64.ZERO,
           UInt64.ZERO,
-          custody_commitment,
           spec.getGenesisSlot(),
           spec.getGenesisSlot());
 
@@ -1129,8 +1111,6 @@ public class SpecHelpers {
         input
             .getPubKey()
             .concat(input.getWithdrawalCredentials())
-            .concat(input.getRandaoCommitment())
-            .concat(input.getCustodyCommitment())
             .concat(input.getProofOfPossession());
 
     return data.getValue()

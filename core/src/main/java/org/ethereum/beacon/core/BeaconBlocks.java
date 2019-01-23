@@ -2,6 +2,7 @@ package org.ethereum.beacon.core;
 
 import org.ethereum.beacon.core.spec.ChainSpec;
 import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.bytes.Bytes96;
 
 /** A class holding various utility methods to work with {@link BeaconBlock}. */
 public abstract class BeaconBlocks {
@@ -21,7 +22,7 @@ public abstract class BeaconBlocks {
         .withSlot(chainSpec.getGenesisSlot())
         .withParentRoot(Hash32.ZERO)
         .withStateRoot(Hash32.ZERO)
-        .withRandaoReveal(Hash32.ZERO)
+        .withRandaoReveal(chainSpec.getEmptySignature())
         .withDepositRoot(Hash32.ZERO)
         .withSignature(chainSpec.getEmptySignature())
         .withBody(BeaconBlockBody.EMPTY)

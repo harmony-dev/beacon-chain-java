@@ -35,7 +35,7 @@ public class NextSlotTransitionTest {
       Deposit deposit = new Deposit(new Hash32[]{Hash32.random(rnd)}, UInt64.ZERO,
           new DepositData(
               new DepositInput(
-                  Bytes48.intToBytes48(i), Hash32.random(rnd), Hash32.ZERO, Hash32.ZERO, Bytes96.ZERO
+                  Bytes48.intToBytes48(i), Hash32.random(rnd), Bytes96.ZERO
               ), chainSpec.getMaxDeposit().toGWei(), UInt64.ZERO));
       deposits.add(deposit);
     }
