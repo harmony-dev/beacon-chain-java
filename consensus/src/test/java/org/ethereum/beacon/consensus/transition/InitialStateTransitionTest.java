@@ -36,16 +36,6 @@ public class InitialStateTransitionTest {
               public List<Deposit> getInitialDeposits() {
                 return Collections.emptyList();
               }
-
-              @Override
-              public Hash32 getRecentDepositRoot() {
-                return Hash32.ZERO;
-              }
-
-              @Override
-              public boolean isValidatorRegistered(Bytes48 pubKey) {
-                return false;
-              }
             },
             new SpecHelpers(ChainSpec.DEFAULT));
 
