@@ -20,10 +20,13 @@ public interface DepositContract {
   class ChainStart {
     private final UInt64 time;
     private final Hash32 receiptRoot;
+    private final List<Deposit> initialDeposits;
 
-    public ChainStart(UInt64 time, Hash32 receiptRoot) {
+    public ChainStart(UInt64 time, Hash32 receiptRoot,
+        List<Deposit> initialDeposits) {
       this.time = time;
       this.receiptRoot = receiptRoot;
+      this.initialDeposits = initialDeposits;
     }
 
     public UInt64 getTime() {
@@ -32,6 +35,10 @@ public interface DepositContract {
 
     public Hash32 getReceiptRoot() {
       return receiptRoot;
+    }
+
+    public List<Deposit> getInitialDeposits() {
+      return initialDeposits;
     }
   }
 }
