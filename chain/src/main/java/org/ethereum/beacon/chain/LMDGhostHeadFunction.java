@@ -30,7 +30,7 @@ import java.util.Set;
  * href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md#beacon-chain-fork-choice-rule">Beacon
  * chain fork choice rule</a>
  */
-public class GhostHeadFunction implements HeadFunction {
+public class LMDGhostHeadFunction implements HeadFunction {
 
   private final BeaconBlockStorage blockStorage;
   private final BeaconTupleStorage tupleStorage;
@@ -40,7 +40,7 @@ public class GhostHeadFunction implements HeadFunction {
   private final Map<UInt64, Set<Bytes48>> validatorSlotCache = new HashMap<>();
   private BeaconState state;
 
-  public GhostHeadFunction(
+  public LMDGhostHeadFunction(
       BeaconChain beaconChain, BeaconChainStorage chainStorage, SpecHelpers specHelpers) {
     this.tupleStorage = chainStorage.getBeaconTupleStorage();
     this.blockStorage = chainStorage.getBeaconBlockStorage();
