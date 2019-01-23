@@ -1262,11 +1262,12 @@ public class SpecHelpers {
       Function<Hash32, Optional<BeaconBlock>> getBlock) {
     Attestation latest = get_latest_attestation.apply(validatorRecord);
     return getBlock
-        .apply(latest.getData().getBeaconBlockRoot())
+        .apply(latest.getData().getJustifiedBlockRoot())
         .orElseThrow(
             () ->
                 new RuntimeException(
-                    "Couldn't find attestation target " + latest.getData().getBeaconBlockRoot()));
+                    "Couldn't find attestation target "
+                        + latest.getData().getJustifiedBlockRoot()));
   }
 
   /**

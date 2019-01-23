@@ -44,19 +44,25 @@ public class LMDGhostHeadFunction implements HeadFunction {
     this.tupleStorage = chainStorage.getBeaconTupleStorage();
     this.blockStorage = chainStorage.getBeaconBlockStorage();
     this.specHelpers = specHelpers;
-    this.state = tupleStorage.getCanonicalHead().getState();
+    Optional<Hash32> justifiedHash = blockStorage.getSlotJustifiedBlock(blockStorage.getMaxSlot());
+    Optional<BeaconTuple> justifiedTuple =
+        justifiedHash
+            .map(tupleStorage::get)
+            .orElseThrow(() -> new RuntimeException("No justified head found"));
+    this.state =
+        justifiedTuple
+            .map(BeaconTuple::getState)
+            .orElseThrow(() -> new RuntimeException("No justified tuple found"));
     Flux.from(beaconChain.getBlockStatesStream())
         .doOnNext(beaconTuple -> state = beaconTuple.getState())
         .subscribe();
   }
 
   @Override
-  public Optional<BeaconBlock> update() {
-    Hash32 curHead = blockStorage.getCanonicalHead();
-    UInt64 lastJustifiedSlot = state.getJustifiedSlot();
+  public BeaconBlock getHead() {
+    Optional<Hash32> justifiedHash = blockStorage.getSlotJustifiedBlock(blockStorage.getMaxSlot());
     Optional<BeaconTuple> justifiedTuple =
-        blockStorage
-            .getSlotCanonicalBlock(lastJustifiedSlot.getValue())
+        justifiedHash
             .map(tupleStorage::get)
             .orElseThrow(() -> new RuntimeException("No justified head found"));
     Function<Hash32, List<BeaconBlock>> getChildrenBlocks =
@@ -72,12 +78,20 @@ public class LMDGhostHeadFunction implements HeadFunction {
                         getChildrenBlocks,
                         this::get_latest_attestation))
             .orElseThrow(() -> new RuntimeException("No justified head found"));
-    if (!newHead.getHash().equals(curHead)) {
-      blockStorage.reorgTo(newHead.getHash());
-      return Optional.of(newHead);
-    } else {
-      return Optional.empty();
+
+    // Let justified_head be the descendant of finalized_head with the highest slot number that has
+    // been justified for at least EPOCH_LENGTH slots. (A block B is justified if there is a
+    // descendant of B in store the processing of which sets B as justified.)
+    if (newHead
+            .getSlot()
+            .minus(justifiedTuple.get().getBlock().getSlot())
+            .compareTo(specHelpers.getChainSpec().getEpochLength())
+        >= 0) {
+      blockStorage.addJustifiedHash(newHead.getHash());
+      blockStorage.addFinalizedHash(justifiedHash.get());
     }
+
+    return newHead;
   }
 
   /**

@@ -69,11 +69,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     if (blockStorage.isEmpty()) {
       initializeStorage();
     }
-    BeaconTuple headTuple = tupleStorage.getCanonicalHead();
-    blockSink.onNext(headTuple);
-
-    this.head = BeaconChainHead.of(headTuple);
-    headSink.onNext(this.head);
+    updateHead(true);
   }
 
   private BeaconTuple initializeStorage() {
@@ -117,15 +113,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     BeaconState slotTransitedState = slotTransition.apply(block, parentState);
 
     // update head
-    Optional<BeaconBlock> newHeadOpt = headFunction.update();
-    if (newHeadOpt.isPresent()) {
-      BeaconTuple newHeadTuple = newHeadOpt
-          .flatMap(newHead -> tupleStorage.get(newHead.getHash()))
-          .orElseThrow(() -> new IllegalStateException("Beacon tuple not found for new head "));
-
-      this.head = BeaconChainHead.of(newHeadTuple);
-      headSink.onNext(this.head);
-    }
+    updateHead(false);
 
     VerificationResult blockVerification = blockVerifier.verify(block, slotTransitedState);
     if (!blockVerification.isPassed()) {
@@ -144,6 +132,28 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     database.commit();
 
     blockSink.onNext(newTuple);
+  }
+
+  /**
+   * Updates blockHead by calling external service
+   *
+   * @param blockNotify whether to put new head in {@link #blockSink} if any
+   */
+  private void updateHead(boolean blockNotify) {
+    BeaconBlock newHead = headFunction.getHead();
+    if (this.head != null && this.head.getBlock().equals(newHead)) {
+      return; // == old
+    }
+    BeaconTuple newHeadTuple =
+        tupleStorage
+            .get(newHead.getHash())
+            .orElseThrow(() -> new IllegalStateException("Beacon tuple not found for new head "));
+    this.head = BeaconChainHead.of(newHeadTuple);
+
+    headSink.onNext(this.head);
+    if (blockNotify) {
+      blockSink.onNext(newHeadTuple);
+    }
   }
 
   private BeaconState pullParentState(BeaconBlock block) {

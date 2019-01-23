@@ -1,15 +1,14 @@
 package org.ethereum.beacon.consensus;
 
 import org.ethereum.beacon.core.BeaconBlock;
-import java.util.Optional;
 
 /** Head function updates head */
 public interface HeadFunction {
 
   /**
-   * Updates head on chain and returns new head if it changes
+   * Updates actual head on chain and returns it
    *
-   * @return new head, if it was changed
+   * @return head block
    */
-  Optional<BeaconBlock> update();
+  BeaconBlock getHead();
 }

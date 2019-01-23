@@ -6,15 +6,6 @@ import java.util.List;
 import java.util.Optional;
 
 public interface BeaconBlockStorage extends HashKeyStorage<Hash32, BeaconBlock> {
-
-  /**
-   * @return Current canonical head
-   * @throws IllegalStateException if storage is empty
-   */
-  Hash32 getCanonicalHead();
-
-  void reorgTo(Hash32 newCanonicalBlock);
-
   /**
    * @return maxStoredSlot or -1 if storage is empty
    */
@@ -26,8 +17,6 @@ public interface BeaconBlockStorage extends HashKeyStorage<Hash32, BeaconBlock> 
 
   List<Hash32> getSlotBlocks(long slot);
 
-  Optional<Hash32> getSlotCanonicalBlock(long slot);
-
   /**
    * Searches for all children with limit slot distance from parent
    *
@@ -36,4 +25,12 @@ public interface BeaconBlockStorage extends HashKeyStorage<Hash32, BeaconBlock> 
    * @return list of children
    */
   List<BeaconBlock> getChildren(Hash32 parent, int limit);
+
+  Optional<Hash32> getSlotJustifiedBlock(long slot);
+
+  Optional<Hash32> getSlotFinalizedBlock(long slot);
+
+  void addJustifiedHash(Hash32 justifiedHash);
+
+  void addFinalizedHash(Hash32 finalizedHash);
 }
