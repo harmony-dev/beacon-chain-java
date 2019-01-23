@@ -127,7 +127,7 @@ public class SSZSerializer implements BytesSerializer {
    * @return deserialized instance of clazz or throws exception
    */
   @Override
-  public Object decode(byte[] data, Class clazz) {
+  public <C> C decode(byte[] data, Class<? extends C> clazz) {
     checkSSZSerializableAnnotation(clazz);
 
     // Fast null handling
