@@ -13,8 +13,6 @@ public interface DepositContract {
 
   Publisher<Deposit> getAfterDepositsStream();
 
-  ChainStart getChainStart();
-
   class ChainStart {
     private final UInt64 time;
     private final Hash32 receiptRoot;

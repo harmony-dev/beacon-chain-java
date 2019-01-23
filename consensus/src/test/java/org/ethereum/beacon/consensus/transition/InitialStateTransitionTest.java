@@ -12,6 +12,7 @@ import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.pow.AbstractDepositContract;
 import org.ethereum.beacon.pow.DepositContract;
+import org.ethereum.beacon.pow.DepositContract.ChainStart;
 import org.junit.Test;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
@@ -26,12 +27,7 @@ public class InitialStateTransitionTest {
 
     InitialStateTransition initialStateTransition =
         new InitialStateTransition(
-            new AbstractDepositContract() {
-              @Override
-              public ChainStart getChainStart() {
-                return new ChainStart(genesisTime, receiptRoot, Collections.emptyList());
-              }
-            },
+            new ChainStart(genesisTime, receiptRoot, Collections.emptyList()),
             new SpecHelpers(ChainSpec.DEFAULT));
 
     BeaconState initialState =

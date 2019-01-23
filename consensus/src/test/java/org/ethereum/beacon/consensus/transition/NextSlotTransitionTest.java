@@ -9,6 +9,7 @@ import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.pow.AbstractDepositContract;
 import org.ethereum.beacon.pow.DepositContract;
+import org.ethereum.beacon.pow.DepositContract.ChainStart;
 import org.junit.Assert;
 import org.junit.Test;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -42,13 +43,8 @@ public class NextSlotTransitionTest {
     }
 
     InitialStateTransition initialStateTransition =
-        new InitialStateTransition(
-            new AbstractDepositContract() {
-              @Override
-              public ChainStart getChainStart() {
-                return new ChainStart(genesisTime, receiptRoot, deposits);
-              }
-            }, new SpecHelpers(chainSpec));
+        new InitialStateTransition(new ChainStart(genesisTime, receiptRoot, deposits),
+            new SpecHelpers(chainSpec));
 
     BeaconStateEx initialState =
         initialStateTransition.apply(BeaconBlocks.createGenesis(chainSpec));
