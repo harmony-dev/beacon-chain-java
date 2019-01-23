@@ -1,9 +1,5 @@
 package org.ethereum.beacon.chain;
 
-import static com.google.common.base.Preconditions.checkArgument;
-
-import java.util.Optional;
-import java.util.concurrent.ScheduledFuture;
 import org.ethereum.beacon.chain.storage.BeaconBlockStorage;
 import org.ethereum.beacon.chain.storage.BeaconStateStorage;
 import org.ethereum.beacon.chain.storage.BeaconTuple;
@@ -22,6 +18,10 @@ import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.ReplayProcessor;
 import reactor.core.scheduler.Schedulers;
+import java.util.Optional;
+import java.util.concurrent.ScheduledFuture;
+
+import static com.google.common.base.Preconditions.checkArgument;
 
 public class DefaultBeaconChain implements MutableBeaconChain {
 
@@ -117,17 +117,16 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     BeaconState slotTransitedState = slotTransition.apply(block, parentState);
 
     // update head
-    headFunction
-        .update()
-        .ifPresent(
-            beaconBlock ->
-                tupleStorage
-                    .get(beaconBlock.getHash())
-                    .ifPresent(
-                        beaconTuple -> {
-                          this.head = BeaconChainHead.of(beaconTuple);
-                          headSink.onNext(this.head);
-                        }));
+    Optional<BeaconBlock> newHeadOpt = headFunction.update();
+    if (newHeadOpt.isPresent()) {
+      Optional<BeaconTuple> newTupleOpt = tupleStorage.get(newHeadOpt.get().getHash());
+      if (!newTupleOpt.isPresent()) {
+        throw new IllegalStateException("Beacon tuple not found for new head " + newHeadOpt.get());
+      }
+      BeaconTuple newHeadTuple = newTupleOpt.get();
+      this.head = BeaconChainHead.of(newHeadTuple);
+      headSink.onNext(this.head);
+    }
 
     VerificationResult blockVerification = blockVerifier.verify(block, slotTransitedState);
     if (!blockVerification.isPassed()) {
