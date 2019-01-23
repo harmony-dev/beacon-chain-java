@@ -15,4 +15,6 @@ dependencies {
     exclude group: "org.slf4j", module: "slf4j-log4j12"
     exclude group: "org.ethereum", module: "solcJ-all"
   }
+
+  implementation 'io.projectreactor:reactor-core'
 }

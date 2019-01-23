@@ -1,13 +1,11 @@
 package org.ethereum.beacon.pow;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.core.Block;
 import org.ethereum.core.Blockchain;
 import org.ethereum.core.Bloom;
@@ -21,12 +19,10 @@ import org.ethereum.vm.DataWord;
 import org.ethereum.vm.LogInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
-import tech.pegasys.artemis.util.bytes.Bytes48;
 
-public class PowClient implements DepositContract {
-  private static final Logger logger = LoggerFactory.getLogger(PowClient.class);
+public class EthereumJDepositContract extends AbstractDepositContract {
+  private static final Logger logger = LoggerFactory.getLogger(EthereumJDepositContract.class);
 
   private static final String DEPOSIT_EVENT_NAME = "Deposit";
   private static final String CHAIN_START_EVENT_NAME = "ChainStart";
@@ -40,27 +36,24 @@ public class PowClient implements DepositContract {
   private final Bloom contractAdderssBloom;
   private final Contract contract;
 
-  private List<Deposit> deposits = new ArrayList<>();
   private volatile long bestConfirmedBlock = 0;
   private volatile long processedUpToBlock;
 
-  public PowClient(Ethereum ethereum, long contractDeployBlock,
+  public EthereumJDepositContract(Ethereum ethereum, long contractDeployBlock,
       String contractDeployAddress) {
     this.ethereum = ethereum;
     this.contractDeployAddress = Bytes32.fromHexString(contractDeployAddress);
     this.contractAdderssBloom = Bloom.create(this.contractDeployAddress.extractArray());
     this.contract = new Contract(ContractAbi.getContractAbi());
     processedUpToBlock = contractDeployBlock;
-
-    init();
   }
 
-  public PowClient withBlockConfirmations(long blockConfirmations) {
+  public EthereumJDepositContract withBlockConfirmations(long blockConfirmations) {
     this.blockConfirmations = blockConfirmations;
     return this;
   }
 
-  private void init() {
+  public void start() {
     ethereum.addListener(new EthereumListenerAdapter() {
       @Override
       public void onSyncDone(SyncState state) {
@@ -124,31 +117,4 @@ public class PowClient implements DepositContract {
     }
   }
 
-  private void newDeposit(byte[] previous_deposit_root, byte[] data, byte[] merkle_tree_index) {
-
-  }
-
-  private void chainStart(byte[] deposit_root, byte[] time) {
-
-  }
-
-  @Override
-  public ChainStart getChainStart() {
-    return null;
-  }
-
-  @Override
-  public List<Deposit> getInitialDeposits() {
-    return null;
-  }
-
-  @Override
-  public Hash32 getRecentDepositRoot() {
-    return null;
-  }
-
-  @Override
-  public boolean isValidatorRegistered(Bytes48 pubKey) {
-    return false;
-  }
 }

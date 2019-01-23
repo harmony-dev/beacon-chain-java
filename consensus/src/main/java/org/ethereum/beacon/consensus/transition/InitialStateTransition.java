@@ -121,7 +121,7 @@ public class InitialStateTransition implements StateTransition<BeaconStateEx> {
     initialState.withLatestDepositRoot(chainStart.getReceiptRoot()).withDepositRootVotes(emptyList());
 
     // handle initial deposits and activations
-    final List<Deposit> initialDeposits = depositContract.getInitialDeposits();
+    final List<Deposit> initialDeposits = depositContract.getChainStart().getInitialDeposits();
 
     initialDeposits.forEach(
         deposit -> {

@@ -3,14 +3,17 @@ package org.ethereum.beacon.pow;
 import java.util.List;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.types.Ether;
+import org.reactivestreams.Publisher;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public interface DepositContract {
 
-  ChainStart getChainStart();
+  Publisher<ChainStart> getChainStartMono();
 
-  List<Deposit> getInitialDeposits();
+  Publisher<Deposit> getAfterDepositsStream();
+
+  ChainStart getChainStart();
 
   class ChainStart {
     private final UInt64 time;

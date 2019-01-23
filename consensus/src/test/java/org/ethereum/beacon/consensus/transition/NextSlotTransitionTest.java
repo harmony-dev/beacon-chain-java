@@ -7,6 +7,7 @@ import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.pow.AbstractDepositContract;
 import org.ethereum.beacon.pow.DepositContract;
 import org.junit.Assert;
 import org.junit.Test;
@@ -42,15 +43,10 @@ public class NextSlotTransitionTest {
 
     InitialStateTransition initialStateTransition =
         new InitialStateTransition(
-            new DepositContract() {
+            new AbstractDepositContract() {
               @Override
               public ChainStart getChainStart() {
-                return new ChainStart(genesisTime, receiptRoot);
-              }
-
-              @Override
-              public List<Deposit> getInitialDeposits() {
-                return deposits;
+                return new ChainStart(genesisTime, receiptRoot, deposits);
               }
             }, new SpecHelpers(chainSpec));
 
