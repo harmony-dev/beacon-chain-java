@@ -13,7 +13,6 @@ import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.pow.DepositContract;
 import org.junit.Test;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public class InitialStateTransitionTest {
@@ -40,9 +39,8 @@ public class InitialStateTransitionTest {
             new SpecHelpers(ChainSpec.DEFAULT));
 
     BeaconState initialState =
-        initialStateTransition
-            .apply(BeaconBlocks.createGenesis(ChainSpec.DEFAULT))
-            .getCanonicalState();
+        initialStateTransition.apply(
+            BeaconBlocks.createGenesis(ChainSpec.DEFAULT)).getCanonicalState();
 
     assertThat(initialState.getGenesisTime()).isEqualTo(genesisTime);
     assertThat(initialState.getLatestDepositRoot()).isEqualTo(receiptRoot);
