@@ -4,7 +4,7 @@ import com.google.common.base.MoreObjects;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes48;
 
-/** A list of attributes specific to certain validator instance. */
+/** A list of client side attributes specific to certain validator instance. */
 public class ValidatorCredentials {
 
   private final Bytes48 blsPublicKey;

@@ -1,6 +1,0 @@
-dependencies {
-  implementation project(':types')
-  implementation project(':db:core')
-
-  implementation 'com.google.guava:guava'
-}

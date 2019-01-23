@@ -1,18 +1,6 @@
 package org.ethereum.beacon.validator;
 
-import java.util.concurrent.ExecutionException;
-
-/**
- * Interface of validator service.
- *
- * <p>Validator service is responsible for:
- *
- * <ul>
- *   <li>registration on PoW chain;
- *   <li>block proposing;
- *   <li>block attesting.
- * </ul>
- */
+/** Interface of validator service. */
 public interface ValidatorService {
 
   /** Starts the service. */
