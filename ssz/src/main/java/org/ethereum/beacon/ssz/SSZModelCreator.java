@@ -1,5 +1,6 @@
 package org.ethereum.beacon.ssz;
 
+import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
 import org.javatuples.Pair;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,10 +38,10 @@ public class SSZModelCreator implements SSZModelFactory {
    * @param fieldValuePairs Field -> value info
    * @return created instance or {@link net.consensys.cava.ssz.SSZException} if failed to create it
    */
-  public Object create(
-      Class clazz, List<Pair<SSZSchemeBuilder.SSZScheme.SSZField, Object>> fieldValuePairs) {
+  @Override
+  public <C> C create(Class<? extends C> clazz, List<Pair<SSZField, Object>> fieldValuePairs) {
     for (ObjectCreator objectCreator : objectCreators) {
-      Pair<Boolean, Object> attempt = objectCreator.createObject(clazz, fieldValuePairs);
+      Pair<Boolean, C> attempt = objectCreator.createObject(clazz, fieldValuePairs);
       if (!attempt.getValue0()) {
         continue;
       } else {

@@ -12,13 +12,13 @@ public interface BytesSerializer {
    * @param clazz Class of value
    * @return serialization
    */
-  byte[] encode(@Nullable Object input, Class clazz);
+  <C> byte[] encode(@Nullable C input, Class<? extends C> clazz);
 
   /**
    * Shortcut to {@link #encode(Object, Class)}. Resolves class using input object. Not suitable for
    * null values.
    */
-  default byte[] encode(@Nonnull Object input) {
+  default <C> byte[] encode(@Nonnull C input) {
     return encode(input, input.getClass());
   }
 
@@ -30,5 +30,5 @@ public interface BytesSerializer {
    * @param clazz type class
    * @return deserialized instance of clazz or throws exception
    */
-  Object decode(byte[] data, Class clazz);
+  <C> C decode(byte[] data, Class<? extends C> clazz);
 }

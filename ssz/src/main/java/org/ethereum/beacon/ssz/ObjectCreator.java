@@ -12,6 +12,6 @@ public interface ObjectCreator {
    * @param fieldValuePairs Field -> value info
    * @return Pair[success or not, created instance if success or null otherwise]
    */
-  Pair<Boolean, Object> createObject(
-      Class clazz, List<Pair<SSZSchemeBuilder.SSZScheme.SSZField, Object>> fieldValuePairs);
+  <C> Pair<Boolean, C> createObject(
+      Class<? extends C> clazz, List<Pair<SSZSchemeBuilder.SSZScheme.SSZField, Object>> fieldValuePairs);
 }
