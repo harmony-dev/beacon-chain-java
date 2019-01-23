@@ -119,11 +119,10 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     // update head
     Optional<BeaconBlock> newHeadOpt = headFunction.update();
     if (newHeadOpt.isPresent()) {
-      Optional<BeaconTuple> newTupleOpt = tupleStorage.get(newHeadOpt.get().getHash());
-      if (!newTupleOpt.isPresent()) {
-        throw new IllegalStateException("Beacon tuple not found for new head " + newHeadOpt.get());
-      }
-      BeaconTuple newHeadTuple = newTupleOpt.get();
+      BeaconTuple newHeadTuple = newHeadOpt
+          .flatMap(newHead -> tupleStorage.get(newHead.getHash()))
+          .orElseThrow(() -> new IllegalStateException("Beacon tuple not found for new head "));
+
       this.head = BeaconChainHead.of(newHeadTuple);
       headSink.onNext(this.head);
     }
