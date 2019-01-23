@@ -9,6 +9,7 @@ import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
+import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
 
@@ -22,6 +23,7 @@ public class BeaconChainValidator implements ValidatorService {
   private ScheduledExecutorService executor;
 
   private ObservableBeaconState recentState;
+  private Hash32 recentDepositRoot;
   private UInt24 index = UInt24.MAX_VALUE;
 
   public BeaconChainValidator(
@@ -72,6 +74,10 @@ public class BeaconChainValidator implements ValidatorService {
     }
   }
 
+  private void processDepositRoot(Hash32 depositRoot) {
+    this.recentDepositRoot = depositRoot;
+  }
+
   private void runTasks(ObservableBeaconState observableState) {
     BeaconState state = observableState.getLatestSlotState();
     UInt24 proposerIndex = specHelpers.get_beacon_proposer_index(state, state.getSlot());
@@ -83,11 +89,13 @@ public class BeaconChainValidator implements ValidatorService {
   }
 
   private void propose(final ObservableBeaconState observableState) {
-    executor.execute(
-        () -> {
-          final BeaconBlock newBlock = proposer.propose(observableState);
-          propagateBlock(newBlock);
-        });
+    if (recentDepositRoot != null) {
+      executor.execute(
+          () -> {
+            final BeaconBlock newBlock = proposer.propose(observableState, recentDepositRoot);
+            propagateBlock(newBlock);
+          });
+    }
   }
 
   private void attest(final ObservableBeaconState observableState) {
@@ -114,4 +122,6 @@ public class BeaconChainValidator implements ValidatorService {
   private void propagateAttestation(Attestation attestation) {}
 
   private void subscribeToObservableStateUpdates(Consumer<ObservableBeaconState> payload) {}
+
+  private void subsribeToDepositRootUpdates(Consumer<Hash32> payload) {}
 }
