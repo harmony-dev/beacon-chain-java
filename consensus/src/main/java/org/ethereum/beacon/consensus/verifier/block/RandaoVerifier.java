@@ -10,6 +10,7 @@ import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.bytes.Bytes32;
 
 /**
  * Verifies RANDAO reveal.
@@ -35,7 +36,7 @@ public class RandaoVerifier implements BeaconBlockVerifier {
 
     if (!specHelpers.bls_verify(
         proposer.getPubKey(),
-        Hash32.wrap(proposer.getProposerSlots().toBytes32BigEndian()),
+        Hash32.wrap(Bytes32.leftPad(proposer.getProposerSlots().toBytesBigEndian())),
         block.getRandaoReveal(),
         specHelpers.get_domain(state.getForkData(), state.getSlot(), RANDAO))) {
 

@@ -15,7 +15,6 @@ package tech.pegasys.artemis.util.uint;
 
 import org.junit.Assert;
 import org.junit.Test;
-import tech.pegasys.artemis.util.bytes.Bytes32;
 
 public class UInt64Test {
 
@@ -166,13 +165,6 @@ public class UInt64Test {
     // 2^64-1 % 2 = 1
     UInt64 uQuotientMax = UInt64.MAX_VALUE.modulo(2);
     Assert.assertEquals("UInt64.MAX_VALUE % 2", "1", uQuotientMax.toString());
-  }
-
-  @Test
-  public void toBytes32BigEndian() {
-    Bytes32 expected = Bytes32.fromHexStringLenient("0xf0");
-    UInt64 value = UInt64.valueOf(15).shl(4);
-    Assert.assertEquals(expected, value.toBytes32BigEndian());
   }
 
   private void add(long augend, long addend, String expectedSum) {

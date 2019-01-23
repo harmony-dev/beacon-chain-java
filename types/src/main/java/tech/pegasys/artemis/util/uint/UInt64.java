@@ -13,7 +13,6 @@
 
 package tech.pegasys.artemis.util.uint;
 
-import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes8;
 
 import java.math.BigInteger;
@@ -21,9 +20,6 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Objects;
 import java.util.Random;
-import tech.pegasys.artemis.util.bytes.Bytes8;
-import tech.pegasys.artemis.util.bytes.MutableBytes32;
-import tech.pegasys.artemis.util.bytes.MutableBytes8;
 
 /** An immutable unsigned 64-bit precision integer. */
 public class UInt64 implements Comparable<UInt64> {
@@ -321,10 +317,6 @@ public class UInt64 implements Comparable<UInt64> {
   public Bytes8 toBytesBigEndian() {
     byte[] array = ByteBuffer.allocate(Long.BYTES).order(ByteOrder.BIG_ENDIAN).putLong(value).array();
     return Bytes8.wrap(array);
-  }
-
-  public Bytes32 toBytes32BigEndian() {
-    return Bytes32.leftPad(toBytesBigEndian());
   }
 
   @Override

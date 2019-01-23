@@ -25,6 +25,7 @@ import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.validator.BeaconChainProposer;
 import org.ethereum.beacon.validator.crypto.MessageSigner;
 import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes8;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.uint.UInt24;
@@ -86,7 +87,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
 
   private Bytes96 getRandaoReveal(BeaconState state, UInt24 index, MessageSigner<Bytes96> signer) {
     ValidatorRecord proposer = state.getValidatorRegistry().get(SpecHelpers.safeInt(index));
-    Hash32 hash = Hash32.wrap(proposer.getProposerSlots().toBytes32BigEndian());
+    Hash32 hash = Hash32.wrap(Bytes32.leftPad(proposer.getProposerSlots().toBytesBigEndian()));
     Bytes8 domain = specHelpers.get_domain(state.getForkData(), state.getSlot(), RANDAO);
     return signer.sign(hash, domain);
   }
