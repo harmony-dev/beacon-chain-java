@@ -1177,6 +1177,11 @@ public class SpecHelpers {
     return index;
   }
 
+  public boolean is_in_beacon_chain_committee(BeaconState state, UInt64 slot, UInt24 index) {
+    List<UInt24> first_committee = get_shard_committees_at_slot(state, slot).get(0).getCommittee();
+    return Collections.binarySearch(first_committee, index) >= 0;
+  }
+
   public UInt64 get_current_slot(BeaconState state) {
     UInt64 currentTime = UInt64.valueOf(System.currentTimeMillis() / 1000);
     assert state.getGenesisTime().compareTo(currentTime) < 0;
@@ -1187,20 +1192,13 @@ public class SpecHelpers {
     return state.getSlot().equals(get_current_slot(state));
   }
 
-  /*
-    Returns a slot that validator is assigned to.
-  */
-  public UInt64 get_assigned_slot(BeaconState state, UInt24 index) {
-    UInt64 slot = state.getCurrentEpochCalculationSlot();
-    UInt64 epochEnd = slot.plus(spec.getEpochLength());
-    for (; slot.compareTo(epochEnd) < 0; slot.increment()) {
-      List<UInt24> firstCommittee = get_shard_committees_at_slot(state, slot).get(0).getCommittee();
-      if (Collections.binarySearch(firstCommittee, index) >= 0) {
-        return slot;
-      }
-    }
+  public UInt64 get_slot_start_time(BeaconState state, UInt64 slot) {
+    return state.getGenesisTime().plus(spec.getSlotDuration().times(slot));
+  }
 
-    return UInt64.MAX_VALUE;
+  public UInt64 get_slot_middle_time(BeaconState state, UInt64 slot) {
+    return get_slot_start_time(state, slot)
+        .plus(spec.getSlotDuration().dividedBy(UInt64.valueOf(2)));
   }
 
   public void checkIndexRange(BeaconState state, UInt24 index) {
