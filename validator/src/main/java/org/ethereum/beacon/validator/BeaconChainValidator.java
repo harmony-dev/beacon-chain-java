@@ -2,13 +2,12 @@ package org.ethereum.beacon.validator;
 
 import java.util.function.Consumer;
 import org.ethereum.beacon.chain.MutableBeaconChain;
+import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.db.Database;
-import org.ethereum.beacon.chain.observer.ObservableBeaconState;
-import org.ethereum.beacon.randao.Randao;
 import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
 
@@ -25,7 +24,6 @@ public class BeaconChainValidator implements ValidatorService {
   private MutableBeaconChain beaconChain;
   private SpecHelpers specHelpers;
 
-  private Randao randao;
   private ObservableBeaconState recentState;
   private UInt24 index = UInt24.MAX_VALUE;
 
@@ -65,7 +63,6 @@ public class BeaconChainValidator implements ValidatorService {
 
     if (index.compareTo(UInt24.MAX_VALUE) < 0) {
       this.index = index;
-      this.randao = Randao.get(database.createStorage(RANDAO_SOURCE));
       this.taskManager.start();
       createTasks(state);
       subscribeToEpochUpdates(this::createTasks);
@@ -98,7 +95,7 @@ public class BeaconChainValidator implements ValidatorService {
         index,
         () -> {
           final ObservableBeaconState state = fetchState(slot.decrement());
-          final BeaconBlock newBlock = proposer.propose(state, this.randao);
+          final BeaconBlock newBlock = proposer.propose(state);
           propagateBlock(newBlock);
         });
   }

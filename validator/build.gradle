@@ -6,7 +6,6 @@ dependencies {
   implementation project(':db:core')
   implementation project(':chain')
   implementation project(':pow')
-  implementation project(':randao')
 
   implementation 'com.google.guava:guava'
 }
