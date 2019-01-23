@@ -7,7 +7,7 @@ import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.db.Database;
-import org.ethereum.beacon.pending.ObservableBeaconState;
+import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.randao.Randao;
 import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;

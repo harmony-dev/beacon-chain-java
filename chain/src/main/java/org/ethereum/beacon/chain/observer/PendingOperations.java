@@ -1,4 +1,4 @@
-package org.ethereum.beacon.pending;
+package org.ethereum.beacon.chain.observer;
 
 import java.util.List;
 import org.ethereum.beacon.core.operations.Attestation;

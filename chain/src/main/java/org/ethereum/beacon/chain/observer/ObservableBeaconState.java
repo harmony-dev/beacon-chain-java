@@ -1,25 +1,19 @@
-package org.ethereum.beacon.pending;
+package org.ethereum.beacon.chain.observer;
 
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
-import tech.pegasys.artemis.ethereum.core.Hash32;
 
 /** An observable chain state. */
 public class ObservableBeaconState {
   private final BeaconBlock head;
   private final BeaconState latestSlotState;
-  private final Hash32 latestDepositRoot;
   private final PendingOperations pendingOperations;
 
   public ObservableBeaconState(
-      BeaconBlock head,
-      BeaconState latestSlotState,
-      PendingOperations pendingOperations,
-      Hash32 latestDepositRoot) {
+      BeaconBlock head, BeaconState latestSlotState, PendingOperations pendingOperations) {
     this.head = head;
     this.latestSlotState = latestSlotState;
     this.pendingOperations = pendingOperations;
-    this.latestDepositRoot = latestDepositRoot;
   }
 
   public BeaconBlock getHead() {
@@ -32,9 +26,5 @@ public class ObservableBeaconState {
 
   public PendingOperations getPendingOperations() {
     return pendingOperations;
-  }
-
-  public Hash32 getLatestDepositRoot() {
-    return latestDepositRoot;
   }
 }
