@@ -34,6 +34,10 @@ import org.ethereum.beacon.crypto.BLS381.PublicKey;
 import org.ethereum.beacon.crypto.BLS381.Signature;
 import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.crypto.MessageParameters;
+import org.ethereum.beacon.ssz.SSZHasher;
+import org.ethereum.beacon.ssz.type.BytesCodec;
+import org.ethereum.beacon.ssz.type.HashCodec;
+import org.ethereum.beacon.ssz.type.UIntCodec;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes3;
 import tech.pegasys.artemis.util.bytes.Bytes32;
@@ -45,12 +49,23 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
 import tech.pegasys.artemis.util.uint.UInt64s;
+import java.util.function.Function;
 
 /**
  * https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md#helper-functions
  */
 public class SpecHelpers {
   private final ChainSpec spec;
+  private static final Function<BytesValue, BytesValue> hashingFunction =
+      (data) ->
+          BytesValue.wrap(Hashes.keccak256(BytesValue.of(data.getArrayUnsafe())).getArrayUnsafe());
+  private static final SSZHasher sszHasher =
+      new SSZHasher(
+          SSZHasher.getDefaultBuilder(hashingFunction, true)
+              .addCodec(new UIntCodec())
+              .addCodec(new HashCodec())
+              .addCodec(new BytesCodec()),
+          hashingFunction);
 
   public SpecHelpers(ChainSpec spec) {
     this.spec = spec;
@@ -888,7 +903,7 @@ public class SpecHelpers {
   }
 
   public Hash32 hash_tree_root(Object object) {
-    return Hash32.ZERO;
+    return Hash32.wrap(Bytes32.wrap(sszHasher.calc(object), 0));
   }
 
   public boolean bls_verify(Bytes48 publicKey, Hash32 message, Bytes96 signature, Bytes8 domain) {
