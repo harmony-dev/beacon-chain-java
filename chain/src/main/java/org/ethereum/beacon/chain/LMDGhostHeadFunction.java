@@ -15,14 +15,13 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 
 /**
  * The beacon chain fork choice rule is a hybrid that combines justification and finality with
@@ -60,9 +59,18 @@ public class LMDGhostHeadFunction implements HeadFunction {
             .getSlotCanonicalBlock(lastJustifiedSlot.getValue())
             .map(tupleStorage::get)
             .orElseThrow(() -> new RuntimeException("No justified head found"));
+    Function<Hash32, List<BeaconBlock>> getChildrenBlocks =
+        (hash) -> blockStorage.getChildren(hash, CHILDREN_SEARCH_LIMIT);
     BeaconBlock newHead =
         justifiedTuple
-            .map(this::lmd_ghost)
+            .map(
+                (BeaconTuple startBlock) ->
+                    specHelpers.lmd_ghost(
+                        startBlock.getBlock(),
+                        startBlock.getState(),
+                        blockStorage::get,
+                        getChildrenBlocks,
+                        this::get_latest_attestation))
             .orElseThrow(() -> new RuntimeException("No justified head found"));
     if (!newHead.getHash().equals(curHead)) {
       blockStorage.reorgTo(newHead.getHash());
@@ -72,65 +80,6 @@ public class LMDGhostHeadFunction implements HeadFunction {
     }
   }
 
-  // def lmd_ghost(store, start):
-  //    validators = start.state.validator_registry
-  //    active_validators = [validators[i] for i in
-  //                         get_active_validator_indices(validators, start.state.slot)]
-  //    attestation_targets = [get_latest_attestation_target(store, validator)
-  //                           for validator in active_validators]
-  //    def get_vote_count(block):
-  //        return len([target for target in attestation_targets if
-  //                    get_ancestor(store, target, block.slot) == block])
-  //
-  //    head = start
-  //    while 1:
-  //        children = get_children(head)
-  //        if len(children) == 0:
-  //            return head
-  //        head = max(children, key=get_vote_count)
-  private BeaconBlock lmd_ghost(BeaconTuple startTuple) {
-    List<ValidatorRecord> validators = startTuple.getState().getValidatorRegistry();
-    List<UInt24> active_validator_indices =
-        specHelpers.get_active_validator_indices(validators, startTuple.getState().getSlot());
-
-    List<ValidatorRecord> active_validators = new ArrayList<>();
-    for (UInt24 index : active_validator_indices) {
-      active_validators.add(validators.get(index.getValue()));
-    }
-
-    List<BeaconBlock> attestation_targets = new ArrayList<>();
-    for (ValidatorRecord validatorRecord : active_validators) {
-      attestation_targets.add(get_latest_attestation_target(validatorRecord));
-    }
-
-    BeaconBlock head = startTuple.getBlock();
-    while (true) {
-      List<BeaconBlock> children = blockStorage.getChildren(head.getHash(), CHILDREN_SEARCH_LIMIT);
-      if (children.isEmpty()) {
-        return head;
-      } else {
-        head =
-            children.stream()
-                .max(Comparator.comparingInt(o -> get_vote_count(o, attestation_targets)))
-                .orElseThrow(() -> new RuntimeException("Couldn't find maximum voted block"));
-      }
-    }
-  }
-
-  /**
-   * Let get_latest_attestation_target(store, validator) be the target block in the attestation
-   * get_latest_attestation(store, validator).
-   */
-  private BeaconBlock get_latest_attestation_target(ValidatorRecord validatorRecord) {
-    Attestation latest = get_latest_attestation(validatorRecord);
-    return blockStorage
-        .get(latest.getData().getBeaconBlockRoot())
-        .orElseThrow(
-            () ->
-                new RuntimeException(
-                    "Couldn't find attestation target " + latest.getData().getBeaconBlockRoot()));
-  }
-
   /**
    * Let get_latest_attestation(store, validator) be the attestation with the highest slot number in
    * store from validator. If several such attestations exist, use the one the validator v observed
@@ -138,37 +87,6 @@ public class LMDGhostHeadFunction implements HeadFunction {
    */
   private Attestation get_latest_attestation(ValidatorRecord validatorRecord) {
     return attestationCache.get(validatorRecord.getPubKey());
-  }
-
-  /**
-   * def get_vote_count(block): return len([target for target in attestation_targets if
-   * get_ancestor(store, target, block.slot) == block])
-   */
-  private int get_vote_count(BeaconBlock block, List<BeaconBlock> attestation_targets) {
-    int res = 0;
-    for (BeaconBlock target : attestation_targets) {
-      if (get_ancestor(target, block.getSlot()).equals(block)) {
-        ++res;
-      }
-    }
-
-    return res;
-  }
-
-  /**
-   * Let get_ancestor(store, block, slot) be the ancestor of block with slot number slot. The
-   * get_ancestor function can be defined recursively as def get_ancestor(store, block, slot):
-   * return block if block.slot == slot else get_ancestor(store, store.get_parent(block), slot).
-   */
-  private BeaconBlock get_ancestor(BeaconBlock block, UInt64 slot) {
-    if (block.getSlot().equals(slot)) {
-      return block;
-    } else {
-      return blockStorage
-          .get(block.getParentRoot())
-          .map(parent -> get_ancestor(parent, slot))
-          .orElseThrow(() -> new RuntimeException("Couldn't find ancestor of block " + block));
-    }
   }
 
   /**

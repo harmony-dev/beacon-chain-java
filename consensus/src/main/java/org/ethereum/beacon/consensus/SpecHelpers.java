@@ -1,20 +1,9 @@
 package org.ethereum.beacon.consensus;
 
-import static java.lang.Math.max;
-import static java.lang.Math.min;
-import static java.util.stream.Collectors.toList;
-import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
+import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.CasperSlashing;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustodyBit;
@@ -45,6 +34,20 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
 import tech.pegasys.artemis.util.uint.UInt64s;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import static java.lang.Math.max;
+import static java.lang.Math.min;
+import static java.util.stream.Collectors.toList;
+import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
 
 /**
  * https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md#helper-functions
@@ -1192,6 +1195,113 @@ public class SpecHelpers {
 
   public List<Bytes48> mapIndicesToPubKeys(BeaconState state, UInt24[] indices) {
     return mapIndicesToPubKeys(state, Arrays.asList(indices));
+  }
+
+  // def lmd_ghost(store, start):
+  //    validators = start.state.validator_registry
+  //    active_validators = [validators[i] for i in
+  //                         get_active_validator_indices(validators, start.state.slot)]
+  //    attestation_targets = [get_latest_attestation_target(store, validator)
+  //                           for validator in active_validators]
+  //    def get_vote_count(block):
+  //        return len([target for target in attestation_targets if
+  //                    get_ancestor(store, target, block.slot) == block])
+  //
+  //    head = start
+  //    while 1:
+  //        children = get_children(head)
+  //        if len(children) == 0:
+  //            return head
+  //        head = max(children, key=get_vote_count)
+  public BeaconBlock lmd_ghost(
+      BeaconBlock startBlock,
+      BeaconState state,
+      Function<Hash32, Optional<BeaconBlock>> getBlock,
+      Function<Hash32, List<BeaconBlock>> getChildrenBlocks,
+      Function<ValidatorRecord, Attestation> get_latest_attestation) {
+    List<ValidatorRecord> validators = state.getValidatorRegistry();
+    List<UInt24> active_validator_indices =
+        get_active_validator_indices(validators, state.getSlot());
+
+    List<ValidatorRecord> active_validators = new ArrayList<>();
+    for (UInt24 index : active_validator_indices) {
+      active_validators.add(validators.get(index.getValue()));
+    }
+
+    List<BeaconBlock> attestation_targets = new ArrayList<>();
+    for (ValidatorRecord validatorRecord : active_validators) {
+      attestation_targets.add(
+          get_latest_attestation_target(validatorRecord, get_latest_attestation, getBlock));
+    }
+
+    BeaconBlock head = startBlock;
+    while (true) {
+      List<BeaconBlock> children = getChildrenBlocks.apply(head.getHash());
+      if (children.isEmpty()) {
+        return head;
+      } else {
+        head =
+            children.stream()
+                .max(Comparator.comparingInt(o -> get_vote_count(o, attestation_targets, getBlock)))
+                .orElseThrow(() -> new RuntimeException("Couldn't find maximum voted block"));
+      }
+    }
+  }
+
+  /**
+   * Let get_latest_attestation_target(store, validator) be the target block in the attestation
+   * get_latest_attestation(store, validator).
+   *
+   * @param get_latest_attestation Let get_latest_attestation(store, validator) be the attestation
+   *     with the highest slot number in store from validator. If several such attestations exist,
+   *     use the one the validator v observed first.
+   */
+  private BeaconBlock get_latest_attestation_target(
+      ValidatorRecord validatorRecord,
+      Function<ValidatorRecord, Attestation> get_latest_attestation,
+      Function<Hash32, Optional<BeaconBlock>> getBlock) {
+    Attestation latest = get_latest_attestation.apply(validatorRecord);
+    return getBlock
+        .apply(latest.getData().getBeaconBlockRoot())
+        .orElseThrow(
+            () ->
+                new RuntimeException(
+                    "Couldn't find attestation target " + latest.getData().getBeaconBlockRoot()));
+  }
+
+  /**
+   * def get_vote_count(block): return len([target for target in attestation_targets if
+   * get_ancestor(store, target, block.slot) == block])
+   */
+  private int get_vote_count(
+      BeaconBlock block,
+      List<BeaconBlock> attestation_targets,
+      Function<Hash32, Optional<BeaconBlock>> getBlock) {
+    int res = 0;
+    for (BeaconBlock target : attestation_targets) {
+      if (get_ancestor(target, block.getSlot(), getBlock).equals(block)) {
+        ++res;
+      }
+    }
+
+    return res;
+  }
+
+  /**
+   * Let get_ancestor(store, block, slot) be the ancestor of block with slot number slot. The
+   * get_ancestor function can be defined recursively as def get_ancestor(store, block, slot):
+   * return block if block.slot == slot else get_ancestor(store, store.get_parent(block), slot).
+   */
+  private BeaconBlock get_ancestor(
+      BeaconBlock block, UInt64 slot, Function<Hash32, Optional<BeaconBlock>> getBlock) {
+    if (block.getSlot().equals(slot)) {
+      return block;
+    } else {
+      return getBlock
+          .apply(block.getParentRoot())
+          .map(parent -> get_ancestor(parent, slot, getBlock))
+          .orElseThrow(() -> new RuntimeException("Couldn't find ancestor of block " + block));
+    }
   }
 
   public static int safeInt(UInt64 uint) {
