@@ -99,7 +99,7 @@ public class BeaconChainValidator implements ValidatorService {
       executor.execute(
           () -> {
             final BeaconBlock newBlock =
-                proposer.propose(observableState, recentDepositRoot, messageSigner);
+                proposer.propose(index, observableState, recentDepositRoot, messageSigner);
             propagateBlock(newBlock);
           });
     }
