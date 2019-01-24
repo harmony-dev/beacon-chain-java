@@ -1,5 +1,6 @@
 package org.ethereum.beacon.consensus.transition;
 
+import java.util.Collections;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.core.BeaconBlocks;
 import org.ethereum.beacon.core.BeaconState;
@@ -34,7 +35,7 @@ public class NextSlotTransitionTest {
 
     List<Deposit> deposits = new ArrayList<>();
     for (int i = 0; i < 8000; i++) {
-      Deposit deposit = new Deposit(new Hash32[]{Hash32.random(rnd)}, UInt64.ZERO,
+      Deposit deposit = new Deposit(Collections.singletonList(Hash32.random(rnd)), UInt64.ZERO,
           new DepositData(
               new DepositInput(
                   Bytes48.intToBytes48(i), Hash32.random(rnd), Hash32.ZERO, Hash32.ZERO, Bytes96.ZERO

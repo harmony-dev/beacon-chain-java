@@ -40,7 +40,7 @@ public class DepositVerifier implements OperationVerifier<Deposit> {
         serializedDataHash,
         deposit.getMerkleBranch(),
         chainSpec.getDepositContractTreeDepth(),
-        deposit.getMerkleTreeIndex(),
+        deposit.getDepositIndex(),
         state.getLatestDepositRoot())) {
 
       return failedResult(

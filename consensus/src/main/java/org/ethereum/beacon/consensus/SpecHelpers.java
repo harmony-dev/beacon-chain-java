@@ -1150,15 +1150,15 @@ public class SpecHelpers {
      return value == root
   */
   public boolean verify_merkle_branch(
-      Hash32 leaf, Hash32[] branch, UInt64 depth, UInt64 index, Hash32 root) {
+      Hash32 leaf, List<Hash32> branch, UInt64 depth, UInt64 index, Hash32 root) {
 
     Hash32 value = leaf;
     for (int i : IntStream.range(0, safeInt(depth)).toArray()) {
       if (index.dividedBy(UInt64.valueOf(1 << i)).modulo(UInt64.valueOf(2)).compareTo(UInt64.ZERO)
           > 0) {
-        value = hash(branch[i].concat(value));
+        value = hash(branch.get(i).concat(value));
       } else {
-        value = hash(value.concat(branch[i]));
+        value = hash(value.concat(branch.get(i)));
       }
     }
 
