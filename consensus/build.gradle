@@ -3,6 +3,7 @@ dependencies {
   implementation project(':core')
   implementation project(':crypto')
   implementation project(':pow')
+  implementation project(':ssz')
 
   implementation 'com.google.guava:guava'
 }
