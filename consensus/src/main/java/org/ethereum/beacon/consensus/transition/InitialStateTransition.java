@@ -17,7 +17,6 @@ import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.CrosslinkRecord;
 import org.ethereum.beacon.core.state.ForkData;
 import org.ethereum.beacon.pow.DepositContract;
-import org.ethereum.beacon.pow.DepositContract.ChainStart;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
@@ -116,7 +115,7 @@ public class InitialStateTransition implements StateTransition<BeaconStateEx> {
         .withBatchedBlockRoots(emptyList());
 
     // PoW receipt root
-    initialState.withLatestDepositRoot(depositContractStart.getReceiptRoot()).withDepositRootVotes(emptyList());
+    initialState.withLatestDepositRoot(depositContractStart.getDepositRoot()).withDepositRootVotes(emptyList());
 
     // handle initial deposits and activations
     final List<Deposit> initialDeposits = depositContractStart.getInitialDeposits();

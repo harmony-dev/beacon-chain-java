@@ -63,7 +63,11 @@ public abstract class AbstractDepositContract implements DepositContract {
   }
 
   protected synchronized void chainStart(byte[] deposit_root, byte[] time) {
-
+    ChainStart chainStart = new ChainStart(
+        UInt64.fromBytesBigEndian(Bytes8.wrap(time)),
+        Hash32.wrap(Bytes32.wrap(deposit_root)),
+        initialDeposits);
+    chainStartSink.onNext(chainStart);
     chainStartSink.onComplete();
   }
 
