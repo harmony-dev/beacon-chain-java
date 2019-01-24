@@ -37,7 +37,7 @@ public class InitialStateTransitionTest {
               }
 
               @Override
-              public List<Deposit> pullDeposits(int count, Hash32 depositRoot, UInt64 fromIndex) {
+              public List<Deposit> peekDeposits(int count, Hash32 depositRoot, UInt64 fromIndex) {
                 return Collections.emptyList();
               }
             },

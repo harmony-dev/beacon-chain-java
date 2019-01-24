@@ -94,13 +94,13 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
 
   private BeaconBlockBody getBlockBody(BeaconState state, PendingOperations operations) {
     List<ProposerSlashing> proposerSlashings =
-        operations.pullProposerSlashings(chainSpec.getMaxProposerSlashings());
+        operations.peekProposerSlashings(chainSpec.getMaxProposerSlashings());
     List<CasperSlashing> casperSlashings =
-        operations.pullCasperSlashings(chainSpec.getMaxCasperSlashings());
-    List<Attestation> attestations = operations.pullAttestations(chainSpec.getMaxAttestations());
-    List<Exit> exits = operations.pullExits(chainSpec.getMaxExits());
+        operations.peekCasperSlashings(chainSpec.getMaxCasperSlashings());
+    List<Attestation> attestations = operations.peekAggregatedAttestations(chainSpec.getMaxAttestations());
+    List<Exit> exits = operations.peekExits(chainSpec.getMaxExits());
     List<Deposit> deposits =
-        depositContract.pullDeposits(
+        depositContract.peekDeposits(
             chainSpec.getMaxDeposits(), state.getLatestDepositRoot(), UInt64.ZERO);
 
     return new BeaconBlockBody(

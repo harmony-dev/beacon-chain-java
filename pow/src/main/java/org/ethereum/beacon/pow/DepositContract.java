@@ -11,7 +11,7 @@ public interface DepositContract {
 
   List<Deposit> getInitialDeposits();
 
-  List<Deposit> pullDeposits(int count, Hash32 depositRoot, UInt64 fromIndex);
+  List<Deposit> peekDeposits(int count, Hash32 depositRoot, UInt64 fromIndex);
 
   class ChainStart {
     private final UInt64 time;
