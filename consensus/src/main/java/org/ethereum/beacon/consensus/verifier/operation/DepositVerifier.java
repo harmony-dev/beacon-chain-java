@@ -41,7 +41,7 @@ public class DepositVerifier implements OperationVerifier<Deposit> {
         deposit.getMerkleBranch(),
         chainSpec.getDepositContractTreeDepth(),
         deposit.getDepositIndex(),
-        state.getLatestDepositRoot())) {
+        state.getLatestEth1Data().getDepositRoot())) {
 
       return failedResult(
           "merkle proof verification failed, serialized_data_hash = %s", serializedDataHash);

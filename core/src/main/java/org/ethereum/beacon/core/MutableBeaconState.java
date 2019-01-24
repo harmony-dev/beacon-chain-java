@@ -3,7 +3,8 @@ package org.ethereum.beacon.core;
 import org.ethereum.beacon.core.operations.CustodyChallenge;
 import org.ethereum.beacon.core.state.BeaconStateImpl;
 import org.ethereum.beacon.core.state.CrosslinkRecord;
-import org.ethereum.beacon.core.state.DepositRootVote;
+import org.ethereum.beacon.core.state.Eth1Data;
+import org.ethereum.beacon.core.state.Eth1DataVote;
 import org.ethereum.beacon.core.state.ForkData;
 import org.ethereum.beacon.core.state.PendingAttestationRecord;
 import org.ethereum.beacon.core.state.ValidatorRecord;
@@ -73,9 +74,9 @@ public interface MutableBeaconState extends BeaconState {
 
   void setBatchedBlockRoots(List<Hash32> batchedBlockRoots);
 
-  void setLatestDepositRoot(Hash32 latestDepositRoot);
+  void setLatestEth1Data(Eth1Data latestEth1Data);
 
-  void setDepositRootVotes(List<DepositRootVote> depositRootVotes);
+  void setEth1DataVotes(List<Eth1DataVote> eth1DataVotes);
 
   BeaconState validate();
 
@@ -258,26 +259,26 @@ public interface MutableBeaconState extends BeaconState {
     return this;
   }
 
-  default MutableBeaconState withLatestDepositRoot(Hash32 latestDepositRoot) {
-    setLatestDepositRoot(latestDepositRoot);
+  default MutableBeaconState withLatestEth1Data(Eth1Data latestEth1Data) {
+    setLatestEth1Data(latestEth1Data);
     return this;
   }
 
-  default MutableBeaconState withDepositRootVotes(List<DepositRootVote> depositRootVotes) {
-    setDepositRootVotes(depositRootVotes);
+  default MutableBeaconState withEth1DataVotes(List<Eth1DataVote> eth1DataVotes) {
+    setEth1DataVotes(eth1DataVotes);
     return this;
   }
 
-  default MutableBeaconState withDepositRootVote(
-      int idx, Function<DepositRootVote, DepositRootVote> voteUpdater) {
-    ArrayList<DepositRootVote> newVotes = new ArrayList<>(getDepositRootVotes());
+  default MutableBeaconState withEth1DataVote(
+      int idx, Function<Eth1DataVote, Eth1DataVote> voteUpdater) {
+    ArrayList<Eth1DataVote> newVotes = new ArrayList<>(getEth1DataVotes());
     newVotes.set(idx, voteUpdater.apply(newVotes.get(idx)));
-    return withDepositRootVotes(newVotes);
+    return withEth1DataVotes(newVotes);
   }
 
-  default MutableBeaconState withNewDepositRootVote(DepositRootVote newVote) {
-    ArrayList<DepositRootVote> newVotes = new ArrayList<>(getDepositRootVotes());
+  default MutableBeaconState withNewEth1DataVote(Eth1DataVote newVote) {
+    ArrayList<Eth1DataVote> newVotes = new ArrayList<>(getEth1DataVotes());
     newVotes.add(newVote);
-    return withDepositRootVotes(newVotes);
+    return withEth1DataVotes(newVotes);
   }
 }

@@ -84,10 +84,10 @@ public class BeaconStateImpl implements MutableBeaconState {
 
   /* PoW receipt root */
 
-  /** Latest processed receipt root from PoW deposit contract. */
-  @SSZ private Hash32 latestDepositRoot;
-  /** Receipt roots that voting is still in progress for. */
-  @SSZ private List<DepositRootVote> depositRootVotes;
+  /** Latest processed eth1 data. */
+  @SSZ private Eth1Data latestEth1Data;
+  /** Eth1 data items that voting is still in progress for. */
+  @SSZ private List<Eth1DataVote> eth1DataVotes;
 
   public BeaconStateImpl() {}
 
@@ -126,8 +126,8 @@ public class BeaconStateImpl implements MutableBeaconState {
         new ArrayList<>(state.getLatestAttestations()),
         new ArrayList<>(state.getBatchedBlockRoots()),
 
-        state.getLatestDepositRoot(),
-        new ArrayList<>(state.getDepositRootVotes()));
+        state.getLatestEth1Data(),
+        new ArrayList<>(state.getEth1DataVotes()));
   }
 
   private BeaconStateImpl(
@@ -157,8 +157,8 @@ public class BeaconStateImpl implements MutableBeaconState {
       List<UInt64> latestPenalizedExitBalances,
       List<PendingAttestationRecord> latestAttestations,
       List<Hash32> batchedBlockRoots,
-      Hash32 latestDepositRoot,
-      List<DepositRootVote> depositRootVotes) {
+      Eth1Data latestEth1Data,
+      List<Eth1DataVote> eth1DataVotes) {
     this.slot = slot;
     this.genesisTime = genesisTime;
     this.forkData = forkData;
@@ -186,8 +186,8 @@ public class BeaconStateImpl implements MutableBeaconState {
     this.latestPenalizedExitBalances = latestPenalizedExitBalances;
     this.latestAttestations = latestAttestations;
     this.batchedBlockRoots = batchedBlockRoots;
-    this.latestDepositRoot = latestDepositRoot;
-    this.depositRootVotes = depositRootVotes;
+    this.latestEth1Data = latestEth1Data;
+    this.eth1DataVotes = eth1DataVotes;
 
     validate();
   }
@@ -459,23 +459,23 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
-  public Hash32 getLatestDepositRoot() {
-    return latestDepositRoot;
+  public Eth1Data getLatestEth1Data() {
+    return latestEth1Data;
   }
 
   @Override
-  public void setLatestDepositRoot(Hash32 latestDepositRoot) {
-    this.latestDepositRoot = latestDepositRoot;
+  public void setLatestEth1Data(Eth1Data latestEth1Data) {
+    this.latestEth1Data = latestEth1Data;
   }
 
   @Override
-  public List<DepositRootVote> getDepositRootVotes() {
-    return unmodifiableList(depositRootVotes);
+  public List<Eth1DataVote> getEth1DataVotes() {
+    return unmodifiableList(eth1DataVotes);
   }
 
   @Override
-  public void setDepositRootVotes(List<DepositRootVote> depositRootVotes) {
-    this.depositRootVotes = depositRootVotes;
+  public void setEth1DataVotes(List<Eth1DataVote> eth1DataVotes) {
+    this.eth1DataVotes = eth1DataVotes;
   }
 
   @Override
@@ -519,7 +519,7 @@ public class BeaconStateImpl implements MutableBeaconState {
         && Objects.equal(latestPenalizedExitBalances, that.latestPenalizedExitBalances)
         && Objects.equal(latestAttestations, that.latestAttestations)
         && Objects.equal(batchedBlockRoots, that.batchedBlockRoots)
-        && Objects.equal(latestDepositRoot, that.latestDepositRoot)
-        && Objects.equal(depositRootVotes, that.depositRootVotes);
+        && Objects.equal(latestEth1Data, that.latestEth1Data)
+        && Objects.equal(eth1DataVotes, that.eth1DataVotes);
   }
 }

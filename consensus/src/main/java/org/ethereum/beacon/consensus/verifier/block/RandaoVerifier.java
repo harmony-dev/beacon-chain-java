@@ -1,6 +1,7 @@
 package org.ethereum.beacon.consensus.verifier.block;
 
 import static org.ethereum.beacon.consensus.SpecHelpers.safeInt;
+import static org.ethereum.beacon.core.spec.SignatureDomains.RANDAO;
 
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
@@ -9,6 +10,7 @@ import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.bytes.Bytes32;
 
 /**
  * Verifies RANDAO reveal.
@@ -32,15 +34,15 @@ public class RandaoVerifier implements BeaconBlockVerifier {
             .getValidatorRegistry()
             .get(safeInt(specHelpers.get_beacon_proposer_index(state, state.getSlot())));
 
-    Hash32 actualCommitment =
-        specHelpers.repeat_hash(block.getRandaoReveal(), safeInt(proposer.getRandaoLayers()));
+    if (!specHelpers.bls_verify(
+        proposer.getPubKey(),
+        Hash32.wrap(Bytes32.leftPad(proposer.getProposerSlots().toBytesBigEndian())),
+        block.getRandaoReveal(),
+        specHelpers.get_domain(state.getForkData(), state.getSlot(), RANDAO))) {
 
-    if (actualCommitment.equals(proposer.getRandaoCommitment())) {
-      return VerificationResult.PASSED;
-    } else {
-      return VerificationResult.failedResult(
-          "Incorrect RANDAO reveal for block %s, expected commitment %s but got %s",
-          block, proposer.getRandaoCommitment(), actualCommitment);
+      return VerificationResult.failedResult("Incorrect RANDAO reveal");
     }
+
+    return VerificationResult.PASSED;
   }
 }

@@ -13,7 +13,8 @@ public interface ChainSpec
         DepositContractParameters,
         TimeParameters,
         RewardAndPenaltyQuotients,
-        MaxOperationsPerBlock {
+        MaxOperationsPerBlock,
+        HonestValidatorParameters {
 
   ChainSpec DEFAULT =
       new ChainSpec() {
@@ -143,8 +144,8 @@ public interface ChainSpec
         }
 
         @Override
-        public UInt64 getDepositRootVotingPeriod() {
-          return DEPOSIT_ROOT_VOTING_PERIOD;
+        public UInt64 getEth1DataVotingPeriod() {
+          return ETH1_DATA_VOTING_PERIOD;
         }
 
         @Override
@@ -195,6 +196,11 @@ public interface ChainSpec
         @Override
         public int getMaxExits() {
           return MAX_EXITS;
+        }
+
+        @Override
+        public long getEth1FollowDistance() {
+          return ETH1_FOLLOW_DISTANCE;
         }
       };
 }

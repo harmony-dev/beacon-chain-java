@@ -15,7 +15,7 @@ import org.ethereum.beacon.core.operations.slashing.ProposalSignedData;
 import org.ethereum.beacon.core.operations.slashing.SlashableVoteData;
 import org.ethereum.beacon.core.state.BeaconStateImpl;
 import org.ethereum.beacon.core.state.CrosslinkRecord;
-import org.ethereum.beacon.core.state.DepositRootVote;
+import org.ethereum.beacon.core.state.Eth1DataVote;
 import org.ethereum.beacon.core.state.ForkData;
 import org.ethereum.beacon.core.state.PendingAttestationRecord;
 import org.ethereum.beacon.core.state.ValidatorRecord;
@@ -121,7 +121,7 @@ public class SSZSerializableAnnotationTest {
                 ProposerSlashing.class,
                 SlashableVoteData.class,
                 CrosslinkRecord.class,
-                DepositRootVote.class,
+                Eth1DataVote.class,
                 ForkData.class,
                 PendingAttestationRecord.class,
                 ValidatorRecord.class));
