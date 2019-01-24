@@ -56,7 +56,7 @@ public class Serializer {
    * @param clazz Java class with SSZ model markings
    * @return SSZ model instance filled with input encoded data
    */
-  public Object decode(BytesValue data, Class clazz) {
+  public <C> C decode(BytesValue data, Class<? extends C> clazz) {
     return ANNOTATION_SERIALIZER.decode(data.getArrayUnsafe(), clazz);
   }
 }
