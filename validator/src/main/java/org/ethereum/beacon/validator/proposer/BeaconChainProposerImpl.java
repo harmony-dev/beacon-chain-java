@@ -5,7 +5,6 @@ import static org.ethereum.beacon.core.spec.SignatureDomains.PROPOSAL;
 import static org.ethereum.beacon.core.spec.SignatureDomains.RANDAO;
 
 import java.util.List;
-import java.util.Optional;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.observer.PendingOperations;
 import org.ethereum.beacon.consensus.SpecHelpers;
@@ -123,7 +122,8 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
   */
   private Eth1Data getEth1Data(BeaconState state) {
     List<Eth1DataVote> eth1DataVotes = state.getEth1DataVotes();
-    Eth1Data contractData = depositContract.getEth1Data(chainSpec.getEth1FollowDistance());
+    Eth1Data contractData =
+        depositContract.getEth1DataByDistance(chainSpec.getEth1FollowDistance());
 
     if (eth1DataVotes.isEmpty()) {
       return contractData;
@@ -140,15 +140,8 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
     // verify best vote data and return if verification passed,
     // otherwise, return data from contract
     return depositContract
-        .getDepositRoot(bestVote.getEth1Data().getBlockHash())
-        .flatMap(
-            root -> {
-              if (bestVote.getEth1Data().getDepositRoot().equals(root)) {
-                return Optional.of(bestVote.getEth1Data());
-              } else {
-                return Optional.empty();
-              }
-            })
+        .getEth1DataByBlockHash(bestVote.getEth1Data().getBlockHash())
+        .filter(data -> data.equals(bestVote.getEth1Data()))
         .orElse(contractData);
   }
 

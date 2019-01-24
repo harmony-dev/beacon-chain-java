@@ -62,12 +62,12 @@ public class NextSlotTransitionTest {
               }
 
               @Override
-              public Eth1Data getEth1Data(long followDistance) {
+              public Eth1Data getEth1DataByDistance(long distanceFromHead) {
                 return Eth1Data.EMPTY;
               }
 
               @Override
-              public Optional<Hash32> getDepositRoot(Hash32 blockHash) {
+              public Optional<Eth1Data> getEth1DataByBlockHash(Hash32 blockHash) {
                 return Optional.empty();
               }
             }, new SpecHelpers(chainSpec));

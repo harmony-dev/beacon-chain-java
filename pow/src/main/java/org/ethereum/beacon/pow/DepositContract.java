@@ -15,9 +15,9 @@ public interface DepositContract {
 
   List<Deposit> peekDeposits(int count, Eth1Data eth1Data, UInt64 fromIndex);
 
-  Eth1Data getEth1Data(long followDistance);
+  Eth1Data getEth1DataByDistance(long distanceFromHead);
 
-  Optional<Hash32> getDepositRoot(Hash32 blockHash);
+  Optional<Eth1Data> getEth1DataByBlockHash(Hash32 blockHash);
 
   class ChainStart {
     private final UInt64 time;
