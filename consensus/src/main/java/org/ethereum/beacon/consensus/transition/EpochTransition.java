@@ -18,7 +18,7 @@ import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.CrosslinkRecord;
-import org.ethereum.beacon.core.state.DepositRootVote;
+import org.ethereum.beacon.core.state.Eth1DataVote;
 import org.ethereum.beacon.core.state.PendingAttestationRecord;
 import org.ethereum.beacon.core.state.ShardCommittee;
 import org.ethereum.beacon.core.state.ValidatorRecord;
@@ -315,21 +315,20 @@ public class EpochTransition implements StateTransition<BeaconStateEx> {
     }
 
     /*
-     Deposit roots
+     Eth1 data
 
-     Set state.latest_deposit_root = deposit_root_vote.deposit_root
-         if deposit_root_vote.vote_count * 2 > DEPOSIT_ROOT_VOTING_PERIOD
-         for some deposit_root_vote in state.deposit_root_votes.
-     Set state.deposit_root_votes = [].
+     Set state.latest_eth1_data = eth1_data_vote.data if eth1_data_vote.vote_count * 2 >
+     ETH1_DATA_VOTING_PERIOD for some eth1_data_vote in state.eth1_data_votes.
+     Set state.eth1_data_votes = [].
     */
-    for (DepositRootVote deposit_root_vote : state.getDepositRootVotes()) {
-      if (deposit_root_vote.getVoteCount().times(2)
-          .compareTo(spec.getDepositRootVotingPeriod()) > 0) {
-        state.withLatestDepositRoot(deposit_root_vote.getDepositRoot());
+    for (Eth1DataVote eth1_data_vote : state.getEth1DataVotes()) {
+      if (eth1_data_vote.getVoteCount().times(2)
+          .compareTo(spec.getEth1DataVotingPeriod()) > 0) {
+        state.withLatestEth1Data(eth1_data_vote.getEth1Data());
         break;
       }
     }
-    state.withDepositRootVotes(Collections.emptyList());
+    state.withEth1DataVotes(Collections.emptyList());
 
     /*
      Justification

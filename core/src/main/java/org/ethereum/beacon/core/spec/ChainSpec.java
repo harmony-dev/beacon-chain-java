@@ -143,8 +143,8 @@ public interface ChainSpec
         }
 
         @Override
-        public UInt64 getDepositRootVotingPeriod() {
-          return DEPOSIT_ROOT_VOTING_PERIOD;
+        public UInt64 getEth1DataVotingPeriod() {
+          return ETH1_DATA_VOTING_PERIOD;
         }
 
         @Override

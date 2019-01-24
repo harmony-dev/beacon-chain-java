@@ -1,5 +1,9 @@
 package org.ethereum.beacon.core;
 
+import static org.junit.Assert.assertEquals;
+
+import java.util.ArrayList;
+import java.util.List;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.CasperSlashing;
 import org.ethereum.beacon.core.operations.CustodyChallenge;
@@ -15,7 +19,8 @@ import org.ethereum.beacon.core.operations.slashing.ProposalSignedData;
 import org.ethereum.beacon.core.operations.slashing.SlashableVoteData;
 import org.ethereum.beacon.core.state.BeaconStateImpl;
 import org.ethereum.beacon.core.state.CrosslinkRecord;
-import org.ethereum.beacon.core.state.DepositRootVote;
+import org.ethereum.beacon.core.state.Eth1Data;
+import org.ethereum.beacon.core.state.Eth1DataVote;
 import org.ethereum.beacon.core.state.ForkData;
 import org.ethereum.beacon.core.state.PendingAttestationRecord;
 import org.ethereum.beacon.core.state.ValidatorRecord;
@@ -29,10 +34,6 @@ import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
-import java.util.ArrayList;
-import java.util.List;
-
-import static org.junit.Assert.assertEquals;
 
 public class ModelsSerializeTest {
   private Serializer sszSerializer;
@@ -120,9 +121,7 @@ public class ModelsSerializeTest {
   private DepositInput createDepositInput() {
     DepositInput depositInput =
         new DepositInput(
-            Bytes48.TRUE,
-            Hashes.keccak256(BytesValue.fromHexString("aa")),
-            Bytes96.ZERO);
+            Bytes48.TRUE, Hashes.keccak256(BytesValue.fromHexString("aa")), Bytes96.ZERO);
 
     return depositInput;
   }
@@ -312,7 +311,9 @@ public class ModelsSerializeTest {
             Hashes.keccak256(BytesValue.fromHexString("aa")),
             Hashes.keccak256(BytesValue.fromHexString("bb")),
             Bytes96.fromHexString("cc"),
-            Hashes.keccak256(BytesValue.fromHexString("dd")),
+            new Eth1Data(
+                Hashes.keccak256(BytesValue.fromHexString("dda")),
+                Hashes.keccak256(BytesValue.fromHexString("ddb"))),
             Bytes96.fromHexString("aa"),
             createBeaconBlockBody());
 
@@ -355,17 +356,17 @@ public class ModelsSerializeTest {
     assertEquals(expected, reconstructed);
   }
 
-  private DepositRootVote createDepositRootVote() {
-    DepositRootVote depositRootVote = new DepositRootVote(Hash32.ZERO, UInt64.MAX_VALUE);
+  private Eth1DataVote createEth1DataVote() {
+    Eth1DataVote eth1DataVote = new Eth1DataVote(Eth1Data.EMPTY, UInt64.MAX_VALUE);
 
-    return depositRootVote;
+    return eth1DataVote;
   }
 
   @Test
-  public void depositRootVoteTest() {
-    DepositRootVote expected = createDepositRootVote();
+  public void eth1DataVoteTest() {
+    Eth1DataVote expected = createEth1DataVote();
     BytesValue encoded = sszSerializer.encode2(expected);
-    DepositRootVote reconstructed = sszSerializer.decode(encoded, DepositRootVote.class);
+    Eth1DataVote reconstructed = sszSerializer.decode(encoded, Eth1DataVote.class);
     assertEquals(expected, reconstructed);
   }
 

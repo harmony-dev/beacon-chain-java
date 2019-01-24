@@ -8,6 +8,7 @@ import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.pow.DepositContract;
 import org.junit.Assert;
 import org.junit.Test;
@@ -28,7 +29,7 @@ public class NextSlotTransitionTest {
   public void test1() {
     Random rnd = new Random();
     UInt64 genesisTime = UInt64.random(rnd);
-    Hash32 receiptRoot = Hash32.random(rnd);
+    Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), Hash32.random(rnd));
     ChainSpec chainSpec = ChainSpec.DEFAULT;
 
     List<Deposit> deposits = new ArrayList<>();
@@ -46,7 +47,7 @@ public class NextSlotTransitionTest {
             new DepositContract() {
               @Override
               public ChainStart getChainStart() {
-                return new ChainStart(genesisTime, receiptRoot);
+                return new ChainStart(genesisTime, eth1Data);
               }
 
               @Override

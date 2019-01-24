@@ -2,6 +2,7 @@ package org.ethereum.beacon.pow;
 
 import java.util.List;
 import org.ethereum.beacon.core.operations.Deposit;
+import org.ethereum.beacon.core.state.Eth1Data;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
 
@@ -15,19 +16,19 @@ public interface DepositContract {
 
   class ChainStart {
     private final UInt64 time;
-    private final Hash32 receiptRoot;
+    private final Eth1Data eth1Data;
 
-    public ChainStart(UInt64 time, Hash32 receiptRoot) {
+    public ChainStart(UInt64 time, Eth1Data eth1Data) {
       this.time = time;
-      this.receiptRoot = receiptRoot;
+      this.eth1Data = eth1Data;
     }
 
     public UInt64 getTime() {
       return time;
     }
 
-    public Hash32 getReceiptRoot() {
-      return receiptRoot;
+    public Eth1Data getEth1Data() {
+      return eth1Data;
     }
   }
 }

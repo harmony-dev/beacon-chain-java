@@ -20,6 +20,7 @@ import org.ethereum.beacon.core.operations.Exit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.slashing.ProposalSignedData;
 import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.validator.BeaconChainProposer;
@@ -56,7 +57,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
         .withSlot(state.getSlot())
         .withParentRoot(parentRoot)
         .withRandaoReveal(randaoReveal)
-        .withDepositRoot(depositRoot)
+        .withEth1Data(new Eth1Data(depositRoot, Hash32.ZERO))
         .withSignature(chainSpec.getEmptySignature())
         .withBody(blockBody);
 
@@ -101,7 +102,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
     List<Exit> exits = operations.peekExits(chainSpec.getMaxExits());
     List<Deposit> deposits =
         depositContract.peekDeposits(
-            chainSpec.getMaxDeposits(), state.getLatestDepositRoot(), UInt64.ZERO);
+            chainSpec.getMaxDeposits(), state.getLatestEth1Data().getDepositRoot(), UInt64.ZERO);
 
     return new BeaconBlockBody(
         proposerSlashings,

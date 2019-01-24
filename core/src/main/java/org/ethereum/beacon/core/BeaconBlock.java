@@ -1,5 +1,6 @@
 package org.ethereum.beacon.core;
 
+import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -27,8 +28,8 @@ public class BeaconBlock implements Hashable<Hash32> {
   @SSZ private final Hash32 stateRoot;
   /** RANDAO signature submitted by proposer. */
   @SSZ private final Bytes96 randaoReveal;
-  /** Receipt root from the PoW chain registration contract that is observed by proposer. */
-  @SSZ private final Hash32 depositRoot;
+  /** Eth1 data that is observed by proposer. */
+  @SSZ private final Eth1Data eth1Data;
   /** Proposer's signature. */
   @SSZ private final Bytes96 signature;
 
@@ -40,14 +41,14 @@ public class BeaconBlock implements Hashable<Hash32> {
       Hash32 parentRoot,
       Hash32 stateRoot,
       Bytes96 randaoReveal,
-      Hash32 depositRoot,
+      Eth1Data eth1Data,
       Bytes96 signature,
       BeaconBlockBody body) {
     this.slot = slot;
     this.parentRoot = parentRoot;
     this.stateRoot = stateRoot;
     this.randaoReveal = randaoReveal;
-    this.depositRoot = depositRoot;
+    this.eth1Data = eth1Data;
     this.signature = signature;
     this.body = body;
   }
@@ -57,7 +58,7 @@ public class BeaconBlock implements Hashable<Hash32> {
   }
 
   public BeaconBlock withStateRoot(Hash32 stateRoot) {
-    return new BeaconBlock(slot, parentRoot, stateRoot, randaoReveal, depositRoot, signature, body);
+    return new BeaconBlock(slot, parentRoot, stateRoot, randaoReveal, eth1Data, signature, body);
   }
 
   public UInt64 getSlot() {
@@ -76,8 +77,8 @@ public class BeaconBlock implements Hashable<Hash32> {
     return randaoReveal;
   }
 
-  public Hash32 getDepositRoot() {
-    return depositRoot;
+  public Eth1Data getEth1Data() {
+    return eth1Data;
   }
 
   public Bytes96 getSignature() {
@@ -112,7 +113,7 @@ public class BeaconBlock implements Hashable<Hash32> {
     private Hash32 parentRoot;
     private Hash32 stateRoot;
     private Bytes96 randaoReveal;
-    private Hash32 depositRoot;
+    private Eth1Data eth1Data;
     private Bytes96 signature;
     private BeaconBlockBody body;
 
@@ -129,7 +130,7 @@ public class BeaconBlock implements Hashable<Hash32> {
       builder.parentRoot = block.parentRoot;
       builder.stateRoot = block.stateRoot;
       builder.randaoReveal = block.randaoReveal;
-      builder.depositRoot = block.depositRoot;
+      builder.eth1Data = block.eth1Data;
       builder.signature = block.signature;
       builder.body = block.body;
 
@@ -156,8 +157,8 @@ public class BeaconBlock implements Hashable<Hash32> {
       return this;
     }
 
-    public Builder withDepositRoot(Hash32 depositRoot) {
-      this.depositRoot = depositRoot;
+    public Builder withEth1Data(Eth1Data eth1Data) {
+      this.eth1Data = eth1Data;
       return this;
     }
 
@@ -176,12 +177,12 @@ public class BeaconBlock implements Hashable<Hash32> {
       assert parentRoot != null;
       assert stateRoot != null;
       assert randaoReveal != null;
-      assert depositRoot != null;
+      assert eth1Data != null;
       assert signature != null;
       assert body != null;
 
       return new BeaconBlock(
-          slot, parentRoot, stateRoot, randaoReveal, depositRoot, signature, body);
+          slot, parentRoot, stateRoot, randaoReveal, eth1Data, signature, body);
     }
   }
 }

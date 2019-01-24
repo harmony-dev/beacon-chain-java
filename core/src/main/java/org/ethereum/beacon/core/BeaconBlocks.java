@@ -1,6 +1,7 @@
 package org.ethereum.beacon.core;
 
 import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.state.Eth1Data;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 
@@ -23,7 +24,7 @@ public abstract class BeaconBlocks {
         .withParentRoot(Hash32.ZERO)
         .withStateRoot(Hash32.ZERO)
         .withRandaoReveal(chainSpec.getEmptySignature())
-        .withDepositRoot(Hash32.ZERO)
+        .withEth1Data(Eth1Data.EMPTY)
         .withSignature(chainSpec.getEmptySignature())
         .withBody(BeaconBlockBody.EMPTY)
         .build();
