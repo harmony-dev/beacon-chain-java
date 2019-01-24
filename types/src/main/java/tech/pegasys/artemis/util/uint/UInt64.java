@@ -17,6 +17,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Objects;
 import java.util.Random;
+import tech.pegasys.artemis.util.bytes.Bytes8;
 
 /** An immutable unsigned 64-bit precision integer. */
 public class UInt64 implements Comparable<UInt64> {

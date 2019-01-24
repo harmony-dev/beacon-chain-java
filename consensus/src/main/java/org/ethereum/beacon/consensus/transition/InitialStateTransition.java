@@ -115,7 +115,9 @@ public class InitialStateTransition implements StateTransition<BeaconStateEx> {
         .withBatchedBlockRoots(emptyList());
 
     // PoW receipt root
-    initialState.withLatestEth1Data(chainStart.getEth1Data()).withEth1DataVotes(emptyList());
+    initialState
+        .withLatestEth1Data(depositContractStart.getEth1Data())
+        .withEth1DataVotes(emptyList());
 
     // handle initial deposits and activations
     final List<Deposit> initialDeposits = depositContractStart.getInitialDeposits();

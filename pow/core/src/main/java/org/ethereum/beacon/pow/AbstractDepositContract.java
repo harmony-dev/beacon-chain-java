@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
+import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.ssz.SSZSerializer;
 import org.ethereum.beacon.ssz.SSZSerializerBuilder;
 import org.reactivestreams.Publisher;
@@ -39,7 +40,7 @@ public abstract class AbstractDepositContract implements DepositContract {
 
 
   protected synchronized void newDeposit(byte[] deposit_root,
-      byte[] data, byte[] merkle_tree_index, byte[][] merkle_branch) {
+      byte[] data, byte[] merkle_tree_index, byte[][] merkle_branch, byte[] blockHash) {
 
     List<Hash32> merkleBranch = Arrays.stream(merkle_branch)
         .map(bytes -> Hash32.wrap(Bytes32.wrap(bytes)))
@@ -62,10 +63,11 @@ public abstract class AbstractDepositContract implements DepositContract {
     return new DepositData(depositInput, amount, timestamp);
   }
 
-  protected synchronized void chainStart(byte[] deposit_root, byte[] time) {
+  protected synchronized void chainStart(byte[] deposit_root, byte[] time, byte[] blockHash) {
     ChainStart chainStart = new ChainStart(
         UInt64.fromBytesBigEndian(Bytes8.wrap(time)),
-        Hash32.wrap(Bytes32.wrap(deposit_root)),
+        new Eth1Data(Hash32.wrap(Bytes32.wrap(deposit_root)),
+            Hash32.wrap(Bytes32.wrap(blockHash))),
         initialDeposits);
     chainStartSink.onNext(chainStart);
     chainStartSink.onComplete();

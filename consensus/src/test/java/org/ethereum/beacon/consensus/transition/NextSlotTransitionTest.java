@@ -48,32 +48,8 @@ public class NextSlotTransitionTest {
 
     InitialStateTransition initialStateTransition =
         new InitialStateTransition(
-            new DepositContract() {
-              @Override
-              public ChainStart getChainStart() {
-                return new ChainStart(genesisTime, eth1Data);
-              }
-
-              @Override
-              public List<Deposit> getInitialDeposits() {
-                return deposits;
-              }
-
-              @Override
-              public List<Deposit> peekDeposits(int count, Eth1Data eth1Data, UInt64 fromIndex) {
-                return Collections.emptyList();
-              }
-
-              @Override
-              public Eth1Data getEth1Data(long followDistance) {
-                return Eth1Data.EMPTY;
-              }
-
-              @Override
-              public Optional<Hash32> getDepositRoot(Hash32 blockHash) {
-                return Optional.empty();
-              }
-            }, new SpecHelpers(chainSpec));
+            new ChainStart(genesisTime, eth1Data, deposits),
+            new SpecHelpers(chainSpec));
 
     BeaconStateEx initialState =
         initialStateTransition.apply(BeaconBlocks.createGenesis(chainSpec));

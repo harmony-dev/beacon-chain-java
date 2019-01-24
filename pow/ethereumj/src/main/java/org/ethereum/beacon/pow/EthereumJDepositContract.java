@@ -124,9 +124,10 @@ public class EthereumJDepositContract extends AbstractDepositContract {
                 (byte[]) invocation.args[0],
                 (byte[]) invocation.args[1],
                 (byte[]) invocation.args[2],
-                (byte[][]) invocation.args[3]);
+                (byte[][]) invocation.args[3],
+                block.getHash());
           } else if (CHAIN_START_EVENT_NAME.equals(invocation.function.name)) {
-            chainStart((byte[]) invocation.args[0], (byte[]) invocation.args[1]);
+            chainStart((byte[]) invocation.args[0], (byte[]) invocation.args[1], block.getHash());
           } else {
             throw new IllegalStateException("Invalid event from the contract: " + logInfo);
           }
