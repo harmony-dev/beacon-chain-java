@@ -16,6 +16,6 @@ public interface SSZModelFactory {
    * @param fieldValuePairs Field -> value info
    * @return created instance
    */
-  Object create(
-      Class clazz, List<Pair<SSZSchemeBuilder.SSZScheme.SSZField, Object>> fieldValuePairs);
+  <C> C create(
+      Class<? extends C> clazz, List<Pair<SSZSchemeBuilder.SSZScheme.SSZField, Object>> fieldValuePairs);
 }

@@ -1,5 +1,6 @@
 package org.ethereum.beacon.ssz;
 
+import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
 import org.javatuples.Pair;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
@@ -25,13 +26,14 @@ public class SettersObjCreator implements ObjectCreator {
    * @return Pair[success or not, created instance if success or null otherwise]
    */
   @Override
-  public Pair<Boolean, Object> createObject(
-      Class clazz, List<Pair<SSZSchemeBuilder.SSZScheme.SSZField, Object>> fieldValuePairs) {
+  public <C> Pair<Boolean, C> createObject(Class<? extends C> clazz,
+      List<Pair<SSZField, Object>> fieldValuePairs) {
+
     List<SSZSchemeBuilder.SSZScheme.SSZField> fields =
         fieldValuePairs.stream().map(Pair::getValue0).collect(Collectors.toList());
     Object[] values = fieldValuePairs.stream().map(Pair::getValue1).toArray();
     // Find constructor with no params
-    Constructor constructor;
+    Constructor<? extends C> constructor;
     try {
       constructor = clazz.getConstructor();
     } catch (NoSuchMethodException e) {
@@ -39,7 +41,7 @@ public class SettersObjCreator implements ObjectCreator {
     }
 
     // Create empty instance
-    Object result;
+    C result;
     try {
       result = constructor.newInstance();
     } catch (Exception e) {

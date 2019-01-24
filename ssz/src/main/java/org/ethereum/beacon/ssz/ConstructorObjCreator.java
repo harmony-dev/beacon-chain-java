@@ -1,5 +1,6 @@
 package org.ethereum.beacon.ssz;
 
+import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
 import org.javatuples.Pair;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
@@ -8,10 +9,11 @@ import java.util.List;
 /** Tries to create object instance by one constructor with all input fields included. */
 public class ConstructorObjCreator implements ObjectCreator {
 
-  private static Pair<Boolean, Object> createInstanceWithConstructor(
-      Class clazz, Class[] params, Object[] values) {
+
+  private static <C> Pair<Boolean, C> createInstanceWithConstructor(
+      Class<? extends C> clazz, Class[] params, Object[] values) {
     // Find constructor for params
-    Constructor constructor;
+    Constructor<? extends C> constructor;
     try {
       constructor = clazz.getConstructor(params);
     } catch (NoSuchMethodException e) {
@@ -19,7 +21,7 @@ public class ConstructorObjCreator implements ObjectCreator {
     }
 
     // Invoke constructor using values as params
-    Object result;
+    C result;
     try {
       result = constructor.newInstance(values);
     } catch (Exception e) {
@@ -37,8 +39,8 @@ public class ConstructorObjCreator implements ObjectCreator {
    * @return Pair[success or not, created instance if success or null otherwise]
    */
   @Override
-  public Pair<Boolean, Object> createObject(
-      Class clazz, List<Pair<SSZSchemeBuilder.SSZScheme.SSZField, Object>> fieldValuePairs) {
+  public <C> Pair<Boolean, C> createObject(Class<? extends C> clazz,
+      List<Pair<SSZField, Object>> fieldValuePairs) {
     Class[] params = new Class[fieldValuePairs.size()];
     for (int i = 0; i < fieldValuePairs.size(); i++) {
       Pair<SSZSchemeBuilder.SSZScheme.SSZField, Object> pair = fieldValuePairs.get(i);

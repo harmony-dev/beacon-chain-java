@@ -65,7 +65,7 @@ public class SSZSerializerTest {
 
     byte[] encoded = sszSerializer.encode(signature);
     Sign.Signature constructed =
-        (Sign.Signature) sszSerializer.decode(encoded, Sign.Signature.class);
+        sszSerializer.decode(encoded, Sign.Signature.class);
 
     assertEquals(signature, constructed);
   }
@@ -85,7 +85,7 @@ public class SSZSerializerTest {
 
     byte[] encoded = sszSerializer.encode(expected);
     AttestationRecord constructed =
-        (AttestationRecord) sszSerializer.decode(encoded, AttestationRecord.class);
+        sszSerializer.decode(encoded, AttestationRecord.class);
 
     assertEquals(expected, constructed);
   }
@@ -113,7 +113,7 @@ public class SSZSerializerTest {
 
     byte[] encoded = serializer.encode(expected);
     AttestationRecord constructed =
-        (AttestationRecord) serializer.decode(encoded, AttestationRecord.class);
+        serializer.decode(encoded, AttestationRecord.class);
 
     Assert.assertNotEquals(expected, constructed);
 
@@ -137,7 +137,7 @@ public class SSZSerializerTest {
             null);
     byte[] encoded1 = sszSerializer.encode(expected1);
     AttestationRecord actual1 =
-        (AttestationRecord) sszSerializer.decode(encoded1, AttestationRecord.class);
+        sszSerializer.decode(encoded1, AttestationRecord.class);
 
     assertEquals(expected1, actual1);
 
@@ -153,7 +153,7 @@ public class SSZSerializerTest {
             DEFAULT_SIG);
     byte[] encoded2 = sszSerializer.encode(expected2);
     AttestationRecord actual2 =
-        (AttestationRecord) sszSerializer.decode(encoded2, AttestationRecord.class);
+        sszSerializer.decode(encoded2, AttestationRecord.class);
 
     assertEquals(expected2, actual2);
 
@@ -162,7 +162,7 @@ public class SSZSerializerTest {
             123, Collections.emptyList(), DEFAULT_HASH, null, DEFAULT_HASH, 12412L, 12400L, null);
     byte[] encoded3 = sszSerializer.encode(expected3);
     AttestationRecord actual3 =
-        (AttestationRecord) sszSerializer.decode(encoded3, AttestationRecord.class);
+        sszSerializer.decode(encoded3, AttestationRecord.class);
 
     assertEquals(expected3, actual3);
   }
@@ -238,7 +238,7 @@ public class SSZSerializerTest {
     listOfLists.add(list2);
     ListListObject expected = new ListListObject(listOfLists);
     byte[] encoded = sszSerializer.encode(expected);
-    ListListObject actual = (ListListObject) sszSerializer.decode(encoded, ListListObject.class);
+    ListListObject actual = sszSerializer.decode(encoded, ListListObject.class);
 
     assertEquals(expected, actual);
   }
