@@ -1165,6 +1165,42 @@ public class SpecHelpers {
     return value.equals(root);
   }
 
+  public UInt24 get_validator_index_by_pubkey(BeaconState state, Bytes48 pubkey) {
+    UInt24 index = UInt24.MAX_VALUE;
+    for (int i = 0; i < state.getValidatorRegistry().size(); i++) {
+      if (state.getValidatorRegistry().get(i).getPubKey().equals(pubkey)) {
+        index = UInt24.valueOf(i);
+        break;
+      }
+    }
+
+    return index;
+  }
+
+  public boolean is_in_beacon_chain_committee(BeaconState state, UInt64 slot, UInt24 index) {
+    List<UInt24> first_committee = get_shard_committees_at_slot(state, slot).get(0).getCommittee();
+    return Collections.binarySearch(first_committee, index) >= 0;
+  }
+
+  public UInt64 get_current_slot(BeaconState state) {
+    UInt64 currentTime = UInt64.valueOf(System.currentTimeMillis() / 1000);
+    assert state.getGenesisTime().compareTo(currentTime) < 0;
+    return currentTime.minus(state.getGenesisTime()).dividedBy(spec.getSlotDuration());
+  }
+
+  public boolean is_current_slot(BeaconState state) {
+    return state.getSlot().equals(get_current_slot(state));
+  }
+
+  public UInt64 get_slot_start_time(BeaconState state, UInt64 slot) {
+    return state.getGenesisTime().plus(spec.getSlotDuration().times(slot));
+  }
+
+  public UInt64 get_slot_middle_time(BeaconState state, UInt64 slot) {
+    return get_slot_start_time(state, slot)
+        .plus(spec.getSlotDuration().dividedBy(UInt64.valueOf(2)));
+  }
+
   public void checkIndexRange(BeaconState state, UInt24 index) {
     assertTrue(safeInt(index) < state.getValidatorRegistry().size());
   }

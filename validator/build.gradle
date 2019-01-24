@@ -1,0 +1,11 @@
+dependencies {
+  implementation project(':types')
+  implementation project(':crypto')
+  implementation project(':core')
+  implementation project(':consensus')
+  implementation project(':db:core')
+  implementation project(':chain')
+  implementation project(':pow')
+
+  implementation 'com.google.guava:guava'
+}
