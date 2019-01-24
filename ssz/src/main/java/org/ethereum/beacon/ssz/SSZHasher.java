@@ -1,6 +1,11 @@
 package org.ethereum.beacon.ssz;
 
 import net.consensys.cava.bytes.Bytes;
+import org.ethereum.beacon.ssz.type.BytesCodec;
+import org.ethereum.beacon.ssz.type.HashCodec;
+import org.ethereum.beacon.ssz.type.UIntCodec;
+import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import java.util.function.Function;
 
@@ -59,6 +64,29 @@ public class SSZHasher implements Hasher<BytesValue> {
             .addPrimitivesCodecs();
 
     return builder;
+  }
+
+  /**
+   * Mostly used hasher with all codecs included and required SSZ annotations for each field
+   * @param hashingFunction BytesValue data hashing function
+   * @return object hasher
+   */
+  public static Hasher<Hash32> simpleHasher(Function<BytesValue, BytesValue> hashingFunction) {
+    Hasher<Hash32> objectHasher = new Hasher<Hash32>() {
+      private final SSZHasher sszHasher =
+          new SSZHasher(
+              SSZHasher.getDefaultBuilder(hashingFunction, true)
+                  .addCodec(new UIntCodec())
+                  .addCodec(new HashCodec())
+                  .addCodec(new BytesCodec()),
+              hashingFunction);
+      @Override
+      public Hash32 calc(Object input) {
+        return Hash32.wrap(Bytes32.wrap(sszHasher.calc(input), 0));
+      }
+    };
+
+    return objectHasher;
   }
 
   /**
