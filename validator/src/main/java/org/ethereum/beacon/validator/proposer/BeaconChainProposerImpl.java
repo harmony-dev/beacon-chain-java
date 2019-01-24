@@ -139,17 +139,12 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
 
     // verify best vote data and return if verification passed,
     // otherwise, return data from contract
-    return depositContract
-        .getDepositRoot(bestVote.getEth1Data().getBlockHash())
-        .flatMap(
-            root -> {
-              if (bestVote.getEth1Data().getDepositRoot().equals(root)) {
-                return Optional.of(bestVote.getEth1Data());
-              } else {
-                return Optional.empty();
-              }
-            })
-        .orElse(contractData);
+    if (depositContract.hasDepositRoot(bestVote.getEth1Data().getBlockHash(),
+            bestVote.getEth1Data().getDepositRoot())) {
+      return bestVote.getEth1Data();
+    } else {
+      return contractData;
+    }
   }
 
   private BeaconBlockBody getBlockBody(BeaconState state, PendingOperations operations) {

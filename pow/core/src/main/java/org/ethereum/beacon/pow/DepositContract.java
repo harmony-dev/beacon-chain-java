@@ -11,7 +11,9 @@ public interface DepositContract {
 
   Publisher<ChainStart> getChainStartMono();
 
-  Publisher<DepositInfo> getAfterDepositsStream();
+  Publisher<DepositInfo> initDepositsStream(Eth1Data startFrom);
+
+  boolean hasDepositRoot(Hash32 blockHash, Hash32 depositRoot);
 
   class DepositInfo {
     private final Deposit deposit;

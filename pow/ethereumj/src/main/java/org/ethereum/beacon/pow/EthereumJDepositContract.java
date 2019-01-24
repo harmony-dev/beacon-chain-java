@@ -1,6 +1,9 @@
 package org.ethereum.beacon.pow;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -61,8 +64,8 @@ public class EthereumJDepositContract extends AbstractDepositContract {
   }
 
   @Override
-  protected void depositsSubscribed() {
-    start();
+  protected void depositsSubscribed(byte[] fromBlockHash) {
+
   }
 
   @Override
@@ -98,7 +101,7 @@ public class EthereumJDepositContract extends AbstractDepositContract {
   private void processBlocksUpTo() {
       for (long number = processedUpToBlock; number < bestConfirmedBlock; number++) {
         Block block = ethereum.getBlockchain().getBlockByNumber(number);
-        onConfirmedBlock(block, () -> getBlockTransactionReceipts(block));
+        onConfirmedBlock(block);
         processedUpToBlock = number + 1;
       }
   }
@@ -110,30 +113,53 @@ public class EthereumJDepositContract extends AbstractDepositContract {
         .collect(Collectors.toList());
   }
 
-  private void onConfirmedBlock(Block block, Supplier<List<TransactionReceipt>> receiptsSupplier) {
-    if (!Bloom.create(block.getLogBloom()).matches(contractAdderssBloom)) {
-      return;
-    }
-    List<TransactionReceipt> receipts = receiptsSupplier.get();
-    for (TransactionReceipt receipt : receipts) {
-      for (LogInfo logInfo : receipt.getLogInfoList()) {
-        if (logInfo.getTopics().contains(DataWord.of(contractDeployAddress.extractArray()))) {
-          Invocation invocation = contract.parseEvent(logInfo);
-          if (DEPOSIT_EVENT_NAME.equals(invocation.function.name)) {
-            newDeposit(
-                (byte[]) invocation.args[0],
-                (byte[]) invocation.args[1],
-                (byte[]) invocation.args[2],
-                (byte[][]) invocation.args[3],
-                block.getHash());
-          } else if (CHAIN_START_EVENT_NAME.equals(invocation.function.name)) {
-            chainStart((byte[]) invocation.args[0], (byte[]) invocation.args[1], block.getHash());
-          } else {
-            throw new IllegalStateException("Invalid event from the contract: " + logInfo);
-          }
-        }
+  private void onConfirmedBlock(Block block) {
+    for (Invocation invocation : getContractEvents(block)) {
+      if (DEPOSIT_EVENT_NAME.equals(invocation.function.name)) {
+        newDeposit(
+            (byte[]) invocation.args[0],
+            (byte[]) invocation.args[1],
+            (byte[]) invocation.args[2],
+            (byte[][]) invocation.args[3],
+            block.getHash());
+      } else if (CHAIN_START_EVENT_NAME.equals(invocation.function.name)) {
+        chainStart((byte[]) invocation.args[0], (byte[]) invocation.args[1], block.getHash());
+      } else {
+        throw new IllegalStateException("Invalid event from the contract: " + invocation);
       }
     }
   }
 
+  private List<Invocation> getContractEvents(Block block) {
+    if (!Bloom.create(block.getLogBloom()).matches(contractAdderssBloom)) {
+      return Collections.emptyList();
+    }
+    List<Invocation> ret = new ArrayList<>();
+
+    List<TransactionReceipt> receipts = getBlockTransactionReceipts(block);
+    for (TransactionReceipt receipt : receipts) {
+      for (LogInfo logInfo : receipt.getLogInfoList()) {
+        if (logInfo.getTopics().contains(DataWord.of(contractDeployAddress.extractArray()))) {
+          ret.add(contract.parseEvent(logInfo));
+        }
+      }
+    }
+
+    return ret;
+  }
+
+  @Override
+  protected boolean hasDepositRootImpl(byte[] blockHash, byte[] depositRoot) {
+    Block block = ethereum.getBlockchain().getBlockByHash(blockHash);
+    if (block == null) {
+      return false;
+    }
+    if (ethereum.getBlockchain().getBestBlock().getNumber() - block.getNumber() < blockConfirmations) {
+      return false;
+    }
+
+    return getContractEvents(block).stream()
+        .filter(invocation -> DEPOSIT_EVENT_NAME.equals(invocation.function.name))
+        .anyMatch(invocation -> Arrays.equals((byte[]) invocation.args[0], depositRoot));
+  }
 }

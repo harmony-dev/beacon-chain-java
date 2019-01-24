@@ -20,12 +20,13 @@ import tech.pegasys.artemis.util.bytes.Bytes8;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public abstract class AbstractDepositContract implements DepositContract {
+
   private final SSZSerializer ssz = SSZSerializerBuilder.getBakedAnnotationBuilder().build();
 
   private final MonoProcessor<ChainStart> chainStartSink = MonoProcessor.create();
   private final Publisher<ChainStart> chainStartStream = chainStartSink
       .publishOn(Schedulers.single())
-      .doOnSubscribe(s -> chainStartSubscribed())
+      .doOnSubscribe(s -> chainStartSubscribedPriv())
       .name("PowClient.chainStart");
   private final ReplayProcessor<DepositInfo> depositSink = ReplayProcessor.cacheLast();
   private final Publisher<DepositInfo> depositStream = depositSink
@@ -35,8 +36,11 @@ public abstract class AbstractDepositContract implements DepositContract {
       .onBackpressureError()
       .name("PowClient.deposits");
 
-  private boolean depositsSubscribed;
   private List<Deposit> initialDeposits = new ArrayList<>();
+  private Eth1Data depositsStartFrom;
+  private boolean startDepositFound;
+  private boolean startChainSubscribed;
+  private boolean depositsSubscribed;
 
 
   protected synchronized void newDeposit(byte[] deposit_root,
@@ -46,13 +50,24 @@ public abstract class AbstractDepositContract implements DepositContract {
         .map(bytes -> Hash32.wrap(Bytes32.wrap(bytes)))
         .collect(Collectors.toList());
     Deposit deposit = new Deposit(merkleBranch,
-            UInt64.fromBytesBigEndian(Bytes8.wrap(merkle_tree_index)), parseDepositData(data));
+        UInt64.fromBytesBigEndian(Bytes8.wrap(merkle_tree_index)), parseDepositData(data));
     DepositInfo depositInfo = new DepositInfo(deposit,
         new Eth1Data(Hash32.wrap(Bytes32.wrap(deposit_root)),
             Hash32.wrap(Bytes32.wrap(blockHash))));
 
-    if (chainStartSink.isSuccess()) {
-      depositSink.onNext(depositInfo);
+    if (depositsStartFrom != null) {
+      if (!startDepositFound) {
+        if (!depositInfo.getEth1Data().getBlockHash().equals(depositsStartFrom.getBlockHash())) {
+          depositSink.onError(new RuntimeException("Starting point not found until block hash " +
+              depositInfo.getEth1Data().getBlockHash() + ": " + depositsStartFrom));
+          return;
+        }
+        if (depositInfo.getEth1Data().getDepositRoot().equals(depositsStartFrom.getDepositRoot())) {
+          startDepositFound = true;
+        }
+      } else {
+        depositSink.onNext(depositInfo);
+      }
     } else {
       initialDeposits.add(deposit);
     }
@@ -78,18 +93,38 @@ public abstract class AbstractDepositContract implements DepositContract {
 
   private synchronized void depositSubscriptionsChanged() {
     if (!depositsSubscribed && depositSink.hasDownstreams()) {
-      depositsSubscribed();
+      depositsSubscribed = true;
+      depositsSubscribed(depositsStartFrom.getBlockHash().extractArray());
     }
     if (depositsSubscribed && !depositSink.hasDownstreams()) {
       depositsUnsubscribed();
+      depositsSubscribed = false;
     }
+  }
 
-    depositsSubscribed = depositSink.hasDownstreams();
+  @Override
+  public Publisher<DepositInfo> initDepositsStream(Eth1Data startFrom) {
+    if (depositsStartFrom != null) {
+      throw new IllegalStateException("Only one concurrent deposits stream allowed for now");
+    }
+    if (startChainSubscribed && !chainStartSink.isTerminated()) {
+      throw new IllegalStateException(
+          "startChainStream is still in progress. Concurrent streams are not implemented");
+    }
+    depositsStartFrom = startFrom;
+    return depositStream;
+  }
+
+  private void chainStartSubscribedPriv() {
+    if (!startChainSubscribed) {
+      startChainSubscribed = true;
+      chainStartSubscribed();
+    }
   }
 
   protected abstract void chainStartSubscribed();
 
-  protected abstract void depositsSubscribed();
+  protected abstract void depositsSubscribed(byte[] fromBlockHash);
 
   protected abstract void depositsUnsubscribed();
 
@@ -99,7 +134,9 @@ public abstract class AbstractDepositContract implements DepositContract {
   }
 
   @Override
-  public Publisher<DepositInfo> getAfterDepositsStream() {
-    return depositStream;
+  public boolean hasDepositRoot(Hash32 blockHash, Hash32 depositRoot) {
+    return hasDepositRootImpl(blockHash.extractArray(), depositRoot.extractArray());
   }
+
+  protected abstract boolean hasDepositRootImpl(byte[] blockHash, byte[] depositRoot);
 }
