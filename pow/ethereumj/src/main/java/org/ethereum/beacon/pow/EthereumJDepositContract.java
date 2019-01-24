@@ -9,8 +9,10 @@ import java.util.stream.Collectors;
 import org.ethereum.core.Block;
 import org.ethereum.core.Blockchain;
 import org.ethereum.core.Bloom;
+import org.ethereum.core.CallTransaction;
 import org.ethereum.core.CallTransaction.Contract;
 import org.ethereum.core.CallTransaction.Invocation;
+import org.ethereum.core.Transaction;
 import org.ethereum.core.TransactionReceipt;
 import org.ethereum.facade.Ethereum;
 import org.ethereum.facade.SyncStatus.SyncStage;
@@ -51,6 +53,21 @@ public class EthereumJDepositContract extends AbstractDepositContract {
   public EthereumJDepositContract withBlockConfirmations(long blockConfirmations) {
     this.blockConfirmations = blockConfirmations;
     return this;
+  }
+
+  @Override
+  protected void chainStartSubscribed() {
+    start();
+  }
+
+  @Override
+  protected void depositsSubscribed() {
+    start();
+  }
+
+  @Override
+  protected void depositsUnsubscribed() {
+
   }
 
   public void start() {
@@ -106,7 +123,8 @@ public class EthereumJDepositContract extends AbstractDepositContract {
             newDeposit(
                 (byte[]) invocation.args[0],
                 (byte[]) invocation.args[1],
-                (byte[]) invocation.args[2]);
+                (byte[]) invocation.args[2],
+                (byte[][]) invocation.args[3]);
           } else if (CHAIN_START_EVENT_NAME.equals(invocation.function.name)) {
             chainStart((byte[]) invocation.args[0], (byte[]) invocation.args[1]);
           } else {

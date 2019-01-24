@@ -4,7 +4,7 @@
     "inputs": [
       {
         "type": "bytes32",
-        "name": "previous_deposit_root",
+        "name": "deposit_root",
         "indexed": false
       },
       {
@@ -15,6 +15,11 @@
       {
         "type": "bytes",
         "name": "merkle_tree_index",
+        "indexed": false
+      },
+      {
+        "type": "bytes32[32]",
+        "name": "branch",
         "indexed": false
       }
     ],
@@ -39,17 +44,12 @@
     "type": "event"
   },
   {
-    "name": "deposit",
+    "name": "__init__",
     "outputs": [],
-    "inputs": [
-      {
-        "type": "bytes",
-        "name": "deposit_input"
-      }
-    ],
+    "inputs": [],
     "constant": false,
-    "payable": true,
-    "type": "function"
+    "payable": false,
+    "type": "constructor"
   },
   {
     "name": "get_deposit_root",
@@ -65,21 +65,16 @@
     "type": "function"
   },
   {
-    "name": "get_branch",
-    "outputs": [
-      {
-        "type": "bytes32[32]",
-        "name": "out"
-      }
-    ],
+    "name": "deposit",
+    "outputs": [],
     "inputs": [
       {
-        "type": "uint256",
-        "name": "leaf"
+        "type": "bytes",
+        "name": "deposit_input"
       }
     ],
-    "constant": true,
-    "payable": false,
+    "constant": false,
+    "payable": true,
     "type": "function"
   }
 ]
