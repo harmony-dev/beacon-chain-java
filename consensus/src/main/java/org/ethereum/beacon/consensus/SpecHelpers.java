@@ -55,14 +55,22 @@ public class SpecHelpers {
   private final ChainSpec spec;
   private final Hasher<Hash32> objectHasher;
 
+  /* Uses Hash32.ZERO as a stub for objectHasher */
   public SpecHelpers(ChainSpec spec) {
     this.spec = spec;
     this.objectHasher = input -> Hash32.ZERO;
   }
 
-  public SpecHelpers(ChainSpec spec, Function<Function<BytesValue, Hash32>, Hasher<Hash32>> objectHasherBuilder) {
+  /** Builds objectHasher with {@link #hash(BytesValue)} as data hash function in objectHasher */
+  public SpecHelpers(
+      ChainSpec spec, Function<Function<BytesValue, Hash32>, Hasher<Hash32>> objectHasherBuilder) {
     this.spec = spec;
     this.objectHasher = objectHasherBuilder.apply(this::hash);
+  }
+
+  public SpecHelpers(ChainSpec spec, Hasher<Hash32> objectHasher) {
+    this.spec = spec;
+    this.objectHasher = objectHasher;
   }
 
   public ChainSpec getChainSpec() {
