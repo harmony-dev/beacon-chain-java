@@ -11,7 +11,25 @@ public interface DepositContract {
 
   Publisher<ChainStart> getChainStartMono();
 
-  Publisher<Deposit> getAfterDepositsStream();
+  Publisher<DepositInfo> getAfterDepositsStream();
+
+  class DepositInfo {
+    private final Deposit deposit;
+    private final Eth1Data eth1Data;
+
+    public DepositInfo(Deposit deposit, Eth1Data eth1Data) {
+      this.deposit = deposit;
+      this.eth1Data = eth1Data;
+    }
+
+    public Deposit getDeposit() {
+      return deposit;
+    }
+
+    public Eth1Data getEth1Data() {
+      return eth1Data;
+    }
+  }
 
   class ChainStart {
     private final UInt64 time;

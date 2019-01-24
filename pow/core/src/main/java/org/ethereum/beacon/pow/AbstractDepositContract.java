@@ -27,8 +27,8 @@ public abstract class AbstractDepositContract implements DepositContract {
       .publishOn(Schedulers.single())
       .doOnSubscribe(s -> chainStartSubscribed())
       .name("PowClient.chainStart");
-  private final ReplayProcessor<Deposit> depositSink = ReplayProcessor.cacheLast();
-  private final Publisher<Deposit> depositStream = depositSink
+  private final ReplayProcessor<DepositInfo> depositSink = ReplayProcessor.cacheLast();
+  private final Publisher<DepositInfo> depositStream = depositSink
       .publishOn(Schedulers.single())
       .doOnSubscribe(s -> depositSubscriptionsChanged())
       .doOnCancel(() -> depositSubscriptionsChanged())
@@ -47,9 +47,12 @@ public abstract class AbstractDepositContract implements DepositContract {
         .collect(Collectors.toList());
     Deposit deposit = new Deposit(merkleBranch,
             UInt64.fromBytesBigEndian(Bytes8.wrap(merkle_tree_index)), parseDepositData(data));
+    DepositInfo depositInfo = new DepositInfo(deposit,
+        new Eth1Data(Hash32.wrap(Bytes32.wrap(deposit_root)),
+            Hash32.wrap(Bytes32.wrap(blockHash))));
 
     if (chainStartSink.isSuccess()) {
-      depositSink.onNext(deposit);
+      depositSink.onNext(depositInfo);
     } else {
       initialDeposits.add(deposit);
     }
@@ -96,7 +99,7 @@ public abstract class AbstractDepositContract implements DepositContract {
   }
 
   @Override
-  public Publisher<Deposit> getAfterDepositsStream() {
+  public Publisher<DepositInfo> getAfterDepositsStream() {
     return depositStream;
   }
 }
