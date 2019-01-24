@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.core.BeaconBlocks;
@@ -38,8 +39,18 @@ public class InitialStateTransitionTest {
               }
 
               @Override
-              public List<Deposit> peekDeposits(int count, Hash32 depositRoot, UInt64 fromIndex) {
+              public List<Deposit> peekDeposits(int count, Eth1Data eth1Data, UInt64 fromIndex) {
                 return Collections.emptyList();
+              }
+
+              @Override
+              public Eth1Data getEth1Data(long followDistance) {
+                return Eth1Data.EMPTY;
+              }
+
+              @Override
+              public Optional<Hash32> getDepositRoot(Hash32 blockHash) {
+                return Optional.empty();
               }
             },
             new SpecHelpers(ChainSpec.DEFAULT));

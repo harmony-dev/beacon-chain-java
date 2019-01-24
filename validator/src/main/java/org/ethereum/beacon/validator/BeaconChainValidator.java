@@ -9,7 +9,6 @@ import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.validator.crypto.MessageSigner;
-import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.uint.UInt24;
 
@@ -24,7 +23,6 @@ public class BeaconChainValidator implements ValidatorService {
 
   private ScheduledExecutorService executor;
 
-  private Hash32 recentDepositRoot;
   private UInt24 index = UInt24.MAX_VALUE;
 
   public BeaconChainValidator(
@@ -50,7 +48,6 @@ public class BeaconChainValidator implements ValidatorService {
               return t;
             });
     subscribeToObservableStateUpdates(this::processState);
-    subscribeToDepositRootUpdates(this::processDepositRoot);
   }
 
   @Override
@@ -76,10 +73,6 @@ public class BeaconChainValidator implements ValidatorService {
     }
   }
 
-  private void processDepositRoot(Hash32 depositRoot) {
-    this.recentDepositRoot = depositRoot;
-  }
-
   private void runTasks(final ObservableBeaconState observableState) {
     BeaconState state = observableState.getLatestSlotState();
     UInt24 proposerIndex = specHelpers.get_beacon_proposer_index(state, state.getSlot());
@@ -95,11 +88,8 @@ public class BeaconChainValidator implements ValidatorService {
   }
 
   private void propose(final ObservableBeaconState observableState) {
-    if (recentDepositRoot != null) {
-      BeaconBlock newBlock =
-          proposer.propose(index, observableState, recentDepositRoot, messageSigner);
-      propagateBlock(newBlock);
-    }
+    BeaconBlock newBlock = proposer.propose(index, observableState, messageSigner);
+    propagateBlock(newBlock);
   }
 
   private void attest(final ObservableBeaconState observableState) {
@@ -117,6 +107,4 @@ public class BeaconChainValidator implements ValidatorService {
   private void propagateAttestation(Attestation attestation) {}
 
   private void subscribeToObservableStateUpdates(Consumer<ObservableBeaconState> payload) {}
-
-  private void subscribeToDepositRootUpdates(Consumer<Hash32> payload) {}
 }

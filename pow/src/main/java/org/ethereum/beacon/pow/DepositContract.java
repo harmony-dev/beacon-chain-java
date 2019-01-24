@@ -1,6 +1,7 @@
 package org.ethereum.beacon.pow;
 
 import java.util.List;
+import java.util.Optional;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.state.Eth1Data;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -12,7 +13,11 @@ public interface DepositContract {
 
   List<Deposit> getInitialDeposits();
 
-  List<Deposit> peekDeposits(int count, Hash32 depositRoot, UInt64 fromIndex);
+  List<Deposit> peekDeposits(int count, Eth1Data eth1Data, UInt64 fromIndex);
+
+  Eth1Data getEth1Data(long followDistance);
+
+  Optional<Hash32> getDepositRoot(Hash32 blockHash);
 
   class ChainStart {
     private final UInt64 time;

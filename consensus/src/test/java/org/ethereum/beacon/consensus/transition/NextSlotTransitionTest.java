@@ -1,6 +1,7 @@
 package org.ethereum.beacon.consensus.transition;
 
 import java.util.Collections;
+import java.util.Optional;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.core.BeaconBlocks;
 import org.ethereum.beacon.core.BeaconState;
@@ -56,8 +57,18 @@ public class NextSlotTransitionTest {
               }
 
               @Override
-              public List<Deposit> peekDeposits(int count, Hash32 depositRoot, UInt64 fromIndex) {
+              public List<Deposit> peekDeposits(int count, Eth1Data eth1Data, UInt64 fromIndex) {
                 return Collections.emptyList();
+              }
+
+              @Override
+              public Eth1Data getEth1Data(long followDistance) {
+                return Eth1Data.EMPTY;
+              }
+
+              @Override
+              public Optional<Hash32> getDepositRoot(Hash32 blockHash) {
+                return Optional.empty();
               }
             }, new SpecHelpers(chainSpec));
 
