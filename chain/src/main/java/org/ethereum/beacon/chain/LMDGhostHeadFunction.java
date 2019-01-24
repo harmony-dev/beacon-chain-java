@@ -2,8 +2,7 @@ package org.ethereum.beacon.chain;
 
 import org.ethereum.beacon.chain.storage.BeaconBlockStorage;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
-import org.ethereum.beacon.chain.storage.BeaconTuple;
-import org.ethereum.beacon.chain.storage.BeaconTupleStorage;
+import org.ethereum.beacon.chain.storage.BeaconStateStorage;
 import org.ethereum.beacon.consensus.HeadFunction;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.core.BeaconBlock;
@@ -32,27 +31,27 @@ import java.util.function.Function;
 public class LMDGhostHeadFunction implements HeadFunction {
 
   private final BeaconBlockStorage blockStorage;
-  private final BeaconTupleStorage tupleStorage;
+  private final BeaconStateStorage stateStorage;
   private final SpecHelpers specHelpers;
-  private final int CHILDREN_SEARCH_LIMIT = Integer.MAX_VALUE;
+  private final int SEARCH_LIMIT = Integer.MAX_VALUE;
   private final Map<Bytes48, Attestation> attestationCache = new HashMap<>();
   private final Map<UInt64, Set<Bytes48>> validatorSlotCache = new HashMap<>();
   private BeaconState state;
 
   public LMDGhostHeadFunction(
       BeaconChain beaconChain, BeaconChainStorage chainStorage, SpecHelpers specHelpers) {
-    this.tupleStorage = chainStorage.getBeaconTupleStorage();
+    this.stateStorage = chainStorage.getBeaconStateStorage();
     this.blockStorage = chainStorage.getBeaconBlockStorage();
     this.specHelpers = specHelpers;
-    Optional<Hash32> justifiedHash = blockStorage.getSlotJustifiedBlock(blockStorage.getMaxSlot());
-    Optional<BeaconTuple> justifiedTuple =
-        justifiedHash
-            .map(tupleStorage::get)
-            .orElseThrow(() -> new RuntimeException("No justified head found"));
+    Optional<BeaconBlock> justifiedBlock =
+        blockStorage.getJustifiedBlock(blockStorage.getMaxSlot(), SEARCH_LIMIT);
     this.state =
-        justifiedTuple
-            .map(BeaconTuple::getState)
-            .orElseThrow(() -> new RuntimeException("No justified tuple found"));
+        justifiedBlock
+            .flatMap(block -> chainStorage.getBeaconStateStorage().get(block.getHash()))
+            .orElseThrow(
+                () ->
+                    new RuntimeException(
+                        "State not found for justified block + " + justifiedBlock));
     Flux.from(beaconChain.getBlockStatesStream())
         .doOnNext(beaconTuple -> state = beaconTuple.getState())
         .subscribe();
@@ -60,35 +59,34 @@ public class LMDGhostHeadFunction implements HeadFunction {
 
   @Override
   public BeaconBlock getHead() {
-    Optional<Hash32> justifiedHash = blockStorage.getSlotJustifiedBlock(blockStorage.getMaxSlot());
-    Optional<BeaconTuple> justifiedTuple =
-        justifiedHash
-            .map(tupleStorage::get)
-            .orElseThrow(() -> new RuntimeException("No justified head found"));
+    BeaconBlock justifiedBlock =
+        blockStorage
+            .getJustifiedBlock(blockStorage.getMaxSlot(), SEARCH_LIMIT)
+            .orElseThrow(() -> new RuntimeException("Couldn't find any justified block"));
+    BeaconState justifiedState =
+        stateStorage
+            .get(justifiedBlock.getHash())
+            .orElseThrow(() -> new IllegalStateException("State not found for existing head"));
     Function<Hash32, List<BeaconBlock>> getChildrenBlocks =
-        (hash) -> blockStorage.getChildren(hash, CHILDREN_SEARCH_LIMIT);
+        (hash) -> blockStorage.getChildren(hash, SEARCH_LIMIT);
     BeaconBlock newHead =
-        justifiedTuple
-            .map(
-                (BeaconTuple startBlock) ->
-                    specHelpers.lmd_ghost(
-                        startBlock.getBlock(),
-                        startBlock.getState(),
-                        blockStorage::get,
-                        getChildrenBlocks,
-                        this::get_latest_attestation))
-            .orElseThrow(() -> new RuntimeException("No justified head found"));
+        specHelpers.lmd_ghost(
+            justifiedBlock,
+            justifiedState,
+            blockStorage::get,
+            getChildrenBlocks,
+            this::get_latest_attestation);
 
     // Let justified_head be the descendant of finalized_head with the highest slot number that has
     // been justified for at least EPOCH_LENGTH slots. (A block B is justified if there is a
     // descendant of B in store the processing of which sets B as justified.)
     if (newHead
             .getSlot()
-            .minus(justifiedTuple.get().getBlock().getSlot())
+            .minus(justifiedBlock.getSlot())
             .compareTo(specHelpers.getChainSpec().getEpochLength())
         >= 0) {
-      blockStorage.addJustifiedHash(newHead.getHash());
-      blockStorage.addFinalizedHash(justifiedHash.get());
+      blockStorage.justify(newHead.getHash());
+      blockStorage.finalize(justifiedBlock.getHash());
     }
 
     return newHead;

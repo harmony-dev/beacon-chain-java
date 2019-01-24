@@ -1230,8 +1230,8 @@ public class SpecHelpers {
 
     List<BeaconBlock> attestation_targets = new ArrayList<>();
     for (ValidatorRecord validatorRecord : active_validators) {
-      attestation_targets.add(
-          get_latest_attestation_target(validatorRecord, get_latest_attestation, getBlock));
+      get_latest_attestation_target(validatorRecord, get_latest_attestation, getBlock)
+          .ifPresent(attestation_targets::add);
     }
 
     BeaconBlock head = startBlock;
@@ -1243,7 +1243,7 @@ public class SpecHelpers {
         head =
             children.stream()
                 .max(Comparator.comparingInt(o -> get_vote_count(o, attestation_targets, getBlock)))
-                .orElseThrow(() -> new RuntimeException("Couldn't find maximum voted block"));
+                .get();
       }
     }
   }
@@ -1256,18 +1256,12 @@ public class SpecHelpers {
    *     with the highest slot number in store from validator. If several such attestations exist,
    *     use the one the validator v observed first.
    */
-  private BeaconBlock get_latest_attestation_target(
+  private Optional<BeaconBlock> get_latest_attestation_target(
       ValidatorRecord validatorRecord,
       Function<ValidatorRecord, Attestation> get_latest_attestation,
       Function<Hash32, Optional<BeaconBlock>> getBlock) {
     Attestation latest = get_latest_attestation.apply(validatorRecord);
-    return getBlock
-        .apply(latest.getData().getJustifiedBlockRoot())
-        .orElseThrow(
-            () ->
-                new RuntimeException(
-                    "Couldn't find attestation target "
-                        + latest.getData().getJustifiedBlockRoot()));
+    return getBlock.apply(latest.getData().getJustifiedBlockRoot());
   }
 
   /**
@@ -1301,7 +1295,7 @@ public class SpecHelpers {
       return getBlock
           .apply(block.getParentRoot())
           .map(parent -> get_ancestor(parent, slot, getBlock))
-          .orElseThrow(() -> new RuntimeException("Couldn't find ancestor of block " + block));
+          .get();
     }
   }
 

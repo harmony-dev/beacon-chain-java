@@ -23,6 +23,10 @@ public class BeaconBlockStorageImpl implements BeaconBlockStorage {
     private final Hash32 justifiedHash;
     private final Hash32 finalizedHash;
 
+    SlotBlocks(Hash32 blockHash) {
+      this(singletonList(blockHash), null, null);
+    }
+
     SlotBlocks(Hash32 blockHash, Hash32 justifiedHash, Hash32 finalizedHash) {
       this(singletonList(blockHash), justifiedHash, finalizedHash);
     }
@@ -77,8 +81,6 @@ public class BeaconBlockStorageImpl implements BeaconBlockStorage {
   private final ChainSpec chainSpec;
   private final boolean checkBlockExistOnAdd;
   private final boolean checkParentExistOnAdd;
-  private Hash32 justifiedHash;
-  private Hash32 finalizedHash;
 
   public BeaconBlockStorageImpl(DataSource<Hash32, BeaconBlock> rawBlocks,
                                 HoleyList<SlotBlocks> blockIndex,
@@ -103,10 +105,6 @@ public class BeaconBlockStorageImpl implements BeaconBlockStorage {
     this.chainSpec = chainSpec;
     this.checkBlockExistOnAdd = checkBlockExistOnAdd;
     this.checkParentExistOnAdd = checkParentExistOnAdd;
-    this.justifiedHash =
-        blockIndex.get(getMaxSlot()).map(SlotBlocks::getJustifiedHash).orElse(Hash32.ZERO);
-    this.finalizedHash =
-        blockIndex.get(getMaxSlot()).map(SlotBlocks::getFinalizedHash).orElse(Hash32.ZERO);
   }
 
   @Override
@@ -141,14 +139,14 @@ public class BeaconBlockStorageImpl implements BeaconBlockStorage {
     }
 
     rawBlocks.put(key, newBlock);
+    SlotBlocks slotBlocks =
+        newBlock.getSlot() == chainSpec.getGenesisSlot()
+            ? new SlotBlocks(newBlock.getHash(), newBlock.getHash(), newBlock.getHash())
+            : new SlotBlocks(newBlock.getHash());
     blockIndex.update(
         newBlock.getSlot().getValue(),
         blocks -> blocks.addBlock(newBlock.getHash()),
-        () -> new SlotBlocks(newBlock.getHash(), justifiedHash, finalizedHash));
-    if (newBlock.getSlot() == chainSpec.getGenesisSlot()) {
-      this.justifiedHash = newBlock.getHash();
-      this.finalizedHash = newBlock.getHash();
-    }
+        () -> slotBlocks);
   }
 
   @Override
@@ -166,6 +164,14 @@ public class BeaconBlockStorageImpl implements BeaconBlockStorage {
       }
       ArrayList<Hash32> newBlocks = new ArrayList<>(slotBlocks.getBlockHashes());
       newBlocks.remove(idx);
+      Hash32 justifiedHash =
+          slotBlocks.justifiedHash != null && slotBlocks.justifiedHash != key
+              ? slotBlocks.justifiedHash
+              : null;
+      Hash32 finalizedHash =
+          slotBlocks.finalizedHash != null && slotBlocks.finalizedHash != key
+              ? slotBlocks.finalizedHash
+              : null;
       blockIndex.put(block.get().getSlot().getValue(), new SlotBlocks(newBlocks, justifiedHash, finalizedHash));
     }
   }
@@ -173,8 +179,10 @@ public class BeaconBlockStorageImpl implements BeaconBlockStorage {
   @Override
   public List<BeaconBlock> getChildren(@Nonnull Hash32 parent, int limit) {
     Optional<BeaconBlock> block = get(parent);
-    BeaconBlock start =
-        block.orElseThrow(() -> new RuntimeException("Parent block [" + parent + "] not found"));
+    if (!block.isPresent()) {
+      return Collections.emptyList();
+    }
+    BeaconBlock start = block.get();
     final List<BeaconBlock> children = new ArrayList<>();
 
     for (long curSlot = start.getSlot().getValue() + 1;
@@ -190,50 +198,68 @@ public class BeaconBlockStorageImpl implements BeaconBlockStorage {
     return children;
   }
 
-  public void addJustifiedHash(Hash32 justifiedHash) {
-    UInt64 startSlot =
-        get(justifiedHash)
-            .map(BeaconBlock::getSlot)
-            .orElseThrow(
-                () -> new RuntimeException("Block with hash [" + justifiedHash + "] not found!"));
-    this.justifiedHash = justifiedHash;
-    for (long i = startSlot.getValue() + 1; i <= getMaxSlot(); ++i) {
-      Optional<SlotBlocks> updated =
-          blockIndex
-              .get(i)
-              .flatMap(slotBlocks -> Optional.of(slotBlocks.setJustifiedHash(justifiedHash)));
-      if (updated.isPresent()) {
-        blockIndex.put(i, updated.get());
-      }
+  public boolean justify(Hash32 blockHash) {
+    Optional<UInt64> slot = get(blockHash).map(BeaconBlock::getSlot);
+    if (!slot.isPresent()) {
+      return false;
     }
+
+    return blockIndex
+        .get(slot.get().getValue())
+        .flatMap(slotBlocks -> Optional.of(slotBlocks.setJustifiedHash(blockHash)))
+        .map(
+            slotBlocks -> {
+              blockIndex.put(slot.get().getValue(), slotBlocks);
+              return true;
+            })
+        .orElse(false);
   }
 
-  public void addFinalizedHash(Hash32 finalizedHash) {
-    UInt64 startSlot =
-        get(finalizedHash)
-            .map(BeaconBlock::getSlot)
-            .orElseThrow(
-                () -> new RuntimeException("Block with hash [" + finalizedHash + "] not found!"));
-    this.finalizedHash = finalizedHash;
-    for (long i = startSlot.getValue() + 1; i <= getMaxSlot(); ++i) {
-      Optional<SlotBlocks> updated =
-          blockIndex
-              .get(i)
-              .flatMap(slotBlocks -> Optional.of(slotBlocks.setFinalizedHash(finalizedHash)));
-      if (updated.isPresent()) {
-        blockIndex.put(i, updated.get());
-      }
+  public boolean finalize(Hash32 blockHash) {
+    Optional<UInt64> slot = get(blockHash).map(BeaconBlock::getSlot);
+    if (!slot.isPresent()) {
+      return false;
     }
+
+    return blockIndex
+        .get(slot.get().getValue())
+        .flatMap(slotBlocks -> Optional.of(slotBlocks.setFinalizedHash(blockHash)))
+        .map(
+            slotBlocks -> {
+              blockIndex.put(slot.get().getValue(), slotBlocks);
+              return true;
+            })
+        .orElse(false);
   }
 
   @Override
-  public Optional<Hash32> getSlotJustifiedBlock(long slot) {
-    return blockIndex.get(slot).flatMap(slotBlocks -> Optional.of(slotBlocks.getJustifiedHash()));
+  public Optional<BeaconBlock> getJustifiedBlock(long slot, int limit) {
+    for (long i = slot; i >= Math.max(0, slot - limit); --i) {
+      Optional<SlotBlocks> slotBlocksOptional = blockIndex.get(i);
+      if (slotBlocksOptional.isPresent()) {
+        SlotBlocks slotBlocks = slotBlocksOptional.get();
+        if (slotBlocks.justifiedHash != null) {
+          return get(slotBlocks.justifiedHash);
+        }
+      }
+    }
+
+    return Optional.empty();
   }
 
   @Override
-  public Optional<Hash32> getSlotFinalizedBlock(long slot) {
-    return blockIndex.get(slot).flatMap(slotBlocks -> Optional.of(slotBlocks.getFinalizedHash()));
+  public Optional<BeaconBlock> getFinalizedBlock(long slot, int limit) {
+    for (long i = slot; i >= Math.max(0, slot - limit); --i) {
+      Optional<SlotBlocks> slotBlocksOptional = blockIndex.get(i);
+      if (slotBlocksOptional.isPresent()) {
+        SlotBlocks slotBlocks = slotBlocksOptional.get();
+        if (slotBlocks.finalizedHash != null) {
+          return get(slotBlocks.finalizedHash);
+        }
+      }
+    }
+
+    return Optional.empty();
   }
 
   @Override
