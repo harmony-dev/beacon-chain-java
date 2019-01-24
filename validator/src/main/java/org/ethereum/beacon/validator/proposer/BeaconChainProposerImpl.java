@@ -6,6 +6,7 @@ import static org.ethereum.beacon.core.spec.SignatureDomains.RANDAO;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.observer.PendingOperations;
 import org.ethereum.beacon.consensus.SpecHelpers;
@@ -25,6 +26,7 @@ import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Eth1DataVote;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.pow.DepositContract;
+import org.ethereum.beacon.pow.DepositContract.DepositInfo;
 import org.ethereum.beacon.validator.BeaconChainProposer;
 import org.ethereum.beacon.validator.crypto.MessageSigner;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -123,10 +125,10 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
   */
   private Eth1Data getEth1Data(BeaconState state) {
     List<Eth1DataVote> eth1DataVotes = state.getEth1DataVotes();
-    Eth1Data contractData = depositContract.getEth1Data(chainSpec.getEth1FollowDistance());
+    Optional<Eth1Data> contractData = depositContract.getLatestEth1Data();
 
     if (eth1DataVotes.isEmpty()) {
-      return contractData;
+      return contractData.orElse(state.getLatestEth1Data());
     }
 
     UInt64 maxVotes =
@@ -143,7 +145,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
             bestVote.getEth1Data().getDepositRoot())) {
       return bestVote.getEth1Data();
     } else {
-      return contractData;
+      return contractData.orElse(state.getLatestEth1Data());
     }
   }
 
@@ -155,9 +157,13 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
     List<Attestation> attestations =
         operations.peekAggregatedAttestations(chainSpec.getMaxAttestations());
     List<Exit> exits = operations.peekExits(chainSpec.getMaxExits());
-    List<Deposit> deposits =
-        depositContract.peekDeposits(
-            chainSpec.getMaxDeposits(), state.getLatestEth1Data(), UInt64.ZERO);
+
+    Eth1Data latestProcessedDeposit = null; // TODO wait for spec update to include this to state
+    List<Deposit> deposits = depositContract.peekDeposits(
+        chainSpec.getMaxDeposits(), latestProcessedDeposit, state.getLatestEth1Data())
+        .stream()
+        .map(DepositInfo::getDeposit)
+        .collect(Collectors.toList());
 
     return new BeaconBlockBody(
         proposerSlashings,

@@ -3,6 +3,7 @@ package org.ethereum.beacon.pow;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
@@ -10,6 +11,7 @@ import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.ssz.SSZSerializer;
 import org.ethereum.beacon.ssz.SSZSerializerBuilder;
+import org.javatuples.Pair;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.MonoProcessor;
 import reactor.core.publisher.ReplayProcessor;
@@ -23,62 +25,36 @@ public abstract class AbstractDepositContract implements DepositContract {
 
   private final SSZSerializer ssz = SSZSerializerBuilder.getBakedAnnotationBuilder().build();
 
+  private long distanceFromHead;
+
   private final MonoProcessor<ChainStart> chainStartSink = MonoProcessor.create();
   private final Publisher<ChainStart> chainStartStream = chainStartSink
       .publishOn(Schedulers.single())
       .doOnSubscribe(s -> chainStartSubscribedPriv())
       .name("PowClient.chainStart");
-  private final ReplayProcessor<DepositInfo> depositSink = ReplayProcessor.cacheLast();
-  private final Publisher<DepositInfo> depositStream = depositSink
-      .publishOn(Schedulers.single())
-      .doOnSubscribe(s -> depositSubscriptionsChanged())
-      .doOnCancel(() -> depositSubscriptionsChanged())
-      .onBackpressureError()
-      .name("PowClient.deposits");
 
   private List<Deposit> initialDeposits = new ArrayList<>();
-  private Eth1Data depositsStartFrom;
-  private boolean startDepositFound;
   private boolean startChainSubscribed;
-  private boolean depositsSubscribed;
 
 
-  protected synchronized void newDeposit(byte[] deposit_root,
-      byte[] data, byte[] merkle_tree_index, byte[][] merkle_branch, byte[] blockHash) {
+  protected class DepositEventData {
+    public final byte[] deposit_root;
+    public final byte[] data;
+    public final byte[] merkle_tree_index;
+    public final byte[][] merkle_branch;
 
-    List<Hash32> merkleBranch = Arrays.stream(merkle_branch)
-        .map(bytes -> Hash32.wrap(Bytes32.wrap(bytes)))
-        .collect(Collectors.toList());
-    Deposit deposit = new Deposit(merkleBranch,
-        UInt64.fromBytesBigEndian(Bytes8.wrap(merkle_tree_index)), parseDepositData(data));
-    DepositInfo depositInfo = new DepositInfo(deposit,
-        new Eth1Data(Hash32.wrap(Bytes32.wrap(deposit_root)),
-            Hash32.wrap(Bytes32.wrap(blockHash))));
-
-    if (depositsStartFrom != null) {
-      if (!startDepositFound) {
-        if (!depositInfo.getEth1Data().getBlockHash().equals(depositsStartFrom.getBlockHash())) {
-          depositSink.onError(new RuntimeException("Starting point not found until block hash " +
-              depositInfo.getEth1Data().getBlockHash() + ": " + depositsStartFrom));
-          return;
-        }
-        if (depositInfo.getEth1Data().getDepositRoot().equals(depositsStartFrom.getDepositRoot())) {
-          startDepositFound = true;
-        }
-      } else {
-        depositSink.onNext(depositInfo);
-      }
-    } else {
-      initialDeposits.add(deposit);
+    public DepositEventData(byte[] deposit_root, byte[] data, byte[] merkle_tree_index,
+        byte[][] merkle_branch) {
+      this.deposit_root = deposit_root;
+      this.data = data;
+      this.merkle_tree_index = merkle_tree_index;
+      this.merkle_branch = merkle_branch;
     }
   }
 
-  private DepositData parseDepositData(byte[] data) {
-    UInt64 amount = UInt64.fromBytesBigEndian(Bytes8.wrap(data, 0));
-    UInt64 timestamp = UInt64.fromBytesBigEndian(Bytes8.wrap(data, 8));
-    DepositInput depositInput = ssz.decode(Arrays.copyOfRange(data, 16, data.length),
-        DepositInput.class);
-    return new DepositData(depositInput, amount, timestamp);
+  protected synchronized void newDeposit(DepositEventData eventData, byte[] blockHash) {
+    DepositInfo depositInfo = createDepositInfo(eventData, blockHash);
+    initialDeposits.add(depositInfo.getDeposit());
   }
 
   protected synchronized void chainStart(byte[] deposit_root, byte[] time, byte[] blockHash) {
@@ -89,30 +65,7 @@ public abstract class AbstractDepositContract implements DepositContract {
         initialDeposits);
     chainStartSink.onNext(chainStart);
     chainStartSink.onComplete();
-  }
-
-  private synchronized void depositSubscriptionsChanged() {
-    if (!depositsSubscribed && depositSink.hasDownstreams()) {
-      depositsSubscribed = true;
-      depositsSubscribed(depositsStartFrom.getBlockHash().extractArray());
-    }
-    if (depositsSubscribed && !depositSink.hasDownstreams()) {
-      depositsUnsubscribed();
-      depositsSubscribed = false;
-    }
-  }
-
-  @Override
-  public Publisher<DepositInfo> initDepositsStream(Eth1Data startFrom) {
-    if (depositsStartFrom != null) {
-      throw new IllegalStateException("Only one concurrent deposits stream allowed for now");
-    }
-    if (startChainSubscribed && !chainStartSink.isTerminated()) {
-      throw new IllegalStateException(
-          "startChainStream is still in progress. Concurrent streams are not implemented");
-    }
-    depositsStartFrom = startFrom;
-    return depositStream;
+    chainStartDone();
   }
 
   private void chainStartSubscribedPriv() {
@@ -124,13 +77,31 @@ public abstract class AbstractDepositContract implements DepositContract {
 
   protected abstract void chainStartSubscribed();
 
-  protected abstract void depositsSubscribed(byte[] fromBlockHash);
-
-  protected abstract void depositsUnsubscribed();
+  protected abstract void chainStartDone();
 
   @Override
   public Publisher<ChainStart> getChainStartMono() {
     return chainStartStream;
+  }
+
+  private DepositInfo createDepositInfo(DepositEventData eventData, byte[] blockHash) {
+    List<Hash32> merkleBranch = Arrays.stream(eventData.merkle_branch)
+        .map(bytes -> Hash32.wrap(Bytes32.wrap(bytes)))
+        .collect(Collectors.toList());
+    Deposit deposit = new Deposit(merkleBranch,
+        UInt64.fromBytesBigEndian(Bytes8.wrap(eventData.merkle_tree_index)),
+        parseDepositData(eventData.data));
+    return new DepositInfo(deposit,
+        new Eth1Data(Hash32.wrap(Bytes32.wrap(eventData.deposit_root)),
+            Hash32.wrap(Bytes32.wrap(blockHash))));
+  }
+
+  private DepositData parseDepositData(byte[] data) {
+    UInt64 amount = UInt64.fromBytesBigEndian(Bytes8.wrap(data, 0));
+    UInt64 timestamp = UInt64.fromBytesBigEndian(Bytes8.wrap(data, 8));
+    DepositInput depositInput = ssz.decode(Arrays.copyOfRange(data, 16, data.length),
+        DepositInput.class);
+    return new DepositData(depositInput, amount, timestamp);
   }
 
   @Override
@@ -139,4 +110,44 @@ public abstract class AbstractDepositContract implements DepositContract {
   }
 
   protected abstract boolean hasDepositRootImpl(byte[] blockHash, byte[] depositRoot);
+
+  @Override
+  public Optional<Eth1Data> getLatestEth1Data() {
+    Pair<byte[], byte[]> root = getLatestBlockHashDepositRoot();
+
+    return Optional.ofNullable(root).map(
+        r -> new Eth1Data(
+            Hash32.wrap(Bytes32.wrap(r.getValue1())),
+            Hash32.wrap(Bytes32.wrap(r.getValue0()))));
+  }
+
+  protected abstract Pair<byte[], byte[]> getLatestBlockHashDepositRoot();
+
+
+  @Override
+  public List<DepositInfo> peekDeposits(int count, Eth1Data fromDepositExclusive,
+      Eth1Data tillDepositInclusive) {
+    return peekDepositsImpl(count,
+        fromDepositExclusive.getBlockHash().extractArray(),
+        fromDepositExclusive.getDepositRoot().extractArray(),
+        tillDepositInclusive.getBlockHash().extractArray(),
+        tillDepositInclusive.getDepositRoot().extractArray())
+        .stream()
+        .map(blockDepositPair -> createDepositInfo(blockDepositPair.getValue1(), blockDepositPair.getValue0()))
+        .collect(Collectors.toList());
+  }
+
+  protected abstract List<Pair<byte[], DepositEventData>> peekDepositsImpl(
+      int count,
+      byte[] startBlockHash, byte[] startDepositRoot,
+      byte[] endBlockHash, byte[] endDepositRoot);
+
+  @Override
+  public void setDistanceFromHead(long distanceFromHead) {
+    this.distanceFromHead = distanceFromHead;
+  }
+
+  protected long getDistanceFromHead() {
+    return distanceFromHead;
+  }
 }

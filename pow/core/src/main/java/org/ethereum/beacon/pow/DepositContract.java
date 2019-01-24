@@ -1,6 +1,7 @@
 package org.ethereum.beacon.pow;
 
 import java.util.List;
+import java.util.Optional;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.reactivestreams.Publisher;
@@ -11,9 +12,14 @@ public interface DepositContract {
 
   Publisher<ChainStart> getChainStartMono();
 
-  Publisher<DepositInfo> initDepositsStream(Eth1Data startFrom);
+  List<DepositInfo> peekDeposits(int count,
+      Eth1Data fromDepositExclusive, Eth1Data tillDepositInclusive);
 
   boolean hasDepositRoot(Hash32 blockHash, Hash32 depositRoot);
+
+  Optional<Eth1Data> getLatestEth1Data();
+
+  void setDistanceFromHead(long distanceFromHead);
 
   class DepositInfo {
     private final Deposit deposit;
