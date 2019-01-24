@@ -36,14 +36,17 @@ import tech.pegasys.artemis.util.uint.UInt64;
 public class BeaconChainProposerImpl implements BeaconChainProposer {
 
   private SpecHelpers specHelpers;
+  private ChainSpec chainSpec;
   private StateTransition<BeaconState> blockTransition;
   private DepositContract depositContract;
 
   public BeaconChainProposerImpl(
       SpecHelpers specHelpers,
+      ChainSpec chainSpec,
       StateTransition<BeaconState> blockTransition,
       DepositContract depositContract) {
     this.specHelpers = specHelpers;
+    this.chainSpec = chainSpec;
     this.blockTransition = blockTransition;
     this.depositContract = depositContract;
   }
@@ -65,7 +68,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
         .withParentRoot(parentRoot)
         .withRandaoReveal(randaoReveal)
         .withEth1Data(eth1Data)
-        .withSignature(specHelpers.getEmptySignature())
+        .withSignature(chainSpec.getEmptySignature())
         .withBody(blockBody);
 
     // calculate state_root
@@ -86,7 +89,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
     ProposalSignedData proposal =
         new ProposalSignedData(
             state.getSlot(),
-            specHelpers.getBeaconChainShardNumber(),
+            chainSpec.getBeaconChainShardNumber(),
             specHelpers.hash_tree_root(blockWithoutSignature));
     Hash32 proposalRoot = specHelpers.hash_tree_root(proposal);
     Bytes8 domain = specHelpers.get_domain(state.getForkData(), state.getSlot(), PROPOSAL);
@@ -120,7 +123,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
   private Eth1Data getEth1Data(BeaconState state) {
     List<Eth1DataVote> eth1DataVotes = state.getEth1DataVotes();
     Eth1Data contractData =
-        depositContract.getEth1DataByDistance(specHelpers.getEth1FollowDistance());
+        depositContract.getEth1DataByDistance(chainSpec.getEth1FollowDistance());
 
     if (eth1DataVotes.isEmpty()) {
       return contractData;
@@ -144,15 +147,15 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
 
   private BeaconBlockBody getBlockBody(BeaconState state, PendingOperations operations) {
     List<ProposerSlashing> proposerSlashings =
-        operations.peekProposerSlashings(specHelpers.getMaxProposerSlashings());
+        operations.peekProposerSlashings(chainSpec.getMaxProposerSlashings());
     List<CasperSlashing> casperSlashings =
-        operations.peekCasperSlashings(specHelpers.getMaxCasperSlashings());
+        operations.peekCasperSlashings(chainSpec.getMaxCasperSlashings());
     List<Attestation> attestations =
-        operations.peekAggregatedAttestations(specHelpers.getMaxAttestations());
-    List<Exit> exits = operations.peekExits(specHelpers.getMaxExits());
+        operations.peekAggregatedAttestations(chainSpec.getMaxAttestations());
+    List<Exit> exits = operations.peekExits(chainSpec.getMaxExits());
     List<Deposit> deposits =
         depositContract.peekDeposits(
-            specHelpers.getMaxDeposits(), state.getLatestEth1Data(), UInt64.ZERO);
+            chainSpec.getMaxDeposits(), state.getLatestEth1Data(), UInt64.ZERO);
 
     return new BeaconBlockBody(
         proposerSlashings,
