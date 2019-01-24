@@ -2,6 +2,8 @@ package org.ethereum.beacon.consensus;
 
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.crypto.Hashes;
+import org.ethereum.beacon.ssz.Hasher;
+import org.ethereum.beacon.ssz.SSZHasher;
 import org.junit.Test;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes3;
@@ -89,7 +91,11 @@ public class SpecHelpersTest {
 
   @Test
   public void testHashTreeRoot1() {
-    SpecHelpers specHelpers = new SpecHelpers(null);
+    Function<Function<BytesValue, Hash32>, Hasher<Hash32>> objectHasherBuilder =
+        bytesValueHash32Function ->
+            SSZHasher.simpleHasher(
+                bytesValue -> bytesValueHash32Function.apply(bytesValue).slice(0));
+    SpecHelpers specHelpers = new SpecHelpers(null, objectHasherBuilder);
     Hash32 expected =
         Hash32.fromHexString("0xbb935525e4755625383ea21ac0fb0d6841b873e4abce16cbe722ba5478c6ec23");
     Hash32 actual = specHelpers.hash_tree_root(createDepositInput());
