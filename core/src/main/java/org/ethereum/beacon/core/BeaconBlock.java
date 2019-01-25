@@ -1,5 +1,6 @@
 package org.ethereum.beacon.core;
 
+import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -25,10 +26,10 @@ public class BeaconBlock implements Hashable<Hash32> {
   @SSZ private final Hash32 parentRoot;
   /** A hash of the state that is created by applying a block to the previous state. */
   @SSZ private final Hash32 stateRoot;
-  /** An image of RANDAO hash onion revealed by proposer. */
-  @SSZ private final Hash32 randaoReveal;
-  /** Receipt root from the PoW chain registration contract that is observed by proposer. */
-  @SSZ private final Hash32 depositRoot;
+  /** RANDAO signature submitted by proposer. */
+  @SSZ private final Bytes96 randaoReveal;
+  /** Eth1 data that is observed by proposer. */
+  @SSZ private final Eth1Data eth1Data;
   /** Proposer's signature. */
   @SSZ private final Bytes96 signature;
 
@@ -39,15 +40,15 @@ public class BeaconBlock implements Hashable<Hash32> {
       UInt64 slot,
       Hash32 parentRoot,
       Hash32 stateRoot,
-      Hash32 randaoReveal,
-      Hash32 depositRoot,
+      Bytes96 randaoReveal,
+      Eth1Data eth1Data,
       Bytes96 signature,
       BeaconBlockBody body) {
     this.slot = slot;
     this.parentRoot = parentRoot;
     this.stateRoot = stateRoot;
     this.randaoReveal = randaoReveal;
-    this.depositRoot = depositRoot;
+    this.eth1Data = eth1Data;
     this.signature = signature;
     this.body = body;
   }
@@ -57,7 +58,7 @@ public class BeaconBlock implements Hashable<Hash32> {
   }
 
   public BeaconBlock withStateRoot(Hash32 stateRoot) {
-    return new BeaconBlock(slot, parentRoot, stateRoot, randaoReveal, depositRoot, signature, body);
+    return new BeaconBlock(slot, parentRoot, stateRoot, randaoReveal, eth1Data, signature, body);
   }
 
   public UInt64 getSlot() {
@@ -72,12 +73,12 @@ public class BeaconBlock implements Hashable<Hash32> {
     return stateRoot;
   }
 
-  public Hash32 getRandaoReveal() {
+  public Bytes96 getRandaoReveal() {
     return randaoReveal;
   }
 
-  public Hash32 getDepositRoot() {
-    return depositRoot;
+  public Eth1Data getEth1Data() {
+    return eth1Data;
   }
 
   public Bytes96 getSignature() {
@@ -111,8 +112,8 @@ public class BeaconBlock implements Hashable<Hash32> {
     private UInt64 slot;
     private Hash32 parentRoot;
     private Hash32 stateRoot;
-    private Hash32 randaoReveal;
-    private Hash32 depositRoot;
+    private Bytes96 randaoReveal;
+    private Eth1Data eth1Data;
     private Bytes96 signature;
     private BeaconBlockBody body;
 
@@ -129,7 +130,7 @@ public class BeaconBlock implements Hashable<Hash32> {
       builder.parentRoot = block.parentRoot;
       builder.stateRoot = block.stateRoot;
       builder.randaoReveal = block.randaoReveal;
-      builder.depositRoot = block.depositRoot;
+      builder.eth1Data = block.eth1Data;
       builder.signature = block.signature;
       builder.body = block.body;
 
@@ -151,13 +152,13 @@ public class BeaconBlock implements Hashable<Hash32> {
       return this;
     }
 
-    public Builder withRandaoReveal(Hash32 randaoReveal) {
+    public Builder withRandaoReveal(Bytes96 randaoReveal) {
       this.randaoReveal = randaoReveal;
       return this;
     }
 
-    public Builder withDepositRoot(Hash32 depositRoot) {
-      this.depositRoot = depositRoot;
+    public Builder withEth1Data(Eth1Data eth1Data) {
+      this.eth1Data = eth1Data;
       return this;
     }
 
@@ -176,12 +177,12 @@ public class BeaconBlock implements Hashable<Hash32> {
       assert parentRoot != null;
       assert stateRoot != null;
       assert randaoReveal != null;
-      assert depositRoot != null;
+      assert eth1Data != null;
       assert signature != null;
       assert body != null;
 
       return new BeaconBlock(
-          slot, parentRoot, stateRoot, randaoReveal, depositRoot, signature, body);
+          slot, parentRoot, stateRoot, randaoReveal, eth1Data, signature, body);
     }
   }
 }

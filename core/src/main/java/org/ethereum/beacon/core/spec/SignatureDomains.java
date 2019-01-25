@@ -18,4 +18,6 @@ public interface SignatureDomains {
   UInt64 PROPOSAL = UInt64.valueOf(2);
 
   UInt64 EXIT = UInt64.valueOf(3);
+
+  UInt64 RANDAO = UInt64.valueOf(4);
 }
