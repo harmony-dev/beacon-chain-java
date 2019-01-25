@@ -77,18 +77,6 @@ public class LMDGhostHeadFunction implements HeadFunction {
             getChildrenBlocks,
             this::get_latest_attestation);
 
-    // Let justified_head be the descendant of finalized_head with the highest slot number that has
-    // been justified for at least EPOCH_LENGTH slots. (A block B is justified if there is a
-    // descendant of B in store the processing of which sets B as justified.)
-    if (newHead
-            .getSlot()
-            .minus(justifiedBlock.getSlot())
-            .compareTo(specHelpers.getChainSpec().getEpochLength())
-        >= 0) {
-      blockStorage.justify(newHead.getHash());
-      blockStorage.finalize(justifiedBlock.getHash());
-    }
-
     return newHead;
   }
 
