@@ -82,8 +82,6 @@ public class SpecHelpersTest {
         new DepositInput(
             Bytes48.TRUE,
             Hashes.keccak256(BytesValue.fromHexString("aa")),
-            Hashes.keccak256(BytesValue.fromHexString("bb")),
-            Hashes.keccak256(BytesValue.fromHexString("cc")),
             Bytes96.ZERO);
 
     return depositInput;
@@ -97,7 +95,7 @@ public class SpecHelpersTest {
                 bytesValue -> bytesValueHash32Function.apply(bytesValue).slice(0));
     SpecHelpers specHelpers = new SpecHelpers(null, objectHasherBuilder);
     Hash32 expected =
-        Hash32.fromHexString("0xbb935525e4755625383ea21ac0fb0d6841b873e4abce16cbe722ba5478c6ec23");
+        Hash32.fromHexString("0x8fc89d0f1f435b07543b15fdf687e7fce4a754ecd9e5afbf8f0e83928a7f798f");
     Hash32 actual = specHelpers.hash_tree_root(createDepositInput());
     assertEquals(expected, actual);
   }
