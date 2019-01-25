@@ -38,6 +38,9 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   BeaconBlockVerifier blockVerifier;
   BeaconStateVerifier stateVerifier;
 
+  /*
+    TODO: All head-related stuff should be moved to ObservableStateProcessor when it's available
+   */
   HeadFunction headFunction;
 
   Database database;
