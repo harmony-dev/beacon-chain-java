@@ -34,13 +34,18 @@ public class RandaoVerifier implements BeaconBlockVerifier {
             .getValidatorRegistry()
             .get(safeInt(specHelpers.get_beacon_proposer_index(state, state.getSlot())));
 
+    /*
+     Verify that bls_verify(pubkey=proposer.pubkey,
+       message=int_to_bytes32(proposer.proposer_slots), signature=block.randao_reveal,
+       domain=get_domain(state.fork, state.slot, DOMAIN_RANDAO))
+    */
     if (!specHelpers.bls_verify(
         proposer.getPubKey(),
         Hash32.wrap(Bytes32.leftPad(proposer.getProposerSlots().toBytesBigEndian())),
         block.getRandaoReveal(),
         specHelpers.get_domain(state.getForkData(), state.getSlot(), RANDAO))) {
 
-      return VerificationResult.failedResult("Incorrect RANDAO reveal");
+      return VerificationResult.failedResult("RANDAO reveal verification failed");
     }
 
     return VerificationResult.PASSED;
