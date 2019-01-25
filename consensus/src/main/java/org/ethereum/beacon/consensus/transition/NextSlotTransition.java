@@ -33,13 +33,13 @@ public class NextSlotTransition implements StateTransition<BeaconStateEx> {
     UInt64 newSlot = state.getSlot().increment();
     state.withSlot(newSlot);
 
-    // state.validator_registry[get_beacon_proposer_index(state, state.slot)].randao_layers += 1
+    // state.validator_registry[get_beacon_proposer_index(state, state.slot)].proposer_slots += 1
     List<ValidatorRecord> newValidatorRegistry = new ArrayList<>(state.getValidatorRegistry());
     UInt24 idx = specHelpers.get_beacon_proposer_index(state, newSlot);
     ValidatorRecord validatorRecord = newValidatorRegistry.get(idx.getValue());
     ValidatorRecord newValidatorRecord = ValidatorRecord.Builder
         .fromRecord(validatorRecord)
-        .withRandaoLayers(validatorRecord.getRandaoLayers().increment())
+        .withProposerSlots(validatorRecord.getProposerSlots().increment())
         .build();
     newValidatorRegistry.set(idx.getValue(), newValidatorRecord);
     state.withValidatorRegistry(newValidatorRegistry);

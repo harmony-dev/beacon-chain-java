@@ -2,7 +2,8 @@ package org.ethereum.beacon.core;
 
 import org.ethereum.beacon.core.operations.CustodyChallenge;
 import org.ethereum.beacon.core.state.CrosslinkRecord;
-import org.ethereum.beacon.core.state.DepositRootVote;
+import org.ethereum.beacon.core.state.Eth1Data;
+import org.ethereum.beacon.core.state.Eth1DataVote;
 import org.ethereum.beacon.core.state.ForkData;
 import org.ethereum.beacon.core.state.PendingAttestationRecord;
 import org.ethereum.beacon.core.state.ValidatorRecord;
@@ -50,7 +51,7 @@ public interface BeaconState extends Hashable<Hash32> {
         emptyList(),
         emptyList(),
         emptyList(),
-        Hash32.ZERO,
+        Eth1Data.EMPTY,
         emptyList());
   }
 
@@ -81,8 +82,8 @@ public interface BeaconState extends Hashable<Hash32> {
       List<UInt64> latestPenalizedExitBalances,
       List<PendingAttestationRecord> latestAttestations,
       List<Hash32> batchedBlockRoots,
-      Hash32 latestDepositRoot,
-      List<DepositRootVote> depositRootVotes) {
+      Eth1Data latestEth1Data,
+      List<Eth1DataVote> eth1DataVotes) {
 
     return MutableBeaconState.createNew()
         .withSlot(slot)
@@ -111,8 +112,8 @@ public interface BeaconState extends Hashable<Hash32> {
         .withLatestPenalizedExitBalances(latestPenalizedExitBalances)
         .withLatestAttestations(latestAttestations)
         .withBatchedBlockRoots(batchedBlockRoots)
-        .withLatestDepositRoot(latestDepositRoot)
-        .withDepositRootVotes(depositRootVotes)
+        .withLatestEth1Data(latestEth1Data)
+        .withEth1DataVotes(eth1DataVotes)
         .validate();
   }
 
@@ -202,11 +203,11 @@ public interface BeaconState extends Hashable<Hash32> {
    */
   List<Hash32> getBatchedBlockRoots();
 
-  /** Latest processed receipt root from PoW deposit contract. */
-  Hash32 getLatestDepositRoot();
+  /** Latest processed eth1 data. */
+  Eth1Data getLatestEth1Data();
 
-  /** Receipt roots that voting is still in progress for. */
-  List<DepositRootVote> getDepositRootVotes();
+  /** Eth1 data that voting is still in progress for. */
+  List<Eth1DataVote> getEth1DataVotes();
 
   /**
    * Returns mutable copy of this state. Any changes made to returned copy shouldn't affect this

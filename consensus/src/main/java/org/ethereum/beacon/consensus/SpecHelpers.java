@@ -1,5 +1,19 @@
 package org.ethereum.beacon.consensus;
 
+import static java.lang.Math.max;
+import static java.lang.Math.min;
+import static java.util.stream.Collectors.toList;
+import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
@@ -23,6 +37,7 @@ import org.ethereum.beacon.crypto.BLS381.PublicKey;
 import org.ethereum.beacon.crypto.BLS381.Signature;
 import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.crypto.MessageParameters;
+import org.ethereum.beacon.ssz.Hasher;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes3;
 import tech.pegasys.artemis.util.bytes.Bytes32;
@@ -34,29 +49,30 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
 import tech.pegasys.artemis.util.uint.UInt64s;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
-import static java.lang.Math.max;
-import static java.lang.Math.min;
-import static java.util.stream.Collectors.toList;
-import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
 
 /**
  * https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md#helper-functions
  */
 public class SpecHelpers {
   private final ChainSpec spec;
+  private final Hasher<Hash32> objectHasher;
 
+  /* Uses Hash32.ZERO as a stub for objectHasher */
   public SpecHelpers(ChainSpec spec) {
     this.spec = spec;
+    this.objectHasher = input -> Hash32.ZERO;
+  }
+
+  /** Builds objectHasher with {@link #hash(BytesValue)} as data hash function in objectHasher */
+  public SpecHelpers(
+      ChainSpec spec, Function<Function<BytesValue, Hash32>, Hasher<Hash32>> objectHasherBuilder) {
+    this.spec = spec;
+    this.objectHasher = objectHasherBuilder.apply(this::hash);
+  }
+
+  public SpecHelpers(ChainSpec spec, Hasher<Hash32> objectHasher) {
+    this.spec = spec;
+    this.objectHasher = objectHasher;
   }
 
   public ChainSpec getChainSpec() {
@@ -424,14 +440,10 @@ public class SpecHelpers {
     def validate_proof_of_possession(state: BeaconState,
                                      pubkey: int,
                                      proof_of_possession: bytes,
-                                     withdrawal_credentials: Hash32,
-                                     randao_commitment: Hash32,
-                                     custody_commitment: Hash32) -> bool:
+                                     withdrawal_credentials: Hash32) -> bool:
         proof_of_possession_data = DepositInput(
             pubkey=pubkey,
             withdrawal_credentials=withdrawal_credentials,
-            randao_commitment=randao_commitment,
-            custody_commitment=custody_commitment,
             proof_of_possession=EMPTY_SIGNATURE,
         )
 
@@ -450,12 +462,9 @@ public class SpecHelpers {
       MutableBeaconState state,
       Bytes48 pubkey,
       Bytes96 proof_of_possession,
-      Hash32 withdrawal_credentials,
-      Hash32 randao_commitment,
-      Hash32 custody_commitment) {
+      Hash32 withdrawal_credentials) {
 
-    DepositInput deposit_input = new DepositInput(
-            pubkey, withdrawal_credentials, randao_commitment, custody_commitment, Bytes96.ZERO);
+    DepositInput deposit_input = new DepositInput(pubkey, withdrawal_credentials, Bytes96.ZERO);
 
     return bls_verify(
         pubkey,
@@ -469,9 +478,7 @@ public class SpecHelpers {
                     pubkey: int,
                     amount: int,
                     proof_of_possession: bytes,
-                    withdrawal_credentials: Hash32,
-                    randao_commitment: Hash32,
-                    custody_commitment: Hash32) -> None:
+                    withdrawal_credentials: Hash32) -> None:
     """
     Process a deposit from Ethereum 1.0.
     Note that this function mutates ``state``.
@@ -482,9 +489,7 @@ public class SpecHelpers {
       Bytes48 pubkey,
       UInt64 amount,
       Bytes96 proof_of_possession,
-      Hash32 withdrawal_credentials,
-      Hash32 randao_commitment,
-      Hash32 custody_commitment) {
+      Hash32 withdrawal_credentials) {
 
     //  # Validate the given `proof_of_possession`
     //  assert validate_proof_of_possession(
@@ -492,17 +497,13 @@ public class SpecHelpers {
     //      pubkey,
     //      proof_of_possession,
     //      withdrawal_credentials,
-    //      randao_commitment,
-    //      custody_commitment,
     //      )
     assertTrue(
         validate_proof_of_possession(
             state,
             pubkey,
             proof_of_possession,
-            withdrawal_credentials,
-            randao_commitment,
-            custody_commitment));
+            withdrawal_credentials));
 
     //  validator_pubkeys = [v.pubkey for v in state.validator_registry]
     int index = -1;
@@ -519,8 +520,7 @@ public class SpecHelpers {
       //  validator = Validator(
       //    pubkey=pubkey,
       //    withdrawal_credentials=withdrawal_credentials,
-      //    randao_commitment=randao_commitment,
-      //    randao_layers=0,
+      //    proposer_slots=0,
       //    activation_slot=FAR_FUTURE_SLOT,
       //    exit_slot=FAR_FUTURE_SLOT,
       //    withdrawal_slot=FAR_FUTURE_SLOT,
@@ -534,7 +534,6 @@ public class SpecHelpers {
       ValidatorRecord validator = new ValidatorRecord(
           pubkey,
           withdrawal_credentials,
-          randao_commitment,
           UInt64.ZERO,
           spec.getFarFutureSlot(),
           spec.getFarFutureSlot(),
@@ -542,7 +541,6 @@ public class SpecHelpers {
           spec.getFarFutureSlot(),
           UInt64.ZERO,
           UInt64.ZERO,
-          custody_commitment,
           spec.getGenesisSlot(),
           spec.getGenesisSlot());
 
@@ -891,7 +889,7 @@ public class SpecHelpers {
   }
 
   public Hash32 hash_tree_root(Object object) {
-    return Hash32.ZERO;
+    return objectHasher.calc(object);
   }
 
   public boolean bls_verify(Bytes48 publicKey, Hash32 message, Bytes96 signature, Bytes8 domain) {
@@ -932,10 +930,6 @@ public class SpecHelpers {
 
   public Bytes8 get_domain(ForkData forkData, UInt64 slot, UInt64 domainType) {
     return get_fork_version(forkData, slot).shl(32).plus(domainType).toBytes8();
-  }
-
-  public Hash32 repeat_hash(Hash32 x, int n) {
-    return n == 0 ? x : repeat_hash(x, n - 1);
   }
 
   public List<UInt24> custodyIndexIntersection(CasperSlashing slashing) {
@@ -1132,8 +1126,6 @@ public class SpecHelpers {
         input
             .getPubKey()
             .concat(input.getWithdrawalCredentials())
-            .concat(input.getRandaoCommitment())
-            .concat(input.getCustodyCommitment())
             .concat(input.getProofOfPossession());
 
     return data.getValue()
@@ -1166,6 +1158,42 @@ public class SpecHelpers {
     }
 
     return value.equals(root);
+  }
+
+  public UInt24 get_validator_index_by_pubkey(BeaconState state, Bytes48 pubkey) {
+    UInt24 index = UInt24.MAX_VALUE;
+    for (int i = 0; i < state.getValidatorRegistry().size(); i++) {
+      if (state.getValidatorRegistry().get(i).getPubKey().equals(pubkey)) {
+        index = UInt24.valueOf(i);
+        break;
+      }
+    }
+
+    return index;
+  }
+
+  public boolean is_in_beacon_chain_committee(BeaconState state, UInt64 slot, UInt24 index) {
+    List<UInt24> first_committee = get_shard_committees_at_slot(state, slot).get(0).getCommittee();
+    return Collections.binarySearch(first_committee, index) >= 0;
+  }
+
+  public UInt64 get_current_slot(BeaconState state) {
+    UInt64 currentTime = UInt64.valueOf(System.currentTimeMillis() / 1000);
+    assert state.getGenesisTime().compareTo(currentTime) < 0;
+    return currentTime.minus(state.getGenesisTime()).dividedBy(spec.getSlotDuration());
+  }
+
+  public boolean is_current_slot(BeaconState state) {
+    return state.getSlot().equals(get_current_slot(state));
+  }
+
+  public UInt64 get_slot_start_time(BeaconState state, UInt64 slot) {
+    return state.getGenesisTime().plus(spec.getSlotDuration().times(slot));
+  }
+
+  public UInt64 get_slot_middle_time(BeaconState state, UInt64 slot) {
+    return get_slot_start_time(state, slot)
+        .plus(spec.getSlotDuration().dividedBy(UInt64.valueOf(2)));
   }
 
   public void checkIndexRange(BeaconState state, UInt24 index) {

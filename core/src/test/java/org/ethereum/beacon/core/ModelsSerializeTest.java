@@ -1,5 +1,9 @@
 package org.ethereum.beacon.core;
 
+import static org.junit.Assert.assertEquals;
+
+import java.util.ArrayList;
+import java.util.List;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.CasperSlashing;
 import org.ethereum.beacon.core.operations.CustodyChallenge;
@@ -15,7 +19,8 @@ import org.ethereum.beacon.core.operations.slashing.ProposalSignedData;
 import org.ethereum.beacon.core.operations.slashing.SlashableVoteData;
 import org.ethereum.beacon.core.state.BeaconStateImpl;
 import org.ethereum.beacon.core.state.CrosslinkRecord;
-import org.ethereum.beacon.core.state.DepositRootVote;
+import org.ethereum.beacon.core.state.Eth1Data;
+import org.ethereum.beacon.core.state.Eth1DataVote;
 import org.ethereum.beacon.core.state.ForkData;
 import org.ethereum.beacon.core.state.PendingAttestationRecord;
 import org.ethereum.beacon.core.state.ValidatorRecord;
@@ -29,10 +34,6 @@ import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
-import java.util.ArrayList;
-import java.util.List;
-
-import static org.junit.Assert.assertEquals;
 
 public class ModelsSerializeTest {
   private Serializer sszSerializer;
@@ -61,8 +62,7 @@ public class ModelsSerializeTest {
   public void attestationDataTest() {
     AttestationData expected = createAttestationData();
     BytesValue encoded = sszSerializer.encode2(expected);
-    AttestationData reconstructed =
-        (AttestationData) sszSerializer.decode(encoded, AttestationData.class);
+    AttestationData reconstructed = sszSerializer.decode(encoded, AttestationData.class);
     assertEquals(expected, reconstructed);
   }
 
@@ -82,7 +82,7 @@ public class ModelsSerializeTest {
   public void attestationTest() {
     Attestation expected = createAttestation();
     BytesValue encoded = sszSerializer.encode2(expected);
-    Attestation reconstructed = (Attestation) sszSerializer.decode(encoded, Attestation.class);
+    Attestation reconstructed = sszSerializer.decode(encoded, Attestation.class);
     assertEquals(expected, reconstructed);
   }
 
@@ -100,8 +100,7 @@ public class ModelsSerializeTest {
   public void slashableVoteDataTest() {
     SlashableVoteData expected = createSlashableVoteData();
     BytesValue encoded = sszSerializer.encode2(expected);
-    SlashableVoteData reconstructed =
-        (SlashableVoteData) sszSerializer.decode(encoded, SlashableVoteData.class);
+    SlashableVoteData reconstructed = sszSerializer.decode(encoded, SlashableVoteData.class);
     assertEquals(expected, reconstructed);
   }
 
@@ -115,19 +114,14 @@ public class ModelsSerializeTest {
   public void casperSlashingTest() {
     CasperSlashing expected = createCasperSlashing();
     BytesValue encoded = sszSerializer.encode2(expected);
-    CasperSlashing reconstructed =
-        (CasperSlashing) sszSerializer.decode(encoded, CasperSlashing.class);
+    CasperSlashing reconstructed = sszSerializer.decode(encoded, CasperSlashing.class);
     assertEquals(expected, reconstructed);
   }
 
   private DepositInput createDepositInput() {
     DepositInput depositInput =
         new DepositInput(
-            Bytes48.TRUE,
-            Hashes.keccak256(BytesValue.fromHexString("aa")),
-            Hashes.keccak256(BytesValue.fromHexString("bb")),
-            Hashes.keccak256(BytesValue.fromHexString("cc")),
-            Bytes96.ZERO);
+            Bytes48.TRUE, Hashes.keccak256(BytesValue.fromHexString("aa")), Bytes96.ZERO);
 
     return depositInput;
   }
@@ -136,7 +130,7 @@ public class ModelsSerializeTest {
   public void depositInputTest() {
     DepositInput expected = createDepositInput();
     BytesValue encoded = sszSerializer.encode2(expected);
-    DepositInput reconstructed = (DepositInput) sszSerializer.decode(encoded, DepositInput.class);
+    DepositInput reconstructed = sszSerializer.decode(encoded, DepositInput.class);
     assertEquals(expected, reconstructed);
   }
 
@@ -151,7 +145,7 @@ public class ModelsSerializeTest {
   public void depositDataTest() {
     DepositData expected = createDepositData();
     BytesValue encoded = sszSerializer.encode2(expected);
-    DepositData reconstructed = (DepositData) sszSerializer.decode(encoded, DepositData.class);
+    DepositData reconstructed = sszSerializer.decode(encoded, DepositData.class);
     assertEquals(expected, reconstructed);
   }
 
@@ -176,8 +170,8 @@ public class ModelsSerializeTest {
     Deposit expected2 = createDeposit2();
     BytesValue encoded1 = sszSerializer.encode2(expected1);
     BytesValue encoded2 = sszSerializer.encode2(expected2);
-    Deposit reconstructed1 = (Deposit) sszSerializer.decode(encoded1, Deposit.class);
-    Deposit reconstructed2 = (Deposit) sszSerializer.decode(encoded2, Deposit.class);
+    Deposit reconstructed1 = sszSerializer.decode(encoded1, Deposit.class);
+    Deposit reconstructed2 = sszSerializer.decode(encoded2, Deposit.class);
     assertEquals(expected1, reconstructed1);
     assertEquals(expected2, reconstructed2);
   }
@@ -192,7 +186,7 @@ public class ModelsSerializeTest {
   public void exitTest() {
     Exit expected = createExit();
     BytesValue encoded = sszSerializer.encode2(expected);
-    Exit reconstructed = (Exit) sszSerializer.decode(encoded, Exit.class);
+    Exit reconstructed = sszSerializer.decode(encoded, Exit.class);
     assertEquals(expected, reconstructed);
   }
 
@@ -205,8 +199,7 @@ public class ModelsSerializeTest {
   public void proofOfCustodyChallengeTest() {
     CustodyChallenge expected = createProofOfCustodyChallenge();
     BytesValue encoded = sszSerializer.encode2(expected);
-    CustodyChallenge reconstructed =
-        (CustodyChallenge) sszSerializer.decode(encoded, CustodyChallenge.class);
+    CustodyChallenge reconstructed = sszSerializer.decode(encoded, CustodyChallenge.class);
     assertEquals(expected, reconstructed);
   }
 
@@ -219,8 +212,7 @@ public class ModelsSerializeTest {
   public void proofOfCustodyResponseTest() {
     CustodyResponse expected = createProofOfCustodyResponse();
     BytesValue encoded = sszSerializer.encode2(expected);
-    CustodyResponse reconstructed =
-        (CustodyResponse) sszSerializer.decode(encoded, CustodyResponse.class);
+    CustodyResponse reconstructed = sszSerializer.decode(encoded, CustodyResponse.class);
     assertEquals(expected, reconstructed);
   }
 
@@ -233,8 +225,7 @@ public class ModelsSerializeTest {
   public void proofOfCustodySeedChangeTest() {
     CustodyReseed expected = createProofOfCustodySeedChange();
     BytesValue encoded = sszSerializer.encode2(expected);
-    CustodyReseed reconstructed =
-        (CustodyReseed) sszSerializer.decode(encoded, CustodyReseed.class);
+    CustodyReseed reconstructed = sszSerializer.decode(encoded, CustodyReseed.class);
     assertEquals(expected, reconstructed);
   }
 
@@ -249,8 +240,7 @@ public class ModelsSerializeTest {
   public void proposalSignedDataTest() {
     ProposalSignedData expected = createProposalSignedData();
     BytesValue encoded = sszSerializer.encode2(expected);
-    ProposalSignedData reconstructed =
-        (ProposalSignedData) sszSerializer.decode(encoded, ProposalSignedData.class);
+    ProposalSignedData reconstructed = sszSerializer.decode(encoded, ProposalSignedData.class);
     assertEquals(expected, reconstructed);
   }
 
@@ -270,8 +260,7 @@ public class ModelsSerializeTest {
   public void proposerSlashingTest() {
     ProposerSlashing expected = createProposerSlashing();
     BytesValue encoded = sszSerializer.encode2(expected);
-    ProposerSlashing reconstructed =
-        (ProposerSlashing) sszSerializer.decode(encoded, ProposerSlashing.class);
+    ProposerSlashing reconstructed = sszSerializer.decode(encoded, ProposerSlashing.class);
     assertEquals(expected, reconstructed);
   }
 
@@ -311,8 +300,7 @@ public class ModelsSerializeTest {
   public void beaconBlockBodyTest() {
     BeaconBlockBody expected = createBeaconBlockBody();
     BytesValue encoded = sszSerializer.encode2(expected);
-    BeaconBlockBody reconstructed =
-        (BeaconBlockBody) sszSerializer.decode(encoded, BeaconBlockBody.class);
+    BeaconBlockBody reconstructed = sszSerializer.decode(encoded, BeaconBlockBody.class);
     assertEquals(expected, reconstructed);
   }
 
@@ -322,8 +310,10 @@ public class ModelsSerializeTest {
             UInt64.MAX_VALUE,
             Hashes.keccak256(BytesValue.fromHexString("aa")),
             Hashes.keccak256(BytesValue.fromHexString("bb")),
-            Hashes.keccak256(BytesValue.fromHexString("cc")),
-            Hashes.keccak256(BytesValue.fromHexString("dd")),
+            Bytes96.fromHexString("cc"),
+            new Eth1Data(
+                Hashes.keccak256(BytesValue.fromHexString("dda")),
+                Hashes.keccak256(BytesValue.fromHexString("ddb"))),
             Bytes96.fromHexString("aa"),
             createBeaconBlockBody());
 
@@ -334,7 +324,7 @@ public class ModelsSerializeTest {
   public void beaconBlockTest() {
     BeaconBlock expected = createBeaconBlock();
     BytesValue encoded = sszSerializer.encode2(expected);
-    BeaconBlock reconstructed = (BeaconBlock) sszSerializer.decode(encoded, BeaconBlock.class);
+    BeaconBlock reconstructed = sszSerializer.decode(encoded, BeaconBlock.class);
     assertEquals(expected, reconstructed);
   }
 
@@ -348,7 +338,7 @@ public class ModelsSerializeTest {
   public void beaconStateTest() {
     BeaconState expected = createBeaconState();
     BytesValue encoded = sszSerializer.encode2(expected);
-    BeaconState reconstructed = (BeaconState) sszSerializer.decode(encoded, BeaconStateImpl.class);
+    BeaconState reconstructed = sszSerializer.decode(encoded, BeaconStateImpl.class);
     assertEquals(expected, reconstructed);
   }
 
@@ -362,23 +352,21 @@ public class ModelsSerializeTest {
   public void crosslinkRecordTest() {
     CrosslinkRecord expected = createCrosslinkRecord();
     BytesValue encoded = sszSerializer.encode2(expected);
-    CrosslinkRecord reconstructed =
-        (CrosslinkRecord) sszSerializer.decode(encoded, CrosslinkRecord.class);
+    CrosslinkRecord reconstructed = sszSerializer.decode(encoded, CrosslinkRecord.class);
     assertEquals(expected, reconstructed);
   }
 
-  private DepositRootVote createDepositRootVote() {
-    DepositRootVote depositRootVote = new DepositRootVote(Hash32.ZERO, UInt64.MAX_VALUE);
+  private Eth1DataVote createEth1DataVote() {
+    Eth1DataVote eth1DataVote = new Eth1DataVote(Eth1Data.EMPTY, UInt64.MAX_VALUE);
 
-    return depositRootVote;
+    return eth1DataVote;
   }
 
   @Test
-  public void depositRootVoteTest() {
-    DepositRootVote expected = createDepositRootVote();
+  public void eth1DataVoteTest() {
+    Eth1DataVote expected = createEth1DataVote();
     BytesValue encoded = sszSerializer.encode2(expected);
-    DepositRootVote reconstructed =
-        (DepositRootVote) sszSerializer.decode(encoded, DepositRootVote.class);
+    Eth1DataVote reconstructed = sszSerializer.decode(encoded, Eth1DataVote.class);
     assertEquals(expected, reconstructed);
   }
 
@@ -392,7 +380,7 @@ public class ModelsSerializeTest {
   public void forkDataTest() {
     ForkData expected = createForkData();
     BytesValue encoded = sszSerializer.encode2(expected);
-    ForkData reconstructed = (ForkData) sszSerializer.decode(encoded, ForkData.class);
+    ForkData reconstructed = sszSerializer.decode(encoded, ForkData.class);
     assertEquals(expected, reconstructed);
   }
 
@@ -412,7 +400,7 @@ public class ModelsSerializeTest {
     PendingAttestationRecord expected = createPendingAttestationRecord();
     BytesValue encoded = sszSerializer.encode2(expected);
     PendingAttestationRecord reconstructed =
-        (PendingAttestationRecord) sszSerializer.decode(encoded, PendingAttestationRecord.class);
+        sszSerializer.decode(encoded, PendingAttestationRecord.class);
     assertEquals(expected, reconstructed);
   }
 
@@ -425,10 +413,9 @@ public class ModelsSerializeTest {
             .withPenalizedSlot(UInt64.ZERO)
             .withExitCount(UInt64.ZERO)
             .withStatusFlags(UInt64.ZERO)
-            .withCustodyCommitment(Hash32.ZERO)
             .withLatestCustodyReseedSlot(UInt64.ZERO)
             .withPenultimateCustodyReseedSlot(UInt64.ZERO)
-            .withRandaoLayers(UInt64.ZERO)
+            .withProposerSlots(UInt64.ZERO)
             .build();
 
     return validatorRecord;
@@ -438,8 +425,7 @@ public class ModelsSerializeTest {
   public void validatorRecordTest() {
     ValidatorRecord expected = createValidatorRecord();
     BytesValue encoded = sszSerializer.encode2(expected);
-    ValidatorRecord reconstructed =
-        (ValidatorRecord) sszSerializer.decode(encoded, ValidatorRecord.class);
+    ValidatorRecord reconstructed = sszSerializer.decode(encoded, ValidatorRecord.class);
     assertEquals(expected, reconstructed);
   }
 }

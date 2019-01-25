@@ -1,19 +1,23 @@
 package org.ethereum.beacon.consensus;
 
-import org.ethereum.beacon.core.state.ShardCommittee;
+import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.crypto.Hashes;
-import org.junit.Assert;
+import org.ethereum.beacon.ssz.Hasher;
+import org.ethereum.beacon.ssz.SSZHasher;
 import org.junit.Test;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes3;
+import tech.pegasys.artemis.util.bytes.Bytes48;
+import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static org.junit.Assert.assertEquals;
 
 public class SpecHelpersTest {
 
@@ -71,5 +75,28 @@ public class SpecHelpersTest {
 
 
     System.out.println(map);
+  }
+
+  private DepositInput createDepositInput() {
+    DepositInput depositInput =
+        new DepositInput(
+            Bytes48.TRUE,
+            Hashes.keccak256(BytesValue.fromHexString("aa")),
+            Bytes96.ZERO);
+
+    return depositInput;
+  }
+
+  @Test
+  public void testHashTreeRoot1() {
+    Function<Function<BytesValue, Hash32>, Hasher<Hash32>> objectHasherBuilder =
+        bytesValueHash32Function ->
+            SSZHasher.simpleHasher(
+                bytesValue -> bytesValueHash32Function.apply(bytesValue).slice(0));
+    SpecHelpers specHelpers = new SpecHelpers(null, objectHasherBuilder);
+    Hash32 expected =
+        Hash32.fromHexString("0x8fc89d0f1f435b07543b15fdf687e7fce4a754ecd9e5afbf8f0e83928a7f798f");
+    Hash32 actual = specHelpers.hash_tree_root(createDepositInput());
+    assertEquals(expected, actual);
   }
 }
