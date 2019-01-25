@@ -11,11 +11,11 @@ public interface PendingOperations {
 
   List<Attestation> getAttestations();
 
-  List<ProposerSlashing> peekProposerSlashings(int count);
+  List<ProposerSlashing> peekProposerSlashings(int maxCount);
 
-  List<CasperSlashing> peekCasperSlashings(int count);
+  List<CasperSlashing> peekCasperSlashings(int maxCount);
 
-  List<Attestation> peekAggregatedAttestations(int count);
+  List<Attestation> peekAggregatedAttestations(int maxCount);
 
-  List<Exit> peekExits(int count);
+  List<Exit> peekExits(int maxCount);
 }
