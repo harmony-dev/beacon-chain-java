@@ -1,5 +1,7 @@
 package org.ethereum.beacon.validator;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -87,17 +89,20 @@ public class BeaconChainValidator implements ValidatorService {
   private void runTasks(final ObservableBeaconState observableState) {
     BeaconState state = observableState.getLatestSlotState();
 
+    final List<UInt24> firstCommittee =
+        specHelpers.get_shard_committees_at_slot(state, state.getSlot()).get(0).getCommittee();
+
     // trigger proposer
-    UInt24 proposerIndex = specHelpers.get_beacon_proposer_index(state, state.getSlot());
+    UInt24 proposerIndex =
+        specHelpers.get_beacon_proposer_index_in_committee(firstCommittee, state.getSlot());
     if (index.equals(proposerIndex)) {
       runAsync(() -> propose(observableState));
     }
 
     // trigger attester at a halfway through the slot
-    if (index.equals(proposerIndex)
-        || specHelpers.is_in_beacon_chain_committee(state, state.getSlot(), index)) {
+    if (index.equals(proposerIndex) || Collections.binarySearch(firstCommittee, index) >= 0) {
       UInt64 startAt = specHelpers.get_slot_middle_time(state, state.getSlot());
-      schedule(startAt, () -> attest(this.recentState));
+      schedule(startAt, () -> attest(this.index, firstCommittee, this.recentState));
     }
   }
 
@@ -116,8 +121,17 @@ public class BeaconChainValidator implements ValidatorService {
     propagateBlock(newBlock);
   }
 
-  private void attest(final ObservableBeaconState observableState) {
-    Attestation attestation = attester.attest(observableState);
+  private void attest(
+      final UInt24 index,
+      final List<UInt24> committee,
+      final ObservableBeaconState observableState) {
+    Attestation attestation =
+        attester.attest(
+            index,
+            committee,
+            specHelpers.getChainSpec().getBeaconChainShardNumber(),
+            observableState,
+            messageSigner);
     propagateAttestation(attestation);
   }
 

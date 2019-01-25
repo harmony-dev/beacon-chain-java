@@ -192,7 +192,11 @@ public class SpecHelpers {
   public UInt24 get_beacon_proposer_index(BeaconState state, UInt64 slot) {
     List<UInt24> first_committee =
         get_shard_committees_at_slot(state, slot).get(0).getCommittee();
-    return first_committee.get(safeInt(slot.modulo(first_committee.size())));
+    return get_beacon_proposer_index_in_committee(first_committee, slot);
+  }
+
+  public UInt24 get_beacon_proposer_index_in_committee(List<UInt24> committee, UInt64 slot) {
+    return committee.get(safeInt(slot.modulo(committee.size())));
   }
 
   /*

@@ -27,17 +27,17 @@ public class Attestation {
   /** Proof of custody bitfield. */
   @SSZ private final BytesValue custodyBitfield;
   /** A product of aggregation of signatures from different validators to {@link #data}. */
-  @SSZ private final Bytes96 aggregatedSignature;
+  @SSZ private final Bytes96 aggregateSignature;
 
   public Attestation(
       AttestationData data,
       BytesValue participationBitfield,
       BytesValue custodyBitfield,
-      Bytes96 aggregatedSignature) {
+      Bytes96 aggregateSignature) {
     this.data = data;
     this.participationBitfield = participationBitfield;
     this.custodyBitfield = custodyBitfield;
-    this.aggregatedSignature = aggregatedSignature;
+    this.aggregateSignature = aggregateSignature;
   }
 
   public AttestationData getData() {
@@ -52,8 +52,8 @@ public class Attestation {
     return custodyBitfield;
   }
 
-  public Bytes96 getAggregatedSignature() {
-    return aggregatedSignature;
+  public Bytes96 getAggregateSignature() {
+    return aggregateSignature;
   }
 
   @Override
@@ -64,6 +64,6 @@ public class Attestation {
     return Objects.equal(data, that.data)
         && Objects.equal(participationBitfield, that.participationBitfield)
         && Objects.equal(custodyBitfield, that.custodyBitfield)
-        && Objects.equal(aggregatedSignature, that.aggregatedSignature);
+        && Objects.equal(aggregateSignature, that.aggregateSignature);
   }
 }
