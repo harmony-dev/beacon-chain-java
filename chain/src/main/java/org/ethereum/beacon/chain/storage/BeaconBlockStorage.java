@@ -52,5 +52,7 @@ public interface BeaconBlockStorage extends HashKeyStorage<Hash32, BeaconBlock> 
 
   boolean justify(Hash32 blockHash);
 
+  boolean deJustify(Hash32 blockHash);
+
   boolean finalize(Hash32 blockHash);
 }
