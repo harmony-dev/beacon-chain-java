@@ -168,12 +168,14 @@ public class SSZSerializerBuilder {
         new SSZAnnotationSchemeBuilder(false), sszCodecResolver, createDefaultModelCreator());
   }
 
-  public void addCodec(SSZCodec codec) {
+  public SSZSerializerBuilder addCodec(SSZCodec codec) {
     if (sszCodecResolver == null) {
       throw new RuntimeException("initWith* method should be called first");
     }
     sszCodecResolver.registerCodec(
         codec.getSupportedClasses(), codec.getSupportedSSZTypes(), codec);
+
+    return this;
   }
 
   /** Adds {@link SSZCodec}'s to handle almost all Java primitive types */

@@ -11,6 +11,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.ethereum.beacon.core.BeaconState;
@@ -34,6 +35,7 @@ import org.ethereum.beacon.crypto.BLS381.PublicKey;
 import org.ethereum.beacon.crypto.BLS381.Signature;
 import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.crypto.MessageParameters;
+import org.ethereum.beacon.ssz.Hasher;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes3;
 import tech.pegasys.artemis.util.bytes.Bytes32;
@@ -51,9 +53,24 @@ import tech.pegasys.artemis.util.uint.UInt64s;
  */
 public class SpecHelpers {
   private final ChainSpec spec;
+  private final Hasher<Hash32> objectHasher;
 
+  /* Uses Hash32.ZERO as a stub for objectHasher */
   public SpecHelpers(ChainSpec spec) {
     this.spec = spec;
+    this.objectHasher = input -> Hash32.ZERO;
+  }
+
+  /** Builds objectHasher with {@link #hash(BytesValue)} as data hash function in objectHasher */
+  public SpecHelpers(
+      ChainSpec spec, Function<Function<BytesValue, Hash32>, Hasher<Hash32>> objectHasherBuilder) {
+    this.spec = spec;
+    this.objectHasher = objectHasherBuilder.apply(this::hash);
+  }
+
+  public SpecHelpers(ChainSpec spec, Hasher<Hash32> objectHasher) {
+    this.spec = spec;
+    this.objectHasher = objectHasher;
   }
 
   public ChainSpec getChainSpec() {
@@ -870,7 +887,7 @@ public class SpecHelpers {
   }
 
   public Hash32 hash_tree_root(Object object) {
-    return Hash32.ZERO;
+    return objectHasher.calc(object);
   }
 
   public boolean bls_verify(Bytes48 publicKey, Hash32 message, Bytes96 signature, Bytes8 domain) {

@@ -18,9 +18,9 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 public class Eth1Data {
   public static final Eth1Data EMPTY = new Eth1Data(Hash32.ZERO, Hash32.ZERO);
 
-  /** Root of the deposit tree */
+  /** Root of the deposit tree. */
   @SSZ private final Hash32 depositRoot;
-  /** Block hash */
+  /** Hash of eth1 block which {@code depositRoot} relates to. */
   @SSZ private final Hash32 blockHash;
 
   public Eth1Data(Hash32 depositRoot, Hash32 blockHash) {
