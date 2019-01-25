@@ -2,8 +2,11 @@ package org.ethereum.beacon.pow;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
+/**
+ * Not a unit test. Just some experiments with Progressive Merkle Trie
+ * https://github.com/ethereum/research/blob/master/beacon_chain_impl/progressive_merkle_tree.py
+ */
 public class NewMerkleTest {
   int depth = 3;
   String[] zerohashes = new String[depth];
