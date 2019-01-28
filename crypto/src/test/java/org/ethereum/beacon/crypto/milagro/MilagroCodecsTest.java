@@ -15,6 +15,8 @@ import org.apache.milagro.amcl.RAND;
 import org.ethereum.beacon.crypto.bls.codec.Flags;
 import org.ethereum.beacon.crypto.bls.milagro.BIGs;
 import org.junit.Test;
+import tech.pegasys.artemis.util.bytes.Bytes48;
+import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 public class MilagroCodecsTest {
@@ -72,7 +74,7 @@ public class MilagroCodecsTest {
   @Test
   public void encodeRandomPointInG1() {
     ECP point = ECP.generator().mul(randomBIG());
-    BytesValue encoded = G1.encode(point);
+    Bytes48 encoded = G1.encode(point);
     ECP decoded = G1.decode(encoded);
 
     assert BIG.comp(decoded.getX(), point.getX()) == 0;
@@ -82,7 +84,7 @@ public class MilagroCodecsTest {
   @Test
   public void encodeInfinityInG1() {
     ECP infinity = new ECP();
-    BytesValue encoded = G1.encode(infinity);
+    Bytes48 encoded = G1.encode(infinity);
     ECP decoded = G1.decode(encoded);
 
     assertThat(decoded.is_infinity()).isTrue();
@@ -91,7 +93,7 @@ public class MilagroCodecsTest {
   @Test
   public void encodeRandomPointInG2() {
     ECP2 point = ECP2.generator().mul(randomBIG());
-    BytesValue encoded = G2.encode(point);
+    Bytes96 encoded = G2.encode(point);
     ECP2 decoded = G2.decode(encoded);
 
     assert BIG.comp(decoded.getX().getA(), point.getX().getA()) == 0;
@@ -104,7 +106,7 @@ public class MilagroCodecsTest {
   @Test
   public void encodeInfinityInG2() {
     ECP2 point = new ECP2();
-    BytesValue encoded = G2.encode(point);
+    Bytes96 encoded = G2.encode(point);
     ECP2 decoded = G2.decode(encoded);
 
     assertThat(decoded.is_infinity()).isTrue();

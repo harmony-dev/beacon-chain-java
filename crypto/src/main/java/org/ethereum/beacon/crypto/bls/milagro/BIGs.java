@@ -105,21 +105,4 @@ public abstract class BIGs {
   public static BIG fromBigInteger(BigInteger value) {
     return fromByteArray(value.toByteArray(), true);
   }
-
-  /**
-   * A helper method that prepends
-   *
-   * @param bytes
-   * @param targetLen
-   * @return
-   */
-  private static byte[] prependWithZeros(byte[] bytes, int targetLen) {
-    if (bytes.length < targetLen) {
-      byte[] prepended = new byte[targetLen];
-      System.arraycopy(bytes, 0, prepended, targetLen - bytes.length, bytes.length);
-      return prepended;
-    } else {
-      return bytes;
-    }
-  }
 }

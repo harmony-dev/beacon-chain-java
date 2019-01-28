@@ -4,6 +4,8 @@ import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import java.util.Arrays;
 import org.ethereum.beacon.crypto.bls.milagro.MilagroCodecs;
+import tech.pegasys.artemis.util.bytes.Bytes48;
+import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 /**
@@ -21,6 +23,7 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
  * <p>Use {@link Validator} interface and its implementations to check the validity of arbitrary
  * byte sequence against the format described by the spec.
  *
+ * @param <ENCODED> a type that represents encoded point data.
  * @see Codec
  * @see Validator
  * @see Flags
@@ -28,7 +31,7 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
  *     href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/bls_signature.md#point-representations">Format
  *     specification</a>
  */
-public interface PointData {
+public interface PointData<ENCODED extends BytesValue> {
 
   /**
    * Should check whether point is the point at infinity.
@@ -49,7 +52,7 @@ public interface PointData {
    *
    * @return encoded point.
    */
-  BytesValue encode();
+  ENCODED encode();
 
   /**
    * Represents a point belonging to <code>G<sub>1</sub></code> subgroup.
@@ -60,7 +63,7 @@ public interface PointData {
    * @see Validator#G1
    * @see Codec#G1
    */
-  class G1 implements PointData {
+  class G1 implements PointData<Bytes48> {
     private final Flags flags;
     private final byte[] x;
 
@@ -98,7 +101,7 @@ public interface PointData {
     }
 
     @Override
-    public BytesValue encode() {
+    public Bytes48 encode() {
       return Codec.G1.encode(this);
     }
 
@@ -133,7 +136,7 @@ public interface PointData {
    * @see Validator#G2
    * @see Codec#G2
    */
-  class G2 implements PointData {
+  class G2 implements PointData<Bytes96> {
     private final Flags flags1;
     private final Flags flags2;
     private final byte[] x1;
@@ -183,7 +186,7 @@ public interface PointData {
     }
 
     @Override
-    public BytesValue encode() {
+    public Bytes96 encode() {
       return Codec.G2.encode(this);
     }
 

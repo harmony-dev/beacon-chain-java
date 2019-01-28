@@ -31,8 +31,8 @@ public class MilagroMessageMapper implements MessageParametersMapper<ECP2> {
     BytesValue reBytes = parameters.getDomain().concat(BYTES_ONE).concat(parameters.getHash());
     BytesValue imBytes = parameters.getDomain().concat(BYTES_TWO).concat(parameters.getHash());
 
-    BIG reX = BIGs.fromBytes(Hashes.keccak384(reBytes));
-    BIG imX = BIGs.fromBytes(Hashes.keccak384(imBytes));
+    BIG reX = BIGs.fromBytes(Hashes.keccak256(reBytes));
+    BIG imX = BIGs.fromBytes(Hashes.keccak256(imBytes));
 
     FP2 x = new FP2(reX, imX);
     org.apache.milagro.amcl.BLS381.ECP2 point = new org.apache.milagro.amcl.BLS381.ECP2(x);
