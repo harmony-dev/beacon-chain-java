@@ -168,30 +168,7 @@ public class BLS381 {
     /** Encoded <code>G<sub>2</sub></code> point that represents signature. */
     private final Bytes96 encoded;
 
-    /**
-     * Constructor. Runs format validation.
-     *
-     * @param encoded encoded point that represents signature.
-     * @throws IllegalArgumentException if encoded point didn't pass the validation
-     * @see Validator#G2
-     */
     private Signature(Bytes96 encoded) {
-      Validator.Result result = Validator.G2.validate(encoded);
-      checkArgument(result.isValid(), "Failed to instantiate signature, %s", result.getMessage());
-
-      if (!Codec.G2.decode(encoded).isInfinity()) {
-        ECP2 point = G2.decode(encoded);
-        checkArgument(
-            !point.is_infinity(),
-            "Failed to instantiate signature, given point is not a G2 member");
-
-        // Multiply point by group order to check whether this point belongs to G2
-        ECP2 orderCheck = point.mul(ORDER);
-        checkArgument(
-            orderCheck.is_infinity(),
-            "Failed to instantiate signature, given point is not a G2 member");
-      }
-
       this.encoded = encoded;
     }
 
@@ -208,10 +185,30 @@ public class BLS381 {
     /**
      * Creates signature from encoded <code>G<sub>2</sub></code> point.
      *
+     * <p><strong>Note:</strong> runs encoding format validation.
+     *
      * @param encoded encoded point.
      * @return an instance of signature.
+     * @throws IllegalArgumentException if encoded point didn't pass the validation
+     * @see Validator#G2
      */
     public static Signature create(Bytes96 encoded) {
+      Validator.Result result = Validator.G2.validate(encoded);
+      checkArgument(result.isValid(), "Failed to instantiate signature, %s", result.getMessage());
+
+      if (!Codec.G2.decode(encoded).isInfinity()) {
+        ECP2 point = G2.decode(encoded);
+        checkArgument(
+            !point.is_infinity(),
+            "Failed to instantiate signature, given point is not a G2 member");
+
+        // Multiply point by group order to check whether this point belongs to G2
+        ECP2 orderCheck = point.mul(ORDER);
+        checkArgument(
+            orderCheck.is_infinity(),
+            "Failed to instantiate signature, given point is not a G2 member");
+      }
+
       return new Signature(encoded);
     }
 
@@ -308,31 +305,7 @@ public class BLS381 {
 
     private final Bytes48 encoded;
 
-    /**
-     * Constructor. Runs format validation.
-     *
-     * @param encoded encoded point that represents public key.
-     * @throws IllegalArgumentException if encoded point didn't pass the validation
-     * @see Validator#G1
-     */
     private PublicKey(Bytes48 encoded) {
-      Validator.Result result = Validator.G1.validate(encoded);
-      checkArgument(result.isValid(), "Failed to instantiate public key, %s", result.getMessage());
-
-      if (!Codec.G1.decode(encoded).isInfinity()) {
-        ECP point = G1.decode(encoded);
-
-        checkArgument(
-            !point.is_infinity(),
-            "Failed to instantiate public key, given point is not a G1 member");
-
-        // Multiply point by group order to check whether this point belongs to G1
-        ECP orderCheck = point.mul(ORDER);
-        checkArgument(
-            orderCheck.is_infinity(),
-            "Failed to instantiate public key, given point is not a G1 member");
-      }
-
       this.encoded = encoded;
     }
 
@@ -375,10 +348,31 @@ public class BLS381 {
     /**
      * Instantiates key from encoded <code>G<sub>1</sub></code> point.
      *
+     * <p><strong>Note:</strong> runs encoding format validation.
+     *
      * @param encoded an encoded point.
      * @return an instance of public key.
+     * @throws IllegalArgumentException if encoded point didn't pass the validation
+     * @see Validator#G1
      */
     public static PublicKey create(Bytes48 encoded) {
+      Validator.Result result = Validator.G1.validate(encoded);
+      checkArgument(result.isValid(), "Failed to instantiate public key, %s", result.getMessage());
+
+      if (!Codec.G1.decode(encoded).isInfinity()) {
+        ECP point = G1.decode(encoded);
+
+        checkArgument(
+            !point.is_infinity(),
+            "Failed to instantiate public key, given point is not a G1 member");
+
+        // Multiply point by group order to check whether this point belongs to G1
+        ECP orderCheck = point.mul(ORDER);
+        checkArgument(
+            orderCheck.is_infinity(),
+            "Failed to instantiate public key, given point is not a G1 member");
+      }
+
       return new PublicKey(encoded);
     }
 
