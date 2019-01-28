@@ -1,17 +1,11 @@
 package org.ethereum.beacon.chain;
 
-import static com.google.common.base.Preconditions.checkArgument;
-
-import java.util.Optional;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledFuture;
 import org.ethereum.beacon.chain.storage.BeaconBlockStorage;
 import org.ethereum.beacon.chain.storage.BeaconStateStorage;
 import org.ethereum.beacon.chain.storage.BeaconTuple;
 import org.ethereum.beacon.chain.storage.BeaconTupleStorage;
-import org.ethereum.beacon.consensus.ScoreFunction;
+import org.ethereum.beacon.consensus.HeadFunction;
 import org.ethereum.beacon.consensus.StateTransition;
-import org.ethereum.beacon.consensus.types.Score;
 import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
 import org.ethereum.beacon.consensus.verifier.BeaconStateVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
@@ -20,11 +14,14 @@ import org.ethereum.beacon.core.BeaconBlocks;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.db.Database;
-import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.ReplayProcessor;
 import reactor.core.scheduler.Schedulers;
+import java.util.Optional;
+import java.util.concurrent.ScheduledFuture;
+
+import static com.google.common.base.Preconditions.checkArgument;
 
 public class DefaultBeaconChain implements MutableBeaconChain {
 
@@ -41,7 +38,10 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   BeaconBlockVerifier blockVerifier;
   BeaconStateVerifier stateVerifier;
 
-  ScoreFunction scoreFunction;
+  /*
+    TODO: All head-related stuff should be moved to ObservableStateProcessor when it's available
+   */
+  HeadFunction headFunction;
 
   Database database;
 
@@ -72,12 +72,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     if (blockStorage.isEmpty()) {
       initializeStorage();
     }
-    BeaconTuple headTuple = tupleStorage.getCanonicalHead();
-    blockSink.onNext(headTuple);
-
-    Score headScore = scoreFunction.apply(headTuple.getBlock(), headTuple.getState());
-    this.head = BeaconChainHead.of(headTuple, headScore);
-    headSink.onNext(this.head);
+    updateHead(true);
   }
 
   private BeaconTuple initializeStorage() {
@@ -120,6 +115,9 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     BeaconState parentState = pullParentState(block);
     BeaconState slotTransitedState = slotTransition.apply(block, parentState);
 
+    // update head
+    updateHead(false);
+
     VerificationResult blockVerification = blockVerifier.verify(block, slotTransitedState);
     if (!blockVerification.isPassed()) {
       return;
@@ -134,17 +132,31 @@ public class DefaultBeaconChain implements MutableBeaconChain {
 
     BeaconTuple newTuple = BeaconTuple.of(block, newState);
     tupleStorage.put(newTuple);
-
-    Score newScore = scoreFunction.apply(block, newState);
-    if (head.getScore().compareTo(newScore) < 0) {
-      blockStorage.reorgTo(newTuple.getBlock().getHash());
-      this.head = BeaconChainHead.of(newTuple, newScore);
-      headSink.onNext(this.head);
-    }
-
     database.commit();
 
     blockSink.onNext(newTuple);
+  }
+
+  /**
+   * Updates blockHead by calling external service
+   *
+   * @param blockNotify whether to put new head in {@link #blockSink} if any
+   */
+  private void updateHead(boolean blockNotify) {
+    BeaconBlock newHead = headFunction.getHead();
+    if (this.head != null && this.head.getBlock().equals(newHead)) {
+      return; // == old
+    }
+    BeaconTuple newHeadTuple =
+        tupleStorage
+            .get(newHead.getHash())
+            .orElseThrow(() -> new IllegalStateException("Beacon tuple not found for new head "));
+    this.head = BeaconChainHead.of(newHeadTuple);
+
+    headSink.onNext(this.head);
+    if (blockNotify) {
+      blockSink.onNext(newHeadTuple);
+    }
   }
 
   private BeaconState pullParentState(BeaconBlock block) {
