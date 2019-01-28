@@ -12,6 +12,8 @@ import org.ethereum.core.Transaction;
 import org.ethereum.crypto.ECKey;
 import org.ethereum.facade.Blockchain;
 import org.ethereum.facade.EthereumImpl;
+import org.ethereum.facade.SyncStatus;
+import org.ethereum.facade.SyncStatus.SyncStage;
 import org.ethereum.listener.CompositeEthereumListener;
 import org.ethereum.listener.EthereumListener;
 import org.ethereum.listener.EthereumListenerAdapter;
@@ -31,7 +33,7 @@ public class StandaloneEthereum extends EthereumImpl {
 
   private static CompositeEthereumListener getListenerHack(StandaloneBlockchain sb) {
     try {
-      Field field = sb.getClass().getField("listener");
+      Field field = sb.getClass().getDeclaredField("listener");
       field.setAccessible(true);
       return (CompositeEthereumListener) field.get(sb);
     } catch (Exception e) {
@@ -109,5 +111,11 @@ public class StandaloneEthereum extends EthereumImpl {
   @Override
   public Blockchain getBlockchain() {
     return standaloneBlockchain.getBlockchain();
+  }
+
+  @Override
+  public SyncStatus getSyncStatus() {
+    long best = getBlockchain().getBestBlock().getNumber();
+    return new SyncStatus(SyncStage.Complete, best, best);
   }
 }

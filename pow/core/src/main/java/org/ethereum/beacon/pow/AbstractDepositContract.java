@@ -9,21 +9,20 @@ import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.state.Eth1Data;
-import org.ethereum.beacon.ssz.SSZSerializer;
-import org.ethereum.beacon.ssz.SSZSerializerBuilder;
+import org.ethereum.beacon.ssz.Serializer;
 import org.javatuples.Pair;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.MonoProcessor;
-import reactor.core.publisher.ReplayProcessor;
 import reactor.core.scheduler.Schedulers;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes8;
+import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public abstract class AbstractDepositContract implements DepositContract {
 
-  private final SSZSerializer ssz = SSZSerializerBuilder.getBakedAnnotationBuilder().build();
+  private final Serializer ssz = Serializer.annotationSerializer();
 
   private long distanceFromHead;
 
@@ -53,8 +52,10 @@ public abstract class AbstractDepositContract implements DepositContract {
   }
 
   protected synchronized void newDeposit(DepositEventData eventData, byte[] blockHash) {
-    DepositInfo depositInfo = createDepositInfo(eventData, blockHash);
-    initialDeposits.add(depositInfo.getDeposit());
+    if (startChainSubscribed && !chainStartSink.isTerminated()) {
+      DepositInfo depositInfo = createDepositInfo(eventData, blockHash);
+      initialDeposits.add(depositInfo.getDeposit());
+    }
   }
 
   protected synchronized void chainStart(byte[] deposit_root, byte[] time, byte[] blockHash) {
@@ -99,7 +100,7 @@ public abstract class AbstractDepositContract implements DepositContract {
   private DepositData parseDepositData(byte[] data) {
     UInt64 amount = UInt64.fromBytesBigEndian(Bytes8.wrap(data, 0));
     UInt64 timestamp = UInt64.fromBytesBigEndian(Bytes8.wrap(data, 8));
-    DepositInput depositInput = ssz.decode(Arrays.copyOfRange(data, 16, data.length),
+    DepositInput depositInput = ssz.decode(BytesValue.wrap(data, 16, data.length - 16),
         DepositInput.class);
     return new DepositData(depositInput, amount, timestamp);
   }
