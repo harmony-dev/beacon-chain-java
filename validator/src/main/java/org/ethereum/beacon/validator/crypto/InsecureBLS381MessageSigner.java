@@ -21,6 +21,6 @@ public class InsecureBLS381MessageSigner implements BLS381MessageSigner {
   public Bytes96 sign(Hash32 messageHash, Bytes8 domain) {
     MessageParameters messageParameters = MessageParameters.create(messageHash, domain);
     KeyPair keyPair = KeyPair.create(PrivateKey.create(privateKeyBytes));
-    return Bytes96.wrap(BLS381.sign(messageParameters, keyPair).getEncoded(), 0);
+    return BLS381.sign(messageParameters, keyPair).getEncoded();
   }
 }

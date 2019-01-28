@@ -7,6 +7,8 @@ import org.apache.milagro.amcl.BLS381.FP;
 import org.apache.milagro.amcl.BLS381.FP2;
 import org.ethereum.beacon.crypto.bls.codec.Codec;
 import org.ethereum.beacon.crypto.bls.codec.PointData;
+import tech.pegasys.artemis.util.bytes.Bytes48;
+import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 /**
@@ -29,10 +31,10 @@ public abstract class MilagroCodecs {
    *
    * @see Codec#G1
    */
-  public static final Codec<ECP> G1 =
-      new Codec<ECP>() {
+  public static final Codec<ECP, Bytes48> G1 =
+      new Codec<ECP, Bytes48>() {
         @Override
-        public ECP decode(BytesValue encoded) {
+        public ECP decode(Bytes48 encoded) {
           PointData.G1 g1 = Codec.G1.decode(encoded);
           if (g1.isInfinity()) {
             return new ECP();
@@ -49,7 +51,7 @@ public abstract class MilagroCodecs {
         }
 
         @Override
-        public BytesValue encode(ECP point) {
+        public Bytes48 encode(ECP point) {
           byte[] x = BIGs.toByteArray(point.getX());
           int sign = FPs.getSign(point.getY());
           PointData.G1 data = PointData.G1.create(x, point.is_infinity(), sign);
@@ -62,10 +64,10 @@ public abstract class MilagroCodecs {
    *
    * @see Codec#G2
    */
-  public static final Codec<ECP2> G2 =
-      new Codec<ECP2>() {
+  public static final Codec<ECP2, Bytes96> G2 =
+      new Codec<ECP2, Bytes96>() {
         @Override
-        public ECP2 decode(BytesValue encoded) {
+        public ECP2 decode(Bytes96 encoded) {
           PointData.G2 g2 = Codec.G2.decode(encoded);
           if (g2.isInfinity()) {
             return new ECP2();
@@ -87,7 +89,7 @@ public abstract class MilagroCodecs {
         }
 
         @Override
-        public BytesValue encode(ECP2 point) {
+        public Bytes96 encode(ECP2 point) {
           byte[] re = BIGs.toByteArray(point.getX().getA());
           byte[] im = BIGs.toByteArray(point.getX().getB());
           int sign = FPs.getSign(point.getY().getB());

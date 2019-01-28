@@ -2,6 +2,8 @@ package org.ethereum.beacon.crypto.bls.codec;
 
 import java.math.BigInteger;
 import org.ethereum.beacon.crypto.bls.bc.BCParameters;
+import tech.pegasys.artemis.util.bytes.Bytes48;
+import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 /**
@@ -29,18 +31,16 @@ public interface Validator {
    */
   Validator G1 =
       new Validator() {
-        static final int ENCODED_SIZE = 48;
-
         @Override
         public Result validate(BytesValue encoded) {
-          if (encoded.size() != ENCODED_SIZE) {
+          if (encoded.size() != Bytes48.SIZE) {
             return Result.invalid(
                 String.format(
                     "unexpected length of encoded G1, should be %d got %d",
-                    ENCODED_SIZE, encoded.size()));
+                    Bytes48.SIZE, encoded.size()));
           }
 
-          PointData.G1 data = Codec.G1.decode(encoded);
+          PointData.G1 data = Codec.G1.decode(Bytes48.wrap(encoded, 0));
 
           int aFlag = data.getFlags().test(Flags.A);
           int bFlag = data.getFlags().test(Flags.B);
@@ -76,18 +76,16 @@ public interface Validator {
    */
   Validator G2 =
       new Validator() {
-        static final int ENCODED_SIZE = 96;
-
         @Override
         public Result validate(BytesValue encoded) {
-          if (encoded.size() != ENCODED_SIZE) {
+          if (encoded.size() != Bytes96.SIZE) {
             return Result.invalid(
                 String.format(
                     "unexpected length of encoded G2, should be %d got %d",
-                    ENCODED_SIZE, encoded.size()));
+                    Bytes96.SIZE, encoded.size()));
           }
 
-          PointData.G2 data = Codec.G2.decode(encoded);
+          PointData.G2 data = Codec.G2.decode(Bytes96.wrap(encoded, 0));
 
           int aFlag = data.getFlags1().test(Flags.A);
           int bFlag = data.getFlags1().test(Flags.B);

@@ -28,10 +28,11 @@ import org.ethereum.beacon.crypto.bls.codec.Validator;
 import org.ethereum.beacon.crypto.bls.milagro.BIGs;
 import org.ethereum.beacon.crypto.bls.milagro.MilagroMessageMapper;
 import tech.pegasys.artemis.util.bytes.Bytes32;
-import tech.pegasys.artemis.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.bytes.Bytes48;
+import tech.pegasys.artemis.util.bytes.Bytes96;
 
 /**
- * An implementation of {@code BLS12-381} signature scheme.
+ * An implementation of {@code BLS12-381} signature scheme in application to eth2.0 beacon chain.
  *
  * <p>Current implementation uses Milagro library to handle elliptic curve mathematics. And Bouncy
  * Castle library for key pair generation.
@@ -165,7 +166,7 @@ public class BLS381 {
   public static class Signature {
 
     /** Encoded <code>G<sub>2</sub></code> point that represents signature. */
-    private final BytesValue encoded;
+    private final Bytes96 encoded;
 
     /**
      * Constructor. Runs format validation.
@@ -174,7 +175,7 @@ public class BLS381 {
      * @throws IllegalArgumentException if encoded point didn't pass the validation
      * @see Validator#G2
      */
-    private Signature(BytesValue encoded) {
+    private Signature(Bytes96 encoded) {
       Validator.Result result = Validator.G2.validate(encoded);
       checkArgument(result.isValid(), "Failed to instantiate signature, %s", result.getMessage());
 
@@ -210,7 +211,7 @@ public class BLS381 {
      * @param encoded encoded point.
      * @return an instance of signature.
      */
-    public static Signature create(BytesValue encoded) {
+    public static Signature create(Bytes96 encoded) {
       return new Signature(encoded);
     }
 
@@ -229,7 +230,7 @@ public class BLS381 {
       return create(product);
     }
 
-    public BytesValue getEncoded() {
+    public Bytes96 getEncoded() {
       return encoded;
     }
 
@@ -251,8 +252,6 @@ public class BLS381 {
    */
   public static class PrivateKey implements java.security.PrivateKey {
 
-    private static final int SIZE = 32;
-
     private final Bytes32 encoded;
 
     private PrivateKey(Bytes32 encoded) {
@@ -266,7 +265,7 @@ public class BLS381 {
      * @return created key.
      */
     public static PrivateKey create(BigInteger value) {
-      byte[] rawBytes = BigIntegers.asUnsignedByteArray(SIZE, value);
+      byte[] rawBytes = BigIntegers.asUnsignedByteArray(Bytes32.SIZE, value);
       return new PrivateKey(Bytes32.wrap(rawBytes));
     }
 
@@ -307,7 +306,7 @@ public class BLS381 {
   /** {@code BLS12-381} public key. */
   public static class PublicKey implements java.security.PublicKey {
 
-    private final BytesValue encoded;
+    private final Bytes48 encoded;
 
     /**
      * Constructor. Runs format validation.
@@ -316,7 +315,7 @@ public class BLS381 {
      * @throws IllegalArgumentException if encoded point didn't pass the validation
      * @see Validator#G1
      */
-    private PublicKey(BytesValue encoded) {
+    private PublicKey(Bytes48 encoded) {
       Validator.Result result = Validator.G1.validate(encoded);
       checkArgument(result.isValid(), "Failed to instantiate public key, %s", result.getMessage());
 
@@ -379,7 +378,7 @@ public class BLS381 {
      * @param encoded an encoded point.
      * @return an instance of public key.
      */
-    public static PublicKey create(BytesValue encoded) {
+    public static PublicKey create(Bytes48 encoded) {
       return new PublicKey(encoded);
     }
 
@@ -413,7 +412,7 @@ public class BLS381 {
       return encoded.getArrayUnsafe();
     }
 
-    public BytesValue getEncodedBytes() {
+    public Bytes48 getEncodedBytes() {
       return encoded;
     }
 
