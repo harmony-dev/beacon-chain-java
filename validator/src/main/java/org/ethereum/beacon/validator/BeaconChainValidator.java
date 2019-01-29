@@ -12,14 +12,24 @@ import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.validator.crypto.MessageSigner;
+import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
 
-/** Runs a single validator in the same instance with chain processing. */
+/**
+ * A simple implementation of beacon chain validator.
+ *
+ * <p>Drives an "honest" validator instance alongside with chain processing.
+ *
+ * @see ValidatorService
+ * @see <a
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/validator/0_beacon-chain-validator.md">Honest
+ *     validator</a> in the spec.
+ */
 public class BeaconChainValidator implements ValidatorService {
 
-  private ValidatorCredentials credentials;
+  private Bytes48 publicKey;
   private BeaconChainProposer proposer;
   private BeaconChainAttester attester;
   private SpecHelpers specHelpers;
@@ -33,12 +43,12 @@ public class BeaconChainValidator implements ValidatorService {
   private ObservableBeaconState recentState;
 
   public BeaconChainValidator(
-      ValidatorCredentials credentials,
+      Bytes48 publicKey,
       BeaconChainProposer proposer,
       BeaconChainAttester attester,
       SpecHelpers specHelpers,
       MessageSigner<Bytes96> messageSigner) {
-    this.credentials = credentials;
+    this.publicKey = publicKey;
     this.proposer = proposer;
     this.attester = attester;
     this.specHelpers = specHelpers;
@@ -63,8 +73,7 @@ public class BeaconChainValidator implements ValidatorService {
   }
 
   private void init(BeaconState state) {
-    this.validatorIndex =
-        specHelpers.get_validator_index_by_pubkey(state, credentials.getBlsPublicKey());
+    this.validatorIndex = specHelpers.get_validator_index_by_pubkey(state, publicKey);
     setSlotProcessed(state);
   }
 
