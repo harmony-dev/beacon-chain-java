@@ -7,6 +7,8 @@ import java.util.Random;
 import org.bouncycastle.util.Arrays;
 import org.ethereum.beacon.crypto.bls.bc.BCParameters;
 import org.junit.Test;
+import tech.pegasys.artemis.util.bytes.Bytes48;
+import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 public class CodecTest {
@@ -31,7 +33,7 @@ public class CodecTest {
   public void encodeInfinityInG1() {
     byte[] x = randomX();
 
-    BytesValue encoded = Codec.G1.encode(PointData.G1.create(x, true, 1));
+    Bytes48 encoded = Codec.G1.encode(PointData.G1.create(x, true, 1));
     Flags flags = Flags.read(encoded.get(0));
 
     assertThat(flags.test(Flags.C)).isEqualTo(1);
@@ -51,7 +53,7 @@ public class CodecTest {
   public void encodeG1WithSign() {
     byte[] x = randomX();
 
-    BytesValue encoded = Codec.G1.encode(PointData.G1.create(x, false, 1));
+    Bytes48 encoded = Codec.G1.encode(PointData.G1.create(x, false, 1));
     Flags flags = Flags.read(encoded.get(0));
 
     assertThat(flags.test(Flags.C)).isEqualTo(1);
@@ -72,7 +74,7 @@ public class CodecTest {
     byte[] x1 = randomX();
     byte[] x2 = randomX();
 
-    BytesValue encoded = Codec.G2.encode(PointData.G2.create(x1, x2, true, 1));
+    Bytes96 encoded = Codec.G2.encode(PointData.G2.create(x1, x2, true, 1));
     Flags flags = Flags.read(encoded.get(0));
 
     assertThat(flags.test(Flags.C)).isEqualTo(1);
@@ -95,7 +97,7 @@ public class CodecTest {
     byte[] x1 = randomX();
     byte[] x2 = randomX();
 
-    BytesValue encoded = Codec.G2.encode(PointData.G2.create(x1, x2, false, 1));
+    Bytes96 encoded = Codec.G2.encode(PointData.G2.create(x1, x2, false, 1));
     Flags flags = Flags.read(encoded.get(0));
 
     assertThat(flags.test(Flags.C)).isEqualTo(1);
@@ -116,7 +118,7 @@ public class CodecTest {
   @Test
   public void checkG1WithRandomData() {
     PointData.G1 data = randomDataG1();
-    BytesValue encoded = Codec.G1.encode(data);
+    Bytes48 encoded = Codec.G1.encode(data);
     PointData.G1 decoded = Codec.G1.decode(encoded);
 
     assertThat(decoded).isEqualTo(data);
@@ -125,7 +127,7 @@ public class CodecTest {
   @Test
   public void checkG2WithRandomData() {
     PointData.G2 data = randomDataG2();
-    BytesValue encoded = Codec.G2.encode(data);
+    Bytes96 encoded = Codec.G2.encode(data);
     PointData.G2 decoded = Codec.G2.decode(encoded);
 
     assertThat(decoded).isEqualTo(data);

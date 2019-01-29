@@ -11,9 +11,12 @@ import org.ethereum.beacon.crypto.BLS381.Signature;
 import org.ethereum.beacon.crypto.MessageParameters.Impl;
 import org.ethereum.beacon.crypto.bls.codec.PointData;
 import org.junit.Test;
+import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.bytes.Bytes8;
+import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
-import tech.pegasys.artemis.util.bytes.MutableBytesValue;
+import tech.pegasys.artemis.util.bytes.MutableBytes48;
+import tech.pegasys.artemis.util.bytes.MutableBytes96;
 
 public class BLS381Test {
 
@@ -162,8 +165,8 @@ public class BLS381Test {
                 "0x04b93f0c13abd2a249b267ca11fd3b207eb2de5189f6015f0a9b915fcf1e047057f3ba85216850e1255598657502411f")
             .getArrayUnsafe();
 
-    BytesValue notInG2Point = PointData.G2.create(x1, x2, false, 0).encode();
-    MutableBytesValue wrongEncoding = MutableBytesValue.wrap(notInG2Point.extractArray());
+    Bytes96 notInG2Point = PointData.G2.create(x1, x2, false, 0).encode();
+    MutableBytes96 wrongEncoding = MutableBytes96.wrap(notInG2Point.extractArray());
     wrongEncoding.set(0, (byte) (wrongEncoding.get(0) & 0x7F));
 
     assertThatThrownBy(() -> Signature.create(wrongEncoding))
@@ -183,8 +186,8 @@ public class BLS381Test {
                 "0x074752311471f52ffd86405410eb65ab9cf09cc67496e11b6706e1e25c35898c6021fdb9dffa908b5981d21211a9350a")
             .getArrayUnsafe();
 
-    BytesValue notInG1Point = PointData.G1.create(x, false, 0).encode();
-    MutableBytesValue wrongEncoding = MutableBytesValue.wrap(notInG1Point.extractArray());
+    Bytes48 notInG1Point = PointData.G1.create(x, false, 0).encode();
+    MutableBytes48 wrongEncoding = MutableBytes48.wrap(notInG1Point.extractArray());
     wrongEncoding.set(0, (byte) (wrongEncoding.get(0) & 0x7F));
 
     assertThatThrownBy(() -> PublicKey.create(wrongEncoding))

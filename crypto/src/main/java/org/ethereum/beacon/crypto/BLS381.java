@@ -28,10 +28,11 @@ import org.ethereum.beacon.crypto.bls.codec.Validator;
 import org.ethereum.beacon.crypto.bls.milagro.BIGs;
 import org.ethereum.beacon.crypto.bls.milagro.MilagroMessageMapper;
 import tech.pegasys.artemis.util.bytes.Bytes32;
-import tech.pegasys.artemis.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.bytes.Bytes48;
+import tech.pegasys.artemis.util.bytes.Bytes96;
 
 /**
- * An implementation of {@code BLS12-381} signature scheme.
+ * An implementation of {@code BLS12-381} signature scheme in application to eth2.0 beacon chain.
  *
  * <p>Current implementation uses Milagro library to handle elliptic curve mathematics. And Bouncy
  * Castle library for key pair generation.
@@ -165,32 +166,9 @@ public class BLS381 {
   public static class Signature {
 
     /** Encoded <code>G<sub>2</sub></code> point that represents signature. */
-    private final BytesValue encoded;
+    private final Bytes96 encoded;
 
-    /**
-     * Constructor. Runs format validation.
-     *
-     * @param encoded encoded point that represents signature.
-     * @throws IllegalArgumentException if encoded point didn't pass the validation
-     * @see Validator#G2
-     */
-    private Signature(BytesValue encoded) {
-      Validator.Result result = Validator.G2.validate(encoded);
-      checkArgument(result.isValid(), "Failed to instantiate signature, %s", result.getMessage());
-
-      if (!Codec.G2.decode(encoded).isInfinity()) {
-        ECP2 point = G2.decode(encoded);
-        checkArgument(
-            !point.is_infinity(),
-            "Failed to instantiate signature, given point is not a G2 member");
-
-        // Multiply point by group order to check whether this point belongs to G2
-        ECP2 orderCheck = point.mul(ORDER);
-        checkArgument(
-            orderCheck.is_infinity(),
-            "Failed to instantiate signature, given point is not a G2 member");
-      }
-
+    private Signature(Bytes96 encoded) {
       this.encoded = encoded;
     }
 
@@ -207,10 +185,30 @@ public class BLS381 {
     /**
      * Creates signature from encoded <code>G<sub>2</sub></code> point.
      *
+     * <p><strong>Note:</strong> runs encoding format validation.
+     *
      * @param encoded encoded point.
      * @return an instance of signature.
+     * @throws IllegalArgumentException if encoded point didn't pass the validation
+     * @see Validator#G2
      */
-    public static Signature create(BytesValue encoded) {
+    public static Signature create(Bytes96 encoded) {
+      Validator.Result result = Validator.G2.validate(encoded);
+      checkArgument(result.isValid(), "Failed to instantiate signature, %s", result.getMessage());
+
+      if (!Codec.G2.decode(encoded).isInfinity()) {
+        ECP2 point = G2.decode(encoded);
+        checkArgument(
+            !point.is_infinity(),
+            "Failed to instantiate signature, given point is not a G2 member");
+
+        // Multiply point by group order to check whether this point belongs to G2
+        ECP2 orderCheck = point.mul(ORDER);
+        checkArgument(
+            orderCheck.is_infinity(),
+            "Failed to instantiate signature, given point is not a G2 member");
+      }
+
       return new Signature(encoded);
     }
 
@@ -229,7 +227,7 @@ public class BLS381 {
       return create(product);
     }
 
-    public BytesValue getEncoded() {
+    public Bytes96 getEncoded() {
       return encoded;
     }
 
@@ -251,8 +249,6 @@ public class BLS381 {
    */
   public static class PrivateKey implements java.security.PrivateKey {
 
-    private static final int SIZE = 32;
-
     private final Bytes32 encoded;
 
     private PrivateKey(Bytes32 encoded) {
@@ -266,7 +262,7 @@ public class BLS381 {
      * @return created key.
      */
     public static PrivateKey create(BigInteger value) {
-      byte[] rawBytes = BigIntegers.asUnsignedByteArray(SIZE, value);
+      byte[] rawBytes = BigIntegers.asUnsignedByteArray(Bytes32.SIZE, value);
       return new PrivateKey(Bytes32.wrap(rawBytes));
     }
 
@@ -307,33 +303,9 @@ public class BLS381 {
   /** {@code BLS12-381} public key. */
   public static class PublicKey implements java.security.PublicKey {
 
-    private final BytesValue encoded;
+    private final Bytes48 encoded;
 
-    /**
-     * Constructor. Runs format validation.
-     *
-     * @param encoded encoded point that represents public key.
-     * @throws IllegalArgumentException if encoded point didn't pass the validation
-     * @see Validator#G1
-     */
-    private PublicKey(BytesValue encoded) {
-      Validator.Result result = Validator.G1.validate(encoded);
-      checkArgument(result.isValid(), "Failed to instantiate public key, %s", result.getMessage());
-
-      if (!Codec.G1.decode(encoded).isInfinity()) {
-        ECP point = G1.decode(encoded);
-
-        checkArgument(
-            !point.is_infinity(),
-            "Failed to instantiate public key, given point is not a G1 member");
-
-        // Multiply point by group order to check whether this point belongs to G1
-        ECP orderCheck = point.mul(ORDER);
-        checkArgument(
-            orderCheck.is_infinity(),
-            "Failed to instantiate public key, given point is not a G1 member");
-      }
-
+    private PublicKey(Bytes48 encoded) {
       this.encoded = encoded;
     }
 
@@ -376,10 +348,31 @@ public class BLS381 {
     /**
      * Instantiates key from encoded <code>G<sub>1</sub></code> point.
      *
+     * <p><strong>Note:</strong> runs encoding format validation.
+     *
      * @param encoded an encoded point.
      * @return an instance of public key.
+     * @throws IllegalArgumentException if encoded point didn't pass the validation
+     * @see Validator#G1
      */
-    public static PublicKey create(BytesValue encoded) {
+    public static PublicKey create(Bytes48 encoded) {
+      Validator.Result result = Validator.G1.validate(encoded);
+      checkArgument(result.isValid(), "Failed to instantiate public key, %s", result.getMessage());
+
+      if (!Codec.G1.decode(encoded).isInfinity()) {
+        ECP point = G1.decode(encoded);
+
+        checkArgument(
+            !point.is_infinity(),
+            "Failed to instantiate public key, given point is not a G1 member");
+
+        // Multiply point by group order to check whether this point belongs to G1
+        ECP orderCheck = point.mul(ORDER);
+        checkArgument(
+            orderCheck.is_infinity(),
+            "Failed to instantiate public key, given point is not a G1 member");
+      }
+
       return new PublicKey(encoded);
     }
 
@@ -413,7 +406,7 @@ public class BLS381 {
       return encoded.getArrayUnsafe();
     }
 
-    public BytesValue getEncodedBytes() {
+    public Bytes48 getEncodedBytes() {
       return encoded;
     }
 

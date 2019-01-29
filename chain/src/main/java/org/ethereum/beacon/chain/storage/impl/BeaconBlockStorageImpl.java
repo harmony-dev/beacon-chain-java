@@ -2,142 +2,135 @@ package org.ethereum.beacon.chain.storage.impl;
 
 import org.ethereum.beacon.chain.storage.BeaconBlockStorage;
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.db.source.DataSource;
 import org.ethereum.beacon.db.source.HoleyList;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-
+import tech.pegasys.artemis.util.uint.UInt64;
 import javax.annotation.Nonnull;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
-import static java.util.Collections.singletonList;
+import static java.util.Collections.singleton;
 
 public class BeaconBlockStorageImpl implements BeaconBlockStorage {
 
   private static class SlotBlocks {
-    private static final int NO_CANONICAL = -1;
 
-    private final List<Hash32> blockHashes;
-    // -1: no canonical block
-    private final int canonicalIndex;
+    private final Set<Hash32> blockHashes;
+    private final Set<Hash32> justifiedHashes;
+    private final Hash32 finalizedHash;
 
-    SlotBlocks(Hash32 blockHash, boolean isCanonical) {
-      this(singletonList(blockHash), isCanonical ? 0 : NO_CANONICAL);
+    SlotBlocks(Hash32 blockHash) {
+      this(singleton(blockHash), Collections.emptySet(), null);
     }
-    public SlotBlocks(List<Hash32> blockHashes, int canonicalIndex) {
+
+    SlotBlocks(Hash32 blockHash, Hash32 justifiedHash, Hash32 finalizedHash) {
+      this(singleton(blockHash), singleton(justifiedHash), finalizedHash);
+    }
+
+    SlotBlocks(Hash32 blockHash, Set<Hash32> justifiedHashes, Hash32 finalizedHash) {
+      this(singleton(blockHash), justifiedHashes, finalizedHash);
+    }
+
+    public SlotBlocks(Set<Hash32> blockHashes, Set<Hash32> justifiedHashes, Hash32 finalizedHash) {
       this.blockHashes = blockHashes;
-      this.canonicalIndex = canonicalIndex;
+      this.justifiedHashes = justifiedHashes;
+      this.finalizedHash = finalizedHash;
     }
 
-    public List<Hash32> getBlockHashes() {
+    public SlotBlocks(Set<Hash32> blockHashes, Hash32 justifiedHash, Hash32 finalizedHash) {
+      this.blockHashes = blockHashes;
+      this.justifiedHashes = singleton(justifiedHash);
+      this.finalizedHash = finalizedHash;
+    }
+
+    public Set<Hash32> getBlockHashes() {
       return blockHashes;
     }
 
-    int getCanonicalIndex() {
-      return canonicalIndex;
+    public Set<Hash32> getJustifiedHashes() {
+      return justifiedHashes;
     }
 
-    public Optional<Hash32> getCanonicalHash() {
-      return canonicalIndex == NO_CANONICAL ? Optional.empty() :
-          Optional.of(getBlockHashes().get(getCanonicalIndex()));
+    public Hash32 getFinalizedHash() {
+      return finalizedHash;
     }
 
-    SlotBlocks addBlock(Hash32 newBlock, boolean canonical) {
-      ArrayList<Hash32> blocks = new ArrayList<>(getBlockHashes());
+    SlotBlocks addBlock(Hash32 newBlock) {
+      Set<Hash32> blocks = new HashSet<>(getBlockHashes());
       blocks.add(newBlock);
-      return new SlotBlocks(blocks, canonical ? blocks.size() - 1 : canonicalIndex);
+      return new SlotBlocks(blocks, justifiedHashes, finalizedHash);
     }
 
-    SlotBlocks setCanonicalHash(Hash32 newCanonicalHash) {
-      int idx = blockHashes.indexOf(newCanonicalHash);
-      return setCanonicalIndex(idx < 0 ? NO_CANONICAL : idx);
+    SlotBlocks addJustifiedHash(Hash32 newJustifiedHash) {
+      Set<Hash32> justifiedHash = new HashSet<>(getJustifiedHashes());
+      justifiedHash.add(newJustifiedHash);
+      return new SlotBlocks(blockHashes, justifiedHash, finalizedHash);
     }
 
-    private SlotBlocks setCanonicalIndex(int newCanonicalIdx) {
-      return newCanonicalIdx == getCanonicalIndex() ? this :
-          new SlotBlocks(getBlockHashes(), newCanonicalIdx);
+    SlotBlocks removeJustifiedHash(Hash32 badJustifiedHash) {
+      Set<Hash32> justifiedHash =
+          getJustifiedHashes().stream()
+              .filter(hash -> !badJustifiedHash.equals(hash))
+              .collect(Collectors.toSet());
+      return new SlotBlocks(blockHashes, justifiedHash, finalizedHash);
+    }
+
+    SlotBlocks setFinalizedHash(Hash32 newFinalizedHash) {
+      return new SlotBlocks(blockHashes, justifiedHashes, newFinalizedHash);
     }
 
     @Override
     public String toString() {
-      return "SlotBlocks{" +
-          "blockHashes=" + blockHashes +
-          ", canonicalIndex=" + canonicalIndex +
-          '}';
+      return "SlotBlocks{"
+          + "blockHashes="
+          + blockHashes
+          + ", justifiedHashes="
+          + justifiedHashes
+          + ", finalizedHash="
+          + finalizedHash
+          + '}';
     }
   }
 
   private final DataSource<Hash32, BeaconBlock> rawBlocks;
   private final HoleyList<SlotBlocks> blockIndex;
+  private final ChainSpec chainSpec;
   private final boolean checkBlockExistOnAdd;
   private final boolean checkParentExistOnAdd;
-  private final boolean checkReorgWithChild;
 
-  public BeaconBlockStorageImpl(DataSource<Hash32, BeaconBlock> rawBlocks,
-                                HoleyList<SlotBlocks> blockIndex) {
-    this(rawBlocks, blockIndex, true, true, true);
+  public BeaconBlockStorageImpl(
+      DataSource<Hash32, BeaconBlock> rawBlocks,
+      HoleyList<SlotBlocks> blockIndex,
+      ChainSpec chainSpec) {
+    this(rawBlocks, blockIndex, chainSpec, true, true);
   }
 
   /**
    * @param rawBlocks hash -> block datasource
    * @param blockIndex slot -> blocks datasource
+   * @param chainSpec Chain specification
    * @param checkBlockExistOnAdd asserts that no duplicate blocks added (adds some overhead)
-   * @param checkParentExistOnAdd asserts that added block parent is already here (adds some overhead)
-   * @param checkReorgWithChild asserts that reorg block is a leaf block (has no children) (adds some overhead)
+   * @param checkParentExistOnAdd asserts that added block parent is already here (adds some
+   *     overhead)
    */
-  public BeaconBlockStorageImpl(DataSource<Hash32, BeaconBlock> rawBlocks,
-                                HoleyList<SlotBlocks> blockIndex,
-                                boolean checkBlockExistOnAdd,
-                                boolean checkParentExistOnAdd,
-                                boolean checkReorgWithChild) {
+  public BeaconBlockStorageImpl(
+      DataSource<Hash32, BeaconBlock> rawBlocks,
+      HoleyList<SlotBlocks> blockIndex,
+      ChainSpec chainSpec,
+      boolean checkBlockExistOnAdd,
+      boolean checkParentExistOnAdd) {
     this.rawBlocks = rawBlocks;
     this.blockIndex = blockIndex;
+    this.chainSpec = chainSpec;
     this.checkBlockExistOnAdd = checkBlockExistOnAdd;
     this.checkParentExistOnAdd = checkParentExistOnAdd;
-    this.checkReorgWithChild = checkReorgWithChild;
-  }
-
-  @Override
-  public Hash32 getCanonicalHead() {
-    for (long i = getMaxSlot(); i >= 0; i--) {
-      Optional<Hash32> canonicalHash = blockIndex.get(i)
-          .flatMap(SlotBlocks::getCanonicalHash);
-      if (canonicalHash.isPresent()) {
-        return canonicalHash.get();
-      }
-    }
-    throw new IllegalStateException("At least genesis head should exist.");
-  }
-
-  @Override
-  public void reorgTo(Hash32 newCanonicalBlock) {
-    Hash32 newCanonical = newCanonicalBlock;
-    for (long slot = getMaxSlot(); slot >= 0; slot--) {
-      Optional<SlotBlocks> slotBlocks = blockIndex.get(slot);
-      if (slotBlocks.isPresent()) {
-        Optional<Hash32> curCanonical = slotBlocks.get().getCanonicalHash();
-        if (curCanonical.isPresent() && newCanonical.equals(curCanonical.get())) {
-          break;
-        }
-
-        if (checkReorgWithChild) {
-          for (Hash32 hash : slotBlocks.get().getBlockHashes()) {
-            BeaconBlock block = get(hash).orElseThrow(() -> new IllegalStateException("Internal error: hash is in index but missing but missing in raw: " + hash));
-            if (block.getParentRoot().equals(newCanonicalBlock)) {
-              throw new IllegalArgumentException("Reorg to block with children is restricted: newCanonical " + newCanonical + " has child " + block);
-            }
-          }
-        }
-
-        SlotBlocks slotBlocksNew = slotBlocks.get().setCanonicalHash(newCanonical);
-        blockIndex.put(slot, slotBlocksNew);
-        Optional<Hash32> curCanonicalNew = slotBlocksNew.getCanonicalHash();
-        if (curCanonicalNew.isPresent() && newCanonical.equals(curCanonicalNew.get())) {
-          BeaconBlock block = get(newCanonical)
-              .orElseThrow(() -> new RuntimeException("Can't reorg to missing block"));
-          newCanonical = block.getParentRoot();
-        }
-      }
-    }
   }
 
   @Override
@@ -147,14 +140,10 @@ public class BeaconBlockStorageImpl implements BeaconBlockStorage {
 
   @Override
   public List<Hash32> getSlotBlocks(long slot) {
-    return blockIndex.get(slot)
-        .map(SlotBlocks::getBlockHashes)
+    return blockIndex
+        .get(slot)
+        .map(slotBlocks -> (List<Hash32>) new ArrayList<>(slotBlocks.getBlockHashes()))
         .orElse(Collections.emptyList());
-  }
-
-  @Override
-  public Optional<Hash32> getSlotCanonicalBlock(long slot) {
-    return blockIndex.get(slot).flatMap(SlotBlocks::getCanonicalHash);
   }
 
   @Override
@@ -164,14 +153,10 @@ public class BeaconBlockStorageImpl implements BeaconBlockStorage {
 
   @Override
   public void put(@Nonnull Hash32 key, @Nonnull BeaconBlock newBlock) {
-    // if genesis block is being added: it will be canonical
-    // if new block is child of current canonical block: it should be the new canonical block
-    // else new block is not canonical
-    boolean isCanonical = isEmpty() || newBlock.getParentRoot().equals(getCanonicalHead());
-
     if (checkBlockExistOnAdd) {
       if (get(key).isPresent()) {
-        throw new IllegalArgumentException("Block with hash already exists in storage: " + newBlock);
+        throw new IllegalArgumentException(
+            "Block with hash already exists in storage: " + newBlock);
       }
     }
 
@@ -182,9 +167,14 @@ public class BeaconBlockStorageImpl implements BeaconBlockStorage {
     }
 
     rawBlocks.put(key, newBlock);
-    blockIndex.update(newBlock.getSlot().getValue(),
-        blocks -> blocks.addBlock(newBlock.getHash(), isCanonical),
-        () -> new SlotBlocks(newBlock.getHash(), isCanonical));
+    SlotBlocks slotBlocks =
+        newBlock.getSlot() == chainSpec.getGenesisSlot()
+            ? new SlotBlocks(newBlock.getHash(), newBlock.getHash(), newBlock.getHash())
+            : new SlotBlocks(newBlock.getHash());
+    blockIndex.update(
+        newBlock.getSlot().getValue(),
+        blocks -> blocks.addBlock(newBlock.getHash()),
+        () -> slotBlocks);
   }
 
   @Override
@@ -192,22 +182,132 @@ public class BeaconBlockStorageImpl implements BeaconBlockStorage {
     Optional<BeaconBlock> block = rawBlocks.get(key);
     if (block.isPresent()) {
       rawBlocks.remove(key);
-      SlotBlocks slotBlocks = blockIndex.get(block.get().getSlot().getValue()).orElseThrow(
-          () -> new IllegalStateException("Internal error: rawBlocks contains block, but blockIndex misses: " + key));
-      int idx = 0;
-      for (; idx < slotBlocks.getBlockHashes().size(); idx++) {
-        if (slotBlocks.getBlockHashes().get(idx).equals(key)) {
-          break;
+      SlotBlocks slotBlocks =
+          blockIndex
+              .get(block.get().getSlot().getValue())
+              .orElseThrow(
+                  () ->
+                      new IllegalStateException(
+                          "Internal error: rawBlocks contains block, but blockIndex misses: "
+                              + key));
+      Set<Hash32> newBlocks = new HashSet<>(slotBlocks.getBlockHashes());
+      newBlocks.remove(key);
+      Set<Hash32> justifiedHashes =
+          slotBlocks.getJustifiedHashes().stream()
+              .filter(hash -> !key.equals(hash))
+              .collect(Collectors.toSet());
+      Hash32 finalizedHash =
+          slotBlocks.finalizedHash != null && slotBlocks.finalizedHash != key
+              ? slotBlocks.finalizedHash
+              : null;
+      blockIndex.put(
+          block.get().getSlot().getValue(),
+          new SlotBlocks(newBlocks, justifiedHashes, finalizedHash));
+    }
+  }
+
+  @Override
+  public List<BeaconBlock> getChildren(@Nonnull Hash32 parent, int limit) {
+    Optional<BeaconBlock> block = get(parent);
+    if (!block.isPresent()) {
+      return Collections.emptyList();
+    }
+    BeaconBlock start = block.get();
+    final List<BeaconBlock> children = new ArrayList<>();
+
+    for (long curSlot = start.getSlot().getValue() + 1;
+        curSlot <= Math.min(start.getSlot().getValue() + limit, getMaxSlot());
+        ++curSlot) {
+      getSlotBlocks(curSlot).stream()
+          .map(this::get)
+          .filter(Optional::isPresent)
+          .filter(b -> start.isParentOf(b.get()))
+          .forEach(b -> children.add(b.get()));
+    }
+
+    return children;
+  }
+
+  public boolean justify(Hash32 blockHash) {
+    Optional<UInt64> slot = get(blockHash).map(BeaconBlock::getSlot);
+    if (!slot.isPresent()) {
+      return false;
+    }
+
+    return blockIndex
+        .get(slot.get().getValue())
+        .flatMap(slotBlocks -> Optional.of(slotBlocks.addJustifiedHash(blockHash)))
+        .map(
+            slotBlocks -> {
+              blockIndex.put(slot.get().getValue(), slotBlocks);
+              return true;
+            })
+        .orElse(false);
+  }
+
+  @Override
+  public boolean deJustify(Hash32 blockHash) {
+    Optional<UInt64> slot = get(blockHash).map(BeaconBlock::getSlot);
+    if (!slot.isPresent()) {
+      return false;
+    }
+
+    return blockIndex
+        .get(slot.get().getValue())
+        .flatMap(slotBlocks -> Optional.of(slotBlocks.removeJustifiedHash(blockHash)))
+        .map(
+            slotBlocks -> {
+              blockIndex.put(slot.get().getValue(), slotBlocks);
+              return true;
+            })
+        .orElse(false);
+  }
+
+  public boolean finalize(Hash32 blockHash) {
+    Optional<UInt64> slot = get(blockHash).map(BeaconBlock::getSlot);
+    if (!slot.isPresent()) {
+      return false;
+    }
+
+    return blockIndex
+        .get(slot.get().getValue())
+        .flatMap(slotBlocks -> Optional.of(slotBlocks.setFinalizedHash(blockHash)))
+        .map(
+            slotBlocks -> {
+              blockIndex.put(slot.get().getValue(), slotBlocks);
+              return true;
+            })
+        .orElse(false);
+  }
+
+  @Override
+  public Optional<BeaconBlock> getJustifiedBlock(long slot, int limit) {
+    for (long i = slot; i >= Math.max(0, slot - limit); --i) {
+      Optional<SlotBlocks> slotBlocksOptional = blockIndex.get(i);
+      if (slotBlocksOptional.isPresent()) {
+        SlotBlocks slotBlocks = slotBlocksOptional.get();
+        // FIXME: stub. There could be a case when we have 2 justified blocks (one should be
+        // slashed) and need to deal with it
+        return slotBlocks.justifiedHashes.stream().findFirst().flatMap(this::get);
+      }
+    }
+
+    return Optional.empty();
+  }
+
+  @Override
+  public Optional<BeaconBlock> getFinalizedBlock(long slot, int limit) {
+    for (long i = slot; i >= Math.max(0, slot - limit); --i) {
+      Optional<SlotBlocks> slotBlocksOptional = blockIndex.get(i);
+      if (slotBlocksOptional.isPresent()) {
+        SlotBlocks slotBlocks = slotBlocksOptional.get();
+        if (slotBlocks.finalizedHash != null) {
+          return get(slotBlocks.finalizedHash);
         }
       }
-      if (slotBlocks.getCanonicalIndex() == idx) {
-        throw new RuntimeException("Attempt to remove canonical block: " + block.get().getSlot() + ": " + key);
-      }
-      int newIdx = slotBlocks.getCanonicalIndex() - (slotBlocks.getCanonicalIndex() < idx ? 0 : 1);
-      ArrayList<Hash32> newBlocks = new ArrayList<>(slotBlocks.getBlockHashes());
-      newBlocks.remove(idx);
-      blockIndex.put(block.get().getSlot().getValue(), new SlotBlocks(newBlocks, newIdx));
     }
+
+    return Optional.empty();
   }
 
   @Override
