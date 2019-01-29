@@ -13,6 +13,7 @@ import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustodyBit;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.validator.BeaconChainAttester;
+import org.ethereum.beacon.validator.ValidatorService;
 import org.ethereum.beacon.validator.crypto.MessageSigner;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes8;
@@ -22,9 +23,17 @@ import tech.pegasys.artemis.util.bytes.MutableBytesValue;
 import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
 
+/**
+ * An implementation of beacon chain attester.
+ *
+ * @see BeaconChainAttester
+ * @see ValidatorService
+ */
 public class BeaconChainAttesterImpl implements BeaconChainAttester {
 
+  /** The spec. */
   private SpecHelpers specHelpers;
+  /** Chain parameters. */
   private ChainSpec chainSpec;
 
   public BeaconChainAttesterImpl(SpecHelpers specHelpers, ChainSpec chainSpec) {
@@ -34,8 +43,7 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
 
   @Override
   public Attestation attest(
-      UInt24 index,
-      List<UInt24> committee,
+      UInt24 validatorIndex,
       UInt64 shard,
       ObservableBeaconState observableState,
       MessageSigner<Bytes96> signer) {
@@ -59,11 +67,30 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
             justifiedSlot,
             justifiedBlockRoot);
 
-    BytesValue participationBitfield = getParticipationBitfield(index, committee);
-    BytesValue custodyBitfield = getCustodyBitfield(index, committee);
+    List<UInt24> committee = getCommittee(state, shard);
+    BytesValue participationBitfield = getParticipationBitfield(validatorIndex, committee);
+    BytesValue custodyBitfield = getCustodyBitfield(validatorIndex, committee);
     Bytes96 aggregateSignature = getAggregateSignature(state, data, signer);
 
     return new Attestation(data, participationBitfield, custodyBitfield, aggregateSignature);
+  }
+
+  /**
+   * Returns a committee at a state slot for a given shard.
+   *
+   * @param state a state.
+   * @param shard a shard.
+   * @return a committee.
+   */
+  private List<UInt24> getCommittee(BeaconState state, UInt64 shard) {
+    if (shard.equals(chainSpec.getBeaconChainShardNumber())) {
+      return specHelpers.get_shard_committees_at_slot(state, state.getSlot()).get(0).getCommittee();
+    } else {
+      return specHelpers
+          .get_shard_committees_at_slot(state, state.getSlot())
+          .get(shard.getIntValue())
+          .getCommittee();
+    }
   }
 
   /*
@@ -120,6 +147,14 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
     return BytesValue.wrap(new byte[custodyBitfieldSize]);
   }
 
+  /**
+   * Creates {@link AttestationDataAndCustodyBit} instance and signs off on it.
+   *
+   * @param state a state at a slot that validator is attesting in.
+   * @param data an attestation data instance.
+   * @param signer message signer.
+   * @return signature of attestation data and custody bit.
+   */
   private Bytes96 getAggregateSignature(
       BeaconState state, AttestationData data, MessageSigner<Bytes96> signer) {
     AttestationDataAndCustodyBit attestationDataAndCustodyBit =

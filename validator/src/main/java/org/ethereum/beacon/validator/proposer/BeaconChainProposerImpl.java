@@ -25,6 +25,7 @@ import org.ethereum.beacon.core.state.Eth1DataVote;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.validator.BeaconChainProposer;
+import org.ethereum.beacon.validator.ValidatorService;
 import org.ethereum.beacon.validator.crypto.MessageSigner;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
@@ -33,11 +34,21 @@ import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
 
+/**
+ * An implementation of beacon chain proposer.
+ *
+ * @see BeaconChainProposer
+ * @see ValidatorService
+ */
 public class BeaconChainProposerImpl implements BeaconChainProposer {
 
+  /** The spec. */
   private SpecHelpers specHelpers;
+  /** Chain parameters. */
   private ChainSpec chainSpec;
+  /** State transition that is regularly applied to a block during processing. */
   private StateTransition<BeaconState> blockTransition;
+  /** Eth1 deposit contract. */
   private DepositContract depositContract;
 
   public BeaconChainProposerImpl(
@@ -53,11 +64,11 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
 
   @Override
   public BeaconBlock propose(
-      UInt24 index, ObservableBeaconState observableState, MessageSigner<Bytes96> signer) {
+      UInt24 validatorIndex, ObservableBeaconState observableState, MessageSigner<Bytes96> signer) {
     BeaconState state = observableState.getLatestSlotState();
 
     Hash32 parentRoot = specHelpers.get_block_root(state, state.getSlot().decrement());
-    Bytes96 randaoReveal = getRandaoReveal(state, index, signer);
+    Bytes96 randaoReveal = getRandaoReveal(state, validatorIndex, signer);
     Eth1Data eth1Data = getEth1Data(state);
     BeaconBlockBody blockBody = getBlockBody(state, observableState.getPendingOperations());
 
@@ -84,6 +95,14 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
     return builder.build();
   }
 
+  /**
+   * Creates a {@link ProposalSignedData} instance and signs off on it.
+   *
+   * @param state state at the slot of created block.
+   * @param blockWithoutSignature created block with zero {@link BeaconBlock#signature} field.
+   * @param signer message signer.
+   * @return signature of proposal signed data.
+   */
   private Bytes96 getProposalSignature(
       BeaconState state, BeaconBlock blockWithoutSignature, MessageSigner<Bytes96> signer) {
     ProposalSignedData proposal =
@@ -96,8 +115,18 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
     return signer.sign(proposalRoot, domain);
   }
 
-  private Bytes96 getRandaoReveal(BeaconState state, UInt24 index, MessageSigner<Bytes96> signer) {
-    ValidatorRecord proposer = state.getValidatorRegistry().get(SpecHelpers.safeInt(index));
+  /**
+   * Returns next RANDAO reveal.
+   *
+   * @param state state at the slot of created block.
+   * @param validatorIndex validator index.
+   * @param signer message signer.
+   * @return next RANDAO reveal.
+   */
+  private Bytes96 getRandaoReveal(
+      BeaconState state, UInt24 validatorIndex, MessageSigner<Bytes96> signer) {
+    ValidatorRecord proposer =
+        state.getValidatorRegistry().get(SpecHelpers.safeInt(validatorIndex));
     Hash32 hash = Hash32.wrap(Bytes32.leftPad(proposer.getProposerSlots().toBytesBigEndian()));
     Bytes8 domain = specHelpers.get_domain(state.getForkData(), state.getSlot(), RANDAO);
     return signer.sign(hash, domain);
@@ -145,6 +174,14 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
         .orElse(contractData);
   }
 
+  /**
+   * Creates block body for new block.
+   *
+   * @param state state at the slot of created block.
+   * @param operations pending operations instance.
+   * @return {@link BeaconBlockBody} for new block.
+   * @see PendingOperations
+   */
   private BeaconBlockBody getBlockBody(BeaconState state, PendingOperations operations) {
     List<ProposerSlashing> proposerSlashings =
         operations.peekProposerSlashings(chainSpec.getMaxProposerSlashings());
