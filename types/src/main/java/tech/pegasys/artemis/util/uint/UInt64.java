@@ -20,7 +20,7 @@ import java.util.Random;
 import tech.pegasys.artemis.util.bytes.Bytes8;
 
 /** An immutable unsigned 64-bit precision integer. */
-public class UInt64 implements Comparable<UInt64> {
+public class UInt64 extends Number implements Comparable<UInt64> {
   // Yes, this looks weird. If it helps, think of this as (Long.MAX_VALUE<<1)+1.
   public static final UInt64 MAX_VALUE = valueOf(-1);
   public static final UInt64 MIN_VALUE = valueOf(0);
@@ -347,5 +347,25 @@ public class UInt64 implements Comparable<UInt64> {
   @Override
   public String toString() {
     return Long.toUnsignedString(this.value);
+  }
+
+  @Override
+  public int intValue() {
+    return getIntValue();
+  }
+
+  @Override
+  public long longValue() {
+    return getValue();
+  }
+
+  @Override
+  public float floatValue() {
+    return getValue();
+  }
+
+  @Override
+  public double doubleValue() {
+    return getValue();
   }
 }
