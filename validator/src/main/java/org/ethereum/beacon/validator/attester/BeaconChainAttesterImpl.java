@@ -28,6 +28,11 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
   private SpecHelpers specHelpers;
   private ChainSpec chainSpec;
 
+  public BeaconChainAttesterImpl(SpecHelpers specHelpers, ChainSpec chainSpec) {
+    this.specHelpers = specHelpers;
+    this.chainSpec = chainSpec;
+  }
+
   @Override
   public Attestation attest(
       UInt24 index,
