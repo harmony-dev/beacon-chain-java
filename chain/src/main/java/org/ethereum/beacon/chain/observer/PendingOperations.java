@@ -5,6 +5,7 @@ import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.CasperSlashing;
 import org.ethereum.beacon.core.operations.Exit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
+import tech.pegasys.artemis.util.uint.UInt64;
 
 /** A pending state interface. */
 public interface PendingOperations {
@@ -15,7 +16,7 @@ public interface PendingOperations {
 
   List<CasperSlashing> peekCasperSlashings(int maxCount);
 
-  List<Attestation> peekAggregatedAttestations(int maxCount);
+  List<Attestation> peekAggregatedAttestations(int maxCount, UInt64 maxSlot);
 
   List<Exit> peekExits(int maxCount);
 }

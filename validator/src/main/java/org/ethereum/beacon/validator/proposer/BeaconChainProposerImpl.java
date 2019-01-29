@@ -151,7 +151,9 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
     List<CasperSlashing> casperSlashings =
         operations.peekCasperSlashings(chainSpec.getMaxCasperSlashings());
     List<Attestation> attestations =
-        operations.peekAggregatedAttestations(chainSpec.getMaxAttestations());
+        operations.peekAggregatedAttestations(
+            chainSpec.getMaxAttestations(),
+            state.getSlot().plus(chainSpec.getMinAttestationInclusionDelay()));
     List<Exit> exits = operations.peekExits(chainSpec.getMaxExits());
     List<Deposit> deposits =
         depositContract.peekDeposits(
