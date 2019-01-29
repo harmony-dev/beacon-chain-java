@@ -9,6 +9,12 @@ import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes8;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 
+/**
+ * Insecure BLS381 message signer.
+ *
+ * <p>Instantiated with bytes of private key which are kept in memory all the way. Not a production
+ * solution.
+ */
 public class InsecureBLS381MessageSigner implements BLS381MessageSigner {
 
   private final Bytes32 privateKeyBytes;
