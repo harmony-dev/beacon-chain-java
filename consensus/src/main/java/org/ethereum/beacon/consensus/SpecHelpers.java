@@ -1194,6 +1194,32 @@ public class SpecHelpers {
         .plus(spec.getSlotDuration().dividedBy(UInt64.valueOf(2)));
   }
 
+  /*
+    def slot_to_epoch(slot: SlotNumber) -> EpochNumber:
+        return slot // EPOCH_LENGTH
+   */
+  public UInt64 slot_to_epoch(UInt64 slot) {
+    return slot.dividedBy(spec.getEpochLength());
+  }
+  /*
+    def get_current_epoch(state: BeaconState) -> EpochNumber:
+        return slot_to_epoch(state.slot)
+   */
+  public UInt64 get_current_epoch(BeaconState state) {
+    return slot_to_epoch(state.getSlot());
+  }
+  /*
+    def get_epoch_start_slot(epoch: EpochNumber) -> SlotNumber:
+      return epoch * EPOCH_LENGTH
+   */
+  public UInt64 get_epoch_start_slot(UInt64 epoch) {
+    return epoch.times(spec.getEpochLength());
+  }
+
+  public UInt64 get_genesis_epoch() {
+    return slot_to_epoch(spec.getGenesisSlot());
+  }
+
   public void checkIndexRange(BeaconState state, UInt24 index) {
     assertTrue(safeInt(index) < state.getValidatorRegistry().size());
   }
