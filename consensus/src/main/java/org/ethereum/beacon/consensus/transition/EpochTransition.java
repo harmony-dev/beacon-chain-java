@@ -42,6 +42,18 @@ public class EpochTransition implements StateTransition<BeaconStateEx> {
   public BeaconStateEx apply(BeaconBlock block, BeaconStateEx stateEx) {
     MutableBeaconState state = stateEx.getCanonicalState().createMutableCopy();
 
+    // The steps below happen when (state.slot + 1) % EPOCH_LENGTH == 0.
+
+    /*
+      Let current_epoch = get_current_epoch(state).
+      Let previous_epoch = current_epoch - 1 if current_epoch > GENESIS_EPOCH else current_epoch.
+      Let next_epoch = current_epoch + 1.
+     */
+    UInt64 current_epoch = specHelpers.get_current_epoch(state);
+    UInt64 previous_epoch = current_epoch.compareTo(specHelpers.get_genesis_epoch()) > 0 ?
+        current_epoch.decrement() : current_epoch;
+    UInt64 next_epoch = current_epoch.increment();
+
     /*
      Helpers: All validators:
     */
@@ -388,6 +400,19 @@ public class EpochTransition implements StateTransition<BeaconStateEx> {
            shard_block_root=winning_root(shard_committee))
        if 3 * total_attesting_balance(shard_committee) >= 2 * total_balance(shard_committee).
     */
+
+    /*
+      For every slot in range(get_epoch_start_slot(previous_epoch), get_epoch_start_slot(next_epoch)),
+      let crosslink_committees_at_slot = get_crosslink_committees_at_slot(state, slot).
+      For every (crosslink_committee, shard) in crosslink_committees_at_slot, compute:
+
+          Set state.latest_crosslinks[shard] = Crosslink(
+            epoch=current_epoch,
+            shard_block_root=winning_root(crosslink_committee))
+          if 3 * total_attesting_balance(crosslink_committee) >=
+                2 * total_balance(crosslink_committee).
+
+     */
 
     List<CrosslinkRecord> newLatestCrosslinks = new ArrayList<>(state.getLatestCrosslinks());
     LongStream.range(0, spec.getEpochLength().times(2).getValue())
