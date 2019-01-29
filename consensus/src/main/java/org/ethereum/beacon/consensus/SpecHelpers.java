@@ -1176,11 +1176,6 @@ public class SpecHelpers {
     return index;
   }
 
-  public boolean is_in_beacon_chain_committee(BeaconState state, UInt64 slot, UInt24 index) {
-    List<UInt24> first_committee = get_shard_committees_at_slot(state, slot).get(0).getCommittee();
-    return Collections.binarySearch(first_committee, index) >= 0;
-  }
-
   public UInt64 get_current_slot(BeaconState state) {
     UInt64 currentTime = UInt64.valueOf(System.currentTimeMillis() / 1000);
     assert state.getGenesisTime().compareTo(currentTime) < 0;

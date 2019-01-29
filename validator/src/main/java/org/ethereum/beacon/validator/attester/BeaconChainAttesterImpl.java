@@ -1,6 +1,5 @@
 package org.ethereum.beacon.validator.attester;
 
-import static org.ethereum.beacon.consensus.SpecHelpers.safeInt;
 import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
 
 import java.util.Collections;
@@ -82,7 +81,7 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
      where state is the beacon state at head and shard is the validator's assigned shard.
   */
   private Hash32 getLatestCrosslinkRoot(BeaconState state, UInt64 shard) {
-    return state.getLatestCrosslinks().get(safeInt(shard)).getShardBlockRoot();
+    return state.getLatestCrosslinks().get(shard.getIntValue()).getShardBlockRoot();
   }
 
   /*
