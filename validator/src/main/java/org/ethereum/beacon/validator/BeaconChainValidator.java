@@ -27,7 +27,7 @@ public class BeaconChainValidator implements ValidatorService {
 
   private ScheduledExecutorService executor;
 
-  private UInt24 index = UInt24.MAX_VALUE;
+  private UInt24 validatorIndex = UInt24.MAX_VALUE;
   private UInt64 lastProcessedSlot = UInt64.MAX_VALUE;
 
   private ObservableBeaconState recentState;
@@ -54,8 +54,7 @@ public class BeaconChainValidator implements ValidatorService {
               t.setDaemon(true);
               return t;
             });
-    subscribeToSlotStateUpdates(this::processSlotState);
-    subscribeToObservableStateUpdates(this::keepRecentState);
+    subscribeToStateUpdates(this::onNewState);
   }
 
   @Override
@@ -64,15 +63,18 @@ public class BeaconChainValidator implements ValidatorService {
   }
 
   private void init(BeaconState state) {
-    this.index = specHelpers.get_validator_index_by_pubkey(state, credentials.getBlsPublicKey());
+    this.validatorIndex =
+        specHelpers.get_validator_index_by_pubkey(state, credentials.getBlsPublicKey());
     setSlotProcessed(state);
   }
 
   private void keepRecentState(ObservableBeaconState state) {
-    this.recentState = state;
+    if (specHelpers.is_current_slot(state.getLatestSlotState())) {
+      this.recentState = state;
+    }
   }
 
-  private void processSlotState(ObservableBeaconState observableState) {
+  private void onNewState(ObservableBeaconState observableState) {
     keepRecentState(observableState);
     BeaconState state = observableState.getLatestSlotState();
 
@@ -89,20 +91,15 @@ public class BeaconChainValidator implements ValidatorService {
   private void runTasks(final ObservableBeaconState observableState) {
     BeaconState state = observableState.getLatestSlotState();
 
-    final List<UInt24> firstCommittee =
-        specHelpers.get_shard_committees_at_slot(state, state.getSlot()).get(0).getCommittee();
-
     // trigger proposer
-    UInt24 proposerIndex =
-        specHelpers.get_beacon_proposer_index_in_committee(firstCommittee, state.getSlot());
-    if (index.equals(proposerIndex)) {
+    if (isEligibleToPropose(state)) {
       runAsync(() -> propose(observableState));
     }
 
     // trigger attester at a halfway through the slot
-    if (index.equals(proposerIndex) || Collections.binarySearch(firstCommittee, index) >= 0) {
+    if (isEligibleToAttest(state)) {
       UInt64 startAt = specHelpers.get_slot_middle_time(state, state.getSlot());
-      schedule(startAt, () -> attest(this.index, firstCommittee, this.recentState));
+      schedule(startAt, this::attest);
     }
   }
 
@@ -117,26 +114,40 @@ public class BeaconChainValidator implements ValidatorService {
   }
 
   private void propose(final ObservableBeaconState observableState) {
-    BeaconBlock newBlock = proposer.propose(index, observableState, messageSigner);
+    BeaconBlock newBlock = proposer.propose(validatorIndex, observableState, messageSigner);
     propagateBlock(newBlock);
   }
 
-  private void attest(
-      final UInt24 index,
-      final List<UInt24> committee,
-      final ObservableBeaconState observableState) {
-    Attestation attestation =
-        attester.attest(
-            index,
-            committee,
-            specHelpers.getChainSpec().getBeaconChainShardNumber(),
-            observableState,
-            messageSigner);
-    propagateAttestation(attestation);
+  private void attest() {
+    final ObservableBeaconState observableState = this.recentState;
+    final BeaconState state = observableState.getLatestSlotState();
+
+    if (isEligibleToAttest(state)) {
+      final List<UInt24> firstCommittee =
+          specHelpers.get_shard_committees_at_slot(state, state.getSlot()).get(0).getCommittee();
+      Attestation attestation =
+          attester.attest(
+              validatorIndex,
+              firstCommittee,
+              specHelpers.getChainSpec().getBeaconChainShardNumber(),
+              observableState,
+              messageSigner);
+      propagateAttestation(attestation);
+    }
   }
 
   private void setSlotProcessed(BeaconState state) {
     this.lastProcessedSlot = state.getSlot();
+  }
+
+  private boolean isEligibleToPropose(BeaconState state) {
+    return validatorIndex.equals(specHelpers.get_beacon_proposer_index(state, state.getSlot()));
+  }
+
+  private boolean isEligibleToAttest(BeaconState state) {
+    final List<UInt24> firstCommittee =
+        specHelpers.get_shard_committees_at_slot(state, state.getSlot()).get(0).getCommittee();
+    return Collections.binarySearch(firstCommittee, validatorIndex) >= 0;
   }
 
   private boolean isSlotProcessed(BeaconState state) {
@@ -148,7 +159,7 @@ public class BeaconChainValidator implements ValidatorService {
   }
 
   private boolean isInitialized() {
-    return index.compareTo(UInt24.MAX_VALUE) < 0;
+    return validatorIndex.compareTo(UInt24.MAX_VALUE) < 0;
   }
 
   /* FIXME: stub for streams. */
@@ -156,7 +167,5 @@ public class BeaconChainValidator implements ValidatorService {
 
   private void propagateAttestation(Attestation attestation) {}
 
-  private void subscribeToSlotStateUpdates(Consumer<ObservableBeaconState> payload) {}
-
-  private void subscribeToObservableStateUpdates(Consumer<ObservableBeaconState> payload) {}
+  private void subscribeToStateUpdates(Consumer<ObservableBeaconState> payload) {}
 }
