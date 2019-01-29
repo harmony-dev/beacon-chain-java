@@ -17,7 +17,6 @@ import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.CrosslinkRecord;
 import org.ethereum.beacon.core.state.ForkData;
 import org.ethereum.beacon.pow.DepositContract;
-import org.ethereum.beacon.pow.DepositContract.ChainStart;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
@@ -37,13 +36,13 @@ import tech.pegasys.artemis.util.uint.UInt64;
  */
 public class InitialStateTransition implements StateTransition<BeaconStateEx> {
 
-  private final DepositContract depositContract;
+  private final DepositContract.ChainStart depositContractStart;
   private final ChainSpec chainSpec;
   private final SpecHelpers specHelpers;
 
-  public InitialStateTransition(DepositContract depositContract,
+  public InitialStateTransition(DepositContract.ChainStart depositContractStart,
       SpecHelpers specHelpers) {
-    this.depositContract = depositContract;
+    this.depositContractStart = depositContractStart;
     this.specHelpers = specHelpers;
     this.chainSpec = specHelpers.getChainSpec();
   }
@@ -56,14 +55,12 @@ public class InitialStateTransition implements StateTransition<BeaconStateEx> {
   public BeaconStateEx apply(BeaconBlock block, BeaconStateEx state) {
     assert block.getSlot() == chainSpec.getGenesisSlot();
 
-    ChainStart chainStart = depositContract.getChainStart();
-
     MutableBeaconState initialState = MutableBeaconState.createNew();
 
     // Misc
     initialState
         .withSlot(chainSpec.getGenesisSlot())
-        .withGenesisTime(chainStart.getTime())
+        .withGenesisTime(depositContractStart.getTime())
         .withForkData(
             new ForkData(
                 chainSpec.getGenesisForkVersion(),
@@ -118,10 +115,12 @@ public class InitialStateTransition implements StateTransition<BeaconStateEx> {
         .withBatchedBlockRoots(emptyList());
 
     // PoW receipt root
-    initialState.withLatestEth1Data(chainStart.getEth1Data()).withEth1DataVotes(emptyList());
+    initialState
+        .withLatestEth1Data(depositContractStart.getEth1Data())
+        .withEth1DataVotes(emptyList());
 
     // handle initial deposits and activations
-    final List<Deposit> initialDeposits = depositContract.getInitialDeposits();
+    final List<Deposit> initialDeposits = depositContractStart.getInitialDeposits();
 
     initialDeposits.forEach(
         deposit -> {

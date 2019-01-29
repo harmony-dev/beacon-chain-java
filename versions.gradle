@@ -22,5 +22,6 @@ dependencyManagement {
     dependency "net.consensys.cava:cava-ssz:${cavaVersion}"
     dependency "net.consensys.cava:cava-units:${cavaVersion}"
     dependency "io.projectreactor:reactor-core:3.2.5.RELEASE"
+    dependency "org.reactivestreams:reactive-streams:1.0.2"
   }
 }
