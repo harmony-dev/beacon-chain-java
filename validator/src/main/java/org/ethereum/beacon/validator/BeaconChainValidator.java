@@ -28,6 +28,7 @@ public class BeaconChainValidator implements ValidatorService {
   private ScheduledExecutorService executor;
 
   private UInt24 index = UInt24.MAX_VALUE;
+  private UInt64 lastProcessedSlot = UInt64.MAX_VALUE;
 
   private ObservableBeaconState recentState;
 
@@ -64,25 +65,24 @@ public class BeaconChainValidator implements ValidatorService {
 
   private void init(BeaconState state) {
     this.index = specHelpers.get_validator_index_by_pubkey(state, credentials.getBlsPublicKey());
+    setSlotProcessed(state);
   }
 
   private void keepRecentState(ObservableBeaconState state) {
     this.recentState = state;
   }
 
-  private void processSlotState(ObservableBeaconState state) {
-    keepRecentState(state);
+  private void processSlotState(ObservableBeaconState observableState) {
+    keepRecentState(observableState);
+    BeaconState state = observableState.getLatestSlotState();
 
-    if (!specHelpers.is_current_slot(state.getLatestSlotState())) {
-      return;
+    if (!isInitialized() && isCurrentSlot(state)) {
+      init(state);
     }
 
-    if (!isInitialized()) {
-      init(state.getLatestSlotState());
-    }
-
-    if (isInitialized()) {
-      runTasks(state);
+    if (isInitialized() && !isSlotProcessed(state)) {
+      setSlotProcessed(state);
+      runTasks(observableState);
     }
   }
 
@@ -133,6 +133,18 @@ public class BeaconChainValidator implements ValidatorService {
             observableState,
             messageSigner);
     propagateAttestation(attestation);
+  }
+
+  private void setSlotProcessed(BeaconState state) {
+    this.lastProcessedSlot = state.getSlot();
+  }
+
+  private boolean isSlotProcessed(BeaconState state) {
+    return lastProcessedSlot.compareTo(state.getSlot()) < 0;
+  }
+
+  private boolean isCurrentSlot(BeaconState state) {
+    return specHelpers.is_current_slot(state);
   }
 
   private boolean isInitialized() {
