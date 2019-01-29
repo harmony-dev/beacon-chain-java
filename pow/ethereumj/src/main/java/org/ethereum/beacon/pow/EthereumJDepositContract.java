@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
@@ -175,7 +176,7 @@ public class EthereumJDepositContract extends AbstractDepositContract {
   }
 
   @Override
-  protected Pair<byte[], byte[]> getLatestBlockHashDepositRoot() {
+  protected Optional<Pair<byte[], byte[]>> getLatestBlockHashDepositRoot() {
     long bestBlock = ethereum.getBlockchain().getBestBlock().getNumber() - getDistanceFromHead();
     for(long blockNum = bestBlock; blockNum >= contractDeployBlock; blockNum--) {
       Block block = ethereum.getBlockchain().getBlockByNumber(blockNum);
@@ -183,13 +184,13 @@ public class EthereumJDepositContract extends AbstractDepositContract {
       Collections.reverse(contractEvents);
       for (Invocation contractEvent : contractEvents) {
         if (CHAIN_START_EVENT_NAME.equals(contractEvent.function.name)) {
-          return Pair.with(block.getHash(), (byte[]) contractEvent.args[0]);
+          return Optional.of(Pair.with(block.getHash(), (byte[]) contractEvent.args[0]));
         } else {
-          return Pair.with(block.getHash(), (byte[]) contractEvent.args[0]);
+          return Optional.of(Pair.with(block.getHash(), (byte[]) contractEvent.args[0]));
         }
       }
     }
-    return null;
+    return Optional.empty();
   }
 
   @Override

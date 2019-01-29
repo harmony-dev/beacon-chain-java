@@ -114,16 +114,13 @@ public abstract class AbstractDepositContract implements DepositContract {
 
   @Override
   public Optional<Eth1Data> getLatestEth1Data() {
-    Pair<byte[], byte[]> root = getLatestBlockHashDepositRoot();
-
-    return Optional.ofNullable(root).map(
+    return getLatestBlockHashDepositRoot().map(
         r -> new Eth1Data(
             Hash32.wrap(Bytes32.wrap(r.getValue1())),
             Hash32.wrap(Bytes32.wrap(r.getValue0()))));
   }
 
-  protected abstract Pair<byte[], byte[]> getLatestBlockHashDepositRoot();
-
+  protected abstract Optional<Pair<byte[], byte[]>> getLatestBlockHashDepositRoot();
 
   @Override
   public List<DepositInfo> peekDeposits(int count, Eth1Data fromDepositExclusive,
