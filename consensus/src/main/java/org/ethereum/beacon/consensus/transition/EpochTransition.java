@@ -133,9 +133,9 @@ public class EpochTransition implements StateTransition<BeaconStateEx> {
         .stream()
         .filter(a ->
             state.getSlot().minus(spec.getEpochLength().times(2))
-                .compareTo(a.getData().getSlot()) <= 0
+                .lessEqual(a.getData().getSlot())
                 && a.getData().getSlot()
-                .compareTo(state.getSlot().minus(spec.getEpochLength())) < 0)
+                .less(state.getSlot().minus(spec.getEpochLength())))
         .collect(Collectors.toList());
 
     // Let previous_epoch_attester_indices be the union of the validator index sets given by

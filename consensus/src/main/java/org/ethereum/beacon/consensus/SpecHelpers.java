@@ -1234,7 +1234,7 @@ public class SpecHelpers {
   }
 
   public void checkIndexRange(BeaconState state, ValidatorIndex index) {
-    assertTrue(index.compareTo(state.getValidatorRegistry().size()) < 0);
+    assertTrue(index.less(state.getValidatorRegistry().size()));
   }
 
   public void checkIndexRange(BeaconState state, List<ValidatorIndex> indices) {

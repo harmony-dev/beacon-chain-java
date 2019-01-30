@@ -276,7 +276,7 @@ public class BeaconChainValidator implements ValidatorService {
    * @return {@code true} if index is defined, {@code false} otherwise.
    */
   private boolean isInitialized() {
-    return validatorIndex.compareTo(UInt24.MAX_VALUE) < 0;
+    return validatorIndex.compareTo(UInt64.MAX_VALUE) < 0;
   }
 
   /* FIXME: stub for streams. */
