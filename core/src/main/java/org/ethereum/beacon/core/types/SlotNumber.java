@@ -3,9 +3,7 @@ package org.ethereum.beacon.core.types;
 import java.util.Iterator;
 import tech.pegasys.artemis.util.uint.UInt64;
 
-public class SlotNumber extends UInt64{
-
-  public static final SlotNumber ZERO = of(0);
+public class SlotNumber extends UInt64 implements SafeCompare<SlotNumber> {
 
   public static class EpochLength extends SlotNumber {
     public EpochLength(UInt64 uint) {
@@ -18,6 +16,8 @@ public class SlotNumber extends UInt64{
     }
   }
 
+  public static final SlotNumber ZERO = of(0);
+
   public static SlotNumber of(long slot) {
     return new SlotNumber(UInt64.valueOf(slot));
   }
@@ -26,7 +26,7 @@ public class SlotNumber extends UInt64{
     return new SlotNumber(slot);
   }
 
-  public SlotNumber(UInt64 uint) {
+  SlotNumber(UInt64 uint) {
     super(uint);
   }
 
@@ -96,7 +96,7 @@ public class SlotNumber extends UInt64{
 
     @Override
     public boolean hasNext() {
-      return increment > 0 ? cur.compareTo(end) < 0 : cur.compareTo(end) > 0;
+      return increment > 0 ? cur.less(end) : cur.greater(end);
     }
 
     @Override

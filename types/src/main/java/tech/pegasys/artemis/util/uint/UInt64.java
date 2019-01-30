@@ -320,22 +320,6 @@ public class UInt64 extends Number implements Comparable<UInt64> {
     return Long.compareUnsigned(this.value, uint.getValue());
   }
 
-  public boolean greater(UInt64 uint) {
-    return compareTo(uint) > 0;
-  }
-
-  public boolean less(UInt64 uint) {
-    return compareTo(uint) < 0;
-  }
-
-  public boolean greaterEqual(UInt64 uint) {
-    return compareTo(uint) >= 0;
-  }
-
-  public boolean lessEqual(UInt64 uint) {
-    return compareTo(uint) <= 0;
-  }
-
   public Bytes8 toBytesBigEndian() {
     byte[] array = ByteBuffer.allocate(Long.BYTES).order(ByteOrder.BIG_ENDIAN).putLong(value).array();
     return Bytes8.wrap(array);

@@ -3,13 +3,13 @@ package org.ethereum.beacon.core.types;
 import org.ethereum.beacon.core.types.SlotNumber.EpochLength;
 import tech.pegasys.artemis.util.uint.UInt64;
 
-public class EpochNumber extends UInt64 {
+public class EpochNumber extends UInt64 implements SafeCompare<EpochNumber>{
 
   public static EpochNumber of(int epochNum) {
     return new EpochNumber(UInt64.valueOf(epochNum));
   }
 
-  public EpochNumber(UInt64 uint) {
+  EpochNumber(UInt64 uint) {
     super(uint);
   }
 

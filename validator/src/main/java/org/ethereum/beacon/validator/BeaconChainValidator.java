@@ -257,7 +257,7 @@ public class BeaconChainValidator implements ValidatorService {
    * @return {@code true} if slot has been processed, {@link false} otherwise.
    */
   private boolean isSlotProcessed(BeaconState state) {
-    return lastProcessedSlot.compareTo(state.getSlot()) < 0;
+    return lastProcessedSlot.less(state.getSlot());
   }
 
   /**

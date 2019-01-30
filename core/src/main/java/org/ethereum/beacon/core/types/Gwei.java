@@ -2,7 +2,7 @@ package org.ethereum.beacon.core.types;
 
 import tech.pegasys.artemis.util.uint.UInt64;
 
-public class Gwei extends UInt64 {
+public class Gwei extends UInt64 implements SafeCompare<Gwei>{
 
   public static final Gwei ZERO = of(0);
 

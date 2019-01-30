@@ -150,7 +150,7 @@ public class SpecHelpers {
     int committees_per_slot;
     List<List<ValidatorIndex>> shuffling;
     ShardNumber slot_start_shard;
-    if (slot.compareTo(state_epoch_slot) < 0) {
+    if (slot.less(state_epoch_slot)) {
       //      committees_per_slot = get_previous_epoch_committees_per_slot(state)
       committees_per_slot = get_previous_epoch_committee_count_per_slot(state);
       //      shuffling = get_shuffling(state.previous_epoch_randao_mix,
@@ -872,8 +872,8 @@ public class SpecHelpers {
           eligible_indices.add(index);
         }
       } else {
-        if (state.getSlot()
-            .compareTo(validator.getExitSlot().plus(spec.getMinValidatorWithdrawalTime())) >= 0) {
+        if (state.getSlot().greaterEqual(
+          (validator.getExitSlot().plus(spec.getMinValidatorWithdrawalTime())))) {
           eligible_indices.add(index);
         }
       }
@@ -1010,14 +1010,14 @@ public class SpecHelpers {
   */
   public boolean is_surround_vote(
       AttestationData attestation_data_1, AttestationData attestation_data_2) {
-    UInt64 source_epoch_1 = attestation_data_1.getJustifiedSlot(); // EPOCH_LENGTH
-    UInt64 source_epoch_2 = attestation_data_2.getJustifiedSlot(); // EPOCH_LENGTH
-    UInt64 target_epoch_1 = attestation_data_1.getSlot(); // EPOCH_LENGTH
-    UInt64 target_epoch_2 = attestation_data_2.getSlot(); // EPOCH_LENGTH
+    EpochNumber source_epoch_1 = attestation_data_1.getJustifiedSlot().dividedBy(spec.getEpochLength());
+    EpochNumber source_epoch_2 = attestation_data_2.getJustifiedSlot().dividedBy(spec.getEpochLength());
+    EpochNumber target_epoch_1 = attestation_data_1.getSlot().dividedBy(spec.getEpochLength());
+    EpochNumber target_epoch_2 = attestation_data_2.getSlot().dividedBy(spec.getEpochLength());
 
-    return (source_epoch_1.compareTo(source_epoch_2) < 0)
+    return (source_epoch_1.less(source_epoch_2))
         && (source_epoch_2.plus(1).equals(target_epoch_2))
-        && (target_epoch_2.compareTo(target_epoch_1) < 0);
+        && (target_epoch_2.less(target_epoch_1));
   }
 
   /*
@@ -1189,7 +1189,7 @@ public class SpecHelpers {
 
   public SlotNumber get_current_slot(BeaconState state) {
     UInt64 currentTime = UInt64.valueOf(System.currentTimeMillis() / 1000);
-    assert state.getGenesisTime().less(currentTime);
+    assert state.getGenesisTime().compareTo(currentTime) < 0;
     return SlotNumber.castFrom(
         currentTime.minus(state.getGenesisTime()).dividedBy(spec.getSlotDuration()));
   }
@@ -1242,7 +1242,7 @@ public class SpecHelpers {
   }
 
   public void checkShardRange(ShardNumber shard) {
-    assertTrue(shard.compareTo(spec.getShardCount()) < 0);
+    assertTrue(shard.less(spec.getShardCount()));
   }
 
   public List<BLSPubkey> mapIndicesToPubKeys(BeaconState state, List<ValidatorIndex> indices) {

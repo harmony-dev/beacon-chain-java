@@ -84,8 +84,8 @@ public class EpochTransition implements StateTransition<BeaconStateEx> {
         state.getLatestAttestations().stream()
             .filter(a ->
                 state.getSlot().minus(spec.getEpochLength())
-                    .compareTo(a.getData().getSlot()) <= 0
-                    && a.getData().getSlot().compareTo(state.getSlot()) < 0)
+                    .lessEqual(a.getData().getSlot())
+                    && a.getData().getSlot().less(state.getSlot()))
             .collect(Collectors.toList());
 
     // Validators justifying the epoch boundary block at the start of the current epoch:

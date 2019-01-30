@@ -38,14 +38,13 @@ public class ExitVerifier implements OperationVerifier<Exit> {
 
     ValidatorRecord validator = state.getValidatorRegistry().get(exit.getValidatorIndex());
 
-    if (state.getSlot().plus(chainSpec.getEntryExitDelay()).compareTo(validator.getExitSlot())
-        <= 0) {
+    if (state.getSlot().plus(chainSpec.getEntryExitDelay()).lessEqual(validator.getExitSlot())) {
       return failedResult(
           "ENTRY_EXIT_DELAY exceeded, min exit slot %s, got %s",
           state.getSlot().plus(chainSpec.getEntryExitDelay()), validator.getExitSlot());
     }
 
-    if (state.getSlot().compareTo(exit.getSlot()) < 0) {
+    if (state.getSlot().less(exit.getSlot())) {
       return failedResult(
           "exit.slot must be greater or equal to state.slot, exit.slot=%s and state.slot=%s",
           exit.getSlot(), state.getSlot());

@@ -3,7 +3,7 @@ package org.ethereum.beacon.core.types;
 import java.util.function.Function;
 import tech.pegasys.artemis.util.uint.UInt64;
 
-public class ShardNumber extends UInt64 {
+public class ShardNumber extends UInt64 implements SafeCompare<ShardNumber>{
 
   public static final ShardNumber ZERO = of(0);
 

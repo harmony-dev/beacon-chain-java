@@ -45,23 +45,21 @@ public class AttestationVerifier implements OperationVerifier<Attestation> {
 
     specHelpers.checkShardRange(data.getShard());
 
-    if (data.getSlot().plus(chainSpec.getMinAttestationInclusionDelay()).compareTo(state.getSlot())
-        > 0) {
+    if (data.getSlot().plus(chainSpec.getMinAttestationInclusionDelay()).greater(state.getSlot())) {
       return failedResult(
           "MIN_ATTESTATION_INCLUSION_DELAY violated, inclusion slot starts from %s but got %s",
           data.getSlot().plus(chainSpec.getMinAttestationInclusionDelay()), state.getSlot());
     }
 
-    if (data.getSlot().plus(chainSpec.getEpochLength()).compareTo(state.getSlot()) < 0) {
+    if (data.getSlot().plus(chainSpec.getEpochLength()).less(state.getSlot())) {
       return failedResult(
           "EPOCH_LENGTH boundary violated, boundary slot %d, attestation slot %s",
           Math.max(0, state.getSlot().getValue() - chainSpec.getEpochLength().getValue()),
           data.getSlot());
     }
 
-    if (data.getSlot()
-            .compareTo(state.getSlot().minus(state.getSlot().modulo(chainSpec.getEpochLength())))
-        >= 0) {
+    if (data.getSlot().greaterEqual(
+        state.getSlot().minus(state.getSlot().modulo(chainSpec.getEpochLength())))) {
       if (!data.getSlot().equals(state.getJustifiedSlot())) {
         return failedResult(
             "attestation_data.slot=%s must be equal to justified_slot=%s",

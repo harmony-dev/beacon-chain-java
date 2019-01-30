@@ -12,7 +12,7 @@ public class ValidatorIndex extends UInt24 {
     return new ValidatorIndex(UInt24.valueOf(index));
   }
 
-  public ValidatorIndex(UInt24 uint) {
+  ValidatorIndex(UInt24 uint) {
     super(uint);
   }
 
