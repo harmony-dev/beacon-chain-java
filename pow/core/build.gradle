@@ -1,0 +1,7 @@
+dependencies {
+  implementation project(':types')
+  implementation project(':core')
+  implementation project(':ssz')
+
+  implementation 'io.projectreactor:reactor-core'
+}

@@ -194,7 +194,11 @@ public class SpecHelpers {
   public UInt24 get_beacon_proposer_index(BeaconState state, UInt64 slot) {
     List<UInt24> first_committee =
         get_shard_committees_at_slot(state, slot).get(0).getCommittee();
-    return first_committee.get(safeInt(slot.modulo(first_committee.size())));
+    return get_beacon_proposer_index_in_committee(first_committee, slot);
+  }
+
+  public UInt24 get_beacon_proposer_index_in_committee(List<UInt24> committee, UInt64 slot) {
+    return committee.get(safeInt(slot.modulo(committee.size())));
   }
 
   /*
@@ -1145,15 +1149,15 @@ public class SpecHelpers {
      return value == root
   */
   public boolean verify_merkle_branch(
-      Hash32 leaf, Hash32[] branch, UInt64 depth, UInt64 index, Hash32 root) {
+      Hash32 leaf, List<Hash32> branch, UInt64 depth, UInt64 index, Hash32 root) {
 
     Hash32 value = leaf;
     for (int i : IntStream.range(0, safeInt(depth)).toArray()) {
       if (index.dividedBy(UInt64.valueOf(1 << i)).modulo(UInt64.valueOf(2)).compareTo(UInt64.ZERO)
           > 0) {
-        value = hash(branch[i].concat(value));
+        value = hash(branch.get(i).concat(value));
       } else {
-        value = hash(value.concat(branch[i]));
+        value = hash(value.concat(branch.get(i)));
       }
     }
 
@@ -1170,11 +1174,6 @@ public class SpecHelpers {
     }
 
     return index;
-  }
-
-  public boolean is_in_beacon_chain_committee(BeaconState state, UInt64 slot, UInt24 index) {
-    List<UInt24> first_committee = get_shard_committees_at_slot(state, slot).get(0).getCommittee();
-    return Collections.binarySearch(first_committee, index) >= 0;
   }
 
   public UInt64 get_current_slot(BeaconState state) {

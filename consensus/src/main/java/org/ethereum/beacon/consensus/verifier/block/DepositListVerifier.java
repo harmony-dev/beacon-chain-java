@@ -4,7 +4,6 @@ import static org.ethereum.beacon.consensus.verifier.VerificationResult.PASSED;
 import static org.ethereum.beacon.consensus.verifier.VerificationResult.failedResult;
 
 import org.ethereum.beacon.consensus.verifier.OperationVerifier;
-import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import tech.pegasys.artemis.util.uint.UInt64;
@@ -22,12 +21,12 @@ public class DepositListVerifier extends OperationListVerifier<Deposit> {
     addCustomVerifier(
         deposits -> {
           if (deposits.size() > 0) {
-            UInt64 expectedIndex = deposits.get(0).getMerkleTreeIndex();
+            UInt64 expectedIndex = deposits.get(0).getDepositIndex();
             for (Deposit deposit : deposits) {
-              if (!deposit.getMerkleTreeIndex().equals(expectedIndex)) {
+              if (!deposit.getDepositIndex().equals(expectedIndex)) {
                 return failedResult(
                     "inclusion order is broken, expected index %d but got %d",
-                    expectedIndex, deposit.getMerkleTreeIndex());
+                    expectedIndex, deposit.getDepositIndex());
               }
               expectedIndex = expectedIndex.increment();
             }

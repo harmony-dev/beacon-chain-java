@@ -101,7 +101,7 @@ public class AttestationVerifier implements OperationVerifier<Attestation> {
     if (!specHelpers.bls_verify(
         groupPublicKey,
         specHelpers.hash_tree_root(new AttestationDataAndCustodyBit(data, false)),
-        attestation.getAggregatedSignature(),
+        attestation.getAggregateSignature(),
         specHelpers.get_domain(state.getForkData(), data.getSlot(), ATTESTATION))) {
       return failedResult("failed to verify aggregated signature");
     }

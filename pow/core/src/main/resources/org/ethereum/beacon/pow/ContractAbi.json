@@ -1,0 +1,80 @@
+[
+  {
+    "name": "Deposit",
+    "inputs": [
+      {
+        "type": "bytes32",
+        "name": "deposit_root",
+        "indexed": false
+      },
+      {
+        "type": "bytes",
+        "name": "data",
+        "indexed": false
+      },
+      {
+        "type": "bytes",
+        "name": "merkle_tree_index",
+        "indexed": false
+      },
+      {
+        "type": "bytes32[32]",
+        "name": "branch",
+        "indexed": false
+      }
+    ],
+    "anonymous": false,
+    "type": "event"
+  },
+  {
+    "name": "ChainStart",
+    "inputs": [
+      {
+        "type": "bytes32",
+        "name": "deposit_root",
+        "indexed": false
+      },
+      {
+        "type": "bytes",
+        "name": "time",
+        "indexed": false
+      }
+    ],
+    "anonymous": false,
+    "type": "event"
+  },
+  {
+    "name": "__init__",
+    "outputs": [],
+    "inputs": [],
+    "constant": false,
+    "payable": false,
+    "type": "constructor"
+  },
+  {
+    "name": "get_deposit_root",
+    "outputs": [
+      {
+        "type": "bytes32",
+        "name": "out"
+      }
+    ],
+    "inputs": [],
+    "constant": true,
+    "payable": false,
+    "type": "function"
+  },
+  {
+    "name": "deposit",
+    "outputs": [],
+    "inputs": [
+      {
+        "type": "bytes",
+        "name": "deposit_input"
+      }
+    ],
+    "constant": false,
+    "payable": true,
+    "type": "function"
+  }
+]

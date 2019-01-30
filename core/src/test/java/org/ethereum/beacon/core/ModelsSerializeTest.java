@@ -1,5 +1,6 @@
 package org.ethereum.beacon.core;
 
+import java.util.Collections;
 import static org.junit.Assert.assertEquals;
 
 import java.util.ArrayList;
@@ -150,15 +151,15 @@ public class ModelsSerializeTest {
   }
 
   private Deposit createDeposit1() {
-    Deposit deposit = new Deposit(new Hash32[0], UInt64.ZERO, createDepositData());
+    Deposit deposit = new Deposit(Collections.emptyList(), UInt64.ZERO, createDepositData());
 
     return deposit;
   }
 
   private Deposit createDeposit2() {
-    Hash32[] hashes = new Hash32[2];
-    hashes[0] = Hashes.keccak256(BytesValue.fromHexString("aa"));
-    hashes[1] = Hashes.keccak256(BytesValue.fromHexString("bb"));
+    ArrayList<Hash32> hashes = new ArrayList<>();
+    hashes.add(Hashes.keccak256(BytesValue.fromHexString("aa")));
+    hashes.add(Hashes.keccak256(BytesValue.fromHexString("bb")));
     Deposit deposit = new Deposit(hashes, UInt64.ZERO, createDepositData());
 
     return deposit;

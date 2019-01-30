@@ -1,22 +1,21 @@
 package org.ethereum.beacon.ssz.type;
 
-import net.consensys.cava.bytes.Bytes;
-import net.consensys.cava.ssz.BytesSSZReaderProxy;
-import net.consensys.cava.ssz.SSZ;
-import net.consensys.cava.ssz.SSZException;
-import org.ethereum.beacon.ssz.SSZSchemeBuilder;
-import org.ethereum.beacon.ssz.SSZSchemeException;
-import org.ethereum.beacon.types.Hash48;
-import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.bytes.Bytes32;
-import tech.pegasys.artemis.util.bytes.Bytes48;
-import tech.pegasys.artemis.util.bytes.BytesValue;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import net.consensys.cava.bytes.Bytes;
+import net.consensys.cava.ssz.BytesSSZReaderProxy;
+import net.consensys.cava.ssz.SSZ;
+import net.consensys.cava.ssz.SSZException;
+import org.ethereum.beacon.ssz.SSZSchemeBuilder;
+import org.ethereum.beacon.ssz.SSZSchemeException;
+import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.bytes.Bytes32;
+import tech.pegasys.artemis.util.bytes.Bytes48;
+import tech.pegasys.artemis.util.bytes.BytesValue;
 
 /**
  * SSZ Codec designed to work with fixed size bytes data classes representing hashes, check list in
@@ -30,7 +29,6 @@ public class HashCodec implements SSZCodec {
 
   static {
     supportedClassTypes.add(Hash32.class);
-    supportedClassTypes.add(Hash48.class);
   }
 
   private static Bytes[] repackBytesList(List<BytesValue> list) {
@@ -92,10 +90,6 @@ public class HashCodec implements SSZCodec {
           {
             return Hash32.wrap(Bytes32.wrap(reader.readHash(hashType.size).toArrayUnsafe()));
           }
-        case 48:
-          {
-            return Hash48.wrap(Bytes48.wrap(reader.readHash(hashType.size).toArrayUnsafe()));
-          }
       }
     } catch (Exception ex) {
       String error = String.format("Failed to read data from stream to field \"%s\"", field.name);
@@ -130,7 +124,6 @@ public class HashCodec implements SSZCodec {
                 bytesList.stream()
                     .map(Bytes::toArrayUnsafe)
                     .map(Bytes48::wrap)
-                    .map(Hash48::wrap)
                     .collect(Collectors.toList());
             break;
           }
@@ -147,8 +140,6 @@ public class HashCodec implements SSZCodec {
   private HashType parseFieldType(SSZSchemeBuilder.SSZScheme.SSZField field) {
     if (field.type.equals(Hash32.class)) {
       return HashType.of(32);
-    } else if (field.type.equals(Hash48.class)) {
-      return HashType.of(48);
     }
 
     throw new SSZSchemeException(String.format("Hash of class %s is not supported", field.type));
