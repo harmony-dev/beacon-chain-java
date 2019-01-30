@@ -6,8 +6,6 @@ import org.reactivestreams.Publisher;
 
 public interface BeaconChain {
 
-  Publisher<BeaconChainHead> getHeadStream();
-
   Publisher<BeaconTuple> getBlockStatesStream();
 
   Publisher<BeaconState> getSlotStatesStream();
