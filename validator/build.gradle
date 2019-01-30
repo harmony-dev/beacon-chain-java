@@ -8,5 +8,4 @@ dependencies {
   implementation project(':pow:core')
 
   implementation 'com.google.guava:guava'
-  implementation 'io.projectreactor:reactor-core'
 }

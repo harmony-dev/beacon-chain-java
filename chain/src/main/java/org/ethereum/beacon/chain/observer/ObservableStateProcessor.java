@@ -6,7 +6,6 @@ import org.ethereum.beacon.chain.storage.BeaconTupleStorage;
 import org.ethereum.beacon.consensus.HeadFunction;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
-import org.ethereum.beacon.types.ValidatorEvent;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.ReplayProcessor;
@@ -20,7 +19,6 @@ public class ObservableStateProcessor {
   BeaconChainHead head;
 
   Publisher<BeaconState> slotStatesStream;
-  Publisher<ValidatorEvent> validatorEventStream;
   BeaconState latestState;
 
   private final ReplayProcessor<BeaconChainHead> headSink = ReplayProcessor.cacheLast();
@@ -42,17 +40,10 @@ public class ObservableStateProcessor {
     Flux.from(slotStatesStream)
         .doOnNext(this::onSlotStateUpdate)
         .subscribe();
-    Flux.from(validatorEventStream)
-        .doOnNext(this::onValidatorNotice)
-        .subscribe();
   }
 
   private void onSlotStateUpdate(BeaconState slotState) {
     this.latestState = slotState;
-    updateObservableState();
-  }
-
-  private void onValidatorNotice(ValidatorEvent event) {
     updateObservableState();
   }
 
