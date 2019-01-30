@@ -16,6 +16,9 @@ import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.CrosslinkRecord;
 import org.ethereum.beacon.core.state.ForkData;
+import org.ethereum.beacon.core.types.Bitfield;
+import org.ethereum.beacon.core.types.Gwei;
+import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.pow.DepositContract;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt24;
@@ -58,66 +61,60 @@ public class InitialStateTransition implements StateTransition<BeaconStateEx> {
     MutableBeaconState initialState = MutableBeaconState.createNew();
 
     // Misc
-    initialState
-        .withSlot(chainSpec.getGenesisSlot())
-        .withGenesisTime(depositContractStart.getTime())
-        .withForkData(
+    initialState.setSlot(chainSpec.getGenesisSlot());
+    initialState.setGenesisTime(depositContractStart.getTime());
+    initialState.setForkData(
             new ForkData(
                 chainSpec.getGenesisForkVersion(),
                 chainSpec.getGenesisForkVersion(),
                 chainSpec.getGenesisSlot()));
 
     // Validator registry
-    initialState
-        .withValidatorRegistry(emptyList())
-        .withValidatorBalances(emptyList())
-        .withValidatorRegistryLatestChangeSlot(chainSpec.getGenesisSlot())
-        .withValidatorRegistryExitCount(UInt64.ZERO)
-        .withValidatorRegistryDeltaChainTip(Hash32.ZERO);
+    initialState.getValidatorRegistry().clear();
+    initialState.getValidatorBalances().clear();
+    initialState.setValidatorRegistryLatestChangeSlot(chainSpec.getGenesisSlot());
+    initialState.setValidatorRegistryExitCount(UInt64.ZERO);
+    initialState.setValidatorRegistryDeltaChainTip(Hash32.ZERO);
 
     // Randomness and committees
-    initialState
-        .withLatestRandaoMixes(
-            nCopies(chainSpec.getLatestRandaoMixesLength().getIntValue(), Hash32.ZERO))
-        .withLatestVdfOutputs(
+    initialState.getLatestRandaoMixes().addAll(
+            nCopies(chainSpec.getLatestRandaoMixesLength().getIntValue(), Hash32.ZERO));
+    initialState.getLatestVdfOutputs().addAll(
             nCopies(
                 chainSpec
                     .getLatestRandaoMixesLength()
                     .dividedBy(chainSpec.getEpochLength())
                     .getIntValue(),
-                Hash32.ZERO))
-        .withPreviousEpochStartShard(chainSpec.getGenesisStartShard())
-        .withCurrentEpochStartShard(chainSpec.getGenesisStartShard())
-        .withPreviousEpochCalculationSlot(chainSpec.getGenesisSlot())
-        .withCurrentEpochCalculationSlot(chainSpec.getGenesisSlot())
-        .withPreviousEpochRandaoMix(Hash32.ZERO)
-        .withCurrentEpochRandaoMix(Hash32.ZERO);
+                Hash32.ZERO));
+    initialState.setPreviousEpochStartShard(chainSpec.getGenesisStartShard());
+    initialState.setCurrentEpochStartShard(chainSpec.getGenesisStartShard());
+    initialState.setPreviousEpochCalculationSlot(chainSpec.getGenesisSlot());
+    initialState.setCurrentEpochCalculationSlot(chainSpec.getGenesisSlot());
+    initialState.setPreviousEpochRandaoMix(Hash32.ZERO);
+    initialState.setCurrentEpochRandaoMix(Hash32.ZERO);
 
     // Proof of custody
-    initialState.withCustodyChallenges(emptyList());
+    initialState.getCustodyChallenges().clear();
 
     // Finality
-    initialState
-        .withPreviousJustifiedSlot(chainSpec.getGenesisSlot())
-        .withJustifiedSlot(chainSpec.getGenesisSlot())
-        .withJustificationBitfield(UInt64.ZERO)
-        .withFinalizedSlot(chainSpec.getGenesisSlot());
+    initialState.setPreviousJustifiedSlot(chainSpec.getGenesisSlot());
+    initialState.setJustifiedSlot(chainSpec.getGenesisSlot());
+    initialState.setJustificationBitfield(Bitfield.ZERO);
+    initialState.setFinalizedSlot(chainSpec.getGenesisSlot());
 
     // Recent state
-    initialState
-        .withLatestCrosslinks(
-            nCopies(chainSpec.getShardCount().getIntValue(), CrosslinkRecord.EMPTY))
-        .withLatestBlockRoots(
-            nCopies(chainSpec.getLatestBlockRootsLength().getIntValue(), Hash32.ZERO))
-        .withLatestPenalizedExitBalances(
-            nCopies(chainSpec.getLatestPenalizedExitLength().getIntValue(), UInt64.ZERO))
-        .withLatestAttestations(emptyList())
-        .withBatchedBlockRoots(emptyList());
+    initialState.getLatestCrosslinks().addAll(
+            nCopies(chainSpec.getShardCount().getIntValue(), CrosslinkRecord.EMPTY));
+    initialState.getLatestBlockRoots().addAll(
+            nCopies(chainSpec.getLatestBlockRootsLength().getIntValue(), Hash32.ZERO));
+    initialState.getLatestPenalizedExitBalances().addAll(
+            nCopies(chainSpec.getLatestPenalizedExitLength().getIntValue(), Gwei.ZERO));
+    initialState.getLatestAttestations().clear();
+    initialState.getBatchedBlockRoots().clear();
 
     // PoW receipt root
-    initialState
-        .withLatestEth1Data(depositContractStart.getEth1Data())
-        .withEth1DataVotes(emptyList());
+    initialState.setLatestEth1Data(depositContractStart.getEth1Data());
+    initialState.getEth1DataVotes().clear();
 
     // handle initial deposits and activations
     final List<Deposit> initialDeposits = depositContractStart.getInitialDeposits();
@@ -126,22 +123,22 @@ public class InitialStateTransition implements StateTransition<BeaconStateEx> {
         deposit -> {
           DepositData depositData = deposit.getDepositData();
           DepositInput depositInput = depositData.getDepositInput();
-          UInt24 index = specHelpers.process_deposit(initialState,
+          ValidatorIndex index = specHelpers.process_deposit(initialState,
               depositInput.getPubKey(),
               depositData.getValue(),
               depositInput.getProofOfPossession(),
               depositInput.getWithdrawalCredentials()
               );
-          UInt64 balance = specHelpers.get_effective_balance(initialState, index);
+          Gwei balance = specHelpers.get_effective_balance(initialState, index);
 
           // initial validators must have a strict deposit value
-          if (chainSpec.getMaxDeposit().toGWei().compareTo(balance) <= 0) {
+          if (chainSpec.getMaxDeposit().lessEqual(balance)) {
             specHelpers.activate_validator(initialState, index, true);
           }
         });
 
 
-    BeaconState validatorsState = initialState.validate();
+    BeaconState validatorsState = initialState.createImmutable();
 
     Hash32 genesisBlockHash = BeaconBlocks.createGenesis(chainSpec)
         .withStateRoot(validatorsState.getHash()).getHash();

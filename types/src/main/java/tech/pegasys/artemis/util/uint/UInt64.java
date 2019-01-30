@@ -314,9 +314,26 @@ public class UInt64 extends Number implements Comparable<UInt64> {
     return Bytes8.longToBytes8(value);
   }
 
+  // TODO should be type safe with the respect to custom types
   @Override
   public int compareTo(UInt64 uint) {
     return Long.compareUnsigned(this.value, uint.getValue());
+  }
+
+  public boolean greater(UInt64 uint) {
+    return compareTo(uint) > 0;
+  }
+
+  public boolean less(UInt64 uint) {
+    return compareTo(uint) < 0;
+  }
+
+  public boolean greaterEqual(UInt64 uint) {
+    return compareTo(uint) >= 0;
+  }
+
+  public boolean lessEqual(UInt64 uint) {
+    return compareTo(uint) <= 0;
   }
 
   public Bytes8 toBytesBigEndian() {

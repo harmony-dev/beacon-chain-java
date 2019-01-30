@@ -14,6 +14,8 @@ import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustodyBit;
 import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.types.BLSPubkey;
+import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.crypto.BLS381.PublicKey;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes48;
@@ -82,7 +84,7 @@ public class AttestationVerifier implements OperationVerifier<Attestation> {
     }
 
     Hash32 shardBlockRoot =
-        state.getLatestCrosslinks().get(safeInt(data.getShard())).getShardBlockRoot();
+        state.getLatestCrosslinks().get(data.getShard()).getShardBlockRoot();
     if (!data.getJustifiedBlockRoot().equals(shardBlockRoot)
         && !data.getShardBlockRoot().equals(shardBlockRoot)) {
       return failedResult(
@@ -92,11 +94,11 @@ public class AttestationVerifier implements OperationVerifier<Attestation> {
           data.getJustifiedBlockRoot(), data.getShardBlockRoot(), shardBlockRoot);
     }
 
-    List<UInt24> participants =
+    List<ValidatorIndex> participants =
         specHelpers.get_attestation_participants(
             state, data, attestation.getParticipationBitfield());
 
-    List<Bytes48> pubKeys = specHelpers.mapIndicesToPubKeys(state, participants);
+    List<BLSPubkey> pubKeys = specHelpers.mapIndicesToPubKeys(state, participants);
     PublicKey groupPublicKey = specHelpers.bls_aggregate_pubkeys(pubKeys);
     if (!specHelpers.bls_verify(
         groupPublicKey,

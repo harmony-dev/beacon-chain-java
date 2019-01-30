@@ -1,5 +1,7 @@
 package org.ethereum.beacon.core.spec;
 
+import org.ethereum.beacon.core.types.SlotNumber;
+import org.ethereum.beacon.core.types.SlotNumber.EpochLength;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 /**
@@ -12,26 +14,26 @@ import tech.pegasys.artemis.util.uint.UInt64;
 public interface TimeParameters {
 
   UInt64 SLOT_DURATION = UInt64.valueOf(6); // 6 seconds
-  UInt64 MIN_ATTESTATION_INCLUSION_DELAY = UInt64.valueOf(1 << 2); // 4 slots
-  UInt64 EPOCH_LENGTH = UInt64.valueOf(1 << 6); // 64 slots
-  UInt64 SEED_LOOKAHEAD = UInt64.valueOf(1 << 6); // 64 slots
-  UInt64 ENTRY_EXIT_DELAY = UInt64.valueOf(1 << 8); // 256 slots
-  UInt64 ETH1_DATA_VOTING_PERIOD = UInt64.valueOf(1 << 10); // 1024 slots
-  UInt64 MIN_VALIDATOR_WITHDRAWAL_TIME = UInt64.valueOf(1 << 14); // 16384 slots
+  SlotNumber MIN_ATTESTATION_INCLUSION_DELAY = SlotNumber.of(1 << 2); // 4 slots
+  EpochLength EPOCH_LENGTH = new EpochLength(UInt64.valueOf(1 << 6)); // 64 slots
+  SlotNumber  SEED_LOOKAHEAD = SlotNumber.of(1 << 6); // 64 slots
+  SlotNumber ENTRY_EXIT_DELAY = SlotNumber.of(1 << 8); // 256 slots
+  SlotNumber ETH1_DATA_VOTING_PERIOD = SlotNumber.of(1 << 10); // 1024 slots
+  SlotNumber MIN_VALIDATOR_WITHDRAWAL_TIME = SlotNumber.of(1 << 14); // 16384 slots
 
   /* Values defined in the spec. */
 
   UInt64 getSlotDuration();
 
-  UInt64 getMinAttestationInclusionDelay();
+  SlotNumber getMinAttestationInclusionDelay();
 
-  UInt64 getEpochLength();
+  EpochLength getEpochLength();
 
-  UInt64 getSeedLookahead();
+  SlotNumber getSeedLookahead();
 
-  UInt64 getEntryExitDelay();
+  SlotNumber getEntryExitDelay();
 
-  UInt64 getEth1DataVotingPeriod();
+  SlotNumber getEth1DataVotingPeriod();
 
-  UInt64 getMinValidatorWithdrawalTime();
+  SlotNumber getMinValidatorWithdrawalTime();
 }

@@ -3,6 +3,7 @@ package org.ethereum.beacon.core.state;
 import com.google.common.base.Objects;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
+import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.util.bytes.BytesValue;
@@ -26,13 +27,13 @@ public class PendingAttestationRecord {
   /** Proof of custody bitfield. */
   @SSZ private final BytesValue custodyBitfield;
   /** Slot in which it was included. */
-  @SSZ private final UInt64 slotIncluded;
+  @SSZ private final SlotNumber slotIncluded;
 
   public PendingAttestationRecord(
       AttestationData data,
       BytesValue participationBitfield,
       BytesValue custodyBitfield,
-      UInt64 slotIncluded) {
+      SlotNumber slotIncluded) {
     this.data = data;
     this.participationBitfield = participationBitfield;
     this.custodyBitfield = custodyBitfield;
@@ -51,7 +52,7 @@ public class PendingAttestationRecord {
     return custodyBitfield;
   }
 
-  public UInt64 getSlotIncluded() {
+  public SlotNumber getSlotIncluded() {
     return slotIncluded;
   }
 

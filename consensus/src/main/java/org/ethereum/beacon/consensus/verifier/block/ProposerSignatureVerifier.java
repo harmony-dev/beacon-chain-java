@@ -10,6 +10,8 @@ import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.slashing.ProposalSignedData;
 import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.types.BLSPubkey;
+import org.ethereum.beacon.core.types.ValidatorIndex;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.bytes.Bytes8;
@@ -44,8 +46,8 @@ public class ProposerSignatureVerifier implements BeaconBlockVerifier {
             specHelpers.hash_tree_root(blockWithoutSignature));
 
     Hash32 proposalRoot = specHelpers.hash_tree_root(proposal);
-    UInt24 proposerIndex = specHelpers.get_beacon_proposer_index(state, state.getSlot());
-    Bytes48 publicKey = state.getValidatorRegistry().get(safeInt(proposerIndex)).getPubKey();
+    ValidatorIndex proposerIndex = specHelpers.get_beacon_proposer_index(state, state.getSlot());
+    BLSPubkey publicKey = state.getValidatorRegistry().get(proposerIndex).getPubKey();
     Bytes8 domain = specHelpers.get_domain(state.getForkData(), state.getSlot(), PROPOSAL);
 
     if (specHelpers.bls_verify(publicKey, proposalRoot, block.getSignature(), domain)) {

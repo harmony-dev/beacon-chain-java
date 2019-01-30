@@ -1,6 +1,8 @@
 package tech.pegasys.artemis.util.collections;
 
 import java.util.Collection;
+import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import tech.pegasys.artemis.util.uint.UInt24;
 
@@ -18,7 +20,7 @@ public interface ReadList<IndexType extends Number, ValueType> extends Iterable<
 
   ValueType get(IndexType index);
 
-  ListImpl<IndexType, ValueType> subList(IndexType fromIndex, IndexType toIndex);
+  ReadList<IndexType, ValueType> subList(IndexType fromIndex, IndexType toIndex);
 
   WriteList<IndexType, ValueType> createMutableCopy();
 
@@ -28,4 +30,7 @@ public interface ReadList<IndexType extends Number, ValueType> extends Iterable<
     return size().longValue() == 0;
   }
 
+  default List<ValueType> listCopy() {
+    return stream().collect(Collectors.toList());
+  }
 }

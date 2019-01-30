@@ -8,6 +8,9 @@ import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.spec.SignatureDomains;
+import org.ethereum.beacon.core.types.BLSPubkey;
+import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.crypto.BLS381;
 import org.ethereum.beacon.crypto.BLS381.KeyPair;
 import org.ethereum.beacon.crypto.BLS381.Signature;
@@ -42,9 +45,9 @@ public class TestUtils {
       KeyPair keyPair = KeyPair.generate();
       Hash32 proofOfPosession = Hash32.random(rnd);
       DepositInput depositInputWithoutSignature = new DepositInput(
-          Bytes48.leftPad(keyPair.getPublic().getEncodedBytes()),
+          BLSPubkey.wrap(Bytes48.leftPad(keyPair.getPublic().getEncodedBytes())),
           proofOfPosession,
-          Bytes96.ZERO
+          BLSSignature.wrap(Bytes96.ZERO)
       );
       Hash32 msgHash = specHelpers.hash_tree_root(depositInputWithoutSignature);
       Signature signature = BLS381
@@ -52,12 +55,17 @@ public class TestUtils {
 
       validatorsKeys.add(keyPair);
 
-      Deposit deposit = new Deposit(Collections.singletonList(Hash32.random(rnd)), UInt64.ZERO,
-          new DepositData(
-              new DepositInput(
-                  Bytes48.leftPad(keyPair.getPublic().getEncodedBytes()), proofOfPosession,
-                  Bytes96.wrap(signature.getEncoded(), 0)
-              ), specHelpers.getChainSpec().getMaxDeposit().toGWei(), UInt64.ZERO));
+      Deposit deposit =
+          new Deposit(
+              Collections.singletonList(Hash32.random(rnd)),
+              UInt64.ZERO,
+              new DepositData(
+                  new DepositInput(
+                      BLSPubkey.wrap(Bytes48.leftPad(keyPair.getPublic().getEncodedBytes())),
+                      proofOfPosession,
+                      BLSSignature.wrap(signature.getEncoded())),
+                  specHelpers.getChainSpec().getMaxDeposit(),
+                  UInt64.ZERO));
       deposits.add(deposit);
     }
 

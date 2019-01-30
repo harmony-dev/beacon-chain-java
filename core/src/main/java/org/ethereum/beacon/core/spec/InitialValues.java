@@ -1,5 +1,8 @@
 package org.ethereum.beacon.core.spec;
 
+import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.ShardNumber;
+import org.ethereum.beacon.core.types.SlotNumber;
 import tech.pegasys.artemis.util.bytes.Bytes1;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.uint.UInt64;
@@ -14,23 +17,23 @@ import tech.pegasys.artemis.util.uint.UInt64;
 public interface InitialValues {
 
   UInt64 GENESIS_FORK_VERSION = UInt64.ZERO;
-  UInt64 GENESIS_SLOT = UInt64.valueOf(1 << 19); // 2**19
-  UInt64 GENESIS_START_SHARD = UInt64.ZERO;
-  UInt64 FAR_FUTURE_SLOT = UInt64.MAX_VALUE; // (1 << 64) - 1
-  Bytes96 EMPTY_SIGNATURE = Bytes96.ZERO;
+  SlotNumber GENESIS_SLOT = SlotNumber.of(1 << 19); // 2**19
+  ShardNumber GENESIS_START_SHARD = ShardNumber.of(0);
+  SlotNumber FAR_FUTURE_SLOT = SlotNumber.castFrom(UInt64.MAX_VALUE); // (1 << 64) - 1
+  BLSSignature EMPTY_SIGNATURE = BLSSignature.ZERO;
   Bytes1 BLS_WITHDRAWAL_PREFIX_BYTE = Bytes1.ZERO;
 
   /* Values defined in the spec. */
 
   UInt64 getGenesisForkVersion();
 
-  UInt64 getGenesisSlot();
+  SlotNumber getGenesisSlot();
 
-  UInt64 getGenesisStartShard();
+  ShardNumber getGenesisStartShard();
 
-  UInt64 getFarFutureSlot();
+  SlotNumber getFarFutureSlot();
 
-  Bytes96 getEmptySignature();
+  BLSSignature getEmptySignature();
 
   Bytes1 getBlsWithdrawalPrefixByte();
 }

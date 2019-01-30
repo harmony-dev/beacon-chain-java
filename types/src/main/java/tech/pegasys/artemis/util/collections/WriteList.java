@@ -9,6 +9,11 @@ import tech.pegasys.artemis.util.uint.UInt24;
 public interface WriteList<IndexType extends Number, ValueType>
     extends ReadList<IndexType, ValueType> {
 
+  static <IndexType extends Number, ValueType> WriteList<IndexType, ValueType>
+      create(Function<Integer, IndexType> indexConverter) {
+    return new ListImpl<>(indexConverter);
+  }
+
   static <ValueType> WriteList<UInt24, ValueType> createUInt24() {
     return new ListImpl<>(UInt24::valueOf);
   }

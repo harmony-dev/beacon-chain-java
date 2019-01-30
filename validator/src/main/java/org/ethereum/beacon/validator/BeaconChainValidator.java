@@ -11,6 +11,10 @@ import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
+import org.ethereum.beacon.core.types.BLSPubkey;
+import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.SlotNumber;
+import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.validator.crypto.MessageSigner;
 import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.bytes.Bytes96;
@@ -30,7 +34,7 @@ import tech.pegasys.artemis.util.uint.UInt64;
 public class BeaconChainValidator implements ValidatorService {
 
   /** BLS public key that corresponds to a "hot" private key. */
-  private Bytes48 publicKey;
+  private BLSPubkey publicKey;
   /** Proposer logic. */
   private BeaconChainProposer proposer;
   /** Attester logic. */
@@ -38,12 +42,12 @@ public class BeaconChainValidator implements ValidatorService {
   /** The spec. */
   private SpecHelpers specHelpers;
   /** Helper that signs validator messages with a "hot" private key. */
-  private MessageSigner<Bytes96> messageSigner;
+  private MessageSigner<BLSSignature> messageSigner;
 
   /** Validator index. Assigned in {@link #init(BeaconState)} method. */
-  private UInt24 validatorIndex = UInt24.MAX_VALUE;
+  private ValidatorIndex validatorIndex = ValidatorIndex.MAX;
   /** Latest slot that has been processed. Initialized in {@link #init(BeaconState)} method. */
-  private UInt64 lastProcessedSlot = UInt64.MAX_VALUE;
+  private SlotNumber lastProcessedSlot = SlotNumber.castFrom(UInt64.MAX_VALUE);
   /** The most recent beacon state came from the outside. */
   private ObservableBeaconState recentState;
 
@@ -51,11 +55,11 @@ public class BeaconChainValidator implements ValidatorService {
   private ScheduledExecutorService executor;
 
   public BeaconChainValidator(
-      Bytes48 publicKey,
+      BLSPubkey publicKey,
       BeaconChainProposer proposer,
       BeaconChainAttester attester,
       SpecHelpers specHelpers,
-      MessageSigner<Bytes96> messageSigner) {
+      MessageSigner<BLSSignature> messageSigner) {
     this.publicKey = publicKey;
     this.proposer = proposer;
     this.attester = attester;
@@ -237,7 +241,7 @@ public class BeaconChainValidator implements ValidatorService {
    * @return {@code true} if assigned, {@link false} otherwise.
    */
   private boolean isEligibleToAttest(BeaconState state) {
-    final List<UInt24> firstCommittee =
+    final List<ValidatorIndex> firstCommittee =
         specHelpers.get_shard_committees_at_slot(state, state.getSlot()).get(0).getCommittee();
     return Collections.binarySearch(firstCommittee, validatorIndex) >= 0;
   }

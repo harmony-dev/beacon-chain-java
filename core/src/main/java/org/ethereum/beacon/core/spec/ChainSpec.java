@@ -1,6 +1,12 @@
 package org.ethereum.beacon.core.spec;
 
-import org.ethereum.beacon.types.Ether;
+import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.EpochNumber;
+import org.ethereum.beacon.core.types.Gwei;
+import org.ethereum.beacon.core.types.ShardNumber;
+import org.ethereum.beacon.core.types.SlotNumber;
+import org.ethereum.beacon.core.types.SlotNumber.EpochLength;
+import org.ethereum.beacon.core.types.ValidatorIndex;
 import tech.pegasys.artemis.ethereum.core.Address;
 import tech.pegasys.artemis.util.bytes.Bytes1;
 import tech.pegasys.artemis.util.bytes.Bytes96;
@@ -20,17 +26,17 @@ public interface ChainSpec
 
   class DefaultChainSpec implements ChainSpec {
     @Override
-    public UInt64 getShardCount() {
+    public ShardNumber getShardCount() {
       return SHARD_COUNT;
     }
 
     @Override
-    public UInt24 getTargetCommitteeSize() {
+    public ValidatorIndex getTargetCommitteeSize() {
       return TARGET_COMMITTEE_SIZE;
     }
 
     @Override
-    public Ether getEjectionBalance() {
+    public Gwei getEjectionBalance() {
       return EJECTION_BALANCE;
     }
 
@@ -40,7 +46,7 @@ public interface ChainSpec
     }
 
     @Override
-    public UInt64 getBeaconChainShardNumber() {
+    public ShardNumber getBeaconChainShardNumber() {
       return BEACON_CHAIN_SHARD_NUMBER;
     }
 
@@ -50,17 +56,17 @@ public interface ChainSpec
     }
 
     @Override
-    public UInt64 getLatestBlockRootsLength() {
+    public SlotNumber getLatestBlockRootsLength() {
       return LATEST_BLOCK_ROOTS_LENGTH;
     }
 
     @Override
-    public UInt64 getLatestRandaoMixesLength() {
+    public EpochNumber getLatestRandaoMixesLength() {
       return LATEST_RANDAO_MIXES_LENGTH;
     }
 
     @Override
-    public UInt64 getLatestPenalizedExitLength() {
+    public EpochNumber getLatestPenalizedExitLength() {
       return LATEST_PENALIZED_EXIT_LENGTH;
     }
 
@@ -80,12 +86,12 @@ public interface ChainSpec
     }
 
     @Override
-    public Ether getMinDeposit() {
+    public Gwei getMinDeposit() {
       return MIN_DEPOSIT;
     }
 
     @Override
-    public Ether getMaxDeposit() {
+    public Gwei getMaxDeposit() {
       return MAX_DEPOSIT;
     }
 
@@ -95,22 +101,22 @@ public interface ChainSpec
     }
 
     @Override
-    public UInt64 getGenesisSlot() {
+    public SlotNumber getGenesisSlot() {
       return GENESIS_SLOT;
     }
 
     @Override
-    public UInt64 getGenesisStartShard() {
+    public ShardNumber getGenesisStartShard() {
       return GENESIS_START_SHARD;
     }
 
     @Override
-    public UInt64 getFarFutureSlot() {
+    public SlotNumber getFarFutureSlot() {
       return FAR_FUTURE_SLOT;
     }
 
     @Override
-    public Bytes96 getEmptySignature() {
+    public BLSSignature getEmptySignature() {
       return EMPTY_SIGNATURE;
     }
 
@@ -125,32 +131,32 @@ public interface ChainSpec
     }
 
     @Override
-    public UInt64 getMinAttestationInclusionDelay() {
+    public SlotNumber getMinAttestationInclusionDelay() {
       return MIN_ATTESTATION_INCLUSION_DELAY;
     }
 
     @Override
-    public UInt64 getEpochLength() {
+    public EpochLength getEpochLength() {
       return EPOCH_LENGTH;
     }
 
     @Override
-    public UInt64 getSeedLookahead() {
+    public SlotNumber getSeedLookahead() {
       return SEED_LOOKAHEAD;
     }
 
     @Override
-    public UInt64 getEntryExitDelay() {
+    public SlotNumber getEntryExitDelay() {
       return ENTRY_EXIT_DELAY;
     }
 
     @Override
-    public UInt64 getEth1DataVotingPeriod() {
+    public SlotNumber getEth1DataVotingPeriod() {
       return ETH1_DATA_VOTING_PERIOD;
     }
 
     @Override
-    public UInt64 getMinValidatorWithdrawalTime() {
+    public SlotNumber getMinValidatorWithdrawalTime() {
       return MIN_VALIDATOR_WITHDRAWAL_TIME;
     }
 

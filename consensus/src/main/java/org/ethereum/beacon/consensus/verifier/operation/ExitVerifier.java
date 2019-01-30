@@ -36,7 +36,7 @@ public class ExitVerifier implements OperationVerifier<Exit> {
   public VerificationResult verify(Exit exit, BeaconState state) {
     specHelpers.checkIndexRange(state, exit.getValidatorIndex());
 
-    ValidatorRecord validator = state.getValidatorRegistry().get(safeInt(exit.getValidatorIndex()));
+    ValidatorRecord validator = state.getValidatorRegistry().get(exit.getValidatorIndex());
 
     if (state.getSlot().plus(chainSpec.getEntryExitDelay()).compareTo(validator.getExitSlot())
         <= 0) {

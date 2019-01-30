@@ -8,6 +8,7 @@ import org.ethereum.beacon.core.BeaconBlocks;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.Eth1Data;
+import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.pow.DepositContract.ChainStart;
 import org.junit.Assert;
 import org.junit.Test;
@@ -21,12 +22,13 @@ public class NextSlotTransitionTest {
     Random rnd = new Random();
     UInt64 genesisTime = UInt64.random(rnd);
     Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), Hash32.random(rnd));
-    ChainSpec chainSpec = new ChainSpec.DefaultChainSpec() {
-      @Override
-      public UInt64 getEpochLength() {
-        return UInt64.valueOf(8);
-      }
-    };
+    ChainSpec chainSpec =
+        new ChainSpec.DefaultChainSpec() {
+          @Override
+          public SlotNumber.EpochLength getEpochLength() {
+            return new SlotNumber.EpochLength(UInt64.valueOf(8));
+          }
+        };
     SpecHelpers specHelpers = new SpecHelpers(chainSpec);
 
     List<Deposit> deposits = TestUtils.getAnyDeposits(specHelpers, 8).getValue0();

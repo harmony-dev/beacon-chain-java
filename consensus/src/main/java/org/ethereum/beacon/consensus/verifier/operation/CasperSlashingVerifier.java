@@ -11,6 +11,7 @@ import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.CasperSlashing;
 import org.ethereum.beacon.core.operations.slashing.SlashableVoteData;
+import org.ethereum.beacon.core.types.ValidatorIndex;
 import tech.pegasys.artemis.util.uint.UInt24;
 
 /**
@@ -45,7 +46,7 @@ public class CasperSlashingVerifier implements OperationVerifier<CasperSlashing>
       return failedResult("slashable_vote_data_1 != slashable_vote_data_2");
     }
 
-    List<UInt24> intersection = specHelpers.custodyIndexIntersection(casperSlashing);
+    List<ValidatorIndex> intersection = specHelpers.custodyIndexIntersection(casperSlashing);
 
     if (intersection.size() < 1) {
       return failedResult("there is no intersection between indices of slashable_vote_data");
@@ -57,8 +58,8 @@ public class CasperSlashingVerifier implements OperationVerifier<CasperSlashing>
       return failedResult("no slashing conditions found");
     }
 
-    for (UInt24 index : slashableVoteData1.getCustodyBit0Indices()) {
-      if (safeInt(index) >= state.getValidatorRegistry().size()) {
+    for (ValidatorIndex index : slashableVoteData1.getCustodyBit0Indices()) {
+      if (index.compareTo(state.getValidatorRegistry().size()) >= 0) {
         return failedResult(
             "validator index %s is out of range, registry size %d",
             index, state.getValidatorRegistry().size());

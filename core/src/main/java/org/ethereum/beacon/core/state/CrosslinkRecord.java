@@ -2,6 +2,7 @@ package org.ethereum.beacon.core.state;
 
 import com.google.common.base.Objects;
 import org.ethereum.beacon.core.BeaconState;
+import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -18,19 +19,19 @@ import tech.pegasys.artemis.util.uint.UInt64;
 @SSZSerializable
 public class CrosslinkRecord {
 
-  public static final CrosslinkRecord EMPTY = new CrosslinkRecord(UInt64.ZERO, Hash32.ZERO);
+  public static final CrosslinkRecord EMPTY = new CrosslinkRecord(SlotNumber.of(0), Hash32.ZERO);
 
   /** Slot number. */
-  @SSZ private final UInt64 slot;
+  @SSZ private final SlotNumber slot;
   /** Shard block hash. */
   @SSZ private final Hash32 shardBlockRoot;
 
-  public CrosslinkRecord(UInt64 slot, Hash32 shardBlockRoot) {
+  public CrosslinkRecord(SlotNumber slot, Hash32 shardBlockRoot) {
     this.slot = slot;
     this.shardBlockRoot = shardBlockRoot;
   }
 
-  public UInt64 getSlot() {
+  public SlotNumber getSlot() {
     return slot;
   }
 

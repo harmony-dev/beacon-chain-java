@@ -1,6 +1,6 @@
 package org.ethereum.beacon.core.spec;
 
-import org.ethereum.beacon.types.Ether;
+import org.ethereum.beacon.core.types.Gwei;
 import tech.pegasys.artemis.ethereum.core.Address;
 import tech.pegasys.artemis.util.uint.UInt64;
 
@@ -16,8 +16,8 @@ public interface DepositContractParameters {
   Address DEPOSIT_CONTRACT_ADDRESS =
       Address.fromHexString("0x0000000000000000000000000000000000000000"); // TBD
   UInt64 DEPOSIT_CONTRACT_TREE_DEPTH = UInt64.valueOf(1 << 5); // 32
-  Ether MIN_DEPOSIT = Ether.valueOf(1); // 1 ETH
-  Ether MAX_DEPOSIT = Ether.valueOf(1 << 5); // 32 ETH
+  Gwei MIN_DEPOSIT = Gwei.ofEthers(1); // 1 ETH
+  Gwei MAX_DEPOSIT = Gwei.ofEthers(1 << 5); // 32 ETH
 
   /* Values defined in the spec. */
 
@@ -25,7 +25,7 @@ public interface DepositContractParameters {
 
   UInt64 getDepositContractTreeDepth();
 
-  Ether getMinDeposit();
+  Gwei getMinDeposit();
 
-  Ether getMaxDeposit();
+  Gwei getMaxDeposit();
 }
