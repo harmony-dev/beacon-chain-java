@@ -1,6 +1,5 @@
 package org.ethereum.beacon.consensus.verifier.block;
 
-import static org.ethereum.beacon.consensus.SpecHelpers.safeInt;
 import static org.ethereum.beacon.core.spec.SignatureDomains.PROPOSAL;
 
 import org.ethereum.beacon.consensus.SpecHelpers;
@@ -13,9 +12,7 @@ import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.bytes.Bytes8;
-import tech.pegasys.artemis.util.uint.UInt24;
 
 /**
  * Verifies proposer signature of the block.

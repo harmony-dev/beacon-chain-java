@@ -1,6 +1,5 @@
 package org.ethereum.beacon.consensus.verifier.block;
 
-import static org.ethereum.beacon.consensus.SpecHelpers.safeInt;
 import static org.ethereum.beacon.core.spec.SignatureDomains.RANDAO;
 
 import org.ethereum.beacon.consensus.SpecHelpers;

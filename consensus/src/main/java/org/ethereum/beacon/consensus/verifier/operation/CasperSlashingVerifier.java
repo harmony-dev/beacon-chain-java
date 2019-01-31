@@ -1,6 +1,5 @@
 package org.ethereum.beacon.consensus.verifier.operation;
 
-import static org.ethereum.beacon.consensus.SpecHelpers.safeInt;
 import static org.ethereum.beacon.consensus.verifier.VerificationResult.PASSED;
 import static org.ethereum.beacon.consensus.verifier.VerificationResult.failedResult;
 
@@ -12,7 +11,6 @@ import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.CasperSlashing;
 import org.ethereum.beacon.core.operations.slashing.SlashableVoteData;
 import org.ethereum.beacon.core.types.ValidatorIndex;
-import tech.pegasys.artemis.util.uint.UInt24;
 
 /**
  * Verifies {@link CasperSlashing} beacon chain operation.
