@@ -13,6 +13,7 @@ import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
+import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.collections.ReadList;
@@ -32,7 +33,7 @@ public interface MutableBeaconState extends BeaconState {
 
   void setSlot(SlotNumber slotNumber);
 
-  void setGenesisTime(UInt64 genesisTime);
+  void setGenesisTime(Time genesisTime);
 
   void setForkData(ForkData forkData);
 

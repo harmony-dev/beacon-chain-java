@@ -14,6 +14,7 @@ import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.SlotNumber;
+import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.validator.crypto.MessageSigner;
 import tech.pegasys.artemis.util.bytes.Bytes48;
@@ -155,7 +156,7 @@ public class BeaconChainValidator implements ValidatorService {
 
     // trigger attester at a halfway through the slot
     if (isEligibleToAttest(state)) {
-      UInt64 startAt = specHelpers.get_slot_middle_time(state, state.getSlot());
+      Time startAt = specHelpers.get_slot_middle_time(state, state.getSlot());
       schedule(startAt, this::attest);
     }
   }
@@ -175,7 +176,7 @@ public class BeaconChainValidator implements ValidatorService {
    * @param startAt a unix timestamp of start point, in seconds.
    * @param routine a routine.
    */
-  private void schedule(UInt64 startAt, Runnable routine) {
+  private void schedule(Time startAt, Runnable routine) {
     long startAtMillis = startAt.getValue() * 1000;
     assert System.currentTimeMillis() < startAtMillis;
     executor.schedule(routine, System.currentTimeMillis() - startAtMillis, TimeUnit.MILLISECONDS);

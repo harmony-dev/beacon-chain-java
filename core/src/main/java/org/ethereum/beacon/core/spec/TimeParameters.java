@@ -2,6 +2,7 @@ package org.ethereum.beacon.core.spec;
 
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.SlotNumber.EpochLength;
+import org.ethereum.beacon.core.types.Time;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 /**
@@ -13,7 +14,7 @@ import tech.pegasys.artemis.util.uint.UInt64;
  */
 public interface TimeParameters {
 
-  UInt64 SLOT_DURATION = UInt64.valueOf(6); // 6 seconds
+  Time SLOT_DURATION = Time.of(6); // 6 seconds
   SlotNumber MIN_ATTESTATION_INCLUSION_DELAY = SlotNumber.of(1 << 2); // 4 slots
   EpochLength EPOCH_LENGTH = new EpochLength(UInt64.valueOf(1 << 6)); // 64 slots
   SlotNumber  SEED_LOOKAHEAD = SlotNumber.of(1 << 6); // 64 slots
@@ -23,7 +24,7 @@ public interface TimeParameters {
 
   /* Values defined in the spec. */
 
-  UInt64 getSlotDuration();
+  Time getSlotDuration();
 
   SlotNumber getMinAttestationInclusionDelay();
 

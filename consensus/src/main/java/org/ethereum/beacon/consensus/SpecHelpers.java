@@ -38,6 +38,7 @@ import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
+import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.crypto.BLS381;
 import org.ethereum.beacon.crypto.BLS381.PublicKey;
@@ -52,7 +53,6 @@ import tech.pegasys.artemis.util.bytes.Bytes32s;
 import tech.pegasys.artemis.util.bytes.Bytes8;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.collections.ReadList;
-import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
 import tech.pegasys.artemis.util.uint.UInt64s;
 
@@ -1188,7 +1188,7 @@ public class SpecHelpers {
   }
 
   public SlotNumber get_current_slot(BeaconState state) {
-    UInt64 currentTime = UInt64.valueOf(System.currentTimeMillis() / 1000);
+    Time currentTime = Time.of(System.currentTimeMillis() / 1000);
     assert state.getGenesisTime().compareTo(currentTime) < 0;
     return SlotNumber.castFrom(
         currentTime.minus(state.getGenesisTime()).dividedBy(spec.getSlotDuration()));
@@ -1198,11 +1198,11 @@ public class SpecHelpers {
     return state.getSlot().equals(get_current_slot(state));
   }
 
-  public SlotNumber get_slot_start_time(BeaconState state, SlotNumber slot) {
-    return SlotNumber.castFrom(state.getGenesisTime().plus(spec.getSlotDuration().times(slot)));
+  public Time get_slot_start_time(BeaconState state, SlotNumber slot) {
+    return state.getGenesisTime().plus(spec.getSlotDuration().times(slot));
   }
 
-  public SlotNumber get_slot_middle_time(BeaconState state, SlotNumber slot) {
+  public Time get_slot_middle_time(BeaconState state, SlotNumber slot) {
     return get_slot_start_time(state, slot)
         .plus(spec.getSlotDuration().dividedBy(2));
   }
@@ -1360,12 +1360,6 @@ public class SpecHelpers {
     long lVal = uint.getValue();
     assertTrue(lVal >= 0 && lVal < Integer.MAX_VALUE);
     return (int) lVal;
-  }
-
-  public static int safeInt(UInt24 uint) {
-    int lVal = uint.getValue();
-    assertTrue(lVal >= 0 && lVal < (1 << 24));
-    return lVal;
   }
 
   private static void assertTrue(boolean assertion) {

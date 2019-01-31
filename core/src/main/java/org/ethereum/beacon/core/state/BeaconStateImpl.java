@@ -9,6 +9,7 @@ import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
+import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
@@ -29,7 +30,7 @@ public class BeaconStateImpl implements MutableBeaconState {
   /** Slot number that this state was calculated in. */
   @SSZ private SlotNumber slot = SlotNumber.ZERO;
   /** Timestamp of the genesis. */
-  @SSZ private UInt64 genesisTime = UInt64.ZERO;
+  @SSZ private Time genesisTime = Time.ZERO;
   /** Fork data corresponding to the {@link #slot}. */
   @SSZ private ForkData forkData = ForkData.EMPTY;
 
@@ -149,7 +150,7 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
-  public UInt64 getGenesisTime() {
+  public Time getGenesisTime() {
     return genesisTime;
   }
 
@@ -289,7 +290,7 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
-  public void setGenesisTime(UInt64 genesisTime) {
+  public void setGenesisTime(Time genesisTime) {
     this.genesisTime = genesisTime;
   }
 

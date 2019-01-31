@@ -6,6 +6,7 @@ import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.SlotNumber.EpochLength;
+import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import tech.pegasys.artemis.ethereum.core.Address;
 import tech.pegasys.artemis.util.bytes.Bytes1;
@@ -126,7 +127,7 @@ public interface ChainSpec
     }
 
     @Override
-    public UInt64 getSlotDuration() {
+    public Time getSlotDuration() {
       return SLOT_DURATION;
     }
 

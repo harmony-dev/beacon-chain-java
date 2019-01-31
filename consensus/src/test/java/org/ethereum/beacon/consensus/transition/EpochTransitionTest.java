@@ -14,6 +14,7 @@ import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.spec.SignatureDomains;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.SlotNumber;
+import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.crypto.BLS381;
 import org.ethereum.beacon.crypto.BLS381.KeyPair;
 import org.ethereum.beacon.crypto.BLS381.Signature;
@@ -31,7 +32,7 @@ public class EpochTransitionTest {
   @Test
   public void test1() {
     Random rnd = new Random();
-    UInt64 genesisTime = UInt64.random(rnd);
+    Time genesisTime = Time.castFrom(UInt64.random(rnd));
     Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), Hash32.random(rnd));
     ChainSpec chainSpec =
         new ChainSpec.DefaultChainSpec() {

@@ -13,6 +13,7 @@ import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
+import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.collections.ReadList;
@@ -43,7 +44,7 @@ public interface BeaconState extends Hashable<Hash32> {
   /** ******* Validator registry ********* */
 
   /** Timestamp of the genesis. */
-  UInt64 getGenesisTime();
+  Time getGenesisTime();
 
   /** Fork data corresponding to the {@link #getSlot()}. */
   ForkData getForkData();
