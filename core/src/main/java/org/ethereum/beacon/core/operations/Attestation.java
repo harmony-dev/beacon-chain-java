@@ -5,6 +5,7 @@ import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
+import org.ethereum.beacon.types.Bitfield;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
@@ -23,9 +24,9 @@ public class Attestation {
   /** Attestation data object. */
   @SSZ private final AttestationData data;
   /** A bitfield where each bit corresponds to a validator attested to the {@link #data}. */
-  @SSZ private final BytesValue participationBitfield;
+  @SSZ private final Bitfield participationBitfield;
   /** Proof of custody bitfield. */
-  @SSZ private final BytesValue custodyBitfield;
+  @SSZ private final Bitfield custodyBitfield;
   /** A product of aggregation of signatures from different validators to {@link #data}. */
   @SSZ private final Bytes96 aggregateSignature;
 
@@ -33,6 +34,17 @@ public class Attestation {
       AttestationData data,
       BytesValue participationBitfield,
       BytesValue custodyBitfield,
+      Bytes96 aggregateSignature) {
+    this.data = data;
+    this.participationBitfield = new Bitfield(participationBitfield.getArrayUnsafe());
+    this.custodyBitfield = new Bitfield(custodyBitfield.getArrayUnsafe());
+    this.aggregateSignature = aggregateSignature;
+  }
+
+  public Attestation(
+      AttestationData data,
+      Bitfield participationBitfield,
+      Bitfield custodyBitfield,
       Bytes96 aggregateSignature) {
     this.data = data;
     this.participationBitfield = participationBitfield;
@@ -44,11 +56,11 @@ public class Attestation {
     return data;
   }
 
-  public BytesValue getParticipationBitfield() {
+  public Bitfield getParticipationBitfield() {
     return participationBitfield;
   }
 
-  public BytesValue getCustodyBitfield() {
+  public Bitfield getCustodyBitfield() {
     return custodyBitfield;
   }
 

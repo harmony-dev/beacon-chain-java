@@ -1,6 +1,7 @@
 dependencies {
   implementation project(':types')
   implementation project(':core')
+  implementation project(':crypto')
   implementation project(':consensus')
   implementation project(':db:core')
 

@@ -11,6 +11,7 @@ import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 
 /**
@@ -24,12 +25,12 @@ public class LMDGhostHeadFunction implements HeadFunction {
   private final BeaconBlockStorage blockStorage;
   private final BeaconStateStorage stateStorage;
   private final SpecHelpers specHelpers;
-  Function<ValidatorRecord, Attestation> latestAttestationStorage;
+  Function<ValidatorRecord, Optional<Attestation>> latestAttestationStorage;
   private final int SEARCH_LIMIT = Integer.MAX_VALUE;
 
   public LMDGhostHeadFunction(
       BeaconChainStorage chainStorage,
-      Function<ValidatorRecord, Attestation> latestAttestationStorage,
+      Function<ValidatorRecord, Optional<Attestation>> latestAttestationStorage,
       SpecHelpers specHelpers) {
     this.stateStorage = chainStorage.getBeaconStateStorage();
     this.blockStorage = chainStorage.getBeaconBlockStorage();
@@ -65,7 +66,7 @@ public class LMDGhostHeadFunction implements HeadFunction {
    * store from validator. If several such attestations exist, use the one the validator v observed
    * first.
    */
-  private Attestation get_latest_attestation(ValidatorRecord validatorRecord) {
+  private Optional<Attestation> get_latest_attestation(ValidatorRecord validatorRecord) {
     return latestAttestationStorage.apply(validatorRecord);
   }
 }

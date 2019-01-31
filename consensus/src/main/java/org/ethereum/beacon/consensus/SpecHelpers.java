@@ -1245,7 +1245,7 @@ public class SpecHelpers {
       BeaconState state,
       Function<Hash32, Optional<BeaconBlock>> getBlock,
       Function<Hash32, List<BeaconBlock>> getChildrenBlocks,
-      Function<ValidatorRecord, Attestation> get_latest_attestation) {
+      Function<ValidatorRecord, Optional<Attestation>> get_latest_attestation) {
     List<ValidatorRecord> validators = state.getValidatorRegistry();
     List<UInt24> active_validator_indices =
         get_active_validator_indices(validators, state.getSlot());
@@ -1285,10 +1285,10 @@ public class SpecHelpers {
    */
   private Optional<BeaconBlock> get_latest_attestation_target(
       ValidatorRecord validatorRecord,
-      Function<ValidatorRecord, Attestation> get_latest_attestation,
+      Function<ValidatorRecord, Optional<Attestation>> get_latest_attestation,
       Function<Hash32, Optional<BeaconBlock>> getBlock) {
-    Attestation latest = get_latest_attestation.apply(validatorRecord);
-    return getBlock.apply(latest.getData().getJustifiedBlockRoot());
+    Optional<Attestation> latest = get_latest_attestation.apply(validatorRecord);
+    return latest.flatMap(at -> getBlock.apply(at.getData().getJustifiedBlockRoot()));
   }
 
   /**
