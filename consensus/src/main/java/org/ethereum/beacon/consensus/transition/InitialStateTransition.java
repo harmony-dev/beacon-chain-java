@@ -58,7 +58,7 @@ public class InitialStateTransition implements StateTransition<BeaconStateEx> {
   public BeaconStateEx apply(BeaconBlock block, BeaconStateEx state) {
     assert block.getSlot() == chainSpec.getGenesisSlot();
 
-    MutableBeaconState initialState = MutableBeaconState.createNew();
+    MutableBeaconState initialState = BeaconState.getEmpty().createMutableCopy();
 
     // Misc
     initialState.setSlot(chainSpec.getGenesisSlot());
