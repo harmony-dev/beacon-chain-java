@@ -1,9 +1,9 @@
 package org.ethereum.beacon.core.types;
 
-import java.util.Iterator;
 import tech.pegasys.artemis.util.uint.UInt64;
 
-public class SlotNumber extends UInt64 implements SafeCompare<SlotNumber> {
+public class SlotNumber extends UInt64 implements
+    SafeComparable<SlotNumber>, TypeIterable<SlotNumber> {
 
   public static class EpochLength extends SlotNumber {
     public EpochLength(UInt64 uint) {
@@ -73,37 +73,8 @@ public class SlotNumber extends UInt64 implements SafeCompare<SlotNumber> {
     return new SlotNumber(super.modulo(divisor));
   }
 
-  public Iterable<SlotNumber> iterateFrom(SlotNumber toSlot) {
-    return toSlot.iterateFrom(this);
-  }
-
-  public Iterable<SlotNumber> iterateTo(SlotNumber toSlot) {
-    if (toSlot.less(this))
-      throw new IllegalArgumentException("toSlot < this: " + toSlot + " < " + this);
-    return () -> new SlotNumber.Iter(SlotNumber.this, toSlot, 1);
-  }
-
-  private static class Iter implements Iterator<SlotNumber> {
-    int increment;
-    SlotNumber cur;
-    SlotNumber end;
-
-    public Iter(SlotNumber from, SlotNumber to, int increment) {
-      this.increment = increment;
-      this.cur = from;
-      this.end = to;
-    }
-
-    @Override
-    public boolean hasNext() {
-      return increment > 0 ? cur.less(end) : cur.greater(end);
-    }
-
-    @Override
-    public SlotNumber next() {
-      SlotNumber ret = cur;
-      cur = increment > 0 ? cur.plus(increment) : cur.minus(increment);
-      return ret;
-    }
+  @Override
+  public SlotNumber zeroElement() {
+    return ZERO;
   }
 }

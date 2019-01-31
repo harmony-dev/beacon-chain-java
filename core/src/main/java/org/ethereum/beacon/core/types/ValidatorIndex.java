@@ -1,9 +1,9 @@
 package org.ethereum.beacon.core.types;
 
-import java.util.Iterator;
 import tech.pegasys.artemis.util.uint.UInt64;
 
-public class ValidatorIndex extends UInt64 implements SafeCompare<ValidatorIndex> {
+public class ValidatorIndex extends UInt64 implements
+    SafeComparable<ValidatorIndex>, TypeIterable<ValidatorIndex> {
 
   public static final ValidatorIndex MAX = new ValidatorIndex(UInt64.MAX_VALUE);
   public static final ValidatorIndex ZERO = new ValidatorIndex(UInt64.ZERO);
@@ -12,12 +12,8 @@ public class ValidatorIndex extends UInt64 implements SafeCompare<ValidatorIndex
     return new ValidatorIndex(UInt64.valueOf(index));
   }
 
-  ValidatorIndex(UInt64 uint) {
+  private ValidatorIndex(UInt64 uint) {
     super(uint);
-  }
-
-  public Iterable<ValidatorIndex> iterateFromZero() {
-    return () -> new Iter(ZERO, ValidatorIndex.this, 1);
   }
 
   @Override
@@ -50,27 +46,8 @@ public class ValidatorIndex extends UInt64 implements SafeCompare<ValidatorIndex
     return new ValidatorIndex(super.minus(subtrahend));
   }
 
-  private static class Iter implements Iterator<ValidatorIndex> {
-    int increment;
-    ValidatorIndex cur;
-    ValidatorIndex end;
-
-    public Iter(ValidatorIndex from, ValidatorIndex to, int increment) {
-      this.increment = increment;
-      this.cur = from;
-      this.end = to;
-    }
-
-    @Override
-    public boolean hasNext() {
-      return increment > 0 ? cur.less(end): cur.greater(end);
-    }
-
-    @Override
-    public ValidatorIndex next() {
-      ValidatorIndex ret = cur;
-      cur = increment > 0 ? cur.plus(increment) : cur.minus(increment);
-      return ret;
-    }
+  @Override
+  public ValidatorIndex zeroElement() {
+    return ZERO;
   }
 }

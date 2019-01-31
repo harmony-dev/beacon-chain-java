@@ -3,7 +3,8 @@ package org.ethereum.beacon.core.types;
 import java.util.function.Function;
 import tech.pegasys.artemis.util.uint.UInt64;
 
-public class ShardNumber extends UInt64 implements SafeCompare<ShardNumber>{
+public class ShardNumber extends UInt64 implements
+    SafeComparable<ShardNumber>, TypeIterable<ShardNumber> {
 
   public static final ShardNumber ZERO = of(0);
 
@@ -28,5 +29,20 @@ public class ShardNumber extends UInt64 implements SafeCompare<ShardNumber>{
 
   public ShardNumber safeModulo(Function<UInt64, UInt64> safeCalc, ShardNumber divisor) {
     return new ShardNumber(safeCalc.apply(this).modulo(divisor));
+  }
+
+  @Override
+  public ShardNumber increment() {
+    return new ShardNumber(super.increment());
+  }
+
+  @Override
+  public ShardNumber decrement() {
+    return new ShardNumber(super.decrement());
+  }
+
+  @Override
+  public ShardNumber zeroElement() {
+    return ZERO;
   }
 }

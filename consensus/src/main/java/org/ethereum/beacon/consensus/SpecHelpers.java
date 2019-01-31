@@ -226,7 +226,7 @@ public class SpecHelpers {
   public List<ValidatorIndex>  get_active_validator_indices(
       ReadList<ValidatorIndex, ValidatorRecord> validators, SlotNumber slotNumber) {
     ArrayList<ValidatorIndex> ret = new ArrayList<>();
-    for (ValidatorIndex i : validators.size().iterateFromZero()) {
+    for (ValidatorIndex i : validators.size()) {
       if (is_active_validator(validators.get(i), slotNumber)) {
         ret.add(i);
       }
@@ -519,7 +519,7 @@ public class SpecHelpers {
 
     //  validator_pubkeys = [v.pubkey for v in state.validator_registry]
     ValidatorIndex index = null;
-    for (ValidatorIndex i : state.getValidatorRegistry().size().iterateFromZero()) {
+    for (ValidatorIndex i : state.getValidatorRegistry().size()) {
       if (state.getValidatorRegistry().get(i).getPubKey().equals(pubkey)) {
         index = i;
         break;
@@ -734,7 +734,7 @@ public class SpecHelpers {
     //    balance_churn = 0
     //    for index, validator in enumerate(state.validator_registry):
     Gwei balance_churn = Gwei.ZERO;
-    for (ValidatorIndex index : state.getValidatorRegistry().size().iterateFromZero()) {
+    for (ValidatorIndex index : state.getValidatorRegistry().size()) {
       ValidatorRecord validator = state.getValidatorRegistry().get(index);
       //    if validator.activation_slot > state.slot + ENTRY_EXIT_DELAY
       //       and state.validator_balances[index] >= MAX_DEPOSIT_AMOUNT:
@@ -816,7 +816,7 @@ public class SpecHelpers {
         .orElse(Gwei.ZERO);
 
     //    for index, validator in enumerate(state.validator_registry):
-    for (ValidatorIndex index : state.getValidatorRegistry().size().iterateFromZero()) {
+    for (ValidatorIndex index : state.getValidatorRegistry().size()) {
       ValidatorRecord validator = state.getValidatorRegistry().get(index);
       //    if (state.slot // EPOCH_LENGTH) == (validator.penalized_slot // EPOCH_LENGTH)
       //        + LATEST_PENALIZED_EXIT_LENGTH // 2:
@@ -1177,7 +1177,7 @@ public class SpecHelpers {
 
   public ValidatorIndex get_validator_index_by_pubkey(BeaconState state, BLSPubkey pubkey) {
     ValidatorIndex index = ValidatorIndex.MAX;
-    for (ValidatorIndex i : state.getValidatorRegistry().size().iterateFromZero()) {
+    for (ValidatorIndex i : state.getValidatorRegistry().size()) {
       if (state.getValidatorRegistry().get(i).getPubKey().equals(pubkey)) {
         index = i;
         break;

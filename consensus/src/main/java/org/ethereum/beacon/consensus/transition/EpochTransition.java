@@ -415,9 +415,7 @@ public class EpochTransition implements StateTransition<BeaconStateEx> {
 
     */
 
-    StreamSupport.stream(
-            SlotNumber.of(0).iterateTo(
-            spec.getEpochLength().times(2)).spliterator(), false)
+    spec.getEpochLength().times(2).streamFromZero()
         .map(i -> state.getSlot().minus(spec.getEpochLength().times(2)).plus(i))
         .flatMap(slot -> specHelpers.get_shard_committees_at_slot(state, slot).stream())
         .filter(shardCom ->

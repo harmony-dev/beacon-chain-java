@@ -2,7 +2,7 @@ package org.ethereum.beacon.core.types;
 
 import tech.pegasys.artemis.util.uint.UInt64;
 
-public class Gwei extends UInt64 implements SafeCompare<Gwei>{
+public class Gwei extends UInt64 implements SafeComparable<Gwei> {
 
   public static final Gwei ZERO = of(0);
 
@@ -50,6 +50,6 @@ public class Gwei extends UInt64 implements SafeCompare<Gwei>{
   }
 
   public Gwei times(int times) {
-    return new Gwei(this.times(times));
+    return new Gwei(super.times(times));
   }
 }
