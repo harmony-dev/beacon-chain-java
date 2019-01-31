@@ -239,8 +239,8 @@ public class SSZCodecRoulette implements SSZCodecResolver {
   private SSZCodec resolveCodec(SSZSchemeBuilder.SSZScheme.SSZField field) {
     Class<?> type = field.type;
     boolean subclassCodec = false;
-    if (!field.getSerializableClass().equals(type)) {
-      type = field.getSerializableClass();
+    if (!SubclassCodec.getSerializableClass(type).equals(type)) {
+      type = SubclassCodec.getSerializableClass(type);
       subclassCodec = true;
     }
 

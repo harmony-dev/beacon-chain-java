@@ -37,21 +37,6 @@ public interface SSZSchemeBuilder {
        */
       public boolean notAContainer = false;
 
-      /**
-       *  If the field class specifies {@link SSZSerializable#serializeAs()} attribute
-       *  returns the specified class.
-       *  Else returns type value.
-       */
-      public Class<?> getSerializableClass() {
-        SSZSerializable fieldClassAnnotation = type.getAnnotation(SSZSerializable.class);
-        if (fieldClassAnnotation != null && fieldClassAnnotation.serializeAs() != void.class) {
-          // the class of the field wants to be serialized as another class
-          return fieldClassAnnotation.serializeAs();
-        } else {
-          return type;
-        }
-      }
-
       @Override
       public String toString() {
         return "SSZField{"

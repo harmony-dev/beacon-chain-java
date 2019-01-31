@@ -7,7 +7,14 @@ import java.util.stream.Collectors;
 import net.consensys.cava.ssz.BytesSSZReaderProxy;
 import org.ethereum.beacon.ssz.ConstructorObjCreator;
 import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
+import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 
+/**
+ * The SSZCodec which implements logic of {@link SSZSerializable#serializeAs()} attribute
+ * It delegates calls to wrapped Codec corresponding to <code>serializeAs</code> class
+ * but substitutes <code>field.type</code> with the <code>serializeAs</code> class
+ * and decodes result to the original <code>field.type</code>.
+ */
 public class SubclassCodec implements SSZCodec {
 
   private final SSZCodec superclassCodec;
@@ -64,7 +71,7 @@ public class SubclassCodec implements SSZCodec {
 
   private static SSZField getSerializableField(SSZField field) {
     SSZField ret = new SSZField();
-    ret.type = field.getSerializableClass();
+    ret.type = getSerializableClass(field.type);
     ret.name = field.name;
     ret.multipleType = field.multipleType;
     ret.extraType = field.extraType;
@@ -73,4 +80,21 @@ public class SubclassCodec implements SSZCodec {
     ret.notAContainer = field.notAContainer;
     return ret;
   }
+
+  /**
+   *  If the field class specifies {@link SSZSerializable#serializeAs()} attribute
+   *  returns the specified class.
+   *  Else returns type value.
+   */
+  public static Class<?> getSerializableClass(Class<?> type) {
+    SSZSerializable fieldClassAnnotation = type.getAnnotation(SSZSerializable.class);
+    if (fieldClassAnnotation != null && fieldClassAnnotation.serializeAs() != void.class) {
+      // the class of the field wants to be serialized as another class
+      return fieldClassAnnotation.serializeAs();
+    } else {
+      return type;
+    }
+  }
+
+
 }
