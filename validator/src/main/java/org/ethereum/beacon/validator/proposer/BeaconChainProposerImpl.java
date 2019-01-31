@@ -77,6 +77,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
     builder
         .withSlot(state.getSlot())
         .withParentRoot(parentRoot)
+        .withStateRoot(Hash32.ZERO)
         .withRandaoReveal(randaoReveal)
         .withEth1Data(eth1Data)
         .withSignature(chainSpec.getEmptySignature())
