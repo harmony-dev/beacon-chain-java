@@ -1,10 +1,13 @@
 package org.ethereum.beacon.core.types;
 
+import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.util.uint.UInt64;
 
+@SSZSerializable(serializeAs = UInt64.class)
 public class SlotNumber extends UInt64 implements
     SafeComparable<SlotNumber>, TypeIterable<SlotNumber> {
 
+  @SSZSerializable(serializeAs = UInt64.class)
   public static class EpochLength extends SlotNumber {
     public EpochLength(UInt64 uint) {
       super(uint);
@@ -26,7 +29,7 @@ public class SlotNumber extends UInt64 implements
     return new SlotNumber(slot);
   }
 
-  SlotNumber(UInt64 uint) {
+  public SlotNumber(UInt64 uint) {
     super(uint);
   }
 

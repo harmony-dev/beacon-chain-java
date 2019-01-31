@@ -1,7 +1,9 @@
 package org.ethereum.beacon.core.types;
 
+import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.util.uint.UInt64;
 
+@SSZSerializable(serializeAs = UInt64.class)
 public class ValidatorIndex extends UInt64 implements
     SafeComparable<ValidatorIndex>, TypeIterable<ValidatorIndex> {
 
@@ -12,7 +14,7 @@ public class ValidatorIndex extends UInt64 implements
     return new ValidatorIndex(UInt64.valueOf(index));
   }
 
-  private ValidatorIndex(UInt64 uint) {
+  public ValidatorIndex(UInt64 uint) {
     super(uint);
   }
 
