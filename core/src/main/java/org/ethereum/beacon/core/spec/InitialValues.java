@@ -14,7 +14,7 @@ import tech.pegasys.artemis.util.uint.UInt64;
 public interface InitialValues {
 
   UInt64 GENESIS_FORK_VERSION = UInt64.ZERO;
-  UInt64 GENESIS_SLOT = UInt64.ZERO;
+  UInt64 GENESIS_SLOT = UInt64.valueOf(1 << 19); // 524,288
   UInt64 GENESIS_START_SHARD = UInt64.ZERO;
   UInt64 FAR_FUTURE_SLOT = UInt64.MAX_VALUE; // (1 << 64) - 1
   Bytes96 EMPTY_SIGNATURE = Bytes96.ZERO;
