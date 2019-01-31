@@ -222,7 +222,7 @@ public class UIntCodec implements SSZCodec {
   }
 
   @Override
-  public List<Object> decodeList(
+  public List decodeList(
       SSZSchemeBuilder.SSZScheme.SSZField field, BytesSSZReaderProxy reader) {
     NumericType numericType = parseFieldType(field);
 
@@ -232,18 +232,18 @@ public class UIntCodec implements SSZCodec {
           switch (numericType.size) {
             case 24:
               {
-                return (List<Object>) (List<?>) readUInt24List(numericType, reader);
+                return readUInt24List(numericType, reader);
               }
             case 64:
               {
-                return (List<Object>) (List<?>) readUInt64List(numericType, reader);
+                return readUInt64List(numericType, reader);
               }
           }
         }
       case BIGINT:
         {
           if (numericType.size == 256) {
-            return (List<Object>) (List<?>) readUInt256List(numericType, reader);
+            return readUInt256List(numericType, reader);
           }
         }
       default:
