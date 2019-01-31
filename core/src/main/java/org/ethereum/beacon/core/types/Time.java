@@ -1,7 +1,9 @@
 package org.ethereum.beacon.core.types;
 
+import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.util.uint.UInt64;
 
+@SSZSerializable(serializeAs = UInt64.class)
 public class Time extends UInt64 implements SafeComparable<Time> {
 
   public static final Time ZERO = of(0);

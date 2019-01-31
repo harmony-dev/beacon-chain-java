@@ -1,8 +1,10 @@
 package org.ethereum.beacon.core.types;
 
 import org.ethereum.beacon.core.types.SlotNumber.EpochLength;
+import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.util.uint.UInt64;
 
+@SSZSerializable(serializeAs = UInt64.class)
 public class EpochNumber extends UInt64 implements
     SafeComparable<EpochNumber>, TypeIterable<EpochNumber> {
 
@@ -12,7 +14,7 @@ public class EpochNumber extends UInt64 implements
     return new EpochNumber(UInt64.valueOf(epochNum));
   }
 
-  EpochNumber(UInt64 uint) {
+  public EpochNumber(UInt64 uint) {
     super(uint);
   }
 

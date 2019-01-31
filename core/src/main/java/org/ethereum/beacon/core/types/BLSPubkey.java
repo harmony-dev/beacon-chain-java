@@ -1,13 +1,16 @@
 package org.ethereum.beacon.core.types;
 
+import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.util.bytes.Bytes48;
+import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.DelegatingBytes48;
 
+@SSZSerializable(serializeAs = Bytes48.class)
 public class BLSPubkey extends DelegatingBytes48 {
 
   public static final BLSPubkey ZERO = new BLSPubkey(Bytes48.ZERO);
 
-  private BLSPubkey(final Bytes48 bytes) {
+  public BLSPubkey(final Bytes48 bytes) {
     super(bytes);
   }
 

@@ -1,7 +1,9 @@
 package org.ethereum.beacon.core.types;
 
+import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.util.uint.UInt64;
 
+@SSZSerializable(serializeAs = UInt64.class)
 public class Gwei extends UInt64 implements SafeComparable<Gwei> {
 
   public static final Gwei ZERO = of(0);

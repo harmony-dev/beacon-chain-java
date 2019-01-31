@@ -1,8 +1,10 @@
 package org.ethereum.beacon.core.types;
 
 import java.util.function.Function;
+import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.util.uint.UInt64;
 
+@SSZSerializable(serializeAs = UInt64.class)
 public class ShardNumber extends UInt64 implements
     SafeComparable<ShardNumber>, TypeIterable<ShardNumber> {
 

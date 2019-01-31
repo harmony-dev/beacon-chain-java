@@ -12,18 +12,27 @@ import org.jetbrains.annotations.NotNull;
 class ListImpl<IndexType extends Number, ValueType>
     implements WriteList<IndexType, ValueType> {
 
+  static <IndexType extends Number, ValueType> WriteList<IndexType, ValueType>
+      wrap(List<ValueType> backedList, Function<Integer, IndexType> indexConverter) {
+    return new ListImpl<>(backedList, indexConverter);
+  }
+
   private final List<ValueType> backedList;
   private final Function<Integer, IndexType> indexConverter;
 
-  public ListImpl(Collection<ValueType> source,
+  private ListImpl(List<ValueType> backedList,
       Function<Integer, IndexType> indexConverter) {
-    this.backedList = new ArrayList<>(source);
+    this.backedList = backedList;
     this.indexConverter = indexConverter;
   }
 
-  public ListImpl(Function<Integer, IndexType> indexConverter) {
-    this.indexConverter = indexConverter;
-    backedList = new ArrayList<>();
+  ListImpl(Collection<ValueType> source,
+      Function<Integer, IndexType> indexConverter) {
+    this(new ArrayList<>(source), indexConverter);
+  }
+
+  ListImpl(Function<Integer, IndexType> indexConverter) {
+    this(new ArrayList<>(), indexConverter);
   }
 
   @Override

@@ -1,7 +1,9 @@
 package org.ethereum.beacon.core.types;
 
+import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.util.uint.UInt64;
 
+@SSZSerializable(serializeAs = UInt64.class)
 public class Bitfield extends UInt64 {
 
   public static final Bitfield ZERO = new Bitfield(UInt64.ZERO);

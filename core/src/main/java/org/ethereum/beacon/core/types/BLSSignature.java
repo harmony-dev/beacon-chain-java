@@ -1,9 +1,11 @@
 package org.ethereum.beacon.core.types;
 
+import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.bytes.WrappingBytes96;
 
+@SSZSerializable(serializeAs = Bytes96.class)
 public class BLSSignature extends WrappingBytes96 {
 
   public static final BLSSignature ZERO = new BLSSignature(Bytes96.ZERO);
@@ -12,7 +14,7 @@ public class BLSSignature extends WrappingBytes96 {
     return new BLSSignature(signatureBytes);
   }
 
-  private BLSSignature(Bytes96 value) {
+  public BLSSignature(Bytes96 value) {
     super(value);
   }
 }
