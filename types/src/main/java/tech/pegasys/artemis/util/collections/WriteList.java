@@ -2,6 +2,7 @@ package tech.pegasys.artemis.util.collections;
 
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.List;
 import java.util.function.Function;
 import org.jetbrains.annotations.NotNull;
 import tech.pegasys.artemis.util.uint.UInt24;
@@ -10,16 +11,13 @@ public interface WriteList<IndexType extends Number, ValueType>
     extends ReadList<IndexType, ValueType> {
 
   static <IndexType extends Number, ValueType> WriteList<IndexType, ValueType>
+      wrap(List<ValueType> srcList, Function<Integer, IndexType> indexConverter) {
+    return ListImpl.wrap(srcList, indexConverter);
+  }
+
+  static <IndexType extends Number, ValueType> WriteList<IndexType, ValueType>
       create(Function<Integer, IndexType> indexConverter) {
     return new ListImpl<>(indexConverter);
-  }
-
-  static <ValueType> WriteList<UInt24, ValueType> createUInt24() {
-    return new ListImpl<>(UInt24::valueOf);
-  }
-
-  static <ValueType> WriteList<UInt24, ValueType> createUInt24(Collection<ValueType> source) {
-    return new ListImpl<>(source, UInt24::valueOf);
   }
 
   boolean add(ValueType valueType);
