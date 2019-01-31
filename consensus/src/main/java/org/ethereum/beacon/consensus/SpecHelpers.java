@@ -1326,6 +1326,28 @@ public class SpecHelpers {
     }
   }
 
+  /*
+  def slot_to_epoch(slot: SlotNumber) -> EpochNumber:
+    """
+    Return the epoch number of the given ``slot``.
+    """
+    return slot // EPOCH_LENGTH
+   */
+  public UInt64 slot_to_epoch(UInt64 slot) {
+    return slot.dividedBy(spec.getEpochLength());
+  }
+
+  /*
+  def get_current_epoch(state: BeaconState) -> EpochNumber:
+    """
+    Return the current epoch of the given ``state``.
+    """
+    return slot_to_epoch(state.slot)
+   */
+  public UInt64 get_current_epoch(BeaconState state) {
+    return slot_to_epoch(state.getSlot());
+  }
+
   public static int safeInt(UInt64 uint) {
     long lVal = uint.getValue();
     assertTrue(lVal >= 0 && lVal < Integer.MAX_VALUE);
