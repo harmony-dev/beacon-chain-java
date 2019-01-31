@@ -42,9 +42,9 @@ public class ValidatorRecord {
   /** Status flags. */
   @SSZ private final UInt64 statusFlags;
   /** Slot the proof of custody seed was last changed. */
-  @SSZ private final UInt64 latestCustodyReseedSlot;
+  @SSZ private final SlotNumber latestCustodyReseedSlot;
 
-  @SSZ private final UInt64 penultimateCustodyReseedSlot;
+  @SSZ private final SlotNumber penultimateCustodyReseedSlot;
 
   public ValidatorRecord(
       BLSPubkey pubKey,
@@ -56,8 +56,8 @@ public class ValidatorRecord {
       SlotNumber penalizedSlot,
       UInt64 exitCount,
       UInt64 statusFlags,
-      UInt64 latestCustodyReseedSlot,
-      UInt64 penultimateCustodyReseedSlot) {
+      SlotNumber latestCustodyReseedSlot,
+      SlotNumber penultimateCustodyReseedSlot) {
     this.pubKey = pubKey;
     this.withdrawalCredentials = withdrawalCredentials;
     this.proposerSlots = proposerSlots;
@@ -148,8 +148,8 @@ public class ValidatorRecord {
     private SlotNumber penalizedSlot;
     private UInt64 exitCount;
     private UInt64 statusFlags;
-    private UInt64 latestCustodyReseedSlot;
-    private UInt64 penultimateCustodyReseedSlot;
+    private SlotNumber latestCustodyReseedSlot;
+    private SlotNumber penultimateCustodyReseedSlot;
 
     private Builder() {}
 
@@ -261,12 +261,12 @@ public class ValidatorRecord {
       return this;
     }
 
-    public Builder withLatestCustodyReseedSlot(UInt64 latestCustodyReseedSlot) {
+    public Builder withLatestCustodyReseedSlot(SlotNumber latestCustodyReseedSlot) {
       this.latestCustodyReseedSlot = latestCustodyReseedSlot;
       return this;
     }
 
-    public Builder withPenultimateCustodyReseedSlot(UInt64 penultimateCustodyReseedSlot) {
+    public Builder withPenultimateCustodyReseedSlot(SlotNumber penultimateCustodyReseedSlot) {
       this.penultimateCustodyReseedSlot = penultimateCustodyReseedSlot;
       return this;
     }

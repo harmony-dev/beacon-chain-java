@@ -466,7 +466,7 @@ public class EpochTransition implements StateTransition<BeaconStateEx> {
         .minus(state.getFinalizedSlot())
         .dividedBy(spec.getEpochLength());
 
-    if (epochs_since_finality.compareTo(UInt64.valueOf(4)) <= 0) {
+    if (epochs_since_finality.lessEqual(EpochNumber.of(4))) {
       // Case 1: epochs_since_finality <= 4:
 
       //  Expected FFG source:
@@ -720,7 +720,7 @@ public class EpochTransition implements StateTransition<BeaconStateEx> {
       state.setPreviousEpochStartShard(state.getCurrentEpochStartShard());
       //    Let epochs_since_last_registry_change =
       //      (state.slot - state.validator_registry_update_slot) // EPOCH_LENGTH.
-      UInt64 epochs_since_last_registry_change = state.getSlot()
+      EpochNumber epochs_since_last_registry_change = state.getSlot()
           .minus(state.getValidatorRegistryLatestChangeSlot())
           .dividedBy(spec.getEpochLength());
 

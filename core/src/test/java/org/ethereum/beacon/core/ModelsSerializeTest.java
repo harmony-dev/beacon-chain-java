@@ -423,8 +423,8 @@ public class ModelsSerializeTest {
             .withPenalizedSlot(SlotNumber.ZERO)
             .withExitCount(UInt64.ZERO)
             .withStatusFlags(UInt64.ZERO)
-            .withLatestCustodyReseedSlot(UInt64.ZERO)
-            .withPenultimateCustodyReseedSlot(UInt64.ZERO)
+            .withLatestCustodyReseedSlot(SlotNumber.ZERO)
+            .withPenultimateCustodyReseedSlot(SlotNumber.ZERO)
             .withProposerSlots(SlotNumber.ZERO)
             .build();
 

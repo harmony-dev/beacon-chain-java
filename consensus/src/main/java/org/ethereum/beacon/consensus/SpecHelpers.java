@@ -144,7 +144,7 @@ public class SpecHelpers {
     assertTrue(slot.less(state_epoch_slot.plus(spec.getEpochLength())));
 
     //    offset = slot % EPOCH_LENGTH
-    UInt64 offset = slot.modulo(spec.getEpochLength());
+    SlotNumber offset = slot.modulo(spec.getEpochLength());
 
     //    if slot < state_epoch_slot:
     int committees_per_slot;
@@ -201,7 +201,7 @@ public class SpecHelpers {
 
   public ValidatorIndex get_beacon_proposer_index_in_committee(
       List<ValidatorIndex> committee, SlotNumber slot) {
-    return committee.get(safeInt(slot.modulo(committee.size())));
+    return committee.get(slot.modulo(committee.size()).getIntValue());
   }
 
   /*
@@ -1073,7 +1073,7 @@ public class SpecHelpers {
   public Hash32 get_block_root(BeaconState state, SlotNumber slot) {
     assertTrue(state.getSlot().lessEqual(slot.plus(spec.getLatestBlockRootsLength())));
     assertTrue(slot.less(state.getSlot()));
-    return state.getLatestBlockRoots().get(safeInt(slot.modulo(spec.getLatestBlockRootsLength())));
+    return state.getLatestBlockRoots().get(slot.modulo(spec.getLatestBlockRootsLength()).getIntValue());
   }
 
   /*
@@ -1163,7 +1163,7 @@ public class SpecHelpers {
       Hash32 leaf, List<Hash32> branch, UInt64 depth, UInt64 index, Hash32 root) {
 
     Hash32 value = leaf;
-    for (int i : IntStream.range(0, safeInt(depth)).toArray()) {
+    for (int i : IntStream.range(0, depth.intValue()).toArray()) {
       if (index.dividedBy(UInt64.valueOf(1 << i)).modulo(UInt64.valueOf(2)).compareTo(UInt64.ZERO)
           > 0) {
         value = hash(branch.get(i).concat(value));
@@ -1354,12 +1354,6 @@ public class SpecHelpers {
           .map(parent -> get_ancestor(parent, slot, getBlock))
           .get();
     }
-  }
-
-  public static int safeInt(UInt64 uint) {
-    long lVal = uint.getValue();
-    assertTrue(lVal >= 0 && lVal < Integer.MAX_VALUE);
-    return (int) lVal;
   }
 
   private static void assertTrue(boolean assertion) {

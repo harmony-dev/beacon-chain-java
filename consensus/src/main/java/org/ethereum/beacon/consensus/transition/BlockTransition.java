@@ -1,6 +1,5 @@
 package org.ethereum.beacon.consensus.transition;
 
-import java.util.ArrayList;
 import java.util.List;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.StateTransition;
@@ -17,8 +16,6 @@ import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.Eth1DataVote;
 import org.ethereum.beacon.core.state.PendingAttestationRecord;
 import org.ethereum.beacon.core.types.ValidatorIndex;
-import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public class BlockTransition implements StateTransition<BeaconStateEx> {
