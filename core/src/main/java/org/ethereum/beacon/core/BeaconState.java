@@ -108,7 +108,7 @@ public interface BeaconState extends Hashable<Hash32> {
   ReadList<ShardNumber, CrosslinkRecord> getLatestCrosslinks();
 
   /** Latest block hashes for each shard. */
-  ReadList<Integer, Hash32> getLatestBlockRoots();
+  ReadList<SlotNumber, Hash32> getLatestBlockRoots();
 
   /** Indices of validators that has been ejected lately. */
   ReadList<EpochNumber, Gwei> getLatestPenalizedExitBalances();

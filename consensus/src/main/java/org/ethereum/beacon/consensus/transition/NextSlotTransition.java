@@ -37,7 +37,7 @@ public class NextSlotTransition implements StateTransition<BeaconStateEx> {
 
     //  Set state.latest_block_roots[(state.slot - 1) % LATEST_BLOCK_ROOTS_LENGTH] = previous_block_root.
     state.getLatestBlockRoots().set(
-        state.getSlot().decrement().modulo(spec.getLatestBlockRootsLength()).getIntValue(),
+        state.getSlot().decrement().modulo(spec.getLatestBlockRootsLength()),
         stateEx.getLatestChainBlockHash());
 
     // If state.slot % LATEST_BLOCK_ROOTS_LENGTH == 0

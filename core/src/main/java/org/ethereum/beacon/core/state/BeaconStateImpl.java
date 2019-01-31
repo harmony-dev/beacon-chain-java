@@ -80,7 +80,7 @@ public class BeaconStateImpl implements MutableBeaconState {
   /** Latest crosslink record for each shard. */
   @SSZ private WriteList<ShardNumber, CrosslinkRecord> latestCrosslinks = WriteList.create(ShardNumber::of);
   /** Latest block hashes for each shard. */
-  @SSZ private WriteList<Integer, Hash32> latestBlockRoots = WriteList.create(Integer::valueOf);
+  @SSZ private WriteList<SlotNumber, Hash32> latestBlockRoots = WriteList.create(SlotNumber::of);
   /** Indices of validators that has been ejected lately. */
   @SSZ private WriteList<EpochNumber, Gwei> latestPenalizedExitBalances = WriteList.create(EpochNumber::of);
   /** Attestations that has not been processed yet. */
@@ -255,7 +255,7 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
-  public WriteList<Integer, Hash32> getLatestBlockRoots() {
+  public WriteList<SlotNumber, Hash32> getLatestBlockRoots() {
     return latestBlockRoots;
   }
 

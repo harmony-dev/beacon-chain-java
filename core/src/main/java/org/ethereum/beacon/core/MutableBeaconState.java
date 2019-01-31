@@ -82,7 +82,7 @@ public interface MutableBeaconState extends BeaconState {
   WriteList<ShardNumber, CrosslinkRecord> getLatestCrosslinks();
 
   @Override
-  WriteList<Integer, Hash32> getLatestBlockRoots();
+  WriteList<SlotNumber, Hash32> getLatestBlockRoots();
 
   @Override
   WriteList<EpochNumber, Gwei> getLatestPenalizedExitBalances();

@@ -1073,7 +1073,7 @@ public class SpecHelpers {
   public Hash32 get_block_root(BeaconState state, SlotNumber slot) {
     assertTrue(state.getSlot().lessEqual(slot.plus(spec.getLatestBlockRootsLength())));
     assertTrue(slot.less(state.getSlot()));
-    return state.getLatestBlockRoots().get(slot.modulo(spec.getLatestBlockRootsLength()).getIntValue());
+    return state.getLatestBlockRoots().get(slot.modulo(spec.getLatestBlockRootsLength()));
   }
 
   /*
