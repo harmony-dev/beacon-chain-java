@@ -183,7 +183,7 @@ public class BeaconChainValidator implements ValidatorService {
    * @param observableState a state.
    */
   private void propose(final ObservableBeaconState observableState) {
-    BeaconBlock newBlock = proposer.propose(validatorIndex, observableState, messageSigner);
+    BeaconBlock newBlock = proposer.propose(observableState, messageSigner);
     propagateBlock(newBlock);
   }
 

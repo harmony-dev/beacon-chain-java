@@ -24,7 +24,6 @@ import org.ethereum.beacon.core.operations.slashing.ProposalSignedData;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Eth1DataVote;
-import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.pow.DepositContract.DepositInfo;
 import org.ethereum.beacon.validator.BeaconChainProposer;
@@ -34,7 +33,6 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes8;
 import tech.pegasys.artemis.util.bytes.Bytes96;
-import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 /**
@@ -66,12 +64,11 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
   }
 
   @Override
-  public BeaconBlock propose(
-      UInt24 validatorIndex, ObservableBeaconState observableState, MessageSigner<Bytes96> signer) {
+  public BeaconBlock propose(ObservableBeaconState observableState, MessageSigner<Bytes96> signer) {
     BeaconState state = observableState.getLatestSlotState();
 
     Hash32 parentRoot = specHelpers.get_block_root(state, state.getSlot().decrement());
-    Bytes96 randaoReveal = getRandaoReveal(state, validatorIndex, signer);
+    Bytes96 randaoReveal = getRandaoReveal(state, signer);
     Eth1Data eth1Data = getEth1Data(state);
     BeaconBlockBody blockBody = getBlockBody(state, observableState.getPendingOperations());
 
@@ -122,15 +119,12 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
    * Returns next RANDAO reveal.
    *
    * @param state state at the slot of created block.
-   * @param validatorIndex validator index.
    * @param signer message signer.
    * @return next RANDAO reveal.
    */
-  private Bytes96 getRandaoReveal(
-      BeaconState state, UInt24 validatorIndex, MessageSigner<Bytes96> signer) {
-    ValidatorRecord proposer =
-        state.getValidatorRegistry().get(SpecHelpers.safeInt(validatorIndex));
-    Hash32 hash = Hash32.wrap(Bytes32.leftPad(proposer.getProposerSlots().toBytesBigEndian()));
+  private Bytes96 getRandaoReveal(BeaconState state, MessageSigner<Bytes96> signer) {
+    Hash32 hash =
+        Hash32.wrap(Bytes32.leftPad(specHelpers.get_current_epoch(state).toBytesBigEndian()));
     Bytes8 domain = specHelpers.get_domain(state.getForkData(), state.getSlot(), RANDAO);
     return signer.sign(hash, domain);
   }
@@ -170,8 +164,8 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
 
     // verify best vote data and return if verification passed,
     // otherwise, return data from contract
-    if (depositContract.hasDepositRoot(bestVote.getEth1Data().getBlockHash(),
-            bestVote.getEth1Data().getDepositRoot())) {
+    if (depositContract.hasDepositRoot(
+        bestVote.getEth1Data().getBlockHash(), bestVote.getEth1Data().getDepositRoot())) {
       return bestVote.getEth1Data();
     } else {
       return contractData.orElse(state.getLatestEth1Data());
@@ -198,11 +192,13 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
     List<Exit> exits = operations.peekExits(chainSpec.getMaxExits());
 
     Eth1Data latestProcessedDeposit = null; // TODO wait for spec update to include this to state
-    List<Deposit> deposits = depositContract.peekDeposits(
-        chainSpec.getMaxDeposits(), latestProcessedDeposit, state.getLatestEth1Data())
-        .stream()
-        .map(DepositInfo::getDeposit)
-        .collect(Collectors.toList());
+    List<Deposit> deposits =
+        depositContract
+            .peekDeposits(
+                chainSpec.getMaxDeposits(), latestProcessedDeposit, state.getLatestEth1Data())
+            .stream()
+            .map(DepositInfo::getDeposit)
+            .collect(Collectors.toList());
 
     return new BeaconBlockBody(
         proposerSlashings,
