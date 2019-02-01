@@ -1,6 +1,5 @@
 package org.ethereum.beacon.consensus.transition;
 
-import static java.util.Collections.emptyList;
 import static java.util.Collections.nCopies;
 
 import java.util.List;
@@ -16,12 +15,11 @@ import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.CrosslinkRecord;
 import org.ethereum.beacon.core.state.ForkData;
-import org.ethereum.beacon.core.types.Bitfield;
+import org.ethereum.beacon.core.types.Bitfield64;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.pow.DepositContract;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 /**
@@ -99,7 +97,7 @@ public class InitialStateTransition implements StateTransition<BeaconStateEx> {
     // Finality
     initialState.setPreviousJustifiedSlot(chainSpec.getGenesisSlot());
     initialState.setJustifiedSlot(chainSpec.getGenesisSlot());
-    initialState.setJustificationBitfield(Bitfield.ZERO);
+    initialState.setJustificationBitfield(Bitfield64.ZERO);
     initialState.setFinalizedSlot(chainSpec.getGenesisSlot());
 
     // Recent state
