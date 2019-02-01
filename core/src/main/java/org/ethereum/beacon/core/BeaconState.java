@@ -94,7 +94,7 @@ public interface BeaconState extends Hashable<Hash32> {
   ReadList<SlotNumber, Hash32> getLatestBlockRoots();
 
   /** Latest block hashes for each shard. */
-  ReadList<SlotNumber, Hash32> getLatestIndexRoots();
+  ReadList<EpochNumber, Hash32> getLatestIndexRoots();
 
   /** Balances penalized at every withdrawal period */
   ReadList<EpochNumber, Gwei> getLatestPenalizedBalances();

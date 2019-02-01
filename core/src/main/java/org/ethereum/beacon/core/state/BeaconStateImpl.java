@@ -374,8 +374,8 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
-  public WriteList<SlotNumber, Hash32> getLatestIndexRoots() {
-    return WriteList.wrap(getLatestIndexRootsList(), SlotNumber::of);
+  public WriteList<EpochNumber, Hash32> getLatestIndexRoots() {
+    return WriteList.wrap(getLatestIndexRootsList(), EpochNumber::of);
   }
 
   @Override

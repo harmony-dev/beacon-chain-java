@@ -18,9 +18,9 @@ public interface TimeParameters {
   Time SLOT_DURATION = Time.of(6); // 6 seconds
   SlotNumber MIN_ATTESTATION_INCLUSION_DELAY = SlotNumber.of(1 << 2); // 4 slots
   EpochLength EPOCH_LENGTH = new EpochLength(UInt64.valueOf(1 << 6)); // 64 slots
-  SlotNumber  SEED_LOOKAHEAD = SlotNumber.of(1 << 6); // 64 slots
-  SlotNumber ENTRY_EXIT_DELAY = SlotNumber.of(1 << 8); // 256 slots
-  SlotNumber ETH1_DATA_VOTING_PERIOD = SlotNumber.of(1 << 10); // 1024 slots
+  EpochNumber  SEED_LOOKAHEAD = EpochNumber.of(1);
+  EpochNumber ENTRY_EXIT_DELAY = EpochNumber.of(1 << 2);
+  EpochNumber ETH1_DATA_VOTING_PERIOD = EpochNumber.of(1 << 4);
   EpochNumber MIN_VALIDATOR_WITHDRAWAL_EPOCHS = EpochNumber.of(1 << 8);
 
   /* Values defined in the spec. */
@@ -37,15 +37,15 @@ public interface TimeParameters {
     return EPOCH_LENGTH;
   }
 
-  default SlotNumber getSeedLookahead() {
+  default EpochNumber getSeedLookahead() {
     return SEED_LOOKAHEAD;
   }
 
-  default SlotNumber getEntryExitDelay() {
+  default EpochNumber getEntryExitDelay() {
     return ENTRY_EXIT_DELAY;
   }
 
-  default SlotNumber getEth1DataVotingPeriod() {
+  default EpochNumber getEth1DataVotingPeriod() {
     return ETH1_DATA_VOTING_PERIOD;
   }
 

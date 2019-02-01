@@ -205,29 +205,29 @@ public class SpecHelpers {
   }
 
   /*
-   def is_active_validator(validator: ValidatorRecord, slot: int) -> bool:
-   """
-   Checks if ``validator`` is active.
-   """
-   return validator.activation_slot <= slot < validator.exit_slot
-  */
-  public boolean is_active_validator(ValidatorRecord validator, SlotNumber slot) {
-    return validator.getActivationSlot().lessEqual(slot)
-        && slot.less(validator.getExitSlot());
+    def is_active_validator(validator: Validator, epoch: EpochNumber) -> bool:
+        """
+        Check if ``validator`` is active.
+        """
+        return validator.activation_epoch <= epoch < validator.exit_epoch
+    */
+  public boolean is_active_validator(ValidatorRecord validator, EpochNumber epoch) {
+    return validator.getActivationEpoch().lessEqual(epoch)
+        && epoch.less(validator.getExitEpoch());
   }
 
   /*
-   def get_active_validator_indices(validators: [ValidatorRecord], slot: int) -> List[int]:
-   """
-   Gets indices of active validators from ``validators``.
-   """
-   return [i for i, v in enumerate(validators) if is_active_validator(v, slot)]
-  */
+    def get_active_validator_indices(validators: List[Validator], epoch: EpochNumber) -> List[ValidatorIndex]:
+        """
+        Get indices of active validators from ``validators``.
+        """
+        return [i for i, v in enumerate(validators) if is_active_validator(v, epoch)]
+    */
   public List<ValidatorIndex>  get_active_validator_indices(
-      ReadList<ValidatorIndex, ValidatorRecord> validators, SlotNumber slotNumber) {
+      ReadList<ValidatorIndex, ValidatorRecord> validators, EpochNumber epochNumber) {
     ArrayList<ValidatorIndex> ret = new ArrayList<>();
     for (ValidatorIndex i : validators.size()) {
-      if (is_active_validator(validators.get(i), slotNumber)) {
+      if (is_active_validator(validators.get(i), epochNumber)) {
         ret.add(i);
       }
     }
@@ -235,19 +235,19 @@ public class SpecHelpers {
   }
 
   /*
-      def get_randao_mix(state: BeaconState, slot: int) -> Hash32:
-          """
-          Returns the randao mix at a recent ``slot``.
-          """
-          assert state.slot < slot + LATEST_RANDAO_MIXES_LENGTH
-          assert slot <= state.slot
-          return state.latest_randao_mixes[slot % LATEST_RANDAO_MIXES_LENGTH]
+    def get_randao_mix(state: BeaconState,
+                       epoch: EpochNumber) -> Bytes32:
+        """
+        Return the randao mix at a recent ``epoch``.
+        """
+        assert get_current_epoch(state) - LATEST_RANDAO_MIXES_LENGTH < epoch <= get_current_epoch(state)
+        return state.latest_randao_mixes[epoch % LATEST_RANDAO_MIXES_LENGTH]
     */
-  public Hash32 get_randao_mix(BeaconState state, SlotNumber slot) {
-    assertTrue(state.getSlot().less(slot.plus(spec.getLatestRandaoMixesLength())));
-    assertTrue(slot.lessEqual(state.getSlot()));
+  public Hash32 get_randao_mix(BeaconState state, EpochNumber epoch) {
+    assertTrue(get_current_epoch(state).minus(spec.getLatestRandaoMixesLength()).less(epoch));
+    assertTrue(epoch.lessEqual(get_current_epoch(state)));
     return state.getLatestRandaoMixes().get(
-        slot.modulo(spec.getLatestRandaoMixesLength()));
+        epoch.modulo(spec.getLatestRandaoMixesLength()));
   }
 
   /*
@@ -422,7 +422,7 @@ public class SpecHelpers {
   public Gwei get_effective_balance(BeaconState state, ValidatorIndex validatorIdx) {
     return UInt64s.min(
         state.getValidatorBalances().get(validatorIdx),
-        spec.getMaxDeposit());
+        spec.getMaxDepositAmount());
   }
 
   /*
@@ -487,9 +487,9 @@ public class SpecHelpers {
 
   /*
   def process_deposit(state: BeaconState,
-                    pubkey: int,
-                    amount: int,
-                    proof_of_possession: bytes,
+                    pubkey: BLSPubkey,
+                    amount: Gwei,
+                    proof_of_possession: BLSSignature,
                     withdrawal_credentials: Hash32) -> None:
     """
     Process a deposit from Ethereum 1.0.
@@ -546,15 +546,11 @@ public class SpecHelpers {
       ValidatorRecord validator = new ValidatorRecord(
           pubkey,
           withdrawal_credentials,
-          SlotNumber.of(0),
-          spec.getFarFutureSlot(),
-          spec.getFarFutureSlot(),
-          spec.getFarFutureSlot(),
-          spec.getFarFutureSlot(),
-          UInt64.ZERO,
-          UInt64.ZERO,
-          spec.getGenesisSlot(),
-          spec.getGenesisSlot());
+          spec.getFarFutureEpoch(),
+          spec.getFarFutureEpoch(),
+          spec.getFarFutureEpoch(),
+          spec.getFarFutureEpoch(),
+          UInt64.ZERO);
 
       //  # Note: In phase 2 registry indices that has been withdrawn for a long time will be recycled.
       //  index = len(state.validator_registry)
@@ -576,6 +572,18 @@ public class SpecHelpers {
   }
 
   /*
+    def get_entry_exit_effect_epoch(epoch: EpochNumber) -> EpochNumber:
+        """
+        An entry or exit triggered in the ``epoch`` given by the input takes effect at
+        the epoch given by the output.
+        """
+        return epoch + 1 + ENTRY_EXIT_DELAY
+   */
+  EpochNumber get_entry_exit_effect_epoch(EpochNumber epoch) {
+    return epoch.plus(1).plus(spec.getEntryExitDelay());
+  }
+
+  /*
     def activate_validator(state: BeaconState, index: int, genesis: bool) -> None:
       validator = state.validator_registry[index]
 
@@ -591,22 +599,11 @@ public class SpecHelpers {
       )
    */
   public void activate_validator(MutableBeaconState state, ValidatorIndex index, boolean genesis) {
-    SlotNumber activationSlot = genesis ?
-        spec.getGenesisSlot() :
-        state.getSlot().plus(spec.getEntryExitDelay());
+    EpochNumber activationSlot = genesis ?
+        spec.getGenesisEpoch() :
+        get_entry_exit_effect_epoch(get_current_epoch(state));
     state.getValidatorRegistry().update(index,
-        v -> v.builder().withActivationSlot(activationSlot).build());
-
-    ValidatorRecord validator = state.getValidatorRegistry().get(index);
-    state.setValidatorRegistryDeltaChainTip(hash_tree_root(
-        new ValidatorRegistryDeltaBlock(
-            state.getValidatorRegistryDeltaChainTip(),
-            index,
-            validator.getPubKey(),
-            validator.getActivationSlot(),
-            ValidatorRegistryDeltaFlags.ACTIVATION
-        )
-    ));
+        v -> v.builder().withActivationEpoch(activationSlot).build());
   }
 
   /*
@@ -903,6 +900,41 @@ public class SpecHelpers {
 
   public Hash32 hash_tree_root(Object object) {
     return objectHasher.calc(object);
+  }
+
+  /*
+    def get_active_index_root(state: BeaconState,
+                              epoch: EpochNumber) -> Bytes32:
+        """
+        Return the index root at a recent ``epoch``.
+        """
+        assert get_current_epoch(state) - LATEST_INDEX_ROOTS_LENGTH + ENTRY_EXIT_DELAY < epoch
+            <= get_current_epoch(state) + ENTRY_EXIT_DELAY
+        return state.latest_index_roots[epoch % LATEST_INDEX_ROOTS_LENGTH]
+   */
+  Hash32 get_active_index_root(BeaconState state, EpochNumber epoch) {
+    assertTrue(get_current_epoch(state).minus(spec.getLatestIndexRootsLength()).plus(spec.getEntryExitDelay())
+        .less(epoch));
+    assertTrue(epoch.lessEqual(get_current_epoch(state).plus(spec.getEntryExitDelay())));
+    return state.getLatestIndexRoots().get(epoch.modulo(spec.getLatestIndexRootsLength()));
+  }
+
+  /*
+    def generate_seed(state: BeaconState,
+                      epoch: EpochNumber) -> Bytes32:
+        """
+        Generate a seed for the given ``epoch``.
+        """
+
+        return hash(
+            get_randao_mix(state, epoch - SEED_LOOKAHEAD) +
+            get_active_index_root(state, epoch)
+        )
+   */
+  public Hash32 generate_seed(BeaconState state, EpochNumber epoch) {
+    return hash(
+        get_randao_mix(state, epoch.minus(spec.getSeedLookahead()))
+            .concat(get_active_index_root(state, epoch)));
   }
 
   public boolean bls_verify(BLSPubkey publicKey, Hash32 message, BLSSignature signature, Bytes8 domain) {

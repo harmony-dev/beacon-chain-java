@@ -63,7 +63,7 @@ public interface MutableBeaconState extends BeaconState {
   WriteList<SlotNumber, Hash32> getLatestBlockRoots();
 
   @Override
-  WriteList<SlotNumber, Hash32> getLatestIndexRoots();
+  WriteList<EpochNumber, Hash32> getLatestIndexRoots();
 
   @Override
   WriteList<EpochNumber, Gwei> getLatestPenalizedBalances();
