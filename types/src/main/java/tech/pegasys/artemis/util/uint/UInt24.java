@@ -3,7 +3,7 @@ package tech.pegasys.artemis.util.uint;
 import java.util.Objects;
 
 /** An immutable unsigned 24-bit precision integer. */
-public class UInt24 implements Comparable<UInt24> {
+public class UInt24 extends Number implements Comparable<UInt24> {
   private static final int MODULO = (1 << 24);
 
   public static final UInt24 MAX_VALUE = valueOf(MODULO - 1);
@@ -146,5 +146,25 @@ public class UInt24 implements Comparable<UInt24> {
   @Override
   public String toString() {
     return Integer.toUnsignedString(this.value);
+  }
+
+  @Override
+  public int intValue() {
+    return getValue();
+  }
+
+  @Override
+  public long longValue() {
+    return getValue();
+  }
+
+  @Override
+  public float floatValue() {
+    return getValue();
+  }
+
+  @Override
+  public double doubleValue() {
+    return getValue();
   }
 }

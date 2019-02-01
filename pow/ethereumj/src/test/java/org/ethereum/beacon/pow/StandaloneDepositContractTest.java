@@ -9,6 +9,8 @@ import java.util.Optional;
 import org.apache.commons.codec.binary.Hex;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.state.Eth1Data;
+import org.ethereum.beacon.core.types.BLSPubkey;
+import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.pow.DepositContract.ChainStart;
 import org.ethereum.beacon.pow.DepositContract.DepositInfo;
 import org.ethereum.beacon.ssz.Serializer;
@@ -60,7 +62,7 @@ public class StandaloneDepositContractTest {
     for(int i = 0; i < 20; i++) {
       MutableBytes48 pubKey = MutableBytes48.create();
       pubKey.set(0, (byte) i);
-      DepositInput depositInput = new DepositInput(pubKey, Hash32.ZERO, Bytes96.ZERO);
+      DepositInput depositInput = new DepositInput(BLSPubkey.wrap(pubKey), Hash32.ZERO, BLSSignature.wrap(Bytes96.ZERO));
       BytesValue depositInputBytes = sszSerializer.encode2(depositInput);
 
       SolidityCallResult result = contract.callFunction(
@@ -148,7 +150,7 @@ public class StandaloneDepositContractTest {
     for(int i = 0; i < 16; i++) {
       MutableBytes48 pubKey = MutableBytes48.create();
       pubKey.set(0, (byte) i);
-      DepositInput depositInput = new DepositInput(pubKey, Hash32.ZERO, Bytes96.ZERO);
+      DepositInput depositInput = new DepositInput(BLSPubkey.wrap(pubKey), Hash32.ZERO, BLSSignature.wrap(Bytes96.ZERO));
       BytesValue depositInputBytes = sszSerializer.encode2(depositInput);
 
       SolidityCallResult result = contract.callFunction(
@@ -187,7 +189,7 @@ public class StandaloneDepositContractTest {
       for (int j = 0; j < 4; j++) {
         MutableBytes48 pubKey = MutableBytes48.create();
         pubKey.set(0, (byte) (0x20 + i * 4 + j));
-        DepositInput depositInput = new DepositInput(pubKey, Hash32.ZERO, Bytes96.ZERO);
+        DepositInput depositInput = new DepositInput(BLSPubkey.wrap(pubKey), Hash32.ZERO, BLSSignature.wrap(Bytes96.ZERO));
         BytesValue depositInputBytes = sszSerializer.encode2(depositInput);
 
         contract.callFunction(depositAmount,"deposit",

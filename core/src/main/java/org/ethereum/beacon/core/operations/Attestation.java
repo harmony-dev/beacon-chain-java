@@ -3,10 +3,10 @@ package org.ethereum.beacon.core.operations;
 import com.google.common.base.Objects;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
+import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.Bitfield;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
-import tech.pegasys.artemis.util.bytes.Bytes96;
-import tech.pegasys.artemis.util.bytes.BytesValue;
 
 /**
  * Attests on a block linked to particular slot in particular shard.
@@ -23,17 +23,17 @@ public class Attestation {
   /** Attestation data object. */
   @SSZ private final AttestationData data;
   /** A bitfield where each bit corresponds to a validator attested to the {@link #data}. */
-  @SSZ private final BytesValue participationBitfield;
+  @SSZ private final Bitfield participationBitfield;
   /** Proof of custody bitfield. */
-  @SSZ private final BytesValue custodyBitfield;
+  @SSZ private final Bitfield custodyBitfield;
   /** A product of aggregation of signatures from different validators to {@link #data}. */
-  @SSZ private final Bytes96 aggregateSignature;
+  @SSZ private final BLSSignature aggregateSignature;
 
   public Attestation(
       AttestationData data,
-      BytesValue participationBitfield,
-      BytesValue custodyBitfield,
-      Bytes96 aggregateSignature) {
+      Bitfield participationBitfield,
+      Bitfield custodyBitfield,
+      BLSSignature aggregateSignature) {
     this.data = data;
     this.participationBitfield = participationBitfield;
     this.custodyBitfield = custodyBitfield;
@@ -44,15 +44,15 @@ public class Attestation {
     return data;
   }
 
-  public BytesValue getParticipationBitfield() {
+  public Bitfield getParticipationBitfield() {
     return participationBitfield;
   }
 
-  public BytesValue getCustodyBitfield() {
+  public Bitfield getCustodyBitfield() {
     return custodyBitfield;
   }
 
-  public Bytes96 getAggregateSignature() {
+  public BLSSignature getAggregateSignature() {
     return aggregateSignature;
   }
 

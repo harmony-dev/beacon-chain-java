@@ -1,6 +1,5 @@
 package org.ethereum.beacon.consensus.verifier.operation;
 
-import static org.ethereum.beacon.consensus.SpecHelpers.safeInt;
 import static org.ethereum.beacon.consensus.verifier.VerificationResult.PASSED;
 import static org.ethereum.beacon.consensus.verifier.VerificationResult.failedResult;
 import static org.ethereum.beacon.core.spec.SignatureDomains.PROPOSAL;
@@ -57,8 +56,8 @@ public class ProposerSlashingVerifier implements OperationVerifier<ProposerSlash
     }
 
     ValidatorRecord proposer =
-        state.getValidatorRegistry().get(safeInt(proposerSlashing.getProposerIndex()));
-    if (proposer.getPenalizedSlot().compareTo(state.getSlot()) >= 0) {
+        state.getValidatorRegistry().get(proposerSlashing.getProposerIndex());
+    if (proposer.getPenalizedSlot().greaterEqual(state.getSlot())) {
       return failedResult(
           "proposer penalized_slot should be less than state.slot, got penalized_slot=%s, state.slot=%s",
           proposer.getPenalizedSlot(), state.getSlot());

@@ -4,6 +4,8 @@ import org.ethereum.beacon.chain.storage.impl.MemBeaconChainStorage;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.state.Eth1Data;
+import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.SlotNumber;
 import org.junit.Test;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
@@ -24,10 +26,10 @@ public class BeaconBlockStorageTest {
   }
 
   private BeaconBlock createBlock(long slot, BeaconBlock parent) {
-    return new BeaconBlock(UInt64.valueOf(slot),
+    return new BeaconBlock(SlotNumber.of(slot),
         parent == null ? Hash32.ZERO : parent.getHash(),
         Hash32.wrap(Bytes32.leftPad(BytesValues.toMinimalBytes(counter++))),
-        Bytes96.ZERO, Eth1Data.EMPTY, Bytes96.ZERO, BeaconBlockBody.EMPTY);
+        BLSSignature.ZERO, Eth1Data.EMPTY, BLSSignature.ZERO, BeaconBlockBody.EMPTY);
   }
 
 // TODO: Test smth

@@ -1,5 +1,6 @@
 package org.ethereum.beacon.core;
 
+import java.util.Arrays;
 import java.util.Collections;
 import static org.junit.Assert.assertEquals;
 
@@ -25,6 +26,13 @@ import org.ethereum.beacon.core.state.Eth1DataVote;
 import org.ethereum.beacon.core.state.ForkData;
 import org.ethereum.beacon.core.state.PendingAttestationRecord;
 import org.ethereum.beacon.core.state.ValidatorRecord;
+import org.ethereum.beacon.core.types.BLSPubkey;
+import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.Bitfield;
+import org.ethereum.beacon.core.types.Gwei;
+import org.ethereum.beacon.core.types.ShardNumber;
+import org.ethereum.beacon.core.types.SlotNumber;
+import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.ssz.Serializer;
 import org.junit.Before;
@@ -47,13 +55,13 @@ public class ModelsSerializeTest {
   private AttestationData createAttestationData() {
     AttestationData expected =
         new AttestationData(
-            UInt64.valueOf(123),
-            UInt64.valueOf(345),
+            SlotNumber.of(123),
+            ShardNumber.of(345),
             Hashes.keccak256(BytesValue.fromHexString("aa")),
             Hashes.keccak256(BytesValue.fromHexString("bb")),
             Hashes.keccak256(BytesValue.fromHexString("cc")),
             Hashes.keccak256(BytesValue.fromHexString("dd")),
-            UInt64.ZERO,
+            SlotNumber.ZERO,
             Hash32.ZERO);
 
     return expected;
@@ -72,9 +80,9 @@ public class ModelsSerializeTest {
     Attestation attestation =
         new Attestation(
             attestationData,
-            BytesValue.fromHexString("aa"),
-            BytesValue.fromHexString("bb"),
-            Bytes96.fromHexString("cc"));
+            Bitfield.of(BytesValue.fromHexString("aa")),
+            Bitfield.of(BytesValue.fromHexString("bb")),
+            BLSSignature.wrap(Bytes96.fromHexString("cc")));
 
     return attestation;
   }
@@ -88,10 +96,10 @@ public class ModelsSerializeTest {
   }
 
   private SlashableVoteData createSlashableVoteData() {
-    UInt24[] custodyBit0Indices = new UInt24[0];
-    UInt24[] custodyBit1Indices = new UInt24[] {UInt24.valueOf(123), UInt24.MAX_VALUE};
+    List<ValidatorIndex> custodyBit0Indices = Collections.emptyList();
+    List<ValidatorIndex> custodyBit1Indices = Arrays.asList(ValidatorIndex.of(123), ValidatorIndex.MAX);
     AttestationData data = createAttestationData();
-    Bytes96 aggregatedSignature = Bytes96.fromHexString("aabbccdd");
+    BLSSignature aggregatedSignature = BLSSignature.wrap(Bytes96.fromHexString("aabbccdd"));
     SlashableVoteData slashableVoteData =
         new SlashableVoteData(custodyBit0Indices, custodyBit1Indices, data, aggregatedSignature);
     return slashableVoteData;
@@ -122,7 +130,9 @@ public class ModelsSerializeTest {
   private DepositInput createDepositInput() {
     DepositInput depositInput =
         new DepositInput(
-            Bytes48.TRUE, Hashes.keccak256(BytesValue.fromHexString("aa")), Bytes96.ZERO);
+            BLSPubkey.wrap(Bytes48.TRUE),
+            Hashes.keccak256(BytesValue.fromHexString("aa")),
+            BLSSignature.wrap(Bytes96.ZERO));
 
     return depositInput;
   }
@@ -137,7 +147,7 @@ public class ModelsSerializeTest {
 
   private DepositData createDepositData() {
     DepositData depositData =
-        new DepositData(createDepositInput(), UInt64.ZERO, UInt64.valueOf(123));
+        new DepositData(createDepositInput(), Gwei.ZERO, UInt64.valueOf(123));
 
     return depositData;
   }
@@ -178,7 +188,7 @@ public class ModelsSerializeTest {
   }
 
   private Exit createExit() {
-    Exit exit = new Exit(UInt64.valueOf(123), UInt24.MAX_VALUE, Bytes96.fromHexString("aa"));
+    Exit exit = new Exit(SlotNumber.of(123), ValidatorIndex.MAX, BLSSignature.wrap(Bytes96.fromHexString("aa")));
 
     return exit;
   }
@@ -233,7 +243,7 @@ public class ModelsSerializeTest {
   private ProposalSignedData createProposalSignedData() {
     ProposalSignedData proposalSignedData =
         new ProposalSignedData(
-            UInt64.valueOf(12), UInt64.ZERO, Hashes.keccak256(BytesValue.fromHexString("aa")));
+            SlotNumber.of(12), ShardNumber.ZERO, Hashes.keccak256(BytesValue.fromHexString("aa")));
     return proposalSignedData;
   }
 
@@ -248,11 +258,11 @@ public class ModelsSerializeTest {
   private ProposerSlashing createProposerSlashing() {
     ProposerSlashing proposerSlashing =
         new ProposerSlashing(
-            UInt24.MAX_VALUE,
+            ValidatorIndex.MAX,
             createProposalSignedData(),
-            Bytes96.fromHexString("aa"),
+            BLSSignature.wrap(Bytes96.fromHexString("aa")),
             createProposalSignedData(),
-            Bytes96.fromHexString("bb"));
+            BLSSignature.wrap(Bytes96.fromHexString("bb")));
 
     return proposerSlashing;
   }
@@ -308,14 +318,14 @@ public class ModelsSerializeTest {
   private BeaconBlock createBeaconBlock() {
     BeaconBlock beaconBlock =
         new BeaconBlock(
-            UInt64.MAX_VALUE,
+            SlotNumber.castFrom(UInt64.MAX_VALUE),
             Hashes.keccak256(BytesValue.fromHexString("aa")),
             Hashes.keccak256(BytesValue.fromHexString("bb")),
-            Bytes96.fromHexString("cc"),
+            BLSSignature.wrap(Bytes96.fromHexString("cc")),
             new Eth1Data(
-                Hashes.keccak256(BytesValue.fromHexString("dda")),
-                Hashes.keccak256(BytesValue.fromHexString("ddb"))),
-            Bytes96.fromHexString("aa"),
+                Hashes.keccak256(BytesValue.fromHexString("ddaa")),
+                Hashes.keccak256(BytesValue.fromHexString("ddbb"))),
+            BLSSignature.wrap(Bytes96.fromHexString("aa")),
             createBeaconBlockBody());
 
     return beaconBlock;
@@ -389,9 +399,9 @@ public class ModelsSerializeTest {
     PendingAttestationRecord pendingAttestationRecord =
         new PendingAttestationRecord(
             createAttestationData(),
-            BytesValue.fromHexString("aa"),
-            BytesValue.fromHexString("bb"),
-            UInt64.ZERO);
+            Bitfield.of(BytesValue.fromHexString("aa")),
+            Bitfield.of(BytesValue.fromHexString("bb")),
+            SlotNumber.ZERO);
 
     return pendingAttestationRecord;
   }
@@ -408,15 +418,15 @@ public class ModelsSerializeTest {
   private ValidatorRecord createValidatorRecord() {
     ValidatorRecord validatorRecord =
         ValidatorRecord.Builder.fromDepositInput(createDepositInput())
-            .withActivationSlot(UInt64.ZERO)
-            .withExitSlot(UInt64.ZERO)
-            .withWithdrawalSlot(UInt64.ZERO)
-            .withPenalizedSlot(UInt64.ZERO)
+            .withActivationSlot(SlotNumber.ZERO)
+            .withExitSlot(SlotNumber.ZERO)
+            .withWithdrawalSlot(SlotNumber.ZERO)
+            .withPenalizedSlot(SlotNumber.ZERO)
             .withExitCount(UInt64.ZERO)
             .withStatusFlags(UInt64.ZERO)
-            .withLatestCustodyReseedSlot(UInt64.ZERO)
-            .withPenultimateCustodyReseedSlot(UInt64.ZERO)
-            .withProposerSlots(UInt64.ZERO)
+            .withLatestCustodyReseedSlot(SlotNumber.ZERO)
+            .withPenultimateCustodyReseedSlot(SlotNumber.ZERO)
+            .withProposerSlots(SlotNumber.ZERO)
             .build();
 
     return validatorRecord;

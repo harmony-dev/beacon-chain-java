@@ -1,8 +1,11 @@
 package org.ethereum.beacon.core.operations.slashing;
 
 import com.google.common.base.Objects;
+import java.util.List;
 import org.ethereum.beacon.core.operations.CasperSlashing;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
+import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.util.bytes.Bytes96;
@@ -21,30 +24,30 @@ import java.util.Arrays;
 public class SlashableVoteData {
 
   /** Proof-of-custody indices (0 bits). */
-  @SSZ private final UInt24[] custodyBit0Indices;
+  @SSZ private final List<ValidatorIndex> custodyBit0Indices;
   /** Proof-of-custody indices (1 bits). */
-  @SSZ private final UInt24[] custodyBit1Indices;
+  @SSZ private final List<ValidatorIndex> custodyBit1Indices;
   /** Attestation data. */
   @SSZ private final AttestationData data;
   /** Aggregated signature. */
-  @SSZ private final Bytes96 aggregatedSignature;
+  @SSZ private final BLSSignature aggregatedSignature;
 
   public SlashableVoteData(
-      UInt24[] custodyBit0Indices,
-      UInt24[] custodyBit1Indices,
+      List<ValidatorIndex> custodyBit0Indices,
+      List<ValidatorIndex> custodyBit1Indices,
       AttestationData data,
-      Bytes96 aggregatedSignature) {
+      BLSSignature aggregatedSignature) {
     this.custodyBit0Indices = custodyBit0Indices;
     this.custodyBit1Indices = custodyBit1Indices;
     this.data = data;
     this.aggregatedSignature = aggregatedSignature;
   }
 
-  public UInt24[] getCustodyBit0Indices() {
+  public List<ValidatorIndex> getCustodyBit0Indices() {
     return custodyBit0Indices;
   }
 
-  public UInt24[] getCustodyBit1Indices() {
+  public List<ValidatorIndex> getCustodyBit1Indices() {
     return custodyBit1Indices;
   }
 
@@ -52,7 +55,7 @@ public class SlashableVoteData {
     return data;
   }
 
-  public Bytes96 getAggregatedSignature() {
+  public BLSSignature getAggregatedSignature() {
     return aggregatedSignature;
   }
 
@@ -61,8 +64,8 @@ public class SlashableVoteData {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     SlashableVoteData that = (SlashableVoteData) o;
-    return Arrays.equals(custodyBit0Indices, that.custodyBit0Indices)
-        && Arrays.equals(custodyBit1Indices, that.custodyBit1Indices)
+    return Objects.equal(custodyBit0Indices, that.custodyBit0Indices)
+        && Objects.equal(custodyBit1Indices, that.custodyBit1Indices)
         && Objects.equal(data, that.data)
         && Objects.equal(aggregatedSignature, that.aggregatedSignature);
   }

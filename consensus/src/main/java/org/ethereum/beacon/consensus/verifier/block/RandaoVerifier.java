@@ -1,6 +1,5 @@
 package org.ethereum.beacon.consensus.verifier.block;
 
-import static org.ethereum.beacon.consensus.SpecHelpers.safeInt;
 import static org.ethereum.beacon.core.spec.SignatureDomains.RANDAO;
 
 import org.ethereum.beacon.consensus.SpecHelpers;
@@ -32,7 +31,7 @@ public class RandaoVerifier implements BeaconBlockVerifier {
     ValidatorRecord proposer =
         state
             .getValidatorRegistry()
-            .get(safeInt(specHelpers.get_beacon_proposer_index(state, state.getSlot())));
+            .get(specHelpers.get_beacon_proposer_index(state, state.getSlot()));
 
     /*
      Verify that bls_verify(pubkey=proposer.pubkey,

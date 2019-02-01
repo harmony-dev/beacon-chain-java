@@ -1,6 +1,5 @@
 package org.ethereum.beacon.consensus.verifier.operation;
 
-import static org.ethereum.beacon.consensus.SpecHelpers.safeInt;
 import static org.ethereum.beacon.consensus.verifier.VerificationResult.PASSED;
 import static org.ethereum.beacon.consensus.verifier.VerificationResult.failedResult;
 import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
@@ -14,10 +13,10 @@ import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustodyBit;
 import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.types.BLSPubkey;
+import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.crypto.BLS381.PublicKey;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.bytes.Bytes48;
-import tech.pegasys.artemis.util.uint.UInt24;
 
 /**
  * Verifies {@link Attestation} beacon chain operation.
@@ -43,23 +42,21 @@ public class AttestationVerifier implements OperationVerifier<Attestation> {
 
     specHelpers.checkShardRange(data.getShard());
 
-    if (data.getSlot().plus(chainSpec.getMinAttestationInclusionDelay()).compareTo(state.getSlot())
-        > 0) {
+    if (data.getSlot().plus(chainSpec.getMinAttestationInclusionDelay()).greater(state.getSlot())) {
       return failedResult(
           "MIN_ATTESTATION_INCLUSION_DELAY violated, inclusion slot starts from %s but got %s",
           data.getSlot().plus(chainSpec.getMinAttestationInclusionDelay()), state.getSlot());
     }
 
-    if (data.getSlot().plus(chainSpec.getEpochLength()).compareTo(state.getSlot()) < 0) {
+    if (data.getSlot().plus(chainSpec.getEpochLength()).less(state.getSlot())) {
       return failedResult(
           "EPOCH_LENGTH boundary violated, boundary slot %d, attestation slot %s",
           Math.max(0, state.getSlot().getValue() - chainSpec.getEpochLength().getValue()),
           data.getSlot());
     }
 
-    if (data.getSlot()
-            .compareTo(state.getSlot().minus(state.getSlot().modulo(chainSpec.getEpochLength())))
-        >= 0) {
+    if (data.getSlot().greaterEqual(
+        state.getSlot().minus(state.getSlot().modulo(chainSpec.getEpochLength())))) {
       if (!data.getSlot().equals(state.getJustifiedSlot())) {
         return failedResult(
             "attestation_data.slot=%s must be equal to justified_slot=%s",
@@ -82,7 +79,7 @@ public class AttestationVerifier implements OperationVerifier<Attestation> {
     }
 
     Hash32 shardBlockRoot =
-        state.getLatestCrosslinks().get(safeInt(data.getShard())).getShardBlockRoot();
+        state.getLatestCrosslinks().get(data.getShard()).getShardBlockRoot();
     if (!data.getJustifiedBlockRoot().equals(shardBlockRoot)
         && !data.getShardBlockRoot().equals(shardBlockRoot)) {
       return failedResult(
@@ -92,11 +89,11 @@ public class AttestationVerifier implements OperationVerifier<Attestation> {
           data.getJustifiedBlockRoot(), data.getShardBlockRoot(), shardBlockRoot);
     }
 
-    List<UInt24> participants =
+    List<ValidatorIndex> participants =
         specHelpers.get_attestation_participants(
             state, data, attestation.getParticipationBitfield());
 
-    List<Bytes48> pubKeys = specHelpers.mapIndicesToPubKeys(state, participants);
+    List<BLSPubkey> pubKeys = specHelpers.mapIndicesToPubKeys(state, participants);
     PublicKey groupPublicKey = specHelpers.bls_aggregate_pubkeys(pubKeys);
     if (!specHelpers.bls_verify(
         groupPublicKey,

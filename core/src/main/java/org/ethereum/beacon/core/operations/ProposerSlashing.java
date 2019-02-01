@@ -2,6 +2,8 @@ package org.ethereum.beacon.core.operations;
 
 import com.google.common.base.Objects;
 import org.ethereum.beacon.core.operations.slashing.ProposalSignedData;
+import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.util.bytes.Bytes96;
@@ -9,18 +11,18 @@ import tech.pegasys.artemis.util.uint.UInt24;
 
 @SSZSerializable
 public class ProposerSlashing {
-  @SSZ private final UInt24 proposerIndex;
+  @SSZ private final ValidatorIndex proposerIndex;
   @SSZ private final ProposalSignedData proposalData1;
-  @SSZ private final Bytes96 proposalSignature1;
+  @SSZ private final BLSSignature proposalSignature1;
   @SSZ private final ProposalSignedData proposalData2;
-  @SSZ private final Bytes96 proposalSignature2;
+  @SSZ private final BLSSignature proposalSignature2;
 
   public ProposerSlashing(
-      UInt24 proposerIndex,
+      ValidatorIndex proposerIndex,
       ProposalSignedData proposalData1,
-      Bytes96 proposalSignature1,
+      BLSSignature proposalSignature1,
       ProposalSignedData proposalData2,
-      Bytes96 proposalSignature2) {
+      BLSSignature proposalSignature2) {
     this.proposerIndex = proposerIndex;
     this.proposalData1 = proposalData1;
     this.proposalSignature1 = proposalSignature1;
@@ -28,7 +30,7 @@ public class ProposerSlashing {
     this.proposalSignature2 = proposalSignature2;
   }
 
-  public UInt24 getProposerIndex() {
+  public ValidatorIndex getProposerIndex() {
     return proposerIndex;
   }
 
@@ -36,7 +38,7 @@ public class ProposerSlashing {
     return proposalData1;
   }
 
-  public Bytes96 getProposalSignature1() {
+  public BLSSignature getProposalSignature1() {
     return proposalSignature1;
   }
 
@@ -44,7 +46,7 @@ public class ProposerSlashing {
     return proposalData2;
   }
 
-  public Bytes96 getProposalSignature2() {
+  public BLSSignature getProposalSignature2() {
     return proposalSignature2;
   }
 

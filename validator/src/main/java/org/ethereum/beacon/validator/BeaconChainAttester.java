@@ -3,6 +3,9 @@ package org.ethereum.beacon.validator;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustodyBit;
+import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.ShardNumber;
+import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.validator.crypto.MessageSigner;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.uint.UInt24;
@@ -25,8 +28,8 @@ public interface BeaconChainAttester {
    * @return created attestation.
    */
   Attestation attest(
-      UInt24 validatorIndex,
-      UInt64 shard,
+      ValidatorIndex validatorIndex,
+      ShardNumber shard,
       ObservableBeaconState observableState,
-      MessageSigner<Bytes96> signer);
+      MessageSigner<BLSSignature> signer);
 }

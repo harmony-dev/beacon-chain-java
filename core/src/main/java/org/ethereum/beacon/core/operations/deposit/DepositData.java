@@ -2,6 +2,7 @@ package org.ethereum.beacon.core.operations.deposit;
 
 import com.google.common.base.Objects;
 import org.ethereum.beacon.core.operations.Deposit;
+import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.util.uint.UInt64;
@@ -20,11 +21,11 @@ public class DepositData {
   /** Deposit parameters. */
   @SSZ private final DepositInput depositInput;
   /** Value in Gwei. */
-  @SSZ private final UInt64 value;
+  @SSZ private final Gwei value;
   /** Timestamp from deposit contract. */
   @SSZ private final UInt64 timestamp;
 
-  public DepositData(DepositInput depositInput, UInt64 value, UInt64 timestamp) {
+  public DepositData(DepositInput depositInput, Gwei value, UInt64 timestamp) {
     this.depositInput = depositInput;
     this.value = value;
     this.timestamp = timestamp;
@@ -34,7 +35,7 @@ public class DepositData {
     return depositInput;
   }
 
-  public UInt64 getValue() {
+  public Gwei getValue() {
     return value;
   }
 

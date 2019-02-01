@@ -1,6 +1,5 @@
 package org.ethereum.beacon.consensus.transition;
 
-import java.util.ArrayList;
 import java.util.List;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.StateTransition;
@@ -16,8 +15,7 @@ import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.Eth1DataVote;
 import org.ethereum.beacon.core.state.PendingAttestationRecord;
-import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.uint.UInt24;
+import org.ethereum.beacon.core.types.ValidatorIndex;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public class BlockTransition implements StateTransition<BeaconStateEx> {
@@ -39,10 +37,8 @@ public class BlockTransition implements StateTransition<BeaconStateEx> {
       Set state.latest_randao_mixes[state.slot % LATEST_RANDAO_MIXES_LENGTH] =
       hash(state.latest_randao_mixes[state.slot % LATEST_RANDAO_MIXES_LENGTH] + block.randao_reveal).
     */
-    List<Hash32> newLatestRandaoMixes = new ArrayList<>(state.getLatestRandaoMixes());
-    int randaoMixIdx = SpecHelpers.safeInt(state.getSlot().modulo(spec.getLatestRandaoMixesLength()));
-    newLatestRandaoMixes.set(randaoMixIdx,
-        specHelpers.hash(newLatestRandaoMixes.get(randaoMixIdx).concat(block.getRandaoReveal())));
+    state.getLatestRandaoMixes().update(state.getSlot().modulo(spec.getLatestRandaoMixesLength()),
+        rm -> specHelpers.hash(rm.concat(block.getRandaoReveal())));
 
     /*
      Eth1 data
@@ -60,11 +56,10 @@ public class BlockTransition implements StateTransition<BeaconStateEx> {
       }
     }
     if (depositIdx >= 0) {
-      state.withEth1DataVote(
-          depositIdx,
+      state.getEth1DataVotes().update(depositIdx,
           vote -> new Eth1DataVote(vote.getEth1Data(), vote.getVoteCount().increment()));
     } else {
-      state.withNewEth1DataVote(new Eth1DataVote(block.getEth1Data(), UInt64.valueOf(1)));
+      state.getEth1DataVotes().add(new Eth1DataVote(block.getEth1Data(), UInt64.valueOf(1)));
     }
 
     /*
@@ -72,7 +67,7 @@ public class BlockTransition implements StateTransition<BeaconStateEx> {
        Run penalize_validator(state, proposer_slashing.proposer_index).
     */
     for (ProposerSlashing proposer_slashing : block.getBody().getProposerSlashings()) {
-      specHelpers.penalize_validator(state, proposer_slashing.getProposerIndex().getValue());
+      specHelpers.penalize_validator(state, proposer_slashing.getProposerIndex());
     }
 
     /*
@@ -86,15 +81,11 @@ public class BlockTransition implements StateTransition<BeaconStateEx> {
            if state.validator_registry[i].penalized_slot > state.slot.
     */
     for (CasperSlashing casper_slashing : block.getBody().getCasperSlashings()) {
-      List<UInt24> intersection = specHelpers.custodyIndexIntersection(casper_slashing);
-      for (UInt24 index : intersection) {
-        if (state
-                .getValidatorRegistry()
-                .get(index.getValue())
-                .getPenalizedSlot()
-                .compareTo(state.getSlot())
-            > 0) {
-          specHelpers.penalize_validator(state, index.getValue());
+      List<ValidatorIndex> intersection = specHelpers.custodyIndexIntersection(casper_slashing);
+      for (ValidatorIndex index : intersection) {
+        if (state.getValidatorRegistry().get(index).getPenalizedSlot().greater(
+                state.getSlot())) {
+          specHelpers.penalize_validator(state, index);
         }
       }
     }
@@ -117,7 +108,7 @@ public class BlockTransition implements StateTransition<BeaconStateEx> {
               attestation.getParticipationBitfield(),
               attestation.getCustodyBitfield(),
               state.getSlot());
-      state.withNewLatestAttestation(record);
+      state.getLatestAttestations().add(record);
     }
 
     /*
@@ -152,9 +143,9 @@ public class BlockTransition implements StateTransition<BeaconStateEx> {
        Run initiate_validator_exit(state, exit.validator_index).
     */
     for (Exit exit : block.getBody().getExits()) {
-      specHelpers.initiate_validator_exit(state, exit.getValidatorIndex().getValue());
+      specHelpers.initiate_validator_exit(state, exit.getValidatorIndex());
     }
 
-    return new BeaconStateEx(state.validate(), block.getHash());
+    return new BeaconStateEx(state.createImmutable(), block.getHash());
   }
 }

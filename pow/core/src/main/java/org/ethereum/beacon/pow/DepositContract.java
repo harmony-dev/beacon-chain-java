@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.state.Eth1Data;
+import org.ethereum.beacon.core.types.Time;
 import org.reactivestreams.Publisher;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
@@ -94,19 +95,19 @@ public interface DepositContract {
    * Container for the deposit contract <code>ChainStartEvent</code>
    */
   class ChainStart {
-    private final UInt64 time;
+    private final Time time;
     private final Eth1Data eth1Data;
     private final List<Deposit> initialDeposits;
 
 
-    public ChainStart(UInt64 time, Eth1Data eth1Data,
+    public ChainStart(Time time, Eth1Data eth1Data,
         List<Deposit> initialDeposits) {
       this.time = time;
       this.eth1Data = eth1Data;
       this.initialDeposits = initialDeposits;
     }
 
-    public UInt64 getTime() {
+    public Time getTime() {
       return time;
     }
 
