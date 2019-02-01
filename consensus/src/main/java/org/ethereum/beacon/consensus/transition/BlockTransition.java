@@ -6,16 +6,18 @@ import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
-import org.ethereum.beacon.core.operations.CasperSlashing;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.Exit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
+import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.Eth1DataVote;
 import org.ethereum.beacon.core.state.PendingAttestationRecord;
 import org.ethereum.beacon.core.types.ValidatorIndex;
+import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.bytes.Bytes32s;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public class BlockTransition implements StateTransition<BeaconStateEx> {
@@ -32,13 +34,15 @@ public class BlockTransition implements StateTransition<BeaconStateEx> {
     MutableBeaconState state = stateEx.getCanonicalState().createMutableCopy();
 
     /*
-      RANDAO
-      Let proposer = state.validator_registry[get_beacon_proposer_index(state, state.slot)].
-      Set state.latest_randao_mixes[state.slot % LATEST_RANDAO_MIXES_LENGTH] =
-      hash(state.latest_randao_mixes[state.slot % LATEST_RANDAO_MIXES_LENGTH] + block.randao_reveal).
+    RANDAO
+    Set state.latest_randao_mixes[get_current_epoch(state) % LATEST_RANDAO_MIXES_LENGTH] =
+        xor(get_randao_mix(state, get_current_epoch(state)), hash(block.randao_reveal)).
     */
-    state.getLatestRandaoMixes().update(state.getSlot().modulo(spec.getLatestRandaoMixesLength()),
-        rm -> specHelpers.hash(rm.concat(block.getRandaoReveal())));
+    state.getLatestRandaoMixes().update(
+            specHelpers.get_current_epoch(state).modulo(spec.getLatestRandaoMixesLength()),
+            rm -> Hash32.wrap(Bytes32s.xor(
+                  specHelpers.get_randao_mix(state, specHelpers.get_current_epoch(state)),
+                  specHelpers.hash(block.getRandaoReveal()))));
 
     /*
      Eth1 data
@@ -71,20 +75,22 @@ public class BlockTransition implements StateTransition<BeaconStateEx> {
     }
 
     /*
-       For each casper_slashing in block.body.casper_slashings:
-       Let slashable_vote_data_1 = casper_slashing.slashable_vote_data_1.
-       Let slashable_vote_data_2 = casper_slashing.slashable_vote_data_2.
-       Let indices(slashable_vote_data) =
-          slashable_vote_data.custody_bit_0_indices + slashable_vote_data.custody_bit_1_indices.
-       Let intersection = [x for x in indices(slashable_vote_data_1) if x in indices(slashable_vote_data_2)].
-       For each validator index i in intersection run penalize_validator(state, i)
-           if state.validator_registry[i].penalized_slot > state.slot.
+       For each attester_slashing in block.body.attester_slashings:
+         Let slashable_attestation_1 = attester_slashing.slashable_attestation_1.
+         Let slashable_attestation_2 = attester_slashing.slashable_attestation_2.
+         Let slashable_indices = [index for index in slashable_attestation_1.validator_indices
+             if index in slashable_attestation_2.validator_indices
+                 and state.validator_registry[index].penalized_epoch > get_current_epoch(state)].
+         Run penalize_validator(state, index) for each index in slashable_indices.
     */
-    for (CasperSlashing casper_slashing : block.getBody().getCasperSlashings()) {
-      List<ValidatorIndex> intersection = specHelpers.custodyIndexIntersection(casper_slashing);
+    for (AttesterSlashing attester_slashing : block.getBody().getAttesterSlashings()) {
+      List<ValidatorIndex> intersection = attester_slashing.getSlashableAttestation1()
+          .getValidatorIndices().listCopy();
+      intersection.retainAll(attester_slashing.getSlashableAttestation2()
+          .getValidatorIndices().listCopy());
       for (ValidatorIndex index : intersection) {
-        if (state.getValidatorRegistry().get(index).getPenalizedSlot().greater(
-                state.getSlot())) {
+        if (state.getValidatorRegistry().get(index).getPenalizedEpoch().greater(
+            specHelpers.get_current_epoch(state))) {
           specHelpers.penalize_validator(state, index);
         }
       }
@@ -104,8 +110,8 @@ public class BlockTransition implements StateTransition<BeaconStateEx> {
     for (Attestation attestation : block.getBody().getAttestations()) {
       PendingAttestationRecord record =
           new PendingAttestationRecord(
+              attestation.getAggregationBitfield(),
               attestation.getData(),
-              attestation.getParticipationBitfield(),
               attestation.getCustodyBitfield(),
               state.getSlot());
       state.getLatestAttestations().add(record);

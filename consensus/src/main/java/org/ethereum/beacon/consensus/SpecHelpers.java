@@ -610,22 +610,19 @@ public class SpecHelpers {
     def penalize_validator(state: BeaconState, index: int) -> None:
       exit_validator(state, index)
       validator = state.validator_registry[index]
-      state.latest_penalized_exit_balances[(state.slot // EPOCH_LENGTH) % LATEST_PENALIZED_EXIT_LENGTH]
+      state.latest_penalized_balances[get_current_epoch(state) % LATEST_PENALIZED_EXIT_LENGTH]
           += get_effective_balance(state, index)
 
       whistleblower_index = get_beacon_proposer_index(state, state.slot)
       whistleblower_reward = get_effective_balance(state, index) // WHISTLEBLOWER_REWARD_QUOTIENT
       state.validator_balances[whistleblower_index] += whistleblower_reward
       state.validator_balances[index] -= whistleblower_reward
-      validator.penalized_slot = state.slot
+      validator.penalized_epoch = get_current_epoch(state)
     */
   public void penalize_validator(MutableBeaconState state, ValidatorIndex index) {
     exit_validator(state, index);
-    EpochNumber exitBalanceIdx = state.getSlot()
-        .dividedBy(spec.getEpochLength())
-        .modulo(spec.getLatestPenalizedExitLength());
-    state.getLatestPenalizedExitBalances().update(
-        exitBalanceIdx,
+    state.getLatestPenalizedBalances().update(
+        get_current_epoch(state).modulo(spec.getLatestPenalizedExitLength()),
         balance -> balance.plus(get_effective_balance(state, index)));
 
     ValidatorIndex whistleblower_index = get_beacon_proposer_index(state, state.getSlot());
@@ -636,7 +633,7 @@ public class SpecHelpers {
     state.getValidatorBalances().update(index,
         oldVal -> oldVal.minus(whistleblower_reward));
     state.getValidatorRegistry().update(index,
-        v -> v.builder().withPenalizedSlot(state.getSlot()).build());
+        v -> v.builder().withPenalizedEpoch(get_current_epoch(state)).build());
   }
 
   /*

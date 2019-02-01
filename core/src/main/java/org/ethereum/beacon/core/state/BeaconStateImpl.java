@@ -359,8 +359,8 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
-  public WriteList<UInt64, Hash32> getLatestRandaoMixes() {
-    return WriteList.wrap(getLatestRandaoMixesList(), UInt64::valueOf);
+  public WriteList<EpochNumber, Hash32> getLatestRandaoMixes() {
+    return WriteList.wrap(getLatestRandaoMixesList(), EpochNumber::of);
   }
 
   @Override

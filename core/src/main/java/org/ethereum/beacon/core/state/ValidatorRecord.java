@@ -181,7 +181,7 @@ public class ValidatorRecord {
       return this;
     }
 
-    public Builder withPenalizedSlot(EpochNumber penalizedEpoch) {
+    public Builder withPenalizedEpoch(EpochNumber penalizedEpoch) {
       this.penalizedEpoch = penalizedEpoch;
       return this;
     }

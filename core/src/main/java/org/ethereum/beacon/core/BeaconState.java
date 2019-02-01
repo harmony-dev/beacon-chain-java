@@ -57,7 +57,7 @@ public interface BeaconState extends Hashable<Hash32> {
   /** ******* Randomness and committees ********* */
 
   /** The most recent randao mixes. */
-  ReadList<UInt64, Hash32> getLatestRandaoMixes();
+  ReadList<EpochNumber, Hash32> getLatestRandaoMixes();
 
   ShardNumber getPreviousEpochStartShard();
 

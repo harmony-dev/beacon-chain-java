@@ -34,7 +34,7 @@ public interface MutableBeaconState extends BeaconState {
   void setValidatorRegistryUpdateEpoch(EpochNumber validatorRegistryUpdateEpoch);
 
   @Override
-  WriteList<UInt64, Hash32> getLatestRandaoMixes();
+  WriteList<EpochNumber, Hash32> getLatestRandaoMixes();
 
   void setPreviousEpochStartShard(ShardNumber previousEpochStartShard);
 
