@@ -1,6 +1,5 @@
 package org.ethereum.beacon.core;
 
-import org.ethereum.beacon.core.operations.CustodyChallenge;
 import org.ethereum.beacon.core.state.CrosslinkRecord;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Eth1DataVote;

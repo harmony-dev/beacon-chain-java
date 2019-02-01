@@ -1,10 +1,9 @@
 package org.ethereum.beacon.core.state;
 
-import com.google.common.base.Objects;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
-import org.ethereum.beacon.core.operations.CustodyChallenge;
 import org.ethereum.beacon.core.types.Bitfield64;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
@@ -16,11 +15,8 @@ import org.ethereum.beacon.ssz.Serializer;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.collections.WriteList;
 import tech.pegasys.artemis.util.uint.UInt64;
-import java.util.ArrayList;
-import java.util.List;
 
 @SSZSerializable
 public class BeaconStateImpl implements MutableBeaconState {
