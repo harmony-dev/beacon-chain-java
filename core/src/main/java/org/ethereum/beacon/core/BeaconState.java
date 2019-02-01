@@ -56,53 +56,40 @@ public interface BeaconState extends Hashable<Hash32> {
   ReadList<ValidatorIndex, Gwei> getValidatorBalances();
 
   /** Slot number of last validator registry change. */
-  SlotNumber getValidatorRegistryLatestChangeSlot();
+  EpochNumber getValidatorRegistryUpdateEpoch();
 
   /** ******* Randomness and committees ********* */
 
-  /** A nonce for validator registry exits. */
-  UInt64 getValidatorRegistryExitCount();
-
-  /** A hash of latest validator registry delta. */
-  Hash32 getValidatorRegistryDeltaChainTip();
-
   /** The most recent randao mixes. */
   ReadList<UInt64, Hash32> getLatestRandaoMixes();
-
-  /** The most recent VDF outputs. */
-  ReadList<Integer, Hash32> getLatestVdfOutputs();
 
   ShardNumber getPreviousEpochStartShard();
 
   ShardNumber getCurrentEpochStartShard();
 
-  SlotNumber getPreviousEpochCalculationSlot();
+  EpochNumber getPreviousCalculationEpoch();
 
-  SlotNumber getCurrentEpochCalculationSlot();
+  EpochNumber getCurrentCalculationEpoch();
 
-  Hash32 getPreviousEpochRandaoMix();
+  Hash32 getPreviousEpochSeed();
 
-  /** ******* Finality ********* */
-  Hash32 getCurrentEpochRandaoMix();
-
-  /** Proof of custody placeholder. */
-  ReadList<Integer, CustodyChallenge> getCustodyChallenges();
+  Hash32 getCurrentEpochSeed();
 
   /********* Finality **********/
 
-  /** Latest justified slot before {@link #getJustifiedSlot()}. */
-  SlotNumber getPreviousJustifiedSlot();
+  /** Latest justified epoch before {@link #getJustifiedEpoch()}. */
+  EpochNumber getPreviousJustifiedEpoch();
 
-  /** Latest justified slot. */
-  SlotNumber getJustifiedSlot();
-
-  /** ******* Recent state ********* */
+  /** Latest justified epoch. */
+  EpochNumber getJustifiedEpoch();
 
   /** Bitfield of latest justified slots (epochs). */
   Bitfield getJustificationBitfield();
 
   /** Latest finalized slot. */
-  SlotNumber getFinalizedSlot();
+  EpochNumber getFinalizedEpoch();
+
+  /** ******* Recent state ********* */
 
   /** Latest crosslink record for each shard. */
   ReadList<ShardNumber, CrosslinkRecord> getLatestCrosslinks();
@@ -110,10 +97,11 @@ public interface BeaconState extends Hashable<Hash32> {
   /** Latest block hashes for each shard. */
   ReadList<SlotNumber, Hash32> getLatestBlockRoots();
 
-  /** Indices of validators that has been ejected lately. */
-  ReadList<EpochNumber, Gwei> getLatestPenalizedExitBalances();
+  /** Latest block hashes for each shard. */
+  ReadList<SlotNumber, Hash32> getLatestIndexRoots();
 
-  /** ******* PoW receipt root ********* */
+  /** Balances penalized at every withdrawal period */
+  ReadList<EpochNumber, Gwei> getLatestPenalizedBalances();
 
   /** Attestations that has not been processed yet. */
   ReadList<Integer, PendingAttestationRecord> getLatestAttestations();
@@ -123,6 +111,8 @@ public interface BeaconState extends Hashable<Hash32> {
    * LATEST_BLOCK_ROOTS_LENGTH.
    */
   ReadList<Integer, Hash32> getBatchedBlockRoots();
+
+  /** ******* PoW receipt root ********* */
 
   /** Latest processed eth1 data. */
   Eth1Data getLatestEth1Data();
