@@ -8,7 +8,7 @@ import org.ethereum.beacon.core.state.Eth1DataVote;
 import org.ethereum.beacon.core.state.ForkData;
 import org.ethereum.beacon.core.state.PendingAttestationRecord;
 import org.ethereum.beacon.core.state.ValidatorRecord;
-import org.ethereum.beacon.core.types.Bitfield;
+import org.ethereum.beacon.core.types.Bitfield64;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ShardNumber;
@@ -18,9 +18,6 @@ import org.ethereum.beacon.core.types.ValidatorIndex;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
-import java.util.List;
-
-import static java.util.Collections.emptyList;
 
 /**
  * Beacon chain state.
@@ -99,7 +96,7 @@ public interface BeaconState extends Hashable<Hash32> {
   /** ******* Recent state ********* */
 
   /** Bitfield of latest justified slots (epochs). */
-  Bitfield getJustificationBitfield();
+  Bitfield64 getJustificationBitfield();
 
   /** Latest finalized slot. */
   SlotNumber getFinalizedSlot();

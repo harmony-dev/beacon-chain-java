@@ -4,7 +4,7 @@ import com.google.common.base.Objects;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.CustodyChallenge;
-import org.ethereum.beacon.core.types.Bitfield;
+import org.ethereum.beacon.core.types.Bitfield64;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ShardNumber;
@@ -68,7 +68,7 @@ public class BeaconStateImpl implements MutableBeaconState {
   /** Latest justified slot. */
   @SSZ private SlotNumber justifiedSlot = SlotNumber.ZERO;
   /** Bitfield of latest justified slots (epochs). */
-  @SSZ private Bitfield justificationBitfield = Bitfield.ZERO;
+  @SSZ private Bitfield64 justificationBitfield = Bitfield64.ZERO;
   /** Latest finalized slot. */
   @SSZ private SlotNumber finalizedSlot = SlotNumber.ZERO;
 
@@ -237,7 +237,7 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
-  public Bitfield getJustificationBitfield() {
+  public Bitfield64 getJustificationBitfield() {
     return justificationBitfield;
   }
 
@@ -358,7 +358,7 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
-  public void setJustificationBitfield(Bitfield justificationBitfield) {
+  public void setJustificationBitfield(Bitfield64 justificationBitfield) {
     this.justificationBitfield = justificationBitfield;
   }
 

@@ -3,6 +3,7 @@ package org.ethereum.beacon.core.state;
 import com.google.common.base.Objects;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
+import org.ethereum.beacon.core.types.Bitfield;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
@@ -23,16 +24,16 @@ public class PendingAttestationRecord {
   /** Signed data. */
   @SSZ private final AttestationData data;
   /** Attester participation bitfield. */
-  @SSZ private final BytesValue participationBitfield;
+  @SSZ private final Bitfield participationBitfield;
   /** Proof of custody bitfield. */
-  @SSZ private final BytesValue custodyBitfield;
+  @SSZ private final Bitfield custodyBitfield;
   /** Slot in which it was included. */
   @SSZ private final SlotNumber slotIncluded;
 
   public PendingAttestationRecord(
       AttestationData data,
-      BytesValue participationBitfield,
-      BytesValue custodyBitfield,
+      Bitfield participationBitfield,
+      Bitfield custodyBitfield,
       SlotNumber slotIncluded) {
     this.data = data;
     this.participationBitfield = participationBitfield;
@@ -44,11 +45,11 @@ public class PendingAttestationRecord {
     return data;
   }
 
-  public BytesValue getParticipationBitfield() {
+  public Bitfield getParticipationBitfield() {
     return participationBitfield;
   }
 
-  public BytesValue getCustodyBitfield() {
+  public Bitfield getCustodyBitfield() {
     return custodyBitfield;
   }
 
