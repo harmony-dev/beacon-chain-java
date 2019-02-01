@@ -2,6 +2,7 @@ package org.ethereum.beacon.core.state;
 
 import com.google.common.base.Objects;
 import org.ethereum.beacon.core.BeaconState;
+import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
@@ -17,31 +18,32 @@ import tech.pegasys.artemis.util.uint.UInt64;
  */
 @SSZSerializable
 public class ForkData {
-  public static final ForkData EMPTY = new ForkData(UInt64.ZERO, UInt64.ZERO, SlotNumber.of(0));
+  public static final ForkData EMPTY = new ForkData(UInt64.ZERO, UInt64.ZERO, EpochNumber.of(0));
 
   /** Previous fork version. */
-  @SSZ private final UInt64 preForkVersion;
+  @SSZ private final UInt64 previousVersion;
   /** Post fork version. */
-  @SSZ private final UInt64 postForkVersion;
+  @SSZ private final UInt64 currentVersion;
   /** Fork slot number. */
-  @SSZ private final SlotNumber forkSlot;
+  @SSZ private final EpochNumber epoch;
 
-  public ForkData(UInt64 preForkVersion, UInt64 postForkVersion, SlotNumber forkSlot) {
-    this.preForkVersion = preForkVersion;
-    this.postForkVersion = postForkVersion;
-    this.forkSlot = forkSlot;
+  public ForkData(UInt64 previousVersion, UInt64 currentVersion,
+      EpochNumber epoch) {
+    this.previousVersion = previousVersion;
+    this.currentVersion = currentVersion;
+    this.epoch = epoch;
   }
 
-  public UInt64 getPreForkVersion() {
-    return preForkVersion;
+  public UInt64 getPreviousVersion() {
+    return previousVersion;
   }
 
-  public UInt64 getPostForkVersion() {
-    return postForkVersion;
+  public UInt64 getCurrentVersion() {
+    return currentVersion;
   }
 
-  public SlotNumber getForkSlot() {
-    return forkSlot;
+  public EpochNumber getEpoch() {
+    return epoch;
   }
 
   @Override
@@ -49,8 +51,8 @@ public class ForkData {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     ForkData forkData = (ForkData) o;
-    return Objects.equal(preForkVersion, forkData.preForkVersion)
-        && Objects.equal(postForkVersion, forkData.postForkVersion)
-        && Objects.equal(forkSlot, forkData.forkSlot);
+    return Objects.equal(previousVersion, forkData.previousVersion)
+        && Objects.equal(currentVersion, forkData.currentVersion)
+        && Objects.equal(epoch, forkData.epoch);
   }
 }

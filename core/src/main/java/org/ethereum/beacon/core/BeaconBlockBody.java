@@ -1,19 +1,19 @@
 package org.ethereum.beacon.core;
 
+import static java.util.Collections.emptyList;
+
 import com.google.common.base.Objects;
+import java.util.ArrayList;
+import java.util.List;
 import org.ethereum.beacon.core.operations.Attestation;
-import org.ethereum.beacon.core.operations.CasperSlashing;
-import org.ethereum.beacon.core.operations.CustodyChallenge;
-import org.ethereum.beacon.core.operations.CustodyReseed;
-import org.ethereum.beacon.core.operations.CustodyResponse;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.Exit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
+import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
-import java.util.List;
-
-import static java.util.Collections.emptyList;
+import tech.pegasys.artemis.util.collections.ReadList;
+import tech.pegasys.artemis.util.collections.WriteList;
 
 /**
  * Beacon block body.
@@ -35,77 +35,84 @@ public class BeaconBlockBody {
           emptyList(),
           emptyList(),
           emptyList(),
-          emptyList(),
-          emptyList(),
-          emptyList(),
           emptyList());
 
   /** A list of proposer slashing challenges. */
-  @SSZ private final List<ProposerSlashing> proposerSlashings;
-  /** A list of Casper slashing challenges. */
-  @SSZ private final List<CasperSlashing> casperSlashings;
+  @SSZ private final List<ProposerSlashing> proposerSlashingsList;
+
+  @SSZ private final List<AttesterSlashing> attesterSlashingsList;
   /** A list of attestations. */
-  @SSZ private final List<Attestation> attestations;
-  /** A list of proof of custody seed changes. */
-  @SSZ private final List<CustodyReseed> custodyReseeds;
-  /** A list of proof of custody challenges. */
-  @SSZ private final List<CustodyChallenge> custodyChallenges;
-  /** A list of proof of custody challenge responses. */
-  @SSZ private final List<CustodyResponse> custodyResponses;
+  @SSZ private final List<Attestation> attestationsList;
   /** A list of validator deposit proofs. */
-  @SSZ private final List<Deposit> deposits;
+  @SSZ private final List<Deposit> depositsList;
   /** A list of validator exits. */
-  @SSZ private final List<Exit> exits;
+  @SSZ private final List<Exit> exitsList;
 
   public BeaconBlockBody(
       List<ProposerSlashing> proposerSlashings,
-      List<CasperSlashing> casperSlashings,
+      List<AttesterSlashing> attesterSlashings,
       List<Attestation> attestations,
-      List<CustodyReseed> custodyReseeds,
-      List<CustodyChallenge> custodyChallenges,
-      List<CustodyResponse> custodyResponses,
-      List<Deposit> deposits,
-      List<Exit> exits) {
-    this.proposerSlashings = proposerSlashings;
-    this.casperSlashings = casperSlashings;
-    this.attestations = attestations;
-    this.custodyReseeds = custodyReseeds;
-    this.custodyChallenges = custodyChallenges;
-    this.custodyResponses = custodyResponses;
-    this.deposits = deposits;
-    this.exits = exits;
+      List<Deposit> deposits, List<Exit> exits) {
+    this.proposerSlashingsList = new ArrayList<>(proposerSlashings);
+    this.attesterSlashingsList = new ArrayList<>(attesterSlashings);
+    this.attestationsList = new ArrayList<>(attestations);
+    this.depositsList = new ArrayList<>(deposits);
+    this.exitsList = new ArrayList<>(exits);
   }
 
-  public List<ProposerSlashing> getProposerSlashings() {
-    return proposerSlashings;
+  public ReadList<Integer, ProposerSlashing> getProposerSlashings() {
+    return WriteList.wrap(proposerSlashingsList, Integer::intValue);
   }
 
-  public List<CasperSlashing> getCasperSlashings() {
-    return casperSlashings;
+  public ReadList<Integer, AttesterSlashing> getAttesterSlashings() {
+    return WriteList.wrap(attesterSlashingsList, Integer::intValue);
   }
 
-  public List<Attestation> getAttestations() {
-    return attestations;
+  public ReadList<Integer, Attestation> getAttestations() {
+    return WriteList.wrap(attestationsList, Integer::intValue);
   }
 
-  public List<CustodyReseed> getCustodyReseeds() {
-    return custodyReseeds;
+  public ReadList<Integer, Deposit> getDeposits() {
+    return WriteList.wrap(depositsList, Integer::intValue);
   }
 
-  public List<CustodyChallenge> getCustodyChallenges() {
-    return custodyChallenges;
+  public ReadList<Integer, Exit> getExits() {
+    return WriteList.wrap(exitsList, Integer::intValue);
   }
 
-  public List<CustodyResponse> getCustodyResponses() {
-    return custodyResponses;
+  /**
+   * @deprecated for serialization only
+   */
+  public List<ProposerSlashing> getProposerSlashingsList() {
+    return proposerSlashingsList;
   }
 
-  public List<Deposit> getDeposits() {
-    return deposits;
+  /**
+   * @deprecated for serialization only
+   */
+  public List<AttesterSlashing> getAttesterSlashingsList() {
+    return attesterSlashingsList;
   }
 
-  public List<Exit> getExits() {
-    return exits;
+  /**
+   * @deprecated for serialization only
+   */
+  public List<Attestation> getAttestationsList() {
+    return attestationsList;
+  }
+
+  /**
+   * @deprecated for serialization only
+   */
+  public List<Deposit> getDepositsList() {
+    return depositsList;
+  }
+
+  /**
+   * @deprecated for serialization only
+   */
+  public List<Exit> getExitsList() {
+    return exitsList;
   }
 
   @Override
@@ -113,13 +120,10 @@ public class BeaconBlockBody {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     BeaconBlockBody that = (BeaconBlockBody) o;
-    return Objects.equal(proposerSlashings, that.proposerSlashings)
-        && Objects.equal(casperSlashings, that.casperSlashings)
-        && Objects.equal(attestations, that.attestations)
-        && Objects.equal(custodyReseeds, that.custodyReseeds)
-        && Objects.equal(custodyChallenges, that.custodyChallenges)
-        && Objects.equal(custodyResponses, that.custodyResponses)
-        && Objects.equal(deposits, that.deposits)
-        && Objects.equal(exits, that.exits);
+    return Objects.equal(proposerSlashingsList, that.proposerSlashingsList)
+        && Objects.equal(attestationsList, that.attestationsList)
+        && Objects.equal(attesterSlashingsList, that.attesterSlashingsList)
+        && Objects.equal(depositsList, that.depositsList)
+        && Objects.equal(exitsList, that.exitsList);
   }
 }

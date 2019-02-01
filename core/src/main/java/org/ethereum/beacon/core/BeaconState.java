@@ -1,6 +1,5 @@
 package org.ethereum.beacon.core;
 
-import org.ethereum.beacon.core.operations.CustodyChallenge;
 import org.ethereum.beacon.core.state.BeaconStateImpl;
 import org.ethereum.beacon.core.state.CrosslinkRecord;
 import org.ethereum.beacon.core.state.Eth1Data;
@@ -18,9 +17,6 @@ import org.ethereum.beacon.core.types.ValidatorIndex;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
-import java.util.List;
-
-import static java.util.Collections.emptyList;
 
 /**
  * Beacon chain state.

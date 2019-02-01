@@ -4,6 +4,7 @@ import com.google.common.base.Objects;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.types.BLSPubkey;
+import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
@@ -27,48 +28,28 @@ public class ValidatorRecord {
   @SSZ private final BLSPubkey pubKey;
   /** Withdrawal credentials. */
   @SSZ private final Hash32 withdrawalCredentials;
-  /** Number of proposer slots since genesis. */
-  @SSZ private final SlotNumber proposerSlots;
   /** Slot when validator activated */
-  @SSZ private final SlotNumber activationSlot;
+  @SSZ private final EpochNumber activationEpoch;
   /** Slot when validator exited */
-  @SSZ private final SlotNumber exitSlot;
+  @SSZ private final EpochNumber exitEpoch;
   /** Slot when validator withdrew */
-  @SSZ private final SlotNumber withdrawalSlot;
+  @SSZ private final EpochNumber withdrawalEpoch;
   /** Slot when validator was penalized */
-  @SSZ private final SlotNumber penalizedSlot;
-  /** Exit counter when validator exited (or 0). */
-  @SSZ private final UInt64 exitCount;
+  @SSZ private final EpochNumber penalizedEpoch;
   /** Status flags. */
   @SSZ private final UInt64 statusFlags;
-  /** Slot the proof of custody seed was last changed. */
-  @SSZ private final SlotNumber latestCustodyReseedSlot;
 
-  @SSZ private final SlotNumber penultimateCustodyReseedSlot;
-
-  public ValidatorRecord(
-      BLSPubkey pubKey,
-      Hash32 withdrawalCredentials,
-      SlotNumber proposerSlots,
-      SlotNumber activationSlot,
-      SlotNumber exitSlot,
-      SlotNumber withdrawalSlot,
-      SlotNumber penalizedSlot,
-      UInt64 exitCount,
-      UInt64 statusFlags,
-      SlotNumber latestCustodyReseedSlot,
-      SlotNumber penultimateCustodyReseedSlot) {
+  public ValidatorRecord(BLSPubkey pubKey,
+      Hash32 withdrawalCredentials, EpochNumber activationEpoch,
+      EpochNumber exitEpoch, EpochNumber withdrawalEpoch,
+      EpochNumber penalizedEpoch, UInt64 statusFlags) {
     this.pubKey = pubKey;
     this.withdrawalCredentials = withdrawalCredentials;
-    this.proposerSlots = proposerSlots;
-    this.activationSlot = activationSlot;
-    this.exitSlot = exitSlot;
-    this.withdrawalSlot = withdrawalSlot;
-    this.penalizedSlot = penalizedSlot;
-    this.exitCount = exitCount;
+    this.activationEpoch = activationEpoch;
+    this.exitEpoch = exitEpoch;
+    this.withdrawalEpoch = withdrawalEpoch;
+    this.penalizedEpoch = penalizedEpoch;
     this.statusFlags = statusFlags;
-    this.latestCustodyReseedSlot = latestCustodyReseedSlot;
-    this.penultimateCustodyReseedSlot = penultimateCustodyReseedSlot;
   }
 
   public BLSPubkey getPubKey() {
@@ -79,40 +60,24 @@ public class ValidatorRecord {
     return withdrawalCredentials;
   }
 
-  public SlotNumber getProposerSlots() {
-    return proposerSlots;
+  public EpochNumber getActivationEpoch() {
+    return activationEpoch;
   }
 
-  public SlotNumber getActivationSlot() {
-    return activationSlot;
+  public EpochNumber getExitEpoch() {
+    return exitEpoch;
   }
 
-  public SlotNumber getExitSlot() {
-    return exitSlot;
+  public EpochNumber getWithdrawalEpoch() {
+    return withdrawalEpoch;
   }
 
-  public SlotNumber getWithdrawalSlot() {
-    return withdrawalSlot;
-  }
-
-  public SlotNumber getPenalizedSlot() {
-    return penalizedSlot;
-  }
-
-  public UInt64 getExitCount() {
-    return exitCount;
+  public EpochNumber getPenalizedEpoch() {
+    return penalizedEpoch;
   }
 
   public UInt64 getStatusFlags() {
     return statusFlags;
-  }
-
-  public UInt64 getLatestCustodyReseedSlot() {
-    return latestCustodyReseedSlot;
-  }
-
-  public UInt64 getPenultimateCustodyReseedSlot() {
-    return penultimateCustodyReseedSlot;
   }
 
   @Override
@@ -122,15 +87,11 @@ public class ValidatorRecord {
     ValidatorRecord that = (ValidatorRecord) o;
     return Objects.equal(pubKey, that.pubKey)
         && Objects.equal(withdrawalCredentials, that.withdrawalCredentials)
-        && Objects.equal(proposerSlots, that.proposerSlots)
-        && Objects.equal(activationSlot, that.activationSlot)
-        && Objects.equal(exitSlot, that.exitSlot)
-        && Objects.equal(withdrawalSlot, that.withdrawalSlot)
-        && Objects.equal(penalizedSlot, that.penalizedSlot)
-        && Objects.equal(exitCount, that.exitCount)
-        && Objects.equal(statusFlags, that.statusFlags)
-        && Objects.equal(latestCustodyReseedSlot, that.latestCustodyReseedSlot)
-        && Objects.equal(penultimateCustodyReseedSlot, that.penultimateCustodyReseedSlot);
+        && Objects.equal(activationEpoch, that.activationEpoch)
+        && Objects.equal(exitEpoch, that.exitEpoch)
+        && Objects.equal(withdrawalEpoch, that.withdrawalEpoch)
+        && Objects.equal(penalizedEpoch, that.penalizedEpoch)
+        && Objects.equal(statusFlags, that.statusFlags);
   }
 
   public Builder builder() {
@@ -141,15 +102,11 @@ public class ValidatorRecord {
 
     private BLSPubkey pubKey;
     private Hash32 withdrawalCredentials;
-    private SlotNumber proposerSlots;
-    private SlotNumber activationSlot;
-    private SlotNumber exitSlot;
-    private SlotNumber withdrawalSlot;
-    private SlotNumber penalizedSlot;
-    private UInt64 exitCount;
+    private EpochNumber activationEpoch;
+    private EpochNumber exitEpoch;
+    private EpochNumber withdrawalEpoch;
+    private EpochNumber penalizedEpoch;
     private UInt64 statusFlags;
-    private SlotNumber latestCustodyReseedSlot;
-    private SlotNumber penultimateCustodyReseedSlot;
 
     private Builder() {}
 
@@ -171,15 +128,11 @@ public class ValidatorRecord {
 
       builder.pubKey = record.pubKey;
       builder.withdrawalCredentials = record.withdrawalCredentials;
-      builder.proposerSlots = record.proposerSlots;
-      builder.activationSlot = record.activationSlot;
-      builder.exitSlot = record.exitSlot;
-      builder.withdrawalSlot = record.withdrawalSlot;
-      builder.penalizedSlot = record.penalizedSlot;
-      builder.exitCount = record.exitCount;
+      builder.activationEpoch = record.activationEpoch;
+      builder.exitEpoch = record.exitEpoch;
+      builder.withdrawalEpoch = record.withdrawalEpoch;
+      builder.penalizedEpoch = record.penalizedEpoch;
       builder.statusFlags = record.statusFlags;
-      builder.latestCustodyReseedSlot = record.latestCustodyReseedSlot;
-      builder.penultimateCustodyReseedSlot = record.penultimateCustodyReseedSlot;
 
       return builder;
     }
@@ -187,28 +140,20 @@ public class ValidatorRecord {
     public ValidatorRecord build() {
       assert pubKey != null;
       assert withdrawalCredentials != null;
-      assert proposerSlots != null;
-      assert activationSlot != null;
-      assert exitSlot != null;
-      assert withdrawalSlot != null;
-      assert penalizedSlot != null;
-      assert exitCount != null;
+      assert activationEpoch != null;
+      assert exitEpoch != null;
+      assert withdrawalEpoch != null;
+      assert penalizedEpoch != null;
       assert statusFlags != null;
-      assert latestCustodyReseedSlot != null;
-      assert penultimateCustodyReseedSlot != null;
 
       return new ValidatorRecord(
           pubKey,
           withdrawalCredentials,
-          proposerSlots,
-          activationSlot,
-          exitSlot,
-          withdrawalSlot,
-          penalizedSlot,
-          exitCount,
-          statusFlags,
-          latestCustodyReseedSlot,
-          penultimateCustodyReseedSlot);
+          activationEpoch,
+          exitEpoch,
+          withdrawalEpoch,
+          penalizedEpoch,
+          statusFlags);
     }
 
     public Builder withPubKey(BLSPubkey pubKey) {
@@ -221,33 +166,23 @@ public class ValidatorRecord {
       return this;
     }
 
-    public Builder withProposerSlots(SlotNumber proposerSlots) {
-      this.proposerSlots = proposerSlots;
+    public Builder withActivationEpoch(EpochNumber activationEpoch) {
+      this.activationEpoch = activationEpoch;
       return this;
     }
 
-    public Builder withActivationSlot(SlotNumber activationSlot) {
-      this.activationSlot = activationSlot;
+    public Builder withExitEpoch(EpochNumber exitEpoch) {
+      this.exitEpoch = exitEpoch;
       return this;
     }
 
-    public Builder withExitSlot(SlotNumber exitSlot) {
-      this.exitSlot = exitSlot;
+    public Builder withWithdrawalSlot(EpochNumber withdrawalEpoch) {
+      this.withdrawalEpoch = withdrawalEpoch;
       return this;
     }
 
-    public Builder withWithdrawalSlot(SlotNumber withdrawalSlot) {
-      this.withdrawalSlot = withdrawalSlot;
-      return this;
-    }
-
-    public Builder withPenalizedSlot(SlotNumber penalizedSlot) {
-      this.penalizedSlot = penalizedSlot;
-      return this;
-    }
-
-    public Builder withExitCount(UInt64 exitCount) {
-      this.exitCount = exitCount;
+    public Builder withPenalizedSlot(EpochNumber penalizedEpoch) {
+      this.penalizedEpoch = penalizedEpoch;
       return this;
     }
 
@@ -258,16 +193,6 @@ public class ValidatorRecord {
 
     public Builder withStatusFlags(Function<UInt64, UInt64> statusFlagsUpdater) {
       this.statusFlags = statusFlagsUpdater.apply(statusFlags);
-      return this;
-    }
-
-    public Builder withLatestCustodyReseedSlot(SlotNumber latestCustodyReseedSlot) {
-      this.latestCustodyReseedSlot = latestCustodyReseedSlot;
-      return this;
-    }
-
-    public Builder withPenultimateCustodyReseedSlot(SlotNumber penultimateCustodyReseedSlot) {
-      this.penultimateCustodyReseedSlot = penultimateCustodyReseedSlot;
       return this;
     }
   }

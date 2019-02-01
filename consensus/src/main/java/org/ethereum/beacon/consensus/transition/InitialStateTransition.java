@@ -72,7 +72,7 @@ public class InitialStateTransition implements StateTransition<BeaconStateEx> {
     // Validator registry
     initialState.getValidatorRegistry().clear();
     initialState.getValidatorBalances().clear();
-    initialState.setValidatorRegistryLatestChangeSlot(chainSpec.getGenesisSlot());
+    initialState.setValidatorRegistryUpdateEpoch(chainSpec.getGenesisEpoch());
     initialState.setValidatorRegistryExitCount(UInt64.ZERO);
     initialState.setValidatorRegistryDeltaChainTip(Hash32.ZERO);
 

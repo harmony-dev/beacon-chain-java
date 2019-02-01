@@ -24,7 +24,7 @@ public class Attestation {
   /** Attestation data object. */
   @SSZ private final AttestationData data;
   /** A bitfield where each bit corresponds to a validator attested to the {@link #data}. */
-  @SSZ private final BytesValue participationBitfield;
+  @SSZ private final BytesValue aggregationBitfield;
   /** Proof of custody bitfield. */
   @SSZ private final BytesValue custodyBitfield;
   /** A product of aggregation of signatures from different validators to {@link #data}. */
@@ -32,11 +32,11 @@ public class Attestation {
 
   public Attestation(
       AttestationData data,
-      BytesValue participationBitfield,
+      BytesValue aggregationBitfield,
       BytesValue custodyBitfield,
       BLSSignature aggregateSignature) {
     this.data = data;
-    this.participationBitfield = participationBitfield;
+    this.aggregationBitfield = aggregationBitfield;
     this.custodyBitfield = custodyBitfield;
     this.aggregateSignature = aggregateSignature;
   }
@@ -45,8 +45,8 @@ public class Attestation {
     return data;
   }
 
-  public BytesValue getParticipationBitfield() {
-    return participationBitfield;
+  public BytesValue getAggregationBitfield() {
+    return aggregationBitfield;
   }
 
   public BytesValue getCustodyBitfield() {
@@ -63,7 +63,7 @@ public class Attestation {
     if (o == null || getClass() != o.getClass()) return false;
     Attestation that = (Attestation) o;
     return Objects.equal(data, that.data)
-        && Objects.equal(participationBitfield, that.participationBitfield)
+        && Objects.equal(aggregationBitfield, that.aggregationBitfield)
         && Objects.equal(custodyBitfield, that.custodyBitfield)
         && Objects.equal(aggregateSignature, that.aggregateSignature);
   }

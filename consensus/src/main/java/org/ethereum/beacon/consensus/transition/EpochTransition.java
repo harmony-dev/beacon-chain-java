@@ -9,7 +9,6 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.core.BeaconBlock;
@@ -322,8 +321,8 @@ public class EpochTransition implements StateTransition<BeaconStateEx> {
       List<ValidatorIndex> attestation_participants = specHelpers
           .get_attestation_participants(state, a.getData(), a.getParticipationBitfield());
       for (ValidatorIndex participant : attestation_participants) {
-        inclusion_slot.put(participant, a.getSlotIncluded());
-        inclusion_distance.put(participant, a.getSlotIncluded().minus(a.getData().getSlot()));
+        inclusion_slot.put(participant, a.getInclusionSlot());
+        inclusion_distance.put(participant, a.getInclusionSlot().minus(a.getData().getSlot()));
       }
     }
 

@@ -935,9 +935,9 @@ public class SpecHelpers {
 
   public UInt64 get_fork_version(ForkData forkData, SlotNumber slot) {
     if (slot.less(forkData.getForkSlot())) {
-      return forkData.getPreForkVersion();
+      return forkData.getPreviousVersion();
     } else {
-      return forkData.getPostForkVersion();
+      return forkData.getCurrentVersion();
     }
   }
 
