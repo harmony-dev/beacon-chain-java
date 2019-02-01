@@ -4,4 +4,5 @@ dependencies {
   implementation project(':ssz')
 
   implementation 'io.projectreactor:reactor-core'
+  implementation 'com.google.guava:guava'
 }

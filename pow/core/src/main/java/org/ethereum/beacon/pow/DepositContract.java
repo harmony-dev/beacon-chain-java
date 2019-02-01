@@ -1,5 +1,6 @@
 package org.ethereum.beacon.pow;
 
+import com.google.common.base.Objects;
 import java.util.List;
 import java.util.Optional;
 import org.ethereum.beacon.core.operations.Deposit;
@@ -87,6 +88,18 @@ public interface DepositContract {
 
     public Eth1Data getEth1Data() {
       return eth1Data;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      DepositInfo that = (DepositInfo) o;
+      return Objects.equal(deposit, that.deposit) && Objects.equal(eth1Data, that.eth1Data);
     }
   }
 

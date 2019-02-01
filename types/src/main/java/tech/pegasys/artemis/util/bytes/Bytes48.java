@@ -15,6 +15,7 @@ package tech.pegasys.artemis.util.bytes;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import java.util.Random;
 import tech.pegasys.artemis.util.uint.Int256;
 import tech.pegasys.artemis.util.uint.UInt256;
 import tech.pegasys.artemis.util.uint.UInt256Bytes;
@@ -177,6 +178,19 @@ public interface Bytes48 extends BytesValue {
   static Bytes48 fromHexStringStrict(String str) {
     return wrap(BytesValues.fromRawHexString(str, -1, false));
   }
+
+  /**
+   * Constructs a randomly generated value.
+   *
+   * @param rnd random number generator.
+   * @return random value.
+   */
+  static Bytes48 random(Random rnd) {
+    byte[] randomBytes = new byte[SIZE];
+    rnd.nextBytes(randomBytes);
+    return wrap(randomBytes);
+  }
+
 
   @Override
   default int size() {
