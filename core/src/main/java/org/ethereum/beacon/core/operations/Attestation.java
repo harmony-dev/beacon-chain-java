@@ -4,10 +4,9 @@ import com.google.common.base.Objects;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.Bitfield;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
-import tech.pegasys.artemis.util.bytes.Bytes96;
-import tech.pegasys.artemis.util.bytes.BytesValue;
 
 /**
  * Attests on a block linked to particular slot in particular shard.
@@ -24,16 +23,16 @@ public class Attestation {
   /** Attestation data object. */
   @SSZ private final AttestationData data;
   /** A bitfield where each bit corresponds to a validator attested to the {@link #data}. */
-  @SSZ private final BytesValue aggregationBitfield;
+  @SSZ private final Bitfield aggregationBitfield;
   /** Proof of custody bitfield. */
-  @SSZ private final BytesValue custodyBitfield;
+  @SSZ private final Bitfield custodyBitfield;
   /** A product of aggregation of signatures from different validators to {@link #data}. */
   @SSZ private final BLSSignature aggregateSignature;
 
   public Attestation(
       AttestationData data,
-      BytesValue aggregationBitfield,
-      BytesValue custodyBitfield,
+      Bitfield aggregationBitfield,
+      Bitfield custodyBitfield,
       BLSSignature aggregateSignature) {
     this.data = data;
     this.aggregationBitfield = aggregationBitfield;
@@ -45,11 +44,11 @@ public class Attestation {
     return data;
   }
 
-  public BytesValue getAggregationBitfield() {
+  public Bitfield getAggregationBitfield() {
     return aggregationBitfield;
   }
 
-  public BytesValue getCustodyBitfield() {
+  public Bitfield getCustodyBitfield() {
     return custodyBitfield;
   }
 

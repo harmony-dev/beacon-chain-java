@@ -5,7 +5,7 @@ import java.util.Arrays;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.CustodyChallenge;
-import org.ethereum.beacon.core.types.Bitfield;
+import org.ethereum.beacon.core.types.Bitfield64;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ShardNumber;
@@ -51,7 +51,7 @@ public class BeaconStateImpl implements MutableBeaconState {
 
   @SSZ private EpochNumber previousJustifiedEpoch = EpochNumber.ZERO;
   @SSZ private EpochNumber justifiedEpoch = EpochNumber.ZERO;
-  @SSZ private Bitfield justificationBitfield = Bitfield.ZERO;
+  @SSZ private Bitfield64 justificationBitfield = Bitfield64.ZERO;
   @SSZ private EpochNumber finalizedEpoch = EpochNumber.ZERO;
 
   /* Recent state */
@@ -260,12 +260,12 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
-  public Bitfield getJustificationBitfield() {
+  public Bitfield64 getJustificationBitfield() {
     return justificationBitfield;
   }
 
   @Override
-  public void setJustificationBitfield(Bitfield justificationBitfield) {
+  public void setJustificationBitfield(Bitfield64 justificationBitfield) {
     this.justificationBitfield = justificationBitfield;
   }
 

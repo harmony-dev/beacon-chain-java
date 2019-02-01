@@ -1,23 +1,26 @@
 package org.ethereum.beacon.core.types;
 
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
-import tech.pegasys.artemis.util.uint.UInt64;
+import tech.pegasys.artemis.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.bytes.DelegatingBytesValue;
+import tech.pegasys.artemis.util.bytes.MutableBytesValue;
 
-@SSZSerializable(serializeAs = UInt64.class)
-public class Bitfield extends UInt64 {
+@SSZSerializable(serializeAs = BytesValue.class)
+public class Bitfield extends DelegatingBytesValue {
 
-  public static final Bitfield ZERO = new Bitfield(UInt64.ZERO);
+  public static final Bitfield EMPTY = new Bitfield(BytesValue.of());
 
-  public Bitfield(UInt64 uint) {
-    super(uint);
+  public static Bitfield of(BytesValue bytes) {
+    return new Bitfield(bytes);
   }
 
-  @Override
-  public Bitfield shl(int number) {
-    return new Bitfield(super.shl(number));
+  public Bitfield(BytesValue bytes) {
+    super(bytes);
   }
 
-  public Bitfield or(long uint) {
-    return new Bitfield(super.or(UInt64.valueOf(uint)));
+  public Bitfield setBit(int bitIndex, boolean bit) {
+    MutableBytesValue mutableCopy = mutableCopy();
+    mutableCopy.setBit(bitIndex, bit);
+    return new Bitfield(mutableCopy);
   }
 }

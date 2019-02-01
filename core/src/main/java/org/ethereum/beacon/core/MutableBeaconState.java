@@ -1,14 +1,13 @@
 package org.ethereum.beacon.core;
 
 import org.ethereum.beacon.core.operations.CustodyChallenge;
-import org.ethereum.beacon.core.state.BeaconStateImpl;
 import org.ethereum.beacon.core.state.CrosslinkRecord;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Eth1DataVote;
 import org.ethereum.beacon.core.state.ForkData;
 import org.ethereum.beacon.core.state.PendingAttestationRecord;
 import org.ethereum.beacon.core.state.ValidatorRecord;
-import org.ethereum.beacon.core.types.Bitfield;
+import org.ethereum.beacon.core.types.Bitfield64;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ShardNumber;
@@ -16,14 +15,8 @@ import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.collections.WriteList;
-import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Consumer;
-import java.util.function.Function;
 
 public interface MutableBeaconState extends BeaconState {
 
@@ -60,7 +53,7 @@ public interface MutableBeaconState extends BeaconState {
 
   void setJustifiedEpoch(EpochNumber justifiedSlot);
 
-  void setJustificationBitfield(Bitfield justificationBitfield);
+  void setJustificationBitfield(Bitfield64 justificationBitfield);
 
   void setFinalizedEpoch(EpochNumber finalizedEpoch);
 

@@ -16,6 +16,7 @@ package tech.pegasys.artemis.util.bytes;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.vertx.core.buffer.Buffer;
+import net.consensys.cava.bytes.MutableBytes;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -855,5 +856,54 @@ public class BytesValueTest {
     assertThat(small.compareTo(big)).isEqualTo(-1);
 
     assertThat(small.compareTo(otherSmall)).isEqualTo(0);
+  }
+
+  @Test
+  public void testGetSetBit() {
+    MutableBytesValue bytes = MutableBytesValue.create(4);
+    for (int i = 0; i < 32; i++) {
+      assertEquals(false, bytes.getBit(i));
+    }
+
+    bytes.setBit(0, true);
+    assertEquals(true, bytes.getBit(0));
+    assertEquals((byte) 0b10000000, bytes.get(0));
+    for (int i = 1; i < 32; i++) {
+      assertEquals(false, bytes.getBit(i));
+    }
+    bytes.setBit(0, true);
+    assertEquals(true, bytes.getBit(0));
+    assertEquals((byte) 0b10000000, bytes.get(0));
+    bytes.setBit(0, false);
+    assertEquals(false, bytes.getBit(0));
+    assertEquals((byte) 0b00000000, bytes.get(0));
+    bytes.setBit(0, false);
+    assertEquals(false, bytes.getBit(0));
+    assertEquals((byte) 0b00000000, bytes.get(0));
+    for (int i = 0; i < 32; i++) {
+      assertEquals(false, bytes.getBit(i));
+    }
+
+    bytes.setBit(1, true);
+    assertEquals(true, bytes.getBit(1));
+    assertEquals((byte) 0b01000000, bytes.get(0));
+    assertEquals(false, bytes.getBit(0));
+    for (int i = 2; i < 32; i++) {
+      assertEquals(false, bytes.getBit(i));
+    }
+    bytes.setBit(1, true);
+    assertEquals(true, bytes.getBit(1));
+    assertEquals((byte) 0b01000000, bytes.get(0));
+
+    bytes.setBit(5, true);
+    assertEquals(true, bytes.getBit(5));
+    assertEquals((byte) 0b01000100, bytes.get(0));
+
+    bytes.setBit(15, true);
+    assertEquals(true, bytes.getBit(15));
+    assertEquals((byte) 0b01000100, bytes.get(0));
+    assertEquals((byte) 0b00000001, bytes.get(1));
+    assertEquals((byte) 0b00000000, bytes.get(2));
+    assertEquals((byte) 0b00000000, bytes.get(3));
   }
 }

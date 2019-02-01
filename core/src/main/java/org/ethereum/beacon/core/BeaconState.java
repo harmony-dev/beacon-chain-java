@@ -7,7 +7,7 @@ import org.ethereum.beacon.core.state.Eth1DataVote;
 import org.ethereum.beacon.core.state.ForkData;
 import org.ethereum.beacon.core.state.PendingAttestationRecord;
 import org.ethereum.beacon.core.state.ValidatorRecord;
-import org.ethereum.beacon.core.types.Bitfield;
+import org.ethereum.beacon.core.types.Bitfield64;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ShardNumber;
@@ -80,7 +80,7 @@ public interface BeaconState extends Hashable<Hash32> {
   EpochNumber getJustifiedEpoch();
 
   /** Bitfield of latest justified slots (epochs). */
-  Bitfield getJustificationBitfield();
+  Bitfield64 getJustificationBitfield();
 
   /** Latest finalized slot. */
   EpochNumber getFinalizedEpoch();
