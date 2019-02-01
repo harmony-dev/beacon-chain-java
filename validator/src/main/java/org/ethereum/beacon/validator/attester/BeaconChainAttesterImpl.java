@@ -14,6 +14,7 @@ import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustodyBit;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.Bitfield;
 import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
@@ -77,7 +78,8 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
     BytesValue custodyBitfield = getCustodyBitfield(validatorIndex, committee);
     BLSSignature aggregateSignature = getAggregateSignature(state, data, signer);
 
-    return new Attestation(data, participationBitfield, custodyBitfield, aggregateSignature);
+    return new Attestation(data, Bitfield.of(participationBitfield),
+        Bitfield.of(custodyBitfield), aggregateSignature);
   }
 
   /**
