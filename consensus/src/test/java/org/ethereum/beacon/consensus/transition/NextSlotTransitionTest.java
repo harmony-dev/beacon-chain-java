@@ -45,6 +45,6 @@ public class NextSlotTransitionTest {
     BeaconStateEx s2State = new NextSlotTransition(chainSpec).apply(null, s1State);
     BeaconStateEx s3State = new NextSlotTransition(chainSpec).apply(null, s2State);
 
-    Assert.assertEquals(UInt64.valueOf(3), s3State.getCanonicalState().getSlot());
+    Assert.assertEquals(chainSpec.getGenesisSlot().plus(3), s3State.getCanonicalState().getSlot());
   }
 }
