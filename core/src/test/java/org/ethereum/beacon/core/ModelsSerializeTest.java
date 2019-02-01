@@ -28,6 +28,7 @@ import org.ethereum.beacon.core.state.PendingAttestationRecord;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.Bitfield;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
@@ -79,8 +80,8 @@ public class ModelsSerializeTest {
     Attestation attestation =
         new Attestation(
             attestationData,
-            BytesValue.fromHexString("aa"),
-            BytesValue.fromHexString("bb"),
+            Bitfield.of(BytesValue.fromHexString("aa")),
+            Bitfield.of(BytesValue.fromHexString("bb")),
             BLSSignature.wrap(Bytes96.fromHexString("cc")));
 
     return attestation;
@@ -398,8 +399,8 @@ public class ModelsSerializeTest {
     PendingAttestationRecord pendingAttestationRecord =
         new PendingAttestationRecord(
             createAttestationData(),
-            BytesValue.fromHexString("aa"),
-            BytesValue.fromHexString("bb"),
+            Bitfield.of(BytesValue.fromHexString("aa")),
+            Bitfield.of(BytesValue.fromHexString("bb")),
             SlotNumber.ZERO);
 
     return pendingAttestationRecord;
