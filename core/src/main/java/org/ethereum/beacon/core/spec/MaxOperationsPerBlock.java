@@ -10,20 +10,31 @@ package org.ethereum.beacon.core.spec;
 public interface MaxOperationsPerBlock {
 
   int MAX_PROPOSER_SLASHINGS = 1 << 4; // 16
-  int MAX_CASPER_SLASHINGS = 1 << 4; // 16
+  int MAX_ATTESTER_SLASHINGS = 1;
   int MAX_ATTESTATIONS = 1 << 7; // 128
   int MAX_DEPOSITS = 1 << 4; // 16
   int MAX_EXITS = 1 << 4; // 16
 
   /* Values defined in the spec. */
 
-  int getMaxProposerSlashings();
+  default int getMaxProposerSlashings() {
+    return MAX_PROPOSER_SLASHINGS;
+  }
 
-  int getMaxCasperSlashings();
+  default int getMaxAttesterSlashings() {
+    return MAX_ATTESTER_SLASHINGS;
+  }
 
-  int getMaxAttestations();
 
-  int getMaxDeposits();
+  default int getMaxAttestations() {
+    return MAX_ATTESTATIONS;
+  }
 
-  int getMaxExits();
+  default int getMaxDeposits() {
+    return MAX_DEPOSITS;
+  }
+
+  default int getMaxExits() {
+    return MAX_EXITS;
+  }
 }

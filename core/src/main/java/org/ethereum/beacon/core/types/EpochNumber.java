@@ -14,6 +14,10 @@ public class EpochNumber extends UInt64 implements
     return new EpochNumber(UInt64.valueOf(epochNum));
   }
 
+  public static EpochNumber castFrom(UInt64 epochNum) {
+    return new EpochNumber(epochNum);
+  }
+
   public EpochNumber(UInt64 uint) {
     super(uint);
   }

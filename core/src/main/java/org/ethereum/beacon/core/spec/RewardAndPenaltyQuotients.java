@@ -11,18 +11,26 @@ import tech.pegasys.artemis.util.uint.UInt64;
  */
 public interface RewardAndPenaltyQuotients {
 
-  UInt64 BASE_REWARD_QUOTIENT = UInt64.valueOf(1 << 10); // 1024
+  UInt64 BASE_REWARD_QUOTIENT = UInt64.valueOf(1 << 5); // 1024
   UInt64 WHISTLEBLOWER_REWARD_QUOTIENT = UInt64.valueOf(1 << 9); // 512
   UInt64 INCLUDER_REWARD_QUOTIENT = UInt64.valueOf(1 << 3); // 8
   UInt64 INACTIVITY_PENALTY_QUOTIENT = UInt64.valueOf(1 << 24); // 16_777_216
 
   /* Values defined in the spec. */
 
-  UInt64 getBaseRewardQuotient();
+  default UInt64 getBaseRewardQuotient() {
+    return BASE_REWARD_QUOTIENT;
+  }
 
-  UInt64 getWhistleblowerRewardQuotient();
+  default UInt64 getWhistleblowerRewardQuotient() {
+    return WHISTLEBLOWER_REWARD_QUOTIENT;
+  }
 
-  UInt64 getIncluderRewardQuotient();
+  default UInt64 getIncluderRewardQuotient() {
+    return INCLUDER_REWARD_QUOTIENT;
+  }
 
-  UInt64 getInactivityPenaltyQuotient();
+  default UInt64 getInactivityPenaltyQuotient() {
+    return INACTIVITY_PENALTY_QUOTIENT;
+  }
 }
