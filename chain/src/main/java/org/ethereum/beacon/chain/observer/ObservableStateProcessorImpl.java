@@ -34,7 +34,6 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   private HeadFunction headFunction;
 
   private BeaconState latestState;
-  private PendingOperations latestPendingOperations;
   private SpecHelpers specHelpers;
   private ChainSpec chainSpec;
 
@@ -75,12 +74,11 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     this.chainSpec = specHelpers.getChainSpec();
     this.headFunction = new LMDGhostHeadFunction(chainStorage, specHelpers);
     Flux.from(slotStatesStream).doOnNext(this::onSlotStateUpdate).subscribe();
-//    Flux.from(pendingOperationsPublisher).doOnNext(this::onPendingStateUpdate).subscribe();
     Flux.from(attestationPublisher).doOnNext(this::onNewAttestation).subscribe();
     Flux.from(pendingAttestationRecordPublisher)
         .doOnNext(this::onNewPendingAttestation)
         .subscribe();
-    updateIntervals.subscribe(tick -> updateCurrentPending());
+    updateIntervals.subscribe(tick -> updateCurrentObservableState());
   }
 
   private void onSlotStateUpdate(BeaconState slotState) {
@@ -94,12 +92,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
             .getSlot()
             .minus(chainSpec.getEpochLength())
             .minus(chainSpec.getMinAttestationInclusionDelay()));
-    updateCurrentPending();
-  }
-
-  private void onPendingStateUpdate(PendingOperations pendingOperations) {
-    this.latestPendingOperations = pendingOperations;
-    updateObservableState();
+    updateCurrentObservableState();
   }
 
   private void onNewAttestation(Attestation attestation) {
@@ -164,26 +157,22 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     }
   }
 
-  private void updateCurrentPending() {
+  private void updateCurrentObservableState() {
     PendingOperations pendingOperations = new PendingOperationsState(attestationCache);
     pendingOperationsSink.onNext(pendingOperations);
-  }
-
-  private void updateObservableState() {
-    updateHead();
+    updateHead(pendingOperations);
     ObservableBeaconState newObservableState =
-        new ObservableBeaconState(head.getBlock(), latestState, latestPendingOperations);
+        new ObservableBeaconState(head.getBlock(), latestState, pendingOperations);
     if (!newObservableState.equals(observableState)) {
       this.observableState = newObservableState;
       observableStateSink.onNext(newObservableState);
     }
   }
 
-  private void updateHead() {
+  private void updateHead(PendingOperations pendingOperations) {
     BeaconBlock newHead =
         headFunction.getHead(
-            validatorRecord ->
-                latestPendingOperations.findAttestation(validatorRecord.getPubKey()));
+            validatorRecord -> pendingOperations.findAttestation(validatorRecord.getPubKey()));
     if (this.head != null && this.head.getBlock().equals(newHead)) {
       return; // == old
     }
