@@ -4,6 +4,8 @@ import org.ethereum.beacon.chain.BeaconChainHead;
 import org.reactivestreams.Publisher;
 
 public interface ObservableStateProcessor {
+  void start();
+
   Publisher<BeaconChainHead> getHeadStream();
 
   Publisher<ObservableBeaconState> getObservableStateStream();

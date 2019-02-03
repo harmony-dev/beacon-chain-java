@@ -18,8 +18,6 @@ import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.ReplayProcessor;
 import reactor.core.scheduler.Schedulers;
-import tech.pegasys.artemis.util.bytes.Bytes48;
-import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
 import java.time.Duration;
 import java.util.HashMap;
@@ -30,17 +28,21 @@ import java.util.Set;
 
 public class ObservableStateProcessorImpl implements ObservableStateProcessor {
 
-  private BeaconTupleStorage tupleStorage;
+  private final BeaconTupleStorage tupleStorage;
   private ObservableBeaconState observableState;
   private BeaconChainHead head;
-  private HeadFunction headFunction;
+  private final HeadFunction headFunction;
 
   private BeaconState latestState;
-  private SpecHelpers specHelpers;
-  private ChainSpec chainSpec;
+  private final SpecHelpers specHelpers;
+  private final ChainSpec chainSpec;
+
+  private final Publisher<BeaconState> slotStatesStream;
+  private final Publisher<Attestation> attestationPublisher;
+  private final Publisher<PendingAttestationRecord> pendingAttestationRecordPublisher;
 
   private static final int UPDATE_MILLIS = 500;
-  private Flux updateIntervals = Flux.interval(Duration.ofMillis(UPDATE_MILLIS));
+  private final Flux updateIntervals = Flux.interval(Duration.ofMillis(UPDATE_MILLIS));
   private final Map<BLSPubkey, Attestation> attestationCache = new HashMap<>();
   private final Map<UInt64, Set<BLSPubkey>> validatorSlotCache = new HashMap<>();
 
@@ -75,6 +77,13 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     this.specHelpers = specHelpers;
     this.chainSpec = specHelpers.getChainSpec();
     this.headFunction = new LMDGhostHeadFunction(chainStorage, specHelpers);
+    this.slotStatesStream = slotStatesStream;
+    this.attestationPublisher = attestationPublisher;
+    this.pendingAttestationRecordPublisher = pendingAttestationRecordPublisher;
+  }
+
+  @Override
+  public void start() {
     Flux.from(slotStatesStream).doOnNext(this::onSlotStateUpdate).subscribe();
     Flux.from(attestationPublisher).doOnNext(this::onNewAttestation).subscribe();
     Flux.from(pendingAttestationRecordPublisher)
