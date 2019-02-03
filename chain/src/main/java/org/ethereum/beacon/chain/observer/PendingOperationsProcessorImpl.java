@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class PendingStateProcessorImpl implements PendingStateProcessor {
+public class PendingOperationsProcessorImpl implements PendingOperationsProcessor {
 
   private static final int UPDATE_MILLIS = 500;
 
@@ -29,7 +29,7 @@ public class PendingStateProcessorImpl implements PendingStateProcessor {
       Flux.from(pendingOperationsSink)
           .publishOn(Schedulers.single())
           .onBackpressureError()
-          .name("PendingStateProcessor.pendingOperations");
+          .name("PendingOperationsProcessor.pendingOperations");
 
   private Flux updateIntervals = Flux.interval(Duration.ofMillis(UPDATE_MILLIS));
   private final Map<Bytes48, Attestation> attestationCache = new HashMap<>();
@@ -38,7 +38,7 @@ public class PendingStateProcessorImpl implements PendingStateProcessor {
   private final ChainSpec chainSpec;
   private BeaconState latestState;
 
-  public PendingStateProcessorImpl(
+  public PendingOperationsProcessorImpl(
       SpecHelpers specHelpers,
       Publisher<Attestation> attestationPublisher,
       Publisher<PendingAttestationRecord> pendingAttestationRecordPublisher,
@@ -58,7 +58,6 @@ public class PendingStateProcessorImpl implements PendingStateProcessor {
   }
 
   private void onNewPendingAttestation(PendingAttestationRecord pendingAttestationRecord) {
-    // TODO: what if rebranch?
     List<UInt24> participants =
         specHelpers.get_attestation_participants(
             latestState,
@@ -104,7 +103,6 @@ public class PendingStateProcessorImpl implements PendingStateProcessor {
    * verified attestations, even those not included in blocks yet
    */
   private void addAttestation(Attestation attestation) {
-    // TODO: validation
     List<UInt24> participants =
         specHelpers.get_attestation_participants(
             latestState, attestation.getData(), attestation.getParticipationBitfield());
