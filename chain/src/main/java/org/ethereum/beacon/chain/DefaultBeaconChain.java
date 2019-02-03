@@ -1,6 +1,5 @@
 package org.ethereum.beacon.chain;
 
-import org.ethereum.beacon.chain.observer.ObservableStateProcessor;
 import org.ethereum.beacon.chain.storage.BeaconBlockStorage;
 import org.ethereum.beacon.chain.storage.BeaconStateStorage;
 import org.ethereum.beacon.chain.storage.BeaconTuple;
@@ -31,9 +30,6 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   BeaconStateStorage stateStorage;
   BeaconTupleStorage tupleStorage;
 
-  ObservableStateProcessor observableProcessor;
-  BeaconChainHead head;
-
   StateTransition<BeaconState> initialTransition;
   StateTransition<BeaconState> slotTransition;
   StateTransition<BeaconState> stateTransition;
@@ -43,37 +39,27 @@ public class DefaultBeaconChain implements MutableBeaconChain {
 
   Database database;
 
-
   private final ReplayProcessor<BeaconTuple> blockSink = ReplayProcessor.cacheLast();
-  private final Publisher<BeaconTuple> blockStream = Flux.from(blockSink)
-      .publishOn(Schedulers.single())
-      .onBackpressureError()
-      .name("DefaultBeaconChain.block");
+  private final Publisher<BeaconTuple> blockStream =
+      Flux.from(blockSink)
+          .publishOn(Schedulers.single())
+          .onBackpressureError()
+          .name("DefaultBeaconChain.block");
   private final ReplayProcessor<BeaconState> slotSink = ReplayProcessor.cacheLast();
-  private final Publisher<BeaconState> slotStream = Flux.from(slotSink)
-      .doOnSubscribe(s -> slotStreamSubscribersUpdate())
-      .doOnCancel(() -> slotStreamSubscribersUpdate())
-      .publishOn(Schedulers.single())
-      .onBackpressureError()
-      .name("DefaultBeaconChain.slot");
+  private final Publisher<BeaconState> slotStream =
+      Flux.from(slotSink)
+          .doOnSubscribe(s -> slotStreamSubscribersUpdate())
+          .doOnCancel(() -> slotStreamSubscribersUpdate())
+          .publishOn(Schedulers.single())
+          .onBackpressureError()
+          .name("DefaultBeaconChain.slot");
   private ScheduledFuture<Void> stateTrackingTask;
-
 
   @Override
   public void init() {
     if (blockStorage.isEmpty()) {
       initializeStorage();
     }
-    Flux.from(observableProcessor.getHeadStream())
-        .doOnNext(this::onHeadUpdate)
-        .subscribe();
-  }
-
-  private void onHeadUpdate(BeaconChainHead newHead) {
-    if (this.head == null) {
-      blockSink.onNext(newHead.getTuple());
-    }
-    this.head = newHead;
   }
 
   private BeaconTuple initializeStorage() {
@@ -103,8 +89,6 @@ public class DefaultBeaconChain implements MutableBeaconChain {
 
   @Override
   public synchronized void insert(BeaconBlock block) {
-    assert head != null;
-
     if (exist(block)) {
       return;
     }
@@ -137,13 +121,9 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   }
 
   private BeaconState pullParentState(BeaconBlock block) {
-    if (head.getBlock().isParentOf(block)) {
-      return head.getState();
-    } else {
-      Optional<BeaconState> parentState = stateStorage.get(block.getParentRoot());
-      checkArgument(parentState.isPresent(), "No parent for block %s", block);
-      return parentState.get();
-    }
+    Optional<BeaconState> parentState = stateStorage.get(block.getParentRoot());
+    checkArgument(parentState.isPresent(), "No parent for block %s", block);
+    return parentState.get();
   }
 
   private boolean exist(BeaconBlock block) {
