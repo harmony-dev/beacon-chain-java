@@ -5,7 +5,6 @@ import org.ethereum.beacon.chain.storage.BeaconBlockStorage;
 import org.ethereum.beacon.chain.storage.BeaconStateStorage;
 import org.ethereum.beacon.chain.storage.BeaconTuple;
 import org.ethereum.beacon.chain.storage.BeaconTupleStorage;
-import org.ethereum.beacon.consensus.HeadFunction;
 import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
 import org.ethereum.beacon.consensus.verifier.BeaconStateVerifier;

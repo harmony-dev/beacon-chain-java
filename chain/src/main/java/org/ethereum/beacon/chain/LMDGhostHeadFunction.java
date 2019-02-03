@@ -25,21 +25,17 @@ public class LMDGhostHeadFunction implements HeadFunction {
   private final BeaconBlockStorage blockStorage;
   private final BeaconStateStorage stateStorage;
   private final SpecHelpers specHelpers;
-  Function<ValidatorRecord, Optional<Attestation>> latestAttestationStorage;
   private final int SEARCH_LIMIT = Integer.MAX_VALUE;
 
-  public LMDGhostHeadFunction(
-      BeaconChainStorage chainStorage,
-      Function<ValidatorRecord, Optional<Attestation>> latestAttestationStorage,
-      SpecHelpers specHelpers) {
+  public LMDGhostHeadFunction(BeaconChainStorage chainStorage, SpecHelpers specHelpers) {
     this.stateStorage = chainStorage.getBeaconStateStorage();
     this.blockStorage = chainStorage.getBeaconBlockStorage();
-    this.latestAttestationStorage = latestAttestationStorage;
     this.specHelpers = specHelpers;
   }
 
   @Override
-  public BeaconBlock getHead() {
+  public BeaconBlock getHead(
+      Function<ValidatorRecord, Optional<Attestation>> latestAttestationStorage) {
     BeaconBlock justifiedBlock =
         blockStorage
             .getJustifiedBlock(blockStorage.getMaxSlot(), SEARCH_LIMIT)
@@ -56,7 +52,7 @@ public class LMDGhostHeadFunction implements HeadFunction {
             justifiedState,
             blockStorage::get,
             getChildrenBlocks,
-            this::get_latest_attestation);
+            validatorRecord -> get_latest_attestation(latestAttestationStorage, validatorRecord));
 
     return newHead;
   }
@@ -66,7 +62,9 @@ public class LMDGhostHeadFunction implements HeadFunction {
    * store from validator. If several such attestations exist, use the one the validator v observed
    * first.
    */
-  private Optional<Attestation> get_latest_attestation(ValidatorRecord validatorRecord) {
+  private Optional<Attestation> get_latest_attestation(
+      Function<ValidatorRecord, Optional<Attestation>> latestAttestationStorage,
+      ValidatorRecord validatorRecord) {
     return latestAttestationStorage.apply(validatorRecord);
   }
 }

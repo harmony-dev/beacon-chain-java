@@ -20,6 +20,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   BeaconTupleStorage tupleStorage;
   ObservableBeaconState observableState;
   BeaconChainHead head;
+  HeadFunction headFunction;
 
   Publisher<BeaconState> slotStatesStream;
   BeaconState latestState;
@@ -49,6 +50,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     this.tupleStorage = chainStorage.getBeaconTupleStorage();
     this.slotStatesStream = slotStatesStream;
     this.specHelpers = specHelpers;
+    this.headFunction = new LMDGhostHeadFunction(chainStorage, specHelpers);
     Flux.from(slotStatesStream).doOnNext(this::onSlotStateUpdate).subscribe();
     Flux.from(pendingOperationsPublisher).doOnNext(this::onPendingStateUpdate).subscribe();
   }
@@ -72,16 +74,11 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     }
   }
 
-  private HeadFunction createLatestHeadFunction() {
-    return new LMDGhostHeadFunction(
-        chainStorage,
-        validatorRecord -> latestPendingOperations.findAttestation(validatorRecord.getPubKey()),
-        specHelpers);
-  }
-
   private void updateHead() {
-    HeadFunction headFunction = createLatestHeadFunction();
-    BeaconBlock newHead = headFunction.getHead();
+    BeaconBlock newHead =
+        headFunction.getHead(
+            validatorRecord ->
+                latestPendingOperations.findAttestation(validatorRecord.getPubKey()));
     if (this.head != null && this.head.getBlock().equals(newHead)) {
       return; // == old
     }
