@@ -7,4 +7,6 @@ public interface ObservableStateProcessor {
   Publisher<BeaconChainHead> getHeadStream();
 
   Publisher<ObservableBeaconState> getObservableStateStream();
+
+  Publisher<PendingOperations> getPendingOperationsStream();
 }
