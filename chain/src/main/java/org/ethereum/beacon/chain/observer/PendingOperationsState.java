@@ -4,8 +4,10 @@ import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.CasperSlashing;
 import org.ethereum.beacon.core.operations.Exit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
+import org.ethereum.beacon.core.types.BLSPubkey;
+import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.Bitfield;
 import org.ethereum.beacon.crypto.BLS381;
-import org.ethereum.beacon.types.Bitfield;
 import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.uint.UInt64;
 import java.util.ArrayList;
@@ -20,14 +22,14 @@ import static java.util.stream.Collectors.groupingBy;
 
 public class PendingOperationsState implements PendingOperations {
 
-  Map<Bytes48, Attestation> attestations;
+  Map<BLSPubkey, Attestation> attestations;
 
-  public PendingOperationsState(Map<Bytes48, Attestation> attestations) {
+  public PendingOperationsState(Map<BLSPubkey, Attestation> attestations) {
     this.attestations = attestations;
   }
 
   @Override
-  public Optional<Attestation> findAttestation(Bytes48 pubKey) {
+  public Optional<Attestation> findAttestation(BLSPubkey pubKey) {
     return Optional.of(attestations.get(pubKey));
   }
 
@@ -75,9 +77,10 @@ public class PendingOperationsState implements PendingOperations {
                 .map(Attestation::getAggregateSignature)
                 .map(BLS381.Signature::create)
                 .collect(Collectors.toList()));
+    BLSSignature aggSign = BLSSignature.wrap(aggregatedSignature.getEncoded());
 
     return new Attestation(
-        attestations.get(0).getData(), participants, custody, aggregatedSignature.getEncoded());
+        attestations.get(0).getData(), participants, custody, aggSign);
   }
 
   @Override

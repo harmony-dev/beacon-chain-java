@@ -3,6 +3,8 @@ package org.ethereum.beacon.core.state;
 import com.google.common.base.Objects;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
+import org.ethereum.beacon.core.types.BLSPubkey;
+import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -22,40 +24,40 @@ import java.util.function.Function;
 public class ValidatorRecord {
 
   /** BLS public key. */
-  @SSZ private final Bytes48 pubKey;
+  @SSZ private final BLSPubkey pubKey;
   /** Withdrawal credentials. */
   @SSZ private final Hash32 withdrawalCredentials;
   /** Number of proposer slots since genesis. */
-  @SSZ private final UInt64 proposerSlots;
+  @SSZ private final SlotNumber proposerSlots;
   /** Slot when validator activated */
-  @SSZ private final UInt64 activationSlot;
+  @SSZ private final SlotNumber activationSlot;
   /** Slot when validator exited */
-  @SSZ private final UInt64 exitSlot;
+  @SSZ private final SlotNumber exitSlot;
   /** Slot when validator withdrew */
-  @SSZ private final UInt64 withdrawalSlot;
+  @SSZ private final SlotNumber withdrawalSlot;
   /** Slot when validator was penalized */
-  @SSZ private final UInt64 penalizedSlot;
+  @SSZ private final SlotNumber penalizedSlot;
   /** Exit counter when validator exited (or 0). */
   @SSZ private final UInt64 exitCount;
   /** Status flags. */
   @SSZ private final UInt64 statusFlags;
   /** Slot the proof of custody seed was last changed. */
-  @SSZ private final UInt64 latestCustodyReseedSlot;
+  @SSZ private final SlotNumber latestCustodyReseedSlot;
 
-  @SSZ private final UInt64 penultimateCustodyReseedSlot;
+  @SSZ private final SlotNumber penultimateCustodyReseedSlot;
 
   public ValidatorRecord(
-      Bytes48 pubKey,
+      BLSPubkey pubKey,
       Hash32 withdrawalCredentials,
-      UInt64 proposerSlots,
-      UInt64 activationSlot,
-      UInt64 exitSlot,
-      UInt64 withdrawalSlot,
-      UInt64 penalizedSlot,
+      SlotNumber proposerSlots,
+      SlotNumber activationSlot,
+      SlotNumber exitSlot,
+      SlotNumber withdrawalSlot,
+      SlotNumber penalizedSlot,
       UInt64 exitCount,
       UInt64 statusFlags,
-      UInt64 latestCustodyReseedSlot,
-      UInt64 penultimateCustodyReseedSlot) {
+      SlotNumber latestCustodyReseedSlot,
+      SlotNumber penultimateCustodyReseedSlot) {
     this.pubKey = pubKey;
     this.withdrawalCredentials = withdrawalCredentials;
     this.proposerSlots = proposerSlots;
@@ -69,7 +71,7 @@ public class ValidatorRecord {
     this.penultimateCustodyReseedSlot = penultimateCustodyReseedSlot;
   }
 
-  public Bytes48 getPubKey() {
+  public BLSPubkey getPubKey() {
     return pubKey;
   }
 
@@ -77,23 +79,23 @@ public class ValidatorRecord {
     return withdrawalCredentials;
   }
 
-  public UInt64 getProposerSlots() {
+  public SlotNumber getProposerSlots() {
     return proposerSlots;
   }
 
-  public UInt64 getActivationSlot() {
+  public SlotNumber getActivationSlot() {
     return activationSlot;
   }
 
-  public UInt64 getExitSlot() {
+  public SlotNumber getExitSlot() {
     return exitSlot;
   }
 
-  public UInt64 getWithdrawalSlot() {
+  public SlotNumber getWithdrawalSlot() {
     return withdrawalSlot;
   }
 
-  public UInt64 getPenalizedSlot() {
+  public SlotNumber getPenalizedSlot() {
     return penalizedSlot;
   }
 
@@ -131,19 +133,23 @@ public class ValidatorRecord {
         && Objects.equal(penultimateCustodyReseedSlot, that.penultimateCustodyReseedSlot);
   }
 
+  public Builder builder() {
+    return Builder.fromRecord(this);
+  }
+
   public static class Builder {
 
-    private Bytes48 pubKey;
+    private BLSPubkey pubKey;
     private Hash32 withdrawalCredentials;
-    private UInt64 proposerSlots;
-    private UInt64 activationSlot;
-    private UInt64 exitSlot;
-    private UInt64 withdrawalSlot;
-    private UInt64 penalizedSlot;
+    private SlotNumber proposerSlots;
+    private SlotNumber activationSlot;
+    private SlotNumber exitSlot;
+    private SlotNumber withdrawalSlot;
+    private SlotNumber penalizedSlot;
     private UInt64 exitCount;
     private UInt64 statusFlags;
-    private UInt64 latestCustodyReseedSlot;
-    private UInt64 penultimateCustodyReseedSlot;
+    private SlotNumber latestCustodyReseedSlot;
+    private SlotNumber penultimateCustodyReseedSlot;
 
     private Builder() {}
 
@@ -205,7 +211,7 @@ public class ValidatorRecord {
           penultimateCustodyReseedSlot);
     }
 
-    public Builder withPubKey(Bytes48 pubKey) {
+    public Builder withPubKey(BLSPubkey pubKey) {
       this.pubKey = pubKey;
       return this;
     }
@@ -215,27 +221,27 @@ public class ValidatorRecord {
       return this;
     }
 
-    public Builder withProposerSlots(UInt64 proposerSlots) {
+    public Builder withProposerSlots(SlotNumber proposerSlots) {
       this.proposerSlots = proposerSlots;
       return this;
     }
 
-    public Builder withActivationSlot(UInt64 activationSlot) {
+    public Builder withActivationSlot(SlotNumber activationSlot) {
       this.activationSlot = activationSlot;
       return this;
     }
 
-    public Builder withExitSlot(UInt64 exitSlot) {
+    public Builder withExitSlot(SlotNumber exitSlot) {
       this.exitSlot = exitSlot;
       return this;
     }
 
-    public Builder withWithdrawalSlot(UInt64 withdrawalSlot) {
+    public Builder withWithdrawalSlot(SlotNumber withdrawalSlot) {
       this.withdrawalSlot = withdrawalSlot;
       return this;
     }
 
-    public Builder withPenalizedSlot(UInt64 penalizedSlot) {
+    public Builder withPenalizedSlot(SlotNumber penalizedSlot) {
       this.penalizedSlot = penalizedSlot;
       return this;
     }
@@ -255,12 +261,12 @@ public class ValidatorRecord {
       return this;
     }
 
-    public Builder withLatestCustodyReseedSlot(UInt64 latestCustodyReseedSlot) {
+    public Builder withLatestCustodyReseedSlot(SlotNumber latestCustodyReseedSlot) {
       this.latestCustodyReseedSlot = latestCustodyReseedSlot;
       return this;
     }
 
-    public Builder withPenultimateCustodyReseedSlot(UInt64 penultimateCustodyReseedSlot) {
+    public Builder withPenultimateCustodyReseedSlot(SlotNumber penultimateCustodyReseedSlot) {
       this.penultimateCustodyReseedSlot = penultimateCustodyReseedSlot;
       return this;
     }

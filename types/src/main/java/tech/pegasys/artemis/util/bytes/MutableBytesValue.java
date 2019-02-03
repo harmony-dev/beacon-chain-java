@@ -174,6 +174,19 @@ public interface MutableBytesValue extends BytesValue {
     }
   }
 
+  default void setBit(int bitIndex, boolean value) {
+    int byteIndex = bitIndex / 8;
+    int byteBitIndex = bitIndex % 8;
+    byte byteVal = get(byteIndex);
+    byte newVal;
+    if (value) {
+      newVal = (byte) (byteVal | (1 << (7 - byteBitIndex)));
+    } else {
+      newVal = (byte) (byteVal & ~(1 << (7 - byteBitIndex)));
+    }
+    set(byteIndex, newVal);
+  }
+
   /**
    * Clears all the bytes (set to 0) of this value.
    */

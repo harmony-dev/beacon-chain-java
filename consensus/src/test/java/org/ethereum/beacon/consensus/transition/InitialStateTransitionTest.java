@@ -12,6 +12,7 @@ import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.Eth1Data;
+import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.pow.DepositContract.ChainStart;
 import org.junit.Test;
@@ -23,7 +24,7 @@ public class InitialStateTransitionTest {
   @Test
   public void handleChainStartCorrectly() {
     Random rnd = new Random();
-    UInt64 genesisTime = UInt64.random(rnd);
+    Time genesisTime = Time.castFrom(UInt64.random(rnd));
     Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), Hash32.random(rnd));
 
     InitialStateTransition initialStateTransition =

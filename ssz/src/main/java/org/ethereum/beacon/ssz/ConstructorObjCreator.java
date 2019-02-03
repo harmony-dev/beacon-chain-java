@@ -10,7 +10,7 @@ import java.util.List;
 public class ConstructorObjCreator implements ObjectCreator {
 
 
-  private static <C> Pair<Boolean, C> createInstanceWithConstructor(
+  public static <C> Pair<Boolean, C> createInstanceWithConstructor(
       Class<? extends C> clazz, Class[] params, Object[] values) {
     // Find constructor for params
     Constructor<? extends C> constructor;

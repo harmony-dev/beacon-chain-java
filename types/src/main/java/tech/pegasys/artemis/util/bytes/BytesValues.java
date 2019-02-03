@@ -13,10 +13,10 @@
 
 package tech.pegasys.artemis.util.bytes;
 
-import static com.google.common.base.Preconditions.checkArgument;
-
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+
+import static com.google.common.base.Preconditions.checkArgument;
 
 
 /**
@@ -258,6 +258,33 @@ public abstract class BytesValues {
     return new BigInteger(bytes.getArrayUnsafe());
   }
 
+  /**
+   * Bitwise and Accepts values of different length, in this case the result will have the length of
+   * the largest one
+   *
+   * @param b1 Bytes one
+   * @param b2 Bytes two
+   * @return b1&b2
+   */
+  public static BytesValue and(BytesValue b1, BytesValue b2) {
+    int len = Math.max(b1.size(), b2.size());
+    byte[] res = new byte[len];
+    boolean thisBigger = b1.size() >= b2.size();
+    byte[] other;
+    if (thisBigger) {
+      System.arraycopy(b1.getArrayUnsafe(), 0, res, 0, len);
+      other = b2.getArrayUnsafe();
+    } else {
+      System.arraycopy(b2.getArrayUnsafe(), 0, res, 0, len);
+      other = b1.getArrayUnsafe();
+    }
+    for (int i = 0; i < Math.min(b1.size(), b2.size()); ++i) {
+      res[i] &= other[i];
+    }
+
+    return BytesValue.wrap(res);
+  }
+
   // In Java9, this could be moved to BytesValue and made private
   static BytesValue fromHexString(String str, int destSize, boolean lenient) {
     return BytesValue.wrap(fromRawHexString(str, destSize, lenient));
@@ -329,5 +356,4 @@ public abstract class BytesValues {
     }
     return bytes.size();
   }
-
 }

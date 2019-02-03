@@ -2,6 +2,9 @@ package org.ethereum.beacon.core.operations;
 
 import com.google.common.base.Objects;
 import org.ethereum.beacon.core.BeaconBlockBody;
+import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.SlotNumber;
+import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.util.bytes.Bytes96;
@@ -20,27 +23,27 @@ import tech.pegasys.artemis.util.uint.UInt64;
 public class Exit {
 
   /** Minimum slot for processing exit. */
-  @SSZ private final UInt64 slot;
+  @SSZ private final SlotNumber slot;
   /** Index of the exiting validator. */
-  @SSZ private final UInt24 validatorIndex;
+  @SSZ private final ValidatorIndex validatorIndex;
   /** Validator signature. */
-  @SSZ private final Bytes96 signature;
+  @SSZ private final BLSSignature signature;
 
-  public Exit(UInt64 slot, UInt24 validatorIndex, Bytes96 signature) {
+  public Exit(SlotNumber slot, ValidatorIndex validatorIndex, BLSSignature signature) {
     this.slot = slot;
     this.validatorIndex = validatorIndex;
     this.signature = signature;
   }
 
-  public UInt64 getSlot() {
+  public SlotNumber getSlot() {
     return slot;
   }
 
-  public UInt24 getValidatorIndex() {
+  public ValidatorIndex getValidatorIndex() {
     return validatorIndex;
   }
 
-  public Bytes96 getSignature() {
+  public BLSSignature getSignature() {
     return signature;
   }
 

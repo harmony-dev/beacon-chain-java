@@ -303,6 +303,10 @@ public interface BytesValue extends Comparable<BytesValue> {
    */
   byte get(int i);
 
+  default boolean getBit(int bitIndex) {
+    return ((get(bitIndex / 8) >> (7 - bitIndex % 8)) & 1) == 1;
+  }
+
   /**
    * Retrieves the 4 bytes starting at the provided index in this value as an integer.
    *

@@ -9,6 +9,8 @@ import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.state.Eth1Data;
+import org.ethereum.beacon.core.types.Gwei;
+import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.ssz.Serializer;
 import org.javatuples.Pair;
 import org.reactivestreams.Publisher;
@@ -60,7 +62,7 @@ public abstract class AbstractDepositContract implements DepositContract {
 
   protected synchronized void chainStart(byte[] deposit_root, byte[] time, byte[] blockHash) {
     ChainStart chainStart = new ChainStart(
-        UInt64.fromBytesBigEndian(Bytes8.wrap(time)),
+        Time.castFrom(UInt64.fromBytesBigEndian(Bytes8.wrap(time))),
         new Eth1Data(Hash32.wrap(Bytes32.wrap(deposit_root)),
             Hash32.wrap(Bytes32.wrap(blockHash))),
         initialDeposits);
@@ -102,7 +104,7 @@ public abstract class AbstractDepositContract implements DepositContract {
     UInt64 timestamp = UInt64.fromBytesBigEndian(Bytes8.wrap(data, 8));
     DepositInput depositInput = ssz.decode(BytesValue.wrap(data, 16, data.length - 16),
         DepositInput.class);
-    return new DepositData(depositInput, amount, timestamp);
+    return new DepositData(depositInput, Gwei.castFrom(amount), timestamp);
   }
 
   @Override

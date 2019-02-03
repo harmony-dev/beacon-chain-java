@@ -15,11 +15,11 @@ package tech.pegasys.artemis.util.uint;
 
 public class UInt64s {
 
-  public static UInt64 max(UInt64 v1, UInt64 v2) {
+  public static <C extends UInt64> C max(C v1, C v2) {
     return v1.compareTo(v2) >= 0 ? v1 : v2;
   }
 
-  public static UInt64 min(UInt64 v1, UInt64 v2) {
+  public static <C extends UInt64> C min(C v1, C v2) {
     return v1.compareTo(v2) < 0 ? v1 : v2;
   }
 }

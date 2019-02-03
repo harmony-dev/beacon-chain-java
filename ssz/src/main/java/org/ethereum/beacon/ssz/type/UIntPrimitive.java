@@ -215,22 +215,22 @@ public class UIntPrimitive implements SSZCodec {
   }
 
   @Override
-  public List<Object> decodeList(
+  public List decodeList(
       SSZSchemeBuilder.SSZScheme.SSZField field, BytesSSZReaderProxy reader) {
     NumericType numericType = parseFieldType(field);
 
     switch (numericType.type) {
       case INT:
         {
-          return (List<Object>) (List<?>) reader.readUIntList(numericType.size);
+          return reader.readUIntList(numericType.size);
         }
       case LONG:
         {
-          return (List<Object>) (List<?>) reader.readULongIntList(numericType.size);
+          return reader.readULongIntList(numericType.size);
         }
       case BIGINT:
         {
-          return (List<Object>) (List<?>) reader.readUnsignedBigIntegerList(numericType.size);
+          return reader.readUnsignedBigIntegerList(numericType.size);
         }
       default:
         {
