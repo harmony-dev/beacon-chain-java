@@ -92,7 +92,6 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
             .getSlot()
             .minus(chainSpec.getEpochLength())
             .minus(chainSpec.getMinAttestationInclusionDelay()));
-    updateCurrentObservableState();
   }
 
   private void onNewAttestation(Attestation attestation) {
