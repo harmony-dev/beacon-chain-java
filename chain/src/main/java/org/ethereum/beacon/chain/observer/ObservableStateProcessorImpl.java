@@ -18,6 +18,7 @@ import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.ReplayProcessor;
 import reactor.core.scheduler.Schedulers;
+import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
 import java.time.Duration;
 import java.util.HashMap;
@@ -39,7 +40,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
 
   private final Publisher<BeaconState> slotStatesStream;
   private final Publisher<Attestation> attestationPublisher;
-  private final Publisher<PendingAttestationRecord> pendingAttestationRecordPublisher;
+  private final Publisher<BeaconTuple> beaconPublisher;
 
   private static final int UPDATE_MILLIS = 500;
   private final Flux updateIntervals = Flux.interval(Duration.ofMillis(UPDATE_MILLIS));
@@ -71,7 +72,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
       BeaconChainStorage chainStorage,
       Publisher<BeaconState> slotStatesStream,
       Publisher<Attestation> attestationPublisher,
-      Publisher<PendingAttestationRecord> pendingAttestationRecordPublisher,
+      Publisher<BeaconTuple> beaconPublisher,
       SpecHelpers specHelpers) {
     this.tupleStorage = chainStorage.getBeaconTupleStorage();
     this.specHelpers = specHelpers;
@@ -79,16 +80,14 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     this.headFunction = new LMDGhostHeadFunction(chainStorage, specHelpers);
     this.slotStatesStream = slotStatesStream;
     this.attestationPublisher = attestationPublisher;
-    this.pendingAttestationRecordPublisher = pendingAttestationRecordPublisher;
+    this.beaconPublisher = beaconPublisher;
   }
 
   @Override
   public void start() {
     Flux.from(slotStatesStream).doOnNext(this::onSlotStateUpdate).subscribe();
     Flux.from(attestationPublisher).doOnNext(this::onNewAttestation).subscribe();
-    Flux.from(pendingAttestationRecordPublisher)
-        .doOnNext(this::onNewPendingAttestation)
-        .subscribe();
+    Flux.from(beaconPublisher).doOnNext(this::onNewBlockTuple).subscribe();
     updateIntervals.subscribe(tick -> updateCurrentObservableState());
   }
 
@@ -140,21 +139,25 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     }
   }
 
-  private void onNewPendingAttestation(PendingAttestationRecord pendingAttestationRecord) {
-    List<ValidatorIndex> participants =
-        specHelpers.get_attestation_participants(
-            latestState,
-            pendingAttestationRecord.getData(),
-            pendingAttestationRecord.getParticipationBitfield());
-    List<BLSPubkey> pubKeys = specHelpers.mapIndicesToPubKeys(latestState, participants);
-    UInt64 slot = pendingAttestationRecord.getData().getSlot();
-    pubKeys.forEach(
-        pubkey -> {
-          attestationCache.remove(pubkey);
-          if (validatorSlotCache.containsKey(slot)) {
-            validatorSlotCache.get(slot).remove(pubkey);
-          }
-        });
+  private void onNewBlockTuple(BeaconTuple beaconTuple) {
+    ReadList<Integer, PendingAttestationRecord> pendingAttestationRecords =
+        beaconTuple.getState().getLatestAttestations();
+    for (PendingAttestationRecord pendingAttestationRecord : pendingAttestationRecords) {
+      List<ValidatorIndex> participants =
+          specHelpers.get_attestation_participants(
+              latestState,
+              pendingAttestationRecord.getData(),
+              pendingAttestationRecord.getParticipationBitfield());
+      List<BLSPubkey> pubKeys = specHelpers.mapIndicesToPubKeys(latestState, participants);
+      UInt64 slot = pendingAttestationRecord.getData().getSlot();
+      pubKeys.forEach(
+          pubkey -> {
+            attestationCache.remove(pubkey);
+            if (validatorSlotCache.containsKey(slot)) {
+              validatorSlotCache.get(slot).remove(pubkey);
+            }
+          });
+    }
   }
 
   /** Purges all entries for slot and before */
