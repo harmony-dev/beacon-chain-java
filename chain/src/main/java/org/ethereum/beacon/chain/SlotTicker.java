@@ -39,6 +39,7 @@ public class SlotTicker implements Ticker<SlotNumber> {
     this.genesisTime = state.getGenesisTime();
   }
 
+  /** Execute to start {@link SlotNumber} propagation */
   @Override
   public void start() {
     SlotNumber genesisSlot = specHelpers.getChainSpec().getGenesisSlot();
@@ -61,7 +62,7 @@ public class SlotTicker implements Ticker<SlotNumber> {
             });
   }
 
-  /** Stream fires current slot number at its start */
+  /** Stream fires current slot number at slot time start */
   @Override
   public Publisher<SlotNumber> getTickerStream() {
     return slotStream;
