@@ -1,5 +1,9 @@
 package org.ethereum.beacon.validator.proposer;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.when;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -34,8 +38,7 @@ import org.ethereum.beacon.pow.DepositContract.DepositInfo;
 import org.ethereum.beacon.validator.BeaconChainProposer;
 import org.ethereum.beacon.validator.crypto.BLS381MessageSigner;
 import org.ethereum.beacon.validator.crypto.InsecureBLS381MessageSigner;
-import org.reactivestreams.Publisher;
-import reactor.core.publisher.Flux;
+import org.mockito.Mockito;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes48;
@@ -52,40 +55,42 @@ public class BeaconChainProposerTestUtil {
   }
 
   public static PendingOperations createEmptyPendingOperations() {
-    return createPendingOperations(
+    return mockPendingOperations(
         Collections.emptyList(),
         Collections.emptyList(),
         Collections.emptyList(),
         Collections.emptyList());
   }
 
-  public static List<Attestation> createRandomAttestationList(Random random, int count) {
+  public static List<Attestation> createRandomAttestationList(Random random, int maxCount) {
     return Stream.generate(() -> createRandomAttestation(random))
-        .limit(count)
+        .limit(Math.abs(random.nextInt()) % maxCount + 1)
         .collect(Collectors.toList());
   }
 
-  public static List<ProposerSlashing> createRandomProposerSlashingList(Random random, int count) {
+  public static List<ProposerSlashing> createRandomProposerSlashingList(
+      Random random, int maxCount) {
     return Stream.generate(() -> createRandomProposerSlashing(random))
-        .limit(count)
+        .limit(Math.abs(random.nextInt()) % maxCount + 1)
         .collect(Collectors.toList());
   }
 
-  public static List<CasperSlashing> createRandomCasperSlashingList(Random random, int count) {
+  public static List<CasperSlashing> createRandomCasperSlashingList(Random random, int maxCount) {
     return Stream.generate(() -> createRandomCasperSlashing(random))
-        .limit(count)
+        .limit(Math.abs(random.nextInt()) % maxCount + 1)
         .collect(Collectors.toList());
   }
 
-  public static List<Exit> createRandomExitList(Random random, int count) {
+  public static List<Exit> createRandomExitList(Random random, int maxCount) {
     return Stream.generate(() -> createRandomExit(random))
-        .limit(count)
+        .limit(Math.abs(random.nextInt()) % maxCount + 1)
         .collect(Collectors.toList());
   }
 
   public static List<DepositInfo> createRandomDepositList(
-      Random random, SpecHelpers specHelpers, UInt64 startIndex, int count) {
+      Random random, SpecHelpers specHelpers, UInt64 startIndex, int maxCount) {
     List<DepositInfo> deposits = new ArrayList<>();
+    int count = Math.abs(random.nextInt()) % maxCount + 1;
     for (int i = 0; i < count; i++) {
       deposits.add(createRandomDeposit(random, specHelpers, startIndex.plus(i)));
     }
@@ -161,37 +166,18 @@ public class BeaconChainProposerTestUtil {
     return new DepositInfo(deposit, createRandomEth1Data(random));
   }
 
-  public static PendingOperations createPendingOperations(
+  public static PendingOperations mockPendingOperations(
       List<Attestation> attestations,
       List<ProposerSlashing> proposerSlashings,
       List<CasperSlashing> casperSlashings,
       List<Exit> exits) {
-    return new PendingOperations() {
-      @Override
-      public List<Attestation> getAttestations() {
-        return attestations;
-      }
-
-      @Override
-      public List<ProposerSlashing> peekProposerSlashings(int maxCount) {
-        return proposerSlashings;
-      }
-
-      @Override
-      public List<CasperSlashing> peekCasperSlashings(int maxCount) {
-        return casperSlashings;
-      }
-
-      @Override
-      public List<Attestation> peekAggregatedAttestations(int maxCount, UInt64 maxSlot) {
-        return attestations;
-      }
-
-      @Override
-      public List<Exit> peekExits(int maxCount) {
-        return exits;
-      }
-    };
+    PendingOperations pendingOperations = Mockito.mock(PendingOperations.class);
+    when(pendingOperations.getAttestations()).thenReturn(attestations);
+    when(pendingOperations.peekProposerSlashings(anyInt())).thenReturn(proposerSlashings);
+    when(pendingOperations.peekCasperSlashings(anyInt())).thenReturn(casperSlashings);
+    when(pendingOperations.peekAggregatedAttestations(anyInt(), any())).thenReturn(attestations);
+    when(pendingOperations.peekExits(anyInt())).thenReturn(exits);
+    return pendingOperations;
   }
 
   public static ObservableBeaconState createInitialState(Random random, SpecHelpers specHelpers) {
@@ -220,41 +206,16 @@ public class BeaconChainProposerTestUtil {
     return new Eth1Data(Hash32.random(random), Hash32.random(random));
   }
 
-  public static DepositContract createDummyDepositContract(Random random) {
-    return createDepositContract(Collections.emptyList(), createRandomEth1Data(random));
+  public static DepositContract mockDepositContract(Random random, List<DepositInfo> deposits) {
+    return mockDepositContract(deposits, createRandomEth1Data(random));
   }
 
-  public static DepositContract createDepositContract(Random random, List<DepositInfo> deposits) {
-    return createDepositContract(deposits, createRandomEth1Data(random));
-  }
-
-  public static DepositContract createDepositContract(
-      List<DepositInfo> deposits, Eth1Data eth1Data) {
-    return new DepositContract() {
-      @Override
-      public Publisher<ChainStart> getChainStartMono() {
-        return Flux.empty();
-      }
-
-      @Override
-      public List<DepositInfo> peekDeposits(
-          int maxCount, Eth1Data fromDepositExclusive, Eth1Data tillDepositInclusive) {
-        return deposits;
-      }
-
-      @Override
-      public boolean hasDepositRoot(Hash32 blockHash, Hash32 depositRoot) {
-        return true;
-      }
-
-      @Override
-      public Optional<Eth1Data> getLatestEth1Data() {
-        return Optional.of(eth1Data);
-      }
-
-      @Override
-      public void setDistanceFromHead(long distanceFromHead) {}
-    };
+  public static DepositContract mockDepositContract(List<DepositInfo> deposits, Eth1Data eth1Data) {
+    DepositContract depositContract = Mockito.mock(DepositContract.class);
+    when(depositContract.getLatestEth1Data()).thenReturn(Optional.of(eth1Data));
+    when(depositContract.peekDeposits(anyInt(), any(), any())).thenReturn(deposits);
+    when(depositContract.hasDepositRoot(any(), any())).thenReturn(true);
+    return depositContract;
   }
 
   public static BeaconChainProposer createProposer(
