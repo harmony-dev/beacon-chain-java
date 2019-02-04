@@ -5,8 +5,8 @@ import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.reactivestreams.Publisher;
+import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.ReplayProcessor;
 import reactor.core.scheduler.Schedulers;
 import tech.pegasys.artemis.util.uint.UInt64;
 import java.time.Duration;
@@ -24,7 +24,7 @@ public class SlotTicker implements Ticker<SlotNumber> {
   private final Supplier<UInt64> accurateTime;
   private UInt64 slot;
 
-  private final ReplayProcessor<SlotNumber> slotSink = ReplayProcessor.cacheLast();
+  private final DirectProcessor<SlotNumber> slotSink = DirectProcessor.create();
   private final Publisher<SlotNumber> slotStream =
       Flux.from(slotSink)
           .publishOn(Schedulers.single())
