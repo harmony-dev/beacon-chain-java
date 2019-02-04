@@ -13,6 +13,7 @@ import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.PendingAttestationRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
+import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
@@ -38,7 +39,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   private final SpecHelpers specHelpers;
   private final ChainSpec chainSpec;
 
-  private final Publisher<BeaconState> slotStatesStream;
+  private final Publisher<SlotNumber> slotTicker;
   private final Publisher<Attestation> attestationPublisher;
   private final Publisher<BeaconTuple> beaconPublisher;
 
@@ -70,7 +71,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
 
   public ObservableStateProcessorImpl(
       BeaconChainStorage chainStorage,
-      Publisher<BeaconState> slotStatesStream,
+      Publisher<SlotNumber> slotTicker,
       Publisher<Attestation> attestationPublisher,
       Publisher<BeaconTuple> beaconPublisher,
       SpecHelpers specHelpers) {
@@ -78,28 +79,26 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     this.specHelpers = specHelpers;
     this.chainSpec = specHelpers.getChainSpec();
     this.headFunction = new LMDGhostHeadFunction(chainStorage, specHelpers);
-    this.slotStatesStream = slotStatesStream;
+    this.slotTicker = slotTicker;
     this.attestationPublisher = attestationPublisher;
     this.beaconPublisher = beaconPublisher;
   }
 
   @Override
   public void start() {
-    Flux.from(slotStatesStream).doOnNext(this::onSlotStateUpdate).subscribe();
+    Flux.from(slotTicker).doOnNext(this::onNewSlot).subscribe();
     Flux.from(attestationPublisher).doOnNext(this::onNewAttestation).subscribe();
     Flux.from(beaconPublisher).doOnNext(this::onNewBlockTuple).subscribe();
     updateIntervals.subscribe(tick -> updateCurrentObservableState());
   }
 
-  private void onSlotStateUpdate(BeaconState slotState) {
-    this.latestState = slotState;
+  private void onNewSlot(SlotNumber newSlot) {
     // From spec: Verify that attestation.data.slot <= state.slot - MIN_ATTESTATION_INCLUSION_DELAY
     // < attestation.data.slot + EPOCH_LENGTH
     // state.slot - MIN_ATTESTATION_INCLUSION_DELAY < attestation.data.slot + EPOCH_LENGTH
     // state.slot - MIN_ATTESTATION_INCLUSION_DELAY - EPOCH_LENGTH < attestation.data.slot
     purgeAttestations(
-        latestState
-            .getSlot()
+        newSlot
             .minus(chainSpec.getEpochLength())
             .minus(chainSpec.getMinAttestationInclusionDelay()));
   }
@@ -140,6 +139,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   }
 
   private void onNewBlockTuple(BeaconTuple beaconTuple) {
+    this.latestState = beaconTuple.getState();
     ReadList<Integer, PendingAttestationRecord> pendingAttestationRecords =
         beaconTuple.getState().getLatestAttestations();
     for (PendingAttestationRecord pendingAttestationRecord : pendingAttestationRecords) {

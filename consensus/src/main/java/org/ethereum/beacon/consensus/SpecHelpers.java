@@ -12,6 +12,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.ethereum.beacon.core.BeaconBlock;
@@ -1187,8 +1188,16 @@ public class SpecHelpers {
     return index;
   }
 
+  /**
+   * Accurate time source
+   * @return current time in milliseconds
+   */
+  public Supplier<UInt64> accurateTimeMillis() {
+    return () -> UInt64.valueOf(System.currentTimeMillis());
+  }
+
   public SlotNumber get_current_slot(BeaconState state) {
-    Time currentTime = Time.of(System.currentTimeMillis() / 1000);
+    Time currentTime = new Time(accurateTimeMillis().get().dividedBy(1000));
     assert state.getGenesisTime().compareTo(currentTime) < 0;
     return SlotNumber.castFrom(
         currentTime.minus(state.getGenesisTime()).dividedBy(spec.getSlotDuration()));
