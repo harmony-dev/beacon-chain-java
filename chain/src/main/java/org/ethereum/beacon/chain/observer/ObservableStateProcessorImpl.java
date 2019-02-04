@@ -22,14 +22,18 @@ import reactor.core.scheduler.Schedulers;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.ScheduledExecutorService;
 
 public class ObservableStateProcessorImpl implements ObservableStateProcessor {
-
   private final BeaconTupleStorage tupleStorage;
   private ObservableBeaconState observableState;
   private BeaconChainHead head;
@@ -44,7 +48,9 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   private final Publisher<BeaconTuple> beaconPublisher;
 
   private static final int UPDATE_MILLIS = 500;
-  private final Flux updateIntervals = Flux.interval(Duration.ofMillis(UPDATE_MILLIS));
+  private final Flux workIntervals = Flux.interval(Duration.ofMillis(UPDATE_MILLIS));
+  private ScheduledExecutorService executor;
+  private final BlockingQueue<Attestation> attestationBuffer = new LinkedBlockingDeque<>();
   private final Map<BLSPubkey, Attestation> attestationCache = new HashMap<>();
   private final Map<UInt64, Set<BLSPubkey>> validatorSlotCache = new HashMap<>();
 
@@ -54,6 +60,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
           .publishOn(Schedulers.single())
           .onBackpressureError()
           .name("ObservableStateProcessor.head");
+
   private final ReplayProcessor<ObservableBeaconState> observableStateSink =
       ReplayProcessor.cacheLast();
   private final Publisher<ObservableBeaconState> observableStateStream =
@@ -61,6 +68,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
           .publishOn(Schedulers.single())
           .onBackpressureError()
           .name("ObservableStateProcessor.observableState");
+
   private final ReplayProcessor<PendingOperations> pendingOperationsSink =
       ReplayProcessor.cacheLast();
   private final Publisher<PendingOperations> pendingOperationsStream =
@@ -89,7 +97,14 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     Flux.from(slotTicker).doOnNext(this::onNewSlot).subscribe();
     Flux.from(attestationPublisher).doOnNext(this::onNewAttestation).subscribe();
     Flux.from(beaconPublisher).doOnNext(this::onNewBlockTuple).subscribe();
-    updateIntervals.subscribe(tick -> updateCurrentObservableState());
+    this.executor =
+        Executors.newSingleThreadScheduledExecutor(
+            runnable -> {
+              Thread t = new Thread(runnable, "observable-state-processor");
+              t.setDaemon(true);
+              return t;
+            });
+    workIntervals.subscribe(tick -> executor.execute(this::doHardWork));
   }
 
   private void onNewSlot(SlotNumber newSlot) {
@@ -101,31 +116,41 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
         newSlot
             .minus(chainSpec.getEpochLength())
             .minus(chainSpec.getMinAttestationInclusionDelay()));
+    updateCurrentObservableState();
+  }
+
+  private void doHardWork() {
+    List<Attestation> attestations = new ArrayList<>();
+    attestationBuffer.drainTo(attestations);
+    for (Attestation attestation : attestations) {
+
+      List<ValidatorIndex> participants =
+          specHelpers.get_attestation_participants(
+              latestState, attestation.getData(), attestation.getParticipationBitfield());
+
+      List<BLSPubkey> pubKeys = specHelpers.mapIndicesToPubKeys(latestState, participants);
+
+      for (BLSPubkey pubKey : pubKeys) {
+        if (attestationCache.containsKey(pubKey)) {
+          Attestation oldAttestation = attestationCache.get(pubKey);
+          if (attestation.getData().getSlot().compareTo(oldAttestation.getData().getSlot()) > 0) {
+            attestationCache.put(pubKey, attestation);
+            validatorSlotCache.get(oldAttestation.getData().getSlot()).remove(pubKey);
+            addToSlotCache(attestation.getData().getSlot(), pubKey);
+          } else {
+            // XXX: If several such attestations exist, use the one the validator v observed first
+            // so no need to swap it
+          }
+        } else {
+          attestationCache.put(pubKey, attestation);
+          addToSlotCache(attestation.getData().getSlot(), pubKey);
+        }
+      }
+    }
   }
 
   private void onNewAttestation(Attestation attestation) {
-    List<ValidatorIndex> participants =
-        specHelpers.get_attestation_participants(
-            latestState, attestation.getData(), attestation.getParticipationBitfield());
-
-    List<BLSPubkey> pubKeys = specHelpers.mapIndicesToPubKeys(latestState, participants);
-
-    for (BLSPubkey pubKey : pubKeys) {
-      if (attestationCache.containsKey(pubKey)) {
-        Attestation oldAttestation = attestationCache.get(pubKey);
-        if (attestation.getData().getSlot().compareTo(oldAttestation.getData().getSlot()) > 0) {
-          attestationCache.put(pubKey, attestation);
-          validatorSlotCache.get(oldAttestation.getData().getSlot()).remove(pubKey);
-          addToSlotCache(attestation.getData().getSlot(), pubKey);
-        } else {
-          // XXX: If several such attestations exist, use the one the validator v observed first
-          // so no need to swap it
-        }
-      } else {
-        attestationCache.put(pubKey, attestation);
-        addToSlotCache(attestation.getData().getSlot(), pubKey);
-      }
-    }
+    attestationBuffer.add(attestation);
   }
 
   private void addToSlotCache(UInt64 slot, BLSPubkey pubKey) {
