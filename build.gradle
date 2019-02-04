@@ -5,6 +5,7 @@ plugins {
 allprojects {
   apply plugin: 'java-library'
   apply plugin: 'io.spring.dependency-management'
+  apply plugin: 'jacoco'
 
   apply from: "${rootDir}/versions.gradle"
 
@@ -25,4 +26,26 @@ allprojects {
     jcenter()
   }
 
+  task allDependencies(type: DependencyReportTask) {}
+
+  javadoc {
+    options.author = true
+    options.header = project.name
+    options.addStringOption('-quiet')
+    options.encoding = "UTF-8"
+    options.links(
+            "http://docs.oracle.com/javase/8/docs/api/"
+    )
+  }
+
+  jacoco {
+    toolVersion = '0.8.2'
+  }
+
+  jacocoTestReport {
+    reports {
+      xml.enabled = true
+      html.enabled = true
+    }
+  }
 }
