@@ -15,10 +15,21 @@ import org.ethereum.beacon.core.operations.slashing.ProposalSignedData;
 import org.ethereum.beacon.core.operations.slashing.SlashableVoteData;
 import org.ethereum.beacon.core.state.BeaconStateImpl;
 import org.ethereum.beacon.core.state.CrosslinkRecord;
+import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Eth1DataVote;
 import org.ethereum.beacon.core.state.ForkData;
 import org.ethereum.beacon.core.state.PendingAttestationRecord;
 import org.ethereum.beacon.core.state.ValidatorRecord;
+import org.ethereum.beacon.core.types.BLSPubkey;
+import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.Bitfield;
+import org.ethereum.beacon.core.types.Bitfield64;
+import org.ethereum.beacon.core.types.EpochNumber;
+import org.ethereum.beacon.core.types.Gwei;
+import org.ethereum.beacon.core.types.ShardNumber;
+import org.ethereum.beacon.core.types.SlotNumber;
+import org.ethereum.beacon.core.types.Time;
+import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import org.junit.Test;
 import java.io.File;
@@ -124,13 +135,24 @@ public class SSZSerializableAnnotationTest {
                 Eth1DataVote.class,
                 ForkData.class,
                 PendingAttestationRecord.class,
-                ValidatorRecord.class));
+                ValidatorRecord.class,
+                Eth1Data.class,
+                Bitfield.class,
+                Bitfield64.class,
+                BLSPubkey.class,
+                BLSSignature.class,
+                EpochNumber.class,
+                Gwei.class,
+                ShardNumber.class,
+                SlotNumber.class,
+                Time.class,
+                ValidatorIndex.class));
     Class[] allClasses = getClasses("org.ethereum.beacon.core");
 
     for (Class clazz : allClasses) {
       if (testedClasses.contains(clazz)) continue;
 
-      if (clazz.isAnnotationPresent(SSZSerializable.class)) {
+      if (clazz.isAnnotationPresent(SSZSerializable.class) && clazz.getEnclosingClass() == null) {
         throw new RuntimeException(
             String.format(
                 "Class %s is marked with "
