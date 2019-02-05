@@ -5,5 +5,7 @@ import org.reactivestreams.Publisher;
 public interface Ticker<T> {
   void start();
 
+  void stop();
+
   Publisher<T> getTickerStream();
 }

@@ -1,8 +1,6 @@
 package org.ethereum.beacon.chain;
 
 import java.time.Duration;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.types.SlotNumber;
@@ -33,7 +31,7 @@ public class SlotTicker implements Ticker<SlotNumber> {
 
   private SlotNumber startSlot;
 
-  private Executor scheduler;
+  private Scheduler scheduler;
 
   public SlotTicker(SpecHelpers specHelpers, BeaconState state) {
     this.specHelpers = specHelpers;
@@ -43,18 +41,17 @@ public class SlotTicker implements Ticker<SlotNumber> {
   /** Execute to start {@link SlotNumber} propagation */
   @Override
   public void start() {
-    this.scheduler =
-        Executors.newSingleThreadExecutor(
-            runnable -> {
-              Thread thread = new Thread(runnable, "slot-ticker");
-              thread.setDaemon(true);
-              return thread;
-            });
+    this.scheduler = Schedulers.newSingle("slot-ticker");
 
     SlotNumber nextSlot = specHelpers.get_current_slot(state).increment();
     Time period = specHelpers.getChainSpec().getSlotDuration();
+    startImpl(nextSlot, period, scheduler);
+  }
 
-    startImpl(nextSlot, period, Schedulers.fromExecutor(scheduler));
+  @Override
+  public void stop() {
+    assert scheduler != null;
+    scheduler.dispose();
   }
 
   private void startImpl(SlotNumber startSlot, Time period, Scheduler scheduler) {
