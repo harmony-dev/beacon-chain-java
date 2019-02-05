@@ -37,9 +37,11 @@ import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
+import org.ethereum.beacon.core.types.Millis;
 import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
+import org.ethereum.beacon.core.types.Times;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.crypto.BLS381;
 import org.ethereum.beacon.crypto.BLS381.PublicKey;
@@ -1188,19 +1190,11 @@ public class SpecHelpers {
     return index;
   }
 
-  /**
-   * Accurate time source
-   * @return current time in milliseconds
-   */
-  public Supplier<UInt64> accurateTimeMillis() {
-    return () -> UInt64.valueOf(System.currentTimeMillis());
-  }
-
   public SlotNumber get_current_slot(BeaconState state) {
-    Time currentTime = new Time(accurateTimeMillis().get().dividedBy(1000));
-    assert state.getGenesisTime().compareTo(currentTime) < 0;
-    return SlotNumber.castFrom(
-        currentTime.minus(state.getGenesisTime()).dividedBy(spec.getSlotDuration()));
+    Millis currentTime = Times.currentTimeMillis();
+    assert state.getGenesisTime().less(currentTime.getSeconds());
+    Time sinceGenesis = currentTime.getSeconds().minus(state.getGenesisTime());
+    return SlotNumber.castFrom(sinceGenesis.dividedBy(spec.getSlotDuration()));
   }
 
   public boolean is_current_slot(BeaconState state) {
