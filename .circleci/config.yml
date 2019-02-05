@@ -47,7 +47,7 @@ jobs:
       - run:
           name: Collecting test results
           command: |
-            ./gradlew jacocoTestReport coveralls
+            ./gradlew jacocoRootTestReport coveralls
             mkdir -p ~/test-results/
             find . -type f -regex ".*/build/test-results/.*xml" -exec cp {} ~/test-results/ \;
           when: always

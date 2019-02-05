@@ -1,6 +1,5 @@
 plugins {
   id "io.spring.dependency-management" version "1.0.6.RELEASE"
-  id 'jacoco'
   id 'com.github.kt3k.coveralls' version '2.8.2'
 }
 
@@ -42,6 +41,7 @@ allprojects {
 
   jacoco {
     toolVersion = '0.8.2'
+    reportsDir = file("$buildDir/reports/jacoco")
   }
 
   jacocoTestReport {
@@ -49,5 +49,30 @@ allprojects {
       xml.enabled = true
       html.enabled = true
     }
+  }
+}
+
+// aggregates jacoco results from all subprojects and core project and generate a report
+task jacocoRootTestReport(type: JacocoReport) {
+
+  sourceSets sourceSets.main
+
+  def jacocoTestFiles = []
+  subprojects.each { p ->
+    def coverageFileLocation = "$p.buildDir/jacoco/test.exec"
+    if (new File(coverageFileLocation).exists()) {
+      jacocoTestFiles << coverageFileLocation
+    }
+  }
+
+  logger.info('Aggregating next JaCoCo Coverage Files: {}', jacocoTestFiles)
+  executionData files(jacocoTestFiles)
+
+  reports {
+    xml.enabled true
+    csv.enabled false
+    html.enabled true
+    xml.setDestination(file("${buildDir}/reports/jacoco/test/jacocoTestReport.xml"))
+    html.setDestination(file("${buildDir}/reports/jacoco/test/jacocoTestReport"))
   }
 }
