@@ -1,35 +1,25 @@
 package org.ethereum.beacon.consensus.transition;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.TestUtils;
 import org.ethereum.beacon.core.BeaconBlocks;
 import org.ethereum.beacon.core.operations.Deposit;
-import org.ethereum.beacon.core.operations.deposit.DepositData;
-import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.spec.ChainSpec;
-import org.ethereum.beacon.core.spec.SignatureDomains;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
-import org.ethereum.beacon.crypto.BLS381;
-import org.ethereum.beacon.crypto.BLS381.KeyPair;
-import org.ethereum.beacon.crypto.BLS381.Signature;
-import org.ethereum.beacon.crypto.MessageParameters.Impl;
 import org.ethereum.beacon.pow.DepositContract.ChainStart;
-import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.bytes.Bytes48;
-import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.uint.UInt64;
+import java.util.List;
+import java.util.Random;
 
 public class EpochTransitionTest {
 
   @Test
+  @Ignore("Until get_crosslink_committees_at_slot is updated according to spec")
   public void test1() {
     Random rnd = new Random();
     Time genesisTime = Time.castFrom(UInt64.random(rnd));
@@ -47,9 +37,7 @@ public class EpochTransitionTest {
     List<Deposit> deposits = TestUtils.getAnyDeposits(specHelpers, 8).getValue0();
 
     InitialStateTransition initialStateTransition =
-        new InitialStateTransition(
-            new ChainStart(genesisTime, eth1Data, deposits),
-            specHelpers);
+        new InitialStateTransition(new ChainStart(genesisTime, eth1Data, deposits), specHelpers);
 
     BeaconStateEx[] states = new BeaconStateEx[9];
 
