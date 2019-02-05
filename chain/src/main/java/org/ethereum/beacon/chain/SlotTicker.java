@@ -1,5 +1,8 @@
 package org.ethereum.beacon.chain;
 
+import java.time.Duration;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.types.SlotNumber;
@@ -7,10 +10,8 @@ import org.ethereum.beacon.core.types.Time;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
-import tech.pegasys.artemis.util.uint.UInt64;
-import java.time.Duration;
-import java.util.function.Supplier;
 
 /**
  * Generator of {@link SlotNumber}
@@ -20,9 +21,7 @@ import java.util.function.Supplier;
  */
 public class SlotTicker implements Ticker<SlotNumber> {
   private final SpecHelpers specHelpers;
-  private final Time genesisTime;
-  private final Supplier<UInt64> accurateTime;
-  private UInt64 slot;
+  private final BeaconState state;
 
   private final DirectProcessor<SlotNumber> slotSink = DirectProcessor.create();
   private final Publisher<SlotNumber> slotStream =
@@ -31,35 +30,41 @@ public class SlotTicker implements Ticker<SlotNumber> {
           .onBackpressureError()
           .name("SlotTicker.slot");
 
-  private static final long MILLIS_IN_SECOND = Duration.ofSeconds(1).toMillis();
+  private SlotNumber startSlot;
+
+  private Executor scheduler;
 
   public SlotTicker(SpecHelpers specHelpers, BeaconState state) {
     this.specHelpers = specHelpers;
-    this.accurateTime = specHelpers.accurateTimeMillis();
-    this.genesisTime = state.getGenesisTime();
+    this.state = state;
   }
 
   /** Execute to start {@link SlotNumber} propagation */
   @Override
   public void start() {
-    SlotNumber genesisSlot = specHelpers.getChainSpec().getGenesisSlot();
-    Time slotDuration = specHelpers.getChainSpec().getSlotDuration();
-    UInt64 slotDelta =
-        accurateTime
-            .get()
-            .dividedBy(UInt64.valueOf(MILLIS_IN_SECOND))
-            .minus(genesisTime)
-            .dividedBy(slotDuration);
-    UInt64 nextSlotStartTime = genesisTime.plus(slotDelta.increment()).times(slotDuration);
-    this.slot = genesisSlot.plus(slotDelta);
-    UInt64 delay = nextSlotStartTime.times(MILLIS_IN_SECOND).minus(accurateTime.get());
-    Flux.interval(Duration.ofSeconds(slotDuration.getIntValue()))
-        .delaySubscription(Duration.ofMillis(delay.longValue()))
-        .subscribe(
-            tick -> {
-              this.slot = slot.increment();
-              slotSink.onNext(new SlotNumber(slot));
+    this.scheduler =
+        Executors.newSingleThreadExecutor(
+            runnable -> {
+              Thread thread = new Thread(runnable, "slot-ticker");
+              thread.setDaemon(true);
+              return thread;
             });
+
+    SlotNumber nextSlot = specHelpers.get_current_slot(state).increment();
+    Time period = specHelpers.getChainSpec().getSlotDuration();
+
+    startImpl(nextSlot, period, Schedulers.fromExecutor(scheduler));
+  }
+
+  private void startImpl(SlotNumber startSlot, Time period, Scheduler scheduler) {
+    this.startSlot = startSlot;
+
+    Time startSlotTime = specHelpers.get_slot_start_time(state, startSlot);
+    long delayMillis = Math.max(0, startSlotTime.getMillis() - System.currentTimeMillis());
+
+    Flux.interval(Duration.ofSeconds(period.getValue()), scheduler)
+        .delaySubscription(Duration.ofMillis(delayMillis))
+        .subscribe(tick -> slotSink.onNext(this.startSlot.plus(tick)));
   }
 
   /** Stream fires current slot number at slot time start */

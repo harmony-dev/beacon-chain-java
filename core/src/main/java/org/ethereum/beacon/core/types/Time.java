@@ -47,4 +47,7 @@ public class Time extends UInt64 implements SafeComparable<Time> {
     return new Time(super.dividedBy(divisor));
   }
 
+  public long getMillis() {
+    return getValue() * 1000;
+  }
 }
