@@ -18,7 +18,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.ReplayProcessor;
 import reactor.core.scheduler.Schedulers;
 import java.util.Optional;
-import java.util.concurrent.ScheduledFuture;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
@@ -45,15 +44,6 @@ public class DefaultBeaconChain implements MutableBeaconChain {
           .publishOn(Schedulers.single())
           .onBackpressureError()
           .name("DefaultBeaconChain.block");
-  private final ReplayProcessor<BeaconState> slotSink = ReplayProcessor.cacheLast();
-  private final Publisher<BeaconState> slotStream =
-      Flux.from(slotSink)
-          .doOnSubscribe(s -> slotStreamSubscribersUpdate())
-          .doOnCancel(() -> slotStreamSubscribersUpdate())
-          .publishOn(Schedulers.single())
-          .onBackpressureError()
-          .name("DefaultBeaconChain.slot");
-  private ScheduledFuture<Void> stateTrackingTask;
 
   @Override
   public void init() {
@@ -74,19 +64,6 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     return tuple;
   }
 
-  private void slotStreamSubscribersUpdate() {
-    if (slotSink.downstreamCount() > 0) {
-      stateTrackingTask = startSlotStateTracking();
-    } else {
-      stateTrackingTask.cancel(false);
-    }
-  }
-
-  private ScheduledFuture<Void> startSlotStateTracking() {
-    // TODO
-    return null;
-  }
-
   @Override
   public synchronized void insert(BeaconBlock block) {
     if (exist(block)) {
@@ -99,7 +76,6 @@ public class DefaultBeaconChain implements MutableBeaconChain {
 
     BeaconState parentState = pullParentState(block);
     BeaconState slotTransitedState = slotTransition.apply(block, parentState);
-    slotSink.onNext(slotTransitedState);
 
     VerificationResult blockVerification = blockVerifier.verify(block, slotTransitedState);
     if (!blockVerification.isPassed()) {
@@ -137,10 +113,5 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   @Override
   public Publisher<BeaconTuple> getBlockStatesStream() {
     return blockStream;
-  }
-
-  @Override
-  public Publisher<BeaconState> getSlotStatesStream() {
-    return slotStream;
   }
 }

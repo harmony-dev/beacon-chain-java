@@ -8,7 +8,5 @@ public interface BeaconChain {
 
   Publisher<BeaconTuple> getBlockStatesStream();
 
-  Publisher<BeaconState> getSlotStatesStream();
-
   void init();
 }
