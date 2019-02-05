@@ -21,7 +21,6 @@ import reactor.core.publisher.ReplayProcessor;
 import reactor.core.scheduler.Schedulers;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -32,6 +31,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   private final BeaconTupleStorage tupleStorage;
@@ -48,7 +48,6 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   private final Publisher<BeaconTuple> beaconPublisher;
 
   private static final int UPDATE_MILLIS = 500;
-  private final Flux workIntervals = Flux.interval(Duration.ofMillis(UPDATE_MILLIS));
   private ScheduledExecutorService executor;
   private final BlockingQueue<Attestation> attestationBuffer = new LinkedBlockingDeque<>();
   private final Map<BLSPubkey, Attestation> attestationCache = new HashMap<>();
@@ -104,7 +103,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
               t.setDaemon(true);
               return t;
             });
-    workIntervals.subscribe(tick -> executor.execute(this::doHardWork));
+    executor.scheduleAtFixedRate(this::doHardWork, 0, UPDATE_MILLIS, TimeUnit.MILLISECONDS);
   }
 
   private void onNewSlot(SlotNumber newSlot) {
