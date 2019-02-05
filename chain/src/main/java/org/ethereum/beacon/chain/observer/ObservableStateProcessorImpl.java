@@ -7,6 +7,9 @@ import org.ethereum.beacon.chain.storage.BeaconTuple;
 import org.ethereum.beacon.chain.storage.BeaconTupleStorage;
 import org.ethereum.beacon.consensus.HeadFunction;
 import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.transition.BeaconStateEx;
+import org.ethereum.beacon.consensus.transition.EpochTransition;
+import org.ethereum.beacon.consensus.transition.NextSlotTransition;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
@@ -19,6 +22,7 @@ import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.ReplayProcessor;
 import reactor.core.scheduler.Schedulers;
+import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
 import java.util.ArrayList;
@@ -42,6 +46,8 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   private BeaconState latestState;
   private final SpecHelpers specHelpers;
   private final ChainSpec chainSpec;
+  private final EpochTransition epochTransition;
+  private final NextSlotTransition nextSlotTransition;
 
   private final Publisher<SlotNumber> slotTicker;
   private final Publisher<Attestation> attestationPublisher;
@@ -82,10 +88,14 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
       Publisher<SlotNumber> slotTicker,
       Publisher<Attestation> attestationPublisher,
       Publisher<BeaconTuple> beaconPublisher,
-      SpecHelpers specHelpers) {
+      SpecHelpers specHelpers,
+      EpochTransition epochTransition,
+      NextSlotTransition nextSlotTransition) {
     this.tupleStorage = chainStorage.getBeaconTupleStorage();
     this.specHelpers = specHelpers;
     this.chainSpec = specHelpers.getChainSpec();
+    this.epochTransition = epochTransition;
+    this.nextSlotTransition = nextSlotTransition;
     this.headFunction = new LMDGhostHeadFunction(chainStorage, specHelpers);
     this.slotTicker = slotTicker;
     this.attestationPublisher = attestationPublisher;
@@ -131,7 +141,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     runTaskInSeparateThread(
         () -> {
           purgeAttestations(slotMinimum);
-          updateCurrentObservableState();
+          updateCurrentObservableState(newSlot);
         });
   }
 
@@ -227,16 +237,38 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     return new HashMap<>(attestationCache);
   }
 
-  private void updateCurrentObservableState() {
+  private void updateCurrentObservableState(SlotNumber newSlot) {
     PendingOperations pendingOperations = new PendingOperationsState(drainAttestationCache());
     pendingOperationsSink.onNext(pendingOperations);
     updateHead(pendingOperations);
+    this.latestState = applySlotTransitions(latestState, newSlot, head.getBlock().getHash());
     ObservableBeaconState newObservableState =
         new ObservableBeaconState(head.getBlock(), latestState, pendingOperations);
     if (!newObservableState.equals(observableState)) {
       this.observableState = newObservableState;
       observableStateSink.onNext(newObservableState);
     }
+  }
+
+  /**
+   * Applies next slot transition and if it's required - epoch transition
+   *
+   * @param canonicalState Source state
+   * @param newSlot Slot number of the new slot
+   * @param latestChainBlock Latest chain block
+   * @return new state, result of applied transition to the latest input state
+   */
+  private BeaconState applySlotTransitions(
+      BeaconState canonicalState, SlotNumber newSlot, Hash32 latestChainBlock) {
+    // Every slot transition
+    BeaconStateEx result =
+        nextSlotTransition.apply(null, new BeaconStateEx(canonicalState, latestChainBlock));
+    // Epoch transition happens when (state.slot + 1) % EPOCH_LENGTH == 0.
+    if (newSlot.increment().modulo(chainSpec.getEpochLength()).compareTo(UInt64.ZERO) == 0) {
+      result = epochTransition.apply(null, result);
+    }
+
+    return result.getCanonicalState();
   }
 
   private void updateHead(PendingOperations pendingOperations) {
