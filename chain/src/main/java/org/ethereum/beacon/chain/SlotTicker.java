@@ -7,6 +7,7 @@ import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
+import org.ethereum.beacon.core.types.Times;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
@@ -60,7 +61,8 @@ public class SlotTicker implements Ticker<SlotNumber> {
     this.startSlot = startSlot;
 
     Time startSlotTime = specHelpers.get_slot_start_time(state, startSlot);
-    long delayMillis = Math.max(0, startSlotTime.getMillis() - System.currentTimeMillis());
+    long delayMillis =
+        Math.max(0, startSlotTime.getMillis().getValue() - Times.currentTimeMillis().getValue());
 
     Flux.interval(Duration.ofSeconds(period.getValue()), scheduler)
         .delaySubscription(Duration.ofMillis(delayMillis))
