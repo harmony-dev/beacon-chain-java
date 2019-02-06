@@ -55,6 +55,7 @@ allprojects {
 coveralls {
   def subProjects = subprojects.findAll()
   sourceDirs = subProjects.sourceSets.main.allSource.srcDirs.flatten()
+  jacocoReportPath = "${buildDir}/reports/jacoco/test/jacocoTestReport.xml"
 }
 
 // aggregates jacoco results from all subprojects and core project and generate a report
