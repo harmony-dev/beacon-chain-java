@@ -13,6 +13,7 @@ import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.spec.SignatureDomains;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
@@ -75,6 +76,14 @@ public class BeaconChainAttesterTest {
 
     byte aByte = attestation.getParticipationBitfield().get(indexIntoCommittee / 8);
     Assert.assertEquals(1, (aByte >> (indexIntoCommittee % 8)) & 0xFF);
+
+    BLSSignature expectedSignature =
+        signer.sign(
+            specHelpers.hash_tree_root(data),
+            specHelpers.get_domain(
+                state.getForkData(), state.getSlot(), SignatureDomains.ATTESTATION));
+
+    Assert.assertEquals(expectedSignature, attestation.getAggregateSignature());
   }
 
   private List<ValidatorIndex> getCommittee(int size) {
