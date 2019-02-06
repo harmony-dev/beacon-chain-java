@@ -41,7 +41,6 @@ allprojects {
 
   jacoco {
     toolVersion = '0.8.2'
-    reportsDir = file("$buildDir/reports/jacoco")
   }
 
   jacocoTestReport {
