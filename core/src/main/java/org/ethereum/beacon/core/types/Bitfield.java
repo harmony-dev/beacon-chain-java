@@ -2,6 +2,7 @@ package org.ethereum.beacon.core.types;
 
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.bytes.BytesValues;
 import tech.pegasys.artemis.util.bytes.DelegatingBytesValue;
 import tech.pegasys.artemis.util.bytes.MutableBytesValue;
 
@@ -22,5 +23,9 @@ public class Bitfield extends DelegatingBytesValue {
     MutableBytesValue mutableCopy = mutableCopy();
     mutableCopy.setBit(bitIndex, bit);
     return new Bitfield(mutableCopy);
+  }
+
+  public Bitfield and(Bitfield other) {
+    return Bitfield.of(BytesValues.and(this, other));
   }
 }

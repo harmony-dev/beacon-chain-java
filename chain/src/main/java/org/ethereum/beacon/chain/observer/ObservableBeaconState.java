@@ -1,5 +1,6 @@
 package org.ethereum.beacon.chain.observer;
 
+import com.google.common.base.Objects;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 
@@ -26,5 +27,20 @@ public class ObservableBeaconState {
 
   public PendingOperations getPendingOperations() {
     return pendingOperations;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    ObservableBeaconState that = (ObservableBeaconState) o;
+    return Objects.equal(head, that.head) &&
+        Objects.equal(latestSlotState, that.latestSlotState) &&
+        Objects.equal(pendingOperations, that.pendingOperations);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(head, latestSlotState, pendingOperations);
   }
 }

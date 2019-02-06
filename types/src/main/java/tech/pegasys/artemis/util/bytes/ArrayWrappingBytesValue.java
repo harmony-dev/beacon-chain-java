@@ -25,13 +25,13 @@ import io.vertx.core.buffer.Buffer;
 /**
  * An implementation of {@link BytesValue} backed by a byte array ({@code byte[]}).
  */
-class ArrayWrappingBytesValue extends AbstractBytesValue {
+public class ArrayWrappingBytesValue extends AbstractBytesValue {
 
   protected final byte[] bytes;
   protected final int offset;
   protected final int length;
 
-  ArrayWrappingBytesValue(byte[] bytes) {
+  public ArrayWrappingBytesValue(byte[] bytes) {
     this(bytes, 0, bytes.length);
   }
 
