@@ -42,12 +42,12 @@ jobs:
 
       - run:
           name: Running tests
-          command: ./gradlew --stacktrace test
+          command: ./gradlew --stacktrace cleanTest test --continue
 
       - run:
           name: Collecting test results
           command: |
-            ./gradlew jacocoTestReport jacocoRootTestReport coveralls
+            ./gradlew coveralls
             mkdir -p ~/test-results/
             find . -type f -regex ".*/build/test-results/.*xml" -exec cp {} ~/test-results/ \;
           when: always

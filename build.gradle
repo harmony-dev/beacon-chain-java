@@ -2,11 +2,12 @@ plugins {
   id "io.spring.dependency-management" version "1.0.6.RELEASE"
   id 'com.github.kt3k.coveralls' version '2.8.2'
 }
+apply plugin: 'jacoco'
+apply plugin: 'com.github.kt3k.coveralls'
 
 allprojects {
   apply plugin: 'java-library'
   apply plugin: 'io.spring.dependency-management'
-  apply plugin: 'jacoco'
 
   apply from: "${rootDir}/versions.gradle"
 
@@ -38,47 +39,45 @@ allprojects {
             "http://docs.oracle.com/javase/8/docs/api/"
     )
   }
+}
 
-  jacoco {
-    toolVersion = '0.8.2'
+def allSubProjects = subprojects.findAll()
+jacoco {
+  toolVersion = "0.8.3"
+}
+
+task jacocoMerge(type: JacocoMerge) {
+  allSubProjects.each { subproject ->
+    executionData = files(subproject.tasks.withType(Test))
   }
-
-  jacocoTestReport {
-    reports {
-      xml.enabled = true
-      html.enabled = true
-    }
+  doFirst {
+    executionData = files(executionData.findAll { it.exists() })
   }
 }
 
-// Aggregates all subprojects source paths so coveralls knows where the sources are
-coveralls {
-  def subProjects = subprojects.findAll()
-  sourceDirs = subProjects.sourceSets.main.allSource.srcDirs.flatten()
-  jacocoReportPath = "${buildDir}/reports/jacoco/test/jacocoTestReport.xml"
-}
+task jacocoRootReport(type: JacocoReport, group: 'Coverage reports') {
+  description = 'Generates an aggregate report from all subprojects'
+  dependsOn allSubProjects.test, jacocoMerge
 
-// aggregates jacoco results from all subprojects and core project and generate a report
-task jacocoRootTestReport(type: JacocoReport) {
-
-  sourceSets sourceSets.main
-
-  def jacocoTestFiles = []
-  subprojects.each { p ->
-    def coverageFileLocation = "$p.buildDir/jacoco/test.exec"
-    if (new File(coverageFileLocation).exists()) {
-      jacocoTestFiles << coverageFileLocation
-    }
-  }
-
-  logger.info('Aggregating next JaCoCo Coverage Files: {}', jacocoTestFiles)
-  executionData files(jacocoTestFiles)
+  additionalSourceDirs = files(allSubProjects.sourceSets.main.allSource.srcDirs)
+  sourceDirectories = files(allSubProjects.sourceSets.main.allSource.srcDirs)
+  classDirectories = files(allSubProjects.sourceSets.main.output)
+  executionData = files(jacocoMerge.destinationFile)
 
   reports {
-    xml.enabled true
-    csv.enabled false
-    html.enabled true
-    xml.setDestination(file("${buildDir}/reports/jacoco/test/jacocoTestReport.xml"))
-    html.setDestination(file("${buildDir}/reports/jacoco/test/jacocoTestReport"))
+    html.enabled = true // human readable
+    xml.enabled = true // required by coveralls
   }
+}
+
+coveralls {
+  sourceDirs = allSubProjects.sourceSets.main.allSource.srcDirs.flatten()
+  jacocoReportPath = "${buildDir}/reports/jacoco/jacocoRootReport/jacocoRootReport.xml"
+}
+
+tasks.coveralls {
+  group = 'Coverage reports'
+  description = 'Uploads the aggregated coverage report to Coveralls'
+
+  dependsOn jacocoRootReport
 }
