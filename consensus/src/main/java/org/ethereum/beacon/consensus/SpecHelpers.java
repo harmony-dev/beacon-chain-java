@@ -1,20 +1,5 @@
 package org.ethereum.beacon.consensus;
 
-import static java.lang.Math.max;
-import static java.lang.Math.min;
-import static java.util.stream.Collectors.toList;
-import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
@@ -58,6 +43,20 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
 import tech.pegasys.artemis.util.uint.UInt64s;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import static java.lang.Math.max;
+import static java.lang.Math.min;
+import static java.util.stream.Collectors.toList;
+import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
 
 /**
  * https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md#helper-functions
@@ -1194,7 +1193,8 @@ public class SpecHelpers {
     Millis currentTime = Times.currentTimeMillis();
     assert state.getGenesisTime().less(currentTime.getSeconds());
     Time sinceGenesis = currentTime.getSeconds().minus(state.getGenesisTime());
-    return SlotNumber.castFrom(sinceGenesis.dividedBy(spec.getSlotDuration()));
+    return SlotNumber.castFrom(sinceGenesis.dividedBy(spec.getSlotDuration()))
+        .plus(getChainSpec().getGenesisSlot());
   }
 
   public boolean is_current_slot(BeaconState state) {
@@ -1202,7 +1202,9 @@ public class SpecHelpers {
   }
 
   public Time get_slot_start_time(BeaconState state, SlotNumber slot) {
-    return state.getGenesisTime().plus(spec.getSlotDuration().times(slot));
+    return state
+        .getGenesisTime()
+        .plus(spec.getSlotDuration().times(slot.minus(getChainSpec().getGenesisSlot())));
   }
 
   public Time get_slot_middle_time(BeaconState state, SlotNumber slot) {

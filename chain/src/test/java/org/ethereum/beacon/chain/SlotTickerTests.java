@@ -26,7 +26,8 @@ public class SlotTickerTests {
         || System.currentTimeMillis() % MILLIS_IN_SECOND > 900) {
       Thread.sleep(100);
     }
-    beaconState.setGenesisTime(Time.of(System.currentTimeMillis() / MILLIS_IN_SECOND));
+    beaconState.setGenesisTime(
+        Time.of(System.currentTimeMillis() / MILLIS_IN_SECOND).minus(Time.of(2)));
     ChainSpec chainSpec =
         new ChainSpec.DefaultChainSpec() {
           @Override
@@ -54,11 +55,11 @@ public class SlotTickerTests {
         .subscribe(
             slotNumber -> {
               if (first.get()) {
-                assertEquals(SlotNumber.of(genesisSlot + 2), slotNumber);
+                assertEquals(SlotNumber.of(genesisSlot + 4), slotNumber);
                 bothAssertsRun.countDown();
                 first.set(false);
               } else { // second
-                assertEquals(SlotNumber.of(genesisSlot + 3), slotNumber);
+                assertEquals(SlotNumber.of(genesisSlot + 5), slotNumber);
                 bothAssertsRun.countDown();
               }
             });
