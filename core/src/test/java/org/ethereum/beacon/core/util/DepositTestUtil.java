@@ -8,6 +8,8 @@ import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.types.BLSPubkey;
+import org.ethereum.beacon.core.types.BLSSignature;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.bytes.Bytes96;
@@ -28,13 +30,14 @@ public abstract class DepositTestUtil {
 
   public static Deposit createRandom(Random random, ChainSpec spec, UInt64 depositIndex) {
     DepositInput depositInput =
-        new DepositInput(Bytes48.random(random), Hash32.random(random), Bytes96.random(random));
+        new DepositInput(
+            BLSPubkey.wrap(Bytes48.random(random)),
+            Hash32.random(random),
+            BLSSignature.wrap(Bytes96.random(random)));
 
     DepositData depositData =
         new DepositData(
-            depositInput,
-            spec.getMaxDeposit().toGWei(),
-            UInt64.valueOf(System.currentTimeMillis() / 1000));
+            depositInput, spec.getMaxDeposit(), UInt64.valueOf(System.currentTimeMillis() / 1000));
 
     List<Hash32> merkleBranch =
         Collections.nCopies(spec.getDepositContractTreeDepth().getIntValue(), Hash32.ZERO);

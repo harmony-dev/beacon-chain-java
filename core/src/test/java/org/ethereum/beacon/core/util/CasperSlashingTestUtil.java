@@ -1,13 +1,14 @@
 package org.ethereum.beacon.core.util;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.ethereum.beacon.core.operations.CasperSlashing;
 import org.ethereum.beacon.core.operations.slashing.SlashableVoteData;
+import org.ethereum.beacon.core.types.BLSSignature;
 import tech.pegasys.artemis.util.bytes.Bytes96;
-import tech.pegasys.artemis.util.uint.UInt24;
 
 public abstract class CasperSlashingTestUtil {
   private CasperSlashingTestUtil() {}
@@ -21,16 +22,18 @@ public abstract class CasperSlashingTestUtil {
   public static CasperSlashing createRandom(Random random) {
     SlashableVoteData voteData1 =
         new SlashableVoteData(
-            new UInt24[0],
-            new UInt24[0],
+            Collections.emptyList(),
+            Collections.emptyList(),
             AttestationTestUtil.createRandomAttestationData(random),
-            Bytes96.random(random));
+            BLSSignature.wrap(Bytes96.random(random)));
+
     SlashableVoteData voteData2 =
         new SlashableVoteData(
-            new UInt24[0],
-            new UInt24[0],
+            Collections.emptyList(),
+            Collections.emptyList(),
             AttestationTestUtil.createRandomAttestationData(random),
-            Bytes96.random(random));
+            BLSSignature.wrap(Bytes96.random(random)));
+
     return new CasperSlashing(voteData1, voteData2);
   }
 }

@@ -2,6 +2,8 @@ package org.ethereum.beacon.core.operations.deposit;
 
 import com.google.common.base.Objects;
 import org.ethereum.beacon.core.operations.Deposit;
+import org.ethereum.beacon.core.types.BLSPubkey;
+import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -21,22 +23,22 @@ import tech.pegasys.artemis.util.bytes.Bytes96;
 public class DepositInput {
 
   /** BLS public key. */
-  @SSZ private final Bytes48 pubKey;
+  @SSZ private final BLSPubkey pubKey;
   /** Withdrawal credentials. */
   @SSZ private final Hash32 withdrawalCredentials;
   /** A BLS signature of this {@link DepositInput} */
-  @SSZ private final Bytes96 proofOfPossession;
+  @SSZ private final BLSSignature proofOfPossession;
 
   public DepositInput(
-      Bytes48 pubKey,
+      BLSPubkey pubKey,
       Hash32 withdrawalCredentials,
-      Bytes96 proofOfPossession) {
+      BLSSignature proofOfPossession) {
     this.pubKey = pubKey;
     this.withdrawalCredentials = withdrawalCredentials;
     this.proofOfPossession = proofOfPossession;
   }
 
-  public Bytes48 getPubKey() {
+  public BLSPubkey getPubKey() {
     return pubKey;
   }
 
@@ -44,7 +46,7 @@ public class DepositInput {
     return withdrawalCredentials;
   }
 
-  public Bytes96 getProofOfPossession() {
+  public BLSSignature getProofOfPossession() {
     return proofOfPossession;
   }
 

@@ -1,6 +1,8 @@
 package org.ethereum.beacon.consensus;
 
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
+import org.ethereum.beacon.core.types.BLSPubkey;
+import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.ssz.Hasher;
 import org.ethereum.beacon.ssz.SSZHasher;
@@ -80,9 +82,9 @@ public class SpecHelpersTest {
   private DepositInput createDepositInput() {
     DepositInput depositInput =
         new DepositInput(
-            Bytes48.TRUE,
+            BLSPubkey.wrap(Bytes48.TRUE),
             Hashes.keccak256(BytesValue.fromHexString("aa")),
-            Bytes96.ZERO);
+            BLSSignature.wrap(Bytes96.ZERO));
 
     return depositInput;
   }

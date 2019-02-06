@@ -6,7 +6,7 @@ public class WrappingBytes96 extends AbstractBytesValue implements Bytes96 {
 
   private final BytesValue value;
 
-  WrappingBytes96(BytesValue value) {
+  protected WrappingBytes96(BytesValue value) {
     checkArgument(
         value.size() == SIZE, "Expected value to be %s bytes, but is %s bytes", SIZE, value.size());
     this.value = value;

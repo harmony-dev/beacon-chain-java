@@ -83,7 +83,7 @@ public interface SSZCodec {
    *     moved to the end of this field/beginning of next one after reading is performed.
    * @return field list value
    */
-  List<Object> decodeList(SSZSchemeBuilder.SSZScheme.SSZField field, BytesSSZReaderProxy reader);
+  List decodeList(SSZSchemeBuilder.SSZScheme.SSZField field, BytesSSZReaderProxy reader);
 
   /**
    * Decodes SSZ encoded data and returns result
@@ -95,7 +95,7 @@ public interface SSZCodec {
    */
   default Object[] decodeArray(
       SSZSchemeBuilder.SSZScheme.SSZField field, BytesSSZReaderProxy reader) {
-    List<Object> list = decodeList(field, reader);
+    List list = decodeList(field, reader);
     return list.toArray();
   }
 

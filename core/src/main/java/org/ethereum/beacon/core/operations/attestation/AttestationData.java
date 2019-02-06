@@ -2,6 +2,8 @@ package org.ethereum.beacon.core.operations.attestation;
 
 import com.google.common.base.Objects;
 import org.ethereum.beacon.core.operations.Attestation;
+import org.ethereum.beacon.core.types.ShardNumber;
+import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -19,9 +21,9 @@ import tech.pegasys.artemis.util.uint.UInt64;
 public class AttestationData {
 
   /** Slot number. */
-  @SSZ private final UInt64 slot;
+  @SSZ private final SlotNumber slot;
   /** Shard number. */
-  @SSZ private final UInt64 shard;
+  @SSZ private final ShardNumber shard;
   /** Hash of signed beacon block. */
   @SSZ private final Hash32 beaconBlockRoot;
   /** Hash of beacon block's ancestor at the epoch boundary. */
@@ -31,18 +33,18 @@ public class AttestationData {
   /** Hash of last crosslink block. */
   @SSZ private final Hash32 latestCrosslinkRoot;
   /** Slot of the last justified beacon block. */
-  @SSZ private final UInt64 justifiedSlot;
+  @SSZ private final SlotNumber justifiedSlot;
   /** Hash of the last justified beacon block. */
   @SSZ private final Hash32 justifiedBlockRoot;
 
   public AttestationData(
-      UInt64 slot,
-      UInt64 shard,
+      SlotNumber slot,
+      ShardNumber shard,
       Hash32 beaconBlockRoot,
       Hash32 epochBoundaryRoot,
       Hash32 shardBlockRoot,
       Hash32 latestCrosslinkRoot,
-      UInt64 justifiedSlot,
+      SlotNumber justifiedSlot,
       Hash32 justifiedBlockRoot) {
     this.slot = slot;
     this.shard = shard;
@@ -54,11 +56,11 @@ public class AttestationData {
     this.justifiedBlockRoot = justifiedBlockRoot;
   }
 
-  public UInt64 getSlot() {
+  public SlotNumber getSlot() {
     return slot;
   }
 
-  public UInt64 getShard() {
+  public ShardNumber getShard() {
     return shard;
   }
 
@@ -78,7 +80,7 @@ public class AttestationData {
     return latestCrosslinkRoot;
   }
 
-  public UInt64 getJustifiedSlot() {
+  public SlotNumber getJustifiedSlot() {
     return justifiedSlot;
   }
 

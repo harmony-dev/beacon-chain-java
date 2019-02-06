@@ -7,10 +7,10 @@ import java.util.stream.Stream;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.slashing.ProposalSignedData;
 import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.ValidatorIndex;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes96;
-import tech.pegasys.artemis.util.uint.UInt24;
-import tech.pegasys.artemis.util.uint.UInt64;
 
 public abstract class ProposerSlashingTestUtil {
   private ProposerSlashingTestUtil() {}
@@ -24,11 +24,15 @@ public abstract class ProposerSlashingTestUtil {
   public static ProposerSlashing createRandom(Random random) {
     ProposalSignedData signedData1 =
         new ProposalSignedData(
-            UInt64.ZERO, ChainSpec.BEACON_CHAIN_SHARD_NUMBER, Hash32.random(random));
+            ChainSpec.GENESIS_SLOT, ChainSpec.BEACON_CHAIN_SHARD_NUMBER, Hash32.random(random));
     ProposalSignedData signedData2 =
         new ProposalSignedData(
-            UInt64.ZERO, ChainSpec.BEACON_CHAIN_SHARD_NUMBER, Hash32.random(random));
+            ChainSpec.GENESIS_SLOT, ChainSpec.BEACON_CHAIN_SHARD_NUMBER, Hash32.random(random));
     return new ProposerSlashing(
-        UInt24.ZERO, signedData1, Bytes96.random(random), signedData2, Bytes96.random(random));
+        ValidatorIndex.ZERO,
+        signedData1,
+        BLSSignature.wrap(Bytes96.random(random)),
+        signedData2,
+        BLSSignature.wrap(Bytes96.random(random)));
   }
 }

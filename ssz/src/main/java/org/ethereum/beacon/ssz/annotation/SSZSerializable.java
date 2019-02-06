@@ -26,4 +26,13 @@ public @interface SSZSerializable {
    * @return method for encoding
    */
   String encode() default "";
+
+  /**
+   * Tells the Serializer that this class should be serialized as <code>serializeAs</code> class
+   *
+   * - This class should be an ancestor of the <code>serializeAs</code> class
+   * - This class should have a public constructor that takes single <code>serializeAs</code>
+   *   class instance as an argument
+   */
+  Class<?> serializeAs() default void.class;
 }

@@ -2,6 +2,9 @@ package org.ethereum.beacon.core.state;
 
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.Hashable;
+import org.ethereum.beacon.core.types.BLSPubkey;
+import org.ethereum.beacon.core.types.SlotNumber;
+import org.ethereum.beacon.core.types.ValidatorIndex;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.uint.UInt24;
@@ -20,19 +23,19 @@ public class ValidatorRegistryDeltaBlock implements Hashable {
   /** A hash of previous registry delta block. */
   private final Hash32 latestRegistryDeltaRoot;
   /** An index of validator that has been changed. */
-  private final UInt24 validatorIndex;
+  private final ValidatorIndex validatorIndex;
   /** BLS public key of the validator. */
-  private final Bytes48 pubKey;
+  private final BLSPubkey pubKey;
 
-  private final UInt64 slot;
+  private final SlotNumber slot;
   /** A code denoting an action applied to the validator. */
   private final UInt64 flag;
 
   public ValidatorRegistryDeltaBlock(
       Hash32 latestRegistryDeltaRoot,
-      UInt24 validatorIndex,
-      Bytes48 pubKey,
-      UInt64 slot,
+      ValidatorIndex validatorIndex,
+      BLSPubkey pubKey,
+      SlotNumber slot,
       UInt64 flag) {
     this.latestRegistryDeltaRoot = latestRegistryDeltaRoot;
     this.validatorIndex = validatorIndex;
@@ -45,15 +48,15 @@ public class ValidatorRegistryDeltaBlock implements Hashable {
     return latestRegistryDeltaRoot;
   }
 
-  public UInt24 getValidatorIndex() {
+  public ValidatorIndex getValidatorIndex() {
     return validatorIndex;
   }
 
-  public Bytes48 getPubKey() {
+  public BLSPubkey getPubKey() {
     return pubKey;
   }
 
-  public UInt64 getSlot() {
+  public SlotNumber getSlot() {
     return slot;
   }
 
