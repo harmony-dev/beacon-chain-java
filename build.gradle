@@ -2,12 +2,12 @@ plugins {
   id "io.spring.dependency-management" version "1.0.6.RELEASE"
   id 'com.github.kt3k.coveralls' version '2.8.2'
 }
-apply plugin: 'jacoco'
 apply plugin: 'com.github.kt3k.coveralls'
 
 allprojects {
   apply plugin: 'java-library'
   apply plugin: 'io.spring.dependency-management'
+  apply plugin: 'jacoco'
 
   apply from: "${rootDir}/versions.gradle"
 
@@ -39,6 +39,17 @@ allprojects {
             "http://docs.oracle.com/javase/8/docs/api/"
     )
   }
+
+  jacoco {
+    toolVersion = '0.8.2'
+  }
+
+  jacocoTestReport {
+    reports {
+      xml.enabled = true
+      html.enabled = true
+    }
+  }
 }
 
 def allSubProjects = subprojects.findAll()
@@ -48,21 +59,24 @@ jacoco {
 
 task jacocoMerge(type: JacocoMerge) {
   allSubProjects.each { subproject ->
-    executionData = files(subproject.tasks.withType(Test))
+    executionData(new File(subproject.buildDir, 'jacoco/test.exec'))
   }
   doFirst {
     executionData = files(executionData.findAll { it.exists() })
+  }
+  for (project in allSubProjects) {
+    dependsOn project.path + ":jacocoTestReport"
   }
 }
 
 task jacocoRootReport(type: JacocoReport, group: 'Coverage reports') {
   description = 'Generates an aggregate report from all subprojects'
-  dependsOn allSubProjects.test, jacocoMerge
+  dependsOn allSubProjects.test, tasks.jacocoMerge
 
   additionalSourceDirs = files(allSubProjects.sourceSets.main.allSource.srcDirs)
   sourceDirectories = files(allSubProjects.sourceSets.main.allSource.srcDirs)
   classDirectories = files(allSubProjects.sourceSets.main.output)
-  executionData = files(jacocoMerge.destinationFile)
+  executionData = files(tasks.jacocoMerge.destinationFile)
 
   reports {
     html.enabled = true // human readable
