@@ -26,6 +26,7 @@ import org.ethereum.beacon.core.types.Bitfield;
 import org.ethereum.beacon.core.types.Bitfield64;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
+import org.ethereum.beacon.core.types.Millis;
 import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
@@ -146,6 +147,7 @@ public class SSZSerializableAnnotationTest {
                 ShardNumber.class,
                 SlotNumber.class,
                 Time.class,
+                Millis.class,
                 ValidatorIndex.class));
     Class[] allClasses = getClasses("org.ethereum.beacon.core");
 
