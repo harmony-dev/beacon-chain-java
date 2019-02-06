@@ -5,4 +5,8 @@ dependencies {
 
   implementation 'io.projectreactor:reactor-core'
   implementation 'com.google.guava:guava'
+
+  testImplementation 'org.mockito:mockito-core'
+
+  testImplementation project(':core').sourceSets.test.output
 }

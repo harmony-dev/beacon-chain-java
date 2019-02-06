@@ -2,6 +2,7 @@ package org.ethereum.beacon.validator.attester;
 
 import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.util.Collections;
 import java.util.List;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
@@ -82,7 +83,8 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
    * @param shard a shard.
    * @return a committee.
    */
-  private List<UInt24> getCommittee(BeaconState state, UInt64 shard) {
+  @VisibleForTesting
+  List<UInt24> getCommittee(BeaconState state, UInt64 shard) {
     if (shard.equals(chainSpec.getBeaconChainShardNumber())) {
       return specHelpers.get_shard_committees_at_slot(state, state.getSlot()).get(0).getCommittee();
     } else {
@@ -97,7 +99,8 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
    Note: This can be looked up in the state using
      get_block_root(state, head.slot - head.slot % EPOCH_LENGTH).
   */
-  private Hash32 getEpochBoundaryRoot(BeaconState state, BeaconBlock head) {
+  @VisibleForTesting
+  Hash32 getEpochBoundaryRoot(BeaconState state, BeaconBlock head) {
     UInt64 epochBoundarySlot =
         head.getSlot().minus(head.getSlot().modulo(chainSpec.getEpochLength()));
     return specHelpers.get_block_root(state, epochBoundarySlot);
@@ -107,7 +110,8 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
    Set attestation_data.latest_crosslink_root = state.latest_crosslinks[shard].shard_block_root
      where state is the beacon state at head and shard is the validator's assigned shard.
   */
-  private Hash32 getLatestCrosslinkRoot(BeaconState state, UInt64 shard) {
+  @VisibleForTesting
+  Hash32 getLatestCrosslinkRoot(BeaconState state, UInt64 shard) {
     return state.getLatestCrosslinks().get(shard.getIntValue()).getShardBlockRoot();
   }
 
@@ -117,7 +121,8 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
 
    Note: This can be looked up in the state using get_block_root(state, justified_slot).
   */
-  private Hash32 getJustifiedBlockRoot(BeaconState state, UInt64 slot) {
+  @VisibleForTesting
+  Hash32 getJustifiedBlockRoot(BeaconState state, UInt64 slot) {
     return specHelpers.get_block_root(state, slot);
   }
 

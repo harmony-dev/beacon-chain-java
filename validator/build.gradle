@@ -9,6 +9,11 @@ dependencies {
 
   implementation 'com.google.guava:guava'
   implementation 'io.projectreactor:reactor-core'
-  
+
   testImplementation 'org.mockito:mockito-core'
+
+  testImplementation project(':core').sourceSets.test.output
+  testImplementation project(':consensus').sourceSets.test.output
+  testImplementation project(':chain').sourceSets.test.output
+  testImplementation project(':pow:core').sourceSets.test.output
 }
