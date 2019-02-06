@@ -17,4 +17,6 @@ dependencies {
   }
 
   implementation 'io.projectreactor:reactor-core'
+
+  testImplementation project(':ssz')
 }
