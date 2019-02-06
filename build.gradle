@@ -51,6 +51,12 @@ allprojects {
   }
 }
 
+// Aggregates all subprojects source paths so coveralls knows where the sources are
+coveralls {
+  def subProjects = subprojects.findAll()
+  sourceDirs = subProjects.sourceSets.main.allSource.srcDirs.flatten()
+}
+
 // aggregates jacoco results from all subprojects and core project and generate a report
 task jacocoRootTestReport(type: JacocoReport) {
 
