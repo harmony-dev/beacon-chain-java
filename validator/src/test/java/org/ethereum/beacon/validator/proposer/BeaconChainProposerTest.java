@@ -94,7 +94,7 @@ public class BeaconChainProposerTest {
 
     PendingOperations pendingOperations =
         PendingOperationsTestUtil.mockPendingOperations(
-            attestations, proposerSlashings, casperSlashings, exits);
+            attestations, attestations, proposerSlashings, casperSlashings, exits);
     ObservableBeaconState initialObservedState =
         ObservableBeaconStateTestUtil.createInitialState(random, specHelpers, pendingOperations);
     BeaconState initialState = initialObservedState.getLatestSlotState();

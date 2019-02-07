@@ -20,11 +20,13 @@ public class PendingOperationsTestUtil {
         Collections.emptyList(),
         Collections.emptyList(),
         Collections.emptyList(),
+        Collections.emptyList(),
         Collections.emptyList());
   }
 
   public static PendingOperations mockPendingOperations(
       List<Attestation> attestations,
+      List<Attestation> aggregateAttestations,
       List<ProposerSlashing> proposerSlashings,
       List<CasperSlashing> casperSlashings,
       List<Exit> exits) {
@@ -32,7 +34,8 @@ public class PendingOperationsTestUtil {
     when(pendingOperations.getAttestations()).thenReturn(attestations);
     when(pendingOperations.peekProposerSlashings(anyInt())).thenReturn(proposerSlashings);
     when(pendingOperations.peekCasperSlashings(anyInt())).thenReturn(casperSlashings);
-    when(pendingOperations.peekAggregatedAttestations(anyInt(), any())).thenReturn(attestations);
+    when(pendingOperations.peekAggregatedAttestations(anyInt(), any()))
+        .thenReturn(aggregateAttestations);
     when(pendingOperations.peekExits(anyInt())).thenReturn(exits);
     return pendingOperations;
   }
