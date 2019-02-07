@@ -16,7 +16,7 @@ import org.junit.Test;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
 
-public class NextSlotTransitionTest {
+public class PerSlotTransitionTest {
 
   @Test
   public void test1() {
@@ -41,9 +41,9 @@ public class NextSlotTransitionTest {
 
     BeaconStateEx initialState =
         initialStateTransition.apply(BeaconBlocks.createGenesis(chainSpec));
-    BeaconStateEx s1State = new NextSlotTransition(chainSpec).apply(null, initialState);
-    BeaconStateEx s2State = new NextSlotTransition(chainSpec).apply(null, s1State);
-    BeaconStateEx s3State = new NextSlotTransition(chainSpec).apply(null, s2State);
+    BeaconStateEx s1State = new PerSlotTransition(chainSpec).apply(null, initialState);
+    BeaconStateEx s2State = new PerSlotTransition(chainSpec).apply(null, s1State);
+    BeaconStateEx s3State = new PerSlotTransition(chainSpec).apply(null, s2State);
 
     Assert.assertEquals(chainSpec.getGenesisSlot().plus(3), s3State.getCanonicalState().getSlot());
   }

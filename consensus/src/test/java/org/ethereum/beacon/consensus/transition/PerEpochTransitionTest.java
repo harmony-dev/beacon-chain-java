@@ -1,33 +1,21 @@
 package org.ethereum.beacon.consensus.transition;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.TestUtils;
 import org.ethereum.beacon.core.BeaconBlocks;
 import org.ethereum.beacon.core.operations.Deposit;
-import org.ethereum.beacon.core.operations.deposit.DepositData;
-import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.spec.ChainSpec;
-import org.ethereum.beacon.core.spec.SignatureDomains;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
-import org.ethereum.beacon.crypto.BLS381;
-import org.ethereum.beacon.crypto.BLS381.KeyPair;
-import org.ethereum.beacon.crypto.BLS381.Signature;
-import org.ethereum.beacon.crypto.MessageParameters.Impl;
 import org.ethereum.beacon.pow.DepositContract.ChainStart;
-import org.junit.Assert;
 import org.junit.Test;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.bytes.Bytes48;
-import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.uint.UInt64;
 
-public class EpochTransitionTest {
+public class PerEpochTransitionTest {
 
   @Test
   public void test1() {
@@ -55,10 +43,10 @@ public class EpochTransitionTest {
 
     states[0] = initialStateTransition.apply(BeaconBlocks.createGenesis(chainSpec));
     for (int i = 1; i < 9; i++) {
-      states[i] = new NextSlotTransition(chainSpec).apply(null, states[i - 1]);
+      states[i] = new PerSlotTransition(chainSpec).apply(null, states[i - 1]);
     }
-    EpochTransition epochTransition = new EpochTransition(specHelpers);
-    BeaconStateEx epochState = epochTransition.apply(null, states[8]);
+    PerEpochTransition perEpochTransition = new PerEpochTransition(specHelpers);
+    BeaconStateEx epochState = perEpochTransition.apply(null, states[8]);
 
     System.out.println(epochState);
   }

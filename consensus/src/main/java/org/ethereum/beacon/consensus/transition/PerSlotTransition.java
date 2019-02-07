@@ -7,10 +7,10 @@ import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.types.SlotNumber;
 
-public class NextSlotTransition implements StateTransition<BeaconStateEx> {
+public class PerSlotTransition implements StateTransition<BeaconStateEx> {
   private final ChainSpec spec;
 
-  public NextSlotTransition(ChainSpec spec) {
+  public PerSlotTransition(ChainSpec spec) {
     this.spec = spec;
   }
 

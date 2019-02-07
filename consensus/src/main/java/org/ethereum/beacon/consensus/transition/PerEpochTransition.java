@@ -28,12 +28,12 @@ import org.javatuples.Pair;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
 
-public class EpochTransition implements StateTransition<BeaconStateEx> {
+public class PerEpochTransition implements StateTransition<BeaconStateEx> {
 
   private final ChainSpec specConst;
   private final SpecHelpers spec;
 
-  public EpochTransition(SpecHelpers specHelpers) {
+  public PerEpochTransition(SpecHelpers specHelpers) {
     this.spec = specHelpers;
     this.specConst = specHelpers.getChainSpec();
   }

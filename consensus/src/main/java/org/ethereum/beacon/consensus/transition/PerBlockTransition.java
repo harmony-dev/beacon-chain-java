@@ -20,11 +20,11 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32s;
 import tech.pegasys.artemis.util.uint.UInt64;
 
-public class BlockTransition implements StateTransition<BeaconStateEx> {
+public class PerBlockTransition implements StateTransition<BeaconStateEx> {
   private final ChainSpec spec;
   private final SpecHelpers specHelpers;
 
-  public BlockTransition(SpecHelpers specHelpers) {
+  public PerBlockTransition(SpecHelpers specHelpers) {
     this.specHelpers = specHelpers;
     this.spec = specHelpers.getChainSpec();
   }
