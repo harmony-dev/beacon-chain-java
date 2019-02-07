@@ -229,51 +229,41 @@ public class EpochTransition implements StateTransition<BeaconStateEx> {
     // For every slot in range(get_epoch_start_slot(previous_epoch), get_epoch_start_slot(next_epoch)),
     // let crosslink_committees_at_slot = get_crosslink_committees_at_slot(state, slot).
     // For every (crosslink_committee, shard) in crosslink_committees_at_slot, compute:
-
-    // For every slot in range(state.slot - 2 * EPOCH_LENGTH, state.slot),
-    // let shard_committee_at_slot = get_shard_committees_at_slot(slot).
-    // For every (shard_committee, shard) in shard_committee_at_slot, compute:
     for (SlotNumber slot : spec.get_epoch_start_slot(previous_epoch)
                 .iterateTo(spec.get_epoch_start_slot(next_epoch))) {
-      List<ShardCommittee> shard_committees_at_slot = spec
-          .get_shard_committees_at_slot(state, slot);
-      spec.get_crosslink_committees_at_slot()
-      for (ShardCommittee s : shard_committees_at_slot) {
-        List<ValidatorIndex> shard_committee = s.getCommittee();
+      for (ShardCommittee s : spec.get_crosslink_committees_at_slot(state, slot)) {
+        List<ValidatorIndex> crosslink_committee = s.getCommittee();
         ShardNumber shard = s.getShard();
 
         // Let shard_block_root be state.latest_crosslinks[shard].shard_block_root
         Hash32 shard_block_root = state.getLatestCrosslinks().get(shard).getShardBlockRoot();
-
-        // Let attesting_validator_indices(shard_committee, shard_block_root)
+        // Let attesting_validator_indices(crosslink_committee, shard_block_root)
         // be the union of the validator index sets given by
-        // [get_attestation_participants(state, a.data, a.participation_bitfield)
+        // [get_attestation_participants(state, a.data, a.aggregation_bitfield)
         //    for a in current_epoch_attestations + previous_epoch_attestations
-        //    if a.shard == shard and a.shard_block_root == shard_block_root]
-        // FIXME a.shard => a.data.shard
+        //    if a.data.shard == shard and a.data.shard_block_root == shard_block_root].
         Set<ValidatorIndex> attesting_validator_indices_tmp = Stream
             .concat(current_epoch_attestations.stream(), previous_epoch_attestations.stream())
             .filter(a -> a.getData().getShard().equals(shard)
                 && a.getData().getShardBlockRoot().equals(shard_block_root))
             .flatMap(a -> spec.get_attestation_participants(
-                state, a.getData(), a.getParticipationBitfield()).stream())
+                state, a.getData(), a.getAggregationBitfield()).stream())
             .collect(Collectors.toSet());
 
         attesting_validator_indices.put(
-            Pair.with(shard_committee, shard_block_root),
+            Pair.with(crosslink_committee, shard_block_root),
             attesting_validator_indices_tmp);
 
-        // Let winning_root(shard_committee) be equal to the value of shard_block_root
+        // Let winning_root(crosslink_committee) be equal to the value of shard_block_root
         // such that sum([get_effective_balance(state, i)
-        // for i in attesting_validator_indices(shard_committee, shard_block_root)])
+        // for i in attesting_validator_indices(crosslink_committee, shard_block_root)])
         // is maximized (ties broken by favoring lower shard_block_root values).
-
         // TODO not sure this is correct implementation
         Gwei sum = attesting_validator_indices_tmp.stream()
             .map(i -> spec.get_effective_balance(state, i))
             .reduce(Gwei::plus)
             .orElse(Gwei.ZERO);
-        winning_root_tmp.compute(shard_committee, (k, v) ->
+        winning_root_tmp.compute(crosslink_committee, (k, v) ->
             v == null || sum.compareTo(v.getValue0()) > 0 ?
                 Pair.with(sum, shard_block_root) : v
         );
@@ -283,25 +273,24 @@ public class EpochTransition implements StateTransition<BeaconStateEx> {
         .map(e -> new AbstractMap.SimpleEntry<>(e.getKey(), e.getValue().getValue1()))
         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-    // Let attesting_validators(shard_committee) be equal to
-    // attesting_validator_indices(shard_committee, winning_root(shard_committee)) for convenience.
-    Function<List<ValidatorIndex>, Set<ValidatorIndex>> attesting_validators = shard_committee ->
+    // Let attesting_validators(crosslink_committee) be equal to
+    // attesting_validator_indices(crosslink_committee, winning_root(crosslink_committee)) for convenience.
+    Function<List<ValidatorIndex>, Set<ValidatorIndex>> attesting_validators = crosslink_committee ->
         attesting_validator_indices.get(
-            Pair.with(shard_committee, winning_root.get(shard_committee)));
+            Pair.with(crosslink_committee, winning_root.get(crosslink_committee)));
 
-    // Let total_attesting_balance(shard_committee) =
-    // sum([get_effective_balance(state, i) for i in attesting_validators(shard_committee)])
-    Function<List<ValidatorIndex>, Gwei> total_attesting_balance = shard_committee ->
-        attesting_validators.apply(shard_committee).stream()
+    // Let total_attesting_balance(crosslink_committee) =
+    // sum([get_effective_balance(state, i) for i in attesting_validators(crosslink_committee)]).
+    Function<List<ValidatorIndex>, Gwei> total_attesting_balance = crosslink_committee ->
+        attesting_validators.apply(crosslink_committee).stream()
             .map(i -> spec.get_effective_balance(state, i))
             .reduce(Gwei::plus)
             .orElse(Gwei.ZERO);
 
-    // Let total_balance(shard_committee) = sum([get_effective_balance(state, i)
-    //    for i in shard_committee]).
-    // FIXME total_balance name conflict
-    Function<List<ValidatorIndex>, Gwei> total_balance_func = shard_committee ->
-        shard_committee.stream()
+    // Let total_balance(crosslink_committee) = sum([get_effective_balance(state, i)
+    //    for i in crosslink_committee]).
+    Function<List<ValidatorIndex>, Gwei> total_balance = crosslink_committee ->
+        crosslink_committee.stream()
             .map(i -> spec.get_effective_balance(state, i))
             .reduce(Gwei::plus)
             .orElse(Gwei.ZERO);
@@ -311,133 +300,158 @@ public class EpochTransition implements StateTransition<BeaconStateEx> {
 
     // For every attestation a in previous_epoch_attestations:
     //    Let inclusion_slot(state, index) = a.slot_included for the attestation a
-    //      where index is in get_attestation_participants(state, a.data, a.participation_bitfield).
+    //      where index is in get_attestation_participants(state, a.data, a.aggregation_bitfield).
+    //    If multiple attestations are applicable,
+    //      the attestation with lowest inclusion_slot is considered.
     //    Let inclusion_distance(state, index) = a.slot_included - a.data.slot
-    //      where a is the above attestation. FIXME fuzzy spec
+    //      where a is the above attestation.
     Map<ValidatorIndex, SlotNumber> inclusion_slot = new HashMap<>();
     Map<ValidatorIndex, SlotNumber> inclusion_distance = new HashMap<>();
     for (PendingAttestationRecord a : previous_epoch_attestations) {
       List<ValidatorIndex> attestation_participants = spec
-          .get_attestation_participants(state, a.getData(), a.getParticipationBitfield());
+          .get_attestation_participants(state, a.getData(), a.getAggregationBitfield());
       for (ValidatorIndex participant : attestation_participants) {
-        inclusion_slot.put(participant, a.getInclusionSlot());
-        inclusion_distance.put(participant, a.getInclusionSlot().minus(a.getData().getSlot()));
+        if (inclusion_slot.get(participant) == null ||
+            inclusion_slot.get(participant).greater(a.getInclusionSlot())) {
+          inclusion_slot.put(participant, a.getInclusionSlot());
+          inclusion_distance.put(participant, a.getInclusionSlot().minus(a.getData().getSlot()));
+        }
       }
     }
 
     /*
      Eth1 data
 
-     Set state.latest_eth1_data = eth1_data_vote.data if eth1_data_vote.vote_count * 2 >
-     ETH1_DATA_VOTING_PERIOD for some eth1_data_vote in state.eth1_data_votes.
-     Set state.eth1_data_votes = [].
+     If next_epoch % ETH1_DATA_VOTING_PERIOD == 0:
+
+      If eth1_data_vote.vote_count * 2 >
+      ETH1_DATA_VOTING_PERIOD * EPOCH_LENGTH for some eth1_data_vote in state.eth1_data_votes
+      (ie. more than half the votes in this voting period were for that value),
+      set state.latest_eth1_data = eth1_data_vote.eth1_data.
+      Set state.eth1_data_votes = [].
     */
-    for (Eth1DataVote eth1_data_vote : state.getEth1DataVotes()) {
-      if (eth1_data_vote.getVoteCount().times(2)
-          .compareTo(specConst.getEth1DataVotingPeriod()) > 0) {
-        state.setLatestEth1Data(eth1_data_vote.getEth1Data());
-        break;
+    if (next_epoch.modulo(specConst.getEth1DataVotingPeriod()).equals(EpochNumber.ZERO)) {
+      for (Eth1DataVote eth1_data_vote : state.getEth1DataVotes()) {
+        if (SlotNumber.castFrom(eth1_data_vote.getVoteCount().times(2))
+            .greater(specConst.getEth1DataVotingPeriod().mul(specConst.getEpochLength()))) {
+          state.setLatestEth1Data(eth1_data_vote.getEth1Data());
+          break;
+        }
       }
+      state.getEth1DataVotes().clear();
     }
-    state.getEth1DataVotes().clear();
 
     /*
      Justification
     */
 
-    // Set state.previous_justified_slot = state.justified_slot.
-    state.setPreviousJustifiedSlot(state.getJustifiedSlot());
+    // First, update the justification bitfield:
 
-    // Set state.justification_bitfield = (state.justification_bitfield * 2) % 2**64.
+    // Let new_justified_epoch = state.justified_epoch.
+    EpochNumber new_justified_epoch = state.getJustifiedEpoch();
+
+    // Set state.justification_bitfield = state.justification_bitfield << 1.
     state.setJustificationBitfield(state.getJustificationBitfield().shl(1));
 
-    // Set state.justification_bitfield |= 2 and
-    //    state.justified_slot = state.slot - 2 * EPOCH_LENGTH
-    // if 3 * previous_epoch_boundary_attesting_balance >= 2 * total_balance.
+    // Set state.justification_bitfield |= 2 and new_justified_epoch = previous_epoch
+    //    if 3 * previous_epoch_boundary_attesting_balance >= 2 * previous_total_balance.
     if (previous_epoch_boundary_attesting_balance.times(3).greaterEqual(
-            total_balance.times(2))) {
+            previous_total_balance.times(2))) {
       state.setJustificationBitfield(state.getJustificationBitfield().or(2));
-      state.setJustifiedSlot(state.getSlot().minus(specConst.getEpochLength().times(2)));
+      new_justified_epoch = previous_epoch;
     }
+
+    // Set state.justification_bitfield |= 1 and new_justified_epoch = current_epoch
+    //    if 3 * current_epoch_boundary_attesting_balance >= 2 * current_total_balance.
 
     // Set state.justification_bitfield |= 1 and
     //    state.justified_slot = state.slot - 1 * EPOCH_LENGTH
     // if 3 * current_epoch_boundary_attesting_balance >= 2 * total_balance.
     if (current_epoch_boundary_attesting_balance.times(3).greaterEqual(
-            total_balance.times(2))) {
+            current_total_balance.times(2))) {
       state.setJustificationBitfield(state.getJustificationBitfield().or(1));
-      state.setJustifiedSlot(state.getSlot().minus(specConst.getEpochLength().times(1)));
+      new_justified_epoch = current_epoch;
     }
 
-    // Set state.finalized_slot = state.previous_justified_slot if any of the following are true:
-    // state.previous_justified_slot == state.slot - 2 * EPOCH_LENGTH
-    //     and state.justification_bitfield % 4 == 3
-    // state.previous_justified_slot == state.slot - 3 * EPOCH_LENGTH
-    //     and state.justification_bitfield % 8 == 7
-    // state.previous_justified_slot == state.slot - 4 * EPOCH_LENGTH
-    //     and state.justification_bitfield % 16 in (15, 14)
-    if (state.getPreviousJustifiedSlot()
-        .equals(state.getSlot().minus(specConst.getEpochLength().times(2)))
-        && state.getJustificationBitfield().modulo(4).getValue() == 3
-        || state.getPreviousJustifiedSlot()
-        .equals(state.getSlot().minus(specConst.getEpochLength().times(3)))
-        && state.getJustificationBitfield().modulo(8).getValue() == 7
-        || state.getPreviousJustifiedSlot()
-        .equals(state.getSlot().minus(specConst.getEpochLength().times(4)))
-        && (state.getJustificationBitfield().modulo(16).getValue() == 15
-        || state.getJustificationBitfield().modulo(16).getValue() == 14)) {
-      state.setFinalizedSlot(state.getPreviousJustifiedSlot());
+    // Next, update last finalized epoch if possible:
+
+    // Set state.finalized_epoch = state.previous_justified_epoch
+    //    if (state.justification_bitfield >> 1) % 8 == 0b111 and
+    //        state.previous_justified_epoch == previous_epoch - 2.
+    if (state.getJustificationBitfield().shr(1).modulo(8).equals(UInt64.valueOf(0b111))
+        && state.getPreviousJustifiedEpoch().equals(previous_epoch.minus(2))) {
+      state.setFinalizedEpoch(state.getPreviousJustifiedEpoch());
+    }
+    // Set state.finalized_epoch = state.previous_justified_epoch
+    //    if (state.justification_bitfield >> 1) % 4 == 0b11 and
+    //        state.previous_justified_epoch == previous_epoch - 1.
+    if (state.getJustificationBitfield().shr(1).modulo(4).equals(UInt64.valueOf(0b11))
+        && state.getPreviousJustifiedEpoch().equals(previous_epoch.minus(1))) {
+      state.setFinalizedEpoch(state.getPreviousJustifiedEpoch());
+    }
+    // Set state.finalized_epoch = state.justified_epoch
+    //    if (state.justification_bitfield >> 0) % 8 == 0b111 and
+    //        state.justified_epoch == previous_epoch - 1.
+    if (state.getJustificationBitfield().shr(0).modulo(8).equals(UInt64.valueOf(0b111))
+        && state.getJustifiedEpoch().equals(previous_epoch.minus(1))) {
+      state.setFinalizedEpoch(state.getJustifiedEpoch());
+    }
+    // Set state.finalized_epoch = state.justified_epoch
+    //    if (state.justification_bitfield >> 0) % 4 == 0b11 and
+    //        state.justified_epoch == previous_epoch.
+    if (state.getJustificationBitfield().shr(0).modulo(4).equals(UInt64.valueOf(0b11))
+        && state.getJustifiedEpoch().equals(previous_epoch)) {
+      state.setFinalizedEpoch(state.getJustifiedEpoch());
+    }
+
+    // Finally, update the following:
+    // Set state.previous_justified_epoch = state.justified_epoch.
+    state.setPreviousJustifiedEpoch(state.getJustifiedEpoch());
+    // Set state.justified_epoch = new_justified_epoch.
+    state.setJustifiedEpoch(new_justified_epoch);
+
+    // Crosslinks
+
+    /*
+    For every slot in range(get_epoch_start_slot(previous_epoch), get_epoch_start_slot(next_epoch)),
+    let crosslink_committees_at_slot = get_crosslink_committees_at_slot(state, slot).
+       For every (crosslink_committee, shard) in crosslink_committees_at_slot, compute:
+           Set state.latest_crosslinks[shard] = Crosslink(
+               epoch=current_epoch,
+               shard_block_root=winning_root(crosslink_committee))
+           if 3 * total_attesting_balance(crosslink_committee) >= 2 * total_balance(crosslink_committee).
+    */
+    for (SlotNumber slot : spec.get_epoch_start_slot(previous_epoch)
+            .iterateTo(spec.get_epoch_start_slot(next_epoch))) {
+      List<ShardCommittee> crosslink_committees_at_slot = spec
+          .get_crosslink_committees_at_slot(state, slot);
+      for (ShardCommittee committee : crosslink_committees_at_slot) {
+        List<ValidatorIndex> crosslink_committee = committee.getCommittee();
+        ShardNumber shard = committee.getShard();
+        if (total_attesting_balance.apply(crosslink_committee).times(3).greaterEqual(
+            total_balance.apply(crosslink_committee).times(2))) {
+          state.getLatestCrosslinks().set(shard,
+              new CrosslinkRecord(current_epoch, winning_root.get(crosslink_committee)));
+        }
+      }
     }
 
     /*
-     For every slot in range(state.slot - 2 * EPOCH_LENGTH, state.slot),
-     let shard_committee_at_slot = get_shard_committees_at_slot(slot).
-     For every (shard_committee, shard) in shard_committee_at_slot, compute:
+    Rewards and penalties
 
-       Set state.latest_crosslinks[shard] = CrosslinkRecord(
-           slot=state.slot,
-           shard_block_root=winning_root(shard_committee))
-       if 3 * total_attesting_balance(shard_committee) >= 2 * total_balance(shard_committee).
+    First, we define some additional helpers:
     */
-
-    /*
-     For every slot in range(get_epoch_start_slot(previous_epoch), get_epoch_start_slot(next_epoch)),
-     let crosslink_committees_at_slot = get_crosslink_committees_at_slot(state, slot).
-     For every (crosslink_committee, shard) in crosslink_committees_at_slot, compute:
-
-         Set state.latest_crosslinks[shard] = Crosslink(
-           epoch=current_epoch,
-           shard_block_root=winning_root(crosslink_committee))
-         if 3 * total_attesting_balance(crosslink_committee) >=
-               2 * total_balance(crosslink_committee).
-
-    */
-
-    specConst.getEpochLength().times(2).streamFromZero()
-        .map(i -> state.getSlot().minus(specConst.getEpochLength().times(2)).plus(i))
-        .flatMap(slot -> spec.get_shard_committees_at_slot(state, slot).stream())
-        .filter(shardCom ->
-          total_attesting_balance.apply(shardCom.getCommittee()).times(3)
-              .greaterEqual(total_balance_func.apply(shardCom.getCommittee()).times(3)))
-        .forEachOrdered(shardCommittee -> {
-          state.getLatestCrosslinks().set(shardCommittee.getShard(),
-              new CrosslinkRecord(
-                  state.getSlot(),
-                  winning_root.get(shardCommittee.getCommittee())));
-        });
-
-    /*
-     Rewards and penalties
-     First, we define some additional helpers:
-     */
 
     //     Let base_reward_quotient = BASE_REWARD_QUOTIENT *
     //        integer_squareroot(total_balance // GWEI_PER_ETH)
-    Gwei base_reward_quotient = Gwei.castFrom(specConst.getBaseRewardQuotient()
-        .times(spec.integer_squareroot(total_balance)));
+    // Let base_reward_quotient =
+    //    integer_squareroot(previous_total_balance) // BASE_REWARD_QUOTIENT.
+    Gwei base_reward_quotient = Gwei.castFrom(
+            spec.integer_squareroot(previous_total_balance)
+                .dividedBy(specConst.getBaseRewardQuotient()));
 
     // Let base_reward(state, index) = get_effective_balance(state, index) //
-    //    base_reward_quotient // 5 for any validator with the given index.
+    //    base_reward_quotient // 5 for any validator with the given index
     Function<ValidatorIndex, Gwei> base_reward = index ->
         spec.get_effective_balance(state, index)
             .dividedBy(base_reward_quotient)
@@ -445,8 +459,7 @@ public class EpochTransition implements StateTransition<BeaconStateEx> {
 
     // Let inactivity_penalty(state, index, epochs_since_finality) = base_reward(state, index) +
     // get_effective_balance(state, index) * epochs_since_finality //
-    // INACTIVITY_PENALTY_QUOTIENT // 2 for any validator with the given index.
-
+    // INACTIVITY_PENALTY_QUOTIENT // 2 for any validator with the given index
     BiFunction<ValidatorIndex, EpochNumber, Gwei> inactivity_penalty =
         (index, epochs_since_finality) ->
         base_reward.apply(index).plus(
@@ -459,10 +472,11 @@ public class EpochTransition implements StateTransition<BeaconStateEx> {
      Justification and finalization
     */
 
-    //    Let epochs_since_finality = (state.slot - state.finalized_slot) // EPOCH_LENGTH.
-    EpochNumber epochs_since_finality = state.getSlot()
-        .minus(state.getFinalizedSlot())
-        .dividedBy(specConst.getEpochLength());
+    // Note: When applying penalties in the following balance recalculations
+    // implementers should make sure the uint64 does not underflow.
+
+    // Let epochs_since_finality = next_epoch - state.finalized_epoch.
+    EpochNumber epochs_since_finality = next_epoch.minus(state.getFinalizedEpoch());
 
     if (epochs_since_finality.lessEqual(EpochNumber.of(4))) {
       // Case 1: epochs_since_finality <= 4:
@@ -470,17 +484,17 @@ public class EpochTransition implements StateTransition<BeaconStateEx> {
       //  Expected FFG source:
 
       //  Any validator index in previous_epoch_justified_attester_indices gains
-      //    base_reward(state, index) * previous_epoch_justified_attesting_balance // total_balance.
+      //    base_reward(state, index) * previous_epoch_justified_attesting_balance // previous_total_balance.
       for (ValidatorIndex index : previous_epoch_justified_attester_indices) {
         state.getValidatorBalances().update(index, balance ->
             balance.plus(base_reward.apply(index)
                     .times(previous_epoch_justified_attesting_balance)
-                    .dividedBy(total_balance)));
+                    .dividedBy(previous_total_balance)));
       }
-      //  Any active validator v not in previous_epoch_justified_attester_indices loses
+      //  Any active validator index not in previous_epoch_justified_attester_indices loses
       //    base_reward(state, index).
       //  FIXME 'active validator' - not exact meaning
-      for (ValidatorIndex index : active_validator_indices) {
+      for (ValidatorIndex index : current_active_validator_indices) {
         if (!previous_epoch_justified_attester_indices.contains(index)) {
           state.getValidatorBalances().update(index, balance ->
               balance.minus(base_reward.apply(index)));
@@ -490,17 +504,18 @@ public class EpochTransition implements StateTransition<BeaconStateEx> {
       //  Expected FFG target:
 
       //  Any validator index in previous_epoch_boundary_attester_indices gains
-      //    base_reward(state, index) * previous_epoch_boundary_attesting_balance // total_balance.
+      //    base_reward(state, index) * previous_epoch_boundary_attesting_balance // previous_total_balance.
       for (ValidatorIndex index : previous_epoch_boundary_attester_indices) {
         state.getValidatorBalances().update(index, balance ->
             balance
                 .plus(base_reward.apply(index)
                     .times(previous_epoch_boundary_attesting_balance)
-                    .dividedBy(total_balance)));
+                    .dividedBy(previous_total_balance)));
       }
       //  Any active validator index not in previous_epoch_boundary_attester_indices loses
       //    base_reward(state, index).
-      for (ValidatorIndex index : active_validator_indices) {
+      //  FIXME 'active validator' - not exact meaning
+      for (ValidatorIndex index : current_active_validator_indices) {
         if (!previous_epoch_boundary_attester_indices.contains(index)) {
           state.getValidatorBalances().update(index, balance ->
               balance.minus(base_reward.apply(index)));
@@ -510,16 +525,16 @@ public class EpochTransition implements StateTransition<BeaconStateEx> {
       //  Expected beacon chain head:
 
       //  Any validator index in previous_epoch_head_attester_indices gains
-      //    base_reward(state, index) * previous_epoch_head_attesting_balance // total_balance).
+      //    base_reward(state, index) * previous_epoch_head_attesting_balance // previous_total_balance).
       for (ValidatorIndex index : previous_epoch_head_attester_indices) {
         state.getValidatorBalances().update(index, balance ->
             balance.plus(base_reward.apply(index)
                     .times(previous_epoch_head_attesting_balance)
-                    .dividedBy(total_balance)));
+                    .dividedBy(previous_total_balance)));
       }
       //  Any active validator index not in previous_epoch_head_attester_indices loses
       //    base_reward(state, index).
-      for (ValidatorIndex index : active_validator_indices) {
+      for (ValidatorIndex index : current_active_validator_indices) {
         if (!previous_epoch_head_attester_indices.contains(index)) {
           state.getValidatorBalances().update(index, balance ->
               balance.minus(base_reward.apply(index)));
@@ -542,7 +557,7 @@ public class EpochTransition implements StateTransition<BeaconStateEx> {
 
       //  Any active validator index not in previous_epoch_justified_attester_indices, loses
       //      inactivity_penalty(state, index, epochs_since_finality).
-      for (ValidatorIndex index : active_validator_indices) {
+      for (ValidatorIndex index : current_active_validator_indices) {
         if (!previous_epoch_justified_attester_indices.contains(index)) {
           state.getValidatorBalances().update(index, balance ->
               balance.minus(inactivity_penalty.apply(index, epochs_since_finality)));
@@ -550,7 +565,7 @@ public class EpochTransition implements StateTransition<BeaconStateEx> {
       }
       //  Any active validator index not in previous_epoch_boundary_attester_indices, loses
       //      inactivity_penalty(state, index, epochs_since_finality).
-      for (ValidatorIndex index : active_validator_indices) {
+      for (ValidatorIndex index : current_active_validator_indices) {
         if (!previous_epoch_boundary_attester_indices.contains(index)) {
           state.getValidatorBalances().update(index, balance ->
               balance.minus(inactivity_penalty.apply(index, epochs_since_finality)));
@@ -558,17 +573,17 @@ public class EpochTransition implements StateTransition<BeaconStateEx> {
       }
       //  Any active validator index not in previous_epoch_head_attester_indices, loses
       //      base_reward(state, index).
-      for (ValidatorIndex index : active_validator_indices) {
+      for (ValidatorIndex index : current_active_validator_indices) {
         if (!previous_epoch_head_attester_indices.contains(index)) {
           state.getValidatorBalances().update(index, balance ->
               balance.minus(base_reward.apply(index)));
         }
       }
-      //  Any active_validator index with validator.penalized_slot <= state.slot, loses
+      //  Any active_validator index with validator.penalized_epoch <= current_epoch, loses
       //      2 * inactivity_penalty(state, index, epochs_since_finality) + base_reward(state, index).
-      for (ValidatorIndex index : active_validator_indices) {
+      for (ValidatorIndex index : current_active_validator_indices) {
         ValidatorRecord validator = state.getValidatorRegistry().get(index);
-        if (validator.getPenalizedSlot().compareTo(state.getSlot()) <= 0) {
+        if (validator.getPenalizedEpoch().lessEqual(current_epoch)) {
           state.getValidatorBalances().update(index, balance ->
               balance.minus(
                   inactivity_penalty.apply(index, epochs_since_finality))
@@ -598,7 +613,7 @@ public class EpochTransition implements StateTransition<BeaconStateEx> {
     // For each index in previous_epoch_attester_indices, we determine the proposer
     //    proposer_index = get_beacon_proposer_index(state, inclusion_slot(state, index))
     //    and set state.validator_balances[proposer_index] +=
-    //    base_reward(state, index) // INCLUDER_REWARD_QUOTIENT
+    //      base_reward(state, index) // INCLUDER_REWARD_QUOTIENT.
     for (ValidatorIndex index : previous_epoch_attester_indices) {
       ValidatorIndex proposer_index = spec
           .get_beacon_proposer_index(state, inclusion_slot.get(index));
@@ -609,29 +624,23 @@ public class EpochTransition implements StateTransition<BeaconStateEx> {
     }
 
     /*
-     Crosslinks
+    Crosslinks
 
-     For every i in range(state.slot - 2 * EPOCH_LENGTH, state.slot - EPOCH_LENGTH),
-        let shard_committee_at_slot, start_shard = get_shard_committees_at_slot(i).
-     For every j in range(len(shard_committee_at_slot)),
-        let shard_committee = shard_committee_at_slot[j],
-        shard = (start_shard + j) % SHARD_COUNT, and compute:
-        // FIXME shard is not used; weird start_shard type
-
-          If index in attesting_validators(shard_committee),
-              state.validator_balances[index] += base_reward(state, index) *
-                  total_attesting_balance(shard_committee) // total_balance(shard_committee)).
-          If index not in attesting_validators(shard_committee),
-              state.validator_balances[index] -= base_reward(state, index).
-     */
-    for (SlotNumber i : state.getSlot().minus(specConst.getEpochLength().times(2)).
-            iterateTo(state.getSlot().minus(specConst.getEpochLength()))) {
-      List<ShardCommittee> shard_committees_at_slot = spec
-          .get_shard_committees_at_slot(state, i);
-      for (int j = 0; j < shard_committees_at_slot.size(); j++) {
-        List<ValidatorIndex> shard_committee = shard_committees_at_slot.get(j).getCommittee();
-        Set<ValidatorIndex> attesting_validator_set = attesting_validators.apply(shard_committee);
-        for (ValidatorIndex index : shard_committee) {
+    For every slot in range(get_epoch_start_slot(previous_epoch), get_epoch_start_slot(current_epoch)):
+       Let crosslink_committees_at_slot = get_crosslink_committees_at_slot(state, slot).
+       For every (crosslink_committee, shard) in crosslink_committees_at_slot:
+           If index in attesting_validators(crosslink_committee),
+               state.validator_balances[index] += base_reward(state, index) *
+                   total_attesting_balance(crosslink_committee) // total_balance(crosslink_committee)).
+           If index not in attesting_validators(crosslink_committee),
+               state.validator_balances[index] -= base_reward(state, index).
+    */
+    for (SlotNumber slot: spec.get_epoch_start_slot(previous_epoch)
+            .iterateTo(spec.get_epoch_start_slot(current_epoch))) {
+      for (ShardCommittee committee : spec.get_crosslink_committees_at_slot(state, slot)) {
+        List<ValidatorIndex> crosslink_committee = committee.getCommittee();
+        Set<ValidatorIndex> attesting_validator_set = attesting_validators.apply(crosslink_committee);
+        for (ValidatorIndex index : crosslink_committee) {
           if (attesting_validator_set.contains(index)) {
             state.getValidatorBalances().update(index, vb -> vb.plus(base_reward.apply(index)));
           } else {
@@ -651,38 +660,48 @@ public class EpochTransition implements StateTransition<BeaconStateEx> {
       Iterate through the validator registry
       and eject active validators with balance below ``EJECTION_BALANCE``.
       """
-      for index in get_active_validator_indices(state.validator_registry, state.slot):
+      for index in get_active_validator_indices(state.validator_registry, current_epoch(state)):
           if state.validator_balances[index] < EJECTION_BALANCE:
               exit_validator(state, index)
      */
 
     for (ValidatorIndex index : spec.get_active_validator_indices(
-            state.getValidatorRegistry(), state.getSlot())) {
+            state.getValidatorRegistry(), current_epoch)) {
       if (state.getValidatorBalances().get(index).less(specConst.getEjectionBalance())) {
         spec.exit_validator(state, index);
       }
     }
 
     /*
-          Validator registry
+          Validator registry and shuffling seed data
     */
 
-    //    If the following are satisfied:
-    //        state.finalized_slot > state.validator_registry_update_slot and
-    //        state.latest_crosslinks[shard].slot > state.validator_registry_update_slot
-    //            for every shard number shard in
-    //            [(state.current_epoch_start_shard + i) % SHARD_COUNT
-    //                for i in range(get_current_epoch_committee_count_per_slot(state) * EPOCH_LENGTH)]
-    //     (that is, for every shard in the current committees)
-    boolean updateRegistry = state.getFinalizedSlot()
-        .compareTo(state.getValidatorRegistryLatestChangeSlot()) > 0;
+    // First, update the following:
 
-    SlotNumber range = specConst.getEpochLength()
-        .times(spec.get_current_epoch_committee_count_per_slot(state));
-    for (SlotNumber i : SlotNumber.of(0).iterateTo(range)) {
+    // Set state.previous_calculation_epoch = state.current_calculation_epoch.
+    state.setPreviousCalculationEpoch(state.getCurrentCalculationEpoch());
+    // Set state.previous_epoch_start_shard = state.current_epoch_start_shard.
+    state.setPreviousEpochStartShard(state.getCurrentEpochStartShard());
+    // Set state.previous_epoch_seed = state.current_epoch_seed.
+    state.setPreviousEpochSeed(state.getPreviousEpochSeed());
+
+    /*
+      If the following are satisfied:
+         state.finalized_epoch > state.validator_registry_update_epoch
+         state.latest_crosslinks[shard].epoch > state.validator_registry_update_epoch
+             for every shard number shard in
+             [(state.current_epoch_start_shard + i) % SHARD_COUNT
+                 for i in range(get_current_epoch_committee_count(state))]
+                 (that is, for every shard in the current committees)
+
+    */
+    boolean updateRegistry =
+        state.getFinalizedEpoch().greater(state.getValidatorRegistryUpdateEpoch());
+
+    for (int i = 0; i < spec.get_current_epoch_committee_count(state); i++) {
       ShardNumber shard = state.getCurrentEpochStartShard().plusModulo(i, specConst.getShardCount());
-      if (state.getLatestCrosslinks().get(shard).getSlot().lessEqual(
-          state.getValidatorRegistryLatestChangeSlot())) {
+      if (!state.getLatestCrosslinks().get(shard).getEpoch().greater(
+          state.getValidatorRegistryUpdateEpoch())) {
         updateRegistry = false;
         break;
       }
@@ -691,49 +710,30 @@ public class EpochTransition implements StateTransition<BeaconStateEx> {
     if (updateRegistry) {
       //    update the validator registry and associated fields by running
       spec.update_validator_registry(state);
-      //      Set state.previous_epoch_calculation_slot = state.current_epoch_calculation_slot
-      state.setPreviousEpochCalculationSlot(state.getCurrentEpochCalculationSlot());
-      //      Set state.previous_epoch_start_shard = state.current_epoch_start_shard
-      state.setPreviousEpochStartShard(state.getCurrentEpochStartShard());
-      //      Set state.previous_epoch_randao_mix = state.current_epoch_randao_mix
-      state.setPreviousEpochRandaoMix(state.getCurrentEpochRandaoMix());
-      //      Set state.current_epoch_calculation_slot = state.slot
-      state.setCurrentEpochCalculationSlot(state.getSlot());
-      //      Set state.current_epoch_start_shard = (state.current_epoch_start_shard +
-      //          get_current_epoch_committee_count_per_slot(state) * EPOCH_LENGTH) % SHARD_COUNT
-      state.setCurrentEpochStartShard(state.getCurrentEpochStartShard()
-          .plusModulo(
-              specConst.getEpochLength().times(spec.get_current_epoch_committee_count_per_slot(state)),
-              specConst.getShardCount()));
-      //      Set state.current_epoch_randao_mix =
-      //        get_randao_mix(state, state.current_epoch_calculation_slot - SEED_LOOKAHEAD)
-      state.setCurrentEpochRandaoMix(spec.get_randao_mix(state,
-          state.getCurrentEpochCalculationSlot().minus(specConst.getSeedLookahead())));
+      // Set state.current_calculation_epoch = next_epoch
+      state.setCurrentCalculationEpoch(next_epoch);
+      // Set state.current_epoch_start_shard = (state.current_epoch_start_shard +
+      //    get_current_epoch_committee_count(state)) % SHARD_COUNT
+      state.setCurrentEpochStartShard(state.getCurrentEpochStartShard().plusModulo(
+          spec.get_current_epoch_committee_count(state), specConst.getShardCount()));
+      // Set state.current_epoch_seed = generate_seed(state, state.current_calculation_epoch)
+      state.setCurrentEpochSeed(spec.generate_seed(state, state.getCurrentCalculationEpoch()));
+
     } else {
       //    If a validator registry update does not happen do the following:
 
-      //    Set state.previous_epoch_calculation_slot = state.current_epoch_calculation_slot
-      state.setPreviousEpochCalculationSlot(state.getCurrentEpochCalculationSlot());
-      //    Set state.previous_epoch_start_shard = state.current_epoch_start_shard
-      state.setPreviousEpochStartShard(state.getCurrentEpochStartShard());
-      //    Let epochs_since_last_registry_change =
-      //      (state.slot - state.validator_registry_update_slot) // EPOCH_LENGTH.
-      EpochNumber epochs_since_last_registry_change = state.getSlot()
-          .minus(state.getValidatorRegistryLatestChangeSlot())
-          .dividedBy(specConst.getEpochLength());
+      // Let epochs_since_last_registry_update = current_epoch - state.validator_registry_update_epoch.
+      EpochNumber epochs_since_last_registry_update =
+          current_epoch.minus(state.getValidatorRegistryUpdateEpoch());
 
-      //    If epochs_since_last_registry_change is an exact power of 2,
-      if (Long.bitCount(epochs_since_last_registry_change.getValue()) == 1) {
-        //      set state.current_epoch_calculation_slot = state.slot and
-        state.setCurrentEpochCalculationSlot(state.getSlot());
-        //      state.current_epoch_randao_mix = state.latest_randao_mixes
-        //        [(state.current_epoch_calculation_slot - SEED_LOOKAHEAD)
-        //          % LATEST_RANDAO_MIXES_LENGTH].
-        UInt64 idx = state.getCurrentEpochCalculationSlot()
-            .minus(specConst.getSeedLookahead())
-            .modulo(specConst.getLatestRandaoMixesLength());
-        state.setCurrentEpochRandaoMix(state.getLatestRandaoMixes().get(idx));
-        //    Note that state.current_epoch_start_shard is left unchanged.
+      // If epochs_since_last_registry_update > 1 and is_power_of_two(epochs_since_last_registry_update):
+      if (epochs_since_last_registry_update.greater(EpochNumber.of(1)) &&
+          epochs_since_last_registry_update.isPowerOf2()) {
+        // Set state.current_calculation_epoch = next_epoch.
+        state.setCurrentCalculationEpoch(next_epoch);
+        // Set state.current_epoch_seed = generate_seed(state, state.current_calculation_epoch)
+        state.setCurrentEpochSeed(spec.generate_seed(state, state.getCurrentCalculationEpoch()));
+        // Note that state.current_epoch_start_shard is left unchanged.
       }
     }
 
@@ -744,23 +744,25 @@ public class EpochTransition implements StateTransition<BeaconStateEx> {
      Final updates
     */
 
-    // Let e = state.slot // EPOCH_LENGTH.
-    EpochNumber e = state.getSlot().dividedBy(specConst.getEpochLength());
-    // Set state.latest_penalized_balances[(e+1) % LATEST_PENALIZED_EXIT_LENGTH] =
-    //    state.latest_penalized_balances[e % LATEST_PENALIZED_EXIT_LENGTH]
-    state.getLatestPenalizedExitBalances().update(
-        e.increment().modulo(specConst.getLatestPenalizedExitLength()),
-        ignore -> state.getLatestPenalizedExitBalances()
-                .get(e.modulo(specConst.getLatestPenalizedExitLength())));
-    // Remove any attestation in state.latest_attestations such that
-    //    attestation.data.slot < state.slot - EPOCH_LENGTH.
-    state.getLatestAttestations().clear();
-    for (PendingAttestationRecord attestation : state.getLatestAttestations()) {
-      if (attestation.getData().getSlot()
-          .compareTo(state.getSlot().minus(specConst.getEpochLength())) >= 0) {
-        state.getLatestAttestations().add(attestation);
-      }
-    }
+    //  Set state.latest_index_roots[(next_epoch + ENTRY_EXIT_DELAY) % LATEST_INDEX_ROOTS_LENGTH] =
+    //      hash_tree_root(get_active_validator_indices(state, next_epoch + ENTRY_EXIT_DELAY)).
+    state.getLatestIndexRoots().set(
+        next_epoch.plus(specConst.getEntryExitDelay()).modulo(specConst.getLatestIndexRootsLength()),
+        spec.hash_tree_root(spec.get_active_validator_indices(state.getValidatorRegistry(),
+            next_epoch.plus(specConst.getEntryExitDelay()))));
+    //  Set state.latest_penalized_balances[(next_epoch) % LATEST_PENALIZED_EXIT_LENGTH] =
+    //      state.latest_penalized_balances[current_epoch % LATEST_PENALIZED_EXIT_LENGTH].
+    state.getLatestPenalizedBalances().set(next_epoch.modulo(specConst.getLatestPenalizedExitLength()),
+        state.getLatestPenalizedBalances().get(
+            current_epoch.modulo(specConst.getLatestPenalizedExitLength())));
+    //  Set state.latest_randao_mixes[next_epoch % LATEST_RANDAO_MIXES_LENGTH] =
+    //      get_randao_mix(state, current_epoch).
+    state.getLatestRandaoMixes().set(next_epoch.modulo(specConst.getLatestRandaoMixesLength()),
+        spec.get_randao_mix(state, current_epoch));
+    //  Remove any attestation in state.latest_attestations such that
+    //      slot_to_epoch(attestation.data.slot) < current_epoch.
+    state.getLatestAttestations().remove(
+        a -> spec.slot_to_epoch(a.getData().getSlot()).less(current_epoch));
 
     return new BeaconStateEx(state.createImmutable(), stateEx.getLatestChainBlockHash());
   }

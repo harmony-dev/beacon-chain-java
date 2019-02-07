@@ -53,6 +53,10 @@ public class EpochNumber extends UInt64 implements
     return new EpochNumber(super.decrement());
   }
 
+  public EpochNumber half() {
+    return new EpochNumber(dividedBy(2));
+  }
+
   @Override
   public EpochNumber zeroElement() {
     return ZERO;
