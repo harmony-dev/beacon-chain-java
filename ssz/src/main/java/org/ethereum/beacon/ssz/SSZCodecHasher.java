@@ -5,6 +5,7 @@ import net.consensys.cava.ssz.BytesSSZReaderProxy;
 import net.consensys.cava.ssz.SSZ;
 import net.consensys.cava.ssz.SSZException;
 import org.ethereum.beacon.ssz.type.SSZCodec;
+import org.ethereum.beacon.ssz.type.SubclassCodec;
 import org.javatuples.Pair;
 import org.javatuples.Triplet;
 import java.io.ByteArrayOutputStream;
@@ -170,20 +171,33 @@ public class SSZCodecHasher implements SSZCodecResolver {
   }
 
   private SSZCodec resolveCodec(SSZSchemeBuilder.SSZScheme.SSZField field) {
-    if (registeredClassHandlers.containsKey(field.type)) {
-      List<CodecEntry> codecs = registeredClassHandlers.get(field.type);
+    Class<?> type = field.type;
+    boolean subclassCodec = false;
+    if (!SubclassCodec.getSerializableClass(type).equals(type)) {
+      type = SubclassCodec.getSerializableClass(type);
+      subclassCodec = true;
+    }
+
+    SSZCodec codec = null;
+    if (registeredClassHandlers.containsKey(type)) {
+      List<CodecEntry> codecs = registeredClassHandlers.get(type);
       if (field.extraType == null || field.extraType.isEmpty()) {
-        return codecs.get(0).codec;
+        codec = codecs.get(0).codec;
       } else {
         for (CodecEntry codecEntry : codecs) {
           if (codecEntry.types.contains(field.extraType)) {
-            return codecEntry.codec;
+            codec = codecEntry.codec;
+            break;
           }
         }
       }
     }
 
-    return null;
+    if (codec != null && subclassCodec) {
+      codec = new SubclassCodec(codec);
+    }
+
+    return codec;
   }
 
   /**
