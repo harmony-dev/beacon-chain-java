@@ -5,3 +5,7 @@ build
 # Idea
 .idea
 out
+
+# :pow:ethereumj
+pow/ethereumj/database
+pow/ethereumj/logs

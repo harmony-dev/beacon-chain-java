@@ -1,5 +1,6 @@
 package org.ethereum.beacon.validator;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Executors;
@@ -17,9 +18,6 @@ import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.validator.crypto.MessageSigner;
-import tech.pegasys.artemis.util.bytes.Bytes48;
-import tech.pegasys.artemis.util.bytes.Bytes96;
-import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 /**
@@ -90,7 +88,8 @@ public class BeaconChainValidator implements ValidatorService {
    *
    * @param state a state object to seek for the validator in.
    */
-  private void init(BeaconState state) {
+  @VisibleForTesting
+  void init(BeaconState state) {
     this.validatorIndex = specHelpers.get_validator_index_by_pubkey(state, publicKey);
     setSlotProcessed(state);
   }
@@ -100,14 +99,10 @@ public class BeaconChainValidator implements ValidatorService {
    *
    * <p>Recent state is required by delayed tasks like {@link #attest()}.
    *
-   * <p><strong>Note:</strong> coming state is discarded it isn't related to current slot.
-   *
    * @param state state came from the outside.
    */
   private void keepRecentState(ObservableBeaconState state) {
-    if (specHelpers.is_current_slot(state.getLatestSlotState())) {
-      this.recentState = state;
-    }
+    this.recentState = state;
   }
 
   /**
@@ -115,15 +110,32 @@ public class BeaconChainValidator implements ValidatorService {
    * from the outside.
    *
    * <p>It is assumed that outer component, that validator is subscribed to, sends a new state on
-   * every processed and on every empty slot transition made on top of the chain head.
+   * every processed and on every empty slot transition made on top of the chain head. * *
+   *
+   * <p><strong>Note:</strong> coming state is discarded if it isn't related to current slot.
    *
    * @param observableState a new state object.
    */
-  private void onNewState(ObservableBeaconState observableState) {
-    keepRecentState(observableState);
+  @VisibleForTesting
+  void onNewState(ObservableBeaconState observableState) {
+    if (isCurrentSlot(observableState.getLatestSlotState())) {
+      keepRecentState(observableState);
+      processState(observableState);
+    }
+  }
+
+  /**
+   * Processes a new state.
+   *
+   * <p>Initializes service if it's possible and then runs validator tasks by calling to {@link
+   * #runTasks(ObservableBeaconState)}.
+   *
+   * @param observableState a state object to process.
+   */
+  private void processState(ObservableBeaconState observableState) {
     BeaconState state = observableState.getLatestSlotState();
 
-    if (!isInitialized() && isCurrentSlot(state)) {
+    if (!isInitialized()) {
       init(state);
     }
 
@@ -146,7 +158,8 @@ public class BeaconChainValidator implements ValidatorService {
    *
    * @param observableState a state that validator tasks are executed with.
    */
-  private void runTasks(final ObservableBeaconState observableState) {
+  @VisibleForTesting
+  void runTasks(final ObservableBeaconState observableState) {
     BeaconState state = observableState.getLatestSlotState();
 
     // trigger proposer
@@ -188,7 +201,7 @@ public class BeaconChainValidator implements ValidatorService {
    * @param observableState a state.
    */
   private void propose(final ObservableBeaconState observableState) {
-    BeaconBlock newBlock = proposer.propose(validatorIndex, observableState, messageSigner);
+    BeaconBlock newBlock = proposer.propose(observableState, messageSigner);
     propagateBlock(newBlock);
   }
 
@@ -258,7 +271,7 @@ public class BeaconChainValidator implements ValidatorService {
    * @return {@code true} if slot has been processed, {@link false} otherwise.
    */
   private boolean isSlotProcessed(BeaconState state) {
-    return lastProcessedSlot.less(state.getSlot());
+    return state.getSlot().lessEqual(lastProcessedSlot);
   }
 
   /**
@@ -286,4 +299,14 @@ public class BeaconChainValidator implements ValidatorService {
   private void propagateAttestation(Attestation attestation) {}
 
   private void subscribeToStateUpdates(Consumer<ObservableBeaconState> payload) {}
+
+  @VisibleForTesting
+  ValidatorIndex getValidatorIndex() {
+    return validatorIndex;
+  }
+
+  @VisibleForTesting
+  ObservableBeaconState getRecentState() {
+    return recentState;
+  }
 }

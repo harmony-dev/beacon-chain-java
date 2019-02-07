@@ -2,6 +2,8 @@ package tech.pegasys.artemis.util.bytes;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import java.util.Random;
+
 public interface Bytes96 extends BytesValue {
   int SIZE = 96;
 
@@ -123,6 +125,18 @@ public interface Bytes96 extends BytesValue {
    */
   static Bytes96 fromHexStringStrict(String str) {
     return wrap(BytesValues.fromRawHexString(str, -1, false));
+  }
+
+  /**
+   * Constructs a randomly generated value.
+   *
+   * @param rnd random number generator.
+   * @return random value.
+   */
+  static Bytes96 random(Random rnd) {
+    byte[] randomBytes = new byte[SIZE];
+    rnd.nextBytes(randomBytes);
+    return wrap(randomBytes);
   }
 
   @Override

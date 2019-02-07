@@ -24,9 +24,7 @@ import org.ethereum.beacon.core.operations.slashing.ProposalSignedData;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Eth1DataVote;
-import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSSignature;
-import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.pow.DepositContract.DepositInfo;
 import org.ethereum.beacon.validator.BeaconChainProposer;
@@ -35,9 +33,7 @@ import org.ethereum.beacon.validator.crypto.MessageSigner;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes8;
-import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.collections.ReadList;
-import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 /**
@@ -70,11 +66,11 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
 
   @Override
   public BeaconBlock propose(
-      ValidatorIndex validatorIndex, ObservableBeaconState observableState, MessageSigner<BLSSignature> signer) {
+      ObservableBeaconState observableState, MessageSigner<BLSSignature> signer) {
     BeaconState state = observableState.getLatestSlotState();
 
     Hash32 parentRoot = specHelpers.get_block_root(state, state.getSlot().decrement());
-    BLSSignature randaoReveal = getRandaoReveal(state, validatorIndex, signer);
+    BLSSignature randaoReveal = getRandaoReveal(state, signer);
     Eth1Data eth1Data = getEth1Data(state);
     BeaconBlockBody blockBody = getBlockBody(state, observableState.getPendingOperations());
 
@@ -83,6 +79,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
     builder
         .withSlot(state.getSlot())
         .withParentRoot(parentRoot)
+        .withStateRoot(Hash32.ZERO)
         .withRandaoReveal(randaoReveal)
         .withEth1Data(eth1Data)
         .withSignature(chainSpec.getEmptySignature())
@@ -125,15 +122,12 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
    * Returns next RANDAO reveal.
    *
    * @param state state at the slot of created block.
-   * @param validatorIndex validator index.
    * @param signer message signer.
    * @return next RANDAO reveal.
    */
-  private BLSSignature getRandaoReveal(
-      BeaconState state, ValidatorIndex validatorIndex, MessageSigner<BLSSignature> signer) {
-    ValidatorRecord proposer =
-        state.getValidatorRegistry().get(validatorIndex);
-    Hash32 hash = Hash32.wrap(Bytes32.leftPad(proposer.getProposerSlots().toBytesBigEndian()));
+  private BLSSignature getRandaoReveal(BeaconState state, MessageSigner<BLSSignature> signer) {
+    Hash32 hash =
+        Hash32.wrap(Bytes32.leftPad(specHelpers.get_current_epoch(state).toBytesBigEndian()));
     Bytes8 domain = specHelpers.get_domain(state.getForkData(), state.getSlot(), RANDAO);
     return signer.sign(hash, domain);
   }
@@ -155,6 +149,32 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
 
    Set block.eth1_data = Eth1Data(deposit_root=deposit_root, block_hash=block_hash).
   */
+  private Eth1Data getEth1Data(BeaconState state) {
+    ReadList<Integer, Eth1DataVote> eth1DataVotes = state.getEth1DataVotes();
+    Optional<Eth1Data> contractData = depositContract.getLatestEth1Data();
+
+    if (eth1DataVotes.isEmpty()) {
+      return contractData.orElse(state.getLatestEth1Data());
+    }
+
+    UInt64 maxVotes =
+        eth1DataVotes.stream().map(Eth1DataVote::getVoteCount).max(UInt64::compareTo).get();
+    Eth1DataVote bestVote =
+        eth1DataVotes.stream()
+            .filter(eth1DataVote -> eth1DataVote.getVoteCount().equals(maxVotes))
+            .reduce((first, second) -> second)
+            .get();
+
+    // verify best vote data and return if verification passed,
+    // otherwise, return data from contract
+    if (depositContract.hasDepositRoot(
+        bestVote.getEth1Data().getBlockHash(), bestVote.getEth1Data().getDepositRoot())) {
+      return bestVote.getEth1Data();
+    } else {
+      return contractData.orElse(state.getLatestEth1Data());
+    }
+  }
+
   /**
    * Creates block body for new block.
    *
@@ -175,11 +195,13 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
     List<Exit> exits = operations.peekExits(chainSpec.getMaxExits());
 
     Eth1Data latestProcessedDeposit = null; // TODO wait for spec update to include this to state
-    List<Deposit> deposits = depositContract.peekDeposits(
-        chainSpec.getMaxDeposits(), latestProcessedDeposit, state.getLatestEth1Data())
-        .stream()
-        .map(DepositInfo::getDeposit)
-        .collect(Collectors.toList());
+    List<Deposit> deposits =
+        depositContract
+            .peekDeposits(
+                chainSpec.getMaxDeposits(), latestProcessedDeposit, state.getLatestEth1Data())
+            .stream()
+            .map(DepositInfo::getDeposit)
+            .collect(Collectors.toList());
 
     return new BeaconBlockBody(
         proposerSlashings,
@@ -190,31 +212,5 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
         emptyList(),
         deposits,
         exits);
-  }
-
-  private Eth1Data getEth1Data(BeaconState state) {
-    ReadList<Integer, Eth1DataVote> eth1DataVotes = state.getEth1DataVotes();
-    Optional<Eth1Data> contractData = depositContract.getLatestEth1Data();
-
-    if (eth1DataVotes.isEmpty()) {
-      return contractData.orElse(state.getLatestEth1Data());
-    }
-
-    UInt64 maxVotes =
-        eth1DataVotes.stream().map(Eth1DataVote::getVoteCount).max(UInt64::compareTo).get();
-    Eth1DataVote bestVote =
-        eth1DataVotes.stream()
-            .filter(eth1DataVote -> eth1DataVote.getVoteCount().equals(maxVotes))
-            .reduce((first, second) -> second)
-            .get();
-
-    // verify best vote data and return if verification passed,
-    // otherwise, return data from contract
-    if (depositContract.hasDepositRoot(bestVote.getEth1Data().getBlockHash(),
-        bestVote.getEth1Data().getDepositRoot())) {
-      return bestVote.getEth1Data();
-    } else {
-      return contractData.orElse(state.getLatestEth1Data());
-    }
   }
 }

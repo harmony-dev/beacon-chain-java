@@ -2,9 +2,9 @@ package org.ethereum.beacon.validator.attester;
 
 import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.util.Collections;
 import java.util.List;
-import javax.xml.validation.Validator;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.core.BeaconBlock;
@@ -23,10 +23,8 @@ import org.ethereum.beacon.validator.ValidatorService;
 import org.ethereum.beacon.validator.crypto.MessageSigner;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes8;
-import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.bytes.MutableBytesValue;
-import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 /**
@@ -78,8 +76,8 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
     BytesValue custodyBitfield = getCustodyBitfield(validatorIndex, committee);
     BLSSignature aggregateSignature = getAggregateSignature(state, data, signer);
 
-    return new Attestation(data, Bitfield.of(participationBitfield),
-        Bitfield.of(custodyBitfield), aggregateSignature);
+    return new Attestation(
+        data, Bitfield.of(participationBitfield), Bitfield.of(custodyBitfield), aggregateSignature);
   }
 
   /**
@@ -89,7 +87,8 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
    * @param shard a shard.
    * @return a committee.
    */
-  private List<ValidatorIndex> getCommittee(BeaconState state, UInt64 shard) {
+  @VisibleForTesting
+  List<ValidatorIndex> getCommittee(BeaconState state, UInt64 shard) {
     if (shard.equals(chainSpec.getBeaconChainShardNumber())) {
       return specHelpers.get_shard_committees_at_slot(state, state.getSlot()).get(0).getCommittee();
     } else {
@@ -104,7 +103,8 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
    Note: This can be looked up in the state using
      get_block_root(state, head.slot - head.slot % EPOCH_LENGTH).
   */
-  private Hash32 getEpochBoundaryRoot(BeaconState state, BeaconBlock head) {
+  @VisibleForTesting
+  Hash32 getEpochBoundaryRoot(BeaconState state, BeaconBlock head) {
     SlotNumber epochBoundarySlot =
         head.getSlot().minus(head.getSlot().modulo(chainSpec.getEpochLength()));
     return specHelpers.get_block_root(state, epochBoundarySlot);
@@ -114,7 +114,8 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
    Set attestation_data.latest_crosslink_root = state.latest_crosslinks[shard].shard_block_root
      where state is the beacon state at head and shard is the validator's assigned shard.
   */
-  private Hash32 getLatestCrosslinkRoot(BeaconState state, ShardNumber shard) {
+  @VisibleForTesting
+  Hash32 getLatestCrosslinkRoot(BeaconState state, ShardNumber shard) {
     return state.getLatestCrosslinks().get(shard).getShardBlockRoot();
   }
 
@@ -124,7 +125,8 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
 
    Note: This can be looked up in the state using get_block_root(state, justified_slot).
   */
-  private Hash32 getJustifiedBlockRoot(BeaconState state, SlotNumber slot) {
+  @VisibleForTesting
+  Hash32 getJustifiedBlockRoot(BeaconState state, SlotNumber slot) {
     return specHelpers.get_block_root(state, slot);
   }
 
@@ -134,7 +136,8 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
      located.
    Set aggregation_bitfield[index_into_committee // 8] |= 2 ** (index_into_committee % 8).
   */
-  private BytesValue getParticipationBitfield(ValidatorIndex index, List<ValidatorIndex> committee) {
+  private BytesValue getParticipationBitfield(
+      ValidatorIndex index, List<ValidatorIndex> committee) {
     int indexIntoCommittee = Collections.binarySearch(committee, index);
     assert indexIntoCommittee >= 0;
 
