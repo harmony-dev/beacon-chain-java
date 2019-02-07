@@ -1,5 +1,16 @@
 package org.ethereum.beacon.chain.observer;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import org.ethereum.beacon.chain.BeaconChainHead;
 import org.ethereum.beacon.chain.LMDGhostHeadFunction;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
@@ -8,8 +19,7 @@ import org.ethereum.beacon.chain.storage.BeaconTupleStorage;
 import org.ethereum.beacon.consensus.HeadFunction;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.transition.BeaconStateEx;
-import org.ethereum.beacon.consensus.transition.EpochTransition;
-import org.ethereum.beacon.consensus.transition.NextSlotTransition;
+import org.ethereum.beacon.consensus.transition.EmptySlotTransition;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
@@ -25,17 +35,6 @@ import reactor.core.scheduler.Schedulers;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   private final BeaconTupleStorage tupleStorage;
@@ -46,8 +45,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   private BeaconState latestState;
   private final SpecHelpers specHelpers;
   private final ChainSpec chainSpec;
-  private final EpochTransition epochTransition;
-  private final NextSlotTransition nextSlotTransition;
+  private final EmptySlotTransition emptySlotTransition;
 
   private final Publisher<SlotNumber> slotTicker;
   private final Publisher<Attestation> attestationPublisher;
@@ -89,13 +87,11 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
       Publisher<Attestation> attestationPublisher,
       Publisher<BeaconTuple> beaconPublisher,
       SpecHelpers specHelpers,
-      EpochTransition epochTransition,
-      NextSlotTransition nextSlotTransition) {
+      EmptySlotTransition emptySlotTransition) {
     this.tupleStorage = chainStorage.getBeaconTupleStorage();
     this.specHelpers = specHelpers;
     this.chainSpec = specHelpers.getChainSpec();
-    this.epochTransition = epochTransition;
-    this.nextSlotTransition = nextSlotTransition;
+    this.emptySlotTransition = emptySlotTransition;
     this.headFunction = new LMDGhostHeadFunction(chainStorage, specHelpers);
     this.slotTicker = slotTicker;
     this.attestationPublisher = attestationPublisher;
@@ -260,14 +256,8 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
    */
   private BeaconState applySlotTransitions(
       BeaconState canonicalState, SlotNumber newSlot, Hash32 latestChainBlock) {
-    // Every slot transition
     BeaconStateEx result =
-        nextSlotTransition.apply(null, new BeaconStateEx(canonicalState, latestChainBlock));
-    // Epoch transition happens when (state.slot + 1) % EPOCH_LENGTH == 0.
-    if (newSlot.increment().modulo(chainSpec.getEpochLength()).compareTo(UInt64.ZERO) == 0) {
-      result = epochTransition.apply(null, result);
-    }
-
+        emptySlotTransition.apply(new BeaconStateEx(canonicalState, latestChainBlock), newSlot);
     return result.getCanonicalState();
   }
 

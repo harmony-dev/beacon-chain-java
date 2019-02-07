@@ -1361,6 +1361,10 @@ public class SpecHelpers {
     }
   }
 
+  public boolean is_epoch_end(SlotNumber slot) {
+    return slot.increment().modulo(spec.getEpochLength()).equals(SlotNumber.ZERO);
+  }
+
   private static void assertTrue(boolean assertion) {
     if (!assertion) {
       throw new SpecAssertionFailed();
