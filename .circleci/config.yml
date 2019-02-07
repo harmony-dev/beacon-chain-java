@@ -42,7 +42,7 @@ jobs:
 
       - run:
           name: Running tests
-          command: ./gradlew --stacktrace cleanTest test --continue
+          command: ./gradlew --stacktrace clean cleanTest test --continue
 
       - run:
           name: Collecting test results
