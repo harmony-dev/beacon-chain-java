@@ -5,7 +5,6 @@ import static org.ethereum.beacon.crypto.bls.milagro.MilagroCodecs.G1;
 import static org.ethereum.beacon.crypto.bls.milagro.MilagroCodecs.G2;
 
 import java.math.BigInteger;
-import java.security.SecureRandom;
 import java.util.Random;
 import org.apache.milagro.amcl.BLS381.BIG;
 import org.apache.milagro.amcl.BLS381.ECP;
@@ -112,12 +111,10 @@ public class MilagroCodecsTest {
     assertThat(decoded.is_infinity()).isTrue();
   }
 
-  SecureRandom secureRandom = new SecureRandom();
-
   BIG randomBIG() {
     Random random = new Random();
     byte[] seed = new byte[32];
-    secureRandom.nextBytes(seed);
+    random.nextBytes(seed);
     RAND rand = new RAND();
     rand.seed(seed.length, seed);
 
