@@ -18,6 +18,7 @@ import org.ethereum.beacon.core.state.PendingAttestationRecord;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32s;
+import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public class PerBlockTransition implements StateTransition<BeaconStateEx> {
@@ -84,10 +85,9 @@ public class PerBlockTransition implements StateTransition<BeaconStateEx> {
          Run penalize_validator(state, index) for each index in slashable_indices.
     */
     for (AttesterSlashing attester_slashing : block.getBody().getAttesterSlashings()) {
-      List<ValidatorIndex> intersection = attester_slashing.getSlashableAttestation1()
-          .getValidatorIndices().listCopy();
-      intersection.retainAll(attester_slashing.getSlashableAttestation2()
-          .getValidatorIndices().listCopy());
+      ReadList<Integer, ValidatorIndex> intersection =
+          attester_slashing.getSlashableAttestation1().getValidatorIndices().intersection(
+          attester_slashing.getSlashableAttestation2().getValidatorIndices());
       for (ValidatorIndex index : intersection) {
         if (state.getValidatorRegistry().get(index).getPenalizedEpoch().greater(
             specHelpers.get_current_epoch(state))) {

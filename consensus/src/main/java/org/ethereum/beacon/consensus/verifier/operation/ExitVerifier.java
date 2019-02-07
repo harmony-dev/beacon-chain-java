@@ -11,6 +11,7 @@ import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Exit;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.ValidatorRecord;
+import org.ethereum.beacon.core.types.BLSSignature;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
 /**
@@ -37,23 +38,35 @@ public class ExitVerifier implements OperationVerifier<Exit> {
 
     ValidatorRecord validator = state.getValidatorRegistry().get(exit.getValidatorIndex());
 
-    if (state.getSlot().plus(chainSpec.getEntryExitDelay()).lessEqual(validator.getExitSlot())) {
+    // Verify that validator.exit_epoch > get_entry_exit_effect_epoch(get_current_epoch(state))
+    if (!validator.getExitEpoch().greater(
+        specHelpers.get_entry_exit_effect_epoch(specHelpers.get_current_epoch(state)))) {
       return failedResult(
-          "ENTRY_EXIT_DELAY exceeded, min exit slot %s, got %s",
-          state.getSlot().plus(chainSpec.getEntryExitDelay()), validator.getExitSlot());
+          "ENTRY_EXIT_DELAY exceeded, min exit epoch %s, got %s",
+          state.getSlot().plus(chainSpec.getEntryExitDelay()), validator.getExitEpoch());
     }
 
-    if (state.getSlot().less(exit.getSlot())) {
+    // Verify that get_current_epoch(state) >= exit.epoch
+    if (!specHelpers.get_current_epoch(state).greaterEqual(exit.getEpoch())) {
       return failedResult(
-          "exit.slot must be greater or equal to state.slot, exit.slot=%s and state.slot=%s",
-          exit.getSlot(), state.getSlot());
+          "exit.epoch must be greater or equal to current_epoch");
     }
 
+    // Let exit_message = hash_tree_root(
+    //    Exit(
+    //        epoch=exit.epoch,
+    //        validator_index=exit.validator_index,
+    //        signature=EMPTY_SIGNATURE)).
+    // Verify that bls_verify(
+    //    pubkey=validator.pubkey,
+    //    message=exit_message,
+    //    signature=exit.signature,
+    //    domain=get_domain(state.fork, exit.epoch, DOMAIN_EXIT)).
     if (!specHelpers.bls_verify(
         validator.getPubKey(),
-        Hash32.ZERO,
+        specHelpers.hash_tree_root(new Exit(exit.getEpoch(), exit.getValidatorIndex(), BLSSignature.ZERO)),
         exit.getSignature(),
-        specHelpers.get_domain(state.getForkData(), exit.getSlot(), EXIT))) {
+        specHelpers.get_domain(state.getForkData(), exit.getEpoch(), EXIT))) {
       return failedResult("failed to verify signature");
     }
 

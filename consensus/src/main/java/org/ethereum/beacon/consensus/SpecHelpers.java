@@ -12,27 +12,22 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
-import org.ethereum.beacon.core.operations.CasperSlashing;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustodyBit;
-import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
-import org.ethereum.beacon.core.operations.slashing.SlashableVoteData;
+import org.ethereum.beacon.core.operations.slashing.SlashableAttestation;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.spec.SignatureDomains;
-import org.ethereum.beacon.core.spec.ValidatorRegistryDeltaFlags;
 import org.ethereum.beacon.core.spec.ValidatorStatusFlags;
 import org.ethereum.beacon.core.state.ForkData;
 import org.ethereum.beacon.core.state.ShardCommittee;
 import org.ethereum.beacon.core.state.ValidatorRecord;
-import org.ethereum.beacon.core.state.ValidatorRegistryDeltaBlock;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Bitfield;
@@ -587,7 +582,7 @@ public class SpecHelpers {
             signature=proof_of_possession,
             domain=get_domain(
                 state.fork,
-                state.slot,
+                get_current_epoch(state),
                 DOMAIN_DEPOSIT,
             )
         )
@@ -604,7 +599,7 @@ public class SpecHelpers {
         pubkey,
         hash_tree_root(deposit_input),
         proof_of_possession,
-        get_domain(state.getForkData(), state.getSlot(), SignatureDomains.DEPOSIT));
+        get_domain(state.getForkData(), get_current_epoch(state), SignatureDomains.DEPOSIT));
   }
 
   /*
@@ -701,7 +696,7 @@ public class SpecHelpers {
         """
         return epoch + 1 + ENTRY_EXIT_DELAY
    */
-  EpochNumber get_entry_exit_effect_epoch(EpochNumber epoch) {
+  public EpochNumber get_entry_exit_effect_epoch(EpochNumber epoch) {
     return epoch.plus(1).plus(spec.getEntryExitDelay());
   }
 
@@ -1056,38 +1051,37 @@ public class SpecHelpers {
     return PublicKey.aggregate(publicKeys);
   }
 
-  public UInt64 get_fork_version(ForkData forkData, SlotNumber slot) {
-    if (slot.less(forkData.getForkSlot())) {
+  /*
+    def get_fork_version(fork: Fork,
+                     epoch: EpochNumber) -> int:
+    """
+    Return the fork version of the given ``epoch``.
+    """
+    if epoch < fork.epoch:
+        return fork.previous_version
+    else:
+        return fork.current_version
+   */
+  public UInt64 get_fork_version(ForkData forkData, EpochNumber epoch) {
+    if (epoch.less(forkData.getEpoch())) {
       return forkData.getPreviousVersion();
     } else {
       return forkData.getCurrentVersion();
     }
   }
 
-  public Bytes8 get_domain(ForkData forkData, SlotNumber slot, UInt64 domainType) {
-    return get_fork_version(forkData, slot).shl(32).plus(domainType).toBytes8();
-  }
-
-  public List<ValidatorIndex> custodyIndexIntersection(CasperSlashing slashing) {
-    return intersection(
-        indices(slashing.getSlashableVoteData1().getCustodyBit0Indices(),
-            slashing.getSlashableVoteData1().getCustodyBit1Indices()),
-        indices(slashing.getSlashableVoteData2().getCustodyBit0Indices(),
-            slashing.getSlashableVoteData2().getCustodyBit1Indices())
-    );
-  }
-
-  public List<ValidatorIndex> indices(List<ValidatorIndex> custodyBit0Indices, List<ValidatorIndex> custodyBit1Indices) {
-    List<ValidatorIndex> indices = new ArrayList<>();
-    indices.addAll(custodyBit0Indices);
-    indices.addAll(custodyBit1Indices);
-    return indices;
-  }
-
-  public List<ValidatorIndex> intersection(List<ValidatorIndex> indices1, List<ValidatorIndex> indices2) {
-    List<ValidatorIndex> intersection = new ArrayList<>(indices1);
-    intersection.retainAll(indices2);
-    return intersection;
+  /*
+    def get_domain(fork: Fork,
+               epoch: EpochNumber,
+               domain_type: int) -> int:
+    """
+    Get the domain number that represents the fork meta and signature domain.
+    """
+    fork_version = get_fork_version(fork, epoch)
+    return fork_version * 2**32 + domain_type
+   */
+  public Bytes8 get_domain(ForkData forkData, EpochNumber epoch, UInt64 domainType) {
+    return get_fork_version(forkData, epoch).shl(32).plus(domainType).toBytes8();
   }
 
   /*
@@ -1104,10 +1098,8 @@ public class SpecHelpers {
   */
   public boolean is_double_vote(
       AttestationData attestation_data_1, AttestationData attestation_data_2) {
-    EpochNumber target_epoch_1 = attestation_data_1.getSlot()
-        .dividedBy(spec.getEpochLength());
-    EpochNumber  target_epoch_2 = attestation_data_2.getSlot()
-        .dividedBy(spec.getEpochLength());
+    EpochNumber target_epoch_1 = slot_to_epoch(attestation_data_1.getSlot());
+    EpochNumber  target_epoch_2 = slot_to_epoch(attestation_data_2.getSlot());
     return target_epoch_1.equals(target_epoch_2);
   }
 
@@ -1133,54 +1125,103 @@ public class SpecHelpers {
   */
   public boolean is_surround_vote(
       AttestationData attestation_data_1, AttestationData attestation_data_2) {
-    EpochNumber source_epoch_1 = attestation_data_1.getJustifiedSlot().dividedBy(spec.getEpochLength());
-    EpochNumber source_epoch_2 = attestation_data_2.getJustifiedSlot().dividedBy(spec.getEpochLength());
-    EpochNumber target_epoch_1 = attestation_data_1.getSlot().dividedBy(spec.getEpochLength());
-    EpochNumber target_epoch_2 = attestation_data_2.getSlot().dividedBy(spec.getEpochLength());
+    EpochNumber source_epoch_1 = attestation_data_1.getJustifiedEpoch();
+    EpochNumber source_epoch_2 = attestation_data_2.getJustifiedEpoch();
+    EpochNumber target_epoch_1 = slot_to_epoch(attestation_data_1.getSlot());
+    EpochNumber target_epoch_2 = slot_to_epoch(attestation_data_2.getSlot());
 
     return (source_epoch_1.less(source_epoch_2))
-        && (source_epoch_2.plus(1).equals(target_epoch_2))
         && (target_epoch_2.less(target_epoch_1));
   }
 
-  /*
-   def verify_slashable_vote_data(state: BeaconState, vote_data: SlashableVoteData) -> bool:
-     if len(vote_data.custody_bit_0_indices) + len(vote_data.custody_bit_1_indices) > MAX_CASPER_VOTES:
-         return False
 
-     return bls_verify_multiple(
-         pubkeys=[
-             aggregate_pubkey([state.validators[i].pubkey for i in vote_data.custody_bit_0_indices]),
-             aggregate_pubkey([state.validators[i].pubkey for i in vote_data.custody_bit_1_indices]),
-         ],
-         messages=[
-             hash_tree_root(AttestationDataAndCustodyBit(vote_data.data, False)),
-             hash_tree_root(AttestationDataAndCustodyBit(vote_data.data, True)),
-         ],
-         signature=vote_data.aggregate_signature,
-         domain=get_domain(
-             state.fork_data,
-             vote_data.data.slot,
-             DOMAIN_ATTESTATION,
-         ),
-     )
-  */
-  public boolean verify_slashable_vote_data(BeaconState state, SlashableVoteData vote_data) {
-    if (vote_data.getCustodyBit0Indices().size() + vote_data.getCustodyBit1Indices().size()
-        > spec.getMaxCasperVotes()) {
+  /*
+    def verify_slashable_attestation(state: BeaconState, slashable_attestation: SlashableAttestation) -> bool:
+      """
+      Verify validity of ``slashable_attestation`` fields.
+      """
+   */
+  public boolean verify_slashable_attestation(BeaconState state, SlashableAttestation slashable_attestation) {
+    //  if slashable_attestation.custody_bitfield != b'\x00' * len(slashable_attestation.custody_bitfield):  # [TO BE REMOVED IN PHASE 1]
+    //    return False
+    if (!slashable_attestation.getCustodyBitfield().isZero()) return false;
+
+    //  if len(slashable_attestation.validator_indices) == 0:
+    //  return False
+    if (slashable_attestation.getValidatorIndices().size() == 0) return false;
+
+    //  for i in range(len(slashable_attestation.validator_indices) - 1):
+    //    if slashable_attestation.validator_indices[i] >= slashable_attestation.validator_indices[i + 1]:
+    //      return False
+
+    for (int i = 0; i < slashable_attestation.getValidatorIndices().size() - 1; i++) {
+      if (slashable_attestation.getValidatorIndices().get(i).greaterEqual(
+          slashable_attestation.getValidatorIndices().get(i + 1))) {
+        return false;
+      }
+    }
+
+    //  if not verify_bitfield(slashable_attestation.custody_bitfield, len(slashable_attestation.validator_indices)):
+    //  return False
+    if (!verify_bitfield(slashable_attestation.getCustodyBitfield(), slashable_attestation.getValidatorIndices().size())) {
       return false;
     }
 
-    List<BLSPubkey> pubKeys1 = mapIndicesToPubKeys(state, vote_data.getCustodyBit0Indices());
-    List<BLSPubkey> pubKeys2 = mapIndicesToPubKeys(state, vote_data.getCustodyBit1Indices());
+    //  if len(slashable_attestation.validator_indices) > MAX_INDICES_PER_SLASHABLE_VOTE:
+    //  return False
+    if (UInt64.valueOf(slashable_attestation.getValidatorIndices().size()).
+        compareTo(spec.getMaxIndicesPerSlashableVote()) > 0) {
+      return false;
+    }
+
+    /*
+      custody_bit_0_indices = []
+      custody_bit_1_indices = []
+      for i, validator_index in enumerate(slashable_attestation.validator_indices):
+          if get_bitfield_bit(slashable_attestation.custody_bitfield, i) == 0b0:
+              custody_bit_0_indices.append(validator_index)
+          else:
+              custody_bit_1_indices.append(validator_index)
+    */
+    List<ValidatorIndex> custody_bit_0_indices = new ArrayList<>();
+    List<ValidatorIndex> custody_bit_1_indices = new ArrayList<>();
+    for (int i = 0; i < slashable_attestation.getValidatorIndices().size(); i++) {
+      ValidatorIndex validator_index = slashable_attestation.getValidatorIndices().get(i);
+      if (slashable_attestation.getCustodyBitfield().getBit(i) == false) {
+        custody_bit_0_indices.add(validator_index);
+      } else {
+        custody_bit_1_indices.add(validator_index);
+      }
+    }
+
+    /*
+      return bls_verify(
+          pubkeys=[
+              bls_aggregate_pubkeys([state.validator_registry[i].pubkey for i in custody_bit_0_indices]),
+              bls_aggregate_pubkeys([state.validator_registry[i].pubkey for i in custody_bit_1_indices]),
+          ],
+          messages=[
+              hash_tree_root(AttestationDataAndCustodyBit(data=slashable_attestation.data, custody_bit=0b0)),
+              hash_tree_root(AttestationDataAndCustodyBit(data=slashable_attestation.data, custody_bit=0b1)),
+          ],
+          signature=slashable_attestation.aggregate_signature,
+          domain=get_domain(
+              state.fork,
+              slot_to_epoch(vote_data.data.slot),
+              DOMAIN_ATTESTATION,
+          ),
+      )
+    */
+    List<BLSPubkey> pubKeys1 = mapIndicesToPubKeys(state, custody_bit_0_indices);
+    List<BLSPubkey> pubKeys2 = mapIndicesToPubKeys(state, custody_bit_1_indices);
 
     return bls_verify_multiple(
         Arrays.asList(bls_aggregate_pubkeys(pubKeys1), bls_aggregate_pubkeys(pubKeys2)),
         Arrays.asList(
-            hash_tree_root(new AttestationDataAndCustodyBit(vote_data.getData(), false)),
-            hash_tree_root(new AttestationDataAndCustodyBit(vote_data.getData(), true))),
-        vote_data.getAggregatedSignature(),
-        get_domain(state.getForkData(), vote_data.getData().getSlot(), ATTESTATION));
+            hash_tree_root(new AttestationDataAndCustodyBit(slashable_attestation.getData(), false)),
+            hash_tree_root(new AttestationDataAndCustodyBit(slashable_attestation.getData(), true))),
+        slashable_attestation.getBlsSignature(),
+        get_domain(state.getForkData(), slot_to_epoch(slashable_attestation.getData().getSlot()), ATTESTATION));
   }
 
   /*
@@ -1277,26 +1318,6 @@ public class SpecHelpers {
   }
 
   /*
-    Let serialized_deposit_data be the serialized form of deposit.deposit_data.
-    It should be 8 bytes for deposit_data.amount followed by 8 bytes for deposit_data.timestamp
-    and then the DepositInput bytes. That is, it should match deposit_data in the Ethereum 1.0
-    deposit contract of which the hash was placed into the Merkle tree.
-   */
-  public BytesValue serialized_deposit_data(DepositData data) {
-    DepositInput input = data.getDepositInput();
-    BytesValue inputBytes =
-        input
-            .getPubKey()
-            .concat(input.getWithdrawalCredentials())
-            .concat(input.getProofOfPossession());
-
-    return data.getValue()
-        .toBytesBigEndian()
-        .concat(data.getTimestamp().toBytesBigEndian())
-        .concat(inputBytes);
-  }
-
-  /*
    def verify_merkle_branch(leaf: Bytes32, branch: [Bytes32], depth: int, index: int, root: Bytes32) -> bool:
      value = leaf
      for i in range(depth):
@@ -1384,7 +1405,7 @@ public class SpecHelpers {
     assertTrue(index.less(state.getValidatorRegistry().size()));
   }
 
-  public void checkIndexRange(BeaconState state, List<ValidatorIndex> indices) {
+  public void checkIndexRange(BeaconState state, Iterable<ValidatorIndex> indices) {
     indices.forEach(index -> checkIndexRange(state, index));
   }
 
@@ -1392,7 +1413,7 @@ public class SpecHelpers {
     assertTrue(shard.less(spec.getShardCount()));
   }
 
-  public List<BLSPubkey> mapIndicesToPubKeys(BeaconState state, List<ValidatorIndex> indices) {
+  public List<BLSPubkey> mapIndicesToPubKeys(BeaconState state, Iterable<ValidatorIndex> indices) {
     List<BLSPubkey> publicKeys = new ArrayList<>();
     for (ValidatorIndex index : indices) {
       checkIndexRange(state, index);
@@ -1401,22 +1422,36 @@ public class SpecHelpers {
     return publicKeys;
   }
 
-  // def lmd_ghost(store, start):
-  //    validators = start.state.validator_registry
-  //    active_validators = [validators[i] for i in
-  //                         get_active_validator_indices(validators, start.state.slot)]
-  //    attestation_targets = [get_latest_attestation_target(store, validator)
-  //                           for validator in active_validators]
-  //    def get_vote_count(block):
-  //        return len([target for target in attestation_targets if
-  //                    get_ancestor(store, target, block.slot) == block])
-  //
-  //    head = start
-  //    while 1:
-  //        children = get_children(head)
-  //        if len(children) == 0:
-  //            return head
-  //        head = max(children, key=get_vote_count)
+  /*
+    def lmd_ghost(store: Store, start_state: BeaconState, start_block: BeaconBlock) -> BeaconBlock:
+      """
+      Execute the LMD-GHOST algorithm to find the head ``BeaconBlock``.
+      """
+      validators = start_state.validator_registry
+      active_validators = [
+          validators[i]
+          for i in get_active_validator_indices(validators, start_state.slot)
+      ]
+      attestation_targets = [
+          get_latest_attestation_target(store, validator)
+          for validator in active_validators
+      ]
+
+      def get_vote_count(block: BeaconBlock) -> int:
+          return len([
+              target
+              for target in attestation_targets
+              if get_ancestor(store, target, block.slot) == block
+          ])
+
+      head = start_block
+      while 1:
+          children = get_children(store, head)
+          if len(children) == 0:
+              return head
+          head = max(children, key=get_vote_count)
+   */
+  // FIXME should be epoch parameter get_active_validator_indices(validators, start_state.slot)
   public BeaconBlock lmd_ghost(
       BeaconBlock startBlock,
       BeaconState state,
@@ -1425,7 +1460,7 @@ public class SpecHelpers {
       Function<ValidatorRecord, Optional<Attestation>> get_latest_attestation) {
     ReadList<ValidatorIndex, ValidatorRecord> validators = state.getValidatorRegistry();
     List<ValidatorIndex> active_validator_indices =
-        get_active_validator_indices(validators, state.getSlot());
+        get_active_validator_indices(validators, get_current_epoch(state));
 
     List<ValidatorRecord> active_validators = new ArrayList<>();
     for (ValidatorIndex index : active_validator_indices) {

@@ -8,7 +8,9 @@ import org.ethereum.beacon.consensus.verifier.OperationVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
+import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.ssz.Serializer;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
@@ -22,25 +24,38 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
  */
 public class DepositVerifier implements OperationVerifier<Deposit> {
 
-  private ChainSpec chainSpec;
-  private SpecHelpers specHelpers;
+  private final ChainSpec chainSpec;
+  private final SpecHelpers specHelpers;
+  private final Serializer ssz = Serializer.annotationSerializer();
 
   public DepositVerifier(ChainSpec chainSpec, SpecHelpers specHelpers) {
     this.chainSpec = chainSpec;
     this.specHelpers = specHelpers;
   }
 
+  BytesValue serialize(DepositData depositData) {
+    // Let serialized_deposit_data be the serialized form of deposit.deposit_data.
+    // It should be 8 bytes for deposit_data.amount
+    // followed by 8 bytes for deposit_data.timestamp
+    // and then the DepositInput bytes.
+    // That is, it should match deposit_data in the Ethereum 1.0 deposit contract of which
+    // the hash was placed into the Merkle tree.
+    return depositData
+        .getValue().toBytesBigEndian()
+        .concat(depositData.getTimestamp().toBytesBigEndian())
+        .concat(ssz.encode2(depositData.getDepositInput()));
+  }
+
   @Override
   public VerificationResult verify(Deposit deposit, BeaconState state) {
-    BytesValue serializedDepositData =
-        specHelpers.serialized_deposit_data(deposit.getDepositData());
+    BytesValue serializedDepositData = serialize(deposit.getDepositData());
     Hash32 serializedDataHash = specHelpers.hash(serializedDepositData);
 
     if (!specHelpers.verify_merkle_branch(
         serializedDataHash,
-        deposit.getMerkleBranch(),
+        deposit.getBranch(),
         chainSpec.getDepositContractTreeDepth(),
-        deposit.getDepositIndex(),
+        deposit.getIndex(),
         state.getLatestEth1Data().getDepositRoot())) {
 
       return failedResult(

@@ -33,14 +33,14 @@ public class ProposerSlashingVerifier implements OperationVerifier<ProposerSlash
     specHelpers.checkShardRange(proposerSlashing.getProposalData1().getShard());
     specHelpers.checkShardRange(proposerSlashing.getProposalData2().getShard());
 
-    if (proposerSlashing
+    if (!proposerSlashing
         .getProposalData1()
         .getSlot()
         .equals(proposerSlashing.getProposalData2().getSlot())) {
       return failedResult("proposal_data_1.slot != proposal_data_2.slot");
     }
 
-    if (proposerSlashing
+    if (!proposerSlashing
         .getProposalData1()
         .getShard()
         .equals(proposerSlashing.getProposalData2().getShard())) {
@@ -57,13 +57,12 @@ public class ProposerSlashingVerifier implements OperationVerifier<ProposerSlash
 
     ValidatorRecord proposer =
         state.getValidatorRegistry().get(proposerSlashing.getProposerIndex());
-    if (proposer.getPenalizedSlot().greaterEqual(state.getSlot())) {
+    if (!proposer.getPenalizedEpoch().greater(specHelpers.get_current_epoch(state))) {
       return failedResult(
-          "proposer penalized_slot should be less than state.slot, got penalized_slot=%s, state.slot=%s",
-          proposer.getPenalizedSlot(), state.getSlot());
+          "proposer penalized_epoch should be less than get_current_epoch(state)");
     }
 
-    if (specHelpers.bls_verify(
+    if (!specHelpers.bls_verify(
         proposer.getPubKey(),
         specHelpers.hash_tree_root(proposerSlashing.getProposalData1()),
         proposerSlashing.getProposalSignature1(),
@@ -72,7 +71,7 @@ public class ProposerSlashingVerifier implements OperationVerifier<ProposerSlash
       return failedResult("proposal_signature_1 is invalid");
     }
 
-    if (specHelpers.bls_verify(
+    if (!specHelpers.bls_verify(
         proposer.getPubKey(),
         specHelpers.hash_tree_root(proposerSlashing.getProposalData2()),
         proposerSlashing.getProposalSignature2(),

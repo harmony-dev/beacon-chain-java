@@ -28,6 +28,7 @@ public class RandaoVerifier implements BeaconBlockVerifier {
 
   @Override
   public VerificationResult verify(BeaconBlock block, BeaconState state) {
+    // Let proposer = state.validator_registry[get_beacon_proposer_index(state, state.slot)].
     ValidatorRecord proposer =
         state
             .getValidatorRegistry()
@@ -35,14 +36,14 @@ public class RandaoVerifier implements BeaconBlockVerifier {
 
     /*
      Verify that bls_verify(pubkey=proposer.pubkey,
-       message=int_to_bytes32(proposer.proposer_slots), signature=block.randao_reveal,
-       domain=get_domain(state.fork, state.slot, DOMAIN_RANDAO))
+       message=int_to_bytes32(get_current_epoch(state)), signature=block.randao_reveal,
+       domain=get_domain(state.fork, get_current_epoch(state), DOMAIN_RANDAO))
     */
     if (!specHelpers.bls_verify(
         proposer.getPubKey(),
-        Hash32.wrap(Bytes32.leftPad(proposer.getProposerSlots().toBytesBigEndian())),
+        Hash32.wrap(Bytes32.leftPad(specHelpers.get_current_epoch(state).toBytesBigEndian())),
         block.getRandaoReveal(),
-        specHelpers.get_domain(state.getForkData(), state.getSlot(), RANDAO))) {
+        specHelpers.get_domain(state.getForkData(), specHelpers.get_current_epoch(state), RANDAO))) {
 
       return VerificationResult.failedResult("RANDAO reveal verification failed");
     }

@@ -39,6 +39,8 @@ public interface WriteList<IndexType extends Number, ValueType>
 
   ValueType remove(IndexType index);
 
+  void retainAll(ReadList<IndexType, ValueType> other);
+
   ReadList<IndexType, ValueType> createImmutableCopy();
 
   default ValueType update(IndexType index, Function<ValueType, ValueType> updater) {
