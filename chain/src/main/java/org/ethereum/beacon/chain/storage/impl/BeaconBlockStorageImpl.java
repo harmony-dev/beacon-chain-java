@@ -1,5 +1,7 @@
 package org.ethereum.beacon.chain.storage.impl;
 
+import java.util.function.Function;
+import org.ethereum.beacon.chain.storage.AbstractHashKeyStorage;
 import org.ethereum.beacon.chain.storage.BeaconBlockStorage;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.spec.ChainSpec;
@@ -18,7 +20,8 @@ import java.util.stream.Collectors;
 
 import static java.util.Collections.singleton;
 
-public class BeaconBlockStorageImpl implements BeaconBlockStorage {
+public class BeaconBlockStorageImpl extends AbstractHashKeyStorage<Hash32, BeaconBlock>
+    implements BeaconBlockStorage {
 
   private static class SlotBlocks {
 
@@ -106,10 +109,11 @@ public class BeaconBlockStorageImpl implements BeaconBlockStorage {
   private final boolean checkParentExistOnAdd;
 
   public BeaconBlockStorageImpl(
+      Function<Object, Hash32> hashFunction,
       DataSource<Hash32, BeaconBlock> rawBlocks,
       HoleyList<SlotBlocks> blockIndex,
       ChainSpec chainSpec) {
-    this(rawBlocks, blockIndex, chainSpec, true, true);
+    this(hashFunction, rawBlocks, blockIndex, chainSpec, true, true);
   }
 
   /**
@@ -121,11 +125,13 @@ public class BeaconBlockStorageImpl implements BeaconBlockStorage {
    *     overhead)
    */
   public BeaconBlockStorageImpl(
+      Function<Object, Hash32> hashFunction,
       DataSource<Hash32, BeaconBlock> rawBlocks,
       HoleyList<SlotBlocks> blockIndex,
       ChainSpec chainSpec,
       boolean checkBlockExistOnAdd,
       boolean checkParentExistOnAdd) {
+    super(hashFunction);
     this.rawBlocks = rawBlocks;
     this.blockIndex = blockIndex;
     this.chainSpec = chainSpec;
@@ -167,13 +173,14 @@ public class BeaconBlockStorageImpl implements BeaconBlockStorage {
     }
 
     rawBlocks.put(key, newBlock);
+    Hash32 newBlockHash = hash(newBlock);
     SlotBlocks slotBlocks =
-        newBlock.getSlot() == chainSpec.getGenesisSlot()
-            ? new SlotBlocks(newBlock.getHash(), newBlock.getHash(), newBlock.getHash())
-            : new SlotBlocks(newBlock.getHash());
+        newBlock.getSlot().equals(chainSpec.getGenesisSlot())
+            ? new SlotBlocks(newBlockHash, newBlockHash, newBlockHash)
+            : new SlotBlocks(newBlockHash);
     blockIndex.update(
         newBlock.getSlot().getValue(),
-        blocks -> blocks.addBlock(newBlock.getHash()),
+        blocks -> blocks.addBlock(newBlockHash),
         () -> slotBlocks);
   }
 
@@ -221,7 +228,7 @@ public class BeaconBlockStorageImpl implements BeaconBlockStorage {
       getSlotBlocks(curSlot).stream()
           .map(this::get)
           .filter(Optional::isPresent)
-          .filter(b -> start.isParentOf(b.get()))
+          .filter(b -> isChild(start, b.get()))
           .forEach(b -> children.add(b.get()));
     }
 
@@ -313,5 +320,9 @@ public class BeaconBlockStorageImpl implements BeaconBlockStorage {
   @Override
   public void flush() {
     // nothing to be done here. No cached data in this implementation
+  }
+
+  public boolean isChild(BeaconBlock parent, BeaconBlock child) {
+    return hash(parent).equals(child.getParentRoot());
   }
 }

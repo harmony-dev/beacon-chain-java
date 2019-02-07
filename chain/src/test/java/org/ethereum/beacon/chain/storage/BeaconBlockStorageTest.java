@@ -1,6 +1,7 @@
 package org.ethereum.beacon.chain.storage;
 
 import org.ethereum.beacon.chain.storage.impl.MemBeaconChainStorage;
+import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.state.Eth1Data;
@@ -21,13 +22,13 @@ public class BeaconBlockStorageTest {
 
   private long counter = 0;
 
-  private BeaconBlockStorage create() {
-    return new MemBeaconChainStorage().createBeaconBlockStorage();
+  private BeaconBlockStorage create(SpecHelpers specHelpers) {
+    return new MemBeaconChainStorage(specHelpers::hash_tree_root).createBeaconBlockStorage();
   }
 
-  private BeaconBlock createBlock(long slot, BeaconBlock parent) {
+  private BeaconBlock createBlock(long slot, BeaconBlock parent, Hash32 parentHash) {
     return new BeaconBlock(SlotNumber.of(slot),
-        parent == null ? Hash32.ZERO : parent.getHash(),
+        parent == null ? Hash32.ZERO : parentHash,
         Hash32.wrap(Bytes32.leftPad(BytesValues.toMinimalBytes(counter++))),
         BLSSignature.ZERO, Eth1Data.EMPTY, BLSSignature.ZERO, BeaconBlockBody.EMPTY);
   }

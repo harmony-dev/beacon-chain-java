@@ -146,6 +146,6 @@ public class BlockTransition implements StateTransition<BeaconStateEx> {
       specHelpers.initiate_validator_exit(state, exit.getValidatorIndex());
     }
 
-    return new BeaconStateEx(state.createImmutable(), block.getHash());
+    return new BeaconStateEx(state.createImmutable(), specHelpers.hash_tree_root(block));
   }
 }

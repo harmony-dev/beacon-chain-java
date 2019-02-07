@@ -138,9 +138,9 @@ public class InitialStateTransition implements StateTransition<BeaconStateEx> {
 
     BeaconState validatorsState = initialState.createImmutable();
 
-    Hash32 genesisBlockHash = BeaconBlocks.createGenesis(chainSpec)
-        .withStateRoot(validatorsState.getHash()).getHash();
+    BeaconBlock genesisBlock = BeaconBlocks.createGenesis(chainSpec)
+        .withStateRoot(specHelpers.hash_tree_root(validatorsState));
 
-    return new BeaconStateEx(validatorsState, genesisBlockHash);
+    return new BeaconStateEx(validatorsState, specHelpers.hash_tree_root(genesisBlock));
   }
 }

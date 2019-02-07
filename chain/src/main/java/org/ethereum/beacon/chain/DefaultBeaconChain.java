@@ -1,9 +1,13 @@
 package org.ethereum.beacon.chain;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
+import java.util.Optional;
 import org.ethereum.beacon.chain.storage.BeaconBlockStorage;
 import org.ethereum.beacon.chain.storage.BeaconStateStorage;
 import org.ethereum.beacon.chain.storage.BeaconTuple;
 import org.ethereum.beacon.chain.storage.BeaconTupleStorage;
+import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
 import org.ethereum.beacon.consensus.verifier.BeaconStateVerifier;
@@ -17,12 +21,11 @@ import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.ReplayProcessor;
 import reactor.core.scheduler.Schedulers;
-import java.util.Optional;
-
-import static com.google.common.base.Preconditions.checkArgument;
+import tech.pegasys.artemis.ethereum.core.Hash32;
 
 public class DefaultBeaconChain implements MutableBeaconChain {
 
+  SpecHelpers specHelpers;
   ChainSpec chainSpec;
 
   BeaconBlockStorage blockStorage;
@@ -56,7 +59,8 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     BeaconState initialState =
         initialTransition.apply(BeaconBlocks.createGenesis(chainSpec), BeaconState.getEmpty());
     BeaconBlock genesis =
-        BeaconBlocks.createGenesis(chainSpec).withStateRoot(initialState.getHash());
+        BeaconBlocks.createGenesis(chainSpec)
+            .withStateRoot(hash(initialState));
 
     BeaconTuple tuple = BeaconTuple.of(genesis, initialState);
     tupleStorage.put(tuple);
@@ -103,11 +107,15 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   }
 
   private boolean exist(BeaconBlock block) {
-    return blockStorage.get(block.getHash()).isPresent();
+    return blockStorage.get(hash(block)).isPresent();
   }
 
   private boolean hasParent(BeaconBlock block) {
     return blockStorage.get(block.getParentRoot()).isPresent();
+  }
+
+  private Hash32 hash(Object object) {
+    return specHelpers.hash_tree_root(object);
   }
 
   @Override

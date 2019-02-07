@@ -1,5 +1,6 @@
 package org.ethereum.beacon.core;
 
+import com.google.common.base.Objects;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.SlotNumber;
@@ -55,10 +56,6 @@ public class BeaconBlock implements Hashable<Hash32> {
     this.body = body;
   }
 
-  public boolean isParentOf(BeaconBlock ancestor) {
-    return this.getHash().equals(ancestor.parentRoot);
-  }
-
   public BeaconBlock withStateRoot(Hash32 stateRoot) {
     return new BeaconBlock(slot, parentRoot, stateRoot, randaoReveal, eth1Data, signature, body);
   }
@@ -92,22 +89,26 @@ public class BeaconBlock implements Hashable<Hash32> {
   }
 
   @Override
-  public Hash32 getHash() {
-    // TODO temporary hash for tests
-    return getStateRoot();
-  }
-
-  @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-    BeaconBlock that = (BeaconBlock) o;
-    return getHash().equals(that.getHash());
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    BeaconBlock block = (BeaconBlock) o;
+    return Objects.equal(slot, block.slot) &&
+        Objects.equal(parentRoot, block.parentRoot) &&
+        Objects.equal(stateRoot, block.stateRoot) &&
+        Objects.equal(randaoReveal, block.randaoReveal) &&
+        Objects.equal(eth1Data, block.eth1Data) &&
+        Objects.equal(signature, block.signature) &&
+        Objects.equal(body, block.body);
   }
 
   @Override
   public int hashCode() {
-    return getHash().hashCode();
+    return Objects.hashCode(slot, parentRoot, stateRoot, randaoReveal, eth1Data, signature, body);
   }
 
   public static class Builder {

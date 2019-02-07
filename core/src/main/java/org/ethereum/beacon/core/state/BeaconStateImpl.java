@@ -373,11 +373,6 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
-  public Hash32 getHash() {
-    return Hash32.ZERO;
-  }
-
-  @Override
   public MutableBeaconState createMutableCopy() {
     return new BeaconStateImpl(this);
   }

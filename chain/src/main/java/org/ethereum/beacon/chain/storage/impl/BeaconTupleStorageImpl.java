@@ -1,5 +1,7 @@
 package org.ethereum.beacon.chain.storage.impl;
 
+import java.util.function.Function;
+import org.ethereum.beacon.chain.storage.AbstractHashKeyStorage;
 import org.ethereum.beacon.chain.storage.BeaconBlockStorage;
 import org.ethereum.beacon.chain.storage.BeaconStateStorage;
 import org.ethereum.beacon.chain.storage.BeaconTuple;
@@ -9,13 +11,17 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 import javax.annotation.Nonnull;
 import java.util.Optional;
 
-public class BeaconTupleStorageImpl implements BeaconTupleStorage {
+public class BeaconTupleStorageImpl extends AbstractHashKeyStorage<Hash32, BeaconTuple>
+    implements BeaconTupleStorage {
 
   private final BeaconBlockStorage blockStorage;
   private final BeaconStateStorage stateStorage;
 
-  public BeaconTupleStorageImpl(BeaconBlockStorage blockStorage,
-                                BeaconStateStorage stateStorage) {
+  public BeaconTupleStorageImpl(
+      Function<Object, Hash32> hashFunction,
+      BeaconBlockStorage blockStorage,
+      BeaconStateStorage stateStorage) {
+    super(hashFunction);
     this.blockStorage = blockStorage;
     this.stateStorage = stateStorage;
   }
@@ -31,7 +37,7 @@ public class BeaconTupleStorageImpl implements BeaconTupleStorage {
 
   @Override
   public void put(Hash32 hash, BeaconTuple tuple) {
-    assert hash.equals(tuple.getHash());
+    assert hash.equals(hash(tuple));
 
     blockStorage.put(tuple.getBlock());
     stateStorage.put(tuple.getState());

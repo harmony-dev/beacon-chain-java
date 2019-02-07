@@ -26,9 +26,4 @@ public class BeaconTuple implements Hashable<Hash32> {
   public BeaconState getState() {
     return state;
   }
-
-  @Override
-  public Hash32 getHash() {
-    return block.getHash();
-  }
 }
