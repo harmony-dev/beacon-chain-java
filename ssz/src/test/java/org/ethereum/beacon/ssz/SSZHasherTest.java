@@ -104,30 +104,6 @@ public class SSZHasherTest {
   }
 
   @Test
-  public void list48Test() {
-    List<byte[]> hashes = new ArrayList<>();
-    hashes.add(Hashes.keccak384(BytesValue.fromHexString("aa")).getArrayUnsafe());
-    hashes.add(Hashes.keccak384(BytesValue.fromHexString("bb")).getArrayUnsafe());
-    hashes.add(Hashes.keccak384(BytesValue.fromHexString("cc")).getArrayUnsafe());
-    AttestationRecord attestationRecord =
-        new AttestationRecord(
-            123,
-            Collections.emptyList(),
-            DEFAULT_HASH,
-            new Bitfield(decode("abcdef45")),
-            DEFAULT_HASH,
-            12412L,
-            12400L,
-            DEFAULT_SIG);
-
-    BytesValue hash = sszHasher.calc(attestationRecord);
-    assertEquals(
-        BytesValue.fromHexString(
-            "740620beb3f42033473a7adf01b5f115ec0a72bf8c97eb36f732a6158ff8775d"),
-        hash);
-  }
-
-  @Test
   public void smallItemsListTest() {
     List<Long> list = new ArrayList<>();
     list.add(1L);

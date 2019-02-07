@@ -3,6 +3,7 @@ package org.ethereum.beacon.core.types;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.util.uint.UInt64;
 
+/** Time in seconds. */
 @SSZSerializable(serializeAs = UInt64.class)
 public class Time extends UInt64 implements SafeComparable<Time> {
 
@@ -47,4 +48,7 @@ public class Time extends UInt64 implements SafeComparable<Time> {
     return new Time(super.dividedBy(divisor));
   }
 
+  public Millis getMillis() {
+    return Millis.of(getValue() * 1000);
+  }
 }

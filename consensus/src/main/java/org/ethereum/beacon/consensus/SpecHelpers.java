@@ -12,6 +12,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.ethereum.beacon.core.BeaconBlock;
@@ -36,9 +37,11 @@ import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
+import org.ethereum.beacon.core.types.Millis;
 import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
+import org.ethereum.beacon.core.types.Times;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.crypto.BLS381;
 import org.ethereum.beacon.crypto.BLS381.PublicKey;
@@ -1325,10 +1328,10 @@ public class SpecHelpers {
   }
 
   public SlotNumber get_current_slot(BeaconState state) {
-    Time currentTime = Time.of(System.currentTimeMillis() / 1000);
-    assert state.getGenesisTime().compareTo(currentTime) < 0;
-    return SlotNumber.castFrom(
-        currentTime.minus(state.getGenesisTime()).dividedBy(spec.getSlotDuration()));
+    Millis currentTime = Times.currentTimeMillis();
+    assert state.getGenesisTime().less(currentTime.getSeconds());
+    Time sinceGenesis = currentTime.getSeconds().minus(state.getGenesisTime());
+    return SlotNumber.castFrom(sinceGenesis.dividedBy(spec.getSlotDuration()));
   }
 
   public boolean is_current_slot(BeaconState state) {
@@ -1412,7 +1415,7 @@ public class SpecHelpers {
       BeaconState state,
       Function<Hash32, Optional<BeaconBlock>> getBlock,
       Function<Hash32, List<BeaconBlock>> getChildrenBlocks,
-      Function<ValidatorRecord, Attestation> get_latest_attestation) {
+      Function<ValidatorRecord, Optional<Attestation>> get_latest_attestation) {
     ReadList<ValidatorIndex, ValidatorRecord> validators = state.getValidatorRegistry();
     List<ValidatorIndex> active_validator_indices =
         get_active_validator_indices(validators, state.getSlot());
@@ -1452,10 +1455,10 @@ public class SpecHelpers {
    */
   private Optional<BeaconBlock> get_latest_attestation_target(
       ValidatorRecord validatorRecord,
-      Function<ValidatorRecord, Attestation> get_latest_attestation,
+      Function<ValidatorRecord, Optional<Attestation>> get_latest_attestation,
       Function<Hash32, Optional<BeaconBlock>> getBlock) {
-    Attestation latest = get_latest_attestation.apply(validatorRecord);
-    return getBlock.apply(latest.getData().getJustifiedBlockRoot());
+    Optional<Attestation> latest = get_latest_attestation.apply(validatorRecord);
+    return latest.flatMap(at -> getBlock.apply(at.getData().getJustifiedBlockRoot()));
   }
 
   /**
