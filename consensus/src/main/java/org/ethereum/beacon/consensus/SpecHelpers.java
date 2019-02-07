@@ -90,104 +90,205 @@ public class SpecHelpers {
   }
 
   /*
-    def get_committee_count_per_slot(active_validator_count: int) -> int:
-    return max(
-          1,
-          min(
-              SHARD_COUNT // EPOCH_LENGTH,
-    active_validator_count // EPOCH_LENGTH// TARGET_COMMITTEE_SIZE,
-          )
-      )
+    def get_epoch_committee_count(active_validator_count: int) -> int:
+        """
+        Return the number of committees in one epoch.
+        """
+        return max(
+            1,
+            min(
+                SHARD_COUNT // EPOCH_LENGTH,
+                active_validator_count // EPOCH_LENGTH // TARGET_COMMITTEE_SIZE,
+            )
+        ) * EPOCH_LENGTH
    */
-  int get_committee_count_per_slot(int active_validator_count) {
+  int get_epoch_committee_count(int active_validator_count) {
     return max(1,
         min(
             spec.getShardCount()
                 .dividedBy(spec.getEpochLength()).getIntValue(),
             UInt64.valueOf(active_validator_count)
                 .dividedBy(spec.getEpochLength())
-                .dividedBy(spec.getTargetCommitteeSize().getValue())
+                .dividedBy(spec.getTargetCommitteeSize())
                 .getIntValue()
         ));
   }
 
   /*
-      def get_previous_epoch_committee_count_per_slot(state: BeaconState) -> int:
-        previous_active_validators = get_active_validator_indices(state.validator_registry, state.previous_epoch_calculation_slot)
-        return get_committee_count_per_slot(len(previous_active_validators))
+    def get_previous_epoch_committee_count(state: BeaconState) -> int:
+        """
+        Return the number of committees in the previous epoch of the given ``state``.
+        """
+        previous_active_validators = get_active_validator_indices(
+            state.validator_registry,
+            state.previous_calculation_epoch,
+        )
+        return get_epoch_committee_count(len(previous_active_validators))
    */
-  public int get_previous_epoch_committee_count_per_slot(BeaconState state) {
+  public int get_previous_epoch_committee_count(BeaconState state) {
     List<ValidatorIndex> previous_active_validators = get_active_validator_indices(
         state.getValidatorRegistry(),
-        state.getPreviousEpochCalculationSlot());
-    return get_committee_count_per_slot(previous_active_validators.size());
+        state.getPreviousCalculationEpoch());
+    return get_epoch_committee_count(previous_active_validators.size());
   }
 
   /*
-    def get_current_epoch_committee_count_per_slot(state: BeaconState) -> int:
-        current_active_validators = get_active_validator_indices(validators, state.current_epoch_calculation_slot)
-        return get_committee_count_per_slot(len(current_active_validators))
+    def get_current_epoch_committee_count(state: BeaconState) -> int:
+        """
+        Return the number of committees in the current epoch of the given ``state``.
+        """
+        current_active_validators = get_active_validator_indices(
+            state.validator_registry,
+            state.current_calculation_epoch,
+        )
+        return get_epoch_committee_count(len(current_active_validators))
    */
-  public int get_current_epoch_committee_count_per_slot(BeaconState state) {
-    List<ValidatorIndex> previous_active_validators = get_active_validator_indices(
+  public int get_current_epoch_committee_count(BeaconState state) {
+    List<ValidatorIndex> current_active_validators = get_active_validator_indices(
         state.getValidatorRegistry(),
-        state.getCurrentEpochCalculationSlot());
-    return get_committee_count_per_slot(previous_active_validators.size());
+        state.getCurrentCalculationEpoch());
+    return get_epoch_committee_count(current_active_validators.size());
+  }
+
+  /*
+    def get_next_epoch_committee_count(state: BeaconState) -> int:
+        next_active_validators = get_active_validator_indices(
+            state.validator_registry,
+            get_current_epoch(state) + 1,
+        )
+        return get_epoch_committee_count(len(next_active_validators))
+   */
+  public int get_next_epoch_committee_count(BeaconState state) {
+    List<ValidatorIndex> next_active_validators = get_active_validator_indices(
+        state.getValidatorRegistry(),
+        get_current_epoch(state).increment());
+    return get_epoch_committee_count(next_active_validators.size());
   }
 
   /*
     Returns the list of ``(committee, shard)`` tuples for the ``slot``.
    */
-  public List<ShardCommittee> get_shard_committees_at_slot(BeaconState state, SlotNumber slot) {
+  public List<ShardCommittee> get_crosslink_committees_at_slot(
+      BeaconState state, SlotNumber slot, boolean registry_change) {
+
     SlotNumber state_epoch_slot = state.getSlot().minus(state.getSlot().modulo(spec.getEpochLength()));
     assertTrue(state_epoch_slot.lessEqual(slot.plus(spec.getEpochLength())));
     assertTrue(slot.less(state_epoch_slot.plus(spec.getEpochLength())));
 
+    //  epoch = slot_to_epoch(slot)
+    //  current_epoch = get_current_epoch(state)
+    //  previous_epoch = current_epoch - 1 if current_epoch > GENESIS_EPOCH else current_epoch
+    //  next_epoch = current_epoch + 1
+    EpochNumber epoch = slot_to_epoch(slot);
+    EpochNumber current_epoch = get_current_epoch(state);
+    EpochNumber previous_epoch =
+        current_epoch.greater(spec.getGenesisEpoch()) ? current_epoch.decrement() : current_epoch;
+    EpochNumber next_epoch = current_epoch.increment();
+    //     assert previous_epoch <= epoch <= next_epoch
+    assertTrue(previous_epoch.lessEqual(epoch));
+    assertTrue(epoch.lessEqual(next_epoch));
+
+    /*
+      if epoch == previous_epoch:
+        committees_per_epoch = get_previous_epoch_committee_count(state)
+        seed = state.previous_epoch_seed
+        shuffling_epoch = state.previous_calculation_epoch
+        shuffling_start_shard = state.previous_epoch_start_shard
+     */
+    int committees_per_epoch;
+    Hash32 seed;
+    EpochNumber shuffling_epoch;
+    ShardNumber shuffling_start_shard;
+    if (epoch.equals(previous_epoch)) {
+      committees_per_epoch = get_previous_epoch_committee_count(state);
+      seed = state.getPreviousEpochSeed();
+      shuffling_epoch = state.getPreviousCalculationEpoch();
+      shuffling_start_shard = state.getPreviousEpochStartShard();
+    } else if (epoch.equals(current_epoch)) {
+      /*
+          elif epoch == current_epoch:
+              committees_per_epoch = get_current_epoch_committee_count(state)
+              seed = state.current_epoch_seed
+              shuffling_epoch = state.current_calculation_epoch
+
+       */
+      committees_per_epoch = get_current_epoch_committee_count(state);
+      seed = state.getCurrentEpochSeed();
+      shuffling_epoch = state.getCurrentCalculationEpoch();
+      shuffling_start_shard = state.getCurrentEpochStartShard();
+    } else {
+      assertTrue(epoch.equals(next_epoch));
+      /*
+          elif epoch == next_epoch:
+              current_committees_per_epoch = get_current_epoch_committee_count(state)
+              committees_per_epoch = get_next_epoch_committee_count(state)
+              shuffling_epoch = next_epoch
+              epochs_since_last_registry_update = current_epoch - state.validator_registry_update_epoch
+
+       */
+      int current_committees_per_epoch = get_current_epoch_committee_count(state);
+      committees_per_epoch = get_next_epoch_committee_count(state);
+      shuffling_epoch = next_epoch;
+      EpochNumber epochs_since_last_registry_update = current_epoch
+          .minus(state.getValidatorRegistryUpdateEpoch());
+      /*
+        if registry_change:
+            seed = generate_seed(state, next_epoch)
+            shuffling_start_shard = (state.current_epoch_start_shard + current_committees_per_epoch) % SHARD_COUNT
+       */
+      if (registry_change) {
+        seed = generate_seed(state, next_epoch);
+        shuffling_start_shard = state.getCurrentEpochStartShard()
+            .plusModulo(current_committees_per_epoch, spec.getShardCount());
+      } else if (epochs_since_last_registry_update.greater(EpochNumber.of(1)) &&
+          is_power_of_two(epochs_since_last_registry_update)) {
+        /*
+          elif epochs_since_last_registry_update > 1 and is_power_of_two(epochs_since_last_registry_update):
+            seed = generate_seed(state, next_epoch)
+            shuffling_start_shard = state.current_epoch_start_shard
+         */
+        seed = generate_seed(state, next_epoch);
+        shuffling_start_shard = state.getCurrentEpochStartShard()
+      } else {
+        /*
+          else:
+            seed = state.current_epoch_seed
+            shuffling_start_shard = state.current_epoch_start_shard
+         */
+        seed = state.getCurrentEpochSeed();
+        shuffling_start_shard = state.getCurrentEpochStartShard();
+      }
+    }
+    List<List<ValidatorIndex>> shuffling = get_shuffling(seed, state.getValidatorRegistry(),
+        shuffling_epoch);
+
     //    offset = slot % EPOCH_LENGTH
     SlotNumber offset = slot.modulo(spec.getEpochLength());
+    //    committees_per_slot = committees_per_epoch // EPOCH_LENGTH
+    UInt64 committees_per_slot = UInt64.valueOf(committees_per_epoch).dividedBy(spec.getEpochLength());
+    //    slot_start_shard = (shuffling_start_shard + committees_per_slot * offset) % SHARD_COUNT
+    ShardNumber slot_start_shard = shuffling_start_shard
+        .plusModulo(committees_per_slot.times(offset), spec.getShardCount());
 
-    //    if slot < state_epoch_slot:
-    int committees_per_slot;
-    List<List<ValidatorIndex>> shuffling;
-    ShardNumber slot_start_shard;
-    if (slot.less(state_epoch_slot)) {
-      //      committees_per_slot = get_previous_epoch_committees_per_slot(state)
-      committees_per_slot = get_previous_epoch_committee_count_per_slot(state);
-      //      shuffling = get_shuffling(state.previous_epoch_randao_mix,
-      //          state.validator_registry,
-      //          state.previous_epoch_calculation_slot)
-      shuffling = get_shuffling(state.getPreviousEpochRandaoMix(),
-          state.getValidatorRegistry(),
-          state.getPreviousEpochCalculationSlot());
-          //      slot_start_shard = (state.previous_epoch_start_shard + committees_per_slot * offset) % SHARD_COUNT
-      slot_start_shard = state.getPreviousEpochStartShard()
-          .plusModulo(offset.times(committees_per_slot), spec.getShardCount());
-    //    else:
-    } else {
-      //      committees_per_slot = get_current_epoch_committees_per_slot(state)
-      committees_per_slot = get_current_epoch_committee_count_per_slot(state);
-      //      shuffling = get_shuffling(state.current_epoch_randao_mix,
-      //          state.validator_registry,
-      //          state.current_epoch_calculation_slot)
-      shuffling = get_shuffling(state.getCurrentEpochRandaoMix(),
-          state.getValidatorRegistry(),
-          state.getCurrentEpochCalculationSlot());
-      //      slot_start_shard = (state.current_epoch_start_shard + committees_per_slot * offset) % SHARD_COUNT
-      slot_start_shard = state.getCurrentEpochStartShard()
-          .plusModulo(offset.times(committees_per_slot), spec.getShardCount());
-    }
-
-    //    return [
-    //    (shuffling[committees_per_slot * offset + i], (slot_start_shard + i) % SHARD_COUNT)
-    //    for i in range(committees_per_slot)
-    //    ]
+    /*
+       return [
+        (
+            shuffling[committees_per_slot * offset + i],
+            (slot_start_shard + i) % SHARD_COUNT,
+        )
+        for i in range(committees_per_slot)
+      ]
+     */
     List<ShardCommittee> ret = new ArrayList<>();
-    for (int i = 0; i < committees_per_slot; i++) {
-      List<ValidatorIndex> shuffling1 = shuffling.get(offset.times(committees_per_slot).plus(i).getIntValue());
-      ret.add(new ShardCommittee(shuffling1, slot_start_shard.plusModulo(i, spec.getShardCount())));
+    for(int i = 0; i < committees_per_slot.intValue(); i++) {
+      ShardCommittee committee = new ShardCommittee(
+          shuffling.get(committees_per_slot.times(offset).plus(i).getIntValue()),
+          slot_start_shard.plusModulo(i, spec.getShardCount()));
+      ret.add(committee);
     }
+
     return ret;
-}
+  }
 
   /*
    first_committee = get_shard_committees_at_slot(state, slot)[0].committee
@@ -360,30 +461,23 @@ public class SpecHelpers {
   //  """
   public List<List<ValidatorIndex>> get_shuffling(Hash32 _seed,
                                ReadList<ValidatorIndex, ValidatorRecord> validators,
-                               SlotNumber _slot) {
+                               EpochNumber epoch) {
 
 
-    //
-    //      # Normalizes slot to start of epoch boundary
-    //  slot -= slot % EPOCH_LENGTH
-    SlotNumber slot = _slot.minus(_slot.modulo(spec.getEpochLength()));
     //      active_validator_indices = get_active_validator_indices(validators, slot)
-    List<ValidatorIndex>  active_validator_indices = get_active_validator_indices(validators, slot);
-    //      committees_per_slot = get_committee_count_per_slot(len(active_validator_indices))
-    int committees_per_slot = get_committee_count_per_slot(active_validator_indices.size());
+    List<ValidatorIndex>  active_validator_indices = get_active_validator_indices(validators, epoch);
+    //      committees_per_epoch = get_epoch_committee_count(len(active_validator_indices))
+    int committees_per_epoch = get_epoch_committee_count(active_validator_indices.size());
 
     //      # Shuffle
-    //      seed = xor(seed, bytes32(slot))
-    Hash32 seed = Hash32.wrap(Bytes32s.xor(_seed, Bytes32.leftPad(slot.toBytesBigEndian())));
+    //      seed = xor(seed, int_to_bytes32(epoch))
+    Hash32 seed = Hash32.wrap(Bytes32s.xor(_seed, Bytes32.leftPad(epoch.toBytesBigEndian())));
 
     //  shuffled_active_validator_indices = shuffle(active_validator_indices, seed)
     List<ValidatorIndex> shuffled_active_validator_indices = shuffle(active_validator_indices, seed);
-    //    # Split the shuffled list into epoch_length * committees_per_slot pieces
-    //    return split(shuffled_active_validator_indices, committees_per_slot * EPOCH_LENGTH)
-    return split(shuffled_active_validator_indices,
-        spec.getEpochLength()
-            .times(committees_per_slot)
-            .getIntValue());
+    //    # Split the shuffled list into committees_per_epoch pieces
+    //    return split(shuffled_active_validator_indices, committees_per_epoch)
+    return split(shuffled_active_validator_indices, committees_per_epoch);
   }
 
   /*
@@ -448,7 +542,21 @@ public class SpecHelpers {
     return x;
   }
 
-/*
+  /*
+  def is_power_of_two(value: int) -> bool:
+    """
+    Check if ``value`` is a power of two integer.
+    """
+    if value == 0:
+        return False
+    else:
+        return 2**int(math.log2(value)) == value
+   */
+  public boolean is_power_of_two(UInt64 value) {
+    return Long.bitCount(value.getValue()) == 1;
+  }
+
+  /*
     def validate_proof_of_possession(state: BeaconState,
                                      pubkey: int,
                                      proof_of_possession: bytes,
