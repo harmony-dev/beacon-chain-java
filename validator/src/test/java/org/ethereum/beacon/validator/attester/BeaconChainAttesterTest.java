@@ -75,7 +75,7 @@ public class BeaconChainAttesterTest {
     Assert.assertTrue(attestation.getCustodyBitfield().isZero());
 
     byte aByte = attestation.getParticipationBitfield().get(indexIntoCommittee / 8);
-    Assert.assertEquals(1, (aByte >> (indexIntoCommittee % 8)) & 0xFF);
+    Assert.assertEquals(1, (aByte >>> (indexIntoCommittee % 8)) & 0xFF);
 
     BLSSignature expectedSignature =
         signer.sign(
