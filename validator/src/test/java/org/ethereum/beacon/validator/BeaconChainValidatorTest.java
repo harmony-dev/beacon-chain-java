@@ -32,14 +32,14 @@ public class BeaconChainValidatorTest {
 
     // state was kept
     validator.onNewState(currentSlotState);
-    Assert.assertEquals(currentSlotState, validator.recentState);
+    Assert.assertEquals(currentSlotState, validator.getRecentState());
 
     ObservableBeaconState updatedState =
         ObservableBeaconStateTestUtil.createInitialState(random, specHelpers, currentSlot);
 
     // state was updated
     validator.onNewState(updatedState);
-    Assert.assertEquals(updatedState, validator.recentState);
+    Assert.assertEquals(updatedState, validator.getRecentState());
   }
 
   @Test
@@ -62,15 +62,15 @@ public class BeaconChainValidatorTest {
 
     // state wasn't kept
     validator.onNewState(outdatedState);
-    Assert.assertNull(validator.recentState);
+    Assert.assertNull(validator.getRecentState());
 
     // state was kept
     validator.onNewState(currentSlotState);
-    Assert.assertEquals(currentSlotState, validator.recentState);
+    Assert.assertEquals(currentSlotState, validator.getRecentState());
 
     // state wasn't updated
     validator.onNewState(outdatedState);
-    Assert.assertEquals(currentSlotState, validator.recentState);
+    Assert.assertEquals(currentSlotState, validator.getRecentState());
   }
 
   @Test
@@ -86,7 +86,7 @@ public class BeaconChainValidatorTest {
     ObservableBeaconState outdatedState =
         ObservableBeaconStateTestUtil.createInitialState(random, specHelpers, SlotNumber.ZERO);
     validator.onNewState(outdatedState);
-    Assert.assertNull(validator.recentState);
+    Assert.assertNull(validator.getRecentState());
 
     Mockito.verify(validator, Mockito.never()).init(any());
     Mockito.verify(validator, Mockito.never()).runTasks(any());
@@ -107,7 +107,7 @@ public class BeaconChainValidatorTest {
     Mockito.verify(validator, Mockito.never()).runTasks(currentSlotState);
 
     // validatorIndex is set
-    Assert.assertEquals(validatorIndex, validator.validatorIndex);
+    Assert.assertEquals(validatorIndex, validator.getValidatorIndex());
 
     // init is not triggered twice
     validator.onNewState(currentSlotState);
@@ -143,7 +143,7 @@ public class BeaconChainValidatorTest {
 
     validator.onNewState(initialState);
     // validatorIndex is set
-    Assert.assertEquals(validatorIndex, validator.validatorIndex);
+    Assert.assertEquals(validatorIndex, validator.getValidatorIndex());
 
     // runTasks was called on a new state
     validator.onNewState(updatedState);

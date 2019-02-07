@@ -44,11 +44,11 @@ public class BeaconChainValidator implements ValidatorService {
   private MessageSigner<BLSSignature> messageSigner;
 
   /** Validator index. Assigned in {@link #init(BeaconState)} method. */
-  @VisibleForTesting ValidatorIndex validatorIndex = ValidatorIndex.MAX;
+  private ValidatorIndex validatorIndex = ValidatorIndex.MAX;
   /** Latest slot that has been processed. Initialized in {@link #init(BeaconState)} method. */
-  @VisibleForTesting SlotNumber lastProcessedSlot = SlotNumber.castFrom(UInt64.MAX_VALUE);
+  private SlotNumber lastProcessedSlot = SlotNumber.castFrom(UInt64.MAX_VALUE);
   /** The most recent beacon state came from the outside. */
-  @VisibleForTesting ObservableBeaconState recentState;
+  private ObservableBeaconState recentState;
 
   /** Validator task executor. */
   private ScheduledExecutorService executor;
@@ -299,4 +299,14 @@ public class BeaconChainValidator implements ValidatorService {
   private void propagateAttestation(Attestation attestation) {}
 
   private void subscribeToStateUpdates(Consumer<ObservableBeaconState> payload) {}
+
+  @VisibleForTesting
+  ValidatorIndex getValidatorIndex() {
+    return validatorIndex;
+  }
+
+  @VisibleForTesting
+  ObservableBeaconState getRecentState() {
+    return recentState;
+  }
 }
