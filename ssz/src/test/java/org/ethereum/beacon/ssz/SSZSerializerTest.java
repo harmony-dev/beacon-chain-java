@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.logging.Logger;
 import tech.pegasys.artemis.util.uint.UInt64;
 
-import static com.sun.org.apache.xerces.internal.impl.dv.util.HexBin.decode;
 import static net.consensys.cava.bytes.Bytes.fromHexString;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -52,7 +51,7 @@ public class SSZSerializerTest {
 
   @Test
   public void bitfieldTest() {
-    Bitfield expected = new Bitfield(decode("abcd"));
+    Bitfield expected = new Bitfield(BytesValue.fromHexString("abcd").getArrayUnsafe());
 
     byte[] encoded = sszSerializer.encode(expected);
     Bitfield constructed = (Bitfield) sszSerializer.decode(encoded, Bitfield.class);
@@ -80,7 +79,7 @@ public class SSZSerializerTest {
             123,
             Collections.emptyList(),
             DEFAULT_HASH,
-            new Bitfield(decode("abcdef45")),
+            new Bitfield(BytesValue.fromHexString("abcdef45").getArrayUnsafe()),
             DEFAULT_HASH,
             12412L,
             12400L,
@@ -108,7 +107,7 @@ public class SSZSerializerTest {
             123,
             Collections.emptyList(),
             DEFAULT_HASH,
-            new Bitfield(decode("abcdef45")),
+            new Bitfield(BytesValue.fromHexString("abcdef45").getArrayUnsafe()),
             DEFAULT_HASH,
             12412L,
             12400L,
@@ -133,7 +132,7 @@ public class SSZSerializerTest {
             123,
             Collections.emptyList(),
             DEFAULT_HASH,
-            new Bitfield(decode("abcdef45")),
+            new Bitfield(BytesValue.fromHexString("abcdef45").getArrayUnsafe()),
             DEFAULT_HASH,
             12412L,
             12400L,
@@ -177,7 +176,7 @@ public class SSZSerializerTest {
             123,
             Collections.emptyList(),
             null,
-            new Bitfield(decode("abcdef45")),
+            new Bitfield(BytesValue.fromHexString("abcdef45").getArrayUnsafe()),
             null,
             12412L,
             12400L,
@@ -192,7 +191,7 @@ public class SSZSerializerTest {
             123,
             null,
             DEFAULT_HASH,
-            new Bitfield(decode("abcdef45")),
+            new Bitfield(BytesValue.fromHexString("abcdef45").getArrayUnsafe()),
             DEFAULT_HASH,
             12412L,
             12400L,

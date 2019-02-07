@@ -5,8 +5,7 @@ import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-
-import static com.sun.org.apache.bcel.internal.classfile.Utility.toHexString;
+import tech.pegasys.artemis.util.bytes.BytesValue;
 
 /** Slot attestation data */
 @SSZSerializable
@@ -126,13 +125,13 @@ public class AttestationRecord {
             .append(obliqueParentHashes.size())
             .append(" item(s)]")
             .append(", shardBlockHash=")
-            .append(toHexString(shardBlockHash))
+            .append(BytesValue.wrap(shardBlockHash))
             .append(", attesterBitfield=")
             .append(attesterBitfield)
             .append(", justifiedSlot=")
             .append(justifiedSlot)
             .append(", justifiedBlockHash=")
-            .append(toHexString(justifiedBlockHash))
+            .append(BytesValue.wrap(justifiedBlockHash))
             .append(", aggregateSig=[")
             .append(aggregateSig)
             .append("}");
