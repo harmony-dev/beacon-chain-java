@@ -100,11 +100,11 @@ public abstract class AbstractDepositContract implements DepositContract {
   }
 
   private DepositData parseDepositData(byte[] data) {
-    UInt64 amount = UInt64.fromBytesBigEndian(Bytes8.wrap(data, 0));
-    UInt64 timestamp = UInt64.fromBytesBigEndian(Bytes8.wrap(data, 8));
+    Gwei amount = Gwei.castFrom(UInt64.fromBytesBigEndian(Bytes8.wrap(data, 0)));
+    Time timestamp = Time.castFrom(UInt64.fromBytesBigEndian(Bytes8.wrap(data, 8)));
     DepositInput depositInput = ssz.decode(BytesValue.wrap(data, 16, data.length - 16),
         DepositInput.class);
-    return new DepositData(depositInput, Gwei.castFrom(amount), timestamp);
+    return new DepositData(amount, timestamp, depositInput);
   }
 
   @Override

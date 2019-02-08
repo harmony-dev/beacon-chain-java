@@ -1,15 +1,7 @@
 package org.ethereum.beacon.chain.observer;
 
-import org.ethereum.beacon.core.operations.Attestation;
-import org.ethereum.beacon.core.operations.CasperSlashing;
-import org.ethereum.beacon.core.operations.Exit;
-import org.ethereum.beacon.core.operations.ProposerSlashing;
-import org.ethereum.beacon.core.types.BLSPubkey;
-import org.ethereum.beacon.core.types.BLSSignature;
-import org.ethereum.beacon.core.types.Bitfield;
-import org.ethereum.beacon.crypto.BLS381;
-import tech.pegasys.artemis.util.bytes.Bytes48;
-import tech.pegasys.artemis.util.uint.UInt64;
+import static java.util.stream.Collectors.groupingBy;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -17,8 +9,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-
-import static java.util.stream.Collectors.groupingBy;
+import org.ethereum.beacon.core.operations.Attestation;
+import org.ethereum.beacon.core.operations.Exit;
+import org.ethereum.beacon.core.operations.ProposerSlashing;
+import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
+import org.ethereum.beacon.core.types.BLSPubkey;
+import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.Bitfield;
+import org.ethereum.beacon.crypto.BLS381;
+import tech.pegasys.artemis.util.uint.UInt64;
 
 public class PendingOperationsState implements PendingOperations {
 
@@ -44,7 +43,7 @@ public class PendingOperationsState implements PendingOperations {
   }
 
   @Override
-  public List<CasperSlashing> peekCasperSlashings(int maxCount) {
+  public List<AttesterSlashing> peekAttesterSlashings(int maxCount) {
     return Collections.emptyList();
   }
 
@@ -66,7 +65,7 @@ public class PendingOperationsState implements PendingOperations {
 
     Bitfield participants =
         attestations.stream()
-            .map(Attestation::getParticipationBitfield)
+            .map(Attestation::getAggregationBitfield)
             .reduce(Bitfield::and)
             .get();
     Bitfield custody =

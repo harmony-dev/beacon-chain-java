@@ -295,6 +295,10 @@ public class UInt64 extends Number implements Comparable<UInt64> {
     return new UInt64(this.value | uint.value);
   }
 
+  public UInt64 and(UInt64 uint) {
+    return new UInt64(this.value & uint.value);
+  }
+
   /**
    * Shifts a bit pattern of the value to the left.
    *
@@ -303,6 +307,18 @@ public class UInt64 extends Number implements Comparable<UInt64> {
    */
   public UInt64 shl(int number) {
     return new UInt64(value << number);
+  }
+
+  public UInt64 shr(int number) {
+    return new UInt64(value >>> number);
+  }
+
+  public int getBitCount() {
+    return Long.bitCount(value);
+  }
+
+  public boolean isPowerOf2() {
+    return getBitCount() == 1;
   }
 
   /**

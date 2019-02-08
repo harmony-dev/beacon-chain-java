@@ -17,17 +17,17 @@ import org.ethereum.beacon.consensus.util.StateTransitionTestUtil;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
-import org.ethereum.beacon.core.operations.CasperSlashing;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.Exit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
+import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.operations.slashing.ProposalSignedData;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.spec.SignatureDomains;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.util.AttestationTestUtil;
-import org.ethereum.beacon.core.util.CasperSlashingTestUtil;
+import org.ethereum.beacon.core.util.AttesterSlashingTestUtil;
 import org.ethereum.beacon.core.util.DepositTestUtil;
 import org.ethereum.beacon.core.util.Eth1DataTestUtil;
 import org.ethereum.beacon.core.util.ExitTestUtil;
@@ -86,9 +86,9 @@ public class BeaconChainProposerTest {
     List<ProposerSlashing> proposerSlashings =
         ProposerSlashingTestUtil.createRandomList(
             random, specHelpers.getChainSpec().getMaxProposerSlashings());
-    List<CasperSlashing> casperSlashings =
-        CasperSlashingTestUtil.createRandomList(
-            random, specHelpers.getChainSpec().getMaxCasperSlashings());
+    List<AttesterSlashing> casperSlashings =
+        AttesterSlashingTestUtil.createRandomList(
+            random, specHelpers.getChainSpec().getMaxAttesterSlashings());
     List<Exit> exits =
         ExitTestUtil.createRandomList(random, specHelpers.getChainSpec().getMaxExits());
 
@@ -110,7 +110,7 @@ public class BeaconChainProposerTest {
     Mockito.verify(pendingOperations)
         .peekProposerSlashings(specHelpers.getChainSpec().getMaxProposerSlashings());
     Mockito.verify(pendingOperations)
-        .peekCasperSlashings(specHelpers.getChainSpec().getMaxCasperSlashings());
+        .peekAttesterSlashings(specHelpers.getChainSpec().getMaxAttesterSlashings());
     Mockito.verify(pendingOperations).peekExits(specHelpers.getChainSpec().getMaxExits());
 
     BeaconState stateAfterBlock = stateTransition.apply(block, initialState);
@@ -118,10 +118,10 @@ public class BeaconChainProposerTest {
     Assert.assertEquals(specHelpers.hash_tree_root(stateAfterBlock), block.getStateRoot());
     Assert.assertTrue(verifySignature(specHelpers, initialState, block, signer));
 
-    Assert.assertEquals(attestations, block.getBody().getAttestations());
-    Assert.assertEquals(proposerSlashings, block.getBody().getProposerSlashings());
-    Assert.assertEquals(casperSlashings, block.getBody().getCasperSlashings());
-    Assert.assertEquals(exits, block.getBody().getExits());
+    Assert.assertEquals(attestations, block.getBody().getAttestations().listCopy());
+    Assert.assertEquals(proposerSlashings, block.getBody().getProposerSlashings().listCopy());
+    Assert.assertEquals(casperSlashings, block.getBody().getAttesterSlashings().listCopy());
+    Assert.assertEquals(exits, block.getBody().getExits().listCopy());
   }
 
   @Test
@@ -167,7 +167,7 @@ public class BeaconChainProposerTest {
 
     Assert.assertEquals(
         depositInfos.stream().map(DepositInfo::getDeposit).collect(Collectors.toList()),
-        block.getBody().getDeposits());
+        block.getBody().getDeposits().listCopy());
     Assert.assertEquals(depositContract.getLatestEth1Data(), Optional.of(block.getEth1Data()));
   }
 
@@ -186,7 +186,9 @@ public class BeaconChainProposerTest {
         signer.sign(
             specHelpers.hash_tree_root(signedData),
             specHelpers.get_domain(
-                initialState.getForkData(), initialState.getSlot(), SignatureDomains.PROPOSAL));
+                initialState.getForkData(),
+                specHelpers.get_current_epoch(initialState),
+                SignatureDomains.PROPOSAL));
 
     return expectedSignature.equals(block.getSignature());
   }

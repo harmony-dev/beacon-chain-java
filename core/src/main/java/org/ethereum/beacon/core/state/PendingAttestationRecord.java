@@ -8,7 +8,6 @@ import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.util.bytes.BytesValue;
-import tech.pegasys.artemis.util.uint.UInt64;
 
 /**
  * An attestation data that have not been processed yet.
@@ -21,40 +20,38 @@ import tech.pegasys.artemis.util.uint.UInt64;
 @SSZSerializable
 public class PendingAttestationRecord {
 
+  /** Proof of custody bitfield. */
+  @SSZ private final Bitfield aggregationBitfield;
   /** Signed data. */
   @SSZ private final AttestationData data;
   /** Attester participation bitfield. */
-  @SSZ private final Bitfield participationBitfield;
-  /** Proof of custody bitfield. */
   @SSZ private final Bitfield custodyBitfield;
   /** Slot in which it was included. */
-  @SSZ private final SlotNumber slotIncluded;
+  @SSZ private final SlotNumber inclusionSlot;
 
-  public PendingAttestationRecord(
-      AttestationData data,
-      Bitfield participationBitfield,
-      Bitfield custodyBitfield,
-      SlotNumber slotIncluded) {
+  public PendingAttestationRecord(Bitfield aggregationBitfield,
+      AttestationData data, Bitfield custodyBitfield,
+      SlotNumber inclusionSlot) {
+    this.aggregationBitfield = aggregationBitfield;
     this.data = data;
-    this.participationBitfield = participationBitfield;
     this.custodyBitfield = custodyBitfield;
-    this.slotIncluded = slotIncluded;
+    this.inclusionSlot = inclusionSlot;
+  }
+
+  public Bitfield getAggregationBitfield() {
+    return aggregationBitfield;
   }
 
   public AttestationData getData() {
     return data;
   }
 
-  public Bitfield getParticipationBitfield() {
-    return participationBitfield;
-  }
-
   public Bitfield getCustodyBitfield() {
     return custodyBitfield;
   }
 
-  public SlotNumber getSlotIncluded() {
-    return slotIncluded;
+  public SlotNumber getInclusionSlot() {
+    return inclusionSlot;
   }
 
   @Override
@@ -63,8 +60,8 @@ public class PendingAttestationRecord {
     if (o == null || getClass() != o.getClass()) return false;
     PendingAttestationRecord that = (PendingAttestationRecord) o;
     return Objects.equal(data, that.data)
-        && Objects.equal(participationBitfield, that.participationBitfield)
+        && Objects.equal(aggregationBitfield, that.aggregationBitfield)
         && Objects.equal(custodyBitfield, that.custodyBitfield)
-        && Objects.equal(slotIncluded, that.slotIncluded);
+        && Objects.equal(inclusionSlot, that.inclusionSlot);
   }
 }

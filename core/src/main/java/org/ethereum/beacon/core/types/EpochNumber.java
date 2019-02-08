@@ -14,6 +14,10 @@ public class EpochNumber extends UInt64 implements
     return new EpochNumber(UInt64.valueOf(epochNum));
   }
 
+  public static EpochNumber castFrom(UInt64 epochNum) {
+    return new EpochNumber(epochNum);
+  }
+
   public EpochNumber(UInt64 uint) {
     super(uint);
   }
@@ -23,8 +27,11 @@ public class EpochNumber extends UInt64 implements
     return new EpochNumber(super.plus(unsignedAddend));
   }
 
-  @Override
-  public EpochNumber plus(UInt64 addend) {
+  public EpochNumber minus(EpochNumber subtract) {
+    return new EpochNumber(super.minus(subtract));
+  }
+
+  public EpochNumber plus(EpochNumber addend) {
     return new EpochNumber(super.plus(addend));
   }
 
@@ -44,6 +51,10 @@ public class EpochNumber extends UInt64 implements
   @Override
   public EpochNumber decrement() {
     return new EpochNumber(super.decrement());
+  }
+
+  public EpochNumber half() {
+    return new EpochNumber(dividedBy(2));
   }
 
   @Override

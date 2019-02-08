@@ -17,6 +17,11 @@ public class Bitfield64 extends UInt64 {
     return new Bitfield64(super.shl(number));
   }
 
+  @Override
+  public Bitfield64 shr(int number) {
+    return new Bitfield64(super.shr(number));
+  }
+
   public Bitfield64 or(long uint) {
     return new Bitfield64(super.or(UInt64.valueOf(uint)));
   }

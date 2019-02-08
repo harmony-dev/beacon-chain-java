@@ -11,5 +11,7 @@ public interface HonestValidatorParameters {
 
   long ETH1_FOLLOW_DISTANCE = 1L << 10; // 1024 blocks, ~4 hours
 
-  long getEth1FollowDistance();
+  default long getEth1FollowDistance() {
+    return ETH1_FOLLOW_DISTANCE;
+  }
 }

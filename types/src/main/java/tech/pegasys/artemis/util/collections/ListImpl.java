@@ -112,6 +112,11 @@ class ListImpl<IndexType extends Number, ValueType>
   }
 
   @Override
+  public void retainAll(ReadList<IndexType, ValueType> other) {
+    backedList.retainAll(other.listCopy());
+  }
+
+  @Override
   public ReadList<IndexType, ValueType> createImmutableCopy() {
     return new ListImpl<>(backedList, indexConverter);
   }

@@ -1,11 +1,8 @@
 package org.ethereum.beacon.core.spec;
 
-import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ShardNumber;
-import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
-import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 /**
@@ -22,31 +19,37 @@ public interface MiscParameters {
   Gwei EJECTION_BALANCE = Gwei.ofEthers(1 << 4); // 16 ETH
   UInt64 MAX_BALANCE_CHURN_QUOTIENT = UInt64.valueOf(1 << 5); // 32
   ShardNumber BEACON_CHAIN_SHARD_NUMBER = ShardNumber.of(UInt64.MAX_VALUE); // (1 << 64) - 1
-  int MAX_CASPER_VOTES = 1 << 10; // 1024 votes
-  SlotNumber LATEST_BLOCK_ROOTS_LENGTH = SlotNumber.of(1 << 13); // 8192 block roots
-  EpochNumber LATEST_RANDAO_MIXES_LENGTH = EpochNumber.of(1 << 13); // 8192 randao mixes
-  EpochNumber LATEST_PENALIZED_EXIT_LENGTH = EpochNumber.of(1 << 13); // 8192 epochs
+  UInt64 MAX_INDICES_PER_SLASHABLE_VOTE = UInt64.valueOf(1 << 12);
   UInt64 MAX_WITHDRAWALS_PER_EPOCH = UInt64.valueOf(1 << 2); // 4
 
   /* Values defined in the spec. */
 
-  ShardNumber getShardCount();
+  default ShardNumber getShardCount() {
+    return SHARD_COUNT;
+  }
 
-  ValidatorIndex getTargetCommitteeSize();
+  default ValidatorIndex getTargetCommitteeSize() {
+    return TARGET_COMMITTEE_SIZE;
+  }
 
-  Gwei getEjectionBalance();
+  default Gwei getEjectionBalance() {
+    return EJECTION_BALANCE;
+  }
 
-  UInt64 getMaxBalanceChurnQuotient();
+  default UInt64 getMaxBalanceChurnQuotient() {
+    return MAX_BALANCE_CHURN_QUOTIENT;
+  }
 
-  ShardNumber getBeaconChainShardNumber();
+  default ShardNumber getBeaconChainShardNumber() {
+    return BEACON_CHAIN_SHARD_NUMBER;
+  }
 
-  int getMaxCasperVotes();
+  default UInt64 getMaxIndicesPerSlashableVote() {
+    return MAX_INDICES_PER_SLASHABLE_VOTE;
+  }
 
-  SlotNumber getLatestBlockRootsLength();
+  default UInt64 getMaxWithdrawalsPerEpoch() {
+    return MAX_WITHDRAWALS_PER_EPOCH;
+  }
 
-  EpochNumber getLatestRandaoMixesLength();
-
-  EpochNumber getLatestPenalizedExitLength();
-
-  UInt64 getMaxWithdrawalsPerEpoch();
 }

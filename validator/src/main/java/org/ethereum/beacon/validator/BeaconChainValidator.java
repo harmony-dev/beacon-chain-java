@@ -256,7 +256,7 @@ public class BeaconChainValidator implements ValidatorService {
    */
   private boolean isEligibleToAttest(BeaconState state) {
     final List<ValidatorIndex> firstCommittee =
-        specHelpers.get_shard_committees_at_slot(state, state.getSlot()).get(0).getCommittee();
+        specHelpers.get_crosslink_committees_at_slot(state, state.getSlot()).get(0).getCommittee();
     return Collections.binarySearch(firstCommittee, validatorIndex) >= 0;
   }
 

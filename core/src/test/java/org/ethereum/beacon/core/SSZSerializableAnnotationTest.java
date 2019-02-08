@@ -1,18 +1,24 @@
 package org.ethereum.beacon.core;
 
+import java.io.File;
+import java.io.IOException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import org.ethereum.beacon.core.operations.Attestation;
-import org.ethereum.beacon.core.operations.CasperSlashing;
-import org.ethereum.beacon.core.operations.CustodyChallenge;
-import org.ethereum.beacon.core.operations.CustodyReseed;
-import org.ethereum.beacon.core.operations.CustodyResponse;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.Exit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
+import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.operations.slashing.ProposalSignedData;
-import org.ethereum.beacon.core.operations.slashing.SlashableVoteData;
+import org.ethereum.beacon.core.operations.slashing.SlashableAttestation;
 import org.ethereum.beacon.core.state.BeaconStateImpl;
 import org.ethereum.beacon.core.state.CrosslinkRecord;
 import org.ethereum.beacon.core.state.Eth1Data;
@@ -33,15 +39,6 @@ import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import org.junit.Test;
-import java.io.File;
-import java.io.IOException;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Enumeration;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 /**
  * Verifies {@link SSZSerializable} model test coverage
@@ -118,20 +115,16 @@ public class SSZSerializableAnnotationTest {
             Arrays.asList(
                 Attestation.class,
                 AttestationData.class,
+                AttesterSlashing.class,
                 BeaconBlock.class,
                 BeaconBlockBody.class,
                 BeaconStateImpl.class,
-                CasperSlashing.class,
                 Deposit.class,
                 DepositData.class,
                 DepositInput.class,
                 Exit.class,
-                CustodyReseed.class,
-                CustodyResponse.class,
-                CustodyChallenge.class,
                 ProposalSignedData.class,
                 ProposerSlashing.class,
-                SlashableVoteData.class,
                 CrosslinkRecord.class,
                 Eth1DataVote.class,
                 ForkData.class,
@@ -144,6 +137,7 @@ public class SSZSerializableAnnotationTest {
                 BLSSignature.class,
                 EpochNumber.class,
                 Gwei.class,
+                SlashableAttestation.class,
                 ShardNumber.class,
                 SlotNumber.class,
                 Time.class,
