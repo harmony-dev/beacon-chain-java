@@ -6,6 +6,7 @@ import org.ethereum.beacon.chain.storage.BeaconBlockStorage;
 import org.ethereum.beacon.chain.storage.BeaconStateStorage;
 import org.ethereum.beacon.chain.storage.BeaconTuple;
 import org.ethereum.beacon.chain.storage.BeaconTupleStorage;
+import org.ethereum.beacon.consensus.hasher.ObjectHasher;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
 import javax.annotation.Nonnull;
@@ -18,10 +19,10 @@ public class BeaconTupleStorageImpl extends AbstractHashKeyStorage<Hash32, Beaco
   private final BeaconStateStorage stateStorage;
 
   public BeaconTupleStorageImpl(
-      Function<Object, Hash32> hashFunction,
+      ObjectHasher<Hash32> objectHasher,
       BeaconBlockStorage blockStorage,
       BeaconStateStorage stateStorage) {
-    super(hashFunction);
+    super(objectHasher);
     this.blockStorage = blockStorage;
     this.stateStorage = stateStorage;
   }

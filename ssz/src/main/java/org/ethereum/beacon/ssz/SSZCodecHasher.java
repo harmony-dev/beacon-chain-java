@@ -1,13 +1,5 @@
 package org.ethereum.beacon.ssz;
 
-import net.consensys.cava.bytes.Bytes;
-import net.consensys.cava.ssz.BytesSSZReaderProxy;
-import net.consensys.cava.ssz.SSZ;
-import net.consensys.cava.ssz.SSZException;
-import org.ethereum.beacon.ssz.type.SSZCodec;
-import org.ethereum.beacon.ssz.type.SubclassCodec;
-import org.javatuples.Pair;
-import org.javatuples.Triplet;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -20,6 +12,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import net.consensys.cava.bytes.Bytes;
+import net.consensys.cava.ssz.BytesSSZReaderProxy;
+import net.consensys.cava.ssz.SSZ;
+import net.consensys.cava.ssz.SSZException;
+import org.ethereum.beacon.ssz.type.SSZCodec;
+import org.ethereum.beacon.ssz.type.SubclassCodec;
+import org.javatuples.Pair;
+import org.javatuples.Triplet;
+import tech.pegasys.artemis.util.bytes.BytesValue;
 
 /**
  * Implementation of {@link SSZCodecResolver} which implements SSZ Hash function
@@ -40,6 +41,14 @@ public class SSZCodecHasher implements SSZCodecResolver {
 
   public SSZCodecHasher(Function<Bytes, Bytes> hashFunction) {
     this.hashFunction = hashFunction;
+  }
+
+  public static SSZCodecHasher createWithHashFunction(
+      Function<BytesValue, ? extends BytesValue> hashFunction) {
+    return new SSZCodecHasher(bytes -> {
+      BytesValue input = BytesValue.of(bytes.toArrayUnsafe());
+      return Bytes.wrap(hashFunction.apply(input).getArrayUnsafe());
+    });
   }
 
   public Consumer<Triplet<Object, OutputStream, SSZSerializer>> resolveEncodeFunction(

@@ -2,7 +2,13 @@ package org.ethereum.beacon.ssz;
 
 import javax.annotation.Nullable;
 
-/** Extends {@link SSZSerializer} to match Hash calculation needs */
+/**
+ * Extends {@link SSZSerializer} to match Tree Hash algorithm.
+ *
+ * @see <a
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/simple-serialize.md#tree-hash">SSZ
+ *     Tree Hash</a> in the spec
+ */
 public class SSZHashSerializer extends SSZSerializer {
 
   private static final int HASH_LENGTH = 32;

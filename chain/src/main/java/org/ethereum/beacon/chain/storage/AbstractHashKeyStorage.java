@@ -1,24 +1,24 @@
 package org.ethereum.beacon.chain.storage;
 
-import java.util.function.Function;
+import org.ethereum.beacon.consensus.hasher.ObjectHasher;
 import org.ethereum.beacon.core.Hashable;
 import tech.pegasys.artemis.ethereum.core.Hash;
 
 public abstract class AbstractHashKeyStorage<H extends Hash, T extends Hashable<H>>
     implements HashKeyStorage<H, T> {
 
-  private final Function<Object, H> hashFunction;
+  private final ObjectHasher<H> objectHasher;
 
-  public AbstractHashKeyStorage(Function<Object, H> hashFunction) {
-    this.hashFunction = hashFunction;
+  public AbstractHashKeyStorage(ObjectHasher<H> objectHasher) {
+    this.objectHasher = objectHasher;
   }
 
   @Override
   public void put(T item) {
-    this.put(hash(item), item);
+    this.put(objectHasher.getHash(item), item);
   }
 
   protected H hash(T item) {
-    return hashFunction.apply(item);
+    return objectHasher.getHash(item);
   }
 }

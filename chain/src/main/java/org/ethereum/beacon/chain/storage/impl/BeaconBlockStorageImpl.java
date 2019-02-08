@@ -3,6 +3,7 @@ package org.ethereum.beacon.chain.storage.impl;
 import java.util.function.Function;
 import org.ethereum.beacon.chain.storage.AbstractHashKeyStorage;
 import org.ethereum.beacon.chain.storage.BeaconBlockStorage;
+import org.ethereum.beacon.consensus.hasher.ObjectHasher;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.db.source.DataSource;
@@ -109,11 +110,11 @@ public class BeaconBlockStorageImpl extends AbstractHashKeyStorage<Hash32, Beaco
   private final boolean checkParentExistOnAdd;
 
   public BeaconBlockStorageImpl(
-      Function<Object, Hash32> hashFunction,
+      ObjectHasher<Hash32> objectHasher,
       DataSource<Hash32, BeaconBlock> rawBlocks,
       HoleyList<SlotBlocks> blockIndex,
       ChainSpec chainSpec) {
-    this(hashFunction, rawBlocks, blockIndex, chainSpec, true, true);
+    this(objectHasher, rawBlocks, blockIndex, chainSpec, true, true);
   }
 
   /**
@@ -125,13 +126,13 @@ public class BeaconBlockStorageImpl extends AbstractHashKeyStorage<Hash32, Beaco
    *     overhead)
    */
   public BeaconBlockStorageImpl(
-      Function<Object, Hash32> hashFunction,
+      ObjectHasher<Hash32> objectHasher,
       DataSource<Hash32, BeaconBlock> rawBlocks,
       HoleyList<SlotBlocks> blockIndex,
       ChainSpec chainSpec,
       boolean checkBlockExistOnAdd,
       boolean checkParentExistOnAdd) {
-    super(hashFunction);
+    super(objectHasher);
     this.rawBlocks = rawBlocks;
     this.blockIndex = blockIndex;
     this.chainSpec = chainSpec;

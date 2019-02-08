@@ -16,6 +16,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.annotation.Nonnull;
+import org.ethereum.beacon.consensus.hasher.ObjectHasher;
+import org.ethereum.beacon.consensus.hasher.SSZObjectHasher;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
@@ -49,8 +51,6 @@ import org.ethereum.beacon.crypto.BLS381.PublicKey;
 import org.ethereum.beacon.crypto.BLS381.Signature;
 import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.crypto.MessageParameters;
-import org.ethereum.beacon.ssz.Hasher;
-import org.ethereum.beacon.ssz.SSZHasher;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes3;
 import tech.pegasys.artemis.util.bytes.Bytes32;
@@ -64,14 +64,15 @@ import tech.pegasys.artemis.util.uint.UInt64s;
 /**
  * https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md#helper-functions
  */
-public class SpecHelpers {
+public class SpecHelpers implements ObjectHasher<Hash32> {
   private final ChainSpec spec;
-  private final Hasher<Hash32> objectHasher;
+  private final ObjectHasher<Hash32> objectHasher;
   private final Function<BytesValue, Hash32> hashFunction;
 
   /**
    * Creates a SpecHelpers instance with {@link ChainSpec#DEFAULT} as a chain spec, {@link
-   * Hashes#keccak256(BytesValue)} as a hash function and {@link SSZHasher} as an object hasher.
+   * Hashes#keccak256(BytesValue)} as a hash function and {@link SSZObjectHasher} as an object
+   * hasher.
    *
    * @return spec helpers instance.
    */
@@ -81,7 +82,8 @@ public class SpecHelpers {
 
   /**
    * Creates a SpecHelpers instance with given {@link ChainSpec}, {@link
-   * Hashes#keccak256(BytesValue)} as a hash function and {@link SSZHasher} as an object hasher.
+   * Hashes#keccak256(BytesValue)} as a hash function and {@link SSZObjectHasher} as an object
+   * hasher.
    *
    * @param spec a chain spec.
    * @return spec helpers instance.
@@ -90,12 +92,14 @@ public class SpecHelpers {
     Objects.requireNonNull(spec);
 
     Function<BytesValue, Hash32> hashFunction = Hashes::keccak256;
-    Hasher<Hash32> sszHasher = SSZHasher.simpleHasher(hashFunction);
+    ObjectHasher<Hash32> sszHasher = SSZObjectHasher.create(hashFunction);
     return new SpecHelpers(spec, hashFunction, sszHasher);
   }
 
   public SpecHelpers(
-      ChainSpec spec, Function<BytesValue, Hash32> hashFunction, Hasher<Hash32> objectHasher) {
+      ChainSpec spec,
+      Function<BytesValue, Hash32> hashFunction,
+      ObjectHasher<Hash32> objectHasher) {
     this.spec = spec;
     this.hashFunction = hashFunction;
     this.objectHasher = objectHasher;
@@ -961,7 +965,7 @@ public class SpecHelpers {
   }
 
   public Hash32 hash_tree_root(Object object) {
-    return objectHasher.calc(object);
+    return objectHasher.getHash(object);
   }
 
   public boolean bls_verify(
@@ -1428,6 +1432,11 @@ public class SpecHelpers {
     if (!assertion) {
       throw new SpecAssertionFailed();
     }
+  }
+
+  @Override
+  public Hash32 getHash(Object input) {
+    return objectHasher.getHash(input);
   }
 
   public static class SpecAssertionFailed extends RuntimeException {}

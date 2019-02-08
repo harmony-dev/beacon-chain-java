@@ -1,7 +1,7 @@
 package org.ethereum.beacon.chain.storage;
 
-import java.util.function.Function;
 import org.ethereum.beacon.chain.storage.impl.BeaconTupleStorageImpl;
+import org.ethereum.beacon.consensus.hasher.ObjectHasher;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
 public abstract class AbstractBeaconChainStorage implements BeaconChainStorage {
@@ -10,11 +10,10 @@ public abstract class AbstractBeaconChainStorage implements BeaconChainStorage {
   private BeaconBlockStorage beaconBlockStorage;
   private BeaconStateStorage beaconStateStorage;
 
-  protected final Function<Object, Hash32> hashFunction;
+  protected final ObjectHasher<Hash32> objectHasher;
 
-  public AbstractBeaconChainStorage(
-      Function<Object, Hash32> hashFunction) {
-    this.hashFunction = hashFunction;
+  public AbstractBeaconChainStorage(ObjectHasher<Hash32> objectHasher) {
+    this.objectHasher = objectHasher;
   }
 
   @Override
@@ -27,7 +26,7 @@ public abstract class AbstractBeaconChainStorage implements BeaconChainStorage {
 
   public abstract BeaconBlockStorage createBeaconBlockStorage();
 
-    @Override
+  @Override
   public BeaconStateStorage getBeaconStateStorage() {
     if (beaconStateStorage == null) {
       beaconStateStorage = createBeaconStateStorage();
@@ -47,6 +46,6 @@ public abstract class AbstractBeaconChainStorage implements BeaconChainStorage {
 
   protected BeaconTupleStorage createBeaconTupleStorage() {
     return new BeaconTupleStorageImpl(
-        hashFunction, getBeaconBlockStorage(), getBeaconStateStorage());
+        objectHasher, getBeaconBlockStorage(), getBeaconStateStorage());
   }
 }
