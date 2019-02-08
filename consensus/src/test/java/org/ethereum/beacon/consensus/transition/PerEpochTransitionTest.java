@@ -8,20 +8,20 @@ import org.ethereum.beacon.core.BeaconBlocks;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.Eth1Data;
+import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
+import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.pow.DepositContract.ChainStart;
+import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
-import java.util.List;
-import java.util.Random;
 
 public class PerEpochTransitionTest {
 
   @Test
-  @Ignore("Until get_crosslink_committees_at_slot is updated according to spec")
   public void test1() {
     Random rnd = new Random();
     Time genesisTime = Time.castFrom(UInt64.random(rnd));
@@ -50,6 +50,13 @@ public class PerEpochTransitionTest {
     PerEpochTransition perEpochTransition = new PerEpochTransition(specHelpers);
     BeaconStateEx epochState = perEpochTransition.apply(null, states[8]);
 
-    System.out.println(epochState);
+    // check validators penalized for inactivity
+    for (int i = 0; i < deposits.size(); i++) {
+      Gwei balanceBefore =
+          states[0].getCanonicalState().getValidatorBalances().get(ValidatorIndex.of(i));
+      Gwei balanceAfter =
+          epochState.getCanonicalState().getValidatorBalances().get(ValidatorIndex.of(i));
+      Assert.assertTrue(balanceAfter.less(balanceBefore));
+    }
   }
 }
