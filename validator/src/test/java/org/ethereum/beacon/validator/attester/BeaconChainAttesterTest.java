@@ -12,7 +12,7 @@ import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
-import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustodyBit;
 import org.ethereum.beacon.core.spec.SignatureDomains;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.ShardNumber;
@@ -30,7 +30,7 @@ public class BeaconChainAttesterTest {
   public void attestASlot() {
     Random random = new Random();
 
-    SpecHelpers specHelpers = new SpecHelpers(ChainSpec.DEFAULT);
+    SpecHelpers specHelpers = SpecHelpers.createDefault();
 
     MessageSigner<BLSSignature> signer = MessageSignerTestUtil.createBLSSigner();
     BeaconChainAttesterImpl attester = BeaconChainAttesterTestUtil.mockAttester(specHelpers);
@@ -79,7 +79,7 @@ public class BeaconChainAttesterTest {
 
     BLSSignature expectedSignature =
         signer.sign(
-            specHelpers.hash_tree_root(data),
+            specHelpers.hash_tree_root(new AttestationDataAndCustodyBit(data, false)),
             specHelpers.get_domain(
                 state.getForkData(), state.getSlot(), SignatureDomains.ATTESTATION));
 

@@ -30,7 +30,7 @@ public class NextSlotTransitionTest {
             return new SlotNumber.EpochLength(UInt64.valueOf(8));
           }
         };
-    SpecHelpers specHelpers = new SpecHelpers(chainSpec);
+    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(chainSpec);
 
     List<Deposit> deposits = TestUtils.getAnyDeposits(specHelpers, 8).getValue0();
 

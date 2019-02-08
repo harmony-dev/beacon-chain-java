@@ -7,8 +7,6 @@ import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.bytes.Bytes96;
-import tech.pegasys.artemis.util.uint.UInt64;
 
 /**
  * Beacon chain block.
@@ -58,6 +56,11 @@ public class BeaconBlock implements Hashable<Hash32> {
 
   public BeaconBlock withStateRoot(Hash32 stateRoot) {
     return new BeaconBlock(slot, parentRoot, stateRoot, randaoReveal, eth1Data, signature, body);
+  }
+
+  public BeaconBlock withoutSignature() {
+    return new BeaconBlock(
+        slot, parentRoot, stateRoot, randaoReveal, eth1Data, BLSSignature.ZERO, body);
   }
 
   public SlotNumber getSlot() {

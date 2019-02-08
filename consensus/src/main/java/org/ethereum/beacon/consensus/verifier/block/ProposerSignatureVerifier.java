@@ -33,8 +33,7 @@ public class ProposerSignatureVerifier implements BeaconBlockVerifier {
 
   @Override
   public VerificationResult verify(BeaconBlock block, BeaconState state) {
-    BeaconBlock blockWithoutSignature =
-        BeaconBlock.Builder.fromBlock(block).withSignature(chainSpec.getEmptySignature()).build();
+    BeaconBlock blockWithoutSignature = block.withoutSignature();
 
     ProposalSignedData proposal =
         new ProposalSignedData(

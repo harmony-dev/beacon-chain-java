@@ -40,7 +40,7 @@ public class SlotTickerTests {
             return Time.of(1);
           }
         };
-    SpecHelpers specHelpers = new SpecHelpers(chainSpec);
+    SpecHelpers specHelpers = SpecHelpers.createDefault();
     genesisSlot = specHelpers.getChainSpec().getGenesisSlot().longValue();
     slotTicker = new SlotTicker(specHelpers, beaconState);
   }

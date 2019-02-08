@@ -16,7 +16,7 @@ public class NextSlotTransition implements StateTransition<BeaconStateEx> {
 
   @Override
   public BeaconStateEx apply(BeaconBlock block, BeaconStateEx stateEx) {
-    SpecHelpers specHelpers = new SpecHelpers(spec);
+    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(spec);
 
     MutableBeaconState state = stateEx.getCanonicalState().createMutableCopy();
 

@@ -42,7 +42,7 @@ public class BeaconStateImpl implements MutableBeaconState {
   /** A nonce for validator registry exits. */
   @SSZ private UInt64 validatorRegistryExitCount = UInt64.ZERO;
   /** A hash of latest validator registry delta. */
-  @SSZ private Hash32 validatorRegistryDeltaChainTip = Hash32.ZERO;
+  private Hash32 validatorRegistryDeltaChainTip = Hash32.ZERO;
 
   /* Randomness and committees */
 

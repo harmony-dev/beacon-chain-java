@@ -22,7 +22,6 @@ import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.Exit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.slashing.ProposalSignedData;
-import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.spec.SignatureDomains;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.BLSSignature;
@@ -49,7 +48,7 @@ public class BeaconChainProposerTest {
   public void proposeABlock() {
     Random random = new Random();
 
-    SpecHelpers specHelpers = new SpecHelpers(ChainSpec.DEFAULT);
+    SpecHelpers specHelpers = SpecHelpers.createDefault();
     DepositContract depositContract =
         DepositContractTestUtil.mockDepositContract(random, Collections.emptyList());
     StateTransition<BeaconState> stateTransition =
@@ -72,7 +71,7 @@ public class BeaconChainProposerTest {
   public void proposeABlockWithOperations() {
     Random random = new Random();
 
-    SpecHelpers specHelpers = new SpecHelpers(ChainSpec.DEFAULT);
+    SpecHelpers specHelpers = SpecHelpers.createDefault();
     DepositContract depositContract =
         DepositContractTestUtil.mockDepositContract(random, Collections.emptyList());
     StateTransition<BeaconState> stateTransition =
@@ -128,7 +127,7 @@ public class BeaconChainProposerTest {
   public void proposeABlockWithDeposits() {
     Random random = new Random();
 
-    SpecHelpers specHelpers = new SpecHelpers(ChainSpec.DEFAULT);
+    SpecHelpers specHelpers = SpecHelpers.createDefault();
 
     List<Deposit> deposits =
         DepositTestUtil.createRandomList(
@@ -181,7 +180,7 @@ public class BeaconChainProposerTest {
         new ProposalSignedData(
             initialState.getSlot(),
             specHelpers.getChainSpec().getBeaconChainShardNumber(),
-            specHelpers.hash_tree_root(block));
+            specHelpers.hash_tree_root(block.withoutSignature()));
     BLSSignature expectedSignature =
         signer.sign(
             specHelpers.hash_tree_root(signedData),

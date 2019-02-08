@@ -9,6 +9,7 @@ import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.Exit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
+import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustodyBit;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.operations.slashing.ProposalSignedData;
@@ -118,6 +119,7 @@ public class SSZSerializableAnnotationTest {
             Arrays.asList(
                 Attestation.class,
                 AttestationData.class,
+                AttestationDataAndCustodyBit.class,
                 BeaconBlock.class,
                 BeaconBlockBody.class,
                 BeaconStateImpl.class,

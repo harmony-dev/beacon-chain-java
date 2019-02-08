@@ -20,7 +20,7 @@ import java.util.function.Function;
 public class SSZHasher implements Hasher<BytesValue> {
   private SSZSerializer hasher;
 
-  private Function<BytesValue, BytesValue> hashFunction;
+  private Function<BytesValue, ? extends BytesValue> hashFunction;
 
   /**
    * Creates instance of SSZ Hasher with
@@ -29,7 +29,7 @@ public class SSZHasher implements Hasher<BytesValue> {
    *     called
    * @param hashFunction Function that will be used for hashing
    */
-  public SSZHasher(SSZSerializerBuilder builder, Function<BytesValue, BytesValue> hashFunction) {
+  public SSZHasher(SSZSerializerBuilder builder, Function<BytesValue, ? extends BytesValue> hashFunction) {
     this.hashFunction = hashFunction;
     this.hasher =
         builder.buildCustom(
@@ -49,7 +49,7 @@ public class SSZHasher implements Hasher<BytesValue> {
    * @return prebaked SSZHasher builder
    */
   public static SSZSerializerBuilder getDefaultBuilder(
-      Function<BytesValue, BytesValue> hashFunction, boolean explicitAnnotations) {
+      Function<BytesValue, ? extends BytesValue> hashFunction, boolean explicitAnnotations) {
     SSZCodecResolver hasher =
         new SSZCodecHasher(
             bytes -> {
@@ -71,7 +71,7 @@ public class SSZHasher implements Hasher<BytesValue> {
    * @param hashingFunction BytesValue data hashing function
    * @return object hasher
    */
-  public static Hasher<Hash32> simpleHasher(Function<BytesValue, BytesValue> hashingFunction) {
+  public static Hasher<Hash32> simpleHasher(Function<BytesValue, ? extends BytesValue> hashingFunction) {
     Hasher<Hash32> objectHasher = new Hasher<Hash32>() {
       private final SSZHasher sszHasher =
           new SSZHasher(

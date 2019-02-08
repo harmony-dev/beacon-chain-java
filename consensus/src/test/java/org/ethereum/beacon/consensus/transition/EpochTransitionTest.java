@@ -32,7 +32,7 @@ public class EpochTransitionTest {
           }
         };
 
-    SpecHelpers specHelpers = new SpecHelpers(chainSpec);
+    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(chainSpec);
 
     List<Deposit> deposits = TestUtils.getAnyDeposits(specHelpers, 8).getValue0();
 
