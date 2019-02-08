@@ -41,7 +41,7 @@ public class DepositVerifier implements OperationVerifier<Deposit> {
     // That is, it should match deposit_data in the Ethereum 1.0 deposit contract of which
     // the hash was placed into the Merkle tree.
     return depositData
-        .getValue().toBytesBigEndian()
+        .getAmount().toBytesBigEndian()
         .concat(depositData.getTimestamp().toBytesBigEndian())
         .concat(ssz.encode2(depositData.getDepositInput()));
   }

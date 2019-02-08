@@ -1,6 +1,5 @@
 package org.ethereum.beacon.consensus.transition;
 
-import java.util.List;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.core.BeaconBlock;
@@ -136,7 +135,7 @@ public class PerBlockTransition implements StateTransition<BeaconStateEx> {
       DepositInput depositInput = depositData.getDepositInput();
       specHelpers.process_deposit(state,
           depositInput.getPubKey(),
-          depositData.getValue(),
+          depositData.getAmount(),
           depositInput.getProofOfPossession(),
           depositInput.getWithdrawalCredentials()
       );

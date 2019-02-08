@@ -228,17 +228,32 @@ public class ModelsSerializeTest {
 
   private AttesterSlashing createAttesterSlashings() {
     return new AttesterSlashing(
-        new SlashableAttestation(
-            Arrays.asList(ValidatorIndex.of(234), ValidatorIndex.of(678)),
-            createAttestationData(),
-            Bitfield.of(BytesValue.fromHexString("aa19")),
-            BLSSignature.wrap(Bytes96.fromHexString("aa"))),
-        new SlashableAttestation(
-            Arrays.asList(ValidatorIndex.of(234), ValidatorIndex.of(678)),
-            createAttestationData(),
-            Bitfield.of(BytesValue.fromHexString("aa19")),
-            BLSSignature.wrap(Bytes96.fromHexString("aa")))
-    );
+        createSlashableAttestation(),
+        createSlashableAttestation());
+  }
+
+  private SlashableAttestation createSlashableAttestation() {
+    return new SlashableAttestation(
+        Arrays.asList(ValidatorIndex.of(234), ValidatorIndex.of(678)),
+        createAttestationData(),
+        Bitfield.of(BytesValue.fromHexString("aa19")),
+        BLSSignature.wrap(Bytes96.fromHexString("aa")));
+  }
+
+  @Test
+  public void slashableAttestationTest() {
+    SlashableAttestation expected = createSlashableAttestation();
+    BytesValue encoded = sszSerializer.encode2(expected);
+    SlashableAttestation reconstructed = sszSerializer.decode(encoded, SlashableAttestation.class);
+    assertEquals(expected, reconstructed);
+  }
+
+  @Test
+  public void attesterSlashingTest() {
+    AttesterSlashing expected = createAttesterSlashings();
+    BytesValue encoded = sszSerializer.encode2(expected);
+    AttesterSlashing reconstructed = sszSerializer.decode(encoded, AttesterSlashing.class);
+    assertEquals(expected, reconstructed);
   }
 
   @Test

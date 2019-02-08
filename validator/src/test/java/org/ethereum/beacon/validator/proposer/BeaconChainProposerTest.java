@@ -118,10 +118,10 @@ public class BeaconChainProposerTest {
     Assert.assertEquals(specHelpers.hash_tree_root(stateAfterBlock), block.getStateRoot());
     Assert.assertTrue(verifySignature(specHelpers, initialState, block, signer));
 
-    Assert.assertEquals(attestations, block.getBody().getAttestations());
-    Assert.assertEquals(proposerSlashings, block.getBody().getProposerSlashings());
-    Assert.assertEquals(casperSlashings, block.getBody().getAttesterSlashings());
-    Assert.assertEquals(exits, block.getBody().getExits());
+    Assert.assertEquals(attestations, block.getBody().getAttestations().listCopy());
+    Assert.assertEquals(proposerSlashings, block.getBody().getProposerSlashings().listCopy());
+    Assert.assertEquals(casperSlashings, block.getBody().getAttesterSlashings().listCopy());
+    Assert.assertEquals(exits, block.getBody().getExits().listCopy());
   }
 
   @Test
@@ -167,7 +167,7 @@ public class BeaconChainProposerTest {
 
     Assert.assertEquals(
         depositInfos.stream().map(DepositInfo::getDeposit).collect(Collectors.toList()),
-        block.getBody().getDeposits());
+        block.getBody().getDeposits().listCopy());
     Assert.assertEquals(depositContract.getLatestEth1Data(), Optional.of(block.getEth1Data()));
   }
 

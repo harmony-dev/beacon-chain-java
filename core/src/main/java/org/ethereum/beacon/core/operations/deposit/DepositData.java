@@ -32,7 +32,7 @@ public class DepositData {
     this.depositInput = depositInput;
   }
 
-  public Gwei getValue() {
+  public Gwei getAmount() {
     return amount;
   }
 

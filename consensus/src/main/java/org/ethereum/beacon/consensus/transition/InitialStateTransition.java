@@ -21,7 +21,6 @@ import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.pow.DepositContract;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.uint.UInt64;
 
 /**
  * Produces initial beacon state.
@@ -114,7 +113,7 @@ public class InitialStateTransition implements StateTransition<BeaconStateEx> {
           DepositInput depositInput = depositData.getDepositInput();
           ValidatorIndex index = specHelpers.process_deposit(initialState,
               depositInput.getPubKey(),
-              depositData.getValue(),
+              depositData.getAmount(),
               depositInput.getProofOfPossession(),
               depositInput.getWithdrawalCredentials()
               );
