@@ -5,6 +5,7 @@ import org.ethereum.beacon.core.types.EpochNumber;
 public interface ChainSpec
     extends InitialValues,
         MiscParameters,
+        StateListLengths,
         DepositContractParameters,
         TimeParameters,
         RewardAndPenaltyQuotients,
