@@ -11,6 +11,7 @@ import org.ethereum.beacon.consensus.verifier.OperationVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
+import tech.pegasys.artemis.util.collections.ReadList;
 
 /**
  * An abstract class for a family of beacon chain operation verifiers.
@@ -35,13 +36,13 @@ import org.ethereum.beacon.core.BeaconState;
 public abstract class OperationListVerifier<T> implements BeaconBlockVerifier {
 
   private OperationVerifier<T> operationVerifier;
-  private Function<BeaconBlock, List<T>> operationListExtractor;
+  private Function<BeaconBlock, Iterable<T>> operationListExtractor;
   private int maxOperationsInList;
-  private List<Function<List<T>, VerificationResult>> customVerifiers;
+  private List<Function<Iterable<T>, VerificationResult>> customVerifiers;
 
   protected OperationListVerifier(
       OperationVerifier<T> operationVerifier,
-      Function<BeaconBlock, List<T>> operationListExtractor,
+      Function<BeaconBlock, Iterable<T>> operationListExtractor,
       int maxOperationsInList) {
     this.operationVerifier = operationVerifier;
     this.operationListExtractor = operationListExtractor;
@@ -51,15 +52,15 @@ public abstract class OperationListVerifier<T> implements BeaconBlockVerifier {
 
   @Override
   public VerificationResult verify(BeaconBlock block, BeaconState state) {
-    List<T> operations = operationListExtractor.apply(block);
+    Iterable<T> operations = operationListExtractor.apply(block);
 
-    if (operations.size() > maxOperationsInList) {
+    if (ReadList.sizeOf(operations) > maxOperationsInList) {
       return VerificationResult.failedResult(
           "%s max number exceeded, should be at most %d but got %d",
-          getType().getSimpleName(), maxOperationsInList, operations.size());
+          getType().getSimpleName(), maxOperationsInList, ReadList.sizeOf(operations));
     }
 
-    for (Function<List<T>, VerificationResult> verifier : customVerifiers) {
+    for (Function<Iterable<T>, VerificationResult> verifier : customVerifiers) {
       VerificationResult result = verifier.apply(operations);
       if (result != PASSED) {
         return failedResult(
@@ -67,11 +68,12 @@ public abstract class OperationListVerifier<T> implements BeaconBlockVerifier {
       }
     }
 
-    for (int i = 0; i < operations.size(); i++) {
-      VerificationResult result = operationVerifier.verify(operations.get(i), state);
+    for (T operation : operations) {
+      VerificationResult result = operationVerifier.verify(operation, state);
       if (result != PASSED) {
         return failedResult(
-            "%s with index %d: %s", getType().getSimpleName(), i, result.getMessage());
+            "%s with operation %s: %s", getType().getSimpleName(),
+            operation.getClass().getSimpleName(), result.getMessage());
       }
     }
 
@@ -79,7 +81,7 @@ public abstract class OperationListVerifier<T> implements BeaconBlockVerifier {
   }
 
   protected OperationListVerifier<T> addCustomVerifier(
-      Function<List<T>, VerificationResult> verifier) {
+      Function<Iterable<T>, VerificationResult> verifier) {
     this.customVerifiers.add(verifier);
     return this;
   }

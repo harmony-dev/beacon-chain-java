@@ -10,6 +10,7 @@ import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.Time;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.bytes.Bytes96;
@@ -37,7 +38,7 @@ public abstract class DepositTestUtil {
 
     DepositData depositData =
         new DepositData(
-            depositInput, spec.getMaxDeposit(), UInt64.valueOf(System.currentTimeMillis() / 1000));
+            spec.getMaxDepositAmount(), Time.of(System.currentTimeMillis() / 1000), depositInput);
 
     List<Hash32> merkleBranch =
         Collections.nCopies(spec.getDepositContractTreeDepth().getIntValue(), Hash32.ZERO);

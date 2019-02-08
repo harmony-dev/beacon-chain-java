@@ -64,24 +64,26 @@ public class BeaconChainAttesterTest {
     Assert.assertEquals(epochBoundaryRoot, data.getEpochBoundaryRoot());
     Assert.assertEquals(Hash32.ZERO, data.getShardBlockRoot());
     Assert.assertEquals(latestCrosslinkRoot, data.getLatestCrosslinkRoot());
-    Assert.assertEquals(state.getJustifiedSlot(), data.getJustifiedSlot());
+    Assert.assertEquals(state.getJustifiedEpoch(), data.getJustifiedEpoch());
     Assert.assertEquals(justifiedBlockRoot, data.getJustifiedBlockRoot());
 
     int bitfieldSize = (committee.size() - 1) / 8 + 1;
 
-    Assert.assertEquals(bitfieldSize, attestation.getParticipationBitfield().size());
+    Assert.assertEquals(bitfieldSize, attestation.getAggregationBitfield().size());
     Assert.assertEquals(bitfieldSize, attestation.getCustodyBitfield().size());
 
     Assert.assertTrue(attestation.getCustodyBitfield().isZero());
 
-    byte aByte = attestation.getParticipationBitfield().get(indexIntoCommittee / 8);
+    byte aByte = attestation.getAggregationBitfield().get(indexIntoCommittee / 8);
     Assert.assertEquals(1, ((aByte & 0xFF) >>> (indexIntoCommittee % 8)));
 
     BLSSignature expectedSignature =
         signer.sign(
             specHelpers.hash_tree_root(new AttestationDataAndCustodyBit(data, false)),
             specHelpers.get_domain(
-                state.getForkData(), state.getSlot(), SignatureDomains.ATTESTATION));
+                state.getForkData(),
+                specHelpers.get_current_epoch(state),
+                SignatureDomains.ATTESTATION));
 
     Assert.assertEquals(expectedSignature, attestation.getAggregateSignature());
   }

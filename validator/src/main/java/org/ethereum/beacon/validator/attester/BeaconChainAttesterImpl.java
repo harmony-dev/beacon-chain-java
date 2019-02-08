@@ -15,6 +15,7 @@ import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustody
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Bitfield;
+import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
@@ -58,8 +59,9 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
     Hash32 epochBoundaryRoot = getEpochBoundaryRoot(state, observableState.getHead());
     Hash32 shardBlockRoot = Hash32.ZERO; // Note: This is a stub for phase 0.
     Hash32 latestCrosslinkRoot = getLatestCrosslinkRoot(state, shard);
-    SlotNumber justifiedSlot = state.getJustifiedSlot();
-    Hash32 justifiedBlockRoot = getJustifiedBlockRoot(state, justifiedSlot);
+    EpochNumber justifiedEpoch = state.getJustifiedEpoch();
+    Hash32 justifiedBlockRoot =
+        getJustifiedBlockRoot(state, specHelpers.get_epoch_start_slot(justifiedEpoch));
     AttestationData data =
         new AttestationData(
             slot,
@@ -68,7 +70,7 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
             epochBoundaryRoot,
             shardBlockRoot,
             latestCrosslinkRoot,
-            justifiedSlot,
+            justifiedEpoch,
             justifiedBlockRoot);
 
     List<ValidatorIndex> committee = getCommittee(state, shard);
@@ -90,10 +92,10 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
   @VisibleForTesting
   List<ValidatorIndex> getCommittee(BeaconState state, UInt64 shard) {
     if (shard.equals(chainSpec.getBeaconChainShardNumber())) {
-      return specHelpers.get_shard_committees_at_slot(state, state.getSlot()).get(0).getCommittee();
+      return specHelpers.get_crosslink_committees_at_slot(state, state.getSlot()).get(0).getCommittee();
     } else {
       return specHelpers
-          .get_shard_committees_at_slot(state, state.getSlot())
+          .get_crosslink_committees_at_slot(state, state.getSlot())
           .get(shard.getIntValue())
           .getCommittee();
     }
@@ -170,7 +172,8 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
     AttestationDataAndCustodyBit attestationDataAndCustodyBit =
         new AttestationDataAndCustodyBit(data, false);
     Hash32 hash = specHelpers.hash_tree_root(attestationDataAndCustodyBit);
-    Bytes8 domain = specHelpers.get_domain(state.getForkData(), state.getSlot(), ATTESTATION);
+    Bytes8 domain = specHelpers.get_domain(state.getForkData(),
+        specHelpers.get_current_epoch(state), ATTESTATION);
     return signer.sign(hash, domain);
   }
 }

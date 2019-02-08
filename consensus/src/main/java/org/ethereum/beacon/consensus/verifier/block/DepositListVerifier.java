@@ -6,6 +6,7 @@ import static org.ethereum.beacon.consensus.verifier.VerificationResult.failedRe
 import org.ethereum.beacon.consensus.verifier.OperationVerifier;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.spec.ChainSpec;
+import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 /**
@@ -20,13 +21,13 @@ public class DepositListVerifier extends OperationListVerifier<Deposit> {
 
     addCustomVerifier(
         deposits -> {
-          if (deposits.size() > 0) {
-            UInt64 expectedIndex = deposits.get(0).getDepositIndex();
+          if (ReadList.sizeOf(deposits) > 0) {
+            UInt64 expectedIndex = deposits.iterator().next().getIndex();
             for (Deposit deposit : deposits) {
-              if (!deposit.getDepositIndex().equals(expectedIndex)) {
+              if (!deposit.getIndex().equals(expectedIndex)) {
                 return failedResult(
                     "inclusion order is broken, expected index %d but got %d",
-                    expectedIndex, deposit.getDepositIndex());
+                    expectedIndex, deposit.getIndex());
               }
               expectedIndex = expectedIndex.increment();
             }

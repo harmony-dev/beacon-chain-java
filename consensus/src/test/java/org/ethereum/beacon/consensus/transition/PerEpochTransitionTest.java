@@ -1,31 +1,32 @@
 package org.ethereum.beacon.consensus.transition;
 
+import java.util.List;
+import java.util.Random;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.TestUtils;
 import org.ethereum.beacon.core.BeaconBlocks;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.Eth1Data;
+import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
+import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.pow.DepositContract.ChainStart;
-import org.junit.Ignore;
+import org.junit.Assert;
 import org.junit.Test;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
-import java.util.List;
-import java.util.Random;
 
-public class EpochTransitionTest {
+public class PerEpochTransitionTest {
 
   @Test
-  @Ignore("Until get_crosslink_committees_at_slot is updated according to spec")
   public void test1() {
     Random rnd = new Random();
     Time genesisTime = Time.castFrom(UInt64.random(rnd));
     Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), Hash32.random(rnd));
     ChainSpec chainSpec =
-        new ChainSpec.DefaultChainSpec() {
+        new ChainSpec() {
           @Override
           public SlotNumber.EpochLength getEpochLength() {
             return new SlotNumber.EpochLength(UInt64.valueOf(8));
@@ -43,11 +44,18 @@ public class EpochTransitionTest {
 
     states[0] = initialStateTransition.apply(BeaconBlocks.createGenesis(chainSpec));
     for (int i = 1; i < 9; i++) {
-      states[i] = new NextSlotTransition(chainSpec).apply(states[i - 1]);
+      states[i] = new PerSlotTransition(chainSpec).apply(states[i - 1]);
     }
-    EpochTransition epochTransition = new EpochTransition(specHelpers);
-    BeaconStateEx epochState = epochTransition.apply(states[8]);
+    PerEpochTransition perEpochTransition = new PerEpochTransition(specHelpers);
+    BeaconStateEx epochState = perEpochTransition.apply(states[8]);
 
-    System.out.println(epochState);
+    // check validators penalized for inactivity
+    for (int i = 0; i < deposits.size(); i++) {
+      Gwei balanceBefore =
+          states[0].getCanonicalState().getValidatorBalances().get(ValidatorIndex.of(i));
+      Gwei balanceAfter =
+          epochState.getCanonicalState().getValidatorBalances().get(ValidatorIndex.of(i));
+      Assert.assertTrue(balanceAfter.less(balanceBefore));
+    }
   }
 }

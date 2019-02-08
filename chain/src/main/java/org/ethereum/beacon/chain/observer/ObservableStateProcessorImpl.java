@@ -151,7 +151,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
 
       List<ValidatorIndex> participants =
           specHelpers.get_attestation_participants(
-              latestState, attestation.getData(), attestation.getParticipationBitfield());
+              latestState, attestation.getData(), attestation.getAggregationBitfield());
 
       List<BLSPubkey> pubKeys = specHelpers.mapIndicesToPubKeys(latestState, participants);
 
@@ -205,7 +205,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
           specHelpers.get_attestation_participants(
               beaconState,
               pendingAttestationRecord.getData(),
-              pendingAttestationRecord.getParticipationBitfield());
+              pendingAttestationRecord.getAggregationBitfield());
       List<BLSPubkey> pubKeys = specHelpers.mapIndicesToPubKeys(beaconState, participants);
       SlotNumber slot = pendingAttestationRecord.getData().getSlot();
       pubKeys.forEach(

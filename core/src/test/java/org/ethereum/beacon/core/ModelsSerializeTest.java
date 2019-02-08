@@ -1,24 +1,21 @@
 package org.ethereum.beacon.core;
 
-import java.util.Arrays;
-import java.util.Collections;
 import static org.junit.Assert.assertEquals;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import org.ethereum.beacon.core.operations.Attestation;
-import org.ethereum.beacon.core.operations.CasperSlashing;
-import org.ethereum.beacon.core.operations.CustodyChallenge;
-import org.ethereum.beacon.core.operations.CustodyReseed;
-import org.ethereum.beacon.core.operations.CustodyResponse;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.Exit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
+import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.operations.slashing.ProposalSignedData;
-import org.ethereum.beacon.core.operations.slashing.SlashableVoteData;
+import org.ethereum.beacon.core.operations.slashing.SlashableAttestation;
 import org.ethereum.beacon.core.state.BeaconStateImpl;
 import org.ethereum.beacon.core.state.CrosslinkRecord;
 import org.ethereum.beacon.core.state.Eth1Data;
@@ -29,9 +26,11 @@ import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Bitfield;
+import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
+import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.ssz.Serializer;
@@ -41,7 +40,6 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
-import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public class ModelsSerializeTest {
@@ -61,7 +59,7 @@ public class ModelsSerializeTest {
             Hashes.keccak256(BytesValue.fromHexString("bb")),
             Hashes.keccak256(BytesValue.fromHexString("cc")),
             Hashes.keccak256(BytesValue.fromHexString("dd")),
-            SlotNumber.ZERO,
+            EpochNumber.ZERO,
             Hash32.ZERO);
 
     return expected;
@@ -95,38 +93,6 @@ public class ModelsSerializeTest {
     assertEquals(expected, reconstructed);
   }
 
-  private SlashableVoteData createSlashableVoteData() {
-    List<ValidatorIndex> custodyBit0Indices = Collections.emptyList();
-    List<ValidatorIndex> custodyBit1Indices = Arrays.asList(ValidatorIndex.of(123), ValidatorIndex.MAX);
-    AttestationData data = createAttestationData();
-    BLSSignature aggregatedSignature = BLSSignature.wrap(Bytes96.fromHexString("aabbccdd"));
-    SlashableVoteData slashableVoteData =
-        new SlashableVoteData(custodyBit0Indices, custodyBit1Indices, data, aggregatedSignature);
-    return slashableVoteData;
-  }
-
-  @Test
-  public void slashableVoteDataTest() {
-    SlashableVoteData expected = createSlashableVoteData();
-    BytesValue encoded = sszSerializer.encode2(expected);
-    SlashableVoteData reconstructed = sszSerializer.decode(encoded, SlashableVoteData.class);
-    assertEquals(expected, reconstructed);
-  }
-
-  private CasperSlashing createCasperSlashing() {
-    CasperSlashing casperSlashing =
-        new CasperSlashing(createSlashableVoteData(), createSlashableVoteData());
-    return casperSlashing;
-  }
-
-  @Test
-  public void casperSlashingTest() {
-    CasperSlashing expected = createCasperSlashing();
-    BytesValue encoded = sszSerializer.encode2(expected);
-    CasperSlashing reconstructed = sszSerializer.decode(encoded, CasperSlashing.class);
-    assertEquals(expected, reconstructed);
-  }
-
   private DepositInput createDepositInput() {
     DepositInput depositInput =
         new DepositInput(
@@ -147,7 +113,7 @@ public class ModelsSerializeTest {
 
   private DepositData createDepositData() {
     DepositData depositData =
-        new DepositData(createDepositInput(), Gwei.ZERO, UInt64.valueOf(123));
+        new DepositData(Gwei.ZERO, Time.castFrom(UInt64.valueOf(123)), createDepositInput());
 
     return depositData;
   }
@@ -188,7 +154,7 @@ public class ModelsSerializeTest {
   }
 
   private Exit createExit() {
-    Exit exit = new Exit(SlotNumber.of(123), ValidatorIndex.MAX, BLSSignature.wrap(Bytes96.fromHexString("aa")));
+    Exit exit = new Exit(EpochNumber.of(123), ValidatorIndex.MAX, BLSSignature.wrap(Bytes96.fromHexString("aa")));
 
     return exit;
   }
@@ -198,45 +164,6 @@ public class ModelsSerializeTest {
     Exit expected = createExit();
     BytesValue encoded = sszSerializer.encode2(expected);
     Exit reconstructed = sszSerializer.decode(encoded, Exit.class);
-    assertEquals(expected, reconstructed);
-  }
-
-  private CustodyChallenge createProofOfCustodyChallenge() {
-    CustodyChallenge proofOfCustodyChallenge = new CustodyChallenge();
-    return proofOfCustodyChallenge;
-  }
-
-  @Test
-  public void proofOfCustodyChallengeTest() {
-    CustodyChallenge expected = createProofOfCustodyChallenge();
-    BytesValue encoded = sszSerializer.encode2(expected);
-    CustodyChallenge reconstructed = sszSerializer.decode(encoded, CustodyChallenge.class);
-    assertEquals(expected, reconstructed);
-  }
-
-  private CustodyResponse createProofOfCustodyResponse() {
-    CustodyResponse proofOfCustodyResponse = new CustodyResponse();
-    return proofOfCustodyResponse;
-  }
-
-  @Test
-  public void proofOfCustodyResponseTest() {
-    CustodyResponse expected = createProofOfCustodyResponse();
-    BytesValue encoded = sszSerializer.encode2(expected);
-    CustodyResponse reconstructed = sszSerializer.decode(encoded, CustodyResponse.class);
-    assertEquals(expected, reconstructed);
-  }
-
-  private CustodyReseed createProofOfCustodySeedChange() {
-    CustodyReseed proofOfCustodySeedChange = new CustodyReseed();
-    return proofOfCustodySeedChange;
-  }
-
-  @Test
-  public void proofOfCustodySeedChangeTest() {
-    CustodyReseed expected = createProofOfCustodySeedChange();
-    BytesValue encoded = sszSerializer.encode2(expected);
-    CustodyReseed reconstructed = sszSerializer.decode(encoded, CustodyReseed.class);
     assertEquals(expected, reconstructed);
   }
 
@@ -278,16 +205,11 @@ public class ModelsSerializeTest {
   private BeaconBlockBody createBeaconBlockBody() {
     List<ProposerSlashing> proposerSlashings = new ArrayList<>();
     proposerSlashings.add(createProposerSlashing());
-    List<CasperSlashing> casperSlashings = new ArrayList<>();
-    casperSlashings.add(createCasperSlashing());
-    casperSlashings.add(createCasperSlashing());
+    List<AttesterSlashing> attesterSlashings = new ArrayList<>();
+    attesterSlashings.add(createAttesterSlashings());
+    attesterSlashings.add(createAttesterSlashings());
     List<Attestation> attestations = new ArrayList<>();
     attestations.add(createAttestation());
-    List<CustodyReseed> pocSeedChanges = new ArrayList<>();
-    List<CustodyChallenge> pocChallenges = new ArrayList<>();
-    pocChallenges.add(createProofOfCustodyChallenge());
-    List<CustodyResponse> pocResponses = new ArrayList<>();
-    pocResponses.add(createProofOfCustodyResponse());
     List<Deposit> deposits = new ArrayList<>();
     deposits.add(createDeposit1());
     deposits.add(createDeposit2());
@@ -296,15 +218,42 @@ public class ModelsSerializeTest {
     BeaconBlockBody beaconBlockBody =
         new BeaconBlockBody(
             proposerSlashings,
-            casperSlashings,
+            attesterSlashings,
             attestations,
-            pocSeedChanges,
-            pocChallenges,
-            pocResponses,
             deposits,
             exits);
 
     return beaconBlockBody;
+  }
+
+  private AttesterSlashing createAttesterSlashings() {
+    return new AttesterSlashing(
+        createSlashableAttestation(),
+        createSlashableAttestation());
+  }
+
+  private SlashableAttestation createSlashableAttestation() {
+    return new SlashableAttestation(
+        Arrays.asList(ValidatorIndex.of(234), ValidatorIndex.of(678)),
+        createAttestationData(),
+        Bitfield.of(BytesValue.fromHexString("aa19")),
+        BLSSignature.wrap(Bytes96.fromHexString("aa")));
+  }
+
+  @Test
+  public void slashableAttestationTest() {
+    SlashableAttestation expected = createSlashableAttestation();
+    BytesValue encoded = sszSerializer.encode2(expected);
+    SlashableAttestation reconstructed = sszSerializer.decode(encoded, SlashableAttestation.class);
+    assertEquals(expected, reconstructed);
+  }
+
+  @Test
+  public void attesterSlashingTest() {
+    AttesterSlashing expected = createAttesterSlashings();
+    BytesValue encoded = sszSerializer.encode2(expected);
+    AttesterSlashing reconstructed = sszSerializer.decode(encoded, AttesterSlashing.class);
+    assertEquals(expected, reconstructed);
   }
 
   @Test
@@ -398,8 +347,8 @@ public class ModelsSerializeTest {
   private PendingAttestationRecord createPendingAttestationRecord() {
     PendingAttestationRecord pendingAttestationRecord =
         new PendingAttestationRecord(
-            createAttestationData(),
             Bitfield.of(BytesValue.fromHexString("aa")),
+            createAttestationData(),
             Bitfield.of(BytesValue.fromHexString("bb")),
             SlotNumber.ZERO);
 
@@ -418,15 +367,14 @@ public class ModelsSerializeTest {
   private ValidatorRecord createValidatorRecord() {
     ValidatorRecord validatorRecord =
         ValidatorRecord.Builder.fromDepositInput(createDepositInput())
-            .withActivationSlot(SlotNumber.ZERO)
-            .withExitSlot(SlotNumber.ZERO)
-            .withWithdrawalSlot(SlotNumber.ZERO)
-            .withPenalizedSlot(SlotNumber.ZERO)
-            .withExitCount(UInt64.ZERO)
+            .withPubKey(BLSPubkey.ZERO)
+            .withWithdrawalCredentials(Hash32.ZERO)
+            .withActivationEpoch(EpochNumber.ZERO)
+            .withExitEpoch(EpochNumber.ZERO)
+            .withWithdrawalEpoch(EpochNumber.ZERO)
+            .withPenalizedEpoch(EpochNumber.ZERO)
+            .withExitEpoch(EpochNumber.ZERO)
             .withStatusFlags(UInt64.ZERO)
-            .withLatestCustodyReseedSlot(SlotNumber.ZERO)
-            .withPenultimateCustodyReseedSlot(SlotNumber.ZERO)
-            .withProposerSlots(SlotNumber.ZERO)
             .build();
 
     return validatorRecord;

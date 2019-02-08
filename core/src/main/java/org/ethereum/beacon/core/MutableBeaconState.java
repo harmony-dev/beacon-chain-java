@@ -1,6 +1,5 @@
 package org.ethereum.beacon.core;
 
-import org.ethereum.beacon.core.operations.CustodyChallenge;
 import org.ethereum.beacon.core.state.CrosslinkRecord;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Eth1DataVote;
@@ -32,40 +31,30 @@ public interface MutableBeaconState extends BeaconState {
   @Override
   WriteList<ValidatorIndex, Gwei> getValidatorBalances();
 
-  void setValidatorRegistryLatestChangeSlot(SlotNumber latestChangeSlot);
-
-  void setValidatorRegistryExitCount(UInt64 exitCount);
-
-  void setValidatorRegistryDeltaChainTip(Hash32 deltaChainTip);
+  void setValidatorRegistryUpdateEpoch(EpochNumber validatorRegistryUpdateEpoch);
 
   @Override
-  WriteList<UInt64, Hash32> getLatestRandaoMixes();
-
-  @Override
-  WriteList<Integer, Hash32> getLatestVdfOutputs();
+  WriteList<EpochNumber, Hash32> getLatestRandaoMixes();
 
   void setPreviousEpochStartShard(ShardNumber previousEpochStartShard);
 
   void setCurrentEpochStartShard(ShardNumber currentEpochStartShard);
 
-  void setPreviousEpochCalculationSlot(SlotNumber previousEpochCalculationSlot);
+  void setPreviousCalculationEpoch(EpochNumber previousCalculationEpoch);
 
-  void setCurrentEpochCalculationSlot(SlotNumber currentEpochCalculationSlot);
+  void setCurrentCalculationEpoch(EpochNumber currentCalculationEpoch);
 
-  void setPreviousEpochRandaoMix(Hash32 previousEpochRandaoMix);
+  void setPreviousEpochSeed(Hash32 previousEpochRandaoMix);
 
-  void setCurrentEpochRandaoMix(Hash32 currentEpochRandaoMix);
+  void setCurrentEpochSeed(Hash32 currentEpochRandaoMix);
 
-  @Override
-  WriteList<Integer, CustodyChallenge> getCustodyChallenges();
+  void setPreviousJustifiedEpoch(EpochNumber previousJustifiedEpoch);
 
-  void setPreviousJustifiedSlot(SlotNumber previousJustifiedSlot);
-
-  void setJustifiedSlot(SlotNumber justifiedSlot);
+  void setJustifiedEpoch(EpochNumber justifiedSlot);
 
   void setJustificationBitfield(Bitfield64 justificationBitfield);
 
-  void setFinalizedSlot(SlotNumber finalizedSlot);
+  void setFinalizedEpoch(EpochNumber finalizedEpoch);
 
   @Override
   WriteList<ShardNumber, CrosslinkRecord> getLatestCrosslinks();
@@ -74,7 +63,10 @@ public interface MutableBeaconState extends BeaconState {
   WriteList<SlotNumber, Hash32> getLatestBlockRoots();
 
   @Override
-  WriteList<EpochNumber, Gwei> getLatestPenalizedExitBalances();
+  WriteList<EpochNumber, Hash32> getLatestIndexRoots();
+
+  @Override
+  WriteList<EpochNumber, Gwei> getLatestPenalizedBalances();
 
   @Override
   WriteList<Integer, PendingAttestationRecord> getLatestAttestations();

@@ -1,5 +1,6 @@
 package org.ethereum.beacon.core.spec;
 
+import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.SlotNumber.EpochLength;
 import org.ethereum.beacon.core.types.Time;
@@ -17,24 +18,38 @@ public interface TimeParameters {
   Time SLOT_DURATION = Time.of(6); // 6 seconds
   SlotNumber MIN_ATTESTATION_INCLUSION_DELAY = SlotNumber.of(1 << 2); // 4 slots
   EpochLength EPOCH_LENGTH = new EpochLength(UInt64.valueOf(1 << 6)); // 64 slots
-  SlotNumber  SEED_LOOKAHEAD = SlotNumber.of(1 << 6); // 64 slots
-  SlotNumber ENTRY_EXIT_DELAY = SlotNumber.of(1 << 8); // 256 slots
-  SlotNumber ETH1_DATA_VOTING_PERIOD = SlotNumber.of(1 << 10); // 1024 slots
-  SlotNumber MIN_VALIDATOR_WITHDRAWAL_TIME = SlotNumber.of(1 << 14); // 16384 slots
+  EpochNumber  SEED_LOOKAHEAD = EpochNumber.of(1);
+  EpochNumber ENTRY_EXIT_DELAY = EpochNumber.of(1 << 2);
+  EpochNumber ETH1_DATA_VOTING_PERIOD = EpochNumber.of(1 << 4);
+  EpochNumber MIN_VALIDATOR_WITHDRAWAL_EPOCHS = EpochNumber.of(1 << 8);
 
   /* Values defined in the spec. */
 
-  Time getSlotDuration();
+  default Time getSlotDuration() {
+    return SLOT_DURATION;
+  }
 
-  SlotNumber getMinAttestationInclusionDelay();
+  default SlotNumber getMinAttestationInclusionDelay() {
+    return MIN_ATTESTATION_INCLUSION_DELAY;
+  }
 
-  EpochLength getEpochLength();
+  default EpochLength getEpochLength() {
+    return EPOCH_LENGTH;
+  }
 
-  SlotNumber getSeedLookahead();
+  default EpochNumber getSeedLookahead() {
+    return SEED_LOOKAHEAD;
+  }
 
-  SlotNumber getEntryExitDelay();
+  default EpochNumber getEntryExitDelay() {
+    return ENTRY_EXIT_DELAY;
+  }
 
-  SlotNumber getEth1DataVotingPeriod();
+  default EpochNumber getEth1DataVotingPeriod() {
+    return ETH1_DATA_VOTING_PERIOD;
+  }
 
-  SlotNumber getMinValidatorWithdrawalTime();
+  default EpochNumber getMinValidatorWithdrawalEpochs() {
+    return MIN_VALIDATOR_WITHDRAWAL_EPOCHS;
+  }
 }

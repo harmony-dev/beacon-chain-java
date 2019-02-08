@@ -2,6 +2,7 @@ package org.ethereum.beacon.core.operations.attestation;
 
 import com.google.common.base.Objects;
 import org.ethereum.beacon.core.operations.Attestation;
+import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.ssz.annotation.SSZ;
@@ -33,7 +34,7 @@ public class AttestationData {
   /** Hash of last crosslink block. */
   @SSZ private final Hash32 latestCrosslinkRoot;
   /** Slot of the last justified beacon block. */
-  @SSZ private final SlotNumber justifiedSlot;
+  @SSZ private final EpochNumber justifiedEpoch;
   /** Hash of the last justified beacon block. */
   @SSZ private final Hash32 justifiedBlockRoot;
 
@@ -44,7 +45,7 @@ public class AttestationData {
       Hash32 epochBoundaryRoot,
       Hash32 shardBlockRoot,
       Hash32 latestCrosslinkRoot,
-      SlotNumber justifiedSlot,
+      EpochNumber justifiedEpoch,
       Hash32 justifiedBlockRoot) {
     this.slot = slot;
     this.shard = shard;
@@ -52,7 +53,7 @@ public class AttestationData {
     this.epochBoundaryRoot = epochBoundaryRoot;
     this.shardBlockRoot = shardBlockRoot;
     this.latestCrosslinkRoot = latestCrosslinkRoot;
-    this.justifiedSlot = justifiedSlot;
+    this.justifiedEpoch = justifiedEpoch;
     this.justifiedBlockRoot = justifiedBlockRoot;
   }
 
@@ -80,8 +81,8 @@ public class AttestationData {
     return latestCrosslinkRoot;
   }
 
-  public SlotNumber getJustifiedSlot() {
-    return justifiedSlot;
+  public EpochNumber getJustifiedEpoch() {
+    return justifiedEpoch;
   }
 
   public Hash32 getJustifiedBlockRoot() {
@@ -99,7 +100,7 @@ public class AttestationData {
         && Objects.equal(epochBoundaryRoot, that.epochBoundaryRoot)
         && Objects.equal(shardBlockRoot, that.shardBlockRoot)
         && Objects.equal(latestCrosslinkRoot, that.latestCrosslinkRoot)
-        && Objects.equal(justifiedSlot, that.justifiedSlot)
+        && Objects.equal(justifiedEpoch, that.justifiedEpoch)
         && Objects.equal(justifiedBlockRoot, that.justifiedBlockRoot);
   }
 }

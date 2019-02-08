@@ -3,6 +3,7 @@ package org.ethereum.beacon.core.operations.deposit;
 import com.google.common.base.Objects;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.types.Gwei;
+import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.util.uint.UInt64;
@@ -18,29 +19,29 @@ import tech.pegasys.artemis.util.uint.UInt64;
 @SSZSerializable
 public class DepositData {
 
+  /** Value in Gwei. */
+  @SSZ private final Gwei amount;
+  /** Timestamp from deposit contract. */
+  @SSZ private final Time timestamp;
   /** Deposit parameters. */
   @SSZ private final DepositInput depositInput;
-  /** Value in Gwei. */
-  @SSZ private final Gwei value;
-  /** Timestamp from deposit contract. */
-  @SSZ private final UInt64 timestamp;
 
-  public DepositData(DepositInput depositInput, Gwei value, UInt64 timestamp) {
-    this.depositInput = depositInput;
-    this.value = value;
+  public DepositData(Gwei amount, Time timestamp, DepositInput depositInput) {
+    this.amount = amount;
     this.timestamp = timestamp;
+    this.depositInput = depositInput;
+  }
+
+  public Gwei getAmount() {
+    return amount;
+  }
+
+  public Time getTimestamp() {
+    return timestamp;
   }
 
   public DepositInput getDepositInput() {
     return depositInput;
-  }
-
-  public Gwei getValue() {
-    return value;
-  }
-
-  public UInt64 getTimestamp() {
-    return timestamp;
   }
 
   @Override
@@ -49,7 +50,7 @@ public class DepositData {
     if (o == null || getClass() != o.getClass()) return false;
     DepositData that = (DepositData) o;
     return Objects.equal(depositInput, that.depositInput)
-        && Objects.equal(value, that.value)
+        && Objects.equal(amount, that.amount)
         && Objects.equal(timestamp, that.timestamp);
   }
 }
