@@ -64,7 +64,7 @@ import tech.pegasys.artemis.util.uint.UInt64s;
 /**
  * https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md#helper-functions
  */
-public class SpecHelpers implements ObjectHasher<Hash32> {
+public class SpecHelpers {
   private final ChainSpec spec;
   private final ObjectHasher<Hash32> objectHasher;
   private final Function<BytesValue, Hash32> hashFunction;
@@ -1432,11 +1432,6 @@ public class SpecHelpers implements ObjectHasher<Hash32> {
     if (!assertion) {
       throw new SpecAssertionFailed();
     }
-  }
-
-  @Override
-  public Hash32 getHash(Object input) {
-    return objectHasher.getHash(input);
   }
 
   public static class SpecAssertionFailed extends RuntimeException {}

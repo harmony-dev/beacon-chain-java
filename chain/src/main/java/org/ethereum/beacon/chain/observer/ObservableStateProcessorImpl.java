@@ -238,7 +238,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     pendingOperationsSink.onNext(pendingOperations);
     updateHead(pendingOperations);
     this.latestState =
-        applySlotTransitions(latestState, newSlot, hash(head.getBlock()));
+        applySlotTransitions(latestState, newSlot, specHelpers.hash_tree_root(head.getBlock()));
     ObservableBeaconState newObservableState =
         new ObservableBeaconState(head.getBlock(), latestState, pendingOperations);
     if (!newObservableState.equals(observableState)) {
@@ -271,7 +271,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     }
     BeaconTuple newHeadTuple =
         tupleStorage
-            .get(hash(newHead))
+            .get(specHelpers.hash_tree_root(newHead))
             .orElseThrow(() -> new IllegalStateException("Beacon tuple not found for new head "));
     this.head = BeaconChainHead.of(newHeadTuple);
 
@@ -291,9 +291,5 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   @Override
   public Publisher<PendingOperations> getPendingOperationsStream() {
     return pendingOperationsStream;
-  }
-
-  private Hash32 hash(Object object) {
-    return specHelpers.hash_tree_root(object);
   }
 }

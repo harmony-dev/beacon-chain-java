@@ -42,7 +42,7 @@ public class LMDGhostHeadFunction implements HeadFunction {
             .orElseThrow(() -> new RuntimeException("Couldn't find any justified block"));
     BeaconState justifiedState =
         stateStorage
-            .get(hash(justifiedBlock))
+            .get(specHelpers.hash_tree_root(justifiedBlock))
             .orElseThrow(() -> new IllegalStateException("State not found for existing head"));
     Function<Hash32, List<BeaconBlock>> getChildrenBlocks =
         (hash) -> blockStorage.getChildren(hash, SEARCH_LIMIT);
@@ -66,9 +66,5 @@ public class LMDGhostHeadFunction implements HeadFunction {
       Function<ValidatorRecord, Optional<Attestation>> latestAttestationStorage,
       ValidatorRecord validatorRecord) {
     return latestAttestationStorage.apply(validatorRecord);
-  }
-
-  private Hash32 hash(Object object) {
-    return specHelpers.hash_tree_root(object);
   }
 }
