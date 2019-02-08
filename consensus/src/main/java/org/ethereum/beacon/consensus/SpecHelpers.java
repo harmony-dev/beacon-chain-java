@@ -1108,7 +1108,7 @@ public class SpecHelpers {
   public boolean is_double_vote(
       AttestationData attestation_data_1, AttestationData attestation_data_2) {
     EpochNumber target_epoch_1 = slot_to_epoch(attestation_data_1.getSlot());
-    EpochNumber  target_epoch_2 = slot_to_epoch(attestation_data_2.getSlot());
+    EpochNumber target_epoch_2 = slot_to_epoch(attestation_data_2.getSlot());
     return target_epoch_1.equals(target_epoch_2);
   }
 
