@@ -18,8 +18,8 @@ import org.ethereum.beacon.chain.storage.BeaconTuple;
 import org.ethereum.beacon.chain.storage.BeaconTupleStorage;
 import org.ethereum.beacon.consensus.HeadFunction;
 import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.consensus.transition.BeaconStateEx;
-import org.ethereum.beacon.consensus.transition.EmptySlotTransition;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
@@ -45,7 +45,8 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   private BeaconState latestState;
   private final SpecHelpers specHelpers;
   private final ChainSpec chainSpec;
-  private final EmptySlotTransition emptySlotTransition;
+  private final StateTransition<BeaconStateEx> perSlotTransition;
+  private final StateTransition<BeaconStateEx> perEpochTransition;
 
   private final Publisher<SlotNumber> slotTicker;
   private final Publisher<Attestation> attestationPublisher;
@@ -87,11 +88,13 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
       Publisher<Attestation> attestationPublisher,
       Publisher<BeaconTuple> beaconPublisher,
       SpecHelpers specHelpers,
-      EmptySlotTransition emptySlotTransition) {
+      StateTransition<BeaconStateEx> perSlotTransition,
+      StateTransition<BeaconStateEx> perEpochTransition) {
     this.tupleStorage = chainStorage.getBeaconTupleStorage();
     this.specHelpers = specHelpers;
     this.chainSpec = specHelpers.getChainSpec();
-    this.emptySlotTransition = emptySlotTransition;
+    this.perSlotTransition = perSlotTransition;
+    this.perEpochTransition = perEpochTransition;
     this.headFunction = new LMDGhostHeadFunction(chainStorage, specHelpers);
     this.slotTicker = slotTicker;
     this.attestationPublisher = attestationPublisher;
@@ -238,7 +241,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     pendingOperationsSink.onNext(pendingOperations);
     updateHead(pendingOperations);
     this.latestState =
-        applySlotTransitions(latestState, newSlot, specHelpers.hash_tree_root(head.getBlock()));
+        applySlotTransitions(latestState, specHelpers.hash_tree_root(head.getBlock()));
     ObservableBeaconState newObservableState =
         new ObservableBeaconState(head.getBlock(), latestState, pendingOperations);
     if (!newObservableState.equals(observableState)) {
@@ -250,16 +253,19 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   /**
    * Applies next slot transition and if it's required - epoch transition
    *
-   * @param canonicalState Source state
-   * @param newSlot Slot number of the new slot
+   * @param source Source state
    * @param latestChainBlock Latest chain block
    * @return new state, result of applied transition to the latest input state
    */
-  private BeaconState applySlotTransitions(
-      BeaconState canonicalState, SlotNumber newSlot, Hash32 latestChainBlock) {
-    BeaconStateEx result =
-        emptySlotTransition.apply(new BeaconStateEx(canonicalState, latestChainBlock), newSlot);
-    return result.getCanonicalState();
+  private BeaconState applySlotTransitions(BeaconState source, Hash32 latestChainBlock) {
+    BeaconStateEx sourceEx = new BeaconStateEx(source, latestChainBlock);
+    BeaconStateEx slotState = perSlotTransition.apply(sourceEx);
+    if (specHelpers.is_epoch_end(slotState.getCanonicalState().getSlot())) {
+      BeaconStateEx epochState = perEpochTransition.apply(slotState);
+      return epochState.getCanonicalState();
+    } else {
+      return slotState.getCanonicalState();
+    }
   }
 
   private void updateHead(PendingOperations pendingOperations) {

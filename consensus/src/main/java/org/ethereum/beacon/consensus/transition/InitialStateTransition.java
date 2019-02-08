@@ -3,10 +3,9 @@ package org.ethereum.beacon.consensus.transition;
 import static java.util.Collections.nCopies;
 
 import java.util.List;
+import org.ethereum.beacon.consensus.BlockTransition;
 import org.ethereum.beacon.consensus.SpecHelpers;
-import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.core.BeaconBlock;
-import org.ethereum.beacon.core.BeaconBlocks;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
@@ -35,7 +34,7 @@ import tech.pegasys.artemis.util.uint.UInt64;
  *     href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md#on-startup">On
  *     startup in the spec</a>
  */
-public class InitialStateTransition implements StateTransition<BeaconStateEx> {
+public class InitialStateTransition implements BlockTransition<BeaconStateEx> {
 
   private final DepositContract.ChainStart depositContractStart;
   private final ChainSpec chainSpec;
@@ -49,12 +48,12 @@ public class InitialStateTransition implements StateTransition<BeaconStateEx> {
   }
 
   public BeaconStateEx apply(BeaconBlock block) {
-    return apply(block, null);
+    return apply(null, block);
   }
 
   @Override
-  public BeaconStateEx apply(BeaconBlock block, BeaconStateEx state) {
-    assert block.getSlot() == chainSpec.getGenesisSlot();
+  public BeaconStateEx apply(BeaconStateEx state, BeaconBlock block) {
+    assert block.getSlot().equals(chainSpec.getGenesisSlot());
 
     MutableBeaconState initialState = BeaconState.getEmpty().createMutableCopy();
 
@@ -138,8 +137,7 @@ public class InitialStateTransition implements StateTransition<BeaconStateEx> {
 
     BeaconState validatorsState = initialState.createImmutable();
 
-    BeaconBlock genesisBlock = BeaconBlocks.createGenesis(chainSpec)
-        .withStateRoot(specHelpers.hash_tree_root(validatorsState));
+    BeaconBlock genesisBlock = block.withStateRoot(specHelpers.hash_tree_root(validatorsState));
 
     return new BeaconStateEx(validatorsState, specHelpers.hash_tree_root(genesisBlock));
   }

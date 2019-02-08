@@ -1,6 +1,5 @@
 package org.ethereum.beacon.chain.storage.impl;
 
-import java.util.function.Function;
 import org.ethereum.beacon.chain.storage.AbstractHashKeyStorage;
 import org.ethereum.beacon.chain.storage.BeaconBlockStorage;
 import org.ethereum.beacon.chain.storage.BeaconStateStorage;
@@ -54,5 +53,10 @@ public class BeaconTupleStorageImpl extends AbstractHashKeyStorage<Hash32, Beaco
   public void flush() {
     blockStorage.flush();
     stateStorage.flush();
+  }
+
+  @Override
+  public boolean isEmpty() {
+    return blockStorage.isEmpty();
   }
 }

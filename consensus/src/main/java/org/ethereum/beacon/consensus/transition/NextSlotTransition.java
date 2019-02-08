@@ -2,7 +2,6 @@ package org.ethereum.beacon.consensus.transition;
 
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.StateTransition;
-import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.types.SlotNumber;
@@ -15,7 +14,7 @@ public class NextSlotTransition implements StateTransition<BeaconStateEx> {
   }
 
   @Override
-  public BeaconStateEx apply(BeaconBlock block, BeaconStateEx stateEx) {
+  public BeaconStateEx apply(BeaconStateEx stateEx) {
     SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(spec);
 
     MutableBeaconState state = stateEx.getCanonicalState().createMutableCopy();

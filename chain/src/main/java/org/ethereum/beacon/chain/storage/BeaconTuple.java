@@ -1,5 +1,6 @@
 package org.ethereum.beacon.chain.storage;
 
+import org.ethereum.beacon.consensus.transition.BeaconStateEx;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.Hashable;
@@ -17,6 +18,10 @@ public class BeaconTuple implements Hashable<Hash32> {
 
   public static BeaconTuple of(BeaconBlock block, BeaconState state) {
     return new BeaconTuple(block, state);
+  }
+
+  public static BeaconTuple of(BeaconBlock block, BeaconStateEx state) {
+    return new BeaconTuple(block, state.getCanonicalState());
   }
 
   public BeaconBlock getBlock() {

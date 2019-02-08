@@ -9,8 +9,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.observer.PendingOperations;
+import org.ethereum.beacon.consensus.BlockTransition;
 import org.ethereum.beacon.consensus.SpecHelpers;
-import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlock.Builder;
 import org.ethereum.beacon.core.BeaconBlockBody;
@@ -49,14 +49,14 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
   /** Chain parameters. */
   private ChainSpec chainSpec;
   /** State transition that is regularly applied to a block during processing. */
-  private StateTransition<BeaconState> blockTransition;
+  private BlockTransition<BeaconState> blockTransition;
   /** Eth1 deposit contract. */
   private DepositContract depositContract;
 
   public BeaconChainProposerImpl(
       SpecHelpers specHelpers,
       ChainSpec chainSpec,
-      StateTransition<BeaconState> blockTransition,
+      BlockTransition<BeaconState> blockTransition,
       DepositContract depositContract) {
     this.specHelpers = specHelpers;
     this.chainSpec = chainSpec;
@@ -87,7 +87,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
 
     // calculate state_root
     BeaconBlock newBlock = builder.build();
-    BeaconState newState = blockTransition.apply(newBlock, state);
+    BeaconState newState = blockTransition.apply(state, newBlock);
     builder.withStateRoot(specHelpers.hash_tree_root(newState));
 
     // sign off on proposal

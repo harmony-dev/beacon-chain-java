@@ -43,10 +43,10 @@ public class EpochTransitionTest {
 
     states[0] = initialStateTransition.apply(BeaconBlocks.createGenesis(chainSpec));
     for (int i = 1; i < 9; i++) {
-      states[i] = new NextSlotTransition(chainSpec).apply(null, states[i - 1]);
+      states[i] = new NextSlotTransition(chainSpec).apply(states[i - 1]);
     }
     EpochTransition epochTransition = new EpochTransition(specHelpers);
-    BeaconStateEx epochState = epochTransition.apply(null, states[8]);
+    BeaconStateEx epochState = epochTransition.apply(states[8]);
 
     System.out.println(epochState);
   }

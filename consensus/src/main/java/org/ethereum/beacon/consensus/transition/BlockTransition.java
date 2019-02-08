@@ -2,7 +2,6 @@ package org.ethereum.beacon.consensus.transition;
 
 import java.util.List;
 import org.ethereum.beacon.consensus.SpecHelpers;
-import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
@@ -18,7 +17,8 @@ import org.ethereum.beacon.core.state.PendingAttestationRecord;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import tech.pegasys.artemis.util.uint.UInt64;
 
-public class BlockTransition implements StateTransition<BeaconStateEx> {
+public class BlockTransition implements
+    org.ethereum.beacon.consensus.BlockTransition<BeaconStateEx> {
   private final ChainSpec spec;
   private final SpecHelpers specHelpers;
 
@@ -28,7 +28,7 @@ public class BlockTransition implements StateTransition<BeaconStateEx> {
   }
 
   @Override
-  public BeaconStateEx apply(BeaconBlock block, BeaconStateEx stateEx) {
+  public BeaconStateEx apply(BeaconStateEx stateEx, BeaconBlock block) {
     MutableBeaconState state = stateEx.getCanonicalState().createMutableCopy();
 
     /*

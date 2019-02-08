@@ -2,8 +2,8 @@ package org.ethereum.beacon.validator.util;
 
 import java.util.Collections;
 import java.util.Random;
+import org.ethereum.beacon.consensus.BlockTransition;
 import org.ethereum.beacon.consensus.SpecHelpers;
-import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.consensus.util.StateTransitionTestUtil;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.types.BLSPubkey;
@@ -25,7 +25,7 @@ public abstract class ValidatorServiceTestUtil {
   public static BeaconChainValidator mockBeaconChainValidator(
       Random random, SpecHelpers specHelpers) {
     BLSPubkey pubkey = BLSPubkey.wrap(Bytes48.random(random));
-    StateTransition<BeaconState> stateTransition =
+    BlockTransition<BeaconState> stateTransition =
         StateTransitionTestUtil.createSlotFromBlockTransition();
     DepositContract depositContract =
         DepositContractTestUtil.mockDepositContract(random, Collections.emptyList());
