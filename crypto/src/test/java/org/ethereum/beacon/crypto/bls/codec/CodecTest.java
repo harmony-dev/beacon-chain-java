@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.math.BigInteger;
 import java.util.Random;
 import org.bouncycastle.util.Arrays;
+import org.bouncycastle.util.BigIntegers;
 import org.ethereum.beacon.crypto.bls.bc.BCParameters;
 import org.junit.Test;
 import tech.pegasys.artemis.util.bytes.Bytes48;
@@ -166,6 +167,7 @@ public class CodecTest {
   }
 
   byte[] randomX() {
-    return new BigInteger(381, new Random()).mod(BCParameters.Q).toByteArray();
+    return BigIntegers.asUnsignedByteArray(
+        BCParameters.Q_BYTE_LENGTH, new BigInteger(381, new Random()).mod(BCParameters.Q));
   }
 }

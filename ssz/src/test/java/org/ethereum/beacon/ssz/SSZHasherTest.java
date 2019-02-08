@@ -14,7 +14,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
-import static com.sun.org.apache.xerces.internal.impl.dv.util.HexBin.decode;
 import static org.junit.Assert.assertEquals;
 
 /** Tests of {@link SSZHasher} */
@@ -41,7 +40,7 @@ public class SSZHasherTest {
 
   @Test
   public void bitfieldTest() {
-    Bitfield bitfield = new Bitfield(decode("abcd"));
+    Bitfield bitfield = new Bitfield(BytesValue.fromHexString("abcd").getArrayUnsafe());
 
     BytesValue hash = sszHasher.calc(bitfield);
     assertEquals(
@@ -66,7 +65,7 @@ public class SSZHasherTest {
             123,
             Collections.emptyList(),
             DEFAULT_HASH,
-            new Bitfield(decode("abcdef45")),
+            new Bitfield(BytesValue.fromHexString("abcdef45").getArrayUnsafe()),
             DEFAULT_HASH,
             12412L,
             12400L,
@@ -90,7 +89,7 @@ public class SSZHasherTest {
             123,
             Collections.emptyList(),
             DEFAULT_HASH,
-            new Bitfield(decode("abcdef45")),
+            new Bitfield(BytesValue.fromHexString("abcdef45").getArrayUnsafe()),
             DEFAULT_HASH,
             12412L,
             12400L,
