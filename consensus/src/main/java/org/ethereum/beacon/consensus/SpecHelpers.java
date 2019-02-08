@@ -309,11 +309,6 @@ public class SpecHelpers {
     return first_committee.get(slot.modulo(first_committee.size()).getIntValue());
   }
 
-  public ValidatorIndex get_beacon_proposer_index_in_committee(
-      List<ValidatorIndex> committee, SlotNumber slot) {
-    return committee.get(slot.modulo(committee.size()).getIntValue());
-  }
-
   /*
     def is_active_validator(validator: Validator, epoch: EpochNumber) -> bool:
         """

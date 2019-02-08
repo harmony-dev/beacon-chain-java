@@ -28,7 +28,7 @@ public class SlotTickerTests {
     }
     beaconState.setGenesisTime(Time.of(System.currentTimeMillis() / MILLIS_IN_SECOND));
     ChainSpec chainSpec =
-        new ChainSpec.DefaultChainSpec() {
+        new ChainSpec() {
           @Override
           public SlotNumber getGenesisSlot() {
             return SlotNumber.of(12345);

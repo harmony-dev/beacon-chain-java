@@ -11,6 +11,7 @@ import org.ethereum.beacon.core.spec.SignatureDomains;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Gwei;
+import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.crypto.BLS381;
 import org.ethereum.beacon.crypto.BLS381.KeyPair;
 import org.ethereum.beacon.crypto.BLS381.Signature;
@@ -60,12 +61,13 @@ public class TestUtils {
               Collections.singletonList(Hash32.random(rnd)),
               UInt64.ZERO,
               new DepositData(
+                  specHelpers.getChainSpec().getMaxDepositAmount(),
+                  Time.of(0),
                   new DepositInput(
                       BLSPubkey.wrap(Bytes48.leftPad(keyPair.getPublic().getEncodedBytes())),
                       proofOfPosession,
-                      BLSSignature.wrap(signature.getEncoded())),
-                  specHelpers.getChainSpec().getMaxDeposit(),
-                  UInt64.ZERO));
+                      BLSSignature.wrap(signature.getEncoded()))
+                  ));
       deposits.add(deposit);
     }
 

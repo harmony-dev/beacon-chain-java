@@ -90,7 +90,7 @@ public class StandaloneDepositContractTest {
     Assert.assertEquals(17, sb.getBlockchain()
         .getBlockByHash(chainStart.getEth1Data().getBlockHash().extractArray()).getNumber());
     for (int i = 0; i < 16; i++) {
-      Assert.assertEquals(UInt64.valueOf(i), chainStart.getInitialDeposits().get(i).getDepositIndex());
+      Assert.assertEquals(UInt64.valueOf(i), chainStart.getInitialDeposits().get(i).getIndex());
       Assert.assertEquals((byte) i, chainStart.getInitialDeposits().get(i).getDepositData()
           .getDepositInput().getPubKey().get(0));
     }
@@ -176,7 +176,7 @@ public class StandaloneDepositContractTest {
     Assert.assertEquals(1 + 16 + 31, sb.getBlockchain()
         .getBlockByHash(chainStart.getEth1Data().getBlockHash().extractArray()).getNumber());
     for (int i = 0; i < 16; i++) {
-      Assert.assertEquals(UInt64.valueOf(i), chainStart.getInitialDeposits().get(i).getDepositIndex());
+      Assert.assertEquals(UInt64.valueOf(i), chainStart.getInitialDeposits().get(i).getIndex());
       Assert.assertEquals((byte) i, chainStart.getInitialDeposits().get(i).getDepositData()
           .getDepositInput().getPubKey().get(0));
     }

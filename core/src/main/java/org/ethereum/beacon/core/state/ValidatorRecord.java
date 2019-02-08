@@ -176,7 +176,7 @@ public class ValidatorRecord {
       return this;
     }
 
-    public Builder withWithdrawalSlot(EpochNumber withdrawalEpoch) {
+    public Builder withWithdrawalEpoch(EpochNumber withdrawalEpoch) {
       this.withdrawalEpoch = withdrawalEpoch;
       return this;
     }

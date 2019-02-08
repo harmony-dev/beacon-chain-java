@@ -23,7 +23,7 @@ public class PerEpochTransitionTest {
     Time genesisTime = Time.castFrom(UInt64.random(rnd));
     Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), Hash32.random(rnd));
     ChainSpec chainSpec =
-        new ChainSpec.DefaultChainSpec() {
+        new ChainSpec() {
           @Override
           public SlotNumber.EpochLength getEpochLength() {
             return new SlotNumber.EpochLength(UInt64.valueOf(8));

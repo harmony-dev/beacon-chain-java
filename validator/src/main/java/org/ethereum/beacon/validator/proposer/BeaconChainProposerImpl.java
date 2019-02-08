@@ -1,6 +1,5 @@
 package org.ethereum.beacon.validator.proposer;
 
-import static java.util.Collections.emptyList;
 import static org.ethereum.beacon.core.spec.SignatureDomains.PROPOSAL;
 import static org.ethereum.beacon.core.spec.SignatureDomains.RANDAO;
 
@@ -16,10 +15,10 @@ import org.ethereum.beacon.core.BeaconBlock.Builder;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
-import org.ethereum.beacon.core.operations.CasperSlashing;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.Exit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
+import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.operations.slashing.ProposalSignedData;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.Eth1Data;
@@ -35,9 +34,7 @@ import org.ethereum.beacon.validator.crypto.MessageSigner;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes8;
-import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.collections.ReadList;
-import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 /**
@@ -117,7 +114,8 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
             chainSpec.getBeaconChainShardNumber(),
             specHelpers.hash_tree_root(blockWithoutSignature));
     Hash32 proposalRoot = specHelpers.hash_tree_root(proposal);
-    Bytes8 domain = specHelpers.get_domain(state.getForkData(), state.getSlot(), PROPOSAL);
+    Bytes8 domain = specHelpers.get_domain(state.getForkData(),
+        specHelpers.get_current_epoch(state), PROPOSAL);
     return signer.sign(proposalRoot, domain);
   }
 
@@ -133,8 +131,9 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
       BeaconState state, ValidatorIndex validatorIndex, MessageSigner<BLSSignature> signer) {
     ValidatorRecord proposer =
         state.getValidatorRegistry().get(validatorIndex);
-    Hash32 hash = Hash32.wrap(Bytes32.leftPad(proposer.getProposerSlots().toBytesBigEndian()));
-    Bytes8 domain = specHelpers.get_domain(state.getForkData(), state.getSlot(), RANDAO);
+    Hash32 hash = Hash32.wrap(Bytes32.leftPad(specHelpers.get_current_epoch(state).toBytesBigEndian()));
+    Bytes8 domain = specHelpers.get_domain(state.getForkData(),
+        specHelpers.get_current_epoch(state), RANDAO);
     return signer.sign(hash, domain);
   }
 
@@ -166,8 +165,8 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
   private BeaconBlockBody getBlockBody(BeaconState state, PendingOperations operations) {
     List<ProposerSlashing> proposerSlashings =
         operations.peekProposerSlashings(chainSpec.getMaxProposerSlashings());
-    List<CasperSlashing> casperSlashings =
-        operations.peekCasperSlashings(chainSpec.getMaxCasperSlashings());
+    List<AttesterSlashing> attesterSlashings =
+        operations.peekAttesterSlashings(chainSpec.getMaxAttesterSlashings());
     List<Attestation> attestations =
         operations.peekAggregatedAttestations(
             chainSpec.getMaxAttestations(),
@@ -183,11 +182,8 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
 
     return new BeaconBlockBody(
         proposerSlashings,
-        casperSlashings,
+        attesterSlashings,
         attestations,
-        emptyList(),
-        emptyList(),
-        emptyList(),
         deposits,
         exits);
   }

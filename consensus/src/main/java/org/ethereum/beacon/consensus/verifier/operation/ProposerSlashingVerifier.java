@@ -67,7 +67,9 @@ public class ProposerSlashingVerifier implements OperationVerifier<ProposerSlash
         specHelpers.hash_tree_root(proposerSlashing.getProposalData1()),
         proposerSlashing.getProposalSignature1(),
         specHelpers.get_domain(
-            state.getForkData(), proposerSlashing.getProposalData1().getSlot(), PROPOSAL))) {
+            state.getForkData(),
+            specHelpers.slot_to_epoch(proposerSlashing.getProposalData1().getSlot()),
+            PROPOSAL))) {
       return failedResult("proposal_signature_1 is invalid");
     }
 
@@ -76,7 +78,9 @@ public class ProposerSlashingVerifier implements OperationVerifier<ProposerSlash
         specHelpers.hash_tree_root(proposerSlashing.getProposalData2()),
         proposerSlashing.getProposalSignature2(),
         specHelpers.get_domain(
-            state.getForkData(), proposerSlashing.getProposalData2().getSlot(), PROPOSAL))) {
+            state.getForkData(),
+            specHelpers.slot_to_epoch(proposerSlashing.getProposalData2().getSlot()),
+            PROPOSAL))) {
       return failedResult("proposal_signature_2 is invalid");
     }
 
