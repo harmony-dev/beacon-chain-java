@@ -54,20 +54,6 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
 import tech.pegasys.artemis.util.uint.UInt64s;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
-import static java.lang.Math.max;
-import static java.lang.Math.min;
-import static java.util.stream.Collectors.toList;
-import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
 
 /**
  * https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md#helper-functions
@@ -725,11 +711,11 @@ public class SpecHelpers {
       )
    */
   public void activate_validator(MutableBeaconState state, ValidatorIndex index, boolean genesis) {
-    EpochNumber activationSlot = genesis ?
-        spec.getGenesisEpoch() :
-        get_entry_exit_effect_epoch(get_current_epoch(state));
-    state.getValidatorRegistry().update(index,
-        v -> v.builder().withActivationEpoch(activationSlot).build());
+    EpochNumber activationSlot =
+        genesis ? spec.getGenesisEpoch() : get_entry_exit_effect_epoch(get_current_epoch(state));
+    state
+        .getValidatorRegistry()
+        .update(index, v -> v.builder().withActivationEpoch(activationSlot).build());
   }
 
   /*
