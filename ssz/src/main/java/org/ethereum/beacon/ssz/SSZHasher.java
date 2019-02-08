@@ -7,6 +7,7 @@ import org.ethereum.beacon.ssz.type.UIntCodec;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
+import java.util.List;
 import java.util.function.Function;
 
 /**
@@ -84,6 +85,11 @@ public class SSZHasher implements Hasher<BytesValue> {
       public Hash32 calc(Object input) {
         return Hash32.wrap(Bytes32.wrap(sszHasher.calc(input), 0));
       }
+
+      @Override
+      public Hash32 calcList(List<Object> input) {
+        return Hash32.wrap(Bytes32.wrap(sszHasher.calcList(input), 0));
+      }
     };
 
     return objectHasher;
@@ -95,7 +101,19 @@ public class SSZHasher implements Hasher<BytesValue> {
    * @param input SSZ model instance
    * @return SSZ Hash, 32 bytes wrapped with Bytes type
    */
+  @Override
   public BytesValue calc(Object input) {
     return hashFunction.apply(BytesValue.wrap(hasher.encode(input)));
+  }
+
+  /**
+   * Calcs SSZ Hash for provided SSZ list
+   *
+   * @param input SSZ list
+   * @return SSZ Hash, 32 bytes wrapped with Bytes type
+   */
+  @Override
+  public BytesValue calcList(List<Object> input) {
+    return BytesValue.wrap(hasher.encode(input));
   }
 }

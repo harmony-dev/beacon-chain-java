@@ -1,5 +1,7 @@
 package org.ethereum.beacon.ssz;
 
+import java.util.List;
+
 /**
  * Hasher
  *
@@ -13,4 +15,6 @@ public interface Hasher<R> {
    * @return Hash
    */
   R calc(Object input);
+
+  R calcList(List<Object> input);
 }

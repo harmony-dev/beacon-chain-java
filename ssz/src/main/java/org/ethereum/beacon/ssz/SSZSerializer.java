@@ -27,7 +27,7 @@ public class SSZSerializer implements BytesSerializer {
 
   private SSZSchemeBuilder schemeBuilder;
 
-  private SSZCodecResolver codecResolver;
+  SSZCodecResolver codecResolver;
 
   private SSZModelFactory sszModelFactory;
 
@@ -48,7 +48,7 @@ public class SSZSerializer implements BytesSerializer {
     this.sszModelFactory = sszModelFactory;
   }
 
-  private static void checkSSZSerializableAnnotation(Class clazz) {
+  void checkSSZSerializableAnnotation(Class clazz) {
     if (!clazz.isAnnotationPresent(SSZSerializable.class)) {
       String error = String.format("Class %s should be annotated with SSZSerializable!", clazz);
       throw new SSZSchemeException(error);
