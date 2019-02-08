@@ -18,7 +18,8 @@ import static org.junit.Assert.assertTrue;
 public class SlotTickerTests {
   public static final int MILLIS_IN_SECOND = 1000;
   SlotTicker slotTicker;
-  long genesisSlot;
+  SlotNumber genesisSlot;
+  SlotNumber previousTick = SlotNumber.ZERO;
 
   public SlotTickerTests() throws InterruptedException {
     MutableBeaconState beaconState = BeaconState.getEmpty().createMutableCopy();
@@ -40,31 +41,29 @@ public class SlotTickerTests {
             return Time.of(1);
           }
         };
-    SpecHelpers specHelpers = SpecHelpers.createDefault();
-    genesisSlot = specHelpers.getChainSpec().getGenesisSlot().longValue();
+    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(chainSpec);
+    genesisSlot = specHelpers.getChainSpec().getGenesisSlot();
     slotTicker = new SlotTicker(specHelpers, beaconState);
   }
 
   @Test
   public void testSlotTicker() throws Exception {
     slotTicker.start();
-    Thread.sleep(2000);
-    final AtomicBoolean first = new AtomicBoolean(true);
-    final CountDownLatch bothAssertsRun = new CountDownLatch(2);
+    final CountDownLatch bothAssertsRun = new CountDownLatch(3);
     Flux.from(slotTicker.getTickerStream())
         .subscribe(
             slotNumber -> {
-              if (first.get()) {
-                assertEquals(SlotNumber.of(genesisSlot + 4), slotNumber);
+              if (previousTick.greater(SlotNumber.ZERO)) {
+                assertEquals(previousTick.increment(), slotNumber);
                 bothAssertsRun.countDown();
-                first.set(false);
-              } else { // second
-                assertEquals(SlotNumber.of(genesisSlot + 5), slotNumber);
+              } else {
+                assertTrue(slotNumber.greater(genesisSlot)); // first tracked tick
                 bothAssertsRun.countDown();
               }
+              previousTick = slotNumber;
             });
     assertTrue(
         String.format("%s assertion(s) was not correct or not tested", bothAssertsRun.getCount()),
-        bothAssertsRun.await(2, TimeUnit.SECONDS));
+        bothAssertsRun.await(4, TimeUnit.SECONDS));
   }
 }
