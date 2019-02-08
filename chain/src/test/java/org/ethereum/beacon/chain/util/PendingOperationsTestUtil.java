@@ -8,9 +8,9 @@ import java.util.Collections;
 import java.util.List;
 import org.ethereum.beacon.chain.observer.PendingOperations;
 import org.ethereum.beacon.core.operations.Attestation;
-import org.ethereum.beacon.core.operations.CasperSlashing;
 import org.ethereum.beacon.core.operations.Exit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
+import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.mockito.Mockito;
 
 public class PendingOperationsTestUtil {
@@ -28,12 +28,12 @@ public class PendingOperationsTestUtil {
       List<Attestation> attestations,
       List<Attestation> aggregateAttestations,
       List<ProposerSlashing> proposerSlashings,
-      List<CasperSlashing> casperSlashings,
+      List<AttesterSlashing> attesterSlashings,
       List<Exit> exits) {
     PendingOperations pendingOperations = Mockito.mock(PendingOperations.class);
     when(pendingOperations.getAttestations()).thenReturn(attestations);
     when(pendingOperations.peekProposerSlashings(anyInt())).thenReturn(proposerSlashings);
-    when(pendingOperations.peekCasperSlashings(anyInt())).thenReturn(casperSlashings);
+    when(pendingOperations.peekAttesterSlashings(anyInt())).thenReturn(attesterSlashings);
     when(pendingOperations.peekAggregatedAttestations(anyInt(), any()))
         .thenReturn(aggregateAttestations);
     when(pendingOperations.peekExits(anyInt())).thenReturn(exits);

@@ -38,7 +38,7 @@ public abstract class AttestationTestUtil {
         Hash32.random(random),
         Hash32.random(random),
         Hash32.random(random),
-        ChainSpec.GENESIS_SLOT,
+        ChainSpec.DEFAULT.getGenesisEpoch(),
         Hash32.random(random));
   }
 }
