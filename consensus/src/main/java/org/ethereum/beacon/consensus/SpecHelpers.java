@@ -1525,7 +1525,7 @@ public class SpecHelpers {
       Function<Hash32, Optional<BeaconBlock>> getBlock) {
     int res = 0;
     for (BeaconBlock target : attestation_targets) {
-      if (get_ancestor(target, block.getSlot(), getBlock).equals(block)) {
+      if (get_ancestor(target, block.getSlot(), getBlock).map(b -> b.equals(block)).orElse(false)) {
         ++res;
       }
     }
@@ -1533,20 +1533,28 @@ public class SpecHelpers {
     return res;
   }
 
-  /**
-   * Let get_ancestor(store, block, slot) be the ancestor of block with slot number slot. The
-   * get_ancestor function can be defined recursively as def get_ancestor(store, block, slot):
-   * return block if block.slot == slot else get_ancestor(store, store.get_parent(block), slot).
+  /*
+    def get_ancestor(store: Store, block: BeaconBlock, slot: SlotNumber) -> BeaconBlock:
+      """
+      Get the ancestor of ``block`` with slot number ``slot``; return ``None`` if not found.
+      """
+      if block.slot == slot:
+          return block
+      elif block.slot < slot:
+          return None
+      else:
+          return get_ancestor(store, store.get_parent(block), slot)
    */
-  private BeaconBlock get_ancestor(
+  private Optional<BeaconBlock> get_ancestor(
       BeaconBlock block, SlotNumber slot, Function<Hash32, Optional<BeaconBlock>> getBlock) {
     if (block.getSlot().equals(slot)) {
-      return block;
+      return Optional.of(block);
+    } else if (block.getSlot().less(slot)) {
+      return Optional.empty();
     } else {
       return getBlock
           .apply(block.getParentRoot())
-          .map(parent -> get_ancestor(parent, slot, getBlock))
-          .get();
+          .flatMap(parent -> get_ancestor(parent, slot, getBlock));
     }
   }
 
