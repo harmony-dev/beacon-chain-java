@@ -50,7 +50,11 @@ public class SSZSerializer implements BytesSerializer {
 
   void checkSSZSerializableAnnotation(Class clazz) {
     if (!clazz.isAnnotationPresent(SSZSerializable.class)) {
-      String error = String.format("Class %s should be annotated with SSZSerializable!", clazz);
+      String error =
+          String.format(
+              "Serializer doesn't know how to handle class of type %s. Maybe you forget to "
+                  + "annotate it with SSZSerializable?",
+              clazz);
       throw new SSZSchemeException(error);
     }
   }
