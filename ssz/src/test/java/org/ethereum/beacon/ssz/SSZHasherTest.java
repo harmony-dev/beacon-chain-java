@@ -135,6 +135,20 @@ public class SSZHasherTest {
         hash2);
   }
 
+  @Test
+  public void listTest() {
+    AnotherObject anotherObject1 = new AnotherObject(1);
+    AnotherObject anotherObject2 = new AnotherObject(2);
+    List<AnotherObject> anotherObjects = new ArrayList<>();
+    anotherObjects.add(anotherObject1);
+    anotherObjects.add(anotherObject2);
+    BytesValue hash = sszHasher.calc(anotherObjects);
+    assertEquals(
+        BytesValue.fromHexString(
+            "709d93be8e9b3e7f0cd7f21d20a9cd99ce60429b71205c14eee48acda15fcad1"),
+        hash);
+  }
+
   @SSZSerializable
   public static class SomeObject {
     private List<Long> list;

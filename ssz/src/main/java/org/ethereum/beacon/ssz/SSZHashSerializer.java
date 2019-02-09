@@ -1,6 +1,10 @@
 package org.ethereum.beacon.ssz;
 
+import org.javatuples.Triplet;
 import javax.annotation.Nullable;
+import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 /** Extends {@link SSZSerializer} to match Hash calculation needs */
 public class SSZHashSerializer extends SSZSerializer {
@@ -22,7 +26,12 @@ public class SSZHashSerializer extends SSZSerializer {
    */
   @Override
   public byte[] encode(@Nullable Object input, Class clazz) {
-    byte[] preBakedHash = super.encode(input, clazz);
+    byte[] preBakedHash;
+    if (input instanceof List) {
+      preBakedHash = encodeList((List<Object>) input, clazz);
+    } else {
+      preBakedHash = super.encode(input, clazz);
+    }
     // For the final output only (ie. not intermediate outputs), if the output is less than 32
     // bytes, right-zero-pad it to 32 bytes.
     byte[] res;
@@ -34,5 +43,24 @@ public class SSZHashSerializer extends SSZSerializer {
     }
 
     return res;
+  }
+
+  private byte[] encodeList(List<Object> input, Class clazz) {
+    if (input.isEmpty()) {
+      return new byte[0];
+    }
+    Class internalClass = input.get(0).getClass();
+    checkSSZSerializableAnnotation(internalClass);
+
+    // Cook field for such List
+    SSZSchemeBuilder.SSZScheme.SSZField field = new SSZSchemeBuilder.SSZScheme.SSZField();
+    field.type = internalClass;
+    field.multipleType = SSZSchemeBuilder.SSZScheme.MultipleType.LIST;
+    field.notAContainer = false;
+
+    ByteArrayOutputStream res = new ByteArrayOutputStream();
+    codecResolver.resolveEncodeFunction(field).accept(new Triplet<>(input, res, this));
+
+    return res.toByteArray();
   }
 }

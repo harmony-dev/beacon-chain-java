@@ -65,7 +65,17 @@ public class SpecHelpers {
   /* Uses Hash32.ZERO as a stub for objectHasher */
   public SpecHelpers(ChainSpec spec) {
     this.spec = spec;
-    this.objectHasher = input -> Hash32.ZERO;
+    this.objectHasher = new Hasher<Hash32>() {
+      @Override
+      public Hash32 calc(Object input) {
+        return Hash32.ZERO;
+      }
+
+      @Override
+      public Hash32 calcList(List<Object> input) {
+        return Hash32.ZERO;
+      }
+    };
   }
 
   /** Builds objectHasher with {@link #hash(BytesValue)} as data hash function in objectHasher */
