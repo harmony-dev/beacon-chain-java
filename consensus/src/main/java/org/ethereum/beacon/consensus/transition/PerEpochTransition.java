@@ -27,6 +27,13 @@ import org.javatuples.Pair;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
 
+/**
+ * Per-epoch transition function.
+ *
+ * @see <a
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/dev/specs/core/0_beacon-chain.md#per-epoch-processing">Per-epoch
+ *     processing</a> in the spec.
+ */
 public class PerEpochTransition implements StateTransition<BeaconStateEx> {
 
   private final ChainSpec specConst;

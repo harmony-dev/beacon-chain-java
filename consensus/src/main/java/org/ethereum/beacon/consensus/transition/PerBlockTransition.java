@@ -20,6 +20,13 @@ import tech.pegasys.artemis.util.bytes.Bytes32s;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
 
+/**
+ * Per-block transition function.
+ *
+ * @see <a
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/dev/specs/core/0_beacon-chain.md#per-block-processing">Per-block
+ *     processing</a> in the spec.
+ */
 public class PerBlockTransition implements BlockTransition<BeaconStateEx> {
   private final ChainSpec spec;
   private final SpecHelpers specHelpers;

@@ -6,6 +6,13 @@ import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.types.SlotNumber;
 
+/**
+ * Per-epoch transition function.
+ *
+ * @see <a
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/dev/specs/core/0_beacon-chain.md#per-slot-processing">Per-slot
+ *     processing</a> in the spec.
+ */
 public class PerSlotTransition implements StateTransition<BeaconStateEx> {
   private final ChainSpec spec;
 
