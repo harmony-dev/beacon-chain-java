@@ -3,10 +3,8 @@ package org.ethereum.beacon.chain.storage;
 import org.ethereum.beacon.consensus.transition.BeaconStateEx;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
-import org.ethereum.beacon.core.Hashable;
-import tech.pegasys.artemis.ethereum.core.Hash32;
 
-public class BeaconTuple implements Hashable<Hash32> {
+public class BeaconTuple {
 
   private final BeaconBlock block;
   private final BeaconState state;

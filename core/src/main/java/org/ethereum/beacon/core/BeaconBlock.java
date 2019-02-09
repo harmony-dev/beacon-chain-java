@@ -19,7 +19,7 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
  *     in the spec</a>
  */
 @SSZSerializable
-public class BeaconBlock implements Hashable<Hash32> {
+public class BeaconBlock {
 
   /** Number of a slot that block does belong to. */
   @SSZ private final SlotNumber slot;

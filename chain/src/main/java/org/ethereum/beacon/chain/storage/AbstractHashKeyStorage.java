@@ -1,11 +1,9 @@
 package org.ethereum.beacon.chain.storage;
 
 import org.ethereum.beacon.consensus.hasher.ObjectHasher;
-import org.ethereum.beacon.core.Hashable;
 import tech.pegasys.artemis.ethereum.core.Hash;
 
-public abstract class AbstractHashKeyStorage<H extends Hash, T extends Hashable<H>>
-    implements HashKeyStorage<H, T> {
+public abstract class AbstractHashKeyStorage<H extends Hash, T> implements HashKeyStorage<H, T> {
 
   private final ObjectHasher<H> objectHasher;
 
