@@ -18,6 +18,7 @@ import org.ethereum.beacon.consensus.transition.BeaconStateEx;
 import org.ethereum.beacon.consensus.util.StateTransitionTestUtil;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
+import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.Exit;
@@ -186,6 +187,53 @@ public class BeaconChainProposerTest {
         depositInfos.stream().map(DepositInfo::getDeposit).collect(Collectors.toList()),
         block.getBody().getDeposits().listCopy());
     Assert.assertEquals(depositContract.getLatestEth1Data(), Optional.of(block.getEth1Data()));
+  }
+
+  @Test
+  public void proposeABlockWithEpochTransition() {
+    Random random = new Random();
+
+    SpecHelpers specHelpers = SpecHelpers.createDefault();
+    DepositContract depositContract =
+        DepositContractTestUtil.mockDepositContract(random, Collections.emptyList());
+    BlockTransition<BeaconStateEx> perBlockTransition =
+        StateTransitionTestUtil.createPerBlockTransition();
+
+    final Eth1Data eth1Data = Eth1DataTestUtil.createRandom(random);
+    StateTransition<BeaconStateEx> perEpochTransition =
+        source -> {
+          MutableBeaconState newState = source.getCanonicalState().createMutableCopy();
+          newState.setLatestEth1Data(eth1Data);
+          return new BeaconStateEx(newState, source.getLatestChainBlockHash());
+        };
+
+    BeaconChainProposer proposer =
+        mockProposer(perBlockTransition, perEpochTransition, depositContract, specHelpers);
+    MessageSigner<BLSSignature> signer = MessageSignerTestUtil.createBLSSigner();
+
+    ObservableBeaconState initialObservedState =
+        ObservableBeaconStateTestUtil.createInitialState(random, specHelpers);
+
+    // set slot to the end of the epoch
+    MutableBeaconState modifiedState =
+        initialObservedState.getLatestSlotState().createMutableCopy();
+    modifiedState.setSlot(specHelpers.getChainSpec().getEpochLength().decrement());
+
+    ObservableBeaconState endOfTheEpoch =
+        new ObservableBeaconState(
+            initialObservedState.getHead(),
+            modifiedState,
+            initialObservedState.getPendingOperations());
+
+    BeaconBlock block = proposer.propose(endOfTheEpoch, signer);
+
+    BeaconStateEx stateAfterBlock =
+        perBlockTransition.apply(new BeaconStateEx(modifiedState, Hash32.ZERO), block);
+    BeaconStateEx stateAfterEpoch = perEpochTransition.apply(stateAfterBlock);
+
+    Assert.assertEquals(
+        specHelpers.hash_tree_root(stateAfterEpoch.getCanonicalState()), block.getStateRoot());
+    Assert.assertTrue(verifySignature(specHelpers, modifiedState, block, signer));
   }
 
   private boolean verifySignature(
