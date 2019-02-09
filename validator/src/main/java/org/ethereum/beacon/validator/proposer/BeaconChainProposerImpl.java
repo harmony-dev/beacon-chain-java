@@ -10,6 +10,8 @@ import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.observer.PendingOperations;
 import org.ethereum.beacon.consensus.BlockTransition;
 import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.StateTransition;
+import org.ethereum.beacon.consensus.transition.BeaconStateEx;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlock.Builder;
 import org.ethereum.beacon.core.BeaconBlockBody;
@@ -47,19 +49,23 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
   private SpecHelpers specHelpers;
   /** Chain parameters. */
   private ChainSpec chainSpec;
-  /** State transition that is regularly applied to a block during processing. */
-  private BlockTransition<BeaconState> blockTransition;
+  /** Per-block state transition. */
+  private BlockTransition<BeaconStateEx> perBlockTransition;
+  /** Per-epoch state transition. */
+  private StateTransition<BeaconStateEx> perEpochTransition;
   /** Eth1 deposit contract. */
   private DepositContract depositContract;
 
   public BeaconChainProposerImpl(
       SpecHelpers specHelpers,
       ChainSpec chainSpec,
-      BlockTransition<BeaconState> blockTransition,
+      BlockTransition<BeaconStateEx> perBlockTransition,
+      StateTransition<BeaconStateEx> perEpochTransition,
       DepositContract depositContract) {
     this.specHelpers = specHelpers;
     this.chainSpec = chainSpec;
-    this.blockTransition = blockTransition;
+    this.perBlockTransition = perBlockTransition;
+    this.perEpochTransition = perEpochTransition;
     this.depositContract = depositContract;
   }
 
@@ -86,7 +92,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
 
     // calculate state_root
     BeaconBlock newBlock = builder.build();
-    BeaconState newState = blockTransition.apply(state, newBlock);
+    BeaconState newState = applyStateTransition(state, parentRoot, newBlock);
     builder.withStateRoot(specHelpers.hash_tree_root(newState));
 
     // sign off on proposal
@@ -95,6 +101,17 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
     builder.withSignature(signature);
 
     return builder.build();
+  }
+
+  private BeaconState applyStateTransition(BeaconState source, Hash32 parentRoot, BeaconBlock block) {
+    BeaconStateEx sourceEx = new BeaconStateEx(source, parentRoot);
+    BeaconStateEx blockState = perBlockTransition.apply(sourceEx, block);
+    if (specHelpers.is_epoch_end(blockState.getCanonicalState().getSlot())) {
+      BeaconStateEx epochState = perEpochTransition.apply(blockState);
+      return epochState.getCanonicalState();
+    } else {
+      return blockState.getCanonicalState();
+    }
   }
 
   /**
