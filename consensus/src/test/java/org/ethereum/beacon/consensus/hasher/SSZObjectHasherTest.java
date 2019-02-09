@@ -34,7 +34,7 @@ public class SSZObjectHasherTest {
   public void setup() {
     SSZSerializer sszHashSerializer =
         SSZHashSerializers.createWithBeaconChainTypes(Hashes::keccak256, false);
-    sszHasher = new SSZObjectHasher<>(sszHashSerializer, Hashes::keccak256);
+    sszHasher = new SSZObjectHasher(sszHashSerializer, Hashes::keccak256);
   }
 
   @Test
@@ -132,6 +132,20 @@ public class SSZObjectHasherTest {
         BytesValue.fromHexString(
             "B7047395B0D5A9C70336FDE7E40DE2BB369FE67C8E762A35641E209B7338FDD9"),
         hash2);
+  }
+
+  @Test
+  public void listTest() {
+    AnotherObject anotherObject1 = new AnotherObject(1);
+    AnotherObject anotherObject2 = new AnotherObject(2);
+    List<AnotherObject> anotherObjects = new ArrayList<>();
+    anotherObjects.add(anotherObject1);
+    anotherObjects.add(anotherObject2);
+    BytesValue hash = sszHasher.getHash(anotherObjects);
+    assertEquals(
+        BytesValue.fromHexString(
+            "a9bb69cad9fb0d9a9963bf9a32f09b9c306bed6f6c95fff3e5d625fd9370646e"),
+        hash);
   }
 
   @SSZSerializable
