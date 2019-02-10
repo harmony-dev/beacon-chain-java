@@ -181,9 +181,20 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     return tupleStorage.get(block.getParentRoot()).isPresent();
   }
 
+  /**
+   * There is no sense in importing block with a slot number less or equal to latest finalized slot
+   * or too far in the future.
+   *
+   * @param block block to run check on.
+   * @return true if block should be rejected, false otherwise.
+   */
   private boolean rejectedByTime(BeaconBlock block) {
-    SlotNumber currentSlot = specHelpers.get_current_slot(recentlyProcessed.getState());
-    return block.getSlot().greater(currentSlot.increment());
+    SlotNumber finalizedSlot =
+        specHelpers.get_epoch_end_slot(recentlyProcessed.getState().getFinalizedEpoch());
+    SlotNumber nextToCurrentSlot =
+        specHelpers.get_current_slot(recentlyProcessed.getState()).increment();
+
+    return block.getSlot().lessEqual(finalizedSlot) || block.getSlot().greater(nextToCurrentSlot);
   }
 
   private BeaconStateEx applyEmptySlotTransitions(BeaconStateEx source, BeaconBlock block) {
