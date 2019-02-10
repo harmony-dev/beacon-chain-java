@@ -90,7 +90,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
       SpecHelpers specHelpers,
       StateTransition<BeaconStateEx> perSlotTransition,
       StateTransition<BeaconStateEx> perEpochTransition) {
-    this.tupleStorage = chainStorage.getBeaconTupleStorage();
+    this.tupleStorage = chainStorage.getTupleStorage();
     this.specHelpers = specHelpers;
     this.chainSpec = specHelpers.getChainSpec();
     this.perSlotTransition = perSlotTransition;

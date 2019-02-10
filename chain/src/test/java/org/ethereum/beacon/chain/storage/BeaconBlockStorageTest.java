@@ -22,8 +22,7 @@ public class BeaconBlockStorageTest {
     return BeaconBlockStorageImpl.create(
         Database.inMemoryDB(),
         ObjectHasher.createSSZOverKeccak256(),
-        SerializerFactory.createSSZ(),
-        specHelpers.getChainSpec());
+        SerializerFactory.createSSZ());
   }
 
   private BeaconBlock createBlock(long slot, BeaconBlock parent, Hash32 parentHash) {

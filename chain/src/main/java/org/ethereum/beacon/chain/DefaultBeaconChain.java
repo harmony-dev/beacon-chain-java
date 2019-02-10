@@ -62,7 +62,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     this.blockVerifier = blockVerifier;
     this.stateVerifier = stateVerifier;
     this.chainStorage = chainStorage;
-    this.tupleStorage = chainStorage.getBeaconTupleStorage();
+    this.tupleStorage = chainStorage.getTupleStorage();
     this.database = database;
   }
 
@@ -81,9 +81,12 @@ public class DefaultBeaconChain implements MutableBeaconChain {
 
     Hash32 initialStateRoot = specHelpers.hash_tree_root(initialState.getCanonicalState());
     BeaconBlock genesis = initialGenesis.withStateRoot(initialStateRoot);
+    Hash32 genesisRoot = specHelpers.hash_tree_root(genesis);
     BeaconTuple tuple = BeaconTuple.of(genesis, initialState);
 
     tupleStorage.put(tuple);
+    chainStorage.getJustifiedStorage().set(genesisRoot);
+    chainStorage.getFinalizedStorage().set(genesisRoot);
   }
 
   @Override
@@ -118,10 +121,27 @@ public class DefaultBeaconChain implements MutableBeaconChain {
 
     BeaconTuple newTuple = BeaconTuple.of(block, postBlockState);
     tupleStorage.put(newTuple);
+    updateFinality(parentState.getCanonicalState(), postBlockState.getCanonicalState());
+
     chainStorage.commit();
     database.commit();
 
     blockSink.onNext(newTuple);
+  }
+
+  private void updateFinality(BeaconState previous, BeaconState current) {
+    if (previous.getFinalizedEpoch().less(current.getFinalizedEpoch())) {
+      Hash32 finalizedRoot =
+          specHelpers.get_block_root(
+              current, specHelpers.get_epoch_end_slot(current.getFinalizedEpoch()));
+      chainStorage.getFinalizedStorage().set(finalizedRoot);
+    }
+    if (previous.getJustifiedEpoch().less(current.getJustifiedEpoch())) {
+      Hash32 justifiedRoot =
+          specHelpers.get_block_root(
+              current, specHelpers.get_epoch_end_slot(current.getJustifiedEpoch()));
+      chainStorage.getJustifiedStorage().set(justifiedRoot);
+    }
   }
 
   private BeaconStateEx pullParentState(BeaconBlock block) {

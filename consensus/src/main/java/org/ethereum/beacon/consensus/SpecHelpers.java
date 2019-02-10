@@ -1428,6 +1428,10 @@ public class SpecHelpers {
     return epoch.mul(spec.getEpochLength());
   }
 
+  public SlotNumber get_epoch_end_slot(EpochNumber epoch) {
+    return get_epoch_start_slot(epoch).plus(spec.getEpochLength()).decrement();
+  }
+
   public EpochNumber get_genesis_epoch() {
     return slot_to_epoch(spec.getGenesisSlot());
   }
