@@ -80,4 +80,12 @@ public class SlotNumber extends UInt64 implements
   public SlotNumber zeroElement() {
     return ZERO;
   }
+
+  public static SlotNumber min(SlotNumber value1, SlotNumber value2) {
+    if (value1.compareTo(value2) < 0) {
+      return value2;
+    } else {
+      return value1;
+    }
+  }
 }

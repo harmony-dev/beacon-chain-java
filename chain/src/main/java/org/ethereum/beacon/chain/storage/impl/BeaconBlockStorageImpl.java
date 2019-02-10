@@ -12,7 +12,7 @@ import org.ethereum.beacon.chain.storage.AbstractHashKeyStorage;
 import org.ethereum.beacon.chain.storage.BeaconBlockStorage;
 import org.ethereum.beacon.consensus.hasher.ObjectHasher;
 import org.ethereum.beacon.core.BeaconBlock;
-import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.db.Database;
 import org.ethereum.beacon.db.source.CodecSource;
 import org.ethereum.beacon.db.source.DataSource;
@@ -89,14 +89,14 @@ public class BeaconBlockStorageImpl extends AbstractHashKeyStorage<Hash32, Beaco
   }
 
   @Override
-  public long getMaxSlot() {
-    return blockIndex.size() - 1;
+  public SlotNumber getMaxSlot() {
+    return SlotNumber.of(blockIndex.size() - 1);
   }
 
   @Override
-  public List<Hash32> getSlotBlocks(long slot) {
+  public List<Hash32> getSlotBlocks(SlotNumber slot) {
     return blockIndex
-        .get(slot)
+        .get(slot.getValue())
         .map(slotBlocks -> (List<Hash32>) new ArrayList<>(slotBlocks.getBlockHashes()))
         .orElse(Collections.emptyList());
   }
@@ -160,9 +160,9 @@ public class BeaconBlockStorageImpl extends AbstractHashKeyStorage<Hash32, Beaco
     BeaconBlock start = block.get();
     final List<BeaconBlock> children = new ArrayList<>();
 
-    for (long curSlot = start.getSlot().getValue() + 1;
-        curSlot <= Math.min(start.getSlot().getValue() + limit, getMaxSlot());
-        ++curSlot) {
+    for (SlotNumber curSlot = start.getSlot().increment();
+        curSlot.less(SlotNumber.min(start.getSlot().plus(limit), getMaxSlot()));
+        curSlot = curSlot.increment()) {
       getSlotBlocks(curSlot).stream()
           .map(this::get)
           .filter(Optional::isPresent)

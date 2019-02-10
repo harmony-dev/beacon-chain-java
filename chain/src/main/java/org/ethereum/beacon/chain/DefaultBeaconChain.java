@@ -2,6 +2,7 @@ package org.ethereum.beacon.chain;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import java.util.List;
 import java.util.Optional;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.chain.storage.BeaconTuple;
@@ -16,6 +17,7 @@ import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlocks;
 import org.ethereum.beacon.core.BeaconState;
+import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.db.Database;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
@@ -44,6 +46,8 @@ public class DefaultBeaconChain implements MutableBeaconChain {
           .onBackpressureError()
           .name("DefaultBeaconChain.block");
 
+  private BeaconTuple recentlyProcessed;
+
   public DefaultBeaconChain(
       SpecHelpers specHelpers,
       BlockTransition<BeaconStateEx> initialTransition,
@@ -71,6 +75,17 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     if (tupleStorage.isEmpty()) {
       initializeStorage();
     }
+    this.recentlyProcessed = fetchRecentTuple();
+  }
+
+  private BeaconTuple fetchRecentTuple() {
+    SlotNumber maxSlot = chainStorage.getBlockStorage().getMaxSlot();
+    List<Hash32> latestBlockRoots = chainStorage.getBlockStorage().getSlotBlocks(maxSlot);
+    assert latestBlockRoots.size() > 0;
+    return tupleStorage
+        .get(latestBlockRoots.get(0))
+        .orElseThrow(
+            () -> new RuntimeException("Block with stored maxSlot not found, maxSlot: " + maxSlot));
   }
 
   private void initializeStorage() {
@@ -91,6 +106,10 @@ public class DefaultBeaconChain implements MutableBeaconChain {
 
   @Override
   public synchronized void insert(BeaconBlock block) {
+    if (rejectedByTime(block)) {
+      return;
+    }
+
     if (exist(block)) {
       return;
     }
@@ -160,6 +179,11 @@ public class DefaultBeaconChain implements MutableBeaconChain {
 
   private boolean hasParent(BeaconBlock block) {
     return tupleStorage.get(block.getParentRoot()).isPresent();
+  }
+
+  private boolean rejectedByTime(BeaconBlock block) {
+    SlotNumber currentSlot = specHelpers.get_current_slot(recentlyProcessed.getState());
+    return block.getSlot().greater(currentSlot.increment());
   }
 
   private BeaconStateEx applyEmptySlotTransitions(BeaconStateEx source, BeaconBlock block) {
