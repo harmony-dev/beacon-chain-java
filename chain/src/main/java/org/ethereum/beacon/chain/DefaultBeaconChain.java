@@ -3,6 +3,7 @@ package org.ethereum.beacon.chain;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import java.util.Optional;
+import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.chain.storage.BeaconTuple;
 import org.ethereum.beacon.chain.storage.BeaconTupleStorage;
 import org.ethereum.beacon.consensus.BlockTransition;
@@ -32,6 +33,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   private final BeaconBlockVerifier blockVerifier;
   private final BeaconStateVerifier stateVerifier;
 
+  private final BeaconChainStorage chainStorage;
   private final BeaconTupleStorage tupleStorage;
   private final Database database;
 
@@ -50,7 +52,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
       StateTransition<BeaconStateEx> perEpochTransition,
       BeaconBlockVerifier blockVerifier,
       BeaconStateVerifier stateVerifier,
-      BeaconTupleStorage tupleStorage,
+      BeaconChainStorage chainStorage,
       Database database) {
     this.specHelpers = specHelpers;
     this.initialTransition = initialTransition;
@@ -59,7 +61,8 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     this.perEpochTransition = perEpochTransition;
     this.blockVerifier = blockVerifier;
     this.stateVerifier = stateVerifier;
-    this.tupleStorage = tupleStorage;
+    this.chainStorage = chainStorage;
+    this.tupleStorage = chainStorage.getBeaconTupleStorage();
     this.database = database;
   }
 
@@ -115,6 +118,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
 
     BeaconTuple newTuple = BeaconTuple.of(block, postBlockState);
     tupleStorage.put(newTuple);
+    chainStorage.commit();
     database.commit();
 
     blockSink.onNext(newTuple);

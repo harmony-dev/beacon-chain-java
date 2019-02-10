@@ -1,5 +1,7 @@
 package org.ethereum.beacon.consensus.hasher;
 
+import org.ethereum.beacon.crypto.Hashes;
+import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 /**
@@ -17,4 +19,8 @@ public interface ObjectHasher<H extends BytesValue> {
    * @return calculated hash.
    */
   H getHash(Object input);
+
+  static ObjectHasher<Hash32> createSSZOverKeccak256() {
+    return SSZObjectHasher.create(Hashes::keccak256);
+  }
 }

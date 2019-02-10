@@ -1,64 +1,67 @@
 package org.ethereum.beacon.chain.storage.impl;
 
-import java.util.function.Function;
+import static java.util.Collections.singletonList;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import javax.annotation.Nonnull;
 import org.ethereum.beacon.chain.storage.AbstractHashKeyStorage;
 import org.ethereum.beacon.chain.storage.BeaconBlockStorage;
 import org.ethereum.beacon.consensus.hasher.ObjectHasher;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.db.Database;
+import org.ethereum.beacon.db.source.CodecSource;
 import org.ethereum.beacon.db.source.DataSource;
 import org.ethereum.beacon.db.source.HoleyList;
+import org.ethereum.beacon.db.source.impl.DataSourceList;
+import org.ethereum.beacon.ssz.Serializer;
+import org.ethereum.beacon.ssz.annotation.SSZ;
 import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt64;
-import javax.annotation.Nonnull;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import static java.util.Collections.singleton;
 
 public class BeaconBlockStorageImpl extends AbstractHashKeyStorage<Hash32, BeaconBlock>
     implements BeaconBlockStorage {
 
   private static class SlotBlocks {
 
-    private final Set<Hash32> blockHashes;
-    private final Set<Hash32> justifiedHashes;
-    private final Hash32 finalizedHash;
+    @SSZ private final List<Hash32> blockHashes;
+    @SSZ private final List<Hash32> justifiedHashes;
+    @SSZ private final Hash32 finalizedHash;
 
     SlotBlocks(Hash32 blockHash) {
-      this(singleton(blockHash), Collections.emptySet(), null);
+      this(singletonList(blockHash), Collections.emptyList(), null);
     }
 
     SlotBlocks(Hash32 blockHash, Hash32 justifiedHash, Hash32 finalizedHash) {
-      this(singleton(blockHash), singleton(justifiedHash), finalizedHash);
+      this(singletonList(blockHash), singletonList(justifiedHash), finalizedHash);
     }
 
-    SlotBlocks(Hash32 blockHash, Set<Hash32> justifiedHashes, Hash32 finalizedHash) {
-      this(singleton(blockHash), justifiedHashes, finalizedHash);
+    SlotBlocks(Hash32 blockHash, List<Hash32> justifiedHashes, Hash32 finalizedHash) {
+      this(singletonList(blockHash), justifiedHashes, finalizedHash);
     }
 
-    public SlotBlocks(Set<Hash32> blockHashes, Set<Hash32> justifiedHashes, Hash32 finalizedHash) {
+    public SlotBlocks(List<Hash32> blockHashes, List<Hash32> justifiedHashes, Hash32 finalizedHash) {
       this.blockHashes = blockHashes;
       this.justifiedHashes = justifiedHashes;
       this.finalizedHash = finalizedHash;
     }
 
-    public SlotBlocks(Set<Hash32> blockHashes, Hash32 justifiedHash, Hash32 finalizedHash) {
+    public SlotBlocks(List<Hash32> blockHashes, Hash32 justifiedHash, Hash32 finalizedHash) {
       this.blockHashes = blockHashes;
-      this.justifiedHashes = singleton(justifiedHash);
+      this.justifiedHashes = singletonList(justifiedHash);
       this.finalizedHash = finalizedHash;
     }
 
-    public Set<Hash32> getBlockHashes() {
+    public List<Hash32> getBlockHashes() {
       return blockHashes;
     }
 
-    public Set<Hash32> getJustifiedHashes() {
+    public List<Hash32> getJustifiedHashes() {
       return justifiedHashes;
     }
 
@@ -67,22 +70,22 @@ public class BeaconBlockStorageImpl extends AbstractHashKeyStorage<Hash32, Beaco
     }
 
     SlotBlocks addBlock(Hash32 newBlock) {
-      Set<Hash32> blocks = new HashSet<>(getBlockHashes());
+      List<Hash32> blocks = new ArrayList<>(getBlockHashes());
       blocks.add(newBlock);
       return new SlotBlocks(blocks, justifiedHashes, finalizedHash);
     }
 
     SlotBlocks addJustifiedHash(Hash32 newJustifiedHash) {
-      Set<Hash32> justifiedHash = new HashSet<>(getJustifiedHashes());
+      List<Hash32> justifiedHash = new ArrayList<>(getJustifiedHashes());
       justifiedHash.add(newJustifiedHash);
       return new SlotBlocks(blockHashes, justifiedHash, finalizedHash);
     }
 
     SlotBlocks removeJustifiedHash(Hash32 badJustifiedHash) {
-      Set<Hash32> justifiedHash =
+      List<Hash32> justifiedHash =
           getJustifiedHashes().stream()
               .filter(hash -> !badJustifiedHash.equals(hash))
-              .collect(Collectors.toSet());
+              .collect(Collectors.toList());
       return new SlotBlocks(blockHashes, justifiedHash, finalizedHash);
     }
 
@@ -174,7 +177,7 @@ public class BeaconBlockStorageImpl extends AbstractHashKeyStorage<Hash32, Beaco
     }
 
     rawBlocks.put(key, newBlock);
-    Hash32 newBlockHash = hash(newBlock);
+    Hash32 newBlockHash = getObjectHasher().getHash(newBlock);
     SlotBlocks slotBlocks =
         newBlock.getSlot().equals(chainSpec.getGenesisSlot())
             ? new SlotBlocks(newBlockHash, newBlockHash, newBlockHash)
@@ -198,12 +201,12 @@ public class BeaconBlockStorageImpl extends AbstractHashKeyStorage<Hash32, Beaco
                       new IllegalStateException(
                           "Internal error: rawBlocks contains block, but blockIndex misses: "
                               + key));
-      Set<Hash32> newBlocks = new HashSet<>(slotBlocks.getBlockHashes());
+      List<Hash32> newBlocks = new ArrayList<>(slotBlocks.getBlockHashes());
       newBlocks.remove(key);
-      Set<Hash32> justifiedHashes =
+      List<Hash32> justifiedHashes =
           slotBlocks.getJustifiedHashes().stream()
               .filter(hash -> !key.equals(hash))
-              .collect(Collectors.toSet());
+              .collect(Collectors.toList());
       Hash32 finalizedHash =
           slotBlocks.finalizedHash != null && slotBlocks.finalizedHash != key
               ? slotBlocks.finalizedHash
@@ -323,7 +326,31 @@ public class BeaconBlockStorageImpl extends AbstractHashKeyStorage<Hash32, Beaco
     // nothing to be done here. No cached data in this implementation
   }
 
-  public boolean isChild(BeaconBlock parent, BeaconBlock child) {
-    return hash(parent).equals(child.getParentRoot());
+  private boolean isChild(BeaconBlock parent, BeaconBlock child) {
+    return getObjectHasher().getHash(parent).equals(child.getParentRoot());
+  }
+
+  public static BeaconBlockStorageImpl create(
+      Database database,
+      ObjectHasher<Hash32> objectHasher,
+      Serializer serializer,
+      ChainSpec chainSpec) {
+    DataSource<BytesValue, BytesValue> backingBlockSource = database.createStorage("beacon-block");
+    DataSource<BytesValue, BytesValue> backingIndexSource =
+        database.createStorage("beacon-block-index");
+
+    DataSource<Hash32, BeaconBlock> blockSource =
+        new CodecSource<>(
+            backingBlockSource,
+            key -> key,
+            serializer::encode2,
+            bytes -> serializer.decode(bytes, BeaconBlock.class));
+    HoleyList<SlotBlocks> indexSource =
+        new DataSourceList<>(
+            backingIndexSource,
+            serializer::encode2,
+            bytes -> serializer.decode(bytes, SlotBlocks.class));
+
+    return new BeaconBlockStorageImpl(objectHasher, blockSource, indexSource, chainSpec);
   }
 }

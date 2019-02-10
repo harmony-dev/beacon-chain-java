@@ -1,52 +1,48 @@
 package org.ethereum.beacon.chain.storage.impl;
 
-import org.ethereum.beacon.chain.storage.AbstractHashKeyStorage;
+import java.util.Objects;
+import java.util.Optional;
+import javax.annotation.Nonnull;
 import org.ethereum.beacon.chain.storage.BeaconBlockStorage;
 import org.ethereum.beacon.chain.storage.BeaconStateStorage;
 import org.ethereum.beacon.chain.storage.BeaconTuple;
 import org.ethereum.beacon.chain.storage.BeaconTupleStorage;
-import org.ethereum.beacon.consensus.hasher.ObjectHasher;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
-import javax.annotation.Nonnull;
-import java.util.Optional;
-
-public class BeaconTupleStorageImpl extends AbstractHashKeyStorage<Hash32, BeaconTuple>
-    implements BeaconTupleStorage {
+public class BeaconTupleStorageImpl implements BeaconTupleStorage {
 
   private final BeaconBlockStorage blockStorage;
   private final BeaconStateStorage stateStorage;
 
-  public BeaconTupleStorageImpl(
-      ObjectHasher<Hash32> objectHasher,
-      BeaconBlockStorage blockStorage,
-      BeaconStateStorage stateStorage) {
-    super(objectHasher);
+  public BeaconTupleStorageImpl(BeaconBlockStorage blockStorage, BeaconStateStorage stateStorage) {
     this.blockStorage = blockStorage;
     this.stateStorage = stateStorage;
   }
 
   @Override
-  public Optional<BeaconTuple> get(Hash32 hash) {
-    return blockStorage.get(hash).map(block ->
-        stateStorage.get(hash)
-            .map(state -> BeaconTuple.of(block, state))
-            .orElseThrow(() -> new IllegalStateException("State inconsistency for block "+ block))
-    );
+  public Optional<BeaconTuple> get(@Nonnull Hash32 hash) {
+    Objects.requireNonNull(hash);
+    return blockStorage
+        .get(hash)
+        .map(
+            block ->
+                stateStorage
+                    .get(hash)
+                    .map(state -> BeaconTuple.of(block, state))
+                    .orElseThrow(
+                        () -> new IllegalStateException("State inconsistency for block " + block)));
   }
 
   @Override
-  public void put(Hash32 hash, BeaconTuple tuple) {
-    assert hash.equals(hash(tuple));
-
-    blockStorage.put(tuple.getBlock());
-    stateStorage.put(tuple.getState());
+  public void put(@Nonnull Hash32 hash, @Nonnull BeaconTuple tuple) {
+    put(tuple);
   }
 
   @Override
-  public void remove(@Nonnull Hash32 key) {
-    blockStorage.remove(key);
-    stateStorage.remove(key);
+  public void remove(@Nonnull Hash32 hash) {
+    Objects.requireNonNull(hash);
+    blockStorage.remove(hash);
+    stateStorage.remove(hash);
   }
 
   @Override
@@ -58,5 +54,13 @@ public class BeaconTupleStorageImpl extends AbstractHashKeyStorage<Hash32, Beaco
   @Override
   public boolean isEmpty() {
     return blockStorage.isEmpty();
+  }
+
+  @Override
+  public void put(@Nonnull BeaconTuple tuple) {
+    Objects.requireNonNull(tuple);
+
+    blockStorage.put(tuple.getBlock());
+    stateStorage.put(tuple.getState());
   }
 }

@@ -1,29 +1,29 @@
 package org.ethereum.beacon.chain.storage;
 
-import org.ethereum.beacon.chain.storage.impl.MemBeaconChainStorage;
+import org.ethereum.beacon.chain.storage.impl.BeaconBlockStorageImpl;
 import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.hasher.ObjectHasher;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.SlotNumber;
-import org.junit.Test;
+import org.ethereum.beacon.db.Database;
+import org.ethereum.beacon.ssz.Serializer;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
-import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValues;
-import tech.pegasys.artemis.util.uint.UInt64;
-
-import java.util.HashSet;
-
-import static org.junit.Assert.*;
 
 public class BeaconBlockStorageTest {
 
   private long counter = 0;
 
   private BeaconBlockStorage create(SpecHelpers specHelpers) {
-    return new MemBeaconChainStorage(specHelpers::hash_tree_root).createBeaconBlockStorage();
+    return BeaconBlockStorageImpl.create(
+        Database.inMemoryDB(),
+        ObjectHasher.createSSZOverKeccak256(),
+        Serializer.annotationSerializer(),
+        specHelpers.getChainSpec());
   }
 
   private BeaconBlock createBlock(long slot, BeaconBlock parent, Hash32 parentHash) {
