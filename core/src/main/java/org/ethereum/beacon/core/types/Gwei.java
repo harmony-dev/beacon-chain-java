@@ -3,6 +3,8 @@ package org.ethereum.beacon.core.types;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.util.uint.UInt64;
 
+import java.math.BigInteger;
+
 @SSZSerializable(serializeAs = UInt64.class)
 public class Gwei extends UInt64 implements SafeComparable<Gwei> {
 
@@ -53,5 +55,10 @@ public class Gwei extends UInt64 implements SafeComparable<Gwei> {
 
   public Gwei times(int times) {
     return new Gwei(super.times(times));
+  }
+
+  public BigInteger weiValue() {
+    return BigInteger.valueOf(1_000_000_000) // G-letter
+        .multiply(BigInteger.valueOf(longValue()));
   }
 }
