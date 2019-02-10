@@ -18,7 +18,6 @@ import org.ethereum.beacon.db.source.CodecSource;
 import org.ethereum.beacon.db.source.DataSource;
 import org.ethereum.beacon.db.source.HoleyList;
 import org.ethereum.beacon.db.source.impl.DataSourceList;
-import org.ethereum.beacon.ssz.Serializer;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
@@ -333,7 +332,7 @@ public class BeaconBlockStorageImpl extends AbstractHashKeyStorage<Hash32, Beaco
   public static BeaconBlockStorageImpl create(
       Database database,
       ObjectHasher<Hash32> objectHasher,
-      Serializer serializer,
+      SerializerFactory serializerFactory,
       ChainSpec chainSpec) {
     DataSource<BytesValue, BytesValue> backingBlockSource = database.createStorage("beacon-block");
     DataSource<BytesValue, BytesValue> backingIndexSource =
@@ -343,13 +342,13 @@ public class BeaconBlockStorageImpl extends AbstractHashKeyStorage<Hash32, Beaco
         new CodecSource<>(
             backingBlockSource,
             key -> key,
-            serializer::encode2,
-            bytes -> serializer.decode(bytes, BeaconBlock.class));
+            serializerFactory.getSerializer(BeaconBlock.class),
+            serializerFactory.getDeserializer(BeaconBlock.class));
     HoleyList<SlotBlocks> indexSource =
         new DataSourceList<>(
             backingIndexSource,
-            serializer::encode2,
-            bytes -> serializer.decode(bytes, SlotBlocks.class));
+            serializerFactory.getSerializer(SlotBlocks.class),
+            serializerFactory.getDeserializer(SlotBlocks.class));
 
     return new BeaconBlockStorageImpl(objectHasher, blockSource, indexSource, chainSpec);
   }

@@ -11,7 +11,6 @@ import org.ethereum.beacon.core.state.BeaconStateImpl;
 import org.ethereum.beacon.db.Database;
 import org.ethereum.beacon.db.source.CodecSource;
 import org.ethereum.beacon.db.source.DataSource;
-import org.ethereum.beacon.ssz.Serializer;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
@@ -51,14 +50,14 @@ public class BeaconStateStorageImpl extends AbstractHashKeyStorage<Hash32, Beaco
   }
 
   public static BeaconStateStorageImpl create(
-      Database database, ObjectHasher<Hash32> objectHasher, Serializer serializer) {
+      Database database, ObjectHasher<Hash32> objectHasher, SerializerFactory serializerFactory) {
     DataSource<BytesValue, BytesValue> backingSource = database.createStorage("beacon-state");
     DataSource<Hash32, BeaconState> stateSource =
         new CodecSource<>(
             backingSource,
             key -> key,
-            serializer::encode2,
-            bytes -> serializer.decode(bytes, BeaconStateImpl.class));
+            serializerFactory.getSerializer(BeaconState.class),
+            bytes -> serializerFactory.getDeserializer(BeaconStateImpl.class).apply(bytes));
     return new BeaconStateStorageImpl(stateSource, objectHasher);
   }
 }
