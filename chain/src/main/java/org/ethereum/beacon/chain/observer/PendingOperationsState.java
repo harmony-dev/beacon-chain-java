@@ -29,7 +29,7 @@ public class PendingOperationsState implements PendingOperations {
 
   @Override
   public Optional<Attestation> findAttestation(BLSPubkey pubKey) {
-    return Optional.of(attestations.get(pubKey));
+    return Optional.ofNullable(attestations.get(pubKey));
   }
 
   @Override
