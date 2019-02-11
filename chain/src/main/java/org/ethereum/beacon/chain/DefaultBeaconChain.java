@@ -73,6 +73,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
       initializeStorage();
     }
     this.recentlyProcessed = fetchRecentTuple();
+    blockSink.onNext(recentlyProcessed);
   }
 
   private BeaconTuple fetchRecentTuple() {
