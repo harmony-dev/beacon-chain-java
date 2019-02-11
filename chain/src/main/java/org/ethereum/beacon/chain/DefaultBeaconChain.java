@@ -145,6 +145,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     chainStorage.commit();
     database.commit();
 
+    this.recentlyProcessed = newTuple;
     blockSink.onNext(newTuple);
   }
 
