@@ -134,7 +134,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
 
     VerificationResult stateVerification =
         stateVerifier.verify(postBlockState.getCanonicalState(), block);
-    if (stateVerification.isPassed()) {
+    if (!stateVerification.isPassed()) {
       return false;
     }
 
@@ -149,6 +149,11 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     blockSink.onNext(newTuple);
 
     return true;
+  }
+
+  @Override
+  public BeaconTuple getRecentlyProcessed() {
+    return recentlyProcessed;
   }
 
   private void updateFinality(BeaconState previous, BeaconState current) {
