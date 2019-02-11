@@ -18,6 +18,10 @@ import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.validator.crypto.MessageSigner;
+import org.reactivestreams.Publisher;
+import reactor.core.publisher.DirectProcessor;
+import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Schedulers;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 /**
@@ -32,6 +36,20 @@ import tech.pegasys.artemis.util.uint.UInt64;
  */
 public class BeaconChainValidator implements ValidatorService {
 
+  private final DirectProcessor<BeaconBlock> blocksSink = DirectProcessor.create();
+  private final Publisher<BeaconBlock> blocksStream =
+      Flux.from(blocksSink)
+          .publishOn(Schedulers.single())
+          .onBackpressureError()
+          .name("BeaconChainValidator.block");
+
+  private final DirectProcessor<Attestation> attestationsSink = DirectProcessor.create();
+  private final Publisher<Attestation> attestationsStream =
+      Flux.from(attestationsSink)
+          .publishOn(Schedulers.single())
+          .onBackpressureError()
+          .name("BeaconChainValidator.attestation");
+
   /** BLS public key that corresponds to a "hot" private key. */
   private BLSPubkey publicKey;
   /** Proposer logic. */
@@ -42,6 +60,8 @@ public class BeaconChainValidator implements ValidatorService {
   private SpecHelpers specHelpers;
   /** Helper that signs validator messages with a "hot" private key. */
   private MessageSigner<BLSSignature> messageSigner;
+
+  private Publisher<ObservableBeaconState> stateStream;
 
   /** Validator index. Assigned in {@link #init(BeaconState)} method. */
   private ValidatorIndex validatorIndex = ValidatorIndex.MAX;
@@ -58,12 +78,14 @@ public class BeaconChainValidator implements ValidatorService {
       BeaconChainProposer proposer,
       BeaconChainAttester attester,
       SpecHelpers specHelpers,
-      MessageSigner<BLSSignature> messageSigner) {
+      MessageSigner<BLSSignature> messageSigner,
+      Publisher<ObservableBeaconState> stateStream) {
     this.publicKey = publicKey;
     this.proposer = proposer;
     this.attester = attester;
     this.specHelpers = specHelpers;
     this.messageSigner = messageSigner;
+    this.stateStream = stateStream;
   }
 
   @Override
@@ -294,11 +316,17 @@ public class BeaconChainValidator implements ValidatorService {
   }
 
   /* FIXME: stub for streams. */
-  private void propagateBlock(BeaconBlock newBlock) {}
+  private void propagateBlock(BeaconBlock newBlock) {
+    blocksSink.onNext(newBlock);
+  }
 
-  private void propagateAttestation(Attestation attestation) {}
+  private void propagateAttestation(Attestation attestation) {
+    attestationsSink.onNext(attestation);
+  }
 
-  private void subscribeToStateUpdates(Consumer<ObservableBeaconState> payload) {}
+  private void subscribeToStateUpdates(Consumer<ObservableBeaconState> payload) {
+    Flux.from(stateStream).subscribe(payload);
+  }
 
   @VisibleForTesting
   ValidatorIndex getValidatorIndex() {
@@ -308,5 +336,15 @@ public class BeaconChainValidator implements ValidatorService {
   @VisibleForTesting
   ObservableBeaconState getRecentState() {
     return recentState;
+  }
+
+  @Override
+  public Publisher<BeaconBlock> getProposedBlocksStream() {
+    return blocksStream;
+  }
+
+  @Override
+  public Publisher<Attestation> getAttestationsStream() {
+    return attestationsStream;
   }
 }
