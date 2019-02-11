@@ -1,5 +1,6 @@
 package org.ethereum.beacon.chain.observer;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -53,8 +54,19 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   private final Publisher<BeaconTuple> beaconPublisher;
 
   private static final int UPDATE_MILLIS = 500;
-  private ScheduledExecutorService regularJobExecutor;
-  private ScheduledExecutorService continuousJobExecutor;
+  private ScheduledExecutorService regularJobExecutor =
+      Executors.newSingleThreadScheduledExecutor(
+          new ThreadFactoryBuilder()
+              .setNameFormat("observable-state-processor-regular")
+              .setDaemon(true)
+              .build());
+  private ScheduledExecutorService continuousJobExecutor =
+      Executors.newSingleThreadScheduledExecutor(
+          new ThreadFactoryBuilder()
+              .setNameFormat("observable-state-processor-continuous")
+              .setDaemon(true)
+              .build());
+
   private final BlockingQueue<Attestation> attestationBuffer = new LinkedBlockingDeque<>();
   private final Map<BLSPubkey, Attestation> attestationCache = new HashMap<>();
   private final Map<UInt64, Set<BLSPubkey>> validatorSlotCache = new HashMap<>();
@@ -106,22 +118,8 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     Flux.from(slotTicker).subscribe(this::onNewSlot);
     Flux.from(attestationPublisher).subscribe(this::onNewAttestation);
     Flux.from(beaconPublisher).subscribe(this::onNewBlockTuple);
-    this.regularJobExecutor =
-        Executors.newSingleThreadScheduledExecutor(
-            runnable -> {
-              Thread t = new Thread(runnable, "observable-state-processor-regular");
-              t.setDaemon(true);
-              return t;
-            });
     regularJobExecutor.scheduleAtFixedRate(
         this::doHardWork, 0, UPDATE_MILLIS, TimeUnit.MILLISECONDS);
-    this.continuousJobExecutor =
-        Executors.newSingleThreadScheduledExecutor(
-            runnable -> {
-              Thread t = new Thread(runnable, "observable-state-processor-continuous");
-              t.setDaemon(true);
-              return t;
-            });
   }
 
   private void runTaskInSeparateThread(Runnable task) {
