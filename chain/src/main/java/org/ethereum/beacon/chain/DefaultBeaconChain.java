@@ -37,7 +37,6 @@ public class DefaultBeaconChain implements MutableBeaconChain {
 
   private final BeaconChainStorage chainStorage;
   private final BeaconTupleStorage tupleStorage;
-  private final Database database;
 
   private final ReplayProcessor<BeaconTuple> blockSink = ReplayProcessor.cacheLast();
   private final Publisher<BeaconTuple> blockStream =
@@ -56,8 +55,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
       StateTransition<BeaconStateEx> perEpochTransition,
       BeaconBlockVerifier blockVerifier,
       BeaconStateVerifier stateVerifier,
-      BeaconChainStorage chainStorage,
-      Database database) {
+      BeaconChainStorage chainStorage) {
     this.specHelpers = specHelpers;
     this.initialTransition = initialTransition;
     this.perSlotTransition = perSlotTransition;
@@ -67,7 +65,6 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     this.stateVerifier = stateVerifier;
     this.chainStorage = chainStorage;
     this.tupleStorage = chainStorage.getTupleStorage();
-    this.database = database;
   }
 
   @Override
@@ -143,7 +140,6 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     updateFinality(parentState.getCanonicalState(), postBlockState.getCanonicalState());
 
     chainStorage.commit();
-    database.commit();
 
     this.recentlyProcessed = newTuple;
     blockSink.onNext(newTuple);

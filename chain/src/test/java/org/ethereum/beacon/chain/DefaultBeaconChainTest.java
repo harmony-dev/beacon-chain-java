@@ -104,7 +104,6 @@ public class DefaultBeaconChainTest {
         perEpochTransition,
         blockVerifier,
         stateVerifier,
-        chainStorage,
-        database);
+        chainStorage);
   }
 }
