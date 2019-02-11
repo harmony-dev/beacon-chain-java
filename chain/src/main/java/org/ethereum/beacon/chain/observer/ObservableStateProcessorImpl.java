@@ -103,9 +103,9 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
 
   @Override
   public void start() {
-    Flux.from(slotTicker).doOnNext(this::onNewSlot).subscribe();
-    Flux.from(attestationPublisher).doOnNext(this::onNewAttestation).subscribe();
-    Flux.from(beaconPublisher).doOnNext(this::onNewBlockTuple).subscribe();
+    Flux.from(slotTicker).subscribe(this::onNewSlot);
+    Flux.from(attestationPublisher).subscribe(this::onNewAttestation);
+    Flux.from(beaconPublisher).subscribe(this::onNewBlockTuple);
     this.regularJobExecutor =
         Executors.newSingleThreadScheduledExecutor(
             runnable -> {
@@ -125,7 +125,14 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   }
 
   private void runTaskInSeparateThread(Runnable task) {
-    continuousJobExecutor.execute(task);
+    continuousJobExecutor.execute(() -> {
+      try {
+        task.run();
+      } catch (Exception e) {
+        e.printStackTrace();
+        // TODO logging!
+      }
+    });
   }
 
   private void onNewSlot(SlotNumber newSlot) {
