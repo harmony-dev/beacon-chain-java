@@ -16,6 +16,7 @@ import org.ethereum.beacon.consensus.verifier.BeaconStateVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockBody;
+import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.Times;
@@ -30,7 +31,9 @@ public class DefaultBeaconChainTest {
   @Test
   public void insertAChain() {
     SpecHelpers specHelpers = SpecHelpers.createDefault();
-    MutableBeaconChain beaconChain = createBeaconChain(specHelpers);
+    StateTransition<BeaconStateEx> perSlotTransition =
+        StateTransitionTestUtil.createNextSlotTransition();
+    MutableBeaconChain beaconChain = createBeaconChain(specHelpers, perSlotTransition);
 
     beaconChain.init();
     BeaconTuple initialTuple = beaconChain.getRecentlyProcessed();
@@ -41,7 +44,7 @@ public class DefaultBeaconChainTest {
         .forEach(
             (idx) -> {
               BeaconTuple recentlyProcessed = beaconChain.getRecentlyProcessed();
-              BeaconBlock aBlock = createBlock(recentlyProcessed, specHelpers);
+              BeaconBlock aBlock = createBlock(recentlyProcessed, specHelpers, perSlotTransition);
               Assert.assertTrue(beaconChain.insert(aBlock));
               Assert.assertEquals(aBlock, beaconChain.getRecentlyProcessed().getBlock());
 
@@ -49,18 +52,30 @@ public class DefaultBeaconChainTest {
             });
   }
 
-  private BeaconBlock createBlock(BeaconTuple parent, SpecHelpers specHelpers) {
-    return new BeaconBlock(
-        specHelpers.get_current_slot(parent.getState()),
-        specHelpers.hash_tree_root(parent.getBlock()),
-        Hash32.ZERO,
-        specHelpers.getChainSpec().getEmptySignature(),
-        Eth1Data.EMPTY,
-        specHelpers.getChainSpec().getEmptySignature(),
-        BeaconBlockBody.EMPTY);
+  private BeaconBlock createBlock(
+      BeaconTuple parent,
+      SpecHelpers specHelpers,
+      StateTransition<BeaconStateEx> perSlotTransition) {
+    BeaconBlock block =
+        new BeaconBlock(
+            specHelpers.get_current_slot(parent.getState()),
+            specHelpers.hash_tree_root(parent.getBlock()),
+            Hash32.ZERO,
+            specHelpers.getChainSpec().getEmptySignature(),
+            Eth1Data.EMPTY,
+            specHelpers.getChainSpec().getEmptySignature(),
+            BeaconBlockBody.EMPTY);
+    BeaconState state =
+        perSlotTransition
+            .apply(
+                new BeaconStateEx(parent.getState(), specHelpers.hash_tree_root(parent.getBlock())))
+            .getCanonicalState();
+
+    return block.withStateRoot(specHelpers.hash_tree_root(state));
   }
 
-  private MutableBeaconChain createBeaconChain(SpecHelpers specHelpers) {
+  private MutableBeaconChain createBeaconChain(
+      SpecHelpers specHelpers, StateTransition<BeaconStateEx> perSlotTransition) {
     Time start =
         Times.currentTimeMillis()
             .getSeconds()
@@ -74,8 +89,6 @@ public class DefaultBeaconChainTest {
         new InitialStateTransition(chainStart, specHelpers);
     BlockTransition<BeaconStateEx> perBlockTransition =
         StateTransitionTestUtil.createPerBlockTransition();
-    StateTransition<BeaconStateEx> perSlotTransition =
-        StateTransitionTestUtil.createNextSlotTransition();
     StateTransition<BeaconStateEx> perEpochTransition =
         StateTransitionTestUtil.createStateWithNoTransition();
     BeaconBlockVerifier blockVerifier = (block, state) -> VerificationResult.PASSED;
