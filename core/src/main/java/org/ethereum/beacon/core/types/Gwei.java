@@ -58,7 +58,7 @@ public class Gwei extends UInt64 implements SafeComparable<Gwei> {
   }
 
   public BigInteger weiValue() {
-    return BigInteger.valueOf(1_000_000_000) // G-letter
+    return BigInteger.valueOf(1_000_000_000) // G-letter, Giga
         .multiply(BigInteger.valueOf(longValue()));
   }
 }

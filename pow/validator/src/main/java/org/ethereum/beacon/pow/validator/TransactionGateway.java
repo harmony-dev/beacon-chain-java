@@ -4,7 +4,7 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import java.util.concurrent.CompletableFuture;
 
-/** Gateway to Eth1 */
+/** Gateway to Eth1, allows sending of signed transactions */
 public interface TransactionGateway {
   boolean isReady();
 

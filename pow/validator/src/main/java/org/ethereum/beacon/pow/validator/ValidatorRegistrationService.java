@@ -1,7 +1,7 @@
 package org.ethereum.beacon.pow.validator;
 
 /**
- * Registers validator in DepositContract and passes all way to active validator according to spec
+ * Registers validator in DepositContract and runs all way to active validator according to the spec
  * <a
  * href="https://github.com/ethereum/eth2.0-specs/blob/dev/specs/validator/0_beacon-chain-validator.md">https://github.com/ethereum/eth2.0-specs/blob/dev/specs/validator/0_beacon-chain-validator.md</a>
  */
