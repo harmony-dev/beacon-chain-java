@@ -22,6 +22,7 @@ import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.uint.UInt64s;
 
 public class BeaconBlockStorageImpl extends AbstractHashKeyStorage<Hash32, BeaconBlock>
     implements BeaconBlockStorage {
@@ -163,7 +164,7 @@ public class BeaconBlockStorageImpl extends AbstractHashKeyStorage<Hash32, Beaco
     final List<BeaconBlock> children = new ArrayList<>();
 
     for (SlotNumber curSlot = start.getSlot().increment();
-        curSlot.less(SlotNumber.min(start.getSlot().plus(limit), getMaxSlot()));
+        curSlot.less(UInt64s.min(start.getSlot().plus(limit), getMaxSlot()));
         curSlot = curSlot.increment()) {
       getSlotBlocks(curSlot).stream()
           .map(this::get)
