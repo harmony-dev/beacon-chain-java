@@ -105,17 +105,17 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   }
 
   @Override
-  public synchronized void insert(BeaconBlock block) {
+  public synchronized boolean insert(BeaconBlock block) {
     if (rejectedByTime(block)) {
-      return;
+      return false;
     }
 
     if (exist(block)) {
-      return;
+      return false;
     }
 
     if (!hasParent(block)) {
-      return;
+      return false;
     }
 
     BeaconStateEx parentState = pullParentState(block);
@@ -124,7 +124,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     VerificationResult blockVerification =
         blockVerifier.verify(block, preBlockState.getCanonicalState());
     if (!blockVerification.isPassed()) {
-      return;
+      return false;
     }
 
     BeaconStateEx postBlockState = perBlockTransition.apply(preBlockState, block);
@@ -135,7 +135,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     VerificationResult stateVerification =
         stateVerifier.verify(postBlockState.getCanonicalState(), block);
     if (stateVerification.isPassed()) {
-      return;
+      return false;
     }
 
     BeaconTuple newTuple = BeaconTuple.of(block, postBlockState);
@@ -147,6 +147,8 @@ public class DefaultBeaconChain implements MutableBeaconChain {
 
     this.recentlyProcessed = newTuple;
     blockSink.onNext(newTuple);
+
+    return true;
   }
 
   private void updateFinality(BeaconState previous, BeaconState current) {
