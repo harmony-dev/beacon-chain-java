@@ -182,11 +182,11 @@ public class DefaultBeaconChain implements MutableBeaconChain {
 
   private boolean exist(BeaconBlock block) {
     Hash32 blockHash = specHelpers.hash_tree_root(block);
-    return tupleStorage.get(blockHash).isPresent();
+    return chainStorage.getBlockStorage().get(blockHash).isPresent();
   }
 
   private boolean hasParent(BeaconBlock block) {
-    return tupleStorage.get(block.getParentRoot()).isPresent();
+    return chainStorage.getBlockStorage().get(block.getParentRoot()).isPresent();
   }
 
   /**

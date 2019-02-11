@@ -7,6 +7,7 @@ import org.ethereum.beacon.chain.storage.BeaconBlockStorage;
 import org.ethereum.beacon.chain.storage.BeaconStateStorage;
 import org.ethereum.beacon.chain.storage.BeaconTuple;
 import org.ethereum.beacon.chain.storage.BeaconTupleStorage;
+import org.ethereum.beacon.core.BeaconBlock;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
 public class BeaconTupleStorageImpl implements BeaconTupleStorage {
@@ -61,6 +62,6 @@ public class BeaconTupleStorageImpl implements BeaconTupleStorage {
     Objects.requireNonNull(tuple);
 
     blockStorage.put(tuple.getBlock());
-    stateStorage.put(tuple.getState());
+    stateStorage.put(tuple.getBlock().getStateRoot(), tuple.getState());
   }
 }
