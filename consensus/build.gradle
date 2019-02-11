@@ -6,4 +6,8 @@ dependencies {
   implementation project(':pow:core')
 
   implementation 'com.google.guava:guava'
+
+  // Gradle does not import test sources alongside with main sources
+  // use a workaround until better solution will be found
+  testImplementation project(':ssz').sourceSets.test.output
 }

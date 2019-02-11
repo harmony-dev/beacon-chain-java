@@ -2,11 +2,17 @@ package org.ethereum.beacon.consensus.transition;
 
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.StateTransition;
-import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.types.SlotNumber;
 
+/**
+ * Per-epoch transition function.
+ *
+ * @see <a
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/dev/specs/core/0_beacon-chain.md#per-slot-processing">Per-slot
+ *     processing</a> in the spec.
+ */
 public class PerSlotTransition implements StateTransition<BeaconStateEx> {
   private final ChainSpec spec;
 
@@ -15,8 +21,8 @@ public class PerSlotTransition implements StateTransition<BeaconStateEx> {
   }
 
   @Override
-  public BeaconStateEx apply(BeaconBlock block, BeaconStateEx stateEx) {
-    SpecHelpers specHelpers = new SpecHelpers(spec);
+  public BeaconStateEx apply(BeaconStateEx stateEx) {
+    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(spec);
 
     MutableBeaconState state = stateEx.getCanonicalState().createMutableCopy();
 

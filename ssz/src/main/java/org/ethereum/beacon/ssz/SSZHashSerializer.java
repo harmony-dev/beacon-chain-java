@@ -6,7 +6,13 @@ import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Extends {@link SSZSerializer} to match Hash calculation needs */
+/**
+ * Extends {@link SSZSerializer} to match Tree Hash algorithm.
+ *
+ * @see <a
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/simple-serialize.md#tree-hash">SSZ
+ *     Tree Hash</a> in the spec
+ */
 public class SSZHashSerializer extends SSZSerializer {
 
   private static final int HASH_LENGTH = 32;
@@ -28,7 +34,7 @@ public class SSZHashSerializer extends SSZSerializer {
   public byte[] encode(@Nullable Object input, Class clazz) {
     byte[] preBakedHash;
     if (input instanceof List) {
-      preBakedHash = encodeList((List<Object>) input, clazz);
+      preBakedHash = encodeList((List) input);
     } else {
       preBakedHash = super.encode(input, clazz);
     }
@@ -45,7 +51,7 @@ public class SSZHashSerializer extends SSZSerializer {
     return res;
   }
 
-  private byte[] encodeList(List<Object> input, Class clazz) {
+  private byte[] encodeList(List input) {
     if (input.isEmpty()) {
       return new byte[0];
     }

@@ -2,10 +2,11 @@ package org.ethereum.beacon.validator.util;
 
 import java.util.Collections;
 import java.util.Random;
+import org.ethereum.beacon.consensus.BlockTransition;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.StateTransition;
+import org.ethereum.beacon.consensus.transition.BeaconStateEx;
 import org.ethereum.beacon.consensus.util.StateTransitionTestUtil;
-import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.pow.DepositContract;
@@ -25,12 +26,15 @@ public abstract class ValidatorServiceTestUtil {
   public static BeaconChainValidator mockBeaconChainValidator(
       Random random, SpecHelpers specHelpers) {
     BLSPubkey pubkey = BLSPubkey.wrap(Bytes48.random(random));
-    StateTransition<BeaconState> stateTransition =
-        StateTransitionTestUtil.createSlotFromBlockTransition();
+    BlockTransition<BeaconStateEx> perBlockTransition =
+        StateTransitionTestUtil.createPerBlockTransition();
+    StateTransition<BeaconStateEx> perEpochTransition =
+        StateTransitionTestUtil.createStateWithNoTransition();
     DepositContract depositContract =
         DepositContractTestUtil.mockDepositContract(random, Collections.emptyList());
     BeaconChainProposer proposer =
-        BeaconChainProposerTestUtil.mockProposer(stateTransition, depositContract, specHelpers);
+        BeaconChainProposerTestUtil.mockProposer(
+            perBlockTransition, perEpochTransition, depositContract, specHelpers);
     BeaconChainAttester attester = BeaconChainAttesterTestUtil.mockAttester(specHelpers);
     MessageSigner<BLSSignature> signer = MessageSignerTestUtil.createBLSSigner();
 

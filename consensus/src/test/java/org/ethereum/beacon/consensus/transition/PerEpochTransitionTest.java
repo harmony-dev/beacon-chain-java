@@ -14,7 +14,6 @@ import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.pow.DepositContract.ChainStart;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
@@ -34,7 +33,7 @@ public class PerEpochTransitionTest {
           }
         };
 
-    SpecHelpers specHelpers = new SpecHelpers(chainSpec);
+    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(chainSpec);
 
     List<Deposit> deposits = TestUtils.getAnyDeposits(specHelpers, 8).getValue0();
 
@@ -45,10 +44,10 @@ public class PerEpochTransitionTest {
 
     states[0] = initialStateTransition.apply(BeaconBlocks.createGenesis(chainSpec));
     for (int i = 1; i < 9; i++) {
-      states[i] = new PerSlotTransition(chainSpec).apply(null, states[i - 1]);
+      states[i] = new PerSlotTransition(chainSpec).apply(states[i - 1]);
     }
     PerEpochTransition perEpochTransition = new PerEpochTransition(specHelpers);
-    BeaconStateEx epochState = perEpochTransition.apply(null, states[8]);
+    BeaconStateEx epochState = perEpochTransition.apply(states[8]);
 
     // check validators penalized for inactivity
     for (int i = 0; i < deposits.size(); i++) {

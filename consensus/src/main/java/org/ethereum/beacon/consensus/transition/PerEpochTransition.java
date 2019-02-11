@@ -11,7 +11,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.StateTransition;
-import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.CrosslinkRecord;
@@ -28,6 +27,13 @@ import org.javatuples.Pair;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
 
+/**
+ * Per-epoch transition function.
+ *
+ * @see <a
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/dev/specs/core/0_beacon-chain.md#per-epoch-processing">Per-epoch
+ *     processing</a> in the spec.
+ */
 public class PerEpochTransition implements StateTransition<BeaconStateEx> {
 
   private final ChainSpec specConst;
@@ -39,7 +45,7 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
   }
 
   @Override
-  public BeaconStateEx apply(BeaconBlock block, BeaconStateEx stateEx) {
+  public BeaconStateEx apply(BeaconStateEx stateEx) {
     MutableBeaconState state = stateEx.getCanonicalState().createMutableCopy();
 
     // The steps below happen when (state.slot + 1) % EPOCH_LENGTH == 0.

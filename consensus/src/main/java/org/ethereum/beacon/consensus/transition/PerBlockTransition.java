@@ -1,7 +1,7 @@
 package org.ethereum.beacon.consensus.transition;
 
+import org.ethereum.beacon.consensus.BlockTransition;
 import org.ethereum.beacon.consensus.SpecHelpers;
-import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
@@ -20,7 +20,14 @@ import tech.pegasys.artemis.util.bytes.Bytes32s;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
 
-public class PerBlockTransition implements StateTransition<BeaconStateEx> {
+/**
+ * Per-block transition function.
+ *
+ * @see <a
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/dev/specs/core/0_beacon-chain.md#per-block-processing">Per-block
+ *     processing</a> in the spec.
+ */
+public class PerBlockTransition implements BlockTransition<BeaconStateEx> {
   private final ChainSpec spec;
   private final SpecHelpers specHelpers;
 
@@ -30,7 +37,7 @@ public class PerBlockTransition implements StateTransition<BeaconStateEx> {
   }
 
   @Override
-  public BeaconStateEx apply(BeaconBlock block, BeaconStateEx stateEx) {
+  public BeaconStateEx apply(BeaconStateEx stateEx, BeaconBlock block) {
     MutableBeaconState state = stateEx.getCanonicalState().createMutableCopy();
 
     /*
@@ -151,6 +158,6 @@ public class PerBlockTransition implements StateTransition<BeaconStateEx> {
       specHelpers.initiate_validator_exit(state, exit.getValidatorIndex());
     }
 
-    return new BeaconStateEx(state.createImmutable(), block.getHash());
+    return new BeaconStateEx(state.createImmutable(), specHelpers.hash_tree_root(block));
   }
 }

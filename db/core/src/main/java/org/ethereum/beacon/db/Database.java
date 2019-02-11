@@ -20,4 +20,8 @@ public interface Database {
    * Close underlying database storage
    */
   void close();
+
+  static Database inMemoryDB() {
+    return new InMemoryDatabase();
+  }
 }

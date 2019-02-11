@@ -1,9 +1,20 @@
 package org.ethereum.beacon.consensus;
 
-import org.ethereum.beacon.core.BeaconBlock;
-import org.ethereum.beacon.core.BeaconState;
+/**
+ * A pure state transition interface.
+ *
+ * <p>Used as an interface to per-slot and per-epoch transitions that accepts only a source state.
+ *
+ * @param <State> a state type.
+ * @see BlockTransition
+ */
+public interface StateTransition<State> {
 
-public interface StateTransition<S> {
-
-  S apply(BeaconBlock block, S state);
+  /**
+   * Applies a transition function.
+   *
+   * @param source a source state.
+   * @return a source state modified by a transition function.
+   */
+  State apply(State source);
 }

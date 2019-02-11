@@ -35,8 +35,7 @@ public class ProposerSignatureVerifier implements BeaconBlockVerifier {
   public VerificationResult verify(BeaconBlock block, BeaconState state) {
 
     // Let block_without_signature_root be the hash_tree_root of block where block.signature is set to EMPTY_SIGNATURE.
-    BeaconBlock blockWithoutSignature =
-        BeaconBlock.Builder.fromBlock(block).withSignature(chainSpec.getEmptySignature()).build();
+    BeaconBlock blockWithoutSignature = block.withoutSignature();
 
     // Let proposal_root = hash_tree_root(
     //  ProposalSignedData(state.slot, BEACON_CHAIN_SHARD_NUMBER, block_without_signature_root)).

@@ -16,7 +16,6 @@ import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.collections.ReadList;
-import tech.pegasys.artemis.util.uint.UInt64;
 
 /**
  * Beacon chain state.
@@ -26,7 +25,7 @@ import tech.pegasys.artemis.util.uint.UInt64;
  *     href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md#beaconstate">BeaconState
  *     in the spec</a>
  */
-public interface BeaconState extends Hashable<Hash32> {
+public interface BeaconState {
 
   static BeaconState getEmpty() {
     return new BeaconStateImpl();

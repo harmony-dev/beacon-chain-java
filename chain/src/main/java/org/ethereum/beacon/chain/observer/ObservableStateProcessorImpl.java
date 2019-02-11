@@ -1,5 +1,16 @@
 package org.ethereum.beacon.chain.observer;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import org.ethereum.beacon.chain.BeaconChainHead;
 import org.ethereum.beacon.chain.LMDGhostHeadFunction;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
@@ -7,9 +18,8 @@ import org.ethereum.beacon.chain.storage.BeaconTuple;
 import org.ethereum.beacon.chain.storage.BeaconTupleStorage;
 import org.ethereum.beacon.consensus.HeadFunction;
 import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.consensus.transition.BeaconStateEx;
-import org.ethereum.beacon.consensus.transition.PerEpochTransition;
-import org.ethereum.beacon.consensus.transition.PerSlotTransition;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
@@ -25,17 +35,6 @@ import reactor.core.scheduler.Schedulers;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   private final BeaconTupleStorage tupleStorage;
@@ -46,8 +45,8 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   private BeaconState latestState;
   private final SpecHelpers specHelpers;
   private final ChainSpec chainSpec;
-  private final PerEpochTransition perEpochTransition;
-  private final PerSlotTransition perSlotTransition;
+  private final StateTransition<BeaconStateEx> perSlotTransition;
+  private final StateTransition<BeaconStateEx> perEpochTransition;
 
   private final Publisher<SlotNumber> slotTicker;
   private final Publisher<Attestation> attestationPublisher;
@@ -89,13 +88,13 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
       Publisher<Attestation> attestationPublisher,
       Publisher<BeaconTuple> beaconPublisher,
       SpecHelpers specHelpers,
-      PerEpochTransition perEpochTransition,
-      PerSlotTransition perSlotTransition) {
-    this.tupleStorage = chainStorage.getBeaconTupleStorage();
+      StateTransition<BeaconStateEx> perSlotTransition,
+      StateTransition<BeaconStateEx> perEpochTransition) {
+    this.tupleStorage = chainStorage.getTupleStorage();
     this.specHelpers = specHelpers;
     this.chainSpec = specHelpers.getChainSpec();
-    this.perEpochTransition = perEpochTransition;
     this.perSlotTransition = perSlotTransition;
+    this.perEpochTransition = perEpochTransition;
     this.headFunction = new LMDGhostHeadFunction(chainStorage, specHelpers);
     this.slotTicker = slotTicker;
     this.attestationPublisher = attestationPublisher;
@@ -241,7 +240,8 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     PendingOperations pendingOperations = new PendingOperationsState(drainAttestationCache());
     pendingOperationsSink.onNext(pendingOperations);
     updateHead(pendingOperations);
-    this.latestState = applySlotTransitions(latestState, newSlot, head.getBlock().getHash());
+    this.latestState =
+        applySlotTransitions(latestState, specHelpers.hash_tree_root(head.getBlock()));
     ObservableBeaconState newObservableState =
         new ObservableBeaconState(head.getBlock(), latestState, pendingOperations);
     if (!newObservableState.equals(observableState)) {
@@ -253,22 +253,19 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   /**
    * Applies next slot transition and if it's required - epoch transition
    *
-   * @param canonicalState Source state
-   * @param newSlot Slot number of the new slot
+   * @param source Source state
    * @param latestChainBlock Latest chain block
    * @return new state, result of applied transition to the latest input state
    */
-  private BeaconState applySlotTransitions(
-      BeaconState canonicalState, SlotNumber newSlot, Hash32 latestChainBlock) {
-    // Every slot transition
-    BeaconStateEx result =
-        perSlotTransition.apply(null, new BeaconStateEx(canonicalState, latestChainBlock));
-    // Epoch transition happens when (state.slot + 1) % EPOCH_LENGTH == 0.
-    if (newSlot.increment().modulo(chainSpec.getEpochLength()).compareTo(UInt64.ZERO) == 0) {
-      result = perEpochTransition.apply(null, result);
+  private BeaconState applySlotTransitions(BeaconState source, Hash32 latestChainBlock) {
+    BeaconStateEx sourceEx = new BeaconStateEx(source, latestChainBlock);
+    BeaconStateEx slotState = perSlotTransition.apply(sourceEx);
+    if (specHelpers.is_epoch_end(slotState.getCanonicalState().getSlot())) {
+      BeaconStateEx epochState = perEpochTransition.apply(slotState);
+      return epochState.getCanonicalState();
+    } else {
+      return slotState.getCanonicalState();
     }
-
-    return result.getCanonicalState();
   }
 
   private void updateHead(PendingOperations pendingOperations) {
@@ -280,7 +277,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     }
     BeaconTuple newHeadTuple =
         tupleStorage
-            .get(newHead.getHash())
+            .get(specHelpers.hash_tree_root(newHead))
             .orElseThrow(() -> new IllegalStateException("Beacon tuple not found for new head "));
     this.head = BeaconChainHead.of(newHeadTuple);
 
