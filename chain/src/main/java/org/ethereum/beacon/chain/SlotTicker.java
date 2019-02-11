@@ -60,9 +60,7 @@ public class SlotTicker implements Ticker<SlotNumber> {
     Time startSlotTime = specHelpers.get_slot_start_time(state, startSlot);
     long delayMillis =
         Math.max(0, startSlotTime.getMillis().getValue() - Times.currentTimeMillis().getValue());
-
-    Flux.interval(Duration.ofSeconds(period.getValue()), scheduler)
-        .delaySubscription(Duration.ofMillis(delayMillis))
+    Flux.interval(Duration.ofMillis(delayMillis), Duration.ofSeconds(period.getValue()), scheduler)
         .subscribe(tick -> slotSink.onNext(this.startSlot.plus(tick)));
   }
 
