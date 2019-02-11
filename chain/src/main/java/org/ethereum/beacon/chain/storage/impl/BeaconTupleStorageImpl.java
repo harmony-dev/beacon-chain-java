@@ -27,7 +27,7 @@ public class BeaconTupleStorageImpl implements BeaconTupleStorage {
         .map(
             block ->
                 stateStorage
-                    .get(hash)
+                    .get(block.getStateRoot())
                     .map(state -> BeaconTuple.of(block, state))
                     .orElseThrow(
                         () -> new IllegalStateException("State inconsistency for block " + block)));
