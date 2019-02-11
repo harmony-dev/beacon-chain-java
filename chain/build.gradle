@@ -11,4 +11,8 @@ dependencies {
   implementation 'io.projectreactor:reactor-core'
 
   testImplementation 'org.mockito:mockito-core'
+
+  // Gradle does not import test sources alongside with main sources
+  // use a workaround until better solution will be found
+  testImplementation project(':consensus').sourceSets.test.output
 }
