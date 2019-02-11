@@ -3,17 +3,13 @@ package org.ethereum.beacon.consensus.transition;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
 import java.util.Random;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.core.BeaconBlocks;
 import org.ethereum.beacon.core.BeaconState;
-import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.Time;
-import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.pow.DepositContract.ChainStart;
 import org.junit.Test;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -30,7 +26,7 @@ public class InitialStateTransitionTest {
     InitialStateTransition initialStateTransition =
         new InitialStateTransition(
             new ChainStart(genesisTime, eth1Data, Collections.emptyList()),
-            new SpecHelpers(ChainSpec.DEFAULT));
+            SpecHelpers.createDefault());
 
     BeaconState initialState =
         initialStateTransition.apply(

@@ -1,6 +1,14 @@
-package org.ethereum.beacon.ssz;
+package org.ethereum.beacon.consensus.hasher;
 
+import static org.junit.Assert.assertEquals;
+
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import org.ethereum.beacon.crypto.Hashes;
+import org.ethereum.beacon.ssz.SSZHashSerializers;
+import org.ethereum.beacon.ssz.SSZSerializer;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import org.ethereum.beacon.ssz.fixtures.AttestationRecord;
 import org.ethereum.beacon.ssz.fixtures.Bitfield;
@@ -8,16 +16,9 @@ import org.ethereum.beacon.ssz.fixtures.Sign;
 import org.junit.Before;
 import org.junit.Test;
 import tech.pegasys.artemis.util.bytes.BytesValue;
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.function.Function;
 
-import static org.junit.Assert.assertEquals;
-
-/** Tests of {@link SSZHasher} */
-public class SSZHasherTest {
+/** Tests of {@link SSZObjectHasher} */
+public class SSZObjectHasherTest {
   private static byte[] DEFAULT_HASH =
       Hashes.keccak256(BytesValue.fromHexString("aa")).getArrayUnsafe();
   private static Sign.Signature DEFAULT_SIG = new Sign.Signature();
@@ -27,22 +28,20 @@ public class SSZHasherTest {
     DEFAULT_SIG.s = new BigInteger("8713785871");
   }
 
-  private SSZHasher sszHasher;
+  private SSZObjectHasher sszHasher;
 
   @Before
   public void setup() {
-    Function<BytesValue, BytesValue> hashingFunction =
-        (data) ->
-            BytesValue.wrap(
-                Hashes.keccak256(BytesValue.of(data.getArrayUnsafe())).getArrayUnsafe());
-    sszHasher = new SSZHasher(SSZHasher.getDefaultBuilder(hashingFunction, false), hashingFunction);
+    SSZSerializer sszHashSerializer =
+        SSZHashSerializers.createWithBeaconChainTypes(Hashes::keccak256, false);
+    sszHasher = new SSZObjectHasher(sszHashSerializer, Hashes::keccak256);
   }
 
   @Test
   public void bitfieldTest() {
     Bitfield bitfield = new Bitfield(BytesValue.fromHexString("abcd").getArrayUnsafe());
 
-    BytesValue hash = sszHasher.calc(bitfield);
+    BytesValue hash = sszHasher.getHash(bitfield);
     assertEquals(
         BytesValue.fromHexString(
             "A0B1BE2F50398CA7FE11EA48E5AFE9F89F758EC815E5C12BE21315AF6D34FA1D"),
@@ -51,7 +50,7 @@ public class SSZHasherTest {
 
   @Test
   public void SignatureTest() {
-    BytesValue hash = sszHasher.calc(DEFAULT_SIG);
+    BytesValue hash = sszHasher.getHash(DEFAULT_SIG);
     assertEquals(
         BytesValue.fromHexString(
             "D75724A07F4EFB3B456408DD6C36C70A6DF189FAE6A09F7AD0C848F0D3341290"),
@@ -71,7 +70,7 @@ public class SSZHasherTest {
             12400L,
             DEFAULT_SIG);
 
-    BytesValue hash = sszHasher.calc(attestationRecord);
+    BytesValue hash = sszHasher.getHash(attestationRecord);
     assertEquals(
         BytesValue.fromHexString(
             "740620beb3f42033473a7adf01b5f115ec0a72bf8c97eb36f732a6158ff8775d"),
@@ -95,7 +94,7 @@ public class SSZHasherTest {
             12400L,
             DEFAULT_SIG);
 
-    BytesValue hash = sszHasher.calc(attestationRecord);
+    BytesValue hash = sszHasher.getHash(attestationRecord);
     assertEquals(
         BytesValue.fromHexString(
             "740620beb3f42033473a7adf01b5f115ec0a72bf8c97eb36f732a6158ff8775d"),
@@ -111,7 +110,7 @@ public class SSZHasherTest {
     list.add(Long.MAX_VALUE);
     SomeObject someObject = new SomeObject(list);
 
-    BytesValue hash = sszHasher.calc(someObject);
+    BytesValue hash = sszHasher.getHash(someObject);
     assertEquals(
         BytesValue.fromHexString(
             "BD4AB28F883B78BF4C5B3652AFCF272EAD9026C3361821A0420777A9B3C20425"),
@@ -123,8 +122,8 @@ public class SSZHasherTest {
     AnotherObject anotherObject1 = new AnotherObject(1);
     AnotherObject anotherObject2 = new AnotherObject(2);
 
-    BytesValue hash1 = sszHasher.calc(anotherObject1);
-    BytesValue hash2 = sszHasher.calc(anotherObject2);
+    BytesValue hash1 = sszHasher.getHash(anotherObject1);
+    BytesValue hash2 = sszHasher.getHash(anotherObject2);
     assertEquals(
         BytesValue.fromHexString(
             "FB5BAAECAB62C516763CEA2DFBA17FBBC24907E4E3B0BE426BDE71BE89AF495F"),
@@ -142,10 +141,10 @@ public class SSZHasherTest {
     List<AnotherObject> anotherObjects = new ArrayList<>();
     anotherObjects.add(anotherObject1);
     anotherObjects.add(anotherObject2);
-    BytesValue hash = sszHasher.calc(anotherObjects);
+    BytesValue hash = sszHasher.getHash(anotherObjects);
     assertEquals(
         BytesValue.fromHexString(
-            "709d93be8e9b3e7f0cd7f21d20a9cd99ce60429b71205c14eee48acda15fcad1"),
+            "a9bb69cad9fb0d9a9963bf9a32f09b9c306bed6f6c95fff3e5d625fd9370646e"),
         hash);
   }
 

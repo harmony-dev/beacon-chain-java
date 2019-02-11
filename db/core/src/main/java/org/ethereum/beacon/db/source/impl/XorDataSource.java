@@ -21,7 +21,7 @@ public class XorDataSource<TValue> extends CodecSource.KeyOnly<BytesValue, TValu
     int longLen = longVal.size();
     int shortLen = shortVal.size();
     for (int i = 0; i < shortLen; i++) {
-      ret.set(longLen - i, (byte) (ret.get(longLen - i) ^ shortVal.get(shortLen - i)));
+      ret.set(longLen - i - 1, (byte) (ret.get(longLen - i - 1) ^ shortVal.get(shortLen - i - 1)));
     }
     return ret;
   }

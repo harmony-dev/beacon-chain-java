@@ -16,7 +16,6 @@ import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.collections.WriteList;
-import tech.pegasys.artemis.util.uint.UInt64;
 
 @SSZSerializable
 public class BeaconStateImpl implements MutableBeaconState {
@@ -399,12 +398,6 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   /*********  List Getters/Setter for serialization  **********/
-
-
-  @Override
-  public Hash32 getHash() {
-    return Hash32.ZERO;
-  }
 
   @Override
   public MutableBeaconState createMutableCopy() {
