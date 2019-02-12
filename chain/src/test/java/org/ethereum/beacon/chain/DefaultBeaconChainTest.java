@@ -18,8 +18,8 @@ import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.state.Eth1Data;
+import org.ethereum.beacon.core.types.Millis;
 import org.ethereum.beacon.core.types.Time;
-import org.ethereum.beacon.core.types.Times;
 import org.ethereum.beacon.db.Database;
 import org.ethereum.beacon.pow.DepositContract.ChainStart;
 import org.junit.Assert;
@@ -77,7 +77,7 @@ public class DefaultBeaconChainTest {
   private MutableBeaconChain createBeaconChain(
       SpecHelpers specHelpers, StateTransition<BeaconStateEx> perSlotTransition) {
     Time start =
-        Times.currentTimeMillis()
+        Millis.of(System.currentTimeMillis())
             .getSeconds()
             .minus(
                 specHelpers

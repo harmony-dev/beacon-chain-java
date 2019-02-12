@@ -7,6 +7,7 @@ dependencies {
   implementation project(':pow:core')
   implementation project(':types')
   implementation project(':core')
+  implementation project(':util')
   implementation ("org.ethereum:ethereumj-core") {
     changing = true
 

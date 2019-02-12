@@ -1,11 +1,9 @@
 package org.ethereum.beacon.validator;
 
 import com.google.common.annotations.VisibleForTesting;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.consensus.SpecHelpers;
@@ -17,11 +15,13 @@ import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
+import org.ethereum.beacon.schedulers.RunnableEx;
+import org.ethereum.beacon.schedulers.Scheduler;
+import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.validator.crypto.MessageSigner;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
-import reactor.core.scheduler.Schedulers;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 /**
@@ -39,14 +39,14 @@ public class BeaconChainValidator implements ValidatorService {
   private final DirectProcessor<BeaconBlock> blocksSink = DirectProcessor.create();
   private final Publisher<BeaconBlock> blocksStream =
       Flux.from(blocksSink)
-          .publishOn(Schedulers.single())
+          .publishOn(Schedulers.get().reactorEvents())
           .onBackpressureError()
           .name("BeaconChainValidator.block");
 
   private final DirectProcessor<Attestation> attestationsSink = DirectProcessor.create();
   private final Publisher<Attestation> attestationsStream =
       Flux.from(attestationsSink)
-          .publishOn(Schedulers.single())
+          .publishOn(Schedulers.get().reactorEvents())
           .onBackpressureError()
           .name("BeaconChainValidator.attestation");
 
@@ -71,7 +71,7 @@ public class BeaconChainValidator implements ValidatorService {
   private ObservableBeaconState recentState;
 
   /** Validator task executor. */
-  private ScheduledExecutorService executor;
+  private Scheduler executor = Schedulers.get().newSingleThreadDaemon("validator-service");
 
   public BeaconChainValidator(
       BLSPubkey publicKey,
@@ -90,20 +90,11 @@ public class BeaconChainValidator implements ValidatorService {
 
   @Override
   public void start() {
-    this.executor =
-        Executors.newSingleThreadScheduledExecutor(
-            runnable -> {
-              Thread t = new Thread(runnable, "validator-service");
-              t.setDaemon(true);
-              return t;
-            });
     subscribeToStateUpdates(this::onNewState);
   }
 
   @Override
-  public void stop() {
-    this.executor.shutdown();
-  }
+  public void stop() {}
 
   /**
    * Initializes validator by looking its index in validator registry.
@@ -201,7 +192,7 @@ public class BeaconChainValidator implements ValidatorService {
    *
    * @param routine a routine.
    */
-  private void runAsync(Runnable routine) {
+  private void runAsync(RunnableEx routine) {
     executor.execute(routine);
   }
 
@@ -211,10 +202,10 @@ public class BeaconChainValidator implements ValidatorService {
    * @param startAt a unix timestamp of start point, in seconds.
    * @param routine a routine.
    */
-  private void schedule(Time startAt, Runnable routine) {
+  private void schedule(Time startAt, RunnableEx routine) {
     long startAtMillis = startAt.getValue() * 1000;
-    assert System.currentTimeMillis() < startAtMillis;
-    executor.schedule(routine, System.currentTimeMillis() - startAtMillis, TimeUnit.MILLISECONDS);
+    assert Schedulers.get().getCurrentTime() < startAtMillis;
+    executor.executeWithDelay(Duration.ofMillis(Schedulers.get().getCurrentTime() - startAtMillis), routine);
   }
 
   /**

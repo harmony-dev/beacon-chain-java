@@ -41,13 +41,13 @@ import org.ethereum.beacon.core.types.Millis;
 import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
-import org.ethereum.beacon.core.types.Times;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.crypto.BLS381;
 import org.ethereum.beacon.crypto.BLS381.PublicKey;
 import org.ethereum.beacon.crypto.BLS381.Signature;
 import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.crypto.MessageParameters;
+import org.ethereum.beacon.schedulers.Schedulers;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes3;
 import tech.pegasys.artemis.util.bytes.Bytes32;
@@ -1385,7 +1385,7 @@ public class SpecHelpers {
   }
 
   public SlotNumber get_current_slot(BeaconState state) {
-    Millis currentTime = Times.currentTimeMillis();
+    Millis currentTime = Millis.of(Schedulers.get().getCurrentTime());
     assert state.getGenesisTime().less(currentTime.getSeconds());
     Time sinceGenesis = currentTime.getSeconds().minus(state.getGenesisTime());
     return SlotNumber.castFrom(sinceGenesis.dividedBy(spec.getSlotDuration()))

@@ -18,11 +18,10 @@ import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlocks;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.types.SlotNumber;
-import org.ethereum.beacon.db.Database;
+import org.ethereum.beacon.schedulers.Schedulers;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.ReplayProcessor;
-import reactor.core.scheduler.Schedulers;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
 public class DefaultBeaconChain implements MutableBeaconChain {
@@ -41,7 +40,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   private final ReplayProcessor<BeaconTuple> blockSink = ReplayProcessor.cacheLast();
   private final Publisher<BeaconTuple> blockStream =
       Flux.from(blockSink)
-          .publishOn(Schedulers.single())
+          .publishOn(Schedulers.get().reactorEvents())
           .onBackpressureError()
           .name("DefaultBeaconChain.block");
 

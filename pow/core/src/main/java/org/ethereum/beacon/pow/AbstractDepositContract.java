@@ -11,11 +11,11 @@ import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.Time;
+import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.ssz.Serializer;
 import org.javatuples.Pair;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.MonoProcessor;
-import reactor.core.scheduler.Schedulers;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes8;
@@ -30,7 +30,7 @@ public abstract class AbstractDepositContract implements DepositContract {
 
   private final MonoProcessor<ChainStart> chainStartSink = MonoProcessor.create();
   private final Publisher<ChainStart> chainStartStream = chainStartSink
-      .publishOn(Schedulers.single())
+      .publishOn(Schedulers.get().reactorEvents())
       .doOnSubscribe(s -> chainStartSubscribedPriv())
       .name("PowClient.chainStart");
 

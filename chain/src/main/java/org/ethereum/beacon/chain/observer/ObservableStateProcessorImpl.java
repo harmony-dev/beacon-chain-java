@@ -1,6 +1,6 @@
 package org.ethereum.beacon.chain.observer;
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -8,10 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import org.ethereum.beacon.chain.BeaconChainHead;
 import org.ethereum.beacon.chain.LMDGhostHeadFunction;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
@@ -29,10 +26,11 @@ import org.ethereum.beacon.core.state.PendingAttestationRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
+import org.ethereum.beacon.schedulers.Scheduler;
+import org.ethereum.beacon.schedulers.Schedulers;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.ReplayProcessor;
-import reactor.core.scheduler.Schedulers;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
@@ -54,18 +52,10 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   private final Publisher<BeaconTuple> beaconPublisher;
 
   private static final int UPDATE_MILLIS = 500;
-  private ScheduledExecutorService regularJobExecutor =
-      Executors.newSingleThreadScheduledExecutor(
-          new ThreadFactoryBuilder()
-              .setNameFormat("observable-state-processor-regular")
-              .setDaemon(true)
-              .build());
-  private ScheduledExecutorService continuousJobExecutor =
-      Executors.newSingleThreadScheduledExecutor(
-          new ThreadFactoryBuilder()
-              .setNameFormat("observable-state-processor-continuous")
-              .setDaemon(true)
-              .build());
+  private Scheduler regularJobExecutor =
+      Schedulers.get().newSingleThreadDaemon("observable-state-processor-regular");
+  private Scheduler continuousJobExecutor =
+      Schedulers.get().newSingleThreadDaemon("observable-state-processor-continuous");
 
   private final BlockingQueue<Attestation> attestationBuffer = new LinkedBlockingDeque<>();
   private final Map<BLSPubkey, Attestation> attestationCache = new HashMap<>();
@@ -74,7 +64,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   private final ReplayProcessor<BeaconChainHead> headSink = ReplayProcessor.cacheLast();
   private final Publisher<BeaconChainHead> headStream =
       Flux.from(headSink)
-          .publishOn(Schedulers.single())
+          .publishOn(Schedulers.get().reactorEvents())
           .onBackpressureError()
           .name("ObservableStateProcessor.head");
 
@@ -82,7 +72,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
       ReplayProcessor.cacheLast();
   private final Publisher<ObservableBeaconState> observableStateStream =
       Flux.from(observableStateSink)
-          .publishOn(Schedulers.single())
+          .publishOn(Schedulers.get().reactorEvents())
           .onBackpressureError()
           .name("ObservableStateProcessor.observableState");
 
@@ -90,7 +80,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
       ReplayProcessor.cacheLast();
   private final Publisher<PendingOperations> pendingOperationsStream =
       Flux.from(pendingOperationsSink)
-          .publishOn(Schedulers.single())
+          .publishOn(Schedulers.get().reactorEvents())
           .onBackpressureError()
           .name("PendingOperationsProcessor.pendingOperations");
 
@@ -118,8 +108,8 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     Flux.from(slotTicker).subscribe(this::onNewSlot);
     Flux.from(attestationPublisher).subscribe(this::onNewAttestation);
     Flux.from(beaconPublisher).subscribe(this::onNewBlockTuple);
-    regularJobExecutor.scheduleAtFixedRate(
-        this::doHardWork, 0, UPDATE_MILLIS, TimeUnit.MILLISECONDS);
+    regularJobExecutor.executeAtFixedRate(
+        Duration.ZERO, Duration.ofMillis(UPDATE_MILLIS), this::doHardWork);
   }
 
   private void runTaskInSeparateThread(Runnable task) {
