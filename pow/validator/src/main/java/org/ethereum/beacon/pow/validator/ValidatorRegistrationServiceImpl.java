@@ -257,8 +257,8 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
   private CompletableFuture<TransactionGateway.TxStatus> submitDeposit(
       Gwei amount, Address eth1From, BytesValue eth1PrivKey) {
     DepositInput depositInput = createDepositInput();
-    BytesValue tx = createTransaction(eth1From, eth1PrivKey, depositInput, amount);
-    return transactionGateway.send(tx);
+    return createTransaction(eth1From, eth1PrivKey, depositInput, amount)
+        .thenCompose(transactionGateway::send);
   }
 
   private DepositInput createDepositInput() {
@@ -288,7 +288,7 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
     return Optional.ofNullable(validatorService);
   }
 
-  private BytesValue createTransaction(
+  private CompletableFuture<BytesValue> createTransaction(
       Address eth1From, BytesValue eth1PrivKey, DepositInput depositInput, Gwei amount) {
     // Let amount be the amount in Gwei to be deposited by the validator where MIN_DEPOSIT_AMOUNT <=
     // amount <= MAX_DEPOSIT_AMOUNT.
@@ -307,10 +307,8 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
     // Send a transaction on the Ethereum 1.0 chain to DEPOSIT_CONTRACT_ADDRESS executing deposit
     // along with serialize(deposit_input) as the singular bytes input along with a deposit amount
     // in Gwei.
-    BytesValue unsignedTx =
-        transactionBuilder.createTransaction(
-            eth1From.toString(), sszSerializer.encode2(depositInput), amount);
-
-    return transactionBuilder.signTransaction(unsignedTx, eth1PrivKey);
+    return transactionBuilder
+        .createTransaction(eth1From.toString(), sszSerializer.encode2(depositInput), amount)
+        .thenCompose(unsignedTx -> transactionBuilder.signTransaction(unsignedTx, eth1PrivKey));
   }
 }

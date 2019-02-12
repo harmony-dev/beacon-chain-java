@@ -6,8 +6,6 @@ import java.util.concurrent.CompletableFuture;
 
 /** Gateway to Eth1, allows sending of signed transactions */
 public interface TransactionGateway {
-  boolean isReady();
-
   CompletableFuture<TxStatus> send(BytesValue signedTransaction);
 
   enum TxStatus {
