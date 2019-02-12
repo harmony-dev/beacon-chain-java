@@ -36,6 +36,7 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes8;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
+import javax.annotation.Nullable;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -46,37 +47,43 @@ import java.util.function.Function;
 import static org.ethereum.beacon.core.spec.SignatureDomains.DEPOSIT;
 
 public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationService {
-  TransactionBuilder transactionBuilder;
-  TransactionGateway transactionGateway;
-  DepositContract depositContract;
-  Disposable depositSubscription = null;
-  ValidatorService validatorService = null;
-  SpecHelpers specHelpers;
-  Publisher<ObservableBeaconState> observablePublisher;
-  ObjectHasher<Hash32> sszHasher;
-  Serializer sszSerializer;
-  RegistrationStage currentStage = null;
-  SingleValueSource<RegistrationStage> stagePersistence;
+  private final TransactionBuilder transactionBuilder;
+  private final TransactionGateway transactionGateway;
+  private final DepositContract depositContract;
+  private final Publisher<ObservableBeaconState> observablePublisher;
+  private final SingleValueSource<RegistrationStage> stagePersistence;
+
+  private final SpecHelpers specHelpers;
+  private final ObjectHasher<Hash32> sszHasher;
+  private final Serializer sszSerializer;
+
+  private Disposable depositSubscription = null;
+  private ValidatorService validatorService = null;
+  private RegistrationStage currentStage = null;
+  private ValidatorRecord validatorRecord = null;
 
   // Validator
-  MessageSigner<BLSSignature> signer;
-  BLSPubkey pubKey;
-  Hash32 withdrawalCredentials = null;
-  Gwei amount = null;
-  Address eth1From = null;
-  BytesValue eth1PrivKey = null;
-  ValidatorRecord validatorRecord = null;
+  private MessageSigner<BLSSignature> signer;
+  private BLSPubkey pubKey;
+  private Hash32 withdrawalCredentials = null;
+  private Gwei amount = null;
+  private Address eth1From = null;
+  private BytesValue eth1PrivKey = null;
 
   private ExecutorService executor;
 
   public ValidatorRegistrationServiceImpl(
       TransactionBuilder transactionBuilder,
       TransactionGateway transactionGateway,
+      DepositContract depositContract,
       Publisher<ObservableBeaconState> observablePublisher,
+      SingleValueSource<RegistrationStage> registrationStagePersistence,
       SpecHelpers specHelpers) {
     this.transactionBuilder = transactionBuilder;
     this.transactionGateway = transactionGateway;
+    this.depositContract = depositContract;
     this.observablePublisher = observablePublisher;
+    this.stagePersistence = registrationStagePersistence;
     this.specHelpers = specHelpers;
     Function<BytesValue, Hash32> hashFunction = Hashes::keccak256;
     sszHasher = SSZObjectHasher.create(hashFunction);
@@ -84,7 +91,15 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
   }
 
   @Override
-  public void start() {
+  public void start(
+      MessageSigner<BLSSignature> signer,
+      BLSPubkey pubKey,
+      @Nullable Hash32 withdrawalCredentials,
+      @Nullable Gwei amount,
+      @Nullable Address eth1From,
+      @Nullable BytesValue eth1PrivKey) {
+    this.signer = signer;
+    this.pubKey = pubKey;
     this.executor =
         Executors.newSingleThreadExecutor(
             runnable -> {
