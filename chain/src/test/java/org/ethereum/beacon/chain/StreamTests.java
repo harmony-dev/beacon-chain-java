@@ -1,13 +1,12 @@
 package org.ethereum.beacon.chain;
 
-import org.ethereum.beacon.chain.storage.BeaconTuple;
+import java.time.Duration;
+import org.junit.Ignore;
 import org.junit.Test;
-import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
-import reactor.core.publisher.EmitterProcessor;
+import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
-import reactor.core.publisher.FluxSink.OverflowStrategy;
 import reactor.core.publisher.ReplayProcessor;
 import reactor.core.scheduler.Schedulers;
 
@@ -42,5 +41,26 @@ public class StreamTests {
     }
 
     Thread.sleep(1000L);
+  }
+
+  @Test
+  @Ignore
+  public void intervalTest1() throws InterruptedException {
+
+    long initDelay = (System.currentTimeMillis() / 10000 + 1) * 10000 - System.currentTimeMillis();
+    Flux<Long> interval = Flux.interval(Duration.ofMillis(initDelay), Duration.ofSeconds(10));
+    Thread.sleep(2000);
+
+    Disposable subscribe = interval
+        .subscribe(l -> System.out.println(l + ": " + System.currentTimeMillis() % 60_000));
+    Thread.sleep(20000);
+
+    subscribe.dispose();
+    System.out.println("Unsubscribed");
+    Thread.sleep(2000);
+
+    interval
+        .subscribe(l -> System.out.println(l + ": " + System.currentTimeMillis() % 60_000));
+    Thread.sleep(20000);
   }
 }
