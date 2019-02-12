@@ -119,7 +119,33 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
       return currentStage;
     }
 
-    return stagePersistence.get().orElse(RegistrationStage.SEND_TX);
+    return stagePersistence
+        .get()
+        .orElseGet(() -> findRegistrationStage().orElse(RegistrationStage.SEND_TX));
+  }
+
+  /**
+   * Sometimes current registration stage could be discovered indirectly without stage persistence
+   * data, for example, when our validator is already registered or active. In such cases this
+   * method will return registration stage, otherwise Optional.empty()
+   */
+  private Optional<RegistrationStage> findRegistrationStage() {
+    BeaconState latestState = getLatestState();
+    Optional<ValidatorRecord> validatorRecordOptional =
+        latestState.getValidatorRegistry().stream()
+            .filter(record -> record.getPubKey().equals(pubKey))
+            .findFirst();
+    if (!validatorRecordOptional.isPresent()) {
+      return Optional.empty();
+    }
+
+    this.validatorRecord = validatorRecordOptional.get();
+    EpochNumber currentEpoch = specHelpers.get_current_epoch(latestState);
+    if (specHelpers.is_active_validator(validatorRecord, currentEpoch)) {
+      return Optional.of(RegistrationStage.VALIDATOR_START);
+    } else {
+      return Optional.of(RegistrationStage.AWAIT_ACTIVATION);
+    }
   }
 
   private Runnable getCurrentStageFunction(RegistrationStage stage) {
@@ -183,6 +209,16 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
     }
   }
 
+  private BeaconState getLatestState() {
+    BeaconState latestState = null;
+    try {
+      latestState = Flux.from(observablePublisher).next().toFuture().get().getLatestSlotState();
+    } catch (InterruptedException | ExecutionException e) {
+      throw new RuntimeException("Cannot obtain latest state from Observable state publisher");
+    }
+    return latestState;
+  }
+
   private void awaitInclusion() {
     if (depositSubscription == null) {
       depositSubscription =
@@ -193,25 +229,14 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
                         .ifPresent(
                             d -> {
                               changeCurrentStage(RegistrationStage.AWAIT_ACTIVATION);
-                              try {
-                                BeaconState latestState =
-                                    Flux.from(observablePublisher)
-                                        .next()
-                                        .toFuture()
-                                        .get()
-                                        .getLatestSlotState();
-                                validatorRecord =
-                                    latestState.getValidatorRegistry().stream()
-                                        .filter(
-                                            record -> {
-                                              return record.getPubKey().equals(pubKey);
-                                            })
-                                        .findFirst()
-                                        .get();
-                              } catch (InterruptedException | ExecutionException e) {
-                                throw new RuntimeException(
-                                    "Cannot obtain latest state from Observable state publisher");
-                              }
+                              validatorRecord =
+                                  getLatestState().getValidatorRegistry().stream()
+                                      .filter(
+                                          record -> {
+                                            return record.getPubKey().equals(pubKey);
+                                          })
+                                      .findFirst()
+                                      .get();
                               depositSubscription.dispose();
                               depositSubscription = null;
                             });
@@ -247,12 +272,7 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
     // Let proof_of_possession be the result of bls_sign of the hash_tree_root(deposit_input) with
     // domain=DOMAIN_DEPOSIT.
     Hash32 hash = specHelpers.hash_tree_root(preDepositInput);
-    BeaconState latestState = null;
-    try {
-      latestState = Flux.from(observablePublisher).next().toFuture().get().getLatestSlotState();
-    } catch (InterruptedException | ExecutionException e) {
-      throw new RuntimeException("Cannot obtain latest state from Observable state publisher");
-    }
+    BeaconState latestState = getLatestState();
     Bytes8 domain =
         specHelpers.get_domain(
             latestState.getForkData(), specHelpers.get_current_epoch(latestState), DEPOSIT);
@@ -261,6 +281,11 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
     DepositInput depositInput = new DepositInput(pubKey, withdrawalCredentials, signature);
 
     return depositInput;
+  }
+
+  @Override
+  public Optional<ValidatorService> getValidatorService() {
+    return Optional.ofNullable(validatorService);
   }
 
   private BytesValue createTransaction(
