@@ -18,6 +18,7 @@ import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.crypto.Hashes;
+import org.ethereum.beacon.db.source.SingleValueSource;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.ssz.Serializer;
 import org.ethereum.beacon.validator.BeaconChainAttester;
@@ -55,6 +56,7 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
   ObjectHasher<Hash32> sszHasher;
   Serializer sszSerializer;
   RegistrationStage currentStage = null;
+  SingleValueSource<RegistrationStage> stagePersistence;
 
   // Validator
   MessageSigner<BLSSignature> signer;
@@ -100,7 +102,7 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
 
   private void changeCurrentStage(RegistrationStage newStage) {
     this.currentStage = newStage;
-    // TODO: save to DB
+    stagePersistence.set(currentStage);
     actionCircle();
   }
 
@@ -109,7 +111,7 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
       return currentStage;
     }
 
-    return RegistrationStage.SEND_TX; // TODO: read from DB
+    return stagePersistence.get().orElse(RegistrationStage.SEND_TX);
   }
 
   private Runnable getCurrentStageFunction(RegistrationStage stage) {
