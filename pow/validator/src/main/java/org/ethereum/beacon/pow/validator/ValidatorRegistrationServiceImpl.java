@@ -4,8 +4,6 @@ import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.consensus.BlockTransition;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.StateTransition;
-import org.ethereum.beacon.consensus.hasher.ObjectHasher;
-import org.ethereum.beacon.consensus.hasher.SSZObjectHasher;
 import org.ethereum.beacon.consensus.transition.BeaconStateEx;
 import org.ethereum.beacon.consensus.transition.PerBlockTransition;
 import org.ethereum.beacon.consensus.transition.PerEpochTransition;
@@ -17,7 +15,6 @@ import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
-import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.db.source.SingleValueSource;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.ssz.Serializer;
@@ -42,7 +39,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.function.Function;
 
 import static org.ethereum.beacon.core.spec.SignatureDomains.DEPOSIT;
 
@@ -54,7 +50,6 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
   private final SingleValueSource<RegistrationStage> stagePersistence;
 
   private final SpecHelpers specHelpers;
-  private final ObjectHasher<Hash32> sszHasher;
   private final Serializer sszSerializer;
 
   private Disposable depositSubscription = null;
@@ -85,8 +80,6 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
     this.observablePublisher = observablePublisher;
     this.stagePersistence = registrationStagePersistence;
     this.specHelpers = specHelpers;
-    Function<BytesValue, Hash32> hashFunction = Hashes::keccak256;
-    sszHasher = SSZObjectHasher.create(hashFunction);
     sszSerializer = Serializer.annotationSerializer();
   }
 
@@ -253,7 +246,7 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
         new DepositInput(pubKey, withdrawalCredentials, BLSSignature.ZERO);
     // Let proof_of_possession be the result of bls_sign of the hash_tree_root(deposit_input) with
     // domain=DOMAIN_DEPOSIT.
-    Hash32 hash = sszHasher.getHash(preDepositInput);
+    Hash32 hash = specHelpers.hash_tree_root(preDepositInput);
     BeaconState latestState = null;
     try {
       latestState = Flux.from(observablePublisher).next().toFuture().get().getLatestSlotState();
