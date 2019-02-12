@@ -10,6 +10,9 @@ public abstract class Schedulers {
   private static Schedulers current;
 
   public static Schedulers get() {
+    if (current == null) {
+      resetToDefault();
+    }
     return current;
   }
 
@@ -18,7 +21,7 @@ public abstract class Schedulers {
   }
 
   public static void resetToDefault() {
-
+    current = new DefaultSchedulers();
   }
 
   public long getCurrentTime() {
@@ -35,5 +38,5 @@ public abstract class Schedulers {
 
   public abstract Scheduler newSingleThreadDaemon(String threadName);
 
-  public abstract Scheduler newParallelDaemon(String threadName, int threadPoolCount);
+  public abstract Scheduler newParallelDaemon(String threadNamePattern, int threadPoolCount);
 }

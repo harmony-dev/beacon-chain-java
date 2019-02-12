@@ -1,3 +1,4 @@
 dependencies {
   implementation 'io.projectreactor:reactor-core'
+  implementation 'com.google.guava:guava'
 }
