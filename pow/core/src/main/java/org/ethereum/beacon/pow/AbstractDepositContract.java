@@ -78,7 +78,6 @@ public abstract class AbstractDepositContract implements DepositContract {
             Hash32.wrap(Bytes32.wrap(blockHash))),
         initialDeposits);
     chainStartSink.onNext(chainStart);
-    initialDeposits.forEach(depositSink::onNext);
     chainStartSink.onComplete();
     chainStartDone();
   }
