@@ -18,6 +18,7 @@ import org.ethereum.beacon.validator.attester.BeaconChainAttesterTestUtil;
 import org.ethereum.beacon.validator.crypto.MessageSigner;
 import org.ethereum.beacon.validator.proposer.BeaconChainProposerTestUtil;
 import org.mockito.Mockito;
+import reactor.core.publisher.Mono;
 import tech.pegasys.artemis.util.bytes.Bytes48;
 
 public abstract class ValidatorServiceTestUtil {
@@ -38,6 +39,7 @@ public abstract class ValidatorServiceTestUtil {
     BeaconChainAttester attester = BeaconChainAttesterTestUtil.mockAttester(specHelpers);
     MessageSigner<BLSSignature> signer = MessageSignerTestUtil.createBLSSigner();
 
-    return Mockito.spy(new BeaconChainValidator(pubkey, proposer, attester, specHelpers, signer));
+    return Mockito.spy(
+        new BeaconChainValidator(pubkey, proposer, attester, specHelpers, signer, Mono.empty()));
   }
 }
