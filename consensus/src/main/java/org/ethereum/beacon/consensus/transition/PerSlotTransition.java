@@ -16,6 +16,10 @@ import org.ethereum.beacon.core.types.SlotNumber;
 public class PerSlotTransition implements StateTransition<BeaconStateEx> {
   private final ChainSpec spec;
 
+  public PerSlotTransition(SpecHelpers specHelpers) {
+    this(specHelpers.getChainSpec());
+  }
+
   public PerSlotTransition(ChainSpec spec) {
     this.spec = spec;
   }
