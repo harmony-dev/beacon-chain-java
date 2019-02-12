@@ -1,6 +1,7 @@
 package org.ethereum.beacon.schedulers;
 
 import java.time.Duration;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -8,9 +9,9 @@ import java.util.concurrent.CompletableFuture;
  */
 public interface Scheduler {
 
-  <T> CompletableFuture<T> execute(CallableEx<T> task);
+  <T> CompletableFuture<T> execute(Callable<T> task);
 
-  <T> CompletableFuture<T> executeWithDelay(Duration delay, CallableEx<T> task);
+  <T> CompletableFuture<T> executeWithDelay(Duration delay, Callable<T> task);
 
   CompletableFuture<Void> executeAtFixedRate(Duration initialDelay, Duration period, RunnableEx task);
 

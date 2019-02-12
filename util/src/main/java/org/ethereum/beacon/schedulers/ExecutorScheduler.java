@@ -1,6 +1,7 @@
 package org.ethereum.beacon.schedulers;
 
 import java.time.Duration;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -15,7 +16,7 @@ public class ExecutorScheduler implements Scheduler {
   }
 
   @Override
-  public <T> CompletableFuture<T> execute(CallableEx<T> task) {
+  public <T> CompletableFuture<T> execute(Callable<T> task) {
     CompletableFuture<T> future = new CompletableFuture<>();
     executorService.execute(() -> {
       try {
@@ -28,7 +29,7 @@ public class ExecutorScheduler implements Scheduler {
   }
 
   @Override
-  public <T> CompletableFuture<T> executeWithDelay(Duration delay, CallableEx<T> task) {
+  public <T> CompletableFuture<T> executeWithDelay(Duration delay, Callable<T> task) {
     CompletableFuture<T> future = new CompletableFuture<>();
     executorService.schedule(() -> {
       try {
