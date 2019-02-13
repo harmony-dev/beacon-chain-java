@@ -8,6 +8,10 @@ public class Gwei extends UInt64 implements SafeComparable<Gwei> {
 
   public static final Gwei ZERO = of(0);
 
+  public Gwei(UInt64 uint) {
+    super(uint);
+  }
+
   public static Gwei ofEthers(int ethers) {
     return of(1_000_000_000L * ethers);
   }
@@ -18,10 +22,6 @@ public class Gwei extends UInt64 implements SafeComparable<Gwei> {
 
   public static Gwei castFrom(UInt64 gweis) {
     return new Gwei(gweis);
-  }
-
-  public Gwei(UInt64 uint) {
-    super(uint);
   }
 
   public Gwei plus(Gwei addend) {
