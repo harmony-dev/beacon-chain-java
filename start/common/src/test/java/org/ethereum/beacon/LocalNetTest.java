@@ -37,6 +37,11 @@ public class LocalNetTest {
     }
 
     @Override
+    public Publisher<Deposit> getDepositStream() {
+      return Mono.empty();
+    }
+
+    @Override
     public List<DepositInfo> peekDeposits(int maxCount, Eth1Data fromDepositExclusive,
         Eth1Data tillDepositInclusive) {
       return Collections.emptyList();

@@ -203,7 +203,9 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
               depositContract);
       BeaconChainAttester attester =
           new BeaconChainAttesterImpl(specHelpers, specHelpers.getChainSpec());
-      validatorService = new BeaconChainValidator(pubKey, proposer, attester, specHelpers, signer);
+      validatorService =
+          new BeaconChainValidator(
+              pubKey, proposer, attester, specHelpers, signer, observablePublisher);
       validatorService.start();
       changeCurrentStage(RegistrationStage.COMPLETE);
     }
