@@ -15,7 +15,9 @@ import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.ssz.Serializer;
 import org.javatuples.Pair;
 import org.reactivestreams.Publisher;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.MonoProcessor;
+import reactor.core.publisher.ReplayProcessor;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes8;
@@ -33,6 +35,14 @@ public abstract class AbstractDepositContract implements DepositContract {
       .publishOn(Schedulers.get().reactorEvents())
       .doOnSubscribe(s -> chainStartSubscribedPriv())
       .name("PowClient.chainStart");
+
+  private final ReplayProcessor<Deposit> depositSink =
+      ReplayProcessor.cacheLast();
+  private final Publisher<Deposit> depositStream =
+      Flux.from(depositSink)
+          .publishOn(Schedulers.get().reactorEvents())
+          .onBackpressureError()
+          .name("PowClient.deposit");
 
   private List<Deposit> initialDeposits = new ArrayList<>();
   private boolean startChainSubscribed;
@@ -57,6 +67,7 @@ public abstract class AbstractDepositContract implements DepositContract {
     if (startChainSubscribed && !chainStartSink.isTerminated()) {
       DepositInfo depositInfo = createDepositInfo(eventData, blockHash);
       initialDeposits.add(depositInfo.getDeposit());
+      depositSink.onNext(depositInfo.getDeposit());
     }
   }
 
@@ -85,6 +96,11 @@ public abstract class AbstractDepositContract implements DepositContract {
   @Override
   public Publisher<ChainStart> getChainStartMono() {
     return chainStartStream;
+  }
+
+  @Override
+  public Publisher<Deposit> getDepositStream() {
+    return depositStream;
   }
 
   private DepositInfo createDepositInfo(DepositEventData eventData, byte[] blockHash) {

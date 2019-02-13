@@ -25,6 +25,15 @@ public interface DepositContract {
   Publisher<ChainStart> getChainStartMono();
 
   /**
+   * Returns stream with all deposits received by Deposit Contract (Deposit event).
+   * The listening process starts lazily when at least one subscriber subscribes.
+   * The process takes into account the <code>distanceFromHead</code> parameter, so
+   * the <code>ChainStart</code> event is issued only when specified number
+   * of confirmation blocks are imported.
+   */
+  Publisher<Deposit> getDepositStream();
+
+  /**
    * Returns a list of deposits found in already imported blocks.
    * The method takes into account the <code>distanceFromHead</code> parameter, so
    * only events from confirmed blocks are returned.

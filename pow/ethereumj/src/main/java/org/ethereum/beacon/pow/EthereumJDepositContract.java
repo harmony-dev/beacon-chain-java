@@ -39,7 +39,7 @@ public class EthereumJDepositContract extends AbstractDepositContract {
   private final Address contractDeployAddress;
   private final Hash32 contractDeployAddressHash;
   private final long contractDeployBlock;
-  private final Bloom contractAdderssBloom;
+  private final Bloom contractAddressBloom;
   private final Contract contract;
 
   private volatile long bestConfirmedBlock = 0;
@@ -52,7 +52,7 @@ public class EthereumJDepositContract extends AbstractDepositContract {
     this.contractDeployAddress = Address.fromHexString(contractDeployAddress);
     contractDeployAddressHash =
         Hash32.wrap(Bytes32.wrap(HashUtil.sha3(this.contractDeployAddress.extractArray())));
-    this.contractAdderssBloom = Bloom.create(contractDeployAddressHash.extractArray());
+    this.contractAddressBloom = Bloom.create(contractDeployAddressHash.extractArray());
     this.contract = new Contract(ContractAbi.getContractAbi());
     this.contractDeployBlock = contractDeployBlock;
     processedUpToBlock = contractDeployBlock;
@@ -141,7 +141,7 @@ public class EthereumJDepositContract extends AbstractDepositContract {
   }
 
   private List<Invocation> getContractEvents(Block block) {
-    if (!new Bloom(block.getLogBloom()).matches(contractAdderssBloom)) {
+    if (!new Bloom(block.getLogBloom()).matches(contractAddressBloom)) {
       return Collections.emptyList();
     }
     List<Invocation> ret = new ArrayList<>();

@@ -5,6 +5,7 @@ repositories {
 
 dependencies {
   implementation project(':pow:core')
+  implementation project(':pow:validator')
   implementation project(':types')
   implementation project(':core')
   implementation project(':util')
