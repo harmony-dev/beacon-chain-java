@@ -9,6 +9,7 @@ import org.ethereum.facade.Ethereum;
 import org.ethereum.facade.SyncStatus;
 import org.ethereum.listener.EthereumListenerAdapter;
 import org.ethereum.listener.RecommendedGasPriceTracker;
+import org.ethereum.util.blockchain.EtherUtil;
 import tech.pegasys.artemis.ethereum.core.Address;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
@@ -52,7 +53,7 @@ public class EthereumJTransactionBuilder implements TransactionBuilder {
                   BigInteger.valueOf(gasPriceTracker.getRecommendedGasPrice()),
                   BigInteger.valueOf(2_000_000), // FIXME: Why this number??
                   contractDeployAddress.getArrayUnsafe(),
-                  amount.weiValue(),
+                  EtherUtil.convert(amount.longValue(), EtherUtil.Unit.GWEI),
                   data);
           result.complete(BytesValue.wrap(tx.getEncoded()));
         });
