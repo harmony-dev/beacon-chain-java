@@ -231,7 +231,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     pendingOperationsSink.onNext(pendingOperations);
     updateHead(pendingOperations);
     this.latestState =
-        applySlotTransitions(latestState, specHelpers.hash_tree_root(head.getBlock()));
+        applySlotTransitions(latestState, specHelpers.hash_tree_root(head.getBlock()), newSlot);
     ObservableBeaconState newObservableState =
         new ObservableBeaconState(head.getBlock(), latestState, pendingOperations);
     if (!newObservableState.equals(observableState)) {
@@ -247,15 +247,17 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
    * @param latestChainBlock Latest chain block
    * @return new state, result of applied transition to the latest input state
    */
-  private BeaconState applySlotTransitions(BeaconState source, Hash32 latestChainBlock) {
-    BeaconStateEx sourceEx = new BeaconStateEx(source, latestChainBlock);
-    BeaconStateEx slotState = perSlotTransition.apply(sourceEx);
-    if (specHelpers.is_epoch_end(slotState.getCanonicalState().getSlot())) {
-      BeaconStateEx epochState = perEpochTransition.apply(slotState);
-      return epochState.getCanonicalState();
-    } else {
-      return slotState.getCanonicalState();
+  private BeaconState applySlotTransitions(
+      BeaconState source, Hash32 latestChainBlock, SlotNumber targetSlot) {
+
+    BeaconStateEx stateEx = new BeaconStateEx(source, latestChainBlock);
+    for (SlotNumber slot : source.getSlot().increment().iterateTo(targetSlot.increment())) {
+      stateEx = perSlotTransition.apply(stateEx);
+      if (specHelpers.is_epoch_end(slot)) {
+        stateEx = perEpochTransition.apply(stateEx);
+      }
     }
+    return stateEx.getCanonicalState();
   }
 
   private void updateHead(PendingOperations pendingOperations) {
