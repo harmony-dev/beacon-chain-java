@@ -115,14 +115,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   }
 
   private void runTaskInSeparateThread(Runnable task) {
-    continuousJobExecutor.execute(() -> {
-      try {
-        task.run();
-      } catch (Exception e) {
-        e.printStackTrace();
-        // TODO logging!
-      }
-    });
+    continuousJobExecutor.execute(task::run);
   }
 
   private void onNewSlot(SlotNumber newSlot) {

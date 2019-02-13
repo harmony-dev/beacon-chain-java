@@ -40,6 +40,10 @@ public abstract class Schedulers {
 
   protected abstract ScheduledExecutorService createExecutor(String namePattern, int threads);
 
+  protected Scheduler createExecutorScheduler(ScheduledExecutorService executorService) {
+    return new ExecutorScheduler(executorService);
+  }
+
   public Scheduler cpuHeavy() {
     if (cpuHeavyScheduler == null) {
       synchronized (this) {
@@ -52,7 +56,7 @@ public abstract class Schedulers {
   }
 
   protected Scheduler createCpuHeavy() {
-    return new ExecutorScheduler(createCpuHeavyExecutor());
+    return createExecutorScheduler(createCpuHeavyExecutor());
   }
 
   protected ScheduledExecutorService createCpuHeavyExecutor() {
@@ -71,7 +75,7 @@ public abstract class Schedulers {
   }
 
   protected Scheduler createBlocking() {
-    return new ExecutorScheduler(createBlockingExecutor());
+    return createExecutorScheduler(createBlockingExecutor());
   }
 
   protected ScheduledExecutorService createBlockingExecutor() {
@@ -90,7 +94,7 @@ public abstract class Schedulers {
   }
 
   protected Scheduler createEvents() {
-    return new ExecutorScheduler(getEventsExecutor());
+    return createExecutorScheduler(getEventsExecutor());
   }
 
   protected ScheduledExecutorService getEventsExecutor() {
@@ -116,10 +120,10 @@ public abstract class Schedulers {
   }
 
   public Scheduler newSingleThreadDaemon(String threadName) {
-    return new ExecutorScheduler(createExecutor(threadName, 1));
+    return createExecutorScheduler(createExecutor(threadName, 1));
   }
 
   public Scheduler newParallelDaemon(String threadNamePattern, int threadPoolCount) {
-    return new ExecutorScheduler(createExecutor(threadNamePattern, threadPoolCount));
+    return createExecutorScheduler(createExecutor(threadNamePattern, threadPoolCount));
   }
 }
