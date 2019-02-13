@@ -1,5 +1,7 @@
 package org.ethereum.beacon.schedulers;
 
+import java.util.concurrent.ScheduledExecutorService;
+
 /**
  * The collection of standard Schedulers, Scheduler factory and system time supplier
  *
@@ -7,6 +9,8 @@ package org.ethereum.beacon.schedulers;
  * with appropriate one
  */
 public abstract class Schedulers {
+  private static final int BLOCKING_THREAD_COUNT = 128;
+
   private static Schedulers current;
 
   public static Schedulers get() {
@@ -24,19 +28,98 @@ public abstract class Schedulers {
     current = new DefaultSchedulers();
   }
 
+  private Scheduler cpuHeavyScheduler;
+  private Scheduler blockingScheduler;
+  private Scheduler eventsScheduler;
+  private reactor.core.scheduler.Scheduler eventsReactorScheduler;
+  private ScheduledExecutorService eventsExecutor;
+
   public long getCurrentTime() {
     return System.currentTimeMillis();
   }
 
-  public abstract Scheduler cpuHeavy();
+  protected abstract ScheduledExecutorService createExecutor(String namePattern, int threads);
 
-  public abstract Scheduler blocking();
+  public Scheduler cpuHeavy() {
+    if (cpuHeavyScheduler == null) {
+      synchronized (this) {
+        if (cpuHeavyScheduler == null) {
+          cpuHeavyScheduler = createCpuHeavy();
+        }
+      }
+    }
+    return cpuHeavyScheduler;
+  }
 
-  public abstract Scheduler events();
+  protected Scheduler createCpuHeavy() {
+    return new ExecutorScheduler(createCpuHeavyExecutor());
+  }
 
-  public abstract reactor.core.scheduler.Scheduler reactorEvents();
+  protected ScheduledExecutorService createCpuHeavyExecutor() {
+    return createExecutor("Schedulers-cpuHeavy-%d", Runtime.getRuntime().availableProcessors());
+  }
 
-  public abstract Scheduler newSingleThreadDaemon(String threadName);
+  public Scheduler blocking() {
+    if (blockingScheduler == null) {
+      synchronized (this) {
+        if (blockingScheduler == null) {
+          blockingScheduler = createBlocking();
+        }
+      }
+    }
+    return blockingScheduler;
+  }
 
-  public abstract Scheduler newParallelDaemon(String threadNamePattern, int threadPoolCount);
+  protected Scheduler createBlocking() {
+    return new ExecutorScheduler(createBlockingExecutor());
+  }
+
+  protected ScheduledExecutorService createBlockingExecutor() {
+    return createExecutor("Schedulers-blocking-%d", BLOCKING_THREAD_COUNT);
+  }
+
+  public Scheduler events() {
+    if (eventsScheduler == null) {
+      synchronized (this) {
+        if (eventsScheduler == null) {
+          eventsScheduler = createEvents();
+        }
+      }
+    }
+    return eventsScheduler;
+  }
+
+  protected Scheduler createEvents() {
+    return new ExecutorScheduler(getEventsExecutor());
+  }
+
+  protected ScheduledExecutorService getEventsExecutor() {
+    if (eventsExecutor == null) {
+      eventsExecutor = createExecutor("Schedulers-events", 1);
+    }
+    return eventsExecutor;
+  }
+
+  public reactor.core.scheduler.Scheduler reactorEvents() {
+    if (eventsReactorScheduler == null) {
+      synchronized (this) {
+        if (eventsReactorScheduler == null) {
+          eventsReactorScheduler = createReactorEvents();
+        }
+      }
+    }
+    return eventsReactorScheduler;
+  }
+
+  protected reactor.core.scheduler.Scheduler createReactorEvents() {
+    return reactor.core.scheduler.Schedulers.fromExecutor(getEventsExecutor());
+  }
+
+  public Scheduler newSingleThreadDaemon(String threadName) {
+    return new ExecutorScheduler(createExecutor(threadName, 1));
+  }
+
+  public Scheduler newParallelDaemon(String threadNamePattern, int threadPoolCount) {
+    return new ExecutorScheduler(createExecutor(threadNamePattern, threadPoolCount));
+  }
 }
