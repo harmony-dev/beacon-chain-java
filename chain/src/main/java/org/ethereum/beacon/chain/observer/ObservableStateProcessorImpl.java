@@ -52,10 +52,8 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   private final Publisher<BeaconTuple> beaconPublisher;
 
   private static final int UPDATE_MILLIS = 500;
-  private Scheduler regularJobExecutor =
-      Schedulers.get().newSingleThreadDaemon("observable-state-processor-regular");
-  private Scheduler continuousJobExecutor =
-      Schedulers.get().newSingleThreadDaemon("observable-state-processor-continuous");
+  private Scheduler regularJobExecutor;
+  private Scheduler continuousJobExecutor;
 
   private final BlockingQueue<Attestation> attestationBuffer = new LinkedBlockingDeque<>();
   private final Map<BLSPubkey, Attestation> attestationCache = new HashMap<>();
@@ -105,6 +103,10 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
 
   @Override
   public void start() {
+    regularJobExecutor =
+        Schedulers.get().newSingleThreadDaemon("observable-state-processor-regular");
+    continuousJobExecutor =
+        Schedulers.get().newSingleThreadDaemon("observable-state-processor-continuous");
     Flux.from(slotTicker).subscribe(this::onNewSlot);
     Flux.from(attestationPublisher).subscribe(this::onNewAttestation);
     Flux.from(beaconPublisher).subscribe(this::onNewBlockTuple);
