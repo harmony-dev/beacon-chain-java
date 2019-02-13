@@ -306,7 +306,6 @@ public class BeaconChainValidator implements ValidatorService {
     return validatorIndex.compareTo(UInt64.MAX_VALUE) < 0;
   }
 
-  /* FIXME: stub for streams. */
   private void propagateBlock(BeaconBlock newBlock) {
     blocksSink.onNext(newBlock);
   }
