@@ -118,7 +118,7 @@ public class ControlledExecutorServiceImpl implements ControlledExecutorService 
   @Override
   public long getNextScheduleTime() {
     Collections.sort(tasks);
-    return tasks.get(0).targetTime;
+    return tasks.isEmpty() ? Long.MAX_VALUE : tasks.get(0).targetTime;
   }
 
   @Override
