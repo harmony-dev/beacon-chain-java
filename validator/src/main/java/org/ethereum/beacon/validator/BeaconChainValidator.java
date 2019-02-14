@@ -66,7 +66,7 @@ public class BeaconChainValidator implements ValidatorService {
   /** Validator index. Assigned in {@link #init(BeaconState)} method. */
   private ValidatorIndex validatorIndex = ValidatorIndex.MAX;
   /** Latest slot that has been processed. Initialized in {@link #init(BeaconState)} method. */
-  private SlotNumber lastProcessedSlot = SlotNumber.castFrom(UInt64.MAX_VALUE);
+  private SlotNumber lastProcessedSlot = SlotNumber.ZERO;
   /** The most recent beacon state came from the outside. */
   private ObservableBeaconState recentState;
 
@@ -104,7 +104,6 @@ public class BeaconChainValidator implements ValidatorService {
   @VisibleForTesting
   void init(BeaconState state) {
     this.validatorIndex = specHelpers.get_validator_index_by_pubkey(state, publicKey);
-    setSlotProcessed(state);
   }
 
   /**
@@ -270,7 +269,7 @@ public class BeaconChainValidator implements ValidatorService {
   private boolean isEligibleToAttest(BeaconState state) {
     final List<ValidatorIndex> firstCommittee =
         specHelpers.get_crosslink_committees_at_slot(state, state.getSlot()).get(0).getCommittee();
-    return Collections.binarySearch(firstCommittee, validatorIndex) >= 0;
+    return firstCommittee.contains(validatorIndex);
   }
 
   /**
