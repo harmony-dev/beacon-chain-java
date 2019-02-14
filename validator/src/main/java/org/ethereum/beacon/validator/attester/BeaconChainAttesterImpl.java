@@ -118,7 +118,11 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
   */
   @VisibleForTesting
   Hash32 getLatestCrosslinkRoot(BeaconState state, ShardNumber shard) {
-    return state.getLatestCrosslinks().get(shard).getShardBlockRoot();
+    if (shard.equals(chainSpec.getBeaconChainShardNumber())) {
+      return Hash32.ZERO;
+    } else {
+      return state.getLatestCrosslinks().get(shard).getShardBlockRoot();
+    }
   }
 
   /*
