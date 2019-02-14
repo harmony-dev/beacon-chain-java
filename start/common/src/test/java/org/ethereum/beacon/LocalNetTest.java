@@ -72,7 +72,7 @@ public class LocalNetTest {
     ControlledSchedulers schedulers = new ControlledSchedulers();
     Schedulers.set(schedulers);
 
-    Random rnd = new Random();
+    Random rnd = new Random(1);
     Time genesisTime = Time.of(10 * 60);
     schedulers.setCurrentTime(genesisTime.getMillis().getValue() + 1000);
     Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), Hash32.random(rnd));
@@ -114,21 +114,32 @@ public class LocalNetTest {
           wireApi);
       int finalI = i;
       Flux.from(launcher.slotTicker.getTickerStream())
-          .subscribe(slot -> System.out.println("#" + finalI + " Slot: " + slot.toString(chainSpec, genesisTime)));
+          .subscribe(slot -> System.out.println("  #" + finalI + " Slot: " + slot.toString(chainSpec, genesisTime)));
       Flux.from(launcher.observableStateProcessor.getObservableStateStream())
-          .subscribe(os ->System.out.println("#" + finalI + " New observable state: " +
-              os.getLatestSlotState().getSlot().toString(chainSpec, genesisTime)));
+          .subscribe(os -> {
+            System.out.println("  #" + finalI + " New observable state: " +
+                os.getLatestSlotState().getSlot().toString(chainSpec, genesisTime)
+                + ": Proposer: " +
+                specHelpers.get_beacon_proposer_index(os.getLatestSlotState(), os.getLatestSlotState().getSlot())
+                + ", Beacon committee: " +
+                specHelpers.get_crosslink_committees_at_slot(os.getLatestSlotState(), os.getLatestSlotState().getSlot()).get(0).getCommittee()
+            );
+          });
       Flux.from(launcher.beaconChainValidator.getProposedBlocksStream())
           .subscribe(block ->System.out.println("#" + finalI + " !!! New block: " +
               block.toString(chainSpec, genesisTime, specHelpers::hash_tree_root)));
       Flux.from(launcher.beaconChainValidator.getAttestationsStream())
           .subscribe(attest ->System.out.println("#" + finalI + " !!! New attestation: " +
               attest.toString(chainSpec, genesisTime)));
+      Flux.from(launcher.beaconChain.getBlockStatesStream())
+          .subscribe(blockState ->System.out.println("  #" + finalI + " Block imported: " +
+              blockState.getBlock().toString(chainSpec, genesisTime, specHelpers::hash_tree_root)));
     }
     System.out.println("Peers created");
 
     while (true) {
       schedulers.addTime(Duration.ofSeconds(10));
+      System.out.println("===============================");
     }
 
 //    Thread.sleep(100000000);
