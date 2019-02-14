@@ -1,5 +1,6 @@
 package org.ethereum.beacon;
 
+import java.time.Duration;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -12,9 +13,12 @@ import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
+import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.crypto.BLS381.KeyPair;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.pow.DepositContract.ChainStart;
+import org.ethereum.beacon.schedulers.ControlledSchedulers;
+import org.ethereum.beacon.schedulers.Schedulers;
 import org.javatuples.Pair;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
@@ -62,20 +66,35 @@ public class LocalNetTest {
   }
 
   public static void main(String[] args) throws Exception {
-    int validatorCount = 8;
+    int validatorCount = 4;
+    int epochLength = 2;
+
+    ControlledSchedulers schedulers = new ControlledSchedulers();
+    Schedulers.set(schedulers);
 
     Random rnd = new Random();
-    Time genesisTime = Time.castFrom(UInt64.valueOf(System.currentTimeMillis() / 1000 - 60));
+    Time genesisTime = Time.of(10 * 60);
+    schedulers.setCurrentTime(genesisTime.getMillis().getValue() + 1000);
     Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), Hash32.random(rnd));
     ChainSpec chainSpec =
         new ChainSpec() {
           @Override
           public SlotNumber.EpochLength getEpochLength() {
-            return new SlotNumber.EpochLength(UInt64.valueOf(validatorCount));
+            return new SlotNumber.EpochLength(UInt64.valueOf(epochLength));
           }
           @Override
           public Time getSlotDuration() {
-            return Time.of(5);
+            return Time.of(10);
+          }
+
+          @Override
+          public SlotNumber getGenesisSlot() {
+            return SlotNumber.of(1_000_000);
+          }
+
+          @Override
+          public ValidatorIndex getTargetCommitteeSize() {
+            return ValidatorIndex.of(1);
           }
         };
 
@@ -101,7 +120,11 @@ public class LocalNetTest {
     }
     System.out.println("Peers created");
 
-    Thread.sleep(100000000);
+    while (true) {
+      schedulers.addTime(Duration.ofSeconds(10));
+    }
+
+//    Thread.sleep(100000000);
   }
 
   static String slotInfo(SpecHelpers specHelpers, Time genesisTime, SlotNumber slot) {

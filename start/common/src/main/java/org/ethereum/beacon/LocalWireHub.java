@@ -1,5 +1,6 @@
 package org.ethereum.beacon;
 
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
@@ -51,7 +52,7 @@ public class LocalWireHub {
   }
 
   List<WireImpl> peers = new CopyOnWriteArrayList<>();
-  Consumer<String> logger = s -> {};
+  Consumer<String> logger = s -> System.out.println(new Date() + ": " + s);
 
   public LocalWireHub(Consumer<String> logger) {
     this.logger = logger;
