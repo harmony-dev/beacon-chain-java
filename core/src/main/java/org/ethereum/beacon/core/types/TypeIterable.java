@@ -1,6 +1,7 @@
 package org.ethereum.beacon.core.types;
 
 import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -56,11 +57,12 @@ public interface TypeIterable<C extends TypeIterable<C>> extends SafeComparable<
 
       @Override
       public C next() {
+        if (!hasNext()) throw new NoSuchElementException();
         C ret = cur;
         cur = (C) (increasing ? cur.increment() : cur.decrement());
         return ret;
       }
     }
-    return () -> new Iter((C) this, toNumber, this.lessEqual(toNumber));
+    return () -> new Iter((C) this, toNumber, true);
   }
 }
