@@ -1,13 +1,14 @@
 package org.ethereum.beacon.core.operations;
 
 import com.google.common.base.Objects;
+import javax.annotation.Nullable;
 import org.ethereum.beacon.core.operations.slashing.ProposalSignedData;
+import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
-import tech.pegasys.artemis.util.bytes.Bytes96;
-import tech.pegasys.artemis.util.uint.UInt24;
 
 @SSZSerializable
 public class ProposerSlashing {
@@ -60,5 +61,20 @@ public class ProposerSlashing {
         && Objects.equal(proposalSignature1, that.proposalSignature1)
         && Objects.equal(proposalData2, that.proposalData2)
         && Objects.equal(proposalSignature2, that.proposalSignature2);
+  }
+
+  @Override
+  public String toString() {
+    return toString(null, null);
+  }
+
+  public String toString(@Nullable ChainSpec spec, @Nullable Time beaconStart) {
+    return "ProposerSlashing["
+        + "proposer: " + proposerIndex
+        + ", data1: " + proposalData1.toString(spec, beaconStart)
+        + ", data2: " + proposalData2.toString(spec, beaconStart)
+        + ", sig1: " + proposalSignature1
+        + ", sig2: " + proposalSignature2
+        + "]";
   }
 }

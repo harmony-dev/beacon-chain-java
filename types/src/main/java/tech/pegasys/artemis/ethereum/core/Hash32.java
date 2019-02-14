@@ -58,4 +58,8 @@ public class Hash32 extends DelegatingBytes32 implements Hash {
   public static Hash32 random(Random rnd) {
     return wrap(Bytes32.random(rnd));
   }
+
+  public String toStringShort() {
+    return super.toString().substring(2, 10);
+  }
 }

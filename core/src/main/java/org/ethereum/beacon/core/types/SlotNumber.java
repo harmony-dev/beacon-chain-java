@@ -1,5 +1,8 @@
 package org.ethereum.beacon.core.types;
 
+import java.time.Duration;
+import javax.annotation.Nullable;
+import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.util.uint.UInt64;
 
@@ -79,5 +82,36 @@ public class SlotNumber extends UInt64 implements
   @Override
   public SlotNumber zeroElement() {
     return ZERO;
+  }
+
+
+  public String toString(
+      @Nullable ChainSpec spec,
+      @Nullable Time beaconStart) {
+
+    long num = spec == null ? getValue() : this.minus(spec.getGenesisSlot()).getValue();
+    String extraInfo = "";
+    if (spec != null) {
+      extraInfo += "time " + (beaconStart == null ?
+          Duration.ofSeconds(spec.getSlotDuration().times(num).getValue()).toString()
+              + " from genesis"
+          : spec.getSlotDuration().times((int)num).plus(beaconStart));
+      extraInfo += ", ";
+      int numInEpoch = this.modulo(spec.getEpochLength()).getIntValue();
+      if (numInEpoch == 0) {
+        extraInfo += "first";
+      } else if (numInEpoch + 1 == spec.getEpochLength().getIntValue()) {
+        extraInfo += "last";
+      } else {
+        extraInfo += "#" + numInEpoch;
+      }
+      extraInfo += " in epoch " + this.dividedBy(spec.getEpochLength()).minus(spec.getGenesisEpoch());
+    }
+    return "#" + num + (extraInfo.isEmpty() ? "" : " (" + extraInfo + ")");
+  }
+
+  @Override
+  public String toString() {
+    return toString(null, null);
   }
 }

@@ -55,4 +55,14 @@ public class Deposit {
         && Objects.equal(index, deposit.index)
         && Objects.equal(depositData, deposit.depositData);
   }
+
+  @Override
+  public String toString() {
+    return "Deposit["
+        + "idx=" + index
+        + "amount=" + depositData.getAmount()
+        + "time=" + depositData.getTimestamp()
+        + "pubkey=" + depositData.getDepositInput().getPubKey()
+        + "]";
+  }
 }

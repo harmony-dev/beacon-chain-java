@@ -103,7 +103,7 @@ public class LocalNetTest {
     Pair<List<Deposit>, List<KeyPair>> anyDeposits = TestUtils.getAnyDeposits(specHelpers, validatorCount);
     List<Deposit> deposits = anyDeposits.getValue0();
 
-    LocalWireHub localWireHub = new LocalWireHub(s -> System.out.println(new Date() + " : " + s));
+    LocalWireHub localWireHub = new LocalWireHub(s -> {});
     ChainStart chainStart = new ChainStart(genesisTime, eth1Data, deposits);
     DepositContract depositContract = new SimpleDepositContract(chainStart);
 
@@ -112,11 +112,18 @@ public class LocalNetTest {
       WireApi wireApi = localWireHub.createNewPeer("" + i);
       Launcher launcher = new Launcher(specHelpers, depositContract, anyDeposits.getValue1().get(i),
           wireApi);
+      int finalI = i;
       Flux.from(launcher.slotTicker.getTickerStream())
-          .subscribe(slot -> System.out.println(slotInfo(specHelpers, genesisTime, slot)));
+          .subscribe(slot -> System.out.println("#" + finalI + " Slot: " + slot.toString(chainSpec, genesisTime)));
       Flux.from(launcher.observableStateProcessor.getObservableStateStream())
-          .subscribe(os ->System.out.println("New observable state: " +
-              slotInfo(specHelpers, genesisTime, os.getLatestSlotState().getSlot())));
+          .subscribe(os ->System.out.println("#" + finalI + " New observable state: " +
+              os.getLatestSlotState().getSlot().toString(chainSpec, genesisTime)));
+      Flux.from(launcher.beaconChainValidator.getProposedBlocksStream())
+          .subscribe(block ->System.out.println("#" + finalI + " !!! New block: " +
+              block.toString(chainSpec, genesisTime, specHelpers::hash_tree_root)));
+      Flux.from(launcher.beaconChainValidator.getAttestationsStream())
+          .subscribe(attest ->System.out.println("#" + finalI + " !!! New attestation: " +
+              attest.toString(chainSpec, genesisTime)));
     }
     System.out.println("Peers created");
 

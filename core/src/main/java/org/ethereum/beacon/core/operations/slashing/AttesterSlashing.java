@@ -1,5 +1,8 @@
 package org.ethereum.beacon.core.operations.slashing;
 
+import javax.annotation.Nullable;
+import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 
@@ -30,5 +33,17 @@ public class AttesterSlashing {
     AttesterSlashing that = (AttesterSlashing) o;
     if (!slashableAttestation1.equals(that.slashableAttestation1)) {return false;}
     return slashableAttestation2.equals(that.slashableAttestation2);
+  }
+
+  @Override
+  public String toString() {
+    return toString(null, null);
+  }
+
+  public String toString(@Nullable ChainSpec spec,@Nullable Time beaconStart) {
+    return "AttesterSlashing["
+        + "att1=" + slashableAttestation1.toString(spec, beaconStart)
+        + "att2=" + slashableAttestation2.toString(spec, beaconStart)
+        + "]";
   }
 }

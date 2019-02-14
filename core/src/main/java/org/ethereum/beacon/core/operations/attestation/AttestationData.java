@@ -1,10 +1,13 @@
 package org.ethereum.beacon.core.operations.attestation;
 
 import com.google.common.base.Objects;
+import javax.annotation.Nullable;
 import org.ethereum.beacon.core.operations.Attestation;
+import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
+import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -102,5 +105,23 @@ public class AttestationData {
         && Objects.equal(latestCrosslinkRoot, that.latestCrosslinkRoot)
         && Objects.equal(justifiedEpoch, that.justifiedEpoch)
         && Objects.equal(justifiedBlockRoot, that.justifiedBlockRoot);
+  }
+
+  @Override
+  public String toString() {
+    return toString(null, null);
+  }
+
+  public String toString(@Nullable ChainSpec spec,@Nullable Time beaconStart) {
+    return "AttestationData[slot="
+        + slot.toString(spec, beaconStart)
+        + ", shard=" + shard.toString(spec)
+        + ", beaconBlock=" + beaconBlockRoot.toStringShort()
+        + ", epochBoundary=" + epochBoundaryRoot.toStringShort()
+        + ", shardBlock=" + shardBlockRoot.toStringShort()
+        + ", latestCrosslink=" + latestCrosslinkRoot.toStringShort()
+        + ", justifiedEpoch=" + justifiedEpoch.toString(spec)
+        + ", justifiedBlock=" + justifiedBlockRoot.toStringShort()
+        +"]";
   }
 }
