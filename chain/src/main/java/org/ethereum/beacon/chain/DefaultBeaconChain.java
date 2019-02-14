@@ -103,9 +103,9 @@ public class DefaultBeaconChain implements MutableBeaconChain {
 
   @Override
   public synchronized boolean insert(BeaconBlock block) {
-    if (rejectedByTime(block)) {
-      return false;
-    }
+//    if (rejectedByTime(block)) {
+//      return false;
+//    }
 
     if (exist(block)) {
       return false;
@@ -210,7 +210,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
       }
     }
 
-    return perSlotTransition.apply(result);
+    return result;
   }
 
   @Override
