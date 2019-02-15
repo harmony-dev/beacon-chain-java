@@ -90,14 +90,16 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
    * @return a committee.
    */
   @VisibleForTesting
-  List<ValidatorIndex> getCommittee(BeaconState state, UInt64 shard) {
+  List<ValidatorIndex> getCommittee(BeaconState state, ShardNumber shard) {
     if (shard.equals(chainSpec.getBeaconChainShardNumber())) {
       return specHelpers.get_crosslink_committees_at_slot(state, state.getSlot()).get(0).getCommittee();
     } else {
       return specHelpers
-          .get_crosslink_committees_at_slot(state, state.getSlot())
-          .get(shard.getIntValue())
-          .getCommittee();
+          .get_crosslink_committees_at_slot(state, state.getSlot()).stream()
+          .filter(sc -> sc.getShard().equals(shard))
+          .findFirst()
+          .map(sc -> sc.getCommittee())
+          .orElse(Collections.emptyList());
     }
   }
 
