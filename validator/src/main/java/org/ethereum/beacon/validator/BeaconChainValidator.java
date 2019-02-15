@@ -2,14 +2,15 @@ package org.ethereum.beacon.validator;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.time.Duration;
-import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
+import org.ethereum.beacon.core.state.ShardCommittee;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.SlotNumber;
@@ -180,7 +181,7 @@ public class BeaconChainValidator implements ValidatorService {
     }
 
     // trigger attester at a halfway through the slot
-    if (isEligibleToAttest(state)) {
+    if (getValidatorCommittee(state).isPresent()) {
       Time startAt = specHelpers.get_slot_middle_time(state, state.getSlot());
       schedule(startAt, this::attest);
     }
@@ -228,11 +229,12 @@ public class BeaconChainValidator implements ValidatorService {
     final ObservableBeaconState observableState = this.recentState;
     final BeaconState state = observableState.getLatestSlotState();
 
-    if (isEligibleToAttest(state)) {
+    Optional<ShardCommittee> validatorCommittee = getValidatorCommittee(state);
+    if (validatorCommittee.isPresent()) {
       Attestation attestation =
           attester.attest(
               validatorIndex,
-              specHelpers.getChainSpec().getBeaconChainShardNumber(),
+              validatorCommittee.get().getShard(),
               observableState,
               messageSigner);
       propagateAttestation(attestation);
@@ -261,15 +263,12 @@ public class BeaconChainValidator implements ValidatorService {
   }
 
   /**
-   * Whether validator is assigned to attest to a head at a slot of the state.
-   *
-   * @param state a state.
-   * @return {@code true} if assigned, {@link false} otherwise.
+   * Returns committee where the validator participates if any
    */
-  private boolean isEligibleToAttest(BeaconState state) {
-    final List<ValidatorIndex> firstCommittee =
-        specHelpers.get_crosslink_committees_at_slot(state, state.getSlot()).get(0).getCommittee();
-    return firstCommittee.contains(validatorIndex);
+  private Optional<ShardCommittee> getValidatorCommittee(BeaconState state) {
+    List<ShardCommittee> committees =
+        specHelpers.get_crosslink_committees_at_slot(state, state.getSlot());
+    return committees.stream().filter(sc -> sc.getCommittee().contains(validatorIndex)).findFirst();
   }
 
   /**
