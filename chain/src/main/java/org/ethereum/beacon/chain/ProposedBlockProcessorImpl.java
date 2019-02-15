@@ -6,7 +6,7 @@ import org.reactivestreams.Publisher;
 import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
 
-public class ProposedBlocksProcessorImpl implements ProposedBlockProcessor {
+public class ProposedBlockProcessorImpl implements ProposedBlockProcessor {
 
   private final DirectProcessor<BeaconBlock> blocksSink = DirectProcessor.create();
   private final Publisher<BeaconBlock> blocksStream =
@@ -17,7 +17,7 @@ public class ProposedBlocksProcessorImpl implements ProposedBlockProcessor {
 
   private final MutableBeaconChain beaconChain;
 
-  public ProposedBlocksProcessorImpl(MutableBeaconChain beaconChain) {
+  public ProposedBlockProcessorImpl(MutableBeaconChain beaconChain) {
     this.beaconChain = beaconChain;
   }
 
