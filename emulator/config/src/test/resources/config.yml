@@ -11,7 +11,7 @@ config:
       contractAbi: file://Contract.abi
     signer:
       implementation:
-        clazz: InsecureBLS381MessageSigner
+        class: InsecureBLS381MessageSigner
         input:
           pubKey: 1
           privKey: 1
@@ -27,6 +27,8 @@ plan:
       eth1PrivKey: 0x3564c032070e518026e47b32b6d34bca57c192d56f62e41b33e4b952e7b04d7a
       withdrawalCredentials: 0xd47c61f2c25bbb677dcf23e65765fac04c85d6a0
       amount: 32
+
     - action: run
+
     - action: emulate
       count: 4
