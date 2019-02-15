@@ -47,6 +47,11 @@ public class ControlledSchedulers extends Schedulers {
   }
 
   @Override
+  protected Scheduler createExecutorScheduler(ScheduledExecutorService executorService) {
+    return new ErrorHandlingScheduler(new ExecutorScheduler(executorService), e -> e.printStackTrace());
+  }
+
+  @Override
   protected ScheduledExecutorService createExecutor(String namePattern, int threads) {
     ControlledExecutorService service = new ControlledExecutorServiceImpl();
     controlledExecutors.add(service);
