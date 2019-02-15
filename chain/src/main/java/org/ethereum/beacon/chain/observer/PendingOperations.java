@@ -23,4 +23,10 @@ public interface PendingOperations {
   List<Attestation> peekAggregatedAttestations(int maxCount, UInt64 maxSlot);
 
   List<Exit> peekExits(int maxCount);
+
+  default String toStringShort() {
+    return "PendingOperations["
+        + "attest: " + getAttestations().size()
+        + "]";
+  }
 }

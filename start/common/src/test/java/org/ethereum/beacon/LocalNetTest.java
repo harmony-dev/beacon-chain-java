@@ -117,13 +117,7 @@ public class LocalNetTest {
           .subscribe(slot -> System.out.println("  #" + finalI + " Slot: " + slot.toString(chainSpec, genesisTime)));
       Flux.from(launcher.observableStateProcessor.getObservableStateStream())
           .subscribe(os -> {
-            System.out.println("  #" + finalI + " New observable state: " +
-                os.getLatestSlotState().getSlot().toString(chainSpec, genesisTime)
-                + ": Proposer: " +
-                specHelpers.get_beacon_proposer_index(os.getLatestSlotState(), os.getLatestSlotState().getSlot())
-                + ", Beacon committee: " +
-                specHelpers.get_crosslink_committees_at_slot(os.getLatestSlotState(), os.getLatestSlotState().getSlot()).get(0).getCommittee()
-            );
+            System.out.println("  #" + finalI + " New observable state: " + os.toString(specHelpers));
           });
       Flux.from(launcher.beaconChainValidator.getProposedBlocksStream())
           .subscribe(block ->System.out.println("#" + finalI + " !!! New block: " +

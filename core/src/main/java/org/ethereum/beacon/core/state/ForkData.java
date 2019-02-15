@@ -1,7 +1,9 @@
 package org.ethereum.beacon.core.state;
 
 import com.google.common.base.Objects;
+import javax.annotation.Nullable;
 import org.ethereum.beacon.core.BeaconState;
+import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.ssz.annotation.SSZ;
@@ -54,5 +56,15 @@ public class ForkData {
     return Objects.equal(previousVersion, forkData.previousVersion)
         && Objects.equal(currentVersion, forkData.currentVersion)
         && Objects.equal(epoch, forkData.epoch);
+  }
+
+  @Override
+  public String toString() {
+    return toString(null);
+  }
+
+  public String toString(
+      @Nullable ChainSpec spec) {
+    return "Fork[" + epoch.toString(spec) + ", " + previousVersion + " => " + currentVersion + "]";
   }
 }
