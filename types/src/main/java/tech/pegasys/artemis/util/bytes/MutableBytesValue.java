@@ -180,9 +180,9 @@ public interface MutableBytesValue extends BytesValue {
     byte byteVal = get(byteIndex);
     byte newVal;
     if (value) {
-      newVal = (byte) (byteVal | (1 << (7 - byteBitIndex)));
+      newVal = (byte) (byteVal | (1 << (byteBitIndex)));
     } else {
-      newVal = (byte) (byteVal & ~(1 << (7 - byteBitIndex)));
+      newVal = (byte) (byteVal & ~(1 << (byteBitIndex)));
     }
     set(byteIndex, newVal);
   }
