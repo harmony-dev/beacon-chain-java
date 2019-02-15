@@ -2,8 +2,8 @@ package org.ethereum.beacon.emulator.config;
 
 import org.apache.commons.beanutils.BeanUtilsBean;
 import org.apache.commons.beanutils.PropertyUtils;
-import org.ethereum.beacon.emulator.config.version.Config;
-import org.ethereum.beacon.emulator.config.version.ConfigV1;
+import org.ethereum.beacon.emulator.config.data.Config;
+import org.ethereum.beacon.emulator.config.data.v1.MainConfig;
 import org.javatuples.Pair;
 
 import java.io.File;
@@ -20,7 +20,7 @@ public class ConfigBuilder {
 
   public ConfigBuilder() {
     Map<Integer, Class<? extends Config>> handlers = new HashMap<>();
-    handlers.put(1, ConfigV1.class);
+    handlers.put(1, MainConfig.class);
     configReaders.put(Type.YAML, new YamlReader(handlers));
     configReaders.put(Type.ASIS, new AsIsReader());
   }

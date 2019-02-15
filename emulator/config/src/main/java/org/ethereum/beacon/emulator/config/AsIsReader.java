@@ -1,6 +1,6 @@
 package org.ethereum.beacon.emulator.config;
 
-import org.ethereum.beacon.emulator.config.version.Config;
+import org.ethereum.beacon.emulator.config.data.Config;
 
 /** Passes config out without any modifications or AS IS */
 public class AsIsReader implements ConfigReader {

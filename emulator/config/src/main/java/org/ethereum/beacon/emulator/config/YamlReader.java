@@ -2,8 +2,8 @@ package org.ethereum.beacon.emulator.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import org.ethereum.beacon.emulator.config.version.Config;
-import org.ethereum.beacon.emulator.config.version.ConfigVersion;
+import org.ethereum.beacon.emulator.config.data.Config;
+import org.ethereum.beacon.emulator.config.data.ConfigVersion;
 
 import java.io.File;
 import java.io.IOException;
