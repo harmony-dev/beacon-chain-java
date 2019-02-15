@@ -47,4 +47,24 @@ public interface SingleValueSource<V> {
       }
     };
   }
+  static <ValueType> SingleValueSource<ValueType> memSource() {
+    return new SingleValueSource<ValueType>() {
+      ValueType value;
+
+      @Override
+      public Optional<ValueType> get() {
+        return Optional.ofNullable(value);
+      }
+
+      @Override
+      public void set(ValueType value) {
+        this.value = value;
+      }
+
+      @Override
+      public void remove() {
+        this.value = null;
+      }
+    };
+  }
 }

@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import org.ethereum.beacon.chain.storage.impl.MemBeaconChainStorageFactory;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.TestUtils;
 import org.ethereum.beacon.core.operations.Deposit;
@@ -112,7 +113,8 @@ public class LocalNetTest {
     for(int i = 0; i < validatorCount; i++) {
       WireApi wireApi = localWireHub.createNewPeer("" + i);
       Launcher launcher = new Launcher(specHelpers, depositContract, anyDeposits.getValue1().get(i),
-          wireApi);
+          wireApi, new MemBeaconChainStorageFactory());
+
       int finalI = i;
       Flux.from(launcher.slotTicker.getTickerStream())
           .subscribe(slot -> System.out.println("  #" + finalI + " Slot: " + slot.toString(chainSpec, genesisTime)));
@@ -133,8 +135,8 @@ public class LocalNetTest {
     System.out.println("Peers created");
 
     while (true) {
-      schedulers.addTime(Duration.ofSeconds(10));
       System.out.println("===============================");
+      schedulers.addTime(Duration.ofSeconds(10));
     }
 
 //    Thread.sleep(100000000);
