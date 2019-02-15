@@ -8,6 +8,7 @@ dependencies {
   implementation project(':pow:core')
   implementation project(':validator')
   implementation project(':wire')
+  implementation project(':util')
 
   implementation 'com.google.guava:guava'
   implementation 'io.projectreactor:reactor-core'
