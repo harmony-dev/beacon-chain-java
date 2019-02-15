@@ -164,7 +164,7 @@ public class BeaconBlockStorageImpl extends AbstractHashKeyStorage<Hash32, Beaco
     final List<BeaconBlock> children = new ArrayList<>();
 
     for (SlotNumber curSlot = start.getSlot().increment();
-        curSlot.less(UInt64s.min(start.getSlot().plus(limit), getMaxSlot()));
+        curSlot.lessEqual(UInt64s.min(start.getSlot().plus(limit), getMaxSlot()));
         curSlot = curSlot.increment()) {
       getSlotBlocks(curSlot).stream()
           .map(this::get)
