@@ -1,4 +1,7 @@
 dependencies {
+  implementation project(':core')
+  implementation project(':types')
+
   implementation 'commons-beanutils:commons-beanutils'
   implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
   implementation 'com.fasterxml.jackson.core:jackson-databind'

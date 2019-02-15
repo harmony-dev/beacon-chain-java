@@ -5,7 +5,7 @@ import org.ethereum.beacon.emulator.config.data.Config;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class MainConfig implements Config {
-  private final int version = 1;
+  private Integer version;
   private Configuration config;
   private Plan plan;
 
@@ -31,6 +31,6 @@ public class MainConfig implements Config {
   }
 
   public void setVersion(int version) {
-    assert version == this.version;
+    this.version = version;
   }
 }

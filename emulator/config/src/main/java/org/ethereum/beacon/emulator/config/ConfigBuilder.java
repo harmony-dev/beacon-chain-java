@@ -3,7 +3,6 @@ package org.ethereum.beacon.emulator.config;
 import org.apache.commons.beanutils.BeanUtilsBean;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.ethereum.beacon.emulator.config.data.Config;
-import org.ethereum.beacon.emulator.config.data.v1.MainConfig;
 import org.javatuples.Pair;
 
 import java.io.File;
@@ -13,20 +12,23 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class ConfigBuilder {
+public class ConfigBuilder<T extends Config> {  // TODO: doesn't work for several versions, rework approach!!!!
   private List<ConfigFile> configs = new ArrayList<>();
   private List<Pair<String, String>> pathValueOverrides = new ArrayList<>();
   private Map<Type, ConfigReader> configReaders = new HashMap<>();
 
-  public ConfigBuilder() {
+  public ConfigBuilder(Class<T> type) {
     Map<Integer, Class<? extends Config>> handlers = new HashMap<>();
-    handlers.put(1, MainConfig.class);
+    if (!Config.class.isAssignableFrom(type)) {
+      throw new RuntimeException(String.format("Config builder should be parameterized with some Config interface implementation but parameterized with %s", type));
+    }
+    handlers.put(1, type);
     configReaders.put(Type.YAML, new YamlReader(handlers));
     configReaders.put(Type.ASIS, new AsIsReader());
   }
 
   /**
-   * From <a href="https://stackoverflow.com/a/24866702">https://stackoverflow.com/a/24866702</a>
+   * "copyProperties" method from <a href="https://stackoverflow.com/a/24866702">https://stackoverflow.com/a/24866702</a>
    *
    * <p>Copies all properties from sources to destination, does not copy null values and any nested
    * objects will attempted to be either cloned or copied into the existing object. This is
@@ -148,7 +150,7 @@ public class ConfigBuilder {
     return this;
   }
 
-  public Config build() {
+  public T build() {
     if (configs.isEmpty()) {
       throw new RuntimeException("There should be at least one configuration provided");
     }
@@ -189,7 +191,7 @@ public class ConfigBuilder {
       }
     }
 
-    return firstConfig;
+    return (T) firstConfig;
   }
 
   public enum Type {
