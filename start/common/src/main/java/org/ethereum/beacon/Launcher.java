@@ -27,6 +27,7 @@ import org.ethereum.beacon.validator.BeaconChainProposer;
 import org.ethereum.beacon.validator.BeaconChainValidator;
 import org.ethereum.beacon.validator.attester.BeaconChainAttesterImpl;
 import org.ethereum.beacon.validator.proposer.BeaconChainProposerImpl;
+import org.ethereum.beacon.wire.WireApi;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 

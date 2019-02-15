@@ -2,7 +2,6 @@ package org.ethereum.beacon;
 
 import java.time.Duration;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -19,6 +18,8 @@ import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.pow.DepositContract.ChainStart;
 import org.ethereum.beacon.schedulers.ControlledSchedulers;
 import org.ethereum.beacon.schedulers.Schedulers;
+import org.ethereum.beacon.wire.LocalWireHub;
+import org.ethereum.beacon.wire.WireApi;
 import org.javatuples.Pair;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;

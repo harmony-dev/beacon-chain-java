@@ -1,4 +1,4 @@
-package org.ethereum.beacon;
+package org.ethereum.beacon.wire;
 
 import java.util.Date;
 import java.util.List;
