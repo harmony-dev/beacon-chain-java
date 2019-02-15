@@ -1,0 +1,7 @@
+dependencies {
+  implementation 'commons-beanutils:commons-beanutils'
+  implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
+  implementation 'com.fasterxml.jackson.core:jackson-databind'
+
+  testImplementation 'org.mockito:mockito-core'
+}
