@@ -7,13 +7,11 @@ import org.ethereum.beacon.emulator.config.data.v1.MainConfig;
 import org.ethereum.beacon.emulator.config.data.v1.action.ActionEmulate;
 import org.ethereum.beacon.emulator.config.data.v1.chainspec.ChainSpecData;
 import org.junit.Test;
-import sun.applet.Main;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 import java.io.File;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -21,17 +19,16 @@ import static org.junit.Assert.fail;
 public class ConfigReaderTest {
   @Test
   public void test1() {
-    ConfigBuilder<MainConfig> configBuilder = new ConfigBuilder<MainConfig>(MainConfig.class);
+    ConfigBuilder configBuilder = new ConfigBuilder(MainConfig.class);
     File testYamlConfig = new File(getClass().getClassLoader().getResource("config.yml").getFile());
 
     configBuilder.addYamlConfig(testYamlConfig);
-    MainConfig unmodified = configBuilder.build();
+    MainConfig unmodified = (MainConfig) configBuilder.build();
     assertEquals(1, unmodified.getVersion());
     assertEquals("file://db", unmodified.getConfig().getDb());
     assertEquals("file://chainSpec.json", unmodified.getConfig().getChainSpec());
     assertEquals(3, unmodified.getPlan().getValidator().size());
-    assertEquals(
-        4, ((ActionEmulate) unmodified.getPlan().getValidator().get(2)).getCount());
+    assertEquals(4, ((ActionEmulate) unmodified.getPlan().getValidator().get(2)).getCount());
 
     MainConfig config2 = new MainConfig();
     Configuration configPart = new Configuration();
@@ -39,7 +36,7 @@ public class ConfigReaderTest {
     config2.setConfig(configPart);
     config2.setVersion(1);
     configBuilder.addConfig(config2);
-    MainConfig merged = configBuilder.build();
+    MainConfig merged = (MainConfig) configBuilder.build();
     assertEquals("file://second/path", merged.getConfig().getDb());
     assertEquals("file://chainSpec.json", merged.getConfig().getChainSpec());
     assertEquals(3, merged.getPlan().getValidator().size());
@@ -47,7 +44,7 @@ public class ConfigReaderTest {
 
     configBuilder.addConfigOverride("config.db", "file://test-db");
     configBuilder.addConfigOverride("config.validator.contract.handler", "unknown");
-    MainConfig overrided = configBuilder.build();
+    MainConfig overrided = (MainConfig) configBuilder.build();
     assertEquals("file://test-db", overrided.getConfig().getDb());
     assertEquals("file://chainSpec.json", overrided.getConfig().getChainSpec());
     assertEquals(3, overrided.getPlan().getValidator().size());
@@ -56,15 +53,19 @@ public class ConfigReaderTest {
 
   @Test
   public void testUnsupportedVersion() {
-    ConfigBuilder<MainConfig> configBuilder = new ConfigBuilder<MainConfig>(MainConfig.class);
+    ConfigBuilder configBuilder = new ConfigBuilder(MainConfig.class);
     File testYamlConfig = new File(getClass().getClassLoader().getResource("config.yml").getFile());
 
     configBuilder.addYamlConfig(testYamlConfig);
-    MainConfig unmodified = configBuilder.build();
+    MainConfig unmodified = (MainConfig) configBuilder.build();
     assertEquals(1, unmodified.getVersion());
 
-    MainConfig config2 = new MainConfig();
-    config2.setVersion(2);
+    MainConfig config2 = new MainConfig(){
+      @Override
+      public int getVersion() {
+        return 2;
+      }
+    };
     configBuilder.addConfig(config2);
     try {
       Config failed = configBuilder.build();
@@ -72,16 +73,17 @@ public class ConfigReaderTest {
       assertTrue(e.getMessage().contains("same version"));
       return;
     }
-    fail(); //XXX: should not reach this code
+    fail(); // XXX: should not reach this code
   }
 
   @Test
   public void testChainSpec() {
-    ConfigBuilder<ChainSpecData> configBuilder = new ConfigBuilder<ChainSpecData>(ChainSpecData.class);
-    File testYamlConfig = new File(getClass().getClassLoader().getResource("chainSpec.yml").getFile());
+    ConfigBuilder configBuilder = new ConfigBuilder(ChainSpecData.class);
+    File testYamlConfig =
+        new File(getClass().getClassLoader().getResource("chainSpec.yml").getFile());
 
     configBuilder.addYamlConfig(testYamlConfig);
-    ChainSpecData unmodified = configBuilder.build();
+    ChainSpecData unmodified = (ChainSpecData) configBuilder.build();
     assertEquals(1, unmodified.getVersion());
     ChainSpec chainSpec = unmodified.build();
 
@@ -92,7 +94,7 @@ public class ConfigReaderTest {
     assertEquals(chainSpecDefault.getSlotDuration(), chainSpec.getSlotDuration());
 
     configBuilder.addConfigOverride("timeParameters.SLOT_DURATION", "10");
-    ChainSpecData overriden = configBuilder.build();
+    ChainSpecData overriden = (ChainSpecData) configBuilder.build();
     ChainSpec chainSpec2 = overriden.build();
     assertNotEquals(chainSpecDefault.getSlotDuration(), chainSpec2.getSlotDuration());
     assertEquals(UInt64.valueOf(10), chainSpec2.getSlotDuration());

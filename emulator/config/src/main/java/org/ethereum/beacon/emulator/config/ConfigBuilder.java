@@ -12,23 +12,35 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class ConfigBuilder<T extends Config> {  // TODO: doesn't work for several versions, rework approach!!!!
+public class ConfigBuilder {
   private List<ConfigFile> configs = new ArrayList<>();
   private List<Pair<String, String>> pathValueOverrides = new ArrayList<>();
   private Map<Type, ConfigReader> configReaders = new HashMap<>();
 
-  public ConfigBuilder(Class<T> type) {
+  public ConfigBuilder(Class... types) {
     Map<Integer, Class<? extends Config>> handlers = new HashMap<>();
-    if (!Config.class.isAssignableFrom(type)) {
-      throw new RuntimeException(String.format("Config builder should be parameterized with some Config interface implementation but parameterized with %s", type));
+    for (Class<? extends Config> type : types) {
+      if (!Config.class.isAssignableFrom(type)) {
+        throw new RuntimeException(
+            String.format("Config type %s should implement Config interface", type));
+      }
+      try {
+        int version = type.newInstance().getVersion();
+        handlers.put(version, type);
+      } catch (Exception e) {
+        throw new RuntimeException(
+            String.format(
+                "Something goes wrong when initializing ConfigBuilder with type %s", type),
+            e);
+      }
     }
-    handlers.put(1, type);
     configReaders.put(Type.YAML, new YamlReader(handlers));
     configReaders.put(Type.ASIS, new AsIsReader());
   }
 
   /**
-   * "copyProperties" method from <a href="https://stackoverflow.com/a/24866702">https://stackoverflow.com/a/24866702</a>
+   * "copyProperties" method from <a
+   * href="https://stackoverflow.com/a/24866702">https://stackoverflow.com/a/24866702</a>
    *
    * <p>Copies all properties from sources to destination, does not copy null values and any nested
    * objects will attempted to be either cloned or copied into the existing object. This is
@@ -150,7 +162,7 @@ public class ConfigBuilder<T extends Config> {  // TODO: doesn't work for severa
     return this;
   }
 
-  public T build() {
+  public Config build() {
     if (configs.isEmpty()) {
       throw new RuntimeException("There should be at least one configuration provided");
     }
@@ -191,7 +203,7 @@ public class ConfigBuilder<T extends Config> {  // TODO: doesn't work for severa
       }
     }
 
-    return (T) firstConfig;
+    return firstConfig;
   }
 
   public enum Type {

@@ -15,7 +15,7 @@ import tech.pegasys.artemis.util.bytes.Bytes1;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public class ChainSpecData implements Config {
-  private Integer version;
+  private final Integer version;
   private DepositContractParametersData depositContractParameters;
   private HonestValidatorParametersData honestValidatorParameters;
   private InitialValuesData initialValues;
@@ -25,12 +25,16 @@ public class ChainSpecData implements Config {
   private StateListLengthsData stateListLengths;
   private TimeParametersData timeParameters;
 
+  public ChainSpecData() {
+    this.version = 1;
+  }
+
   public int getVersion() {
     return version;
   }
 
   public void setVersion(int version) {
-    this.version = version;
+    assert version == this.version;
   }
 
   public ChainSpec build() {
