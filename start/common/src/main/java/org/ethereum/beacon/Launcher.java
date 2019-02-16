@@ -2,6 +2,8 @@ package org.ethereum.beacon;
 
 import org.ethereum.beacon.chain.DefaultBeaconChain;
 import org.ethereum.beacon.chain.MutableBeaconChain;
+import org.ethereum.beacon.chain.ProposedBlockProcessor;
+import org.ethereum.beacon.chain.ProposedBlockProcessorImpl;
 import org.ethereum.beacon.chain.SlotTicker;
 import org.ethereum.beacon.chain.observer.ObservableStateProcessor;
 import org.ethereum.beacon.chain.observer.ObservableStateProcessorImpl;
@@ -27,6 +29,7 @@ import org.ethereum.beacon.validator.BeaconChainProposer;
 import org.ethereum.beacon.validator.BeaconChainValidator;
 import org.ethereum.beacon.validator.attester.BeaconChainAttesterImpl;
 import org.ethereum.beacon.validator.proposer.BeaconChainProposerImpl;
+import org.ethereum.beacon.wire.WireApi;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -44,13 +47,16 @@ public class Launcher {
   BeaconChainProposer beaconChainProposer;
   BeaconChainAttesterImpl beaconChainAttester;
   BeaconChainValidator beaconChainValidator;
+  BeaconChainStorageFactory storageFactory;
 
   public Launcher(SpecHelpers specHelpers, DepositContract depositContract,
-      KeyPair validatorSig, WireApi wireApi) {
+      KeyPair validatorSig, WireApi wireApi, BeaconChainStorageFactory storageFactory) {
+
     this.specHelpers = specHelpers;
     this.depositContract = depositContract;
     this.validatorSig = validatorSig;
     this.wireApi = wireApi;
+    this.storageFactory = storageFactory;
 
     if (depositContract != null) {
       Mono.from(depositContract.getChainStartMono()).subscribe(this::chainStarted);
@@ -64,7 +70,7 @@ public class Launcher {
     PerEpochTransition perEpochTransition = new PerEpochTransition(specHelpers);
 
     db = new InMemoryDatabase();
-    beaconChainStorage = BeaconChainStorageFactory.get().create(db);
+    beaconChainStorage = storageFactory.create(db);
 
     // TODO
     BeaconBlockVerifier blockVerifier = (block, state) -> VerificationResult.PASSED;
@@ -110,7 +116,13 @@ public class Launcher {
         observableStateProcessor.getObservableStateStream());
     beaconChainValidator.start();
 
-    Flux.from(beaconChainValidator.getProposedBlocksStream()).subscribe(wireApi::sendProposedBlock);
+    ProposedBlockProcessor proposedBlocksProcessor = new ProposedBlockProcessorImpl(
+        beaconChain);
+    Flux.from(beaconChainValidator.getProposedBlocksStream())
+        .subscribe(proposedBlocksProcessor::newBlockProposed);
+    Flux.from(proposedBlocksProcessor.processedBlocksStream())
+        .subscribe(wireApi::sendProposedBlock);
+
     Flux.from(beaconChainValidator.getAttestationsStream()).subscribe(wireApi::sendAttestation);
 
     Flux.from(wireApi.inboundBlocksStream()).subscribe(beaconChain::insert);

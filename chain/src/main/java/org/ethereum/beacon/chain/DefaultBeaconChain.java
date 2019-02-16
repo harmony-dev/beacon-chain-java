@@ -210,7 +210,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
       }
     }
 
-    return perSlotTransition.apply(result);
+    return result;
   }
 
   @Override

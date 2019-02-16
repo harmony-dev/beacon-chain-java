@@ -1,5 +1,7 @@
 package org.ethereum.beacon.core.types;
 
+import javax.annotation.Nullable;
+import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.types.SlotNumber.EpochLength;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.util.uint.UInt64;
@@ -60,5 +62,9 @@ public class EpochNumber extends UInt64 implements
   @Override
   public EpochNumber zeroElement() {
     return ZERO;
+  }
+
+  public String toString(@Nullable ChainSpec spec) {
+    return spec == null ? super.toString() : this.minus(spec.getGenesisEpoch()).toString();
   }
 }

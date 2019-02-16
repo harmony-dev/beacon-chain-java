@@ -1,16 +1,14 @@
 package org.ethereum.beacon.core.operations;
 
 import com.google.common.base.Objects;
+import javax.annotation.Nullable;
 import org.ethereum.beacon.core.BeaconBlockBody;
+import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.EpochNumber;
-import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
-import tech.pegasys.artemis.util.bytes.Bytes96;
-import tech.pegasys.artemis.util.uint.UInt24;
-import tech.pegasys.artemis.util.uint.UInt64;
 
 /**
  * Requests a quit from validator registry.
@@ -23,12 +21,21 @@ import tech.pegasys.artemis.util.uint.UInt64;
 @SSZSerializable
 public class Exit {
 
-  /** Minimum slot for processing exit. */
-  @SSZ private final EpochNumber epoch;
-  /** Index of the exiting validator. */
-  @SSZ private final ValidatorIndex validatorIndex;
-  /** Validator signature. */
-  @SSZ private final BLSSignature signature;
+  /**
+   * Minimum slot for processing exit.
+   */
+  @SSZ
+  private final EpochNumber epoch;
+  /**
+   * Index of the exiting validator.
+   */
+  @SSZ
+  private final ValidatorIndex validatorIndex;
+  /**
+   * Validator signature.
+   */
+  @SSZ
+  private final BLSSignature signature;
 
   public Exit(EpochNumber epoch, ValidatorIndex validatorIndex, BLSSignature signature) {
     this.epoch = epoch;
@@ -50,11 +57,26 @@ public class Exit {
 
   @Override
   public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
+    if (this == o)
+      return true;
+    if (o == null || getClass() != o.getClass())
+      return false;
     Exit exit = (Exit) o;
     return Objects.equal(epoch, exit.epoch)
         && Objects.equal(validatorIndex, exit.validatorIndex)
         && Objects.equal(signature, exit.signature);
+  }
+
+  @Override
+  public String toString() {
+    return toString(null);
+  }
+
+  public String toString(@Nullable ChainSpec spec) {
+    return "Exit["
+        + "epoch=" + epoch.toString(spec)
+        + ", validator=" + validatorIndex
+        + ", sig=" + signature
+        +"]";
   }
 }

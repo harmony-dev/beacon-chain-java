@@ -1,6 +1,8 @@
 package org.ethereum.beacon.core.types;
 
 import java.util.function.Function;
+import javax.annotation.Nullable;
+import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.util.uint.UInt64;
 
@@ -25,6 +27,7 @@ public class ShardNumber extends UInt64 implements
   public ShardNumber plusModulo(long addend, ShardNumber divisor) {
     return plusModulo(UInt64.valueOf(addend), divisor);
   }
+
   public ShardNumber plusModulo(UInt64 addend, ShardNumber divisor) {
     return new ShardNumber(this.plus(addend).modulo(divisor));
   }
@@ -46,5 +49,15 @@ public class ShardNumber extends UInt64 implements
   @Override
   public ShardNumber zeroElement() {
     return ZERO;
+  }
+
+  @Override
+  public String toString() {
+    return toString(null);
+  }
+
+  public String toString(@Nullable ChainSpec spec) {
+    return spec == null ? super.toString() :
+        spec.getBeaconChainShardNumber().equals(this) ? "Beacon" : super.toString();
   }
 }

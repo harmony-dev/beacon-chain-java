@@ -410,4 +410,9 @@ public class BeaconStateImpl implements MutableBeaconState {
     Serializer serializer = Serializer.annotationSerializer();
     return serializer.encode2(this).equals(serializer.encode2(o));
   }
+
+  @Override
+  public String toString() {
+    return toStringShort(null);
+  }
 }

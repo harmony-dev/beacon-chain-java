@@ -102,8 +102,6 @@ public class BeaconChainValidatorTest {
 
     // init was called
     Mockito.verify(validator, Mockito.times(1)).init(currentSlotState.getLatestSlotState());
-    // tasks are never emitted right after the init
-    Mockito.verify(validator, Mockito.never()).runTasks(currentSlotState);
 
     // validatorIndex is set
     Assert.assertEquals(validatorIndex, validator.getValidatorIndex());
@@ -147,13 +145,14 @@ public class BeaconChainValidatorTest {
     // runTasks was called on a new state
     validator.onNewState(updatedState);
     Mockito.verify(validator, Mockito.times(1)).runTasks(updatedState);
+    Mockito.verify(validator, Mockito.times(2)).runTasks(any());
 
     // runTasks was not called for a state belonging to the same slot
     validator.onNewState(sameSlotState);
-    Mockito.verify(validator, Mockito.times(1)).runTasks(any());
+    Mockito.verify(validator, Mockito.times(2)).runTasks(any());
 
     // runTasks was called again when a state for a new slot came
     validator.onNewState(nextSlotState);
-    Mockito.verify(validator, Mockito.times(2)).runTasks(any());
+    Mockito.verify(validator, Mockito.times(3)).runTasks(any());
   }
 }

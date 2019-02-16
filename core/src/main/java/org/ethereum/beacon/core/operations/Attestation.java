@@ -1,10 +1,13 @@
 package org.ethereum.beacon.core.operations;
 
 import com.google.common.base.Objects;
+import javax.annotation.Nullable;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
+import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Bitfield;
+import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 
@@ -65,5 +68,19 @@ public class Attestation {
         && Objects.equal(aggregationBitfield, that.aggregationBitfield)
         && Objects.equal(custodyBitfield, that.custodyBitfield)
         && Objects.equal(aggregateSignature, that.aggregateSignature);
+  }
+
+  @Override
+  public String toString() {
+    return toString(null, null);
+  }
+
+  public String toString(@Nullable ChainSpec spec,@Nullable Time beaconStart) {
+    return "Attestation["
+        + data.toString(spec, beaconStart)
+        + ", aggrBits=" + aggregationBitfield
+        + ", cusodyBits=" + custodyBitfield
+        + ", sig=" + aggregateSignature
+        + "]";
   }
 }

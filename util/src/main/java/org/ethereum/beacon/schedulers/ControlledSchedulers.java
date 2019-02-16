@@ -1,5 +1,6 @@
 package org.ethereum.beacon.schedulers;
 
+import java.time.Duration;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -34,12 +35,27 @@ public class ControlledSchedulers extends Schedulers {
       nextSchedulerToRun.setCurrentTime(currentTime);
     }
     currentTime = newTime;
+    controlledExecutors.forEach(e -> e.setCurrentTime(newTime));
+  }
+
+  public void addTime(Duration duration) {
+    addTime(duration.toMillis());
+  }
+
+  public void addTime(long millis) {
+    setCurrentTime(getCurrentTime() + millis);
+  }
+
+  @Override
+  protected Scheduler createExecutorScheduler(ScheduledExecutorService executorService) {
+    return new ErrorHandlingScheduler(new ExecutorScheduler(executorService), e -> e.printStackTrace());
   }
 
   @Override
   protected ScheduledExecutorService createExecutor(String namePattern, int threads) {
     ControlledExecutorService service = new ControlledExecutorServiceImpl();
     controlledExecutors.add(service);
+    service.setCurrentTime(currentTime);
     return service;
   }
 }

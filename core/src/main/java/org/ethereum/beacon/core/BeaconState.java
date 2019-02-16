@@ -1,5 +1,7 @@
 package org.ethereum.beacon.core;
 
+import javax.annotation.Nullable;
+import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.BeaconStateImpl;
 import org.ethereum.beacon.core.state.CrosslinkRecord;
 import org.ethereum.beacon.core.state.Eth1Data;
@@ -121,4 +123,21 @@ public interface BeaconState {
    */
   MutableBeaconState createMutableCopy();
 
+  default String toStringShort(@Nullable ChainSpec spec) {
+    String ret = "BeaconState["
+        + "@ " + getSlot().toString(spec, getGenesisTime())
+        + ", " + getForkData().toString(spec)
+        + ", validators: " + getValidatorRegistry().size()
+        + " updated at epoch " + getValidatorRegistryUpdateEpoch().toString(spec)
+        + ", just/final epoch: " + getJustifiedEpoch().toString(spec) + "/" + getFinalizedEpoch().toString(spec);
+    if (spec != null) {
+      ret += ", latestBlocks=[...";
+      for (SlotNumber slot : getSlot().minus(2).iterateTo(getSlot().increment())) {
+        Hash32 blockRoot = getLatestBlockRoots().get(slot.modulo(spec.getLatestBlockRootsLength()));
+        ret += ", " + blockRoot.toStringShort();
+      }
+      ret += "]";
+    }
+    return ret;
+  }
 }

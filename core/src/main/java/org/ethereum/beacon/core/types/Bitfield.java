@@ -28,4 +28,21 @@ public class Bitfield extends DelegatingBytesValue {
   public Bitfield and(Bitfield other) {
     return Bitfield.of(BytesValues.and(this, other));
   }
+
+  @Override
+  public String toString() {
+    StringBuilder ret = new StringBuilder("0b");
+    for (int i = 0; i < size(); i++) {
+      ret.append(toBinaryString(get(i)));
+    }
+    return ret.toString();
+  }
+
+  private String toBinaryString(byte b) {
+    StringBuilder ret = new StringBuilder();
+    for (int i = 0; i < 8; i++) {
+      ret.append((b >> (7 - i)) & 1);
+    }
+    return ret.toString();
+  }
 }

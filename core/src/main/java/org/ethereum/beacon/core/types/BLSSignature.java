@@ -17,4 +17,10 @@ public class BLSSignature extends WrappingBytes96 {
   public BLSSignature(Bytes96 value) {
     super(value);
   }
+
+  @Override
+  public String toString() {
+    String s = super.toString();
+    return s.substring(2, 6) + "..." + s.substring(190);
+  }
 }

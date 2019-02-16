@@ -1,4 +1,4 @@
-package org.ethereum.beacon;
+package org.ethereum.beacon.wire;
 
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
