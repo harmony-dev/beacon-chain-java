@@ -66,10 +66,10 @@ public class PendingOperationsState implements PendingOperations {
     Bitfield participants =
         attestations.stream()
             .map(Attestation::getAggregationBitfield)
-            .reduce(Bitfield::and)
+            .reduce(Bitfield::or)
             .get();
     Bitfield custody =
-        attestations.stream().map(Attestation::getCustodyBitfield).reduce(Bitfield::and).get();
+        attestations.stream().map(Attestation::getCustodyBitfield).reduce(Bitfield::or).get();
     BLS381.Signature aggregatedSignature =
         BLS381.Signature.aggregate(
             attestations.stream()
