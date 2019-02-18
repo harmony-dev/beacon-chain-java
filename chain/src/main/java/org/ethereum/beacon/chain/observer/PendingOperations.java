@@ -6,6 +6,7 @@ import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Exit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
+import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import tech.pegasys.artemis.util.uint.UInt64;
 
@@ -26,7 +27,20 @@ public interface PendingOperations {
 
   default String toStringShort() {
     return "PendingOperations["
-        + "attest: " + getAttestations().size()
+        + (getAttestations().isEmpty() ? "" : "attest: " + getAttestations().size())
         + "]";
+  }
+
+  default String toStringMedium(ChainSpec spec) {
+    String ret = "PendingOperations[";
+    if (!getAttestations().isEmpty()) {
+      ret += "attest (slot/shard/beaconBlock): [";
+      for (Attestation att : getAttestations()) {
+        ret += att.toStringShort(spec) + ", ";
+      }
+      ret = ret.substring(0, ret.length() - 2);
+    }
+    ret += "]";
+    return ret;
   }
 }

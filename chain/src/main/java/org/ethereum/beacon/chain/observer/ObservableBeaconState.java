@@ -51,8 +51,7 @@ public class ObservableBeaconState {
     return toString(null);
   }
 
-  public String toString(
-      @Nullable SpecHelpers spec) {
+  public String toString(@Nullable SpecHelpers spec) {
 
     String committee = "";
     if (spec != null) {
@@ -69,7 +68,7 @@ public class ObservableBeaconState {
         + ", latestState: "
         + committee
         + latestSlotState.toStringShort(spec == null ? null : spec.getChainSpec())
-        + ", pendingOps: " + getPendingOperations().toStringShort()
+        + ", pendingOps: " + getPendingOperations().toStringMedium(spec == null ? null : spec.getChainSpec())
         + "]";
   }
 }
