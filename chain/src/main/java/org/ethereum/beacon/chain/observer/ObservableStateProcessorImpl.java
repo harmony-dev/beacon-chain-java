@@ -154,7 +154,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   private synchronized void addValidatorAttestation(BLSPubkey pubKey, Attestation attestation) {
     if (attestationCache.containsKey(pubKey)) {
       Attestation oldAttestation = attestationCache.get(pubKey);
-      if (attestation.getData().getSlot().compareTo(oldAttestation.getData().getSlot()) > 0) {
+      if (attestation.getData().getSlot().greater(oldAttestation.getData().getSlot())) {
         attestationCache.put(pubKey, attestation);
         validatorSlotCache.get(oldAttestation.getData().getSlot()).remove(pubKey);
         addToSlotCache(attestation.getData().getSlot(), pubKey);

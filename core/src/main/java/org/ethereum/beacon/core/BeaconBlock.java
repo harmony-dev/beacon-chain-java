@@ -2,6 +2,7 @@ package org.ethereum.beacon.core;
 
 import com.google.common.base.Objects;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
@@ -155,14 +156,33 @@ public class BeaconBlock {
 
   public String toString(@Nullable ChainSpec spec,@Nullable Time beaconStart,
       @Nullable Function<? super BeaconBlock, Hash32> hasher) {
-    String ret = "Block["
-        + toStringPriv(spec, beaconStart, hasher)
-        + ", atts: " + body.getAttestations().size()
-        + ", depos: " + body.getDeposits().size()
-        + ", exits: " + body.getExits().size()
-        + ", attSlash: " + body.getAttesterSlashings().size()
-        + ", propSlash: " + body.getProposerSlashings().size()
-        + "]";
+    String ret = "Block[" + toStringPriv(spec, beaconStart, hasher);
+    if (!body.getAttestations().isEmpty()) {
+      ret += ", atts: [" + body.getAttestations().stream()
+          .map(a -> a.toStringShort(spec))
+          .collect(Collectors.joining(", ")) + "]";
+    }
+    if (!body.getDeposits().isEmpty()) {
+      ret += ", depos: [" + body.getDeposits().stream()
+          .map(a -> a.toString())
+          .collect(Collectors.joining(", ")) + "]";
+    }
+    if (!body.getExits().isEmpty()) {
+      ret += ", exits: [" + body.getExits().stream()
+          .map(a -> a.toString(spec))
+          .collect(Collectors.joining(", ")) + "]";
+    }
+    if (!body.getAttesterSlashings().isEmpty()) {
+      ret += ", attSlash: [" + body.getAttesterSlashings().stream()
+          .map(a -> a.toString(spec, beaconStart))
+          .collect(Collectors.joining(", ")) + "]";
+    }
+    if (!body.getProposerSlashings().isEmpty()) {
+      ret += ", propSlash: [" + body.getProposerSlashings().stream()
+          .map(a -> a.toString(spec, beaconStart))
+          .collect(Collectors.joining(", ")) + "]";
+    }
+    ret += "]";
 
     return ret;
   }

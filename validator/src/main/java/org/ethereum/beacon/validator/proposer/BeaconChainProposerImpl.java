@@ -209,7 +209,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
     List<Attestation> attestations =
         operations.peekAggregatedAttestations(
             chainSpec.getMaxAttestations(),
-            state.getSlot().plus(chainSpec.getMinAttestationInclusionDelay()));
+            state.getSlot().minus(chainSpec.getMinAttestationInclusionDelay()));
     List<Exit> exits = operations.peekExits(chainSpec.getMaxExits());
 
     Eth1Data latestProcessedDeposit = null; // TODO wait for spec update to include this to state

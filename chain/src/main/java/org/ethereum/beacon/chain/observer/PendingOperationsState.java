@@ -16,8 +16,8 @@ import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Bitfield;
+import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.crypto.BLS381;
-import tech.pegasys.artemis.util.uint.UInt64;
 
 public class PendingOperationsState implements PendingOperations {
 
@@ -48,10 +48,10 @@ public class PendingOperationsState implements PendingOperations {
   }
 
   @Override
-  public List<Attestation> peekAggregatedAttestations(int maxCount, UInt64 maxSlot) {
-    Map<UInt64, List<Attestation>> attestationsBySlot =
+  public List<Attestation> peekAggregatedAttestations(int maxCount, SlotNumber maxSlot) {
+    Map<SlotNumber, List<Attestation>> attestationsBySlot =
         getAttestations().stream()
-            .filter(attestation -> attestation.getData().getSlot().compareTo(maxSlot) <= 0)
+            .filter(attestation -> attestation.getData().getSlot().lessEqual(maxSlot))
             .collect(groupingBy(at -> at.getData().getSlot()));
     return attestationsBySlot.entrySet().stream()
         .sorted(Comparator.comparing(Map.Entry::getKey))

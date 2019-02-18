@@ -98,6 +98,11 @@ public class LocalNetTest {
           public ValidatorIndex getTargetCommitteeSize() {
             return ValidatorIndex.of(1);
           }
+
+          @Override
+          public SlotNumber getMinAttestationInclusionDelay() {
+            return SlotNumber.of(1);
+          }
         };
 
     SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(chainSpec);

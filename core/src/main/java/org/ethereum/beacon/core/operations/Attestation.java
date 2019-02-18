@@ -83,4 +83,10 @@ public class Attestation {
         + ", sig=" + aggregateSignature
         + "]";
   }
+
+  public String toStringShort(@Nullable ChainSpec spec) {
+    return getData().getSlot().toStringNumber(spec) + "/"
+        + getData().getShard().toString(spec) + "/"
+        + getData().getBeaconBlockRoot().toStringShort();
+  }
 }

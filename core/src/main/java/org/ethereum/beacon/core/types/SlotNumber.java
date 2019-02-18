@@ -110,6 +110,11 @@ public class SlotNumber extends UInt64 implements
     return "#" + num + (extraInfo.isEmpty() ? "" : " (" + extraInfo + ")");
   }
 
+  public String toStringNumber(@Nullable ChainSpec spec) {
+    return "" + (spec == null ? getValue() : this.minus(spec.getGenesisSlot()).getValue());
+  }
+
+
   @Override
   public String toString() {
     return toString(null, null);
