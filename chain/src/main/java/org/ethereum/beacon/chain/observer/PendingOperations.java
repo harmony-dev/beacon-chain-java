@@ -8,7 +8,7 @@ import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.types.BLSPubkey;
-import tech.pegasys.artemis.util.uint.UInt64;
+import org.ethereum.beacon.core.types.SlotNumber;
 
 /** A pending state interface. */
 public interface PendingOperations {
@@ -21,7 +21,7 @@ public interface PendingOperations {
 
   List<AttesterSlashing> peekAttesterSlashings(int maxCount);
 
-  List<Attestation> peekAggregatedAttestations(int maxCount, UInt64 maxSlot);
+  List<Attestation> peekAggregatedAttestations(int maxCount, SlotNumber maxSlot);
 
   List<Exit> peekExits(int maxCount);
 
