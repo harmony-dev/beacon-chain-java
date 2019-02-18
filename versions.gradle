@@ -28,5 +28,7 @@ dependencyManagement {
     dependency "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${jacksonVersion}"
     dependency "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
     dependency "commons-beanutils:commons-beanutils:1.9.3"
+
+    dependency "info.picocli:picocli:3.9.4"
   }
 }

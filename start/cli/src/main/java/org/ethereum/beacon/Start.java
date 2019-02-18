@@ -1,10 +1,28 @@
 package org.ethereum.beacon;
 
-public class Start {
+import picocli.CommandLine;
+
+import java.io.File;
+import java.util.concurrent.Callable;
+
+@CommandLine.Command(
+    description = "Eth2.0 beacon chain client",
+    name = "beacon-chain",
+    mixinStandardHelpOptions = true,
+    version = "beacon-chain 0.1b")
+public class Start implements Callable<Void> {
+
+  @CommandLine.Parameters(index = "0", description = "YAML config.")
+  private File file;
+
   public static void main(String[] args) {
-    System.out.println("Starting Beacon chain java");
-    for (int i = 0; i < args.length; ++i) {
-      System.out.println("Arg #" + i + ": " + args[i]);
-    }
+    CommandLine.call(new Start(), args);
+  }
+
+  @Override
+  public Void call() throws Exception {
+    // TODO: your business logic goes here...
+    System.out.println("Starting...");
+    return null;
   }
 }

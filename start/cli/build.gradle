@@ -5,6 +5,7 @@ dependencies {
   implementation project(':start:common')
   implementation project(':emulator:config')
 
+  implementation 'info.picocli:picocli'
   implementation 'com.google.guava:guava'
   implementation 'io.projectreactor:reactor-core'
 
