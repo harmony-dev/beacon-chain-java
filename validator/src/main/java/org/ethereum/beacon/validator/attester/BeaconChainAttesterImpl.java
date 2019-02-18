@@ -146,7 +146,7 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
   */
   private BytesValue getParticipationBitfield(
       ValidatorIndex index, List<ValidatorIndex> committee) {
-    int indexIntoCommittee = Collections.binarySearch(committee, index);
+    int indexIntoCommittee = committee.indexOf(index);
     assert indexIntoCommittee >= 0;
 
     int aggregationBitfieldSize = (committee.size() + 7) / 8;
