@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import net.consensys.cava.bytes.Bytes;
+import net.consensys.cava.bytes.MutableBytes;
 import net.consensys.cava.ssz.BytesSSZReaderProxy;
 import net.consensys.cava.ssz.SSZ;
 import net.consensys.cava.ssz.SSZException;
@@ -21,6 +22,7 @@ import org.ethereum.beacon.ssz.type.SubclassCodec;
 import org.javatuples.Pair;
 import org.javatuples.Triplet;
 import tech.pegasys.artemis.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.bytes.MutableBytesValue;
 
 /**
  * Implementation of {@link SSZCodecResolver} which implements SSZ Hash function
@@ -248,9 +250,11 @@ public class SSZCodecHasher implements SSZCodecResolver {
       int itemsPerChunk = SSZ_CHUNK_SIZE / lst[0].size();
       // Build a list of chunks based on the number of items in the chunk
       for (int i = 0; i < lst.length; i += itemsPerChunk) {
-        Bytes[] sliced = new Bytes[itemsPerChunk];
-        System.arraycopy(lst, i, sliced, 0, itemsPerChunk);
-        chunkz.add(Bytes.concatenate(sliced));
+        MutableBytes chunk = MutableBytes.create(SSZ_CHUNK_SIZE);
+        for(int j = 0; j < Math.min(lst.length - i, itemsPerChunk); j++) {
+          lst[i + j].copyTo(chunk, j * lst[0].size());
+        }
+        chunkz.add(chunk);
       }
     } else {
       // Leave large items alone
