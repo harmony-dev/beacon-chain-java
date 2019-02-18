@@ -4,6 +4,7 @@ import org.ethereum.beacon.emulator.config.data.v1.action.Action;
 
 import java.util.List;
 
+/** Configuration of application tasks */
 public class Plan {
   private List<Action> sync;
   private List<Action> validator;

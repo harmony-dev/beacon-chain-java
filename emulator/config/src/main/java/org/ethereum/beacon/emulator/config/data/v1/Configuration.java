@@ -1,5 +1,6 @@
 package org.ethereum.beacon.emulator.config.data.v1;
 
+/** Beacon chain configuration */
 public class Configuration {
   private String chainSpec;
   private String db;

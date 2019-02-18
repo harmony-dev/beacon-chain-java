@@ -2,6 +2,7 @@ package org.ethereum.beacon.emulator.config.data.v1;
 
 import java.util.Map;
 
+/** Validator settings */
 public class Validator {
   private Map<String, String> contract;
   private Signer signer;

@@ -12,11 +12,22 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Builds config using several kind of users input: files and config path-value pairs All files are
+ * applied in the same order as added, after that path-value pairs are applied in the order of
+ * addition.
+ *
+ * <p>Config should be of {@link Config} kind
+ */
 public class ConfigBuilder {
   private List<ConfigFile> configs = new ArrayList<>();
   private List<Pair<String, String>> pathValueOverrides = new ArrayList<>();
   private Map<Type, ConfigReader> configReaders = new HashMap<>();
 
+  /**
+   * Creates builder
+   * @param types supported config types
+   */
   public ConfigBuilder(Class... types) {
     Map<Integer, Class<? extends Config>> handlers = new HashMap<>();
     for (Class<? extends Config> type : types) {
@@ -137,31 +148,51 @@ public class ConfigBuilder {
     return dest;
   }
 
+  /** Adds Yaml config as source of configuration */
   public ConfigBuilder addYamlConfig(File file) {
     configs.add(new ConfigFile(file, Type.YAML));
     return this;
   }
 
+  /** Adds alread created Config as source of configuration */
   public ConfigBuilder addConfig(Config config) {
     configs.add(new ConfigFile(config, Type.ASIS));
     return this;
   }
 
+  /**
+   * Adds path-value pair which overrides configuration
+   * @param path    Configuration path like "config.db.path"
+   * @param value   Configuraiton value, say "/home/mypath/db/"
+   * @return  current builder instance
+   */
   public ConfigBuilder addConfigOverride(String path, String value) {
     pathValueOverrides.add(Pair.with(path, value));
     return this;
   }
 
+  /**
+   * Same as {@link #addConfigOverride(String, String)} but accepts Map. So order of map is
+   * non-existent, but all pairs from this map will be applied after those changes that were already
+   * added to the builder.
+   */
   public ConfigBuilder addConfigOverrides(Map<String, String> pathValues) {
     pathValues.forEach((key, value) -> pathValueOverrides.add(Pair.with(key, value)));
     return this;
   }
 
+  /** Same as {@link #addConfigOverride(String, String)} but accepts List. */
   public ConfigBuilder addConfigOverrides(List<Pair<String, String>> pathValues) {
     pathValueOverrides.addAll(pathValues);
     return this;
   }
 
+  /**
+   * Creates config from all files and pathValue overrides already added. Doesn't touch input, so
+   * could be reused after new additions.
+   *
+   * @return built config
+   */
   public Config build() {
     if (configs.isEmpty()) {
       throw new RuntimeException("There should be at least one configuration provided");

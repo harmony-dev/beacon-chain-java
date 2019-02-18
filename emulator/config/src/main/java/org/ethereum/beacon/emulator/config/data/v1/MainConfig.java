@@ -3,6 +3,7 @@ package org.ethereum.beacon.emulator.config.data.v1;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.ethereum.beacon.emulator.config.data.Config;
 
+/** Main application configuration */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class MainConfig implements Config {
   private final Integer version;

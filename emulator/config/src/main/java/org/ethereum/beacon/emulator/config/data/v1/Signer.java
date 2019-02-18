@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Map;
 
+/** Eth2.0 Signer settings */
 public class Signer {
   private SignerImplementation implementation;
 

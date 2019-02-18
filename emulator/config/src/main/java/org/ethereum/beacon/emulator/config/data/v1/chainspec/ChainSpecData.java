@@ -14,6 +14,7 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes1;
 import tech.pegasys.artemis.util.uint.UInt64;
 
+/** ChainSpec settings object, creates {@link ChainSpec} from user data */
 public class ChainSpecData implements Config {
   private final Integer version;
   private DepositContractParametersData depositContractParameters;
