@@ -16,7 +16,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-public class ConfigReaderTest {
+public class ConfigBuilderTest {
   @Test
   public void test1() {
     ConfigBuilder configBuilder = new ConfigBuilder(MainConfig.class);
@@ -60,12 +60,13 @@ public class ConfigReaderTest {
     MainConfig unmodified = (MainConfig) configBuilder.build();
     assertEquals(1, unmodified.getVersion());
 
-    MainConfig config2 = new MainConfig(){
-      @Override
-      public int getVersion() {
-        return 2;
-      }
-    };
+    MainConfig config2 =
+        new MainConfig() {
+          @Override
+          public int getVersion() {
+            return 2;
+          }
+        };
     configBuilder.addConfig(config2);
     try {
       Config failed = configBuilder.build();

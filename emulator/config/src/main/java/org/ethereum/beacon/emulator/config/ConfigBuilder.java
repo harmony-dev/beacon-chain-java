@@ -1,11 +1,22 @@
 package org.ethereum.beacon.emulator.config;
 
+import com.google.common.base.Charsets;
+import com.google.common.io.CharStreams;
 import org.apache.commons.beanutils.BeanUtilsBean;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.ethereum.beacon.emulator.config.data.Config;
+import org.ethereum.beacon.emulator.config.type.AsIsSource;
+import org.ethereum.beacon.emulator.config.type.ConfigSource;
+import org.ethereum.beacon.emulator.config.type.YamlSource;
 import org.javatuples.Pair;
 
+import java.io.DataInputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -20,16 +31,17 @@ import java.util.Map;
  * <p>Config should be of {@link Config} kind
  */
 public class ConfigBuilder {
-  private List<ConfigFile> configs = new ArrayList<>();
+  private final Map<Integer, Class<? extends Config>> supportedConfigs;
+  private List<ConfigSource> configs = new ArrayList<>();
   private List<Pair<String, String>> pathValueOverrides = new ArrayList<>();
-  private Map<Type, ConfigReader> configReaders = new HashMap<>();
 
   /**
    * Creates builder
+   *
    * @param types supported config types
    */
   public ConfigBuilder(Class... types) {
-    Map<Integer, Class<? extends Config>> handlers = new HashMap<>();
+    Map<Integer, Class<? extends Config>> configs = new HashMap<>();
     for (Class<? extends Config> type : types) {
       if (!Config.class.isAssignableFrom(type)) {
         throw new RuntimeException(
@@ -37,7 +49,7 @@ public class ConfigBuilder {
       }
       try {
         int version = type.newInstance().getVersion();
-        handlers.put(version, type);
+        configs.put(version, type);
       } catch (Exception e) {
         throw new RuntimeException(
             String.format(
@@ -45,8 +57,7 @@ public class ConfigBuilder {
             e);
       }
     }
-    configReaders.put(Type.YAML, new YamlReader(handlers));
-    configReaders.put(Type.ASIS, new AsIsReader());
+    this.supportedConfigs = configs;
   }
 
   /**
@@ -148,23 +159,47 @@ public class ConfigBuilder {
     return dest;
   }
 
-  /** Adds Yaml config as source of configuration */
+  /**
+   * Adds Yaml config as source of configuration
+   *
+   * <p>NOTE: not compatible with resource files in jar, use {@link #addYamlConfig(InputStream)}
+   * instead
+   */
   public ConfigBuilder addYamlConfig(File file) {
-    configs.add(new ConfigFile(file, Type.YAML));
+    InputStream inputStream = null;
+    try {
+      inputStream = new DataInputStream(new FileInputStream(file));
+    } catch (FileNotFoundException e) {
+      throw new RuntimeException(String.format("Yaml file %s was not found", file.getName()), e);
+    }
+    return addYamlConfig(inputStream);
+  }
+
+  /** Adds input stream with yaml config to list of config sources with guaranteed order */
+  public ConfigBuilder addYamlConfig(InputStream inputStream) {
+    String content;
+    try (InputStreamReader streamReader = new InputStreamReader(inputStream, Charsets.UTF_8)) {
+      content = CharStreams.toString(streamReader);
+    } catch (IOException e) {
+      throw new RuntimeException(
+          String.format("Error reading contents of stream %s", inputStream), e);
+    }
+    configs.add(new YamlSource(content));
     return this;
   }
 
   /** Adds alread created Config as source of configuration */
   public ConfigBuilder addConfig(Config config) {
-    configs.add(new ConfigFile(config, Type.ASIS));
+    configs.add(new AsIsSource(config));
     return this;
   }
 
   /**
    * Adds path-value pair which overrides configuration
-   * @param path    Configuration path like "config.db.path"
-   * @param value   Configuraiton value, say "/home/mypath/db/"
-   * @return  current builder instance
+   *
+   * @param path Configuration path like "config.db.path"
+   * @param value Configuraiton value, say "/home/mypath/db/"
+   * @return current builder instance
    */
   public ConfigBuilder addConfigOverride(String path, String value) {
     pathValueOverrides.add(Pair.with(path, value));
@@ -199,25 +234,25 @@ public class ConfigBuilder {
     }
 
     // Handling config files
-    ConfigFile firstConfigFile = configs.get(0);
-    Config firstConfig = configReaders.get(firstConfigFile.type).readConfig(firstConfigFile.obj);
+    ConfigSource firstConfigSource = configs.get(0);
+    Config firstConfig = getConfigSupplier(firstConfigSource).getConfig();
     int version = firstConfig.getVersion();
 
     for (int i = 1; i < configs.size(); ++i) {
-      ConfigFile nextConfigFile = configs.get(i);
-      Config nextConfig = configReaders.get(nextConfigFile.type).readConfig(nextConfigFile.obj);
+      ConfigSource nextConfigSource = configs.get(i);
+      Config nextConfig = getConfigSupplier(nextConfigSource).getConfig();
       if (nextConfig.getVersion() != version) {
         throw new RuntimeException(
             String.format(
                 "All configs should have the same version. First config has %s version, "
                     + "current config %s has version %s.",
-                version, nextConfigFile.obj, nextConfig.getVersion()));
+                version, nextConfigSource, nextConfig.getVersion()));
       }
       try {
         firstConfig = copyProperties(firstConfig, nextConfig);
       } catch (Exception ex) {
         throw new RuntimeException(
-            String.format("Failed to merge config %s into main config", nextConfigFile.obj), ex);
+            String.format("Failed to merge config %s into main config", nextConfigSource), ex);
       }
     }
 
@@ -237,18 +272,24 @@ public class ConfigBuilder {
     return firstConfig;
   }
 
-  public enum Type {
-    ASIS,
-    YAML
-  }
+  private ConfigSupplier getConfigSupplier(ConfigSource source) {
+    switch (source.getType()) {
+      case ASIS:
+        {
+          AsIsSource asIsSource = (AsIsSource) source;
+          return new AsIsSupplier(asIsSource.getConfig());
+        }
+      case YAML:
+        {
+          YamlSource yamlSource = (YamlSource) source;
 
-  class ConfigFile {
-    final Object obj;
-    final Type type;
-
-    public ConfigFile(Object obj, Type type) {
-      this.obj = obj;
-      this.type = type;
+          return new YamlReader(yamlSource.getData(), supportedConfigs);
+        }
+      default:
+        {
+          throw new RuntimeException(
+              String.format("No handlers for config source of type %s found", source.getType()));
+        }
     }
   }
 }

@@ -5,6 +5,7 @@ dependencies {
   implementation 'commons-beanutils:commons-beanutils'
   implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
   implementation 'com.fasterxml.jackson.core:jackson-databind'
+  implementation 'com.google.guava:guava'
 
   testImplementation 'org.mockito:mockito-core'
 }
