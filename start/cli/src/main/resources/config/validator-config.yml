@@ -1,0 +1,12 @@
+plan:
+  validator:
+    - action: deposit
+      creator: ethereumj
+      sender: ethereumj
+      gasLimit: 2000000
+      eth1From: 0x0000000000000000000000000000000000000000
+      eth1PrivKey: 0x0000000000000000000000000000000000000000000000000000000000000000
+      withdrawalCredentials: 0x0000000000000000000000000000000000000000
+      amount: 32
+
+    - action: run

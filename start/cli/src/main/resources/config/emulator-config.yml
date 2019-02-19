@@ -1,0 +1,4 @@
+plan:
+  validator:
+    - action: emulate
+      count: 4

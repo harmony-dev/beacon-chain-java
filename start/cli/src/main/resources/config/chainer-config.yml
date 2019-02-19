@@ -1,0 +1,3 @@
+plan:
+  sync:
+    - action: run
