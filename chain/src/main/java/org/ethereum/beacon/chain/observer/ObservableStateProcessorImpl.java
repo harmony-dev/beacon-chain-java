@@ -4,8 +4,10 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -214,10 +216,12 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
 
   /** Purges all entries for slot and before */
   private synchronized void purgeAttestations(UInt64 slot) {
-    for (Map.Entry<UInt64, Set<BLSPubkey>> entry : validatorSlotCache.entrySet()) {
+    Iterator<Entry<UInt64, Set<BLSPubkey>>> entryIterator = validatorSlotCache.entrySet().iterator();
+    while (entryIterator.hasNext()) {
+      Entry<UInt64, Set<BLSPubkey>> entry = entryIterator.next();
       if (entry.getKey().compareTo(slot) <= 0) {
         entry.getValue().forEach(attestationCache::remove);
-        validatorSlotCache.remove(entry.getKey());
+        entryIterator.remove();
       }
     }
   }

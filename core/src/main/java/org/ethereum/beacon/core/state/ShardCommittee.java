@@ -26,4 +26,9 @@ public class ShardCommittee {
   public ShardNumber getShard() {
     return shard;
   }
+
+  @Override
+  public String toString() {
+    return "ShardCommittee[" + shard + ": " + committee + "]";
+  }
 }

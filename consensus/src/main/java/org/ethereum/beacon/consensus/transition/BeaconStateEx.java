@@ -33,12 +33,11 @@ public class BeaconStateEx {
 
   @Override
   public String toString() {
-    return toString(null, null);
+    return toString(null);
   }
 
   public String toString(
-      @Nullable ChainSpec spec,
-      @Nullable Time beaconStart) {
+      @Nullable ChainSpec spec) {
     return "BeaconStateEx[latestBlock=" + latestChainBlock.toStringShort()
         + ", " + canonicalState.toStringShort(spec);
   }
