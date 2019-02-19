@@ -17,6 +17,7 @@ import org.ethereum.beacon.consensus.transition.PerSlotTransition;
 import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
 import org.ethereum.beacon.consensus.verifier.BeaconStateVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
+import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.crypto.BLS381;
@@ -30,6 +31,7 @@ import org.ethereum.beacon.validator.BeaconChainValidator;
 import org.ethereum.beacon.validator.attester.BeaconChainAttesterImpl;
 import org.ethereum.beacon.validator.proposer.BeaconChainProposerImpl;
 import org.ethereum.beacon.wire.WireApi;
+import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -91,10 +93,13 @@ public class Launcher {
     slotTicker = new SlotTicker(specHelpers, beaconChain.getRecentlyProcessed().getState());
     slotTicker.start();
 
+    DirectProcessor<Attestation> allAttestations = DirectProcessor.create();
+    wireApi.inboundAttestationsStream().subscribe(allAttestations);
+
     observableStateProcessor = new ObservableStateProcessorImpl(
         beaconChainStorage,
         slotTicker.getTickerStream(),
-        wireApi.inboundAttestationsStream(),
+        allAttestations,
         beaconChain.getBlockStatesStream(),
         specHelpers,
         perSlotTransition,
@@ -124,6 +129,7 @@ public class Launcher {
         .subscribe(wireApi::sendProposedBlock);
 
     Flux.from(beaconChainValidator.getAttestationsStream()).subscribe(wireApi::sendAttestation);
+    Flux.from(beaconChainValidator.getAttestationsStream()).subscribe(allAttestations);
 
     Flux.from(wireApi.inboundBlocksStream()).subscribe(beaconChain::insert);
   }
