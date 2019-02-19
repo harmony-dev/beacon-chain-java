@@ -1386,7 +1386,7 @@ public class SpecHelpers {
 
   public SlotNumber get_current_slot(BeaconState state) {
     Millis currentTime = Millis.of(Schedulers.get().getCurrentTime());
-    assert state.getGenesisTime().less(currentTime.getSeconds());
+    assertTrue(state.getGenesisTime().lessEqual(currentTime.getSeconds()));
     Time sinceGenesis = currentTime.getSeconds().minus(state.getGenesisTime());
     return SlotNumber.castFrom(sinceGenesis.dividedBy(spec.getSlotDuration()))
         .plus(getChainSpec().getGenesisSlot());

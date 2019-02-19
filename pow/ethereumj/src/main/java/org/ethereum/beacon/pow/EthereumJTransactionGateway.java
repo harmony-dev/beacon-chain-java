@@ -25,28 +25,36 @@ public class EthereumJTransactionGateway implements TransactionGateway {
   @Override
   public CompletableFuture<TxStatus> send(BytesValue signedTransaction) {
     CompletableFuture<TxStatus> result = new CompletableFuture<>();
-    if (!(isReady())) {
+    executeOnSyncDone(() -> {
+      Future txFuture =
+          ethereum.submitTransaction(new Transaction(signedTransaction.getArrayUnsafe()));
+      try {
+        if (txFuture.get() == null) {
+          result.complete(TxStatus.ERROR);
+        } else {
+          result.complete(TxStatus.SUCCESS);
+        }
+      } catch (InterruptedException | ExecutionException e) {
+        result.complete(TxStatus.ERROR);
+      }
+    });
+
+    return result;
+  }
+
+  private void executeOnSyncDone(Runnable runnable) {
+    if (isReady()) {
+      runnable.run();
+    } else {
       ethereum.addListener(
           new EthereumListenerAdapter() {
             @Override
             public void onSyncDone(SyncState state) {
-              if (isReady()) {
-                Future txFuture =
-                    ethereum.submitTransaction(new Transaction(signedTransaction.getArrayUnsafe()));
-                try {
-                  if (txFuture.get() == null) {
-                    result.complete(TxStatus.ERROR);
-                  } else {
-                    result.complete(TxStatus.SUCCESS);
-                  }
-                } catch (InterruptedException | ExecutionException e) {
-                  result.complete(TxStatus.ERROR);
-                }
+              if (state == SyncState.COMPLETE) {
+                runnable.run();
               }
             }
           });
     }
-
-    return result;
   }
 }
