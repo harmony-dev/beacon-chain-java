@@ -29,6 +29,9 @@ public class ReusableOptions {
           "YAML chain specification file.\nFor all specifications that are not set, default values are used.")
   File[] chainspecs;
 
+  @CommandLine.Option(names = "-v")
+  boolean verbose;
+
   List<Pair<String, Object>> configPathValues = new ArrayList<>();
   List<Pair<String, Object>> chainSpecPathValues = new ArrayList<>();
 
@@ -74,8 +77,12 @@ public class ReusableOptions {
       System.out.println("If executed with `start` command, will use following options.");
       System.out.println("Main config:");
       System.out.println(new YamlPrinter(mainConfig).getString());
-      System.out.println("Chain specifications:");
-      System.out.println(new YamlPrinter(chainSpecData).getString());
+      if (verbose) {
+        System.out.println("Chain specifications:");
+        System.out.println(new YamlPrinter(chainSpecData).getString());
+      } else {
+        System.out.println("To see chain specifications use verbose `-v` option.");
+      }
     }
 
     return Pair.with(mainConfig, chainSpecData);
