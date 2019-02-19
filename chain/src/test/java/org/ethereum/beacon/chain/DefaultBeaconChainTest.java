@@ -78,12 +78,12 @@ public class DefaultBeaconChainTest {
       SpecHelpers specHelpers, StateTransition<BeaconStateEx> perSlotTransition) {
     Time start =
         Millis.of(System.currentTimeMillis())
-            .getSeconds()
-            .minus(
-                specHelpers
-                    .getChainSpec()
-                    .getSlotDuration()
-                    .times(specHelpers.getChainSpec().getEpochLength().times(2)));
+            .getSeconds();
+//            .minus(
+//                specHelpers
+//                    .getChainSpec()
+//                    .getSlotDuration()
+//                    .times(specHelpers.getChainSpec().getEpochLength()));
     ChainStart chainStart = new ChainStart(start, Eth1Data.EMPTY, Collections.emptyList());
     BlockTransition<BeaconStateEx> initialTransition =
         new InitialStateTransition(chainStart, specHelpers);

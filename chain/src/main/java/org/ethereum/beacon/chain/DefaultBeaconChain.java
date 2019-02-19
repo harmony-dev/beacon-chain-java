@@ -156,13 +156,13 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     if (previous.getFinalizedEpoch().less(current.getFinalizedEpoch())) {
       Hash32 finalizedRoot =
           specHelpers.get_block_root(
-              current, specHelpers.get_epoch_end_slot(current.getFinalizedEpoch()));
+              current, specHelpers.get_epoch_start_slot(current.getFinalizedEpoch()));
       chainStorage.getFinalizedStorage().set(finalizedRoot);
     }
     if (previous.getJustifiedEpoch().less(current.getJustifiedEpoch())) {
       Hash32 justifiedRoot =
           specHelpers.get_block_root(
-              current, specHelpers.get_epoch_end_slot(current.getJustifiedEpoch()));
+              current, specHelpers.get_epoch_start_slot(current.getJustifiedEpoch()));
       chainStorage.getJustifiedStorage().set(justifiedRoot);
     }
   }
@@ -186,19 +186,16 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   }
 
   /**
-   * There is no sense in importing block with a slot number less or equal to latest finalized slot
-   * or too far in the future.
+   * There is no sense in importing block with a slot that is too far in the future.
    *
    * @param block block to run check on.
    * @return true if block should be rejected, false otherwise.
    */
   private boolean rejectedByTime(BeaconBlock block) {
-    SlotNumber finalizedSlot =
-        specHelpers.get_epoch_end_slot(recentlyProcessed.getState().getFinalizedEpoch());
     SlotNumber nextToCurrentSlot =
         specHelpers.get_current_slot(recentlyProcessed.getState()).increment();
 
-    return block.getSlot().lessEqual(finalizedSlot) || block.getSlot().greater(nextToCurrentSlot);
+    return block.getSlot().greater(nextToCurrentSlot);
   }
 
   private BeaconStateEx applyEmptySlotTransitions(BeaconStateEx source, BeaconBlock block) {
