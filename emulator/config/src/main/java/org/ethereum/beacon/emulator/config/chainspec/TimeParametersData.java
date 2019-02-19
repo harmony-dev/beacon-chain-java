@@ -1,5 +1,6 @@
 package org.ethereum.beacon.emulator.config.chainspec;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.ethereum.beacon.core.spec.TimeParameters;
 import org.ethereum.beacon.core.types.EpochNumber;
@@ -10,52 +11,59 @@ import tech.pegasys.artemis.util.uint.UInt64;
 
 public class TimeParametersData implements TimeParameters {
 
-  @JsonProperty("SLOT_DURATION")
+  @JsonProperty(value = "SLOT_DURATION", access = JsonProperty.Access.WRITE_ONLY)
   private String SLOT_DURATION;
-  @JsonProperty("MIN_ATTESTATION_INCLUSION_DELAY")
+  @JsonProperty(value = "MIN_ATTESTATION_INCLUSION_DELAY", access = JsonProperty.Access.WRITE_ONLY)
   private String MIN_ATTESTATION_INCLUSION_DELAY;
-  @JsonProperty("EPOCH_LENGTH")
+  @JsonProperty(value = "EPOCH_LENGTH", access = JsonProperty.Access.WRITE_ONLY)
   private String EPOCH_LENGTH;
-  @JsonProperty("SEED_LOOKAHEAD")
+  @JsonProperty(value = "SEED_LOOKAHEAD", access = JsonProperty.Access.WRITE_ONLY)
   private String  SEED_LOOKAHEAD;
-  @JsonProperty("ENTRY_EXIT_DELAY")
+  @JsonProperty(value = "ENTRY_EXIT_DELAY", access = JsonProperty.Access.WRITE_ONLY)
   private String ENTRY_EXIT_DELAY;
-  @JsonProperty("ETH1_DATA_VOTING_PERIOD")
+  @JsonProperty(value = "ETH1_DATA_VOTING_PERIOD", access = JsonProperty.Access.WRITE_ONLY)
   private String ETH1_DATA_VOTING_PERIOD;
-  @JsonProperty("MIN_VALIDATOR_WITHDRAWAL_EPOCHS")
+  @JsonProperty(value = "MIN_VALIDATOR_WITHDRAWAL_EPOCHS", access = JsonProperty.Access.WRITE_ONLY)
   private String MIN_VALIDATOR_WITHDRAWAL_EPOCHS;
 
   @Override
+  @JsonIgnore
   public Time getSlotDuration() {
     return Time.castFrom(UInt64.valueOf(getSLOT_DURATION()));
   }
 
   @Override
+  @JsonIgnore
   public SlotNumber getMinAttestationInclusionDelay() {
     return SlotNumber.castFrom(UInt64.valueOf(getMIN_ATTESTATION_INCLUSION_DELAY()));
   }
 
   @Override
+  @JsonIgnore
   public EpochLength getEpochLength() {
     return new EpochLength(UInt64.valueOf(getEPOCH_LENGTH()));
   }
 
   @Override
+  @JsonIgnore
   public EpochNumber getSeedLookahead() {
     return new EpochNumber(UInt64.valueOf(getSEED_LOOKAHEAD()));
   }
 
   @Override
+  @JsonIgnore
   public EpochNumber getEntryExitDelay() {
     return new EpochNumber(UInt64.valueOf(getENTRY_EXIT_DELAY()));
   }
 
   @Override
+  @JsonIgnore
   public EpochNumber getEth1DataVotingPeriod() {
     return new EpochNumber(UInt64.valueOf(getETH1_DATA_VOTING_PERIOD()));
   }
 
   @Override
+  @JsonIgnore
   public EpochNumber getMinValidatorWithdrawalEpochs() {
     return new EpochNumber(UInt64.valueOf(getMIN_VALIDATOR_WITHDRAWAL_EPOCHS()));
   }

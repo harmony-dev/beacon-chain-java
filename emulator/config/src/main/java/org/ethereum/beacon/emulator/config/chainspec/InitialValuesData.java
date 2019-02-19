@@ -1,5 +1,6 @@
 package org.ethereum.beacon.emulator.config.chainspec;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.ethereum.beacon.core.spec.InitialValues;
 import org.ethereum.beacon.core.types.BLSSignature;
@@ -13,57 +14,65 @@ import tech.pegasys.artemis.util.uint.UInt64;
 
 public class InitialValuesData implements InitialValues {
 
-  @JsonProperty("GENESIS_FORK_VERSION")
+  @JsonProperty(value = "GENESIS_FORK_VERSION", access = JsonProperty.Access.WRITE_ONLY)
   private String GENESIS_FORK_VERSION;
-  @JsonProperty("GENESIS_SLOT")
+  @JsonProperty(value = "GENESIS_SLOT", access = JsonProperty.Access.WRITE_ONLY)
   private String GENESIS_SLOT;
-  @JsonProperty("GENESIS_START_SHARD")
+  @JsonProperty(value = "GENESIS_START_SHARD", access = JsonProperty.Access.WRITE_ONLY)
   private Integer GENESIS_START_SHARD;
-  @JsonProperty("FAR_FUTURE_EPOCH")
+  @JsonProperty(value = "FAR_FUTURE_EPOCH", access = JsonProperty.Access.WRITE_ONLY)
   private String FAR_FUTURE_EPOCH;
-  @JsonProperty("ZERO_HASH")
+  @JsonProperty(value = "ZERO_HASH", access = JsonProperty.Access.WRITE_ONLY)
   private String ZERO_HASH;
-  @JsonProperty("EMPTY_SIGNATURE")
+  @JsonProperty(value = "EMPTY_SIGNATURE", access = JsonProperty.Access.WRITE_ONLY)
   private String EMPTY_SIGNATURE;
-  @JsonProperty("BLS_WITHDRAWAL_PREFIX_BYTE")
+  @JsonProperty(value = "BLS_WITHDRAWAL_PREFIX_BYTE", access = JsonProperty.Access.WRITE_ONLY)
   private String BLS_WITHDRAWAL_PREFIX_BYTE;
 
   @Override
+  @JsonIgnore
   public UInt64 getGenesisForkVersion() {
     return UInt64.valueOf(getGENESIS_FORK_VERSION());
   }
 
   @Override
+  @JsonIgnore
   public SlotNumber getGenesisSlot() {
     return SlotNumber.castFrom(UInt64.valueOf(getGENESIS_SLOT()));
   }
 
   @Override
+  @JsonIgnore
   public EpochNumber getGenesisEpoch() {
     return null;// XXX: is set in final ChainSpec construction
   }
 
   @Override
+  @JsonIgnore
   public ShardNumber getGenesisStartShard() {
     return ShardNumber.of(getGENESIS_START_SHARD());
   }
 
   @Override
+  @JsonIgnore
   public EpochNumber getFarFutureEpoch() {
     return new EpochNumber(UInt64.valueOf(getFAR_FUTURE_EPOCH()));
   }
 
   @Override
+  @JsonIgnore
   public Hash32 getZeroHash() {
     return Hash32.fromHexString(getZERO_HASH());
   }
 
   @Override
+  @JsonIgnore
   public BLSSignature getEmptySignature() {
     return BLSSignature.wrap(Bytes96.fromHexString(getEMPTY_SIGNATURE()));
   }
 
   @Override
+  @JsonIgnore
   public Bytes1 getBlsWithdrawalPrefixByte() {
     return Bytes1.fromHexString(getBLS_WITHDRAWAL_PREFIX_BYTE());
   }

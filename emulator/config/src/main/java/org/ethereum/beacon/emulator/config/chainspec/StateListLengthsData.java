@@ -1,5 +1,6 @@
 package org.ethereum.beacon.emulator.config.chainspec;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.ethereum.beacon.core.spec.StateListLengths;
 import org.ethereum.beacon.core.types.EpochNumber;
@@ -8,31 +9,35 @@ import tech.pegasys.artemis.util.uint.UInt64;
 
 public class StateListLengthsData implements StateListLengths {
 
-  @JsonProperty("LATEST_BLOCK_ROOTS_LENGTH")
+  @JsonProperty(value = "LATEST_BLOCK_ROOTS_LENGTH", access = JsonProperty.Access.WRITE_ONLY)
   private String LATEST_BLOCK_ROOTS_LENGTH;
-  @JsonProperty("LATEST_RANDAO_MIXES_LENGTH")
+  @JsonProperty(value = "LATEST_RANDAO_MIXES_LENGTH", access = JsonProperty.Access.WRITE_ONLY)
   private String LATEST_RANDAO_MIXES_LENGTH;
-  @JsonProperty("LATEST_INDEX_ROOTS_LENGTH")
+  @JsonProperty(value = "LATEST_INDEX_ROOTS_LENGTH", access = JsonProperty.Access.WRITE_ONLY)
   private String LATEST_INDEX_ROOTS_LENGTH;
-  @JsonProperty("LATEST_PENALIZED_EXIT_LENGTH")
+  @JsonProperty(value = "LATEST_PENALIZED_EXIT_LENGTH", access = JsonProperty.Access.WRITE_ONLY)
   private String LATEST_PENALIZED_EXIT_LENGTH;
 
   @Override
+  @JsonIgnore
   public SlotNumber getLatestBlockRootsLength() {
     return SlotNumber.castFrom(UInt64.valueOf(getLATEST_BLOCK_ROOTS_LENGTH()));
   }
 
   @Override
+  @JsonIgnore
   public EpochNumber getLatestRandaoMixesLength() {
     return new EpochNumber(UInt64.valueOf(getLATEST_RANDAO_MIXES_LENGTH()));
   }
 
   @Override
+  @JsonIgnore
   public EpochNumber getLatestIndexRootsLength() {
     return new EpochNumber(UInt64.valueOf(getLATEST_INDEX_ROOTS_LENGTH()));
   }
 
   @Override
+  @JsonIgnore
   public EpochNumber getLatestPenalizedExitLength() {
     return new EpochNumber(UInt64.valueOf(getLATEST_PENALIZED_EXIT_LENGTH()));
   }

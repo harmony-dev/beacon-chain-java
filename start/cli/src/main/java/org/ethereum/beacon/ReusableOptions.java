@@ -7,6 +7,7 @@ import org.ethereum.beacon.emulator.config.main.MainConfig;
 import org.javatuples.Pair;
 import picocli.CommandLine;
 
+import javax.annotation.Nullable;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,7 +36,7 @@ public class ReusableOptions {
   List<Pair<String, Object>> configPathValues = new ArrayList<>();
   List<Pair<String, Object>> chainSpecPathValues = new ArrayList<>();
 
-  MainConfig prepareConfig(String extraConfig) {
+  private MainConfig prepareConfig(String extraConfig) {
     ConfigBuilder<MainConfig> configBuilder = new ConfigBuilder<>(MainConfig.class);
     configBuilder.addYamlConfig(
         ClassLoader.class.getResourceAsStream("/config/default-config.yml"));
@@ -53,10 +54,14 @@ public class ReusableOptions {
     return configBuilder.build();
   }
 
-  ChainSpecData prepareChainSpec() {
+  private ChainSpecData prepareChainSpec(@Nullable String extraChainSpec) {
     ConfigBuilder<ChainSpecData> configBuilder = new ConfigBuilder<>(ChainSpecData.class);
     configBuilder.addYamlConfig(
         ClassLoader.class.getResourceAsStream("/config/default-chainSpec.yml"));
+    if (extraChainSpec != null) {
+      configBuilder.addYamlConfig(
+          ClassLoader.class.getResourceAsStream(extraChainSpec));
+    }
     if (chainspecs != null) {
       for (File chainspec : chainspecs) {
         configBuilder.addYamlConfig(chainspec);
@@ -71,8 +76,13 @@ public class ReusableOptions {
   }
 
   Pair<MainConfig, ChainSpecData> prepareAndPrintConfigs(Task action, String extraConfig) {
+    return prepareAndPrintConfigs(action, extraConfig, null);
+  }
+
+  Pair<MainConfig, ChainSpecData> prepareAndPrintConfigs(
+      Task action, String extraConfig, @Nullable String extraChainSpec) {
     MainConfig mainConfig = prepareConfig(extraConfig);
-    ChainSpecData chainSpecData = prepareChainSpec();
+    ChainSpecData chainSpecData = prepareChainSpec(extraChainSpec);
     if (action.equals(Task.print)) {
       System.out.println("If executed with `start` command, will use following options.");
       System.out.println("Main config:");

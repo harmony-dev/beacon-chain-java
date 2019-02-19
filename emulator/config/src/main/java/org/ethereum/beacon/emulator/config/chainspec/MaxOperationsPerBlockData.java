@@ -1,42 +1,48 @@
 package org.ethereum.beacon.emulator.config.chainspec;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.ethereum.beacon.core.spec.MaxOperationsPerBlock;
 
 public class MaxOperationsPerBlockData implements MaxOperationsPerBlock {
 
-  @JsonProperty("MAX_PROPOSER_SLASHINGS")
+  @JsonProperty(value = "MAX_PROPOSER_SLASHINGS", access = JsonProperty.Access.WRITE_ONLY)
   private Integer MAX_PROPOSER_SLASHINGS;
-  @JsonProperty("MAX_ATTESTER_SLASHINGS")
+  @JsonProperty(value = "MAX_ATTESTER_SLASHINGS", access = JsonProperty.Access.WRITE_ONLY)
   private Integer MAX_ATTESTER_SLASHINGS;
-  @JsonProperty("MAX_ATTESTATIONS")
+  @JsonProperty(value = "MAX_ATTESTATIONS", access = JsonProperty.Access.WRITE_ONLY)
   private Integer MAX_ATTESTATIONS;
-  @JsonProperty("MAX_DEPOSITS")
+  @JsonProperty(value = "MAX_DEPOSITS", access = JsonProperty.Access.WRITE_ONLY)
   private Integer MAX_DEPOSITS;
-  @JsonProperty("MAX_EXITS")
+  @JsonProperty(value = "MAX_EXITS", access = JsonProperty.Access.WRITE_ONLY)
   private Integer MAX_EXITS;
 
   @Override
+  @JsonIgnore
   public int getMaxProposerSlashings() {
     return getMAX_PROPOSER_SLASHINGS();
   }
 
   @Override
+  @JsonIgnore
   public int getMaxAttesterSlashings() {
     return getMAX_ATTESTER_SLASHINGS();
   }
 
   @Override
+  @JsonIgnore
   public int getMaxAttestations() {
     return getMAX_ATTESTATIONS();
   }
 
   @Override
+  @JsonIgnore
   public int getMaxDeposits() {
     return getMAX_DEPOSITS();
   }
 
   @Override
+  @JsonIgnore
   public int getMaxExits() {
     return getMAX_EXITS();
   }

@@ -1,36 +1,41 @@
 package org.ethereum.beacon.emulator.config.chainspec;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.ethereum.beacon.core.spec.RewardAndPenaltyQuotients;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public class RewardAndPenaltyQuotientsData implements RewardAndPenaltyQuotients {
 
-  @JsonProperty("BASE_REWARD_QUOTIENT")
+  @JsonProperty(value = "BASE_REWARD_QUOTIENT", access = JsonProperty.Access.WRITE_ONLY)
   private String BASE_REWARD_QUOTIENT;
-  @JsonProperty("WHISTLEBLOWER_REWARD_QUOTIENT")
+  @JsonProperty(value = "WHISTLEBLOWER_REWARD_QUOTIENT", access = JsonProperty.Access.WRITE_ONLY)
   private String WHISTLEBLOWER_REWARD_QUOTIENT;
-  @JsonProperty("INCLUDER_REWARD_QUOTIENT")
+  @JsonProperty(value = "INCLUDER_REWARD_QUOTIENT", access = JsonProperty.Access.WRITE_ONLY)
   private String INCLUDER_REWARD_QUOTIENT;
-  @JsonProperty("INACTIVITY_PENALTY_QUOTIENT")
+  @JsonProperty(value = "INACTIVITY_PENALTY_QUOTIENT", access = JsonProperty.Access.WRITE_ONLY)
   private String INACTIVITY_PENALTY_QUOTIENT;
 
   @Override
+  @JsonIgnore
   public UInt64 getBaseRewardQuotient() {
     return UInt64.valueOf(getBASE_REWARD_QUOTIENT());
   }
 
   @Override
+  @JsonIgnore
   public UInt64 getWhistleblowerRewardQuotient() {
     return UInt64.valueOf(getWHISTLEBLOWER_REWARD_QUOTIENT());
   }
 
   @Override
+  @JsonIgnore
   public UInt64 getIncluderRewardQuotient() {
     return UInt64.valueOf(getINCLUDER_REWARD_QUOTIENT());
   }
 
   @Override
+  @JsonIgnore
   public UInt64 getInactivityPenaltyQuotient() {
     return UInt64.valueOf(getINACTIVITY_PENALTY_QUOTIENT());
   }
