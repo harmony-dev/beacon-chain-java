@@ -1,6 +1,7 @@
 ext {
   // After that version snapshots are compiled with new JDK w/o full backward compatibility
   cavaVersion = '0.6.0-5618C0-snapshot'
+  jacksonVersion = '2.9.8'
 }
 
 dependencyManagement {
@@ -23,5 +24,9 @@ dependencyManagement {
     dependency "net.consensys.cava:cava-units:${cavaVersion}"
     dependency "io.projectreactor:reactor-core:3.2.5.RELEASE"
     dependency "org.reactivestreams:reactive-streams:1.0.2"
+
+    dependency "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${jacksonVersion}"
+    dependency "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
+    dependency "commons-beanutils:commons-beanutils:1.9.3"
   }
 }
