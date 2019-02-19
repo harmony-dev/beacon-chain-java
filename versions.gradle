@@ -2,11 +2,14 @@ ext {
   // After that version snapshots are compiled with new JDK w/o full backward compatibility
   cavaVersion = '0.6.0-5618C0-snapshot'
   jacksonVersion = '2.9.8'
+  log4j2Version = '2.11.2'
 }
 
 dependencyManagement {
   dependencies {
 
+    dependency "org.apache.logging.log4j:log4j-api:${log4j2Version}"
+    dependency "org.apache.logging.log4j:log4j-core:${log4j2Version}"
     dependency 'org.ethereum:ethereumj-core:1+'
 
     dependency 'org.bouncycastle:bcprov-jdk15on:1.60'

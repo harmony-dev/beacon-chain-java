@@ -14,6 +14,7 @@ dependencies {
   implementation 'io.projectreactor:reactor-core'
 
   testImplementation 'org.mockito:mockito-core'
+  testImplementation 'org.apache.logging.log4j:log4j-core'
 
   // Gradle does not import test sources alongside with main sources
   // use a workaround until better solution will be found

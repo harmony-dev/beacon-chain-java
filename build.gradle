@@ -19,6 +19,7 @@ allprojects {
   dependencies {
     implementation 'com.google.code.findbugs:jsr305'
     implementation 'org.javatuples:javatuples'
+    implementation 'org.apache.logging.log4j:log4j-api:2.11.2'
 
     testImplementation 'junit:junit'
     testImplementation 'org.assertj:assertj-core'
