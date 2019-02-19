@@ -116,7 +116,7 @@ public class BeaconChainProposerTest {
             specHelpers.getChainSpec().getMaxAttestations(),
             initialState
                 .getSlot()
-                .plus(specHelpers.getChainSpec().getMinAttestationInclusionDelay()));
+                .minus(specHelpers.getChainSpec().getMinAttestationInclusionDelay()));
 
     Mockito.verify(pendingOperations)
         .peekProposerSlashings(specHelpers.getChainSpec().getMaxProposerSlashings());

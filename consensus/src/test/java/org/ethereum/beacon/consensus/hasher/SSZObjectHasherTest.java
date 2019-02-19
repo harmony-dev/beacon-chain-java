@@ -6,6 +6,7 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.ssz.SSZHashSerializers;
 import org.ethereum.beacon.ssz.SSZSerializer;
@@ -146,6 +147,14 @@ public class SSZObjectHasherTest {
         BytesValue.fromHexString(
             "a9bb69cad9fb0d9a9963bf9a32f09b9c306bed6f6c95fff3e5d625fd9370646e"),
         hash);
+  }
+
+  @Test
+  public void listTest2() {
+    List<ValidatorIndex> list = new ArrayList<>();
+    list.add(ValidatorIndex.of(1));
+    list.add(ValidatorIndex.of(1));
+    BytesValue hash = sszHasher.getHash(list);
   }
 
   @SSZSerializable

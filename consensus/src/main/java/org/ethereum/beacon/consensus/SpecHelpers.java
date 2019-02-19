@@ -1386,7 +1386,7 @@ public class SpecHelpers {
 
   public SlotNumber get_current_slot(BeaconState state) {
     Millis currentTime = Millis.of(Schedulers.get().getCurrentTime());
-    assert state.getGenesisTime().less(currentTime.getSeconds());
+    assertTrue(state.getGenesisTime().lessEqual(currentTime.getSeconds()));
     Time sinceGenesis = currentTime.getSeconds().minus(state.getGenesisTime());
     return SlotNumber.castFrom(sinceGenesis.dividedBy(spec.getSlotDuration()))
         .plus(getChainSpec().getGenesisSlot());
@@ -1426,10 +1426,6 @@ public class SpecHelpers {
   */
   public SlotNumber get_epoch_start_slot(EpochNumber epoch) {
     return epoch.mul(spec.getEpochLength());
-  }
-
-  public SlotNumber get_epoch_end_slot(EpochNumber epoch) {
-    return get_epoch_start_slot(epoch).plus(spec.getEpochLength()).decrement();
   }
 
   public EpochNumber get_genesis_epoch() {

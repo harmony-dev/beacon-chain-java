@@ -18,13 +18,13 @@ import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.state.Eth1Data;
-import org.ethereum.beacon.core.types.Millis;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.db.Database;
 import org.ethereum.beacon.pow.DepositContract.ChainStart;
 import org.junit.Assert;
 import org.junit.Test;
 import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.uint.UInt64;
 
 public class DefaultBeaconChainTest {
 
@@ -76,14 +76,7 @@ public class DefaultBeaconChainTest {
 
   private MutableBeaconChain createBeaconChain(
       SpecHelpers specHelpers, StateTransition<BeaconStateEx> perSlotTransition) {
-    Time start =
-        Millis.of(System.currentTimeMillis())
-            .getSeconds()
-            .minus(
-                specHelpers
-                    .getChainSpec()
-                    .getSlotDuration()
-                    .times(specHelpers.getChainSpec().getEpochLength().times(2)));
+    Time start = Time.castFrom(UInt64.valueOf(System.currentTimeMillis() / 1000));
     ChainStart chainStart = new ChainStart(start, Eth1Data.EMPTY, Collections.emptyList());
     BlockTransition<BeaconStateEx> initialTransition =
         new InitialStateTransition(chainStart, specHelpers);

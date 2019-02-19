@@ -108,6 +108,19 @@ public class AttestationData {
   }
 
   @Override
+  public int hashCode() {
+    int result = slot != null ? slot.hashCode() : 0;
+    result = 31 * result + (shard != null ? shard.hashCode() : 0);
+    result = 31 * result + (beaconBlockRoot != null ? beaconBlockRoot.hashCode() : 0);
+    result = 31 * result + (epochBoundaryRoot != null ? epochBoundaryRoot.hashCode() : 0);
+    result = 31 * result + (shardBlockRoot != null ? shardBlockRoot.hashCode() : 0);
+    result = 31 * result + (latestCrosslinkRoot != null ? latestCrosslinkRoot.hashCode() : 0);
+    result = 31 * result + (justifiedEpoch != null ? justifiedEpoch.hashCode() : 0);
+    result = 31 * result + (justifiedBlockRoot != null ? justifiedBlockRoot.hashCode() : 0);
+    return result;
+  }
+
+  @Override
   public String toString() {
     return toString(null, null);
   }

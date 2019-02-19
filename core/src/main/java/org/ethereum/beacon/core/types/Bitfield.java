@@ -28,6 +28,9 @@ public class Bitfield extends DelegatingBytesValue {
   public Bitfield and(Bitfield other) {
     return Bitfield.of(BytesValues.and(this, other));
   }
+  public Bitfield or(Bitfield other) {
+    return Bitfield.of(BytesValues.or(this, other));
+  }
 
   @Override
   public String toString() {
