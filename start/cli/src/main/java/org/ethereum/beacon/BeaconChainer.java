@@ -23,7 +23,7 @@ public class BeaconChainer extends ReusableOptions implements Callable<Void> {
   @Override
   public Void call() throws Exception {
     System.out.println("Starting beacon chain client...");
-    prepareConfigs(action, "/config/chainer-config.yml");
+    prepareAndPrintConfigs(action, "/config/chainer-config.yml");
     // TODO: your business logic goes here...
     return null;
   }

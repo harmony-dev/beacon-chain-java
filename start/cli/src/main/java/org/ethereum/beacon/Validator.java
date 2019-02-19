@@ -24,7 +24,7 @@ public class Validator extends ReusableOptions implements Callable<Void> {
   public Void call() throws Exception {
     // TODO: your business logic goes here...
     System.out.println("Starting beacon validator...");
-    prepareConfigs(action, "/config/validator-config.yml");
+    prepareAndPrintConfigs(action, "/config/validator-config.yml");
     return null;
   }
 }

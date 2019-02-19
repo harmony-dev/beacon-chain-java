@@ -28,7 +28,7 @@ import java.util.Map;
 public class ConfigBuilder<C extends Config> {
   private final Class<? extends Config> supportedConfig;
   private List<ConfigSource> configs = new ArrayList<>();
-  private List<Pair<String, String>> pathValueOverrides = new ArrayList<>();
+  private List<Pair<String, Object>> pathValueOverrides = new ArrayList<>();
 
   /**
    * Creates builder
@@ -184,13 +184,13 @@ public class ConfigBuilder<C extends Config> {
    * @param value Configuraiton value, say "/home/mypath/db/"
    * @return current builder instance
    */
-  public ConfigBuilder addConfigOverride(String path, String value) {
+  public ConfigBuilder addConfigOverride(String path, Object value) {
     pathValueOverrides.add(Pair.with(path, value));
     return this;
   }
 
   /**
-   * Same as {@link #addConfigOverride(String, String)} but accepts Map. So order of map is
+   * Same as {@link #addConfigOverride(String, Object)} but accepts Map. So order of map is
    * non-existent, but all pairs from this map will be applied after those changes that were already
    * added to the builder.
    */
@@ -199,8 +199,8 @@ public class ConfigBuilder<C extends Config> {
     return this;
   }
 
-  /** Same as {@link #addConfigOverride(String, String)} but accepts List. */
-  public ConfigBuilder addConfigOverrides(List<Pair<String, String>> pathValues) {
+  /** Same as {@link #addConfigOverride(String, Object)} but accepts List. */
+  public ConfigBuilder addConfigOverrides(List<Pair<String, Object>> pathValues) {
     pathValueOverrides.addAll(pathValues);
     return this;
   }
@@ -238,7 +238,7 @@ public class ConfigBuilder<C extends Config> {
     }
 
     // Handling string pathValue pairs config overrides
-    for (Pair<String, String> pathValue : pathValueOverrides) {
+    for (Pair<String, Object> pathValue : pathValueOverrides) {
       try {
         PropertyUtils.setNestedProperty(firstConfig, pathValue.getValue0(), pathValue.getValue1());
       } catch (Exception e) {

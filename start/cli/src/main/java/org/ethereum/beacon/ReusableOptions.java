@@ -8,42 +8,66 @@ import org.javatuples.Pair;
 import picocli.CommandLine;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ReusableOptions {
 
   static final String VERSION = "0.1b";
 
-  @CommandLine.Option(names = { "-c", "--config" }, paramLabel = "CONFIG", description = "YAML config file.\nAll options that are not set will be loaded from default config.")
+  @CommandLine.Option(
+      names = {"-c", "--config"},
+      paramLabel = "CONFIG",
+      description =
+          "YAML config file.\nAll options that are not set will be loaded from default config.")
   File[] configs;
 
-  @CommandLine.Option(names = { "-s", "--spec" }, paramLabel = "CHAINSPEC", description = "YAML chain specification file.\nFor all specifications that are not set, default values are used.")
+  @CommandLine.Option(
+      names = {"-s", "--spec"},
+      paramLabel = "CHAINSPEC",
+      description =
+          "YAML chain specification file.\nFor all specifications that are not set, default values are used.")
   File[] chainspecs;
+
+  List<Pair<String, Object>> configPathValues = new ArrayList<>();
+  List<Pair<String, Object>> chainSpecPathValues = new ArrayList<>();
 
   MainConfig prepareConfig(String extraConfig) {
     ConfigBuilder<MainConfig> configBuilder = new ConfigBuilder<>(MainConfig.class);
-    configBuilder.addYamlConfig(ClassLoader.class.getResourceAsStream("/config/default-config.yml"));
+    configBuilder.addYamlConfig(
+        ClassLoader.class.getResourceAsStream("/config/default-config.yml"));
     configBuilder.addYamlConfig(ClassLoader.class.getResourceAsStream(extraConfig));
     if (configs != null) {
       for (File config : configs) {
         configBuilder.addYamlConfig(config);
       }
     }
-    return configBuilder.build();
 
+    for (Pair<String, Object> pathValue : configPathValues) {
+      configBuilder.addConfigOverride(pathValue.getValue0(), pathValue.getValue1());
+    }
+
+    return configBuilder.build();
   }
 
   ChainSpecData prepareChainSpec() {
     ConfigBuilder<ChainSpecData> configBuilder = new ConfigBuilder<>(ChainSpecData.class);
-    configBuilder.addYamlConfig(ClassLoader.class.getResourceAsStream("/config/default-chainSpec.yml"));
+    configBuilder.addYamlConfig(
+        ClassLoader.class.getResourceAsStream("/config/default-chainSpec.yml"));
     if (chainspecs != null) {
       for (File chainspec : chainspecs) {
         configBuilder.addYamlConfig(chainspec);
       }
     }
+
+    for (Pair<String, Object> pathValue : chainSpecPathValues) {
+      configBuilder.addConfigOverride(pathValue.getValue0(), pathValue.getValue1());
+    }
+
     return configBuilder.build();
   }
 
-  Pair<MainConfig, ChainSpecData> prepareConfigs(Task action, String extraConfig) {
+  Pair<MainConfig, ChainSpecData> prepareAndPrintConfigs(Task action, String extraConfig) {
     MainConfig mainConfig = prepareConfig(extraConfig);
     ChainSpecData chainSpecData = prepareChainSpec();
     if (action.equals(Task.print)) {
@@ -52,8 +76,6 @@ public class ReusableOptions {
       System.out.println(new YamlPrinter(mainConfig).getString());
       System.out.println("Chain specifications:");
       System.out.println(new YamlPrinter(chainSpecData).getString());
-    } else {
-      throw new RuntimeException("Not implemented yet");
     }
 
     return Pair.with(mainConfig, chainSpecData);
@@ -64,4 +86,3 @@ public class ReusableOptions {
     print
   }
 }
-
