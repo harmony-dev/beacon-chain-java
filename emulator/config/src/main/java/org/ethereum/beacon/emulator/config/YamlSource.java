@@ -1,4 +1,4 @@
-package org.ethereum.beacon.emulator.config.type;
+package org.ethereum.beacon.emulator.config;
 
 /** Source of config from yaml data presented as text */
 public class YamlSource implements ConfigSource {

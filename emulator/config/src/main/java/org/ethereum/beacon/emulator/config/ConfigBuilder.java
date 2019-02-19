@@ -4,10 +4,6 @@ import com.google.common.base.Charsets;
 import com.google.common.io.CharStreams;
 import org.apache.commons.beanutils.BeanUtilsBean;
 import org.apache.commons.beanutils.PropertyUtils;
-import org.ethereum.beacon.emulator.config.data.Config;
-import org.ethereum.beacon.emulator.config.type.AsIsSource;
-import org.ethereum.beacon.emulator.config.type.ConfigSource;
-import org.ethereum.beacon.emulator.config.type.YamlSource;
 import org.javatuples.Pair;
 
 import java.io.DataInputStream;
@@ -19,7 +15,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -30,34 +25,22 @@ import java.util.Map;
  *
  * <p>Config should be of {@link Config} kind
  */
-public class ConfigBuilder {
-  private final Map<Integer, Class<? extends Config>> supportedConfigs;
+public class ConfigBuilder<C extends Config> {
+  private final Class<? extends Config> supportedConfig;
   private List<ConfigSource> configs = new ArrayList<>();
   private List<Pair<String, String>> pathValueOverrides = new ArrayList<>();
 
   /**
    * Creates builder
    *
-   * @param types supported config types
+   * @param type supported config type
    */
-  public ConfigBuilder(Class... types) {
-    Map<Integer, Class<? extends Config>> configs = new HashMap<>();
-    for (Class<? extends Config> type : types) {
-      if (!Config.class.isAssignableFrom(type)) {
-        throw new RuntimeException(
-            String.format("Config type %s should implement Config interface", type));
-      }
-      try {
-        int version = type.newInstance().getVersion();
-        configs.put(version, type);
-      } catch (Exception e) {
-        throw new RuntimeException(
-            String.format(
-                "Something goes wrong when initializing ConfigBuilder with type %s", type),
-            e);
-      }
+  public ConfigBuilder(Class<C> type) {
+    if (!Config.class.isAssignableFrom(type)) {
+      throw new RuntimeException(
+          String.format("Config type %s should implement Config interface", type));
     }
-    this.supportedConfigs = configs;
+    supportedConfig = type;
   }
 
   /**
@@ -228,26 +211,24 @@ public class ConfigBuilder {
    *
    * @return built config
    */
-  public Config build() {
+  public C build() {
     if (configs.isEmpty()) {
       throw new RuntimeException("There should be at least one configuration provided");
     }
 
     // Handling config files
     ConfigSource firstConfigSource = configs.get(0);
-    Config firstConfig = getConfigSupplier(firstConfigSource).getConfig();
-    int version = firstConfig.getVersion();
-
+    Config firstConfigOrig = getConfigSupplier(firstConfigSource).getConfig();
+    if (!(supportedConfig.isInstance(firstConfigOrig))) {
+      throw new RuntimeException(
+          String.format(
+              "Config is not of parameterized type %s, got instead %s",
+              supportedConfig.getName(), firstConfigOrig.getClass().getName()));
+    }
+    C firstConfig = (C) firstConfigOrig;
     for (int i = 1; i < configs.size(); ++i) {
       ConfigSource nextConfigSource = configs.get(i);
       Config nextConfig = getConfigSupplier(nextConfigSource).getConfig();
-      if (nextConfig.getVersion() != version) {
-        throw new RuntimeException(
-            String.format(
-                "All configs should have the same version. First config has %s version, "
-                    + "current config %s has version %s.",
-                version, nextConfigSource, nextConfig.getVersion()));
-      }
       try {
         firstConfig = copyProperties(firstConfig, nextConfig);
       } catch (Exception ex) {
@@ -282,8 +263,7 @@ public class ConfigBuilder {
       case YAML:
         {
           YamlSource yamlSource = (YamlSource) source;
-
-          return new YamlReader(yamlSource.getData(), supportedConfigs);
+          return new YamlSupplier(yamlSource.getData(), supportedConfig);
         }
       default:
         {

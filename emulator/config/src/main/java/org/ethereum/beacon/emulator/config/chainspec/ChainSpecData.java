@@ -1,4 +1,4 @@
-package org.ethereum.beacon.emulator.config.data.v1.chainspec;
+package org.ethereum.beacon.emulator.config.chainspec;
 
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.types.BLSSignature;
@@ -8,7 +8,7 @@ import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
-import org.ethereum.beacon.emulator.config.data.Config;
+import org.ethereum.beacon.emulator.config.Config;
 import tech.pegasys.artemis.ethereum.core.Address;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes1;
@@ -16,7 +16,6 @@ import tech.pegasys.artemis.util.uint.UInt64;
 
 /** ChainSpec settings object, creates {@link ChainSpec} from user data */
 public class ChainSpecData implements Config {
-  private final Integer version;
   private DepositContractParametersData depositContractParameters;
   private HonestValidatorParametersData honestValidatorParameters;
   private InitialValuesData initialValues;
@@ -25,18 +24,6 @@ public class ChainSpecData implements Config {
   private RewardAndPenaltyQuotientsData rewardAndPenaltyQuotients;
   private StateListLengthsData stateListLengths;
   private TimeParametersData timeParameters;
-
-  public ChainSpecData() {
-    this.version = 1;
-  }
-
-  public int getVersion() {
-    return version;
-  }
-
-  public void setVersion(int version) {
-    assert version == this.version;
-  }
 
   public ChainSpec build() {
     return new ChainSpec() {

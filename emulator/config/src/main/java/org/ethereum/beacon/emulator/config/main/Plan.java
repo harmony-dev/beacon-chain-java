@@ -1,6 +1,6 @@
-package org.ethereum.beacon.emulator.config.data.v1;
+package org.ethereum.beacon.emulator.config.main;
 
-import org.ethereum.beacon.emulator.config.data.v1.action.Action;
+import org.ethereum.beacon.emulator.config.main.action.Action;
 
 import java.util.List;
 

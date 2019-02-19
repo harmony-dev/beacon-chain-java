@@ -1,4 +1,4 @@
-package org.ethereum.beacon.emulator.config.data.v1;
+package org.ethereum.beacon.emulator.config.main;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

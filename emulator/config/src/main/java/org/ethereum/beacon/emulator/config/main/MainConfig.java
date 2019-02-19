@@ -1,18 +1,13 @@
-package org.ethereum.beacon.emulator.config.data.v1;
+package org.ethereum.beacon.emulator.config.main;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import org.ethereum.beacon.emulator.config.data.Config;
+import org.ethereum.beacon.emulator.config.Config;
 
 /** Main application configuration */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class MainConfig implements Config {
-  private final Integer version;
   private Configuration config;
   private Plan plan;
-
-  public MainConfig() {
-    this.version = 1;
-  }
 
   public Configuration getConfig() {
     return config;
@@ -28,14 +23,5 @@ public class MainConfig implements Config {
 
   public void setPlan(Plan plan) {
     this.plan = plan;
-  }
-
-  @Override
-  public int getVersion() {
-    return version;
-  }
-
-  public void setVersion(int version) {
-    assert version == this.version;
   }
 }

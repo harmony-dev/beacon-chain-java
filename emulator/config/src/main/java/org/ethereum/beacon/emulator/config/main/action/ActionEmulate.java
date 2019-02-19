@@ -1,4 +1,4 @@
-package org.ethereum.beacon.emulator.config.data.v1.action;
+package org.ethereum.beacon.emulator.config.main.action;
 
 /** Settings for validator emulation of several random validators */
 public class ActionEmulate extends Action {
