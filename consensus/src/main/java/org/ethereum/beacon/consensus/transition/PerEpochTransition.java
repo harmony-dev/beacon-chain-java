@@ -624,9 +624,8 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
       ValidatorIndex proposer_index = spec
           .get_beacon_proposer_index(state, inclusion_slot.get(index));
       state.getValidatorBalances().update(proposer_index, balance ->
-          balance
-              .plus(base_reward.apply(index))
-              .dividedBy(specConst.getIncluderRewardQuotient()));
+          balance.plus(base_reward.apply(index)
+              .dividedBy(specConst.getIncluderRewardQuotient())));
     }
 
     /*
