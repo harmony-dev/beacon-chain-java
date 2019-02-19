@@ -60,7 +60,7 @@ public class Emulator extends ReusableOptions implements Callable<Void> {
       configPathValues.add(Pair.with("plan.validator[0].count", validators));
     }
     Pair<MainConfig, ChainSpecData> configs =
-        prepareAndPrintConfigs(action, "/config/emulator-config.yml");
+        prepareAndPrintConfigs(action, "/config/emulator-config.yml", "/config/emulator-chainSpec.yml");
 
     if (action.equals(Task.start)) {
       runEmulator(configs.getValue0(), configs.getValue1().build());
