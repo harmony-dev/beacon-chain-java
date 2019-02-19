@@ -13,7 +13,6 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import net.consensys.cava.bytes.Bytes;
-import net.consensys.cava.bytes.MutableBytes;
 import net.consensys.cava.ssz.BytesSSZReaderProxy;
 import net.consensys.cava.ssz.SSZ;
 import net.consensys.cava.ssz.SSZException;
@@ -22,7 +21,6 @@ import org.ethereum.beacon.ssz.type.SubclassCodec;
 import org.javatuples.Pair;
 import org.javatuples.Triplet;
 import tech.pegasys.artemis.util.bytes.BytesValue;
-import tech.pegasys.artemis.util.bytes.MutableBytesValue;
 
 /**
  * Implementation of {@link SSZCodecResolver} which implements SSZ Hash function
@@ -250,22 +248,22 @@ public class SSZCodecHasher implements SSZCodecResolver {
       int itemsPerChunk = SSZ_CHUNK_SIZE / lst[0].size();
       // Build a list of chunks based on the number of items in the chunk
       for (int i = 0; i < lst.length; i += itemsPerChunk) {
-        MutableBytes chunk = MutableBytes.create(SSZ_CHUNK_SIZE);
-        for(int j = 0; j < Math.min(lst.length - i, itemsPerChunk); j++) {
-          lst[i + j].copyTo(chunk, j * lst[0].size());
-        }
-        chunkz.add(chunk);
+        int chunkLen = Math.min(itemsPerChunk, lst.length - i);
+        Bytes[] lstSlice = new Bytes[chunkLen];
+        System.arraycopy(lst, i, lstSlice, 0, chunkLen);
+        Bytes chunkBeforePad = Bytes.concatenate(lstSlice);
+        chunkz.add(zpad(chunkBeforePad, SSZ_CHUNK_SIZE));
       }
     } else {
       // Leave large items alone
       chunkz.addAll(Arrays.asList(lst));
     }
 
-    // Tree-hash
+    // Merkleise
+    for (int i = chunkz.size(); i < next_power_of_2(chunkz.size()); ++i) {
+      chunkz.add(EMPTY_CHUNK);
+    }
     while (chunkz.size() > 1) {
-      if (chunkz.size() % 2 == 1) {
-        chunkz.add(EMPTY_CHUNK);
-      }
       List<Bytes> tempChunkz = new ArrayList<>();
       for (int i = 0; i < chunkz.size(); i += 2) {
         Bytes curChunk = hashFunction.apply(Bytes.concatenate(chunkz.get(i), chunkz.get(i + 1)));
@@ -275,6 +273,29 @@ public class SSZCodecHasher implements SSZCodecResolver {
     }
 
     return hashFunction.apply(Bytes.concatenate(chunkz.get(0), dataLen));
+  }
+
+  private long next_power_of_2(int x) {
+    if (x == 0) {
+      return 1;
+    } else {
+      return Double.valueOf(Math.pow(2, bit_length(x - 1))).longValue();
+    }
+  }
+
+  private int bit_length(int val) {
+    String bin = Integer.toBinaryString(val);
+    for (int i = 0; i < bin.length(); ++i) {
+      if (bin.charAt(i) != '0') {
+        return bin.length() - i;
+      }
+    }
+
+    return 0;
+  }
+
+  private Bytes zpad(Bytes input, int length) {
+    return Bytes.concatenate(input, Bytes.wrap(new byte[length - input.size()]));
   }
 
   private Bytes hash_tree_root_list(Bytes[] lst) {
