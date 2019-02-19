@@ -1,6 +1,6 @@
 package org.ethereum.beacon.emulator.config;
 
-import org.ethereum.beacon.emulator.config.data.Config;
+import org.ethereum.beacon.emulator.config.Config;
 
 /** Passes config out without any modifications or AS IS */
 public class AsIsSupplier implements ConfigSupplier {

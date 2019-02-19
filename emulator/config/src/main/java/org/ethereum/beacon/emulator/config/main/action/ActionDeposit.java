@@ -1,4 +1,4 @@
-package org.ethereum.beacon.emulator.config.data.v1.action;
+package org.ethereum.beacon.emulator.config.main.action;
 
 /**
  * Deposit action settings sets configuration of validator registration by sending deposit to

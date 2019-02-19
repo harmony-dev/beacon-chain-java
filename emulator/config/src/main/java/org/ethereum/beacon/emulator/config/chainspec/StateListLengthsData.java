@@ -1,4 +1,4 @@
-package org.ethereum.beacon.emulator.config.data.v1.chainspec;
+package org.ethereum.beacon.emulator.config.chainspec;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.ethereum.beacon.core.spec.StateListLengths;

@@ -1,11 +1,10 @@
 package org.ethereum.beacon.emulator.config;
 
 import org.ethereum.beacon.core.spec.ChainSpec;
-import org.ethereum.beacon.emulator.config.data.Config;
-import org.ethereum.beacon.emulator.config.data.v1.Configuration;
-import org.ethereum.beacon.emulator.config.data.v1.MainConfig;
-import org.ethereum.beacon.emulator.config.data.v1.action.ActionEmulate;
-import org.ethereum.beacon.emulator.config.data.v1.chainspec.ChainSpecData;
+import org.ethereum.beacon.emulator.config.chainspec.ChainSpecData;
+import org.ethereum.beacon.emulator.config.main.Configuration;
+import org.ethereum.beacon.emulator.config.main.MainConfig;
+import org.ethereum.beacon.emulator.config.main.action.ActionEmulate;
 import org.junit.Test;
 import tech.pegasys.artemis.util.uint.UInt64;
 
@@ -13,8 +12,6 @@ import java.io.File;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public class ConfigBuilderTest {
   @Test
@@ -24,7 +21,6 @@ public class ConfigBuilderTest {
 
     configBuilder.addYamlConfig(testYamlConfig);
     MainConfig unmodified = (MainConfig) configBuilder.build();
-    assertEquals(1, unmodified.getVersion());
     assertEquals("file://db", unmodified.getConfig().getDb());
     assertEquals("file://chainSpec.json", unmodified.getConfig().getChainSpec());
     assertEquals(3, unmodified.getPlan().getValidator().size());
@@ -34,7 +30,6 @@ public class ConfigBuilderTest {
     Configuration configPart = new Configuration();
     configPart.setDb("file://second/path");
     config2.setConfig(configPart);
-    config2.setVersion(1);
     configBuilder.addConfig(config2);
     MainConfig merged = (MainConfig) configBuilder.build();
     assertEquals("file://second/path", merged.getConfig().getDb());
@@ -52,32 +47,6 @@ public class ConfigBuilderTest {
   }
 
   @Test
-  public void testUnsupportedVersion() {
-    ConfigBuilder configBuilder = new ConfigBuilder(MainConfig.class);
-    File testYamlConfig = new File(getClass().getClassLoader().getResource("config.yml").getFile());
-
-    configBuilder.addYamlConfig(testYamlConfig);
-    MainConfig unmodified = (MainConfig) configBuilder.build();
-    assertEquals(1, unmodified.getVersion());
-
-    MainConfig config2 =
-        new MainConfig() {
-          @Override
-          public int getVersion() {
-            return 2;
-          }
-        };
-    configBuilder.addConfig(config2);
-    try {
-      Config failed = configBuilder.build();
-    } catch (RuntimeException e) {
-      assertTrue(e.getMessage().contains("same version"));
-      return;
-    }
-    fail(); // XXX: should not reach this code
-  }
-
-  @Test
   public void testChainSpec() {
     ConfigBuilder configBuilder = new ConfigBuilder(ChainSpecData.class);
     File testYamlConfig =
@@ -85,7 +54,6 @@ public class ConfigBuilderTest {
 
     configBuilder.addYamlConfig(testYamlConfig);
     ChainSpecData unmodified = (ChainSpecData) configBuilder.build();
-    assertEquals(1, unmodified.getVersion());
     ChainSpec chainSpec = unmodified.build();
 
     ChainSpec chainSpecDefault = ChainSpec.DEFAULT;

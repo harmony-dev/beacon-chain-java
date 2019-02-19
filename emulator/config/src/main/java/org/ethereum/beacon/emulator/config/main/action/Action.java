@@ -1,4 +1,4 @@
-package org.ethereum.beacon.emulator.config.data.v1.action;
+package org.ethereum.beacon.emulator.config.main.action;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;

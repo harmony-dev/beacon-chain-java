@@ -1,8 +1,6 @@
-package org.ethereum.beacon.emulator.config.data.v1.chainspec;
+package org.ethereum.beacon.emulator.config.chainspec;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
-import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import org.ethereum.beacon.core.spec.DepositContractParameters;
 import org.ethereum.beacon.core.types.Gwei;
 import tech.pegasys.artemis.ethereum.core.Address;

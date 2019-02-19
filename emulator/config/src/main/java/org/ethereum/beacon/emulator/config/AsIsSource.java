@@ -1,6 +1,4 @@
-package org.ethereum.beacon.emulator.config.type;
-
-import org.ethereum.beacon.emulator.config.data.Config;
+package org.ethereum.beacon.emulator.config;
 
 /** Source of config from config without changes */
 public class AsIsSource implements ConfigSource {
