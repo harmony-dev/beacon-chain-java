@@ -33,7 +33,7 @@ public class PerEpochTransitionTest {
           }
         };
 
-    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(chainSpec);
+    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(chainSpec, () -> 0L);
 
     List<Deposit> deposits = TestUtils.getAnyDeposits(specHelpers, 8).getValue0();
 

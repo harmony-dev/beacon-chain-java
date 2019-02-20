@@ -25,6 +25,7 @@ import org.ethereum.beacon.core.operations.Exit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.operations.slashing.ProposalSignedData;
+import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.spec.SignatureDomains;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.BLSSignature;
@@ -52,7 +53,7 @@ public class BeaconChainProposerTest {
   public void proposeABlock() {
     Random random = new Random();
 
-    SpecHelpers specHelpers = SpecHelpers.createDefault();
+    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT, () -> 0L);
     DepositContract depositContract =
         DepositContractTestUtil.mockDepositContract(random, Collections.emptyList());
     BlockTransition<BeaconStateEx> perBlockTransition =
@@ -80,7 +81,7 @@ public class BeaconChainProposerTest {
   public void proposeABlockWithOperations() {
     Random random = new Random();
 
-    SpecHelpers specHelpers = SpecHelpers.createDefault();
+    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT, () -> 0L);
     DepositContract depositContract =
         DepositContractTestUtil.mockDepositContract(random, Collections.emptyList());
     BlockTransition<BeaconStateEx> perBlockTransition =
@@ -141,7 +142,7 @@ public class BeaconChainProposerTest {
   public void proposeABlockWithDeposits() {
     Random random = new Random();
 
-    SpecHelpers specHelpers = SpecHelpers.createDefault();
+    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT, () -> 0L);
 
     List<Deposit> deposits =
         DepositTestUtil.createRandomList(
@@ -193,7 +194,7 @@ public class BeaconChainProposerTest {
   public void proposeABlockWithEpochTransition() {
     Random random = new Random();
 
-    SpecHelpers specHelpers = SpecHelpers.createDefault();
+    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT, () -> 0L);
     DepositContract depositContract =
         DepositContractTestUtil.mockDepositContract(random, Collections.emptyList());
     BlockTransition<BeaconStateEx> perBlockTransition =

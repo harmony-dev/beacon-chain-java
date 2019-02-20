@@ -69,30 +69,13 @@ public class SpecHelpers {
   private final Supplier<Long> systemTimeSupplier;
 
   /**
-   * Creates a SpecHelpers instance with {@link ChainSpec#DEFAULT} as a chain spec, {@link
-   * Hashes#keccak256(BytesValue)} as a hash function and {@link SSZObjectHasher} as an object
-   * hasher.
-   *
-   * @return spec helpers instance.
-   */
-  public static SpecHelpers createDefault() {
-    return createWithSSZHasher(ChainSpec.DEFAULT);
-  }
-
-  public static SpecHelpers createWithSSZHasher(@Nonnull ChainSpec spec) {
-    return createWithSSZHasher(
-        spec,
-        () -> {
-          throw new RuntimeException("Time supplier required");
-        });
-  }
-
-  /**
-   * Creates a SpecHelpers instance with given {@link ChainSpec}, {@link
-   * Hashes#keccak256(BytesValue)} as a hash function and {@link SSZObjectHasher} as an object
+   * Creates a SpecHelpers instance with given {@link ChainSpec} and time supplier,
+   * {@link Hashes#keccak256(BytesValue)} as a hash function and {@link SSZObjectHasher} as an object
    * hasher.
    *
    * @param spec a chain spec.
+   * @param systemTimeSupplier The current system time supplier. Normally the
+   *    <code>Schedulers::currentTime</code> is passed
    * @return spec helpers instance.
    */
   public static SpecHelpers createWithSSZHasher(@Nonnull ChainSpec spec, @Nonnull Supplier<Long> systemTimeSupplier) {
