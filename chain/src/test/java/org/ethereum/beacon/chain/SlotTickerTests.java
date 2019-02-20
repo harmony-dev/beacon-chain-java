@@ -18,13 +18,13 @@ import static org.junit.Assert.assertTrue;
 
 public class SlotTickerTests {
   public static final int MILLIS_IN_SECOND = 1000;
-  private final ControlledSchedulers schedulers;
+  private final Schedulers schedulers;
   SlotTicker slotTicker;
   SlotNumber genesisSlot;
   SlotNumber previousTick = SlotNumber.ZERO;
 
   public SlotTickerTests() throws InterruptedException {
-    schedulers = Schedulers.createControlled();
+    schedulers = Schedulers.createDefault();
     MutableBeaconState beaconState = BeaconState.getEmpty().createMutableCopy();
     while (schedulers.getCurrentTime() % MILLIS_IN_SECOND < 100
         || schedulers.getCurrentTime() % MILLIS_IN_SECOND > 900) {
