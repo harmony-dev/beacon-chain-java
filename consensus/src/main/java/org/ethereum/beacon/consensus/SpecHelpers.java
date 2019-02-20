@@ -118,14 +118,13 @@ public class SpecHelpers {
         ) * EPOCH_LENGTH
    */
   int get_epoch_committee_count(int active_validator_count) {
-    return max(1,
-        min(
-            spec.getShardCount().dividedBy(spec.getEpochLength()).getIntValue(),
+    return UInt64s.max(UInt64.valueOf(1),
+        UInt64s.min(
+            spec.getShardCount().dividedBy(spec.getEpochLength()),
             UInt64.valueOf(active_validator_count)
                 .dividedBy(spec.getEpochLength())
                 .dividedBy(spec.getTargetCommitteeSize())
-                .getIntValue()
-        ));
+        )).times(spec.getEpochLength()).intValue();
   }
 
   /*
