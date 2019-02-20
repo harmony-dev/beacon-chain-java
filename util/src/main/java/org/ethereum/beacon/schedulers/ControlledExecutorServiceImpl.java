@@ -195,7 +195,7 @@ public class ControlledExecutorServiceImpl implements ControlledExecutorService 
 
   @Override
   public void execute(Runnable command) {
-    command.run();
+    delegateExecutor.execute(command);
   }
 
   @Override
