@@ -1,6 +1,7 @@
 package org.ethereum.beacon.consensus;
 
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
+import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.crypto.Hashes;
@@ -23,7 +24,7 @@ public class SpecHelpersTest {
 
   @Test
   public void shuffleTest0() throws Exception {
-    SpecHelpers specHelpers = SpecHelpers.createDefault();
+    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT, () -> 0L);
 
     int[] sample = new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 
@@ -68,7 +69,7 @@ public class SpecHelpersTest {
       }
     }
 
-    SpecHelpers specHelpers = SpecHelpers.createDefault();
+    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT, () -> 0L);
 
     Map<Integer, Long> map = Arrays.stream(statuses).boxed().collect
         (Collectors.groupingBy(Function.identity(), Collectors.counting()));
@@ -89,7 +90,7 @@ public class SpecHelpersTest {
 
   @Test
   public void testHashTreeRoot1() {
-    SpecHelpers specHelpers = SpecHelpers.createDefault();
+    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT, () -> 0L);
     Hash32 expected =
         Hash32.fromHexString("0x8fc89d0f1f435b07543b15fdf687e7fce4a754ecd9e5afbf8f0e83928a7f798f");
     Hash32 actual = specHelpers.hash_tree_root(createDepositInput());

@@ -17,6 +17,7 @@ import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.db.source.SingleValueSource;
 import org.ethereum.beacon.pow.DepositContract;
+import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.ssz.Serializer;
 import org.ethereum.beacon.validator.BeaconChainAttester;
 import org.ethereum.beacon.validator.BeaconChainProposer;
@@ -48,6 +49,7 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
   private final DepositContract depositContract;
   private final Publisher<ObservableBeaconState> observablePublisher;
   private final SingleValueSource<RegistrationStage> stagePersistence;
+  private final Schedulers schedulers;
 
   private final SpecHelpers specHelpers;
   private final Serializer sszSerializer;
@@ -73,13 +75,15 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
       DepositContract depositContract,
       Publisher<ObservableBeaconState> observablePublisher,
       SingleValueSource<RegistrationStage> registrationStagePersistence,
-      SpecHelpers specHelpers) {
+      SpecHelpers specHelpers,
+      Schedulers schedulers) {
     this.transactionBuilder = transactionBuilder;
     this.transactionGateway = transactionGateway;
     this.depositContract = depositContract;
     this.observablePublisher = observablePublisher;
     this.stagePersistence = registrationStagePersistence;
     this.specHelpers = specHelpers;
+    this.schedulers = schedulers;
     sszSerializer = Serializer.annotationSerializer();
   }
 
@@ -205,7 +209,7 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
           new BeaconChainAttesterImpl(specHelpers, specHelpers.getChainSpec());
       validatorService =
           new BeaconChainValidator(
-              pubKey, proposer, attester, specHelpers, signer, observablePublisher);
+              pubKey, proposer, attester, specHelpers, signer, observablePublisher, schedulers);
       validatorService.start();
       changeCurrentStage(RegistrationStage.COMPLETE);
     }

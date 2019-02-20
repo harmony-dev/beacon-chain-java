@@ -11,6 +11,8 @@ import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.pow.util.DepositContractTestUtil;
+import org.ethereum.beacon.schedulers.DefaultSchedulers;
+import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.validator.BeaconChainAttester;
 import org.ethereum.beacon.validator.BeaconChainProposer;
 import org.ethereum.beacon.validator.BeaconChainValidator;
@@ -40,6 +42,7 @@ public abstract class ValidatorServiceTestUtil {
     MessageSigner<BLSSignature> signer = MessageSignerTestUtil.createBLSSigner();
 
     return Mockito.spy(
-        new BeaconChainValidator(pubkey, proposer, attester, specHelpers, signer, Mono.empty()));
+        new BeaconChainValidator(pubkey, proposer, attester, specHelpers,
+            signer, Mono.empty(), Schedulers.createDefault()));
   }
 }

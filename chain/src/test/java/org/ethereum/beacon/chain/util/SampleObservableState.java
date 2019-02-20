@@ -28,6 +28,8 @@ import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.crypto.BLS381.KeyPair;
 import org.ethereum.beacon.db.InMemoryDatabase;
 import org.ethereum.beacon.pow.DepositContract.ChainStart;
+import org.ethereum.beacon.schedulers.ControlledSchedulers;
+import org.ethereum.beacon.schedulers.Schedulers;
 import org.javatuples.Pair;
 import org.reactivestreams.Publisher;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -51,7 +53,8 @@ public class SampleObservableState {
       long genesisSlot,
       Duration slotDuration,
       int validatorCount,
-      Publisher<Attestation> attestationsSteam) {
+      Publisher<Attestation> attestationsSteam,
+      Schedulers schedulers) {
 
     ChainSpec chainSpec =
         new ChainSpec() {
@@ -70,7 +73,7 @@ public class SampleObservableState {
             return SlotNumber.of(genesisSlot);
           }
         };
-    this.specHelpers = SpecHelpers.createWithSSZHasher(chainSpec);
+    this.specHelpers = SpecHelpers.createWithSSZHasher(chainSpec, schedulers::getCurrentTime);
 
     Pair<List<Deposit>, List<KeyPair>> anyDeposits = TestUtils
         .getAnyDeposits(specHelpers, 8);
@@ -102,10 +105,12 @@ public class SampleObservableState {
         perEpochTransition,
         blockVerifier,
         stateVerifier,
-        beaconChainStorage);
+        beaconChainStorage,
+        schedulers);
     beaconChain.init();
 
-    slotTicker = new SlotTicker(specHelpers, beaconChain.getRecentlyProcessed().getState());
+    slotTicker = new SlotTicker(specHelpers, beaconChain.getRecentlyProcessed().getState(),
+        schedulers);
     slotTicker.start();
 
     observableStateProcessor = new ObservableStateProcessorImpl(
@@ -115,7 +120,8 @@ public class SampleObservableState {
         beaconChain.getBlockStatesStream(),
         specHelpers,
         perSlotTransition,
-        perEpochTransition);
+        perEpochTransition,
+        schedulers);
     observableStateProcessor.start();
 
   }

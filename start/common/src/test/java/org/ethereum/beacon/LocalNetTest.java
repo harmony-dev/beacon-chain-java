@@ -1,6 +1,7 @@
 package org.ethereum.beacon;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -18,6 +19,7 @@ import org.ethereum.beacon.crypto.BLS381.KeyPair;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.pow.DepositContract.ChainStart;
 import org.ethereum.beacon.schedulers.ControlledSchedulers;
+import org.ethereum.beacon.schedulers.LoggerMDCExecutor;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.wire.LocalWireHub;
 import org.ethereum.beacon.wire.WireApi;
@@ -67,17 +69,46 @@ public class LocalNetTest {
     public void setDistanceFromHead(long distanceFromHead) {}
   }
 
+  static class MDCControlledSchedulers {
+    public String mdcKey = "validatorIndex";
+    private int counter = 0;
+    private List<ControlledSchedulers> schedulersList = new ArrayList<>();
+    private long currentTime;
+
+    public ControlledSchedulers createNew() {
+      LoggerMDCExecutor mdcExecutor = new LoggerMDCExecutor(mdcKey, "" + counter);
+      counter++;
+      ControlledSchedulers newSched = Schedulers.createControlled(() -> mdcExecutor);
+      newSched.setCurrentTime(currentTime);
+      schedulersList.add(newSched);
+      return newSched;
+    }
+
+    public void setCurrentTime(long time) {
+      currentTime = time;
+      schedulersList.forEach(cs -> cs.setCurrentTime(time));
+    }
+
+    void addTime(Duration duration) {
+      addTime(duration.toMillis());
+    }
+
+    void addTime(long millis) {
+      setCurrentTime(currentTime + millis);
+    }
+  }
+
   public static void main(String[] args) throws Exception {
     int validatorCount = 4;
     int epochLength = 2;
-
-    ControlledSchedulers schedulers = new ControlledSchedulers();
-    Schedulers.set(schedulers);
-
     Random rnd = new Random(1);
     Time genesisTime = Time.of(10 * 60);
-    schedulers.setCurrentTime(genesisTime.getMillis().getValue() + 1000);
+
+    MDCControlledSchedulers controlledSchedulers = new MDCControlledSchedulers();
+    controlledSchedulers.setCurrentTime(genesisTime.getMillis().getValue() + 1000);
+
     Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), Hash32.random(rnd));
+
     ChainSpec chainSpec =
         new ChainSpec() {
           @Override
@@ -105,9 +136,8 @@ public class LocalNetTest {
           }
         };
 
-    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(chainSpec);
-
-    Pair<List<Deposit>, List<KeyPair>> anyDeposits = TestUtils.getAnyDeposits(specHelpers, validatorCount);
+    Pair<List<Deposit>, List<KeyPair>> anyDeposits = TestUtils.getAnyDeposits(
+            SpecHelpers.createWithSSZHasher(chainSpec, () -> 0L), validatorCount);
     List<Deposit> deposits = anyDeposits.getValue0();
 
     LocalWireHub localWireHub = new LocalWireHub(s -> {});
@@ -116,9 +146,13 @@ public class LocalNetTest {
 
     System.out.println("Creating peers...");
     for(int i = 0; i < validatorCount; i++) {
+      ControlledSchedulers schedulers = controlledSchedulers.createNew();
+      SpecHelpers specHelpers = SpecHelpers
+          .createWithSSZHasher(chainSpec, schedulers::getCurrentTime);
       WireApi wireApi = localWireHub.createNewPeer("" + i);
+
       Launcher launcher = new Launcher(specHelpers, depositContract, anyDeposits.getValue1().get(i),
-          wireApi, new MemBeaconChainStorageFactory());
+          wireApi, new MemBeaconChainStorageFactory(), schedulers);
 
       int finalI = i;
       Flux.from(launcher.slotTicker.getTickerStream())
@@ -141,19 +175,7 @@ public class LocalNetTest {
 
     while (true) {
       System.out.println("===============================");
-      schedulers.addTime(Duration.ofSeconds(10));
+      controlledSchedulers.addTime(Duration.ofSeconds(10));
     }
-
-//    Thread.sleep(100000000);
-  }
-
-  static String slotInfo(SpecHelpers specHelpers, Time genesisTime, SlotNumber slot) {
-    ChainSpec spec = specHelpers.getChainSpec();
-    Time slotTime = genesisTime.plus(spec.getSlotDuration().times(slot.minus(spec.getGenesisSlot())));
-
-    double time = System.currentTimeMillis() - slotTime.getValue() * 1000;
-    time /= 1000;
-    return "Slot #" + slot.minus(spec.getGenesisSlot()) +
-        String.format(" %.1f sec from its time", time);
   }
 }

@@ -30,7 +30,7 @@ public class PerSlotTransitionTest {
             return new SlotNumber.EpochLength(UInt64.valueOf(8));
           }
         };
-    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(chainSpec);
+    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(chainSpec, () -> 0L);
 
     List<Deposit> deposits = TestUtils.getAnyDeposits(specHelpers, 8).getValue0();
 
@@ -41,9 +41,9 @@ public class PerSlotTransitionTest {
 
     BeaconStateEx initialState =
         initialStateTransition.apply(BeaconBlocks.createGenesis(chainSpec));
-    BeaconStateEx s1State = new PerSlotTransition(chainSpec).apply(initialState);
-    BeaconStateEx s2State = new PerSlotTransition(chainSpec).apply(s1State);
-    BeaconStateEx s3State = new PerSlotTransition(chainSpec).apply(s2State);
+    BeaconStateEx s1State = new PerSlotTransition(specHelpers).apply(initialState);
+    BeaconStateEx s2State = new PerSlotTransition(specHelpers).apply(s1State);
+    BeaconStateEx s3State = new PerSlotTransition(specHelpers).apply(s2State);
 
     Assert.assertEquals(chainSpec.getGenesisSlot().plus(3), s3State.getCanonicalState().getSlot());
   }

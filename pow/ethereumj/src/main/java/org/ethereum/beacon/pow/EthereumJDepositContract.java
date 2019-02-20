@@ -33,7 +33,7 @@ public class EthereumJDepositContract extends AbstractDepositContract {
   private static final String DEPOSIT_EVENT_NAME = "Deposit";
   private static final String CHAIN_START_EVENT_NAME = "ChainStart";
 
-  private final Scheduler blockExecutor = Schedulers.get().blocking();
+  private final Scheduler blockExecutor;
 
   private final Ethereum ethereum;
   private final Address contractDeployAddress;
@@ -47,7 +47,8 @@ public class EthereumJDepositContract extends AbstractDepositContract {
   private boolean chainStartComplete;
 
   public EthereumJDepositContract(Ethereum ethereum, long contractDeployBlock,
-      String contractDeployAddress) {
+      String contractDeployAddress, Schedulers schedulers) {
+    super(schedulers);
     this.ethereum = ethereum;
     this.contractDeployAddress = Address.fromHexString(contractDeployAddress);
     contractDeployAddressHash =
@@ -56,6 +57,7 @@ public class EthereumJDepositContract extends AbstractDepositContract {
     this.contract = new Contract(ContractAbi.getContractAbi());
     this.contractDeployBlock = contractDeployBlock;
     processedUpToBlock = contractDeployBlock;
+    blockExecutor = this.schedulers.blocking();
   }
 
   @Override
