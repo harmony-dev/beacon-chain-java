@@ -16,7 +16,7 @@ public class Emulator extends ReusableOptions implements Callable<Void> {
   @CommandLine.Parameters(
       index = "0",
       description =
-          "Task to do: start/print.\n start - Starts beacon emulator.\n print - Prints configuration and tasks to run on start.")
+          "Task to do: run/config.\n run - Runs beacon emulator.\n config - Prints configuration and tasks to run on start.")
   Task action;
 
   @CommandLine.Parameters(
@@ -39,7 +39,7 @@ public class Emulator extends ReusableOptions implements Callable<Void> {
         prepareAndPrintConfigs(
             action, "/config/emulator-config.yml", "/config/emulator-chainSpec.yml");
 
-    if (action.equals(Task.start)) {
+    if (action.equals(Task.run)) {
       EmulatorLauncher emulatorLauncher =
           new EmulatorLauncher(configs.getValue0(), configs.getValue1().build());
       emulatorLauncher.run();

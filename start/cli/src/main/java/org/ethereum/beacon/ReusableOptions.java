@@ -83,8 +83,8 @@ public class ReusableOptions {
       Task action, String extraConfig, @Nullable String extraChainSpec) {
     MainConfig mainConfig = prepareConfig(extraConfig);
     ChainSpecData chainSpecData = prepareChainSpec(extraChainSpec);
-    if (action.equals(Task.print)) {
-      System.out.println("If executed with `start` command, will use following options.");
+    if (action.equals(Task.config)) {
+      System.out.println("If executed with " + Task.run + " command, will use following options.");
       System.out.println("Main config:");
       System.out.println(new YamlPrinter(mainConfig).getString());
       if (verbose) {
@@ -99,7 +99,7 @@ public class ReusableOptions {
   }
 
   enum Task {
-    start,
-    print
+    run,
+    config
   }
 }

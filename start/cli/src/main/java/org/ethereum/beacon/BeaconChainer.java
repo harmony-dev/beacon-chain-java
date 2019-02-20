@@ -13,7 +13,7 @@ public class BeaconChainer extends ReusableOptions implements Callable<Void> {
   @CommandLine.Parameters(
       index = "0",
       description =
-          "Task to do: start/print.\n start - Starts beacon chain.\n print - Prints configuration and tasks to run on start.")
+          "Task to do: run/config.\n run - Runs beacon chain.\n config - Prints configuration and tasks to run on start.")
   Task action;
 
   public static void main(String[] args) {
