@@ -142,17 +142,5 @@ public class LocalNetTest {
       System.out.println("===============================");
       schedulers.addTime(Duration.ofSeconds(10));
     }
-
-//    Thread.sleep(100000000);
-  }
-
-  static String slotInfo(SpecHelpers specHelpers, Time genesisTime, SlotNumber slot) {
-    ChainSpec spec = specHelpers.getChainSpec();
-    Time slotTime = genesisTime.plus(spec.getSlotDuration().times(slot.minus(spec.getGenesisSlot())));
-
-    double time = System.currentTimeMillis() - slotTime.getValue() * 1000;
-    time /= 1000;
-    return "Slot #" + slot.minus(spec.getGenesisSlot()) +
-        String.format(" %.1f sec from its time", time);
   }
 }

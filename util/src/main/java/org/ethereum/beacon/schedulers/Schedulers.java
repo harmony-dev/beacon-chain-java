@@ -11,23 +11,6 @@ import java.util.concurrent.ScheduledExecutorService;
 public abstract class Schedulers {
   private static final int BLOCKING_THREAD_COUNT = 128;
 
-  private static Schedulers current;
-
-  public static Schedulers get() {
-    if (current == null) {
-      resetToDefault();
-    }
-    return current;
-  }
-
-  public static void set(Schedulers newStaticSchedulers) {
-    current = newStaticSchedulers;
-  }
-
-  public static void resetToDefault() {
-    current = new DefaultSchedulers();
-  }
-
   private Scheduler cpuHeavyScheduler;
   private Scheduler blockingScheduler;
   private Scheduler eventsScheduler;
