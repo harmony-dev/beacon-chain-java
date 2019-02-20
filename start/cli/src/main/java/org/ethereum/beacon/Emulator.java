@@ -15,15 +15,16 @@ import java.util.concurrent.Callable;
 public class Emulator extends ReusableOptions implements Callable<Void> {
   @CommandLine.Parameters(
       index = "0",
+      description = "Number of validators to emulate.",
+      arity = "1")
+  Integer validators;
+
+  @CommandLine.Parameters(
+      index = "1",
       description =
           "Task to do: run/config.\n run - Runs beacon emulator.\n config - Prints configuration and tasks to run on start.")
   Task action;
 
-  @CommandLine.Parameters(
-      index = "1",
-      description = "Number of validators to emulate.",
-      arity = "0..1")
-  Integer validators;
 
   public static void main(String[] args) {
     CommandLine.call(new Emulator(), args);
@@ -37,7 +38,7 @@ public class Emulator extends ReusableOptions implements Callable<Void> {
     }
     Pair<MainConfig, ChainSpecData> configs =
         prepareAndPrintConfigs(
-            action, "/config/emulator-config.yml", "/config/emulator-chainSpec.yml");
+            action, "/config/emulator-config.yml");
 
     if (action.equals(Task.run)) {
       EmulatorLauncher emulatorLauncher =
