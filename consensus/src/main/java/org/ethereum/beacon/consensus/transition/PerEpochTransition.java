@@ -3,6 +3,7 @@ package org.ethereum.beacon.consensus.transition;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -426,9 +427,13 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
     // Set state.justified_epoch = new_justified_epoch.
     state.setJustifiedEpoch(new_justified_epoch);
 
-    logger.debug(() -> "Justified / Finalized epoch changes " +
-        origState.getJustifiedEpoch() + "=>" + state.getJustifiedEpoch() +
-        origState.getFinalizedEpoch() + "=>" + state.getFinalizedEpoch());
+    if (logger.isDebugEnabled() &&
+        !origState.getJustifiedEpoch().equals(state.getJustifiedEpoch()) ||
+        !origState.getFinalizedEpoch().equals(state.getFinalizedEpoch())) {
+      logger.debug("Justified / Finalized epoch changes " +
+          origState.getJustifiedEpoch() + "=>" + state.getJustifiedEpoch() + " / " +
+          origState.getFinalizedEpoch() + "=>" + state.getFinalizedEpoch());
+    }
 
     // Crosslinks
 
@@ -500,6 +505,7 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
 
     if (epochs_since_finality.lessEqual(EpochNumber.of(4))) {
       // Case 1: epochs_since_finality <= 4:
+      logger.debug("Case 1: epochs_since_finality <= 4");
 
       //  Expected FFG source:
 
@@ -511,7 +517,10 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
                     .times(previous_epoch_justified_attesting_balance)
                     .dividedBy(previous_total_balance)));
       }
-      logger.trace(() -> "Rewarded: Previous epoch justified attesters: " + previous_epoch_justified_attester_indices);
+      if (logger.isTraceEnabled() && !previous_epoch_justified_attester_indices.isEmpty()) {
+        logger.trace("Rewarded: Previous epoch justified attesters: "
+            + previous_epoch_justified_attester_indices);
+      }
 
       //  Any active validator index not in previous_epoch_justified_attester_indices loses
       //    base_reward(state, index).
@@ -524,7 +533,10 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
           previous_epoch_justified_attester_loosers.add(index);
         }
       }
-      logger.trace(() -> "Penalized: Previous epoch justified attesters: " + previous_epoch_justified_attester_loosers);
+      if (logger.isDebugEnabled() && !previous_epoch_justified_attester_loosers.isEmpty()) {
+        logger.debug("Penalized: Previous epoch justified attesters: "
+            + previous_epoch_justified_attester_loosers);
+      }
 
       //  Expected FFG target:
 
@@ -537,7 +549,10 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
                     .times(previous_epoch_boundary_attesting_balance)
                     .dividedBy(previous_total_balance)));
       }
-      logger.trace(() -> "Rewarded: Previous epoch boundary attesters: " + previous_epoch_boundary_attester_indices);
+      if (logger.isTraceEnabled() && !previous_epoch_boundary_attester_indices.isEmpty()) {
+        logger.trace("Rewarded: Previous epoch boundary attesters: "
+            + previous_epoch_boundary_attester_indices);
+      }
 
       //  Any active validator index not in previous_epoch_boundary_attester_indices loses
       //    base_reward(state, index).
@@ -550,7 +565,10 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
           previous_epoch_boundary_attester_loosers.add(index);
         }
       }
-      logger.trace(() -> "Penalized: Previous epoch boundary attesters: " + previous_epoch_boundary_attester_loosers);
+      if (logger.isDebugEnabled() && !previous_epoch_boundary_attester_loosers.isEmpty()) {
+        logger.debug("Penalized: Previous epoch boundary attesters: "
+            + previous_epoch_boundary_attester_loosers);
+      }
 
       //  Expected beacon chain head:
 
@@ -562,13 +580,24 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
                     .times(previous_epoch_head_attesting_balance)
                     .dividedBy(previous_total_balance)));
       }
+      if (logger.isTraceEnabled() && !previous_epoch_head_attester_indices.isEmpty()) {
+        logger.trace("Rewarded: Previous epoch head attesters: "
+            + previous_epoch_head_attester_indices);
+      }
+
       //  Any active validator index not in previous_epoch_head_attester_indices loses
       //    base_reward(state, index).
+      List<ValidatorIndex> previous_epoch_head_attester_loosers = new ArrayList<>();
       for (ValidatorIndex index : current_active_validator_indices) {
         if (!previous_epoch_head_attester_indices.contains(index)) {
           state.getValidatorBalances().update(index, balance ->
               balance.minus(base_reward.apply(index)));
+          previous_epoch_head_attester_loosers.add(index);
         }
+      }
+      if (logger.isDebugEnabled() && !previous_epoch_head_attester_loosers.isEmpty()) {
+        logger.debug("Penalized: Previous epoch head attesters: "
+            + previous_epoch_head_attester_loosers);
       }
 
       //  Inclusion distance:
@@ -582,35 +611,60 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
                     .times(specConst.getMinAttestationInclusionDelay())
                     .dividedBy(inclusion_distance.get(index))));
       }
+      if (logger.isTraceEnabled() && !previous_epoch_attester_indices.isEmpty()) {
+        logger.trace("Rewarded: Previous epoch attesters: " + previous_epoch_attester_indices);
+      }
     } else {
       // Case 2: epochs_since_finality > 4:
+      logger.debug("Case 2: epochs_since_finality > 4");
 
       //  Any active validator index not in previous_epoch_justified_attester_indices, loses
       //      inactivity_penalty(state, index, epochs_since_finality).
+      List<ValidatorIndex> previous_epoch_justified_attester_loosers = new ArrayList<>();
       for (ValidatorIndex index : current_active_validator_indices) {
         if (!previous_epoch_justified_attester_indices.contains(index)) {
           state.getValidatorBalances().update(index, balance ->
               balance.minus(inactivity_penalty.apply(index, epochs_since_finality)));
+          previous_epoch_justified_attester_loosers.add(index);
         }
       }
+      if (logger.isDebugEnabled() && !previous_epoch_justified_attester_loosers.isEmpty()) {
+        logger.debug("Penalized: Previous epoch justified attesters: "
+            + previous_epoch_justified_attester_loosers);
+      }
+
       //  Any active validator index not in previous_epoch_boundary_attester_indices, loses
       //      inactivity_penalty(state, index, epochs_since_finality).
+      List<ValidatorIndex> previous_epoch_boundary_attester_loosers = new ArrayList<>();
       for (ValidatorIndex index : current_active_validator_indices) {
         if (!previous_epoch_boundary_attester_indices.contains(index)) {
           state.getValidatorBalances().update(index, balance ->
               balance.minus(inactivity_penalty.apply(index, epochs_since_finality)));
+          previous_epoch_boundary_attester_loosers.add(index);
         }
       }
+      if (logger.isDebugEnabled() && !previous_epoch_boundary_attester_loosers.isEmpty()) {
+        logger.debug("Penalized: Previous epoch boundary attesters: "
+            + previous_epoch_boundary_attester_loosers);
+      }
+
       //  Any active validator index not in previous_epoch_head_attester_indices, loses
       //      base_reward(state, index).
+      List<ValidatorIndex> previous_epoch_head_attester_loosers = new ArrayList<>();
       for (ValidatorIndex index : current_active_validator_indices) {
         if (!previous_epoch_head_attester_indices.contains(index)) {
           state.getValidatorBalances().update(index, balance ->
               balance.minus(base_reward.apply(index)));
+          previous_epoch_head_attester_loosers.add(index);
         }
       }
+      if (logger.isDebugEnabled() && !previous_epoch_head_attester_loosers.isEmpty()) {
+        logger.debug("Penalized: Previous epoch head attesters: " + previous_epoch_head_attester_loosers);
+      }
+
       //  Any active_validator index with validator.penalized_epoch <= current_epoch, loses
       //      2 * inactivity_penalty(state, index, epochs_since_finality) + base_reward(state, index).
+      List<ValidatorIndex> inactive_attester_loosers = new ArrayList<>();
       for (ValidatorIndex index : current_active_validator_indices) {
         ValidatorRecord validator = state.getValidatorRegistry().get(index);
         if (validator.getPenalizedEpoch().lessEqual(current_epoch)) {
@@ -620,8 +674,13 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
                       .times(2)
                       .plus(base_reward.apply(index))
           );
+          inactive_attester_loosers.add(index);
         }
       }
+      if (logger.isDebugEnabled() && !inactive_attester_loosers.isEmpty()) {
+        logger.debug("Penalized: Inactive attesters: " + inactive_attester_loosers);
+      }
+
       //  Any validator index in previous_epoch_attester_indices loses
       //    base_reward(state, index) - base_reward(state, index) *
       //        MIN_ATTESTATION_INCLUSION_DELAY // inclusion_distance(state, index)
@@ -634,6 +693,9 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
             )
         ));
       }
+      if (logger.isDebugEnabled() && !previous_epoch_attester_indices.isEmpty()) {
+        logger.debug("Penalized: No finality attesters: " + previous_epoch_attester_indices);
+      }
     }
 
     /*
@@ -644,12 +706,17 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
     //    proposer_index = get_beacon_proposer_index(state, inclusion_slot(state, index))
     //    and set state.validator_balances[proposer_index] +=
     //      base_reward(state, index) // INCLUDER_REWARD_QUOTIENT.
+    Set<ValidatorIndex> attestation_inclusion_gainers = new HashSet<>();
     for (ValidatorIndex index : previous_epoch_attester_indices) {
       ValidatorIndex proposer_index = spec
           .get_beacon_proposer_index(state, inclusion_slot.get(index));
       state.getValidatorBalances().update(proposer_index, balance ->
           balance.plus(base_reward.apply(index)
               .dividedBy(specConst.getIncluderRewardQuotient())));
+      attestation_inclusion_gainers.add(proposer_index);
+    }
+    if (logger.isTraceEnabled() && !attestation_inclusion_gainers.isEmpty()) {
+      logger.trace("Rewarded: Attestation include proposers: " + attestation_inclusion_gainers);
     }
 
     /*
@@ -664,6 +731,8 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
            If index not in attesting_validators(crosslink_committee),
                state.validator_balances[index] -= base_reward(state, index).
     */
+    Set<ValidatorIndex> crosslink_attestation_gainers = new HashSet<>();
+    Set<ValidatorIndex> crosslink_attestation_loosers = new HashSet<>();
     for (SlotNumber slot: spec.get_epoch_start_slot(previous_epoch)
             .iterateTo(spec.get_epoch_start_slot(current_epoch))) {
       for (ShardCommittee committee : spec.get_crosslink_committees_at_slot(state, slot)) {
@@ -672,12 +741,21 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
         for (ValidatorIndex index : crosslink_committee) {
           if (attesting_validator_set.contains(index)) {
             state.getValidatorBalances().update(index, vb -> vb.plus(base_reward.apply(index)));
+            crosslink_attestation_gainers.add(index);
           } else {
             state.getValidatorBalances().update(index, vb -> vb.minus(base_reward.apply(index)));
+            crosslink_attestation_loosers.add(index);
           }
         }
       }
     }
+    if (logger.isTraceEnabled() && !crosslink_attestation_gainers.isEmpty()) {
+      logger.trace("Rewarded: Crosslink attesters: " + crosslink_attestation_gainers);
+    }
+    if (logger.isDebugEnabled() && !crosslink_attestation_loosers.isEmpty()) {
+      logger.debug("Penalized: Crosslink attesters: " + crosslink_attestation_loosers);
+    }
+
 
     /*
     Ejections
@@ -694,11 +772,17 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
               exit_validator(state, index)
      */
 
+
+    Set<ValidatorIndex> exit_validators = new HashSet<>();
     for (ValidatorIndex index : spec.get_active_validator_indices(
             state.getValidatorRegistry(), current_epoch)) {
       if (state.getValidatorBalances().get(index).less(specConst.getEjectionBalance())) {
         spec.exit_validator(state, index);
+        exit_validators.add(index);
       }
+    }
+    if (logger.isInfoEnabled() && !exit_validators.isEmpty()) {
+      logger.info("Validators ejected: " + exit_validators);
     }
 
     /*
