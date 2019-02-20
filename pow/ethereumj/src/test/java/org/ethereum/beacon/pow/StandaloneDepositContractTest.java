@@ -86,7 +86,7 @@ public class StandaloneDepositContractTest {
             ethereum,
             0,
             BytesValue.wrap(contract.getAddress()).toString(),
-            new DefaultSchedulers());
+            Schedulers.createDefault());
     depositContract.setDistanceFromHead(3);
 
     ChainStart chainStart = Mono.from(depositContract.getChainStartMono())
@@ -146,7 +146,7 @@ public class StandaloneDepositContractTest {
             ethereum,
             0,
             BytesValue.wrap(contract.getAddress()).toString(),
-            new DefaultSchedulers());
+            Schedulers.createDefault());
     depositContract.setDistanceFromHead(3);
     Mono<ChainStart> chainStartMono = Mono.from(depositContract.getChainStartMono());
     chainStartMono.subscribe();

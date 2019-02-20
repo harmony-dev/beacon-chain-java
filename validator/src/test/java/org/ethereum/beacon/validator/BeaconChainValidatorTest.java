@@ -21,7 +21,7 @@ public class BeaconChainValidatorTest {
   @Test
   public void recentStateIsKept() {
     Random random = new Random();
-    Schedulers schedulers = new DefaultSchedulers();
+    Schedulers schedulers = Schedulers.createDefault();
     SpecHelpers specHelpers =
         Mockito.spy(SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT, schedulers::getCurrentTime));
 
@@ -49,7 +49,7 @@ public class BeaconChainValidatorTest {
   @Test
   public void outboundRecentStateIsIgnored() {
     Random random = new Random();
-    Schedulers schedulers = new DefaultSchedulers();
+    Schedulers schedulers = Schedulers.createDefault();
     SpecHelpers specHelpers =
         Mockito.spy(SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT, schedulers::getCurrentTime));
 
@@ -82,7 +82,7 @@ public class BeaconChainValidatorTest {
   @Test
   public void initService() {
     Random random = new Random();
-    Schedulers schedulers = new DefaultSchedulers();
+    Schedulers schedulers = Schedulers.createDefault();
     SpecHelpers specHelpers =
         Mockito.spy(SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT, schedulers::getCurrentTime));
 
@@ -123,7 +123,7 @@ public class BeaconChainValidatorTest {
   @Test
   public void runValidatorTasks() {
     Random random = new Random();
-    Schedulers schedulers = new DefaultSchedulers();
+    Schedulers schedulers = Schedulers.createDefault();
     SpecHelpers specHelpers =
         Mockito.spy(SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT, schedulers::getCurrentTime));
 

@@ -6,6 +6,7 @@ import java.util.List;
 import org.ethereum.beacon.chain.util.SampleObservableState;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.schedulers.ControlledSchedulers;
+import org.ethereum.beacon.schedulers.Schedulers;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
@@ -14,7 +15,7 @@ public class ObservableStateProcessorTest {
 
   @Test
   public void test1() throws Exception {
-    ControlledSchedulers schedulers = new ControlledSchedulers();
+    ControlledSchedulers schedulers = Schedulers.createControlled();
     Duration genesisTime = Duration.ofMinutes(10);
     SlotNumber genesisSlot = SlotNumber.of(1_000_000);
     schedulers.setCurrentTime((genesisTime.getSeconds() + 1) * 1000);
@@ -49,7 +50,7 @@ public class ObservableStateProcessorTest {
 
   @Test
   public void test2() throws Exception {
-    ControlledSchedulers schedulers = new ControlledSchedulers();
+    ControlledSchedulers schedulers = Schedulers.createControlled();
     Duration genesisTime = Duration.ofMinutes(10);
     SlotNumber genesisSlot = SlotNumber.of(1_000_000);
     schedulers.setCurrentTime(genesisTime.plus(Duration.ofMinutes(10)).toMillis());

@@ -33,7 +33,7 @@ public class DefaultBeaconChainTest {
 
   @Test
   public void insertAChain() {
-    Schedulers schedulers = new DefaultSchedulers();
+    Schedulers schedulers = Schedulers.createDefault();
 
     SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT, schedulers::getCurrentTime);
     StateTransition<BeaconStateEx> perSlotTransition =

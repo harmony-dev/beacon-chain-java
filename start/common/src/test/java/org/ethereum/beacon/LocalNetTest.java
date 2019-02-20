@@ -71,7 +71,7 @@ public class LocalNetTest {
     int validatorCount = 4;
     int epochLength = 2;
 
-    ControlledSchedulers schedulers = new ControlledSchedulers();
+    ControlledSchedulers schedulers = Schedulers.createControlled();
 
     Random rnd = new Random(1);
     Time genesisTime = Time.of(10 * 60);

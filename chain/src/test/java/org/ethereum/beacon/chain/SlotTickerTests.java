@@ -7,7 +7,7 @@ import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.schedulers.ControlledSchedulers;
-import org.ethereum.beacon.schedulers.DefaultSchedulers;
+import org.ethereum.beacon.schedulers.Schedulers;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
 import java.util.concurrent.CountDownLatch;
@@ -24,7 +24,7 @@ public class SlotTickerTests {
   SlotNumber previousTick = SlotNumber.ZERO;
 
   public SlotTickerTests() throws InterruptedException {
-    schedulers = new ControlledSchedulers();
+    schedulers = Schedulers.createControlled();
     MutableBeaconState beaconState = BeaconState.getEmpty().createMutableCopy();
     while (schedulers.getCurrentTime() % MILLIS_IN_SECOND < 100
         || schedulers.getCurrentTime() % MILLIS_IN_SECOND > 900) {
@@ -46,7 +46,7 @@ public class SlotTickerTests {
         };
     SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(chainSpec, schedulers::getCurrentTime);
     genesisSlot = specHelpers.getChainSpec().getGenesisSlot();
-    slotTicker = new SlotTicker(specHelpers, beaconState, new DefaultSchedulers());
+    slotTicker = new SlotTicker(specHelpers, beaconState, Schedulers.createDefault());
   }
 
   @Test

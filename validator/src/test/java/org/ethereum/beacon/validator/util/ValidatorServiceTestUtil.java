@@ -43,6 +43,6 @@ public abstract class ValidatorServiceTestUtil {
 
     return Mockito.spy(
         new BeaconChainValidator(pubkey, proposer, attester, specHelpers,
-            signer, Mono.empty(), new DefaultSchedulers()));
+            signer, Mono.empty(), Schedulers.createDefault()));
   }
 }
