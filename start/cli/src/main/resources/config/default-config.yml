@@ -1,19 +1,2 @@
 config:
-  chainSpec: file://chainSpec.json
-  db: file://db
-  validator:
-    contract:
-      handler: ethereumj
-      distanceFromHead: 1000
-      contractAddress: 0xd47c61f2c25aaa677dcf23e65765fac04c85d6a0
-      contractBlock: 8000000
-      contractAbi: file://Contract.abi
-    signer:
-      implementation:
-        class: InsecureBLS381MessageSigner
-        input:
-          pubKey: 1
-          privKey: 1
 plan:
-  sync:
-    - action: run
