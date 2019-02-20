@@ -5,6 +5,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 
 public class ControlledSchedulers extends Schedulers {
@@ -53,9 +54,13 @@ public class ControlledSchedulers extends Schedulers {
 
   @Override
   protected ScheduledExecutorService createExecutor(String namePattern, int threads) {
-    ControlledExecutorService service = new ControlledExecutorServiceImpl();
+    ControlledExecutorService service = new ControlledExecutorServiceImpl(createDelegateExecutor());
     controlledExecutors.add(service);
     service.setCurrentTime(currentTime);
     return service;
+  }
+
+  protected Executor createDelegateExecutor() {
+    return Runnable::run;
   }
 }
