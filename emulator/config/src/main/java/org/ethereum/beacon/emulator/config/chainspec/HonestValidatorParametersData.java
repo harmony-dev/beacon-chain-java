@@ -6,7 +6,7 @@ import org.ethereum.beacon.core.spec.HonestValidatorParameters;
 
 public class HonestValidatorParametersData implements HonestValidatorParameters {
 
-  @JsonProperty(value = "ETH1_FOLLOW_DISTANCE", access = JsonProperty.Access.WRITE_ONLY)
+  @JsonProperty("ETH1_FOLLOW_DISTANCE")
   private Long ETH1_FOLLOW_DISTANCE;
 
   @Override
@@ -15,6 +15,7 @@ public class HonestValidatorParametersData implements HonestValidatorParameters 
     return getETH1_FOLLOW_DISTANCE();
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public Long getETH1_FOLLOW_DISTANCE() {
     return ETH1_FOLLOW_DISTANCE;
   }

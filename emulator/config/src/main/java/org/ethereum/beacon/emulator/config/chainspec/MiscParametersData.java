@@ -10,19 +10,19 @@ import tech.pegasys.artemis.util.uint.UInt64;
 
 public class MiscParametersData implements MiscParameters {
 
-  @JsonProperty(value = "SHARD_COUNT", access = JsonProperty.Access.WRITE_ONLY)
+  @JsonProperty("SHARD_COUNT")
   private String SHARD_COUNT;
-  @JsonProperty(value = "TARGET_COMMITTEE_SIZE", access = JsonProperty.Access.WRITE_ONLY)
+  @JsonProperty("TARGET_COMMITTEE_SIZE")
   private String TARGET_COMMITTEE_SIZE;
-  @JsonProperty(value = "EJECTION_BALANCE", access = JsonProperty.Access.WRITE_ONLY)
+  @JsonProperty("EJECTION_BALANCE")
   private String EJECTION_BALANCE;
-  @JsonProperty(value = "MAX_BALANCE_CHURN_QUOTIENT", access = JsonProperty.Access.WRITE_ONLY)
+  @JsonProperty("MAX_BALANCE_CHURN_QUOTIENT")
   private String MAX_BALANCE_CHURN_QUOTIENT;
-  @JsonProperty(value = "BEACON_CHAIN_SHARD_NUMBER", access = JsonProperty.Access.WRITE_ONLY)
+  @JsonProperty("BEACON_CHAIN_SHARD_NUMBER")
   private String BEACON_CHAIN_SHARD_NUMBER;
-  @JsonProperty(value = "MAX_INDICES_PER_SLASHABLE_VOTE", access = JsonProperty.Access.WRITE_ONLY)
+  @JsonProperty("MAX_INDICES_PER_SLASHABLE_VOTE")
   private String MAX_INDICES_PER_SLASHABLE_VOTE;
-  @JsonProperty(value = "MAX_WITHDRAWALS_PER_EPOCH", access = JsonProperty.Access.WRITE_ONLY)
+  @JsonProperty("MAX_WITHDRAWALS_PER_EPOCH")
   private String MAX_WITHDRAWALS_PER_EPOCH;
 
   @Override
@@ -67,6 +67,7 @@ public class MiscParametersData implements MiscParameters {
     return UInt64.valueOf(getMAX_WITHDRAWALS_PER_EPOCH());
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getSHARD_COUNT() {
     return SHARD_COUNT;
   }
@@ -75,6 +76,7 @@ public class MiscParametersData implements MiscParameters {
     this.SHARD_COUNT = SHARD_COUNT;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getTARGET_COMMITTEE_SIZE() {
     return TARGET_COMMITTEE_SIZE;
   }
@@ -83,6 +85,7 @@ public class MiscParametersData implements MiscParameters {
     this.TARGET_COMMITTEE_SIZE = TARGET_COMMITTEE_SIZE;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getEJECTION_BALANCE() {
     return EJECTION_BALANCE;
   }
@@ -91,6 +94,7 @@ public class MiscParametersData implements MiscParameters {
     this.EJECTION_BALANCE = EJECTION_BALANCE;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getMAX_BALANCE_CHURN_QUOTIENT() {
     return MAX_BALANCE_CHURN_QUOTIENT;
   }
@@ -99,6 +103,7 @@ public class MiscParametersData implements MiscParameters {
     this.MAX_BALANCE_CHURN_QUOTIENT = MAX_BALANCE_CHURN_QUOTIENT;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getBEACON_CHAIN_SHARD_NUMBER() {
     return BEACON_CHAIN_SHARD_NUMBER;
   }
@@ -107,6 +112,7 @@ public class MiscParametersData implements MiscParameters {
     this.BEACON_CHAIN_SHARD_NUMBER = BEACON_CHAIN_SHARD_NUMBER;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getMAX_INDICES_PER_SLASHABLE_VOTE() {
     return MAX_INDICES_PER_SLASHABLE_VOTE;
   }
@@ -115,6 +121,7 @@ public class MiscParametersData implements MiscParameters {
     this.MAX_INDICES_PER_SLASHABLE_VOTE = MAX_INDICES_PER_SLASHABLE_VOTE;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getMAX_WITHDRAWALS_PER_EPOCH() {
     return MAX_WITHDRAWALS_PER_EPOCH;
   }

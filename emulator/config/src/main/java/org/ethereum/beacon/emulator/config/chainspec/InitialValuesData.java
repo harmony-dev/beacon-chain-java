@@ -14,19 +14,19 @@ import tech.pegasys.artemis.util.uint.UInt64;
 
 public class InitialValuesData implements InitialValues {
 
-  @JsonProperty(value = "GENESIS_FORK_VERSION", access = JsonProperty.Access.WRITE_ONLY)
+  @JsonProperty("GENESIS_FORK_VERSION")
   private String GENESIS_FORK_VERSION;
-  @JsonProperty(value = "GENESIS_SLOT", access = JsonProperty.Access.WRITE_ONLY)
+  @JsonProperty("GENESIS_SLOT")
   private String GENESIS_SLOT;
-  @JsonProperty(value = "GENESIS_START_SHARD", access = JsonProperty.Access.WRITE_ONLY)
+  @JsonProperty("GENESIS_START_SHARD")
   private Integer GENESIS_START_SHARD;
-  @JsonProperty(value = "FAR_FUTURE_EPOCH", access = JsonProperty.Access.WRITE_ONLY)
+  @JsonProperty("FAR_FUTURE_EPOCH")
   private String FAR_FUTURE_EPOCH;
-  @JsonProperty(value = "ZERO_HASH", access = JsonProperty.Access.WRITE_ONLY)
+  @JsonProperty("ZERO_HASH")
   private String ZERO_HASH;
-  @JsonProperty(value = "EMPTY_SIGNATURE", access = JsonProperty.Access.WRITE_ONLY)
+  @JsonProperty("EMPTY_SIGNATURE")
   private String EMPTY_SIGNATURE;
-  @JsonProperty(value = "BLS_WITHDRAWAL_PREFIX_BYTE", access = JsonProperty.Access.WRITE_ONLY)
+  @JsonProperty("BLS_WITHDRAWAL_PREFIX_BYTE")
   private String BLS_WITHDRAWAL_PREFIX_BYTE;
 
   @Override
@@ -77,6 +77,7 @@ public class InitialValuesData implements InitialValues {
     return Bytes1.fromHexString(getBLS_WITHDRAWAL_PREFIX_BYTE());
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getGENESIS_FORK_VERSION() {
     return GENESIS_FORK_VERSION;
   }
@@ -85,6 +86,7 @@ public class InitialValuesData implements InitialValues {
     this.GENESIS_FORK_VERSION = GENESIS_FORK_VERSION;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getGENESIS_SLOT() {
     return GENESIS_SLOT;
   }
@@ -93,6 +95,7 @@ public class InitialValuesData implements InitialValues {
     this.GENESIS_SLOT = GENESIS_SLOT;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public Integer getGENESIS_START_SHARD() {
     return GENESIS_START_SHARD;
   }
@@ -101,6 +104,7 @@ public class InitialValuesData implements InitialValues {
     this.GENESIS_START_SHARD = GENESIS_START_SHARD;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getFAR_FUTURE_EPOCH() {
     return FAR_FUTURE_EPOCH;
   }
@@ -109,6 +113,7 @@ public class InitialValuesData implements InitialValues {
     this.FAR_FUTURE_EPOCH = FAR_FUTURE_EPOCH;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getZERO_HASH() {
     return ZERO_HASH;
   }
@@ -117,6 +122,7 @@ public class InitialValuesData implements InitialValues {
     this.ZERO_HASH = ZERO_HASH;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getEMPTY_SIGNATURE() {
     return EMPTY_SIGNATURE;
   }
@@ -125,6 +131,7 @@ public class InitialValuesData implements InitialValues {
     this.EMPTY_SIGNATURE = EMPTY_SIGNATURE;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getBLS_WITHDRAWAL_PREFIX_BYTE() {
     return BLS_WITHDRAWAL_PREFIX_BYTE;
   }

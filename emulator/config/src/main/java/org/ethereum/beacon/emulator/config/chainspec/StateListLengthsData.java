@@ -9,13 +9,13 @@ import tech.pegasys.artemis.util.uint.UInt64;
 
 public class StateListLengthsData implements StateListLengths {
 
-  @JsonProperty(value = "LATEST_BLOCK_ROOTS_LENGTH", access = JsonProperty.Access.WRITE_ONLY)
+  @JsonProperty("LATEST_BLOCK_ROOTS_LENGTH")
   private String LATEST_BLOCK_ROOTS_LENGTH;
-  @JsonProperty(value = "LATEST_RANDAO_MIXES_LENGTH", access = JsonProperty.Access.WRITE_ONLY)
+  @JsonProperty("LATEST_RANDAO_MIXES_LENGTH")
   private String LATEST_RANDAO_MIXES_LENGTH;
-  @JsonProperty(value = "LATEST_INDEX_ROOTS_LENGTH", access = JsonProperty.Access.WRITE_ONLY)
+  @JsonProperty("LATEST_INDEX_ROOTS_LENGTH")
   private String LATEST_INDEX_ROOTS_LENGTH;
-  @JsonProperty(value = "LATEST_PENALIZED_EXIT_LENGTH", access = JsonProperty.Access.WRITE_ONLY)
+  @JsonProperty("LATEST_PENALIZED_EXIT_LENGTH")
   private String LATEST_PENALIZED_EXIT_LENGTH;
 
   @Override
@@ -42,6 +42,7 @@ public class StateListLengthsData implements StateListLengths {
     return new EpochNumber(UInt64.valueOf(getLATEST_PENALIZED_EXIT_LENGTH()));
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getLATEST_BLOCK_ROOTS_LENGTH() {
     return LATEST_BLOCK_ROOTS_LENGTH;
   }
@@ -50,6 +51,7 @@ public class StateListLengthsData implements StateListLengths {
     this.LATEST_BLOCK_ROOTS_LENGTH = LATEST_BLOCK_ROOTS_LENGTH;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getLATEST_RANDAO_MIXES_LENGTH() {
     return LATEST_RANDAO_MIXES_LENGTH;
   }
@@ -58,6 +60,7 @@ public class StateListLengthsData implements StateListLengths {
     this.LATEST_RANDAO_MIXES_LENGTH = LATEST_RANDAO_MIXES_LENGTH;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getLATEST_INDEX_ROOTS_LENGTH() {
     return LATEST_INDEX_ROOTS_LENGTH;
   }
@@ -66,6 +69,7 @@ public class StateListLengthsData implements StateListLengths {
     this.LATEST_INDEX_ROOTS_LENGTH = LATEST_INDEX_ROOTS_LENGTH;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getLATEST_PENALIZED_EXIT_LENGTH() {
     return LATEST_PENALIZED_EXIT_LENGTH;
   }

@@ -6,15 +6,15 @@ import org.ethereum.beacon.core.spec.MaxOperationsPerBlock;
 
 public class MaxOperationsPerBlockData implements MaxOperationsPerBlock {
 
-  @JsonProperty(value = "MAX_PROPOSER_SLASHINGS", access = JsonProperty.Access.WRITE_ONLY)
+  @JsonProperty("MAX_PROPOSER_SLASHINGS")
   private Integer MAX_PROPOSER_SLASHINGS;
-  @JsonProperty(value = "MAX_ATTESTER_SLASHINGS", access = JsonProperty.Access.WRITE_ONLY)
+  @JsonProperty("MAX_ATTESTER_SLASHINGS")
   private Integer MAX_ATTESTER_SLASHINGS;
-  @JsonProperty(value = "MAX_ATTESTATIONS", access = JsonProperty.Access.WRITE_ONLY)
+  @JsonProperty("MAX_ATTESTATIONS")
   private Integer MAX_ATTESTATIONS;
-  @JsonProperty(value = "MAX_DEPOSITS", access = JsonProperty.Access.WRITE_ONLY)
+  @JsonProperty("MAX_DEPOSITS")
   private Integer MAX_DEPOSITS;
-  @JsonProperty(value = "MAX_EXITS", access = JsonProperty.Access.WRITE_ONLY)
+  @JsonProperty("MAX_EXITS")
   private Integer MAX_EXITS;
 
   @Override
@@ -47,6 +47,7 @@ public class MaxOperationsPerBlockData implements MaxOperationsPerBlock {
     return getMAX_EXITS();
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public Integer getMAX_PROPOSER_SLASHINGS() {
     return MAX_PROPOSER_SLASHINGS;
   }
@@ -55,6 +56,7 @@ public class MaxOperationsPerBlockData implements MaxOperationsPerBlock {
     this.MAX_PROPOSER_SLASHINGS = MAX_PROPOSER_SLASHINGS;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public Integer getMAX_ATTESTER_SLASHINGS() {
     return MAX_ATTESTER_SLASHINGS;
   }
@@ -63,6 +65,7 @@ public class MaxOperationsPerBlockData implements MaxOperationsPerBlock {
     this.MAX_ATTESTER_SLASHINGS = MAX_ATTESTER_SLASHINGS;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public Integer getMAX_ATTESTATIONS() {
     return MAX_ATTESTATIONS;
   }
@@ -71,6 +74,7 @@ public class MaxOperationsPerBlockData implements MaxOperationsPerBlock {
     this.MAX_ATTESTATIONS = MAX_ATTESTATIONS;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public Integer getMAX_DEPOSITS() {
     return MAX_DEPOSITS;
   }
@@ -79,6 +83,7 @@ public class MaxOperationsPerBlockData implements MaxOperationsPerBlock {
     this.MAX_DEPOSITS = MAX_DEPOSITS;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public Integer getMAX_EXITS() {
     return MAX_EXITS;
   }

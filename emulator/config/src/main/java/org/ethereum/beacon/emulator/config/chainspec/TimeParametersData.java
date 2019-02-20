@@ -11,19 +11,19 @@ import tech.pegasys.artemis.util.uint.UInt64;
 
 public class TimeParametersData implements TimeParameters {
 
-  @JsonProperty(value = "SLOT_DURATION", access = JsonProperty.Access.WRITE_ONLY)
+  @JsonProperty("SLOT_DURATION")
   private String SLOT_DURATION;
-  @JsonProperty(value = "MIN_ATTESTATION_INCLUSION_DELAY", access = JsonProperty.Access.WRITE_ONLY)
+  @JsonProperty("MIN_ATTESTATION_INCLUSION_DELAY")
   private String MIN_ATTESTATION_INCLUSION_DELAY;
-  @JsonProperty(value = "EPOCH_LENGTH", access = JsonProperty.Access.WRITE_ONLY)
+  @JsonProperty("EPOCH_LENGTH")
   private String EPOCH_LENGTH;
-  @JsonProperty(value = "SEED_LOOKAHEAD", access = JsonProperty.Access.WRITE_ONLY)
+  @JsonProperty("SEED_LOOKAHEAD")
   private String  SEED_LOOKAHEAD;
-  @JsonProperty(value = "ENTRY_EXIT_DELAY", access = JsonProperty.Access.WRITE_ONLY)
+  @JsonProperty("ENTRY_EXIT_DELAY")
   private String ENTRY_EXIT_DELAY;
-  @JsonProperty(value = "ETH1_DATA_VOTING_PERIOD", access = JsonProperty.Access.WRITE_ONLY)
+  @JsonProperty("ETH1_DATA_VOTING_PERIOD")
   private String ETH1_DATA_VOTING_PERIOD;
-  @JsonProperty(value = "MIN_VALIDATOR_WITHDRAWAL_EPOCHS", access = JsonProperty.Access.WRITE_ONLY)
+  @JsonProperty("MIN_VALIDATOR_WITHDRAWAL_EPOCHS")
   private String MIN_VALIDATOR_WITHDRAWAL_EPOCHS;
 
   @Override
@@ -68,6 +68,7 @@ public class TimeParametersData implements TimeParameters {
     return new EpochNumber(UInt64.valueOf(getMIN_VALIDATOR_WITHDRAWAL_EPOCHS()));
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getSLOT_DURATION() {
     return SLOT_DURATION;
   }
@@ -76,6 +77,7 @@ public class TimeParametersData implements TimeParameters {
     this.SLOT_DURATION = SLOT_DURATION;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getMIN_ATTESTATION_INCLUSION_DELAY() {
     return MIN_ATTESTATION_INCLUSION_DELAY;
   }
@@ -84,6 +86,7 @@ public class TimeParametersData implements TimeParameters {
     this.MIN_ATTESTATION_INCLUSION_DELAY = MIN_ATTESTATION_INCLUSION_DELAY;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getEPOCH_LENGTH() {
     return EPOCH_LENGTH;
   }
@@ -92,6 +95,7 @@ public class TimeParametersData implements TimeParameters {
     this.EPOCH_LENGTH = EPOCH_LENGTH;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getSEED_LOOKAHEAD() {
     return SEED_LOOKAHEAD;
   }
@@ -100,6 +104,7 @@ public class TimeParametersData implements TimeParameters {
     this.SEED_LOOKAHEAD = SEED_LOOKAHEAD;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getENTRY_EXIT_DELAY() {
     return ENTRY_EXIT_DELAY;
   }
@@ -108,6 +113,7 @@ public class TimeParametersData implements TimeParameters {
     this.ENTRY_EXIT_DELAY = ENTRY_EXIT_DELAY;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getETH1_DATA_VOTING_PERIOD() {
     return ETH1_DATA_VOTING_PERIOD;
   }
@@ -116,6 +122,7 @@ public class TimeParametersData implements TimeParameters {
     this.ETH1_DATA_VOTING_PERIOD = ETH1_DATA_VOTING_PERIOD;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getMIN_VALIDATOR_WITHDRAWAL_EPOCHS() {
     return MIN_VALIDATOR_WITHDRAWAL_EPOCHS;
   }

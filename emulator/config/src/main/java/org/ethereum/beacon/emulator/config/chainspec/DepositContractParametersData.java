@@ -9,13 +9,13 @@ import tech.pegasys.artemis.util.uint.UInt64;
 
 public class DepositContractParametersData implements DepositContractParameters {
 
-  @JsonProperty(value = "DEPOSIT_CONTRACT_ADDRESS", access = JsonProperty.Access.WRITE_ONLY)
+  @JsonProperty("DEPOSIT_CONTRACT_ADDRESS")
   private String DEPOSIT_CONTRACT_ADDRESS;
-  @JsonProperty(value = "DEPOSIT_CONTRACT_TREE_DEPTH", access = JsonProperty.Access.WRITE_ONLY)
+  @JsonProperty("DEPOSIT_CONTRACT_TREE_DEPTH")
   private String DEPOSIT_CONTRACT_TREE_DEPTH;
-  @JsonProperty(value = "MIN_DEPOSIT_AMOUNT", access = JsonProperty.Access.WRITE_ONLY)
+  @JsonProperty("MIN_DEPOSIT_AMOUNT")
   private String MIN_DEPOSIT_AMOUNT;
-  @JsonProperty(value = "MAX_DEPOSIT_AMOUNT", access = JsonProperty.Access.WRITE_ONLY)
+  @JsonProperty("MAX_DEPOSIT_AMOUNT")
   private String MAX_DEPOSIT_AMOUNT;
 
   @Override
@@ -42,6 +42,7 @@ public class DepositContractParametersData implements DepositContractParameters 
     return Gwei.castFrom(UInt64.valueOf(getMAX_DEPOSIT_AMOUNT()));
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getDEPOSIT_CONTRACT_ADDRESS() {
     return DEPOSIT_CONTRACT_ADDRESS;
   }
@@ -50,6 +51,7 @@ public class DepositContractParametersData implements DepositContractParameters 
     this.DEPOSIT_CONTRACT_ADDRESS = DEPOSIT_CONTRACT_ADDRESS;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getDEPOSIT_CONTRACT_TREE_DEPTH() {
     return DEPOSIT_CONTRACT_TREE_DEPTH;
   }
@@ -58,6 +60,7 @@ public class DepositContractParametersData implements DepositContractParameters 
     this.DEPOSIT_CONTRACT_TREE_DEPTH = DEPOSIT_CONTRACT_TREE_DEPTH;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getMIN_DEPOSIT_AMOUNT() {
     return MIN_DEPOSIT_AMOUNT;
   }
@@ -66,6 +69,7 @@ public class DepositContractParametersData implements DepositContractParameters 
     this.MIN_DEPOSIT_AMOUNT = MIN_DEPOSIT_AMOUNT;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getMAX_DEPOSIT_AMOUNT() {
     return MAX_DEPOSIT_AMOUNT;
   }

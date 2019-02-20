@@ -7,13 +7,13 @@ import tech.pegasys.artemis.util.uint.UInt64;
 
 public class RewardAndPenaltyQuotientsData implements RewardAndPenaltyQuotients {
 
-  @JsonProperty(value = "BASE_REWARD_QUOTIENT", access = JsonProperty.Access.WRITE_ONLY)
+  @JsonProperty("BASE_REWARD_QUOTIENT")
   private String BASE_REWARD_QUOTIENT;
-  @JsonProperty(value = "WHISTLEBLOWER_REWARD_QUOTIENT", access = JsonProperty.Access.WRITE_ONLY)
+  @JsonProperty("WHISTLEBLOWER_REWARD_QUOTIENT")
   private String WHISTLEBLOWER_REWARD_QUOTIENT;
-  @JsonProperty(value = "INCLUDER_REWARD_QUOTIENT", access = JsonProperty.Access.WRITE_ONLY)
+  @JsonProperty("INCLUDER_REWARD_QUOTIENT")
   private String INCLUDER_REWARD_QUOTIENT;
-  @JsonProperty(value = "INACTIVITY_PENALTY_QUOTIENT", access = JsonProperty.Access.WRITE_ONLY)
+  @JsonProperty("INACTIVITY_PENALTY_QUOTIENT")
   private String INACTIVITY_PENALTY_QUOTIENT;
 
   @Override
@@ -40,6 +40,7 @@ public class RewardAndPenaltyQuotientsData implements RewardAndPenaltyQuotients 
     return UInt64.valueOf(getINACTIVITY_PENALTY_QUOTIENT());
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getBASE_REWARD_QUOTIENT() {
     return BASE_REWARD_QUOTIENT;
   }
@@ -48,6 +49,7 @@ public class RewardAndPenaltyQuotientsData implements RewardAndPenaltyQuotients 
     this.BASE_REWARD_QUOTIENT = BASE_REWARD_QUOTIENT;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getWHISTLEBLOWER_REWARD_QUOTIENT() {
     return WHISTLEBLOWER_REWARD_QUOTIENT;
   }
@@ -56,6 +58,7 @@ public class RewardAndPenaltyQuotientsData implements RewardAndPenaltyQuotients 
     this.WHISTLEBLOWER_REWARD_QUOTIENT = WHISTLEBLOWER_REWARD_QUOTIENT;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getINCLUDER_REWARD_QUOTIENT() {
     return INCLUDER_REWARD_QUOTIENT;
   }
@@ -64,6 +67,7 @@ public class RewardAndPenaltyQuotientsData implements RewardAndPenaltyQuotients 
     this.INCLUDER_REWARD_QUOTIENT = INCLUDER_REWARD_QUOTIENT;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getINACTIVITY_PENALTY_QUOTIENT() {
     return INACTIVITY_PENALTY_QUOTIENT;
   }
