@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.annotation.Nonnull;
@@ -65,6 +66,7 @@ public class SpecHelpers {
   private final ChainSpec spec;
   private final ObjectHasher<Hash32> objectHasher;
   private final Function<BytesValue, Hash32> hashFunction;
+  private final Supplier<Long> systemTimeSupplier;
 
   /**
    * Creates a SpecHelpers instance with {@link ChainSpec#DEFAULT} as a chain spec, {@link
@@ -77,6 +79,14 @@ public class SpecHelpers {
     return createWithSSZHasher(ChainSpec.DEFAULT);
   }
 
+  public static SpecHelpers createWithSSZHasher(@Nonnull ChainSpec spec) {
+    return createWithSSZHasher(
+        spec,
+        () -> {
+          throw new RuntimeException("Time supplier required");
+        });
+  }
+
   /**
    * Creates a SpecHelpers instance with given {@link ChainSpec}, {@link
    * Hashes#keccak256(BytesValue)} as a hash function and {@link SSZObjectHasher} as an object
@@ -85,21 +95,22 @@ public class SpecHelpers {
    * @param spec a chain spec.
    * @return spec helpers instance.
    */
-  public static SpecHelpers createWithSSZHasher(@Nonnull ChainSpec spec) {
+  public static SpecHelpers createWithSSZHasher(@Nonnull ChainSpec spec, @Nonnull Supplier<Long> systemTimeSupplier) {
     Objects.requireNonNull(spec);
 
     Function<BytesValue, Hash32> hashFunction = Hashes::keccak256;
     ObjectHasher<Hash32> sszHasher = SSZObjectHasher.create(hashFunction);
-    return new SpecHelpers(spec, hashFunction, sszHasher);
+    return new SpecHelpers(spec, hashFunction, sszHasher, systemTimeSupplier);
   }
 
-  public SpecHelpers(
-      ChainSpec spec,
+  public SpecHelpers(ChainSpec spec,
       Function<BytesValue, Hash32> hashFunction,
-      ObjectHasher<Hash32> objectHasher) {
+      ObjectHasher<Hash32> objectHasher,
+      Supplier<Long> systemTimeSupplier) {
     this.spec = spec;
-    this.hashFunction = hashFunction;
     this.objectHasher = objectHasher;
+    this.hashFunction = hashFunction;
+    this.systemTimeSupplier = systemTimeSupplier;
   }
 
   public ChainSpec getChainSpec() {
@@ -1385,7 +1396,7 @@ public class SpecHelpers {
   }
 
   public SlotNumber get_current_slot(BeaconState state) {
-    Millis currentTime = Millis.of(Schedulers.get().getCurrentTime());
+    Millis currentTime = Millis.of(systemTimeSupplier.get());
     assertTrue(state.getGenesisTime().lessEqual(currentTime.getSeconds()));
     Time sinceGenesis = currentTime.getSeconds().minus(state.getGenesisTime());
     return SlotNumber.castFrom(sinceGenesis.dividedBy(spec.getSlotDuration()))

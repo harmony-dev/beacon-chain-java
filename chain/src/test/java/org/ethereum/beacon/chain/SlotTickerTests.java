@@ -6,6 +6,7 @@ import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
+import org.ethereum.beacon.schedulers.Schedulers;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
 import java.util.concurrent.CountDownLatch;
@@ -41,9 +42,9 @@ public class SlotTickerTests {
             return Time.of(1);
           }
         };
-    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(chainSpec);
+    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(chainSpec, System::currentTimeMillis);
     genesisSlot = specHelpers.getChainSpec().getGenesisSlot();
-    slotTicker = new SlotTicker(specHelpers, beaconState);
+    slotTicker = new SlotTicker(specHelpers, beaconState, Schedulers.get());
   }
 
   @Test

@@ -21,26 +21,29 @@ public class SlotTicker implements Ticker<SlotNumber> {
   private final SpecHelpers specHelpers;
   private final BeaconState state;
 
+  private final Schedulers schedulers;
   private final DirectProcessor<SlotNumber> slotSink = DirectProcessor.create();
-  private final Publisher<SlotNumber> slotStream =
-      Flux.from(slotSink)
-          .publishOn(Schedulers.get().reactorEvents())
-          .onBackpressureError()
-          .name("SlotTicker.slot");
+  private final Publisher<SlotNumber> slotStream;
 
   private SlotNumber startSlot;
 
   private Scheduler scheduler;
 
-  public SlotTicker(SpecHelpers specHelpers, BeaconState state) {
+  public SlotTicker(SpecHelpers specHelpers, BeaconState state, Schedulers schedulers) {
     this.specHelpers = specHelpers;
     this.state = state;
+    this.schedulers = schedulers;
+
+    slotStream = Flux.from(slotSink)
+            .publishOn(this.schedulers.reactorEvents())
+            .onBackpressureError()
+            .name("SlotTicker.slot");
   }
 
   /** Execute to start {@link SlotNumber} propagation */
   @Override
   public void start() {
-    this.scheduler = Schedulers.get().newSingleThreadDaemon("slot-ticker");
+    this.scheduler = schedulers.newSingleThreadDaemon("slot-ticker");
 
     SlotNumber nextSlot = specHelpers.get_current_slot(state).increment();
     Time period = specHelpers.getChainSpec().getSlotDuration();
@@ -55,11 +58,11 @@ public class SlotTicker implements Ticker<SlotNumber> {
 
     Time startSlotTime = specHelpers.get_slot_start_time(state, startSlot);
     long delayMillis =
-        Math.max(0, startSlotTime.getMillis().getValue() - Schedulers.get().getCurrentTime());
+        Math.max(0, startSlotTime.getMillis().getValue() - schedulers.getCurrentTime());
     Flux.interval(
             Duration.ofMillis(delayMillis),
             Duration.ofSeconds(period.getValue()),
-            Schedulers.get().reactorEvents())
+            schedulers.reactorEvents())
         .subscribe(tick -> slotSink.onNext(this.startSlot.plus(tick)));
   }
 

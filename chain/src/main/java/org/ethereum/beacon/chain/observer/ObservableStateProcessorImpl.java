@@ -60,29 +60,18 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   private final BlockingQueue<Attestation> attestationBuffer = new LinkedBlockingDeque<>();
   private final Map<BLSPubkey, Attestation> attestationCache = new HashMap<>();
   private final Map<UInt64, Set<BLSPubkey>> validatorSlotCache = new HashMap<>();
+  private final Schedulers schedulers;
 
   private final ReplayProcessor<BeaconChainHead> headSink = ReplayProcessor.cacheLast();
-  private final Publisher<BeaconChainHead> headStream =
-      Flux.from(headSink)
-          .publishOn(Schedulers.get().reactorEvents())
-          .onBackpressureError()
-          .name("ObservableStateProcessor.head");
+  private final Publisher<BeaconChainHead> headStream;
 
   private final ReplayProcessor<ObservableBeaconState> observableStateSink =
       ReplayProcessor.cacheLast();
-  private final Publisher<ObservableBeaconState> observableStateStream =
-      Flux.from(observableStateSink)
-          .publishOn(Schedulers.get().reactorEvents())
-          .onBackpressureError()
-          .name("ObservableStateProcessor.observableState");
+  private final Publisher<ObservableBeaconState> observableStateStream;
 
   private final ReplayProcessor<PendingOperations> pendingOperationsSink =
       ReplayProcessor.cacheLast();
-  private final Publisher<PendingOperations> pendingOperationsStream =
-      Flux.from(pendingOperationsSink)
-          .publishOn(Schedulers.get().reactorEvents())
-          .onBackpressureError()
-          .name("PendingOperationsProcessor.pendingOperations");
+  private final Publisher<PendingOperations> pendingOperationsStream;
 
   public ObservableStateProcessorImpl(
       BeaconChainStorage chainStorage,
@@ -91,7 +80,8 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
       Publisher<BeaconTuple> beaconPublisher,
       SpecHelpers specHelpers,
       StateTransition<BeaconStateEx> perSlotTransition,
-      StateTransition<BeaconStateEx> perEpochTransition) {
+      StateTransition<BeaconStateEx> perEpochTransition,
+      Schedulers schedulers) {
     this.tupleStorage = chainStorage.getTupleStorage();
     this.specHelpers = specHelpers;
     this.chainSpec = specHelpers.getChainSpec();
@@ -101,14 +91,28 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     this.slotTicker = slotTicker;
     this.attestationPublisher = attestationPublisher;
     this.beaconPublisher = beaconPublisher;
+    this.schedulers = schedulers;
+
+    headStream = Flux.from(headSink)
+        .publishOn(this.schedulers.reactorEvents())
+        .onBackpressureError()
+        .name("ObservableStateProcessor.head");
+    observableStateStream = Flux.from(observableStateSink)
+        .publishOn(this.schedulers.reactorEvents())
+        .onBackpressureError()
+        .name("ObservableStateProcessor.observableState");
+    pendingOperationsStream = Flux.from(pendingOperationsSink)
+            .publishOn(this.schedulers.reactorEvents())
+            .onBackpressureError()
+            .name("PendingOperationsProcessor.pendingOperations");
   }
 
   @Override
   public void start() {
     regularJobExecutor =
-        Schedulers.get().newSingleThreadDaemon("observable-state-processor-regular");
+        schedulers.newSingleThreadDaemon("observable-state-processor-regular");
     continuousJobExecutor =
-        Schedulers.get().newSingleThreadDaemon("observable-state-processor-continuous");
+        schedulers.newSingleThreadDaemon("observable-state-processor-continuous");
     Flux.from(slotTicker).subscribe(this::onNewSlot);
     Flux.from(attestationPublisher).subscribe(this::onNewAttestation);
     Flux.from(beaconPublisher).subscribe(this::onNewBlockTuple);

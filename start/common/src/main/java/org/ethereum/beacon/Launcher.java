@@ -26,6 +26,7 @@ import org.ethereum.beacon.crypto.MessageParameters;
 import org.ethereum.beacon.db.InMemoryDatabase;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.pow.DepositContract.ChainStart;
+import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.validator.BeaconChainProposer;
 import org.ethereum.beacon.validator.BeaconChainValidator;
 import org.ethereum.beacon.validator.attester.BeaconChainAttesterImpl;
@@ -50,15 +51,22 @@ public class Launcher {
   BeaconChainAttesterImpl beaconChainAttester;
   BeaconChainValidator beaconChainValidator;
   BeaconChainStorageFactory storageFactory;
+  Schedulers schedulers;
 
-  public Launcher(SpecHelpers specHelpers, DepositContract depositContract,
-      KeyPair validatorSig, WireApi wireApi, BeaconChainStorageFactory storageFactory) {
+  public Launcher(
+      SpecHelpers specHelpers,
+      DepositContract depositContract,
+      KeyPair validatorSig,
+      WireApi wireApi,
+      BeaconChainStorageFactory storageFactory,
+      Schedulers schedulers) {
 
     this.specHelpers = specHelpers;
     this.depositContract = depositContract;
     this.validatorSig = validatorSig;
     this.wireApi = wireApi;
     this.storageFactory = storageFactory;
+    this.schedulers = schedulers;
 
     if (depositContract != null) {
       Mono.from(depositContract.getChainStartMono()).subscribe(this::chainStarted);
@@ -87,10 +95,12 @@ public class Launcher {
         perEpochTransition,
         blockVerifier,
         stateVerifier,
-        beaconChainStorage);
+        beaconChainStorage,
+        schedulers);
     beaconChain.init();
 
-    slotTicker = new SlotTicker(specHelpers, beaconChain.getRecentlyProcessed().getState());
+    slotTicker =
+        new SlotTicker(specHelpers, beaconChain.getRecentlyProcessed().getState(), schedulers);
     slotTicker.start();
 
     DirectProcessor<Attestation> allAttestations = DirectProcessor.create();
@@ -103,7 +113,8 @@ public class Launcher {
         beaconChain.getBlockStatesStream(),
         specHelpers,
         perSlotTransition,
-        perEpochTransition);
+        perEpochTransition,
+        schedulers);
     observableStateProcessor.start();
 
     beaconChainProposer = new BeaconChainProposerImpl(specHelpers,
@@ -118,11 +129,12 @@ public class Launcher {
         specHelpers,
         (msgHash, domain) -> BLSSignature.wrap(
             BLS381.sign(MessageParameters.create(msgHash, domain), validatorSig).getEncoded()),
-        observableStateProcessor.getObservableStateStream());
+        observableStateProcessor.getObservableStateStream(),
+        schedulers);
     beaconChainValidator.start();
 
     ProposedBlockProcessor proposedBlocksProcessor = new ProposedBlockProcessorImpl(
-        beaconChain);
+        beaconChain, schedulers);
     Flux.from(beaconChainValidator.getProposedBlocksStream())
         .subscribe(proposedBlocksProcessor::newBlockProposed);
     Flux.from(proposedBlocksProcessor.processedBlocksStream())

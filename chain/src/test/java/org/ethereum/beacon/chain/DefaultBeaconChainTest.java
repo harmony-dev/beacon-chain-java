@@ -17,10 +17,12 @@ import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.BeaconState;
+import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.db.Database;
 import org.ethereum.beacon.pow.DepositContract.ChainStart;
+import org.ethereum.beacon.schedulers.Schedulers;
 import org.junit.Assert;
 import org.junit.Test;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -30,7 +32,8 @@ public class DefaultBeaconChainTest {
 
   @Test
   public void insertAChain() {
-    SpecHelpers specHelpers = SpecHelpers.createDefault();
+    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT,
+        System::currentTimeMillis);
     StateTransition<BeaconStateEx> perSlotTransition =
         StateTransitionTestUtil.createNextSlotTransition();
     MutableBeaconChain beaconChain = createBeaconChain(specHelpers, perSlotTransition);
@@ -97,6 +100,7 @@ public class DefaultBeaconChainTest {
         perEpochTransition,
         blockVerifier,
         stateVerifier,
-        chainStorage);
+        chainStorage,
+        Schedulers.get());
   }
 }

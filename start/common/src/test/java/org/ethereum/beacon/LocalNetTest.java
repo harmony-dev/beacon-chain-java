@@ -72,7 +72,6 @@ public class LocalNetTest {
     int epochLength = 2;
 
     ControlledSchedulers schedulers = new ControlledSchedulers();
-    Schedulers.set(schedulers);
 
     Random rnd = new Random(1);
     Time genesisTime = Time.of(10 * 60);
@@ -118,7 +117,7 @@ public class LocalNetTest {
     for(int i = 0; i < validatorCount; i++) {
       WireApi wireApi = localWireHub.createNewPeer("" + i);
       Launcher launcher = new Launcher(specHelpers, depositContract, anyDeposits.getValue1().get(i),
-          wireApi, new MemBeaconChainStorageFactory());
+          wireApi, new MemBeaconChainStorageFactory(), schedulers);
 
       int finalI = i;
       Flux.from(launcher.slotTicker.getTickerStream())

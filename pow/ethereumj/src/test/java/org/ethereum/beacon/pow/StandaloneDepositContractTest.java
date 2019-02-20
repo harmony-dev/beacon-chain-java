@@ -13,6 +13,7 @@ import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.pow.DepositContract.ChainStart;
 import org.ethereum.beacon.pow.DepositContract.DepositInfo;
+import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.ssz.Serializer;
 import org.ethereum.config.SystemProperties;
 import org.ethereum.facade.Ethereum;
@@ -80,7 +81,7 @@ public class StandaloneDepositContractTest {
 
     Ethereum ethereum = new StandaloneEthereum(new SystemProperties(), sb);
     EthereumJDepositContract depositContract = new EthereumJDepositContract(
-        ethereum, 0, BytesValue.wrap(contract.getAddress()).toString());
+        ethereum, 0, BytesValue.wrap(contract.getAddress()).toString(), Schedulers.get());
     depositContract.setDistanceFromHead(3);
 
     ChainStart chainStart = Mono.from(depositContract.getChainStartMono())
@@ -136,7 +137,7 @@ public class StandaloneDepositContractTest {
 
     Ethereum ethereum = new StandaloneEthereum(new SystemProperties(), sb);
     EthereumJDepositContract depositContract = new EthereumJDepositContract(
-        ethereum, 0, BytesValue.wrap(contract.getAddress()).toString());
+        ethereum, 0, BytesValue.wrap(contract.getAddress()).toString(), Schedulers.get());
     depositContract.setDistanceFromHead(3);
     Mono<ChainStart> chainStartMono = Mono.from(depositContract.getChainStartMono());
     chainStartMono.subscribe();

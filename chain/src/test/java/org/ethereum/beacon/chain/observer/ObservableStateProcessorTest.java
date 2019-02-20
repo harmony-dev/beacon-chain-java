@@ -6,36 +6,22 @@ import java.util.List;
 import org.ethereum.beacon.chain.util.SampleObservableState;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.schedulers.ControlledSchedulers;
-import org.ethereum.beacon.schedulers.Schedulers;
-import org.junit.AfterClass;
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
 
 public class ObservableStateProcessorTest {
 
-  static ControlledSchedulers schedulers = new ControlledSchedulers();
-
-  @BeforeClass
-  public static void init() {
-    Schedulers.set(schedulers);
-  }
-
-  @AfterClass
-  public static void cleanup() {
-    Schedulers.resetToDefault();
-  }
-
   @Test
   public void test1() throws Exception {
+    ControlledSchedulers schedulers = new ControlledSchedulers();
     Duration genesisTime = Duration.ofMinutes(10);
     SlotNumber genesisSlot = SlotNumber.of(1_000_000);
     schedulers.setCurrentTime((genesisTime.getSeconds() + 1) * 1000);
 
     SampleObservableState sample = new SampleObservableState(
         genesisTime, genesisSlot.getValue(), Duration.ofSeconds(10), 8, s -> {
-    });
+    }, schedulers);
 
     List<ObservableBeaconState> states = new ArrayList<>();
     Flux.from(sample.observableStateProcessor.getObservableStateStream()).subscribe(states::add);
@@ -63,13 +49,14 @@ public class ObservableStateProcessorTest {
 
   @Test
   public void test2() throws Exception {
+    ControlledSchedulers schedulers = new ControlledSchedulers();
     Duration genesisTime = Duration.ofMinutes(10);
     SlotNumber genesisSlot = SlotNumber.of(1_000_000);
     schedulers.setCurrentTime(genesisTime.plus(Duration.ofMinutes(10)).toMillis());
 
     SampleObservableState sample = new SampleObservableState(
         genesisTime, genesisSlot.getValue(), Duration.ofSeconds(10), 8, s -> {
-    });
+    }, schedulers);
 
     List<ObservableBeaconState> states = new ArrayList<>();
     Flux.from(sample.observableStateProcessor.getObservableStateStream()).subscribe(s -> states.add(s));

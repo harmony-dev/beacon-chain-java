@@ -18,19 +18,16 @@ import org.ethereum.beacon.core.types.SlotNumber;
 public class PerSlotTransition implements StateTransition<BeaconStateEx> {
   private static final Logger logger = LogManager.getLogger(PerSlotTransition.class);
 
+  private final SpecHelpers specHelpers;
   private final ChainSpec spec;
 
   public PerSlotTransition(SpecHelpers specHelpers) {
-    this(specHelpers.getChainSpec());
-  }
-
-  public PerSlotTransition(ChainSpec spec) {
-    this.spec = spec;
+    this.specHelpers = specHelpers;
+    this.spec = specHelpers.getChainSpec();
   }
 
   @Override
   public BeaconStateEx apply(BeaconStateEx stateEx) {
-    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(spec);
 
     MutableBeaconState state = stateEx.getCanonicalState().createMutableCopy();
 
