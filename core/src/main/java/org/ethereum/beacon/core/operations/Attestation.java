@@ -1,6 +1,7 @@
 package org.ethereum.beacon.core.operations;
 
 import com.google.common.base.Objects;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
@@ -75,10 +76,14 @@ public class Attestation {
     return toString(null, null);
   }
 
+  private String getSignerIndices() {
+    return aggregationBitfield.getBits().stream().map(i -> "" + i).collect(Collectors.joining("+"));
+  }
+
   public String toString(@Nullable ChainSpec spec,@Nullable Time beaconStart) {
     return "Attestation["
         + data.toString(spec, beaconStart)
-        + ", aggrBits=" + aggregationBitfield
+        + ", attesters=" + getSignerIndices()
         + ", cusodyBits=" + custodyBitfield
         + ", sig=" + aggregateSignature
         + "]";
@@ -87,6 +92,7 @@ public class Attestation {
   public String toStringShort(@Nullable ChainSpec spec) {
     return getData().getSlot().toStringNumber(spec) + "/"
         + getData().getShard().toString(spec) + "/"
-        + getData().getBeaconBlockRoot().toStringShort();
+        + getData().getBeaconBlockRoot().toStringShort() + "/"
+        + getSignerIndices();
   }
 }
