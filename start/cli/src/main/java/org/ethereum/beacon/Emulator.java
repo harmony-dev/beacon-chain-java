@@ -42,7 +42,7 @@ public class Emulator extends ReusableOptions implements Callable<Void> {
 
     if (action.equals(Task.run)) {
       EmulatorLauncher emulatorLauncher =
-          new EmulatorLauncher(configs.getValue0(), configs.getValue1().build());
+          new EmulatorLauncher(configs.getValue0(), configs.getValue1().build(), prepareLogLevel(true));
       emulatorLauncher.run();
     }
 

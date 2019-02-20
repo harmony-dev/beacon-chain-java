@@ -15,6 +15,7 @@ dependencies {
   implementation 'info.picocli:picocli'
   implementation 'com.google.guava:guava'
   implementation 'io.projectreactor:reactor-core'
+  implementation 'org.apache.logging.log4j:log4j-core'
 
   testImplementation 'org.mockito:mockito-core'
 }

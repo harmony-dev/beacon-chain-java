@@ -1,5 +1,10 @@
 package org.ethereum.beacon;
 
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.config.Configuration;
+import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.ethereum.beacon.chain.storage.impl.MemBeaconChainStorageFactory;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.core.operations.Deposit;
@@ -23,6 +28,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
+import java.io.File;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -33,8 +39,9 @@ import java.util.Random;
 public class EmulatorLauncher implements Runnable {
   private final ActionEmulate emulateConfig;
   private final ChainSpec chainSpec;
+  private final Level logLevel;
 
-  public EmulatorLauncher(MainConfig mainConfig, ChainSpec chainSpec) {
+  public EmulatorLauncher(MainConfig mainConfig, ChainSpec chainSpec, Level logLevel) {
     this.chainSpec = chainSpec;
     List<Action> actions = mainConfig.getPlan().getValidator();
     Optional<ActionEmulate> actionEmulate =
@@ -46,9 +53,27 @@ public class EmulatorLauncher implements Runnable {
       throw new RuntimeException("Emulate settings are not set");
     }
     this.emulateConfig = actionEmulate.get();
+    this.logLevel = logLevel;
+  }
+
+  private void setupLogging() {
+    LoggerContext context = (org.apache.logging.log4j.core.LoggerContext) LogManager.getContext(false);
+    File file = new File(ClassLoader.getSystemClassLoader().getResource("log4j2.xml").getFile());
+
+    // this will force a reconfiguration
+    context.setConfigLocation(file.toURI());
+
+    // set logLevel
+    if (logLevel != null) {
+      Configuration config = context.getConfiguration();
+      LoggerConfig loggerConfig = config.getLoggerConfig(LogManager.ROOT_LOGGER_NAME);
+      loggerConfig.setLevel(logLevel);
+      context.updateLoggers();
+    }
   }
 
   public void run() {
+    setupLogging();
     int validatorCount = emulateConfig.getCount();
 
     Random rnd = new Random(1);

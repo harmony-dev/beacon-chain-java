@@ -1,5 +1,6 @@
 package org.ethereum.beacon;
 
+import org.apache.logging.log4j.Level;
 import org.ethereum.beacon.emulator.config.ConfigBuilder;
 import org.ethereum.beacon.emulator.config.YamlPrinter;
 import org.ethereum.beacon.emulator.config.chainspec.ChainSpecData;
@@ -10,11 +11,25 @@ import picocli.CommandLine;
 import javax.annotation.Nullable;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class ReusableOptions {
 
   static final String VERSION = "0.1b";
+  private static final Map<Integer, Level> LOG_LEVELS = new HashMap<>();
+
+  static {
+    LOG_LEVELS.put(0, Level.OFF);
+    LOG_LEVELS.put(1, Level.FATAL);
+    LOG_LEVELS.put(2, Level.ERROR);
+    LOG_LEVELS.put(3, Level.WARN);
+    LOG_LEVELS.put(4, Level.INFO);
+    LOG_LEVELS.put(5, Level.DEBUG);
+    LOG_LEVELS.put(6, Level.TRACE);
+    LOG_LEVELS.put(7, Level.ALL);
+  }
 
   @CommandLine.Option(
       names = {"-c", "--config"},
@@ -22,17 +37,19 @@ public class ReusableOptions {
       description =
           "YAML config file.\nAll options that are not set will be loaded from default config.")
   File[] configs;
-
   @CommandLine.Option(
       names = {"-s", "--spec"},
       paramLabel = "CHAINSPEC",
       description =
           "YAML chain specification file.\nFor all specifications that are not set, default values are used.")
   File[] chainspecs;
-
+  @CommandLine.Option(
+      names = {"-l", "--loglevel"},
+      paramLabel = "LOG",
+      description = "Sets log level in the range of 0..7 (OFF..ALL), default is 4 (INFO).")
+  Integer logLevel;
   @CommandLine.Option(names = "-v")
   boolean verbose;
-
   List<Pair<String, Object>> configPathValues = new ArrayList<>();
   List<Pair<String, Object>> chainSpecPathValues = new ArrayList<>();
 
@@ -59,8 +76,7 @@ public class ReusableOptions {
     configBuilder.addYamlConfig(
         ClassLoader.class.getResourceAsStream("/config/default-chainSpec.yml"));
     if (extraChainSpec != null) {
-      configBuilder.addYamlConfig(
-          ClassLoader.class.getResourceAsStream(extraChainSpec));
+      configBuilder.addYamlConfig(ClassLoader.class.getResourceAsStream(extraChainSpec));
     }
     if (chainspecs != null) {
       for (File chainspec : chainspecs) {
@@ -96,6 +112,24 @@ public class ReusableOptions {
     }
 
     return Pair.with(mainConfig, chainSpecData);
+  }
+
+  Level prepareLogLevel(boolean print) {
+    if (logLevel != null) {
+      if (print) {
+        System.out.println("Setting log level to " + logLevel);
+      }
+      Level res;
+      if (logLevel >= 7) {
+        res = LOG_LEVELS.get(7);
+      } else {
+        res = LOG_LEVELS.get(logLevel);
+      }
+
+      return res;
+    }
+
+    return null;
   }
 
   enum Task {
