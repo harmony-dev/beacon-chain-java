@@ -7,6 +7,7 @@ dependencies {
   implementation project(':chain')
   implementation project(':consensus')
   implementation project(':validator')
+  implementation project(':util')
   implementation project(':db:core')
 
   implementation 'io.projectreactor:reactor-core'

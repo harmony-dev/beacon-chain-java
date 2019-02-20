@@ -37,19 +37,13 @@ import tech.pegasys.artemis.util.uint.UInt64;
  */
 public class BeaconChainValidator implements ValidatorService {
 
+  private final Schedulers schedulers;
+
   private final DirectProcessor<BeaconBlock> blocksSink = DirectProcessor.create();
-  private final Publisher<BeaconBlock> blocksStream =
-      Flux.from(blocksSink)
-          .publishOn(Schedulers.get().reactorEvents())
-          .onBackpressureError()
-          .name("BeaconChainValidator.block");
+  private final Publisher<BeaconBlock> blocksStream;
 
   private final DirectProcessor<Attestation> attestationsSink = DirectProcessor.create();
-  private final Publisher<Attestation> attestationsStream =
-      Flux.from(attestationsSink)
-          .publishOn(Schedulers.get().reactorEvents())
-          .onBackpressureError()
-          .name("BeaconChainValidator.attestation");
+  private final Publisher<Attestation> attestationsStream;
 
   /** BLS public key that corresponds to a "hot" private key. */
   private BLSPubkey publicKey;
@@ -72,7 +66,7 @@ public class BeaconChainValidator implements ValidatorService {
   private ObservableBeaconState recentState;
 
   /** Validator task executor. */
-  private Scheduler executor = Schedulers.get().newSingleThreadDaemon("validator-service");
+  private final Scheduler executor;
 
   public BeaconChainValidator(
       BLSPubkey publicKey,
@@ -80,13 +74,27 @@ public class BeaconChainValidator implements ValidatorService {
       BeaconChainAttester attester,
       SpecHelpers specHelpers,
       MessageSigner<BLSSignature> messageSigner,
-      Publisher<ObservableBeaconState> stateStream) {
+      Publisher<ObservableBeaconState> stateStream,
+      Schedulers schedulers) {
     this.publicKey = publicKey;
     this.proposer = proposer;
     this.attester = attester;
     this.specHelpers = specHelpers;
     this.messageSigner = messageSigner;
     this.stateStream = stateStream;
+    this.schedulers = schedulers;
+
+    blocksStream = Flux.from(blocksSink)
+            .publishOn(this.schedulers.reactorEvents())
+            .onBackpressureError()
+            .name("BeaconChainValidator.block");
+
+    attestationsStream = Flux.from(attestationsSink)
+            .publishOn(this.schedulers.reactorEvents())
+            .onBackpressureError()
+            .name("BeaconChainValidator.attestation");
+
+    executor = this.schedulers.newSingleThreadDaemon("validator-service");
   }
 
   @Override
@@ -204,8 +212,8 @@ public class BeaconChainValidator implements ValidatorService {
    */
   private void schedule(Time startAt, RunnableEx routine) {
     long startAtMillis = startAt.getValue() * 1000;
-    assert Schedulers.get().getCurrentTime() < startAtMillis;
-    executor.executeWithDelay(Duration.ofMillis(Schedulers.get().getCurrentTime() - startAtMillis), routine);
+    assert schedulers.getCurrentTime() < startAtMillis;
+    executor.executeWithDelay(Duration.ofMillis(schedulers.getCurrentTime() - startAtMillis), routine);
   }
 
   /**

@@ -9,16 +9,16 @@ import reactor.core.publisher.Flux;
 public class ProposedBlockProcessorImpl implements ProposedBlockProcessor {
 
   private final DirectProcessor<BeaconBlock> blocksSink = DirectProcessor.create();
-  private final Publisher<BeaconBlock> blocksStream =
-      Flux.from(blocksSink)
-          .publishOn(Schedulers.get().reactorEvents())
-          .onBackpressureError()
-          .name("ProposedBlocksProcessor.blocks");
+  private final Publisher<BeaconBlock> blocksStream;
 
   private final MutableBeaconChain beaconChain;
 
-  public ProposedBlockProcessorImpl(MutableBeaconChain beaconChain) {
+  public ProposedBlockProcessorImpl(MutableBeaconChain beaconChain, Schedulers schedulers) {
     this.beaconChain = beaconChain;
+    blocksStream = Flux.from(blocksSink)
+            .publishOn(schedulers.reactorEvents())
+            .onBackpressureError()
+            .name("ProposedBlocksProcessor.blocks");
   }
 
   @Override

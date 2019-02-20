@@ -1,129 +1,93 @@
 package org.ethereum.beacon.schedulers;
 
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.Executor;
+import java.util.function.Supplier;
 
 /**
  * The collection of standard Schedulers, Scheduler factory and system time supplier
- *
- * For debugging and testing the default <code>Schedulers</code> instance can be replaced
- * with appropriate one
+ * Any scheduler withing a system should be obtained or created via this interface
  */
-public abstract class Schedulers {
-  private static final int BLOCKING_THREAD_COUNT = 128;
+public interface Schedulers {
 
-  private static Schedulers current;
-
-  public static Schedulers get() {
-    if (current == null) {
-      resetToDefault();
-    }
-    return current;
+  /**
+   * Creates default Schedulers implementation for production functioning
+   */
+  static Schedulers createDefault() {
+    return new DefaultSchedulers();
   }
 
-  public static void set(Schedulers newStaticSchedulers) {
-    current = newStaticSchedulers;
-  }
-
-  public static void resetToDefault() {
-    current = new DefaultSchedulers();
-  }
-
-  private Scheduler cpuHeavyScheduler;
-  private Scheduler blockingScheduler;
-  private Scheduler eventsScheduler;
-  private reactor.core.scheduler.Scheduler eventsReactorScheduler;
-  private ScheduledExecutorService eventsExecutor;
-
-  public long getCurrentTime() {
-    return System.currentTimeMillis();
-  }
-
-  protected abstract ScheduledExecutorService createExecutor(String namePattern, int threads);
-
-  protected Scheduler createExecutorScheduler(ScheduledExecutorService executorService) {
-    return new ExecutorScheduler(executorService);
-  }
-
-  public Scheduler cpuHeavy() {
-    if (cpuHeavyScheduler == null) {
-      synchronized (this) {
-        if (cpuHeavyScheduler == null) {
-          cpuHeavyScheduler = createCpuHeavy();
-        }
+  /**
+   * Creates the ControlledSchedulers implementation (normally for testing or emulation)
+   * with the specified delegate Executor factory.
+   * @param delegateExecutor all the tasks are finally executed on executors created by this
+   * factory. Normally a single executor should be sufficient and could be supplied as
+   * <code>() -> mySingleExecutor</code>
+   */
+  static ControlledSchedulers createControlled(Supplier<Executor> delegateExecutor) {
+    return new ControlledSchedulersImpl() {
+      @Override
+      protected Executor createDelegateExecutor() {
+        return delegateExecutor.get();
       }
-    }
-    return cpuHeavyScheduler;
+    };
   }
 
-  protected Scheduler createCpuHeavy() {
-    return createExecutorScheduler(createCpuHeavyExecutor());
+  /**
+   * Creates the ControlledSchedulers implementation (normally for testing or emulation)
+   * which executes all the tasks immediately on the same thread or if a task scheduled for
+   * later execution then this task would be executed within appropriate
+   * {@link ControlledSchedulers#setCurrentTime(long)} call
+   */
+  static ControlledSchedulers createControlled() {
+    return createControlled(() -> Runnable::run);
   }
 
-  protected ScheduledExecutorService createCpuHeavyExecutor() {
-    return createExecutor("Schedulers-cpuHeavy-%d", Runtime.getRuntime().availableProcessors());
+  /**
+   * Returns the current system time
+   * This method should be used by all components to obtain the current system time
+   * <code>System.currentTimeMillis()</code> (or other standard Java means) is prohibited.
+   */
+  long getCurrentTime();
+
+  /**
+   * Scheduler to execute CPU heavy tasks
+   * This is normally based on a thread pool with the number of threads
+   * equal to number of CPU cores
+   */
+  Scheduler cpuHeavy();
+
+  /**
+   * The scheduler to execute disk read/write tasks (like DB access, file read/write etc)
+   * and other tasks with potentially short blocking time.
+   * Tasks with potentially longer blocking time (like waiting for network response) is
+   * highly recommended to execute in a non-blocking (reactive) manner or at least on
+   * a dedicated Scheduler
+   *
+   * This Scheduler is normally based on a dynamic pool with sufficient number of threads
+   */
+  Scheduler blocking();
+
+  /**
+   * Dedicated Scheduler for internal system asynchronous events
+   */
+  Scheduler events();
+
+  /**
+   * Reactor Scheduler decorator for {@link #events()} Scheduler. Those two shares the
+   * same thread/pool
+   */
+  reactor.core.scheduler.Scheduler reactorEvents();
+
+  /**
+   * Creates new single thread Scheduler with the specified thread name
+   */
+  default Scheduler newSingleThreadDaemon(String threadName) {
+    return newParallelDaemon(threadName, 1);
   }
 
-  public Scheduler blocking() {
-    if (blockingScheduler == null) {
-      synchronized (this) {
-        if (blockingScheduler == null) {
-          blockingScheduler = createBlocking();
-        }
-      }
-    }
-    return blockingScheduler;
-  }
-
-  protected Scheduler createBlocking() {
-    return createExecutorScheduler(createBlockingExecutor());
-  }
-
-  protected ScheduledExecutorService createBlockingExecutor() {
-    return createExecutor("Schedulers-blocking-%d", BLOCKING_THREAD_COUNT);
-  }
-
-  public Scheduler events() {
-    if (eventsScheduler == null) {
-      synchronized (this) {
-        if (eventsScheduler == null) {
-          eventsScheduler = createEvents();
-        }
-      }
-    }
-    return eventsScheduler;
-  }
-
-  protected Scheduler createEvents() {
-    return createExecutorScheduler(getEventsExecutor());
-  }
-
-  protected ScheduledExecutorService getEventsExecutor() {
-    if (eventsExecutor == null) {
-      eventsExecutor = createExecutor("Schedulers-events", 1);
-    }
-    return eventsExecutor;
-  }
-
-  public reactor.core.scheduler.Scheduler reactorEvents() {
-    if (eventsReactorScheduler == null) {
-      synchronized (this) {
-        if (eventsReactorScheduler == null) {
-          eventsReactorScheduler = createReactorEvents();
-        }
-      }
-    }
-    return eventsReactorScheduler;
-  }
-
-  protected reactor.core.scheduler.Scheduler createReactorEvents() {
-    return reactor.core.scheduler.Schedulers.fromExecutor(getEventsExecutor());
-  }
-
-  public Scheduler newSingleThreadDaemon(String threadName) {
-    return createExecutorScheduler(createExecutor(threadName, 1));
-  }
-
-  public Scheduler newParallelDaemon(String threadNamePattern, int threadPoolCount) {
-    return createExecutorScheduler(createExecutor(threadNamePattern, threadPoolCount));
-  }
+  /**
+   * Creates new multi-thread Scheduler with the specified thread namePattern and
+   * number of pool threads
+   */
+  Scheduler newParallelDaemon(String threadNamePattern, int threadPoolCount);
 }

@@ -33,7 +33,7 @@ public class PerEpochTransitionTest {
           }
         };
 
-    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(chainSpec);
+    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(chainSpec, () -> 0L);
 
     List<Deposit> deposits = TestUtils.getAnyDeposits(specHelpers, 8).getValue0();
 
@@ -44,7 +44,7 @@ public class PerEpochTransitionTest {
 
     states[0] = initialStateTransition.apply(BeaconBlocks.createGenesis(chainSpec));
     for (int i = 1; i < 9; i++) {
-      states[i] = new PerSlotTransition(chainSpec).apply(states[i - 1]);
+      states[i] = new PerSlotTransition(specHelpers).apply(states[i - 1]);
     }
     PerEpochTransition perEpochTransition = new PerEpochTransition(specHelpers);
     BeaconStateEx epochState = perEpochTransition.apply(states[8]);

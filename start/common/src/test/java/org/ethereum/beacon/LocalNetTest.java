@@ -71,8 +71,7 @@ public class LocalNetTest {
     int validatorCount = 4;
     int epochLength = 2;
 
-    ControlledSchedulers schedulers = new ControlledSchedulers();
-    Schedulers.set(schedulers);
+    ControlledSchedulers schedulers = Schedulers.createControlled();
 
     Random rnd = new Random(1);
     Time genesisTime = Time.of(10 * 60);
@@ -105,7 +104,7 @@ public class LocalNetTest {
           }
         };
 
-    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(chainSpec);
+    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(chainSpec, schedulers::getCurrentTime);
 
     Pair<List<Deposit>, List<KeyPair>> anyDeposits = TestUtils.getAnyDeposits(specHelpers, validatorCount);
     List<Deposit> deposits = anyDeposits.getValue0();
@@ -118,7 +117,7 @@ public class LocalNetTest {
     for(int i = 0; i < validatorCount; i++) {
       WireApi wireApi = localWireHub.createNewPeer("" + i);
       Launcher launcher = new Launcher(specHelpers, depositContract, anyDeposits.getValue1().get(i),
-          wireApi, new MemBeaconChainStorageFactory());
+          wireApi, new MemBeaconChainStorageFactory(), schedulers);
 
       int finalI = i;
       Flux.from(launcher.slotTicker.getTickerStream())
@@ -143,17 +142,5 @@ public class LocalNetTest {
       System.out.println("===============================");
       schedulers.addTime(Duration.ofSeconds(10));
     }
-
-//    Thread.sleep(100000000);
-  }
-
-  static String slotInfo(SpecHelpers specHelpers, Time genesisTime, SlotNumber slot) {
-    ChainSpec spec = specHelpers.getChainSpec();
-    Time slotTime = genesisTime.plus(spec.getSlotDuration().times(slot.minus(spec.getGenesisSlot())));
-
-    double time = System.currentTimeMillis() - slotTime.getValue() * 1000;
-    time /= 1000;
-    return "Slot #" + slot.minus(spec.getGenesisSlot()) +
-        String.format(" %.1f sec from its time", time);
   }
 }

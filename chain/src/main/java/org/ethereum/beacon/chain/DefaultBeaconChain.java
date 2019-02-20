@@ -38,11 +38,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   private final BeaconTupleStorage tupleStorage;
 
   private final ReplayProcessor<BeaconTuple> blockSink = ReplayProcessor.cacheLast();
-  private final Publisher<BeaconTuple> blockStream =
-      Flux.from(blockSink)
-          .publishOn(Schedulers.get().reactorEvents())
-          .onBackpressureError()
-          .name("DefaultBeaconChain.block");
+  private final Publisher<BeaconTuple> blockStream;
 
   private BeaconTuple recentlyProcessed;
 
@@ -54,7 +50,8 @@ public class DefaultBeaconChain implements MutableBeaconChain {
       StateTransition<BeaconStateEx> perEpochTransition,
       BeaconBlockVerifier blockVerifier,
       BeaconStateVerifier stateVerifier,
-      BeaconChainStorage chainStorage) {
+      BeaconChainStorage chainStorage,
+      Schedulers schedulers) {
     this.specHelpers = specHelpers;
     this.initialTransition = initialTransition;
     this.perSlotTransition = perSlotTransition;
@@ -64,6 +61,11 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     this.stateVerifier = stateVerifier;
     this.chainStorage = chainStorage;
     this.tupleStorage = chainStorage.getTupleStorage();
+
+    blockStream = Flux.from(blockSink)
+            .publishOn(schedulers.reactorEvents())
+            .onBackpressureError()
+            .name("DefaultBeaconChain.block");
   }
 
   @Override

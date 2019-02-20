@@ -5,7 +5,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Consumer;
 
-public class DefaultSchedulers extends Schedulers {
+public class DefaultSchedulers extends AbstractSchedulers {
 
   private Consumer<Throwable> errorHandler =
       t -> {

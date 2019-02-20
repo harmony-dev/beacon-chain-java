@@ -1,61 +1,38 @@
 package org.ethereum.beacon.schedulers;
 
 import java.time.Duration;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ScheduledExecutorService;
 
-public class ControlledSchedulers extends Schedulers {
+/**
+ * Special Schedulers implementation which is mostly suitable for testing and emulation.
+ * The system time is controlled manually and all the schedulers execute tasks according
+ * to this time.
+ * Initial system time is equal to 0
+ */
+public interface ControlledSchedulers extends Schedulers {
 
-  private final List<ControlledExecutorService> controlledExecutors = new CopyOnWriteArrayList<>();
-  private long currentTime = 0;
+  /**
+   * Sets the next system timestamp.
+   * After the call the {@link #getCurrentTime()} method will return <code>newTime</code>
+   * however during this call if a task for some Scheduler is scheduled for time T (T <= <code>newTime</code>)
+   * the {@link #getCurrentTime()} should return T until the task completes execution.
+   * All the tasks scheduled for the period from the previous till the new time are executed
+   * sequentially in time increasing order.
+   * Periodic tasks would execute several times if scheduled accordingly
+   */
+  void setCurrentTime(long newTime);
 
-  @Override
-  public long getCurrentTime() {
-    return currentTime;
-  }
-
-  public void setCurrentTime(long newTime) {
-    assert newTime >= currentTime;
-    while (true) {
-      Optional<ControlledExecutorService> nextSchedulerToRunOpt =
-          controlledExecutors.stream()
-              .min(Comparator.comparingLong(ex -> ex.getNextScheduleTime()));
-      if (!nextSchedulerToRunOpt.isPresent()) {
-        break;
-      }
-      ControlledExecutorService nextSchedulerToRun = nextSchedulerToRunOpt.get();
-      long time = nextSchedulerToRun.getNextScheduleTime();
-      if (time > newTime) {
-        break;
-      }
-      currentTime = time;
-      nextSchedulerToRun.setCurrentTime(currentTime);
-    }
-    currentTime = newTime;
-    controlledExecutors.forEach(e -> e.setCurrentTime(newTime));
-  }
-
-  public void addTime(Duration duration) {
+  /**
+   * Just a handy helper method for {@link #setCurrentTime(long)}
+   */
+  default void addTime(Duration duration) {
     addTime(duration.toMillis());
   }
 
-  public void addTime(long millis) {
+  /**
+   * Just a handy helper method for {@link #setCurrentTime(long)}
+   */
+  default void addTime(long millis) {
     setCurrentTime(getCurrentTime() + millis);
   }
 
-  @Override
-  protected Scheduler createExecutorScheduler(ScheduledExecutorService executorService) {
-    return new ErrorHandlingScheduler(new ExecutorScheduler(executorService), e -> e.printStackTrace());
-  }
-
-  @Override
-  protected ScheduledExecutorService createExecutor(String namePattern, int threads) {
-    ControlledExecutorService service = new ControlledExecutorServiceImpl();
-    controlledExecutors.add(service);
-    service.setCurrentTime(currentTime);
-    return service;
-  }
 }
