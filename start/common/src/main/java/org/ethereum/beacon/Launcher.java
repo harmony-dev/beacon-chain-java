@@ -104,7 +104,9 @@ public class Launcher {
     slotTicker.start();
 
     DirectProcessor<Attestation> allAttestations = DirectProcessor.create();
-    wireApi.inboundAttestationsStream().subscribe(allAttestations);
+    Flux.from(wireApi.inboundAttestationsStream())
+        .publishOn(schedulers.reactorEvents())
+        .subscribe(allAttestations);
 
     observableStateProcessor = new ObservableStateProcessorImpl(
         beaconChainStorage,
@@ -143,6 +145,8 @@ public class Launcher {
     Flux.from(beaconChainValidator.getAttestationsStream()).subscribe(wireApi::sendAttestation);
     Flux.from(beaconChainValidator.getAttestationsStream()).subscribe(allAttestations);
 
-    Flux.from(wireApi.inboundBlocksStream()).subscribe(beaconChain::insert);
+    Flux.from(wireApi.inboundBlocksStream())
+        .publishOn(schedulers.reactorEvents())
+        .subscribe(beaconChain::insert);
   }
 }
