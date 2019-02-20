@@ -31,6 +31,19 @@ allprojects {
 
   task allDependencies(type: DependencyReportTask) {}
 
+  tasks.withType(Jar) {
+    if (rootProject == project) {
+      baseName = project.name
+    } else {
+      def projectCustomName = project.path.replaceAll(":", "-");
+      baseName = rootProject.name + projectCustomName
+    }
+    manifest {
+      attributes('Implementation-Title': baseName,
+          'Implementation-Version': project.version)
+    }
+  }
+
   javadoc {
     options.author = true
     options.header = project.name
