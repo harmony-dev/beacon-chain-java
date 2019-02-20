@@ -104,7 +104,7 @@ public class LocalNetTest {
           }
         };
 
-    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(chainSpec);
+    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(chainSpec, schedulers::getCurrentTime);
 
     Pair<List<Deposit>, List<KeyPair>> anyDeposits = TestUtils.getAnyDeposits(specHelpers, validatorCount);
     List<Deposit> deposits = anyDeposits.getValue0();
