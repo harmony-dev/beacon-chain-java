@@ -1,3 +1,11 @@
+plugins {
+  id 'application'
+}
+
+application {
+  mainClassName = 'org.ethereum.beacon.Emulator'
+}
+
 dependencies {
   implementation project(':types')
   implementation project(':wire')
