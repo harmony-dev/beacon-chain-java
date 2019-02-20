@@ -8,6 +8,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -36,12 +37,14 @@ public class ControlledExecutorServiceImpl implements ControlledExecutorService 
     }
 
     void execute() {
-      try {
-        V res = callable.call();
-        future.delegate.complete(res);
-      } catch (Exception e) {
-        future.delegate.completeExceptionally(e);
-      }
+      ControlledExecutorServiceImpl.this.execute(() -> {
+        try {
+          V res = callable.call();
+          future.delegate.complete(res);
+        } catch (Exception e) {
+          future.delegate.completeExceptionally(e);
+        }
+      });
     }
 
     @Override
@@ -97,8 +100,19 @@ public class ControlledExecutorServiceImpl implements ControlledExecutorService 
     }
   }
 
-  private List<ScheduledTask> tasks = new ArrayList<>();
+  private final Executor delegateExecutor;
+
+  private final List<ScheduledTask> tasks = new ArrayList<>();
   private long currentTime = 0;
+
+  public ControlledExecutorServiceImpl() {
+    this(Runnable::run);  // default immediate executor
+  }
+
+
+  public ControlledExecutorServiceImpl(Executor delegateExecutor) {
+    this.delegateExecutor = delegateExecutor;
+  }
 
   @Override
   public void setCurrentTime(long currentTime) {
