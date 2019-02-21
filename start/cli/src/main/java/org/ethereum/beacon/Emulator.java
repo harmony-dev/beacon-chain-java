@@ -8,10 +8,10 @@ import picocli.CommandLine;
 import java.util.concurrent.Callable;
 
 @CommandLine.Command(
-    description = "Eth2.0 emulator",
-    name = "beacon-emulator",
+    description = "Eth2.0 beacon emulator",
+    name = "emulator",
     mixinStandardHelpOptions = true,
-    version = "beacon-emulator " + ReusableOptions.VERSION)
+    version = "emulator " + ReusableOptions.VERSION)
 public class Emulator extends ReusableOptions implements Callable<Void> {
   @CommandLine.Parameters(
       index = "0",

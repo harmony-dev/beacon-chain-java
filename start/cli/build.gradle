@@ -2,9 +2,16 @@ plugins {
   id 'application'
 }
 
-application {
-  mainClassName = 'org.ethereum.beacon.Emulator'
-}
+// The next two lines disable the tasks for the primary main which by default
+// generates a script with a name matching the project name.
+// You can leave them enabled but if so you'll need to define mainClassName
+// And you'll be creating your application scripts two different ways which
+// could lead to confusion
+startScripts.enabled = false
+run.enabled = false
+
+// Call this for each Main class you want to expose with an app script
+createScript(project, 'org.ethereum.beacon.Emulator', 'emulator')
 
 dependencies {
   implementation project(':types')
