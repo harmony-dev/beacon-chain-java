@@ -24,7 +24,7 @@ public class BeaconChainer extends ReusableOptions implements Callable<Void> {
   public Void call() throws Exception {
     System.out.println("Starting beacon chain client...");
     prepareAndPrintConfigs(action, "/config/chainer-config.yml");
-    // TODO: your business logic goes here...
+    System.out.println("Beacon chain client is not ready yet"); // TODO
     return null;
   }
 }

@@ -22,9 +22,9 @@ public class Validator extends ReusableOptions implements Callable<Void> {
 
   @Override
   public Void call() throws Exception {
-    // TODO: your business logic goes here...
     System.out.println("Starting beacon validator...");
     prepareAndPrintConfigs(action, "/config/validator-config.yml");
+    System.out.println("Beacon validator is not ready yet"); // TODO
     return null;
   }
 }
