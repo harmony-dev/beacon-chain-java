@@ -122,7 +122,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
 
     BeaconStateEx parentState = pullParentState(block);
 
-    BeaconStateEx preBlockState = applyEmptySlotTransitions(parentState, block);
+    BeaconStateEx preBlockState = applyEmptySlotTransitionsTillBlock(parentState, block);
     VerificationResult blockVerification =
         blockVerifier.verify(block, preBlockState.getCanonicalState());
     if (!blockVerification.isPassed()) {
@@ -205,14 +205,16 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     return block.getSlot().greater(nextToCurrentSlot);
   }
 
-  private BeaconStateEx applyEmptySlotTransitions(BeaconStateEx source, BeaconBlock block) {
+  private BeaconStateEx applyEmptySlotTransitionsTillBlock(BeaconStateEx source, BeaconBlock block) {
     BeaconStateEx result = source;
-    while (result.getCanonicalState().getSlot().less(block.getSlot())) {
+    for (SlotNumber slot : result.getCanonicalState().getSlot().increment().iterateTo(block.getSlot())) {
       result = perSlotTransition.apply(result);
       if (specHelpers.is_epoch_end(result.getCanonicalState().getSlot())) {
         result = perEpochTransition.apply(result);
       }
     }
+    // the slot at block should be processed before the block
+    result = perSlotTransition.apply(result);
 
     return result;
   }
