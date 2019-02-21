@@ -26,9 +26,9 @@ public class ProposerSignatureVerifier implements BeaconBlockVerifier {
   private ChainSpec chainSpec;
   private SpecHelpers specHelpers;
 
-  public ProposerSignatureVerifier(ChainSpec chainSpec, SpecHelpers specHelpers) {
-    this.chainSpec = chainSpec;
+  public ProposerSignatureVerifier(SpecHelpers specHelpers) {
     this.specHelpers = specHelpers;
+    this.chainSpec = specHelpers.getChainSpec();
   }
 
   @Override

@@ -27,9 +27,9 @@ public class ExitVerifier implements OperationVerifier<Exit> {
   private ChainSpec chainSpec;
   private SpecHelpers specHelpers;
 
-  public ExitVerifier(ChainSpec chainSpec, SpecHelpers specHelpers) {
-    this.chainSpec = chainSpec;
+  public ExitVerifier(SpecHelpers specHelpers) {
     this.specHelpers = specHelpers;
+    this.chainSpec = specHelpers.getChainSpec();
   }
 
   @Override

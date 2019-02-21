@@ -35,9 +35,9 @@ public class AttestationVerifier implements OperationVerifier<Attestation> {
   private ChainSpec chainSpec;
   private SpecHelpers specHelpers;
 
-  public AttestationVerifier(ChainSpec chainSpec, SpecHelpers specHelpers) {
-    this.chainSpec = chainSpec;
+  public AttestationVerifier(SpecHelpers specHelpers) {
     this.specHelpers = specHelpers;
+    this.chainSpec = specHelpers.getChainSpec();
   }
 
   @Override

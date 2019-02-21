@@ -28,9 +28,9 @@ public class DepositVerifier implements OperationVerifier<Deposit> {
   private final SpecHelpers specHelpers;
   private final Serializer ssz = Serializer.annotationSerializer();
 
-  public DepositVerifier(ChainSpec chainSpec, SpecHelpers specHelpers) {
-    this.chainSpec = chainSpec;
+  public DepositVerifier(SpecHelpers specHelpers) {
     this.specHelpers = specHelpers;
+    this.chainSpec = specHelpers.getChainSpec();
   }
 
   BytesValue serialize(DepositData depositData) {

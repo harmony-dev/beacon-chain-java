@@ -82,10 +82,8 @@ public class Launcher {
     db = new InMemoryDatabase();
     beaconChainStorage = storageFactory.create(db);
 
-    // TODO
-    BeaconBlockVerifier blockVerifier = (block, state) -> VerificationResult.PASSED;
-    // TODO
-    BeaconStateVerifier stateVerifier = (block, state) -> VerificationResult.PASSED;
+    BeaconBlockVerifier blockVerifier = BeaconBlockVerifier.createDefault(specHelpers);
+    BeaconStateVerifier stateVerifier = BeaconStateVerifier.createDefault(specHelpers);
 
     beaconChain = new DefaultBeaconChain(
         specHelpers,
