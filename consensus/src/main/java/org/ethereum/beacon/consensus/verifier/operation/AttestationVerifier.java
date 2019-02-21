@@ -62,10 +62,10 @@ public class AttestationVerifier implements OperationVerifier<Attestation> {
 
     // Verify that attestation.data.justified_epoch is equal to
     // state.justified_epoch
-    // if attestation.data.slot >= get_epoch_start_slot(get_current_epoch(state))
-    // else state.previous_justified_epoch
+    // if slot_to_epoch(attestation.data.slot + 1) >= get_current_epoch(state)
+    // else state.previous_justified_epoch.
     if (!data.getJustifiedEpoch().equals(
-        data.getSlot().greaterEqual(specHelpers.get_epoch_start_slot(specHelpers.get_current_epoch(state))) ?
+        specHelpers.slot_to_epoch(data.getSlot().increment()).greaterEqual(specHelpers.get_current_epoch(state)) ?
         state.getJustifiedEpoch() : state.getPreviousJustifiedEpoch())) {
       return failedResult(
           "Attestation.data.justified_epoch is invalid");
