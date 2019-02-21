@@ -21,6 +21,7 @@ import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.crypto.BLS381.KeyPair;
+import org.ethereum.beacon.crypto.BLS381.PublicKey;
 import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.pow.DepositContract.ChainStart;
@@ -198,5 +199,12 @@ public class LocalNetTest {
       public boolean bls_verify(BLSPubkey publicKey, Hash32 message, BLSSignature signature, Bytes8 domain) {
         return true;
       }
-    };  }
+
+      @Override
+      public boolean bls_verify_multiple(List<PublicKey> publicKeys, List<Hash32> messages,
+          BLSSignature signature, Bytes8 domain) {
+        return true;
+      }
+    };
+  }
 }
