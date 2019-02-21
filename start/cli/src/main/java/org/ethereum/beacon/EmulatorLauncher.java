@@ -4,6 +4,8 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.Configuration;
+import org.apache.logging.log4j.core.config.ConfigurationSource;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.ethereum.beacon.chain.storage.impl.MemBeaconChainStorageFactory;
 import org.ethereum.beacon.consensus.SpecHelpers;
@@ -28,7 +30,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
-import java.io.File;
+import java.io.InputStream;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -57,11 +59,14 @@ public class EmulatorLauncher implements Runnable {
   }
 
   private void setupLogging() {
-    LoggerContext context = (org.apache.logging.log4j.core.LoggerContext) LogManager.getContext(false);
-    File file = new File(ClassLoader.getSystemClassLoader().getResource("log4j2.xml").getFile());
-
-    // this will force a reconfiguration
-    context.setConfigLocation(file.toURI());
+    LoggerContext context =
+        (org.apache.logging.log4j.core.LoggerContext) LogManager.getContext(false);
+    try (InputStream inputStream = ClassLoader.class.getResourceAsStream("/log4j2.xml")) {
+      ConfigurationSource source = new ConfigurationSource(inputStream);
+      Configurator.initialize(null, source);
+    } catch (Exception e) {
+      throw new RuntimeException("Cannot read log4j default configuration", e);
+    }
 
     // set logLevel
     if (logLevel != null) {
@@ -84,40 +89,70 @@ public class EmulatorLauncher implements Runnable {
 
     Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), Hash32.random(rnd));
 
-    Pair<List<Deposit>, List<BLS381.KeyPair>> anyDeposits = EmulateUtils.getAnyDeposits(
-        SpecHelpers.createWithSSZHasher(chainSpec, () -> 0L), validatorCount);
+    Pair<List<Deposit>, List<BLS381.KeyPair>> anyDeposits =
+        EmulateUtils.getAnyDeposits(
+            SpecHelpers.createWithSSZHasher(chainSpec, () -> 0L), validatorCount);
     List<Deposit> deposits = anyDeposits.getValue0();
 
     LocalWireHub localWireHub = new LocalWireHub(s -> {});
-    DepositContract.ChainStart chainStart = new DepositContract.ChainStart(genesisTime, eth1Data, deposits);
+    DepositContract.ChainStart chainStart =
+        new DepositContract.ChainStart(genesisTime, eth1Data, deposits);
     DepositContract depositContract = new SimpleDepositContract(chainStart);
 
     System.out.println("Creating peers...");
-    for(int i = 0; i < validatorCount; i++) {
+    for (int i = 0; i < validatorCount; i++) {
       ControlledSchedulers schedulers = controlledSchedulers.createNew();
-      SpecHelpers specHelpers = SpecHelpers
-          .createWithSSZHasher(chainSpec, schedulers::getCurrentTime);
+      SpecHelpers specHelpers =
+          SpecHelpers.createWithSSZHasher(chainSpec, schedulers::getCurrentTime);
       WireApi wireApi = localWireHub.createNewPeer("" + i);
 
-      Launcher launcher = new Launcher(specHelpers, depositContract, anyDeposits.getValue1().get(i),
-          wireApi, new MemBeaconChainStorageFactory(), schedulers);
+      Launcher launcher =
+          new Launcher(
+              specHelpers,
+              depositContract,
+              anyDeposits.getValue1().get(i),
+              wireApi,
+              new MemBeaconChainStorageFactory(),
+              schedulers);
 
       int finalI = i;
       Flux.from(launcher.slotTicker.getTickerStream())
-          .subscribe(slot -> System.out.println("  #" + finalI + " Slot: " + slot.toString(chainSpec, genesisTime)));
+          .subscribe(
+              slot ->
+                  System.out.println(
+                      "  #" + finalI + " Slot: " + slot.toString(chainSpec, genesisTime)));
       Flux.from(launcher.observableStateProcessor.getObservableStateStream())
-          .subscribe(os -> {
-            System.out.println("  #" + finalI + " New observable state: " + os.toString(specHelpers));
-          });
+          .subscribe(
+              os -> {
+                System.out.println(
+                    "  #" + finalI + " New observable state: " + os.toString(specHelpers));
+              });
       Flux.from(launcher.beaconChainValidator.getProposedBlocksStream())
-          .subscribe(block ->System.out.println("#" + finalI + " !!! New block: " +
-              block.toString(chainSpec, genesisTime, specHelpers::hash_tree_root)));
+          .subscribe(
+              block ->
+                  System.out.println(
+                      "#"
+                          + finalI
+                          + " !!! New block: "
+                          + block.toString(chainSpec, genesisTime, specHelpers::hash_tree_root)));
       Flux.from(launcher.beaconChainValidator.getAttestationsStream())
-          .subscribe(attest ->System.out.println("#" + finalI + " !!! New attestation: " +
-              attest.toString(chainSpec, genesisTime)));
+          .subscribe(
+              attest ->
+                  System.out.println(
+                      "#"
+                          + finalI
+                          + " !!! New attestation: "
+                          + attest.toString(chainSpec, genesisTime)));
       Flux.from(launcher.beaconChain.getBlockStatesStream())
-          .subscribe(blockState ->System.out.println("  #" + finalI + " Block imported: " +
-              blockState.getBlock().toString(chainSpec, genesisTime, specHelpers::hash_tree_root)));
+          .subscribe(
+              blockState ->
+                  System.out.println(
+                      "  #"
+                          + finalI
+                          + " Block imported: "
+                          + blockState
+                              .getBlock()
+                              .toString(chainSpec, genesisTime, specHelpers::hash_tree_root)));
     }
     System.out.println("Peers created");
 
@@ -163,7 +198,6 @@ public class EmulatorLauncher implements Runnable {
     @Override
     public void setDistanceFromHead(long distanceFromHead) {}
   }
-
 
   static class MDCControlledSchedulers {
     public String mdcKey = "validatorIndex";
