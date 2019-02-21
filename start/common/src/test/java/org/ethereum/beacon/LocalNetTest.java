@@ -6,16 +6,22 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.util.function.Supplier;
 import org.ethereum.beacon.chain.storage.impl.MemBeaconChainStorageFactory;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.TestUtils;
+import org.ethereum.beacon.consensus.hasher.SSZObjectHasher;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.Eth1Data;
+import org.ethereum.beacon.core.types.BLSPubkey;
+import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.crypto.BLS381.KeyPair;
+import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.pow.DepositContract.ChainStart;
 import org.ethereum.beacon.schedulers.ControlledSchedulers;
@@ -28,6 +34,7 @@ import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.bytes.Bytes8;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public class LocalNetTest {
@@ -99,8 +106,10 @@ public class LocalNetTest {
   }
 
   public static void main(String[] args) throws Exception {
-    int validatorCount = 4;
-    int epochLength = 2;
+    int validatorCount = 8;
+    int epochLength = 4;
+    int targetCommitteeSize = 2;
+    int shardCount = 4;
     Random rnd = new Random(1);
     Time genesisTime = Time.of(10 * 60);
 
@@ -127,17 +136,22 @@ public class LocalNetTest {
 
           @Override
           public ValidatorIndex getTargetCommitteeSize() {
-            return ValidatorIndex.of(1);
+            return ValidatorIndex.of(targetCommitteeSize);
           }
 
           @Override
           public SlotNumber getMinAttestationInclusionDelay() {
             return SlotNumber.of(1);
           }
+
+          @Override
+          public ShardNumber getShardCount() {
+            return ShardNumber.of(shardCount);
+          }
         };
 
     Pair<List<Deposit>, List<KeyPair>> anyDeposits = TestUtils.getAnyDeposits(
-            SpecHelpers.createWithSSZHasher(chainSpec, () -> 0L), validatorCount);
+            createLightSpecHelpers(chainSpec, () -> 0L), validatorCount);
     List<Deposit> deposits = anyDeposits.getValue0();
 
     LocalWireHub localWireHub = new LocalWireHub(s -> {});
@@ -147,8 +161,7 @@ public class LocalNetTest {
     System.out.println("Creating peers...");
     for(int i = 0; i < validatorCount; i++) {
       ControlledSchedulers schedulers = controlledSchedulers.createNew();
-      SpecHelpers specHelpers = SpecHelpers
-          .createWithSSZHasher(chainSpec, schedulers::getCurrentTime);
+      SpecHelpers specHelpers = createLightSpecHelpers(chainSpec, schedulers::getCurrentTime);
       WireApi wireApi = localWireHub.createNewPeer("" + i);
 
       Launcher launcher = new Launcher(specHelpers, depositContract, anyDeposits.getValue1().get(i),
@@ -178,4 +191,12 @@ public class LocalNetTest {
       controlledSchedulers.addTime(Duration.ofSeconds(10));
     }
   }
+
+  static SpecHelpers createLightSpecHelpers(ChainSpec spec, Supplier<Long> time) {
+    return new SpecHelpers(spec, Hashes::keccak256, SSZObjectHasher.create(Hashes::keccak256), time) {
+      @Override
+      public boolean bls_verify(BLSPubkey publicKey, Hash32 message, BLSSignature signature, Bytes8 domain) {
+        return true;
+      }
+    };  }
 }
