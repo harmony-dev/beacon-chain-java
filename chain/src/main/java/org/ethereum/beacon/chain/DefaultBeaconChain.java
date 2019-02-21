@@ -4,6 +4,8 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 import java.util.List;
 import java.util.Optional;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.chain.storage.BeaconTuple;
 import org.ethereum.beacon.chain.storage.BeaconTupleStorage;
@@ -25,6 +27,7 @@ import reactor.core.publisher.ReplayProcessor;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
 public class DefaultBeaconChain implements MutableBeaconChain {
+  private static final Logger logger = LogManager.getLogger(DefaultBeaconChain.class);
 
   private final SpecHelpers specHelpers;
   private final BlockTransition<BeaconStateEx> initialTransition;
@@ -123,6 +126,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     VerificationResult blockVerification =
         blockVerifier.verify(block, preBlockState.getCanonicalState());
     if (!blockVerification.isPassed()) {
+      logger.warn("Block verification failed: " + blockVerification + ": " + block.toString(specHelpers.getChainSpec(), parentState.getCanonicalState().getGenesisTime(), specHelpers::hash_tree_root));
       return false;
     }
 
@@ -134,6 +138,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     VerificationResult stateVerification =
         stateVerifier.verify(postBlockState.getCanonicalState(), block);
     if (!stateVerification.isPassed()) {
+      logger.warn("State verification failed: " + stateVerification);
       return false;
     }
 
