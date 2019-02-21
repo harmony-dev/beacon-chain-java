@@ -49,12 +49,18 @@ public class PendingOperationsState implements PendingOperations {
   }
 
   @Override
-  public List<Attestation> peekAggregatedAttestations(int maxCount, SlotNumber maxSlot) {
+  public List<Attestation> peekAggregatedAttestations(
+      int maxCount, SlotNumber minSlotExclusive, SlotNumber maxSlotInclusive) {
+
     Map<AttestationData, List<Attestation>> attestationsBySlot =
-        getAttestations().stream()
-            .filter(attestation -> attestation.getData().getSlot().lessEqual(maxSlot))
+        getAttestations()
+            .stream()
+            .filter(attestation -> attestation.getData().getSlot().greater(minSlotExclusive))
+            .filter(attestation -> attestation.getData().getSlot().lessEqual(maxSlotInclusive))
             .collect(groupingBy(Attestation::getData));
-    return attestationsBySlot.entrySet().stream()
+    return attestationsBySlot
+        .entrySet()
+        .stream()
         .sorted(Comparator.comparing(e -> e.getKey().getSlot()))
         .limit(maxCount)
         .map(entry -> aggregateAttestations(entry.getValue()))

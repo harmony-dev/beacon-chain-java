@@ -21,7 +21,7 @@ public interface PendingOperations {
 
   List<AttesterSlashing> peekAttesterSlashings(int maxCount);
 
-  List<Attestation> peekAggregatedAttestations(int maxCount, SlotNumber maxSlot);
+  List<Attestation> peekAggregatedAttestations(int maxCount, SlotNumber minSlot, SlotNumber maxSlot);
 
   List<Exit> peekExits(int maxCount);
 
