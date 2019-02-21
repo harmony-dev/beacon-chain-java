@@ -1254,7 +1254,7 @@ public class SpecHelpers {
     if len(bitfield) != (committee_size + 7) // 8:
         return False
 
-    for i in range(committee_size + 1, committee_size - committee_size % 8 + 8):
+    for i in range(committee_size, len(bitfield) * 8):
         if get_bitfield_bit(bitfield, i) == 0b1:
             return False
 
@@ -1265,9 +1265,13 @@ public class SpecHelpers {
       return false;
     }
 
-    for(int i = committee_size + 1; i < committee_size - committee_size % 8 + 8; i++) {
-      if (bitfield.getBit(i)) {
-        return false;
+    for(int i = committee_size; i < bitfield.size() * 8; i++) {
+      try {
+        if (bitfield.getBit(i)) {
+          return false;
+        }
+      } catch (Exception e) {
+        e.printStackTrace();
       }
     }
     return true;
