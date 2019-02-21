@@ -73,4 +73,26 @@ public class TestUtils {
 
     return Pair.with(deposits, validatorsKeys);
   }
+
+  public static List<Deposit> generateRandomDepositsWithoutSig(SpecHelpers specHelpers, int count) {
+    List<Deposit> deposits = new ArrayList<>();
+
+    UInt64 counter = UInt64.ZERO;
+    for (int i = 0; i < count; i++) {
+      Hash32 proofOfPosession = Hash32.random(rnd);
+
+      BLSPubkey pubkey = BLSPubkey.wrap(Bytes48.leftPad(counter.toBytesBigEndian()));
+      Deposit deposit =
+          new Deposit(
+              Collections.singletonList(Hash32.random(rnd)),
+              counter,
+              new DepositData(
+                  specHelpers.getChainSpec().getMaxDepositAmount(),
+                  Time.of(0),
+                  new DepositInput(pubkey, proofOfPosession, BLSSignature.ZERO)));
+      deposits.add(deposit);
+      counter = counter.increment();
+    }
+    return deposits;
+  }
 }
