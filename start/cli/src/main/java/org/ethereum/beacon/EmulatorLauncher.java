@@ -59,8 +59,6 @@ public class EmulatorLauncher implements Runnable {
   }
 
   private void setupLogging() {
-    LoggerContext context =
-        (org.apache.logging.log4j.core.LoggerContext) LogManager.getContext(false);
     try (InputStream inputStream = ClassLoader.class.getResourceAsStream("/log4j2.xml")) {
       ConfigurationSource source = new ConfigurationSource(inputStream);
       Configurator.initialize(null, source);
@@ -70,6 +68,8 @@ public class EmulatorLauncher implements Runnable {
 
     // set logLevel
     if (logLevel != null) {
+      LoggerContext context =
+          (org.apache.logging.log4j.core.LoggerContext) LogManager.getContext(false);
       Configuration config = context.getConfiguration();
       LoggerConfig loggerConfig = config.getLoggerConfig(LogManager.ROOT_LOGGER_NAME);
       loggerConfig.setLevel(logLevel);
