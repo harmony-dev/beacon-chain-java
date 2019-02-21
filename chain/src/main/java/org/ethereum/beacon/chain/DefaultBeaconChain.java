@@ -132,7 +132,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
 
     BeaconStateEx postBlockState = perBlockTransition.apply(preBlockState, block);
     if (specHelpers.is_epoch_end(block.getSlot())) {
-      postBlockState = perEpochTransition.apply(preBlockState);
+      postBlockState = perEpochTransition.apply(postBlockState);
     }
 
     VerificationResult stateVerification =
