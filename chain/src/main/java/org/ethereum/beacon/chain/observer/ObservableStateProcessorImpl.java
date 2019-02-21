@@ -57,7 +57,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   private Scheduler regularJobExecutor;
   private Scheduler continuousJobExecutor;
 
-  private final BlockingQueue<Attestation> attestationBuffer = new LinkedBlockingDeque<>();
+  private final List<Attestation> attestationBuffer = new ArrayList<>();
   private final Map<BLSPubkey, Attestation> attestationCache = new HashMap<>();
   private final Map<UInt64, Set<BLSPubkey>> validatorSlotCache = new HashMap<>();
   private final Schedulers schedulers;
@@ -141,8 +141,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   }
 
   private void doHardWork() {
-    List<Attestation> attestations = new ArrayList<>();
-    attestationBuffer.drainTo(attestations);
+    List<Attestation> attestations = drainAttestations(latestState.getSlot());
     for (Attestation attestation : attestations) {
 
       List<ValidatorIndex> participants =
@@ -184,9 +183,23 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     }
   }
 
-  private void onNewAttestation(Attestation attestation) {
-    runTaskInSeparateThread(() -> attestationBuffer.add(attestation));
+  private synchronized void onNewAttestation(Attestation attestation) {
+    attestationBuffer.add(attestation);
   }
+
+  private synchronized List<Attestation> drainAttestations(SlotNumber uptoSlotInclusive) {
+    List<Attestation> ret = new ArrayList<>();
+    Iterator<Attestation> it = attestationBuffer.iterator();
+    while (it.hasNext()) {
+      Attestation att = it.next();
+      if (att.getData().getSlot().lessEqual(uptoSlotInclusive)) {
+        ret.add(att);
+        it.remove();
+      }
+    }
+    return ret;
+  }
+
 
   private void onNewBlockTuple(BeaconTuple beaconTuple) {
     this.latestState = beaconTuple.getState();
