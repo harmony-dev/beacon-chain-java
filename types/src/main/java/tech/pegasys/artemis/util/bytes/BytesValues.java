@@ -285,6 +285,16 @@ public abstract class BytesValues {
     return BytesValue.wrap(res);
   }
 
+  public static BytesValue or(BytesValue b1, BytesValue b2) {
+    assert b1.size() == b2.size();
+    byte[] res = new byte[b1.size()];
+    for (int i = 0; i < res.length; ++i) {
+      res[i] = (byte) (b1.get(i) | b2.get(i));
+    }
+
+    return BytesValue.wrap(res);
+  }
+
   // In Java9, this could be moved to BytesValue and made private
   static BytesValue fromHexString(String str, int destSize, boolean lenient) {
     return BytesValue.wrap(fromRawHexString(str, destSize, lenient));

@@ -1,15 +1,14 @@
 package org.ethereum.beacon.pow;
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
+import org.ethereum.beacon.schedulers.Scheduler;
+import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.core.Block;
 import org.ethereum.core.Blockchain;
 import org.ethereum.core.Bloom;
@@ -34,8 +33,7 @@ public class EthereumJDepositContract extends AbstractDepositContract {
   private static final String DEPOSIT_EVENT_NAME = "Deposit";
   private static final String CHAIN_START_EVENT_NAME = "ChainStart";
 
-  private final ExecutorService blockExecutor = Executors.newSingleThreadExecutor(
-      new ThreadFactoryBuilder().setNameFormat("PowClientBlockProcessingThread").build());
+  private final Scheduler blockExecutor;
 
   private final Ethereum ethereum;
   private final Address contractDeployAddress;
@@ -49,7 +47,8 @@ public class EthereumJDepositContract extends AbstractDepositContract {
   private boolean chainStartComplete;
 
   public EthereumJDepositContract(Ethereum ethereum, long contractDeployBlock,
-      String contractDeployAddress) {
+      String contractDeployAddress, Schedulers schedulers) {
+    super(schedulers);
     this.ethereum = ethereum;
     this.contractDeployAddress = Address.fromHexString(contractDeployAddress);
     contractDeployAddressHash =
@@ -58,6 +57,7 @@ public class EthereumJDepositContract extends AbstractDepositContract {
     this.contract = new Contract(ContractAbi.getContractAbi());
     this.contractDeployBlock = contractDeployBlock;
     processedUpToBlock = contractDeployBlock;
+    blockExecutor = this.schedulers.blocking();
   }
 
   @Override
@@ -94,7 +94,7 @@ public class EthereumJDepositContract extends AbstractDepositContract {
 
   private void processConfirmedBlocks() {
     bestConfirmedBlock = ethereum.getBlockchain().getBestBlock().getNumber() - getDistanceFromHead();
-    blockExecutor.submit(this::processBlocksUpTo);
+    blockExecutor.execute(this::processBlocksUpTo);
   }
 
   private void processBlocksUpTo() {

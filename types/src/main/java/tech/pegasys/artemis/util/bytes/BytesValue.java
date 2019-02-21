@@ -304,7 +304,7 @@ public interface BytesValue extends Comparable<BytesValue> {
   byte get(int i);
 
   default boolean getBit(int bitIndex) {
-    return ((get(bitIndex / 8) >> (7 - bitIndex % 8)) & 1) == 1;
+    return ((get(bitIndex / 8) >> (bitIndex % 8)) & 1) == 1;
   }
 
   /**

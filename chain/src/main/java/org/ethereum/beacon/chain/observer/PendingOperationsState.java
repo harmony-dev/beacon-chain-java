@@ -12,12 +12,13 @@ import java.util.stream.Collectors;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Exit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
+import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Bitfield;
+import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.crypto.BLS381;
-import tech.pegasys.artemis.util.uint.UInt64;
 
 public class PendingOperationsState implements PendingOperations {
 
@@ -29,7 +30,7 @@ public class PendingOperationsState implements PendingOperations {
 
   @Override
   public Optional<Attestation> findAttestation(BLSPubkey pubKey) {
-    return Optional.of(attestations.get(pubKey));
+    return Optional.ofNullable(attestations.get(pubKey));
   }
 
   @Override
@@ -48,13 +49,13 @@ public class PendingOperationsState implements PendingOperations {
   }
 
   @Override
-  public List<Attestation> peekAggregatedAttestations(int maxCount, UInt64 maxSlot) {
-    Map<UInt64, List<Attestation>> attestationsBySlot =
+  public List<Attestation> peekAggregatedAttestations(int maxCount, SlotNumber maxSlot) {
+    Map<AttestationData, List<Attestation>> attestationsBySlot =
         getAttestations().stream()
-            .filter(attestation -> attestation.getData().getSlot().compareTo(maxSlot) <= 0)
-            .collect(groupingBy(at -> at.getData().getSlot()));
+            .filter(attestation -> attestation.getData().getSlot().lessEqual(maxSlot))
+            .collect(groupingBy(Attestation::getData));
     return attestationsBySlot.entrySet().stream()
-        .sorted(Comparator.comparing(Map.Entry::getKey))
+        .sorted(Comparator.comparing(e -> e.getKey().getSlot()))
         .limit(maxCount)
         .map(entry -> aggregateAttestations(entry.getValue()))
         .collect(Collectors.toList());
@@ -62,14 +63,15 @@ public class PendingOperationsState implements PendingOperations {
 
   private Attestation aggregateAttestations(List<Attestation> attestations) {
     assert !attestations.isEmpty();
+    assert attestations.stream().skip(1).allMatch(a -> a.equals(attestations.get(0)));
 
     Bitfield participants =
         attestations.stream()
             .map(Attestation::getAggregationBitfield)
-            .reduce(Bitfield::and)
+            .reduce(Bitfield::or)
             .get();
     Bitfield custody =
-        attestations.stream().map(Attestation::getCustodyBitfield).reduce(Bitfield::and).get();
+        attestations.stream().map(Attestation::getCustodyBitfield).reduce(Bitfield::or).get();
     BLS381.Signature aggregatedSignature =
         BLS381.Signature.aggregate(
             attestations.stream()

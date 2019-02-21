@@ -1,0 +1,25 @@
+dependencies {
+  implementation project(':types')
+  implementation project(':crypto')
+  implementation project(':core')
+  implementation project(':consensus')
+  implementation project(':db:core')
+  implementation project(':chain')
+  implementation project(':pow:core')
+  implementation project(':validator')
+  implementation project(':wire')
+  implementation project(':util')
+
+  implementation 'com.google.guava:guava'
+  implementation 'io.projectreactor:reactor-core'
+
+  testImplementation 'org.mockito:mockito-core'
+  testImplementation 'org.apache.logging.log4j:log4j-core'
+
+  // Gradle does not import test sources alongside with main sources
+  // use a workaround until better solution will be found
+  testImplementation project(':core').sourceSets.test.output
+  testImplementation project(':consensus').sourceSets.test.output
+  testImplementation project(':chain').sourceSets.test.output
+  testImplementation project(':pow:core').sourceSets.test.output
+}

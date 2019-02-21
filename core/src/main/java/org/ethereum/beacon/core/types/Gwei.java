@@ -5,6 +5,7 @@ import tech.pegasys.artemis.util.uint.UInt64;
 
 @SSZSerializable(serializeAs = UInt64.class)
 public class Gwei extends UInt64 implements SafeComparable<Gwei> {
+  private static final long GWEI_PER_ETHER = 1_000_000_000L;
 
   public static final Gwei ZERO = of(0);
 
@@ -13,7 +14,7 @@ public class Gwei extends UInt64 implements SafeComparable<Gwei> {
   }
 
   public static Gwei ofEthers(int ethers) {
-    return of(1_000_000_000L * ethers);
+    return of(GWEI_PER_ETHER * ethers);
   }
 
   public static Gwei of(long gweis) {
@@ -53,5 +54,10 @@ public class Gwei extends UInt64 implements SafeComparable<Gwei> {
 
   public Gwei times(int times) {
     return new Gwei(super.times(times));
+  }
+
+  @Override
+  public String toString() {
+    return getValue() % GWEI_PER_ETHER == 0 ? (getValue() / GWEI_PER_ETHER) + " Eth" : getValue() + " Gwei";
   }
 }

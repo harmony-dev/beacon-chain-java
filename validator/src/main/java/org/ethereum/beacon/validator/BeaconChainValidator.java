@@ -1,23 +1,28 @@
 package org.ethereum.beacon.validator;
 
 import com.google.common.annotations.VisibleForTesting;
-import java.util.Collections;
+import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.Optional;
 import java.util.function.Consumer;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
+import org.ethereum.beacon.core.state.ShardCommittee;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
+import org.ethereum.beacon.schedulers.RunnableEx;
+import org.ethereum.beacon.schedulers.Scheduler;
+import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.validator.crypto.MessageSigner;
+import org.reactivestreams.Publisher;
+import reactor.core.publisher.DirectProcessor;
+import reactor.core.publisher.Flux;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 /**
@@ -32,6 +37,14 @@ import tech.pegasys.artemis.util.uint.UInt64;
  */
 public class BeaconChainValidator implements ValidatorService {
 
+  private final Schedulers schedulers;
+
+  private final DirectProcessor<BeaconBlock> blocksSink = DirectProcessor.create();
+  private final Publisher<BeaconBlock> blocksStream;
+
+  private final DirectProcessor<Attestation> attestationsSink = DirectProcessor.create();
+  private final Publisher<Attestation> attestationsStream;
+
   /** BLS public key that corresponds to a "hot" private key. */
   private BLSPubkey publicKey;
   /** Proposer logic. */
@@ -43,45 +56,54 @@ public class BeaconChainValidator implements ValidatorService {
   /** Helper that signs validator messages with a "hot" private key. */
   private MessageSigner<BLSSignature> messageSigner;
 
+  private Publisher<ObservableBeaconState> stateStream;
+
   /** Validator index. Assigned in {@link #init(BeaconState)} method. */
   private ValidatorIndex validatorIndex = ValidatorIndex.MAX;
   /** Latest slot that has been processed. Initialized in {@link #init(BeaconState)} method. */
-  private SlotNumber lastProcessedSlot = SlotNumber.castFrom(UInt64.MAX_VALUE);
+  private SlotNumber lastProcessedSlot = SlotNumber.ZERO;
   /** The most recent beacon state came from the outside. */
   private ObservableBeaconState recentState;
 
   /** Validator task executor. */
-  private ScheduledExecutorService executor;
+  private final Scheduler executor;
 
   public BeaconChainValidator(
       BLSPubkey publicKey,
       BeaconChainProposer proposer,
       BeaconChainAttester attester,
       SpecHelpers specHelpers,
-      MessageSigner<BLSSignature> messageSigner) {
+      MessageSigner<BLSSignature> messageSigner,
+      Publisher<ObservableBeaconState> stateStream,
+      Schedulers schedulers) {
     this.publicKey = publicKey;
     this.proposer = proposer;
     this.attester = attester;
     this.specHelpers = specHelpers;
     this.messageSigner = messageSigner;
+    this.stateStream = stateStream;
+    this.schedulers = schedulers;
+
+    blocksStream = Flux.from(blocksSink)
+            .publishOn(this.schedulers.reactorEvents())
+            .onBackpressureError()
+            .name("BeaconChainValidator.block");
+
+    attestationsStream = Flux.from(attestationsSink)
+            .publishOn(this.schedulers.reactorEvents())
+            .onBackpressureError()
+            .name("BeaconChainValidator.attestation");
+
+    executor = this.schedulers.newSingleThreadDaemon("validator-service");
   }
 
   @Override
   public void start() {
-    this.executor =
-        Executors.newSingleThreadScheduledExecutor(
-            runnable -> {
-              Thread t = new Thread(runnable, "validator-service");
-              t.setDaemon(true);
-              return t;
-            });
     subscribeToStateUpdates(this::onNewState);
   }
 
   @Override
-  public void stop() {
-    this.executor.shutdown();
-  }
+  public void stop() {}
 
   /**
    * Initializes validator by looking its index in validator registry.
@@ -91,7 +113,6 @@ public class BeaconChainValidator implements ValidatorService {
   @VisibleForTesting
   void init(BeaconState state) {
     this.validatorIndex = specHelpers.get_validator_index_by_pubkey(state, publicKey);
-    setSlotProcessed(state);
   }
 
   /**
@@ -168,7 +189,7 @@ public class BeaconChainValidator implements ValidatorService {
     }
 
     // trigger attester at a halfway through the slot
-    if (isEligibleToAttest(state)) {
+    if (getValidatorCommittee(state).isPresent()) {
       Time startAt = specHelpers.get_slot_middle_time(state, state.getSlot());
       schedule(startAt, this::attest);
     }
@@ -179,7 +200,7 @@ public class BeaconChainValidator implements ValidatorService {
    *
    * @param routine a routine.
    */
-  private void runAsync(Runnable routine) {
+  private void runAsync(RunnableEx routine) {
     executor.execute(routine);
   }
 
@@ -189,10 +210,10 @@ public class BeaconChainValidator implements ValidatorService {
    * @param startAt a unix timestamp of start point, in seconds.
    * @param routine a routine.
    */
-  private void schedule(Time startAt, Runnable routine) {
+  private void schedule(Time startAt, RunnableEx routine) {
     long startAtMillis = startAt.getValue() * 1000;
-    assert System.currentTimeMillis() < startAtMillis;
-    executor.schedule(routine, System.currentTimeMillis() - startAtMillis, TimeUnit.MILLISECONDS);
+    assert schedulers.getCurrentTime() < startAtMillis;
+    executor.executeWithDelay(Duration.ofMillis(schedulers.getCurrentTime() - startAtMillis), routine);
   }
 
   /**
@@ -216,11 +237,12 @@ public class BeaconChainValidator implements ValidatorService {
     final ObservableBeaconState observableState = this.recentState;
     final BeaconState state = observableState.getLatestSlotState();
 
-    if (isEligibleToAttest(state)) {
+    Optional<ShardCommittee> validatorCommittee = getValidatorCommittee(state);
+    if (validatorCommittee.isPresent()) {
       Attestation attestation =
           attester.attest(
               validatorIndex,
-              specHelpers.getChainSpec().getBeaconChainShardNumber(),
+              validatorCommittee.get().getShard(),
               observableState,
               messageSigner);
       propagateAttestation(attestation);
@@ -249,15 +271,12 @@ public class BeaconChainValidator implements ValidatorService {
   }
 
   /**
-   * Whether validator is assigned to attest to a head at a slot of the state.
-   *
-   * @param state a state.
-   * @return {@code true} if assigned, {@link false} otherwise.
+   * Returns committee where the validator participates if any
    */
-  private boolean isEligibleToAttest(BeaconState state) {
-    final List<ValidatorIndex> firstCommittee =
-        specHelpers.get_crosslink_committees_at_slot(state, state.getSlot()).get(0).getCommittee();
-    return Collections.binarySearch(firstCommittee, validatorIndex) >= 0;
+  private Optional<ShardCommittee> getValidatorCommittee(BeaconState state) {
+    List<ShardCommittee> committees =
+        specHelpers.get_crosslink_committees_at_slot(state, state.getSlot());
+    return committees.stream().filter(sc -> sc.getCommittee().contains(validatorIndex)).findFirst();
   }
 
   /**
@@ -293,12 +312,17 @@ public class BeaconChainValidator implements ValidatorService {
     return validatorIndex.compareTo(UInt64.MAX_VALUE) < 0;
   }
 
-  /* FIXME: stub for streams. */
-  private void propagateBlock(BeaconBlock newBlock) {}
+  private void propagateBlock(BeaconBlock newBlock) {
+    blocksSink.onNext(newBlock);
+  }
 
-  private void propagateAttestation(Attestation attestation) {}
+  private void propagateAttestation(Attestation attestation) {
+    attestationsSink.onNext(attestation);
+  }
 
-  private void subscribeToStateUpdates(Consumer<ObservableBeaconState> payload) {}
+  private void subscribeToStateUpdates(Consumer<ObservableBeaconState> payload) {
+    Flux.from(stateStream).subscribe(payload);
+  }
 
   @VisibleForTesting
   ValidatorIndex getValidatorIndex() {
@@ -308,5 +332,15 @@ public class BeaconChainValidator implements ValidatorService {
   @VisibleForTesting
   ObservableBeaconState getRecentState() {
     return recentState;
+  }
+
+  @Override
+  public Publisher<BeaconBlock> getProposedBlocksStream() {
+    return blocksStream;
+  }
+
+  @Override
+  public Publisher<Attestation> getAttestationsStream() {
+    return attestationsStream;
   }
 }

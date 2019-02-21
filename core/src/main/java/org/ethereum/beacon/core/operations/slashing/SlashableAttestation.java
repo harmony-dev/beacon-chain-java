@@ -2,9 +2,12 @@ package org.ethereum.beacon.core.operations.slashing;
 
 import java.util.ArrayList;
 import java.util.List;
+import javax.annotation.Nullable;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
+import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Bitfield;
+import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
@@ -60,5 +63,19 @@ public class SlashableAttestation {
     if (!data.equals(that.data)) {return false;}
     if (!custodyBitfield.equals(that.custodyBitfield)) {return false;}
     return blsSignature.equals(that.blsSignature);
+  }
+
+  @Override
+  public String toString() {
+    return toString(null, null);
+  }
+
+  public String toString(@Nullable ChainSpec spec,@Nullable Time beaconStart) {
+    return "SlashableAttestation["
+        + "data=" + data.toString(spec, beaconStart)
+        + ", validators=" + validatorIndicesList
+        + ", custodyBits=" + custodyBitfield
+        + ", sig=" + blsSignature
+        + "]";
   }
 }

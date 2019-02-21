@@ -35,4 +35,10 @@ public class BLSPubkey extends DelegatingBytes48 {
   public static BLSPubkey fromHexStringLenient(final String str) {
     return new BLSPubkey(Bytes48.fromHexStringLenient(str));
   }
+
+  @Override
+  public String toString() {
+    String s = super.toString();
+    return s.substring(2, 6) + "..." + s.substring(94);
+  }
 }

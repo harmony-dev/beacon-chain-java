@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.annotation.Nonnull;
@@ -41,13 +42,13 @@ import org.ethereum.beacon.core.types.Millis;
 import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
-import org.ethereum.beacon.core.types.Times;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.crypto.BLS381;
 import org.ethereum.beacon.crypto.BLS381.PublicKey;
 import org.ethereum.beacon.crypto.BLS381.Signature;
 import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.crypto.MessageParameters;
+import org.ethereum.beacon.schedulers.Schedulers;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes3;
 import tech.pegasys.artemis.util.bytes.Bytes32;
@@ -65,41 +66,34 @@ public class SpecHelpers {
   private final ChainSpec spec;
   private final ObjectHasher<Hash32> objectHasher;
   private final Function<BytesValue, Hash32> hashFunction;
+  private final Supplier<Long> systemTimeSupplier;
 
   /**
-   * Creates a SpecHelpers instance with {@link ChainSpec#DEFAULT} as a chain spec, {@link
-   * Hashes#keccak256(BytesValue)} as a hash function and {@link SSZObjectHasher} as an object
-   * hasher.
-   *
-   * @return spec helpers instance.
-   */
-  public static SpecHelpers createDefault() {
-    return createWithSSZHasher(ChainSpec.DEFAULT);
-  }
-
-  /**
-   * Creates a SpecHelpers instance with given {@link ChainSpec}, {@link
-   * Hashes#keccak256(BytesValue)} as a hash function and {@link SSZObjectHasher} as an object
+   * Creates a SpecHelpers instance with given {@link ChainSpec} and time supplier,
+   * {@link Hashes#keccak256(BytesValue)} as a hash function and {@link SSZObjectHasher} as an object
    * hasher.
    *
    * @param spec a chain spec.
+   * @param systemTimeSupplier The current system time supplier. Normally the
+   *    <code>Schedulers::currentTime</code> is passed
    * @return spec helpers instance.
    */
-  public static SpecHelpers createWithSSZHasher(@Nonnull ChainSpec spec) {
+  public static SpecHelpers createWithSSZHasher(@Nonnull ChainSpec spec, @Nonnull Supplier<Long> systemTimeSupplier) {
     Objects.requireNonNull(spec);
 
     Function<BytesValue, Hash32> hashFunction = Hashes::keccak256;
     ObjectHasher<Hash32> sszHasher = SSZObjectHasher.create(hashFunction);
-    return new SpecHelpers(spec, hashFunction, sszHasher);
+    return new SpecHelpers(spec, hashFunction, sszHasher, systemTimeSupplier);
   }
 
-  public SpecHelpers(
-      ChainSpec spec,
+  public SpecHelpers(ChainSpec spec,
       Function<BytesValue, Hash32> hashFunction,
-      ObjectHasher<Hash32> objectHasher) {
+      ObjectHasher<Hash32> objectHasher,
+      Supplier<Long> systemTimeSupplier) {
     this.spec = spec;
-    this.hashFunction = hashFunction;
     this.objectHasher = objectHasher;
+    this.hashFunction = hashFunction;
+    this.systemTimeSupplier = systemTimeSupplier;
   }
 
   public ChainSpec getChainSpec() {
@@ -124,14 +118,13 @@ public class SpecHelpers {
         ) * EPOCH_LENGTH
    */
   int get_epoch_committee_count(int active_validator_count) {
-    return max(1,
-        min(
-            spec.getShardCount().dividedBy(spec.getEpochLength()).getIntValue(),
+    return UInt64s.max(UInt64.valueOf(1),
+        UInt64s.min(
+            spec.getShardCount().dividedBy(spec.getEpochLength()),
             UInt64.valueOf(active_validator_count)
                 .dividedBy(spec.getEpochLength())
                 .dividedBy(spec.getTargetCommitteeSize())
-                .getIntValue()
-        ));
+        )).times(spec.getEpochLength()).intValue();
   }
 
   /*
@@ -1385,8 +1378,8 @@ public class SpecHelpers {
   }
 
   public SlotNumber get_current_slot(BeaconState state) {
-    Millis currentTime = Times.currentTimeMillis();
-    assert state.getGenesisTime().less(currentTime.getSeconds());
+    Millis currentTime = Millis.of(systemTimeSupplier.get());
+    assertTrue(state.getGenesisTime().lessEqual(currentTime.getSeconds()));
     Time sinceGenesis = currentTime.getSeconds().minus(state.getGenesisTime());
     return SlotNumber.castFrom(sinceGenesis.dividedBy(spec.getSlotDuration()))
         .plus(getChainSpec().getGenesisSlot());
@@ -1426,10 +1419,6 @@ public class SpecHelpers {
   */
   public SlotNumber get_epoch_start_slot(EpochNumber epoch) {
     return epoch.mul(spec.getEpochLength());
-  }
-
-  public SlotNumber get_epoch_end_slot(EpochNumber epoch) {
-    return get_epoch_start_slot(epoch).plus(spec.getEpochLength()).decrement();
   }
 
   public EpochNumber get_genesis_epoch() {

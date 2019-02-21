@@ -6,29 +6,32 @@ import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
+import org.ethereum.beacon.schedulers.ControlledSchedulers;
+import org.ethereum.beacon.schedulers.Schedulers;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class SlotTickerTests {
   public static final int MILLIS_IN_SECOND = 1000;
+  private final Schedulers schedulers;
   SlotTicker slotTicker;
   SlotNumber genesisSlot;
   SlotNumber previousTick = SlotNumber.ZERO;
 
   public SlotTickerTests() throws InterruptedException {
+    schedulers = Schedulers.createDefault();
     MutableBeaconState beaconState = BeaconState.getEmpty().createMutableCopy();
-    while (System.currentTimeMillis() % MILLIS_IN_SECOND < 100
-        || System.currentTimeMillis() % MILLIS_IN_SECOND > 900) {
+    while (schedulers.getCurrentTime() % MILLIS_IN_SECOND < 100
+        || schedulers.getCurrentTime() % MILLIS_IN_SECOND > 900) {
       Thread.sleep(100);
     }
     beaconState.setGenesisTime(
-        Time.of(System.currentTimeMillis() / MILLIS_IN_SECOND).minus(Time.of(2)));
+        Time.of(schedulers.getCurrentTime() / MILLIS_IN_SECOND).minus(Time.of(2)));
     ChainSpec chainSpec =
         new ChainSpec() {
           @Override
@@ -41,9 +44,9 @@ public class SlotTickerTests {
             return Time.of(1);
           }
         };
-    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(chainSpec);
+    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(chainSpec, schedulers::getCurrentTime);
     genesisSlot = specHelpers.getChainSpec().getGenesisSlot();
-    slotTicker = new SlotTicker(specHelpers, beaconState);
+    slotTicker = new SlotTicker(specHelpers, beaconState, Schedulers.createDefault());
   }
 
   @Test

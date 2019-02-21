@@ -1,6 +1,9 @@
 package org.ethereum.beacon.consensus.transition;
 
+import javax.annotation.Nullable;
 import org.ethereum.beacon.core.BeaconState;
+import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.types.Time;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
 /**
@@ -26,5 +29,16 @@ public class BeaconStateEx {
 
   public Hash32 getLatestChainBlockHash() {
     return latestChainBlock;
+  }
+
+  @Override
+  public String toString() {
+    return toString(null);
+  }
+
+  public String toString(
+      @Nullable ChainSpec spec) {
+    return "BeaconStateEx[latestBlock=" + latestChainBlock.toStringShort()
+        + ", " + canonicalState.toStringShort(spec);
   }
 }

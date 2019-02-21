@@ -11,13 +11,13 @@ import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.Time;
+import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.ssz.Serializer;
 import org.javatuples.Pair;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.MonoProcessor;
 import reactor.core.publisher.ReplayProcessor;
-import reactor.core.scheduler.Schedulers;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes8;
@@ -25,29 +25,6 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public abstract class AbstractDepositContract implements DepositContract {
-
-  private final Serializer ssz = Serializer.annotationSerializer();
-
-  private long distanceFromHead;
-
-  private final MonoProcessor<ChainStart> chainStartSink = MonoProcessor.create();
-  private final Publisher<ChainStart> chainStartStream = chainStartSink
-      .publishOn(Schedulers.single())
-      .doOnSubscribe(s -> chainStartSubscribedPriv())
-      .name("PowClient.chainStart");
-
-  private final ReplayProcessor<Deposit> depositSink =
-      ReplayProcessor.cacheLast();
-  private final Publisher<Deposit> depositStream =
-      Flux.from(depositSink)
-          .publishOn(Schedulers.single())
-          .onBackpressureError()
-          .name("PowClient.deposit");
-
-  private List<Deposit> initialDeposits = new ArrayList<>();
-  private boolean startChainSubscribed;
-
-
   protected class DepositEventData {
     public final byte[] deposit_root;
     public final byte[] data;
@@ -61,6 +38,33 @@ public abstract class AbstractDepositContract implements DepositContract {
       this.merkle_tree_index = merkle_tree_index;
       this.merkle_branch = merkle_branch;
     }
+  }
+
+  private final Serializer ssz = Serializer.annotationSerializer();
+
+  private long distanceFromHead;
+
+  protected final Schedulers schedulers;
+  private final MonoProcessor<ChainStart> chainStartSink = MonoProcessor.create();
+  private final Publisher<ChainStart> chainStartStream;
+
+  private final ReplayProcessor<Deposit> depositSink = ReplayProcessor.cacheLast();
+  private final Publisher<Deposit> depositStream;
+
+  private List<Deposit> initialDeposits = new ArrayList<>();
+  private boolean startChainSubscribed;
+
+  public AbstractDepositContract(Schedulers schedulers) {
+    this.schedulers = schedulers;
+
+    chainStartStream = chainStartSink
+        .publishOn(this.schedulers.reactorEvents())
+        .doOnSubscribe(s -> chainStartSubscribedPriv())
+        .name("PowClient.chainStart");
+    depositStream = Flux.from(depositSink)
+            .publishOn(this.schedulers.reactorEvents())
+            .onBackpressureError()
+            .name("PowClient.deposit");
   }
 
   protected synchronized void newDeposit(DepositEventData eventData, byte[] blockHash) {

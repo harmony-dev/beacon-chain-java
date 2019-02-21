@@ -26,7 +26,6 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes8;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.bytes.MutableBytesValue;
-import tech.pegasys.artemis.util.uint.UInt64;
 
 /**
  * An implementation of beacon chain attester.
@@ -60,8 +59,7 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
     Hash32 shardBlockRoot = Hash32.ZERO; // Note: This is a stub for phase 0.
     Hash32 latestCrosslinkRoot = getLatestCrosslinkRoot(state, shard);
     EpochNumber justifiedEpoch = state.getJustifiedEpoch();
-    Hash32 justifiedBlockRoot =
-        getJustifiedBlockRoot(state, specHelpers.get_epoch_start_slot(justifiedEpoch));
+    Hash32 justifiedBlockRoot = getJustifiedBlockRoot(state);
     AttestationData data =
         new AttestationData(
             slot,
@@ -90,14 +88,16 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
    * @return a committee.
    */
   @VisibleForTesting
-  List<ValidatorIndex> getCommittee(BeaconState state, UInt64 shard) {
+  List<ValidatorIndex> getCommittee(BeaconState state, ShardNumber shard) {
     if (shard.equals(chainSpec.getBeaconChainShardNumber())) {
       return specHelpers.get_crosslink_committees_at_slot(state, state.getSlot()).get(0).getCommittee();
     } else {
       return specHelpers
-          .get_crosslink_committees_at_slot(state, state.getSlot())
-          .get(shard.getIntValue())
-          .getCommittee();
+          .get_crosslink_committees_at_slot(state, state.getSlot()).stream()
+          .filter(sc -> sc.getShard().equals(shard))
+          .findFirst()
+          .map(sc -> sc.getCommittee())
+          .orElse(Collections.emptyList());
     }
   }
 
@@ -107,8 +107,9 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
   */
   @VisibleForTesting
   Hash32 getEpochBoundaryRoot(BeaconState state, BeaconBlock head) {
+    SlotNumber ancestorMaxSlot = head.getSlot().decrement();
     SlotNumber epochBoundarySlot =
-        head.getSlot().minus(head.getSlot().modulo(chainSpec.getEpochLength()));
+        ancestorMaxSlot.minus(ancestorMaxSlot.modulo(chainSpec.getEpochLength()));
     return specHelpers.get_block_root(state, epochBoundarySlot);
   }
 
@@ -118,7 +119,11 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
   */
   @VisibleForTesting
   Hash32 getLatestCrosslinkRoot(BeaconState state, ShardNumber shard) {
-    return state.getLatestCrosslinks().get(shard).getShardBlockRoot();
+    if (shard.equals(chainSpec.getBeaconChainShardNumber())) {
+      return Hash32.ZERO;
+    } else {
+      return state.getLatestCrosslinks().get(shard).getShardBlockRoot();
+    }
   }
 
   /*
@@ -128,7 +133,8 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
    Note: This can be looked up in the state using get_block_root(state, justified_slot).
   */
   @VisibleForTesting
-  Hash32 getJustifiedBlockRoot(BeaconState state, SlotNumber slot) {
+  Hash32 getJustifiedBlockRoot(BeaconState state) {
+    SlotNumber slot = specHelpers.get_epoch_start_slot(state.getJustifiedEpoch());
     return specHelpers.get_block_root(state, slot);
   }
 
@@ -140,7 +146,7 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
   */
   private BytesValue getParticipationBitfield(
       ValidatorIndex index, List<ValidatorIndex> committee) {
-    int indexIntoCommittee = Collections.binarySearch(committee, index);
+    int indexIntoCommittee = committee.indexOf(index);
     assert indexIntoCommittee >= 0;
 
     int aggregationBitfieldSize = (committee.size() + 7) / 8;

@@ -1,5 +1,7 @@
 package org.ethereum.beacon.core.types;
 
+import java.util.ArrayList;
+import java.util.List;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.bytes.BytesValues;
@@ -27,5 +29,35 @@ public class Bitfield extends DelegatingBytesValue {
 
   public Bitfield and(Bitfield other) {
     return Bitfield.of(BytesValues.and(this, other));
+  }
+  public Bitfield or(Bitfield other) {
+    return Bitfield.of(BytesValues.or(this, other));
+  }
+
+  public List<Integer> getBits() {
+    List<Integer> ret = new ArrayList<>();
+    for (int i = 0; i < size() * 8; i++) {
+      if (getBit(i)) {
+        ret.add(i);
+      }
+    }
+    return ret;
+  }
+
+  @Override
+  public String toString() {
+    StringBuilder ret = new StringBuilder("0b");
+    for (int i = 0; i < size(); i++) {
+      ret.append(toBinaryString(get(i)));
+    }
+    return ret.toString();
+  }
+
+  private String toBinaryString(byte b) {
+    StringBuilder ret = new StringBuilder();
+    for (int i = 0; i < 8; i++) {
+      ret.append((b >> (7 - i)) & 1);
+    }
+    return ret.toString();
   }
 }

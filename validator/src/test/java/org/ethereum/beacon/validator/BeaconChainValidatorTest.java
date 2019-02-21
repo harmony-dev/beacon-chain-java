@@ -6,8 +6,11 @@ import java.util.Random;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.util.ObservableBeaconStateTestUtil;
 import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
+import org.ethereum.beacon.schedulers.DefaultSchedulers;
+import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.validator.util.ValidatorServiceTestUtil;
 import org.junit.Assert;
 import org.junit.Test;
@@ -18,7 +21,9 @@ public class BeaconChainValidatorTest {
   @Test
   public void recentStateIsKept() {
     Random random = new Random();
-    SpecHelpers specHelpers = Mockito.spy(SpecHelpers.createDefault());
+    Schedulers schedulers = Schedulers.createDefault();
+    SpecHelpers specHelpers =
+        Mockito.spy(SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT, schedulers::getCurrentTime));
 
     BeaconChainValidator validator =
         ValidatorServiceTestUtil.mockBeaconChainValidator(random, specHelpers);
@@ -44,7 +49,9 @@ public class BeaconChainValidatorTest {
   @Test
   public void outboundRecentStateIsIgnored() {
     Random random = new Random();
-    SpecHelpers specHelpers = Mockito.spy(SpecHelpers.createDefault());
+    Schedulers schedulers = Schedulers.createDefault();
+    SpecHelpers specHelpers =
+        Mockito.spy(SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT, schedulers::getCurrentTime));
 
     BeaconChainValidator validator =
         ValidatorServiceTestUtil.mockBeaconChainValidator(random, specHelpers);
@@ -75,7 +82,9 @@ public class BeaconChainValidatorTest {
   @Test
   public void initService() {
     Random random = new Random();
-    SpecHelpers specHelpers = Mockito.spy(SpecHelpers.createDefault());
+    Schedulers schedulers = Schedulers.createDefault();
+    SpecHelpers specHelpers =
+        Mockito.spy(SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT, schedulers::getCurrentTime));
 
     BeaconChainValidator validator =
         ValidatorServiceTestUtil.mockBeaconChainValidator(random, specHelpers);
@@ -102,8 +111,6 @@ public class BeaconChainValidatorTest {
 
     // init was called
     Mockito.verify(validator, Mockito.times(1)).init(currentSlotState.getLatestSlotState());
-    // tasks are never emitted right after the init
-    Mockito.verify(validator, Mockito.never()).runTasks(currentSlotState);
 
     // validatorIndex is set
     Assert.assertEquals(validatorIndex, validator.getValidatorIndex());
@@ -116,7 +123,9 @@ public class BeaconChainValidatorTest {
   @Test
   public void runValidatorTasks() {
     Random random = new Random();
-    SpecHelpers specHelpers = Mockito.spy(SpecHelpers.createDefault());
+    Schedulers schedulers = Schedulers.createDefault();
+    SpecHelpers specHelpers =
+        Mockito.spy(SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT, schedulers::getCurrentTime));
 
     BeaconChainValidator validator =
         ValidatorServiceTestUtil.mockBeaconChainValidator(random, specHelpers);
@@ -147,13 +156,14 @@ public class BeaconChainValidatorTest {
     // runTasks was called on a new state
     validator.onNewState(updatedState);
     Mockito.verify(validator, Mockito.times(1)).runTasks(updatedState);
+    Mockito.verify(validator, Mockito.times(2)).runTasks(any());
 
     // runTasks was not called for a state belonging to the same slot
     validator.onNewState(sameSlotState);
-    Mockito.verify(validator, Mockito.times(1)).runTasks(any());
+    Mockito.verify(validator, Mockito.times(2)).runTasks(any());
 
     // runTasks was called again when a state for a new slot came
     validator.onNewState(nextSlotState);
-    Mockito.verify(validator, Mockito.times(2)).runTasks(any());
+    Mockito.verify(validator, Mockito.times(3)).runTasks(any());
   }
 }

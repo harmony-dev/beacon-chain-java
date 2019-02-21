@@ -1,9 +1,19 @@
 package org.ethereum.beacon.core;
 
 import com.google.common.base.Objects;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import javax.annotation.Nullable;
+import org.ethereum.beacon.core.operations.Attestation;
+import org.ethereum.beacon.core.operations.Deposit;
+import org.ethereum.beacon.core.operations.Exit;
+import org.ethereum.beacon.core.operations.ProposerSlashing;
+import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
+import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.SlotNumber;
+import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -112,6 +122,80 @@ public class BeaconBlock {
   @Override
   public int hashCode() {
     return Objects.hashCode(slot, parentRoot, stateRoot, randaoReveal, eth1Data, signature, body);
+  }
+
+  @Override
+  public String toString() {
+    return toString(null, null, null);
+  }
+
+  public String toStringFull(@Nullable ChainSpec spec,@Nullable Time beaconStart,
+      @Nullable Function<? super BeaconBlock, Hash32> hasher) {
+    StringBuilder ret = new StringBuilder("Block["
+        + toStringPriv(spec, beaconStart, hasher)
+        + "]:\n");
+    for (Attestation attestation : body.getAttestations()) {
+      ret.append("  " + attestation.toString(spec, beaconStart) + "\n");
+    }
+    for (Deposit deposit : body.getDeposits()) {
+      ret.append("  " + deposit.toString() + "\n");
+    }
+    for (Exit exit : body.getExits()) {
+      ret.append("  " + exit.toString(spec) + "\n");
+    }
+    for (ProposerSlashing proposerSlashing : body.getProposerSlashings()) {
+      ret.append("  " + proposerSlashing.toString(spec, beaconStart) + "\n");
+    }
+
+    for (AttesterSlashing attesterSlashing : body.getAttesterSlashings()) {
+      ret.append("  " + attesterSlashing.toString(spec, beaconStart) + "\n");
+    }
+
+    return ret.toString();
+  }
+
+  public String toString(@Nullable ChainSpec spec,@Nullable Time beaconStart,
+      @Nullable Function<? super BeaconBlock, Hash32> hasher) {
+    String ret = "Block[" + toStringPriv(spec, beaconStart, hasher);
+    if (!body.getAttestations().isEmpty()) {
+      ret += ", atts: [" + body.getAttestations().stream()
+          .map(a -> a.toStringShort(spec))
+          .collect(Collectors.joining(", ")) + "]";
+    }
+    if (!body.getDeposits().isEmpty()) {
+      ret += ", depos: [" + body.getDeposits().stream()
+          .map(a -> a.toString())
+          .collect(Collectors.joining(", ")) + "]";
+    }
+    if (!body.getExits().isEmpty()) {
+      ret += ", exits: [" + body.getExits().stream()
+          .map(a -> a.toString(spec))
+          .collect(Collectors.joining(", ")) + "]";
+    }
+    if (!body.getAttesterSlashings().isEmpty()) {
+      ret += ", attSlash: [" + body.getAttesterSlashings().stream()
+          .map(a -> a.toString(spec, beaconStart))
+          .collect(Collectors.joining(", ")) + "]";
+    }
+    if (!body.getProposerSlashings().isEmpty()) {
+      ret += ", propSlash: [" + body.getProposerSlashings().stream()
+          .map(a -> a.toString(spec, beaconStart))
+          .collect(Collectors.joining(", ")) + "]";
+    }
+    ret += "]";
+
+    return ret;
+  }
+
+  private String toStringPriv(@Nullable ChainSpec spec,@Nullable Time beaconStart,
+      @Nullable Function<? super BeaconBlock, Hash32> hasher) {
+    return (hasher == null ? "?" : hasher.apply(this).toStringShort())
+        + " <~ " + parentRoot.toStringShort()
+        + ", @slot " + slot.toString(spec, beaconStart)
+        + ", state=" + stateRoot.toStringShort()
+        + ", randao=" + randaoReveal.toString()
+        + ", " + eth1Data
+        + ", sig=" + signature;
   }
 
   public static class Builder {

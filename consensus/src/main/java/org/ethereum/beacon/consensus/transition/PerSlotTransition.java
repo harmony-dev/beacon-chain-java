@@ -1,5 +1,7 @@
 package org.ethereum.beacon.consensus.transition;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.core.MutableBeaconState;
@@ -14,15 +16,18 @@ import org.ethereum.beacon.core.types.SlotNumber;
  *     processing</a> in the spec.
  */
 public class PerSlotTransition implements StateTransition<BeaconStateEx> {
+  private static final Logger logger = LogManager.getLogger(PerSlotTransition.class);
+
+  private final SpecHelpers specHelpers;
   private final ChainSpec spec;
 
-  public PerSlotTransition(ChainSpec spec) {
-    this.spec = spec;
+  public PerSlotTransition(SpecHelpers specHelpers) {
+    this.specHelpers = specHelpers;
+    this.spec = specHelpers.getChainSpec();
   }
 
   @Override
   public BeaconStateEx apply(BeaconStateEx stateEx) {
-    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(spec);
 
     MutableBeaconState state = stateEx.getCanonicalState().createMutableCopy();
 

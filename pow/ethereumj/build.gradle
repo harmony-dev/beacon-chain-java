@@ -8,6 +8,7 @@ dependencies {
   implementation project(':pow:validator')
   implementation project(':types')
   implementation project(':core')
+  implementation project(':util')
   implementation ("org.ethereum:ethereumj-core") {
     changing = true
 

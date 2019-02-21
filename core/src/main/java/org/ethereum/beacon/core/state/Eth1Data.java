@@ -48,4 +48,9 @@ public class Eth1Data {
     return Objects.equal(depositRoot, eth1Data.depositRoot)
         && Objects.equal(blockHash, eth1Data.blockHash);
   }
+
+  @Override
+  public String toString() {
+    return "Eth1Data[deposit=" + depositRoot.toStringShort() + ", block=" + blockHash.toStringShort() + "]";
+  }
 }

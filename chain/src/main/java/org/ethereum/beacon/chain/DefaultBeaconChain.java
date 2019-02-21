@@ -18,11 +18,10 @@ import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlocks;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.types.SlotNumber;
-import org.ethereum.beacon.db.Database;
+import org.ethereum.beacon.schedulers.Schedulers;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.ReplayProcessor;
-import reactor.core.scheduler.Schedulers;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
 public class DefaultBeaconChain implements MutableBeaconChain {
@@ -37,14 +36,9 @@ public class DefaultBeaconChain implements MutableBeaconChain {
 
   private final BeaconChainStorage chainStorage;
   private final BeaconTupleStorage tupleStorage;
-  private final Database database;
 
   private final ReplayProcessor<BeaconTuple> blockSink = ReplayProcessor.cacheLast();
-  private final Publisher<BeaconTuple> blockStream =
-      Flux.from(blockSink)
-          .publishOn(Schedulers.single())
-          .onBackpressureError()
-          .name("DefaultBeaconChain.block");
+  private final Publisher<BeaconTuple> blockStream;
 
   private BeaconTuple recentlyProcessed;
 
@@ -57,7 +51,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
       BeaconBlockVerifier blockVerifier,
       BeaconStateVerifier stateVerifier,
       BeaconChainStorage chainStorage,
-      Database database) {
+      Schedulers schedulers) {
     this.specHelpers = specHelpers;
     this.initialTransition = initialTransition;
     this.perSlotTransition = perSlotTransition;
@@ -67,7 +61,11 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     this.stateVerifier = stateVerifier;
     this.chainStorage = chainStorage;
     this.tupleStorage = chainStorage.getTupleStorage();
-    this.database = database;
+
+    blockStream = Flux.from(blockSink)
+            .publishOn(schedulers.reactorEvents())
+            .onBackpressureError()
+            .name("DefaultBeaconChain.block");
   }
 
   @Override
@@ -76,6 +74,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
       initializeStorage();
     }
     this.recentlyProcessed = fetchRecentTuple();
+    blockSink.onNext(recentlyProcessed);
   }
 
   private BeaconTuple fetchRecentTuple() {
@@ -143,7 +142,6 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     updateFinality(parentState.getCanonicalState(), postBlockState.getCanonicalState());
 
     chainStorage.commit();
-    database.commit();
 
     this.recentlyProcessed = newTuple;
     blockSink.onNext(newTuple);
@@ -160,13 +158,13 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     if (previous.getFinalizedEpoch().less(current.getFinalizedEpoch())) {
       Hash32 finalizedRoot =
           specHelpers.get_block_root(
-              current, specHelpers.get_epoch_end_slot(current.getFinalizedEpoch()));
+              current, specHelpers.get_epoch_start_slot(current.getFinalizedEpoch()));
       chainStorage.getFinalizedStorage().set(finalizedRoot);
     }
     if (previous.getJustifiedEpoch().less(current.getJustifiedEpoch())) {
       Hash32 justifiedRoot =
           specHelpers.get_block_root(
-              current, specHelpers.get_epoch_end_slot(current.getJustifiedEpoch()));
+              current, specHelpers.get_epoch_start_slot(current.getJustifiedEpoch()));
       chainStorage.getJustifiedStorage().set(justifiedRoot);
     }
   }
@@ -190,19 +188,16 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   }
 
   /**
-   * There is no sense in importing block with a slot number less or equal to latest finalized slot
-   * or too far in the future.
+   * There is no sense in importing block with a slot that is too far in the future.
    *
    * @param block block to run check on.
    * @return true if block should be rejected, false otherwise.
    */
   private boolean rejectedByTime(BeaconBlock block) {
-    SlotNumber finalizedSlot =
-        specHelpers.get_epoch_end_slot(recentlyProcessed.getState().getFinalizedEpoch());
     SlotNumber nextToCurrentSlot =
         specHelpers.get_current_slot(recentlyProcessed.getState()).increment();
 
-    return block.getSlot().lessEqual(finalizedSlot) || block.getSlot().greater(nextToCurrentSlot);
+    return block.getSlot().greater(nextToCurrentSlot);
   }
 
   private BeaconStateEx applyEmptySlotTransitions(BeaconStateEx source, BeaconBlock block) {
@@ -214,7 +209,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
       }
     }
 
-    return perSlotTransition.apply(result);
+    return result;
   }
 
   @Override
