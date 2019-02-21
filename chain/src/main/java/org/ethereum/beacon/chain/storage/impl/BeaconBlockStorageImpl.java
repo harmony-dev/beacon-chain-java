@@ -110,9 +110,9 @@ public class BeaconBlockStorageImpl extends AbstractHashKeyStorage<Hash32, Beaco
   }
 
   @Override
-  public void put(@Nonnull Hash32 key, @Nonnull BeaconBlock newBlock) {
+  public void put(@Nonnull Hash32 newBlockHash, @Nonnull BeaconBlock newBlock) {
     if (checkBlockExistOnAdd) {
-      if (get(key).isPresent()) {
+      if (get(newBlockHash).isPresent()) {
         throw new IllegalArgumentException(
             "Block with hash already exists in storage: " + newBlock);
       }
@@ -124,8 +124,7 @@ public class BeaconBlockStorageImpl extends AbstractHashKeyStorage<Hash32, Beaco
       }
     }
 
-    rawBlocks.put(key, newBlock);
-    Hash32 newBlockHash = getObjectHasher().getHash(newBlock);
+    rawBlocks.put(newBlockHash, newBlock);
     SlotBlocks slotBlocks = new SlotBlocks(newBlockHash);
     blockIndex.update(
         newBlock.getSlot().getValue(),
@@ -169,7 +168,7 @@ public class BeaconBlockStorageImpl extends AbstractHashKeyStorage<Hash32, Beaco
       getSlotBlocks(curSlot).stream()
           .map(this::get)
           .filter(Optional::isPresent)
-          .filter(b -> isChild(start, b.get()))
+          .filter(b -> b.get().getParentRoot().equals(parent))
           .forEach(b -> children.add(b.get()));
     }
 
@@ -179,10 +178,6 @@ public class BeaconBlockStorageImpl extends AbstractHashKeyStorage<Hash32, Beaco
   @Override
   public void flush() {
     // nothing to be done here. No cached data in this implementation
-  }
-
-  private boolean isChild(BeaconBlock parent, BeaconBlock child) {
-    return getObjectHasher().getHash(parent).equals(child.getParentRoot());
   }
 
   public static BeaconBlockStorageImpl create(
