@@ -18,11 +18,8 @@ import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
 import org.ethereum.beacon.consensus.verifier.BeaconStateVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.operations.Attestation;
-import org.ethereum.beacon.core.types.BLSPubkey;
-import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.crypto.BLS381;
 import org.ethereum.beacon.crypto.BLS381.KeyPair;
-import org.ethereum.beacon.crypto.MessageParameters;
 import org.ethereum.beacon.db.InMemoryDatabase;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.pow.DepositContract.ChainStart;
@@ -30,6 +27,7 @@ import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.validator.BeaconChainProposer;
 import org.ethereum.beacon.validator.BeaconChainValidator;
 import org.ethereum.beacon.validator.attester.BeaconChainAttesterImpl;
+import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import org.ethereum.beacon.validator.proposer.BeaconChainProposerImpl;
 import org.ethereum.beacon.wire.WireApi;
 import reactor.core.publisher.DirectProcessor;
@@ -125,12 +123,10 @@ public class Launcher {
         specHelpers.getChainSpec());
 
     beaconChainValidator = new BeaconChainValidator(
-        BLSPubkey.wrap(validatorSig.getPublic().getEncodedBytes()),
+        BLS381Credentials.createWithInsecureSigner(validatorSig),
         beaconChainProposer,
         beaconChainAttester,
         specHelpers,
-        (msgHash, domain) -> BLSSignature.wrap(
-            BLS381.sign(MessageParameters.create(msgHash, domain), validatorSig).getEncoded()),
         observableStateProcessor.getObservableStateStream(),
         schedulers);
     beaconChainValidator.start();

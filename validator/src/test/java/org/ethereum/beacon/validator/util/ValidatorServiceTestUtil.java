@@ -17,6 +17,7 @@ import org.ethereum.beacon.validator.BeaconChainAttester;
 import org.ethereum.beacon.validator.BeaconChainProposer;
 import org.ethereum.beacon.validator.BeaconChainValidator;
 import org.ethereum.beacon.validator.attester.BeaconChainAttesterTestUtil;
+import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import org.ethereum.beacon.validator.crypto.MessageSigner;
 import org.ethereum.beacon.validator.proposer.BeaconChainProposerTestUtil;
 import org.mockito.Mockito;
@@ -41,8 +42,10 @@ public abstract class ValidatorServiceTestUtil {
     BeaconChainAttester attester = BeaconChainAttesterTestUtil.mockAttester(specHelpers);
     MessageSigner<BLSSignature> signer = MessageSignerTestUtil.createBLSSigner();
 
+    BLS381Credentials blsCredentials = new BLS381Credentials(pubkey, signer);
+
     return Mockito.spy(
-        new BeaconChainValidator(pubkey, proposer, attester, specHelpers,
-            signer, Mono.empty(), Schedulers.createDefault()));
+        new BeaconChainValidator(blsCredentials, proposer, attester, specHelpers,
+            Mono.empty(), Schedulers.createDefault()));
   }
 }
