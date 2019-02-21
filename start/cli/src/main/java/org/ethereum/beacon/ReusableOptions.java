@@ -1,6 +1,7 @@
 package org.ethereum.beacon;
 
 import org.apache.logging.log4j.Level;
+import org.ethereum.beacon.emulator.config.Config;
 import org.ethereum.beacon.emulator.config.ConfigBuilder;
 import org.ethereum.beacon.emulator.config.YamlPrinter;
 import org.ethereum.beacon.emulator.config.chainspec.ChainSpecData;
@@ -10,6 +11,9 @@ import picocli.CommandLine;
 
 import javax.annotation.Nullable;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -38,11 +42,25 @@ public class ReusableOptions {
           "YAML config file.\nAll options that are not set will be loaded from default config.")
   File[] configs;
   @CommandLine.Option(
+      names = {"-cs", "--save-config"},
+      paramLabel = "SAVE-CONFIG",
+      description =
+          "Saves merged configuration to file in YAML format")
+  File config;
+
+  @CommandLine.Option(
       names = {"-s", "--spec"},
       paramLabel = "CHAINSPEC",
       description =
           "YAML chain specification file.\nFor all specifications that are not set, default values are used.")
   File[] chainspecs;
+  @CommandLine.Option(
+      names = {"-ss", "--save-spec"},
+      paramLabel = "SAVE-SPEC",
+      description =
+          "Saves merged chain specification to file in YAML format")
+  File chainspec;
+
   @CommandLine.Option(
       names = {"-l", "--loglevel"},
       paramLabel = "LOG",
@@ -99,6 +117,8 @@ public class ReusableOptions {
       Task action, String extraConfig, @Nullable String extraChainSpec) {
     MainConfig mainConfig = prepareConfig(extraConfig);
     ChainSpecData chainSpecData = prepareChainSpec(extraChainSpec);
+
+    // Print if needed
     if (action.equals(Task.config)) {
       System.out.println("If executed with " + Task.run + " command, will use following options.");
       System.out.println("Main config:");
@@ -111,7 +131,26 @@ public class ReusableOptions {
       }
     }
 
+    // Save if needed
+    if (config != null) {
+      System.out.println("Saving config to file: " + config);
+      saveConfigToFile(mainConfig, config);
+    }
+    if (chainspec != null) {
+      System.out.println("Saving chain specification to file: " + chainspec);
+      saveConfigToFile(chainSpecData, chainspec);
+    }
+
     return Pair.with(mainConfig, chainSpecData);
+  }
+
+  private void saveConfigToFile(Config config, File file) {
+    try (PrintStream out = new PrintStream(new FileOutputStream(file))) {
+      out.print(new YamlPrinter(config).getString());
+      out.flush();
+    } catch (FileNotFoundException e) {
+      throw new RuntimeException(String.format("Cannot save to file %s", file), e);
+    }
   }
 
   Level prepareLogLevel(boolean print) {
