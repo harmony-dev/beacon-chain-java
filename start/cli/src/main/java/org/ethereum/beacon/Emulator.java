@@ -25,7 +25,6 @@ public class Emulator extends ReusableOptions implements Callable<Void> {
           "Task to do: run/config.\n run - Runs beacon emulator.\n config - Prints configuration and tasks to run on start.")
   Task action;
 
-
   public static void main(String[] args) {
     CommandLine.call(new Emulator(), args);
   }
@@ -37,12 +36,20 @@ public class Emulator extends ReusableOptions implements Callable<Void> {
       configPathValues.add(Pair.with("plan.validator[0].count", validators));
     }
     Pair<MainConfig, ChainSpecData> configs =
-        prepareAndPrintConfigs(
-            action, "/config/emulator-config.yml");
+        prepareAndPrintConfigs(action, "/config/emulator-config.yml");
 
     if (action.equals(Task.run)) {
       EmulatorLauncher emulatorLauncher =
-          new EmulatorLauncher(configs.getValue0(), configs.getValue1().build(), prepareLogLevel(true));
+          new EmulatorLauncher(
+              configs.getValue0(),
+              configs.getValue1().build(),
+              prepareLogLevel(true),
+              mainConfig -> {
+                if (config != null) {
+                  System.out.println("Updating config to file: " + config);
+                  saveConfigToFile(mainConfig, config);
+                }
+              });
       emulatorLauncher.run();
     }
 

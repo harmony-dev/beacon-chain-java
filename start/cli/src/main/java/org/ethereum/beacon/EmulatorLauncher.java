@@ -29,6 +29,7 @@ import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.bytes.Bytes32;
 
 import java.io.InputStream;
 import java.time.Duration;
@@ -37,14 +38,31 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.util.function.Consumer;
 
 public class EmulatorLauncher implements Runnable {
   private final ActionEmulate emulateConfig;
+  private final MainConfig mainConfig;
   private final ChainSpec chainSpec;
+  private final SpecHelpers specHelpers;
   private final Level logLevel;
+  private final Consumer<MainConfig> onUpdateConfig;
 
-  public EmulatorLauncher(MainConfig mainConfig, ChainSpec chainSpec, Level logLevel) {
+  /**
+   * Creates Emulator launcher with following settings
+   * @param mainConfig        Configuration and run plan
+   * @param chainSpec         Chain specification
+   * @param logLevel          Log level, Apache log4j type
+   * @param onUpdateConfig    Callback to run when mainConfig is updated
+   */
+  public EmulatorLauncher(
+      MainConfig mainConfig,
+      ChainSpec chainSpec,
+      Level logLevel,
+      Consumer<MainConfig> onUpdateConfig) {
+    this.mainConfig = mainConfig;
     this.chainSpec = chainSpec;
+    this.specHelpers = SpecHelpers.createWithSSZHasher(chainSpec, () -> 0L);
     List<Action> actions = mainConfig.getPlan().getValidator();
     Optional<ActionEmulate> actionEmulate =
         actions.stream()
@@ -56,6 +74,7 @@ public class EmulatorLauncher implements Runnable {
     }
     this.emulateConfig = actionEmulate.get();
     this.logLevel = logLevel;
+    this.onUpdateConfig = onUpdateConfig;
   }
 
   private void setupLogging() {
@@ -77,9 +96,38 @@ public class EmulatorLauncher implements Runnable {
     }
   }
 
+  private void onUpdateConfig() {
+    this.onUpdateConfig.accept(mainConfig);
+  }
+
+  private Pair<List<Deposit>, List<BLS381.KeyPair>> getValidatorDeposits() {
+    if (emulateConfig.getPrivateKeys() != null && !emulateConfig.getPrivateKeys().isEmpty()) {
+      List<BLS381.KeyPair> keyPairs = new ArrayList<>();
+      for (String pKey : emulateConfig.getPrivateKeys()) {
+        keyPairs.add(BLS381.KeyPair.create(BLS381.PrivateKey.create(Bytes32.fromHexString(pKey))));
+      }
+      return Pair.with(EmulateUtils.getDepositsForKeyPairs(keyPairs, specHelpers), keyPairs);
+    } else {
+      Pair<List<Deposit>, List<BLS381.KeyPair>> anyDeposits =
+          EmulateUtils.getAnyDeposits(specHelpers, emulateConfig.getCount());
+      List<String> pKeysEncoded = new ArrayList<>();
+      anyDeposits
+          .getValue1()
+          .forEach(
+              pk -> {
+                pKeysEncoded.add(pk.getPrivate().getEncodedBytes().toString());
+              });
+      emulateConfig.setPrivateKeys(pKeysEncoded);
+      onUpdateConfig();
+      return anyDeposits;
+    }
+  }
+
   public void run() {
     setupLogging();
-    int validatorCount = emulateConfig.getCount();
+    Pair<List<Deposit>, List<BLS381.KeyPair>> validatorDeposits = getValidatorDeposits();
+    List<Deposit> deposits = validatorDeposits.getValue0();
+    List<BLS381.KeyPair> keyPairs = validatorDeposits.getValue1();
 
     Random rnd = new Random(1);
     Time genesisTime = Time.of(10 * 60);
@@ -89,18 +137,13 @@ public class EmulatorLauncher implements Runnable {
 
     Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), Hash32.random(rnd));
 
-    Pair<List<Deposit>, List<BLS381.KeyPair>> anyDeposits =
-        EmulateUtils.getAnyDeposits(
-            SpecHelpers.createWithSSZHasher(chainSpec, () -> 0L), validatorCount);
-    List<Deposit> deposits = anyDeposits.getValue0();
-
     LocalWireHub localWireHub = new LocalWireHub(s -> {});
     DepositContract.ChainStart chainStart =
         new DepositContract.ChainStart(genesisTime, eth1Data, deposits);
     DepositContract depositContract = new SimpleDepositContract(chainStart);
 
     System.out.println("Creating peers...");
-    for (int i = 0; i < validatorCount; i++) {
+    for (int i = 0; i < keyPairs.size(); i++) {
       ControlledSchedulers schedulers = controlledSchedulers.createNew();
       SpecHelpers specHelpers =
           SpecHelpers.createWithSSZHasher(chainSpec, schedulers::getCurrentTime);
@@ -110,7 +153,7 @@ public class EmulatorLauncher implements Runnable {
           new Launcher(
               specHelpers,
               depositContract,
-              anyDeposits.getValue1().get(i),
+              keyPairs.get(i),
               wireApi,
               new MemBeaconChainStorageFactory(),
               schedulers);

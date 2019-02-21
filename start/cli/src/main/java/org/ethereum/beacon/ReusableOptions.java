@@ -144,7 +144,8 @@ public class ReusableOptions {
     return Pair.with(mainConfig, chainSpecData);
   }
 
-  private void saveConfigToFile(Config config, File file) {
+  // Overrides without prompt
+  void saveConfigToFile(Config config, File file) {
     try (PrintStream out = new PrintStream(new FileOutputStream(file))) {
       out.print(new YamlPrinter(config).getString());
       out.flush();

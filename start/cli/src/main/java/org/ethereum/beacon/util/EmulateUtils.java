@@ -39,12 +39,11 @@ public class EmulateUtils {
         cachedDeposits.getValue0().subList(0, count), cachedDeposits.getValue1().subList(0, count));
   }
 
-  private static synchronized Pair<List<Deposit>, List<BLS381.KeyPair>> generateRandomDeposits(
-      SpecHelpers specHelpers, int count) {
+  public static synchronized List<Deposit> getDepositsForKeyPairs(
+      List<BLS381.KeyPair> keyPairs, SpecHelpers specHelpers) {
     List<Deposit> deposits = new ArrayList<>();
-    List<BLS381.KeyPair> validatorsKeys = new ArrayList<>();
-    for (int i = 0; i < count; i++) {
-      BLS381.KeyPair keyPair = BLS381.KeyPair.generate();
+
+    for (BLS381.KeyPair keyPair : keyPairs) {
       Hash32 proofOfPosession = Hash32.random(rnd);
       DepositInput depositInputWithoutSignature =
           new DepositInput(
@@ -56,8 +55,6 @@ public class EmulateUtils {
           BLS381.sign(
               new MessageParameters.Impl(msgHash, SignatureDomains.DEPOSIT.toBytesBigEndian()),
               keyPair);
-
-      validatorsKeys.add(keyPair);
 
       Deposit deposit =
           new Deposit(
@@ -73,6 +70,17 @@ public class EmulateUtils {
       deposits.add(deposit);
     }
 
+    return deposits;
+  }
+
+  private static synchronized Pair<List<Deposit>, List<BLS381.KeyPair>> generateRandomDeposits(
+      SpecHelpers specHelpers, int count) {
+    List<BLS381.KeyPair> validatorsKeys = new ArrayList<>();
+    for (int i = 0; i < count; i++) {
+      BLS381.KeyPair keyPair = BLS381.KeyPair.generate();
+      validatorsKeys.add(keyPair);
+    }
+    List<Deposit> deposits = getDepositsForKeyPairs(validatorsKeys, specHelpers);
     return Pair.with(deposits, validatorsKeys);
   }
 }
