@@ -50,10 +50,11 @@ public class EmulatorLauncher implements Runnable {
 
   /**
    * Creates Emulator launcher with following settings
-   * @param mainConfig        Configuration and run plan
-   * @param chainSpec         Chain specification
-   * @param logLevel          Log level, Apache log4j type
-   * @param onUpdateConfig    Callback to run when mainConfig is updated
+   *
+   * @param mainConfig Configuration and run plan
+   * @param chainSpec Chain specification
+   * @param logLevel Log level, Apache log4j type
+   * @param onUpdateConfig Callback to run when mainConfig is updated
    */
   public EmulatorLauncher(
       MainConfig mainConfig,
@@ -73,6 +74,9 @@ public class EmulatorLauncher implements Runnable {
       throw new RuntimeException("Emulate settings are not set");
     }
     this.emulateConfig = actionEmulate.get();
+    if (emulateConfig.getCount() == null && emulateConfig.getPrivateKeys() == null) {
+      throw new RuntimeException("Set either number of validators or private keys.");
+    }
     this.logLevel = logLevel;
     this.onUpdateConfig = onUpdateConfig;
   }

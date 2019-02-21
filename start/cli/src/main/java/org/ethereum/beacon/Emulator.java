@@ -13,20 +13,25 @@ import java.util.concurrent.Callable;
     mixinStandardHelpOptions = true,
     version = "emulator " + ReusableOptions.VERSION)
 public class Emulator extends ReusableOptions implements Callable<Void> {
-  @CommandLine.Parameters(
-      index = "0",
-      description = "Number of validators to emulate.",
-      arity = "1")
-  Integer validators;
 
   @CommandLine.Parameters(
-      index = "1",
+      index = "0",
       description =
           "Task to do: run/config.\n run - Runs beacon emulator.\n config - Prints configuration and tasks to run on start.")
   Task action;
 
+  @CommandLine.Parameters(
+      index = "1",
+      description = "Number of validators to emulate.",
+      arity = "0..1")
+  Integer validators;
+
   public static void main(String[] args) {
-    CommandLine.call(new Emulator(), args);
+    try {
+      CommandLine.call(new Emulator(), args);
+    } catch (Exception e) {
+      System.out.println(String.format((char) 27 + "[31m" + "FATAL ERROR: %s", e.getMessage()));
+    }
   }
 
   @Override
