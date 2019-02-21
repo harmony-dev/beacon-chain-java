@@ -48,8 +48,13 @@ public class AttestationVerifier implements OperationVerifier<Attestation> {
 
     // Verify that attestation.data.slot <= state.slot - MIN_ATTESTATION_INCLUSION_DELAY
     //    < attestation.data.slot + EPOCH_LENGTH
-    if (!(data.getSlot().lessEqual(state.getSlot().minus(chainSpec.getMinAttestationInclusionDelay()))
-        && state.getSlot().minus(chainSpec.getMinAttestationInclusionDelay()).less(data.getSlot()))) {
+    if (!(data.getSlot()
+            .lessEqual(state.getSlot().minus(chainSpec.getMinAttestationInclusionDelay()))
+        && state
+            .getSlot()
+            .minus(chainSpec.getMinAttestationInclusionDelay())
+            .less(data.getSlot().plus(chainSpec.getEpochLength())))) {
+
       return failedResult(
           "MIN_ATTESTATION_INCLUSION_DELAY violated, inclusion slot starts from %s but got %s",
           data.getSlot().plus(chainSpec.getMinAttestationInclusionDelay()), state.getSlot());
