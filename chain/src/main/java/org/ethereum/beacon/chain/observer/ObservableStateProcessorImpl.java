@@ -251,30 +251,45 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     PendingOperations pendingOperations = new PendingOperationsState(drainAttestationCache());
     pendingOperationsSink.onNext(pendingOperations);
     updateHead(pendingOperations);
-    this.latestState =
-        applySlotTransitions(latestState, specHelpers.hash_tree_root(head.getBlock()), newSlot);
-    ObservableBeaconState newObservableState =
-        new ObservableBeaconState(head.getBlock(), latestState, pendingOperations);
+
+    BeaconState originalState = latestState;
+    BeaconState beaconStateWithoutEpoch = applySlotTransitionsWithoutEpoch(originalState,
+        specHelpers.hash_tree_root(head.getBlock()), newSlot);
+    BeaconState newBeaconState = applyEpochTransitionIfNeeded(beaconStateWithoutEpoch);
+    latestState = newBeaconState;
+    ObservableBeaconState newObservableState = new ObservableBeaconState(
+            head.getBlock(), newBeaconState, beaconStateWithoutEpoch, pendingOperations);
     if (!newObservableState.equals(observableState)) {
       this.observableState = newObservableState;
       observableStateSink.onNext(newObservableState);
     }
   }
 
+  private BeaconState applyEpochTransitionIfNeeded(BeaconState source) {
+    if (specHelpers.is_epoch_end(source.getSlot())) {
+      BeaconStateEx stateEx =
+          new BeaconStateEx(source, specHelpers.get_block_root(source, source.getSlot().decrement()));
+      return perEpochTransition.apply(stateEx).getCanonicalState();
+    } else {
+      return source;
+    }
+  }
+
   /**
-   * Applies next slot transition and if it's required - epoch transition
+   * Applies next slot transitions until the <code>targetSlot</code> but
+   * doesn't apply EpochTransition for the <code>targetSlot</code>
    *
    * @param source Source state
    * @param latestChainBlock Latest chain block
    * @return new state, result of applied transition to the latest input state
    */
-  private BeaconState applySlotTransitions(
+  private BeaconState applySlotTransitionsWithoutEpoch(
       BeaconState source, Hash32 latestChainBlock, SlotNumber targetSlot) {
 
     BeaconStateEx stateEx = new BeaconStateEx(source, latestChainBlock);
     for (SlotNumber slot : source.getSlot().increment().iterateTo(targetSlot.increment())) {
       stateEx = perSlotTransition.apply(stateEx);
-      if (specHelpers.is_epoch_end(slot)) {
+      if (specHelpers.is_epoch_end(slot) && !slot.equals(targetSlot)) {
         stateEx = perEpochTransition.apply(stateEx);
       }
     }
