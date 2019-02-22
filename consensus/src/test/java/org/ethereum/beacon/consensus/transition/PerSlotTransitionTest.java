@@ -32,7 +32,7 @@ public class PerSlotTransitionTest {
         };
     SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(chainSpec, () -> 0L);
 
-    List<Deposit> deposits = TestUtils.getAnyDeposits(specHelpers, 8).getValue0();
+    List<Deposit> deposits = TestUtils.getAnyDeposits(rnd, specHelpers, 8).getValue0();
 
     InitialStateTransition initialStateTransition =
         new InitialStateTransition(

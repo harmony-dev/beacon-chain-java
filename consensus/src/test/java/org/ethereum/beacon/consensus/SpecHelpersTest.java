@@ -159,7 +159,7 @@ public class SpecHelpersTest {
 
     InitialStateTransition initialStateTransition =
         new InitialStateTransition(
-            new ChainStart(genesisTime, eth1Data, TestUtils.generateRandomDepositsWithoutSig(specHelpers, validatorCount)),
+            new ChainStart(genesisTime, eth1Data, TestUtils.generateRandomDepositsWithoutSig(rnd, specHelpers, validatorCount)),
             specHelpers);
 
     BeaconState initialState = initialStateTransition.apply(

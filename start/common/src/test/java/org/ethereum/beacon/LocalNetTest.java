@@ -152,7 +152,7 @@ public class LocalNetTest {
         };
 
     Pair<List<Deposit>, List<KeyPair>> anyDeposits = TestUtils.getAnyDeposits(
-            createLightSpecHelpers(chainSpec, () -> 0L), validatorCount);
+            rnd, createLightSpecHelpers(chainSpec, () -> 0L), validatorCount);
     List<Deposit> deposits = anyDeposits.getValue0();
 
     LocalWireHub localWireHub = new LocalWireHub(s -> {});
