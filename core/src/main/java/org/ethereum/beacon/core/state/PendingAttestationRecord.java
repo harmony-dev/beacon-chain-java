@@ -73,6 +73,11 @@ public class PendingAttestationRecord {
     return aggregationBitfield.getBits().stream().map(i -> "" + i).collect(Collectors.joining("+"));
   }
 
+  @Override
+  public String toString() {
+    return toString(null, null);
+  }
+
   public String toString(@Nullable ChainSpec spec,@Nullable Time beaconStart) {
     return "Attestation["
         + data.toString(spec, beaconStart)

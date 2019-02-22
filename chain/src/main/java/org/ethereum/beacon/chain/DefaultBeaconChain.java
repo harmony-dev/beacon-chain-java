@@ -131,20 +131,23 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     }
 
     BeaconStateEx postBlockState = perBlockTransition.apply(preBlockState, block);
+    BeaconStateEx postEpochState;
     if (specHelpers.is_epoch_end(block.getSlot())) {
-      postBlockState = perEpochTransition.apply(postBlockState);
+      postEpochState = perEpochTransition.apply(postBlockState);
+    } else {
+      postEpochState = postBlockState;
     }
 
     VerificationResult stateVerification =
-        stateVerifier.verify(postBlockState.getCanonicalState(), block);
+        stateVerifier.verify(postEpochState.getCanonicalState(), block);
     if (!stateVerification.isPassed()) {
       logger.warn("State verification failed: " + stateVerification);
       return false;
     }
 
-    BeaconTuple newTuple = BeaconTuple.of(block, postBlockState);
+    BeaconTuple newTuple = BeaconTuple.of(block, postEpochState);
     tupleStorage.put(newTuple);
-    updateFinality(parentState.getCanonicalState(), postBlockState.getCanonicalState());
+    updateFinality(parentState.getCanonicalState(), postEpochState.getCanonicalState());
 
     chainStorage.commit();
 

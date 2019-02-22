@@ -52,7 +52,8 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
 
   @Override
   public BeaconStateEx apply(BeaconStateEx stateEx) {
-    logger.debug(() -> "Applying epoch transition to state: " + stateEx.toString(specConst));
+    logger.debug(() -> "Applying epoch transition to state: (" +
+        spec.hash_tree_root(stateEx.getCanonicalState()).toStringShort() + ") " + stateEx.toString(specConst));
 
     BeaconState origState = stateEx.getCanonicalState();
     MutableBeaconState state = origState.createMutableCopy();
@@ -877,6 +878,12 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
     state.getLatestAttestations().remove(
         a -> spec.slot_to_epoch(a.getData().getSlot()).less(current_epoch));
 
-    return new BeaconStateEx(state.createImmutable(), stateEx.getLatestChainBlockHash());
+    BeaconStateEx ret = new BeaconStateEx(state.createImmutable(),
+        stateEx.getLatestChainBlockHash());
+
+    logger.debug(() -> "Epoch transition result state: (" +
+        spec.hash_tree_root(ret.getCanonicalState()).toStringShort() + ") " + ret.toString(specConst));
+
+    return ret;
   }
 }
