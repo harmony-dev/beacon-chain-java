@@ -29,7 +29,7 @@ public class PerSlotTransition implements StateTransition<BeaconStateEx> {
 
   @Override
   public BeaconStateEx apply(BeaconStateEx stateEx) {
-    logger.debug(() -> "Applying slot transition to state: (" +
+    logger.trace(() -> "Applying slot transition to state: (" +
         specHelpers.hash_tree_root(stateEx.getCanonicalState()).toStringShort() + ") " + stateEx.toString(spec));
     TransitionType.SLOT.checkCanBeAppliedAfter(stateEx.getLastTransition());
 
@@ -54,7 +54,7 @@ public class PerSlotTransition implements StateTransition<BeaconStateEx> {
         new BeaconStateEx(
             state.createImmutable(), stateEx.getLatestChainBlockHash(), TransitionType.SLOT);
 
-    logger.debug(() -> "Slot transition result state: (" +
+    logger.trace(() -> "Slot transition result state: (" +
         specHelpers.hash_tree_root(ret.getCanonicalState()).toStringShort() + ") " + ret.toString(spec));
 
     return ret;
