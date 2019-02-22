@@ -4,6 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.consensus.BlockTransition;
 import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.transition.BeaconStateEx.TransitionType;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
@@ -46,6 +47,8 @@ public class PerBlockTransition implements BlockTransition<BeaconStateEx> {
         specHelpers.hash_tree_root(stateEx.getCanonicalState()).toStringShort() + ") "
         + stateEx.toString(spec) + ", Block: "
         + block.toString(spec, stateEx.getCanonicalState().getGenesisTime(), specHelpers::hash_tree_root));
+
+    TransitionType.BLOCK.checkCanBeAppliedAfter(stateEx.getLastTransition());
 
     MutableBeaconState state = stateEx.getCanonicalState().createMutableCopy();
 
@@ -168,7 +171,7 @@ public class PerBlockTransition implements BlockTransition<BeaconStateEx> {
     }
 
     BeaconStateEx ret = new BeaconStateEx(state.createImmutable(),
-        specHelpers.hash_tree_root(block));
+        specHelpers.hash_tree_root(block), TransitionType.BLOCK);
 
     logger.debug(() -> "Block transition result state: (" +
         specHelpers.hash_tree_root(ret.getCanonicalState()).toStringShort() + ") " + ret.toString(spec));
