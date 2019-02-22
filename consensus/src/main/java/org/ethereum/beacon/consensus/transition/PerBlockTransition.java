@@ -1,5 +1,7 @@
 package org.ethereum.beacon.consensus.transition;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.consensus.BlockTransition;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.core.BeaconBlock;
@@ -28,6 +30,8 @@ import tech.pegasys.artemis.util.uint.UInt64;
  *     processing</a> in the spec.
  */
 public class PerBlockTransition implements BlockTransition<BeaconStateEx> {
+  private static final Logger logger = LogManager.getLogger(PerBlockTransition.class);
+
   private final ChainSpec spec;
   private final SpecHelpers specHelpers;
 
@@ -38,6 +42,11 @@ public class PerBlockTransition implements BlockTransition<BeaconStateEx> {
 
   @Override
   public BeaconStateEx apply(BeaconStateEx stateEx, BeaconBlock block) {
+    logger.debug(() -> "Applying block transition to state: (" +
+        specHelpers.hash_tree_root(stateEx.getCanonicalState()).toStringShort() + ") "
+        + stateEx.toString(spec) + ", Block: "
+        + block.toString(spec, stateEx.getCanonicalState().getGenesisTime(), specHelpers::hash_tree_root));
+
     MutableBeaconState state = stateEx.getCanonicalState().createMutableCopy();
 
     /*
@@ -158,6 +167,12 @@ public class PerBlockTransition implements BlockTransition<BeaconStateEx> {
       specHelpers.initiate_validator_exit(state, exit.getValidatorIndex());
     }
 
-    return new BeaconStateEx(state.createImmutable(), specHelpers.hash_tree_root(block));
+    BeaconStateEx ret = new BeaconStateEx(state.createImmutable(),
+        specHelpers.hash_tree_root(block));
+
+    logger.debug(() -> "Block transition result state: (" +
+        specHelpers.hash_tree_root(ret.getCanonicalState()).toStringShort() + ") " + ret.toString(spec));
+
+    return ret;
   }
 }
