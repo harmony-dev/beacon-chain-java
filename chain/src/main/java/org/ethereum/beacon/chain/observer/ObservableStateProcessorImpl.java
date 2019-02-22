@@ -253,25 +253,29 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     updateHead(pendingOperations);
 
     BeaconState originalState = latestState;
-    BeaconState beaconStateWithoutEpoch = applySlotTransitionsWithoutEpoch(originalState,
+    BeaconState stateWithoutEpoch = applySlotTransitionsWithoutEpoch(originalState,
         specHelpers.hash_tree_root(head.getBlock()), newSlot);
-    BeaconState newBeaconState = applyEpochTransitionIfNeeded(beaconStateWithoutEpoch);
+    BeaconState newBeaconState = applyEpochTransitionIfNeeded(originalState, stateWithoutEpoch);
     latestState = newBeaconState;
     ObservableBeaconState newObservableState = new ObservableBeaconState(
-            head.getBlock(), newBeaconState, beaconStateWithoutEpoch, pendingOperations);
+            head.getBlock(), newBeaconState, stateWithoutEpoch, pendingOperations);
     if (!newObservableState.equals(observableState)) {
       this.observableState = newObservableState;
       observableStateSink.onNext(newObservableState);
     }
   }
 
-  private BeaconState applyEpochTransitionIfNeeded(BeaconState source) {
-    if (specHelpers.is_epoch_end(source.getSlot())) {
+  private BeaconState applyEpochTransitionIfNeeded(BeaconState originalState, BeaconState stateWithoutEpoch) {
+    if (specHelpers.is_epoch_end(stateWithoutEpoch.getSlot())
+        && originalState.getSlot().less(stateWithoutEpoch.getSlot())) {
       BeaconStateEx stateEx =
-          new BeaconStateEx(source, specHelpers.get_block_root(source, source.getSlot().decrement()));
+          new BeaconStateEx(
+              stateWithoutEpoch,
+              specHelpers.get_block_root(
+                  stateWithoutEpoch, stateWithoutEpoch.getSlot().decrement()));
       return perEpochTransition.apply(stateEx).getCanonicalState();
     } else {
-      return source;
+      return stateWithoutEpoch;
     }
   }
 
