@@ -22,9 +22,9 @@ public class ConfigBuilderTest {
     configBuilder.addYamlConfig(testYamlConfig);
     MainConfig unmodified = (MainConfig) configBuilder.build();
     assertEquals("file://db", unmodified.getConfig().getDb());
-    assertEquals("file://chainSpec.json", unmodified.getConfig().getChainSpec());
     assertEquals(3, unmodified.getPlan().getValidator().size());
-    assertEquals(4, ((ActionEmulate) unmodified.getPlan().getValidator().get(2)).getCount());
+    ActionEmulate actionEmulate = ((ActionEmulate) unmodified.getPlan().getValidator().get(2));
+    assertEquals(4, (long) actionEmulate.getCount());
 
     MainConfig config2 = new MainConfig();
     Configuration configPart = new Configuration();
@@ -33,7 +33,6 @@ public class ConfigBuilderTest {
     configBuilder.addConfig(config2);
     MainConfig merged = (MainConfig) configBuilder.build();
     assertEquals("file://second/path", merged.getConfig().getDb());
-    assertEquals("file://chainSpec.json", merged.getConfig().getChainSpec());
     assertEquals(3, merged.getPlan().getValidator().size());
     assertEquals("ethereumj", merged.getConfig().getValidator().getContract().get("handler"));
 
@@ -41,7 +40,6 @@ public class ConfigBuilderTest {
     configBuilder.addConfigOverride("config.validator.contract.handler", "unknown");
     MainConfig overrided = (MainConfig) configBuilder.build();
     assertEquals("file://test-db", overrided.getConfig().getDb());
-    assertEquals("file://chainSpec.json", overrided.getConfig().getChainSpec());
     assertEquals(3, overrided.getPlan().getValidator().size());
     assertEquals("unknown", overrided.getConfig().getValidator().getContract().get("handler"));
   }

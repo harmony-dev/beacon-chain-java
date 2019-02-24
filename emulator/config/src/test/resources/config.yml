@@ -1,5 +1,4 @@
 config:
-  chainSpec: file://chainSpec.json
   db: file://db
   validator:
     contract:
