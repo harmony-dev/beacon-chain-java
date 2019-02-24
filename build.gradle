@@ -112,6 +112,10 @@ tasks.coveralls {
   dependsOn jacocoRootReport
 }
 
+// We have enabled `application` plugin but we don't need its default behavior
+// Instead we will use it via createScript() method when it's needed
+startScripts.enabled = false
+
 // Creates executable scripts for entry points
 // Subproject must apply application plugin to be able to call this method.
 def createScript(project, mainClass, name) {
