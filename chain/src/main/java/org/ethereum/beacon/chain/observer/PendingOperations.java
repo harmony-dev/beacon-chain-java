@@ -15,7 +15,7 @@ public interface PendingOperations {
 
   List<Attestation> getAttestations();
 
-  Optional<Attestation> findAttestation(BLSPubkey pubKey);
+  Optional<Attestation> getLatestAttestation(BLSPubkey pubKey);
 
   List<ProposerSlashing> peekProposerSlashings(int maxCount);
 
