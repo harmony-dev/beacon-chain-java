@@ -72,6 +72,15 @@ public class Attestation {
   }
 
   @Override
+  public int hashCode() {
+    int result = data.hashCode();
+    result = 31 * result + aggregationBitfield.hashCode();
+    result = 31 * result + custodyBitfield.hashCode();
+    result = 31 * result + aggregateSignature.hashCode();
+    return result;
+  }
+
+  @Override
   public String toString() {
     return toString(null, null);
   }
