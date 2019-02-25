@@ -37,10 +37,10 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public class Launcher {
-  private final SpecHelpers specHelpers;
-  private final DepositContract depositContract;
-  private final BLS381.KeyPair validatorSig;
-  private final WireApi wireApi;
+  final SpecHelpers specHelpers;
+  final DepositContract depositContract;
+  final BLS381.KeyPair validatorSig;
+  final WireApi wireApi;
 
   InMemoryDatabase db;
   BeaconChainStorage beaconChainStorage;
