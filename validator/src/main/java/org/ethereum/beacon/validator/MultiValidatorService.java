@@ -1,19 +1,34 @@
 package org.ethereum.beacon.validator;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.state.ShardCommittee;
+import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
+import org.ethereum.beacon.schedulers.LatestExecutor;
 import org.ethereum.beacon.schedulers.RunnableEx;
 import org.ethereum.beacon.schedulers.Scheduler;
 import org.ethereum.beacon.schedulers.Schedulers;
@@ -21,19 +36,11 @@ import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
-import tech.pegasys.artemis.util.uint.UInt64;
 
-/**
- * A simple implementation of beacon chain validator.
- *
- * <p>Drives an "honest" validator instance alongside with chain processing.
- *
- * @see ValidatorService
- * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/validator/0_beacon-chain-validator.md">Honest
- *     validator</a> in the spec.
- */
-public class BeaconChainValidator implements ValidatorService {
+/** Runs several validators in one instance. */
+public class MultiValidatorService implements ValidatorService {
+
+  private static final Logger logger = LogManager.getLogger(MultiValidatorService.class);
 
   private final Schedulers schedulers;
 
@@ -43,8 +50,6 @@ public class BeaconChainValidator implements ValidatorService {
   private final DirectProcessor<Attestation> attestationsSink = DirectProcessor.create();
   private final Publisher<Attestation> attestationsStream;
 
-  /** A pair of "hot" keys that are used to sign off on proposals and attestations. */
-  private BLS381Credentials blsCredentials;
   /** Proposer logic. */
   private BeaconChainProposer proposer;
   /** Attester logic. */
@@ -54,9 +59,11 @@ public class BeaconChainValidator implements ValidatorService {
 
   private Publisher<ObservableBeaconState> stateStream;
 
-  /** Validator index. Assigned in {@link #init(BeaconState)} method. */
-  private ValidatorIndex validatorIndex = ValidatorIndex.MAX;
-  /** Latest slot that has been processed. Initialized in {@link #init(BeaconState)} method. */
+  /** Credentials of yet not initialized validators. */
+  private Map<BLSPubkey, BLS381Credentials> uninitialized;
+  /** Credentials of already initialized validators. */
+  private Map<ValidatorIndex, BLS381Credentials> initialized = new ConcurrentHashMap<>();
+  /** Latest slot that has been processed. */
   private SlotNumber lastProcessedSlot = SlotNumber.ZERO;
   /** The most recent beacon state came from the outside. */
   private ObservableBeaconState recentState;
@@ -64,31 +71,38 @@ public class BeaconChainValidator implements ValidatorService {
   /** Validator task executor. */
   private final Scheduler executor;
 
-  public BeaconChainValidator(
-      BLS381Credentials blsCredentials,
+  private final LatestExecutor<BeaconState> initExecutor;
+
+  public MultiValidatorService(
+      List<BLS381Credentials> blsCredentials,
       BeaconChainProposer proposer,
       BeaconChainAttester attester,
       SpecHelpers specHelpers,
       Publisher<ObservableBeaconState> stateStream,
       Schedulers schedulers) {
-    this.blsCredentials = blsCredentials;
+    this.uninitialized =
+        blsCredentials.stream()
+            .collect(Collectors.toMap(BLS381Credentials::getPubkey, Function.identity()));
     this.proposer = proposer;
     this.attester = attester;
     this.specHelpers = specHelpers;
     this.stateStream = stateStream;
     this.schedulers = schedulers;
 
-    blocksStream = Flux.from(blocksSink)
-        .publishOn(this.schedulers.reactorEvents())
-        .onBackpressureError()
-        .name("BeaconChainValidator.block");
+    blocksStream =
+        Flux.from(blocksSink)
+            .publishOn(this.schedulers.reactorEvents())
+            .onBackpressureError()
+            .name("BeaconChainValidator.block");
 
-    attestationsStream = Flux.from(attestationsSink)
-        .publishOn(this.schedulers.reactorEvents())
-        .onBackpressureError()
-        .name("BeaconChainValidator.attestation");
+    attestationsStream =
+        Flux.from(attestationsSink)
+            .publishOn(this.schedulers.reactorEvents())
+            .onBackpressureError()
+            .name("BeaconChainValidator.attestation");
 
     executor = this.schedulers.newSingleThreadDaemon("validator-service");
+    initExecutor = new LatestExecutor<>(schedulers.blocking(), this::initFromLatestBeaconState);
   }
 
   @Override
@@ -100,19 +114,29 @@ public class BeaconChainValidator implements ValidatorService {
   public void stop() {}
 
   /**
-   * Initializes validator by looking its index in validator registry.
+   * Passes validators from {@link #uninitialized} map through initialization process.
    *
-   * @param state a state object to seek for the validator in.
+   * @param state a state object to seek for validators in.
    */
-  @VisibleForTesting
-  void init(BeaconState state) {
-    this.validatorIndex = specHelpers.get_validator_index_by_pubkey(state, blsCredentials.getPubkey());
+  private void initFromLatestBeaconState(BeaconState state) {
+    Map<ValidatorIndex, BLS381Credentials> intoCommittees = new HashMap<>();
+    for (ValidatorIndex i : state.getValidatorRegistry().size()) {
+      BLS381Credentials credentials =
+          uninitialized.remove(state.getValidatorRegistry().get(i).getPubKey());
+      if (credentials != null) {
+        intoCommittees.put(i, credentials);
+      }
+    }
+    this.initialized.putAll(intoCommittees);
+
+    if (!intoCommittees.isEmpty())
+      logger.info("initialized validators: {}", intoCommittees.keySet());
   }
 
   /**
    * Keeps the most recent state in memory.
    *
-   * <p>Recent state is required by delayed tasks like {@link #attest()}.
+   * <p>Recent state is required by delayed tasks like {@link #attest(ValidatorIndex)}.
    *
    * @param state state came from the outside.
    */
@@ -150,25 +174,24 @@ public class BeaconChainValidator implements ValidatorService {
   private void processState(ObservableBeaconState observableState) {
     BeaconState state = observableState.getLatestSlotState();
 
-    if (!isInitialized()) {
-      init(state);
-    }
-
-    if (isInitialized() && !isSlotProcessed(state)) {
+    if (!isSlotProcessed(state)) {
       setSlotProcessed(state);
+      if (!isInitialized()) {
+        initExecutor.newEvent(state);
+      }
       runTasks(observableState);
     }
   }
 
   /**
-   * Checks if validator is assigned to either propose or attest to a block with slot equal to
-   * {@code observableState.slot}. And triggers corresponding routine:
+   * Checks if any of {@link #initialized} validators are assigned to either propose or attest to a
+   * block with slot equal to {@code observableState.slot}. And triggers corresponding routine:
    *
    * <ul>
-   *   <li>{@link #propose(ObservableBeaconState)} routine is triggered instantly with received
-   *       {@code observableState} object.
-   *   <li>{@link #attest()} routine is a delayed task, it's called with {@link #recentState}
-   *       object.
+   *   <li>{@link #propose(ValidatorIndex, ObservableBeaconState)} routine is triggered instantly
+   *       with received {@code observableState} object.
+   *   <li>{@link #attest(ValidatorIndex)} routine is a delayed task, it's called with {@link
+   *       #recentState} object.
    * </ul>
    *
    * @param observableState a state that validator tasks are executed with.
@@ -178,14 +201,19 @@ public class BeaconChainValidator implements ValidatorService {
     BeaconState state = observableState.getLatestSlotState();
 
     // trigger proposer
-    if (isEligibleToPropose(state)) {
-      runAsync(() -> propose(observableState));
+    ValidatorIndex proposerIndex = specHelpers.get_beacon_proposer_index(state, state.getSlot());
+    if (initialized.containsKey(proposerIndex)) {
+      runAsync(() -> propose(proposerIndex, observableState));
     }
 
     // trigger attester at a halfway through the slot
-    if (getValidatorCommittee(state).isPresent()) {
-      Time startAt = specHelpers.get_slot_middle_time(state, state.getSlot());
-      schedule(startAt, this::attest);
+    Time startAt = specHelpers.get_slot_middle_time(state, state.getSlot());
+    List<ShardCommittee> committees =
+        specHelpers.get_crosslink_committees_at_slot(state, state.getSlot());
+    for (ShardCommittee sc : committees) {
+      sc.getCommittee().stream()
+          .filter(initialized::containsKey)
+          .forEach(index -> schedule(startAt, () -> this.attest(index)));
     }
   }
 
@@ -207,17 +235,30 @@ public class BeaconChainValidator implements ValidatorService {
   private void schedule(Time startAt, RunnableEx routine) {
     long startAtMillis = startAt.getValue() * 1000;
     assert schedulers.getCurrentTime() < startAtMillis;
-    executor.executeWithDelay(Duration.ofMillis(schedulers.getCurrentTime() - startAtMillis), routine);
+    executor.executeWithDelay(
+        Duration.ofMillis(schedulers.getCurrentTime() - startAtMillis), routine);
   }
 
   /**
    * Proposes a new block that is build on top of given state.
    *
+   * @param index index of proposer.
    * @param observableState a state.
    */
-  private void propose(final ObservableBeaconState observableState) {
-    BeaconBlock newBlock = proposer.propose(observableState, blsCredentials.getSigner());
-    propagateBlock(newBlock);
+  private void propose(ValidatorIndex index, final ObservableBeaconState observableState) {
+    BLS381Credentials credentials = initialized.get(index);
+    if (credentials != null) {
+      BeaconBlock newBlock = proposer.propose(observableState, credentials.getSigner());
+      propagateBlock(newBlock);
+
+      logger.info(
+          "validator {}: proposed a {}",
+          index,
+          newBlock.toString(
+              specHelpers.getChainSpec(),
+              observableState.getLatestSlotState().getGenesisTime(),
+              specHelpers::hash_tree_root));
+    }
   }
 
   /**
@@ -226,20 +267,31 @@ public class BeaconChainValidator implements ValidatorService {
    * <p><strong>Note:</strong> since {@link #recentState} may be updated after attestation has been
    * scheduled, there is a sanity check that validator is still eligible to attest with {@link
    * #recentState}.
+   *
+   * @param index index of attester.
    */
-  private void attest() {
+  private void attest(ValidatorIndex index) {
     final ObservableBeaconState observableState = this.recentState;
     final BeaconState state = observableState.getLatestSlotState();
 
-    Optional<ShardCommittee> validatorCommittee = getValidatorCommittee(state);
-    if (validatorCommittee.isPresent()) {
+    Optional<ShardCommittee> validatorCommittee = getValidatorCommittee(index, state);
+    BLS381Credentials credentials = initialized.get(index);
+    if (validatorCommittee.isPresent() && credentials != null) {
       Attestation attestation =
           attester.attest(
-              validatorIndex,
-              validatorCommittee.get().getShard(),
-              observableState,
-              blsCredentials.getSigner());
+              index, validatorCommittee.get().getShard(), observableState, credentials.getSigner());
       propagateAttestation(attestation);
+
+      logger.info(
+          "validator {}: attested to head: {} in a slot: {}",
+          index,
+          observableState
+              .getHead()
+              .toString(
+                  specHelpers.getChainSpec(),
+                  observableState.getLatestSlotState().getGenesisTime(),
+                  specHelpers::hash_tree_root),
+          state.getSlot());
     }
   }
 
@@ -254,23 +306,11 @@ public class BeaconChainValidator implements ValidatorService {
     this.lastProcessedSlot = state.getSlot();
   }
 
-  /**
-   * Whether validator is assigned to propose a block at a slot of the state.
-   *
-   * @param state a state.
-   * @return {@code true} if assigned, {@link false} otherwise.
-   */
-  private boolean isEligibleToPropose(BeaconState state) {
-    return validatorIndex.equals(specHelpers.get_beacon_proposer_index(state, state.getSlot()));
-  }
-
-  /**
-   * Returns committee where the validator participates if any
-   */
-  private Optional<ShardCommittee> getValidatorCommittee(BeaconState state) {
+  /** Returns committee where the validator participates if any */
+  private Optional<ShardCommittee> getValidatorCommittee(ValidatorIndex index, BeaconState state) {
     List<ShardCommittee> committees =
         specHelpers.get_crosslink_committees_at_slot(state, state.getSlot());
-    return committees.stream().filter(sc -> sc.getCommittee().contains(validatorIndex)).findFirst();
+    return committees.stream().filter(sc -> sc.getCommittee().contains(index)).findFirst();
   }
 
   /**
@@ -303,7 +343,7 @@ public class BeaconChainValidator implements ValidatorService {
    * @return {@code true} if index is defined, {@code false} otherwise.
    */
   private boolean isInitialized() {
-    return validatorIndex.compareTo(UInt64.MAX_VALUE) < 0;
+    return uninitialized.isEmpty();
   }
 
   private void propagateBlock(BeaconBlock newBlock) {
@@ -316,11 +356,6 @@ public class BeaconChainValidator implements ValidatorService {
 
   private void subscribeToStateUpdates(Consumer<ObservableBeaconState> payload) {
     Flux.from(stateStream).subscribe(payload);
-  }
-
-  @VisibleForTesting
-  ValidatorIndex getValidatorIndex() {
-    return validatorIndex;
   }
 
   @VisibleForTesting

@@ -1,5 +1,7 @@
 package org.ethereum.beacon;
 
+import java.util.List;
+import java.util.stream.Collectors;
 import org.ethereum.beacon.chain.DefaultBeaconChain;
 import org.ethereum.beacon.chain.MutableBeaconChain;
 import org.ethereum.beacon.chain.ProposedBlockProcessor;
@@ -18,14 +20,14 @@ import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
 import org.ethereum.beacon.consensus.verifier.BeaconStateVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.operations.Attestation;
-import org.ethereum.beacon.crypto.BLS381;
 import org.ethereum.beacon.crypto.BLS381.KeyPair;
 import org.ethereum.beacon.db.InMemoryDatabase;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.pow.DepositContract.ChainStart;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.validator.BeaconChainProposer;
-import org.ethereum.beacon.validator.BeaconChainValidator;
+import org.ethereum.beacon.validator.MultiValidatorService;
+import org.ethereum.beacon.validator.ValidatorService;
 import org.ethereum.beacon.validator.attester.BeaconChainAttesterImpl;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import org.ethereum.beacon.validator.proposer.BeaconChainProposerImpl;
@@ -34,10 +36,10 @@ import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-public class Launcher {
+public class MultiValidatorLauncher {
   private final SpecHelpers specHelpers;
   private final DepositContract depositContract;
-  private final BLS381.KeyPair validatorSig;
+  private final List<KeyPair> validatorSigs;
   private final WireApi wireApi;
 
   InMemoryDatabase db;
@@ -47,21 +49,21 @@ public class Launcher {
   ObservableStateProcessor observableStateProcessor;
   BeaconChainProposer beaconChainProposer;
   BeaconChainAttesterImpl beaconChainAttester;
-  BeaconChainValidator beaconChainValidator;
+  ValidatorService beaconChainValidator;
   BeaconChainStorageFactory storageFactory;
   Schedulers schedulers;
 
-  public Launcher(
+  public MultiValidatorLauncher(
       SpecHelpers specHelpers,
       DepositContract depositContract,
-      KeyPair validatorSig,
+      List<KeyPair> validatorSigs,
       WireApi wireApi,
       BeaconChainStorageFactory storageFactory,
       Schedulers schedulers) {
 
     this.specHelpers = specHelpers;
     this.depositContract = depositContract;
-    this.validatorSig = validatorSig;
+    this.validatorSigs = validatorSigs;
     this.wireApi = wireApi;
     this.storageFactory = storageFactory;
     this.schedulers = schedulers;
@@ -122,8 +124,13 @@ public class Launcher {
     beaconChainAttester = new BeaconChainAttesterImpl(specHelpers,
         specHelpers.getChainSpec());
 
-    beaconChainValidator = new BeaconChainValidator(
-        BLS381Credentials.createWithInsecureSigner(validatorSig),
+    List<BLS381Credentials> credentials =
+        validatorSigs.stream()
+            .map(BLS381Credentials::createWithInsecureSigner)
+            .collect(Collectors.toList());
+
+    beaconChainValidator = new MultiValidatorService(
+        credentials,
         beaconChainProposer,
         beaconChainAttester,
         specHelpers,
