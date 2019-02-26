@@ -28,6 +28,7 @@ import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
+import org.ethereum.beacon.schedulers.LatestExecutor;
 import org.ethereum.beacon.schedulers.RunnableEx;
 import org.ethereum.beacon.schedulers.Scheduler;
 import org.ethereum.beacon.schedulers.Schedulers;
@@ -62,7 +63,7 @@ public class MultiValidatorService implements ValidatorService {
   private Map<BLSPubkey, BLS381Credentials> uninitialized;
   /** Credentials of already initialized validators. */
   private Map<ValidatorIndex, BLS381Credentials> initialized = new ConcurrentHashMap<>();
-  /** Latest slot that has been processed. Initialized in {@link #init(BeaconState)} method. */
+  /** Latest slot that has been processed. */
   private SlotNumber lastProcessedSlot = SlotNumber.ZERO;
   /** The most recent beacon state came from the outside. */
   private ObservableBeaconState recentState;
@@ -70,10 +71,7 @@ public class MultiValidatorService implements ValidatorService {
   /** Validator task executor. */
   private final Scheduler executor;
 
-  /** Validator init executor with capacity of the queue = 1. */
-  private final BlockingQueue<Runnable> initQueue = new ArrayBlockingQueue<>(1);
-
-  private final ExecutorService initExecutor;
+  private final LatestExecutor<BeaconState> initExecutor;
 
   public MultiValidatorService(
       List<BLS381Credentials> blsCredentials,
@@ -104,19 +102,7 @@ public class MultiValidatorService implements ValidatorService {
             .name("BeaconChainValidator.attestation");
 
     executor = this.schedulers.newSingleThreadDaemon("validator-service");
-    initExecutor =
-        new ThreadPoolExecutor(
-            1,
-            1,
-            0,
-            TimeUnit.MILLISECONDS,
-            initQueue,
-            new ThreadFactoryBuilder()
-                .setNameFormat("multi-validator-init-%d")
-                .setDaemon(true)
-                .setUncaughtExceptionHandler(
-                    (thread, t) -> logger.error("Failed to execute init", t))
-                .build());
+    initExecutor = new LatestExecutor<>(schedulers.cpuHeavy(), this::initFromLatestBeaconState);
   }
 
   @Override
@@ -132,23 +118,19 @@ public class MultiValidatorService implements ValidatorService {
    *
    * @param state a state object to seek for validators in.
    */
-  void init(BeaconState state) {
-    initQueue.clear();
-    initExecutor.submit(
-        () -> {
-          Map<ValidatorIndex, BLS381Credentials> intoCommittees = new HashMap<>();
-          for (ValidatorIndex i : state.getValidatorRegistry().size()) {
-            BLS381Credentials credentials =
-                uninitialized.remove(state.getValidatorRegistry().get(i).getPubKey());
-            if (credentials != null) {
-              intoCommittees.put(i, credentials);
-            }
-          }
-          this.initialized.putAll(intoCommittees);
+  private void initFromLatestBeaconState(BeaconState state) {
+    Map<ValidatorIndex, BLS381Credentials> intoCommittees = new HashMap<>();
+    for (ValidatorIndex i : state.getValidatorRegistry().size()) {
+      BLS381Credentials credentials =
+          uninitialized.remove(state.getValidatorRegistry().get(i).getPubKey());
+      if (credentials != null) {
+        intoCommittees.put(i, credentials);
+      }
+    }
+    this.initialized.putAll(intoCommittees);
 
-          if (!intoCommittees.isEmpty())
-            logger.info("initialized validators: {}", intoCommittees.keySet());
-        });
+    if (!intoCommittees.isEmpty())
+      logger.info("initialized validators: {}", intoCommittees.keySet());
   }
 
   /**
@@ -195,7 +177,7 @@ public class MultiValidatorService implements ValidatorService {
     if (!isSlotProcessed(state)) {
       setSlotProcessed(state);
       if (!isInitialized()) {
-        init(state);
+        initExecutor.newEvent(state);
       }
       runTasks(observableState);
     }
