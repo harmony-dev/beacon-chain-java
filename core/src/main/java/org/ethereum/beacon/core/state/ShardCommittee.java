@@ -28,6 +28,30 @@ public class ShardCommittee {
   }
 
   @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    ShardCommittee committee1 = (ShardCommittee) o;
+
+    if (!committee.equals(committee1.committee)) {
+      return false;
+    }
+    return shard.equals(committee1.shard);
+  }
+
+  @Override
+  public int hashCode() {
+    int result = committee.hashCode();
+    result = 31 * result + shard.hashCode();
+    return result;
+  }
+
+  @Override
   public String toString() {
     return "ShardCommittee[" + shard + ": " + committee + "]";
   }
