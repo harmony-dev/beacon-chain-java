@@ -1,0 +1,30 @@
+package org.ethereum.beacon;
+
+import picocli.CommandLine;
+
+import java.util.concurrent.Callable;
+
+@CommandLine.Command(
+    description = "Eth2.0 validator",
+    name = "beacon-validator",
+    mixinStandardHelpOptions = true,
+    version = "beacon-validator " + ReusableOptions.VERSION)
+public class Validator extends ReusableOptions implements Callable<Void> {
+  @CommandLine.Parameters(
+      index = "0",
+      description =
+          "Task to do: run/config.\n run - Starts beacon validator.\n config - Prints configuration and tasks to run on start.")
+  Task action;
+
+  public static void main(String[] args) {
+    CommandLine.call(new Validator(), args);
+  }
+
+  @Override
+  public Void call() throws Exception {
+    System.out.println("Starting beacon validator...");
+    prepareAndPrintConfigs(action, "/config/validator-config.yml");
+    System.out.println("Beacon validator is not ready yet"); // TODO
+    return null;
+  }
+}

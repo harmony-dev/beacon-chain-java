@@ -1,5 +1,6 @@
 package org.ethereum.beacon.emulator.config.chainspec;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.EpochNumber;
@@ -15,6 +16,7 @@ import tech.pegasys.artemis.util.bytes.Bytes1;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 /** ChainSpec settings object, creates {@link ChainSpec} from user data */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ChainSpecData implements Config {
   private DepositContractParametersData depositContractParameters;
   private HonestValidatorParametersData honestValidatorParameters;

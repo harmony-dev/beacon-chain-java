@@ -6,8 +6,8 @@ import org.ethereum.beacon.emulator.config.Config;
 /** Main application configuration */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class MainConfig implements Config {
-  private Configuration config;
   private Plan plan;
+  private Configuration config;
 
   public Configuration getConfig() {
     return config;

@@ -1,5 +1,6 @@
 package org.ethereum.beacon.emulator.config.chainspec;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.ethereum.beacon.core.spec.StateListLengths;
 import org.ethereum.beacon.core.types.EpochNumber;
@@ -18,25 +19,30 @@ public class StateListLengthsData implements StateListLengths {
   private String LATEST_PENALIZED_EXIT_LENGTH;
 
   @Override
+  @JsonIgnore
   public SlotNumber getLatestBlockRootsLength() {
     return SlotNumber.castFrom(UInt64.valueOf(getLATEST_BLOCK_ROOTS_LENGTH()));
   }
 
   @Override
+  @JsonIgnore
   public EpochNumber getLatestRandaoMixesLength() {
     return new EpochNumber(UInt64.valueOf(getLATEST_RANDAO_MIXES_LENGTH()));
   }
 
   @Override
+  @JsonIgnore
   public EpochNumber getLatestIndexRootsLength() {
     return new EpochNumber(UInt64.valueOf(getLATEST_INDEX_ROOTS_LENGTH()));
   }
 
   @Override
+  @JsonIgnore
   public EpochNumber getLatestPenalizedExitLength() {
     return new EpochNumber(UInt64.valueOf(getLATEST_PENALIZED_EXIT_LENGTH()));
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getLATEST_BLOCK_ROOTS_LENGTH() {
     return LATEST_BLOCK_ROOTS_LENGTH;
   }
@@ -45,6 +51,7 @@ public class StateListLengthsData implements StateListLengths {
     this.LATEST_BLOCK_ROOTS_LENGTH = LATEST_BLOCK_ROOTS_LENGTH;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getLATEST_RANDAO_MIXES_LENGTH() {
     return LATEST_RANDAO_MIXES_LENGTH;
   }
@@ -53,6 +60,7 @@ public class StateListLengthsData implements StateListLengths {
     this.LATEST_RANDAO_MIXES_LENGTH = LATEST_RANDAO_MIXES_LENGTH;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getLATEST_INDEX_ROOTS_LENGTH() {
     return LATEST_INDEX_ROOTS_LENGTH;
   }
@@ -61,6 +69,7 @@ public class StateListLengthsData implements StateListLengths {
     this.LATEST_INDEX_ROOTS_LENGTH = LATEST_INDEX_ROOTS_LENGTH;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getLATEST_PENALIZED_EXIT_LENGTH() {
     return LATEST_PENALIZED_EXIT_LENGTH;
   }

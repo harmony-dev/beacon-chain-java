@@ -1,5 +1,6 @@
 package org.ethereum.beacon.emulator.config.chainspec;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.ethereum.beacon.core.spec.MiscParameters;
 import org.ethereum.beacon.core.types.Gwei;
@@ -25,40 +26,48 @@ public class MiscParametersData implements MiscParameters {
   private String MAX_WITHDRAWALS_PER_EPOCH;
 
   @Override
+  @JsonIgnore
   public ShardNumber getShardCount() {
     return new ShardNumber(UInt64.valueOf(getSHARD_COUNT()));
   }
 
   @Override
+  @JsonIgnore
   public ValidatorIndex getTargetCommitteeSize() {
     return new ValidatorIndex(UInt64.valueOf(getTARGET_COMMITTEE_SIZE()));
   }
 
   @Override
+  @JsonIgnore
   public Gwei getEjectionBalance() {
     return Gwei.castFrom(UInt64.valueOf(getEJECTION_BALANCE()));
   }
 
   @Override
+  @JsonIgnore
   public UInt64 getMaxBalanceChurnQuotient() {
     return UInt64.valueOf(getMAX_BALANCE_CHURN_QUOTIENT());
   }
 
   @Override
+  @JsonIgnore
   public ShardNumber getBeaconChainShardNumber() {
     return ShardNumber.of(UInt64.valueOf(getBEACON_CHAIN_SHARD_NUMBER()));
   }
 
   @Override
+  @JsonIgnore
   public UInt64 getMaxIndicesPerSlashableVote() {
     return UInt64.valueOf(getMAX_INDICES_PER_SLASHABLE_VOTE());
   }
 
   @Override
+  @JsonIgnore
   public UInt64 getMaxWithdrawalsPerEpoch() {
     return UInt64.valueOf(getMAX_WITHDRAWALS_PER_EPOCH());
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getSHARD_COUNT() {
     return SHARD_COUNT;
   }
@@ -67,6 +76,7 @@ public class MiscParametersData implements MiscParameters {
     this.SHARD_COUNT = SHARD_COUNT;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getTARGET_COMMITTEE_SIZE() {
     return TARGET_COMMITTEE_SIZE;
   }
@@ -75,6 +85,7 @@ public class MiscParametersData implements MiscParameters {
     this.TARGET_COMMITTEE_SIZE = TARGET_COMMITTEE_SIZE;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getEJECTION_BALANCE() {
     return EJECTION_BALANCE;
   }
@@ -83,6 +94,7 @@ public class MiscParametersData implements MiscParameters {
     this.EJECTION_BALANCE = EJECTION_BALANCE;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getMAX_BALANCE_CHURN_QUOTIENT() {
     return MAX_BALANCE_CHURN_QUOTIENT;
   }
@@ -91,6 +103,7 @@ public class MiscParametersData implements MiscParameters {
     this.MAX_BALANCE_CHURN_QUOTIENT = MAX_BALANCE_CHURN_QUOTIENT;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getBEACON_CHAIN_SHARD_NUMBER() {
     return BEACON_CHAIN_SHARD_NUMBER;
   }
@@ -99,6 +112,7 @@ public class MiscParametersData implements MiscParameters {
     this.BEACON_CHAIN_SHARD_NUMBER = BEACON_CHAIN_SHARD_NUMBER;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getMAX_INDICES_PER_SLASHABLE_VOTE() {
     return MAX_INDICES_PER_SLASHABLE_VOTE;
   }
@@ -107,6 +121,7 @@ public class MiscParametersData implements MiscParameters {
     this.MAX_INDICES_PER_SLASHABLE_VOTE = MAX_INDICES_PER_SLASHABLE_VOTE;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getMAX_WITHDRAWALS_PER_EPOCH() {
     return MAX_WITHDRAWALS_PER_EPOCH;
   }

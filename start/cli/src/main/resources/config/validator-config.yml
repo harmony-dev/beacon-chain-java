@@ -21,12 +21,9 @@ plan:
       creator: ethereumj
       sender: ethereumj
       gasLimit: 2000000
-      eth1From: 0xf8cfd0257cd454bf0b05412eb3037e604aafe324
-      eth1PrivKey: 0x3564c032070e518026e47b32b6d34bca57c192d56f62e41b33e4b952e7b04d7a
-      withdrawalCredentials: 0xd47c61f2c25bbb677dcf23e65765fac04c85d6a0
+      eth1From: 0x0000000000000000000000000000000000000000
+      eth1PrivKey: 0x0000000000000000000000000000000000000000000000000000000000000000
+      withdrawalCredentials: 0x0000000000000000000000000000000000000000
       amount: 32
 
     - action: run
-
-    - action: emulate
-      count: 4

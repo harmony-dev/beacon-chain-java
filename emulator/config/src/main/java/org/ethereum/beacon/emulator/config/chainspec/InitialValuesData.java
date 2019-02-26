@@ -1,5 +1,6 @@
 package org.ethereum.beacon.emulator.config.chainspec;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.ethereum.beacon.core.spec.InitialValues;
 import org.ethereum.beacon.core.types.BLSSignature;
@@ -29,45 +30,54 @@ public class InitialValuesData implements InitialValues {
   private String BLS_WITHDRAWAL_PREFIX_BYTE;
 
   @Override
+  @JsonIgnore
   public UInt64 getGenesisForkVersion() {
     return UInt64.valueOf(getGENESIS_FORK_VERSION());
   }
 
   @Override
+  @JsonIgnore
   public SlotNumber getGenesisSlot() {
     return SlotNumber.castFrom(UInt64.valueOf(getGENESIS_SLOT()));
   }
 
   @Override
+  @JsonIgnore
   public EpochNumber getGenesisEpoch() {
     return null;// XXX: is set in final ChainSpec construction
   }
 
   @Override
+  @JsonIgnore
   public ShardNumber getGenesisStartShard() {
     return ShardNumber.of(getGENESIS_START_SHARD());
   }
 
   @Override
+  @JsonIgnore
   public EpochNumber getFarFutureEpoch() {
     return new EpochNumber(UInt64.valueOf(getFAR_FUTURE_EPOCH()));
   }
 
   @Override
+  @JsonIgnore
   public Hash32 getZeroHash() {
     return Hash32.fromHexString(getZERO_HASH());
   }
 
   @Override
+  @JsonIgnore
   public BLSSignature getEmptySignature() {
     return BLSSignature.wrap(Bytes96.fromHexString(getEMPTY_SIGNATURE()));
   }
 
   @Override
+  @JsonIgnore
   public Bytes1 getBlsWithdrawalPrefixByte() {
     return Bytes1.fromHexString(getBLS_WITHDRAWAL_PREFIX_BYTE());
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getGENESIS_FORK_VERSION() {
     return GENESIS_FORK_VERSION;
   }
@@ -76,6 +86,7 @@ public class InitialValuesData implements InitialValues {
     this.GENESIS_FORK_VERSION = GENESIS_FORK_VERSION;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getGENESIS_SLOT() {
     return GENESIS_SLOT;
   }
@@ -84,6 +95,7 @@ public class InitialValuesData implements InitialValues {
     this.GENESIS_SLOT = GENESIS_SLOT;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public Integer getGENESIS_START_SHARD() {
     return GENESIS_START_SHARD;
   }
@@ -92,6 +104,7 @@ public class InitialValuesData implements InitialValues {
     this.GENESIS_START_SHARD = GENESIS_START_SHARD;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getFAR_FUTURE_EPOCH() {
     return FAR_FUTURE_EPOCH;
   }
@@ -100,6 +113,7 @@ public class InitialValuesData implements InitialValues {
     this.FAR_FUTURE_EPOCH = FAR_FUTURE_EPOCH;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getZERO_HASH() {
     return ZERO_HASH;
   }
@@ -108,6 +122,7 @@ public class InitialValuesData implements InitialValues {
     this.ZERO_HASH = ZERO_HASH;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getEMPTY_SIGNATURE() {
     return EMPTY_SIGNATURE;
   }
@@ -116,6 +131,7 @@ public class InitialValuesData implements InitialValues {
     this.EMPTY_SIGNATURE = EMPTY_SIGNATURE;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getBLS_WITHDRAWAL_PREFIX_BYTE() {
     return BLS_WITHDRAWAL_PREFIX_BYTE;
   }

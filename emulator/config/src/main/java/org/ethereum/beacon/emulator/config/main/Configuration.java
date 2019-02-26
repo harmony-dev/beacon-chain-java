@@ -2,17 +2,8 @@ package org.ethereum.beacon.emulator.config.main;
 
 /** Beacon chain configuration */
 public class Configuration {
-  private String chainSpec;
   private String db;
   private Validator validator;
-
-  public String getChainSpec() {
-    return chainSpec;
-  }
-
-  public void setChainSpec(String chainSpec) {
-    this.chainSpec = chainSpec;
-  }
 
   public String getDb() {
     return db;

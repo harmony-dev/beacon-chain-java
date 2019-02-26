@@ -1,6 +1,7 @@
 plugins {
   id "io.spring.dependency-management" version "1.0.6.RELEASE"
   id 'com.github.kt3k.coveralls' version '2.8.2'
+  id 'application'
 }
 apply plugin: 'com.github.kt3k.coveralls'
 
@@ -30,6 +31,20 @@ allprojects {
   }
 
   task allDependencies(type: DependencyReportTask) {}
+
+  // Customize module jars so every module and sub-module receives right name
+  tasks.withType(Jar) {
+    if (rootProject == project) {
+      baseName = project.name
+    } else {
+      def projectCustomName = project.path.replaceAll(":", "-");
+      baseName = rootProject.name + projectCustomName
+    }
+    manifest {
+      attributes('Implementation-Title': baseName,
+          'Implementation-Version': project.version)
+    }
+  }
 
   javadoc {
     options.author = true
@@ -95,4 +110,28 @@ tasks.coveralls {
   description = 'Uploads the aggregated coverage report to Coveralls'
 
   dependsOn jacocoRootReport
+}
+
+// We have enabled `application` plugin but we don't need its default behavior
+// Instead we will use it via createScript() method when it's needed
+startScripts.enabled = false
+
+// Creates executable scripts for entry points
+// Subproject must apply application plugin to be able to call this method.
+def createScript(project, mainClass, name) {
+  project.tasks.create(name: name, type: CreateStartScripts) {
+    outputDir       = new File(project.buildDir, 'scripts')
+    mainClassName   = mainClass
+    applicationName = name
+    classpath = project.startScripts.classpath + project.configurations.runtime
+  }
+  project.tasks[name].dependsOn(project.jar)
+
+  project.applicationDistribution.with {
+    into("bin") {
+      from(project.tasks[name])
+      fileMode = 0755
+      duplicatesStrategy = 'exclude'
+    }
+  }
 }
