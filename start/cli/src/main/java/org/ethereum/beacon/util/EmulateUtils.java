@@ -50,7 +50,7 @@ public class EmulateUtils {
               BLSPubkey.wrap(Bytes48.leftPad(keyPair.getPublic().getEncodedBytes())),
               proofOfPosession,
               BLSSignature.wrap(Bytes96.ZERO));
-      Hash32 msgHash = specHelpers.hash_tree_root(depositInputWithoutSignature);
+      Hash32 msgHash = specHelpers.signed_root(depositInputWithoutSignature, "proofOfPossession");
       BLS381.Signature signature =
           BLS381.sign(
               new MessageParameters.Impl(msgHash, SignatureDomains.DEPOSIT.toBytesBigEndian()),

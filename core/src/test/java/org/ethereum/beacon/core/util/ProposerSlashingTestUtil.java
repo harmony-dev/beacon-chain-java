@@ -5,7 +5,7 @@ import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
-import org.ethereum.beacon.core.operations.slashing.ProposalSignedData;
+import org.ethereum.beacon.core.operations.slashing.Proposal;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.ValidatorIndex;
@@ -22,12 +22,12 @@ public abstract class ProposerSlashingTestUtil {
   }
 
   public static ProposerSlashing createRandom(Random random) {
-    ProposalSignedData signedData1 =
-        new ProposalSignedData(
-            ChainSpec.GENESIS_SLOT, ChainSpec.BEACON_CHAIN_SHARD_NUMBER, Hash32.random(random));
-    ProposalSignedData signedData2 =
-        new ProposalSignedData(
-            ChainSpec.GENESIS_SLOT, ChainSpec.BEACON_CHAIN_SHARD_NUMBER, Hash32.random(random));
+    Proposal signedData1 =
+        new Proposal(
+            ChainSpec.GENESIS_SLOT, ChainSpec.BEACON_CHAIN_SHARD_NUMBER, Hash32.random(random), BLSSignature.ZERO);
+    Proposal signedData2 =
+        new Proposal(
+            ChainSpec.GENESIS_SLOT, ChainSpec.BEACON_CHAIN_SHARD_NUMBER, Hash32.random(random), BLSSignature.ZERO);
     return new ProposerSlashing(
         ValidatorIndex.ZERO,
         signedData1,

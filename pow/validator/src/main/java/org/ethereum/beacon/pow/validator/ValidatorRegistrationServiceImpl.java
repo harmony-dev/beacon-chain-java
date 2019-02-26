@@ -277,7 +277,7 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
         new DepositInput(pubKey, withdrawalCredentials, BLSSignature.ZERO);
     // Let proof_of_possession be the result of bls_sign of the hash_tree_root(deposit_input) with
     // domain=DOMAIN_DEPOSIT.
-    Hash32 hash = specHelpers.hash_tree_root(preDepositInput);
+    Hash32 hash = specHelpers.signed_root(preDepositInput, "proofOfPossession");
     BeaconState latestState = getLatestState();
     Bytes8 domain =
         specHelpers.get_domain(

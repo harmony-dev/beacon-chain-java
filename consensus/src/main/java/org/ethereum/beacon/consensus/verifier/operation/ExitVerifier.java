@@ -64,7 +64,7 @@ public class ExitVerifier implements OperationVerifier<Exit> {
     //    domain=get_domain(state.fork, exit.epoch, DOMAIN_EXIT)).
     if (!specHelpers.bls_verify(
         validator.getPubKey(),
-        specHelpers.hash_tree_root(new Exit(exit.getEpoch(), exit.getValidatorIndex(), BLSSignature.ZERO)),
+        specHelpers.signed_root(exit, "signature"),
         exit.getSignature(),
         specHelpers.get_domain(state.getForkData(), exit.getEpoch(), EXIT))) {
       return failedResult("failed to verify signature");

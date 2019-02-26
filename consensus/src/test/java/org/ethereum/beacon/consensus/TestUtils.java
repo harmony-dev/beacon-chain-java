@@ -1,16 +1,11 @@
 package org.ethereum.beacon.consensus;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.spec.SignatureDomains;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
-import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.crypto.BLS381;
 import org.ethereum.beacon.crypto.BLS381.KeyPair;
@@ -21,6 +16,11 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.uint.UInt64;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
 
 public class TestUtils {
   private static final Random rnd = new Random();
@@ -50,7 +50,7 @@ public class TestUtils {
           proofOfPosession,
           BLSSignature.wrap(Bytes96.ZERO)
       );
-      Hash32 msgHash = specHelpers.hash_tree_root(depositInputWithoutSignature);
+      Hash32 msgHash = specHelpers.signed_root(depositInputWithoutSignature, "proofOfPossession");
       Signature signature = BLS381
           .sign(new Impl(msgHash, SignatureDomains.DEPOSIT.toBytesBigEndian()), keyPair);
 
