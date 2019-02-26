@@ -3,6 +3,8 @@ package org.ethereum.beacon.validator.crypto;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.crypto.BLS381;
+import org.ethereum.beacon.crypto.BLS381.PrivateKey;
+import tech.pegasys.artemis.util.bytes.Bytes32;
 
 /** A pair of {@link BLS381MessageSigner} instance and a corresponding pubkey. */
 public class BLS381Credentials {
@@ -26,6 +28,16 @@ public class BLS381Credentials {
     BLSPubkey pubkey = BLSPubkey.wrap(keyPair.getPublic().getEncodedBytes());
     BLS381MessageSigner signer =
         new InsecureBLS381MessageSigner(keyPair.getPrivate().getEncodedBytes());
+    return new BLS381Credentials(pubkey, signer);
+  }
+
+  public static BLS381Credentials createWithInsecureSigner(Bytes32 privateKeyBytes) {
+    BLSPubkey pubkey =
+        BLSPubkey.wrap(
+            BLS381.KeyPair.create(PrivateKey.create(privateKeyBytes))
+                .getPublic()
+                .getEncodedBytes());
+    BLS381MessageSigner signer = new InsecureBLS381MessageSigner(privateKeyBytes);
     return new BLS381Credentials(pubkey, signer);
   }
 }
