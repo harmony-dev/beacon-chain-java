@@ -68,11 +68,6 @@ public class BeaconBlock {
     return new BeaconBlock(slot, parentRoot, stateRoot, randaoReveal, eth1Data, signature, body);
   }
 
-  public BeaconBlock withoutSignature() {
-    return new BeaconBlock(
-        slot, parentRoot, stateRoot, randaoReveal, eth1Data, BLSSignature.ZERO, body);
-  }
-
   public SlotNumber getSlot() {
     return slot;
   }

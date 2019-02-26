@@ -31,7 +31,7 @@ public interface SSZCodecResolver {
    * @param field Field
    * @return encode function
    */
-  Consumer<Triplet<Object, OutputStream, SSZSerializer>> resolveEncodeFunction(
+  Consumer<Triplet<Object, OutputStream, BytesSerializer>> resolveEncodeFunction(
       SSZSchemeBuilder.SSZScheme.SSZField field);
 
   /**
@@ -40,6 +40,6 @@ public interface SSZCodecResolver {
    * @param field Field
    * @return decode function
    */
-  Function<Pair<BytesSSZReaderProxy, SSZSerializer>, Object> resolveDecodeFunction(
+  Function<Pair<BytesSSZReaderProxy, BytesSerializer>, Object> resolveDecodeFunction(
       SSZSchemeBuilder.SSZScheme.SSZField field);
 }

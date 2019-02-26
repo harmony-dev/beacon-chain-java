@@ -51,7 +51,7 @@ public class SSZCodecHasher implements SSZCodecResolver {
     });
   }
 
-  public Consumer<Triplet<Object, OutputStream, SSZSerializer>> resolveEncodeFunction(
+  public Consumer<Triplet<Object, OutputStream, BytesSerializer>> resolveEncodeFunction(
       SSZSchemeBuilder.SSZScheme.SSZField field) {
     SSZCodec encoder = resolveCodec(field);
 
@@ -72,7 +72,7 @@ public class SSZCodecHasher implements SSZCodecResolver {
         return objects -> {
           Object value = objects.getValue0();
           OutputStream res = objects.getValue1();
-          SSZSerializer sszSerializer = objects.getValue2();
+          BytesSerializer sszSerializer = objects.getValue2();
           encodeContainer(value, field, res, sszSerializer);
         };
       }
@@ -92,7 +92,7 @@ public class SSZCodecHasher implements SSZCodecResolver {
           }
           elements = listElements;
         } else {
-          SSZSerializer sszSerializer = objects.getValue2();
+          BytesSerializer sszSerializer = objects.getValue2();
           elements = packContainerList((List<Object>) value, field, sszSerializer);
         }
         try {
@@ -117,7 +117,7 @@ public class SSZCodecHasher implements SSZCodecResolver {
           }
           elements = arrayElements;
         } else {
-          SSZSerializer sszSerializer = objects.getValue2();
+          BytesSerializer sszSerializer = objects.getValue2();
           elements = packContainerList(Arrays.asList((Object[]) value), field, sszSerializer);
         }
         try {
@@ -136,7 +136,7 @@ public class SSZCodecHasher implements SSZCodecResolver {
       Object value,
       SSZSchemeBuilder.SSZScheme.SSZField field,
       OutputStream result,
-      SSZSerializer sszSerializer) {
+      BytesSerializer sszSerializer) {
     byte[] data = sszSerializer.encode(value, field.type);
 
     if (!field.notAContainer) {
@@ -158,7 +158,7 @@ public class SSZCodecHasher implements SSZCodecResolver {
   }
 
   private Bytes[] packContainerList(
-      List<Object> values, SSZSchemeBuilder.SSZScheme.SSZField field, SSZSerializer sszSerializer) {
+      List<Object> values, SSZSchemeBuilder.SSZScheme.SSZField field, BytesSerializer sszSerializer) {
     Bytes[] res = new Bytes[values.size()];
     for (int i = 0; i < values.size(); ++i) {
       byte[] data = sszSerializer.encode(values.get(i), field.type);
@@ -174,7 +174,7 @@ public class SSZCodecHasher implements SSZCodecResolver {
     return res;
   }
 
-  public Function<Pair<BytesSSZReaderProxy, SSZSerializer>, Object> resolveDecodeFunction(
+  public Function<Pair<BytesSSZReaderProxy, BytesSerializer>, Object> resolveDecodeFunction(
       SSZSchemeBuilder.SSZScheme.SSZField field) {
     throw new SSZException("Decode is not supported for hash");
   }

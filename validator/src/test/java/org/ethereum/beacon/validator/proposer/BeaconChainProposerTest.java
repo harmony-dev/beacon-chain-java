@@ -24,7 +24,7 @@ import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.Exit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
-import org.ethereum.beacon.core.operations.slashing.ProposalSignedData;
+import org.ethereum.beacon.core.operations.slashing.Proposal;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.spec.SignatureDomains;
 import org.ethereum.beacon.core.state.Eth1Data;
@@ -247,14 +247,15 @@ public class BeaconChainProposerTest {
       BeaconBlock block,
       MessageSigner<BLSSignature> signer) {
 
-    ProposalSignedData signedData =
-        new ProposalSignedData(
+    Proposal signedData =
+        new Proposal(
             initialState.getSlot(),
             specHelpers.getChainSpec().getBeaconChainShardNumber(),
-            specHelpers.hash_tree_root(block.withoutSignature()));
+            specHelpers.signed_root(block, "signature"),
+            block.getSignature());
     BLSSignature expectedSignature =
         signer.sign(
-            specHelpers.hash_tree_root(signedData),
+            specHelpers.signed_root(signedData,"signature"),
             specHelpers.get_domain(
                 initialState.getForkData(),
                 specHelpers.get_current_epoch(initialState),

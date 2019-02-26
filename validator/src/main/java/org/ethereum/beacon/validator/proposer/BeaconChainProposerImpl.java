@@ -21,7 +21,7 @@ import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.Exit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
-import org.ethereum.beacon.core.operations.slashing.ProposalSignedData;
+import org.ethereum.beacon.core.operations.slashing.Proposal;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Eth1DataVote;
@@ -115,21 +115,22 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
   }
 
   /**
-   * Creates a {@link ProposalSignedData} instance and signs off on it.
+   * Creates a {@link Proposal} instance and signs off on it.
    *
    * @param state state at the slot of created block.
-   * @param blockWithoutSignature created block with zero {@link BeaconBlock#signature} field.
+   * @param block block
    * @param signer message signer.
    * @return signature of proposal signed data.
    */
   private BLSSignature getProposalSignature(
-      BeaconState state, BeaconBlock blockWithoutSignature, MessageSigner<BLSSignature> signer) {
-    ProposalSignedData proposal =
-        new ProposalSignedData(
+      BeaconState state, BeaconBlock block, MessageSigner<BLSSignature> signer) {
+    Proposal proposal =
+        new Proposal(
             state.getSlot(),
             chainSpec.getBeaconChainShardNumber(),
-            specHelpers.hash_tree_root(blockWithoutSignature));
-    Hash32 proposalRoot = specHelpers.hash_tree_root(proposal);
+            specHelpers.signed_root(block, "signature"),
+            block.getSignature());
+    Hash32 proposalRoot = specHelpers.signed_root(proposal, "signature");
     Bytes8 domain = specHelpers.get_domain(state.getForkData(),
         specHelpers.get_current_epoch(state), PROPOSAL);
     return signer.sign(proposalRoot, domain);

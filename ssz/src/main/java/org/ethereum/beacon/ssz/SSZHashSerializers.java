@@ -1,11 +1,17 @@
 package org.ethereum.beacon.ssz;
 
-import java.util.function.Function;
 import org.ethereum.beacon.ssz.annotation.SSZ;
+import org.ethereum.beacon.ssz.type.BooleanPrimitive;
 import org.ethereum.beacon.ssz.type.BytesCodec;
+import org.ethereum.beacon.ssz.type.BytesPrimitive;
 import org.ethereum.beacon.ssz.type.HashCodec;
+import org.ethereum.beacon.ssz.type.SSZCodec;
+import org.ethereum.beacon.ssz.type.StringPrimitive;
 import org.ethereum.beacon.ssz.type.UIntCodec;
+import org.ethereum.beacon.ssz.type.UIntPrimitive;
 import tech.pegasys.artemis.util.bytes.BytesValue;
+
+import java.util.function.Function;
 
 /**
  * SSZ Hashing helper made according to the following specs: <a
@@ -27,25 +33,23 @@ public abstract class SSZHashSerializers {
    *     picked by returned serializer.
    * @return serializer instance.
    */
-  public static SSZSerializer createWithBeaconChainTypes(
+  public static SSZHashSerializer createWithBeaconChainTypes(
       Function<BytesValue, ? extends BytesValue> hashFunction, boolean explicitFieldAnnotation) {
     SSZCodecHasher hashCodecResolver = SSZCodecHasher.createWithHashFunction(hashFunction);
-    SSZSerializerBuilder builder =
-        new SSZSerializerBuilder()
-            .withSSZSchemeBuilder(new SSZAnnotationSchemeBuilder(explicitFieldAnnotation))
-            .withDefaultSSZModelFactory()
-            .withSSZCodecResolver(hashCodecResolver)
-            .addPrimitivesCodecs()
-            .addCodec(new UIntCodec())
-            .addCodec(new HashCodec())
-            .addCodec(new BytesCodec());
+    registerCodec(hashCodecResolver, new UIntPrimitive());
+    registerCodec(hashCodecResolver, new BytesPrimitive());
+    registerCodec(hashCodecResolver, new BooleanPrimitive());
+    registerCodec(hashCodecResolver, new StringPrimitive());
+    registerCodec(hashCodecResolver, new UIntCodec());
+    registerCodec(hashCodecResolver, new HashCodec());
+    registerCodec(hashCodecResolver, new BytesCodec());
+    SSZSchemeBuilder schemeBuilder = new SSZAnnotationSchemeBuilder(explicitFieldAnnotation);
 
-    return builder.buildCustom(
-        objects -> {
-          SSZSchemeBuilder schemeBuilder = objects.getValue0();
-          SSZCodecResolver codecResolver = objects.getValue1();
-          SSZModelFactory modelFactory = objects.getValue2();
-          return new SSZHashSerializer(schemeBuilder, codecResolver, modelFactory);
-        });
+    return new SSZHashSerializer(schemeBuilder, hashCodecResolver);
+  }
+
+  private static SSZCodecHasher registerCodec(SSZCodecHasher codecResolver, SSZCodec codec) {
+    codecResolver.registerCodec(codec.getSupportedClasses(), codec.getSupportedSSZTypes(), codec);
+    return codecResolver;
   }
 }
