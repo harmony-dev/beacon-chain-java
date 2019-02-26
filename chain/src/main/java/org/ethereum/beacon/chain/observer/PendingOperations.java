@@ -15,13 +15,13 @@ public interface PendingOperations {
 
   List<Attestation> getAttestations();
 
-  Optional<Attestation> findAttestation(BLSPubkey pubKey);
+  Optional<Attestation> getLatestAttestation(BLSPubkey pubKey);
 
   List<ProposerSlashing> peekProposerSlashings(int maxCount);
 
   List<AttesterSlashing> peekAttesterSlashings(int maxCount);
 
-  List<Attestation> peekAggregatedAttestations(int maxCount, SlotNumber maxSlot);
+  List<Attestation> peekAggregatedAttestations(int maxCount, SlotNumber minSlot, SlotNumber maxSlot);
 
   List<Exit> peekExits(int maxCount);
 

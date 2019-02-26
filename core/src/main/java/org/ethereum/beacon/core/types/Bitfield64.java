@@ -25,4 +25,9 @@ public class Bitfield64 extends UInt64 {
   public Bitfield64 or(long uint) {
     return new Bitfield64(super.or(UInt64.valueOf(uint)));
   }
+
+  @Override
+  public String toString() {
+    return "0b" + Long.toBinaryString(getValue());
+  }
 }

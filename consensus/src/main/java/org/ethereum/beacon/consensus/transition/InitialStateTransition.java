@@ -3,8 +3,11 @@ package org.ethereum.beacon.consensus.transition;
 import static java.util.Collections.nCopies;
 
 import java.util.List;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.consensus.BlockTransition;
 import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.transition.BeaconStateEx.TransitionType;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
@@ -35,6 +38,7 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
  *     startup in the spec</a>
  */
 public class InitialStateTransition implements BlockTransition<BeaconStateEx> {
+  private static final Logger logger = LogManager.getLogger(InitialStateTransition.class);
 
   private final DepositContract.ChainStart depositContractStart;
   private final ChainSpec chainSpec;
@@ -141,6 +145,13 @@ public class InitialStateTransition implements BlockTransition<BeaconStateEx> {
 
     BeaconState validatorsState = initialState.createImmutable();
     BeaconBlock genesisBlock = block.withStateRoot(specHelpers.hash_tree_root(validatorsState));
-    return new BeaconStateEx(validatorsState, specHelpers.hash_tree_root(genesisBlock));
+
+    BeaconStateEx ret = new BeaconStateEx(
+        validatorsState, specHelpers.hash_tree_root(genesisBlock), TransitionType.INITIAL);
+
+    logger.debug(() -> "Slot transition result state: (" +
+        specHelpers.hash_tree_root(ret.getCanonicalState()).toStringShort() + ") " + ret.toString(chainSpec));
+
+    return ret;
   }
 }

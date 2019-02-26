@@ -15,6 +15,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.StateTransition;
+import org.ethereum.beacon.consensus.transition.BeaconStateEx.TransitionType;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.spec.ChainSpec;
@@ -52,7 +53,10 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
 
   @Override
   public BeaconStateEx apply(BeaconStateEx stateEx) {
-    logger.debug(() -> "Applying epoch transition to state: " + stateEx.toString(specConst));
+    logger.debug(() -> "Applying epoch transition to state: (" +
+        spec.hash_tree_root(stateEx.getCanonicalState()).toStringShort() + ") " + stateEx.toString(specConst));
+
+    TransitionType.EPOCH.checkCanBeAppliedAfter(stateEx.getLastTransition());
 
     BeaconState origState = stateEx.getCanonicalState();
     MutableBeaconState state = origState.createMutableCopy();
@@ -796,7 +800,7 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
     // Set state.previous_epoch_start_shard = state.current_epoch_start_shard.
     state.setPreviousEpochStartShard(state.getCurrentEpochStartShard());
     // Set state.previous_epoch_seed = state.current_epoch_seed.
-    state.setPreviousEpochSeed(state.getPreviousEpochSeed());
+    state.setPreviousEpochSeed(state.getCurrentEpochSeed());
 
     /*
       If the following are satisfied:
@@ -877,6 +881,12 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
     state.getLatestAttestations().remove(
         a -> spec.slot_to_epoch(a.getData().getSlot()).less(current_epoch));
 
-    return new BeaconStateEx(state.createImmutable(), stateEx.getLatestChainBlockHash());
+    BeaconStateEx ret = new BeaconStateEx(state.createImmutable(),
+        stateEx.getLatestChainBlockHash(), TransitionType.EPOCH);
+
+    logger.debug(() -> "Epoch transition result state: (" +
+        spec.hash_tree_root(ret.getCanonicalState()).toStringShort() + ") " + ret.toString(specConst));
+
+    return ret;
   }
 }

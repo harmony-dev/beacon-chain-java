@@ -27,6 +27,7 @@ import reactor.core.publisher.ReplayProcessor;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
 public class DefaultBeaconChain implements MutableBeaconChain {
+  private static final Logger logger = LogManager.getLogger(DefaultBeaconChain.class);
 
   private static final Logger logger = LogManager.getLogger(DefaultBeaconChain.class);
 
@@ -123,27 +124,32 @@ public class DefaultBeaconChain implements MutableBeaconChain {
 
     BeaconStateEx parentState = pullParentState(block);
 
-    BeaconStateEx preBlockState = applyEmptySlotTransitions(parentState, block);
+    BeaconStateEx preBlockState = applyEmptySlotTransitionsTillBlock(parentState, block);
     VerificationResult blockVerification =
         blockVerifier.verify(block, preBlockState.getCanonicalState());
     if (!blockVerification.isPassed()) {
+      logger.warn("Block verification failed: " + blockVerification + ": " + block.toString(specHelpers.getChainSpec(), parentState.getCanonicalState().getGenesisTime(), specHelpers::hash_tree_root));
       return false;
     }
 
     BeaconStateEx postBlockState = perBlockTransition.apply(preBlockState, block);
+    BeaconStateEx postEpochState;
     if (specHelpers.is_epoch_end(block.getSlot())) {
-      postBlockState = perEpochTransition.apply(preBlockState);
+      postEpochState = perEpochTransition.apply(postBlockState);
+    } else {
+      postEpochState = postBlockState;
     }
 
     VerificationResult stateVerification =
-        stateVerifier.verify(postBlockState.getCanonicalState(), block);
+        stateVerifier.verify(postEpochState.getCanonicalState(), block);
     if (!stateVerification.isPassed()) {
+      logger.warn("State verification failed: " + stateVerification);
       return false;
     }
 
-    BeaconTuple newTuple = BeaconTuple.of(block, postBlockState);
+    BeaconTuple newTuple = BeaconTuple.of(block, postEpochState);
     tupleStorage.put(newTuple);
-    updateFinality(parentState.getCanonicalState(), postBlockState.getCanonicalState());
+    updateFinality(parentState.getCanonicalState(), postEpochState.getCanonicalState());
 
     chainStorage.commit();
 
@@ -213,14 +219,16 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     return block.getSlot().greater(nextToCurrentSlot);
   }
 
-  private BeaconStateEx applyEmptySlotTransitions(BeaconStateEx source, BeaconBlock block) {
+  private BeaconStateEx applyEmptySlotTransitionsTillBlock(BeaconStateEx source, BeaconBlock block) {
     BeaconStateEx result = source;
-    while (result.getCanonicalState().getSlot().less(block.getSlot())) {
+    for (SlotNumber slot : result.getCanonicalState().getSlot().increment().iterateTo(block.getSlot())) {
       result = perSlotTransition.apply(result);
       if (specHelpers.is_epoch_end(result.getCanonicalState().getSlot())) {
         result = perEpochTransition.apply(result);
       }
     }
+    // the slot at block should be processed before the block
+    result = perSlotTransition.apply(result);
 
     return result;
   }

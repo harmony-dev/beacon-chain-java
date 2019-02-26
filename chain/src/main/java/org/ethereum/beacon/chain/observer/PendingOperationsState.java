@@ -2,7 +2,7 @@ package org.ethereum.beacon.chain.observer;
 
 import static java.util.stream.Collectors.groupingBy;
 
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -22,20 +22,21 @@ import org.ethereum.beacon.crypto.BLS381;
 
 public class PendingOperationsState implements PendingOperations {
 
-  Map<BLSPubkey, Attestation> attestations;
+  Map<BLSPubkey, List<Attestation>> attestations;
 
-  public PendingOperationsState(Map<BLSPubkey, Attestation> attestations) {
+  public PendingOperationsState(Map<BLSPubkey, List<Attestation>> attestations) {
     this.attestations = attestations;
   }
 
   @Override
-  public Optional<Attestation> findAttestation(BLSPubkey pubKey) {
-    return Optional.ofNullable(attestations.get(pubKey));
+  public Optional<Attestation> getLatestAttestation(BLSPubkey pubKey) {
+    return Optional.ofNullable(attestations.get(pubKey))
+        .map(atts -> Collections.max(atts, Comparator.comparing(att -> att.getData().getSlot())));
   }
 
   @Override
   public List<Attestation> getAttestations() {
-    return new ArrayList<>(attestations.values());
+    return attestations.values().stream().flatMap(Collection::stream).collect(Collectors.toList());
   }
 
   @Override
@@ -49,12 +50,18 @@ public class PendingOperationsState implements PendingOperations {
   }
 
   @Override
-  public List<Attestation> peekAggregatedAttestations(int maxCount, SlotNumber maxSlot) {
+  public List<Attestation> peekAggregatedAttestations(
+      int maxCount, SlotNumber minSlotExclusive, SlotNumber maxSlotInclusive) {
+
     Map<AttestationData, List<Attestation>> attestationsBySlot =
-        getAttestations().stream()
-            .filter(attestation -> attestation.getData().getSlot().lessEqual(maxSlot))
+        getAttestations()
+            .stream()
+            .filter(attestation -> attestation.getData().getSlot().greater(minSlotExclusive))
+            .filter(attestation -> attestation.getData().getSlot().lessEqual(maxSlotInclusive))
             .collect(groupingBy(Attestation::getData));
-    return attestationsBySlot.entrySet().stream()
+    return attestationsBySlot
+        .entrySet()
+        .stream()
         .sorted(Comparator.comparing(e -> e.getKey().getSlot()))
         .limit(maxCount)
         .map(entry -> aggregateAttestations(entry.getValue()))

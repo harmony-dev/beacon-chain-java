@@ -35,9 +35,9 @@ public class AttestationVerifier implements OperationVerifier<Attestation> {
   private ChainSpec chainSpec;
   private SpecHelpers specHelpers;
 
-  public AttestationVerifier(ChainSpec chainSpec, SpecHelpers specHelpers) {
-    this.chainSpec = chainSpec;
+  public AttestationVerifier(SpecHelpers specHelpers) {
     this.specHelpers = specHelpers;
+    this.chainSpec = specHelpers.getChainSpec();
   }
 
   @Override
@@ -48,8 +48,13 @@ public class AttestationVerifier implements OperationVerifier<Attestation> {
 
     // Verify that attestation.data.slot <= state.slot - MIN_ATTESTATION_INCLUSION_DELAY
     //    < attestation.data.slot + EPOCH_LENGTH
-    if (!(data.getSlot().lessEqual(state.getSlot().minus(chainSpec.getMinAttestationInclusionDelay()))
-        && state.getSlot().minus(chainSpec.getMinAttestationInclusionDelay()).less(data.getSlot()))) {
+    if (!(data.getSlot()
+            .lessEqual(state.getSlot().minus(chainSpec.getMinAttestationInclusionDelay()))
+        && state
+            .getSlot()
+            .minus(chainSpec.getMinAttestationInclusionDelay())
+            .less(data.getSlot().plus(chainSpec.getEpochLength())))) {
+
       return failedResult(
           "MIN_ATTESTATION_INCLUSION_DELAY violated, inclusion slot starts from %s but got %s",
           data.getSlot().plus(chainSpec.getMinAttestationInclusionDelay()), state.getSlot());
@@ -57,10 +62,10 @@ public class AttestationVerifier implements OperationVerifier<Attestation> {
 
     // Verify that attestation.data.justified_epoch is equal to
     // state.justified_epoch
-    // if attestation.data.slot >= get_epoch_start_slot(get_current_epoch(state))
-    // else state.previous_justified_epoch
+    // if slot_to_epoch(attestation.data.slot + 1) >= get_current_epoch(state)
+    // else state.previous_justified_epoch.
     if (!data.getJustifiedEpoch().equals(
-        data.getSlot().greaterEqual(specHelpers.get_epoch_start_slot(specHelpers.get_current_epoch(state))) ?
+        specHelpers.slot_to_epoch(data.getSlot().increment()).greaterEqual(specHelpers.get_current_epoch(state)) ?
         state.getJustifiedEpoch() : state.getPreviousJustifiedEpoch())) {
       return failedResult(
           "Attestation.data.justified_epoch is invalid");

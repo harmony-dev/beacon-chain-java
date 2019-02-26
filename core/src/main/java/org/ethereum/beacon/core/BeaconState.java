@@ -1,5 +1,6 @@
 package org.ethereum.beacon.core;
 
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.BeaconStateImpl;
@@ -132,12 +133,18 @@ public interface BeaconState {
         + ", just/final epoch: " + getJustifiedEpoch().toString(spec) + "/" + getFinalizedEpoch().toString(spec);
     if (spec != null) {
       ret += ", latestBlocks=[...";
-      for (SlotNumber slot : getSlot().minus(2).iterateTo(getSlot().increment())) {
+      for (SlotNumber slot : getSlot().minus(3).iterateTo(getSlot())) {
         Hash32 blockRoot = getLatestBlockRoots().get(slot.modulo(spec.getLatestBlockRootsLength()));
         ret += ", " + blockRoot.toStringShort();
       }
       ret += "]";
+
+      ret += ", attest:["
+          + getLatestAttestations().stream().map(ar -> ar.toStringShort(spec)).collect(Collectors.joining(", "))
+          + "]";
     }
+    ret += "]";
+
     return ret;
   }
 }
