@@ -800,7 +800,7 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
     // Set state.previous_epoch_start_shard = state.current_epoch_start_shard.
     state.setPreviousEpochStartShard(state.getCurrentEpochStartShard());
     // Set state.previous_epoch_seed = state.current_epoch_seed.
-    state.setPreviousEpochSeed(state.getPreviousEpochSeed());
+    state.setPreviousEpochSeed(state.getCurrentEpochSeed());
 
     /*
       If the following are satisfied:
