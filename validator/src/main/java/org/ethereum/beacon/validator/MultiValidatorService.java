@@ -102,7 +102,7 @@ public class MultiValidatorService implements ValidatorService {
             .name("BeaconChainValidator.attestation");
 
     executor = this.schedulers.newSingleThreadDaemon("validator-service");
-    initExecutor = new LatestExecutor<>(schedulers.cpuHeavy(), this::initFromLatestBeaconState);
+    initExecutor = new LatestExecutor<>(schedulers.blocking(), this::initFromLatestBeaconState);
   }
 
   @Override
