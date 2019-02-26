@@ -3,13 +3,16 @@ package org.ethereum.beacon;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.storage.impl.MemBeaconChainStorageFactory;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.TestUtils;
@@ -19,6 +22,7 @@ import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.PendingAttestationRecord;
+import org.ethereum.beacon.core.state.ShardCommittee;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Bitfield;
@@ -220,10 +224,12 @@ public class LocalNetTest {
                     System.err.println("Unknown attestation: " + att);
                   }
                 }
-                if (!blockAttestations.add(att)) {
+                if (allBlockAttestations.contains(att)) {
                   System.err.println("Duplicate block attestation: " + att);
+                } else {
+                  blockAttestations.add(att);
+                  allBlockAttestations.add(att);
                 }
-                allBlockAttestations.add(att);
         }));
     Flux.from(peers.get(0).observableStateProcessor.getObservableStateStream())
         .subscribe(state -> {
@@ -238,6 +244,26 @@ public class LocalNetTest {
               });
           curSlot.set(state.getLatestSlotState().getSlot());
         });
+
+    Map<SlotNumber, ObservableBeaconState> slotStates = new HashMap<>();
+    SpecHelpers specHelpers = peers.get(0).specHelpers;
+    Flux.from(peers.get(0).observableStateProcessor.getObservableStateStream())
+        .subscribe((ObservableBeaconState state) -> {
+
+          SlotNumber slot = state.getLatestSlotState().getSlot();
+          slotStates.put(slot, state);
+          if (slotStates.size() > epochLength) {
+            SlotNumber oldSlot = slot.minus(epochLength);
+            List<ShardCommittee> committees1 = specHelpers
+                .get_crosslink_committees_at_slot(slotStates.get(oldSlot).getLatestSlotState(), oldSlot);
+            List<ShardCommittee> committees2 = specHelpers
+                .get_crosslink_committees_at_slot(state.getLatestSlotState(), oldSlot);
+            if (!committees1.equals(committees2)) {
+              System.err.println("##### Committees differ!!!");
+            }
+          }
+        });
+
 
     while (true) {
       System.out.println("===============================");
