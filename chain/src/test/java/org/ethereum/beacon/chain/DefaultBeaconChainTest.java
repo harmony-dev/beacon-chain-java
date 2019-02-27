@@ -5,10 +5,11 @@ import java.util.stream.IntStream;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.chain.storage.BeaconChainStorageFactory;
 import org.ethereum.beacon.chain.storage.BeaconTuple;
+import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.BlockTransition;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.StateTransition;
-import org.ethereum.beacon.consensus.transition.BeaconStateEx;
+import org.ethereum.beacon.consensus.transition.BeaconStateExImpl;
 import org.ethereum.beacon.consensus.transition.InitialStateTransition;
 import org.ethereum.beacon.consensus.util.StateTransitionTestUtil;
 import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
@@ -22,7 +23,6 @@ import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.db.Database;
 import org.ethereum.beacon.pow.DepositContract.ChainStart;
-import org.ethereum.beacon.schedulers.DefaultSchedulers;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.junit.Assert;
 import org.junit.Test;
@@ -73,8 +73,7 @@ public class DefaultBeaconChainTest {
     BeaconState state =
         perSlotTransition
             .apply(
-                new BeaconStateEx(parent.getState(), specHelpers.hash_tree_root(parent.getBlock())))
-            .getCanonicalState();
+                new BeaconStateExImpl(parent.getState(), specHelpers.hash_tree_root(parent.getBlock())));
 
     return block.withStateRoot(specHelpers.hash_tree_root(state));
   }

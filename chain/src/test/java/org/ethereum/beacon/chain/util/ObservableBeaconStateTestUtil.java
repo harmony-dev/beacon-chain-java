@@ -48,7 +48,7 @@ public class ObservableBeaconStateTestUtil {
             Collections.emptyList());
     InitialStateTransition stateTransition = new InitialStateTransition(chainStart, specHelpers);
 
-    BeaconState state = stateTransition.apply(genesis).getCanonicalState();
+    BeaconState state = stateTransition.apply(genesis);
     return new ObservableBeaconState(genesis, state, operations);
   }
 }

@@ -1,6 +1,6 @@
 package org.ethereum.beacon.chain.storage;
 
-import org.ethereum.beacon.consensus.transition.BeaconStateEx;
+import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 
@@ -19,7 +19,7 @@ public class BeaconTuple {
   }
 
   public static BeaconTuple of(BeaconBlock block, BeaconStateEx state) {
-    return new BeaconTuple(block, state.getCanonicalState());
+    return new BeaconTuple(block, state);
   }
 
   public BeaconBlock getBlock() {

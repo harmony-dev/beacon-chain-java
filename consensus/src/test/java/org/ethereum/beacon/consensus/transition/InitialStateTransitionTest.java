@@ -31,7 +31,7 @@ public class InitialStateTransitionTest {
 
     BeaconState initialState =
         initialStateTransition.apply(
-            BeaconBlocks.createGenesis(ChainSpec.DEFAULT)).getCanonicalState();
+            BeaconBlocks.createGenesis(ChainSpec.DEFAULT));
 
     assertThat(initialState.getGenesisTime()).isEqualTo(genesisTime);
     assertThat(initialState.getLatestEth1Data()).isEqualTo(eth1Data);
