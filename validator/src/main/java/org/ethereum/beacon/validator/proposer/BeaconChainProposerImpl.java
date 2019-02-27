@@ -73,7 +73,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
   @Override
   public BeaconBlock propose(
       ObservableBeaconState observableState, MessageSigner<BLSSignature> signer) {
-    BeaconStateEx state = observableState.getLatestSlotStateWithoutEpoch();
+    BeaconStateEx state = observableState.getLatestSlotState();
 
     Hash32 parentRoot = specHelpers.get_block_root(state, state.getSlot().decrement());
     BLSSignature randaoReveal = getRandaoReveal(state, signer);

@@ -37,7 +37,6 @@ import tech.pegasys.artemis.util.collections.ReadList;
 
 public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   private final BeaconTupleStorage tupleStorage;
-  private ObservableBeaconState observableState;
   private BeaconChainHead head;
   private final HeadFunction headFunction;
 
@@ -224,13 +223,16 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
 
     BeaconStateEx originalState = latestState;
     BeaconStateEx stateWithoutEpoch = applySlotTransitionsWithoutEpoch(originalState, newSlot);
-    BeaconStateEx newBeaconState = applyEpochTransitionIfNeeded(originalState, stateWithoutEpoch);
-    latestState = newBeaconState;
-    ObservableBeaconState newObservableState = new ObservableBeaconState(
-            head.getBlock(), newBeaconState, stateWithoutEpoch, pendingOperations);
-    if (!newObservableState.equals(observableState)) {
-      this.observableState = newObservableState;
-      observableStateSink.onNext(newObservableState);
+
+    latestState = stateWithoutEpoch;
+    observableStateSink.onNext(new ObservableBeaconState(
+        head.getBlock(), stateWithoutEpoch, pendingOperations));
+
+    BeaconStateEx epochState = applyEpochTransitionIfNeeded(originalState, stateWithoutEpoch);
+    if (epochState != null) {
+      latestState = epochState;
+      observableStateSink.onNext(new ObservableBeaconState(
+          head.getBlock(), epochState, pendingOperations));
     }
   }
 
@@ -241,7 +243,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
         && originalState.getSlot().less(stateWithoutEpoch.getSlot())) {
       return perEpochTransition.apply(stateWithoutEpoch);
     } else {
-      return stateWithoutEpoch;
+      return null;
     }
   }
 

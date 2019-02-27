@@ -11,23 +11,12 @@ import org.ethereum.beacon.core.BeaconState;
 public class ObservableBeaconState {
   private final BeaconBlock head;
   private final BeaconStateEx latestSlotState;
-  private final BeaconStateEx latestSlotStateWithoutEpoch;
   private final PendingOperations pendingOperations;
-
-  public ObservableBeaconState(BeaconBlock head, BeaconStateEx latestSlotState,
-      BeaconStateEx latestSlotStateWithoutEpoch,
-      PendingOperations pendingOperations) {
-    this.head = head;
-    this.latestSlotState = latestSlotState;
-    this.latestSlotStateWithoutEpoch = latestSlotStateWithoutEpoch;
-    this.pendingOperations = pendingOperations;
-  }
 
   public ObservableBeaconState(
       BeaconBlock head, BeaconStateEx latestSlotState, PendingOperations pendingOperations) {
     this.head = head;
     this.latestSlotState = latestSlotState;
-    this.latestSlotStateWithoutEpoch = latestSlotState;
     this.pendingOperations = pendingOperations;
   }
 
@@ -37,10 +26,6 @@ public class ObservableBeaconState {
 
   public BeaconStateEx getLatestSlotState() {
     return latestSlotState;
-  }
-
-  public BeaconStateEx getLatestSlotStateWithoutEpoch() {
-    return latestSlotStateWithoutEpoch;
   }
 
   public PendingOperations getPendingOperations() {
