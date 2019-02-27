@@ -21,6 +21,7 @@ public interface MiscParameters {
   ShardNumber BEACON_CHAIN_SHARD_NUMBER = ShardNumber.of(UInt64.MAX_VALUE); // (1 << 64) - 1
   UInt64 MAX_INDICES_PER_SLASHABLE_VOTE = UInt64.valueOf(1 << 12);
   UInt64 MAX_WITHDRAWALS_PER_EPOCH = UInt64.valueOf(1 << 2); // 4
+  int SHUFFLE_ROUND_COUNT = 90;
 
   /* Values defined in the spec. */
 
@@ -52,4 +53,7 @@ public interface MiscParameters {
     return MAX_WITHDRAWALS_PER_EPOCH;
   }
 
+  default int getShuffleRoundCount() {
+    return SHUFFLE_ROUND_COUNT;
+  }
 }

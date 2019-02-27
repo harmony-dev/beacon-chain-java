@@ -34,9 +34,9 @@ import org.ethereum.beacon.crypto.MessageParameters;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes3;
 import tech.pegasys.artemis.util.bytes.Bytes32;
-import tech.pegasys.artemis.util.bytes.Bytes32s;
 import tech.pegasys.artemis.util.bytes.Bytes8;
 import tech.pegasys.artemis.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.bytes.BytesValues;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
 import tech.pegasys.artemis.util.uint.UInt64s;
@@ -125,6 +125,8 @@ public class SpecHelpers {
                 .dividedBy(spec.getTargetCommitteeSize())
         )).times(spec.getEpochLength()).intValue();
   }
+
+
 
   /*
     def get_previous_epoch_committee_count(state: BeaconState) -> int:
@@ -448,6 +450,60 @@ public class SpecHelpers {
   }
 
   /*
+  def get_permuted_index(index: int, list_size: int, seed: Bytes32) -> int:
+    """
+    Return `p(index)` in a pseudorandom permutation `p` of `0...list_size-1` with ``seed`` as entropy.
+
+    Utilizes 'swap or not' shuffling found in
+    https://link.springer.com/content/pdf/10.1007%2F978-3-642-32009-5_1.pdf
+    See the 'generalized domain' algorithm on page 3.
+    """
+    assert index < list_size
+    assert list_size <= 2**40
+
+    for round in range(SHUFFLE_ROUND_COUNT):
+        pivot = bytes_to_int(hash(seed + int_to_bytes1(round))[0:8]) % list_size
+        flip = (pivot - index) % list_size
+        position = max(index, flip)
+        source = hash(seed + int_to_bytes1(round) + int_to_bytes4(position // 256))
+        byte = source[(position % 256) // 8]
+        bit = (byte >> (position % 8)) % 2
+        index = flip if bit else index
+
+    return index
+   */
+  public UInt64 get_permuted_index(UInt64 index, UInt64 listSize, Bytes32 seed) {
+    assertTrue(index.compareTo(listSize) < 0);
+    assertTrue(listSize.compareTo(UInt64.valueOf(1L << 40)) <= 0);
+
+    for (int round = 0; round < spec.getShuffleRoundCount(); round++) {
+      Bytes8 pivotBytes = Bytes8.wrap(hash(seed.concat(int_to_bytes1(round))), 0);
+      UInt64 pivot = bytes_to_int(pivotBytes).modulo(listSize);
+      UInt64 flip = pivot.minus(index).modulo(listSize);
+      UInt64 position = UInt64s.max(index, flip);
+      BytesValue positionBytes = int_to_bytes4(position.dividedBy(UInt64.valueOf(256)).getValue());
+      Bytes32 source = hash(seed.concat(int_to_bytes1(round)).concat(positionBytes));
+      byte byt = source.get(position.modulo(256).getIntValue() / 8);
+      byte bit = (byte) ((byt >> (position.modulo(8).getIntValue())) % 2);
+      index = bit > 0 ? flip : index;
+    }
+
+    return index;
+  }
+
+  public UInt64 bytes_to_int(Bytes8 bytes) {
+    return UInt64.fromBytesLittleEndian(bytes);
+  }
+
+  public BytesValue int_to_bytes1(int value) {
+    return BytesValues.ofUnsignedByte(value);
+  }
+
+  public BytesValue int_to_bytes4(long value) {
+    return BytesValues.ofUnsignedInt(value);
+  }
+
+  /*
    def split(values: List[Any], split_count: int) -> List[Any]:
    """
    Splits ``values`` into ``split_count`` pieces.
@@ -468,33 +524,33 @@ public class SpecHelpers {
     return ret;
   }
 
-  //  def get_shuffling(randao_mix: Hash32,
-  //              validators: List[ValidatorRecord],
-  //              slot: int) -> List[List[int]]
-  //  """
-  //  Shuffles ``validators`` into shard committees seeded by ``seed`` and ``slot``.
-  //  Returns a list of ``EPOCH_LENGTH * committees_per_slot`` committees where each
-  //  committee is itself a list of validator indices.
-  //  """
-  public List<List<ValidatorIndex>> get_shuffling(Hash32 _seed,
+  /*
+  def get_shuffling(seed: Bytes32,
+                  validators: List[Validator],
+                  epoch: Epoch) -> List[List[ValidatorIndex]]
+    """
+    Shuffle active validators and split into crosslink committees.
+    Return a list of committees (each a list of validator indices).
+    """
+    # Shuffle active validator indices
+    active_validator_indices = get_active_validator_indices(validators, epoch)
+    length = len(active_validator_indices)
+    shuffled_indices = [active_validator_indices[get_permuted_index(i, length, seed)] for i in range(length)]
+
+    # Split the shuffled active validator indices
+    return split(shuffled_indices, get_epoch_committee_count(length))
+   */
+  public List<List<ValidatorIndex>> get_shuffling(Hash32 seed,
                                ReadList<ValidatorIndex, ValidatorRecord> validators,
                                EpochNumber epoch) {
-
-
-    //      active_validator_indices = get_active_validator_indices(validators, slot)
-    List<ValidatorIndex>  active_validator_indices = get_active_validator_indices(validators, epoch);
-    //      committees_per_epoch = get_epoch_committee_count(len(active_validator_indices))
-    int committees_per_epoch = get_epoch_committee_count(active_validator_indices.size());
-
-    //      # Shuffle
-    //      seed = xor(seed, int_to_bytes32(epoch))
-    Hash32 seed = Hash32.wrap(Bytes32s.xor(_seed, Bytes32.leftPad(epoch.toBytesBigEndian())));
-
-    //  shuffled_active_validator_indices = shuffle(active_validator_indices, seed)
-    List<ValidatorIndex> shuffled_active_validator_indices = shuffle(active_validator_indices, seed);
-    //    # Split the shuffled list into committees_per_epoch pieces
-    //    return split(shuffled_active_validator_indices, committees_per_epoch)
-    return split(shuffled_active_validator_indices, committees_per_epoch);
+    List<ValidatorIndex> active_validator_indices = get_active_validator_indices(validators, epoch);
+    int length = active_validator_indices.size();
+    List<ValidatorIndex> shuffled_indices =
+        IntStream.range(0, length)
+            .mapToObj(i -> get_permuted_index(UInt64.valueOf(i), UInt64.valueOf(length), seed))
+            .map(permutedIndex -> active_validator_indices.get(permutedIndex.getIntValue()))
+            .collect(toList());
+    return split(shuffled_indices, get_epoch_committee_count(length));
   }
 
   /*
