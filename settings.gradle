@@ -1,19 +1,37 @@
 rootProject.name = 'beacon'
+// Chain construction services and helpers
 include 'chain'
+// Spec functions implementation, transitions etc
 include 'consensus'
+// Ethereum 2.0 domain model: data models
 include 'core'
+// Crypto utilities: BLS381-12 and hash
 include 'crypto'
+// DB persistence core interfaces 
 include 'db:core'
+// DB made around EthereumJ client
 include 'db:ethereumj'
+// Configuration parser
 include 'emulator:config'
+// PoW (Proof of Work) interfaces etc
 include 'pow:core'
+// PoW made with EthereumJ
 include 'pow:ethereumj'
+// PoW validator part
 include 'pow:validator'
+// PoW made with web3j (not ready yet)
 include 'pow:web3j'
+// SSZ (Simple serialization)
 include 'ssz'
+// Command line executable clients
 include 'start:cli'
+// Clients helpers
 include 'start:common'
+// Strict types definition
 include 'types'
+// Standalone utils without any relation to Ethereum 2.0
 include 'util'
+// Validator services
 include 'validator'
+// Wire API mock
 include 'wire'

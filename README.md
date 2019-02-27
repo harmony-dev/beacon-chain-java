@@ -5,7 +5,10 @@ Ethereum 2.0 Serenity ~~client~~ emulator. Someday, definitely, it will be a ~~S
 Yes, Ethereum Foundation, community and other interested parties are developing successor of the current [Ethereum network](https://ethereum.org/) without cons :). 
 It starts with [Phase 0](https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md), the simplest one. Phase 1 will be the next and so on.
 
-## How to run it
+## Develop
+If you want to take part in Ethereum 2.0 development and use our code, we split everything into several modules, so anyone could easily take only the needed part. To dig into module goals, check [settings.gradle](settings.gradle). 
+
+## Run
 Install Java 8 or later. There are many guidelines in Internet, even the [official one](https://java.com/en/download/help/download_options.xml), from Oracle. Next, git clone our repo, build `client` module distribution and run emulator:
 ```bash
 git clone https://github.com/harmony-dev/beacon-chain-java.git
