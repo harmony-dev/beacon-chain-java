@@ -77,8 +77,18 @@ public class UInt64 extends Number implements Comparable<UInt64> {
   }
 
   public static UInt64 fromBytesBigEndian(Bytes8 bytes) {
-    ByteBuffer byteBuffer = ByteBuffer.allocate(Long.BYTES).order(ByteOrder.BIG_ENDIAN)
-        .put(bytes.getArrayUnsafe());
+    return fromBytes(bytes, true);
+  }
+
+  public static UInt64 fromBytesLittleEndian(Bytes8 bytes) {
+    return fromBytes(bytes, false);
+  }
+
+  private static UInt64 fromBytes(Bytes8 bytes, boolean bigEndian) {
+    ByteBuffer byteBuffer =
+        ByteBuffer.allocate(Long.BYTES)
+            .order(bigEndian ? ByteOrder.BIG_ENDIAN : ByteOrder.LITTLE_ENDIAN)
+            .put(bytes.getArrayUnsafe());
     byteBuffer.rewind();
     return valueOf(byteBuffer.getLong());
   }
