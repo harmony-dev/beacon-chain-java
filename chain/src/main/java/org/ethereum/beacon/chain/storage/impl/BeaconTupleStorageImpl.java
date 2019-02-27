@@ -7,6 +7,8 @@ import org.ethereum.beacon.chain.storage.BeaconBlockStorage;
 import org.ethereum.beacon.chain.storage.BeaconStateStorage;
 import org.ethereum.beacon.chain.storage.BeaconTuple;
 import org.ethereum.beacon.chain.storage.BeaconTupleStorage;
+import org.ethereum.beacon.consensus.TransitionType;
+import org.ethereum.beacon.consensus.transition.BeaconStateExImpl;
 import org.ethereum.beacon.core.BeaconBlock;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
@@ -29,7 +31,10 @@ public class BeaconTupleStorageImpl implements BeaconTupleStorage {
             block ->
                 stateStorage
                     .get(block.getStateRoot())
-                    .map(state -> BeaconTuple.of(block, state))
+                    .map(
+                        state ->
+                            BeaconTuple.of(
+                                block, new BeaconStateExImpl(state, hash, TransitionType.UNKNOWN)))
                     .orElseThrow(
                         () -> new IllegalStateException("State inconsistency for block " + block)));
   }

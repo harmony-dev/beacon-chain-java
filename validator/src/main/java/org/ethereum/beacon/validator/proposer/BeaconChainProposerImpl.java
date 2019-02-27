@@ -73,7 +73,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
   @Override
   public BeaconBlock propose(
       ObservableBeaconState observableState, MessageSigner<BLSSignature> signer) {
-    BeaconState state = observableState.getLatestSlotStateWithoutEpoch();
+    BeaconStateEx state = observableState.getLatestSlotStateWithoutEpoch();
 
     Hash32 parentRoot = specHelpers.get_block_root(state, state.getSlot().decrement());
     BLSSignature randaoReveal = getRandaoReveal(state, signer);
@@ -93,7 +93,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
 
     // calculate state_root
     BeaconBlock newBlock = builder.build();
-    BeaconState newState = applyStateTransition(state, parentRoot, newBlock);
+    BeaconState newState = applyStateTransition(state, newBlock);
     builder.withStateRoot(specHelpers.hash_tree_root(newState));
 
     // sign off on proposal
@@ -104,8 +104,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
     return builder.build();
   }
 
-  private BeaconState applyStateTransition(BeaconState source, Hash32 parentRoot, BeaconBlock block) {
-    BeaconStateEx sourceEx = new BeaconStateExImpl(source, parentRoot);
+  private BeaconStateEx applyStateTransition(BeaconStateEx sourceEx, BeaconBlock block) {
     BeaconStateEx blockState = perBlockTransition.apply(sourceEx, block);
     if (specHelpers.is_epoch_end(blockState.getSlot())) {
       return perEpochTransition.apply(blockState);

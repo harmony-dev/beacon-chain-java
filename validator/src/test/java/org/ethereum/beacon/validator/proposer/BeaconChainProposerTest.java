@@ -228,7 +228,7 @@ public class BeaconChainProposerTest {
     ObservableBeaconState endOfTheEpoch =
         new ObservableBeaconState(
             initialObservedState.getHead(),
-            modifiedState,
+            new BeaconStateExImpl(modifiedState, Hash32.ZERO),
             initialObservedState.getPendingOperations());
 
     BeaconBlock block = proposer.propose(endOfTheEpoch, signer);

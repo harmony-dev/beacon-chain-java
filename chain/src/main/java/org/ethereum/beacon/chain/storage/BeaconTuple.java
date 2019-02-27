@@ -1,21 +1,18 @@
 package org.ethereum.beacon.chain.storage;
 
 import org.ethereum.beacon.consensus.BeaconStateEx;
+import org.ethereum.beacon.consensus.transition.BeaconStateExImpl;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 
 public class BeaconTuple {
 
   private final BeaconBlock block;
-  private final BeaconState state;
+  private final BeaconStateEx state;
 
-  BeaconTuple(BeaconBlock block, BeaconState state) {
+  BeaconTuple(BeaconBlock block, BeaconStateEx state) {
     this.block = block;
     this.state = state;
-  }
-
-  public static BeaconTuple of(BeaconBlock block, BeaconState state) {
-    return new BeaconTuple(block, state);
   }
 
   public static BeaconTuple of(BeaconBlock block, BeaconStateEx state) {
@@ -26,7 +23,7 @@ public class BeaconTuple {
     return block;
   }
 
-  public BeaconState getState() {
+  public BeaconStateEx getState() {
     return state;
   }
 }

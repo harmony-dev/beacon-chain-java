@@ -190,9 +190,8 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     Optional<BeaconTuple> parent = tupleStorage.get(block.getParentRoot());
     checkArgument(parent.isPresent(), "No parent for block %s", block);
     BeaconTuple parentTuple = parent.get();
-    Hash32 parentHash = specHelpers.hash_tree_root(parentTuple.getBlock());
 
-    return new BeaconStateExImpl(parentTuple.getState(), parentHash);
+    return parentTuple.getState();
   }
 
   private boolean exist(BeaconBlock block) {

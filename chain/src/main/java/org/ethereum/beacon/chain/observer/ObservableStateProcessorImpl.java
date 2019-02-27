@@ -41,7 +41,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   private BeaconChainHead head;
   private final HeadFunction headFunction;
 
-  private BeaconState latestState;
+  private BeaconStateEx latestState;
 
   private final SpecHelpers specHelpers;
   private final ChainSpec chainSpec;
@@ -222,10 +222,9 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     pendingOperationsSink.onNext(pendingOperations);
     updateHead(pendingOperations);
 
-    BeaconState originalState = latestState;
-    BeaconState stateWithoutEpoch = applySlotTransitionsWithoutEpoch(originalState,
-        specHelpers.hash_tree_root(head.getBlock()), newSlot);
-    BeaconState newBeaconState = applyEpochTransitionIfNeeded(originalState, stateWithoutEpoch);
+    BeaconStateEx originalState = latestState;
+    BeaconStateEx stateWithoutEpoch = applySlotTransitionsWithoutEpoch(originalState, newSlot);
+    BeaconStateEx newBeaconState = applyEpochTransitionIfNeeded(originalState, stateWithoutEpoch);
     latestState = newBeaconState;
     ObservableBeaconState newObservableState = new ObservableBeaconState(
             head.getBlock(), newBeaconState, stateWithoutEpoch, pendingOperations);
@@ -235,15 +234,12 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     }
   }
 
-  private BeaconState applyEpochTransitionIfNeeded(BeaconState originalState, BeaconState stateWithoutEpoch) {
+  private BeaconStateEx applyEpochTransitionIfNeeded(
+      BeaconStateEx originalState, BeaconStateEx stateWithoutEpoch) {
+
     if (specHelpers.is_epoch_end(stateWithoutEpoch.getSlot())
         && originalState.getSlot().less(stateWithoutEpoch.getSlot())) {
-      BeaconStateEx stateEx =
-          new BeaconStateExImpl(
-              stateWithoutEpoch,
-              specHelpers.get_block_root(
-                  stateWithoutEpoch, stateWithoutEpoch.getSlot().decrement()));
-      return perEpochTransition.apply(stateEx);
+      return perEpochTransition.apply(stateWithoutEpoch);
     } else {
       return stateWithoutEpoch;
     }
@@ -254,20 +250,19 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
    * doesn't apply EpochTransition for the <code>targetSlot</code>
    *
    * @param source Source state
-   * @param latestChainBlock Latest chain block
    * @return new state, result of applied transition to the latest input state
    */
-  private BeaconState applySlotTransitionsWithoutEpoch(
-      BeaconState source, Hash32 latestChainBlock, SlotNumber targetSlot) {
+  private BeaconStateEx applySlotTransitionsWithoutEpoch(
+      BeaconStateEx source, SlotNumber targetSlot) {
 
-    BeaconStateEx stateEx = new BeaconStateExImpl(source, latestChainBlock);
+    BeaconStateEx state = source;
     for (SlotNumber slot : source.getSlot().increment().iterateTo(targetSlot.increment())) {
-      stateEx = perSlotTransition.apply(stateEx);
+      state = perSlotTransition.apply(state);
       if (specHelpers.is_epoch_end(slot) && !slot.equals(targetSlot)) {
-        stateEx = perEpochTransition.apply(stateEx);
+        state = perEpochTransition.apply(state);
       }
     }
-    return stateEx;
+    return state;
   }
 
   private void updateHead(PendingOperations pendingOperations) {
