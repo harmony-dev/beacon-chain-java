@@ -29,8 +29,6 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 public class DefaultBeaconChain implements MutableBeaconChain {
   private static final Logger logger = LogManager.getLogger(DefaultBeaconChain.class);
 
-  private static final Logger logger = LogManager.getLogger(DefaultBeaconChain.class);
-
   private final SpecHelpers specHelpers;
   private final BlockTransition<BeaconStateEx> initialTransition;
   private final StateTransition<BeaconStateEx> perSlotTransition;
