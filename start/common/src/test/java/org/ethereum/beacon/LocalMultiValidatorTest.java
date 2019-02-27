@@ -105,7 +105,7 @@ public class LocalMultiValidatorTest {
         };
 
     Pair<List<Deposit>, List<KeyPair>> anyDeposits = TestUtils.getAnyDeposits(
-        SpecHelpers.createWithSSZHasher(chainSpec, () -> 0L), validatorCount);
+        rnd, SpecHelpers.createWithSSZHasher(chainSpec, () -> 0L), validatorCount);
     List<Deposit> deposits = anyDeposits.getValue0();
 
     LocalWireHub localWireHub = new LocalWireHub(s -> {});
