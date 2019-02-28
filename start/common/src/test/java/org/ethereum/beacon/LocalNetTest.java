@@ -1,8 +1,11 @@
 package org.ethereum.beacon;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -92,18 +95,25 @@ public class LocalNetTest {
   }
 
   static class MDCControlledSchedulers {
+    private DateFormat localTimeFormat = new SimpleDateFormat("HH:mm:ss.SSS");
     public String mdcKey = "validatorIndex";
     private int counter = 0;
     private List<ControlledSchedulers> schedulersList = new ArrayList<>();
     private long currentTime;
 
     public ControlledSchedulers createNew() {
-      LoggerMDCExecutor mdcExecutor = new LoggerMDCExecutor(mdcKey, "" + counter);
-      counter++;
-      ControlledSchedulers newSched = Schedulers.createControlled(() -> mdcExecutor);
-      newSched.setCurrentTime(currentTime);
-      schedulersList.add(newSched);
-      return newSched;
+      int counterF = this.counter;
+      ControlledSchedulers[] newSched = new ControlledSchedulers[1];
+      LoggerMDCExecutor mdcExecutor = new LoggerMDCExecutor()
+              .add("validatorTime", () -> localTimeFormat.format(new Date(newSched[0].getCurrentTime())))
+              .add(mdcKey, () -> "" + counterF);
+
+      newSched[0] = Schedulers.createControlled(() -> mdcExecutor);
+      newSched[0].setCurrentTime(currentTime);
+      schedulersList.add(newSched[0]);
+
+      this.counter++;
+      return newSched[0];
     }
 
     public void setCurrentTime(long time) {

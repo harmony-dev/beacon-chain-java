@@ -8,7 +8,7 @@
         <Route>
           <File name="dummy" fileName="logs/validator-${ctx:validatorIndex:-X}.log" append="false">
             <PatternLayout>
-              <Pattern>%d{HH:mm:ss.SSS} %p %c{1.} [%t] %m%n</Pattern>
+              <Pattern>%d{HH:mm:ss.SSS} [%X{validatorTime}] %p %c{1.} [%t] %m%n</Pattern>
             </PatternLayout>
           </File>
         </Route>
@@ -17,7 +17,7 @@
 
     <File name="allFile" fileName="logs/all.log" append="false">
       <PatternLayout>
-        <Pattern>%d{HH:mm:ss.SSS} %p %c{1.} [%t] #%X{validatorIndex} %m%n</Pattern>
+        <Pattern>%d{HH:mm:ss.SSS} [%X{validatorTime}] %p %c{1.} [%t] #%X{validatorIndex} %m%n</Pattern>
       </PatternLayout>
     </File>
 
