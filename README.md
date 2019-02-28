@@ -1,9 +1,9 @@
 # Beacon Chain Java
-Ethereum 2.0 Serenity ~~client~~ emulator. Someday, definitely, it will be a ~~Shasper~~ Serenity client. We are working to get there. Currently there is no p2p and we don't support other clients.
+Ethereum 2.0 Beacon chain client. Someday, definitely, it will be a fully featured Serenity client. We are working to get there. Currently there is no p2p and, hence, there is no cross client communication.
  
 ## Ethereum 2.0?
-Yes, Ethereum Foundation, community and other interested parties are developing successor of the current [Ethereum network](https://ethereum.org/) without cons :). 
-It starts with [Phase 0](https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md), the simplest one. Phase 1 will be the next and so on.
+Yes, Ethereum Foundation, community and other interested parties are developing successor of [Ethereum](https://ethereum.org/) without cons :).
+New blockchain starts from [Phase 0](https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md) also known as Beacon chain, a core of Ethereum 2.0 blockchain. Phase 1 will be the next one and so on.
 
 ## Develop
 If you want to take part in Ethereum 2.0 development and use our code, we split everything into several modules, so anyone could easily take only the needed part. To dig into module goals, check [settings.gradle](settings.gradle). 
@@ -14,28 +14,28 @@ You can build one module jar with gradle `assemble` task executed on desired mod
 cp crypto/build/libs/beacon-crypto-0.1.0.jar <jar-destination>
 ``` 
 
-## Run
-Install Java 8 or later. There are many guidelines in Internet, even the [official one](https://java.com/en/download/help/download_options.xml), from Oracle. Next, git clone our repo, build `client` module distribution and run emulator:
+## Simulator
+Despite lacking a network stack there is already something that everybody can play with, a standalone Beacon chain simulator.
+
+To run an simulator you need to install Java 8 or later. There are many guidelines in Internet, even the [official one](https://java.com/en/download/help/download_options.xml), from Oracle. Next, git clone our repo, build `client` module distribution and run simulator:
 ```bash
 git clone https://github.com/harmony-dev/beacon-chain-java.git
 cd beacon-chain-java
 ./gradlew :start:cli:distZip
 ``` 
-Cool, we made distribution tied to our system, it's in the `start/cli/build/distributions/` folder and looks like `cli-0.1.0.zip`. Unzip it, enter the `bin` folder and run emulator:
+Cool, we made distribution tied to our system, it's in the `start/cli/build/distributions/` folder and looks like `cli-0.1.0.zip`. Unzip it, enter the `bin` folder and run simulator:
 ```bash
 cd start/cli/build/distributions/
 unzip cli-0.1.0.zip
 cd cli-0.1.0/bin
-./emulator
+./simulator
 ``` 
-and you will see help for `emulator` launcher. Preceding commands will work for OS X/Linux, in Windows you will need to  use `.bat` commands where its needed.
+and you will see help for `simulator` launcher. Preceding commands will work for OS X/Linux, in Windows you will need to  use `.bat` commands where its needed.
 
-Let's run emulator with default settings and 4 peers:
+Let's run simulator with default settings and 4 peers:
 ```bash
-./emulator run 4
+./simulator run 4
 ```
-#### Latest release
-Release [0.1](#tag01) replicates Phase 0 specification of Ethereum 2.0 release [v0.4.0](https://github.com/ethereum/eth2.0-specs/releases/tag/0.4.0)
 
 ## Contribution guideline
 Thank you for joining our efforts to drive Ethereum forward! 
@@ -48,3 +48,8 @@ We are not very strict on requirements but your code should help us to reach our
 
 ## Licensing
 This project is licensed under Apache 2.0 license. You could use it for any commercial, private or open-source project.
+
+## Donations
+If you like the project, we could use your donations to fund the development:
+
+`0xF5eFA576ee17A381d798299d10eD397c4dce9BdD`
