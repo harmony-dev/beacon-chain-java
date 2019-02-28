@@ -31,7 +31,7 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
  */
 public class SSZCodecHasher implements SSZCodecResolver {
 
-  private static final int SSZ_CHUNK_SIZE = 32;
+  static final int SSZ_CHUNK_SIZE = 32;
 
   private static final Bytes EMPTY_CHUNK = Bytes.of(new byte[SSZ_CHUNK_SIZE]);
 
@@ -63,7 +63,7 @@ public class SSZCodecHasher implements SSZCodecResolver {
           ByteArrayOutputStream tmp = new ByteArrayOutputStream();
           encoder.encode(value, field, tmp);
           try {
-            res.write(hash_tree_root_element(Bytes.wrap(tmp.toByteArray())).toArrayUnsafe());
+            res.write(hash_tree_root_internal(Bytes.wrap(tmp.toByteArray())).toArrayUnsafe());
           } catch (IOException e) {
             throw new SSZException("Failed to write data length to stream", e);
           }
@@ -235,7 +235,7 @@ public class SSZCodecHasher implements SSZCodecResolver {
    * @param lst
    * @return
    */
-  private Bytes merkle_hash(Bytes[] lst) {
+  Bytes merkle_hash(Bytes[] lst) {
     // Store length of list (to compensate for non-bijectiveness of padding)
     Bytes dataLen = SSZ.encodeInt32(lst.length);
 
@@ -294,19 +294,24 @@ public class SSZCodecHasher implements SSZCodecResolver {
     return 0;
   }
 
-  private Bytes zpad(Bytes input, int length) {
+  Bytes zpad(Bytes input, int length) {
+    try {
     return Bytes.concatenate(input, Bytes.wrap(new byte[length - input.size()]));
+    } catch (Exception ex) {
+      System.out.println("");
+      return null;
+    }
   }
 
   private Bytes hash_tree_root_list(Bytes[] lst) {
     Bytes[] res = new Bytes[lst.length];
     for (int i = 0; i < lst.length; ++i) {
-      res[i] = hash_tree_root_element(lst[i]);
+      res[i] = hash_tree_root_internal(lst[i]);
     }
     return merkle_hash(res);
   }
 
-  private Bytes hash_tree_root_element(Bytes el) {
+  Bytes hash_tree_root_internal(Bytes el) {
     if (el.size() <= SSZ_CHUNK_SIZE) {
       return el;
     } else {

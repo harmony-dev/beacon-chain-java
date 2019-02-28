@@ -1,5 +1,6 @@
 package org.ethereum.beacon.ssz;
 
+import net.consensys.cava.bytes.Bytes;
 import org.javatuples.Triplet;
 
 import javax.annotation.Nullable;
@@ -8,6 +9,7 @@ import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.io.ByteArrayOutputStream;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -103,9 +105,12 @@ public class SSZHashSerializer implements BytesHasher, BytesSerializer {
             String.format("Field %s doesn't exist in object %s", truncateField, input));
       }
     }
-    ByteArrayOutputStream res = new ByteArrayOutputStream();
+
+    SSZCodecHasher codecHasher = (SSZCodecHasher) codecResolver;
+    List<Bytes> containerValues = new ArrayList<>();
     for (SSZSchemeBuilder.SSZScheme.SSZField field : scheme.fields) {
       Object value;
+      ByteArrayOutputStream res = new ByteArrayOutputStream();
       Method getter = getters.get(field.getter);
       try {
         if (getter != null) { // We have getter
@@ -123,9 +128,13 @@ public class SSZHashSerializer implements BytesHasher, BytesSerializer {
       }
 
       codecResolver.resolveEncodeFunction(field).accept(new Triplet<>(value, res, this));
+      containerValues.add(
+          codecHasher.zpad(
+              codecHasher.hash_tree_root_internal(Bytes.wrap(res.toByteArray())),
+              SSZCodecHasher.SSZ_CHUNK_SIZE));
     }
 
-    return res.toByteArray();
+    return codecHasher.merkle_hash(containerValues.toArray(new Bytes[0])).toArray();
   }
 
   @Override
