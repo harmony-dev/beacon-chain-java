@@ -31,6 +31,10 @@ public class DelegateBeaconState implements BeaconState {
     return BeaconState.getEmpty();
   }
 
+  public BeaconState getDelegate() {
+    return delegate;
+  }
+
   @Override
   public SlotNumber getSlot() {
     return delegate.getSlot();

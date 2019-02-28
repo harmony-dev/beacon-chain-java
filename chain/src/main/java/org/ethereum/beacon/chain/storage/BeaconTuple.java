@@ -2,7 +2,6 @@ package org.ethereum.beacon.chain.storage;
 
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.core.BeaconBlock;
-import org.ethereum.beacon.core.BeaconState;
 
 public class BeaconTuple {
 

@@ -62,17 +62,33 @@ public class SSZSerializer implements BytesSerializer {
   /**
    * Serializes input to byte[] data
    *
-   * @param input input value
-   * @param clazz Class of value
+   * @param inputObject input value
+   * @param inputClazz Class of value
    * @return SSZ serialization
    */
   @Override
-  public byte[] encode(@Nullable Object input, Class clazz) {
-    checkSSZSerializableAnnotation(clazz);
+  public <C> byte[] encode(@Nullable C inputObject, Class<? extends C> inputClazz) {
+    checkSSZSerializableAnnotation(inputClazz);
 
     // Null check
-    if (input == null) {
+    if (inputObject == null) {
       return EMPTY_PREFIX;
+    }
+
+    Object input;
+    Class<?> clazz;
+    if (!inputClazz.getAnnotation(SSZSerializable.class).instanceGetter().isEmpty()) {
+      try {
+        Method instanceGetter = inputClazz
+            .getMethod(inputClazz.getAnnotation(SSZSerializable.class).instanceGetter());
+        input = instanceGetter.invoke(inputObject);
+        clazz = input.getClass();
+      } catch (Exception e) {
+        throw new RuntimeException("Error processing SSZSerializable.instanceGetter attribute", e);
+      }
+    } else {
+      input = inputObject;
+      clazz = inputClazz;
     }
 
     // Fill up map with all available method getters

@@ -4,4 +4,6 @@ dependencies {
   implementation project(':ssz')
 
   implementation 'com.google.guava:guava'
+
+  testImplementation project(':consensus')
 }

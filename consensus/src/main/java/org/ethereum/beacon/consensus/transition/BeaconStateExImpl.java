@@ -3,12 +3,14 @@ package org.ethereum.beacon.consensus.transition;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.TransitionType;
 import org.ethereum.beacon.core.BeaconState;
+import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
 /**
  * Class to hold additional state info which is not included to the
  * canonical spec BeaconState but is wanted for state transitions
  */
+@SSZSerializable(instanceGetter = "getDelegate")
 public class BeaconStateExImpl extends DelegateBeaconState implements BeaconStateEx {
 
   private final Hash32 latestChainBlock;
