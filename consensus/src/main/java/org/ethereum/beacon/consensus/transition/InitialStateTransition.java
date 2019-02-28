@@ -5,9 +5,10 @@ import static java.util.Collections.nCopies;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.BlockTransition;
 import org.ethereum.beacon.consensus.SpecHelpers;
-import org.ethereum.beacon.consensus.transition.BeaconStateEx.TransitionType;
+import org.ethereum.beacon.consensus.TransitionType;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
@@ -146,11 +147,11 @@ public class InitialStateTransition implements BlockTransition<BeaconStateEx> {
     BeaconState validatorsState = initialState.createImmutable();
     BeaconBlock genesisBlock = block.withStateRoot(specHelpers.hash_tree_root(validatorsState));
 
-    BeaconStateEx ret = new BeaconStateEx(
+    BeaconStateExImpl ret = new BeaconStateExImpl(
         validatorsState, specHelpers.hash_tree_root(genesisBlock), TransitionType.INITIAL);
 
     logger.debug(() -> "Slot transition result state: (" +
-        specHelpers.hash_tree_root(ret.getCanonicalState()).toStringShort() + ") " + ret.toString(chainSpec));
+        specHelpers.hash_tree_root(ret).toStringShort() + ") " + ret.toString(chainSpec));
 
     return ret;
   }

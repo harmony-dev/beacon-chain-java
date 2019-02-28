@@ -6,7 +6,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
+import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.TransitionType;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
@@ -175,7 +177,7 @@ public class BeaconChainValidator implements ValidatorService {
    */
   @VisibleForTesting
   void runTasks(final ObservableBeaconState observableState) {
-    BeaconState state = observableState.getLatestSlotState();
+    BeaconStateEx state = observableState.getLatestSlotState();
 
     // trigger proposer
     if (isEligibleToPropose(state)) {
@@ -260,8 +262,9 @@ public class BeaconChainValidator implements ValidatorService {
    * @param state a state.
    * @return {@code true} if assigned, {@link false} otherwise.
    */
-  private boolean isEligibleToPropose(BeaconState state) {
-    return validatorIndex.equals(specHelpers.get_beacon_proposer_index(state, state.getSlot()));
+  private boolean isEligibleToPropose(BeaconStateEx state) {
+    return state.getTransition() == TransitionType.SLOT
+        && validatorIndex.equals(specHelpers.get_beacon_proposer_index(state, state.getSlot()));
   }
 
   /**

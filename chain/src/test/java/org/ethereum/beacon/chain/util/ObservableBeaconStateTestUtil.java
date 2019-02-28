@@ -4,7 +4,10 @@ import java.util.Collections;
 import java.util.Random;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.observer.PendingOperations;
+import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.TransitionType;
+import org.ethereum.beacon.consensus.transition.BeaconStateExImpl;
 import org.ethereum.beacon.consensus.transition.InitialStateTransition;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlocks;
@@ -35,7 +38,7 @@ public class ObservableBeaconStateTestUtil {
     BeaconBlock modifiedHead =
         BeaconBlock.Builder.fromBlock(originalState.getHead()).withSlot(slotNumber).build();
     return new ObservableBeaconState(
-        modifiedHead, modifiedState, originalState.getPendingOperations());
+        modifiedHead, new BeaconStateExImpl(modifiedState, Hash32.ZERO), originalState.getPendingOperations());
   }
 
   public static ObservableBeaconState createInitialState(
@@ -48,7 +51,7 @@ public class ObservableBeaconStateTestUtil {
             Collections.emptyList());
     InitialStateTransition stateTransition = new InitialStateTransition(chainStart, specHelpers);
 
-    BeaconState state = stateTransition.apply(genesis).getCanonicalState();
+    BeaconStateEx state = stateTransition.apply(genesis);
     return new ObservableBeaconState(genesis, state, operations);
   }
 }

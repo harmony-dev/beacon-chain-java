@@ -9,10 +9,10 @@ import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.chain.storage.BeaconTuple;
 import org.ethereum.beacon.chain.storage.BeaconTupleStorage;
+import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.BlockTransition;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.StateTransition;
-import org.ethereum.beacon.consensus.transition.BeaconStateEx;
 import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
 import org.ethereum.beacon.consensus.verifier.BeaconStateVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
@@ -92,11 +92,9 @@ public class DefaultBeaconChain implements MutableBeaconChain {
 
   private void initializeStorage() {
     BeaconBlock initialGenesis = BeaconBlocks.createGenesis(specHelpers.getChainSpec());
-    BeaconStateEx initialState =
-        initialTransition.apply(
-            new BeaconStateEx(BeaconState.getEmpty(), Hash32.ZERO), initialGenesis);
+    BeaconStateEx initialState = initialTransition.apply(BeaconStateEx.getEmpty(), initialGenesis);
 
-    Hash32 initialStateRoot = specHelpers.hash_tree_root(initialState.getCanonicalState());
+    Hash32 initialStateRoot = specHelpers.hash_tree_root(initialState);
     BeaconBlock genesis = initialGenesis.withStateRoot(initialStateRoot);
     Hash32 genesisRoot = specHelpers.hash_tree_root(genesis);
     BeaconTuple tuple = BeaconTuple.of(genesis, initialState);
@@ -124,9 +122,10 @@ public class DefaultBeaconChain implements MutableBeaconChain {
 
     BeaconStateEx preBlockState = applyEmptySlotTransitionsTillBlock(parentState, block);
     VerificationResult blockVerification =
-        blockVerifier.verify(block, preBlockState.getCanonicalState());
+        blockVerifier.verify(block, preBlockState);
     if (!blockVerification.isPassed()) {
-      logger.warn("Block verification failed: " + blockVerification + ": " + block.toString(specHelpers.getChainSpec(), parentState.getCanonicalState().getGenesisTime(), specHelpers::hash_tree_root));
+      logger.warn("Block verification failed: " + blockVerification + ": " +
+          block.toString(specHelpers.getChainSpec(), parentState.getGenesisTime(), specHelpers::hash_tree_root));
       return false;
     }
 
@@ -139,7 +138,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     }
 
     VerificationResult stateVerification =
-        stateVerifier.verify(postEpochState.getCanonicalState(), block);
+        stateVerifier.verify(postEpochState, block);
     if (!stateVerification.isPassed()) {
       logger.warn("State verification failed: " + stateVerification);
       return false;
@@ -147,7 +146,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
 
     BeaconTuple newTuple = BeaconTuple.of(block, postEpochState);
     tupleStorage.put(newTuple);
-    updateFinality(parentState.getCanonicalState(), postEpochState.getCanonicalState());
+    updateFinality(parentState, postEpochState);
 
     chainStorage.commit();
 
@@ -190,9 +189,8 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     Optional<BeaconTuple> parent = tupleStorage.get(block.getParentRoot());
     checkArgument(parent.isPresent(), "No parent for block %s", block);
     BeaconTuple parentTuple = parent.get();
-    Hash32 parentHash = specHelpers.hash_tree_root(parentTuple.getBlock());
 
-    return new BeaconStateEx(parentTuple.getState(), parentHash);
+    return parentTuple.getState();
   }
 
   private boolean exist(BeaconBlock block) {
@@ -219,9 +217,9 @@ public class DefaultBeaconChain implements MutableBeaconChain {
 
   private BeaconStateEx applyEmptySlotTransitionsTillBlock(BeaconStateEx source, BeaconBlock block) {
     BeaconStateEx result = source;
-    for (SlotNumber slot : result.getCanonicalState().getSlot().increment().iterateTo(block.getSlot())) {
+    for (SlotNumber slot : result.getSlot().increment().iterateTo(block.getSlot())) {
       result = perSlotTransition.apply(result);
-      if (specHelpers.is_epoch_end(result.getCanonicalState().getSlot())) {
+      if (specHelpers.is_epoch_end(result.getSlot())) {
         result = perEpochTransition.apply(result);
       }
     }

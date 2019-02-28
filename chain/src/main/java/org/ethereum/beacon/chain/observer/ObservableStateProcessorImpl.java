@@ -13,10 +13,10 @@ import org.ethereum.beacon.chain.LMDGhostHeadFunction;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.chain.storage.BeaconTuple;
 import org.ethereum.beacon.chain.storage.BeaconTupleStorage;
+import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.HeadFunction;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.StateTransition;
-import org.ethereum.beacon.consensus.transition.BeaconStateEx;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
@@ -36,11 +36,11 @@ import tech.pegasys.artemis.util.collections.ReadList;
 
 public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   private final BeaconTupleStorage tupleStorage;
-  private ObservableBeaconState observableState;
   private BeaconChainHead head;
   private final HeadFunction headFunction;
 
-  private BeaconState latestState;
+  private BeaconStateEx latestState;
+
   private final SpecHelpers specHelpers;
   private final ChainSpec chainSpec;
   private final StateTransition<BeaconStateEx> perSlotTransition;
@@ -220,30 +220,29 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     pendingOperationsSink.onNext(pendingOperations);
     updateHead(pendingOperations);
 
-    BeaconState originalState = latestState;
-    BeaconState stateWithoutEpoch = applySlotTransitionsWithoutEpoch(originalState,
-        specHelpers.hash_tree_root(head.getBlock()), newSlot);
-    BeaconState newBeaconState = applyEpochTransitionIfNeeded(originalState, stateWithoutEpoch);
-    latestState = newBeaconState;
-    ObservableBeaconState newObservableState = new ObservableBeaconState(
-            head.getBlock(), newBeaconState, stateWithoutEpoch, pendingOperations);
-    if (!newObservableState.equals(observableState)) {
-      this.observableState = newObservableState;
-      observableStateSink.onNext(newObservableState);
+    BeaconStateEx originalState = latestState;
+    BeaconStateEx stateWithoutEpoch = applySlotTransitionsWithoutEpoch(originalState, newSlot);
+
+    latestState = stateWithoutEpoch;
+    observableStateSink.onNext(new ObservableBeaconState(
+        head.getBlock(), stateWithoutEpoch, pendingOperations));
+
+    BeaconStateEx epochState = applyEpochTransitionIfNeeded(originalState, stateWithoutEpoch);
+    if (epochState != null) {
+      latestState = epochState;
+      observableStateSink.onNext(new ObservableBeaconState(
+          head.getBlock(), epochState, pendingOperations));
     }
   }
 
-  private BeaconState applyEpochTransitionIfNeeded(BeaconState originalState, BeaconState stateWithoutEpoch) {
+  private BeaconStateEx applyEpochTransitionIfNeeded(
+      BeaconStateEx originalState, BeaconStateEx stateWithoutEpoch) {
+
     if (specHelpers.is_epoch_end(stateWithoutEpoch.getSlot())
         && originalState.getSlot().less(stateWithoutEpoch.getSlot())) {
-      BeaconStateEx stateEx =
-          new BeaconStateEx(
-              stateWithoutEpoch,
-              specHelpers.get_block_root(
-                  stateWithoutEpoch, stateWithoutEpoch.getSlot().decrement()));
-      return perEpochTransition.apply(stateEx).getCanonicalState();
+      return perEpochTransition.apply(stateWithoutEpoch);
     } else {
-      return stateWithoutEpoch;
+      return null;
     }
   }
 
@@ -252,20 +251,19 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
    * doesn't apply EpochTransition for the <code>targetSlot</code>
    *
    * @param source Source state
-   * @param latestChainBlock Latest chain block
    * @return new state, result of applied transition to the latest input state
    */
-  private BeaconState applySlotTransitionsWithoutEpoch(
-      BeaconState source, Hash32 latestChainBlock, SlotNumber targetSlot) {
+  private BeaconStateEx applySlotTransitionsWithoutEpoch(
+      BeaconStateEx source, SlotNumber targetSlot) {
 
-    BeaconStateEx stateEx = new BeaconStateEx(source, latestChainBlock);
+    BeaconStateEx state = source;
     for (SlotNumber slot : source.getSlot().increment().iterateTo(targetSlot.increment())) {
-      stateEx = perSlotTransition.apply(stateEx);
+      state = perSlotTransition.apply(state);
       if (specHelpers.is_epoch_end(slot) && !slot.equals(targetSlot)) {
-        stateEx = perEpochTransition.apply(stateEx);
+        state = perEpochTransition.apply(state);
       }
     }
-    return stateEx.getCanonicalState();
+    return state;
   }
 
   private void updateHead(PendingOperations pendingOperations) {

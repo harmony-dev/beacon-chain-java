@@ -1,9 +1,9 @@
 package org.ethereum.beacon.validator.proposer;
 
+import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.BlockTransition;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.StateTransition;
-import org.ethereum.beacon.consensus.transition.BeaconStateEx;
 import org.ethereum.beacon.pow.DepositContract;
 import org.mockito.Mockito;
 

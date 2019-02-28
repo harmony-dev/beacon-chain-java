@@ -163,7 +163,7 @@ public class SpecHelpersTest {
             specHelpers);
 
     BeaconState initialState = initialStateTransition.apply(
-            BeaconBlocks.createGenesis(specHelpers.getChainSpec())).getCanonicalState();
+            BeaconBlocks.createGenesis(specHelpers.getChainSpec()));
     MutableBeaconState state = initialState.createMutableCopy();
 
     for(int i = 1; i < 128; i++) {

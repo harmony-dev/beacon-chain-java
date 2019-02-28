@@ -18,7 +18,7 @@ dependencies {
   implementation project(':wire')
   implementation project(':util')
   implementation project(':start:common')
-  implementation project(':emulator:config')
+  implementation project(':start:config')
   implementation project(':crypto')
   implementation project(':core')
   implementation project(':consensus')

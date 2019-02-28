@@ -11,10 +11,11 @@ import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.observer.PendingOperations;
 import org.ethereum.beacon.chain.util.ObservableBeaconStateTestUtil;
 import org.ethereum.beacon.chain.util.PendingOperationsTestUtil;
+import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.BlockTransition;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.StateTransition;
-import org.ethereum.beacon.consensus.transition.BeaconStateEx;
+import org.ethereum.beacon.consensus.transition.BeaconStateExImpl;
 import org.ethereum.beacon.consensus.util.StateTransitionTestUtil;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
@@ -70,10 +71,10 @@ public class BeaconChainProposerTest {
     BeaconBlock block = proposer.propose(initialObservedState, signer);
 
     BeaconStateEx stateAfterBlock =
-        perBlockTransition.apply(new BeaconStateEx(initialState, Hash32.ZERO), block);
+        perBlockTransition.apply(new BeaconStateExImpl(initialState, Hash32.ZERO), block);
 
     Assert.assertEquals(
-        specHelpers.hash_tree_root(stateAfterBlock.getCanonicalState()), block.getStateRoot());
+        specHelpers.hash_tree_root(stateAfterBlock), block.getStateRoot());
     Assert.assertTrue(verifySignature(specHelpers, initialState, block, signer));
   }
 
@@ -130,10 +131,10 @@ public class BeaconChainProposerTest {
     Mockito.verify(pendingOperations).peekExits(specHelpers.getChainSpec().getMaxExits());
 
     BeaconStateEx stateAfterBlock =
-        perBlockTransition.apply(new BeaconStateEx(initialState, Hash32.ZERO), block);
+        perBlockTransition.apply(new BeaconStateExImpl(initialState, Hash32.ZERO), block);
 
     Assert.assertEquals(
-        specHelpers.hash_tree_root(stateAfterBlock.getCanonicalState()), block.getStateRoot());
+        specHelpers.hash_tree_root(stateAfterBlock), block.getStateRoot());
     Assert.assertTrue(verifySignature(specHelpers, initialState, block, signer));
 
     Assert.assertEquals(attestations, block.getBody().getAttestations().listCopy());
@@ -182,10 +183,10 @@ public class BeaconChainProposerTest {
             Mockito.eq(initialState.getLatestEth1Data()));
 
     BeaconStateEx stateAfterBlock =
-        perBlockTransition.apply(new BeaconStateEx(initialState, Hash32.ZERO), block);
+        perBlockTransition.apply(new BeaconStateExImpl(initialState, Hash32.ZERO), block);
 
     Assert.assertEquals(
-        specHelpers.hash_tree_root(stateAfterBlock.getCanonicalState()), block.getStateRoot());
+        specHelpers.hash_tree_root(stateAfterBlock), block.getStateRoot());
     Assert.assertTrue(verifySignature(specHelpers, initialState, block, signer));
 
     Assert.assertEquals(
@@ -207,9 +208,9 @@ public class BeaconChainProposerTest {
     final Eth1Data eth1Data = Eth1DataTestUtil.createRandom(random);
     StateTransition<BeaconStateEx> perEpochTransition =
         source -> {
-          MutableBeaconState newState = source.getCanonicalState().createMutableCopy();
+          MutableBeaconState newState = source.createMutableCopy();
           newState.setLatestEth1Data(eth1Data);
-          return new BeaconStateEx(newState, source.getLatestChainBlockHash());
+          return new BeaconStateExImpl(newState, source.getHeadBlockHash());
         };
 
     BeaconChainProposer proposer =
@@ -227,17 +228,17 @@ public class BeaconChainProposerTest {
     ObservableBeaconState endOfTheEpoch =
         new ObservableBeaconState(
             initialObservedState.getHead(),
-            modifiedState,
+            new BeaconStateExImpl(modifiedState, Hash32.ZERO),
             initialObservedState.getPendingOperations());
 
     BeaconBlock block = proposer.propose(endOfTheEpoch, signer);
 
     BeaconStateEx stateAfterBlock =
-        perBlockTransition.apply(new BeaconStateEx(modifiedState, Hash32.ZERO), block);
+        perBlockTransition.apply(new BeaconStateExImpl(modifiedState, Hash32.ZERO), block);
     BeaconStateEx stateAfterEpoch = perEpochTransition.apply(stateAfterBlock);
 
     Assert.assertEquals(
-        specHelpers.hash_tree_root(stateAfterEpoch.getCanonicalState()), block.getStateRoot());
+        specHelpers.hash_tree_root(stateAfterEpoch), block.getStateRoot());
     Assert.assertTrue(verifySignature(specHelpers, modifiedState, block, signer));
   }
 

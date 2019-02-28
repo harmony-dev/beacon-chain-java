@@ -1,5 +1,7 @@
 package org.ethereum.beacon.core;
 
+import org.ethereum.beacon.consensus.BeaconStateEx;
+import org.ethereum.beacon.consensus.transition.BeaconStateExImpl;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.Exit;
@@ -302,6 +304,15 @@ public class ModelsSerializeTest {
   public void beaconStateTest() {
     BeaconState expected = createBeaconState();
     BytesValue encoded = sszSerializer.encode2(expected);
+    BeaconState reconstructed = sszSerializer.decode(encoded, BeaconStateImpl.class);
+    assertEquals(expected, reconstructed);
+  }
+
+  @Test
+  public void beaconStateExTest() {
+    BeaconState expected = createBeaconState();
+    BeaconStateEx stateEx = new BeaconStateExImpl(expected, Hash32.ZERO);
+    BytesValue encoded = sszSerializer.encode2(stateEx);
     BeaconState reconstructed = sszSerializer.decode(encoded, BeaconStateImpl.class);
     assertEquals(expected, reconstructed);
   }
