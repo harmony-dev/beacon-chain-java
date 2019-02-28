@@ -1,11 +1,7 @@
 package org.ethereum.beacon.core;
 
-import static org.junit.Assert.assertEquals;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import org.ethereum.beacon.consensus.BeaconStateEx;
+import org.ethereum.beacon.consensus.transition.BeaconStateExImpl;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.Exit;
@@ -14,7 +10,7 @@ import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
-import org.ethereum.beacon.core.operations.slashing.ProposalSignedData;
+import org.ethereum.beacon.core.operations.slashing.Proposal;
 import org.ethereum.beacon.core.operations.slashing.SlashableAttestation;
 import org.ethereum.beacon.core.state.BeaconStateImpl;
 import org.ethereum.beacon.core.state.CrosslinkRecord;
@@ -41,6 +37,13 @@ import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt64;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+import static org.junit.Assert.assertEquals;
 
 public class ModelsSerializeTest {
   private Serializer sszSerializer;
@@ -167,18 +170,21 @@ public class ModelsSerializeTest {
     assertEquals(expected, reconstructed);
   }
 
-  private ProposalSignedData createProposalSignedData() {
-    ProposalSignedData proposalSignedData =
-        new ProposalSignedData(
-            SlotNumber.of(12), ShardNumber.ZERO, Hashes.keccak256(BytesValue.fromHexString("aa")));
-    return proposalSignedData;
+  private Proposal createProposalSignedData() {
+    Proposal proposal =
+        new Proposal(
+            SlotNumber.of(12),
+            ShardNumber.ZERO,
+            Hashes.keccak256(BytesValue.fromHexString("aa")),
+            BLSSignature.ZERO);
+    return proposal;
   }
 
   @Test
   public void proposalSignedDataTest() {
-    ProposalSignedData expected = createProposalSignedData();
+    Proposal expected = createProposalSignedData();
     BytesValue encoded = sszSerializer.encode2(expected);
-    ProposalSignedData reconstructed = sszSerializer.decode(encoded, ProposalSignedData.class);
+    Proposal reconstructed = sszSerializer.decode(encoded, Proposal.class);
     assertEquals(expected, reconstructed);
   }
 
@@ -298,6 +304,15 @@ public class ModelsSerializeTest {
   public void beaconStateTest() {
     BeaconState expected = createBeaconState();
     BytesValue encoded = sszSerializer.encode2(expected);
+    BeaconState reconstructed = sszSerializer.decode(encoded, BeaconStateImpl.class);
+    assertEquals(expected, reconstructed);
+  }
+
+  @Test
+  public void beaconStateExTest() {
+    BeaconState expected = createBeaconState();
+    BeaconStateEx stateEx = new BeaconStateExImpl(expected, Hash32.ZERO);
+    BytesValue encoded = sszSerializer.encode2(stateEx);
     BeaconState reconstructed = sszSerializer.decode(encoded, BeaconStateImpl.class);
     assertEquals(expected, reconstructed);
   }

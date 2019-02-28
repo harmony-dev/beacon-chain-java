@@ -11,8 +11,6 @@ include 'crypto'
 include 'db:core'
 // DB made around EthereumJ client
 include 'db:ethereumj'
-// Configuration parser
-include 'emulator:config'
 // PoW (Proof of Work) interfaces etc
 include 'pow:core'
 // PoW made with EthereumJ
@@ -27,6 +25,8 @@ include 'ssz'
 include 'start:cli'
 // Clients helpers
 include 'start:common'
+// Configuration parser
+include 'start:config'
 // Strict types definition
 include 'types'
 // Standalone utils without any relation to Ethereum 2.0

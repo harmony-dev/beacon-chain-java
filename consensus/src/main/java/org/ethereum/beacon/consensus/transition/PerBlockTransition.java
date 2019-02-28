@@ -1,7 +1,11 @@
 package org.ethereum.beacon.consensus.transition;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.BlockTransition;
 import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.TransitionType;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
@@ -28,6 +32,8 @@ import tech.pegasys.artemis.util.uint.UInt64;
  *     processing</a> in the spec.
  */
 public class PerBlockTransition implements BlockTransition<BeaconStateEx> {
+  private static final Logger logger = LogManager.getLogger(PerBlockTransition.class);
+
   private final ChainSpec spec;
   private final SpecHelpers specHelpers;
 
@@ -38,7 +44,14 @@ public class PerBlockTransition implements BlockTransition<BeaconStateEx> {
 
   @Override
   public BeaconStateEx apply(BeaconStateEx stateEx, BeaconBlock block) {
-    MutableBeaconState state = stateEx.getCanonicalState().createMutableCopy();
+    logger.trace(() -> "Applying block transition to state: (" +
+        specHelpers.hash_tree_root(stateEx).toStringShort() + ") "
+        + stateEx.toString(spec) + ", Block: "
+        + block.toString(spec, stateEx.getGenesisTime(), specHelpers::hash_tree_root));
+
+    TransitionType.BLOCK.checkCanBeAppliedAfter(stateEx.getTransition());
+
+    MutableBeaconState state = stateEx.createMutableCopy();
 
     /*
     RANDAO
@@ -158,6 +171,12 @@ public class PerBlockTransition implements BlockTransition<BeaconStateEx> {
       specHelpers.initiate_validator_exit(state, exit.getValidatorIndex());
     }
 
-    return new BeaconStateEx(state.createImmutable(), specHelpers.hash_tree_root(block));
+    BeaconStateEx ret = new BeaconStateExImpl(state.createImmutable(),
+        specHelpers.hash_tree_root(block), TransitionType.BLOCK);
+
+    logger.trace(() -> "Block transition result state: (" +
+        specHelpers.hash_tree_root(ret).toStringShort() + ") " + ret.toString(spec));
+
+    return ret;
   }
 }

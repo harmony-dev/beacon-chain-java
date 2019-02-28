@@ -35,4 +35,11 @@ public @interface SSZSerializable {
    *   class instance as an argument
    */
   Class<?> serializeAs() default void.class;
+
+  /**
+   * Call this method to get target serializable instance.
+   * This is handy for wrapper classes which delegate all calls to a wrapped instance which
+   * is serializable
+   */
+  String instanceGetter() default "";
 }

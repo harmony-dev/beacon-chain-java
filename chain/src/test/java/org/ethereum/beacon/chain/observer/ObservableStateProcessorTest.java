@@ -3,6 +3,7 @@ package org.ethereum.beacon.chain.observer;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import org.ethereum.beacon.chain.util.SampleObservableState;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.schedulers.ControlledSchedulers;
@@ -20,7 +21,7 @@ public class ObservableStateProcessorTest {
     SlotNumber genesisSlot = SlotNumber.of(1_000_000);
     schedulers.setCurrentTime((genesisTime.getSeconds() + 1) * 1000);
 
-    SampleObservableState sample = new SampleObservableState(
+    SampleObservableState sample = new SampleObservableState(new Random(1),
         genesisTime, genesisSlot.getValue(), Duration.ofSeconds(10), 8, s -> {
     }, schedulers);
 
@@ -55,7 +56,7 @@ public class ObservableStateProcessorTest {
     SlotNumber genesisSlot = SlotNumber.of(1_000_000);
     schedulers.setCurrentTime(genesisTime.plus(Duration.ofMinutes(10)).toMillis());
 
-    SampleObservableState sample = new SampleObservableState(
+    SampleObservableState sample = new SampleObservableState(new Random(1),
         genesisTime, genesisSlot.getValue(), Duration.ofSeconds(10), 8, s -> {
     }, schedulers);
 

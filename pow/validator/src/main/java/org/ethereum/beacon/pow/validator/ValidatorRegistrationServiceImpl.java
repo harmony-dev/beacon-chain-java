@@ -1,17 +1,16 @@
 package org.ethereum.beacon.pow.validator;
 
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
+import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.BlockTransition;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.StateTransition;
-import org.ethereum.beacon.consensus.transition.BeaconStateEx;
 import org.ethereum.beacon.consensus.transition.PerBlockTransition;
 import org.ethereum.beacon.consensus.transition.PerEpochTransition;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.state.ValidatorRecord;
-import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
@@ -24,7 +23,7 @@ import org.ethereum.beacon.validator.BeaconChainProposer;
 import org.ethereum.beacon.validator.BeaconChainValidator;
 import org.ethereum.beacon.validator.ValidatorService;
 import org.ethereum.beacon.validator.attester.BeaconChainAttesterImpl;
-import org.ethereum.beacon.validator.crypto.MessageSigner;
+import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import org.ethereum.beacon.validator.proposer.BeaconChainProposerImpl;
 import org.reactivestreams.Publisher;
 import reactor.core.Disposable;
@@ -60,8 +59,7 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
   private ValidatorRecord validatorRecord = null;
 
   // Validator
-  private MessageSigner<BLSSignature> signer;
-  private BLSPubkey pubKey;
+  private BLS381Credentials blsCredentials;
   private Hash32 withdrawalCredentials = null;
   private Gwei amount = null;
   private Address eth1From = null;
@@ -89,14 +87,11 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
 
   @Override
   public void start(
-      MessageSigner<BLSSignature> signer,
-      BLSPubkey pubKey,
+      BLS381Credentials credentials,
       @Nullable Hash32 withdrawalCredentials,
       @Nullable Gwei amount,
       @Nullable Address eth1From,
       @Nullable BytesValue eth1PrivKey) {
-    this.signer = signer;
-    this.pubKey = pubKey;
     this.executor =
         Executors.newSingleThreadExecutor(
             runnable -> {
@@ -137,7 +132,7 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
     BeaconState latestState = getLatestState();
     Optional<ValidatorRecord> validatorRecordOptional =
         latestState.getValidatorRegistry().stream()
-            .filter(record -> record.getPubKey().equals(pubKey))
+            .filter(record -> record.getPubKey().equals(blsCredentials.getPubkey()))
             .findFirst();
     if (!validatorRecordOptional.isPresent()) {
       return Optional.empty();
@@ -209,7 +204,7 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
           new BeaconChainAttesterImpl(specHelpers, specHelpers.getChainSpec());
       validatorService =
           new BeaconChainValidator(
-              pubKey, proposer, attester, specHelpers, signer, observablePublisher, schedulers);
+              blsCredentials, proposer, attester, specHelpers, observablePublisher, schedulers);
       validatorService.start();
       changeCurrentStage(RegistrationStage.COMPLETE);
     }
@@ -239,7 +234,7 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
                                   getLatestState().getValidatorRegistry().stream()
                                       .filter(
                                           record -> {
-                                            return record.getPubKey().equals(pubKey);
+                                            return record.getPubKey().equals(blsCredentials.getPubkey());
                                           })
                                       .findFirst()
                                       .get();
@@ -257,7 +252,7 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
 
   private Optional<Deposit> onDeposit(Deposit deposit) {
     return Optional.of(deposit)
-        .filter(d -> d.getDepositData().getDepositInput().getPubKey().equals(pubKey));
+        .filter(d -> d.getDepositData().getDepositInput().getPubKey().equals(blsCredentials.getPubkey()));
   }
 
   private CompletableFuture<TransactionGateway.TxStatus> submitDeposit(
@@ -274,17 +269,17 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
     // object.
     //    Set deposit_input.proof_of_possession = EMPTY_SIGNATURE.
     DepositInput preDepositInput =
-        new DepositInput(pubKey, withdrawalCredentials, BLSSignature.ZERO);
+        new DepositInput(blsCredentials.getPubkey(), withdrawalCredentials, BLSSignature.ZERO);
     // Let proof_of_possession be the result of bls_sign of the hash_tree_root(deposit_input) with
     // domain=DOMAIN_DEPOSIT.
-    Hash32 hash = specHelpers.hash_tree_root(preDepositInput);
+    Hash32 hash = specHelpers.signed_root(preDepositInput, "proofOfPossession");
     BeaconState latestState = getLatestState();
     Bytes8 domain =
         specHelpers.get_domain(
             latestState.getForkData(), specHelpers.get_current_epoch(latestState), DEPOSIT);
-    BLSSignature signature = signer.sign(hash, domain);
+    BLSSignature signature = blsCredentials.getSigner().sign(hash, domain);
     // Set deposit_input.proof_of_possession = proof_of_possession.
-    DepositInput depositInput = new DepositInput(pubKey, withdrawalCredentials, signature);
+    DepositInput depositInput = new DepositInput(blsCredentials.getPubkey(), withdrawalCredentials, signature);
 
     return depositInput;
   }

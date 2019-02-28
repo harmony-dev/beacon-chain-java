@@ -1,15 +1,9 @@
 package org.ethereum.beacon.consensus.hasher;
 
-import static org.junit.Assert.assertEquals;
-
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.crypto.Hashes;
+import org.ethereum.beacon.ssz.SSZHashSerializer;
 import org.ethereum.beacon.ssz.SSZHashSerializers;
-import org.ethereum.beacon.ssz.SSZSerializer;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import org.ethereum.beacon.ssz.fixtures.AttestationRecord;
 import org.ethereum.beacon.ssz.fixtures.Bitfield;
@@ -17,6 +11,13 @@ import org.ethereum.beacon.ssz.fixtures.Sign;
 import org.junit.Before;
 import org.junit.Test;
 import tech.pegasys.artemis.util.bytes.BytesValue;
+
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import static org.junit.Assert.assertEquals;
 
 /** Tests of {@link SSZObjectHasher} */
 public class SSZObjectHasherTest {
@@ -33,7 +34,7 @@ public class SSZObjectHasherTest {
 
   @Before
   public void setup() {
-    SSZSerializer sszHashSerializer =
+    SSZHashSerializer sszHashSerializer =
         SSZHashSerializers.createWithBeaconChainTypes(Hashes::keccak256, false);
     sszHasher = new SSZObjectHasher(sszHashSerializer, Hashes::keccak256);
   }
@@ -76,6 +77,50 @@ public class SSZObjectHasherTest {
         BytesValue.fromHexString(
             "740620beb3f42033473a7adf01b5f115ec0a72bf8c97eb36f732a6158ff8775d"),
         hash);
+  }
+
+  @Test
+  public void simpleTruncateTest() {
+    AttestationRecord attestationRecord =
+        new AttestationRecord(
+            123,
+            Collections.emptyList(),
+            DEFAULT_HASH,
+            new Bitfield(BytesValue.fromHexString("abcdef45").getArrayUnsafe()),
+            DEFAULT_HASH,
+            12412L,
+            12400L,
+            DEFAULT_SIG);
+
+    // justifiedBlockHash and aggregateSig removed
+    BytesValue hash1 = sszHasher.getHashTruncate(attestationRecord, "justifiedBlockHash");
+    assertEquals(
+        BytesValue.fromHexString(
+            "0x8d5fc215a3e8c2a67c44e8c43711ce1396315366f013892cce63ad88b8e8eb9e"),
+        hash1);
+
+    // Sig only removed
+    BytesValue hash2 = sszHasher.getHashTruncate(attestationRecord, "aggregateSig");
+    assertEquals(
+        BytesValue.fromHexString(
+            "0x5df5425a3581f24ec3f8508c44820d2c70c89299cf217a3a5d8e126e51b6e4ed"),
+        hash2);
+
+    boolean fired = false;
+    try {
+      // No such field
+      BytesValue hash3 = sszHasher.getHashTruncate(attestationRecord, "myField");
+      assertEquals(
+          BytesValue.fromHexString(
+              "740620beb3f42033473a7adf01b5f115ec0a72bf8c97eb36f732a6158ff8775d"),
+          hash3);
+    } catch (Exception e) {
+      if (e.getMessage().contains("myField")) {
+        fired = true;
+      }
+    }
+
+    assert fired;
   }
 
   @Test

@@ -49,6 +49,7 @@ public class SampleObservableState {
   public ObservableStateProcessor observableStateProcessor;
 
   public SampleObservableState(
+      Random rnd,
       Duration genesisTime,
       long genesisSlot,
       Duration slotDuration,
@@ -76,11 +77,10 @@ public class SampleObservableState {
     this.specHelpers = SpecHelpers.createWithSSZHasher(chainSpec, schedulers::getCurrentTime);
 
     Pair<List<Deposit>, List<KeyPair>> anyDeposits = TestUtils
-        .getAnyDeposits(specHelpers, 8);
+        .getAnyDeposits(rnd, specHelpers, 8);
     deposits = anyDeposits.getValue0();
     depositKeys = anyDeposits.getValue1();
 
-    Random rnd = new Random();
     eth1Data = new Eth1Data(Hash32.random(rnd), Hash32.random(rnd));
     chainStart = new ChainStart(Time.of(genesisTime.getSeconds()), eth1Data, deposits);
 

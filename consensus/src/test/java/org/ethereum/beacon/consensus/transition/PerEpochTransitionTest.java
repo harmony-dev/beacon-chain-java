@@ -2,6 +2,7 @@ package org.ethereum.beacon.consensus.transition;
 
 import java.util.List;
 import java.util.Random;
+import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.TestUtils;
 import org.ethereum.beacon.core.BeaconBlocks;
@@ -35,12 +36,12 @@ public class PerEpochTransitionTest {
 
     SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(chainSpec, () -> 0L);
 
-    List<Deposit> deposits = TestUtils.getAnyDeposits(specHelpers, 8).getValue0();
+    List<Deposit> deposits = TestUtils.getAnyDeposits(rnd, specHelpers, 8).getValue0();
 
     InitialStateTransition initialStateTransition =
         new InitialStateTransition(new ChainStart(genesisTime, eth1Data, deposits), specHelpers);
 
-    BeaconStateEx[] states = new BeaconStateEx[9];
+    BeaconStateEx[] states = new BeaconStateExImpl[9];
 
     states[0] = initialStateTransition.apply(BeaconBlocks.createGenesis(chainSpec));
     for (int i = 1; i < 9; i++) {
@@ -52,9 +53,9 @@ public class PerEpochTransitionTest {
     // check validators penalized for inactivity
     for (int i = 0; i < deposits.size(); i++) {
       Gwei balanceBefore =
-          states[0].getCanonicalState().getValidatorBalances().get(ValidatorIndex.of(i));
+          states[0].getValidatorBalances().get(ValidatorIndex.of(i));
       Gwei balanceAfter =
-          epochState.getCanonicalState().getValidatorBalances().get(ValidatorIndex.of(i));
+          epochState.getValidatorBalances().get(ValidatorIndex.of(i));
       Assert.assertTrue(balanceAfter.less(balanceBefore));
     }
   }

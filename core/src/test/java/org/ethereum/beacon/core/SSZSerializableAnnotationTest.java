@@ -18,7 +18,7 @@ import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustody
 import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
-import org.ethereum.beacon.core.operations.slashing.ProposalSignedData;
+import org.ethereum.beacon.core.operations.slashing.Proposal;
 import org.ethereum.beacon.core.operations.slashing.SlashableAttestation;
 import org.ethereum.beacon.core.state.BeaconStateImpl;
 import org.ethereum.beacon.core.state.CrosslinkRecord;
@@ -125,7 +125,7 @@ public class SSZSerializableAnnotationTest {
                 DepositData.class,
                 DepositInput.class,
                 Exit.class,
-                ProposalSignedData.class,
+                Proposal.class,
                 ProposerSlashing.class,
                 CrosslinkRecord.class,
                 Eth1DataVote.class,

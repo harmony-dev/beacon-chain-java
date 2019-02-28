@@ -3,19 +3,36 @@ package org.ethereum.beacon;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
+import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.storage.impl.MemBeaconChainStorageFactory;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.TestUtils;
+import org.ethereum.beacon.consensus.hasher.SSZObjectHasher;
+import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.Eth1Data;
+import org.ethereum.beacon.core.state.PendingAttestationRecord;
+import org.ethereum.beacon.core.state.ShardCommittee;
+import org.ethereum.beacon.core.types.BLSPubkey;
+import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.Bitfield;
+import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.crypto.BLS381.KeyPair;
+import org.ethereum.beacon.crypto.BLS381.PublicKey;
+import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.pow.DepositContract.ChainStart;
 import org.ethereum.beacon.schedulers.ControlledSchedulers;
@@ -28,6 +45,8 @@ import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.bytes.Bytes8;
+import tech.pegasys.artemis.util.bytes.MutableBytesValue;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public class LocalNetTest {
@@ -99,8 +118,10 @@ public class LocalNetTest {
   }
 
   public static void main(String[] args) throws Exception {
-    int validatorCount = 4;
-    int epochLength = 2;
+    int validatorCount = 8;
+    int epochLength = 4;
+    int targetCommitteeSize = 2;
+    int shardCount = 4;
     Random rnd = new Random(1);
     Time genesisTime = Time.of(10 * 60);
 
@@ -127,17 +148,22 @@ public class LocalNetTest {
 
           @Override
           public ValidatorIndex getTargetCommitteeSize() {
-            return ValidatorIndex.of(1);
+            return ValidatorIndex.of(targetCommitteeSize);
           }
 
           @Override
           public SlotNumber getMinAttestationInclusionDelay() {
             return SlotNumber.of(1);
           }
+
+          @Override
+          public ShardNumber getShardCount() {
+            return ShardNumber.of(shardCount);
+          }
         };
 
     Pair<List<Deposit>, List<KeyPair>> anyDeposits = TestUtils.getAnyDeposits(
-            SpecHelpers.createWithSSZHasher(chainSpec, () -> 0L), validatorCount);
+            rnd, createLightSpecHelpers(chainSpec, () -> 0L), validatorCount);
     List<Deposit> deposits = anyDeposits.getValue0();
 
     LocalWireHub localWireHub = new LocalWireHub(s -> {});
@@ -145,14 +171,15 @@ public class LocalNetTest {
     DepositContract depositContract = new SimpleDepositContract(chainStart);
 
     System.out.println("Creating peers...");
+    List<Launcher> peers = new ArrayList<>();
     for(int i = 0; i < validatorCount; i++) {
       ControlledSchedulers schedulers = controlledSchedulers.createNew();
-      SpecHelpers specHelpers = SpecHelpers
-          .createWithSSZHasher(chainSpec, schedulers::getCurrentTime);
+      SpecHelpers specHelpers = createLightSpecHelpers(chainSpec, schedulers::getCurrentTime);
       WireApi wireApi = localWireHub.createNewPeer("" + i);
 
       Launcher launcher = new Launcher(specHelpers, depositContract, anyDeposits.getValue1().get(i),
           wireApi, new MemBeaconChainStorageFactory(), schedulers);
+      peers.add(launcher);
 
       int finalI = i;
       Flux.from(launcher.slotTicker.getTickerStream())
@@ -173,9 +200,120 @@ public class LocalNetTest {
     }
     System.out.println("Peers created");
 
+    AtomicReference<SlotNumber> curSlot = new AtomicReference<>();
+    Set<Attestation> attestations = new HashSet<>();
+    Set<Attestation> blockAttestations = new HashSet<>();
+    Set<Attestation> allBlockAttestations = new HashSet<>();
+    Set<Attestation> stateAttestations = new HashSet<>();
+
+    WireApi wireApi = localWireHub.createNewPeer("test");
+    Flux.from(wireApi.inboundAttestationsStream())
+        .subscribe(att -> {
+          if (!attestations.add(segregate(att).get(0))) {
+            System.err.println("Duplicate attestation: " + att);
+          }
+        });
+    Flux.from(wireApi.inboundBlocksStream())
+        .subscribe(block -> block.getBody().getAttestations().stream()
+            .flatMap(aggAtt -> segregate(aggAtt).stream())
+            .forEach(att -> {
+                if (!attestations.remove(att)) {
+                  if (allBlockAttestations.contains(att)) {
+                    System.err.println("Double included attestation: " + att);
+                  } else {
+                    System.err.println("Unknown attestation: " + att);
+                  }
+                }
+                if (allBlockAttestations.contains(att)) {
+                  System.err.println("Duplicate block attestation: " + att);
+                } else {
+                  blockAttestations.add(att);
+                  allBlockAttestations.add(att);
+                }
+        }));
+    Flux.from(peers.get(0).observableStateProcessor.getObservableStateStream())
+        .subscribe(state -> {
+          state.getLatestSlotState().getLatestAttestations().stream()
+              .flatMap(a -> fromPending(a).stream())
+              .forEach(att -> {
+                blockAttestations.remove(att);
+                  if (!allBlockAttestations.contains(att)) {
+                    System.err.println("Unknown block attestation: " + att);
+                  }
+                  stateAttestations.add(att);
+              });
+          curSlot.set(state.getLatestSlotState().getSlot());
+        });
+
+    Map<SlotNumber, ObservableBeaconState> slotStates = new HashMap<>();
+    SpecHelpers specHelpers = peers.get(0).specHelpers;
+    Flux.from(peers.get(0).observableStateProcessor.getObservableStateStream())
+        .subscribe((ObservableBeaconState state) -> {
+
+          SlotNumber slot = state.getLatestSlotState().getSlot();
+          slotStates.put(slot, state);
+          if (slotStates.size() > epochLength) {
+            SlotNumber oldSlot = slot.minus(epochLength);
+            List<ShardCommittee> committees1 = specHelpers
+                .get_crosslink_committees_at_slot(slotStates.get(oldSlot).getLatestSlotState(), oldSlot);
+            List<ShardCommittee> committees2 = specHelpers
+                .get_crosslink_committees_at_slot(state.getLatestSlotState(), oldSlot);
+            if (!committees1.equals(committees2)) {
+              System.err.println("##### Committees differ!!!");
+            }
+          }
+        });
+
+
     while (true) {
       System.out.println("===============================");
       controlledSchedulers.addTime(Duration.ofSeconds(10));
+
+      attestations.stream()
+          .filter(att -> att.getData().getSlot().less(curSlot.get().minus(epochLength * 2)))
+          .forEach(att -> System.err.println("###### Lost attestation: " + att));
+
+      blockAttestations.stream()
+          .filter(att -> att.getData().getSlot().less(curSlot.get().minus(epochLength * 2)))
+          .forEach(att -> System.err.println("###### Lost block attestation: " + att));
     }
+  }
+
+  static List<Attestation> segregate(Attestation attestation) {
+    List<Attestation> ret = new ArrayList<>();
+    for (Integer validatorBit : attestation.getAggregationBitfield().getBits()) {
+      Bitfield singleBit = Bitfield.of(MutableBytesValue.create(attestation.getAggregationBitfield().size()))
+          .setBit(validatorBit, true);
+      ret.add(new Attestation(
+          attestation.getData(),
+          singleBit,
+          attestation.getCustodyBitfield(),
+          BLSSignature.ZERO));
+    }
+    return ret;
+  }
+
+  static List<Attestation> fromPending(PendingAttestationRecord attestation) {
+    return segregate(
+        new Attestation(
+            attestation.getData(),
+            attestation.getAggregationBitfield(),
+            attestation.getCustodyBitfield(),
+            BLSSignature.ZERO));
+  }
+
+  static SpecHelpers createLightSpecHelpers(ChainSpec spec, Supplier<Long> time) {
+    return new SpecHelpers(spec, Hashes::keccak256, SSZObjectHasher.create(Hashes::keccak256), time) {
+      @Override
+      public boolean bls_verify(BLSPubkey publicKey, Hash32 message, BLSSignature signature, Bytes8 domain) {
+        return true;
+      }
+
+      @Override
+      public boolean bls_verify_multiple(List<PublicKey> publicKeys, List<Hash32> messages,
+          BLSSignature signature, Bytes8 domain) {
+        return true;
+      }
+    };
   }
 }

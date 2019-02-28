@@ -8,10 +8,10 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.observer.PendingOperations;
+import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.BlockTransition;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.StateTransition;
-import org.ethereum.beacon.consensus.transition.BeaconStateEx;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlock.Builder;
 import org.ethereum.beacon.core.BeaconBlockBody;
@@ -21,7 +21,7 @@ import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.Exit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
-import org.ethereum.beacon.core.operations.slashing.ProposalSignedData;
+import org.ethereum.beacon.core.operations.slashing.Proposal;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Eth1DataVote;
@@ -72,7 +72,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
   @Override
   public BeaconBlock propose(
       ObservableBeaconState observableState, MessageSigner<BLSSignature> signer) {
-    BeaconState state = observableState.getLatestSlotState();
+    BeaconStateEx state = observableState.getLatestSlotState();
 
     Hash32 parentRoot = specHelpers.get_block_root(state, state.getSlot().decrement());
     BLSSignature randaoReveal = getRandaoReveal(state, signer);
@@ -92,7 +92,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
 
     // calculate state_root
     BeaconBlock newBlock = builder.build();
-    BeaconState newState = applyStateTransition(state, parentRoot, newBlock);
+    BeaconState newState = applyStateTransition(state, newBlock);
     builder.withStateRoot(specHelpers.hash_tree_root(newState));
 
     // sign off on proposal
@@ -103,33 +103,32 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
     return builder.build();
   }
 
-  private BeaconState applyStateTransition(BeaconState source, Hash32 parentRoot, BeaconBlock block) {
-    BeaconStateEx sourceEx = new BeaconStateEx(source, parentRoot);
+  private BeaconStateEx applyStateTransition(BeaconStateEx sourceEx, BeaconBlock block) {
     BeaconStateEx blockState = perBlockTransition.apply(sourceEx, block);
-    if (specHelpers.is_epoch_end(blockState.getCanonicalState().getSlot())) {
-      BeaconStateEx epochState = perEpochTransition.apply(blockState);
-      return epochState.getCanonicalState();
+    if (specHelpers.is_epoch_end(blockState.getSlot())) {
+      return perEpochTransition.apply(blockState);
     } else {
-      return blockState.getCanonicalState();
+      return blockState;
     }
   }
 
   /**
-   * Creates a {@link ProposalSignedData} instance and signs off on it.
+   * Creates a {@link Proposal} instance and signs off on it.
    *
    * @param state state at the slot of created block.
-   * @param blockWithoutSignature created block with zero {@link BeaconBlock#signature} field.
+   * @param block block
    * @param signer message signer.
    * @return signature of proposal signed data.
    */
   private BLSSignature getProposalSignature(
-      BeaconState state, BeaconBlock blockWithoutSignature, MessageSigner<BLSSignature> signer) {
-    ProposalSignedData proposal =
-        new ProposalSignedData(
+      BeaconState state, BeaconBlock block, MessageSigner<BLSSignature> signer) {
+    Proposal proposal =
+        new Proposal(
             state.getSlot(),
             chainSpec.getBeaconChainShardNumber(),
-            specHelpers.hash_tree_root(blockWithoutSignature));
-    Hash32 proposalRoot = specHelpers.hash_tree_root(proposal);
+            specHelpers.signed_root(block, "signature"),
+            block.getSignature());
+    Hash32 proposalRoot = specHelpers.signed_root(proposal, "signature");
     Bytes8 domain = specHelpers.get_domain(state.getForkData(),
         specHelpers.get_current_epoch(state), PROPOSAL);
     return signer.sign(proposalRoot, domain);
@@ -209,6 +208,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
     List<Attestation> attestations =
         operations.peekAggregatedAttestations(
             chainSpec.getMaxAttestations(),
+            state.getSlot().minus(chainSpec.getMinAttestationInclusionDelay()).minus(chainSpec.getEpochLength()),
             state.getSlot().minus(chainSpec.getMinAttestationInclusionDelay()));
     List<Exit> exits = operations.peekExits(chainSpec.getMaxExits());
 

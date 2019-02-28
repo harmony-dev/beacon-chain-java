@@ -1,22 +1,5 @@
 package org.ethereum.beacon.consensus;
 
-import static java.lang.Math.max;
-import static java.lang.Math.min;
-import static java.util.stream.Collectors.toList;
-import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import javax.annotation.Nonnull;
 import org.ethereum.beacon.consensus.hasher.ObjectHasher;
 import org.ethereum.beacon.consensus.hasher.SSZObjectHasher;
 import org.ethereum.beacon.core.BeaconBlock;
@@ -48,7 +31,6 @@ import org.ethereum.beacon.crypto.BLS381.PublicKey;
 import org.ethereum.beacon.crypto.BLS381.Signature;
 import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.crypto.MessageParameters;
-import org.ethereum.beacon.schedulers.Schedulers;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes3;
 import tech.pegasys.artemis.util.bytes.Bytes32;
@@ -58,6 +40,23 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
 import tech.pegasys.artemis.util.uint.UInt64s;
+
+import javax.annotation.Nonnull;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import static java.lang.Math.min;
+import static java.util.stream.Collectors.toList;
+import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
 
 /**
  * https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md#helper-functions
@@ -607,7 +606,7 @@ public class SpecHelpers {
 
     return bls_verify(
         pubkey,
-        hash_tree_root(deposit_input),
+        signed_root(deposit_input, "proofOfPossession"),
         proof_of_possession,
         get_domain(state.getForkData(), get_current_epoch(state), SignatureDomains.DEPOSIT));
   }
@@ -1007,8 +1006,14 @@ public class SpecHelpers {
     }
   }
 
+  /** Function for hashing objects into a single root utilizing a hash tree structure */
   public Hash32 hash_tree_root(Object object) {
     return objectHasher.getHash(object);
+  }
+
+  /** Function for hashing objects with part starting from field rejected */
+  public Hash32 signed_root(Object object, String field) {
+    return objectHasher.getHashTruncate(object, field);
   }
 
   /*
@@ -1254,7 +1259,7 @@ public class SpecHelpers {
     if len(bitfield) != (committee_size + 7) // 8:
         return False
 
-    for i in range(committee_size + 1, committee_size - committee_size % 8 + 8):
+    for i in range(committee_size, len(bitfield) * 8):
         if get_bitfield_bit(bitfield, i) == 0b1:
             return False
 
@@ -1265,9 +1270,13 @@ public class SpecHelpers {
       return false;
     }
 
-    for(int i = committee_size + 1; i < committee_size - committee_size % 8 + 8; i++) {
-      if (bitfield.getBit(i)) {
-        return false;
+    for(int i = committee_size; i < bitfield.size() * 8; i++) {
+      try {
+        if (bitfield.getBit(i)) {
+          return false;
+        }
+      } catch (Exception e) {
+        e.printStackTrace();
       }
     }
     return true;

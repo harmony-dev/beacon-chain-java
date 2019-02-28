@@ -1,14 +1,29 @@
 package org.ethereum.beacon.consensus;
 
+import java.util.Random;
+import org.ethereum.beacon.consensus.hasher.SSZObjectHasher;
+import org.ethereum.beacon.consensus.transition.InitialStateTransition;
+import org.ethereum.beacon.core.BeaconBlocks;
+import org.ethereum.beacon.core.BeaconState;
+import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.state.Eth1Data;
+import org.ethereum.beacon.core.state.ShardCommittee;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.ShardNumber;
+import org.ethereum.beacon.core.types.SlotNumber;
+import org.ethereum.beacon.core.types.Time;
+import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.crypto.Hashes;
+import org.ethereum.beacon.pow.DepositContract.ChainStart;
+import org.junit.Ignore;
 import org.junit.Test;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes3;
 import tech.pegasys.artemis.util.bytes.Bytes48;
+import tech.pegasys.artemis.util.bytes.Bytes8;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import java.util.ArrayList;
@@ -17,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import tech.pegasys.artemis.util.uint.UInt64;
 
 import static org.junit.Assert.assertEquals;
 
@@ -95,5 +111,72 @@ public class SpecHelpersTest {
         Hash32.fromHexString("0x8fc89d0f1f435b07543b15fdf687e7fce4a754ecd9e5afbf8f0e83928a7f798f");
     Hash32 actual = specHelpers.hash_tree_root(createDepositInput());
     assertEquals(expected, actual);
+  }
+
+  @Ignore
+  @Test
+  public void committeeTest1() {
+    int validatorCount = 4;
+    int epochLength = 4;
+    int shardCount = 8;
+    int targetCommitteeSize = 2;
+    SlotNumber genesisSlot = SlotNumber.of(1_000_000);
+    Random rnd = new Random(1);
+    Time genesisTime = Time.of(10 * 60);
+
+    Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), Hash32.random(rnd));
+
+    ChainSpec chainSpec =
+        new ChainSpec() {
+          @Override
+          public SlotNumber.EpochLength getEpochLength() {
+            return new SlotNumber.EpochLength(UInt64.valueOf(epochLength));
+          }
+
+          @Override
+          public SlotNumber getGenesisSlot() {
+            return genesisSlot;
+          }
+
+          @Override
+          public ValidatorIndex getTargetCommitteeSize() {
+            return ValidatorIndex.of(targetCommitteeSize);
+          }
+
+          @Override
+          public ShardNumber getShardCount() {
+            return ShardNumber.of(shardCount);
+          }
+        };
+    SpecHelpers specHelpers = new SpecHelpers(
+            chainSpec, Hashes::keccak256, SSZObjectHasher.create(Hashes::keccak256), () -> 0L) {
+      @Override
+      public boolean bls_verify(BLSPubkey publicKey, Hash32 message, BLSSignature signature,
+          Bytes8 domain) {
+        return true;
+      }
+    };
+
+    InitialStateTransition initialStateTransition =
+        new InitialStateTransition(
+            new ChainStart(genesisTime, eth1Data, TestUtils.generateRandomDepositsWithoutSig(rnd, specHelpers, validatorCount)),
+            specHelpers);
+
+    BeaconState initialState = initialStateTransition.apply(
+            BeaconBlocks.createGenesis(specHelpers.getChainSpec()));
+    MutableBeaconState state = initialState.createMutableCopy();
+
+    for(int i = 1; i < 128; i++) {
+      System.out.println("get_epoch_committee_count(" + i + ") = " +
+          specHelpers.get_epoch_committee_count(i));
+    }
+
+    for (SlotNumber slot : genesisSlot.iterateTo(genesisSlot.plus(SlotNumber.of(epochLength)))) {
+      System.out.println("Slot #" + slot
+          + " beacon proposer: "
+          + specHelpers.get_beacon_proposer_index(state, slot)
+          + " committee: "
+          + specHelpers.get_crosslink_committees_at_slot(state, slot));
+    }
   }
 }

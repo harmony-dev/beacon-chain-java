@@ -1,10 +1,14 @@
 package org.ethereum.beacon.core.state;
 
 import com.google.common.base.Objects;
+import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
+import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.types.Bitfield;
 import org.ethereum.beacon.core.types.SlotNumber;
+import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.util.bytes.BytesValue;
@@ -63,5 +67,31 @@ public class PendingAttestationRecord {
         && Objects.equal(aggregationBitfield, that.aggregationBitfield)
         && Objects.equal(custodyBitfield, that.custodyBitfield)
         && Objects.equal(inclusionSlot, that.inclusionSlot);
+  }
+
+  private String getSignerIndices() {
+    return aggregationBitfield.getBits().stream().map(i -> "" + i).collect(Collectors.joining("+"));
+  }
+
+  @Override
+  public String toString() {
+    return toString(null, null);
+  }
+
+  public String toString(@Nullable ChainSpec spec,@Nullable Time beaconStart) {
+    return "Attestation["
+        + data.toString(spec, beaconStart)
+        + ", attesters=" + getSignerIndices()
+        + ", cusodyBits=" + custodyBitfield
+        + ", inclusionSlot=#" + getInclusionSlot().toStringNumber(spec)
+        + "]";
+  }
+
+  public String toStringShort(@Nullable ChainSpec spec) {
+    return "#" + getData().getSlot().toStringNumber(spec) + "/"
+        + "#" + getInclusionSlot().toStringNumber(spec) + "/"
+        + getData().getShard().toString(spec) + "/"
+        + getData().getBeaconBlockRoot().toStringShort() + "/"
+        + getSignerIndices();
   }
 }

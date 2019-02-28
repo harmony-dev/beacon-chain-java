@@ -6,20 +6,20 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
+import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.TransitionType;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.state.ShardCommittee;
-import org.ethereum.beacon.core.types.BLSPubkey;
-import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.schedulers.RunnableEx;
 import org.ethereum.beacon.schedulers.Scheduler;
 import org.ethereum.beacon.schedulers.Schedulers;
-import org.ethereum.beacon.validator.crypto.MessageSigner;
+import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
@@ -45,16 +45,14 @@ public class BeaconChainValidator implements ValidatorService {
   private final DirectProcessor<Attestation> attestationsSink = DirectProcessor.create();
   private final Publisher<Attestation> attestationsStream;
 
-  /** BLS public key that corresponds to a "hot" private key. */
-  private BLSPubkey publicKey;
+  /** A pair of "hot" keys that are used to sign off on proposals and attestations. */
+  private BLS381Credentials blsCredentials;
   /** Proposer logic. */
   private BeaconChainProposer proposer;
   /** Attester logic. */
   private BeaconChainAttester attester;
   /** The spec. */
   private SpecHelpers specHelpers;
-  /** Helper that signs validator messages with a "hot" private key. */
-  private MessageSigner<BLSSignature> messageSigner;
 
   private Publisher<ObservableBeaconState> stateStream;
 
@@ -69,30 +67,28 @@ public class BeaconChainValidator implements ValidatorService {
   private final Scheduler executor;
 
   public BeaconChainValidator(
-      BLSPubkey publicKey,
+      BLS381Credentials blsCredentials,
       BeaconChainProposer proposer,
       BeaconChainAttester attester,
       SpecHelpers specHelpers,
-      MessageSigner<BLSSignature> messageSigner,
       Publisher<ObservableBeaconState> stateStream,
       Schedulers schedulers) {
-    this.publicKey = publicKey;
+    this.blsCredentials = blsCredentials;
     this.proposer = proposer;
     this.attester = attester;
     this.specHelpers = specHelpers;
-    this.messageSigner = messageSigner;
     this.stateStream = stateStream;
     this.schedulers = schedulers;
 
     blocksStream = Flux.from(blocksSink)
-            .publishOn(this.schedulers.reactorEvents())
-            .onBackpressureError()
-            .name("BeaconChainValidator.block");
+        .publishOn(this.schedulers.reactorEvents())
+        .onBackpressureError()
+        .name("BeaconChainValidator.block");
 
     attestationsStream = Flux.from(attestationsSink)
-            .publishOn(this.schedulers.reactorEvents())
-            .onBackpressureError()
-            .name("BeaconChainValidator.attestation");
+        .publishOn(this.schedulers.reactorEvents())
+        .onBackpressureError()
+        .name("BeaconChainValidator.attestation");
 
     executor = this.schedulers.newSingleThreadDaemon("validator-service");
   }
@@ -112,7 +108,7 @@ public class BeaconChainValidator implements ValidatorService {
    */
   @VisibleForTesting
   void init(BeaconState state) {
-    this.validatorIndex = specHelpers.get_validator_index_by_pubkey(state, publicKey);
+    this.validatorIndex = specHelpers.get_validator_index_by_pubkey(state, blsCredentials.getPubkey());
   }
 
   /**
@@ -181,7 +177,7 @@ public class BeaconChainValidator implements ValidatorService {
    */
   @VisibleForTesting
   void runTasks(final ObservableBeaconState observableState) {
-    BeaconState state = observableState.getLatestSlotState();
+    BeaconStateEx state = observableState.getLatestSlotState();
 
     // trigger proposer
     if (isEligibleToPropose(state)) {
@@ -222,7 +218,7 @@ public class BeaconChainValidator implements ValidatorService {
    * @param observableState a state.
    */
   private void propose(final ObservableBeaconState observableState) {
-    BeaconBlock newBlock = proposer.propose(observableState, messageSigner);
+    BeaconBlock newBlock = proposer.propose(observableState, blsCredentials.getSigner());
     propagateBlock(newBlock);
   }
 
@@ -244,7 +240,7 @@ public class BeaconChainValidator implements ValidatorService {
               validatorIndex,
               validatorCommittee.get().getShard(),
               observableState,
-              messageSigner);
+              blsCredentials.getSigner());
       propagateAttestation(attestation);
     }
   }
@@ -266,8 +262,9 @@ public class BeaconChainValidator implements ValidatorService {
    * @param state a state.
    * @return {@code true} if assigned, {@link false} otherwise.
    */
-  private boolean isEligibleToPropose(BeaconState state) {
-    return validatorIndex.equals(specHelpers.get_beacon_proposer_index(state, state.getSlot()));
+  private boolean isEligibleToPropose(BeaconStateEx state) {
+    return state.getTransition() == TransitionType.SLOT
+        && validatorIndex.equals(specHelpers.get_beacon_proposer_index(state, state.getSlot()));
   }
 
   /**
