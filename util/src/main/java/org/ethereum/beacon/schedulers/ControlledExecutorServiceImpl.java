@@ -137,6 +137,9 @@ public class ControlledExecutorServiceImpl implements ControlledExecutorService 
 
   @Override
   public <V> ScheduledFuture<V> schedule(Callable<V> callable, long delay, TimeUnit unit) {
+    if (delay < 0) {
+      delay = 0;
+    }
     ScheduledTask<V> scheduledTask = new ScheduledTask<>(callable, currentTime + unit.toMillis(delay));
     tasks.add(scheduledTask);
     return scheduledTask.future;

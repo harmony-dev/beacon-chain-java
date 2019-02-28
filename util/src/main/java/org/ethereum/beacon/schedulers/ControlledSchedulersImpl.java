@@ -32,6 +32,9 @@ public class ControlledSchedulersImpl extends AbstractSchedulers implements Cont
       if (time > newTime) {
         break;
       }
+      if (time < currentTime) {
+        throw new IllegalStateException("Invalid task time: " + time + " < " + currentTime);
+      }
       currentTime = time;
       nextSchedulerToRun.setCurrentTime(currentTime);
     }
