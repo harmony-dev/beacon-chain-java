@@ -20,6 +20,7 @@ public class ControlledSchedulersImpl extends AbstractSchedulers implements Cont
   @Override
   public void setCurrentTime(long newTime) {
     assert newTime >= currentTime;
+    long oldTime = currentTime;
     while (true) {
       Optional<ControlledExecutorService> nextSchedulerToRunOpt =
           controlledExecutors.stream()
@@ -36,10 +37,10 @@ public class ControlledSchedulersImpl extends AbstractSchedulers implements Cont
         throw new IllegalStateException("Invalid task time: " + time + " < " + currentTime);
       }
       currentTime = time;
-      nextSchedulerToRun.setCurrentTime(currentTime);
+      controlledExecutors.forEach(e -> e.setCurrentTime(currentTime));
     }
     currentTime = newTime;
-    controlledExecutors.forEach(e -> e.setCurrentTime(newTime));
+    controlledExecutors.forEach(e -> e.setCurrentTime(currentTime));
   }
 
   @Override
