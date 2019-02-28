@@ -31,7 +31,6 @@ import org.javatuples.Pair;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.ReplayProcessor;
-import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.collections.ReadList;
 
 public class ObservableStateProcessorImpl implements ObservableStateProcessor {
@@ -40,6 +39,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   private final HeadFunction headFunction;
 
   private BeaconStateEx latestState;
+  private SlotNumber latestSlot;
 
   private final SpecHelpers specHelpers;
   private final ChainSpec chainSpec;
@@ -176,7 +176,10 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
 
   private void onNewBlockTuple(BeaconTuple beaconTuple) {
     this.latestState = beaconTuple.getState();
-    runTaskInSeparateThread(() -> addAttestationsFromState(beaconTuple.getState()));
+    runTaskInSeparateThread(() -> {
+      addAttestationsFromState(beaconTuple.getState());
+      updateCurrentObservableState(latestSlot);
+    });
   }
 
   private void addAttestationsFromState(BeaconState beaconState) {
@@ -216,6 +219,10 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   }
 
   private void updateCurrentObservableState(SlotNumber newSlot) {
+    if (newSlot == null) {
+      return;
+    }
+    latestSlot = newSlot;
     PendingOperations pendingOperations = new PendingOperationsState(copyAttestationCache());
     pendingOperationsSink.onNext(pendingOperations);
     updateHead(pendingOperations);
