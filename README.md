@@ -1,5 +1,5 @@
 # Beacon Chain Java
-Java implementation of Ethereum 2.0 Beacon chain. Someday, definitely, it will be a fully featured Serenity client. We are working to get there. Currently there is no p2p and, hence, there is no cross client communication.
+Ethereum 2.0 Beacon chain client. Someday, definitely, it will be a fully featured Serenity client. We are working to get there. Currently there is no p2p and, hence, there is no cross client communication.
  
 ## Ethereum 2.0?
 Yes, Ethereum Foundation, community and other interested parties are developing successor of [Ethereum](https://ethereum.org/) without cons :).
