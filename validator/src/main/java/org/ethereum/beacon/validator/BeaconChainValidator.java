@@ -209,7 +209,7 @@ public class BeaconChainValidator implements ValidatorService {
   private void schedule(Time startAt, RunnableEx routine) {
     long startAtMillis = startAt.getValue() * 1000;
     assert schedulers.getCurrentTime() < startAtMillis;
-    executor.executeWithDelay(Duration.ofMillis(schedulers.getCurrentTime() - startAtMillis), routine);
+    executor.executeWithDelay(Duration.ofMillis(startAtMillis - schedulers.getCurrentTime()), routine);
   }
 
   /**
