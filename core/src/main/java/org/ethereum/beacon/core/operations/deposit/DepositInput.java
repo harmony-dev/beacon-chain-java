@@ -7,8 +7,6 @@ import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.bytes.Bytes48;
-import tech.pegasys.artemis.util.bytes.Bytes96;
 
 /**
  * An input parameters of deposit contract.
@@ -30,9 +28,7 @@ public class DepositInput {
   @SSZ private final BLSSignature proofOfPossession;
 
   public DepositInput(
-      BLSPubkey pubKey,
-      Hash32 withdrawalCredentials,
-      BLSSignature proofOfPossession) {
+      BLSPubkey pubKey, Hash32 withdrawalCredentials, BLSSignature proofOfPossession) {
     this.pubKey = pubKey;
     this.withdrawalCredentials = withdrawalCredentials;
     this.proofOfPossession = proofOfPossession;
