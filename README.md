@@ -14,27 +14,27 @@ You can build one module jar with gradle `assemble` task executed on desired mod
 cp crypto/build/libs/beacon-crypto-0.1.0.jar <jar-destination>
 ``` 
 
-## Emulator
-Despite lacking a network stack there is already something that everybody can play with, a standalone Beacon chain emulator.
+## Simulator
+Despite lacking a network stack there is already something that everybody can play with, a standalone Beacon chain simulator.
 
-To run an emulator you need to install Java 8 or later. There are many guidelines in Internet, even the [official one](https://java.com/en/download/help/download_options.xml), from Oracle. Next, git clone our repo, build `client` module distribution and run emulator:
+To run an simulator you need to install Java 8 or later. There are many guidelines in Internet, even the [official one](https://java.com/en/download/help/download_options.xml), from Oracle. Next, git clone our repo, build `client` module distribution and run simulator:
 ```bash
 git clone https://github.com/harmony-dev/beacon-chain-java.git
 cd beacon-chain-java
 ./gradlew :start:cli:distZip
 ``` 
-Cool, we made distribution tied to our system, it's in the `start/cli/build/distributions/` folder and looks like `cli-0.1.0.zip`. Unzip it, enter the `bin` folder and run emulator:
+Cool, we made distribution tied to our system, it's in the `start/cli/build/distributions/` folder and looks like `cli-0.1.0.zip`. Unzip it, enter the `bin` folder and run simulator:
 ```bash
 cd start/cli/build/distributions/
 unzip cli-0.1.0.zip
 cd cli-0.1.0/bin
-./emulator
+./simulator
 ``` 
-and you will see help for `emulator` launcher. Preceding commands will work for OS X/Linux, in Windows you will need to  use `.bat` commands where its needed.
+and you will see help for `simulator` launcher. Preceding commands will work for OS X/Linux, in Windows you will need to  use `.bat` commands where its needed.
 
-Let's run emulator with default settings and 4 peers:
+Let's run simulator with default settings and 4 peers:
 ```bash
-./emulator run 4
+./simulator run 4
 ```
 
 ## Contribution guideline
