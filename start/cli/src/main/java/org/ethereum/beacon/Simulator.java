@@ -8,27 +8,27 @@ import picocli.CommandLine;
 import java.util.concurrent.Callable;
 
 @CommandLine.Command(
-    description = "Eth2.0 beacon emulator",
-    name = "emulator",
+    description = "Eth2.0 beacon chain simulator",
+    name = "simulator",
     mixinStandardHelpOptions = true,
-    version = "emulator " + ReusableOptions.VERSION)
-public class Emulator extends ReusableOptions implements Callable<Void> {
+    version = "simulator " + ReusableOptions.VERSION)
+public class Simulator extends ReusableOptions implements Callable<Void> {
 
   @CommandLine.Parameters(
       index = "0",
       description =
-          "Task to do: run/config.\n run - Runs beacon emulator.\n config - Prints configuration and tasks to run on start.")
+          "Task to do: run/config.\n run - Runs beacon simulator.\n config - Prints configuration and tasks to run on start.")
   Task action;
 
   @CommandLine.Parameters(
       index = "1",
-      description = "Number of validators to emulate.",
+      description = "Number of validators to simulate.",
       arity = "0..1")
   Integer validators;
 
   public static void main(String[] args) {
     try {
-      CommandLine.call(new Emulator(), args);
+      CommandLine.call(new Simulator(), args);
     } catch (Exception e) {
       System.out.println(String.format((char) 27 + "[31m" + "FATAL ERROR: %s", e.getMessage()));
     }
@@ -36,16 +36,16 @@ public class Emulator extends ReusableOptions implements Callable<Void> {
 
   @Override
   public Void call() throws Exception {
-    System.out.println("Starting beacon emulator...");
+    System.out.println("Starting beacon simulator...");
     if (validators != null) {
       configPathValues.add(Pair.with("plan.validator[0].count", validators));
     }
     Pair<MainConfig, ChainSpecData> configs =
-        prepareAndPrintConfigs(action, "/config/emulator-config.yml");
+        prepareAndPrintConfigs(action, "/config/simulator-config.yml");
 
     if (action.equals(Task.run)) {
-      EmulatorLauncher emulatorLauncher =
-          new EmulatorLauncher(
+      SimulatorLauncher simulatorLauncher =
+          new SimulatorLauncher(
               configs.getValue0(),
               configs.getValue1().build(),
               prepareLogLevel(true),
@@ -55,7 +55,7 @@ public class Emulator extends ReusableOptions implements Callable<Void> {
                   saveConfigToFile(mainConfig, config);
                 }
               });
-      emulatorLauncher.run();
+      simulatorLauncher.run();
     }
 
     return null;

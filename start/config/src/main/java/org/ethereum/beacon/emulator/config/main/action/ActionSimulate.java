@@ -2,8 +2,8 @@ package org.ethereum.beacon.emulator.config.main.action;
 
 import java.util.List;
 
-/** Settings for validator emulation of several random validators */
-public class ActionEmulate extends Action {
+/** Settings for validator simulation of several random validators */
+public class ActionSimulate extends Action {
   private Integer count;
   private List<String> privateKeys;
 

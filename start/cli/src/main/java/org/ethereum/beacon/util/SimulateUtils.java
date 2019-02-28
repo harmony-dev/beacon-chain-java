@@ -21,7 +21,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
-public class EmulateUtils {
+public class SimulateUtils {
   private static final Random rnd = new Random();
 
   private static Pair<List<Deposit>, List<BLS381.KeyPair>> cachedDeposits =
