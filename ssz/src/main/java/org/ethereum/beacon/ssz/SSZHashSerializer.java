@@ -14,6 +14,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.ethereum.beacon.ssz.SSZCodecHasher.EMPTY_CHUNK;
 import static org.ethereum.beacon.ssz.SSZSerializer.checkSSZSerializableAnnotation;
 
 /**
@@ -47,31 +48,20 @@ public class SSZHashSerializer implements BytesHasher, BytesSerializer {
   /** Calculates hash of the input object */
   @Override
   public byte[] hash(@Nullable Object input, Class clazz) {
-    byte[] preBakedHash;
+    byte[] hash;
     if (input instanceof List) {
-      preBakedHash = hashList((List) input);
+      hash = hashList((List) input);
     } else {
-      preBakedHash = hashImpl(input, clazz, null);
+      hash = hashImpl(input, clazz, null);
     }
-    // For the final output only (ie. not intermediate outputs), if the output is less than 32
-    // bytes, right-zero-pad it to 32 bytes.
-    byte[] res;
-    if (preBakedHash.length < HASH_LENGTH) {
-      res = new byte[HASH_LENGTH];
-      System.arraycopy(preBakedHash, 0, res, 0, preBakedHash.length);
-    } else {
-      res = preBakedHash;
-    }
-
-    return res;
+    return hash;
   }
 
   private byte[] hashImpl(@Nullable Object input, Class clazz, @Nullable String truncateField) {
     checkSSZSerializableAnnotation(clazz);
 
-    // Null check
     if (input == null) {
-      return EMPTY_PREFIX;
+      return EMPTY_CHUNK.toArray();
     }
 
     // Fill up map with all available method getters
@@ -128,39 +118,24 @@ public class SSZHashSerializer implements BytesHasher, BytesSerializer {
       }
 
       codecResolver.resolveEncodeFunction(field).accept(new Triplet<>(value, res, this));
-      containerValues.add(
-          codecHasher.zpad(
-              codecHasher.hash_tree_root_internal(Bytes.wrap(res.toByteArray())),
-              SSZCodecHasher.SSZ_CHUNK_SIZE));
+      containerValues.add(codecHasher.hash_tree_root_element(Bytes.wrap(res.toByteArray())));
     }
 
-    return codecHasher.merkle_hash(containerValues.toArray(new Bytes[0])).toArray();
+    return codecHasher.merkleize(containerValues).toArray();
   }
 
   @Override
   public byte[] hashTruncate(@Nullable Object input, Class clazz, String field) {
-    byte[] preBakedHash;
     if (input instanceof List) {
       throw new RuntimeException("hashTruncate doesn't support lists");
     } else {
-      preBakedHash = hashImpl(input, clazz, field);
+      return hashImpl(input, clazz, field);
     }
-    // For the final output only (ie. not intermediate outputs), if the output is less than 32
-    // bytes, right-zero-pad it to 32 bytes.
-    byte[] res;
-    if (preBakedHash.length < HASH_LENGTH) {
-      res = new byte[HASH_LENGTH];
-      System.arraycopy(preBakedHash, 0, res, 0, preBakedHash.length);
-    } else {
-      res = preBakedHash;
-    }
-
-    return res;
   }
 
   private byte[] hashList(List input) {
     if (input.isEmpty()) {
-      return new byte[0];
+      return EMPTY_CHUNK.toArray();
     }
     Class internalClass = input.get(0).getClass();
     checkSSZSerializableAnnotation(internalClass);
@@ -173,8 +148,9 @@ public class SSZHashSerializer implements BytesHasher, BytesSerializer {
 
     ByteArrayOutputStream res = new ByteArrayOutputStream();
     codecResolver.resolveEncodeFunction(field).accept(new Triplet<>(input, res, this));
+    SSZCodecHasher codecHasher = (SSZCodecHasher) codecResolver;
 
-    return res.toByteArray();
+    return codecHasher.mix_in_length(Bytes.wrap(res.toByteArray()), input.size()).toArray();
   }
 
   @Override

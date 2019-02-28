@@ -1,5 +1,16 @@
 package org.ethereum.beacon.ssz;
 
+import net.consensys.cava.bytes.Bytes;
+import net.consensys.cava.ssz.BytesSSZReaderProxy;
+import net.consensys.cava.ssz.SSZ;
+import net.consensys.cava.ssz.SSZException;
+import net.consensys.cava.units.bigints.UInt256;
+import org.ethereum.beacon.ssz.type.SSZCodec;
+import org.ethereum.beacon.ssz.type.SubclassCodec;
+import org.javatuples.Pair;
+import org.javatuples.Triplet;
+import tech.pegasys.artemis.util.bytes.BytesValue;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -12,15 +23,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import net.consensys.cava.bytes.Bytes;
-import net.consensys.cava.ssz.BytesSSZReaderProxy;
-import net.consensys.cava.ssz.SSZ;
-import net.consensys.cava.ssz.SSZException;
-import org.ethereum.beacon.ssz.type.SSZCodec;
-import org.ethereum.beacon.ssz.type.SubclassCodec;
-import org.javatuples.Pair;
-import org.javatuples.Triplet;
-import tech.pegasys.artemis.util.bytes.BytesValue;
 
 /**
  * Implementation of {@link SSZCodecResolver} which implements SSZ Hash function
@@ -31,9 +33,9 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
  */
 public class SSZCodecHasher implements SSZCodecResolver {
 
-  static final int SSZ_CHUNK_SIZE = 32;
+  static final int BYTES_PER_CHUNK = 32;
 
-  private static final Bytes EMPTY_CHUNK = Bytes.of(new byte[SSZ_CHUNK_SIZE]);
+  static final Bytes EMPTY_CHUNK = Bytes.of(new byte[BYTES_PER_CHUNK]);
 
   private Function<Bytes, Bytes> hashFunction;
 
@@ -63,7 +65,7 @@ public class SSZCodecHasher implements SSZCodecResolver {
           ByteArrayOutputStream tmp = new ByteArrayOutputStream();
           encoder.encode(value, field, tmp);
           try {
-            res.write(hash_tree_root_internal(Bytes.wrap(tmp.toByteArray())).toArrayUnsafe());
+            res.write(hash_tree_root_element(Bytes.wrap(tmp.toByteArray())).toArrayUnsafe());
           } catch (IOException e) {
             throw new SSZException("Failed to write data length to stream", e);
           }
@@ -230,36 +232,49 @@ public class SSZCodecHasher implements SSZCodecResolver {
   }
 
   /**
-   * Merkle tree hash of a list of homogenous, non-empty items
+   * Given ordered objects of the same basic type, serialize them, pack them into
+   * BYTES_PER_CHUNK-byte chunks, right-pad the last chunk with zero bytes, and return the chunks.
    *
-   * @param lst
-   * @return
    */
-  Bytes merkle_hash(Bytes[] lst) {
-    // Store length of list (to compensate for non-bijectiveness of padding)
-    Bytes dataLen = SSZ.encodeInt32(lst.length);
-
+  List<Bytes> pack(Bytes[] lst) {
     List<Bytes> chunkz = new ArrayList<>();
     // Handle empty list case
-    if (dataLen.isZero()) {
+    if (lst.length == 0) {
       chunkz.add(EMPTY_CHUNK);
-    } else if (lst[0].size() < SSZ_CHUNK_SIZE) {
-      // See how many items fit in a chunk
-      int itemsPerChunk = SSZ_CHUNK_SIZE / lst[0].size();
-      // Build a list of chunks based on the number of items in the chunk
-      for (int i = 0; i < lst.length; i += itemsPerChunk) {
-        int chunkLen = Math.min(itemsPerChunk, lst.length - i);
-        Bytes[] lstSlice = new Bytes[chunkLen];
-        System.arraycopy(lst, i, lstSlice, 0, chunkLen);
-        Bytes chunkBeforePad = Bytes.concatenate(lstSlice);
-        chunkz.add(zpad(chunkBeforePad, SSZ_CHUNK_SIZE));
-      }
     } else {
-      // Leave large items alone
-      chunkz.addAll(Arrays.asList(lst));
+      int currentItem = 0;
+      int itemPosition = 0;
+      while (currentItem < lst.length) {
+        int chunkPosition = 0;
+        byte[] currentChunk = new byte[BYTES_PER_CHUNK];
+        while (chunkPosition < BYTES_PER_CHUNK) {
+          int len =
+              Math.min(BYTES_PER_CHUNK - chunkPosition, lst[currentItem].size() - itemPosition);
+          System.arraycopy(
+              lst[currentItem].toArray(), itemPosition, currentChunk, chunkPosition, len);
+          chunkPosition += len;
+          itemPosition += len;
+          if (itemPosition == lst[currentItem].size()) {
+            ++currentItem;
+            itemPosition = 0;
+          }
+          if (currentItem == lst.length || chunkPosition == BYTES_PER_CHUNK) {
+            chunkz.add(Bytes.wrap(currentChunk));
+            chunkPosition = BYTES_PER_CHUNK;
+          }
+        }
+        ++currentItem;
+      }
     }
 
-    // Merkleise
+    return chunkz;
+  }
+
+  /**
+   * Given ordered BYTES_PER_CHUNK-byte chunks, if necessary append zero chunks so that the number
+   * of chunks is a power of two, Merkleize the chunks, and return the root.
+   */
+  Bytes merkleize(List<Bytes> chunkz) {
     for (int i = chunkz.size(); i < next_power_of_2(chunkz.size()); ++i) {
       chunkz.add(EMPTY_CHUNK);
     }
@@ -272,7 +287,7 @@ public class SSZCodecHasher implements SSZCodecResolver {
       chunkz = tempChunkz;
     }
 
-    return hashFunction.apply(Bytes.concatenate(chunkz.get(0), dataLen));
+    return chunkz.get(0);
   }
 
   private long next_power_of_2(int x) {
@@ -294,29 +309,41 @@ public class SSZCodecHasher implements SSZCodecResolver {
     return 0;
   }
 
+  /**
+   * Given a Merkle root and a length (uint256 little-endian serialization) return
+   * hash(root + length).
+   */
+  Bytes mix_in_length(Bytes root, int length) {
+    Bytes len = SSZ.encodeUInt256(UInt256.valueOf(length));
+    return hashFunction.apply(Bytes.concatenate(root, len));
+  }
+
   Bytes zpad(Bytes input, int length) {
-    try {
     return Bytes.concatenate(input, Bytes.wrap(new byte[length - input.size()]));
-    } catch (Exception ex) {
-      System.out.println("");
-      return null;
-    }
   }
 
   private Bytes hash_tree_root_list(Bytes[] lst) {
-    Bytes[] res = new Bytes[lst.length];
-    for (int i = 0; i < lst.length; ++i) {
-      res[i] = hash_tree_root_internal(lst[i]);
-    }
-    return merkle_hash(res);
+    return mix_in_length(merkleize(pack(lst)), lst.length);
   }
 
-  Bytes hash_tree_root_internal(Bytes el) {
-    if (el.size() <= SSZ_CHUNK_SIZE) {
-      return el;
-    } else {
-      return hashFunction.apply(el);
+  private Bytes hash_tree_root_container(Bytes[] lst) {
+    List<Bytes> values = new ArrayList<>();
+    for (int i = 0; i < lst.length; ++i) {
+      values.add(hash_tree_root_element(lst[i]));
     }
+    return merkleize(values);
+  }
+
+  Bytes hash_tree_root_element(Bytes el) {
+    return merkleize(pack(new Bytes[]{el}));
+  }
+
+  private Bytes hash_tree_root_containers_list(Bytes[] lst) {
+    List<Bytes> values = new ArrayList<>();
+    for (int i = 0; i < lst.length; ++i) {
+      values.add(hash_tree_root_element(lst[i]));
+    }
+    return mix_in_length(merkleize(values), lst.length);
   }
 
   class CodecEntry {
