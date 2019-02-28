@@ -26,12 +26,9 @@ public class ReusableOptions {
 
   static {
     LOG_LEVELS.put(LogLevel.OFF, Level.OFF);
-    LOG_LEVELS.put(LogLevel.FATAL, Level.FATAL);
     LOG_LEVELS.put(LogLevel.ERROR, Level.ERROR);
-    LOG_LEVELS.put(LogLevel.WARN, Level.WARN);
     LOG_LEVELS.put(LogLevel.INFO, Level.INFO);
     LOG_LEVELS.put(LogLevel.DEBUG, Level.DEBUG);
-    LOG_LEVELS.put(LogLevel.TRACE, Level.TRACE);
     LOG_LEVELS.put(LogLevel.ALL, Level.ALL);
   }
 
@@ -175,12 +172,9 @@ public class ReusableOptions {
 
   enum LogLevel {
     OFF,
-    FATAL,
     ERROR,
-    WARN,
     INFO,
     DEBUG,
-    TRACE,
     ALL
   }
 }
