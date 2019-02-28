@@ -108,7 +108,7 @@ public class SpecHelpersTest {
   public void testHashTreeRoot1() {
     SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT, () -> 0L);
     Hash32 expected =
-        Hash32.fromHexString("0x8fc89d0f1f435b07543b15fdf687e7fce4a754ecd9e5afbf8f0e83928a7f798f");
+        Hash32.fromHexString("0x175dfc7ad9dd6f35ef93ba1bcb94fd573ca9ce7d6e4423de3d5e9ca9dca593c8");
     Hash32 actual = specHelpers.hash_tree_root(createDepositInput());
     assertEquals(expected, actual);
   }

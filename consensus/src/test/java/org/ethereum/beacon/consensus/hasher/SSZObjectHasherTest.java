@@ -46,7 +46,7 @@ public class SSZObjectHasherTest {
     BytesValue hash = sszHasher.getHash(bitfield);
     assertEquals(
         BytesValue.fromHexString(
-            "A0B1BE2F50398CA7FE11EA48E5AFE9F89F758EC815E5C12BE21315AF6D34FA1D"),
+            "0x1487e072053dbcdc89f662bd1ddf36a2f22c3d0594c511d349dfa18e595d6d59"),
         hash);
   }
 
@@ -55,7 +55,7 @@ public class SSZObjectHasherTest {
     BytesValue hash = sszHasher.getHash(DEFAULT_SIG);
     assertEquals(
         BytesValue.fromHexString(
-            "D75724A07F4EFB3B456408DD6C36C70A6DF189FAE6A09F7AD0C848F0D3341290"),
+            "0x479653058b37be6734f8f2b5ab589be2065a4decc77cfc2ad03f883ce0c9e609"),
         hash);
   }
 
@@ -75,7 +75,7 @@ public class SSZObjectHasherTest {
     BytesValue hash = sszHasher.getHash(attestationRecord);
     assertEquals(
         BytesValue.fromHexString(
-            "740620beb3f42033473a7adf01b5f115ec0a72bf8c97eb36f732a6158ff8775d"),
+            "0x93a79f0374c8cac12d3234f7aaeee20cd5a9902bfba7dd85a21d1cceb836921e"),
         hash);
   }
 
@@ -96,14 +96,14 @@ public class SSZObjectHasherTest {
     BytesValue hash1 = sszHasher.getHashTruncate(attestationRecord, "justifiedBlockHash");
     assertEquals(
         BytesValue.fromHexString(
-            "0x8d5fc215a3e8c2a67c44e8c43711ce1396315366f013892cce63ad88b8e8eb9e"),
+            "0xac0c6c3e2f2d6f5af8ee3d41729018acf3aa5d8f36ea1241706c213b4cb88fc0"),
         hash1);
 
     // Sig only removed
     BytesValue hash2 = sszHasher.getHashTruncate(attestationRecord, "aggregateSig");
     assertEquals(
         BytesValue.fromHexString(
-            "0x5df5425a3581f24ec3f8508c44820d2c70c89299cf217a3a5d8e126e51b6e4ed"),
+            "0x1d54a52a350790809fb6fd16968671390f074504fbf771e4dae8c5753e07e43d"),
         hash2);
 
     boolean fired = false;
@@ -143,7 +143,7 @@ public class SSZObjectHasherTest {
     BytesValue hash = sszHasher.getHash(attestationRecord);
     assertEquals(
         BytesValue.fromHexString(
-            "740620beb3f42033473a7adf01b5f115ec0a72bf8c97eb36f732a6158ff8775d"),
+            "0x93a79f0374c8cac12d3234f7aaeee20cd5a9902bfba7dd85a21d1cceb836921e"),
         hash);
   }
 
@@ -159,7 +159,7 @@ public class SSZObjectHasherTest {
     BytesValue hash = sszHasher.getHash(someObject);
     assertEquals(
         BytesValue.fromHexString(
-            "BD4AB28F883B78BF4C5B3652AFCF272EAD9026C3361821A0420777A9B3C20425"),
+            "0xda54f4e7a1c2a874d9589bd283278d61433f4c21de313291efba440874d07bc3"),
         hash);
   }
 
@@ -172,11 +172,11 @@ public class SSZObjectHasherTest {
     BytesValue hash2 = sszHasher.getHash(anotherObject2);
     assertEquals(
         BytesValue.fromHexString(
-            "FB5BAAECAB62C516763CEA2DFBA17FBBC24907E4E3B0BE426BDE71BE89AF495F"),
+            "0x48078cfed56339ea54962e72c37c7f588fc4f8e5bc173827ba75cb10a63a96a5"),
         hash1);
     assertEquals(
         BytesValue.fromHexString(
-            "B7047395B0D5A9C70336FDE7E40DE2BB369FE67C8E762A35641E209B7338FDD9"),
+            "0x340dd630ad21bf010b4e676dbfa9ba9a02175262d1fa356232cfde6cb5b47ef2"),
         hash2);
   }
 
@@ -190,7 +190,7 @@ public class SSZObjectHasherTest {
     BytesValue hash = sszHasher.getHash(anotherObjects);
     assertEquals(
         BytesValue.fromHexString(
-            "a9bb69cad9fb0d9a9963bf9a32f09b9c306bed6f6c95fff3e5d625fd9370646e"),
+            "0xac239c6a7397cc176933c6b1a4d75df567c2603e49f53ea61878b1e484b62fbe"),
         hash);
   }
 
