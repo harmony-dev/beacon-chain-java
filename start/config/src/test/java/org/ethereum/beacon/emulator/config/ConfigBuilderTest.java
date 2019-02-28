@@ -4,7 +4,7 @@ import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.emulator.config.chainspec.ChainSpecData;
 import org.ethereum.beacon.emulator.config.main.Configuration;
 import org.ethereum.beacon.emulator.config.main.MainConfig;
-import org.ethereum.beacon.emulator.config.main.action.ActionEmulate;
+import org.ethereum.beacon.emulator.config.main.action.ActionSimulate;
 import org.junit.Test;
 import tech.pegasys.artemis.util.uint.UInt64;
 
@@ -23,8 +23,8 @@ public class ConfigBuilderTest {
     MainConfig unmodified = (MainConfig) configBuilder.build();
     assertEquals("file://db", unmodified.getConfig().getDb());
     assertEquals(3, unmodified.getPlan().getValidator().size());
-    ActionEmulate actionEmulate = ((ActionEmulate) unmodified.getPlan().getValidator().get(2));
-    assertEquals(4, (long) actionEmulate.getCount());
+    ActionSimulate actionSimulate = ((ActionSimulate) unmodified.getPlan().getValidator().get(2));
+    assertEquals(4, (long) actionSimulate.getCount());
 
     MainConfig config2 = new MainConfig();
     Configuration configPart = new Configuration();

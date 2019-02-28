@@ -16,12 +16,12 @@ import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.crypto.BLS381;
 import org.ethereum.beacon.emulator.config.main.MainConfig;
 import org.ethereum.beacon.emulator.config.main.action.Action;
-import org.ethereum.beacon.emulator.config.main.action.ActionEmulate;
+import org.ethereum.beacon.emulator.config.main.action.ActionSimulate;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.schedulers.ControlledSchedulers;
 import org.ethereum.beacon.schedulers.LoggerMDCExecutor;
 import org.ethereum.beacon.schedulers.Schedulers;
-import org.ethereum.beacon.util.EmulateUtils;
+import org.ethereum.beacon.util.SimulateUtils;
 import org.ethereum.beacon.wire.LocalWireHub;
 import org.ethereum.beacon.wire.WireApi;
 import org.javatuples.Pair;
@@ -40,8 +40,8 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.function.Consumer;
 
-public class EmulatorLauncher implements Runnable {
-  private final ActionEmulate emulateConfig;
+public class SimulatorLauncher implements Runnable {
+  private final ActionSimulate simulateConfig;
   private final MainConfig mainConfig;
   private final ChainSpec chainSpec;
   private final SpecHelpers specHelpers;
@@ -49,14 +49,14 @@ public class EmulatorLauncher implements Runnable {
   private final Consumer<MainConfig> onUpdateConfig;
 
   /**
-   * Creates Emulator launcher with following settings
+   * Creates Simulator launcher with following settings
    *
    * @param mainConfig Configuration and run plan
    * @param chainSpec Chain specification
    * @param logLevel Log level, Apache log4j type
    * @param onUpdateConfig Callback to run when mainConfig is updated
    */
-  public EmulatorLauncher(
+  public SimulatorLauncher(
       MainConfig mainConfig,
       ChainSpec chainSpec,
       Level logLevel,
@@ -65,16 +65,16 @@ public class EmulatorLauncher implements Runnable {
     this.chainSpec = chainSpec;
     this.specHelpers = SpecHelpers.createWithSSZHasher(chainSpec, () -> 0L);
     List<Action> actions = mainConfig.getPlan().getValidator();
-    Optional<ActionEmulate> actionEmulate =
+    Optional<ActionSimulate> actionSimulate =
         actions.stream()
-            .filter(a -> a instanceof ActionEmulate)
-            .map(a -> (ActionEmulate) a)
+            .filter(a -> a instanceof ActionSimulate)
+            .map(a -> (ActionSimulate) a)
             .findFirst();
-    if (!actionEmulate.isPresent()) {
-      throw new RuntimeException("Emulate settings are not set");
+    if (!actionSimulate.isPresent()) {
+      throw new RuntimeException("Simulate settings are not set");
     }
-    this.emulateConfig = actionEmulate.get();
-    if (emulateConfig.getCount() == null && emulateConfig.getPrivateKeys() == null) {
+    this.simulateConfig = actionSimulate.get();
+    if (simulateConfig.getCount() == null && simulateConfig.getPrivateKeys() == null) {
       throw new RuntimeException("Set either number of validators or private keys.");
     }
     this.logLevel = logLevel;
@@ -105,15 +105,15 @@ public class EmulatorLauncher implements Runnable {
   }
 
   private Pair<List<Deposit>, List<BLS381.KeyPair>> getValidatorDeposits() {
-    if (emulateConfig.getPrivateKeys() != null && !emulateConfig.getPrivateKeys().isEmpty()) {
+    if (simulateConfig.getPrivateKeys() != null && !simulateConfig.getPrivateKeys().isEmpty()) {
       List<BLS381.KeyPair> keyPairs = new ArrayList<>();
-      for (String pKey : emulateConfig.getPrivateKeys()) {
+      for (String pKey : simulateConfig.getPrivateKeys()) {
         keyPairs.add(BLS381.KeyPair.create(BLS381.PrivateKey.create(Bytes32.fromHexString(pKey))));
       }
-      return Pair.with(EmulateUtils.getDepositsForKeyPairs(keyPairs, specHelpers), keyPairs);
+      return Pair.with(SimulateUtils.getDepositsForKeyPairs(keyPairs, specHelpers), keyPairs);
     } else {
       Pair<List<Deposit>, List<BLS381.KeyPair>> anyDeposits =
-          EmulateUtils.getAnyDeposits(specHelpers, emulateConfig.getCount());
+          SimulateUtils.getAnyDeposits(specHelpers, simulateConfig.getCount());
       List<String> pKeysEncoded = new ArrayList<>();
       anyDeposits
           .getValue1()
@@ -121,7 +121,7 @@ public class EmulatorLauncher implements Runnable {
               pk -> {
                 pKeysEncoded.add(pk.getPrivate().getEncodedBytes().toString());
               });
-      emulateConfig.setPrivateKeys(pKeysEncoded);
+      simulateConfig.setPrivateKeys(pKeysEncoded);
       onUpdateConfig();
       return anyDeposits;
     }

@@ -3,7 +3,7 @@ package org.ethereum.beacon.schedulers;
 import java.time.Duration;
 
 /**
- * Special Schedulers implementation which is mostly suitable for testing and emulation.
+ * Special Schedulers implementation which is mostly suitable for testing and simulation.
  * The system time is controlled manually and all the schedulers execute tasks according
  * to this time.
  * Initial system time is equal to 0

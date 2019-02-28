@@ -28,5 +28,5 @@ plan:
 
     - action: run
 
-    - action: emulate
+    - action: simulate
       count: 4

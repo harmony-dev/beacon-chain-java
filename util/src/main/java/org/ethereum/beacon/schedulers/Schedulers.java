@@ -17,7 +17,7 @@ public interface Schedulers {
   }
 
   /**
-   * Creates the ControlledSchedulers implementation (normally for testing or emulation)
+   * Creates the ControlledSchedulers implementation (normally for testing or simulation)
    * with the specified delegate Executor factory.
    * @param delegateExecutor all the tasks are finally executed on executors created by this
    * factory. Normally a single executor should be sufficient and could be supplied as
@@ -33,7 +33,7 @@ public interface Schedulers {
   }
 
   /**
-   * Creates the ControlledSchedulers implementation (normally for testing or emulation)
+   * Creates the ControlledSchedulers implementation (normally for testing or simulation)
    * which executes all the tasks immediately on the same thread or if a task scheduled for
    * later execution then this task would be executed within appropriate
    * {@link ControlledSchedulers#setCurrentTime(long)} call
