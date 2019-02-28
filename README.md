@@ -8,6 +8,12 @@ It starts with [Phase 0](https://github.com/ethereum/eth2.0-specs/blob/master/sp
 ## Develop
 If you want to take part in Ethereum 2.0 development and use our code, we split everything into several modules, so anyone could easily take only the needed part. To dig into module goals, check [settings.gradle](settings.gradle). 
 
+You can build one module jar with gradle `assemble` task executed on desired module:
+```bash
+./gradlew :crypto:assemble
+cp crypto/build/libs/beacon-crypto-0.1.0.jar <jar-destination>
+``` 
+
 ## Run
 Install Java 8 or later. There are many guidelines in Internet, even the [official one](https://java.com/en/download/help/download_options.xml), from Oracle. Next, git clone our repo, build `client` module distribution and run emulator:
 ```bash
@@ -36,8 +42,7 @@ Thank you for joining our efforts to drive Ethereum forward!
 We are not very strict on requirements but your code should help us to reach our goal, it should be easy to get it, understand the idea, and it should be feasible to review it. Also we are trying to match [Google code style](https://google.github.io/styleguide/javaguide.html) but we don't like it. Feel free to choose any [issue](https://github.com/harmony-dev/beacon-chain-java/issues) and ask how to do it better.  
 
 ## Links
-[Ethereum 2.0 specs](https://github.com/ethereum/eth2.0-specs)
-
+[Ethereum 2.0 specs](https://github.com/ethereum/eth2.0-specs)  
 [Vitalik Buterin on DevCon4 about Ethereum 2.0](https://slideslive.com/38911602/latest-of-ethereum)
  
 
