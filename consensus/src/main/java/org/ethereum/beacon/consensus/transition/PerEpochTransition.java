@@ -504,6 +504,9 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
 
     // Note: When applying penalties in the following balance recalculations
     // implementers should make sure the uint64 does not underflow.
+    // Note: Rewards and penalties are for participation in the previous epoch,
+    // so the "active validator" set is drawn from
+    // get_active_validator_indices(state.validator_registry, previous_epoch).
 
     // Let epochs_since_finality = next_epoch - state.finalized_epoch.
     EpochNumber epochs_since_finality = next_epoch.minus(state.getFinalizedEpoch());
@@ -531,7 +534,7 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
       //    base_reward(state, index).
       //  FIXME 'active validator' - not exact meaning
       List<ValidatorIndex> previous_epoch_justified_attester_loosers = new ArrayList<>();
-      for (ValidatorIndex index : current_active_validator_indices) {
+      for (ValidatorIndex index : previous_active_validator_indices) {
         if (!previous_epoch_justified_attester_indices.contains(index)) {
           state.getValidatorBalances().update(index, balance ->
               balance.minus(base_reward.apply(index)));
@@ -563,7 +566,7 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
       //    base_reward(state, index).
       //  FIXME 'active validator' - not exact meaning
       List<ValidatorIndex> previous_epoch_boundary_attester_loosers = new ArrayList<>();
-      for (ValidatorIndex index : current_active_validator_indices) {
+      for (ValidatorIndex index : previous_active_validator_indices) {
         if (!previous_epoch_boundary_attester_indices.contains(index)) {
           state.getValidatorBalances().update(index, balance ->
               balance.minus(base_reward.apply(index)));
@@ -593,7 +596,7 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
       //  Any active validator index not in previous_epoch_head_attester_indices loses
       //    base_reward(state, index).
       List<ValidatorIndex> previous_epoch_head_attester_loosers = new ArrayList<>();
-      for (ValidatorIndex index : current_active_validator_indices) {
+      for (ValidatorIndex index : previous_active_validator_indices) {
         if (!previous_epoch_head_attester_indices.contains(index)) {
           state.getValidatorBalances().update(index, balance ->
               balance.minus(base_reward.apply(index)));
@@ -626,7 +629,7 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
       //  Any active validator index not in previous_epoch_justified_attester_indices, loses
       //      inactivity_penalty(state, index, epochs_since_finality).
       List<ValidatorIndex> previous_epoch_justified_attester_loosers = new ArrayList<>();
-      for (ValidatorIndex index : current_active_validator_indices) {
+      for (ValidatorIndex index : previous_active_validator_indices) {
         if (!previous_epoch_justified_attester_indices.contains(index)) {
           state.getValidatorBalances().update(index, balance ->
               balance.minus(inactivity_penalty.apply(index, epochs_since_finality)));
@@ -641,7 +644,7 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
       //  Any active validator index not in previous_epoch_boundary_attester_indices, loses
       //      inactivity_penalty(state, index, epochs_since_finality).
       List<ValidatorIndex> previous_epoch_boundary_attester_loosers = new ArrayList<>();
-      for (ValidatorIndex index : current_active_validator_indices) {
+      for (ValidatorIndex index : previous_active_validator_indices) {
         if (!previous_epoch_boundary_attester_indices.contains(index)) {
           state.getValidatorBalances().update(index, balance ->
               balance.minus(inactivity_penalty.apply(index, epochs_since_finality)));
@@ -656,7 +659,7 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
       //  Any active validator index not in previous_epoch_head_attester_indices, loses
       //      base_reward(state, index).
       List<ValidatorIndex> previous_epoch_head_attester_loosers = new ArrayList<>();
-      for (ValidatorIndex index : current_active_validator_indices) {
+      for (ValidatorIndex index : previous_active_validator_indices) {
         if (!previous_epoch_head_attester_indices.contains(index)) {
           state.getValidatorBalances().update(index, balance ->
               balance.minus(base_reward.apply(index)));
@@ -670,7 +673,7 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
       //  Any active_validator index with validator.penalized_epoch <= current_epoch, loses
       //      2 * inactivity_penalty(state, index, epochs_since_finality) + base_reward(state, index).
       List<ValidatorIndex> inactive_attester_loosers = new ArrayList<>();
-      for (ValidatorIndex index : current_active_validator_indices) {
+      for (ValidatorIndex index : previous_active_validator_indices) {
         ValidatorRecord validator = state.getValidatorRegistry().get(index);
         if (validator.getPenalizedEpoch().lessEqual(current_epoch)) {
           state.getValidatorBalances().update(index, balance ->
