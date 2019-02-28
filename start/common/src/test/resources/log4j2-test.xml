@@ -1,8 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Configuration status="WARN">
+<Configuration status="INFO">
+
   <Appenders>
+
+    <Routing name="validatorFile">
+      <Routes pattern="$${ctx:validatorIndex:-X}">
+        <Route>
+          <File name="dummy" fileName="logs/validator-${ctx:validatorIndex:-X}.log" append="false">
+            <PatternLayout>
+              <Pattern>%d{HH:mm:ss.SSS} %p %c{1.} [%t] %m%n</Pattern>
+            </PatternLayout>
+          </File>
+        </Route>
+      </Routes>
+    </Routing>
+
+    <File name="allFile" fileName="logs/all.log" append="false">
+      <PatternLayout>
+        <Pattern>%d{HH:mm:ss.SSS} %p %c{1.} [%t] #%X{validatorIndex} %m%n</Pattern>
+      </PatternLayout>
+    </File>
+
     <Console name="Console" target="SYSTEM_OUT">
-      <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} [Validator: %X{validatorIndex}] - %msg%n"/>
+      <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} [Validator: #%X{validatorIndex}] - %msg%n"/>
+      <ThresholdFilter level="info"/>
 <!--
       <ContextMapFilter onMatch="ACCEPT" onMismatch="DENY" operator="or">
         <KeyValuePair key="mdcKey" value="value1"/>
@@ -11,8 +32,10 @@
     </Console>
   </Appenders>
   <Loggers>
-    <Root level="trace">
+    <Root level="debug">
       <AppenderRef ref="Console"/>
+      <AppenderRef ref="validatorFile"/>
+      <AppenderRef ref="allFile"/>
     </Root>
   </Loggers>
 </Configuration>

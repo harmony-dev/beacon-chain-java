@@ -12,6 +12,8 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.storage.impl.MemBeaconChainStorageFactory;
 import org.ethereum.beacon.consensus.SpecHelpers;
@@ -50,6 +52,7 @@ import tech.pegasys.artemis.util.bytes.MutableBytesValue;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public class LocalNetTest {
+  private static final Logger logger = LogManager.getLogger(LocalNetTest.class);
 
   private static class SimpleDepositContract implements DepositContract {
     private final ChainStart chainStart;
@@ -170,7 +173,7 @@ public class LocalNetTest {
     ChainStart chainStart = new ChainStart(genesisTime, eth1Data, deposits);
     DepositContract depositContract = new SimpleDepositContract(chainStart);
 
-    System.out.println("Creating peers...");
+    logger.info("Creating peers...");
     List<Launcher> peers = new ArrayList<>();
     for(int i = 0; i < validatorCount; i++) {
       ControlledSchedulers schedulers = controlledSchedulers.createNew();
