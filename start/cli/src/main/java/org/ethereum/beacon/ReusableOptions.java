@@ -22,17 +22,14 @@ import java.util.Map;
 public class ReusableOptions {
 
   static final String VERSION = "0.1b";
-  private static final Map<Integer, Level> LOG_LEVELS = new HashMap<>();
+  private static final Map<LogLevel, Level> LOG_LEVELS = new HashMap<>();
 
   static {
-    LOG_LEVELS.put(0, Level.OFF);
-    LOG_LEVELS.put(1, Level.FATAL);
-    LOG_LEVELS.put(2, Level.ERROR);
-    LOG_LEVELS.put(3, Level.WARN);
-    LOG_LEVELS.put(4, Level.INFO);
-    LOG_LEVELS.put(5, Level.DEBUG);
-    LOG_LEVELS.put(6, Level.TRACE);
-    LOG_LEVELS.put(7, Level.ALL);
+    LOG_LEVELS.put(LogLevel.OFF, Level.OFF);
+    LOG_LEVELS.put(LogLevel.ERROR, Level.ERROR);
+    LOG_LEVELS.put(LogLevel.INFO, Level.INFO);
+    LOG_LEVELS.put(LogLevel.DEBUG, Level.DEBUG);
+    LOG_LEVELS.put(LogLevel.ALL, Level.ALL);
   }
 
   @CommandLine.Option(
@@ -41,11 +38,11 @@ public class ReusableOptions {
       description =
           "YAML config file.\nAll options that are not set will be loaded from default config.")
   File[] configs;
+
   @CommandLine.Option(
       names = {"-cs", "--save-config"},
       paramLabel = "SAVE-CONFIG",
-      description =
-          "Saves merged configuration to file in YAML format")
+      description = "Saves merged configuration to file in YAML format")
   File config;
 
   @CommandLine.Option(
@@ -54,20 +51,23 @@ public class ReusableOptions {
       description =
           "YAML chain specification file.\nFor all specifications that are not set, default values are used.")
   File[] chainspecs;
+
   @CommandLine.Option(
       names = {"-ss", "--save-spec"},
       paramLabel = "SAVE-SPEC",
-      description =
-          "Saves merged chain specification to file in YAML format")
+      description = "Saves merged chain specification to file in YAML format")
   File chainspec;
 
   @CommandLine.Option(
       names = {"-l", "--loglevel"},
       paramLabel = "LOG",
-      description = "Sets log level in the range of 0..7 (OFF..ALL), default is 4 (INFO).")
-  Integer logLevel;
+      description =
+          "Sets log level in the range from OFF to ALL messages, default is INFO. Available levels: ${COMPLETION-CANDIDATES}")
+  LogLevel logLevel;
+
   @CommandLine.Option(names = "-v")
   boolean verbose;
+
   List<Pair<String, Object>> configPathValues = new ArrayList<>();
   List<Pair<String, Object>> chainSpecPathValues = new ArrayList<>();
 
@@ -159,14 +159,7 @@ public class ReusableOptions {
       if (print) {
         System.out.println("Setting log level to " + logLevel);
       }
-      Level res;
-      if (logLevel >= 7) {
-        res = LOG_LEVELS.get(7);
-      } else {
-        res = LOG_LEVELS.get(logLevel);
-      }
-
-      return res;
+      return LOG_LEVELS.get(logLevel);
     }
 
     return null;
@@ -175,5 +168,13 @@ public class ReusableOptions {
   enum Task {
     run,
     config
+  }
+
+  enum LogLevel {
+    OFF,
+    ERROR,
+    INFO,
+    DEBUG,
+    ALL
   }
 }
