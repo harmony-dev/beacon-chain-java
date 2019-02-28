@@ -17,7 +17,6 @@ import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.consensus.TransitionType;
-import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.CrosslinkRecord;
@@ -54,12 +53,24 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
 
   @Override
   public BeaconStateEx apply(BeaconStateEx stateEx) {
+    return apply(stateEx, null);
+  }
+
+  public EpochTransitionSummary applyWithSummary(BeaconStateEx stateEx) {
+    EpochTransitionSummary summary = new EpochTransitionSummary();
+    apply(stateEx, summary);
+    return summary;
+  }
+
+  private BeaconStateEx apply(BeaconStateEx origState, EpochTransitionSummary summary) {
     logger.debug(() -> "Applying epoch transition to state: (" +
-        spec.hash_tree_root(stateEx).toStringShort() + ") " + stateEx.toString(specConst));
+        spec.hash_tree_root(origState).toStringShort() + ") " + origState.toString(specConst));
 
-    TransitionType.EPOCH.checkCanBeAppliedAfter(stateEx.getTransition());
+    TransitionType.EPOCH.checkCanBeAppliedAfter(origState.getTransition());
 
-    BeaconState origState = stateEx; // var for debugging
+    if (summary != null) {
+      summary.preState = origState;
+    }
     MutableBeaconState state = origState.createMutableCopy();
 
     // The steps below happen when (state.slot + 1) % EPOCH_LENGTH == 0.
@@ -124,6 +135,7 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
                 .stream())
         .collect(Collectors.toSet());
 
+
     // Let current_epoch_boundary_attesting_balance =
     //    sum([get_effective_balance(state, i) for i in current_epoch_boundary_attester_indices]).
     Gwei current_epoch_boundary_attesting_balance = current_epoch_boundary_attester_indices
@@ -132,15 +144,22 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
         .reduce(Gwei::plus)
         .orElse(Gwei.ZERO);
 
+    if (summary != null) {
+      summary.currentEpochSummary.activeAttesters = current_active_validator_indices;
+      summary.currentEpochSummary.validatorBalance = current_total_balance;
+      summary.currentEpochSummary.boundaryAttesters.addAll(current_epoch_boundary_attester_indices);
+      summary.currentEpochSummary.boundaryAttestingBalance = current_epoch_boundary_attesting_balance;
+    }
     /*
      Helpers: Validators attesting during the previous epoch:
     */
 
+    List<ValidatorIndex> previous_active_validator_indices = spec
+        .get_active_validator_indices(state.getValidatorRegistry(), previous_epoch);
+
     //Let previous_total_balance = sum([get_effective_balance(state, i)
     //    for i in get_active_validator_indices(state.validator_registry, previous_epoch)]).
-    Gwei previous_total_balance = spec
-        .get_active_validator_indices(state.getValidatorRegistry(), previous_epoch)
-        .stream()
+    Gwei previous_total_balance = previous_active_validator_indices.stream()
         .map(i -> spec.get_effective_balance(state, i))
         .reduce(Gwei::plus)
         .orElse(Gwei.ZERO);
@@ -242,6 +261,18 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
         .map(i -> spec.get_effective_balance(state, i))
         .reduce(Gwei::plus)
         .orElse(Gwei.ZERO);
+
+    if (summary != null) {
+      summary.previousEpochSummary.activeAttesters = current_active_validator_indices;
+      summary.previousEpochSummary.validatorBalance = current_total_balance;
+      summary.previousEpochSummary.boundaryAttesters.addAll(previous_epoch_boundary_attester_indices);
+      summary.previousEpochSummary.boundaryAttestingBalance = previous_epoch_boundary_attesting_balance;
+      summary.headAttesters.addAll(previous_epoch_head_attester_indices);
+      summary.headAttestingBalance = previous_epoch_head_attesting_balance;
+      summary.justifiedAttesters.addAll(previous_epoch_justified_attester_indices);
+      summary.justifiedAttestingBalance = previous_epoch_justified_attesting_balance;
+    }
+
 
     Map<Pair<List<ValidatorIndex>, Hash32>, Set<ValidatorIndex>>
         attesting_validator_indices = new HashMap<>();
@@ -514,16 +545,24 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
     if (epochs_since_finality.lessEqual(EpochNumber.of(4))) {
       // Case 1: epochs_since_finality <= 4:
       logger.debug("Case 1: epochs_since_finality <= 4");
+      if (summary != null) {
+        summary.noFinality = false;
+      }
 
       //  Expected FFG source:
 
       //  Any validator index in previous_epoch_justified_attester_indices gains
       //    base_reward(state, index) * previous_epoch_justified_attesting_balance // previous_total_balance.
       for (ValidatorIndex index : previous_epoch_justified_attester_indices) {
+        Gwei reward = base_reward.apply(index)
+            .times(previous_epoch_justified_attesting_balance)
+            .dividedBy(previous_total_balance);
         state.getValidatorBalances().update(index, balance ->
-            balance.plus(base_reward.apply(index)
-                    .times(previous_epoch_justified_attesting_balance)
-                    .dividedBy(previous_total_balance)));
+            balance.plus(reward));
+
+        if (summary != null) {
+          summary.attestationRewards.put(index, reward);
+        }
       }
       if (logger.isTraceEnabled() && !previous_epoch_justified_attester_indices.isEmpty()) {
         logger.trace("Rewarded: Previous epoch justified attesters: "
@@ -536,9 +575,13 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
       List<ValidatorIndex> previous_epoch_justified_attester_loosers = new ArrayList<>();
       for (ValidatorIndex index : previous_active_validator_indices) {
         if (!previous_epoch_justified_attester_indices.contains(index)) {
-          state.getValidatorBalances().update(index, balance ->
-              balance.minus(base_reward.apply(index)));
+          Gwei penalty = base_reward.apply(index);
+          state.getValidatorBalances().update(index, balance -> balance.minus(penalty));
+
           previous_epoch_justified_attester_loosers.add(index);
+          if (summary != null) {
+            summary.attestationPenalties.put(index, penalty);
+          }
         }
       }
       if (logger.isDebugEnabled() && !previous_epoch_justified_attester_loosers.isEmpty()) {
@@ -551,11 +594,14 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
       //  Any validator index in previous_epoch_boundary_attester_indices gains
       //    base_reward(state, index) * previous_epoch_boundary_attesting_balance // previous_total_balance.
       for (ValidatorIndex index : previous_epoch_boundary_attester_indices) {
-        state.getValidatorBalances().update(index, balance ->
-            balance
-                .plus(base_reward.apply(index)
-                    .times(previous_epoch_boundary_attesting_balance)
-                    .dividedBy(previous_total_balance)));
+        Gwei reward = base_reward.apply(index)
+            .times(previous_epoch_boundary_attesting_balance)
+            .dividedBy(previous_total_balance);
+        state.getValidatorBalances().update(index, balance -> balance.plus(reward));
+
+        if (summary != null) {
+          summary.boundaryAttestationRewards.put(index, reward);
+        }
       }
       if (logger.isTraceEnabled() && !previous_epoch_boundary_attester_indices.isEmpty()) {
         logger.trace("Rewarded: Previous epoch boundary attesters: "
@@ -568,9 +614,13 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
       List<ValidatorIndex> previous_epoch_boundary_attester_loosers = new ArrayList<>();
       for (ValidatorIndex index : previous_active_validator_indices) {
         if (!previous_epoch_boundary_attester_indices.contains(index)) {
+          Gwei penalty = base_reward.apply(index);
           state.getValidatorBalances().update(index, balance ->
-              balance.minus(base_reward.apply(index)));
+              balance.minus(penalty));
           previous_epoch_boundary_attester_loosers.add(index);
+          if (summary != null) {
+            summary.boundaryAttestationPenalties.put(index, penalty);
+          }
         }
       }
       if (logger.isDebugEnabled() && !previous_epoch_boundary_attester_loosers.isEmpty()) {
@@ -583,10 +633,14 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
       //  Any validator index in previous_epoch_head_attester_indices gains
       //    base_reward(state, index) * previous_epoch_head_attesting_balance // previous_total_balance).
       for (ValidatorIndex index : previous_epoch_head_attester_indices) {
-        state.getValidatorBalances().update(index, balance ->
-            balance.plus(base_reward.apply(index)
-                    .times(previous_epoch_head_attesting_balance)
-                    .dividedBy(previous_total_balance)));
+        Gwei reward = base_reward.apply(index)
+            .times(previous_epoch_head_attesting_balance)
+            .dividedBy(previous_total_balance);
+        state.getValidatorBalances().update(index, balance -> balance.plus(reward));
+        if (summary != null) {
+          summary.beaconHeadAttestationRewards.put(index, reward);
+        }
+
       }
       if (logger.isTraceEnabled() && !previous_epoch_head_attester_indices.isEmpty()) {
         logger.trace("Rewarded: Previous epoch head attesters: "
@@ -598,9 +652,13 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
       List<ValidatorIndex> previous_epoch_head_attester_loosers = new ArrayList<>();
       for (ValidatorIndex index : previous_active_validator_indices) {
         if (!previous_epoch_head_attester_indices.contains(index)) {
+          Gwei penalty = base_reward.apply(index);
           state.getValidatorBalances().update(index, balance ->
-              balance.minus(base_reward.apply(index)));
+              balance.minus(penalty));
           previous_epoch_head_attester_loosers.add(index);
+          if (summary != null) {
+            summary.beaconHeadAttestationPenalties.put(index, penalty);
+          }
         }
       }
       if (logger.isDebugEnabled() && !previous_epoch_head_attester_loosers.isEmpty()) {
@@ -614,10 +672,13 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
       //    base_reward(state, index) * MIN_ATTESTATION_INCLUSION_DELAY //
       //        inclusion_distance(state, index)
       for (ValidatorIndex index : previous_epoch_attester_indices) {
-        state.getValidatorBalances().update(index, balance ->
-            balance.plus(base_reward.apply(index)
-                    .times(specConst.getMinAttestationInclusionDelay())
-                    .dividedBy(inclusion_distance.get(index))));
+        Gwei reward = base_reward.apply(index)
+            .times(specConst.getMinAttestationInclusionDelay())
+            .dividedBy(inclusion_distance.get(index));
+        state.getValidatorBalances().update(index, balance -> balance.plus(reward));
+        if (summary != null) {
+          summary.inclusionDistanceRewards.put(index, reward);
+        }
       }
       if (logger.isTraceEnabled() && !previous_epoch_attester_indices.isEmpty()) {
         logger.trace("Rewarded: Previous epoch attesters: " + previous_epoch_attester_indices);
@@ -625,15 +686,21 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
     } else {
       // Case 2: epochs_since_finality > 4:
       logger.debug("Case 2: epochs_since_finality > 4");
+      if (summary != null) {
+        summary.noFinality = true;
+      }
 
       //  Any active validator index not in previous_epoch_justified_attester_indices, loses
       //      inactivity_penalty(state, index, epochs_since_finality).
       List<ValidatorIndex> previous_epoch_justified_attester_loosers = new ArrayList<>();
       for (ValidatorIndex index : previous_active_validator_indices) {
         if (!previous_epoch_justified_attester_indices.contains(index)) {
-          state.getValidatorBalances().update(index, balance ->
-              balance.minus(inactivity_penalty.apply(index, epochs_since_finality)));
+          Gwei penalty = inactivity_penalty.apply(index, epochs_since_finality);
+          state.getValidatorBalances().update(index, balance -> balance.minus(penalty));
           previous_epoch_justified_attester_loosers.add(index);
+          if (summary != null) {
+            summary.attestationPenalties.put(index, penalty);
+          }
         }
       }
       if (logger.isDebugEnabled() && !previous_epoch_justified_attester_loosers.isEmpty()) {
@@ -646,9 +713,13 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
       List<ValidatorIndex> previous_epoch_boundary_attester_loosers = new ArrayList<>();
       for (ValidatorIndex index : previous_active_validator_indices) {
         if (!previous_epoch_boundary_attester_indices.contains(index)) {
+          Gwei penalty = inactivity_penalty.apply(index, epochs_since_finality);
           state.getValidatorBalances().update(index, balance ->
-              balance.minus(inactivity_penalty.apply(index, epochs_since_finality)));
+              balance.minus(penalty));
           previous_epoch_boundary_attester_loosers.add(index);
+          if (summary != null) {
+            summary.boundaryAttestationPenalties.put(index, penalty);
+          }
         }
       }
       if (logger.isDebugEnabled() && !previous_epoch_boundary_attester_loosers.isEmpty()) {
@@ -661,9 +732,13 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
       List<ValidatorIndex> previous_epoch_head_attester_loosers = new ArrayList<>();
       for (ValidatorIndex index : previous_active_validator_indices) {
         if (!previous_epoch_head_attester_indices.contains(index)) {
+          Gwei penalty = base_reward.apply(index);
           state.getValidatorBalances().update(index, balance ->
-              balance.minus(base_reward.apply(index)));
+              balance.minus(penalty));
           previous_epoch_head_attester_loosers.add(index);
+          if (summary != null) {
+            summary.beaconHeadAttestationPenalties.put(index, penalty);
+          }
         }
       }
       if (logger.isDebugEnabled() && !previous_epoch_head_attester_loosers.isEmpty()) {
@@ -675,14 +750,14 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
       List<ValidatorIndex> inactive_attester_loosers = new ArrayList<>();
       for (ValidatorIndex index : previous_active_validator_indices) {
         ValidatorRecord validator = state.getValidatorRegistry().get(index);
+        Gwei penalty = inactivity_penalty.apply(index, epochs_since_finality)
+            .times(2).plus(base_reward.apply(index));
         if (validator.getPenalizedEpoch().lessEqual(current_epoch)) {
-          state.getValidatorBalances().update(index, balance ->
-              balance.minus(
-                  inactivity_penalty.apply(index, epochs_since_finality))
-                      .times(2)
-                      .plus(base_reward.apply(index))
-          );
+          state.getValidatorBalances().update(index, balance -> balance.minus(penalty));
           inactive_attester_loosers.add(index);
+          if (summary != null) {
+            summary.penalizedEpochPenalties.put(index, penalty);
+          }
         }
       }
       if (logger.isDebugEnabled() && !inactive_attester_loosers.isEmpty()) {
@@ -693,13 +768,15 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
       //    base_reward(state, index) - base_reward(state, index) *
       //        MIN_ATTESTATION_INCLUSION_DELAY // inclusion_distance(state, index)
       for (ValidatorIndex index : previous_epoch_attester_indices) {
-        state.getValidatorBalances().update(index, balance -> balance.minus(
-            base_reward.apply(index).minus(
+        Gwei penalty = base_reward.apply(index)
+            .minus(
                 base_reward.apply(index)
-                .times(specConst.getMinAttestationInclusionDelay())
-                .dividedBy(inclusion_distance.get(index))
-            )
-        ));
+                    .times(specConst.getMinAttestationInclusionDelay())
+                    .dividedBy(inclusion_distance.get(index)));
+        state.getValidatorBalances().update(index, balance -> balance.minus(penalty));
+        if (summary != null) {
+          summary.noFinalityPenalties.put(index, penalty);
+        }
       }
       if (logger.isDebugEnabled() && !previous_epoch_attester_indices.isEmpty()) {
         logger.debug("Penalized: No finality attesters: " + previous_epoch_attester_indices);
@@ -718,10 +795,15 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
     for (ValidatorIndex index : previous_epoch_attester_indices) {
       ValidatorIndex proposer_index = spec
           .get_beacon_proposer_index(state, inclusion_slot.get(index));
+      Gwei reward = base_reward.apply(index).dividedBy(specConst.getIncluderRewardQuotient());
       state.getValidatorBalances().update(proposer_index, balance ->
-          balance.plus(base_reward.apply(index)
-              .dividedBy(specConst.getIncluderRewardQuotient())));
+          balance.plus(reward));
       attestation_inclusion_gainers.add(proposer_index);
+      if (summary != null) {
+        summary.attestationInclusionRewards.put(proposer_index, reward);
+      }
+
+
     }
     if (logger.isTraceEnabled() && !attestation_inclusion_gainers.isEmpty()) {
       logger.trace("Rewarded: Attestation include proposers: " + attestation_inclusion_gainers);
@@ -787,6 +869,9 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
       if (state.getValidatorBalances().get(index).less(specConst.getEjectionBalance())) {
         spec.exit_validator(state, index);
         exit_validators.add(index);
+        if (summary != null) {
+          summary.ejectedValidators.add(index);
+        }
       }
     }
     if (logger.isInfoEnabled() && !exit_validators.isEmpty()) {
@@ -886,7 +971,11 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
         a -> spec.slot_to_epoch(a.getData().getSlot()).less(current_epoch));
 
     BeaconStateEx ret = new BeaconStateExImpl(state.createImmutable(),
-        stateEx.getHeadBlockHash(), TransitionType.EPOCH);
+        origState.getHeadBlockHash(), TransitionType.EPOCH);
+
+    if (summary != null) {
+      summary.postState = ret;
+    }
 
     logger.debug(() -> "Epoch transition result state: (" +
         spec.hash_tree_root(ret).toStringShort() + ") " + ret.toString(specConst));
