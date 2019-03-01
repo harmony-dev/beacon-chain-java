@@ -1,7 +1,11 @@
 package org.ethereum.beacon;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.ConfigurationSource;
@@ -41,6 +45,9 @@ import java.util.Random;
 import java.util.function.Consumer;
 
 public class SimulatorLauncher implements Runnable {
+  private static final Logger logger = LogManager.getLogger(SimulatorLauncher.class);
+  private static final Logger logPeer = logger; //LogManager.getLogger("peer");
+
   private final ActionSimulate simulateConfig;
   private final MainConfig mainConfig;
   private final ChainSpec chainSpec;
@@ -52,18 +59,18 @@ public class SimulatorLauncher implements Runnable {
    * Creates Simulator launcher with following settings
    *
    * @param mainConfig Configuration and run plan
-   * @param chainSpec Chain specification
+   * @param specHelpers Chain specification
    * @param logLevel Log level, Apache log4j type
    * @param onUpdateConfig Callback to run when mainConfig is updated
    */
   public SimulatorLauncher(
       MainConfig mainConfig,
-      ChainSpec chainSpec,
+      SpecHelpers specHelpers,
       Level logLevel,
       Consumer<MainConfig> onUpdateConfig) {
     this.mainConfig = mainConfig;
-    this.chainSpec = chainSpec;
-    this.specHelpers = SpecHelpers.createWithSSZHasher(chainSpec, () -> 0L);
+    this.chainSpec = specHelpers.getChainSpec();
+    this.specHelpers = specHelpers;
     List<Action> actions = mainConfig.getPlan().getValidator();
     Optional<ActionSimulate> actionSimulate =
         actions.stream()
@@ -146,11 +153,11 @@ public class SimulatorLauncher implements Runnable {
         new DepositContract.ChainStart(genesisTime, eth1Data, deposits);
     DepositContract depositContract = new SimpleDepositContract(chainStart);
 
-    System.out.println("Creating peers...");
+    List<Launcher> peers = new ArrayList<>();
+
+    logger.info("Creating validators...");
     for (int i = 0; i < keyPairs.size(); i++) {
-      ControlledSchedulers schedulers = controlledSchedulers.createNew();
-      SpecHelpers specHelpers =
-          SpecHelpers.createWithSSZHasher(chainSpec, schedulers::getCurrentTime);
+      ControlledSchedulers schedulers = controlledSchedulers.createNew("" + i);
       WireApi wireApi = localWireHub.createNewPeer("" + i);
 
       Launcher launcher =
@@ -162,49 +169,29 @@ public class SimulatorLauncher implements Runnable {
               new MemBeaconChainStorageFactory(),
               schedulers);
 
-      int finalI = i;
-      Flux.from(launcher.slotTicker.getTickerStream())
-          .subscribe(
-              slot ->
-                  System.out.println(
-                      "  #" + finalI + " Slot: " + slot.toString(chainSpec, genesisTime)));
-      Flux.from(launcher.observableStateProcessor.getObservableStateStream())
-          .subscribe(
-              os -> {
-                System.out.println(
-                    "  #" + finalI + " New observable state: " + os.toString(specHelpers));
-              });
-      Flux.from(launcher.beaconChainValidator.getProposedBlocksStream())
-          .subscribe(
-              block ->
-                  System.out.println(
-                      "#"
-                          + finalI
-                          + " !!! New block: "
-                          + block.toString(chainSpec, genesisTime, specHelpers::hash_tree_root)));
-      Flux.from(launcher.beaconChainValidator.getAttestationsStream())
-          .subscribe(
-              attest ->
-                  System.out.println(
-                      "#"
-                          + finalI
-                          + " !!! New attestation: "
-                          + attest.toString(chainSpec, genesisTime)));
-      Flux.from(launcher.beaconChain.getBlockStatesStream())
-          .subscribe(
-              blockState ->
-                  System.out.println(
-                      "  #"
-                          + finalI
-                          + " Block imported: "
-                          + blockState
-                              .getBlock()
-                              .toString(chainSpec, genesisTime, specHelpers::hash_tree_root)));
+      peers.add(launcher);
     }
-    System.out.println("Peers created");
+    logger.info("Validators created");
+
+    for (int i = 0; i < peers.size(); i++) {
+      Launcher launcher = peers.get(i);
+
+      Flux.from(launcher.slotTicker.getTickerStream()).subscribe(slot ->
+          logPeer.debug("New slot: " + slot.toString(chainSpec, genesisTime)));
+      Flux.from(launcher.observableStateProcessor.getObservableStateStream())
+          .subscribe(os -> logPeer.debug("New observable state: " + os.toString(specHelpers)));
+      Flux.from(launcher.beaconChainValidator.getProposedBlocksStream())
+          .subscribe(block -> logPeer.info("New block created: "
+              + block.toString(chainSpec, genesisTime, specHelpers::hash_tree_root)));
+      Flux.from(launcher.beaconChainValidator.getAttestationsStream())
+          .subscribe(attest -> logPeer.info("New attestation created: "
+              + attest.toString(chainSpec, genesisTime)));
+      Flux.from(launcher.beaconChain.getBlockStatesStream())
+          .subscribe(blockState -> logPeer.debug("Block imported: "
+              + blockState.getBlock().toString(chainSpec, genesisTime, specHelpers::hash_tree_root)));
+    }
 
     while (true) {
-      System.out.println("===============================");
       controlledSchedulers.addTime(Duration.ofSeconds(10));
     }
   }
@@ -247,18 +234,21 @@ public class SimulatorLauncher implements Runnable {
   }
 
   static class MDCControlledSchedulers {
-    public String mdcKey = "validatorIndex";
-    private int counter = 0;
+    private DateFormat localTimeFormat = new SimpleDateFormat("HH:mm:ss.SSS");
+
     private List<ControlledSchedulers> schedulersList = new ArrayList<>();
     private long currentTime;
 
-    public ControlledSchedulers createNew() {
-      LoggerMDCExecutor mdcExecutor = new LoggerMDCExecutor(mdcKey, "" + counter);
-      counter++;
-      ControlledSchedulers newSched = Schedulers.createControlled(() -> mdcExecutor);
-      newSched.setCurrentTime(currentTime);
-      schedulersList.add(newSched);
-      return newSched;
+    public ControlledSchedulers createNew(String validatorId) {
+      ControlledSchedulers[] newSched = new ControlledSchedulers[1];
+      LoggerMDCExecutor mdcExecutor = new LoggerMDCExecutor()
+          .add("validatorTime", () -> localTimeFormat.format(new Date(newSched[0].getCurrentTime())))
+          .add("validatorIndex", () -> "" + validatorId);
+      newSched[0] = Schedulers.createControlled(() -> mdcExecutor);
+      newSched[0].setCurrentTime(currentTime);
+      schedulersList.add(newSched[0]);
+
+      return newSched[0];
     }
 
     public void setCurrentTime(long time) {
