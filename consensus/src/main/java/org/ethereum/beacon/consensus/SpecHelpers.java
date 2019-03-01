@@ -110,19 +110,19 @@ public class SpecHelpers {
         return max(
             1,
             min(
-                SHARD_COUNT // EPOCH_LENGTH,
-                active_validator_count // EPOCH_LENGTH // TARGET_COMMITTEE_SIZE,
+                SHARD_COUNT // SLOTS_PER_EPOCH,
+                active_validator_count // SLOTS_PER_EPOCH // TARGET_COMMITTEE_SIZE,
             )
-        ) * EPOCH_LENGTH
+        ) * SLOTS_PER_EPOCH
    */
   int get_epoch_committee_count(int active_validator_count) {
     return UInt64s.max(UInt64.valueOf(1),
         UInt64s.min(
-            spec.getShardCount().dividedBy(spec.getEpochLength()),
+            spec.getShardCount().dividedBy(spec.getSlotsPerEpoch()),
             UInt64.valueOf(active_validator_count)
-                .dividedBy(spec.getEpochLength())
+                .dividedBy(spec.getSlotsPerEpoch())
                 .dividedBy(spec.getTargetCommitteeSize())
-        )).times(spec.getEpochLength()).intValue();
+        )).times(spec.getSlotsPerEpoch()).intValue();
   }
 
 
@@ -189,9 +189,9 @@ public class SpecHelpers {
   public List<ShardCommittee> get_crosslink_committees_at_slot(
       BeaconState state, SlotNumber slot, boolean registry_change) {
 
-    SlotNumber state_epoch_slot = state.getSlot().minus(state.getSlot().modulo(spec.getEpochLength()));
-    assertTrue(state_epoch_slot.lessEqual(slot.plus(spec.getEpochLength())));
-    assertTrue(slot.less(state_epoch_slot.plus(spec.getEpochLength())));
+    SlotNumber state_epoch_slot = state.getSlot().minus(state.getSlot().modulo(spec.getSlotsPerEpoch()));
+    assertTrue(state_epoch_slot.lessEqual(slot.plus(spec.getSlotsPerEpoch())));
+    assertTrue(slot.less(state_epoch_slot.plus(spec.getSlotsPerEpoch())));
 
     //  epoch = slot_to_epoch(slot)
     //  current_epoch = get_current_epoch(state)
@@ -279,10 +279,10 @@ public class SpecHelpers {
     List<List<ValidatorIndex>> shuffling = get_shuffling(seed, state.getValidatorRegistry(),
         shuffling_epoch);
 
-    //    offset = slot % EPOCH_LENGTH
-    SlotNumber offset = slot.modulo(spec.getEpochLength());
-    //    committees_per_slot = committees_per_epoch // EPOCH_LENGTH
-    UInt64 committees_per_slot = UInt64.valueOf(committees_per_epoch).dividedBy(spec.getEpochLength());
+    //    offset = slot % SLOTS_PER_EPOCH
+    SlotNumber offset = slot.modulo(spec.getSlotsPerEpoch());
+    //    committees_per_slot = committees_per_epoch // SLOTS_PER_EPOCH
+    UInt64 committees_per_slot = UInt64.valueOf(committees_per_epoch).dividedBy(spec.getSlotsPerEpoch());
     //    slot_start_shard = (shuffling_start_shard + committees_per_slot * offset) % SHARD_COUNT
     ShardNumber slot_start_shard = shuffling_start_shard
         .plusModulo(committees_per_slot.times(offset), spec.getShardCount());
@@ -756,17 +756,17 @@ public class SpecHelpers {
         An entry or exit triggered in the ``epoch`` given by the input takes effect at
         the epoch given by the output.
         """
-        return epoch + 1 + ENTRY_EXIT_DELAY
+        return epoch + 1 + ACTIVATION_EXIT_DELAY
    */
   public EpochNumber get_entry_exit_effect_epoch(EpochNumber epoch) {
-    return epoch.plus(1).plus(spec.getEntryExitDelay());
+    return epoch.plus(1).plus(spec.getActivationExitDelay());
   }
 
   /*
     def activate_validator(state: BeaconState, index: int, genesis: bool) -> None:
       validator = state.validator_registry[index]
 
-      validator.activation_slot = GENESIS_SLOT if genesis else (state.slot + ENTRY_EXIT_DELAY)
+      validator.activation_slot = GENESIS_SLOT if genesis else (state.slot + ACTIVATION_EXIT_DELAY)
       state.validator_registry_delta_chain_tip = hash_tree_root(
           ValidatorRegistryDeltaBlock(
               latest_registry_delta_root=state.validator_registry_delta_chain_tip,
@@ -789,7 +789,7 @@ public class SpecHelpers {
     def penalize_validator(state: BeaconState, index: int) -> None:
       exit_validator(state, index)
       validator = state.validator_registry[index]
-      state.latest_slashed_balances[get_current_epoch(state) % LATEST_PENALIZED_EXIT_LENGTH]
+      state.latest_slashed_balances[get_current_epoch(state) % LATEST_SLASHED_EXIT_LENGTH]
           += get_effective_balance(state, index)
 
       whistleblower_index = get_beacon_proposer_index(state, state.slot)
@@ -801,7 +801,7 @@ public class SpecHelpers {
   public void penalize_validator(MutableBeaconState state, ValidatorIndex index) {
     exit_validator(state, index);
     state.getLatestSlashedBalances().update(
-        get_current_epoch(state).modulo(spec.getLatestPenalizedExitLength()),
+        get_current_epoch(state).modulo(spec.getSlashedExitLength()),
         balance -> balance.plus(get_effective_balance(state, index)));
 
     ValidatorIndex whistleblower_index = get_beacon_proposer_index(state, state.getSlot());
@@ -813,7 +813,7 @@ public class SpecHelpers {
         oldVal -> oldVal.minus(whistleblower_reward));
     state.getValidatorRegistry().update(index,
         v -> v.builder().withSlashed(Boolean.TRUE)
-            .withWithdrawableEpoch(get_current_epoch(state).plus(spec.getLatestPenalizedExitLength()))
+            .withWithdrawableEpoch(get_current_epoch(state).plus(spec.getSlashedExitLength()))
             .build());
   }
 
@@ -988,13 +988,13 @@ public class SpecHelpers {
       //  if validator.slashed and current_epoch ==
       //  validator.withdrawable_epoch - LATEST_SLASHED_EXIT_LENGTH // 2:
       if (validator.getSlashed() && current_epoch.equals(
-          validator.getWithdrawableEpoch().minus(spec.getLatestPenalizedExitLength().half()))) {
+          validator.getWithdrawableEpoch().minus(spec.getSlashedExitLength().half()))) {
 
-        //  epoch_index = current_epoch % LATEST_PENALIZED_EXIT_LENGTH
-        EpochNumber epoch_index = current_epoch.modulo(spec.getLatestPenalizedExitLength());
-        // total_at_start = state.latest_slashed_balances[(epoch_index + 1) % LATEST_PENALIZED_EXIT_LENGTH]
+        //  epoch_index = current_epoch % LATEST_SLASHED_EXIT_LENGTH
+        EpochNumber epoch_index = current_epoch.modulo(spec.getSlashedExitLength());
+        // total_at_start = state.latest_slashed_balances[(epoch_index + 1) % LATEST_SLASHED_EXIT_LENGTH]
         Gwei total_at_start = state.getLatestSlashedBalances().get(
-            epoch_index.increment().modulo(spec.getLatestPenalizedExitLength()));
+            epoch_index.increment().modulo(spec.getSlashedExitLength()));
         //  total_at_end = state.latest_slashed_balances[epoch_index]
         Gwei total_at_end = state.getLatestSlashedBalances().get(epoch_index);
         //    total_penalties = total_at_end - total_at_start
@@ -1013,7 +1013,7 @@ public class SpecHelpers {
        def eligible(index):
            validator = state.validator_registry[index]
         if validator.initiated_exit <= current_epoch:
-            penalized_withdrawal_epochs = LATEST_PENALIZED_EXIT_LENGTH // 2
+            penalized_withdrawal_epochs = LATEST_SLASHED_EXIT_LENGTH // 2
             return current_epoch >= validator.initiated_exit + penalized_withdrawal_epochs
         else:
             return current_epoch >= validator.exit_epoch + MIN_VALIDATOR_WITHDRAWABILITY_DELAY
@@ -1052,9 +1052,9 @@ public class SpecHelpers {
       prepare_validator_for_withdrawal(state, index);
       //    withdrawn_so_far += 1
       withdrawn_so_far++;
-      //    if withdrawn_so_far >= MAX_WITHDRAWALS_PER_EPOCH:
+      //    if withdrawn_so_far >= MAX_EXIT_DEQUEUES_PER_EPOCH:
       //      break
-      if (withdrawn_so_far >= spec.getMaxWithdrawalsPerEpoch().getIntValue()) {
+      if (withdrawn_so_far >= spec.getMaxExitDequesPerEpoch().getIntValue()) {
         break;
       }
     }
@@ -1076,14 +1076,14 @@ public class SpecHelpers {
         """
         Return the index root at a recent ``epoch``.
         """
-        assert get_current_epoch(state) - LATEST_ACTIVE_INDEX_ROOTS_LENGTH + ENTRY_EXIT_DELAY < epoch
-            <= get_current_epoch(state) + ENTRY_EXIT_DELAY
+        assert get_current_epoch(state) - LATEST_ACTIVE_INDEX_ROOTS_LENGTH + ACTIVATION_EXIT_DELAY < epoch
+            <= get_current_epoch(state) + ACTIVATION_EXIT_DELAY
         return state.latest_active_index_roots[epoch % LATEST_ACTIVE_INDEX_ROOTS_LENGTH]
    */
   Hash32 get_active_index_root(BeaconState state, EpochNumber epoch) {
-    assertTrue(get_current_epoch(state).minus(spec.getLatestActiveIndexRootsLength()).plus(spec.getEntryExitDelay())
+    assertTrue(get_current_epoch(state).minus(spec.getLatestActiveIndexRootsLength()).plus(spec.getActivationExitDelay())
         .less(epoch));
-    assertTrue(epoch.lessEqual(get_current_epoch(state).plus(spec.getEntryExitDelay())));
+    assertTrue(epoch.lessEqual(get_current_epoch(state).plus(spec.getActivationExitDelay())));
     return state.getLatestActiveIndexRoots().get(epoch.modulo(spec.getLatestActiveIndexRootsLength()));
   }
 
@@ -1095,13 +1095,13 @@ public class SpecHelpers {
         """
 
         return hash(
-            get_randao_mix(state, epoch - SEED_LOOKAHEAD) +
+            get_randao_mix(state, epoch - MIN_SEED_LOOKAHEAD) +
             get_active_index_root(state, epoch)
         )
    */
   public Hash32 generate_seed(BeaconState state, EpochNumber epoch) {
     return hash(
-        get_randao_mix(state, epoch.minus(spec.getSeedLookahead()))
+        get_randao_mix(state, epoch.minus(spec.getMinSeedLookahead()))
             .concat(get_active_index_root(state, epoch)));
   }
 
@@ -1173,8 +1173,8 @@ public class SpecHelpers {
      Returns True if the provided ``AttestationData`` are slashable
      due to a 'double vote'.
      """
-     target_epoch_1 = attestation_data_1.slot // EPOCH_LENGTH
-     target_epoch_2 = attestation_data_2.slot // EPOCH_LENGTH
+     target_epoch_1 = attestation_data_1.slot // SLOTS_PER_EPOCH
+     target_epoch_2 = attestation_data_2.slot // SLOTS_PER_EPOCH
      return target_epoch_1 == target_epoch_2
   */
   public boolean is_double_vote(
@@ -1194,10 +1194,10 @@ public class SpecHelpers {
      Note: parameter order matters as this function only checks
      that ``attestation_data_1`` surrounds ``attestation_data_2``.
      """
-     source_epoch_1 = attestation_data_1.justified_slot // EPOCH_LENGTH
-     source_epoch_2 = attestation_data_2.justified_slot // EPOCH_LENGTH
-     target_epoch_1 = attestation_data_1.slot // EPOCH_LENGTH
-     target_epoch_2 = attestation_data_2.slot // EPOCH_LENGTH
+     source_epoch_1 = attestation_data_1.justified_slot // SLOTS_PER_EPOCH
+     source_epoch_2 = attestation_data_2.justified_slot // SLOTS_PER_EPOCH
+     target_epoch_1 = attestation_data_1.slot // SLOTS_PER_EPOCH
+     target_epoch_2 = attestation_data_2.slot // SLOTS_PER_EPOCH
      return (
          (source_epoch_1 < source_epoch_2) and
          (source_epoch_2 + 1 == target_epoch_2) and
@@ -1444,7 +1444,7 @@ public class SpecHelpers {
     Millis currentTime = Millis.of(systemTimeSupplier.get());
     assertTrue(state.getGenesisTime().lessEqual(currentTime.getSeconds()));
     Time sinceGenesis = currentTime.getSeconds().minus(state.getGenesisTime());
-    return SlotNumber.castFrom(sinceGenesis.dividedBy(spec.getSlotDuration()))
+    return SlotNumber.castFrom(sinceGenesis.dividedBy(spec.getSecondsPerSlot()))
         .plus(getChainSpec().getGenesisSlot());
   }
 
@@ -1455,19 +1455,19 @@ public class SpecHelpers {
   public Time get_slot_start_time(BeaconState state, SlotNumber slot) {
     return state
         .getGenesisTime()
-        .plus(spec.getSlotDuration().times(slot.minus(getChainSpec().getGenesisSlot())));
+        .plus(spec.getSecondsPerSlot().times(slot.minus(getChainSpec().getGenesisSlot())));
   }
 
   public Time get_slot_middle_time(BeaconState state, SlotNumber slot) {
-    return get_slot_start_time(state, slot).plus(spec.getSlotDuration().dividedBy(2));
+    return get_slot_start_time(state, slot).plus(spec.getSecondsPerSlot().dividedBy(2));
   }
 
   /*
    def slot_to_epoch(slot: SlotNumber) -> EpochNumber:
-       return slot // EPOCH_LENGTH
+       return slot // SLOTS_PER_EPOCH
   */
   public EpochNumber slot_to_epoch(SlotNumber slot) {
-    return slot.dividedBy(spec.getEpochLength());
+    return slot.dividedBy(spec.getSlotsPerEpoch());
   }
   /*
    def get_current_epoch(state: BeaconState) -> EpochNumber:
@@ -1478,10 +1478,10 @@ public class SpecHelpers {
   }
   /*
    def get_epoch_start_slot(epoch: EpochNumber) -> SlotNumber:
-     return epoch * EPOCH_LENGTH
+     return epoch * SLOTS_PER_EPOCH
   */
   public SlotNumber get_epoch_start_slot(EpochNumber epoch) {
-    return epoch.mul(spec.getEpochLength());
+    return epoch.mul(spec.getSlotsPerEpoch());
   }
 
   public EpochNumber get_genesis_epoch() {
@@ -1634,7 +1634,7 @@ public class SpecHelpers {
   }
 
   public boolean is_epoch_end(SlotNumber slot) {
-    return slot.increment().modulo(spec.getEpochLength()).equals(SlotNumber.ZERO);
+    return slot.increment().modulo(spec.getSlotsPerEpoch()).equals(SlotNumber.ZERO);
   }
 
   private static void assertTrue(boolean assertion) {

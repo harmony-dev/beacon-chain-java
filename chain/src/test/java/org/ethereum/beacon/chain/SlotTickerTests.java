@@ -40,7 +40,7 @@ public class SlotTickerTests {
           }
 
           @Override
-          public Time getSlotDuration() {
+          public Time getSecondsPerSlot() {
             return Time.of(1);
           }
         };

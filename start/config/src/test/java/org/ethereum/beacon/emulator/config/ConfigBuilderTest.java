@@ -57,13 +57,13 @@ public class ConfigBuilderTest {
     ChainSpec chainSpecDefault = ChainSpec.DEFAULT;
     assertEquals(chainSpecDefault.getGenesisEpoch(), chainSpec.getGenesisEpoch());
     assertEquals(chainSpecDefault.getEmptySignature(), chainSpec.getEmptySignature());
-    assertEquals(chainSpecDefault.getEpochLength(), chainSpec.getEpochLength());
-    assertEquals(chainSpecDefault.getSlotDuration(), chainSpec.getSlotDuration());
+    assertEquals(chainSpecDefault.getSlotsPerEpoch(), chainSpec.getSlotsPerEpoch());
+    assertEquals(chainSpecDefault.getSecondsPerSlot(), chainSpec.getSecondsPerSlot());
 
-    configBuilder.addConfigOverride("timeParameters.SLOT_DURATION", "10");
+    configBuilder.addConfigOverride("timeParameters.SECONDS_PER_SLOT", "10");
     ChainSpecData overriden = (ChainSpecData) configBuilder.build();
     ChainSpec chainSpec2 = overriden.build();
-    assertNotEquals(chainSpecDefault.getSlotDuration(), chainSpec2.getSlotDuration());
-    assertEquals(UInt64.valueOf(10), chainSpec2.getSlotDuration());
+    assertNotEquals(chainSpecDefault.getSecondsPerSlot(), chainSpec2.getSecondsPerSlot());
+    assertEquals(UInt64.valueOf(10), chainSpec2.getSecondsPerSlot());
   }
 }

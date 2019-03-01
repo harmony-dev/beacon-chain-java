@@ -60,12 +60,12 @@ public class SampleObservableState {
     ChainSpec chainSpec =
         new ChainSpec() {
           @Override
-          public SlotNumber.EpochLength getEpochLength() {
+          public SlotNumber.EpochLength getSlotsPerEpoch() {
             return new SlotNumber.EpochLength(UInt64.valueOf(validatorCount));
           }
 
           @Override
-          public Time getSlotDuration() {
+          public Time getSecondsPerSlot() {
             return Time.of(slotDuration.getSeconds());
           }
 

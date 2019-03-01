@@ -10,12 +10,13 @@ public interface ChainSpec
         TimeParameters,
         RewardAndPenaltyQuotients,
         MaxOperationsPerBlock,
-        HonestValidatorParameters {
+        HonestValidatorParameters,
+        GweiValues {
 
-  ChainSpec DEFAULT = new ChainSpec(){};
+  ChainSpec DEFAULT = new ChainSpec() {};
 
   @Override
   default EpochNumber getGenesisEpoch() {
-    return getGenesisSlot().dividedBy(getEpochLength());
+    return getGenesisSlot().dividedBy(getSlotsPerEpoch());
   }
 }

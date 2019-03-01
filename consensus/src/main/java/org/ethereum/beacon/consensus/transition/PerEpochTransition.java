@@ -73,7 +73,7 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
     }
     MutableBeaconState state = origState.createMutableCopy();
 
-    // The steps below happen when (state.slot + 1) % EPOCH_LENGTH == 0.
+    // The steps below happen when (state.slot + 1) % SLOTS_PER_EPOCH == 0.
 
     /*
       Let current_epoch = get_current_epoch(state).
@@ -374,10 +374,10 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
     /*
      Eth1 data
 
-     If next_epoch % ETH1_DATA_VOTING_PERIOD == 0:
+     If next_epoch % EPOCHS_PER_ETH1_VOTING_PERIOD == 0:
 
       If eth1_data_vote.vote_count * 2 >
-      ETH1_DATA_VOTING_PERIOD * EPOCH_LENGTH for some eth1_data_vote in state.eth1_data_votes
+      EPOCHS_PER_ETH1_VOTING_PERIOD * SLOTS_PER_EPOCH for some eth1_data_vote in state.eth1_data_votes
       (ie. more than half the votes in this voting period were for that value),
       set state.latest_eth1_data = eth1_data_vote.eth1_data.
       Set state.eth1_data_votes = [].
@@ -385,7 +385,7 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
     if (next_epoch.modulo(specConst.getEth1DataVotingPeriod()).equals(EpochNumber.ZERO)) {
       for (Eth1DataVote eth1_data_vote : state.getEth1DataVotes()) {
         if (SlotNumber.castFrom(eth1_data_vote.getVoteCount().times(2))
-            .greater(specConst.getEth1DataVotingPeriod().mul(specConst.getEpochLength()))) {
+            .greater(specConst.getEth1DataVotingPeriod().mul(specConst.getSlotsPerEpoch()))) {
           state.setLatestEth1Data(eth1_data_vote.getEth1Data());
           logger.debug(() -> "Latest Eth1Data changed to " + state.getLatestEth1Data());
           break;
@@ -418,7 +418,7 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
     //    if 3 * current_epoch_boundary_attesting_balance >= 2 * current_total_balance.
 
     // Set state.justification_bitfield |= 1 and
-    //    state.justified_slot = state.slot - 1 * EPOCH_LENGTH
+    //    state.justified_slot = state.slot - 1 * SLOTS_PER_EPOCH
     // if 3 * current_epoch_boundary_attesting_balance >= 2 * total_balance.
     if (current_epoch_boundary_attesting_balance.times(3).greaterEqual(
             current_total_balance.times(2))) {
@@ -790,12 +790,12 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
     // For each index in previous_epoch_attester_indices, we determine the proposer
     //    proposer_index = get_beacon_proposer_index(state, inclusion_slot(state, index))
     //    and set state.validator_balances[proposer_index] +=
-    //      base_reward(state, index) // INCLUDER_REWARD_QUOTIENT.
+    //      base_reward(state, index) // ATTESTATION_INCLUSION_REWARD_QUOTIENT.
     Set<ValidatorIndex> attestation_inclusion_gainers = new HashSet<>();
     for (ValidatorIndex index : previous_epoch_attester_indices) {
       ValidatorIndex proposer_index = spec
           .get_beacon_proposer_index(state, inclusion_slot.get(index));
-      Gwei reward = base_reward.apply(index).dividedBy(specConst.getIncluderRewardQuotient());
+      Gwei reward = base_reward.apply(index).dividedBy(specConst.getAttestationInclusionRewardQuotient());
       state.getValidatorBalances().update(proposer_index, balance ->
           balance.plus(reward));
       attestation_inclusion_gainers.add(proposer_index);
@@ -950,17 +950,17 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
      Final updates
     */
 
-    //  Set state.latest_active_index_roots[(next_epoch + ENTRY_EXIT_DELAY) % LATEST_ACTIVE_INDEX_ROOTS_LENGTH] =
-    //      hash_tree_root(get_active_validator_indices(state, next_epoch + ENTRY_EXIT_DELAY)).
+    //  Set state.latest_active_index_roots[(next_epoch + ACTIVATION_EXIT_DELAY) % LATEST_ACTIVE_INDEX_ROOTS_LENGTH] =
+    //      hash_tree_root(get_active_validator_indices(state, next_epoch + ACTIVATION_EXIT_DELAY)).
     state.getLatestActiveIndexRoots().set(
-        next_epoch.plus(specConst.getEntryExitDelay()).modulo(specConst.getLatestActiveIndexRootsLength()),
+        next_epoch.plus(specConst.getActivationExitDelay()).modulo(specConst.getLatestActiveIndexRootsLength()),
         spec.hash_tree_root(spec.get_active_validator_indices(state.getValidatorRegistry(),
-            next_epoch.plus(specConst.getEntryExitDelay()))));
-    //  Set state.latest_slashed_balances[(next_epoch) % LATEST_PENALIZED_EXIT_LENGTH] =
-    //      state.latest_slashed_balances[current_epoch % LATEST_PENALIZED_EXIT_LENGTH].
-    state.getLatestSlashedBalances().set(next_epoch.modulo(specConst.getLatestPenalizedExitLength()),
+            next_epoch.plus(specConst.getActivationExitDelay()))));
+    //  Set state.latest_slashed_balances[(next_epoch) % LATEST_SLASHED_EXIT_LENGTH] =
+    //      state.latest_slashed_balances[current_epoch % LATEST_SLASHED_EXIT_LENGTH].
+    state.getLatestSlashedBalances().set(next_epoch.modulo(specConst.getSlashedExitLength()),
         state.getLatestSlashedBalances().get(
-            current_epoch.modulo(specConst.getLatestPenalizedExitLength())));
+            current_epoch.modulo(specConst.getSlashedExitLength())));
     //  Set state.latest_randao_mixes[next_epoch % LATEST_RANDAO_MIXES_LENGTH] =
     //      get_randao_mix(state, current_epoch).
     state.getLatestRandaoMixes().set(next_epoch.modulo(specConst.getLatestRandaoMixesLength()),

@@ -119,7 +119,7 @@ public class BeaconChainProposerTest {
             initialState
                 .getSlot()
                 .minus(specHelpers.getChainSpec().getMinAttestationInclusionDelay())
-                .minus(specHelpers.getChainSpec().getEpochLength()),
+                .minus(specHelpers.getChainSpec().getSlotsPerEpoch()),
             initialState
                 .getSlot()
                 .minus(specHelpers.getChainSpec().getMinAttestationInclusionDelay()));
@@ -223,7 +223,7 @@ public class BeaconChainProposerTest {
     // set slot to the end of the epoch
     MutableBeaconState modifiedState =
         initialObservedState.getLatestSlotState().createMutableCopy();
-    modifiedState.setSlot(specHelpers.getChainSpec().getEpochLength().decrement());
+    modifiedState.setSlot(specHelpers.getChainSpec().getSlotsPerEpoch().decrement());
 
     ObservableBeaconState endOfTheEpoch =
         new ObservableBeaconState(

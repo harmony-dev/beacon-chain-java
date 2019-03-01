@@ -100,7 +100,7 @@ public class InitialStateTransition implements BlockTransition<BeaconStateEx> {
     initialState.getLatestActiveIndexRoots().addAll(
             nCopies(chainSpec.getLatestActiveIndexRootsLength().getIntValue(), Hash32.ZERO));
     initialState.getLatestSlashedBalances().addAll(
-            nCopies(chainSpec.getLatestPenalizedExitLength().getIntValue(), Gwei.ZERO));
+            nCopies(chainSpec.getSlashedExitLength().getIntValue(), Gwei.ZERO));
     initialState.getLatestAttestations().clear();
     initialState.getBatchedBlockRoots().clear();
 

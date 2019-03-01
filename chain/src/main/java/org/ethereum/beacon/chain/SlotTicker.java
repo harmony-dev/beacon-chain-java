@@ -46,7 +46,7 @@ public class SlotTicker implements Ticker<SlotNumber> {
     this.scheduler = schedulers.newSingleThreadDaemon("slot-ticker");
 
     SlotNumber nextSlot = specHelpers.get_current_slot(state).increment();
-    Time period = specHelpers.getChainSpec().getSlotDuration();
+    Time period = specHelpers.getChainSpec().getSecondsPerSlot();
     startImpl(nextSlot, period, scheduler);
   }
 

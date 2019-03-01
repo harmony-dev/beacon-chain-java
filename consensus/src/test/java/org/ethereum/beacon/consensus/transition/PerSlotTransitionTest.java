@@ -27,7 +27,7 @@ public class PerSlotTransitionTest {
     ChainSpec chainSpec =
         new ChainSpec() {
           @Override
-          public SlotNumber.EpochLength getEpochLength() {
+          public SlotNumber.EpochLength getSlotsPerEpoch() {
             return new SlotNumber.EpochLength(UInt64.valueOf(8));
           }
         };

@@ -209,7 +209,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
     List<Attestation> attestations =
         operations.peekAggregatedAttestations(
             chainSpec.getMaxAttestations(),
-            state.getSlot().minus(chainSpec.getMinAttestationInclusionDelay()).minus(chainSpec.getEpochLength()),
+            state.getSlot().minus(chainSpec.getMinAttestationInclusionDelay()).minus(chainSpec.getSlotsPerEpoch()),
             state.getSlot().minus(chainSpec.getMinAttestationInclusionDelay()));
     List<VoluntaryExit> voluntaryExits = operations.peekExits(chainSpec.getMaxVoluntaryExits());
     List<Transfer> transfers = operations.peekTransfers(chainSpec.getMaxTransfers());

@@ -31,7 +31,6 @@ import org.javatuples.Pair;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.ReplayProcessor;
-import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.collections.ReadList;
 
 public class ObservableStateProcessorImpl implements ObservableStateProcessor {
@@ -122,12 +121,12 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
 
   private void onNewSlot(SlotNumber newSlot) {
     // From spec: Verify that attestation.data.slot <= state.slot - MIN_ATTESTATION_INCLUSION_DELAY
-    // < attestation.data.slot + EPOCH_LENGTH
-    // state.slot - MIN_ATTESTATION_INCLUSION_DELAY < attestation.data.slot + EPOCH_LENGTH
-    // state.slot - MIN_ATTESTATION_INCLUSION_DELAY - EPOCH_LENGTH < attestation.data.slot
+    // < attestation.data.slot + SLOTS_PER_EPOCH
+    // state.slot - MIN_ATTESTATION_INCLUSION_DELAY < attestation.data.slot + SLOTS_PER_EPOCH
+    // state.slot - MIN_ATTESTATION_INCLUSION_DELAY - SLOTS_PER_EPOCH < attestation.data.slot
     SlotNumber slotMinimum =
         newSlot
-            .minus(chainSpec.getEpochLength())
+            .minus(chainSpec.getSlotsPerEpoch())
             .minus(chainSpec.getMinAttestationInclusionDelay());
     runTaskInSeparateThread(
         () -> {

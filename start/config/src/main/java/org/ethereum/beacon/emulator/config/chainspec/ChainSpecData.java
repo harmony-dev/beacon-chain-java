@@ -23,6 +23,7 @@ public class ChainSpecData implements Config {
   private InitialValuesData initialValues;
   private MaxOperationsPerBlockData maxOperationsPerBlock;
   private MiscParametersData miscParameters;
+  private GweiValuesData gweiValues;
   private RewardAndPenaltyQuotientsData rewardAndPenaltyQuotients;
   private StateListLengthsData stateListLengths;
   private TimeParametersData timeParameters;
@@ -41,12 +42,22 @@ public class ChainSpecData implements Config {
 
       @Override
       public Gwei getMinDepositAmount() {
-        return depositContractParameters.getMinDepositAmount();
+        return gweiValues.getMinDepositAmount();
       }
 
       @Override
       public Gwei getMaxDepositAmount() {
-        return depositContractParameters.getMaxDepositAmount();
+        return gweiValues.getMaxDepositAmount();
+      }
+
+      @Override
+      public Gwei getForkChoiceBalanceIncrement() {
+        return gweiValues.getForkChoiceBalanceIncrement();
+      }
+
+      @Override
+      public UInt64 getMinPenaltyQuotient() {
+        return rewardAndPenaltyQuotients.getMinPenaltyQuotient();
       }
 
       @Override
@@ -126,7 +137,7 @@ public class ChainSpecData implements Config {
 
       @Override
       public Gwei getEjectionBalance() {
-        return miscParameters.getEjectionBalance();
+        return gweiValues.getEjectionBalance();
       }
 
       @Override
@@ -145,8 +156,8 @@ public class ChainSpecData implements Config {
       }
 
       @Override
-      public UInt64 getMaxWithdrawalsPerEpoch() {
-        return miscParameters.getMaxWithdrawalsPerEpoch();
+      public UInt64 getMaxExitDequesPerEpoch() {
+        return miscParameters.getMaxExitDequesPerEpoch();
       }
 
       @Override
@@ -160,8 +171,8 @@ public class ChainSpecData implements Config {
       }
 
       @Override
-      public UInt64 getIncluderRewardQuotient() {
-        return rewardAndPenaltyQuotients.getIncluderRewardQuotient();
+      public UInt64 getAttestationInclusionRewardQuotient() {
+        return rewardAndPenaltyQuotients.getAttestationInclusionRewardQuotient();
       }
 
       @Override
@@ -185,13 +196,13 @@ public class ChainSpecData implements Config {
       }
 
       @Override
-      public EpochNumber getLatestPenalizedExitLength() {
-        return stateListLengths.getLatestPenalizedExitLength();
+      public EpochNumber getSlashedExitLength() {
+        return stateListLengths.getSlashedExitLength();
       }
 
       @Override
-      public Time getSlotDuration() {
-        return timeParameters.getSlotDuration();
+      public Time getSecondsPerSlot() {
+        return timeParameters.getSecondsPerSlot();
       }
 
       @Override
@@ -200,18 +211,18 @@ public class ChainSpecData implements Config {
       }
 
       @Override
-      public SlotNumber.EpochLength getEpochLength() {
-        return timeParameters.getEpochLength();
+      public SlotNumber.EpochLength getSlotsPerEpoch() {
+        return timeParameters.getSlotsPerEpoch();
       }
 
       @Override
-      public EpochNumber getSeedLookahead() {
-        return timeParameters.getSeedLookahead();
+      public EpochNumber getMinSeedLookahead() {
+        return timeParameters.getMinSeedLookahead();
       }
 
       @Override
-      public EpochNumber getEntryExitDelay() {
-        return timeParameters.getEntryExitDelay();
+      public EpochNumber getActivationExitDelay() {
+        return timeParameters.getActivationExitDelay();
       }
 
       @Override
@@ -264,6 +275,14 @@ public class ChainSpecData implements Config {
 
   public void setMiscParameters(MiscParametersData miscParameters) {
     this.miscParameters = miscParameters;
+  }
+
+  public GweiValuesData getGweiValues() {
+    return gweiValues;
+  }
+
+  public void setGweiValues(GweiValuesData gweiValues) {
+    this.gweiValues = gweiValues;
   }
 
   public RewardAndPenaltyQuotientsData getRewardAndPenaltyQuotients() {

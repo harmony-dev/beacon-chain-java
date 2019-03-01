@@ -93,19 +93,19 @@ public class SlotNumber extends UInt64 implements
     String extraInfo = "";
     if (spec != null) {
       extraInfo += "time " + (beaconStart == null ?
-          Duration.ofSeconds(spec.getSlotDuration().times(num).getValue()).toString()
+          Duration.ofSeconds(spec.getSecondsPerSlot().times(num).getValue()).toString()
               + " from genesis"
-          : spec.getSlotDuration().times((int)num).plus(beaconStart));
+          : spec.getSecondsPerSlot().times((int)num).plus(beaconStart));
       extraInfo += ", ";
-      int numInEpoch = this.modulo(spec.getEpochLength()).getIntValue();
+      int numInEpoch = this.modulo(spec.getSlotsPerEpoch()).getIntValue();
       if (numInEpoch == 0) {
         extraInfo += "first";
-      } else if (numInEpoch + 1 == spec.getEpochLength().getIntValue()) {
+      } else if (numInEpoch + 1 == spec.getSlotsPerEpoch().getIntValue()) {
         extraInfo += "last";
       } else {
         extraInfo += "#" + numInEpoch;
       }
-      extraInfo += " in epoch " + this.dividedBy(spec.getEpochLength()).minus(spec.getGenesisEpoch());
+      extraInfo += " in epoch " + this.dividedBy(spec.getSlotsPerEpoch()).minus(spec.getGenesisEpoch());
     }
     return "#" + num + (extraInfo.isEmpty() ? "" : " (" + extraInfo + ")");
   }

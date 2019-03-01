@@ -47,13 +47,13 @@ public class AttestationVerifier implements OperationVerifier<Attestation> {
     specHelpers.checkShardRange(data.getShard());
 
     // Verify that attestation.data.slot <= state.slot - MIN_ATTESTATION_INCLUSION_DELAY
-    //    < attestation.data.slot + EPOCH_LENGTH
+    //    < attestation.data.slot + SLOTS_PER_EPOCH
     if (!(data.getSlot()
             .lessEqual(state.getSlot().minus(chainSpec.getMinAttestationInclusionDelay()))
         && state
             .getSlot()
             .minus(chainSpec.getMinAttestationInclusionDelay())
-            .less(data.getSlot().plus(chainSpec.getEpochLength())))) {
+            .less(data.getSlot().plus(chainSpec.getSlotsPerEpoch())))) {
 
       return failedResult(
           "MIN_ATTESTATION_INCLUSION_DELAY violated, inclusion slot starts from %s but got %s",

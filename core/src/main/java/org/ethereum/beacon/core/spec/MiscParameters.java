@@ -16,11 +16,10 @@ public interface MiscParameters {
 
   ShardNumber SHARD_COUNT = ShardNumber.of(1 << 10); // 1024 shards
   ValidatorIndex TARGET_COMMITTEE_SIZE = ValidatorIndex.of(1 << 7); // 128 validators
-  Gwei EJECTION_BALANCE = Gwei.ofEthers(1 << 4); // 16 ETH
   UInt64 MAX_BALANCE_CHURN_QUOTIENT = UInt64.valueOf(1 << 5); // 32
   ShardNumber BEACON_CHAIN_SHARD_NUMBER = ShardNumber.of(UInt64.MAX_VALUE); // (1 << 64) - 1
   UInt64 MAX_INDICES_PER_SLASHABLE_VOTE = UInt64.valueOf(1 << 12);
-  UInt64 MAX_WITHDRAWALS_PER_EPOCH = UInt64.valueOf(1 << 2); // 4
+  UInt64 MAX_EXIT_DEQUEUES_PER_EPOCH = UInt64.valueOf(1 << 2); // 4
   int SHUFFLE_ROUND_COUNT = 90;
 
   /* Values defined in the spec. */
@@ -31,10 +30,6 @@ public interface MiscParameters {
 
   default ValidatorIndex getTargetCommitteeSize() {
     return TARGET_COMMITTEE_SIZE;
-  }
-
-  default Gwei getEjectionBalance() {
-    return EJECTION_BALANCE;
   }
 
   default UInt64 getMaxBalanceChurnQuotient() {
@@ -49,8 +44,8 @@ public interface MiscParameters {
     return MAX_INDICES_PER_SLASHABLE_VOTE;
   }
 
-  default UInt64 getMaxWithdrawalsPerEpoch() {
-    return MAX_WITHDRAWALS_PER_EPOCH;
+  default UInt64 getMaxExitDequesPerEpoch() {
+    return MAX_EXIT_DEQUEUES_PER_EPOCH;
   }
 
   default int getShuffleRoundCount() {

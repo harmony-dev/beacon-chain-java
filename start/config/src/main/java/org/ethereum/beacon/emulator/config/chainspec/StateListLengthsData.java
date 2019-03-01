@@ -15,8 +15,8 @@ public class StateListLengthsData implements StateListLengths {
   private String LATEST_RANDAO_MIXES_LENGTH;
   @JsonProperty("LATEST_ACTIVE_INDEX_ROOTS_LENGTH")
   private String LATEST_ACTIVE_INDEX_ROOTS_LENGTH;
-  @JsonProperty("LATEST_PENALIZED_EXIT_LENGTH")
-  private String LATEST_PENALIZED_EXIT_LENGTH;
+  @JsonProperty("LATEST_SLASHED_EXIT_LENGTH")
+  private String LATEST_SLASHED_EXIT_LENGTH;
 
   @Override
   @JsonIgnore
@@ -38,8 +38,8 @@ public class StateListLengthsData implements StateListLengths {
 
   @Override
   @JsonIgnore
-  public EpochNumber getLatestPenalizedExitLength() {
-    return new EpochNumber(UInt64.valueOf(getLATEST_PENALIZED_EXIT_LENGTH()));
+  public EpochNumber getSlashedExitLength() {
+    return new EpochNumber(UInt64.valueOf(getLATEST_SLASHED_EXIT_LENGTH()));
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
@@ -70,11 +70,11 @@ public class StateListLengthsData implements StateListLengths {
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-  public String getLATEST_PENALIZED_EXIT_LENGTH() {
-    return LATEST_PENALIZED_EXIT_LENGTH;
+  public String getLATEST_SLASHED_EXIT_LENGTH() {
+    return LATEST_SLASHED_EXIT_LENGTH;
   }
 
-  public void setLATEST_PENALIZED_EXIT_LENGTH(String LATEST_PENALIZED_EXIT_LENGTH) {
-    this.LATEST_PENALIZED_EXIT_LENGTH = LATEST_PENALIZED_EXIT_LENGTH;
+  public void setLATEST_SLASHED_EXIT_LENGTH(String LATEST_SLASHED_EXIT_LENGTH) {
+    this.LATEST_SLASHED_EXIT_LENGTH = LATEST_SLASHED_EXIT_LENGTH;
   }
 }

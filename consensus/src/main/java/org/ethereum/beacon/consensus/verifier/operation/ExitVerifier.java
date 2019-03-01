@@ -40,8 +40,8 @@ public class ExitVerifier implements OperationVerifier<VoluntaryExit> {
     if (!validator.getExitEpoch().greater(
         specHelpers.get_entry_exit_effect_epoch(specHelpers.get_current_epoch(state)))) {
       return failedResult(
-          "ENTRY_EXIT_DELAY exceeded, min exit epoch %s, got %s",
-          state.getSlot().plus(chainSpec.getEntryExitDelay()), validator.getExitEpoch());
+          "ACTIVATION_EXIT_DELAY exceeded, min exit epoch %s, got %s",
+          state.getSlot().plus(chainSpec.getActivationExitDelay()), validator.getExitEpoch());
     }
 
     // Verify that get_current_epoch(state) >= exit.epoch
