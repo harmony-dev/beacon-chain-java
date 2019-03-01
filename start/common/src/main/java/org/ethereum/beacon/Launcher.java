@@ -115,29 +115,31 @@ public class Launcher {
         schedulers);
     observableStateProcessor.start();
 
-    beaconChainProposer = new BeaconChainProposerImpl(specHelpers,
-        specHelpers.getChainSpec(), perBlockTransition, perEpochTransition, depositContract);
-    beaconChainAttester = new BeaconChainAttesterImpl(specHelpers,
-        specHelpers.getChainSpec());
+    if (validatorSig != null) {
+      beaconChainProposer = new BeaconChainProposerImpl(specHelpers,
+          specHelpers.getChainSpec(), perBlockTransition, perEpochTransition, depositContract);
+      beaconChainAttester = new BeaconChainAttesterImpl(specHelpers,
+          specHelpers.getChainSpec());
 
-    beaconChainValidator = new BeaconChainValidator(
-        BLS381Credentials.createWithInsecureSigner(validatorSig),
-        beaconChainProposer,
-        beaconChainAttester,
-        specHelpers,
-        observableStateProcessor.getObservableStateStream(),
-        schedulers);
-    beaconChainValidator.start();
+      beaconChainValidator = new BeaconChainValidator(
+          BLS381Credentials.createWithInsecureSigner(validatorSig),
+          beaconChainProposer,
+          beaconChainAttester,
+          specHelpers,
+          observableStateProcessor.getObservableStateStream(),
+          schedulers);
+      beaconChainValidator.start();
 
-    ProposedBlockProcessor proposedBlocksProcessor = new ProposedBlockProcessorImpl(
-        beaconChain, schedulers);
-    Flux.from(beaconChainValidator.getProposedBlocksStream())
-        .subscribe(proposedBlocksProcessor::newBlockProposed);
-    Flux.from(proposedBlocksProcessor.processedBlocksStream())
-        .subscribe(wireApi::sendProposedBlock);
+      ProposedBlockProcessor proposedBlocksProcessor = new ProposedBlockProcessorImpl(
+          beaconChain, schedulers);
+      Flux.from(beaconChainValidator.getProposedBlocksStream())
+          .subscribe(proposedBlocksProcessor::newBlockProposed);
+      Flux.from(proposedBlocksProcessor.processedBlocksStream())
+          .subscribe(wireApi::sendProposedBlock);
 
-    Flux.from(beaconChainValidator.getAttestationsStream()).subscribe(wireApi::sendAttestation);
-    Flux.from(beaconChainValidator.getAttestationsStream()).subscribe(allAttestations);
+      Flux.from(beaconChainValidator.getAttestationsStream()).subscribe(wireApi::sendAttestation);
+      Flux.from(beaconChainValidator.getAttestationsStream()).subscribe(allAttestations);
+    }
 
     Flux.from(wireApi.inboundBlocksStream())
         .publishOn(schedulers.reactorEvents())
