@@ -45,3 +45,6 @@ timeParameters:
   ENTRY_EXIT_DELAY: 4
   ETH1_DATA_VOTING_PERIOD: 16
   MIN_VALIDATOR_WITHDRAWAL_EPOCHS: 256
+
+specHelpersOptions:
+  blsVerifyEnabled: true

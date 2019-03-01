@@ -1577,6 +1577,14 @@ public class SpecHelpers {
     return slot.increment().modulo(spec.getEpochLength()).equals(SlotNumber.ZERO);
   }
 
+  public ObjectHasher<Hash32> getObjectHasher() {
+    return objectHasher;
+  }
+
+  public Function<BytesValue, Hash32> getHashFunction() {
+    return hashFunction;
+  }
+
   private static void assertTrue(boolean assertion) {
     if (!assertion) {
       throw new SpecAssertionFailed();

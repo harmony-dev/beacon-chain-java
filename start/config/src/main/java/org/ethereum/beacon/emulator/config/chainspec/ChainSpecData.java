@@ -1,6 +1,8 @@
 package org.ethereum.beacon.emulator.config.chainspec;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.util.List;
+import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.EpochNumber;
@@ -9,10 +11,12 @@ import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
+import org.ethereum.beacon.crypto.BLS381.PublicKey;
 import org.ethereum.beacon.emulator.config.Config;
 import tech.pegasys.artemis.ethereum.core.Address;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes1;
+import tech.pegasys.artemis.util.bytes.Bytes8;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 /** ChainSpec settings object, creates {@link ChainSpec} from user data */
@@ -26,8 +30,9 @@ public class ChainSpecData implements Config {
   private RewardAndPenaltyQuotientsData rewardAndPenaltyQuotients;
   private StateListLengthsData stateListLengths;
   private TimeParametersData timeParameters;
+  private SpecHelpersOptions specHelpersOptions;
 
-  public ChainSpec build() {
+  public ChainSpec buildSpecConstants() {
     return new ChainSpec() {
       @Override
       public Address getDepositContractAddress() {
@@ -226,6 +231,31 @@ public class ChainSpecData implements Config {
     };
   }
 
+  public SpecHelpers buildSpecHelpers() {
+    SpecHelpers defaultSpecHelpers = SpecHelpers.createWithSSZHasher(buildSpecConstants());
+    if (getSpecHelpersOptions().isBlsVerifyEnabled()) {
+      return defaultSpecHelpers;
+    } else {
+      return new SpecHelpers(
+          defaultSpecHelpers.getChainSpec(),
+          defaultSpecHelpers.getHashFunction(),
+          defaultSpecHelpers.getObjectHasher()) {
+
+        @Override
+        public boolean bls_verify(PublicKey blsPublicKey, Hash32 message, BLSSignature signature,
+            Bytes8 domain) {
+          return true;
+        }
+
+        @Override
+        public boolean bls_verify_multiple(List<PublicKey> publicKeys, List<Hash32> messages,
+            BLSSignature signature, Bytes8 domain) {
+          return true;
+        }
+      };
+    }
+  }
+
   public DepositContractParametersData getDepositContractParameters() {
     return depositContractParameters;
   }
@@ -288,5 +318,14 @@ public class ChainSpecData implements Config {
 
   public void setTimeParameters(TimeParametersData timeParameters) {
     this.timeParameters = timeParameters;
+  }
+
+  public SpecHelpersOptions getSpecHelpersOptions() {
+    return specHelpersOptions;
+  }
+
+  public void setSpecHelpersOptions(
+      SpecHelpersOptions specHelpersOptions) {
+    this.specHelpersOptions = specHelpersOptions;
   }
 }

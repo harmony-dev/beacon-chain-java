@@ -52,7 +52,7 @@ public class ConfigBuilderTest {
 
     configBuilder.addYamlConfig(testYamlConfig);
     ChainSpecData unmodified = (ChainSpecData) configBuilder.build();
-    ChainSpec chainSpec = unmodified.build();
+    ChainSpec chainSpec = unmodified.buildSpecConstants();
 
     ChainSpec chainSpecDefault = ChainSpec.DEFAULT;
     assertEquals(chainSpecDefault.getGenesisEpoch(), chainSpec.getGenesisEpoch());
@@ -62,7 +62,7 @@ public class ConfigBuilderTest {
 
     configBuilder.addConfigOverride("timeParameters.SLOT_DURATION", "10");
     ChainSpecData overriden = (ChainSpecData) configBuilder.build();
-    ChainSpec chainSpec2 = overriden.build();
+    ChainSpec chainSpec2 = overriden.buildSpecConstants();
     assertNotEquals(chainSpecDefault.getSlotDuration(), chainSpec2.getSlotDuration());
     assertEquals(UInt64.valueOf(10), chainSpec2.getSlotDuration());
   }
