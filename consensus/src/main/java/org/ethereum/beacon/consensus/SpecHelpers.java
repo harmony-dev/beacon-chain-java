@@ -165,6 +165,9 @@ public class SpecHelpers {
 
   /*
     def get_next_epoch_committee_count(state: BeaconState) -> int:
+        """
+        Return the number of committees in the next epoch of the given ``state``.
+        """
         next_active_validators = get_active_validator_indices(
             state.validator_registry,
             get_current_epoch(state) + 1,
@@ -184,118 +187,118 @@ public class SpecHelpers {
   }
 
   /*
-    Returns the list of ``(committee, shard)`` tuples for the ``slot``.
+    Return the list of ``(committee, shard)`` tuples for the ``slot``.
+    Note: There are two possible shufflings for crosslink committees for a
+    ``slot`` in the next epoch -- with and without a `registry_change`
    */
   public List<ShardCommittee> get_crosslink_committees_at_slot(
       BeaconState state, SlotNumber slot, boolean registry_change) {
 
-    SlotNumber state_epoch_slot = state.getSlot().minus(state.getSlot().modulo(spec.getSlotsPerEpoch()));
-    assertTrue(state_epoch_slot.lessEqual(slot.plus(spec.getSlotsPerEpoch())));
-    assertTrue(slot.less(state_epoch_slot.plus(spec.getSlotsPerEpoch())));
-
-    //  epoch = slot_to_epoch(slot)
-    //  current_epoch = get_current_epoch(state)
-    //  previous_epoch = current_epoch - 1 if current_epoch > GENESIS_EPOCH else current_epoch
-    //  next_epoch = current_epoch + 1
     EpochNumber epoch = slot_to_epoch(slot);
-    EpochNumber current_epoch = get_current_epoch(state);
-    EpochNumber previous_epoch =
-        current_epoch.greater(spec.getGenesisEpoch()) ? current_epoch.decrement() : current_epoch;
-    EpochNumber next_epoch = current_epoch.increment();
-    //     assert previous_epoch <= epoch <= next_epoch
-    assertTrue(previous_epoch.lessEqual(epoch));
-    assertTrue(epoch.lessEqual(next_epoch));
-    /*
-      if epoch == previous_epoch:
-        committees_per_epoch = get_previous_epoch_committee_count(state)
-        seed = state.previous_shuffling_seed
-        shuffling_epoch = state.previous_shuffling_epoch
-        shuffling_start_shard = state.previous_shuffling_start_shard
-     */
-    int committees_per_epoch;
+    EpochNumber currentEpoch = get_current_epoch(state);
+    EpochNumber previousEpoch = get_previous_epoch(state);
+    EpochNumber nextEpoch = currentEpoch.increment();
+
+    assertTrue(previousEpoch.lessEqual(epoch) && epoch.lessEqual(nextEpoch));
+
     Hash32 seed;
+    int committees_per_epoch;
     EpochNumber shuffling_epoch;
     ShardNumber shuffling_start_shard;
-    if (epoch.equals(previous_epoch)) {
-      committees_per_epoch = get_previous_epoch_committee_count(state);
-      seed = state.getPreviousShufflingSeed();
-      shuffling_epoch = state.getPreviousShufflingEpoch();
-      shuffling_start_shard = state.getPreviousShufflingStartShard();
-    } else if (epoch.equals(current_epoch)) {
+    if (epoch.equals(currentEpoch)) {
       /*
-          elif epoch == current_epoch:
-              committees_per_epoch = get_current_epoch_committee_count(state)
-              seed = state.current_shuffling_seed
-              shuffling_epoch = state.current_shuffling_epoch
+        if epoch == current_epoch:
+          committees_per_epoch = get_current_epoch_committee_count(state)
+          seed = state.current_shuffling_seed
+          shuffling_epoch = state.current_shuffling_epoch
+          shuffling_start_shard = state.current_shuffling_start_shard */
 
-       */
       committees_per_epoch = get_current_epoch_committee_count(state);
       seed = state.getCurrentShufflingSeed();
       shuffling_epoch = state.getCurrentShufflingEpoch();
       shuffling_start_shard = state.getCurrentShufflingStartShard();
-    } else {
-      assertTrue(epoch.equals(next_epoch));
+    } else if (epoch.equals(previousEpoch)) {
       /*
-          elif epoch == next_epoch:
-              current_committees_per_epoch = get_current_epoch_committee_count(state)
-              committees_per_epoch = get_next_epoch_committee_count(state)
-              shuffling_epoch = next_epoch
-              epochs_since_last_registry_update = current_epoch - state.validator_registry_update_epoch
+        elif epoch == previous_epoch:
+          committees_per_epoch = get_previous_epoch_committee_count(state)
+          seed = state.previous_shuffling_seed
+          shuffling_epoch = state.previous_shuffling_epoch
+          shuffling_start_shard = state.previous_shuffling_start_shard */
+      committees_per_epoch = get_previous_epoch_committee_count(state);
+      seed = state.getPreviousShufflingSeed();
+      shuffling_epoch = state.getPreviousShufflingEpoch();
+      shuffling_start_shard = state.getPreviousShufflingStartShard();
+    } else {
+      /*
+        elif epoch == next_epoch:
+          current_committees_per_epoch = get_current_epoch_committee_count(state)
+          committees_per_epoch = get_next_epoch_committee_count(state)
+          shuffling_epoch = next_epoch
 
-       */
+          epochs_since_last_registry_update = current_epoch - state.validator_registry_update_epoch */
+
       int current_committees_per_epoch = get_current_epoch_committee_count(state);
       committees_per_epoch = get_next_epoch_committee_count(state);
-      shuffling_epoch = next_epoch;
-      EpochNumber epochs_since_last_registry_update = current_epoch
-          .minus(state.getValidatorRegistryUpdateEpoch());
-      /*
-        if registry_change:
-            seed = generate_seed(state, next_epoch)
-            shuffling_start_shard = (state.current_shuffling_start_shard + current_committees_per_epoch) % SHARD_COUNT
-       */
+      shuffling_epoch = nextEpoch;
+
+      EpochNumber epochs_since_last_registry_update =
+          currentEpoch.minus(state.getValidatorRegistryUpdateEpoch());
+
       if (registry_change) {
-        seed = generate_seed(state, next_epoch);
-        shuffling_start_shard = state.getCurrentShufflingStartShard()
-            .plusModulo(current_committees_per_epoch, spec.getShardCount());
+        /*
+          if registry_change:
+            seed = generate_seed(state, next_epoch)
+            shuffling_start_shard = (state.current_shuffling_start_shard + current_committees_per_epoch) % SHARD_COUNT */
+        seed = generate_seed(state, nextEpoch);
+        shuffling_start_shard = ShardNumber.of(state.getCurrentShufflingStartShard()
+            .plus(current_committees_per_epoch).modulo(spec.getShardCount()));
       } else if (epochs_since_last_registry_update.greater(EpochNumber.of(1)) &&
           is_power_of_two(epochs_since_last_registry_update)) {
         /*
           elif epochs_since_last_registry_update > 1 and is_power_of_two(epochs_since_last_registry_update):
             seed = generate_seed(state, next_epoch)
-            shuffling_start_shard = state.current_shuffling_start_shard
-         */
-        seed = generate_seed(state, next_epoch);
+            shuffling_start_shard = state.current_shuffling_start_shard */
+        seed = generate_seed(state, nextEpoch);
         shuffling_start_shard = state.getCurrentShufflingStartShard();
       } else {
         /*
           else:
             seed = state.current_shuffling_seed
-            shuffling_start_shard = state.current_shuffling_start_shard
-         */
+            shuffling_start_shard = state.current_shuffling_start_shard */
         seed = state.getCurrentShufflingSeed();
         shuffling_start_shard = state.getCurrentShufflingStartShard();
       }
     }
-    List<List<ValidatorIndex>> shuffling = get_shuffling(seed, state.getValidatorRegistry(),
-        shuffling_epoch);
-
-    //    offset = slot % SLOTS_PER_EPOCH
-    SlotNumber offset = slot.modulo(spec.getSlotsPerEpoch());
-    //    committees_per_slot = committees_per_epoch // SLOTS_PER_EPOCH
-    UInt64 committees_per_slot = UInt64.valueOf(committees_per_epoch).dividedBy(spec.getSlotsPerEpoch());
-    //    slot_start_shard = (shuffling_start_shard + committees_per_slot * offset) % SHARD_COUNT
-    ShardNumber slot_start_shard = shuffling_start_shard
-        .plusModulo(committees_per_slot.times(offset), spec.getShardCount());
 
     /*
-       return [
+      shuffling = get_shuffling(
+        seed,
+        state.validator_registry,
+        shuffling_epoch,
+      ) */
+    List<List<ValidatorIndex>> shuffling = get_shuffling(
+        seed,
+        state.getValidatorRegistry(),
+        shuffling_epoch
+    );
+
+    /*
+      offset = slot % SLOTS_PER_EPOCH
+      committees_per_slot = committees_per_epoch // SLOTS_PER_EPOCH
+      slot_start_shard = (shuffling_start_shard + committees_per_slot * offset) % SHARD_COUNT */
+    SlotNumber offset = slot.modulo(spec.getSlotsPerEpoch());
+    UInt64 committees_per_slot = UInt64.valueOf(committees_per_epoch).dividedBy(spec.getSlotsPerEpoch());
+    ShardNumber slot_start_shard = ShardNumber.of(
+        shuffling_start_shard.plus(committees_per_slot).times(offset).modulo(spec.getShardCount()));
+
+    /*
+      return [
         (
             shuffling[committees_per_slot * offset + i],
             (slot_start_shard + i) % SHARD_COUNT,
         )
         for i in range(committees_per_slot)
-      ]
-     */
+      ] */
     List<ShardCommittee> ret = new ArrayList<>();
     for(int i = 0; i < committees_per_slot.intValue(); i++) {
       ShardCommittee committee = new ShardCommittee(
@@ -499,7 +502,11 @@ public class SpecHelpers {
   }
 
   public BytesValue int_to_bytes4(long value) {
-    return BytesValues.ofUnsignedInt(value);
+    return BytesValues.ofUnsignedIntLittleEndian(value);
+  }
+
+  public BytesValue int_to_bytes32(UInt64 value) {
+    return value.toBytes8LittleEndian();
   }
 
   /*
@@ -1089,20 +1096,21 @@ public class SpecHelpers {
 
   /*
     def generate_seed(state: BeaconState,
-                      epoch: EpochNumber) -> Bytes32:
-        """
-        Generate a seed for the given ``epoch``.
-        """
-
-        return hash(
-            get_randao_mix(state, epoch - MIN_SEED_LOOKAHEAD) +
-            get_active_index_root(state, epoch)
-        )
+                  epoch: Epoch) -> Bytes32:
+      """
+      Generate a seed for the given ``epoch``.
+      """
+      return hash(
+          get_randao_mix(state, epoch - MIN_SEED_LOOKAHEAD) +
+          get_active_index_root(state, epoch) +
+          int_to_bytes32(epoch)
+      )
    */
   public Hash32 generate_seed(BeaconState state, EpochNumber epoch) {
     return hash(
         get_randao_mix(state, epoch.minus(spec.getMinSeedLookahead()))
-            .concat(get_active_index_root(state, epoch)));
+            .concat(get_active_index_root(state, epoch))
+            .concat(int_to_bytes32(epoch)));
   }
 
   public boolean bls_verify(BLSPubkey publicKey, Hash32 message, BLSSignature signature, Bytes8 domain) {
@@ -1469,6 +1477,18 @@ public class SpecHelpers {
   public EpochNumber slot_to_epoch(SlotNumber slot) {
     return slot.dividedBy(spec.getSlotsPerEpoch());
   }
+
+  /*
+  def get_previous_epoch(state: BeaconState) -> Epoch:
+    """`
+    Return the previous epoch of the given ``state``.
+    """
+    return max(get_current_epoch(state) - 1, GENESIS_EPOCH)
+   */
+  public EpochNumber get_previous_epoch(BeaconState state) {
+    return UInt64s.max(get_current_epoch(state).decrement(), spec.getGenesisEpoch());
+  }
+
   /*
    def get_current_epoch(state: BeaconState) -> EpochNumber:
        return slot_to_epoch(state.slot)

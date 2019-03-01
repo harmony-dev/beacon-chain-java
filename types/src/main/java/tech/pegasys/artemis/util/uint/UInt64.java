@@ -340,6 +340,16 @@ public class UInt64 extends Number implements Comparable<UInt64> {
     return Bytes8.longToBytes8(value);
   }
 
+  /**
+   * Converts value to {@link Bytes8} little endian value.
+   * Uses {@link Bytes8#longToBytes8LittleEndian(long)} method.
+   *
+   * @return a {@link Bytes8} value.
+   */
+  public Bytes8 toBytes8LittleEndian() {
+    return Bytes8.longToBytes8LittleEndian(value);
+  }
+
   // TODO should be type safe with the respect to custom types
   @Override
   public int compareTo(UInt64 uint) {
