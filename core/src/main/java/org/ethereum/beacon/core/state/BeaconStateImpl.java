@@ -17,6 +17,7 @@ import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.collections.WriteList;
+import tech.pegasys.artemis.util.uint.UInt64;
 
 @SSZSerializable
 public class BeaconStateImpl implements MutableBeaconState {
@@ -63,6 +64,7 @@ public class BeaconStateImpl implements MutableBeaconState {
 
   @SSZ private Eth1Data latestEth1Data = Eth1Data.EMPTY;
   @SSZ private List<Eth1DataVote> eth1DataVotesList = new ArrayList<>();
+  @SSZ private UInt64 depositIndex;
 
   public BeaconStateImpl() {}
 
@@ -396,6 +398,16 @@ public class BeaconStateImpl implements MutableBeaconState {
   @Override
   public WriteList<Integer, Eth1DataVote> getEth1DataVotes() {
     return WriteList.wrap(getEth1DataVotesList(), Integer::valueOf);
+  }
+
+  @Override
+  public UInt64 getDepositIndex() {
+    return depositIndex;
+  }
+
+  @Override
+  public void setDepositIndex(UInt64 depositIndex) {
+    this.depositIndex = depositIndex;
   }
 
   /*********  List Getters/Setter for serialization  **********/

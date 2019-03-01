@@ -2,9 +2,9 @@ package org.ethereum.beacon.core;
 
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
+import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.BeaconStateImpl;
-import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Eth1DataVote;
 import org.ethereum.beacon.core.state.ForkData;
@@ -118,6 +118,9 @@ public interface BeaconState {
 
   /** Eth1 data that voting is still in progress for. */
   ReadList<Integer, Eth1DataVote> getEth1DataVotes();
+
+  /** The most recent Eth1 deposit index */
+  UInt64 getDepositIndex();
 
   /**
    * Returns mutable copy of this state. Any changes made to returned copy shouldn't affect this

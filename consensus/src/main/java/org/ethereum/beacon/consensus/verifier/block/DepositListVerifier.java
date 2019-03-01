@@ -20,9 +20,16 @@ public class DepositListVerifier extends OperationListVerifier<Deposit> {
     super(operationVerifier, block -> block.getBody().getDeposits(), chainSpec.getMaxDeposits());
 
     addCustomVerifier(
-        deposits -> {
+        (deposits, state) -> {
           if (ReadList.sizeOf(deposits) > 0) {
             UInt64 expectedIndex = deposits.iterator().next().getIndex();
+
+            if (!expectedIndex.equals(state.getDepositIndex())) {
+              return failedResult(
+                  "index of the first deposit is incorrect, expected %d but got %d",
+                  state.getDepositIndex(), expectedIndex);
+            }
+
             for (Deposit deposit : deposits) {
               if (!deposit.getIndex().equals(expectedIndex)) {
                 return failedResult(

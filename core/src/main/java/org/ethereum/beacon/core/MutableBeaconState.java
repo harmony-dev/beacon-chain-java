@@ -15,6 +15,7 @@ import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.collections.WriteList;
+import tech.pegasys.artemis.util.uint.UInt64;
 
 public interface MutableBeaconState extends BeaconState {
 
@@ -77,6 +78,8 @@ public interface MutableBeaconState extends BeaconState {
 
   @Override
   WriteList<Integer, Eth1DataVote> getEth1DataVotes();
+
+  void setDepositIndex(UInt64 depositIndex);
 
   BeaconState createImmutable();
 }

@@ -5,6 +5,7 @@ import static org.ethereum.beacon.consensus.verifier.VerificationResult.failedRe
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
 import org.ethereum.beacon.consensus.verifier.OperationVerifier;
@@ -38,7 +39,7 @@ public abstract class OperationListVerifier<T> implements BeaconBlockVerifier {
   private OperationVerifier<T> operationVerifier;
   private Function<BeaconBlock, Iterable<T>> operationListExtractor;
   private int maxOperationsInList;
-  private List<Function<Iterable<T>, VerificationResult>> customVerifiers;
+  private List<BiFunction<Iterable<T>, BeaconState, VerificationResult>> customVerifiers;
 
   protected OperationListVerifier(
       OperationVerifier<T> operationVerifier,
@@ -60,8 +61,8 @@ public abstract class OperationListVerifier<T> implements BeaconBlockVerifier {
           getType().getSimpleName(), maxOperationsInList, ReadList.sizeOf(operations));
     }
 
-    for (Function<Iterable<T>, VerificationResult> verifier : customVerifiers) {
-      VerificationResult result = verifier.apply(operations);
+    for (BiFunction<Iterable<T>, BeaconState, VerificationResult> verifier : customVerifiers) {
+      VerificationResult result = verifier.apply(operations, state);
       if (result != PASSED) {
         return failedResult(
             "%s list verification failed: %s", getType().getSimpleName(), result.getMessage());
@@ -81,7 +82,7 @@ public abstract class OperationListVerifier<T> implements BeaconBlockVerifier {
   }
 
   protected OperationListVerifier<T> addCustomVerifier(
-      Function<Iterable<T>, VerificationResult> verifier) {
+      BiFunction<Iterable<T>, BeaconState, VerificationResult> verifier) {
     this.customVerifiers.add(verifier);
     return this;
   }

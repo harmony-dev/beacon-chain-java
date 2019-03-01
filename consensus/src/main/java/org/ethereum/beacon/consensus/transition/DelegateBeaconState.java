@@ -19,6 +19,7 @@ import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.collections.ReadList;
+import tech.pegasys.artemis.util.uint.UInt64;
 
 public class DelegateBeaconState implements BeaconState {
   private final BeaconState delegate;
@@ -158,6 +159,11 @@ public class DelegateBeaconState implements BeaconState {
   @Override
   public ReadList<Integer, Eth1DataVote> getEth1DataVotes() {
     return delegate.getEth1DataVotes();
+  }
+
+  @Override
+  public UInt64 getDepositIndex() {
+    return delegate.getDepositIndex();
   }
 
   @Override
