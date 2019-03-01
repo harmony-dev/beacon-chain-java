@@ -60,9 +60,7 @@ public class AttesterSlashingVerifier implements OperationVerifier<AttesterSlash
         slashableAttestation1.getValidatorIndices().intersection(
             slashableAttestation1.getValidatorIndices());
     if (intersection.stream()
-        .noneMatch(i ->
-                state.getValidatorRegistry().get(i).getPenalizedEpoch()
-                    .greater(specHelpers.get_current_epoch(state)))) {
+        .noneMatch(i -> state.getValidatorRegistry().get(i).getSlashed())) {
       return failedResult("spec assertion failed");
     }
 

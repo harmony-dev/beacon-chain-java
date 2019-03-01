@@ -13,7 +13,8 @@ public interface MaxOperationsPerBlock {
   int MAX_ATTESTER_SLASHINGS = 1;
   int MAX_ATTESTATIONS = 1 << 7; // 128
   int MAX_DEPOSITS = 1 << 4; // 16
-  int MAX_EXITS = 1 << 4; // 16
+  int MAX_VOLUNTARY_EXITS = 1 << 4; // 16
+  int MAX_TRANSFERS = 1 << 4; // 16
 
   /* Values defined in the spec. */
 
@@ -34,7 +35,11 @@ public interface MaxOperationsPerBlock {
     return MAX_DEPOSITS;
   }
 
-  default int getMaxExits() {
-    return MAX_EXITS;
+  default int getMaxVoluntaryExits() {
+    return MAX_VOLUNTARY_EXITS;
+  }
+
+  default int getMaxTransfers() {
+    return MAX_TRANSFERS;
   }
 }

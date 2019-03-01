@@ -13,6 +13,7 @@ import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustodyBit;
 import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Bitfield;
 import org.ethereum.beacon.core.types.EpochNumber;
@@ -56,8 +57,8 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
     SlotNumber slot = state.getSlot();
     Hash32 beaconBlockRoot = specHelpers.hash_tree_root(observableState.getHead());
     Hash32 epochBoundaryRoot = getEpochBoundaryRoot(state, observableState.getHead());
-    Hash32 shardBlockRoot = Hash32.ZERO; // Note: This is a stub for phase 0.
-    Hash32 latestCrosslinkRoot = getLatestCrosslinkRoot(state, shard);
+    Hash32 crosslinkDataRoot = Hash32.ZERO; // Note: This is a stub for phase 0.
+    Crosslink latestCrosslink = getLatestCrosslink(state, shard);
     EpochNumber justifiedEpoch = state.getJustifiedEpoch();
     Hash32 justifiedBlockRoot = getJustifiedBlockRoot(state);
     AttestationData data =
@@ -66,8 +67,8 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
             shard,
             beaconBlockRoot,
             epochBoundaryRoot,
-            shardBlockRoot,
-            latestCrosslinkRoot,
+            crosslinkDataRoot,
+            latestCrosslink,
             justifiedEpoch,
             justifiedBlockRoot);
 
@@ -114,15 +115,15 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
   }
 
   /*
-   Set attestation_data.latest_crosslink_root = state.latest_crosslinks[shard].shard_block_root
+   Set attestation_data.latest_crosslink_root = state.latest_crosslinks[shard].crosslink_data_root
      where state is the beacon state at head and shard is the validator's assigned shard.
   */
   @VisibleForTesting
-  Hash32 getLatestCrosslinkRoot(BeaconState state, ShardNumber shard) {
+  Crosslink getLatestCrosslink(BeaconState state, ShardNumber shard) {
     if (shard.equals(chainSpec.getBeaconChainShardNumber())) {
-      return Hash32.ZERO;
+      return Crosslink.EMPTY;
     } else {
-      return state.getLatestCrosslinks().get(shard).getShardBlockRoot();
+      return state.getLatestCrosslinks().get(shard);
     }
   }
 

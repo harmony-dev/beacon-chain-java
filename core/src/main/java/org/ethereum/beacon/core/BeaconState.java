@@ -4,7 +4,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.BeaconStateImpl;
-import org.ethereum.beacon.core.state.CrosslinkRecord;
+import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Eth1DataVote;
 import org.ethereum.beacon.core.state.ForkData;
@@ -19,6 +19,7 @@ import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.collections.ReadList;
+import tech.pegasys.artemis.util.uint.UInt64;
 
 /**
  * Beacon chain state.
@@ -61,17 +62,17 @@ public interface BeaconState {
   /** The most recent randao mixes. */
   ReadList<EpochNumber, Hash32> getLatestRandaoMixes();
 
-  ShardNumber getPreviousEpochStartShard();
+  ShardNumber getPreviousShufflingStartShard();
 
-  ShardNumber getCurrentEpochStartShard();
+  ShardNumber getCurrentShufflingStartShard();
 
-  EpochNumber getPreviousCalculationEpoch();
+  EpochNumber getPreviousShufflingEpoch();
 
-  EpochNumber getCurrentCalculationEpoch();
+  EpochNumber getCurrentShufflingEpoch();
 
-  Hash32 getPreviousEpochSeed();
+  Hash32 getPreviousShufflingSeed();
 
-  Hash32 getCurrentEpochSeed();
+  Hash32 getCurrentShufflingSeed();
 
   /********* Finality **********/
 
@@ -90,16 +91,16 @@ public interface BeaconState {
   /** ******* Recent state ********* */
 
   /** Latest crosslink record for each shard. */
-  ReadList<ShardNumber, CrosslinkRecord> getLatestCrosslinks();
+  ReadList<ShardNumber, Crosslink> getLatestCrosslinks();
 
   /** Latest block hashes for each shard. */
   ReadList<SlotNumber, Hash32> getLatestBlockRoots();
 
   /** Latest block hashes for each shard. */
-  ReadList<EpochNumber, Hash32> getLatestIndexRoots();
+  ReadList<EpochNumber, Hash32> getLatestActiveIndexRoots();
 
-  /** Balances penalized at every withdrawal period */
-  ReadList<EpochNumber, Gwei> getLatestPenalizedBalances();
+  /** Balances slashed at every withdrawal period */
+  ReadList<EpochNumber, Gwei> getLatestSlashedBalances();
 
   /** Attestations that has not been processed yet. */
   ReadList<Integer, PendingAttestationRecord> getLatestAttestations();

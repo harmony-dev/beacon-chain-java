@@ -8,21 +8,19 @@ import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.verifier.OperationVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconState;
-import org.ethereum.beacon.core.operations.Exit;
+import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.ValidatorRecord;
-import org.ethereum.beacon.core.types.BLSSignature;
-import tech.pegasys.artemis.ethereum.core.Hash32;
 
 /**
- * Verifies {@link Exit} beacon chain operation.
+ * Verifies {@link VoluntaryExit} beacon chain operation.
  *
- * @see Exit
+ * @see VoluntaryExit
  * @see <a
  *     href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md#exits-1">Exits</a>
  *     in the spec.
  */
-public class ExitVerifier implements OperationVerifier<Exit> {
+public class ExitVerifier implements OperationVerifier<VoluntaryExit> {
 
   private ChainSpec chainSpec;
   private SpecHelpers specHelpers;
@@ -33,10 +31,10 @@ public class ExitVerifier implements OperationVerifier<Exit> {
   }
 
   @Override
-  public VerificationResult verify(Exit exit, BeaconState state) {
-    specHelpers.checkIndexRange(state, exit.getValidatorIndex());
+  public VerificationResult verify(VoluntaryExit voluntaryExit, BeaconState state) {
+    specHelpers.checkIndexRange(state, voluntaryExit.getValidatorIndex());
 
-    ValidatorRecord validator = state.getValidatorRegistry().get(exit.getValidatorIndex());
+    ValidatorRecord validator = state.getValidatorRegistry().get(voluntaryExit.getValidatorIndex());
 
     // Verify that validator.exit_epoch > get_entry_exit_effect_epoch(get_current_epoch(state))
     if (!validator.getExitEpoch().greater(
@@ -47,7 +45,7 @@ public class ExitVerifier implements OperationVerifier<Exit> {
     }
 
     // Verify that get_current_epoch(state) >= exit.epoch
-    if (!specHelpers.get_current_epoch(state).greaterEqual(exit.getEpoch())) {
+    if (!specHelpers.get_current_epoch(state).greaterEqual(voluntaryExit.getEpoch())) {
       return failedResult(
           "exit.epoch must be greater or equal to current_epoch");
     }
@@ -64,9 +62,9 @@ public class ExitVerifier implements OperationVerifier<Exit> {
     //    domain=get_domain(state.fork, exit.epoch, DOMAIN_EXIT)).
     if (!specHelpers.bls_verify(
         validator.getPubKey(),
-        specHelpers.signed_root(exit, "signature"),
-        exit.getSignature(),
-        specHelpers.get_domain(state.getForkData(), exit.getEpoch(), EXIT))) {
+        specHelpers.signed_root(voluntaryExit, "signature"),
+        voluntaryExit.getSignature(),
+        specHelpers.get_domain(state.getForkData(), voluntaryExit.getEpoch(), EXIT))) {
       return failedResult("failed to verify signature");
     }
 

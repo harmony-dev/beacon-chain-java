@@ -13,8 +13,8 @@ public class StateListLengthsData implements StateListLengths {
   private String LATEST_BLOCK_ROOTS_LENGTH;
   @JsonProperty("LATEST_RANDAO_MIXES_LENGTH")
   private String LATEST_RANDAO_MIXES_LENGTH;
-  @JsonProperty("LATEST_INDEX_ROOTS_LENGTH")
-  private String LATEST_INDEX_ROOTS_LENGTH;
+  @JsonProperty("LATEST_ACTIVE_INDEX_ROOTS_LENGTH")
+  private String LATEST_ACTIVE_INDEX_ROOTS_LENGTH;
   @JsonProperty("LATEST_PENALIZED_EXIT_LENGTH")
   private String LATEST_PENALIZED_EXIT_LENGTH;
 
@@ -32,8 +32,8 @@ public class StateListLengthsData implements StateListLengths {
 
   @Override
   @JsonIgnore
-  public EpochNumber getLatestIndexRootsLength() {
-    return new EpochNumber(UInt64.valueOf(getLATEST_INDEX_ROOTS_LENGTH()));
+  public EpochNumber getLatestActiveIndexRootsLength() {
+    return new EpochNumber(UInt64.valueOf(getLATEST_ACTIVE_INDEX_ROOTS_LENGTH()));
   }
 
   @Override
@@ -61,12 +61,12 @@ public class StateListLengthsData implements StateListLengths {
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-  public String getLATEST_INDEX_ROOTS_LENGTH() {
-    return LATEST_INDEX_ROOTS_LENGTH;
+  public String getLATEST_ACTIVE_INDEX_ROOTS_LENGTH() {
+    return LATEST_ACTIVE_INDEX_ROOTS_LENGTH;
   }
 
-  public void setLATEST_INDEX_ROOTS_LENGTH(String LATEST_INDEX_ROOTS_LENGTH) {
-    this.LATEST_INDEX_ROOTS_LENGTH = LATEST_INDEX_ROOTS_LENGTH;
+  public void setLATEST_ACTIVE_INDEX_ROOTS_LENGTH(String LATEST_ACTIVE_INDEX_ROOTS_LENGTH) {
+    this.LATEST_ACTIVE_INDEX_ROOTS_LENGTH = LATEST_ACTIVE_INDEX_ROOTS_LENGTH;
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)

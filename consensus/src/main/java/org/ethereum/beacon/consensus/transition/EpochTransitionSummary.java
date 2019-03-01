@@ -53,7 +53,7 @@ public class EpochTransitionSummary {
   Map<ValidatorIndex, Gwei> beaconHeadAttestationRewards = new HashMap<>();
   Map<ValidatorIndex, Gwei> beaconHeadAttestationPenalties = new HashMap<>();
   Map<ValidatorIndex, Gwei> inclusionDistanceRewards = new HashMap<>();
-  Map<ValidatorIndex, Gwei> penalizedEpochPenalties = new HashMap<>();
+  Map<ValidatorIndex, Gwei> initiatedExitPenalties = new HashMap<>();
   Map<ValidatorIndex, Gwei> noFinalityPenalties = new HashMap<>();
   Map<ValidatorIndex, Gwei> attestationInclusionRewards = new HashMap<>();
 
@@ -123,8 +123,8 @@ public class EpochTransitionSummary {
     return inclusionDistanceRewards;
   }
 
-  public Map<ValidatorIndex, Gwei> getPenalizedEpochPenalties() {
-    return penalizedEpochPenalties;
+  public Map<ValidatorIndex, Gwei> getInitiatedExitPenalties() {
+    return initiatedExitPenalties;
   }
 
   public Map<ValidatorIndex, Gwei> getNoFinalityPenalties() {

@@ -12,7 +12,6 @@ import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.operations.slashing.SlashableAttestation;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.spec.SignatureDomains;
-import org.ethereum.beacon.core.spec.ValidatorStatusFlags;
 import org.ethereum.beacon.core.state.ForkData;
 import org.ethereum.beacon.core.state.ShardCommittee;
 import org.ethereum.beacon.core.state.ValidatorRecord;
@@ -135,14 +134,14 @@ public class SpecHelpers {
         """
         previous_active_validators = get_active_validator_indices(
             state.validator_registry,
-            state.previous_calculation_epoch,
+            state.previous_shuffling_epoch,
         )
         return get_epoch_committee_count(len(previous_active_validators))
    */
   public int get_previous_epoch_committee_count(BeaconState state) {
     List<ValidatorIndex> previous_active_validators = get_active_validator_indices(
         state.getValidatorRegistry(),
-        state.getPreviousCalculationEpoch());
+        state.getPreviousShufflingEpoch());
     return get_epoch_committee_count(previous_active_validators.size());
   }
 
@@ -153,14 +152,14 @@ public class SpecHelpers {
         """
         current_active_validators = get_active_validator_indices(
             state.validator_registry,
-            state.current_calculation_epoch,
+            state.current_shuffling_epoch,
         )
         return get_epoch_committee_count(len(current_active_validators))
    */
   public int get_current_epoch_committee_count(BeaconState state) {
     List<ValidatorIndex> current_active_validators = get_active_validator_indices(
         state.getValidatorRegistry(),
-        state.getCurrentCalculationEpoch());
+        state.getCurrentShufflingEpoch());
     return get_epoch_committee_count(current_active_validators.size());
   }
 
@@ -209,9 +208,9 @@ public class SpecHelpers {
     /*
       if epoch == previous_epoch:
         committees_per_epoch = get_previous_epoch_committee_count(state)
-        seed = state.previous_epoch_seed
-        shuffling_epoch = state.previous_calculation_epoch
-        shuffling_start_shard = state.previous_epoch_start_shard
+        seed = state.previous_shuffling_seed
+        shuffling_epoch = state.previous_shuffling_epoch
+        shuffling_start_shard = state.previous_shuffling_start_shard
      */
     int committees_per_epoch;
     Hash32 seed;
@@ -219,21 +218,21 @@ public class SpecHelpers {
     ShardNumber shuffling_start_shard;
     if (epoch.equals(previous_epoch)) {
       committees_per_epoch = get_previous_epoch_committee_count(state);
-      seed = state.getPreviousEpochSeed();
-      shuffling_epoch = state.getPreviousCalculationEpoch();
-      shuffling_start_shard = state.getPreviousEpochStartShard();
+      seed = state.getPreviousShufflingSeed();
+      shuffling_epoch = state.getPreviousShufflingEpoch();
+      shuffling_start_shard = state.getPreviousShufflingStartShard();
     } else if (epoch.equals(current_epoch)) {
       /*
           elif epoch == current_epoch:
               committees_per_epoch = get_current_epoch_committee_count(state)
-              seed = state.current_epoch_seed
-              shuffling_epoch = state.current_calculation_epoch
+              seed = state.current_shuffling_seed
+              shuffling_epoch = state.current_shuffling_epoch
 
        */
       committees_per_epoch = get_current_epoch_committee_count(state);
-      seed = state.getCurrentEpochSeed();
-      shuffling_epoch = state.getCurrentCalculationEpoch();
-      shuffling_start_shard = state.getCurrentEpochStartShard();
+      seed = state.getCurrentShufflingSeed();
+      shuffling_epoch = state.getCurrentShufflingEpoch();
+      shuffling_start_shard = state.getCurrentShufflingStartShard();
     } else {
       assertTrue(epoch.equals(next_epoch));
       /*
@@ -252,29 +251,29 @@ public class SpecHelpers {
       /*
         if registry_change:
             seed = generate_seed(state, next_epoch)
-            shuffling_start_shard = (state.current_epoch_start_shard + current_committees_per_epoch) % SHARD_COUNT
+            shuffling_start_shard = (state.current_shuffling_start_shard + current_committees_per_epoch) % SHARD_COUNT
        */
       if (registry_change) {
         seed = generate_seed(state, next_epoch);
-        shuffling_start_shard = state.getCurrentEpochStartShard()
+        shuffling_start_shard = state.getCurrentShufflingStartShard()
             .plusModulo(current_committees_per_epoch, spec.getShardCount());
       } else if (epochs_since_last_registry_update.greater(EpochNumber.of(1)) &&
           is_power_of_two(epochs_since_last_registry_update)) {
         /*
           elif epochs_since_last_registry_update > 1 and is_power_of_two(epochs_since_last_registry_update):
             seed = generate_seed(state, next_epoch)
-            shuffling_start_shard = state.current_epoch_start_shard
+            shuffling_start_shard = state.current_shuffling_start_shard
          */
         seed = generate_seed(state, next_epoch);
-        shuffling_start_shard = state.getCurrentEpochStartShard();
+        shuffling_start_shard = state.getCurrentShufflingStartShard();
       } else {
         /*
           else:
-            seed = state.current_epoch_seed
-            shuffling_start_shard = state.current_epoch_start_shard
+            seed = state.current_shuffling_seed
+            shuffling_start_shard = state.current_shuffling_start_shard
          */
-        seed = state.getCurrentEpochSeed();
-        shuffling_start_shard = state.getCurrentEpochStartShard();
+        seed = state.getCurrentShufflingSeed();
+        shuffling_start_shard = state.getCurrentShufflingStartShard();
       }
     }
     List<List<ValidatorIndex>> shuffling = get_shuffling(seed, state.getValidatorRegistry(),
@@ -707,28 +706,26 @@ public class SpecHelpers {
     //  if pubkey not in validator_pubkeys:
     if (index == null) {
       //  # Add new validator
-      //  validator = Validator(
-      //    pubkey=pubkey,
-      //    withdrawal_credentials=withdrawal_credentials,
-      //    proposer_slots=0,
-      //    activation_slot=FAR_FUTURE_SLOT,
-      //    exit_slot=FAR_FUTURE_SLOT,
-      //    withdrawal_slot=FAR_FUTURE_SLOT,
-      //    penalized_slot=FAR_FUTURE_SLOT,
-      //    exit_count=0,
-      //    status_flags=0,
-      //    custody_commitment=custody_commitment,
-      //    latest_custody_reseed_slot=GENESIS_SLOT,
-      //    penultimate_custody_reseed_slot=GENESIS_SLOT,
-      //  )
+      /*
+      validator = Validator(
+          pubkey=pubkey,
+          withdrawal_credentials=withdrawal_credentials,
+          activation_epoch=FAR_FUTURE_EPOCH,
+          exit_epoch=FAR_FUTURE_EPOCH,
+          withdrawable_epoch=FAR_FUTURE_EPOCH,
+          initiated_exit=False,
+          slashed=False,
+          )
+       */
+
       ValidatorRecord validator = new ValidatorRecord(
           pubkey,
           withdrawal_credentials,
           spec.getFarFutureEpoch(),
           spec.getFarFutureEpoch(),
           spec.getFarFutureEpoch(),
-          spec.getFarFutureEpoch(),
-          UInt64.ZERO);
+          Boolean.FALSE,
+          Boolean.FALSE);
 
       //  # Note: In phase 2 registry indices that has been withdrawn for a long time will be recycled.
       //  index = len(state.validator_registry)
@@ -792,18 +789,18 @@ public class SpecHelpers {
     def penalize_validator(state: BeaconState, index: int) -> None:
       exit_validator(state, index)
       validator = state.validator_registry[index]
-      state.latest_penalized_balances[get_current_epoch(state) % LATEST_PENALIZED_EXIT_LENGTH]
+      state.latest_slashed_balances[get_current_epoch(state) % LATEST_PENALIZED_EXIT_LENGTH]
           += get_effective_balance(state, index)
 
       whistleblower_index = get_beacon_proposer_index(state, state.slot)
       whistleblower_reward = get_effective_balance(state, index) // WHISTLEBLOWER_REWARD_QUOTIENT
       state.validator_balances[whistleblower_index] += whistleblower_reward
       state.validator_balances[index] -= whistleblower_reward
-      validator.penalized_epoch = get_current_epoch(state)
+      validator.initiated_exit = get_current_epoch(state)
     */
   public void penalize_validator(MutableBeaconState state, ValidatorIndex index) {
     exit_validator(state, index);
-    state.getLatestPenalizedBalances().update(
+    state.getLatestSlashedBalances().update(
         get_current_epoch(state).modulo(spec.getLatestPenalizedExitLength()),
         balance -> balance.plus(get_effective_balance(state, index)));
 
@@ -815,13 +812,15 @@ public class SpecHelpers {
     state.getValidatorBalances().update(index,
         oldVal -> oldVal.minus(whistleblower_reward));
     state.getValidatorRegistry().update(index,
-        v -> v.builder().withPenalizedEpoch(get_current_epoch(state)).build());
+        v -> v.builder().withSlashed(Boolean.TRUE)
+            .withWithdrawableEpoch(get_current_epoch(state).plus(spec.getLatestPenalizedExitLength()))
+            .build());
   }
 
   /*
    def initiate_validator_exit(state: BeaconState, index: int) -> None:
      validator = state.validator_registry[index]
-     validator.status_flags |= INITIATED_EXIT
+     validator.slashed = True
   */
   public void initiate_validator_exit(MutableBeaconState state, ValidatorIndex index) {
     state
@@ -830,7 +829,7 @@ public class SpecHelpers {
             index,
             v ->
                 v.builder()
-                    .withStatusFlags(flags -> flags.or(ValidatorStatusFlags.INITIATED_EXIT))
+                    .withInitiatedExit(Boolean.TRUE)
                     .build());
   }
 
@@ -925,9 +924,9 @@ public class SpecHelpers {
     for (ValidatorIndex index : state.getValidatorRegistry().size().iterateFromZero()) {
       ValidatorRecord validator = state.getValidatorRegistry().get(index);
       //  if validator.exit_epoch > get_entry_exit_effect_epoch(current_epoch)
-      //      and validator.status_flags & INITIATED_EXIT:
-      if (validator.getExitEpoch().greater(get_entry_exit_effect_epoch(current_epoch))
-          && !validator.getStatusFlags().and(ValidatorStatusFlags.INITIATED_EXIT).equals(UInt64.ZERO)) {
+      //      and validator.slashed:
+      if (validator.getActivationEpoch().equals(spec.getFarFutureEpoch())
+          && validator.getInitiatedExit()) {
         //   # Check the balance churn would be within the allowance
         //   balance_churn += get_effective_balance(state, index)
         balance_churn = balance_churn.plus(get_effective_balance(state, index));
@@ -950,7 +949,7 @@ public class SpecHelpers {
   /*
    def prepare_validator_for_withdrawal(state: BeaconState, index: int) -> None:
        validator = state.validator_registry[index]
-       validator.status_flags |= WITHDRAWABLE
+       validator.slashed = False
   */
   public void prepare_validator_for_withdrawal(MutableBeaconState state, ValidatorIndex index) {
     state
@@ -959,7 +958,8 @@ public class SpecHelpers {
             index,
             v ->
                 v.builder()
-                    .withStatusFlags(flags -> flags.or(ValidatorStatusFlags.WITHDRAWABLE))
+                    .withWithdrawableEpoch(
+                        get_current_epoch(state).plus(spec.getMinValidatorWithdrawabilityDelay()))
                     .build());
   }
 
@@ -985,17 +985,18 @@ public class SpecHelpers {
     //    for index, validator in enumerate(state.validator_registry):
     for (ValidatorIndex index : state.getValidatorRegistry().size()) {
       ValidatorRecord validator = state.getValidatorRegistry().get(index);
-      //  if current_epoch == validator.penalized_epoch + LATEST_PENALIZED_EXIT_LENGTH // 2:
-      if (current_epoch.equals(
-          validator.getPenalizedEpoch().plus(spec.getLatestPenalizedExitLength().half()))) {
+      //  if validator.slashed and current_epoch ==
+      //  validator.withdrawable_epoch - LATEST_SLASHED_EXIT_LENGTH // 2:
+      if (validator.getSlashed() && current_epoch.equals(
+          validator.getWithdrawableEpoch().minus(spec.getLatestPenalizedExitLength().half()))) {
 
         //  epoch_index = current_epoch % LATEST_PENALIZED_EXIT_LENGTH
         EpochNumber epoch_index = current_epoch.modulo(spec.getLatestPenalizedExitLength());
-        // total_at_start = state.latest_penalized_balances[(epoch_index + 1) % LATEST_PENALIZED_EXIT_LENGTH]
-        Gwei total_at_start = state.getLatestPenalizedBalances().get(
+        // total_at_start = state.latest_slashed_balances[(epoch_index + 1) % LATEST_PENALIZED_EXIT_LENGTH]
+        Gwei total_at_start = state.getLatestSlashedBalances().get(
             epoch_index.increment().modulo(spec.getLatestPenalizedExitLength()));
-        //  total_at_end = state.latest_penalized_balances[epoch_index]
-        Gwei total_at_end = state.getLatestPenalizedBalances().get(epoch_index);
+        //  total_at_end = state.latest_slashed_balances[epoch_index]
+        Gwei total_at_end = state.getLatestSlashedBalances().get(epoch_index);
         //    total_penalties = total_at_end - total_at_start
         Gwei total_penalties = total_at_end.minus(total_at_start);
         //    penalty = get_effective_balance(state, index) *
@@ -1011,11 +1012,11 @@ public class SpecHelpers {
     /*
        def eligible(index):
            validator = state.validator_registry[index]
-        if validator.penalized_epoch <= current_epoch:
+        if validator.initiated_exit <= current_epoch:
             penalized_withdrawal_epochs = LATEST_PENALIZED_EXIT_LENGTH // 2
-            return current_epoch >= validator.penalized_epoch + penalized_withdrawal_epochs
+            return current_epoch >= validator.initiated_exit + penalized_withdrawal_epochs
         else:
-            return current_epoch >= validator.exit_epoch + MIN_VALIDATOR_WITHDRAWAL_EPOCHS
+            return current_epoch >= validator.exit_epoch + MIN_VALIDATOR_WITHDRAWABILITY_DELAY
 
        all_indices = list(range(len(state.validator_registry)))
        eligible_indices = filter(eligible, all_indices)
@@ -1023,14 +1024,11 @@ public class SpecHelpers {
     List<ValidatorIndex> eligible_indices = new ArrayList<>();
     for (ValidatorIndex index : state.getValidatorRegistry().size().iterateFromZero()) {
       ValidatorRecord validator = state.getValidatorRegistry().get(index);
-      if (validator.getPenalizedEpoch().lessEqual(current_epoch)) {
-        if (current_epoch.greaterEqual(
-            validator.getPenalizedEpoch().plus(spec.getLatestPenalizedExitLength().half()))) {
-          eligible_indices.add(index);
-        }
+      if (validator.getWithdrawableEpoch().equals(spec.getFarFutureEpoch())) {
+        eligible_indices.add(index);
       } else {
-        if (current_epoch.greaterEqual(
-            validator.getExitEpoch().plus(spec.getMinValidatorWithdrawalEpochs()))) {
+        if (get_current_epoch(state).greaterEqual(
+            validator.getExitEpoch().plus(spec.getMinValidatorWithdrawabilityDelay()))) {
           eligible_indices.add(index);
         }
       }
@@ -1078,15 +1076,15 @@ public class SpecHelpers {
         """
         Return the index root at a recent ``epoch``.
         """
-        assert get_current_epoch(state) - LATEST_INDEX_ROOTS_LENGTH + ENTRY_EXIT_DELAY < epoch
+        assert get_current_epoch(state) - LATEST_ACTIVE_INDEX_ROOTS_LENGTH + ENTRY_EXIT_DELAY < epoch
             <= get_current_epoch(state) + ENTRY_EXIT_DELAY
-        return state.latest_index_roots[epoch % LATEST_INDEX_ROOTS_LENGTH]
+        return state.latest_active_index_roots[epoch % LATEST_ACTIVE_INDEX_ROOTS_LENGTH]
    */
   Hash32 get_active_index_root(BeaconState state, EpochNumber epoch) {
-    assertTrue(get_current_epoch(state).minus(spec.getLatestIndexRootsLength()).plus(spec.getEntryExitDelay())
+    assertTrue(get_current_epoch(state).minus(spec.getLatestActiveIndexRootsLength()).plus(spec.getEntryExitDelay())
         .less(epoch));
     assertTrue(epoch.lessEqual(get_current_epoch(state).plus(spec.getEntryExitDelay())));
-    return state.getLatestIndexRoots().get(epoch.modulo(spec.getLatestIndexRootsLength()));
+    return state.getLatestActiveIndexRoots().get(epoch.modulo(spec.getLatestActiveIndexRootsLength()));
   }
 
   /*

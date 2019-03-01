@@ -24,15 +24,15 @@ public abstract class ProposerSlashingTestUtil {
   public static ProposerSlashing createRandom(Random random) {
     Proposal signedData1 =
         new Proposal(
-            ChainSpec.GENESIS_SLOT, ChainSpec.BEACON_CHAIN_SHARD_NUMBER, Hash32.random(random), BLSSignature.ZERO);
+            ChainSpec.GENESIS_SLOT, ChainSpec.BEACON_CHAIN_SHARD_NUMBER, Hash32.random(random),
+            BLSSignature.wrap(Bytes96.random(random)));
     Proposal signedData2 =
         new Proposal(
-            ChainSpec.GENESIS_SLOT, ChainSpec.BEACON_CHAIN_SHARD_NUMBER, Hash32.random(random), BLSSignature.ZERO);
+            ChainSpec.GENESIS_SLOT, ChainSpec.BEACON_CHAIN_SHARD_NUMBER, Hash32.random(random),
+            BLSSignature.wrap(Bytes96.random(random)));
     return new ProposerSlashing(
         ValidatorIndex.ZERO,
         signedData1,
-        BLSSignature.wrap(Bytes96.random(random)),
-        signedData2,
-        BLSSignature.wrap(Bytes96.random(random)));
+        signedData2);
   }
 }

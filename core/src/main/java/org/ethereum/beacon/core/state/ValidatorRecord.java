@@ -5,11 +5,9 @@ import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.EpochNumber;
-import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.uint.UInt64;
 import java.util.function.Function;
 
@@ -32,24 +30,24 @@ public class ValidatorRecord {
   @SSZ private final EpochNumber activationEpoch;
   /** Slot when validator exited */
   @SSZ private final EpochNumber exitEpoch;
-  /** Slot when validator withdrew */
-  @SSZ private final EpochNumber withdrawalEpoch;
-  /** Slot when validator was penalized */
-  @SSZ private final EpochNumber penalizedEpoch;
+  /** Epoch when validator is eligible to withdraw */
+  @SSZ private final EpochNumber WithdrawableEpoch;
+  /** Did the validator initiate an exit */
+  @SSZ private final Boolean initiatedExit;
   /** Status flags. */
-  @SSZ private final UInt64 statusFlags;
+  @SSZ private final Boolean slashed;
 
   public ValidatorRecord(BLSPubkey pubKey,
       Hash32 withdrawalCredentials, EpochNumber activationEpoch,
-      EpochNumber exitEpoch, EpochNumber withdrawalEpoch,
-      EpochNumber penalizedEpoch, UInt64 statusFlags) {
+      EpochNumber exitEpoch, EpochNumber WithdrawableEpoch,
+      Boolean initiatedExit, Boolean slashed) {
     this.pubKey = pubKey;
     this.withdrawalCredentials = withdrawalCredentials;
     this.activationEpoch = activationEpoch;
     this.exitEpoch = exitEpoch;
-    this.withdrawalEpoch = withdrawalEpoch;
-    this.penalizedEpoch = penalizedEpoch;
-    this.statusFlags = statusFlags;
+    this.WithdrawableEpoch = WithdrawableEpoch;
+    this.initiatedExit = initiatedExit;
+    this.slashed = slashed;
   }
 
   public BLSPubkey getPubKey() {
@@ -68,16 +66,16 @@ public class ValidatorRecord {
     return exitEpoch;
   }
 
-  public EpochNumber getWithdrawalEpoch() {
-    return withdrawalEpoch;
+  public EpochNumber getWithdrawableEpoch() {
+    return WithdrawableEpoch;
   }
 
-  public EpochNumber getPenalizedEpoch() {
-    return penalizedEpoch;
+  public Boolean getInitiatedExit() {
+    return initiatedExit;
   }
 
-  public UInt64 getStatusFlags() {
-    return statusFlags;
+  public Boolean getSlashed() {
+    return slashed;
   }
 
   @Override
@@ -89,9 +87,9 @@ public class ValidatorRecord {
         && Objects.equal(withdrawalCredentials, that.withdrawalCredentials)
         && Objects.equal(activationEpoch, that.activationEpoch)
         && Objects.equal(exitEpoch, that.exitEpoch)
-        && Objects.equal(withdrawalEpoch, that.withdrawalEpoch)
-        && Objects.equal(penalizedEpoch, that.penalizedEpoch)
-        && Objects.equal(statusFlags, that.statusFlags);
+        && Objects.equal(WithdrawableEpoch, that.WithdrawableEpoch)
+        && Objects.equal(initiatedExit, that.initiatedExit)
+        && Objects.equal(slashed, that.slashed);
   }
 
   public Builder builder() {
@@ -104,9 +102,9 @@ public class ValidatorRecord {
     private Hash32 withdrawalCredentials;
     private EpochNumber activationEpoch;
     private EpochNumber exitEpoch;
-    private EpochNumber withdrawalEpoch;
-    private EpochNumber penalizedEpoch;
-    private UInt64 statusFlags;
+    private EpochNumber withdrawableEpoch;
+    private Boolean initiatedExit;
+    private Boolean slashed;
 
     private Builder() {}
 
@@ -130,9 +128,9 @@ public class ValidatorRecord {
       builder.withdrawalCredentials = record.withdrawalCredentials;
       builder.activationEpoch = record.activationEpoch;
       builder.exitEpoch = record.exitEpoch;
-      builder.withdrawalEpoch = record.withdrawalEpoch;
-      builder.penalizedEpoch = record.penalizedEpoch;
-      builder.statusFlags = record.statusFlags;
+      builder.withdrawableEpoch = record.WithdrawableEpoch;
+      builder.initiatedExit = record.initiatedExit;
+      builder.slashed = record.slashed;
 
       return builder;
     }
@@ -142,18 +140,18 @@ public class ValidatorRecord {
       assert withdrawalCredentials != null;
       assert activationEpoch != null;
       assert exitEpoch != null;
-      assert withdrawalEpoch != null;
-      assert penalizedEpoch != null;
-      assert statusFlags != null;
+      assert withdrawableEpoch != null;
+      assert initiatedExit != null;
+      assert slashed != null;
 
       return new ValidatorRecord(
           pubKey,
           withdrawalCredentials,
           activationEpoch,
           exitEpoch,
-          withdrawalEpoch,
-          penalizedEpoch,
-          statusFlags);
+          withdrawableEpoch,
+          initiatedExit,
+          slashed);
     }
 
     public Builder withPubKey(BLSPubkey pubKey) {
@@ -176,23 +174,18 @@ public class ValidatorRecord {
       return this;
     }
 
-    public Builder withWithdrawalEpoch(EpochNumber withdrawalEpoch) {
-      this.withdrawalEpoch = withdrawalEpoch;
+    public Builder withWithdrawableEpoch(EpochNumber withdrawableEpoch) {
+      this.withdrawableEpoch = withdrawableEpoch;
       return this;
     }
 
-    public Builder withPenalizedEpoch(EpochNumber penalizedEpoch) {
-      this.penalizedEpoch = penalizedEpoch;
+    public Builder withInitiatedExit(Boolean initiatedExit) {
+      this.initiatedExit = initiatedExit;
       return this;
     }
 
-    public Builder withStatusFlags(UInt64 statusFlags) {
-      this.statusFlags = statusFlags;
-      return this;
-    }
-
-    public Builder withStatusFlags(Function<UInt64, UInt64> statusFlagsUpdater) {
-      this.statusFlags = statusFlagsUpdater.apply(statusFlags);
+    public Builder withSlashed(Boolean slashed) {
+      this.slashed = slashed;
       return this;
     }
   }

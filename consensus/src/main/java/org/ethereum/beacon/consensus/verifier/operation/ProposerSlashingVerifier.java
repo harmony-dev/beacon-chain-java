@@ -57,31 +57,31 @@ public class ProposerSlashingVerifier implements OperationVerifier<ProposerSlash
 
     ValidatorRecord proposer =
         state.getValidatorRegistry().get(proposerSlashing.getProposerIndex());
-    if (!proposer.getPenalizedEpoch().greater(specHelpers.get_current_epoch(state))) {
+    if (proposer.getSlashed()) {
       return failedResult(
-          "proposer penalized_epoch should be less than get_current_epoch(state)");
+          "proposer was already slashed");
     }
 
     if (!specHelpers.bls_verify(
         proposer.getPubKey(),
         specHelpers.signed_root(proposerSlashing.getProposal1(), "signature"),
-        proposerSlashing.getProposalSignature1(),
+        proposerSlashing.getProposal1().getSignature(),
         specHelpers.get_domain(
             state.getForkData(),
             specHelpers.slot_to_epoch(proposerSlashing.getProposal1().getSlot()),
             PROPOSAL))) {
-      return failedResult("proposal_signature_1 is invalid");
+      return failedResult("proposal_1.signature is invalid");
     }
 
     if (!specHelpers.bls_verify(
         proposer.getPubKey(),
         specHelpers.signed_root(proposerSlashing.getProposal2(), "signature"),
-        proposerSlashing.getProposalSignature2(),
+        proposerSlashing.getProposal2().getSignature(),
         specHelpers.get_domain(
             state.getForkData(),
             specHelpers.slot_to_epoch(proposerSlashing.getProposal2().getSlot()),
             PROPOSAL))) {
-      return failedResult("proposal_signature_2 is invalid");
+      return failedResult("proposal_2.signature is invalid");
     }
 
     return PASSED;

@@ -10,7 +10,7 @@ import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
-import org.ethereum.beacon.core.operations.Exit;
+import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
@@ -100,7 +100,7 @@ public class PerBlockTransition implements BlockTransition<BeaconStateEx> {
          Let slashable_attestation_2 = attester_slashing.slashable_attestation_2.
          Let slashable_indices = [index for index in slashable_attestation_1.validator_indices
              if index in slashable_attestation_2.validator_indices
-                 and state.validator_registry[index].penalized_epoch > get_current_epoch(state)].
+                 and state.validator_registry[index].initiated_exit > get_current_epoch(state)].
          Run penalize_validator(state, index) for each index in slashable_indices.
     */
     for (AttesterSlashing attester_slashing : block.getBody().getAttesterSlashings()) {
@@ -108,8 +108,7 @@ public class PerBlockTransition implements BlockTransition<BeaconStateEx> {
           attester_slashing.getSlashableAttestation1().getValidatorIndices().intersection(
           attester_slashing.getSlashableAttestation2().getValidatorIndices());
       for (ValidatorIndex index : intersection) {
-        if (state.getValidatorRegistry().get(index).getPenalizedEpoch().greater(
-            specHelpers.get_current_epoch(state))) {
+        if (!state.getValidatorRegistry().get(index).getSlashed()) {
           specHelpers.penalize_validator(state, index);
         }
       }
@@ -167,8 +166,8 @@ public class PerBlockTransition implements BlockTransition<BeaconStateEx> {
      For each exit in block.body.exits:
        Run initiate_validator_exit(state, exit.validator_index).
     */
-    for (Exit exit : block.getBody().getExits()) {
-      specHelpers.initiate_validator_exit(state, exit.getValidatorIndex());
+    for (VoluntaryExit voluntaryExit : block.getBody().getExits()) {
+      specHelpers.initiate_validator_exit(state, voluntaryExit.getValidatorIndex());
     }
 
     BeaconStateEx ret = new BeaconStateExImpl(state.createImmutable(),

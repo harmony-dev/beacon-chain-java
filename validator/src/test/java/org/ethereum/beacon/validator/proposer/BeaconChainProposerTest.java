@@ -22,7 +22,7 @@ import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
-import org.ethereum.beacon.core.operations.Exit;
+import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.operations.slashing.Proposal;
@@ -102,12 +102,12 @@ public class BeaconChainProposerTest {
     List<AttesterSlashing> casperSlashings =
         AttesterSlashingTestUtil.createRandomList(
             random, specHelpers.getChainSpec().getMaxAttesterSlashings());
-    List<Exit> exits =
-        ExitTestUtil.createRandomList(random, specHelpers.getChainSpec().getMaxExits());
+    List<VoluntaryExit> voluntaryExits =
+        ExitTestUtil.createRandomList(random, specHelpers.getChainSpec().getMaxVoluntaryExits());
 
     PendingOperations pendingOperations =
         PendingOperationsTestUtil.mockPendingOperations(
-            attestations, attestations, proposerSlashings, casperSlashings, exits);
+            attestations, attestations, proposerSlashings, casperSlashings, voluntaryExits);
     ObservableBeaconState initialObservedState =
         ObservableBeaconStateTestUtil.createInitialState(random, specHelpers, pendingOperations);
     BeaconState initialState = initialObservedState.getLatestSlotState();
@@ -128,7 +128,7 @@ public class BeaconChainProposerTest {
         .peekProposerSlashings(specHelpers.getChainSpec().getMaxProposerSlashings());
     Mockito.verify(pendingOperations)
         .peekAttesterSlashings(specHelpers.getChainSpec().getMaxAttesterSlashings());
-    Mockito.verify(pendingOperations).peekExits(specHelpers.getChainSpec().getMaxExits());
+    Mockito.verify(pendingOperations).peekExits(specHelpers.getChainSpec().getMaxVoluntaryExits());
 
     BeaconStateEx stateAfterBlock =
         perBlockTransition.apply(new BeaconStateExImpl(initialState, Hash32.ZERO), block);
@@ -140,7 +140,7 @@ public class BeaconChainProposerTest {
     Assert.assertEquals(attestations, block.getBody().getAttestations().listCopy());
     Assert.assertEquals(proposerSlashings, block.getBody().getProposerSlashings().listCopy());
     Assert.assertEquals(casperSlashings, block.getBody().getAttesterSlashings().listCopy());
-    Assert.assertEquals(exits, block.getBody().getExits().listCopy());
+    Assert.assertEquals(voluntaryExits, block.getBody().getExits().listCopy());
   }
 
   @Test

@@ -21,7 +21,7 @@ public interface TimeParameters {
   EpochNumber  SEED_LOOKAHEAD = EpochNumber.of(1);
   EpochNumber ENTRY_EXIT_DELAY = EpochNumber.of(1 << 2);
   EpochNumber ETH1_DATA_VOTING_PERIOD = EpochNumber.of(1 << 4);
-  EpochNumber MIN_VALIDATOR_WITHDRAWAL_EPOCHS = EpochNumber.of(1 << 8);
+  EpochNumber MIN_VALIDATOR_WITHDRAWABILITY_DELAY = EpochNumber.of(1 << 8);
 
   /* Values defined in the spec. */
 
@@ -49,7 +49,7 @@ public interface TimeParameters {
     return ETH1_DATA_VOTING_PERIOD;
   }
 
-  default EpochNumber getMinValidatorWithdrawalEpochs() {
-    return MIN_VALIDATOR_WITHDRAWAL_EPOCHS;
+  default EpochNumber getMinValidatorWithdrawabilityDelay() {
+    return MIN_VALIDATOR_WITHDRAWABILITY_DELAY;
   }
 }

@@ -6,7 +6,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
-import org.ethereum.beacon.core.operations.Exit;
+import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.spec.ChainSpec;
@@ -41,11 +41,10 @@ public class BeaconBlock {
   @SSZ private final BLSSignature randaoReveal;
   /** Eth1 data that is observed by proposer. */
   @SSZ private final Eth1Data eth1Data;
-  /** Proposer's signature. */
-  @SSZ private final BLSSignature signature;
-
   /** Block body. */
   @SSZ private final BeaconBlockBody body;
+  /** Proposer's signature. */
+  @SSZ private final BLSSignature signature;
 
   public BeaconBlock(
       SlotNumber slot,
@@ -135,8 +134,8 @@ public class BeaconBlock {
     for (Deposit deposit : body.getDeposits()) {
       ret.append("  " + deposit.toString() + "\n");
     }
-    for (Exit exit : body.getExits()) {
-      ret.append("  " + exit.toString(spec) + "\n");
+    for (VoluntaryExit voluntaryExit : body.getExits()) {
+      ret.append("  " + voluntaryExit.toString(spec) + "\n");
     }
     for (ProposerSlashing proposerSlashing : body.getProposerSlashings()) {
       ret.append("  " + proposerSlashing.toString(spec, beaconStart) + "\n");

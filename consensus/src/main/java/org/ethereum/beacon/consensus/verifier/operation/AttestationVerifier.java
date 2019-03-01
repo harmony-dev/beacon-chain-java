@@ -83,16 +83,16 @@ public class AttestationVerifier implements OperationVerifier<Attestation> {
     }
 
     // Verify that either attestation.data.latest_crosslink_root or
-    //  attestation.data.shard_block_root equals state.latest_crosslinks[shard].shard_block_root
-    Hash32 shardBlockRoot =
-        state.getLatestCrosslinks().get(data.getShard()).getShardBlockRoot();
-    if (!data.getLatestCrosslinkRoot().equals(shardBlockRoot)
-        && !data.getShardBlockRoot().equals(shardBlockRoot)) {
+    //  attestation.data.crosslink_data_root equals state.latest_crosslinks[shard].crosslink_data_root
+    Hash32 crosslinkDataRoot =
+        state.getLatestCrosslinks().get(data.getShard()).getCrosslinkDataRoot();
+    if (!data.getLatestCrosslink().getCrosslinkDataRoot().equals(crosslinkDataRoot)
+        && !data.getCrosslinkDataRoot().equals(crosslinkDataRoot)) {
       return failedResult(
-          "either attestation_data.justified_block_root or attestation_data.shard_block_root must be "
-              + "equal to latest_crosslink.shard_block_root, justified_block_root=%s, "
-              + "attestation_data.shard_block_root=%s, latest_crosslink.shard_block_root=%s",
-          data.getJustifiedBlockRoot(), data.getShardBlockRoot(), shardBlockRoot);
+          "either attestation_data.justified_block_root or attestation_data.crosslink_data_root must be "
+              + "equal to latest_crosslink.crosslink_data_root, justified_block_root=%s, "
+              + "attestation_data.crosslink_data_root=%s, latest_crosslink.crosslink_data_root=%s",
+          data.getJustifiedBlockRoot(), data.getCrosslinkDataRoot(), crosslinkDataRoot);
     }
 
     // Verify bitfields and aggregate signature:
@@ -167,9 +167,9 @@ public class AttestationVerifier implements OperationVerifier<Attestation> {
       return failedResult("failed to verify aggregated signature");
     }
 
-    if (!Hash32.ZERO.equals(data.getShardBlockRoot())) {
+    if (!Hash32.ZERO.equals(data.getCrosslinkDataRoot())) {
       return failedResult(
-          "attestation_data.shard_block_root must be equal to zero hash, phase 0 check");
+          "attestation_data.crosslink_data_root must be equal to zero hash, phase 0 check");
     }
 
     return PASSED;

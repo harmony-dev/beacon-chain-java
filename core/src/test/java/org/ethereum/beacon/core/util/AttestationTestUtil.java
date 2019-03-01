@@ -7,8 +7,10 @@ import java.util.stream.Stream;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Bitfield;
+import org.ethereum.beacon.core.types.EpochNumber;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
@@ -37,7 +39,7 @@ public abstract class AttestationTestUtil {
         Hash32.random(random),
         Hash32.random(random),
         Hash32.random(random),
-        Hash32.random(random),
+        new Crosslink(EpochNumber.ZERO, Hash32.random(random)),
         ChainSpec.DEFAULT.getGenesisEpoch(),
         Hash32.random(random));
   }

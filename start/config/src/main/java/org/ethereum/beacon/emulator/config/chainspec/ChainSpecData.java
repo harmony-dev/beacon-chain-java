@@ -110,8 +110,8 @@ public class ChainSpecData implements Config {
       }
 
       @Override
-      public int getMaxExits() {
-        return maxOperationsPerBlock.getMaxExits();
+      public int getMaxVoluntaryExits() {
+        return maxOperationsPerBlock.getMaxVoluntaryExits();
       }
 
       @Override
@@ -180,8 +180,8 @@ public class ChainSpecData implements Config {
       }
 
       @Override
-      public EpochNumber getLatestIndexRootsLength() {
-        return stateListLengths.getLatestIndexRootsLength();
+      public EpochNumber getLatestActiveIndexRootsLength() {
+        return stateListLengths.getLatestActiveIndexRootsLength();
       }
 
       @Override
@@ -220,8 +220,8 @@ public class ChainSpecData implements Config {
       }
 
       @Override
-      public EpochNumber getMinValidatorWithdrawalEpochs() {
-        return timeParameters.getMinValidatorWithdrawalEpochs();
+      public EpochNumber getMinValidatorWithdrawabilityDelay() {
+        return timeParameters.getMinValidatorWithdrawabilityDelay();
       }
     };
   }

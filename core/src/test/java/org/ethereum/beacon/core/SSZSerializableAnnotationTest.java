@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Set;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
-import org.ethereum.beacon.core.operations.Exit;
+import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustodyBit;
@@ -21,7 +21,7 @@ import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.operations.slashing.Proposal;
 import org.ethereum.beacon.core.operations.slashing.SlashableAttestation;
 import org.ethereum.beacon.core.state.BeaconStateImpl;
-import org.ethereum.beacon.core.state.CrosslinkRecord;
+import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Eth1DataVote;
 import org.ethereum.beacon.core.state.ForkData;
@@ -124,10 +124,10 @@ public class SSZSerializableAnnotationTest {
                 Deposit.class,
                 DepositData.class,
                 DepositInput.class,
-                Exit.class,
+                VoluntaryExit.class,
                 Proposal.class,
                 ProposerSlashing.class,
-                CrosslinkRecord.class,
+                Crosslink.class,
                 Eth1DataVote.class,
                 ForkData.class,
                 PendingAttestationRecord.class,

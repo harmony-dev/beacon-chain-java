@@ -16,7 +16,7 @@ import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.spec.ChainSpec;
-import org.ethereum.beacon.core.state.CrosslinkRecord;
+import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.state.ForkData;
 import org.ethereum.beacon.core.types.Bitfield64;
 import org.ethereum.beacon.core.types.EpochNumber;
@@ -79,12 +79,12 @@ public class InitialStateTransition implements BlockTransition<BeaconStateEx> {
     // Randomness and committees
     initialState.getLatestRandaoMixes().addAll(
             nCopies(chainSpec.getLatestRandaoMixesLength().getIntValue(), Hash32.ZERO));
-    initialState.setPreviousEpochStartShard(chainSpec.getGenesisStartShard());
-    initialState.setCurrentEpochStartShard(chainSpec.getGenesisStartShard());
-    initialState.setPreviousCalculationEpoch(chainSpec.getGenesisEpoch());
-    initialState.setCurrentCalculationEpoch(chainSpec.getGenesisEpoch());
-    initialState.setPreviousEpochSeed(Hash32.ZERO);
-    initialState.setCurrentEpochSeed(Hash32.ZERO);
+    initialState.setPreviousShufflingStartShard(chainSpec.getGenesisStartShard());
+    initialState.setCurrentShufflingStartShard(chainSpec.getGenesisStartShard());
+    initialState.setPreviousShufflingEpoch(chainSpec.getGenesisEpoch());
+    initialState.setCurrentShufflingEpoch(chainSpec.getGenesisEpoch());
+    initialState.setPreviousShufflingSeed(Hash32.ZERO);
+    initialState.setCurrentShufflingSeed(Hash32.ZERO);
 
     // Finality
     initialState.setPreviousJustifiedEpoch(chainSpec.getGenesisEpoch());
@@ -94,12 +94,12 @@ public class InitialStateTransition implements BlockTransition<BeaconStateEx> {
 
     // Recent state
     initialState.getLatestCrosslinks().addAll(
-            nCopies(chainSpec.getShardCount().getIntValue(), CrosslinkRecord.EMPTY));
+            nCopies(chainSpec.getShardCount().getIntValue(), Crosslink.EMPTY));
     initialState.getLatestBlockRoots().addAll(
             nCopies(chainSpec.getLatestBlockRootsLength().getIntValue(), Hash32.ZERO));
-    initialState.getLatestIndexRoots().addAll(
-            nCopies(chainSpec.getLatestIndexRootsLength().getIntValue(), Hash32.ZERO));
-    initialState.getLatestPenalizedBalances().addAll(
+    initialState.getLatestActiveIndexRoots().addAll(
+            nCopies(chainSpec.getLatestActiveIndexRootsLength().getIntValue(), Hash32.ZERO));
+    initialState.getLatestSlashedBalances().addAll(
             nCopies(chainSpec.getLatestPenalizedExitLength().getIntValue(), Gwei.ZERO));
     initialState.getLatestAttestations().clear();
     initialState.getBatchedBlockRoots().clear();
@@ -137,11 +137,11 @@ public class InitialStateTransition implements BlockTransition<BeaconStateEx> {
         specHelpers.get_active_validator_indices(
             initialState.getValidatorRegistry(), chainSpec.getGenesisEpoch()));
 
-    for (EpochNumber index : chainSpec.getLatestIndexRootsLength().iterateFromZero()) {
-      initialState.getLatestIndexRoots().set(index, genesis_active_index_root);
+    for (EpochNumber index : chainSpec.getLatestActiveIndexRootsLength().iterateFromZero()) {
+      initialState.getLatestActiveIndexRoots().set(index, genesis_active_index_root);
     }
 
-    initialState.setCurrentEpochSeed(
+    initialState.setCurrentShufflingSeed(
         specHelpers.generate_seed(initialState, chainSpec.getGenesisEpoch()));
 
     BeaconState validatorsState = initialState.createImmutable();

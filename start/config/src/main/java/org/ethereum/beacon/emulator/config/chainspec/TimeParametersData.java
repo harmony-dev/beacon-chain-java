@@ -23,8 +23,8 @@ public class TimeParametersData implements TimeParameters {
   private String ENTRY_EXIT_DELAY;
   @JsonProperty("ETH1_DATA_VOTING_PERIOD")
   private String ETH1_DATA_VOTING_PERIOD;
-  @JsonProperty("MIN_VALIDATOR_WITHDRAWAL_EPOCHS")
-  private String MIN_VALIDATOR_WITHDRAWAL_EPOCHS;
+  @JsonProperty("MIN_VALIDATOR_WITHDRAWABILITY_DELAY")
+  private String MIN_VALIDATOR_WITHDRAWABILITY_DELAY;
 
   @Override
   @JsonIgnore
@@ -64,8 +64,8 @@ public class TimeParametersData implements TimeParameters {
 
   @Override
   @JsonIgnore
-  public EpochNumber getMinValidatorWithdrawalEpochs() {
-    return new EpochNumber(UInt64.valueOf(getMIN_VALIDATOR_WITHDRAWAL_EPOCHS()));
+  public EpochNumber getMinValidatorWithdrawabilityDelay() {
+    return new EpochNumber(UInt64.valueOf(getMIN_VALIDATOR_WITHDRAWABILITY_DELAY()));
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
@@ -123,11 +123,11 @@ public class TimeParametersData implements TimeParameters {
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-  public String getMIN_VALIDATOR_WITHDRAWAL_EPOCHS() {
-    return MIN_VALIDATOR_WITHDRAWAL_EPOCHS;
+  public String getMIN_VALIDATOR_WITHDRAWABILITY_DELAY() {
+    return MIN_VALIDATOR_WITHDRAWABILITY_DELAY;
   }
 
-  public void setMIN_VALIDATOR_WITHDRAWAL_EPOCHS(String MIN_VALIDATOR_WITHDRAWAL_EPOCHS) {
-    this.MIN_VALIDATOR_WITHDRAWAL_EPOCHS = MIN_VALIDATOR_WITHDRAWAL_EPOCHS;
+  public void setMIN_VALIDATOR_WITHDRAWABILITY_DELAY(String MIN_VALIDATOR_WITHDRAWABILITY_DELAY) {
+    this.MIN_VALIDATOR_WITHDRAWABILITY_DELAY = MIN_VALIDATOR_WITHDRAWABILITY_DELAY;
   }
 }

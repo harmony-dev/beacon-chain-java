@@ -49,7 +49,7 @@ public class BeaconChainAttesterTest {
 
     Mockito.doReturn(committee).when(attester).getCommittee(any(), any());
     Mockito.doReturn(epochBoundaryRoot).when(attester).getEpochBoundaryRoot(any(), any());
-    Mockito.doReturn(latestCrosslinkRoot).when(attester).getLatestCrosslinkRoot(any(), any());
+    Mockito.doReturn(latestCrosslinkRoot).when(attester).getLatestCrosslink(any(), any());
     Mockito.doReturn(justifiedBlockRoot).when(attester).getJustifiedBlockRoot(any());
 
     Attestation attestation =
@@ -63,8 +63,8 @@ public class BeaconChainAttesterTest {
     Assert.assertEquals(
         specHelpers.hash_tree_root(initiallyObservedState.getHead()), data.getBeaconBlockRoot());
     Assert.assertEquals(epochBoundaryRoot, data.getEpochBoundaryRoot());
-    Assert.assertEquals(Hash32.ZERO, data.getShardBlockRoot());
-    Assert.assertEquals(latestCrosslinkRoot, data.getLatestCrosslinkRoot());
+    Assert.assertEquals(Hash32.ZERO, data.getCrosslinkDataRoot());
+    Assert.assertEquals(latestCrosslinkRoot, data.getLatestCrosslink().getCrosslinkDataRoot());
     Assert.assertEquals(state.getJustifiedEpoch(), data.getJustifiedEpoch());
     Assert.assertEquals(justifiedBlockRoot, data.getJustifiedBlockRoot());
 
