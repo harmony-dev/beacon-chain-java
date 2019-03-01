@@ -41,13 +41,13 @@ public class Simulator extends ReusableOptions implements Callable<Void> {
       configPathValues.add(Pair.with("plan.validator[0].count", validators));
     }
     Pair<MainConfig, ChainSpecData> configs =
-        prepareAndPrintConfigs(action, "/config/simulator-config.yml");
+        prepareAndPrintConfigs(action, "/config/simulator-config.yml", "/config/simulator-chainSpec.yml");
 
     if (action.equals(Task.run)) {
       SimulatorLauncher simulatorLauncher =
           new SimulatorLauncher(
               configs.getValue0(),
-              configs.getValue1().build(),
+              configs.getValue1().buildSpecHelpers(),
               prepareLogLevel(true),
               mainConfig -> {
                 if (config != null) {
