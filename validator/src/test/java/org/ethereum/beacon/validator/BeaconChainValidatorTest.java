@@ -26,7 +26,7 @@ public class BeaconChainValidatorTest {
 
     BeaconChainValidator validator =
         ValidatorServiceTestUtil.mockBeaconChainValidator(random, specHelpers);
-    Mockito.doReturn(true).when(specHelpers).is_current_slot(any(), schedulers.getCurrentTime());
+    Mockito.doReturn(true).when(specHelpers).is_current_slot(any(), any());
     Mockito.doNothing().when(validator).runTasks(any());
 
     SlotNumber currentSlot = SlotNumber.of(Math.abs(random.nextLong()) % 10 + 10);
@@ -63,7 +63,7 @@ public class BeaconChainValidatorTest {
     ObservableBeaconState currentSlotState =
         ObservableBeaconStateTestUtil.createInitialState(random, specHelpers, currentSlot);
 
-    Mockito.doReturn(true).when(specHelpers).is_current_slot(currentSlotState.getLatestSlotState(), schedulers.getCurrentTime());
+    Mockito.doReturn(true).when(specHelpers).is_current_slot(currentSlotState.getLatestSlotState(), any());
 
     // state wasn't kept
     validator.onNewState(outdatedState);
@@ -102,7 +102,7 @@ public class BeaconChainValidatorTest {
     ObservableBeaconState currentSlotState =
         ObservableBeaconStateTestUtil.createInitialState(random, specHelpers, currentSlot);
 
-    Mockito.doReturn(true).when(specHelpers).is_current_slot(any(), schedulers.getCurrentTime());
+    Mockito.doReturn(true).when(specHelpers).is_current_slot(any(), any());
     Mockito.doReturn(validatorIndex).when(specHelpers).get_validator_index_by_pubkey(any(), any());
     Mockito.doNothing().when(validator).runTasks(any());
 
@@ -144,7 +144,7 @@ public class BeaconChainValidatorTest {
         ObservableBeaconStateTestUtil.createInitialState(
             random, specHelpers, currentSlot.increment().increment());
 
-    Mockito.doReturn(true).when(specHelpers).is_current_slot(any(), schedulers.getCurrentTime());
+    Mockito.doReturn(true).when(specHelpers).is_current_slot(any(), any());
     Mockito.doReturn(validatorIndex).when(specHelpers).get_validator_index_by_pubkey(any(), any());
     Mockito.doNothing().when(validator).runTasks(any());
 
