@@ -175,8 +175,9 @@ public class LocalNetTest {
           }
         };
 
+    SpecHelpers specHelpers = createLightSpecHelpers(chainSpec);
     Pair<List<Deposit>, List<KeyPair>> anyDeposits = TestUtils.getAnyDeposits(
-            rnd, createLightSpecHelpers(chainSpec, () -> 0L), validatorCount);
+            rnd, specHelpers, validatorCount);
     List<Deposit> deposits = anyDeposits.getValue0();
 
     LocalWireHub localWireHub = new LocalWireHub(s -> {});
@@ -187,7 +188,6 @@ public class LocalNetTest {
     List<Launcher> peers = new ArrayList<>();
     for(int i = 0; i < validatorCount; i++) {
       ControlledSchedulers schedulers = controlledSchedulers.createNew();
-      SpecHelpers specHelpers = createLightSpecHelpers(chainSpec, schedulers::getCurrentTime);
       WireApi wireApi = localWireHub.createNewPeer("" + i);
 
       Launcher launcher = new Launcher(specHelpers, depositContract, anyDeposits.getValue1().get(i),
@@ -259,7 +259,6 @@ public class LocalNetTest {
         });
 
     Map<SlotNumber, ObservableBeaconState> slotStates = new HashMap<>();
-    SpecHelpers specHelpers = peers.get(0).specHelpers;
     Flux.from(peers.get(0).observableStateProcessor.getObservableStateStream())
         .subscribe((ObservableBeaconState state) -> {
 
@@ -315,8 +314,8 @@ public class LocalNetTest {
             BLSSignature.ZERO));
   }
 
-  static SpecHelpers createLightSpecHelpers(ChainSpec spec, Supplier<Long> time) {
-    return new SpecHelpers(spec, Hashes::keccak256, SSZObjectHasher.create(Hashes::keccak256), time) {
+  static SpecHelpers createLightSpecHelpers(ChainSpec spec) {
+    return new SpecHelpers(spec, Hashes::keccak256, SSZObjectHasher.create(Hashes::keccak256)) {
       @Override
       public boolean bls_verify(BLSPubkey publicKey, Hash32 message, BLSSignature signature, Bytes8 domain) {
         return true;

@@ -74,7 +74,7 @@ public class SampleObservableState {
             return SlotNumber.of(genesisSlot);
           }
         };
-    this.specHelpers = SpecHelpers.createWithSSZHasher(chainSpec, schedulers::getCurrentTime);
+    this.specHelpers = SpecHelpers.createWithSSZHasher(chainSpec);
 
     Pair<List<Deposit>, List<KeyPair>> anyDeposits = TestUtils
         .getAnyDeposits(rnd, specHelpers, 8);

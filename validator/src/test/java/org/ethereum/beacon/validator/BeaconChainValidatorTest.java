@@ -9,7 +9,6 @@ import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
-import org.ethereum.beacon.schedulers.DefaultSchedulers;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.validator.util.ValidatorServiceTestUtil;
 import org.junit.Assert;
@@ -23,11 +22,11 @@ public class BeaconChainValidatorTest {
     Random random = new Random();
     Schedulers schedulers = Schedulers.createDefault();
     SpecHelpers specHelpers =
-        Mockito.spy(SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT, schedulers::getCurrentTime));
+        Mockito.spy(SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT));
 
     BeaconChainValidator validator =
         ValidatorServiceTestUtil.mockBeaconChainValidator(random, specHelpers);
-    Mockito.doReturn(true).when(specHelpers).is_current_slot(any());
+    Mockito.doReturn(true).when(specHelpers).is_current_slot(any(), schedulers.getCurrentTime());
     Mockito.doNothing().when(validator).runTasks(any());
 
     SlotNumber currentSlot = SlotNumber.of(Math.abs(random.nextLong()) % 10 + 10);
@@ -51,7 +50,7 @@ public class BeaconChainValidatorTest {
     Random random = new Random();
     Schedulers schedulers = Schedulers.createDefault();
     SpecHelpers specHelpers =
-        Mockito.spy(SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT, schedulers::getCurrentTime));
+        Mockito.spy(SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT));
 
     BeaconChainValidator validator =
         ValidatorServiceTestUtil.mockBeaconChainValidator(random, specHelpers);
@@ -64,7 +63,7 @@ public class BeaconChainValidatorTest {
     ObservableBeaconState currentSlotState =
         ObservableBeaconStateTestUtil.createInitialState(random, specHelpers, currentSlot);
 
-    Mockito.doReturn(true).when(specHelpers).is_current_slot(currentSlotState.getLatestSlotState());
+    Mockito.doReturn(true).when(specHelpers).is_current_slot(currentSlotState.getLatestSlotState(), schedulers.getCurrentTime());
 
     // state wasn't kept
     validator.onNewState(outdatedState);
@@ -84,7 +83,7 @@ public class BeaconChainValidatorTest {
     Random random = new Random();
     Schedulers schedulers = Schedulers.createDefault();
     SpecHelpers specHelpers =
-        Mockito.spy(SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT, schedulers::getCurrentTime));
+        Mockito.spy(SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT));
 
     BeaconChainValidator validator =
         ValidatorServiceTestUtil.mockBeaconChainValidator(random, specHelpers);
@@ -103,7 +102,7 @@ public class BeaconChainValidatorTest {
     ObservableBeaconState currentSlotState =
         ObservableBeaconStateTestUtil.createInitialState(random, specHelpers, currentSlot);
 
-    Mockito.doReturn(true).when(specHelpers).is_current_slot(any());
+    Mockito.doReturn(true).when(specHelpers).is_current_slot(any(), schedulers.getCurrentTime());
     Mockito.doReturn(validatorIndex).when(specHelpers).get_validator_index_by_pubkey(any(), any());
     Mockito.doNothing().when(validator).runTasks(any());
 
@@ -125,7 +124,7 @@ public class BeaconChainValidatorTest {
     Random random = new Random();
     Schedulers schedulers = Schedulers.createDefault();
     SpecHelpers specHelpers =
-        Mockito.spy(SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT, schedulers::getCurrentTime));
+        Mockito.spy(SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT));
 
     BeaconChainValidator validator =
         ValidatorServiceTestUtil.mockBeaconChainValidator(random, specHelpers);
@@ -145,7 +144,7 @@ public class BeaconChainValidatorTest {
         ObservableBeaconStateTestUtil.createInitialState(
             random, specHelpers, currentSlot.increment().increment());
 
-    Mockito.doReturn(true).when(specHelpers).is_current_slot(any());
+    Mockito.doReturn(true).when(specHelpers).is_current_slot(any(), schedulers.getCurrentTime());
     Mockito.doReturn(validatorIndex).when(specHelpers).get_validator_index_by_pubkey(any(), any());
     Mockito.doNothing().when(validator).runTasks(any());
 

@@ -105,7 +105,7 @@ public class LocalMultiValidatorTest {
         };
 
     Pair<List<Deposit>, List<KeyPair>> anyDeposits = TestUtils.getAnyDeposits(
-        rnd, SpecHelpers.createWithSSZHasher(chainSpec, () -> 0L), validatorCount);
+        rnd, SpecHelpers.createWithSSZHasher(chainSpec), validatorCount);
     List<Deposit> deposits = anyDeposits.getValue0();
 
     LocalWireHub localWireHub = new LocalWireHub(s -> {});
@@ -116,7 +116,7 @@ public class LocalMultiValidatorTest {
     ControlledSchedulers schedulers = Schedulers.createControlled();
     schedulers.setCurrentTime(genesisTime.getMillis().getValue() + 1000);
     SpecHelpers specHelpers = SpecHelpers
-        .createWithSSZHasher(chainSpec, schedulers::getCurrentTime);
+        .createWithSSZHasher(chainSpec);
     WireApi wireApi = localWireHub.createNewPeer("multi-peer");
 
     MultiValidatorLauncher launcher =

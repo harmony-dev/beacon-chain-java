@@ -1,5 +1,20 @@
 package org.ethereum.beacon.consensus;
 
+import static java.lang.Math.min;
+import static java.util.stream.Collectors.toList;
+import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import javax.annotation.Nonnull;
 import org.ethereum.beacon.consensus.hasher.ObjectHasher;
 import org.ethereum.beacon.consensus.hasher.SSZObjectHasher;
 import org.ethereum.beacon.core.BeaconBlock;
@@ -41,23 +56,6 @@ import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
 import tech.pegasys.artemis.util.uint.UInt64s;
 
-import javax.annotation.Nonnull;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
-import static java.lang.Math.min;
-import static java.util.stream.Collectors.toList;
-import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
-
 /**
  * https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md#helper-functions
  */
@@ -65,7 +63,6 @@ public class SpecHelpers {
   private final ChainSpec spec;
   private final ObjectHasher<Hash32> objectHasher;
   private final Function<BytesValue, Hash32> hashFunction;
-  private final Supplier<Long> systemTimeSupplier;
 
   /**
    * Creates a SpecHelpers instance with given {@link ChainSpec} and time supplier,
@@ -73,26 +70,23 @@ public class SpecHelpers {
    * hasher.
    *
    * @param spec a chain spec.
-   * @param systemTimeSupplier The current system time supplier. Normally the
    *    <code>Schedulers::currentTime</code> is passed
    * @return spec helpers instance.
    */
-  public static SpecHelpers createWithSSZHasher(@Nonnull ChainSpec spec, @Nonnull Supplier<Long> systemTimeSupplier) {
+  public static SpecHelpers createWithSSZHasher(@Nonnull ChainSpec spec) {
     Objects.requireNonNull(spec);
 
     Function<BytesValue, Hash32> hashFunction = Hashes::keccak256;
     ObjectHasher<Hash32> sszHasher = SSZObjectHasher.create(hashFunction);
-    return new SpecHelpers(spec, hashFunction, sszHasher, systemTimeSupplier);
+    return new SpecHelpers(spec, hashFunction, sszHasher);
   }
 
   public SpecHelpers(ChainSpec spec,
       Function<BytesValue, Hash32> hashFunction,
-      ObjectHasher<Hash32> objectHasher,
-      Supplier<Long> systemTimeSupplier) {
+      ObjectHasher<Hash32> objectHasher) {
     this.spec = spec;
     this.objectHasher = objectHasher;
     this.hashFunction = hashFunction;
-    this.systemTimeSupplier = systemTimeSupplier;
   }
 
   public ChainSpec getChainSpec() {
@@ -1386,16 +1380,16 @@ public class SpecHelpers {
     return index;
   }
 
-  public SlotNumber get_current_slot(BeaconState state) {
-    Millis currentTime = Millis.of(systemTimeSupplier.get());
+  public SlotNumber get_current_slot(BeaconState state, long systemTime) {
+    Millis currentTime = Millis.of(systemTime);
     assertTrue(state.getGenesisTime().lessEqual(currentTime.getSeconds()));
     Time sinceGenesis = currentTime.getSeconds().minus(state.getGenesisTime());
     return SlotNumber.castFrom(sinceGenesis.dividedBy(spec.getSlotDuration()))
         .plus(getChainSpec().getGenesisSlot());
   }
 
-  public boolean is_current_slot(BeaconState state) {
-    return state.getSlot().equals(get_current_slot(state));
+  public boolean is_current_slot(BeaconState state, long systemTime) {
+    return state.getSlot().equals(get_current_slot(state, systemTime));
   }
 
   public Time get_slot_start_time(BeaconState state, SlotNumber slot) {

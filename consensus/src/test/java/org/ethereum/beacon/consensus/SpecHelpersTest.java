@@ -40,7 +40,7 @@ public class SpecHelpersTest {
 
   @Test
   public void shuffleTest0() throws Exception {
-    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT, () -> 0L);
+    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT);
 
     int[] sample = new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 
@@ -85,7 +85,7 @@ public class SpecHelpersTest {
       }
     }
 
-    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT, () -> 0L);
+    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT);
 
     Map<Integer, Long> map = Arrays.stream(statuses).boxed().collect
         (Collectors.groupingBy(Function.identity(), Collectors.counting()));
@@ -106,7 +106,7 @@ public class SpecHelpersTest {
 
   @Test
   public void testHashTreeRoot1() {
-    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT, () -> 0L);
+    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT);
     Hash32 expected =
         Hash32.fromHexString("0x8fc89d0f1f435b07543b15fdf687e7fce4a754ecd9e5afbf8f0e83928a7f798f");
     Hash32 actual = specHelpers.hash_tree_root(createDepositInput());
@@ -149,7 +149,7 @@ public class SpecHelpersTest {
           }
         };
     SpecHelpers specHelpers = new SpecHelpers(
-            chainSpec, Hashes::keccak256, SSZObjectHasher.create(Hashes::keccak256), () -> 0L) {
+            chainSpec, Hashes::keccak256, SSZObjectHasher.create(Hashes::keccak256)) {
       @Override
       public boolean bls_verify(BLSPubkey publicKey, Hash32 message, BLSSignature signature,
           Bytes8 domain) {

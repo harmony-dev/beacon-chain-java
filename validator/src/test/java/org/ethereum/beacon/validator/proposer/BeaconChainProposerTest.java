@@ -54,7 +54,7 @@ public class BeaconChainProposerTest {
   public void proposeABlock() {
     Random random = new Random();
 
-    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT, () -> 0L);
+    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT);
     DepositContract depositContract =
         DepositContractTestUtil.mockDepositContract(random, Collections.emptyList());
     BlockTransition<BeaconStateEx> perBlockTransition =
@@ -82,7 +82,7 @@ public class BeaconChainProposerTest {
   public void proposeABlockWithOperations() {
     Random random = new Random();
 
-    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT, () -> 0L);
+    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT);
     DepositContract depositContract =
         DepositContractTestUtil.mockDepositContract(random, Collections.emptyList());
     BlockTransition<BeaconStateEx> perBlockTransition =
@@ -147,7 +147,7 @@ public class BeaconChainProposerTest {
   public void proposeABlockWithDeposits() {
     Random random = new Random();
 
-    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT, () -> 0L);
+    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT);
 
     List<Deposit> deposits =
         DepositTestUtil.createRandomList(
@@ -199,7 +199,7 @@ public class BeaconChainProposerTest {
   public void proposeABlockWithEpochTransition() {
     Random random = new Random();
 
-    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT, () -> 0L);
+    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT);
     DepositContract depositContract =
         DepositContractTestUtil.mockDepositContract(random, Collections.emptyList());
     BlockTransition<BeaconStateEx> perBlockTransition =

@@ -23,7 +23,7 @@ public class InitialStateTransitionTest {
     Time genesisTime = Time.castFrom(UInt64.random(rnd));
     Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), Hash32.random(rnd));
 
-    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT, () -> 0L);
+    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT);
     InitialStateTransition initialStateTransition =
         new InitialStateTransition(
             new ChainStart(genesisTime, eth1Data, Collections.emptyList()),

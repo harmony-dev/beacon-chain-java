@@ -31,7 +31,7 @@ public class BeaconChainAttesterTest {
   public void attestASlot() {
     Random random = new Random();
 
-    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT, () -> 0L);
+    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT);
 
     MessageSigner<BLSSignature> signer = MessageSignerTestUtil.createBLSSigner();
     BeaconChainAttesterImpl attester = BeaconChainAttesterTestUtil.mockAttester(specHelpers);

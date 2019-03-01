@@ -297,7 +297,7 @@ public class BeaconChainValidator implements ValidatorService {
    * @return {@link true} if current moment belongs to a slot, {@link false} otherwise.
    */
   private boolean isCurrentSlot(BeaconState state) {
-    return specHelpers.is_current_slot(state);
+    return specHelpers.is_current_slot(state, schedulers.getCurrentTime());
   }
 
   /**

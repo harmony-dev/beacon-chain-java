@@ -42,6 +42,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
 
   private final ReplayProcessor<BeaconTuple> blockSink = ReplayProcessor.cacheLast();
   private final Publisher<BeaconTuple> blockStream;
+  private final Schedulers schedulers;
 
   private BeaconTuple recentlyProcessed;
 
@@ -64,6 +65,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     this.stateVerifier = stateVerifier;
     this.chainStorage = chainStorage;
     this.tupleStorage = chainStorage.getTupleStorage();
+    this.schedulers = schedulers;
 
     blockStream = Flux.from(blockSink)
             .publishOn(schedulers.reactorEvents())
@@ -210,7 +212,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
    */
   private boolean rejectedByTime(BeaconBlock block) {
     SlotNumber nextToCurrentSlot =
-        specHelpers.get_current_slot(recentlyProcessed.getState()).increment();
+        specHelpers.get_current_slot(recentlyProcessed.getState(), schedulers.getCurrentTime()).increment();
 
     return block.getSlot().greater(nextToCurrentSlot);
   }
