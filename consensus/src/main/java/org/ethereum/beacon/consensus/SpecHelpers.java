@@ -47,6 +47,7 @@ import org.ethereum.beacon.crypto.BLS381.PublicKey;
 import org.ethereum.beacon.crypto.BLS381.Signature;
 import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.crypto.MessageParameters;
+import org.javatuples.Pair;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes3;
 import tech.pegasys.artemis.util.bytes.Bytes32;
@@ -1589,15 +1590,15 @@ public class SpecHelpers {
     List<ValidatorIndex> active_validator_indices =
         get_active_validator_indices(validators, get_current_epoch(state));
 
-    List<ValidatorRecord> active_validators = new ArrayList<>();
+    List<Pair<ValidatorIndex, ValidatorRecord>> active_validators = new ArrayList<>();
     for (ValidatorIndex index : active_validator_indices) {
-      active_validators.add(validators.get(index));
+      active_validators.add(Pair.with(index, validators.get(index)));
     }
 
-    List<BeaconBlock> attestation_targets = new ArrayList<>();
-    for (ValidatorRecord validatorRecord : active_validators) {
-      get_latest_attestation_target(validatorRecord, get_latest_attestation, getBlock)
-          .ifPresent(attestation_targets::add);
+    List<Pair<ValidatorIndex, BeaconBlock>> attestation_targets = new ArrayList<>();
+    for (Pair<ValidatorIndex, ValidatorRecord> validatorRecord : active_validators) {
+      get_latest_attestation_target(validatorRecord.getValue1(), get_latest_attestation, getBlock)
+          .ifPresent(block -> attestation_targets.add(Pair.with(validatorRecord.getValue0(), block)));
     }
 
     BeaconBlock head = startBlock;
@@ -1608,7 +1609,9 @@ public class SpecHelpers {
       } else {
         head =
             children.stream()
-                .max(Comparator.comparingInt(o -> get_vote_count(o, attestation_targets, getBlock)))
+                .max(
+                    Comparator.comparing(o -> get_vote_count(state, o, attestation_targets, getBlock),
+                    UInt64::compareTo))
                 .get();
       }
     }
@@ -1630,22 +1633,25 @@ public class SpecHelpers {
     return latest.flatMap(at -> getBlock.apply(at.getData().getJustifiedBlockRoot()));
   }
 
-  /**
-   * def get_vote_count(block): return len([target for target in attestation_targets if
-   * get_ancestor(store, target, block.slot) == block])
+  /*
+    def get_vote_count(block: BeaconBlock) -> int:
+      return sum(
+          get_effective_balance(start_state.validator_balances[validator_index]) // FORK_CHOICE_BALANCE_INCREMENT
+          for validator_index, target in attestation_targets
+          if get_ancestor(store, target, block.slot) == block
+      )
    */
-  private int get_vote_count(
+  private UInt64 get_vote_count(
+      BeaconState startState,
       BeaconBlock block,
-      List<BeaconBlock> attestation_targets,
+      List<Pair<ValidatorIndex, BeaconBlock>> attestation_targets,
       Function<Hash32, Optional<BeaconBlock>> getBlock) {
-    int res = 0;
-    for (BeaconBlock target : attestation_targets) {
-      if (get_ancestor(target, block.getSlot(), getBlock).map(b -> b.equals(block)).orElse(false)) {
-        ++res;
-      }
-    }
 
-    return res;
+    return attestation_targets.stream().filter(
+        target -> get_ancestor(target.getValue1(), block.getSlot(), getBlock)
+            .filter(ancestor -> ancestor.equals(block)).isPresent())
+        .map(target -> get_effective_balance(startState, target.getValue0()).dividedBy(constants.getForkChoiceBalanceIncrement()))
+        .reduce(Gwei.ZERO, Gwei::plus);
   }
 
   /*
