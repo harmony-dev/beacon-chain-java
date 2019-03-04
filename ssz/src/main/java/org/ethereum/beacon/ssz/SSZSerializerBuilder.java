@@ -66,14 +66,14 @@ public class SSZSerializerBuilder {
     return builder;
   }
 
-  public void addSchemeBuilderCache(int cacheSize) {
+  public void addSchemeBuilderCache() {
     if (sszSchemeBuilder == null) {
       throw new RuntimeException("Scheme builder is not defined yet");
     }
     if (!(sszSchemeBuilder instanceof SSZAnnotationSchemeBuilder)) {
       throw new RuntimeException("Only SSZAnnotationSchemeBuilder is supported for adding cache");
     } else {
-      ((SSZAnnotationSchemeBuilder) sszSchemeBuilder).withCache(cacheSize);
+      ((SSZAnnotationSchemeBuilder) sszSchemeBuilder).withCache();
     }
   }
 

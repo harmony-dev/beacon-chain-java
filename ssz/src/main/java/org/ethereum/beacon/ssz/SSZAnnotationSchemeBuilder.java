@@ -15,7 +15,6 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -89,13 +88,12 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
   }
 
   /**
-   * Initializes cache for `numberOfRecords` classes
+   * Initializes cache, unlimited in size, 1 scheme record per each class
    *
-   * @param numberOfRecords cache size
    * @return this scheme builder with cache added
    */
-  public SSZAnnotationSchemeBuilder withCache(int numberOfRecords) {
-    this.cache = new LinkedHashMap<>(numberOfRecords, 2, true);
+  public SSZAnnotationSchemeBuilder withCache() {
+    this.cache = new HashMap<>();
     return this;
   }
 

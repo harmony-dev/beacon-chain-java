@@ -32,12 +32,12 @@ public abstract class SSZHashSerializers {
    * @param hashFunction a basic hash function that serializer does use.
    * @param explicitFieldAnnotation whether object fields must be annotated with {@link SSZ} to be
    *     picked by returned serializer.
-   * @param schemeBuilderCache  number of classes to keep built scheme in cache
+   * @param schemeBuilderCache  whether to activate scheme builder cache
    * @return serializer instance.
    */
   public static SSZHashSerializer createWithBeaconChainTypes(
       Function<BytesValue, ? extends BytesValue> hashFunction, boolean explicitFieldAnnotation,
-      @Nullable Integer schemeBuilderCache) {
+      boolean schemeBuilderCache) {
     SSZCodecHasher hashCodecResolver = SSZCodecHasher.createWithHashFunction(hashFunction);
     registerCodec(hashCodecResolver, new UIntPrimitive());
     registerCodec(hashCodecResolver, new BytesPrimitive());
@@ -47,8 +47,8 @@ public abstract class SSZHashSerializers {
     registerCodec(hashCodecResolver, new HashCodec());
     registerCodec(hashCodecResolver, new BytesCodec());
     SSZAnnotationSchemeBuilder schemeBuilder = new SSZAnnotationSchemeBuilder(explicitFieldAnnotation);
-    if (schemeBuilderCache != null) {
-      schemeBuilder.withCache(schemeBuilderCache);
+    if (schemeBuilderCache) {
+      schemeBuilder.withCache();
     }
 
     return new SSZHashSerializer(schemeBuilder, hashCodecResolver);
