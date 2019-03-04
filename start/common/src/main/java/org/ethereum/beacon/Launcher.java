@@ -40,6 +40,11 @@ public class Launcher {
   final BLS381.KeyPair validatorSig;
   final WireApi wireApi;
 
+  InitialStateTransition initialTransition;
+  PerSlotTransition perSlotTransition;
+  PerBlockTransition perBlockTransition;
+  PerEpochTransition perEpochTransition;
+
   InMemoryDatabase db;
   BeaconChainStorage beaconChainStorage;
   MutableBeaconChain beaconChain;
@@ -72,10 +77,10 @@ public class Launcher {
   }
 
   void chainStarted(ChainStart chainStartEvent) {
-    InitialStateTransition initialTransition = new InitialStateTransition(chainStartEvent, specHelpers);
-    PerSlotTransition perSlotTransition = new PerSlotTransition(specHelpers);
-    PerBlockTransition perBlockTransition = new PerBlockTransition(specHelpers);
-    PerEpochTransition perEpochTransition = new PerEpochTransition(specHelpers);
+    initialTransition = new InitialStateTransition(chainStartEvent, specHelpers);
+    perSlotTransition = new PerSlotTransition(specHelpers);
+    perBlockTransition = new PerBlockTransition(specHelpers);
+    perEpochTransition = new PerEpochTransition(specHelpers);
 
     db = new InMemoryDatabase();
     beaconChainStorage = storageFactory.create(db);
