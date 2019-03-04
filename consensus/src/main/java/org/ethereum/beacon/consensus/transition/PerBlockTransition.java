@@ -10,8 +10,9 @@ import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
-import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
+import org.ethereum.beacon.core.operations.Transfer;
+import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.state.Eth1DataVote;
 import org.ethereum.beacon.core.state.PendingAttestationRecord;
@@ -156,6 +157,29 @@ public class PerBlockTransition implements BlockTransition<BeaconStateEx> {
     */
     for (VoluntaryExit voluntaryExit : block.getBody().getExits()) {
       spec.initiate_validator_exit(state, voluntaryExit.getValidatorIndex());
+    }
+
+    /*
+      Transfers
+
+      Set state.validator_balances[transfer.from] -= transfer.amount + transfer.fee
+      Set state.validator_balances[transfer.to] += transfer.amount.
+      Set state.validator_balances[get_beacon_proposer_index(state, state.slot)] += transfer.fee.
+     */
+    for (Transfer transfer : block.getBody().getTransfers()) {
+      state
+          .getValidatorBalances()
+          .update(
+              transfer.getFrom(),
+              balance -> balance.minus(transfer.getAmount()).minus(transfer.getFee()));
+      state
+          .getValidatorBalances()
+          .update(transfer.getTo(), balance -> balance.plus(transfer.getAmount()));
+      state
+          .getValidatorBalances()
+          .update(
+              spec.get_beacon_proposer_index(state, state.getSlot()),
+              balance -> balance.plus(transfer.getFee()));
     }
 
     BeaconStateEx ret = new BeaconStateExImpl(state.createImmutable(),

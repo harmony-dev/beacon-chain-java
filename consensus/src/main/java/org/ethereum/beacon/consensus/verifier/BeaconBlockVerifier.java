@@ -3,7 +3,7 @@ package org.ethereum.beacon.consensus.verifier;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.verifier.block.AttestationListVerifier;
 import org.ethereum.beacon.consensus.verifier.block.DepositListVerifier;
-import org.ethereum.beacon.consensus.verifier.block.ExitListVerifier;
+import org.ethereum.beacon.consensus.verifier.block.VoluntaryExitListVerifier;
 import org.ethereum.beacon.consensus.verifier.block.BlockSignatureVerifier;
 import org.ethereum.beacon.consensus.verifier.block.ProposerSlashingListVerifier;
 import org.ethereum.beacon.consensus.verifier.block.RandaoVerifier;
@@ -23,7 +23,7 @@ public interface BeaconBlockVerifier {
         .with(new BlockSignatureVerifier(specHelpers))
         .with(new AttestationListVerifier(new AttestationVerifier(specHelpers), specHelpers.getConstants()))
         .with(new DepositListVerifier(new DepositVerifier(specHelpers), specHelpers.getConstants()))
-        .with(new ExitListVerifier(new VoluntaryExitVerifier(specHelpers), specHelpers.getConstants()))
+        .with(new VoluntaryExitListVerifier(new VoluntaryExitVerifier(specHelpers), specHelpers.getConstants()))
         .with(new ProposerSlashingListVerifier(new ProposerSlashingVerifier(specHelpers), specHelpers.getConstants()))
         .build();
   }
