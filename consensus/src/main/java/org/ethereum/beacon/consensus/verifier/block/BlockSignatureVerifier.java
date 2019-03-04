@@ -17,14 +17,14 @@ import static org.ethereum.beacon.core.spec.SignatureDomains.PROPOSAL;
  * Verifies proposer signature of the block.
  *
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md#proposer-signature>Proposer
+ *     href=https://github.com/ethereum/eth2.0-specs/blob/0.4.0/specs/core/0_beacon-chain.md#block-signature"">Block
  *     signature</a> in the spec.
  */
-public class ProposerSignatureVerifier implements BeaconBlockVerifier {
+public class BlockSignatureVerifier implements BeaconBlockVerifier {
 
   private SpecHelpers spec;
 
-  public ProposerSignatureVerifier(SpecHelpers spec) {
+  public BlockSignatureVerifier(SpecHelpers spec) {
     this.spec = spec;
   }
 

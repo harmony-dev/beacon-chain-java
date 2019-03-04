@@ -15,6 +15,7 @@ import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustodyBit;
+import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.state.ShardCommittee;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.ValidatorIndex;
@@ -40,6 +41,11 @@ public class AttestationVerifier implements OperationVerifier<Attestation> {
   @Override
   public VerificationResult verify(Attestation attestation, BeaconState state) {
     AttestationData data = attestation.getData();
+
+    if (attestation.getData().getSlot().less(spec.getConstants().getGenesisSlot())) {
+      return failedResult("Attestation slot %s is less than GENESIS_SLOT %s",
+          attestation.getData().getSlot(), spec.getConstants().getGenesisSlot());
+    }
 
     spec.checkShardRange(data.getShard());
 
@@ -79,17 +85,16 @@ public class AttestationVerifier implements OperationVerifier<Attestation> {
           data.getJustifiedBlockRoot(), blockRootAtJustifiedSlot);
     }
 
-    // Verify that either attestation.data.latest_crosslink_root or
-    //  attestation.data.crosslink_data_root equals state.latest_crosslinks[shard].crosslink_data_root
-    Hash32 crosslinkDataRoot =
-        state.getLatestCrosslinks().get(data.getShard()).getCrosslinkDataRoot();
-    if (!data.getLatestCrosslink().getCrosslinkDataRoot().equals(crosslinkDataRoot)
-        && !data.getCrosslinkDataRoot().equals(crosslinkDataRoot)) {
-      return failedResult(
-          "either attestation_data.justified_block_root or attestation_data.crosslink_data_root must be "
-              + "equal to latest_crosslink.crosslink_data_root, justified_block_root=%s, "
-              + "attestation_data.crosslink_data_root=%s, latest_crosslink.crosslink_data_root=%s",
-          data.getJustifiedBlockRoot(), data.getCrosslinkDataRoot(), crosslinkDataRoot);
+    // Verify that either
+    //   (i) state.latest_crosslinks[attestation.data.shard] == attestation.data.latest_crosslink or
+    //   (ii) state.latest_crosslinks[attestation.data.shard] ==
+    //        Crosslink(crosslink_data_root=attestation.data.crosslink_data_root, epoch=slot_to_epoch(attestation.data.slot)).
+    Crosslink latestCrosslink =
+        state.getLatestCrosslinks().get(data.getShard());
+    if (!data.getLatestCrosslink().equals(latestCrosslink)
+        && !latestCrosslink.equals(new Crosslink(spec.slot_to_epoch(attestation.getData().getSlot()),
+            attestation.getData().getCrosslinkDataRoot()))) {
+      return failedResult("attestation.data.latest_crosslink is incorrect");
     }
 
     // Verify bitfields and aggregate signature:

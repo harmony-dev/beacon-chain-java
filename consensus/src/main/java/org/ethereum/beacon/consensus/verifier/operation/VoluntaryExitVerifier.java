@@ -16,14 +16,14 @@ import org.ethereum.beacon.core.state.ValidatorRecord;
  *
  * @see VoluntaryExit
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md#exits-1">Exits</a>
- *     in the spec.
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/0.4.0/specs/core/0_beacon-chain.md#voluntary-exits-1">Voluntary
+ *     exits</a> in the spec.
  */
-public class ExitVerifier implements OperationVerifier<VoluntaryExit> {
+public class VoluntaryExitVerifier implements OperationVerifier<VoluntaryExit> {
 
   private SpecHelpers spec;
 
-  public ExitVerifier(SpecHelpers spec) {
+  public VoluntaryExitVerifier(SpecHelpers spec) {
     this.spec = spec;
   }
 
@@ -33,18 +33,20 @@ public class ExitVerifier implements OperationVerifier<VoluntaryExit> {
 
     ValidatorRecord validator = state.getValidatorRegistry().get(voluntaryExit.getValidatorIndex());
 
-    // Verify that validator.exit_epoch > get_delayed_activation_exit_epoch(get_current_epoch(state))
-    if (!validator.getExitEpoch().greater(
-        spec.get_delayed_activation_exit_epoch(spec.get_current_epoch(state)))) {
+    // Verify that validator.exit_epoch >
+    // get_delayed_activation_exit_epoch(get_current_epoch(state))
+    if (!validator
+        .getExitEpoch()
+        .greater(spec.get_delayed_activation_exit_epoch(spec.get_current_epoch(state)))) {
       return failedResult(
           "ACTIVATION_EXIT_DELAY exceeded, min exit epoch %s, got %s",
-          state.getSlot().plus(spec.getConstants().getActivationExitDelay()), validator.getExitEpoch());
+          state.getSlot().plus(spec.getConstants().getActivationExitDelay()),
+          validator.getExitEpoch());
     }
 
     // Verify that get_current_epoch(state) >= exit.epoch
     if (!spec.get_current_epoch(state).greaterEqual(voluntaryExit.getEpoch())) {
-      return failedResult(
-          "exit.epoch must be greater or equal to current_epoch");
+      return failedResult("exit.epoch must be greater or equal to current_epoch");
     }
 
     // Let exit_message = hash_tree_root(

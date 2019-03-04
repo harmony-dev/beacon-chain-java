@@ -4,12 +4,12 @@ import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.verifier.block.AttestationListVerifier;
 import org.ethereum.beacon.consensus.verifier.block.DepositListVerifier;
 import org.ethereum.beacon.consensus.verifier.block.ExitListVerifier;
-import org.ethereum.beacon.consensus.verifier.block.ProposerSignatureVerifier;
+import org.ethereum.beacon.consensus.verifier.block.BlockSignatureVerifier;
 import org.ethereum.beacon.consensus.verifier.block.ProposerSlashingListVerifier;
 import org.ethereum.beacon.consensus.verifier.block.RandaoVerifier;
 import org.ethereum.beacon.consensus.verifier.operation.AttestationVerifier;
 import org.ethereum.beacon.consensus.verifier.operation.DepositVerifier;
-import org.ethereum.beacon.consensus.verifier.operation.ExitVerifier;
+import org.ethereum.beacon.consensus.verifier.operation.VoluntaryExitVerifier;
 import org.ethereum.beacon.consensus.verifier.operation.ProposerSlashingVerifier;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
@@ -20,10 +20,10 @@ public interface BeaconBlockVerifier {
   static BeaconBlockVerifier createDefault(SpecHelpers specHelpers) {
     return CompositeBlockVerifier.Builder.createNew()
         .with(new RandaoVerifier(specHelpers))
-        .with(new ProposerSignatureVerifier(specHelpers))
+        .with(new BlockSignatureVerifier(specHelpers))
         .with(new AttestationListVerifier(new AttestationVerifier(specHelpers), specHelpers.getConstants()))
         .with(new DepositListVerifier(new DepositVerifier(specHelpers), specHelpers.getConstants()))
-        .with(new ExitListVerifier(new ExitVerifier(specHelpers), specHelpers.getConstants()))
+        .with(new ExitListVerifier(new VoluntaryExitVerifier(specHelpers), specHelpers.getConstants()))
         .with(new ProposerSlashingListVerifier(new ProposerSlashingVerifier(specHelpers), specHelpers.getConstants()))
         .build();
   }
