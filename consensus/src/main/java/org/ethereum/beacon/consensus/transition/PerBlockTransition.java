@@ -12,8 +12,6 @@ import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
-import org.ethereum.beacon.core.operations.deposit.DepositData;
-import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.state.Eth1DataVote;
 import org.ethereum.beacon.core.state.PendingAttestationRecord;
@@ -147,14 +145,7 @@ public class PerBlockTransition implements BlockTransition<BeaconStateEx> {
        )
     */
     for (Deposit deposit : block.getBody().getDeposits()) {
-      DepositData depositData = deposit.getDepositData();
-      DepositInput depositInput = depositData.getDepositInput();
-      spec.process_deposit(state,
-          depositInput.getPubKey(),
-          depositData.getAmount(),
-          depositInput.getProofOfPossession(),
-          depositInput.getWithdrawalCredentials()
-      );
+      spec.process_deposit(state, deposit);
     }
 
     /*

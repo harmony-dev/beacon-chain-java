@@ -1,17 +1,34 @@
 package org.ethereum.beacon.consensus;
 
+import static java.lang.Math.min;
+import static java.util.stream.Collectors.toList;
+import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import javax.annotation.Nonnull;
 import org.ethereum.beacon.consensus.hasher.ObjectHasher;
 import org.ethereum.beacon.consensus.hasher.SSZObjectHasher;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
+import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustodyBit;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.operations.slashing.SlashableAttestation;
-import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.spec.SignatureDomains;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.ForkData;
 import org.ethereum.beacon.core.state.ShardCommittee;
 import org.ethereum.beacon.core.state.ValidatorRecord;
@@ -39,23 +56,6 @@ import tech.pegasys.artemis.util.bytes.BytesValues;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
 import tech.pegasys.artemis.util.uint.UInt64s;
-
-import javax.annotation.Nonnull;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
-import static java.lang.Math.min;
-import static java.util.stream.Collectors.toList;
-import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
 
 /**
  * https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md#helper-functions
@@ -686,57 +686,58 @@ public class SpecHelpers {
   }
 
   /*
-  def process_deposit(state: BeaconState,
-                    pubkey: BLSPubkey,
-                    amount: Gwei,
-                    proof_of_possession: BLSSignature,
-                    withdrawal_credentials: Hash32) -> None:
-    """
-    Process a deposit from Ethereum 1.0.
-    Note that this function mutates ``state``.
-    """
+    def process_deposit(state: BeaconState, deposit: Deposit) -> None:
+      """
+      Process a deposit from Ethereum 1.0.
+      Note that this function mutates ``state``.
+      """
     */
-  public ValidatorIndex process_deposit(
+  public void process_deposit(
       MutableBeaconState state,
-      BLSPubkey pubkey,
-      Gwei amount,
-      BLSSignature proof_of_possession,
-      Hash32 withdrawal_credentials) {
+      Deposit deposit) {
 
-    //  # Validate the given `proof_of_possession`
-    //  assert validate_proof_of_possession(
-    //      state,
-    //      pubkey,
-    //      proof_of_possession,
-    //      withdrawal_credentials,
-    //      )
-    assertTrue(
-        validate_proof_of_possession(state, pubkey, proof_of_possession, withdrawal_credentials));
+    /* deposit_input = deposit.deposit_data.deposit_input
 
-    //  validator_pubkeys = [v.pubkey for v in state.validator_registry]
-    ValidatorIndex index = null;
-    for (ValidatorIndex i : state.getValidatorRegistry().size()) {
-      if (state.getValidatorRegistry().get(i).getPubKey().equals(pubkey)) {
-        index = i;
-        break;
-      }
+    proof_is_valid = bls_verify(
+        pubkey=deposit_input.pubkey,
+        message_hash=signed_root(deposit_input, "proof_of_possession"),
+        signature=deposit_input.proof_of_possession,
+        domain=get_domain(
+            state.fork,
+            get_current_epoch(state),
+            DOMAIN_DEPOSIT,
+            )
+    )
+
+    if not proof_is_valid:
+      return */
+
+    DepositInput deposit_input = deposit.getDepositData().getDepositInput();
+
+    boolean proof_is_valid =
+        bls_verify(
+            deposit_input.getPubKey(),
+            signed_root(deposit_input, "proof_of_possession"),
+            deposit_input.getProofOfPossession(),
+            get_domain(state.getForkData(), get_current_epoch(state), SignatureDomains.DEPOSIT));
+
+    if (!proof_is_valid) {
+      return;
     }
 
-    //  if pubkey not in validator_pubkeys:
-    if (index == null) {
-      //  # Add new validator
-      /*
-      validator = Validator(
-          pubkey=pubkey,
-          withdrawal_credentials=withdrawal_credentials,
-          activation_epoch=FAR_FUTURE_EPOCH,
-          exit_epoch=FAR_FUTURE_EPOCH,
-          withdrawable_epoch=FAR_FUTURE_EPOCH,
-          initiated_exit=False,
-          slashed=False,
-          )
-       */
+    /*
+    validator_pubkeys = [v.pubkey for v in state.validator_registry]
+    pubkey = deposit_input.pubkey
+    amount = deposit.deposit_data.amount
+    withdrawal_credentials = deposit_input.withdrawal_credentials */
 
+    BLSPubkey pubkey = deposit_input.getPubKey();
+    Gwei amount = deposit.getDepositData().getAmount();
+    Hash32 withdrawal_credentials = deposit_input.getWithdrawalCredentials();
+    ValidatorIndex index = get_validator_index_by_pubkey(state, pubkey);
+
+    if (index.equals(ValidatorIndex.MAX)) {
+      // Add new validator
       ValidatorRecord validator = new ValidatorRecord(
           pubkey,
           withdrawal_credentials,
@@ -746,27 +747,21 @@ public class SpecHelpers {
           Boolean.FALSE,
           Boolean.FALSE);
 
-      //  # Note: In phase 2 registry indices that has been withdrawn for a long time will be recycled.
-      //  index = len(state.validator_registry)
-      index = state.getValidatorRegistry().size();
-      //  state.validator_registry.append(validator)
+      // Note: In phase 2 registry indices that have been withdrawn for a long time will be
+      // recycled.
       state.getValidatorRegistry().add(validator);
-      //  state.validator_balances.append(amount)
       state.getValidatorBalances().add(amount);
     } else {
-      //  # Increase balance by deposit amount
-      //  index = validator_pubkeys.index(pubkey)
-      //  assert state.validator_registry[index].withdrawal_credentials == withdrawal_credentials
+      // Increase balance by deposit amount
       assertTrue(
           state
               .getValidatorRegistry()
               .get(index)
               .getWithdrawalCredentials()
               .equals(withdrawal_credentials));
-      //  state.validator_balances[index] += amount
-      state.getValidatorBalances().update(index, balance -> balance.plus(amount));
+
+      state.getValidatorBalances().update(index, oldBalance -> oldBalance.plus(amount));
     }
-    return index;
   }
 
   /*

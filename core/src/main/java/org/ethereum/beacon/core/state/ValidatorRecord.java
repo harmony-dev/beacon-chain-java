@@ -8,8 +8,6 @@ import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.uint.UInt64;
-import java.util.function.Function;
 
 /**
  * A record denoting a validator in the validator registry.
@@ -31,7 +29,7 @@ public class ValidatorRecord {
   /** Slot when validator exited */
   @SSZ private final EpochNumber exitEpoch;
   /** Epoch when validator is eligible to withdraw */
-  @SSZ private final EpochNumber WithdrawableEpoch;
+  @SSZ private final EpochNumber withdrawableEpoch;
   /** Did the validator initiate an exit */
   @SSZ private final Boolean initiatedExit;
   /** Status flags. */
@@ -39,13 +37,13 @@ public class ValidatorRecord {
 
   public ValidatorRecord(BLSPubkey pubKey,
       Hash32 withdrawalCredentials, EpochNumber activationEpoch,
-      EpochNumber exitEpoch, EpochNumber WithdrawableEpoch,
+      EpochNumber exitEpoch, EpochNumber withdrawableEpoch,
       Boolean initiatedExit, Boolean slashed) {
     this.pubKey = pubKey;
     this.withdrawalCredentials = withdrawalCredentials;
     this.activationEpoch = activationEpoch;
     this.exitEpoch = exitEpoch;
-    this.WithdrawableEpoch = WithdrawableEpoch;
+    this.withdrawableEpoch = withdrawableEpoch;
     this.initiatedExit = initiatedExit;
     this.slashed = slashed;
   }
@@ -67,7 +65,7 @@ public class ValidatorRecord {
   }
 
   public EpochNumber getWithdrawableEpoch() {
-    return WithdrawableEpoch;
+    return withdrawableEpoch;
   }
 
   public Boolean getInitiatedExit() {
@@ -87,7 +85,7 @@ public class ValidatorRecord {
         && Objects.equal(withdrawalCredentials, that.withdrawalCredentials)
         && Objects.equal(activationEpoch, that.activationEpoch)
         && Objects.equal(exitEpoch, that.exitEpoch)
-        && Objects.equal(WithdrawableEpoch, that.WithdrawableEpoch)
+        && Objects.equal(withdrawableEpoch, that.withdrawableEpoch)
         && Objects.equal(initiatedExit, that.initiatedExit)
         && Objects.equal(slashed, that.slashed);
   }
@@ -128,7 +126,7 @@ public class ValidatorRecord {
       builder.withdrawalCredentials = record.withdrawalCredentials;
       builder.activationEpoch = record.activationEpoch;
       builder.exitEpoch = record.exitEpoch;
-      builder.withdrawableEpoch = record.WithdrawableEpoch;
+      builder.withdrawableEpoch = record.withdrawableEpoch;
       builder.initiatedExit = record.initiatedExit;
       builder.slashed = record.slashed;
 

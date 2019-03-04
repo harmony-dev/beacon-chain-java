@@ -13,8 +13,6 @@ import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
-import org.ethereum.beacon.core.operations.deposit.DepositData;
-import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.state.ForkData;
 import org.ethereum.beacon.core.types.Bitfield64;
@@ -110,17 +108,9 @@ public class InitialStateTransition implements BlockTransition<BeaconStateEx> {
     final List<Deposit> initialDeposits = depositContractStart.getInitialDeposits();
     initialState.setDepositIndex(UInt64.valueOf(initialDeposits.size()));
 
-    initialDeposits.forEach(
-        deposit -> {
-          DepositData depositData = deposit.getDepositData();
-          DepositInput depositInput = depositData.getDepositInput();
-          ValidatorIndex index = spec.process_deposit(initialState,
-              depositInput.getPubKey(),
-              depositData.getAmount(),
-              depositInput.getProofOfPossession(),
-              depositInput.getWithdrawalCredentials()
-              );
-        });
+    for (Deposit deposit : initialDeposits) {
+      spec.process_deposit(initialState, deposit);
+    }
 
     for (ValidatorIndex validatorIndex :
         initialState.getValidatorRegistry().size().iterateFromZero()) {
