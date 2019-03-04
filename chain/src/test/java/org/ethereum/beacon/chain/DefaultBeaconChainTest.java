@@ -4,7 +4,6 @@ import java.util.Collections;
 import java.util.stream.IntStream;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.chain.storage.BeaconChainStorageFactory;
-import org.ethereum.beacon.chain.storage.BeaconTuple;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.BlockTransition;
 import org.ethereum.beacon.consensus.SpecHelpers;

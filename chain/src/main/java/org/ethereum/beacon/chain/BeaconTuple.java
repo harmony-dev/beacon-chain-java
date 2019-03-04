@@ -1,4 +1,4 @@
-package org.ethereum.beacon.chain.storage;
+package org.ethereum.beacon.chain;
 
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.core.BeaconBlock;
