@@ -958,9 +958,9 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
             next_epoch.plus(specConst.getActivationExitDelay()))));
     //  Set state.latest_slashed_balances[(next_epoch) % LATEST_SLASHED_EXIT_LENGTH] =
     //      state.latest_slashed_balances[current_epoch % LATEST_SLASHED_EXIT_LENGTH].
-    state.getLatestSlashedBalances().set(next_epoch.modulo(specConst.getSlashedExitLength()),
+    state.getLatestSlashedBalances().set(next_epoch.modulo(specConst.getLatestSlashedExitLength()),
         state.getLatestSlashedBalances().get(
-            current_epoch.modulo(specConst.getSlashedExitLength())));
+            current_epoch.modulo(specConst.getLatestSlashedExitLength())));
     //  Set state.latest_randao_mixes[next_epoch % LATEST_RANDAO_MIXES_LENGTH] =
     //      get_randao_mix(state, current_epoch).
     state.getLatestRandaoMixes().set(next_epoch.modulo(specConst.getLatestRandaoMixesLength()),

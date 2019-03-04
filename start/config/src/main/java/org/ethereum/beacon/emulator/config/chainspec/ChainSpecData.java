@@ -196,8 +196,8 @@ public class ChainSpecData implements Config {
       }
 
       @Override
-      public EpochNumber getSlashedExitLength() {
-        return stateListLengths.getSlashedExitLength();
+      public EpochNumber getLatestSlashedExitLength() {
+        return stateListLengths.getLatestSlashedExitLength();
       }
 
       @Override

@@ -599,6 +599,18 @@ public class SpecHelpers {
   }
 
   /*
+    def get_total_balance(state: BeaconState, validators: List[ValidatorIndex]) -> Gwei:
+      """
+      Return the combined effective balance of an array of validators.
+      """
+      return sum([get_effective_balance(state, i) for i in validators])
+   */
+  public Gwei get_total_balance(BeaconState state, List<ValidatorIndex> validators) {
+    return validators.stream().map(index -> get_effective_balance(state, index))
+        .reduce(Gwei.ZERO, Gwei::plus);
+  }
+
+  /*
    def integer_squareroot(n: int) -> int:
    """
    The largest integer ``x`` such that ``x**2`` is less than ``n``.
@@ -758,14 +770,14 @@ public class SpecHelpers {
   }
 
   /*
-    def get_entry_exit_effect_epoch(epoch: EpochNumber) -> EpochNumber:
+    def get_delayed_activation_exit_epoch(epoch: EpochNumber) -> EpochNumber:
         """
         An entry or exit triggered in the ``epoch`` given by the input takes effect at
         the epoch given by the output.
         """
         return epoch + 1 + ACTIVATION_EXIT_DELAY
    */
-  public EpochNumber get_entry_exit_effect_epoch(EpochNumber epoch) {
+  public EpochNumber get_delayed_activation_exit_epoch(EpochNumber epoch) {
     return epoch.plus(1).plus(spec.getActivationExitDelay());
   }
 
@@ -786,29 +798,36 @@ public class SpecHelpers {
    */
   public void activate_validator(MutableBeaconState state, ValidatorIndex index, boolean genesis) {
     EpochNumber activationSlot =
-        genesis ? spec.getGenesisEpoch() : get_entry_exit_effect_epoch(get_current_epoch(state));
+        genesis ? spec.getGenesisEpoch() : get_delayed_activation_exit_epoch(get_current_epoch(state));
     state
         .getValidatorRegistry()
         .update(index, v -> v.builder().withActivationEpoch(activationSlot).build());
   }
 
   /*
-    def penalize_validator(state: BeaconState, index: int) -> None:
-      exit_validator(state, index)
-      validator = state.validator_registry[index]
-      state.latest_slashed_balances[get_current_epoch(state) % LATEST_SLASHED_EXIT_LENGTH]
-          += get_effective_balance(state, index)
+    def slash_validator(state: BeaconState, index: ValidatorIndex) -> None:
+    """
+    Slash the validator with index ``index``.
+    Note that this function mutates ``state``.
+    """
+    validator = state.validator_registry[index]
+    assert state.slot < get_epoch_start_slot(validator.withdrawable_epoch)  # [TO BE REMOVED IN PHASE 2]
+    exit_validator(state, index)
+    state.latest_slashed_balances[get_current_epoch(state) % LATEST_SLASHED_EXIT_LENGTH] += get_effective_balance(state, index)
 
-      whistleblower_index = get_beacon_proposer_index(state, state.slot)
-      whistleblower_reward = get_effective_balance(state, index) // WHISTLEBLOWER_REWARD_QUOTIENT
-      state.validator_balances[whistleblower_index] += whistleblower_reward
-      state.validator_balances[index] -= whistleblower_reward
-      validator.initiated_exit = get_current_epoch(state)
+    whistleblower_index = get_beacon_proposer_index(state, state.slot)
+    whistleblower_reward = get_effective_balance(state, index) // WHISTLEBLOWER_REWARD_QUOTIENT
+    state.validator_balances[whistleblower_index] += whistleblower_reward
+    state.validator_balances[index] -= whistleblower_reward
+    validator.slashed = True
+    validator.withdrawable_epoch = get_current_epoch(state) + LATEST_SLASHED_EXIT_LENGTH
     */
-  public void penalize_validator(MutableBeaconState state, ValidatorIndex index) {
+  public void slash_validator(MutableBeaconState state, ValidatorIndex index) {
+    ValidatorRecord validator = state.getValidatorRegistry().get(index);
+    assertTrue(state.getSlot().less(get_epoch_start_slot(validator.getWithdrawableEpoch())));
     exit_validator(state, index);
     state.getLatestSlashedBalances().update(
-        get_current_epoch(state).modulo(spec.getSlashedExitLength()),
+        get_current_epoch(state).modulo(spec.getLatestSlashedExitLength()),
         balance -> balance.plus(get_effective_balance(state, index)));
 
     ValidatorIndex whistleblower_index = get_beacon_proposer_index(state, state.getSlot());
@@ -820,14 +839,14 @@ public class SpecHelpers {
         oldVal -> oldVal.minus(whistleblower_reward));
     state.getValidatorRegistry().update(index,
         v -> v.builder().withSlashed(Boolean.TRUE)
-            .withWithdrawableEpoch(get_current_epoch(state).plus(spec.getSlashedExitLength()))
+            .withWithdrawableEpoch(get_current_epoch(state).plus(spec.getLatestSlashedExitLength()))
             .build());
   }
 
   /*
    def initiate_validator_exit(state: BeaconState, index: int) -> None:
      validator = state.validator_registry[index]
-     validator.slashed = True
+     validator.initiated_exit = True
   */
   public void initiate_validator_exit(MutableBeaconState state, ValidatorIndex index) {
     state
@@ -849,19 +868,19 @@ public class SpecHelpers {
       validator = state.validator_registry[index]
 
       # The following updates only occur if not previous exited
-      if validator.exit_epoch <= get_entry_exit_effect_epoch(get_current_epoch(state)):
+      if validator.exit_epoch <= get_delayed_activation_exit_epoch(get_current_epoch(state)):
           return
 
-      validator.exit_epoch = get_entry_exit_effect_epoch(get_current_epoch(state))
+      validator.exit_epoch = get_delayed_activation_exit_epoch(get_current_epoch(state))
    */
   public void exit_validator(MutableBeaconState state, ValidatorIndex index) {
     ValidatorRecord validator = state.getValidatorRegistry().get(index);
-    if (validator.getExitEpoch().lessEqual(get_entry_exit_effect_epoch(get_current_epoch(state)))) {
+    if (validator.getExitEpoch().lessEqual(get_delayed_activation_exit_epoch(get_current_epoch(state)))) {
       return;
     }
     state.getValidatorRegistry().update(index, v ->
         v.builder().withExitEpoch(
-            get_entry_exit_effect_epoch(get_current_epoch(state))
+            get_delayed_activation_exit_epoch(get_current_epoch(state))
         ).build());
   }
 
@@ -901,10 +920,10 @@ public class SpecHelpers {
     Gwei balance_churn = Gwei.ZERO;
     for (ValidatorIndex index : state.getValidatorRegistry().size()) {
       ValidatorRecord validator = state.getValidatorRegistry().get(index);
-      //  if validator.activation_epoch > get_entry_exit_effect_epoch(current_epoch)
+      //  if validator.activation_epoch > get_delayed_activation_exit_epoch(current_epoch)
       //      and state.validator_balances[index] >= MAX_DEPOSIT_AMOUNT:
       if (validator.getActivationEpoch().greater(
-              get_entry_exit_effect_epoch(current_epoch))
+              get_delayed_activation_exit_epoch(current_epoch))
           && state.getValidatorBalances().get(index).greaterEqual(
               spec.getMaxDepositAmount())) {
 
@@ -930,7 +949,7 @@ public class SpecHelpers {
     //    for index, validator in enumerate(state.validator_registry):
     for (ValidatorIndex index : state.getValidatorRegistry().size().iterateFromZero()) {
       ValidatorRecord validator = state.getValidatorRegistry().get(index);
-      //  if validator.exit_epoch > get_entry_exit_effect_epoch(current_epoch)
+      //  if validator.exit_epoch > get_delayed_activation_exit_epoch(current_epoch)
       //      and validator.slashed:
       if (validator.getActivationEpoch().equals(spec.getFarFutureEpoch())
           && validator.getInitiatedExit()) {
@@ -954,9 +973,14 @@ public class SpecHelpers {
   }
 
   /*
-   def prepare_validator_for_withdrawal(state: BeaconState, index: int) -> None:
-       validator = state.validator_registry[index]
-       validator.slashed = False
+   def prepare_validator_for_withdrawal(state: BeaconState, index: ValidatorIndex) -> None:
+      """
+      Set the validator with the given ``index`` as withdrawable
+      ``MIN_VALIDATOR_WITHDRAWABILITY_DELAY`` after the current epoch.
+      Note that this function mutates ``state``.
+      """
+      validator = state.validator_registry[index]
+      validator.withdrawable_epoch = get_current_epoch(state) + MIN_VALIDATOR_WITHDRAWABILITY_DELAY
   */
   public void prepare_validator_for_withdrawal(MutableBeaconState state, ValidatorIndex index) {
     state
@@ -995,13 +1019,13 @@ public class SpecHelpers {
       //  if validator.slashed and current_epoch ==
       //  validator.withdrawable_epoch - LATEST_SLASHED_EXIT_LENGTH // 2:
       if (validator.getSlashed() && current_epoch.equals(
-          validator.getWithdrawableEpoch().minus(spec.getSlashedExitLength().half()))) {
+          validator.getWithdrawableEpoch().minus(spec.getLatestSlashedExitLength().half()))) {
 
         //  epoch_index = current_epoch % LATEST_SLASHED_EXIT_LENGTH
-        EpochNumber epoch_index = current_epoch.modulo(spec.getSlashedExitLength());
+        EpochNumber epoch_index = current_epoch.modulo(spec.getLatestSlashedExitLength());
         // total_at_start = state.latest_slashed_balances[(epoch_index + 1) % LATEST_SLASHED_EXIT_LENGTH]
         Gwei total_at_start = state.getLatestSlashedBalances().get(
-            epoch_index.increment().modulo(spec.getSlashedExitLength()));
+            epoch_index.increment().modulo(spec.getLatestSlashedExitLength()));
         //  total_at_end = state.latest_slashed_balances[epoch_index]
         Gwei total_at_end = state.getLatestSlashedBalances().get(epoch_index);
         //    total_penalties = total_at_end - total_at_start

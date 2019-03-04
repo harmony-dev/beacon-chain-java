@@ -88,10 +88,10 @@ public class PerBlockTransition implements BlockTransition<BeaconStateEx> {
 
     /*
        For each proposer_slashing in block.body.proposer_slashings:
-       Run penalize_validator(state, proposer_slashing.proposer_index).
+       Run slash_validator(state, proposer_slashing.proposer_index).
     */
     for (ProposerSlashing proposer_slashing : block.getBody().getProposerSlashings()) {
-      specHelpers.penalize_validator(state, proposer_slashing.getProposerIndex());
+      specHelpers.slash_validator(state, proposer_slashing.getProposerIndex());
     }
 
     /*
@@ -101,7 +101,7 @@ public class PerBlockTransition implements BlockTransition<BeaconStateEx> {
          Let slashable_indices = [index for index in slashable_attestation_1.validator_indices
              if index in slashable_attestation_2.validator_indices
                  and state.validator_registry[index].initiated_exit > get_current_epoch(state)].
-         Run penalize_validator(state, index) for each index in slashable_indices.
+         Run slash_validator(state, index) for each index in slashable_indices.
     */
     for (AttesterSlashing attester_slashing : block.getBody().getAttesterSlashings()) {
       ReadList<Integer, ValidatorIndex> intersection =
@@ -109,7 +109,7 @@ public class PerBlockTransition implements BlockTransition<BeaconStateEx> {
           attester_slashing.getSlashableAttestation2().getValidatorIndices());
       for (ValidatorIndex index : intersection) {
         if (!state.getValidatorRegistry().get(index).getSlashed()) {
-          specHelpers.penalize_validator(state, index);
+          specHelpers.slash_validator(state, index);
         }
       }
     }

@@ -38,7 +38,7 @@ public class StateListLengthsData implements StateListLengths {
 
   @Override
   @JsonIgnore
-  public EpochNumber getSlashedExitLength() {
+  public EpochNumber getLatestSlashedExitLength() {
     return new EpochNumber(UInt64.valueOf(getLATEST_SLASHED_EXIT_LENGTH()));
   }
 

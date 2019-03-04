@@ -29,7 +29,7 @@ public interface StateListLengths {
     return LATEST_ACTIVE_INDEX_ROOTS_LENGTH;
   }
 
-  default EpochNumber getSlashedExitLength() {
+  default EpochNumber getLatestSlashedExitLength() {
     return LATEST_SLASHED_EXIT_LENGTH;
   }
 }
