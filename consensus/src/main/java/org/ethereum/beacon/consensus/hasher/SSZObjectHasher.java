@@ -28,7 +28,7 @@ public class SSZObjectHasher implements ObjectHasher<Hash32> {
 
   public static SSZObjectHasher create(Function<BytesValue, Hash32> hashFunction) {
     SSZHashSerializer sszHashSerializer =
-        SSZHashSerializers.createWithBeaconChainTypes(hashFunction, true);
+        SSZHashSerializers.createWithBeaconChainTypes(hashFunction, true, 64);
     return new SSZObjectHasher(sszHashSerializer, hashFunction);
   }
 

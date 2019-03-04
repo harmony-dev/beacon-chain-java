@@ -9,6 +9,7 @@ import org.ethereum.beacon.ssz.type.SSZCodec;
 import org.ethereum.beacon.ssz.type.StringPrimitive;
 import org.ethereum.beacon.ssz.type.UIntPrimitive;
 import org.javatuples.Triplet;
+
 import java.util.function.Function;
 
 /**
@@ -63,6 +64,17 @@ public class SSZSerializerBuilder {
     builder.addPrimitivesCodecs();
 
     return builder;
+  }
+
+  public void addSchemeBuilderCache(int cacheSize) {
+    if (sszSchemeBuilder == null) {
+      throw new RuntimeException("Scheme builder is not defined yet");
+    }
+    if (!(sszSchemeBuilder instanceof SSZAnnotationSchemeBuilder)) {
+      throw new RuntimeException("Only SSZAnnotationSchemeBuilder is supported for adding cache");
+    } else {
+      ((SSZAnnotationSchemeBuilder) sszSchemeBuilder).withCache(cacheSize);
+    }
   }
 
   private void checkAlreadyInitialized() {
@@ -145,8 +157,8 @@ public class SSZSerializerBuilder {
    */
   public SSZSerializerBuilder initWithExplicitAnnotations() {
     this.sszCodecResolver = new SSZCodecRoulette();
-    return initWith(
-        new SSZAnnotationSchemeBuilder(), sszCodecResolver, createDefaultModelCreator());
+    this.sszSchemeBuilder = new SSZAnnotationSchemeBuilder();
+    return initWith(sszSchemeBuilder, sszCodecResolver, createDefaultModelCreator());
   }
 
   private SSZModelFactory createDefaultModelCreator() {
@@ -164,8 +176,8 @@ public class SSZSerializerBuilder {
    */
   public SSZSerializerBuilder initWithNonExplicitAnnotations() {
     this.sszCodecResolver = new SSZCodecRoulette();
-    return initWith(
-        new SSZAnnotationSchemeBuilder(false), sszCodecResolver, createDefaultModelCreator());
+    this.sszSchemeBuilder = new SSZAnnotationSchemeBuilder(false);
+    return initWith(sszSchemeBuilder, sszCodecResolver, createDefaultModelCreator());
   }
 
   public SSZSerializerBuilder addCodec(SSZCodec codec) {

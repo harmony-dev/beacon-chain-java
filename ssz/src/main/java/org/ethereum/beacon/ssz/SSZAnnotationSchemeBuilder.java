@@ -4,6 +4,7 @@ import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import org.ethereum.beacon.ssz.annotation.SSZTransient;
 import org.javatuples.Pair;
+
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
@@ -14,6 +15,7 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -46,6 +48,8 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
   private Logger logger = null;
 
   private boolean explicitFieldAnnotation = true;
+
+  private Map<Class, SSZScheme> cache = null;
 
   public SSZAnnotationSchemeBuilder() {}
 
@@ -85,6 +89,17 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
   }
 
   /**
+   * Initializes cache for `numberOfRecords` classes
+   *
+   * @param numberOfRecords cache size
+   * @return this scheme builder with cache added
+   */
+  public SSZAnnotationSchemeBuilder withCache(int numberOfRecords) {
+    this.cache = new LinkedHashMap<>(numberOfRecords, 2, true);
+    return this;
+  }
+
+  /**
    * Add logger to {@link SSZAnnotationSchemeBuilder}
    *
    * @param logger Java logger
@@ -104,6 +119,10 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
    */
   @Override
   public SSZScheme build(Class clazz) {
+    if (cache != null && cache.containsKey(clazz)) {
+      return cache.get(clazz);
+    }
+
     SSZScheme scheme = new SSZScheme();
     SSZSerializable mainAnnotation = (SSZSerializable) clazz.getAnnotation(SSZSerializable.class);
 
@@ -193,6 +212,10 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
   }
 
   private SSZScheme logAndReturnScheme(Class clazz, SSZScheme scheme) {
+    if (cache != null) {
+      cache.put(clazz, scheme);
+    }
+
     if (logger == null) {
       return scheme;
     }
