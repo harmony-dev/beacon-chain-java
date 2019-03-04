@@ -5,7 +5,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
-import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Bitfield;
 import org.ethereum.beacon.core.types.Time;
@@ -89,7 +89,7 @@ public class Attestation {
     return aggregationBitfield.getBits().stream().map(i -> "" + i).collect(Collectors.joining("+"));
   }
 
-  public String toString(@Nullable ChainSpec spec,@Nullable Time beaconStart) {
+  public String toString(@Nullable SpecConstants spec,@Nullable Time beaconStart) {
     return "Attestation["
         + data.toString(spec, beaconStart)
         + ", attesters=" + getSignerIndices()
@@ -98,7 +98,7 @@ public class Attestation {
         + "]";
   }
 
-  public String toStringShort(@Nullable ChainSpec spec) {
+  public String toStringShort(@Nullable SpecConstants spec) {
     return getData().getSlot().toStringNumber(spec) + "/"
         + getData().getShard().toString(spec) + "/"
         + getData().getBeaconBlockRoot().toStringShort() + "/"

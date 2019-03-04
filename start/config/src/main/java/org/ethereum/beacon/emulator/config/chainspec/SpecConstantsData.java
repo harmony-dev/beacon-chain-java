@@ -1,7 +1,7 @@
 package org.ethereum.beacon.emulator.config.chainspec;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
@@ -15,9 +15,9 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes1;
 import tech.pegasys.artemis.util.uint.UInt64;
 
-/** ChainSpec settings object, creates {@link ChainSpec} from user data */
+/** SpecConstants settings object, creates {@link SpecConstants} from user data */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class ChainSpecData implements Config {
+public class SpecConstantsData implements Config {
   private DepositContractParametersData depositContractParameters;
   private HonestValidatorParametersData honestValidatorParameters;
   private InitialValuesData initialValues;
@@ -28,8 +28,8 @@ public class ChainSpecData implements Config {
   private StateListLengthsData stateListLengths;
   private TimeParametersData timeParameters;
 
-  public ChainSpec build() {
-    return new ChainSpec() {
+  public SpecConstants build() {
+    return new SpecConstants() {
       @Override
       public Address getDepositContractAddress() {
         return depositContractParameters.getDepositContractAddress();

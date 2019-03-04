@@ -5,7 +5,7 @@ import static org.ethereum.beacon.consensus.verifier.VerificationResult.failedRe
 
 import org.ethereum.beacon.consensus.verifier.OperationVerifier;
 import org.ethereum.beacon.core.operations.Deposit;
-import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
 
@@ -16,8 +16,8 @@ import tech.pegasys.artemis.util.uint.UInt64;
  */
 public class DepositListVerifier extends OperationListVerifier<Deposit> {
 
-  public DepositListVerifier(OperationVerifier<Deposit> operationVerifier, ChainSpec chainSpec) {
-    super(operationVerifier, block -> block.getBody().getDeposits(), chainSpec.getMaxDeposits());
+  public DepositListVerifier(OperationVerifier<Deposit> operationVerifier, SpecConstants specConstants) {
+    super(operationVerifier, block -> block.getBody().getDeposits(), specConstants.getMaxDeposits());
 
     addCustomVerifier(
         (deposits, state) -> {

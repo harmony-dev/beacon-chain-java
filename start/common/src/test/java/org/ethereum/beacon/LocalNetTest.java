@@ -19,7 +19,7 @@ import org.ethereum.beacon.consensus.TestUtils;
 import org.ethereum.beacon.consensus.hasher.SSZObjectHasher;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
-import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.PendingAttestationRecord;
 import org.ethereum.beacon.core.state.ShardCommittee;
@@ -130,8 +130,8 @@ public class LocalNetTest {
 
     Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), Hash32.random(rnd));
 
-    ChainSpec chainSpec =
-        new ChainSpec() {
+    SpecConstants specConstants =
+        new SpecConstants() {
           @Override
           public SlotNumber.EpochLength getSlotsPerEpoch() {
             return new SlotNumber.EpochLength(UInt64.valueOf(epochLength));
@@ -163,7 +163,7 @@ public class LocalNetTest {
         };
 
     Pair<List<Deposit>, List<KeyPair>> anyDeposits = TestUtils.getAnyDeposits(
-            rnd, createLightSpecHelpers(chainSpec, () -> 0L), validatorCount);
+            rnd, createLightSpecHelpers(specConstants, () -> 0L), validatorCount);
     List<Deposit> deposits = anyDeposits.getValue0();
 
     LocalWireHub localWireHub = new LocalWireHub(s -> {});
@@ -174,7 +174,7 @@ public class LocalNetTest {
     List<Launcher> peers = new ArrayList<>();
     for(int i = 0; i < validatorCount; i++) {
       ControlledSchedulers schedulers = controlledSchedulers.createNew();
-      SpecHelpers specHelpers = createLightSpecHelpers(chainSpec, schedulers::getCurrentTime);
+      SpecHelpers specHelpers = createLightSpecHelpers(specConstants, schedulers::getCurrentTime);
       WireApi wireApi = localWireHub.createNewPeer("" + i);
 
       Launcher launcher = new Launcher(specHelpers, depositContract, anyDeposits.getValue1().get(i),
@@ -183,20 +183,21 @@ public class LocalNetTest {
 
       int finalI = i;
       Flux.from(launcher.slotTicker.getTickerStream())
-          .subscribe(slot -> System.out.println("  #" + finalI + " Slot: " + slot.toString(chainSpec, genesisTime)));
+          .subscribe(slot -> System.out.println("  #" + finalI + " Slot: " + slot.toString(
+              specConstants, genesisTime)));
       Flux.from(launcher.observableStateProcessor.getObservableStateStream())
           .subscribe(os -> {
             System.out.println("  #" + finalI + " New observable state: " + os.toString(specHelpers));
           });
       Flux.from(launcher.beaconChainValidator.getProposedBlocksStream())
           .subscribe(block ->System.out.println("#" + finalI + " !!! New block: " +
-              block.toString(chainSpec, genesisTime, specHelpers::hash_tree_root)));
+              block.toString(specConstants, genesisTime, specHelpers::hash_tree_root)));
       Flux.from(launcher.beaconChainValidator.getAttestationsStream())
           .subscribe(attest ->System.out.println("#" + finalI + " !!! New attestation: " +
-              attest.toString(chainSpec, genesisTime)));
+              attest.toString(specConstants, genesisTime)));
       Flux.from(launcher.beaconChain.getBlockStatesStream())
           .subscribe(blockState ->System.out.println("  #" + finalI + " Block imported: " +
-              blockState.getBlock().toString(chainSpec, genesisTime, specHelpers::hash_tree_root)));
+              blockState.getBlock().toString(specConstants, genesisTime, specHelpers::hash_tree_root)));
     }
     System.out.println("Peers created");
 
@@ -246,7 +247,7 @@ public class LocalNetTest {
         });
 
     Map<SlotNumber, ObservableBeaconState> slotStates = new HashMap<>();
-    SpecHelpers specHelpers = peers.get(0).specHelpers;
+    SpecHelpers specHelpers = peers.get(0).spec;
     Flux.from(peers.get(0).observableStateProcessor.getObservableStateStream())
         .subscribe((ObservableBeaconState state) -> {
 
@@ -302,7 +303,7 @@ public class LocalNetTest {
             BLSSignature.ZERO));
   }
 
-  static SpecHelpers createLightSpecHelpers(ChainSpec spec, Supplier<Long> time) {
+  static SpecHelpers createLightSpecHelpers(SpecConstants spec, Supplier<Long> time) {
     return new SpecHelpers(spec, Hashes::keccak256, SSZObjectHasher.create(Hashes::keccak256), time) {
       @Override
       public boolean bls_verify(BLSPubkey publicKey, Hash32 message, BLSSignature signature, Bytes8 domain) {

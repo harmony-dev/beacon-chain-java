@@ -3,7 +3,7 @@ package org.ethereum.beacon.core.operations.attestation;
 import com.google.common.base.Objects;
 import javax.annotation.Nullable;
 import org.ethereum.beacon.core.operations.Attestation;
-import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
@@ -124,7 +124,7 @@ public class AttestationData {
     return toString(null, null);
   }
 
-  public String toString(@Nullable ChainSpec spec,@Nullable Time beaconStart) {
+  public String toString(@Nullable SpecConstants spec,@Nullable Time beaconStart) {
     return "AttestationData[slot="
         + slot.toString(spec, beaconStart)
         + ", shard=" + shard.toString(spec)

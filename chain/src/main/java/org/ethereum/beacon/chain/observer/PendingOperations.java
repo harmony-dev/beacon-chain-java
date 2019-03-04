@@ -7,7 +7,7 @@ import org.ethereum.beacon.core.operations.Transfer;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
-import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.SlotNumber;
 
@@ -34,7 +34,7 @@ public interface PendingOperations {
         + "]";
   }
 
-  default String toStringMedium(ChainSpec spec) {
+  default String toStringMedium(SpecConstants spec) {
     String ret = "PendingOperations[";
     if (!getAttestations().isEmpty()) {
       ret += "attest (slot/shard/beaconBlock): [";

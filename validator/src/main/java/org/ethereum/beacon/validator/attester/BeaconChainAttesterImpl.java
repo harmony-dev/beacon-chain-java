@@ -12,7 +12,7 @@ import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustodyBit;
-import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Bitfield;
@@ -37,13 +37,10 @@ import tech.pegasys.artemis.util.bytes.MutableBytesValue;
 public class BeaconChainAttesterImpl implements BeaconChainAttester {
 
   /** The spec. */
-  private SpecHelpers specHelpers;
-  /** Chain parameters. */
-  private ChainSpec chainSpec;
+  private SpecHelpers spec;
 
-  public BeaconChainAttesterImpl(SpecHelpers specHelpers, ChainSpec chainSpec) {
-    this.specHelpers = specHelpers;
-    this.chainSpec = chainSpec;
+  public BeaconChainAttesterImpl(SpecHelpers spec) {
+    this.spec = spec;
   }
 
   @Override
@@ -55,7 +52,7 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
     BeaconState state = observableState.getLatestSlotState();
 
     SlotNumber slot = state.getSlot();
-    Hash32 beaconBlockRoot = specHelpers.hash_tree_root(observableState.getHead());
+    Hash32 beaconBlockRoot = spec.hash_tree_root(observableState.getHead());
     Hash32 epochBoundaryRoot = getEpochBoundaryRoot(state, observableState.getHead());
     Hash32 crosslinkDataRoot = Hash32.ZERO; // Note: This is a stub for phase 0.
     Crosslink latestCrosslink = getLatestCrosslink(state, shard);
@@ -90,10 +87,10 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
    */
   @VisibleForTesting
   List<ValidatorIndex> getCommittee(BeaconState state, ShardNumber shard) {
-    if (shard.equals(chainSpec.getBeaconChainShardNumber())) {
-      return specHelpers.get_crosslink_committees_at_slot(state, state.getSlot()).get(0).getCommittee();
+    if (shard.equals(spec.getConstants().getBeaconChainShardNumber())) {
+      return spec.get_crosslink_committees_at_slot(state, state.getSlot()).get(0).getCommittee();
     } else {
-      return specHelpers
+      return spec
           .get_crosslink_committees_at_slot(state, state.getSlot()).stream()
           .filter(sc -> sc.getShard().equals(shard))
           .findFirst()
@@ -110,8 +107,8 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
   Hash32 getEpochBoundaryRoot(BeaconState state, BeaconBlock head) {
     SlotNumber ancestorMaxSlot = head.getSlot().decrement();
     SlotNumber epochBoundarySlot =
-        ancestorMaxSlot.minus(ancestorMaxSlot.modulo(chainSpec.getSlotsPerEpoch()));
-    return specHelpers.get_block_root(state, epochBoundarySlot);
+        ancestorMaxSlot.minus(ancestorMaxSlot.modulo(spec.getConstants().getSlotsPerEpoch()));
+    return spec.get_block_root(state, epochBoundarySlot);
   }
 
   /*
@@ -120,7 +117,7 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
   */
   @VisibleForTesting
   Crosslink getLatestCrosslink(BeaconState state, ShardNumber shard) {
-    if (shard.equals(chainSpec.getBeaconChainShardNumber())) {
+    if (shard.equals(spec.getConstants().getBeaconChainShardNumber())) {
       return Crosslink.EMPTY;
     } else {
       return state.getLatestCrosslinks().get(shard);
@@ -135,8 +132,8 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
   */
   @VisibleForTesting
   Hash32 getJustifiedBlockRoot(BeaconState state) {
-    SlotNumber slot = specHelpers.get_epoch_start_slot(state.getJustifiedEpoch());
-    return specHelpers.get_block_root(state, slot);
+    SlotNumber slot = spec.get_epoch_start_slot(state.getJustifiedEpoch());
+    return spec.get_block_root(state, slot);
   }
 
   /*
@@ -178,9 +175,9 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
       BeaconState state, AttestationData data, MessageSigner<BLSSignature> signer) {
     AttestationDataAndCustodyBit attestationDataAndCustodyBit =
         new AttestationDataAndCustodyBit(data, false);
-    Hash32 hash = specHelpers.hash_tree_root(attestationDataAndCustodyBit);
-    Bytes8 domain = specHelpers.get_domain(state.getForkData(),
-        specHelpers.get_current_epoch(state), ATTESTATION);
+    Hash32 hash = spec.hash_tree_root(attestationDataAndCustodyBit);
+    Bytes8 domain = spec.get_domain(state.getForkData(),
+        spec.get_current_epoch(state), ATTESTATION);
     return signer.sign(hash, domain);
   }
 }

@@ -2,7 +2,7 @@ package org.ethereum.beacon.consensus.verifier.block;
 
 import org.ethereum.beacon.consensus.verifier.OperationVerifier;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
-import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.spec.SpecConstants;
 
 /**
  * Verifies exit operation list.
@@ -11,8 +11,8 @@ import org.ethereum.beacon.core.spec.ChainSpec;
  */
 public class ExitListVerifier extends OperationListVerifier<VoluntaryExit> {
 
-  public ExitListVerifier(OperationVerifier<VoluntaryExit> operationVerifier, ChainSpec chainSpec) {
-    super(operationVerifier, block -> block.getBody().getExits(), chainSpec.getMaxVoluntaryExits());
+  public ExitListVerifier(OperationVerifier<VoluntaryExit> operationVerifier, SpecConstants specConstants) {
+    super(operationVerifier, block -> block.getBody().getExits(), specConstants.getMaxVoluntaryExits());
   }
 
   @Override

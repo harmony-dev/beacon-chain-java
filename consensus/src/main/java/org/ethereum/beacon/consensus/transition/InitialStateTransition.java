@@ -15,7 +15,6 @@ import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
-import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.state.ForkData;
 import org.ethereum.beacon.core.types.Bitfield64;
@@ -43,14 +42,12 @@ public class InitialStateTransition implements BlockTransition<BeaconStateEx> {
   private static final Logger logger = LogManager.getLogger(InitialStateTransition.class);
 
   private final DepositContract.ChainStart depositContractStart;
-  private final ChainSpec chainSpec;
-  private final SpecHelpers specHelpers;
+  private final SpecHelpers spec;
 
   public InitialStateTransition(DepositContract.ChainStart depositContractStart,
-      SpecHelpers specHelpers) {
+      SpecHelpers spec) {
     this.depositContractStart = depositContractStart;
-    this.specHelpers = specHelpers;
-    this.chainSpec = specHelpers.getChainSpec();
+    this.spec = spec;
   }
 
   public BeaconStateEx apply(BeaconBlock block) {
@@ -59,49 +56,49 @@ public class InitialStateTransition implements BlockTransition<BeaconStateEx> {
 
   @Override
   public BeaconStateEx apply(BeaconStateEx state, BeaconBlock block) {
-    assert block.getSlot().equals(chainSpec.getGenesisSlot());
+    assert block.getSlot().equals(spec.getConstants().getGenesisSlot());
 
     MutableBeaconState initialState = BeaconState.getEmpty().createMutableCopy();
 
     // Misc
-    initialState.setSlot(chainSpec.getGenesisSlot());
+    initialState.setSlot(spec.getConstants().getGenesisSlot());
     initialState.setGenesisTime(depositContractStart.getTime());
     initialState.setForkData(
             new ForkData(
-                chainSpec.getGenesisForkVersion(),
-                chainSpec.getGenesisForkVersion(),
-                chainSpec.getGenesisEpoch()));
+                spec.getConstants().getGenesisForkVersion(),
+                spec.getConstants().getGenesisForkVersion(),
+                spec.getConstants().getGenesisEpoch()));
 
     // Validator registry
     initialState.getValidatorRegistry().clear();
     initialState.getValidatorBalances().clear();
-    initialState.setValidatorRegistryUpdateEpoch(chainSpec.getGenesisEpoch());
+    initialState.setValidatorRegistryUpdateEpoch(spec.getConstants().getGenesisEpoch());
 
     // Randomness and committees
     initialState.getLatestRandaoMixes().addAll(
-            nCopies(chainSpec.getLatestRandaoMixesLength().getIntValue(), Hash32.ZERO));
-    initialState.setPreviousShufflingStartShard(chainSpec.getGenesisStartShard());
-    initialState.setCurrentShufflingStartShard(chainSpec.getGenesisStartShard());
-    initialState.setPreviousShufflingEpoch(chainSpec.getGenesisEpoch());
-    initialState.setCurrentShufflingEpoch(chainSpec.getGenesisEpoch());
+            nCopies(spec.getConstants().getLatestRandaoMixesLength().getIntValue(), Hash32.ZERO));
+    initialState.setPreviousShufflingStartShard(spec.getConstants().getGenesisStartShard());
+    initialState.setCurrentShufflingStartShard(spec.getConstants().getGenesisStartShard());
+    initialState.setPreviousShufflingEpoch(spec.getConstants().getGenesisEpoch());
+    initialState.setCurrentShufflingEpoch(spec.getConstants().getGenesisEpoch());
     initialState.setPreviousShufflingSeed(Hash32.ZERO);
     initialState.setCurrentShufflingSeed(Hash32.ZERO);
 
     // Finality
-    initialState.setPreviousJustifiedEpoch(chainSpec.getGenesisEpoch());
-    initialState.setJustifiedEpoch(chainSpec.getGenesisEpoch());
+    initialState.setPreviousJustifiedEpoch(spec.getConstants().getGenesisEpoch());
+    initialState.setJustifiedEpoch(spec.getConstants().getGenesisEpoch());
     initialState.setJustificationBitfield(Bitfield64.ZERO);
-    initialState.setFinalizedEpoch(chainSpec.getGenesisEpoch());
+    initialState.setFinalizedEpoch(spec.getConstants().getGenesisEpoch());
 
     // Recent state
     initialState.getLatestCrosslinks().addAll(
-            nCopies(chainSpec.getShardCount().getIntValue(), Crosslink.EMPTY));
+            nCopies(spec.getConstants().getShardCount().getIntValue(), Crosslink.EMPTY));
     initialState.getLatestBlockRoots().addAll(
-            nCopies(chainSpec.getLatestBlockRootsLength().getIntValue(), Hash32.ZERO));
+            nCopies(spec.getConstants().getLatestBlockRootsLength().getIntValue(), Hash32.ZERO));
     initialState.getLatestActiveIndexRoots().addAll(
-            nCopies(chainSpec.getLatestActiveIndexRootsLength().getIntValue(), Hash32.ZERO));
+            nCopies(spec.getConstants().getLatestActiveIndexRootsLength().getIntValue(), Hash32.ZERO));
     initialState.getLatestSlashedBalances().addAll(
-            nCopies(chainSpec.getLatestSlashedExitLength().getIntValue(), Gwei.ZERO));
+            nCopies(spec.getConstants().getLatestSlashedExitLength().getIntValue(), Gwei.ZERO));
     initialState.getLatestAttestations().clear();
     initialState.getBatchedBlockRoots().clear();
 
@@ -117,7 +114,7 @@ public class InitialStateTransition implements BlockTransition<BeaconStateEx> {
         deposit -> {
           DepositData depositData = deposit.getDepositData();
           DepositInput depositInput = depositData.getDepositInput();
-          ValidatorIndex index = specHelpers.process_deposit(initialState,
+          ValidatorIndex index = spec.process_deposit(initialState,
               depositInput.getPubKey(),
               depositData.getAmount(),
               depositInput.getProofOfPossession(),
@@ -128,32 +125,32 @@ public class InitialStateTransition implements BlockTransition<BeaconStateEx> {
     for (ValidatorIndex validatorIndex :
         initialState.getValidatorRegistry().size().iterateFromZero()) {
 
-      Gwei balance = specHelpers.get_effective_balance(initialState, validatorIndex);
+      Gwei balance = spec.get_effective_balance(initialState, validatorIndex);
 
-      if (balance.greaterEqual(chainSpec.getMaxDepositAmount())) {
-        specHelpers.activate_validator(initialState, validatorIndex, true);
+      if (balance.greaterEqual(spec.getConstants().getMaxDepositAmount())) {
+        spec.activate_validator(initialState, validatorIndex, true);
       }
     }
 
-    Hash32 genesis_active_index_root = specHelpers.hash_tree_root(
-        specHelpers.get_active_validator_indices(
-            initialState.getValidatorRegistry(), chainSpec.getGenesisEpoch()));
+    Hash32 genesis_active_index_root = spec.hash_tree_root(
+        spec.get_active_validator_indices(
+            initialState.getValidatorRegistry(), spec.getConstants().getGenesisEpoch()));
 
-    for (EpochNumber index : chainSpec.getLatestActiveIndexRootsLength().iterateFromZero()) {
+    for (EpochNumber index : spec.getConstants().getLatestActiveIndexRootsLength().iterateFromZero()) {
       initialState.getLatestActiveIndexRoots().set(index, genesis_active_index_root);
     }
 
     initialState.setCurrentShufflingSeed(
-        specHelpers.generate_seed(initialState, chainSpec.getGenesisEpoch()));
+        spec.generate_seed(initialState, spec.getConstants().getGenesisEpoch()));
 
     BeaconState validatorsState = initialState.createImmutable();
-    BeaconBlock genesisBlock = block.withStateRoot(specHelpers.hash_tree_root(validatorsState));
+    BeaconBlock genesisBlock = block.withStateRoot(spec.hash_tree_root(validatorsState));
 
     BeaconStateExImpl ret = new BeaconStateExImpl(
-        validatorsState, specHelpers.hash_tree_root(genesisBlock), TransitionType.INITIAL);
+        validatorsState, spec.hash_tree_root(genesisBlock), TransitionType.INITIAL);
 
     logger.debug(() -> "Slot transition result state: (" +
-        specHelpers.hash_tree_root(ret).toStringShort() + ") " + ret.toString(chainSpec));
+        spec.hash_tree_root(ret).toStringShort() + ") " + ret.toString(spec.getConstants()));
 
     return ret;
   }

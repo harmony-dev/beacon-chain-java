@@ -4,7 +4,7 @@ import com.google.common.base.Objects;
 import javax.annotation.Nullable;
 
 import org.ethereum.beacon.core.operations.slashing.Proposal;
-import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.ssz.annotation.SSZ;
@@ -52,7 +52,7 @@ public class ProposerSlashing {
     return toString(null, null);
   }
 
-  public String toString(@Nullable ChainSpec spec, @Nullable Time beaconStart) {
+  public String toString(@Nullable SpecConstants spec, @Nullable Time beaconStart) {
     return "ProposerSlashing["
         + "proposer: " + proposerIndex
         + ", data1: " + proposal1.toString(spec, beaconStart)

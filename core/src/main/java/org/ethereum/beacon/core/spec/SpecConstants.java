@@ -2,7 +2,7 @@ package org.ethereum.beacon.core.spec;
 
 import org.ethereum.beacon.core.types.EpochNumber;
 
-public interface ChainSpec
+public interface SpecConstants
     extends InitialValues,
         MiscParameters,
         StateListLengths,
@@ -13,7 +13,7 @@ public interface ChainSpec
         HonestValidatorParameters,
         GweiValues {
 
-  ChainSpec DEFAULT = new ChainSpec() {};
+  SpecConstants DEFAULT = new SpecConstants() {};
 
   @Override
   default EpochNumber getGenesisEpoch() {

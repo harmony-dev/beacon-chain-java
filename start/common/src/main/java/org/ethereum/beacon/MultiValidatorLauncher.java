@@ -37,7 +37,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public class MultiValidatorLauncher {
-  private final SpecHelpers specHelpers;
+  private final SpecHelpers spec;
   private final DepositContract depositContract;
   private final List<KeyPair> validatorSigs;
   private final WireApi wireApi;
@@ -54,14 +54,14 @@ public class MultiValidatorLauncher {
   Schedulers schedulers;
 
   public MultiValidatorLauncher(
-      SpecHelpers specHelpers,
+      SpecHelpers spec,
       DepositContract depositContract,
       List<KeyPair> validatorSigs,
       WireApi wireApi,
       BeaconChainStorageFactory storageFactory,
       Schedulers schedulers) {
 
-    this.specHelpers = specHelpers;
+    this.spec = spec;
     this.depositContract = depositContract;
     this.validatorSigs = validatorSigs;
     this.wireApi = wireApi;
@@ -74,10 +74,10 @@ public class MultiValidatorLauncher {
   }
 
   void chainStarted(ChainStart chainStartEvent) {
-    InitialStateTransition initialTransition = new InitialStateTransition(chainStartEvent, specHelpers);
-    PerSlotTransition perSlotTransition = new PerSlotTransition(specHelpers);
-    PerBlockTransition perBlockTransition = new PerBlockTransition(specHelpers);
-    PerEpochTransition perEpochTransition = new PerEpochTransition(specHelpers);
+    InitialStateTransition initialTransition = new InitialStateTransition(chainStartEvent, spec);
+    PerSlotTransition perSlotTransition = new PerSlotTransition(spec);
+    PerBlockTransition perBlockTransition = new PerBlockTransition(spec);
+    PerEpochTransition perEpochTransition = new PerEpochTransition(spec);
 
     db = new InMemoryDatabase();
     beaconChainStorage = storageFactory.create(db);
@@ -88,7 +88,7 @@ public class MultiValidatorLauncher {
     BeaconStateVerifier stateVerifier = (block, state) -> VerificationResult.PASSED;
 
     beaconChain = new DefaultBeaconChain(
-        specHelpers,
+        spec,
         initialTransition,
         perSlotTransition,
         perBlockTransition,
@@ -100,7 +100,7 @@ public class MultiValidatorLauncher {
     beaconChain.init();
 
     slotTicker =
-        new SlotTicker(specHelpers, beaconChain.getRecentlyProcessed().getState(), schedulers);
+        new SlotTicker(spec, beaconChain.getRecentlyProcessed().getState(), schedulers);
     slotTicker.start();
 
     DirectProcessor<Attestation> allAttestations = DirectProcessor.create();
@@ -113,16 +113,15 @@ public class MultiValidatorLauncher {
         slotTicker.getTickerStream(),
         allAttestations,
         beaconChain.getBlockStatesStream(),
-        specHelpers,
+        spec,
         perSlotTransition,
         perEpochTransition,
         schedulers);
     observableStateProcessor.start();
 
-    beaconChainProposer = new BeaconChainProposerImpl(specHelpers,
-        specHelpers.getChainSpec(), perBlockTransition, perEpochTransition, depositContract);
-    beaconChainAttester = new BeaconChainAttesterImpl(specHelpers,
-        specHelpers.getChainSpec());
+    beaconChainProposer = new BeaconChainProposerImpl(spec,
+        perBlockTransition, perEpochTransition, depositContract);
+    beaconChainAttester = new BeaconChainAttesterImpl(spec);
 
     List<BLS381Credentials> credentials =
         validatorSigs.stream()
@@ -133,7 +132,7 @@ public class MultiValidatorLauncher {
         credentials,
         beaconChainProposer,
         beaconChainAttester,
-        specHelpers,
+        spec,
         observableStateProcessor.getObservableStateStream(),
         schedulers);
     beaconChainValidator.start();

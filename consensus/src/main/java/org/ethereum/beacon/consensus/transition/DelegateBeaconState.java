@@ -3,7 +3,7 @@ package org.ethereum.beacon.consensus.transition;
 import javax.annotation.Nullable;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
-import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Eth1DataVote;
@@ -172,7 +172,7 @@ public class DelegateBeaconState implements BeaconState {
   }
 
   @Override
-  public String toStringShort(@Nullable ChainSpec spec) {
-    return delegate.toStringShort(spec);
+  public String toStringShort(@Nullable SpecConstants constants) {
+    return delegate.toStringShort(constants);
   }
 }

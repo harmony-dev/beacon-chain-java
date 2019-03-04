@@ -2,7 +2,7 @@ package org.ethereum.beacon.core.operations.attestation;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
-import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
@@ -61,7 +61,7 @@ public class Crosslink {
     return toString(null);
   }
 
-  public String toString(ChainSpec spec) {
+  public String toString(SpecConstants spec) {
     return MoreObjects.toStringHelper(this)
         .add("epoch", epoch.toString(spec))
         .add("crosslinkDataRoot", crosslinkDataRoot.toStringShort())

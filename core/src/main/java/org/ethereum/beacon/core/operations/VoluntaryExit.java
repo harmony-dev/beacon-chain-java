@@ -3,7 +3,7 @@ package org.ethereum.beacon.core.operations;
 import com.google.common.base.Objects;
 import javax.annotation.Nullable;
 import org.ethereum.beacon.core.BeaconBlockBody;
-import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
@@ -72,7 +72,7 @@ public class VoluntaryExit {
     return toString(null);
   }
 
-  public String toString(@Nullable ChainSpec spec) {
+  public String toString(@Nullable SpecConstants spec) {
     return "VoluntaryExit["
         + "epoch=" + epoch.toString(spec)
         + ", validator=" + validatorIndex

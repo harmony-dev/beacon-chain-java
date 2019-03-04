@@ -21,10 +21,10 @@ public interface BeaconBlockVerifier {
     return CompositeBlockVerifier.Builder.createNew()
         .with(new RandaoVerifier(specHelpers))
         .with(new ProposerSignatureVerifier(specHelpers))
-        .with(new AttestationListVerifier(new AttestationVerifier(specHelpers), specHelpers.getChainSpec()))
-        .with(new DepositListVerifier(new DepositVerifier(specHelpers), specHelpers.getChainSpec()))
-        .with(new ExitListVerifier(new ExitVerifier(specHelpers), specHelpers.getChainSpec()))
-        .with(new ProposerSlashingListVerifier(new ProposerSlashingVerifier(specHelpers), specHelpers.getChainSpec()))
+        .with(new AttestationListVerifier(new AttestationVerifier(specHelpers), specHelpers.getConstants()))
+        .with(new DepositListVerifier(new DepositVerifier(specHelpers), specHelpers.getConstants()))
+        .with(new ExitListVerifier(new ExitVerifier(specHelpers), specHelpers.getConstants()))
+        .with(new ProposerSlashingListVerifier(new ProposerSlashingVerifier(specHelpers), specHelpers.getConstants()))
         .build();
   }
 

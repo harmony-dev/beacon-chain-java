@@ -1,7 +1,6 @@
 package org.ethereum.beacon;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -10,7 +9,7 @@ import org.ethereum.beacon.chain.storage.impl.MemBeaconChainStorageFactory;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.TestUtils;
 import org.ethereum.beacon.core.operations.Deposit;
-import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
@@ -19,7 +18,6 @@ import org.ethereum.beacon.crypto.BLS381.KeyPair;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.pow.DepositContract.ChainStart;
 import org.ethereum.beacon.schedulers.ControlledSchedulers;
-import org.ethereum.beacon.schedulers.LoggerMDCExecutor;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.wire.LocalWireHub;
 import org.ethereum.beacon.wire.WireApi;
@@ -77,8 +75,8 @@ public class LocalMultiValidatorTest {
 
     Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), Hash32.random(rnd));
 
-    ChainSpec chainSpec =
-        new ChainSpec() {
+    SpecConstants specConstants =
+        new SpecConstants() {
           @Override
           public SlotNumber.EpochLength getSlotsPerEpoch() {
             return new SlotNumber.EpochLength(UInt64.valueOf(epochLength));
@@ -105,7 +103,7 @@ public class LocalMultiValidatorTest {
         };
 
     Pair<List<Deposit>, List<KeyPair>> anyDeposits = TestUtils.getAnyDeposits(
-        rnd, SpecHelpers.createWithSSZHasher(chainSpec, () -> 0L), validatorCount);
+        rnd, SpecHelpers.createWithSSZHasher(specConstants, () -> 0L), validatorCount);
     List<Deposit> deposits = anyDeposits.getValue0();
 
     LocalWireHub localWireHub = new LocalWireHub(s -> {});
@@ -116,7 +114,7 @@ public class LocalMultiValidatorTest {
     ControlledSchedulers schedulers = Schedulers.createControlled();
     schedulers.setCurrentTime(genesisTime.getMillis().getValue() + 1000);
     SpecHelpers specHelpers = SpecHelpers
-        .createWithSSZHasher(chainSpec, schedulers::getCurrentTime);
+        .createWithSSZHasher(specConstants, schedulers::getCurrentTime);
     WireApi wireApi = localWireHub.createNewPeer("multi-peer");
 
     MultiValidatorLauncher launcher =
@@ -129,20 +127,20 @@ public class LocalMultiValidatorTest {
             schedulers);
 
     Flux.from(launcher.slotTicker.getTickerStream())
-        .subscribe(slot -> System.out.println("Slot: " + slot.toString(chainSpec, genesisTime)));
+        .subscribe(slot -> System.out.println("Slot: " + slot.toString(specConstants, genesisTime)));
     Flux.from(launcher.observableStateProcessor.getObservableStateStream())
         .subscribe(os -> {
           System.out.println("New observable state: " + os.toString(specHelpers));
         });
     Flux.from(launcher.beaconChainValidator.getProposedBlocksStream())
         .subscribe(block ->System.out.println(" !!!New block: " +
-            block.toString(chainSpec, genesisTime, specHelpers::hash_tree_root)));
+            block.toString(specConstants, genesisTime, specHelpers::hash_tree_root)));
     Flux.from(launcher.beaconChainValidator.getAttestationsStream())
         .subscribe(attest ->System.out.println(" !!!New attestation: " +
-            attest.toString(chainSpec, genesisTime)));
+            attest.toString(specConstants, genesisTime)));
     Flux.from(launcher.beaconChain.getBlockStatesStream())
         .subscribe(blockState ->System.out.println("Block imported: " +
-            blockState.getBlock().toString(chainSpec, genesisTime, specHelpers::hash_tree_root)));
+            blockState.getBlock().toString(specConstants, genesisTime, specHelpers::hash_tree_root)));
     System.out.println("Multi validator started");
 
     while (true) {

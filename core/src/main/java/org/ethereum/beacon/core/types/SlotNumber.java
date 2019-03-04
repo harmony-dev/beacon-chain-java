@@ -2,7 +2,7 @@ package org.ethereum.beacon.core.types;
 
 import java.time.Duration;
 import javax.annotation.Nullable;
-import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.util.uint.UInt64;
 
@@ -86,7 +86,7 @@ public class SlotNumber extends UInt64 implements
 
 
   public String toString(
-      @Nullable ChainSpec spec,
+      @Nullable SpecConstants spec,
       @Nullable Time beaconStart) {
 
     long num = spec == null ? getValue() : this.minus(spec.getGenesisSlot()).getValue();
@@ -110,7 +110,7 @@ public class SlotNumber extends UInt64 implements
     return "#" + num + (extraInfo.isEmpty() ? "" : " (" + extraInfo + ")");
   }
 
-  public String toStringNumber(@Nullable ChainSpec spec) {
+  public String toStringNumber(@Nullable SpecConstants spec) {
     return "" + (spec == null ? getValue() : this.minus(spec.getGenesisSlot()).getValue());
   }
 

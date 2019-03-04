@@ -15,7 +15,6 @@ import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
-import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.Eth1DataVote;
 import org.ethereum.beacon.core.state.PendingAttestationRecord;
 import org.ethereum.beacon.core.types.ValidatorIndex;
@@ -34,20 +33,18 @@ import tech.pegasys.artemis.util.uint.UInt64;
 public class PerBlockTransition implements BlockTransition<BeaconStateEx> {
   private static final Logger logger = LogManager.getLogger(PerBlockTransition.class);
 
-  private final ChainSpec spec;
-  private final SpecHelpers specHelpers;
+  private final SpecHelpers spec;
 
-  public PerBlockTransition(SpecHelpers specHelpers) {
-    this.specHelpers = specHelpers;
-    this.spec = specHelpers.getChainSpec();
+  public PerBlockTransition(SpecHelpers spec) {
+    this.spec = spec;
   }
 
   @Override
   public BeaconStateEx apply(BeaconStateEx stateEx, BeaconBlock block) {
     logger.trace(() -> "Applying block transition to state: (" +
-        specHelpers.hash_tree_root(stateEx).toStringShort() + ") "
-        + stateEx.toString(spec) + ", Block: "
-        + block.toString(spec, stateEx.getGenesisTime(), specHelpers::hash_tree_root));
+        spec.hash_tree_root(stateEx).toStringShort() + ") "
+        + stateEx.toString(spec.getConstants()) + ", Block: "
+        + block.toString(spec.getConstants(), stateEx.getGenesisTime(), spec::hash_tree_root));
 
     TransitionType.BLOCK.checkCanBeAppliedAfter(stateEx.getTransition());
 
@@ -59,10 +56,10 @@ public class PerBlockTransition implements BlockTransition<BeaconStateEx> {
         xor(get_randao_mix(state, get_current_epoch(state)), hash(block.randao_reveal)).
     */
     state.getLatestRandaoMixes().update(
-            specHelpers.get_current_epoch(state).modulo(spec.getLatestRandaoMixesLength()),
+            spec.get_current_epoch(state).modulo(spec.getConstants().getLatestRandaoMixesLength()),
             rm -> Hash32.wrap(Bytes32s.xor(
-                  specHelpers.get_randao_mix(state, specHelpers.get_current_epoch(state)),
-                  specHelpers.hash(block.getRandaoReveal()))));
+                  spec.get_randao_mix(state, spec.get_current_epoch(state)),
+                  spec.hash(block.getRandaoReveal()))));
 
     /*
      Eth1 data
@@ -91,7 +88,7 @@ public class PerBlockTransition implements BlockTransition<BeaconStateEx> {
        Run slash_validator(state, proposer_slashing.proposer_index).
     */
     for (ProposerSlashing proposer_slashing : block.getBody().getProposerSlashings()) {
-      specHelpers.slash_validator(state, proposer_slashing.getProposerIndex());
+      spec.slash_validator(state, proposer_slashing.getProposerIndex());
     }
 
     /*
@@ -109,7 +106,7 @@ public class PerBlockTransition implements BlockTransition<BeaconStateEx> {
           attester_slashing.getSlashableAttestation2().getValidatorIndices());
       for (ValidatorIndex index : intersection) {
         if (!state.getValidatorRegistry().get(index).getSlashed()) {
-          specHelpers.slash_validator(state, index);
+          spec.slash_validator(state, index);
         }
       }
     }
@@ -152,7 +149,7 @@ public class PerBlockTransition implements BlockTransition<BeaconStateEx> {
     for (Deposit deposit : block.getBody().getDeposits()) {
       DepositData depositData = deposit.getDepositData();
       DepositInput depositInput = depositData.getDepositInput();
-      specHelpers.process_deposit(state,
+      spec.process_deposit(state,
           depositInput.getPubKey(),
           depositData.getAmount(),
           depositInput.getProofOfPossession(),
@@ -167,14 +164,14 @@ public class PerBlockTransition implements BlockTransition<BeaconStateEx> {
        Run initiate_validator_exit(state, exit.validator_index).
     */
     for (VoluntaryExit voluntaryExit : block.getBody().getExits()) {
-      specHelpers.initiate_validator_exit(state, voluntaryExit.getValidatorIndex());
+      spec.initiate_validator_exit(state, voluntaryExit.getValidatorIndex());
     }
 
     BeaconStateEx ret = new BeaconStateExImpl(state.createImmutable(),
-        specHelpers.hash_tree_root(block), TransitionType.BLOCK);
+        spec.hash_tree_root(block), TransitionType.BLOCK);
 
     logger.trace(() -> "Block transition result state: (" +
-        specHelpers.hash_tree_root(ret).toStringShort() + ") " + ret.toString(spec));
+        spec.hash_tree_root(ret).toStringShort() + ") " + ret.toString(spec.getConstants()));
 
     return ret;
   }

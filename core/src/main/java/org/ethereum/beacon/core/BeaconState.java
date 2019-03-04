@@ -3,7 +3,7 @@ package org.ethereum.beacon.core;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
-import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.BeaconStateImpl;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Eth1DataVote;
@@ -128,7 +128,7 @@ public interface BeaconState {
    */
   MutableBeaconState createMutableCopy();
 
-  default String toStringShort(@Nullable ChainSpec spec) {
+  default String toStringShort(@Nullable SpecConstants spec) {
     String ret = "BeaconState["
         + "@ " + getSlot().toString(spec, getGenesisTime())
         + ", " + getForkData().toString(spec)
