@@ -1,6 +1,8 @@
 package org.ethereum.beacon.validator;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 
 import java.util.Random;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
@@ -20,13 +22,12 @@ public class BeaconChainValidatorTest {
   @Test
   public void recentStateIsKept() {
     Random random = new Random();
-    Schedulers schedulers = Schedulers.createDefault();
     SpecHelpers specHelpers =
         Mockito.spy(SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT));
 
     BeaconChainValidator validator =
         ValidatorServiceTestUtil.mockBeaconChainValidator(random, specHelpers);
-    Mockito.doReturn(true).when(specHelpers).is_current_slot(any(), any());
+    Mockito.doReturn(true).when(specHelpers).is_current_slot(any(), anyLong());
     Mockito.doNothing().when(validator).runTasks(any());
 
     SlotNumber currentSlot = SlotNumber.of(Math.abs(random.nextLong()) % 10 + 10);
@@ -48,7 +49,6 @@ public class BeaconChainValidatorTest {
   @Test
   public void outboundRecentStateIsIgnored() {
     Random random = new Random();
-    Schedulers schedulers = Schedulers.createDefault();
     SpecHelpers specHelpers =
         Mockito.spy(SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT));
 
@@ -63,7 +63,7 @@ public class BeaconChainValidatorTest {
     ObservableBeaconState currentSlotState =
         ObservableBeaconStateTestUtil.createInitialState(random, specHelpers, currentSlot);
 
-    Mockito.doReturn(true).when(specHelpers).is_current_slot(currentSlotState.getLatestSlotState(), any());
+    Mockito.doReturn(true).when(specHelpers).is_current_slot(eq(currentSlotState.getLatestSlotState()), anyLong());
 
     // state wasn't kept
     validator.onNewState(outdatedState);
@@ -81,7 +81,6 @@ public class BeaconChainValidatorTest {
   @Test
   public void initService() {
     Random random = new Random();
-    Schedulers schedulers = Schedulers.createDefault();
     SpecHelpers specHelpers =
         Mockito.spy(SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT));
 
@@ -102,7 +101,7 @@ public class BeaconChainValidatorTest {
     ObservableBeaconState currentSlotState =
         ObservableBeaconStateTestUtil.createInitialState(random, specHelpers, currentSlot);
 
-    Mockito.doReturn(true).when(specHelpers).is_current_slot(any(), any());
+    Mockito.doReturn(true).when(specHelpers).is_current_slot(any(), anyLong());
     Mockito.doReturn(validatorIndex).when(specHelpers).get_validator_index_by_pubkey(any(), any());
     Mockito.doNothing().when(validator).runTasks(any());
 
@@ -122,7 +121,6 @@ public class BeaconChainValidatorTest {
   @Test
   public void runValidatorTasks() {
     Random random = new Random();
-    Schedulers schedulers = Schedulers.createDefault();
     SpecHelpers specHelpers =
         Mockito.spy(SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT));
 
@@ -144,7 +142,7 @@ public class BeaconChainValidatorTest {
         ObservableBeaconStateTestUtil.createInitialState(
             random, specHelpers, currentSlot.increment().increment());
 
-    Mockito.doReturn(true).when(specHelpers).is_current_slot(any(), any());
+    Mockito.doReturn(true).when(specHelpers).is_current_slot(any(), anyLong());
     Mockito.doReturn(validatorIndex).when(specHelpers).get_validator_index_by_pubkey(any(), any());
     Mockito.doNothing().when(validator).runTasks(any());
 
