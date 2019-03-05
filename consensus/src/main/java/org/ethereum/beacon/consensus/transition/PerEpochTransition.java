@@ -18,7 +18,6 @@ import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.consensus.TransitionType;
 import org.ethereum.beacon.core.MutableBeaconState;
-import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.state.Eth1DataVote;
 import org.ethereum.beacon.core.state.PendingAttestationRecord;
@@ -76,12 +75,11 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
 
     /*
       Let current_epoch = get_current_epoch(state).
-      Let previous_epoch = current_epoch - 1 if current_epoch > GENESIS_EPOCH else current_epoch.
+      Let previous_epoch = get_previous_epoch(state).
       Let next_epoch = current_epoch + 1.
      */
     EpochNumber current_epoch = spec.get_current_epoch(state);
-    EpochNumber previous_epoch = current_epoch.greater(spec.get_genesis_epoch()) ?
-        current_epoch.decrement() : current_epoch;
+    EpochNumber previous_epoch = spec.get_previous_epoch(state);
     EpochNumber next_epoch = current_epoch.increment();
 
     /*
@@ -92,14 +90,11 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
      Helpers: Validators attesting during the current epoch:
     */
 
-    // Let current_total_balance = sum([get_effective_balance(state, i)
-    //    for i in get_active_validator_indices(state.validator_registry, current_epoch)])
+    // Let current_total_balance = get_total_balance(state,
+    //      get_active_validator_indices(state.validator_registry, current_epoch)).
     List<ValidatorIndex> current_active_validator_indices = spec.get_active_validator_indices(
         state.getValidatorRegistry(), current_epoch);
-    Gwei current_total_balance = current_active_validator_indices.stream()
-        .map(i -> spec.get_effective_balance(state, i))
-        .reduce(Gwei::plus)
-        .orElse(Gwei.ZERO);
+    Gwei current_total_balance = spec.get_total_balance(state, current_active_validator_indices);
     logger.trace(() -> current_active_validator_indices.size() + " active validators with total balance " + current_total_balance);
 
     // Let current_epoch_attestations =
@@ -114,13 +109,11 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
     // Validators justifying the epoch boundary block at the start of the current epoch:
 
     // Let current_epoch_boundary_attestations = [a for a in current_epoch_attestations
-    //      if a.data.epoch_boundary_root == get_block_root(state, get_epoch_start_slot(current_epoch))
-    //      and a.data.justified_epoch == state.justified_epoch].
+    //      if a.data.epoch_boundary_root == get_block_root(state, get_epoch_start_slot(current_epoch)).
     List<PendingAttestationRecord> current_epoch_boundary_attestations =
         current_epoch_attestations.stream().filter(a ->
             a.getData().getEpochBoundaryRoot().equals(
                 spec.get_block_root(state, spec.get_epoch_start_slot(current_epoch)))
-                && a.getData().getJustifiedEpoch().equals(state.getJustifiedEpoch())
         ).collect(Collectors.toList());
 
     // Let current_epoch_boundary_attester_indices be the union of the validator index sets
@@ -136,12 +129,9 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
 
 
     // Let current_epoch_boundary_attesting_balance =
-    //    sum([get_effective_balance(state, i) for i in current_epoch_boundary_attester_indices]).
-    Gwei current_epoch_boundary_attesting_balance = current_epoch_boundary_attester_indices
-        .stream()
-        .map(i -> spec.get_effective_balance(state, i))
-        .reduce(Gwei::plus)
-        .orElse(Gwei.ZERO);
+    //    get_total_balance(state, current_epoch_boundary_attester_indices).
+    Gwei current_epoch_boundary_attesting_balance = spec.get_total_balance(state,
+        current_epoch_boundary_attester_indices);
 
     if (summary != null) {
       summary.currentEpochSummary.activeAttesters = current_active_validator_indices;
@@ -156,12 +146,9 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
     List<ValidatorIndex> previous_active_validator_indices = spec
         .get_active_validator_indices(state.getValidatorRegistry(), previous_epoch);
 
-    //Let previous_total_balance = sum([get_effective_balance(state, i)
-    //    for i in get_active_validator_indices(state.validator_registry, previous_epoch)]).
-    Gwei previous_total_balance = previous_active_validator_indices.stream()
-        .map(i -> spec.get_effective_balance(state, i))
-        .reduce(Gwei::plus)
-        .orElse(Gwei.ZERO);
+    // Let previous_total_balance = get_total_balance(state,
+    //    get_active_validator_indices(state.validator_registry, previous_epoch)).
+    Gwei previous_total_balance = spec.get_total_balance(state, previous_active_validator_indices);
 
     // Validators that made an attestation during the previous epoch:
 
@@ -184,37 +171,17 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
 
     // Validators targeting the previous justified slot:
 
-    // Let previous_epoch_justified_attestations =
-    //    [a for a in current_epoch_attestations + previous_epoch_attestations
-    //        if a.data.justified_epoch == state.previous_justified_epoch].
-    List<PendingAttestationRecord> previous_epoch_justified_attestations = Stream
-        .concat(current_epoch_attestations.stream(), previous_epoch_attestations.stream())
-        .filter(a -> a.getData().getJustifiedEpoch().equals(state.getPreviousJustifiedEpoch()))
-        .collect(Collectors.toList());
-
-    // Let previous_epoch_justified_attester_indices be the union of the validator index sets given by
-    // [get_attestation_participants(state, a.data, a.aggregation_bitfield)
-    //      for a in previous_epoch_justified_attestations].
-    Set<ValidatorIndex> previous_epoch_justified_attester_indices = previous_epoch_justified_attestations
-        .stream()
-        .flatMap(a -> spec.get_attestation_participants(
-            state, a.getData(), a.getAggregationBitfield()).stream())
-        .collect(Collectors.toSet());
-
-    // Let previous_epoch_justified_attesting_balance = sum([get_effective_balance(state, i)
-    //    for i in previous_epoch_justified_attester_indices]).
-    Gwei previous_epoch_justified_attesting_balance = previous_epoch_justified_attester_indices
-        .stream()
-        .map(i -> spec.get_effective_balance(state, i))
-        .reduce(Gwei::plus)
-        .orElse(Gwei.ZERO);
+    // Let previous_epoch_attesting_balance =
+    //    get_total_balance(state, previous_epoch_attester_indices).
+    Gwei previous_epoch_attesting_balance =
+        spec.get_total_balance(state, previous_epoch_attester_indices);
 
     // Validators justifying the epoch boundary block at the start of the previous epoch:
 
-    // Let previous_epoch_boundary_attestations = [a for a in previous_epoch_justified_attestations
+    // Let previous_epoch_boundary_attestations = [a for a in previous_epoch_attestations
     //    if a.data.epoch_boundary_root == get_block_root(state, get_epoch_start_slot(previous_epoch))].
     List<PendingAttestationRecord> previous_epoch_boundary_attestations =
-        previous_epoch_justified_attestations.stream()
+        previous_epoch_attestations.stream()
             .filter(a -> a.getData().getEpochBoundaryRoot()
                 .equals(spec.get_block_root(state, spec.get_epoch_start_slot(previous_epoch))))
             .collect(Collectors.toList());
@@ -228,13 +195,10 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
             state, a.getData(), a.getAggregationBitfield()).stream())
         .collect(Collectors.toSet());
 
-    // Let previous_epoch_boundary_attesting_balance = sum([get_effective_balance(state, i)
-    //    for i in previous_epoch_boundary_attester_indices]).
-    Gwei previous_epoch_boundary_attesting_balance = previous_epoch_boundary_attester_indices
-        .stream()
-        .map(i -> spec.get_effective_balance(state, i))
-        .reduce(Gwei::plus)
-        .orElse(Gwei.ZERO);
+    // Let previous_epoch_boundary_attesting_balance =
+    //    get_total_balance(state, previous_epoch_boundary_attester_indices).
+    Gwei previous_epoch_boundary_attesting_balance =
+        spec.get_total_balance(state, previous_epoch_boundary_attester_indices);
 
     // Validators attesting to the expected beacon chain head during the previous epoch:
 
@@ -254,12 +218,10 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
             state, a.getData(), a.getAggregationBitfield()).stream())
         .collect(Collectors.toSet());
 
-    // Let previous_epoch_head_attesting_balance = sum([get_effective_balance(state, i)
-    //    for i in previous_epoch_head_attester_indices]).
-    Gwei previous_epoch_head_attesting_balance = previous_epoch_head_attester_indices.stream()
-        .map(i -> spec.get_effective_balance(state, i))
-        .reduce(Gwei::plus)
-        .orElse(Gwei.ZERO);
+    // Let previous_epoch_head_attesting_balance =
+    //    get_total_balance(state, previous_epoch_head_attester_indices).
+    Gwei previous_epoch_head_attesting_balance =
+        spec.get_total_balance(state, previous_epoch_head_attester_indices);
 
     if (summary != null) {
       summary.previousEpochSummary.activeAttesters = current_active_validator_indices;
@@ -268,8 +230,8 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
       summary.previousEpochSummary.boundaryAttestingBalance = previous_epoch_boundary_attesting_balance;
       summary.headAttesters.addAll(previous_epoch_head_attester_indices);
       summary.headAttestingBalance = previous_epoch_head_attesting_balance;
-      summary.justifiedAttesters.addAll(previous_epoch_justified_attester_indices);
-      summary.justifiedAttestingBalance = previous_epoch_justified_attesting_balance;
+      summary.justifiedAttesters.addAll(previous_epoch_attester_indices);
+      summary.justifiedAttestingBalance = previous_epoch_attesting_balance;
     }
 
 
@@ -308,15 +270,25 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
         // Let winning_root(crosslink_committee) be equal to the value of crosslink_data_root
         // such that sum([get_effective_balance(state, i)
         // for i in attesting_validator_indices(crosslink_committee, crosslink_data_root)])
-        // is maximized (ties broken by favoring lower crosslink_data_root values).
+        // is maximized (ties broken by favoring lexicographically smallest crosslink_data_root values).
         // TODO not sure this is correct implementation
         Gwei sum = attesting_validator_indices_tmp.stream()
             .map(i -> spec.get_effective_balance(state, i))
             .reduce(Gwei::plus)
             .orElse(Gwei.ZERO);
-        winning_root_tmp.compute(crosslink_committee, (k, v) ->
-            v == null || sum.compareTo(v.getValue0()) > 0 ?
-                Pair.with(sum, crosslink_data_root) : v
+        winning_root_tmp.compute(crosslink_committee, (k, v) -> {
+            if (v == null) {
+              return Pair.with(sum, crosslink_data_root);
+            }
+            if (sum.greater(v.getValue0())) {
+              return Pair.with(sum, crosslink_data_root);
+            }
+            if (sum.equals(v.getValue0()) && crosslink_data_root.compareTo(v.getValue1()) > 0) {
+              return Pair.with(sum, crosslink_data_root);
+            }
+
+            return v;
+          }
         );
       }
     }
@@ -476,10 +448,9 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
     For every slot in range(get_epoch_start_slot(previous_epoch), get_epoch_start_slot(next_epoch)),
     let crosslink_committees_at_slot = get_crosslink_committees_at_slot(state, slot).
        For every (crosslink_committee, shard) in crosslink_committees_at_slot, compute:
-           Set state.latest_crosslinks[shard] = Crosslink(
-               epoch=current_epoch,
-               crosslink_data_root=winning_root(crosslink_committee))
-           if 3 * total_attesting_balance(crosslink_committee) >= 2 * total_balance(crosslink_committee).
+           Set state.latest_crosslinks[shard] = Crosslink(epoch=slot_to_epoch(slot),
+              crosslink_data_root=winning_root(crosslink_committee))
+           if 3 * total_attesting_balance(crosslink_committee) >= 2 * get_total_balance(crosslink_committee).
     */
     for (SlotNumber slot : spec.get_epoch_start_slot(previous_epoch)
             .iterateTo(spec.get_epoch_start_slot(next_epoch))) {
@@ -489,9 +460,9 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
         List<ValidatorIndex> crosslink_committee = committee.getCommittee();
         ShardNumber shard = committee.getShard();
         if (total_attesting_balance.apply(crosslink_committee).times(3).greaterEqual(
-            total_balance.apply(crosslink_committee).times(2))) {
+            spec.get_total_balance(state, crosslink_committee).times(2))) {
           state.getLatestCrosslinks().set(shard,
-              new Crosslink(current_epoch, winning_root.get(crosslink_committee)));
+              new Crosslink(spec.slot_to_epoch(slot), winning_root.get(crosslink_committee)));
         }
       }
     }
@@ -550,11 +521,11 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
 
       //  Expected FFG source:
 
-      //  Any validator index in previous_epoch_justified_attester_indices gains
-      //    base_reward(state, index) * previous_epoch_justified_attesting_balance // previous_total_balance.
-      for (ValidatorIndex index : previous_epoch_justified_attester_indices) {
+      //  Any validator index in previous_epoch_attester_indices gains base_reward(state, index) *
+      //      previous_epoch_attesting_balance // previous_total_balance.
+      for (ValidatorIndex index : previous_epoch_attester_indices) {
         Gwei reward = base_reward.apply(index)
-            .times(previous_epoch_justified_attesting_balance)
+            .times(previous_epoch_attesting_balance)
             .dividedBy(previous_total_balance);
         state.getValidatorBalances().update(index, balance ->
             balance.plus(reward));
@@ -563,17 +534,16 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
           summary.attestationRewards.put(index, reward);
         }
       }
-      if (logger.isTraceEnabled() && !previous_epoch_justified_attester_indices.isEmpty()) {
+      if (logger.isTraceEnabled() && !previous_epoch_attester_indices.isEmpty()) {
         logger.trace("Rewarded: Previous epoch justified attesters: "
-            + previous_epoch_justified_attester_indices);
+            + previous_epoch_attester_indices);
       }
 
-      //  Any active validator index not in previous_epoch_justified_attester_indices loses
-      //    base_reward(state, index).
+      //  Any active validator index not in previous_epoch_attester_indices loses base_reward(state, index).
       //  FIXME 'active validator' - not exact meaning
       List<ValidatorIndex> previous_epoch_justified_attester_loosers = new ArrayList<>();
       for (ValidatorIndex index : previous_active_validator_indices) {
-        if (!previous_epoch_justified_attester_indices.contains(index)) {
+        if (!previous_epoch_attester_indices.contains(index)) {
           Gwei penalty = base_reward.apply(index);
           state.getValidatorBalances().update(index, balance -> balance.minus(penalty));
 
@@ -689,11 +659,11 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
         summary.noFinality = true;
       }
 
-      //  Any active validator index not in previous_epoch_justified_attester_indices, loses
+      //  Any active validator index not in previous_epoch_attester_indices, loses
       //      inactivity_penalty(state, index, epochs_since_finality).
       List<ValidatorIndex> previous_epoch_justified_attester_loosers = new ArrayList<>();
       for (ValidatorIndex index : previous_active_validator_indices) {
-        if (!previous_epoch_justified_attester_indices.contains(index)) {
+        if (!previous_epoch_attester_indices.contains(index)) {
           Gwei penalty = inactivity_penalty.apply(index, epochs_since_finality);
           state.getValidatorBalances().update(index, balance -> balance.minus(penalty));
           previous_epoch_justified_attester_loosers.add(index);
@@ -744,8 +714,8 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
         logger.debug("Penalized: Previous epoch head attesters: " + previous_epoch_head_attester_loosers);
       }
 
-      //  Any active_validator index with validator.initiated_exit <= current_epoch, loses
-      //      2 * inactivity_penalty(state, index, epochs_since_finality) + base_reward(state, index).
+      //  Any active validator index with validator.slashed == True,
+      //  loses 2 * inactivity_penalty(state, index, epochs_since_finality) + base_reward(state, index).
       List<ValidatorIndex> inactive_attester_loosers = new ArrayList<>();
       for (ValidatorIndex index : previous_active_validator_indices) {
         ValidatorRecord validator = state.getValidatorRegistry().get(index);
@@ -813,10 +783,10 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
 
     For every slot in range(get_epoch_start_slot(previous_epoch), get_epoch_start_slot(current_epoch)):
        Let crosslink_committees_at_slot = get_crosslink_committees_at_slot(state, slot).
-       For every (crosslink_committee, shard) in crosslink_committees_at_slot:
+       For every (crosslink_committee, shard) in crosslink_committees_at_slot and every index in crosslink_committee:
            If index in attesting_validators(crosslink_committee),
                state.validator_balances[index] += base_reward(state, index) *
-                   total_attesting_balance(crosslink_committee) // total_balance(crosslink_committee)).
+                   total_attesting_balance(crosslink_committee) // get_total_balance(state, crosslink_committee)).
            If index not in attesting_validators(crosslink_committee),
                state.validator_balances[index] -= base_reward(state, index).
     */
@@ -829,7 +799,9 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
         Set<ValidatorIndex> attesting_validator_set = attesting_validators.apply(crosslink_committee);
         for (ValidatorIndex index : crosslink_committee) {
           if (attesting_validator_set.contains(index)) {
-            state.getValidatorBalances().update(index, vb -> vb.plus(base_reward.apply(index)));
+            state.getValidatorBalances().update(index,
+                vb -> vb.plus(base_reward.apply(index).mulDiv(total_attesting_balance.apply(crosslink_committee),
+                            spec.get_total_balance(state, crosslink_committee))));
             crosslink_attestation_gainers.add(index);
           } else {
             state.getValidatorBalances().update(index, vb -> vb.minus(base_reward.apply(index)));
@@ -943,7 +915,8 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
     }
 
     // Regardless of whether or not a validator set change happens, run the following:
-    spec.process_penalties_and_exits(state);
+    spec.process_slashings(state);
+    spec.process_exit_queue(state);
 
     /*
      Final updates

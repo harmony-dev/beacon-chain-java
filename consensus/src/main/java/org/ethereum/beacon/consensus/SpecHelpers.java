@@ -6,6 +6,7 @@ import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -606,7 +607,7 @@ public class SpecHelpers {
       """
       return sum([get_effective_balance(state, i) for i in validators])
    */
-  public Gwei get_total_balance(BeaconState state, List<ValidatorIndex> validators) {
+  public Gwei get_total_balance(BeaconState state, Collection<ValidatorIndex> validators) {
     return validators.stream().map(index -> get_effective_balance(state, index))
         .reduce(Gwei.ZERO, Gwei::plus);
   }
@@ -896,11 +897,8 @@ public class SpecHelpers {
     List<ValidatorIndex> active_validator_indices = get_active_validator_indices(
         state.getValidatorRegistry(), current_epoch);
     // # The total effective balance of active validators
-    //    total_balance = sum([get_effective_balance(state, i) for i in active_validator_indices])
-    Gwei total_balance = Gwei.ZERO;
-    for (ValidatorIndex i : active_validator_indices) {
-      total_balance = total_balance.plus(get_effective_balance(state, i));
-    }
+    //    total_balance = get_total_balance(state, active_validator_indices)
+    Gwei total_balance = get_total_balance(state, active_validator_indices);
 
     //    # The maximum balance churn in Gwei (for deposits and exits separately)
     //    max_balance_churn = max(
@@ -916,10 +914,9 @@ public class SpecHelpers {
     Gwei balance_churn = Gwei.ZERO;
     for (ValidatorIndex index : state.getValidatorRegistry().size()) {
       ValidatorRecord validator = state.getValidatorRegistry().get(index);
-      //  if validator.activation_epoch > get_delayed_activation_exit_epoch(current_epoch)
-      //      and state.validator_balances[index] >= MAX_DEPOSIT_AMOUNT:
-      if (validator.getActivationEpoch().greater(
-              get_delayed_activation_exit_epoch(current_epoch))
+      //  if validator.activation_epoch == FAR_FUTURE_EPOCH
+      //     and state.validator_balances[index] >= MAX_DEPOSIT_AMOUNT:
+      if (validator.getActivationEpoch().equals(constants.getFarFutureEpoch())
           && state.getValidatorBalances().get(index).greaterEqual(
               constants.getMaxDepositAmount())) {
 
@@ -945,8 +942,8 @@ public class SpecHelpers {
     //    for index, validator in enumerate(state.validator_registry):
     for (ValidatorIndex index : state.getValidatorRegistry().size().iterateFromZero()) {
       ValidatorRecord validator = state.getValidatorRegistry().get(index);
-      //  if validator.exit_epoch > get_delayed_activation_exit_epoch(current_epoch)
-      //      and validator.slashed:
+      //  if validator.activation_epoch == FAR_FUTURE_EPOCH
+      //      and validator.initiated_exit:
       if (validator.getActivationEpoch().equals(constants.getFarFutureEpoch())
           && validator.getInitiatedExit()) {
         //   # Check the balance churn would be within the allowance
@@ -991,9 +988,10 @@ public class SpecHelpers {
   }
 
   /*
-   def process_penalties_and_exits(state: BeaconState) -> None:
+      Process the slashings.
+      Note that this function mutates ``state``.
   */
-  public void process_penalties_and_exits(MutableBeaconState state) {
+  public void process_slashings(MutableBeaconState state) {
     // current_epoch = get_current_epoch(state)
     EpochNumber current_epoch = get_current_epoch(state);
 
@@ -1026,8 +1024,10 @@ public class SpecHelpers {
         Gwei total_at_end = state.getLatestSlashedBalances().get(epoch_index);
         //    total_penalties = total_at_end - total_at_start
         Gwei total_penalties = total_at_end.minus(total_at_start);
-        //    penalty = get_effective_balance(state, index) *
-        //        min(total_penalties * 3, total_balance) // total_balance
+        //    penalty = max(
+        //      get_effective_balance(state, index) * min(total_penalties * 3, total_balance) // total_balance,
+        //      get_effective_balance(state, index) // MIN_PENALTY_QUOTIENT
+        //    )
         Gwei penalty =
             get_effective_balance(state, index)
                 .mulDiv(UInt64s.min(total_penalties.times(3), total_balance), total_balance);
@@ -1035,18 +1035,25 @@ public class SpecHelpers {
         state.getValidatorBalances().update(index, balance -> balance.minus(penalty));
       }
     }
+  }
+
+  /*
+      Process the exit queue.
+      Note that this function mutates ``state``.
+  */
+  public void process_exit_queue(MutableBeaconState state) {
 
     /*
        def eligible(index):
-           validator = state.validator_registry[index]
-        if validator.initiated_exit <= current_epoch:
-            penalized_withdrawal_epochs = LATEST_SLASHED_EXIT_LENGTH // 2
-            return current_epoch >= validator.initiated_exit + penalized_withdrawal_epochs
+        validator = state.validator_registry[index]
+        # Filter out dequeued validators
+        if validator.withdrawable_epoch != FAR_FUTURE_EPOCH:
+            return False
+        # Dequeue if the minimum amount of time has passed
         else:
-            return current_epoch >= validator.exit_epoch + MIN_VALIDATOR_WITHDRAWABILITY_DELAY
+            return get_current_epoch(state) >= validator.exit_epoch + MIN_VALIDATOR_WITHDRAWABILITY_DELAY
 
-       all_indices = list(range(len(state.validator_registry)))
-       eligible_indices = filter(eligible, all_indices)
+       eligible_indices = filter(eligible, list(range(len(state.validator_registry))))
     */
     List<ValidatorIndex> eligible_indices = new ArrayList<>();
     for (ValidatorIndex index : state.getValidatorRegistry().size().iterateFromZero()) {
@@ -1064,12 +1071,14 @@ public class SpecHelpers {
     // # Sort in order of exit epoch, and validators that exit within the same epoch exit in order of validator index
     //  sorted_indices = sorted(eligible_indices,
     //          key=lambda index: state.validator_registry[index].exit_epoch)
-
-    //    sorted_indices = sorted(eligible_indices,
-    //          key=lambda index: state.validator_registry[index].exit_count)
     eligible_indices.sort(Comparator.comparing(i ->
         state.getValidatorRegistry().get(i).getExitEpoch()));
     List<ValidatorIndex> sorted_indices = eligible_indices;
+
+    // for dequeues, index in enumerate(sorted_indices):
+    //        if dequeues >= MAX_EXIT_DEQUEUES_PER_EPOCH:
+    //            break
+    //        prepare_validator_for_withdrawal(state, index)
 
     //    withdrawn_so_far = 0
     int withdrawn_so_far = 0;
