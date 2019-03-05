@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Set;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
+import org.ethereum.beacon.core.operations.Transfer;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
@@ -144,7 +145,8 @@ public class SSZSerializableAnnotationTest {
                 SlotNumber.class,
                 Time.class,
                 Millis.class,
-                ValidatorIndex.class));
+                ValidatorIndex.class,
+                Transfer.class));
     Class[] allClasses = getClasses("org.ethereum.beacon.core");
 
     for (Class clazz : allClasses) {

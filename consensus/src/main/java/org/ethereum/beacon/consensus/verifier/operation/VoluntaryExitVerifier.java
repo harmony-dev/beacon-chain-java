@@ -50,7 +50,7 @@ public class VoluntaryExitVerifier implements OperationVerifier<VoluntaryExit> {
     }
 
     // Let exit_message = hash_tree_root(
-    //    Exit(
+    //    VoluntaryExitVerifier(
     //        epoch=exit.epoch,
     //        validator_index=exit.validator_index,
     //        signature=EMPTY_SIGNATURE)).

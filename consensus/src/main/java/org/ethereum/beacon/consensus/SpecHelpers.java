@@ -650,44 +650,6 @@ public class SpecHelpers {
   }
 
   /*
-    def validate_proof_of_possession(state: BeaconState,
-                                     pubkey: int,
-                                     proof_of_possession: bytes,
-                                     withdrawal_credentials: Hash32) -> bool:
-        proof_of_possession_data = DepositInput(
-            pubkey=pubkey,
-            withdrawal_credentials=withdrawal_credentials,
-            proof_of_possession=EMPTY_SIGNATURE,
-        )
-
-        return bls_verify(
-            pubkey=pubkey,
-            message=hash_tree_root(proof_of_possession_data),
-            signature=proof_of_possession,
-            domain=get_domain(
-                state.fork,
-                get_current_epoch(state),
-                DOMAIN_DEPOSIT,
-            )
-        )
- */
-  public boolean validate_proof_of_possession(
-      MutableBeaconState state,
-      BLSPubkey pubkey,
-      BLSSignature proof_of_possession,
-      Hash32 withdrawal_credentials) {
-
-    DepositInput deposit_input =
-        new DepositInput(pubkey, withdrawal_credentials, constants.getEmptySignature());
-
-    return bls_verify(
-        pubkey,
-        signed_root(deposit_input, "proofOfPossession"),
-        proof_of_possession,
-        get_domain(state.getForkData(), get_current_epoch(state), SignatureDomains.DEPOSIT));
-  }
-
-  /*
     def process_deposit(state: BeaconState, deposit: Deposit) -> None:
       """
       Process a deposit from Ethereum 1.0.
@@ -719,7 +681,7 @@ public class SpecHelpers {
     boolean proof_is_valid =
         bls_verify(
             deposit_input.getPubKey(),
-            signed_root(deposit_input, "proof_of_possession"),
+            signed_root(deposit_input, "proofOfPossession"),
             deposit_input.getProofOfPossession(),
             get_domain(state.getForkData(), get_current_epoch(state), SignatureDomains.DEPOSIT));
 

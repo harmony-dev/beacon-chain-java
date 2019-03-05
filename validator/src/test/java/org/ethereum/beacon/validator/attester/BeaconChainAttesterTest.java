@@ -13,6 +13,7 @@ import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustodyBit;
+import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.spec.SignatureDomains;
 import org.ethereum.beacon.core.types.BLSSignature;
@@ -43,13 +44,12 @@ public class BeaconChainAttesterTest {
     int indexIntoCommittee = Math.abs(random.nextInt() % committee.size());
     ValidatorIndex validatorIndex = committee.get(indexIntoCommittee);
     Hash32 epochBoundaryRoot = Hash32.random(random);
-    Hash32 latestCrosslinkRoot = Hash32.random(random);
     Hash32 justifiedBlockRoot = Hash32.random(random);
     ShardNumber shard = specHelpers.getConstants().getBeaconChainShardNumber();
 
     Mockito.doReturn(committee).when(attester).getCommittee(any(), any());
     Mockito.doReturn(epochBoundaryRoot).when(attester).getEpochBoundaryRoot(any(), any());
-    Mockito.doReturn(latestCrosslinkRoot).when(attester).getLatestCrosslink(any(), any());
+    Mockito.doReturn(Crosslink.EMPTY).when(attester).getLatestCrosslink(any(), any());
     Mockito.doReturn(justifiedBlockRoot).when(attester).getJustifiedBlockRoot(any());
 
     Attestation attestation =
@@ -64,7 +64,7 @@ public class BeaconChainAttesterTest {
         specHelpers.hash_tree_root(initiallyObservedState.getHead()), data.getBeaconBlockRoot());
     Assert.assertEquals(epochBoundaryRoot, data.getEpochBoundaryRoot());
     Assert.assertEquals(Hash32.ZERO, data.getCrosslinkDataRoot());
-    Assert.assertEquals(latestCrosslinkRoot, data.getLatestCrosslink().getCrosslinkDataRoot());
+    Assert.assertEquals(Hash32.ZERO, data.getLatestCrosslink().getCrosslinkDataRoot());
     Assert.assertEquals(state.getJustifiedEpoch(), data.getJustifiedEpoch());
     Assert.assertEquals(justifiedBlockRoot, data.getJustifiedBlockRoot());
 
