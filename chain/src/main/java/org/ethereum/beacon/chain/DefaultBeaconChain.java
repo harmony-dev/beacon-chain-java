@@ -39,8 +39,8 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   private final BeaconChainStorage chainStorage;
   private final BeaconTupleStorage tupleStorage;
 
-  private final ReplayProcessor<BeaconTuple> blockSink = ReplayProcessor.cacheLast();
-  private final Publisher<BeaconTuple> blockStream;
+  private final ReplayProcessor<BeaconTupleDetails> blockSink = ReplayProcessor.cacheLast();
+  private final Publisher<BeaconTupleDetails> blockStream;
   private final Schedulers schedulers;
 
   private BeaconTuple recentlyProcessed;
@@ -78,7 +78,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
       initializeStorage();
     }
     this.recentlyProcessed = fetchRecentTuple();
-    blockSink.onNext(recentlyProcessed);
+    blockSink.onNext(new BeaconTupleDetails(recentlyProcessed));
   }
 
   private BeaconTuple fetchRecentTuple() {
@@ -152,7 +152,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     chainStorage.commit();
 
     this.recentlyProcessed = newTuple;
-    blockSink.onNext(newTuple);
+    blockSink.onNext(new BeaconTupleDetails(block, preBlockState, postBlockState, postEpochState));
 
     logger.info(
         "new block inserted: {}",
@@ -231,7 +231,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   }
 
   @Override
-  public Publisher<BeaconTuple> getBlockStatesStream() {
+  public Publisher<BeaconTupleDetails> getBlockStatesStream() {
     return blockStream;
   }
 }

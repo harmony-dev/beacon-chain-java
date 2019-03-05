@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import org.ethereum.beacon.chain.BeaconChainHead;
+import org.ethereum.beacon.chain.BeaconTupleDetails;
 import org.ethereum.beacon.chain.LMDGhostHeadFunction;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.chain.BeaconTuple;
@@ -48,7 +49,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
 
   private final Publisher<SlotNumber> slotTicker;
   private final Publisher<Attestation> attestationPublisher;
-  private final Publisher<BeaconTuple> beaconPublisher;
+  private final Publisher<BeaconTupleDetails> beaconPublisher;
 
   private static final int UPDATE_MILLIS = 500;
   private Scheduler regularJobExecutor;
@@ -73,7 +74,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
       BeaconChainStorage chainStorage,
       Publisher<SlotNumber> slotTicker,
       Publisher<Attestation> attestationPublisher,
-      Publisher<BeaconTuple> beaconPublisher,
+      Publisher<BeaconTupleDetails> beaconPublisher,
       SpecHelpers specHelpers,
       StateTransition<BeaconStateEx> perSlotTransition,
       StateTransition<BeaconStateEx> perEpochTransition,
@@ -174,7 +175,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   }
 
 
-  private void onNewBlockTuple(BeaconTuple beaconTuple) {
+  private void onNewBlockTuple(BeaconTupleDetails beaconTuple) {
     this.latestState = beaconTuple.getState();
     runTaskInSeparateThread(() -> {
       addAttestationsFromState(beaconTuple.getState());

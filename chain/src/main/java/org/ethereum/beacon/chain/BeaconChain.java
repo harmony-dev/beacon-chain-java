@@ -4,7 +4,7 @@ import org.reactivestreams.Publisher;
 
 public interface BeaconChain {
 
-  Publisher<BeaconTuple> getBlockStatesStream();
+  Publisher<BeaconTupleDetails> getBlockStatesStream();
 
   /**
    * Returns the most recent processed tuple.
