@@ -1,20 +1,5 @@
 package org.ethereum.beacon.consensus;
 
-import static java.lang.Math.min;
-import static java.util.stream.Collectors.toList;
-import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import javax.annotation.Nonnull;
 import org.ethereum.beacon.consensus.hasher.ObjectHasher;
 import org.ethereum.beacon.consensus.hasher.SSZObjectHasher;
 import org.ethereum.beacon.core.BeaconBlock;
@@ -56,6 +41,24 @@ import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
 import tech.pegasys.artemis.util.uint.UInt64s;
 
+import javax.annotation.Nonnull;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import static java.lang.Math.min;
+import static java.util.stream.Collectors.toList;
+import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
+
 /**
  * https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md#helper-functions
  */
@@ -63,6 +66,9 @@ public class SpecHelpers {
   private final ChainSpec spec;
   private final ObjectHasher<Hash32> objectHasher;
   private final Function<BytesValue, Hash32> hashFunction;
+
+  private static final int MAX_CACHE_ENTRIES = 512;
+  private Map<String, Hash32> hashCache;
 
   /**
    * Creates a SpecHelpers instance with given {@link ChainSpec} and time supplier,
@@ -86,6 +92,13 @@ public class SpecHelpers {
       ObjectHasher<Hash32> objectHasher) {
     this.spec = spec;
     this.objectHasher = objectHasher;
+    this.hashCache =
+        new LinkedHashMap<String, Hash32>(MAX_CACHE_ENTRIES + 1, .75F, true) {
+          // This method is called just after a new entry has been added
+          public boolean removeEldestEntry(Map.Entry eldest) {
+            return size() > MAX_CACHE_ENTRIES;
+          }
+        };
     this.hashFunction = hashFunction;
   }
 
@@ -1002,12 +1015,31 @@ public class SpecHelpers {
 
   /** Function for hashing objects into a single root utilizing a hash tree structure */
   public Hash32 hash_tree_root(Object object) {
-    return objectHasher.getHash(object);
+    String id = object.getClass().getName() + "@" + Integer.toHexString(object.hashCode());
+    if (hashCache != null && hashCache.containsKey(id)) {
+      return hashCache.get(id);
+    } else {
+      Hash32 hash = objectHasher.getHash(object);
+      if (hashCache != null) {
+        hashCache.put(id, hash);
+      }
+      return hash;
+    }
   }
 
   /** Function for hashing objects with part starting from field rejected */
   public Hash32 signed_root(Object object, String field) {
-    return objectHasher.getHashTruncate(object, field);
+    String id =
+        object.getClass().getName() + "@" + Integer.toHexString(object.hashCode()) + ">" + field;
+    if (hashCache != null && hashCache.containsKey(id)) {
+      return hashCache.get(id);
+    } else {
+      Hash32 hash = objectHasher.getHashTruncate(object, field);
+      if (hashCache != null) {
+        hashCache.put(id, hash);
+      }
+      return hash;
+    }
   }
 
   /*
