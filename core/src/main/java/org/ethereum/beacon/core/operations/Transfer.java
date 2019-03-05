@@ -1,5 +1,6 @@
 package org.ethereum.beacon.core.operations;
 
+import com.google.common.base.Objects;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Gwei;
@@ -75,5 +76,28 @@ public class Transfer {
 
   public BLSSignature getSignature() {
     return signature;
+  }
+
+  @Override
+  public boolean equals(Object object) {
+    if (this == object) {
+      return true;
+    }
+    if (object == null || getClass() != object.getClass()) {
+      return false;
+    }
+    Transfer transfer = (Transfer) object;
+    return Objects.equal(from, transfer.from)
+        && Objects.equal(to, transfer.to)
+        && Objects.equal(amount, transfer.amount)
+        && Objects.equal(fee, transfer.fee)
+        && Objects.equal(slot, transfer.slot)
+        && Objects.equal(pubkey, transfer.pubkey)
+        && Objects.equal(signature, transfer.signature);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(from, to, amount, fee, slot, pubkey, signature);
   }
 }
