@@ -52,8 +52,8 @@ public class BeaconBlock {
       Hash32 stateRoot,
       BLSSignature randaoReveal,
       Eth1Data eth1Data,
-      BLSSignature signature,
-      BeaconBlockBody body) {
+      BeaconBlockBody body,
+      BLSSignature signature) {
     this.slot = slot;
     this.parentRoot = parentRoot;
     this.stateRoot = stateRoot;
@@ -64,7 +64,7 @@ public class BeaconBlock {
   }
 
   public BeaconBlock withStateRoot(Hash32 stateRoot) {
-    return new BeaconBlock(slot, parentRoot, stateRoot, randaoReveal, eth1Data, signature, body);
+    return new BeaconBlock(slot, parentRoot, stateRoot, randaoReveal, eth1Data, body, signature);
   }
 
   public SlotNumber getSlot() {
@@ -266,7 +266,7 @@ public class BeaconBlock {
       assert body != null;
 
       return new BeaconBlock(
-          slot, parentRoot, stateRoot, randaoReveal, eth1Data, signature, body);
+          slot, parentRoot, stateRoot, randaoReveal, eth1Data, body, signature);
     }
   }
 }

@@ -68,8 +68,8 @@ public class DefaultBeaconChainTest {
             Hash32.ZERO,
             specHelpers.getConstants().getEmptySignature(),
             Eth1Data.EMPTY,
-            specHelpers.getConstants().getEmptySignature(),
-            BeaconBlockBody.EMPTY);
+            BeaconBlockBody.EMPTY,
+            specHelpers.getConstants().getEmptySignature());
     BeaconState state =
         perSlotTransition
             .apply(

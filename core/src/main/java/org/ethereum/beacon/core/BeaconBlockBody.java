@@ -126,6 +126,13 @@ public class BeaconBlockBody {
     return exitsList;
   }
 
+  /**
+   * @deprecated for serialization only
+   */
+  public List<Transfer> getTransferList() {
+    return transferList;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;

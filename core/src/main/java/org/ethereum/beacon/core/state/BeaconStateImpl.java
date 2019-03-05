@@ -64,7 +64,7 @@ public class BeaconStateImpl implements MutableBeaconState {
 
   @SSZ private Eth1Data latestEth1Data = Eth1Data.EMPTY;
   @SSZ private List<Eth1DataVote> eth1DataVotesList = new ArrayList<>();
-  @SSZ private UInt64 depositIndex;
+  @SSZ private UInt64 depositIndex = UInt64.ZERO;
 
   public BeaconStateImpl() {}
 

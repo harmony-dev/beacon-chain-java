@@ -282,8 +282,8 @@ public class ModelsSerializeTest {
             new Eth1Data(
                 Hashes.keccak256(BytesValue.fromHexString("ddaa")),
                 Hashes.keccak256(BytesValue.fromHexString("ddbb"))),
-            BLSSignature.wrap(Bytes96.fromHexString("aa")),
-            createBeaconBlockBody());
+            createBeaconBlockBody(),
+            BLSSignature.wrap(Bytes96.fromHexString("aa")));
 
     return beaconBlock;
   }
