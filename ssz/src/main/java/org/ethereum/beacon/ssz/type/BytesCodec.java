@@ -71,7 +71,12 @@ public class BytesCodec implements SSZCodec {
   public void encode(Object value, SSZSchemeBuilder.SSZScheme.SSZField field, OutputStream result) {
     Bytes res = null;
     BytesValue data = (BytesValue) value;
-    res = SSZ.encodeBytes(Bytes.of(data.getArrayUnsafe()));
+    BytesType bytesType = parseFieldType(field);
+    if (bytesType.size == null) {
+      res = SSZ.encodeBytes(Bytes.of(data.getArrayUnsafe()));
+    } else {
+      res = SSZ.encodeHash(Bytes.of(data.getArrayUnsafe()));
+    }
 
     try {
       result.write(res.toArrayUnsafe());
@@ -87,7 +92,14 @@ public class BytesCodec implements SSZCodec {
     Bytes[] data = repackBytesList((List<BytesValue>) (List<?>) value);
 
     try {
-      result.write(SSZ.encodeBytesList(data).toArrayUnsafe());
+      Bytes res;
+      BytesType bytesType = parseFieldType(field);
+      if (bytesType.size == null) {
+        res = SSZ.encodeBytesList(data);
+      } else {
+        res = SSZ.encodeHashList(data);
+      }
+      result.write(res.toArrayUnsafe());
     } catch (IOException ex) {
       String error = String.format("Failed to write data from field \"%s\" to stream", field.name);
       throw new SSZException(error, ex);
@@ -105,19 +117,19 @@ public class BytesCodec implements SSZCodec {
       switch (bytesType.size) {
         case 1:
           {
-            return Bytes1.wrap(reader.readBytes(bytesType.size).toArrayUnsafe());
+            return Bytes1.wrap(reader.readHash(bytesType.size).toArrayUnsafe());
           }
         case 20:
           {
-            return Address.wrap(BytesValue.of(reader.readBytes(bytesType.size).toArrayUnsafe()));
+            return Address.wrap(BytesValue.of(reader.readHash(bytesType.size).toArrayUnsafe()));
           }
         case 48:
           {
-            return Bytes48.wrap(reader.readBytes(bytesType.size).toArrayUnsafe());
+            return Bytes48.wrap(reader.readHash(bytesType.size).toArrayUnsafe());
           }
         case 96:
           {
-            return Bytes96.wrap(reader.readBytes(bytesType.size).toArrayUnsafe());
+            return Bytes96.wrap(reader.readHash(bytesType.size).toArrayUnsafe());
           }
       }
     } catch (Exception ex) {
@@ -133,15 +145,15 @@ public class BytesCodec implements SSZCodec {
       SSZSchemeBuilder.SSZScheme.SSZField field, BytesSSZReaderProxy reader) {
     BytesType bytesType = parseFieldType(field);
 
-    List<Bytes> bytesList = reader.readHashList(bytesType.size);
     if (bytesType.size == null) {
-      return bytesList.stream()
+      return reader.readBytesList().stream()
           .map(Bytes::toArrayUnsafe)
           .map(BytesValue::wrap)
           .collect(Collectors.toList());
     }
     List<BytesValue> res = null;
     try {
+      List<Bytes> bytesList = reader.readHashList(bytesType.size);
       switch (bytesType.size) {
         case 1:
           {

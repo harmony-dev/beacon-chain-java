@@ -1,6 +1,7 @@
 package org.ethereum.beacon.ssz;
 
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
+import net.consensys.cava.bytes.Bytes;
 import org.javatuples.Triplet;
 
 import javax.annotation.Nullable;
@@ -9,10 +10,12 @@ import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.io.ByteArrayOutputStream;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.ethereum.beacon.ssz.SSZCodecHasher.EMPTY_CHUNK;
 import static org.ethereum.beacon.ssz.SSZSerializer.checkSSZSerializableAnnotation;
 
 /**
@@ -46,31 +49,20 @@ public class SSZHashSerializer implements BytesHasher, BytesSerializer {
   /** Calculates hash of the input object */
   @Override
   public byte[] hash(@Nullable Object input, Class clazz) {
-    byte[] preBakedHash;
+    byte[] hash;
     if (input instanceof List) {
-      preBakedHash = hashList((List) input);
+      hash = hashList((List) input);
     } else {
-      preBakedHash = hashImpl(input, clazz, null);
+      hash = hashImpl(input, clazz, null);
     }
-    // For the final output only (ie. not intermediate outputs), if the output is less than 32
-    // bytes, right-zero-pad it to 32 bytes.
-    byte[] res;
-    if (preBakedHash.length < HASH_LENGTH) {
-      res = new byte[HASH_LENGTH];
-      System.arraycopy(preBakedHash, 0, res, 0, preBakedHash.length);
-    } else {
-      res = preBakedHash;
-    }
-
-    return res;
+    return hash;
   }
 
   private byte[] hashImpl(@Nullable Object inputObject, Class<?> inputClazz, @Nullable String truncateField) {
     checkSSZSerializableAnnotation(inputClazz);
 
-    // Null check
     if (inputObject == null) {
-      return EMPTY_PREFIX;
+      return EMPTY_CHUNK.toArray();
     }
 
     Object input;
@@ -120,9 +112,12 @@ public class SSZHashSerializer implements BytesHasher, BytesSerializer {
             String.format("Field %s doesn't exist in object %s", truncateField, input));
       }
     }
-    ByteArrayOutputStream res = new ByteArrayOutputStream();
+
+    SSZCodecHasher codecHasher = (SSZCodecHasher) codecResolver;
+    List<Bytes> containerValues = new ArrayList<>();
     for (SSZSchemeBuilder.SSZScheme.SSZField field : scheme.fields) {
       Object value;
+      ByteArrayOutputStream res = new ByteArrayOutputStream();
       Method getter = getters.get(field.getter);
       try {
         if (getter != null) { // We have getter
@@ -140,35 +135,24 @@ public class SSZHashSerializer implements BytesHasher, BytesSerializer {
       }
 
       codecResolver.resolveEncodeFunction(field).accept(new Triplet<>(value, res, this));
+      containerValues.add(codecHasher.hash_tree_root_element(Bytes.wrap(res.toByteArray())));
     }
 
-    return res.toByteArray();
+    return codecHasher.merkleize(containerValues).toArray();
   }
 
   @Override
   public byte[] hashTruncate(@Nullable Object input, Class clazz, String field) {
-    byte[] preBakedHash;
     if (input instanceof List) {
       throw new RuntimeException("hashTruncate doesn't support lists");
     } else {
-      preBakedHash = hashImpl(input, clazz, field);
+      return hashImpl(input, clazz, field);
     }
-    // For the final output only (ie. not intermediate outputs), if the output is less than 32
-    // bytes, right-zero-pad it to 32 bytes.
-    byte[] res;
-    if (preBakedHash.length < HASH_LENGTH) {
-      res = new byte[HASH_LENGTH];
-      System.arraycopy(preBakedHash, 0, res, 0, preBakedHash.length);
-    } else {
-      res = preBakedHash;
-    }
-
-    return res;
   }
 
   private byte[] hashList(List input) {
     if (input.isEmpty()) {
-      return new byte[0];
+      return EMPTY_CHUNK.toArray();
     }
     Class internalClass = input.get(0).getClass();
     checkSSZSerializableAnnotation(internalClass);
@@ -181,8 +165,9 @@ public class SSZHashSerializer implements BytesHasher, BytesSerializer {
 
     ByteArrayOutputStream res = new ByteArrayOutputStream();
     codecResolver.resolveEncodeFunction(field).accept(new Triplet<>(input, res, this));
+    SSZCodecHasher codecHasher = (SSZCodecHasher) codecResolver;
 
-    return res.toByteArray();
+    return codecHasher.mix_in_length(Bytes.wrap(res.toByteArray()), input.size()).toArray();
   }
 
   @Override

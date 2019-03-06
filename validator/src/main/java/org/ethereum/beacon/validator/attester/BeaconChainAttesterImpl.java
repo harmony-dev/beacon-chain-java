@@ -105,10 +105,12 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
   */
   @VisibleForTesting
   Hash32 getEpochBoundaryRoot(BeaconState state, BeaconBlock head) {
-    SlotNumber ancestorMaxSlot = head.getSlot().decrement();
-    SlotNumber epochBoundarySlot =
-        ancestorMaxSlot.minus(ancestorMaxSlot.modulo(spec.getConstants().getSlotsPerEpoch()));
-    return spec.get_block_root(state, epochBoundarySlot);
+    SlotNumber epochBoundarySlot = spec.get_epoch_start_slot(spec.slot_to_epoch(head.getSlot()));
+    if (epochBoundarySlot.equals(head.getSlot())) {
+      return spec.hash_tree_root(head);
+    } else {
+      return spec.get_block_root(state, epochBoundarySlot);
+    }
   }
 
   /*
