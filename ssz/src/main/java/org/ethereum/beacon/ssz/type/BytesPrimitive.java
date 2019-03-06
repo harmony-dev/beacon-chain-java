@@ -6,6 +6,7 @@ import net.consensys.cava.ssz.SSZ;
 import net.consensys.cava.ssz.SSZException;
 import org.ethereum.beacon.ssz.SSZSchemeBuilder;
 import org.ethereum.beacon.ssz.SSZSchemeException;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.HashSet;
@@ -85,7 +86,11 @@ public class BytesPrimitive implements SSZCodec {
         }
       case BYTES:
         {
-          res = SSZ.encodeByteArray(data);
+          if (byteType.size == null) {
+            res = SSZ.encodeByteArray(data);
+          } else {
+            res = SSZ.encodeHash(Bytes.wrap(data)); // w/o length prefix
+          }
           break;
         }
       default:
@@ -122,7 +127,11 @@ public class BytesPrimitive implements SSZCodec {
           }
         case ADDRESS:
           {
-            result.write(SSZ.encodeAddressList(data).toArrayUnsafe());
+            if (bytesType.size == null) {
+              result.write(SSZ.encodeAddressList(data).toArrayUnsafe());
+            } else {
+              result.write(SSZ.encodeHashList(data).toArrayUnsafe());
+            }
             break;
           }
         default:
@@ -144,7 +153,7 @@ public class BytesPrimitive implements SSZCodec {
         {
           return (bytesType.size == null)
               ? reader.readBytes().toArrayUnsafe()
-              : reader.readBytes(bytesType.size).toArrayUnsafe();
+              : reader.readHash(bytesType.size).toArrayUnsafe();
         }
       case HASH:
         {
@@ -167,7 +176,11 @@ public class BytesPrimitive implements SSZCodec {
     switch (bytesType.type) {
       case BYTES:
         {
-          return (List<Object>) (List<?>) reader.readByteArrayList();
+          if (bytesType.size == null) {
+            return (List<Object>) (List<?>) reader.readByteArrayList();
+          } else {
+            return (List<Object>) (List<?>) reader.readHashList(bytesType.size);
+          }
         }
       case HASH:
         {

@@ -1,6 +1,5 @@
 ext {
-  // After that version snapshots are compiled with new JDK w/o full backward compatibility
-  cavaVersion = '0.6.0-5618C0-snapshot'
+  cavaVersion = '1.0.0-876579-snapshot'
   jacksonVersion = '2.9.8'
   log4j2Version = '2.11.2'
 }
