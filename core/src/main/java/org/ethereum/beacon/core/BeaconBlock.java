@@ -70,14 +70,12 @@ public class BeaconBlock implements Hash32able {
 
   @Override
   public Optional<Hash32> getHash() {
-    if (hashCache != null) {
-      return Optional.of(hashCache);
-    }
-    Hash32able.objectHasher
-        .getObjectHasher()
-        .map(hasher -> hasher.apply(this))
-        .map(h -> this.hashCache = h);
     return Optional.ofNullable(hashCache);
+  }
+
+  @Override
+  public void setHash(Hash32 hash) {
+    this.hashCache = hash;
   }
 
   public BeaconBlock withStateRoot(Hash32 stateRoot) {

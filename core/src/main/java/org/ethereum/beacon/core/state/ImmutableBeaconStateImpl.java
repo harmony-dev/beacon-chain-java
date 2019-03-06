@@ -5,6 +5,7 @@ import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.types.Bitfield64;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
+import org.ethereum.beacon.core.types.Hash32able;
 import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
@@ -17,9 +18,10 @@ import tech.pegasys.artemis.util.collections.ReadList;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @SSZSerializable
-public class ImmutableBeaconStateImpl implements BeaconState {
+public class ImmutableBeaconStateImpl implements BeaconState, Hash32able {
 
   /* Misc */
   @SSZ private final SlotNumber slot;
@@ -62,6 +64,8 @@ public class ImmutableBeaconStateImpl implements BeaconState {
 
   @SSZ private final Eth1Data latestEth1Data;
   @SSZ private final List<Eth1DataVote> eth1DataVotesList;
+
+  private Hash32 hashCache = null;
 
   public ImmutableBeaconStateImpl(BeaconState state) {
     slot = state.getSlot();
@@ -260,6 +264,16 @@ public class ImmutableBeaconStateImpl implements BeaconState {
   @Override
   public ReadList<Integer, Eth1DataVote> getEth1DataVotes() {
     return ReadList.wrap(eth1DataVotesList, Integer::valueOf);
+  }
+
+  @Override
+  public Optional<Hash32> getHash() {
+    return Optional.ofNullable(hashCache);
+  }
+
+  @Override
+  public void setHash(Hash32 hash) {
+    this.hashCache = hash;
   }
 
   @Override

@@ -31,7 +31,8 @@ public class SSZObjectHasher implements ObjectHasher<Hash32> {
 
   /**
    * Creates object hasher with hash function and SSZ scheme builder with cache
-   * @param hashFunction    Hash function
+   *
+   * @param hashFunction Hash function
    * @return hasher
    */
   public static SSZObjectHasher create(Function<BytesValue, Hash32> hashFunction) {
@@ -52,7 +53,13 @@ public class SSZObjectHasher implements ObjectHasher<Hash32> {
           return hashOptional.get();
         }
       }
-      return hashFunction.apply(BytesValue.wrap(sszHashSerializer.hash(input)));
+
+      Hash32 hash = hashFunction.apply(BytesValue.wrap(sszHashSerializer.hash(input)));
+      if (input instanceof Hash32able) {
+        ((Hash32able) input).setHash(hash);
+      }
+
+      return hash;
     }
   }
 
