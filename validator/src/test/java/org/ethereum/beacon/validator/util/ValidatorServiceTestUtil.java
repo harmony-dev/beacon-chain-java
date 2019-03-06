@@ -1,14 +1,12 @@
 package org.ethereum.beacon.validator.util;
 
-import static java.util.Collections.singletonList;
-
 import java.util.Collections;
+import java.util.List;
 import java.util.Random;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.BlockTransition;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.StateTransition;
-import org.ethereum.beacon.consensus.transition.BeaconStateExImpl;
 import org.ethereum.beacon.consensus.util.StateTransitionTestUtil;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
@@ -32,6 +30,30 @@ public abstract class ValidatorServiceTestUtil {
   public static MultiValidatorService mockBeaconChainValidator(
       Random random, SpecHelpers specHelpers) {
     BLSPubkey pubkey = BLSPubkey.wrap(Bytes48.random(random));
+    MessageSigner<BLSSignature> signer = MessageSignerTestUtil.createBLSSigner();
+    BLS381Credentials blsCredentials = new BLS381Credentials(pubkey, signer);
+    return mockBeaconChainValidator(
+        random,
+        specHelpers,
+        Collections.singletonList(blsCredentials),
+        Schedulers.createControlled());
+  }
+
+
+  public static MultiValidatorService mockBeaconChainValidator(
+      Random random, SpecHelpers specHelpers, BLS381Credentials credentials) {
+    return mockBeaconChainValidator(
+        random,
+        specHelpers,
+        Collections.singletonList(credentials),
+        Schedulers.createControlled());
+  }
+
+  public static MultiValidatorService mockBeaconChainValidator(
+      Random random,
+      SpecHelpers specHelpers,
+      List<BLS381Credentials> blsCredentials,
+      Schedulers schedulers) {
     BlockTransition<BeaconStateEx> perBlockTransition =
         StateTransitionTestUtil.createPerBlockTransition();
     StateTransition<BeaconStateEx> perEpochTransition =
@@ -42,12 +64,9 @@ public abstract class ValidatorServiceTestUtil {
         BeaconChainProposerTestUtil.mockProposer(
             perBlockTransition, perEpochTransition, depositContract, specHelpers);
     BeaconChainAttester attester = BeaconChainAttesterTestUtil.mockAttester(specHelpers);
-    MessageSigner<BLSSignature> signer = MessageSignerTestUtil.createBLSSigner();
-
-    BLS381Credentials blsCredentials = new BLS381Credentials(pubkey, signer);
 
     return Mockito.spy(
-        new MultiValidatorService(singletonList(blsCredentials), proposer, attester, specHelpers,
-            Mono.empty(), Schedulers.createDefault()));
+        new MultiValidatorService(
+            blsCredentials, proposer, attester, specHelpers, Mono.empty(), schedulers));
   }
 }
