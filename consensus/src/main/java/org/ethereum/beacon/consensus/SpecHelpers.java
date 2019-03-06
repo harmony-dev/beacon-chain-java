@@ -31,8 +31,6 @@ import org.ethereum.beacon.crypto.BLS381.PublicKey;
 import org.ethereum.beacon.crypto.BLS381.Signature;
 import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.crypto.MessageParameters;
-import org.ethereum.beacon.util.Cache;
-import org.ethereum.beacon.util.LRUCache;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes3;
 import tech.pegasys.artemis.util.bytes.Bytes32;
@@ -67,9 +65,6 @@ public class SpecHelpers {
   private final ObjectHasher<Hash32> objectHasher;
   private final Function<BytesValue, Hash32> hashFunction;
 
-  private static final int MAX_CACHE_ENTRIES = 512;
-  private final Cache<String, Hash32> hashCache;
-
   /**
    * Creates a SpecHelpers instance with given {@link ChainSpec} and time supplier,
    * {@link Hashes#keccak256(BytesValue)} as a hash function and {@link SSZObjectHasher} as an object
@@ -92,7 +87,6 @@ public class SpecHelpers {
       ObjectHasher<Hash32> objectHasher) {
     this.spec = spec;
     this.objectHasher = objectHasher;
-    this.hashCache = new LRUCache<>(MAX_CACHE_ENTRIES);
     this.hashFunction = hashFunction;
   }
 
@@ -1009,15 +1003,12 @@ public class SpecHelpers {
 
   /** Function for hashing objects into a single root utilizing a hash tree structure */
   public Hash32 hash_tree_root(Object object) {
-    String id = object.getClass().getName() + "@" + Integer.toHexString(object.hashCode());
-    return hashCache.get(id, s -> objectHasher.getHash(object));
+    return objectHasher.getHash(object);
   }
 
   /** Function for hashing objects with part starting from field rejected */
   public Hash32 signed_root(Object object, String field) {
-    String id =
-        object.getClass().getName() + "@" + Integer.toHexString(object.hashCode()) + ">" + field;
-    return hashCache.get(id, s -> objectHasher.getHashTruncate(object, field));
+    return objectHasher.getHashTruncate(object, field);
   }
 
   /*
