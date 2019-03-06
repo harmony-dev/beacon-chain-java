@@ -15,6 +15,7 @@ import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.pow.DepositContract.ChainStart;
+import org.mockito.Mockito;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
 public class ObservableBeaconStateTestUtil {
@@ -36,7 +37,7 @@ public class ObservableBeaconStateTestUtil {
     BeaconBlock modifiedHead =
         BeaconBlock.Builder.fromBlock(originalState.getHead()).withSlot(slotNumber).build();
     return new ObservableBeaconState(
-        modifiedHead, new BeaconStateExImpl(modifiedState, Hash32.ZERO), originalState.getPendingOperations());
+        modifiedHead, Mockito.spy(new BeaconStateExImpl(modifiedState, Hash32.ZERO)), originalState.getPendingOperations());
   }
 
   public static ObservableBeaconState createInitialState(

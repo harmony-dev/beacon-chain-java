@@ -3,6 +3,7 @@ package org.ethereum.beacon.validator;
 import com.google.common.annotations.VisibleForTesting;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -389,5 +390,9 @@ public class MultiValidatorService implements ValidatorService {
 
   public Publisher<Pair<ValidatorIndex, BLSPubkey>> getInitializedStream() {
     return initializedStream;
+  }
+
+  public Set<ValidatorIndex> getValidatorIndices() {
+    return new HashSet<>(initialized.keySet());
   }
 }
