@@ -65,7 +65,7 @@ public class BeaconStateImpl implements MutableBeaconState {
 
   public BeaconStateImpl() {}
 
-  private BeaconStateImpl(BeaconState state) {
+  BeaconStateImpl(BeaconState state) {
         slot = state.getSlot();
         genesisTime = state.getGenesisTime();
         forkData = state.getForkData();
@@ -100,8 +100,7 @@ public class BeaconStateImpl implements MutableBeaconState {
 
   @Override
   public BeaconState createImmutable() {
-    // TODO validation
-    return new BeaconStateImpl(this);
+    return new ImmutableBeaconStateImpl(this);
   }
 
   @Override
