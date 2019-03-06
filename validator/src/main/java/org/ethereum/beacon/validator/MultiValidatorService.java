@@ -13,7 +13,9 @@ import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
+import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.TransitionType;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
@@ -192,11 +194,11 @@ public class MultiValidatorService implements ValidatorService {
    */
   @VisibleForTesting
   void runTasks(final ObservableBeaconState observableState) {
-    BeaconState state = observableState.getLatestSlotState();
+    BeaconStateEx state = observableState.getLatestSlotState();
 
     // trigger proposer
     ValidatorIndex proposerIndex = spec.get_beacon_proposer_index(state, state.getSlot());
-    if (initialized.containsKey(proposerIndex)) {
+    if (initialized.containsKey(proposerIndex) && state.getTransition() == TransitionType.SLOT) {
       runAsync(() -> propose(proposerIndex, observableState));
     }
 
@@ -230,7 +232,7 @@ public class MultiValidatorService implements ValidatorService {
     long startAtMillis = startAt.getValue() * 1000;
     assert schedulers.getCurrentTime() < startAtMillis;
     executor.executeWithDelay(
-        Duration.ofMillis(schedulers.getCurrentTime() - startAtMillis), routine);
+        Duration.ofMillis(startAtMillis - schedulers.getCurrentTime()), routine);
   }
 
   /**
@@ -302,6 +304,9 @@ public class MultiValidatorService implements ValidatorService {
 
   /** Returns committee where the validator participates if any */
   private Optional<ShardCommittee> getValidatorCommittee(ValidatorIndex index, BeaconState state) {
+    if (state.getSlot().equals(spec.getConstants().getGenesisSlot())) {
+      return Optional.empty();
+    }
     List<ShardCommittee> committees =
         spec.get_crosslink_committees_at_slot(state, state.getSlot());
     return committees.stream().filter(sc -> sc.getCommittee().contains(index)).findFirst();
