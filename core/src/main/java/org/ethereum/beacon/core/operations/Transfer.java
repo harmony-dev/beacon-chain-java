@@ -10,7 +10,7 @@ import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 
 /**
- * A value transfer between validator.
+ * A value transfer between validators.
  *
  * @see <a
  *     href="https://github.com/ethereum/eth2.0-specs/blob/0.4.0/specs/core/0_beacon-chain.md#transfers">Transfers</a>
