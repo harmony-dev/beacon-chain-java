@@ -3,6 +3,10 @@ package org.ethereum.beacon.consensus.verifier.block;
 import static org.ethereum.beacon.consensus.verifier.VerificationResult.PASSED;
 import static org.ethereum.beacon.consensus.verifier.VerificationResult.failedResult;
 
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.verifier.OperationVerifier;
 import org.ethereum.beacon.core.operations.Transfer;
@@ -22,12 +26,13 @@ public class TransferListVerifier extends OperationListVerifier<Transfer> {
 
     addCustomVerifier(
         ((transfers, state) -> {
-          for (Transfer t1 : transfers) {
-            for (Transfer t2 : transfers) {
-              if (t1.equals(t2)) {
-                return failedResult("two equal transfers have been found");
-              }
-            }
+          List<Transfer> allTransfers =
+              StreamSupport.stream(transfers.spliterator(), false).collect(Collectors.toList());
+          Set<Transfer> distinctTransfers =
+              StreamSupport.stream(transfers.spliterator(), false).collect(Collectors.toSet());
+
+          if (allTransfers.size() > distinctTransfers.size()) {
+            return failedResult("two equal transfers have been found");
           }
 
           return PASSED;
