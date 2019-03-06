@@ -18,6 +18,7 @@ import java.util.function.Function;
  */
 public class SSZObjectHasher implements ObjectHasher<Hash32> {
 
+  private static final int SSZ_SCHEMES_CACHE_CAPACITY = 128;
   private final SSZHashSerializer sszHashSerializer;
   private final Function<BytesValue, Hash32> hashFunction;
 
@@ -26,9 +27,15 @@ public class SSZObjectHasher implements ObjectHasher<Hash32> {
     this.hashFunction = hashFunction;
   }
 
+  /**
+   * Creates object hasher with hash function and SSZ scheme builder with cache
+   * @param hashFunction    Hash function
+   * @return hasher
+   */
   public static SSZObjectHasher create(Function<BytesValue, Hash32> hashFunction) {
     SSZHashSerializer sszHashSerializer =
-        SSZHashSerializers.createWithBeaconChainTypes(hashFunction, true, true);
+        SSZHashSerializers.createWithBeaconChainTypes(
+            hashFunction, true, SSZ_SCHEMES_CACHE_CAPACITY);
     return new SSZObjectHasher(sszHashSerializer, hashFunction);
   }
 

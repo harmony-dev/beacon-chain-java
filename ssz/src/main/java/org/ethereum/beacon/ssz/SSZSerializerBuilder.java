@@ -42,6 +42,8 @@ import java.util.function.Function;
  */
 public class SSZSerializerBuilder {
 
+  private static final int SSZ_SCHEMES_CACHE_CAPACITY = 128;
+
   private SSZSerializer sszSerializer = null;
 
   private SSZCodecResolver sszCodecResolver = null;
@@ -73,7 +75,7 @@ public class SSZSerializerBuilder {
     if (!(sszSchemeBuilder instanceof SSZAnnotationSchemeBuilder)) {
       throw new RuntimeException("Only SSZAnnotationSchemeBuilder is supported for adding cache");
     } else {
-      ((SSZAnnotationSchemeBuilder) sszSchemeBuilder).withCache();
+      ((SSZAnnotationSchemeBuilder) sszSchemeBuilder).withCache(SSZ_SCHEMES_CACHE_CAPACITY);
     }
   }
 

@@ -35,7 +35,7 @@ public class SSZObjectHasherTest {
   @Before
   public void setup() {
     SSZHashSerializer sszHashSerializer =
-        SSZHashSerializers.createWithBeaconChainTypes(Hashes::keccak256, false, true);
+        SSZHashSerializers.createWithBeaconChainTypes(Hashes::keccak256, false, 128);
     sszHasher = new SSZObjectHasher(sszHashSerializer, Hashes::keccak256);
   }
 
