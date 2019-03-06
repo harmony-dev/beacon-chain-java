@@ -2,6 +2,7 @@ package org.ethereum.beacon.core.state;
 
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
+import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.types.Bitfield64;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
@@ -15,6 +16,7 @@ import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.collections.ReadList;
+import tech.pegasys.artemis.util.uint.UInt64;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,6 +26,7 @@ import java.util.Optional;
 public class ImmutableBeaconStateImpl implements BeaconState, Hash32able {
 
   /* Misc */
+
   @SSZ private final SlotNumber slot;
   @SSZ private final Time genesisTime;
   @SSZ private final ForkData forkData;
@@ -37,12 +40,12 @@ public class ImmutableBeaconStateImpl implements BeaconState, Hash32able {
   /* Randomness and committees */
 
   @SSZ private final List<Hash32> latestRandaoMixesList;
-  @SSZ private final ShardNumber previousEpochStartShard;
-  @SSZ private final ShardNumber currentEpochStartShard;
-  @SSZ private final EpochNumber previousCalculationEpoch;
-  @SSZ private final EpochNumber currentCalculationEpoch;
-  @SSZ private final Hash32 previousEpochSeed;
-  @SSZ private final Hash32 currentEpochSeed;
+  @SSZ private final ShardNumber previousShufflingStartShard;
+  @SSZ private final ShardNumber currentShufflingStartShard;
+  @SSZ private final EpochNumber previousShufflingEpoch;
+  @SSZ private final EpochNumber currentShufflingEpoch;
+  @SSZ private final Hash32 previousShufflingSeed;
+  @SSZ private final Hash32 currentShufflingSeed;
 
   /* Finality */
 
@@ -53,10 +56,10 @@ public class ImmutableBeaconStateImpl implements BeaconState, Hash32able {
 
   /* Recent state */
 
-  @SSZ private final List<CrosslinkRecord> latestCrosslinksList;
+  @SSZ private final List<Crosslink> latestCrosslinksList;
   @SSZ private final List<Hash32> latestBlockRootsList;
-  @SSZ private final List<Hash32> latestIndexRootsList;
-  @SSZ private final List<Gwei> latestPenalizedBalancesList;
+  @SSZ private final List<Hash32> latestActiveIndexRootsList;
+  @SSZ private final List<Gwei> latestSlashedBalancesList;
   @SSZ private final List<PendingAttestationRecord> latestAttestationsList;
   @SSZ private final List<Hash32> batchedBlockRootsList;
 
@@ -64,43 +67,85 @@ public class ImmutableBeaconStateImpl implements BeaconState, Hash32able {
 
   @SSZ private final Eth1Data latestEth1Data;
   @SSZ private final List<Eth1DataVote> eth1DataVotesList;
+  @SSZ private final UInt64 depositIndex;
 
   private Hash32 hashCache = null;
 
   public ImmutableBeaconStateImpl(BeaconState state) {
-    slot = state.getSlot();
-    genesisTime = state.getGenesisTime();
-    forkData = state.getForkData();
+    this.slot = state.getSlot();
+    this.genesisTime = state.getGenesisTime();
+    this.forkData = state.getForkData();
 
-    validatorRegistryList = state.getValidatorRegistry().listCopy();
-    validatorBalancesList = state.getValidatorBalances().listCopy();
-    validatorRegistryUpdateEpoch = state.getValidatorRegistryUpdateEpoch();
+    this.validatorRegistryList = state.getValidatorRegistry().listCopy();
+    this.validatorBalancesList = state.getValidatorBalances().listCopy();
+    this.validatorRegistryUpdateEpoch = state.getValidatorRegistryUpdateEpoch();
 
-    latestRandaoMixesList = state.getLatestRandaoMixes().listCopy();
-    previousEpochStartShard = state.getPreviousEpochStartShard();
-    currentEpochStartShard = state.getCurrentEpochStartShard();
-    previousCalculationEpoch = state.getPreviousCalculationEpoch();
-    currentCalculationEpoch = state.getCurrentCalculationEpoch();
-    previousEpochSeed = state.getPreviousEpochSeed();
-    currentEpochSeed = state.getCurrentEpochSeed();
+    this.latestRandaoMixesList = state.getLatestRandaoMixes().listCopy();
+    this.previousShufflingStartShard = state.getPreviousShufflingStartShard();
+    this.currentShufflingStartShard = state.getCurrentShufflingStartShard();
+    this.previousShufflingEpoch = state.getPreviousShufflingEpoch();
+    this.currentShufflingEpoch = state.getCurrentShufflingEpoch();
+    this.previousShufflingSeed = state.getPreviousShufflingSeed();
+    this.currentShufflingSeed = state.getCurrentShufflingSeed();
 
-    previousJustifiedEpoch = state.getPreviousJustifiedEpoch();
-    justifiedEpoch = state.getJustifiedEpoch();
-    justificationBitfield = state.getJustificationBitfield();
-    finalizedEpoch = state.getFinalizedEpoch();
+    this.previousJustifiedEpoch = state.getPreviousJustifiedEpoch();
+    this.justifiedEpoch = state.getJustifiedEpoch();
+    this.justificationBitfield = state.getJustificationBitfield();
+    this.finalizedEpoch = state.getFinalizedEpoch();
 
-    latestCrosslinksList = state.getLatestCrosslinks().listCopy();
-    latestBlockRootsList = state.getLatestBlockRoots().listCopy();
-    latestIndexRootsList = state.getLatestIndexRoots().listCopy();
-    latestPenalizedBalancesList = state.getLatestPenalizedBalances().listCopy();
-    latestAttestationsList = state.getLatestAttestations().listCopy();
-    batchedBlockRootsList = state.getBatchedBlockRoots().listCopy();
+    this.latestCrosslinksList = state.getLatestCrosslinks().listCopy();
+    this.latestBlockRootsList = state.getLatestBlockRoots().listCopy();
+    this.latestActiveIndexRootsList = state.getLatestActiveIndexRoots().listCopy();
+    this.latestSlashedBalancesList = state.getLatestSlashedBalances().listCopy();
+    this.latestAttestationsList = state.getLatestAttestations().listCopy();
+    this.batchedBlockRootsList = state.getBatchedBlockRoots().listCopy();
 
-    latestEth1Data = state.getLatestEth1Data();
-    eth1DataVotesList = state.getEth1DataVotes().listCopy();
+    this.latestEth1Data = state.getLatestEth1Data();
+    this.eth1DataVotesList = state.getEth1DataVotes().listCopy();
+    this.depositIndex = state.getDepositIndex();
   }
 
   /** ******* List Getters for serialization ********* */
+  public List<ValidatorRecord> getValidatorRegistryList() {
+    return validatorRegistryList;
+  }
+
+  public List<Gwei> getValidatorBalancesList() {
+    return validatorBalancesList;
+  }
+
+  public List<Hash32> getLatestRandaoMixesList() {
+    return new ArrayList<>(latestRandaoMixesList);
+  }
+
+  public List<Crosslink> getLatestCrosslinksList() {
+    return new ArrayList<>(latestCrosslinksList);
+  }
+
+  public List<Hash32> getLatestBlockRootsList() {
+    return new ArrayList<>(latestBlockRootsList);
+  }
+
+  public List<PendingAttestationRecord> getLatestAttestationsList() {
+    return new ArrayList<>(latestAttestationsList);
+  }
+
+  public List<Hash32> getBatchedBlockRootsList() {
+    return new ArrayList<>(batchedBlockRootsList);
+  }
+
+  public List<Eth1DataVote> getEth1DataVotesList() {
+    return new ArrayList<>(eth1DataVotesList);
+  }
+
+  public List<Hash32> getLatestActiveIndexRootsList() {
+    return new ArrayList<>(latestActiveIndexRootsList);
+  }
+
+  public List<Gwei> getLatestSlashedBalancesList() {
+    return new ArrayList<>(latestSlashedBalancesList);
+  }
+
   @Override
   public SlotNumber getSlot() {
     return slot;
@@ -116,51 +161,9 @@ public class ImmutableBeaconStateImpl implements BeaconState, Hash32able {
     return forkData;
   }
 
-  public List<ValidatorRecord> getValidatorRegistryList() {
-    return validatorRegistryList;
-  }
-
-  public List<Gwei> getValidatorBalancesList() {
-    return validatorBalancesList;
-  }
-
   @Override
   public EpochNumber getValidatorRegistryUpdateEpoch() {
     return validatorRegistryUpdateEpoch;
-  }
-
-  public List<Hash32> getLatestRandaoMixesList() {
-    return new ArrayList<>(latestRandaoMixesList);
-  }
-
-  @Override
-  public ShardNumber getPreviousEpochStartShard() {
-    return previousEpochStartShard;
-  }
-
-  @Override
-  public ShardNumber getCurrentEpochStartShard() {
-    return currentEpochStartShard;
-  }
-
-  @Override
-  public EpochNumber getPreviousCalculationEpoch() {
-    return previousCalculationEpoch;
-  }
-
-  @Override
-  public EpochNumber getCurrentCalculationEpoch() {
-    return currentCalculationEpoch;
-  }
-
-  @Override
-  public Hash32 getPreviousEpochSeed() {
-    return previousEpochSeed;
-  }
-
-  @Override
-  public Hash32 getCurrentEpochSeed() {
-    return currentEpochSeed;
   }
 
   @Override
@@ -183,37 +186,59 @@ public class ImmutableBeaconStateImpl implements BeaconState, Hash32able {
     return finalizedEpoch;
   }
 
-  public List<CrosslinkRecord> getLatestCrosslinksList() {
-    return new ArrayList<>(latestCrosslinksList);
-  }
-
-  public List<Hash32> getLatestBlockRootsList() {
-    return new ArrayList<>(latestBlockRootsList);
-  }
-
-  public List<Hash32> getLatestIndexRootsList() {
-    return new ArrayList<>(latestIndexRootsList);
-  }
-
-  public List<Gwei> getLatestPenalizedBalancesList() {
-    return new ArrayList<>(latestPenalizedBalancesList);
-  }
-
-  public List<PendingAttestationRecord> getLatestAttestationsList() {
-    return new ArrayList<>(latestAttestationsList);
-  }
-
-  public List<Hash32> getBatchedBlockRootsList() {
-    return new ArrayList<>(batchedBlockRootsList);
-  }
-
   @Override
   public Eth1Data getLatestEth1Data() {
     return latestEth1Data;
   }
 
-  public List<Eth1DataVote> getEth1DataVotesList() {
-    return eth1DataVotesList;
+  @Override
+  public ShardNumber getPreviousShufflingStartShard() {
+    return previousShufflingStartShard;
+  }
+
+  @Override
+  public ShardNumber getCurrentShufflingStartShard() {
+    return currentShufflingStartShard;
+  }
+
+  @Override
+  public EpochNumber getPreviousShufflingEpoch() {
+    return previousShufflingEpoch;
+  }
+
+  @Override
+  public EpochNumber getCurrentShufflingEpoch() {
+    return currentShufflingEpoch;
+  }
+
+  @Override
+  public Hash32 getPreviousShufflingSeed() {
+    return previousShufflingSeed;
+  }
+
+  @Override
+  public Hash32 getCurrentShufflingSeed() {
+    return currentShufflingSeed;
+  }
+
+  @Override
+  public ReadList<ShardNumber, Crosslink> getLatestCrosslinks() {
+    return ReadList.wrap(latestCrosslinksList, ShardNumber::of);
+  }
+
+  @Override
+  public ReadList<EpochNumber, Hash32> getLatestActiveIndexRoots() {
+    return ReadList.wrap(latestActiveIndexRootsList, EpochNumber::of);
+  }
+
+  @Override
+  public ReadList<EpochNumber, Gwei> getLatestSlashedBalances() {
+    return ReadList.wrap(latestSlashedBalancesList, EpochNumber::of);
+  }
+
+  @Override
+  public UInt64 getDepositIndex() {
+    return depositIndex;
   }
 
   @Override
@@ -232,23 +257,8 @@ public class ImmutableBeaconStateImpl implements BeaconState, Hash32able {
   }
 
   @Override
-  public ReadList<ShardNumber, CrosslinkRecord> getLatestCrosslinks() {
-    return ReadList.wrap(latestCrosslinksList, ShardNumber::of);
-  }
-
-  @Override
   public ReadList<SlotNumber, Hash32> getLatestBlockRoots() {
     return ReadList.wrap(latestBlockRootsList, SlotNumber::of);
-  }
-
-  @Override
-  public ReadList<EpochNumber, Hash32> getLatestIndexRoots() {
-    return ReadList.wrap(latestIndexRootsList, EpochNumber::of);
-  }
-
-  @Override
-  public ReadList<EpochNumber, Gwei> getLatestPenalizedBalances() {
-    return ReadList.wrap(latestPenalizedBalancesList, EpochNumber::of);
   }
 
   @Override
