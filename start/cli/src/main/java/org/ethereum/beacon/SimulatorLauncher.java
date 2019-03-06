@@ -29,9 +29,12 @@ import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.crypto.BLS381;
+import org.ethereum.beacon.crypto.BLS381.KeyPair;
+import org.ethereum.beacon.crypto.BLS381.PrivateKey;
 import org.ethereum.beacon.emulator.config.main.MainConfig;
 import org.ethereum.beacon.emulator.config.main.action.Action;
 import org.ethereum.beacon.emulator.config.main.action.ActionSimulate;
+import org.ethereum.beacon.emulator.config.simulator.PeersConfig;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.schedulers.ControlledSchedulers;
 import org.ethereum.beacon.schedulers.LoggerMDCExecutor;
@@ -60,6 +63,7 @@ public class SimulatorLauncher implements Runnable {
   private static final Logger logPeer = LogManager.getLogger("peer");
 
   private final ActionSimulate simulateConfig;
+  private final List<PeersConfig> allPeers = new ArrayList<>();
   private final MainConfig mainConfig;
   private final SpecConstants specConstants;
   private final SpecHelpers specHelpers;
@@ -92,8 +96,13 @@ public class SimulatorLauncher implements Runnable {
       throw new RuntimeException("Simulate settings are not set");
     }
     this.simulateConfig = actionSimulate.get();
-    if (simulateConfig.getCount() == null && simulateConfig.getPrivateKeys() == null) {
-      throw new RuntimeException("Set either number of validators or private keys.");
+    if (simulateConfig.getPeersConfigs().isEmpty()) {
+      throw new RuntimeException("No peers found in config");
+    }
+    for (PeersConfig peersConfig : simulateConfig.getPeersConfigs()) {
+      for (int i = 0; i < peersConfig.getPeersCount(); i++) {
+        allPeers.add(peersConfig);
+      }
     }
     this.logLevel = logLevel;
     this.onUpdateConfig = onUpdateConfig;
@@ -123,26 +132,18 @@ public class SimulatorLauncher implements Runnable {
   }
 
   private Pair<List<Deposit>, List<BLS381.KeyPair>> getValidatorDeposits() {
-    if (simulateConfig.getPrivateKeys() != null && !simulateConfig.getPrivateKeys().isEmpty()) {
-      List<BLS381.KeyPair> keyPairs = new ArrayList<>();
-      for (String pKey : simulateConfig.getPrivateKeys()) {
-        keyPairs.add(BLS381.KeyPair.create(BLS381.PrivateKey.create(Bytes32.fromHexString(pKey))));
+    Pair<List<Deposit>, List<BLS381.KeyPair>> deposits =
+        SimulateUtils.getAnyDeposits(specHelpers, allPeers.size());
+    for (int i = 0; i < allPeers.size(); i++) {
+      if (allPeers.get(i).getBlsPrivateKey() != null) {
+        KeyPair keyPair = KeyPair.create(
+            PrivateKey.create(Bytes32.fromHexString(allPeers.get(i).getBlsPrivateKey())));
+        deposits.getValue0().set(i, SimulateUtils.getDepositForKeyPair(keyPair, specHelpers));
+        deposits.getValue1().set(i, keyPair);
       }
-      return Pair.with(SimulateUtils.getDepositsForKeyPairs(keyPairs, specHelpers), keyPairs);
-    } else {
-      Pair<List<Deposit>, List<BLS381.KeyPair>> anyDeposits =
-          SimulateUtils.getAnyDeposits(specHelpers, simulateConfig.getCount());
-      List<String> pKeysEncoded = new ArrayList<>();
-      anyDeposits
-          .getValue1()
-          .forEach(
-              pk -> {
-                pKeysEncoded.add(pk.getPrivate().getEncodedBytes().toString());
-              });
-      simulateConfig.setPrivateKeys(pKeysEncoded);
-      onUpdateConfig();
-      return anyDeposits;
     }
+
+    return deposits;
   }
 
   public void run() {

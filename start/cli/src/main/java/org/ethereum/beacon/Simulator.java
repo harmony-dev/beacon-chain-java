@@ -20,12 +20,6 @@ public class Simulator extends ReusableOptions implements Callable<Void> {
           "Task to do: run/config.\n run - Runs beacon simulator.\n config - Prints configuration and tasks to run on start.")
   Task action;
 
-  @CommandLine.Parameters(
-      index = "1",
-      description = "Number of validators to simulate.",
-      arity = "0..1")
-  Integer validators;
-
   public static void main(String[] args) {
     try {
       CommandLine.call(new Simulator(), args);
@@ -37,9 +31,6 @@ public class Simulator extends ReusableOptions implements Callable<Void> {
   @Override
   public Void call() throws Exception {
     System.out.println("Starting beacon simulator...");
-    if (validators != null) {
-      configPathValues.add(Pair.with("plan.validator[0].count", validators));
-    }
     Pair<MainConfig, Spec> configs =
         prepareAndPrintConfigs(action, "/config/simulator-config.yml", "/config/simulator-chainSpec.yml");
 
