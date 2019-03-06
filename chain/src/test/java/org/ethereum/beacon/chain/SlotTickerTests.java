@@ -3,10 +3,9 @@ package org.ethereum.beacon.chain;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
-import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
-import org.ethereum.beacon.schedulers.ControlledSchedulers;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
@@ -32,20 +31,20 @@ public class SlotTickerTests {
     }
     beaconState.setGenesisTime(
         Time.of(schedulers.getCurrentTime() / MILLIS_IN_SECOND).minus(Time.of(2)));
-    ChainSpec chainSpec =
-        new ChainSpec() {
+    SpecConstants specConstants =
+        new SpecConstants() {
           @Override
           public SlotNumber getGenesisSlot() {
             return SlotNumber.of(12345);
           }
 
           @Override
-          public Time getSlotDuration() {
+          public Time getSecondsPerSlot() {
             return Time.of(1);
           }
         };
-    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(chainSpec);
-    genesisSlot = specHelpers.getChainSpec().getGenesisSlot();
+    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(specConstants);
+    genesisSlot = specHelpers.getConstants().getGenesisSlot();
     slotTicker = new SlotTicker(specHelpers, beaconState, Schedulers.createDefault());
   }
 

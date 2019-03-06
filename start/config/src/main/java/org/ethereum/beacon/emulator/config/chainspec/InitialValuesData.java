@@ -44,7 +44,7 @@ public class InitialValuesData implements InitialValues {
   @Override
   @JsonIgnore
   public EpochNumber getGenesisEpoch() {
-    return null;// XXX: is set in final ChainSpec construction
+    return null;// XXX: is set in final SpecConstants construction
   }
 
   @Override

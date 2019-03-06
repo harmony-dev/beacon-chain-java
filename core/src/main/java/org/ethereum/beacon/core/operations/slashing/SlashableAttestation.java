@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.annotation.Nullable;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
-import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Bitfield;
 import org.ethereum.beacon.core.types.Time;
@@ -70,7 +70,7 @@ public class SlashableAttestation {
     return toString(null, null);
   }
 
-  public String toString(@Nullable ChainSpec spec,@Nullable Time beaconStart) {
+  public String toString(@Nullable SpecConstants spec,@Nullable Time beaconStart) {
     return "SlashableAttestation["
         + "data=" + data.toString(spec, beaconStart)
         + ", validators=" + validatorIndicesList

@@ -24,7 +24,7 @@ import org.ethereum.beacon.consensus.transition.EpochTransitionSummary;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
-import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
@@ -62,8 +62,8 @@ public class SimulatorLauncher implements Runnable {
 
   private final ActionSimulate simulateConfig;
   private final MainConfig mainConfig;
-  private final ChainSpec chainSpec;
-  private final SpecHelpers specHelpers;
+  private final SpecConstants specConstants;
+  private final SpecHelpers spec;
   private final Level logLevel;
   private final Consumer<MainConfig> onUpdateConfig;
 
@@ -71,18 +71,18 @@ public class SimulatorLauncher implements Runnable {
    * Creates Simulator launcher with following settings
    *
    * @param mainConfig Configuration and run plan
-   * @param specHelpers Chain specification
+   * @param specConstants Chain specification
    * @param logLevel Log level, Apache log4j type
    * @param onUpdateConfig Callback to run when mainConfig is updated
    */
   public SimulatorLauncher(
       MainConfig mainConfig,
-      SpecHelpers specHelpers,
+      SpecConstants specConstants,
       Level logLevel,
       Consumer<MainConfig> onUpdateConfig) {
     this.mainConfig = mainConfig;
-    this.chainSpec = specHelpers.getChainSpec();
-    this.specHelpers = specHelpers;
+    this.specConstants = specConstants;
+    this.spec = SpecHelpers.createWithSSZHasher(specConstants);
     List<Action> actions = mainConfig.getPlan().getValidator();
     Optional<ActionSimulate> actionSimulate =
         actions.stream()
@@ -129,10 +129,10 @@ public class SimulatorLauncher implements Runnable {
       for (String pKey : simulateConfig.getPrivateKeys()) {
         keyPairs.add(BLS381.KeyPair.create(BLS381.PrivateKey.create(Bytes32.fromHexString(pKey))));
       }
-      return Pair.with(SimulateUtils.getDepositsForKeyPairs(keyPairs, specHelpers), keyPairs);
+      return Pair.with(SimulateUtils.getDepositsForKeyPairs(keyPairs, spec), keyPairs);
     } else {
       Pair<List<Deposit>, List<BLS381.KeyPair>> anyDeposits =
-          SimulateUtils.getAnyDeposits(specHelpers, simulateConfig.getCount());
+          SimulateUtils.getAnyDeposits(spec, simulateConfig.getCount());
       List<String> pKeysEncoded = new ArrayList<>();
       anyDeposits
           .getValue1()
@@ -170,6 +170,8 @@ public class SimulatorLauncher implements Runnable {
     logger.info("Creating validators...");
     for (int i = 0; i < keyPairs.size(); i++) {
       ControlledSchedulers schedulers = controlledSchedulers.createNew("" + i);
+      SpecHelpers specHelpers =
+          SpecHelpers.createWithSSZHasher(specConstants);
       WireApi wireApi = localWireHub.createNewPeer("" + i);
 
       Launcher launcher =
@@ -191,7 +193,7 @@ public class SimulatorLauncher implements Runnable {
 
       int finalI = i;
       Flux.from(launcher.slotTicker.getTickerStream()).subscribe(slot ->
-          logPeer.debug("New slot: " + slot.toString(chainSpec, genesisTime)));
+          logPeer.debug("New slot: " + slot.toString(specConstants, genesisTime)));
       Flux.from(launcher.observableStateProcessor.getObservableStateStream())
           .subscribe(os -> {
             latestStates.put(finalI, os);
@@ -199,13 +201,13 @@ public class SimulatorLauncher implements Runnable {
           });
       Flux.from(launcher.beaconChainValidator.getProposedBlocksStream())
           .subscribe(block -> logPeer.info("New block created: "
-              + block.toString(chainSpec, genesisTime, specHelpers::hash_tree_root)));
+              + block.toString(specConstants, genesisTime, specHelpers::hash_tree_root)));
       Flux.from(launcher.beaconChainValidator.getAttestationsStream())
           .subscribe(attest -> logPeer.info("New attestation created: "
-              + attest.toString(chainSpec, genesisTime)));
+              + attest.toString(specConstants, genesisTime)));
       Flux.from(launcher.beaconChain.getBlockStatesStream())
           .subscribe(blockState -> logPeer.debug("Block imported: "
-              + blockState.getBlock().toString(chainSpec, genesisTime, specHelpers::hash_tree_root)));
+              + blockState.getBlock().toString(specConstants, genesisTime, specHelpers::hash_tree_root)));
     }
 
     logger.info("Creating observer peer...");

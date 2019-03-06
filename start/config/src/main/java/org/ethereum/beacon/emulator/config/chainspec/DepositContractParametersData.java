@@ -13,10 +13,6 @@ public class DepositContractParametersData implements DepositContractParameters 
   private String DEPOSIT_CONTRACT_ADDRESS;
   @JsonProperty("DEPOSIT_CONTRACT_TREE_DEPTH")
   private String DEPOSIT_CONTRACT_TREE_DEPTH;
-  @JsonProperty("MIN_DEPOSIT_AMOUNT")
-  private String MIN_DEPOSIT_AMOUNT;
-  @JsonProperty("MAX_DEPOSIT_AMOUNT")
-  private String MAX_DEPOSIT_AMOUNT;
 
   @Override
   @JsonIgnore
@@ -28,18 +24,6 @@ public class DepositContractParametersData implements DepositContractParameters 
   @JsonIgnore
   public UInt64 getDepositContractTreeDepth() {
     return UInt64.valueOf(getDEPOSIT_CONTRACT_TREE_DEPTH());
-  }
-
-  @Override
-  @JsonIgnore
-  public Gwei getMinDepositAmount() {
-    return Gwei.castFrom(UInt64.valueOf(getMIN_DEPOSIT_AMOUNT()));
-  }
-
-  @Override
-  @JsonIgnore
-  public Gwei getMaxDepositAmount() {
-    return Gwei.castFrom(UInt64.valueOf(getMAX_DEPOSIT_AMOUNT()));
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
@@ -58,23 +42,5 @@ public class DepositContractParametersData implements DepositContractParameters 
 
   public void setDEPOSIT_CONTRACT_TREE_DEPTH(String DEPOSIT_CONTRACT_TREE_DEPTH) {
     this.DEPOSIT_CONTRACT_TREE_DEPTH = DEPOSIT_CONTRACT_TREE_DEPTH;
-  }
-
-  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-  public String getMIN_DEPOSIT_AMOUNT() {
-    return MIN_DEPOSIT_AMOUNT;
-  }
-
-  public void setMIN_DEPOSIT_AMOUNT(String MIN_DEPOSIT_AMOUNT) {
-    this.MIN_DEPOSIT_AMOUNT = MIN_DEPOSIT_AMOUNT;
-  }
-
-  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-  public String getMAX_DEPOSIT_AMOUNT() {
-    return MAX_DEPOSIT_AMOUNT;
-  }
-
-  public void setMAX_DEPOSIT_AMOUNT(String MAX_DEPOSIT_AMOUNT) {
-    this.MAX_DEPOSIT_AMOUNT = MAX_DEPOSIT_AMOUNT;
   }
 }

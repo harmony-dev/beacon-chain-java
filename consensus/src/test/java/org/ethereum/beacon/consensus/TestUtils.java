@@ -62,7 +62,7 @@ public class TestUtils {
               Collections.singletonList(Hash32.random(rnd)),
               UInt64.ZERO,
               new DepositData(
-                  specHelpers.getChainSpec().getMaxDepositAmount(),
+                  specHelpers.getConstants().getMaxDepositAmount(),
                   Time.of(0),
                   new DepositInput(
                       BLSPubkey.wrap(Bytes48.leftPad(keyPair.getPublic().getEncodedBytes())),
@@ -88,7 +88,7 @@ public class TestUtils {
               Collections.singletonList(Hash32.random(rnd)),
               counter,
               new DepositData(
-                  specHelpers.getChainSpec().getMaxDepositAmount(),
+                  specHelpers.getConstants().getMaxDepositAmount(),
                   Time.of(0),
                   new DepositInput(pubkey, proofOfPosession, BLSSignature.ZERO)));
       deposits.add(deposit);

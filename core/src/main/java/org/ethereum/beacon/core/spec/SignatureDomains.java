@@ -20,4 +20,6 @@ public interface SignatureDomains {
   UInt64 EXIT = UInt64.valueOf(3);
 
   UInt64 RANDAO = UInt64.valueOf(4);
+
+  UInt64 TRANSFER = UInt64.valueOf(5);
 }

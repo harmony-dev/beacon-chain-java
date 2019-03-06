@@ -6,6 +6,7 @@ import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -21,13 +22,13 @@ import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
+import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustodyBit;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.operations.slashing.SlashableAttestation;
-import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.spec.SignatureDomains;
-import org.ethereum.beacon.core.spec.ValidatorStatusFlags;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.ForkData;
 import org.ethereum.beacon.core.state.ShardCommittee;
 import org.ethereum.beacon.core.state.ValidatorRecord;
@@ -46,12 +47,13 @@ import org.ethereum.beacon.crypto.BLS381.PublicKey;
 import org.ethereum.beacon.crypto.BLS381.Signature;
 import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.crypto.MessageParameters;
+import org.javatuples.Pair;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes3;
 import tech.pegasys.artemis.util.bytes.Bytes32;
-import tech.pegasys.artemis.util.bytes.Bytes32s;
 import tech.pegasys.artemis.util.bytes.Bytes8;
 import tech.pegasys.artemis.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.bytes.BytesValues;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
 import tech.pegasys.artemis.util.uint.UInt64s;
@@ -60,37 +62,37 @@ import tech.pegasys.artemis.util.uint.UInt64s;
  * https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md#helper-functions
  */
 public class SpecHelpers {
-  private final ChainSpec spec;
+  private final SpecConstants constants;
   private final ObjectHasher<Hash32> objectHasher;
   private final Function<BytesValue, Hash32> hashFunction;
 
   /**
-   * Creates a SpecHelpers instance with given {@link ChainSpec} and time supplier,
+   * Creates a SpecHelpers instance with given {@link SpecConstants} and time supplier,
    * {@link Hashes#keccak256(BytesValue)} as a hash function and {@link SSZObjectHasher} as an object
    * hasher.
    *
-   * @param spec a chain spec.
+   * @param constants a chain constants.
    *    <code>Schedulers::currentTime</code> is passed
    * @return spec helpers instance.
    */
-  public static SpecHelpers createWithSSZHasher(@Nonnull ChainSpec spec) {
-    Objects.requireNonNull(spec);
+  public static SpecHelpers createWithSSZHasher(@Nonnull SpecConstants constants) {
+    Objects.requireNonNull(constants);
 
     Function<BytesValue, Hash32> hashFunction = Hashes::keccak256;
     ObjectHasher<Hash32> sszHasher = SSZObjectHasher.create(hashFunction);
-    return new SpecHelpers(spec, hashFunction, sszHasher);
+    return new SpecHelpers(constants, hashFunction, sszHasher);
   }
 
-  public SpecHelpers(ChainSpec spec,
+  public SpecHelpers(SpecConstants constants,
       Function<BytesValue, Hash32> hashFunction,
       ObjectHasher<Hash32> objectHasher) {
-    this.spec = spec;
+    this.constants = constants;
     this.objectHasher = objectHasher;
     this.hashFunction = hashFunction;
   }
 
-  public ChainSpec getChainSpec() {
-    return spec;
+  public SpecConstants getConstants() {
+    return constants;
   }
 
   public Hash32 hash(BytesValue data) {
@@ -105,20 +107,22 @@ public class SpecHelpers {
         return max(
             1,
             min(
-                SHARD_COUNT // EPOCH_LENGTH,
-                active_validator_count // EPOCH_LENGTH // TARGET_COMMITTEE_SIZE,
+                SHARD_COUNT // SLOTS_PER_EPOCH,
+                active_validator_count // SLOTS_PER_EPOCH // TARGET_COMMITTEE_SIZE,
             )
-        ) * EPOCH_LENGTH
+        ) * SLOTS_PER_EPOCH
    */
   int get_epoch_committee_count(int active_validator_count) {
     return UInt64s.max(UInt64.valueOf(1),
         UInt64s.min(
-            spec.getShardCount().dividedBy(spec.getEpochLength()),
+            constants.getShardCount().dividedBy(constants.getSlotsPerEpoch()),
             UInt64.valueOf(active_validator_count)
-                .dividedBy(spec.getEpochLength())
-                .dividedBy(spec.getTargetCommitteeSize())
-        )).times(spec.getEpochLength()).intValue();
+                .dividedBy(constants.getSlotsPerEpoch())
+                .dividedBy(constants.getTargetCommitteeSize())
+        )).times(constants.getSlotsPerEpoch()).intValue();
   }
+
+
 
   /*
     def get_previous_epoch_committee_count(state: BeaconState) -> int:
@@ -127,14 +131,14 @@ public class SpecHelpers {
         """
         previous_active_validators = get_active_validator_indices(
             state.validator_registry,
-            state.previous_calculation_epoch,
+            state.previous_shuffling_epoch,
         )
         return get_epoch_committee_count(len(previous_active_validators))
    */
   public int get_previous_epoch_committee_count(BeaconState state) {
     List<ValidatorIndex> previous_active_validators = get_active_validator_indices(
         state.getValidatorRegistry(),
-        state.getPreviousCalculationEpoch());
+        state.getPreviousShufflingEpoch());
     return get_epoch_committee_count(previous_active_validators.size());
   }
 
@@ -145,19 +149,22 @@ public class SpecHelpers {
         """
         current_active_validators = get_active_validator_indices(
             state.validator_registry,
-            state.current_calculation_epoch,
+            state.current_shuffling_epoch,
         )
         return get_epoch_committee_count(len(current_active_validators))
    */
   public int get_current_epoch_committee_count(BeaconState state) {
     List<ValidatorIndex> current_active_validators = get_active_validator_indices(
         state.getValidatorRegistry(),
-        state.getCurrentCalculationEpoch());
+        state.getCurrentShufflingEpoch());
     return get_epoch_committee_count(current_active_validators.size());
   }
 
   /*
     def get_next_epoch_committee_count(state: BeaconState) -> int:
+        """
+        Return the number of committees in the next epoch of the given ``state``.
+        """
         next_active_validators = get_active_validator_indices(
             state.validator_registry,
             get_current_epoch(state) + 1,
@@ -177,123 +184,123 @@ public class SpecHelpers {
   }
 
   /*
-    Returns the list of ``(committee, shard)`` tuples for the ``slot``.
+    Return the list of ``(committee, shard)`` tuples for the ``slot``.
+    Note: There are two possible shufflings for crosslink committees for a
+    ``slot`` in the next epoch -- with and without a `registry_change`
    */
   public List<ShardCommittee> get_crosslink_committees_at_slot(
       BeaconState state, SlotNumber slot, boolean registry_change) {
 
-    SlotNumber state_epoch_slot = state.getSlot().minus(state.getSlot().modulo(spec.getEpochLength()));
-    assertTrue(state_epoch_slot.lessEqual(slot.plus(spec.getEpochLength())));
-    assertTrue(slot.less(state_epoch_slot.plus(spec.getEpochLength())));
-
-    //  epoch = slot_to_epoch(slot)
-    //  current_epoch = get_current_epoch(state)
-    //  previous_epoch = current_epoch - 1 if current_epoch > GENESIS_EPOCH else current_epoch
-    //  next_epoch = current_epoch + 1
     EpochNumber epoch = slot_to_epoch(slot);
-    EpochNumber current_epoch = get_current_epoch(state);
-    EpochNumber previous_epoch =
-        current_epoch.greater(spec.getGenesisEpoch()) ? current_epoch.decrement() : current_epoch;
-    EpochNumber next_epoch = current_epoch.increment();
-    //     assert previous_epoch <= epoch <= next_epoch
-    assertTrue(previous_epoch.lessEqual(epoch));
-    assertTrue(epoch.lessEqual(next_epoch));
-    /*
-      if epoch == previous_epoch:
-        committees_per_epoch = get_previous_epoch_committee_count(state)
-        seed = state.previous_epoch_seed
-        shuffling_epoch = state.previous_calculation_epoch
-        shuffling_start_shard = state.previous_epoch_start_shard
-     */
-    int committees_per_epoch;
+    EpochNumber currentEpoch = get_current_epoch(state);
+    EpochNumber previousEpoch = get_previous_epoch(state);
+    EpochNumber nextEpoch = currentEpoch.increment();
+
+    assertTrue(previousEpoch.lessEqual(epoch) && epoch.lessEqual(nextEpoch));
+
     Hash32 seed;
+    int committees_per_epoch;
     EpochNumber shuffling_epoch;
     ShardNumber shuffling_start_shard;
-    if (epoch.equals(previous_epoch)) {
-      committees_per_epoch = get_previous_epoch_committee_count(state);
-      seed = state.getPreviousEpochSeed();
-      shuffling_epoch = state.getPreviousCalculationEpoch();
-      shuffling_start_shard = state.getPreviousEpochStartShard();
-    } else if (epoch.equals(current_epoch)) {
+    if (epoch.equals(currentEpoch)) {
       /*
-          elif epoch == current_epoch:
-              committees_per_epoch = get_current_epoch_committee_count(state)
-              seed = state.current_epoch_seed
-              shuffling_epoch = state.current_calculation_epoch
+        if epoch == current_epoch:
+          committees_per_epoch = get_current_epoch_committee_count(state)
+          seed = state.current_shuffling_seed
+          shuffling_epoch = state.current_shuffling_epoch
+          shuffling_start_shard = state.current_shuffling_start_shard */
 
-       */
       committees_per_epoch = get_current_epoch_committee_count(state);
-      seed = state.getCurrentEpochSeed();
-      shuffling_epoch = state.getCurrentCalculationEpoch();
-      shuffling_start_shard = state.getCurrentEpochStartShard();
-    } else {
-      assertTrue(epoch.equals(next_epoch));
+      seed = state.getCurrentShufflingSeed();
+      shuffling_epoch = state.getCurrentShufflingEpoch();
+      shuffling_start_shard = state.getCurrentShufflingStartShard();
+    } else if (epoch.equals(previousEpoch)) {
       /*
-          elif epoch == next_epoch:
-              current_committees_per_epoch = get_current_epoch_committee_count(state)
-              committees_per_epoch = get_next_epoch_committee_count(state)
-              shuffling_epoch = next_epoch
-              epochs_since_last_registry_update = current_epoch - state.validator_registry_update_epoch
+        elif epoch == previous_epoch:
+          committees_per_epoch = get_previous_epoch_committee_count(state)
+          seed = state.previous_shuffling_seed
+          shuffling_epoch = state.previous_shuffling_epoch
+          shuffling_start_shard = state.previous_shuffling_start_shard */
+      committees_per_epoch = get_previous_epoch_committee_count(state);
+      seed = state.getPreviousShufflingSeed();
+      shuffling_epoch = state.getPreviousShufflingEpoch();
+      shuffling_start_shard = state.getPreviousShufflingStartShard();
+    } else {
+      /*
+        elif epoch == next_epoch:
+          current_committees_per_epoch = get_current_epoch_committee_count(state)
+          committees_per_epoch = get_next_epoch_committee_count(state)
+          shuffling_epoch = next_epoch
 
-       */
+          epochs_since_last_registry_update = current_epoch - state.validator_registry_update_epoch */
+
       int current_committees_per_epoch = get_current_epoch_committee_count(state);
       committees_per_epoch = get_next_epoch_committee_count(state);
-      shuffling_epoch = next_epoch;
-      EpochNumber epochs_since_last_registry_update = current_epoch
-          .minus(state.getValidatorRegistryUpdateEpoch());
-      /*
-        if registry_change:
-            seed = generate_seed(state, next_epoch)
-            shuffling_start_shard = (state.current_epoch_start_shard + current_committees_per_epoch) % SHARD_COUNT
-       */
+      shuffling_epoch = nextEpoch;
+
+      EpochNumber epochs_since_last_registry_update =
+          currentEpoch.minus(state.getValidatorRegistryUpdateEpoch());
+
       if (registry_change) {
-        seed = generate_seed(state, next_epoch);
-        shuffling_start_shard = state.getCurrentEpochStartShard()
-            .plusModulo(current_committees_per_epoch, spec.getShardCount());
+        /*
+          if registry_change:
+            seed = generate_seed(state, next_epoch)
+            shuffling_start_shard = (state.current_shuffling_start_shard + current_committees_per_epoch) % SHARD_COUNT */
+        seed = generate_seed(state, nextEpoch);
+        shuffling_start_shard = ShardNumber.of(state.getCurrentShufflingStartShard()
+            .plus(current_committees_per_epoch).modulo(constants.getShardCount()));
       } else if (epochs_since_last_registry_update.greater(EpochNumber.of(1)) &&
           is_power_of_two(epochs_since_last_registry_update)) {
         /*
           elif epochs_since_last_registry_update > 1 and is_power_of_two(epochs_since_last_registry_update):
             seed = generate_seed(state, next_epoch)
-            shuffling_start_shard = state.current_epoch_start_shard
-         */
-        seed = generate_seed(state, next_epoch);
-        shuffling_start_shard = state.getCurrentEpochStartShard();
+            shuffling_start_shard = state.current_shuffling_start_shard */
+        seed = generate_seed(state, nextEpoch);
+        shuffling_start_shard = state.getCurrentShufflingStartShard();
       } else {
         /*
           else:
-            seed = state.current_epoch_seed
-            shuffling_start_shard = state.current_epoch_start_shard
-         */
-        seed = state.getCurrentEpochSeed();
-        shuffling_start_shard = state.getCurrentEpochStartShard();
+            seed = state.current_shuffling_seed
+            shuffling_start_shard = state.current_shuffling_start_shard */
+        seed = state.getCurrentShufflingSeed();
+        shuffling_start_shard = state.getCurrentShufflingStartShard();
       }
     }
-    List<List<ValidatorIndex>> shuffling = get_shuffling(seed, state.getValidatorRegistry(),
-        shuffling_epoch);
-
-    //    offset = slot % EPOCH_LENGTH
-    SlotNumber offset = slot.modulo(spec.getEpochLength());
-    //    committees_per_slot = committees_per_epoch // EPOCH_LENGTH
-    UInt64 committees_per_slot = UInt64.valueOf(committees_per_epoch).dividedBy(spec.getEpochLength());
-    //    slot_start_shard = (shuffling_start_shard + committees_per_slot * offset) % SHARD_COUNT
-    ShardNumber slot_start_shard = shuffling_start_shard
-        .plusModulo(committees_per_slot.times(offset), spec.getShardCount());
 
     /*
-       return [
+      shuffling = get_shuffling(
+        seed,
+        state.validator_registry,
+        shuffling_epoch,
+      ) */
+    List<List<ValidatorIndex>> shuffling = get_shuffling(
+        seed,
+        state.getValidatorRegistry(),
+        shuffling_epoch
+    );
+
+    /*
+      offset = slot % SLOTS_PER_EPOCH
+      committees_per_slot = committees_per_epoch // SLOTS_PER_EPOCH
+      slot_start_shard = (shuffling_start_shard + committees_per_slot * offset) % SHARD_COUNT */
+    SlotNumber offset = slot.modulo(constants.getSlotsPerEpoch());
+    UInt64 committees_per_slot = UInt64.valueOf(committees_per_epoch).dividedBy(constants.getSlotsPerEpoch());
+    ShardNumber slot_start_shard = ShardNumber.of(
+        shuffling_start_shard.plus(committees_per_slot).times(offset).modulo(constants.getShardCount()));
+
+    /*
+      return [
         (
             shuffling[committees_per_slot * offset + i],
             (slot_start_shard + i) % SHARD_COUNT,
         )
         for i in range(committees_per_slot)
-      ]
-     */
+      ] */
     List<ShardCommittee> ret = new ArrayList<>();
     for(int i = 0; i < committees_per_slot.intValue(); i++) {
       ShardCommittee committee = new ShardCommittee(
           shuffling.get(committees_per_slot.times(offset).plus(i).getIntValue()),
-          slot_start_shard.plusModulo(i, spec.getShardCount()));
+          slot_start_shard.plusModulo(i, constants.getShardCount()));
       ret.add(committee);
     }
 
@@ -355,10 +362,10 @@ public class SpecHelpers {
         return state.latest_randao_mixes[epoch % LATEST_RANDAO_MIXES_LENGTH]
     */
   public Hash32 get_randao_mix(BeaconState state, EpochNumber epoch) {
-    assertTrue(get_current_epoch(state).minus(spec.getLatestRandaoMixesLength()).less(epoch));
+    assertTrue(get_current_epoch(state).minus(constants.getLatestRandaoMixesLength()).less(epoch));
     assertTrue(epoch.lessEqual(get_current_epoch(state)));
     return state.getLatestRandaoMixes().get(
-        epoch.modulo(spec.getLatestRandaoMixesLength()));
+        epoch.modulo(constants.getLatestRandaoMixesLength()));
   }
 
   /*
@@ -442,6 +449,64 @@ public class SpecHelpers {
   }
 
   /*
+  def get_permuted_index(index: int, list_size: int, seed: Bytes32) -> int:
+    """
+    Return `p(index)` in a pseudorandom permutation `p` of `0...list_size-1` with ``seed`` as entropy.
+
+    Utilizes 'swap or not' shuffling found in
+    https://link.springer.com/content/pdf/10.1007%2F978-3-642-32009-5_1.pdf
+    See the 'generalized domain' algorithm on page 3.
+    """
+    assert index < list_size
+    assert list_size <= 2**40
+
+    for round in range(SHUFFLE_ROUND_COUNT):
+        pivot = bytes_to_int(hash(seed + int_to_bytes1(round))[0:8]) % list_size
+        flip = (pivot - index) % list_size
+        position = max(index, flip)
+        source = hash(seed + int_to_bytes1(round) + int_to_bytes4(position // 256))
+        byte = source[(position % 256) // 8]
+        bit = (byte >> (position % 8)) % 2
+        index = flip if bit else index
+
+    return index
+   */
+  public UInt64 get_permuted_index(UInt64 index, UInt64 listSize, Bytes32 seed) {
+    assertTrue(index.compareTo(listSize) < 0);
+    assertTrue(listSize.compareTo(UInt64.valueOf(1L << 40)) <= 0);
+
+    for (int round = 0; round < constants.getShuffleRoundCount(); round++) {
+      Bytes8 pivotBytes = Bytes8.wrap(hash(seed.concat(int_to_bytes1(round))), 0);
+      UInt64 pivot = bytes_to_int(pivotBytes).modulo(listSize);
+      UInt64 flip = pivot.minus(index).modulo(listSize);
+      UInt64 position = UInt64s.max(index, flip);
+      BytesValue positionBytes = int_to_bytes4(position.dividedBy(UInt64.valueOf(256)).getValue());
+      Bytes32 source = hash(seed.concat(int_to_bytes1(round)).concat(positionBytes));
+      byte byt = source.get(position.modulo(256).getIntValue() / 8);
+      byte bit = (byte) ((byt >> (position.modulo(8).getIntValue())) % 2);
+      index = bit > 0 ? flip : index;
+    }
+
+    return index;
+  }
+
+  public UInt64 bytes_to_int(Bytes8 bytes) {
+    return UInt64.fromBytesLittleEndian(bytes);
+  }
+
+  public BytesValue int_to_bytes1(int value) {
+    return BytesValues.ofUnsignedByte(value);
+  }
+
+  public BytesValue int_to_bytes4(long value) {
+    return BytesValues.ofUnsignedIntLittleEndian(value);
+  }
+
+  public BytesValue int_to_bytes32(UInt64 value) {
+    return value.toBytes8LittleEndian();
+  }
+
+  /*
    def split(values: List[Any], split_count: int) -> List[Any]:
    """
    Splits ``values`` into ``split_count`` pieces.
@@ -462,33 +527,33 @@ public class SpecHelpers {
     return ret;
   }
 
-  //  def get_shuffling(randao_mix: Hash32,
-  //              validators: List[ValidatorRecord],
-  //              slot: int) -> List[List[int]]
-  //  """
-  //  Shuffles ``validators`` into shard committees seeded by ``seed`` and ``slot``.
-  //  Returns a list of ``EPOCH_LENGTH * committees_per_slot`` committees where each
-  //  committee is itself a list of validator indices.
-  //  """
-  public List<List<ValidatorIndex>> get_shuffling(Hash32 _seed,
+  /*
+  def get_shuffling(seed: Bytes32,
+                  validators: List[Validator],
+                  epoch: Epoch) -> List[List[ValidatorIndex]]
+    """
+    Shuffle active validators and split into crosslink committees.
+    Return a list of committees (each a list of validator indices).
+    """
+    # Shuffle active validator indices
+    active_validator_indices = get_active_validator_indices(validators, epoch)
+    length = len(active_validator_indices)
+    shuffled_indices = [active_validator_indices[get_permuted_index(i, length, seed)] for i in range(length)]
+
+    # Split the shuffled active validator indices
+    return split(shuffled_indices, get_epoch_committee_count(length))
+   */
+  public List<List<ValidatorIndex>> get_shuffling(Hash32 seed,
                                ReadList<ValidatorIndex, ValidatorRecord> validators,
                                EpochNumber epoch) {
-
-
-    //      active_validator_indices = get_active_validator_indices(validators, slot)
-    List<ValidatorIndex>  active_validator_indices = get_active_validator_indices(validators, epoch);
-    //      committees_per_epoch = get_epoch_committee_count(len(active_validator_indices))
-    int committees_per_epoch = get_epoch_committee_count(active_validator_indices.size());
-
-    //      # Shuffle
-    //      seed = xor(seed, int_to_bytes32(epoch))
-    Hash32 seed = Hash32.wrap(Bytes32s.xor(_seed, Bytes32.leftPad(epoch.toBytesBigEndian())));
-
-    //  shuffled_active_validator_indices = shuffle(active_validator_indices, seed)
-    List<ValidatorIndex> shuffled_active_validator_indices = shuffle(active_validator_indices, seed);
-    //    # Split the shuffled list into committees_per_epoch pieces
-    //    return split(shuffled_active_validator_indices, committees_per_epoch)
-    return split(shuffled_active_validator_indices, committees_per_epoch);
+    List<ValidatorIndex> active_validator_indices = get_active_validator_indices(validators, epoch);
+    int length = active_validator_indices.size();
+    List<ValidatorIndex> shuffled_indices =
+        IntStream.range(0, length)
+            .mapToObj(i -> get_permuted_index(UInt64.valueOf(i), UInt64.valueOf(length), seed))
+            .map(permutedIndex -> active_validator_indices.get(permutedIndex.getIntValue()))
+            .collect(toList());
+    return split(shuffled_indices, get_epoch_committee_count(length));
   }
 
   /*
@@ -527,7 +592,19 @@ public class SpecHelpers {
   public Gwei get_effective_balance(BeaconState state, ValidatorIndex validatorIdx) {
     return UInt64s.min(
         state.getValidatorBalances().get(validatorIdx),
-        spec.getMaxDepositAmount());
+        constants.getMaxDepositAmount());
+  }
+
+  /*
+    def get_total_balance(state: BeaconState, validators: List[ValidatorIndex]) -> Gwei:
+      """
+      Return the combined effective balance of an array of validators.
+      """
+      return sum([get_effective_balance(state, i) for i in validators])
+   */
+  public Gwei get_total_balance(BeaconState state, Collection<ValidatorIndex> validators) {
+    return validators.stream().map(index -> get_effective_balance(state, index))
+        .reduce(Gwei.ZERO, Gwei::plus);
   }
 
   /*
@@ -568,146 +645,101 @@ public class SpecHelpers {
   }
 
   /*
-    def validate_proof_of_possession(state: BeaconState,
-                                     pubkey: int,
-                                     proof_of_possession: bytes,
-                                     withdrawal_credentials: Hash32) -> bool:
-        proof_of_possession_data = DepositInput(
-            pubkey=pubkey,
-            withdrawal_credentials=withdrawal_credentials,
-            proof_of_possession=EMPTY_SIGNATURE,
-        )
-
-        return bls_verify(
-            pubkey=pubkey,
-            message=hash_tree_root(proof_of_possession_data),
-            signature=proof_of_possession,
-            domain=get_domain(
-                state.fork,
-                get_current_epoch(state),
-                DOMAIN_DEPOSIT,
-            )
-        )
- */
-  public boolean validate_proof_of_possession(
-      MutableBeaconState state,
-      BLSPubkey pubkey,
-      BLSSignature proof_of_possession,
-      Hash32 withdrawal_credentials) {
-
-    DepositInput deposit_input =
-        new DepositInput(pubkey, withdrawal_credentials, spec.getEmptySignature());
-
-    return bls_verify(
-        pubkey,
-        signed_root(deposit_input, "proofOfPossession"),
-        proof_of_possession,
-        get_domain(state.getForkData(), get_current_epoch(state), SignatureDomains.DEPOSIT));
-  }
-
-  /*
-  def process_deposit(state: BeaconState,
-                    pubkey: BLSPubkey,
-                    amount: Gwei,
-                    proof_of_possession: BLSSignature,
-                    withdrawal_credentials: Hash32) -> None:
-    """
-    Process a deposit from Ethereum 1.0.
-    Note that this function mutates ``state``.
-    """
+    def process_deposit(state: BeaconState, deposit: Deposit) -> None:
+      """
+      Process a deposit from Ethereum 1.0.
+      Note that this function mutates ``state``.
+      """
     */
-  public ValidatorIndex process_deposit(
+  public void process_deposit(
       MutableBeaconState state,
-      BLSPubkey pubkey,
-      Gwei amount,
-      BLSSignature proof_of_possession,
-      Hash32 withdrawal_credentials) {
+      Deposit deposit) {
 
-    //  # Validate the given `proof_of_possession`
-    //  assert validate_proof_of_possession(
-    //      state,
-    //      pubkey,
-    //      proof_of_possession,
-    //      withdrawal_credentials,
-    //      )
-    assertTrue(
-        validate_proof_of_possession(state, pubkey, proof_of_possession, withdrawal_credentials));
+    /* deposit_input = deposit.deposit_data.deposit_input
 
-    //  validator_pubkeys = [v.pubkey for v in state.validator_registry]
-    ValidatorIndex index = null;
-    for (ValidatorIndex i : state.getValidatorRegistry().size()) {
-      if (state.getValidatorRegistry().get(i).getPubKey().equals(pubkey)) {
-        index = i;
-        break;
-      }
+    proof_is_valid = bls_verify(
+        pubkey=deposit_input.pubkey,
+        message_hash=signed_root(deposit_input, "proof_of_possession"),
+        signature=deposit_input.proof_of_possession,
+        domain=get_domain(
+            state.fork,
+            get_current_epoch(state),
+            DOMAIN_DEPOSIT,
+            )
+    )
+
+    if not proof_is_valid:
+      return */
+
+    DepositInput deposit_input = deposit.getDepositData().getDepositInput();
+
+    boolean proof_is_valid =
+        bls_verify(
+            deposit_input.getPubKey(),
+            signed_root(deposit_input, "proofOfPossession"),
+            deposit_input.getProofOfPossession(),
+            get_domain(state.getForkData(), get_current_epoch(state), SignatureDomains.DEPOSIT));
+
+    if (!proof_is_valid) {
+      return;
     }
 
-    //  if pubkey not in validator_pubkeys:
-    if (index == null) {
-      //  # Add new validator
-      //  validator = Validator(
-      //    pubkey=pubkey,
-      //    withdrawal_credentials=withdrawal_credentials,
-      //    proposer_slots=0,
-      //    activation_slot=FAR_FUTURE_SLOT,
-      //    exit_slot=FAR_FUTURE_SLOT,
-      //    withdrawal_slot=FAR_FUTURE_SLOT,
-      //    penalized_slot=FAR_FUTURE_SLOT,
-      //    exit_count=0,
-      //    status_flags=0,
-      //    custody_commitment=custody_commitment,
-      //    latest_custody_reseed_slot=GENESIS_SLOT,
-      //    penultimate_custody_reseed_slot=GENESIS_SLOT,
-      //  )
+    /*
+    validator_pubkeys = [v.pubkey for v in state.validator_registry]
+    pubkey = deposit_input.pubkey
+    amount = deposit.deposit_data.amount
+    withdrawal_credentials = deposit_input.withdrawal_credentials */
+
+    BLSPubkey pubkey = deposit_input.getPubKey();
+    Gwei amount = deposit.getDepositData().getAmount();
+    Hash32 withdrawal_credentials = deposit_input.getWithdrawalCredentials();
+    ValidatorIndex index = get_validator_index_by_pubkey(state, pubkey);
+
+    if (index.equals(ValidatorIndex.MAX)) {
+      // Add new validator
       ValidatorRecord validator = new ValidatorRecord(
           pubkey,
           withdrawal_credentials,
-          spec.getFarFutureEpoch(),
-          spec.getFarFutureEpoch(),
-          spec.getFarFutureEpoch(),
-          spec.getFarFutureEpoch(),
-          UInt64.ZERO);
+          constants.getFarFutureEpoch(),
+          constants.getFarFutureEpoch(),
+          constants.getFarFutureEpoch(),
+          Boolean.FALSE,
+          Boolean.FALSE);
 
-      //  # Note: In phase 2 registry indices that has been withdrawn for a long time will be recycled.
-      //  index = len(state.validator_registry)
-      index = state.getValidatorRegistry().size();
-      //  state.validator_registry.append(validator)
+      // Note: In phase 2 registry indices that have been withdrawn for a long time will be
+      // recycled.
       state.getValidatorRegistry().add(validator);
-      //  state.validator_balances.append(amount)
       state.getValidatorBalances().add(amount);
     } else {
-      //  # Increase balance by deposit amount
-      //  index = validator_pubkeys.index(pubkey)
-      //  assert state.validator_registry[index].withdrawal_credentials == withdrawal_credentials
+      // Increase balance by deposit amount
       assertTrue(
           state
               .getValidatorRegistry()
               .get(index)
               .getWithdrawalCredentials()
               .equals(withdrawal_credentials));
-      //  state.validator_balances[index] += amount
-      state.getValidatorBalances().update(index, balance -> balance.plus(amount));
+
+      state.getValidatorBalances().update(index, oldBalance -> oldBalance.plus(amount));
     }
-    return index;
   }
 
   /*
-    def get_entry_exit_effect_epoch(epoch: EpochNumber) -> EpochNumber:
+    def get_delayed_activation_exit_epoch(epoch: EpochNumber) -> EpochNumber:
         """
         An entry or exit triggered in the ``epoch`` given by the input takes effect at
         the epoch given by the output.
         """
-        return epoch + 1 + ENTRY_EXIT_DELAY
+        return epoch + 1 + ACTIVATION_EXIT_DELAY
    */
-  public EpochNumber get_entry_exit_effect_epoch(EpochNumber epoch) {
-    return epoch.plus(1).plus(spec.getEntryExitDelay());
+  public EpochNumber get_delayed_activation_exit_epoch(EpochNumber epoch) {
+    return epoch.plus(1).plus(constants.getActivationExitDelay());
   }
 
   /*
     def activate_validator(state: BeaconState, index: int, genesis: bool) -> None:
       validator = state.validator_registry[index]
 
-      validator.activation_slot = GENESIS_SLOT if genesis else (state.slot + ENTRY_EXIT_DELAY)
+      validator.activation_slot = GENESIS_SLOT if genesis else (state.slot + ACTIVATION_EXIT_DELAY)
       state.validator_registry_delta_chain_tip = hash_tree_root(
           ValidatorRegistryDeltaBlock(
               latest_registry_delta_root=state.validator_registry_delta_chain_tip,
@@ -720,46 +752,55 @@ public class SpecHelpers {
    */
   public void activate_validator(MutableBeaconState state, ValidatorIndex index, boolean genesis) {
     EpochNumber activationSlot =
-        genesis ? spec.getGenesisEpoch() : get_entry_exit_effect_epoch(get_current_epoch(state));
+        genesis ? constants.getGenesisEpoch() : get_delayed_activation_exit_epoch(get_current_epoch(state));
     state
         .getValidatorRegistry()
         .update(index, v -> v.builder().withActivationEpoch(activationSlot).build());
   }
 
   /*
-    def penalize_validator(state: BeaconState, index: int) -> None:
-      exit_validator(state, index)
-      validator = state.validator_registry[index]
-      state.latest_penalized_balances[get_current_epoch(state) % LATEST_PENALIZED_EXIT_LENGTH]
-          += get_effective_balance(state, index)
+    def slash_validator(state: BeaconState, index: ValidatorIndex) -> None:
+    """
+    Slash the validator with index ``index``.
+    Note that this function mutates ``state``.
+    """
+    validator = state.validator_registry[index]
+    assert state.slot < get_epoch_start_slot(validator.withdrawable_epoch)  # [TO BE REMOVED IN PHASE 2]
+    exit_validator(state, index)
+    state.latest_slashed_balances[get_current_epoch(state) % LATEST_SLASHED_EXIT_LENGTH] += get_effective_balance(state, index)
 
-      whistleblower_index = get_beacon_proposer_index(state, state.slot)
-      whistleblower_reward = get_effective_balance(state, index) // WHISTLEBLOWER_REWARD_QUOTIENT
-      state.validator_balances[whistleblower_index] += whistleblower_reward
-      state.validator_balances[index] -= whistleblower_reward
-      validator.penalized_epoch = get_current_epoch(state)
+    whistleblower_index = get_beacon_proposer_index(state, state.slot)
+    whistleblower_reward = get_effective_balance(state, index) // WHISTLEBLOWER_REWARD_QUOTIENT
+    state.validator_balances[whistleblower_index] += whistleblower_reward
+    state.validator_balances[index] -= whistleblower_reward
+    validator.slashed = True
+    validator.withdrawable_epoch = get_current_epoch(state) + LATEST_SLASHED_EXIT_LENGTH
     */
-  public void penalize_validator(MutableBeaconState state, ValidatorIndex index) {
+  public void slash_validator(MutableBeaconState state, ValidatorIndex index) {
+    ValidatorRecord validator = state.getValidatorRegistry().get(index);
+    assertTrue(state.getSlot().less(get_epoch_start_slot(validator.getWithdrawableEpoch())));
     exit_validator(state, index);
-    state.getLatestPenalizedBalances().update(
-        get_current_epoch(state).modulo(spec.getLatestPenalizedExitLength()),
+    state.getLatestSlashedBalances().update(
+        get_current_epoch(state).modulo(constants.getLatestSlashedExitLength()),
         balance -> balance.plus(get_effective_balance(state, index)));
 
     ValidatorIndex whistleblower_index = get_beacon_proposer_index(state, state.getSlot());
     Gwei whistleblower_reward = get_effective_balance(state, index)
-            .dividedBy(spec.getWhistleblowerRewardQuotient());
+            .dividedBy(constants.getWhistleblowerRewardQuotient());
     state.getValidatorBalances().update(whistleblower_index,
         oldVal -> oldVal.plus(whistleblower_reward));
     state.getValidatorBalances().update(index,
         oldVal -> oldVal.minus(whistleblower_reward));
     state.getValidatorRegistry().update(index,
-        v -> v.builder().withPenalizedEpoch(get_current_epoch(state)).build());
+        v -> v.builder().withSlashed(Boolean.TRUE)
+            .withWithdrawableEpoch(get_current_epoch(state).plus(constants.getLatestSlashedExitLength()))
+            .build());
   }
 
   /*
    def initiate_validator_exit(state: BeaconState, index: int) -> None:
      validator = state.validator_registry[index]
-     validator.status_flags |= INITIATED_EXIT
+     validator.initiated_exit = True
   */
   public void initiate_validator_exit(MutableBeaconState state, ValidatorIndex index) {
     state
@@ -768,7 +809,7 @@ public class SpecHelpers {
             index,
             v ->
                 v.builder()
-                    .withStatusFlags(flags -> flags.or(ValidatorStatusFlags.INITIATED_EXIT))
+                    .withInitiatedExit(Boolean.TRUE)
                     .build());
   }
 
@@ -781,19 +822,19 @@ public class SpecHelpers {
       validator = state.validator_registry[index]
 
       # The following updates only occur if not previous exited
-      if validator.exit_epoch <= get_entry_exit_effect_epoch(get_current_epoch(state)):
+      if validator.exit_epoch <= get_delayed_activation_exit_epoch(get_current_epoch(state)):
           return
 
-      validator.exit_epoch = get_entry_exit_effect_epoch(get_current_epoch(state))
+      validator.exit_epoch = get_delayed_activation_exit_epoch(get_current_epoch(state))
    */
   public void exit_validator(MutableBeaconState state, ValidatorIndex index) {
     ValidatorRecord validator = state.getValidatorRegistry().get(index);
-    if (validator.getExitEpoch().lessEqual(get_entry_exit_effect_epoch(get_current_epoch(state)))) {
+    if (validator.getExitEpoch().lessEqual(get_delayed_activation_exit_epoch(get_current_epoch(state)))) {
       return;
     }
     state.getValidatorRegistry().update(index, v ->
         v.builder().withExitEpoch(
-            get_entry_exit_effect_epoch(get_current_epoch(state))
+            get_delayed_activation_exit_epoch(get_current_epoch(state))
         ).build());
   }
 
@@ -813,19 +854,16 @@ public class SpecHelpers {
     List<ValidatorIndex> active_validator_indices = get_active_validator_indices(
         state.getValidatorRegistry(), current_epoch);
     // # The total effective balance of active validators
-    //    total_balance = sum([get_effective_balance(state, i) for i in active_validator_indices])
-    Gwei total_balance = Gwei.ZERO;
-    for (ValidatorIndex i : active_validator_indices) {
-      total_balance = total_balance.plus(get_effective_balance(state, i));
-    }
+    //    total_balance = get_total_balance(state, active_validator_indices)
+    Gwei total_balance = get_total_balance(state, active_validator_indices);
 
     //    # The maximum balance churn in Gwei (for deposits and exits separately)
     //    max_balance_churn = max(
     //        MAX_DEPOSIT_AMOUNT,
     //        total_balance // (2 * MAX_BALANCE_CHURN_QUOTIENT)
     //    )
-    Gwei max_balance_churn = UInt64s.max(spec.getMaxDepositAmount(),
-        total_balance.dividedBy(spec.getMaxBalanceChurnQuotient().times(2)));
+    Gwei max_balance_churn = UInt64s.max(constants.getMaxDepositAmount(),
+        total_balance.dividedBy(constants.getMaxBalanceChurnQuotient().times(2)));
 
     //    # Activate validators within the allowable balance churn
     //    balance_churn = 0
@@ -833,12 +871,11 @@ public class SpecHelpers {
     Gwei balance_churn = Gwei.ZERO;
     for (ValidatorIndex index : state.getValidatorRegistry().size()) {
       ValidatorRecord validator = state.getValidatorRegistry().get(index);
-      //  if validator.activation_epoch > get_entry_exit_effect_epoch(current_epoch)
-      //      and state.validator_balances[index] >= MAX_DEPOSIT_AMOUNT:
-      if (validator.getActivationEpoch().greater(
-              get_entry_exit_effect_epoch(current_epoch))
+      //  if validator.activation_epoch == FAR_FUTURE_EPOCH
+      //     and state.validator_balances[index] >= MAX_DEPOSIT_AMOUNT:
+      if (validator.getActivationEpoch().equals(constants.getFarFutureEpoch())
           && state.getValidatorBalances().get(index).greaterEqual(
-              spec.getMaxDepositAmount())) {
+              constants.getMaxDepositAmount())) {
 
         //    # Check the balance churn would be within the allowance
         //    balance_churn += get_effective_balance(state, index)
@@ -862,10 +899,10 @@ public class SpecHelpers {
     //    for index, validator in enumerate(state.validator_registry):
     for (ValidatorIndex index : state.getValidatorRegistry().size().iterateFromZero()) {
       ValidatorRecord validator = state.getValidatorRegistry().get(index);
-      //  if validator.exit_epoch > get_entry_exit_effect_epoch(current_epoch)
-      //      and validator.status_flags & INITIATED_EXIT:
-      if (validator.getExitEpoch().greater(get_entry_exit_effect_epoch(current_epoch))
-          && !validator.getStatusFlags().and(ValidatorStatusFlags.INITIATED_EXIT).equals(UInt64.ZERO)) {
+      //  if validator.activation_epoch == FAR_FUTURE_EPOCH
+      //      and validator.initiated_exit:
+      if (validator.getActivationEpoch().equals(constants.getFarFutureEpoch())
+          && validator.getInitiatedExit()) {
         //   # Check the balance churn would be within the allowance
         //   balance_churn += get_effective_balance(state, index)
         balance_churn = balance_churn.plus(get_effective_balance(state, index));
@@ -886,9 +923,14 @@ public class SpecHelpers {
   }
 
   /*
-   def prepare_validator_for_withdrawal(state: BeaconState, index: int) -> None:
-       validator = state.validator_registry[index]
-       validator.status_flags |= WITHDRAWABLE
+   def prepare_validator_for_withdrawal(state: BeaconState, index: ValidatorIndex) -> None:
+      """
+      Set the validator with the given ``index`` as withdrawable
+      ``MIN_VALIDATOR_WITHDRAWABILITY_DELAY`` after the current epoch.
+      Note that this function mutates ``state``.
+      """
+      validator = state.validator_registry[index]
+      validator.withdrawable_epoch = get_current_epoch(state) + MIN_VALIDATOR_WITHDRAWABILITY_DELAY
   */
   public void prepare_validator_for_withdrawal(MutableBeaconState state, ValidatorIndex index) {
     state
@@ -897,14 +939,16 @@ public class SpecHelpers {
             index,
             v ->
                 v.builder()
-                    .withStatusFlags(flags -> flags.or(ValidatorStatusFlags.WITHDRAWABLE))
+                    .withWithdrawableEpoch(
+                        get_current_epoch(state).plus(constants.getMinValidatorWithdrawabilityDelay()))
                     .build());
   }
 
   /*
-   def process_penalties_and_exits(state: BeaconState) -> None:
+      Process the slashings.
+      Note that this function mutates ``state``.
   */
-  public void process_penalties_and_exits(MutableBeaconState state) {
+  public void process_slashings(MutableBeaconState state) {
     // current_epoch = get_current_epoch(state)
     EpochNumber current_epoch = get_current_epoch(state);
 
@@ -923,21 +967,24 @@ public class SpecHelpers {
     //    for index, validator in enumerate(state.validator_registry):
     for (ValidatorIndex index : state.getValidatorRegistry().size()) {
       ValidatorRecord validator = state.getValidatorRegistry().get(index);
-      //  if current_epoch == validator.penalized_epoch + LATEST_PENALIZED_EXIT_LENGTH // 2:
-      if (current_epoch.equals(
-          validator.getPenalizedEpoch().plus(spec.getLatestPenalizedExitLength().half()))) {
+      //  if validator.slashed and current_epoch ==
+      //  validator.withdrawable_epoch - LATEST_SLASHED_EXIT_LENGTH // 2:
+      if (validator.getSlashed() && current_epoch.equals(
+          validator.getWithdrawableEpoch().minus(constants.getLatestSlashedExitLength().half()))) {
 
-        //  epoch_index = current_epoch % LATEST_PENALIZED_EXIT_LENGTH
-        EpochNumber epoch_index = current_epoch.modulo(spec.getLatestPenalizedExitLength());
-        // total_at_start = state.latest_penalized_balances[(epoch_index + 1) % LATEST_PENALIZED_EXIT_LENGTH]
-        Gwei total_at_start = state.getLatestPenalizedBalances().get(
-            epoch_index.increment().modulo(spec.getLatestPenalizedExitLength()));
-        //  total_at_end = state.latest_penalized_balances[epoch_index]
-        Gwei total_at_end = state.getLatestPenalizedBalances().get(epoch_index);
+        //  epoch_index = current_epoch % LATEST_SLASHED_EXIT_LENGTH
+        EpochNumber epoch_index = current_epoch.modulo(constants.getLatestSlashedExitLength());
+        // total_at_start = state.latest_slashed_balances[(epoch_index + 1) % LATEST_SLASHED_EXIT_LENGTH]
+        Gwei total_at_start = state.getLatestSlashedBalances().get(
+            epoch_index.increment().modulo(constants.getLatestSlashedExitLength()));
+        //  total_at_end = state.latest_slashed_balances[epoch_index]
+        Gwei total_at_end = state.getLatestSlashedBalances().get(epoch_index);
         //    total_penalties = total_at_end - total_at_start
         Gwei total_penalties = total_at_end.minus(total_at_start);
-        //    penalty = get_effective_balance(state, index) *
-        //        min(total_penalties * 3, total_balance) // total_balance
+        //    penalty = max(
+        //      get_effective_balance(state, index) * min(total_penalties * 3, total_balance) // total_balance,
+        //      get_effective_balance(state, index) // MIN_PENALTY_QUOTIENT
+        //    )
         Gwei penalty =
             get_effective_balance(state, index)
                 .mulDiv(UInt64s.min(total_penalties.times(3), total_balance), total_balance);
@@ -945,30 +992,34 @@ public class SpecHelpers {
         state.getValidatorBalances().update(index, balance -> balance.minus(penalty));
       }
     }
+  }
+
+  /*
+      Process the exit queue.
+      Note that this function mutates ``state``.
+  */
+  public void process_exit_queue(MutableBeaconState state) {
 
     /*
        def eligible(index):
-           validator = state.validator_registry[index]
-        if validator.penalized_epoch <= current_epoch:
-            penalized_withdrawal_epochs = LATEST_PENALIZED_EXIT_LENGTH // 2
-            return current_epoch >= validator.penalized_epoch + penalized_withdrawal_epochs
+        validator = state.validator_registry[index]
+        # Filter out dequeued validators
+        if validator.withdrawable_epoch != FAR_FUTURE_EPOCH:
+            return False
+        # Dequeue if the minimum amount of time has passed
         else:
-            return current_epoch >= validator.exit_epoch + MIN_VALIDATOR_WITHDRAWAL_EPOCHS
+            return get_current_epoch(state) >= validator.exit_epoch + MIN_VALIDATOR_WITHDRAWABILITY_DELAY
 
-       all_indices = list(range(len(state.validator_registry)))
-       eligible_indices = filter(eligible, all_indices)
+       eligible_indices = filter(eligible, list(range(len(state.validator_registry))))
     */
     List<ValidatorIndex> eligible_indices = new ArrayList<>();
     for (ValidatorIndex index : state.getValidatorRegistry().size().iterateFromZero()) {
       ValidatorRecord validator = state.getValidatorRegistry().get(index);
-      if (validator.getPenalizedEpoch().lessEqual(current_epoch)) {
-        if (current_epoch.greaterEqual(
-            validator.getPenalizedEpoch().plus(spec.getLatestPenalizedExitLength().half()))) {
-          eligible_indices.add(index);
-        }
+      if (validator.getWithdrawableEpoch().equals(constants.getFarFutureEpoch())) {
+        eligible_indices.add(index);
       } else {
-        if (current_epoch.greaterEqual(
-            validator.getExitEpoch().plus(spec.getMinValidatorWithdrawalEpochs()))) {
+        if (get_current_epoch(state).greaterEqual(
+            validator.getExitEpoch().plus(constants.getMinValidatorWithdrawabilityDelay()))) {
           eligible_indices.add(index);
         }
       }
@@ -977,12 +1028,14 @@ public class SpecHelpers {
     // # Sort in order of exit epoch, and validators that exit within the same epoch exit in order of validator index
     //  sorted_indices = sorted(eligible_indices,
     //          key=lambda index: state.validator_registry[index].exit_epoch)
-
-    //    sorted_indices = sorted(eligible_indices,
-    //          key=lambda index: state.validator_registry[index].exit_count)
     eligible_indices.sort(Comparator.comparing(i ->
         state.getValidatorRegistry().get(i).getExitEpoch()));
     List<ValidatorIndex> sorted_indices = eligible_indices;
+
+    // for dequeues, index in enumerate(sorted_indices):
+    //        if dequeues >= MAX_EXIT_DEQUEUES_PER_EPOCH:
+    //            break
+    //        prepare_validator_for_withdrawal(state, index)
 
     //    withdrawn_so_far = 0
     int withdrawn_so_far = 0;
@@ -992,9 +1045,9 @@ public class SpecHelpers {
       prepare_validator_for_withdrawal(state, index);
       //    withdrawn_so_far += 1
       withdrawn_so_far++;
-      //    if withdrawn_so_far >= MAX_WITHDRAWALS_PER_EPOCH:
+      //    if withdrawn_so_far >= MAX_EXIT_DEQUEUES_PER_EPOCH:
       //      break
-      if (withdrawn_so_far >= spec.getMaxWithdrawalsPerEpoch().getIntValue()) {
+      if (withdrawn_so_far >= constants.getMaxExitDequesPerEpoch().getIntValue()) {
         break;
       }
     }
@@ -1016,33 +1069,35 @@ public class SpecHelpers {
         """
         Return the index root at a recent ``epoch``.
         """
-        assert get_current_epoch(state) - LATEST_INDEX_ROOTS_LENGTH + ENTRY_EXIT_DELAY < epoch
-            <= get_current_epoch(state) + ENTRY_EXIT_DELAY
-        return state.latest_index_roots[epoch % LATEST_INDEX_ROOTS_LENGTH]
+        assert get_current_epoch(state) - LATEST_ACTIVE_INDEX_ROOTS_LENGTH + ACTIVATION_EXIT_DELAY < epoch
+            <= get_current_epoch(state) + ACTIVATION_EXIT_DELAY
+        return state.latest_active_index_roots[epoch % LATEST_ACTIVE_INDEX_ROOTS_LENGTH]
    */
   Hash32 get_active_index_root(BeaconState state, EpochNumber epoch) {
-    assertTrue(get_current_epoch(state).minus(spec.getLatestIndexRootsLength()).plus(spec.getEntryExitDelay())
+    assertTrue(get_current_epoch(state).minus(constants.getLatestActiveIndexRootsLength()).plus(
+        constants.getActivationExitDelay())
         .less(epoch));
-    assertTrue(epoch.lessEqual(get_current_epoch(state).plus(spec.getEntryExitDelay())));
-    return state.getLatestIndexRoots().get(epoch.modulo(spec.getLatestIndexRootsLength()));
+    assertTrue(epoch.lessEqual(get_current_epoch(state).plus(constants.getActivationExitDelay())));
+    return state.getLatestActiveIndexRoots().get(epoch.modulo(constants.getLatestActiveIndexRootsLength()));
   }
 
   /*
     def generate_seed(state: BeaconState,
-                      epoch: EpochNumber) -> Bytes32:
-        """
-        Generate a seed for the given ``epoch``.
-        """
-
-        return hash(
-            get_randao_mix(state, epoch - SEED_LOOKAHEAD) +
-            get_active_index_root(state, epoch)
-        )
+                  epoch: Epoch) -> Bytes32:
+      """
+      Generate a seed for the given ``epoch``.
+      """
+      return hash(
+          get_randao_mix(state, epoch - MIN_SEED_LOOKAHEAD) +
+          get_active_index_root(state, epoch) +
+          int_to_bytes32(epoch)
+      )
    */
   public Hash32 generate_seed(BeaconState state, EpochNumber epoch) {
     return hash(
-        get_randao_mix(state, epoch.minus(spec.getSeedLookahead()))
-            .concat(get_active_index_root(state, epoch)));
+        get_randao_mix(state, epoch.minus(constants.getMinSeedLookahead()))
+            .concat(get_active_index_root(state, epoch))
+            .concat(int_to_bytes32(epoch)));
   }
 
   public boolean bls_verify(BLSPubkey publicKey, Hash32 message, BLSSignature signature, Bytes8 domain) {
@@ -1113,8 +1168,8 @@ public class SpecHelpers {
      Returns True if the provided ``AttestationData`` are slashable
      due to a 'double vote'.
      """
-     target_epoch_1 = attestation_data_1.slot // EPOCH_LENGTH
-     target_epoch_2 = attestation_data_2.slot // EPOCH_LENGTH
+     target_epoch_1 = attestation_data_1.slot // SLOTS_PER_EPOCH
+     target_epoch_2 = attestation_data_2.slot // SLOTS_PER_EPOCH
      return target_epoch_1 == target_epoch_2
   */
   public boolean is_double_vote(
@@ -1134,10 +1189,10 @@ public class SpecHelpers {
      Note: parameter order matters as this function only checks
      that ``attestation_data_1`` surrounds ``attestation_data_2``.
      """
-     source_epoch_1 = attestation_data_1.justified_slot // EPOCH_LENGTH
-     source_epoch_2 = attestation_data_2.justified_slot // EPOCH_LENGTH
-     target_epoch_1 = attestation_data_1.slot // EPOCH_LENGTH
-     target_epoch_2 = attestation_data_2.slot // EPOCH_LENGTH
+     source_epoch_1 = attestation_data_1.justified_slot // SLOTS_PER_EPOCH
+     source_epoch_2 = attestation_data_2.justified_slot // SLOTS_PER_EPOCH
+     target_epoch_1 = attestation_data_1.slot // SLOTS_PER_EPOCH
+     target_epoch_2 = attestation_data_2.slot // SLOTS_PER_EPOCH
      return (
          (source_epoch_1 < source_epoch_2) and
          (source_epoch_2 + 1 == target_epoch_2) and
@@ -1191,7 +1246,7 @@ public class SpecHelpers {
     //  if len(slashable_attestation.validator_indices) > MAX_INDICES_PER_SLASHABLE_VOTE:
     //  return False
     if (UInt64.valueOf(slashable_attestation.getValidatorIndices().size()).
-        compareTo(spec.getMaxIndicesPerSlashableVote()) > 0) {
+        compareTo(constants.getMaxIndicesPerSlashableVote()) > 0) {
       return false;
     }
 
@@ -1287,9 +1342,9 @@ public class SpecHelpers {
      return state.latest_block_roots[slot % LATEST_BLOCK_ROOTS_LENGTH]
   */
   public Hash32 get_block_root(BeaconState state, SlotNumber slot) {
-    assertTrue(state.getSlot().lessEqual(slot.plus(spec.getLatestBlockRootsLength())));
+    assertTrue(state.getSlot().lessEqual(slot.plus(constants.getLatestBlockRootsLength())));
     assertTrue(slot.less(state.getSlot()));
-    return state.getLatestBlockRoots().get(slot.modulo(spec.getLatestBlockRootsLength()));
+    return state.getLatestBlockRoots().get(slot.modulo(constants.getLatestBlockRootsLength()));
   }
 
   /*
@@ -1384,8 +1439,8 @@ public class SpecHelpers {
     Millis currentTime = Millis.of(systemTime);
     assertTrue(state.getGenesisTime().lessEqual(currentTime.getSeconds()));
     Time sinceGenesis = currentTime.getSeconds().minus(state.getGenesisTime());
-    return SlotNumber.castFrom(sinceGenesis.dividedBy(spec.getSlotDuration()))
-        .plus(getChainSpec().getGenesisSlot());
+    return SlotNumber.castFrom(sinceGenesis.dividedBy(constants.getSecondsPerSlot()))
+        .plus(getConstants().getGenesisSlot());
   }
 
   public boolean is_current_slot(BeaconState state, long systemTime) {
@@ -1395,20 +1450,32 @@ public class SpecHelpers {
   public Time get_slot_start_time(BeaconState state, SlotNumber slot) {
     return state
         .getGenesisTime()
-        .plus(spec.getSlotDuration().times(slot.minus(getChainSpec().getGenesisSlot())));
+        .plus(constants.getSecondsPerSlot().times(slot.minus(getConstants().getGenesisSlot())));
   }
 
   public Time get_slot_middle_time(BeaconState state, SlotNumber slot) {
-    return get_slot_start_time(state, slot).plus(spec.getSlotDuration().dividedBy(2));
+    return get_slot_start_time(state, slot).plus(constants.getSecondsPerSlot().dividedBy(2));
   }
 
   /*
    def slot_to_epoch(slot: SlotNumber) -> EpochNumber:
-       return slot // EPOCH_LENGTH
+       return slot // SLOTS_PER_EPOCH
   */
   public EpochNumber slot_to_epoch(SlotNumber slot) {
-    return slot.dividedBy(spec.getEpochLength());
+    return slot.dividedBy(constants.getSlotsPerEpoch());
   }
+
+  /*
+  def get_previous_epoch(state: BeaconState) -> Epoch:
+    """`
+    Return the previous epoch of the given ``state``.
+    """
+    return max(get_current_epoch(state) - 1, GENESIS_EPOCH)
+   */
+  public EpochNumber get_previous_epoch(BeaconState state) {
+    return UInt64s.max(get_current_epoch(state).decrement(), constants.getGenesisEpoch());
+  }
+
   /*
    def get_current_epoch(state: BeaconState) -> EpochNumber:
        return slot_to_epoch(state.slot)
@@ -1418,14 +1485,14 @@ public class SpecHelpers {
   }
   /*
    def get_epoch_start_slot(epoch: EpochNumber) -> SlotNumber:
-     return epoch * EPOCH_LENGTH
+     return epoch * SLOTS_PER_EPOCH
   */
   public SlotNumber get_epoch_start_slot(EpochNumber epoch) {
-    return epoch.mul(spec.getEpochLength());
+    return epoch.mul(constants.getSlotsPerEpoch());
   }
 
   public EpochNumber get_genesis_epoch() {
-    return slot_to_epoch(spec.getGenesisSlot());
+    return slot_to_epoch(constants.getGenesisSlot());
   }
 
   public void checkIndexRange(BeaconState state, ValidatorIndex index) {
@@ -1437,7 +1504,7 @@ public class SpecHelpers {
   }
 
   public void checkShardRange(ShardNumber shard) {
-    assertTrue(shard.less(spec.getShardCount()));
+    assertTrue(shard.less(constants.getShardCount()));
   }
 
   public List<BLSPubkey> mapIndicesToPubKeys(BeaconState state, Iterable<ValidatorIndex> indices) {
@@ -1489,15 +1556,15 @@ public class SpecHelpers {
     List<ValidatorIndex> active_validator_indices =
         get_active_validator_indices(validators, get_current_epoch(state));
 
-    List<ValidatorRecord> active_validators = new ArrayList<>();
+    List<Pair<ValidatorIndex, ValidatorRecord>> active_validators = new ArrayList<>();
     for (ValidatorIndex index : active_validator_indices) {
-      active_validators.add(validators.get(index));
+      active_validators.add(Pair.with(index, validators.get(index)));
     }
 
-    List<BeaconBlock> attestation_targets = new ArrayList<>();
-    for (ValidatorRecord validatorRecord : active_validators) {
-      get_latest_attestation_target(validatorRecord, get_latest_attestation, getBlock)
-          .ifPresent(attestation_targets::add);
+    List<Pair<ValidatorIndex, BeaconBlock>> attestation_targets = new ArrayList<>();
+    for (Pair<ValidatorIndex, ValidatorRecord> validatorRecord : active_validators) {
+      get_latest_attestation_target(validatorRecord.getValue1(), get_latest_attestation, getBlock)
+          .ifPresent(block -> attestation_targets.add(Pair.with(validatorRecord.getValue0(), block)));
     }
 
     BeaconBlock head = startBlock;
@@ -1508,7 +1575,9 @@ public class SpecHelpers {
       } else {
         head =
             children.stream()
-                .max(Comparator.comparingInt(o -> get_vote_count(o, attestation_targets, getBlock)))
+                .max(
+                    Comparator.comparing(o -> get_vote_count(state, o, attestation_targets, getBlock),
+                    UInt64::compareTo))
                 .get();
       }
     }
@@ -1530,22 +1599,25 @@ public class SpecHelpers {
     return latest.flatMap(at -> getBlock.apply(at.getData().getJustifiedBlockRoot()));
   }
 
-  /**
-   * def get_vote_count(block): return len([target for target in attestation_targets if
-   * get_ancestor(store, target, block.slot) == block])
+  /*
+    def get_vote_count(block: BeaconBlock) -> int:
+      return sum(
+          get_effective_balance(start_state.validator_balances[validator_index]) // FORK_CHOICE_BALANCE_INCREMENT
+          for validator_index, target in attestation_targets
+          if get_ancestor(store, target, block.slot) == block
+      )
    */
-  private int get_vote_count(
+  private UInt64 get_vote_count(
+      BeaconState startState,
       BeaconBlock block,
-      List<BeaconBlock> attestation_targets,
+      List<Pair<ValidatorIndex, BeaconBlock>> attestation_targets,
       Function<Hash32, Optional<BeaconBlock>> getBlock) {
-    int res = 0;
-    for (BeaconBlock target : attestation_targets) {
-      if (get_ancestor(target, block.getSlot(), getBlock).map(b -> b.equals(block)).orElse(false)) {
-        ++res;
-      }
-    }
 
-    return res;
+    return attestation_targets.stream().filter(
+        target -> get_ancestor(target.getValue1(), block.getSlot(), getBlock)
+            .filter(ancestor -> ancestor.equals(block)).isPresent())
+        .map(target -> get_effective_balance(startState, target.getValue0()).dividedBy(constants.getForkChoiceBalanceIncrement()))
+        .reduce(Gwei.ZERO, Gwei::plus);
   }
 
   /*
@@ -1574,7 +1646,7 @@ public class SpecHelpers {
   }
 
   public boolean is_epoch_end(SlotNumber slot) {
-    return slot.increment().modulo(spec.getEpochLength()).equals(SlotNumber.ZERO);
+    return slot.increment().modulo(constants.getSlotsPerEpoch()).equals(SlotNumber.ZERO);
   }
 
   public ObjectHasher<Hash32> getObjectHasher() {

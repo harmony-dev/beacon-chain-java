@@ -17,7 +17,7 @@ import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.BeaconState;
-import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.db.Database;
@@ -34,7 +34,7 @@ public class DefaultBeaconChainTest {
   public void insertAChain() {
     Schedulers schedulers = Schedulers.createDefault();
 
-    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT);
+    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(SpecConstants.DEFAULT);
     StateTransition<BeaconStateEx> perSlotTransition =
         StateTransitionTestUtil.createNextSlotTransition();
     MutableBeaconChain beaconChain = createBeaconChain(specHelpers, perSlotTransition, schedulers);
@@ -42,7 +42,7 @@ public class DefaultBeaconChainTest {
     beaconChain.init();
     BeaconTuple initialTuple = beaconChain.getRecentlyProcessed();
     Assert.assertEquals(
-        specHelpers.getChainSpec().getGenesisSlot(), initialTuple.getBlock().getSlot());
+        specHelpers.getConstants().getGenesisSlot(), initialTuple.getBlock().getSlot());
 
     IntStream.range(0, 10)
         .forEach(
@@ -66,10 +66,10 @@ public class DefaultBeaconChainTest {
             specHelpers.get_current_slot(parent.getState(), currentTime),
             specHelpers.hash_tree_root(parent.getBlock()),
             Hash32.ZERO,
-            specHelpers.getChainSpec().getEmptySignature(),
+            specHelpers.getConstants().getEmptySignature(),
             Eth1Data.EMPTY,
-            specHelpers.getChainSpec().getEmptySignature(),
-            BeaconBlockBody.EMPTY);
+            BeaconBlockBody.EMPTY,
+            specHelpers.getConstants().getEmptySignature());
     BeaconState state =
         perSlotTransition
             .apply(

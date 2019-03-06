@@ -14,8 +14,10 @@ public class MaxOperationsPerBlockData implements MaxOperationsPerBlock {
   private Integer MAX_ATTESTATIONS;
   @JsonProperty("MAX_DEPOSITS")
   private Integer MAX_DEPOSITS;
-  @JsonProperty("MAX_EXITS")
-  private Integer MAX_EXITS;
+  @JsonProperty("MAX_VOLUNTARY_EXITS")
+  private Integer MAX_VOLUNTARY_EXITS;
+  @JsonProperty("MAX_TRANSFERS")
+  private Integer MAX_TRANSFERS;
 
   @Override
   @JsonIgnore
@@ -43,8 +45,14 @@ public class MaxOperationsPerBlockData implements MaxOperationsPerBlock {
 
   @Override
   @JsonIgnore
-  public int getMaxExits() {
-    return getMAX_EXITS();
+  public int getMaxVoluntaryExits() {
+    return getMAX_VOLUNTARY_EXITS();
+  }
+
+  @Override
+  @JsonIgnore
+  public int getMaxTransfers() {
+    return getMAX_TRANSFERS();
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
@@ -84,11 +92,20 @@ public class MaxOperationsPerBlockData implements MaxOperationsPerBlock {
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-  public Integer getMAX_EXITS() {
-    return MAX_EXITS;
+  public Integer getMAX_VOLUNTARY_EXITS() {
+    return MAX_VOLUNTARY_EXITS;
   }
 
-  public void setMAX_EXITS(Integer MAX_EXITS) {
-    this.MAX_EXITS = MAX_EXITS;
+  public void setMAX_VOLUNTARY_EXITS(Integer MAX_VOLUNTARY_EXITS) {
+    this.MAX_VOLUNTARY_EXITS = MAX_VOLUNTARY_EXITS;
+  }
+
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+  public Integer getMAX_TRANSFERS() {
+    return MAX_TRANSFERS;
+  }
+
+  public void setMAX_TRANSFERS(Integer MAX_TRANSFERS) {
+    this.MAX_TRANSFERS = MAX_TRANSFERS;
   }
 }

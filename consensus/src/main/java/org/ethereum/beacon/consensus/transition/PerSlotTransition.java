@@ -7,7 +7,6 @@ import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.consensus.TransitionType;
 import org.ethereum.beacon.core.MutableBeaconState;
-import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.types.SlotNumber;
 
 /**
@@ -20,18 +19,16 @@ import org.ethereum.beacon.core.types.SlotNumber;
 public class PerSlotTransition implements StateTransition<BeaconStateEx> {
   private static final Logger logger = LogManager.getLogger(PerSlotTransition.class);
 
-  private final SpecHelpers specHelpers;
-  private final ChainSpec spec;
+  private final SpecHelpers spec;
 
-  public PerSlotTransition(SpecHelpers specHelpers) {
-    this.specHelpers = specHelpers;
-    this.spec = specHelpers.getChainSpec();
+  public PerSlotTransition(SpecHelpers spec) {
+    this.spec = spec;
   }
 
   @Override
   public BeaconStateEx apply(BeaconStateEx stateEx) {
     logger.trace(() -> "Applying slot transition to state: (" +
-        specHelpers.hash_tree_root(stateEx).toStringShort() + ") " + stateEx.toString(spec));
+        spec.hash_tree_root(stateEx).toStringShort() + ") " + stateEx.toString(spec.getConstants()));
     TransitionType.SLOT.checkCanBeAppliedAfter(stateEx.getTransition());
 
     MutableBeaconState state = stateEx.createMutableCopy();
@@ -42,13 +39,13 @@ public class PerSlotTransition implements StateTransition<BeaconStateEx> {
 
     //  Set state.latest_block_roots[(state.slot - 1) % LATEST_BLOCK_ROOTS_LENGTH] = previous_block_root.
     state.getLatestBlockRoots().set(
-        state.getSlot().decrement().modulo(spec.getLatestBlockRootsLength()),
+        state.getSlot().decrement().modulo(spec.getConstants().getLatestBlockRootsLength()),
         stateEx.getHeadBlockHash());
 
     // If state.slot % LATEST_BLOCK_ROOTS_LENGTH == 0
     // append merkle_root(state.latest_block_roots) to state.batched_block_roots
-    if (state.getSlot().modulo(spec.getLatestBlockRootsLength()).getIntValue() == 0) {
-      state.getBatchedBlockRoots().add(specHelpers.merkle_root(state.getLatestBlockRoots()));
+    if (state.getSlot().modulo(spec.getConstants().getLatestBlockRootsLength()).getIntValue() == 0) {
+      state.getBatchedBlockRoots().add(spec.merkle_root(state.getLatestBlockRoots()));
     }
 
     BeaconStateEx ret =
@@ -56,7 +53,7 @@ public class PerSlotTransition implements StateTransition<BeaconStateEx> {
             state.createImmutable(), stateEx.getHeadBlockHash(), TransitionType.SLOT);
 
     logger.trace(() -> "Slot transition result state: (" +
-        specHelpers.hash_tree_root(ret).toStringShort() + ") " + ret.toString(spec));
+        spec.hash_tree_root(ret).toStringShort() + ") " + ret.toString(spec.getConstants()));
 
     return ret;
   }

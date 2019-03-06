@@ -2,7 +2,7 @@ package org.ethereum.beacon.core.types;
 
 import java.util.function.Function;
 import javax.annotation.Nullable;
-import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.util.uint.UInt64;
 
@@ -56,7 +56,7 @@ public class ShardNumber extends UInt64 implements
     return toString(null);
   }
 
-  public String toString(@Nullable ChainSpec spec) {
+  public String toString(@Nullable SpecConstants spec) {
     return spec == null ? super.toString() :
         spec.getBeaconChainShardNumber().equals(this) ? "Beacon" : super.toString();
   }

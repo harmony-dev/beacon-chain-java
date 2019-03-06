@@ -3,8 +3,8 @@ package org.ethereum.beacon.consensus.transition;
 import javax.annotation.Nullable;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
-import org.ethereum.beacon.core.spec.ChainSpec;
-import org.ethereum.beacon.core.state.CrosslinkRecord;
+import org.ethereum.beacon.core.spec.SpecConstants;
+import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Eth1DataVote;
 import org.ethereum.beacon.core.state.ForkData;
@@ -19,6 +19,7 @@ import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.collections.ReadList;
+import tech.pegasys.artemis.util.uint.UInt64;
 
 public class DelegateBeaconState implements BeaconState {
   private final BeaconState delegate;
@@ -71,33 +72,33 @@ public class DelegateBeaconState implements BeaconState {
   }
 
   @Override
-  public ShardNumber getPreviousEpochStartShard() {
-    return delegate.getPreviousEpochStartShard();
+  public ShardNumber getPreviousShufflingStartShard() {
+    return delegate.getPreviousShufflingStartShard();
   }
 
   @Override
-  public ShardNumber getCurrentEpochStartShard() {
-    return delegate.getCurrentEpochStartShard();
+  public ShardNumber getCurrentShufflingStartShard() {
+    return delegate.getCurrentShufflingStartShard();
   }
 
   @Override
-  public EpochNumber getPreviousCalculationEpoch() {
-    return delegate.getPreviousCalculationEpoch();
+  public EpochNumber getPreviousShufflingEpoch() {
+    return delegate.getPreviousShufflingEpoch();
   }
 
   @Override
-  public EpochNumber getCurrentCalculationEpoch() {
-    return delegate.getCurrentCalculationEpoch();
+  public EpochNumber getCurrentShufflingEpoch() {
+    return delegate.getCurrentShufflingEpoch();
   }
 
   @Override
-  public Hash32 getPreviousEpochSeed() {
-    return delegate.getPreviousEpochSeed();
+  public Hash32 getPreviousShufflingSeed() {
+    return delegate.getPreviousShufflingSeed();
   }
 
   @Override
-  public Hash32 getCurrentEpochSeed() {
-    return delegate.getCurrentEpochSeed();
+  public Hash32 getCurrentShufflingSeed() {
+    return delegate.getCurrentShufflingSeed();
   }
 
   @Override
@@ -121,7 +122,7 @@ public class DelegateBeaconState implements BeaconState {
   }
 
   @Override
-  public ReadList<ShardNumber, CrosslinkRecord> getLatestCrosslinks() {
+  public ReadList<ShardNumber, Crosslink> getLatestCrosslinks() {
     return delegate.getLatestCrosslinks();
   }
 
@@ -131,13 +132,13 @@ public class DelegateBeaconState implements BeaconState {
   }
 
   @Override
-  public ReadList<EpochNumber, Hash32> getLatestIndexRoots() {
-    return delegate.getLatestIndexRoots();
+  public ReadList<EpochNumber, Hash32> getLatestActiveIndexRoots() {
+    return delegate.getLatestActiveIndexRoots();
   }
 
   @Override
-  public ReadList<EpochNumber, Gwei> getLatestPenalizedBalances() {
-    return delegate.getLatestPenalizedBalances();
+  public ReadList<EpochNumber, Gwei> getLatestSlashedBalances() {
+    return delegate.getLatestSlashedBalances();
   }
 
   @Override
@@ -161,12 +162,17 @@ public class DelegateBeaconState implements BeaconState {
   }
 
   @Override
+  public UInt64 getDepositIndex() {
+    return delegate.getDepositIndex();
+  }
+
+  @Override
   public MutableBeaconState createMutableCopy() {
     return delegate.createMutableCopy();
   }
 
   @Override
-  public String toStringShort(@Nullable ChainSpec spec) {
-    return delegate.toStringShort(spec);
+  public String toStringShort(@Nullable SpecConstants constants) {
+    return delegate.toStringShort(constants);
   }
 }

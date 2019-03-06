@@ -11,25 +11,25 @@ import tech.pegasys.artemis.util.uint.UInt64;
 
 public class TimeParametersData implements TimeParameters {
 
-  @JsonProperty("SLOT_DURATION")
-  private String SLOT_DURATION;
+  @JsonProperty("SECONDS_PER_SLOT")
+  private String SECONDS_PER_SLOT;
   @JsonProperty("MIN_ATTESTATION_INCLUSION_DELAY")
   private String MIN_ATTESTATION_INCLUSION_DELAY;
-  @JsonProperty("EPOCH_LENGTH")
-  private String EPOCH_LENGTH;
-  @JsonProperty("SEED_LOOKAHEAD")
-  private String  SEED_LOOKAHEAD;
-  @JsonProperty("ENTRY_EXIT_DELAY")
-  private String ENTRY_EXIT_DELAY;
-  @JsonProperty("ETH1_DATA_VOTING_PERIOD")
-  private String ETH1_DATA_VOTING_PERIOD;
-  @JsonProperty("MIN_VALIDATOR_WITHDRAWAL_EPOCHS")
-  private String MIN_VALIDATOR_WITHDRAWAL_EPOCHS;
+  @JsonProperty("SLOTS_PER_EPOCH")
+  private String SLOTS_PER_EPOCH;
+  @JsonProperty("MIN_SEED_LOOKAHEAD")
+  private String MIN_SEED_LOOKAHEAD;
+  @JsonProperty("ACTIVATION_EXIT_DELAY")
+  private String ACTIVATION_EXIT_DELAY;
+  @JsonProperty("EPOCHS_PER_ETH1_VOTING_PERIOD")
+  private String EPOCHS_PER_ETH1_VOTING_PERIOD;
+  @JsonProperty("MIN_VALIDATOR_WITHDRAWABILITY_DELAY")
+  private String MIN_VALIDATOR_WITHDRAWABILITY_DELAY;
 
   @Override
   @JsonIgnore
-  public Time getSlotDuration() {
-    return Time.castFrom(UInt64.valueOf(getSLOT_DURATION()));
+  public Time getSecondsPerSlot() {
+    return Time.castFrom(UInt64.valueOf(getSECONDS_PER_SLOT()));
   }
 
   @Override
@@ -40,41 +40,41 @@ public class TimeParametersData implements TimeParameters {
 
   @Override
   @JsonIgnore
-  public EpochLength getEpochLength() {
-    return new EpochLength(UInt64.valueOf(getEPOCH_LENGTH()));
+  public EpochLength getSlotsPerEpoch() {
+    return new EpochLength(UInt64.valueOf(getSLOTS_PER_EPOCH()));
   }
 
   @Override
   @JsonIgnore
-  public EpochNumber getSeedLookahead() {
-    return new EpochNumber(UInt64.valueOf(getSEED_LOOKAHEAD()));
+  public EpochNumber getMinSeedLookahead() {
+    return new EpochNumber(UInt64.valueOf(getMIN_SEED_LOOKAHEAD()));
   }
 
   @Override
   @JsonIgnore
-  public EpochNumber getEntryExitDelay() {
-    return new EpochNumber(UInt64.valueOf(getENTRY_EXIT_DELAY()));
+  public EpochNumber getActivationExitDelay() {
+    return new EpochNumber(UInt64.valueOf(getACTIVATION_EXIT_DELAY()));
   }
 
   @Override
   @JsonIgnore
   public EpochNumber getEth1DataVotingPeriod() {
-    return new EpochNumber(UInt64.valueOf(getETH1_DATA_VOTING_PERIOD()));
+    return new EpochNumber(UInt64.valueOf(getEPOCHS_PER_ETH1_VOTING_PERIOD()));
   }
 
   @Override
   @JsonIgnore
-  public EpochNumber getMinValidatorWithdrawalEpochs() {
-    return new EpochNumber(UInt64.valueOf(getMIN_VALIDATOR_WITHDRAWAL_EPOCHS()));
+  public EpochNumber getMinValidatorWithdrawabilityDelay() {
+    return new EpochNumber(UInt64.valueOf(getMIN_VALIDATOR_WITHDRAWABILITY_DELAY()));
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-  public String getSLOT_DURATION() {
-    return SLOT_DURATION;
+  public String getSECONDS_PER_SLOT() {
+    return SECONDS_PER_SLOT;
   }
 
-  public void setSLOT_DURATION(String SLOT_DURATION) {
-    this.SLOT_DURATION = SLOT_DURATION;
+  public void setSECONDS_PER_SLOT(String SECONDS_PER_SLOT) {
+    this.SECONDS_PER_SLOT = SECONDS_PER_SLOT;
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
@@ -87,47 +87,47 @@ public class TimeParametersData implements TimeParameters {
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-  public String getEPOCH_LENGTH() {
-    return EPOCH_LENGTH;
+  public String getSLOTS_PER_EPOCH() {
+    return SLOTS_PER_EPOCH;
   }
 
-  public void setEPOCH_LENGTH(String EPOCH_LENGTH) {
-    this.EPOCH_LENGTH = EPOCH_LENGTH;
-  }
-
-  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-  public String getSEED_LOOKAHEAD() {
-    return SEED_LOOKAHEAD;
-  }
-
-  public void setSEED_LOOKAHEAD(String SEED_LOOKAHEAD) {
-    this.SEED_LOOKAHEAD = SEED_LOOKAHEAD;
+  public void setSLOTS_PER_EPOCH(String SLOTS_PER_EPOCH) {
+    this.SLOTS_PER_EPOCH = SLOTS_PER_EPOCH;
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-  public String getENTRY_EXIT_DELAY() {
-    return ENTRY_EXIT_DELAY;
+  public String getMIN_SEED_LOOKAHEAD() {
+    return MIN_SEED_LOOKAHEAD;
   }
 
-  public void setENTRY_EXIT_DELAY(String ENTRY_EXIT_DELAY) {
-    this.ENTRY_EXIT_DELAY = ENTRY_EXIT_DELAY;
-  }
-
-  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-  public String getETH1_DATA_VOTING_PERIOD() {
-    return ETH1_DATA_VOTING_PERIOD;
-  }
-
-  public void setETH1_DATA_VOTING_PERIOD(String ETH1_DATA_VOTING_PERIOD) {
-    this.ETH1_DATA_VOTING_PERIOD = ETH1_DATA_VOTING_PERIOD;
+  public void setMIN_SEED_LOOKAHEAD(String MIN_SEED_LOOKAHEAD) {
+    this.MIN_SEED_LOOKAHEAD = MIN_SEED_LOOKAHEAD;
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-  public String getMIN_VALIDATOR_WITHDRAWAL_EPOCHS() {
-    return MIN_VALIDATOR_WITHDRAWAL_EPOCHS;
+  public String getACTIVATION_EXIT_DELAY() {
+    return ACTIVATION_EXIT_DELAY;
   }
 
-  public void setMIN_VALIDATOR_WITHDRAWAL_EPOCHS(String MIN_VALIDATOR_WITHDRAWAL_EPOCHS) {
-    this.MIN_VALIDATOR_WITHDRAWAL_EPOCHS = MIN_VALIDATOR_WITHDRAWAL_EPOCHS;
+  public void setACTIVATION_EXIT_DELAY(String ACTIVATION_EXIT_DELAY) {
+    this.ACTIVATION_EXIT_DELAY = ACTIVATION_EXIT_DELAY;
+  }
+
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+  public String getEPOCHS_PER_ETH1_VOTING_PERIOD() {
+    return EPOCHS_PER_ETH1_VOTING_PERIOD;
+  }
+
+  public void setEPOCHS_PER_ETH1_VOTING_PERIOD(String EPOCHS_PER_ETH1_VOTING_PERIOD) {
+    this.EPOCHS_PER_ETH1_VOTING_PERIOD = EPOCHS_PER_ETH1_VOTING_PERIOD;
+  }
+
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+  public String getMIN_VALIDATOR_WITHDRAWABILITY_DELAY() {
+    return MIN_VALIDATOR_WITHDRAWABILITY_DELAY;
+  }
+
+  public void setMIN_VALIDATOR_WITHDRAWABILITY_DELAY(String MIN_VALIDATOR_WITHDRAWABILITY_DELAY) {
+    this.MIN_VALIDATOR_WITHDRAWABILITY_DELAY = MIN_VALIDATOR_WITHDRAWABILITY_DELAY;
   }
 }

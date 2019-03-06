@@ -16,7 +16,6 @@ import org.ethereum.beacon.consensus.transition.PerEpochTransition;
 import org.ethereum.beacon.consensus.transition.PerSlotTransition;
 import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
 import org.ethereum.beacon.consensus.verifier.BeaconStateVerifier;
-import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.crypto.BLS381;
 import org.ethereum.beacon.crypto.BLS381.KeyPair;
@@ -35,7 +34,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public class Launcher {
-  final SpecHelpers specHelpers;
+  final SpecHelpers spec;
   final DepositContract depositContract;
   final BLS381.KeyPair validatorSig;
   final WireApi wireApi;
@@ -57,14 +56,14 @@ public class Launcher {
   Schedulers schedulers;
 
   public Launcher(
-      SpecHelpers specHelpers,
+      SpecHelpers spec,
       DepositContract depositContract,
       KeyPair validatorSig,
       WireApi wireApi,
       BeaconChainStorageFactory storageFactory,
       Schedulers schedulers) {
 
-    this.specHelpers = specHelpers;
+    this.spec = spec;
     this.depositContract = depositContract;
     this.validatorSig = validatorSig;
     this.wireApi = wireApi;
@@ -77,19 +76,19 @@ public class Launcher {
   }
 
   void chainStarted(ChainStart chainStartEvent) {
-    initialTransition = new InitialStateTransition(chainStartEvent, specHelpers);
-    perSlotTransition = new PerSlotTransition(specHelpers);
-    perBlockTransition = new PerBlockTransition(specHelpers);
-    perEpochTransition = new PerEpochTransition(specHelpers);
+    initialTransition = new InitialStateTransition(chainStartEvent, spec);
+    perSlotTransition = new PerSlotTransition(spec);
+    perBlockTransition = new PerBlockTransition(spec);
+    perEpochTransition = new PerEpochTransition(spec);
 
     db = new InMemoryDatabase();
     beaconChainStorage = storageFactory.create(db);
 
-    BeaconBlockVerifier blockVerifier = BeaconBlockVerifier.createDefault(specHelpers);
-    BeaconStateVerifier stateVerifier = BeaconStateVerifier.createDefault(specHelpers);
+    BeaconBlockVerifier blockVerifier = BeaconBlockVerifier.createDefault(spec);
+    BeaconStateVerifier stateVerifier = BeaconStateVerifier.createDefault(spec);
 
     beaconChain = new DefaultBeaconChain(
-        specHelpers,
+        spec,
         initialTransition,
         perSlotTransition,
         perBlockTransition,
@@ -101,7 +100,7 @@ public class Launcher {
     beaconChain.init();
 
     slotTicker =
-        new SlotTicker(specHelpers, beaconChain.getRecentlyProcessed().getState(), schedulers);
+        new SlotTicker(spec, beaconChain.getRecentlyProcessed().getState(), schedulers);
     slotTicker.start();
 
     DirectProcessor<Attestation> allAttestations = DirectProcessor.create();
@@ -114,26 +113,24 @@ public class Launcher {
         slotTicker.getTickerStream(),
         allAttestations,
         beaconChain.getBlockStatesStream(),
-        specHelpers,
+        spec,
         perSlotTransition,
         perEpochTransition,
         schedulers);
     observableStateProcessor.start();
 
-    if (validatorSig != null) {
-      beaconChainProposer = new BeaconChainProposerImpl(specHelpers,
-          specHelpers.getChainSpec(), perBlockTransition, perEpochTransition, depositContract);
-      beaconChainAttester = new BeaconChainAttesterImpl(specHelpers,
-          specHelpers.getChainSpec());
+    if (validatorSig != null) {beaconChainProposer = new BeaconChainProposerImpl(spec,
+         perBlockTransition, perEpochTransition, depositContract);
+    beaconChainAttester = new BeaconChainAttesterImpl(spec);
 
-      beaconChainValidator = new BeaconChainValidator(
-          BLS381Credentials.createWithInsecureSigner(validatorSig),
-          beaconChainProposer,
-          beaconChainAttester,
-          specHelpers,
-          observableStateProcessor.getObservableStateStream(),
-          schedulers);
-      beaconChainValidator.start();
+    beaconChainValidator = new BeaconChainValidator(
+        BLS381Credentials.createWithInsecureSigner(validatorSig),
+        beaconChainProposer,
+        beaconChainAttester,
+        spec,
+        observableStateProcessor.getObservableStateStream(),
+        schedulers);
+    beaconChainValidator.start();
 
       ProposedBlockProcessor proposedBlocksProcessor = new ProposedBlockProcessorImpl(
           beaconChain, schedulers);

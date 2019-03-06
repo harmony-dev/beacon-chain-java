@@ -20,10 +20,10 @@ import tech.pegasys.artemis.util.bytes.Bytes32;
  */
 public class RandaoVerifier implements BeaconBlockVerifier {
 
-  private SpecHelpers specHelpers;
+  private SpecHelpers spec;
 
-  public RandaoVerifier(SpecHelpers specHelpers) {
-    this.specHelpers = specHelpers;
+  public RandaoVerifier(SpecHelpers spec) {
+    this.spec = spec;
   }
 
   @Override
@@ -32,18 +32,18 @@ public class RandaoVerifier implements BeaconBlockVerifier {
     ValidatorRecord proposer =
         state
             .getValidatorRegistry()
-            .get(specHelpers.get_beacon_proposer_index(state, state.getSlot()));
+            .get(spec.get_beacon_proposer_index(state, state.getSlot()));
 
     /*
      Verify that bls_verify(pubkey=proposer.pubkey,
        message=int_to_bytes32(get_current_epoch(state)), signature=block.randao_reveal,
        domain=get_domain(state.fork, get_current_epoch(state), DOMAIN_RANDAO))
     */
-    if (!specHelpers.bls_verify(
+    if (!spec.bls_verify(
         proposer.getPubKey(),
-        Hash32.wrap(Bytes32.leftPad(specHelpers.get_current_epoch(state).toBytesBigEndian())),
+        Hash32.wrap(Bytes32.leftPad(spec.get_current_epoch(state).toBytesBigEndian())),
         block.getRandaoReveal(),
-        specHelpers.get_domain(state.getForkData(), specHelpers.get_current_epoch(state), RANDAO))) {
+        spec.get_domain(state.getForkData(), spec.get_current_epoch(state), RANDAO))) {
 
       return VerificationResult.failedResult("RANDAO reveal verification failed");
     }

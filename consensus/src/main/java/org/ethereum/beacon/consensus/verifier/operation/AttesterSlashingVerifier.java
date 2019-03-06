@@ -22,10 +22,10 @@ import tech.pegasys.artemis.util.collections.ReadList;
  */
 public class AttesterSlashingVerifier implements OperationVerifier<AttesterSlashing> {
 
-  private SpecHelpers specHelpers;
+  private SpecHelpers spec;
 
-  public AttesterSlashingVerifier(SpecHelpers specHelpers) {
-    this.specHelpers = specHelpers;
+  public AttesterSlashingVerifier(SpecHelpers spec) {
+    this.spec = spec;
   }
 
   @Override
@@ -33,26 +33,26 @@ public class AttesterSlashingVerifier implements OperationVerifier<AttesterSlash
     SlashableAttestation slashableAttestation1 = attesterSlashing.getSlashableAttestation1();
     SlashableAttestation slashableAttestation2 = attesterSlashing.getSlashableAttestation2();
 
-    specHelpers.checkIndexRange(state, slashableAttestation1.getValidatorIndices());
-    specHelpers.checkIndexRange(state, slashableAttestation2.getValidatorIndices());
-    specHelpers.checkShardRange(slashableAttestation1.getData().getShard());
-    specHelpers.checkShardRange(slashableAttestation2.getData().getShard());
+    spec.checkIndexRange(state, slashableAttestation1.getValidatorIndices());
+    spec.checkIndexRange(state, slashableAttestation2.getValidatorIndices());
+    spec.checkShardRange(slashableAttestation1.getData().getShard());
+    spec.checkShardRange(slashableAttestation2.getData().getShard());
 
     if (slashableAttestation1.getData().equals(slashableAttestation2.getData())) {
       return failedResult("slashable_vote_data_1 != slashable_vote_data_2");
     }
 
-    if (!(specHelpers.is_double_vote(slashableAttestation1.getData(), slashableAttestation2.getData())
-        || specHelpers.is_surround_vote(
+    if (!(spec.is_double_vote(slashableAttestation1.getData(), slashableAttestation2.getData())
+        || spec.is_surround_vote(
           slashableAttestation1.getData(), slashableAttestation2.getData()))) {
       return failedResult("no slashing conditions found");
     }
 
-    if (!specHelpers.verify_slashable_attestation(state, slashableAttestation1)) {
+    if (!spec.verify_slashable_attestation(state, slashableAttestation1)) {
       return failedResult("slashableAttestation1 is incorrect");
     }
 
-    if (!specHelpers.verify_slashable_attestation(state, slashableAttestation2)) {
+    if (!spec.verify_slashable_attestation(state, slashableAttestation2)) {
       return failedResult("slashableAttestation2 is incorrect");
     }
 
@@ -60,9 +60,7 @@ public class AttesterSlashingVerifier implements OperationVerifier<AttesterSlash
         slashableAttestation1.getValidatorIndices().intersection(
             slashableAttestation1.getValidatorIndices());
     if (intersection.stream()
-        .noneMatch(i ->
-                state.getValidatorRegistry().get(i).getPenalizedEpoch()
-                    .greater(specHelpers.get_current_epoch(state)))) {
+        .noneMatch(i -> state.getValidatorRegistry().get(i).getSlashed())) {
       return failedResult("spec assertion failed");
     }
 

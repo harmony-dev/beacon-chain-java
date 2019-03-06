@@ -1,6 +1,6 @@
 package org.ethereum.beacon;
 
-import org.ethereum.beacon.emulator.config.chainspec.ChainSpecData;
+import org.ethereum.beacon.emulator.config.chainspec.SpecConstantsData;
 import org.ethereum.beacon.emulator.config.main.MainConfig;
 import org.javatuples.Pair;
 import picocli.CommandLine;
@@ -40,7 +40,7 @@ public class Simulator extends ReusableOptions implements Callable<Void> {
     if (validators != null) {
       configPathValues.add(Pair.with("plan.validator[0].count", validators));
     }
-    Pair<MainConfig, ChainSpecData> configs =
+    Pair<MainConfig, SpecConstantsData> configs =
         prepareAndPrintConfigs(action, "/config/simulator-config.yml", "/config/simulator-chainSpec.yml");
 
     if (action.equals(Task.run)) {

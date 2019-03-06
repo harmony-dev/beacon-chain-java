@@ -2,7 +2,7 @@ package org.ethereum.beacon.core.operations.slashing;
 
 import com.google.common.base.Objects;
 import javax.annotation.Nullable;
-import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
@@ -58,7 +58,7 @@ public class Proposal {
         && Objects.equal(blockRoot, that.blockRoot);
   }
 
-  public String toString(@Nullable ChainSpec spec, @Nullable Time beaconStart) {
+  public String toString(@Nullable SpecConstants spec, @Nullable Time beaconStart) {
     return "Proposal["
         + "slot=" + slot.toString(spec, beaconStart)
         + "shard=" + shard.toString(spec)

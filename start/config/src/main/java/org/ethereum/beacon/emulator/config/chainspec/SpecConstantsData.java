@@ -3,7 +3,7 @@ package org.ethereum.beacon.emulator.config.chainspec;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.List;
 import org.ethereum.beacon.consensus.SpecHelpers;
-import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
@@ -19,21 +19,22 @@ import tech.pegasys.artemis.util.bytes.Bytes1;
 import tech.pegasys.artemis.util.bytes.Bytes8;
 import tech.pegasys.artemis.util.uint.UInt64;
 
-/** ChainSpec settings object, creates {@link ChainSpec} from user data */
+/** SpecConstants settings object, creates {@link SpecConstants} from user data */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class ChainSpecData implements Config {
+public class SpecConstantsData implements Config {
   private DepositContractParametersData depositContractParameters;
   private HonestValidatorParametersData honestValidatorParameters;
   private InitialValuesData initialValues;
   private MaxOperationsPerBlockData maxOperationsPerBlock;
   private MiscParametersData miscParameters;
+  private GweiValuesData gweiValues;
   private RewardAndPenaltyQuotientsData rewardAndPenaltyQuotients;
   private StateListLengthsData stateListLengths;
   private TimeParametersData timeParameters;
   private SpecHelpersOptions specHelpersOptions;
 
-  public ChainSpec buildSpecConstants() {
-    return new ChainSpec() {
+  public SpecConstants buildSpecConstants() {
+    return new SpecConstants() {
       @Override
       public Address getDepositContractAddress() {
         return depositContractParameters.getDepositContractAddress();
@@ -46,12 +47,22 @@ public class ChainSpecData implements Config {
 
       @Override
       public Gwei getMinDepositAmount() {
-        return depositContractParameters.getMinDepositAmount();
+        return gweiValues.getMinDepositAmount();
       }
 
       @Override
       public Gwei getMaxDepositAmount() {
-        return depositContractParameters.getMaxDepositAmount();
+        return gweiValues.getMaxDepositAmount();
+      }
+
+      @Override
+      public Gwei getForkChoiceBalanceIncrement() {
+        return gweiValues.getForkChoiceBalanceIncrement();
+      }
+
+      @Override
+      public UInt64 getMinPenaltyQuotient() {
+        return rewardAndPenaltyQuotients.getMinPenaltyQuotient();
       }
 
       @Override
@@ -115,8 +126,8 @@ public class ChainSpecData implements Config {
       }
 
       @Override
-      public int getMaxExits() {
-        return maxOperationsPerBlock.getMaxExits();
+      public int getMaxVoluntaryExits() {
+        return maxOperationsPerBlock.getMaxVoluntaryExits();
       }
 
       @Override
@@ -131,7 +142,7 @@ public class ChainSpecData implements Config {
 
       @Override
       public Gwei getEjectionBalance() {
-        return miscParameters.getEjectionBalance();
+        return gweiValues.getEjectionBalance();
       }
 
       @Override
@@ -150,8 +161,8 @@ public class ChainSpecData implements Config {
       }
 
       @Override
-      public UInt64 getMaxWithdrawalsPerEpoch() {
-        return miscParameters.getMaxWithdrawalsPerEpoch();
+      public UInt64 getMaxExitDequesPerEpoch() {
+        return miscParameters.getMaxExitDequesPerEpoch();
       }
 
       @Override
@@ -165,8 +176,8 @@ public class ChainSpecData implements Config {
       }
 
       @Override
-      public UInt64 getIncluderRewardQuotient() {
-        return rewardAndPenaltyQuotients.getIncluderRewardQuotient();
+      public UInt64 getAttestationInclusionRewardQuotient() {
+        return rewardAndPenaltyQuotients.getAttestationInclusionRewardQuotient();
       }
 
       @Override
@@ -185,18 +196,18 @@ public class ChainSpecData implements Config {
       }
 
       @Override
-      public EpochNumber getLatestIndexRootsLength() {
-        return stateListLengths.getLatestIndexRootsLength();
+      public EpochNumber getLatestActiveIndexRootsLength() {
+        return stateListLengths.getLatestActiveIndexRootsLength();
       }
 
       @Override
-      public EpochNumber getLatestPenalizedExitLength() {
-        return stateListLengths.getLatestPenalizedExitLength();
+      public EpochNumber getLatestSlashedExitLength() {
+        return stateListLengths.getLatestSlashedExitLength();
       }
 
       @Override
-      public Time getSlotDuration() {
-        return timeParameters.getSlotDuration();
+      public Time getSecondsPerSlot() {
+        return timeParameters.getSecondsPerSlot();
       }
 
       @Override
@@ -205,18 +216,18 @@ public class ChainSpecData implements Config {
       }
 
       @Override
-      public SlotNumber.EpochLength getEpochLength() {
-        return timeParameters.getEpochLength();
+      public SlotNumber.EpochLength getSlotsPerEpoch() {
+        return timeParameters.getSlotsPerEpoch();
       }
 
       @Override
-      public EpochNumber getSeedLookahead() {
-        return timeParameters.getSeedLookahead();
+      public EpochNumber getMinSeedLookahead() {
+        return timeParameters.getMinSeedLookahead();
       }
 
       @Override
-      public EpochNumber getEntryExitDelay() {
-        return timeParameters.getEntryExitDelay();
+      public EpochNumber getActivationExitDelay() {
+        return timeParameters.getActivationExitDelay();
       }
 
       @Override
@@ -225,8 +236,8 @@ public class ChainSpecData implements Config {
       }
 
       @Override
-      public EpochNumber getMinValidatorWithdrawalEpochs() {
-        return timeParameters.getMinValidatorWithdrawalEpochs();
+      public EpochNumber getMinValidatorWithdrawabilityDelay() {
+        return timeParameters.getMinValidatorWithdrawabilityDelay();
       }
     };
   }
@@ -294,6 +305,14 @@ public class ChainSpecData implements Config {
 
   public void setMiscParameters(MiscParametersData miscParameters) {
     this.miscParameters = miscParameters;
+  }
+
+  public GweiValuesData getGweiValues() {
+    return gweiValues;
+  }
+
+  public void setGweiValues(GweiValuesData gweiValues) {
+    this.gweiValues = gweiValues;
   }
 
   public RewardAndPenaltyQuotientsData getRewardAndPenaltyQuotients() {

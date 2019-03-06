@@ -2,7 +2,7 @@ package org.ethereum.beacon.consensus.verifier.block;
 
 import org.ethereum.beacon.consensus.verifier.OperationVerifier;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
-import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.spec.SpecConstants;
 
 /**
  * Verifies proposer slashing list.
@@ -12,11 +12,11 @@ import org.ethereum.beacon.core.spec.ChainSpec;
 public class ProposerSlashingListVerifier extends OperationListVerifier<ProposerSlashing> {
 
   public ProposerSlashingListVerifier(
-      OperationVerifier<ProposerSlashing> operationVerifier, ChainSpec chainSpec) {
+      OperationVerifier<ProposerSlashing> operationVerifier, SpecConstants specConstants) {
     super(
         operationVerifier,
         block -> block.getBody().getProposerSlashings(),
-        chainSpec.getMaxProposerSlashings());
+        specConstants.getMaxProposerSlashings());
   }
 
   @Override

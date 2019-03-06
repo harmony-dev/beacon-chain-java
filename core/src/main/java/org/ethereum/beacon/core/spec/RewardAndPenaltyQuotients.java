@@ -13,8 +13,9 @@ public interface RewardAndPenaltyQuotients {
 
   UInt64 BASE_REWARD_QUOTIENT = UInt64.valueOf(1 << 5); // 1024
   UInt64 WHISTLEBLOWER_REWARD_QUOTIENT = UInt64.valueOf(1 << 9); // 512
-  UInt64 INCLUDER_REWARD_QUOTIENT = UInt64.valueOf(1 << 3); // 8
+  UInt64 ATTESTATION_INCLUSION_REWARD_QUOTIENT = UInt64.valueOf(1 << 3); // 8
   UInt64 INACTIVITY_PENALTY_QUOTIENT = UInt64.valueOf(1 << 24); // 16_777_216
+  UInt64 MIN_PENALTY_QUOTIENT = UInt64.valueOf(1 << 5); // 32
 
   /* Values defined in the spec. */
 
@@ -26,11 +27,15 @@ public interface RewardAndPenaltyQuotients {
     return WHISTLEBLOWER_REWARD_QUOTIENT;
   }
 
-  default UInt64 getIncluderRewardQuotient() {
-    return INCLUDER_REWARD_QUOTIENT;
+  default UInt64 getAttestationInclusionRewardQuotient() {
+    return ATTESTATION_INCLUSION_REWARD_QUOTIENT;
   }
 
   default UInt64 getInactivityPenaltyQuotient() {
     return INACTIVITY_PENALTY_QUOTIENT;
+  }
+
+  default UInt64 getMinPenaltyQuotient() {
+    return MIN_PENALTY_QUOTIENT;
   }
 }

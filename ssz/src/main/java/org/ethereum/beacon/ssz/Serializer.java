@@ -1,5 +1,6 @@
 package org.ethereum.beacon.ssz;
 
+import org.ethereum.beacon.ssz.type.BooleanPrimitive;
 import org.ethereum.beacon.ssz.type.BytesCodec;
 import org.ethereum.beacon.ssz.type.HashCodec;
 import org.ethereum.beacon.ssz.type.UIntCodec;
@@ -24,6 +25,7 @@ public class Serializer {
     builder.addCodec(new HashCodec());
     builder.addCodec(new UIntCodec());
     builder.addCodec(new BytesCodec());
+    builder.addCodec(new BooleanPrimitive());
     ANNOTATION_SERIALIZER = builder.build();
   }
 

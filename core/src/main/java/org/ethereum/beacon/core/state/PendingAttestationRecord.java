@@ -5,13 +5,12 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
-import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.types.Bitfield;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
-import tech.pegasys.artemis.util.bytes.BytesValue;
 
 /**
  * An attestation data that have not been processed yet.
@@ -78,7 +77,7 @@ public class PendingAttestationRecord {
     return toString(null, null);
   }
 
-  public String toString(@Nullable ChainSpec spec,@Nullable Time beaconStart) {
+  public String toString(@Nullable SpecConstants spec,@Nullable Time beaconStart) {
     return "Attestation["
         + data.toString(spec, beaconStart)
         + ", attesters=" + getSignerIndices()
@@ -87,7 +86,7 @@ public class PendingAttestationRecord {
         + "]";
   }
 
-  public String toStringShort(@Nullable ChainSpec spec) {
+  public String toStringShort(@Nullable SpecConstants spec) {
     return "#" + getData().getSlot().toStringNumber(spec) + "/"
         + "#" + getInclusionSlot().toStringNumber(spec) + "/"
         + getData().getShard().toString(spec) + "/"
