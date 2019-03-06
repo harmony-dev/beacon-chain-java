@@ -1,5 +1,6 @@
 package org.ethereum.beacon.consensus.hasher;
 
+import org.ethereum.beacon.core.types.Hash32able;
 import org.ethereum.beacon.ssz.SSZHashSerializer;
 import org.ethereum.beacon.ssz.SSZHashSerializers;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -7,6 +8,7 @@ import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 
 /**
@@ -44,6 +46,12 @@ public class SSZObjectHasher implements ObjectHasher<Hash32> {
     if (input instanceof List) {
       return Hash32.wrap(Bytes32.wrap(sszHashSerializer.hash(input)));
     } else {
+      if (input instanceof Hash32able) {
+        Optional<Hash32> hashOptional = ((Hash32able) input).getHash();
+        if (hashOptional.isPresent()) {
+          return hashOptional.get();
+        }
+      }
       return hashFunction.apply(BytesValue.wrap(sszHashSerializer.hash(input)));
     }
   }

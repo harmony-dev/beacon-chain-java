@@ -1,9 +1,6 @@
 package org.ethereum.beacon.core;
 
 import com.google.common.base.Objects;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import javax.annotation.Nullable;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.Exit;
@@ -12,11 +9,17 @@ import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.Hash32able;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
+
+import javax.annotation.Nullable;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Beacon chain block.
@@ -29,7 +32,7 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
  *     in the spec</a>
  */
 @SSZSerializable
-public class BeaconBlock {
+public class BeaconBlock implements Hash32able {
 
   /** Number of a slot that block does belong to. */
   @SSZ private final SlotNumber slot;
@@ -43,9 +46,10 @@ public class BeaconBlock {
   @SSZ private final Eth1Data eth1Data;
   /** Proposer's signature. */
   @SSZ private final BLSSignature signature;
-
   /** Block body. */
   @SSZ private final BeaconBlockBody body;
+
+  private Hash32 hashCache = null;
 
   public BeaconBlock(
       SlotNumber slot,
@@ -62,6 +66,18 @@ public class BeaconBlock {
     this.eth1Data = eth1Data;
     this.signature = signature;
     this.body = body;
+  }
+
+  @Override
+  public Optional<Hash32> getHash() {
+    if (hashCache != null) {
+      return Optional.of(hashCache);
+    }
+    Hash32able.objectHasher
+        .getObjectHasher()
+        .map(hasher -> hasher.apply(this))
+        .map(h -> this.hashCache = h);
+    return Optional.ofNullable(hashCache);
   }
 
   public BeaconBlock withStateRoot(Hash32 stateRoot) {
