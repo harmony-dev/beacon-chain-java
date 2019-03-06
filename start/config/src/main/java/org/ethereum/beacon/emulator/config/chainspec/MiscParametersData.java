@@ -14,16 +14,14 @@ public class MiscParametersData implements MiscParameters {
   private String SHARD_COUNT;
   @JsonProperty("TARGET_COMMITTEE_SIZE")
   private String TARGET_COMMITTEE_SIZE;
-  @JsonProperty("EJECTION_BALANCE")
-  private String EJECTION_BALANCE;
   @JsonProperty("MAX_BALANCE_CHURN_QUOTIENT")
   private String MAX_BALANCE_CHURN_QUOTIENT;
   @JsonProperty("BEACON_CHAIN_SHARD_NUMBER")
   private String BEACON_CHAIN_SHARD_NUMBER;
   @JsonProperty("MAX_INDICES_PER_SLASHABLE_VOTE")
   private String MAX_INDICES_PER_SLASHABLE_VOTE;
-  @JsonProperty("MAX_WITHDRAWALS_PER_EPOCH")
-  private String MAX_WITHDRAWALS_PER_EPOCH;
+  @JsonProperty("MAX_EXIT_DEQUEUES_PER_EPOCH")
+  private String MAX_EXIT_DEQUEUES_PER_EPOCH;
 
   @Override
   @JsonIgnore
@@ -35,12 +33,6 @@ public class MiscParametersData implements MiscParameters {
   @JsonIgnore
   public ValidatorIndex getTargetCommitteeSize() {
     return new ValidatorIndex(UInt64.valueOf(getTARGET_COMMITTEE_SIZE()));
-  }
-
-  @Override
-  @JsonIgnore
-  public Gwei getEjectionBalance() {
-    return Gwei.castFrom(UInt64.valueOf(getEJECTION_BALANCE()));
   }
 
   @Override
@@ -63,8 +55,8 @@ public class MiscParametersData implements MiscParameters {
 
   @Override
   @JsonIgnore
-  public UInt64 getMaxWithdrawalsPerEpoch() {
-    return UInt64.valueOf(getMAX_WITHDRAWALS_PER_EPOCH());
+  public UInt64 getMaxExitDequesPerEpoch() {
+    return UInt64.valueOf(getMAX_EXIT_DEQUEUES_PER_EPOCH());
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
@@ -83,15 +75,6 @@ public class MiscParametersData implements MiscParameters {
 
   public void setTARGET_COMMITTEE_SIZE(String TARGET_COMMITTEE_SIZE) {
     this.TARGET_COMMITTEE_SIZE = TARGET_COMMITTEE_SIZE;
-  }
-
-  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-  public String getEJECTION_BALANCE() {
-    return EJECTION_BALANCE;
-  }
-
-  public void setEJECTION_BALANCE(String EJECTION_BALANCE) {
-    this.EJECTION_BALANCE = EJECTION_BALANCE;
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
@@ -122,11 +105,11 @@ public class MiscParametersData implements MiscParameters {
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-  public String getMAX_WITHDRAWALS_PER_EPOCH() {
-    return MAX_WITHDRAWALS_PER_EPOCH;
+  public String getMAX_EXIT_DEQUEUES_PER_EPOCH() {
+    return MAX_EXIT_DEQUEUES_PER_EPOCH;
   }
 
-  public void setMAX_WITHDRAWALS_PER_EPOCH(String MAX_WITHDRAWALS_PER_EPOCH) {
-    this.MAX_WITHDRAWALS_PER_EPOCH = MAX_WITHDRAWALS_PER_EPOCH;
+  public void setMAX_EXIT_DEQUEUES_PER_EPOCH(String MAX_EXIT_DEQUEUES_PER_EPOCH) {
+    this.MAX_EXIT_DEQUEUES_PER_EPOCH = MAX_EXIT_DEQUEUES_PER_EPOCH;
   }
 }

@@ -15,7 +15,7 @@ import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustodyBit;
-import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.state.ShardCommittee;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.ValidatorIndex;
@@ -32,32 +32,35 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
  */
 public class AttestationVerifier implements OperationVerifier<Attestation> {
 
-  private ChainSpec chainSpec;
-  private SpecHelpers specHelpers;
+  private SpecHelpers spec;
 
-  public AttestationVerifier(SpecHelpers specHelpers) {
-    this.specHelpers = specHelpers;
-    this.chainSpec = specHelpers.getChainSpec();
+  public AttestationVerifier(SpecHelpers spec) {
+    this.spec = spec;
   }
 
   @Override
   public VerificationResult verify(Attestation attestation, BeaconState state) {
     AttestationData data = attestation.getData();
 
-    specHelpers.checkShardRange(data.getShard());
+    if (attestation.getData().getSlot().less(spec.getConstants().getGenesisSlot())) {
+      return failedResult("Attestation slot %s is less than GENESIS_SLOT %s",
+          attestation.getData().getSlot(), spec.getConstants().getGenesisSlot());
+    }
+
+    spec.checkShardRange(data.getShard());
 
     // Verify that attestation.data.slot <= state.slot - MIN_ATTESTATION_INCLUSION_DELAY
-    //    < attestation.data.slot + EPOCH_LENGTH
+    //    < attestation.data.slot + SLOTS_PER_EPOCH
     if (!(data.getSlot()
-            .lessEqual(state.getSlot().minus(chainSpec.getMinAttestationInclusionDelay()))
+            .lessEqual(state.getSlot().minus(spec.getConstants().getMinAttestationInclusionDelay()))
         && state
             .getSlot()
-            .minus(chainSpec.getMinAttestationInclusionDelay())
-            .less(data.getSlot().plus(chainSpec.getEpochLength())))) {
+            .minus(spec.getConstants().getMinAttestationInclusionDelay())
+            .less(data.getSlot().plus(spec.getConstants().getSlotsPerEpoch())))) {
 
       return failedResult(
           "MIN_ATTESTATION_INCLUSION_DELAY violated, inclusion slot starts from %s but got %s",
-          data.getSlot().plus(chainSpec.getMinAttestationInclusionDelay()), state.getSlot());
+          data.getSlot().plus(spec.getConstants().getMinAttestationInclusionDelay()), state.getSlot());
     }
 
     // Verify that attestation.data.justified_epoch is equal to
@@ -65,7 +68,7 @@ public class AttestationVerifier implements OperationVerifier<Attestation> {
     // if slot_to_epoch(attestation.data.slot + 1) >= get_current_epoch(state)
     // else state.previous_justified_epoch.
     if (!data.getJustifiedEpoch().equals(
-        specHelpers.slot_to_epoch(data.getSlot().increment()).greaterEqual(specHelpers.get_current_epoch(state)) ?
+        spec.slot_to_epoch(data.getSlot().increment()).greaterEqual(spec.get_current_epoch(state)) ?
         state.getJustifiedEpoch() : state.getPreviousJustifiedEpoch())) {
       return failedResult(
           "Attestation.data.justified_epoch is invalid");
@@ -73,8 +76,8 @@ public class AttestationVerifier implements OperationVerifier<Attestation> {
 
     // Verify that attestation.data.justified_block_root is equal to
     // get_block_root(state, get_epoch_start_slot(attestation.data.justified_epoch))
-    Hash32 blockRootAtJustifiedSlot = specHelpers.get_block_root(state,
-        specHelpers.get_epoch_start_slot(data.getJustifiedEpoch()));
+    Hash32 blockRootAtJustifiedSlot = spec.get_block_root(state,
+        spec.get_epoch_start_slot(data.getJustifiedEpoch()));
     if (!data.getJustifiedBlockRoot().equals(blockRootAtJustifiedSlot)) {
       return failedResult(
           "attestation_data.justified_block_root must be equal to block_root at state.justified_slot, "
@@ -82,17 +85,16 @@ public class AttestationVerifier implements OperationVerifier<Attestation> {
           data.getJustifiedBlockRoot(), blockRootAtJustifiedSlot);
     }
 
-    // Verify that either attestation.data.latest_crosslink_root or
-    //  attestation.data.shard_block_root equals state.latest_crosslinks[shard].shard_block_root
-    Hash32 shardBlockRoot =
-        state.getLatestCrosslinks().get(data.getShard()).getShardBlockRoot();
-    if (!data.getLatestCrosslinkRoot().equals(shardBlockRoot)
-        && !data.getShardBlockRoot().equals(shardBlockRoot)) {
-      return failedResult(
-          "either attestation_data.justified_block_root or attestation_data.shard_block_root must be "
-              + "equal to latest_crosslink.shard_block_root, justified_block_root=%s, "
-              + "attestation_data.shard_block_root=%s, latest_crosslink.shard_block_root=%s",
-          data.getJustifiedBlockRoot(), data.getShardBlockRoot(), shardBlockRoot);
+    // Verify that either
+    //   (i) state.latest_crosslinks[attestation.data.shard] == attestation.data.latest_crosslink or
+    //   (ii) state.latest_crosslinks[attestation.data.shard] ==
+    //        Crosslink(crosslink_data_root=attestation.data.crosslink_data_root, epoch=slot_to_epoch(attestation.data.slot)).
+    Crosslink latestCrosslink =
+        state.getLatestCrosslinks().get(data.getShard());
+    if (!data.getLatestCrosslink().equals(latestCrosslink)
+        && !latestCrosslink.equals(new Crosslink(spec.slot_to_epoch(attestation.getData().getSlot()),
+            attestation.getData().getCrosslinkDataRoot()))) {
+      return failedResult("attestation.data.latest_crosslink is incorrect");
     }
 
     // Verify bitfields and aggregate signature:
@@ -110,7 +112,7 @@ public class AttestationVerifier implements OperationVerifier<Attestation> {
     //      committee for committee, shard in get_crosslink_committees_at_slot(state, attestation.data.slot)
     //      if shard == attestation.data.shard
     //  ][0]
-    Optional<ShardCommittee> crosslink_committee_opt = specHelpers
+    Optional<ShardCommittee> crosslink_committee_opt = spec
         .get_crosslink_committees_at_slot(state, data.getSlot()).stream()
         .filter(c -> c.getShard().equals(data.getShard()))
         .findFirst();
@@ -132,11 +134,11 @@ public class AttestationVerifier implements OperationVerifier<Attestation> {
 
     //  participants = get_attestation_participants(state, attestation.data, attestation.aggregation_bitfield)
     List<ValidatorIndex> participants =
-        specHelpers.get_attestation_participants(state, data, attestation.getAggregationBitfield());
+        spec.get_attestation_participants(state, data, attestation.getAggregationBitfield());
 
     //  custody_bit_1_participants = get_attestation_participants(state, attestation.data, attestation.custody_bitfield)
     List<ValidatorIndex> custody_bit_1_participants =
-        specHelpers.get_attestation_participants(state, data, attestation.getCustodyBitfield());
+        spec.get_attestation_participants(state, data, attestation.getCustodyBitfield());
     //  custody_bit_0_participants = [i in participants for i not in custody_bit_1_participants]
     List<ValidatorIndex> custody_bit_0_participants = participants.stream()
         .filter(i -> !custody_bit_1_participants.contains(i)).collect(Collectors.toList());
@@ -153,23 +155,23 @@ public class AttestationVerifier implements OperationVerifier<Attestation> {
     //      signature=attestation.aggregate_signature,
     //      domain=get_domain(state.fork, slot_to_epoch(attestation.data.slot), DOMAIN_ATTESTATION),
     //  )
-    List<BLSPubkey> pubKeys1 = specHelpers.mapIndicesToPubKeys(state, custody_bit_0_participants);
-    PublicKey groupPublicKey1 = specHelpers.bls_aggregate_pubkeys(pubKeys1);
-    List<BLSPubkey> pubKeys2 = specHelpers.mapIndicesToPubKeys(state, custody_bit_1_participants);
-    PublicKey groupPublicKey2 = specHelpers.bls_aggregate_pubkeys(pubKeys2);
-    if (!specHelpers.bls_verify_multiple(
+    List<BLSPubkey> pubKeys1 = spec.mapIndicesToPubKeys(state, custody_bit_0_participants);
+    PublicKey groupPublicKey1 = spec.bls_aggregate_pubkeys(pubKeys1);
+    List<BLSPubkey> pubKeys2 = spec.mapIndicesToPubKeys(state, custody_bit_1_participants);
+    PublicKey groupPublicKey2 = spec.bls_aggregate_pubkeys(pubKeys2);
+    if (!spec.bls_verify_multiple(
         Arrays.asList(groupPublicKey1, groupPublicKey2),
         Arrays.asList(
-          specHelpers.hash_tree_root(new AttestationDataAndCustodyBit(data, false)),
-          specHelpers.hash_tree_root(new AttestationDataAndCustodyBit(data, true))),
+          spec.hash_tree_root(new AttestationDataAndCustodyBit(data, false)),
+          spec.hash_tree_root(new AttestationDataAndCustodyBit(data, true))),
         attestation.getAggregateSignature(),
-        specHelpers.get_domain(state.getForkData(), specHelpers.slot_to_epoch(data.getSlot()), ATTESTATION))) {
+        spec.get_domain(state.getForkData(), spec.slot_to_epoch(data.getSlot()), ATTESTATION))) {
       return failedResult("failed to verify aggregated signature");
     }
 
-    if (!Hash32.ZERO.equals(data.getShardBlockRoot())) {
+    if (!Hash32.ZERO.equals(data.getCrosslinkDataRoot())) {
       return failedResult(
-          "attestation_data.shard_block_root must be equal to zero hash, phase 0 check");
+          "attestation_data.crosslink_data_root must be equal to zero hash, phase 0 check");
     }
 
     return PASSED;

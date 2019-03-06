@@ -6,10 +6,9 @@ import java.util.Random;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.util.ObservableBeaconStateTestUtil;
 import org.ethereum.beacon.consensus.SpecHelpers;
-import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
-import org.ethereum.beacon.schedulers.DefaultSchedulers;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.validator.util.ValidatorServiceTestUtil;
 import org.junit.Assert;
@@ -23,7 +22,7 @@ public class BeaconChainValidatorTest {
     Random random = new Random();
     Schedulers schedulers = Schedulers.createDefault();
     SpecHelpers specHelpers =
-        Mockito.spy(SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT, schedulers::getCurrentTime));
+        Mockito.spy(SpecHelpers.createWithSSZHasher(SpecConstants.DEFAULT, schedulers::getCurrentTime));
 
     BeaconChainValidator validator =
         ValidatorServiceTestUtil.mockBeaconChainValidator(random, specHelpers);
@@ -51,7 +50,7 @@ public class BeaconChainValidatorTest {
     Random random = new Random();
     Schedulers schedulers = Schedulers.createDefault();
     SpecHelpers specHelpers =
-        Mockito.spy(SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT, schedulers::getCurrentTime));
+        Mockito.spy(SpecHelpers.createWithSSZHasher(SpecConstants.DEFAULT, schedulers::getCurrentTime));
 
     BeaconChainValidator validator =
         ValidatorServiceTestUtil.mockBeaconChainValidator(random, specHelpers);
@@ -84,7 +83,7 @@ public class BeaconChainValidatorTest {
     Random random = new Random();
     Schedulers schedulers = Schedulers.createDefault();
     SpecHelpers specHelpers =
-        Mockito.spy(SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT, schedulers::getCurrentTime));
+        Mockito.spy(SpecHelpers.createWithSSZHasher(SpecConstants.DEFAULT, schedulers::getCurrentTime));
 
     BeaconChainValidator validator =
         ValidatorServiceTestUtil.mockBeaconChainValidator(random, specHelpers);
@@ -125,7 +124,7 @@ public class BeaconChainValidatorTest {
     Random random = new Random();
     Schedulers schedulers = Schedulers.createDefault();
     SpecHelpers specHelpers =
-        Mockito.spy(SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT, schedulers::getCurrentTime));
+        Mockito.spy(SpecHelpers.createWithSSZHasher(SpecConstants.DEFAULT, schedulers::getCurrentTime));
 
     BeaconChainValidator validator =
         ValidatorServiceTestUtil.mockBeaconChainValidator(random, specHelpers);

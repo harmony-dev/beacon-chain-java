@@ -14,8 +14,8 @@ public interface StateListLengths {
 
   SlotNumber LATEST_BLOCK_ROOTS_LENGTH = SlotNumber.of(1 << 13); // 8192 block roots
   EpochNumber LATEST_RANDAO_MIXES_LENGTH = EpochNumber.of(1 << 13); // 8192 randao mixes
-  EpochNumber LATEST_INDEX_ROOTS_LENGTH = EpochNumber.of(1 << 13);
-  EpochNumber LATEST_PENALIZED_EXIT_LENGTH = EpochNumber.of(1 << 13); // 8192 epochs
+  EpochNumber LATEST_ACTIVE_INDEX_ROOTS_LENGTH = EpochNumber.of(1 << 13);
+  EpochNumber LATEST_SLASHED_EXIT_LENGTH = EpochNumber.of(1 << 13); // 8192 epochs
 
   default SlotNumber getLatestBlockRootsLength() {
     return LATEST_BLOCK_ROOTS_LENGTH;
@@ -25,11 +25,11 @@ public interface StateListLengths {
     return LATEST_RANDAO_MIXES_LENGTH;
   }
 
-  default EpochNumber getLatestIndexRootsLength() {
-    return LATEST_INDEX_ROOTS_LENGTH;
+  default EpochNumber getLatestActiveIndexRootsLength() {
+    return LATEST_ACTIVE_INDEX_ROOTS_LENGTH;
   }
 
-  default EpochNumber getLatestPenalizedExitLength() {
-    return LATEST_PENALIZED_EXIT_LENGTH;
+  default EpochNumber getLatestSlashedExitLength() {
+    return LATEST_SLASHED_EXIT_LENGTH;
   }
 }

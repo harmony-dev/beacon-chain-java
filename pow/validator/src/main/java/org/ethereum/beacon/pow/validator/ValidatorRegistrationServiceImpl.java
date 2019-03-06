@@ -50,7 +50,7 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
   private final SingleValueSource<RegistrationStage> stagePersistence;
   private final Schedulers schedulers;
 
-  private final SpecHelpers specHelpers;
+  private final SpecHelpers spec;
   private final Serializer sszSerializer;
 
   private Disposable depositSubscription = null;
@@ -73,14 +73,14 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
       DepositContract depositContract,
       Publisher<ObservableBeaconState> observablePublisher,
       SingleValueSource<RegistrationStage> registrationStagePersistence,
-      SpecHelpers specHelpers,
+      SpecHelpers spec,
       Schedulers schedulers) {
     this.transactionBuilder = transactionBuilder;
     this.transactionGateway = transactionGateway;
     this.depositContract = depositContract;
     this.observablePublisher = observablePublisher;
     this.stagePersistence = registrationStagePersistence;
-    this.specHelpers = specHelpers;
+    this.spec = spec;
     this.schedulers = schedulers;
     sszSerializer = Serializer.annotationSerializer();
   }
@@ -139,8 +139,8 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
     }
 
     this.validatorRecord = validatorRecordOptional.get();
-    EpochNumber currentEpoch = specHelpers.get_current_epoch(latestState);
-    if (specHelpers.is_active_validator(validatorRecord, currentEpoch)) {
+    EpochNumber currentEpoch = spec.get_current_epoch(latestState);
+    if (spec.is_active_validator(validatorRecord, currentEpoch)) {
       return Optional.of(RegistrationStage.VALIDATOR_START);
     } else {
       return Optional.of(RegistrationStage.AWAIT_ACTIVATION);
@@ -182,8 +182,8 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
         .subscribe(
             observableBeaconState -> {
               BeaconState latestState = observableBeaconState.getLatestSlotState();
-              EpochNumber currentEpoch = specHelpers.get_current_epoch(latestState);
-              if (specHelpers.is_active_validator(validatorRecord, currentEpoch)) {
+              EpochNumber currentEpoch = spec.get_current_epoch(latestState);
+              if (spec.is_active_validator(validatorRecord, currentEpoch)) {
                 changeCurrentStage(RegistrationStage.VALIDATOR_START);
               }
             });
@@ -191,20 +191,19 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
 
   private void startValidator() {
     if (validatorService == null) {
-      BlockTransition<BeaconStateEx> blockTransition = new PerBlockTransition(specHelpers);
-      StateTransition<BeaconStateEx> epochTransition = new PerEpochTransition(specHelpers);
+      BlockTransition<BeaconStateEx> blockTransition = new PerBlockTransition(spec);
+      StateTransition<BeaconStateEx> epochTransition = new PerEpochTransition(spec);
       BeaconChainProposer proposer =
           new BeaconChainProposerImpl(
-              specHelpers,
-              specHelpers.getChainSpec(),
+              spec,
               blockTransition,
               epochTransition,
               depositContract);
       BeaconChainAttester attester =
-          new BeaconChainAttesterImpl(specHelpers, specHelpers.getChainSpec());
+          new BeaconChainAttesterImpl(spec);
       validatorService =
           new BeaconChainValidator(
-              blsCredentials, proposer, attester, specHelpers, observablePublisher, schedulers);
+              blsCredentials, proposer, attester, spec, observablePublisher, schedulers);
       validatorService.start();
       changeCurrentStage(RegistrationStage.COMPLETE);
     }
@@ -272,11 +271,11 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
         new DepositInput(blsCredentials.getPubkey(), withdrawalCredentials, BLSSignature.ZERO);
     // Let proof_of_possession be the result of bls_sign of the hash_tree_root(deposit_input) with
     // domain=DOMAIN_DEPOSIT.
-    Hash32 hash = specHelpers.signed_root(preDepositInput, "proofOfPossession");
+    Hash32 hash = spec.signed_root(preDepositInput, "proofOfPossession");
     BeaconState latestState = getLatestState();
     Bytes8 domain =
-        specHelpers.get_domain(
-            latestState.getForkData(), specHelpers.get_current_epoch(latestState), DEPOSIT);
+        spec.get_domain(
+            latestState.getForkData(), spec.get_current_epoch(latestState), DEPOSIT);
     BLSSignature signature = blsCredentials.getSigner().sign(hash, domain);
     // Set deposit_input.proof_of_possession = proof_of_possession.
     DepositInput depositInput = new DepositInput(blsCredentials.getPubkey(), withdrawalCredentials, signature);
@@ -293,17 +292,17 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
       Address eth1From, BytesValue eth1PrivKey, DepositInput depositInput, Gwei amount) {
     // Let amount be the amount in Gwei to be deposited by the validator where MIN_DEPOSIT_AMOUNT <=
     // amount <= MAX_DEPOSIT_AMOUNT.
-    if (amount.compareTo(specHelpers.getChainSpec().getMinDepositAmount()) < 0) {
+    if (amount.compareTo(spec.getConstants().getMinDepositAmount()) < 0) {
       throw new RuntimeException(
           String.format(
               "Deposit amount should be equal or greater than %s (defined by spec)",
-              specHelpers.getChainSpec().getMinDepositAmount()));
+              spec.getConstants().getMinDepositAmount()));
     }
-    if (amount.compareTo(specHelpers.getChainSpec().getMaxDepositAmount()) > 0) {
+    if (amount.compareTo(spec.getConstants().getMaxDepositAmount()) > 0) {
       throw new RuntimeException(
           String.format(
               "Deposit amount should be equal or less than %s (defined by spec)",
-              specHelpers.getChainSpec().getMaxDepositAmount()));
+              spec.getConstants().getMaxDepositAmount()));
     }
     // Send a transaction on the Ethereum 1.0 chain to DEPOSIT_CONTRACT_ADDRESS executing deposit
     // along with serialize(deposit_input) as the singular bytes input along with a deposit amount

@@ -52,7 +52,7 @@ public class BeaconChainValidator implements ValidatorService {
   /** Attester logic. */
   private BeaconChainAttester attester;
   /** The spec. */
-  private SpecHelpers specHelpers;
+  private SpecHelpers spec;
 
   private Publisher<ObservableBeaconState> stateStream;
 
@@ -70,13 +70,13 @@ public class BeaconChainValidator implements ValidatorService {
       BLS381Credentials blsCredentials,
       BeaconChainProposer proposer,
       BeaconChainAttester attester,
-      SpecHelpers specHelpers,
+      SpecHelpers spec,
       Publisher<ObservableBeaconState> stateStream,
       Schedulers schedulers) {
     this.blsCredentials = blsCredentials;
     this.proposer = proposer;
     this.attester = attester;
-    this.specHelpers = specHelpers;
+    this.spec = spec;
     this.stateStream = stateStream;
     this.schedulers = schedulers;
 
@@ -108,7 +108,7 @@ public class BeaconChainValidator implements ValidatorService {
    */
   @VisibleForTesting
   void init(BeaconState state) {
-    this.validatorIndex = specHelpers.get_validator_index_by_pubkey(state, blsCredentials.getPubkey());
+    this.validatorIndex = spec.get_validator_index_by_pubkey(state, blsCredentials.getPubkey());
   }
 
   /**
@@ -186,7 +186,7 @@ public class BeaconChainValidator implements ValidatorService {
 
     // trigger attester at a halfway through the slot
     if (getValidatorCommittee(state).isPresent()) {
-      Time startAt = specHelpers.get_slot_middle_time(state, state.getSlot());
+      Time startAt = spec.get_slot_middle_time(state, state.getSlot());
       schedule(startAt, this::attest);
     }
   }
@@ -264,7 +264,7 @@ public class BeaconChainValidator implements ValidatorService {
    */
   private boolean isEligibleToPropose(BeaconStateEx state) {
     return state.getTransition() == TransitionType.SLOT
-        && validatorIndex.equals(specHelpers.get_beacon_proposer_index(state, state.getSlot()));
+        && validatorIndex.equals(spec.get_beacon_proposer_index(state, state.getSlot()));
   }
 
   /**
@@ -272,7 +272,7 @@ public class BeaconChainValidator implements ValidatorService {
    */
   private Optional<ShardCommittee> getValidatorCommittee(BeaconState state) {
     List<ShardCommittee> committees =
-        specHelpers.get_crosslink_committees_at_slot(state, state.getSlot());
+        spec.get_crosslink_committees_at_slot(state, state.getSlot());
     return committees.stream().filter(sc -> sc.getCommittee().contains(validatorIndex)).findFirst();
   }
 
@@ -297,7 +297,7 @@ public class BeaconChainValidator implements ValidatorService {
    * @return {@link true} if current moment belongs to a slot, {@link false} otherwise.
    */
   private boolean isCurrentSlot(BeaconState state) {
-    return specHelpers.is_current_slot(state);
+    return spec.is_current_slot(state);
   }
 
   /**

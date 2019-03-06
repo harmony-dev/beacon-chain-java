@@ -15,41 +15,41 @@ import tech.pegasys.artemis.util.uint.UInt64;
  */
 public interface TimeParameters {
 
-  Time SLOT_DURATION = Time.of(6); // 6 seconds
+  Time SECONDS_PER_SLOT = Time.of(6); // 6 seconds
   SlotNumber MIN_ATTESTATION_INCLUSION_DELAY = SlotNumber.of(1 << 2); // 4 slots
-  EpochLength EPOCH_LENGTH = new EpochLength(UInt64.valueOf(1 << 6)); // 64 slots
-  EpochNumber  SEED_LOOKAHEAD = EpochNumber.of(1);
-  EpochNumber ENTRY_EXIT_DELAY = EpochNumber.of(1 << 2);
-  EpochNumber ETH1_DATA_VOTING_PERIOD = EpochNumber.of(1 << 4);
-  EpochNumber MIN_VALIDATOR_WITHDRAWAL_EPOCHS = EpochNumber.of(1 << 8);
+  EpochLength SLOTS_PER_EPOCH = new EpochLength(UInt64.valueOf(1 << 6)); // 64 slots
+  EpochNumber MIN_SEED_LOOKAHEAD = EpochNumber.of(1);
+  EpochNumber ACTIVATION_EXIT_DELAY = EpochNumber.of(1 << 2);
+  EpochNumber EPOCHS_PER_ETH1_VOTING_PERIOD = EpochNumber.of(1 << 4);
+  EpochNumber MIN_VALIDATOR_WITHDRAWABILITY_DELAY = EpochNumber.of(1 << 8);
 
   /* Values defined in the spec. */
 
-  default Time getSlotDuration() {
-    return SLOT_DURATION;
+  default Time getSecondsPerSlot() {
+    return SECONDS_PER_SLOT;
   }
 
   default SlotNumber getMinAttestationInclusionDelay() {
     return MIN_ATTESTATION_INCLUSION_DELAY;
   }
 
-  default EpochLength getEpochLength() {
-    return EPOCH_LENGTH;
+  default EpochLength getSlotsPerEpoch() {
+    return SLOTS_PER_EPOCH;
   }
 
-  default EpochNumber getSeedLookahead() {
-    return SEED_LOOKAHEAD;
+  default EpochNumber getMinSeedLookahead() {
+    return MIN_SEED_LOOKAHEAD;
   }
 
-  default EpochNumber getEntryExitDelay() {
-    return ENTRY_EXIT_DELAY;
+  default EpochNumber getActivationExitDelay() {
+    return ACTIVATION_EXIT_DELAY;
   }
 
   default EpochNumber getEth1DataVotingPeriod() {
-    return ETH1_DATA_VOTING_PERIOD;
+    return EPOCHS_PER_ETH1_VOTING_PERIOD;
   }
 
-  default EpochNumber getMinValidatorWithdrawalEpochs() {
-    return MIN_VALIDATOR_WITHDRAWAL_EPOCHS;
+  default EpochNumber getMinValidatorWithdrawabilityDelay() {
+    return MIN_VALIDATOR_WITHDRAWABILITY_DELAY;
   }
 }

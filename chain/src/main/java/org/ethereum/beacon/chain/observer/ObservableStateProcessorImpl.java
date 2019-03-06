@@ -20,7 +20,6 @@ import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
-import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.core.state.PendingAttestationRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.SlotNumber;
@@ -31,7 +30,6 @@ import org.javatuples.Pair;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.ReplayProcessor;
-import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.collections.ReadList;
 
 public class ObservableStateProcessorImpl implements ObservableStateProcessor {
@@ -41,8 +39,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
 
   private BeaconStateEx latestState;
 
-  private final SpecHelpers specHelpers;
-  private final ChainSpec chainSpec;
+  private final SpecHelpers spec;
   private final StateTransition<BeaconStateEx> perSlotTransition;
   private final StateTransition<BeaconStateEx> perEpochTransition;
 
@@ -74,16 +71,15 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
       Publisher<SlotNumber> slotTicker,
       Publisher<Attestation> attestationPublisher,
       Publisher<BeaconTuple> beaconPublisher,
-      SpecHelpers specHelpers,
+      SpecHelpers spec,
       StateTransition<BeaconStateEx> perSlotTransition,
       StateTransition<BeaconStateEx> perEpochTransition,
       Schedulers schedulers) {
     this.tupleStorage = chainStorage.getTupleStorage();
-    this.specHelpers = specHelpers;
-    this.chainSpec = specHelpers.getChainSpec();
+    this.spec = spec;
     this.perSlotTransition = perSlotTransition;
     this.perEpochTransition = perEpochTransition;
-    this.headFunction = new LMDGhostHeadFunction(chainStorage, specHelpers);
+    this.headFunction = new LMDGhostHeadFunction(chainStorage, spec);
     this.slotTicker = slotTicker;
     this.attestationPublisher = attestationPublisher;
     this.beaconPublisher = beaconPublisher;
@@ -122,13 +118,13 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
 
   private void onNewSlot(SlotNumber newSlot) {
     // From spec: Verify that attestation.data.slot <= state.slot - MIN_ATTESTATION_INCLUSION_DELAY
-    // < attestation.data.slot + EPOCH_LENGTH
-    // state.slot - MIN_ATTESTATION_INCLUSION_DELAY < attestation.data.slot + EPOCH_LENGTH
-    // state.slot - MIN_ATTESTATION_INCLUSION_DELAY - EPOCH_LENGTH < attestation.data.slot
+    // < attestation.data.slot + SLOTS_PER_EPOCH
+    // state.slot - MIN_ATTESTATION_INCLUSION_DELAY < attestation.data.slot + SLOTS_PER_EPOCH
+    // state.slot - MIN_ATTESTATION_INCLUSION_DELAY - SLOTS_PER_EPOCH < attestation.data.slot
     SlotNumber slotMinimum =
         newSlot
-            .minus(chainSpec.getEpochLength())
-            .minus(chainSpec.getMinAttestationInclusionDelay());
+            .minus(spec.getConstants().getSlotsPerEpoch())
+            .minus(spec.getConstants().getMinAttestationInclusionDelay());
     runTaskInSeparateThread(
         () -> {
           purgeAttestations(slotMinimum);
@@ -141,10 +137,10 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     for (Attestation attestation : attestations) {
 
       List<ValidatorIndex> participants =
-          specHelpers.get_attestation_participants(
+          spec.get_attestation_participants(
               latestState, attestation.getData(), attestation.getAggregationBitfield());
 
-      List<BLSPubkey> pubKeys = specHelpers.mapIndicesToPubKeys(latestState, participants);
+      List<BLSPubkey> pubKeys = spec.mapIndicesToPubKeys(latestState, participants);
 
       for (BLSPubkey pubKey : pubKeys) {
         addValidatorAttestation(pubKey, attestation);
@@ -184,11 +180,11 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
         beaconState.getLatestAttestations();
     for (PendingAttestationRecord pendingAttestationRecord : pendingAttestationRecords) {
       List<ValidatorIndex> participants =
-          specHelpers.get_attestation_participants(
+          spec.get_attestation_participants(
               beaconState,
               pendingAttestationRecord.getData(),
               pendingAttestationRecord.getAggregationBitfield());
-      List<BLSPubkey> pubKeys = specHelpers.mapIndicesToPubKeys(beaconState, participants);
+      List<BLSPubkey> pubKeys = spec.mapIndicesToPubKeys(beaconState, participants);
       SlotNumber slot = pendingAttestationRecord.getData().getSlot();
       pubKeys.forEach(
           pubKey -> {
@@ -238,7 +234,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   private BeaconStateEx applyEpochTransitionIfNeeded(
       BeaconStateEx originalState, BeaconStateEx stateWithoutEpoch) {
 
-    if (specHelpers.is_epoch_end(stateWithoutEpoch.getSlot())
+    if (spec.is_epoch_end(stateWithoutEpoch.getSlot())
         && originalState.getSlot().less(stateWithoutEpoch.getSlot())) {
       return perEpochTransition.apply(stateWithoutEpoch);
     } else {
@@ -259,7 +255,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     BeaconStateEx state = source;
     for (SlotNumber slot : source.getSlot().increment().iterateTo(targetSlot.increment())) {
       state = perSlotTransition.apply(state);
-      if (specHelpers.is_epoch_end(slot) && !slot.equals(targetSlot)) {
+      if (spec.is_epoch_end(slot) && !slot.equals(targetSlot)) {
         state = perEpochTransition.apply(state);
       }
     }
@@ -275,7 +271,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     }
     BeaconTuple newHeadTuple =
         tupleStorage
-            .get(specHelpers.hash_tree_root(newHead))
+            .get(spec.hash_tree_root(newHead))
             .orElseThrow(() -> new IllegalStateException("Beacon tuple not found for new head "));
     this.head = BeaconChainHead.of(newHeadTuple);
 

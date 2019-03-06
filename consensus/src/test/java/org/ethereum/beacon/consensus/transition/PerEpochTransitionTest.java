@@ -7,7 +7,7 @@ import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.TestUtils;
 import org.ethereum.beacon.core.BeaconBlocks;
 import org.ethereum.beacon.core.operations.Deposit;
-import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.SlotNumber;
@@ -26,15 +26,15 @@ public class PerEpochTransitionTest {
     Random rnd = new Random();
     Time genesisTime = Time.castFrom(UInt64.random(rnd));
     Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), Hash32.random(rnd));
-    ChainSpec chainSpec =
-        new ChainSpec() {
+    SpecConstants specConstants =
+        new SpecConstants() {
           @Override
-          public SlotNumber.EpochLength getEpochLength() {
+          public SlotNumber.EpochLength getSlotsPerEpoch() {
             return new SlotNumber.EpochLength(UInt64.valueOf(8));
           }
         };
 
-    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(chainSpec, () -> 0L);
+    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(specConstants, () -> 0L);
 
     List<Deposit> deposits = TestUtils.getAnyDeposits(rnd, specHelpers, 8).getValue0();
 
@@ -43,7 +43,7 @@ public class PerEpochTransitionTest {
 
     BeaconStateEx[] states = new BeaconStateExImpl[9];
 
-    states[0] = initialStateTransition.apply(BeaconBlocks.createGenesis(chainSpec));
+    states[0] = initialStateTransition.apply(BeaconBlocks.createGenesis(specConstants));
     for (int i = 1; i < 9; i++) {
       states[i] = new PerSlotTransition(specHelpers).apply(states[i - 1]);
     }

@@ -19,7 +19,7 @@ import tech.pegasys.artemis.util.uint.UInt64;
 public interface InitialValues {
 
   UInt64 GENESIS_FORK_VERSION = UInt64.ZERO;
-  SlotNumber GENESIS_SLOT = SlotNumber.of(1 << 19); // 2**19
+  SlotNumber GENESIS_SLOT = SlotNumber.of(1L << 32); // 2**32
   ShardNumber GENESIS_START_SHARD = ShardNumber.of(0);
   EpochNumber FAR_FUTURE_EPOCH = EpochNumber.castFrom(UInt64.MAX_VALUE); // (1 << 64) - 1
   Hash32 ZERO_HASH = Hash32.ZERO;

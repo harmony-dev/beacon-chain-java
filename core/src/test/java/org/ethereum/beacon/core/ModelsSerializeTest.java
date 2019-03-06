@@ -4,7 +4,8 @@ import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.transition.BeaconStateExImpl;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
-import org.ethereum.beacon.core.operations.Exit;
+import org.ethereum.beacon.core.operations.Transfer;
+import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
@@ -13,7 +14,7 @@ import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.operations.slashing.Proposal;
 import org.ethereum.beacon.core.operations.slashing.SlashableAttestation;
 import org.ethereum.beacon.core.state.BeaconStateImpl;
-import org.ethereum.beacon.core.state.CrosslinkRecord;
+import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Eth1DataVote;
 import org.ethereum.beacon.core.state.ForkData;
@@ -61,7 +62,7 @@ public class ModelsSerializeTest {
             Hashes.keccak256(BytesValue.fromHexString("aa")),
             Hashes.keccak256(BytesValue.fromHexString("bb")),
             Hashes.keccak256(BytesValue.fromHexString("cc")),
-            Hashes.keccak256(BytesValue.fromHexString("dd")),
+            new Crosslink(EpochNumber.ZERO, Hashes.keccak256(BytesValue.fromHexString("dd"))),
             EpochNumber.ZERO,
             Hash32.ZERO);
 
@@ -156,17 +157,17 @@ public class ModelsSerializeTest {
     assertEquals(expected2, reconstructed2);
   }
 
-  private Exit createExit() {
-    Exit exit = new Exit(EpochNumber.of(123), ValidatorIndex.MAX, BLSSignature.wrap(Bytes96.fromHexString("aa")));
+  private VoluntaryExit createExit() {
+    VoluntaryExit voluntaryExit = new VoluntaryExit(EpochNumber.of(123), ValidatorIndex.MAX, BLSSignature.wrap(Bytes96.fromHexString("aa")));
 
-    return exit;
+    return voluntaryExit;
   }
 
   @Test
   public void exitTest() {
-    Exit expected = createExit();
+    VoluntaryExit expected = createExit();
     BytesValue encoded = sszSerializer.encode2(expected);
-    Exit reconstructed = sszSerializer.decode(encoded, Exit.class);
+    VoluntaryExit reconstructed = sszSerializer.decode(encoded, VoluntaryExit.class);
     assertEquals(expected, reconstructed);
   }
 
@@ -193,9 +194,7 @@ public class ModelsSerializeTest {
         new ProposerSlashing(
             ValidatorIndex.MAX,
             createProposalSignedData(),
-            BLSSignature.wrap(Bytes96.fromHexString("aa")),
-            createProposalSignedData(),
-            BLSSignature.wrap(Bytes96.fromHexString("bb")));
+            createProposalSignedData());
 
     return proposerSlashing;
   }
@@ -219,15 +218,18 @@ public class ModelsSerializeTest {
     List<Deposit> deposits = new ArrayList<>();
     deposits.add(createDeposit1());
     deposits.add(createDeposit2());
-    List<Exit> exits = new ArrayList<>();
-    exits.add(createExit());
+    List<VoluntaryExit> voluntaryExits = new ArrayList<>();
+    voluntaryExits.add(createExit());
+    List<Transfer> transfers = new ArrayList<>();
     BeaconBlockBody beaconBlockBody =
         new BeaconBlockBody(
             proposerSlashings,
             attesterSlashings,
             attestations,
             deposits,
-            exits);
+            voluntaryExits,
+            transfers
+            );
 
     return beaconBlockBody;
   }
@@ -280,8 +282,8 @@ public class ModelsSerializeTest {
             new Eth1Data(
                 Hashes.keccak256(BytesValue.fromHexString("ddaa")),
                 Hashes.keccak256(BytesValue.fromHexString("ddbb"))),
-            BLSSignature.wrap(Bytes96.fromHexString("aa")),
-            createBeaconBlockBody());
+            createBeaconBlockBody(),
+            BLSSignature.wrap(Bytes96.fromHexString("aa")));
 
     return beaconBlock;
   }
@@ -317,17 +319,17 @@ public class ModelsSerializeTest {
     assertEquals(expected, reconstructed);
   }
 
-  private CrosslinkRecord createCrosslinkRecord() {
-    CrosslinkRecord crosslinkRecord = CrosslinkRecord.EMPTY;
+  private Crosslink createCrosslink() {
+    Crosslink crosslink = Crosslink.EMPTY;
 
-    return crosslinkRecord;
+    return crosslink;
   }
 
   @Test
-  public void crosslinkRecordTest() {
-    CrosslinkRecord expected = createCrosslinkRecord();
+  public void crosslinkTest() {
+    Crosslink expected = createCrosslink();
     BytesValue encoded = sszSerializer.encode2(expected);
-    CrosslinkRecord reconstructed = sszSerializer.decode(encoded, CrosslinkRecord.class);
+    Crosslink reconstructed = sszSerializer.decode(encoded, Crosslink.class);
     assertEquals(expected, reconstructed);
   }
 
@@ -386,10 +388,10 @@ public class ModelsSerializeTest {
             .withWithdrawalCredentials(Hash32.ZERO)
             .withActivationEpoch(EpochNumber.ZERO)
             .withExitEpoch(EpochNumber.ZERO)
-            .withWithdrawalEpoch(EpochNumber.ZERO)
-            .withPenalizedEpoch(EpochNumber.ZERO)
+            .withWithdrawableEpoch(EpochNumber.ZERO)
+            .withInitiatedExit(Boolean.FALSE)
             .withExitEpoch(EpochNumber.ZERO)
-            .withStatusFlags(UInt64.ZERO)
+            .withSlashed(Boolean.FALSE)
             .build();
 
     return validatorRecord;

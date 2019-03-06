@@ -7,7 +7,7 @@ import java.util.Random;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.core.BeaconBlocks;
 import org.ethereum.beacon.core.BeaconState;
-import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.pow.DepositContract.ChainStart;
@@ -23,7 +23,7 @@ public class InitialStateTransitionTest {
     Time genesisTime = Time.castFrom(UInt64.random(rnd));
     Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), Hash32.random(rnd));
 
-    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT, () -> 0L);
+    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(SpecConstants.DEFAULT, () -> 0L);
     InitialStateTransition initialStateTransition =
         new InitialStateTransition(
             new ChainStart(genesisTime, eth1Data, Collections.emptyList()),
@@ -31,7 +31,7 @@ public class InitialStateTransitionTest {
 
     BeaconState initialState =
         initialStateTransition.apply(
-            BeaconBlocks.createGenesis(ChainSpec.DEFAULT));
+            BeaconBlocks.createGenesis(SpecConstants.DEFAULT));
 
     assertThat(initialState.getGenesisTime()).isEqualTo(genesisTime);
     assertThat(initialState.getLatestEth1Data()).isEqualTo(eth1Data);

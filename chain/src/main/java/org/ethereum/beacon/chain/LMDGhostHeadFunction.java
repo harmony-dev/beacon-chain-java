@@ -21,12 +21,12 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 public class LMDGhostHeadFunction implements HeadFunction {
 
   private final BeaconChainStorage chainStorage;
-  private final SpecHelpers specHelpers;
+  private final SpecHelpers spec;
   private final int SEARCH_LIMIT = Integer.MAX_VALUE;
 
-  public LMDGhostHeadFunction(BeaconChainStorage chainStorage, SpecHelpers specHelpers) {
+  public LMDGhostHeadFunction(BeaconChainStorage chainStorage, SpecHelpers spec) {
     this.chainStorage = chainStorage;
-    this.specHelpers = specHelpers;
+    this.spec = spec;
   }
 
   @Override
@@ -46,7 +46,7 @@ public class LMDGhostHeadFunction implements HeadFunction {
     Function<Hash32, List<BeaconBlock>> getChildrenBlocks =
         (hash) -> chainStorage.getBlockStorage().getChildren(hash, SEARCH_LIMIT);
     BeaconBlock newHead =
-        specHelpers.lmd_ghost(
+        spec.lmd_ghost(
             justifiedTuple.getBlock(),
             justifiedTuple.getState(),
             chainStorage.getBlockStorage()::get,

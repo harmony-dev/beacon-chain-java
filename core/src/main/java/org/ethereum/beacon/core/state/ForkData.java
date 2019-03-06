@@ -3,9 +3,8 @@ package org.ethereum.beacon.core.state;
 import com.google.common.base.Objects;
 import javax.annotation.Nullable;
 import org.ethereum.beacon.core.BeaconState;
-import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.types.EpochNumber;
-import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.util.uint.UInt64;
@@ -64,7 +63,7 @@ public class ForkData {
   }
 
   public String toString(
-      @Nullable ChainSpec spec) {
+      @Nullable SpecConstants spec) {
     return "Fork[" + epoch.toString(spec) + ", " + previousVersion + " => " + currentVersion + "]";
   }
 }
