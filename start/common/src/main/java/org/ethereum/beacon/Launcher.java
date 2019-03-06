@@ -45,6 +45,8 @@ public class Launcher {
   private PerSlotTransition perSlotTransition;
   private PerBlockTransition perBlockTransition;
   private PerEpochTransition perEpochTransition;
+  private BeaconBlockVerifier blockVerifier;
+  private BeaconStateVerifier stateVerifier;
 
   private InMemoryDatabase db;
   private BeaconChainStorage beaconChainStorage;
@@ -84,8 +86,8 @@ public class Launcher {
     db = new InMemoryDatabase();
     beaconChainStorage = storageFactory.create(db);
 
-    BeaconBlockVerifier blockVerifier = BeaconBlockVerifier.createDefault(spec);
-    BeaconStateVerifier stateVerifier = BeaconStateVerifier.createDefault(spec);
+    blockVerifier = BeaconBlockVerifier.createDefault(spec);
+    stateVerifier = BeaconStateVerifier.createDefault(spec);
 
     beaconChain = new DefaultBeaconChain(
         spec,
@@ -179,6 +181,14 @@ public class Launcher {
 
   public PerEpochTransition getPerEpochTransition() {
     return perEpochTransition;
+  }
+
+  public BeaconBlockVerifier getBlockVerifier() {
+    return blockVerifier;
+  }
+
+  public BeaconStateVerifier getStateVerifier() {
+    return stateVerifier;
   }
 
   public InMemoryDatabase getDb() {
