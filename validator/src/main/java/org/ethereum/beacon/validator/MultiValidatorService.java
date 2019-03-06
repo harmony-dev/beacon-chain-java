@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -29,6 +30,7 @@ import org.ethereum.beacon.schedulers.RunnableEx;
 import org.ethereum.beacon.schedulers.Scheduler;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
+import org.javatuples.Pair;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
@@ -45,6 +47,9 @@ public class MultiValidatorService implements ValidatorService {
 
   private final DirectProcessor<Attestation> attestationsSink = DirectProcessor.create();
   private final Publisher<Attestation> attestationsStream;
+
+  private final DirectProcessor<Pair<ValidatorIndex, BLSPubkey>> initializedSink = DirectProcessor.create();
+  private final Publisher<Pair<ValidatorIndex, BLSPubkey>> initializedStream;
 
   /** Proposer logic. */
   private BeaconChainProposer proposer;
@@ -97,6 +102,12 @@ public class MultiValidatorService implements ValidatorService {
             .onBackpressureError()
             .name("BeaconChainValidator.attestation");
 
+    initializedStream =
+        Flux.from(initializedSink)
+            .publishOn(this.schedulers.reactorEvents())
+            .onBackpressureError()
+            .name("BeaconChainValidator.init");
+
     executor = this.schedulers.newSingleThreadDaemon("validator-service");
     initExecutor = new LatestExecutor<>(schedulers.blocking(), this::initFromLatestBeaconState);
   }
@@ -124,6 +135,10 @@ public class MultiValidatorService implements ValidatorService {
       }
     }
     this.initialized.putAll(intoCommittees);
+    intoCommittees.forEach((vIdx, bls) -> initializedSink.onNext(Pair.with(vIdx, bls.getPubkey())));
+    if (uninitialized.isEmpty()) {
+      initializedSink.onComplete();
+    }
 
     if (!intoCommittees.isEmpty())
       logger.info("initialized validators: {}", intoCommittees.keySet());
@@ -370,5 +385,9 @@ public class MultiValidatorService implements ValidatorService {
   @Override
   public Publisher<Attestation> getAttestationsStream() {
     return attestationsStream;
+  }
+
+  public Publisher<Pair<ValidatorIndex, BLSPubkey>> getInitializedStream() {
+    return initializedStream;
   }
 }
