@@ -248,7 +248,7 @@ public class SpecConstantsData implements Config {
       return defaultSpecHelpers;
     } else {
       return new SpecHelpers(
-          defaultSpecHelpers.getChainSpec(),
+          defaultSpecHelpers.getConstants(),
           defaultSpecHelpers.getHashFunction(),
           defaultSpecHelpers.getObjectHasher()) {
 

@@ -175,7 +175,7 @@ public class LocalNetTest {
           }
         };
 
-    SpecHelpers specHelpers = createLightSpecHelpers(chainSpec);
+    SpecHelpers specHelpers = createLightSpecHelpers(specConstants);
     Pair<List<Deposit>, List<KeyPair>> anyDeposits = TestUtils.getAnyDeposits(
             rnd, specHelpers, validatorCount);
     List<Deposit> deposits = anyDeposits.getValue0();

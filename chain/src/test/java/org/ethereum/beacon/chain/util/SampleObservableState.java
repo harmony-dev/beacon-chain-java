@@ -73,7 +73,7 @@ public class SampleObservableState {
             return SlotNumber.of(genesisSlot);
           }
         };
-    this.specHelpers = SpecHelpers.createWithSSZHasher(specConstants);
+    this.spec = SpecHelpers.createWithSSZHasher(specConstants);
 
     Pair<List<Deposit>, List<KeyPair>> anyDeposits = TestUtils
         .getAnyDeposits(rnd, spec, 8);

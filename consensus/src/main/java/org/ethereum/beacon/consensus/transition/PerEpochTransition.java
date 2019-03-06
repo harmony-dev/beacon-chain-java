@@ -233,19 +233,6 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
       summary.justifiedAttestingBalance = previous_epoch_attesting_balance;
     }
 
-
-    if (summary != null) {
-      summary.previousEpochSummary.activeAttesters = current_active_validator_indices;
-      summary.previousEpochSummary.validatorBalance = current_total_balance;
-      summary.previousEpochSummary.boundaryAttesters.addAll(previous_epoch_boundary_attester_indices);
-      summary.previousEpochSummary.boundaryAttestingBalance = previous_epoch_boundary_attesting_balance;
-      summary.headAttesters.addAll(previous_epoch_head_attester_indices);
-      summary.headAttestingBalance = previous_epoch_head_attesting_balance;
-      summary.justifiedAttesters.addAll(previous_epoch_justified_attester_indices);
-      summary.justifiedAttestingBalance = previous_epoch_justified_attesting_balance;
-    }
-
-
     Map<Pair<List<ValidatorIndex>, Hash32>, Set<ValidatorIndex>>
         attesting_validator_indices = new HashMap<>();
     Map<List<ValidatorIndex>, Pair<Gwei, Hash32>> winning_root_tmp = new HashMap<>();
@@ -537,9 +524,6 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
       for (ValidatorIndex index : previous_epoch_attester_indices) {
         Gwei reward = base_reward.apply(index)
             .times(previous_epoch_attesting_balance)
-            .dividedBy(previous_total_balance);
-        Gwei reward = base_reward.apply(index)
-            .times(previous_epoch_justified_attesting_balance)
             .dividedBy(previous_total_balance);
         state.getValidatorBalances().update(index, balance ->
             balance.plus(reward));

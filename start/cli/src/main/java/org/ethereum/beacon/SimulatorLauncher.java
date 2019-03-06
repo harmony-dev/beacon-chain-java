@@ -71,18 +71,18 @@ public class SimulatorLauncher implements Runnable {
    * Creates Simulator launcher with following settings
    *
    * @param mainConfig Configuration and run plan
-   * @param specConstants Chain specification
+   * @param specHelpers Chain specification
    * @param logLevel Log level, Apache log4j type
    * @param onUpdateConfig Callback to run when mainConfig is updated
    */
   public SimulatorLauncher(
       MainConfig mainConfig,
-      SpecConstants specConstants,
+      SpecHelpers specHelpers,
       Level logLevel,
       Consumer<MainConfig> onUpdateConfig) {
     this.mainConfig = mainConfig;
-    this.specConstants = specConstants;
-    this.spec = SpecHelpers.createWithSSZHasher(specConstants);
+    this.specConstants = specHelpers.getConstants();
+    this.spec = specHelpers;
     List<Action> actions = mainConfig.getPlan().getValidator();
     Optional<ActionSimulate> actionSimulate =
         actions.stream()
@@ -167,11 +167,12 @@ public class SimulatorLauncher implements Runnable {
 
     List<Launcher> peers = new ArrayList<>();
 
+    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(specConstants);
+    SpecConstants specConst = specHelpers.getConstants();
+
     logger.info("Creating validators...");
     for (int i = 0; i < keyPairs.size(); i++) {
       ControlledSchedulers schedulers = controlledSchedulers.createNew("" + i);
-      SpecHelpers specHelpers =
-          SpecHelpers.createWithSSZHasher(specConstants);
       WireApi wireApi = localWireHub.createNewPeer("" + i);
 
       Launcher launcher =
@@ -232,7 +233,7 @@ public class SimulatorLauncher implements Runnable {
 
     Flux.from(observer.slotTicker.getTickerStream()).subscribe(slot -> {
       slots.add(slot);
-      logger.debug("New slot: " + slot.toString(chainSpec, genesisTime));
+      logger.debug("New slot: " + slot.toString(specConst, genesisTime));
     });
     Flux.from(observer.observableStateProcessor.getObservableStateStream())
         .subscribe(os -> {
@@ -242,18 +243,18 @@ public class SimulatorLauncher implements Runnable {
     Flux.from(observer.wireApi.inboundAttestationsStream())
         .subscribe(att -> {
           attestations.add(att);
-          logger.debug("New attestation received: " + att.toStringShort(chainSpec));
+          logger.debug("New attestation received: " + att.toStringShort(specConst));
         });
     Flux.from(observer.beaconChain.getBlockStatesStream())
         .subscribe(blockState -> {
           blocks.add(blockState.getBlock());
           logger.debug("Block imported: "
-              + blockState.getBlock().toString(chainSpec, genesisTime, specHelpers::hash_tree_root));
+              + blockState.getBlock().toString(specConst, genesisTime, specHelpers::hash_tree_root));
         });
 
     logger.info("Time starts running ...");
     while (true) {
-      controlledSchedulers.addTime(Duration.ofMillis(chainSpec.getSlotDuration().getValue() * 1000 - 1));
+      controlledSchedulers.addTime(Duration.ofMillis(specConst.getSecondsPerSlot().getValue() * 1000 - 1));
 
       if (slots.size() > 1) {
         logger.warn("More than 1 slot generated: " + slots);
@@ -276,7 +277,7 @@ public class SimulatorLauncher implements Runnable {
 
       }
 
-      logger.info("Slot " + slots.get(0).toStringNumber(chainSpec)
+      logger.info("Slot " + slots.get(0).toStringNumber(specConst)
           + ", committee: " + specHelpers.get_crosslink_committees_at_slot(states.get(0).getLatestSlotState(), slots.get(0))
           + ", blocks: " + blocks.size()
           + ", attestations: " + attestations.size()
@@ -288,17 +289,17 @@ public class SimulatorLauncher implements Runnable {
         EpochTransitionSummary summary = observer.perEpochTransition
             .applyWithSummary(preEpochState.getLatestSlotState());
         logger.info("Epoch transition "
-            + specHelpers.get_current_epoch(preEpochState.getLatestSlotState()).toString(chainSpec)
+            + specHelpers.get_current_epoch(preEpochState.getLatestSlotState()).toString(specConst)
             + "=>"
-            + specHelpers.get_current_epoch(preEpochState.getLatestSlotState()).increment().toString(chainSpec)
+            + specHelpers.get_current_epoch(preEpochState.getLatestSlotState()).increment().toString(specConst)
             + ": Justified/Finalized epochs: "
-            + summary.getPreState().getJustifiedEpoch().toString(chainSpec)
+            + summary.getPreState().getJustifiedEpoch().toString(specConst)
             + "/"
-            + summary.getPreState().getFinalizedEpoch().toString(chainSpec)
+            + summary.getPreState().getFinalizedEpoch().toString(specConst)
             + " => "
-            + summary.getPostState().getJustifiedEpoch().toString(chainSpec)
+            + summary.getPostState().getJustifiedEpoch().toString(specConst)
             + "/"
-            + summary.getPostState().getFinalizedEpoch().toString(chainSpec)
+            + summary.getPostState().getFinalizedEpoch().toString(specConst)
         );
         logger.info("  Validators rewarded:"
             + getValidators(" attestations: ", summary.getAttestationRewards())
@@ -312,7 +313,7 @@ public class SimulatorLauncher implements Runnable {
             + getValidators(" attestations: ", summary.getAttestationPenalties())
             + getValidators(" boundary: ", summary.getBoundaryAttestationPenalties())
             + getValidators(" head: ", summary.getBeaconHeadAttestationPenalties())
-            + getValidators(" penalized epoch: ", summary.getPenalizedEpochPenalties())
+            + getValidators(" penalized epoch: ", summary.getInitiatedExitPenalties())
             + getValidators(" no finality: ", summary.getNoFinalityPenalties())
         );
       }
