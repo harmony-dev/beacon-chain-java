@@ -186,7 +186,7 @@ public class BeaconBlock {
       @Nullable Function<? super BeaconBlock, Hash32> hasher) {
     return (hasher == null ? "?" : hasher.apply(this).toStringShort())
         + " <~ " + parentRoot.toStringShort()
-        + ", @slot " + slot.toString(spec, beaconStart)
+        + ", @slot " + slot.toStringNumber(spec)
         + ", state=" + stateRoot.toStringShort()
         + ", randao=" + randaoReveal.toString()
         + ", " + eth1Data

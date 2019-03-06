@@ -4,6 +4,7 @@ import java.util.Optional;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.ethereum.beacon.consensus.BeaconStateEx;
+import org.ethereum.beacon.consensus.TransitionType;
 import org.ethereum.beacon.core.BeaconBlock;
 
 public class BeaconTupleDetails extends BeaconTuple {
@@ -31,6 +32,12 @@ public class BeaconTupleDetails extends BeaconTuple {
 
   public Optional<BeaconStateEx> getPostBlockState() {
     return Optional.ofNullable(postBlockState);
+  }
+
+  public Optional<BeaconStateEx> getPostEpochState() {
+    return getFinalState().getTransition() == TransitionType.EPOCH
+        ? Optional.of(getFinalState())
+        : Optional.empty();
   }
 
   public BeaconStateEx getFinalState() {

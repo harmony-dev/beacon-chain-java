@@ -271,6 +271,9 @@ public class BeaconChainValidator implements ValidatorService {
    * Returns committee where the validator participates if any
    */
   private Optional<ShardCommittee> getValidatorCommittee(BeaconState state) {
+    if (state.getSlot().equals(specHelpers.getChainSpec().getGenesisSlot())) {
+      return Optional.empty();
+    }
     List<ShardCommittee> committees =
         specHelpers.get_crosslink_committees_at_slot(state, state.getSlot());
     return committees.stream().filter(sc -> sc.getCommittee().contains(validatorIndex)).findFirst();

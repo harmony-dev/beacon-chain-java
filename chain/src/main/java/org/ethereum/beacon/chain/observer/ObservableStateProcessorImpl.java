@@ -2,8 +2,10 @@ package org.ethereum.beacon.chain.observer;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -35,13 +37,10 @@ import reactor.core.publisher.ReplayProcessor;
 import tech.pegasys.artemis.util.collections.ReadList;
 
 public class ObservableStateProcessorImpl implements ObservableStateProcessor {
+  private static final int MAX_TUPLE_CACHE_SIZE = 256;
   private final BeaconTupleStorage tupleStorage;
-  private BeaconChainHead head;
+
   private final HeadFunction headFunction;
-
-  private BeaconStateEx latestState;
-  private SlotNumber latestSlot;
-
   private final SpecHelpers specHelpers;
   private final ChainSpec chainSpec;
   private final StateTransition<BeaconStateEx> perSlotTransition;
@@ -54,6 +53,13 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   private static final int UPDATE_MILLIS = 500;
   private Scheduler regularJobExecutor;
   private Scheduler continuousJobExecutor;
+  private Map<BeaconBlock, BeaconTupleDetails> tupleDetails = Collections.synchronizedMap(
+      new LinkedHashMap<BeaconBlock, BeaconTupleDetails>() {
+        @Override
+        protected boolean removeEldestEntry(Entry eldest) {
+          return size() > MAX_TUPLE_CACHE_SIZE;
+        }
+      });
 
   private final List<Attestation> attestationBuffer = new ArrayList<>();
   private final Map<Pair<BLSPubkey, SlotNumber>, Attestation> attestationCache = new HashMap<>();
@@ -133,11 +139,14 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     runTaskInSeparateThread(
         () -> {
           purgeAttestations(slotMinimum);
-          updateCurrentObservableState(newSlot);
+          newSlot(newSlot);
         });
   }
 
   private void doHardWork() {
+    if (latestState == null) {
+      return;
+    }
     List<Attestation> attestations = drainAttestations(latestState.getSlot());
     for (Attestation attestation : attestations) {
 
@@ -176,11 +185,12 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
 
 
   private void onNewBlockTuple(BeaconTupleDetails beaconTuple) {
-    this.latestState = beaconTuple.getState();
-    runTaskInSeparateThread(() -> {
-      addAttestationsFromState(beaconTuple.getState());
-      updateCurrentObservableState(latestSlot);
-    });
+    tupleDetails.put(beaconTuple.getBlock(), beaconTuple);
+    runTaskInSeparateThread(
+        () -> {
+          addAttestationsFromState(beaconTuple.getState());
+          updateHead();
+        });
   }
 
   private void addAttestationsFromState(BeaconState beaconState) {
@@ -219,27 +229,62 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
                 Collectors.mapping(Entry::getValue, Collectors.toList())));
   }
 
-  private void updateCurrentObservableState(SlotNumber newSlot) {
-    if (newSlot == null) {
+  private BeaconTupleDetails head;
+  private BeaconStateEx latestState;
+
+  private void newHead(BeaconTupleDetails head) {
+    this.head = head;
+    headSink.onNext(new BeaconChainHead(this.head));
+
+    if (latestState == null || head.getBlock().getSlot().greater(latestState.getSlot())) {
+      return;
+    } else {
+      updateCurrentObservableState(head, latestState.getSlot());
+    }
+  }
+
+  private void newSlot(SlotNumber newSlot) {
+    if (head.getBlock().getSlot().greater(newSlot)) {
       return;
     }
-    latestSlot = newSlot;
+    updateCurrentObservableState(head, newSlot);
+  }
+
+  private void updateCurrentObservableState(BeaconTupleDetails head, SlotNumber slot) {
+    assert slot.greaterEqual(head.getBlock().getSlot());
+
     PendingOperations pendingOperations = new PendingOperationsState(copyAttestationCache());
-    pendingOperationsSink.onNext(pendingOperations);
-    updateHead(pendingOperations);
-
-    BeaconStateEx originalState = latestState;
-    BeaconStateEx stateWithoutEpoch = applySlotTransitionsWithoutEpoch(originalState, newSlot);
-
-    latestState = stateWithoutEpoch;
-    observableStateSink.onNext(new ObservableBeaconState(
-        head.getBlock(), stateWithoutEpoch, pendingOperations));
-
-    BeaconStateEx epochState = applyEpochTransitionIfNeeded(originalState, stateWithoutEpoch);
-    if (epochState != null) {
-      latestState = epochState;
-      observableStateSink.onNext(new ObservableBeaconState(
-          head.getBlock(), epochState, pendingOperations));
+    if (slot.greater(head.getBlock().getSlot())) {
+      BeaconStateEx stateWithoutEpoch = applySlotTransitionsWithoutEpoch(head.getFinalState(), slot);
+      latestState = stateWithoutEpoch;
+      observableStateSink.onNext(
+          new ObservableBeaconState(head.getBlock(), stateWithoutEpoch, pendingOperations));
+      BeaconStateEx epochState = applyEpochTransitionIfNeeded(head.getFinalState(), stateWithoutEpoch);
+      if (epochState != null) {
+        latestState = epochState;
+        observableStateSink.onNext(new ObservableBeaconState(
+            head.getBlock(), epochState, pendingOperations));
+      }
+    } else {
+      if (head.getPostSlotState().isPresent()) {
+        latestState = head.getPostSlotState().get();
+        observableStateSink.onNext(new ObservableBeaconState(
+            head.getBlock(), head.getPostSlotState().get(), pendingOperations));
+      }
+      if (head.getPostBlockState().isPresent()) {
+        latestState = head.getPostBlockState().get();
+        observableStateSink.onNext(new ObservableBeaconState(
+            head.getBlock(), head.getPostBlockState().get(), pendingOperations));
+        if (head.getPostEpochState().isPresent()) {
+          latestState = head.getPostEpochState().get();
+          observableStateSink.onNext(new ObservableBeaconState(
+              head.getBlock(), head.getPostEpochState().get(), pendingOperations));
+        }
+      } else {
+        latestState = head.getFinalState();
+        observableStateSink.onNext(new ObservableBeaconState(
+            head.getBlock(), head.getFinalState(), pendingOperations));
+      }
     }
   }
 
@@ -274,20 +319,23 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     return state;
   }
 
-  private void updateHead(PendingOperations pendingOperations) {
+  private void updateHead() {
+    PendingOperations pendingOperations = new PendingOperationsState(copyAttestationCache());
     BeaconBlock newHead =
         headFunction.getHead(
             validatorRecord -> pendingOperations.getLatestAttestation(validatorRecord.getPubKey()));
     if (this.head != null && this.head.getBlock().equals(newHead)) {
       return; // == old
     }
-    BeaconTuple newHeadTuple =
-        tupleStorage
-            .get(specHelpers.hash_tree_root(newHead))
-            .orElseThrow(() -> new IllegalStateException("Beacon tuple not found for new head "));
-    this.head = BeaconChainHead.of(newHeadTuple);
-
-    headSink.onNext(this.head);
+    BeaconTupleDetails tuple = tupleDetails.get(newHead);
+    if (tuple == null) {
+      BeaconTuple newHeadTuple =
+          tupleStorage
+              .get(specHelpers.hash_tree_root(newHead))
+              .orElseThrow(() -> new IllegalStateException("Beacon tuple not found for new head "));
+      tuple = new BeaconTupleDetails(newHeadTuple);
+    }
+    newHead(tuple);
   }
 
   @Override
