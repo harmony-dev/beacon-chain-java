@@ -1,7 +1,8 @@
 package org.ethereum.beacon.emulator.config;
 
-import org.ethereum.beacon.core.spec.ChainSpec;
-import org.ethereum.beacon.emulator.config.chainspec.ChainSpecData;
+import org.ethereum.beacon.core.spec.SpecConstants;
+import org.ethereum.beacon.emulator.config.chainspec.Spec;
+import org.ethereum.beacon.emulator.config.chainspec.SpecConstantsData;
 import org.ethereum.beacon.emulator.config.main.Configuration;
 import org.ethereum.beacon.emulator.config.main.MainConfig;
 import org.ethereum.beacon.emulator.config.main.action.ActionSimulate;
@@ -46,24 +47,24 @@ public class ConfigBuilderTest {
 
   @Test
   public void testChainSpec() {
-    ConfigBuilder configBuilder = new ConfigBuilder(ChainSpecData.class);
+    ConfigBuilder<Spec> configBuilder = new ConfigBuilder<>(Spec.class);
     File testYamlConfig =
         new File(getClass().getClassLoader().getResource("chainSpec.yml").getFile());
 
     configBuilder.addYamlConfig(testYamlConfig);
-    ChainSpecData unmodified = (ChainSpecData) configBuilder.build();
-    ChainSpec chainSpec = unmodified.buildSpecConstants();
+    Spec unmodified = configBuilder.build();
+    SpecConstants specConstants = unmodified.buildSpecConstants();
 
-    ChainSpec chainSpecDefault = ChainSpec.DEFAULT;
-    assertEquals(chainSpecDefault.getGenesisEpoch(), chainSpec.getGenesisEpoch());
-    assertEquals(chainSpecDefault.getEmptySignature(), chainSpec.getEmptySignature());
-    assertEquals(chainSpecDefault.getEpochLength(), chainSpec.getEpochLength());
-    assertEquals(chainSpecDefault.getSlotDuration(), chainSpec.getSlotDuration());
+    SpecConstants specConstantsDefault = SpecConstants.DEFAULT;
+    assertEquals(specConstantsDefault.getGenesisEpoch(), specConstants.getGenesisEpoch());
+    assertEquals(specConstantsDefault.getEmptySignature(), specConstants.getEmptySignature());
+    assertEquals(specConstantsDefault.getSlotsPerEpoch(), specConstants.getSlotsPerEpoch());
+    assertEquals(specConstantsDefault.getSecondsPerSlot(), specConstants.getSecondsPerSlot());
 
-    configBuilder.addConfigOverride("timeParameters.SLOT_DURATION", "10");
-    ChainSpecData overriden = (ChainSpecData) configBuilder.build();
-    ChainSpec chainSpec2 = overriden.buildSpecConstants();
-    assertNotEquals(chainSpecDefault.getSlotDuration(), chainSpec2.getSlotDuration());
-    assertEquals(UInt64.valueOf(10), chainSpec2.getSlotDuration());
+    configBuilder.addConfigOverride("specConstants.timeParameters.SECONDS_PER_SLOT", "10");
+    Spec overriden = configBuilder.build();
+    SpecConstants specConstants2 = overriden.buildSpecConstants();
+    assertNotEquals(specConstantsDefault.getSecondsPerSlot(), specConstants2.getSecondsPerSlot());
+    assertEquals(UInt64.valueOf(10), specConstants2.getSecondsPerSlot());
   }
 }

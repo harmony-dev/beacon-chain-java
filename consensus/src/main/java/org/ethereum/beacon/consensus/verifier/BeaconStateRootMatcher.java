@@ -11,20 +11,20 @@ import org.ethereum.beacon.core.BeaconState;
  */
 public class BeaconStateRootMatcher implements BeaconStateVerifier {
 
-  private final SpecHelpers specHelpers;
+  private final SpecHelpers spec;
 
-  public BeaconStateRootMatcher(SpecHelpers specHelpers) {
-    this.specHelpers = specHelpers;
+  public BeaconStateRootMatcher(SpecHelpers spec) {
+    this.spec = spec;
   }
 
   @Override
   public VerificationResult verify(BeaconState state, BeaconBlock block) {
-    if (block.getStateRoot().equals(specHelpers.hash_tree_root(state))) {
+    if (block.getStateRoot().equals(spec.hash_tree_root(state))) {
       return VerificationResult.PASSED;
     } else {
       return VerificationResult.failedResult(
           "State root doesn't match, expected %s but got %s",
-          block.getStateRoot(), specHelpers.hash_tree_root(state));
+          block.getStateRoot(), spec.hash_tree_root(state));
     }
   }
 }

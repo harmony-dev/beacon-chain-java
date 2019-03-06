@@ -1,5 +1,7 @@
 package org.ethereum.beacon.validator.util;
 
+import static java.util.Collections.singletonList;
+
 import java.util.Collections;
 import java.util.Random;
 import org.ethereum.beacon.consensus.BeaconStateEx;
@@ -15,7 +17,7 @@ import org.ethereum.beacon.pow.util.DepositContractTestUtil;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.validator.BeaconChainAttester;
 import org.ethereum.beacon.validator.BeaconChainProposer;
-import org.ethereum.beacon.validator.BeaconChainValidator;
+import org.ethereum.beacon.validator.MultiValidatorService;
 import org.ethereum.beacon.validator.attester.BeaconChainAttesterTestUtil;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import org.ethereum.beacon.validator.crypto.MessageSigner;
@@ -27,7 +29,7 @@ import tech.pegasys.artemis.util.bytes.Bytes48;
 public abstract class ValidatorServiceTestUtil {
   private ValidatorServiceTestUtil() {}
 
-  public static BeaconChainValidator mockBeaconChainValidator(
+  public static MultiValidatorService mockBeaconChainValidator(
       Random random, SpecHelpers specHelpers) {
     BLSPubkey pubkey = BLSPubkey.wrap(Bytes48.random(random));
     BlockTransition<BeaconStateEx> perBlockTransition =
@@ -45,7 +47,7 @@ public abstract class ValidatorServiceTestUtil {
     BLS381Credentials blsCredentials = new BLS381Credentials(pubkey, signer);
 
     return Mockito.spy(
-        new BeaconChainValidator(blsCredentials, proposer, attester, specHelpers,
+        new MultiValidatorService(singletonList(blsCredentials), proposer, attester, specHelpers,
             Mono.empty(), Schedulers.createDefault()));
   }
 }

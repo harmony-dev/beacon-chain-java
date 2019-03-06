@@ -2,7 +2,7 @@ package org.ethereum.beacon.core.spec;
 
 import org.ethereum.beacon.core.types.EpochNumber;
 
-public interface ChainSpec
+public interface SpecConstants
     extends InitialValues,
         MiscParameters,
         StateListLengths,
@@ -10,12 +10,13 @@ public interface ChainSpec
         TimeParameters,
         RewardAndPenaltyQuotients,
         MaxOperationsPerBlock,
-        HonestValidatorParameters {
+        HonestValidatorParameters,
+        GweiValues {
 
-  ChainSpec DEFAULT = new ChainSpec(){};
+  SpecConstants DEFAULT = new SpecConstants() {};
 
   @Override
   default EpochNumber getGenesisEpoch() {
-    return getGenesisSlot().dividedBy(getEpochLength());
+    return getGenesisSlot().dividedBy(getSlotsPerEpoch());
   }
 }

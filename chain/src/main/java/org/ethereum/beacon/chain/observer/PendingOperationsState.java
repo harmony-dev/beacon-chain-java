@@ -10,7 +10,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.ethereum.beacon.core.operations.Attestation;
-import org.ethereum.beacon.core.operations.Exit;
+import org.ethereum.beacon.core.operations.Transfer;
+import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
@@ -92,7 +93,12 @@ public class PendingOperationsState implements PendingOperations {
   }
 
   @Override
-  public List<Exit> peekExits(int maxCount) {
+  public List<VoluntaryExit> peekExits(int maxCount) {
+    return Collections.emptyList();
+  }
+
+  @Override
+  public List<Transfer> peekTransfers(int maxCount) {
     return Collections.emptyList();
   }
 }

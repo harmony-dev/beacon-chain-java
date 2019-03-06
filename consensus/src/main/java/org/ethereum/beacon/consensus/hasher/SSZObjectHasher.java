@@ -22,31 +22,19 @@ public class SSZObjectHasher implements ObjectHasher<Hash32> {
 
   private static final int SSZ_SCHEMES_CACHE_CAPACITY = 128;
   private final SSZHashSerializer sszHashSerializer;
-  private final Function<BytesValue, Hash32> hashFunction;
 
-  SSZObjectHasher(SSZHashSerializer sszHashSerializer, Function<BytesValue, Hash32> hashFunction) {
+  SSZObjectHasher(SSZHashSerializer sszHashSerializer) {
     this.sszHashSerializer = sszHashSerializer;
-    this.hashFunction = hashFunction;
   }
 
-  /**
-   * Creates object hasher with hash function and SSZ scheme builder with cache
-   *
-   * @param hashFunction Hash function
-   * @return hasher
-   */
   public static SSZObjectHasher create(Function<BytesValue, Hash32> hashFunction) {
     SSZHashSerializer sszHashSerializer =
-        SSZHashSerializers.createWithBeaconChainTypes(
-            hashFunction, true, SSZ_SCHEMES_CACHE_CAPACITY);
-    return new SSZObjectHasher(sszHashSerializer, hashFunction);
+        SSZHashSerializers.createWithBeaconChainTypes(hashFunction, true, SSZ_SCHEMES_CACHE_CAPACITY);
+    return new SSZObjectHasher(sszHashSerializer);
   }
 
   @Override
   public Hash32 getHash(Object input) {
-    if (input instanceof List) {
-      return Hash32.wrap(Bytes32.wrap(sszHashSerializer.hash(input)));
-    } else {
       if (input instanceof Hash32able) {
         Optional<Hash32> hashOptional = ((Hash32able) input).getHash();
         if (hashOptional.isPresent()) {
@@ -54,13 +42,12 @@ public class SSZObjectHasher implements ObjectHasher<Hash32> {
         }
       }
 
-      Hash32 hash = hashFunction.apply(BytesValue.wrap(sszHashSerializer.hash(input)));
+      Hash32 hash = Hash32.wrap(Bytes32.wrap(sszHashSerializer.hash(input)));
       if (input instanceof Hash32able) {
         ((Hash32able) input).setHash(hash);
       }
 
       return hash;
-    }
   }
 
   @Override
@@ -68,8 +55,7 @@ public class SSZObjectHasher implements ObjectHasher<Hash32> {
     if (input instanceof List) {
       throw new RuntimeException("Lists are not supported in truncated hash");
     } else {
-      return hashFunction.apply(
-          BytesValue.wrap(sszHashSerializer.hashTruncate(input, input.getClass(), field)));
+      return Hash32.wrap(Bytes32.wrap(sszHashSerializer.hashTruncate(input, input.getClass(), field)));
     }
   }
 }

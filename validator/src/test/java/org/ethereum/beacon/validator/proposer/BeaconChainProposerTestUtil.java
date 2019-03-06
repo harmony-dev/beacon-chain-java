@@ -18,7 +18,6 @@ public abstract class BeaconChainProposerTestUtil {
     return Mockito.spy(
         new BeaconChainProposerImpl(
             specHelpers,
-            specHelpers.getChainSpec(),
             perBlockTransition,
             perEpochTransition,
             depositContract));

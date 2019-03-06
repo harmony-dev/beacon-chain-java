@@ -11,10 +11,12 @@ public class RewardAndPenaltyQuotientsData implements RewardAndPenaltyQuotients 
   private String BASE_REWARD_QUOTIENT;
   @JsonProperty("WHISTLEBLOWER_REWARD_QUOTIENT")
   private String WHISTLEBLOWER_REWARD_QUOTIENT;
-  @JsonProperty("INCLUDER_REWARD_QUOTIENT")
-  private String INCLUDER_REWARD_QUOTIENT;
+  @JsonProperty("ATTESTATION_INCLUSION_REWARD_QUOTIENT")
+  private String ATTESTATION_INCLUSION_REWARD_QUOTIENT;
   @JsonProperty("INACTIVITY_PENALTY_QUOTIENT")
   private String INACTIVITY_PENALTY_QUOTIENT;
+  @JsonProperty("MIN_PENALTY_QUOTIENT")
+  private String MIN_PENALTY_QUOTIENT;
 
   @Override
   @JsonIgnore
@@ -30,14 +32,20 @@ public class RewardAndPenaltyQuotientsData implements RewardAndPenaltyQuotients 
 
   @Override
   @JsonIgnore
-  public UInt64 getIncluderRewardQuotient() {
-    return UInt64.valueOf(getINCLUDER_REWARD_QUOTIENT());
+  public UInt64 getAttestationInclusionRewardQuotient() {
+    return UInt64.valueOf(getATTESTATION_INCLUSION_REWARD_QUOTIENT());
   }
 
   @Override
   @JsonIgnore
   public UInt64 getInactivityPenaltyQuotient() {
     return UInt64.valueOf(getINACTIVITY_PENALTY_QUOTIENT());
+  }
+
+  @Override
+  @JsonIgnore
+  public UInt64 getMinPenaltyQuotient() {
+    return UInt64.valueOf(getMIN_PENALTY_QUOTIENT());
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
@@ -59,12 +67,12 @@ public class RewardAndPenaltyQuotientsData implements RewardAndPenaltyQuotients 
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-  public String getINCLUDER_REWARD_QUOTIENT() {
-    return INCLUDER_REWARD_QUOTIENT;
+  public String getATTESTATION_INCLUSION_REWARD_QUOTIENT() {
+    return ATTESTATION_INCLUSION_REWARD_QUOTIENT;
   }
 
-  public void setINCLUDER_REWARD_QUOTIENT(String INCLUDER_REWARD_QUOTIENT) {
-    this.INCLUDER_REWARD_QUOTIENT = INCLUDER_REWARD_QUOTIENT;
+  public void setATTESTATION_INCLUSION_REWARD_QUOTIENT(String ATTESTATION_INCLUSION_REWARD_QUOTIENT) {
+    this.ATTESTATION_INCLUSION_REWARD_QUOTIENT = ATTESTATION_INCLUSION_REWARD_QUOTIENT;
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
@@ -74,5 +82,14 @@ public class RewardAndPenaltyQuotientsData implements RewardAndPenaltyQuotients 
 
   public void setINACTIVITY_PENALTY_QUOTIENT(String INACTIVITY_PENALTY_QUOTIENT) {
     this.INACTIVITY_PENALTY_QUOTIENT = INACTIVITY_PENALTY_QUOTIENT;
+  }
+
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+  public String getMIN_PENALTY_QUOTIENT() {
+    return MIN_PENALTY_QUOTIENT;
+  }
+
+  public void setMIN_PENALTY_QUOTIENT(String MIN_PENALTY_QUOTIENT) {
+    this.MIN_PENALTY_QUOTIENT = MIN_PENALTY_QUOTIENT;
   }
 }

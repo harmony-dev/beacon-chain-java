@@ -21,14 +21,13 @@ import org.ethereum.beacon.consensus.verifier.BeaconStateVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
-import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.crypto.BLS381.KeyPair;
 import org.ethereum.beacon.db.InMemoryDatabase;
 import org.ethereum.beacon.pow.DepositContract.ChainStart;
-import org.ethereum.beacon.schedulers.ControlledSchedulers;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.javatuples.Pair;
 import org.reactivestreams.Publisher;
@@ -36,7 +35,7 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public class SampleObservableState {
-  private final SpecHelpers specHelpers;
+  private final SpecHelpers spec;
 
   public List<Deposit> deposits;
   public List<KeyPair> depositKeys;
@@ -57,15 +56,15 @@ public class SampleObservableState {
       Publisher<Attestation> attestationsSteam,
       Schedulers schedulers) {
 
-    ChainSpec chainSpec =
-        new ChainSpec() {
+    SpecConstants specConstants =
+        new SpecConstants() {
           @Override
-          public SlotNumber.EpochLength getEpochLength() {
+          public SlotNumber.EpochLength getSlotsPerEpoch() {
             return new SlotNumber.EpochLength(UInt64.valueOf(validatorCount));
           }
 
           @Override
-          public Time getSlotDuration() {
+          public Time getSecondsPerSlot() {
             return Time.of(slotDuration.getSeconds());
           }
 
@@ -74,20 +73,20 @@ public class SampleObservableState {
             return SlotNumber.of(genesisSlot);
           }
         };
-    this.specHelpers = SpecHelpers.createWithSSZHasher(chainSpec);
+    this.spec = SpecHelpers.createWithSSZHasher(specConstants);
 
     Pair<List<Deposit>, List<KeyPair>> anyDeposits = TestUtils
-        .getAnyDeposits(rnd, specHelpers, 8);
+        .getAnyDeposits(rnd, spec, 8);
     deposits = anyDeposits.getValue0();
     depositKeys = anyDeposits.getValue1();
 
     eth1Data = new Eth1Data(Hash32.random(rnd), Hash32.random(rnd));
     chainStart = new ChainStart(Time.of(genesisTime.getSeconds()), eth1Data, deposits);
 
-    InitialStateTransition initialTransition = new InitialStateTransition(chainStart, specHelpers);
-    PerSlotTransition perSlotTransition = new PerSlotTransition(specHelpers);
-    PerBlockTransition perBlockTransition = new PerBlockTransition(specHelpers);
-    PerEpochTransition perEpochTransition = new PerEpochTransition(specHelpers);
+    InitialStateTransition initialTransition = new InitialStateTransition(chainStart, spec);
+    PerSlotTransition perSlotTransition = new PerSlotTransition(spec);
+    PerBlockTransition perBlockTransition = new PerBlockTransition(spec);
+    PerEpochTransition perEpochTransition = new PerEpochTransition(spec);
 
     db = new InMemoryDatabase();
     beaconChainStorage = BeaconChainStorageFactory.get().create(db);
@@ -98,7 +97,7 @@ public class SampleObservableState {
     BeaconStateVerifier stateVerifier = (block, state) -> VerificationResult.PASSED;
 
     beaconChain = new DefaultBeaconChain(
-        specHelpers,
+        spec,
         initialTransition,
         perSlotTransition,
         perBlockTransition,
@@ -109,7 +108,7 @@ public class SampleObservableState {
         schedulers);
     beaconChain.init();
 
-    slotTicker = new SlotTicker(specHelpers, beaconChain.getRecentlyProcessed().getState(),
+    slotTicker = new SlotTicker(spec, beaconChain.getRecentlyProcessed().getState(),
         schedulers);
     slotTicker.start();
 
@@ -118,7 +117,7 @@ public class SampleObservableState {
         slotTicker.getTickerStream(),
         attestationsSteam,
         beaconChain.getBlockStatesStream(),
-        specHelpers,
+        spec,
         perSlotTransition,
         perEpochTransition,
         schedulers);

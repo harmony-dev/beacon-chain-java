@@ -61,7 +61,7 @@ public class SimulateUtils {
               Collections.singletonList(Hash32.random(rnd)),
               UInt64.ZERO,
               new DepositData(
-                  specHelpers.getChainSpec().getMaxDepositAmount(),
+                  specHelpers.getConstants().getMaxDepositAmount(),
                   Time.of(0),
                   new DepositInput(
                       BLSPubkey.wrap(Bytes48.leftPad(keyPair.getPublic().getEncodedBytes())),

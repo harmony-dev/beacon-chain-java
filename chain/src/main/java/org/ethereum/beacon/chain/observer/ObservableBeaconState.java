@@ -5,7 +5,6 @@ import javax.annotation.Nullable;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.core.BeaconBlock;
-import org.ethereum.beacon.core.BeaconState;
 
 /** An observable chain state. */
 public class ObservableBeaconState {
@@ -68,8 +67,8 @@ public class ObservableBeaconState {
         + (spec != null ? spec.hash_tree_root(head).toStringShort() : head.toString(null ,null, null))
         + ", latestState: "
         + committee
-        + latestSlotState.toStringShort(spec == null ? null : spec.getChainSpec())
-        + ", pendingOps: " + getPendingOperations().toStringMedium(spec == null ? null : spec.getChainSpec())
+        + latestSlotState.toStringShort(spec == null ? null : spec.getConstants())
+        + ", pendingOps: " + getPendingOperations().toStringMedium(spec == null ? null : spec.getConstants())
         + "]";
   }
 }

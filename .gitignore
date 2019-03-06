@@ -10,3 +10,6 @@ out
 pow/ethereumj/database
 pow/ethereumj/logs
 work
+
+# logs
+/logs

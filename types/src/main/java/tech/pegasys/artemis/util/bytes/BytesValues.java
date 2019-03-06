@@ -141,6 +141,25 @@ public abstract class BytesValues {
     res[3] = b(v);
     return BytesValue.wrap(res);
   }
+  /**
+   * Returns a 4 bytes little-endian value corresponding to the provided value interpreted as an
+   * unsigned int value.
+   *
+   * @param v The value, which must fit an unsigned int.
+   * @return A 4 bytes value corresponding to {@code v}.
+   * @throws IllegalArgumentException if {@code v < 0} or {@code v} is too big to fit an unsigned
+   *         4-bytes int (that is, if {@code v >= (1L << 32)}).
+   */
+  public static BytesValue ofUnsignedIntLittleEndian(long v) {
+    checkArgument(v >= 0 && v <= MAX_UNSIGNED_INT,
+        "Value %s cannot be represented as an unsigned int (it is negative or too big)", v);
+    byte[] res = new byte[4];
+    res[0] = b(v);
+    res[1] = b(v >> 8);
+    res[2] = b(v >> 16);
+    res[3] = b(v >> 24);
+    return BytesValue.wrap(res);
+  }
 
   /**
    * Extracts the int value corresponding to the provide bytes, which must be 4 bytes or less.

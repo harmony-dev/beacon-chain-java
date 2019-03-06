@@ -4,7 +4,7 @@ import org.apache.logging.log4j.Level;
 import org.ethereum.beacon.emulator.config.Config;
 import org.ethereum.beacon.emulator.config.ConfigBuilder;
 import org.ethereum.beacon.emulator.config.YamlPrinter;
-import org.ethereum.beacon.emulator.config.chainspec.ChainSpecData;
+import org.ethereum.beacon.emulator.config.chainspec.Spec;
 import org.ethereum.beacon.emulator.config.main.MainConfig;
 import org.javatuples.Pair;
 import picocli.CommandLine;
@@ -89,8 +89,8 @@ public class ReusableOptions {
     return configBuilder.build();
   }
 
-  private ChainSpecData prepareChainSpec(@Nullable String extraChainSpec) {
-    ConfigBuilder<ChainSpecData> configBuilder = new ConfigBuilder<>(ChainSpecData.class);
+  private Spec prepareChainSpec(@Nullable String extraChainSpec) {
+    ConfigBuilder<Spec> configBuilder = new ConfigBuilder<>(Spec.class);
     configBuilder.addYamlConfig(
         ClassLoader.class.getResourceAsStream("/config/default-chainSpec.yml"));
     if (extraChainSpec != null) {
@@ -109,14 +109,14 @@ public class ReusableOptions {
     return configBuilder.build();
   }
 
-  Pair<MainConfig, ChainSpecData> prepareAndPrintConfigs(Task action, String extraConfig) {
+  Pair<MainConfig, Spec> prepareAndPrintConfigs(Task action, String extraConfig) {
     return prepareAndPrintConfigs(action, extraConfig, null);
   }
 
-  Pair<MainConfig, ChainSpecData> prepareAndPrintConfigs(
+  Pair<MainConfig, Spec> prepareAndPrintConfigs(
       Task action, String extraConfig, @Nullable String extraChainSpec) {
     MainConfig mainConfig = prepareConfig(extraConfig);
-    ChainSpecData chainSpecData = prepareChainSpec(extraChainSpec);
+    Spec specConstantsData = prepareChainSpec(extraChainSpec);
 
     // Print if needed
     if (action.equals(Task.config)) {
@@ -124,8 +124,8 @@ public class ReusableOptions {
       System.out.println("Main config:");
       System.out.println(new YamlPrinter(mainConfig).getString());
       if (verbose) {
-        System.out.println("Chain specifications:");
-        System.out.println(new YamlPrinter(chainSpecData).getString());
+        System.out.println("Spec constants:");
+        System.out.println(new YamlPrinter(specConstantsData).getString());
       } else {
         System.out.println("To see chain specifications use verbose `-v` option.");
       }
@@ -138,10 +138,10 @@ public class ReusableOptions {
     }
     if (chainspec != null) {
       System.out.println("Saving chain specification to file: " + chainspec);
-      saveConfigToFile(chainSpecData, chainspec);
+      saveConfigToFile(specConstantsData, chainspec);
     }
 
-    return Pair.with(mainConfig, chainSpecData);
+    return Pair.with(mainConfig, specConstantsData);
   }
 
   // Overrides without prompt

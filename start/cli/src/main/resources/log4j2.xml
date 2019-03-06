@@ -22,8 +22,10 @@
     </File>
 
     <Console name="Console" target="SYSTEM_OUT">
-      <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} [Validator: #%X{validatorIndex}] - %msg%n"/>
-      <ThresholdFilter level="info"/>
+      <PatternLayout>
+        <Pattern>%d{HH:mm:ss.SSS} [%t] %-5level #%X{validatorIndex} %logger{36} - %msg%n</Pattern>
+      </PatternLayout>
+      <!-- ThresholdFilter level="info"/ -->
       <!--
             <ContextMapFilter onMatch="ACCEPT" onMismatch="DENY" operator="or">
               <KeyValuePair key="mdcKey" value="value1"/>
@@ -32,8 +34,14 @@
     </Console>
   </Appenders>
   <Loggers>
-    <Root level="debug">
+    <Logger name="simulator" level="info" additivity="false">
       <AppenderRef ref="Console"/>
+    </Logger>
+    <Logger name="peer" level="info" additivity="false">
+      <AppenderRef ref="Console"/>
+    </Logger>
+
+    <Root level="trace">
       <AppenderRef ref="validatorFile"/>
       <AppenderRef ref="allFile"/>
     </Root>
