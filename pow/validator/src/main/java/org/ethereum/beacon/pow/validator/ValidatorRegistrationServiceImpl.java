@@ -1,5 +1,6 @@
 package org.ethereum.beacon.pow.validator;
 
+import java.util.Collections;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.BlockTransition;
@@ -20,7 +21,7 @@ import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.ssz.Serializer;
 import org.ethereum.beacon.validator.BeaconChainAttester;
 import org.ethereum.beacon.validator.BeaconChainProposer;
-import org.ethereum.beacon.validator.BeaconChainValidator;
+import org.ethereum.beacon.validator.MultiValidatorService;
 import org.ethereum.beacon.validator.ValidatorService;
 import org.ethereum.beacon.validator.attester.BeaconChainAttesterImpl;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
@@ -40,6 +41,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import static java.util.Collections.singletonList;
 import static org.ethereum.beacon.core.spec.SignatureDomains.DEPOSIT;
 
 public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationService {
@@ -202,8 +204,13 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
       BeaconChainAttester attester =
           new BeaconChainAttesterImpl(spec);
       validatorService =
-          new BeaconChainValidator(
-              blsCredentials, proposer, attester, spec, observablePublisher, schedulers);
+          new MultiValidatorService(
+              singletonList(blsCredentials),
+              proposer,
+              attester,
+              spec,
+              observablePublisher,
+              schedulers);
       validatorService.start();
       changeCurrentStage(RegistrationStage.COMPLETE);
     }
