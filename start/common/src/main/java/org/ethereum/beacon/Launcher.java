@@ -1,5 +1,8 @@
 package org.ethereum.beacon;
 
+import static java.util.Collections.singletonList;
+import static org.ethereum.beacon.validator.crypto.BLS381Credentials.createWithInsecureSigner;
+
 import org.ethereum.beacon.chain.DefaultBeaconChain;
 import org.ethereum.beacon.chain.MutableBeaconChain;
 import org.ethereum.beacon.chain.ProposedBlockProcessor;
@@ -24,9 +27,8 @@ import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.pow.DepositContract.ChainStart;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.validator.BeaconChainProposer;
-import org.ethereum.beacon.validator.BeaconChainValidator;
+import org.ethereum.beacon.validator.MultiValidatorService;
 import org.ethereum.beacon.validator.attester.BeaconChainAttesterImpl;
-import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import org.ethereum.beacon.validator.proposer.BeaconChainProposerImpl;
 import org.ethereum.beacon.wire.WireApi;
 import reactor.core.publisher.DirectProcessor;
@@ -55,7 +57,7 @@ public class Launcher {
   private ObservableStateProcessor observableStateProcessor;
   private BeaconChainProposer beaconChainProposer;
   private BeaconChainAttesterImpl beaconChainAttester;
-  private BeaconChainValidator beaconChainValidator;
+  private MultiValidatorService beaconChainValidator;
 
   public Launcher(
       SpecHelpers spec,
@@ -125,8 +127,8 @@ public class Launcher {
          perBlockTransition, perEpochTransition, depositContract);
     beaconChainAttester = new BeaconChainAttesterImpl(spec);
 
-    beaconChainValidator = new BeaconChainValidator(
-        BLS381Credentials.createWithInsecureSigner(validatorSig),
+    beaconChainValidator = new MultiValidatorService(
+        singletonList(createWithInsecureSigner(validatorSig)),
         beaconChainProposer,
         beaconChainAttester,
         spec,
@@ -219,7 +221,7 @@ public class Launcher {
     return beaconChainAttester;
   }
 
-  public BeaconChainValidator getBeaconChainValidator() {
+  public MultiValidatorService getValidatorService() {
     return beaconChainValidator;
   }
 

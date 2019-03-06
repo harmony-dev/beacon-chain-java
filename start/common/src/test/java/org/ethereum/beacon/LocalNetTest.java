@@ -201,10 +201,10 @@ public class LocalNetTest {
           .subscribe(os -> {
             System.out.println("  #" + finalI + " New observable state: " + os.toString(specHelpers));
           });
-      Flux.from(launcher.getBeaconChainValidator().getProposedBlocksStream())
+      Flux.from(launcher.getValidatorService().getProposedBlocksStream())
           .subscribe(block ->System.out.println("#" + finalI + " !!! New block: " +
               block.toString(specConstants, genesisTime, specHelpers::hash_tree_root)));
-      Flux.from(launcher.getBeaconChainValidator().getAttestationsStream())
+      Flux.from(launcher.getValidatorService().getAttestationsStream())
           .subscribe(attest ->System.out.println("#" + finalI + " !!! New attestation: " +
               attest.toString(specConstants, genesisTime)));
       Flux.from(launcher.getBeaconChain().getBlockStatesStream())

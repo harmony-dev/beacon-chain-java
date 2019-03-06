@@ -196,10 +196,10 @@ public class SimulatorLauncher implements Runnable {
             latestStates.put(finalI, os);
             logPeer.debug("New observable state: " + os.toString(specHelpers));
           });
-      Flux.from(launcher.getBeaconChainValidator().getProposedBlocksStream())
+      Flux.from(launcher.getValidatorService().getProposedBlocksStream())
           .subscribe(block -> logPeer.info("New block created: "
               + block.toString(this.specConstants, genesisTime, specHelpers::hash_tree_root)));
-      Flux.from(launcher.getBeaconChainValidator().getAttestationsStream())
+      Flux.from(launcher.getValidatorService().getAttestationsStream())
           .subscribe(attest -> logPeer.info("New attestation created: "
               + attest.toString(this.specConstants, genesisTime)));
       Flux.from(launcher.getBeaconChain().getBlockStatesStream())
