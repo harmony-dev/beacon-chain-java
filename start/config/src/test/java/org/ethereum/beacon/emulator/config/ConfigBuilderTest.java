@@ -1,6 +1,7 @@
 package org.ethereum.beacon.emulator.config;
 
 import org.ethereum.beacon.core.spec.SpecConstants;
+import org.ethereum.beacon.emulator.config.chainspec.Spec;
 import org.ethereum.beacon.emulator.config.chainspec.SpecConstantsData;
 import org.ethereum.beacon.emulator.config.main.Configuration;
 import org.ethereum.beacon.emulator.config.main.MainConfig;
@@ -46,12 +47,12 @@ public class ConfigBuilderTest {
 
   @Test
   public void testChainSpec() {
-    ConfigBuilder configBuilder = new ConfigBuilder(SpecConstantsData.class);
+    ConfigBuilder<Spec> configBuilder = new ConfigBuilder<>(Spec.class);
     File testYamlConfig =
         new File(getClass().getClassLoader().getResource("chainSpec.yml").getFile());
 
     configBuilder.addYamlConfig(testYamlConfig);
-    SpecConstantsData unmodified = (SpecConstantsData) configBuilder.build();
+    Spec unmodified = configBuilder.build();
     SpecConstants specConstants = unmodified.buildSpecConstants();
 
     SpecConstants specConstantsDefault = SpecConstants.DEFAULT;
@@ -60,8 +61,8 @@ public class ConfigBuilderTest {
     assertEquals(specConstantsDefault.getSlotsPerEpoch(), specConstants.getSlotsPerEpoch());
     assertEquals(specConstantsDefault.getSecondsPerSlot(), specConstants.getSecondsPerSlot());
 
-    configBuilder.addConfigOverride("timeParameters.SECONDS_PER_SLOT", "10");
-    SpecConstantsData overriden = (SpecConstantsData) configBuilder.build();
+    configBuilder.addConfigOverride("specConstants.timeParameters.SECONDS_PER_SLOT", "10");
+    Spec overriden = configBuilder.build();
     SpecConstants specConstants2 = overriden.buildSpecConstants();
     assertNotEquals(specConstantsDefault.getSecondsPerSlot(), specConstants2.getSecondsPerSlot());
     assertEquals(UInt64.valueOf(10), specConstants2.getSecondsPerSlot());

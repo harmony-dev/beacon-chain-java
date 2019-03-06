@@ -21,7 +21,7 @@ import tech.pegasys.artemis.util.uint.UInt64;
 
 /** SpecConstants settings object, creates {@link SpecConstants} from user data */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class SpecConstantsData implements Config {
+public class SpecConstantsData {
   private DepositContractParametersData depositContractParameters;
   private HonestValidatorParametersData honestValidatorParameters;
   private InitialValuesData initialValues;
@@ -31,7 +31,6 @@ public class SpecConstantsData implements Config {
   private RewardAndPenaltyQuotientsData rewardAndPenaltyQuotients;
   private StateListLengthsData stateListLengths;
   private TimeParametersData timeParameters;
-  private SpecHelpersOptions specHelpersOptions;
 
   public SpecConstants buildSpecConstants() {
     return new SpecConstants() {
@@ -242,31 +241,6 @@ public class SpecConstantsData implements Config {
     };
   }
 
-  public SpecHelpers buildSpecHelpers() {
-    SpecHelpers defaultSpecHelpers = SpecHelpers.createWithSSZHasher(buildSpecConstants());
-    if (getSpecHelpersOptions().isBlsVerifyEnabled()) {
-      return defaultSpecHelpers;
-    } else {
-      return new SpecHelpers(
-          defaultSpecHelpers.getConstants(),
-          defaultSpecHelpers.getHashFunction(),
-          defaultSpecHelpers.getObjectHasher()) {
-
-        @Override
-        public boolean bls_verify(PublicKey blsPublicKey, Hash32 message, BLSSignature signature,
-            Bytes8 domain) {
-          return true;
-        }
-
-        @Override
-        public boolean bls_verify_multiple(List<PublicKey> publicKeys, List<Hash32> messages,
-            BLSSignature signature, Bytes8 domain) {
-          return true;
-        }
-      };
-    }
-  }
-
   public DepositContractParametersData getDepositContractParameters() {
     return depositContractParameters;
   }
@@ -337,14 +311,5 @@ public class SpecConstantsData implements Config {
 
   public void setTimeParameters(TimeParametersData timeParameters) {
     this.timeParameters = timeParameters;
-  }
-
-  public SpecHelpersOptions getSpecHelpersOptions() {
-    return specHelpersOptions;
-  }
-
-  public void setSpecHelpersOptions(
-      SpecHelpersOptions specHelpersOptions) {
-    this.specHelpersOptions = specHelpersOptions;
   }
 }

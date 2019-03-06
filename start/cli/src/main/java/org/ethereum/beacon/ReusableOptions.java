@@ -4,7 +4,7 @@ import org.apache.logging.log4j.Level;
 import org.ethereum.beacon.emulator.config.Config;
 import org.ethereum.beacon.emulator.config.ConfigBuilder;
 import org.ethereum.beacon.emulator.config.YamlPrinter;
-import org.ethereum.beacon.emulator.config.chainspec.SpecConstantsData;
+import org.ethereum.beacon.emulator.config.chainspec.Spec;
 import org.ethereum.beacon.emulator.config.main.MainConfig;
 import org.javatuples.Pair;
 import picocli.CommandLine;
@@ -89,8 +89,8 @@ public class ReusableOptions {
     return configBuilder.build();
   }
 
-  private SpecConstantsData prepareChainSpec(@Nullable String extraChainSpec) {
-    ConfigBuilder<SpecConstantsData> configBuilder = new ConfigBuilder<>(SpecConstantsData.class);
+  private Spec prepareChainSpec(@Nullable String extraChainSpec) {
+    ConfigBuilder<Spec> configBuilder = new ConfigBuilder<>(Spec.class);
     configBuilder.addYamlConfig(
         ClassLoader.class.getResourceAsStream("/config/default-chainSpec.yml"));
     if (extraChainSpec != null) {
@@ -109,14 +109,14 @@ public class ReusableOptions {
     return configBuilder.build();
   }
 
-  Pair<MainConfig, SpecConstantsData> prepareAndPrintConfigs(Task action, String extraConfig) {
+  Pair<MainConfig, Spec> prepareAndPrintConfigs(Task action, String extraConfig) {
     return prepareAndPrintConfigs(action, extraConfig, null);
   }
 
-  Pair<MainConfig, SpecConstantsData> prepareAndPrintConfigs(
+  Pair<MainConfig, Spec> prepareAndPrintConfigs(
       Task action, String extraConfig, @Nullable String extraChainSpec) {
     MainConfig mainConfig = prepareConfig(extraConfig);
-    SpecConstantsData specConstantsData = prepareChainSpec(extraChainSpec);
+    Spec specConstantsData = prepareChainSpec(extraChainSpec);
 
     // Print if needed
     if (action.equals(Task.config)) {
