@@ -1,10 +1,18 @@
 package org.ethereum.beacon;
 
+import java.io.InputStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Random;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.Level;
@@ -48,15 +56,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
-
-import java.io.InputStream;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.Random;
-import java.util.function.Consumer;
 
 public class SimulatorLauncher implements Runnable {
   private static final Logger logger = LogManager.getLogger("simulator");
@@ -157,7 +156,7 @@ public class SimulatorLauncher implements Runnable {
     Time genesisTime = Time.of(10 * 60);
 
     MDCControlledSchedulers controlledSchedulers = new MDCControlledSchedulers();
-    controlledSchedulers.setCurrentTime(genesisTime.getMillis().getValue() + 1000);
+    controlledSchedulers.setCurrentTime(genesisTime.getMillis().getValue());
 
     Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), Hash32.random(rnd));
 
@@ -257,8 +256,18 @@ public class SimulatorLauncher implements Runnable {
         });
 
     logger.info("Time starts running ...");
+    Duration halfASlot =
+        Duration.ofMillis(specConstants.getSecondsPerSlot().getMillis().getValue() / 2);
+
+    // skip through a genesis slot
+    controlledSchedulers.addTime(halfASlot.minusMillis(1000));
+    controlledSchedulers.addTime(halfASlot);
+
     while (true) {
-      controlledSchedulers.addTime(Duration.ofMillis(specConstants.getSecondsPerSlot().getValue() * 1000 - 1));
+      // step into the next slot
+      controlledSchedulers.addTime(halfASlot);
+      // unleash scheduled attestations
+      controlledSchedulers.addTime(halfASlot);
 
       if (slots.size() > 1) {
         logger.warn("More than 1 slot generated: " + slots);
@@ -321,8 +330,6 @@ public class SimulatorLauncher implements Runnable {
             + getValidators(" no finality: ", summary.getNoFinalityPenalties())
         );
       }
-
-      controlledSchedulers.addTime(Duration.ofMillis(1));
 
       slots.clear();
       attestations.clear();
