@@ -14,7 +14,6 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Supplier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
@@ -195,20 +194,20 @@ public class LocalNetTest {
       peers.add(launcher);
 
       int finalI = i;
-      Flux.from(launcher.slotTicker.getTickerStream())
+      Flux.from(launcher.getSlotTicker().getTickerStream())
           .subscribe(slot -> System.out.println("  #" + finalI + " Slot: " + slot.toString(
               specConstants, genesisTime)));
-      Flux.from(launcher.observableStateProcessor.getObservableStateStream())
+      Flux.from(launcher.getObservableStateProcessor().getObservableStateStream())
           .subscribe(os -> {
             System.out.println("  #" + finalI + " New observable state: " + os.toString(specHelpers));
           });
-      Flux.from(launcher.beaconChainValidator.getProposedBlocksStream())
+      Flux.from(launcher.getBeaconChainValidator().getProposedBlocksStream())
           .subscribe(block ->System.out.println("#" + finalI + " !!! New block: " +
               block.toString(specConstants, genesisTime, specHelpers::hash_tree_root)));
-      Flux.from(launcher.beaconChainValidator.getAttestationsStream())
+      Flux.from(launcher.getBeaconChainValidator().getAttestationsStream())
           .subscribe(attest ->System.out.println("#" + finalI + " !!! New attestation: " +
               attest.toString(specConstants, genesisTime)));
-      Flux.from(launcher.beaconChain.getBlockStatesStream())
+      Flux.from(launcher.getBeaconChain().getBlockStatesStream())
           .subscribe(blockState ->System.out.println("  #" + finalI + " Block imported: " +
               blockState.getBlock().toString(specConstants, genesisTime, specHelpers::hash_tree_root)));
     }
@@ -245,7 +244,7 @@ public class LocalNetTest {
                   allBlockAttestations.add(att);
                 }
         }));
-    Flux.from(peers.get(0).observableStateProcessor.getObservableStateStream())
+    Flux.from(peers.get(0).getObservableStateProcessor().getObservableStateStream())
         .subscribe(state -> {
           state.getLatestSlotState().getLatestAttestations().stream()
               .flatMap(a -> fromPending(a).stream())
@@ -260,7 +259,7 @@ public class LocalNetTest {
         });
 
     Map<SlotNumber, ObservableBeaconState> slotStates = new HashMap<>();
-    Flux.from(peers.get(0).observableStateProcessor.getObservableStateStream())
+    Flux.from(peers.get(0).getObservableStateProcessor().getObservableStateStream())
         .subscribe((ObservableBeaconState state) -> {
 
           SlotNumber slot = state.getLatestSlotState().getSlot();

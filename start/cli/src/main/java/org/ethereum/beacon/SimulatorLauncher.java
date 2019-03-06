@@ -189,20 +189,20 @@ public class SimulatorLauncher implements Runnable {
       Launcher launcher = peers.get(i);
 
       int finalI = i;
-      Flux.from(launcher.slotTicker.getTickerStream()).subscribe(slot ->
+      Flux.from(launcher.getSlotTicker().getTickerStream()).subscribe(slot ->
           logPeer.debug("New slot: " + slot.toString(this.specConstants, genesisTime)));
-      Flux.from(launcher.observableStateProcessor.getObservableStateStream())
+      Flux.from(launcher.getObservableStateProcessor().getObservableStateStream())
           .subscribe(os -> {
             latestStates.put(finalI, os);
             logPeer.debug("New observable state: " + os.toString(specHelpers));
           });
-      Flux.from(launcher.beaconChainValidator.getProposedBlocksStream())
+      Flux.from(launcher.getBeaconChainValidator().getProposedBlocksStream())
           .subscribe(block -> logPeer.info("New block created: "
               + block.toString(this.specConstants, genesisTime, specHelpers::hash_tree_root)));
-      Flux.from(launcher.beaconChainValidator.getAttestationsStream())
+      Flux.from(launcher.getBeaconChainValidator().getAttestationsStream())
           .subscribe(attest -> logPeer.info("New attestation created: "
               + attest.toString(this.specConstants, genesisTime)));
-      Flux.from(launcher.beaconChain.getBlockStatesStream())
+      Flux.from(launcher.getBeaconChain().getBlockStatesStream())
           .subscribe(blockState -> logPeer.debug("Block imported: "
               + blockState.getBlock().toString(this.specConstants, genesisTime, specHelpers::hash_tree_root)));
     }
@@ -227,21 +227,21 @@ public class SimulatorLauncher implements Runnable {
     List<BeaconBlock> blocks = new ArrayList<>();
     List<ObservableBeaconState> states = new ArrayList<>();
 
-    Flux.from(observer.slotTicker.getTickerStream()).subscribe(slot -> {
+    Flux.from(observer.getSlotTicker().getTickerStream()).subscribe(slot -> {
       slots.add(slot);
       logger.debug("New slot: " + slot.toString(specConstants, genesisTime));
     });
-    Flux.from(observer.observableStateProcessor.getObservableStateStream())
+    Flux.from(observer.getObservableStateProcessor().getObservableStateStream())
         .subscribe(os -> {
           states.add(os);
           logger.debug("New observable state: " + os.toString(specHelpers));
         });
-    Flux.from(observer.wireApi.inboundAttestationsStream())
+    Flux.from(observer.getWireApi().inboundAttestationsStream())
         .subscribe(att -> {
           attestations.add(att);
           logger.debug("New attestation received: " + att.toStringShort(specConstants));
         });
-    Flux.from(observer.beaconChain.getBlockStatesStream())
+    Flux.from(observer.getBeaconChain().getBlockStatesStream())
         .subscribe(blockState -> {
           blocks.add(blockState.getBlock());
           logger.debug("Block imported: "
@@ -282,7 +282,7 @@ public class SimulatorLauncher implements Runnable {
       ObservableBeaconState lastState = states.get(states.size() - 1);
       if (lastState.getLatestSlotState().getTransition() == TransitionType.EPOCH) {
         ObservableBeaconState preEpochState = states.get(states.size() - 2);
-        EpochTransitionSummary summary = observer.perEpochTransition
+        EpochTransitionSummary summary = observer.getPerEpochTransition()
             .applyWithSummary(preEpochState.getLatestSlotState());
         logger.info("Epoch transition "
             + specHelpers.get_current_epoch(preEpochState.getLatestSlotState()).toString(specConstants)
