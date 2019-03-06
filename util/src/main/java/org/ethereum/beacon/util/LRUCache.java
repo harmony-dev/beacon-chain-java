@@ -1,5 +1,6 @@
 package org.ethereum.beacon.util;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Function;
@@ -22,12 +23,13 @@ public class LRUCache<K, V> implements Cache<K, V> {
    */
   public LRUCache(int capacity) {
     this.cacheData =
-        new LinkedHashMap<K, V>(capacity + 1, .75F, true) {
-          // This method is called just after a new entry has been added
-          public boolean removeEldestEntry(Map.Entry eldest) {
-            return size() > capacity;
-          }
-        };
+        Collections.synchronizedMap(
+            new LinkedHashMap<K, V>(capacity + 1, .75F, true) {
+              // This method is called just after a new entry has been added
+              public boolean removeEldestEntry(Map.Entry eldest) {
+                return size() > capacity;
+              }
+            });
   }
 
   /**
