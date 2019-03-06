@@ -20,6 +20,7 @@ import org.ethereum.beacon.core.BeaconBlocks;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.schedulers.Schedulers;
+import org.ethereum.beacon.stream.SimpleProcessor;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.ReplayProcessor;
@@ -39,8 +40,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   private final BeaconChainStorage chainStorage;
   private final BeaconTupleStorage tupleStorage;
 
-  private final ReplayProcessor<BeaconTupleDetails> blockSink = ReplayProcessor.cacheLast();
-  private final Publisher<BeaconTupleDetails> blockStream;
+  private final SimpleProcessor<BeaconTupleDetails> blockStream;
   private final Schedulers schedulers;
 
   private BeaconTuple recentlyProcessed;
@@ -66,10 +66,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     this.tupleStorage = chainStorage.getTupleStorage();
     this.schedulers = schedulers;
 
-    blockStream = Flux.from(blockSink)
-            .publishOn(schedulers.reactorEvents())
-            .onBackpressureError()
-            .name("DefaultBeaconChain.block");
+    blockStream = new SimpleProcessor<>(schedulers.reactorEvents(), "DefaultBeaconChain.block");
   }
 
   @Override
@@ -78,7 +75,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
       initializeStorage();
     }
     this.recentlyProcessed = fetchRecentTuple();
-    blockSink.onNext(new BeaconTupleDetails(recentlyProcessed));
+    blockStream.onNext(new BeaconTupleDetails(recentlyProcessed));
   }
 
   private BeaconTuple fetchRecentTuple() {
@@ -152,7 +149,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     chainStorage.commit();
 
     this.recentlyProcessed = newTuple;
-    blockSink.onNext(new BeaconTupleDetails(block, preBlockState, postBlockState, postEpochState));
+    blockStream.onNext(new BeaconTupleDetails(block, preBlockState, postBlockState, postEpochState));
 
     logger.info(
         "new block inserted: {}",
