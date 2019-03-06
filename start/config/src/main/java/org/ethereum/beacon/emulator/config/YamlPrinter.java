@@ -22,7 +22,10 @@ public class YamlPrinter implements ConfigPrinter {
     try {
       return mapper.writeValueAsString(config);
     } catch (IOException e) {
-      throw new RuntimeException("Cannot read stream %s with YAML config reader", e);
+      throw new RuntimeException(
+          String.format(
+              "Error thrown when reading stream with YAML config printer:\n%s", e.getMessage()),
+          e);
     }
   }
 }

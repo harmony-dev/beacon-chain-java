@@ -21,7 +21,10 @@ public class YamlSupplier implements ConfigSupplier {
     try {
       return mapper.readValue(data, configType);
     } catch (IOException e) {
-      throw new RuntimeException("Cannot read stream %s with YAML config reader", e);
+      throw new RuntimeException(
+          String.format(
+              "Error thrown when reading stream with YAML config reader:\n%s", e.getMessage()),
+          e);
     }
   }
 }
