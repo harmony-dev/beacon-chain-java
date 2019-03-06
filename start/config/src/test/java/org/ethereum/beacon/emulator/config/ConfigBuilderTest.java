@@ -25,7 +25,7 @@ public class ConfigBuilderTest {
     assertEquals("file://db", unmodified.getConfig().getDb());
     assertEquals(3, unmodified.getPlan().getValidator().size());
     ActionSimulate actionSimulate = ((ActionSimulate) unmodified.getPlan().getValidator().get(2));
-    assertEquals(4, (long) actionSimulate.getCount());
+    assertEquals(1, (long) actionSimulate.getPeersConfigs().size());
 
     MainConfig config2 = new MainConfig();
     Configuration configPart = new Configuration();

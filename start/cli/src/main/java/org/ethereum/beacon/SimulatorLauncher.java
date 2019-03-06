@@ -60,6 +60,7 @@ import java.util.function.Consumer;
 
 public class SimulatorLauncher implements Runnable {
   private static final Logger logger = LogManager.getLogger("simulator");
+  private static final Logger wire = LogManager.getLogger("wire");
   private static final Logger logPeer = LogManager.getLogger("peer");
 
   private final ActionSimulate simulateConfig;
@@ -160,7 +161,8 @@ public class SimulatorLauncher implements Runnable {
 
     Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), Hash32.random(rnd));
 
-    LocalWireHub localWireHub = new LocalWireHub(s -> {});
+    LocalWireHub localWireHub =
+        new LocalWireHub(s -> wire.trace(s), controlledSchedulers.createNew("wire"));
     DepositContract.ChainStart chainStart =
         new DepositContract.ChainStart(genesisTime, eth1Data, deposits);
     DepositContract depositContract = new SimpleDepositContract(chainStart);
@@ -168,15 +170,20 @@ public class SimulatorLauncher implements Runnable {
     List<Launcher> peers = new ArrayList<>();
 
     logger.info("Creating validators...");
-    for (int i = 0; i < keyPairs.size(); i++) {
-      ControlledSchedulers schedulers = controlledSchedulers.createNew("" + i);
-      WireApi wireApi = localWireHub.createNewPeer("" + i);
+    for (int i = 0; i < allPeers.size(); i++) {
+      ControlledSchedulers schedulers =
+          controlledSchedulers.createNew("" + i, allPeers.get(i).getSystemTimeShift());
+      WireApi wireApi =
+          localWireHub.createNewPeer(
+              "" + i,
+              allPeers.get(i).getWireInboundDelay(),
+              allPeers.get(i).getWireOutboundDelay());
 
       Launcher launcher =
           new Launcher(
               specHelpers,
               depositContract,
-              keyPairs.get(i),
+              allPeers.get(i).isValidator() ? keyPairs.get(i) : null,
               wireApi,
               new MemBeaconChainStorageFactory(),
               schedulers);
@@ -372,9 +379,14 @@ public class SimulatorLauncher implements Runnable {
     private DateFormat localTimeFormat = new SimpleDateFormat("HH:mm:ss.SSS");
 
     private List<ControlledSchedulers> schedulersList = new ArrayList<>();
+    private List<Long> timeShifts = new ArrayList<>();
     private long currentTime;
 
     public ControlledSchedulers createNew(String validatorId) {
+      return createNew(validatorId, 0);
+    }
+
+    public ControlledSchedulers createNew(String validatorId, long timeShift) {
       ControlledSchedulers[] newSched = new ControlledSchedulers[1];
       LoggerMDCExecutor mdcExecutor = new LoggerMDCExecutor()
           .add("validatorTime", () -> localTimeFormat.format(new Date(newSched[0].getCurrentTime())))
@@ -382,12 +394,18 @@ public class SimulatorLauncher implements Runnable {
       newSched[0] = Schedulers.createControlled(() -> mdcExecutor);
       newSched[0].setCurrentTime(currentTime);
       schedulersList.add(newSched[0]);
+      timeShifts.add(timeShift);
 
       return newSched[0];
     }
 
     public void setCurrentTime(long time) {
       currentTime = time;
+      for (int i = 0; i < schedulersList.size(); i++) {
+        long schTime = time + timeShifts.get(i);
+        if (schTime < 0) throw new IllegalStateException("Incorrect time with shift: " + schTime);
+        schedulersList.get(i).setCurrentTime(schTime);
+      }
       schedulersList.forEach(cs -> cs.setCurrentTime(time));
     }
 
