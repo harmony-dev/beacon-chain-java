@@ -50,7 +50,7 @@ public class BeaconChainAttesterTest {
     Mockito.doReturn(committee).when(attester).getCommittee(any(), any());
     Mockito.doReturn(epochBoundaryRoot).when(attester).getEpochBoundaryRoot(any(), any());
     Mockito.doReturn(Crosslink.EMPTY).when(attester).getLatestCrosslink(any(), any());
-    Mockito.doReturn(justifiedBlockRoot).when(attester).getJustifiedBlockRoot(any());
+    Mockito.doReturn(justifiedBlockRoot).when(attester).getJustifiedBlockRoot(any(), any());
 
     Attestation attestation =
         attester.attest(validatorIndex, shard, initiallyObservedState, signer);
