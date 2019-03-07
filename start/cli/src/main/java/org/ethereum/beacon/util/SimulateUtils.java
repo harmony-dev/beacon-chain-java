@@ -39,35 +39,40 @@ public class SimulateUtils {
         cachedDeposits.getValue0().subList(0, count), cachedDeposits.getValue1().subList(0, count));
   }
 
+  public static synchronized Deposit getDepositForKeyPair(
+      BLS381.KeyPair keyPair, SpecHelpers specHelpers) {
+    Hash32 proofOfPosession = Hash32.random(rnd);
+    DepositInput depositInputWithoutSignature =
+        new DepositInput(
+            BLSPubkey.wrap(Bytes48.leftPad(keyPair.getPublic().getEncodedBytes())),
+            proofOfPosession,
+            BLSSignature.wrap(Bytes96.ZERO));
+    Hash32 msgHash = specHelpers.signed_root(depositInputWithoutSignature, "proofOfPossession");
+    BLS381.Signature signature =
+        BLS381.sign(
+            new MessageParameters.Impl(msgHash, SignatureDomains.DEPOSIT.toBytesBigEndian()),
+            keyPair);
+
+    Deposit deposit =
+        new Deposit(
+            Collections.singletonList(Hash32.random(rnd)),
+            UInt64.ZERO,
+            new DepositData(
+                specHelpers.getConstants().getMaxDepositAmount(),
+                Time.of(0),
+                new DepositInput(
+                    BLSPubkey.wrap(Bytes48.leftPad(keyPair.getPublic().getEncodedBytes())),
+                    proofOfPosession,
+                    BLSSignature.wrap(signature.getEncoded()))));
+    return deposit;
+  }
+
   public static synchronized List<Deposit> getDepositsForKeyPairs(
       List<BLS381.KeyPair> keyPairs, SpecHelpers specHelpers) {
     List<Deposit> deposits = new ArrayList<>();
 
     for (BLS381.KeyPair keyPair : keyPairs) {
-      Hash32 proofOfPosession = Hash32.random(rnd);
-      DepositInput depositInputWithoutSignature =
-          new DepositInput(
-              BLSPubkey.wrap(Bytes48.leftPad(keyPair.getPublic().getEncodedBytes())),
-              proofOfPosession,
-              BLSSignature.wrap(Bytes96.ZERO));
-      Hash32 msgHash = specHelpers.signed_root(depositInputWithoutSignature, "proofOfPossession");
-      BLS381.Signature signature =
-          BLS381.sign(
-              new MessageParameters.Impl(msgHash, SignatureDomains.DEPOSIT.toBytesBigEndian()),
-              keyPair);
-
-      Deposit deposit =
-          new Deposit(
-              Collections.singletonList(Hash32.random(rnd)),
-              UInt64.ZERO,
-              new DepositData(
-                  specHelpers.getConstants().getMaxDepositAmount(),
-                  Time.of(0),
-                  new DepositInput(
-                      BLSPubkey.wrap(Bytes48.leftPad(keyPair.getPublic().getEncodedBytes())),
-                      proofOfPosession,
-                      BLSSignature.wrap(signature.getEncoded()))));
-      deposits.add(deposit);
+      deposits.add(getDepositForKeyPair(keyPair, specHelpers));
     }
 
     return deposits;

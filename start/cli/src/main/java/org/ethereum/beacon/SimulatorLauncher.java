@@ -1,10 +1,18 @@
 package org.ethereum.beacon;
 
+import java.io.InputStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Random;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.Level;
@@ -29,9 +37,12 @@ import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.crypto.BLS381;
+import org.ethereum.beacon.crypto.BLS381.KeyPair;
+import org.ethereum.beacon.crypto.BLS381.PrivateKey;
 import org.ethereum.beacon.emulator.config.main.MainConfig;
 import org.ethereum.beacon.emulator.config.main.action.Action;
 import org.ethereum.beacon.emulator.config.main.action.ActionSimulate;
+import org.ethereum.beacon.emulator.config.simulator.PeersConfig;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.schedulers.ControlledSchedulers;
 import org.ethereum.beacon.schedulers.LoggerMDCExecutor;
@@ -46,20 +57,13 @@ import reactor.core.publisher.Mono;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 
-import java.io.InputStream;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.Random;
-import java.util.function.Consumer;
-
 public class SimulatorLauncher implements Runnable {
   private static final Logger logger = LogManager.getLogger("simulator");
+  private static final Logger wire = LogManager.getLogger("wire");
   private static final Logger logPeer = LogManager.getLogger("peer");
 
   private final ActionSimulate simulateConfig;
+  private final List<PeersConfig> allPeers = new ArrayList<>();
   private final MainConfig mainConfig;
   private final SpecConstants specConstants;
   private final SpecHelpers specHelpers;
@@ -92,8 +96,13 @@ public class SimulatorLauncher implements Runnable {
       throw new RuntimeException("Simulate settings are not set");
     }
     this.simulateConfig = actionSimulate.get();
-    if (simulateConfig.getCount() == null && simulateConfig.getPrivateKeys() == null) {
-      throw new RuntimeException("Set either number of validators or private keys.");
+    if (simulateConfig.getPeersConfigs().isEmpty()) {
+      throw new RuntimeException("No peers found in config");
+    }
+    for (PeersConfig peersConfig : simulateConfig.getPeersConfigs()) {
+      for (int i = 0; i < peersConfig.getPeersCount(); i++) {
+        allPeers.add(peersConfig);
+      }
     }
     this.logLevel = logLevel;
     this.onUpdateConfig = onUpdateConfig;
@@ -123,26 +132,18 @@ public class SimulatorLauncher implements Runnable {
   }
 
   private Pair<List<Deposit>, List<BLS381.KeyPair>> getValidatorDeposits() {
-    if (simulateConfig.getPrivateKeys() != null && !simulateConfig.getPrivateKeys().isEmpty()) {
-      List<BLS381.KeyPair> keyPairs = new ArrayList<>();
-      for (String pKey : simulateConfig.getPrivateKeys()) {
-        keyPairs.add(BLS381.KeyPair.create(BLS381.PrivateKey.create(Bytes32.fromHexString(pKey))));
+    Pair<List<Deposit>, List<BLS381.KeyPair>> deposits =
+        SimulateUtils.getAnyDeposits(specHelpers, allPeers.size());
+    for (int i = 0; i < allPeers.size(); i++) {
+      if (allPeers.get(i).getBlsPrivateKey() != null) {
+        KeyPair keyPair = KeyPair.create(
+            PrivateKey.create(Bytes32.fromHexString(allPeers.get(i).getBlsPrivateKey())));
+        deposits.getValue0().set(i, SimulateUtils.getDepositForKeyPair(keyPair, specHelpers));
+        deposits.getValue1().set(i, keyPair);
       }
-      return Pair.with(SimulateUtils.getDepositsForKeyPairs(keyPairs, specHelpers), keyPairs);
-    } else {
-      Pair<List<Deposit>, List<BLS381.KeyPair>> anyDeposits =
-          SimulateUtils.getAnyDeposits(specHelpers, simulateConfig.getCount());
-      List<String> pKeysEncoded = new ArrayList<>();
-      anyDeposits
-          .getValue1()
-          .forEach(
-              pk -> {
-                pKeysEncoded.add(pk.getPrivate().getEncodedBytes().toString());
-              });
-      simulateConfig.setPrivateKeys(pKeysEncoded);
-      onUpdateConfig();
-      return anyDeposits;
     }
+
+    return deposits;
   }
 
   public void run() {
@@ -155,11 +156,12 @@ public class SimulatorLauncher implements Runnable {
     Time genesisTime = Time.of(10 * 60);
 
     MDCControlledSchedulers controlledSchedulers = new MDCControlledSchedulers();
-    controlledSchedulers.setCurrentTime(genesisTime.getMillis().getValue() + 1000);
+    controlledSchedulers.setCurrentTime(genesisTime.getMillis().getValue());
 
     Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), Hash32.random(rnd));
 
-    LocalWireHub localWireHub = new LocalWireHub(s -> {});
+    LocalWireHub localWireHub =
+        new LocalWireHub(s -> wire.trace(s), controlledSchedulers.createNew("wire"));
     DepositContract.ChainStart chainStart =
         new DepositContract.ChainStart(genesisTime, eth1Data, deposits);
     DepositContract depositContract = new SimpleDepositContract(chainStart);
@@ -167,15 +169,20 @@ public class SimulatorLauncher implements Runnable {
     List<Launcher> peers = new ArrayList<>();
 
     logger.info("Creating validators...");
-    for (int i = 0; i < keyPairs.size(); i++) {
-      ControlledSchedulers schedulers = controlledSchedulers.createNew("" + i);
-      WireApi wireApi = localWireHub.createNewPeer("" + i);
+    for (int i = 0; i < allPeers.size(); i++) {
+      ControlledSchedulers schedulers =
+          controlledSchedulers.createNew("" + i, allPeers.get(i).getSystemTimeShift());
+      WireApi wireApi =
+          localWireHub.createNewPeer(
+              "" + i,
+              allPeers.get(i).getWireInboundDelay(),
+              allPeers.get(i).getWireOutboundDelay());
 
       Launcher launcher =
           new Launcher(
               specHelpers,
               depositContract,
-              keyPairs.get(i),
+              allPeers.get(i).isValidator() ? keyPairs.get(i) : null,
               wireApi,
               new MemBeaconChainStorageFactory(),
               schedulers);
@@ -249,8 +256,18 @@ public class SimulatorLauncher implements Runnable {
         });
 
     logger.info("Time starts running ...");
+    Duration halfASlot =
+        Duration.ofMillis(specConstants.getSecondsPerSlot().getMillis().getValue() / 2);
+
+    // skip through a genesis slot
+    controlledSchedulers.addTime(halfASlot.minusMillis(1000));
+    controlledSchedulers.addTime(halfASlot);
+
     while (true) {
-      controlledSchedulers.addTime(Duration.ofMillis(specConstants.getSecondsPerSlot().getValue() * 1000 - 1));
+      // step into the next slot
+      controlledSchedulers.addTime(halfASlot);
+      // unleash scheduled attestations
+      controlledSchedulers.addTime(halfASlot);
 
       if (slots.size() > 1) {
         logger.warn("More than 1 slot generated: " + slots);
@@ -314,8 +331,6 @@ public class SimulatorLauncher implements Runnable {
         );
       }
 
-      controlledSchedulers.addTime(Duration.ofMillis(1));
-
       slots.clear();
       attestations.clear();
       blocks.clear();
@@ -371,9 +386,14 @@ public class SimulatorLauncher implements Runnable {
     private DateFormat localTimeFormat = new SimpleDateFormat("HH:mm:ss.SSS");
 
     private List<ControlledSchedulers> schedulersList = new ArrayList<>();
+    private List<Long> timeShifts = new ArrayList<>();
     private long currentTime;
 
     public ControlledSchedulers createNew(String validatorId) {
+      return createNew(validatorId, 0);
+    }
+
+    public ControlledSchedulers createNew(String validatorId, long timeShift) {
       ControlledSchedulers[] newSched = new ControlledSchedulers[1];
       LoggerMDCExecutor mdcExecutor = new LoggerMDCExecutor()
           .add("validatorTime", () -> localTimeFormat.format(new Date(newSched[0].getCurrentTime())))
@@ -381,12 +401,18 @@ public class SimulatorLauncher implements Runnable {
       newSched[0] = Schedulers.createControlled(() -> mdcExecutor);
       newSched[0].setCurrentTime(currentTime);
       schedulersList.add(newSched[0]);
+      timeShifts.add(timeShift);
 
       return newSched[0];
     }
 
     public void setCurrentTime(long time) {
       currentTime = time;
+      for (int i = 0; i < schedulersList.size(); i++) {
+        long schTime = time + timeShifts.get(i);
+        if (schTime < 0) throw new IllegalStateException("Incorrect time with shift: " + schTime);
+        schedulersList.get(i).setCurrentTime(schTime);
+      }
       schedulersList.forEach(cs -> cs.setCurrentTime(time));
     }
 

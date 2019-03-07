@@ -29,10 +29,10 @@ import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.schedulers.Scheduler;
 import org.ethereum.beacon.schedulers.Schedulers;
+import org.ethereum.beacon.stream.SimpleProcessor;
 import org.javatuples.Pair;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.ReplayProcessor;
 import tech.pegasys.artemis.util.collections.ReadList;
 
 public class ObservableStateProcessorImpl implements ObservableStateProcessor {
@@ -63,16 +63,9 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   private final Map<Pair<BLSPubkey, SlotNumber>, Attestation> attestationCache = new HashMap<>();
   private final Schedulers schedulers;
 
-  private final ReplayProcessor<BeaconChainHead> headSink = ReplayProcessor.cacheLast();
-  private final Publisher<BeaconChainHead> headStream;
-
-  private final ReplayProcessor<ObservableBeaconState> observableStateSink =
-      ReplayProcessor.cacheLast();
-  private final Publisher<ObservableBeaconState> observableStateStream;
-
-  private final ReplayProcessor<PendingOperations> pendingOperationsSink =
-      ReplayProcessor.cacheLast();
-  private final Publisher<PendingOperations> pendingOperationsStream;
+  private final SimpleProcessor<BeaconChainHead> headStream;
+  private final SimpleProcessor<ObservableBeaconState> observableStateStream;
+  private final SimpleProcessor<PendingOperations> pendingOperationsStream;
 
   public ObservableStateProcessorImpl(
       BeaconChainStorage chainStorage,
@@ -93,18 +86,9 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     this.beaconPublisher = beaconPublisher;
     this.schedulers = schedulers;
 
-    headStream = Flux.from(headSink)
-        .publishOn(this.schedulers.reactorEvents())
-        .onBackpressureError()
-        .name("ObservableStateProcessor.head");
-    observableStateStream = Flux.from(observableStateSink)
-        .publishOn(this.schedulers.reactorEvents())
-        .onBackpressureError()
-        .name("ObservableStateProcessor.observableState");
-    pendingOperationsStream = Flux.from(pendingOperationsSink)
-            .publishOn(this.schedulers.reactorEvents())
-            .onBackpressureError()
-            .name("PendingOperationsProcessor.pendingOperations");
+    headStream = new SimpleProcessor<>(this.schedulers.reactorEvents(), "ObservableStateProcessor.head");
+    observableStateStream = new SimpleProcessor<>(this.schedulers.reactorEvents(), "ObservableStateProcessor.observableState");
+    pendingOperationsStream = new SimpleProcessor<>(this.schedulers.reactorEvents(), "PendingOperationsProcessor.pendingOperations");
   }
 
   @Override
@@ -231,11 +215,13 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
 
   private void newHead(BeaconTupleDetails head) {
     this.head = head;
-    headSink.onNext(new BeaconChainHead(this.head));
+    headStream.onNext(new BeaconChainHead(this.head));
 
-    if (latestState == null || head.getBlock().getSlot().greater(latestState.getSlot())) {
-      return;
-    } else {
+    if (latestState == null) {
+      latestState = head.getFinalState();
+    }
+
+    if (!head.getBlock().getSlot().greater(latestState.getSlot())) {
       updateCurrentObservableState(head, latestState.getSlot());
     }
   }
@@ -254,45 +240,28 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     if (slot.greater(head.getBlock().getSlot())) {
       BeaconStateEx stateWithoutEpoch = applySlotTransitionsWithoutEpoch(head.getFinalState(), slot);
       latestState = stateWithoutEpoch;
-      observableStateSink.onNext(
+      observableStateStream.onNext(
           new ObservableBeaconState(head.getBlock(), stateWithoutEpoch, pendingOperations));
-      BeaconStateEx epochState = applyEpochTransitionIfNeeded(head.getFinalState(), stateWithoutEpoch);
-      if (epochState != null) {
-        latestState = epochState;
-        observableStateSink.onNext(new ObservableBeaconState(
-            head.getBlock(), epochState, pendingOperations));
-      }
     } else {
       if (head.getPostSlotState().isPresent()) {
         latestState = head.getPostSlotState().get();
-        observableStateSink.onNext(new ObservableBeaconState(
+        observableStateStream.onNext(new ObservableBeaconState(
             head.getBlock(), head.getPostSlotState().get(), pendingOperations));
       }
       if (head.getPostBlockState().isPresent()) {
         latestState = head.getPostBlockState().get();
-        observableStateSink.onNext(new ObservableBeaconState(
+        observableStateStream.onNext(new ObservableBeaconState(
             head.getBlock(), head.getPostBlockState().get(), pendingOperations));
         if (head.getPostEpochState().isPresent()) {
           latestState = head.getPostEpochState().get();
-          observableStateSink.onNext(new ObservableBeaconState(
+          observableStateStream.onNext(new ObservableBeaconState(
               head.getBlock(), head.getPostEpochState().get(), pendingOperations));
         }
       } else {
         latestState = head.getFinalState();
-        observableStateSink.onNext(new ObservableBeaconState(
+        observableStateStream.onNext(new ObservableBeaconState(
             head.getBlock(), head.getFinalState(), pendingOperations));
       }
-    }
-  }
-
-  private BeaconStateEx applyEpochTransitionIfNeeded(
-      BeaconStateEx originalState, BeaconStateEx stateWithoutEpoch) {
-
-    if (spec.is_epoch_end(stateWithoutEpoch.getSlot())
-        && originalState.getSlot().less(stateWithoutEpoch.getSlot())) {
-      return perEpochTransition.apply(stateWithoutEpoch);
-    } else {
-      return null;
     }
   }
 

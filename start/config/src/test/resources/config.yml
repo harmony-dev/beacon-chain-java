@@ -29,4 +29,6 @@ plan:
     - action: run
 
     - action: simulate
-      count: 4
+      peersConfigs:
+        - peersCount: 8
+          isValidator: true
