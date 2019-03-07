@@ -226,7 +226,7 @@ public class SpecHelpers {
       seed = state.getPreviousShufflingSeed();
       shuffling_epoch = state.getPreviousShufflingEpoch();
       shuffling_start_shard = state.getPreviousShufflingStartShard();
-    } else {
+    } else if (epoch.equals(nextEpoch)) {
       /*
         elif epoch == next_epoch:
           current_committees_per_epoch = get_current_epoch_committee_count(state)
@@ -266,6 +266,8 @@ public class SpecHelpers {
         seed = state.getCurrentShufflingSeed();
         shuffling_start_shard = state.getCurrentShufflingStartShard();
       }
+    } else {
+      throw new SpecAssertionFailed();
     }
 
     /*
