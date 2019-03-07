@@ -9,6 +9,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.function.Consumer;
@@ -57,13 +58,6 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 
 import java.io.InputStream;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.Random;
-import java.util.function.Consumer;
 
 public class SimulatorLauncher implements Runnable {
   private static final Logger logger = LogManager.getLogger("simulator");
@@ -139,15 +133,19 @@ public class SimulatorLauncher implements Runnable {
     this.onUpdateConfig.accept(mainConfig);
   }
 
-  private Pair<List<Deposit>, List<BLS381.KeyPair>> getValidatorDeposits() {
+  private Pair<List<Deposit>, List<BLS381.KeyPair>> getValidatorDeposits(Random rnd) {
     Pair<List<Deposit>, List<BLS381.KeyPair>> deposits =
-        SimulateUtils.getAnyDeposits(specHelpers, allPeers.size());
+        SimulateUtils.getAnyDeposits(rnd, specHelpers, allPeers.size());
     for (int i = 0; i < allPeers.size(); i++) {
       if (allPeers.get(i).getBlsPrivateKey() != null) {
         KeyPair keyPair = KeyPair.create(
             PrivateKey.create(Bytes32.fromHexString(allPeers.get(i).getBlsPrivateKey())));
-        deposits.getValue0().set(i, SimulateUtils.getDepositForKeyPair(keyPair, specHelpers));
+        deposits.getValue0().set(i, SimulateUtils.getDepositForKeyPair(rnd, keyPair, specHelpers));
         deposits.getValue1().set(i, keyPair);
+      }
+      if (!allPeers.get(i).isValidator()) {
+        deposits.getValue0().set(i, null);
+        deposits.getValue1().set(i, null);
       }
     }
 
@@ -155,12 +153,14 @@ public class SimulatorLauncher implements Runnable {
   }
 
   public void run() {
+    Random rnd = new Random(1);
     setupLogging();
-    Pair<List<Deposit>, List<BLS381.KeyPair>> validatorDeposits = getValidatorDeposits();
-    List<Deposit> deposits = validatorDeposits.getValue0();
+    Pair<List<Deposit>, List<BLS381.KeyPair>> validatorDeposits = getValidatorDeposits(rnd);
+
+    List<Deposit> deposits = validatorDeposits.getValue0().stream()
+        .filter(Objects::nonNull).collect(Collectors.toList());
     List<BLS381.KeyPair> keyPairs = validatorDeposits.getValue1();
 
-    Random rnd = new Random(1);
     Time genesisTime = Time.of(10 * 60);
 
     MDCControlledSchedulers controlledSchedulers = new MDCControlledSchedulers();
@@ -190,7 +190,7 @@ public class SimulatorLauncher implements Runnable {
           new Launcher(
               specHelpers,
               depositContract,
-              allPeers.get(i).isValidator() ? keyPairs.get(i) : null,
+              keyPairs.get(i),
               wireApi,
               new MemBeaconChainStorageFactory(),
               schedulers);
