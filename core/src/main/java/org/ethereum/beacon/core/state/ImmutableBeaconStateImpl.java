@@ -6,7 +6,7 @@ import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.types.Bitfield64;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
-import org.ethereum.beacon.core.types.Hash32able;
+import org.ethereum.beacon.core.types.Hashable;
 import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Optional;
 
 @SSZSerializable
-public class ImmutableBeaconStateImpl implements BeaconState, Hash32able {
+public class ImmutableBeaconStateImpl implements BeaconState, Hashable<Hash32> {
 
   /* Misc */
 

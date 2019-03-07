@@ -14,7 +14,7 @@ import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.BLSSignature;
-import org.ethereum.beacon.core.types.Hash32able;
+import org.ethereum.beacon.core.types.Hashable;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.ssz.annotation.SSZ;
@@ -32,7 +32,7 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
  *     in the spec</a>
  */
 @SSZSerializable
-public class BeaconBlock implements Hash32able {
+public class BeaconBlock implements Hashable<Hash32> {
 
   /** Number of a slot that block does belong to. */
   @SSZ private final SlotNumber slot;
