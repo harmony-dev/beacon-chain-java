@@ -9,9 +9,11 @@ import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.crypto.BLS381;
+import org.ethereum.beacon.crypto.BLS381.PrivateKey;
 import org.ethereum.beacon.crypto.MessageParameters;
 import org.javatuples.Pair;
 import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.uint.UInt64;
@@ -22,16 +24,15 @@ import java.util.List;
 import java.util.Random;
 
 public class SimulateUtils {
-  private static final Random rnd = new Random();
 
   private static Pair<List<Deposit>, List<BLS381.KeyPair>> cachedDeposits =
       Pair.with(new ArrayList<>(), new ArrayList<>());
 
   public static synchronized Pair<List<Deposit>, List<BLS381.KeyPair>> getAnyDeposits(
-      SpecHelpers specHelpers, int count) {
+      Random rnd, SpecHelpers specHelpers, int count) {
     if (count > cachedDeposits.getValue0().size()) {
       Pair<List<Deposit>, List<BLS381.KeyPair>> newDeposits =
-          generateRandomDeposits(specHelpers, count - cachedDeposits.getValue0().size());
+          generateRandomDeposits(rnd, specHelpers, count - cachedDeposits.getValue0().size());
       cachedDeposits.getValue0().addAll(newDeposits.getValue0());
       cachedDeposits.getValue1().addAll(newDeposits.getValue1());
     }
@@ -40,7 +41,7 @@ public class SimulateUtils {
   }
 
   public static synchronized Deposit getDepositForKeyPair(
-      BLS381.KeyPair keyPair, SpecHelpers specHelpers) {
+      Random rnd, BLS381.KeyPair keyPair, SpecHelpers specHelpers) {
     Hash32 proofOfPosession = Hash32.random(rnd);
     DepositInput depositInputWithoutSignature =
         new DepositInput(
@@ -68,24 +69,24 @@ public class SimulateUtils {
   }
 
   public static synchronized List<Deposit> getDepositsForKeyPairs(
-      List<BLS381.KeyPair> keyPairs, SpecHelpers specHelpers) {
+      Random rnd, List<BLS381.KeyPair> keyPairs, SpecHelpers specHelpers) {
     List<Deposit> deposits = new ArrayList<>();
 
     for (BLS381.KeyPair keyPair : keyPairs) {
-      deposits.add(getDepositForKeyPair(keyPair, specHelpers));
+      deposits.add(getDepositForKeyPair(rnd, keyPair, specHelpers));
     }
 
     return deposits;
   }
 
   private static synchronized Pair<List<Deposit>, List<BLS381.KeyPair>> generateRandomDeposits(
-      SpecHelpers specHelpers, int count) {
+      Random rnd, SpecHelpers specHelpers, int count) {
     List<BLS381.KeyPair> validatorsKeys = new ArrayList<>();
     for (int i = 0; i < count; i++) {
-      BLS381.KeyPair keyPair = BLS381.KeyPair.generate();
+      BLS381.KeyPair keyPair = BLS381.KeyPair.create(PrivateKey.create(Bytes32.random(rnd)));
       validatorsKeys.add(keyPair);
     }
-    List<Deposit> deposits = getDepositsForKeyPairs(validatorsKeys, specHelpers);
+    List<Deposit> deposits = getDepositsForKeyPairs(rnd, validatorsKeys, specHelpers);
     return Pair.with(deposits, validatorsKeys);
   }
 }
