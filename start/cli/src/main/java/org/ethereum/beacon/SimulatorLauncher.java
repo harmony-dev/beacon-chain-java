@@ -257,8 +257,11 @@ public class SimulatorLauncher implements Runnable {
         });
 
     logger.info("Time starts running ...");
+    controlledSchedulers.setCurrentTime(
+        genesisTime.plus(specConstants.getSecondsPerSlot()).getMillis().getValue() - 1);
     while (true) {
-      controlledSchedulers.addTime(Duration.ofMillis(specConstants.getSecondsPerSlot().getValue() * 1000 - 1));
+      controlledSchedulers.addTime(
+          Duration.ofMillis(specConstants.getSecondsPerSlot().getMillis().getValue()));
 
       if (slots.size() > 1) {
         logger.warn("More than 1 slot generated: " + slots);
@@ -321,8 +324,6 @@ public class SimulatorLauncher implements Runnable {
             + getValidators(" no finality: ", summary.getNoFinalityPenalties())
         );
       }
-
-      controlledSchedulers.addTime(Duration.ofMillis(1));
 
       slots.clear();
       attestations.clear();
@@ -415,6 +416,10 @@ public class SimulatorLauncher implements Runnable {
 
     void addTime(long millis) {
       setCurrentTime(currentTime + millis);
+    }
+
+    public long getCurrentTime() {
+      return currentTime;
     }
   }
 }
