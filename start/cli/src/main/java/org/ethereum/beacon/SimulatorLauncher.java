@@ -204,15 +204,17 @@ public class SimulatorLauncher implements Runnable {
             latestStates.put(finalI, os);
             logPeer.debug("New observable state: " + os.toString(specHelpers));
           });
-      Flux.from(launcher.getValidatorService().getProposedBlocksStream())
-          .subscribe(block -> logPeer.info("New block created: "
-              + block.toString(this.specConstants, genesisTime, specHelpers::hash_tree_root)));
-      Flux.from(launcher.getValidatorService().getAttestationsStream())
-          .subscribe(attest -> logPeer.info("New attestation created: "
-              + attest.toString(this.specConstants, genesisTime)));
       Flux.from(launcher.getBeaconChain().getBlockStatesStream())
           .subscribe(blockState -> logPeer.debug("Block imported: "
               + blockState.getBlock().toString(this.specConstants, genesisTime, specHelpers::hash_tree_root)));
+      if (launcher.getValidatorService() != null) {
+        Flux.from(launcher.getValidatorService().getProposedBlocksStream())
+            .subscribe(block -> logPeer.info("New block created: "
+                + block.toString(this.specConstants, genesisTime, specHelpers::hash_tree_root)));
+        Flux.from(launcher.getValidatorService().getAttestationsStream())
+            .subscribe(attest -> logPeer.info("New attestation created: "
+                + attest.toString(this.specConstants, genesisTime)));
+      }
     }
 
     logger.info("Creating observer peer...");
@@ -258,7 +260,7 @@ public class SimulatorLauncher implements Runnable {
 
     logger.info("Time starts running ...");
     controlledSchedulers.setCurrentTime(
-        genesisTime.plus(specConstants.getSecondsPerSlot()).getMillis().getValue() - 1);
+        genesisTime.plus(specConstants.getSecondsPerSlot()).getMillis().getValue() - 9);
     while (true) {
       controlledSchedulers.addTime(
           Duration.ofMillis(specConstants.getSecondsPerSlot().getMillis().getValue()));
