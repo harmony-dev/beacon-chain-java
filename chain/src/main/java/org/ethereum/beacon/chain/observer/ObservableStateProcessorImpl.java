@@ -217,9 +217,11 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     this.head = head;
     headStream.onNext(new BeaconChainHead(this.head));
 
-    if (latestState == null || head.getBlock().getSlot().greater(latestState.getSlot())) {
-      return;
-    } else {
+    if (latestState == null) {
+      latestState = head.getFinalState();
+    }
+
+    if (!head.getBlock().getSlot().greater(latestState.getSlot())) {
       updateCurrentObservableState(head, latestState.getSlot());
     }
   }
