@@ -203,7 +203,11 @@ public class SpecHelpers {
     int committees_per_epoch;
     EpochNumber shuffling_epoch;
     ShardNumber shuffling_start_shard;
-    if (epoch.equals(currentEpoch)) {
+    // 'lookahead' might already happened if
+    // get_crosslink_committees_at_slot is called after epoch transition
+    // hacking around
+    if ((epoch.equals(currentEpoch) && currentEpoch.greaterEqual(state.getCurrentShufflingEpoch()))
+        || (epoch.equals(nextEpoch) && nextEpoch.equals(state.getCurrentShufflingEpoch()))) {
       /*
         if epoch == current_epoch:
           committees_per_epoch = get_current_epoch_committee_count(state)
@@ -215,7 +219,8 @@ public class SpecHelpers {
       seed = state.getCurrentShufflingSeed();
       shuffling_epoch = state.getCurrentShufflingEpoch();
       shuffling_start_shard = state.getCurrentShufflingStartShard();
-    } else if (epoch.equals(previousEpoch)) {
+    } else if (epoch.equals(previousEpoch) ||
+        (epoch.equals(currentEpoch) && currentEpoch.less(state.getCurrentShufflingEpoch()))) {
       /*
         elif epoch == previous_epoch:
           committees_per_epoch = get_previous_epoch_committee_count(state)
