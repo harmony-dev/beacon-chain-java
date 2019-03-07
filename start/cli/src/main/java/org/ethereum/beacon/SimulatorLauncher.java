@@ -403,13 +403,17 @@ public class SimulatorLauncher implements Runnable {
     }
 
     public void setCurrentTime(long time) {
+      long curTime = currentTime > 0 ? currentTime : time;
       currentTime = time;
-      for (int i = 0; i < schedulersList.size(); i++) {
-        long schTime = time + timeShifts.get(i);
-        if (schTime < 0) throw new IllegalStateException("Incorrect time with shift: " + schTime);
-        schedulersList.get(i).setCurrentTime(schTime);
+      while (++curTime <= time) {
+        for (int i = 0; i < schedulersList.size(); i++) {
+          long schTime = curTime + timeShifts.get(i);
+          if (schTime < 0) {
+            throw new IllegalStateException("Incorrect time with shift: " + schTime);
+          }
+          schedulersList.get(i).setCurrentTime(schTime);
+        }
       }
-      schedulersList.forEach(cs -> cs.setCurrentTime(time));
     }
 
     void addTime(Duration duration) {
