@@ -16,7 +16,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.annotation.Nonnull;
-import org.checkerframework.checker.guieffect.qual.UI;
 import org.ethereum.beacon.consensus.hasher.ObjectHasher;
 import org.ethereum.beacon.consensus.hasher.SSZObjectHasher;
 import org.ethereum.beacon.core.BeaconBlock;
