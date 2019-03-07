@@ -33,7 +33,6 @@ import org.ethereum.beacon.stream.SimpleProcessor;
 import org.javatuples.Pair;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.ReplayProcessor;
 import tech.pegasys.artemis.util.collections.ReadList;
 
 public class ObservableStateProcessorImpl implements ObservableStateProcessor {
@@ -218,9 +217,11 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     this.head = head;
     headStream.onNext(new BeaconChainHead(this.head));
 
-    if (latestState == null || head.getBlock().getSlot().greater(latestState.getSlot())) {
-      return;
-    } else {
+    if (latestState == null) {
+      latestState = head.getFinalState();
+    }
+
+    if (!head.getBlock().getSlot().greater(latestState.getSlot())) {
       updateCurrentObservableState(head, latestState.getSlot());
     }
   }
@@ -241,12 +242,6 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
       latestState = stateWithoutEpoch;
       observableStateStream.onNext(
           new ObservableBeaconState(head.getBlock(), stateWithoutEpoch, pendingOperations));
-      BeaconStateEx epochState = applyEpochTransitionIfNeeded(head.getFinalState(), stateWithoutEpoch);
-      if (epochState != null) {
-        latestState = epochState;
-        observableStateStream.onNext(new ObservableBeaconState(
-            head.getBlock(), epochState, pendingOperations));
-      }
     } else {
       if (head.getPostSlotState().isPresent()) {
         latestState = head.getPostSlotState().get();
@@ -267,17 +262,6 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
         observableStateStream.onNext(new ObservableBeaconState(
             head.getBlock(), head.getFinalState(), pendingOperations));
       }
-    }
-  }
-
-  private BeaconStateEx applyEpochTransitionIfNeeded(
-      BeaconStateEx originalState, BeaconStateEx stateWithoutEpoch) {
-
-    if (spec.is_epoch_end(stateWithoutEpoch.getSlot())
-        && originalState.getSlot().less(stateWithoutEpoch.getSlot())) {
-      return perEpochTransition.apply(stateWithoutEpoch);
-    } else {
-      return null;
     }
   }
 
