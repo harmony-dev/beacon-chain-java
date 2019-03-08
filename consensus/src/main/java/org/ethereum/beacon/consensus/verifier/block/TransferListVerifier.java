@@ -18,7 +18,7 @@ import org.ethereum.beacon.core.operations.Transfer;
  */
 public class TransferListVerifier extends OperationListVerifier<Transfer> {
 
-  protected TransferListVerifier(OperationVerifier<Transfer> operationVerifier, SpecHelpers spec) {
+  public TransferListVerifier(OperationVerifier<Transfer> operationVerifier, SpecHelpers spec) {
     super(
         operationVerifier,
         block -> block.getBody().getTransfers(),
