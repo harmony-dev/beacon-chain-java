@@ -102,7 +102,7 @@ public class SimulatorLauncher implements Runnable {
       LoggerContext context =
           (org.apache.logging.log4j.core.LoggerContext) LogManager.getContext(false);
       Configuration config = context.getConfiguration();
-      LoggerConfig loggerConfig = config.getLoggerConfig(LogManager.ROOT_LOGGER_NAME);
+      LoggerConfig loggerConfig = config.getLoggerConfig("peer");
       loggerConfig.setLevel(logLevel);
       context.updateLoggers();
     }
@@ -128,7 +128,7 @@ public class SimulatorLauncher implements Runnable {
   }
 
   public void run() {
-    logger.info("Configuration:\n{}", simulatorConfig);
+    logger.info("Simulation parameters:\n{}", simulatorConfig);
 
     Random rnd = new Random(simulatorConfig.getSeed());
     setupLogging();

@@ -13,7 +13,6 @@ import tech.pegasys.artemis.util.bytes.Bytes8;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Spec implements Config {
   private SpecConstantsData specConstants;
-  private SpecHelpersOptions specHelpersOptions = new SpecHelpersOptions();
 
   public SpecConstants buildSpecConstants() {
     return specConstants.buildSpecConstants();
@@ -52,14 +51,5 @@ public class Spec implements Config {
   public void setSpecConstants(
       SpecConstantsData specConstants) {
     this.specConstants = specConstants;
-  }
-
-  public SpecHelpersOptions getSpecHelpersOptions() {
-    return specHelpersOptions;
-  }
-
-  public void setSpecHelpersOptions(
-      SpecHelpersOptions specHelpersOptions) {
-    this.specHelpersOptions = specHelpersOptions;
   }
 }

@@ -25,47 +25,49 @@ public class ReusableOptions {
   private static final Map<LogLevel, Level> LOG_LEVELS = new HashMap<>();
 
   static {
-    LOG_LEVELS.put(LogLevel.OFF, Level.OFF);
-    LOG_LEVELS.put(LogLevel.ERROR, Level.ERROR);
-    LOG_LEVELS.put(LogLevel.INFO, Level.INFO);
-    LOG_LEVELS.put(LogLevel.DEBUG, Level.DEBUG);
-    LOG_LEVELS.put(LogLevel.ALL, Level.ALL);
+    LOG_LEVELS.put(LogLevel.all, Level.ALL);
+    LOG_LEVELS.put(LogLevel.debug, Level.DEBUG);
+    LOG_LEVELS.put(LogLevel.info, Level.INFO);
+    LOG_LEVELS.put(LogLevel.error, Level.ERROR);
   }
 
   @CommandLine.Option(
-      names = {"-c", "--config"},
-      paramLabel = "CONFIG",
+      order = 0,
+      names = {"--config"},
+      paramLabel = "config.yml",
       description =
-          "YAML config file.\nAll options that are not set will be loaded from default config.")
-  File[] configs;
+          "A path to a simulator config in YAML format\ndefault config is used if file is not specified")
+  protected File[] configs;
+
+//  @CommandLine.Option(
+//      names = {"-cs", "--save-config"},
+//      paramLabel = "SAVE-CONFIG",
+//      description = "Saves merged configuration to file in YAML format")
+  protected File config;
 
   @CommandLine.Option(
-      names = {"-cs", "--save-config"},
-      paramLabel = "SAVE-CONFIG",
-      description = "Saves merged configuration to file in YAML format")
-  File config;
-
-  @CommandLine.Option(
-      names = {"-s", "--spec"},
-      paramLabel = "CHAINSPEC",
+      order = 1,
+      names = {"--spec"},
+      paramLabel = "spec.yml",
       description =
-          "YAML chain specification file.\nFor all specifications that are not set, default values are used.")
-  File[] chainspecs;
+          "A path to YAML file with spec constants\nfor unspecified constants spec defaults are used")
+  protected File[] chainspecs;
+
+//  @CommandLine.Option(
+//      names = {"-ss", "--save-spec"},
+//      paramLabel = "SAVE-SPEC",
+//      description = "Saves merged chain specification to file in YAML format")
+  protected File chainspec;
 
   @CommandLine.Option(
-      names = {"-ss", "--save-spec"},
-      paramLabel = "SAVE-SPEC",
-      description = "Saves merged chain specification to file in YAML format")
-  File chainspec;
-
-  @CommandLine.Option(
-      names = {"-l", "--loglevel"},
-      paramLabel = "LOG",
+      order = 2,
+      names = {"--loglevel"},
+      paramLabel = "level",
       description =
-          "Sets log level in the range from OFF to ALL messages, default is INFO. Available levels: ${COMPLETION-CANDIDATES}")
+          "Log verbosity level: all, debug, info, error\ninfo is set by default")
   LogLevel logLevel;
 
-  @CommandLine.Option(names = "-v")
+//  @CommandLine.Option(names = "-v")
   boolean verbose;
 
   List<Pair<String, Object>> configPathValues = new ArrayList<>();
@@ -89,7 +91,7 @@ public class ReusableOptions {
     return configBuilder.build();
   }
 
-  private Spec prepareChainSpec(@Nullable String extraChainSpec) {
+  protected Spec prepareChainSpec(@Nullable String extraChainSpec) {
     ConfigBuilder<Spec> configBuilder = new ConfigBuilder<>(Spec.class);
     configBuilder.addYamlConfig(
         ClassLoader.class.getResourceAsStream("/config/default-chainSpec.yml"));
@@ -127,7 +129,7 @@ public class ReusableOptions {
         System.out.println("Spec constants:");
         System.out.println(new YamlPrinter(specConstantsData).getString());
       } else {
-        System.out.println("To see chain specifications use verbose `-v` option.");
+//        System.out.println("To see chain specifications use verbose `-v` option.");
       }
     }
 
@@ -167,14 +169,14 @@ public class ReusableOptions {
 
   enum Task {
     run,
-    config
+    config,
+    spec
   }
 
   enum LogLevel {
-    OFF,
-    ERROR,
-    INFO,
-    DEBUG,
-    ALL
+    all,
+    debug,
+    info,
+    error
   }
 }
