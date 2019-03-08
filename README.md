@@ -32,9 +32,9 @@ cd cli-0.1.0/bin
 ``` 
 and you will see help for `simulator` launcher. Preceding commands will work for OS X/Linux, in Windows you will need to  use `.bat` commands where its needed.
 
-Let's run simulator with default settings and 4 peers:
+To try simulator with pre-set configuration use this command:
 ```bash
-./simulator run 4
+./simulator run
 ```
 
 ## Contribution guideline
