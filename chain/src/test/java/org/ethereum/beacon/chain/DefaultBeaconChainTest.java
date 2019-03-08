@@ -4,7 +4,6 @@ import java.util.Collections;
 import java.util.stream.IntStream;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.chain.storage.BeaconChainStorageFactory;
-import org.ethereum.beacon.chain.storage.BeaconTuple;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.BlockTransition;
 import org.ethereum.beacon.consensus.SpecHelpers;
@@ -35,7 +34,7 @@ public class DefaultBeaconChainTest {
   public void insertAChain() {
     Schedulers schedulers = Schedulers.createDefault();
 
-    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(SpecConstants.DEFAULT, schedulers::getCurrentTime);
+    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(SpecConstants.DEFAULT);
     StateTransition<BeaconStateEx> perSlotTransition =
         StateTransitionTestUtil.createNextSlotTransition();
     MutableBeaconChain beaconChain = createBeaconChain(specHelpers, perSlotTransition, schedulers);
@@ -49,7 +48,8 @@ public class DefaultBeaconChainTest {
         .forEach(
             (idx) -> {
               BeaconTuple recentlyProcessed = beaconChain.getRecentlyProcessed();
-              BeaconBlock aBlock = createBlock(recentlyProcessed, specHelpers, perSlotTransition);
+              BeaconBlock aBlock = createBlock(recentlyProcessed, specHelpers,
+                  schedulers.getCurrentTime(), perSlotTransition);
               Assert.assertTrue(beaconChain.insert(aBlock));
               Assert.assertEquals(aBlock, beaconChain.getRecentlyProcessed().getBlock());
 
@@ -59,11 +59,11 @@ public class DefaultBeaconChainTest {
 
   private BeaconBlock createBlock(
       BeaconTuple parent,
-      SpecHelpers specHelpers,
+      SpecHelpers specHelpers, long currentTime,
       StateTransition<BeaconStateEx> perSlotTransition) {
     BeaconBlock block =
         new BeaconBlock(
-            specHelpers.get_current_slot(parent.getState()),
+            specHelpers.get_current_slot(parent.getState(), currentTime),
             specHelpers.hash_tree_root(parent.getBlock()),
             Hash32.ZERO,
             specHelpers.getConstants().getEmptySignature(),

@@ -1,6 +1,5 @@
 package org.ethereum.beacon.chain;
 
-import org.ethereum.beacon.chain.storage.BeaconTuple;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 

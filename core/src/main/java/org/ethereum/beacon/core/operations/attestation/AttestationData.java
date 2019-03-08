@@ -126,7 +126,7 @@ public class AttestationData {
 
   public String toString(@Nullable SpecConstants spec,@Nullable Time beaconStart) {
     return "AttestationData[slot="
-        + slot.toString(spec, beaconStart)
+        + slot.toStringNumber(spec)
         + ", shard=" + shard.toString(spec)
         + ", beaconBlock=" + beaconBlockRoot.toStringShort()
         + ", epochBoundary=" + epochBoundaryRoot.toStringShort()

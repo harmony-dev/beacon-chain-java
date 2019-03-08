@@ -1,5 +1,7 @@
 dependencies {
   implementation project(':core')
+  implementation project(':consensus')
+  implementation project(':crypto')
   implementation project(':types')
 
   implementation 'commons-beanutils:commons-beanutils'

@@ -7,7 +7,6 @@ import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
-import org.ethereum.beacon.chain.storage.BeaconTuple;
 import org.ethereum.beacon.chain.storage.BeaconTupleStorage;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.BlockTransition;
@@ -21,6 +20,7 @@ import org.ethereum.beacon.core.BeaconBlocks;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.schedulers.Schedulers;
+import org.ethereum.beacon.stream.SimpleProcessor;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.ReplayProcessor;
@@ -40,8 +40,8 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   private final BeaconChainStorage chainStorage;
   private final BeaconTupleStorage tupleStorage;
 
-  private final ReplayProcessor<BeaconTuple> blockSink = ReplayProcessor.cacheLast();
-  private final Publisher<BeaconTuple> blockStream;
+  private final SimpleProcessor<BeaconTupleDetails> blockStream;
+  private final Schedulers schedulers;
 
   private BeaconTuple recentlyProcessed;
 
@@ -64,11 +64,9 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     this.stateVerifier = stateVerifier;
     this.chainStorage = chainStorage;
     this.tupleStorage = chainStorage.getTupleStorage();
+    this.schedulers = schedulers;
 
-    blockStream = Flux.from(blockSink)
-            .publishOn(schedulers.reactorEvents())
-            .onBackpressureError()
-            .name("DefaultBeaconChain.block");
+    blockStream = new SimpleProcessor<>(schedulers.reactorEvents(), "DefaultBeaconChain.block");
   }
 
   @Override
@@ -77,7 +75,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
       initializeStorage();
     }
     this.recentlyProcessed = fetchRecentTuple();
-    blockSink.onNext(recentlyProcessed);
+    blockStream.onNext(new BeaconTupleDetails(recentlyProcessed));
   }
 
   private BeaconTuple fetchRecentTuple() {
@@ -151,7 +149,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     chainStorage.commit();
 
     this.recentlyProcessed = newTuple;
-    blockSink.onNext(newTuple);
+    blockStream.onNext(new BeaconTupleDetails(block, preBlockState, postBlockState, postEpochState));
 
     logger.info(
         "new block inserted: {}",
@@ -210,7 +208,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
    */
   private boolean rejectedByTime(BeaconBlock block) {
     SlotNumber nextToCurrentSlot =
-        spec.get_current_slot(recentlyProcessed.getState()).increment();
+        spec.get_current_slot(recentlyProcessed.getState(), schedulers.getCurrentTime()).increment();
 
     return block.getSlot().greater(nextToCurrentSlot);
   }
@@ -230,7 +228,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   }
 
   @Override
-  public Publisher<BeaconTuple> getBlockStatesStream() {
+  public Publisher<BeaconTupleDetails> getBlockStatesStream() {
     return blockStream;
   }
 }

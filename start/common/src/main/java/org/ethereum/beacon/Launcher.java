@@ -1,5 +1,8 @@
 package org.ethereum.beacon;
 
+import static java.util.Collections.singletonList;
+import static org.ethereum.beacon.validator.crypto.BLS381Credentials.createWithInsecureSigner;
+
 import org.ethereum.beacon.chain.DefaultBeaconChain;
 import org.ethereum.beacon.chain.MutableBeaconChain;
 import org.ethereum.beacon.chain.ProposedBlockProcessor;
@@ -24,9 +27,8 @@ import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.pow.DepositContract.ChainStart;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.validator.BeaconChainProposer;
-import org.ethereum.beacon.validator.BeaconChainValidator;
+import org.ethereum.beacon.validator.MultiValidatorService;
 import org.ethereum.beacon.validator.attester.BeaconChainAttesterImpl;
-import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import org.ethereum.beacon.validator.proposer.BeaconChainProposerImpl;
 import org.ethereum.beacon.wire.WireApi;
 import reactor.core.publisher.DirectProcessor;
@@ -34,21 +36,28 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public class Launcher {
-  final SpecHelpers spec;
-  final DepositContract depositContract;
-  final BLS381.KeyPair validatorSig;
-  final WireApi wireApi;
+  private final SpecHelpers spec;
+  private final DepositContract depositContract;
+  private final BLS381.KeyPair validatorSig;
+  private final WireApi wireApi;
+  private final BeaconChainStorageFactory storageFactory;
+  private final Schedulers schedulers;
 
-  InMemoryDatabase db;
-  BeaconChainStorage beaconChainStorage;
-  MutableBeaconChain beaconChain;
-  SlotTicker slotTicker;
-  ObservableStateProcessor observableStateProcessor;
-  BeaconChainProposer beaconChainProposer;
-  BeaconChainAttesterImpl beaconChainAttester;
-  BeaconChainValidator beaconChainValidator;
-  BeaconChainStorageFactory storageFactory;
-  Schedulers schedulers;
+  private InitialStateTransition initialTransition;
+  private PerSlotTransition perSlotTransition;
+  private PerBlockTransition perBlockTransition;
+  private PerEpochTransition perEpochTransition;
+  private BeaconBlockVerifier blockVerifier;
+  private BeaconStateVerifier stateVerifier;
+
+  private InMemoryDatabase db;
+  private BeaconChainStorage beaconChainStorage;
+  private MutableBeaconChain beaconChain;
+  private SlotTicker slotTicker;
+  private ObservableStateProcessor observableStateProcessor;
+  private BeaconChainProposer beaconChainProposer;
+  private BeaconChainAttesterImpl beaconChainAttester;
+  private MultiValidatorService beaconChainValidator;
 
   public Launcher(
       SpecHelpers spec,
@@ -71,16 +80,16 @@ public class Launcher {
   }
 
   void chainStarted(ChainStart chainStartEvent) {
-    InitialStateTransition initialTransition = new InitialStateTransition(chainStartEvent, spec);
-    PerSlotTransition perSlotTransition = new PerSlotTransition(spec);
-    PerBlockTransition perBlockTransition = new PerBlockTransition(spec);
-    PerEpochTransition perEpochTransition = new PerEpochTransition(spec);
+    initialTransition = new InitialStateTransition(chainStartEvent, spec);
+    perSlotTransition = new PerSlotTransition(spec);
+    perBlockTransition = new PerBlockTransition(spec);
+    perEpochTransition = new PerEpochTransition(spec);
 
     db = new InMemoryDatabase();
     beaconChainStorage = storageFactory.create(db);
 
-    BeaconBlockVerifier blockVerifier = BeaconBlockVerifier.createDefault(spec);
-    BeaconStateVerifier stateVerifier = BeaconStateVerifier.createDefault(spec);
+    blockVerifier = BeaconBlockVerifier.createDefault(spec);
+    stateVerifier = BeaconStateVerifier.createDefault(spec);
 
     beaconChain = new DefaultBeaconChain(
         spec,
@@ -114,12 +123,12 @@ public class Launcher {
         schedulers);
     observableStateProcessor.start();
 
-    beaconChainProposer = new BeaconChainProposerImpl(spec,
-        perBlockTransition, perEpochTransition, depositContract);
+    if (validatorSig != null) {beaconChainProposer = new BeaconChainProposerImpl(spec,
+         perBlockTransition, perEpochTransition, depositContract);
     beaconChainAttester = new BeaconChainAttesterImpl(spec);
 
-    beaconChainValidator = new BeaconChainValidator(
-        BLS381Credentials.createWithInsecureSigner(validatorSig),
+    beaconChainValidator = new MultiValidatorService(
+        singletonList(createWithInsecureSigner(validatorSig)),
         beaconChainProposer,
         beaconChainAttester,
         spec,
@@ -127,18 +136,100 @@ public class Launcher {
         schedulers);
     beaconChainValidator.start();
 
-    ProposedBlockProcessor proposedBlocksProcessor = new ProposedBlockProcessorImpl(
-        beaconChain, schedulers);
-    Flux.from(beaconChainValidator.getProposedBlocksStream())
-        .subscribe(proposedBlocksProcessor::newBlockProposed);
-    Flux.from(proposedBlocksProcessor.processedBlocksStream())
-        .subscribe(wireApi::sendProposedBlock);
+      ProposedBlockProcessor proposedBlocksProcessor = new ProposedBlockProcessorImpl(
+          beaconChain, schedulers);
+      Flux.from(beaconChainValidator.getProposedBlocksStream())
+          .subscribe(proposedBlocksProcessor::newBlockProposed);
+      Flux.from(proposedBlocksProcessor.processedBlocksStream())
+          .subscribe(wireApi::sendProposedBlock);
 
-    Flux.from(beaconChainValidator.getAttestationsStream()).subscribe(wireApi::sendAttestation);
-    Flux.from(beaconChainValidator.getAttestationsStream()).subscribe(allAttestations);
+      Flux.from(beaconChainValidator.getAttestationsStream()).subscribe(wireApi::sendAttestation);
+      Flux.from(beaconChainValidator.getAttestationsStream()).subscribe(allAttestations);
+    }
 
     Flux.from(wireApi.inboundBlocksStream())
         .publishOn(schedulers.reactorEvents())
         .subscribe(beaconChain::insert);
+  }
+
+
+  public SpecHelpers getSpec() {
+    return spec;
+  }
+
+  public DepositContract getDepositContract() {
+    return depositContract;
+  }
+
+  public KeyPair getValidatorSig() {
+    return validatorSig;
+  }
+
+  public WireApi getWireApi() {
+    return wireApi;
+  }
+
+  public InitialStateTransition getInitialTransition() {
+    return initialTransition;
+  }
+
+  public PerSlotTransition getPerSlotTransition() {
+    return perSlotTransition;
+  }
+
+  public PerBlockTransition getPerBlockTransition() {
+    return perBlockTransition;
+  }
+
+  public PerEpochTransition getPerEpochTransition() {
+    return perEpochTransition;
+  }
+
+  public BeaconBlockVerifier getBlockVerifier() {
+    return blockVerifier;
+  }
+
+  public BeaconStateVerifier getStateVerifier() {
+    return stateVerifier;
+  }
+
+  public InMemoryDatabase getDb() {
+    return db;
+  }
+
+  public BeaconChainStorage getBeaconChainStorage() {
+    return beaconChainStorage;
+  }
+
+  public MutableBeaconChain getBeaconChain() {
+    return beaconChain;
+  }
+
+  public SlotTicker getSlotTicker() {
+    return slotTicker;
+  }
+
+  public ObservableStateProcessor getObservableStateProcessor() {
+    return observableStateProcessor;
+  }
+
+  public BeaconChainProposer getBeaconChainProposer() {
+    return beaconChainProposer;
+  }
+
+  public BeaconChainAttesterImpl getBeaconChainAttester() {
+    return beaconChainAttester;
+  }
+
+  public MultiValidatorService getValidatorService() {
+    return beaconChainValidator;
+  }
+
+  public BeaconChainStorageFactory getStorageFactory() {
+    return storageFactory;
+  }
+
+  public Schedulers getSchedulers() {
+    return schedulers;
   }
 }

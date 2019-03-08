@@ -1,30 +1,75 @@
 package org.ethereum.beacon;
 
-import org.ethereum.beacon.emulator.config.chainspec.SpecConstantsData;
-import org.ethereum.beacon.emulator.config.main.MainConfig;
-import org.javatuples.Pair;
-import picocli.CommandLine;
-
+import java.io.File;
 import java.util.concurrent.Callable;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.ethereum.beacon.Simulator.SimulatorPrintSpec;
+import org.ethereum.beacon.Simulator.SimulatorRun;
+import org.ethereum.beacon.emulator.config.ConfigBuilder;
+import org.ethereum.beacon.emulator.config.YamlPrinter;
+import org.ethereum.beacon.emulator.config.chainspec.Spec;
+import org.ethereum.beacon.emulator.config.simulator.SimulatorConfig;
+import picocli.CommandLine;
 
 @CommandLine.Command(
     description = "Eth2.0 beacon chain simulator",
     name = "simulator",
+    version = "simulator " + ReusableOptions.VERSION,
     mixinStandardHelpOptions = true,
-    version = "simulator " + ReusableOptions.VERSION)
-public class Simulator extends ReusableOptions implements Callable<Void> {
+    subcommands = { SimulatorRun.class, SimulatorPrintSpec.class })
+public class Simulator implements Callable<Void> {
 
-  @CommandLine.Parameters(
-      index = "0",
-      description =
-          "Task to do: run/config.\n run - Runs beacon simulator.\n config - Prints configuration and tasks to run on start.")
-  Task action;
+  private static final Logger logger = LogManager.getLogger("simulator");
 
-  @CommandLine.Parameters(
-      index = "1",
-      description = "Number of validators to simulate.",
-      arity = "0..1")
-  Integer validators;
+  @CommandLine.Command(
+      name = "run",
+      description = "Runs simulation",
+      mixinStandardHelpOptions = true)
+  public static class SimulatorRun extends ReusableOptions implements Callable<Void>  {
+
+    @Override
+    public Void call() throws Exception {
+      ConfigBuilder<SimulatorConfig> configBuilder = new ConfigBuilder<>(SimulatorConfig.class);
+      if (this.configs != null) {
+        for (File config : this.configs) {
+          configBuilder.addYamlConfig(config);
+        }
+      } else {
+        logger.info("Simulator config is not set, fallback to default configuration");
+        configBuilder.addYamlConfig(ClassLoader.class.getResourceAsStream("/config/default-simulation.yml"));
+      }
+
+      SimulatorConfig simulatorConfig = configBuilder.build();
+      Spec spec = prepareChainSpec("/config/simulator-chainSpec.yml");
+
+      SimulatorLauncher simulatorLauncher =
+          new SimulatorLauncher(
+              simulatorConfig,
+              spec.buildSpecHelpers(simulatorConfig.isBlsVerifyEnabled()),
+              prepareLogLevel(false));
+      simulatorLauncher.run();
+
+      return null;
+    }
+  }
+
+  @CommandLine.Command(
+      name = "spec",
+      description = "Prints default spec constants used by simulator",
+      mixinStandardHelpOptions = true)
+  public static class SimulatorPrintSpec implements Callable<Void> {
+    @Override
+    public Void call() throws Exception {
+      ConfigBuilder<Spec> configBuilder = new ConfigBuilder<>(Spec.class);
+      configBuilder.addYamlConfig(
+          ClassLoader.class.getResourceAsStream("/config/default-chainSpec.yml"));
+      configBuilder.addYamlConfig(
+          ClassLoader.class.getResourceAsStream("/config/simulator-chainSpec.yml"));
+      System.out.println(new YamlPrinter(configBuilder.build()).getString());
+      return null;
+    }
+  }
 
   public static void main(String[] args) {
     try {
@@ -36,28 +81,7 @@ public class Simulator extends ReusableOptions implements Callable<Void> {
 
   @Override
   public Void call() throws Exception {
-    System.out.println("Starting beacon simulator...");
-    if (validators != null) {
-      configPathValues.add(Pair.with("plan.validator[0].count", validators));
-    }
-    Pair<MainConfig, SpecConstantsData> configs =
-        prepareAndPrintConfigs(action, "/config/simulator-config.yml");
-
-    if (action.equals(Task.run)) {
-      SimulatorLauncher simulatorLauncher =
-          new SimulatorLauncher(
-              configs.getValue0(),
-              configs.getValue1().build(),
-              prepareLogLevel(true),
-              mainConfig -> {
-                if (config != null) {
-                  System.out.println("Updating config to file: " + config);
-                  saveConfigToFile(mainConfig, config);
-                }
-              });
-      simulatorLauncher.run();
-    }
-
+    CommandLine.usage(this, System.out);
     return null;
   }
 }

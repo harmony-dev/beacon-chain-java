@@ -7,6 +7,7 @@ import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.schedulers.Scheduler;
 import org.ethereum.beacon.schedulers.Schedulers;
+import org.ethereum.beacon.stream.SimpleProcessor;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
@@ -22,8 +23,7 @@ public class SlotTicker implements Ticker<SlotNumber> {
   private final BeaconState state;
 
   private final Schedulers schedulers;
-  private final DirectProcessor<SlotNumber> slotSink = DirectProcessor.create();
-  private final Publisher<SlotNumber> slotStream;
+  private final SimpleProcessor<SlotNumber> slotStream;
 
   private SlotNumber startSlot;
 
@@ -34,10 +34,7 @@ public class SlotTicker implements Ticker<SlotNumber> {
     this.state = state;
     this.schedulers = schedulers;
 
-    slotStream = Flux.from(slotSink)
-            .publishOn(this.schedulers.reactorEvents())
-            .onBackpressureError()
-            .name("SlotTicker.slot");
+    slotStream = new SimpleProcessor<>(this.schedulers.reactorEvents(), "SlotTicker.slot");
   }
 
   /** Execute to start {@link SlotNumber} propagation */
@@ -45,7 +42,7 @@ public class SlotTicker implements Ticker<SlotNumber> {
   public void start() {
     this.scheduler = schedulers.newSingleThreadDaemon("slot-ticker");
 
-    SlotNumber nextSlot = spec.get_current_slot(state).increment();
+    SlotNumber nextSlot = spec.get_current_slot(state, schedulers.getCurrentTime()).increment();
     Time period = spec.getConstants().getSecondsPerSlot();
     startImpl(nextSlot, period, scheduler);
   }
@@ -63,7 +60,7 @@ public class SlotTicker implements Ticker<SlotNumber> {
             Duration.ofMillis(delayMillis),
             Duration.ofSeconds(period.getValue()),
             schedulers.reactorEvents())
-        .subscribe(tick -> slotSink.onNext(this.startSlot.plus(tick)));
+        .subscribe(tick -> slotStream.onNext(this.startSlot.plus(tick)));
   }
 
   /** Stream fires current slot number at slot time start */

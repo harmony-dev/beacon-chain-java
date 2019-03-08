@@ -1,5 +1,6 @@
 package org.ethereum.beacon.ssz;
 
+import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import net.consensys.cava.bytes.Bytes;
 import org.javatuples.Triplet;
 
@@ -57,11 +58,27 @@ public class SSZHashSerializer implements BytesHasher, BytesSerializer {
     return hash;
   }
 
-  private byte[] hashImpl(@Nullable Object input, Class clazz, @Nullable String truncateField) {
-    checkSSZSerializableAnnotation(clazz);
+  private byte[] hashImpl(@Nullable Object inputObject, Class<?> inputClazz, @Nullable String truncateField) {
+    checkSSZSerializableAnnotation(inputClazz);
 
-    if (input == null) {
+    if (inputObject == null) {
       return EMPTY_CHUNK.toArray();
+    }
+
+    Object input;
+    Class<?> clazz;
+    if (!inputClazz.getAnnotation(SSZSerializable.class).instanceGetter().isEmpty()) {
+      try {
+        Method instanceGetter = inputClazz
+            .getMethod(inputClazz.getAnnotation(SSZSerializable.class).instanceGetter());
+        input = instanceGetter.invoke(inputObject);
+        clazz = input.getClass();
+      } catch (Exception e) {
+        throw new RuntimeException("Error processing SSZSerializable.instanceGetter attribute", e);
+      }
+    } else {
+      input = inputObject;
+      clazz = inputClazz;
     }
 
     // Fill up map with all available method getters

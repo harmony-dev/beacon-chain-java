@@ -13,6 +13,7 @@ import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.ssz.Serializer;
+import org.ethereum.beacon.stream.SimpleProcessor;
 import org.javatuples.Pair;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
@@ -48,8 +49,7 @@ public abstract class AbstractDepositContract implements DepositContract {
   private final MonoProcessor<ChainStart> chainStartSink = MonoProcessor.create();
   private final Publisher<ChainStart> chainStartStream;
 
-  private final ReplayProcessor<Deposit> depositSink = ReplayProcessor.cacheLast();
-  private final Publisher<Deposit> depositStream;
+  private final SimpleProcessor<Deposit> depositStream;
 
   private List<Deposit> initialDeposits = new ArrayList<>();
   private boolean startChainSubscribed;
@@ -61,17 +61,14 @@ public abstract class AbstractDepositContract implements DepositContract {
         .publishOn(this.schedulers.reactorEvents())
         .doOnSubscribe(s -> chainStartSubscribedPriv())
         .name("PowClient.chainStart");
-    depositStream = Flux.from(depositSink)
-            .publishOn(this.schedulers.reactorEvents())
-            .onBackpressureError()
-            .name("PowClient.deposit");
+    depositStream = new SimpleProcessor<>(this.schedulers.reactorEvents(), "PowClient.deposit");
   }
 
   protected synchronized void newDeposit(DepositEventData eventData, byte[] blockHash) {
     if (startChainSubscribed && !chainStartSink.isTerminated()) {
       DepositInfo depositInfo = createDepositInfo(eventData, blockHash);
       initialDeposits.add(depositInfo.getDeposit());
-      depositSink.onNext(depositInfo.getDeposit());
+      depositStream.onNext(depositInfo.getDeposit());
     }
   }
 

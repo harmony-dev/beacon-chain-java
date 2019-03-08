@@ -1,34 +1,45 @@
 package org.ethereum.beacon.schedulers;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Executor;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.ThreadContext;
 
 public class LoggerMDCExecutor implements Executor {
 
-  private final String mdcKey;
-  private final String mdcValue;
+  private final List<String> mdcKeys = new ArrayList<>();
+  private final List<Supplier<String>> mdcValueSuppliers = new ArrayList<>();
   private final Executor delegateExecutor;
 
-  public LoggerMDCExecutor(String mdcKey, String mdcValue,
-      Executor delegateExecutor) {
-    this.mdcKey = mdcKey;
-    this.mdcValue = mdcValue;
+  public LoggerMDCExecutor() {
+    this(Runnable::run);
+  }
+
+  public LoggerMDCExecutor(Executor delegateExecutor) {
     this.delegateExecutor = delegateExecutor;
   }
 
-  public LoggerMDCExecutor(String mdcKey, String mdcValue) {
-    this(mdcKey, mdcValue, Runnable::run);
+  public LoggerMDCExecutor add(String mdcKey, Supplier<String> mdcValueSupplier) {
+    mdcKeys.add(mdcKey);
+    mdcValueSuppliers.add(mdcValueSupplier);
+    return this;
   }
 
   @Override
   public void execute(Runnable command) {
-    String oldValue = ThreadContext.get(mdcKey);
-    ThreadContext.put(mdcKey, mdcValue);
+    List<String> oldValues = new ArrayList<>(mdcKeys.size());
+    for (int i = 0; i < mdcKeys.size(); i++) {
+      oldValues.add(ThreadContext.get(mdcKeys.get(i)));
+      ThreadContext.put(mdcKeys.get(i), mdcValueSuppliers.get(i).get());
+    }
     delegateExecutor.execute(command);
-    if (oldValue == null) {
-      ThreadContext.remove(mdcKey);
-    } else {
-      ThreadContext.put(mdcKey, oldValue);
+    for (int i = 0; i < mdcKeys.size(); i++) {
+      if (oldValues.get(i) == null) {
+        ThreadContext.remove(mdcKeys.get(i));
+      } else {
+        ThreadContext.put(mdcKeys.get(i), oldValues.get(i));
+      }
     }
   }
 }

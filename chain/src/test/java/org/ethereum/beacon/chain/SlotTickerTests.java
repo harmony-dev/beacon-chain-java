@@ -43,7 +43,7 @@ public class SlotTickerTests {
             return Time.of(1);
           }
         };
-    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(specConstants, schedulers::getCurrentTime);
+    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(specConstants);
     genesisSlot = specHelpers.getConstants().getGenesisSlot();
     slotTicker = new SlotTicker(specHelpers, beaconState, Schedulers.createDefault());
   }

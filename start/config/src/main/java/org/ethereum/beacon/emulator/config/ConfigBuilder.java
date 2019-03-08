@@ -159,7 +159,7 @@ public class ConfigBuilder<C extends Config> {
   }
 
   /** Adds input stream with yaml config to list of config sources with guaranteed order */
-  public ConfigBuilder addYamlConfig(InputStream inputStream) {
+  public ConfigBuilder<C> addYamlConfig(InputStream inputStream) {
     String content;
     try (InputStreamReader streamReader = new InputStreamReader(inputStream, Charsets.UTF_8)) {
       content = CharStreams.toString(streamReader);

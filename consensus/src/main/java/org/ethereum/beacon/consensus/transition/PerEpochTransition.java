@@ -61,8 +61,7 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
 
   private BeaconStateEx apply(BeaconStateEx origState, EpochTransitionSummary summary) {
     logger.debug(() -> "Applying epoch transition to state: (" +
-        spec.hash_tree_root(origState).toStringShort() + ") " +
-        origState.toString(spec.getConstants()));
+        spec.hash_tree_root(origState).toStringShort() + ") " + origState.toString(spec.getConstants()));
 
     TransitionType.EPOCH.checkCanBeAppliedAfter(origState.getTransition());
 
@@ -233,7 +232,6 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
       summary.justifiedAttesters.addAll(previous_epoch_attester_indices);
       summary.justifiedAttestingBalance = previous_epoch_attesting_balance;
     }
-
 
     Map<Pair<List<ValidatorIndex>, Hash32>, Set<ValidatorIndex>>
         attesting_validator_indices = new HashMap<>();
@@ -546,7 +544,6 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
         if (!previous_epoch_attester_indices.contains(index)) {
           Gwei penalty = base_reward.apply(index);
           state.getValidatorBalances().update(index, balance -> balance.minus(penalty));
-
           previous_epoch_justified_attester_loosers.add(index);
           if (summary != null) {
             summary.attestationPenalties.put(index, penalty);

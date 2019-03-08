@@ -1,25 +1,22 @@
 package org.ethereum.beacon.emulator.config.main.action;
 
+import java.util.ArrayList;
 import java.util.List;
+import org.ethereum.beacon.emulator.config.simulator.PeersConfig;
 
 /** Settings for validator simulation of several random validators */
 public class ActionSimulate extends Action {
-  private Integer count;
-  private List<String> privateKeys;
+  private List<PeersConfig> peersConfigs = new ArrayList<>();
 
-  public Integer getCount() {
-    return count;
+  public List<PeersConfig> getPeersConfigs() {
+    return peersConfigs;
   }
 
-  public void setCount(Integer count) {
-    this.count = count;
+  public void setPeersConfigs(List<PeersConfig> peersConfigs) {
+    this.peersConfigs = new ArrayList<>(peersConfigs);
   }
 
-  public List<String> getPrivateKeys() {
-    return privateKeys;
-  }
-
-  public void setPrivateKeys(List<String> privateKeys) {
-    this.privateKeys = privateKeys;
+  public void addPeersConfig(PeersConfig peersConfig) {
+    peersConfigs.add(peersConfig);
   }
 }

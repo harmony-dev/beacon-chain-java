@@ -32,7 +32,7 @@ public class BeaconChainAttesterTest {
   public void attestASlot() {
     Random random = new Random();
 
-    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(SpecConstants.DEFAULT, () -> 0L);
+    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(SpecConstants.DEFAULT);
 
     MessageSigner<BLSSignature> signer = MessageSignerTestUtil.createBLSSigner();
     BeaconChainAttesterImpl attester = BeaconChainAttesterTestUtil.mockAttester(specHelpers);
@@ -50,7 +50,7 @@ public class BeaconChainAttesterTest {
     Mockito.doReturn(committee).when(attester).getCommittee(any(), any());
     Mockito.doReturn(epochBoundaryRoot).when(attester).getEpochBoundaryRoot(any(), any());
     Mockito.doReturn(Crosslink.EMPTY).when(attester).getLatestCrosslink(any(), any());
-    Mockito.doReturn(justifiedBlockRoot).when(attester).getJustifiedBlockRoot(any());
+    Mockito.doReturn(justifiedBlockRoot).when(attester).getJustifiedBlockRoot(any(), any());
 
     Attestation attestation =
         attester.attest(validatorIndex, shard, initiallyObservedState, signer);

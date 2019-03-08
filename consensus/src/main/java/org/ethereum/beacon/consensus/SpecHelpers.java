@@ -13,11 +13,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.annotation.Nonnull;
-import org.checkerframework.checker.guieffect.qual.UI;
 import org.ethereum.beacon.consensus.hasher.ObjectHasher;
 import org.ethereum.beacon.consensus.hasher.SSZObjectHasher;
 import org.ethereum.beacon.core.BeaconBlock;
@@ -67,7 +65,6 @@ public class SpecHelpers {
   private final SpecConstants constants;
   private final ObjectHasher<Hash32> objectHasher;
   private final Function<BytesValue, Hash32> hashFunction;
-  private final Supplier<Long> systemTimeSupplier;
 
   /**
    * Creates a SpecHelpers instance with given {@link SpecConstants} and time supplier,
@@ -75,26 +72,23 @@ public class SpecHelpers {
    * hasher.
    *
    * @param constants a chain constants.
-   * @param systemTimeSupplier The current system time supplier. Normally the
    *    <code>Schedulers::currentTime</code> is passed
    * @return spec helpers instance.
    */
-  public static SpecHelpers createWithSSZHasher(@Nonnull SpecConstants constants, @Nonnull Supplier<Long> systemTimeSupplier) {
+  public static SpecHelpers createWithSSZHasher(@Nonnull SpecConstants constants) {
     Objects.requireNonNull(constants);
 
     Function<BytesValue, Hash32> hashFunction = Hashes::keccak256;
     ObjectHasher<Hash32> sszHasher = SSZObjectHasher.create(hashFunction);
-    return new SpecHelpers(constants, hashFunction, sszHasher, systemTimeSupplier);
+    return new SpecHelpers(constants, hashFunction, sszHasher);
   }
 
   public SpecHelpers(SpecConstants constants,
       Function<BytesValue, Hash32> hashFunction,
-      ObjectHasher<Hash32> objectHasher,
-      Supplier<Long> systemTimeSupplier) {
+      ObjectHasher<Hash32> objectHasher) {
     this.constants = constants;
     this.objectHasher = objectHasher;
     this.hashFunction = hashFunction;
-    this.systemTimeSupplier = systemTimeSupplier;
   }
 
   public SpecConstants getConstants() {
@@ -208,7 +202,11 @@ public class SpecHelpers {
     int committees_per_epoch;
     EpochNumber shuffling_epoch;
     ShardNumber shuffling_start_shard;
-    if (epoch.equals(currentEpoch)) {
+    // 'lookahead' might already happened if
+    // get_crosslink_committees_at_slot is called after epoch transition
+    // hacking around
+    if ((epoch.equals(currentEpoch) && currentEpoch.greaterEqual(state.getCurrentShufflingEpoch()))
+        || (epoch.equals(nextEpoch) && nextEpoch.equals(state.getCurrentShufflingEpoch()))) {
       /*
         if epoch == current_epoch:
           committees_per_epoch = get_current_epoch_committee_count(state)
@@ -220,7 +218,8 @@ public class SpecHelpers {
       seed = state.getCurrentShufflingSeed();
       shuffling_epoch = state.getCurrentShufflingEpoch();
       shuffling_start_shard = state.getCurrentShufflingStartShard();
-    } else if (epoch.equals(previousEpoch)) {
+    } else if (epoch.equals(previousEpoch) ||
+        (epoch.equals(currentEpoch) && currentEpoch.less(state.getCurrentShufflingEpoch()))) {
       /*
         elif epoch == previous_epoch:
           committees_per_epoch = get_previous_epoch_committee_count(state)
@@ -231,7 +230,7 @@ public class SpecHelpers {
       seed = state.getPreviousShufflingSeed();
       shuffling_epoch = state.getPreviousShufflingEpoch();
       shuffling_start_shard = state.getPreviousShufflingStartShard();
-    } else {
+    } else if (epoch.equals(nextEpoch)) {
       /*
         elif epoch == next_epoch:
           current_committees_per_epoch = get_current_epoch_committee_count(state)
@@ -271,6 +270,8 @@ public class SpecHelpers {
         seed = state.getCurrentShufflingSeed();
         shuffling_start_shard = state.getCurrentShufflingStartShard();
       }
+    } else {
+      throw new SpecAssertionFailed();
     }
 
     /*
@@ -1516,16 +1517,16 @@ public class SpecHelpers {
     return index;
   }
 
-  public SlotNumber get_current_slot(BeaconState state) {
-    Millis currentTime = Millis.of(systemTimeSupplier.get());
+  public SlotNumber get_current_slot(BeaconState state, long systemTime) {
+    Millis currentTime = Millis.of(systemTime);
     assertTrue(state.getGenesisTime().lessEqual(currentTime.getSeconds()));
     Time sinceGenesis = currentTime.getSeconds().minus(state.getGenesisTime());
     return SlotNumber.castFrom(sinceGenesis.dividedBy(constants.getSecondsPerSlot()))
         .plus(getConstants().getGenesisSlot());
   }
 
-  public boolean is_current_slot(BeaconState state) {
-    return state.getSlot().equals(get_current_slot(state));
+  public boolean is_current_slot(BeaconState state, long systemTime) {
+    return state.getSlot().equals(get_current_slot(state, systemTime));
   }
 
   public Time get_slot_start_time(BeaconState state, SlotNumber slot) {
@@ -1728,6 +1729,14 @@ public class SpecHelpers {
 
   public boolean is_epoch_end(SlotNumber slot) {
     return slot.increment().modulo(constants.getSlotsPerEpoch()).equals(SlotNumber.ZERO);
+  }
+
+  public ObjectHasher<Hash32> getObjectHasher() {
+    return objectHasher;
+  }
+
+  public Function<BytesValue, Hash32> getHashFunction() {
+    return hashFunction;
   }
 
   private static void assertTrue(boolean assertion) {
