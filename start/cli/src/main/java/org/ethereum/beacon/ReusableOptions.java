@@ -21,7 +21,7 @@ import java.util.Map;
 
 public class ReusableOptions {
 
-  static final String VERSION = "0.1b";
+  static final String VERSION = "0.1.0";
   private static final Map<LogLevel, Level> LOG_LEVELS = new HashMap<>();
 
   static {
