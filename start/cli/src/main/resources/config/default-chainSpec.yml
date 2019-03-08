@@ -50,6 +50,3 @@ specConstants:
     ACTIVATION_EXIT_DELAY: 4
     EPOCHS_PER_ETH1_VOTING_PERIOD: 16
     MIN_VALIDATOR_WITHDRAWABILITY_DELAY: 256
-
-specHelpersOptions:
-  blsVerifyEnabled: true

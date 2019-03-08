@@ -1,11 +1,12 @@
 package org.ethereum.beacon;
 
+import java.util.concurrent.Callable;
+import org.ethereum.beacon.emulator.config.ConfigBuilder;
 import org.ethereum.beacon.emulator.config.chainspec.Spec;
 import org.ethereum.beacon.emulator.config.main.MainConfig;
+import org.ethereum.beacon.emulator.config.simulator.SimulatorConfig;
 import org.javatuples.Pair;
 import picocli.CommandLine;
-
-import java.util.concurrent.Callable;
 
 @CommandLine.Command(
     description = "Eth2.0 beacon chain simulator",
@@ -30,22 +31,20 @@ public class Simulator extends ReusableOptions implements Callable<Void> {
 
   @Override
   public Void call() throws Exception {
-    System.out.println("Starting beacon simulator...");
     Pair<MainConfig, Spec> configs =
         prepareAndPrintConfigs(action, "/config/simulator-config.yml", "/config/simulator-chainSpec.yml");
+
+    SimulatorConfig simulatorConfig =
+        new ConfigBuilder<>(SimulatorConfig.class)
+            .addYamlConfig(ClassLoader.class.getResourceAsStream("/config/default-simulation.yml"))
+            .build();
 
     if (action.equals(Task.run)) {
       SimulatorLauncher simulatorLauncher =
           new SimulatorLauncher(
-              configs.getValue0(),
-              configs.getValue1().buildSpecHelpers(),
-              prepareLogLevel(true),
-              mainConfig -> {
-                if (config != null) {
-                  System.out.println("Updating config to file: " + config);
-                  saveConfigToFile(mainConfig, config);
-                }
-              });
+              simulatorConfig,
+              configs.getValue1().buildSpecHelpers(simulatorConfig.isBlsVerifyEnabled()),
+              prepareLogLevel(true));
       simulatorLauncher.run();
     }
 

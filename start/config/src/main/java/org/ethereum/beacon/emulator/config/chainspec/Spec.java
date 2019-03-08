@@ -19,10 +19,10 @@ public class Spec implements Config {
     return specConstants.buildSpecConstants();
   }
 
-  public SpecHelpers buildSpecHelpers() {
+  public SpecHelpers buildSpecHelpers(boolean blsVerifyEnabled) {
     SpecHelpers defaultSpecHelpers =
         SpecHelpers.createWithSSZHasher(buildSpecConstants());
-    if (getSpecHelpersOptions().isBlsVerifyEnabled()) {
+    if (blsVerifyEnabled) {
       return defaultSpecHelpers;
     } else {
       return new SpecHelpers(

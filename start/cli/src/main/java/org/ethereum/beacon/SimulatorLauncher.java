@@ -12,7 +12,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.logging.log4j.Level;
@@ -39,10 +38,8 @@ import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.crypto.BLS381;
 import org.ethereum.beacon.crypto.BLS381.KeyPair;
 import org.ethereum.beacon.crypto.BLS381.PrivateKey;
-import org.ethereum.beacon.emulator.config.main.MainConfig;
-import org.ethereum.beacon.emulator.config.main.action.Action;
-import org.ethereum.beacon.emulator.config.main.action.ActionSimulate;
-import org.ethereum.beacon.emulator.config.simulator.PeersConfig;
+import org.ethereum.beacon.emulator.config.simulator.Peer;
+import org.ethereum.beacon.emulator.config.simulator.SimulatorConfig;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.schedulers.ControlledSchedulers;
 import org.ethereum.beacon.schedulers.LoggerMDCExecutor;
@@ -64,50 +61,32 @@ public class SimulatorLauncher implements Runnable {
   private static final Logger wire = LogManager.getLogger("wire");
   private static final Logger logPeer = LogManager.getLogger("peer");
 
-  private final ActionSimulate simulateConfig;
-  private final List<PeersConfig> allPeers = new ArrayList<>();
-  private final MainConfig mainConfig;
+  private final SimulatorConfig simulatorConfig;
+  private final List<Peer> allPeers = new ArrayList<>();
   private final SpecConstants specConstants;
   private final SpecHelpers specHelpers;
   private final Level logLevel;
-  private final Consumer<MainConfig> onUpdateConfig;
 
   /**
    * Creates Simulator launcher with following settings
    *
-   * @param mainConfig Configuration and run plan
+   * @param simulatorConfig Configuration and run plan
    * @param specHelpers Chain specification
    * @param logLevel Log level, Apache log4j type
-   * @param onUpdateConfig Callback to run when mainConfig is updated
    */
   public SimulatorLauncher(
-      MainConfig mainConfig,
+      SimulatorConfig simulatorConfig,
       SpecHelpers specHelpers,
-      Level logLevel,
-      Consumer<MainConfig> onUpdateConfig) {
-    this.mainConfig = mainConfig;
+      Level logLevel) {
+    this.simulatorConfig = simulatorConfig;
     this.specConstants = specHelpers.getConstants();
     this.specHelpers = specHelpers;
-    List<Action> actions = mainConfig.getPlan().getValidator();
-    Optional<ActionSimulate> actionSimulate =
-        actions.stream()
-            .filter(a -> a instanceof ActionSimulate)
-            .map(a -> (ActionSimulate) a)
-            .findFirst();
-    if (!actionSimulate.isPresent()) {
-      throw new RuntimeException("Simulate settings are not set");
-    }
-    this.simulateConfig = actionSimulate.get();
-    if (simulateConfig.getPeersConfigs().isEmpty()) {
-      throw new RuntimeException("No peers found in config");
-    }
-    for (PeersConfig peersConfig : simulateConfig.getPeersConfigs()) {
-      for (int i = 0; i < peersConfig.getPeersCount(); i++) {
-        allPeers.add(peersConfig);
+    for (Peer peer : simulatorConfig.getPeers()) {
+      for (int i = 0; i < peer.getCount(); i++) {
+        allPeers.add(peer);
       }
     }
     this.logLevel = logLevel;
-    this.onUpdateConfig = onUpdateConfig;
   }
 
   private void setupLogging() {
@@ -127,10 +106,6 @@ public class SimulatorLauncher implements Runnable {
       loggerConfig.setLevel(logLevel);
       context.updateLoggers();
     }
-  }
-
-  private void onUpdateConfig() {
-    this.onUpdateConfig.accept(mainConfig);
   }
 
   private Pair<List<Deposit>, List<BLS381.KeyPair>> getValidatorDeposits(Random rnd) {
@@ -153,7 +128,9 @@ public class SimulatorLauncher implements Runnable {
   }
 
   public void run() {
-    Random rnd = new Random(1);
+    logger.info("Configuration:\n{}", simulatorConfig);
+
+    Random rnd = new Random(simulatorConfig.getSeed());
     setupLogging();
     Pair<List<Deposit>, List<BLS381.KeyPair>> validatorDeposits = getValidatorDeposits(rnd);
 
@@ -161,7 +138,7 @@ public class SimulatorLauncher implements Runnable {
         .filter(Objects::nonNull).collect(Collectors.toList());
     List<BLS381.KeyPair> keyPairs = validatorDeposits.getValue1();
 
-    Time genesisTime = Time.of(10 * 60);
+    Time genesisTime = Time.of(simulatorConfig.getGenesisTime());
 
     MDCControlledSchedulers controlledSchedulers = new MDCControlledSchedulers();
     controlledSchedulers.setCurrentTime(genesisTime.getMillis().getValue() + 1000);
