@@ -31,4 +31,4 @@ plan:
     - action: simulate
       peersConfigs:
         - peersCount: 8
-          isValidator: true
+          validator: true
