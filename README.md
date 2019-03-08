@@ -17,7 +17,7 @@ cp crypto/build/libs/beacon-crypto-0.1.0.jar <jar-destination>
 ## Simulator
 Despite lacking a network stack there is already something that everybody can play with, a standalone Beacon chain simulator.
 
-To run an simulator you need to install Java 8 or later. There are many guidelines in Internet, even the [official one](https://java.com/en/download/help/download_options.xml), from Oracle. Next, git clone our repo, build `client` module distribution and run simulator:
+To run a simulator you need to install Java 8 or later. There are many guidelines in Internet, even the [official one](https://java.com/en/download/help/download_options.xml), from Oracle. Next, git clone our repo, build `client` module distribution and run simulator:
 ```bash
 git clone https://github.com/harmony-dev/beacon-chain-java.git
 cd beacon-chain-java
