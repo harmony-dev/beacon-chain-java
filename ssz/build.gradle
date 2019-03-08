@@ -2,6 +2,7 @@ apply plugin: 'java-library'
 
 dependencies {
     implementation project(':types')
+    implementation project(':util')
     implementation 'net.consensys.cava:cava-ssz'
     implementation 'net.consensys.cava:cava-units'
 

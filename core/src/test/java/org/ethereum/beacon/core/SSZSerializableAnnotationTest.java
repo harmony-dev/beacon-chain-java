@@ -26,6 +26,7 @@ import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Eth1DataVote;
 import org.ethereum.beacon.core.state.ForkData;
+import org.ethereum.beacon.core.state.ImmutableBeaconStateImpl;
 import org.ethereum.beacon.core.state.PendingAttestationRecord;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
@@ -122,6 +123,7 @@ public class SSZSerializableAnnotationTest {
                 BeaconBlock.class,
                 BeaconBlockBody.class,
                 BeaconStateImpl.class,
+                ImmutableBeaconStateImpl.class,
                 Deposit.class,
                 DepositData.class,
                 DepositInput.class,

@@ -26,6 +26,7 @@ public class Serializer {
     builder.addCodec(new UIntCodec());
     builder.addCodec(new BytesCodec());
     builder.addCodec(new BooleanPrimitive());
+    builder.addSchemeBuilderCache();
     ANNOTATION_SERIALIZER = builder.build();
   }
 

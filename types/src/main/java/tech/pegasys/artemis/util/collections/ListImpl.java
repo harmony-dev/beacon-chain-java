@@ -97,6 +97,11 @@ class ListImpl<IndexType extends Number, ValueType>
   }
 
   @Override
+  public List<ValueType> listCopy() {
+    return new ArrayList<>(backedList);
+  }
+
+  @Override
   public ValueType set(IndexType index, ValueType element) {
     return backedList.set(index.intValue(), element);
   }
