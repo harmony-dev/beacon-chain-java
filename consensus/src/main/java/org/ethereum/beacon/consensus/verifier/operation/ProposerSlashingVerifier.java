@@ -21,67 +21,67 @@ import org.ethereum.beacon.core.state.ValidatorRecord;
  */
 public class ProposerSlashingVerifier implements OperationVerifier<ProposerSlashing> {
 
-  private SpecHelpers specHelpers;
+  private SpecHelpers spec;
 
-  public ProposerSlashingVerifier(SpecHelpers specHelpers) {
-    this.specHelpers = specHelpers;
+  public ProposerSlashingVerifier(SpecHelpers spec) {
+    this.spec = spec;
   }
 
   @Override
   public VerificationResult verify(ProposerSlashing proposerSlashing, BeaconState state) {
-    specHelpers.checkIndexRange(state, proposerSlashing.getProposerIndex());
-    specHelpers.checkShardRange(proposerSlashing.getProposalData1().getShard());
-    specHelpers.checkShardRange(proposerSlashing.getProposalData2().getShard());
+    spec.checkIndexRange(state, proposerSlashing.getProposerIndex());
+    spec.checkShardRange(proposerSlashing.getProposal1().getShard());
+    spec.checkShardRange(proposerSlashing.getProposal2().getShard());
 
     if (!proposerSlashing
-        .getProposalData1()
+        .getProposal1()
         .getSlot()
-        .equals(proposerSlashing.getProposalData2().getSlot())) {
+        .equals(proposerSlashing.getProposal2().getSlot())) {
       return failedResult("proposal_data_1.slot != proposal_data_2.slot");
     }
 
     if (!proposerSlashing
-        .getProposalData1()
+        .getProposal1()
         .getShard()
-        .equals(proposerSlashing.getProposalData2().getShard())) {
+        .equals(proposerSlashing.getProposal2().getShard())) {
       return failedResult("proposal_data_1.shard != proposal_data_2.shard");
     }
 
     if (proposerSlashing
-        .getProposalData1()
+        .getProposal1()
         .getBlockRoot()
-        .equals(proposerSlashing.getProposalData2().getBlockRoot())) {
+        .equals(proposerSlashing.getProposal2().getBlockRoot())) {
       return failedResult(
           "proposal_data_1.block_root == proposal_data_2.block_root, roots should not be equal");
     }
 
     ValidatorRecord proposer =
         state.getValidatorRegistry().get(proposerSlashing.getProposerIndex());
-    if (!proposer.getPenalizedEpoch().greater(specHelpers.get_current_epoch(state))) {
+    if (proposer.getSlashed()) {
       return failedResult(
-          "proposer penalized_epoch should be less than get_current_epoch(state)");
+          "proposer was already slashed");
     }
 
-    if (!specHelpers.bls_verify(
+    if (!spec.bls_verify(
         proposer.getPubKey(),
-        specHelpers.hash_tree_root(proposerSlashing.getProposalData1()),
-        proposerSlashing.getProposalSignature1(),
-        specHelpers.get_domain(
+        spec.signed_root(proposerSlashing.getProposal1(), "signature"),
+        proposerSlashing.getProposal1().getSignature(),
+        spec.get_domain(
             state.getForkData(),
-            specHelpers.slot_to_epoch(proposerSlashing.getProposalData1().getSlot()),
+            spec.slot_to_epoch(proposerSlashing.getProposal1().getSlot()),
             PROPOSAL))) {
-      return failedResult("proposal_signature_1 is invalid");
+      return failedResult("proposal_1.signature is invalid");
     }
 
-    if (!specHelpers.bls_verify(
+    if (!spec.bls_verify(
         proposer.getPubKey(),
-        specHelpers.hash_tree_root(proposerSlashing.getProposalData2()),
-        proposerSlashing.getProposalSignature2(),
-        specHelpers.get_domain(
+        spec.signed_root(proposerSlashing.getProposal2(), "signature"),
+        proposerSlashing.getProposal2().getSignature(),
+        spec.get_domain(
             state.getForkData(),
-            specHelpers.slot_to_epoch(proposerSlashing.getProposalData2().getSlot()),
+            spec.slot_to_epoch(proposerSlashing.getProposal2().getSlot()),
             PROPOSAL))) {
-      return failedResult("proposal_signature_2 is invalid");
+      return failedResult("proposal_2.signature is invalid");
     }
 
     return PASSED;

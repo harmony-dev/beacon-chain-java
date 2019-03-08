@@ -1,17 +1,20 @@
 package org.ethereum.beacon.core;
 
 import com.google.common.base.Objects;
+
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
-import org.ethereum.beacon.core.operations.Exit;
+import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
-import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.Hashable;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.ssz.annotation.SSZ;
@@ -29,7 +32,7 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
  *     in the spec</a>
  */
 @SSZSerializable
-public class BeaconBlock {
+public class BeaconBlock implements Hashable<Hash32> {
 
   /** Number of a slot that block does belong to. */
   @SSZ private final SlotNumber slot;
@@ -41,11 +44,12 @@ public class BeaconBlock {
   @SSZ private final BLSSignature randaoReveal;
   /** Eth1 data that is observed by proposer. */
   @SSZ private final Eth1Data eth1Data;
+  /** Block body. */
+  @SSZ private final BeaconBlockBody body;
   /** Proposer's signature. */
   @SSZ private final BLSSignature signature;
 
-  /** Block body. */
-  @SSZ private final BeaconBlockBody body;
+  private Hash32 hashCache = null;
 
   public BeaconBlock(
       SlotNumber slot,
@@ -53,8 +57,8 @@ public class BeaconBlock {
       Hash32 stateRoot,
       BLSSignature randaoReveal,
       Eth1Data eth1Data,
-      BLSSignature signature,
-      BeaconBlockBody body) {
+      BeaconBlockBody body,
+      BLSSignature signature) {
     this.slot = slot;
     this.parentRoot = parentRoot;
     this.stateRoot = stateRoot;
@@ -64,13 +68,18 @@ public class BeaconBlock {
     this.body = body;
   }
 
-  public BeaconBlock withStateRoot(Hash32 stateRoot) {
-    return new BeaconBlock(slot, parentRoot, stateRoot, randaoReveal, eth1Data, signature, body);
+  @Override
+  public Optional<Hash32> getHash() {
+    return Optional.ofNullable(hashCache);
   }
 
-  public BeaconBlock withoutSignature() {
-    return new BeaconBlock(
-        slot, parentRoot, stateRoot, randaoReveal, eth1Data, BLSSignature.ZERO, body);
+  @Override
+  public void setHash(Hash32 hash) {
+    this.hashCache = hash;
+  }
+
+  public BeaconBlock withStateRoot(Hash32 stateRoot) {
+    return new BeaconBlock(slot, parentRoot, stateRoot, randaoReveal, eth1Data, body, signature);
   }
 
   public SlotNumber getSlot() {
@@ -129,37 +138,37 @@ public class BeaconBlock {
     return toString(null, null, null);
   }
 
-  public String toStringFull(@Nullable ChainSpec spec,@Nullable Time beaconStart,
+  public String toStringFull(@Nullable SpecConstants constants, @Nullable Time beaconStart,
       @Nullable Function<? super BeaconBlock, Hash32> hasher) {
     StringBuilder ret = new StringBuilder("Block["
-        + toStringPriv(spec, beaconStart, hasher)
+        + toStringPriv(constants, beaconStart, hasher)
         + "]:\n");
     for (Attestation attestation : body.getAttestations()) {
-      ret.append("  " + attestation.toString(spec, beaconStart) + "\n");
+      ret.append("  " + attestation.toString(constants, beaconStart) + "\n");
     }
     for (Deposit deposit : body.getDeposits()) {
       ret.append("  " + deposit.toString() + "\n");
     }
-    for (Exit exit : body.getExits()) {
-      ret.append("  " + exit.toString(spec) + "\n");
+    for (VoluntaryExit voluntaryExit : body.getExits()) {
+      ret.append("  " + voluntaryExit.toString(constants) + "\n");
     }
     for (ProposerSlashing proposerSlashing : body.getProposerSlashings()) {
-      ret.append("  " + proposerSlashing.toString(spec, beaconStart) + "\n");
+      ret.append("  " + proposerSlashing.toString(constants, beaconStart) + "\n");
     }
 
     for (AttesterSlashing attesterSlashing : body.getAttesterSlashings()) {
-      ret.append("  " + attesterSlashing.toString(spec, beaconStart) + "\n");
+      ret.append("  " + attesterSlashing.toString(constants, beaconStart) + "\n");
     }
 
     return ret.toString();
   }
 
-  public String toString(@Nullable ChainSpec spec,@Nullable Time beaconStart,
+  public String toString(@Nullable SpecConstants constants, @Nullable Time beaconStart,
       @Nullable Function<? super BeaconBlock, Hash32> hasher) {
-    String ret = "Block[" + toStringPriv(spec, beaconStart, hasher);
+    String ret = "Block[" + toStringPriv(constants, beaconStart, hasher);
     if (!body.getAttestations().isEmpty()) {
       ret += ", atts: [" + body.getAttestations().stream()
-          .map(a -> a.toStringShort(spec))
+          .map(a -> a.toStringShort(constants))
           .collect(Collectors.joining(", ")) + "]";
     }
     if (!body.getDeposits().isEmpty()) {
@@ -169,17 +178,17 @@ public class BeaconBlock {
     }
     if (!body.getExits().isEmpty()) {
       ret += ", exits: [" + body.getExits().stream()
-          .map(a -> a.toString(spec))
+          .map(a -> a.toString(constants))
           .collect(Collectors.joining(", ")) + "]";
     }
     if (!body.getAttesterSlashings().isEmpty()) {
       ret += ", attSlash: [" + body.getAttesterSlashings().stream()
-          .map(a -> a.toString(spec, beaconStart))
+          .map(a -> a.toString(constants, beaconStart))
           .collect(Collectors.joining(", ")) + "]";
     }
     if (!body.getProposerSlashings().isEmpty()) {
       ret += ", propSlash: [" + body.getProposerSlashings().stream()
-          .map(a -> a.toString(spec, beaconStart))
+          .map(a -> a.toString(constants, beaconStart))
           .collect(Collectors.joining(", ")) + "]";
     }
     ret += "]";
@@ -187,11 +196,11 @@ public class BeaconBlock {
     return ret;
   }
 
-  private String toStringPriv(@Nullable ChainSpec spec,@Nullable Time beaconStart,
+  private String toStringPriv(@Nullable SpecConstants constants, @Nullable Time beaconStart,
       @Nullable Function<? super BeaconBlock, Hash32> hasher) {
     return (hasher == null ? "?" : hasher.apply(this).toStringShort())
         + " <~ " + parentRoot.toStringShort()
-        + ", @slot " + slot.toString(spec, beaconStart)
+        + ", @slot " + slot.toStringNumber(constants)
         + ", state=" + stateRoot.toStringShort()
         + ", randao=" + randaoReveal.toString()
         + ", " + eth1Data
@@ -272,7 +281,7 @@ public class BeaconBlock {
       assert body != null;
 
       return new BeaconBlock(
-          slot, parentRoot, stateRoot, randaoReveal, eth1Data, signature, body);
+          slot, parentRoot, stateRoot, randaoReveal, eth1Data, body, signature);
     }
   }
 }

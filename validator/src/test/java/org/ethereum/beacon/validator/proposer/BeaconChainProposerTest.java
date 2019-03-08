@@ -11,21 +11,22 @@ import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.observer.PendingOperations;
 import org.ethereum.beacon.chain.util.ObservableBeaconStateTestUtil;
 import org.ethereum.beacon.chain.util.PendingOperationsTestUtil;
+import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.BlockTransition;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.StateTransition;
-import org.ethereum.beacon.consensus.transition.BeaconStateEx;
+import org.ethereum.beacon.consensus.transition.BeaconStateExImpl;
 import org.ethereum.beacon.consensus.util.StateTransitionTestUtil;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
-import org.ethereum.beacon.core.operations.Exit;
+import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
-import org.ethereum.beacon.core.operations.slashing.ProposalSignedData;
-import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.operations.slashing.Proposal;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.spec.SignatureDomains;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.BLSSignature;
@@ -53,7 +54,7 @@ public class BeaconChainProposerTest {
   public void proposeABlock() {
     Random random = new Random();
 
-    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT, () -> 0L);
+    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(SpecConstants.DEFAULT);
     DepositContract depositContract =
         DepositContractTestUtil.mockDepositContract(random, Collections.emptyList());
     BlockTransition<BeaconStateEx> perBlockTransition =
@@ -70,10 +71,10 @@ public class BeaconChainProposerTest {
     BeaconBlock block = proposer.propose(initialObservedState, signer);
 
     BeaconStateEx stateAfterBlock =
-        perBlockTransition.apply(new BeaconStateEx(initialState, Hash32.ZERO), block);
+        perBlockTransition.apply(new BeaconStateExImpl(initialState, Hash32.ZERO), block);
 
     Assert.assertEquals(
-        specHelpers.hash_tree_root(stateAfterBlock.getCanonicalState()), block.getStateRoot());
+        specHelpers.hash_tree_root(stateAfterBlock), block.getStateRoot());
     Assert.assertTrue(verifySignature(specHelpers, initialState, block, signer));
   }
 
@@ -81,7 +82,7 @@ public class BeaconChainProposerTest {
   public void proposeABlockWithOperations() {
     Random random = new Random();
 
-    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT, () -> 0L);
+    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(SpecConstants.DEFAULT);
     DepositContract depositContract =
         DepositContractTestUtil.mockDepositContract(random, Collections.emptyList());
     BlockTransition<BeaconStateEx> perBlockTransition =
@@ -94,19 +95,19 @@ public class BeaconChainProposerTest {
 
     List<Attestation> attestations =
         AttestationTestUtil.createRandomList(
-            random, specHelpers.getChainSpec().getMaxAttestations());
+            random, specHelpers.getConstants().getMaxAttestations());
     List<ProposerSlashing> proposerSlashings =
         ProposerSlashingTestUtil.createRandomList(
-            random, specHelpers.getChainSpec().getMaxProposerSlashings());
+            random, specHelpers.getConstants().getMaxProposerSlashings());
     List<AttesterSlashing> casperSlashings =
         AttesterSlashingTestUtil.createRandomList(
-            random, specHelpers.getChainSpec().getMaxAttesterSlashings());
-    List<Exit> exits =
-        ExitTestUtil.createRandomList(random, specHelpers.getChainSpec().getMaxExits());
+            random, specHelpers.getConstants().getMaxAttesterSlashings());
+    List<VoluntaryExit> voluntaryExits =
+        ExitTestUtil.createRandomList(random, specHelpers.getConstants().getMaxVoluntaryExits());
 
     PendingOperations pendingOperations =
         PendingOperationsTestUtil.mockPendingOperations(
-            attestations, attestations, proposerSlashings, casperSlashings, exits);
+            attestations, attestations, proposerSlashings, casperSlashings, voluntaryExits);
     ObservableBeaconState initialObservedState =
         ObservableBeaconStateTestUtil.createInitialState(random, specHelpers, pendingOperations);
     BeaconState initialState = initialObservedState.getLatestSlotState();
@@ -114,42 +115,46 @@ public class BeaconChainProposerTest {
 
     Mockito.verify(pendingOperations)
         .peekAggregatedAttestations(
-            specHelpers.getChainSpec().getMaxAttestations(),
+            specHelpers.getConstants().getMaxAttestations(),
             initialState
                 .getSlot()
-                .minus(specHelpers.getChainSpec().getMinAttestationInclusionDelay()));
+                .minus(specHelpers.getConstants().getMinAttestationInclusionDelay())
+                .minus(specHelpers.getConstants().getSlotsPerEpoch()),
+            initialState
+                .getSlot()
+                .minus(specHelpers.getConstants().getMinAttestationInclusionDelay()));
 
     Mockito.verify(pendingOperations)
-        .peekProposerSlashings(specHelpers.getChainSpec().getMaxProposerSlashings());
+        .peekProposerSlashings(specHelpers.getConstants().getMaxProposerSlashings());
     Mockito.verify(pendingOperations)
-        .peekAttesterSlashings(specHelpers.getChainSpec().getMaxAttesterSlashings());
-    Mockito.verify(pendingOperations).peekExits(specHelpers.getChainSpec().getMaxExits());
+        .peekAttesterSlashings(specHelpers.getConstants().getMaxAttesterSlashings());
+    Mockito.verify(pendingOperations).peekExits(specHelpers.getConstants().getMaxVoluntaryExits());
 
     BeaconStateEx stateAfterBlock =
-        perBlockTransition.apply(new BeaconStateEx(initialState, Hash32.ZERO), block);
+        perBlockTransition.apply(new BeaconStateExImpl(initialState, Hash32.ZERO), block);
 
     Assert.assertEquals(
-        specHelpers.hash_tree_root(stateAfterBlock.getCanonicalState()), block.getStateRoot());
+        specHelpers.hash_tree_root(stateAfterBlock), block.getStateRoot());
     Assert.assertTrue(verifySignature(specHelpers, initialState, block, signer));
 
     Assert.assertEquals(attestations, block.getBody().getAttestations().listCopy());
     Assert.assertEquals(proposerSlashings, block.getBody().getProposerSlashings().listCopy());
     Assert.assertEquals(casperSlashings, block.getBody().getAttesterSlashings().listCopy());
-    Assert.assertEquals(exits, block.getBody().getExits().listCopy());
+    Assert.assertEquals(voluntaryExits, block.getBody().getExits().listCopy());
   }
 
   @Test
   public void proposeABlockWithDeposits() {
     Random random = new Random();
 
-    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT, () -> 0L);
+    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(SpecConstants.DEFAULT);
 
     List<Deposit> deposits =
         DepositTestUtil.createRandomList(
             random,
-            specHelpers.getChainSpec(),
+            specHelpers.getConstants(),
             UInt64.ZERO,
-            specHelpers.getChainSpec().getMaxDeposits());
+            specHelpers.getConstants().getMaxDeposits());
     Eth1Data eth1Data = Eth1DataTestUtil.createRandom(random);
     List<DepositInfo> depositInfos =
         deposits.stream()
@@ -173,15 +178,15 @@ public class BeaconChainProposerTest {
 
     Mockito.verify(depositContract)
         .peekDeposits(
-            Mockito.eq(specHelpers.getChainSpec().getMaxDeposits()),
+            Mockito.eq(specHelpers.getConstants().getMaxDeposits()),
             Mockito.any(),
             Mockito.eq(initialState.getLatestEth1Data()));
 
     BeaconStateEx stateAfterBlock =
-        perBlockTransition.apply(new BeaconStateEx(initialState, Hash32.ZERO), block);
+        perBlockTransition.apply(new BeaconStateExImpl(initialState, Hash32.ZERO), block);
 
     Assert.assertEquals(
-        specHelpers.hash_tree_root(stateAfterBlock.getCanonicalState()), block.getStateRoot());
+        specHelpers.hash_tree_root(stateAfterBlock), block.getStateRoot());
     Assert.assertTrue(verifySignature(specHelpers, initialState, block, signer));
 
     Assert.assertEquals(
@@ -194,7 +199,7 @@ public class BeaconChainProposerTest {
   public void proposeABlockWithEpochTransition() {
     Random random = new Random();
 
-    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT, () -> 0L);
+    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(SpecConstants.DEFAULT);
     DepositContract depositContract =
         DepositContractTestUtil.mockDepositContract(random, Collections.emptyList());
     BlockTransition<BeaconStateEx> perBlockTransition =
@@ -203,9 +208,9 @@ public class BeaconChainProposerTest {
     final Eth1Data eth1Data = Eth1DataTestUtil.createRandom(random);
     StateTransition<BeaconStateEx> perEpochTransition =
         source -> {
-          MutableBeaconState newState = source.getCanonicalState().createMutableCopy();
+          MutableBeaconState newState = source.createMutableCopy();
           newState.setLatestEth1Data(eth1Data);
-          return new BeaconStateEx(newState, source.getLatestChainBlockHash());
+          return new BeaconStateExImpl(newState, source.getHeadBlockHash());
         };
 
     BeaconChainProposer proposer =
@@ -218,22 +223,22 @@ public class BeaconChainProposerTest {
     // set slot to the end of the epoch
     MutableBeaconState modifiedState =
         initialObservedState.getLatestSlotState().createMutableCopy();
-    modifiedState.setSlot(specHelpers.getChainSpec().getEpochLength().decrement());
+    modifiedState.setSlot(specHelpers.getConstants().getSlotsPerEpoch().decrement());
 
     ObservableBeaconState endOfTheEpoch =
         new ObservableBeaconState(
             initialObservedState.getHead(),
-            modifiedState,
+            new BeaconStateExImpl(modifiedState, Hash32.ZERO),
             initialObservedState.getPendingOperations());
 
     BeaconBlock block = proposer.propose(endOfTheEpoch, signer);
 
     BeaconStateEx stateAfterBlock =
-        perBlockTransition.apply(new BeaconStateEx(modifiedState, Hash32.ZERO), block);
+        perBlockTransition.apply(new BeaconStateExImpl(modifiedState, Hash32.ZERO), block);
     BeaconStateEx stateAfterEpoch = perEpochTransition.apply(stateAfterBlock);
 
     Assert.assertEquals(
-        specHelpers.hash_tree_root(stateAfterEpoch.getCanonicalState()), block.getStateRoot());
+        specHelpers.hash_tree_root(stateAfterEpoch), block.getStateRoot());
     Assert.assertTrue(verifySignature(specHelpers, modifiedState, block, signer));
   }
 
@@ -243,14 +248,15 @@ public class BeaconChainProposerTest {
       BeaconBlock block,
       MessageSigner<BLSSignature> signer) {
 
-    ProposalSignedData signedData =
-        new ProposalSignedData(
+    Proposal signedData =
+        new Proposal(
             initialState.getSlot(),
-            specHelpers.getChainSpec().getBeaconChainShardNumber(),
-            specHelpers.hash_tree_root(block.withoutSignature()));
+            specHelpers.getConstants().getBeaconChainShardNumber(),
+            specHelpers.signed_root(block, "signature"),
+            block.getSignature());
     BLSSignature expectedSignature =
         signer.sign(
-            specHelpers.hash_tree_root(signedData),
+            specHelpers.signed_root(signedData,"signature"),
             specHelpers.get_domain(
                 initialState.getForkData(),
                 specHelpers.get_current_epoch(initialState),

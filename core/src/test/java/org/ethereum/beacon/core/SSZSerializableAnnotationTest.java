@@ -11,20 +11,22 @@ import java.util.List;
 import java.util.Set;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
-import org.ethereum.beacon.core.operations.Exit;
+import org.ethereum.beacon.core.operations.Transfer;
+import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustodyBit;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
-import org.ethereum.beacon.core.operations.slashing.ProposalSignedData;
+import org.ethereum.beacon.core.operations.slashing.Proposal;
 import org.ethereum.beacon.core.operations.slashing.SlashableAttestation;
 import org.ethereum.beacon.core.state.BeaconStateImpl;
-import org.ethereum.beacon.core.state.CrosslinkRecord;
+import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Eth1DataVote;
 import org.ethereum.beacon.core.state.ForkData;
+import org.ethereum.beacon.core.state.ImmutableBeaconStateImpl;
 import org.ethereum.beacon.core.state.PendingAttestationRecord;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
@@ -121,13 +123,14 @@ public class SSZSerializableAnnotationTest {
                 BeaconBlock.class,
                 BeaconBlockBody.class,
                 BeaconStateImpl.class,
+                ImmutableBeaconStateImpl.class,
                 Deposit.class,
                 DepositData.class,
                 DepositInput.class,
-                Exit.class,
-                ProposalSignedData.class,
+                VoluntaryExit.class,
+                Proposal.class,
                 ProposerSlashing.class,
-                CrosslinkRecord.class,
+                Crosslink.class,
                 Eth1DataVote.class,
                 ForkData.class,
                 PendingAttestationRecord.class,
@@ -144,7 +147,8 @@ public class SSZSerializableAnnotationTest {
                 SlotNumber.class,
                 Time.class,
                 Millis.class,
-                ValidatorIndex.class));
+                ValidatorIndex.class,
+                Transfer.class));
     Class[] allClasses = getClasses("org.ethereum.beacon.core");
 
     for (Class clazz : allClasses) {

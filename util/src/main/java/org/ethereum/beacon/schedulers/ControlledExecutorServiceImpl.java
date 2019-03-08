@@ -23,6 +23,9 @@ public class ControlledExecutorServiceImpl implements ControlledExecutorService 
     long targetTime;
 
     public ScheduledTask(Callable<V> callable, long targetTime) {
+      if (targetTime < getCurrentTime()) {
+        throw new IllegalStateException("Invalid target time: " + targetTime + " < " + getCurrentTime());
+      }
       this.callable = callable;
       this.targetTime = targetTime;
     }
@@ -137,6 +140,9 @@ public class ControlledExecutorServiceImpl implements ControlledExecutorService 
 
   @Override
   public <V> ScheduledFuture<V> schedule(Callable<V> callable, long delay, TimeUnit unit) {
+    if (delay < 0) {
+      delay = 0;
+    }
     ScheduledTask<V> scheduledTask = new ScheduledTask<>(callable, currentTime + unit.toMillis(delay));
     tasks.add(scheduledTask);
     return scheduledTask.future;

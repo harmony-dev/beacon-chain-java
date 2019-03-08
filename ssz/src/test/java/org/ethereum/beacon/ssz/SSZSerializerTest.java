@@ -207,7 +207,7 @@ public class SSZSerializerTest {
   public void shouldWorkLikeCavaWithObjects() {
     Bytes bytes =
         fromHexString(
-            "0x00000003426F62040000000000000000000000000000000000000000000000000000011F71B70768");
+            "0x03000000426F62046807B7711F010000000000000000000000000000000000000000000000000000");
     SomeObject readObject =
         SSZ.decode(bytes, r -> new SomeObject(r.readString(), r.readInt8(), r.readBigInteger(256)));
 

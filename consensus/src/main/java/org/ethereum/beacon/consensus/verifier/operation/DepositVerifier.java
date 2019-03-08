@@ -9,7 +9,6 @@ import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
-import org.ethereum.beacon.core.spec.ChainSpec;
 import org.ethereum.beacon.ssz.Serializer;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
@@ -24,13 +23,11 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
  */
 public class DepositVerifier implements OperationVerifier<Deposit> {
 
-  private final ChainSpec chainSpec;
-  private final SpecHelpers specHelpers;
+  private final SpecHelpers spec;
   private final Serializer ssz = Serializer.annotationSerializer();
 
-  public DepositVerifier(ChainSpec chainSpec, SpecHelpers specHelpers) {
-    this.chainSpec = chainSpec;
-    this.specHelpers = specHelpers;
+  public DepositVerifier(SpecHelpers spec) {
+    this.spec = spec;
   }
 
   BytesValue serialize(DepositData depositData) {
@@ -49,12 +46,12 @@ public class DepositVerifier implements OperationVerifier<Deposit> {
   @Override
   public VerificationResult verify(Deposit deposit, BeaconState state) {
     BytesValue serializedDepositData = serialize(deposit.getDepositData());
-    Hash32 serializedDataHash = specHelpers.hash(serializedDepositData);
+    Hash32 serializedDataHash = spec.hash(serializedDepositData);
 
-    if (!specHelpers.verify_merkle_branch(
+    if (!spec.verify_merkle_branch(
         serializedDataHash,
         deposit.getBranch(),
-        chainSpec.getDepositContractTreeDepth(),
+        spec.getConstants().getDepositContractTreeDepth(),
         deposit.getIndex(),
         state.getLatestEth1Data().getDepositRoot())) {
 

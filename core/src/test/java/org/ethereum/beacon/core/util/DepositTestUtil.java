@@ -7,7 +7,7 @@ import java.util.Random;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
-import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Time;
@@ -20,7 +20,7 @@ public abstract class DepositTestUtil {
   private DepositTestUtil() {}
 
   public static List<Deposit> createRandomList(
-      Random random, ChainSpec spec, UInt64 startIndex, int maxCount) {
+      Random random, SpecConstants spec, UInt64 startIndex, int maxCount) {
     List<Deposit> deposits = new ArrayList<>();
     int count = Math.abs(random.nextInt()) % maxCount + 1;
     for (int i = 0; i < count; i++) {
@@ -29,7 +29,7 @@ public abstract class DepositTestUtil {
     return deposits;
   }
 
-  public static Deposit createRandom(Random random, ChainSpec spec, UInt64 depositIndex) {
+  public static Deposit createRandom(Random random, SpecConstants spec, UInt64 depositIndex) {
     DepositInput depositInput =
         new DepositInput(
             BLSPubkey.wrap(Bytes48.random(random)),

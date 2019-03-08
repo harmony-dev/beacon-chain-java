@@ -7,7 +7,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import org.ethereum.beacon.schedulers.Scheduler;
+import org.ethereum.beacon.schedulers.LatestExecutor;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.core.Block;
 import org.ethereum.core.Blockchain;
@@ -33,7 +33,7 @@ public class EthereumJDepositContract extends AbstractDepositContract {
   private static final String DEPOSIT_EVENT_NAME = "Deposit";
   private static final String CHAIN_START_EVENT_NAME = "ChainStart";
 
-  private final Scheduler blockExecutor;
+  private final LatestExecutor<Long> blockExecutor;
 
   private final Ethereum ethereum;
   private final Address contractDeployAddress;
@@ -42,7 +42,6 @@ public class EthereumJDepositContract extends AbstractDepositContract {
   private final Bloom contractAddressBloom;
   private final Contract contract;
 
-  private volatile long bestConfirmedBlock = 0;
   private volatile long processedUpToBlock;
   private boolean chainStartComplete;
 
@@ -57,7 +56,7 @@ public class EthereumJDepositContract extends AbstractDepositContract {
     this.contract = new Contract(ContractAbi.getContractAbi());
     this.contractDeployBlock = contractDeployBlock;
     processedUpToBlock = contractDeployBlock;
-    blockExecutor = this.schedulers.blocking();
+    blockExecutor = new LatestExecutor<>(this.schedulers.blocking(), this::processBlocksUpTo);
   }
 
   @Override
@@ -93,11 +92,12 @@ public class EthereumJDepositContract extends AbstractDepositContract {
   }
 
   private void processConfirmedBlocks() {
-    bestConfirmedBlock = ethereum.getBlockchain().getBestBlock().getNumber() - getDistanceFromHead();
-    blockExecutor.execute(this::processBlocksUpTo);
+    long bestConfirmedBlock =
+        ethereum.getBlockchain().getBestBlock().getNumber() - getDistanceFromHead();
+    blockExecutor.newEvent(bestConfirmedBlock);
   }
 
-  private void processBlocksUpTo() {
+  private void processBlocksUpTo(long bestConfirmedBlock) {
     try {
       for (long number = processedUpToBlock; number < bestConfirmedBlock; number++) {
         Block block = ethereum.getBlockchain().getBlockByNumber(number);

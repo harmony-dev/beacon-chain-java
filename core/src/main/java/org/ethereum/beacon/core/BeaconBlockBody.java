@@ -7,7 +7,8 @@ import java.util.ArrayList;
 import java.util.List;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
-import org.ethereum.beacon.core.operations.Exit;
+import org.ethereum.beacon.core.operations.Transfer;
+import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.ssz.annotation.SSZ;
@@ -35,6 +36,7 @@ public class BeaconBlockBody {
           emptyList(),
           emptyList(),
           emptyList(),
+          emptyList(),
           emptyList());
 
   /** A list of proposer slashing challenges. */
@@ -46,18 +48,23 @@ public class BeaconBlockBody {
   /** A list of validator deposit proofs. */
   @SSZ private final List<Deposit> depositsList;
   /** A list of validator exits. */
-  @SSZ private final List<Exit> exitsList;
+  @SSZ private final List<VoluntaryExit> exitsList;
+  /** A list of transfers. */
+  @SSZ private final List<Transfer> transferList;
 
   public BeaconBlockBody(
       List<ProposerSlashing> proposerSlashings,
       List<AttesterSlashing> attesterSlashings,
       List<Attestation> attestations,
-      List<Deposit> deposits, List<Exit> exits) {
+      List<Deposit> deposits,
+      List<VoluntaryExit> voluntaryExits,
+      List<Transfer> transfers) {
     this.proposerSlashingsList = new ArrayList<>(proposerSlashings);
     this.attesterSlashingsList = new ArrayList<>(attesterSlashings);
     this.attestationsList = new ArrayList<>(attestations);
     this.depositsList = new ArrayList<>(deposits);
-    this.exitsList = new ArrayList<>(exits);
+    this.exitsList = new ArrayList<>(voluntaryExits);
+    this.transferList = new ArrayList<>(transfers);
   }
 
   public ReadList<Integer, ProposerSlashing> getProposerSlashings() {
@@ -76,8 +83,12 @@ public class BeaconBlockBody {
     return WriteList.wrap(depositsList, Integer::intValue);
   }
 
-  public ReadList<Integer, Exit> getExits() {
+  public ReadList<Integer, VoluntaryExit> getExits() {
     return WriteList.wrap(exitsList, Integer::intValue);
+  }
+
+  public ReadList<Integer, Transfer> getTransfers() {
+    return WriteList.wrap(transferList, Integer::intValue);
   }
 
   /**
@@ -111,8 +122,15 @@ public class BeaconBlockBody {
   /**
    * @deprecated for serialization only
    */
-  public List<Exit> getExitsList() {
+  public List<VoluntaryExit> getExitsList() {
     return exitsList;
+  }
+
+  /**
+   * @deprecated for serialization only
+   */
+  public List<Transfer> getTransferList() {
+    return transferList;
   }
 
   @Override

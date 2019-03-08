@@ -1,0 +1,34 @@
+config:
+  db: file://db
+  validator:
+    contract:
+      handler: ethereumj
+      distanceFromHead: 1000
+      contractAddress: 0xd47c61f2c25aaa677dcf23e65765fac04c85d6a0
+      contractBlock: 8000000
+      contractAbi: file://Contract.abi
+    signer:
+      implementation:
+        class: InsecureBLS381MessageSigner
+        input:
+          pubKey: 1
+          privKey: 1
+plan:
+  sync:
+    - action: run
+  validator:
+    - action: deposit
+      creator: ethereumj
+      sender: ethereumj
+      gasLimit: 2000000
+      eth1From: 0xf8cfd0257cd454bf0b05412eb3037e604aafe324
+      eth1PrivKey: 0x3564c032070e518026e47b32b6d34bca57c192d56f62e41b33e4b952e7b04d7a
+      withdrawalCredentials: 0xd47c61f2c25bbb677dcf23e65765fac04c85d6a0
+      amount: 32
+
+    - action: run
+
+    - action: simulate
+      peersConfigs:
+        - peersCount: 8
+          validator: true

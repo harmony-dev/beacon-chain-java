@@ -1,6 +1,6 @@
 package org.ethereum.beacon.core;
 
-import org.ethereum.beacon.core.state.CrosslinkRecord;
+import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Eth1DataVote;
 import org.ethereum.beacon.core.state.ForkData;
@@ -36,17 +36,17 @@ public interface MutableBeaconState extends BeaconState {
   @Override
   WriteList<EpochNumber, Hash32> getLatestRandaoMixes();
 
-  void setPreviousEpochStartShard(ShardNumber previousEpochStartShard);
+  void setPreviousShufflingStartShard(ShardNumber previousShufflingStartShard);
 
-  void setCurrentEpochStartShard(ShardNumber currentEpochStartShard);
+  void setCurrentShufflingStartShard(ShardNumber currentShufflingStartShard);
 
-  void setPreviousCalculationEpoch(EpochNumber previousCalculationEpoch);
+  void setPreviousShufflingEpoch(EpochNumber previousShufflingEpoch);
 
-  void setCurrentCalculationEpoch(EpochNumber currentCalculationEpoch);
+  void setCurrentShufflingEpoch(EpochNumber currentShufflingEpoch);
 
-  void setPreviousEpochSeed(Hash32 previousEpochRandaoMix);
+  void setPreviousShufflingSeed(Hash32 previousEpochRandaoMix);
 
-  void setCurrentEpochSeed(Hash32 currentEpochRandaoMix);
+  void setCurrentShufflingSeed(Hash32 currentEpochRandaoMix);
 
   void setPreviousJustifiedEpoch(EpochNumber previousJustifiedEpoch);
 
@@ -57,16 +57,16 @@ public interface MutableBeaconState extends BeaconState {
   void setFinalizedEpoch(EpochNumber finalizedEpoch);
 
   @Override
-  WriteList<ShardNumber, CrosslinkRecord> getLatestCrosslinks();
+  WriteList<ShardNumber, Crosslink> getLatestCrosslinks();
 
   @Override
   WriteList<SlotNumber, Hash32> getLatestBlockRoots();
 
   @Override
-  WriteList<EpochNumber, Hash32> getLatestIndexRoots();
+  WriteList<EpochNumber, Hash32> getLatestActiveIndexRoots();
 
   @Override
-  WriteList<EpochNumber, Gwei> getLatestPenalizedBalances();
+  WriteList<EpochNumber, Gwei> getLatestSlashedBalances();
 
   @Override
   WriteList<Integer, PendingAttestationRecord> getLatestAttestations();
@@ -78,6 +78,8 @@ public interface MutableBeaconState extends BeaconState {
 
   @Override
   WriteList<Integer, Eth1DataVote> getEth1DataVotes();
+
+  void setDepositIndex(UInt64 depositIndex);
 
   BeaconState createImmutable();
 }

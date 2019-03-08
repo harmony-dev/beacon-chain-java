@@ -1,17 +1,17 @@
 package org.ethereum.beacon.pow.validator;
 
+import java.util.Collections;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
+import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.BlockTransition;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.StateTransition;
-import org.ethereum.beacon.consensus.transition.BeaconStateEx;
 import org.ethereum.beacon.consensus.transition.PerBlockTransition;
 import org.ethereum.beacon.consensus.transition.PerEpochTransition;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.state.ValidatorRecord;
-import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
@@ -21,10 +21,10 @@ import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.ssz.Serializer;
 import org.ethereum.beacon.validator.BeaconChainAttester;
 import org.ethereum.beacon.validator.BeaconChainProposer;
-import org.ethereum.beacon.validator.BeaconChainValidator;
+import org.ethereum.beacon.validator.MultiValidatorService;
 import org.ethereum.beacon.validator.ValidatorService;
 import org.ethereum.beacon.validator.attester.BeaconChainAttesterImpl;
-import org.ethereum.beacon.validator.crypto.MessageSigner;
+import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import org.ethereum.beacon.validator.proposer.BeaconChainProposerImpl;
 import org.reactivestreams.Publisher;
 import reactor.core.Disposable;
@@ -41,6 +41,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import static java.util.Collections.singletonList;
 import static org.ethereum.beacon.core.spec.SignatureDomains.DEPOSIT;
 
 public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationService {
@@ -51,7 +52,7 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
   private final SingleValueSource<RegistrationStage> stagePersistence;
   private final Schedulers schedulers;
 
-  private final SpecHelpers specHelpers;
+  private final SpecHelpers spec;
   private final Serializer sszSerializer;
 
   private Disposable depositSubscription = null;
@@ -60,8 +61,7 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
   private ValidatorRecord validatorRecord = null;
 
   // Validator
-  private MessageSigner<BLSSignature> signer;
-  private BLSPubkey pubKey;
+  private BLS381Credentials blsCredentials;
   private Hash32 withdrawalCredentials = null;
   private Gwei amount = null;
   private Address eth1From = null;
@@ -75,28 +75,25 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
       DepositContract depositContract,
       Publisher<ObservableBeaconState> observablePublisher,
       SingleValueSource<RegistrationStage> registrationStagePersistence,
-      SpecHelpers specHelpers,
+      SpecHelpers spec,
       Schedulers schedulers) {
     this.transactionBuilder = transactionBuilder;
     this.transactionGateway = transactionGateway;
     this.depositContract = depositContract;
     this.observablePublisher = observablePublisher;
     this.stagePersistence = registrationStagePersistence;
-    this.specHelpers = specHelpers;
+    this.spec = spec;
     this.schedulers = schedulers;
     sszSerializer = Serializer.annotationSerializer();
   }
 
   @Override
   public void start(
-      MessageSigner<BLSSignature> signer,
-      BLSPubkey pubKey,
+      BLS381Credentials credentials,
       @Nullable Hash32 withdrawalCredentials,
       @Nullable Gwei amount,
       @Nullable Address eth1From,
       @Nullable BytesValue eth1PrivKey) {
-    this.signer = signer;
-    this.pubKey = pubKey;
     this.executor =
         Executors.newSingleThreadExecutor(
             runnable -> {
@@ -137,15 +134,15 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
     BeaconState latestState = getLatestState();
     Optional<ValidatorRecord> validatorRecordOptional =
         latestState.getValidatorRegistry().stream()
-            .filter(record -> record.getPubKey().equals(pubKey))
+            .filter(record -> record.getPubKey().equals(blsCredentials.getPubkey()))
             .findFirst();
     if (!validatorRecordOptional.isPresent()) {
       return Optional.empty();
     }
 
     this.validatorRecord = validatorRecordOptional.get();
-    EpochNumber currentEpoch = specHelpers.get_current_epoch(latestState);
-    if (specHelpers.is_active_validator(validatorRecord, currentEpoch)) {
+    EpochNumber currentEpoch = spec.get_current_epoch(latestState);
+    if (spec.is_active_validator(validatorRecord, currentEpoch)) {
       return Optional.of(RegistrationStage.VALIDATOR_START);
     } else {
       return Optional.of(RegistrationStage.AWAIT_ACTIVATION);
@@ -187,8 +184,8 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
         .subscribe(
             observableBeaconState -> {
               BeaconState latestState = observableBeaconState.getLatestSlotState();
-              EpochNumber currentEpoch = specHelpers.get_current_epoch(latestState);
-              if (specHelpers.is_active_validator(validatorRecord, currentEpoch)) {
+              EpochNumber currentEpoch = spec.get_current_epoch(latestState);
+              if (spec.is_active_validator(validatorRecord, currentEpoch)) {
                 changeCurrentStage(RegistrationStage.VALIDATOR_START);
               }
             });
@@ -196,20 +193,24 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
 
   private void startValidator() {
     if (validatorService == null) {
-      BlockTransition<BeaconStateEx> blockTransition = new PerBlockTransition(specHelpers);
-      StateTransition<BeaconStateEx> epochTransition = new PerEpochTransition(specHelpers);
+      BlockTransition<BeaconStateEx> blockTransition = new PerBlockTransition(spec);
+      StateTransition<BeaconStateEx> epochTransition = new PerEpochTransition(spec);
       BeaconChainProposer proposer =
           new BeaconChainProposerImpl(
-              specHelpers,
-              specHelpers.getChainSpec(),
+              spec,
               blockTransition,
               epochTransition,
               depositContract);
       BeaconChainAttester attester =
-          new BeaconChainAttesterImpl(specHelpers, specHelpers.getChainSpec());
+          new BeaconChainAttesterImpl(spec);
       validatorService =
-          new BeaconChainValidator(
-              pubKey, proposer, attester, specHelpers, signer, observablePublisher, schedulers);
+          new MultiValidatorService(
+              singletonList(blsCredentials),
+              proposer,
+              attester,
+              spec,
+              observablePublisher,
+              schedulers);
       validatorService.start();
       changeCurrentStage(RegistrationStage.COMPLETE);
     }
@@ -239,7 +240,7 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
                                   getLatestState().getValidatorRegistry().stream()
                                       .filter(
                                           record -> {
-                                            return record.getPubKey().equals(pubKey);
+                                            return record.getPubKey().equals(blsCredentials.getPubkey());
                                           })
                                       .findFirst()
                                       .get();
@@ -257,7 +258,7 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
 
   private Optional<Deposit> onDeposit(Deposit deposit) {
     return Optional.of(deposit)
-        .filter(d -> d.getDepositData().getDepositInput().getPubKey().equals(pubKey));
+        .filter(d -> d.getDepositData().getDepositInput().getPubKey().equals(blsCredentials.getPubkey()));
   }
 
   private CompletableFuture<TransactionGateway.TxStatus> submitDeposit(
@@ -274,17 +275,17 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
     // object.
     //    Set deposit_input.proof_of_possession = EMPTY_SIGNATURE.
     DepositInput preDepositInput =
-        new DepositInput(pubKey, withdrawalCredentials, BLSSignature.ZERO);
+        new DepositInput(blsCredentials.getPubkey(), withdrawalCredentials, BLSSignature.ZERO);
     // Let proof_of_possession be the result of bls_sign of the hash_tree_root(deposit_input) with
     // domain=DOMAIN_DEPOSIT.
-    Hash32 hash = specHelpers.hash_tree_root(preDepositInput);
+    Hash32 hash = spec.signed_root(preDepositInput, "proofOfPossession");
     BeaconState latestState = getLatestState();
     Bytes8 domain =
-        specHelpers.get_domain(
-            latestState.getForkData(), specHelpers.get_current_epoch(latestState), DEPOSIT);
-    BLSSignature signature = signer.sign(hash, domain);
+        spec.get_domain(
+            latestState.getForkData(), spec.get_current_epoch(latestState), DEPOSIT);
+    BLSSignature signature = blsCredentials.getSigner().sign(hash, domain);
     // Set deposit_input.proof_of_possession = proof_of_possession.
-    DepositInput depositInput = new DepositInput(pubKey, withdrawalCredentials, signature);
+    DepositInput depositInput = new DepositInput(blsCredentials.getPubkey(), withdrawalCredentials, signature);
 
     return depositInput;
   }
@@ -298,17 +299,17 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
       Address eth1From, BytesValue eth1PrivKey, DepositInput depositInput, Gwei amount) {
     // Let amount be the amount in Gwei to be deposited by the validator where MIN_DEPOSIT_AMOUNT <=
     // amount <= MAX_DEPOSIT_AMOUNT.
-    if (amount.compareTo(specHelpers.getChainSpec().getMinDepositAmount()) < 0) {
+    if (amount.compareTo(spec.getConstants().getMinDepositAmount()) < 0) {
       throw new RuntimeException(
           String.format(
               "Deposit amount should be equal or greater than %s (defined by spec)",
-              specHelpers.getChainSpec().getMinDepositAmount()));
+              spec.getConstants().getMinDepositAmount()));
     }
-    if (amount.compareTo(specHelpers.getChainSpec().getMaxDepositAmount()) > 0) {
+    if (amount.compareTo(spec.getConstants().getMaxDepositAmount()) > 0) {
       throw new RuntimeException(
           String.format(
               "Deposit amount should be equal or less than %s (defined by spec)",
-              specHelpers.getChainSpec().getMaxDepositAmount()));
+              spec.getConstants().getMaxDepositAmount()));
     }
     // Send a transaction on the Ethereum 1.0 chain to DEPOSIT_CONTRACT_ADDRESS executing deposit
     // along with serialize(deposit_input) as the singular bytes input along with a deposit amount

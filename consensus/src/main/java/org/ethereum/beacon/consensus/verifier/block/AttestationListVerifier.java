@@ -2,7 +2,7 @@ package org.ethereum.beacon.consensus.verifier.block;
 
 import org.ethereum.beacon.consensus.verifier.OperationVerifier;
 import org.ethereum.beacon.core.operations.Attestation;
-import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.spec.SpecConstants;
 
 /**
  * Verifies attestation list.
@@ -12,11 +12,11 @@ import org.ethereum.beacon.core.spec.ChainSpec;
 public class AttestationListVerifier extends OperationListVerifier<Attestation> {
 
   public AttestationListVerifier(
-      OperationVerifier<Attestation> operationVerifier, ChainSpec chainSpec) {
+      OperationVerifier<Attestation> operationVerifier, SpecConstants specConstants) {
     super(
         operationVerifier,
         block -> block.getBody().getAttestations(),
-        chainSpec.getMaxAttestations());
+        specConstants.getMaxAttestations());
   }
 
   @Override

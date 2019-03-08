@@ -2,18 +2,18 @@ package org.ethereum.beacon.chain.observer;
 
 import com.google.common.base.Objects;
 import javax.annotation.Nullable;
+import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.core.BeaconBlock;
-import org.ethereum.beacon.core.BeaconState;
 
 /** An observable chain state. */
 public class ObservableBeaconState {
   private final BeaconBlock head;
-  private final BeaconState latestSlotState;
+  private final BeaconStateEx latestSlotState;
   private final PendingOperations pendingOperations;
 
   public ObservableBeaconState(
-      BeaconBlock head, BeaconState latestSlotState, PendingOperations pendingOperations) {
+      BeaconBlock head, BeaconStateEx latestSlotState, PendingOperations pendingOperations) {
     this.head = head;
     this.latestSlotState = latestSlotState;
     this.pendingOperations = pendingOperations;
@@ -23,7 +23,7 @@ public class ObservableBeaconState {
     return head;
   }
 
-  public BeaconState getLatestSlotState() {
+  public BeaconStateEx getLatestSlotState() {
     return latestSlotState;
   }
 
@@ -67,8 +67,8 @@ public class ObservableBeaconState {
         + (spec != null ? spec.hash_tree_root(head).toStringShort() : head.toString(null ,null, null))
         + ", latestState: "
         + committee
-        + latestSlotState.toStringShort(spec == null ? null : spec.getChainSpec())
-        + ", pendingOps: " + getPendingOperations().toStringMedium(spec == null ? null : spec.getChainSpec())
+        + latestSlotState.toStringShort(spec == null ? null : spec.getConstants())
+        + ", pendingOps: " + getPendingOperations().toStringMedium(spec == null ? null : spec.getConstants())
         + "]";
   }
 }

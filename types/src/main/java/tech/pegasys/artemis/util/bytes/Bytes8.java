@@ -51,6 +51,26 @@ public interface Bytes8 extends BytesValue {
   }
 
   /**
+   * Converts long to little-endian Bytes8.
+   *
+   * @param seed  converted
+   * @return      converted Bytes8
+   * @throws IllegalArgumentException if seed is a negative value.
+   */
+  static Bytes8 longToBytes8LittleEndian(long seed) {
+    byte[] bytes = new byte[8];
+    bytes[0] = (byte) seed;
+    bytes[1] = (byte) (seed >> 8);
+    bytes[2] = (byte) (seed >> 16);
+    bytes[3] = (byte) (seed >> 24);
+    bytes[4] = (byte) (seed >> 32);
+    bytes[5] = (byte) (seed >> 40);
+    bytes[6] = (byte) (seed >> 48);
+    bytes[7] = (byte) (seed >> 56);
+    return Bytes8.wrap(bytes);
+  }
+
+  /**
    * Wraps the provided byte array, which must be of length 8, as a {@link Bytes8}.
    *
    * <p>

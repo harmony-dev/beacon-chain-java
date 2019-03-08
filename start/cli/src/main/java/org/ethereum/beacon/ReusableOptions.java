@@ -4,7 +4,7 @@ import org.apache.logging.log4j.Level;
 import org.ethereum.beacon.emulator.config.Config;
 import org.ethereum.beacon.emulator.config.ConfigBuilder;
 import org.ethereum.beacon.emulator.config.YamlPrinter;
-import org.ethereum.beacon.emulator.config.chainspec.ChainSpecData;
+import org.ethereum.beacon.emulator.config.chainspec.Spec;
 import org.ethereum.beacon.emulator.config.main.MainConfig;
 import org.javatuples.Pair;
 import picocli.CommandLine;
@@ -21,53 +21,55 @@ import java.util.Map;
 
 public class ReusableOptions {
 
-  static final String VERSION = "0.1b";
-  private static final Map<Integer, Level> LOG_LEVELS = new HashMap<>();
+  static final String VERSION = "0.1.0";
+  private static final Map<LogLevel, Level> LOG_LEVELS = new HashMap<>();
 
   static {
-    LOG_LEVELS.put(0, Level.OFF);
-    LOG_LEVELS.put(1, Level.FATAL);
-    LOG_LEVELS.put(2, Level.ERROR);
-    LOG_LEVELS.put(3, Level.WARN);
-    LOG_LEVELS.put(4, Level.INFO);
-    LOG_LEVELS.put(5, Level.DEBUG);
-    LOG_LEVELS.put(6, Level.TRACE);
-    LOG_LEVELS.put(7, Level.ALL);
+    LOG_LEVELS.put(LogLevel.all, Level.ALL);
+    LOG_LEVELS.put(LogLevel.debug, Level.DEBUG);
+    LOG_LEVELS.put(LogLevel.info, Level.INFO);
+    LOG_LEVELS.put(LogLevel.error, Level.ERROR);
   }
 
   @CommandLine.Option(
-      names = {"-c", "--config"},
-      paramLabel = "CONFIG",
+      order = 0,
+      names = {"--config"},
+      paramLabel = "config.yml",
       description =
-          "YAML config file.\nAll options that are not set will be loaded from default config.")
-  File[] configs;
-  @CommandLine.Option(
-      names = {"-cs", "--save-config"},
-      paramLabel = "SAVE-CONFIG",
-      description =
-          "Saves merged configuration to file in YAML format")
-  File config;
+          "A path to a simulator config in YAML format\ndefault config is used if file is not specified")
+  protected File[] configs;
+
+//  @CommandLine.Option(
+//      names = {"-cs", "--save-config"},
+//      paramLabel = "SAVE-CONFIG",
+//      description = "Saves merged configuration to file in YAML format")
+  protected File config;
 
   @CommandLine.Option(
-      names = {"-s", "--spec"},
-      paramLabel = "CHAINSPEC",
+      order = 1,
+      names = {"--spec"},
+      paramLabel = "spec.yml",
       description =
-          "YAML chain specification file.\nFor all specifications that are not set, default values are used.")
-  File[] chainspecs;
-  @CommandLine.Option(
-      names = {"-ss", "--save-spec"},
-      paramLabel = "SAVE-SPEC",
-      description =
-          "Saves merged chain specification to file in YAML format")
-  File chainspec;
+          "A path to YAML file with spec constants\nfor unspecified constants spec defaults are used")
+  protected File[] chainspecs;
+
+//  @CommandLine.Option(
+//      names = {"-ss", "--save-spec"},
+//      paramLabel = "SAVE-SPEC",
+//      description = "Saves merged chain specification to file in YAML format")
+  protected File chainspec;
 
   @CommandLine.Option(
-      names = {"-l", "--loglevel"},
-      paramLabel = "LOG",
-      description = "Sets log level in the range of 0..7 (OFF..ALL), default is 4 (INFO).")
-  Integer logLevel;
-  @CommandLine.Option(names = "-v")
+      order = 2,
+      names = {"--loglevel"},
+      paramLabel = "level",
+      description =
+          "Log verbosity level: all, debug, info, error\ninfo is set by default")
+  LogLevel logLevel;
+
+//  @CommandLine.Option(names = "-v")
   boolean verbose;
+
   List<Pair<String, Object>> configPathValues = new ArrayList<>();
   List<Pair<String, Object>> chainSpecPathValues = new ArrayList<>();
 
@@ -89,8 +91,8 @@ public class ReusableOptions {
     return configBuilder.build();
   }
 
-  private ChainSpecData prepareChainSpec(@Nullable String extraChainSpec) {
-    ConfigBuilder<ChainSpecData> configBuilder = new ConfigBuilder<>(ChainSpecData.class);
+  protected Spec prepareChainSpec(@Nullable String extraChainSpec) {
+    ConfigBuilder<Spec> configBuilder = new ConfigBuilder<>(Spec.class);
     configBuilder.addYamlConfig(
         ClassLoader.class.getResourceAsStream("/config/default-chainSpec.yml"));
     if (extraChainSpec != null) {
@@ -109,14 +111,14 @@ public class ReusableOptions {
     return configBuilder.build();
   }
 
-  Pair<MainConfig, ChainSpecData> prepareAndPrintConfigs(Task action, String extraConfig) {
+  Pair<MainConfig, Spec> prepareAndPrintConfigs(Task action, String extraConfig) {
     return prepareAndPrintConfigs(action, extraConfig, null);
   }
 
-  Pair<MainConfig, ChainSpecData> prepareAndPrintConfigs(
+  Pair<MainConfig, Spec> prepareAndPrintConfigs(
       Task action, String extraConfig, @Nullable String extraChainSpec) {
     MainConfig mainConfig = prepareConfig(extraConfig);
-    ChainSpecData chainSpecData = prepareChainSpec(extraChainSpec);
+    Spec specConstantsData = prepareChainSpec(extraChainSpec);
 
     // Print if needed
     if (action.equals(Task.config)) {
@@ -124,10 +126,10 @@ public class ReusableOptions {
       System.out.println("Main config:");
       System.out.println(new YamlPrinter(mainConfig).getString());
       if (verbose) {
-        System.out.println("Chain specifications:");
-        System.out.println(new YamlPrinter(chainSpecData).getString());
+        System.out.println("Spec constants:");
+        System.out.println(new YamlPrinter(specConstantsData).getString());
       } else {
-        System.out.println("To see chain specifications use verbose `-v` option.");
+//        System.out.println("To see chain specifications use verbose `-v` option.");
       }
     }
 
@@ -138,10 +140,10 @@ public class ReusableOptions {
     }
     if (chainspec != null) {
       System.out.println("Saving chain specification to file: " + chainspec);
-      saveConfigToFile(chainSpecData, chainspec);
+      saveConfigToFile(specConstantsData, chainspec);
     }
 
-    return Pair.with(mainConfig, chainSpecData);
+    return Pair.with(mainConfig, specConstantsData);
   }
 
   // Overrides without prompt
@@ -159,14 +161,7 @@ public class ReusableOptions {
       if (print) {
         System.out.println("Setting log level to " + logLevel);
       }
-      Level res;
-      if (logLevel >= 7) {
-        res = LOG_LEVELS.get(7);
-      } else {
-        res = LOG_LEVELS.get(logLevel);
-      }
-
-      return res;
+      return LOG_LEVELS.get(logLevel);
     }
 
     return null;
@@ -174,6 +169,14 @@ public class ReusableOptions {
 
   enum Task {
     run,
-    config
+    config,
+    spec
+  }
+
+  enum LogLevel {
+    all,
+    debug,
+    info,
+    error
   }
 }

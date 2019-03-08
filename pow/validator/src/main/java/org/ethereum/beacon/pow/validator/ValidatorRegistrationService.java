@@ -4,6 +4,7 @@ import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.validator.ValidatorService;
+import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import org.ethereum.beacon.validator.crypto.MessageSigner;
 import tech.pegasys.artemis.ethereum.core.Address;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -19,8 +20,7 @@ import java.util.Optional;
  */
 public interface ValidatorRegistrationService {
   void start(
-      MessageSigner<BLSSignature> signer,
-      BLSPubkey pubKey,
+      BLS381Credentials credentials,
       @Nullable Hash32 withdrawalCredentials,
       @Nullable Gwei amount,
       @Nullable Address eth1From,

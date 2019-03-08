@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
+import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.types.Bitfield64;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
@@ -16,6 +17,7 @@ import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.collections.WriteList;
+import tech.pegasys.artemis.util.uint.UInt64;
 
 @SSZSerializable
 public class BeaconStateImpl implements MutableBeaconState {
@@ -35,12 +37,12 @@ public class BeaconStateImpl implements MutableBeaconState {
   /* Randomness and committees */
 
   @SSZ private List<Hash32> latestRandaoMixesList = new ArrayList<>();
-  @SSZ private ShardNumber previousEpochStartShard = ShardNumber.ZERO;
-  @SSZ private ShardNumber currentEpochStartShard = ShardNumber.ZERO;
-  @SSZ private EpochNumber previousCalculationEpoch = EpochNumber.ZERO;
-  @SSZ private EpochNumber currentCalculationEpoch = EpochNumber.ZERO;
-  @SSZ private Hash32 previousEpochSeed = Hash32.ZERO;
-  @SSZ private Hash32 currentEpochSeed = Hash32.ZERO;
+  @SSZ private ShardNumber previousShufflingStartShard = ShardNumber.ZERO;
+  @SSZ private ShardNumber currentShufflingStartShard = ShardNumber.ZERO;
+  @SSZ private EpochNumber previousShufflingEpoch = EpochNumber.ZERO;
+  @SSZ private EpochNumber currentShufflingEpoch = EpochNumber.ZERO;
+  @SSZ private Hash32 previousShufflingSeed = Hash32.ZERO;
+  @SSZ private Hash32 currentShufflingSeed = Hash32.ZERO;
 
   /* Finality */
 
@@ -51,10 +53,10 @@ public class BeaconStateImpl implements MutableBeaconState {
 
   /* Recent state */
 
-  @SSZ private List<CrosslinkRecord> latestCrosslinksList = new ArrayList<>();
+  @SSZ private List<Crosslink> latestCrosslinksList = new ArrayList<>();
   @SSZ private List<Hash32> latestBlockRootsList = new ArrayList<>();
-  @SSZ private List<Hash32> latestIndexRootsList = new ArrayList<>();
-  @SSZ private List<Gwei> latestPenalizedBalancesList = new ArrayList<>();
+  @SSZ private List<Hash32> latestActiveIndexRootsList = new ArrayList<>();
+  @SSZ private List<Gwei> latestSlashedBalancesList = new ArrayList<>();
   @SSZ private List<PendingAttestationRecord> latestAttestationsList = new ArrayList<>();
   @SSZ private List<Hash32> batchedBlockRootsList = new ArrayList<>();
 
@@ -62,10 +64,11 @@ public class BeaconStateImpl implements MutableBeaconState {
 
   @SSZ private Eth1Data latestEth1Data = Eth1Data.EMPTY;
   @SSZ private List<Eth1DataVote> eth1DataVotesList = new ArrayList<>();
+  @SSZ private UInt64 depositIndex = UInt64.ZERO;
 
   public BeaconStateImpl() {}
 
-  private BeaconStateImpl(BeaconState state) {
+  BeaconStateImpl(BeaconState state) {
         slot = state.getSlot();
         genesisTime = state.getGenesisTime();
         forkData = state.getForkData();
@@ -75,12 +78,12 @@ public class BeaconStateImpl implements MutableBeaconState {
         validatorRegistryUpdateEpoch = state.getValidatorRegistryUpdateEpoch();
 
         latestRandaoMixesList = state.getLatestRandaoMixes().listCopy();
-        previousEpochStartShard = state.getPreviousEpochStartShard();
-        currentEpochStartShard = state.getCurrentEpochStartShard();
-        previousCalculationEpoch = state.getPreviousCalculationEpoch();
-        currentCalculationEpoch = state.getCurrentCalculationEpoch();
-        previousEpochSeed = state.getPreviousEpochSeed();
-        currentEpochSeed = state.getCurrentEpochSeed();
+        previousShufflingStartShard = state.getPreviousShufflingStartShard();
+        currentShufflingStartShard = state.getCurrentShufflingStartShard();
+        previousShufflingEpoch = state.getPreviousShufflingEpoch();
+        currentShufflingEpoch = state.getCurrentShufflingEpoch();
+        previousShufflingSeed = state.getPreviousShufflingSeed();
+        currentShufflingSeed = state.getCurrentShufflingSeed();
 
         previousJustifiedEpoch = state.getPreviousJustifiedEpoch();
         justifiedEpoch = state.getJustifiedEpoch();
@@ -89,8 +92,8 @@ public class BeaconStateImpl implements MutableBeaconState {
 
         latestCrosslinksList = state.getLatestCrosslinks().listCopy();
         latestBlockRootsList = state.getLatestBlockRoots().listCopy();
-        latestIndexRootsList = state.getLatestIndexRoots().listCopy();
-        latestPenalizedBalancesList = state.getLatestPenalizedBalances().listCopy();
+        latestActiveIndexRootsList = state.getLatestActiveIndexRoots().listCopy();
+        latestSlashedBalancesList = state.getLatestSlashedBalances().listCopy();
         latestAttestationsList = state.getLatestAttestations().listCopy();
         batchedBlockRootsList = state.getBatchedBlockRoots().listCopy();
 
@@ -100,8 +103,7 @@ public class BeaconStateImpl implements MutableBeaconState {
 
   @Override
   public BeaconState createImmutable() {
-    // TODO validation
-    return new BeaconStateImpl(this);
+    return new ImmutableBeaconStateImpl(this);
   }
 
   @Override
@@ -173,66 +175,66 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
-  public ShardNumber getPreviousEpochStartShard() {
-    return previousEpochStartShard;
+  public ShardNumber getPreviousShufflingStartShard() {
+    return previousShufflingStartShard;
   }
 
   @Override
-  public void setPreviousEpochStartShard(
-      ShardNumber previousEpochStartShard) {
-    this.previousEpochStartShard = previousEpochStartShard;
+  public void setPreviousShufflingStartShard(
+      ShardNumber previousShufflingStartShard) {
+    this.previousShufflingStartShard = previousShufflingStartShard;
   }
 
   @Override
-  public ShardNumber getCurrentEpochStartShard() {
-    return currentEpochStartShard;
+  public ShardNumber getCurrentShufflingStartShard() {
+    return currentShufflingStartShard;
   }
 
   @Override
-  public void setCurrentEpochStartShard(ShardNumber currentEpochStartShard) {
-    this.currentEpochStartShard = currentEpochStartShard;
+  public void setCurrentShufflingStartShard(ShardNumber currentShufflingStartShard) {
+    this.currentShufflingStartShard = currentShufflingStartShard;
   }
 
   @Override
-  public EpochNumber getPreviousCalculationEpoch() {
-    return previousCalculationEpoch;
+  public EpochNumber getPreviousShufflingEpoch() {
+    return previousShufflingEpoch;
   }
 
   @Override
-  public void setPreviousCalculationEpoch(
-      EpochNumber previousCalculationEpoch) {
-    this.previousCalculationEpoch = previousCalculationEpoch;
+  public void setPreviousShufflingEpoch(
+      EpochNumber previousShufflingEpoch) {
+    this.previousShufflingEpoch = previousShufflingEpoch;
   }
 
   @Override
-  public EpochNumber getCurrentCalculationEpoch() {
-    return currentCalculationEpoch;
+  public EpochNumber getCurrentShufflingEpoch() {
+    return currentShufflingEpoch;
   }
 
   @Override
-  public void setCurrentCalculationEpoch(
-      EpochNumber currentCalculationEpoch) {
-    this.currentCalculationEpoch = currentCalculationEpoch;
+  public void setCurrentShufflingEpoch(
+      EpochNumber currentShufflingEpoch) {
+    this.currentShufflingEpoch = currentShufflingEpoch;
   }
 
   @Override
-  public Hash32 getPreviousEpochSeed() {
-    return previousEpochSeed;
+  public Hash32 getPreviousShufflingSeed() {
+    return previousShufflingSeed;
   }
 
   @Override
-  public void setPreviousEpochSeed(Hash32 previousEpochSeed) {
-    this.previousEpochSeed = previousEpochSeed;
+  public void setPreviousShufflingSeed(Hash32 previousShufflingSeed) {
+    this.previousShufflingSeed = previousShufflingSeed;
   }
 
   @Override
-  public Hash32 getCurrentEpochSeed() {
-    return currentEpochSeed;
+  public Hash32 getCurrentShufflingSeed() {
+    return currentShufflingSeed;
   }
 
   @Override
-  public void setCurrentEpochSeed(Hash32 currentEpochSeed) {
-    this.currentEpochSeed = currentEpochSeed;
+  public void setCurrentShufflingSeed(Hash32 currentShufflingSeed) {
+    this.currentShufflingSeed = currentShufflingSeed;
   }
 
   @Override
@@ -274,12 +276,12 @@ public class BeaconStateImpl implements MutableBeaconState {
     this.finalizedEpoch = finalizedEpoch;
   }
 
-  public List<CrosslinkRecord> getLatestCrosslinksList() {
+  public List<Crosslink> getLatestCrosslinksList() {
     return latestCrosslinksList;
   }
 
   public void setLatestCrosslinksList(
-      List<CrosslinkRecord> latestCrosslinksList) {
+      List<Crosslink> latestCrosslinksList) {
     this.latestCrosslinksList = latestCrosslinksList;
   }
 
@@ -292,22 +294,22 @@ public class BeaconStateImpl implements MutableBeaconState {
     this.latestBlockRootsList = latestBlockRootsList;
   }
 
-  public List<Hash32> getLatestIndexRootsList() {
-    return latestIndexRootsList;
+  public List<Hash32> getLatestActiveIndexRootsList() {
+    return latestActiveIndexRootsList;
   }
 
-  public void setLatestIndexRootsList(
-      List<Hash32> latestIndexRootsList) {
-    this.latestIndexRootsList = latestIndexRootsList;
+  public void setLatestActiveIndexRootsList(
+      List<Hash32> latestActiveIndexRootsList) {
+    this.latestActiveIndexRootsList = latestActiveIndexRootsList;
   }
 
-  public List<Gwei> getLatestPenalizedBalancesList() {
-    return latestPenalizedBalancesList;
+  public List<Gwei> getLatestSlashedBalancesList() {
+    return latestSlashedBalancesList;
   }
 
-  public void setLatestPenalizedBalancesList(
-      List<Gwei> latestPenalizedBalancesList) {
-    this.latestPenalizedBalancesList = latestPenalizedBalancesList;
+  public void setLatestSlashedBalancesList(
+      List<Gwei> latestSlashedBalancesList) {
+    this.latestSlashedBalancesList = latestSlashedBalancesList;
   }
 
   public List<PendingAttestationRecord> getLatestAttestationsList() {
@@ -363,7 +365,7 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
-  public WriteList<ShardNumber, CrosslinkRecord> getLatestCrosslinks() {
+  public WriteList<ShardNumber, Crosslink> getLatestCrosslinks() {
     return WriteList.wrap(getLatestCrosslinksList(), ShardNumber::of);
   }
 
@@ -373,13 +375,13 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
-  public WriteList<EpochNumber, Hash32> getLatestIndexRoots() {
-    return WriteList.wrap(getLatestIndexRootsList(), EpochNumber::of);
+  public WriteList<EpochNumber, Hash32> getLatestActiveIndexRoots() {
+    return WriteList.wrap(getLatestActiveIndexRootsList(), EpochNumber::of);
   }
 
   @Override
-  public WriteList<EpochNumber, Gwei> getLatestPenalizedBalances() {
-    return WriteList.wrap(getLatestPenalizedBalancesList(), EpochNumber::of);
+  public WriteList<EpochNumber, Gwei> getLatestSlashedBalances() {
+    return WriteList.wrap(getLatestSlashedBalancesList(), EpochNumber::of);
   }
 
   @Override
@@ -395,6 +397,16 @@ public class BeaconStateImpl implements MutableBeaconState {
   @Override
   public WriteList<Integer, Eth1DataVote> getEth1DataVotes() {
     return WriteList.wrap(getEth1DataVotesList(), Integer::valueOf);
+  }
+
+  @Override
+  public UInt64 getDepositIndex() {
+    return depositIndex;
+  }
+
+  @Override
+  public void setDepositIndex(UInt64 depositIndex) {
+    this.depositIndex = depositIndex;
   }
 
   /*********  List Getters/Setter for serialization  **********/

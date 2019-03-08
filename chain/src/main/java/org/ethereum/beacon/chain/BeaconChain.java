@@ -1,14 +1,10 @@
 package org.ethereum.beacon.chain;
 
-import java.time.Duration;
-import org.ethereum.beacon.chain.storage.BeaconTuple;
-import org.ethereum.beacon.core.BeaconState;
 import org.reactivestreams.Publisher;
-import reactor.core.publisher.Mono;
 
 public interface BeaconChain {
 
-  Publisher<BeaconTuple> getBlockStatesStream();
+  Publisher<BeaconTupleDetails> getBlockStatesStream();
 
   /**
    * Returns the most recent processed tuple.

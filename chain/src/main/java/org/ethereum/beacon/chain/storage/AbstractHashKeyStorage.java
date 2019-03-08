@@ -15,8 +15,4 @@ public abstract class AbstractHashKeyStorage<H extends Hash, T> implements HashK
   public void put(T item) {
     this.put(objectHasher.getHash(item), item);
   }
-
-  public ObjectHasher<H> getObjectHasher() {
-    return objectHasher;
-  }
 }

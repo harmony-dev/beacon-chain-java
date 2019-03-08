@@ -9,3 +9,7 @@ out
 # :pow:ethereumj
 pow/ethereumj/database
 pow/ethereumj/logs
+work
+
+# logs
+/logs

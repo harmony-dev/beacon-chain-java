@@ -5,7 +5,7 @@ import static org.ethereum.beacon.consensus.verifier.VerificationResult.failedRe
 
 import org.ethereum.beacon.consensus.verifier.OperationVerifier;
 import org.ethereum.beacon.core.operations.Deposit;
-import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
 
@@ -16,13 +16,20 @@ import tech.pegasys.artemis.util.uint.UInt64;
  */
 public class DepositListVerifier extends OperationListVerifier<Deposit> {
 
-  public DepositListVerifier(OperationVerifier<Deposit> operationVerifier, ChainSpec chainSpec) {
-    super(operationVerifier, block -> block.getBody().getDeposits(), chainSpec.getMaxDeposits());
+  public DepositListVerifier(OperationVerifier<Deposit> operationVerifier, SpecConstants specConstants) {
+    super(operationVerifier, block -> block.getBody().getDeposits(), specConstants.getMaxDeposits());
 
     addCustomVerifier(
-        deposits -> {
+        (deposits, state) -> {
           if (ReadList.sizeOf(deposits) > 0) {
             UInt64 expectedIndex = deposits.iterator().next().getIndex();
+
+            if (!expectedIndex.equals(state.getDepositIndex())) {
+              return failedResult(
+                  "index of the first deposit is incorrect, expected %d but got %d",
+                  state.getDepositIndex(), expectedIndex);
+            }
+
             for (Deposit deposit : deposits) {
               if (!deposit.getIndex().equals(expectedIndex)) {
                 return failedResult(

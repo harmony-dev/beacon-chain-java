@@ -11,14 +11,14 @@ startScripts.enabled = false
 run.enabled = false
 
 // Call this for each Main class you want to expose with an app script
-createScript(project, 'org.ethereum.beacon.Emulator', 'emulator')
+createScript(project, 'org.ethereum.beacon.Simulator', 'simulator')
 
 dependencies {
   implementation project(':types')
   implementation project(':wire')
   implementation project(':util')
   implementation project(':start:common')
-  implementation project(':emulator:config')
+  implementation project(':start:config')
   implementation project(':crypto')
   implementation project(':core')
   implementation project(':consensus')

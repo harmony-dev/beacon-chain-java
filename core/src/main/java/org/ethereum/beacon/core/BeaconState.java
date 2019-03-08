@@ -1,9 +1,10 @@
 package org.ethereum.beacon.core;
 
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
-import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.operations.attestation.Crosslink;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.BeaconStateImpl;
-import org.ethereum.beacon.core.state.CrosslinkRecord;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Eth1DataVote;
 import org.ethereum.beacon.core.state.ForkData;
@@ -18,6 +19,7 @@ import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.collections.ReadList;
+import tech.pegasys.artemis.util.uint.UInt64;
 
 /**
  * Beacon chain state.
@@ -60,17 +62,17 @@ public interface BeaconState {
   /** The most recent randao mixes. */
   ReadList<EpochNumber, Hash32> getLatestRandaoMixes();
 
-  ShardNumber getPreviousEpochStartShard();
+  ShardNumber getPreviousShufflingStartShard();
 
-  ShardNumber getCurrentEpochStartShard();
+  ShardNumber getCurrentShufflingStartShard();
 
-  EpochNumber getPreviousCalculationEpoch();
+  EpochNumber getPreviousShufflingEpoch();
 
-  EpochNumber getCurrentCalculationEpoch();
+  EpochNumber getCurrentShufflingEpoch();
 
-  Hash32 getPreviousEpochSeed();
+  Hash32 getPreviousShufflingSeed();
 
-  Hash32 getCurrentEpochSeed();
+  Hash32 getCurrentShufflingSeed();
 
   /********* Finality **********/
 
@@ -89,16 +91,16 @@ public interface BeaconState {
   /** ******* Recent state ********* */
 
   /** Latest crosslink record for each shard. */
-  ReadList<ShardNumber, CrosslinkRecord> getLatestCrosslinks();
+  ReadList<ShardNumber, Crosslink> getLatestCrosslinks();
 
   /** Latest block hashes for each shard. */
   ReadList<SlotNumber, Hash32> getLatestBlockRoots();
 
   /** Latest block hashes for each shard. */
-  ReadList<EpochNumber, Hash32> getLatestIndexRoots();
+  ReadList<EpochNumber, Hash32> getLatestActiveIndexRoots();
 
-  /** Balances penalized at every withdrawal period */
-  ReadList<EpochNumber, Gwei> getLatestPenalizedBalances();
+  /** Balances slashed at every withdrawal period */
+  ReadList<EpochNumber, Gwei> getLatestSlashedBalances();
 
   /** Attestations that has not been processed yet. */
   ReadList<Integer, PendingAttestationRecord> getLatestAttestations();
@@ -117,13 +119,16 @@ public interface BeaconState {
   /** Eth1 data that voting is still in progress for. */
   ReadList<Integer, Eth1DataVote> getEth1DataVotes();
 
+  /** The most recent Eth1 deposit index */
+  UInt64 getDepositIndex();
+
   /**
    * Returns mutable copy of this state. Any changes made to returned copy shouldn't affect this
    * instance
    */
   MutableBeaconState createMutableCopy();
 
-  default String toStringShort(@Nullable ChainSpec spec) {
+  default String toStringShort(@Nullable SpecConstants spec) {
     String ret = "BeaconState["
         + "@ " + getSlot().toString(spec, getGenesisTime())
         + ", " + getForkData().toString(spec)
@@ -132,12 +137,18 @@ public interface BeaconState {
         + ", just/final epoch: " + getJustifiedEpoch().toString(spec) + "/" + getFinalizedEpoch().toString(spec);
     if (spec != null) {
       ret += ", latestBlocks=[...";
-      for (SlotNumber slot : getSlot().minus(2).iterateTo(getSlot().increment())) {
+      for (SlotNumber slot : getSlot().minus(3).iterateTo(getSlot())) {
         Hash32 blockRoot = getLatestBlockRoots().get(slot.modulo(spec.getLatestBlockRootsLength()));
         ret += ", " + blockRoot.toStringShort();
       }
       ret += "]";
+
+      ret += ", attest:["
+          + getLatestAttestations().stream().map(ar -> ar.toStringShort(spec)).collect(Collectors.joining(", "))
+          + "]";
     }
+    ret += "]";
+
     return ret;
   }
 }

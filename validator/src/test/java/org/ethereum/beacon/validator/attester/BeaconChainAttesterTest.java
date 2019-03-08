@@ -13,7 +13,8 @@ import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustodyBit;
-import org.ethereum.beacon.core.spec.ChainSpec;
+import org.ethereum.beacon.core.operations.attestation.Crosslink;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.spec.SignatureDomains;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.ShardNumber;
@@ -31,7 +32,7 @@ public class BeaconChainAttesterTest {
   public void attestASlot() {
     Random random = new Random();
 
-    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(ChainSpec.DEFAULT, () -> 0L);
+    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(SpecConstants.DEFAULT);
 
     MessageSigner<BLSSignature> signer = MessageSignerTestUtil.createBLSSigner();
     BeaconChainAttesterImpl attester = BeaconChainAttesterTestUtil.mockAttester(specHelpers);
@@ -39,18 +40,17 @@ public class BeaconChainAttesterTest {
         ObservableBeaconStateTestUtil.createInitialState(random, specHelpers);
 
     List<ValidatorIndex> committee =
-        getCommittee(specHelpers.getChainSpec().getTargetCommitteeSize().getIntValue());
+        getCommittee(specHelpers.getConstants().getTargetCommitteeSize().getIntValue());
     int indexIntoCommittee = Math.abs(random.nextInt() % committee.size());
     ValidatorIndex validatorIndex = committee.get(indexIntoCommittee);
     Hash32 epochBoundaryRoot = Hash32.random(random);
-    Hash32 latestCrosslinkRoot = Hash32.random(random);
     Hash32 justifiedBlockRoot = Hash32.random(random);
-    ShardNumber shard = specHelpers.getChainSpec().getBeaconChainShardNumber();
+    ShardNumber shard = specHelpers.getConstants().getBeaconChainShardNumber();
 
     Mockito.doReturn(committee).when(attester).getCommittee(any(), any());
     Mockito.doReturn(epochBoundaryRoot).when(attester).getEpochBoundaryRoot(any(), any());
-    Mockito.doReturn(latestCrosslinkRoot).when(attester).getLatestCrosslinkRoot(any(), any());
-    Mockito.doReturn(justifiedBlockRoot).when(attester).getJustifiedBlockRoot(any());
+    Mockito.doReturn(Crosslink.EMPTY).when(attester).getLatestCrosslink(any(), any());
+    Mockito.doReturn(justifiedBlockRoot).when(attester).getJustifiedBlockRoot(any(), any());
 
     Attestation attestation =
         attester.attest(validatorIndex, shard, initiallyObservedState, signer);
@@ -63,8 +63,8 @@ public class BeaconChainAttesterTest {
     Assert.assertEquals(
         specHelpers.hash_tree_root(initiallyObservedState.getHead()), data.getBeaconBlockRoot());
     Assert.assertEquals(epochBoundaryRoot, data.getEpochBoundaryRoot());
-    Assert.assertEquals(Hash32.ZERO, data.getShardBlockRoot());
-    Assert.assertEquals(latestCrosslinkRoot, data.getLatestCrosslinkRoot());
+    Assert.assertEquals(Hash32.ZERO, data.getCrosslinkDataRoot());
+    Assert.assertEquals(Hash32.ZERO, data.getLatestCrosslink().getCrosslinkDataRoot());
     Assert.assertEquals(state.getJustifiedEpoch(), data.getJustifiedEpoch());
     Assert.assertEquals(justifiedBlockRoot, data.getJustifiedBlockRoot());
 
