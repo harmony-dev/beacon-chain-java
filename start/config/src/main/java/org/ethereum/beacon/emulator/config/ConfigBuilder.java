@@ -148,7 +148,7 @@ public class ConfigBuilder<C extends Config> {
    * <p>NOTE: not compatible with resource files in jar, use {@link #addYamlConfig(InputStream)}
    * instead
    */
-  public ConfigBuilder addYamlConfig(File file) {
+  public ConfigBuilder<C> addYamlConfig(File file) {
     InputStream inputStream = null;
     try {
       inputStream = new DataInputStream(new FileInputStream(file));
@@ -169,6 +169,11 @@ public class ConfigBuilder<C extends Config> {
     }
     configs.add(new YamlSource(content));
     return this;
+  }
+
+  /** A shortcut method that loads config from resource bundle */
+  public ConfigBuilder<C> addYamlConfigFromResources(String resourceName) {
+    return addYamlConfig(ClassLoader.class.getResourceAsStream(resourceName));
   }
 
   /** Adds alread created Config as source of configuration */
