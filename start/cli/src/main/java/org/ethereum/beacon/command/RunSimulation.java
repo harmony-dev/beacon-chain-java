@@ -16,9 +16,9 @@ public class RunSimulation implements Runnable {
 
   @CommandLine.Parameters(
       index = "0",
-      paramLabel = "simulation",
-      description = "A path to a simulator config in YAML format")
-  private File simulation;
+      paramLabel = "plan",
+      description = "A path to a simulation plan in YAML format")
+  private File plan;
 
   @CommandLine.Option(
       names = {"--spec"},
@@ -35,8 +35,8 @@ public class RunSimulation implements Runnable {
 
   @Override
   public void run() {
-    SimulatorConfig simulatorConfig =
-        new ConfigBuilder<>(SimulatorConfig.class).addYamlConfig(simulation).build();
+    SimulatorConfig simulationPlan =
+        new ConfigBuilder<>(SimulatorConfig.class).addYamlConfig(plan).build();
 
     ConfigBuilder<Spec> specBuilder =
         new ConfigBuilder<>(Spec.class).addYamlConfigFromResources("/config/spec-constants.yml");
@@ -46,8 +46,8 @@ public class RunSimulation implements Runnable {
     Spec spec = specBuilder.build();
 
     new SimulatorLauncher(
-            simulatorConfig,
-            spec.buildSpecHelpers(simulatorConfig.isBlsVerifyEnabled()),
+            simulationPlan,
+            spec.buildSpecHelpers(simulationPlan.isBlsVerifyEnabled()),
             logLevel.toLog4j())
         .run();
   }
