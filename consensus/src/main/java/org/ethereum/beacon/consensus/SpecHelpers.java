@@ -391,7 +391,7 @@ public class SpecHelpers {
     //    # The highest possible result of the RNG.
     //        rand_max = 2 ** (rand_bytes * 8) - 1
     int rand_bytes = 3;
-    int rand_max = 1 << (rand_bytes * 8 - 1);
+    int rand_max = (1 << (rand_bytes * 8)) - 1;
 
     //    # The range of the RNG places an upper-bound on the size of the list that
     //    # may be shuffled. It is a logic error to supply an oversized list.
