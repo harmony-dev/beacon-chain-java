@@ -5,4 +5,5 @@ dependencies {
   testImplementation project(':types')
   testImplementation project(':crypto')
   testImplementation project(':ssz')
+  testImplementation project(':consensus')
 }
