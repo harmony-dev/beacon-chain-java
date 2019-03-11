@@ -67,24 +67,28 @@ public class SimulatorLauncher implements Runnable {
   private final List<Peer> allPeers;
   private final SpecConstants specConstants;
   private final SpecHelpers specHelpers;
+  private final Spec overriddenConstants;
   private final Level logLevel;
 
   /**
    * Creates Simulator launcher with following settings
    *
-   * @param simulationPlan Configuration and run plan
-   * @param specHelpers Chain specification
-   * @param allPeers peers configuration
-   * @param logLevel Log level, Apache log4j type
+   * @param simulationPlan configuration and run plan.
+   * @param specHelpers chain specification.
+   * @param allPeers peers configuration.
+   * @param overriddenConstants overridden beacon chain constants, pass null if none are overridden.
+   * @param logLevel Log level, Apache log4j type.
    */
   public SimulatorLauncher(
       SimulationPlan simulationPlan,
       SpecHelpers specHelpers,
+      Spec overriddenConstants,
       List<Peer> allPeers,
       Level logLevel) {
     this.simulationPlan = simulationPlan;
     this.specConstants = specHelpers.getConstants();
     this.specHelpers = specHelpers;
+    this.overriddenConstants = overriddenConstants;
     this.allPeers = allPeers;
     this.logLevel = logLevel;
   }
@@ -129,6 +133,8 @@ public class SimulatorLauncher implements Runnable {
 
   public void run() {
     logger.info("Simulation parameters:\n{}", simulationPlan);
+    if (overriddenConstants != null)
+      logger.info("Overridden beacon chain parameters:\n{}", overriddenConstants);
 
     Random rnd = new Random(simulationPlan.getSeed());
     setupLogging();
@@ -441,6 +447,7 @@ public class SimulatorLauncher implements Runnable {
       return new SimulatorLauncher(
           simulationPlan,
           spec.buildSpecHelpers(simulationPlan.isBlsVerifyEnabled()),
+          specOverridesBuilder.isEmpty() ? null : specOverridesBuilder.build(),
           peers,
           logLevel);
     }
