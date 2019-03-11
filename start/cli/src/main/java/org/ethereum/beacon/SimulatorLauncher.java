@@ -42,7 +42,7 @@ import org.ethereum.beacon.crypto.BLS381.KeyPair;
 import org.ethereum.beacon.crypto.BLS381.PrivateKey;
 import org.ethereum.beacon.emulator.config.ConfigBuilder;
 import org.ethereum.beacon.emulator.config.chainspec.Spec;
-import org.ethereum.beacon.emulator.config.simulator.Peer;
+import org.ethereum.beacon.emulator.config.simulator.PeersConfig;
 import org.ethereum.beacon.emulator.config.simulator.SimulationPlan;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.schedulers.ControlledSchedulers;
@@ -63,7 +63,7 @@ public class SimulatorLauncher implements Runnable {
   private static final Logger wire = LogManager.getLogger("wire");
 
   private final SimulationPlan simulationPlan;
-  private final List<Peer> allPeers;
+  private final List<PeersConfig> allPeers;
   private final SpecConstants specConstants;
   private final SpecHelpers specHelpers;
   private final Spec overriddenConstants;
@@ -82,7 +82,7 @@ public class SimulatorLauncher implements Runnable {
       SimulationPlan simulationPlan,
       SpecHelpers specHelpers,
       Spec overriddenConstants,
-      List<Peer> allPeers,
+      List<PeersConfig> allPeers,
       Level logLevel) {
     this.simulationPlan = simulationPlan;
     this.specConstants = specHelpers.getConstants();
@@ -437,8 +437,8 @@ public class SimulatorLauncher implements Runnable {
 
       Spec spec = specBuilder.build();
 
-      List<Peer> peers = new ArrayList<>();
-      for (Peer peer : simulationPlan.getPeers()) {
+      List<PeersConfig> peers = new ArrayList<>();
+      for (PeersConfig peer : simulationPlan.getPeers()) {
         for (int i = 0; i < peer.getCount(); i++) {
           peers.add(peer);
         }

@@ -8,7 +8,7 @@ import org.ethereum.beacon.emulator.config.YamlPrinter;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class SimulationPlan implements Config {
-  private List<Peer> peers;
+  private List<PeersConfig> peers;
 
   @JsonProperty("bls-verify")
   private boolean blsVerifyEnabled = true;
@@ -18,11 +18,11 @@ public class SimulationPlan implements Config {
 
   private long seed = System.currentTimeMillis();
 
-  public List<Peer> getPeers() {
+  public List<PeersConfig> getPeers() {
     return peers;
   }
 
-  public void setPeers(List<Peer> peers) {
+  public void setPeers(List<PeersConfig> peers) {
     this.peers = peers;
   }
 
