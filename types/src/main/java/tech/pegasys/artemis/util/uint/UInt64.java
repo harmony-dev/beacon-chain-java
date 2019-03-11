@@ -13,11 +13,14 @@
 
 package tech.pegasys.artemis.util.uint;
 
+import tech.pegasys.artemis.util.bytes.Bytes8;
+import tech.pegasys.artemis.util.bytes.BytesValue;
+
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Objects;
 import java.util.Random;
-import tech.pegasys.artemis.util.bytes.Bytes8;
 
 /** An immutable unsigned 64-bit precision integer. */
 public class UInt64 extends Number implements Comparable<UInt64> {
@@ -293,7 +296,13 @@ public class UInt64 extends Number implements Comparable<UInt64> {
     if (divisor.getValue() == 0) {
       throw new IllegalArgumentException("Argument 'divisor' is 0.");
     }
-    return new UInt64(Long.remainderUnsigned(this.value, divisor.getValue()));
+    BigInteger res = asBigInteger().remainder(divisor.asBigInteger());
+    return UInt64.fromBytesBigEndian(Bytes8.leftPad(BytesValue.of(res.toByteArray())));
+  }
+
+  /** Returns current value as BigInteger */
+  public BigInteger asBigInteger() {
+    return new BigInteger(1, toBytesBigEndian().getArrayUnsafe());
   }
 
   /**
