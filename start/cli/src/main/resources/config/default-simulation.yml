@@ -4,5 +4,8 @@ genesis-time: 600
 peers:
   - count: 8
     validator: true
+    systemTimeShift: 0
+    wireInboundDelay: 0
+    wireOutboundDelay: 0
   - count: 1
     validator: false
