@@ -2,13 +2,12 @@ package org.ethereum.beacon.emulator.config.simulator;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.MoreObjects;
 import java.util.List;
 import org.ethereum.beacon.emulator.config.Config;
 import org.ethereum.beacon.emulator.config.YamlPrinter;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class SimulatorConfig implements Config {
+public class SimulationPlan implements Config {
   private List<Peer> peers;
 
   @JsonProperty("bls-verify")
@@ -53,6 +52,6 @@ public class SimulatorConfig implements Config {
 
   @Override
   public String toString() {
-    return new YamlPrinter(this).getString() + "---";
+    return new YamlPrinter(this).getString();
   }
 }

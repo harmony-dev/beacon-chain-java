@@ -1,5 +1,7 @@
 package org.ethereum.beacon;
 
+import java.io.File;
+import java.io.InputStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
@@ -38,8 +40,10 @@ import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.crypto.BLS381;
 import org.ethereum.beacon.crypto.BLS381.KeyPair;
 import org.ethereum.beacon.crypto.BLS381.PrivateKey;
+import org.ethereum.beacon.emulator.config.ConfigBuilder;
+import org.ethereum.beacon.emulator.config.chainspec.Spec;
 import org.ethereum.beacon.emulator.config.simulator.Peer;
-import org.ethereum.beacon.emulator.config.simulator.SimulatorConfig;
+import org.ethereum.beacon.emulator.config.simulator.SimulationPlan;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.schedulers.ControlledSchedulers;
 import org.ethereum.beacon.schedulers.LoggerMDCExecutor;
@@ -54,38 +58,38 @@ import reactor.core.publisher.Mono;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 
-import java.io.InputStream;
-
 public class SimulatorLauncher implements Runnable {
   private static final Logger logger = LogManager.getLogger("simulator");
   private static final Logger wire = LogManager.getLogger("wire");
   private static final Logger logPeer = LogManager.getLogger("peer");
 
-  private final SimulatorConfig simulatorConfig;
-  private final List<Peer> allPeers = new ArrayList<>();
+  private final SimulationPlan simulationPlan;
+  private final List<Peer> allPeers;
   private final SpecConstants specConstants;
   private final SpecHelpers specHelpers;
+  private final Spec overriddenConstants;
   private final Level logLevel;
 
   /**
    * Creates Simulator launcher with following settings
    *
-   * @param simulatorConfig Configuration and run plan
-   * @param specHelpers Chain specification
-   * @param logLevel Log level, Apache log4j type
+   * @param simulationPlan configuration and run plan.
+   * @param specHelpers chain specification.
+   * @param allPeers peers configuration.
+   * @param overriddenConstants overridden beacon chain constants, pass null if none are overridden.
+   * @param logLevel Log level, Apache log4j type.
    */
   public SimulatorLauncher(
-      SimulatorConfig simulatorConfig,
+      SimulationPlan simulationPlan,
       SpecHelpers specHelpers,
+      Spec overriddenConstants,
+      List<Peer> allPeers,
       Level logLevel) {
-    this.simulatorConfig = simulatorConfig;
+    this.simulationPlan = simulationPlan;
     this.specConstants = specHelpers.getConstants();
     this.specHelpers = specHelpers;
-    for (Peer peer : simulatorConfig.getPeers()) {
-      for (int i = 0; i < peer.getCount(); i++) {
-        allPeers.add(peer);
-      }
-    }
+    this.overriddenConstants = overriddenConstants;
+    this.allPeers = allPeers;
     this.logLevel = logLevel;
   }
 
@@ -128,9 +132,11 @@ public class SimulatorLauncher implements Runnable {
   }
 
   public void run() {
-    logger.info("Simulation parameters:\n{}", simulatorConfig);
+    logger.info("Simulation parameters:\n{}", simulationPlan);
+    if (overriddenConstants != null)
+      logger.info("Overridden beacon chain parameters:\n{}", overriddenConstants);
 
-    Random rnd = new Random(simulatorConfig.getSeed());
+    Random rnd = new Random(simulationPlan.getSeed());
     setupLogging();
     Pair<List<Deposit>, List<BLS381.KeyPair>> validatorDeposits = getValidatorDeposits(rnd);
 
@@ -138,7 +144,7 @@ public class SimulatorLauncher implements Runnable {
         .filter(Objects::nonNull).collect(Collectors.toList());
     List<BLS381.KeyPair> keyPairs = validatorDeposits.getValue1();
 
-    Time genesisTime = Time.of(simulatorConfig.getGenesisTime());
+    Time genesisTime = Time.of(simulationPlan.getGenesisTime());
 
     MDCControlledSchedulers controlledSchedulers = new MDCControlledSchedulers();
     controlledSchedulers.setCurrentTime(genesisTime.getMillis().getValue() + 1000);
@@ -410,6 +416,68 @@ public class SimulatorLauncher implements Runnable {
 
     public long getCurrentTime() {
       return currentTime;
+    }
+  }
+
+  public static class Builder {
+    private SimulationPlan simulationPlan;
+    private ConfigBuilder<Spec> specOverridesBuilder = new ConfigBuilder<>(Spec.class);
+    private Level logLevel = Level.INFO;
+
+    public Builder() {}
+
+    public SimulatorLauncher build() {
+      assert simulationPlan != null;
+
+      ConfigBuilder<Spec> specBuilder =
+          new ConfigBuilder<>(Spec.class).addYamlConfigFromResources("/config/spec-constants.yml");
+      if (!specOverridesBuilder.isEmpty()) {
+        specBuilder.addConfig(specOverridesBuilder.build());
+      }
+
+      Spec spec = specBuilder.build();
+
+      List<Peer> peers = new ArrayList<>();
+      for (Peer peer : simulationPlan.getPeers()) {
+        for (int i = 0; i < peer.getCount(); i++) {
+          peers.add(peer);
+        }
+      }
+
+      return new SimulatorLauncher(
+          simulationPlan,
+          spec.buildSpecHelpers(simulationPlan.isBlsVerifyEnabled()),
+          specOverridesBuilder.isEmpty() ? null : specOverridesBuilder.build(),
+          peers,
+          logLevel);
+    }
+
+    public Builder addSpecFromFile(File file) {
+      this.specOverridesBuilder.addYamlConfig(file);
+      return this;
+    }
+
+    public Builder addSpecFromResource(String resource) {
+      this.specOverridesBuilder.addYamlConfigFromResources(resource);
+      return this;
+    }
+
+    public Builder withPlanFromFile(File file) {
+      this.simulationPlan = new ConfigBuilder<>(SimulationPlan.class).addYamlConfig(file).build();
+      return this;
+    }
+
+    public Builder withPlanFromResource(String resourceName) {
+      this.simulationPlan =
+          new ConfigBuilder<>(SimulationPlan.class)
+              .addYamlConfigFromResources(resourceName)
+              .build();
+      return this;
+    }
+
+    public Builder withLogLevel(Level logLevel) {
+      this.logLevel = logLevel;
+      return this;
     }
   }
 }

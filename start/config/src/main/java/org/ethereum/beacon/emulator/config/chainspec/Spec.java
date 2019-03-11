@@ -7,6 +7,7 @@ import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.crypto.BLS381.PublicKey;
 import org.ethereum.beacon.emulator.config.Config;
+import org.ethereum.beacon.emulator.config.YamlPrinter;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes8;
 
@@ -51,5 +52,10 @@ public class Spec implements Config {
   public void setSpecConstants(
       SpecConstantsData specConstants) {
     this.specConstants = specConstants;
+  }
+
+  @Override
+  public String toString() {
+    return new YamlPrinter(this).getString();
   }
 }
