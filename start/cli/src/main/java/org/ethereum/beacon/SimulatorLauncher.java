@@ -39,7 +39,7 @@ import org.ethereum.beacon.crypto.BLS381;
 import org.ethereum.beacon.crypto.BLS381.KeyPair;
 import org.ethereum.beacon.crypto.BLS381.PrivateKey;
 import org.ethereum.beacon.emulator.config.simulator.Peer;
-import org.ethereum.beacon.emulator.config.simulator.SimulatorConfig;
+import org.ethereum.beacon.emulator.config.simulator.SimulationPlan;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.schedulers.ControlledSchedulers;
 import org.ethereum.beacon.schedulers.LoggerMDCExecutor;
@@ -61,7 +61,7 @@ public class SimulatorLauncher implements Runnable {
   private static final Logger wire = LogManager.getLogger("wire");
   private static final Logger logPeer = LogManager.getLogger("peer");
 
-  private final SimulatorConfig simulatorConfig;
+  private final SimulationPlan simulationPlan;
   private final List<Peer> allPeers = new ArrayList<>();
   private final SpecConstants specConstants;
   private final SpecHelpers specHelpers;
@@ -70,18 +70,18 @@ public class SimulatorLauncher implements Runnable {
   /**
    * Creates Simulator launcher with following settings
    *
-   * @param simulatorConfig Configuration and run plan
+   * @param simulationPlan Configuration and run plan
    * @param specHelpers Chain specification
    * @param logLevel Log level, Apache log4j type
    */
   public SimulatorLauncher(
-      SimulatorConfig simulatorConfig,
+      SimulationPlan simulationPlan,
       SpecHelpers specHelpers,
       Level logLevel) {
-    this.simulatorConfig = simulatorConfig;
+    this.simulationPlan = simulationPlan;
     this.specConstants = specHelpers.getConstants();
     this.specHelpers = specHelpers;
-    for (Peer peer : simulatorConfig.getPeers()) {
+    for (Peer peer : simulationPlan.getPeers()) {
       for (int i = 0; i < peer.getCount(); i++) {
         allPeers.add(peer);
       }
@@ -128,9 +128,9 @@ public class SimulatorLauncher implements Runnable {
   }
 
   public void run() {
-    logger.info("Simulation parameters:\n{}", simulatorConfig);
+    logger.info("Simulation parameters:\n{}", simulationPlan);
 
-    Random rnd = new Random(simulatorConfig.getSeed());
+    Random rnd = new Random(simulationPlan.getSeed());
     setupLogging();
     Pair<List<Deposit>, List<BLS381.KeyPair>> validatorDeposits = getValidatorDeposits(rnd);
 
@@ -138,7 +138,7 @@ public class SimulatorLauncher implements Runnable {
         .filter(Objects::nonNull).collect(Collectors.toList());
     List<BLS381.KeyPair> keyPairs = validatorDeposits.getValue1();
 
-    Time genesisTime = Time.of(simulatorConfig.getGenesisTime());
+    Time genesisTime = Time.of(simulationPlan.getGenesisTime());
 
     MDCControlledSchedulers controlledSchedulers = new MDCControlledSchedulers();
     controlledSchedulers.setCurrentTime(genesisTime.getMillis().getValue() + 1000);
