@@ -34,7 +34,7 @@ and you will see help for `simulator` launcher. Preceding commands will work for
 
 To try simulator with pre-set configuration use this command:
 ```bash
-./simulator run
+./simulator run default
 ```
 
 ## Contribution guideline
