@@ -2,7 +2,7 @@ package org.ethereum.beacon.emulator.config.simulator;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-@JsonIgnoreProperties(ignoreUnknown = false)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class PeersConfig {
   private int count = 1;
   private boolean validator = true;

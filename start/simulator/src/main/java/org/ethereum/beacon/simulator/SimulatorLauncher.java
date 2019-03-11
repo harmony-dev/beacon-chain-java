@@ -1,4 +1,4 @@
-package org.ethereum.beacon;
+package org.ethereum.beacon.simulator;
 
 import java.io.File;
 import java.io.InputStream;
@@ -24,6 +24,7 @@ import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.ConfigurationSource;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.logging.log4j.core.config.LoggerConfig;
+import org.ethereum.beacon.Launcher;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.storage.impl.MemBeaconChainStorageFactory;
 import org.ethereum.beacon.consensus.SpecHelpers;
@@ -48,7 +49,7 @@ import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.schedulers.ControlledSchedulers;
 import org.ethereum.beacon.schedulers.LoggerMDCExecutor;
 import org.ethereum.beacon.schedulers.Schedulers;
-import org.ethereum.beacon.util.SimulateUtils;
+import org.ethereum.beacon.simulator.util.SimulateUtils;
 import org.ethereum.beacon.wire.LocalWireHub;
 import org.ethereum.beacon.wire.WireApi;
 import org.javatuples.Pair;
