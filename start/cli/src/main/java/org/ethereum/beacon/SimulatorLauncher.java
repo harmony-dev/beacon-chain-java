@@ -61,7 +61,6 @@ import tech.pegasys.artemis.util.bytes.Bytes32;
 public class SimulatorLauncher implements Runnable {
   private static final Logger logger = LogManager.getLogger("simulator");
   private static final Logger wire = LogManager.getLogger("wire");
-  private static final Logger logPeer = LogManager.getLogger("peer");
 
   private final SimulationPlan simulationPlan;
   private final List<Peer> allPeers;
@@ -106,7 +105,7 @@ public class SimulatorLauncher implements Runnable {
       LoggerContext context =
           (org.apache.logging.log4j.core.LoggerContext) LogManager.getContext(false);
       Configuration config = context.getConfiguration();
-      LoggerConfig loggerConfig = config.getLoggerConfig("peer");
+      LoggerConfig loggerConfig = config.getLoggerConfig("simulator");
       loggerConfig.setLevel(logLevel);
       context.updateLoggers();
     }
@@ -188,21 +187,21 @@ public class SimulatorLauncher implements Runnable {
 
       int finalI = i;
       Flux.from(launcher.getSlotTicker().getTickerStream()).subscribe(slot ->
-          logPeer.debug("New slot: " + slot.toString(this.specConstants, genesisTime)));
+          logger.trace("New slot: " + slot.toString(this.specConstants, genesisTime)));
       Flux.from(launcher.getObservableStateProcessor().getObservableStateStream())
           .subscribe(os -> {
             latestStates.put(finalI, os);
-            logPeer.debug("New observable state: " + os.toString(specHelpers));
+            logger.trace("New observable state: " + os.toString(specHelpers));
           });
       Flux.from(launcher.getBeaconChain().getBlockStatesStream())
-          .subscribe(blockState -> logPeer.debug("Block imported: "
+          .subscribe(blockState -> logger.trace("Block imported: "
               + blockState.getBlock().toString(this.specConstants, genesisTime, specHelpers::hash_tree_root)));
       if (launcher.getValidatorService() != null) {
         Flux.from(launcher.getValidatorService().getProposedBlocksStream())
-            .subscribe(block -> logPeer.info("New block created: "
+            .subscribe(block -> logger.debug("New block created: "
                 + block.toString(this.specConstants, genesisTime, specHelpers::hash_tree_root)));
         Flux.from(launcher.getValidatorService().getAttestationsStream())
-            .subscribe(attest -> logPeer.info("New attestation created: "
+            .subscribe(attest -> logger.debug("New attestation created: "
                 + attest.toString(this.specConstants, genesisTime)));
       }
     }
@@ -237,6 +236,7 @@ public class SimulatorLauncher implements Runnable {
           logger.debug("New observable state: " + os.toString(specHelpers));
         });
     Flux.from(observer.getWireApi().inboundAttestationsStream())
+        .publishOn(observer.getSchedulers().reactorEvents())
         .subscribe(att -> {
           attestations.add(att);
           logger.debug("New attestation received: " + att.toStringShort(specConstants));
