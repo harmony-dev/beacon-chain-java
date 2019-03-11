@@ -1,8 +1,8 @@
-package org.ethereum.beacon.command;
+package org.ethereum.beacon.simulator.command;
 
 import java.io.File;
-import org.ethereum.beacon.SimulatorLauncher;
-import org.ethereum.beacon.SimulatorLauncher.Builder;
+import org.ethereum.beacon.simulator.SimulatorLauncher;
+import org.ethereum.beacon.simulator.SimulatorLauncher.Builder;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "run", description = "Runs simulation", mixinStandardHelpOptions = true)

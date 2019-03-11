@@ -1,4 +1,4 @@
-package org.ethereum.beacon.command;
+package org.ethereum.beacon.simulator.command;
 
 import org.apache.logging.log4j.Level;
 

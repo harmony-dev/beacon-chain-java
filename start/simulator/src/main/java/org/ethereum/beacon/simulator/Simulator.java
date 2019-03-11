@@ -1,7 +1,7 @@
-package org.ethereum.beacon;
+package org.ethereum.beacon.simulator;
 
-import org.ethereum.beacon.command.PrintSpec;
-import org.ethereum.beacon.command.RunSimulation;
+import org.ethereum.beacon.simulator.command.PrintSpec;
+import org.ethereum.beacon.simulator.command.RunSimulation;
 import picocli.CommandLine;
 import picocli.CommandLine.RunLast;
 
