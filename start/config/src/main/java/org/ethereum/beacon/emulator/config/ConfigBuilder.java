@@ -277,4 +277,8 @@ public class ConfigBuilder<C extends Config> {
         }
     }
   }
+
+  public boolean isEmpty() {
+    return configs.isEmpty();
+  }
 }

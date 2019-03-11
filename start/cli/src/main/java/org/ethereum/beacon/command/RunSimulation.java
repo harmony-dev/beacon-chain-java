@@ -2,9 +2,7 @@ package org.ethereum.beacon.command;
 
 import java.io.File;
 import org.ethereum.beacon.SimulatorLauncher;
-import org.ethereum.beacon.emulator.config.ConfigBuilder;
-import org.ethereum.beacon.emulator.config.chainspec.Spec;
-import org.ethereum.beacon.emulator.config.simulator.SimulationPlan;
+import org.ethereum.beacon.SimulatorLauncher.Builder;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "run", description = "Runs simulation", mixinStandardHelpOptions = true)
@@ -32,27 +30,19 @@ public class RunSimulation implements Runnable {
 
   @Override
   public void run() {
-    ConfigBuilder<SimulationPlan> planBuilder = new ConfigBuilder<>(SimulationPlan.class);
-    ConfigBuilder<Spec> specBuilder =
-        new ConfigBuilder<>(Spec.class).addYamlConfigFromResources("/config/spec-constants.yml");
+    SimulatorLauncher.Builder simulationBuilder = new Builder().withLogLevel(logLevel.toLog4j());
 
     if ("default".equals(plan)) {
-      planBuilder.addYamlConfigFromResources("/config/default-simulation.yml");
-      specBuilder.addYamlConfigFromResources("/config/default-simulation-constants.yml");
+      simulationBuilder
+          .withPlanFromResource("/config/default-simulation.yml")
+          .addSpecFromResource("/config/default-simulation-constants.yml");
     } else {
-      planBuilder.addYamlConfig(new File(plan));
+      simulationBuilder.withPlanFromFile(new File(plan));
       if (spec != null) {
-        specBuilder.addYamlConfig(spec);
+        simulationBuilder.addSpecFromFile(spec);
       }
     }
 
-    SimulationPlan simulationPlan = planBuilder.build();
-    Spec spec = specBuilder.build();
-
-    new SimulatorLauncher(
-            simulationPlan,
-            spec.buildSpecHelpers(simulationPlan.isBlsVerifyEnabled()),
-            logLevel.toLog4j())
-        .run();
+    simulationBuilder.build().run();
   }
 }

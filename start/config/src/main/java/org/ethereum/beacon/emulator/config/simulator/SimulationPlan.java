@@ -52,6 +52,6 @@ public class SimulationPlan implements Config {
 
   @Override
   public String toString() {
-    return new YamlPrinter(this).getString() + "---";
+    return new YamlPrinter(this).getString();
   }
 }
