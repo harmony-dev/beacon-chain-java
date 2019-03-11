@@ -10,9 +10,9 @@ public class RunSimulation implements Runnable {
 
   @CommandLine.Parameters(
       index = "0",
-      paramLabel = "plan",
+      paramLabel = "plan.yml",
       description =
-          "A path to a simulation plan in YAML format\npass 'default' to run a simulation with default setup")
+          "A path to a file containing simulation plan in YAML format\nuse 'default' to run a simulation with default setup")
   private String plan;
 
   @CommandLine.Option(
