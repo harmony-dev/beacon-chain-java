@@ -12,6 +12,8 @@ import org.ethereum.beacon.test.runner.ShuffleRunner;
 import org.ethereum.beacon.test.type.ShuffleTest;
 import org.junit.Ignore;
 import org.junit.Test;
+import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 import java.nio.file.Path;
@@ -61,13 +63,43 @@ public class ShuffleTests extends TestUtils {
 
   @Test
   @Ignore("Remove ignore when community tests are updated according to the latest spec")
-  public void test() {
+  public void testShuffling() {
     Path sszTestsPath = Paths.get(PATH_TO_TESTS, TESTS_DIR);
     runTestsInResourceDir(
         sszTestsPath,
         ShuffleTest.class,
         testCase -> {
-          ShuffleRunner testCaseRunner = new ShuffleRunner(testCase, specHelpers);
+          ShuffleRunner testCaseRunner =
+              new ShuffleRunner(
+                  testCase,
+                  specHelpers,
+                  objects ->
+                      specHelpers.get_shuffling(
+                          objects.getValue0(), objects.getValue1(), objects.getValue2()));
+          return testCaseRunner.run();
+        });
+  }
+
+  /**
+   * Runs tests on optimized version of get_shuffling, {@link SpecHelpers#get_shuffling2(Hash32,
+   * ReadList, EpochNumber)}
+   */
+  @Test
+  @Ignore(
+      "Remove ignore when get_shuffling2 is fixed and community tests are updated according to the latest spec")
+  public void testShuffling2() {
+    Path sszTestsPath = Paths.get(PATH_TO_TESTS, TESTS_DIR);
+    runTestsInResourceDir(
+        sszTestsPath,
+        ShuffleTest.class,
+        testCase -> {
+          ShuffleRunner testCaseRunner =
+              new ShuffleRunner(
+                  testCase,
+                  specHelpers,
+                  objects ->
+                      specHelpers.get_shuffling2(
+                          objects.getValue0(), objects.getValue1(), objects.getValue2()));
           return testCaseRunner.run();
         });
   }

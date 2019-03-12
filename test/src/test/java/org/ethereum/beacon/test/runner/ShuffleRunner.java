@@ -7,6 +7,7 @@ import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.test.type.ShuffleTestCase;
 import org.ethereum.beacon.test.type.TestCase;
+import org.javatuples.Triplet;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
@@ -14,22 +15,32 @@ import tech.pegasys.artemis.util.uint.UInt64;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 
 import static org.junit.Assert.assertArrayEquals;
 
-/**
- * TestRunner for {@link org.ethereum.beacon.test.type.ShuffleTestCase}
- */
+/** TestRunner for {@link org.ethereum.beacon.test.type.ShuffleTestCase} */
 public class ShuffleRunner implements Runner {
-  ShuffleTestCase testCase;
+  private ShuffleTestCase testCase;
   private SpecHelpers specHelpers;
+  private Function<
+          Triplet<Hash32, ReadList<ValidatorIndex, ValidatorRecord>, EpochNumber>,
+          List<List<ValidatorIndex>>>
+      getShuffling;
 
-  public ShuffleRunner(TestCase testCase, SpecHelpers specHelpers) {
+  public ShuffleRunner(
+      TestCase testCase,
+      SpecHelpers specHelpers,
+      Function<
+              Triplet<Hash32, ReadList<ValidatorIndex, ValidatorRecord>, EpochNumber>,
+              List<List<ValidatorIndex>>>
+          getShuffling) {
     if (!(testCase instanceof ShuffleTestCase)) {
       throw new RuntimeException("TestCase runner accepts only ShuffleTestCase.class as input!");
     }
     this.testCase = (ShuffleTestCase) testCase;
     this.specHelpers = specHelpers;
+    this.getShuffling = getShuffling;
   }
 
   public Optional<String> run() {
@@ -63,9 +74,9 @@ public class ShuffleRunner implements Runner {
       expectedIndices.add(indices);
     }
     List<List<ValidatorIndex>> validatorIndices =
-        specHelpers.get_shuffling(
-            Hash32.fromHexString(testCase.getSeed()), validatorReadList, currentEpoch);
-
+        getShuffling.apply(
+            new Triplet<>(
+                Hash32.fromHexString(testCase.getSeed()), validatorReadList, currentEpoch));
     try {
       assertArrayEquals(expectedIndices.toArray(), validatorIndices.toArray());
     } catch (AssertionError e) {
