@@ -64,7 +64,8 @@ public class SimulatorLauncher implements Runnable {
   private static final Logger wire = LogManager.getLogger("wire");
 
   private final SimulationPlan simulationPlan;
-  private final List<PeersConfig> allPeers;
+  private final List<PeersConfig> validators;
+  private final List<PeersConfig> observers;
   private final SpecConstants specConstants;
   private final SpecHelpers specHelpers;
   private final Spec overriddenConstants;
@@ -75,7 +76,8 @@ public class SimulatorLauncher implements Runnable {
    *
    * @param simulationPlan configuration and run plan.
    * @param specHelpers chain specification.
-   * @param allPeers peers configuration.
+   * @param validators validator peers configuration.
+   * @param observers observer peers configuration.
    * @param overriddenConstants overridden beacon chain constants, pass null if none are overridden.
    * @param logLevel Log level, Apache log4j type.
    */
@@ -83,13 +85,15 @@ public class SimulatorLauncher implements Runnable {
       SimulationPlan simulationPlan,
       SpecHelpers specHelpers,
       Spec overriddenConstants,
-      List<PeersConfig> allPeers,
+      List<PeersConfig> validators,
+      List<PeersConfig> observers,
       Level logLevel) {
     this.simulationPlan = simulationPlan;
     this.specConstants = specHelpers.getConstants();
     this.specHelpers = specHelpers;
     this.overriddenConstants = overriddenConstants;
-    this.allPeers = allPeers;
+    this.validators = validators;
+    this.observers = observers;
     this.logLevel = logLevel;
   }
 
@@ -114,17 +118,13 @@ public class SimulatorLauncher implements Runnable {
 
   private Pair<List<Deposit>, List<BLS381.KeyPair>> getValidatorDeposits(Random rnd) {
     Pair<List<Deposit>, List<BLS381.KeyPair>> deposits =
-        SimulateUtils.getAnyDeposits(rnd, specHelpers, allPeers.size());
-    for (int i = 0; i < allPeers.size(); i++) {
-      if (allPeers.get(i).getBlsPrivateKey() != null) {
+        SimulateUtils.getAnyDeposits(rnd, specHelpers, validators.size());
+    for (int i = 0; i < validators.size(); i++) {
+      if (validators.get(i).getBlsPrivateKey() != null) {
         KeyPair keyPair = KeyPair.create(
-            PrivateKey.create(Bytes32.fromHexString(allPeers.get(i).getBlsPrivateKey())));
+            PrivateKey.create(Bytes32.fromHexString(validators.get(i).getBlsPrivateKey())));
         deposits.getValue0().set(i, SimulateUtils.getDepositForKeyPair(rnd, keyPair, specHelpers));
         deposits.getValue1().set(i, keyPair);
-      }
-      if (!allPeers.get(i).isValidator()) {
-        deposits.getValue0().set(i, null);
-        deposits.getValue1().set(i, null);
       }
     }
 
@@ -160,14 +160,14 @@ public class SimulatorLauncher implements Runnable {
     List<Launcher> peers = new ArrayList<>();
 
     logger.info("Creating validators...");
-    for (int i = 0; i < allPeers.size(); i++) {
+    for (int i = 0; i < validators.size(); i++) {
       ControlledSchedulers schedulers =
-          controlledSchedulers.createNew("" + i, allPeers.get(i).getSystemTimeShift());
+          controlledSchedulers.createNew("V" + i, validators.get(i).getSystemTimeShift());
       WireApi wireApi =
           localWireHub.createNewPeer(
               "" + i,
-              allPeers.get(i).getWireInboundDelay(),
-              allPeers.get(i).getWireOutboundDelay());
+              validators.get(i).getWireInboundDelay(),
+              validators.get(i).getWireOutboundDelay());
 
       Launcher launcher =
           new Launcher(
@@ -181,6 +181,22 @@ public class SimulatorLauncher implements Runnable {
       peers.add(launcher);
     }
     logger.info("Validators created");
+
+    logger.info("Creating observer peers...");
+    for (int i = 0; i < observers.size(); i++) {
+      PeersConfig config = observers.get(i);
+      String name = "O" + i;
+      Launcher launcher =
+          new Launcher(
+              specHelpers,
+              depositContract,
+              null,
+              localWireHub.createNewPeer(
+                  name, config.getWireInboundDelay(), config.getWireOutboundDelay()),
+              new MemBeaconChainStorageFactory(),
+              controlledSchedulers.createNew(name, config.getSystemTimeShift()));
+      peers.add(launcher);
+    }
 
     Map<Integer, ObservableBeaconState> latestStates = new HashMap<>();
     for (int i = 0; i < peers.size(); i++) {
@@ -207,7 +223,7 @@ public class SimulatorLauncher implements Runnable {
       }
     }
 
-    logger.info("Creating observer peer...");
+    // system observer
     ControlledSchedulers schedulers = controlledSchedulers.createNew("X");
     WireApi wireApi = localWireHub.createNewPeer("X");
 
@@ -233,6 +249,7 @@ public class SimulatorLauncher implements Runnable {
     });
     Flux.from(observer.getObservableStateProcessor().getObservableStateStream())
         .subscribe(os -> {
+          latestStates.put(peers.size(), os);
           states.add(os);
           logger.debug("New observable state: " + os.toString(specHelpers));
         });
@@ -263,8 +280,7 @@ public class SimulatorLauncher implements Runnable {
         logger.error("No slots generated");
       }
 
-      Map<Hash32, List<ObservableBeaconState>> grouping = Stream
-          .concat(latestStates.values().stream(), states.stream())
+      Map<Hash32, List<ObservableBeaconState>> grouping = latestStates.values().stream()
           .collect(Collectors.groupingBy(s -> specHelpers.hash_tree_root(s.getLatestSlotState())));
 
       String statesInfo;
@@ -449,7 +465,8 @@ public class SimulatorLauncher implements Runnable {
           simulationPlan,
           spec.buildSpecHelpers(simulationPlan.isBlsVerifyEnabled()),
           specOverridesBuilder.isEmpty() ? null : specOverridesBuilder.build(),
-          peers,
+          peers.stream().filter(PeersConfig::isValidator).collect(Collectors.toList()),
+          peers.stream().filter(config -> !config.isValidator()).collect(Collectors.toList()),
           logLevel);
     }
 
