@@ -405,7 +405,7 @@ public class SpecHelpers {
     for (int round = 0; round < constants.getShuffleRoundCount(); round++) {
       Bytes8 pivotBytes = Bytes8.wrap(hash(seed.concat(int_to_bytes1(round))), 0);
       long pivot = bytes_to_int(pivotBytes).modulo(listSize).getValue();
-      UInt64 flip = UInt64.valueOf(remainder(pivot - index.getValue(), listSize.getValue()));
+      UInt64 flip = UInt64.valueOf(Math.floorMod(pivot - index.getValue(), listSize.getValue()));
       UInt64 position = UInt64s.max(index, flip);
       BytesValue positionBytes = int_to_bytes4(position.dividedBy(UInt64.valueOf(256)).getValue());
       Bytes32 source = hash(seed.concat(int_to_bytes1(round)).concat(positionBytes));
@@ -415,15 +415,6 @@ public class SpecHelpers {
     }
 
     return index;
-  }
-
-  private long remainder(long value, long divisor) {
-    long res = value % divisor;
-    if (res < 0) {
-      res += divisor;
-    }
-
-    return res;
   }
 
   /**
