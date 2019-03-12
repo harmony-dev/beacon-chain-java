@@ -7,11 +7,11 @@ import java.util.List;
  * href="https://github.com/ethereum/eth2.0-test-generators/tree/master/shuffling">https://github.com/ethereum/eth2.0-test-generators/tree/master/shuffling</a>
  */
 public class ShuffleTest extends TestSkeleton {
-  public List<TestCase> getTest_cases() {
-    return test_cases;
+  public List<TestCase> getTestCases() {
+    return testCases;
   }
 
-  public void setTest_cases(List<ShuffleTestCase> test_cases) {
-    this.test_cases = (List<TestCase>) (List<?>) test_cases;
+  public void setTestCases(List<ShuffleTestCase> testCases) {
+    this.testCases = (List<TestCase>) (List<?>) testCases;
   }
 }

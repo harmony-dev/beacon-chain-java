@@ -63,7 +63,7 @@ public class TestUtils {
     V test = readTest(content, clazz);
 
     StringBuilder errors = new StringBuilder();
-    for (TestCase testCase : test.getTest_cases()) {
+    for (TestCase testCase : test.getTestCases()) {
       Optional<String> testCaseErrors = testCaseRunner.apply(testCase);
       if (testCaseErrors.isPresent()) {
         errors

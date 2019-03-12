@@ -1,6 +1,7 @@
 package org.ethereum.beacon.test.type;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
@@ -16,9 +17,11 @@ public abstract class TestSkeleton {
   private String title;
   private String summary;
   private String version;
-  private String test_suite;
+  @JsonProperty("test_suite")
+  private String testSuite;
   private String fork;
-  List<TestCase> test_cases;
+  @JsonProperty("test_cases")
+  List<TestCase> testCases;
 
   public String getTitle() {
     return title;
@@ -44,12 +47,12 @@ public abstract class TestSkeleton {
     this.version = version;
   }
 
-  public String getTest_suite() {
-    return test_suite;
+  public String getTestSuite() {
+    return testSuite;
   }
 
-  public void setTest_suite(String test_suite) {
-    this.test_suite = test_suite;
+  public void setTestSuite(String testSuite) {
+    this.testSuite = testSuite;
   }
 
   public String getFork() {
@@ -60,8 +63,8 @@ public abstract class TestSkeleton {
     this.fork = fork;
   }
 
-  public List<TestCase> getTest_cases() {
-    return test_cases;
+  public List<TestCase> getTestCases() {
+    return testCases;
   }
 
   @Override
