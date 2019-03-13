@@ -409,8 +409,8 @@ public class SpecHelpers {
       UInt64 position = UInt64s.max(index, flip);
       BytesValue positionBytes = int_to_bytes4(position.dividedBy(UInt64.valueOf(256)).getValue());
       Bytes32 source = hash(seed.concat(int_to_bytes1(round)).concat(positionBytes));
-      int byt = source.get(position.modulo(256).getIntValue() / 8) & 0xFF;
-      int bit = ((byt >> (position.modulo(8).getIntValue())) % 2) & 0xFF;
+      int byteV = source.get(position.modulo(256).getIntValue() / 8) & 0xFF;
+      int bit = ((byteV >> (position.modulo(8).getIntValue())) % 2) & 0xFF;
       index = bit > 0 ? flip : index;
     }
 
@@ -423,52 +423,56 @@ public class SpecHelpers {
    * Ported from https://github.com/protolambda/eth2-shuffle/blob/master/shuffle.go#L159
    */
   List<UInt64> get_permuted_list(List<? extends UInt64> indices, Bytes32 seed) {
+    if (indices.size() < 2) {
+      return new ArrayList<>(indices);
+    }
+
     int listSize = indices.size();
     List<UInt64> permutations = new ArrayList<>(indices);
 
     for (int round = 0; round < constants.getShuffleRoundCount(); round++) {
       BytesValue roundSeed = seed.concat(int_to_bytes1(round));
       Bytes8 pivotBytes = Bytes8.wrap(hash(roundSeed), 0);
-      int pivot = bytes_to_int(pivotBytes).modulo(listSize).getIntValue();
+      long pivot = bytes_to_int(pivotBytes).modulo(listSize).getValue();
 
-      int mirror = (pivot + 1) >>> 1;
+      long mirror = (pivot + 1) >>> 1;
       Bytes32 source = hash(roundSeed.concat(int_to_bytes4(pivot >>> 8)));
 
-      byte byteV = source.get((pivot & 0xff) >>> 3);
-      for (int i = 0, j = pivot; i < mirror; ++i, --j) {
+      byte byteV = source.get((int) ((pivot & 0xff) >>> 3));
+      for (long i = 0, j = pivot; i < mirror; ++i, --j) {
         if ((j & 0xff) == 0xff) {
           source = hash(roundSeed.concat(int_to_bytes4(j >>> 8)));
         }
         if ((j & 0x7) == 0x7) {
-          byteV = source.get((j & 0xff) >>> 3);
+          byteV = source.get((int) ((j & 0xff) >>> 3));
         }
 
         byte bitV = (byte) ((byteV >>> (j & 0x7)) & 0x1);
         if (bitV == 1) {
-          UInt64 oldV = permutations.get(i);
-          permutations.set(i, permutations.get(j));
-          permutations.set(j, oldV);
+          UInt64 oldV = permutations.get((int) i);
+          permutations.set((int) i, permutations.get((int) j));
+          permutations.set((int) j, oldV);
         }
       }
 
-      mirror = UInt64.valueOf(pivot).plus(listSize).increment().shr(1).getIntValue();
-      int end = listSize - 1;
+      mirror = (pivot + listSize + 1) >>> 1;
+      long end = listSize - 1;
 
       source = hash(roundSeed.concat(int_to_bytes4(end >>> 8)));
-      byteV = source.get((end & 0xff) >>> 3);
-      for (int i = pivot + 1, j = end; i < mirror; ++i, --j) {
+      byteV = source.get((int) ((end & 0xff) >>> 3));
+      for (long i = pivot + 1, j = end; i < mirror; ++i, --j) {
         if ((j & 0xff) == 0xff) {
           source = hash(roundSeed.concat(int_to_bytes4(j >>> 8)));
         }
         if ((j & 0x7) == 0x7) {
-          byteV = source.get((j & 0xff) >>> 3);
+          byteV = source.get((int) ((j & 0xff) >>> 3));
         }
 
         byte bitV = (byte) ((byteV >>> (j & 0x7)) & 0x1);
         if (bitV == 1) {
-          UInt64 oldV = permutations.get(i);
-          permutations.set(i, permutations.get(j));
-          permutations.set(j, oldV);
+          UInt64 oldV = permutations.get((int) i);
+          permutations.set((int) i, permutations.get((int) j));
+          permutations.set((int) j, oldV);
         }
       }
     }
