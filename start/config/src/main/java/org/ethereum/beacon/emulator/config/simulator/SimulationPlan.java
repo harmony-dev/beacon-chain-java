@@ -13,6 +13,9 @@ public class SimulationPlan implements Config {
   @JsonProperty("bls-verify")
   private boolean blsVerifyEnabled = true;
 
+  @JsonProperty("bls-sign")
+  private boolean blsSignEnabled = true;
+
   @JsonProperty("genesis-time")
   private int genesisTime = 600;
 
@@ -32,6 +35,14 @@ public class SimulationPlan implements Config {
 
   public void setBlsVerifyEnabled(boolean blsVerifyEnabled) {
     this.blsVerifyEnabled = blsVerifyEnabled;
+  }
+
+  public boolean isBlsSignEnabled() {
+    return blsSignEnabled;
+  }
+
+  public void setBlsSignEnabled(boolean blsSignEnabled) {
+    this.blsSignEnabled = blsSignEnabled;
   }
 
   public int getGenesisTime() {

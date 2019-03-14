@@ -50,6 +50,7 @@ import org.ethereum.beacon.schedulers.ControlledSchedulers;
 import org.ethereum.beacon.schedulers.LoggerMDCExecutor;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.simulator.util.SimulateUtils;
+import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import org.ethereum.beacon.wire.LocalWireHub;
 import org.ethereum.beacon.wire.WireApi;
 import org.javatuples.Pair;
@@ -169,11 +170,20 @@ public class SimulatorLauncher implements Runnable {
               validators.get(i).getWireInboundDelay(),
               validators.get(i).getWireOutboundDelay());
 
+      BLS381Credentials bls;
+      if (keyPairs.get(i) == null) {
+        bls = null;
+      } else {
+        bls = simulationPlan.isBlsSignEnabled() ?
+            BLS381Credentials.createWithInsecureSigner(keyPairs.get(i)) :
+            BLS381Credentials.createWithDummySigner(keyPairs.get(i));
+      }
+
       Launcher launcher =
           new Launcher(
               specHelpers,
               depositContract,
-              keyPairs.get(i),
+              bls,
               wireApi,
               new MemBeaconChainStorageFactory(),
               schedulers);
@@ -463,7 +473,7 @@ public class SimulatorLauncher implements Runnable {
 
       return new SimulatorLauncher(
           simulationPlan,
-          spec.buildSpecHelpers(simulationPlan.isBlsVerifyEnabled()),
+          spec.buildSpecHelpers(simulationPlan.isBlsVerifyEnabled(), simulationPlan.isBlsSignEnabled()),
           specOverridesBuilder.isEmpty() ? null : specOverridesBuilder.build(),
           peers.stream().filter(PeersConfig::isValidator).collect(Collectors.toList()),
           peers.stream().filter(config -> !config.isValidator()).collect(Collectors.toList()),
