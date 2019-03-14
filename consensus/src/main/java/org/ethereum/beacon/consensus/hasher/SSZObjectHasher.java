@@ -1,5 +1,6 @@
 package org.ethereum.beacon.consensus.hasher;
 
+import java.util.function.Consumer;
 import org.ethereum.beacon.core.types.Hashable;
 import org.ethereum.beacon.ssz.SSZHashSerializer;
 import org.ethereum.beacon.ssz.SSZHashSerializers;
@@ -35,19 +36,12 @@ public class SSZObjectHasher implements ObjectHasher<Hash32> {
 
   @Override
   public Hash32 getHash(Object input) {
-    if (input instanceof Hashable<?>) {
-      Optional<Hash32> hashOptional = ((Hashable<Hash32>) input).getHash();
-      if (hashOptional.isPresent()) {
-        return hashOptional.get();
-      }
+    Function<Object, Hash32> hasher = o -> Hash32.wrap(Bytes32.wrap(sszHashSerializer.hash(o)));
+    if (input instanceof Hashable) {
+      return ((Hashable<Hash32>) input).getHash(hasher);
+    } else {
+      return hasher.apply(input);
     }
-
-    Hash32 hash = Hash32.wrap(Bytes32.wrap(sszHashSerializer.hash(input)));
-    if (input instanceof Hashable<?>) {
-      ((Hashable<Hash32>) input).setHash(hash);
-    }
-
-      return hash;
   }
 
   @Override
