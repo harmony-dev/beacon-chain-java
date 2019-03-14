@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
-import static org.junit.Assert.assertArrayEquals;
+import static org.ethereum.beacon.test.SilentAsserts.assertLists;
 
 /** TestRunner for {@link org.ethereum.beacon.test.type.ShuffleTestCase} */
 public class ShuffleRunner implements Runner {
@@ -77,12 +77,6 @@ public class ShuffleRunner implements Runner {
         getShuffling.apply(
             new Triplet<>(
                 Hash32.fromHexString(testCase.getSeed()), validatorReadList, currentEpoch));
-    try {
-      assertArrayEquals(expectedIndices.toArray(), validatorIndices.toArray());
-    } catch (AssertionError e) {
-      return Optional.of(e.getMessage());
-    }
-
-    return Optional.empty();
+    return assertLists(expectedIndices, validatorIndices);
   }
 }

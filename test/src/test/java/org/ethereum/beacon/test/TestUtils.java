@@ -28,6 +28,20 @@ public class TestUtils {
   static ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
   String PATH_TO_TESTS = "eth2.0-tests";
 
+  static File getResourceFile(String relativePath) {
+    try {
+      String path = Resources.getResource(relativePath).getPath();
+      final Path filePath = Paths.get(path);
+      return filePath.toFile();
+    } catch (IllegalArgumentException e) {
+      throw new RuntimeException(
+          String.format(
+              "Nothing found on path `%s`.\n Maybe you need to pull tests submodule with following command:\n git submodule update --recursive --remote",
+              relativePath),
+          e);
+    }
+  }
+
   static List<File> getResourceFiles(String dir) {
     try {
       String fixturesRoot = Resources.getResource(dir).getPath();
@@ -47,8 +61,7 @@ public class TestUtils {
     }
   }
 
-  static <V extends TestSkeleton> Optional<String> runAllTestsInFile(
-      File file, Function<TestCase, Optional<String>> testCaseRunner, Class<? extends V> clazz) {
+  static <V extends TestSkeleton> V readTest(File file, Class<? extends V> clazz) {
     String content;
     try (InputStream inputStream = new FileInputStream(file);
         InputStreamReader streamReader = new InputStreamReader(inputStream, Charsets.UTF_8)) {
@@ -62,20 +75,20 @@ public class TestUtils {
 
     V test = readTest(content, clazz);
 
+    return test;
+  }
+
+  static <V extends TestSkeleton> Optional<String> runAllTestsInFile(
+      File file, Function<TestCase, Optional<String>> testCaseRunner, Class<? extends V> clazz) {
+    V test = readTest(file, clazz);
+    return runAllCasesInTest(test, testCaseRunner, clazz);
+  }
+
+  static <V extends TestSkeleton> Optional<String> runAllCasesInTest(
+      V test, Function<TestCase, Optional<String>> testCaseRunner, Class<? extends V> clazz) {
     StringBuilder errors = new StringBuilder();
     for (TestCase testCase : test.getTestCases()) {
-      Optional<String> testCaseErrors = testCaseRunner.apply(testCase);
-      if (testCaseErrors.isPresent()) {
-        errors
-            .append("FAILED TEST ")
-            .append(test)
-            .append("\n")
-            .append(testCase)
-            .append("\n")
-            .append("ERROR: ")
-            .append(testCaseErrors.get())
-            .append("\n---\n");
-      }
+      runTestCase(testCase, test, testCaseRunner).ifPresent(errors::append);
     }
 
     if (errors.length() == 0) {
@@ -83,6 +96,27 @@ public class TestUtils {
     }
 
     return Optional.of(errors.toString());
+  }
+
+  static <V extends TestSkeleton> Optional<String> runTestCase(
+      TestCase testCase, V test, Function<TestCase, Optional<String>> testCaseRunner) {
+    Optional<String> testCaseErrors = testCaseRunner.apply(testCase);
+    if (testCaseErrors.isPresent()) {
+      StringBuilder errors = new StringBuilder();
+      errors
+          .append("FAILED TEST ")
+          .append(test)
+          .append("\n")
+          .append(testCase)
+          .append("\n")
+          .append("ERROR: ")
+          .append(testCaseErrors.get())
+          .append("\n---\n");
+
+      return Optional.of(errors.toString());
+    }
+
+    return Optional.empty();
   }
 
   static <V> V readTest(String content, Class<? extends V> clazz) {
