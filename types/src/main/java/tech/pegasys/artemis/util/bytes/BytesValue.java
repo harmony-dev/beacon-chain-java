@@ -91,6 +91,53 @@ public interface BytesValue extends Comparable<BytesValue> {
    * @return A value representing a view over the concatenation of {@code v1} and {@code v2}.
    */
   static BytesValue wrap(BytesValue v1, BytesValue v2) {
+    return new AbstractBytesValue() {
+      @Override
+      public int size() {
+        return v1.size() + v2.size();
+      }
+
+      @Override
+      public byte get(int i) {
+        checkElementIndex(i, size());
+        return i < v1.size() ? v1.get(i) : v2.get(i - v1.size());
+      }
+
+      @Override
+      public BytesValue slice(int i, int length) {
+        if (i == 0 && length == size())
+          return this;
+        if (length == 0)
+          return BytesValue.EMPTY;
+
+        checkElementIndex(i, size());
+        checkArgument(i + length <= size(),
+            "Provided length %s is too big: the value has size %s and has only %s bytes from %s",
+            length, size(), size() - i, i);
+
+        if (i + length < v1.size())
+          return v1.slice(i, length);
+
+        if (i >= v1.size())
+          return v2.slice(i - v1.size(), length);
+
+        MutableBytesValue res = MutableBytesValue.create(length);
+        int lengthInV1 = v1.size() - i;
+        v1.slice(i, lengthInV1).copyTo(res, 0);
+        v2.slice(0, length - lengthInV1).copyTo(res, lengthInV1);
+        return res;
+      }
+    };
+  }
+
+  /**
+   * Concatenates two values
+   *
+   * The resulting value would be either backed by supplied values with
+   * {@link #wrap(BytesValue, BytesValue)} or create a copy of backing bytes
+   * depending on the target value size
+   */
+  static BytesValue concat(BytesValue v1, BytesValue v2) {
     if (v1.size() + v2.size() < 512) {
       // it should be generally cheaper for further usage
       byte[] bb = new byte[v1.size() + v2.size()];
@@ -100,43 +147,7 @@ public interface BytesValue extends Comparable<BytesValue> {
       System.arraycopy(arr2, 0, bb, arr1.length, arr2.length);
       return wrap(bb);
     } else {
-      return new AbstractBytesValue() {
-        @Override
-        public int size() {
-          return v1.size() + v2.size();
-        }
-
-        @Override
-        public byte get(int i) {
-          checkElementIndex(i, size());
-          return i < v1.size() ? v1.get(i) : v2.get(i - v1.size());
-        }
-
-        @Override
-        public BytesValue slice(int i, int length) {
-          if (i == 0 && length == size())
-            return this;
-          if (length == 0)
-            return BytesValue.EMPTY;
-
-          checkElementIndex(i, size());
-          checkArgument(i + length <= size(),
-              "Provided length %s is too big: the value has size %s and has only %s bytes from %s",
-              length, size(), size() - i, i);
-
-          if (i + length < v1.size())
-            return v1.slice(i, length);
-
-          if (i >= v1.size())
-            return v2.slice(i - v1.size(), length);
-
-          MutableBytesValue res = MutableBytesValue.create(length);
-          int lengthInV1 = v1.size() - i;
-          v1.slice(i, lengthInV1).copyTo(res, 0);
-          v2.slice(0, length - lengthInV1).copyTo(res, lengthInV1);
-          return res;
-        }
-      };
+      return wrap(v1, v2);
     }
   }
 
@@ -542,7 +553,7 @@ public interface BytesValue extends Comparable<BytesValue> {
   }
 
   default BytesValue concat(final BytesValue value) {
-    return wrap(this, value);
+    return concat(this, value);
   }
 
   /**
