@@ -62,7 +62,6 @@ public class ShuffleTests extends TestUtils {
   }
 
   @Test
-  @Ignore("Remove ignore when community tests are updated according to the latest spec")
   public void testShuffling() {
     Path sszTestsPath = Paths.get(PATH_TO_TESTS, TESTS_DIR);
     runTestsInResourceDir(
@@ -85,8 +84,7 @@ public class ShuffleTests extends TestUtils {
    * ReadList, EpochNumber)}
    */
   @Test
-  @Ignore(
-      "Remove ignore when get_shuffling2 is fixed and community tests are updated according to the latest spec")
+  @Ignore("get_shuffling2 provides different output compared to spec get_shuffling")
   public void testShuffling2() {
     Path sszTestsPath = Paths.get(PATH_TO_TESTS, TESTS_DIR);
     runTestsInResourceDir(
