@@ -13,6 +13,7 @@
 
 package tech.pegasys.artemis.util.uint;
 
+import com.google.common.primitives.UnsignedLongs;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Objects;
@@ -278,7 +279,7 @@ public class UInt64 extends Number implements Comparable<UInt64> {
     if (unsignedDivisor == 0) {
       throw new IllegalArgumentException("Argument 'divisor' is 0.");
     }
-    return new UInt64(Long.remainderUnsigned(this.value, unsignedDivisor));
+    return new UInt64(UnsignedLongs.remainder(this.value, unsignedDivisor));
   }
 
   /**
