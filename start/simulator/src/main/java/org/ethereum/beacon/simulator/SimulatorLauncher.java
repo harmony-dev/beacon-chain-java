@@ -41,7 +41,7 @@ import org.ethereum.beacon.crypto.BLS381;
 import org.ethereum.beacon.crypto.BLS381.KeyPair;
 import org.ethereum.beacon.crypto.BLS381.PrivateKey;
 import org.ethereum.beacon.emulator.config.ConfigBuilder;
-import org.ethereum.beacon.emulator.config.chainspec.Spec;
+import org.ethereum.beacon.emulator.config.chainspec.SpecData;
 import org.ethereum.beacon.emulator.config.chainspec.SpecBuilder;
 import org.ethereum.beacon.emulator.config.main.MainConfig;
 import org.ethereum.beacon.emulator.config.main.plan.SimulationPlan;
@@ -468,11 +468,11 @@ public class SimulatorLauncher implements Runnable {
       assert config != null;
       SimulationPlan simulationPlan = (SimulationPlan) config.getPlan();
 
-      ConfigBuilder<Spec> specConfigBuilder =
-          new ConfigBuilder<>(Spec.class).addYamlConfigFromResources("/config/spec-constants.yml");
+      ConfigBuilder<SpecData> specConfigBuilder =
+          new ConfigBuilder<>(SpecData.class).addYamlConfigFromResources("/config/spec-constants.yml");
       specConfigBuilder.addConfig(config.getChainSpec());
 
-      Spec spec = specConfigBuilder.build();
+      SpecData spec = specConfigBuilder.build();
 
       List<PeersConfig> peers = new ArrayList<>();
       for (PeersConfig peer : simulationPlan.getPeers()) {

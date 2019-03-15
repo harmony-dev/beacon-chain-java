@@ -2,7 +2,7 @@ package org.ethereum.beacon.emulator.config.chainspec;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class SpecHelpersOptions {
+public class SpecHelpersData {
   @JsonProperty("bls-verify")
   private boolean blsVerifyEnabled = true;
 
