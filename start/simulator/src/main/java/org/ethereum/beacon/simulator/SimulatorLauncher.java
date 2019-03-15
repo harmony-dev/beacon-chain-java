@@ -30,6 +30,7 @@ import org.ethereum.beacon.chain.storage.impl.MemBeaconChainStorageFactory;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.TransitionType;
 import org.ethereum.beacon.consensus.transition.EpochTransitionSummary;
+import org.ethereum.beacon.consensus.util.CachingSpecHelpers;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
@@ -470,10 +471,12 @@ public class SimulatorLauncher implements Runnable {
           peers.add(peer);
         }
       }
+      SpecHelpers specHelpers = spec
+          .buildSpecHelpers(simulationPlan.isBlsVerifyEnabled(), simulationPlan.isBlsSignEnabled());
 
       return new SimulatorLauncher(
           simulationPlan,
-          spec.buildSpecHelpers(simulationPlan.isBlsVerifyEnabled(), simulationPlan.isBlsSignEnabled()),
+          specHelpers,
           specOverridesBuilder.isEmpty() ? null : specOverridesBuilder.build(),
           peers.stream().filter(PeersConfig::isValidator).collect(Collectors.toList()),
           peers.stream().filter(config -> !config.isValidator()).collect(Collectors.toList()),

@@ -502,7 +502,7 @@ public class SpecHelpers {
    *
    * Ported from https://github.com/protolambda/eth2-shuffle/blob/master/shuffle.go#L159
    */
-  List<UInt64> get_permuted_list(List<? extends UInt64> indices, Bytes32 seed) {
+  public List<UInt64> get_permuted_list(List<? extends UInt64> indices, Bytes32 seed) {
     int listSize = indices.size();
     List<UInt64> permutations = new ArrayList<>(indices);
 
