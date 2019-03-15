@@ -50,6 +50,7 @@ import org.ethereum.beacon.schedulers.ControlledSchedulers;
 import org.ethereum.beacon.schedulers.LoggerMDCExecutor;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.simulator.util.SimulateUtils;
+import org.ethereum.beacon.util.stats.TimeCollector;
 import org.ethereum.beacon.wire.LocalWireHub;
 import org.ethereum.beacon.wire.WireApi;
 import org.javatuples.Pair;
@@ -116,7 +117,8 @@ public class SimulatorLauncher implements Runnable {
     }
   }
 
-  private Pair<List<Deposit>, List<BLS381.KeyPair>> getValidatorDeposits(Random rnd) {
+  private Pair<List<Deposit>, List<BLS381.KeyPair>> getValidatorDeposits(Random rnd,
+      boolean isProofVerifyEnabled) {
     Pair<List<Deposit>, List<BLS381.KeyPair>> deposits =
         SimulateUtils.getAnyDeposits(rnd, specHelpers, validators.size(),
             simulationPlan.isProofVerifyEnabled());
@@ -140,7 +142,8 @@ public class SimulatorLauncher implements Runnable {
 
     Random rnd = new Random(simulationPlan.getSeed());
     setupLogging();
-    Pair<List<Deposit>, List<BLS381.KeyPair>> validatorDeposits = getValidatorDeposits(rnd);
+    Pair<List<Deposit>, List<BLS381.KeyPair>> validatorDeposits = getValidatorDeposits(rnd,
+        simulationPlan.isProofVerifyEnabled());
 
     List<Deposit> deposits = validatorDeposits.getValue0().stream()
         .filter(Objects::nonNull).collect(Collectors.toList());
@@ -162,6 +165,7 @@ public class SimulatorLauncher implements Runnable {
     List<Launcher> peers = new ArrayList<>();
 
     logger.info("Creating validators...");
+    TimeCollector proposeTimeCollector = new TimeCollector();
     for (int i = 0; i < validators.size(); i++) {
       ControlledSchedulers schedulers =
           controlledSchedulers.createNew("V" + i, validators.get(i).getSystemTimeShift());
@@ -178,7 +182,11 @@ public class SimulatorLauncher implements Runnable {
               keyPairs.get(i),
               wireApi,
               new MemBeaconChainStorageFactory(),
-              schedulers);
+              schedulers,
+              proposeTimeCollector);
+
+      if ((i + 1) % 100 == 0)
+        logger.info("{} validators created", i + 1);
 
       peers.add(launcher);
 
