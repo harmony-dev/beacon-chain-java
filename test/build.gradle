@@ -6,4 +6,13 @@ dependencies {
   testImplementation project(':crypto')
   testImplementation project(':ssz')
   testImplementation project(':consensus')
+  testImplementation project(':core')
 }
+
+task submodulesUpdate(type:Exec) {
+  description 'Updates (and inits) git submodules'
+  commandLine 'git', 'submodule', 'update', '--init', '--recursive'
+  group 'Build Setup'
+}
+
+test.dependsOn(submodulesUpdate)
