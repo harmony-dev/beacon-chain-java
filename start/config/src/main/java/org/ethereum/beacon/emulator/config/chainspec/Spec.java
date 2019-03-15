@@ -3,6 +3,8 @@ package org.ethereum.beacon.emulator.config.chainspec;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.List;
 import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.core.MutableBeaconState;
+import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.crypto.BLS381.PublicKey;
@@ -19,12 +21,12 @@ public class Spec implements Config {
     return specConstants.buildSpecConstants();
   }
 
-  public SpecHelpers buildSpecHelpers(boolean blsVerifyEnabled) {
+  public SpecHelpers buildSpecHelpers(boolean blsVerifyEnabled, boolean proofVerifyEnabled) {
     SpecHelpers defaultSpecHelpers =
         SpecHelpers.createWithSSZHasher(buildSpecConstants());
-    if (blsVerifyEnabled) {
+    if (blsVerifyEnabled && proofVerifyEnabled) {
       return defaultSpecHelpers;
-    } else {
+    } else if (!blsVerifyEnabled) {
       return new SpecHelpers(
           defaultSpecHelpers.getConstants(),
           defaultSpecHelpers.getHashFunction(),
@@ -40,6 +42,22 @@ public class Spec implements Config {
         public boolean bls_verify_multiple(List<PublicKey> publicKeys, List<Hash32> messages,
             BLSSignature signature, Bytes8 domain) {
           return true;
+        }
+
+        @Override
+        public void process_deposit(MutableBeaconState state, Deposit deposit) {
+          super.process_deposit_inner(state, deposit, proofVerifyEnabled);
+        }
+      };
+    } else {
+      return new SpecHelpers(
+          defaultSpecHelpers.getConstants(),
+          defaultSpecHelpers.getHashFunction(),
+          defaultSpecHelpers.getObjectHasher()) {
+
+        @Override
+        public void process_deposit(MutableBeaconState state, Deposit deposit) {
+          super.process_deposit_inner(state, deposit, false);
         }
       };
     }

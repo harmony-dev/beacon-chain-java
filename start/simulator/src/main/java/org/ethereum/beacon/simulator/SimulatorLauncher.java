@@ -118,12 +118,14 @@ public class SimulatorLauncher implements Runnable {
 
   private Pair<List<Deposit>, List<BLS381.KeyPair>> getValidatorDeposits(Random rnd) {
     Pair<List<Deposit>, List<BLS381.KeyPair>> deposits =
-        SimulateUtils.getAnyDeposits(rnd, specHelpers, validators.size());
+        SimulateUtils.getAnyDeposits(rnd, specHelpers, validators.size(),
+            simulationPlan.isProofVerifyEnabled());
     for (int i = 0; i < validators.size(); i++) {
       if (validators.get(i).getBlsPrivateKey() != null) {
         KeyPair keyPair = KeyPair.create(
             PrivateKey.create(Bytes32.fromHexString(validators.get(i).getBlsPrivateKey())));
-        deposits.getValue0().set(i, SimulateUtils.getDepositForKeyPair(rnd, keyPair, specHelpers));
+        deposits.getValue0().set(i, SimulateUtils.getDepositForKeyPair(rnd, keyPair, specHelpers,
+            simulationPlan.isProofVerifyEnabled()));
         deposits.getValue1().set(i, keyPair);
       }
     }
@@ -179,8 +181,11 @@ public class SimulatorLauncher implements Runnable {
               schedulers);
 
       peers.add(launcher);
+
+      if ((i + 1) % 1000 == 0)
+        logger.info("{} validators created", (i + 1));
     }
-    logger.info("Validators created");
+    logger.info("All validators created");
 
     logger.info("Creating observer peers...");
     for (int i = 0; i < observers.size(); i++) {
@@ -463,7 +468,7 @@ public class SimulatorLauncher implements Runnable {
 
       return new SimulatorLauncher(
           simulationPlan,
-          spec.buildSpecHelpers(simulationPlan.isBlsVerifyEnabled()),
+          spec.buildSpecHelpers(simulationPlan.isBlsVerifyEnabled(), simulationPlan.isProofVerifyEnabled()),
           specOverridesBuilder.isEmpty() ? null : specOverridesBuilder.build(),
           peers.stream().filter(PeersConfig::isValidator).collect(Collectors.toList()),
           peers.stream().filter(config -> !config.isValidator()).collect(Collectors.toList()),
