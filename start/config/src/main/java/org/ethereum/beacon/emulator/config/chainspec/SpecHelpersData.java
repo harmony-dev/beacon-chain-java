@@ -1,39 +1,33 @@
 package org.ethereum.beacon.emulator.config.chainspec;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 public class SpecHelpersData {
-  @JsonProperty("bls-verify")
-  private boolean blsVerifyEnabled = true;
+  private boolean blsVerify = true;
 
-  @JsonProperty("bls-sign")
-  private boolean blsSignEnabled = true;
+  private boolean blsVerifyProofOfPosession = true;
 
-  @JsonProperty("verify-proof-of-possession")
-  private boolean proofVerifyEnabled = true;
+  private boolean blsSign = true;
 
-
-  public boolean isBlsVerifyEnabled() {
-    return blsVerifyEnabled;
+  public boolean isBlsVerify() {
+    return blsVerify;
   }
 
-  public void setBlsVerifyEnabled(boolean blsVerifyEnabled) {
-    this.blsVerifyEnabled = blsVerifyEnabled;
+  public void setBlsVerify(boolean blsVerify) {
+    this.blsVerify = blsVerify;
   }
 
-  public boolean isBlsSignEnabled() {
-    return blsSignEnabled;
+  public boolean isBlsVerifyProofOfPosession() {
+    return blsVerifyProofOfPosession;
   }
 
-  public void setBlsSignEnabled(boolean blsSignEnabled) {
-    this.blsSignEnabled = blsSignEnabled;
+  public void setBlsVerifyProofOfPosession(boolean blsVerifyProofOfPosession) {
+    this.blsVerifyProofOfPosession = blsVerifyProofOfPosession;
   }
 
-  public boolean isProofVerifyEnabled() {
-    return proofVerifyEnabled;
+  public boolean isBlsSign() {
+    return blsSign;
   }
 
-  public void setProofVerifyEnabled(boolean proofVerifyEnabled) {
-    this.proofVerifyEnabled = proofVerifyEnabled;
+  public void setBlsSign(boolean blsSign) {
+    this.blsSign = blsSign;
   }
 }

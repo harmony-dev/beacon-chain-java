@@ -121,13 +121,13 @@ public class SimulatorLauncher implements Runnable {
       boolean isProofVerifyEnabled) {
     Pair<List<Deposit>, List<BLS381.KeyPair>> deposits =
         SimulateUtils.getAnyDeposits(rnd, specHelpers, validators.size(),
-            config.getChainSpec().getSpecHelpersOptions().isProofVerifyEnabled());
+            config.getChainSpec().getSpecHelpersOptions().isBlsVerifyProofOfPosession());
     for (int i = 0; i < validators.size(); i++) {
       if (validators.get(i).getBlsPrivateKey() != null) {
         KeyPair keyPair = KeyPair.create(
             PrivateKey.create(Bytes32.fromHexString(validators.get(i).getBlsPrivateKey())));
         deposits.getValue0().set(i, SimulateUtils.getDepositForKeyPair(rnd, keyPair, specHelpers,
-            config.getChainSpec().getSpecHelpersOptions().isProofVerifyEnabled()));
+            config.getChainSpec().getSpecHelpersOptions().isBlsVerifyProofOfPosession()));
         deposits.getValue1().set(i, keyPair);
       }
     }
@@ -143,7 +143,7 @@ public class SimulatorLauncher implements Runnable {
     Random rnd = new Random(simulationPlan.getSeed());
     setupLogging();
     Pair<List<Deposit>, List<BLS381.KeyPair>> validatorDeposits = getValidatorDeposits(rnd,
-        config.getChainSpec().getSpecHelpersOptions().isProofVerifyEnabled());
+        config.getChainSpec().getSpecHelpersOptions().isBlsVerifyProofOfPosession());
 
     List<Deposit> deposits = validatorDeposits.getValue0().stream()
         .filter(Objects::nonNull).collect(Collectors.toList());
@@ -179,7 +179,7 @@ public class SimulatorLauncher implements Runnable {
       if (keyPairs.get(i) == null) {
         bls = null;
       } else {
-        bls = config.getChainSpec().getSpecHelpersOptions().isBlsSignEnabled() ?
+        bls = config.getChainSpec().getSpecHelpersOptions().isBlsSign() ?
             BLS381Credentials.createWithInsecureSigner(keyPairs.get(i)) :
             BLS381Credentials.createWithDummySigner(keyPairs.get(i));
       }

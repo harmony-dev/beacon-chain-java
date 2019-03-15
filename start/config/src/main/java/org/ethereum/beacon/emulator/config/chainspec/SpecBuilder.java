@@ -23,17 +23,17 @@ import tech.pegasys.artemis.util.uint.UInt64;
 
 public class SpecBuilder {
 
-  public SpecHelpers buildSpecHelpers(Spec spec) {
+  public SpecHelpers buildSpecHelpers(SpecData spec) {
     return buildSpecHelpers(spec.getSpecHelpersOptions(), spec.getSpecConstants());
   }
 
   public SpecHelpers buildSpecHelpers(
-      SpecHelpersOptions specHelpersOptions, SpecConstantsData specConstantsData) {
+      SpecHelpersData specHelpersOptions, SpecConstantsData specConstantsData) {
     return buildSpecHelpers(specHelpersOptions, buildSpecConstants(specConstantsData));
   }
 
   public SpecHelpers buildSpecHelpers(
-      SpecHelpersOptions specHelpersOptions, SpecConstants specConstants) {
+      SpecHelpersData specHelpersOptions, SpecConstants specConstants) {
 
     SpecHelpers defaultSpecHelpers = SpecHelpers.createWithSSZHasher(specConstants);
     return new SpecHelpers(
@@ -43,7 +43,7 @@ public class SpecBuilder {
 
       @Override
       public PublicKey bls_aggregate_pubkeys(List<BLSPubkey> publicKeysBytes) {
-        if (specHelpersOptions.isBlsSignEnabled()) {
+        if (specHelpersOptions.isBlsSign()) {
           return super.bls_aggregate_pubkeys(publicKeysBytes);
         } else {
           return PublicKey.create(new ECP());
@@ -53,7 +53,7 @@ public class SpecBuilder {
       @Override
       public boolean bls_verify(
           BLSPubkey publicKey, Hash32 message, BLSSignature signature, Bytes8 domain) {
-        if (specHelpersOptions.isBlsVerifyEnabled()) {
+        if (specHelpersOptions.isBlsVerify()) {
           return super.bls_verify(publicKey, message, signature, domain);
         } else {
           return true;
@@ -63,7 +63,7 @@ public class SpecBuilder {
       @Override
       public boolean bls_verify(
           PublicKey blsPublicKey, Hash32 message, BLSSignature signature, Bytes8 domain) {
-        if (specHelpersOptions.isBlsVerifyEnabled()) {
+        if (specHelpersOptions.isBlsVerify()) {
           return super.bls_verify(blsPublicKey, message, signature, domain);
         } else {
           return true;
@@ -76,7 +76,7 @@ public class SpecBuilder {
           List<Hash32> messages,
           BLSSignature signature,
           Bytes8 domain) {
-        if (specHelpersOptions.isBlsVerifyEnabled()) {
+        if (specHelpersOptions.isBlsVerify()) {
           return super.bls_verify_multiple(publicKeys, messages, signature, domain);
         } else {
           return true;
@@ -85,7 +85,7 @@ public class SpecBuilder {
 
       @Override
       public void process_deposit(MutableBeaconState state, Deposit deposit) {
-        super.process_deposit_inner(state, deposit, specHelpersOptions.isProofVerifyEnabled());
+        super.process_deposit_inner(state, deposit, specHelpersOptions.isBlsVerifyProofOfPosession());
       }
     };
   }
