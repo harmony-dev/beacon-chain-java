@@ -1,6 +1,6 @@
 plan: !simulation
   seed: 1
-  genesis-time: 600
+  genesisTime: 600
   peers:
     - count: 8
       validator: true

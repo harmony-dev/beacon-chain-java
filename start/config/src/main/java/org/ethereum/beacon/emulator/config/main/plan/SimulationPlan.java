@@ -11,7 +11,6 @@ public class SimulationPlan extends Plan implements Config {
 
   private List<PeersConfig> peers = new ArrayList<>();
 
-  @JsonProperty("genesis-time")
   private int genesisTime = 600;
 
   private long seed = System.currentTimeMillis();
