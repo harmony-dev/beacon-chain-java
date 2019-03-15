@@ -26,6 +26,7 @@ import org.ethereum.beacon.db.InMemoryDatabase;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.pow.DepositContract.ChainStart;
 import org.ethereum.beacon.schedulers.Schedulers;
+import org.ethereum.beacon.util.stats.TimeCollector;
 import org.ethereum.beacon.validator.BeaconChainProposer;
 import org.ethereum.beacon.validator.MultiValidatorService;
 import org.ethereum.beacon.validator.attester.BeaconChainAttesterImpl;
@@ -60,6 +61,8 @@ public class Launcher {
   private BeaconChainAttesterImpl beaconChainAttester;
   private MultiValidatorService beaconChainValidator;
 
+  private TimeCollector proposeTimeCollector;
+
   public Launcher(
       SpecHelpers spec,
       DepositContract depositContract,
@@ -67,6 +70,17 @@ public class Launcher {
       WireApi wireApi,
       BeaconChainStorageFactory storageFactory,
       Schedulers schedulers) {
+    this(spec, depositContract, validatorSig, wireApi, storageFactory, schedulers, new TimeCollector());
+  }
+
+  public Launcher(
+      SpecHelpers spec,
+      DepositContract depositContract,
+      KeyPair validatorSig,
+      WireApi wireApi,
+      BeaconChainStorageFactory storageFactory,
+      Schedulers schedulers,
+      TimeCollector proposeTimeCollector) {
 
     this.spec = spec;
     this.depositContract = depositContract;
@@ -74,6 +88,7 @@ public class Launcher {
     this.wireApi = wireApi;
     this.storageFactory = storageFactory;
     this.schedulers = schedulers;
+    this.proposeTimeCollector = proposeTimeCollector;
 
     if (depositContract != null) {
       Mono.from(depositContract.getChainStartMono()).subscribe(this::chainStarted);
@@ -134,7 +149,8 @@ public class Launcher {
         beaconChainAttester,
         spec,
         observableStateProcessor.getObservableStateStream(),
-        schedulers);
+        schedulers,
+        proposeTimeCollector);
     beaconChainValidator.start();
 
       ProposedBlockProcessor proposedBlocksProcessor = new ProposedBlockProcessorImpl(

@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.List;
 import org.apache.milagro.amcl.BLS381.ECP;
 import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.core.MutableBeaconState;
+import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
@@ -21,12 +23,12 @@ public class Spec implements Config {
     return specConstants.buildSpecConstants();
   }
 
-  public SpecHelpers buildSpecHelpers(boolean blsVerifyEnabled, boolean blsSignEnabled) {
+  public SpecHelpers buildSpecHelpers(boolean blsVerifyEnabled, boolean proofVerifyEnabled, boolean blsSignEnabled) {
     SpecHelpers defaultSpecHelpers =
         SpecHelpers.createWithSSZHasher(buildSpecConstants());
-    if (blsVerifyEnabled) {
+    if (blsVerifyEnabled && proofVerifyEnabled) {
       return defaultSpecHelpers;
-    } else {
+    } else if (!blsVerifyEnabled) {
       return new SpecHelpers(
           defaultSpecHelpers.getConstants(),
           defaultSpecHelpers.getHashFunction(),
@@ -60,6 +62,22 @@ public class Spec implements Config {
             BLSSignature signature,
             Bytes8 domain) {
           return true;
+        }
+
+        @Override
+        public void process_deposit(MutableBeaconState state, Deposit deposit) {
+          super.process_deposit_inner(state, deposit, proofVerifyEnabled);
+        }
+      };
+    } else {
+      return new SpecHelpers(
+          defaultSpecHelpers.getConstants(),
+          defaultSpecHelpers.getHashFunction(),
+          defaultSpecHelpers.getObjectHasher()) {
+
+        @Override
+        public void process_deposit(MutableBeaconState state, Deposit deposit) {
+          super.process_deposit_inner(state, deposit, false);
         }
       };
     }
