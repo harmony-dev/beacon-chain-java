@@ -28,8 +28,8 @@ public class MilagroMessageMapper implements MessageParametersMapper<ECP2> {
 
   @Override
   public ECP2 map(MessageParameters parameters) {
-    BytesValue reBytes = parameters.getDomain().concat(BYTES_ONE).concat(parameters.getHash());
-    BytesValue imBytes = parameters.getDomain().concat(BYTES_TWO).concat(parameters.getHash());
+    BytesValue reBytes = parameters.getHash().concat(parameters.getDomain()).concat(BYTES_ONE);
+    BytesValue imBytes = parameters.getHash().concat(parameters.getDomain()).concat(BYTES_TWO);
 
     BIG reX = BIGs.fromBytes(Hashes.keccak256(reBytes));
     BIG imX = BIGs.fromBytes(Hashes.keccak256(imBytes));
