@@ -72,8 +72,6 @@ public class BlsTests extends TestUtils {
   }
 
   @Test
-  @Ignore(
-      "Match fixed test https://gist.github.com/ChihChengLiang/328bc1db5d2a47950e5364c11f23052a, waiting for update")
   public void testBlsPrivateToPublic() {
     Path testFilePath = Paths.get(PATH_TO_TESTS, TESTS_DIR, FILENAME);
     BlsTest test = readTest(getResourceFile(testFilePath.toString()), BlsTest.class);
@@ -111,8 +109,6 @@ public class BlsTests extends TestUtils {
   }
 
   @Test
-  @Ignore(
-      "Match fixed test https://gist.github.com/ChihChengLiang/328bc1db5d2a47950e5364c11f23052a, waiting for update")
   public void testBlsAggregateSigs() {
     Path testFilePath = Paths.get(PATH_TO_TESTS, TESTS_DIR, FILENAME);
     BlsTest test = readTest(getResourceFile(testFilePath.toString()), BlsTest.class);
@@ -131,8 +127,6 @@ public class BlsTests extends TestUtils {
   }
 
   @Test
-  @Ignore(
-      "Match fixed test https://gist.github.com/ChihChengLiang/328bc1db5d2a47950e5364c11f23052a, waiting for update")
   public void testBlsAggregatePubKeys() {
     Path testFilePath = Paths.get(PATH_TO_TESTS, TESTS_DIR, FILENAME);
     BlsTest test = readTest(getResourceFile(testFilePath.toString()), BlsTest.class);
