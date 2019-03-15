@@ -22,7 +22,7 @@ include 'pow:web3j'
 // SSZ (Simple serialization)
 include 'ssz'
 // Command line executable clients
-include 'start:cli'
+include 'start:simulator'
 // Clients helpers
 include 'start:common'
 // Configuration parser

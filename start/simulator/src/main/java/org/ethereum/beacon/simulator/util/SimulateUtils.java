@@ -1,4 +1,4 @@
-package org.ethereum.beacon.util;
+package org.ethereum.beacon.simulator.util;
 
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.core.operations.Deposit;

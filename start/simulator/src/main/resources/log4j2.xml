@@ -23,21 +23,12 @@
 
     <Console name="Console" target="SYSTEM_OUT">
       <PatternLayout>
-        <Pattern>%d{HH:mm:ss.SSS} [%t] %-5level #%X{validatorIndex} %logger{36} - %msg%n</Pattern>
+        <Pattern>%d{HH:mm:ss.SSS} #%X{validatorIndex} %X{validatorTime} %-5level - %msg%n</Pattern>
       </PatternLayout>
-      <!-- ThresholdFilter level="info"/ -->
-      <!--
-            <ContextMapFilter onMatch="ACCEPT" onMismatch="DENY" operator="or">
-              <KeyValuePair key="mdcKey" value="value1"/>
-            </ContextMapFilter>
-      -->
     </Console>
   </Appenders>
   <Loggers>
-    <Logger name="simulator" level="info" additivity="false">
-      <AppenderRef ref="Console"/>
-    </Logger>
-    <Logger name="peer" level="info" additivity="false">
+    <Logger name="simulator" level="trace" additivity="true">
       <AppenderRef ref="Console"/>
     </Logger>
 
