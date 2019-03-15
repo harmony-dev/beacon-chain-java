@@ -1,5 +1,6 @@
 seed: 1
 bls-verify: false
+verify-proof-of-possession: false
 bls-sign: false
 genesis-time: 600
 peers:

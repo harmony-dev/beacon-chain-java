@@ -70,13 +70,13 @@ public class Launcher {
       WireApi wireApi,
       BeaconChainStorageFactory storageFactory,
       Schedulers schedulers) {
-    this(spec, depositContract, validatorSig, wireApi, storageFactory, schedulers, new TimeCollector());
+    this(spec, depositContract, validatorCred, wireApi, storageFactory, schedulers, new TimeCollector());
   }
 
   public Launcher(
       SpecHelpers spec,
       DepositContract depositContract,
-      KeyPair validatorSig,
+      BLS381Credentials validatorCred,
       WireApi wireApi,
       BeaconChainStorageFactory storageFactory,
       Schedulers schedulers,
