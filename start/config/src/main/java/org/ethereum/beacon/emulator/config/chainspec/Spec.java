@@ -18,70 +18,7 @@ import tech.pegasys.artemis.util.bytes.Bytes8;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Spec implements Config {
   private SpecConstantsData specConstants;
-
-  public SpecConstants buildSpecConstants() {
-    return specConstants.buildSpecConstants();
-  }
-
-  public SpecHelpers buildSpecHelpers(boolean blsVerifyEnabled, boolean proofVerifyEnabled, boolean blsSignEnabled) {
-    SpecHelpers defaultSpecHelpers =
-        SpecHelpers.createWithSSZHasher(buildSpecConstants());
-    if (blsVerifyEnabled && proofVerifyEnabled) {
-      return defaultSpecHelpers;
-    } else if (!blsVerifyEnabled) {
-      return new SpecHelpers(
-          defaultSpecHelpers.getConstants(),
-          defaultSpecHelpers.getHashFunction(),
-          defaultSpecHelpers.getObjectHasher()) {
-
-        @Override
-        public PublicKey bls_aggregate_pubkeys(List<BLSPubkey> publicKeysBytes) {
-          if (blsSignEnabled) {
-            return super.bls_aggregate_pubkeys(publicKeysBytes);
-          } else {
-            return PublicKey.create(new ECP());
-          }
-        }
-
-        @Override
-        public boolean bls_verify(
-            BLSPubkey publicKey, Hash32 message, BLSSignature signature, Bytes8 domain) {
-          return true;
-        }
-
-        @Override
-        public boolean bls_verify(
-            PublicKey blsPublicKey, Hash32 message, BLSSignature signature, Bytes8 domain) {
-          return true;
-        }
-
-        @Override
-        public boolean bls_verify_multiple(
-            List<PublicKey> publicKeys,
-            List<Hash32> messages,
-            BLSSignature signature,
-            Bytes8 domain) {
-          return true;
-        }
-
-        @Override
-        public void process_deposit(MutableBeaconState state, Deposit deposit) {
-          super.process_deposit_inner(state, deposit, proofVerifyEnabled);
-        }
-      };
-    } else {
-      return new SpecHelpers(
-          defaultSpecHelpers.getConstants(),
-          defaultSpecHelpers.getHashFunction(),
-          defaultSpecHelpers.getObjectHasher()) {
-
-        @Override
-        public void process_deposit(MutableBeaconState state, Deposit deposit) {
-          super.process_deposit_inner(state, deposit, false);
-        }
-      };
-    }
-  }
+  private SpecHelpersOptions specHelpersOptions;
 
   public SpecConstantsData getSpecConstants() {
     return specConstants;
@@ -90,6 +27,15 @@ public class Spec implements Config {
   public void setSpecConstants(
       SpecConstantsData specConstants) {
     this.specConstants = specConstants;
+  }
+
+  public SpecHelpersOptions getSpecHelpersOptions() {
+    return specHelpersOptions;
+  }
+
+  public void setSpecHelpersOptions(
+      SpecHelpersOptions specHelpersOptions) {
+    this.specHelpersOptions = specHelpersOptions;
   }
 
   @Override
