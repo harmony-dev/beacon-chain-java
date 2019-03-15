@@ -177,7 +177,7 @@ public class ConfigBuilder<C extends Config> {
   }
 
   /** Adds alread created Config as source of configuration */
-  public ConfigBuilder addConfig(Config config) {
+  public ConfigBuilder addConfig(C config) {
     configs.add(new AsIsSource(config));
     return this;
   }

@@ -1,0 +1,36 @@
+plan: !simulation
+  seed: 1
+  genesis-time: 600
+  peers:
+    - count: 8
+      validator: true
+      systemTimeShift: 0
+      wireInboundDelay: 0
+      wireOutboundDelay: 0
+    - count: 1
+      validator: false
+
+chainSpec:
+  specConstants:
+    initialValues:
+      GENESIS_SLOT: 1000000
+    miscParameters:
+      SHARD_COUNT: 4
+      TARGET_COMMITTEE_SIZE: 2
+    timeParameters:
+      SECONDS_PER_SLOT: 10
+      MIN_ATTESTATION_INCLUSION_DELAY: 1
+      SLOTS_PER_EPOCH: 4
+
+    honestValidatorParameters:
+      ETH1_FOLLOW_DISTANCE: 1
+    stateListLengths:
+      LATEST_BLOCK_ROOTS_LENGTH: 64
+      LATEST_RANDAO_MIXES_LENGTH: 64
+      LATEST_ACTIVE_INDEX_ROOTS_LENGTH: 64
+      LATEST_SLASHED_EXIT_LENGTH: 64
+
+  specHelpersOptions:
+    bls-verify: false
+    verify-proof-of-possession: false
+    bls-sign: false

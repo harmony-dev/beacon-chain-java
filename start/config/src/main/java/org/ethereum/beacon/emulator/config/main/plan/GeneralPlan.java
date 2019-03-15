@@ -1,11 +1,9 @@
-package org.ethereum.beacon.emulator.config.main;
-
-import org.ethereum.beacon.emulator.config.main.action.Action;
+package org.ethereum.beacon.emulator.config.main.plan;
 
 import java.util.List;
+import org.ethereum.beacon.emulator.config.main.action.Action;
 
-/** Configuration of application tasks */
-public class Plan {
+public class GeneralPlan extends Plan {
   private List<Action> sync;
   private List<Action> validator;
 

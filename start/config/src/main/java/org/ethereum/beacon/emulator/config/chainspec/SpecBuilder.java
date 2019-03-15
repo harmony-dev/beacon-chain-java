@@ -23,6 +23,15 @@ import tech.pegasys.artemis.util.uint.UInt64;
 
 public class SpecBuilder {
 
+  public SpecHelpers buildSpecHelpers(Spec spec) {
+    return buildSpecHelpers(spec.getSpecHelpersOptions(), spec.getSpecConstants());
+  }
+
+  public SpecHelpers buildSpecHelpers(
+      SpecHelpersOptions specHelpersOptions, SpecConstantsData specConstantsData) {
+    return buildSpecHelpers(specHelpersOptions, buildSpecConstants(specConstantsData));
+  }
+
   public SpecHelpers buildSpecHelpers(
       SpecHelpersOptions specHelpersOptions, SpecConstants specConstants) {
 
