@@ -94,6 +94,11 @@ abstract class BaseDelegatingBytesValue<T extends BytesValue> implements BytesVa
   }
 
   @Override
+  public byte[] getArrayUnsafe() {
+    return wrapped.getArrayUnsafe();
+  }
+
+  @Override
   public boolean equals(Object other) {
     return wrapped.equals(other);
   }

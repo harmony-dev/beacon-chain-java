@@ -13,6 +13,12 @@ public class SimulationPlan implements Config {
   @JsonProperty("bls-verify")
   private boolean blsVerifyEnabled = true;
 
+  @JsonProperty("bls-sign")
+  private boolean blsSignEnabled = true;
+
+  @JsonProperty("verify-proof-of-possession")
+  private boolean proofVerifyEnabled = true;
+
   @JsonProperty("genesis-time")
   private int genesisTime = 600;
 
@@ -34,6 +40,14 @@ public class SimulationPlan implements Config {
     this.blsVerifyEnabled = blsVerifyEnabled;
   }
 
+  public boolean isBlsSignEnabled() {
+    return blsSignEnabled;
+  }
+
+  public void setBlsSignEnabled(boolean blsSignEnabled) {
+    this.blsSignEnabled = blsSignEnabled;
+  }
+
   public int getGenesisTime() {
     return genesisTime;
   }
@@ -48,6 +62,14 @@ public class SimulationPlan implements Config {
 
   public void setSeed(long seed) {
     this.seed = seed;
+  }
+
+  public boolean isProofVerifyEnabled() {
+    return proofVerifyEnabled;
+  }
+
+  public void setProofVerifyEnabled(boolean proofVerifyEnabled) {
+    this.proofVerifyEnabled = proofVerifyEnabled;
   }
 
   @Override

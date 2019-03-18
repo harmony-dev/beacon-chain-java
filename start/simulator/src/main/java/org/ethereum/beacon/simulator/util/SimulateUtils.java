@@ -29,10 +29,11 @@ public class SimulateUtils {
       Pair.with(new ArrayList<>(), new ArrayList<>());
 
   public static synchronized Pair<List<Deposit>, List<BLS381.KeyPair>> getAnyDeposits(
-      Random rnd, SpecHelpers specHelpers, int count) {
+      Random rnd, SpecHelpers specHelpers, int count, boolean isProofVerifyEnabled) {
     if (count > cachedDeposits.getValue0().size()) {
       Pair<List<Deposit>, List<BLS381.KeyPair>> newDeposits =
-          generateRandomDeposits(rnd, specHelpers, count - cachedDeposits.getValue0().size());
+          generateRandomDeposits(rnd, specHelpers, count - cachedDeposits.getValue0().size(),
+              isProofVerifyEnabled);
       cachedDeposits.getValue0().addAll(newDeposits.getValue0());
       cachedDeposits.getValue1().addAll(newDeposits.getValue1());
     }
@@ -41,18 +42,23 @@ public class SimulateUtils {
   }
 
   public static synchronized Deposit getDepositForKeyPair(
-      Random rnd, BLS381.KeyPair keyPair, SpecHelpers specHelpers) {
+      Random rnd, BLS381.KeyPair keyPair, SpecHelpers specHelpers, boolean isProofVerifyEnabled) {
     Hash32 proofOfPosession = Hash32.random(rnd);
     DepositInput depositInputWithoutSignature =
         new DepositInput(
             BLSPubkey.wrap(Bytes48.leftPad(keyPair.getPublic().getEncodedBytes())),
             proofOfPosession,
             BLSSignature.wrap(Bytes96.ZERO));
-    Hash32 msgHash = specHelpers.signed_root(depositInputWithoutSignature, "proofOfPossession");
-    BLS381.Signature signature =
-        BLS381.sign(
-            new MessageParameters.Impl(msgHash, SignatureDomains.DEPOSIT.toBytesBigEndian()),
-            keyPair);
+
+    BLSSignature signature = BLSSignature.ZERO;
+
+    if (isProofVerifyEnabled) {
+      Hash32 msgHash = specHelpers.signed_root(depositInputWithoutSignature, "proofOfPossession");
+      signature = BLSSignature.wrap(
+          BLS381.sign(
+              new MessageParameters.Impl(msgHash, SignatureDomains.DEPOSIT.toBytesBigEndian()),
+              keyPair).getEncoded());
+    }
 
     Deposit deposit =
         new Deposit(
@@ -64,29 +70,30 @@ public class SimulateUtils {
                 new DepositInput(
                     BLSPubkey.wrap(Bytes48.leftPad(keyPair.getPublic().getEncodedBytes())),
                     proofOfPosession,
-                    BLSSignature.wrap(signature.getEncoded()))));
+                    signature)));
     return deposit;
   }
 
   public static synchronized List<Deposit> getDepositsForKeyPairs(
-      Random rnd, List<BLS381.KeyPair> keyPairs, SpecHelpers specHelpers) {
+      Random rnd, List<BLS381.KeyPair> keyPairs, SpecHelpers specHelpers, boolean isProofVerifyEnabled) {
     List<Deposit> deposits = new ArrayList<>();
 
     for (BLS381.KeyPair keyPair : keyPairs) {
-      deposits.add(getDepositForKeyPair(rnd, keyPair, specHelpers));
+      deposits.add(getDepositForKeyPair(rnd, keyPair, specHelpers, isProofVerifyEnabled));
     }
 
     return deposits;
   }
 
   private static synchronized Pair<List<Deposit>, List<BLS381.KeyPair>> generateRandomDeposits(
-      Random rnd, SpecHelpers specHelpers, int count) {
+      Random rnd, SpecHelpers specHelpers, int count, boolean isProofVerifyEnabled) {
     List<BLS381.KeyPair> validatorsKeys = new ArrayList<>();
     for (int i = 0; i < count; i++) {
       BLS381.KeyPair keyPair = BLS381.KeyPair.create(PrivateKey.create(Bytes32.random(rnd)));
       validatorsKeys.add(keyPair);
+
     }
-    List<Deposit> deposits = getDepositsForKeyPairs(rnd, validatorsKeys, specHelpers);
+    List<Deposit> deposits = getDepositsForKeyPairs(rnd, validatorsKeys, specHelpers, isProofVerifyEnabled);
     return Pair.with(deposits, validatorsKeys);
   }
 }

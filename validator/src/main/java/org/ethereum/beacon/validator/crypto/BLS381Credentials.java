@@ -1,5 +1,6 @@
 package org.ethereum.beacon.validator.crypto;
 
+import org.apache.milagro.amcl.BLS381.ECP2;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.crypto.BLS381;
@@ -22,6 +23,14 @@ public class BLS381Credentials {
 
   public MessageSigner<BLSSignature> getSigner() {
     return signer;
+  }
+
+  public static BLS381Credentials createWithDummySigner(BLS381.KeyPair keyPair) {
+    BLSPubkey pubkey = BLSPubkey.wrap(keyPair.getPublic().getEncodedBytes());
+    BLS381MessageSigner signer =
+        (messageHash, domain) ->
+            BLSSignature.wrap(BLS381.Signature.create(new ECP2()).getEncoded());
+    return new BLS381Credentials(pubkey, signer);
   }
 
   public static BLS381Credentials createWithInsecureSigner(BLS381.KeyPair keyPair) {

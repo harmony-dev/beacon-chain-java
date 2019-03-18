@@ -502,7 +502,7 @@ public class SpecHelpers {
    *
    * Ported from https://github.com/protolambda/eth2-shuffle/blob/master/shuffle.go#L159
    */
-  List<UInt64> get_permuted_list(List<? extends UInt64> indices, Bytes32 seed) {
+  public List<UInt64> get_permuted_list(List<? extends UInt64> indices, Bytes32 seed) {
     int listSize = indices.size();
     List<UInt64> permutations = new ArrayList<>(indices);
 
@@ -736,6 +736,20 @@ public class SpecHelpers {
   public void process_deposit(
       MutableBeaconState state,
       Deposit deposit) {
+    process_deposit_inner(state, deposit, true);
+  }
+  /*
+    def process_deposit(state: BeaconState, deposit: Deposit) -> None:
+      """
+      Process a deposit from Ethereum 1.0.
+      Note that this function mutates ``state``.
+      """
+    */
+
+  protected void process_deposit_inner(
+      MutableBeaconState state,
+      Deposit deposit,
+      boolean verifyProof) {
 
     /* deposit_input = deposit.deposit_data.deposit_input
 
@@ -755,7 +769,7 @@ public class SpecHelpers {
 
     DepositInput deposit_input = deposit.getDepositData().getDepositInput();
 
-    boolean proof_is_valid =
+    boolean proof_is_valid = !verifyProof ||
         bls_verify(
             deposit_input.getPubKey(),
             signed_root(deposit_input, "proofOfPossession"),

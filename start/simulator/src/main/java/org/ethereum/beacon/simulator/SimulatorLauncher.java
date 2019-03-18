@@ -30,6 +30,7 @@ import org.ethereum.beacon.chain.storage.impl.MemBeaconChainStorageFactory;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.TransitionType;
 import org.ethereum.beacon.consensus.transition.EpochTransitionSummary;
+import org.ethereum.beacon.consensus.util.CachingSpecHelpers;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
@@ -50,6 +51,8 @@ import org.ethereum.beacon.schedulers.ControlledSchedulers;
 import org.ethereum.beacon.schedulers.LoggerMDCExecutor;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.simulator.util.SimulateUtils;
+import org.ethereum.beacon.util.stats.TimeCollector;
+import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import org.ethereum.beacon.wire.LocalWireHub;
 import org.ethereum.beacon.wire.WireApi;
 import org.javatuples.Pair;
@@ -116,14 +119,17 @@ public class SimulatorLauncher implements Runnable {
     }
   }
 
-  private Pair<List<Deposit>, List<BLS381.KeyPair>> getValidatorDeposits(Random rnd) {
+  private Pair<List<Deposit>, List<BLS381.KeyPair>> getValidatorDeposits(Random rnd,
+      boolean isProofVerifyEnabled) {
     Pair<List<Deposit>, List<BLS381.KeyPair>> deposits =
-        SimulateUtils.getAnyDeposits(rnd, specHelpers, validators.size());
+        SimulateUtils.getAnyDeposits(rnd, specHelpers, validators.size(),
+            simulationPlan.isProofVerifyEnabled());
     for (int i = 0; i < validators.size(); i++) {
       if (validators.get(i).getBlsPrivateKey() != null) {
         KeyPair keyPair = KeyPair.create(
             PrivateKey.create(Bytes32.fromHexString(validators.get(i).getBlsPrivateKey())));
-        deposits.getValue0().set(i, SimulateUtils.getDepositForKeyPair(rnd, keyPair, specHelpers));
+        deposits.getValue0().set(i, SimulateUtils.getDepositForKeyPair(rnd, keyPair, specHelpers,
+            simulationPlan.isProofVerifyEnabled()));
         deposits.getValue1().set(i, keyPair);
       }
     }
@@ -138,7 +144,8 @@ public class SimulatorLauncher implements Runnable {
 
     Random rnd = new Random(simulationPlan.getSeed());
     setupLogging();
-    Pair<List<Deposit>, List<BLS381.KeyPair>> validatorDeposits = getValidatorDeposits(rnd);
+    Pair<List<Deposit>, List<BLS381.KeyPair>> validatorDeposits = getValidatorDeposits(rnd,
+        simulationPlan.isProofVerifyEnabled());
 
     List<Deposit> deposits = validatorDeposits.getValue0().stream()
         .filter(Objects::nonNull).collect(Collectors.toList());
@@ -160,6 +167,7 @@ public class SimulatorLauncher implements Runnable {
     List<Launcher> peers = new ArrayList<>();
 
     logger.info("Creating validators...");
+    TimeCollector proposeTimeCollector = new TimeCollector();
     for (int i = 0; i < validators.size(); i++) {
       ControlledSchedulers schedulers =
           controlledSchedulers.createNew("V" + i, validators.get(i).getSystemTimeShift());
@@ -169,18 +177,34 @@ public class SimulatorLauncher implements Runnable {
               validators.get(i).getWireInboundDelay(),
               validators.get(i).getWireOutboundDelay());
 
+      BLS381Credentials bls;
+      if (keyPairs.get(i) == null) {
+        bls = null;
+      } else {
+        bls = simulationPlan.isBlsSignEnabled() ?
+            BLS381Credentials.createWithInsecureSigner(keyPairs.get(i)) :
+            BLS381Credentials.createWithDummySigner(keyPairs.get(i));
+      }
+
       Launcher launcher =
           new Launcher(
               specHelpers,
               depositContract,
-              keyPairs.get(i),
+              bls,
               wireApi,
               new MemBeaconChainStorageFactory(),
-              schedulers);
+              schedulers,
+              proposeTimeCollector);
+
+      if ((i + 1) % 100 == 0)
+        logger.info("{} validators created", i + 1);
 
       peers.add(launcher);
+
+      if ((i + 1) % 1000 == 0)
+        logger.info("{} validators created", (i + 1));
     }
-    logger.info("Validators created");
+    logger.info("All validators created");
 
     logger.info("Creating observer peers...");
     for (int i = 0; i < observers.size(); i++) {
@@ -460,10 +484,15 @@ public class SimulatorLauncher implements Runnable {
           peers.add(peer);
         }
       }
+      SpecHelpers specHelpers =
+          spec.buildSpecHelpers(
+              simulationPlan.isBlsVerifyEnabled(),
+              simulationPlan.isProofVerifyEnabled(),
+              simulationPlan.isBlsSignEnabled());
 
       return new SimulatorLauncher(
           simulationPlan,
-          spec.buildSpecHelpers(simulationPlan.isBlsVerifyEnabled()),
+          specHelpers,
           specOverridesBuilder.isEmpty() ? null : specOverridesBuilder.build(),
           peers.stream().filter(PeersConfig::isValidator).collect(Collectors.toList()),
           peers.stream().filter(config -> !config.isValidator()).collect(Collectors.toList()),
