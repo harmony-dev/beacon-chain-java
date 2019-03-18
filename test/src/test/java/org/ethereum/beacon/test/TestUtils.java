@@ -19,6 +19,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -87,13 +88,25 @@ public class TestUtils {
   static <V extends TestSkeleton> Optional<String> runAllCasesInTest(
       V test, Function<TestCase, Optional<String>> testCaseRunner, Class<? extends V> clazz) {
     StringBuilder errors = new StringBuilder();
+    AtomicInteger failed = new AtomicInteger(0);
+    int total = 0;
     for (TestCase testCase : test.getTestCases()) {
-      runTestCase(testCase, test, testCaseRunner).ifPresent(errors::append);
+      ++total;
+      runTestCase(testCase, test, testCaseRunner)
+          .ifPresent(
+              str -> {
+                errors.append(str);
+                failed.incrementAndGet();
+              });
     }
 
     if (errors.length() == 0) {
       return Optional.empty();
     }
+    errors.append("\nTests failed: ");
+    errors.append(failed.get());
+    errors.append("\nTotal: ");
+    errors.append(total);
 
     return Optional.of(errors.toString());
   }

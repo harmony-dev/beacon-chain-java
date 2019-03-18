@@ -137,7 +137,7 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
       encode.extraType = "bytes";
       encode.name = "encode";
       encode.getter = mainAnnotation.encode();
-      scheme.fields.add(encode);
+      scheme.getFields().add(encode);
       return logAndReturnScheme(clazz, scheme);
     }
 
@@ -207,7 +207,7 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
       }
 
       newField.getter = fieldGetters.containsKey(name) ? fieldGetters.get(name).getName() : null;
-      scheme.fields.add(newField);
+      scheme.getFields().add(newField);
     }
 
     return logAndReturnScheme(clazz, scheme);
@@ -219,9 +219,10 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
     }
     String overview =
         String.format(
-            "Scheme for class %s consists of %s field(s)", clazz.getName(), scheme.fields.size());
+            "Scheme for class %s consists of %s field(s)",
+            clazz.getName(), scheme.getFields().size());
     logger.info(overview);
-    for (SSZScheme.SSZField field : scheme.fields) {
+    for (SSZScheme.SSZField field : scheme.getFields()) {
       logger.info(field.toString());
     }
 

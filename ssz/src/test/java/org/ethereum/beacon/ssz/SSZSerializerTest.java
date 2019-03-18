@@ -125,50 +125,6 @@ public class SSZSerializerTest {
     Assert.assertNull(constructed.getAggregateSig());
   }
 
-  @Test
-  public void nullableTest() {
-    AttestationRecord expected1 =
-        new AttestationRecord(
-            123,
-            Collections.emptyList(),
-            DEFAULT_HASH,
-            new Bitfield(BytesValue.fromHexString("abcdef45").getArrayUnsafe()),
-            DEFAULT_HASH,
-            12412L,
-            12400L,
-            null);
-    byte[] encoded1 = sszSerializer.encode(expected1);
-    AttestationRecord actual1 =
-        sszSerializer.decode(encoded1, AttestationRecord.class);
-
-    assertEquals(expected1, actual1);
-
-    AttestationRecord expected2 =
-        new AttestationRecord(
-            123,
-            Collections.emptyList(),
-            DEFAULT_HASH,
-            null,
-            DEFAULT_HASH,
-            12412L,
-            12400L,
-            DEFAULT_SIG);
-    byte[] encoded2 = sszSerializer.encode(expected2);
-    AttestationRecord actual2 =
-        sszSerializer.decode(encoded2, AttestationRecord.class);
-
-    assertEquals(expected2, actual2);
-
-    AttestationRecord expected3 =
-        new AttestationRecord(
-            123, Collections.emptyList(), DEFAULT_HASH, null, DEFAULT_HASH, 12412L, 12400L, null);
-    byte[] encoded3 = sszSerializer.encode(expected3);
-    AttestationRecord actual3 =
-        sszSerializer.decode(encoded3, AttestationRecord.class);
-
-    assertEquals(expected3, actual3);
-  }
-
   @Test(expected = NullPointerException.class)
   public void nullFixedSizeFieldTest() {
     AttestationRecord expected3 =

@@ -1,5 +1,7 @@
 package org.ethereum.beacon.test;
 
+import org.junit.Assert;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -24,7 +26,17 @@ public class SilentAsserts {
     String expectedHex = expected.startsWith("0x") ? expected : "0x" + expected;
     String actualHex = actual.startsWith("0x") ? actual : "0x" + actual;
     try {
-      assertEquals(expectedHex, actualHex);
+      Assert.assertEquals(expectedHex, actualHex);
+    } catch (AssertionError e) {
+      return Optional.of(e.getMessage());
+    }
+
+    return Optional.empty();
+  }
+
+  public static Optional<String> assertEquals(Object expected, Object actual) {
+    try {
+      Assert.assertEquals(expected, actual);
     } catch (AssertionError e) {
       return Optional.of(e.getMessage());
     }
