@@ -6,7 +6,7 @@ import java.util.List;
 
 /**
  * Container for BLS tests <a
- * href="https://github.com/ethereum/eth2.0-test-generators/tree/master/bls/">https://github.com/ethereum/eth2.0-test-generators/tree/master/bls/</a>
+ * href="https://github.com/ethereum/eth2.0-tests/tree/master/bls">https://github.com/ethereum/eth2.0-tests/tree/master/bls</a>
  */
 public class BlsTest extends TestSkeleton {
   @JsonProperty("case01_message_hash_G2_uncompressed")
