@@ -13,7 +13,8 @@ config:
         input:
           pubKey: 1
           privKey: 1
-plan:
+
+plan: !general
   sync:
     - action: run
   validator:
@@ -27,8 +28,3 @@ plan:
       amount: 32
 
     - action: run
-
-    - action: simulate
-      peersConfigs:
-        - peersCount: 8
-          validator: true

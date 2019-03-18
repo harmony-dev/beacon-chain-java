@@ -15,7 +15,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -30,7 +29,6 @@ import org.ethereum.beacon.chain.storage.impl.MemBeaconChainStorageFactory;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.TransitionType;
 import org.ethereum.beacon.consensus.transition.EpochTransitionSummary;
-import org.ethereum.beacon.consensus.util.CachingSpecHelpers;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
@@ -43,9 +41,11 @@ import org.ethereum.beacon.crypto.BLS381;
 import org.ethereum.beacon.crypto.BLS381.KeyPair;
 import org.ethereum.beacon.crypto.BLS381.PrivateKey;
 import org.ethereum.beacon.emulator.config.ConfigBuilder;
-import org.ethereum.beacon.emulator.config.chainspec.Spec;
+import org.ethereum.beacon.emulator.config.chainspec.SpecData;
+import org.ethereum.beacon.emulator.config.chainspec.SpecBuilder;
+import org.ethereum.beacon.emulator.config.main.MainConfig;
+import org.ethereum.beacon.emulator.config.main.plan.SimulationPlan;
 import org.ethereum.beacon.emulator.config.simulator.PeersConfig;
-import org.ethereum.beacon.emulator.config.simulator.SimulationPlan;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.schedulers.ControlledSchedulers;
 import org.ethereum.beacon.schedulers.LoggerMDCExecutor;
@@ -66,35 +66,33 @@ public class SimulatorLauncher implements Runnable {
   private static final Logger logger = LogManager.getLogger("simulator");
   private static final Logger wire = LogManager.getLogger("wire");
 
+  private final MainConfig config;
   private final SimulationPlan simulationPlan;
   private final List<PeersConfig> validators;
   private final List<PeersConfig> observers;
   private final SpecConstants specConstants;
   private final SpecHelpers specHelpers;
-  private final Spec overriddenConstants;
   private final Level logLevel;
 
   /**
    * Creates Simulator launcher with following settings
    *
-   * @param simulationPlan configuration and run plan.
+   * @param config configuration and run plan.
    * @param specHelpers chain specification.
    * @param validators validator peers configuration.
    * @param observers observer peers configuration.
-   * @param overriddenConstants overridden beacon chain constants, pass null if none are overridden.
    * @param logLevel Log level, Apache log4j type.
    */
   public SimulatorLauncher(
-      SimulationPlan simulationPlan,
+      MainConfig config,
       SpecHelpers specHelpers,
-      Spec overriddenConstants,
       List<PeersConfig> validators,
       List<PeersConfig> observers,
       Level logLevel) {
-    this.simulationPlan = simulationPlan;
+    this.config = config;
+    this.simulationPlan = (SimulationPlan) config.getPlan();
     this.specConstants = specHelpers.getConstants();
     this.specHelpers = specHelpers;
-    this.overriddenConstants = overriddenConstants;
     this.validators = validators;
     this.observers = observers;
     this.logLevel = logLevel;
@@ -123,13 +121,13 @@ public class SimulatorLauncher implements Runnable {
       boolean isProofVerifyEnabled) {
     Pair<List<Deposit>, List<BLS381.KeyPair>> deposits =
         SimulateUtils.getAnyDeposits(rnd, specHelpers, validators.size(),
-            simulationPlan.isProofVerifyEnabled());
+            config.getChainSpec().getSpecHelpersOptions().isBlsVerifyProofOfPosession());
     for (int i = 0; i < validators.size(); i++) {
       if (validators.get(i).getBlsPrivateKey() != null) {
         KeyPair keyPair = KeyPair.create(
             PrivateKey.create(Bytes32.fromHexString(validators.get(i).getBlsPrivateKey())));
         deposits.getValue0().set(i, SimulateUtils.getDepositForKeyPair(rnd, keyPair, specHelpers,
-            simulationPlan.isProofVerifyEnabled()));
+            config.getChainSpec().getSpecHelpersOptions().isBlsVerifyProofOfPosession()));
         deposits.getValue1().set(i, keyPair);
       }
     }
@@ -139,13 +137,13 @@ public class SimulatorLauncher implements Runnable {
 
   public void run() {
     logger.info("Simulation parameters:\n{}", simulationPlan);
-    if (overriddenConstants != null)
-      logger.info("Overridden beacon chain parameters:\n{}", overriddenConstants);
+    if (config.getChainSpec() != null)
+      logger.info("Overridden beacon chain parameters:\n{}", config.getChainSpec());
 
     Random rnd = new Random(simulationPlan.getSeed());
     setupLogging();
     Pair<List<Deposit>, List<BLS381.KeyPair>> validatorDeposits = getValidatorDeposits(rnd,
-        simulationPlan.isProofVerifyEnabled());
+        config.getChainSpec().getSpecHelpersOptions().isBlsVerifyProofOfPosession());
 
     List<Deposit> deposits = validatorDeposits.getValue0().stream()
         .filter(Objects::nonNull).collect(Collectors.toList());
@@ -181,7 +179,7 @@ public class SimulatorLauncher implements Runnable {
       if (keyPairs.get(i) == null) {
         bls = null;
       } else {
-        bls = simulationPlan.isBlsSignEnabled() ?
+        bls = config.getChainSpec().getSpecHelpersOptions().isBlsSign() ?
             BLS381Credentials.createWithInsecureSigner(keyPairs.get(i)) :
             BLS381Credentials.createWithDummySigner(keyPairs.get(i));
       }
@@ -461,22 +459,20 @@ public class SimulatorLauncher implements Runnable {
   }
 
   public static class Builder {
-    private SimulationPlan simulationPlan;
-    private ConfigBuilder<Spec> specOverridesBuilder = new ConfigBuilder<>(Spec.class);
+    private MainConfig config;
     private Level logLevel = Level.INFO;
 
     public Builder() {}
 
     public SimulatorLauncher build() {
-      assert simulationPlan != null;
+      assert config != null;
+      SimulationPlan simulationPlan = (SimulationPlan) config.getPlan();
 
-      ConfigBuilder<Spec> specBuilder =
-          new ConfigBuilder<>(Spec.class).addYamlConfigFromResources("/config/spec-constants.yml");
-      if (!specOverridesBuilder.isEmpty()) {
-        specBuilder.addConfig(specOverridesBuilder.build());
-      }
+      ConfigBuilder<SpecData> specConfigBuilder =
+          new ConfigBuilder<>(SpecData.class).addYamlConfigFromResources("/config/spec-constants.yml");
+      specConfigBuilder.addConfig(config.getChainSpec());
 
-      Spec spec = specBuilder.build();
+      SpecData spec = specConfigBuilder.build();
 
       List<PeersConfig> peers = new ArrayList<>();
       for (PeersConfig peer : simulationPlan.getPeers()) {
@@ -484,39 +480,25 @@ public class SimulatorLauncher implements Runnable {
           peers.add(peer);
         }
       }
-      SpecHelpers specHelpers =
-          spec.buildSpecHelpers(
-              simulationPlan.isBlsVerifyEnabled(),
-              simulationPlan.isProofVerifyEnabled(),
-              simulationPlan.isBlsSignEnabled());
+
+      SpecHelpers specHelpers = new SpecBuilder().buildSpecHelpers(spec);
 
       return new SimulatorLauncher(
-          simulationPlan,
+          config,
           specHelpers,
-          specOverridesBuilder.isEmpty() ? null : specOverridesBuilder.build(),
           peers.stream().filter(PeersConfig::isValidator).collect(Collectors.toList()),
           peers.stream().filter(config -> !config.isValidator()).collect(Collectors.toList()),
           logLevel);
     }
 
-    public Builder addSpecFromFile(File file) {
-      this.specOverridesBuilder.addYamlConfig(file);
+    public Builder withConfigFromFile(File file) {
+      this.config = new ConfigBuilder<>(MainConfig.class).addYamlConfig(file).build();
       return this;
     }
 
-    public Builder addSpecFromResource(String resource) {
-      this.specOverridesBuilder.addYamlConfigFromResources(resource);
-      return this;
-    }
-
-    public Builder withPlanFromFile(File file) {
-      this.simulationPlan = new ConfigBuilder<>(SimulationPlan.class).addYamlConfig(file).build();
-      return this;
-    }
-
-    public Builder withPlanFromResource(String resourceName) {
-      this.simulationPlan =
-          new ConfigBuilder<>(SimulationPlan.class)
+    public Builder withConfigFromResource(String resourceName) {
+      this.config =
+          new ConfigBuilder<>(MainConfig.class)
               .addYamlConfigFromResources(resourceName)
               .build();
       return this;
