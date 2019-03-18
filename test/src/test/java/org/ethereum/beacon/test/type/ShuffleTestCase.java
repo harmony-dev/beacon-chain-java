@@ -3,8 +3,8 @@ package org.ethereum.beacon.test.type;
 import java.util.List;
 
 /**
- * Shuffling test <a
- * href="https://github.com/ethereum/eth2.0-test-generators/tree/master/shuffling">https://github.com/ethereum/eth2.0-test-generators/tree/master/shuffling</a>
+ * Shuffling test case <a
+ * href="https://github.com/ethereum/eth2.0-tests/tree/master/shuffling">https://github.com/ethereum/eth2.0-tests/tree/master/shuffling</a>
  */
 public class ShuffleTestCase implements TestCase {
   private ShuffleInput input;

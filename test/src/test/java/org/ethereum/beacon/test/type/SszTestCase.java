@@ -3,8 +3,8 @@ package org.ethereum.beacon.test.type;
 import java.util.List;
 
 /**
- * SSZ test <a
- * href="https://github.com/ethereum/eth2.0-test-generators/tree/master/ssz">https://github.com/ethereum/eth2.0-test-generators/tree/master/ssz</a>
+ * SSZ test case <a
+ * href="https://github.com/ethereum/eth2.0-tests/tree/master/ssz">https://github.com/ethereum/eth2.0-tests/tree/master/ssz</a>
  */
 public class SszTestCase implements TestCase {
   private String type;

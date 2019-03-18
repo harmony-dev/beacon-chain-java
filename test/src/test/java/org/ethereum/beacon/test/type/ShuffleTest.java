@@ -4,7 +4,7 @@ import java.util.List;
 
 /**
  * Container for shuffling tests <a
- * href="https://github.com/ethereum/eth2.0-test-generators/tree/master/shuffling">https://github.com/ethereum/eth2.0-test-generators/tree/master/shuffling</a>
+ * href="https://github.com/ethereum/eth2.0-tests/tree/master/shuffling">https://github.com/ethereum/eth2.0-tests/tree/master/shuffling</a>
  */
 public class ShuffleTest extends TestSkeleton {
   public List<TestCase> getTestCases() {
