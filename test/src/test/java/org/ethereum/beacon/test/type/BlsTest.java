@@ -33,7 +33,6 @@ public class BlsTest extends TestSkeleton {
     test.setSummary(this.getSummary());
     test.setTestSuite(this.getTestSuite());
     test.setTitle(this.getTitle());
-    test.setVersion(this.getVersion());
     test.setTestCases(getBlsMessageHashCases());
 
     return test;
@@ -45,7 +44,6 @@ public class BlsTest extends TestSkeleton {
     test.setSummary(this.getSummary());
     test.setTestSuite(this.getTestSuite());
     test.setTitle(this.getTitle());
-    test.setVersion(this.getVersion());
     test.setTestCases(getBlsMessageHashCompressedCases());
 
     return test;
@@ -57,7 +55,6 @@ public class BlsTest extends TestSkeleton {
     test.setSummary(this.getSummary());
     test.setTestSuite(this.getTestSuite());
     test.setTitle(this.getTitle());
-    test.setVersion(this.getVersion());
     test.setTestCases(getBlsPrivateToPublicCases());
 
     return test;
@@ -69,7 +66,6 @@ public class BlsTest extends TestSkeleton {
     test.setSummary(this.getSummary());
     test.setTestSuite(this.getTestSuite());
     test.setTitle(this.getTitle());
-    test.setVersion(this.getVersion());
     test.setTestCases(getBlsSignMessageCases());
 
     return test;
@@ -81,7 +77,6 @@ public class BlsTest extends TestSkeleton {
     test.setSummary(this.getSummary());
     test.setTestSuite(this.getTestSuite());
     test.setTitle(this.getTitle());
-    test.setVersion(this.getVersion());
     test.setTestCases(getBlsAggregateSigsCases());
 
     return test;
@@ -93,7 +88,6 @@ public class BlsTest extends TestSkeleton {
     test.setSummary(this.getSummary());
     test.setTestSuite(this.getTestSuite());
     test.setTitle(this.getTitle());
-    test.setVersion(this.getVersion());
     test.setTestCases(getBlsAggregatePubKeysCases());
 
     return test;

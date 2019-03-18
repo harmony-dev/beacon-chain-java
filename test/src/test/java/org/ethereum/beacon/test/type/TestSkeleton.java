@@ -16,7 +16,6 @@ import java.util.List;
 public abstract class TestSkeleton {
   private String title;
   private String summary;
-  private String version;
   @JsonProperty("test_suite")
   private String testSuite;
   private String fork;
@@ -37,14 +36,6 @@ public abstract class TestSkeleton {
 
   public void setSummary(String summary) {
     this.summary = summary;
-  }
-
-  public String getVersion() {
-    return version;
-  }
-
-  public void setVersion(String version) {
-    this.version = version;
   }
 
   public String getTestSuite() {
@@ -69,6 +60,6 @@ public abstract class TestSkeleton {
 
   @Override
   public String toString() {
-    return "Test \"" + title + " v" + version + '\"';
+    return "Test \"" + title + " " + fork + '\"';
   }
 }
