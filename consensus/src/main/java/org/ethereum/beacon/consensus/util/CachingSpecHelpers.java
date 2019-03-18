@@ -28,6 +28,8 @@ public class CachingSpecHelpers extends SpecHelpers {
 
   private final LRUCache<Pair<List<? extends UInt64>, Bytes32>, List<UInt64>> shufflerCache =
       new LRUCache<>(1024);
+  private final LRUCache<Object, Hash32> hashTreeRootCache =
+      new LRUCache<>(1024);
 
   public CachingSpecHelpers(SpecConstants constants,
       Function<BytesValue, Hash32> hashFunction,
@@ -39,5 +41,10 @@ public class CachingSpecHelpers extends SpecHelpers {
     return shufflerCache.get(
         Pair.with(indices, seed),
         k -> CachingSpecHelpers.super.get_permuted_list(k.getValue0(), k.getValue1()));
+  }
+
+  @Override
+  public Hash32 hash_tree_root(Object object) {
+    return hashTreeRootCache.get(object, CachingSpecHelpers.super::hash_tree_root);
   }
 }
