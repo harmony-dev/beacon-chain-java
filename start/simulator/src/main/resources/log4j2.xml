@@ -6,7 +6,7 @@
     <Routing name="validatorFile">
       <Routes pattern="$${ctx:validatorIndex:-X}">
         <Route>
-          <File name="dummy" fileName="logs/validator-${ctx:validatorIndex:-X}.log" append="false">
+          <File name="dummy" fileName="logs/peer-${ctx:validatorIndex:-X}.log" append="false">
             <PatternLayout>
               <Pattern>%d{HH:mm:ss.SSS} [%X{validatorTime}] %p %c{1.} [%t] %m%n</Pattern>
             </PatternLayout>

@@ -13,7 +13,7 @@ config:
         input:
           pubKey: 1
           privKey: 1
-plan:
+plan: !general
   sync:
     - action: run
   validator:
