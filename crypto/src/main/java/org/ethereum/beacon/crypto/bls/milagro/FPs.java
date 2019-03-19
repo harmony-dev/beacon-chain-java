@@ -3,6 +3,7 @@ package org.ethereum.beacon.crypto.bls.milagro;
 import org.apache.milagro.amcl.BLS381.BIG;
 import org.apache.milagro.amcl.BLS381.DBIG;
 import org.apache.milagro.amcl.BLS381.FP;
+import org.apache.milagro.amcl.BLS381.FP2;
 import org.apache.milagro.amcl.BLS381.ROM;
 
 /**
@@ -29,6 +30,23 @@ public class FPs {
     DBIG d = new DBIG(value);
     d.add(d);
     return d.div(Q).bit(0);
+  }
+
+  /**
+   * Uses imaginary part of {@link FP2} to calculate a sign if it's greater than zero, otherwise
+   * real part is used.
+   *
+   * <p>Based on {@link #getSign(BIG)}.
+   *
+   * @param value a value.
+   * @return calculated sign.
+   */
+  public static int getSign(FP2 value) {
+    if (BIG.comp(value.getB(), new BIG()) > 0) {
+      return getSign(value.getB());
+    } else {
+      return getSign(value.getA());
+    }
   }
 
   /**

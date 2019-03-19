@@ -27,6 +27,8 @@ include 'start:simulator'
 include 'start:common'
 // Configuration parser
 include 'start:config'
+// Test runners for community tests
+include 'test'
 // Strict types definition
 include 'types'
 // Standalone utils without any relation to Ethereum 2.0

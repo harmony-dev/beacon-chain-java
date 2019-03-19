@@ -2,7 +2,6 @@ package org.ethereum.beacon.ssz;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 
 /** Builds SSZScheme using SSZ model info provided via constructor or predefined */
 public interface SSZSchemeBuilder {
@@ -15,7 +14,11 @@ public interface SSZSchemeBuilder {
    * <p>Enumerates all object fields and their properties in appropriate order. Order matters!
    */
   class SSZScheme {
-    List<SSZField> fields = new ArrayList<>();
+    private List<SSZField> fields = new ArrayList<>();
+
+    public List<SSZField> getFields() {
+      return fields;
+    }
 
     public enum MultipleType {
       NONE,
