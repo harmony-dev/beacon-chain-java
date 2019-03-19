@@ -1,5 +1,7 @@
 package org.ethereum.beacon.crypto.bls.milagro;
 
+import static org.apache.milagro.amcl.BLS381.ECP2.RHS;
+
 import org.apache.milagro.amcl.BLS381.BIG;
 import org.apache.milagro.amcl.BLS381.ECP2;
 import org.apache.milagro.amcl.BLS381.FP2;
@@ -35,12 +37,30 @@ public class MilagroMessageMapper implements MessageParametersMapper<ECP2> {
     BIG imX = BIGs.fromBytes(Hashes.keccak256(imBytes));
 
     FP2 x = new FP2(reX, imX);
-    org.apache.milagro.amcl.BLS381.ECP2 point = new org.apache.milagro.amcl.BLS381.ECP2(x);
+    ECP2 point = createPoint(x);
     while (point.is_infinity()) {
       x.add(Fp2.ONE);
-      point = new org.apache.milagro.amcl.BLS381.ECP2(x);
+      point = createPoint(x);
     }
 
     return ECP2s.mulByG2Cofactor(point);
+  }
+
+  private ECP2 createPoint(FP2 x) {
+    FP2 y1 = RHS(x);
+    if (!y1.sqrt()) {
+      return new ECP2();
+    } else {
+      FP2 y2 = new FP2(y1);
+      y2.neg();
+
+      // return y1 if (y1_im > y2_im or (y1_im == y2_im and y1_re > y2_re)) else y2
+      if (BIG.comp(y1.getB(), y2.getB()) > 0 ||
+          (y1.getB().equals(y2.getB()) && BIG.comp(y1.getA(), y2.getA()) > 0)) {
+        return new ECP2(x, y1);
+      } else {
+        return new ECP2(x, y2);
+      }
+    }
   }
 }
