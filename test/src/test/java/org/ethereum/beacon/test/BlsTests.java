@@ -52,7 +52,6 @@ public class BlsTests extends TestUtils {
   }
 
   @Test
-  @Ignore("??? not matched")
   public void testBlsMessageHashCompressed() {
     Path testFilePath = Paths.get(PATH_TO_TESTS, TESTS_DIR, FILENAME);
     BlsTest test = readTest(getResourceFile(testFilePath.toString()), BlsTest.class);
