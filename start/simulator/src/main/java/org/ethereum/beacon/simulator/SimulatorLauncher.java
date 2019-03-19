@@ -15,7 +15,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -42,14 +41,18 @@ import org.ethereum.beacon.crypto.BLS381;
 import org.ethereum.beacon.crypto.BLS381.KeyPair;
 import org.ethereum.beacon.crypto.BLS381.PrivateKey;
 import org.ethereum.beacon.emulator.config.ConfigBuilder;
-import org.ethereum.beacon.emulator.config.chainspec.Spec;
+import org.ethereum.beacon.emulator.config.chainspec.SpecData;
+import org.ethereum.beacon.emulator.config.chainspec.SpecBuilder;
+import org.ethereum.beacon.emulator.config.main.MainConfig;
+import org.ethereum.beacon.emulator.config.main.plan.SimulationPlan;
 import org.ethereum.beacon.emulator.config.simulator.PeersConfig;
-import org.ethereum.beacon.emulator.config.simulator.SimulationPlan;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.schedulers.ControlledSchedulers;
 import org.ethereum.beacon.schedulers.LoggerMDCExecutor;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.simulator.util.SimulateUtils;
+import org.ethereum.beacon.util.stats.TimeCollector;
+import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import org.ethereum.beacon.wire.LocalWireHub;
 import org.ethereum.beacon.wire.WireApi;
 import org.javatuples.Pair;
@@ -63,33 +66,35 @@ public class SimulatorLauncher implements Runnable {
   private static final Logger logger = LogManager.getLogger("simulator");
   private static final Logger wire = LogManager.getLogger("wire");
 
+  private final MainConfig config;
   private final SimulationPlan simulationPlan;
-  private final List<PeersConfig> allPeers;
+  private final List<PeersConfig> validators;
+  private final List<PeersConfig> observers;
   private final SpecConstants specConstants;
   private final SpecHelpers specHelpers;
-  private final Spec overriddenConstants;
   private final Level logLevel;
 
   /**
    * Creates Simulator launcher with following settings
    *
-   * @param simulationPlan configuration and run plan.
+   * @param config configuration and run plan.
    * @param specHelpers chain specification.
-   * @param allPeers peers configuration.
-   * @param overriddenConstants overridden beacon chain constants, pass null if none are overridden.
+   * @param validators validator peers configuration.
+   * @param observers observer peers configuration.
    * @param logLevel Log level, Apache log4j type.
    */
   public SimulatorLauncher(
-      SimulationPlan simulationPlan,
+      MainConfig config,
       SpecHelpers specHelpers,
-      Spec overriddenConstants,
-      List<PeersConfig> allPeers,
+      List<PeersConfig> validators,
+      List<PeersConfig> observers,
       Level logLevel) {
-    this.simulationPlan = simulationPlan;
+    this.config = config;
+    this.simulationPlan = (SimulationPlan) config.getPlan();
     this.specConstants = specHelpers.getConstants();
     this.specHelpers = specHelpers;
-    this.overriddenConstants = overriddenConstants;
-    this.allPeers = allPeers;
+    this.validators = validators;
+    this.observers = observers;
     this.logLevel = logLevel;
   }
 
@@ -112,19 +117,18 @@ public class SimulatorLauncher implements Runnable {
     }
   }
 
-  private Pair<List<Deposit>, List<BLS381.KeyPair>> getValidatorDeposits(Random rnd) {
+  private Pair<List<Deposit>, List<BLS381.KeyPair>> getValidatorDeposits(Random rnd,
+      boolean isProofVerifyEnabled) {
     Pair<List<Deposit>, List<BLS381.KeyPair>> deposits =
-        SimulateUtils.getAnyDeposits(rnd, specHelpers, allPeers.size());
-    for (int i = 0; i < allPeers.size(); i++) {
-      if (allPeers.get(i).getBlsPrivateKey() != null) {
+        SimulateUtils.getAnyDeposits(rnd, specHelpers, validators.size(),
+            config.getChainSpec().getSpecHelpersOptions().isBlsVerifyProofOfPosession());
+    for (int i = 0; i < validators.size(); i++) {
+      if (validators.get(i).getBlsPrivateKey() != null) {
         KeyPair keyPair = KeyPair.create(
-            PrivateKey.create(Bytes32.fromHexString(allPeers.get(i).getBlsPrivateKey())));
-        deposits.getValue0().set(i, SimulateUtils.getDepositForKeyPair(rnd, keyPair, specHelpers));
+            PrivateKey.create(Bytes32.fromHexString(validators.get(i).getBlsPrivateKey())));
+        deposits.getValue0().set(i, SimulateUtils.getDepositForKeyPair(rnd, keyPair, specHelpers,
+            config.getChainSpec().getSpecHelpersOptions().isBlsVerifyProofOfPosession()));
         deposits.getValue1().set(i, keyPair);
-      }
-      if (!allPeers.get(i).isValidator()) {
-        deposits.getValue0().set(i, null);
-        deposits.getValue1().set(i, null);
       }
     }
 
@@ -133,12 +137,13 @@ public class SimulatorLauncher implements Runnable {
 
   public void run() {
     logger.info("Simulation parameters:\n{}", simulationPlan);
-    if (overriddenConstants != null)
-      logger.info("Overridden beacon chain parameters:\n{}", overriddenConstants);
+    if (config.getChainSpec() != null)
+      logger.info("Overridden beacon chain parameters:\n{}", config.getChainSpec());
 
     Random rnd = new Random(simulationPlan.getSeed());
     setupLogging();
-    Pair<List<Deposit>, List<BLS381.KeyPair>> validatorDeposits = getValidatorDeposits(rnd);
+    Pair<List<Deposit>, List<BLS381.KeyPair>> validatorDeposits = getValidatorDeposits(rnd,
+        config.getChainSpec().getSpecHelpersOptions().isBlsVerifyProofOfPosession());
 
     List<Deposit> deposits = validatorDeposits.getValue0().stream()
         .filter(Objects::nonNull).collect(Collectors.toList());
@@ -160,27 +165,60 @@ public class SimulatorLauncher implements Runnable {
     List<Launcher> peers = new ArrayList<>();
 
     logger.info("Creating validators...");
-    for (int i = 0; i < allPeers.size(); i++) {
+    TimeCollector proposeTimeCollector = new TimeCollector();
+    for (int i = 0; i < validators.size(); i++) {
       ControlledSchedulers schedulers =
-          controlledSchedulers.createNew("" + i, allPeers.get(i).getSystemTimeShift());
+          controlledSchedulers.createNew("V" + i, validators.get(i).getSystemTimeShift());
       WireApi wireApi =
           localWireHub.createNewPeer(
               "" + i,
-              allPeers.get(i).getWireInboundDelay(),
-              allPeers.get(i).getWireOutboundDelay());
+              validators.get(i).getWireInboundDelay(),
+              validators.get(i).getWireOutboundDelay());
+
+      BLS381Credentials bls;
+      if (keyPairs.get(i) == null) {
+        bls = null;
+      } else {
+        bls = config.getChainSpec().getSpecHelpersOptions().isBlsSign() ?
+            BLS381Credentials.createWithInsecureSigner(keyPairs.get(i)) :
+            BLS381Credentials.createWithDummySigner(keyPairs.get(i));
+      }
 
       Launcher launcher =
           new Launcher(
               specHelpers,
               depositContract,
-              keyPairs.get(i),
+              bls,
               wireApi,
               new MemBeaconChainStorageFactory(),
-              schedulers);
+              schedulers,
+              proposeTimeCollector);
+
+      if ((i + 1) % 100 == 0)
+        logger.info("{} validators created", i + 1);
 
       peers.add(launcher);
+
+      if ((i + 1) % 1000 == 0)
+        logger.info("{} validators created", (i + 1));
     }
-    logger.info("Validators created");
+    logger.info("All validators created");
+
+    logger.info("Creating observer peers...");
+    for (int i = 0; i < observers.size(); i++) {
+      PeersConfig config = observers.get(i);
+      String name = "O" + i;
+      Launcher launcher =
+          new Launcher(
+              specHelpers,
+              depositContract,
+              null,
+              localWireHub.createNewPeer(
+                  name, config.getWireInboundDelay(), config.getWireOutboundDelay()),
+              new MemBeaconChainStorageFactory(),
+              controlledSchedulers.createNew(name, config.getSystemTimeShift()));
+      peers.add(launcher);
+    }
 
     Map<Integer, ObservableBeaconState> latestStates = new HashMap<>();
     for (int i = 0; i < peers.size(); i++) {
@@ -207,7 +245,7 @@ public class SimulatorLauncher implements Runnable {
       }
     }
 
-    logger.info("Creating observer peer...");
+    // system observer
     ControlledSchedulers schedulers = controlledSchedulers.createNew("X");
     WireApi wireApi = localWireHub.createNewPeer("X");
 
@@ -233,6 +271,7 @@ public class SimulatorLauncher implements Runnable {
     });
     Flux.from(observer.getObservableStateProcessor().getObservableStateStream())
         .subscribe(os -> {
+          latestStates.put(peers.size(), os);
           states.add(os);
           logger.debug("New observable state: " + os.toString(specHelpers));
         });
@@ -263,8 +302,7 @@ public class SimulatorLauncher implements Runnable {
         logger.error("No slots generated");
       }
 
-      Map<Hash32, List<ObservableBeaconState>> grouping = Stream
-          .concat(latestStates.values().stream(), states.stream())
+      Map<Hash32, List<ObservableBeaconState>> grouping = latestStates.values().stream()
           .collect(Collectors.groupingBy(s -> specHelpers.hash_tree_root(s.getLatestSlotState())));
 
       String statesInfo;
@@ -421,22 +459,20 @@ public class SimulatorLauncher implements Runnable {
   }
 
   public static class Builder {
-    private SimulationPlan simulationPlan;
-    private ConfigBuilder<Spec> specOverridesBuilder = new ConfigBuilder<>(Spec.class);
+    private MainConfig config;
     private Level logLevel = Level.INFO;
 
     public Builder() {}
 
     public SimulatorLauncher build() {
-      assert simulationPlan != null;
+      assert config != null;
+      SimulationPlan simulationPlan = (SimulationPlan) config.getPlan();
 
-      ConfigBuilder<Spec> specBuilder =
-          new ConfigBuilder<>(Spec.class).addYamlConfigFromResources("/config/spec-constants.yml");
-      if (!specOverridesBuilder.isEmpty()) {
-        specBuilder.addConfig(specOverridesBuilder.build());
-      }
+      ConfigBuilder<SpecData> specConfigBuilder =
+          new ConfigBuilder<>(SpecData.class).addYamlConfigFromResources("/config/spec-constants.yml");
+      specConfigBuilder.addConfig(config.getChainSpec());
 
-      Spec spec = specBuilder.build();
+      SpecData spec = specConfigBuilder.build();
 
       List<PeersConfig> peers = new ArrayList<>();
       for (PeersConfig peer : simulationPlan.getPeers()) {
@@ -445,32 +481,24 @@ public class SimulatorLauncher implements Runnable {
         }
       }
 
+      SpecHelpers specHelpers = new SpecBuilder().buildSpecHelpers(spec);
+
       return new SimulatorLauncher(
-          simulationPlan,
-          spec.buildSpecHelpers(simulationPlan.isBlsVerifyEnabled()),
-          specOverridesBuilder.isEmpty() ? null : specOverridesBuilder.build(),
-          peers,
+          config,
+          specHelpers,
+          peers.stream().filter(PeersConfig::isValidator).collect(Collectors.toList()),
+          peers.stream().filter(config -> !config.isValidator()).collect(Collectors.toList()),
           logLevel);
     }
 
-    public Builder addSpecFromFile(File file) {
-      this.specOverridesBuilder.addYamlConfig(file);
+    public Builder withConfigFromFile(File file) {
+      this.config = new ConfigBuilder<>(MainConfig.class).addYamlConfig(file).build();
       return this;
     }
 
-    public Builder addSpecFromResource(String resource) {
-      this.specOverridesBuilder.addYamlConfigFromResources(resource);
-      return this;
-    }
-
-    public Builder withPlanFromFile(File file) {
-      this.simulationPlan = new ConfigBuilder<>(SimulationPlan.class).addYamlConfig(file).build();
-      return this;
-    }
-
-    public Builder withPlanFromResource(String resourceName) {
-      this.simulationPlan =
-          new ConfigBuilder<>(SimulationPlan.class)
+    public Builder withConfigFromResource(String resourceName) {
+      this.config =
+          new ConfigBuilder<>(MainConfig.class)
               .addYamlConfigFromResources(resourceName)
               .build();
       return this;

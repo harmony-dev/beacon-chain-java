@@ -32,6 +32,7 @@ import org.ethereum.beacon.schedulers.RunnableEx;
 import org.ethereum.beacon.schedulers.Scheduler;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.stream.SimpleProcessor;
+import org.ethereum.beacon.util.stats.TimeCollector;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import org.javatuples.Pair;
 import org.reactivestreams.Publisher;
@@ -71,6 +72,8 @@ public class MultiValidatorService implements ValidatorService {
 
   private final LatestExecutor<BeaconState> initExecutor;
 
+  private final TimeCollector proposeTimeCollector;
+
   public MultiValidatorService(
       List<BLS381Credentials> blsCredentials,
       BeaconChainProposer proposer,
@@ -78,6 +81,17 @@ public class MultiValidatorService implements ValidatorService {
       SpecHelpers spec,
       Publisher<ObservableBeaconState> stateStream,
       Schedulers schedulers) {
+    this(blsCredentials, proposer, attester, spec, stateStream, schedulers, new TimeCollector());
+  }
+
+  public MultiValidatorService(
+      List<BLS381Credentials> blsCredentials,
+      BeaconChainProposer proposer,
+      BeaconChainAttester attester,
+      SpecHelpers spec,
+      Publisher<ObservableBeaconState> stateStream,
+      Schedulers schedulers,
+      TimeCollector proposeTimeCollector) {
     this.uninitialized =
         blsCredentials.stream()
             .collect(Collectors.toMap(BLS381Credentials::getPubkey, Function.identity()));
@@ -93,6 +107,8 @@ public class MultiValidatorService implements ValidatorService {
 
     executor = this.schedulers.newSingleThreadDaemon("validator-service");
     initExecutor = new LatestExecutor<>(schedulers.blocking(), this::initFromLatestBeaconState);
+
+    this.proposeTimeCollector = proposeTimeCollector;
   }
 
   @Override
@@ -110,13 +126,18 @@ public class MultiValidatorService implements ValidatorService {
    */
   private void initFromLatestBeaconState(BeaconState state) {
     Map<ValidatorIndex, BLS381Credentials> intoCommittees = new HashMap<>();
+
     for (ValidatorIndex i : state.getValidatorRegistry().size()) {
       BLS381Credentials credentials =
           uninitialized.remove(state.getValidatorRegistry().get(i).getPubKey());
       if (credentials != null) {
         intoCommittees.put(i, credentials);
       }
+      if (uninitialized.isEmpty()) {
+        break;
+      }
     }
+
     this.initialized.putAll(intoCommittees);
     intoCommittees.forEach((vIdx, bls) -> initializedStream.onNext(Pair.with(vIdx, bls.getPubkey())));
     if (uninitialized.isEmpty()) {
@@ -243,16 +264,33 @@ public class MultiValidatorService implements ValidatorService {
   private void propose(ValidatorIndex index, final ObservableBeaconState observableState) {
     BLS381Credentials credentials = initialized.get(index);
     if (credentials != null) {
+      long s = System.nanoTime();
       BeaconBlock newBlock = proposer.propose(observableState, credentials.getSigner());
+      long total = System.nanoTime() - s;
       propagateBlock(newBlock);
 
-      logger.info(
-          "validator {}: proposed a {}",
-          index,
-          newBlock.toString(
-              spec.getConstants(),
-              observableState.getLatestSlotState().getGenesisTime(),
-              spec::hash_tree_root));
+      if (spec.is_epoch_end(newBlock.getSlot())) {
+        logger.info(
+            "validator {}: proposed a {} in {}s, epoch avg without this block: {}s",
+            index,
+            newBlock.toString(
+                spec.getConstants(),
+                observableState.getLatestSlotState().getGenesisTime(),
+                spec::hash_tree_root),
+            String.format("%.3f", (double) total / 1_000_000_000d),
+            String.format("%.3f", (double) proposeTimeCollector.getAvg() / 1_000_000_000d));
+        proposeTimeCollector.reset();
+      } else {
+        logger.info(
+            "validator {}: proposed a {} in {}s",
+            index,
+            newBlock.toString(
+                spec.getConstants(),
+                observableState.getLatestSlotState().getGenesisTime(),
+                spec::hash_tree_root),
+            String.format("%.3f", (double) total / 1_000_000_000d));
+        proposeTimeCollector.tick(total);
+      }
     }
   }
 

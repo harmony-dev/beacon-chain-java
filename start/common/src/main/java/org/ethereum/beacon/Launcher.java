@@ -26,9 +26,11 @@ import org.ethereum.beacon.db.InMemoryDatabase;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.pow.DepositContract.ChainStart;
 import org.ethereum.beacon.schedulers.Schedulers;
+import org.ethereum.beacon.util.stats.TimeCollector;
 import org.ethereum.beacon.validator.BeaconChainProposer;
 import org.ethereum.beacon.validator.MultiValidatorService;
 import org.ethereum.beacon.validator.attester.BeaconChainAttesterImpl;
+import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import org.ethereum.beacon.validator.proposer.BeaconChainProposerImpl;
 import org.ethereum.beacon.wire.WireApi;
 import reactor.core.publisher.DirectProcessor;
@@ -38,7 +40,7 @@ import reactor.core.publisher.Mono;
 public class Launcher {
   private final SpecHelpers spec;
   private final DepositContract depositContract;
-  private final BLS381.KeyPair validatorSig;
+  private final BLS381Credentials validatorCred;
   private final WireApi wireApi;
   private final BeaconChainStorageFactory storageFactory;
   private final Schedulers schedulers;
@@ -59,20 +61,34 @@ public class Launcher {
   private BeaconChainAttesterImpl beaconChainAttester;
   private MultiValidatorService beaconChainValidator;
 
+  private TimeCollector proposeTimeCollector;
+
   public Launcher(
       SpecHelpers spec,
       DepositContract depositContract,
-      KeyPair validatorSig,
+      BLS381Credentials validatorCred,
       WireApi wireApi,
       BeaconChainStorageFactory storageFactory,
       Schedulers schedulers) {
+    this(spec, depositContract, validatorCred, wireApi, storageFactory, schedulers, new TimeCollector());
+  }
+
+  public Launcher(
+      SpecHelpers spec,
+      DepositContract depositContract,
+      BLS381Credentials validatorCred,
+      WireApi wireApi,
+      BeaconChainStorageFactory storageFactory,
+      Schedulers schedulers,
+      TimeCollector proposeTimeCollector) {
 
     this.spec = spec;
     this.depositContract = depositContract;
-    this.validatorSig = validatorSig;
+    this.validatorCred = validatorCred;
     this.wireApi = wireApi;
     this.storageFactory = storageFactory;
     this.schedulers = schedulers;
+    this.proposeTimeCollector = proposeTimeCollector;
 
     if (depositContract != null) {
       Mono.from(depositContract.getChainStartMono()).subscribe(this::chainStarted);
@@ -123,17 +139,18 @@ public class Launcher {
         schedulers);
     observableStateProcessor.start();
 
-    if (validatorSig != null) {beaconChainProposer = new BeaconChainProposerImpl(spec,
+    if (validatorCred != null) {beaconChainProposer = new BeaconChainProposerImpl(spec,
          perBlockTransition, perEpochTransition, depositContract);
     beaconChainAttester = new BeaconChainAttesterImpl(spec);
 
     beaconChainValidator = new MultiValidatorService(
-        singletonList(createWithInsecureSigner(validatorSig)),
+        singletonList(validatorCred),
         beaconChainProposer,
         beaconChainAttester,
         spec,
         observableStateProcessor.getObservableStateStream(),
-        schedulers);
+        schedulers,
+        proposeTimeCollector);
     beaconChainValidator.start();
 
       ProposedBlockProcessor proposedBlocksProcessor = new ProposedBlockProcessorImpl(
@@ -161,8 +178,8 @@ public class Launcher {
     return depositContract;
   }
 
-  public KeyPair getValidatorSig() {
-    return validatorSig;
+  public BLS381Credentials getValidatorCred() {
+    return validatorCred;
   }
 
   public WireApi getWireApi() {

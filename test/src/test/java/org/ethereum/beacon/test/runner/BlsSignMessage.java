@@ -1,5 +1,8 @@
 package org.ethereum.beacon.test.runner;
 
+import static org.ethereum.beacon.test.SilentAsserts.assertEquals;
+
+import java.util.Optional;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.crypto.BLS381;
@@ -9,10 +12,7 @@ import org.ethereum.beacon.test.type.TestCase;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes8;
-
-import java.util.Optional;
-
-import static org.ethereum.beacon.test.SilentAsserts.assertHexStrings;
+import tech.pegasys.artemis.util.bytes.Bytes96;
 
 /**
  * TestRunner for {@link BlsTest.BlsSignMessageCase}
@@ -40,9 +40,10 @@ public class BlsSignMessage implements Runner {
         MessageParameters.create(
             Hash32.wrap(Bytes32.fromHexString(testCase.getInput().getMessage())),
             Bytes8.fromHexStringLenient(testCase.getInput().getDomain()));
-    String signature =
-        BLSSignature.wrap(BLS381.sign(messageParameters, keyPair).getEncoded()).toString();
+    BLSSignature signature =
+        BLSSignature.wrap(BLS381.sign(messageParameters, keyPair).getEncoded());
 
-    return assertHexStrings(testCase.getOutput(), signature);
+    return assertEquals(
+        BLSSignature.wrap(Bytes96.fromHexStringLenient(testCase.getOutput())), signature);
   }
 }

@@ -3,16 +3,15 @@ package org.ethereum.beacon.test.runner;
 import org.apache.milagro.amcl.BLS381.ECP2;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.crypto.MessageParameters;
-import org.ethereum.beacon.crypto.bls.codec.PointData;
-import org.ethereum.beacon.crypto.bls.milagro.BIGs;
-import org.ethereum.beacon.crypto.bls.milagro.FPs;
+import org.ethereum.beacon.crypto.bls.milagro.MilagroCodecs;
 import org.ethereum.beacon.crypto.bls.milagro.MilagroMessageMapper;
 import org.ethereum.beacon.test.type.BlsTest;
 import org.ethereum.beacon.test.type.TestCase;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
+import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.bytes.Bytes8;
-import tech.pegasys.artemis.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.bytes.Bytes96;
 
 import java.util.Optional;
 
@@ -49,15 +48,12 @@ public class BlsMessageHashCompressed implements Runner {
             Bytes8.fromHexStringLenient(testCase.getInput().getDomain()));
     MilagroMessageMapper milagroMessageMapper = new MilagroMessageMapper();
     ECP2 point = milagroMessageMapper.map(messageParameters);
-    byte[] re = BIGs.toByteArray(point.getX().getA());
-    byte[] im = BIGs.toByteArray(point.getX().getB());
-    int sign = FPs.getSign(point.getY().getB());
-    PointData.G2 data = PointData.G2.create(im, re, point.is_infinity(), sign);
+    Bytes96 data = MilagroCodecs.G2.encode(point);
 
     Optional<String> compareX1 =
-        assertHexStrings(testCase.getOutput().get(0), BytesValue.wrap(data.getX1()).toString());
+        assertHexStrings(testCase.getOutput().get(0), data.slice(0, Bytes48.SIZE).toString());
     Optional<String> compareX2 =
-        assertHexStrings(testCase.getOutput().get(1), BytesValue.wrap(data.getX2()).toString());
+        assertHexStrings(testCase.getOutput().get(1), data.slice(Bytes48.SIZE).toString());
 
     if (!compareX1.isPresent() && !compareX2.isPresent()) {
       return Optional.empty();

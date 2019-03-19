@@ -1,19 +1,16 @@
-package org.ethereum.beacon.emulator.config.simulator;
+package org.ethereum.beacon.emulator.config.main.plan;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.ArrayList;
 import java.util.List;
 import org.ethereum.beacon.emulator.config.Config;
 import org.ethereum.beacon.emulator.config.YamlPrinter;
+import org.ethereum.beacon.emulator.config.simulator.PeersConfig;
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-public class SimulationPlan implements Config {
-  private List<PeersConfig> peers;
+public class SimulationPlan extends Plan implements Config {
 
-  @JsonProperty("bls-verify")
-  private boolean blsVerifyEnabled = true;
+  private List<PeersConfig> peers = new ArrayList<>();
 
-  @JsonProperty("genesis-time")
   private int genesisTime = 600;
 
   private long seed = System.currentTimeMillis();
@@ -23,15 +20,11 @@ public class SimulationPlan implements Config {
   }
 
   public void setPeers(List<PeersConfig> peers) {
-    this.peers = peers;
+    this.peers = new ArrayList<>(peers);
   }
 
-  public boolean isBlsVerifyEnabled() {
-    return blsVerifyEnabled;
-  }
-
-  public void setBlsVerifyEnabled(boolean blsVerifyEnabled) {
-    this.blsVerifyEnabled = blsVerifyEnabled;
+  public void addPeers(PeersConfig peersConfig) {
+    peers.add(peersConfig);
   }
 
   public int getGenesisTime() {

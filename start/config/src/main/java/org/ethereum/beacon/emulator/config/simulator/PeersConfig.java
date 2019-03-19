@@ -13,6 +13,29 @@ public class PeersConfig {
 
   private String blsPrivateKey = null;
 
+  public PeersConfig(
+      int count,
+      boolean validator,
+      long systemTimeShift,
+      long wireInboundDelay,
+      long wireOutboundDelay,
+      String blsPrivateKey) {
+    this.count = count;
+    this.validator = validator;
+    this.systemTimeShift = systemTimeShift;
+    this.wireInboundDelay = wireInboundDelay;
+    this.wireOutboundDelay = wireOutboundDelay;
+    this.blsPrivateKey = blsPrivateKey;
+  }
+
+  public PeersConfig() {
+  }
+
+  public PeersConfig(int count, boolean validator) {
+    this.count = count;
+    this.validator = validator;
+  }
+
   public int getCount() {
     return count;
   }

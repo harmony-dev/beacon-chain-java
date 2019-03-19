@@ -84,9 +84,7 @@ public abstract class AbstractBytesValue implements BytesValue {
 
   @Override
   public void update(MessageDigest digest) {
-    for (int i = 0; i < size(); i++) {
-      digest.update(get(i));
-    }
+    digest.update(getArrayUnsafe());
   }
 
   @Override

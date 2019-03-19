@@ -21,9 +21,8 @@ import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.stream.SimpleProcessor;
+import org.ethereum.beacon.util.stats.TimeCollector;
 import org.reactivestreams.Publisher;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.ReplayProcessor;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
 public class DefaultBeaconChain implements MutableBeaconChain {
@@ -44,6 +43,8 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   private final Schedulers schedulers;
 
   private BeaconTuple recentlyProcessed;
+
+  private TimeCollector insertTimeCollector = new TimeCollector();
 
   public DefaultBeaconChain(
       SpecHelpers spec,
@@ -116,6 +117,8 @@ public class DefaultBeaconChain implements MutableBeaconChain {
       return false;
     }
 
+    long s = System.nanoTime();
+
     BeaconStateEx parentState = pullParentState(block);
 
     BeaconStateEx preBlockState = applyEmptySlotTransitionsTillBlock(parentState, block);
@@ -148,17 +151,37 @@ public class DefaultBeaconChain implements MutableBeaconChain {
 
     chainStorage.commit();
 
+    long total = System.nanoTime() - s;
+
     this.recentlyProcessed = newTuple;
     blockStream.onNext(new BeaconTupleDetails(block, preBlockState, postBlockState, postEpochState));
 
-    logger.info(
-        "new block inserted: {}",
-        newTuple
-            .getBlock()
-            .toString(
-                spec.getConstants(),
-                newTuple.getState().getGenesisTime(),
-                spec::hash_tree_root));
+    if (spec.is_epoch_end(block.getSlot())) {
+      logger.info(
+          "new block inserted: {} in {}s, epoch avg without this block: {}s",
+          newTuple
+              .getBlock()
+              .toString(
+                  spec.getConstants(),
+                  newTuple.getState().getGenesisTime(),
+                  spec::hash_tree_root),
+          String.format("%.3f", ((double) total) / 1_000_000_000d),
+          String.format("%.3f", ((double) insertTimeCollector.getAvg()) / 1_000_000_000d));
+
+      insertTimeCollector.reset();
+    } else {
+      logger.info(
+          "new block inserted: {} in {}s",
+          newTuple
+              .getBlock()
+              .toString(
+                  spec.getConstants(),
+                  newTuple.getState().getGenesisTime(),
+                  spec::hash_tree_root),
+              String.format("%.3f", ((double) total) / 1_000_000_000d));
+
+      insertTimeCollector.tick(total);
+    }
 
     return true;
   }

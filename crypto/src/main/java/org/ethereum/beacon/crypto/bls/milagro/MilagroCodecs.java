@@ -79,7 +79,7 @@ public abstract class MilagroCodecs {
             FP2 y = ECP2.RHS(x);
             y.sqrt();
 
-            if (FPs.getSign(y.getB()) == g2.getSign()) {
+            if (FPs.getSign(y) == g2.getSign()) {
               return new ECP2(x, y);
             } else {
               y.neg();
@@ -92,7 +92,7 @@ public abstract class MilagroCodecs {
         public Bytes96 encode(ECP2 point) {
           byte[] re = BIGs.toByteArray(point.getX().getA());
           byte[] im = BIGs.toByteArray(point.getX().getB());
-          int sign = FPs.getSign(point.getY().getB());
+          int sign = FPs.getSign(point.getY());
           PointData.G2 data = PointData.G2.create(im, re, point.is_infinity(), sign);
           return data.encode();
         }

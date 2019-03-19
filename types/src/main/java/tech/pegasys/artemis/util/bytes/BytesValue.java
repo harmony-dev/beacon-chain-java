@@ -131,6 +131,27 @@ public interface BytesValue extends Comparable<BytesValue> {
   }
 
   /**
+   * Concatenates two values
+   *
+   * The resulting value would be either backed by supplied values with
+   * {@link #wrap(BytesValue, BytesValue)} or create a copy of backing bytes
+   * depending on the target value size
+   */
+  static BytesValue concat(BytesValue v1, BytesValue v2) {
+    if (v1.size() + v2.size() < 512) {
+      // it should be generally cheaper for further usage
+      byte[] bb = new byte[v1.size() + v2.size()];
+      byte[] arr1 = v1.getArrayUnsafe();
+      byte[] arr2 = v2.getArrayUnsafe();
+      System.arraycopy(arr1, 0, bb, 0, arr1.length);
+      System.arraycopy(arr2, 0, bb, arr1.length, arr2.length);
+      return wrap(bb);
+    } else {
+      return wrap(v1, v2);
+    }
+  }
+
+  /**
    * Wraps a full Vert.x {@link Buffer} as a {@link BytesValue}.
    *
    * <p>
@@ -532,7 +553,7 @@ public interface BytesValue extends Comparable<BytesValue> {
   }
 
   default BytesValue concat(final BytesValue value) {
-    return wrap(this, value);
+    return concat(this, value);
   }
 
   /**
