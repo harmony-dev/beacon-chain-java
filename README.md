@@ -17,25 +17,7 @@ cp crypto/build/libs/beacon-crypto-0.1.0.jar <jar-destination>
 ## Simulator
 Despite lacking a network stack there is already something that everybody can play with, a standalone Beacon chain simulator.
 
-To run an simulator you need to install Java 8 or later. There are many guidelines in Internet, even the [official one](https://java.com/en/download/help/download_options.xml), from Oracle. Next, git clone our repo, build `client` module distribution and run simulator:
-```bash
-git clone https://github.com/harmony-dev/beacon-chain-java.git
-cd beacon-chain-java
-./gradlew :start:cli:distZip
-``` 
-Cool, we made distribution tied to our system, it's in the `start/cli/build/distributions/` folder and looks like `cli-0.1.0.zip`. Unzip it, enter the `bin` folder and run simulator:
-```bash
-cd start/cli/build/distributions/
-unzip cli-0.1.0.zip
-cd cli-0.1.0/bin
-./simulator
-``` 
-and you will see help for `simulator` launcher. Preceding commands will work for OS X/Linux, in Windows you will need to  use `.bat` commands where its needed.
-
-Let's run simulator with default settings and 4 peers:
-```bash
-./simulator run 4
-```
+Use [Installation guide](https://github.com/harmony-dev/beacon-chain-java/wiki/Beacon-chain-simulator#installation-guide) to install simulator. For additional details check out [Run simulation](https://github.com/harmony-dev/beacon-chain-java/wiki/Beacon-chain-simulator#run-simulation) section.
 
 ## Contribution guideline
 Thank you for joining our efforts to drive Ethereum forward! 

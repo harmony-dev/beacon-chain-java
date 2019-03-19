@@ -1,20 +1,10 @@
 package org.ethereum.beacon.chain.observer;
 
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.stream.Collectors;
 import org.ethereum.beacon.chain.BeaconChainHead;
+import org.ethereum.beacon.chain.BeaconTuple;
 import org.ethereum.beacon.chain.BeaconTupleDetails;
 import org.ethereum.beacon.chain.LMDGhostHeadFunction;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
-import org.ethereum.beacon.chain.BeaconTuple;
 import org.ethereum.beacon.chain.storage.BeaconTupleStorage;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.HeadFunction;
@@ -30,11 +20,21 @@ import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.schedulers.Scheduler;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.stream.SimpleProcessor;
+import org.ethereum.beacon.util.Cache;
+import org.ethereum.beacon.util.LRUCache;
 import org.javatuples.Pair;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.ReplayProcessor;
 import tech.pegasys.artemis.util.collections.ReadList;
+
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   private static final int MAX_TUPLE_CACHE_SIZE = 256;
@@ -52,13 +52,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   private static final int UPDATE_MILLIS = 500;
   private Scheduler regularJobExecutor;
   private Scheduler continuousJobExecutor;
-  private Map<BeaconBlock, BeaconTupleDetails> tupleDetails = Collections.synchronizedMap(
-      new LinkedHashMap<BeaconBlock, BeaconTupleDetails>() {
-        @Override
-        protected boolean removeEldestEntry(Entry eldest) {
-          return size() > MAX_TUPLE_CACHE_SIZE;
-        }
-      });
+  private Cache<BeaconBlock, BeaconTupleDetails> tupleDetails = new LRUCache<>(MAX_TUPLE_CACHE_SIZE);
 
   private final List<Attestation> attestationBuffer = new ArrayList<>();
   private final Map<Pair<BLSPubkey, SlotNumber>, Attestation> attestationCache = new HashMap<>();
@@ -167,7 +161,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
 
 
   private void onNewBlockTuple(BeaconTupleDetails beaconTuple) {
-    tupleDetails.put(beaconTuple.getBlock(), beaconTuple);
+    tupleDetails.get(beaconTuple.getBlock(), (b) -> beaconTuple);
     runTaskInSeparateThread(
         () -> {
           addAttestationsFromState(beaconTuple.getState());
@@ -218,9 +212,11 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     this.head = head;
     headStream.onNext(new BeaconChainHead(this.head));
 
-    if (latestState == null || head.getBlock().getSlot().greater(latestState.getSlot())) {
-      return;
-    } else {
+    if (latestState == null) {
+      latestState = head.getFinalState();
+    }
+
+    if (!head.getBlock().getSlot().greater(latestState.getSlot())) {
       updateCurrentObservableState(head, latestState.getSlot());
     }
   }
@@ -241,12 +237,6 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
       latestState = stateWithoutEpoch;
       observableStateStream.onNext(
           new ObservableBeaconState(head.getBlock(), stateWithoutEpoch, pendingOperations));
-      BeaconStateEx epochState = applyEpochTransitionIfNeeded(head.getFinalState(), stateWithoutEpoch);
-      if (epochState != null) {
-        latestState = epochState;
-        observableStateStream.onNext(new ObservableBeaconState(
-            head.getBlock(), epochState, pendingOperations));
-      }
     } else {
       if (head.getPostSlotState().isPresent()) {
         latestState = head.getPostSlotState().get();
@@ -267,17 +257,6 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
         observableStateStream.onNext(new ObservableBeaconState(
             head.getBlock(), head.getFinalState(), pendingOperations));
       }
-    }
-  }
-
-  private BeaconStateEx applyEpochTransitionIfNeeded(
-      BeaconStateEx originalState, BeaconStateEx stateWithoutEpoch) {
-
-    if (spec.is_epoch_end(stateWithoutEpoch.getSlot())
-        && originalState.getSlot().less(stateWithoutEpoch.getSlot())) {
-      return perEpochTransition.apply(stateWithoutEpoch);
-    } else {
-      return null;
     }
   }
 
@@ -309,14 +288,17 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     if (this.head != null && this.head.getBlock().equals(newHead)) {
       return; // == old
     }
-    BeaconTupleDetails tuple = tupleDetails.get(newHead);
-    if (tuple == null) {
-      BeaconTuple newHeadTuple =
-          tupleStorage
-              .get(spec.hash_tree_root(newHead))
-              .orElseThrow(() -> new IllegalStateException("Beacon tuple not found for new head "));
-      tuple = new BeaconTupleDetails(newHeadTuple);
-    }
+    BeaconTupleDetails tuple =
+        tupleDetails.get(
+            newHead,
+            (head) -> {
+              BeaconTuple newHeadTuple =
+                  tupleStorage
+                      .get(spec.hash_tree_root(head))
+                      .orElseThrow(
+                          () -> new IllegalStateException("Beacon tuple not found for new head "));
+              return new BeaconTupleDetails(newHeadTuple);
+            });
     newHead(tuple);
   }
 

@@ -3,7 +3,11 @@ package org.ethereum.beacon.ssz;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import org.ethereum.beacon.ssz.annotation.SSZTransient;
+import org.ethereum.beacon.util.Cache;
+import org.ethereum.beacon.util.LRUCache;
+import org.ethereum.beacon.util.MockCache;
 import org.javatuples.Pair;
+
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
@@ -47,6 +51,8 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
 
   private boolean explicitFieldAnnotation = true;
 
+  private Cache<Class, SSZScheme> cache = new MockCache<>();
+
   public SSZAnnotationSchemeBuilder() {}
 
   /**
@@ -85,6 +91,17 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
   }
 
   /**
+   * Initializes cache, unlimited in size, 1 scheme record per each class
+   *
+   * @param capacity cache capacity
+   * @return this scheme builder with cache added
+   */
+  public SSZAnnotationSchemeBuilder withCache(int capacity) {
+    this.cache = new LRUCache<>(capacity);
+    return this;
+  }
+
+  /**
    * Add logger to {@link SSZAnnotationSchemeBuilder}
    *
    * @param logger Java logger
@@ -104,6 +121,10 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
    */
   @Override
   public SSZScheme build(Class clazz) {
+    return cache.get(clazz, this::buildImpl);
+  }
+
+  private SSZScheme buildImpl(Class clazz) {
     SSZScheme scheme = new SSZScheme();
     SSZSerializable mainAnnotation = (SSZSerializable) clazz.getAnnotation(SSZSerializable.class);
 
@@ -116,7 +137,7 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
       encode.extraType = "bytes";
       encode.name = "encode";
       encode.getter = mainAnnotation.encode();
-      scheme.fields.add(encode);
+      scheme.getFields().add(encode);
       return logAndReturnScheme(clazz, scheme);
     }
 
@@ -186,7 +207,7 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
       }
 
       newField.getter = fieldGetters.containsKey(name) ? fieldGetters.get(name).getName() : null;
-      scheme.fields.add(newField);
+      scheme.getFields().add(newField);
     }
 
     return logAndReturnScheme(clazz, scheme);
@@ -198,9 +219,10 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
     }
     String overview =
         String.format(
-            "Scheme for class %s consists of %s field(s)", clazz.getName(), scheme.fields.size());
+            "Scheme for class %s consists of %s field(s)",
+            clazz.getName(), scheme.getFields().size());
     logger.info(overview);
-    for (SSZScheme.SSZField field : scheme.fields) {
+    for (SSZScheme.SSZField field : scheme.getFields()) {
       logger.info(field.toString());
     }
 

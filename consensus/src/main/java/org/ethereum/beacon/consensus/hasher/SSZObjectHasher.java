@@ -1,5 +1,7 @@
 package org.ethereum.beacon.consensus.hasher;
 
+import java.util.function.Consumer;
+import org.ethereum.beacon.core.types.Hashable;
 import org.ethereum.beacon.ssz.SSZHashSerializer;
 import org.ethereum.beacon.ssz.SSZHashSerializers;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -7,6 +9,7 @@ import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 
 /**
@@ -18,6 +21,7 @@ import java.util.function.Function;
  */
 public class SSZObjectHasher implements ObjectHasher<Hash32> {
 
+  private static final int SSZ_SCHEMES_CACHE_CAPACITY = 128;
   private final SSZHashSerializer sszHashSerializer;
 
   SSZObjectHasher(SSZHashSerializer sszHashSerializer) {
@@ -26,13 +30,18 @@ public class SSZObjectHasher implements ObjectHasher<Hash32> {
 
   public static SSZObjectHasher create(Function<BytesValue, Hash32> hashFunction) {
     SSZHashSerializer sszHashSerializer =
-        SSZHashSerializers.createWithBeaconChainTypes(hashFunction, true);
+        SSZHashSerializers.createWithBeaconChainTypes(hashFunction, true, SSZ_SCHEMES_CACHE_CAPACITY);
     return new SSZObjectHasher(sszHashSerializer);
   }
 
   @Override
   public Hash32 getHash(Object input) {
-    return Hash32.wrap(Bytes32.wrap(sszHashSerializer.hash(input)));
+    Function<Object, Hash32> hasher = o -> Hash32.wrap(Bytes32.wrap(sszHashSerializer.hash(o)));
+    if (input instanceof Hashable) {
+      return ((Hashable<Hash32>) input).getHash(hasher);
+    } else {
+      return hasher.apply(input);
+    }
   }
 
   @Override

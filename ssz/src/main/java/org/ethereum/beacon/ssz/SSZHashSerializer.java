@@ -100,12 +100,12 @@ public class SSZHashSerializer implements BytesHasher, BytesSerializer {
     } else {
       scheme = new SSZSchemeBuilder.SSZScheme();
       boolean fieldFound = false;
-      for (SSZSchemeBuilder.SSZScheme.SSZField field : fullScheme.fields) {
+      for (SSZSchemeBuilder.SSZScheme.SSZField field : fullScheme.getFields()) {
         if (field.name.equals(truncateField)) {
           fieldFound = true;
           break;
         }
-        scheme.fields.add(field);
+        scheme.getFields().add(field);
       }
       if (!fieldFound) {
         throw new RuntimeException(
@@ -115,7 +115,7 @@ public class SSZHashSerializer implements BytesHasher, BytesSerializer {
 
     SSZCodecHasher codecHasher = (SSZCodecHasher) codecResolver;
     List<Bytes> containerValues = new ArrayList<>();
-    for (SSZSchemeBuilder.SSZScheme.SSZField field : scheme.fields) {
+    for (SSZSchemeBuilder.SSZScheme.SSZField field : scheme.getFields()) {
       Object value;
       ByteArrayOutputStream res = new ByteArrayOutputStream();
       Method getter = getters.get(field.getter);

@@ -1,11 +1,19 @@
 package tech.pegasys.artemis.util.collections;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public interface ReadList<IndexType extends Number, ValueType> extends Iterable<ValueType> {
+
+  /** Wraps with creating of new list */
+  static <IndexType extends Number, ValueType> ReadList<IndexType, ValueType> wrap(
+      List<ValueType> srcList, Function<Integer, IndexType> indexConverter) {
+    return ListImpl.wrap(new ArrayList<>(srcList), indexConverter);
+  }
 
   IndexType size();
 

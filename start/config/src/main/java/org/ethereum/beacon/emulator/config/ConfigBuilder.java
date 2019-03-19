@@ -148,7 +148,7 @@ public class ConfigBuilder<C extends Config> {
    * <p>NOTE: not compatible with resource files in jar, use {@link #addYamlConfig(InputStream)}
    * instead
    */
-  public ConfigBuilder addYamlConfig(File file) {
+  public ConfigBuilder<C> addYamlConfig(File file) {
     InputStream inputStream = null;
     try {
       inputStream = new DataInputStream(new FileInputStream(file));
@@ -159,7 +159,7 @@ public class ConfigBuilder<C extends Config> {
   }
 
   /** Adds input stream with yaml config to list of config sources with guaranteed order */
-  public ConfigBuilder addYamlConfig(InputStream inputStream) {
+  public ConfigBuilder<C> addYamlConfig(InputStream inputStream) {
     String content;
     try (InputStreamReader streamReader = new InputStreamReader(inputStream, Charsets.UTF_8)) {
       content = CharStreams.toString(streamReader);
@@ -171,8 +171,13 @@ public class ConfigBuilder<C extends Config> {
     return this;
   }
 
+  /** A shortcut method that loads config from resource bundle */
+  public ConfigBuilder<C> addYamlConfigFromResources(String resourceName) {
+    return addYamlConfig(ClassLoader.class.getResourceAsStream(resourceName));
+  }
+
   /** Adds alread created Config as source of configuration */
-  public ConfigBuilder addConfig(Config config) {
+  public ConfigBuilder addConfig(C config) {
     configs.add(new AsIsSource(config));
     return this;
   }
@@ -271,5 +276,9 @@ public class ConfigBuilder<C extends Config> {
               String.format("No handlers for config source of type %s found", source.getType()));
         }
     }
+  }
+
+  public boolean isEmpty() {
+    return configs.isEmpty();
   }
 }

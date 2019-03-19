@@ -5,6 +5,7 @@ import net.consensys.cava.ssz.BytesSSZReaderProxy;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import org.javatuples.Pair;
 import org.javatuples.Triplet;
+
 import javax.annotation.Nullable;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
@@ -12,7 +13,6 @@ import java.beans.PropertyDescriptor;
 import java.io.ByteArrayOutputStream;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -105,7 +105,7 @@ public class SSZSerializer implements BytesSerializer {
     // Encode object fields one by one
     SSZScheme scheme = buildScheme(clazz);
     ByteArrayOutputStream res = new ByteArrayOutputStream();
-    for (SSZScheme.SSZField field : scheme.fields) {
+    for (SSZScheme.SSZField field : scheme.getFields()) {
       Object value;
       Method getter = getters.get(field.getter);
       try {
@@ -150,13 +150,8 @@ public class SSZSerializer implements BytesSerializer {
   public <C> C decode(byte[] data, Class<? extends C> clazz) {
     checkSSZSerializableAnnotation(clazz);
 
-    // Fast null handling
-    if (Arrays.equals(data, EMPTY_PREFIX)) {
-      return null;
-    }
-
     SSZScheme scheme = buildScheme(clazz);
-    List<SSZScheme.SSZField> fields = scheme.fields;
+    List<SSZScheme.SSZField> fields = scheme.getFields();
     int size = fields.size();
     BytesSSZReaderProxy reader = new BytesSSZReaderProxy(Bytes.of(data));
     List<Pair<SSZSchemeBuilder.SSZScheme.SSZField, Object>> fieldValuePairs = new ArrayList<>();
@@ -166,6 +161,14 @@ public class SSZSerializer implements BytesSerializer {
       SSZScheme.SSZField field = fields.get(i);
       Object obj = codecResolver.resolveDecodeFunction(field).apply(new Pair<>(reader, this));
       fieldValuePairs.add(new Pair<>(field, obj));
+    }
+
+    if (!reader.isComplete()) {
+      throw new RuntimeException(
+          String.format(
+              "Provided data is not valid for object of type %s, "
+                  + "data is not over but all fields are read!",
+              clazz));
     }
 
     return sszModelFactory.create(clazz, fieldValuePairs);

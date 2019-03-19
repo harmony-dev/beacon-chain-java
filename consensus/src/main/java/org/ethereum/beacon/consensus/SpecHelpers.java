@@ -16,7 +16,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.annotation.Nonnull;
-import org.checkerframework.checker.guieffect.qual.UI;
 import org.ethereum.beacon.consensus.hasher.ObjectHasher;
 import org.ethereum.beacon.consensus.hasher.SSZObjectHasher;
 import org.ethereum.beacon.core.BeaconBlock;
@@ -203,7 +202,11 @@ public class SpecHelpers {
     int committees_per_epoch;
     EpochNumber shuffling_epoch;
     ShardNumber shuffling_start_shard;
-    if (epoch.equals(currentEpoch)) {
+    // 'lookahead' might already happened if
+    // get_crosslink_committees_at_slot is called after epoch transition
+    // hacking around
+    if ((epoch.equals(currentEpoch) && currentEpoch.greaterEqual(state.getCurrentShufflingEpoch()))
+        || (epoch.equals(nextEpoch) && nextEpoch.equals(state.getCurrentShufflingEpoch()))) {
       /*
         if epoch == current_epoch:
           committees_per_epoch = get_current_epoch_committee_count(state)
@@ -215,7 +218,8 @@ public class SpecHelpers {
       seed = state.getCurrentShufflingSeed();
       shuffling_epoch = state.getCurrentShufflingEpoch();
       shuffling_start_shard = state.getCurrentShufflingStartShard();
-    } else if (epoch.equals(previousEpoch)) {
+    } else if (epoch.equals(previousEpoch) ||
+        (epoch.equals(currentEpoch) && currentEpoch.less(state.getCurrentShufflingEpoch()))) {
       /*
         elif epoch == previous_epoch:
           committees_per_epoch = get_previous_epoch_committee_count(state)
@@ -226,7 +230,7 @@ public class SpecHelpers {
       seed = state.getPreviousShufflingSeed();
       shuffling_epoch = state.getPreviousShufflingEpoch();
       shuffling_start_shard = state.getPreviousShufflingStartShard();
-    } else {
+    } else if (epoch.equals(nextEpoch)) {
       /*
         elif epoch == next_epoch:
           current_committees_per_epoch = get_current_epoch_committee_count(state)
@@ -266,6 +270,8 @@ public class SpecHelpers {
         seed = state.getCurrentShufflingSeed();
         shuffling_start_shard = state.getCurrentShufflingStartShard();
       }
+    } else {
+      throw new SpecAssertionFailed();
     }
 
     /*
@@ -370,86 +376,6 @@ public class SpecHelpers {
   }
 
   /*
-   def shuffle(values: List[Any], seed: Hash32) -> List[Any]:
-   """
-   Returns the shuffled ``values`` with ``seed`` as entropy.
-   """
-  */
-  public <T> List<T> shuffle(List<T> values, Hash32 seed) {
-
-    //    values_count = len(values)
-    int values_count = values.size();
-
-    //    # Entropy is consumed from the seed in 3-byte (24 bit) chunks.
-    //        rand_bytes = 3
-    //    # The highest possible result of the RNG.
-    //        rand_max = 2 ** (rand_bytes * 8) - 1
-    int rand_bytes = 3;
-    int rand_max = 1 << (rand_bytes * 8 - 1);
-
-    //    # The range of the RNG places an upper-bound on the size of the list that
-    //    # may be shuffled. It is a logic error to supply an oversized list.
-    //    assert values_count < rand_max
-    assertTrue(values_count < rand_max);
-
-    //    output = [x for x in values]
-    //    source = seed
-    //    index = 0
-    List<T> output = new ArrayList<>(values);
-    Hash32 source = seed;
-    int index = 0;
-
-    //    while index < values_count - 1:
-    while (index < values_count - 1) {
-      //    # Re-hash the `source` to obtain a new pattern of bytes.
-      //    source = hash(source)
-      source = hash(source);
-
-      //    # Iterate through the `source` bytes in 3-byte chunks.
-      //    for position in range(0, 32 - (32 % rand_bytes), rand_bytes):
-      for (int position = 0; position < 32 - (32 % rand_bytes); position += rand_bytes) {
-        //    # Determine the number of indices remaining in `values` and exit
-        //    # once the last index is reached.
-        //    remaining = values_count - index
-        //    if remaining == 1:
-        //        break
-        int remaining = values_count - index;
-        if (remaining == 1) {
-          break;
-        }
-
-        //    # Read 3-bytes of `source` as a 24-bit big-endian integer.
-        //    sample_from_source = int.from_bytes(source[position:position + rand_bytes], 'big')
-        int sample_from_source = Bytes3.wrap(source, position).asUInt24BigEndian().getValue();
-
-        //    # Sample values greater than or equal to `sample_max` will cause
-        //    # modulo bias when mapped into the `remaining` range.
-        //    sample_max = rand_max - rand_max % remaining
-        int sample_max = rand_max - rand_max % remaining;
-
-        //    # Perform a swap if the consumed entropy will not cause modulo bias.
-        //    if sample_from_source < sample_max:
-        if (sample_from_source < sample_max) {
-          //    # Select a replacement index for the current index.
-          //    replacement_position = (sample_from_source % remaining) + index
-          int replacement_position = (sample_from_source % remaining) + index;
-          //    # Swap the current index with the replacement index.
-          //    output[index], output[replacement_position] = output[replacement_position],
-          // output[index]
-          //    index += 1
-          Collections.swap(output, index, replacement_position);
-          index += 1;
-        }
-        //    else:
-        //        # The sample causes modulo bias. A new sample should be read.
-        //        pass
-      }
-    }
-
-    return output;
-  }
-
-  /*
   def get_permuted_index(index: int, list_size: int, seed: Bytes32) -> int:
     """
     Return `p(index)` in a pseudorandom permutation `p` of `0...list_size-1` with ``seed`` as entropy.
@@ -478,13 +404,13 @@ public class SpecHelpers {
 
     for (int round = 0; round < constants.getShuffleRoundCount(); round++) {
       Bytes8 pivotBytes = Bytes8.wrap(hash(seed.concat(int_to_bytes1(round))), 0);
-      UInt64 pivot = bytes_to_int(pivotBytes).modulo(listSize);
-      UInt64 flip = pivot.minus(index).modulo(listSize);
+      long pivot = bytes_to_int(pivotBytes).modulo(listSize).getValue();
+      UInt64 flip = UInt64.valueOf(Math.floorMod(pivot - index.getValue(), listSize.getValue()));
       UInt64 position = UInt64s.max(index, flip);
       BytesValue positionBytes = int_to_bytes4(position.dividedBy(UInt64.valueOf(256)).getValue());
       Bytes32 source = hash(seed.concat(int_to_bytes1(round)).concat(positionBytes));
-      byte byt = source.get(position.modulo(256).getIntValue() / 8);
-      byte bit = (byte) ((byt >> (position.modulo(8).getIntValue())) % 2);
+      int byteV = source.get(position.modulo(256).getIntValue() / 8) & 0xFF;
+      int bit = ((byteV >> (position.modulo(8).getIntValue())) % 2) & 0xFF;
       index = bit > 0 ? flip : index;
     }
 
@@ -496,53 +422,57 @@ public class SpecHelpers {
    *
    * Ported from https://github.com/protolambda/eth2-shuffle/blob/master/shuffle.go#L159
    */
-  List<UInt64> get_permuted_list(List<? extends UInt64> indices, Bytes32 seed) {
+  public List<UInt64> get_permuted_list(List<? extends UInt64> indices, Bytes32 seed) {
+    if (indices.size() < 2) {
+      return new ArrayList<>(indices);
+    }
+
     int listSize = indices.size();
     List<UInt64> permutations = new ArrayList<>(indices);
 
     for (int round = 0; round < constants.getShuffleRoundCount(); round++) {
       BytesValue roundSeed = seed.concat(int_to_bytes1(round));
       Bytes8 pivotBytes = Bytes8.wrap(hash(roundSeed), 0);
-      int pivot = bytes_to_int(pivotBytes).modulo(listSize).getIntValue();
+      long pivot = bytes_to_int(pivotBytes).modulo(listSize).getValue();
 
-      int mirror = (pivot + 1) >>> 1;
+      long mirror = (pivot + 1) >>> 1;
       Bytes32 source = hash(roundSeed.concat(int_to_bytes4(pivot >>> 8)));
 
-      byte byteV = source.get((pivot & 0xff) >>> 3);
-      for (int i = 0, j = pivot; i < mirror; ++i, --j) {
+      byte byteV = source.get((int) ((pivot & 0xff) >>> 3));
+      for (long i = 0, j = pivot; i < mirror; ++i, --j) {
         if ((j & 0xff) == 0xff) {
           source = hash(roundSeed.concat(int_to_bytes4(j >>> 8)));
         }
         if ((j & 0x7) == 0x7) {
-          byteV = source.get((j & 0xff) >>> 3);
+          byteV = source.get((int) ((j & 0xff) >>> 3));
         }
 
         byte bitV = (byte) ((byteV >>> (j & 0x7)) & 0x1);
         if (bitV == 1) {
-          UInt64 oldV = permutations.get(i);
-          permutations.set(i, permutations.get(j));
-          permutations.set(j, oldV);
+          UInt64 oldV = permutations.get((int) i);
+          permutations.set((int) i, permutations.get((int) j));
+          permutations.set((int) j, oldV);
         }
       }
 
-      mirror = UInt64.valueOf(pivot).plus(listSize).increment().shr(1).getIntValue();
-      int end = listSize - 1;
+      mirror = (pivot + listSize + 1) >>> 1;
+      long end = listSize - 1;
 
       source = hash(roundSeed.concat(int_to_bytes4(end >>> 8)));
-      byteV = source.get((end & 0xff) >>> 3);
-      for (int i = pivot + 1, j = end; i < mirror; ++i, --j) {
+      byteV = source.get((int) ((end & 0xff) >>> 3));
+      for (long i = pivot + 1, j = end; i < mirror; ++i, --j) {
         if ((j & 0xff) == 0xff) {
           source = hash(roundSeed.concat(int_to_bytes4(j >>> 8)));
         }
         if ((j & 0x7) == 0x7) {
-          byteV = source.get((j & 0xff) >>> 3);
+          byteV = source.get((int) ((j & 0xff) >>> 3));
         }
 
         byte bitV = (byte) ((byteV >>> (j & 0x7)) & 0x1);
         if (bitV == 1) {
-          UInt64 oldV = permutations.get(i);
-          permutations.set(i, permutations.get(j));
-          permutations.set(j, oldV);
+          UInt64 oldV = permutations.get((int) i);
+          permutations.set((int) i, permutations.get((int) j));
+          permutations.set((int) j, oldV);
         }
       }
     }
@@ -730,6 +660,20 @@ public class SpecHelpers {
   public void process_deposit(
       MutableBeaconState state,
       Deposit deposit) {
+    process_deposit_inner(state, deposit, true);
+  }
+  /*
+    def process_deposit(state: BeaconState, deposit: Deposit) -> None:
+      """
+      Process a deposit from Ethereum 1.0.
+      Note that this function mutates ``state``.
+      """
+    */
+
+  protected void process_deposit_inner(
+      MutableBeaconState state,
+      Deposit deposit,
+      boolean verifyProof) {
 
     /* deposit_input = deposit.deposit_data.deposit_input
 
@@ -749,7 +693,7 @@ public class SpecHelpers {
 
     DepositInput deposit_input = deposit.getDepositData().getDepositInput();
 
-    boolean proof_is_valid =
+    boolean proof_is_valid = !verifyProof ||
         bls_verify(
             deposit_input.getPubKey(),
             signed_root(deposit_input, "proofOfPossession"),

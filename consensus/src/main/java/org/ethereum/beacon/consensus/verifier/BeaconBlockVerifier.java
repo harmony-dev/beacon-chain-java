@@ -3,12 +3,14 @@ package org.ethereum.beacon.consensus.verifier;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.verifier.block.AttestationListVerifier;
 import org.ethereum.beacon.consensus.verifier.block.DepositListVerifier;
+import org.ethereum.beacon.consensus.verifier.block.TransferListVerifier;
 import org.ethereum.beacon.consensus.verifier.block.VoluntaryExitListVerifier;
 import org.ethereum.beacon.consensus.verifier.block.BlockSignatureVerifier;
 import org.ethereum.beacon.consensus.verifier.block.ProposerSlashingListVerifier;
 import org.ethereum.beacon.consensus.verifier.block.RandaoVerifier;
 import org.ethereum.beacon.consensus.verifier.operation.AttestationVerifier;
 import org.ethereum.beacon.consensus.verifier.operation.DepositVerifier;
+import org.ethereum.beacon.consensus.verifier.operation.TransferVerifier;
 import org.ethereum.beacon.consensus.verifier.operation.VoluntaryExitVerifier;
 import org.ethereum.beacon.consensus.verifier.operation.ProposerSlashingVerifier;
 import org.ethereum.beacon.core.BeaconBlock;
@@ -25,6 +27,7 @@ public interface BeaconBlockVerifier {
         .with(new DepositListVerifier(new DepositVerifier(specHelpers), specHelpers.getConstants()))
         .with(new VoluntaryExitListVerifier(new VoluntaryExitVerifier(specHelpers), specHelpers.getConstants()))
         .with(new ProposerSlashingListVerifier(new ProposerSlashingVerifier(specHelpers), specHelpers.getConstants()))
+        .with(new TransferListVerifier(new TransferVerifier(specHelpers), specHelpers))
         .build();
   }
 

@@ -11,6 +11,7 @@ import org.ethereum.beacon.ssz.type.UIntCodec;
 import org.ethereum.beacon.ssz.type.UIntPrimitive;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
+import javax.annotation.Nullable;
 import java.util.function.Function;
 
 /**
@@ -31,10 +32,12 @@ public abstract class SSZHashSerializers {
    * @param hashFunction a basic hash function that serializer does use.
    * @param explicitFieldAnnotation whether object fields must be annotated with {@link SSZ} to be
    *     picked by returned serializer.
+   * @param schemeBuilderCacheCapacity  size of scheme builder cache, null or 0 if not needed
    * @return serializer instance.
    */
   public static SSZHashSerializer createWithBeaconChainTypes(
-      Function<BytesValue, ? extends BytesValue> hashFunction, boolean explicitFieldAnnotation) {
+      Function<BytesValue, ? extends BytesValue> hashFunction, boolean explicitFieldAnnotation,
+      @Nullable Integer schemeBuilderCacheCapacity) {
     SSZCodecHasher hashCodecResolver = SSZCodecHasher.createWithHashFunction(hashFunction);
     registerCodec(hashCodecResolver, new UIntPrimitive());
     registerCodec(hashCodecResolver, new BytesPrimitive());
@@ -43,7 +46,10 @@ public abstract class SSZHashSerializers {
     registerCodec(hashCodecResolver, new UIntCodec());
     registerCodec(hashCodecResolver, new HashCodec());
     registerCodec(hashCodecResolver, new BytesCodec());
-    SSZSchemeBuilder schemeBuilder = new SSZAnnotationSchemeBuilder(explicitFieldAnnotation);
+    SSZAnnotationSchemeBuilder schemeBuilder = new SSZAnnotationSchemeBuilder(explicitFieldAnnotation);
+    if (schemeBuilderCacheCapacity != null && schemeBuilderCacheCapacity > 0) {
+      schemeBuilder.withCache(schemeBuilderCacheCapacity);
+    }
 
     return new SSZHashSerializer(schemeBuilder, hashCodecResolver);
   }

@@ -2,9 +2,9 @@ package org.ethereum.beacon.emulator.config.simulator;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-@JsonIgnoreProperties(ignoreUnknown = false)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class PeersConfig {
-  private int peersCount = 1;
+  private int count = 1;
   private boolean validator = true;
 
   private long systemTimeShift = 0;
@@ -13,12 +13,35 @@ public class PeersConfig {
 
   private String blsPrivateKey = null;
 
-  public int getPeersCount() {
-    return peersCount;
+  public PeersConfig(
+      int count,
+      boolean validator,
+      long systemTimeShift,
+      long wireInboundDelay,
+      long wireOutboundDelay,
+      String blsPrivateKey) {
+    this.count = count;
+    this.validator = validator;
+    this.systemTimeShift = systemTimeShift;
+    this.wireInboundDelay = wireInboundDelay;
+    this.wireOutboundDelay = wireOutboundDelay;
+    this.blsPrivateKey = blsPrivateKey;
   }
 
-  public void setPeersCount(int peersCount) {
-    this.peersCount = peersCount;
+  public PeersConfig() {
+  }
+
+  public PeersConfig(int count, boolean validator) {
+    this.count = count;
+    this.validator = validator;
+  }
+
+  public int getCount() {
+    return count;
+  }
+
+  public void setCount(int count) {
+    this.count = count;
   }
 
   public boolean isValidator() {

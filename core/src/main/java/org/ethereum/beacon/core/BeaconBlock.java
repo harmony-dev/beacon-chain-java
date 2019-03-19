@@ -1,6 +1,8 @@
 package org.ethereum.beacon.core;
 
 import com.google.common.base.Objects;
+
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
@@ -12,6 +14,7 @@ import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.Hashable;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.ssz.annotation.SSZ;
@@ -29,7 +32,7 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
  *     in the spec</a>
  */
 @SSZSerializable
-public class BeaconBlock {
+public class BeaconBlock implements Hashable<Hash32> {
 
   /** Number of a slot that block does belong to. */
   @SSZ private final SlotNumber slot;
@@ -46,6 +49,8 @@ public class BeaconBlock {
   /** Proposer's signature. */
   @SSZ private final BLSSignature signature;
 
+  private Hash32 hashCache = null;
+
   public BeaconBlock(
       SlotNumber slot,
       Hash32 parentRoot,
@@ -61,6 +66,16 @@ public class BeaconBlock {
     this.eth1Data = eth1Data;
     this.signature = signature;
     this.body = body;
+  }
+
+  @Override
+  public Optional<Hash32> getHash() {
+    return Optional.ofNullable(hashCache);
+  }
+
+  @Override
+  public void setHash(Hash32 hash) {
+    this.hashCache = hash;
   }
 
   public BeaconBlock withStateRoot(Hash32 stateRoot) {
