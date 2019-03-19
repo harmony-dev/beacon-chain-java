@@ -33,7 +33,7 @@ public class BlsTests extends TestUtils {
   }
 
   @Test
-  @Ignore("??? not matched")
+  @Ignore("Fixtures uses Jacobian coordinates, testBlsMessageHashCompressed covers same cases")
   public void testBlsMessageHash() {
     Path testFilePath = Paths.get(PATH_TO_TESTS, TESTS_DIR, FILENAME);
     BlsTest test = readTest(getResourceFile(testFilePath.toString()), BlsTest.class);
