@@ -53,7 +53,7 @@ public class SpecBuilder {
 
       @Override
       public boolean bls_verify(
-          BLSPubkey publicKey, Hash32 message, BLSSignature signature, Bytes8 domain) {
+          BLSPubkey publicKey, Hash32 message, BLSSignature signature, UInt64 domain) {
         if (specHelpersOptions.isBlsVerify()) {
           return super.bls_verify(publicKey, message, signature, domain);
         } else {
@@ -63,7 +63,7 @@ public class SpecBuilder {
 
       @Override
       public boolean bls_verify(
-          PublicKey blsPublicKey, Hash32 message, BLSSignature signature, Bytes8 domain) {
+          PublicKey blsPublicKey, Hash32 message, BLSSignature signature, UInt64 domain) {
         if (specHelpersOptions.isBlsVerify()) {
           return super.bls_verify(blsPublicKey, message, signature, domain);
         } else {
@@ -76,7 +76,7 @@ public class SpecBuilder {
           List<PublicKey> publicKeys,
           List<Hash32> messages,
           BLSSignature signature,
-          Bytes8 domain) {
+          UInt64 domain) {
         if (specHelpersOptions.isBlsVerify()) {
           return super.bls_verify_multiple(publicKeys, messages, signature, domain);
         } else {

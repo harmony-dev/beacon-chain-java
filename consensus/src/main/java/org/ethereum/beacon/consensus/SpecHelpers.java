@@ -7,7 +7,6 @@ import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -29,7 +28,7 @@ import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.operations.slashing.SlashableAttestation;
 import org.ethereum.beacon.core.spec.SignatureDomains;
 import org.ethereum.beacon.core.spec.SpecConstants;
-import org.ethereum.beacon.core.state.ForkData;
+import org.ethereum.beacon.core.state.Fork;
 import org.ethereum.beacon.core.state.ShardCommittee;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
@@ -49,8 +48,8 @@ import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.crypto.MessageParameters;
 import org.javatuples.Pair;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.bytes.Bytes3;
 import tech.pegasys.artemis.util.bytes.Bytes32;
+import tech.pegasys.artemis.util.bytes.Bytes4;
 import tech.pegasys.artemis.util.bytes.Bytes8;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.bytes.BytesValues;
@@ -407,7 +406,7 @@ public class SpecHelpers {
       long pivot = bytes_to_int(pivotBytes).modulo(listSize).getValue();
       UInt64 flip = UInt64.valueOf(Math.floorMod(pivot - index.getValue(), listSize.getValue()));
       UInt64 position = UInt64s.max(index, flip);
-      BytesValue positionBytes = int_to_bytes4(position.dividedBy(UInt64.valueOf(256)).getValue());
+      Bytes4 positionBytes = int_to_bytes4(position.dividedBy(UInt64.valueOf(256)));
       Bytes32 source = hash(seed.concat(int_to_bytes1(round)).concat(positionBytes));
       int byteV = source.get(position.modulo(256).getIntValue() / 8) & 0xFF;
       int bit = ((byteV >> (position.modulo(8).getIntValue())) % 2) & 0xFF;
@@ -484,12 +483,20 @@ public class SpecHelpers {
     return UInt64.fromBytesLittleEndian(bytes);
   }
 
+  public UInt64 bytes_to_int(BytesValue bytes) {
+    return bytes_to_int(Bytes8.wrap(bytes, 0));
+  }
+
   public BytesValue int_to_bytes1(int value) {
     return BytesValues.ofUnsignedByte(value);
   }
 
-  public BytesValue int_to_bytes4(long value) {
-    return BytesValues.ofUnsignedIntLittleEndian(value);
+  public Bytes4 int_to_bytes4(long value) {
+    return Bytes4.ofUnsignedIntLittleEndian(value & 0xFFFFFF);
+  }
+
+  public Bytes4 int_to_bytes4(UInt64 value) {
+    return int_to_bytes4(value.getValue());
   }
 
   public BytesValue int_to_bytes32(UInt64 value) {
@@ -698,7 +705,7 @@ public class SpecHelpers {
             deposit_input.getPubKey(),
             signed_root(deposit_input, "proofOfPossession"),
             deposit_input.getProofOfPossession(),
-            get_domain(state.getForkData(), get_current_epoch(state), SignatureDomains.DEPOSIT));
+            get_domain(state.getFork(), get_current_epoch(state), SignatureDomains.DEPOSIT));
 
     if (!proof_is_valid) {
       return;
@@ -1120,20 +1127,20 @@ public class SpecHelpers {
             .concat(int_to_bytes32(epoch)));
   }
 
-  public boolean bls_verify(BLSPubkey publicKey, Hash32 message, BLSSignature signature, Bytes8 domain) {
+  public boolean bls_verify(BLSPubkey publicKey, Hash32 message, BLSSignature signature, UInt64 domain) {
     PublicKey blsPublicKey = PublicKey.create(publicKey);
     return bls_verify(blsPublicKey, message, signature, domain);
   }
 
   public boolean bls_verify(
-      PublicKey blsPublicKey, Hash32 message, BLSSignature signature, Bytes8 domain) {
+      PublicKey blsPublicKey, Hash32 message, BLSSignature signature, UInt64 domain) {
     MessageParameters messageParameters = MessageParameters.create(message, domain);
     Signature blsSignature = Signature.create(signature);
     return BLS381.verify(messageParameters, blsSignature, blsPublicKey);
   }
 
   public boolean bls_verify_multiple(
-      List<PublicKey> publicKeys, List<Hash32> messages, BLSSignature signature, Bytes8 domain) {
+      List<PublicKey> publicKeys, List<Hash32> messages, BLSSignature signature, UInt64 domain) {
     List<MessageParameters> messageParameters =
         messages.stream()
             .map(hash -> MessageParameters.create(hash, domain))
@@ -1149,7 +1156,7 @@ public class SpecHelpers {
 
   /*
     def get_fork_version(fork: Fork,
-                     epoch: EpochNumber) -> int:
+                     epoch: EpochNumber) -> bytes:
     """
     Return the fork version of the given ``epoch``.
     """
@@ -1158,26 +1165,25 @@ public class SpecHelpers {
     else:
         return fork.current_version
    */
-  public UInt64 get_fork_version(ForkData forkData, EpochNumber epoch) {
-    if (epoch.less(forkData.getEpoch())) {
-      return forkData.getPreviousVersion();
+  public Bytes4 get_fork_version(Fork fork, EpochNumber epoch) {
+    if (epoch.less(fork.getEpoch())) {
+      return fork.getPreviousVersion();
     } else {
-      return forkData.getCurrentVersion();
+      return fork.getCurrentVersion();
     }
   }
 
   /*
     def get_domain(fork: Fork,
-               epoch: EpochNumber,
+               epoch: Epoch,
                domain_type: int) -> int:
     """
     Get the domain number that represents the fork meta and signature domain.
     """
-    fork_version = get_fork_version(fork, epoch)
-    return fork_version * 2**32 + domain_type
+    return bytes_to_int(get_fork_version(fork, epoch) + int_to_bytes4(domain_type))
    */
-  public Bytes8 get_domain(ForkData forkData, EpochNumber epoch, UInt64 domainType) {
-    return get_fork_version(forkData, epoch).shl(32).plus(domainType).toBytes8();
+  public UInt64 get_domain(Fork fork, EpochNumber epoch, UInt64 domainType) {
+    return bytes_to_int(get_fork_version(fork, epoch).concat(int_to_bytes4(domainType)));
   }
 
   /*
@@ -1221,8 +1227,8 @@ public class SpecHelpers {
   */
   public boolean is_surround_vote(
       AttestationData attestation_data_1, AttestationData attestation_data_2) {
-    EpochNumber source_epoch_1 = attestation_data_1.getJustifiedEpoch();
-    EpochNumber source_epoch_2 = attestation_data_2.getJustifiedEpoch();
+    EpochNumber source_epoch_1 = attestation_data_1.getSourceEpoch();
+    EpochNumber source_epoch_2 = attestation_data_2.getSourceEpoch();
     EpochNumber target_epoch_1 = slot_to_epoch(attestation_data_1.getSlot());
     EpochNumber target_epoch_2 = slot_to_epoch(attestation_data_2.getSlot());
 
@@ -1316,8 +1322,8 @@ public class SpecHelpers {
         Arrays.asList(
             hash_tree_root(new AttestationDataAndCustodyBit(slashable_attestation.getData(), false)),
             hash_tree_root(new AttestationDataAndCustodyBit(slashable_attestation.getData(), true))),
-        slashable_attestation.getBlsSignature(),
-        get_domain(state.getForkData(), slot_to_epoch(slashable_attestation.getData().getSlot()), ATTESTATION));
+        slashable_attestation.getAggregateSingature(),
+        get_domain(state.getFork(), slot_to_epoch(slashable_attestation.getData().getSlot()), ATTESTATION));
   }
 
   /*
@@ -1616,7 +1622,7 @@ public class SpecHelpers {
       Function<ValidatorRecord, Optional<Attestation>> get_latest_attestation,
       Function<Hash32, Optional<BeaconBlock>> getBlock) {
     Optional<Attestation> latest = get_latest_attestation.apply(validatorRecord);
-    return latest.flatMap(at -> getBlock.apply(at.getData().getJustifiedBlockRoot()));
+    return latest.flatMap(at -> getBlock.apply(at.getData().getSourceRoot()));
   }
 
   /*
@@ -1660,7 +1666,7 @@ public class SpecHelpers {
       return Optional.empty();
     } else {
       return getBlock
-          .apply(block.getParentRoot())
+          .apply(block.getPreviousBlockRoot())
           .flatMap(parent -> get_ancestor(parent, slot, getBlock));
     }
   }

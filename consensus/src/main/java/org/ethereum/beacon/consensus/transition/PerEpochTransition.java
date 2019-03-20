@@ -20,7 +20,7 @@ import org.ethereum.beacon.consensus.TransitionType;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.state.Eth1DataVote;
-import org.ethereum.beacon.core.state.PendingAttestationRecord;
+import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.state.ShardCommittee;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.EpochNumber;
@@ -100,7 +100,7 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
     //   [a for a in state.latest_attestations if current_epoch == slot_to_epoch(a.data.slot)].
     // (Note: this is the set of attestations of slots in the epoch current_epoch,
     //  not attestations that got included in the chain during the epoch current_epoch.)
-    List<PendingAttestationRecord> current_epoch_attestations =
+    List<PendingAttestation> current_epoch_attestations =
         state.getLatestAttestations().stream()
             .filter(a -> current_epoch.equals(spec.slot_to_epoch(a.getData().getSlot())))
             .collect(Collectors.toList());
@@ -109,9 +109,9 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
 
     // Let current_epoch_boundary_attestations = [a for a in current_epoch_attestations
     //      if a.data.epoch_boundary_root == get_block_root(state, get_epoch_start_slot(current_epoch)).
-    List<PendingAttestationRecord> current_epoch_boundary_attestations =
+    List<PendingAttestation> current_epoch_boundary_attestations =
         current_epoch_attestations.stream().filter(a ->
-            a.getData().getEpochBoundaryRoot().equals(
+            a.getData().getTargetRoot().equals(
                 spec.get_block_root(state, spec.get_epoch_start_slot(current_epoch)))
         ).collect(Collectors.toList());
 
@@ -153,7 +153,7 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
 
     // Let previous_epoch_attestations = [a for a in state.latest_attestations
     //    if previous_epoch == slot_to_epoch(a.data.slot)].
-    List<PendingAttestationRecord> previous_epoch_attestations = state.getLatestAttestations()
+    List<PendingAttestation> previous_epoch_attestations = state.getLatestAttestations()
         .stream()
         .filter(a -> previous_epoch.equals(spec.slot_to_epoch(a.getData().getSlot())))
         .collect(Collectors.toList());
@@ -179,9 +179,9 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
 
     // Let previous_epoch_boundary_attestations = [a for a in previous_epoch_attestations
     //    if a.data.epoch_boundary_root == get_block_root(state, get_epoch_start_slot(previous_epoch))].
-    List<PendingAttestationRecord> previous_epoch_boundary_attestations =
+    List<PendingAttestation> previous_epoch_boundary_attestations =
         previous_epoch_attestations.stream()
-            .filter(a -> a.getData().getEpochBoundaryRoot()
+            .filter(a -> a.getData().getTargetRoot()
                 .equals(spec.get_block_root(state, spec.get_epoch_start_slot(previous_epoch))))
             .collect(Collectors.toList());
 
@@ -203,7 +203,7 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
 
     // Let previous_epoch_head_attestations = [a for a in previous_epoch_attestations
     //    if a.data.beacon_block_root == get_block_root(state, a.data.slot)].
-    List<PendingAttestationRecord> previous_epoch_head_attestations = previous_epoch_attestations
+    List<PendingAttestation> previous_epoch_head_attestations = previous_epoch_attestations
         .stream()
         .filter(a -> a.getData().getBeaconBlockRoot()
             .equals(spec.get_block_root(state, a.getData().getSlot())))
@@ -328,7 +328,7 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
     //      where a is the above attestation.
     Map<ValidatorIndex, SlotNumber> inclusion_slot = new HashMap<>();
     Map<ValidatorIndex, SlotNumber> inclusion_distance = new HashMap<>();
-    for (PendingAttestationRecord a : previous_epoch_attestations) {
+    for (PendingAttestation a : previous_epoch_attestations) {
       List<ValidatorIndex> attestation_participants = spec
           .get_attestation_participants(state, a.getData(), a.getAggregationBitfield());
       for (ValidatorIndex participant : attestation_participants) {

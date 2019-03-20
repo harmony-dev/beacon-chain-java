@@ -7,8 +7,8 @@ import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Eth1DataVote;
-import org.ethereum.beacon.core.state.ForkData;
-import org.ethereum.beacon.core.state.PendingAttestationRecord;
+import org.ethereum.beacon.core.state.Fork;
+import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.Bitfield64;
 import org.ethereum.beacon.core.types.EpochNumber;
@@ -47,8 +47,8 @@ public class DelegateBeaconState implements BeaconState {
   }
 
   @Override
-  public ForkData getForkData() {
-    return delegate.getForkData();
+  public Fork getFork() {
+    return delegate.getFork();
   }
 
   @Override
@@ -142,7 +142,7 @@ public class DelegateBeaconState implements BeaconState {
   }
 
   @Override
-  public ReadList<Integer, PendingAttestationRecord> getLatestAttestations() {
+  public ReadList<Integer, PendingAttestation> getLatestAttestations() {
     return delegate.getLatestAttestations();
   }
 

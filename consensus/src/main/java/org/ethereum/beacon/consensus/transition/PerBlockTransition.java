@@ -15,7 +15,7 @@ import org.ethereum.beacon.core.operations.Transfer;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.state.Eth1DataVote;
-import org.ethereum.beacon.core.state.PendingAttestationRecord;
+import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32s;
@@ -58,7 +58,7 @@ public class PerBlockTransition implements BlockTransition<BeaconStateEx> {
             spec.get_current_epoch(state).modulo(spec.getConstants().getLatestRandaoMixesLength()),
             rm -> Hash32.wrap(Bytes32s.xor(
                   spec.get_randao_mix(state, spec.get_current_epoch(state)),
-                  spec.hash(block.getRandaoReveal()))));
+                  spec.hash(block.getBody().getRandaoReveal()))));
 
     /*
      Eth1 data
@@ -70,7 +70,7 @@ public class PerBlockTransition implements BlockTransition<BeaconStateEx> {
 
     int depositIdx = -1;
     for (int i = 0; i < state.getEth1DataVotes().size(); i++) {
-      if (block.getEth1Data().equals(state.getEth1DataVotes().get(i).getEth1Data())) {
+      if (block.getBody().getEth1Data().equals(state.getEth1DataVotes().get(i).getEth1Data())) {
         depositIdx = i;
         break;
       }
@@ -79,7 +79,7 @@ public class PerBlockTransition implements BlockTransition<BeaconStateEx> {
       state.getEth1DataVotes().update(depositIdx,
           vote -> new Eth1DataVote(vote.getEth1Data(), vote.getVoteCount().increment()));
     } else {
-      state.getEth1DataVotes().add(new Eth1DataVote(block.getEth1Data(), UInt64.valueOf(1)));
+      state.getEth1DataVotes().add(new Eth1DataVote(block.getBody().getEth1Data(), UInt64.valueOf(1)));
     }
 
     /*
@@ -114,7 +114,7 @@ public class PerBlockTransition implements BlockTransition<BeaconStateEx> {
        Attestations
 
        For each attestation in block.body.attestations:
-       Append PendingAttestationRecord(
+       Append PendingAttestation(
            data=attestation.data,
            participation_bitfield=attestation.participation_bitfield,
            custody_bitfield=attestation.custody_bitfield,
@@ -122,8 +122,8 @@ public class PerBlockTransition implements BlockTransition<BeaconStateEx> {
        ) to state.latest_attestations.
     */
     for (Attestation attestation : block.getBody().getAttestations()) {
-      PendingAttestationRecord record =
-          new PendingAttestationRecord(
+      PendingAttestation record =
+          new PendingAttestation(
               attestation.getAggregationBitfield(),
               attestation.getData(),
               attestation.getCustodyBitfield(),
@@ -155,7 +155,7 @@ public class PerBlockTransition implements BlockTransition<BeaconStateEx> {
      For each exit in block.body.exits:
        Run initiate_validator_exit(state, exit.validator_index).
     */
-    for (VoluntaryExit voluntaryExit : block.getBody().getExits()) {
+    for (VoluntaryExit voluntaryExit : block.getBody().getVoluntaryExits()) {
       spec.initiate_validator_exit(state, voluntaryExit.getValidatorIndex());
     }
 
@@ -170,11 +170,11 @@ public class PerBlockTransition implements BlockTransition<BeaconStateEx> {
       state
           .getValidatorBalances()
           .update(
-              transfer.getFrom(),
+              transfer.getSender(),
               balance -> balance.minus(transfer.getAmount()).minus(transfer.getFee()));
       state
           .getValidatorBalances()
-          .update(transfer.getTo(), balance -> balance.plus(transfer.getAmount()));
+          .update(transfer.getRecipient(), balance -> balance.plus(transfer.getAmount()));
       state
           .getValidatorBalances()
           .update(

@@ -43,14 +43,14 @@ public class BeaconChainAttesterTest {
         getCommittee(specHelpers.getConstants().getTargetCommitteeSize().getIntValue());
     int indexIntoCommittee = Math.abs(random.nextInt() % committee.size());
     ValidatorIndex validatorIndex = committee.get(indexIntoCommittee);
-    Hash32 epochBoundaryRoot = Hash32.random(random);
-    Hash32 justifiedBlockRoot = Hash32.random(random);
+    Hash32 targetRoot = Hash32.random(random);
+    Hash32 sourceRoot = Hash32.random(random);
     ShardNumber shard = specHelpers.getConstants().getBeaconChainShardNumber();
 
     Mockito.doReturn(committee).when(attester).getCommittee(any(), any());
-    Mockito.doReturn(epochBoundaryRoot).when(attester).getEpochBoundaryRoot(any(), any());
-    Mockito.doReturn(Crosslink.EMPTY).when(attester).getLatestCrosslink(any(), any());
-    Mockito.doReturn(justifiedBlockRoot).when(attester).getJustifiedBlockRoot(any(), any());
+    Mockito.doReturn(targetRoot).when(attester).getTargetRoot(any(), any());
+    Mockito.doReturn(Crosslink.EMPTY).when(attester).getPreviousCrosslink(any(), any());
+    Mockito.doReturn(sourceRoot).when(attester).getSourceRoot(any(), any());
 
     Attestation attestation =
         attester.attest(validatorIndex, shard, initiallyObservedState, signer);
@@ -62,11 +62,11 @@ public class BeaconChainAttesterTest {
     Assert.assertEquals(shard, data.getShard());
     Assert.assertEquals(
         specHelpers.hash_tree_root(initiallyObservedState.getHead()), data.getBeaconBlockRoot());
-    Assert.assertEquals(epochBoundaryRoot, data.getEpochBoundaryRoot());
+    Assert.assertEquals(targetRoot, data.getTargetRoot());
     Assert.assertEquals(Hash32.ZERO, data.getCrosslinkDataRoot());
-    Assert.assertEquals(Hash32.ZERO, data.getLatestCrosslink().getCrosslinkDataRoot());
-    Assert.assertEquals(state.getJustifiedEpoch(), data.getJustifiedEpoch());
-    Assert.assertEquals(justifiedBlockRoot, data.getJustifiedBlockRoot());
+    Assert.assertEquals(Hash32.ZERO, data.getPreviousCrosslink().getCrosslinkDataRoot());
+    Assert.assertEquals(state.getJustifiedEpoch(), data.getSourceEpoch());
+    Assert.assertEquals(sourceRoot, data.getSourceRoot());
 
     int bitfieldSize = (committee.size() - 1) / 8 + 1;
 
@@ -82,7 +82,7 @@ public class BeaconChainAttesterTest {
         signer.sign(
             specHelpers.hash_tree_root(new AttestationDataAndCustodyBit(data, false)),
             specHelpers.get_domain(
-                state.getForkData(),
+                state.getFork(),
                 specHelpers.get_current_epoch(state),
                 SignatureDomains.ATTESTATION));
 

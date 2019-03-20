@@ -119,7 +119,7 @@ public class BeaconBlockStorageImpl extends AbstractHashKeyStorage<Hash32, Beaco
     }
 
     if (!isEmpty() && checkParentExistOnAdd) {
-      if (!get(newBlock.getParentRoot()).isPresent()) {
+      if (!get(newBlock.getPreviousBlockRoot()).isPresent()) {
         throw new IllegalArgumentException("No parent found for added block: " + newBlock);
       }
     }
@@ -168,7 +168,7 @@ public class BeaconBlockStorageImpl extends AbstractHashKeyStorage<Hash32, Beaco
       getSlotBlocks(curSlot).stream()
           .map(this::get)
           .filter(Optional::isPresent)
-          .filter(b -> b.get().getParentRoot().equals(parent))
+          .filter(b -> b.get().getPreviousBlockRoot().equals(parent))
           .forEach(b -> children.add(b.get()));
     }
 

@@ -29,7 +29,7 @@ public class BeaconBlockStorageTest {
     return new BeaconBlock(SlotNumber.of(slot),
         parent == null ? Hash32.ZERO : parentHash,
         Hash32.wrap(Bytes32.leftPad(BytesValues.toMinimalBytes(counter++))),
-        BLSSignature.ZERO, Eth1Data.EMPTY, BeaconBlockBody.EMPTY, BLSSignature.ZERO);
+        BeaconBlockBody.EMPTY, BLSSignature.ZERO);
   }
 
 // TODO: Test smth

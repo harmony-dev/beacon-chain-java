@@ -10,6 +10,7 @@ import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes8;
+import tech.pegasys.artemis.util.uint.UInt64;
 
 import static org.ethereum.beacon.core.spec.SignatureDomains.PROPOSAL;
 
@@ -48,8 +49,8 @@ public class BlockSignatureVerifier implements BeaconBlockVerifier {
     //  domain=get_domain(state.fork, get_current_epoch(state), DOMAIN_PROPOSAL)).
     ValidatorIndex proposerIndex = spec.get_beacon_proposer_index(state, state.getSlot());
     BLSPubkey publicKey = state.getValidatorRegistry().get(proposerIndex).getPubKey();
-    Bytes8 domain =
-        spec.get_domain(state.getForkData(), spec.get_current_epoch(state), PROPOSAL);
+    UInt64 domain =
+        spec.get_domain(state.getFork(), spec.get_current_epoch(state), PROPOSAL);
 
     if (spec.bls_verify(publicKey, proposalRoot, proposal.getSignature(), domain)) {
       return VerificationResult.PASSED;

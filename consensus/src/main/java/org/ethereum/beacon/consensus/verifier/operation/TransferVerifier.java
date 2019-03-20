@@ -30,17 +30,17 @@ public class TransferVerifier implements OperationVerifier<Transfer> {
   @Override
   public VerificationResult verify(Transfer transfer, BeaconState state) {
 
-    if (transfer.getFrom().greaterEqual(state.getValidatorRegistry().size())) {
+    if (transfer.getSender().greaterEqual(state.getValidatorRegistry().size())) {
       return failedResult(
           "sender index does not exist, registry size: %s", state.getValidatorRegistry().size());
     }
 
-    if (transfer.getTo().greaterEqual(state.getValidatorRegistry().size())) {
+    if (transfer.getRecipient().greaterEqual(state.getValidatorRegistry().size())) {
       return failedResult(
           "recipient index does not exist, registry size: %s", state.getValidatorRegistry().size());
     }
 
-    Gwei fromBalance = state.getValidatorBalances().get(transfer.getFrom());
+    Gwei fromBalance = state.getValidatorBalances().get(transfer.getSender());
 
     // Verify that state.validator_balances[transfer.from] >= transfer.amount.
     if (fromBalance.less(transfer.getAmount())) {
@@ -75,7 +75,7 @@ public class TransferVerifier implements OperationVerifier<Transfer> {
       return failedResult("transfer slot is invalid, state.slot=%s when transfer.slot=%s");
     }
 
-    ValidatorRecord sender = state.getValidatorRegistry().get(transfer.getFrom());
+    ValidatorRecord sender = state.getValidatorRegistry().get(transfer.getSender());
 
     // Verify that get_current_epoch(state) >=
     // state.validator_registry[transfer.from].withdrawable_epoch or
@@ -105,7 +105,7 @@ public class TransferVerifier implements OperationVerifier<Transfer> {
         spec.signed_root(transfer, "signature"),
         transfer.getSignature(),
         spec.get_domain(
-            state.getForkData(),
+            state.getFork(),
             spec.slot_to_epoch(transfer.getSlot()),
             SignatureDomains.TRANSFER))) {
       return failedResult("signature verification failed");

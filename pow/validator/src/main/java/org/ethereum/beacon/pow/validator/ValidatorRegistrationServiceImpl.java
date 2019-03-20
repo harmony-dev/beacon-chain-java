@@ -1,6 +1,5 @@
 package org.ethereum.beacon.pow.validator;
 
-import java.util.Collections;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.BlockTransition;
@@ -40,6 +39,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import tech.pegasys.artemis.util.uint.UInt64;
 
 import static java.util.Collections.singletonList;
 import static org.ethereum.beacon.core.spec.SignatureDomains.DEPOSIT;
@@ -280,9 +280,9 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
     // domain=DOMAIN_DEPOSIT.
     Hash32 hash = spec.signed_root(preDepositInput, "proofOfPossession");
     BeaconState latestState = getLatestState();
-    Bytes8 domain =
+    UInt64 domain =
         spec.get_domain(
-            latestState.getForkData(), spec.get_current_epoch(latestState), DEPOSIT);
+            latestState.getFork(), spec.get_current_epoch(latestState), DEPOSIT);
     BLSSignature signature = blsCredentials.getSigner().sign(hash, domain);
     // Set deposit_input.proof_of_possession = proof_of_possession.
     DepositInput depositInput = new DepositInput(blsCredentials.getPubkey(), withdrawalCredentials, signature);

@@ -67,7 +67,7 @@ public class AttestationVerifier implements OperationVerifier<Attestation> {
     // state.justified_epoch
     // if slot_to_epoch(attestation.data.slot + 1) >= get_current_epoch(state)
     // else state.previous_justified_epoch.
-    if (!data.getJustifiedEpoch().equals(
+    if (!data.getSourceEpoch().equals(
         spec.slot_to_epoch(data.getSlot().increment()).greaterEqual(spec.get_current_epoch(state)) ?
         state.getJustifiedEpoch() : state.getPreviousJustifiedEpoch())) {
       return failedResult(
@@ -77,12 +77,12 @@ public class AttestationVerifier implements OperationVerifier<Attestation> {
     // Verify that attestation.data.justified_block_root is equal to
     // get_block_root(state, get_epoch_start_slot(attestation.data.justified_epoch))
     Hash32 blockRootAtJustifiedSlot = spec.get_block_root(state,
-        spec.get_epoch_start_slot(data.getJustifiedEpoch()));
-    if (!data.getJustifiedBlockRoot().equals(blockRootAtJustifiedSlot)) {
+        spec.get_epoch_start_slot(data.getSourceEpoch()));
+    if (!data.getSourceRoot().equals(blockRootAtJustifiedSlot)) {
       return failedResult(
           "attestation_data.justified_block_root must be equal to block_root at state.justified_slot, "
               + "justified_block_root=%s, block_root=%s",
-          data.getJustifiedBlockRoot(), blockRootAtJustifiedSlot);
+          data.getSourceRoot(), blockRootAtJustifiedSlot);
     }
 
     // Verify that either
@@ -91,7 +91,7 @@ public class AttestationVerifier implements OperationVerifier<Attestation> {
     //        Crosslink(crosslink_data_root=attestation.data.crosslink_data_root, epoch=slot_to_epoch(attestation.data.slot)).
     Crosslink latestCrosslink =
         state.getLatestCrosslinks().get(data.getShard());
-    if (!data.getLatestCrosslink().equals(latestCrosslink)
+    if (!data.getPreviousCrosslink().equals(latestCrosslink)
         && !latestCrosslink.equals(new Crosslink(spec.slot_to_epoch(attestation.getData().getSlot()),
             attestation.getData().getCrosslinkDataRoot()))) {
       return failedResult("attestation.data.latest_crosslink is incorrect");
@@ -165,7 +165,7 @@ public class AttestationVerifier implements OperationVerifier<Attestation> {
           spec.hash_tree_root(new AttestationDataAndCustodyBit(data, false)),
           spec.hash_tree_root(new AttestationDataAndCustodyBit(data, true))),
         attestation.getAggregateSignature(),
-        spec.get_domain(state.getForkData(), spec.slot_to_epoch(data.getSlot()), ATTESTATION))) {
+        spec.get_domain(state.getFork(), spec.slot_to_epoch(data.getSlot()), ATTESTATION))) {
       return failedResult("failed to verify aggregated signature");
     }
 

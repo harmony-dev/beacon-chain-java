@@ -151,7 +151,7 @@ public class SpecHelpersTest {
         specConstants, Hashes::keccak256, SSZObjectHasher.create(Hashes::keccak256)) {
       @Override
       public boolean bls_verify(BLSPubkey publicKey, Hash32 message, BLSSignature signature,
-          Bytes8 domain) {
+          UInt64 domain) {
         return true;
       }
     };

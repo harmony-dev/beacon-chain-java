@@ -7,8 +7,8 @@ import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.BeaconStateImpl;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Eth1DataVote;
-import org.ethereum.beacon.core.state.ForkData;
-import org.ethereum.beacon.core.state.PendingAttestationRecord;
+import org.ethereum.beacon.core.state.Fork;
+import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.Bitfield64;
 import org.ethereum.beacon.core.types.EpochNumber;
@@ -46,7 +46,7 @@ public interface BeaconState {
   Time getGenesisTime();
 
   /** Fork data corresponding to the {@link #getSlot()}. */
-  ForkData getForkData();
+  Fork getFork();
 
   /** Validator registry records. */
   ReadList<ValidatorIndex, ValidatorRecord> getValidatorRegistry();
@@ -103,7 +103,7 @@ public interface BeaconState {
   ReadList<EpochNumber, Gwei> getLatestSlashedBalances();
 
   /** Attestations that has not been processed yet. */
-  ReadList<Integer, PendingAttestationRecord> getLatestAttestations();
+  ReadList<Integer, PendingAttestation> getLatestAttestations();
 
   /**
    * Latest hashes of {@link #getLatestBlockRoots()} list calculated when its length got exceeded
@@ -131,7 +131,7 @@ public interface BeaconState {
   default String toStringShort(@Nullable SpecConstants spec) {
     String ret = "BeaconState["
         + "@ " + getSlot().toString(spec, getGenesisTime())
-        + ", " + getForkData().toString(spec)
+        + ", " + getFork().toString(spec)
         + ", validators: " + getValidatorRegistry().size()
         + " updated at epoch " + getValidatorRegistryUpdateEpoch().toString(spec)
         + ", just/final epoch: " + getJustifiedEpoch().toString(spec) + "/" + getFinalizedEpoch().toString(spec);

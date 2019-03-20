@@ -8,6 +8,7 @@ import org.ethereum.beacon.ssz.SSZSchemeBuilder;
 import org.ethereum.beacon.ssz.SSZSchemeException;
 import tech.pegasys.artemis.ethereum.core.Address;
 import tech.pegasys.artemis.util.bytes.Bytes1;
+import tech.pegasys.artemis.util.bytes.Bytes4;
 import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
@@ -32,18 +33,20 @@ public class BytesCodec implements SSZCodec {
   private static Map<Class, BytesType> classToByteType = new HashMap<>();
 
   static {
+    supportedClassTypes.add(Bytes1.class);
+    supportedClassTypes.add(Bytes4.class);
     supportedClassTypes.add(Bytes48.class);
     supportedClassTypes.add(Bytes96.class);
     supportedClassTypes.add(BytesValue.class);
-    supportedClassTypes.add(Bytes1.class);
     supportedClassTypes.add(Address.class);
   }
 
   static {
+    classToByteType.put(Bytes1.class, BytesType.of(1));
+    classToByteType.put(Bytes4.class, BytesType.of(4));
     classToByteType.put(Bytes48.class, BytesType.of(48));
     classToByteType.put(Bytes96.class, BytesType.of(96));
     classToByteType.put(BytesValue.class, BytesType.DYNAMIC);
-    classToByteType.put(Bytes1.class, BytesType.of(1));
     classToByteType.put(Address.class, BytesType.of(20));
   }
 
@@ -116,9 +119,13 @@ public class BytesCodec implements SSZCodec {
     try {
       switch (bytesType.size) {
         case 1:
-          {
-            return Bytes1.wrap(reader.readHash(bytesType.size).toArrayUnsafe());
-          }
+        {
+          return Bytes1.wrap(reader.readHash(bytesType.size).toArrayUnsafe());
+        }
+        case 4:
+        {
+          return Bytes4.wrap(reader.readHash(bytesType.size).toArrayUnsafe());
+        }
         case 20:
           {
             return Address.wrap(BytesValue.of(reader.readHash(bytesType.size).toArrayUnsafe()));
@@ -156,14 +163,23 @@ public class BytesCodec implements SSZCodec {
       List<Bytes> bytesList = reader.readHashList(bytesType.size);
       switch (bytesType.size) {
         case 1:
-          {
-            res =
-                bytesList.stream()
-                    .map(Bytes::toArrayUnsafe)
-                    .map(Bytes1::wrap)
-                    .collect(Collectors.toList());
-            break;
-          }
+        {
+          res =
+              bytesList.stream()
+                  .map(Bytes::toArrayUnsafe)
+                  .map(Bytes1::wrap)
+                  .collect(Collectors.toList());
+          break;
+        }
+        case 4:
+        {
+          res =
+              bytesList.stream()
+                  .map(Bytes::toArrayUnsafe)
+                  .map(Bytes4::wrap)
+                  .collect(Collectors.toList());
+          break;
+        }
         case 20:
           {
             res =

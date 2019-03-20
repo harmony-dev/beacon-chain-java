@@ -29,7 +29,7 @@ public class ImmutableBeaconStateImpl implements BeaconState, Hashable<Hash32> {
 
   @SSZ private final SlotNumber slot;
   @SSZ private final Time genesisTime;
-  @SSZ private final ForkData forkData;
+  @SSZ private final Fork fork;
 
   /* Validator registry */
 
@@ -60,7 +60,7 @@ public class ImmutableBeaconStateImpl implements BeaconState, Hashable<Hash32> {
   @SSZ private final List<Hash32> latestBlockRootsList;
   @SSZ private final List<Hash32> latestActiveIndexRootsList;
   @SSZ private final List<Gwei> latestSlashedBalancesList;
-  @SSZ private final List<PendingAttestationRecord> latestAttestationsList;
+  @SSZ private final List<PendingAttestation> latestAttestationsList;
   @SSZ private final List<Hash32> batchedBlockRootsList;
 
   /* PoW receipt root */
@@ -74,7 +74,7 @@ public class ImmutableBeaconStateImpl implements BeaconState, Hashable<Hash32> {
   public ImmutableBeaconStateImpl(BeaconState state) {
     this.slot = state.getSlot();
     this.genesisTime = state.getGenesisTime();
-    this.forkData = state.getForkData();
+    this.fork = state.getFork();
 
     this.validatorRegistryList = state.getValidatorRegistry().listCopy();
     this.validatorBalancesList = state.getValidatorBalances().listCopy();
@@ -126,7 +126,7 @@ public class ImmutableBeaconStateImpl implements BeaconState, Hashable<Hash32> {
     return new ArrayList<>(latestBlockRootsList);
   }
 
-  public List<PendingAttestationRecord> getLatestAttestationsList() {
+  public List<PendingAttestation> getLatestAttestationsList() {
     return new ArrayList<>(latestAttestationsList);
   }
 
@@ -157,8 +157,8 @@ public class ImmutableBeaconStateImpl implements BeaconState, Hashable<Hash32> {
   }
 
   @Override
-  public ForkData getForkData() {
-    return forkData;
+  public Fork getFork() {
+    return fork;
   }
 
   @Override
@@ -262,7 +262,7 @@ public class ImmutableBeaconStateImpl implements BeaconState, Hashable<Hash32> {
   }
 
   @Override
-  public ReadList<Integer, PendingAttestationRecord> getLatestAttestations() {
+  public ReadList<Integer, PendingAttestation> getLatestAttestations() {
     return ReadList.wrap(latestAttestationsList, Integer::valueOf);
   }
 

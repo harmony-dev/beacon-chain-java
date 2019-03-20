@@ -14,7 +14,7 @@ import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
-import org.ethereum.beacon.core.state.ForkData;
+import org.ethereum.beacon.core.state.Fork;
 import org.ethereum.beacon.core.types.Bitfield64;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
@@ -61,10 +61,10 @@ public class InitialStateTransition implements BlockTransition<BeaconStateEx> {
     // Misc
     initialState.setSlot(spec.getConstants().getGenesisSlot());
     initialState.setGenesisTime(depositContractStart.getTime());
-    initialState.setForkData(
-            new ForkData(
-                spec.getConstants().getGenesisForkVersion(),
-                spec.getConstants().getGenesisForkVersion(),
+    initialState.setFork(
+            new Fork(
+                spec.int_to_bytes4(spec.getConstants().getGenesisForkVersion()),
+                spec.int_to_bytes4(spec.getConstants().getGenesisForkVersion()),
                 spec.getConstants().getGenesisEpoch()));
 
     // Validator registry

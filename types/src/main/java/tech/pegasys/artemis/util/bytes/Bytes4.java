@@ -31,7 +31,7 @@ public interface Bytes4 extends BytesValue {
    * @param seed  converted
    * @return      converted Bytes4
    */
-  static Bytes4 longToBytes4(int seed) {
+  static Bytes4 ofUnsignedInt(long seed) {
     byte[] bytes = new byte[4];
     bytes[0] = (byte) (seed >> 24);
     bytes[1] = (byte) (seed >> 16);
@@ -46,7 +46,7 @@ public interface Bytes4 extends BytesValue {
    * @param seed  converted
    * @return      converted Bytes4
    */
-  static Bytes4 longToBytes4LittleEndian(int seed) {
+  static Bytes4 ofUnsignedIntLittleEndian(long seed) {
     byte[] bytes = new byte[4];
     bytes[0] = (byte) seed;
     bytes[1] = (byte) (seed >> 8);

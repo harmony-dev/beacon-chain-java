@@ -66,8 +66,6 @@ public class DefaultBeaconChainTest {
             specHelpers.get_current_slot(parent.getState(), currentTime),
             specHelpers.hash_tree_root(parent.getBlock()),
             Hash32.ZERO,
-            specHelpers.getConstants().getEmptySignature(),
-            Eth1Data.EMPTY,
             BeaconBlockBody.EMPTY,
             specHelpers.getConstants().getEmptySignature());
     BeaconState state =
