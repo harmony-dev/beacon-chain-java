@@ -91,7 +91,7 @@ public class SpecBuilder {
     };
   }
 
-  public SpecConstants buildSpecConstants(SpecConstantsData specConstants) {
+  public static SpecConstants buildSpecConstants(SpecConstantsData specConstants) {
 
     DepositContractParametersData depositContractParameters = specConstants
         .getDepositContractParameters();

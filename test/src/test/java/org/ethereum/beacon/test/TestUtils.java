@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.junit.Assert.fail;
+import static org.junit.Assert.assertFalse;
 
 public class TestUtils {
   static ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
@@ -145,13 +145,16 @@ public class TestUtils {
   static <V extends TestSkeleton> void runTestsInResourceDir(
       Path dir, Class<? extends V> testsType, Function<TestCase, Optional<String>> testCaseRunner) {
     List<File> files = getResourceFiles(dir.toString());
+    boolean failed = false;
     for (File file : files) {
       System.out.println("Running tests in " + file.getName());
       Optional<String> result = runAllTestsInFile(file, testCaseRunner, testsType);
       if (result.isPresent()) {
         System.out.println(result.get());
-        fail();
+        System.out.println("\n----===----\n");
+        failed = true;
       }
     }
+    assertFalse(failed);
   }
 }

@@ -1,11 +1,13 @@
 package org.ethereum.beacon.emulator.config.chainspec;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.ethereum.beacon.emulator.config.Config;
 import org.ethereum.beacon.emulator.config.YamlPrinter;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class SpecData implements Config {
+  @JsonDeserialize(as = SpecConstantsDataImpl.class)
   private SpecConstantsData specConstants;
   private SpecHelpersData specHelpersOptions;
 

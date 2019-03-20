@@ -407,7 +407,7 @@ public class SimulatorLauncher implements Runnable {
     public void setDistanceFromHead(long distanceFromHead) {}
   }
 
-  static class MDCControlledSchedulers {
+  public static class MDCControlledSchedulers {
     private DateFormat localTimeFormat = new SimpleDateFormat("HH:mm:ss.SSS");
 
     private List<ControlledSchedulers> schedulersList = new ArrayList<>();
