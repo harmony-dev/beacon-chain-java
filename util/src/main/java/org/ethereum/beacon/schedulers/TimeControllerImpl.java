@@ -69,7 +69,7 @@ public class TimeControllerImpl implements TimeController {
   @Override
   public void setParent(TimeController parent) {
     this.parent = parent;
-    setTime(parent.getTime());
+    curTime = parent.getTime();
   }
 
   @Override
