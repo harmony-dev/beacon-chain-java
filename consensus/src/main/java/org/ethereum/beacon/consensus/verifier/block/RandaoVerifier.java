@@ -42,8 +42,8 @@ public class RandaoVerifier implements BeaconBlockVerifier {
     if (!spec.bls_verify(
         proposer.getPubKey(),
         Hash32.wrap(Bytes32.leftPad(spec.get_current_epoch(state).toBytesBigEndian())),
-        block.getRandaoReveal(),
-        spec.get_domain(state.getForkData(), spec.get_current_epoch(state), RANDAO))) {
+        block.getBody().getRandaoReveal(),
+        spec.get_domain(state.getFork(), spec.get_current_epoch(state), RANDAO))) {
 
       return VerificationResult.failedResult("RANDAO reveal verification failed");
     }

@@ -3,8 +3,8 @@ package org.ethereum.beacon.core;
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Eth1DataVote;
-import org.ethereum.beacon.core.state.ForkData;
-import org.ethereum.beacon.core.state.PendingAttestationRecord;
+import org.ethereum.beacon.core.state.Fork;
+import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.Bitfield64;
 import org.ethereum.beacon.core.types.EpochNumber;
@@ -23,7 +23,7 @@ public interface MutableBeaconState extends BeaconState {
 
   void setGenesisTime(Time genesisTime);
 
-  void setForkData(ForkData forkData);
+  void setFork(Fork fork);
 
   @Override
   WriteList<ValidatorIndex, ValidatorRecord> getValidatorRegistry();
@@ -69,7 +69,7 @@ public interface MutableBeaconState extends BeaconState {
   WriteList<EpochNumber, Gwei> getLatestSlashedBalances();
 
   @Override
-  WriteList<Integer, PendingAttestationRecord> getLatestAttestations();
+  WriteList<Integer, PendingAttestation> getLatestAttestations();
 
   @Override
   WriteList<Integer, Hash32> getBatchedBlockRoots();

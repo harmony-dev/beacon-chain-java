@@ -37,14 +37,14 @@ public class PerSlotTransition implements StateTransition<BeaconStateEx> {
     SlotNumber newSlot = state.getSlot().increment();
     state.setSlot(newSlot);
 
-    //  Set state.latest_block_roots[(state.slot - 1) % LATEST_BLOCK_ROOTS_LENGTH] = previous_block_root.
+    //  Set state.latest_block_roots[(state.slot - 1) % SLOTS_PER_HISTORICAL_ROOT] = previous_block_root.
     state.getLatestBlockRoots().set(
-        state.getSlot().decrement().modulo(spec.getConstants().getLatestBlockRootsLength()),
+        state.getSlot().decrement().modulo(spec.getConstants().getSlotsPerHistoricalRoot()),
         stateEx.getHeadBlockHash());
 
-    // If state.slot % LATEST_BLOCK_ROOTS_LENGTH == 0
+    // If state.slot % SLOTS_PER_HISTORICAL_ROOT == 0
     // append merkle_root(state.latest_block_roots) to state.batched_block_roots
-    if (state.getSlot().modulo(spec.getConstants().getLatestBlockRootsLength()).getIntValue() == 0) {
+    if (state.getSlot().modulo(spec.getConstants().getSlotsPerHistoricalRoot()).getIntValue() == 0) {
       state.getBatchedBlockRoots().add(spec.merkle_root(state.getLatestBlockRoots()));
     }
 

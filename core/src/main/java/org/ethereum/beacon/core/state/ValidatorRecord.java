@@ -14,7 +14,7 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
  *
  * @see BeaconState
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md#validatorrecord">ValidatorRecord
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.5.0/specs/core/0_beacon-chain.md#validator">Validator
  *     in the spec</a>
  */
 @SSZSerializable

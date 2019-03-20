@@ -26,8 +26,8 @@ public abstract class AttestationTestUtil {
 
   public static Attestation createRandomAttestation(Random random) {
     return new Attestation(
-        createRandomAttestationData(random),
         Bitfield.of(BytesValue.wrap(new byte[64])),
+        createRandomAttestationData(random),
         Bitfield.of(BytesValue.wrap(new byte[64])),
         BLSSignature.wrap(Bytes96.random(random)));
   }
@@ -35,12 +35,12 @@ public abstract class AttestationTestUtil {
   public static AttestationData createRandomAttestationData(Random random) {
     return new AttestationData(
         SpecConstants.GENESIS_SLOT,
-        SpecConstants.BEACON_CHAIN_SHARD_NUMBER,
         Hash32.random(random),
-        Hash32.random(random),
-        Hash32.random(random),
-        new Crosslink(EpochNumber.ZERO, Hash32.random(random)),
         SpecConstants.DEFAULT.getGenesisEpoch(),
+        Hash32.random(random),
+        Hash32.random(random),
+        SpecConstants.BEACON_CHAIN_SHARD_NUMBER,
+        new Crosslink(EpochNumber.ZERO, Hash32.random(random)),
         Hash32.random(random));
   }
 }

@@ -12,7 +12,7 @@ import org.ethereum.beacon.core.spec.SpecConstants;
 public class VoluntaryExitListVerifier extends OperationListVerifier<VoluntaryExit> {
 
   public VoluntaryExitListVerifier(OperationVerifier<VoluntaryExit> operationVerifier, SpecConstants specConstants) {
-    super(operationVerifier, block -> block.getBody().getExits(), specConstants.getMaxVoluntaryExits());
+    super(operationVerifier, block -> block.getBody().getVoluntaryExits(), specConstants.getMaxVoluntaryExits());
   }
 
   @Override

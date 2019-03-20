@@ -1,9 +1,12 @@
 package org.ethereum.beacon.consensus;
 
+import static org.ethereum.beacon.core.spec.SignatureDomains.DEPOSIT;
+
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.spec.SignatureDomains;
+import org.ethereum.beacon.core.state.Fork;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Time;
@@ -11,6 +14,7 @@ import org.ethereum.beacon.crypto.BLS381;
 import org.ethereum.beacon.crypto.BLS381.KeyPair;
 import org.ethereum.beacon.crypto.BLS381.PrivateKey;
 import org.ethereum.beacon.crypto.BLS381.Signature;
+import org.ethereum.beacon.crypto.MessageParameters;
 import org.ethereum.beacon.crypto.MessageParameters.Impl;
 import org.javatuples.Pair;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -52,8 +56,11 @@ public class TestUtils {
           BLSSignature.wrap(Bytes96.ZERO)
       );
       Hash32 msgHash = specHelpers.signed_root(depositInputWithoutSignature, "proofOfPossession");
+      UInt64 domain =
+          specHelpers.get_domain(
+              Fork.EMPTY, specHelpers.getConstants().getGenesisEpoch(), DEPOSIT);
       Signature signature = BLS381
-          .sign(new Impl(msgHash, SignatureDomains.DEPOSIT.toBytesBigEndian()), keyPair);
+          .sign(MessageParameters.create(msgHash, domain), keyPair);
 
       validatorsKeys.add(keyPair);
 

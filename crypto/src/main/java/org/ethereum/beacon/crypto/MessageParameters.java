@@ -4,6 +4,7 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes8;
 import tech.pegasys.artemis.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.uint.UInt64;
 
 /**
  * An interface of message parameters that are used by BLS381 signature scheme.
@@ -32,6 +33,10 @@ public interface MessageParameters {
 
   static MessageParameters create(Hash32 hash, Bytes8 domain) {
     return new Impl(hash, domain);
+  }
+
+  static MessageParameters create(Hash32 hash, UInt64 domain) {
+    return new Impl(hash, domain.toBytesBigEndian());
   }
 
   /** A straightforward implementation of {@link MessageParameters}. */

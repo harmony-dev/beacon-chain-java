@@ -26,7 +26,7 @@ public class BeaconStateImpl implements MutableBeaconState {
 
   @SSZ private SlotNumber slot = SlotNumber.ZERO;
   @SSZ private Time genesisTime = Time.ZERO;
-  @SSZ private ForkData forkData = ForkData.EMPTY;
+  @SSZ private Fork fork = Fork.EMPTY;
 
   /* Validator registry */
 
@@ -57,7 +57,7 @@ public class BeaconStateImpl implements MutableBeaconState {
   @SSZ private List<Hash32> latestBlockRootsList = new ArrayList<>();
   @SSZ private List<Hash32> latestActiveIndexRootsList = new ArrayList<>();
   @SSZ private List<Gwei> latestSlashedBalancesList = new ArrayList<>();
-  @SSZ private List<PendingAttestationRecord> latestAttestationsList = new ArrayList<>();
+  @SSZ private List<PendingAttestation> latestAttestationsList = new ArrayList<>();
   @SSZ private List<Hash32> batchedBlockRootsList = new ArrayList<>();
 
   /* PoW receipt root */
@@ -71,7 +71,7 @@ public class BeaconStateImpl implements MutableBeaconState {
   BeaconStateImpl(BeaconState state) {
         slot = state.getSlot();
         genesisTime = state.getGenesisTime();
-        forkData = state.getForkData();
+        fork = state.getFork();
 
         validatorRegistryList = state.getValidatorRegistry().listCopy();
         validatorBalancesList = state.getValidatorBalances().listCopy();
@@ -127,13 +127,13 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
-  public ForkData getForkData() {
-    return forkData;
+  public Fork getFork() {
+    return fork;
   }
 
   @Override
-  public void setForkData(ForkData forkData) {
-    this.forkData = forkData;
+  public void setFork(Fork fork) {
+    this.fork = fork;
   }
 
   public List<ValidatorRecord> getValidatorRegistryList() {
@@ -312,12 +312,12 @@ public class BeaconStateImpl implements MutableBeaconState {
     this.latestSlashedBalancesList = latestSlashedBalancesList;
   }
 
-  public List<PendingAttestationRecord> getLatestAttestationsList() {
+  public List<PendingAttestation> getLatestAttestationsList() {
     return latestAttestationsList;
   }
 
   public void setLatestAttestationsList(
-      List<PendingAttestationRecord> latestAttestationsList) {
+      List<PendingAttestation> latestAttestationsList) {
     this.latestAttestationsList = latestAttestationsList;
   }
 
@@ -385,7 +385,7 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
-  public WriteList<Integer, PendingAttestationRecord> getLatestAttestations() {
+  public WriteList<Integer, PendingAttestation> getLatestAttestations() {
     return WriteList.wrap(getLatestAttestationsList(), Integer::valueOf);
   }
 

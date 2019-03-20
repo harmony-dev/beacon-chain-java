@@ -14,21 +14,32 @@ import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.collections.WriteList;
 
+/**
+ * Slashable attestation data structure.
+ *
+ * @see <a
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.5.0/specs/core/0_beacon-chain.md#slashableattestation">SlashableAttestation</a>
+ *     in the spec.
+ */
 @SSZSerializable
 public class SlashableAttestation {
+  /** Validator indices */
   @SSZ private final List<ValidatorIndex> validatorIndicesList;
+  /** Attestation data */
   @SSZ private final AttestationData data;
+  /** Custody bitfield */
   @SSZ private final Bitfield custodyBitfield;
-  @SSZ private final BLSSignature blsSignature;
+  /** Aggregate signature */
+  @SSZ private final BLSSignature aggregateSingature;
 
   public SlashableAttestation(
       List<ValidatorIndex> validatorIndices,
       AttestationData data, Bitfield custodyBitfield,
-      BLSSignature blsSignature) {
+      BLSSignature aggregateSingature) {
     this.validatorIndicesList = new ArrayList<>(validatorIndices);
     this.data = data;
     this.custodyBitfield = custodyBitfield;
-    this.blsSignature = blsSignature;
+    this.aggregateSingature = aggregateSingature;
   }
 
   public ReadList<Integer, ValidatorIndex> getValidatorIndices() {
@@ -43,8 +54,8 @@ public class SlashableAttestation {
     return custodyBitfield;
   }
 
-  public BLSSignature getBlsSignature() {
-    return blsSignature;
+  public BLSSignature getAggregateSingature() {
+    return aggregateSingature;
   }
 
   /**
@@ -62,7 +73,7 @@ public class SlashableAttestation {
     if (!validatorIndicesList.equals(that.validatorIndicesList)) {return false;}
     if (!data.equals(that.data)) {return false;}
     if (!custodyBitfield.equals(that.custodyBitfield)) {return false;}
-    return blsSignature.equals(that.blsSignature);
+    return aggregateSingature.equals(that.aggregateSingature);
   }
 
   @Override
@@ -75,7 +86,7 @@ public class SlashableAttestation {
         + "data=" + data.toString(spec, beaconStart)
         + ", validators=" + validatorIndicesList
         + ", custodyBits=" + custodyBitfield
-        + ", sig=" + blsSignature
+        + ", sig=" + aggregateSingature
         + "]";
   }
 }

@@ -50,7 +50,7 @@ public class DepositVerifier implements OperationVerifier<Deposit> {
 
     if (!spec.verify_merkle_branch(
         serializedDataHash,
-        deposit.getBranch(),
+        deposit.getProof(),
         spec.getConstants().getDepositContractTreeDepth(),
         deposit.getIndex(),
         state.getLatestEth1Data().getDepositRoot())) {

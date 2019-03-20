@@ -13,7 +13,7 @@ import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
-import org.ethereum.beacon.core.state.PendingAttestationRecord;
+import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
@@ -170,16 +170,16 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   }
 
   private void addAttestationsFromState(BeaconState beaconState) {
-    ReadList<Integer, PendingAttestationRecord> pendingAttestationRecords =
+    ReadList<Integer, PendingAttestation> pendingAttestations =
         beaconState.getLatestAttestations();
-    for (PendingAttestationRecord pendingAttestationRecord : pendingAttestationRecords) {
+    for (PendingAttestation pendingAttestation : pendingAttestations) {
       List<ValidatorIndex> participants =
           spec.get_attestation_participants(
               beaconState,
-              pendingAttestationRecord.getData(),
-              pendingAttestationRecord.getAggregationBitfield());
+              pendingAttestation.getData(),
+              pendingAttestation.getAggregationBitfield());
       List<BLSPubkey> pubKeys = spec.mapIndicesToPubKeys(beaconState, participants);
-      SlotNumber slot = pendingAttestationRecord.getData().getSlot();
+      SlotNumber slot = pendingAttestation.getData().getSlot();
       pubKeys.forEach(
           pubKey -> {
             removeValidatorAttestation(pubKey, slot);

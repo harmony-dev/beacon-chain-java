@@ -1,5 +1,7 @@
 package org.ethereum.beacon.core;
 
+import static java.util.Collections.emptyList;
+
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.Eth1Data;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -18,14 +20,23 @@ public abstract class BeaconBlocks {
    * @return a genesis block.
    */
   public static BeaconBlock createGenesis(SpecConstants specConstants) {
+    BeaconBlockBody body =
+        new BeaconBlockBody(
+            specConstants.getEmptySignature(),
+            Eth1Data.EMPTY,
+            emptyList(),
+            emptyList(),
+            emptyList(),
+            emptyList(),
+            emptyList(),
+            emptyList());
+
     return BeaconBlock.Builder.createEmpty()
         .withSlot(specConstants.getGenesisSlot())
         .withParentRoot(Hash32.ZERO)
         .withStateRoot(Hash32.ZERO)
-        .withRandaoReveal(specConstants.getEmptySignature())
-        .withEth1Data(Eth1Data.EMPTY)
         .withSignature(specConstants.getEmptySignature())
-        .withBody(BeaconBlockBody.EMPTY)
+        .withBody(body)
         .build();
   }
 }

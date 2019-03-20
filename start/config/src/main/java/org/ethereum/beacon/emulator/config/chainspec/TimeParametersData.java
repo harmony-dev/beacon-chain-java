@@ -23,8 +23,12 @@ public class TimeParametersData implements TimeParameters {
   private String ACTIVATION_EXIT_DELAY;
   @JsonProperty("EPOCHS_PER_ETH1_VOTING_PERIOD")
   private String EPOCHS_PER_ETH1_VOTING_PERIOD;
+  @JsonProperty("SLOTS_PER_HISTORICAL_ROOT")
+  private String SLOTS_PER_HISTORICAL_ROOT;
   @JsonProperty("MIN_VALIDATOR_WITHDRAWABILITY_DELAY")
   private String MIN_VALIDATOR_WITHDRAWABILITY_DELAY;
+  @JsonProperty("PERSISTENT_COMMITTEE_PERIOD")
+  private String PERSISTENT_COMMITTEE_PERIOD;
 
   @Override
   @JsonIgnore
@@ -64,8 +68,20 @@ public class TimeParametersData implements TimeParameters {
 
   @Override
   @JsonIgnore
+  public SlotNumber getSlotsPerHistoricalRoot() {
+    return new SlotNumber(UInt64.valueOf(getSLOTS_PER_HISTORICAL_ROOT()));
+  }
+
+  @Override
+  @JsonIgnore
   public EpochNumber getMinValidatorWithdrawabilityDelay() {
     return new EpochNumber(UInt64.valueOf(getMIN_VALIDATOR_WITHDRAWABILITY_DELAY()));
+  }
+
+  @Override
+  @JsonIgnore
+  public EpochNumber getPersistentCommitteePeriod() {
+    return new EpochNumber(UInt64.valueOf(getPERSISTENT_COMMITTEE_PERIOD()));
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
@@ -123,11 +139,28 @@ public class TimeParametersData implements TimeParameters {
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+  public String getSLOTS_PER_HISTORICAL_ROOT() {
+    return SLOTS_PER_HISTORICAL_ROOT;
+  }
+
+  public void setSLOTS_PER_HISTORICAL_ROOT(String SLOTS_PER_HISTORICAL_ROOT) {
+    this.SLOTS_PER_HISTORICAL_ROOT = SLOTS_PER_HISTORICAL_ROOT;
+  }
+
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getMIN_VALIDATOR_WITHDRAWABILITY_DELAY() {
     return MIN_VALIDATOR_WITHDRAWABILITY_DELAY;
   }
 
   public void setMIN_VALIDATOR_WITHDRAWABILITY_DELAY(String MIN_VALIDATOR_WITHDRAWABILITY_DELAY) {
     this.MIN_VALIDATOR_WITHDRAWABILITY_DELAY = MIN_VALIDATOR_WITHDRAWABILITY_DELAY;
+  }
+
+  public String getPERSISTENT_COMMITTEE_PERIOD() {
+    return PERSISTENT_COMMITTEE_PERIOD;
+  }
+
+  public void setPERSISTENT_COMMITTEE_PERIOD(String PERSISTENT_COMMITTEE_PERIOD) {
+    this.PERSISTENT_COMMITTEE_PERIOD = PERSISTENT_COMMITTEE_PERIOD;
   }
 }

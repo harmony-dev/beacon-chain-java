@@ -140,7 +140,7 @@ public class BeaconChainProposerTest {
     Assert.assertEquals(attestations, block.getBody().getAttestations().listCopy());
     Assert.assertEquals(proposerSlashings, block.getBody().getProposerSlashings().listCopy());
     Assert.assertEquals(casperSlashings, block.getBody().getAttesterSlashings().listCopy());
-    Assert.assertEquals(voluntaryExits, block.getBody().getExits().listCopy());
+    Assert.assertEquals(voluntaryExits, block.getBody().getVoluntaryExits().listCopy());
   }
 
   @Test
@@ -192,7 +192,7 @@ public class BeaconChainProposerTest {
     Assert.assertEquals(
         depositInfos.stream().map(DepositInfo::getDeposit).collect(Collectors.toList()),
         block.getBody().getDeposits().listCopy());
-    Assert.assertEquals(depositContract.getLatestEth1Data(), Optional.of(block.getEth1Data()));
+    Assert.assertEquals(depositContract.getLatestEth1Data(), Optional.of(block.getBody().getEth1Data()));
   }
 
   @Test
@@ -258,9 +258,9 @@ public class BeaconChainProposerTest {
         signer.sign(
             specHelpers.signed_root(signedData,"signature"),
             specHelpers.get_domain(
-                initialState.getForkData(),
+                initialState.getFork(),
                 specHelpers.get_current_epoch(initialState),
-                SignatureDomains.PROPOSAL));
+                SignatureDomains.BEACON_BLOCK));
 
     return expectedSignature.equals(block.getSignature());
   }

@@ -1,10 +1,15 @@
 package org.ethereum.beacon.simulator.util;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.spec.SignatureDomains;
+import org.ethereum.beacon.core.state.Fork;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Time;
@@ -17,11 +22,6 @@ import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.uint.UInt64;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
 
 public class SimulateUtils {
 
@@ -54,10 +54,12 @@ public class SimulateUtils {
 
     if (isProofVerifyEnabled) {
       Hash32 msgHash = specHelpers.signed_root(depositInputWithoutSignature, "proofOfPossession");
-      signature = BLSSignature.wrap(
-          BLS381.sign(
-              new MessageParameters.Impl(msgHash, SignatureDomains.DEPOSIT.toBytesBigEndian()),
-              keyPair).getEncoded());
+      UInt64 domain =
+          specHelpers.get_domain(
+              Fork.EMPTY, specHelpers.getConstants().getGenesisEpoch(), SignatureDomains.DEPOSIT);
+      signature =
+          BLSSignature.wrap(
+              BLS381.sign(MessageParameters.create(msgHash, domain), keyPair).getEncoded());
     }
 
     Deposit deposit =
