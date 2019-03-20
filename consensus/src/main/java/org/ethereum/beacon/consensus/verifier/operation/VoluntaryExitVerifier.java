@@ -2,7 +2,7 @@ package org.ethereum.beacon.consensus.verifier.operation;
 
 import static org.ethereum.beacon.consensus.verifier.VerificationResult.PASSED;
 import static org.ethereum.beacon.consensus.verifier.VerificationResult.failedResult;
-import static org.ethereum.beacon.core.spec.SignatureDomains.EXIT;
+import static org.ethereum.beacon.core.spec.SignatureDomains.VOLUNTARY_EXIT;
 
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.verifier.OperationVerifier;
@@ -63,7 +63,7 @@ public class VoluntaryExitVerifier implements OperationVerifier<VoluntaryExit> {
         validator.getPubKey(),
         spec.signed_root(voluntaryExit, "signature"),
         voluntaryExit.getSignature(),
-        spec.get_domain(state.getFork(), voluntaryExit.getEpoch(), EXIT))) {
+        spec.get_domain(state.getFork(), voluntaryExit.getEpoch(), VOLUNTARY_EXIT))) {
       return failedResult("failed to verify signature");
     }
 

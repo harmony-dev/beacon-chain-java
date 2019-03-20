@@ -107,7 +107,7 @@ public interface BeaconState {
 
   /**
    * Latest hashes of {@link #getLatestBlockRoots()} list calculated when its length got exceeded
-   * LATEST_BLOCK_ROOTS_LENGTH.
+   * SLOTS_PER_HISTORICAL_ROOT.
    */
   ReadList<Integer, Hash32> getBatchedBlockRoots();
 
@@ -138,7 +138,7 @@ public interface BeaconState {
     if (spec != null) {
       ret += ", latestBlocks=[...";
       for (SlotNumber slot : getSlot().minus(3).iterateTo(getSlot())) {
-        Hash32 blockRoot = getLatestBlockRoots().get(slot.modulo(spec.getLatestBlockRootsLength()));
+        Hash32 blockRoot = getLatestBlockRoots().get(slot.modulo(spec.getSlotsPerHistoricalRoot()));
         ret += ", " + blockRoot.toStringShort();
       }
       ret += "]";

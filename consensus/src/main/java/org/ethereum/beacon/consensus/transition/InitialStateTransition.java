@@ -92,7 +92,7 @@ public class InitialStateTransition implements BlockTransition<BeaconStateEx> {
     initialState.getLatestCrosslinks().addAll(
             nCopies(spec.getConstants().getShardCount().getIntValue(), Crosslink.EMPTY));
     initialState.getLatestBlockRoots().addAll(
-            nCopies(spec.getConstants().getLatestBlockRootsLength().getIntValue(), Hash32.ZERO));
+            nCopies(spec.getConstants().getSlotsPerHistoricalRoot().getIntValue(), Hash32.ZERO));
     initialState.getLatestActiveIndexRoots().addAll(
             nCopies(spec.getConstants().getLatestActiveIndexRootsLength().getIntValue(), Hash32.ZERO));
     initialState.getLatestSlashedBalances().addAll(

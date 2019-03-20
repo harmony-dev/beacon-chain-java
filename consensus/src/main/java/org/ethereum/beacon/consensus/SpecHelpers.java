@@ -1363,14 +1363,14 @@ public class SpecHelpers {
      """
      Returns the block root at a recent ``slot``.
      """
-     assert state.slot <= slot + LATEST_BLOCK_ROOTS_LENGTH
+     assert state.slot <= slot + SLOTS_PER_HISTORICAL_ROOT
      assert slot < state.slot
-     return state.latest_block_roots[slot % LATEST_BLOCK_ROOTS_LENGTH]
+     return state.latest_block_roots[slot % SLOTS_PER_HISTORICAL_ROOT]
   */
   public Hash32 get_block_root(BeaconState state, SlotNumber slot) {
-    assertTrue(state.getSlot().lessEqual(slot.plus(constants.getLatestBlockRootsLength())));
+    assertTrue(state.getSlot().lessEqual(slot.plus(constants.getSlotsPerHistoricalRoot())));
     assertTrue(slot.less(state.getSlot()));
-    return state.getLatestBlockRoots().get(slot.modulo(constants.getLatestBlockRootsLength()));
+    return state.getLatestBlockRoots().get(slot.modulo(constants.getSlotsPerHistoricalRoot()));
   }
 
   /*

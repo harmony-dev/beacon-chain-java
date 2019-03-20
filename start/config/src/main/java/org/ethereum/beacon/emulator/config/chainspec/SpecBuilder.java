@@ -258,11 +258,6 @@ public class SpecBuilder {
       }
 
       @Override
-      public SlotNumber getLatestBlockRootsLength() {
-        return stateListLengths.getLatestBlockRootsLength();
-      }
-
-      @Override
       public EpochNumber getLatestRandaoMixesLength() {
         return stateListLengths.getLatestRandaoMixesLength();
       }
@@ -311,6 +306,13 @@ public class SpecBuilder {
       public EpochNumber getMinValidatorWithdrawabilityDelay() {
         return timeParameters.getMinValidatorWithdrawabilityDelay();
       }
+
+      @Override
+      public SlotNumber getSlotsPerHistoricalRoot() {
+        return timeParameters.getSlotsPerHistoricalRoot();
+      }
+
+
     };
   }
 

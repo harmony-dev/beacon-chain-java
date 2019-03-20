@@ -1,6 +1,6 @@
 package org.ethereum.beacon.validator.proposer;
 
-import static org.ethereum.beacon.core.spec.SignatureDomains.PROPOSAL;
+import static org.ethereum.beacon.core.spec.SignatureDomains.BEACON_BLOCK;
 import static org.ethereum.beacon.core.spec.SignatureDomains.RANDAO;
 
 import java.util.List;
@@ -124,7 +124,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
             block.getSignature());
     Hash32 proposalRoot = spec.signed_root(proposal, "signature");
     UInt64 domain = spec.get_domain(state.getFork(),
-        spec.get_current_epoch(state), PROPOSAL);
+        spec.get_current_epoch(state), BEACON_BLOCK);
     return signer.sign(proposalRoot, domain);
   }
 

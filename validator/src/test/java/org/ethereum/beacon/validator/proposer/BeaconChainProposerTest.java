@@ -260,7 +260,7 @@ public class BeaconChainProposerTest {
             specHelpers.get_domain(
                 initialState.getFork(),
                 specHelpers.get_current_epoch(initialState),
-                SignatureDomains.PROPOSAL));
+                SignatureDomains.BEACON_BLOCK));
 
     return expectedSignature.equals(block.getSignature());
   }

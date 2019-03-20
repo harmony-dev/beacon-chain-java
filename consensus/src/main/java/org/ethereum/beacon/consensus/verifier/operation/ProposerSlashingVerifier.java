@@ -2,7 +2,7 @@ package org.ethereum.beacon.consensus.verifier.operation;
 
 import static org.ethereum.beacon.consensus.verifier.VerificationResult.PASSED;
 import static org.ethereum.beacon.consensus.verifier.VerificationResult.failedResult;
-import static org.ethereum.beacon.core.spec.SignatureDomains.PROPOSAL;
+import static org.ethereum.beacon.core.spec.SignatureDomains.BEACON_BLOCK;
 
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.verifier.OperationVerifier;
@@ -58,7 +58,7 @@ public class ProposerSlashingVerifier implements OperationVerifier<ProposerSlash
         spec.get_domain(
             state.getFork(),
             spec.slot_to_epoch(proposerSlashing.getHeader1().getSlot()),
-            PROPOSAL))) {
+            BEACON_BLOCK))) {
       return failedResult("header_1.signature is invalid");
     }
 
@@ -69,7 +69,7 @@ public class ProposerSlashingVerifier implements OperationVerifier<ProposerSlash
         spec.get_domain(
             state.getFork(),
             spec.slot_to_epoch(proposerSlashing.getHeader2().getSlot()),
-            PROPOSAL))) {
+            BEACON_BLOCK))) {
       return failedResult("header_2.signature is invalid");
     }
 
