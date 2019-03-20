@@ -11,15 +11,14 @@ import java.time.Duration;
 public interface ControlledSchedulers extends Schedulers {
 
   /**
-   * Sets the next system timestamp.
-   * After the call the {@link #getCurrentTime()} method will return <code>newTime</code>
-   * however during this call if a task for some Scheduler is scheduled for time T (T <= <code>newTime</code>)
-   * the {@link #getCurrentTime()} should return T until the task completes execution.
-   * All the tasks scheduled for the period from the previous till the new time are executed
-   * sequentially in time increasing order.
-   * Periodic tasks would execute several times if scheduled accordingly
+   * Sets current time.
+   * @throws IllegalStateException if this instance is dependent on a parent
+   * {@link TimeController}
+   * @see TimeController#setTime(long)
    */
-  void setCurrentTime(long newTime);
+  default void setCurrentTime(long newTime) {
+    getTimeController().setTime(newTime);
+  }
 
   /**
    * Just a handy helper method for {@link #setCurrentTime(long)}
@@ -35,4 +34,9 @@ public interface ControlledSchedulers extends Schedulers {
     setCurrentTime(getCurrentTime() + millis);
   }
 
+  /**
+   * Returns {@link TimeController} which manages tasks ordered execution and
+   * supplies current time for this instance
+   */
+  TimeController getTimeController();
 }
