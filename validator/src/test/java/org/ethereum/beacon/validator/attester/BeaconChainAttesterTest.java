@@ -65,7 +65,7 @@ public class BeaconChainAttesterTest {
     Assert.assertEquals(targetRoot, data.getTargetRoot());
     Assert.assertEquals(Hash32.ZERO, data.getCrosslinkDataRoot());
     Assert.assertEquals(Hash32.ZERO, data.getPreviousCrosslink().getCrosslinkDataRoot());
-    Assert.assertEquals(state.getJustifiedEpoch(), data.getSourceEpoch());
+    Assert.assertEquals(state.getCurrentJustifiedEpoch(), data.getSourceEpoch());
     Assert.assertEquals(sourceRoot, data.getSourceRoot());
 
     int bitfieldSize = (committee.size() - 1) / 8 + 1;

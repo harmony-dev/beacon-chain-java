@@ -170,8 +170,9 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   }
 
   private void addAttestationsFromState(BeaconState beaconState) {
-    ReadList<Integer, PendingAttestation> pendingAttestations =
-        beaconState.getLatestAttestations();
+    List<PendingAttestation> pendingAttestations =
+        beaconState.getCurrentEpochAttestations().listCopy();
+    pendingAttestations.addAll(beaconState.getPreviousEpochAttestations().listCopy());
     for (PendingAttestation pendingAttestation : pendingAttestations) {
       List<ValidatorIndex> participants =
           spec.get_attestation_participants(

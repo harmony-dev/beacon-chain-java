@@ -3,7 +3,6 @@ package org.ethereum.beacon.consensus;
 import java.util.Random;
 import org.ethereum.beacon.consensus.hasher.SSZObjectHasher;
 import org.ethereum.beacon.consensus.transition.InitialStateTransition;
-import org.ethereum.beacon.core.BeaconBlocks;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
@@ -22,7 +21,6 @@ import org.junit.Test;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes3;
 import tech.pegasys.artemis.util.bytes.Bytes48;
-import tech.pegasys.artemis.util.bytes.Bytes8;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import java.util.ArrayList;
@@ -161,8 +159,7 @@ public class SpecHelpersTest {
             new ChainStart(genesisTime, eth1Data, TestUtils.generateRandomDepositsWithoutSig(rnd, specHelpers, validatorCount)),
             specHelpers);
 
-    BeaconState initialState = initialStateTransition.apply(
-            BeaconBlocks.createGenesis(specHelpers.getConstants()));
+    BeaconState initialState = initialStateTransition.apply(specHelpers.get_empty_block());
     MutableBeaconState state = initialState.createMutableCopy();
 
     for(int i = 1; i < 128; i++) {

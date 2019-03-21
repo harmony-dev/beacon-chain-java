@@ -11,6 +11,7 @@ import org.ethereum.beacon.core.operations.Transfer;
 import org.ethereum.beacon.core.spec.SignatureDomains;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.Gwei;
+import tech.pegasys.artemis.util.uint.UInt64s;
 
 /**
  * Verifies {@link Transfer} beacon chain operation.
@@ -42,24 +43,18 @@ public class TransferVerifier implements OperationVerifier<Transfer> {
 
     Gwei fromBalance = state.getValidatorBalances().get(transfer.getSender());
 
-    // Verify that state.validator_balances[transfer.from] >= transfer.amount.
-    if (fromBalance.less(transfer.getAmount())) {
+    // Verify the amount and fee aren't individually too big (for anti-overflow purposes)
+    if (fromBalance.less(UInt64s.max(transfer.getAmount(), transfer.getFee()))) {
       return failedResult(
-          "insufficient funds to cover amount, balance=%s when transfer.amount=%s",
-          fromBalance, transfer.getAmount());
+          "insufficient funds to cover amount or fee, balance=%s when transfer.amount=%s, transfer.fee=%s",
+          fromBalance, transfer.getAmount(), transfer.getFee());
     }
 
-    // Verify that state.validator_balances[transfer.from] >= transfer.fee.
-    if (fromBalance.less(transfer.getFee())) {
-      return failedResult(
-          "insufficient funds to cover the fee, balance=%s when transfer.fee=%s",
-          fromBalance, transfer.getFee());
-    }
-
-    // Verify that state.validator_balances[transfer.from] == transfer.amount + transfer.fee or
-    // state.validator_balances[transfer.from] >= transfer.amount + transfer.fee +
-    // MIN_DEPOSIT_AMOUNT.
-    if (!fromBalance.less(transfer.getFee().plus(transfer.getAmount()))
+    /* assert (
+        state.validator_balances[transfer.sender] == transfer.amount + transfer.fee or
+        state.validator_balances[transfer.sender] >= transfer.amount + transfer.fee + MIN_DEPOSIT_AMOUNT
+       ) */
+    if (!fromBalance.equals(transfer.getFee().plus(transfer.getAmount()))
         && fromBalance.less(
             transfer
                 .getAmount()
@@ -77,16 +72,19 @@ public class TransferVerifier implements OperationVerifier<Transfer> {
 
     ValidatorRecord sender = state.getValidatorRegistry().get(transfer.getSender());
 
-    // Verify that get_current_epoch(state) >=
-    // state.validator_registry[transfer.from].withdrawable_epoch or
-    // state.validator_registry[transfer.from].activation_epoch == FAR_FUTURE_EPOCH.
+    /* assert (
+        get_current_epoch(state) >= state.validator_registry[transfer.sender].withdrawable_epoch or
+        state.validator_registry[transfer.sender].activation_epoch == FAR_FUTURE_EPOCH
+       )*/
     if (spec.get_current_epoch(state).less(sender.getWithdrawableEpoch())
         && !sender.getActivationEpoch().equals(spec.getConstants().getFarFutureEpoch())) {
       return failedResult("epoch validation failed");
     }
 
-    // Verify that state.validator_registry[transfer.from].withdrawal_credentials ==
-    // BLS_WITHDRAWAL_PREFIX_BYTE + hash(transfer.pubkey)[1:]
+    /* assert (
+        state.validator_registry[transfer.sender].withdrawal_credentials ==
+        BLS_WITHDRAWAL_PREFIX_BYTE + hash(transfer.pubkey)[1:]
+       ) */
     if (!sender
         .getWithdrawalCredentials()
         .equals(
@@ -96,10 +94,12 @@ public class TransferVerifier implements OperationVerifier<Transfer> {
       return failedResult("withdrawal_credentials do not match");
     }
 
-    // Verify that bls_verify(pubkey=transfer.pubkey, message_hash=signed_root(transfer,
-    // "signature"),
-    // signature=transfer.signature, domain=get_domain(state.fork, slot_to_epoch(transfer.slot),
-    // DOMAIN_TRANSFER)).
+    /* assert bls_verify(
+        pubkey=transfer.pubkey,
+        message_hash=signed_root(transfer),
+        signature=transfer.signature,
+        domain=get_domain(state.fork, slot_to_epoch(transfer.slot), DOMAIN_TRANSFER)
+       ) */
     if (!spec.bls_verify(
         transfer.getPubkey(),
         spec.signed_root(transfer, "signature"),

@@ -58,7 +58,7 @@ public class AttesterSlashingVerifier implements OperationVerifier<AttesterSlash
 
     ReadList<Integer, ValidatorIndex> intersection =
         slashableAttestation1.getValidatorIndices().intersection(
-            slashableAttestation1.getValidatorIndices());
+            slashableAttestation2.getValidatorIndices());
     if (intersection.stream()
         .noneMatch(i -> state.getValidatorRegistry().get(i).getSlashed())) {
       return failedResult("spec assertion failed");

@@ -55,7 +55,7 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
     Hash32 targetRoot = getTargetRoot(state, observableState.getHead());
     Hash32 crosslinkDataRoot = Hash32.ZERO; // Note: This is a stub for phase 0.
     Crosslink previousCrosslink = getPreviousCrosslink(state, shard);
-    EpochNumber sourceEpoch = state.getJustifiedEpoch();
+    EpochNumber sourceEpoch = state.getCurrentJustifiedEpoch();
     Hash32 sourceRoot = getSourceRoot(state, observableState.getHead());
     AttestationData data =
         new AttestationData(
@@ -133,7 +133,7 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
   */
   @VisibleForTesting
   Hash32 getSourceRoot(BeaconState state, BeaconBlock head) {
-    SlotNumber slot = spec.get_epoch_start_slot(state.getJustifiedEpoch());
+    SlotNumber slot = spec.get_epoch_start_slot(state.getCurrentJustifiedEpoch());
     if (slot.equals(head.getSlot())) {
       return spec.hash_tree_root(head);
     } else {

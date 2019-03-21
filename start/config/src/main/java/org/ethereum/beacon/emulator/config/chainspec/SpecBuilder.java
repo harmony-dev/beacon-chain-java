@@ -19,7 +19,6 @@ import org.ethereum.beacon.crypto.BLS381.PublicKey;
 import tech.pegasys.artemis.ethereum.core.Address;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes1;
-import tech.pegasys.artemis.util.bytes.Bytes8;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public class SpecBuilder {
@@ -298,8 +297,8 @@ public class SpecBuilder {
       }
 
       @Override
-      public EpochNumber getEth1DataVotingPeriod() {
-        return timeParameters.getEth1DataVotingPeriod();
+      public EpochNumber getEpochsPerEth1VotingPeriod() {
+        return timeParameters.getEpochsPerEth1VotingPeriod();
       }
 
       @Override

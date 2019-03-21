@@ -62,7 +62,7 @@ public class TimeParametersData implements TimeParameters {
 
   @Override
   @JsonIgnore
-  public EpochNumber getEth1DataVotingPeriod() {
+  public EpochNumber getEpochsPerEth1VotingPeriod() {
     return new EpochNumber(UInt64.valueOf(getEPOCHS_PER_ETH1_VOTING_PERIOD()));
   }
 

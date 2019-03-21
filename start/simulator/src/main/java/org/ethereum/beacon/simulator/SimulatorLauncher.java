@@ -331,11 +331,11 @@ public class SimulatorLauncher implements Runnable {
             + "=>"
             + specHelpers.get_current_epoch(preEpochState.getLatestSlotState()).increment().toString(specConstants)
             + ": Justified/Finalized epochs: "
-            + summary.getPreState().getJustifiedEpoch().toString(specConstants)
+            + summary.getPreState().getCurrentJustifiedEpoch().toString(specConstants)
             + "/"
             + summary.getPreState().getFinalizedEpoch().toString(specConstants)
             + " => "
-            + summary.getPostState().getJustifiedEpoch().toString(specConstants)
+            + summary.getPostState().getCurrentJustifiedEpoch().toString(specConstants)
             + "/"
             + summary.getPostState().getFinalizedEpoch().toString(specConstants)
         );

@@ -7,6 +7,7 @@ import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.verifier.OperationVerifier;
@@ -49,13 +50,11 @@ public class AttestationVerifier implements OperationVerifier<Attestation> {
 
     spec.checkShardRange(data.getShard());
 
-    // Verify that attestation.data.slot <= state.slot - MIN_ATTESTATION_INCLUSION_DELAY
+    // Verify that attestation.data.slot + MIN_ATTESTATION_INCLUSION_DELAY <= state.slot
     //    < attestation.data.slot + SLOTS_PER_EPOCH
-    if (!(data.getSlot()
-            .lessEqual(state.getSlot().minus(spec.getConstants().getMinAttestationInclusionDelay()))
-        && state
-            .getSlot()
-            .minus(spec.getConstants().getMinAttestationInclusionDelay())
+    if (!(data.getSlot().plus(spec.getConstants().getMinAttestationInclusionDelay())
+            .lessEqual(state.getSlot())
+        && state.getSlot()
             .less(data.getSlot().plus(spec.getConstants().getSlotsPerEpoch())))) {
 
       return failedResult(
@@ -63,41 +62,64 @@ public class AttestationVerifier implements OperationVerifier<Attestation> {
           data.getSlot().plus(spec.getConstants().getMinAttestationInclusionDelay()), state.getSlot());
     }
 
-    // Verify that attestation.data.justified_epoch is equal to
-    // state.justified_epoch
-    // if slot_to_epoch(attestation.data.slot + 1) >= get_current_epoch(state)
-    // else state.previous_justified_epoch.
-    if (!data.getSourceEpoch().equals(
-        spec.slot_to_epoch(data.getSlot().increment()).greaterEqual(spec.get_current_epoch(state)) ?
-        state.getJustifiedEpoch() : state.getPreviousJustifiedEpoch())) {
+    // # Can't submit attestations too quickly
+    // assert attestation.data.slot + MIN_ATTESTATION_INCLUSION_DELAY <= state.slot
+    if (!data.getSlot().plus(spec.getConstants().getMinAttestationInclusionDelay())
+        .lessEqual(state.getSlot())) {
       return failedResult(
-          "Attestation.data.justified_epoch is invalid");
+          "attestation inclusion upper limit violated, inclusion slot ends with %s but got %s",
+          state.getSlot(),
+          data.getSlot().plus(spec.getConstants().getMinAttestationInclusionDelay()));
     }
 
-    // Verify that attestation.data.justified_block_root is equal to
-    // get_block_root(state, get_epoch_start_slot(attestation.data.justified_epoch))
-    Hash32 blockRootAtJustifiedSlot = spec.get_block_root(state,
-        spec.get_epoch_start_slot(data.getSourceEpoch()));
-    if (!data.getSourceRoot().equals(blockRootAtJustifiedSlot)) {
-      return failedResult(
-          "attestation_data.justified_block_root must be equal to block_root at state.justified_slot, "
-              + "justified_block_root=%s, block_root=%s",
-          data.getSourceRoot(), blockRootAtJustifiedSlot);
+    /* # Verify that the justified epoch and root is correct
+    if slot_to_epoch(attestation.data.slot) >= get_current_epoch(state):
+        # Case 1: current epoch attestations
+        assert attestation.data.source_epoch == state.current_justified_epoch
+        assert attestation.data.source_root == state.current_justified_root
+    else:
+        # Case 2: previous epoch attestations
+        assert attestation.data.source_epoch == state.previous_justified_epoch
+        assert attestation.data.source_root == state.previous_justified_root */
+
+    if (spec.slot_to_epoch(data.getSlot()).greaterEqual(spec.get_current_epoch(state))) {
+      if (!(data.getSourceEpoch().equals(state.getCurrentJustifiedEpoch()))) {
+        return failedResult("case 1: source_epoch doesn't match, expected %s but got %s",
+            state.getCurrentJustifiedEpoch(), data.getSourceEpoch());
+      }
+      if (!(data.getSourceRoot().equals(state.getCurrentJustifiedRoot()))) {
+        return failedResult("case 1: source_root doesn't match, expected %s but got %s",
+            state.getCurrentJustifiedRoot(), data.getSourceRoot());
+      }
+    } else {
+      if (!(data.getSourceEpoch().equals(state.getPreviousJustifiedEpoch()))) {
+        return failedResult("case 2: source_epoch doesn't match, expected %s but got %s",
+            state.getPreviousJustifiedEpoch(), data.getSourceEpoch());
+      }
+      if (!(data.getSourceRoot().equals(state.getPreviousJustifiedRoot()))) {
+        return failedResult("case 2: source_root doesn't match, expected %s but got %s",
+            state.getPreviousJustifiedRoot(), data.getSourceRoot());
+      }
     }
 
-    // Verify that either
-    //   (i) state.latest_crosslinks[attestation.data.shard] == attestation.data.latest_crosslink or
-    //   (ii) state.latest_crosslinks[attestation.data.shard] ==
-    //        Crosslink(crosslink_data_root=attestation.data.crosslink_data_root, epoch=slot_to_epoch(attestation.data.slot)).
+    // Check that the crosslink data is valid
+    /*  acceptable_crosslink_data = {
+          # Case 1: Latest crosslink matches the one in the state
+          attestation.data.previous_crosslink,
+          # Case 2: State has already been updated, state's latest crosslink matches the crosslink
+          # the attestation is trying to create
+          Crosslink(
+              crosslink_data_root=attestation.data.crosslink_data_root,
+              epoch=slot_to_epoch(attestation.data.slot)
+          )
+        } */
     Crosslink latestCrosslink =
         state.getLatestCrosslinks().get(data.getShard());
     if (!data.getPreviousCrosslink().equals(latestCrosslink)
-        && !latestCrosslink.equals(new Crosslink(spec.slot_to_epoch(attestation.getData().getSlot()),
-            attestation.getData().getCrosslinkDataRoot()))) {
+        && !latestCrosslink.equals(
+            new Crosslink(spec.slot_to_epoch(data.getSlot()), data.getCrosslinkDataRoot()))) {
       return failedResult("attestation.data.latest_crosslink is incorrect");
     }
-
-    // Verify bitfields and aggregate signature:
 
     //  assert attestation.custody_bitfield == b'\x00' * len(attestation.custody_bitfield)  # [TO BE REMOVED IN PHASE 1]
     if (!attestation.getCustodyBitfield().isZero()) {

@@ -33,6 +33,23 @@ public class Gwei extends UInt64 implements SafeComparable<Gwei> {
     return new Gwei(super.minus(subtrahend));
   }
 
+  public Gwei minusSat(Gwei subtrahend) {
+    if (this.compareTo(subtrahend) < 0) {
+      return Gwei.ZERO;
+    } else {
+      return minus(subtrahend);
+    }
+  }
+
+  public Gwei plusSat(Gwei addend) {
+    Gwei res = this.plus(addend);
+    if (res.lessEqual(res) && addend.greater(Gwei.ZERO)) {
+      return Gwei.castFrom(UInt64.MAX_VALUE);
+    } else {
+      return res;
+    }
+  }
+
   @Override
   public Gwei times(UInt64 unsignedMultiplier) {
     return new Gwei(super.times(unsignedMultiplier));

@@ -9,7 +9,6 @@ import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.transition.BeaconStateExImpl;
 import org.ethereum.beacon.consensus.transition.InitialStateTransition;
 import org.ethereum.beacon.core.BeaconBlock;
-import org.ethereum.beacon.core.BeaconBlocks;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.SlotNumber;
@@ -42,7 +41,7 @@ public class ObservableBeaconStateTestUtil {
 
   public static ObservableBeaconState createInitialState(
       Random random, SpecHelpers specHelpers, PendingOperations operations) {
-    BeaconBlock genesis = BeaconBlocks.createGenesis(specHelpers.getConstants());
+    BeaconBlock genesis = specHelpers.get_empty_block();
     ChainStart chainStart =
         new ChainStart(
             Time.ZERO,

@@ -16,7 +16,6 @@ import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
 import org.ethereum.beacon.consensus.verifier.BeaconStateVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconBlock;
-import org.ethereum.beacon.core.BeaconBlocks;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.schedulers.Schedulers;
@@ -90,7 +89,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   }
 
   private void initializeStorage() {
-    BeaconBlock initialGenesis = BeaconBlocks.createGenesis(spec.getConstants());
+    BeaconBlock initialGenesis = spec.get_empty_block();
     BeaconStateEx initialState = initialTransition.apply(BeaconStateEx.getEmpty(), initialGenesis);
 
     Hash32 initialStateRoot = spec.hash_tree_root(initialState);
@@ -198,10 +197,10 @@ public class DefaultBeaconChain implements MutableBeaconChain {
               current, spec.get_epoch_start_slot(current.getFinalizedEpoch()));
       chainStorage.getFinalizedStorage().set(finalizedRoot);
     }
-    if (previous.getJustifiedEpoch().less(current.getJustifiedEpoch())) {
+    if (previous.getCurrentJustifiedEpoch().less(current.getCurrentJustifiedEpoch())) {
       Hash32 justifiedRoot =
           spec.get_block_root(
-              current, spec.get_epoch_start_slot(current.getJustifiedEpoch()));
+              current, spec.get_epoch_start_slot(current.getCurrentJustifiedEpoch()));
       chainStorage.getJustifiedStorage().set(justifiedRoot);
     }
   }
