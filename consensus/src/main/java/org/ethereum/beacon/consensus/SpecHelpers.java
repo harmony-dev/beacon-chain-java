@@ -2521,14 +2521,15 @@ public class SpecHelpers {
         state.current_shuffling_epoch = next_epoch
         state.current_shuffling_start_shard = (
             state.current_shuffling_start_shard +
-            get_current_epoch_committee_count(state) % SHARD_COUNT
-        )
+            get_current_epoch_committee_count(state)
+        ) % SHARD_COUNT
         state.current_shuffling_seed = generate_seed(state, state.current_shuffling_epoch) */
       update_validator_registry(state);
       // If we update the registry, update the shuffling data and shards as well
       state.setCurrentShufflingEpoch(next_epoch);
-      state.setCurrentShufflingStartShard(state.getCurrentShufflingStartShard().plusModulo(
-          get_current_epoch_committee_count(state), constants.getShardCount()));
+      state.setCurrentShufflingStartShard(ShardNumber.of(
+          state.getCurrentShufflingStartShard().plus(get_current_epoch_committee_count(state))
+              .modulo(constants.getShardCount())));
       state.setCurrentShufflingSeed(generate_seed(state, state.getCurrentShufflingEpoch()));
     } else {
       // If processing at least one crosslink keeps failing, then reshuffle every power of two,
