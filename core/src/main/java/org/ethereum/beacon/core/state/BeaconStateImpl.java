@@ -397,6 +397,26 @@ public class BeaconStateImpl implements MutableBeaconState {
     this.eth1DataVotesList = eth1DataVotesList;
   }
 
+  public void setPreviousEpochAttestationList(
+      List<PendingAttestation> previousEpochAttestationList) {
+    this.previousEpochAttestationList = previousEpochAttestationList;
+  }
+
+  public void setCurrentEpochAttestationList(
+      List<PendingAttestation> currentEpochAttestationList) {
+    this.currentEpochAttestationList = currentEpochAttestationList;
+  }
+
+  public void setLatestStateRootsList(
+      List<Hash32> latestStateRootsList) {
+    this.latestStateRootsList = latestStateRootsList;
+  }
+
+  public void setHistoricalRootList(
+      List<Hash32> historicalRootList) {
+    this.historicalRootList = historicalRootList;
+  }
+
   @Override
   public WriteList<ValidatorIndex, ValidatorRecord> getValidatorRegistry() {
     return WriteList.wrap(getValidatorRegistryList(), ValidatorIndex::of);

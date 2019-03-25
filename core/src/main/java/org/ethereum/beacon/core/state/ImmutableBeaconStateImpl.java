@@ -152,6 +152,22 @@ public class ImmutableBeaconStateImpl implements BeaconState, Hashable<Hash32> {
     return new ArrayList<>(latestSlashedBalancesList);
   }
 
+  public List<PendingAttestation> getPreviousEpochAttestationList() {
+    return new ArrayList<>(previousEpochAttestationList);
+  }
+
+  public List<PendingAttestation> getCurrentEpochAttestationList() {
+    return new ArrayList<>(currentEpochAttestationList);
+  }
+
+  public List<Hash32> getLatestStateRootsList() {
+    return new ArrayList<>(latestStateRootsList);
+  }
+
+  public List<Hash32> getHistoricalRootList() {
+    return new ArrayList<>(historicalRootList);
+  }
+
   @Override
   public SlotNumber getSlot() {
     return slot;
