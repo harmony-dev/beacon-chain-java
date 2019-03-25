@@ -122,8 +122,7 @@ public class SampleObservableState {
         attestationsSteam,
         beaconChain.getBlockStatesStream(),
         spec,
-        perSlotTransition,
-        perEpochTransition,
+        extendedSlotTransition,
         schedulers);
     observableStateProcessor.start();
 

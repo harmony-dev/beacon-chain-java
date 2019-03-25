@@ -67,7 +67,6 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
       Publisher<BeaconTupleDetails> beaconPublisher,
       SpecHelpers spec,
       StateTransition<BeaconStateEx> onSlotTransition,
-      StateTransition<BeaconStateEx> perEpochTransition,
       Schedulers schedulers) {
     this.tupleStorage = chainStorage.getTupleStorage();
     this.spec = spec;
@@ -231,10 +230,10 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
 
     PendingOperations pendingOperations = new PendingOperationsState(copyAttestationCache());
     if (slot.greater(head.getBlock().getSlot())) {
-      BeaconStateEx stateWithoutEpoch = applySlotTransitions(head.getFinalState(), slot);
-      latestState = stateWithoutEpoch;
+      BeaconStateEx stateUponASlot = applySlotTransitions(head.getFinalState(), slot);
+      latestState = stateUponASlot;
       observableStateStream.onNext(
-          new ObservableBeaconState(head.getBlock(), stateWithoutEpoch, pendingOperations));
+          new ObservableBeaconState(head.getBlock(), stateUponASlot, pendingOperations));
     } else {
       if (head.getPostSlotState().isPresent()) {
         latestState = head.getPostSlotState().get();
@@ -245,6 +244,10 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
         latestState = head.getPostBlockState().get();
         observableStateStream.onNext(new ObservableBeaconState(
             head.getBlock(), head.getPostBlockState().get(), pendingOperations));
+      } else {
+        latestState = head.getFinalState();
+        observableStateStream.onNext(new ObservableBeaconState(
+            head.getBlock(), head.getFinalState(), pendingOperations));
       }
     }
   }
@@ -261,7 +264,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
 
     BeaconStateEx state = source;
     SlotNumber slotsCnt = targetSlot.minus(source.getSlot());
-    for (SlotNumber slot : slotsCnt.increment().iterateFromZero()) {
+    for (SlotNumber slot : slotsCnt.iterateFromZero()) {
       state = onSlotTransition.apply(state);
     }
 
@@ -282,7 +285,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
             (head) -> {
               BeaconTuple newHeadTuple =
                   tupleStorage
-                      .get(spec.hash_tree_root(head))
+                      .get(spec.signed_root(head, "signature"))
                       .orElseThrow(
                           () -> new IllegalStateException("Beacon tuple not found for new head "));
               return new BeaconTupleDetails(newHeadTuple);

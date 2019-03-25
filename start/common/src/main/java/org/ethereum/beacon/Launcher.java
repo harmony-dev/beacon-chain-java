@@ -101,6 +101,9 @@ public class Launcher {
     perSlotTransition = new PerSlotTransition(spec);
     perBlockTransition = new PerBlockTransition(spec);
     perEpochTransition = new PerEpochTransition(spec);
+    ExtendedSlotTransition extendedSlotTransition =
+        new ExtendedSlotTransition(
+            stateCachingTransition, perEpochTransition, perSlotTransition, spec);
 
     db = new InMemoryDatabase();
     beaconChainStorage = storageFactory.create(db);
@@ -112,8 +115,7 @@ public class Launcher {
         new DefaultBeaconChain(
             spec,
             initialTransition,
-            new ExtendedSlotTransition(
-                stateCachingTransition, perEpochTransition, perSlotTransition, spec),
+            extendedSlotTransition,
             perBlockTransition,
             blockVerifier,
             stateVerifier,
@@ -136,8 +138,7 @@ public class Launcher {
         allAttestations,
         beaconChain.getBlockStatesStream(),
         spec,
-        perSlotTransition,
-        perEpochTransition,
+        extendedSlotTransition,
         schedulers);
     observableStateProcessor.start();
 

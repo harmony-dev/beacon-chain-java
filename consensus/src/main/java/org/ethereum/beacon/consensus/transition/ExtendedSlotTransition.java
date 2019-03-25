@@ -42,17 +42,13 @@ public class ExtendedSlotTransition implements StateTransition<BeaconStateEx> {
   @Override
   public BeaconStateEx apply(BeaconStateEx source) {
     BeaconStateEx result = source;
-
-    // All transition functions run at every slot > GENESIS_SLOT
-    if (source.getSlot().greater(spec.getConstants().getGenesisSlot())) {
-      result = stateCaching.apply(source);
-      // The steps below happen when (state.slot + 1) % SLOTS_PER_EPOCH == 0.
-      if (result.getSlot().increment().modulo(spec.getConstants().getSlotsPerEpoch())
-          .equals(SlotNumber.ZERO)) {
-        result = perEpochTransition.apply(result);
-      }
-      result = perSlotTransition.apply(result);
+    result = stateCaching.apply(source);
+    // The steps below happen when (state.slot + 1) % SLOTS_PER_EPOCH == 0.
+    if (result.getSlot().increment().modulo(spec.getConstants().getSlotsPerEpoch())
+        .equals(SlotNumber.ZERO)) {
+      result = perEpochTransition.apply(result);
     }
+    result = perSlotTransition.apply(result);
 
     return result;
   }
