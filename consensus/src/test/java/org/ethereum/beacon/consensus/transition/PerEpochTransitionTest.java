@@ -44,10 +44,12 @@ public class PerEpochTransitionTest {
 
     states[0] = initialStateTransition.apply(specHelpers.get_empty_block());
     for (int i = 1; i < 9; i++) {
-      states[i] = new PerSlotTransition(specHelpers).apply(states[i - 1]);
+      BeaconStateEx cachedState = new StateCachingTransition(specHelpers).apply(states[i - 1]);
+      states[i] = new PerSlotTransition(specHelpers).apply(cachedState);
     }
     PerEpochTransition perEpochTransition = new PerEpochTransition(specHelpers);
-    BeaconStateEx epochState = perEpochTransition.apply(states[8]);
+    BeaconStateEx cachedState = new StateCachingTransition(specHelpers).apply(states[8]);
+    BeaconStateEx epochState = perEpochTransition.apply(cachedState);
 
     // check validators penalized for inactivity
     for (int i = 0; i < deposits.size(); i++) {
