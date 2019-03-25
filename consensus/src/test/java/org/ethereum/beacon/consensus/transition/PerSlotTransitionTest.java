@@ -41,9 +41,12 @@ public class PerSlotTransitionTest {
 
     BeaconStateEx initialState =
         initialStateTransition.apply(specHelpers.get_empty_block());
-    BeaconStateEx s1State = new PerSlotTransition(specHelpers).apply(initialState);
-    BeaconStateEx s2State = new PerSlotTransition(specHelpers).apply(s1State);
-    BeaconStateEx s3State = new PerSlotTransition(specHelpers).apply(s2State);
+    BeaconStateEx c1State = new StateCachingTransition(specHelpers).apply(initialState);
+    BeaconStateEx s1State = new PerSlotTransition(specHelpers).apply(c1State);
+    BeaconStateEx c2State = new StateCachingTransition(specHelpers).apply(s1State);
+    BeaconStateEx s2State = new PerSlotTransition(specHelpers).apply(c2State);
+    BeaconStateEx c3State = new StateCachingTransition(specHelpers).apply(s2State);
+    BeaconStateEx s3State = new PerSlotTransition(specHelpers).apply(c3State);
 
     Assert.assertEquals(specConstants.getGenesisSlot().plus(3), s3State.getSlot());
   }
