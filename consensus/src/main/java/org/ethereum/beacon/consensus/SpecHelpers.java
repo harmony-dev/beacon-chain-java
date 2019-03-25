@@ -2105,6 +2105,9 @@ public class SpecHelpers {
         new Gwei[state.getValidatorRegistry().size().getIntValue()],
         new Gwei[state.getValidatorRegistry().size().getIntValue()]
     };
+    for (ValidatorIndex index : state.getValidatorRegistry().size()) {
+      deltas[0][index.getIntValue()] = deltas[1][index.getIntValue()] = Gwei.ZERO;
+    }
 
     // Some helper variables
     List<PendingAttestation> previous_epoch_attestations =
@@ -2201,6 +2204,9 @@ public class SpecHelpers {
         new Gwei[state.getValidatorRegistry().size().getIntValue()],
         new Gwei[state.getValidatorRegistry().size().getIntValue()]
     };
+    for (ValidatorIndex index : state.getValidatorRegistry().size()) {
+      deltas[0][index.getIntValue()] = deltas[1][index.getIntValue()] = Gwei.ZERO;
+    }
 
     List<PendingAttestation> previous_epoch_attestations =
         state.getPreviousEpochAttestations().listCopy();
@@ -2310,6 +2316,9 @@ public class SpecHelpers {
         new Gwei[state.getValidatorRegistry().size().getIntValue()],
         new Gwei[state.getValidatorRegistry().size().getIntValue()]
     };
+    for (ValidatorIndex index : state.getValidatorRegistry().size()) {
+      deltas[0][index.getIntValue()] = deltas[1][index.getIntValue()] = Gwei.ZERO;
+    }
 
     SlotNumber previous_epoch_start_slot = get_epoch_start_slot(get_previous_epoch(state));
     SlotNumber current_epoch_start_slot = get_epoch_start_slot(get_current_epoch(state));
@@ -2562,7 +2571,7 @@ public class SpecHelpers {
     Gwei total_balance = get_total_balance(state, active_validator_indices);
 
     // Compute `total_penalties`
-    Gwei total_at_start = Gwei.castFrom(state.getLatestSlashedBalances().get(current_epoch.increment())
+    Gwei total_at_start = state.getLatestSlashedBalances().get(current_epoch.increment()
         .modulo(constants.getLatestSlashedExitLength()));
     Gwei total_at_end = state.getLatestSlashedBalances()
         .get(current_epoch.modulo(constants.getLatestSlashedExitLength()));
