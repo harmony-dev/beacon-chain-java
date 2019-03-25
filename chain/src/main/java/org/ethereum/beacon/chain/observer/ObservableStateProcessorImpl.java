@@ -264,7 +264,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
 
     BeaconStateEx state = source;
     SlotNumber slotsCnt = targetSlot.minus(source.getSlot());
-    for (SlotNumber slot : slotsCnt.iterateFromZero()) {
+    for (SlotNumber slot : slotsCnt) {
       state = onSlotTransition.apply(state);
     }
 

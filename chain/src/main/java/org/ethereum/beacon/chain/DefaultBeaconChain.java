@@ -218,7 +218,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   private BeaconStateEx applyEmptySlotTransitionsTillBlock(BeaconStateEx source, BeaconBlock block) {
     BeaconStateEx result = source;
     SlotNumber slotsCnt = block.getSlot().minus(source.getSlot());
-    for (SlotNumber slot : slotsCnt.iterateFromZero()) {
+    for (SlotNumber slot : slotsCnt) {
       result = onSlotTransition.apply(result);
     }
 
