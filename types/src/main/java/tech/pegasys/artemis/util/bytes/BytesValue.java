@@ -21,6 +21,7 @@ import java.security.MessageDigest;
 import com.google.common.annotations.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
 import io.vertx.core.buffer.Buffer;
+import java.util.List;
 
 /**
  * A value made of bytes.
@@ -149,6 +150,10 @@ public interface BytesValue extends Comparable<BytesValue> {
     } else {
       return wrap(v1, v2);
     }
+  }
+
+  static BytesValue concat(List<BytesValue> vals) {
+    throw new UnsupportedOperationException();
   }
 
   /**
