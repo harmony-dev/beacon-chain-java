@@ -5,7 +5,6 @@ import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
-import org.ethereum.beacon.core.operations.slashing.Proposal;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import tech.pegasys.artemis.ethereum.core.Hash32;

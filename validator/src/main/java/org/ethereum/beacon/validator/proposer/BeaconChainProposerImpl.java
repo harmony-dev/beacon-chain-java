@@ -22,7 +22,6 @@ import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.Transfer;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
-import org.ethereum.beacon.core.operations.slashing.Proposal;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Eth1DataVote;
 import org.ethereum.beacon.core.types.BLSSignature;
@@ -107,7 +106,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
   }
 
   /**
-   * Creates a {@link Proposal} instance and signs off on it.
+   * Signs off on a block.
    *
    * @param state state at the slot of created block.
    * @param block block
