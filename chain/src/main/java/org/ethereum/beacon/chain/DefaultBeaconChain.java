@@ -146,30 +146,19 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     this.recentlyProcessed = newTuple;
     blockStream.onNext(new BeaconTupleDetails(block, preBlockState, postBlockState, postBlockState));
 
-    if (spec.is_epoch_end(block.getSlot())) {
-      logger.info(
-          "new block inserted: {} in {}s, epoch avg without this block: {}s",
-          newTuple
-              .getBlock()
-              .toString(
-                  spec.getConstants(),
-                  newTuple.getState().getGenesisTime(),
-                  spec::hash_tree_root),
-          String.format("%.3f", ((double) total) / 1_000_000_000d),
-          String.format("%.3f", ((double) insertTimeCollector.getAvg()) / 1_000_000_000d));
+    logger.info(
+        "new block inserted: {} in {}s",
+        newTuple
+            .getBlock()
+            .toString(
+                spec.getConstants(),
+                newTuple.getState().getGenesisTime(),
+                spec::hash_tree_root),
+        String.format("%.3f", ((double) total) / 1_000_000_000d));
 
+    if (spec.is_epoch_end(block.getSlot())) {
       insertTimeCollector.reset();
     } else {
-      logger.info(
-          "new block inserted: {} in {}s",
-          newTuple
-              .getBlock()
-              .toString(
-                  spec.getConstants(),
-                  newTuple.getState().getGenesisTime(),
-                  spec::hash_tree_root),
-              String.format("%.3f", ((double) total) / 1_000_000_000d));
-
       insertTimeCollector.tick(total);
     }
 
