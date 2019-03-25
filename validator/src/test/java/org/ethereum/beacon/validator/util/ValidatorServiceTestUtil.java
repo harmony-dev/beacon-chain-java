@@ -6,7 +6,6 @@ import java.util.Random;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.BlockTransition;
 import org.ethereum.beacon.consensus.SpecHelpers;
-import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.consensus.util.StateTransitionTestUtil;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
@@ -56,13 +55,11 @@ public abstract class ValidatorServiceTestUtil {
       Schedulers schedulers) {
     BlockTransition<BeaconStateEx> perBlockTransition =
         StateTransitionTestUtil.createPerBlockTransition();
-    StateTransition<BeaconStateEx> perEpochTransition =
-        StateTransitionTestUtil.createStateWithNoTransition();
     DepositContract depositContract =
         DepositContractTestUtil.mockDepositContract(random, Collections.emptyList());
     BeaconChainProposer proposer =
         BeaconChainProposerTestUtil.mockProposer(
-            perBlockTransition, perEpochTransition, depositContract, specHelpers);
+            perBlockTransition, depositContract, specHelpers);
     BeaconChainAttester attester = BeaconChainAttesterTestUtil.mockAttester(specHelpers);
 
     return Mockito.spy(

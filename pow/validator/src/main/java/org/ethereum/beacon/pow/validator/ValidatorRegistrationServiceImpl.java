@@ -194,12 +194,10 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
   private void startValidator() {
     if (validatorService == null) {
       BlockTransition<BeaconStateEx> blockTransition = new PerBlockTransition(spec);
-      StateTransition<BeaconStateEx> epochTransition = new PerEpochTransition(spec);
       BeaconChainProposer proposer =
           new BeaconChainProposerImpl(
               spec,
               blockTransition,
-              epochTransition,
               depositContract);
       BeaconChainAttester attester =
           new BeaconChainAttesterImpl(spec);

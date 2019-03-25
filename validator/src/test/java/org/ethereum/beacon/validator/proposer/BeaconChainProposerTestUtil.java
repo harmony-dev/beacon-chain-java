@@ -12,14 +12,12 @@ public abstract class BeaconChainProposerTestUtil {
 
   public static BeaconChainProposerImpl mockProposer(
       BlockTransition<BeaconStateEx> perBlockTransition,
-      StateTransition<BeaconStateEx> perEpochTransition,
       DepositContract depositContract,
       SpecHelpers specHelpers) {
     return Mockito.spy(
         new BeaconChainProposerImpl(
             specHelpers,
             perBlockTransition,
-            perEpochTransition,
             depositContract));
   }
 }

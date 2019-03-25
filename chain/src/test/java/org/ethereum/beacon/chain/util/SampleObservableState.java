@@ -12,10 +12,12 @@ import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.chain.storage.BeaconChainStorageFactory;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.TestUtils;
+import org.ethereum.beacon.consensus.transition.ExtendedSlotTransition;
 import org.ethereum.beacon.consensus.transition.InitialStateTransition;
 import org.ethereum.beacon.consensus.transition.PerBlockTransition;
 import org.ethereum.beacon.consensus.transition.PerEpochTransition;
 import org.ethereum.beacon.consensus.transition.PerSlotTransition;
+import org.ethereum.beacon.consensus.transition.StateCachingTransition;
 import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
 import org.ethereum.beacon.consensus.verifier.BeaconStateVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
@@ -87,6 +89,9 @@ public class SampleObservableState {
     PerSlotTransition perSlotTransition = new PerSlotTransition(spec);
     PerBlockTransition perBlockTransition = new PerBlockTransition(spec);
     PerEpochTransition perEpochTransition = new PerEpochTransition(spec);
+    StateCachingTransition stateCaching = new StateCachingTransition(spec);
+    ExtendedSlotTransition extendedSlotTransition =
+        new ExtendedSlotTransition(stateCaching, perEpochTransition, perSlotTransition, spec);
 
     db = new InMemoryDatabase();
     beaconChainStorage = BeaconChainStorageFactory.get().create(db);
@@ -99,9 +104,8 @@ public class SampleObservableState {
     beaconChain = new DefaultBeaconChain(
         spec,
         initialTransition,
-        perSlotTransition,
+        extendedSlotTransition,
         perBlockTransition,
-        perEpochTransition,
         blockVerifier,
         stateVerifier,
         beaconChainStorage,

@@ -20,8 +20,8 @@ import org.ethereum.beacon.pow.DepositContract;
  *
  * @see DepositContract
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md#on-startup">On
- *     startup in the spec</a>
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.5.1/specs/core/0_beacon-chain.md#on-genesis">On
+ *     genesis</a> in the spec.
  */
 public class InitialStateTransition implements BlockTransition<BeaconStateEx> {
   private static final Logger logger = LogManager.getLogger(InitialStateTransition.class);

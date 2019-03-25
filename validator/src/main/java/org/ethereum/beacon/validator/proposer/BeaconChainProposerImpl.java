@@ -32,7 +32,6 @@ import org.ethereum.beacon.validator.BeaconChainProposer;
 import org.ethereum.beacon.validator.ValidatorService;
 import org.ethereum.beacon.validator.crypto.MessageSigner;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
 
@@ -48,8 +47,6 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
   private SpecHelpers spec;
   /** Per-block state transition. */
   private BlockTransition<BeaconStateEx> perBlockTransition;
-  /** Per-epoch state transition. */
-  private StateTransition<BeaconStateEx> perEpochTransition;
   /** Eth1 deposit contract. */
   private DepositContract depositContract;
 
@@ -60,7 +57,15 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
       DepositContract depositContract) {
     this.spec = spec;
     this.perBlockTransition = perBlockTransition;
-    this.perEpochTransition = perEpochTransition;
+    this.depositContract = depositContract;
+  }
+
+  public BeaconChainProposerImpl(
+      SpecHelpers spec,
+      BlockTransition<BeaconStateEx> perBlockTransition,
+      DepositContract depositContract) {
+    this.spec = spec;
+    this.perBlockTransition = perBlockTransition;
     this.depositContract = depositContract;
   }
 
@@ -98,12 +103,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
   }
 
   private BeaconStateEx applyStateTransition(BeaconStateEx sourceEx, BeaconBlock block) {
-    BeaconStateEx blockState = perBlockTransition.apply(sourceEx, block);
-    if (spec.is_epoch_end(blockState.getSlot())) {
-      return perEpochTransition.apply(blockState);
-    } else {
-      return blockState;
-    }
+    return perBlockTransition.apply(sourceEx, block);
   }
 
   /**

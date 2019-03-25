@@ -9,7 +9,9 @@ import org.ethereum.beacon.consensus.BlockTransition;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.consensus.transition.BeaconStateExImpl;
+import org.ethereum.beacon.consensus.transition.ExtendedSlotTransition;
 import org.ethereum.beacon.consensus.transition.InitialStateTransition;
+import org.ethereum.beacon.consensus.transition.StateCachingTransition;
 import org.ethereum.beacon.consensus.util.StateTransitionTestUtil;
 import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
 import org.ethereum.beacon.consensus.verifier.BeaconStateVerifier;
@@ -82,10 +84,13 @@ public class DefaultBeaconChainTest {
     ChainStart chainStart = new ChainStart(start, Eth1Data.EMPTY, Collections.emptyList());
     BlockTransition<BeaconStateEx> initialTransition =
         new InitialStateTransition(chainStart, specHelpers);
+    StateTransition<BeaconStateEx> stateCaching =
+        StateTransitionTestUtil.createStateWithNoTransition();
     BlockTransition<BeaconStateEx> perBlockTransition =
         StateTransitionTestUtil.createPerBlockTransition();
     StateTransition<BeaconStateEx> perEpochTransition =
         StateTransitionTestUtil.createStateWithNoTransition();
+
     BeaconBlockVerifier blockVerifier = (block, state) -> VerificationResult.PASSED;
     BeaconStateVerifier stateVerifier = (block, state) -> VerificationResult.PASSED;
     Database database = Database.inMemoryDB();
@@ -94,9 +99,8 @@ public class DefaultBeaconChainTest {
     return new DefaultBeaconChain(
         specHelpers,
         initialTransition,
-        perSlotTransition,
+        new ExtendedSlotTransition(stateCaching, perEpochTransition, perSlotTransition, specHelpers),
         perBlockTransition,
-        perEpochTransition,
         blockVerifier,
         stateVerifier,
         chainStorage,

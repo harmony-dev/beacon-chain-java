@@ -29,9 +29,8 @@ public class DefaultBeaconChain implements MutableBeaconChain {
 
   private final SpecHelpers spec;
   private final BlockTransition<BeaconStateEx> initialTransition;
-  private final StateTransition<BeaconStateEx> perSlotTransition;
-  private final BlockTransition<BeaconStateEx> perBlockTransition;
-  private final StateTransition<BeaconStateEx> perEpochTransition;
+  private final StateTransition<BeaconStateEx> onSlotTransition;
+  private final BlockTransition<BeaconStateEx> onBlockTransition;
   private final BeaconBlockVerifier blockVerifier;
   private final BeaconStateVerifier stateVerifier;
 
@@ -48,18 +47,16 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   public DefaultBeaconChain(
       SpecHelpers spec,
       BlockTransition<BeaconStateEx> initialTransition,
-      StateTransition<BeaconStateEx> perSlotTransition,
-      BlockTransition<BeaconStateEx> perBlockTransition,
-      StateTransition<BeaconStateEx> perEpochTransition,
+      StateTransition<BeaconStateEx> onSlotTransition,
+      BlockTransition<BeaconStateEx> onBlockTransition,
       BeaconBlockVerifier blockVerifier,
       BeaconStateVerifier stateVerifier,
       BeaconChainStorage chainStorage,
       Schedulers schedulers) {
     this.spec = spec;
     this.initialTransition = initialTransition;
-    this.perSlotTransition = perSlotTransition;
-    this.perBlockTransition = perBlockTransition;
-    this.perEpochTransition = perEpochTransition;
+    this.onSlotTransition = onSlotTransition;
+    this.onBlockTransition = onBlockTransition;
     this.blockVerifier = blockVerifier;
     this.stateVerifier = stateVerifier;
     this.chainStorage = chainStorage;
@@ -129,31 +126,25 @@ public class DefaultBeaconChain implements MutableBeaconChain {
       return false;
     }
 
-    BeaconStateEx postBlockState = perBlockTransition.apply(preBlockState, block);
-    BeaconStateEx postEpochState;
-    if (spec.is_epoch_end(block.getSlot())) {
-      postEpochState = perEpochTransition.apply(postBlockState);
-    } else {
-      postEpochState = postBlockState;
-    }
+    BeaconStateEx postBlockState = onBlockTransition.apply(preBlockState, block);
 
     VerificationResult stateVerification =
-        stateVerifier.verify(postEpochState, block);
+        stateVerifier.verify(postBlockState, block);
     if (!stateVerification.isPassed()) {
       logger.warn("State verification failed: " + stateVerification);
       return false;
     }
 
-    BeaconTuple newTuple = BeaconTuple.of(block, postEpochState);
+    BeaconTuple newTuple = BeaconTuple.of(block, postBlockState);
     tupleStorage.put(newTuple);
-    updateFinality(parentState, postEpochState);
+    updateFinality(parentState, postBlockState);
 
     chainStorage.commit();
 
     long total = System.nanoTime() - s;
 
     this.recentlyProcessed = newTuple;
-    blockStream.onNext(new BeaconTupleDetails(block, preBlockState, postBlockState, postEpochState));
+    blockStream.onNext(new BeaconTupleDetails(block, preBlockState, postBlockState, postBlockState));
 
     if (spec.is_epoch_end(block.getSlot())) {
       logger.info(
@@ -237,14 +228,10 @@ public class DefaultBeaconChain implements MutableBeaconChain {
 
   private BeaconStateEx applyEmptySlotTransitionsTillBlock(BeaconStateEx source, BeaconBlock block) {
     BeaconStateEx result = source;
-    for (SlotNumber slot : result.getSlot().increment().iterateTo(block.getSlot())) {
-      result = perSlotTransition.apply(result);
-      if (spec.is_epoch_end(result.getSlot())) {
-        result = perEpochTransition.apply(result);
-      }
+    SlotNumber slotsCnt = block.getSlot().minus(source.getSlot());
+    for (SlotNumber slot : slotsCnt.increment().iterateFromZero()) {
+      result = onSlotTransition.apply(result);
     }
-    // the slot at block should be processed before the block
-    result = perSlotTransition.apply(result);
 
     return result;
   }

@@ -1,16 +1,5 @@
 package org.ethereum.beacon.consensus.transition;
 
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.BiFunction;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.consensus.BeaconStateEx;
@@ -18,25 +7,12 @@ import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.consensus.TransitionType;
 import org.ethereum.beacon.core.MutableBeaconState;
-import org.ethereum.beacon.core.operations.attestation.Crosslink;
-import org.ethereum.beacon.core.state.Eth1DataVote;
-import org.ethereum.beacon.core.state.PendingAttestation;
-import org.ethereum.beacon.core.state.ShardCommittee;
-import org.ethereum.beacon.core.state.ValidatorRecord;
-import org.ethereum.beacon.core.types.EpochNumber;
-import org.ethereum.beacon.core.types.Gwei;
-import org.ethereum.beacon.core.types.ShardNumber;
-import org.ethereum.beacon.core.types.SlotNumber;
-import org.ethereum.beacon.core.types.ValidatorIndex;
-import org.javatuples.Pair;
-import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.uint.UInt64;
 
 /**
- * Per-epoch transition function.
+ * Per-epoch transition, which happens at the start of the first slot of every epoch.
  *
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.5.0/specs/core/0_beacon-chain.md#per-epoch-processing">Per-epoch
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.5.1/specs/core/0_beacon-chain.md#per-epoch-processing">Per-epoch
  *     processing</a> in the spec.
  */
 public class PerEpochTransition implements StateTransition<BeaconStateEx> {
@@ -60,13 +36,6 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
   }
 
   private BeaconStateEx apply(BeaconStateEx origState, EpochTransitionSummary summary) {
-    // 2. The per-epoch transitions, which happens at the start of the first slot of every epoch.
-    // The steps below happen when state.slot > GENESIS_SLOT and (state.slot + 1) % SLOTS_PER_EPOCH == 0.
-    if (!origState.getSlot().increment().modulo(spec.getConstants().getSlotsPerEpoch())
-        .equals(SlotNumber.ZERO)) {
-      return origState;
-    }
-
     logger.debug(() -> "Applying epoch transition to state: (" +
         spec.hash_tree_root(origState).toStringShort() + ") " + origState.toString(spec.getConstants()));
 

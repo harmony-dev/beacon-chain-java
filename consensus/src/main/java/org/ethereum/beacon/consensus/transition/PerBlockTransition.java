@@ -10,10 +10,10 @@ import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.MutableBeaconState;
 
 /**
- * Per-block transition function.
+ * Per-block transition, which happens at every block.
  *
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.5.0/specs/core/0_beacon-chain.md#per-block-processing">Per-block
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.5.1/specs/core/0_beacon-chain.md#per-block-processing">Per-block
  *     processing</a> in the spec.
  */
 public class PerBlockTransition implements BlockTransition<BeaconStateEx> {
@@ -38,11 +38,9 @@ public class PerBlockTransition implements BlockTransition<BeaconStateEx> {
 
     // For every block except the genesis block,
     // run process_block_header(state, block), process_randao(state, block) and process_eth1_data(state, block).
-    if (block.getSlot().greater(spec.getConstants().getGenesisSlot())) {
-      spec.process_block_header(state, block);
-      spec.process_randao(state, block);
-      spec.process_eth1_data(state, block);
-    }
+    spec.process_block_header(state, block);
+    spec.process_randao(state, block);
+    spec.process_eth1_data(state, block);
 
     // For each proposer_slashing in block.body.proposer_slashings, run the following function:
     block.getBody().getProposerSlashings().forEach(
