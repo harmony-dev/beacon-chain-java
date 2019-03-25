@@ -3,9 +3,11 @@ package org.ethereum.beacon.consensus;
 import java.util.Random;
 import org.ethereum.beacon.consensus.hasher.SSZObjectHasher;
 import org.ethereum.beacon.consensus.transition.InitialStateTransition;
+import org.ethereum.beacon.consensus.util.CachingSpecHelpers;
 import org.ethereum.beacon.core.BeaconBlocks;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
+import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.Eth1Data;
@@ -147,7 +149,7 @@ public class SpecHelpersTest {
             return ShardNumber.of(shardCount);
           }
         };
-    SpecHelpers specHelpers = new SpecHelpers(
+    SpecHelpers specHelpers = new CachingSpecHelpers(
         specConstants, Hashes::keccak256, SSZObjectHasher.create(Hashes::keccak256)) {
       @Override
       public boolean bls_verify(BLSPubkey publicKey, Hash32 message, BLSSignature signature,
@@ -156,11 +158,12 @@ public class SpecHelpersTest {
       }
     };
 
+    System.out.println("Generating deposits...");
+    List<Deposit> deposits = TestUtils.generateRandomDepositsWithoutSig(rnd, specHelpers, validatorCount);
     InitialStateTransition initialStateTransition =
-        new InitialStateTransition(
-            new ChainStart(genesisTime, eth1Data, TestUtils.generateRandomDepositsWithoutSig(rnd, specHelpers, validatorCount)),
-            specHelpers);
+        new InitialStateTransition(new ChainStart(genesisTime, eth1Data, deposits), specHelpers);
 
+    System.out.println("Applying initial state transition...");
     BeaconState initialState = initialStateTransition.apply(
             BeaconBlocks.createGenesis(specHelpers.getConstants()));
     MutableBeaconState state = initialState.createMutableCopy();
@@ -176,6 +179,14 @@ public class SpecHelpersTest {
           + specHelpers.get_beacon_proposer_index(state, slot)
           + " committee: "
           + specHelpers.get_crosslink_committees_at_slot(state, slot));
+      System.out.println("Slot #" + slot
+          + " beacon proposer: "
+          + specHelpers.get_beacon_proposer_index(state, slot)
+          + " committee: "
+          + specHelpers.get_crosslink_committees_at_slot(state, slot).stream()
+            .map(c -> c.getShard() + ": [" + c.getCommittee().size() + "]")
+            .collect(Collectors.joining(","))
+            );
     }
   }
 }
