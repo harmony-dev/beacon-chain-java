@@ -118,11 +118,7 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
   */
   @VisibleForTesting
   Crosslink getPreviousCrosslink(BeaconState state, ShardNumber shard) {
-    if (shard.equals(spec.getConstants().getBeaconChainShardNumber())) {
-      return Crosslink.EMPTY;
-    } else {
-      return state.getLatestCrosslinks().get(shard);
-    }
+    return state.getLatestCrosslinks().get(shard);
   }
 
   /*

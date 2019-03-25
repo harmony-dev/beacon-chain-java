@@ -116,13 +116,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
    */
   private BLSSignature getProposalSignature(
       BeaconState state, BeaconBlock block, MessageSigner<BLSSignature> signer) {
-    Proposal proposal =
-        new Proposal(
-            state.getSlot(),
-            spec.getConstants().getBeaconChainShardNumber(),
-            spec.signed_root(block, "signature"),
-            block.getSignature());
-    Hash32 proposalRoot = spec.signed_root(proposal, "signature");
+    Hash32 proposalRoot = spec.signed_root(block, "signature");
     UInt64 domain = spec.get_domain(state.getFork(),
         spec.get_current_epoch(state), BEACON_BLOCK);
     return signer.sign(proposalRoot, domain);
@@ -136,8 +130,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
    * @return next RANDAO reveal.
    */
   private BLSSignature getRandaoReveal(BeaconState state, MessageSigner<BLSSignature> signer) {
-    Hash32 hash =
-        Hash32.wrap(Bytes32.leftPad(spec.get_current_epoch(state).toBytesBigEndian()));
+    Hash32 hash = spec.hash_tree_root(spec.slot_to_epoch(state.getSlot()));
     UInt64 domain = spec.get_domain(state.getFork(),
         spec.get_current_epoch(state), RANDAO);
     return signer.sign(hash, domain);
