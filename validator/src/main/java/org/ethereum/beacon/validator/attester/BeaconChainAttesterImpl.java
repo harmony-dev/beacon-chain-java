@@ -129,12 +129,7 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
   */
   @VisibleForTesting
   Hash32 getSourceRoot(BeaconState state, BeaconBlock head) {
-    SlotNumber slot = spec.get_epoch_start_slot(state.getCurrentJustifiedEpoch());
-    if (slot.equals(head.getSlot())) {
-      return spec.signed_root(head);
-    } else {
-      return spec.get_block_root(state, slot);
-    }
+    return state.getCurrentJustifiedRoot();
   }
 
   /*
