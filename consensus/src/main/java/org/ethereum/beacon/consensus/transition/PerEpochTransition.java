@@ -35,7 +35,7 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
     return summary;
   }
 
-  private BeaconStateEx apply(BeaconStateEx origState, EpochTransitionSummary summary) {
+  BeaconStateEx apply(BeaconStateEx origState, EpochTransitionSummary summary) {
     logger.debug(() -> "Applying epoch transition to state: (" +
         spec.hash_tree_root(origState).toStringShort() + ") " + origState.toString(spec.getConstants()));
 

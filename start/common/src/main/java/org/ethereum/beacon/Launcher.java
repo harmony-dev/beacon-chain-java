@@ -49,6 +49,7 @@ public class Launcher {
   private PerSlotTransition perSlotTransition;
   private PerBlockTransition perBlockTransition;
   private PerEpochTransition perEpochTransition;
+  private ExtendedSlotTransition extendedSlotTransition;
   private BeaconBlockVerifier blockVerifier;
   private BeaconStateVerifier stateVerifier;
 
@@ -101,7 +102,7 @@ public class Launcher {
     perSlotTransition = new PerSlotTransition(spec);
     perBlockTransition = new PerBlockTransition(spec);
     perEpochTransition = new PerEpochTransition(spec);
-    ExtendedSlotTransition extendedSlotTransition =
+    extendedSlotTransition =
         new ExtendedSlotTransition(
             stateCachingTransition, perEpochTransition, perSlotTransition, spec);
 
@@ -203,6 +204,10 @@ public class Launcher {
 
   public PerEpochTransition getPerEpochTransition() {
     return perEpochTransition;
+  }
+
+  public ExtendedSlotTransition getExtendedSlotTransition() {
+    return extendedSlotTransition;
   }
 
   public BeaconBlockVerifier getBlockVerifier() {

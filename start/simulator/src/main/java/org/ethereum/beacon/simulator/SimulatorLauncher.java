@@ -26,6 +26,7 @@ import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.ethereum.beacon.Launcher;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.storage.impl.MemBeaconChainStorageFactory;
+import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.TransitionType;
 import org.ethereum.beacon.consensus.transition.EpochTransitionSummary;
@@ -260,6 +261,7 @@ public class SimulatorLauncher implements Runnable {
 
     peers.add(observer);
 
+    ObservableBeaconState previousSlotState = null;
     List<SlotNumber> slots = new ArrayList<>();
     List<Attestation> attestations = new ArrayList<>();
     List<BeaconBlock> blocks = new ArrayList<>();
@@ -321,10 +323,11 @@ public class SimulatorLauncher implements Runnable {
           + ", attestations: " + attestations.size()
           + ", " + statesInfo);
 
-      ObservableBeaconState lastState = states.get(states.size() - 1);
-      if (lastState.getLatestSlotState().getTransition() == TransitionType.EPOCH) {
-        ObservableBeaconState preEpochState = states.get(states.size() - 2);
-        EpochTransitionSummary summary = observer.getPerEpochTransition()
+      ObservableBeaconState newSlotState = states.get(0);
+      if (newSlotState.getLatestSlotState().getSlot().modulo(specHelpers.getConstants().getSlotsPerEpoch())
+          .equals(SlotNumber.ZERO) && previousSlotState != null) {
+        ObservableBeaconState preEpochState = previousSlotState;
+        EpochTransitionSummary summary = observer.getExtendedSlotTransition()
             .applyWithSummary(preEpochState.getLatestSlotState());
         logger.info("Epoch transition "
             + specHelpers.get_current_epoch(preEpochState.getLatestSlotState()).toString(specConstants)
@@ -356,6 +359,7 @@ public class SimulatorLauncher implements Runnable {
         );
       }
 
+      previousSlotState = states.get(slots.size() - 1);
       slots.clear();
       attestations.clear();
       blocks.clear();

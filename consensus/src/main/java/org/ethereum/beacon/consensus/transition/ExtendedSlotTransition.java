@@ -24,13 +24,13 @@ import org.ethereum.beacon.core.types.SlotNumber;
 public class ExtendedSlotTransition implements StateTransition<BeaconStateEx> {
 
   private final StateTransition<BeaconStateEx> stateCaching;
-  private final StateTransition<BeaconStateEx> perEpochTransition;
+  private final PerEpochTransition perEpochTransition;
   private final StateTransition<BeaconStateEx> perSlotTransition;
   private final SpecHelpers spec;
 
   public ExtendedSlotTransition(
       StateTransition<BeaconStateEx> stateCaching,
-      StateTransition<BeaconStateEx> perEpochTransition,
+      PerEpochTransition perEpochTransition,
       StateTransition<BeaconStateEx> perSlotTransition,
       SpecHelpers spec) {
     this.stateCaching = stateCaching;
@@ -41,15 +41,25 @@ public class ExtendedSlotTransition implements StateTransition<BeaconStateEx> {
 
   @Override
   public BeaconStateEx apply(BeaconStateEx source) {
-    BeaconStateEx result = source;
-    result = stateCaching.apply(source);
-    // The steps below happen when (state.slot + 1) % SLOTS_PER_EPOCH == 0.
-    if (result.getSlot().increment().modulo(spec.getConstants().getSlotsPerEpoch())
-        .equals(SlotNumber.ZERO)) {
-      result = perEpochTransition.apply(result);
-    }
-    result = perSlotTransition.apply(result);
+    return apply(source, null);
+  }
 
-    return result;
+  public EpochTransitionSummary applyWithSummary(BeaconStateEx stateEx) {
+    EpochTransitionSummary summary = new EpochTransitionSummary();
+    apply(stateEx, summary);
+    return summary;
+  }
+
+  private BeaconStateEx apply(BeaconStateEx source, EpochTransitionSummary summary) {
+    BeaconStateEx cachedState = stateCaching.apply(source);
+    BeaconStateEx newEpochState = cachedState;
+    // The steps below happen when (state.slot + 1) % SLOTS_PER_EPOCH == 0.
+    if (cachedState.getSlot().increment().modulo(spec.getConstants().getSlotsPerEpoch())
+        .equals(SlotNumber.ZERO)) {
+      newEpochState = perEpochTransition.apply(cachedState, summary);
+    }
+    BeaconStateEx newSlotState = perSlotTransition.apply(newEpochState);
+
+    return newSlotState;
   }
 }
