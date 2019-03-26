@@ -1,9 +1,7 @@
 package org.ethereum.beacon.test;
 
 import org.ethereum.beacon.consensus.SpecHelpers;
-import org.ethereum.beacon.consensus.hasher.SSZObjectHasher;
 import org.ethereum.beacon.core.spec.SpecConstants;
-import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.test.runner.SszRunner;
 import org.ethereum.beacon.test.type.SszTest;
 import org.junit.Test;
@@ -16,9 +14,7 @@ public class SszTests extends TestUtils {
   private SpecHelpers specHelpers;
 
   public SszTests() {
-    this.specHelpers =
-        new SpecHelpers(
-            SpecConstants.DEFAULT, Hashes::keccak256, SSZObjectHasher.create(Hashes::keccak256));
+    this.specHelpers = SpecHelpers.createWithSSZHasher(SpecConstants.DEFAULT);
   }
 
   @Test

@@ -18,6 +18,7 @@ import org.ethereum.beacon.consensus.transition.PerBlockTransition;
 import org.ethereum.beacon.consensus.transition.PerEpochTransition;
 import org.ethereum.beacon.consensus.transition.PerSlotTransition;
 import org.ethereum.beacon.consensus.transition.StateCachingTransition;
+import org.ethereum.beacon.consensus.util.CachingSpecHelpers;
 import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
 import org.ethereum.beacon.consensus.verifier.BeaconStateVerifier;
 import org.ethereum.beacon.core.operations.Attestation;
@@ -83,7 +84,7 @@ public class Launcher {
       Schedulers schedulers,
       TimeCollector proposeTimeCollector) {
 
-    this.spec = spec;
+    this.spec = new CachingSpecHelpers(spec);
     this.depositContract = depositContract;
     this.validatorCred = validatorCred;
     this.wireApi = wireApi;

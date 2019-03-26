@@ -3,6 +3,7 @@ package org.ethereum.beacon.emulator.config.chainspec;
 import java.util.List;
 import org.apache.milagro.amcl.BLS381.ECP;
 import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.SpecHelpersImpl;
 import org.ethereum.beacon.consensus.util.CachingSpecHelpers;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
@@ -36,7 +37,7 @@ public class SpecBuilder {
       SpecHelpersData specHelpersOptions, SpecConstants specConstants) {
 
     SpecHelpers defaultSpecHelpers = SpecHelpers.createWithSSZHasher(specConstants);
-    return new CachingSpecHelpers(
+    return new SpecHelpersImpl(
         defaultSpecHelpers.getConstants(),
         defaultSpecHelpers.getHashFunction(),
         defaultSpecHelpers.getObjectHasher()) {

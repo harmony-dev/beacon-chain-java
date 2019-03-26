@@ -1,9 +1,7 @@
 package org.ethereum.beacon.test;
 
 import org.ethereum.beacon.consensus.SpecHelpers;
-import org.ethereum.beacon.consensus.hasher.SSZObjectHasher;
 import org.ethereum.beacon.core.spec.SpecConstants;
-import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.test.runner.BlsAggregatePubKeys;
 import org.ethereum.beacon.test.runner.BlsAggregateSigs;
 import org.ethereum.beacon.test.runner.BlsMessageHash;
@@ -27,9 +25,7 @@ public class BlsTests extends TestUtils {
   private SpecHelpers specHelpers;
 
   public BlsTests() {
-    this.specHelpers =
-        new SpecHelpers(
-            SpecConstants.DEFAULT, Hashes::keccak256, SSZObjectHasher.create(Hashes::keccak256));
+    this.specHelpers = SpecHelpers.createWithSSZHasher(SpecConstants.DEFAULT);
   }
 
   @Test
