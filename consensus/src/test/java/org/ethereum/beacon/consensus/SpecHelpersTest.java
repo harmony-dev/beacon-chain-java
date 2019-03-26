@@ -1,8 +1,19 @@
 package org.ethereum.beacon.consensus;
 
+import static org.junit.Assert.assertEquals;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.ethereum.beacon.consensus.hasher.SSZObjectHasher;
 import org.ethereum.beacon.consensus.transition.InitialStateTransition;
+import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.BeaconBlockBody;
+import org.ethereum.beacon.core.BeaconBlockHeader;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
@@ -14,6 +25,7 @@ import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
+import org.ethereum.beacon.core.util.AttestationTestUtil;
 import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.pow.DepositContract.ChainStart;
 import org.junit.Ignore;
@@ -23,15 +35,7 @@ import tech.pegasys.artemis.util.bytes.Bytes3;
 import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import tech.pegasys.artemis.util.uint.UInt64;
-
-import static org.junit.Assert.assertEquals;
 
 public class SpecHelpersTest {
 
@@ -108,6 +112,32 @@ public class SpecHelpersTest {
         Hash32.fromHexString("0x1a2017aea008e5bb8b3eb79d031f14347018353f1c58fc3a54e9fc7af7ab2fe1");
     Hash32 actual = specHelpers.hash_tree_root(createDepositInput());
     assertEquals(expected, actual);
+  }
+
+  @Test
+  public void headerAndBlockHashesAreEqual() {
+    Random rnd = new Random(1);
+    SpecHelpers spec = SpecHelpers.createWithSSZHasher(SpecConstants.DEFAULT);
+    BeaconBlock emptyBlock = spec.get_empty_block();
+    BeaconBlockBody body =
+        new BeaconBlockBody(
+            emptyBlock.getBody().getRandaoReveal(),
+            emptyBlock.getBody().getEth1Data(),
+            emptyBlock.getBody().getProposerSlashings().listCopy(),
+            emptyBlock.getBody().getAttesterSlashings().listCopy(),
+            AttestationTestUtil.createRandomList(rnd, 10),
+            emptyBlock.getBody().getDeposits().listCopy(),
+            emptyBlock.getBody().getVoluntaryExits().listCopy(),
+            emptyBlock.getBody().getTransfers().listCopy());
+    BeaconBlock block =
+        new BeaconBlock(
+            emptyBlock.getSlot(),
+            emptyBlock.getPreviousBlockRoot(),
+            emptyBlock.getStateRoot(),
+            body,
+            emptyBlock.getSignature());
+    BeaconBlockHeader header = spec.get_temporary_block_header(block);
+    assertEquals(spec.signed_root(block, "signature"), spec.signed_root(header, "signature"));
   }
 
   @Ignore

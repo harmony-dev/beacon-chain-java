@@ -75,7 +75,7 @@ public class SSZObjectHasherTest {
     BytesValue hash = sszHasher.getHash(attestationRecord);
     assertEquals(
         BytesValue.fromHexString(
-            "0xbfde5860f2d9e9d7e8b2a0d5d3630a09b1330197d09a359470601bae5b3839ae"),
+            "0x3dfd0d63b835618cc9eb5f5da13b494b0e4ab41583b66809fed6fc4990f4dd51"),
         hash);
   }
 
@@ -143,7 +143,7 @@ public class SSZObjectHasherTest {
     BytesValue hash = sszHasher.getHash(attestationRecord);
     assertEquals(
         BytesValue.fromHexString(
-            "0xbfde5860f2d9e9d7e8b2a0d5d3630a09b1330197d09a359470601bae5b3839ae"),
+            "0x3dfd0d63b835618cc9eb5f5da13b494b0e4ab41583b66809fed6fc4990f4dd51"),
         hash);
   }
 
