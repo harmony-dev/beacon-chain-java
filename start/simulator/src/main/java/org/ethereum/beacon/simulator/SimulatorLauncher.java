@@ -325,10 +325,10 @@ public class SimulatorLauncher implements Runnable {
           + ", attestations: " + attestations.size()
           + ", " + statesInfo);
 
-      ObservableBeaconState newSlotState = states.get(0);
-      if (newSlotState.getLatestSlotState().getSlot().modulo(specHelpers.getConstants().getSlotsPerEpoch())
-          .equals(SlotNumber.ZERO) && previousSlotState != null) {
-        ObservableBeaconState preEpochState = previousSlotState;
+      ObservableBeaconState latestState = states.get(states.size() - 1);
+      if (latestState.getLatestSlotState().getSlot().increment().modulo(specHelpers.getConstants().getSlotsPerEpoch())
+          .equals(SlotNumber.ZERO)) {
+        ObservableBeaconState preEpochState = latestState;
         EpochTransitionSummary summary = observer.getExtendedSlotTransition()
             .applyWithSummary(preEpochState.getLatestSlotState());
         logger.info("Epoch transition "
