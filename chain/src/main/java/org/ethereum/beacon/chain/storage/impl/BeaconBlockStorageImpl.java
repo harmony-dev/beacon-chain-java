@@ -134,7 +134,7 @@ public class BeaconBlockStorageImpl implements BeaconBlockStorage {
 
   @Override
   public void put(BeaconBlock block) {
-    this.put(objectHasher.getHashTruncate(block, "signature"), block);
+    this.put(objectHasher.getHashTruncateLast(block), block);
   }
 
   @Override

@@ -194,7 +194,7 @@ public class BeaconChainProposerTest {
 
     BLSSignature expectedSignature =
         signer.sign(
-            specHelpers.signed_root(block, "signature"),
+            specHelpers.signed_root(block),
             specHelpers.get_domain(
                 initialState.getFork(),
                 specHelpers.get_current_epoch(initialState),

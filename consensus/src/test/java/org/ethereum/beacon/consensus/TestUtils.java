@@ -55,7 +55,7 @@ public class TestUtils {
           proofOfPosession,
           BLSSignature.wrap(Bytes96.ZERO)
       );
-      Hash32 msgHash = specHelpers.signed_root(depositInputWithoutSignature, "proofOfPossession");
+      Hash32 msgHash = specHelpers.signed_root(depositInputWithoutSignature);
       UInt64 domain =
           specHelpers.get_domain(
               Fork.EMPTY, specHelpers.getConstants().getGenesisEpoch(), DEPOSIT);

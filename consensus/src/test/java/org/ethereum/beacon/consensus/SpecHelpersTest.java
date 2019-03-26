@@ -137,7 +137,7 @@ public class SpecHelpersTest {
             body,
             emptyBlock.getSignature());
     BeaconBlockHeader header = spec.get_temporary_block_header(block);
-    assertEquals(spec.signed_root(block, "signature"), spec.signed_root(header, "signature"));
+    assertEquals(spec.signed_root(block), spec.signed_root(header));
   }
 
   @Ignore

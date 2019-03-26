@@ -799,7 +799,7 @@ public class SpecHelpers {
           !verifyProof
               || bls_verify(
               deposit_input.getPubKey(),
-              signed_root(deposit_input, "proofOfPossession"),
+              signed_root(deposit_input),
               deposit_input.getProofOfPossession(),
               get_domain(state.getFork(), get_current_epoch(state), SignatureDomains.DEPOSIT));
 
@@ -973,9 +973,9 @@ public class SpecHelpers {
     return objectHasher.getHash(object);
   }
 
-  /** Function for hashing objects with part starting from field rejected */
-  public Hash32 signed_root(Object object, String field) {
-    return objectHasher.getHashTruncate(object, field);
+  /** Function for hashing self-signed objects */
+  public Hash32 signed_root(Object object) {
+    return objectHasher.getHashTruncateLast(object);
   }
 
   /*
@@ -1678,7 +1678,7 @@ public class SpecHelpers {
     state.getLatestBlockRoots()
         .set(
             state.getSlot().modulo(constants.getSlotsPerHistoricalRoot()),
-            signed_root(state.getLatestBlockHeader(), "signature"));
+            signed_root(state.getLatestBlockHeader()));
   }
 
   /*
@@ -2691,7 +2691,7 @@ public class SpecHelpers {
     // Verify that the slots match
     assertTrue(block.getSlot().equals(state.getSlot()));
     // Verify that the parent matches
-    assertTrue(block.getPreviousBlockRoot().equals(signed_root(state.getLatestBlockHeader(), "signature")));
+    assertTrue(block.getPreviousBlockRoot().equals(signed_root(state.getLatestBlockHeader())));
     // Save current block as the new latest block
     state.setLatestBlockHeader(get_temporary_block_header(block));
   }

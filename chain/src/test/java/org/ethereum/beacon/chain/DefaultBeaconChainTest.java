@@ -67,7 +67,7 @@ public class DefaultBeaconChainTest {
     BeaconBlock block =
         new BeaconBlock(
             specHelpers.get_current_slot(parent.getState(), currentTime),
-            specHelpers.signed_root(parent.getBlock(), "signature"),
+            specHelpers.signed_root(parent.getBlock()),
             Hash32.ZERO,
             BeaconBlockBody.EMPTY,
             specHelpers.getConstants().getEmptySignature());

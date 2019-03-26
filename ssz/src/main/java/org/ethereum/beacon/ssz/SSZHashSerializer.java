@@ -1,5 +1,6 @@
 package org.ethereum.beacon.ssz;
 
+import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import net.consensys.cava.bytes.Bytes;
 import org.javatuples.Triplet;
@@ -53,12 +54,12 @@ public class SSZHashSerializer implements BytesHasher, BytesSerializer {
     if (input instanceof List) {
       hash = hashList((List) input);
     } else {
-      hash = hashImpl(input, clazz, null);
+      hash = hashImpl(input, clazz, false);
     }
     return hash;
   }
 
-  private byte[] hashImpl(@Nullable Object inputObject, Class<?> inputClazz, @Nullable String truncateField) {
+  private byte[] hashImpl(@Nullable Object inputObject, Class<?> inputClazz, boolean truncateLast) {
     checkSSZSerializableAnnotation(inputClazz);
 
     if (inputObject == null) {
@@ -94,23 +95,9 @@ public class SSZHashSerializer implements BytesHasher, BytesSerializer {
 
     // Encode object fields one by one
     SSZSchemeBuilder.SSZScheme fullScheme = schemeBuilder.build(clazz);
-    SSZSchemeBuilder.SSZScheme scheme;
-    if (truncateField == null) {
-      scheme = fullScheme;
-    } else {
-      scheme = new SSZSchemeBuilder.SSZScheme();
-      boolean fieldFound = false;
-      for (SSZSchemeBuilder.SSZScheme.SSZField field : fullScheme.getFields()) {
-        if (field.name.equals(truncateField)) {
-          fieldFound = true;
-          break;
-        }
-        scheme.getFields().add(field);
-      }
-      if (!fieldFound) {
-        throw new RuntimeException(
-            String.format("Field %s doesn't exist in object %s", truncateField, input));
-      }
+    SSZSchemeBuilder.SSZScheme scheme = fullScheme.deepCopy();
+    if (truncateLast && scheme.getFields().size() > 0) {
+      scheme.getFields().remove(scheme.getFields().size() - 1);
     }
 
     SSZCodecHasher codecHasher = (SSZCodecHasher) codecResolver;
@@ -142,11 +129,11 @@ public class SSZHashSerializer implements BytesHasher, BytesSerializer {
   }
 
   @Override
-  public byte[] hashTruncate(@Nullable Object input, Class clazz, String field) {
+  public byte[] hashTruncateLast(@Nullable Object input, Class clazz) {
     if (input instanceof List) {
       throw new RuntimeException("hashTruncate doesn't support lists");
     } else {
-      return hashImpl(input, clazz, field);
+      return hashImpl(input, clazz, true);
     }
   }
 

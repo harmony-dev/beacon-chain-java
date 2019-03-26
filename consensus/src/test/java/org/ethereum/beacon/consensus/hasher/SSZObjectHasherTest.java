@@ -92,35 +92,12 @@ public class SSZObjectHasherTest {
             12400L,
             DEFAULT_SIG);
 
-    // justifiedBlockHash and aggregateSig removed
-    BytesValue hash1 = sszHasher.getHashTruncate(attestationRecord, "justifiedBlockHash");
-    assertEquals(
-        BytesValue.fromHexString(
-            "0x945b6a8eac7bd3611f6fb452fd7f63d77ce3672752df45443beb0e0169bf33cb"),
-        hash1);
-
     // Sig only removed
-    BytesValue hash2 = sszHasher.getHashTruncate(attestationRecord, "aggregateSig");
+    BytesValue hash2 = sszHasher.getHashTruncateLast(attestationRecord);
     assertEquals(
         BytesValue.fromHexString(
             "0xae3f28da5903192bff0472fc12baf3acb8c2554606c2449f833d2079188eb871"),
         hash2);
-
-    boolean fired = false;
-    try {
-      // No such field
-      BytesValue hash3 = sszHasher.getHashTruncate(attestationRecord, "myField");
-      assertEquals(
-          BytesValue.fromHexString(
-              "740620beb3f42033473a7adf01b5f115ec0a72bf8c97eb36f732a6158ff8775d"),
-          hash3);
-    } catch (Exception e) {
-      if (e.getMessage().contains("myField")) {
-        fired = true;
-      }
-    }
-
-    assert fired;
   }
 
   @Test

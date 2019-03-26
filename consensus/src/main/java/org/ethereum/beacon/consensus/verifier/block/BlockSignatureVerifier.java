@@ -29,7 +29,7 @@ public class BlockSignatureVerifier implements BeaconBlockVerifier {
 
   @Override
   public VerificationResult verify(BeaconBlock block, BeaconState state) {
-    Hash32 headerRoot = spec.signed_root(block, "signature");
+    Hash32 headerRoot = spec.signed_root(block);
 
     // Verify that bls_verify(
     //  pubkey=state.validator_registry[get_beacon_proposer_index(state, state.slot)].pubkey,

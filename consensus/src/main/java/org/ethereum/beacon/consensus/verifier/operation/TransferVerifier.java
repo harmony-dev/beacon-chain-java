@@ -102,7 +102,7 @@ public class TransferVerifier implements OperationVerifier<Transfer> {
        ) */
     if (!spec.bls_verify(
         transfer.getPubkey(),
-        spec.signed_root(transfer, "signature"),
+        spec.signed_root(transfer),
         transfer.getSignature(),
         spec.get_domain(
             state.getFork(),

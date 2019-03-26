@@ -91,7 +91,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
 
     Hash32 initialStateRoot = spec.hash_tree_root(initialState);
     BeaconBlock genesis = initialGenesis.withStateRoot(initialStateRoot);
-    Hash32 genesisRoot = spec.signed_root(genesis, "signature");
+    Hash32 genesisRoot = spec.signed_root(genesis);
     BeaconTuple tuple = BeaconTuple.of(genesis, initialState);
 
     tupleStorage.put(tuple);

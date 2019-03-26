@@ -115,7 +115,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
    */
   private BLSSignature getProposalSignature(
       BeaconState state, BeaconBlock block, MessageSigner<BLSSignature> signer) {
-    Hash32 proposalRoot = spec.signed_root(block, "signature");
+    Hash32 proposalRoot = spec.signed_root(block);
     UInt64 domain = spec.get_domain(state.getFork(),
         spec.get_current_epoch(state), BEACON_BLOCK);
     return signer.sign(proposalRoot, domain);

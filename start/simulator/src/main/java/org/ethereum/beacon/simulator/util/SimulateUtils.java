@@ -53,7 +53,7 @@ public class SimulateUtils {
     BLSSignature signature = BLSSignature.ZERO;
 
     if (isProofVerifyEnabled) {
-      Hash32 msgHash = specHelpers.signed_root(depositInputWithoutSignature, "proofOfPossession");
+      Hash32 msgHash = specHelpers.signed_root(depositInputWithoutSignature);
       UInt64 domain =
           specHelpers.get_domain(
               Fork.EMPTY, specHelpers.getConstants().getGenesisEpoch(), SignatureDomains.DEPOSIT);

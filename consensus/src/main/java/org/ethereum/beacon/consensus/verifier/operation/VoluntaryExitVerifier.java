@@ -61,7 +61,7 @@ public class VoluntaryExitVerifier implements OperationVerifier<VoluntaryExit> {
        ) */
     if (!spec.bls_verify(
         validator.getPubKey(),
-        spec.signed_root(voluntaryExit, "signature"),
+        spec.signed_root(voluntaryExit),
         voluntaryExit.getSignature(),
         spec.get_domain(state.getFork(), voluntaryExit.getEpoch(), VOLUNTARY_EXIT))) {
       return failedResult("failed to verify signature");
