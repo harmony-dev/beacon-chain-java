@@ -30,7 +30,7 @@ public class PerBlockTransition implements BlockTransition<BeaconStateEx> {
     logger.trace(() -> "Applying block transition to state: (" +
         spec.hash_tree_root(stateEx).toStringShort() + ") "
         + stateEx.toString(spec.getConstants()) + ", Block: "
-        + block.toString(spec.getConstants(), stateEx.getGenesisTime(), spec::hash_tree_root));
+        + block.toString(spec.getConstants(), stateEx.getGenesisTime(), spec::signed_root));
 
     TransitionType.BLOCK.checkCanBeAppliedAfter(stateEx.getTransition());
 
@@ -67,7 +67,7 @@ public class PerBlockTransition implements BlockTransition<BeaconStateEx> {
         transfer -> spec.process_transfer(state, transfer));
 
     BeaconStateEx ret = new BeaconStateExImpl(state.createImmutable(),
-        spec.hash_tree_root(block), TransitionType.BLOCK);
+        spec.signed_root(block), TransitionType.BLOCK);
 
     logger.trace(() -> "Block transition result state: (" +
         spec.hash_tree_root(ret).toStringShort() + ") " + ret.toString(spec.getConstants()));

@@ -122,7 +122,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
         blockVerifier.verify(block, preBlockState);
     if (!blockVerification.isPassed()) {
       logger.warn("Block verification failed: " + blockVerification + ": " +
-          block.toString(spec.getConstants(), parentState.getGenesisTime(), spec::hash_tree_root));
+          block.toString(spec.getConstants(), parentState.getGenesisTime(), spec::signed_root));
       return false;
     }
 
@@ -153,7 +153,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
             .toString(
                 spec.getConstants(),
                 newTuple.getState().getGenesisTime(),
-                spec::hash_tree_root),
+                spec::signed_root),
         String.format("%.3f", ((double) total) / 1_000_000_000d));
 
     if (spec.is_epoch_end(block.getSlot())) {
@@ -194,7 +194,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   }
 
   private boolean exist(BeaconBlock block) {
-    Hash32 blockHash = spec.hash_tree_root(block);
+    Hash32 blockHash = spec.signed_root(block);
     return chainStorage.getBlockStorage().get(blockHash).isPresent();
   }
 

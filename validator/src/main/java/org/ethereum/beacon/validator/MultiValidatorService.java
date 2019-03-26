@@ -275,7 +275,7 @@ public class MultiValidatorService implements ValidatorService {
           newBlock.toString(
               spec.getConstants(),
               observableState.getLatestSlotState().getGenesisTime(),
-              spec::hash_tree_root),
+              spec::signed_root),
           String.format("%.3f", (double) total / 1_000_000_000d));
 
       if (spec.is_epoch_end(newBlock.getSlot())) {
@@ -315,7 +315,7 @@ public class MultiValidatorService implements ValidatorService {
               .toString(
                   spec.getConstants(),
                   observableState.getLatestSlotState().getGenesisTime(),
-                  spec::hash_tree_root),
+                  spec::signed_root),
           state.getSlot());
     }
   }

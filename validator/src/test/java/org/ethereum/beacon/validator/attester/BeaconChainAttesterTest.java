@@ -61,7 +61,7 @@ public class BeaconChainAttesterTest {
     Assert.assertEquals(state.getSlot(), data.getSlot());
     Assert.assertEquals(shard, data.getShard());
     Assert.assertEquals(
-        specHelpers.hash_tree_root(initiallyObservedState.getHead()), data.getBeaconBlockRoot());
+        specHelpers.signed_root(initiallyObservedState.getHead()), data.getBeaconBlockRoot());
     Assert.assertEquals(targetRoot, data.getTargetRoot());
     Assert.assertEquals(Hash32.ZERO, data.getCrosslinkDataRoot());
     Assert.assertEquals(Hash32.ZERO, data.getPreviousCrosslink().getCrosslinkDataRoot());

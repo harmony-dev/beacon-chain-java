@@ -1464,7 +1464,7 @@ public class SpecHelpers {
 
     BeaconBlock head = startBlock;
     while (true) {
-      List<BeaconBlock> children = getChildrenBlocks.apply(hash_tree_root(head));
+      List<BeaconBlock> children = getChildrenBlocks.apply(signed_root(head));
       if (children.isEmpty()) {
         return head;
       } else {
