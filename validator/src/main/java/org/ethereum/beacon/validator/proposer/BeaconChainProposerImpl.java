@@ -90,7 +90,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
 
     // calculate state_root
     BeaconBlock newBlock = builder.build();
-    BeaconState newState = applyStateTransition(state, newBlock);
+    BeaconState newState = perBlockTransition.apply(state, newBlock);
     builder.withStateRoot(spec.hash_tree_root(newState));
 
     // sign off on proposal
@@ -99,10 +99,6 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
     builder.withSignature(signature);
 
     return builder.build();
-  }
-
-  private BeaconStateEx applyStateTransition(BeaconStateEx sourceEx, BeaconBlock block) {
-    return perBlockTransition.apply(sourceEx, block);
   }
 
   /**
