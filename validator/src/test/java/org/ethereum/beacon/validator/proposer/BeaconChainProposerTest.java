@@ -111,7 +111,6 @@ public class BeaconChainProposerTest {
             specHelpers.getConstants().getMaxAttestations(),
             initialState
                 .getSlot()
-                .minus(specHelpers.getConstants().getMinAttestationInclusionDelay())
                 .minus(specHelpers.getConstants().getSlotsPerEpoch()),
             initialState
                 .getSlot()
