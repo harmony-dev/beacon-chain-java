@@ -1,13 +1,18 @@
 package org.ethereum.beacon.consensus.util;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.hasher.ObjectHasher;
 import org.ethereum.beacon.consensus.hasher.SSZObjectHasher;
+import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.spec.SpecConstants;
+import org.ethereum.beacon.core.types.BLSPubkey;
+import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.util.LRUCache;
 import org.javatuples.Pair;
@@ -32,6 +37,8 @@ public class CachingSpecHelpers extends SpecHelpers {
       new LRUCache<>(1024);
   private final LRUCache<Object, Hash32> signedRootCache =
       new LRUCache<>(1024);
+  private ValidatorIndex maxCachedIndex = ValidatorIndex.ZERO;
+  private final Map<BLSPubkey, ValidatorIndex> pubkeyToIndexCache = new ConcurrentHashMap<>();
 
   public CachingSpecHelpers(SpecConstants constants,
       Function<BytesValue, Hash32> hashFunction,
@@ -53,5 +60,17 @@ public class CachingSpecHelpers extends SpecHelpers {
   @Override
   public Hash32 signed_root(Object object) {
     return signedRootCache.get(object, CachingSpecHelpers.super::signed_root);
+  }
+
+  @Override
+  public ValidatorIndex get_validator_index_by_pubkey(BeaconState state, BLSPubkey pubkey) {
+    // relying on the fact that at index -> validator is invariant
+    if (state.getValidatorRegistry().size().greater(maxCachedIndex)) {
+      for (ValidatorIndex index : maxCachedIndex.iterateTo(state.getValidatorRegistry().size())) {
+        pubkeyToIndexCache.put(state.getValidatorRegistry().get(index).getPubKey(), index);
+      }
+      maxCachedIndex = state.getValidatorRegistry().size();
+    }
+    return pubkeyToIndexCache.getOrDefault(pubkey, ValidatorIndex.MAX);
   }
 }

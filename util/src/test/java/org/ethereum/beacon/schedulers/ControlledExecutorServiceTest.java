@@ -19,6 +19,8 @@ public class ControlledExecutorServiceTest {
   @Test
   public void testSchedule1() throws Exception {
     ControlledExecutorServiceImpl executor = new ControlledExecutorServiceImpl();
+    TimeController timeController = new TimeControllerImpl();
+    executor.setTimeController(timeController);
 
     ScheduledFuture<Integer> f1 = executor
         .schedule(() -> 111, 6, TimeUnit.MILLISECONDS);
@@ -32,16 +34,16 @@ public class ControlledExecutorServiceTest {
           Assert.assertEquals(10, executor.getCurrentTime());
           return 333;
         }, 10, TimeUnit.MILLISECONDS);
-    executor.setCurrentTime(5);
+    timeController.setTime(5);
     Assert.assertFalse(f1.isDone());
     Assert.assertFalse(f2.isDone());
     Assert.assertFalse(f3.isDone());
-    executor.setCurrentTime(6);
+    timeController.setTime(6);
     Assert.assertTrue(f1.isDone());
     Assert.assertEquals(111, (long) f1.get());
     Assert.assertFalse(f2.isDone());
     Assert.assertFalse(f3.isDone());
-    executor.setCurrentTime(15);
+    timeController.setTime(15);
     Assert.assertTrue(f2.isDone());
     Assert.assertTrue(f3.isDone());
     Assert.assertEquals(222, (long) f2.get());
@@ -53,11 +55,11 @@ public class ControlledExecutorServiceTest {
       throw new Exception("Aaaaa");
     }, 10, TimeUnit.MILLISECONDS);
 
-    executor.setCurrentTime(16);
+    timeController.setTime(16);
     Assert.assertFalse(f4.isDone());
     Assert.assertNull(f5[0]);
 
-    executor.setCurrentTime(100);
+    timeController.setTime(100);
     Assert.assertTrue(f4.isDone());
     Assert.assertTrue(f5[0].isDone());
     try {
@@ -73,7 +75,7 @@ public class ControlledExecutorServiceTest {
       r1[0] = true;
       return 666;
     }, 5, TimeUnit.MILLISECONDS);
-    executor.setCurrentTime(102);
+    timeController.setTime(102);
     Assert.assertFalse(f6.isDone());
     boolean cancel = f6.cancel(true);
     Assert.assertTrue(cancel);
@@ -87,13 +89,15 @@ public class ControlledExecutorServiceTest {
     }
     Assert.assertFalse(r1[0]);
 
-    executor.setCurrentTime(200);
+    timeController.setTime(200);
     Assert.assertFalse(r1[0]);
   }
 
   @Test
   public void testPeriodicSchedule1() throws Exception {
     ControlledExecutorServiceImpl executor = new ControlledExecutorServiceImpl();
+    TimeController timeController = new TimeControllerImpl();
+    executor.setTimeController(timeController);
 
     AtomicInteger cnt1 = new AtomicInteger();
     ScheduledFuture<?>[] f1 = new ScheduledFuture[1];
@@ -115,7 +119,7 @@ public class ControlledExecutorServiceTest {
       }
     }, 7, 10, TimeUnit.MILLISECONDS);
 
-    executor.setCurrentTime(2);
+    timeController.setTime(2);
     Assert.assertEquals(0, cnt1.get());
     Assert.assertEquals(0, cnt2.get());
     Assert.assertEquals(0, cnt3.get());
@@ -123,7 +127,7 @@ public class ControlledExecutorServiceTest {
     Assert.assertFalse(f2[0].isCancelled());
     Assert.assertFalse(f3[0].isCancelled());
 
-    executor.setCurrentTime(6);
+    timeController.setTime(6);
     Assert.assertEquals(1, cnt1.get());
     Assert.assertEquals(1, cnt2.get());
     Assert.assertEquals(0, cnt3.get());
@@ -131,7 +135,7 @@ public class ControlledExecutorServiceTest {
     Assert.assertFalse(f2[0].isCancelled());
     Assert.assertFalse(f3[0].isCancelled());
 
-    executor.setCurrentTime(8);
+    timeController.setTime(8);
     Assert.assertEquals(1, cnt1.get());
     Assert.assertEquals(1, cnt2.get());
     Assert.assertEquals(1, cnt3.get());
@@ -139,7 +143,7 @@ public class ControlledExecutorServiceTest {
     Assert.assertFalse(f2[0].isCancelled());
     Assert.assertFalse(f3[0].isCancelled());
 
-    executor.setCurrentTime(88);
+    timeController.setTime(88);
     Assert.assertEquals(3, cnt1.get());
     Assert.assertEquals(9, cnt2.get());
     Assert.assertEquals(3, cnt3.get());
@@ -149,7 +153,7 @@ public class ControlledExecutorServiceTest {
 
     f2[0].cancel(true);
 
-    executor.setCurrentTime(200);
+    timeController.setTime(200);
     Assert.assertEquals(3, cnt1.get());
     Assert.assertEquals(9, cnt2.get());
     Assert.assertEquals(3, cnt3.get());
@@ -161,6 +165,8 @@ public class ControlledExecutorServiceTest {
   @Test
   public void testFluxInterval() throws Exception {
     ControlledExecutorServiceImpl executor = new ControlledExecutorServiceImpl();
+    TimeController timeController = new TimeControllerImpl();
+    executor.setTimeController(timeController);
     Scheduler reactScheduler = Schedulers.fromExecutor(executor);
 
     AtomicLong r1 = new AtomicLong(-1);
@@ -173,28 +179,28 @@ public class ControlledExecutorServiceTest {
         .interval(Duration.ofMillis(6), Duration.ofMillis(10), reactScheduler)
         .subscribe(l -> r2.set(l));
 
-    executor.setCurrentTime(2);
+    timeController.setTime(2);
     Assert.assertEquals(-1, r1.get());
     Assert.assertEquals(-1, r2.get());
 
-    executor.setCurrentTime(3);
+    timeController.setTime(3);
     Assert.assertEquals(0, r1.get());
     Assert.assertEquals(-1, r2.get());
 
-    executor.setCurrentTime(4);
+    timeController.setTime(4);
     Assert.assertEquals(0, r1.get());
     Assert.assertEquals(-1, r2.get());
 
-    executor.setCurrentTime(10);
+    timeController.setTime(10);
     Assert.assertEquals(0, r1.get());
     Assert.assertEquals(0, r2.get());
 
-    executor.setCurrentTime(100);
+    timeController.setTime(100);
     Assert.assertEquals(9, r1.get());
     Assert.assertEquals(9, r2.get());
 
     subscribe1.dispose();
-    executor.setCurrentTime(200);
+    timeController.setTime(200);
     Assert.assertEquals(9, r1.get());
     Assert.assertEquals(19, r2.get());
   }

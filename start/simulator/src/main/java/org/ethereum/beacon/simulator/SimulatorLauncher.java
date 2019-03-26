@@ -51,6 +51,8 @@ import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.schedulers.ControlledSchedulers;
 import org.ethereum.beacon.schedulers.LoggerMDCExecutor;
 import org.ethereum.beacon.schedulers.Schedulers;
+import org.ethereum.beacon.schedulers.TimeController;
+import org.ethereum.beacon.schedulers.TimeControllerImpl;
 import org.ethereum.beacon.simulator.util.SimulateUtils;
 import org.ethereum.beacon.util.stats.TimeCollector;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
@@ -414,9 +416,7 @@ public class SimulatorLauncher implements Runnable {
   static class MDCControlledSchedulers {
     private DateFormat localTimeFormat = new SimpleDateFormat("HH:mm:ss.SSS");
 
-    private List<ControlledSchedulers> schedulersList = new ArrayList<>();
-    private List<Long> timeShifts = new ArrayList<>();
-    private long currentTime;
+    private TimeController timeController = new TimeControllerImpl();
 
     public ControlledSchedulers createNew(String validatorId) {
       return createNew(validatorId, 0);
@@ -428,25 +428,14 @@ public class SimulatorLauncher implements Runnable {
           .add("validatorTime", () -> localTimeFormat.format(new Date(newSched[0].getCurrentTime())))
           .add("validatorIndex", () -> "" + validatorId);
       newSched[0] = Schedulers.createControlled(() -> mdcExecutor);
-      newSched[0].setCurrentTime(currentTime);
-      schedulersList.add(newSched[0]);
-      timeShifts.add(timeShift);
+      newSched[0].getTimeController().setParent(timeController);
+      newSched[0].getTimeController().setTimeShift(timeShift);
 
       return newSched[0];
     }
 
     public void setCurrentTime(long time) {
-      long curTime = currentTime > 0 ? currentTime : time;
-      currentTime = time;
-      while (++curTime <= time) {
-        for (int i = 0; i < schedulersList.size(); i++) {
-          long schTime = curTime + timeShifts.get(i);
-          if (schTime < 0) {
-            throw new IllegalStateException("Incorrect time with shift: " + schTime);
-          }
-          schedulersList.get(i).setCurrentTime(schTime);
-        }
-      }
+      timeController.setTime(time);
     }
 
     void addTime(Duration duration) {
@@ -454,11 +443,11 @@ public class SimulatorLauncher implements Runnable {
     }
 
     void addTime(long millis) {
-      setCurrentTime(currentTime + millis);
+      setCurrentTime(timeController.getTime() + millis);
     }
 
     public long getCurrentTime() {
-      return currentTime;
+      return timeController.getTime();
     }
   }
 

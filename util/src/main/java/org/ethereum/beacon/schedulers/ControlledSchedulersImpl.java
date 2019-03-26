@@ -1,46 +1,20 @@
 package org.ethereum.beacon.schedulers;
 
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
 
 public class ControlledSchedulersImpl extends AbstractSchedulers implements ControlledSchedulers {
 
-  private final List<ControlledExecutorService> controlledExecutors = new CopyOnWriteArrayList<>();
-  private long currentTime = 0;
+  private TimeController timeController = new TimeControllerImpl();
 
   @Override
   public long getCurrentTime() {
-    return currentTime;
+    return timeController.getTime();
   }
 
   @Override
   public void setCurrentTime(long newTime) {
-    assert newTime >= currentTime;
-    long oldTime = currentTime;
-    while (true) {
-      Optional<ControlledExecutorService> nextSchedulerToRunOpt =
-          controlledExecutors.stream()
-              .min(Comparator.comparingLong(ex -> ex.getNextScheduleTime()));
-      if (!nextSchedulerToRunOpt.isPresent()) {
-        break;
-      }
-      ControlledExecutorService nextSchedulerToRun = nextSchedulerToRunOpt.get();
-      long time = nextSchedulerToRun.getNextScheduleTime();
-      if (time > newTime) {
-        break;
-      }
-      if (time < currentTime) {
-        throw new IllegalStateException("Invalid task time: " + time + " < " + currentTime);
-      }
-      currentTime = time;
-      controlledExecutors.forEach(e -> e.setCurrentTime(currentTime));
-    }
-    currentTime = newTime;
-    controlledExecutors.forEach(e -> e.setCurrentTime(currentTime));
+    timeController.setTime(newTime);
   }
 
   @Override
@@ -50,10 +24,14 @@ public class ControlledSchedulersImpl extends AbstractSchedulers implements Cont
 
   @Override
   protected ScheduledExecutorService createExecutor(String namePattern, int threads) {
-    ControlledExecutorService service = new ControlledExecutorServiceImpl(createDelegateExecutor());
-    controlledExecutors.add(service);
-    service.setCurrentTime(currentTime);
+    ControlledExecutorServiceImpl service = new ControlledExecutorServiceImpl(createDelegateExecutor());
+    service.setTimeController(timeController);
     return service;
+  }
+
+  @Override
+  public TimeController getTimeController() {
+    return timeController;
   }
 
   protected Executor createDelegateExecutor() {
