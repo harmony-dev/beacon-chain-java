@@ -30,6 +30,8 @@ public class CachingSpecHelpers extends SpecHelpers {
       new LRUCache<>(1024);
   private final LRUCache<Object, Hash32> hashTreeRootCache =
       new LRUCache<>(1024);
+  private final LRUCache<Object, Hash32> signedRootCache =
+      new LRUCache<>(1024);
 
   public CachingSpecHelpers(SpecConstants constants,
       Function<BytesValue, Hash32> hashFunction,
@@ -46,5 +48,10 @@ public class CachingSpecHelpers extends SpecHelpers {
   @Override
   public Hash32 hash_tree_root(Object object) {
     return hashTreeRootCache.get(object, CachingSpecHelpers.super::hash_tree_root);
+  }
+
+  @Override
+  public Hash32 signed_root(Object object) {
+    return signedRootCache.get(object, CachingSpecHelpers.super::signed_root);
   }
 }
