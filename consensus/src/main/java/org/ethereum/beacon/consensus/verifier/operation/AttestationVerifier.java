@@ -52,14 +52,17 @@ public class AttestationVerifier implements OperationVerifier<Attestation> {
 
     // Verify that attestation.data.slot + MIN_ATTESTATION_INCLUSION_DELAY <= state.slot
     //    < attestation.data.slot + SLOTS_PER_EPOCH
-    if (!(data.getSlot().plus(spec.getConstants().getMinAttestationInclusionDelay())
-            .lessEqual(state.getSlot())
-        && state.getSlot()
-            .less(data.getSlot().plus(spec.getConstants().getSlotsPerEpoch())))) {
-
+    if (state.getSlot()
+        .less(data.getSlot().plus(spec.getConstants().getMinAttestationInclusionDelay()))) {
       return failedResult(
           "MIN_ATTESTATION_INCLUSION_DELAY violated, inclusion slot starts from %s but got %s",
           data.getSlot().plus(spec.getConstants().getMinAttestationInclusionDelay()), state.getSlot());
+    }
+    if (state.getSlot().greaterEqual(data.getSlot().plus(spec.getConstants().getSlotsPerEpoch()))) {
+      return failedResult(
+          "MIN_ATTESTATION_INCLUSION_DELAY violated, inclusion slot limit is %s but got %s",
+          data.getSlot().plus(spec.getConstants().getSlotsPerEpoch()).decrement(),
+          state.getSlot());
     }
 
     // # Can't submit attestations too quickly
