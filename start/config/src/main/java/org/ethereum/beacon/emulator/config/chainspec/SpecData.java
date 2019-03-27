@@ -1,5 +1,6 @@
 package org.ethereum.beacon.emulator.config.chainspec;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.ethereum.beacon.emulator.config.Config;
 import org.ethereum.beacon.emulator.config.YamlPrinter;
@@ -29,6 +30,7 @@ public class SpecData implements Config {
     this.specHelpersOptions = specHelpersOptions;
   }
 
+  @JsonIgnore
   public boolean isDefined() {
     return this != NOT_DEFINED;
   }
