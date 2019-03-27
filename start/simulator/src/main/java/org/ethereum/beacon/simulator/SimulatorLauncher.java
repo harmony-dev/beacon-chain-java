@@ -263,7 +263,6 @@ public class SimulatorLauncher implements Runnable {
 
     peers.add(observer);
 
-    ObservableBeaconState previousSlotState = null;
     List<SlotNumber> slots = new ArrayList<>();
     List<Attestation> attestations = new ArrayList<>();
     List<BeaconBlock> blocks = new ArrayList<>();
@@ -361,7 +360,6 @@ public class SimulatorLauncher implements Runnable {
         );
       }
 
-      previousSlotState = states.get(slots.size() - 1);
       slots.clear();
       attestations.clear();
       blocks.clear();
