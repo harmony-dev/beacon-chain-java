@@ -2035,8 +2035,8 @@ public interface SpecHelpers {
             .compareTo(getConstants().getEpochsPerEth1VotingPeriod().times(getConstants().getSlotsPerEpoch())) > 0) {
           state.setLatestEth1Data(eth1_data_vote.getEth1Data());
         }
-        state.getEth1DataVotes().clear();
       }
+      state.getEth1DataVotes().clear();
     }
   }
 
