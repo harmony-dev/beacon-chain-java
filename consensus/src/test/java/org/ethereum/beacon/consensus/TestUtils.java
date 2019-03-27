@@ -49,10 +49,10 @@ public class TestUtils {
     List<KeyPair> validatorsKeys = new ArrayList<>();
     for (int i = 0; i < count; i++) {
       KeyPair keyPair = KeyPair.create(PrivateKey.create(Bytes32.random(rnd)));
-      Hash32 proofOfPosession = Hash32.random(rnd);
+      Hash32 proofOfPossession = Hash32.random(rnd);
       DepositInput depositInputWithoutSignature = new DepositInput(
           BLSPubkey.wrap(Bytes48.leftPad(keyPair.getPublic().getEncodedBytes())),
-          proofOfPosession,
+          proofOfPossession,
           BLSSignature.wrap(Bytes96.ZERO)
       );
       Hash32 msgHash = specHelpers.signed_root(depositInputWithoutSignature);
@@ -73,7 +73,7 @@ public class TestUtils {
                   Time.of(0),
                   new DepositInput(
                       BLSPubkey.wrap(Bytes48.leftPad(keyPair.getPublic().getEncodedBytes())),
-                      proofOfPosession,
+                      proofOfPossession,
                       BLSSignature.wrap(signature.getEncoded()))
                   ));
       deposits.add(deposit);
@@ -87,7 +87,7 @@ public class TestUtils {
 
     UInt64 counter = UInt64.ZERO;
     for (int i = 0; i < count; i++) {
-      Hash32 proofOfPosession = Hash32.random(rnd);
+      Hash32 proofOfPossession = Hash32.random(rnd);
 
       BLSPubkey pubkey = BLSPubkey.wrap(Bytes48.leftPad(counter.toBytesBigEndian()));
       Deposit deposit =
@@ -97,7 +97,7 @@ public class TestUtils {
               new DepositData(
                   specHelpers.getConstants().getMaxDepositAmount(),
                   Time.of(0),
-                  new DepositInput(pubkey, proofOfPosession, BLSSignature.ZERO)));
+                  new DepositInput(pubkey, proofOfPossession, BLSSignature.ZERO)));
       deposits.add(deposit);
       counter = counter.increment();
     }

@@ -10,7 +10,7 @@ import org.ethereum.beacon.emulator.config.main.plan.Plan;
 public class MainConfig implements Config {
   private Plan plan;
   private Configuration config;
-  private SpecData chainSpec;
+  private SpecData chainSpec = SpecData.NOT_DEFINED;
 
   public Configuration getConfig() {
     return config;

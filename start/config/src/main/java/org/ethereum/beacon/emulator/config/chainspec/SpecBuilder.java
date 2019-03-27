@@ -4,7 +4,6 @@ import java.util.List;
 import org.apache.milagro.amcl.BLS381.ECP;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.SpecHelpersImpl;
-import org.ethereum.beacon.consensus.util.CachingSpecHelpers;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.spec.SpecConstants;
@@ -86,7 +85,7 @@ public class SpecBuilder {
 
       @Override
       public void process_deposit(MutableBeaconState state, Deposit deposit) {
-        super.process_deposit_inner(state, deposit, specHelpersOptions.isBlsVerifyProofOfPosession());
+        super.process_deposit_inner(state, deposit, specHelpersOptions.isBlsVerifyProofOfPossession());
       }
     };
   }

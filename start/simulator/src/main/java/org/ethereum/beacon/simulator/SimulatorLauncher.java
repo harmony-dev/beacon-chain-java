@@ -26,9 +26,7 @@ import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.ethereum.beacon.Launcher;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.storage.impl.MemBeaconChainStorageFactory;
-import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.SpecHelpers;
-import org.ethereum.beacon.consensus.TransitionType;
 import org.ethereum.beacon.consensus.transition.EpochTransitionSummary;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
@@ -120,17 +118,16 @@ public class SimulatorLauncher implements Runnable {
     }
   }
 
-  private Pair<List<Deposit>, List<BLS381.KeyPair>> getValidatorDeposits(Random rnd,
-      boolean isProofVerifyEnabled) {
+  private Pair<List<Deposit>, List<BLS381.KeyPair>> getValidatorDeposits(Random rnd) {
     Pair<List<Deposit>, List<BLS381.KeyPair>> deposits =
         SimulateUtils.getAnyDeposits(rnd, specHelpers, validators.size(),
-            config.getChainSpec().getSpecHelpersOptions().isBlsVerifyProofOfPosession());
+            config.getChainSpec().getSpecHelpersOptions().isBlsVerifyProofOfPossession());
     for (int i = 0; i < validators.size(); i++) {
       if (validators.get(i).getBlsPrivateKey() != null) {
         KeyPair keyPair = KeyPair.create(
             PrivateKey.create(Bytes32.fromHexString(validators.get(i).getBlsPrivateKey())));
         deposits.getValue0().set(i, SimulateUtils.getDepositForKeyPair(rnd, keyPair, specHelpers,
-            config.getChainSpec().getSpecHelpersOptions().isBlsVerifyProofOfPosession()));
+            config.getChainSpec().getSpecHelpersOptions().isBlsVerifyProofOfPossession()));
         deposits.getValue1().set(i, keyPair);
       }
     }
@@ -140,13 +137,12 @@ public class SimulatorLauncher implements Runnable {
 
   public void run() {
     logger.info("Simulation parameters:\n{}", simulationPlan);
-    if (config.getChainSpec() != null)
+    if (config.getChainSpec().isDefined())
       logger.info("Overridden beacon chain parameters:\n{}", config.getChainSpec());
 
     Random rnd = new Random(simulationPlan.getSeed());
     setupLogging();
-    Pair<List<Deposit>, List<BLS381.KeyPair>> validatorDeposits = getValidatorDeposits(rnd,
-        config.getChainSpec().getSpecHelpersOptions().isBlsVerifyProofOfPosession());
+    Pair<List<Deposit>, List<BLS381.KeyPair>> validatorDeposits = getValidatorDeposits(rnd);
 
     List<Deposit> deposits = validatorDeposits.getValue0().stream()
         .filter(Objects::nonNull).collect(Collectors.toList());
@@ -197,12 +193,9 @@ public class SimulatorLauncher implements Runnable {
               schedulers,
               proposeTimeCollector);
 
-      if ((i + 1) % 100 == 0)
-        logger.info("{} validators created", i + 1);
-
       peers.add(launcher);
 
-      if ((i + 1) % 1000 == 0)
+      if ((i + 1) % 100 == 0)
         logger.info("{} validators created", (i + 1));
     }
     logger.info("All validators created");
@@ -461,7 +454,9 @@ public class SimulatorLauncher implements Runnable {
 
       ConfigBuilder<SpecData> specConfigBuilder =
           new ConfigBuilder<>(SpecData.class).addYamlConfigFromResources("/config/spec-constants.yml");
-      specConfigBuilder.addConfig(config.getChainSpec());
+      if (config.getChainSpec().isDefined()) {
+        specConfigBuilder.addConfig(config.getChainSpec());
+      }
 
       SpecData spec = specConfigBuilder.build();
 

@@ -6,8 +6,10 @@ import org.ethereum.beacon.emulator.config.YamlPrinter;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class SpecData implements Config {
+  public static final SpecData NOT_DEFINED = new SpecData();
+
   private SpecConstantsData specConstants;
-  private SpecHelpersData specHelpersOptions;
+  private SpecHelpersData specHelpersOptions = new SpecHelpersData();
 
   public SpecConstantsData getSpecConstants() {
     return specConstants;
@@ -25,6 +27,10 @@ public class SpecData implements Config {
   public void setSpecHelpersOptions(
       SpecHelpersData specHelpersOptions) {
     this.specHelpersOptions = specHelpersOptions;
+  }
+
+  public boolean isDefined() {
+    return this != NOT_DEFINED;
   }
 
   @Override

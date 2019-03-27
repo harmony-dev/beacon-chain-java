@@ -43,11 +43,11 @@ public class SimulateUtils {
 
   public static synchronized Deposit getDepositForKeyPair(
       Random rnd, BLS381.KeyPair keyPair, SpecHelpers specHelpers, boolean isProofVerifyEnabled) {
-    Hash32 proofOfPosession = Hash32.random(rnd);
+    Hash32 proofOfPossession = Hash32.random(rnd);
     DepositInput depositInputWithoutSignature =
         new DepositInput(
             BLSPubkey.wrap(Bytes48.leftPad(keyPair.getPublic().getEncodedBytes())),
-            proofOfPosession,
+            proofOfPossession,
             BLSSignature.wrap(Bytes96.ZERO));
 
     BLSSignature signature = BLSSignature.ZERO;
@@ -71,7 +71,7 @@ public class SimulateUtils {
                 Time.of(0),
                 new DepositInput(
                     BLSPubkey.wrap(Bytes48.leftPad(keyPair.getPublic().getEncodedBytes())),
-                    proofOfPosession,
+                    proofOfPossession,
                     signature)));
     return deposit;
   }
