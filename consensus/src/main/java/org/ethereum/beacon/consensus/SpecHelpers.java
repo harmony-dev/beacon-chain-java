@@ -1735,7 +1735,7 @@ public interface SpecHelpers {
       ]
    */
   default List<PendingAttestation> get_previous_epoch_boundary_attestations(BeaconState state) {
-    return state.getCurrentEpochAttestations().stream()
+    return state.getPreviousEpochAttestations().stream()
         .filter(a -> a.getData()
             .getTargetRoot()
             .equals(get_block_root(state, get_epoch_start_slot(get_previous_epoch(state)))))
@@ -1750,7 +1750,7 @@ public interface SpecHelpers {
       ]
    */
   default List<PendingAttestation> get_previous_epoch_matching_head_attestations(BeaconState state) {
-    return state.getCurrentEpochAttestations().stream()
+    return state.getPreviousEpochAttestations().stream()
         .filter(a -> a.getData()
             .getBeaconBlockRoot()
             .equals(get_block_root(state, a.getData().getSlot())))
