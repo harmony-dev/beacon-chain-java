@@ -1773,7 +1773,6 @@ public interface SpecHelpers {
     all_attestations.addAll(state.getPreviousEpochAttestations().listCopy());
     List<PendingAttestation> valid_attestations =
         all_attestations.stream()
-            .filter(a -> a.getData().getShard().equals(shard))
             .filter(a -> a.getData()
                 .getPreviousCrosslink()
                 .equals(state.getLatestCrosslinks().get(shard)))
