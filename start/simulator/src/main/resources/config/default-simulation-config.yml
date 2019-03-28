@@ -32,5 +32,5 @@ chainSpec:
 
   specHelpersOptions:
     blsVerify: true
-    blsVerifyProofOfPosession: true
+    blsVerifyProofOfPossession: true
     blsSign: true
