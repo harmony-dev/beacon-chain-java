@@ -102,7 +102,9 @@ public interface BeaconState {
   /** ******* Recent state ********* */
 
   /** Latest crosslink record for each shard. */
-  ReadList<ShardNumber, Crosslink> getLatestCrosslinks();
+  ReadList<ShardNumber, Crosslink> getPreviousEpochCrosslinks();
+
+  ReadList<ShardNumber, Crosslink> getCurrentEpochCrosslinks();
 
   ReadList<SlotNumber, Hash32> getLatestBlockRoots();
 

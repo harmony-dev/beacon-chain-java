@@ -15,6 +15,7 @@ import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.Transfer;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
+import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.operations.slashing.SlashableAttestation;
 import org.ethereum.beacon.core.spec.SpecConstants;
@@ -522,12 +523,6 @@ public abstract class DelegatingSpecHelpers implements SpecHelpers {
   }
 
   @Override
-  public Pair<Hash32, List<ValidatorIndex>> get_winning_root_and_participants(
-      BeaconState state, ShardNumber shard) {
-    return delegate.get_winning_root_and_participants(state, shard);
-  }
-
-  @Override
   public PendingAttestation earliest_attestation(BeaconState state, ValidatorIndex validatorIndex) {
     return delegate.earliest_attestation(state, validatorIndex);
   }
@@ -545,11 +540,6 @@ public abstract class DelegatingSpecHelpers implements SpecHelpers {
   @Override
   public void update_justification_and_finalization(MutableBeaconState state) {
     delegate.update_justification_and_finalization(state);
-  }
-
-  @Override
-  public void process_crosslinks(MutableBeaconState state) {
-    delegate.process_crosslinks(state);
   }
 
   @Override

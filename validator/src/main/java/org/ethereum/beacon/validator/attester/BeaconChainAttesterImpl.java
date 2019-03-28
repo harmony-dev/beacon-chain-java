@@ -118,7 +118,7 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
   */
   @VisibleForTesting
   Crosslink getPreviousCrosslink(BeaconState state, ShardNumber shard) {
-    return state.getLatestCrosslinks().get(shard);
+    return state.getCurrentEpochCrosslinks().get(shard);
   }
 
   /*

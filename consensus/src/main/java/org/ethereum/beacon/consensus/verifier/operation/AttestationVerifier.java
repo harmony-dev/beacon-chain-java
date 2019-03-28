@@ -7,7 +7,6 @@ import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.verifier.OperationVerifier;
@@ -117,8 +116,9 @@ public class AttestationVerifier implements OperationVerifier<Attestation> {
           )
         } */
     Crosslink latestCrosslink =
-        state.getLatestCrosslinks().get(data.getShard());
+        state.getCurrentEpochCrosslinks().get(data.getShard());
     if (!data.getPreviousCrosslink().equals(latestCrosslink)
+        && !data.getPreviousCrosslink().equals(state.getPreviousEpochCrosslinks().get(data.getShard()))
         && !latestCrosslink.equals(
             new Crosslink(spec.slot_to_epoch(data.getSlot()), data.getCrosslinkDataRoot()))) {
       return failedResult("attestation.data.latest_crosslink is incorrect");

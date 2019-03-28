@@ -1,5 +1,6 @@
 package org.ethereum.beacon.consensus.transition;
 
+import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.consensus.BeaconStateEx;
@@ -7,6 +8,7 @@ import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.consensus.TransitionType;
 import org.ethereum.beacon.core.MutableBeaconState;
+import org.ethereum.beacon.core.operations.attestation.Crosslink;
 
 /**
  * Per-epoch transition, which happens at the start of the first slot of every epoch.
@@ -48,9 +50,10 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
     MutableBeaconState state = origState.createMutableCopy();
 
     spec.update_justification_and_finalization(state);
-    spec.process_crosslinks(state);
+    List<Crosslink> latest_crosslinks = spec.get_latest_crosslinks(state);
     spec.maybe_reset_eth1_period(state);
     spec.apply_rewards(state);
+    spec.apply_crosslinks(state, latest_crosslinks);
     spec.process_ejections(state);
     spec.update_registry_and_shuffling_data(state);
     spec.process_slashings(state);

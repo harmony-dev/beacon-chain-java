@@ -63,7 +63,8 @@ public class ImmutableBeaconStateImpl implements BeaconState, Hashable<Hash32> {
 
   /* Recent state */
 
-  @SSZ private List<Crosslink> latestCrosslinksList = new ArrayList<>();
+  @SSZ private List<Crosslink> previousEpochCrosslinksList = new ArrayList<>();
+  @SSZ private List<Crosslink> currentEpochCrosslinksList = new ArrayList<>();
   @SSZ private List<Hash32> latestBlockRootsList = new ArrayList<>();
   @SSZ private List<Hash32> latestStateRootsList = new ArrayList<>();
   @SSZ private List<Hash32> latestActiveIndexRootsList = new ArrayList<>();
@@ -106,7 +107,8 @@ public class ImmutableBeaconStateImpl implements BeaconState, Hashable<Hash32> {
     this.finalizedEpoch = state.getFinalizedEpoch();
     this.finalizedRoot = state.getFinalizedRoot();
 
-    this.latestCrosslinksList = state.getLatestCrosslinks().listCopy();
+    this.previousEpochCrosslinksList = state.getPreviousEpochCrosslinks().listCopy();
+    this.currentEpochCrosslinksList = state.getCurrentEpochCrosslinks().listCopy();
     this.latestBlockRootsList = state.getLatestBlockRoots().listCopy();
     this.latestStateRootsList = state.getLatestStateRoots().listCopy();
     this.latestActiveIndexRootsList = state.getLatestActiveIndexRoots().listCopy();
@@ -132,8 +134,12 @@ public class ImmutableBeaconStateImpl implements BeaconState, Hashable<Hash32> {
     return new ArrayList<>(latestRandaoMixesList);
   }
 
-  public List<Crosslink> getLatestCrosslinksList() {
-    return new ArrayList<>(latestCrosslinksList);
+  public List<Crosslink> getPreviousEpochCrosslinksList() {
+    return previousEpochCrosslinksList;
+  }
+
+  public List<Crosslink> getCurrentEpochCrosslinksList() {
+    return new ArrayList<>(currentEpochCrosslinksList);
   }
 
   public List<Hash32> getLatestBlockRootsList() {
@@ -269,8 +275,13 @@ public class ImmutableBeaconStateImpl implements BeaconState, Hashable<Hash32> {
   }
 
   @Override
-  public ReadList<ShardNumber, Crosslink> getLatestCrosslinks() {
-    return ReadList.wrap(latestCrosslinksList, ShardNumber::of);
+  public ReadList<ShardNumber, Crosslink> getPreviousEpochCrosslinks() {
+    return ReadList.wrap(previousEpochCrosslinksList, ShardNumber::of);
+  }
+
+  @Override
+  public ReadList<ShardNumber, Crosslink> getCurrentEpochCrosslinks() {
+    return ReadList.wrap(currentEpochCrosslinksList, ShardNumber::of);
   }
 
   @Override

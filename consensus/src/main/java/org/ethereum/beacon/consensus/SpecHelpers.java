@@ -1597,7 +1597,10 @@ public interface SpecHelpers {
     state.setFinalizedRoot(Hash32.ZERO);
 
     // Recent state
-    state.getLatestCrosslinks().addAll(
+    state.getPreviousEpochCrosslinks().addAll(
+        nCopies(getConstants().getShardCount().getIntValue(),
+            new Crosslink(getConstants().getGenesisEpoch(), Hash32.ZERO)));
+    state.getCurrentEpochCrosslinks().addAll(
         nCopies(getConstants().getShardCount().getIntValue(),
             new Crosslink(getConstants().getGenesisEpoch(), Hash32.ZERO)));
     state.getLatestBlockRoots().addAll(
@@ -1761,21 +1764,19 @@ public interface SpecHelpers {
     def get_attestations_for(root) -> List[PendingAttestation]:
         return [a for a in valid_attestations if a.data.crosslink_data_root == root]
    */
-  default Pair<Hash32, List<ValidatorIndex>> get_winning_root_and_participants(BeaconState state, ShardNumber shard) {
-    /*
-      all_attestations = state.current_epoch_attestations + state.previous_epoch_attestations
-      valid_attestations = [
-          a for a in all_attestations if a.data.previous_crosslink == state.latest_crosslinks[shard]
-      ]
-      all_roots = [a.data.crosslink_data_root for a in valid_attestations] */
+  default Pair<Hash32, List<ValidatorIndex>> get_winning_root_and_participants(
+      BeaconState state, ShardNumber shard, EpochNumber epoch) {
+    ReadList<ShardNumber, Crosslink> previous_crosslinks =
+        slot_to_epoch(state.getSlot()).equals(epoch) ?
+            state.getCurrentEpochCrosslinks() : state.getPreviousEpochCrosslinks();
+    ReadList<Integer, PendingAttestation> attestations =
+        slot_to_epoch(state.getSlot()).equals(epoch) ?
+            state.getCurrentEpochAttestations() : state.getPreviousEpochAttestations();
 
-    List<PendingAttestation> all_attestations = state.getCurrentEpochAttestations().listCopy();
-    all_attestations.addAll(state.getPreviousEpochAttestations().listCopy());
     List<PendingAttestation> valid_attestations =
-        all_attestations.stream()
-            .filter(a -> a.getData()
-                .getPreviousCrosslink()
-                .equals(state.getLatestCrosslinks().get(shard)))
+        attestations.stream()
+            .filter(a -> a.getData().getShard().equals(shard))
+            .filter(a -> a.getData().getPreviousCrosslink().equals(previous_crosslinks.get(shard)))
             .collect(toList());
     List<Hash32> all_roots =
         valid_attestations.stream().map(a -> a.getData().getCrosslinkDataRoot()).collect(toList());
@@ -1968,47 +1969,57 @@ public interface SpecHelpers {
     }
   }
 
-  /*
-    Note: this function mutates beacon state
+  default List<Crosslink> get_epoch_crosslinks(BeaconState state, EpochNumber epoch) {
+    List<Crosslink> epoch_crosslinks = new ArrayList<>(
+        nCopies(getConstants().getShardCount().getIntValue(),
+            new Crosslink(EpochNumber.ZERO, Hash32.ZERO))
+    );
 
-    def process_crosslinks(state: BeaconState) -> None:
-      current_epoch = get_current_epoch(state)
-      previous_epoch = current_epoch - 1
-      next_epoch = current_epoch + 1
-      for slot in range(get_epoch_start_slot(previous_epoch), get_epoch_start_slot(next_epoch)):
-          for crosslink_committee, shard in get_crosslink_committees_at_slot(state, slot):
-              winning_root, participants = get_winning_root_and_participants(state, shard)
-              participating_balance = get_total_balance(state, participants)
-              total_balance = get_total_balance(state, crosslink_committee)
-              if 3 * participating_balance >= 2 * total_balance:
-                  state.latest_crosslinks[shard] = Crosslink(
-                      epoch=slot_to_epoch(slot),
-                      crosslink_data_root=winning_root
-                  )
-   */
-  default void process_crosslinks(MutableBeaconState state) {
-    EpochNumber current_epoch = get_current_epoch(state);
-    EpochNumber previous_epoch = current_epoch.decrement();
-    EpochNumber next_epoch = current_epoch.increment();
-
-    for (SlotNumber slot : get_epoch_start_slot(previous_epoch)
-        .iterateTo(get_epoch_start_slot(next_epoch))) {
-
+    for (SlotNumber slot : get_epoch_start_slot(epoch)
+        .iterateTo(get_epoch_start_slot(epoch.increment()))) {
       List<ShardCommittee> committees_at_slot = get_crosslink_committees_at_slot(state, slot);
       for (ShardCommittee shard_and_committee : committees_at_slot) {
         Pair<Hash32, List<ValidatorIndex>> root_and_participants =
-            get_winning_root_and_participants(state, shard_and_committee.getShard());
+            get_winning_root_and_participants(state, shard_and_committee.getShard(), slot_to_epoch(slot));
         Gwei participating_balance = get_total_balance(state, root_and_participants.getValue1());
         Gwei total_balance = get_total_balance(state, shard_and_committee.getCommittee());
 
         if (participating_balance.times(3).greaterEqual(total_balance.times(2))) {
-          state.getLatestCrosslinks().set(shard_and_committee.getShard(), new Crosslink(
+          epoch_crosslinks.set(shard_and_committee.getShard().getIntValue(), new Crosslink(
               slot_to_epoch(slot),
               root_and_participants.getValue0()
           ));
         }
       }
     }
+    return epoch_crosslinks;
+  }
+
+  default List<Crosslink> merge_crosslinks(List<Crosslink> crosslinks_1, List<Crosslink> crosslinks_2) {
+    List<Crosslink> merged_crosslinks = new ArrayList<>(crosslinks_1);
+    for (int i = 0; i < merged_crosslinks.size(); i++) {
+      if (crosslinks_2.get(i).getEpoch().greater(merged_crosslinks.get(i).getEpoch())) {
+        merged_crosslinks.set(i, crosslinks_2.get(i));
+      }
+    }
+    return merged_crosslinks;
+  }
+
+  default List<Crosslink> get_latest_crosslinks(BeaconState state) {
+    List<Crosslink> previous_epoch_crosslinks = get_epoch_crosslinks(state, get_previous_epoch(state));
+    List<Crosslink> current_epoch_crosslinks = get_epoch_crosslinks(state, get_current_epoch(state));
+    return merge_crosslinks(
+        merge_crosslinks(state.getCurrentEpochCrosslinks().listCopy(), previous_epoch_crosslinks),
+        current_epoch_crosslinks
+    );
+  }
+
+  default void apply_crosslinks(MutableBeaconState state, List<Crosslink> latest_crosslinks) {
+    state.getPreviousEpochCrosslinks().clear();
+    state.getPreviousEpochCrosslinks().addAll(state.getCurrentEpochCrosslinks().listCopy());
+
+    state.getCurrentEpochCrosslinks().clear();
+    state.getCurrentEpochCrosslinks().addAll(latest_crosslinks);
   }
 
   /*
@@ -2315,7 +2326,7 @@ public interface SpecHelpers {
             participating_balance = get_total_balance(state, participants)
             total_balance = get_total_balance(state, crosslink_committee) */
         Pair<Hash32, List<ValidatorIndex>> winning_root_and_participants =
-            get_winning_root_and_participants(state, shard);
+            get_winning_root_and_participants(state, shard, slot_to_epoch(slot));
         Gwei participating_balance = get_total_balance(state, winning_root_and_participants.getValue1());
         Gwei total_balance = get_total_balance(state, crosslink_committee);
 
@@ -2407,7 +2418,7 @@ public interface SpecHelpers {
         .mapToObj(i -> ShardNumber.of(state.getCurrentShufflingStartShard()
             .plus(i).modulo(getConstants().getShardCount()))).collect(toList());
     for (ShardNumber shard : shards_to_check) {
-      if (state.getLatestCrosslinks().get(shard).getEpoch()
+      if (state.getCurrentEpochCrosslinks().get(shard).getEpoch()
           .lessEqual(state.getValidatorRegistryUpdateEpoch())) {
         return false;
       }
