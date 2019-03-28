@@ -1989,8 +1989,7 @@ public interface SpecHelpers {
    */
   default void process_crosslinks(MutableBeaconState state) {
     EpochNumber current_epoch = get_current_epoch(state);
-    EpochNumber previous_epoch =
-        UInt64s.max(current_epoch.decrement(), getConstants().getGenesisEpoch());
+    EpochNumber previous_epoch = current_epoch.decrement();
     EpochNumber next_epoch = current_epoch.increment();
 
     for (SlotNumber slot : get_epoch_start_slot(previous_epoch)
