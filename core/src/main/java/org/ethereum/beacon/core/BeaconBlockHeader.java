@@ -4,6 +4,7 @@ import com.google.common.base.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import javax.annotation.Nullable;
+import org.ethereum.beacon.core.spec.InitialValues;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Hashable;
@@ -21,6 +22,10 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
  */
 @SSZSerializable
 public class BeaconBlockHeader implements Hashable<Hash32> {
+
+  public static final BeaconBlockHeader EMPTY =
+      new BeaconBlockHeader(
+          SlotNumber.ZERO, Hash32.ZERO, Hash32.ZERO, Hash32.ZERO, InitialValues.EMPTY_SIGNATURE);
 
   @SSZ private final SlotNumber slot;
   @SSZ private final Hash32 previousBlockRoot;
@@ -61,6 +66,10 @@ public class BeaconBlockHeader implements Hashable<Hash32> {
 
   public BLSSignature getSignature() {
     return signature;
+  }
+
+  public BeaconBlockHeader withStateRoot(Hash32 stateRoot) {
+    return new BeaconBlockHeader(slot, previousBlockRoot, stateRoot, blockBodyRoot, signature);
   }
 
   @Override

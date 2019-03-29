@@ -22,7 +22,6 @@ import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.Transfer;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
-import org.ethereum.beacon.core.operations.slashing.Proposal;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Eth1DataVote;
 import org.ethereum.beacon.core.types.BLSSignature;
@@ -32,7 +31,6 @@ import org.ethereum.beacon.validator.BeaconChainProposer;
 import org.ethereum.beacon.validator.ValidatorService;
 import org.ethereum.beacon.validator.crypto.MessageSigner;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
 
@@ -48,8 +46,6 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
   private SpecHelpers spec;
   /** Per-block state transition. */
   private BlockTransition<BeaconStateEx> perBlockTransition;
-  /** Per-epoch state transition. */
-  private StateTransition<BeaconStateEx> perEpochTransition;
   /** Eth1 deposit contract. */
   private DepositContract depositContract;
 
@@ -60,7 +56,15 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
       DepositContract depositContract) {
     this.spec = spec;
     this.perBlockTransition = perBlockTransition;
-    this.perEpochTransition = perEpochTransition;
+    this.depositContract = depositContract;
+  }
+
+  public BeaconChainProposerImpl(
+      SpecHelpers spec,
+      BlockTransition<BeaconStateEx> perBlockTransition,
+      DepositContract depositContract) {
+    this.spec = spec;
+    this.perBlockTransition = perBlockTransition;
     this.depositContract = depositContract;
   }
 
@@ -86,7 +90,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
 
     // calculate state_root
     BeaconBlock newBlock = builder.build();
-    BeaconState newState = applyStateTransition(state, newBlock);
+    BeaconState newState = perBlockTransition.apply(state, newBlock);
     builder.withStateRoot(spec.hash_tree_root(newState));
 
     // sign off on proposal
@@ -97,17 +101,8 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
     return builder.build();
   }
 
-  private BeaconStateEx applyStateTransition(BeaconStateEx sourceEx, BeaconBlock block) {
-    BeaconStateEx blockState = perBlockTransition.apply(sourceEx, block);
-    if (spec.is_epoch_end(blockState.getSlot())) {
-      return perEpochTransition.apply(blockState);
-    } else {
-      return blockState;
-    }
-  }
-
   /**
-   * Creates a {@link Proposal} instance and signs off on it.
+   * Signs off on a block.
    *
    * @param state state at the slot of created block.
    * @param block block
@@ -116,13 +111,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
    */
   private BLSSignature getProposalSignature(
       BeaconState state, BeaconBlock block, MessageSigner<BLSSignature> signer) {
-    Proposal proposal =
-        new Proposal(
-            state.getSlot(),
-            spec.getConstants().getBeaconChainShardNumber(),
-            spec.signed_root(block, "signature"),
-            block.getSignature());
-    Hash32 proposalRoot = spec.signed_root(proposal, "signature");
+    Hash32 proposalRoot = spec.signed_root(block);
     UInt64 domain = spec.get_domain(state.getFork(),
         spec.get_current_epoch(state), BEACON_BLOCK);
     return signer.sign(proposalRoot, domain);
@@ -136,8 +125,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
    * @return next RANDAO reveal.
    */
   private BLSSignature getRandaoReveal(BeaconState state, MessageSigner<BLSSignature> signer) {
-    Hash32 hash =
-        Hash32.wrap(Bytes32.leftPad(spec.get_current_epoch(state).toBytesBigEndian()));
+    Hash32 hash = spec.hash_tree_root(spec.slot_to_epoch(state.getSlot()));
     UInt64 domain = spec.get_domain(state.getFork(),
         spec.get_current_epoch(state), RANDAO);
     return signer.sign(hash, domain);
@@ -206,8 +194,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
     List<Attestation> attestations =
         operations.peekAggregatedAttestations(
             spec.getConstants().getMaxAttestations(),
-            state.getSlot().minus(spec.getConstants().getMinAttestationInclusionDelay()).minus(
-                spec.getConstants().getSlotsPerEpoch()),
+            state.getSlot().minus(spec.getConstants().getSlotsPerEpoch()),
             state.getSlot().minus(spec.getConstants().getMinAttestationInclusionDelay()));
     List<VoluntaryExit> voluntaryExits =
         operations.peekExits(spec.getConstants().getMaxVoluntaryExits());

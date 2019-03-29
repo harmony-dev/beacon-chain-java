@@ -194,12 +194,10 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
   private void startValidator() {
     if (validatorService == null) {
       BlockTransition<BeaconStateEx> blockTransition = new PerBlockTransition(spec);
-      StateTransition<BeaconStateEx> epochTransition = new PerEpochTransition(spec);
       BeaconChainProposer proposer =
           new BeaconChainProposerImpl(
               spec,
               blockTransition,
-              epochTransition,
               depositContract);
       BeaconChainAttester attester =
           new BeaconChainAttesterImpl(spec);
@@ -278,7 +276,7 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
         new DepositInput(blsCredentials.getPubkey(), withdrawalCredentials, BLSSignature.ZERO);
     // Let proof_of_possession be the result of bls_sign of the hash_tree_root(deposit_input) with
     // domain=DOMAIN_DEPOSIT.
-    Hash32 hash = spec.signed_root(preDepositInput, "proofOfPossession");
+    Hash32 hash = spec.signed_root(preDepositInput);
     BeaconState latestState = getLatestState();
     UInt64 domain =
         spec.get_domain(

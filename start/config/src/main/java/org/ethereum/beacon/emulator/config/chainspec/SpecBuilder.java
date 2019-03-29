@@ -3,7 +3,7 @@ package org.ethereum.beacon.emulator.config.chainspec;
 import java.util.List;
 import org.apache.milagro.amcl.BLS381.ECP;
 import org.ethereum.beacon.consensus.SpecHelpers;
-import org.ethereum.beacon.consensus.util.CachingSpecHelpers;
+import org.ethereum.beacon.consensus.SpecHelpersImpl;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.spec.SpecConstants;
@@ -19,7 +19,6 @@ import org.ethereum.beacon.crypto.BLS381.PublicKey;
 import tech.pegasys.artemis.ethereum.core.Address;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes1;
-import tech.pegasys.artemis.util.bytes.Bytes8;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public class SpecBuilder {
@@ -37,7 +36,7 @@ public class SpecBuilder {
       SpecHelpersData specHelpersOptions, SpecConstants specConstants) {
 
     SpecHelpers defaultSpecHelpers = SpecHelpers.createWithSSZHasher(specConstants);
-    return new CachingSpecHelpers(
+    return new SpecHelpersImpl(
         defaultSpecHelpers.getConstants(),
         defaultSpecHelpers.getHashFunction(),
         defaultSpecHelpers.getObjectHasher()) {
@@ -86,7 +85,7 @@ public class SpecBuilder {
 
       @Override
       public void process_deposit(MutableBeaconState state, Deposit deposit) {
-        super.process_deposit_inner(state, deposit, specHelpersOptions.isBlsVerifyProofOfPosession());
+        super.process_deposit_inner(state, deposit, specHelpersOptions.isBlsVerifyProofOfPossession());
       }
     };
   }
@@ -298,8 +297,8 @@ public class SpecBuilder {
       }
 
       @Override
-      public EpochNumber getEth1DataVotingPeriod() {
-        return timeParameters.getEth1DataVotingPeriod();
+      public EpochNumber getEpochsPerEth1VotingPeriod() {
+        return timeParameters.getEpochsPerEth1VotingPeriod();
       }
 
       @Override

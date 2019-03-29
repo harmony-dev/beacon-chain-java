@@ -27,7 +27,6 @@ import org.ethereum.beacon.Launcher;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.storage.impl.MemBeaconChainStorageFactory;
 import org.ethereum.beacon.consensus.SpecHelpers;
-import org.ethereum.beacon.consensus.TransitionType;
 import org.ethereum.beacon.consensus.transition.EpochTransitionSummary;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
@@ -50,6 +49,8 @@ import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.schedulers.ControlledSchedulers;
 import org.ethereum.beacon.schedulers.LoggerMDCExecutor;
 import org.ethereum.beacon.schedulers.Schedulers;
+import org.ethereum.beacon.schedulers.TimeController;
+import org.ethereum.beacon.schedulers.TimeControllerImpl;
 import org.ethereum.beacon.simulator.util.SimulateUtils;
 import org.ethereum.beacon.util.stats.TimeCollector;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
@@ -117,17 +118,16 @@ public class SimulatorLauncher implements Runnable {
     }
   }
 
-  private Pair<List<Deposit>, List<BLS381.KeyPair>> getValidatorDeposits(Random rnd,
-      boolean isProofVerifyEnabled) {
+  private Pair<List<Deposit>, List<BLS381.KeyPair>> getValidatorDeposits(Random rnd) {
     Pair<List<Deposit>, List<BLS381.KeyPair>> deposits =
         SimulateUtils.getAnyDeposits(rnd, specHelpers, validators.size(),
-            config.getChainSpec().getSpecHelpersOptions().isBlsVerifyProofOfPosession());
+            config.getChainSpec().getSpecHelpersOptions().isBlsVerifyProofOfPossession());
     for (int i = 0; i < validators.size(); i++) {
       if (validators.get(i).getBlsPrivateKey() != null) {
         KeyPair keyPair = KeyPair.create(
             PrivateKey.create(Bytes32.fromHexString(validators.get(i).getBlsPrivateKey())));
         deposits.getValue0().set(i, SimulateUtils.getDepositForKeyPair(rnd, keyPair, specHelpers,
-            config.getChainSpec().getSpecHelpersOptions().isBlsVerifyProofOfPosession()));
+            config.getChainSpec().getSpecHelpersOptions().isBlsVerifyProofOfPossession()));
         deposits.getValue1().set(i, keyPair);
       }
     }
@@ -137,13 +137,12 @@ public class SimulatorLauncher implements Runnable {
 
   public void run() {
     logger.info("Simulation parameters:\n{}", simulationPlan);
-    if (config.getChainSpec() != null)
+    if (config.getChainSpec().isDefined())
       logger.info("Overridden beacon chain parameters:\n{}", config.getChainSpec());
 
     Random rnd = new Random(simulationPlan.getSeed());
     setupLogging();
-    Pair<List<Deposit>, List<BLS381.KeyPair>> validatorDeposits = getValidatorDeposits(rnd,
-        config.getChainSpec().getSpecHelpersOptions().isBlsVerifyProofOfPosession());
+    Pair<List<Deposit>, List<BLS381.KeyPair>> validatorDeposits = getValidatorDeposits(rnd);
 
     List<Deposit> deposits = validatorDeposits.getValue0().stream()
         .filter(Objects::nonNull).collect(Collectors.toList());
@@ -194,12 +193,9 @@ public class SimulatorLauncher implements Runnable {
               schedulers,
               proposeTimeCollector);
 
-      if ((i + 1) % 100 == 0)
-        logger.info("{} validators created", i + 1);
-
       peers.add(launcher);
 
-      if ((i + 1) % 1000 == 0)
+      if ((i + 1) % 100 == 0)
         logger.info("{} validators created", (i + 1));
     }
     logger.info("All validators created");
@@ -234,11 +230,11 @@ public class SimulatorLauncher implements Runnable {
           });
       Flux.from(launcher.getBeaconChain().getBlockStatesStream())
           .subscribe(blockState -> logger.trace("Block imported: "
-              + blockState.getBlock().toString(this.specConstants, genesisTime, specHelpers::hash_tree_root)));
+              + blockState.getBlock().toString(this.specConstants, genesisTime, specHelpers::signed_root)));
       if (launcher.getValidatorService() != null) {
         Flux.from(launcher.getValidatorService().getProposedBlocksStream())
             .subscribe(block -> logger.debug("New block created: "
-                + block.toString(this.specConstants, genesisTime, specHelpers::hash_tree_root)));
+                + block.toString(this.specConstants, genesisTime, specHelpers::signed_root)));
         Flux.from(launcher.getValidatorService().getAttestationsStream())
             .subscribe(attest -> logger.debug("New attestation created: "
                 + attest.toString(this.specConstants, genesisTime)));
@@ -285,7 +281,7 @@ public class SimulatorLauncher implements Runnable {
         .subscribe(blockState -> {
           blocks.add(blockState.getBlock());
           logger.debug("Block imported: "
-              + blockState.getBlock().toString(specConstants, genesisTime, specHelpers::hash_tree_root));
+              + blockState.getBlock().toString(specConstants, genesisTime, specHelpers::signed_root));
         });
 
     logger.info("Time starts running ...");
@@ -321,21 +317,22 @@ public class SimulatorLauncher implements Runnable {
           + ", attestations: " + attestations.size()
           + ", " + statesInfo);
 
-      ObservableBeaconState lastState = states.get(states.size() - 1);
-      if (lastState.getLatestSlotState().getTransition() == TransitionType.EPOCH) {
-        ObservableBeaconState preEpochState = states.get(states.size() - 2);
-        EpochTransitionSummary summary = observer.getPerEpochTransition()
+      ObservableBeaconState latestState = states.get(states.size() - 1);
+      if (latestState.getLatestSlotState().getSlot().increment().modulo(specHelpers.getConstants().getSlotsPerEpoch())
+          .equals(SlotNumber.ZERO)) {
+        ObservableBeaconState preEpochState = latestState;
+        EpochTransitionSummary summary = observer.getExtendedSlotTransition()
             .applyWithSummary(preEpochState.getLatestSlotState());
         logger.info("Epoch transition "
             + specHelpers.get_current_epoch(preEpochState.getLatestSlotState()).toString(specConstants)
             + "=>"
             + specHelpers.get_current_epoch(preEpochState.getLatestSlotState()).increment().toString(specConstants)
             + ": Justified/Finalized epochs: "
-            + summary.getPreState().getJustifiedEpoch().toString(specConstants)
+            + summary.getPreState().getCurrentJustifiedEpoch().toString(specConstants)
             + "/"
             + summary.getPreState().getFinalizedEpoch().toString(specConstants)
             + " => "
-            + summary.getPostState().getJustifiedEpoch().toString(specConstants)
+            + summary.getPostState().getCurrentJustifiedEpoch().toString(specConstants)
             + "/"
             + summary.getPostState().getFinalizedEpoch().toString(specConstants)
         );
@@ -410,9 +407,7 @@ public class SimulatorLauncher implements Runnable {
   public static class MDCControlledSchedulers {
     private DateFormat localTimeFormat = new SimpleDateFormat("HH:mm:ss.SSS");
 
-    private List<ControlledSchedulers> schedulersList = new ArrayList<>();
-    private List<Long> timeShifts = new ArrayList<>();
-    private long currentTime;
+    private TimeController timeController = new TimeControllerImpl();
 
     public ControlledSchedulers createNew(String validatorId) {
       return createNew(validatorId, 0);
@@ -424,25 +419,14 @@ public class SimulatorLauncher implements Runnable {
           .add("validatorTime", () -> localTimeFormat.format(new Date(newSched[0].getCurrentTime())))
           .add("validatorIndex", () -> "" + validatorId);
       newSched[0] = Schedulers.createControlled(() -> mdcExecutor);
-      newSched[0].setCurrentTime(currentTime);
-      schedulersList.add(newSched[0]);
-      timeShifts.add(timeShift);
+      newSched[0].getTimeController().setParent(timeController);
+      newSched[0].getTimeController().setTimeShift(timeShift);
 
       return newSched[0];
     }
 
     public void setCurrentTime(long time) {
-      long curTime = currentTime > 0 ? currentTime : time;
-      currentTime = time;
-      while (++curTime <= time) {
-        for (int i = 0; i < schedulersList.size(); i++) {
-          long schTime = curTime + timeShifts.get(i);
-          if (schTime < 0) {
-            throw new IllegalStateException("Incorrect time with shift: " + schTime);
-          }
-          schedulersList.get(i).setCurrentTime(schTime);
-        }
-      }
+      timeController.setTime(time);
     }
 
     void addTime(Duration duration) {
@@ -450,11 +434,11 @@ public class SimulatorLauncher implements Runnable {
     }
 
     void addTime(long millis) {
-      setCurrentTime(currentTime + millis);
+      setCurrentTime(timeController.getTime() + millis);
     }
 
     public long getCurrentTime() {
-      return currentTime;
+      return timeController.getTime();
     }
   }
 
@@ -470,7 +454,9 @@ public class SimulatorLauncher implements Runnable {
 
       ConfigBuilder<SpecData> specConfigBuilder =
           new ConfigBuilder<>(SpecData.class).addYamlConfigFromResources("/config/spec-constants.yml");
-      specConfigBuilder.addConfig(config.getChainSpec());
+      if (config.getChainSpec().isDefined()) {
+        specConfigBuilder.addConfig(config.getChainSpec());
+      }
 
       SpecData spec = specConfigBuilder.build();
 

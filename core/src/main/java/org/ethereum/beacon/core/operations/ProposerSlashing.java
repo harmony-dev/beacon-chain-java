@@ -4,7 +4,6 @@ import com.google.common.base.Objects;
 import java.util.function.Function;
 import javax.annotation.Nullable;
 import org.ethereum.beacon.core.BeaconBlockHeader;
-import org.ethereum.beacon.core.operations.slashing.Proposal;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.types.Hashable;
 import org.ethereum.beacon.core.types.ValidatorIndex;

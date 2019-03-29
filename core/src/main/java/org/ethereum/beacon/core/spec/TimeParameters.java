@@ -47,7 +47,7 @@ public interface TimeParameters {
     return ACTIVATION_EXIT_DELAY;
   }
 
-  default EpochNumber getEth1DataVotingPeriod() {
+  default EpochNumber getEpochsPerEth1VotingPeriod() {
     return EPOCHS_PER_ETH1_VOTING_PERIOD;
   }
 

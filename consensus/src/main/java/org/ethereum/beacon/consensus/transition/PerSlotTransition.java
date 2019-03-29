@@ -10,10 +10,10 @@ import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.types.SlotNumber;
 
 /**
- * Per-epoch transition function.
+ * Per-slot transition, which happens at every slot.
  *
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/dev/specs/core/0_beacon-chain.md#per-slot-processing">Per-slot
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.5.1/specs/core/0_beacon-chain.md#per-slot-processing">Per-slot
  *     processing</a> in the spec.
  */
 public class PerSlotTransition implements StateTransition<BeaconStateEx> {
@@ -33,20 +33,7 @@ public class PerSlotTransition implements StateTransition<BeaconStateEx> {
 
     MutableBeaconState state = stateEx.createMutableCopy();
 
-    // state.slot += 1
-    SlotNumber newSlot = state.getSlot().increment();
-    state.setSlot(newSlot);
-
-    //  Set state.latest_block_roots[(state.slot - 1) % SLOTS_PER_HISTORICAL_ROOT] = previous_block_root.
-    state.getLatestBlockRoots().set(
-        state.getSlot().decrement().modulo(spec.getConstants().getSlotsPerHistoricalRoot()),
-        stateEx.getHeadBlockHash());
-
-    // If state.slot % SLOTS_PER_HISTORICAL_ROOT == 0
-    // append merkle_root(state.latest_block_roots) to state.batched_block_roots
-    if (state.getSlot().modulo(spec.getConstants().getSlotsPerHistoricalRoot()).getIntValue() == 0) {
-      state.getBatchedBlockRoots().add(spec.merkle_root(state.getLatestBlockRoots()));
-    }
+    spec.advance_slot(state);
 
     BeaconStateEx ret =
         new BeaconStateExImpl(

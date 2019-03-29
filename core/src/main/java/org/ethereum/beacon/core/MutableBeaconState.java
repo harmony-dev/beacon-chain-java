@@ -14,6 +14,7 @@ import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.collections.WriteList;
 import tech.pegasys.artemis.util.uint.UInt64;
 
@@ -50,17 +51,31 @@ public interface MutableBeaconState extends BeaconState {
 
   void setPreviousJustifiedEpoch(EpochNumber previousJustifiedEpoch);
 
-  void setJustifiedEpoch(EpochNumber justifiedSlot);
+  void setCurrentJustifiedEpoch(EpochNumber currentJustifiedSlot);
+
+  void setPreviousJustifiedRoot(Hash32 previousJustifiedRoot);
+
+  void setCurrentJustifiedRoot(Hash32 currentJustifiedRoot);
 
   void setJustificationBitfield(Bitfield64 justificationBitfield);
 
   void setFinalizedEpoch(EpochNumber finalizedEpoch);
 
+  void setFinalizedRoot(Hash32 finalizedRoot);
+
+  void setLatestBlockHeader(BeaconBlockHeader latestBlockHeader);
+
   @Override
-  WriteList<ShardNumber, Crosslink> getLatestCrosslinks();
+  WriteList<ShardNumber, Crosslink> getPreviousEpochCrosslinks();
+
+  @Override
+  WriteList<ShardNumber, Crosslink> getCurrentEpochCrosslinks();
 
   @Override
   WriteList<SlotNumber, Hash32> getLatestBlockRoots();
+
+  @Override
+  WriteList<SlotNumber, Hash32> getLatestStateRoots();
 
   @Override
   WriteList<EpochNumber, Hash32> getLatestActiveIndexRoots();
@@ -69,10 +84,13 @@ public interface MutableBeaconState extends BeaconState {
   WriteList<EpochNumber, Gwei> getLatestSlashedBalances();
 
   @Override
-  WriteList<Integer, PendingAttestation> getLatestAttestations();
+  WriteList<Integer, PendingAttestation> getPreviousEpochAttestations();
 
   @Override
-  WriteList<Integer, Hash32> getBatchedBlockRoots();
+  WriteList<Integer, PendingAttestation> getCurrentEpochAttestations();
+
+  @Override
+  WriteList<Integer, Hash32> getHistoricalRoots();
 
   void setLatestEth1Data(Eth1Data latestEth1Data);
 

@@ -269,26 +269,18 @@ public class MultiValidatorService implements ValidatorService {
       long total = System.nanoTime() - s;
       propagateBlock(newBlock);
 
+      logger.info(
+          "validator {}: proposed a {} in {}s",
+          index,
+          newBlock.toString(
+              spec.getConstants(),
+              observableState.getLatestSlotState().getGenesisTime(),
+              spec::signed_root),
+          String.format("%.3f", (double) total / 1_000_000_000d));
+
       if (spec.is_epoch_end(newBlock.getSlot())) {
-        logger.info(
-            "validator {}: proposed a {} in {}s, epoch avg without this block: {}s",
-            index,
-            newBlock.toString(
-                spec.getConstants(),
-                observableState.getLatestSlotState().getGenesisTime(),
-                spec::hash_tree_root),
-            String.format("%.3f", (double) total / 1_000_000_000d),
-            String.format("%.3f", (double) proposeTimeCollector.getAvg() / 1_000_000_000d));
         proposeTimeCollector.reset();
       } else {
-        logger.info(
-            "validator {}: proposed a {} in {}s",
-            index,
-            newBlock.toString(
-                spec.getConstants(),
-                observableState.getLatestSlotState().getGenesisTime(),
-                spec::hash_tree_root),
-            String.format("%.3f", (double) total / 1_000_000_000d));
         proposeTimeCollector.tick(total);
       }
     }
@@ -323,7 +315,7 @@ public class MultiValidatorService implements ValidatorService {
               .toString(
                   spec.getConstants(),
                   observableState.getLatestSlotState().getGenesisTime(),
-                  spec::hash_tree_root),
+                  spec::signed_root),
           state.getSlot());
     }
   }

@@ -9,7 +9,10 @@ import org.ethereum.beacon.consensus.BlockTransition;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.consensus.transition.BeaconStateExImpl;
+import org.ethereum.beacon.consensus.transition.ExtendedSlotTransition;
 import org.ethereum.beacon.consensus.transition.InitialStateTransition;
+import org.ethereum.beacon.consensus.transition.PerEpochTransition;
+import org.ethereum.beacon.consensus.transition.StateCachingTransition;
 import org.ethereum.beacon.consensus.util.StateTransitionTestUtil;
 import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
 import org.ethereum.beacon.consensus.verifier.BeaconStateVerifier;
@@ -64,14 +67,14 @@ public class DefaultBeaconChainTest {
     BeaconBlock block =
         new BeaconBlock(
             specHelpers.get_current_slot(parent.getState(), currentTime),
-            specHelpers.hash_tree_root(parent.getBlock()),
+            specHelpers.signed_root(parent.getBlock()),
             Hash32.ZERO,
             BeaconBlockBody.EMPTY,
             specHelpers.getConstants().getEmptySignature());
     BeaconState state =
         perSlotTransition
             .apply(
-                new BeaconStateExImpl(parent.getState(), specHelpers.hash_tree_root(parent.getBlock())));
+                new BeaconStateExImpl(parent.getState(), specHelpers.signed_root(parent.getBlock())));
 
     return block.withStateRoot(specHelpers.hash_tree_root(state));
   }
@@ -82,10 +85,13 @@ public class DefaultBeaconChainTest {
     ChainStart chainStart = new ChainStart(start, Eth1Data.EMPTY, Collections.emptyList());
     BlockTransition<BeaconStateEx> initialTransition =
         new InitialStateTransition(chainStart, specHelpers);
+    StateTransition<BeaconStateEx> stateCaching =
+        StateTransitionTestUtil.createStateWithNoTransition();
     BlockTransition<BeaconStateEx> perBlockTransition =
         StateTransitionTestUtil.createPerBlockTransition();
     StateTransition<BeaconStateEx> perEpochTransition =
         StateTransitionTestUtil.createStateWithNoTransition();
+
     BeaconBlockVerifier blockVerifier = (block, state) -> VerificationResult.PASSED;
     BeaconStateVerifier stateVerifier = (block, state) -> VerificationResult.PASSED;
     Database database = Database.inMemoryDB();
@@ -94,9 +100,13 @@ public class DefaultBeaconChainTest {
     return new DefaultBeaconChain(
         specHelpers,
         initialTransition,
-        perSlotTransition,
+        new ExtendedSlotTransition(stateCaching, new PerEpochTransition(specHelpers) {
+          @Override
+          public BeaconStateEx apply(BeaconStateEx stateEx) {
+            return perEpochTransition.apply(stateEx);
+          }
+        }, perSlotTransition, specHelpers),
         perBlockTransition,
-        perEpochTransition,
         blockVerifier,
         stateVerifier,
         chainStorage,

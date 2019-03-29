@@ -8,7 +8,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import javax.annotation.Nonnull;
-import org.ethereum.beacon.chain.storage.AbstractHashKeyStorage;
 import org.ethereum.beacon.chain.storage.BeaconBlockStorage;
 import org.ethereum.beacon.consensus.hasher.ObjectHasher;
 import org.ethereum.beacon.core.BeaconBlock;
@@ -24,8 +23,9 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt64s;
 
-public class BeaconBlockStorageImpl extends AbstractHashKeyStorage<Hash32, BeaconBlock>
-    implements BeaconBlockStorage {
+public class BeaconBlockStorageImpl implements BeaconBlockStorage {
+
+  private final ObjectHasher<Hash32> objectHasher;
 
   @SSZSerializable
   public static class SlotBlocks {
@@ -84,7 +84,7 @@ public class BeaconBlockStorageImpl extends AbstractHashKeyStorage<Hash32, Beaco
       HoleyList<SlotBlocks> blockIndex,
       boolean checkBlockExistOnAdd,
       boolean checkParentExistOnAdd) {
-    super(objectHasher);
+    this.objectHasher = objectHasher;
     this.rawBlocks = rawBlocks;
     this.blockIndex = blockIndex;
     this.checkBlockExistOnAdd = checkBlockExistOnAdd;
@@ -130,6 +130,11 @@ public class BeaconBlockStorageImpl extends AbstractHashKeyStorage<Hash32, Beaco
         newBlock.getSlot().getValue(),
         blocks -> blocks.addBlock(newBlockHash),
         () -> slotBlocks);
+  }
+
+  @Override
+  public void put(BeaconBlock block) {
+    this.put(objectHasher.getHashTruncateLast(block), block);
   }
 
   @Override

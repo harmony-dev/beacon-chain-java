@@ -25,11 +25,10 @@ public interface ObjectHasher<H extends BytesValue> {
   H getHash(Object input);
 
   /**
-   * Calculates hash of object truncated from current to `field` (not included).
+   * Calculates hash of the object skipping its last field.
    *
-   * @param input an object of any type.
-   * @param field this and all subsequent fields will not be included in hashed object
+   * @param input an object.
    * @return calculated hash.
    */
-  H getHashTruncate(Object input, String field);
+  H getHashTruncateLast(Object input);
 }

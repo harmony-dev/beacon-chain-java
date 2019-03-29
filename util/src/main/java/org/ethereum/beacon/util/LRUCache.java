@@ -42,12 +42,12 @@ public class LRUCache<K, V> implements Cache<K, V> {
    */
   @Override
   public V get(K key, Function<K, V> fallback) {
-    if (cacheData.containsKey(key)) {
-      return cacheData.get(key);
-    }
+    V result = cacheData.get(key);
 
-    V result = fallback.apply(key);
-    cacheData.put(key, result);
+    if (result == null) {
+      result = fallback.apply(key);
+      cacheData.put(key, result);
+    }
 
     return result;
   }

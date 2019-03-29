@@ -141,15 +141,6 @@ public class SSZCodecHasher implements SSZCodecResolver {
       BytesSerializer sszSerializer) {
     byte[] data = sszSerializer.encode(value, field.type);
 
-    if (!field.notAContainer) {
-      try {
-        // Prepend data with its length
-        result.write(net.consensys.cava.ssz.SSZ.encodeInt32(data.length).toArrayUnsafe());
-      } catch (IOException e) {
-        throw new SSZException("Failed to write data length to stream", e);
-      }
-    }
-
     try {
       result.write(data);
     } catch (IOException e) {
@@ -291,22 +282,11 @@ public class SSZCodecHasher implements SSZCodecResolver {
   }
 
   private long next_power_of_2(int x) {
-    if (x == 0) {
+    if (x <= 1) {
       return 1;
     } else {
-      return Double.valueOf(Math.pow(2, bit_length(x - 1))).longValue();
+      return Long.highestOneBit(x - 1) << 1;
     }
-  }
-
-  private int bit_length(int val) {
-    String bin = Integer.toBinaryString(val);
-    for (int i = 0; i < bin.length(); ++i) {
-      if (bin.charAt(i) != '0') {
-        return bin.length() - i;
-      }
-    }
-
-    return 0;
   }
 
   /**

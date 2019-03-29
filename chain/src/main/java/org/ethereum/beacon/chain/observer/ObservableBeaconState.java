@@ -64,7 +64,7 @@ public class ObservableBeaconState {
     }
 
     return "ObservableBeaconState[head="
-        + (spec != null ? spec.hash_tree_root(head).toStringShort() : head.toString(null ,null, null))
+        + (spec != null ? spec.signed_root(head).toStringShort() : head.toString(null ,null, null))
         + ", latestState: "
         + committee
         + latestSlotState.toStringShort(spec == null ? null : spec.getConstants())

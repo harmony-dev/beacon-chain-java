@@ -1,13 +1,11 @@
 package org.ethereum.beacon.test;
 
 import org.ethereum.beacon.consensus.SpecHelpers;
-import org.ethereum.beacon.consensus.hasher.SSZObjectHasher;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
-import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.test.runner.ShuffleRunner;
 import org.ethereum.beacon.test.type.ShuffleTest;
 import org.junit.Ignore;
@@ -56,9 +54,7 @@ public class ShuffleTests extends TestUtils {
             return EpochNumber.of(4);
           }
         };
-    this.specHelpers =
-        new SpecHelpers(
-            specConstants, Hashes::keccak256, SSZObjectHasher.create(Hashes::keccak256));
+    this.specHelpers = SpecHelpers.createWithSSZHasher(specConstants);
   }
 
   @Test

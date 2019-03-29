@@ -10,6 +10,7 @@ import java.util.concurrent.Delayed;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -17,7 +18,7 @@ import java.util.function.Consumer;
 
 public class ControlledExecutorServiceImpl implements ControlledExecutorService {
 
-  private class ScheduledTask<V> implements Comparable<ScheduledTask<V>> {
+  private class ScheduledTask<V> implements TimeController.Task{
     Callable<V> callable;
     final ScheduledFutureImpl<V> future = new ScheduledFutureImpl<V>(b -> cancel());
     long targetTime;
@@ -30,16 +31,11 @@ public class ControlledExecutorServiceImpl implements ControlledExecutorService 
       this.targetTime = targetTime;
     }
 
-    @Override
-    public int compareTo(ScheduledTask<V> o) {
-      return Long.compare(targetTime, o.targetTime);
-    }
-
     void cancel() {
-      tasks.remove(this);
+      timeController.cancelTask(this);
     }
 
-    void execute() {
+    public void execute() {
       ControlledExecutorServiceImpl.this.execute(() -> {
         try {
           V res = callable.call();
@@ -48,6 +44,11 @@ public class ControlledExecutorServiceImpl implements ControlledExecutorService 
           future.delegate.completeExceptionally(e);
         }
       });
+    }
+
+    @Override
+    public long getTime() {
+      return targetTime;
     }
 
     @Override
@@ -104,9 +105,7 @@ public class ControlledExecutorServiceImpl implements ControlledExecutorService 
   }
 
   private final Executor delegateExecutor;
-
-  private final List<ScheduledTask> tasks = new ArrayList<>();
-  private long currentTime = 0;
+  private TimeController timeController;
 
   public ControlledExecutorServiceImpl() {
     this(Runnable::run);  // default immediate executor
@@ -118,24 +117,12 @@ public class ControlledExecutorServiceImpl implements ControlledExecutorService 
   }
 
   @Override
-  public void setCurrentTime(long currentTime) {
-    Collections.sort(tasks);
-    while (!tasks.isEmpty() && tasks.get(0).targetTime <= currentTime) {
-      ScheduledTask<?> task = tasks.remove(0);
-      this.currentTime = task.targetTime;
-      task.execute();
-    }
-    this.currentTime = currentTime;
+  public void setTimeController(TimeController timeController) {
+    this.timeController = timeController;
   }
 
   public long getCurrentTime() {
-    return currentTime;
-  }
-
-  @Override
-  public long getNextScheduleTime() {
-    Collections.sort(tasks);
-    return tasks.isEmpty() ? Long.MAX_VALUE : tasks.get(0).targetTime;
+    return timeController.getTime();
   }
 
   @Override
@@ -143,8 +130,8 @@ public class ControlledExecutorServiceImpl implements ControlledExecutorService 
     if (delay < 0) {
       delay = 0;
     }
-    ScheduledTask<V> scheduledTask = new ScheduledTask<>(callable, currentTime + unit.toMillis(delay));
-    tasks.add(scheduledTask);
+    ScheduledTask<V> scheduledTask = new ScheduledTask<>(callable, getCurrentTime() + unit.toMillis(delay));
+    timeController.addTask(scheduledTask);
     return scheduledTask.future;
   }
 

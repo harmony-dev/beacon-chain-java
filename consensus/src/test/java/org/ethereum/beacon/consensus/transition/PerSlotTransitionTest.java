@@ -5,7 +5,6 @@ import java.util.Random;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.TestUtils;
-import org.ethereum.beacon.core.BeaconBlocks;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.Eth1Data;
@@ -41,10 +40,13 @@ public class PerSlotTransitionTest {
             specHelpers);
 
     BeaconStateEx initialState =
-        initialStateTransition.apply(BeaconBlocks.createGenesis(specConstants));
-    BeaconStateEx s1State = new PerSlotTransition(specHelpers).apply(initialState);
-    BeaconStateEx s2State = new PerSlotTransition(specHelpers).apply(s1State);
-    BeaconStateEx s3State = new PerSlotTransition(specHelpers).apply(s2State);
+        initialStateTransition.apply(specHelpers.get_empty_block());
+    BeaconStateEx c1State = new StateCachingTransition(specHelpers).apply(initialState);
+    BeaconStateEx s1State = new PerSlotTransition(specHelpers).apply(c1State);
+    BeaconStateEx c2State = new StateCachingTransition(specHelpers).apply(s1State);
+    BeaconStateEx s2State = new PerSlotTransition(specHelpers).apply(c2State);
+    BeaconStateEx c3State = new StateCachingTransition(specHelpers).apply(s2State);
+    BeaconStateEx s3State = new PerSlotTransition(specHelpers).apply(c3State);
 
     Assert.assertEquals(specConstants.getGenesisSlot().plus(3), s3State.getSlot());
   }

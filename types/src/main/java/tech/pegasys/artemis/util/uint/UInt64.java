@@ -195,6 +195,20 @@ public class UInt64 extends Number implements Comparable<UInt64> {
   }
 
   /**
+   * Saturation version of {@link #minus(UInt64)}.
+   *
+   * @param subtrahend A UInt64 representing an unsigned long to subtract.
+   * @return 0 in case of underflow, otherwise, result of {@link #minus(UInt64)}.
+   */
+  public UInt64 minusSat(UInt64 subtrahend) {
+    if (this.compareTo(subtrahend) < 0) {
+      return UInt64.ZERO;
+    } else {
+      return minus(subtrahend);
+    }
+  }
+
+  /**
    * Multiplies the multiplier passed in the argument by the specified object. The result is
    * returned as a new UInt64.
    *

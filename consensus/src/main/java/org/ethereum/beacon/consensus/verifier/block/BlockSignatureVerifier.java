@@ -5,7 +5,6 @@ import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
-import org.ethereum.beacon.core.operations.slashing.Proposal;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -30,16 +29,7 @@ public class BlockSignatureVerifier implements BeaconBlockVerifier {
 
   @Override
   public VerificationResult verify(BeaconBlock block, BeaconState state) {
-
-    // Let proposal_root = hash_tree_root(
-    //  Proposal(state.slot, BEACON_CHAIN_SHARD_NUMBER, block_without_signature_root)).
-    Proposal proposal =
-        new Proposal(
-            state.getSlot(),
-            spec.getConstants().getBeaconChainShardNumber(),
-            spec.signed_root(block, "signature"),
-            block.getSignature());
-    Hash32 proposalRoot = spec.signed_root(proposal, "signature");
+    Hash32 headerRoot = spec.signed_root(block);
 
     // Verify that bls_verify(
     //  pubkey=state.validator_registry[get_beacon_proposer_index(state, state.slot)].pubkey,
@@ -51,7 +41,7 @@ public class BlockSignatureVerifier implements BeaconBlockVerifier {
     UInt64 domain =
         spec.get_domain(state.getFork(), spec.get_current_epoch(state), BEACON_BLOCK);
 
-    if (spec.bls_verify(publicKey, proposalRoot, proposal.getSignature(), domain)) {
+    if (spec.bls_verify(publicKey, headerRoot, block.getSignature(), domain)) {
       return VerificationResult.PASSED;
     } else {
       return VerificationResult.failedResult(

@@ -53,7 +53,7 @@ public class ProposerSlashingVerifier implements OperationVerifier<ProposerSlash
 
     if (!spec.bls_verify(
         proposer.getPubKey(),
-        spec.signed_root(proposerSlashing.getHeader1(), "signature"),
+        spec.signed_root(proposerSlashing.getHeader1()),
         proposerSlashing.getHeader1().getSignature(),
         spec.get_domain(
             state.getFork(),
@@ -64,7 +64,7 @@ public class ProposerSlashingVerifier implements OperationVerifier<ProposerSlash
 
     if (!spec.bls_verify(
         proposer.getPubKey(),
-        spec.signed_root(proposerSlashing.getHeader2(), "signature"),
+        spec.signed_root(proposerSlashing.getHeader2()),
         proposerSlashing.getHeader2().getSignature(),
         spec.get_domain(
             state.getFork(),

@@ -5,7 +5,6 @@ import java.util.Random;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.TestUtils;
-import org.ethereum.beacon.core.BeaconBlocks;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.Eth1Data;
@@ -43,12 +42,14 @@ public class PerEpochTransitionTest {
 
     BeaconStateEx[] states = new BeaconStateExImpl[9];
 
-    states[0] = initialStateTransition.apply(BeaconBlocks.createGenesis(specConstants));
+    states[0] = initialStateTransition.apply(specHelpers.get_empty_block());
     for (int i = 1; i < 9; i++) {
-      states[i] = new PerSlotTransition(specHelpers).apply(states[i - 1]);
+      BeaconStateEx cachedState = new StateCachingTransition(specHelpers).apply(states[i - 1]);
+      states[i] = new PerSlotTransition(specHelpers).apply(cachedState);
     }
     PerEpochTransition perEpochTransition = new PerEpochTransition(specHelpers);
-    BeaconStateEx epochState = perEpochTransition.apply(states[8]);
+    BeaconStateEx cachedState = new StateCachingTransition(specHelpers).apply(states[8]);
+    BeaconStateEx epochState = perEpochTransition.apply(cachedState);
 
     // check validators penalized for inactivity
     for (int i = 0; i < deposits.size(); i++) {

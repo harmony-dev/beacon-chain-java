@@ -51,11 +51,11 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
     BeaconState state = observableState.getLatestSlotState();
 
     SlotNumber slot = state.getSlot();
-    Hash32 beaconBlockRoot = spec.hash_tree_root(observableState.getHead());
+    Hash32 beaconBlockRoot = spec.signed_root(observableState.getHead());
     Hash32 targetRoot = getTargetRoot(state, observableState.getHead());
     Hash32 crosslinkDataRoot = Hash32.ZERO; // Note: This is a stub for phase 0.
     Crosslink previousCrosslink = getPreviousCrosslink(state, shard);
-    EpochNumber sourceEpoch = state.getJustifiedEpoch();
+    EpochNumber sourceEpoch = state.getCurrentJustifiedEpoch();
     Hash32 sourceRoot = getSourceRoot(state, observableState.getHead());
     AttestationData data =
         new AttestationData(
@@ -106,7 +106,7 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
   Hash32 getTargetRoot(BeaconState state, BeaconBlock head) {
     SlotNumber epochBoundarySlot = spec.get_epoch_start_slot(spec.slot_to_epoch(head.getSlot()));
     if (epochBoundarySlot.equals(head.getSlot())) {
-      return spec.hash_tree_root(head);
+      return spec.signed_root(head);
     } else {
       return spec.get_block_root(state, epochBoundarySlot);
     }
@@ -118,11 +118,7 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
   */
   @VisibleForTesting
   Crosslink getPreviousCrosslink(BeaconState state, ShardNumber shard) {
-    if (shard.equals(spec.getConstants().getBeaconChainShardNumber())) {
-      return Crosslink.EMPTY;
-    } else {
-      return state.getLatestCrosslinks().get(shard);
-    }
+    return state.getCurrentEpochCrosslinks().get(shard);
   }
 
   /*
@@ -133,12 +129,7 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
   */
   @VisibleForTesting
   Hash32 getSourceRoot(BeaconState state, BeaconBlock head) {
-    SlotNumber slot = spec.get_epoch_start_slot(state.getJustifiedEpoch());
-    if (slot.equals(head.getSlot())) {
-      return spec.hash_tree_root(head);
-    } else {
-      return spec.get_block_root(state, slot);
-    }
+    return state.getCurrentJustifiedRoot();
   }
 
   /*

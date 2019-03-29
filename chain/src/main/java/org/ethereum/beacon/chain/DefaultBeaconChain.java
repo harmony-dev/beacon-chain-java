@@ -16,7 +16,6 @@ import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
 import org.ethereum.beacon.consensus.verifier.BeaconStateVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconBlock;
-import org.ethereum.beacon.core.BeaconBlocks;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.schedulers.Schedulers;
@@ -30,9 +29,8 @@ public class DefaultBeaconChain implements MutableBeaconChain {
 
   private final SpecHelpers spec;
   private final BlockTransition<BeaconStateEx> initialTransition;
-  private final StateTransition<BeaconStateEx> perSlotTransition;
-  private final BlockTransition<BeaconStateEx> perBlockTransition;
-  private final StateTransition<BeaconStateEx> perEpochTransition;
+  private final StateTransition<BeaconStateEx> onSlotTransition;
+  private final BlockTransition<BeaconStateEx> onBlockTransition;
   private final BeaconBlockVerifier blockVerifier;
   private final BeaconStateVerifier stateVerifier;
 
@@ -49,18 +47,16 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   public DefaultBeaconChain(
       SpecHelpers spec,
       BlockTransition<BeaconStateEx> initialTransition,
-      StateTransition<BeaconStateEx> perSlotTransition,
-      BlockTransition<BeaconStateEx> perBlockTransition,
-      StateTransition<BeaconStateEx> perEpochTransition,
+      StateTransition<BeaconStateEx> onSlotTransition,
+      BlockTransition<BeaconStateEx> onBlockTransition,
       BeaconBlockVerifier blockVerifier,
       BeaconStateVerifier stateVerifier,
       BeaconChainStorage chainStorage,
       Schedulers schedulers) {
     this.spec = spec;
     this.initialTransition = initialTransition;
-    this.perSlotTransition = perSlotTransition;
-    this.perBlockTransition = perBlockTransition;
-    this.perEpochTransition = perEpochTransition;
+    this.onSlotTransition = onSlotTransition;
+    this.onBlockTransition = onBlockTransition;
     this.blockVerifier = blockVerifier;
     this.stateVerifier = stateVerifier;
     this.chainStorage = chainStorage;
@@ -90,12 +86,12 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   }
 
   private void initializeStorage() {
-    BeaconBlock initialGenesis = BeaconBlocks.createGenesis(spec.getConstants());
+    BeaconBlock initialGenesis = spec.get_empty_block();
     BeaconStateEx initialState = initialTransition.apply(BeaconStateEx.getEmpty(), initialGenesis);
 
     Hash32 initialStateRoot = spec.hash_tree_root(initialState);
     BeaconBlock genesis = initialGenesis.withStateRoot(initialStateRoot);
-    Hash32 genesisRoot = spec.hash_tree_root(genesis);
+    Hash32 genesisRoot = spec.signed_root(genesis);
     BeaconTuple tuple = BeaconTuple.of(genesis, initialState);
 
     tupleStorage.put(tuple);
@@ -126,60 +122,43 @@ public class DefaultBeaconChain implements MutableBeaconChain {
         blockVerifier.verify(block, preBlockState);
     if (!blockVerification.isPassed()) {
       logger.warn("Block verification failed: " + blockVerification + ": " +
-          block.toString(spec.getConstants(), parentState.getGenesisTime(), spec::hash_tree_root));
+          block.toString(spec.getConstants(), parentState.getGenesisTime(), spec::signed_root));
       return false;
     }
 
-    BeaconStateEx postBlockState = perBlockTransition.apply(preBlockState, block);
-    BeaconStateEx postEpochState;
-    if (spec.is_epoch_end(block.getSlot())) {
-      postEpochState = perEpochTransition.apply(postBlockState);
-    } else {
-      postEpochState = postBlockState;
-    }
+    BeaconStateEx postBlockState = onBlockTransition.apply(preBlockState, block);
 
     VerificationResult stateVerification =
-        stateVerifier.verify(postEpochState, block);
+        stateVerifier.verify(postBlockState, block);
     if (!stateVerification.isPassed()) {
       logger.warn("State verification failed: " + stateVerification);
       return false;
     }
 
-    BeaconTuple newTuple = BeaconTuple.of(block, postEpochState);
+    BeaconTuple newTuple = BeaconTuple.of(block, postBlockState);
     tupleStorage.put(newTuple);
-    updateFinality(parentState, postEpochState);
+    updateFinality(parentState, postBlockState);
 
     chainStorage.commit();
 
     long total = System.nanoTime() - s;
 
     this.recentlyProcessed = newTuple;
-    blockStream.onNext(new BeaconTupleDetails(block, preBlockState, postBlockState, postEpochState));
+    blockStream.onNext(new BeaconTupleDetails(block, preBlockState, postBlockState, postBlockState));
+
+    logger.info(
+        "new block inserted: {} in {}s",
+        newTuple
+            .getBlock()
+            .toString(
+                spec.getConstants(),
+                newTuple.getState().getGenesisTime(),
+                spec::signed_root),
+        String.format("%.3f", ((double) total) / 1_000_000_000d));
 
     if (spec.is_epoch_end(block.getSlot())) {
-      logger.info(
-          "new block inserted: {} in {}s, epoch avg without this block: {}s",
-          newTuple
-              .getBlock()
-              .toString(
-                  spec.getConstants(),
-                  newTuple.getState().getGenesisTime(),
-                  spec::hash_tree_root),
-          String.format("%.3f", ((double) total) / 1_000_000_000d),
-          String.format("%.3f", ((double) insertTimeCollector.getAvg()) / 1_000_000_000d));
-
       insertTimeCollector.reset();
     } else {
-      logger.info(
-          "new block inserted: {} in {}s",
-          newTuple
-              .getBlock()
-              .toString(
-                  spec.getConstants(),
-                  newTuple.getState().getGenesisTime(),
-                  spec::hash_tree_root),
-              String.format("%.3f", ((double) total) / 1_000_000_000d));
-
       insertTimeCollector.tick(total);
     }
 
@@ -198,10 +177,10 @@ public class DefaultBeaconChain implements MutableBeaconChain {
               current, spec.get_epoch_start_slot(current.getFinalizedEpoch()));
       chainStorage.getFinalizedStorage().set(finalizedRoot);
     }
-    if (previous.getJustifiedEpoch().less(current.getJustifiedEpoch())) {
+    if (previous.getCurrentJustifiedEpoch().less(current.getCurrentJustifiedEpoch())) {
       Hash32 justifiedRoot =
           spec.get_block_root(
-              current, spec.get_epoch_start_slot(current.getJustifiedEpoch()));
+              current, spec.get_epoch_start_slot(current.getCurrentJustifiedEpoch()));
       chainStorage.getJustifiedStorage().set(justifiedRoot);
     }
   }
@@ -215,7 +194,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   }
 
   private boolean exist(BeaconBlock block) {
-    Hash32 blockHash = spec.hash_tree_root(block);
+    Hash32 blockHash = spec.signed_root(block);
     return chainStorage.getBlockStorage().get(blockHash).isPresent();
   }
 
@@ -238,14 +217,10 @@ public class DefaultBeaconChain implements MutableBeaconChain {
 
   private BeaconStateEx applyEmptySlotTransitionsTillBlock(BeaconStateEx source, BeaconBlock block) {
     BeaconStateEx result = source;
-    for (SlotNumber slot : result.getSlot().increment().iterateTo(block.getSlot())) {
-      result = perSlotTransition.apply(result);
-      if (spec.is_epoch_end(result.getSlot())) {
-        result = perEpochTransition.apply(result);
-      }
+    SlotNumber slotsCnt = block.getSlot().minus(source.getSlot());
+    for (SlotNumber slot : slotsCnt) {
+      result = onSlotTransition.apply(result);
     }
-    // the slot at block should be processed before the block
-    result = perSlotTransition.apply(result);
 
     return result;
   }

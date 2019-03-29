@@ -25,7 +25,6 @@ import org.ethereum.beacon.util.LRUCache;
 import org.javatuples.Pair;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
-import tech.pegasys.artemis.util.collections.ReadList;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -42,8 +41,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
 
   private final HeadFunction headFunction;
   private final SpecHelpers spec;
-  private final StateTransition<BeaconStateEx> perSlotTransition;
-  private final StateTransition<BeaconStateEx> perEpochTransition;
+  private final StateTransition<BeaconStateEx> onSlotTransition;
 
   private final Publisher<SlotNumber> slotTicker;
   private final Publisher<Attestation> attestationPublisher;
@@ -68,13 +66,11 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
       Publisher<Attestation> attestationPublisher,
       Publisher<BeaconTupleDetails> beaconPublisher,
       SpecHelpers spec,
-      StateTransition<BeaconStateEx> perSlotTransition,
-      StateTransition<BeaconStateEx> perEpochTransition,
+      StateTransition<BeaconStateEx> onSlotTransition,
       Schedulers schedulers) {
     this.tupleStorage = chainStorage.getTupleStorage();
     this.spec = spec;
-    this.perSlotTransition = perSlotTransition;
-    this.perEpochTransition = perEpochTransition;
+    this.onSlotTransition = onSlotTransition;
     this.headFunction = new LMDGhostHeadFunction(chainStorage, spec);
     this.slotTicker = slotTicker;
     this.attestationPublisher = attestationPublisher;
@@ -170,8 +166,9 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   }
 
   private void addAttestationsFromState(BeaconState beaconState) {
-    ReadList<Integer, PendingAttestation> pendingAttestations =
-        beaconState.getLatestAttestations();
+    List<PendingAttestation> pendingAttestations =
+        beaconState.getCurrentEpochAttestations().listCopy();
+    pendingAttestations.addAll(beaconState.getPreviousEpochAttestations().listCopy());
     for (PendingAttestation pendingAttestation : pendingAttestations) {
       List<ValidatorIndex> participants =
           spec.get_attestation_participants(
@@ -233,10 +230,10 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
 
     PendingOperations pendingOperations = new PendingOperationsState(copyAttestationCache());
     if (slot.greater(head.getBlock().getSlot())) {
-      BeaconStateEx stateWithoutEpoch = applySlotTransitionsWithoutEpoch(head.getFinalState(), slot);
-      latestState = stateWithoutEpoch;
+      BeaconStateEx stateUponASlot = applySlotTransitions(head.getFinalState(), slot);
+      latestState = stateUponASlot;
       observableStateStream.onNext(
-          new ObservableBeaconState(head.getBlock(), stateWithoutEpoch, pendingOperations));
+          new ObservableBeaconState(head.getBlock(), stateUponASlot, pendingOperations));
     } else {
       if (head.getPostSlotState().isPresent()) {
         latestState = head.getPostSlotState().get();
@@ -247,11 +244,6 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
         latestState = head.getPostBlockState().get();
         observableStateStream.onNext(new ObservableBeaconState(
             head.getBlock(), head.getPostBlockState().get(), pendingOperations));
-        if (head.getPostEpochState().isPresent()) {
-          latestState = head.getPostEpochState().get();
-          observableStateStream.onNext(new ObservableBeaconState(
-              head.getBlock(), head.getPostEpochState().get(), pendingOperations));
-        }
       } else {
         latestState = head.getFinalState();
         observableStateStream.onNext(new ObservableBeaconState(
@@ -261,22 +253,21 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   }
 
   /**
-   * Applies next slot transitions until the <code>targetSlot</code> but
-   * doesn't apply EpochTransition for the <code>targetSlot</code>
+   * Applies next slot transitions until the <code>targetSlot</code>.
    *
    * @param source Source state
+   * @param targetSlot target slot.
    * @return new state, result of applied transition to the latest input state
    */
-  private BeaconStateEx applySlotTransitionsWithoutEpoch(
+  private BeaconStateEx applySlotTransitions(
       BeaconStateEx source, SlotNumber targetSlot) {
 
     BeaconStateEx state = source;
-    for (SlotNumber slot : source.getSlot().increment().iterateTo(targetSlot.increment())) {
-      state = perSlotTransition.apply(state);
-      if (spec.is_epoch_end(slot) && !slot.equals(targetSlot)) {
-        state = perEpochTransition.apply(state);
-      }
+    SlotNumber slotsCnt = targetSlot.minus(source.getSlot());
+    for (SlotNumber slot : slotsCnt) {
+      state = onSlotTransition.apply(state);
     }
+
     return state;
   }
 
@@ -294,7 +285,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
             (head) -> {
               BeaconTuple newHeadTuple =
                   tupleStorage
-                      .get(spec.hash_tree_root(head))
+                      .get(spec.signed_root(head))
                       .orElseThrow(
                           () -> new IllegalStateException("Beacon tuple not found for new head "));
               return new BeaconTupleDetails(newHeadTuple);

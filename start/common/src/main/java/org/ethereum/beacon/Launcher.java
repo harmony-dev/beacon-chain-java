@@ -1,7 +1,6 @@
 package org.ethereum.beacon;
 
 import static java.util.Collections.singletonList;
-import static org.ethereum.beacon.validator.crypto.BLS381Credentials.createWithInsecureSigner;
 
 import org.ethereum.beacon.chain.DefaultBeaconChain;
 import org.ethereum.beacon.chain.MutableBeaconChain;
@@ -13,15 +12,16 @@ import org.ethereum.beacon.chain.observer.ObservableStateProcessorImpl;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.chain.storage.BeaconChainStorageFactory;
 import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.transition.ExtendedSlotTransition;
 import org.ethereum.beacon.consensus.transition.InitialStateTransition;
 import org.ethereum.beacon.consensus.transition.PerBlockTransition;
 import org.ethereum.beacon.consensus.transition.PerEpochTransition;
 import org.ethereum.beacon.consensus.transition.PerSlotTransition;
+import org.ethereum.beacon.consensus.transition.StateCachingTransition;
+import org.ethereum.beacon.consensus.util.CachingSpecHelpers;
 import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
 import org.ethereum.beacon.consensus.verifier.BeaconStateVerifier;
 import org.ethereum.beacon.core.operations.Attestation;
-import org.ethereum.beacon.crypto.BLS381;
-import org.ethereum.beacon.crypto.BLS381.KeyPair;
 import org.ethereum.beacon.db.InMemoryDatabase;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.pow.DepositContract.ChainStart;
@@ -46,9 +46,11 @@ public class Launcher {
   private final Schedulers schedulers;
 
   private InitialStateTransition initialTransition;
+  private StateCachingTransition stateCachingTransition;
   private PerSlotTransition perSlotTransition;
   private PerBlockTransition perBlockTransition;
   private PerEpochTransition perEpochTransition;
+  private ExtendedSlotTransition extendedSlotTransition;
   private BeaconBlockVerifier blockVerifier;
   private BeaconStateVerifier stateVerifier;
 
@@ -82,7 +84,7 @@ public class Launcher {
       Schedulers schedulers,
       TimeCollector proposeTimeCollector) {
 
-    this.spec = spec;
+    this.spec = new CachingSpecHelpers(spec);
     this.depositContract = depositContract;
     this.validatorCred = validatorCred;
     this.wireApi = wireApi;
@@ -97,9 +99,13 @@ public class Launcher {
 
   void chainStarted(ChainStart chainStartEvent) {
     initialTransition = new InitialStateTransition(chainStartEvent, spec);
+    stateCachingTransition = new StateCachingTransition(spec);
     perSlotTransition = new PerSlotTransition(spec);
     perBlockTransition = new PerBlockTransition(spec);
     perEpochTransition = new PerEpochTransition(spec);
+    extendedSlotTransition =
+        new ExtendedSlotTransition(
+            stateCachingTransition, perEpochTransition, perSlotTransition, spec);
 
     db = new InMemoryDatabase();
     beaconChainStorage = storageFactory.create(db);
@@ -107,16 +113,16 @@ public class Launcher {
     blockVerifier = BeaconBlockVerifier.createDefault(spec);
     stateVerifier = BeaconStateVerifier.createDefault(spec);
 
-    beaconChain = new DefaultBeaconChain(
-        spec,
-        initialTransition,
-        perSlotTransition,
-        perBlockTransition,
-        perEpochTransition,
-        blockVerifier,
-        stateVerifier,
-        beaconChainStorage,
-        schedulers);
+    beaconChain =
+        new DefaultBeaconChain(
+            spec,
+            initialTransition,
+            extendedSlotTransition,
+            perBlockTransition,
+            blockVerifier,
+            stateVerifier,
+            beaconChainStorage,
+            schedulers);
     beaconChain.init();
 
     slotTicker =
@@ -134,13 +140,12 @@ public class Launcher {
         allAttestations,
         beaconChain.getBlockStatesStream(),
         spec,
-        perSlotTransition,
-        perEpochTransition,
+        extendedSlotTransition,
         schedulers);
     observableStateProcessor.start();
 
     if (validatorCred != null) {beaconChainProposer = new BeaconChainProposerImpl(spec,
-         perBlockTransition, perEpochTransition, depositContract);
+         perBlockTransition, depositContract);
     beaconChainAttester = new BeaconChainAttesterImpl(spec);
 
     beaconChainValidator = new MultiValidatorService(
@@ -200,6 +205,10 @@ public class Launcher {
 
   public PerEpochTransition getPerEpochTransition() {
     return perEpochTransition;
+  }
+
+  public ExtendedSlotTransition getExtendedSlotTransition() {
+    return extendedSlotTransition;
   }
 
   public BeaconBlockVerifier getBlockVerifier() {
