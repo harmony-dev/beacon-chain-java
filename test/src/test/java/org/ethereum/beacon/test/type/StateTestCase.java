@@ -93,7 +93,7 @@ public class StateTestCase implements TestCase {
     private List<String> validatorBalances;
 
     @JsonProperty("validator_registry_update_epoch")
-    private BigInteger validatorRegistryUpdateEpoch;
+    private String validatorRegistryUpdateEpoch;
 
     @JsonProperty("latest_randao_mixes")
     private List<String> latestRandaoMixes;
@@ -135,10 +135,10 @@ public class StateTestCase implements TestCase {
     private String currentJustifiedRoot;
 
     @JsonProperty("justification_bitfield")
-    private BigInteger justificationBitfield;
+    private String justificationBitfield;
 
     @JsonProperty("finalized_epoch")
-    private BigInteger finalizedEpoch;
+    private String finalizedEpoch;
 
     @JsonProperty("finalized_root")
     private String finalizedRoot;
@@ -156,7 +156,7 @@ public class StateTestCase implements TestCase {
     private List<String> latestActiveIndexRoots;
 
     @JsonProperty("latest_slashed_balances")
-    private List<BigInteger> latestSlashedBalances;
+    private List<String> latestSlashedBalances;
 
     @JsonProperty("latest_block_header")
     private BlockHeaderData latestBlockHeader;
@@ -213,11 +213,11 @@ public class StateTestCase implements TestCase {
       this.validatorBalances = validatorBalances;
     }
 
-    public BigInteger getValidatorRegistryUpdateEpoch() {
+    public String getValidatorRegistryUpdateEpoch() {
       return validatorRegistryUpdateEpoch;
     }
 
-    public void setValidatorRegistryUpdateEpoch(BigInteger validatorRegistryUpdateEpoch) {
+    public void setValidatorRegistryUpdateEpoch(String validatorRegistryUpdateEpoch) {
       this.validatorRegistryUpdateEpoch = validatorRegistryUpdateEpoch;
     }
 
@@ -325,19 +325,19 @@ public class StateTestCase implements TestCase {
       this.currentJustifiedRoot = currentJustifiedRoot;
     }
 
-    public BigInteger getJustificationBitfield() {
+    public String getJustificationBitfield() {
       return justificationBitfield;
     }
 
-    public void setJustificationBitfield(BigInteger justificationBitfield) {
+    public void setJustificationBitfield(String justificationBitfield) {
       this.justificationBitfield = justificationBitfield;
     }
 
-    public BigInteger getFinalizedEpoch() {
+    public String getFinalizedEpoch() {
       return finalizedEpoch;
     }
 
-    public void setFinalizedEpoch(BigInteger finalizedEpoch) {
+    public void setFinalizedEpoch(String finalizedEpoch) {
       this.finalizedEpoch = finalizedEpoch;
     }
 
@@ -381,11 +381,11 @@ public class StateTestCase implements TestCase {
       this.latestActiveIndexRoots = latestActiveIndexRoots;
     }
 
-    public List<BigInteger> getLatestSlashedBalances() {
+    public List<String> getLatestSlashedBalances() {
       return latestSlashedBalances;
     }
 
-    public void setLatestSlashedBalances(List<BigInteger> latestSlashedBalances) {
+    public void setLatestSlashedBalances(List<String> latestSlashedBalances) {
       this.latestSlashedBalances = latestSlashedBalances;
     }
 
@@ -436,7 +436,7 @@ public class StateTestCase implements TestCase {
       @JsonProperty("current_version")
       private String currentVersion;
 
-      private BigInteger epoch;
+      private String epoch;
 
       public String getPreviousVersion() {
         return previousVersion;
@@ -454,11 +454,11 @@ public class StateTestCase implements TestCase {
         this.currentVersion = currentVersion;
       }
 
-      public BigInteger getEpoch() {
+      public String getEpoch() {
         return epoch;
       }
 
-      public void setEpoch(BigInteger epoch) {
+      public void setEpoch(String epoch) {
         this.epoch = epoch;
       }
     }
