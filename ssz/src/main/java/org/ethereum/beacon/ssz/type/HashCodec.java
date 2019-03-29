@@ -61,7 +61,7 @@ public class HashCodec implements SSZCodec {
     try {
       result.write(res.toArrayUnsafe());
     } catch (IOException e) {
-      String error = String.format("Failed to write data of type %s to stream", field.type);
+      String error = String.format("Failed to write data of type %s to stream", field.fieldType);
       throw new SSZException(error, e);
     }
   }
@@ -138,11 +138,11 @@ public class HashCodec implements SSZCodec {
   }
 
   private HashType parseFieldType(SSZSchemeBuilder.SSZScheme.SSZField field) {
-    if (field.type.equals(Hash32.class)) {
+    if (field.fieldType.equals(Hash32.class)) {
       return HashType.of(32);
     }
 
-    throw new SSZSchemeException(String.format("Hash of class %s is not supported", field.type));
+    throw new SSZSchemeException(String.format("Hash of class %s is not supported", field.fieldType));
   }
 
   static class HashType {

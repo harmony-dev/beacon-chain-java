@@ -133,7 +133,7 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
     // method to get all object data and that's all!
     if (!mainAnnotation.encode().isEmpty()) {
       SSZScheme.SSZField encode = new SSZScheme.SSZField();
-      encode.type = byte[].class;
+      encode.fieldType = byte[].class;
       encode.extraType = "bytes";
       encode.name = "encode";
       encode.getter = mainAnnotation.encode();
@@ -190,7 +190,7 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
       if (annotation != null && annotation.skipContainer()) {
         newField.notAContainer = true;
       }
-      newField.type = type;
+      newField.fieldType = type;
       String name = field.getName();
       newField.name = name;
       if (typeAnnotation != null) {
@@ -198,14 +198,6 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
         newField.extraType = extra.getValue0();
         newField.extraSize = extra.getValue1();
       }
-      if (type.equals(List.class)) {
-        newField.multipleType = SSZScheme.MultipleType.LIST;
-        newField.type = extractListInternalType(field);
-      } else if (type.isArray() && !type.getComponentType().isPrimitive()) {
-        newField.multipleType = SSZScheme.MultipleType.ARRAY;
-        newField.type = type.getComponentType();
-      }
-
       newField.getter = fieldGetters.containsKey(name) ? fieldGetters.get(name).getName() : null;
       scheme.getFields().add(newField);
     }

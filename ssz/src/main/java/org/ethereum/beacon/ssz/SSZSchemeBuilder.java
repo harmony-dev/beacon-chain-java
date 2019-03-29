@@ -1,7 +1,9 @@
 package org.ethereum.beacon.ssz;
 
+import java.lang.reflect.ParameterizedType;
 import java.util.ArrayList;
 import java.util.List;
+import org.ethereum.beacon.ssz.annotation.SSZ;
 
 /** Builds SSZScheme using SSZ model info provided via constructor or predefined */
 public interface SSZSchemeBuilder {
@@ -20,15 +22,10 @@ public interface SSZSchemeBuilder {
       return fields;
     }
 
-    public enum MultipleType {
-      NONE,
-      LIST,
-      ARRAY
-    }
-
     public static class SSZField {
-      public Class<?> type;
-      public MultipleType multipleType = MultipleType.NONE;
+      public Class<?> fieldType;
+      public ParameterizedType fieldGenericType = null;
+      public SSZ fieldAnnotation;
       public String extraType = null;
       public Integer extraSize = null;
       public String name;
@@ -40,27 +37,24 @@ public interface SSZSchemeBuilder {
        */
       public boolean notAContainer = false;
 
+      public SSZField() {
+      }
+
+      public SSZField(Class<?> fieldType) {
+        this.fieldType = fieldType;
+      }
+
       @Override
       public String toString() {
-        return "SSZField{"
-            + "type="
-            + type
-            + ", multipleType="
-            + multipleType
-            + ", extraType='"
-            + extraType
-            + '\''
-            + ", extraSize="
-            + extraSize
-            + ", name='"
-            + name
-            + '\''
-            + ", getter='"
-            + getter
-            + '\''
-            + ", notAContainer="
-            + notAContainer
-            + '}';
+        return "SSZField{" +
+            "fieldClass=" + fieldType +
+            ", fieldGenericType=" + fieldGenericType +
+            ", extraType='" + extraType + '\'' +
+            ", extraSize=" + extraSize +
+            ", name='" + name + '\'' +
+            ", getter='" + getter + '\'' +
+            ", notAContainer=" + notAContainer +
+            '}';
       }
     }
   }

@@ -1,0 +1,121 @@
+package org.ethereum.beacon.ssz.visitor;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Function;
+import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
+import org.ethereum.beacon.ssz.visitor.SSZSimpleHasher.MerkleTrie;
+import org.ethereum.beacon.ssz.visitor.SSZSimpleSerializer.SSZSerializerResult;
+import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.bytes.Bytes32;
+import tech.pegasys.artemis.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.bytes.BytesValues;
+
+public class SSZSimpleHasher implements SSZVisitor<MerkleTrie> {
+  public static class MerkleTrie {
+    final Hash32[] nodes;
+
+    public MerkleTrie(Hash32[] nodes) {
+      this.nodes = nodes;
+    }
+
+    public Hash32 getPureRoot() {
+      return nodes[1];
+    }
+
+    public Hash32 getFinalRoot() {
+      return nodes[0];
+    }
+
+    public void setFinalRoot(Hash32 mixedInLengthHash) {
+      nodes[0] = mixedInLengthHash;
+    }
+  }
+
+  final SSZVisitorHandler<SSZSimpleSerializer.SSZSerializerResult> serializer;
+  final Function<BytesValue, Hash32> hashFunction;
+  final int bytesPerChunk;
+
+  public SSZSimpleHasher(
+      SSZVisitorHandler<SSZSerializerResult> serializer,
+      Function<BytesValue, Hash32> hashFunction, int bytesPerChunk) {
+    this.serializer = serializer;
+    this.hashFunction = hashFunction;
+    this.bytesPerChunk = bytesPerChunk;
+  }
+
+  @Override
+  public MerkleTrie visitBasicValue(SSZField descriptor, Object value) {
+
+    SSZSimpleSerializer.SSZSerializerResult sszSerializerResult = serializer.visitAny(descriptor, value);
+    return merkleize(pack(sszSerializerResult.serializedBody));
+  }
+
+  @Override
+  public MerkleTrie visitComposite(SSZCompositeValue value,
+      Function<Long, MerkleTrie> childVisitor) {
+    MerkleTrie merkleize;
+    if (value.getCompositeType().isBasicElementType()) {
+      SSZSimpleSerializer.SSZSerializerResult sszSerializerResult = serializer.visitComposite(value);
+
+      merkleize = merkleize(pack(sszSerializerResult.serializedBody));
+    } else {
+      List<Hash32> childHashes = new ArrayList<>();
+      for (long i = 0; i < value.getChildCount(); i++) {
+        childHashes.add(childVisitor.apply(i).getFinalRoot());
+      }
+      merkleize = merkleize(childHashes);
+    }
+    if (value.getCompositeType().isVariableSize()) {
+      Hash32 mixInLength = hashFunction
+          .apply(BytesValue.concat(merkleize.getFinalRoot(), serializeLength(value.getChildCount())));
+      merkleize.setFinalRoot(mixInLength);
+    }
+    return merkleize;
+  }
+
+  protected List<BytesValue> pack(BytesValue value) {
+    List<BytesValue> ret = new ArrayList<>();
+    int i = 0;
+    while (i + bytesPerChunk <= value.size()) {
+      ret.add(value.slice(i, bytesPerChunk));
+      i += bytesPerChunk;
+    }
+    if (value.size() % bytesPerChunk != 0) {
+      BytesValue last = value.slice(i, value.size() - i);
+      BytesValue lastPadded = BytesValue.concat(
+          last, BytesValue.wrap(new byte[bytesPerChunk - value.size() % bytesPerChunk]));
+      ret.add(lastPadded);
+    }
+    return ret;
+  }
+
+  public MerkleTrie merkleize(List<? extends BytesValue> chunks) {
+    int chunksCount = (int) nextPowerOf2(chunks.size());
+    BytesValue[] nodes = new BytesValue[chunksCount * 2];
+
+    // TODO optimize: no need to recalc zero hashes on upper trie levels, e.g. hash(zeroHash + zeroHash)
+    for (int i = 0; i < chunksCount; i++) {
+      nodes[i + chunksCount] = i < chunks.size() ? chunks.get(i) : Bytes32.ZERO;
+    }
+
+    for (int i = chunksCount - 1; i > 0; i--) {
+      nodes[i] = hashFunction.apply(BytesValue.concat(nodes[i * 2], nodes[i * 2 + 1]));
+    }
+    nodes[0] = nodes[1];
+    return new MerkleTrie((Hash32[]) Arrays.copyOf(nodes, chunksCount));
+  }
+
+  protected long nextPowerOf2(int x) {
+    if (x <= 1) {
+      return 1;
+    } else {
+      return Long.highestOneBit(x - 1) << 1;
+    }
+  }
+
+  BytesValue serializeLength(long len) {
+    return BytesValues.ofUnsignedIntLittleEndian(len);
+  }
+}

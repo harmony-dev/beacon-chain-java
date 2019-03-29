@@ -1,22 +1,14 @@
 package org.ethereum.beacon.ssz;
 
-import org.ethereum.beacon.ssz.annotation.SSZSerializable;
-import net.consensys.cava.bytes.Bytes;
-import org.javatuples.Triplet;
-
+import java.util.function.Function;
+import java.util.function.Predicate;
 import javax.annotation.Nullable;
-import java.beans.IntrospectionException;
-import java.beans.Introspector;
-import java.beans.PropertyDescriptor;
-import java.io.ByteArrayOutputStream;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static org.ethereum.beacon.ssz.SSZCodecHasher.EMPTY_CHUNK;
-import static org.ethereum.beacon.ssz.SSZSerializer.checkSSZSerializableAnnotation;
+import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
+import org.ethereum.beacon.ssz.visitor.SSZSimpleHasher;
+import org.ethereum.beacon.ssz.visitor.SSZVisitorHall;
+import org.javatuples.Pair;
+import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.bytes.BytesValue;
 
 /**
  * Implements Tree Hash algorithm.
@@ -25,14 +17,17 @@ import static org.ethereum.beacon.ssz.SSZSerializer.checkSSZSerializableAnnotati
  *     href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/simple-serialize.md#tree-hash">SSZ
  *     Tree Hash</a> in the spec
  */
-public class SSZHashSerializer implements BytesHasher, BytesSerializer {
+public class SSZHashSerializer implements BytesHasher {
 
-  private static final byte[] EMPTY_PREFIX = SSZSerializer.EMPTY_PREFIX;
-  private static final int HASH_LENGTH = 32;
+  private static final int BYTES_PER_CHUNK = 32;
 
-  private SSZSchemeBuilder schemeBuilder;
+  private final SSZSchemeBuilder schemeBuilder;
 
-  private SSZCodecResolver codecResolver;
+  private final SSZCodecResolver codecResolver;
+
+  private final SSZVisitorHall visitorHall;
+  private final SSZSimpleHasher hasherVisitor;
+  private final SSZSerializer serializer;
 
   /**
    * SSZ hasher with following helpers
@@ -41,142 +36,50 @@ public class SSZHashSerializer implements BytesHasher, BytesSerializer {
    * @param codecResolver Resolves field encoder/decoder {@link
    *     org.ethereum.beacon.ssz.type.SSZCodec} function
    */
-  public SSZHashSerializer(SSZSchemeBuilder schemeBuilder, SSZCodecResolver codecResolver) {
+  public SSZHashSerializer(SSZSchemeBuilder schemeBuilder, SSZCodecResolver codecResolver,
+      Function<BytesValue, Hash32> hashFunction) {
+
     this.schemeBuilder = schemeBuilder;
     this.codecResolver = codecResolver;
+
+    this.serializer = new SSZSerializer(schemeBuilder, codecResolver, null);
+    this.visitorHall = new SSZVisitorHall(schemeBuilder, codecResolver);
+    hasherVisitor = new SSZSimpleHasher(serializer, hashFunction, BYTES_PER_CHUNK);
   }
 
   /** Calculates hash of the input object */
   @Override
   public byte[] hash(@Nullable Object input, Class clazz) {
-    byte[] hash;
-    if (input instanceof List) {
-      hash = hashList((List) input);
-    } else {
-      hash = hashImpl(input, clazz, null);
-    }
-    return hash;
+    return visitorHall.handleAny(new SSZField(clazz), input, hasherVisitor).getFinalRoot().extractArray();
   }
 
-  private byte[] hashImpl(@Nullable Object inputObject, Class<?> inputClazz, @Nullable String truncateField) {
-    checkSSZSerializableAnnotation(inputClazz);
+  @Override
+  public <C> byte[] hashTruncate(@Nullable C input, Class<? extends C> clazz, String field) {
+    SSZVisitorHall hall = new SSZVisitorHall(schemeBuilder, codecResolver);
+    hall.setContainerMembersFilter(new TruncateFilter(clazz, field));
+    return visitorHall.handleAny(new SSZField(clazz), input, hasherVisitor).getFinalRoot().extractArray();
+  }
 
-    if (inputObject == null) {
-      return EMPTY_CHUNK.toArray();
+  private static class TruncateFilter implements Predicate<Pair<Class<?>, SSZField>> {
+    private final Class<?> truncateClass;
+    private final String startFieldName;
+    private boolean fieldHit;
+
+    public TruncateFilter(Class<?> truncateClass, String startFieldName) {
+      this.truncateClass = truncateClass;
+      this.startFieldName = startFieldName;
     }
 
-    Object input;
-    Class<?> clazz;
-    if (!inputClazz.getAnnotation(SSZSerializable.class).instanceGetter().isEmpty()) {
-      try {
-        Method instanceGetter = inputClazz
-            .getMethod(inputClazz.getAnnotation(SSZSerializable.class).instanceGetter());
-        input = instanceGetter.invoke(inputObject);
-        clazz = input.getClass();
-      } catch (Exception e) {
-        throw new RuntimeException("Error processing SSZSerializable.instanceGetter attribute", e);
-      }
-    } else {
-      input = inputObject;
-      clazz = inputClazz;
-    }
-
-    // Fill up map with all available method getters
-    Map<String, Method> getters = new HashMap<>();
-    try {
-      for (PropertyDescriptor pd : Introspector.getBeanInfo(clazz).getPropertyDescriptors()) {
-        getters.put(pd.getReadMethod().getName(), pd.getReadMethod());
-      }
-    } catch (IntrospectionException e) {
-      String error = String.format("Couldn't enumerate all getters in class %s", clazz.getName());
-      throw new RuntimeException(error, e);
-    }
-
-    // Encode object fields one by one
-    SSZSchemeBuilder.SSZScheme fullScheme = schemeBuilder.build(clazz);
-    SSZSchemeBuilder.SSZScheme scheme;
-    if (truncateField == null) {
-      scheme = fullScheme;
-    } else {
-      scheme = new SSZSchemeBuilder.SSZScheme();
-      boolean fieldFound = false;
-      for (SSZSchemeBuilder.SSZScheme.SSZField field : fullScheme.getFields()) {
-        if (field.name.equals(truncateField)) {
-          fieldFound = true;
-          break;
+    @Override
+    public boolean test(Pair<Class<?>, SSZField> field) {
+      if (field.getValue0().equals(truncateClass)) {
+        if (startFieldName.equals(field.getValue1().name)) {
+          fieldHit = true;
         }
-        scheme.getFields().add(field);
-      }
-      if (!fieldFound) {
-        throw new RuntimeException(
-            String.format("Field %s doesn't exist in object %s", truncateField, input));
+        return fieldHit;
+      } else {
+        return false;
       }
     }
-
-    SSZCodecHasher codecHasher = (SSZCodecHasher) codecResolver;
-    List<Bytes> containerValues = new ArrayList<>();
-    for (SSZSchemeBuilder.SSZScheme.SSZField field : scheme.getFields()) {
-      Object value;
-      ByteArrayOutputStream res = new ByteArrayOutputStream();
-      Method getter = getters.get(field.getter);
-      try {
-        if (getter != null) { // We have getter
-          value = getter.invoke(input);
-        } else { // Trying to access field directly
-          value = clazz.getField(field.name).get(input);
-        }
-      } catch (Exception e) {
-        String error =
-            String.format(
-                "Failed to get value from field %s, your should "
-                    + "either have public field or public getter for it",
-                field.name);
-        throw new SSZSchemeException(error);
-      }
-
-      codecResolver.resolveEncodeFunction(field).accept(new Triplet<>(value, res, this));
-      containerValues.add(codecHasher.hash_tree_root_element(Bytes.wrap(res.toByteArray())));
-    }
-
-    return codecHasher.merkleize(containerValues).toArray();
-  }
-
-  @Override
-  public byte[] hashTruncate(@Nullable Object input, Class clazz, String field) {
-    if (input instanceof List) {
-      throw new RuntimeException("hashTruncate doesn't support lists");
-    } else {
-      return hashImpl(input, clazz, field);
-    }
-  }
-
-  private byte[] hashList(List input) {
-    if (input.isEmpty()) {
-      return EMPTY_CHUNK.toArray();
-    }
-    Class internalClass = input.get(0).getClass();
-    checkSSZSerializableAnnotation(internalClass);
-
-    // Cook field for such List
-    SSZSchemeBuilder.SSZScheme.SSZField field = new SSZSchemeBuilder.SSZScheme.SSZField();
-    field.type = internalClass;
-    field.multipleType = SSZSchemeBuilder.SSZScheme.MultipleType.LIST;
-    field.notAContainer = false;
-
-    ByteArrayOutputStream res = new ByteArrayOutputStream();
-    codecResolver.resolveEncodeFunction(field).accept(new Triplet<>(input, res, this));
-    SSZCodecHasher codecHasher = (SSZCodecHasher) codecResolver;
-
-    return codecHasher.mix_in_length(Bytes.wrap(res.toByteArray()), input.size()).toArray();
-  }
-
-  @Override
-  public <C> byte[] encode(@Nullable C input, Class<? extends C> clazz) {
-    return hash(input, clazz);
-  }
-
-  @Override
-  public <C> C decode(byte[] data, Class<? extends C> clazz) {
-    throw new RuntimeException("Decode function is not implemented for hash");
   }
 }

@@ -81,7 +81,7 @@ public class BytesCodec implements SSZCodec {
     try {
       result.write(res.toArrayUnsafe());
     } catch (IOException e) {
-      String error = String.format("Failed to write data of type %s to stream", field.type);
+      String error = String.format("Failed to write data of type %s to stream", field.fieldType);
       throw new SSZException(error, e);
     }
   }
@@ -203,11 +203,11 @@ public class BytesCodec implements SSZCodec {
   }
 
   private BytesType parseFieldType(SSZSchemeBuilder.SSZScheme.SSZField field) {
-    if (classToByteType.containsKey(field.type)) {
-      return classToByteType.get(field.type);
+    if (classToByteType.containsKey(field.fieldType)) {
+      return classToByteType.get(field.fieldType);
     }
 
-    throw new SSZSchemeException(String.format("Hash of class %s is not supported", field.type));
+    throw new SSZSchemeException(String.format("Hash of class %s is not supported", field.fieldType));
   }
 
   static class BytesType {

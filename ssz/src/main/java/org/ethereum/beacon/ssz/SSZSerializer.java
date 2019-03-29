@@ -2,7 +2,17 @@ package org.ethereum.beacon.ssz;
 
 import net.consensys.cava.bytes.Bytes;
 import net.consensys.cava.ssz.BytesSSZReaderProxy;
+import net.consensys.cava.ssz.SSZException;
+import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
+import org.ethereum.beacon.ssz.visitor.SSZSimpleSerializer;
+import org.ethereum.beacon.ssz.visitor.SSZSimpleSerializer.SSZSerializerResult;
+import org.ethereum.beacon.ssz.visitor.SSZVisitor;
+import org.ethereum.beacon.ssz.visitor.SSZCompositeType;
+import org.ethereum.beacon.ssz.visitor.SSZCompositeValue;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
+import org.ethereum.beacon.ssz.type.SSZCodec;
+import org.ethereum.beacon.ssz.visitor.SSZVisitorHall;
+import org.ethereum.beacon.ssz.visitor.SSZVisitorHandler;
 import org.javatuples.Pair;
 import org.javatuples.Triplet;
 
@@ -20,7 +30,7 @@ import java.util.Map;
 import static org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme;
 
 /** SSZ serializer/deserializer */
-public class SSZSerializer implements BytesSerializer {
+public class SSZSerializer implements BytesSerializer, SSZVisitorHandler<SSZSimpleSerializer.SSZSerializerResult> {
 
   public static final int LENGTH_PREFIX_BYTE_SIZE = Integer.SIZE / Byte.SIZE;
   static final byte[] EMPTY_PREFIX = new byte[LENGTH_PREFIX_BYTE_SIZE];
@@ -30,6 +40,9 @@ public class SSZSerializer implements BytesSerializer {
   private SSZCodecResolver codecResolver;
 
   private SSZModelFactory sszModelFactory;
+
+  private final SSZVisitorHall sszVisitorHall;
+  private final SSZSimpleSerializer simpleSerializer;
 
   /**
    * SSZ serializer/deserializer with following helpers
@@ -46,6 +59,8 @@ public class SSZSerializer implements BytesSerializer {
     this.schemeBuilder = schemeBuilder;
     this.codecResolver = codecResolver;
     this.sszModelFactory = sszModelFactory;
+    sszVisitorHall = new SSZVisitorHall(schemeBuilder, codecResolver);
+    simpleSerializer = new SSZSimpleSerializer(codecResolver);
   }
 
   static void checkSSZSerializableAnnotation(Class clazz) {
@@ -68,65 +83,17 @@ public class SSZSerializer implements BytesSerializer {
    */
   @Override
   public <C> byte[] encode(@Nullable C inputObject, Class<? extends C> inputClazz) {
-    checkSSZSerializableAnnotation(inputClazz);
+    return visit(inputObject, inputClazz).getSerialized().getArrayUnsafe();
+  }
 
-    // Null check
-    if (inputObject == null) {
-      return EMPTY_PREFIX;
-    }
+  @Override
+  public SSZSerializerResult visitAny(SSZField descriptor, Object value) {
+    return sszVisitorHall.handleAny(descriptor, value, simpleSerializer);
+  }
 
-    Object input;
-    Class<?> clazz;
-    if (!inputClazz.getAnnotation(SSZSerializable.class).instanceGetter().isEmpty()) {
-      try {
-        Method instanceGetter = inputClazz
-            .getMethod(inputClazz.getAnnotation(SSZSerializable.class).instanceGetter());
-        input = instanceGetter.invoke(inputObject);
-        clazz = input.getClass();
-      } catch (Exception e) {
-        throw new RuntimeException("Error processing SSZSerializable.instanceGetter attribute", e);
-      }
-    } else {
-      input = inputObject;
-      clazz = inputClazz;
-    }
-
-    // Fill up map with all available method getters
-    Map<String, Method> getters = new HashMap<>();
-    try {
-      for (PropertyDescriptor pd : Introspector.getBeanInfo(clazz).getPropertyDescriptors()) {
-        getters.put(pd.getReadMethod().getName(), pd.getReadMethod());
-      }
-    } catch (IntrospectionException e) {
-      String error = String.format("Couldn't enumerate all getters in class %s", clazz.getName());
-      throw new RuntimeException(error, e);
-    }
-
-    // Encode object fields one by one
-    SSZScheme scheme = buildScheme(clazz);
-    ByteArrayOutputStream res = new ByteArrayOutputStream();
-    for (SSZScheme.SSZField field : scheme.getFields()) {
-      Object value;
-      Method getter = getters.get(field.getter);
-      try {
-        if (getter != null) { // We have getter
-          value = getter.invoke(input);
-        } else { // Trying to access field directly
-          value = clazz.getField(field.name).get(input);
-        }
-      } catch (Exception e) {
-        String error =
-            String.format(
-                "Failed to get value from field %s, your should "
-                    + "either have public field or public getter for it",
-                field.name);
-        throw new SSZSchemeException(error);
-      }
-
-      codecResolver.resolveEncodeFunction(field).accept(new Triplet<>(value, res, this));
-    }
-
-    return res.toByteArray();
+  @Override
+  public <C> SSZSerializerResult visit(C input, Class<? extends C> clazz) {
+    return visitAny(new SSZField(clazz), input);
   }
 
   /**

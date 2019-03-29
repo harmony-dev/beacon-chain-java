@@ -57,7 +57,7 @@ public class SszRunner implements Runner {
     this.currentScheme = new SSZSchemeBuilder.SSZScheme();
     SSZSchemeBuilder.SSZScheme.SSZField field = new SSZSchemeBuilder.SSZScheme.SSZField();
     field.name = "value";
-    field.type = BigInteger.class;
+    field.fieldType = BigInteger.class;
     field.multipleType = SSZSchemeBuilder.SSZScheme.MultipleType.NONE;
     field.notAContainer = false;
     field.getter = "getValue";

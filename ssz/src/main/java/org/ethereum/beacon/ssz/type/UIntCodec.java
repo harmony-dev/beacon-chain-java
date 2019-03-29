@@ -283,7 +283,7 @@ public class UIntCodec implements SSZCodec {
   }
 
   private NumericType parseFieldType(SSZSchemeBuilder.SSZScheme.SSZField field) {
-    return classToNumericType.get(field.type);
+    return classToNumericType.get(field.fieldType);
   }
 
   enum Type {

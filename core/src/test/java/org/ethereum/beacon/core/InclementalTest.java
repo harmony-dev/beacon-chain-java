@@ -1,10 +1,18 @@
 package org.ethereum.beacon.core;
 
-import org.ethereum.beacon.core.Incremental.ContainerUpdateTracker;
+import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.List;
+import java.util.function.Supplier;
+import org.ethereum.beacon.util.Incremental;
+import org.ethereum.beacon.util.Incremental.ContainerUpdateTracker;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
+import org.junit.Ignore;
+import org.junit.Test;
 import tech.pegasys.artemis.util.collections.WriteList;
 import tech.pegasys.artemis.util.collections.WriteVector;
 import tech.pegasys.artemis.util.uint.UInt64;
@@ -12,7 +20,7 @@ import tech.pegasys.artemis.util.uint.UInt64;
 public class InclementalTest {
 
   @SSZSerializable
-  static class Container1 implements Incremental<ContainerUpdateTracker>{
+  static class Container1 implements Incremental<ContainerUpdateTracker> {
     private @SSZ UInt64 uint1;
     private @SSZ Container2 container;
     private @SSZ WriteVector<ValidatorIndex, Gwei> balances;
@@ -21,8 +29,8 @@ public class InclementalTest {
     private ContainerUpdateTracker updateTracker;
 
     @Override
-    public void installUpdateTracker(ContainerUpdateTracker updateTracker) {
-      this.updateTracker = updateTracker;
+    public <C extends ContainerUpdateTracker> C getUpdateTracker(Supplier<C> trackerFactory) {
+      return (C) (updateTracker != null ? updateTracker : (updateTracker = trackerFactory.get()));
     }
 
     public void setUint1(UInt64 uint1) {
@@ -62,5 +70,20 @@ public class InclementalTest {
   static class Container2 {
     @SSZ UInt64 uint10;
     @SSZ boolean bool1;
+  }
+
+  public static class T {
+    public List<List<String>> f;
+    public String s;
+  }
+
+  @Test
+  @Ignore
+  public void test1() throws Exception {
+    Field f = T.class.getField("s");
+    Type genericType = f.getGenericType();
+    System.out.println(genericType);
+    ParameterizedType parameterizedType = (ParameterizedType) genericType;
+    System.out.println(parameterizedType.getOwnerType());
   }
 }

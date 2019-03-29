@@ -1,6 +1,7 @@
-package org.ethereum.beacon.core;
+package org.ethereum.beacon.util;
 
-import org.ethereum.beacon.core.Incremental.UpdateTracker;
+import java.util.function.Supplier;
+import org.ethereum.beacon.util.Incremental.UpdateTracker;
 
 public interface Incremental<TrackerType extends UpdateTracker> {
 
@@ -22,5 +23,5 @@ public interface Incremental<TrackerType extends UpdateTracker> {
     }
   }
 
-  void installUpdateTracker(TrackerType updateTracker);
+  <C extends TrackerType> C getUpdateTracker(Supplier<C> trackerFactory);
 }

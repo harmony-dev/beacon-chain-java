@@ -247,7 +247,7 @@ public class UIntPrimitive implements SSZCodec {
       throw new SSZSchemeException(error);
     }
 
-    NumericType res = classToNumericType.get(field.type);
+    NumericType res = classToNumericType.get(field.fieldType);
     if (field.extraSize != null) {
       res = NumericType.of(res.type, field.extraSize);
     }

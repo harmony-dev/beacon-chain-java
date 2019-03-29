@@ -16,6 +16,10 @@ import java.util.Set;
  */
 public interface SSZCodec {
 
+  default long getSize() {
+    return 0;
+  }
+
   /**
    * Set of compatible SSZ types represented as strings. If type could be extended with numeric
    * size, only text part is added in type part.
@@ -109,7 +113,7 @@ public interface SSZCodec {
    */
   default Object throwUnsupportedType(SSZSchemeBuilder.SSZScheme.SSZField field)
       throws RuntimeException {
-    throw new SSZSchemeException(String.format("Type [%s] is not supported", field.type));
+    throw new SSZSchemeException(String.format("Type [%s] is not supported", field.fieldType));
   }
 
   /**
@@ -122,6 +126,6 @@ public interface SSZCodec {
    */
   default List<Object> throwUnsupportedListType(SSZSchemeBuilder.SSZScheme.SSZField field)
       throws RuntimeException {
-    throw new SSZSchemeException(String.format("List of types [%s] is not supported", field.type));
+    throw new SSZSchemeException(String.format("List of types [%s] is not supported", field.fieldType));
   }
 }

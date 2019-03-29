@@ -53,12 +53,12 @@ public class ConstructorObjCreator implements ObjectCreator {
           }
         case ARRAY:
           {
-            params[i] = Array.newInstance(field.type, 0).getClass();
+            params[i] = Array.newInstance(field.fieldType, 0).getClass();
             break;
           }
         default:
           {
-            params[i] = field.type;
+            params[i] = field.fieldType;
             break;
           }
       }

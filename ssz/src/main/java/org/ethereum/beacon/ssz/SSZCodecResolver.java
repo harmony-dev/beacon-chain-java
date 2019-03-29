@@ -2,6 +2,7 @@ package org.ethereum.beacon.ssz;
 
 import net.consensys.cava.ssz.BytesSSZReaderProxy;
 import org.ethereum.beacon.ssz.type.SSZCodec;
+import org.ethereum.beacon.ssz.type.SSZListAccessor;
 import org.javatuples.Pair;
 import org.javatuples.Triplet;
 import java.io.OutputStream;
@@ -24,6 +25,10 @@ public interface SSZCodecResolver {
    * @param codec Codec instance
    */
   void registerCodec(Set<Class> classes, Set<String> types, SSZCodec codec);
+
+  SSZCodec resolveBasicValueCodec(SSZSchemeBuilder.SSZScheme.SSZField field);
+
+  SSZListAccessor resolveListValueAccessor(SSZSchemeBuilder.SSZScheme.SSZField field);
 
   /**
    * SSZ Encode function matching current field

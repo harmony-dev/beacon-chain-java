@@ -102,7 +102,7 @@ public class BytesPrimitive implements SSZCodec {
     try {
       result.write(res.toArrayUnsafe());
     } catch (IOException e) {
-      String error = String.format("Failed to write data of type %s to stream", field.type);
+      String error = String.format("Failed to write data of type %s to stream", field.fieldType);
       throw new SSZException(error, e);
     }
   }

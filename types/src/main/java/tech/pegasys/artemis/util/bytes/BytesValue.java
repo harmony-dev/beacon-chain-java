@@ -152,7 +152,7 @@ public interface BytesValue extends Comparable<BytesValue> {
     }
   }
 
-  static BytesValue concat(List<BytesValue> vals) {
+  static BytesValue concat(List<? extends BytesValue> vals) {
     throw new UnsupportedOperationException();
   }
 
