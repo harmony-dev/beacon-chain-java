@@ -1,6 +1,6 @@
 package org.ethereum.beacon.test;
 
-import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.SpecHelpersImpl;
 import org.ethereum.beacon.consensus.hasher.SSZObjectHasher;
 import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.test.runner.StateRunner;
@@ -26,7 +26,7 @@ public class StateTests extends TestUtils {
               new StateRunner(
                   testCase,
                   specConstants ->
-                      new SpecHelpers(
+                      new SpecHelpersImpl(
                           specConstants,
                           Hashes::keccak256,
                           SSZObjectHasher.create(Hashes::keccak256)));

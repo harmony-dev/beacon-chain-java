@@ -98,7 +98,7 @@ public interface SpecConstantsData {
               setMIN_ATTESTATION_INCLUSION_DELAY(
                   Long.toUnsignedString(specs.getMinAttestationInclusionDelay().getValue()));
               setACTIVATION_EXIT_DELAY(specs.getActivationExitDelay().toString());
-              setEPOCHS_PER_ETH1_VOTING_PERIOD(specs.getEth1DataVotingPeriod().toString());
+              setEPOCHS_PER_ETH1_VOTING_PERIOD(specs.getEpochsPerEth1VotingPeriod().toString());
               setMIN_SEED_LOOKAHEAD(specs.getMinSeedLookahead().toString());
               setMIN_VALIDATOR_WITHDRAWABILITY_DELAY(
                   specs.getMinValidatorWithdrawabilityDelay().toString());

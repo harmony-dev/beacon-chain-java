@@ -79,76 +79,105 @@ public class StateTestCase implements TestCase {
   }
 
   public static class BeaconStateData {
-    private BigInteger slot;
+    private String slot;
 
     @JsonProperty("genesis_time")
     private Long genesisTime;
 
     private Fork fork;
+
     @JsonProperty("validator_registry")
     private List<ValidatorData> validatorRegistry;
+
     @JsonProperty("validator_balances")
-    private List<BigInteger> validatorBalances;
+    private List<String> validatorBalances;
+
     @JsonProperty("validator_registry_update_epoch")
     private BigInteger validatorRegistryUpdateEpoch;
+
     @JsonProperty("latest_randao_mixes")
     private List<String> latestRandaoMixes;
+
     @JsonProperty("previous_shuffling_start_shard")
     private Integer previousShufflingStartShard;
+
     @JsonProperty("current_shuffling_start_shard")
     private Integer currentShufflingStartShard;
+
     @JsonProperty("previous_shuffling_epoch")
-    private BigInteger previousShufflingEpoch;
+    private String previousShufflingEpoch;
+
     @JsonProperty("current_shuffling_epoch")
-    private BigInteger currentShufflingEpoch;
+    private String currentShufflingEpoch;
+
     @JsonProperty("previous_shuffling_seed")
     private String previousShufflingSeed;
+
     @JsonProperty("current_shuffling_seed")
     private String currentShufflingSeed;
+
     @JsonProperty("previous_epoch_attestations")
     private List<AttestationData> previousEpochAttestations;
+
     @JsonProperty("current_epoch_attestations")
     private List<AttestationData> currentEpochAttestations;
+
     @JsonProperty("previous_justified_epoch")
-    private BigInteger previousJustifiedEpoch;
+    private String previousJustifiedEpoch;
+
     @JsonProperty("current_justified_epoch")
-    private BigInteger currentJustifiedEpoch;
+    private String currentJustifiedEpoch;
+
     @JsonProperty("previous_justified_root")
     private String previousJustifiedRoot;
+
     @JsonProperty("current_justified_root")
     private String currentJustifiedRoot;
+
     @JsonProperty("justification_bitfield")
     private BigInteger justificationBitfield;
+
     @JsonProperty("finalized_epoch")
     private BigInteger finalizedEpoch;
+
     @JsonProperty("finalized_root")
     private String finalizedRoot;
+
     @JsonProperty("latest_crosslinks")
     private List<CrossLinkData> latestCrosslinks;
+
     @JsonProperty("latest_block_roots")
     private List<String> latestBlockRoots;
+
     @JsonProperty("latest_state_roots")
     private List<String> latestStateRoots;
+
     @JsonProperty("latest_active_index_roots")
     private List<String> latestActiveIndexRoots;
+
     @JsonProperty("latest_slashed_balances")
     private List<BigInteger> latestSlashedBalances;
+
     @JsonProperty("latest_block_header")
     private BlockHeaderData latestBlockHeader;
+
     @JsonProperty("historical_roots")
     private List<String> historicalRoots;
+
     @JsonProperty("latest_eth1_data")
     private BlockData.BlockBodyData.Eth1 latestEth1Data;
+
     @JsonProperty("eth1_data_votes")
     private List<Eth1Vote> eth1DataVotes;
+
     @JsonProperty("deposit_index")
     private Integer depositIndex;
 
-    public BigInteger getSlot() {
+    public String getSlot() {
       return slot;
     }
 
-    public void setSlot(BigInteger slot) {
+    public void setSlot(String slot) {
       this.slot = slot;
     }
 
@@ -176,11 +205,11 @@ public class StateTestCase implements TestCase {
       this.validatorRegistry = validatorRegistry;
     }
 
-    public List<BigInteger> getValidatorBalances() {
+    public List<String> getValidatorBalances() {
       return validatorBalances;
     }
 
-    public void setValidatorBalances(List<BigInteger> validatorBalances) {
+    public void setValidatorBalances(List<String> validatorBalances) {
       this.validatorBalances = validatorBalances;
     }
 
@@ -216,19 +245,19 @@ public class StateTestCase implements TestCase {
       this.currentShufflingStartShard = currentShufflingStartShard;
     }
 
-    public BigInteger getPreviousShufflingEpoch() {
+    public String getPreviousShufflingEpoch() {
       return previousShufflingEpoch;
     }
 
-    public void setPreviousShufflingEpoch(BigInteger previousShufflingEpoch) {
+    public void setPreviousShufflingEpoch(String previousShufflingEpoch) {
       this.previousShufflingEpoch = previousShufflingEpoch;
     }
 
-    public BigInteger getCurrentShufflingEpoch() {
+    public String getCurrentShufflingEpoch() {
       return currentShufflingEpoch;
     }
 
-    public void setCurrentShufflingEpoch(BigInteger currentShufflingEpoch) {
+    public void setCurrentShufflingEpoch(String currentShufflingEpoch) {
       this.currentShufflingEpoch = currentShufflingEpoch;
     }
 
@@ -264,19 +293,19 @@ public class StateTestCase implements TestCase {
       this.currentEpochAttestations = currentEpochAttestations;
     }
 
-    public BigInteger getPreviousJustifiedEpoch() {
+    public String getPreviousJustifiedEpoch() {
       return previousJustifiedEpoch;
     }
 
-    public void setPreviousJustifiedEpoch(BigInteger previousJustifiedEpoch) {
+    public void setPreviousJustifiedEpoch(String previousJustifiedEpoch) {
       this.previousJustifiedEpoch = previousJustifiedEpoch;
     }
 
-    public BigInteger getCurrentJustifiedEpoch() {
+    public String getCurrentJustifiedEpoch() {
       return currentJustifiedEpoch;
     }
 
-    public void setCurrentJustifiedEpoch(BigInteger currentJustifiedEpoch) {
+    public void setCurrentJustifiedEpoch(String currentJustifiedEpoch) {
       this.currentJustifiedEpoch = currentJustifiedEpoch;
     }
 
@@ -568,13 +597,13 @@ public class StateTestCase implements TestCase {
       }
 
       public static class AttestationDataContainer {
-        private BigInteger slot;
+        private String slot;
 
         @JsonProperty("beacon_block_root")
         private String beaconBlockRoot;
 
         @JsonProperty("source_epoch")
-        private BigInteger sourceEpoch;
+        private String sourceEpoch;
 
         @JsonProperty("source_root")
         private String sourceRoot;
@@ -590,11 +619,11 @@ public class StateTestCase implements TestCase {
         @JsonProperty("crosslink_data_root")
         private String crosslinkDataRoot;
 
-        public BigInteger getSlot() {
+        public String getSlot() {
           return slot;
         }
 
-        public void setSlot(BigInteger slot) {
+        public void setSlot(String slot) {
           this.slot = slot;
         }
 
@@ -606,11 +635,11 @@ public class StateTestCase implements TestCase {
           this.beaconBlockRoot = beaconBlockRoot;
         }
 
-        public BigInteger getSourceEpoch() {
+        public String getSourceEpoch() {
           return sourceEpoch;
         }
 
-        public void setSourceEpoch(BigInteger sourceEpoch) {
+        public void setSourceEpoch(String sourceEpoch) {
           this.sourceEpoch = sourceEpoch;
         }
 
@@ -657,16 +686,16 @@ public class StateTestCase implements TestCase {
     }
 
     public static class CrossLinkData {
-      private BigInteger epoch;
+      private String epoch;
 
       @JsonProperty("crosslink_data_root")
       private String crosslinkDataRoot;
 
-      public BigInteger getEpoch() {
+      public String getEpoch() {
         return epoch;
       }
 
-      public void setEpoch(BigInteger epoch) {
+      public void setEpoch(String epoch) {
         this.epoch = epoch;
       }
 
@@ -680,7 +709,7 @@ public class StateTestCase implements TestCase {
     }
 
     public static class BlockHeaderData {
-      private BigInteger slot;
+      private String slot;
 
       @JsonProperty("previous_block_root")
       private String previousBlockRoot;
@@ -693,11 +722,11 @@ public class StateTestCase implements TestCase {
 
       private String signature;
 
-      public BigInteger getSlot() {
+      public String getSlot() {
         return slot;
       }
 
-      public void setSlot(BigInteger slot) {
+      public void setSlot(String slot) {
         this.slot = slot;
       }
 
@@ -738,7 +767,7 @@ public class StateTestCase implements TestCase {
   }
 
   public static class BlockData {
-    private BigInteger slot;
+    private String slot;
 
     @JsonProperty("previous_block_root")
     private String previousBlockRoot;
@@ -749,11 +778,11 @@ public class StateTestCase implements TestCase {
     private BlockBodyData body;
     private String signature;
 
-    public BigInteger getSlot() {
+    public String getSlot() {
       return slot;
     }
 
-    public void setSlot(BigInteger slot) {
+    public void setSlot(String slot) {
       this.slot = slot;
     }
 
@@ -795,14 +824,19 @@ public class StateTestCase implements TestCase {
 
       @JsonProperty("eth1_data")
       private Eth1 eth1Data;
+
       @JsonProperty("proposer_slashings")
       private List<SlashingData> proposerSlashings;
+
       @JsonProperty("attester_slashings")
       private List<SlashingData> attesterSlashings;
+
       private List<BeaconStateData.AttestationData> attestations;
       private List<DepositData> deposits;
+
       @JsonProperty("voluntary_exits")
       private List<ExitData> voluntaryExits;
+
       private List<TransferData> transfers;
 
       public String getRandaoReveal() {
@@ -960,17 +994,17 @@ public class StateTestCase implements TestCase {
         }
 
         public static class DepositDataContainer {
-          private BigInteger amount;
+          private String amount;
           private Long timestamp;
 
           @JsonProperty("deposit_input")
           private DepositInputData depositInput;
 
-          public BigInteger getAmount() {
+          public String getAmount() {
             return amount;
           }
 
-          public void setAmount(BigInteger amount) {
+          public void setAmount(String amount) {
             this.amount = amount;
           }
 
@@ -1062,9 +1096,9 @@ public class StateTestCase implements TestCase {
       public static class TransferData {
         private Integer sender;
         private Integer recipient;
-        private BigInteger amount;
-        private BigInteger fee;
-        private BigInteger slot;
+        private String amount;
+        private String fee;
+        private String slot;
         private String pubkey;
         private String signature;
 
@@ -1084,27 +1118,27 @@ public class StateTestCase implements TestCase {
           this.recipient = recipient;
         }
 
-        public BigInteger getAmount() {
+        public String getAmount() {
           return amount;
         }
 
-        public void setAmount(BigInteger amount) {
+        public void setAmount(String amount) {
           this.amount = amount;
         }
 
-        public BigInteger getFee() {
+        public String getFee() {
           return fee;
         }
 
-        public void setFee(BigInteger fee) {
+        public void setFee(String fee) {
           this.fee = fee;
         }
 
-        public BigInteger getSlot() {
+        public String getSlot() {
           return slot;
         }
 
-        public void setSlot(BigInteger slot) {
+        public void setSlot(String slot) {
           this.slot = slot;
         }
 
