@@ -1,6 +1,6 @@
 package org.ethereum.beacon.test.runner;
 
-import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.crypto.BLS381;
 import org.ethereum.beacon.test.type.BlsTest;
 import org.ethereum.beacon.test.type.TestCase;
@@ -17,14 +17,14 @@ import static org.ethereum.beacon.test.SilentAsserts.assertHexStrings;
  */
 public class BlsPrivateToPublic implements Runner {
   private BlsTest.BlsPrivateToPublicCase testCase;
-  private SpecHelpers specHelpers;
+  private BeaconChainSpec spec;
 
-  public BlsPrivateToPublic(TestCase testCase, SpecHelpers specHelpers) {
+  public BlsPrivateToPublic(TestCase testCase, BeaconChainSpec spec) {
     if (!(testCase instanceof BlsTest.BlsPrivateToPublicCase)) {
       throw new RuntimeException("TestCase runner accepts only BlsPrivateToPublicCase as input!");
     }
     this.testCase = (BlsTest.BlsPrivateToPublicCase) testCase;
-    this.specHelpers = specHelpers;
+    this.spec = spec;
   }
 
   public Optional<String> run() {

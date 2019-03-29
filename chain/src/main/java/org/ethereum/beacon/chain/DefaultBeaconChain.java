@@ -10,7 +10,7 @@ import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.chain.storage.BeaconTupleStorage;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.BlockTransition;
-import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
 import org.ethereum.beacon.consensus.verifier.BeaconStateVerifier;
@@ -27,7 +27,7 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 public class DefaultBeaconChain implements MutableBeaconChain {
   private static final Logger logger = LogManager.getLogger(DefaultBeaconChain.class);
 
-  private final SpecHelpers spec;
+  private final BeaconChainSpec spec;
   private final BlockTransition<BeaconStateEx> initialTransition;
   private final StateTransition<BeaconStateEx> onSlotTransition;
   private final BlockTransition<BeaconStateEx> onBlockTransition;
@@ -45,7 +45,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   private TimeCollector insertTimeCollector = new TimeCollector();
 
   public DefaultBeaconChain(
-      SpecHelpers spec,
+      BeaconChainSpec spec,
       BlockTransition<BeaconStateEx> initialTransition,
       StateTransition<BeaconStateEx> onSlotTransition,
       BlockTransition<BeaconStateEx> onBlockTransition,

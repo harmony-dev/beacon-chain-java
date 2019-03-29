@@ -3,7 +3,7 @@ package org.ethereum.beacon.consensus.verifier.operation;
 import static org.ethereum.beacon.consensus.verifier.VerificationResult.PASSED;
 import static org.ethereum.beacon.consensus.verifier.VerificationResult.failedResult;
 
-import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.verifier.OperationVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconState;
@@ -22,9 +22,9 @@ import tech.pegasys.artemis.util.collections.ReadList;
  */
 public class AttesterSlashingVerifier implements OperationVerifier<AttesterSlashing> {
 
-  private SpecHelpers spec;
+  private BeaconChainSpec spec;
 
-  public AttesterSlashingVerifier(SpecHelpers spec) {
+  public AttesterSlashingVerifier(BeaconChainSpec spec) {
     this.spec = spec;
   }
 

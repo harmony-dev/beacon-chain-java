@@ -1,7 +1,7 @@
 package org.ethereum.beacon.chain;
 
 import java.time.Duration;
-import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
@@ -9,7 +9,6 @@ import org.ethereum.beacon.schedulers.Scheduler;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.stream.SimpleProcessor;
 import org.reactivestreams.Publisher;
-import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
 
 /**
@@ -19,7 +18,7 @@ import reactor.core.publisher.Flux;
  * start must subscribe to this service and use values from it
  */
 public class SlotTicker implements Ticker<SlotNumber> {
-  private final SpecHelpers spec;
+  private final BeaconChainSpec spec;
   private final BeaconState state;
 
   private final Schedulers schedulers;
@@ -29,7 +28,7 @@ public class SlotTicker implements Ticker<SlotNumber> {
 
   private Scheduler scheduler;
 
-  public SlotTicker(SpecHelpers spec, BeaconState state, Schedulers schedulers) {
+  public SlotTicker(BeaconChainSpec spec, BeaconState state, Schedulers schedulers) {
     this.spec = spec;
     this.state = state;
     this.schedulers = schedulers;

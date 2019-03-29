@@ -10,7 +10,7 @@ import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.observer.PendingOperations;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.BlockTransition;
-import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlock.Builder;
@@ -43,14 +43,14 @@ import tech.pegasys.artemis.util.uint.UInt64;
 public class BeaconChainProposerImpl implements BeaconChainProposer {
 
   /** The spec. */
-  private SpecHelpers spec;
+  private BeaconChainSpec spec;
   /** Per-block state transition. */
   private BlockTransition<BeaconStateEx> perBlockTransition;
   /** Eth1 deposit contract. */
   private DepositContract depositContract;
 
   public BeaconChainProposerImpl(
-      SpecHelpers spec,
+      BeaconChainSpec spec,
       BlockTransition<BeaconStateEx> perBlockTransition,
       StateTransition<BeaconStateEx> perEpochTransition,
       DepositContract depositContract) {
@@ -60,7 +60,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
   }
 
   public BeaconChainProposerImpl(
-      SpecHelpers spec,
+      BeaconChainSpec spec,
       BlockTransition<BeaconStateEx> perBlockTransition,
       DepositContract depositContract) {
     this.spec = spec;

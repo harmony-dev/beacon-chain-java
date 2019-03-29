@@ -4,8 +4,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.HeadFunction;
-import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.state.ValidatorRecord;
@@ -20,10 +20,10 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 public class LMDGhostHeadFunction implements HeadFunction {
 
   private final BeaconChainStorage chainStorage;
-  private final SpecHelpers spec;
+  private final BeaconChainSpec spec;
   private final int SEARCH_LIMIT = Integer.MAX_VALUE;
 
-  public LMDGhostHeadFunction(BeaconChainStorage chainStorage, SpecHelpers spec) {
+  public LMDGhostHeadFunction(BeaconChainStorage chainStorage, BeaconChainSpec spec) {
     this.chainStorage = chainStorage;
     this.spec = spec;
   }

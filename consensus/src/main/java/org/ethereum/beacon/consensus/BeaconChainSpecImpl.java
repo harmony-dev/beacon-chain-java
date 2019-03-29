@@ -6,13 +6,13 @@ import org.ethereum.beacon.core.spec.SpecConstants;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
-/** Default implementation of {@link SpecHelpers}. */
-public class SpecHelpersImpl implements SpecHelpers {
+/** Default implementation of {@link BeaconChainSpec}. */
+public class BeaconChainSpecImpl implements BeaconChainSpec {
   private final SpecConstants constants;
   private final ObjectHasher<Hash32> objectHasher;
   private final Function<BytesValue, Hash32> hashFunction;
 
-  public SpecHelpersImpl(
+  public BeaconChainSpecImpl(
       SpecConstants constants,
       Function<BytesValue, Hash32> hashFunction,
       ObjectHasher<Hash32> objectHasher) {

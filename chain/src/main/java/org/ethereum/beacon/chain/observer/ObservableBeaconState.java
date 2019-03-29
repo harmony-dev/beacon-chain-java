@@ -3,7 +3,7 @@ package org.ethereum.beacon.chain.observer;
 import com.google.common.base.Objects;
 import javax.annotation.Nullable;
 import org.ethereum.beacon.consensus.BeaconStateEx;
-import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.BeaconBlock;
 
 /** An observable chain state. */
@@ -51,7 +51,7 @@ public class ObservableBeaconState {
     return toString(null);
   }
 
-  public String toString(@Nullable SpecHelpers spec) {
+  public String toString(@Nullable BeaconChainSpec spec) {
 
     String committee = "";
     if (spec != null) {

@@ -1,6 +1,6 @@
 package org.ethereum.beacon.chain;
 
-import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.spec.SpecConstants;
@@ -43,9 +43,9 @@ public class SlotTickerTests {
             return Time.of(1);
           }
         };
-    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(specConstants);
-    genesisSlot = specHelpers.getConstants().getGenesisSlot();
-    slotTicker = new SlotTicker(specHelpers, beaconState, Schedulers.createDefault());
+    BeaconChainSpec spec = BeaconChainSpec.createWithSSZHasher(specConstants);
+    genesisSlot = spec.getConstants().getGenesisSlot();
+    slotTicker = new SlotTicker(spec, beaconState, Schedulers.createDefault());
   }
 
   @Test

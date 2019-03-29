@@ -2,11 +2,10 @@ package org.ethereum.beacon.chain.storage;
 
 import org.ethereum.beacon.chain.storage.impl.BeaconBlockStorageImpl;
 import org.ethereum.beacon.chain.storage.impl.SerializerFactory;
-import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.hasher.ObjectHasher;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockBody;
-import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.db.Database;
@@ -18,7 +17,7 @@ public class BeaconBlockStorageTest {
 
   private long counter = 0;
 
-  private BeaconBlockStorage create(SpecHelpers specHelpers) {
+  private BeaconBlockStorage create(BeaconChainSpec spec) {
     return BeaconBlockStorageImpl.create(
         Database.inMemoryDB(),
         ObjectHasher.createSSZOverKeccak256(),

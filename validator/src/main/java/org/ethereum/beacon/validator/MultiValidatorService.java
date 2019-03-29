@@ -15,8 +15,8 @@ import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconStateEx;
-import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.TransitionType;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
@@ -54,7 +54,7 @@ public class MultiValidatorService implements ValidatorService {
   /** Attester logic. */
   private BeaconChainAttester attester;
   /** The spec. */
-  private SpecHelpers spec;
+  private BeaconChainSpec spec;
 
   private Publisher<ObservableBeaconState> stateStream;
 
@@ -78,7 +78,7 @@ public class MultiValidatorService implements ValidatorService {
       List<BLS381Credentials> blsCredentials,
       BeaconChainProposer proposer,
       BeaconChainAttester attester,
-      SpecHelpers spec,
+      BeaconChainSpec spec,
       Publisher<ObservableBeaconState> stateStream,
       Schedulers schedulers) {
     this(blsCredentials, proposer, attester, spec, stateStream, schedulers, new TimeCollector());
@@ -88,7 +88,7 @@ public class MultiValidatorService implements ValidatorService {
       List<BLS381Credentials> blsCredentials,
       BeaconChainProposer proposer,
       BeaconChainAttester attester,
-      SpecHelpers spec,
+      BeaconChainSpec spec,
       Publisher<ObservableBeaconState> stateStream,
       Schedulers schedulers,
       TimeCollector proposeTimeCollector) {

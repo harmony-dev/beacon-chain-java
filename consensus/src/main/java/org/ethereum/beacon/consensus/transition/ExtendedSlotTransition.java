@@ -1,7 +1,7 @@
 package org.ethereum.beacon.consensus.transition;
 
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconStateEx;
-import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.core.types.SlotNumber;
 
@@ -26,13 +26,13 @@ public class ExtendedSlotTransition implements StateTransition<BeaconStateEx> {
   private final StateTransition<BeaconStateEx> stateCaching;
   private final PerEpochTransition perEpochTransition;
   private final StateTransition<BeaconStateEx> perSlotTransition;
-  private final SpecHelpers spec;
+  private final BeaconChainSpec spec;
 
   public ExtendedSlotTransition(
       StateTransition<BeaconStateEx> stateCaching,
       PerEpochTransition perEpochTransition,
       StateTransition<BeaconStateEx> perSlotTransition,
-      SpecHelpers spec) {
+      BeaconChainSpec spec) {
     this.stateCaching = stateCaching;
     this.perEpochTransition = perEpochTransition;
     this.perSlotTransition = perSlotTransition;

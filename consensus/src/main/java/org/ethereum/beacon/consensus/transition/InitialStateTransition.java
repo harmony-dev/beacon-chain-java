@@ -2,9 +2,9 @@ package org.ethereum.beacon.consensus.transition;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.BlockTransition;
-import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.TransitionType;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
@@ -27,10 +27,10 @@ public class InitialStateTransition implements BlockTransition<BeaconStateEx> {
   private static final Logger logger = LogManager.getLogger(InitialStateTransition.class);
 
   private final DepositContract.ChainStart depositContractStart;
-  private final SpecHelpers spec;
+  private final BeaconChainSpec spec;
 
   public InitialStateTransition(DepositContract.ChainStart depositContractStart,
-      SpecHelpers spec) {
+      BeaconChainSpec spec) {
     this.depositContractStart = depositContractStart;
     this.spec = spec;
   }

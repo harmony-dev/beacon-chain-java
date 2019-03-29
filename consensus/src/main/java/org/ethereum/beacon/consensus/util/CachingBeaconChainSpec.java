@@ -3,8 +3,8 @@ package org.ethereum.beacon.consensus.util;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import org.ethereum.beacon.consensus.DelegatingSpecHelpers;
-import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
+import org.ethereum.beacon.consensus.DelegatingBeaconChainSpec;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.ValidatorIndex;
@@ -14,7 +14,7 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.uint.UInt64;
 
-public class CachingSpecHelpers extends DelegatingSpecHelpers {
+public class CachingBeaconChainSpec extends DelegatingBeaconChainSpec {
 
   private final LRUCache<Pair<List<? extends UInt64>, Bytes32>, List<UInt64>> shufflerCache =
       new LRUCache<>(1024);
@@ -25,7 +25,7 @@ public class CachingSpecHelpers extends DelegatingSpecHelpers {
   private ValidatorIndex maxCachedIndex = ValidatorIndex.ZERO;
   private final Map<BLSPubkey, ValidatorIndex> pubkeyToIndexCache = new ConcurrentHashMap<>();
 
-  public CachingSpecHelpers(SpecHelpers delegate) {
+  public CachingBeaconChainSpec(BeaconChainSpec delegate) {
     super(delegate);
   }
 

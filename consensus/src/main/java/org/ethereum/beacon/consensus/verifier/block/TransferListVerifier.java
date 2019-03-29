@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
-import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.verifier.OperationVerifier;
 import org.ethereum.beacon.core.operations.Transfer;
 
@@ -18,7 +18,7 @@ import org.ethereum.beacon.core.operations.Transfer;
  */
 public class TransferListVerifier extends OperationListVerifier<Transfer> {
 
-  public TransferListVerifier(OperationVerifier<Transfer> operationVerifier, SpecHelpers spec) {
+  public TransferListVerifier(OperationVerifier<Transfer> operationVerifier, BeaconChainSpec spec) {
     super(
         operationVerifier,
         block -> block.getBody().getTransfers(),

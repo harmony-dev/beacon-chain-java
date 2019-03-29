@@ -2,8 +2,8 @@ package org.ethereum.beacon.consensus.transition;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconStateEx;
-import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.consensus.TransitionType;
 import org.ethereum.beacon.core.MutableBeaconState;
@@ -18,9 +18,9 @@ import org.ethereum.beacon.core.MutableBeaconState;
 public class StateCachingTransition implements StateTransition<BeaconStateEx> {
   private static final Logger logger = LogManager.getLogger(StateCachingTransition.class);
 
-  private final SpecHelpers spec;
+  private final BeaconChainSpec spec;
 
-  public StateCachingTransition(SpecHelpers spec) {
+  public StateCachingTransition(BeaconChainSpec spec) {
     this.spec = spec;
   }
 

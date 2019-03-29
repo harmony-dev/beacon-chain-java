@@ -11,14 +11,14 @@ import org.ethereum.beacon.chain.observer.ObservableStateProcessor;
 import org.ethereum.beacon.chain.observer.ObservableStateProcessorImpl;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.chain.storage.BeaconChainStorageFactory;
-import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.transition.ExtendedSlotTransition;
 import org.ethereum.beacon.consensus.transition.InitialStateTransition;
 import org.ethereum.beacon.consensus.transition.PerBlockTransition;
 import org.ethereum.beacon.consensus.transition.PerEpochTransition;
 import org.ethereum.beacon.consensus.transition.PerSlotTransition;
 import org.ethereum.beacon.consensus.transition.StateCachingTransition;
-import org.ethereum.beacon.consensus.util.CachingSpecHelpers;
+import org.ethereum.beacon.consensus.util.CachingBeaconChainSpec;
 import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
 import org.ethereum.beacon.consensus.verifier.BeaconStateVerifier;
 import org.ethereum.beacon.core.operations.Attestation;
@@ -38,7 +38,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 public class Launcher {
-  private final SpecHelpers spec;
+  private final BeaconChainSpec spec;
   private final DepositContract depositContract;
   private final BLS381Credentials validatorCred;
   private final WireApi wireApi;
@@ -66,7 +66,7 @@ public class Launcher {
   private TimeCollector proposeTimeCollector;
 
   public Launcher(
-      SpecHelpers spec,
+      BeaconChainSpec spec,
       DepositContract depositContract,
       BLS381Credentials validatorCred,
       WireApi wireApi,
@@ -76,7 +76,7 @@ public class Launcher {
   }
 
   public Launcher(
-      SpecHelpers spec,
+      BeaconChainSpec spec,
       DepositContract depositContract,
       BLS381Credentials validatorCred,
       WireApi wireApi,
@@ -84,7 +84,7 @@ public class Launcher {
       Schedulers schedulers,
       TimeCollector proposeTimeCollector) {
 
-    this.spec = new CachingSpecHelpers(spec);
+    this.spec = new CachingBeaconChainSpec(spec);
     this.depositContract = depositContract;
     this.validatorCred = validatorCred;
     this.wireApi = wireApi;
@@ -175,7 +175,7 @@ public class Launcher {
   }
 
 
-  public SpecHelpers getSpec() {
+  public BeaconChainSpec getSpec() {
     return spec;
   }
 

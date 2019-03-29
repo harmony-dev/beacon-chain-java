@@ -3,8 +3,8 @@ package org.ethereum.beacon.consensus.transition;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconStateEx;
-import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.consensus.TransitionType;
 import org.ethereum.beacon.core.MutableBeaconState;
@@ -20,9 +20,9 @@ import org.ethereum.beacon.core.operations.attestation.Crosslink;
 public class PerEpochTransition implements StateTransition<BeaconStateEx> {
   private static final Logger logger = LogManager.getLogger(PerEpochTransition.class);
 
-  private final SpecHelpers spec;
+  private final BeaconChainSpec spec;
 
-  public PerEpochTransition(SpecHelpers spec) {
+  public PerEpochTransition(BeaconChainSpec spec) {
     this.spec = spec;
   }
 

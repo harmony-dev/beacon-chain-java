@@ -8,7 +8,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.verifier.OperationVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconState;
@@ -32,9 +32,9 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
  */
 public class AttestationVerifier implements OperationVerifier<Attestation> {
 
-  private SpecHelpers spec;
+  private BeaconChainSpec spec;
 
-  public AttestationVerifier(SpecHelpers spec) {
+  public AttestationVerifier(BeaconChainSpec spec) {
     this.spec = spec;
   }
 

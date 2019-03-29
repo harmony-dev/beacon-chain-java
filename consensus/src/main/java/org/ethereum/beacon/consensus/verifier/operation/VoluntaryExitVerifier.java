@@ -4,7 +4,7 @@ import static org.ethereum.beacon.consensus.verifier.VerificationResult.PASSED;
 import static org.ethereum.beacon.consensus.verifier.VerificationResult.failedResult;
 import static org.ethereum.beacon.core.spec.SignatureDomains.VOLUNTARY_EXIT;
 
-import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.verifier.OperationVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconState;
@@ -21,9 +21,9 @@ import org.ethereum.beacon.core.state.ValidatorRecord;
  */
 public class VoluntaryExitVerifier implements OperationVerifier<VoluntaryExit> {
 
-  private SpecHelpers spec;
+  private BeaconChainSpec spec;
 
-  public VoluntaryExitVerifier(SpecHelpers spec) {
+  public VoluntaryExitVerifier(BeaconChainSpec spec) {
     this.spec = spec;
   }
 

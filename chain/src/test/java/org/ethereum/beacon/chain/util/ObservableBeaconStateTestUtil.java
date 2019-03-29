@@ -4,8 +4,8 @@ import java.util.Collections;
 import java.util.Random;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.observer.PendingOperations;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconStateEx;
-import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.transition.BeaconStateExImpl;
 import org.ethereum.beacon.consensus.transition.InitialStateTransition;
 import org.ethereum.beacon.consensus.transition.PerSlotTransition;
@@ -21,16 +21,16 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 
 public class ObservableBeaconStateTestUtil {
 
-  public static ObservableBeaconState createInitialState(Random random, SpecHelpers specHelpers) {
+  public static ObservableBeaconState createInitialState(Random random, BeaconChainSpec spec) {
     return createInitialState(
-        random, specHelpers, PendingOperationsTestUtil.createEmptyPendingOperations());
+        random, spec, PendingOperationsTestUtil.createEmptyPendingOperations());
   }
 
   public static ObservableBeaconState createInitialState(
-      Random random, SpecHelpers specHelpers, SlotNumber slotNumber) {
+      Random random, BeaconChainSpec spec, SlotNumber slotNumber) {
     ObservableBeaconState originalState =
         createInitialState(
-            random, specHelpers, PendingOperationsTestUtil.createEmptyPendingOperations());
+            random, spec, PendingOperationsTestUtil.createEmptyPendingOperations());
 
     MutableBeaconState modifiedState = originalState.getLatestSlotState().createMutableCopy();
     modifiedState.setSlot(slotNumber);
@@ -42,18 +42,18 @@ public class ObservableBeaconStateTestUtil {
   }
 
   public static ObservableBeaconState createInitialState(
-      Random random, SpecHelpers specHelpers, PendingOperations operations) {
-    BeaconBlock genesis = specHelpers.get_empty_block();
+      Random random, BeaconChainSpec spec, PendingOperations operations) {
+    BeaconBlock genesis = spec.get_empty_block();
     ChainStart chainStart =
         new ChainStart(
             Time.ZERO,
             new Eth1Data(Hash32.random(random), Hash32.random(random)),
             Collections.emptyList());
-    InitialStateTransition stateTransition = new InitialStateTransition(chainStart, specHelpers);
+    InitialStateTransition stateTransition = new InitialStateTransition(chainStart, spec);
 
     BeaconStateEx state = stateTransition.apply(genesis);
-    state = new StateCachingTransition(specHelpers).apply(state);
-    state = new PerSlotTransition(specHelpers).apply(state);
+    state = new StateCachingTransition(spec).apply(state);
+    state = new PerSlotTransition(spec).apply(state);
     return new ObservableBeaconState(genesis, state, operations);
   }
 }

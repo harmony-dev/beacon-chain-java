@@ -1,6 +1,6 @@
 package org.ethereum.beacon.consensus.verifier.block;
 
-import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconBlock;
@@ -21,9 +21,9 @@ import static org.ethereum.beacon.core.spec.SignatureDomains.BEACON_BLOCK;
  */
 public class BlockSignatureVerifier implements BeaconBlockVerifier {
 
-  private SpecHelpers spec;
+  private BeaconChainSpec spec;
 
-  public BlockSignatureVerifier(SpecHelpers spec) {
+  public BlockSignatureVerifier(BeaconChainSpec spec) {
     this.spec = spec;
   }
 

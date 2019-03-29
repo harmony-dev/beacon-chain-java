@@ -1,6 +1,6 @@
 package org.ethereum.beacon.test.runner;
 
-import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.test.type.BlsTest;
 import org.ethereum.beacon.test.type.TestCase;
@@ -19,14 +19,14 @@ import static org.ethereum.beacon.test.SilentAsserts.assertHexStrings;
  */
 public class BlsAggregatePubKeys implements Runner {
   private BlsTest.BlsAggregatePubKeysCase testCase;
-  private SpecHelpers specHelpers;
+  private BeaconChainSpec spec;
 
-  public BlsAggregatePubKeys(TestCase testCase, SpecHelpers specHelpers) {
+  public BlsAggregatePubKeys(TestCase testCase, BeaconChainSpec spec) {
     if (!(testCase instanceof BlsTest.BlsAggregatePubKeysCase)) {
       throw new RuntimeException("TestCase runner accepts only BlsAggregatePubKeysCase as input!");
     }
     this.testCase = (BlsTest.BlsAggregatePubKeysCase) testCase;
-    this.specHelpers = specHelpers;
+    this.spec = spec;
   }
 
   public Optional<String> run() {
@@ -38,6 +38,6 @@ public class BlsAggregatePubKeys implements Runner {
 
     return assertHexStrings(
         testCase.getOutput(),
-        specHelpers.bls_aggregate_pubkeys(pubkeys).getEncodedBytes().toString());
+        spec.bls_aggregate_pubkeys(pubkeys).getEncodedBytes().toString());
   }
 }
