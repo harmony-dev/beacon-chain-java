@@ -43,11 +43,8 @@ public class Gwei extends UInt64 implements SafeComparable<Gwei> {
 
   public Gwei plusSat(Gwei addend) {
     Gwei res = this.plus(addend);
-    if (res.lessEqual(res) && addend.greater(Gwei.ZERO)) {
-      return Gwei.castFrom(UInt64.MAX_VALUE);
-    } else {
-      return res;
-    }
+    // TODO remove after fixed in merged version, agree on merged version
+    return res;
   }
 
   @Override
