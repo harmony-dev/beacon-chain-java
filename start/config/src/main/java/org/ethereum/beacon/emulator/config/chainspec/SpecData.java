@@ -10,7 +10,7 @@ import org.ethereum.beacon.emulator.config.YamlPrinter;
 public class SpecData implements Config {
   public static final SpecData NOT_DEFINED = new SpecData();
 
-  @JsonDeserialize(as = SpecConstantsDataImpl.class)
+  @JsonDeserialize(as = SpecConstantsData.class)
   private SpecConstantsData specConstants;
   private SpecHelpersData specHelpersOptions = new SpecHelpersData();
 

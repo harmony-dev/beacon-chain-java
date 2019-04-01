@@ -14,7 +14,7 @@ import org.ethereum.beacon.emulator.config.chainspec.StateListLengthsData;
 import org.ethereum.beacon.emulator.config.chainspec.TimeParametersData;
 
 @JsonIgnoreProperties(ignoreUnknown = false)
-public class SpecConstantsDataMerged implements SpecConstantsData {
+public class SpecConstantsDataMerged extends SpecConstantsData {
   @JsonUnwrapped private DepositContractParametersData depositContractParameters;
   @JsonUnwrapped private HonestValidatorParametersData honestValidatorParameters;
   @JsonUnwrapped private InitialValuesData initialValues;

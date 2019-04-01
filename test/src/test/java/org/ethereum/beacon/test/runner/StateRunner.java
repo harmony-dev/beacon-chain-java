@@ -8,8 +8,8 @@ import org.ethereum.beacon.chain.observer.PendingOperationsState;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.chain.storage.BeaconChainStorageFactory;
 import org.ethereum.beacon.chain.storage.impl.MemBeaconChainStorageFactory;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconStateEx;
-import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.transition.BeaconStateExImpl;
 import org.ethereum.beacon.consensus.transition.ExtendedSlotTransition;
 import org.ethereum.beacon.consensus.transition.InitialStateTransition;
@@ -45,8 +45,17 @@ import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.crypto.BLS381;
 import org.ethereum.beacon.db.InMemoryDatabase;
+import org.ethereum.beacon.emulator.config.chainspec.DepositContractParametersData;
+import org.ethereum.beacon.emulator.config.chainspec.GweiValuesData;
+import org.ethereum.beacon.emulator.config.chainspec.HonestValidatorParametersData;
+import org.ethereum.beacon.emulator.config.chainspec.InitialValuesData;
+import org.ethereum.beacon.emulator.config.chainspec.MaxOperationsPerBlockData;
+import org.ethereum.beacon.emulator.config.chainspec.MiscParametersData;
+import org.ethereum.beacon.emulator.config.chainspec.RewardAndPenaltyQuotientsData;
 import org.ethereum.beacon.emulator.config.chainspec.SpecBuilder;
 import org.ethereum.beacon.emulator.config.chainspec.SpecConstantsData;
+import org.ethereum.beacon.emulator.config.chainspec.StateListLengthsData;
+import org.ethereum.beacon.emulator.config.chainspec.TimeParametersData;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.simulator.SimulatorLauncher;
 import org.ethereum.beacon.test.type.StateTestCase;
@@ -70,10 +79,11 @@ import java.util.stream.Collectors;
 /** TestRunner for {@link StateTestCase} */
 public class StateRunner implements Runner {
   private StateTestCase testCase;
-  private Function<SpecConstants, SpecHelpers> specHelpersBuilder;
+  private Function<SpecConstants, BeaconChainSpec> specHelpersBuilder;
   private SimulatorLauncher.MDCControlledSchedulers schedulers;
 
-  public StateRunner(TestCase testCase, Function<SpecConstants, SpecHelpers> specHelpersBuilder) {
+  public StateRunner(
+      TestCase testCase, Function<SpecConstants, BeaconChainSpec> specHelpersBuilder) {
     if (!(testCase instanceof StateTestCase)) {
       throw new RuntimeException("TestCase runner accepts only StateTestCase.class as input!");
     }
@@ -82,15 +92,133 @@ public class StateRunner implements Runner {
     this.schedulers = new SimulatorLauncher.MDCControlledSchedulers();
   }
 
+  private SpecConstantsData createDefault() {
+    SpecConstants specs = new SpecConstants() {};
+    SpecConstantsData specConstantsData = new SpecConstantsData();
+    DepositContractParametersData depositContractParameters =
+        new DepositContractParametersData() {
+          {
+            setDEPOSIT_CONTRACT_ADDRESS(specs.getDepositContractAddress().toString());
+            setDEPOSIT_CONTRACT_TREE_DEPTH(specs.getDepositContractTreeDepth().toString());
+          }
+        };
+
+    HonestValidatorParametersData honestValidatorParameters =
+        new HonestValidatorParametersData() {
+          {
+            setETH1_FOLLOW_DISTANCE(specs.getEth1FollowDistance());
+          }
+        };
+
+    InitialValuesData initialValues =
+        new InitialValuesData() {
+          {
+            setBLS_WITHDRAWAL_PREFIX_BYTE(specs.getBlsWithdrawalPrefixByte().toString());
+            setEMPTY_SIGNATURE(specs.getEmptySignature().copy().toString());
+            setFAR_FUTURE_EPOCH(specs.getFarFutureEpoch().toString());
+            setGENESIS_FORK_VERSION(specs.getGenesisForkVersion().toString());
+            setGENESIS_SLOT(Long.toUnsignedString(specs.getGenesisSlot().getValue()));
+            setGENESIS_START_SHARD(specs.getGenesisStartShard().intValue());
+            setZERO_HASH(specs.getZeroHash().toString());
+          }
+        };
+
+    MaxOperationsPerBlockData maxOperationsPerBlock =
+        new MaxOperationsPerBlockData() {
+          {
+            setMAX_ATTESTATIONS(specs.getMaxAttestations());
+            setMAX_ATTESTER_SLASHINGS(specs.getMaxAttesterSlashings());
+            setMAX_DEPOSITS(specs.getMaxDeposits());
+            setMAX_PROPOSER_SLASHINGS(specs.getMaxProposerSlashings());
+            setMAX_TRANSFERS(specs.getMaxTransfers());
+            setMAX_VOLUNTARY_EXITS(specs.getMaxVoluntaryExits());
+          }
+        };
+
+    MiscParametersData miscParameters =
+        new MiscParametersData() {
+          {
+            setBEACON_CHAIN_SHARD_NUMBER(specs.getBeaconChainShardNumber().toString());
+            setMAX_BALANCE_CHURN_QUOTIENT(specs.getMaxBalanceChurnQuotient().toString());
+            setMAX_INDICES_PER_SLASHABLE_VOTE(specs.getMaxIndicesPerSlashableVote().toString());
+            setSHARD_COUNT(specs.getShardCount().toString());
+            setTARGET_COMMITTEE_SIZE(specs.getTargetCommitteeSize().toString());
+            setMAX_EXIT_DEQUEUES_PER_EPOCH(specs.getMaxExitDequesPerEpoch().toString());
+          }
+        };
+
+    GweiValuesData gweiValues =
+        new GweiValuesData() {
+          {
+            setEJECTION_BALANCE(Long.toUnsignedString(specs.getEjectionBalance().getValue()));
+            setFORK_CHOICE_BALANCE_INCREMENT(
+                Long.toUnsignedString(specs.getForkChoiceBalanceIncrement().getValue()));
+            setMIN_DEPOSIT_AMOUNT(Long.toUnsignedString(specs.getMinDepositAmount().getValue()));
+            setMAX_DEPOSIT_AMOUNT(Long.toUnsignedString(specs.getMaxDepositAmount().getValue()));
+          }
+        };
+
+    RewardAndPenaltyQuotientsData rewardAndPenaltyQuotients =
+        new RewardAndPenaltyQuotientsData() {
+          {
+            setBASE_REWARD_QUOTIENT(specs.getBaseRewardQuotient().toString());
+            setINACTIVITY_PENALTY_QUOTIENT(specs.getInactivityPenaltyQuotient().toString());
+            setWHISTLEBLOWER_REWARD_QUOTIENT(specs.getWhistleblowerRewardQuotient().toString());
+            setATTESTATION_INCLUSION_REWARD_QUOTIENT(
+                specs.getAttestationInclusionRewardQuotient().toString());
+            setMIN_PENALTY_QUOTIENT(specs.getMinPenaltyQuotient().toString());
+          }
+        };
+
+    StateListLengthsData stateListLengths =
+        new StateListLengthsData() {
+          {
+            setLATEST_RANDAO_MIXES_LENGTH(specs.getLatestRandaoMixesLength().toString());
+            setLATEST_ACTIVE_INDEX_ROOTS_LENGTH(specs.getLatestActiveIndexRootsLength().toString());
+            setLATEST_SLASHED_EXIT_LENGTH(specs.getLatestSlashedExitLength().toString());
+          }
+        };
+
+    TimeParametersData timeParameters =
+        new TimeParametersData() {
+          {
+            setMIN_ATTESTATION_INCLUSION_DELAY(
+                Long.toUnsignedString(specs.getMinAttestationInclusionDelay().getValue()));
+            setACTIVATION_EXIT_DELAY(specs.getActivationExitDelay().toString());
+            setEPOCHS_PER_ETH1_VOTING_PERIOD(specs.getEpochsPerEth1VotingPeriod().toString());
+            setMIN_SEED_LOOKAHEAD(specs.getMinSeedLookahead().toString());
+            setMIN_VALIDATOR_WITHDRAWABILITY_DELAY(
+                specs.getMinValidatorWithdrawabilityDelay().toString());
+            setSECONDS_PER_SLOT(Long.toString(specs.getSecondsPerSlot().getValue()));
+            setSLOTS_PER_EPOCH(Long.toUnsignedString(specs.getSlotsPerEpoch().getValue()));
+            setPERSISTENT_COMMITTEE_PERIOD(specs.getPersistentCommitteePeriod().toString());
+            setSLOTS_PER_HISTORICAL_ROOT(
+                Long.toUnsignedString(specs.getSlotsPerHistoricalRoot().getValue()));
+          }
+        };
+
+    specConstantsData.setDepositContractParameters(depositContractParameters);
+    specConstantsData.setGweiValues(gweiValues);
+    specConstantsData.setHonestValidatorParameters(honestValidatorParameters);
+    specConstantsData.setInitialValues(initialValues);
+    specConstantsData.setMaxOperationsPerBlock(maxOperationsPerBlock);
+    specConstantsData.setMiscParameters(miscParameters);
+    specConstantsData.setRewardAndPenaltyQuotients(rewardAndPenaltyQuotients);
+    specConstantsData.setStateListLengths(stateListLengths);
+    specConstantsData.setTimeParameters(timeParameters);
+
+    return specConstantsData;
+  }
+
   public Optional<String> run() {
-    SpecConstantsData specConstantsData = SpecConstantsData.getDefaultCopy();
+    SpecConstantsData specConstantsData = createDefault();
     try {
       specConstantsData = Objects.copyProperties(specConstantsData, testCase.getConfig());
     } catch (Exception e) {
       return Optional.of("Failed to setup SpecConstants");
     }
     SpecConstants specConstants = SpecBuilder.buildSpecConstants(specConstantsData);
-    SpecHelpers specHelpers = specHelpersBuilder.apply(specConstants);
+    BeaconChainSpec specHelpers = specHelpersBuilder.apply(specConstants);
     Time time = Time.of(testCase.getInitialState().getGenesisTime());
     List<Deposit> initialDeposits = new ArrayList<>();
     Eth1Data eth1Data = new Eth1Data(Hash32.ZERO, Hash32.ZERO);
@@ -322,7 +450,9 @@ public class StateRunner implements Runner {
   }
 
   private void initializeStorage(
-      SpecHelpers spec, InitialStateTransition initialTransition, BeaconChainStorage chainStorage) {
+      BeaconChainSpec spec,
+      InitialStateTransition initialTransition,
+      BeaconChainStorage chainStorage) {
     BeaconBlock initialGenesis = spec.get_empty_block();
     BeaconStateEx initialState = initialTransition.apply(BeaconStateEx.getEmpty(), initialGenesis);
 
@@ -338,7 +468,7 @@ public class StateRunner implements Runner {
 
   private BeaconStateEx applyEmptySlotTransitionsTillSlot(
       BeaconStateEx source,
-      SpecHelpers spec,
+      BeaconChainSpec spec,
       ExtendedSlotTransition onSlotTransition,
       SlotNumber slotNumber) {
     BeaconStateEx result = source;
