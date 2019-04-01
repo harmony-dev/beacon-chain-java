@@ -341,7 +341,6 @@ public class SimulatorLauncher implements Runnable {
             + getValidators(" attestations: ", summary.getAttestationRewards())
             + getValidators(" boundary: ", summary.getBoundaryAttestationRewards())
             + getValidators(" head: ", summary.getBeaconHeadAttestationRewards())
-            + getValidators(" head: ", summary.getBeaconHeadAttestationRewards())
             + getValidators(" include distance: ", summary.getInclusionDistanceRewards())
             + getValidators(" attest inclusion: ", summary.getAttestationInclusionRewards())
         );

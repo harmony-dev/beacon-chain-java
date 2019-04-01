@@ -584,8 +584,8 @@ public abstract class DelegatingBeaconChainSpec implements BeaconChainSpec {
   }
 
   @Override
-  public void process_ejections(MutableBeaconState state) {
-    delegate.process_ejections(state);
+  public List<ValidatorIndex> process_ejections(MutableBeaconState state) {
+    return delegate.process_ejections(state);
   }
 
   @Override

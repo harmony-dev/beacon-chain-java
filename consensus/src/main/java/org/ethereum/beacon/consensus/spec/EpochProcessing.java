@@ -749,14 +749,17 @@ public interface EpochProcessing extends HelperFunction {
           if state.validator_balances[index] < EJECTION_BALANCE:
               exit_validator(state, index)
    */
-  default void process_ejections(MutableBeaconState state) {
+  default List<ValidatorIndex> process_ejections(MutableBeaconState state) {
+    List<ValidatorIndex> ejected = new ArrayList<>();
     List<ValidatorIndex> active_validator_indices =
         get_active_validator_indices(state.getValidatorRegistry(), get_current_epoch(state));
     for (ValidatorIndex index : active_validator_indices) {
       if (state.getValidatorBalances().get(index).less(getConstants().getEjectionBalance())) {
         exit_validator(state, index);
+        ejected.add(index);
       }
     }
+    return ejected;
   }
 
   /*
