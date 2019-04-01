@@ -2,11 +2,11 @@ package org.ethereum.beacon.test.runner;
 
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.core.BeaconBlockHeader;
-import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Fork;
+import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
@@ -190,7 +190,7 @@ public class StateComparator {
       return Optional.empty();
     }
 
-    List<Attestation> expectedAttestations =
+    List<PendingAttestation> expectedAttestations =
         expected.getCurrentEpochAttestations().stream()
             .map(this::deserializeAttestation)
             .collect(Collectors.toList());
@@ -263,7 +263,7 @@ public class StateComparator {
     return assertLists(expectedCrosslinks, actual.getCurrentEpochCrosslinks().listCopy());
   }
 
-  private Attestation deserializeAttestation(
+  private PendingAttestation deserializeAttestation(
       StateTestCase.BeaconStateData.AttestationData attestationData) {
     AttestationData attestationData1 =
         new AttestationData(
@@ -280,13 +280,11 @@ public class StateComparator {
                     attestationData.getData().getPreviousCrosslink().getCrosslinkDataRoot())),
             Hash32.fromHexString(attestationData.getData().getCrosslinkDataRoot()));
 
-    return new Attestation(
+    return new PendingAttestation(
         Bitfield.of(BytesValue.fromHexString(attestationData.getAggregationBitfield())),
         attestationData1,
         Bitfield.of(BytesValue.fromHexString(attestationData.getCustodyBitfield())),
-        attestationData.getAggregateSignature() == null
-            ? BLSSignature.ZERO
-            : BLSSignature.wrap(Bytes96.fromHexString(attestationData.getAggregateSignature())));
+        SlotNumber.castFrom(UInt64.valueOf(attestationData.getInclusionSlot())));
   }
 
   private Optional<String> comparePreviousEpochAttestations() {
@@ -294,7 +292,7 @@ public class StateComparator {
       return Optional.empty();
     }
 
-    List<Attestation> expectedAttestations =
+    List<PendingAttestation> expectedAttestations =
         expected.getPreviousEpochAttestations().stream()
             .map(this::deserializeAttestation)
             .collect(Collectors.toList());

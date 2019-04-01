@@ -554,13 +554,13 @@ public class StateTestCase implements TestCase {
       private String aggregateSignature;
 
       @JsonProperty("inclusion_slot")
-      private BigInteger inclusionSlot;
+      private String inclusionSlot;
 
-      public BigInteger getInclusionSlot() {
+      public String getInclusionSlot() {
         return inclusionSlot;
       }
 
-      public void setInclusionSlot(BigInteger inclusionSlot) {
+      public void setInclusionSlot(String inclusionSlot) {
         this.inclusionSlot = inclusionSlot;
       }
 
