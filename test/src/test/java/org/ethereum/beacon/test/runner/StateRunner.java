@@ -68,6 +68,8 @@ import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt64;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -439,7 +441,10 @@ public class StateRunner implements Runner {
                 latestState, specHelpers, extendedSlotTransition, block.getSlot());
         postBlockState = perBlockTransition.apply(preBlockState, block);
       } catch (Exception ex) {
-        return Optional.of("Error happened during transition: " + ex);
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        ex.printStackTrace(pw);
+        return Optional.of("Error happened during transition: " + sw.toString());
       }
       latestState = postBlockState;
     }
