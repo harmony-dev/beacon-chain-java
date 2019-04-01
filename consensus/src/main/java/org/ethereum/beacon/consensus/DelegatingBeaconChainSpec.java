@@ -43,15 +43,15 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
 
-public abstract class DelegatingSpecHelpers implements SpecHelpers {
+public abstract class DelegatingBeaconChainSpec implements BeaconChainSpec {
 
-  private final SpecHelpers delegate;
+  private final BeaconChainSpec delegate;
 
-  public DelegatingSpecHelpers(SpecHelpers delegate) {
+  public DelegatingBeaconChainSpec(BeaconChainSpec delegate) {
     this.delegate = delegate;
   }
 
-  public SpecHelpers getDelegate() {
+  public BeaconChainSpec getDelegate() {
     return delegate;
   }
 
@@ -584,8 +584,8 @@ public abstract class DelegatingSpecHelpers implements SpecHelpers {
   }
 
   @Override
-  public void process_ejections(MutableBeaconState state) {
-    delegate.process_ejections(state);
+  public List<ValidatorIndex> process_ejections(MutableBeaconState state) {
+    return delegate.process_ejections(state);
   }
 
   @Override
@@ -663,5 +663,32 @@ public abstract class DelegatingSpecHelpers implements SpecHelpers {
   @Override
   public void process_transfer(MutableBeaconState state, Transfer transfer) {
     delegate.process_transfer(state, transfer);
+  }
+
+  @Override
+  public Pair<Hash32, List<ValidatorIndex>> get_winning_root_and_participants(
+      BeaconState state, ShardNumber shard, EpochNumber epoch) {
+    return delegate.get_winning_root_and_participants(state, shard, epoch);
+  }
+
+  @Override
+  public List<Crosslink> get_epoch_crosslinks(BeaconState state, EpochNumber epoch) {
+    return delegate.get_epoch_crosslinks(state, epoch);
+  }
+
+  @Override
+  public List<Crosslink> merge_crosslinks(
+      List<Crosslink> crosslinks_1, List<Crosslink> crosslinks_2) {
+    return delegate.merge_crosslinks(crosslinks_1, crosslinks_2);
+  }
+
+  @Override
+  public List<Crosslink> get_latest_crosslinks(BeaconState state) {
+    return delegate.get_latest_crosslinks(state);
+  }
+
+  @Override
+  public void apply_crosslinks(MutableBeaconState state, List<Crosslink> latest_crosslinks) {
+    delegate.apply_crosslinks(state, latest_crosslinks);
   }
 }

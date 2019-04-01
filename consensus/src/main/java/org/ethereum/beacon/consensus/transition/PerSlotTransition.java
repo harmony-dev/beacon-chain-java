@@ -2,12 +2,11 @@ package org.ethereum.beacon.consensus.transition;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconStateEx;
-import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.consensus.TransitionType;
 import org.ethereum.beacon.core.MutableBeaconState;
-import org.ethereum.beacon.core.types.SlotNumber;
 
 /**
  * Per-slot transition, which happens at every slot.
@@ -19,9 +18,9 @@ import org.ethereum.beacon.core.types.SlotNumber;
 public class PerSlotTransition implements StateTransition<BeaconStateEx> {
   private static final Logger logger = LogManager.getLogger(PerSlotTransition.class);
 
-  private final SpecHelpers spec;
+  private final BeaconChainSpec spec;
 
-  public PerSlotTransition(SpecHelpers spec) {
+  public PerSlotTransition(BeaconChainSpec spec) {
     this.spec = spec;
   }
 

@@ -2,8 +2,8 @@ package org.ethereum.beacon.consensus.transition;
 
 import java.util.List;
 import java.util.Random;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconStateEx;
-import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.TestUtils;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.spec.SpecConstants;
@@ -33,22 +33,22 @@ public class PerEpochTransitionTest {
           }
         };
 
-    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(specConstants);
+    BeaconChainSpec spec = BeaconChainSpec.createWithSSZHasher(specConstants);
 
-    List<Deposit> deposits = TestUtils.getAnyDeposits(rnd, specHelpers, 8).getValue0();
+    List<Deposit> deposits = TestUtils.getAnyDeposits(rnd, spec, 8).getValue0();
 
     InitialStateTransition initialStateTransition =
-        new InitialStateTransition(new ChainStart(genesisTime, eth1Data, deposits), specHelpers);
+        new InitialStateTransition(new ChainStart(genesisTime, eth1Data, deposits), spec);
 
     BeaconStateEx[] states = new BeaconStateExImpl[9];
 
-    states[0] = initialStateTransition.apply(specHelpers.get_empty_block());
+    states[0] = initialStateTransition.apply(spec.get_empty_block());
     for (int i = 1; i < 9; i++) {
-      BeaconStateEx cachedState = new StateCachingTransition(specHelpers).apply(states[i - 1]);
-      states[i] = new PerSlotTransition(specHelpers).apply(cachedState);
+      BeaconStateEx cachedState = new StateCachingTransition(spec).apply(states[i - 1]);
+      states[i] = new PerSlotTransition(spec).apply(cachedState);
     }
-    PerEpochTransition perEpochTransition = new PerEpochTransition(specHelpers);
-    BeaconStateEx cachedState = new StateCachingTransition(specHelpers).apply(states[8]);
+    PerEpochTransition perEpochTransition = new PerEpochTransition(spec);
+    BeaconStateEx cachedState = new StateCachingTransition(spec).apply(states[8]);
     BeaconStateEx epochState = perEpochTransition.apply(cachedState);
 
     // check validators penalized for inactivity

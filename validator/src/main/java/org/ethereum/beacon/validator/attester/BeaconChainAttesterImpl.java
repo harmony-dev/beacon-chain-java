@@ -6,7 +6,7 @@ import com.google.common.annotations.VisibleForTesting;
 import java.util.Collections;
 import java.util.List;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
-import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
@@ -36,9 +36,9 @@ import tech.pegasys.artemis.util.uint.UInt64;
 public class BeaconChainAttesterImpl implements BeaconChainAttester {
 
   /** The spec. */
-  private SpecHelpers spec;
+  private BeaconChainSpec spec;
 
-  public BeaconChainAttesterImpl(SpecHelpers spec) {
+  public BeaconChainAttesterImpl(BeaconChainSpec spec) {
     this.spec = spec;
   }
 

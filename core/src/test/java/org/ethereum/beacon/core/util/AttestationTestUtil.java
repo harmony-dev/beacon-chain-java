@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.spec.SpecConstants;
@@ -36,7 +37,7 @@ public abstract class AttestationTestUtil {
     return new AttestationData(
         SpecConstants.GENESIS_SLOT,
         Hash32.random(random),
-        SpecConstants.DEFAULT.getGenesisEpoch(),
+        BeaconChainSpec.DEFAULT_CONSTANTS.getGenesisEpoch(),
         Hash32.random(random),
         Hash32.random(random),
         SpecConstants.BEACON_CHAIN_SHARD_NUMBER,

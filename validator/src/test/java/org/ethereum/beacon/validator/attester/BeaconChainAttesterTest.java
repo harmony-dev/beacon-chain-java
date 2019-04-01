@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.util.ObservableBeaconStateTestUtil;
-import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
@@ -32,20 +32,20 @@ public class BeaconChainAttesterTest {
   public void attestASlot() {
     Random random = new Random();
 
-    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(SpecConstants.DEFAULT);
+    BeaconChainSpec spec = BeaconChainSpec.createWithDefaults();
 
     MessageSigner<BLSSignature> signer = MessageSignerTestUtil.createBLSSigner();
-    BeaconChainAttesterImpl attester = BeaconChainAttesterTestUtil.mockAttester(specHelpers);
+    BeaconChainAttesterImpl attester = BeaconChainAttesterTestUtil.mockAttester(spec);
     ObservableBeaconState initiallyObservedState =
-        ObservableBeaconStateTestUtil.createInitialState(random, specHelpers);
+        ObservableBeaconStateTestUtil.createInitialState(random, spec);
 
     List<ValidatorIndex> committee =
-        getCommittee(specHelpers.getConstants().getTargetCommitteeSize().getIntValue());
+        getCommittee(spec.getConstants().getTargetCommitteeSize().getIntValue());
     int indexIntoCommittee = Math.abs(random.nextInt() % committee.size());
     ValidatorIndex validatorIndex = committee.get(indexIntoCommittee);
     Hash32 targetRoot = Hash32.random(random);
     Hash32 sourceRoot = Hash32.random(random);
-    ShardNumber shard = specHelpers.getConstants().getBeaconChainShardNumber();
+    ShardNumber shard = spec.getConstants().getBeaconChainShardNumber();
 
     Mockito.doReturn(committee).when(attester).getCommittee(any(), any());
     Mockito.doReturn(targetRoot).when(attester).getTargetRoot(any(), any());
@@ -61,7 +61,7 @@ public class BeaconChainAttesterTest {
     Assert.assertEquals(state.getSlot(), data.getSlot());
     Assert.assertEquals(shard, data.getShard());
     Assert.assertEquals(
-        specHelpers.signed_root(initiallyObservedState.getHead()), data.getBeaconBlockRoot());
+        spec.signed_root(initiallyObservedState.getHead()), data.getBeaconBlockRoot());
     Assert.assertEquals(targetRoot, data.getTargetRoot());
     Assert.assertEquals(Hash32.ZERO, data.getCrosslinkDataRoot());
     Assert.assertEquals(Hash32.ZERO, data.getPreviousCrosslink().getCrosslinkDataRoot());
@@ -80,10 +80,10 @@ public class BeaconChainAttesterTest {
 
     BLSSignature expectedSignature =
         signer.sign(
-            specHelpers.hash_tree_root(new AttestationDataAndCustodyBit(data, false)),
-            specHelpers.get_domain(
+            spec.hash_tree_root(new AttestationDataAndCustodyBit(data, false)),
+            spec.get_domain(
                 state.getFork(),
-                specHelpers.get_current_epoch(state),
+                spec.get_current_epoch(state),
                 SignatureDomains.ATTESTATION));
 
     Assert.assertEquals(expectedSignature, attestation.getAggregateSignature());

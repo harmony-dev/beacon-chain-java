@@ -3,7 +3,7 @@ package org.ethereum.beacon.consensus.verifier.operation;
 import static org.ethereum.beacon.consensus.verifier.VerificationResult.PASSED;
 import static org.ethereum.beacon.consensus.verifier.VerificationResult.failedResult;
 
-import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.verifier.OperationVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconState;
@@ -22,9 +22,9 @@ import tech.pegasys.artemis.util.uint.UInt64s;
  */
 public class TransferVerifier implements OperationVerifier<Transfer> {
 
-  private final SpecHelpers spec;
+  private final BeaconChainSpec spec;
 
-  public TransferVerifier(SpecHelpers spec) {
+  public TransferVerifier(BeaconChainSpec spec) {
     this.spec = spec;
   }
 

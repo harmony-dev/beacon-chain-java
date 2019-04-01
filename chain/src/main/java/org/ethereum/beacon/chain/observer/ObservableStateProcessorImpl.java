@@ -8,7 +8,7 @@ import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.chain.storage.BeaconTupleStorage;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.HeadFunction;
-import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
@@ -40,7 +40,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   private final BeaconTupleStorage tupleStorage;
 
   private final HeadFunction headFunction;
-  private final SpecHelpers spec;
+  private final BeaconChainSpec spec;
   private final StateTransition<BeaconStateEx> onSlotTransition;
 
   private final Publisher<SlotNumber> slotTicker;
@@ -65,7 +65,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
       Publisher<SlotNumber> slotTicker,
       Publisher<Attestation> attestationPublisher,
       Publisher<BeaconTupleDetails> beaconPublisher,
-      SpecHelpers spec,
+      BeaconChainSpec spec,
       StateTransition<BeaconStateEx> onSlotTransition,
       Schedulers schedulers) {
     this.tupleStorage = chainStorage.getTupleStorage();

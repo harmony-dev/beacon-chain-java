@@ -1,6 +1,6 @@
 package org.ethereum.beacon.test;
 
-import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.ShardNumber;
@@ -19,7 +19,7 @@ import java.nio.file.Paths;
 
 public class ShuffleTests extends TestUtils {
   private String TESTS_DIR = "shuffling";
-  private SpecHelpers specHelpers;
+  private BeaconChainSpec spec;
 
   public ShuffleTests() {
     // xxx EPOCH_LENGTH = 2**6  # 64 slots, 6.4 minutes
@@ -54,7 +54,7 @@ public class ShuffleTests extends TestUtils {
             return EpochNumber.of(4);
           }
         };
-    this.specHelpers = SpecHelpers.createWithSSZHasher(specConstants);
+    this.spec = BeaconChainSpec.createWithSSZHasher(specConstants);
   }
 
   @Test
@@ -67,16 +67,16 @@ public class ShuffleTests extends TestUtils {
           ShuffleRunner testCaseRunner =
               new ShuffleRunner(
                   testCase,
-                  specHelpers,
+                  spec,
                   objects ->
-                      specHelpers.get_shuffling(
+                      spec.get_shuffling(
                           objects.getValue0(), objects.getValue1(), objects.getValue2()));
           return testCaseRunner.run();
         });
   }
 
   /**
-   * Runs tests on optimized version of get_shuffling, {@link SpecHelpers#get_shuffling2(Hash32,
+   * Runs tests on optimized version of get_shuffling, {@link BeaconChainSpec#get_shuffling2(Hash32,
    * ReadList, EpochNumber)}
    */
   @Test
@@ -90,9 +90,9 @@ public class ShuffleTests extends TestUtils {
           ShuffleRunner testCaseRunner =
               new ShuffleRunner(
                   testCase,
-                  specHelpers,
+                  spec,
                   objects ->
-                      specHelpers.get_shuffling2(
+                      spec.get_shuffling2(
                           objects.getValue0(), objects.getValue1(), objects.getValue2()));
           return testCaseRunner.run();
         });

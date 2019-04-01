@@ -2,14 +2,12 @@ package org.ethereum.beacon.consensus.verifier.block;
 
 import static org.ethereum.beacon.core.spec.SignatureDomains.RANDAO;
 
-import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.state.ValidatorRecord;
-import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.bytes.Bytes32;
 
 /**
  * Verifies RANDAO reveal.
@@ -20,9 +18,9 @@ import tech.pegasys.artemis.util.bytes.Bytes32;
  */
 public class RandaoVerifier implements BeaconBlockVerifier {
 
-  private SpecHelpers spec;
+  private BeaconChainSpec spec;
 
-  public RandaoVerifier(SpecHelpers spec) {
+  public RandaoVerifier(BeaconChainSpec spec) {
     this.spec = spec;
   }
 

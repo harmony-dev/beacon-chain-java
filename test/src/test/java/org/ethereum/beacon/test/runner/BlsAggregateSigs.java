@@ -1,16 +1,12 @@
 package org.ethereum.beacon.test.runner;
 
 import org.apache.milagro.amcl.BLS381.ECP2;
-import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.crypto.BLS381;
-import org.ethereum.beacon.crypto.MessageParameters;
 import org.ethereum.beacon.crypto.bls.milagro.MilagroCodecs;
 import org.ethereum.beacon.test.type.BlsTest;
 import org.ethereum.beacon.test.type.TestCase;
-import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.bytes.Bytes32;
-import tech.pegasys.artemis.util.bytes.Bytes8;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 
 import java.util.ArrayList;
@@ -26,14 +22,14 @@ import static org.ethereum.beacon.test.SilentAsserts.assertHexStrings;
  */
 public class BlsAggregateSigs implements Runner {
   private BlsTest.BlsAggregateSigsCase testCase;
-  private SpecHelpers specHelpers;
+  private BeaconChainSpec spec;
 
-  public BlsAggregateSigs(TestCase testCase, SpecHelpers specHelpers) {
+  public BlsAggregateSigs(TestCase testCase, BeaconChainSpec spec) {
     if (!(testCase instanceof BlsTest.BlsAggregateSigsCase)) {
       throw new RuntimeException("TestCase runner accepts only BlsAggregateSigsCase as input!");
     }
     this.testCase = (BlsTest.BlsAggregateSigsCase) testCase;
-    this.specHelpers = specHelpers;
+    this.spec = spec;
   }
 
   public Optional<String> run() {

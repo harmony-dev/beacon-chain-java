@@ -1,6 +1,6 @@
 package org.ethereum.beacon.test.runner;
 
-import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.ssz.ConstructorObjCreator;
 import org.ethereum.beacon.ssz.SSZCodecRoulette;
 import org.ethereum.beacon.ssz.SSZModelCreator;
@@ -25,16 +25,16 @@ import static org.ethereum.beacon.test.SilentAsserts.assertEquals;
 /** TestRunner for {@link SszTestCase} */
 public class SszRunner implements Runner {
   private SszTestCase testCase;
-  private SpecHelpers specHelpers;
+  private BeaconChainSpec spec;
   private SSZSchemeBuilder.SSZScheme currentScheme;
   private SSZSerializer sszSerializer;
 
-  public SszRunner(TestCase testCase, SpecHelpers specHelpers) {
+  public SszRunner(TestCase testCase, BeaconChainSpec spec) {
     if (!(testCase instanceof SszTestCase)) {
       throw new RuntimeException("TestCase runner accepts only SszTestCase.class as input!");
     }
     this.testCase = (SszTestCase) testCase;
-    this.specHelpers = specHelpers;
+    this.spec = spec;
     SSZSerializerBuilder builder = new SSZSerializerBuilder();
     builder.withSSZCodecResolver(new SSZCodecRoulette());
     builder.withSSZModelFactory(

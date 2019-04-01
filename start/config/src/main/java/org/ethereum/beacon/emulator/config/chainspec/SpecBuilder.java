@@ -2,8 +2,8 @@ package org.ethereum.beacon.emulator.config.chainspec;
 
 import java.util.List;
 import org.apache.milagro.amcl.BLS381.ECP;
-import org.ethereum.beacon.consensus.SpecHelpers;
-import org.ethereum.beacon.consensus.SpecHelpersImpl;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
+import org.ethereum.beacon.consensus.BeaconChainSpecImpl;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.spec.SpecConstants;
@@ -23,23 +23,23 @@ import tech.pegasys.artemis.util.uint.UInt64;
 
 public class SpecBuilder {
 
-  public SpecHelpers buildSpecHelpers(SpecData spec) {
+  public BeaconChainSpec buildSpecHelpers(SpecData spec) {
     return buildSpecHelpers(spec.getSpecHelpersOptions(), spec.getSpecConstants());
   }
 
-  public SpecHelpers buildSpecHelpers(
+  public BeaconChainSpec buildSpecHelpers(
       SpecHelpersData specHelpersOptions, SpecConstantsData specConstantsData) {
     return buildSpecHelpers(specHelpersOptions, buildSpecConstants(specConstantsData));
   }
 
-  public SpecHelpers buildSpecHelpers(
+  public BeaconChainSpec buildSpecHelpers(
       SpecHelpersData specHelpersOptions, SpecConstants specConstants) {
 
-    SpecHelpers defaultSpecHelpers = SpecHelpers.createWithSSZHasher(specConstants);
-    return new SpecHelpersImpl(
-        defaultSpecHelpers.getConstants(),
-        defaultSpecHelpers.getHashFunction(),
-        defaultSpecHelpers.getObjectHasher()) {
+    BeaconChainSpec defaultSpec = BeaconChainSpec.createWithSSZHasher(specConstants);
+    return new BeaconChainSpecImpl(
+        defaultSpec.getConstants(),
+        defaultSpec.getHashFunction(),
+        defaultSpec.getObjectHasher()) {
 
       @Override
       public PublicKey bls_aggregate_pubkeys(List<BLSPubkey> publicKeysBytes) {

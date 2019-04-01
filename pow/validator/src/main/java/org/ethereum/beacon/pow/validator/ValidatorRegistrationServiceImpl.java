@@ -3,10 +3,8 @@ package org.ethereum.beacon.pow.validator;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.BlockTransition;
-import org.ethereum.beacon.consensus.SpecHelpers;
-import org.ethereum.beacon.consensus.StateTransition;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.transition.PerBlockTransition;
-import org.ethereum.beacon.consensus.transition.PerEpochTransition;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
@@ -30,7 +28,6 @@ import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import tech.pegasys.artemis.ethereum.core.Address;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.bytes.Bytes8;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import javax.annotation.Nullable;
@@ -52,7 +49,7 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
   private final SingleValueSource<RegistrationStage> stagePersistence;
   private final Schedulers schedulers;
 
-  private final SpecHelpers spec;
+  private final BeaconChainSpec spec;
   private final Serializer sszSerializer;
 
   private Disposable depositSubscription = null;
@@ -75,7 +72,7 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
       DepositContract depositContract,
       Publisher<ObservableBeaconState> observablePublisher,
       SingleValueSource<RegistrationStage> registrationStagePersistence,
-      SpecHelpers spec,
+      BeaconChainSpec spec,
       Schedulers schedulers) {
     this.transactionBuilder = transactionBuilder;
     this.transactionGateway = transactionGateway;

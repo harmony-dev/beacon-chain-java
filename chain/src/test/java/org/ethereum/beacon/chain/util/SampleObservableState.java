@@ -10,7 +10,7 @@ import org.ethereum.beacon.chain.observer.ObservableStateProcessor;
 import org.ethereum.beacon.chain.observer.ObservableStateProcessorImpl;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.chain.storage.BeaconChainStorageFactory;
-import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.TestUtils;
 import org.ethereum.beacon.consensus.transition.ExtendedSlotTransition;
 import org.ethereum.beacon.consensus.transition.InitialStateTransition;
@@ -37,7 +37,7 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public class SampleObservableState {
-  private final SpecHelpers spec;
+  private final BeaconChainSpec spec;
 
   public List<Deposit> deposits;
   public List<KeyPair> depositKeys;
@@ -75,7 +75,7 @@ public class SampleObservableState {
             return SlotNumber.of(genesisSlot);
           }
         };
-    this.spec = SpecHelpers.createWithSSZHasher(specConstants);
+    this.spec = BeaconChainSpec.createWithSSZHasher(specConstants);
 
     Pair<List<Deposit>, List<KeyPair>> anyDeposits = TestUtils
         .getAnyDeposits(rnd, spec, 8);

@@ -1,6 +1,6 @@
 package org.ethereum.beacon.test.runner;
 
-import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.EpochNumber;
@@ -22,7 +22,7 @@ import static org.ethereum.beacon.test.SilentAsserts.assertLists;
 /** TestRunner for {@link org.ethereum.beacon.test.type.ShuffleTestCase} */
 public class ShuffleRunner implements Runner {
   private ShuffleTestCase testCase;
-  private SpecHelpers specHelpers;
+  private BeaconChainSpec spec;
   private Function<
           Triplet<Hash32, ReadList<ValidatorIndex, ValidatorRecord>, EpochNumber>,
           List<List<ValidatorIndex>>>
@@ -30,7 +30,7 @@ public class ShuffleRunner implements Runner {
 
   public ShuffleRunner(
       TestCase testCase,
-      SpecHelpers specHelpers,
+      BeaconChainSpec spec,
       Function<
               Triplet<Hash32, ReadList<ValidatorIndex, ValidatorRecord>, EpochNumber>,
               List<List<ValidatorIndex>>>
@@ -39,7 +39,7 @@ public class ShuffleRunner implements Runner {
       throw new RuntimeException("TestCase runner accepts only ShuffleTestCase.class as input!");
     }
     this.testCase = (ShuffleTestCase) testCase;
-    this.specHelpers = specHelpers;
+    this.spec = spec;
     this.getShuffling = getShuffling;
   }
 
@@ -56,7 +56,7 @@ public class ShuffleRunner implements Runner {
               EpochNumber.castFrom(UInt64.valueOf(testValidator.getActivation_epoch())),
               EpochNumber.castFrom(UInt64.valueOf(testValidator.getExit_epoch())),
               EpochNumber.castFrom(UInt64.valueOf(testValidator.getActivation_epoch()))
-                  .plus(specHelpers.getConstants().getMinValidatorWithdrawabilityDelay()),
+                  .plus(spec.getConstants().getMinValidatorWithdrawabilityDelay()),
               false, // XXX: not used
               false);
       validators.add(validatorRecord);

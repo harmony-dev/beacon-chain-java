@@ -1,7 +1,7 @@
 package org.ethereum.beacon.test.runner;
 
 import org.apache.milagro.amcl.BLS381.ECP2;
-import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.crypto.MessageParameters;
 import org.ethereum.beacon.crypto.bls.milagro.MilagroCodecs;
 import org.ethereum.beacon.crypto.bls.milagro.MilagroMessageMapper;
@@ -29,15 +29,15 @@ import static org.ethereum.beacon.test.SilentAsserts.assertHexStrings;
  */
 public class BlsMessageHashCompressed implements Runner {
   private BlsTest.BlsMessageHashCompressedCase testCase;
-  private SpecHelpers specHelpers;
+  private BeaconChainSpec spec;
 
-  public BlsMessageHashCompressed(TestCase testCase, SpecHelpers specHelpers) {
+  public BlsMessageHashCompressed(TestCase testCase, BeaconChainSpec spec) {
     if (!(testCase instanceof BlsTest.BlsMessageHashCompressedCase)) {
       throw new RuntimeException(
           "TestCase runner accepts only BlsMessageHashCompressedCase as input!");
     }
     this.testCase = (BlsTest.BlsMessageHashCompressedCase) testCase;
-    this.specHelpers = specHelpers;
+    this.spec = spec;
   }
 
   public Optional<String> run() {

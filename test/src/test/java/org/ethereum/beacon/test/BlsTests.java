@@ -1,6 +1,6 @@
 package org.ethereum.beacon.test;
 
-import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.test.runner.BlsAggregatePubKeys;
 import org.ethereum.beacon.test.runner.BlsAggregateSigs;
@@ -22,10 +22,10 @@ import static org.junit.Assert.fail;
 public class BlsTests extends TestUtils {
   private String TESTS_DIR = "bls";
   private String FILENAME = "test_bls.yml";
-  private SpecHelpers specHelpers;
+  private BeaconChainSpec spec;
 
   public BlsTests() {
-    this.specHelpers = SpecHelpers.createWithSSZHasher(SpecConstants.DEFAULT);
+    this.spec = BeaconChainSpec.createWithDefaults();
   }
 
   @Test
@@ -37,7 +37,7 @@ public class BlsTests extends TestUtils {
         runAllCasesInTest(
             test.buildBlsMessageHashTest(),
             testCase -> {
-              BlsMessageHash testRunner = new BlsMessageHash(testCase, specHelpers);
+              BlsMessageHash testRunner = new BlsMessageHash(testCase, spec);
               return testRunner.run();
             },
             UniversalTest.class);
@@ -56,7 +56,7 @@ public class BlsTests extends TestUtils {
             test.buildBlsMessageHashCompressedTest(),
             testCase -> {
               BlsMessageHashCompressed testRunner =
-                  new BlsMessageHashCompressed(testCase, specHelpers);
+                  new BlsMessageHashCompressed(testCase, spec);
               return testRunner.run();
             },
             UniversalTest.class);
@@ -74,7 +74,7 @@ public class BlsTests extends TestUtils {
         runAllCasesInTest(
             test.buildBlsPrivateToPublicTest(),
             testCase -> {
-              BlsPrivateToPublic testRunner = new BlsPrivateToPublic(testCase, specHelpers);
+              BlsPrivateToPublic testRunner = new BlsPrivateToPublic(testCase, spec);
               return testRunner.run();
             },
             UniversalTest.class);
@@ -92,7 +92,7 @@ public class BlsTests extends TestUtils {
         runAllCasesInTest(
             test.buildBlsSignMessageTest(),
             testCase -> {
-              BlsSignMessage testRunner = new BlsSignMessage(testCase, specHelpers);
+              BlsSignMessage testRunner = new BlsSignMessage(testCase, spec);
               return testRunner.run();
             },
             UniversalTest.class);
@@ -110,7 +110,7 @@ public class BlsTests extends TestUtils {
         runAllCasesInTest(
             test.buildBlsAggregateSigsTest(),
             testCase -> {
-              BlsAggregateSigs testRunner = new BlsAggregateSigs(testCase, specHelpers);
+              BlsAggregateSigs testRunner = new BlsAggregateSigs(testCase, spec);
               return testRunner.run();
             },
             UniversalTest.class);
@@ -128,7 +128,7 @@ public class BlsTests extends TestUtils {
         runAllCasesInTest(
             test.buildBlsAggregatePubKeysTest(),
             testCase -> {
-              BlsAggregatePubKeys testRunner = new BlsAggregatePubKeys(testCase, specHelpers);
+              BlsAggregatePubKeys testRunner = new BlsAggregatePubKeys(testCase, spec);
               return testRunner.run();
             },
             UniversalTest.class);

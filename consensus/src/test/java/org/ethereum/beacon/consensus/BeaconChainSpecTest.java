@@ -11,10 +11,10 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.ethereum.beacon.consensus.hasher.SSZObjectHasher;
 import org.ethereum.beacon.consensus.transition.InitialStateTransition;
+import org.ethereum.beacon.consensus.util.CachingBeaconChainSpec;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.BeaconBlockHeader;
-import org.ethereum.beacon.consensus.util.CachingSpecHelpers;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
@@ -39,11 +39,11 @@ import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt64;
 
-public class SpecHelpersTest {
+public class BeaconChainSpecTest {
 
   @Test
   public void shuffleTest0() throws Exception {
-    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(SpecConstants.DEFAULT);
+    BeaconChainSpec spec = BeaconChainSpec.createWithDefaults();
 
     int[] sample = new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 
@@ -54,7 +54,7 @@ public class SpecHelpersTest {
     int res = Bytes3.wrap(hash, 0).asUInt24BigEndian().getValue();
 
 
-//    int[] actual = specHelpers.shuffle(sample, Hashes.keccak256(bytes));
+//    int[] actual = spec.shuffle(sample, Hashes.keccak256(bytes));
 //    int[] expected = new int[]{2, 4, 10, 7, 5, 6, 9, 8, 1, 3};
 //
 //    Assert.assertArrayEquals(expected, actual);
@@ -88,7 +88,7 @@ public class SpecHelpersTest {
       }
     }
 
-    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(SpecConstants.DEFAULT);
+    BeaconChainSpec spec = BeaconChainSpec.createWithDefaults();
 
     Map<Integer, Long> map = Arrays.stream(statuses).boxed().collect
         (Collectors.groupingBy(Function.identity(), Collectors.counting()));
@@ -109,17 +109,17 @@ public class SpecHelpersTest {
 
   @Test
   public void testHashTreeRoot1() {
-    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(SpecConstants.DEFAULT);
+    BeaconChainSpec spec = BeaconChainSpec.createWithDefaults();
     Hash32 expected =
         Hash32.fromHexString("0x1a2017aea008e5bb8b3eb79d031f14347018353f1c58fc3a54e9fc7af7ab2fe1");
-    Hash32 actual = specHelpers.hash_tree_root(createDepositInput());
+    Hash32 actual = spec.hash_tree_root(createDepositInput());
     assertEquals(expected, actual);
   }
 
   @Test
   public void headerAndBlockHashesAreEqual() {
     Random rnd = new Random(1);
-    SpecHelpers spec = SpecHelpers.createWithSSZHasher(SpecConstants.DEFAULT);
+    BeaconChainSpec spec = BeaconChainSpec.createWithDefaults();
     BeaconBlock emptyBlock = spec.get_empty_block();
     BeaconBlockBody body =
         new BeaconBlockBody(
@@ -177,7 +177,7 @@ public class SpecHelpersTest {
             return ShardNumber.of(shardCount);
           }
         };
-    SpecHelpers specHelpers = new CachingSpecHelpers(new SpecHelpersImpl(
+    BeaconChainSpec spec = new CachingBeaconChainSpec(new BeaconChainSpecImpl(
         specConstants, Hashes::keccak256, SSZObjectHasher.create(Hashes::keccak256)) {
       @Override
       public boolean bls_verify(BLSPubkey publicKey, Hash32 message, BLSSignature signature,
@@ -187,31 +187,31 @@ public class SpecHelpersTest {
     });
 
     System.out.println("Generating deposits...");
-    List<Deposit> deposits = TestUtils.generateRandomDepositsWithoutSig(rnd, specHelpers, validatorCount);
+    List<Deposit> deposits = TestUtils.generateRandomDepositsWithoutSig(rnd, spec, validatorCount);
     InitialStateTransition initialStateTransition =
-        new InitialStateTransition(new ChainStart(genesisTime, eth1Data, deposits), specHelpers);
+        new InitialStateTransition(new ChainStart(genesisTime, eth1Data, deposits), spec);
 
     System.out.println("Applying initial state transition...");
     BeaconState initialState = initialStateTransition.apply(
-            specHelpers.get_empty_block());
+            spec.get_empty_block());
     MutableBeaconState state = initialState.createMutableCopy();
 
     for(int i = 1; i < 128; i++) {
       System.out.println("get_epoch_committee_count(" + i + ") = " +
-          specHelpers.get_epoch_committee_count(i));
+          spec.get_epoch_committee_count(i));
     }
 
     for (SlotNumber slot : genesisSlot.iterateTo(genesisSlot.plus(SlotNumber.of(epochLength)))) {
       System.out.println("Slot #" + slot
           + " beacon proposer: "
-          + specHelpers.get_beacon_proposer_index(state, slot)
+          + spec.get_beacon_proposer_index(state, slot)
           + " committee: "
-          + specHelpers.get_crosslink_committees_at_slot(state, slot));
+          + spec.get_crosslink_committees_at_slot(state, slot));
       System.out.println("Slot #" + slot
           + " beacon proposer: "
-          + specHelpers.get_beacon_proposer_index(state, slot)
+          + spec.get_beacon_proposer_index(state, slot)
           + " committee: "
-          + specHelpers.get_crosslink_committees_at_slot(state, slot).stream()
+          + spec.get_crosslink_committees_at_slot(state, slot).stream()
             .map(c -> c.getShard() + ": [" + c.getCommittee().size() + "]")
             .collect(Collectors.joining(","))
             );
