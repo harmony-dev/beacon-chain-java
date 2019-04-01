@@ -76,6 +76,6 @@ public class Gwei extends UInt64 implements SafeComparable<Gwei> {
   @Override
   public String toString() {
     return getValue() % GWEI_PER_ETHER == 0 ? (getValue() / GWEI_PER_ETHER) + " Eth" :
-        (getValue() / GWEI_PER_ETHER) + "." + (getValue() % GWEI_PER_ETHER) + " Eth";
+        (getValue() / (double) GWEI_PER_ETHER) + " Eth";
   }
 }
