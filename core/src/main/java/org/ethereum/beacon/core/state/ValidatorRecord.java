@@ -35,10 +35,14 @@ public class ValidatorRecord {
   /** Status flags. */
   @SSZ private final Boolean slashed;
 
-  public ValidatorRecord(BLSPubkey pubKey,
-      Hash32 withdrawalCredentials, EpochNumber activationEpoch,
-      EpochNumber exitEpoch, EpochNumber withdrawableEpoch,
-      Boolean initiatedExit, Boolean slashed) {
+  public ValidatorRecord(
+      BLSPubkey pubKey,
+      Hash32 withdrawalCredentials,
+      EpochNumber activationEpoch,
+      EpochNumber exitEpoch,
+      EpochNumber withdrawableEpoch,
+      Boolean initiatedExit,
+      Boolean slashed) {
     this.pubKey = pubKey;
     this.withdrawalCredentials = withdrawalCredentials;
     this.activationEpoch = activationEpoch;
@@ -92,6 +96,26 @@ public class ValidatorRecord {
 
   public Builder builder() {
     return Builder.fromRecord(this);
+  }
+
+  @Override
+  public String toString() {
+    return "ValidatorRecord{"
+        + "pubKey="
+        + pubKey
+        + ", withdrawalCredentials="
+        + withdrawalCredentials
+        + ", activationEpoch="
+        + activationEpoch
+        + ", exitEpoch="
+        + exitEpoch
+        + ", withdrawableEpoch="
+        + withdrawableEpoch
+        + ", initiatedExit="
+        + initiatedExit
+        + ", slashed="
+        + slashed
+        + '}';
   }
 
   public static class Builder {
