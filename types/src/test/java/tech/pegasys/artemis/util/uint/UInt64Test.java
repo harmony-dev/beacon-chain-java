@@ -167,6 +167,26 @@ public class UInt64Test {
     Assert.assertEquals("UInt64.MAX_VALUE % 2", "1", uQuotientMax.toString());
   }
 
+  @Test
+  public void saturationAddition() {
+    Assert.assertEquals(UInt64.MAX_VALUE, UInt64.MAX_VALUE.plusSat(1));
+    Assert.assertEquals(UInt64.MAX_VALUE, UInt64.MAX_VALUE.dividedBy(2).plusSat(UInt64.MAX_VALUE));
+    Assert.assertEquals(
+        UInt64.MAX_VALUE.dividedBy(2), UInt64.MAX_VALUE.dividedBy(2).plusSat(UInt64.ZERO));
+    Assert.assertEquals(
+        UInt64.MAX_VALUE.dividedBy(2).plus(10), UInt64.MAX_VALUE.dividedBy(2).plusSat(10));
+  }
+
+  @Test
+  public void saturationSubtraction() {
+    Assert.assertEquals(UInt64.MIN_VALUE, UInt64.MIN_VALUE.minusSat(1));
+    Assert.assertEquals(UInt64.MIN_VALUE, UInt64.MAX_VALUE.dividedBy(2).minusSat(UInt64.MAX_VALUE));
+    Assert.assertEquals(
+        UInt64.MAX_VALUE.dividedBy(2), UInt64.MAX_VALUE.dividedBy(2).minusSat(UInt64.ZERO));
+    Assert.assertEquals(
+        UInt64.MAX_VALUE.dividedBy(2).minus(10), UInt64.MAX_VALUE.dividedBy(2).minusSat(10));
+  }
+
   private void add(long augend, long addend, String expectedSum) {
     boolean thrown = false;
 

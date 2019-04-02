@@ -33,18 +33,33 @@ public class Gwei extends UInt64 implements SafeComparable<Gwei> {
     return new Gwei(super.minus(subtrahend));
   }
 
+  /**
+   * Saturation subtraction.
+   *
+   * @param subtrahend A Gwei representing an unsigned long to subtract.
+   * @return {@link #MIN_VALUE} if underflowed, otherwise, result of {@link #minus(UInt64)}.
+   */
   public Gwei minusSat(Gwei subtrahend) {
     if (this.compareTo(subtrahend) < 0) {
-      return Gwei.ZERO;
+      return Gwei.castFrom(MIN_VALUE);
     } else {
       return minus(subtrahend);
     }
   }
 
+  /**
+   * Saturation addition.
+   *
+   * @param addend A Gwei representing an unsigned long to add.
+   * @return {@link #MAX_VALUE} if overflowed, otherwise, result of {@link #plus(UInt64)}.
+   */
   public Gwei plusSat(Gwei addend) {
     Gwei res = this.plus(addend);
-    // TODO remove after fixed in merged version, agree on merged version
-    return res;
+    if (res.compareTo(this) <= 0 && addend.compareTo(Gwei.ZERO) > 0) {
+      return Gwei.castFrom(MAX_VALUE);
+    } else {
+      return res;
+    }
   }
 
   @Override
@@ -73,6 +88,6 @@ public class Gwei extends UInt64 implements SafeComparable<Gwei> {
   @Override
   public String toString() {
     return getValue() % GWEI_PER_ETHER == 0 ? (getValue() / GWEI_PER_ETHER) + " Eth" :
-        (getValue() / (double) GWEI_PER_ETHER) + " Eth";
+        (getValue() / GWEI_PER_ETHER) + "." + (getValue() % GWEI_PER_ETHER) + " Eth";
   }
 }
