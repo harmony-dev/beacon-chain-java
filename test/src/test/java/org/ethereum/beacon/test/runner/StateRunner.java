@@ -7,6 +7,7 @@ import org.ethereum.beacon.chain.storage.impl.MemBeaconChainStorageFactory;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.transition.BeaconStateExImpl;
+import org.ethereum.beacon.consensus.transition.EmptySlotTransition;
 import org.ethereum.beacon.consensus.transition.ExtendedSlotTransition;
 import org.ethereum.beacon.consensus.transition.InitialStateTransition;
 import org.ethereum.beacon.consensus.transition.PerBlockTransition;
@@ -105,6 +106,7 @@ public class StateRunner implements Runner {
     ExtendedSlotTransition extendedSlotTransition =
         new ExtendedSlotTransition(
             stateCachingTransition, perEpochTransition, perSlotTransition, spec);
+    EmptySlotTransition emptySlotTransition = new EmptySlotTransition(extendedSlotTransition);
 
     InMemoryDatabase db = new InMemoryDatabase();
     BeaconChainStorageFactory storageFactory = new MemBeaconChainStorageFactory();
@@ -166,8 +168,7 @@ public class StateRunner implements Runner {
 
       BeaconStateEx postBlockState;
       try {
-        BeaconStateEx preBlockState =
-            applyEmptySlotTransitionsTillSlot(latestState, extendedSlotTransition, block.getSlot());
+        BeaconStateEx preBlockState = emptySlotTransition.apply(latestState, block.getSlot());
         postBlockState = perBlockTransition.apply(preBlockState, block);
       } catch (Exception ex) {
         StringWriter sw = new StringWriter();
@@ -332,17 +333,6 @@ public class StateRunner implements Runner {
     chainStorage.getTupleStorage().put(tuple);
     chainStorage.getJustifiedStorage().set(genesisRoot);
     chainStorage.getFinalizedStorage().set(genesisRoot);
-  }
-
-  private BeaconStateEx applyEmptySlotTransitionsTillSlot(
-      BeaconStateEx source, ExtendedSlotTransition onSlotTransition, SlotNumber slotNumber) {
-    BeaconStateEx result = source;
-    SlotNumber slotsCnt = slotNumber.minus(source.getSlot());
-    for (SlotNumber slot : slotsCnt) {
-      result = onSlotTransition.apply(result);
-    }
-
-    return result;
   }
 
   private SpecConstantsData createDefaultSpecConstantsData() {
