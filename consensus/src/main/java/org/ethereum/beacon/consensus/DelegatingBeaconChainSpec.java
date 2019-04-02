@@ -179,7 +179,7 @@ public abstract class DelegatingBeaconChainSpec implements BeaconChainSpec {
   }
 
   @Override
-  public BytesValue int_to_bytes32(UInt64 value) {
+  public Bytes32 int_to_bytes32(UInt64 value) {
     return delegate.int_to_bytes32(value);
   }
 

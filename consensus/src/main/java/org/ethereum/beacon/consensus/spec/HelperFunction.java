@@ -517,8 +517,8 @@ public interface HelperFunction extends SpecCommons {
     return int_to_bytes4(value.getValue());
   }
 
-  default BytesValue int_to_bytes32(UInt64 value) {
-    return value.toBytes8LittleEndian();
+  default Bytes32 int_to_bytes32(UInt64 value) {
+    return Bytes32.rightPad(value.toBytes8LittleEndian());
   }
 
   /*
