@@ -9,6 +9,7 @@ import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.BlockTransition;
 import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.consensus.transition.BeaconStateExImpl;
+import org.ethereum.beacon.consensus.transition.EmptySlotTransition;
 import org.ethereum.beacon.consensus.transition.ExtendedSlotTransition;
 import org.ethereum.beacon.consensus.transition.InitialStateTransition;
 import org.ethereum.beacon.consensus.transition.PerEpochTransition;
@@ -99,12 +100,13 @@ public class DefaultBeaconChainTest {
     return new DefaultBeaconChain(
         spec,
         initialTransition,
-        new ExtendedSlotTransition(stateCaching, new PerEpochTransition(spec) {
-          @Override
-          public BeaconStateEx apply(BeaconStateEx stateEx) {
-            return perEpochTransition.apply(stateEx);
-          }
-        }, perSlotTransition, spec),
+        new EmptySlotTransition(
+            new ExtendedSlotTransition(stateCaching, new PerEpochTransition(spec) {
+              @Override
+              public BeaconStateEx apply(BeaconStateEx stateEx) {
+                return perEpochTransition.apply(stateEx);
+              }
+            }, perSlotTransition, spec)),
         perBlockTransition,
         blockVerifier,
         stateVerifier,

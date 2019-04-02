@@ -12,6 +12,7 @@ import org.ethereum.beacon.chain.observer.ObservableStateProcessorImpl;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.chain.storage.BeaconChainStorageFactory;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
+import org.ethereum.beacon.consensus.transition.EmptySlotTransition;
 import org.ethereum.beacon.consensus.transition.ExtendedSlotTransition;
 import org.ethereum.beacon.consensus.transition.InitialStateTransition;
 import org.ethereum.beacon.consensus.transition.PerBlockTransition;
@@ -51,6 +52,7 @@ public class Launcher {
   private PerBlockTransition perBlockTransition;
   private PerEpochTransition perEpochTransition;
   private ExtendedSlotTransition extendedSlotTransition;
+  private EmptySlotTransition emptySlotTransition;
   private BeaconBlockVerifier blockVerifier;
   private BeaconStateVerifier stateVerifier;
 
@@ -106,6 +108,7 @@ public class Launcher {
     extendedSlotTransition =
         new ExtendedSlotTransition(
             stateCachingTransition, perEpochTransition, perSlotTransition, spec);
+    emptySlotTransition = new EmptySlotTransition(extendedSlotTransition);
 
     db = new InMemoryDatabase();
     beaconChainStorage = storageFactory.create(db);
@@ -117,7 +120,7 @@ public class Launcher {
         new DefaultBeaconChain(
             spec,
             initialTransition,
-            extendedSlotTransition,
+            emptySlotTransition,
             perBlockTransition,
             blockVerifier,
             stateVerifier,
@@ -140,7 +143,7 @@ public class Launcher {
         allAttestations,
         beaconChain.getBlockStatesStream(),
         spec,
-        extendedSlotTransition,
+        emptySlotTransition,
         schedulers);
     observableStateProcessor.start();
 

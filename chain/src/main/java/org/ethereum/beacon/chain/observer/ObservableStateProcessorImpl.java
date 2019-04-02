@@ -10,6 +10,7 @@ import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.HeadFunction;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.StateTransition;
+import org.ethereum.beacon.consensus.transition.EmptySlotTransition;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
@@ -41,7 +42,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
 
   private final HeadFunction headFunction;
   private final BeaconChainSpec spec;
-  private final StateTransition<BeaconStateEx> onSlotTransition;
+  private final EmptySlotTransition emptySlotTransition;
 
   private final Publisher<SlotNumber> slotTicker;
   private final Publisher<Attestation> attestationPublisher;
@@ -66,11 +67,11 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
       Publisher<Attestation> attestationPublisher,
       Publisher<BeaconTupleDetails> beaconPublisher,
       BeaconChainSpec spec,
-      StateTransition<BeaconStateEx> onSlotTransition,
+      EmptySlotTransition emptySlotTransition,
       Schedulers schedulers) {
     this.tupleStorage = chainStorage.getTupleStorage();
     this.spec = spec;
-    this.onSlotTransition = onSlotTransition;
+    this.emptySlotTransition = emptySlotTransition;
     this.headFunction = new LMDGhostHeadFunction(chainStorage, spec);
     this.slotTicker = slotTicker;
     this.attestationPublisher = attestationPublisher;
@@ -230,7 +231,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
 
     PendingOperations pendingOperations = new PendingOperationsState(copyAttestationCache());
     if (slot.greater(head.getBlock().getSlot())) {
-      BeaconStateEx stateUponASlot = applySlotTransitions(head.getFinalState(), slot);
+      BeaconStateEx stateUponASlot = emptySlotTransition.apply(head.getFinalState(), slot);
       latestState = stateUponASlot;
       observableStateStream.onNext(
           new ObservableBeaconState(head.getBlock(), stateUponASlot, pendingOperations));
@@ -250,25 +251,6 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
             head.getBlock(), head.getFinalState(), pendingOperations));
       }
     }
-  }
-
-  /**
-   * Applies next slot transitions until the <code>targetSlot</code>.
-   *
-   * @param source Source state
-   * @param targetSlot target slot.
-   * @return new state, result of applied transition to the latest input state
-   */
-  private BeaconStateEx applySlotTransitions(
-      BeaconStateEx source, SlotNumber targetSlot) {
-
-    BeaconStateEx state = source;
-    SlotNumber slotsCnt = targetSlot.minus(source.getSlot());
-    for (SlotNumber slot : slotsCnt) {
-      state = onSlotTransition.apply(state);
-    }
-
-    return state;
   }
 
   private void updateHead() {
