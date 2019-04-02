@@ -11,7 +11,7 @@ import org.ethereum.beacon.chain.storage.BeaconTupleStorage;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.BlockTransition;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
-import org.ethereum.beacon.consensus.StateTransition;
+import org.ethereum.beacon.consensus.transition.EmptySlotTransition;
 import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
 import org.ethereum.beacon.consensus.verifier.BeaconStateVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
@@ -29,7 +29,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
 
   private final BeaconChainSpec spec;
   private final BlockTransition<BeaconStateEx> initialTransition;
-  private final StateTransition<BeaconStateEx> onSlotTransition;
+  private final EmptySlotTransition emptySlotTransition;
   private final BlockTransition<BeaconStateEx> onBlockTransition;
   private final BeaconBlockVerifier blockVerifier;
   private final BeaconStateVerifier stateVerifier;
@@ -47,7 +47,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   public DefaultBeaconChain(
       BeaconChainSpec spec,
       BlockTransition<BeaconStateEx> initialTransition,
-      StateTransition<BeaconStateEx> onSlotTransition,
+      EmptySlotTransition emptySlotTransition,
       BlockTransition<BeaconStateEx> onBlockTransition,
       BeaconBlockVerifier blockVerifier,
       BeaconStateVerifier stateVerifier,
@@ -55,7 +55,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
       Schedulers schedulers) {
     this.spec = spec;
     this.initialTransition = initialTransition;
-    this.onSlotTransition = onSlotTransition;
+    this.emptySlotTransition = emptySlotTransition;
     this.onBlockTransition = onBlockTransition;
     this.blockVerifier = blockVerifier;
     this.stateVerifier = stateVerifier;
@@ -117,7 +117,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
 
     BeaconStateEx parentState = pullParentState(block);
 
-    BeaconStateEx preBlockState = applyEmptySlotTransitionsTillBlock(parentState, block);
+    BeaconStateEx preBlockState = emptySlotTransition.apply(parentState, block.getSlot());
     VerificationResult blockVerification =
         blockVerifier.verify(block, preBlockState);
     if (!blockVerification.isPassed()) {
@@ -213,16 +213,6 @@ public class DefaultBeaconChain implements MutableBeaconChain {
         spec.get_current_slot(recentlyProcessed.getState(), schedulers.getCurrentTime()).increment();
 
     return block.getSlot().greater(nextToCurrentSlot);
-  }
-
-  private BeaconStateEx applyEmptySlotTransitionsTillBlock(BeaconStateEx source, BeaconBlock block) {
-    BeaconStateEx result = source;
-    SlotNumber slotsCnt = block.getSlot().minus(source.getSlot());
-    for (SlotNumber slot : slotsCnt) {
-      result = onSlotTransition.apply(result);
-    }
-
-    return result;
   }
 
   @Override
