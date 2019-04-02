@@ -976,6 +976,8 @@ public interface EpochProcessing extends HelperFunction {
     // Filter out dequeued validators
     if (!validator.getWithdrawableEpoch().equals(getConstants().getFarFutureEpoch())) {
       return false;
+    } else if (validator.getExitEpoch().equals(getConstants().getFarFutureEpoch())) {
+      return false;
     } else {
       // Dequeue if the minimum amount of time has passed
       return get_current_epoch(state).greaterEqual(
