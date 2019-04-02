@@ -31,6 +31,6 @@ chainSpec:
       LATEST_SLASHED_EXIT_LENGTH: 64
 
   specHelpersOptions:
-    blsVerify: true
-    blsVerifyProofOfPossession: true
-    blsSign: true
+    blsVerify: false
+    blsVerifyProofOfPossession: false
+    blsSign: false
