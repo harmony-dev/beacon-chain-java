@@ -1,11 +1,11 @@
 package org.ethereum.beacon.validator.attester;
 
-import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.mockito.Mockito;
 
 public class BeaconChainAttesterTestUtil {
 
-  public static BeaconChainAttesterImpl mockAttester(SpecHelpers specHelpers) {
-    return Mockito.spy(new BeaconChainAttesterImpl(specHelpers));
+  public static BeaconChainAttesterImpl mockAttester(BeaconChainSpec spec) {
+    return Mockito.spy(new BeaconChainAttesterImpl(spec));
   }
 }

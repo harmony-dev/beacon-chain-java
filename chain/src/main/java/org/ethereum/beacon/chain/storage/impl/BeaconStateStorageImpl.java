@@ -3,7 +3,6 @@ package org.ethereum.beacon.chain.storage.impl;
 import java.util.Objects;
 import java.util.Optional;
 import javax.annotation.Nonnull;
-import org.ethereum.beacon.chain.storage.AbstractHashKeyStorage;
 import org.ethereum.beacon.chain.storage.BeaconStateStorage;
 import org.ethereum.beacon.consensus.hasher.ObjectHasher;
 import org.ethereum.beacon.core.BeaconState;
@@ -14,15 +13,15 @@ import org.ethereum.beacon.db.source.DataSource;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
-public class BeaconStateStorageImpl extends AbstractHashKeyStorage<Hash32, BeaconState>
-    implements BeaconStateStorage {
+public class BeaconStateStorageImpl implements BeaconStateStorage {
 
+  private final ObjectHasher<Hash32> objectHasher;
   private final DataSource<Hash32, BeaconState> source;
 
   public BeaconStateStorageImpl(
       DataSource<Hash32, BeaconState> source, ObjectHasher<Hash32> objectHasher) {
-    super(objectHasher);
     this.source = source;
+    this.objectHasher = objectHasher;
   }
 
   @Override
@@ -36,6 +35,11 @@ public class BeaconStateStorageImpl extends AbstractHashKeyStorage<Hash32, Beaco
     Objects.requireNonNull(key);
     Objects.requireNonNull(value);
     source.put(key, value);
+  }
+
+  @Override
+  public void put(BeaconState state) {
+    this.put(objectHasher.getHash(state), state);
   }
 
   @Override

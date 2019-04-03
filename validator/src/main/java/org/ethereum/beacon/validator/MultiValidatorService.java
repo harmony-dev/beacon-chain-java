@@ -15,8 +15,8 @@ import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconStateEx;
-import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.consensus.TransitionType;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
@@ -54,7 +54,7 @@ public class MultiValidatorService implements ValidatorService {
   /** Attester logic. */
   private BeaconChainAttester attester;
   /** The spec. */
-  private SpecHelpers spec;
+  private BeaconChainSpec spec;
 
   private Publisher<ObservableBeaconState> stateStream;
 
@@ -78,7 +78,7 @@ public class MultiValidatorService implements ValidatorService {
       List<BLS381Credentials> blsCredentials,
       BeaconChainProposer proposer,
       BeaconChainAttester attester,
-      SpecHelpers spec,
+      BeaconChainSpec spec,
       Publisher<ObservableBeaconState> stateStream,
       Schedulers schedulers) {
     this(blsCredentials, proposer, attester, spec, stateStream, schedulers, new TimeCollector());
@@ -88,7 +88,7 @@ public class MultiValidatorService implements ValidatorService {
       List<BLS381Credentials> blsCredentials,
       BeaconChainProposer proposer,
       BeaconChainAttester attester,
-      SpecHelpers spec,
+      BeaconChainSpec spec,
       Publisher<ObservableBeaconState> stateStream,
       Schedulers schedulers,
       TimeCollector proposeTimeCollector) {
@@ -269,26 +269,18 @@ public class MultiValidatorService implements ValidatorService {
       long total = System.nanoTime() - s;
       propagateBlock(newBlock);
 
+      logger.info(
+          "validator {}: proposed a {} in {}s",
+          index,
+          newBlock.toString(
+              spec.getConstants(),
+              observableState.getLatestSlotState().getGenesisTime(),
+              spec::signed_root),
+          String.format("%.3f", (double) total / 1_000_000_000d));
+
       if (spec.is_epoch_end(newBlock.getSlot())) {
-        logger.info(
-            "validator {}: proposed a {} in {}s, epoch avg without this block: {}s",
-            index,
-            newBlock.toString(
-                spec.getConstants(),
-                observableState.getLatestSlotState().getGenesisTime(),
-                spec::hash_tree_root),
-            String.format("%.3f", (double) total / 1_000_000_000d),
-            String.format("%.3f", (double) proposeTimeCollector.getAvg() / 1_000_000_000d));
         proposeTimeCollector.reset();
       } else {
-        logger.info(
-            "validator {}: proposed a {} in {}s",
-            index,
-            newBlock.toString(
-                spec.getConstants(),
-                observableState.getLatestSlotState().getGenesisTime(),
-                spec::hash_tree_root),
-            String.format("%.3f", (double) total / 1_000_000_000d));
         proposeTimeCollector.tick(total);
       }
     }
@@ -323,7 +315,7 @@ public class MultiValidatorService implements ValidatorService {
               .toString(
                   spec.getConstants(),
                   observableState.getLatestSlotState().getGenesisTime(),
-                  spec::hash_tree_root),
+                  spec::signed_root),
           state.getSlot());
     }
   }

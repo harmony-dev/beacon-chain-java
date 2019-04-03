@@ -45,4 +45,21 @@ public class Bytes32Test {
   public void failsWhenLeftPaddingValueLargerThan32() {
     Bytes32.leftPad(MutableBytesValue.create(33));
   }
+
+  @Test
+  public void rightPadAValueToBytes32() {
+    Bytes32 b32 = Bytes32.rightPad(BytesValue.of(1, 2, 3));
+    assertThat(b32.size()).isEqualTo(32);
+    for (int i = 3; i < 32; ++i) {
+      assertThat(b32.get(i)).isEqualTo((byte) 0);
+    }
+    assertThat(b32.get(0)).isEqualTo((byte) 1);
+    assertThat(b32.get(1)).isEqualTo((byte) 2);
+    assertThat(b32.get(2)).isEqualTo((byte) 3);
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void failsWhenRightPaddingValueLargerThan32() {
+    Bytes32.rightPad(MutableBytesValue.create(33));
+  }
 }

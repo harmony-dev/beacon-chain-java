@@ -1,40 +1,39 @@
 package org.ethereum.beacon.core.operations;
 
 import com.google.common.base.Objects;
+import java.util.function.Function;
 import javax.annotation.Nullable;
-
-import org.ethereum.beacon.core.operations.slashing.Proposal;
+import org.ethereum.beacon.core.BeaconBlockHeader;
 import org.ethereum.beacon.core.spec.SpecConstants;
-import org.ethereum.beacon.core.types.Time;
+import org.ethereum.beacon.core.types.Hashable;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
+import tech.pegasys.artemis.ethereum.core.Hash32;
 
 @SSZSerializable
 public class ProposerSlashing {
   @SSZ private final ValidatorIndex proposerIndex;
-  @SSZ private final Proposal proposal1;
-  @SSZ private final Proposal proposal2;
+  @SSZ private final BeaconBlockHeader header1;
+  @SSZ private final BeaconBlockHeader header2;
 
   public ProposerSlashing(
-      ValidatorIndex proposerIndex,
-      Proposal proposal1,
-      Proposal proposal2) {
+      ValidatorIndex proposerIndex, BeaconBlockHeader header1, BeaconBlockHeader header2) {
     this.proposerIndex = proposerIndex;
-    this.proposal1 = proposal1;
-    this.proposal2 = proposal2;
+    this.header1 = header1;
+    this.header2 = header2;
   }
 
   public ValidatorIndex getProposerIndex() {
     return proposerIndex;
   }
 
-  public Proposal getProposal1() {
-    return proposal1;
+  public BeaconBlockHeader getHeader1() {
+    return header1;
   }
 
-  public Proposal getProposal2() {
-    return proposal2;
+  public BeaconBlockHeader getHeader2() {
+    return header2;
   }
 
   @Override
@@ -43,8 +42,8 @@ public class ProposerSlashing {
     if (o == null || getClass() != o.getClass()) return false;
     ProposerSlashing that = (ProposerSlashing) o;
     return Objects.equal(proposerIndex, that.proposerIndex)
-        && Objects.equal(proposal1, that.proposal1)
-        && Objects.equal(proposal2, that.proposal2);
+        && Objects.equal(header1, that.header1)
+        && Objects.equal(header2, that.header2);
   }
 
   @Override
@@ -52,11 +51,12 @@ public class ProposerSlashing {
     return toString(null, null);
   }
 
-  public String toString(@Nullable SpecConstants spec, @Nullable Time beaconStart) {
+  public String toString(@Nullable SpecConstants spec,
+      @Nullable Function<? super Hashable<Hash32>, Hash32> hasher) {
     return "ProposerSlashing["
         + "proposer: " + proposerIndex
-        + ", data1: " + proposal1.toString(spec, beaconStart)
-        + ", data2: " + proposal2.toString(spec, beaconStart)
+        + ", header1: " + header1.toStringFull(spec, hasher)
+        + ", header2: " + header1.toStringFull(spec, hasher)
         + "]";
   }
 }

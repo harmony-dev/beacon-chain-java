@@ -24,22 +24,22 @@ import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 @SSZSerializable
 public class Attestation {
 
-  /** Attestation data object. */
-  @SSZ private final AttestationData data;
   /** A bitfield where each bit corresponds to a validator attested to the {@link #data}. */
   @SSZ private final Bitfield aggregationBitfield;
+  /** Attestation data object. */
+  @SSZ private final AttestationData data;
   /** Proof of custody bitfield. */
   @SSZ private final Bitfield custodyBitfield;
   /** A product of aggregation of signatures from different validators to {@link #data}. */
   @SSZ private final BLSSignature aggregateSignature;
 
   public Attestation(
-      AttestationData data,
       Bitfield aggregationBitfield,
+      AttestationData data,
       Bitfield custodyBitfield,
       BLSSignature aggregateSignature) {
-    this.data = data;
     this.aggregationBitfield = aggregationBitfield;
+    this.data = data;
     this.custodyBitfield = custodyBitfield;
     this.aggregateSignature = aggregateSignature;
   }

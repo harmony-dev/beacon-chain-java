@@ -26,8 +26,7 @@ import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.ethereum.beacon.Launcher;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.storage.impl.MemBeaconChainStorageFactory;
-import org.ethereum.beacon.consensus.SpecHelpers;
-import org.ethereum.beacon.consensus.TransitionType;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.transition.EpochTransitionSummary;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
@@ -73,28 +72,30 @@ public class SimulatorLauncher implements Runnable {
   private final List<PeersConfig> validators;
   private final List<PeersConfig> observers;
   private final SpecConstants specConstants;
-  private final SpecHelpers specHelpers;
+  private final BeaconChainSpec spec;
   private final Level logLevel;
+  private final SpecBuilder specBuilder;
 
   /**
    * Creates Simulator launcher with following settings
    *
    * @param config configuration and run plan.
-   * @param specHelpers chain specification.
+   * @param specBuilder chain specification builder.
    * @param validators validator peers configuration.
    * @param observers observer peers configuration.
    * @param logLevel Log level, Apache log4j type.
    */
   public SimulatorLauncher(
       MainConfig config,
-      SpecHelpers specHelpers,
+      SpecBuilder specBuilder,
       List<PeersConfig> validators,
       List<PeersConfig> observers,
       Level logLevel) {
     this.config = config;
     this.simulationPlan = (SimulationPlan) config.getPlan();
-    this.specConstants = specHelpers.getConstants();
-    this.specHelpers = specHelpers;
+    this.specBuilder = specBuilder;
+    this.specConstants = specBuilder.buildSpecConstants();
+    this.spec = specBuilder.buildSpec();
     this.validators = validators;
     this.observers = observers;
     this.logLevel = logLevel;
@@ -119,17 +120,16 @@ public class SimulatorLauncher implements Runnable {
     }
   }
 
-  private Pair<List<Deposit>, List<BLS381.KeyPair>> getValidatorDeposits(Random rnd,
-      boolean isProofVerifyEnabled) {
+  private Pair<List<Deposit>, List<BLS381.KeyPair>> getValidatorDeposits(Random rnd) {
     Pair<List<Deposit>, List<BLS381.KeyPair>> deposits =
-        SimulateUtils.getAnyDeposits(rnd, specHelpers, validators.size(),
-            config.getChainSpec().getSpecHelpersOptions().isBlsVerifyProofOfPosession());
+        SimulateUtils.getAnyDeposits(rnd, spec, validators.size(),
+            config.getChainSpec().getSpecHelpersOptions().isBlsVerifyProofOfPossession());
     for (int i = 0; i < validators.size(); i++) {
       if (validators.get(i).getBlsPrivateKey() != null) {
         KeyPair keyPair = KeyPair.create(
             PrivateKey.create(Bytes32.fromHexString(validators.get(i).getBlsPrivateKey())));
-        deposits.getValue0().set(i, SimulateUtils.getDepositForKeyPair(rnd, keyPair, specHelpers,
-            config.getChainSpec().getSpecHelpersOptions().isBlsVerifyProofOfPosession()));
+        deposits.getValue0().set(i, SimulateUtils.getDepositForKeyPair(rnd, keyPair, spec,
+            config.getChainSpec().getSpecHelpersOptions().isBlsVerifyProofOfPossession()));
         deposits.getValue1().set(i, keyPair);
       }
     }
@@ -139,13 +139,12 @@ public class SimulatorLauncher implements Runnable {
 
   public void run() {
     logger.info("Simulation parameters:\n{}", simulationPlan);
-    if (config.getChainSpec() != null)
+    if (config.getChainSpec().isDefined())
       logger.info("Overridden beacon chain parameters:\n{}", config.getChainSpec());
 
     Random rnd = new Random(simulationPlan.getSeed());
     setupLogging();
-    Pair<List<Deposit>, List<BLS381.KeyPair>> validatorDeposits = getValidatorDeposits(rnd,
-        config.getChainSpec().getSpecHelpersOptions().isBlsVerifyProofOfPosession());
+    Pair<List<Deposit>, List<BLS381.KeyPair>> validatorDeposits = getValidatorDeposits(rnd);
 
     List<Deposit> deposits = validatorDeposits.getValue0().stream()
         .filter(Objects::nonNull).collect(Collectors.toList());
@@ -188,7 +187,7 @@ public class SimulatorLauncher implements Runnable {
 
       Launcher launcher =
           new Launcher(
-              specHelpers,
+              specBuilder.buildSpec(),
               depositContract,
               bls,
               wireApi,
@@ -196,12 +195,9 @@ public class SimulatorLauncher implements Runnable {
               schedulers,
               proposeTimeCollector);
 
-      if ((i + 1) % 100 == 0)
-        logger.info("{} validators created", i + 1);
-
       peers.add(launcher);
 
-      if ((i + 1) % 1000 == 0)
+      if ((i + 1) % 100 == 0)
         logger.info("{} validators created", (i + 1));
     }
     logger.info("All validators created");
@@ -212,7 +208,7 @@ public class SimulatorLauncher implements Runnable {
       String name = "O" + i;
       Launcher launcher =
           new Launcher(
-              specHelpers,
+              specBuilder.buildSpec(),
               depositContract,
               null,
               localWireHub.createNewPeer(
@@ -232,15 +228,15 @@ public class SimulatorLauncher implements Runnable {
       Flux.from(launcher.getObservableStateProcessor().getObservableStateStream())
           .subscribe(os -> {
             latestStates.put(finalI, os);
-            logger.trace("New observable state: " + os.toString(specHelpers));
+            logger.trace("New observable state: " + os.toString(spec));
           });
       Flux.from(launcher.getBeaconChain().getBlockStatesStream())
           .subscribe(blockState -> logger.trace("Block imported: "
-              + blockState.getBlock().toString(this.specConstants, genesisTime, specHelpers::hash_tree_root)));
+              + blockState.getBlock().toString(this.specConstants, genesisTime, spec::signed_root)));
       if (launcher.getValidatorService() != null) {
         Flux.from(launcher.getValidatorService().getProposedBlocksStream())
             .subscribe(block -> logger.debug("New block created: "
-                + block.toString(this.specConstants, genesisTime, specHelpers::hash_tree_root)));
+                + block.toString(this.specConstants, genesisTime, spec::signed_root)));
         Flux.from(launcher.getValidatorService().getAttestationsStream())
             .subscribe(attest -> logger.debug("New attestation created: "
                 + attest.toString(this.specConstants, genesisTime)));
@@ -253,7 +249,7 @@ public class SimulatorLauncher implements Runnable {
 
     Launcher observer =
         new Launcher(
-            specHelpers,
+            spec,
             depositContract,
             null,
             wireApi,
@@ -275,7 +271,7 @@ public class SimulatorLauncher implements Runnable {
         .subscribe(os -> {
           latestStates.put(peers.size(), os);
           states.add(os);
-          logger.debug("New observable state: " + os.toString(specHelpers));
+          logger.debug("New observable state: " + os.toString(spec));
         });
     Flux.from(observer.getWireApi().inboundAttestationsStream())
         .publishOn(observer.getSchedulers().reactorEvents())
@@ -287,7 +283,7 @@ public class SimulatorLauncher implements Runnable {
         .subscribe(blockState -> {
           blocks.add(blockState.getBlock());
           logger.debug("Block imported: "
-              + blockState.getBlock().toString(specConstants, genesisTime, specHelpers::hash_tree_root));
+              + blockState.getBlock().toString(specConstants, genesisTime, spec::signed_root));
         });
 
     logger.info("Time starts running ...");
@@ -305,7 +301,7 @@ public class SimulatorLauncher implements Runnable {
       }
 
       Map<Hash32, List<ObservableBeaconState>> grouping = latestStates.values().stream()
-          .collect(Collectors.groupingBy(s -> specHelpers.hash_tree_root(s.getLatestSlotState())));
+          .collect(Collectors.groupingBy(s -> spec.hash_tree_root(s.getLatestSlotState())));
 
       String statesInfo;
       if (grouping.size() == 1) {
@@ -318,33 +314,34 @@ public class SimulatorLauncher implements Runnable {
       }
 
       logger.info("Slot " + slots.get(0).toStringNumber(specConstants)
-          + ", committee: " + specHelpers.get_crosslink_committees_at_slot(states.get(0).getLatestSlotState(), slots.get(0))
+          + ", committee: " + spec
+          .get_crosslink_committees_at_slot(states.get(0).getLatestSlotState(), slots.get(0))
           + ", blocks: " + blocks.size()
           + ", attestations: " + attestations.size()
           + ", " + statesInfo);
 
-      ObservableBeaconState lastState = states.get(states.size() - 1);
-      if (lastState.getLatestSlotState().getTransition() == TransitionType.EPOCH) {
-        ObservableBeaconState preEpochState = states.get(states.size() - 2);
-        EpochTransitionSummary summary = observer.getPerEpochTransition()
+      ObservableBeaconState latestState = states.get(states.size() - 1);
+      if (latestState.getLatestSlotState().getSlot().increment().modulo(spec.getConstants().getSlotsPerEpoch())
+          .equals(SlotNumber.ZERO)) {
+        ObservableBeaconState preEpochState = latestState;
+        EpochTransitionSummary summary = observer.getExtendedSlotTransition()
             .applyWithSummary(preEpochState.getLatestSlotState());
         logger.info("Epoch transition "
-            + specHelpers.get_current_epoch(preEpochState.getLatestSlotState()).toString(specConstants)
+            + spec.get_current_epoch(preEpochState.getLatestSlotState()).toString(specConstants)
             + "=>"
-            + specHelpers.get_current_epoch(preEpochState.getLatestSlotState()).increment().toString(specConstants)
+            + spec.get_current_epoch(preEpochState.getLatestSlotState()).increment().toString(specConstants)
             + ": Justified/Finalized epochs: "
-            + summary.getPreState().getJustifiedEpoch().toString(specConstants)
+            + summary.getPreState().getCurrentJustifiedEpoch().toString(specConstants)
             + "/"
             + summary.getPreState().getFinalizedEpoch().toString(specConstants)
             + " => "
-            + summary.getPostState().getJustifiedEpoch().toString(specConstants)
+            + summary.getPostState().getCurrentJustifiedEpoch().toString(specConstants)
             + "/"
             + summary.getPostState().getFinalizedEpoch().toString(specConstants)
         );
         logger.info("  Validators rewarded:"
             + getValidators(" attestations: ", summary.getAttestationRewards())
             + getValidators(" boundary: ", summary.getBoundaryAttestationRewards())
-            + getValidators(" head: ", summary.getBeaconHeadAttestationRewards())
             + getValidators(" head: ", summary.getBeaconHeadAttestationRewards())
             + getValidators(" include distance: ", summary.getInclusionDistanceRewards())
             + getValidators(" attest inclusion: ", summary.getAttestationInclusionRewards())
@@ -459,7 +456,9 @@ public class SimulatorLauncher implements Runnable {
 
       ConfigBuilder<SpecData> specConfigBuilder =
           new ConfigBuilder<>(SpecData.class).addYamlConfigFromResources("/config/spec-constants.yml");
-      specConfigBuilder.addConfig(config.getChainSpec());
+      if (config.getChainSpec().isDefined()) {
+        specConfigBuilder.addConfig(config.getChainSpec());
+      }
 
       SpecData spec = specConfigBuilder.build();
 
@@ -470,11 +469,11 @@ public class SimulatorLauncher implements Runnable {
         }
       }
 
-      SpecHelpers specHelpers = new SpecBuilder().buildSpecHelpers(spec);
+      SpecBuilder specBuilder = new SpecBuilder().withSpec(spec);
 
       return new SimulatorLauncher(
           config,
-          specHelpers,
+          specBuilder,
           peers.stream().filter(PeersConfig::isValidator).collect(Collectors.toList()),
           peers.stream().filter(config -> !config.isValidator()).collect(Collectors.toList()),
           logLevel);

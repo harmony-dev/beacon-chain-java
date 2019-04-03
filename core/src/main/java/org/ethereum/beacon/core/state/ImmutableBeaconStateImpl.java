@@ -1,5 +1,7 @@
 package org.ethereum.beacon.core.state;
 
+import java.util.function.Function;
+import org.ethereum.beacon.core.BeaconBlockHeader;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
@@ -29,7 +31,7 @@ public class ImmutableBeaconStateImpl implements BeaconState, Hashable<Hash32> {
 
   @SSZ private final SlotNumber slot;
   @SSZ private final Time genesisTime;
-  @SSZ private final ForkData forkData;
+  @SSZ private final Fork fork;
 
   /* Validator registry */
 
@@ -49,19 +51,26 @@ public class ImmutableBeaconStateImpl implements BeaconState, Hashable<Hash32> {
 
   /* Finality */
 
-  @SSZ private final EpochNumber previousJustifiedEpoch;
-  @SSZ private final EpochNumber justifiedEpoch;
-  @SSZ private final Bitfield64 justificationBitfield;
-  @SSZ private final EpochNumber finalizedEpoch;
+  @SSZ private List<PendingAttestation> previousEpochAttestationList = new ArrayList<>();
+  @SSZ private List<PendingAttestation> currentEpochAttestationList = new ArrayList<>();
+  @SSZ private EpochNumber previousJustifiedEpoch = EpochNumber.ZERO;
+  @SSZ private EpochNumber currentJustifiedEpoch = EpochNumber.ZERO;
+  @SSZ private Hash32 previousJustifiedRoot = Hash32.ZERO;
+  @SSZ private Hash32 currentJustifiedRoot = Hash32.ZERO;
+  @SSZ private Bitfield64 justificationBitfield = Bitfield64.ZERO;
+  @SSZ private EpochNumber finalizedEpoch = EpochNumber.ZERO;
+  @SSZ private Hash32 finalizedRoot = Hash32.ZERO;
 
   /* Recent state */
 
-  @SSZ private final List<Crosslink> latestCrosslinksList;
-  @SSZ private final List<Hash32> latestBlockRootsList;
-  @SSZ private final List<Hash32> latestActiveIndexRootsList;
-  @SSZ private final List<Gwei> latestSlashedBalancesList;
-  @SSZ private final List<PendingAttestationRecord> latestAttestationsList;
-  @SSZ private final List<Hash32> batchedBlockRootsList;
+  @SSZ private List<Crosslink> previousCrosslinksList = new ArrayList<>();
+  @SSZ private List<Crosslink> currentCrosslinksList = new ArrayList<>();
+  @SSZ private List<Hash32> latestBlockRootsList = new ArrayList<>();
+  @SSZ private List<Hash32> latestStateRootsList = new ArrayList<>();
+  @SSZ private List<Hash32> latestActiveIndexRootsList = new ArrayList<>();
+  @SSZ private List<Gwei> latestSlashedBalancesList = new ArrayList<>();
+  @SSZ private BeaconBlockHeader latestBlockHeader = BeaconBlockHeader.EMPTY;
+  @SSZ private List<Hash32> historicalRootList = new ArrayList<>();
 
   /* PoW receipt root */
 
@@ -74,7 +83,7 @@ public class ImmutableBeaconStateImpl implements BeaconState, Hashable<Hash32> {
   public ImmutableBeaconStateImpl(BeaconState state) {
     this.slot = state.getSlot();
     this.genesisTime = state.getGenesisTime();
-    this.forkData = state.getForkData();
+    this.fork = state.getFork();
 
     this.validatorRegistryList = state.getValidatorRegistry().listCopy();
     this.validatorBalancesList = state.getValidatorBalances().listCopy();
@@ -88,17 +97,24 @@ public class ImmutableBeaconStateImpl implements BeaconState, Hashable<Hash32> {
     this.previousShufflingSeed = state.getPreviousShufflingSeed();
     this.currentShufflingSeed = state.getCurrentShufflingSeed();
 
+    this.previousEpochAttestationList = state.getPreviousEpochAttestations().listCopy();
+    this.currentEpochAttestationList = state.getCurrentEpochAttestations().listCopy();
     this.previousJustifiedEpoch = state.getPreviousJustifiedEpoch();
-    this.justifiedEpoch = state.getJustifiedEpoch();
+    this.currentJustifiedEpoch = state.getCurrentJustifiedEpoch();
+    this.previousJustifiedRoot = state.getPreviousJustifiedRoot();
+    this.currentJustifiedRoot = state.getCurrentJustifiedRoot();
     this.justificationBitfield = state.getJustificationBitfield();
     this.finalizedEpoch = state.getFinalizedEpoch();
+    this.finalizedRoot = state.getFinalizedRoot();
 
-    this.latestCrosslinksList = state.getLatestCrosslinks().listCopy();
+    this.previousCrosslinksList = state.getPreviousCrosslinks().listCopy();
+    this.currentCrosslinksList = state.getCurrentCrosslinks().listCopy();
     this.latestBlockRootsList = state.getLatestBlockRoots().listCopy();
+    this.latestStateRootsList = state.getLatestStateRoots().listCopy();
     this.latestActiveIndexRootsList = state.getLatestActiveIndexRoots().listCopy();
     this.latestSlashedBalancesList = state.getLatestSlashedBalances().listCopy();
-    this.latestAttestationsList = state.getLatestAttestations().listCopy();
-    this.batchedBlockRootsList = state.getBatchedBlockRoots().listCopy();
+    this.latestBlockHeader = state.getLatestBlockHeader();
+    this.historicalRootList = state.getHistoricalRoots().listCopy();
 
     this.latestEth1Data = state.getLatestEth1Data();
     this.eth1DataVotesList = state.getEth1DataVotes().listCopy();
@@ -118,20 +134,16 @@ public class ImmutableBeaconStateImpl implements BeaconState, Hashable<Hash32> {
     return new ArrayList<>(latestRandaoMixesList);
   }
 
-  public List<Crosslink> getLatestCrosslinksList() {
-    return new ArrayList<>(latestCrosslinksList);
+  public List<Crosslink> getPreviousCrosslinksList() {
+    return previousCrosslinksList;
+  }
+
+  public List<Crosslink> getCurrentCrosslinksList() {
+    return new ArrayList<>(currentCrosslinksList);
   }
 
   public List<Hash32> getLatestBlockRootsList() {
     return new ArrayList<>(latestBlockRootsList);
-  }
-
-  public List<PendingAttestationRecord> getLatestAttestationsList() {
-    return new ArrayList<>(latestAttestationsList);
-  }
-
-  public List<Hash32> getBatchedBlockRootsList() {
-    return new ArrayList<>(batchedBlockRootsList);
   }
 
   public List<Eth1DataVote> getEth1DataVotesList() {
@@ -146,6 +158,22 @@ public class ImmutableBeaconStateImpl implements BeaconState, Hashable<Hash32> {
     return new ArrayList<>(latestSlashedBalancesList);
   }
 
+  public List<PendingAttestation> getPreviousEpochAttestationList() {
+    return new ArrayList<>(previousEpochAttestationList);
+  }
+
+  public List<PendingAttestation> getCurrentEpochAttestationList() {
+    return new ArrayList<>(currentEpochAttestationList);
+  }
+
+  public List<Hash32> getLatestStateRootsList() {
+    return new ArrayList<>(latestStateRootsList);
+  }
+
+  public List<Hash32> getHistoricalRootList() {
+    return new ArrayList<>(historicalRootList);
+  }
+
   @Override
   public SlotNumber getSlot() {
     return slot;
@@ -157,8 +185,8 @@ public class ImmutableBeaconStateImpl implements BeaconState, Hashable<Hash32> {
   }
 
   @Override
-  public ForkData getForkData() {
-    return forkData;
+  public Fork getFork() {
+    return fork;
   }
 
   @Override
@@ -172,8 +200,18 @@ public class ImmutableBeaconStateImpl implements BeaconState, Hashable<Hash32> {
   }
 
   @Override
-  public EpochNumber getJustifiedEpoch() {
-    return justifiedEpoch;
+  public EpochNumber getCurrentJustifiedEpoch() {
+    return currentJustifiedEpoch;
+  }
+
+  @Override
+  public Hash32 getPreviousJustifiedRoot() {
+    return previousJustifiedRoot;
+  }
+
+  @Override
+  public Hash32 getCurrentJustifiedRoot() {
+    return currentJustifiedRoot;
   }
 
   @Override
@@ -184,6 +222,11 @@ public class ImmutableBeaconStateImpl implements BeaconState, Hashable<Hash32> {
   @Override
   public EpochNumber getFinalizedEpoch() {
     return finalizedEpoch;
+  }
+
+  @Override
+  public Hash32 getFinalizedRoot() {
+    return finalizedRoot;
   }
 
   @Override
@@ -222,8 +265,23 @@ public class ImmutableBeaconStateImpl implements BeaconState, Hashable<Hash32> {
   }
 
   @Override
-  public ReadList<ShardNumber, Crosslink> getLatestCrosslinks() {
-    return ReadList.wrap(latestCrosslinksList, ShardNumber::of);
+  public ReadList<Integer, PendingAttestation> getPreviousEpochAttestations() {
+    return ReadList.wrap(previousEpochAttestationList, Function.identity());
+  }
+
+  @Override
+  public ReadList<Integer, PendingAttestation> getCurrentEpochAttestations() {
+    return ReadList.wrap(currentEpochAttestationList, Function.identity());
+  }
+
+  @Override
+  public ReadList<ShardNumber, Crosslink> getPreviousCrosslinks() {
+    return ReadList.wrap(previousCrosslinksList, ShardNumber::of);
+  }
+
+  @Override
+  public ReadList<ShardNumber, Crosslink> getCurrentCrosslinks() {
+    return ReadList.wrap(currentCrosslinksList, ShardNumber::of);
   }
 
   @Override
@@ -262,13 +320,18 @@ public class ImmutableBeaconStateImpl implements BeaconState, Hashable<Hash32> {
   }
 
   @Override
-  public ReadList<Integer, PendingAttestationRecord> getLatestAttestations() {
-    return ReadList.wrap(latestAttestationsList, Integer::valueOf);
+  public ReadList<SlotNumber, Hash32> getLatestStateRoots() {
+    return ReadList.wrap(latestStateRootsList, SlotNumber::of);
   }
 
   @Override
-  public ReadList<Integer, Hash32> getBatchedBlockRoots() {
-    return ReadList.wrap(batchedBlockRootsList, Integer::valueOf);
+  public BeaconBlockHeader getLatestBlockHeader() {
+    return latestBlockHeader;
+  }
+
+  @Override
+  public ReadList<Integer, Hash32> getHistoricalRoots() {
+    return ReadList.wrap(historicalRootList, Function.identity());
   }
 
   @Override

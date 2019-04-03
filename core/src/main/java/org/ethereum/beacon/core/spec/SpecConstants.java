@@ -13,8 +13,6 @@ public interface SpecConstants
         HonestValidatorParameters,
         GweiValues {
 
-  SpecConstants DEFAULT = new SpecConstants() {};
-
   @Override
   default EpochNumber getGenesisEpoch() {
     return getGenesisSlot().dividedBy(getSlotsPerEpoch());

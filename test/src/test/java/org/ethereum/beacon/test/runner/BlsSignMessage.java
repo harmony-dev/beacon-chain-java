@@ -3,7 +3,7 @@ package org.ethereum.beacon.test.runner;
 import static org.ethereum.beacon.test.SilentAsserts.assertEquals;
 
 import java.util.Optional;
-import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.crypto.BLS381;
 import org.ethereum.beacon.crypto.MessageParameters;
@@ -21,14 +21,14 @@ import tech.pegasys.artemis.util.bytes.Bytes96;
  */
 public class BlsSignMessage implements Runner {
   private BlsTest.BlsSignMessageCase testCase;
-  private SpecHelpers specHelpers;
+  private BeaconChainSpec spec;
 
-  public BlsSignMessage(TestCase testCase, SpecHelpers specHelpers) {
+  public BlsSignMessage(TestCase testCase, BeaconChainSpec spec) {
     if (!(testCase instanceof BlsTest.BlsSignMessageCase)) {
       throw new RuntimeException("TestCase runner accepts only BlsSignMessageCase as input!");
     }
     this.testCase = (BlsTest.BlsSignMessageCase) testCase;
-    this.specHelpers = specHelpers;
+    this.spec = spec;
   }
 
   public Optional<String> run() {

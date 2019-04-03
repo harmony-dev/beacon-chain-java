@@ -4,8 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Collections;
 import java.util.Random;
-import org.ethereum.beacon.consensus.SpecHelpers;
-import org.ethereum.beacon.core.BeaconBlocks;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.Eth1Data;
@@ -23,15 +22,14 @@ public class InitialStateTransitionTest {
     Time genesisTime = Time.castFrom(UInt64.random(rnd));
     Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), Hash32.random(rnd));
 
-    SpecHelpers specHelpers = SpecHelpers.createWithSSZHasher(SpecConstants.DEFAULT);
+    BeaconChainSpec spec = BeaconChainSpec.createWithDefaults();
     InitialStateTransition initialStateTransition =
         new InitialStateTransition(
             new ChainStart(genesisTime, eth1Data, Collections.emptyList()),
-            specHelpers);
+            spec);
 
     BeaconState initialState =
-        initialStateTransition.apply(
-            BeaconBlocks.createGenesis(SpecConstants.DEFAULT));
+        initialStateTransition.apply(spec.get_empty_block());
 
     assertThat(initialState.getGenesisTime()).isEqualTo(genesisTime);
     assertThat(initialState.getLatestEth1Data()).isEqualTo(eth1Data);

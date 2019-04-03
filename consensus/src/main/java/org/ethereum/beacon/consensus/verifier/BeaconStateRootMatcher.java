@@ -1,6 +1,6 @@
 package org.ethereum.beacon.consensus.verifier;
 
-import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 
@@ -11,9 +11,9 @@ import org.ethereum.beacon.core.BeaconState;
  */
 public class BeaconStateRootMatcher implements BeaconStateVerifier {
 
-  private final SpecHelpers spec;
+  private final BeaconChainSpec spec;
 
-  public BeaconStateRootMatcher(SpecHelpers spec) {
+  public BeaconStateRootMatcher(BeaconChainSpec spec) {
     this.spec = spec;
   }
 

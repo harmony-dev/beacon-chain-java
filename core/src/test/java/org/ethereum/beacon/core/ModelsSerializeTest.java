@@ -1,5 +1,6 @@
 package org.ethereum.beacon.core;
 
+import java.util.Random;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.transition.BeaconStateExImpl;
 import org.ethereum.beacon.core.operations.Attestation;
@@ -11,14 +12,13 @@ import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
-import org.ethereum.beacon.core.operations.slashing.Proposal;
 import org.ethereum.beacon.core.operations.slashing.SlashableAttestation;
 import org.ethereum.beacon.core.state.BeaconStateImpl;
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Eth1DataVote;
-import org.ethereum.beacon.core.state.ForkData;
-import org.ethereum.beacon.core.state.PendingAttestationRecord;
+import org.ethereum.beacon.core.state.Fork;
+import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
@@ -29,6 +29,7 @@ import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
+import org.ethereum.beacon.core.util.BeaconBlockTestUtil;
 import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.ssz.Serializer;
 import org.junit.Before;
@@ -58,12 +59,12 @@ public class ModelsSerializeTest {
     AttestationData expected =
         new AttestationData(
             SlotNumber.of(123),
-            ShardNumber.of(345),
             Hashes.keccak256(BytesValue.fromHexString("aa")),
+            EpochNumber.ZERO,
             Hashes.keccak256(BytesValue.fromHexString("bb")),
             Hashes.keccak256(BytesValue.fromHexString("cc")),
+            ShardNumber.of(345),
             new Crosslink(EpochNumber.ZERO, Hashes.keccak256(BytesValue.fromHexString("dd"))),
-            EpochNumber.ZERO,
             Hash32.ZERO);
 
     return expected;
@@ -81,8 +82,8 @@ public class ModelsSerializeTest {
     AttestationData attestationData = createAttestationData();
     Attestation attestation =
         new Attestation(
-            attestationData,
             Bitfield.of(BytesValue.fromHexString("aa")),
+            attestationData,
             Bitfield.of(BytesValue.fromHexString("bb")),
             BLSSignature.wrap(Bytes96.fromHexString("cc")));
 
@@ -171,45 +172,38 @@ public class ModelsSerializeTest {
     assertEquals(expected, reconstructed);
   }
 
-  private Proposal createProposalSignedData() {
-    Proposal proposal =
-        new Proposal(
-            SlotNumber.of(12),
-            ShardNumber.ZERO,
-            Hashes.keccak256(BytesValue.fromHexString("aa")),
-            BLSSignature.ZERO);
-    return proposal;
-  }
-
   @Test
-  public void proposalSignedDataTest() {
-    Proposal expected = createProposalSignedData();
+  public void beaconBlockHeaderTest() {
+    Random random = new Random();
+    BeaconBlockHeader expected = BeaconBlockTestUtil.createRandomHeader(random);
     BytesValue encoded = sszSerializer.encode2(expected);
-    Proposal reconstructed = sszSerializer.decode(encoded, Proposal.class);
+    BeaconBlockHeader reconstructed = sszSerializer.decode(encoded, BeaconBlockHeader.class);
     assertEquals(expected, reconstructed);
   }
 
-  private ProposerSlashing createProposerSlashing() {
+  private ProposerSlashing createProposerSlashing(Random random) {
     ProposerSlashing proposerSlashing =
         new ProposerSlashing(
             ValidatorIndex.MAX,
-            createProposalSignedData(),
-            createProposalSignedData());
+            BeaconBlockTestUtil.createRandomHeader(random),
+            BeaconBlockTestUtil.createRandomHeader(random));
 
     return proposerSlashing;
   }
 
   @Test
   public void proposerSlashingTest() {
-    ProposerSlashing expected = createProposerSlashing();
+    Random random = new Random();
+    ProposerSlashing expected = createProposerSlashing(random);
     BytesValue encoded = sszSerializer.encode2(expected);
     ProposerSlashing reconstructed = sszSerializer.decode(encoded, ProposerSlashing.class);
     assertEquals(expected, reconstructed);
   }
 
   private BeaconBlockBody createBeaconBlockBody() {
+    Random random = new Random();
     List<ProposerSlashing> proposerSlashings = new ArrayList<>();
-    proposerSlashings.add(createProposerSlashing());
+    proposerSlashings.add(createProposerSlashing(random));
     List<AttesterSlashing> attesterSlashings = new ArrayList<>();
     attesterSlashings.add(createAttesterSlashings());
     attesterSlashings.add(createAttesterSlashings());
@@ -223,6 +217,8 @@ public class ModelsSerializeTest {
     List<Transfer> transfers = new ArrayList<>();
     BeaconBlockBody beaconBlockBody =
         new BeaconBlockBody(
+            BLSSignature.ZERO,
+            new Eth1Data(Hash32.ZERO, Hash32.ZERO),
             proposerSlashings,
             attesterSlashings,
             attestations,
@@ -278,10 +274,6 @@ public class ModelsSerializeTest {
             SlotNumber.castFrom(UInt64.MAX_VALUE),
             Hashes.keccak256(BytesValue.fromHexString("aa")),
             Hashes.keccak256(BytesValue.fromHexString("bb")),
-            BLSSignature.wrap(Bytes96.fromHexString("cc")),
-            new Eth1Data(
-                Hashes.keccak256(BytesValue.fromHexString("ddaa")),
-                Hashes.keccak256(BytesValue.fromHexString("ddbb"))),
             createBeaconBlockBody(),
             BLSSignature.wrap(Bytes96.fromHexString("aa")));
 
@@ -347,37 +339,37 @@ public class ModelsSerializeTest {
     assertEquals(expected, reconstructed);
   }
 
-  private ForkData createForkData() {
-    ForkData forkData = ForkData.EMPTY;
+  private Fork createFork() {
+    Fork fork = Fork.EMPTY;
 
-    return forkData;
+    return fork;
   }
 
   @Test
-  public void forkDataTest() {
-    ForkData expected = createForkData();
+  public void forkTest() {
+    Fork expected = createFork();
     BytesValue encoded = sszSerializer.encode2(expected);
-    ForkData reconstructed = sszSerializer.decode(encoded, ForkData.class);
+    Fork reconstructed = sszSerializer.decode(encoded, Fork.class);
     assertEquals(expected, reconstructed);
   }
 
-  private PendingAttestationRecord createPendingAttestationRecord() {
-    PendingAttestationRecord pendingAttestationRecord =
-        new PendingAttestationRecord(
+  private PendingAttestation createPendingAttestation() {
+    PendingAttestation pendingAttestation =
+        new PendingAttestation(
             Bitfield.of(BytesValue.fromHexString("aa")),
             createAttestationData(),
             Bitfield.of(BytesValue.fromHexString("bb")),
             SlotNumber.ZERO);
 
-    return pendingAttestationRecord;
+    return pendingAttestation;
   }
 
   @Test
-  public void pendingAttestationRecordTest() {
-    PendingAttestationRecord expected = createPendingAttestationRecord();
+  public void pendingAttestationTest() {
+    PendingAttestation expected = createPendingAttestation();
     BytesValue encoded = sszSerializer.encode2(expected);
-    PendingAttestationRecord reconstructed =
-        sszSerializer.decode(encoded, PendingAttestationRecord.class);
+    PendingAttestation reconstructed =
+        sszSerializer.decode(encoded, PendingAttestation.class);
     assertEquals(expected, reconstructed);
   }
 

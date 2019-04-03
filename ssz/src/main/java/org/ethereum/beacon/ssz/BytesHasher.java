@@ -15,15 +15,14 @@ public interface BytesHasher {
   <C> byte[] hash(@Nullable C input, Class<? extends C> clazz);
 
   /**
-   * Hashes truncated input. Prepares virtual object, which gets all fields from input till `field`
-   * (not included) and calculates hash for it
+   * Hashes truncated input. Prepares virtual object, which gets all fields from input except
+   * the last one.
    *
    * @param input Input value
    * @param clazz Class of value
-   * @param field Field in input value which and all fields after are truncated
    * @return serialization
    */
-  <C> byte[] hashTruncate(@Nullable C input, Class<? extends C> clazz, String field);
+  <C> byte[] hashTruncateLast(@Nullable C input, Class<? extends C> clazz);
 
   /**
    * Shortcut to {@link #hash(Object, Class)}. Resolves class using input object. Not suitable for

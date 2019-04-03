@@ -141,15 +141,6 @@ public class SSZCodecHasher implements SSZCodecResolver {
       BytesSerializer sszSerializer) {
     byte[] data = sszSerializer.encode(value, field.type);
 
-    if (!field.notAContainer) {
-      try {
-        // Prepend data with its length
-        result.write(net.consensys.cava.ssz.SSZ.encodeInt32(data.length).toArrayUnsafe());
-      } catch (IOException e) {
-        throw new SSZException("Failed to write data length to stream", e);
-      }
-    }
-
     try {
       result.write(data);
     } catch (IOException e) {

@@ -20,6 +20,12 @@ public interface SSZSchemeBuilder {
       return fields;
     }
 
+    public SSZScheme deepCopy() {
+      SSZScheme copy = new SSZScheme();
+      copy.fields = new ArrayList<>(this.fields);
+      return copy;
+    }
+
     public enum MultipleType {
       NONE,
       LIST,
