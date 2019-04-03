@@ -1,7 +1,6 @@
 package org.ethereum.beacon.consensus.spec;
 
 import static java.util.Collections.emptyList;
-import static java.util.Collections.nCopies;
 import static java.util.stream.Collectors.toList;
 
 import java.util.ArrayList;
@@ -132,19 +131,13 @@ public interface EpochProcessing extends HelperFunction {
         return [a for a in valid_attestations if a.data.crosslink_data_root == root]
    */
   default Pair<Hash32, List<ValidatorIndex>> get_winning_root_and_participants(
-      BeaconState state, ShardNumber shard, EpochNumber epoch) {
-    ReadList<ShardNumber, Crosslink> previous_crosslinks =
-        slot_to_epoch(state.getSlot()).equals(epoch) ?
-            state.getCurrentEpochCrosslinks() : state.getPreviousEpochCrosslinks();
+      BeaconState state, SlotNumber slot, ShardNumber shard) {
     ReadList<Integer, PendingAttestation> attestations =
-        slot_to_epoch(state.getSlot()).equals(epoch) ?
+        slot_to_epoch(slot).equals(get_current_epoch(state)) ?
             state.getCurrentEpochAttestations() : state.getPreviousEpochAttestations();
 
     List<PendingAttestation> valid_attestations =
-        attestations.stream()
-            .filter(a -> a.getData().getShard().equals(shard))
-            .filter(a -> a.getData().getPreviousCrosslink().equals(previous_crosslinks.get(shard)))
-            .collect(toList());
+        attestations.stream().filter(a -> a.getData().getShard().equals(shard)).collect(toList());
     List<Hash32> all_roots =
         valid_attestations.stream().map(a -> a.getData().getCrosslinkDataRoot()).collect(toList());
 
@@ -336,57 +329,36 @@ public interface EpochProcessing extends HelperFunction {
     }
   }
 
-  default List<Crosslink> get_epoch_crosslinks(BeaconState state, EpochNumber epoch) {
-    List<Crosslink> epoch_crosslinks = new ArrayList<>(
-        nCopies(getConstants().getShardCount().getIntValue(),
-            new Crosslink(EpochNumber.ZERO, Hash32.ZERO))
-    );
+  /*
+    Note: this function mutates beacon state.
+   */
+  default void process_crosslinks(MutableBeaconState state) {
+    EpochNumber current_epoch = get_current_epoch(state);
+    EpochNumber previous_epoch =
+        UInt64s.max(current_epoch.decrement(), getConstants().getGenesisEpoch());
+    EpochNumber next_epoch = current_epoch.increment();
 
-    for (SlotNumber slot : get_epoch_start_slot(epoch)
-        .iterateTo(get_epoch_start_slot(epoch.increment()))) {
+    // swap previous crosslinks
+    state.getPreviousCrosslinks().clear();
+    state.getPreviousCrosslinks().addAll(state.getCurrentCrosslinks().listCopy());
+
+    for (SlotNumber slot : get_epoch_start_slot(previous_epoch)
+        .iterateTo(get_epoch_start_slot(next_epoch))) {
       List<ShardCommittee> committees_at_slot = get_crosslink_committees_at_slot(state, slot);
       for (ShardCommittee shard_and_committee : committees_at_slot) {
         Pair<Hash32, List<ValidatorIndex>> root_and_participants =
-            get_winning_root_and_participants(state, shard_and_committee.getShard(), slot_to_epoch(slot));
+            get_winning_root_and_participants(state, slot, shard_and_committee.getShard());
         Gwei participating_balance = get_total_balance(state, root_and_participants.getValue1());
         Gwei total_balance = get_total_balance(state, shard_and_committee.getCommittee());
 
         if (participating_balance.times(3).greaterEqual(total_balance.times(2))) {
-          epoch_crosslinks.set(shard_and_committee.getShard().getIntValue(), new Crosslink(
+          state.getCurrentCrosslinks().set(shard_and_committee.getShard(), new Crosslink(
               slot_to_epoch(slot),
               root_and_participants.getValue0()
           ));
         }
       }
     }
-    return epoch_crosslinks;
-  }
-
-  default List<Crosslink> merge_crosslinks(List<Crosslink> crosslinks_1, List<Crosslink> crosslinks_2) {
-    List<Crosslink> merged_crosslinks = new ArrayList<>(crosslinks_1);
-    for (int i = 0; i < merged_crosslinks.size(); i++) {
-      if (crosslinks_2.get(i).getEpoch().greater(merged_crosslinks.get(i).getEpoch())) {
-        merged_crosslinks.set(i, crosslinks_2.get(i));
-      }
-    }
-    return merged_crosslinks;
-  }
-
-  default List<Crosslink> get_latest_crosslinks(BeaconState state) {
-    List<Crosslink> previous_epoch_crosslinks = get_epoch_crosslinks(state, get_previous_epoch(state));
-    List<Crosslink> current_epoch_crosslinks = get_epoch_crosslinks(state, get_current_epoch(state));
-    return merge_crosslinks(
-        merge_crosslinks(state.getCurrentEpochCrosslinks().listCopy(), previous_epoch_crosslinks),
-        current_epoch_crosslinks
-    );
-  }
-
-  default void apply_crosslinks(MutableBeaconState state, List<Crosslink> latest_crosslinks) {
-    state.getPreviousEpochCrosslinks().clear();
-    state.getPreviousEpochCrosslinks().addAll(state.getCurrentEpochCrosslinks().listCopy());
-
-    state.getCurrentEpochCrosslinks().clear();
-    state.getCurrentEpochCrosslinks().addAll(latest_crosslinks);
   }
 
   /*
@@ -690,7 +662,7 @@ public interface EpochProcessing extends HelperFunction {
             participating_balance = get_total_balance(state, participants)
             total_balance = get_total_balance(state, crosslink_committee) */
         Pair<Hash32, List<ValidatorIndex>> winning_root_and_participants =
-            get_winning_root_and_participants(state, shard, slot_to_epoch(slot));
+            get_winning_root_and_participants(state, slot, shard);
         Gwei participating_balance = get_total_balance(state, winning_root_and_participants.getValue1());
         Gwei total_balance = get_total_balance(state, crosslink_committee);
 
@@ -785,7 +757,7 @@ public interface EpochProcessing extends HelperFunction {
         .mapToObj(i -> ShardNumber.of(state.getCurrentShufflingStartShard()
             .plus(i).modulo(getConstants().getShardCount()))).collect(toList());
     for (ShardNumber shard : shards_to_check) {
-      if (state.getCurrentEpochCrosslinks().get(shard).getEpoch()
+      if (state.getCurrentCrosslinks().get(shard).getEpoch()
           .lessEqual(state.getValidatorRegistryUpdateEpoch())) {
         return false;
       }

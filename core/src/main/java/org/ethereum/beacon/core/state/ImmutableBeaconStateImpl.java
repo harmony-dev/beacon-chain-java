@@ -63,8 +63,8 @@ public class ImmutableBeaconStateImpl implements BeaconState, Hashable<Hash32> {
 
   /* Recent state */
 
-  @SSZ private List<Crosslink> previousEpochCrosslinksList = new ArrayList<>();
-  @SSZ private List<Crosslink> currentEpochCrosslinksList = new ArrayList<>();
+  @SSZ private List<Crosslink> previousCrosslinksList = new ArrayList<>();
+  @SSZ private List<Crosslink> currentCrosslinksList = new ArrayList<>();
   @SSZ private List<Hash32> latestBlockRootsList = new ArrayList<>();
   @SSZ private List<Hash32> latestStateRootsList = new ArrayList<>();
   @SSZ private List<Hash32> latestActiveIndexRootsList = new ArrayList<>();
@@ -107,8 +107,8 @@ public class ImmutableBeaconStateImpl implements BeaconState, Hashable<Hash32> {
     this.finalizedEpoch = state.getFinalizedEpoch();
     this.finalizedRoot = state.getFinalizedRoot();
 
-    this.previousEpochCrosslinksList = state.getPreviousEpochCrosslinks().listCopy();
-    this.currentEpochCrosslinksList = state.getCurrentEpochCrosslinks().listCopy();
+    this.previousCrosslinksList = state.getPreviousCrosslinks().listCopy();
+    this.currentCrosslinksList = state.getCurrentCrosslinks().listCopy();
     this.latestBlockRootsList = state.getLatestBlockRoots().listCopy();
     this.latestStateRootsList = state.getLatestStateRoots().listCopy();
     this.latestActiveIndexRootsList = state.getLatestActiveIndexRoots().listCopy();
@@ -134,12 +134,12 @@ public class ImmutableBeaconStateImpl implements BeaconState, Hashable<Hash32> {
     return new ArrayList<>(latestRandaoMixesList);
   }
 
-  public List<Crosslink> getPreviousEpochCrosslinksList() {
-    return previousEpochCrosslinksList;
+  public List<Crosslink> getPreviousCrosslinksList() {
+    return previousCrosslinksList;
   }
 
-  public List<Crosslink> getCurrentEpochCrosslinksList() {
-    return new ArrayList<>(currentEpochCrosslinksList);
+  public List<Crosslink> getCurrentCrosslinksList() {
+    return new ArrayList<>(currentCrosslinksList);
   }
 
   public List<Hash32> getLatestBlockRootsList() {
@@ -275,13 +275,13 @@ public class ImmutableBeaconStateImpl implements BeaconState, Hashable<Hash32> {
   }
 
   @Override
-  public ReadList<ShardNumber, Crosslink> getPreviousEpochCrosslinks() {
-    return ReadList.wrap(previousEpochCrosslinksList, ShardNumber::of);
+  public ReadList<ShardNumber, Crosslink> getPreviousCrosslinks() {
+    return ReadList.wrap(previousCrosslinksList, ShardNumber::of);
   }
 
   @Override
-  public ReadList<ShardNumber, Crosslink> getCurrentEpochCrosslinks() {
-    return ReadList.wrap(currentEpochCrosslinksList, ShardNumber::of);
+  public ReadList<ShardNumber, Crosslink> getCurrentCrosslinks() {
+    return ReadList.wrap(currentCrosslinksList, ShardNumber::of);
   }
 
   @Override

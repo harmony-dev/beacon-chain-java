@@ -66,10 +66,10 @@ public interface MutableBeaconState extends BeaconState {
   void setLatestBlockHeader(BeaconBlockHeader latestBlockHeader);
 
   @Override
-  WriteList<ShardNumber, Crosslink> getPreviousEpochCrosslinks();
+  WriteList<ShardNumber, Crosslink> getPreviousCrosslinks();
 
   @Override
-  WriteList<ShardNumber, Crosslink> getCurrentEpochCrosslinks();
+  WriteList<ShardNumber, Crosslink> getCurrentCrosslinks();
 
   @Override
   WriteList<SlotNumber, Hash32> getLatestBlockRoots();

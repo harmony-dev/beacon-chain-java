@@ -93,10 +93,10 @@ public interface OnGenesis extends HelperFunction {
     state.setFinalizedRoot(Hash32.ZERO);
 
     // Recent state
-    state.getPreviousEpochCrosslinks().addAll(
+    state.getPreviousCrosslinks().addAll(
         nCopies(getConstants().getShardCount().getIntValue(),
             new Crosslink(getConstants().getGenesisEpoch(), Hash32.ZERO)));
-    state.getCurrentEpochCrosslinks().addAll(
+    state.getCurrentCrosslinks().addAll(
         nCopies(getConstants().getShardCount().getIntValue(),
             new Crosslink(getConstants().getGenesisEpoch(), Hash32.ZERO)));
     state.getLatestBlockRoots().addAll(

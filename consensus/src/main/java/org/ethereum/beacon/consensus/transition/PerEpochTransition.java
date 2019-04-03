@@ -9,7 +9,6 @@ import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.consensus.TransitionType;
 import org.ethereum.beacon.core.MutableBeaconState;
-import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.state.ShardCommittee;
 import org.ethereum.beacon.core.types.EpochNumber;
@@ -220,7 +219,7 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
           List<ValidatorIndex> crosslink_committee = committee_and_shard.getCommittee();
           ShardNumber shard = committee_and_shard.getShard();
           Pair<Hash32, List<ValidatorIndex>> winning_root_and_participants =
-              spec.get_winning_root_and_participants(state, shard, spec.slot_to_epoch(slot));
+              spec.get_winning_root_and_participants(state, slot, shard);
           Gwei participating_balance = spec.get_total_balance(state, winning_root_and_participants.getValue1());
           Gwei total_balance = spec.get_total_balance(state, crosslink_committee);
 
@@ -237,10 +236,9 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
     }
 
     spec.update_justification_and_finalization(state);
-    List<Crosslink> latest_crosslinks = spec.get_latest_crosslinks(state);
+    spec.process_crosslinks(state);
     spec.maybe_reset_eth1_period(state);
     spec.apply_rewards(state);
-    spec.apply_crosslinks(state, latest_crosslinks);
     List<ValidatorIndex> ejectedValidators = spec.process_ejections(state);
     spec.update_registry_and_shuffling_data(state);
     spec.process_slashings(state);
