@@ -438,6 +438,8 @@ public interface HelperFunction extends SpecCommons {
    * An optimized version of list shuffling.
    *
    * Ported from https://github.com/protolambda/eth2-shuffle/blob/master/shuffle.go#L159
+   * Note: the spec uses inverse direction of index mutations,
+   *       hence round order is inverse
    */
   default List<UInt64> get_permuted_list(List<? extends UInt64> indices, Bytes32 seed) {
     if (indices.size() < 2) {
@@ -447,7 +449,7 @@ public interface HelperFunction extends SpecCommons {
     int listSize = indices.size();
     List<UInt64> permutations = new ArrayList<>(indices);
 
-    for (int round = 0; round < getConstants().getShuffleRoundCount(); round++) {
+    for (int round = getConstants().getShuffleRoundCount() - 1; round >= 0; round--) {
       BytesValue roundSeed = seed.concat(int_to_bytes1(round));
       Bytes8 pivotBytes = Bytes8.wrap(hash(roundSeed), 0);
       long pivot = bytes_to_int(pivotBytes).modulo(listSize).getValue();
