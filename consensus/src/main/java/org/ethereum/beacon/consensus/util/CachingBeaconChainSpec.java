@@ -3,18 +3,21 @@ package org.ethereum.beacon.consensus.util;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import org.ethereum.beacon.consensus.BeaconChainSpec;
-import org.ethereum.beacon.consensus.DelegatingBeaconChainSpec;
+import java.util.function.Function;
+import org.ethereum.beacon.consensus.BeaconChainSpecImpl;
+import org.ethereum.beacon.consensus.hasher.ObjectHasher;
 import org.ethereum.beacon.core.BeaconState;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.util.LRUCache;
 import org.javatuples.Pair;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
+import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt64;
 
-public class CachingBeaconChainSpec extends DelegatingBeaconChainSpec {
+public class CachingBeaconChainSpec extends BeaconChainSpecImpl {
 
   private final LRUCache<Pair<List<? extends UInt64>, Bytes32>, List<UInt64>> shufflerCache =
       new LRUCache<>(1024);
@@ -25,25 +28,28 @@ public class CachingBeaconChainSpec extends DelegatingBeaconChainSpec {
   private ValidatorIndex maxCachedIndex = ValidatorIndex.ZERO;
   private final Map<BLSPubkey, ValidatorIndex> pubkeyToIndexCache = new ConcurrentHashMap<>();
 
-  public CachingBeaconChainSpec(BeaconChainSpec delegate) {
-    super(delegate);
+  public CachingBeaconChainSpec(
+      SpecConstants constants,
+      Function<BytesValue, Hash32> hashFunction,
+      ObjectHasher<Hash32> objectHasher) {
+    super(constants, hashFunction, objectHasher);
   }
 
   @Override
   public List<UInt64> get_permuted_list(List<? extends UInt64> indices, Bytes32 seed) {
     return shufflerCache.get(
         Pair.with(indices, seed),
-        k -> getDelegate().get_permuted_list(k.getValue0(), k.getValue1()));
+        k -> super.get_permuted_list(k.getValue0(), k.getValue1()));
   }
 
   @Override
   public Hash32 hash_tree_root(Object object) {
-    return hashTreeRootCache.get(object, getDelegate()::hash_tree_root);
+    return hashTreeRootCache.get(object, super::hash_tree_root);
   }
 
   @Override
   public Hash32 signed_root(Object object) {
-    return signedRootCache.get(object, getDelegate()::signed_root);
+    return signedRootCache.get(object, super::signed_root);
   }
 
   @Override

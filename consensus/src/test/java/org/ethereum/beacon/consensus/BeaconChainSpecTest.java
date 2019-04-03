@@ -177,14 +177,14 @@ public class BeaconChainSpecTest {
             return ShardNumber.of(shardCount);
           }
         };
-    BeaconChainSpec spec = new CachingBeaconChainSpec(new BeaconChainSpecImpl(
+    BeaconChainSpec spec = new CachingBeaconChainSpec(
         specConstants, Hashes::keccak256, SSZObjectHasher.create(Hashes::keccak256)) {
       @Override
       public boolean bls_verify(BLSPubkey publicKey, Hash32 message, BLSSignature signature,
           UInt64 domain) {
         return true;
       }
-    });
+    };
 
     System.out.println("Generating deposits...");
     List<Deposit> deposits = TestUtils.generateRandomDepositsWithoutSig(rnd, spec, validatorCount);

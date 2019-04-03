@@ -74,26 +74,28 @@ public class SimulatorLauncher implements Runnable {
   private final SpecConstants specConstants;
   private final BeaconChainSpec spec;
   private final Level logLevel;
+  private final SpecBuilder specBuilder;
 
   /**
    * Creates Simulator launcher with following settings
    *
    * @param config configuration and run plan.
-   * @param spec chain specification.
+   * @param specBuilder chain specification builder.
    * @param validators validator peers configuration.
    * @param observers observer peers configuration.
    * @param logLevel Log level, Apache log4j type.
    */
   public SimulatorLauncher(
       MainConfig config,
-      BeaconChainSpec spec,
+      SpecBuilder specBuilder,
       List<PeersConfig> validators,
       List<PeersConfig> observers,
       Level logLevel) {
     this.config = config;
     this.simulationPlan = (SimulationPlan) config.getPlan();
-    this.specConstants = spec.getConstants();
-    this.spec = spec;
+    this.specBuilder = specBuilder;
+    this.specConstants = specBuilder.buildSpecConstants();
+    this.spec = specBuilder.buildSpec();
     this.validators = validators;
     this.observers = observers;
     this.logLevel = logLevel;
@@ -185,7 +187,7 @@ public class SimulatorLauncher implements Runnable {
 
       Launcher launcher =
           new Launcher(
-              spec,
+              specBuilder.buildSpec(),
               depositContract,
               bls,
               wireApi,
@@ -206,7 +208,7 @@ public class SimulatorLauncher implements Runnable {
       String name = "O" + i;
       Launcher launcher =
           new Launcher(
-              spec,
+              specBuilder.buildSpec(),
               depositContract,
               null,
               localWireHub.createNewPeer(
@@ -467,11 +469,11 @@ public class SimulatorLauncher implements Runnable {
         }
       }
 
-      BeaconChainSpec specHelpers = new SpecBuilder().buildSpecHelpers(spec);
+      SpecBuilder specBuilder = new SpecBuilder().withSpec(spec);
 
       return new SimulatorLauncher(
           config,
-          specHelpers,
+          specBuilder,
           peers.stream().filter(PeersConfig::isValidator).collect(Collectors.toList()),
           peers.stream().filter(config -> !config.isValidator()).collect(Collectors.toList()),
           logLevel);

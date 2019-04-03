@@ -86,7 +86,7 @@ public class Launcher {
       Schedulers schedulers,
       TimeCollector proposeTimeCollector) {
 
-    this.spec = new CachingBeaconChainSpec(spec);
+    this.spec = spec;
     this.depositContract = depositContract;
     this.validatorCred = validatorCred;
     this.wireApi = wireApi;

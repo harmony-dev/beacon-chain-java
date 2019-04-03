@@ -3,7 +3,7 @@ package org.ethereum.beacon.emulator.config.chainspec;
 import java.util.List;
 import org.apache.milagro.amcl.BLS381.ECP;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
-import org.ethereum.beacon.consensus.BeaconChainSpecImpl;
+import org.ethereum.beacon.consensus.util.CachingBeaconChainSpec;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.spec.SpecConstants;
@@ -23,20 +23,28 @@ import tech.pegasys.artemis.util.uint.UInt64;
 
 public class SpecBuilder {
 
-  public BeaconChainSpec buildSpecHelpers(SpecData spec) {
-    return buildSpecHelpers(spec.getSpecHelpersOptions(), spec.getSpecConstants());
+  private SpecData spec;
+
+  public SpecBuilder withSpec(SpecData spec) {
+    this.spec = spec;
+    return this;
   }
 
-  public BeaconChainSpec buildSpecHelpers(
+  public BeaconChainSpec buildSpec() {
+    assert spec != null;
+    return buildSpec(spec.getSpecHelpersOptions(), spec.getSpecConstants());
+  }
+
+  public BeaconChainSpec buildSpec(
       SpecHelpersData specHelpersOptions, SpecConstantsData specConstantsData) {
-    return buildSpecHelpers(specHelpersOptions, buildSpecConstants(specConstantsData));
+    return buildSpec(specHelpersOptions, buildSpecConstants(specConstantsData));
   }
 
-  public BeaconChainSpec buildSpecHelpers(
+  public BeaconChainSpec buildSpec(
       SpecHelpersData specHelpersOptions, SpecConstants specConstants) {
 
     BeaconChainSpec defaultSpec = BeaconChainSpec.createWithSSZHasher(specConstants);
-    return new BeaconChainSpecImpl(
+    return new CachingBeaconChainSpec(
         defaultSpec.getConstants(),
         defaultSpec.getHashFunction(),
         defaultSpec.getObjectHasher()) {
@@ -88,6 +96,11 @@ public class SpecBuilder {
         super.process_deposit_inner(state, deposit, specHelpersOptions.isBlsVerifyProofOfPossession());
       }
     };
+  }
+
+  public SpecConstants buildSpecConstants() {
+    assert spec != null;
+    return buildSpecConstants(spec.getSpecConstants());
   }
 
   public SpecConstants buildSpecConstants(SpecConstantsData specConstants) {
