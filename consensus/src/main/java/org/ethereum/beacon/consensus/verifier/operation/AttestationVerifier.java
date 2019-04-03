@@ -18,9 +18,11 @@ import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustody
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.state.ShardCommittee;
 import org.ethereum.beacon.core.types.BLSPubkey;
+import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.crypto.BLS381.PublicKey;
 import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.collections.ReadList;
 
 /**
  * Verifies {@link Attestation} beacon chain operation.
@@ -104,24 +106,20 @@ public class AttestationVerifier implements OperationVerifier<Attestation> {
       }
     }
 
-    // Check that the crosslink data is valid
-    /*  acceptable_crosslink_data = {
-          # Case 1: Latest crosslink matches the one in the state
-          attestation.data.previous_crosslink,
-          # Case 2: State has already been updated, state's latest crosslink matches the crosslink
-          # the attestation is trying to create
-          Crosslink(
-              crosslink_data_root=attestation.data.crosslink_data_root,
-              epoch=slot_to_epoch(attestation.data.slot)
-          )
-        } */
-    Crosslink latestCrosslink =
-        state.getCurrentEpochCrosslinks().get(data.getShard());
-    if (!data.getPreviousCrosslink().equals(latestCrosslink)
-        && !data.getPreviousCrosslink().equals(state.getPreviousEpochCrosslinks().get(data.getShard()))
-        && !latestCrosslink.equals(
-            new Crosslink(spec.slot_to_epoch(data.getSlot()), data.getCrosslinkDataRoot()))) {
+    // Check crosslink data
+    /*  assert attestation.data.crosslink_data_root == ZERO_HASH  # [to be removed in phase 1]
+        crosslinks = state.current_crosslinks if slot_to_epoch(attestation.data.slot) == get_current_epoch(state) else state.previous_crosslinks
+        assert crosslinks[attestation.data.shard] == attestation.data.previous_crosslink */
+    ReadList<ShardNumber, Crosslink> crosslinks =
+        spec.slot_to_epoch(data.getSlot()).equals(spec.get_current_epoch(state)) ?
+            state.getCurrentCrosslinks() : state.getPreviousCrosslinks();
+    if (!crosslinks.get(data.getShard()).equals(data.getPreviousCrosslink())) {
       return failedResult("attestation.data.latest_crosslink is incorrect");
+    }
+
+    if (!Hash32.ZERO.equals(data.getCrosslinkDataRoot())) {
+      return failedResult(
+          "attestation_data.crosslink_data_root must be equal to zero hash, phase 0 check");
     }
 
     //  assert attestation.custody_bitfield == b'\x00' * len(attestation.custody_bitfield)  # [TO BE REMOVED IN PHASE 1]
@@ -192,11 +190,6 @@ public class AttestationVerifier implements OperationVerifier<Attestation> {
         attestation.getAggregateSignature(),
         spec.get_domain(state.getFork(), spec.slot_to_epoch(data.getSlot()), ATTESTATION))) {
       return failedResult("failed to verify aggregated signature");
-    }
-
-    if (!Hash32.ZERO.equals(data.getCrosslinkDataRoot())) {
-      return failedResult(
-          "attestation_data.crosslink_data_root must be equal to zero hash, phase 0 check");
     }
 
     return PASSED;

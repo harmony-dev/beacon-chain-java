@@ -80,7 +80,6 @@ public class ShuffleTests extends TestUtils {
    * ReadList, EpochNumber)}
    */
   @Test
-  @Ignore("get_shuffling2 provides different output compared to spec get_shuffling")
   public void testShuffling2() {
     Path sszTestsPath = Paths.get(PATH_TO_TESTS, TESTS_DIR);
     runTestsInResourceDir(

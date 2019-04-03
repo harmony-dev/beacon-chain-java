@@ -148,13 +148,13 @@ public class DelegateBeaconState implements BeaconState {
   }
 
   @Override
-  public ReadList<ShardNumber, Crosslink> getPreviousEpochCrosslinks() {
-    return delegate.getPreviousEpochCrosslinks();
+  public ReadList<ShardNumber, Crosslink> getPreviousCrosslinks() {
+    return delegate.getPreviousCrosslinks();
   }
 
   @Override
-  public ReadList<ShardNumber, Crosslink> getCurrentEpochCrosslinks() {
-    return delegate.getCurrentEpochCrosslinks();
+  public ReadList<ShardNumber, Crosslink> getCurrentCrosslinks() {
+    return delegate.getCurrentCrosslinks();
   }
 
   @Override

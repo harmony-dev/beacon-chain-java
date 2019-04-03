@@ -60,8 +60,8 @@ public class BeaconStateImpl implements MutableBeaconState {
 
   /* Recent state */
 
-  @SSZ private List<Crosslink> previousEpochCrosslinksList = new ArrayList<>();
-  @SSZ private List<Crosslink> currentEpochCrosslinksList = new ArrayList<>();
+  @SSZ private List<Crosslink> previousCrosslinksList = new ArrayList<>();
+  @SSZ private List<Crosslink> currentCrosslinksList = new ArrayList<>();
   @SSZ private List<Hash32> latestBlockRootsList = new ArrayList<>();
   @SSZ private List<Hash32> latestStateRootsList = new ArrayList<>();
   @SSZ private List<Hash32> latestActiveIndexRootsList = new ArrayList<>();
@@ -104,8 +104,8 @@ public class BeaconStateImpl implements MutableBeaconState {
     finalizedEpoch = state.getFinalizedEpoch();
     finalizedRoot = state.getFinalizedRoot();
 
-    previousEpochCrosslinksList = state.getPreviousEpochCrosslinks().listCopy();
-    currentEpochCrosslinksList = state.getCurrentEpochCrosslinks().listCopy();
+    previousCrosslinksList = state.getPreviousCrosslinks().listCopy();
+    currentCrosslinksList = state.getCurrentCrosslinks().listCopy();
     latestBlockRootsList = state.getLatestBlockRoots().listCopy();
     latestStateRootsList = state.getLatestStateRoots().listCopy();
     latestActiveIndexRootsList = state.getLatestActiveIndexRoots().listCopy();
@@ -328,22 +328,22 @@ public class BeaconStateImpl implements MutableBeaconState {
     this.latestBlockHeader = latestBlockHeader;
   }
 
-  public List<Crosslink> getPreviousEpochCrosslinksList() {
-    return previousEpochCrosslinksList;
+  public List<Crosslink> getPreviousCrosslinksList() {
+    return previousCrosslinksList;
   }
 
-  public void setPreviousEpochCrosslinksList(
-      List<Crosslink> previousEpochCrosslinksList) {
-    this.previousEpochCrosslinksList = previousEpochCrosslinksList;
+  public void setPreviousCrosslinksList(
+      List<Crosslink> previousCrosslinksList) {
+    this.previousCrosslinksList = previousCrosslinksList;
   }
 
-  public List<Crosslink> getCurrentEpochCrosslinksList() {
-    return currentEpochCrosslinksList;
+  public List<Crosslink> getCurrentCrosslinksList() {
+    return currentCrosslinksList;
   }
 
-  public void setCurrentEpochCrosslinksList(
-      List<Crosslink> currentEpochCrosslinksList) {
-    this.currentEpochCrosslinksList = currentEpochCrosslinksList;
+  public void setCurrentCrosslinksList(
+      List<Crosslink> currentCrosslinksList) {
+    this.currentCrosslinksList = currentCrosslinksList;
   }
 
   public List<Hash32> getLatestBlockRootsList() {
@@ -444,13 +444,13 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
-  public WriteList<ShardNumber, Crosslink> getPreviousEpochCrosslinks() {
-    return WriteList.wrap(getPreviousEpochCrosslinksList(), ShardNumber::of);
+  public WriteList<ShardNumber, Crosslink> getPreviousCrosslinks() {
+    return WriteList.wrap(getPreviousCrosslinksList(), ShardNumber::of);
   }
 
   @Override
-  public WriteList<ShardNumber, Crosslink> getCurrentEpochCrosslinks() {
-    return WriteList.wrap(getCurrentEpochCrosslinksList(), ShardNumber::of);
+  public WriteList<ShardNumber, Crosslink> getCurrentCrosslinks() {
+    return WriteList.wrap(getCurrentCrosslinksList(), ShardNumber::of);
   }
 
   @Override

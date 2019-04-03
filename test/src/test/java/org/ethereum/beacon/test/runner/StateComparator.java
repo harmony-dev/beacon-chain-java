@@ -260,7 +260,7 @@ public class StateComparator {
                       Hash32.fromHexString(el.getCrosslinkDataRoot()));
                 })
             .collect(Collectors.toList());
-    return assertLists(expectedCrosslinks, actual.getCurrentEpochCrosslinks().listCopy());
+    return assertLists(expectedCrosslinks, actual.getCurrentCrosslinks().listCopy());
   }
 
   private PendingAttestation deserializeAttestation(
