@@ -5,6 +5,7 @@ import static java.util.Collections.nCopies;
 import static java.util.stream.Collectors.toList;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -463,9 +464,8 @@ public interface EpochProcessing extends HelperFunction {
         new Gwei[state.getValidatorRegistry().size().getIntValue()],
         new Gwei[state.getValidatorRegistry().size().getIntValue()]
     };
-    for (ValidatorIndex index : state.getValidatorRegistry().size()) {
-      deltas[0][index.getIntValue()] = deltas[1][index.getIntValue()] = Gwei.ZERO;
-    }
+    Arrays.fill(deltas[0], Gwei.ZERO);
+    Arrays.fill(deltas[1], Gwei.ZERO);
 
     // Some helper variables
     List<PendingAttestation> previous_epoch_attestations =
@@ -562,9 +562,8 @@ public interface EpochProcessing extends HelperFunction {
         new Gwei[state.getValidatorRegistry().size().getIntValue()],
         new Gwei[state.getValidatorRegistry().size().getIntValue()]
     };
-    for (ValidatorIndex index : state.getValidatorRegistry().size()) {
-      deltas[0][index.getIntValue()] = deltas[1][index.getIntValue()] = Gwei.ZERO;
-    }
+    Arrays.fill(deltas[0], Gwei.ZERO);
+    Arrays.fill(deltas[1], Gwei.ZERO);
 
     List<PendingAttestation> previous_epoch_attestations =
         state.getPreviousEpochAttestations().listCopy();
@@ -674,9 +673,8 @@ public interface EpochProcessing extends HelperFunction {
         new Gwei[state.getValidatorRegistry().size().getIntValue()],
         new Gwei[state.getValidatorRegistry().size().getIntValue()]
     };
-    for (ValidatorIndex index : state.getValidatorRegistry().size()) {
-      deltas[0][index.getIntValue()] = deltas[1][index.getIntValue()] = Gwei.ZERO;
-    }
+    Arrays.fill(deltas[0], Gwei.ZERO);
+    Arrays.fill(deltas[1], Gwei.ZERO);
 
     SlotNumber previous_epoch_start_slot = get_epoch_start_slot(get_previous_epoch(state));
     SlotNumber current_epoch_start_slot = get_epoch_start_slot(get_current_epoch(state));
@@ -897,9 +895,8 @@ public interface EpochProcessing extends HelperFunction {
       update_validator_registry(state);
       // If we update the registry, update the shuffling data and shards as well
       state.setCurrentShufflingEpoch(next_epoch);
-      state.setCurrentShufflingStartShard(ShardNumber.of(
-          state.getCurrentShufflingStartShard().plus(get_current_epoch_committee_count(state))
-              .modulo(getConstants().getShardCount())));
+      state.setCurrentShufflingStartShard(state.getCurrentShufflingStartShard().plusModulo(
+          get_current_epoch_committee_count(state), getConstants().getShardCount()));
       state.setCurrentShufflingSeed(generate_seed(state, state.getCurrentShufflingEpoch()));
     } else {
       // If processing at least one crosslink keeps failing, then reshuffle every power of two,
