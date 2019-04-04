@@ -1,22 +1,26 @@
 package org.ethereum.beacon.ssz.type;
 
 import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
+import org.ethereum.beacon.ssz.scheme.SSZListType;
 
 public interface SSZListAccessor {
 
-  boolean isSupported(SSZField listDescriptor);
+  interface InstanceBuilder {
 
-  default int getVectorSize(SSZField listDescriptor, Object listObject) {
-    return -1;
+    void addChild(Object childValue);
+
+    void setChild(int idx, Object childValue);
+
+    Object build();
   }
 
-  default boolean isVector(SSZField listDescriptor) {
-    return getVectorSize(listDescriptor, null) >= 0;
-  }
+  boolean isSupported(SSZField field);
 
-  SSZField getListElementType(SSZField listDescriptor);
+  int getChildrenCount(Object value);
 
-  long getChildCount(Object listObject);
+  Object getChild(Object value, int idx);
 
-  Object getChild(Object listObject, long index);
+  SSZField getListElementType(SSZField field);
+
+  InstanceBuilder createInstanceBuilder(SSZListType listType);
 }

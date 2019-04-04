@@ -97,7 +97,7 @@ public class SSZSerializerTest {
     SSZSerializerBuilder builder = new SSZSerializerBuilder(); //
     builder
         .withSSZSchemeBuilder(new SSZAnnotationSchemeBuilder().withLogger(Logger.getLogger("test")))
-        .withSSZCodecResolver(new SSZCodecRoulette())
+//        .withSSZCodecResolver(new SSZCodecRoulette())
         .withSSZModelFactory(new SSZModelCreator().registerObjCreator(new ConstructorObjCreator()));
     builder.addPrimitivesCodecs();
     SSZSerializer serializer = builder.build();

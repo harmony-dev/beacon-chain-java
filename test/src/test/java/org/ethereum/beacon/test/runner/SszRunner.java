@@ -2,7 +2,6 @@ package org.ethereum.beacon.test.runner;
 
 import org.ethereum.beacon.consensus.SpecHelpers;
 import org.ethereum.beacon.ssz.ConstructorObjCreator;
-import org.ethereum.beacon.ssz.SSZCodecRoulette;
 import org.ethereum.beacon.ssz.SSZModelCreator;
 import org.ethereum.beacon.ssz.SSZSchemeBuilder;
 import org.ethereum.beacon.ssz.SSZSerializer;
@@ -35,18 +34,18 @@ public class SszRunner implements Runner {
     }
     this.testCase = (SszTestCase) testCase;
     this.specHelpers = specHelpers;
-    SSZSerializerBuilder builder = new SSZSerializerBuilder();
-    builder.withSSZCodecResolver(new SSZCodecRoulette());
-    builder.withSSZModelFactory(
-        new SSZModelCreator()
-            .registerObjCreator(new ConstructorObjCreator())
-            .registerObjCreator(new SettersObjCreator()));
-    builder.withSSZSchemeBuilder(clazz -> currentScheme);
-    builder.addCodec(new UIntPrimitive());
-    builder.addCodec(new BytesPrimitive());
-    builder.addCodec(new BooleanPrimitive());
-    builder.addCodec(new StringPrimitive());
-    this.sszSerializer = builder.build();
+//    SSZSerializerBuilder builder = new SSZSerializerBuilder();
+//    builder.withSSZCodecResolver(new SSZCodecRoulette());
+//    builder.withSSZModelFactory(
+//        new SSZModelCreator()
+//            .registerObjCreator(new ConstructorObjCreator())
+//            .registerObjCreator(new SettersObjCreator()));
+//    builder.withSSZSchemeBuilder(clazz -> currentScheme);
+//    builder.addCodec(new UIntPrimitive());
+//    builder.addCodec(new BytesPrimitive());
+//    builder.addCodec(new BooleanPrimitive());
+//    builder.addCodec(new StringPrimitive());
+//    this.sszSerializer = builder.build();
   }
 
   private void activateSchemeMock(String type) {
@@ -58,7 +57,6 @@ public class SszRunner implements Runner {
     SSZSchemeBuilder.SSZScheme.SSZField field = new SSZSchemeBuilder.SSZScheme.SSZField();
     field.name = "value";
     field.fieldType = BigInteger.class;
-    field.multipleType = SSZSchemeBuilder.SSZScheme.MultipleType.NONE;
     field.notAContainer = false;
     field.getter = "getValue";
     field.extraSize = Integer.valueOf(testCase.getType().substring(4));

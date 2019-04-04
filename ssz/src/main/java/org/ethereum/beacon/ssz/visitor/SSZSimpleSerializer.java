@@ -4,11 +4,10 @@ import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
-import org.ethereum.beacon.ssz.SSZCodecResolver;
-import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
-import org.ethereum.beacon.ssz.SSZSchemeException;
-import org.ethereum.beacon.ssz.type.SSZCodec;
+import org.ethereum.beacon.ssz.scheme.SSZBasicType;
+import org.ethereum.beacon.ssz.scheme.SSZCompositeType;
 import tech.pegasys.artemis.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.bytes.BytesValues;
 
 public class SSZSimpleSerializer implements SSZVisitor<SSZSimpleSerializer.SSZSerializerResult> {
 
@@ -36,7 +35,7 @@ public class SSZSimpleSerializer implements SSZVisitor<SSZSimpleSerializer.SSZSe
     }
 
     public BytesValue getSerialized() {
-      return BytesValue.concat(getSerializedBody(), getSerializedLength());
+      return BytesValue.concat(getSerializedLength(), getSerializedBody());
     }
 
     public boolean isFixedSize() {
@@ -44,31 +43,21 @@ public class SSZSimpleSerializer implements SSZVisitor<SSZSimpleSerializer.SSZSe
     }
   }
 
-  private final SSZCodecResolver codecResolver;
-
-  public SSZSimpleSerializer(SSZCodecResolver codecResolver) {
-    this.codecResolver = codecResolver;
-  }
-
   @Override
-  public SSZSerializerResult visitBasicValue(SSZField descriptor, Object value) {
-    SSZCodec codec = codecResolver.resolveBasicValueCodec(descriptor);
-    if (codec == null) {
-      throw new SSZSchemeException("No codec found for " + descriptor);
-    }
+  public SSZSerializerResult visitBasicValue(SSZBasicType type, Object value) {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    codec.encode(value, descriptor, baos);
+    type.getValueCodec().encode(value, type.getTypeDescriptor(), baos);
     return new SSZSerializerResult(BytesValue.wrap(baos.toByteArray()));
   }
 
   @Override
-  public SSZSerializerResult visitComposite(SSZCompositeValue value,
-      Function<Long, SSZSerializerResult> childVisitor) {
+  public SSZSerializerResult visitComposite(SSZCompositeType type, Object rawValue,
+      Function<Integer, SSZSerializerResult> childVisitor) {
 
     List<BytesValue> childSerializations = new ArrayList<>();
-    boolean fixedSize = !value.getCompositeType().isVariableSize();
-    long length = 0;
-    for (long i = 0; i < value.getChildCount(); i++) {
+    boolean fixedSize = type.isFixedSize();
+    int length = 0;
+    for (int i = 0; i < type.getChildrenCount(rawValue); i++) {
       SSZSerializerResult res = childVisitor.apply(i);
       childSerializations.add(res.serializedLength);
       childSerializations.add(res.serializedBody);
@@ -80,7 +69,7 @@ public class SSZSimpleSerializer implements SSZVisitor<SSZSimpleSerializer.SSZSe
         fixedSize ? BytesValue.EMPTY : serializeLength(length));
   }
 
-  private BytesValue serializeLength(long len) {
-    throw new UnsupportedOperationException();
+  private BytesValue serializeLength(int len) {
+    return BytesValues.ofUnsignedIntLittleEndian(len);
   }
 }

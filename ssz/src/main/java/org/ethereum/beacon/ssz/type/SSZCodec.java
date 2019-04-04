@@ -2,6 +2,7 @@ package org.ethereum.beacon.ssz.type;
 
 import net.consensys.cava.ssz.BytesSSZReaderProxy;
 import org.ethereum.beacon.ssz.SSZSchemeBuilder;
+import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
 import org.ethereum.beacon.ssz.SSZSchemeException;
 import org.ethereum.beacon.ssz.SSZSerializer;
 import java.io.OutputStream;
@@ -15,10 +16,6 @@ import java.util.Set;
  * <p>For more information check {@link SSZSerializer}
  */
 public interface SSZCodec {
-
-  default long getSize() {
-    return 0;
-  }
 
   /**
    * Set of compatible SSZ types represented as strings. If type could be extended with numeric
@@ -38,6 +35,8 @@ public interface SSZCodec {
    */
   Set<Class> getSupportedClasses();
 
+  long getSize(SSZField field);
+
   /**
    * Encodes field as SSZ type and writes it to output stream
    *
@@ -45,7 +44,7 @@ public interface SSZCodec {
    * @param field Field type
    * @param result Output stream
    */
-  void encode(Object value, SSZSchemeBuilder.SSZScheme.SSZField field, OutputStream result);
+  void encode(Object value, SSZField field, OutputStream result);
 
   /**
    * Encodes list field as SSZ type and writes it to output stream
@@ -55,7 +54,7 @@ public interface SSZCodec {
    * @param result Output stream
    */
   void encodeList(
-      List<Object> value, SSZSchemeBuilder.SSZScheme.SSZField field, OutputStream result);
+      List<Object> value, SSZField field, OutputStream result);
 
   /**
    * Encodes array field as SSZ type and writes it to output stream
@@ -65,7 +64,7 @@ public interface SSZCodec {
    * @param result Output stream
    */
   default void encodeArray(
-      Object[] value, SSZSchemeBuilder.SSZScheme.SSZField field, OutputStream result) {
+      Object[] value, SSZField field, OutputStream result) {
     encodeList(Arrays.asList(value), field, result);
   }
 
@@ -77,7 +76,7 @@ public interface SSZCodec {
    *     moved to the end of this field/beginning of next one after reading is performed.
    * @return field value
    */
-  Object decode(SSZSchemeBuilder.SSZScheme.SSZField field, BytesSSZReaderProxy reader);
+  Object decode(SSZField field, BytesSSZReaderProxy reader);
 
   /**
    * Decodes SSZ encoded data and returns result
@@ -87,7 +86,7 @@ public interface SSZCodec {
    *     moved to the end of this field/beginning of next one after reading is performed.
    * @return field list value
    */
-  List decodeList(SSZSchemeBuilder.SSZScheme.SSZField field, BytesSSZReaderProxy reader);
+  List decodeList(SSZField field, BytesSSZReaderProxy reader);
 
   /**
    * Decodes SSZ encoded data and returns result
@@ -98,7 +97,7 @@ public interface SSZCodec {
    * @return field array value
    */
   default Object[] decodeArray(
-      SSZSchemeBuilder.SSZScheme.SSZField field, BytesSSZReaderProxy reader) {
+      SSZField field, BytesSSZReaderProxy reader) {
     List list = decodeList(field, reader);
     return list.toArray();
   }
@@ -111,7 +110,7 @@ public interface SSZCodec {
    * @throws RuntimeException {@link SSZSchemeException} that current codec cannot handle input
    *     field type
    */
-  default Object throwUnsupportedType(SSZSchemeBuilder.SSZScheme.SSZField field)
+  default Object throwUnsupportedType(SSZField field)
       throws RuntimeException {
     throw new SSZSchemeException(String.format("Type [%s] is not supported", field.fieldType));
   }
@@ -124,7 +123,7 @@ public interface SSZCodec {
    * @throws RuntimeException {@link SSZSchemeException} that current code cannot handle input field
    *     type
    */
-  default List<Object> throwUnsupportedListType(SSZSchemeBuilder.SSZScheme.SSZField field)
+  default List<Object> throwUnsupportedListType(SSZField field)
       throws RuntimeException {
     throw new SSZSchemeException(String.format("List of types [%s] is not supported", field.fieldType));
   }

@@ -34,6 +34,11 @@ public class SubclassCodec implements SSZCodec {
   }
 
   @Override
+  public long getSize(SSZField field) {
+    return superclassCodec.getSize(field);
+  }
+
+  @Override
   public void encode(Object value, SSZField field,
       OutputStream result) {
     superclassCodec.encode(value, getSerializableField(field), result);
@@ -73,7 +78,6 @@ public class SubclassCodec implements SSZCodec {
     SSZField ret = new SSZField();
     ret.fieldType = getSerializableClass(field.fieldType);
     ret.name = field.name;
-    ret.multipleType = field.multipleType;
     ret.extraType = field.extraType;
     ret.extraSize = field.extraSize;
     ret.getter = field.getter;

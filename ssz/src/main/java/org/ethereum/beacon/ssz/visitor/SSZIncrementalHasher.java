@@ -1,12 +1,12 @@
 package org.ethereum.beacon.ssz.visitor;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.SortedSet;
 import java.util.function.Function;
+import org.ethereum.beacon.ssz.scheme.SSZCompositeType;
+import org.ethereum.beacon.ssz.scheme.SSZListType;
 import org.ethereum.beacon.ssz.visitor.SSZSimpleSerializer.SSZSerializerResult;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 public class SSZIncrementalHasher extends SSZSimpleHasher {
@@ -23,40 +23,42 @@ public class SSZIncrementalHasher extends SSZSimpleHasher {
   }
 
   @Override
-  public MerkleTrie visitComposite(SSZCompositeValue value, Function<Long, MerkleTrie> childVisitor) {
-    if (value.getRawValue() instanceof Incremental) {
-      SSZIncrementalTracker tracker = ((Incremental) value.getRawValue()).getTracker();
+  public MerkleTrie visitComposite(SSZCompositeType type, Object rawValue,
+      Function<Integer, MerkleTrie> childVisitor) {
+    if (rawValue instanceof Incremental) {
+      SSZIncrementalTracker tracker = ((Incremental) rawValue).getTracker();
       if (tracker.merkleTree == null) {
-        tracker.merkleTree = super.visitComposite(value, childVisitor);
+        tracker.merkleTree = super.visitComposite(type, rawValue, childVisitor);
       } else if (!tracker.elementsUpdated.isEmpty()){
-        if (value.getCompositeType().isBasicElementType()) {
+        if (type.isList() && ((SSZListType) type).getElementType().isBasicType()) {
 //          tracker.merkleTree =
 //              updatePackedTrie(value, childVisitor, tracker.merkleTree, tracker.elementsUpdated);
           // TODO fallback to full recalculation for now
-          tracker.merkleTree = super.visitComposite(value, childVisitor);
+          tracker.merkleTree = super.visitComposite(type, rawValue, childVisitor);
         } else {
           tracker.merkleTree =
-              updateNonPackedTrie(value, childVisitor, tracker.merkleTree, tracker.elementsUpdated);
+              updateNonPackedTrie(type, rawValue, childVisitor, tracker.merkleTree, tracker.elementsUpdated);
         }
       }
       tracker.elementsUpdated.clear();
       return tracker.merkleTree;
     } else {
-      return super.visitComposite(value, childVisitor);
+      return super.visitComposite(type, rawValue, childVisitor);
     }
   }
 
   private MerkleTrie updateNonPackedTrie(
-      SSZCompositeValue value,
-      Function<Long, MerkleTrie> childVisitor,
+      SSZCompositeType type,
+      Object value,
+      Function<Integer, MerkleTrie> childVisitor,
       MerkleTrie merkleTree,
       SortedSet<Integer> elementsUpdated) {
-    MerkleTrie newTrie = copyWithSize(merkleTree, (int) value.getChildCount());
+    MerkleTrie newTrie = copyWithSize(merkleTree, type.getChildrenCount(value));
 
     int pos = newTrie.nodes.length / 2;
 
     for (int i: elementsUpdated) {
-      MerkleTrie childHash = childVisitor.apply((long) i);
+      MerkleTrie childHash = childVisitor.apply(i);
       newTrie.nodes[pos + i] = childHash.getFinalRoot();
     }
 
@@ -74,16 +76,18 @@ public class SSZIncrementalHasher extends SSZSimpleHasher {
         }
       }
     }
-    if (value.getCompositeType().isVariableSize()) {
-      Hash32 mixInLength = hashFunction
-          .apply(BytesValue.concat(newTrie.getFinalRoot(), serializeLength(value.getChildCount())));
+    if (type.isVariableSize()) {
+      Hash32 mixInLength = hashFunction.apply(BytesValue.concat(
+          newTrie.getFinalRoot(),
+          serializeLength(type.getChildrenCount(value))));
       newTrie.setFinalRoot(mixInLength);
     }
     return newTrie;
   }
 
   private MerkleTrie updatePackedTrie(
-      SSZCompositeValue value,
+      SSZCompositeType type,
+      Object value,
       Function<Long, MerkleTrie> childVisitor,
       MerkleTrie merkleTree,
       SortedSet<Integer> elementsUpdated) {

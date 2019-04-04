@@ -45,23 +45,23 @@ public class ConstructorObjCreator implements ObjectCreator {
     for (int i = 0; i < fieldValuePairs.size(); i++) {
       Pair<SSZSchemeBuilder.SSZScheme.SSZField, Object> pair = fieldValuePairs.get(i);
       SSZSchemeBuilder.SSZScheme.SSZField field = pair.getValue0();
-      switch (field.multipleType) {
-        case LIST:
-          {
-            params[i] = List.class;
-            break;
-          }
-        case ARRAY:
-          {
-            params[i] = Array.newInstance(field.fieldType, 0).getClass();
-            break;
-          }
-        default:
-          {
-            params[i] = field.fieldType;
-            break;
-          }
-      }
+//      switch (field.multipleType) {
+//        case LIST:
+//          {
+//            params[i] = List.class;
+//            break;
+//          }
+//        case ARRAY:
+//          {
+//            params[i] = Array.newInstance(field.fieldType, 0).getClass();
+//            break;
+//          }
+//        default:
+//          {
+//            params[i] = field.fieldType;
+//            break;
+//          }
+//      }
     }
     Object[] values = fieldValuePairs.stream().map(Pair::getValue1).toArray();
 

@@ -3,11 +3,14 @@ package org.ethereum.beacon.ssz.type.list;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.WildcardType;
+import java.util.List;
+import java.util.function.Function;
 import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
+import org.ethereum.beacon.ssz.scheme.SSZListType;
 import org.ethereum.beacon.ssz.type.SSZListAccessor;
 import tech.pegasys.artemis.util.collections.ReadList;
 
-public class ReadListAccessor implements SSZListAccessor {
+public class ReadListAccessor extends AbstractListAccessor {
 
   @Override
   public boolean isSupported(SSZField field) {
@@ -16,35 +19,35 @@ public class ReadListAccessor implements SSZListAccessor {
 
   @Override
   public SSZField getListElementType(SSZField field) {
-    SSZField sszField = new SSZField();
-    if (field.fieldGenericType == null) {
-      sszField.fieldType = Object.class;
+    return extractElementType(field, 1);
+  }
+
+  protected Function<Integer, ? extends Number> resolveIndexConverter(Class indexClass) {
+    if (indexClass.equals(Integer.class)) {
+      return Integer::valueOf;
     } else {
-      Type listTypeArgument = field.fieldGenericType.getActualTypeArguments()[1];
-
-      if (listTypeArgument instanceof WildcardType) {
-        listTypeArgument = ((WildcardType) listTypeArgument).getLowerBounds()[0];
-      }
-
-      if (listTypeArgument instanceof Class) {
-        sszField.fieldType = (Class<?>) listTypeArgument;
-      } else if (listTypeArgument instanceof ParameterizedType) {
-        sszField.fieldType = (Class<?>) ((ParameterizedType) listTypeArgument).getRawType();
-        sszField.fieldGenericType = (ParameterizedType) listTypeArgument;
-      } else {
-        throw new RuntimeException("Internal error: unknown list type: " + listTypeArgument);
-      }
+      throw new UnsupportedOperationException("Index converter not found for " + indexClass);
     }
-    return sszField;
   }
 
   @Override
-  public long getChildCount(Object complexObject) {
-    return ((ReadList) complexObject).size().longValue();
+  public int getChildrenCount(Object complexObject) {
+    return ((ReadList) complexObject).size().intValue();
   }
 
   @Override
-  public Object getChild(Object complexObject, long index) {
+  public Object getChild(Object complexObject, int index) {
     return ((ReadList) complexObject).get(index);
+  }
+
+  @Override
+  public InstanceBuilder createInstanceBuilder(SSZListType listType) {
+    return new SimpleInstanceBuilder() {
+      @Override
+      protected Object buildImpl(List<Object> children) {
+        return ReadList.wrap(children, resolveIndexConverter((Class<?>)
+            listType.getTypeDescriptor().fieldGenericType.getActualTypeArguments()[0]));
+      }
+    };
   }
 }

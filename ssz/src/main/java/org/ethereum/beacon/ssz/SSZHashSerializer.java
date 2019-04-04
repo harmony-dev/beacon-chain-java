@@ -4,6 +4,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
+import org.ethereum.beacon.ssz.scheme.TypeResolver;
 import org.ethereum.beacon.ssz.visitor.SSZSimpleHasher;
 import org.ethereum.beacon.ssz.visitor.SSZVisitorHall;
 import org.javatuples.Pair;
@@ -21,13 +22,10 @@ public class SSZHashSerializer implements BytesHasher {
 
   private static final int BYTES_PER_CHUNK = 32;
 
-  private final SSZSchemeBuilder schemeBuilder;
-
-  private final SSZCodecResolver codecResolver;
-
   private final SSZVisitorHall visitorHall;
   private final SSZSimpleHasher hasherVisitor;
   private final SSZSerializer serializer;
+  private TypeResolver typeResolver;
 
   /**
    * SSZ hasher with following helpers
@@ -39,25 +37,28 @@ public class SSZHashSerializer implements BytesHasher {
   public SSZHashSerializer(SSZSchemeBuilder schemeBuilder, SSZCodecResolver codecResolver,
       Function<BytesValue, Hash32> hashFunction) {
 
-    this.schemeBuilder = schemeBuilder;
-    this.codecResolver = codecResolver;
-
-    this.serializer = new SSZSerializer(schemeBuilder, codecResolver, null);
-    this.visitorHall = new SSZVisitorHall(schemeBuilder, codecResolver);
+    this.serializer = new SSZSerializer(schemeBuilder, codecResolver, null, null);
+    this.visitorHall = new SSZVisitorHall();
     hasherVisitor = new SSZSimpleHasher(serializer, hashFunction, BYTES_PER_CHUNK);
   }
 
   /** Calculates hash of the input object */
   @Override
   public byte[] hash(@Nullable Object input, Class clazz) {
-    return visitorHall.handleAny(new SSZField(clazz), input, hasherVisitor).getFinalRoot().extractArray();
+    return visitorHall
+        .handleAny(typeResolver.resolveSSZType(new SSZField(clazz)), input, hasherVisitor)
+        .getFinalRoot()
+        .extractArray();
   }
 
   @Override
   public <C> byte[] hashTruncate(@Nullable C input, Class<? extends C> clazz, String field) {
-    SSZVisitorHall hall = new SSZVisitorHall(schemeBuilder, codecResolver);
+    SSZVisitorHall hall = new SSZVisitorHall();
     hall.setContainerMembersFilter(new TruncateFilter(clazz, field));
-    return visitorHall.handleAny(new SSZField(clazz), input, hasherVisitor).getFinalRoot().extractArray();
+    return visitorHall
+        .handleAny(typeResolver.resolveSSZType(new SSZField(clazz)), input, hasherVisitor)
+        .getFinalRoot()
+        .extractArray();
   }
 
   private static class TruncateFilter implements Predicate<Pair<Class<?>, SSZField>> {

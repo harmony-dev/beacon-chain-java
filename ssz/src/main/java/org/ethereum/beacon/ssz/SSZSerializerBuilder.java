@@ -142,7 +142,7 @@ public class SSZSerializerBuilder {
       SSZCodecResolver codecResolver,
       SSZModelFactory sszModelFactory) {
     checkAlreadyInitialized();
-    this.sszSerializer = new SSZSerializer(schemeBuilder, codecResolver, sszModelFactory);
+    this.sszSerializer = new SSZSerializer(schemeBuilder, codecResolver, sszModelFactory, null);
     this.sszCodecResolver = codecResolver;
     return this;
   }
@@ -158,7 +158,6 @@ public class SSZSerializerBuilder {
    * @return {@link SSZSerializerBuilder} without codecs
    */
   public SSZSerializerBuilder initWithExplicitAnnotations() {
-    this.sszCodecResolver = new SSZCodecRoulette();
     this.sszSchemeBuilder = new SSZAnnotationSchemeBuilder();
     return initWith(sszSchemeBuilder, sszCodecResolver, createDefaultModelCreator());
   }
@@ -177,7 +176,6 @@ public class SSZSerializerBuilder {
    * @return {@link SSZSerializerBuilder} without codecs
    */
   public SSZSerializerBuilder initWithNonExplicitAnnotations() {
-    this.sszCodecResolver = new SSZCodecRoulette();
     this.sszSchemeBuilder = new SSZAnnotationSchemeBuilder(false);
     return initWith(sszSchemeBuilder, sszCodecResolver, createDefaultModelCreator());
   }
@@ -209,7 +207,7 @@ public class SSZSerializerBuilder {
   public SSZSerializer build() {
     if (sszSerializer == null) {
       if (sszCodecResolver != null && sszModelFactory != null && sszSchemeBuilder != null) {
-        this.sszSerializer = new SSZSerializer(sszSchemeBuilder, sszCodecResolver, sszModelFactory);
+        this.sszSerializer = new SSZSerializer(sszSchemeBuilder, sszCodecResolver, sszModelFactory, null);
       } else {
         throw new RuntimeException("initWith* or all with* methods should be called first");
       }

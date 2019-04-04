@@ -3,7 +3,6 @@ package org.ethereum.beacon.consensus.hasher;
 import java.util.function.Consumer;
 import org.ethereum.beacon.core.types.Hashable;
 import org.ethereum.beacon.ssz.SSZHashSerializer;
-import org.ethereum.beacon.ssz.SSZHashSerializers;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
@@ -29,8 +28,7 @@ public class SSZObjectHasher implements ObjectHasher<Hash32> {
   }
 
   public static SSZObjectHasher create(Function<BytesValue, Hash32> hashFunction) {
-    SSZHashSerializer sszHashSerializer =
-        SSZHashSerializers.createWithBeaconChainTypes(hashFunction, true, SSZ_SCHEMES_CACHE_CAPACITY);
+    SSZHashSerializer sszHashSerializer = null; // TODO
     return new SSZObjectHasher(sszHashSerializer);
   }
 

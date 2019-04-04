@@ -5,6 +5,7 @@ import net.consensys.cava.ssz.BytesSSZReaderProxy;
 import net.consensys.cava.ssz.SSZ;
 import net.consensys.cava.ssz.SSZException;
 import org.ethereum.beacon.ssz.SSZSchemeBuilder;
+import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
 import org.ethereum.beacon.ssz.SSZSchemeException;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt24;
@@ -71,6 +72,11 @@ public class UIntCodec implements SSZCodec {
   @Override
   public Set<Class> getSupportedClasses() {
     return supportedClassTypes;
+  }
+
+  @Override
+  public long getSize(SSZField field) {
+    return parseFieldType(field).size / 8;
   }
 
   @Override

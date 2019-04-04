@@ -1,33 +1,21 @@
 package org.ethereum.beacon.ssz;
 
+import static org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme;
+
+import java.util.ArrayList;
+import java.util.List;
+import javax.annotation.Nullable;
 import net.consensys.cava.bytes.Bytes;
 import net.consensys.cava.ssz.BytesSSZReaderProxy;
-import net.consensys.cava.ssz.SSZException;
 import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
+import org.ethereum.beacon.ssz.annotation.SSZSerializable;
+import org.ethereum.beacon.ssz.scheme.SSZType;
+import org.ethereum.beacon.ssz.scheme.TypeResolver;
 import org.ethereum.beacon.ssz.visitor.SSZSimpleSerializer;
 import org.ethereum.beacon.ssz.visitor.SSZSimpleSerializer.SSZSerializerResult;
-import org.ethereum.beacon.ssz.visitor.SSZVisitor;
-import org.ethereum.beacon.ssz.visitor.SSZCompositeType;
-import org.ethereum.beacon.ssz.visitor.SSZCompositeValue;
-import org.ethereum.beacon.ssz.annotation.SSZSerializable;
-import org.ethereum.beacon.ssz.type.SSZCodec;
 import org.ethereum.beacon.ssz.visitor.SSZVisitorHall;
 import org.ethereum.beacon.ssz.visitor.SSZVisitorHandler;
 import org.javatuples.Pair;
-import org.javatuples.Triplet;
-
-import javax.annotation.Nullable;
-import java.beans.IntrospectionException;
-import java.beans.Introspector;
-import java.beans.PropertyDescriptor;
-import java.io.ByteArrayOutputStream;
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme;
 
 /** SSZ serializer/deserializer */
 public class SSZSerializer implements BytesSerializer, SSZVisitorHandler<SSZSimpleSerializer.SSZSerializerResult> {
@@ -43,6 +31,7 @@ public class SSZSerializer implements BytesSerializer, SSZVisitorHandler<SSZSimp
 
   private final SSZVisitorHall sszVisitorHall;
   private final SSZSimpleSerializer simpleSerializer;
+  private TypeResolver typeResolver;
 
   /**
    * SSZ serializer/deserializer with following helpers
@@ -55,12 +44,14 @@ public class SSZSerializer implements BytesSerializer, SSZVisitorHandler<SSZSimp
   public SSZSerializer(
       SSZSchemeBuilder schemeBuilder,
       SSZCodecResolver codecResolver,
-      SSZModelFactory sszModelFactory) {
+      SSZModelFactory sszModelFactory,
+      TypeResolver typeResolver) {
     this.schemeBuilder = schemeBuilder;
     this.codecResolver = codecResolver;
     this.sszModelFactory = sszModelFactory;
-    sszVisitorHall = new SSZVisitorHall(schemeBuilder, codecResolver);
-    simpleSerializer = new SSZSimpleSerializer(codecResolver);
+    this.typeResolver = typeResolver;
+    sszVisitorHall = new SSZVisitorHall();
+    simpleSerializer = new SSZSimpleSerializer();
   }
 
   static void checkSSZSerializableAnnotation(Class clazz) {
@@ -87,23 +78,13 @@ public class SSZSerializer implements BytesSerializer, SSZVisitorHandler<SSZSimp
   }
 
   @Override
-  public SSZSerializerResult visitAny(SSZField descriptor, Object value) {
-    return sszVisitorHall.handleAny(descriptor, value, simpleSerializer);
+  public <C> SSZSerializerResult visit(C input, Class<? extends C> clazz) {
+    return visitAny(typeResolver.resolveSSZType(new SSZField(clazz)), input);
   }
 
   @Override
-  public <C> SSZSerializerResult visit(C input, Class<? extends C> clazz) {
-    return visitAny(new SSZField(clazz), input);
-  }
-
-  /**
-   * Builds class scheme using {@link SSZSchemeBuilder}
-   *
-   * @param clazz type class
-   * @return SSZ model scheme
-   */
-  private SSZScheme buildScheme(Class clazz) {
-    return schemeBuilder.build(clazz);
+  public SSZSerializerResult visitAny(SSZType sszType, Object value) {
+    return sszVisitorHall.handleAny(sszType, value, new SSZSimpleSerializer());
   }
 
   /**
@@ -117,7 +98,7 @@ public class SSZSerializer implements BytesSerializer, SSZVisitorHandler<SSZSimp
   public <C> C decode(byte[] data, Class<? extends C> clazz) {
     checkSSZSerializableAnnotation(clazz);
 
-    SSZScheme scheme = buildScheme(clazz);
+    SSZScheme scheme = schemeBuilder.build(clazz);
     List<SSZScheme.SSZField> fields = scheme.getFields();
     int size = fields.size();
     BytesSSZReaderProxy reader = new BytesSSZReaderProxy(Bytes.of(data));

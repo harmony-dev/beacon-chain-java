@@ -10,6 +10,7 @@ import java.io.OutputStream;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
 
 /** {@link SSZCodec} for {@link String} */
 public class StringPrimitive implements SSZCodec {
@@ -23,6 +24,11 @@ public class StringPrimitive implements SSZCodec {
 
   static {
     supportedClassTypes.add(String.class);
+  }
+
+  @Override
+  public long getSize(SSZField field) {
+    return -1;
   }
 
   @Override

@@ -1,17 +1,9 @@
 package org.ethereum.beacon.ssz.visitor;
 
-import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
+import org.ethereum.beacon.ssz.scheme.SSZType;
 
 public interface SSZVisitorHandler<ResultType> {
-  ResultType visitAny(SSZField descriptor, Object value);
-
-  default ResultType visitAny(Object value) {
-    return visitAny(null, value);
-  }
-
-  default ResultType visitComposite(SSZCompositeValue value) {
-    return visitAny(value.getElementType(), value.getRawValue());
-  }
+  ResultType visitAny(SSZType descriptor, Object value);
 
   default ResultType visit(Object input) {
     return visit(input, input.getClass());

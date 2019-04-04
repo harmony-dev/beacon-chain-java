@@ -153,7 +153,15 @@ public interface BytesValue extends Comparable<BytesValue> {
   }
 
   static BytesValue concat(List<? extends BytesValue> vals) {
-    throw new UnsupportedOperationException();
+    // TODO optimize this naive implementation
+    if (vals.isEmpty()) {
+      return BytesValue.EMPTY;
+    }
+    BytesValue ret = vals.get(0);
+    for (int i = 1; i < vals.size(); i++) {
+      ret = concat(ret, vals.get(i));
+    }
+    return ret;
   }
 
   /**

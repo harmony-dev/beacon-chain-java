@@ -20,14 +20,15 @@ public class Serializer {
   private static final Serializer INSTANCE = new Serializer();
 
   static {
-    SSZSerializerBuilder builder = new SSZSerializerBuilder();
-    builder.initWithExplicitAnnotations();
-    builder.addCodec(new HashCodec());
-    builder.addCodec(new UIntCodec());
-    builder.addCodec(new BytesCodec());
-    builder.addCodec(new BooleanPrimitive());
-    builder.addSchemeBuilderCache();
-    ANNOTATION_SERIALIZER = builder.build();
+//    SSZSerializerBuilder builder = new SSZSerializerBuilder();
+//    builder.initWithExplicitAnnotations();
+//    builder.addCodec(new HashCodec());
+//    builder.addCodec(new UIntCodec());
+//    builder.addCodec(new BytesCodec());
+//    builder.addCodec(new BooleanPrimitive());
+//    builder.addSchemeBuilderCache();
+//    ANNOTATION_SERIALIZER = builder.build();
+    ANNOTATION_SERIALIZER = null;
   }
 
   private Serializer() {}

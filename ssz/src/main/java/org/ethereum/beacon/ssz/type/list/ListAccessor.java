@@ -5,46 +5,38 @@ import java.lang.reflect.Type;
 import java.lang.reflect.WildcardType;
 import java.util.List;
 import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
+import org.ethereum.beacon.ssz.scheme.SSZListType;
 import org.ethereum.beacon.ssz.type.SSZListAccessor;
 
-public class ListAccessor implements SSZListAccessor {
+public class ListAccessor extends AbstractListAccessor {
 
   @Override
   public boolean isSupported(SSZField field) {
-    return field.fieldType.isAssignableFrom(List.class);
+    return List.class.isAssignableFrom(field.fieldType);
   }
 
   @Override
   public SSZField getListElementType(SSZField field) {
-    SSZField sszField = new SSZField();
-    if (field.fieldGenericType == null) {
-      sszField.fieldType = Object.class;
-    } else {
-      Type listTypeArgument = field.fieldGenericType.getActualTypeArguments()[0];
-
-      if (listTypeArgument instanceof WildcardType) {
-        listTypeArgument = ((WildcardType) listTypeArgument).getLowerBounds()[0];
-      }
-
-      if (listTypeArgument instanceof Class) {
-        sszField.fieldType = (Class<?>) listTypeArgument;
-      } else if (listTypeArgument instanceof ParameterizedType) {
-        sszField.fieldType = (Class<?>) ((ParameterizedType) listTypeArgument).getRawType();
-        sszField.fieldGenericType = (ParameterizedType) listTypeArgument;
-      } else {
-        throw new RuntimeException("Internal error: unknown list type: " + listTypeArgument);
-      }
-    }
-    return sszField;
+    return extractElementType(field, 0);
   }
 
   @Override
-  public long getChildCount(Object complexObject) {
+  public int getChildrenCount(Object complexObject) {
     return ((List) complexObject).size();
   }
 
   @Override
-  public Object getChild(Object complexObject, long index) {
+  public Object getChild(Object complexObject, int index) {
     return ((List) complexObject).get((int) index);
+  }
+
+  @Override
+  public InstanceBuilder createInstanceBuilder(SSZListType listType) {
+    return new SimpleInstanceBuilder() {
+      @Override
+      protected Object buildImpl(List<Object> children) {
+        return children;
+      }
+    };
   }
 }

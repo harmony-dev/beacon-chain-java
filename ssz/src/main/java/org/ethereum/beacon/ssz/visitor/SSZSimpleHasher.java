@@ -4,7 +4,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
-import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
+import org.ethereum.beacon.ssz.scheme.SSZBasicType;
+import org.ethereum.beacon.ssz.scheme.SSZCompositeType;
+import org.ethereum.beacon.ssz.scheme.SSZListType;
 import org.ethereum.beacon.ssz.visitor.SSZSimpleHasher.MerkleTrie;
 import org.ethereum.beacon.ssz.visitor.SSZSimpleSerializer.SSZSerializerResult;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -46,30 +48,30 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie> {
   }
 
   @Override
-  public MerkleTrie visitBasicValue(SSZField descriptor, Object value) {
-
+  public MerkleTrie visitBasicValue(SSZBasicType descriptor, Object value) {
     SSZSimpleSerializer.SSZSerializerResult sszSerializerResult = serializer.visitAny(descriptor, value);
     return merkleize(pack(sszSerializerResult.serializedBody));
   }
 
   @Override
-  public MerkleTrie visitComposite(SSZCompositeValue value,
-      Function<Long, MerkleTrie> childVisitor) {
+  public MerkleTrie visitComposite(SSZCompositeType type, Object rawValue,
+      Function<Integer, MerkleTrie> childVisitor) {
     MerkleTrie merkleize;
-    if (value.getCompositeType().isBasicElementType()) {
-      SSZSimpleSerializer.SSZSerializerResult sszSerializerResult = serializer.visitComposite(value);
+    if (type.isList() && ((SSZListType) type).getElementType().isBasicType()) {
+      SSZSimpleSerializer.SSZSerializerResult sszSerializerResult = serializer.visitAny(type, rawValue);
 
       merkleize = merkleize(pack(sszSerializerResult.serializedBody));
     } else {
       List<Hash32> childHashes = new ArrayList<>();
-      for (long i = 0; i < value.getChildCount(); i++) {
+      for (int i = 0; i < type.getChildrenCount(rawValue); i++) {
         childHashes.add(childVisitor.apply(i).getFinalRoot());
       }
       merkleize = merkleize(childHashes);
     }
-    if (value.getCompositeType().isVariableSize()) {
-      Hash32 mixInLength = hashFunction
-          .apply(BytesValue.concat(merkleize.getFinalRoot(), serializeLength(value.getChildCount())));
+    if (type.isVariableSize()) {
+      Hash32 mixInLength = hashFunction.apply(BytesValue.concat(
+          merkleize.getFinalRoot(),
+          serializeLength(type.getChildrenCount(rawValue))));
       merkleize.setFinalRoot(mixInLength);
     }
     return merkleize;

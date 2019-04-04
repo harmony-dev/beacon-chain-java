@@ -82,4 +82,6 @@ public @interface SSZ {
    * parameter when set to <b>true</b> marks that it's such kind of field
    */
   boolean skipContainer() default false;
+
+  String vectorSize() default "";
 }

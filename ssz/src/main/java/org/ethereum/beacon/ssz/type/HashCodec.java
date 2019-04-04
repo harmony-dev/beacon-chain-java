@@ -11,6 +11,7 @@ import net.consensys.cava.ssz.BytesSSZReaderProxy;
 import net.consensys.cava.ssz.SSZ;
 import net.consensys.cava.ssz.SSZException;
 import org.ethereum.beacon.ssz.SSZSchemeBuilder;
+import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
 import org.ethereum.beacon.ssz.SSZSchemeException;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
@@ -49,6 +50,11 @@ public class HashCodec implements SSZCodec {
   @Override
   public Set<Class> getSupportedClasses() {
     return supportedClassTypes;
+  }
+
+  @Override
+  public long getSize(SSZField field) {
+    return 32;
   }
 
   @Override

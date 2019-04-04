@@ -10,6 +10,7 @@ import java.io.OutputStream;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
 
 /** {@link SSZCodec} for {@link Boolean} and {@link boolean} */
 public class BooleanPrimitive implements SSZCodec {
@@ -34,6 +35,13 @@ public class BooleanPrimitive implements SSZCodec {
   @Override
   public Set<Class> getSupportedClasses() {
     return supportedClassTypes;
+  }
+
+
+
+  @Override
+  public long getSize(SSZField field) {
+    return 1;
   }
 
   @Override

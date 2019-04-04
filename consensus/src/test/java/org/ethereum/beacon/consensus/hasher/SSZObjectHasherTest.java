@@ -1,9 +1,14 @@
 package org.ethereum.beacon.consensus.hasher;
 
+import static org.junit.Assert.assertEquals;
+
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.ssz.SSZHashSerializer;
-import org.ethereum.beacon.ssz.SSZHashSerializers;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import org.ethereum.beacon.ssz.fixtures.AttestationRecord;
 import org.ethereum.beacon.ssz.fixtures.Bitfield;
@@ -11,13 +16,6 @@ import org.ethereum.beacon.ssz.fixtures.Sign;
 import org.junit.Before;
 import org.junit.Test;
 import tech.pegasys.artemis.util.bytes.BytesValue;
-
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
-import static org.junit.Assert.assertEquals;
 
 /** Tests of {@link SSZObjectHasher} */
 public class SSZObjectHasherTest {
@@ -34,9 +32,9 @@ public class SSZObjectHasherTest {
 
   @Before
   public void setup() {
-    SSZHashSerializer sszHashSerializer =
-        SSZHashSerializers.createWithBeaconChainTypes(Hashes::keccak256, false, 128);
-    sszHasher = new SSZObjectHasher(sszHashSerializer);
+//    SSZHashSerializer sszHashSerializer =
+//        SSZHashSerializers.createWithBeaconChainTypes(Hashes::keccak256, false, 128);
+//    sszHasher = new SSZObjectHasher(sszHashSerializer);
   }
 
   @Test

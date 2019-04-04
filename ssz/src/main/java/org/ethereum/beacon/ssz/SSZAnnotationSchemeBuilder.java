@@ -155,14 +155,7 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
     for (Field field : clazz.getDeclaredFields()) {
 
       // Skip SSZTransient
-      boolean transientField = false;
-      for (Annotation annotation : field.getAnnotations()) {
-        if (annotation.annotationType().equals(SSZTransient.class)) {
-          transientField = true;
-          break;
-        }
-      }
-      if (transientField) {
+      if (field.getAnnotation(SSZTransient.class) != null) {
         continue;
       }
 
@@ -191,6 +184,9 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
         newField.notAContainer = true;
       }
       newField.fieldType = type;
+      newField.fieldGenericType = field.getGenericType() instanceof ParameterizedType ?
+          (ParameterizedType) field.getGenericType() : null;
+      newField.fieldAnnotation = annotation;
       String name = field.getName();
       newField.name = name;
       if (typeAnnotation != null) {
