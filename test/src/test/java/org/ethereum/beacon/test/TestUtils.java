@@ -112,6 +112,7 @@ public class TestUtils {
           ? ((NamedTestCase) testCase).getName()
           : "Test #" + (total - 1);
       if (exclusions.contains(name)) {
+        System.out.println(String.format("[ ] %s is excluded", name));
         continue;
       }
 
