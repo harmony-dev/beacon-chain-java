@@ -1,7 +1,6 @@
 package org.ethereum.beacon.test;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -14,10 +13,13 @@ import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.Transfer;
+import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
+import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
+import org.ethereum.beacon.core.operations.slashing.SlashableAttestation;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Fork;
 import org.ethereum.beacon.core.state.PendingAttestation;
@@ -34,10 +36,13 @@ import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.test.type.StateTestCase;
 import org.ethereum.beacon.test.type.StateTestCase.BeaconStateData;
+import org.ethereum.beacon.test.type.StateTestCase.BeaconStateData.AttestationData.AttestationDataContainer;
 import org.ethereum.beacon.test.type.StateTestCase.BeaconStateData.BlockHeaderData;
 import org.ethereum.beacon.test.type.StateTestCase.BeaconStateData.CrossLinkData;
 import org.ethereum.beacon.test.type.StateTestCase.BeaconStateData.ValidatorData;
 import org.ethereum.beacon.test.type.StateTestCase.BlockData.BlockBodyData.Eth1;
+import org.ethereum.beacon.test.type.StateTestCase.BlockData.BlockBodyData.ProposerSlashingData;
+import org.ethereum.beacon.test.type.StateTestCase.BlockData.BlockBodyData.SlashableAttestationData;
 import org.javatuples.Pair;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes4;
@@ -83,9 +88,13 @@ public abstract class StateTestUtils {
       attestations.add(attestation);
     }
 
-    if (!blockData.getBody().getAttesterSlashings().isEmpty()) {
-      return Pair.with(null, Optional.of("Implement block attestation slashings!"));
-    }
+    // Attestation slashings
+    List<AttesterSlashing> attesterSlashings =
+        blockData.getBody().getAttesterSlashings().stream()
+            .map(s -> new AttesterSlashing(
+                parseSlashableAttestation(s.getSlashableAttestation1()),
+                parseSlashableAttestation(s.getSlashableAttestation2())))
+            .collect(Collectors.toList());
 
     // Deposits
     List<Deposit> deposits = new ArrayList<>();
@@ -119,25 +128,25 @@ public abstract class StateTestUtils {
 
     // Proposer slashings
     List<ProposerSlashing> proposerSlashings = new ArrayList<>();
-    for (StateTestCase.BlockData.BlockBodyData.SlashingData slashingData :
+    for (ProposerSlashingData proposerSlashingData :
         blockData.getBody().getProposerSlashings()) {
       BeaconBlockHeader header1 =
           new BeaconBlockHeader(
-              SlotNumber.castFrom(UInt64.valueOf(slashingData.getHeader1().getSlot())),
-              Hash32.fromHexString(slashingData.getHeader1().getPreviousBlockRoot()),
-              Hash32.fromHexString(slashingData.getHeader1().getStateRoot()),
-              Hash32.fromHexString(slashingData.getHeader1().getBlockBodyRoot()),
-              BLSSignature.wrap(Bytes96.fromHexString(slashingData.getHeader1().getSignature())));
+              SlotNumber.castFrom(UInt64.valueOf(proposerSlashingData.getHeader1().getSlot())),
+              Hash32.fromHexString(proposerSlashingData.getHeader1().getPreviousBlockRoot()),
+              Hash32.fromHexString(proposerSlashingData.getHeader1().getStateRoot()),
+              Hash32.fromHexString(proposerSlashingData.getHeader1().getBlockBodyRoot()),
+              BLSSignature.wrap(Bytes96.fromHexString(proposerSlashingData.getHeader1().getSignature())));
       BeaconBlockHeader header2 =
           new BeaconBlockHeader(
-              SlotNumber.castFrom(UInt64.valueOf(slashingData.getHeader2().getSlot())),
-              Hash32.fromHexString(slashingData.getHeader2().getPreviousBlockRoot()),
-              Hash32.fromHexString(slashingData.getHeader2().getStateRoot()),
-              Hash32.fromHexString(slashingData.getHeader2().getBlockBodyRoot()),
-              BLSSignature.wrap(Bytes96.fromHexString(slashingData.getHeader2().getSignature())));
+              SlotNumber.castFrom(UInt64.valueOf(proposerSlashingData.getHeader2().getSlot())),
+              Hash32.fromHexString(proposerSlashingData.getHeader2().getPreviousBlockRoot()),
+              Hash32.fromHexString(proposerSlashingData.getHeader2().getStateRoot()),
+              Hash32.fromHexString(proposerSlashingData.getHeader2().getBlockBodyRoot()),
+              BLSSignature.wrap(Bytes96.fromHexString(proposerSlashingData.getHeader2().getSignature())));
       ProposerSlashing proposerSlashing =
           new ProposerSlashing(
-              ValidatorIndex.of(slashingData.getProposerIndex()), header1, header2);
+              ValidatorIndex.of(proposerSlashingData.getProposerIndex()), header1, header2);
       proposerSlashings.add(proposerSlashing);
     }
 
@@ -158,9 +167,15 @@ public abstract class StateTestUtils {
     }
 
     // Voluntary exits
-    if (!blockData.getBody().getVoluntaryExits().isEmpty()) {
-      return Pair.with(null, Optional.of("Implement block voluntary exits!"));
-    }
+    List<VoluntaryExit> voluntaryExits =
+        blockData.getBody().getVoluntaryExits().stream()
+            .map(e -> new VoluntaryExit(
+                EpochNumber.castFrom(UInt64.valueOf(e.getEpoch())),
+                ValidatorIndex.of(e.getValidatorIndex()),
+                e.getSignature() != null
+                    ? BLSSignature.wrap(Bytes96.fromHexString(e.getSignature()))
+                    : BLSSignature.ZERO))
+            .collect(Collectors.toList());
 
     // Finally, creating a block
     BeaconBlockBody blockBody =
@@ -168,10 +183,10 @@ public abstract class StateTestUtils {
             BLSSignature.wrap(Bytes96.fromHexString(blockData.getBody().getRandaoReveal())),
             eth1Data1,
             proposerSlashings,
-            Collections.emptyList(),
+            attesterSlashings,
             attestations,
             deposits,
-            Collections.emptyList(),
+            voluntaryExits,
             transfers);
     BeaconBlock block =
         new BeaconBlock(
@@ -182,6 +197,16 @@ public abstract class StateTestUtils {
             BLSSignature.wrap(Bytes96.fromHexString(blockData.getSignature())));
 
     return Pair.with(block, Optional.empty());
+  }
+
+  public static SlashableAttestation parseSlashableAttestation(SlashableAttestationData data) {
+    return new SlashableAttestation(
+        data.getValidatorIndices().stream().map(ValidatorIndex::of).collect(Collectors.toList()),
+        parseAttestationData(data.getData()),
+        Bitfield.of(BytesValue.fromHexString(data.getCustodyBitfield())),
+        data.getAggregateSignature() != null
+            ? BLSSignature.wrap(Bytes96.fromHexString(data.getAggregateSignature()))
+            : BLSSignature.ZERO);
   }
 
   public static MutableBeaconState parseBeaconState(BeaconStateData data) {
@@ -293,25 +318,24 @@ public abstract class StateTestUtils {
 
   public static PendingAttestation parsePendingAttestation(
       StateTestCase.BeaconStateData.AttestationData attestationData) {
-    AttestationData attestationData1 =
-        new AttestationData(
-            SlotNumber.castFrom(UInt64.valueOf(attestationData.getData().getSlot())),
-            Hash32.fromHexString(attestationData.getData().getBeaconBlockRoot()),
-            EpochNumber.castFrom(UInt64.valueOf(attestationData.getData().getSourceEpoch())),
-            Hash32.fromHexString(attestationData.getData().getSourceRoot()),
-            Hash32.fromHexString(attestationData.getData().getTargetRoot()),
-            ShardNumber.of(attestationData.getData().getShard()),
-            new Crosslink(
-                EpochNumber.castFrom(
-                    UInt64.valueOf(attestationData.getData().getPreviousCrosslink().getEpoch())),
-                Hash32.fromHexString(
-                    attestationData.getData().getPreviousCrosslink().getCrosslinkDataRoot())),
-            Hash32.fromHexString(attestationData.getData().getCrosslinkDataRoot()));
-
     return new PendingAttestation(
         Bitfield.of(BytesValue.fromHexString(attestationData.getAggregationBitfield())),
-        attestationData1,
+        parseAttestationData(attestationData.getData()),
         Bitfield.of(BytesValue.fromHexString(attestationData.getCustodyBitfield())),
         SlotNumber.castFrom(UInt64.valueOf(attestationData.getInclusionSlot())));
+  }
+
+  public static AttestationData parseAttestationData(AttestationDataContainer data) {
+    return new AttestationData(
+        SlotNumber.castFrom(UInt64.valueOf(data.getSlot())),
+        Hash32.fromHexString(data.getBeaconBlockRoot()),
+        EpochNumber.castFrom(UInt64.valueOf(data.getSourceEpoch())),
+        Hash32.fromHexString(data.getSourceRoot()),
+        Hash32.fromHexString(data.getTargetRoot()),
+        ShardNumber.of(data.getShard()),
+        new Crosslink(
+            EpochNumber.castFrom(UInt64.valueOf(data.getPreviousCrosslink().getEpoch())),
+            Hash32.fromHexString(data.getPreviousCrosslink().getCrosslinkDataRoot())),
+        Hash32.fromHexString(data.getCrosslinkDataRoot()));
   }
 }

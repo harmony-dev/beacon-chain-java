@@ -3,8 +3,9 @@ package org.ethereum.beacon.test.type;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.math.BigInteger;
 import java.util.List;
+import org.ethereum.beacon.test.type.StateTestCase.BeaconStateData.AttestationData;
+import org.ethereum.beacon.test.type.StateTestCase.BeaconStateData.AttestationData.AttestationDataContainer;
 
 /**
  * State test case <a
@@ -826,10 +827,10 @@ public class StateTestCase implements TestCase {
       private Eth1 eth1Data;
 
       @JsonProperty("proposer_slashings")
-      private List<SlashingData> proposerSlashings;
+      private List<ProposerSlashingData> proposerSlashings;
 
       @JsonProperty("attester_slashings")
-      private List<SlashingData> attesterSlashings;
+      private List<AttesterSlashingData> attesterSlashings;
 
       private List<BeaconStateData.AttestationData> attestations;
       private List<DepositData> deposits;
@@ -855,19 +856,19 @@ public class StateTestCase implements TestCase {
         this.eth1Data = eth1Data;
       }
 
-      public List<SlashingData> getProposerSlashings() {
+      public List<ProposerSlashingData> getProposerSlashings() {
         return proposerSlashings;
       }
 
-      public void setProposerSlashings(List<SlashingData> proposerSlashings) {
+      public void setProposerSlashings(List<ProposerSlashingData> proposerSlashings) {
         this.proposerSlashings = proposerSlashings;
       }
 
-      public List<SlashingData> getAttesterSlashings() {
+      public List<AttesterSlashingData> getAttesterSlashings() {
         return attesterSlashings;
       }
 
-      public void setAttesterSlashings(List<SlashingData> attesterSlashings) {
+      public void setAttesterSlashings(List<AttesterSlashingData> attesterSlashings) {
         this.attesterSlashings = attesterSlashings;
       }
 
@@ -927,7 +928,7 @@ public class StateTestCase implements TestCase {
         }
       }
 
-      public static class SlashingData {
+      public static class ProposerSlashingData {
         @JsonProperty("proposer_index")
         private Long proposerIndex;
 
@@ -959,6 +960,74 @@ public class StateTestCase implements TestCase {
 
         public void setHeader2(BeaconStateData.BlockHeaderData header2) {
           this.header2 = header2;
+        }
+      }
+
+      public static class SlashableAttestationData {
+        @JsonProperty("validator_indices")
+        private List<Long> validatorIndices;
+        @JsonProperty("data")
+        private AttestationDataContainer data;
+        @JsonProperty("custody_bitfield")
+        private String custodyBitfield;
+        @JsonProperty("aggregate_signature")
+        private String aggregateSignature;
+
+        public List<Long> getValidatorIndices() {
+          return validatorIndices;
+        }
+
+        public void setValidatorIndices(List<Long> validatorIndices) {
+          this.validatorIndices = validatorIndices;
+        }
+
+        public AttestationDataContainer getData() {
+          return data;
+        }
+
+        public void setData(AttestationDataContainer data) {
+          this.data = data;
+        }
+
+        public String getCustodyBitfield() {
+          return custodyBitfield;
+        }
+
+        public void setCustodyBitfield(String custodyBitfield) {
+          this.custodyBitfield = custodyBitfield;
+        }
+
+        public String getAggregateSignature() {
+          return aggregateSignature;
+        }
+
+        public void setAggregateSignature(String aggregateSignature) {
+          this.aggregateSignature = aggregateSignature;
+        }
+      }
+
+      public static class AttesterSlashingData {
+        @JsonProperty("slashable_attestation_1")
+        private SlashableAttestationData slashableAttestation1;
+        @JsonProperty("slashable_attestation_2")
+        private SlashableAttestationData slashableAttestation2;
+
+        public SlashableAttestationData getSlashableAttestation1() {
+          return slashableAttestation1;
+        }
+
+        public void setSlashableAttestation1(
+            SlashableAttestationData slashableAttestation1) {
+          this.slashableAttestation1 = slashableAttestation1;
+        }
+
+        public SlashableAttestationData getSlashableAttestation2() {
+          return slashableAttestation2;
+        }
+
+        public void setSlashableAttestation2(
+            SlashableAttestationData slashableAttestation2) {
+          this.slashableAttestation2 = slashableAttestation2;
         }
       }
 
@@ -1061,18 +1130,18 @@ public class StateTestCase implements TestCase {
       }
 
       public static class ExitData {
-        private BigInteger epoch;
+        private String epoch;
 
         @JsonProperty("validator_index")
         private Long validatorIndex;
 
         private String signature;
 
-        public BigInteger getEpoch() {
+        public String getEpoch() {
           return epoch;
         }
 
-        public void setEpoch(BigInteger epoch) {
+        public void setEpoch(String epoch) {
           this.epoch = epoch;
         }
 
