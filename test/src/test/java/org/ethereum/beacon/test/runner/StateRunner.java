@@ -1,5 +1,14 @@
 package org.ethereum.beacon.test.runner;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.ethereum.beacon.chain.BeaconTuple;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.chain.storage.BeaconChainStorageFactory;
@@ -48,6 +57,8 @@ import org.ethereum.beacon.emulator.config.chainspec.MiscParametersData;
 import org.ethereum.beacon.emulator.config.chainspec.RewardAndPenaltyQuotientsData;
 import org.ethereum.beacon.emulator.config.chainspec.SpecBuilder;
 import org.ethereum.beacon.emulator.config.chainspec.SpecConstantsData;
+import org.ethereum.beacon.emulator.config.chainspec.SpecData;
+import org.ethereum.beacon.emulator.config.chainspec.SpecHelpersData;
 import org.ethereum.beacon.emulator.config.chainspec.StateListLengthsData;
 import org.ethereum.beacon.emulator.config.chainspec.TimeParametersData;
 import org.ethereum.beacon.pow.DepositContract;
@@ -60,37 +71,24 @@ import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt64;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
 /** TestRunner for {@link StateTestCase} */
 public class StateRunner implements Runner {
   private StateTestCase testCase;
-  private Function<SpecConstants, BeaconChainSpec> specBuilder;
 
-  public StateRunner(TestCase testCase, Function<SpecConstants, BeaconChainSpec> specBuilder) {
+  public StateRunner(TestCase testCase) {
     if (!(testCase instanceof StateTestCase)) {
       throw new RuntimeException("TestCase runner accepts only StateTestCase.class as input!");
     }
     this.testCase = (StateTestCase) testCase;
-    this.specBuilder = specBuilder;
   }
 
   public Optional<String> run() {
-    SpecConstantsData specConstantsData = createDefaultSpecConstantsData();
+    BeaconChainSpec spec;
     try {
-      specConstantsData = Objects.copyProperties(specConstantsData, testCase.getConfig());
+      spec = buildSpec(testCase);
     } catch (Exception e) {
-      return Optional.of("Failed to setup SpecConstants");
+      return Optional.of("Failed to BeaconChainSpec");
     }
-    SpecConstants specConstants = SpecBuilder.buildSpecConstants(specConstantsData);
-    BeaconChainSpec spec = specBuilder.apply(specConstants);
 
     // Let's create initial state
     Time time = Time.of(testCase.getInitialState().getGenesisTime());
@@ -158,7 +156,7 @@ public class StateRunner implements Runner {
     }
 
     BeaconStateEx latestState =
-        new BeaconStateExImpl(state, spec.hash_tree_root(genesis.getBlock()));
+        new BeaconStateExImpl(state, spec.signed_root(state.getLatestBlockHeader()));
     for (StateTestCase.BlockData blockData : testCase.getBlocks()) {
       Pair<BeaconBlock, Optional<String>> blockPair = parseBlockData(blockData);
       if (blockPair.getValue1().isPresent()) {
@@ -333,6 +331,21 @@ public class StateRunner implements Runner {
     chainStorage.getTupleStorage().put(tuple);
     chainStorage.getJustifiedStorage().set(genesisRoot);
     chainStorage.getFinalizedStorage().set(genesisRoot);
+  }
+
+  private BeaconChainSpec buildSpec(StateTestCase testCase)
+      throws InvocationTargetException, IllegalAccessException {
+    SpecConstantsData specConstantsData = createDefaultSpecConstantsData();
+    specConstantsData = Objects.copyProperties(specConstantsData, testCase.getConfig());
+
+    SpecHelpersData specHelpersData = new SpecHelpersData();
+    specHelpersData.setBlsVerify(testCase.getVerifySignatures());
+
+    SpecData specData = new SpecData();
+    specData.setSpecHelpersOptions(specHelpersData);
+    specData.setSpecConstants(specConstantsData);
+
+    return new SpecBuilder().withSpec(specData).buildSpec();
   }
 
   private SpecConstantsData createDefaultSpecConstantsData() {
