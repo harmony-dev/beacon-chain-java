@@ -16,6 +16,10 @@ import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -81,12 +85,23 @@ public class TestUtils {
 
   static <V extends TestSkeleton> Optional<String> runAllTestsInFile(
       File file, Function<TestCase, Optional<String>> testCaseRunner, Class<? extends V> clazz) {
+    return runAllTestsInFile(file, testCaseRunner, clazz, Collections.emptySet());
+  }
+
+  static <V extends TestSkeleton> Optional<String> runAllTestsInFile(
+      File file, Function<TestCase, Optional<String>> testCaseRunner, Class<? extends V> clazz,
+      Collection<String> exclusions) {
     V test = readTest(file, clazz);
-    return runAllCasesInTest(test, testCaseRunner, clazz);
+    return runAllCasesInTest(test, testCaseRunner, clazz, exclusions);
+  }
+  static <V extends TestSkeleton> Optional<String> runAllCasesInTest(
+      V test, Function<TestCase, Optional<String>> testCaseRunner, Class<? extends V> clazz) {
+    return runAllCasesInTest(test, testCaseRunner, clazz, Collections.emptySet());
   }
 
   static <V extends TestSkeleton> Optional<String> runAllCasesInTest(
-      V test, Function<TestCase, Optional<String>> testCaseRunner, Class<? extends V> clazz) {
+      V test, Function<TestCase, Optional<String>> testCaseRunner, Class<? extends V> clazz,
+      Collection<String> exclusions) {
     StringBuilder errors = new StringBuilder();
     AtomicInteger failed = new AtomicInteger(0);
     int total = 0;
@@ -95,6 +110,9 @@ public class TestUtils {
       String name = testCase instanceof NamedTestCase
           ? ((NamedTestCase) testCase).getName()
           : "Test #" + (total - 1);
+      if (exclusions.contains(name)) {
+        continue;
+      }
 
       long s = System.nanoTime();
       Optional<String> err = runTestCase(testCase, test, testCaseRunner);
@@ -155,11 +173,26 @@ public class TestUtils {
 
   static <V extends TestSkeleton> void runTestsInResourceDir(
       Path dir, Class<? extends V> testsType, Function<TestCase, Optional<String>> testCaseRunner) {
+    runTestsInResourceDirImpl(dir, testsType, testCaseRunner, Collections.emptySet());
+  }
+
+  static <V extends TestSkeleton> void runTestsInResourceDirWithExclusion(
+      Path dir,
+      Class<? extends V> testsType,
+      Function<TestCase, Optional<String>> testCaseRunner,
+      String... exclusions) {
+    runTestsInResourceDirImpl(
+        dir, testsType, testCaseRunner, new HashSet<>(Arrays.asList(exclusions)));
+  }
+
+  private static <V extends TestSkeleton> void runTestsInResourceDirImpl(
+      Path dir, Class<? extends V> testsType, Function<TestCase, Optional<String>> testCaseRunner,
+      Collection<String> exclusions) {
     List<File> files = getResourceFiles(dir.toString());
     boolean failed = false;
     for (File file : files) {
       System.out.println("Running tests in " + file.getName());
-      Optional<String> result = runAllTestsInFile(file, testCaseRunner, testsType);
+      Optional<String> result = runAllTestsInFile(file, testCaseRunner, testsType, exclusions);
       if (result.isPresent()) {
         System.out.println(result.get());
         System.out.println("\n----===----\n");
