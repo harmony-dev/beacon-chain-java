@@ -1,5 +1,7 @@
 package org.ethereum.beacon.ssz;
 
+import java.util.Map.Entry;
+import org.ethereum.beacon.ssz.annotation.MCVEReflect;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import org.ethereum.beacon.ssz.annotation.SSZTransient;
@@ -182,6 +184,37 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
       scheme.getFields().add(newField);
     }
 
+    if (explicitFieldAnnotation) {
+      for (Entry<String, Method> entry : fieldGetters.entrySet()) {
+        Method method = entry.getValue();
+        SSZ annotation = MCVEReflect.getAnnotation(method, SSZ.class);
+        if (annotation != null) {
+
+          String typeAnnotation = null;
+          if (!annotation.type().isEmpty()) {
+            typeAnnotation = annotation.type();
+          }
+
+          // Construct SSZField
+          SSZScheme.SSZField newField = new SSZScheme.SSZField();
+          newField.fieldType = method.getReturnType();
+          newField.fieldGenericType = method.getGenericReturnType() instanceof ParameterizedType ?
+              (ParameterizedType) method.getGenericReturnType() : null;
+          newField.fieldAnnotation = annotation;
+          String name = entry.getKey();
+          newField.name = name;
+          if (typeAnnotation != null) {
+            Pair<String, Integer> extra = extractType(typeAnnotation, newField.fieldType);
+            newField.extraType = extra.getValue0();
+            newField.extraSize = extra.getValue1();
+          }
+          newField.getter = method.getName();
+          scheme.getFields().add(newField);
+        }
+      }
+    }
+
+
     return logAndReturnScheme(clazz, scheme);
   }
 
@@ -199,27 +232,5 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
     }
 
     return scheme;
-  }
-
-  private Class extractListInternalType(Field field) {
-    Type genericFieldType = field.getGenericType();
-    Class res = null;
-
-    if (genericFieldType instanceof ParameterizedType) {
-      ParameterizedType aType = (ParameterizedType) genericFieldType;
-      Type[] fieldArgTypes = aType.getActualTypeArguments();
-      for (Type fieldArgType : fieldArgTypes) {
-        Class fieldArgClass = (Class) fieldArgType;
-        if (res == null) {
-          res = fieldArgClass;
-        } else {
-          String error =
-              String.format("Could not extract list type from field %s", field.getName());
-          throw new SSZSchemeException(error);
-        }
-      }
-    }
-
-    return res;
   }
 }

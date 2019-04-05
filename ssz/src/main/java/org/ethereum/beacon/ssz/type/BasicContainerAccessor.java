@@ -61,7 +61,7 @@ public class BasicContainerAccessor implements SSZContainerAccessor {
         }
       } catch (Exception e) {
         throw new SSZSchemeException(String.format("Failed to get value from field %s, "
-            + "you should either have public field or public getter for it", field.name));
+            + "you should either have public field or public getter for it", field.name), e);
       }
     }
   }

@@ -16,7 +16,7 @@ import java.lang.annotation.Target;
  * `explicitFieldAnnotation` is set to <b>true</b>, otherwise it's optional.
  */
 @Documented
-@Target(ElementType.FIELD)
+@Target({ElementType.FIELD, ElementType.METHOD})
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)
 public @interface SSZ {

@@ -3,6 +3,8 @@ package org.ethereum.beacon.ssz;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 
+import java.beans.Introspector;
+import java.beans.PropertyDescriptor;
 import java.util.List;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
@@ -12,6 +14,7 @@ import org.ethereum.beacon.ssz.scheme.SSZListType;
 import org.ethereum.beacon.ssz.scheme.SSZType;
 import org.ethereum.beacon.ssz.scheme.SimpleTypeResolver;
 import org.ethereum.beacon.ssz.scheme.TypeResolver;
+import org.junit.Assert;
 import org.junit.Test;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
@@ -228,6 +231,75 @@ public class SSZTypeTest {
 
     Container2 res = serializer.decode1(bytes, Container2.class);
     System.out.println(res);
+  }
+
+  @SSZSerializable
+  public interface Ifc1 {
+    @SSZ int getA1();
+    @SSZ long getA2();
+    int getA3();
+  }
+
+  @SSZSerializable
+  public static class Impl1 implements Ifc1 {
+
+    @Override
+    public int getA1() {
+      return 0x1111;
+    }
+
+    @Override
+    public long getA2() {
+      return 0x2222;
+    }
+
+    @Override
+    public int getA3() {
+      return 0x3333;
+    }
+
+    public int getA4() {
+      return 0x4444;
+    }
+  }
+
+  @SSZSerializable
+  public static class Impl2 extends Impl1 {
+
+    @Override
+    public int getA3() {
+      return 0x5555;
+    }
+
+    public int getA5() {
+      return 0x6666;
+    }
+  }
+
+  @Test
+  public void testTypeResolver2() throws Exception {
+    AccessorResolverRegistry resolverRegistry = new AccessorResolverRegistry();
+    TypeResolver typeResolver = new SimpleTypeResolver(resolverRegistry, s -> "testSize".equals(s) ? 1 : null);
+    SSZSerializer serializer = new SSZSerializer(null, null, null, typeResolver);
+
+    SSZType sszType = typeResolver.resolveSSZType(Impl2.class);
+    System.out.println(dumpType(sszType, ""));
+
+    Assert.assertTrue(sszType instanceof SSZContainerType);
+    SSZContainerType containerType = (SSZContainerType) sszType;
+
+    Assert.assertEquals(2, containerType.getChildTypes().size());
+    Assert.assertEquals("a1", containerType.getChildTypes().get(0).getTypeDescriptor().name);
+    Assert.assertEquals("a2", containerType.getChildTypes().get(1).getTypeDescriptor().name);
+
+    byte[] bytes1 = serializer.encode(new Impl2());
+    System.out.println(BytesValue.wrap(bytes1));
+
+    byte[] bytes2 = serializer.encode(new Impl1());
+    System.out.println(BytesValue.wrap(bytes2));
+    Assert.assertArrayEquals(bytes1, bytes2);
+    Assert.assertTrue(BytesValue.wrap(bytes1).toString().contains("1111"));
+    Assert.assertTrue(BytesValue.wrap(bytes1).toString().contains("2222"));
   }
 }
 
