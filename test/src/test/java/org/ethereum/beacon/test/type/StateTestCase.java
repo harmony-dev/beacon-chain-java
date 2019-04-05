@@ -99,10 +99,10 @@ public class StateTestCase implements TestCase {
     private List<String> latestRandaoMixes;
 
     @JsonProperty("previous_shuffling_start_shard")
-    private Integer previousShufflingStartShard;
+    private Long previousShufflingStartShard;
 
     @JsonProperty("current_shuffling_start_shard")
-    private Integer currentShufflingStartShard;
+    private Long currentShufflingStartShard;
 
     @JsonProperty("previous_shuffling_epoch")
     private String previousShufflingEpoch;
@@ -171,7 +171,7 @@ public class StateTestCase implements TestCase {
     private List<Eth1Vote> eth1DataVotes;
 
     @JsonProperty("deposit_index")
-    private Integer depositIndex;
+    private Long depositIndex;
 
     public String getSlot() {
       return slot;
@@ -229,19 +229,19 @@ public class StateTestCase implements TestCase {
       this.latestRandaoMixes = latestRandaoMixes;
     }
 
-    public Integer getPreviousShufflingStartShard() {
+    public Long getPreviousShufflingStartShard() {
       return previousShufflingStartShard;
     }
 
-    public void setPreviousShufflingStartShard(Integer previousShufflingStartShard) {
+    public void setPreviousShufflingStartShard(Long previousShufflingStartShard) {
       this.previousShufflingStartShard = previousShufflingStartShard;
     }
 
-    public Integer getCurrentShufflingStartShard() {
+    public Long getCurrentShufflingStartShard() {
       return currentShufflingStartShard;
     }
 
-    public void setCurrentShufflingStartShard(Integer currentShufflingStartShard) {
+    public void setCurrentShufflingStartShard(Long currentShufflingStartShard) {
       this.currentShufflingStartShard = currentShufflingStartShard;
     }
 
@@ -421,11 +421,11 @@ public class StateTestCase implements TestCase {
       this.eth1DataVotes = eth1DataVotes;
     }
 
-    public Integer getDepositIndex() {
+    public Long getDepositIndex() {
       return depositIndex;
     }
 
-    public void setDepositIndex(Integer depositIndex) {
+    public void setDepositIndex(Long depositIndex) {
       this.depositIndex = depositIndex;
     }
 
@@ -611,7 +611,7 @@ public class StateTestCase implements TestCase {
         @JsonProperty("target_root")
         private String targetRoot;
 
-        private Integer shard;
+        private Long shard;
 
         @JsonProperty("previous_crosslink")
         private CrossLinkData previousCrosslink;
@@ -659,11 +659,11 @@ public class StateTestCase implements TestCase {
           this.targetRoot = targetRoot;
         }
 
-        public Integer getShard() {
+        public Long getShard() {
           return shard;
         }
 
-        public void setShard(Integer shard) {
+        public void setShard(Long shard) {
           this.shard = shard;
         }
 
@@ -929,7 +929,7 @@ public class StateTestCase implements TestCase {
 
       public static class SlashingData {
         @JsonProperty("proposer_index")
-        private Integer proposerIndex;
+        private Long proposerIndex;
 
         @JsonProperty("header_1")
         private BeaconStateData.BlockHeaderData header1;
@@ -937,11 +937,11 @@ public class StateTestCase implements TestCase {
         @JsonProperty("header_2")
         private BeaconStateData.BlockHeaderData header2;
 
-        public Integer getProposerIndex() {
+        public Long getProposerIndex() {
           return proposerIndex;
         }
 
-        public void setProposerIndex(Integer proposerIndex) {
+        public void setProposerIndex(Long proposerIndex) {
           this.proposerIndex = proposerIndex;
         }
 
@@ -964,7 +964,7 @@ public class StateTestCase implements TestCase {
 
       public static class DepositData {
         private List<String> proof;
-        private Integer index;
+        private Long index;
 
         @JsonProperty("deposit_data")
         private DepositDataContainer depositData;
@@ -977,11 +977,11 @@ public class StateTestCase implements TestCase {
           this.proof = proof;
         }
 
-        public Integer getIndex() {
+        public Long getIndex() {
           return index;
         }
 
-        public void setIndex(Integer index) {
+        public void setIndex(Long index) {
           this.index = index;
         }
 
@@ -1064,7 +1064,7 @@ public class StateTestCase implements TestCase {
         private BigInteger epoch;
 
         @JsonProperty("validator_index")
-        private Integer validatorIndex;
+        private Long validatorIndex;
 
         private String signature;
 
@@ -1076,11 +1076,11 @@ public class StateTestCase implements TestCase {
           this.epoch = epoch;
         }
 
-        public Integer getValidatorIndex() {
+        public Long getValidatorIndex() {
           return validatorIndex;
         }
 
-        public void setValidatorIndex(Integer validatorIndex) {
+        public void setValidatorIndex(Long validatorIndex) {
           this.validatorIndex = validatorIndex;
         }
 
@@ -1094,27 +1094,27 @@ public class StateTestCase implements TestCase {
       }
 
       public static class TransferData {
-        private Integer sender;
-        private Integer recipient;
+        private Long sender;
+        private Long recipient;
         private String amount;
         private String fee;
         private String slot;
         private String pubkey;
         private String signature;
 
-        public Integer getSender() {
+        public Long getSender() {
           return sender;
         }
 
-        public void setSender(Integer sender) {
+        public void setSender(Long sender) {
           this.sender = sender;
         }
 
-        public Integer getRecipient() {
+        public Long getRecipient() {
           return recipient;
         }
 
-        public void setRecipient(Integer recipient) {
+        public void setRecipient(Long recipient) {
           this.recipient = recipient;
         }
 

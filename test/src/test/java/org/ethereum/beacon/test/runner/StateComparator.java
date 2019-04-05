@@ -1,43 +1,35 @@
 package org.ethereum.beacon.test.runner;
 
-import org.ethereum.beacon.consensus.BeaconStateEx;
-import org.ethereum.beacon.core.BeaconBlockHeader;
-import org.ethereum.beacon.core.operations.attestation.AttestationData;
-import org.ethereum.beacon.core.operations.attestation.Crosslink;
-import org.ethereum.beacon.core.state.Eth1Data;
-import org.ethereum.beacon.core.state.Fork;
-import org.ethereum.beacon.core.state.PendingAttestation;
-import org.ethereum.beacon.core.state.ValidatorRecord;
-import org.ethereum.beacon.core.types.BLSPubkey;
-import org.ethereum.beacon.core.types.BLSSignature;
-import org.ethereum.beacon.core.types.Bitfield;
-import org.ethereum.beacon.core.types.Bitfield64;
-import org.ethereum.beacon.core.types.EpochNumber;
-import org.ethereum.beacon.core.types.Gwei;
-import org.ethereum.beacon.core.types.ShardNumber;
-import org.ethereum.beacon.core.types.SlotNumber;
-import org.ethereum.beacon.test.type.StateTestCase;
-import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.bytes.Bytes4;
-import tech.pegasys.artemis.util.bytes.Bytes8;
-import tech.pegasys.artemis.util.bytes.Bytes96;
-import tech.pegasys.artemis.util.bytes.BytesValue;
-import tech.pegasys.artemis.util.uint.UInt64;
+import static org.ethereum.beacon.test.SilentAsserts.assertEquals;
+import static org.ethereum.beacon.test.SilentAsserts.assertLists;
+import static org.ethereum.beacon.test.SilentAsserts.assertTrue;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
-
-import static org.ethereum.beacon.test.SilentAsserts.assertEquals;
-import static org.ethereum.beacon.test.SilentAsserts.assertLists;
-import static org.ethereum.beacon.test.SilentAsserts.assertTrue;
+import org.ethereum.beacon.consensus.BeaconStateEx;
+import org.ethereum.beacon.core.BeaconBlockHeader;
+import org.ethereum.beacon.core.operations.attestation.Crosslink;
+import org.ethereum.beacon.core.state.Eth1Data;
+import org.ethereum.beacon.core.state.PendingAttestation;
+import org.ethereum.beacon.core.state.ValidatorRecord;
+import org.ethereum.beacon.core.types.Bitfield64;
+import org.ethereum.beacon.core.types.EpochNumber;
+import org.ethereum.beacon.core.types.SlotNumber;
+import org.ethereum.beacon.test.StateTestUtils;
+import org.ethereum.beacon.test.type.StateTestCase;
+import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.uint.UInt64;
 
 public class StateComparator {
   private BeaconStateEx actual;
   private StateTestCase.BeaconStateData expected;
 
-  public StateComparator(StateTestCase.BeaconStateData expected, BeaconStateEx actual) {
+  public static Optional<String> compare(StateTestCase.BeaconStateData expected, BeaconStateEx actual) {
+    return new StateComparator(expected, actual).compare();
+  }
+
+  private StateComparator(StateTestCase.BeaconStateData expected, BeaconStateEx actual) {
     this.expected = expected;
     this.actual = actual;
   }
@@ -132,9 +124,7 @@ public class StateComparator {
     }
 
     return assertLists(
-        expected.getLatestBlockRoots().stream()
-            .map(Hash32::fromHexString)
-            .collect(Collectors.toList()),
+        StateTestUtils.parseHashes(expected.getLatestBlockRoots()),
         actual.getLatestBlockRoots().listCopy());
   }
 
@@ -144,10 +134,8 @@ public class StateComparator {
     }
 
     return assertLists(
-        expected.getValidatorBalances(),
-        actual.getValidatorBalances().stream()
-            .map((el) -> Long.toString(el.getValue()))
-            .collect(Collectors.toList()));
+        StateTestUtils.parseBalances(expected.getValidatorBalances()),
+        actual.getValidatorBalances().listCopy());
   }
 
   private Optional<String> compareSlashedBalances() {
@@ -156,10 +144,7 @@ public class StateComparator {
     }
 
     return assertLists(
-        expected.getLatestSlashedBalances().stream()
-            .map(UInt64::valueOf)
-            .map(Gwei::new)
-            .collect(Collectors.toList()),
+        StateTestUtils.parseBalances(expected.getLatestSlashedBalances()),
         actual.getLatestSlashedBalances().listCopy());
   }
 
@@ -169,19 +154,7 @@ public class StateComparator {
     }
 
     List<ValidatorRecord> expectedValidators =
-        expected.getValidatorRegistry().stream()
-            .map(
-                (el) -> {
-                  return new ValidatorRecord(
-                      BLSPubkey.fromHexString(el.getPubkey()),
-                      Hash32.fromHexString(el.getWithdrawalCredentials()),
-                      EpochNumber.castFrom(UInt64.valueOf(el.getActivationEpoch())),
-                      EpochNumber.castFrom(UInt64.valueOf(el.getExitEpoch())),
-                      EpochNumber.castFrom(UInt64.valueOf(el.getWithdrawableEpoch())),
-                      el.getInitiatedExit(),
-                      el.getSlashed());
-                })
-            .collect(Collectors.toList());
+        StateTestUtils.parseValidatorRegistry(expected.getValidatorRegistry());
     return assertLists(expectedValidators, actual.getValidatorRegistry().listCopy());
   }
 
@@ -191,9 +164,7 @@ public class StateComparator {
     }
 
     List<PendingAttestation> expectedAttestations =
-        expected.getCurrentEpochAttestations().stream()
-            .map(this::deserializeAttestation)
-            .collect(Collectors.toList());
+        StateTestUtils.parsePendingAttestations(expected.getCurrentEpochAttestations());
     return assertLists(expectedAttestations, actual.getCurrentEpochAttestations().listCopy());
   }
 
@@ -202,10 +173,7 @@ public class StateComparator {
       return Optional.empty();
     }
 
-    List<Hash32> expectedRoots =
-        expected.getHistoricalRoots().stream()
-            .map(Hash32::fromHexString)
-            .collect(Collectors.toList());
+    List<Hash32> expectedRoots = StateTestUtils.parseHashes(expected.getHistoricalRoots());
     return assertLists(expectedRoots, actual.getHistoricalRoots().listCopy());
   }
 
@@ -214,10 +182,7 @@ public class StateComparator {
       return Optional.empty();
     }
 
-    List<Hash32> expectedRandaoMixes =
-        expected.getLatestRandaoMixes().stream()
-            .map(Hash32::fromHexString)
-            .collect(Collectors.toList());
+    List<Hash32> expectedRandaoMixes = StateTestUtils.parseHashes(expected.getLatestRandaoMixes());
     return assertLists(expectedRandaoMixes, actual.getLatestRandaoMixes().listCopy());
   }
 
@@ -226,10 +191,7 @@ public class StateComparator {
       return Optional.empty();
     }
 
-    List<Hash32> expectedRoots =
-        expected.getLatestStateRoots().stream()
-            .map(Hash32::fromHexString)
-            .collect(Collectors.toList());
+    List<Hash32> expectedRoots = StateTestUtils.parseHashes(expected.getLatestStateRoots());
     return assertLists(expectedRoots, actual.getLatestStateRoots().listCopy());
   }
 
@@ -238,10 +200,7 @@ public class StateComparator {
       return Optional.empty();
     }
 
-    List<Hash32> expectedRoots =
-        expected.getLatestActiveIndexRoots().stream()
-            .map(Hash32::fromHexString)
-            .collect(Collectors.toList());
+    List<Hash32> expectedRoots = StateTestUtils.parseHashes(expected.getLatestActiveIndexRoots());
     return assertLists(expectedRoots, actual.getLatestActiveIndexRoots().listCopy());
   }
 
@@ -252,39 +211,8 @@ public class StateComparator {
 
     // FIXME: already modified by Michael, it couldn't match the test fixtures
     List<Crosslink> expectedCrosslinks =
-        expected.getLatestCrosslinks().stream()
-            .map(
-                (el) -> {
-                  return new Crosslink(
-                      EpochNumber.castFrom(UInt64.valueOf(el.getEpoch())),
-                      Hash32.fromHexString(el.getCrosslinkDataRoot()));
-                })
-            .collect(Collectors.toList());
+        StateTestUtils.parseCrosslinks(expected.getLatestCrosslinks());
     return assertLists(expectedCrosslinks, actual.getCurrentCrosslinks().listCopy());
-  }
-
-  private PendingAttestation deserializeAttestation(
-      StateTestCase.BeaconStateData.AttestationData attestationData) {
-    AttestationData attestationData1 =
-        new AttestationData(
-            SlotNumber.castFrom(UInt64.valueOf(attestationData.getData().getSlot())),
-            Hash32.fromHexString(attestationData.getData().getBeaconBlockRoot()),
-            EpochNumber.castFrom(UInt64.valueOf(attestationData.getData().getSourceEpoch())),
-            Hash32.fromHexString(attestationData.getData().getSourceRoot()),
-            Hash32.fromHexString(attestationData.getData().getTargetRoot()),
-            ShardNumber.of(attestationData.getData().getShard()),
-            new Crosslink(
-                EpochNumber.castFrom(
-                    UInt64.valueOf(attestationData.getData().getPreviousCrosslink().getEpoch())),
-                Hash32.fromHexString(
-                    attestationData.getData().getPreviousCrosslink().getCrosslinkDataRoot())),
-            Hash32.fromHexString(attestationData.getData().getCrosslinkDataRoot()));
-
-    return new PendingAttestation(
-        Bitfield.of(BytesValue.fromHexString(attestationData.getAggregationBitfield())),
-        attestationData1,
-        Bitfield.of(BytesValue.fromHexString(attestationData.getCustodyBitfield())),
-        SlotNumber.castFrom(UInt64.valueOf(attestationData.getInclusionSlot())));
   }
 
   private Optional<String> comparePreviousEpochAttestations() {
@@ -293,9 +221,7 @@ public class StateComparator {
     }
 
     List<PendingAttestation> expectedAttestations =
-        expected.getPreviousEpochAttestations().stream()
-            .map(this::deserializeAttestation)
-            .collect(Collectors.toList());
+        StateTestUtils.parsePendingAttestations(expected.getPreviousEpochAttestations());
     return assertLists(expectedAttestations, actual.getPreviousEpochAttestations().listCopy());
   }
 
@@ -352,7 +278,7 @@ public class StateComparator {
 
     return assertEquals(
         expected.getCurrentShufflingStartShard(),
-        actual.getCurrentShufflingStartShard().intValue());
+        actual.getCurrentShufflingStartShard().getValue());
   }
 
   private Optional<String> comparePreviousJustifiedEpoch() {
@@ -412,7 +338,7 @@ public class StateComparator {
 
     return assertEquals(
         expected.getPreviousShufflingStartShard(),
-        actual.getPreviousShufflingStartShard().intValue());
+        actual.getPreviousShufflingStartShard().getValue());
   }
 
   private Optional<String> compareDepositIndex() {
@@ -420,7 +346,7 @@ public class StateComparator {
       return Optional.empty();
     }
 
-    return assertEquals(expected.getDepositIndex(), actual.getDepositIndex().intValue());
+    return assertEquals(expected.getDepositIndex(), actual.getDepositIndex().getValue());
   }
 
   private Optional<String> compareEth1DataVotes() {
@@ -457,12 +383,7 @@ public class StateComparator {
       return Optional.empty();
     }
 
-    return assertEquals(
-        new Fork(
-            Bytes4.fromHexString(expected.getFork().getPreviousVersion()),
-            Bytes4.fromHexString(expected.getFork().getCurrentVersion()),
-            EpochNumber.castFrom(UInt64.valueOf(expected.getFork().getEpoch()))),
-        actual.getFork());
+    return assertEquals(StateTestUtils.parseFork(expected.getFork()), actual.getFork());
   }
 
   private Optional<String> compareJustificationBitfield() {
@@ -471,7 +392,7 @@ public class StateComparator {
     }
 
     return assertEquals(
-        Bitfield64.fromBytesLittleEndian(Bytes8.fromHexString(expected.getJustificationBitfield())),
+        new Bitfield64(UInt64.valueOf(expected.getJustificationBitfield())),
         actual.getJustificationBitfield());
   }
 
@@ -481,15 +402,7 @@ public class StateComparator {
     }
 
     BeaconBlockHeader expectedHeader =
-        new BeaconBlockHeader(
-            SlotNumber.castFrom(UInt64.valueOf(expected.getLatestBlockHeader().getSlot())),
-            Hash32.fromHexString(expected.getLatestBlockHeader().getPreviousBlockRoot()),
-            Hash32.fromHexString(expected.getLatestBlockHeader().getStateRoot()),
-            Hash32.fromHexString(expected.getLatestBlockHeader().getBlockBodyRoot()),
-            expected.getLatestBlockHeader().getSignature() == null
-                ? BLSSignature.ZERO
-                : BLSSignature.wrap(
-                    Bytes96.fromHexString(expected.getLatestBlockHeader().getSignature())));
+        StateTestUtils.parseBeaconBlockHeader(expected.getLatestBlockHeader());
 
     return assertEquals(expectedHeader, actual.getLatestBlockHeader());
   }
@@ -499,10 +412,7 @@ public class StateComparator {
       return Optional.empty();
     }
 
-    Eth1Data expectedData =
-        new Eth1Data(
-            Hash32.fromHexString(expected.getLatestEth1Data().getDepositRoot()),
-            Hash32.fromHexString(expected.getLatestEth1Data().getBlockHash()));
+    Eth1Data expectedData = StateTestUtils.parseEth1Data(expected.getLatestEth1Data());
     return assertEquals(expectedData, actual.getLatestEth1Data());
   }
 }
