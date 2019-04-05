@@ -26,12 +26,12 @@ public class ListAccessor extends AbstractListAccessor {
   }
 
   @Override
-  public Object getChild(Object complexObject, int index) {
+  public Object getChildValue(Object complexObject, int index) {
     return ((List) complexObject).get((int) index);
   }
 
   @Override
-  public InstanceBuilder createInstanceBuilder(SSZListType listType) {
+  public ListInstanceBuilder createInstanceBuilder(SSZField listType) {
     return new SimpleInstanceBuilder() {
       @Override
       protected Object buildImpl(List<Object> children) {

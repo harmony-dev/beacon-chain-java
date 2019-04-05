@@ -23,7 +23,7 @@ public class SSZBasicType implements SSZType {
   }
 
   @Override
-  public long getSize() {
+  public int getSize() {
     return getValueCodec().getSize(getTypeDescriptor());
   }
 

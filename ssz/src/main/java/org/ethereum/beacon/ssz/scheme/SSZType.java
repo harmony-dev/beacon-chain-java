@@ -4,7 +4,7 @@ import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
 
 public interface SSZType {
 
-  long VARIABLE_SIZE = -1;
+  int VARIABLE_SIZE = -1;
 
   default boolean isBasicType() {
     return false;
@@ -26,7 +26,7 @@ public interface SSZType {
     return !isFixedSize();
   }
 
-  long getSize();
+  int getSize();
 
   SSZField getTypeDescriptor();
 

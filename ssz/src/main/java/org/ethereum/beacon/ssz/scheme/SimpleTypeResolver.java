@@ -1,7 +1,7 @@
 package org.ethereum.beacon.ssz.scheme;
 
 import java.util.Optional;
-import org.ethereum.beacon.ssz.ExternalResolver;
+import org.ethereum.beacon.ssz.ExternalVarResolver;
 import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
 import org.ethereum.beacon.ssz.SSZSchemeException;
 import org.ethereum.beacon.ssz.type.SSZCodec;
@@ -11,12 +11,12 @@ import org.ethereum.beacon.ssz.type.SSZListAccessor;
 public class SimpleTypeResolver implements TypeResolver {
 
   private final AccessorResolver accessorResolver;
-  private final ExternalResolver externalResolver;
+  private final ExternalVarResolver externalVarResolver;
 
   public SimpleTypeResolver(AccessorResolver accessorResolver,
-      ExternalResolver externalResolver) {
+      ExternalVarResolver externalVarResolver) {
     this.accessorResolver = accessorResolver;
-    this.externalResolver = externalResolver;
+    this.externalVarResolver = externalVarResolver;
   }
 
   @Override
@@ -49,8 +49,8 @@ public class SimpleTypeResolver implements TypeResolver {
       return -1;
     }
     if (vectorSize.startsWith("${") && vectorSize.endsWith("}")) {
-      return externalResolver
-          .resolveRequired(vectorSize.substring(2, vectorSize.length() - 1), Number.class)
+      return externalVarResolver
+          .resolveMandatory(vectorSize.substring(2, vectorSize.length() - 1), Number.class)
           .intValue();
     }
     try {

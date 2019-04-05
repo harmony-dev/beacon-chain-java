@@ -1,6 +1,7 @@
-package org.ethereum.beacon.ssz;
+package org.ethereum.beacon.ssz.creator;
 
 import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
+import org.ethereum.beacon.ssz.SSZSchemeException;
 import org.javatuples.Pair;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
@@ -26,10 +27,10 @@ public class SettersObjCreator implements ObjectCreator {
    * @return Pair[success or not, created instance if success or null otherwise]
    */
   @Override
-  public <C> Pair<Boolean, C> createObject(Class<? extends C> clazz,
+  public <C> C createObject(Class<? extends C> clazz,
       List<Pair<SSZField, Object>> fieldValuePairs) {
 
-    List<SSZSchemeBuilder.SSZScheme.SSZField> fields =
+    List<SSZField> fields =
         fieldValuePairs.stream().map(Pair::getValue0).collect(Collectors.toList());
     Object[] values = fieldValuePairs.stream().map(Pair::getValue1).toArray();
     // Find constructor with no params
@@ -37,7 +38,7 @@ public class SettersObjCreator implements ObjectCreator {
     try {
       constructor = clazz.getConstructor();
     } catch (NoSuchMethodException e) {
-      return new Pair<>(false, null);
+      return null;
     }
 
     // Create empty instance
@@ -45,7 +46,7 @@ public class SettersObjCreator implements ObjectCreator {
     try {
       result = constructor.newInstance();
     } catch (Exception e) {
-      return new Pair<>(false, null);
+      return null;
     }
 
     Map<String, Method> fieldSetters = new HashMap<>();
@@ -60,18 +61,18 @@ public class SettersObjCreator implements ObjectCreator {
 
     // Fill up field by field
     for (int i = 0; i < fields.size(); ++i) {
-      SSZSchemeBuilder.SSZScheme.SSZField currentField = fields.get(i);
+      SSZField currentField = fields.get(i);
       try { // Try to set by field assignment
         clazz.getField(currentField.name).set(result, values[i]);
       } catch (Exception e) {
         try { // Try to set using setter
           fieldSetters.get(currentField.name).invoke(result, values[i]);
         } catch (Exception ex) { // Cannot set the field
-          return new Pair<>(false, null);
+          return null;
         }
       }
     }
 
-    return new Pair<>(true, result);
+    return result;
   }
 }

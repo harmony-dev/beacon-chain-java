@@ -1,17 +1,10 @@
 package org.ethereum.beacon.test.runner;
 
 import org.ethereum.beacon.consensus.SpecHelpers;
-import org.ethereum.beacon.ssz.ConstructorObjCreator;
 import org.ethereum.beacon.ssz.SSZModelCreator;
 import org.ethereum.beacon.ssz.SSZSchemeBuilder;
 import org.ethereum.beacon.ssz.SSZSerializer;
-import org.ethereum.beacon.ssz.SSZSerializerBuilder;
-import org.ethereum.beacon.ssz.SettersObjCreator;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
-import org.ethereum.beacon.ssz.type.BooleanPrimitive;
-import org.ethereum.beacon.ssz.type.BytesPrimitive;
-import org.ethereum.beacon.ssz.type.StringPrimitive;
-import org.ethereum.beacon.ssz.type.UIntPrimitive;
 import org.ethereum.beacon.test.type.SszTestCase;
 import org.ethereum.beacon.test.type.TestCase;
 import tech.pegasys.artemis.util.bytes.BytesValue;

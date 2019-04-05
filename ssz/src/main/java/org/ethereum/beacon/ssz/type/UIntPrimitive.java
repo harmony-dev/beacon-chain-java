@@ -99,7 +99,7 @@ public class UIntPrimitive implements SSZCodec {
   }
 
   @Override
-  public long getSize(SSZField field) {
+  public int getSize(SSZField field) {
     return parseFieldType(field).size / 8;
   }
 

@@ -19,7 +19,7 @@ public class ArrayAccessor extends AbstractListAccessor {
   }
 
   @Override
-  public Object getChild(Object complexObject, int index) {
+  public Object getChildValue(Object complexObject, int index) {
     return Array.get(complexObject, index);
   }
 
@@ -32,15 +32,15 @@ public class ArrayAccessor extends AbstractListAccessor {
 
 
   @Override
-  public InstanceBuilder createInstanceBuilder(SSZListType listType) {
+  public ListInstanceBuilder createInstanceBuilder(SSZField compositeDescriptor) {
     return new SimpleInstanceBuilder() {
       @Override
       protected Object buildImpl(List<Object> children) {
-        if (!listType.getElementType().getClass().isPrimitive()) {
+        if (!getListElementType(compositeDescriptor).fieldType.isPrimitive()) {
           return children.toArray(new Object[children.size()]);
         } else {
-          if (listType.getElementType().getTypeDescriptor().fieldType == byte.class) {
-            Object ret = Array.newInstance(listType.getElementType().getClass());
+          if (getListElementType(compositeDescriptor).fieldType == byte.class) {
+            Object ret = Array.newInstance(byte.class);
             for (int i = 0; i < children.size(); i++) {
               Array.setByte(ret, i, (Byte) children.get(i));
             }

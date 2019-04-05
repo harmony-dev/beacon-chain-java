@@ -3,14 +3,10 @@ package org.ethereum.beacon.ssz;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import org.ethereum.beacon.ssz.scheme.AccessorResolverRegistry;
-import org.ethereum.beacon.ssz.scheme.SSZCompositeType;
 import org.ethereum.beacon.ssz.scheme.SSZContainerType;
 import org.ethereum.beacon.ssz.scheme.SSZListType;
 import org.ethereum.beacon.ssz.scheme.SSZType;
@@ -30,6 +26,17 @@ public class SSZTypeTest {
     @SSZ List<List<Integer>> c2;
     @SSZ List<Container2> c3;
     @SSZ private int a3;
+
+    public Container1(int a1, int a2, boolean b, List<Integer> c1,
+        List<List<Integer>> c2, List<Container2> c3, int a3) {
+      this.a1 = a1;
+      this.a2 = a2;
+      this.b = b;
+      this.c1 = c1;
+      this.c2 = c2;
+      this.c3 = c3;
+      this.a3 = a3;
+    }
 
     public boolean isB() {
       return b;
@@ -64,12 +71,22 @@ public class SSZTypeTest {
   public static class Container2 {
     @SSZ int a1;
     @SSZ Container3 b1;
-    @SSZ(vectorSize = "3")
+    @SSZ(vectorSize = "2")
     List<Container3> c1;
     @SSZ(vectorSize = "${testSize}")
     List<Integer> c2;
     @SSZ Container3 b2;
     @SSZ int a2;
+
+    public Container2(int a1, Container3 b1,
+        List<Container3> c1, List<Integer> c2, Container3 b2, int a2) {
+      this.a1 = a1;
+      this.b1 = b1;
+      this.c1 = c1;
+      this.c2 = c2;
+      this.b2 = b2;
+      this.a2 = a2;
+    }
 
     public int getA1() {
       return a1;
@@ -132,7 +149,7 @@ public class SSZTypeTest {
   @Test
   public void testTypeResolver1() {
     AccessorResolverRegistry resolverRegistry = new AccessorResolverRegistry();
-    TypeResolver typeResolver = new SimpleTypeResolver(resolverRegistry, s -> "testSize".equals(s) ? 2 : null);
+    TypeResolver typeResolver = new SimpleTypeResolver(resolverRegistry, s -> "testSize".equals(s) ? 1 : null);
 
     SSZType sszType = typeResolver.resolveSSZType(Container1.class);
     System.out.println(dumpType(sszType, ""));
@@ -142,33 +159,75 @@ public class SSZTypeTest {
   public void testSerializer1() {
     AccessorResolverRegistry resolverRegistry = new AccessorResolverRegistry();
     TypeResolver typeResolver = new SimpleTypeResolver(resolverRegistry,
-        s -> "testSize".equals(s) ? 2 : null);
+        s -> "testSize".equals(s) ? 3 : null);
     SSZSerializer serializer = new SSZSerializer(null, null, null, typeResolver);
 
-    Container1 c1 = new Container1();
-    c1.a1 = 0x11111111;
-    c1.a2 = 0x22222222;
-    c1.b = true;
-    c1.c1 = asList(0x1111, 0x2222, 0x3333);
-    c1.c2 = asList(asList(0x11, 0x22), emptyList(), asList(0x33));
-    c1.c3 = new ArrayList<>();
-    Container2 c2_1 = new Container2();
-    c2_1.a1 = 0x44444444;
-    c2_1.b1 = new Container3(0x5555, 0x6666);
-    c2_1.b2 = new Container3(0, 0);
-    c2_1.c1 = asList(new Container3(0x7777, 0x8888), new Container3(0x9999, 0xaaaa));
-    c2_1.c2 = emptyList();
-    c1.c3.add(c2_1);
-    Container2 c2_2 = new Container2();
-    c2_2.a1 = 0x55555555;
-    c2_2.b1 = new Container3(0xbbbb, 0xcccc);
-    c2_2.b2 = new Container3(0, 0);
-    c2_2.c1 = asList(new Container3(0xdddd, 0xeeee), new Container3(0xffff, 0x1111));
-    c2_2.c2 = emptyList();
-    c1.c3.add(c2_2);
-    c1.a3 = 0x33333333;
+    Container1 c1 = new Container1(
+      0x11111111,
+      0x22222222,
+      true,
+      asList(0x1111, 0x2222, 0x3333),
+      asList(asList(0x11, 0x22), emptyList(), asList(0x33)),
+      asList(
+        new Container2(
+          0x44444444,
+          new Container3(0x5555, 0x6666),
+          asList(new Container3(0x7777, 0x8888), new Container3(0x9999, 0xaaaa)),
+            asList(0x1111, 0x2222, 0x3333),
+          new Container3(0, 0),
+          0),
+        new Container2(
+          0x55555555,
+          new Container3(0xbbbb, 0xcccc),
+          asList(new Container3(0xdddd, 0xeeee), new Container3(0xffff, 0x1111)),
+            asList(0x1111, 0x2222, 0x3333),
+          new Container3(0, 0),
+          0)),
+      0x33333333);
 
     byte[] bytes = serializer.encode(c1);
     System.out.println(BytesValue.wrap(bytes));
+
+    Container1 res = serializer.decode1(bytes, Container1.class);
+    System.out.println(res);
+  }
+
+  @Test
+  public void testSerializer2() {
+    AccessorResolverRegistry resolverRegistry = new AccessorResolverRegistry();
+    TypeResolver typeResolver = new SimpleTypeResolver(resolverRegistry,
+        s -> "testSize".equals(s) ? 2 : null);
+    SSZSerializer serializer = new SSZSerializer(null, null, null, typeResolver);
+
+    Container3 c3 = new Container3(0x5555, 0x6666);
+
+    byte[] bytes = serializer.encode(c3);
+    System.out.println(BytesValue.wrap(bytes));
+
+    Container3 res = serializer.decode1(bytes, Container3.class);
+    System.out.println(res);
+  }
+
+  @Test
+  public void testSerializer3() {
+    AccessorResolverRegistry resolverRegistry = new AccessorResolverRegistry();
+    TypeResolver typeResolver = new SimpleTypeResolver(resolverRegistry,
+        s -> "testSize".equals(s) ? 3 : null);
+    SSZSerializer serializer = new SSZSerializer(null, null, null, typeResolver);
+
+    Container2 c2 = new Container2(
+        0x44444444,
+        new Container3(0x5555, 0x6666),
+        asList(new Container3(0x7777, 0x8888), new Container3(0x9999, 0xaaaa)),
+        asList(0x1111, 0x2222, 0x3333),
+        new Container3(0xbbbb, 0xcccc),
+        0xdddd);
+
+    byte[] bytes = serializer.encode(c2);
+    System.out.println(BytesValue.wrap(bytes));
+
+    Container2 res = serializer.decode1(bytes, Container2.class);
+    System.out.println(res);
   }
 }
+

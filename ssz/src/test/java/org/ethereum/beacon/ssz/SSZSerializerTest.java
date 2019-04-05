@@ -5,6 +5,8 @@ import net.consensys.cava.bytes.Bytes;
 import net.consensys.cava.ssz.SSZ;
 import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
+import org.ethereum.beacon.ssz.creator.ConstructorObjCreator;
+import org.ethereum.beacon.ssz.creator.SSZModelFactory;
 import org.ethereum.beacon.ssz.fixtures.AttestationRecord;
 import org.ethereum.beacon.ssz.fixtures.Bitfield;
 import org.ethereum.beacon.ssz.fixtures.Sign;
@@ -98,7 +100,7 @@ public class SSZSerializerTest {
     builder
         .withSSZSchemeBuilder(new SSZAnnotationSchemeBuilder().withLogger(Logger.getLogger("test")))
 //        .withSSZCodecResolver(new SSZCodecRoulette())
-        .withSSZModelFactory(new SSZModelCreator().registerObjCreator(new ConstructorObjCreator()));
+        .withSSZModelFactory(new SSZModelFactory(new ConstructorObjCreator()));
     builder.addPrimitivesCodecs();
     SSZSerializer serializer = builder.build();
 

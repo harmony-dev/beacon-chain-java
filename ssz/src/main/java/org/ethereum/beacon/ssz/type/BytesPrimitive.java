@@ -69,7 +69,7 @@ public class BytesPrimitive implements SSZCodec {
   }
 
   @Override
-  public long getSize(SSZField field) {
+  public int getSize(SSZField field) {
     Integer size = parseFieldType(field).size;
     return size == null ? -1 : size;
   }

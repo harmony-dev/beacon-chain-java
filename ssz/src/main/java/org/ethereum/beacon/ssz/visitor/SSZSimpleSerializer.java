@@ -3,13 +3,16 @@ package org.ethereum.beacon.ssz.visitor;
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.BiFunction;
 import java.util.function.Function;
+import org.ethereum.beacon.ssz.SSZSerializeException;
 import org.ethereum.beacon.ssz.scheme.SSZBasicType;
 import org.ethereum.beacon.ssz.scheme.SSZCompositeType;
+import org.ethereum.beacon.ssz.scheme.SSZListType;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.bytes.BytesValues;
 
-public class SSZSimpleSerializer implements SSZVisitor<SSZSimpleSerializer.SSZSerializerResult> {
+public class SSZSimpleSerializer implements SSZVisitor<SSZSimpleSerializer.SSZSerializerResult, Object> {
 
   public static class SSZSerializerResult {
     BytesValue serializedBody;
@@ -51,14 +54,27 @@ public class SSZSimpleSerializer implements SSZVisitor<SSZSimpleSerializer.SSZSe
   }
 
   @Override
+  public SSZSerializerResult visitList(SSZListType type, Object param,
+      BiFunction<Integer, Object, SSZSerializerResult> childVisitor) {
+
+    if (type.isVector()) {
+      if (type.getChildrenCount(param) != type.getVectorLength()) {
+        throw new SSZSerializeException("Vector type length doesn't match actual list length: "
+            + type.getVectorLength() + " !=  " + type.getChildrenCount(param) + " for " + type.toStringHelper());
+      }
+    }
+    return visitComposite(type, param, childVisitor);
+  }
+
+  @Override
   public SSZSerializerResult visitComposite(SSZCompositeType type, Object rawValue,
-      Function<Integer, SSZSerializerResult> childVisitor) {
+      BiFunction<Integer, Object, SSZSerializerResult> childVisitor) {
 
     List<BytesValue> childSerializations = new ArrayList<>();
     boolean fixedSize = type.isFixedSize();
     int length = 0;
     for (int i = 0; i < type.getChildrenCount(rawValue); i++) {
-      SSZSerializerResult res = childVisitor.apply(i);
+      SSZSerializerResult res = childVisitor.apply(i, type.getChild(rawValue, i));
       childSerializations.add(res.serializedLength);
       childSerializations.add(res.serializedBody);
       fixedSize &= res.isFixedSize();

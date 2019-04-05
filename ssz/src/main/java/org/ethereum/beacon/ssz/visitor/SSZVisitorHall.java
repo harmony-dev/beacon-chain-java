@@ -31,20 +31,21 @@ public class SSZVisitorHall {
     this.containerMembersFilter = containerMembersFilter;
   }
 
-  public  <ResultType> ResultType handleAny(SSZType type, Object value, SSZVisitor<ResultType> visitor) {
+  public  <ResultType, ParamType> ResultType handleAny(
+      SSZType type, ParamType value, SSZVisitor<ResultType, ParamType> visitor) {
+
     if (type.isBasicType()) {
       return visitor.visitBasicValue((SSZBasicType) type, value);
     } else if (type.isList()) {
       SSZListType listType = (SSZListType) type;
-      return visitor.visitComposite(listType, value, idx ->
-        handleAny(listType.getElementType(), listType.getChild(value, idx), visitor));
+      return visitor.visitList(listType, value, (idx, param) ->
+        handleAny(listType.getElementType(), param, visitor));
 
     } else if (type.isContainer()) {
       SSZContainerType containerType = (SSZContainerType) type;
       // TODO handle filter
-      return visitor.visitComposite(containerType, value, idx ->
-          handleAny(containerType.getChildTypes().get(idx),
-              containerType.getChild(value, idx), visitor));
+      return visitor.visitComposite(containerType, value, (idx, param) ->
+          handleAny(containerType.getChildTypes().get(idx), param, visitor));
     } else {
       throw new IllegalArgumentException("Unknown type: " + type);
     }

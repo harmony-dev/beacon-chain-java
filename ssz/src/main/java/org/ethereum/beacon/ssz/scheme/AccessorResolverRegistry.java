@@ -8,8 +8,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import org.ethereum.beacon.ssz.creator.ConstructorObjCreator;
 import org.ethereum.beacon.ssz.SSZAnnotationSchemeBuilder;
+import org.ethereum.beacon.ssz.creator.SSZModelFactory;
 import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
+import org.ethereum.beacon.ssz.creator.SettersObjCreator;
 import org.ethereum.beacon.ssz.type.BasicContainerAccessor;
 import org.ethereum.beacon.ssz.type.BooleanPrimitive;
 import org.ethereum.beacon.ssz.type.BytesPrimitive;
@@ -32,7 +35,10 @@ public class AccessorResolverRegistry implements AccessorResolver {
   );
 
   List<SSZContainerAccessor> containerAccessors =
-      Arrays.asList(new BasicContainerAccessor(new SSZAnnotationSchemeBuilder(true)));
+      Arrays.asList(
+          new BasicContainerAccessor(
+              new SSZAnnotationSchemeBuilder(true),
+              new SSZModelFactory(new ConstructorObjCreator(), new SettersObjCreator())));
 
   {
     registerCodec(new UIntPrimitive());

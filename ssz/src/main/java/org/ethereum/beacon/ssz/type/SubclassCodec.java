@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import net.consensys.cava.ssz.BytesSSZReaderProxy;
-import org.ethereum.beacon.ssz.ConstructorObjCreator;
+import org.ethereum.beacon.ssz.creator.ConstructorObjCreator;
 import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 
@@ -34,7 +34,7 @@ public class SubclassCodec implements SSZCodec {
   }
 
   @Override
-  public long getSize(SSZField field) {
+  public int getSize(SSZField field) {
     return superclassCodec.getSize(field);
   }
 
@@ -56,7 +56,7 @@ public class SubclassCodec implements SSZCodec {
     SSZField serializableField = getSerializableField(field);
     Object serializableTypeObject = superclassCodec.decode(serializableField, reader);
     return ConstructorObjCreator.createInstanceWithConstructor(
-        field.fieldType, new Class[] {serializableField.fieldType}, new Object[] {serializableTypeObject}).getValue1();
+        field.fieldType, new Class[] {serializableField.fieldType}, new Object[] {serializableTypeObject});
   }
 
   @Override
@@ -70,7 +70,7 @@ public class SubclassCodec implements SSZCodec {
                 ConstructorObjCreator.createInstanceWithConstructor(
                     field.fieldType,
                     new Class[] {serializableField.fieldType},
-                    new Object[] {serializableTypeObject}).getValue1())
+                    new Object[] {serializableTypeObject}))
         .collect(Collectors.toList());
   }
 

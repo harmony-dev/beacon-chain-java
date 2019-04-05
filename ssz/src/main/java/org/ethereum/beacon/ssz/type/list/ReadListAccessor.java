@@ -1,13 +1,8 @@
 package org.ethereum.beacon.ssz.type.list;
 
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.lang.reflect.WildcardType;
 import java.util.List;
 import java.util.function.Function;
 import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
-import org.ethereum.beacon.ssz.scheme.SSZListType;
-import org.ethereum.beacon.ssz.type.SSZListAccessor;
 import tech.pegasys.artemis.util.collections.ReadList;
 
 public class ReadListAccessor extends AbstractListAccessor {
@@ -36,17 +31,17 @@ public class ReadListAccessor extends AbstractListAccessor {
   }
 
   @Override
-  public Object getChild(Object complexObject, int index) {
+  public Object getChildValue(Object complexObject, int index) {
     return ((ReadList) complexObject).get(index);
   }
 
   @Override
-  public InstanceBuilder createInstanceBuilder(SSZListType listType) {
+  public ListInstanceBuilder createInstanceBuilder(SSZField listType) {
     return new SimpleInstanceBuilder() {
       @Override
       protected Object buildImpl(List<Object> children) {
         return ReadList.wrap(children, resolveIndexConverter((Class<?>)
-            listType.getTypeDescriptor().fieldGenericType.getActualTypeArguments()[0]));
+            listType.fieldGenericType.getActualTypeArguments()[0]));
       }
     };
   }

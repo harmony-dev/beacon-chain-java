@@ -10,14 +10,14 @@ public class SSZContainerType implements SSZCompositeType {
   private final TypeResolver typeResolver;
   private final SSZField descriptor;
   private final SSZContainerAccessor containerAccessor;
-  private final SSZContainerAccessor.Accessor accessor;
+  private final SSZContainerAccessor.ContainerAccessor accessor;
 
   public SSZContainerType(TypeResolver typeResolver,
       SSZField descriptor, SSZContainerAccessor accessor) {
     this.typeResolver = typeResolver;
     this.descriptor = descriptor;
     this.containerAccessor = accessor;
-    this.accessor = accessor.createAccessor(descriptor);
+    this.accessor = accessor.getAccessor(descriptor);
   }
 
   @Override
@@ -26,8 +26,8 @@ public class SSZContainerType implements SSZCompositeType {
   }
 
   @Override
-  public long getSize() {
-    long size = 0;
+  public int getSize() {
+    int size = 0;
     for (SSZType child : getChildTypes()) {
       long childSize = child.getSize();
       if (childSize < 0) {

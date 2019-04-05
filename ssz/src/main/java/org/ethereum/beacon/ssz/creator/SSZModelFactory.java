@@ -1,21 +1,26 @@
-package org.ethereum.beacon.ssz;
+package org.ethereum.beacon.ssz.creator;
 
-import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
-import org.javatuples.Pair;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.stream.Collectors;
+import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
+import org.ethereum.beacon.ssz.SSZSchemeException;
+import org.javatuples.Pair;
+import java.util.List;
 
-/**
- * Simple implementation of {@link SSZModelFactory}
- *
- * <p>Uses ObjectCreators to create object with defined fields and their values one by one until
- * success. If no success at all was achieved, throws {@link net.consensys.cava.ssz.SSZException}
- */
-public class SSZModelCreator implements SSZModelFactory {
+/** Creates instance of SSZ model class */
+public class SSZModelFactory implements ObjectCreator {
 
-  List<ObjectCreator> objectCreators = new ArrayList<>();
+  private List<ObjectCreator> objectCreators = new ArrayList<>();
+
+  public SSZModelFactory(List<ObjectCreator> creators) {
+    this.objectCreators = new ArrayList<>(creators);
+  }
+
+  public SSZModelFactory(ObjectCreator... creators) {
+    this(Arrays.asList(creators));
+  }
+
 
   /**
    * Registers object creator which will be used for ssz model instantiation
@@ -25,7 +30,6 @@ public class SSZModelCreator implements SSZModelFactory {
    * @param objectCreator Object creator
    * @return updated this
    */
-  @Override
   public SSZModelFactory registerObjCreator(ObjectCreator objectCreator) {
     objectCreators.add(objectCreator);
     return this;
@@ -39,13 +43,11 @@ public class SSZModelCreator implements SSZModelFactory {
    * @return created instance or {@link net.consensys.cava.ssz.SSZException} if failed to create it
    */
   @Override
-  public <C> C create(Class<? extends C> clazz, List<Pair<SSZField, Object>> fieldValuePairs) {
+  public <C> C createObject(Class<? extends C> clazz, List<Pair<SSZField, Object>> fieldValuePairs) {
     for (ObjectCreator objectCreator : objectCreators) {
-      Pair<Boolean, C> attempt = objectCreator.createObject(clazz, fieldValuePairs);
-      if (!attempt.getValue0()) {
-        continue;
-      } else {
-        return attempt.getValue1();
+      C attempt = objectCreator.createObject(clazz, fieldValuePairs);
+      if (attempt != null) {
+        return attempt;
       }
     }
 

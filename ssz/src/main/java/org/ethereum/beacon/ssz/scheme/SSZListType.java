@@ -33,7 +33,7 @@ public class SSZListType implements SSZCompositeType {
   }
 
   @Override
-  public long getSize() {
+  public int getSize() {
     if (!isVector() || getElementType().isVariableSize()) {
       return VARIABLE_SIZE;
     }
@@ -55,7 +55,7 @@ public class SSZListType implements SSZCompositeType {
 
   @Override
   public Object getChild(Object value, int idx) {
-    return getAccessor().getChild(value, idx);
+    return getAccessor().getChildValue(value, idx);
   }
 
   @Override

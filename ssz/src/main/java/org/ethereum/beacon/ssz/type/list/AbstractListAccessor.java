@@ -10,7 +10,7 @@ import org.ethereum.beacon.ssz.type.SSZListAccessor;
 
 public abstract class AbstractListAccessor implements SSZListAccessor {
 
-  abstract class SimpleInstanceBuilder implements InstanceBuilder {
+  abstract class SimpleInstanceBuilder implements ListInstanceBuilder {
     private List<Object> children = new ArrayList<>();
 
     @Override

@@ -2,6 +2,7 @@ package org.ethereum.beacon.ssz.visitor;
 
 import java.util.Arrays;
 import java.util.SortedSet;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import org.ethereum.beacon.ssz.scheme.SSZCompositeType;
 import org.ethereum.beacon.ssz.scheme.SSZListType;
@@ -24,7 +25,7 @@ public class SSZIncrementalHasher extends SSZSimpleHasher {
 
   @Override
   public MerkleTrie visitComposite(SSZCompositeType type, Object rawValue,
-      Function<Integer, MerkleTrie> childVisitor) {
+      BiFunction<Integer, Object, MerkleTrie> childVisitor) {
     if (rawValue instanceof Incremental) {
       SSZIncrementalTracker tracker = ((Incremental) rawValue).getTracker();
       if (tracker.merkleTree == null) {
@@ -50,7 +51,7 @@ public class SSZIncrementalHasher extends SSZSimpleHasher {
   private MerkleTrie updateNonPackedTrie(
       SSZCompositeType type,
       Object value,
-      Function<Integer, MerkleTrie> childVisitor,
+      BiFunction<Integer, Object, MerkleTrie> childVisitor,
       MerkleTrie merkleTree,
       SortedSet<Integer> elementsUpdated) {
     MerkleTrie newTrie = copyWithSize(merkleTree, type.getChildrenCount(value));
@@ -58,7 +59,7 @@ public class SSZIncrementalHasher extends SSZSimpleHasher {
     int pos = newTrie.nodes.length / 2;
 
     for (int i: elementsUpdated) {
-      MerkleTrie childHash = childVisitor.apply(i);
+      MerkleTrie childHash = childVisitor.apply(i, type.getChild(value, i));
       newTrie.nodes[pos + i] = childHash.getFinalRoot();
     }
 

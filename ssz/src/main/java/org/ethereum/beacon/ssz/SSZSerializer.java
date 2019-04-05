@@ -9,13 +9,17 @@ import net.consensys.cava.bytes.Bytes;
 import net.consensys.cava.ssz.BytesSSZReaderProxy;
 import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
+import org.ethereum.beacon.ssz.creator.SSZModelFactory;
 import org.ethereum.beacon.ssz.scheme.SSZType;
 import org.ethereum.beacon.ssz.scheme.TypeResolver;
+import org.ethereum.beacon.ssz.visitor.SSZSimpleDeserializer;
+import org.ethereum.beacon.ssz.visitor.SSZSimpleDeserializer.DecodeResult;
 import org.ethereum.beacon.ssz.visitor.SSZSimpleSerializer;
 import org.ethereum.beacon.ssz.visitor.SSZSimpleSerializer.SSZSerializerResult;
 import org.ethereum.beacon.ssz.visitor.SSZVisitorHall;
 import org.ethereum.beacon.ssz.visitor.SSZVisitorHandler;
 import org.javatuples.Pair;
+import tech.pegasys.artemis.util.bytes.BytesValue;
 
 /** SSZ serializer/deserializer */
 public class SSZSerializer implements BytesSerializer, SSZVisitorHandler<SSZSimpleSerializer.SSZSerializerResult> {
@@ -87,6 +91,14 @@ public class SSZSerializer implements BytesSerializer, SSZVisitorHandler<SSZSimp
     return sszVisitorHall.handleAny(sszType, value, new SSZSimpleSerializer());
   }
 
+  public <C> C decode1(byte[] data, Class<? extends C> clazz) {
+    DecodeResult decodeResult = sszVisitorHall.handleAny(
+        typeResolver.resolveSSZType(new SSZField(clazz)),
+        BytesValue.wrap(data),
+        new SSZSimpleDeserializer());
+    return (C) decodeResult.decodedInstance;
+  }
+
   /**
    * Restores data instance from serialization data using {@link SSZModelFactory}
    *
@@ -119,6 +131,6 @@ public class SSZSerializer implements BytesSerializer, SSZVisitorHandler<SSZSimp
               clazz));
     }
 
-    return sszModelFactory.create(clazz, fieldValuePairs);
+    return sszModelFactory.createObject(clazz, fieldValuePairs);
   }
 }

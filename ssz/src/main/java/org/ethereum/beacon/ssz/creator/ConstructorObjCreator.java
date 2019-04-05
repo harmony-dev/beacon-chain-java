@@ -1,8 +1,7 @@
-package org.ethereum.beacon.ssz;
+package org.ethereum.beacon.ssz.creator;
 
 import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
 import org.javatuples.Pair;
-import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.util.List;
 
@@ -10,14 +9,14 @@ import java.util.List;
 public class ConstructorObjCreator implements ObjectCreator {
 
 
-  public static <C> Pair<Boolean, C> createInstanceWithConstructor(
+  public static <C> C createInstanceWithConstructor(
       Class<? extends C> clazz, Class[] params, Object[] values) {
     // Find constructor for params
     Constructor<? extends C> constructor;
     try {
       constructor = clazz.getConstructor(params);
     } catch (NoSuchMethodException e) {
-      return new Pair<>(false, null);
+      return null;
     }
 
     // Invoke constructor using values as params
@@ -25,10 +24,10 @@ public class ConstructorObjCreator implements ObjectCreator {
     try {
       result = constructor.newInstance(values);
     } catch (Exception e) {
-      return new Pair<>(false, null);
+      return null;
     }
 
-    return new Pair<>(true, result);
+    return result;
   }
 
   /**
@@ -39,12 +38,13 @@ public class ConstructorObjCreator implements ObjectCreator {
    * @return Pair[success or not, created instance if success or null otherwise]
    */
   @Override
-  public <C> Pair<Boolean, C> createObject(Class<? extends C> clazz,
+  public <C> C createObject(Class<? extends C> clazz,
       List<Pair<SSZField, Object>> fieldValuePairs) {
     Class[] params = new Class[fieldValuePairs.size()];
     for (int i = 0; i < fieldValuePairs.size(); i++) {
-      Pair<SSZSchemeBuilder.SSZScheme.SSZField, Object> pair = fieldValuePairs.get(i);
-      SSZSchemeBuilder.SSZScheme.SSZField field = pair.getValue0();
+      Pair<SSZField, Object> pair = fieldValuePairs.get(i);
+      SSZField field = pair.getValue0();
+      params[i] = field.fieldType;
 //      switch (field.multipleType) {
 //        case LIST:
 //          {

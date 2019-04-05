@@ -3,6 +3,9 @@ package org.ethereum.beacon.ssz;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import org.ethereum.beacon.ssz.annotation.SSZTransient;
+import org.ethereum.beacon.ssz.creator.ConstructorObjCreator;
+import org.ethereum.beacon.ssz.creator.SSZModelFactory;
+import org.ethereum.beacon.ssz.creator.SettersObjCreator;
 import org.ethereum.beacon.ssz.type.BooleanPrimitive;
 import org.ethereum.beacon.ssz.type.BytesPrimitive;
 import org.ethereum.beacon.ssz.type.SSZCodec;
@@ -125,7 +128,7 @@ public class SSZSerializerBuilder {
   }
 
   /**
-   * Uses {@link SSZModelCreator} which tries to create model instance by one constructor with all
+   * Uses {@link SSZModelFactory} which tries to create model instance by one constructor with all
    * input fields included. If such public constructor is not found, it tries to instantiate object
    * with empty constructor and set all fields directly or using standard setter.
    *
@@ -163,9 +166,7 @@ public class SSZSerializerBuilder {
   }
 
   private SSZModelFactory createDefaultModelCreator() {
-    return new SSZModelCreator()
-        .registerObjCreator(new ConstructorObjCreator())
-        .registerObjCreator(new SettersObjCreator());
+    return new SSZModelFactory(new ConstructorObjCreator(),new SettersObjCreator());
   }
 
   /**

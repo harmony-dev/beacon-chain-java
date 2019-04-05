@@ -1,7 +1,6 @@
 package org.ethereum.beacon.ssz.type;
 
 import net.consensys.cava.ssz.BytesSSZReaderProxy;
-import org.ethereum.beacon.ssz.SSZSchemeBuilder;
 import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
 import org.ethereum.beacon.ssz.SSZSchemeException;
 import org.ethereum.beacon.ssz.SSZSerializer;
@@ -35,7 +34,7 @@ public interface SSZCodec {
    */
   Set<Class> getSupportedClasses();
 
-  long getSize(SSZField field);
+  int getSize(SSZField field);
 
   /**
    * Encodes field as SSZ type and writes it to output stream

@@ -2,23 +2,23 @@ package org.ethereum.beacon.ssz;
 
 import java.util.function.Function;
 
-public interface ExternalResolver extends Function<String, Object> {
+public interface ExternalVarResolver extends Function<String, Object> {
 
-  class ExternalVariableNotDefined extends RuntimeException {
+  class ExternalVariableNotDefined extends SSZSchemeException {
 
     ExternalVariableNotDefined(String s) {
       super(s);
     }
   }
 
-  class ExternalVariableInvalidType extends RuntimeException {
+  class ExternalVariableInvalidType extends SSZSchemeException {
 
     public ExternalVariableInvalidType(String message) {
       super(message);
     }
   }
 
-  default <T> T resolveRequired(String varName, Class<T> type) {
+  default <T> T resolveMandatory(String varName, Class<T> type) {
     Object ret = apply(varName);
     if (ret == null) {
       throw new ExternalVariableNotDefined("Mandatory variable not defined: " + varName);

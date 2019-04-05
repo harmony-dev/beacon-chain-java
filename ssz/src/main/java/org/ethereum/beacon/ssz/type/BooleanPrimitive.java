@@ -40,7 +40,7 @@ public class BooleanPrimitive implements SSZCodec {
 
 
   @Override
-  public long getSize(SSZField field) {
+  public int getSize(SSZField field) {
     return 1;
   }
 

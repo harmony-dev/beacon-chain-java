@@ -3,24 +3,26 @@ package org.ethereum.beacon.ssz.type;
 import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
 import org.ethereum.beacon.ssz.scheme.SSZListType;
 
-public interface SSZListAccessor {
+public interface SSZListAccessor extends SSZCompositeAccessor, SSZCompositeAccessor.CompositeAccessor{
 
-  interface InstanceBuilder {
+  interface ListInstanceBuilder extends CompositeInstanceBuilder {
 
     void addChild(Object childValue);
-
-    void setChild(int idx, Object childValue);
-
-    Object build();
   }
 
-  boolean isSupported(SSZField field);
-
+  @Override
   int getChildrenCount(Object value);
 
-  Object getChild(Object value, int idx);
+  @Override
+  Object getChildValue(Object value, int idx);
 
   SSZField getListElementType(SSZField field);
 
-  InstanceBuilder createInstanceBuilder(SSZListType listType);
+  @Override
+  ListInstanceBuilder createInstanceBuilder(SSZField listType);
+
+  @Override
+  default CompositeAccessor getAccessor(SSZField compositeDescriptor) {
+    return this;
+  }
 }
