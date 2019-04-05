@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -176,13 +177,12 @@ public class TestUtils {
     runTestsInResourceDirImpl(dir, testsType, testCaseRunner, Collections.emptySet());
   }
 
-  static <V extends TestSkeleton> void runTestsInResourceDirWithExclusion(
+  static <V extends TestSkeleton> void runTestsInResourceDir(
       Path dir,
       Class<? extends V> testsType,
       Function<TestCase, Optional<String>> testCaseRunner,
-      String... exclusions) {
-    runTestsInResourceDirImpl(
-        dir, testsType, testCaseRunner, new HashSet<>(Arrays.asList(exclusions)));
+      Exclusion exclusion) {
+    runTestsInResourceDirImpl(dir, testsType, testCaseRunner, exclusion.excludedTests);
   }
 
   private static <V extends TestSkeleton> void runTestsInResourceDirImpl(
@@ -200,5 +200,18 @@ public class TestUtils {
       }
     }
     assertFalse(failed);
+  }
+
+  public static class Exclusion {
+    private final Set<String> excludedTests;
+
+    private Exclusion(Set<String> excludedTests) {
+      this.excludedTests = excludedTests;
+    }
+
+    public static Exclusion of(String... names) {
+      assert names.length > 0;
+      return new Exclusion(new HashSet<>(Arrays.asList(names)));
+    }
   }
 }
