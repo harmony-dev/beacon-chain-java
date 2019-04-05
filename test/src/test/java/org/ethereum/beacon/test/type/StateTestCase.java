@@ -11,7 +11,7 @@ import org.ethereum.beacon.test.type.StateTestCase.BeaconStateData.AttestationDa
  * State test case <a
  * href="https://github.com/ethereum/eth2.0-tests/tree/master/state">https://github.com/ethereum/eth2.0-tests/tree/master/state</a>
  */
-public class StateTestCase implements TestCase {
+public class StateTestCase implements NamedTestCase {
   private String name;
   private SpecConstantsDataMerged config;
 
@@ -26,6 +26,7 @@ public class StateTestCase implements TestCase {
   @JsonProperty("expected_state")
   private BeaconStateData expectedState;
 
+  @Override
   public String getName() {
     return name;
   }

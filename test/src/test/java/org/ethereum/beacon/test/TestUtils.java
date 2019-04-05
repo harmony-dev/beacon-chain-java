@@ -1,13 +1,12 @@
 package org.ethereum.beacon.test;
 
+import static org.junit.Assert.assertFalse;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.base.Charsets;
 import com.google.common.io.CharStreams;
 import com.google.common.io.Resources;
-import org.ethereum.beacon.test.type.TestCase;
-import org.ethereum.beacon.test.type.TestSkeleton;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -22,8 +21,9 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import static org.junit.Assert.assertFalse;
+import org.ethereum.beacon.test.type.NamedTestCase;
+import org.ethereum.beacon.test.type.TestCase;
+import org.ethereum.beacon.test.type.TestSkeleton;
 
 public class TestUtils {
   static ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
@@ -92,12 +92,23 @@ public class TestUtils {
     int total = 0;
     for (TestCase testCase : test.getTestCases()) {
       ++total;
-      runTestCase(testCase, test, testCaseRunner)
-          .ifPresent(
-              str -> {
-                errors.append(str);
-                failed.incrementAndGet();
-              });
+      String name = testCase instanceof NamedTestCase
+          ? ((NamedTestCase) testCase).getName()
+          : "Test #" + (total - 1);
+
+      long s = System.nanoTime();
+      Optional<String> err = runTestCase(testCase, test, testCaseRunner);
+      long completionTime = System.nanoTime() - s;
+
+      if (err.isPresent()) {
+        errors.append(err.get());
+        failed.incrementAndGet();
+      }
+
+      System.out.println(
+          String.format(
+              "[%s] %s completed in %.3fs",
+              err.isPresent() ? "F" : "P", name, completionTime / 1_000_000_000d));
     }
 
     if (errors.length() == 0) {
