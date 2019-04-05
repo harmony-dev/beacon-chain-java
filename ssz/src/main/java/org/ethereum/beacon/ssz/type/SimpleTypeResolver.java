@@ -1,12 +1,12 @@
-package org.ethereum.beacon.ssz.scheme;
+package org.ethereum.beacon.ssz.type;
 
 import java.util.Optional;
 import org.ethereum.beacon.ssz.ExternalVarResolver;
 import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
 import org.ethereum.beacon.ssz.SSZSchemeException;
-import org.ethereum.beacon.ssz.type.SSZCodec;
-import org.ethereum.beacon.ssz.type.SSZContainerAccessor;
-import org.ethereum.beacon.ssz.type.SSZListAccessor;
+import org.ethereum.beacon.ssz.access.SSZCodec;
+import org.ethereum.beacon.ssz.access.SSZContainerAccessor;
+import org.ethereum.beacon.ssz.access.SSZListAccessor;
 
 public class SimpleTypeResolver implements TypeResolver {
 

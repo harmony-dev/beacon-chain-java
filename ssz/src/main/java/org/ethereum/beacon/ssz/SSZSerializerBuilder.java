@@ -6,11 +6,11 @@ import org.ethereum.beacon.ssz.annotation.SSZTransient;
 import org.ethereum.beacon.ssz.creator.ConstructorObjCreator;
 import org.ethereum.beacon.ssz.creator.SSZModelFactory;
 import org.ethereum.beacon.ssz.creator.SettersObjCreator;
-import org.ethereum.beacon.ssz.type.BooleanPrimitive;
-import org.ethereum.beacon.ssz.type.BytesPrimitive;
-import org.ethereum.beacon.ssz.type.SSZCodec;
-import org.ethereum.beacon.ssz.type.StringPrimitive;
-import org.ethereum.beacon.ssz.type.UIntPrimitive;
+import org.ethereum.beacon.ssz.access.basic.BooleanPrimitive;
+import org.ethereum.beacon.ssz.access.basic.BytesPrimitive;
+import org.ethereum.beacon.ssz.access.SSZCodec;
+import org.ethereum.beacon.ssz.access.basic.StringPrimitive;
+import org.ethereum.beacon.ssz.access.basic.UIntPrimitive;
 import org.javatuples.Triplet;
 
 import java.util.function.Function;

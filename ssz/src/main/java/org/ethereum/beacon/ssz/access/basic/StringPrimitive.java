@@ -1,4 +1,4 @@
-package org.ethereum.beacon.ssz.type;
+package org.ethereum.beacon.ssz.access.basic;
 
 import net.consensys.cava.bytes.Bytes;
 import net.consensys.cava.ssz.BytesSSZReaderProxy;
@@ -11,20 +11,25 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
+import org.ethereum.beacon.ssz.access.SSZCodec;
 
-/** {@link SSZCodec} for {@link Boolean} and {@link boolean} */
-public class BooleanPrimitive implements SSZCodec {
+/** {@link SSZCodec} for {@link String} */
+public class StringPrimitive implements SSZCodec {
 
   private static Set<String> supportedTypes = new HashSet<>();
   private static Set<Class> supportedClassTypes = new HashSet<>();
 
   static {
-    supportedTypes.add("bool");
+    supportedTypes.add("string");
   }
 
   static {
-    supportedClassTypes.add(Boolean.class);
-    supportedClassTypes.add(boolean.class);
+    supportedClassTypes.add(String.class);
+  }
+
+  @Override
+  public int getSize(SSZField field) {
+    return -1;
   }
 
   @Override
@@ -37,21 +42,14 @@ public class BooleanPrimitive implements SSZCodec {
     return supportedClassTypes;
   }
 
-
-
-  @Override
-  public int getSize(SSZField field) {
-    return 1;
-  }
-
   @Override
   public void encode(Object value, SSZSchemeBuilder.SSZScheme.SSZField field, OutputStream result) {
-    boolean boolValue = (boolean) value;
-    Bytes res = SSZ.encodeBoolean(boolValue);
+    String sValue = (String) value;
+    Bytes res = SSZ.encodeString(sValue);
     try {
       result.write(res.toArrayUnsafe());
     } catch (IOException e) {
-      String error = String.format("Failed to write boolean value \"%s\" to stream", value);
+      String error = String.format("Failed to write string value \"%s\" to stream", sValue);
       throw new SSZException(error, e);
     }
   }
@@ -60,11 +58,8 @@ public class BooleanPrimitive implements SSZCodec {
   public void encodeList(
       List<Object> value, SSZSchemeBuilder.SSZScheme.SSZField field, OutputStream result) {
     try {
-      boolean[] data = new boolean[value.size()];
-      for (int i = 0; i < value.size(); ++i) {
-        data[i] = (boolean) value.get(i);
-      }
-      result.write(SSZ.encodeBooleanList(data).toArrayUnsafe());
+      String[] data = value.toArray(new String[0]);
+      result.write(SSZ.encodeStringList(data).toArrayUnsafe());
     } catch (IOException ex) {
       String error = String.format("Failed to write data from field \"%s\" to stream", field.name);
       throw new SSZException(error, ex);
@@ -73,12 +68,12 @@ public class BooleanPrimitive implements SSZCodec {
 
   @Override
   public Object decode(SSZSchemeBuilder.SSZScheme.SSZField field, BytesSSZReaderProxy reader) {
-    return reader.readBoolean();
+    return reader.readString();
   }
 
   @Override
   public List<Object> decodeList(
       SSZSchemeBuilder.SSZScheme.SSZField field, BytesSSZReaderProxy reader) {
-    return (List<Object>) (List<?>) reader.readBooleanList();
+    return (List<Object>) (List<?>) reader.readStringList();
   }
 }

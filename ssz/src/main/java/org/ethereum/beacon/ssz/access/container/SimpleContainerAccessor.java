@@ -1,4 +1,4 @@
-package org.ethereum.beacon.ssz.type;
+package org.ethereum.beacon.ssz.access.container;
 
 
 import java.beans.IntrospectionException;
@@ -16,9 +16,10 @@ import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
 import org.ethereum.beacon.ssz.SSZSchemeException;
 import org.ethereum.beacon.ssz.SSZSerializeException;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
+import org.ethereum.beacon.ssz.access.SSZContainerAccessor;
 import org.javatuples.Pair;
 
-public class BasicContainerAccessor implements SSZContainerAccessor {
+public class SimpleContainerAccessor implements SSZContainerAccessor {
 
   protected class BasicAccessor implements ContainerAccessor {
     private final SSZField containerDescriptor;
@@ -103,7 +104,7 @@ public class BasicContainerAccessor implements SSZContainerAccessor {
   private final SSZSchemeBuilder sszSchemeBuilder;
   private final ObjectCreator objectCreator;
 
-  public BasicContainerAccessor(SSZSchemeBuilder sszSchemeBuilder,
+  public SimpleContainerAccessor(SSZSchemeBuilder sszSchemeBuilder,
       ObjectCreator objectCreator) {
     this.sszSchemeBuilder = sszSchemeBuilder;
     this.objectCreator = objectCreator;

@@ -1,4 +1,4 @@
-package org.ethereum.beacon.ssz.type;
+package org.ethereum.beacon.ssz.access.basic;
 
 import java.io.OutputStream;
 import java.util.List;
@@ -8,6 +8,7 @@ import net.consensys.cava.ssz.BytesSSZReaderProxy;
 import org.ethereum.beacon.ssz.creator.ConstructorObjCreator;
 import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
+import org.ethereum.beacon.ssz.access.SSZCodec;
 
 /**
  * The SSZCodec which implements logic of {@link SSZSerializable#serializeAs()} attribute

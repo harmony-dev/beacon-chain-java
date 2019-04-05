@@ -1,10 +1,10 @@
 package org.ethereum.beacon.ssz.visitor;
 
 import java.util.function.BiFunction;
-import org.ethereum.beacon.ssz.scheme.SSZBasicType;
-import org.ethereum.beacon.ssz.scheme.SSZCompositeType;
-import org.ethereum.beacon.ssz.scheme.SSZContainerType;
-import org.ethereum.beacon.ssz.scheme.SSZListType;
+import org.ethereum.beacon.ssz.type.SSZBasicType;
+import org.ethereum.beacon.ssz.type.SSZCompositeType;
+import org.ethereum.beacon.ssz.type.SSZContainerType;
+import org.ethereum.beacon.ssz.type.SSZListType;
 
 public interface SSZVisitor<ResultType, ParamType> {
 

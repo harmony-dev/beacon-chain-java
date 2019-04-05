@@ -1,8 +1,8 @@
-package org.ethereum.beacon.ssz.scheme;
+package org.ethereum.beacon.ssz.type;
 
 
 import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
-import org.ethereum.beacon.ssz.type.SSZListAccessor;
+import org.ethereum.beacon.ssz.access.SSZListAccessor;
 
 public class SSZListType implements SSZCompositeType {
 

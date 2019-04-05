@@ -10,13 +10,13 @@ import net.consensys.cava.ssz.BytesSSZReaderProxy;
 import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import org.ethereum.beacon.ssz.creator.SSZModelFactory;
-import org.ethereum.beacon.ssz.scheme.SSZType;
-import org.ethereum.beacon.ssz.scheme.TypeResolver;
+import org.ethereum.beacon.ssz.type.SSZType;
+import org.ethereum.beacon.ssz.type.TypeResolver;
 import org.ethereum.beacon.ssz.visitor.SSZSimpleDeserializer;
 import org.ethereum.beacon.ssz.visitor.SSZSimpleDeserializer.DecodeResult;
 import org.ethereum.beacon.ssz.visitor.SSZSimpleSerializer;
 import org.ethereum.beacon.ssz.visitor.SSZSimpleSerializer.SSZSerializerResult;
-import org.ethereum.beacon.ssz.visitor.SSZVisitorHall;
+import org.ethereum.beacon.ssz.visitor.SSZVisitorHost;
 import org.ethereum.beacon.ssz.visitor.SSZVisitorHandler;
 import org.javatuples.Pair;
 import tech.pegasys.artemis.util.bytes.BytesValue;
@@ -33,7 +33,7 @@ public class SSZSerializer implements BytesSerializer, SSZVisitorHandler<SSZSimp
 
   private SSZModelFactory sszModelFactory;
 
-  private final SSZVisitorHall sszVisitorHall;
+  private final SSZVisitorHost sszVisitorHost;
   private final SSZSimpleSerializer simpleSerializer;
   private TypeResolver typeResolver;
 
@@ -42,7 +42,7 @@ public class SSZSerializer implements BytesSerializer, SSZVisitorHandler<SSZSimp
    *
    * @param schemeBuilder SSZ model scheme building of type {@link SSZScheme}
    * @param codecResolver Resolves field encoder/decoder {@link
-   *     org.ethereum.beacon.ssz.type.SSZCodec} function
+   *     org.ethereum.beacon.ssz.access.SSZCodec} function
    * @param sszModelFactory Instantiates SSZModel with field/data information
    */
   public SSZSerializer(
@@ -54,7 +54,7 @@ public class SSZSerializer implements BytesSerializer, SSZVisitorHandler<SSZSimp
     this.codecResolver = codecResolver;
     this.sszModelFactory = sszModelFactory;
     this.typeResolver = typeResolver;
-    sszVisitorHall = new SSZVisitorHall();
+    sszVisitorHost = new SSZVisitorHost();
     simpleSerializer = new SSZSimpleSerializer();
   }
 
@@ -88,15 +88,7 @@ public class SSZSerializer implements BytesSerializer, SSZVisitorHandler<SSZSimp
 
   @Override
   public SSZSerializerResult visitAny(SSZType sszType, Object value) {
-    return sszVisitorHall.handleAny(sszType, value, new SSZSimpleSerializer());
-  }
-
-  public <C> C decode1(byte[] data, Class<? extends C> clazz) {
-    DecodeResult decodeResult = sszVisitorHall.handleAny(
-        typeResolver.resolveSSZType(new SSZField(clazz)),
-        BytesValue.wrap(data),
-        new SSZSimpleDeserializer());
-    return (C) decodeResult.decodedInstance;
+    return sszVisitorHost.handleAny(sszType, value, new SSZSimpleSerializer());
   }
 
   /**
@@ -106,31 +98,11 @@ public class SSZSerializer implements BytesSerializer, SSZVisitorHandler<SSZSimp
    * @param clazz type class
    * @return deserialized instance of clazz or throws exception
    */
-  @Override
   public <C> C decode(byte[] data, Class<? extends C> clazz) {
-    checkSSZSerializableAnnotation(clazz);
-
-    SSZScheme scheme = schemeBuilder.build(clazz);
-    List<SSZScheme.SSZField> fields = scheme.getFields();
-    int size = fields.size();
-    BytesSSZReaderProxy reader = new BytesSSZReaderProxy(Bytes.of(data));
-    List<Pair<SSZSchemeBuilder.SSZScheme.SSZField, Object>> fieldValuePairs = new ArrayList<>();
-
-    // For each field resolve its type and decode its value
-    for (int i = 0; i < size; i++) {
-      SSZScheme.SSZField field = fields.get(i);
-      Object obj = codecResolver.resolveDecodeFunction(field).apply(new Pair<>(reader, this));
-      fieldValuePairs.add(new Pair<>(field, obj));
-    }
-
-    if (!reader.isComplete()) {
-      throw new RuntimeException(
-          String.format(
-              "Provided data is not valid for object of type %s, "
-                  + "data is not over but all fields are read!",
-              clazz));
-    }
-
-    return sszModelFactory.createObject(clazz, fieldValuePairs);
+    DecodeResult decodeResult = sszVisitorHost.handleAny(
+        typeResolver.resolveSSZType(new SSZField(clazz)),
+        BytesValue.wrap(data),
+        new SSZSimpleDeserializer());
+    return (C) decodeResult.decodedInstance;
   }
 }

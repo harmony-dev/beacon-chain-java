@@ -1,8 +1,8 @@
 package org.ethereum.beacon.ssz;
 
 import net.consensys.cava.ssz.BytesSSZReaderProxy;
-import org.ethereum.beacon.ssz.type.SSZCodec;
-import org.ethereum.beacon.ssz.type.SSZListAccessor;
+import org.ethereum.beacon.ssz.access.SSZCodec;
+import org.ethereum.beacon.ssz.access.SSZListAccessor;
 import org.javatuples.Pair;
 import org.javatuples.Triplet;
 import java.io.OutputStream;

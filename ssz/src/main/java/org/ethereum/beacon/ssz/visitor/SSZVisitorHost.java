@@ -1,28 +1,14 @@
 package org.ethereum.beacon.ssz.visitor;
 
-import java.beans.IntrospectionException;
-import java.beans.Introspector;
-import java.beans.PropertyDescriptor;
-import java.lang.reflect.Method;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import javax.annotation.Nullable;
-import org.ethereum.beacon.ssz.SSZCodecResolver;
-import org.ethereum.beacon.ssz.SSZSchemeBuilder;
 import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
-import org.ethereum.beacon.ssz.SSZSchemeException;
-import org.ethereum.beacon.ssz.annotation.SSZSerializable;
-import org.ethereum.beacon.ssz.scheme.SSZBasicType;
-import org.ethereum.beacon.ssz.scheme.SSZContainerType;
-import org.ethereum.beacon.ssz.scheme.SSZListType;
-import org.ethereum.beacon.ssz.scheme.SSZType;
-import org.ethereum.beacon.ssz.type.SSZCodec;
+import org.ethereum.beacon.ssz.type.SSZBasicType;
+import org.ethereum.beacon.ssz.type.SSZContainerType;
+import org.ethereum.beacon.ssz.type.SSZListType;
+import org.ethereum.beacon.ssz.type.SSZType;
 import org.javatuples.Pair;
 
-public class SSZVisitorHall {
+public class SSZVisitorHost {
 
   private Predicate<Pair<Class<?>, SSZField>> containerMembersFilter = i -> true;
 

@@ -1,9 +1,5 @@
 package org.ethereum.beacon.ssz;
 
-import org.ethereum.beacon.ssz.type.BooleanPrimitive;
-import org.ethereum.beacon.ssz.type.BytesCodec;
-import org.ethereum.beacon.ssz.type.HashCodec;
-import org.ethereum.beacon.ssz.type.UIntCodec;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 /**

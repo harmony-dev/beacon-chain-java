@@ -1,10 +1,8 @@
-package org.ethereum.beacon.ssz.type.list;
+package org.ethereum.beacon.ssz.access.list;
 
 import java.lang.reflect.Array;
 import java.util.List;
 import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
-import org.ethereum.beacon.ssz.scheme.SSZListType;
-import org.ethereum.beacon.ssz.type.SSZListAccessor;
 
 public class ArrayAccessor extends AbstractListAccessor {
 

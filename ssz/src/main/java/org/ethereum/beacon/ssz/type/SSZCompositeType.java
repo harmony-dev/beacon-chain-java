@@ -1,6 +1,6 @@
-package org.ethereum.beacon.ssz.scheme;
+package org.ethereum.beacon.ssz.type;
 
-import org.ethereum.beacon.ssz.type.SSZCompositeAccessor;
+import org.ethereum.beacon.ssz.access.SSZCompositeAccessor;
 
 public interface SSZCompositeType extends SSZType {
 

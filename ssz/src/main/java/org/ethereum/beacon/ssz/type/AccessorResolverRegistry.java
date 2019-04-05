@@ -1,4 +1,4 @@
-package org.ethereum.beacon.ssz.scheme;
+package org.ethereum.beacon.ssz.type;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -13,17 +13,17 @@ import org.ethereum.beacon.ssz.SSZAnnotationSchemeBuilder;
 import org.ethereum.beacon.ssz.creator.SSZModelFactory;
 import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
 import org.ethereum.beacon.ssz.creator.SettersObjCreator;
-import org.ethereum.beacon.ssz.type.BasicContainerAccessor;
-import org.ethereum.beacon.ssz.type.BooleanPrimitive;
-import org.ethereum.beacon.ssz.type.BytesPrimitive;
-import org.ethereum.beacon.ssz.type.SSZCodec;
-import org.ethereum.beacon.ssz.type.SSZContainerAccessor;
-import org.ethereum.beacon.ssz.type.SSZListAccessor;
-import org.ethereum.beacon.ssz.type.StringPrimitive;
-import org.ethereum.beacon.ssz.type.SubclassCodec;
-import org.ethereum.beacon.ssz.type.UIntPrimitive;
-import org.ethereum.beacon.ssz.type.list.ArrayAccessor;
-import org.ethereum.beacon.ssz.type.list.ListAccessor;
+import org.ethereum.beacon.ssz.access.container.SimpleContainerAccessor;
+import org.ethereum.beacon.ssz.access.basic.BooleanPrimitive;
+import org.ethereum.beacon.ssz.access.basic.BytesPrimitive;
+import org.ethereum.beacon.ssz.access.SSZCodec;
+import org.ethereum.beacon.ssz.access.SSZContainerAccessor;
+import org.ethereum.beacon.ssz.access.SSZListAccessor;
+import org.ethereum.beacon.ssz.access.basic.StringPrimitive;
+import org.ethereum.beacon.ssz.access.basic.SubclassCodec;
+import org.ethereum.beacon.ssz.access.basic.UIntPrimitive;
+import org.ethereum.beacon.ssz.access.list.ArrayAccessor;
+import org.ethereum.beacon.ssz.access.list.ListAccessor;
 
 public class AccessorResolverRegistry implements AccessorResolver {
 
@@ -36,7 +36,7 @@ public class AccessorResolverRegistry implements AccessorResolver {
 
   List<SSZContainerAccessor> containerAccessors =
       Arrays.asList(
-          new BasicContainerAccessor(
+          new SimpleContainerAccessor(
               new SSZAnnotationSchemeBuilder(true),
               new SSZModelFactory(new ConstructorObjCreator(), new SettersObjCreator())));
 

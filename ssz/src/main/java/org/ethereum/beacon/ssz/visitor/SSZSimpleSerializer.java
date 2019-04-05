@@ -4,11 +4,10 @@ import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 import org.ethereum.beacon.ssz.SSZSerializeException;
-import org.ethereum.beacon.ssz.scheme.SSZBasicType;
-import org.ethereum.beacon.ssz.scheme.SSZCompositeType;
-import org.ethereum.beacon.ssz.scheme.SSZListType;
+import org.ethereum.beacon.ssz.type.SSZBasicType;
+import org.ethereum.beacon.ssz.type.SSZCompositeType;
+import org.ethereum.beacon.ssz.type.SSZListType;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.bytes.BytesValues;
 

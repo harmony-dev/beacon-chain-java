@@ -10,7 +10,7 @@ import org.ethereum.beacon.ssz.creator.SSZModelFactory;
 import org.ethereum.beacon.ssz.fixtures.AttestationRecord;
 import org.ethereum.beacon.ssz.fixtures.Bitfield;
 import org.ethereum.beacon.ssz.fixtures.Sign;
-import org.ethereum.beacon.ssz.type.UIntCodec;
+import org.ethereum.beacon.ssz.access.basic.UIntCodec;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;

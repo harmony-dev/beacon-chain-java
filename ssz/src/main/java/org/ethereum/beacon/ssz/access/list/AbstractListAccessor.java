@@ -1,4 +1,4 @@
-package org.ethereum.beacon.ssz.type.list;
+package org.ethereum.beacon.ssz.access.list;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -6,7 +6,7 @@ import java.lang.reflect.WildcardType;
 import java.util.ArrayList;
 import java.util.List;
 import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
-import org.ethereum.beacon.ssz.type.SSZListAccessor;
+import org.ethereum.beacon.ssz.access.SSZListAccessor;
 
 public abstract class AbstractListAccessor implements SSZListAccessor {
 
