@@ -30,12 +30,6 @@ public interface SSZSchemeBuilder {
       public Integer extraSize = null;
       public String name;
       public String getter;
-      /**
-       * Special type that could look like a container by using type unhandled with
-       * encoder/decoders, but holds only one standard SSZ value, which should be not wrapped with
-       * extra header like container
-       */
-      public boolean notAContainer = false;
 
       public SSZField() {
       }
@@ -53,7 +47,6 @@ public interface SSZSchemeBuilder {
             ", extraSize=" + extraSize +
             ", name='" + name + '\'' +
             ", getter='" + getter + '\'' +
-            ", notAContainer=" + notAContainer +
             '}';
       }
     }

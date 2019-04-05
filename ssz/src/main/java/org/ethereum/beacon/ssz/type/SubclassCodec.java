@@ -81,7 +81,6 @@ public class SubclassCodec implements SSZCodec {
     ret.extraType = field.extraType;
     ret.extraSize = field.extraSize;
     ret.getter = field.getter;
-    ret.notAContainer = field.notAContainer;
     return ret;
   }
 

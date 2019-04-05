@@ -13,7 +13,7 @@ import java.util.Objects;
  * <p>All methods that could change payload are cloning source, keeping instances of Bitfield
  * immutable.
  */
-@SSZSerializable(encode = "getData")
+@SSZSerializable
 public class Bitfield {
 
   private final BitSet payload;

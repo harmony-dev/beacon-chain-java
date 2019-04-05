@@ -73,15 +73,5 @@ public @interface SSZ {
    */
   String type() default "";
 
-  /**
-   * If true, non-standard field is not handled like container, instead its type is passed through
-   * and reconstructed
-   *
-   * <p>So if you need to have, for example, some field to be stored as "hash32" in SSZ but you
-   * don't want to use byte[] for it in Java representation, you need some class to handle it, this
-   * parameter when set to <b>true</b> marks that it's such kind of field
-   */
-  boolean skipContainer() default false;
-
   String vectorSize() default "";
 }

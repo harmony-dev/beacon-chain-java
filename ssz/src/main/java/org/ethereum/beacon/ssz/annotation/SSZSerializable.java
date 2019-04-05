@@ -18,16 +18,6 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface SSZSerializable {
   /**
-   * If set, uses following method to get encoded class data
-   *
-   * <p>When restoring the instance uses constructor with only "encode" method return type input
-   * parameter.
-   *
-   * @return method for encoding
-   */
-  String encode() default "";
-
-  /**
    * Tells the Serializer that this class should be serialized as <code>serializeAs</code> class
    *
    * - This class should be an ancestor of the <code>serializeAs</code> class

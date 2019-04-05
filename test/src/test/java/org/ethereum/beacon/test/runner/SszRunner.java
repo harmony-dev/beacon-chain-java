@@ -1,7 +1,6 @@
 package org.ethereum.beacon.test.runner;
 
 import org.ethereum.beacon.consensus.SpecHelpers;
-import org.ethereum.beacon.ssz.SSZModelCreator;
 import org.ethereum.beacon.ssz.SSZSchemeBuilder;
 import org.ethereum.beacon.ssz.SSZSerializer;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
@@ -50,7 +49,6 @@ public class SszRunner implements Runner {
     SSZSchemeBuilder.SSZScheme.SSZField field = new SSZSchemeBuilder.SSZScheme.SSZField();
     field.name = "value";
     field.fieldType = BigInteger.class;
-    field.notAContainer = false;
     field.getter = "getValue";
     field.extraSize = Integer.valueOf(testCase.getType().substring(4));
     field.extraType = "uint";

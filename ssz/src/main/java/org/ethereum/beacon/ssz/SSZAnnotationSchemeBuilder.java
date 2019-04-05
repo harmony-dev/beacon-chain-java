@@ -128,19 +128,6 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
     SSZScheme scheme = new SSZScheme();
     SSZSerializable mainAnnotation = (SSZSerializable) clazz.getAnnotation(SSZSerializable.class);
 
-    // Encode parameter means we don't need to serialize class
-    // using any built-in logic, we should only call "encode"
-    // method to get all object data and that's all!
-    if (!mainAnnotation.encode().isEmpty()) {
-      SSZScheme.SSZField encode = new SSZScheme.SSZField();
-      encode.fieldType = byte[].class;
-      encode.extraType = "bytes";
-      encode.name = "encode";
-      encode.getter = mainAnnotation.encode();
-      scheme.getFields().add(encode);
-      return logAndReturnScheme(clazz, scheme);
-    }
-
     // No encode parameter, build scheme field by field
     Map<String, Method> fieldGetters = new HashMap<>();
     try {
@@ -180,9 +167,6 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
 
       // Construct SSZField
       SSZScheme.SSZField newField = new SSZScheme.SSZField();
-      if (annotation != null && annotation.skipContainer()) {
-        newField.notAContainer = true;
-      }
       newField.fieldType = type;
       newField.fieldGenericType = field.getGenericType() instanceof ParameterizedType ?
           (ParameterizedType) field.getGenericType() : null;
