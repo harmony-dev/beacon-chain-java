@@ -18,18 +18,18 @@ import tech.pegasys.artemis.util.bytes.BytesValues;
 public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
 
   public static class MerkleTrie {
-    final Hash32[] nodes;
+    final BytesValue[] nodes;
 
-    public MerkleTrie(Hash32[] nodes) {
+    public MerkleTrie(BytesValue[] nodes) {
       this.nodes = nodes;
     }
 
     public Hash32 getPureRoot() {
-      return nodes[1];
+      return Hash32.wrap(Bytes32.leftPad(nodes[1]));
     }
 
     public Hash32 getFinalRoot() {
-      return nodes[0];
+      return Hash32.wrap(Bytes32.leftPad(nodes[0]));
     }
 
     public void setFinalRoot(Hash32 mixedInLengthHash) {
@@ -108,7 +108,9 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
       nodes[i] = hashFunction.apply(BytesValue.concat(nodes[i * 2], nodes[i * 2 + 1]));
     }
     nodes[0] = nodes[1];
-    return new MerkleTrie((Hash32[]) Arrays.copyOf(nodes, chunksCount));
+    BytesValue[] trie = new BytesValue[chunksCount];
+    System.arraycopy(nodes, 0, trie, 0, chunksCount);
+    return new MerkleTrie(trie);
   }
 
   protected long nextPowerOf2(int x) {
@@ -120,6 +122,6 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
   }
 
   BytesValue serializeLength(long len) {
-    return BytesValues.ofUnsignedIntLittleEndian(len);
+    return BytesValue.concat(BytesValues.ofUnsignedIntLittleEndian(len), BytesValue.wrap(new byte[32 - 4]));
   }
 }

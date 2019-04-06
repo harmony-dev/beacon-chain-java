@@ -12,6 +12,13 @@ public class SSZContainerType implements SSZCompositeType {
   private final SSZContainerAccessor containerAccessor;
   private final SSZContainerAccessor.ContainerAccessor accessor;
 
+  protected SSZContainerType() {
+    this.typeResolver = null;
+    this.descriptor = null;
+    this.containerAccessor = null;
+    this.accessor = null;
+  }
+
   public SSZContainerType(TypeResolver typeResolver,
       SSZField descriptor, SSZContainerAccessor accessor) {
     this.typeResolver = typeResolver;

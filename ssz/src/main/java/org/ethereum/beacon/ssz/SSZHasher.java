@@ -1,13 +1,15 @@
 package org.ethereum.beacon.ssz;
 
+import java.util.List;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
+import org.ethereum.beacon.ssz.access.SSZContainerAccessor;
+import org.ethereum.beacon.ssz.type.SSZContainerType;
+import org.ethereum.beacon.ssz.type.SSZType;
 import org.ethereum.beacon.ssz.type.TypeResolver;
 import org.ethereum.beacon.ssz.visitor.SSZSimpleHasher;
 import org.ethereum.beacon.ssz.visitor.SSZVisitorHost;
-import org.javatuples.Pair;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
@@ -22,7 +24,7 @@ public class SSZHasher implements BytesHasher {
 
   private static final int BYTES_PER_CHUNK = 32;
 
-  private final SSZVisitorHost visitorHall;
+  private final SSZVisitorHost visitorHost;
   private final SSZSimpleHasher hasherVisitor;
   private final SSZSerializer serializer;
   private TypeResolver typeResolver;
@@ -30,22 +32,20 @@ public class SSZHasher implements BytesHasher {
   /**
    * SSZ hasher with following helpers
    *
-   * @param schemeBuilder SSZ model scheme building of type {@link SSZSchemeBuilder.SSZScheme}
-   * @param codecResolver Resolves field encoder/decoder {@link
    *     org.ethereum.beacon.ssz.access.SSZCodec} function
    */
-  public SSZHasher(SSZSchemeBuilder schemeBuilder, SSZCodecResolver codecResolver,
-      Function<BytesValue, Hash32> hashFunction) {
+  public SSZHasher(Function<BytesValue, Hash32> hashFunction, TypeResolver typeResolver) {
 
-    this.serializer = new SSZSerializer(schemeBuilder, codecResolver, null, null);
-    this.visitorHall = new SSZVisitorHost();
+    this.serializer = new SSZSerializer(null, null, null, typeResolver);
+    this.visitorHost = new SSZVisitorHost();
+    this.typeResolver = typeResolver;
     hasherVisitor = new SSZSimpleHasher(serializer, hashFunction, BYTES_PER_CHUNK);
   }
 
   /** Calculates hash of the input object */
   @Override
   public byte[] hash(@Nullable Object input, Class clazz) {
-    return visitorHall
+    return visitorHost
         .handleAny(typeResolver.resolveSSZType(new SSZField(clazz)), input, hasherVisitor)
         .getFinalRoot()
         .extractArray();
@@ -53,34 +53,62 @@ public class SSZHasher implements BytesHasher {
 
   @Override
   public <C> byte[] hashTruncate(@Nullable C input, Class<? extends C> clazz, String field) {
-    SSZVisitorHost hall = new SSZVisitorHost();
-    hall.setContainerMembersFilter(new TruncateFilter(clazz, field));
-    return visitorHall
-        .handleAny(typeResolver.resolveSSZType(new SSZField(clazz)), input, hasherVisitor)
+    return visitorHost
+        .handleAny(
+            new TruncatedContainerType(typeResolver.resolveSSZType(new SSZField(clazz))),
+            input,
+            hasherVisitor)
         .getFinalRoot()
         .extractArray();
   }
 
-  private static class TruncateFilter implements Predicate<Pair<Class<?>, SSZField>> {
-    private final Class<?> truncateClass;
-    private final String startFieldName;
-    private boolean fieldHit;
+  private static class TruncatedContainerType extends SSZContainerType {
+    private final SSZContainerType delegate;
 
-    public TruncateFilter(Class<?> truncateClass, String startFieldName) {
-      this.truncateClass = truncateClass;
-      this.startFieldName = startFieldName;
+    public TruncatedContainerType(SSZType delegate) {
+      this.delegate = (SSZContainerType) delegate;
     }
 
     @Override
-    public boolean test(Pair<Class<?>, SSZField> field) {
-      if (field.getValue0().equals(truncateClass)) {
-        if (startFieldName.equals(field.getValue1().name)) {
-          fieldHit = true;
-        }
-        return fieldHit;
-      } else {
-        return false;
+    public int getSize() {
+      int size = delegate.getSize();
+      List<SSZType> childTypes = delegate.getChildTypes();
+      return size == -1 ? -1 : size - delegate.getSize() - childTypes.get(childTypes.size() - 1).getSize();
+    }
+
+    @Override
+    public List<SSZType> getChildTypes() {
+      List<SSZType> childTypes = delegate.getChildTypes();
+      return childTypes.subList(0, childTypes.size() - 1);
+    }
+
+    @Override
+    public List<String> getChildNames() {
+      List<String> childNames = delegate.getChildNames();
+      return childNames.subList(0, childNames.size() - 1);
+    }
+
+    @Override
+    public SSZContainerAccessor getAccessor() {
+      return delegate.getAccessor();
+    }
+
+    @Override
+    public int getChildrenCount(Object value) {
+      return delegate.getChildrenCount(value) - 1;
+    }
+
+    @Override
+    public Object getChild(Object value, int idx) {
+      if (idx >= getChildrenCount(value)) {
+        throw new IndexOutOfBoundsException(idx + " >= " + getChildrenCount(value) + " for " + getTypeDescriptor());
       }
+      return delegate.getChild(value, idx);
+    }
+
+    @Override
+    public SSZField getTypeDescriptor() {
+      return delegate.getTypeDescriptor();
     }
   }
 }

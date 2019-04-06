@@ -4,6 +4,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 
 import java.util.List;
+import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import org.ethereum.beacon.ssz.type.AccessorResolverRegistry;
@@ -189,7 +190,7 @@ public class SSZTypeTest {
     byte[] bytes = serializer.encode(c1);
     System.out.println(BytesValue.wrap(bytes));
 
-    Container1 res = serializer.decode1(bytes, Container1.class);
+    Container1 res = serializer.decode(bytes, Container1.class);
     System.out.println(res);
   }
 
@@ -205,7 +206,7 @@ public class SSZTypeTest {
     byte[] bytes = serializer.encode(c3);
     System.out.println(BytesValue.wrap(bytes));
 
-    Container3 res = serializer.decode1(bytes, Container3.class);
+    Container3 res = serializer.decode(bytes, Container3.class);
     System.out.println(res);
   }
 
@@ -227,7 +228,7 @@ public class SSZTypeTest {
     byte[] bytes = serializer.encode(c2);
     System.out.println(BytesValue.wrap(bytes));
 
-    Container2 res = serializer.decode1(bytes, Container2.class);
+    Container2 res = serializer.decode(bytes, Container2.class);
     System.out.println(res);
   }
 
@@ -298,6 +299,42 @@ public class SSZTypeTest {
     Assert.assertArrayEquals(bytes1, bytes2);
     Assert.assertTrue(BytesValue.wrap(bytes1).toString().contains("1111"));
     Assert.assertTrue(BytesValue.wrap(bytes1).toString().contains("2222"));
+  }
+
+  @SSZSerializable
+  public static class H1 {
+    @SSZ public int a1;
+    @SSZ public long a2;
+    @SSZ public int a3;
+  }
+
+  @SSZSerializable
+  public static class H2 {
+    @SSZ public int a1;
+    @SSZ public long a2;
+  }
+
+  @Test
+  public void testHashTruncated1() throws Exception {
+    AccessorResolverRegistry resolverRegistry = new AccessorResolverRegistry();
+    TypeResolver typeResolver = new SimpleTypeResolver(resolverRegistry,
+        s -> "testSize".equals(s) ? 1 : null);
+    SSZHasher hasher = new SSZHasher(Hashes::keccak256, typeResolver);
+
+    H1 h1 = new H1();
+    h1.a1 = 0x1111;
+    h1.a2 = 0x2222;
+    h1.a3 = 0x3333;
+
+    H2 h2 = new H2();
+    h2.a1 = 0x1111;
+    h2.a2 = 0x2222;
+
+    byte[] h1h = hasher.hash(h1);
+    byte[] h2h = hasher.hash(h2);
+    byte[] h1hTrunc = hasher.hashTruncate(h1, H1.class, "");
+
+    Assert.assertArrayEquals(h2h, h1hTrunc);
   }
 }
 

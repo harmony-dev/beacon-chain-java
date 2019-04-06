@@ -10,13 +10,6 @@ import org.javatuples.Pair;
 
 public class SSZVisitorHost {
 
-  private Predicate<Pair<Class<?>, SSZField>> containerMembersFilter = i -> true;
-
-  public void setContainerMembersFilter(
-      Predicate<Pair<Class<?>, SSZField>> containerMembersFilter) {
-    this.containerMembersFilter = containerMembersFilter;
-  }
-
   public  <ResultType, ParamType> ResultType handleAny(
       SSZType type, ParamType value, SSZVisitor<ResultType, ParamType> visitor) {
 
