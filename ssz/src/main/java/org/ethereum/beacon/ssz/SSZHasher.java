@@ -26,8 +26,7 @@ public class SSZHasher implements BytesHasher {
 
   private final SSZVisitorHost visitorHost;
   private final SSZSimpleHasher hasherVisitor;
-  private final SSZSerializer serializer;
-  private TypeResolver typeResolver;
+  private final TypeResolver typeResolver;
 
   /**
    * SSZ hasher with following helpers
@@ -36,7 +35,7 @@ public class SSZHasher implements BytesHasher {
    */
   public SSZHasher(Function<BytesValue, Hash32> hashFunction, TypeResolver typeResolver) {
 
-    this.serializer = new SSZSerializer(null, null, null, typeResolver);
+    SSZSerializer serializer = new SSZSerializer(null, null, null, typeResolver);
     this.visitorHost = new SSZVisitorHost();
     this.typeResolver = typeResolver;
     hasherVisitor = new SSZSimpleHasher(serializer, hashFunction, BYTES_PER_CHUNK);

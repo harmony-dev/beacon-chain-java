@@ -2,19 +2,29 @@ package org.ethereum.beacon.ssz.visitor;
 
 import java.util.Arrays;
 import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import org.ethereum.beacon.ssz.incremental.ObservableComposite;
+import org.ethereum.beacon.ssz.incremental.UpdateListener;
 import org.ethereum.beacon.ssz.type.SSZCompositeType;
 import org.ethereum.beacon.ssz.type.SSZListType;
 import org.ethereum.beacon.ssz.visitor.SSZSimpleSerializer.SSZSerializerResult;
 import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 public class SSZIncrementalHasher extends SSZSimpleHasher {
+  private static final String INCREMENTAL_HASHER_OBSERVER_ID = "Hasher";
 
-  static class SSZIncrementalTracker {
-    SortedSet<Integer> elementsUpdated;
+  static class SSZIncrementalTracker implements UpdateListener {
+    SortedSet<Integer> elementsUpdated = new TreeSet<>();
     MerkleTrie merkleTree;
+
+    @Override
+    public void childUpdated(int childIndex) {
+      elementsUpdated.add(childIndex);
+    }
   }
 
   public SSZIncrementalHasher(
@@ -26,8 +36,10 @@ public class SSZIncrementalHasher extends SSZSimpleHasher {
   @Override
   public MerkleTrie visitComposite(SSZCompositeType type, Object rawValue,
       BiFunction<Integer, Object, MerkleTrie> childVisitor) {
-    if (rawValue instanceof Incremental) {
-      SSZIncrementalTracker tracker = ((Incremental) rawValue).getTracker();
+    if (rawValue instanceof ObservableComposite) {
+      SSZIncrementalTracker tracker = (SSZIncrementalTracker)
+          ((ObservableComposite) rawValue).getUpdateListener(
+              INCREMENTAL_HASHER_OBSERVER_ID, SSZIncrementalTracker::new);
       if (tracker.merkleTree == null) {
         tracker.merkleTree = super.visitComposite(type, rawValue, childVisitor);
       } else if (!tracker.elementsUpdated.isEmpty()){
@@ -69,7 +81,7 @@ public class SSZIncrementalHasher extends SSZSimpleHasher {
       idxShift++;
       int lastIdx = Integer.MAX_VALUE;
       for (int i: elementsUpdated) {
-        int idx = pos + i >> idxShift;
+        int idx = pos + (i >> idxShift);
         if (lastIdx != idx) {
           newTrie.nodes[idx] = hashFunction.apply(
               BytesValue.concat(newTrie.nodes[idx * 2], newTrie.nodes[idx * 2 + 1]));
@@ -82,6 +94,8 @@ public class SSZIncrementalHasher extends SSZSimpleHasher {
           newTrie.getFinalRoot(),
           serializeLength(type.getChildrenCount(value))));
       newTrie.setFinalRoot(mixInLength);
+    } else {
+      newTrie.setFinalRoot(newTrie.getPureRoot());
     }
     return newTrie;
   }
@@ -97,11 +111,11 @@ public class SSZIncrementalHasher extends SSZSimpleHasher {
   }
 
   private MerkleTrie copyWithSize(MerkleTrie trie, int newChunksCount) {
-    int newSize = (int) nextPowerOf2(newChunksCount);
+    int newSize = (int) nextPowerOf2(newChunksCount) * 2;
     MerkleTrie copy = new MerkleTrie(Arrays.copyOf(trie.nodes, newSize));
     if (copy.nodes.length > trie.nodes.length) {
       for (int i = newChunksCount; i < newSize; i++) {
-        copy.nodes[i] = Hash32.ZERO;
+        copy.nodes[i] = Bytes32.ZERO;
       }
     }
     return copy;

@@ -108,9 +108,9 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
       nodes[i] = hashFunction.apply(BytesValue.concat(nodes[i * 2], nodes[i * 2 + 1]));
     }
     nodes[0] = nodes[1];
-    BytesValue[] trie = new BytesValue[chunksCount];
-    System.arraycopy(nodes, 0, trie, 0, chunksCount);
-    return new MerkleTrie(trie);
+//    BytesValue[] trie = new BytesValue[chunksCount];
+//    System.arraycopy(nodes, 0, trie, 0, chunksCount);
+    return new MerkleTrie(nodes);
   }
 
   protected long nextPowerOf2(int x) {
