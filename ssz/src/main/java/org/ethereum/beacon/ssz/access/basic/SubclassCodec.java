@@ -6,7 +6,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import net.consensys.cava.ssz.BytesSSZReaderProxy;
 import org.ethereum.beacon.ssz.creator.ConstructorObjCreator;
-import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
+import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import org.ethereum.beacon.ssz.access.SSZCodec;
 

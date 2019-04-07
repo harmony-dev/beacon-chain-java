@@ -1,7 +1,7 @@
 package org.ethereum.beacon.ssz;
 
 import javax.annotation.Nullable;
-import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
+import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.creator.CompositeObjCreator;
 import org.ethereum.beacon.ssz.type.SSZType;
 import org.ethereum.beacon.ssz.type.TypeResolver;

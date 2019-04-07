@@ -1,6 +1,6 @@
 package org.ethereum.beacon.ssz.creator;
 
-import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
+import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.SSZSchemeException;
 import org.javatuples.Pair;
 import java.beans.IntrospectionException;

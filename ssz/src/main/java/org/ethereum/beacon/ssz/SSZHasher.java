@@ -1,19 +1,15 @@
 package org.ethereum.beacon.ssz;
 
 import java.util.List;
-import java.util.function.Function;
 import javax.annotation.Nullable;
-import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
+import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.access.SSZContainerAccessor;
 import org.ethereum.beacon.ssz.type.SSZContainerType;
 import org.ethereum.beacon.ssz.type.SSZType;
 import org.ethereum.beacon.ssz.type.TypeResolver;
-import org.ethereum.beacon.ssz.visitor.SSZSimpleHasher;
 import org.ethereum.beacon.ssz.visitor.SSZSimpleHasher.MerkleTrie;
 import org.ethereum.beacon.ssz.visitor.SSZVisitor;
 import org.ethereum.beacon.ssz.visitor.SSZVisitorHost;
-import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.bytes.BytesValue;
 
 /**
  * Implements Tree Hash algorithm.

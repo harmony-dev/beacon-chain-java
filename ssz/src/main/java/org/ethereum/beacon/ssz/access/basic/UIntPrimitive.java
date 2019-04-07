@@ -4,8 +4,7 @@ import net.consensys.cava.bytes.Bytes;
 import net.consensys.cava.ssz.BytesSSZReaderProxy;
 import net.consensys.cava.ssz.SSZ;
 import net.consensys.cava.ssz.SSZException;
-import org.ethereum.beacon.ssz.SSZSchemeBuilder;
-import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
+import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.SSZSchemeException;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -25,7 +24,7 @@ import static java.util.function.Function.identity;
  * {@link SSZCodec} for all primitive Java integers and their default wrappers
  *
  * <p>All numerics are considered unsigned, bit size could be clarified by {@link
- * org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField#extraSize}
+ * SSZField#extraSize}
  */
 public class UIntPrimitive implements SSZCodec {
   private static final int DEFAULT_SHORT_SIZE = 16;
@@ -105,7 +104,7 @@ public class UIntPrimitive implements SSZCodec {
   }
 
   @Override
-  public void encode(Object value, SSZSchemeBuilder.SSZScheme.SSZField field, OutputStream result) {
+  public void encode(Object value, SSZField field, OutputStream result) {
     NumericType numericType = parseFieldType(field);
 
     switch (numericType.type) {
@@ -133,7 +132,7 @@ public class UIntPrimitive implements SSZCodec {
 
   @Override
   public void encodeList(
-      List<Object> value, SSZSchemeBuilder.SSZScheme.SSZField field, OutputStream result) {
+      List<Object> value, SSZField field, OutputStream result) {
     NumericType numericType = parseFieldType(field);
 
     try {
@@ -189,7 +188,7 @@ public class UIntPrimitive implements SSZCodec {
   }
 
   @Override
-  public Object decode(SSZSchemeBuilder.SSZScheme.SSZField field, BytesSSZReaderProxy reader) {
+  public Object decode(SSZField field, BytesSSZReaderProxy reader) {
     NumericType numericType = parseFieldType(field);
     switch (numericType.type) {
       case INT:
@@ -223,7 +222,7 @@ public class UIntPrimitive implements SSZCodec {
 
   @Override
   public List decodeList(
-      SSZSchemeBuilder.SSZScheme.SSZField field, BytesSSZReaderProxy reader) {
+      SSZField field, BytesSSZReaderProxy reader) {
     NumericType numericType = parseFieldType(field);
 
     switch (numericType.type) {
@@ -246,7 +245,7 @@ public class UIntPrimitive implements SSZCodec {
     }
   }
 
-  private NumericType parseFieldType(SSZSchemeBuilder.SSZScheme.SSZField field) {
+  private NumericType parseFieldType(SSZField field) {
     if (field.extraSize != null && field.extraSize % Byte.SIZE != 0) {
       String error =
           String.format(

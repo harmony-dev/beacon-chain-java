@@ -3,7 +3,7 @@ package org.ethereum.beacon.ssz.creator;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.stream.Collectors;
-import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
+import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.SSZSchemeException;
 import org.javatuples.Pair;
 import java.util.List;

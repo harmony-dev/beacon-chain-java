@@ -4,13 +4,12 @@ import net.consensys.cava.bytes.Bytes;
 import net.consensys.cava.ssz.BytesSSZReaderProxy;
 import net.consensys.cava.ssz.SSZ;
 import net.consensys.cava.ssz.SSZException;
-import org.ethereum.beacon.ssz.SSZSchemeBuilder;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
+import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.access.SSZCodec;
 
 /** {@link SSZCodec} for {@link Boolean} and {@link boolean} */
@@ -46,7 +45,7 @@ public class BooleanPrimitive implements SSZCodec {
   }
 
   @Override
-  public void encode(Object value, SSZSchemeBuilder.SSZScheme.SSZField field, OutputStream result) {
+  public void encode(Object value, SSZField field, OutputStream result) {
     boolean boolValue = (boolean) value;
     Bytes res = SSZ.encodeBoolean(boolValue);
     try {
@@ -59,7 +58,7 @@ public class BooleanPrimitive implements SSZCodec {
 
   @Override
   public void encodeList(
-      List<Object> value, SSZSchemeBuilder.SSZScheme.SSZField field, OutputStream result) {
+      List<Object> value, SSZField field, OutputStream result) {
     try {
       boolean[] data = new boolean[value.size()];
       for (int i = 0; i < value.size(); ++i) {
@@ -73,13 +72,13 @@ public class BooleanPrimitive implements SSZCodec {
   }
 
   @Override
-  public Object decode(SSZSchemeBuilder.SSZScheme.SSZField field, BytesSSZReaderProxy reader) {
+  public Object decode(SSZField field, BytesSSZReaderProxy reader) {
     return reader.readBoolean();
   }
 
   @Override
   public List<Object> decodeList(
-      SSZSchemeBuilder.SSZScheme.SSZField field, BytesSSZReaderProxy reader) {
+      SSZField field, BytesSSZReaderProxy reader) {
     return (List<Object>) (List<?>) reader.readBooleanList();
   }
 }

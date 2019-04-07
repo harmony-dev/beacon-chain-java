@@ -4,8 +4,7 @@ import net.consensys.cava.bytes.Bytes;
 import net.consensys.cava.ssz.BytesSSZReaderProxy;
 import net.consensys.cava.ssz.SSZ;
 import net.consensys.cava.ssz.SSZException;
-import org.ethereum.beacon.ssz.SSZSchemeBuilder;
-import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
+import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.SSZSchemeException;
 import org.ethereum.beacon.ssz.access.SSZCodec;
 import tech.pegasys.artemis.ethereum.core.Address;
@@ -76,7 +75,7 @@ public class BytesCodec implements SSZCodec {
   }
 
   @Override
-  public void encode(Object value, SSZSchemeBuilder.SSZScheme.SSZField field, OutputStream result) {
+  public void encode(Object value, SSZField field, OutputStream result) {
     Bytes res = null;
     BytesValue data = (BytesValue) value;
     BytesType bytesType = parseFieldType(field);
@@ -96,7 +95,7 @@ public class BytesCodec implements SSZCodec {
 
   @Override
   public void encodeList(
-      List<Object> value, SSZSchemeBuilder.SSZScheme.SSZField field, OutputStream result) {
+      List<Object> value, SSZField field, OutputStream result) {
     Bytes[] data = repackBytesList((List<BytesValue>) (List<?>) value);
 
     try {
@@ -115,7 +114,7 @@ public class BytesCodec implements SSZCodec {
   }
 
   @Override
-  public Object decode(SSZSchemeBuilder.SSZScheme.SSZField field, BytesSSZReaderProxy reader) {
+  public Object decode(SSZField field, BytesSSZReaderProxy reader) {
     BytesType bytesType = parseFieldType(field);
 
     if (bytesType.size == null) {
@@ -150,7 +149,7 @@ public class BytesCodec implements SSZCodec {
 
   @Override
   public List<Object> decodeList(
-      SSZSchemeBuilder.SSZScheme.SSZField field, BytesSSZReaderProxy reader) {
+      SSZField field, BytesSSZReaderProxy reader) {
     BytesType bytesType = parseFieldType(field);
 
     if (bytesType.size == null) {
@@ -210,7 +209,7 @@ public class BytesCodec implements SSZCodec {
     return (List<Object>) (List<?>) res;
   }
 
-  private BytesType parseFieldType(SSZSchemeBuilder.SSZScheme.SSZField field) {
+  private BytesType parseFieldType(SSZField field) {
     if (classToByteType.containsKey(field.fieldType)) {
       return classToByteType.get(field.fieldType);
     }

@@ -2,7 +2,7 @@ package org.ethereum.beacon.ssz.access.list;
 
 import java.util.List;
 import java.util.function.Function;
-import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
+import org.ethereum.beacon.ssz.access.SSZField;
 import tech.pegasys.artemis.util.collections.ReadList;
 
 public class ReadListAccessor extends AbstractListAccessor {

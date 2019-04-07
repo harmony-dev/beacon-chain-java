@@ -13,6 +13,8 @@ import org.ethereum.beacon.ssz.access.basic.BooleanPrimitive;
 import org.ethereum.beacon.ssz.access.basic.BytesPrimitive;
 import org.ethereum.beacon.ssz.access.basic.StringPrimitive;
 import org.ethereum.beacon.ssz.access.basic.UIntPrimitive;
+import org.ethereum.beacon.ssz.access.container.SSZAnnotationSchemeBuilder;
+import org.ethereum.beacon.ssz.access.container.SSZSchemeBuilder;
 import org.ethereum.beacon.ssz.access.container.SimpleContainerAccessor;
 import org.ethereum.beacon.ssz.access.list.ArrayAccessor;
 import org.ethereum.beacon.ssz.access.list.ListAccessor;

@@ -1,7 +1,6 @@
 package org.ethereum.beacon.ssz.access;
 
 import java.util.List;
-import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
 
 public interface SSZContainerAccessor extends SSZCompositeAccessor {
 

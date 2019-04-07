@@ -1,6 +1,8 @@
-package org.ethereum.beacon.ssz;
+package org.ethereum.beacon.ssz.access.container;
 
 import java.util.Map.Entry;
+import org.ethereum.beacon.ssz.SSZSchemeException;
+import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.annotation.MCVEReflect;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
@@ -13,14 +15,11 @@ import org.javatuples.Pair;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -168,7 +167,7 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
       }
 
       // Construct SSZField
-      SSZScheme.SSZField newField = new SSZScheme.SSZField();
+      SSZField newField = new SSZField();
       newField.fieldType = type;
       newField.fieldGenericType = field.getGenericType() instanceof ParameterizedType ?
           (ParameterizedType) field.getGenericType() : null;
@@ -196,7 +195,7 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
           }
 
           // Construct SSZField
-          SSZScheme.SSZField newField = new SSZScheme.SSZField();
+          SSZField newField = new SSZField();
           newField.fieldType = method.getReturnType();
           newField.fieldGenericType = method.getGenericReturnType() instanceof ParameterizedType ?
               (ParameterizedType) method.getGenericReturnType() : null;
@@ -227,7 +226,7 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
             "Scheme for class %s consists of %s field(s)",
             clazz.getName(), scheme.getFields().size());
     logger.info(overview);
-    for (SSZScheme.SSZField field : scheme.getFields()) {
+    for (SSZField field : scheme.getFields()) {
       logger.info(field.toString());
     }
 

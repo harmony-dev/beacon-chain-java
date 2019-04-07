@@ -6,13 +6,14 @@ import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import org.ethereum.beacon.ssz.access.container.SSZAnnotationSchemeBuilder;
 
 /**
  * SSZ model field annotation. Used at model field definition.
  *
  * <p>Clarifies SSZ encoding/decoding details
  *
- * <p>Required if {@link org.ethereum.beacon.ssz.SSZAnnotationSchemeBuilder}
+ * <p>Required if {@link SSZAnnotationSchemeBuilder}
  * `explicitFieldAnnotation` is set to <b>true</b>, otherwise it's optional.
  */
 @Documented

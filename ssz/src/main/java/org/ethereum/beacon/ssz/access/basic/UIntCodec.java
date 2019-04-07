@@ -4,8 +4,7 @@ import net.consensys.cava.bytes.Bytes;
 import net.consensys.cava.ssz.BytesSSZReaderProxy;
 import net.consensys.cava.ssz.SSZ;
 import net.consensys.cava.ssz.SSZException;
-import org.ethereum.beacon.ssz.SSZSchemeBuilder;
-import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
+import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.SSZSchemeException;
 import org.ethereum.beacon.ssz.access.SSZCodec;
 import tech.pegasys.artemis.util.bytes.BytesValue;
@@ -81,7 +80,7 @@ public class UIntCodec implements SSZCodec {
   }
 
   @Override
-  public void encode(Object value, SSZSchemeBuilder.SSZScheme.SSZField field, OutputStream result) {
+  public void encode(Object value, SSZField field, OutputStream result) {
     NumericType numericType = parseFieldType(field);
 
     switch (numericType.size) {
@@ -114,7 +113,7 @@ public class UIntCodec implements SSZCodec {
 
   @Override
   public void encodeList(
-      List<Object> value, SSZSchemeBuilder.SSZScheme.SSZField field, OutputStream result) {
+      List<Object> value, SSZField field, OutputStream result) {
     NumericType numericType = parseFieldType(field);
 
     try {
@@ -181,7 +180,7 @@ public class UIntCodec implements SSZCodec {
   }
 
   @Override
-  public Object decode(SSZSchemeBuilder.SSZScheme.SSZField field, BytesSSZReaderProxy reader) {
+  public Object decode(SSZField field, BytesSSZReaderProxy reader) {
     NumericType numericType = parseFieldType(field);
     switch (numericType.type) {
       case LONG:
@@ -230,7 +229,7 @@ public class UIntCodec implements SSZCodec {
 
   @Override
   public List decodeList(
-      SSZSchemeBuilder.SSZScheme.SSZField field, BytesSSZReaderProxy reader) {
+      SSZField field, BytesSSZReaderProxy reader) {
     NumericType numericType = parseFieldType(field);
 
     switch (numericType.type) {
@@ -289,7 +288,7 @@ public class UIntCodec implements SSZCodec {
     return res;
   }
 
-  private NumericType parseFieldType(SSZSchemeBuilder.SSZScheme.SSZField field) {
+  private NumericType parseFieldType(SSZField field) {
     return classToNumericType.get(field.fieldType);
   }
 

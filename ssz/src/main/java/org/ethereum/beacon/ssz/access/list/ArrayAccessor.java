@@ -2,7 +2,7 @@ package org.ethereum.beacon.ssz.access.list;
 
 import java.lang.reflect.Array;
 import java.util.List;
-import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
+import org.ethereum.beacon.ssz.access.SSZField;
 
 public class ArrayAccessor extends AbstractListAccessor {
 

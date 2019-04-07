@@ -4,6 +4,7 @@ import java.util.Arrays;
 import net.consensys.cava.bytes.Bytes;
 import net.consensys.cava.ssz.SSZ;
 import org.ethereum.beacon.crypto.Hashes;
+import org.ethereum.beacon.ssz.access.container.SSZAnnotationSchemeBuilder;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import org.ethereum.beacon.ssz.creator.ConstructorObjCreator;
 import org.ethereum.beacon.ssz.creator.CompositeObjCreator;

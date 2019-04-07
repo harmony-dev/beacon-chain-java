@@ -4,8 +4,7 @@ import net.consensys.cava.bytes.Bytes;
 import net.consensys.cava.ssz.BytesSSZReaderProxy;
 import net.consensys.cava.ssz.SSZ;
 import net.consensys.cava.ssz.SSZException;
-import org.ethereum.beacon.ssz.SSZSchemeBuilder;
-import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
+import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.SSZSchemeException;
 
 import java.io.IOException;
@@ -32,7 +31,7 @@ import static java.util.function.Function.identity;
  * </ul>
  *
  * Type could be clarified by {@link
- * org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField#extraType}
+ * SSZField#extraType}
  */
 public class BytesPrimitive implements SSZCodec {
 
@@ -76,7 +75,7 @@ public class BytesPrimitive implements SSZCodec {
   }
 
   @Override
-  public void encode(Object value, SSZSchemeBuilder.SSZScheme.SSZField field, OutputStream result) {
+  public void encode(Object value, SSZField field, OutputStream result) {
     BytesType byteType = parseFieldType(field);
     Bytes res = null;
     byte[] data = (byte[]) value;
@@ -117,7 +116,7 @@ public class BytesPrimitive implements SSZCodec {
 
   @Override
   public void encodeList(
-      List<Object> value, SSZSchemeBuilder.SSZScheme.SSZField field, OutputStream result) {
+      List<Object> value, SSZField field, OutputStream result) {
     BytesType bytesType = parseFieldType(field);
     Bytes[] data = repackBytesList((List<byte[]>) (List<?>) value);
 
@@ -154,7 +153,7 @@ public class BytesPrimitive implements SSZCodec {
   }
 
   @Override
-  public Object decode(SSZSchemeBuilder.SSZScheme.SSZField field, BytesSSZReaderProxy reader) {
+  public Object decode(SSZField field, BytesSSZReaderProxy reader) {
     BytesType bytesType = parseFieldType(field);
     switch (bytesType.type) {
       case BYTES:
@@ -178,7 +177,7 @@ public class BytesPrimitive implements SSZCodec {
 
   @Override
   public List<Object> decodeList(
-      SSZSchemeBuilder.SSZScheme.SSZField field, BytesSSZReaderProxy reader) {
+      SSZField field, BytesSSZReaderProxy reader) {
     BytesType bytesType = parseFieldType(field);
 
     switch (bytesType.type) {
@@ -206,7 +205,7 @@ public class BytesPrimitive implements SSZCodec {
     }
   }
 
-  private BytesType parseFieldType(SSZSchemeBuilder.SSZScheme.SSZField field) {
+  private BytesType parseFieldType(SSZField field) {
     Type type = Type.fromValue(field.extraType);
 
     if (type == null || type.equals(Type.BYTES)) {

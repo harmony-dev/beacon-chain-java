@@ -1,29 +1,17 @@
 package org.ethereum.beacon.ssz.type;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import org.ethereum.beacon.ssz.creator.ConstructorObjCreator;
-import org.ethereum.beacon.ssz.SSZAnnotationSchemeBuilder;
-import org.ethereum.beacon.ssz.creator.CompositeObjCreator;
-import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
-import org.ethereum.beacon.ssz.creator.SettersObjCreator;
-import org.ethereum.beacon.ssz.access.container.SimpleContainerAccessor;
-import org.ethereum.beacon.ssz.access.basic.BooleanPrimitive;
-import org.ethereum.beacon.ssz.access.basic.BytesPrimitive;
+import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.access.SSZCodec;
 import org.ethereum.beacon.ssz.access.SSZContainerAccessor;
 import org.ethereum.beacon.ssz.access.SSZListAccessor;
-import org.ethereum.beacon.ssz.access.basic.StringPrimitive;
 import org.ethereum.beacon.ssz.access.basic.SubclassCodec;
-import org.ethereum.beacon.ssz.access.basic.UIntPrimitive;
-import org.ethereum.beacon.ssz.access.list.ArrayAccessor;
-import org.ethereum.beacon.ssz.access.list.ListAccessor;
 
 public class AccessorResolverRegistry implements AccessorResolver {
 

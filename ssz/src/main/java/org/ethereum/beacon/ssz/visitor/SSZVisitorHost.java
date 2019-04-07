@@ -1,12 +1,9 @@
 package org.ethereum.beacon.ssz.visitor;
 
-import java.util.function.Predicate;
-import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
 import org.ethereum.beacon.ssz.type.SSZBasicType;
 import org.ethereum.beacon.ssz.type.SSZContainerType;
 import org.ethereum.beacon.ssz.type.SSZListType;
 import org.ethereum.beacon.ssz.type.SSZType;
-import org.javatuples.Pair;
 
 public class SSZVisitorHost {
 

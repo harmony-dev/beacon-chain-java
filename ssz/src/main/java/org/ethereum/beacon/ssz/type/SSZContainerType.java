@@ -2,7 +2,7 @@ package org.ethereum.beacon.ssz.type;
 
 import java.util.List;
 import java.util.stream.Collectors;
-import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
+import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.access.SSZContainerAccessor;
 
 public class SSZContainerType implements SSZCompositeType {

@@ -1,6 +1,6 @@
 package org.ethereum.beacon.ssz.type;
 
-import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
+import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.access.SSZCodec;
 
 public class SSZBasicType implements SSZType {
