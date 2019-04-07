@@ -30,7 +30,8 @@ import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.crypto.Hashes;
-import org.ethereum.beacon.ssz.Serializer;
+import org.ethereum.beacon.ssz.SSZBuilder;
+import org.ethereum.beacon.ssz.SSZSerializer;
 import org.junit.Before;
 import org.junit.Test;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -47,11 +48,11 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 
 public class ModelsSerializeTest {
-  private Serializer sszSerializer;
+  private SSZSerializer sszSerializer;
 
   @Before
   public void setup() {
-    sszSerializer = Serializer.annotationSerializer();
+    sszSerializer = new SSZBuilder().buildSerializer();
   }
 
   private AttestationData createAttestationData() {

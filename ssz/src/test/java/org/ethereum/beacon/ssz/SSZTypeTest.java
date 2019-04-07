@@ -3,13 +3,26 @@ package org.ethereum.beacon.ssz;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
+import org.ethereum.beacon.ssz.access.SSZContainerAccessor;
+import org.ethereum.beacon.ssz.access.SSZListAccessor;
+import org.ethereum.beacon.ssz.access.basic.BooleanPrimitive;
+import org.ethereum.beacon.ssz.access.basic.BytesPrimitive;
+import org.ethereum.beacon.ssz.access.basic.StringPrimitive;
+import org.ethereum.beacon.ssz.access.basic.UIntPrimitive;
+import org.ethereum.beacon.ssz.access.container.SimpleContainerAccessor;
+import org.ethereum.beacon.ssz.access.list.ArrayAccessor;
+import org.ethereum.beacon.ssz.access.list.ListAccessor;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
+import org.ethereum.beacon.ssz.creator.CompositeObjCreator;
+import org.ethereum.beacon.ssz.creator.ConstructorObjCreator;
+import org.ethereum.beacon.ssz.creator.SettersObjCreator;
 import org.ethereum.beacon.ssz.incremental.ObservableComposite;
 import org.ethereum.beacon.ssz.incremental.UpdateListener;
 import org.ethereum.beacon.ssz.type.AccessorResolverRegistry;
@@ -161,8 +174,9 @@ public class SSZTypeTest {
 
   @Test
   public void testTypeResolver1() {
-    AccessorResolverRegistry resolverRegistry = new AccessorResolverRegistry();
-    TypeResolver typeResolver = new SimpleTypeResolver(resolverRegistry, s -> "testSize".equals(s) ? 1 : null);
+    TypeResolver typeResolver = new SSZBuilder()
+            .withExternalVarResolver(s -> "testSize".equals(s) ? 1 : null)
+            .getTypeResolver();
 
     SSZType sszType = typeResolver.resolveSSZType(Container1.class);
     System.out.println(dumpType(sszType, ""));
@@ -170,10 +184,9 @@ public class SSZTypeTest {
 
   @Test
   public void testSerializer1() {
-    AccessorResolverRegistry resolverRegistry = new AccessorResolverRegistry();
-    TypeResolver typeResolver = new SimpleTypeResolver(resolverRegistry,
-        s -> "testSize".equals(s) ? 3 : null);
-    SSZSerializer serializer = new SSZSerializer(null, null, null, typeResolver);
+    SSZSerializer serializer = new SSZBuilder()
+            .withExternalVarResolver(s -> "testSize".equals(s) ? 3 : null)
+            .buildSerializer();
 
     Container1 c1 = new Container1(
       0x11111111,
@@ -207,10 +220,9 @@ public class SSZTypeTest {
 
   @Test
   public void testSerializer2() {
-    AccessorResolverRegistry resolverRegistry = new AccessorResolverRegistry();
-    TypeResolver typeResolver = new SimpleTypeResolver(resolverRegistry,
-        s -> "testSize".equals(s) ? 2 : null);
-    SSZSerializer serializer = new SSZSerializer(null, null, null, typeResolver);
+    SSZSerializer serializer = new SSZBuilder()
+        .withExternalVarResolver(s -> "testSize".equals(s) ? 2 : null)
+        .buildSerializer();
 
     Container3 c3 = new Container3(0x5555, 0x6666);
 
@@ -223,10 +235,9 @@ public class SSZTypeTest {
 
   @Test
   public void testSerializer3() {
-    AccessorResolverRegistry resolverRegistry = new AccessorResolverRegistry();
-    TypeResolver typeResolver = new SimpleTypeResolver(resolverRegistry,
-        s -> "testSize".equals(s) ? 3 : null);
-    SSZSerializer serializer = new SSZSerializer(null, null, null, typeResolver);
+    SSZSerializer serializer = new SSZBuilder()
+        .withExternalVarResolver(s -> "testSize".equals(s) ? 3 : null)
+        .buildSerializer();
 
     Container2 c2 = new Container2(
         0x44444444,
@@ -288,11 +299,11 @@ public class SSZTypeTest {
 
   @Test
   public void testTypeResolver2() throws Exception {
-    AccessorResolverRegistry resolverRegistry = new AccessorResolverRegistry();
-    TypeResolver typeResolver = new SimpleTypeResolver(resolverRegistry, s -> "testSize".equals(s) ? 1 : null);
-    SSZSerializer serializer = new SSZSerializer(null, null, null, typeResolver);
+    SSZBuilder sszBuilder = new SSZBuilder()
+        .withExternalVarResolver(s -> "testSize".equals(s) ? 1 : null);
+    SSZSerializer serializer = sszBuilder.buildSerializer();
 
-    SSZType sszType = typeResolver.resolveSSZType(Impl2.class);
+    SSZType sszType = sszBuilder.getTypeResolver().resolveSSZType(Impl2.class);
     System.out.println(dumpType(sszType, ""));
 
     Assert.assertTrue(sszType instanceof SSZContainerType);
@@ -327,10 +338,7 @@ public class SSZTypeTest {
 
   @Test
   public void testHashTruncated1() throws Exception {
-    AccessorResolverRegistry resolverRegistry = new AccessorResolverRegistry();
-    TypeResolver typeResolver = new SimpleTypeResolver(resolverRegistry,
-        s -> "testSize".equals(s) ? 1 : null);
-    SSZHasher hasher = new SSZHasher(Hashes::keccak256, typeResolver);
+    SSZHasher hasher = new SSZBuilder().buildHasher(Hashes::keccak256);
 
     H1 h1 = new H1();
     h1.a1 = 0x1111;
@@ -408,11 +416,11 @@ public class SSZTypeTest {
         return Hashes.keccak256(bytesValue);
       }
     }
-    AccessorResolverRegistry resolverRegistry = new AccessorResolverRegistry();
-    TypeResolver typeResolver = new SimpleTypeResolver(resolverRegistry, s -> null);
+    SSZBuilder sszBuilder = new SSZBuilder();
+    TypeResolver typeResolver = sszBuilder.getTypeResolver();
 
-    SSZSerializer serializer = new SSZSerializer(null, null, null, typeResolver);
     SSZVisitorHost visitorHost = new SSZVisitorHost();
+    SSZSerializer serializer = new SSZSerializer(visitorHost, typeResolver);
     CountingHash countingHashSimp = new CountingHash();
     CountingHash countingHashInc = new CountingHash();
     SSZIncrementalHasher incrementalHasher = new SSZIncrementalHasher(serializer, countingHashInc, 32);

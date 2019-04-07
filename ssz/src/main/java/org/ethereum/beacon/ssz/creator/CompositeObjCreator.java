@@ -9,15 +9,15 @@ import org.javatuples.Pair;
 import java.util.List;
 
 /** Creates instance of SSZ model class */
-public class SSZModelFactory implements ObjectCreator {
+public class CompositeObjCreator implements ObjectCreator {
 
   private List<ObjectCreator> objectCreators = new ArrayList<>();
 
-  public SSZModelFactory(List<ObjectCreator> creators) {
+  public CompositeObjCreator(List<ObjectCreator> creators) {
     this.objectCreators = new ArrayList<>(creators);
   }
 
-  public SSZModelFactory(ObjectCreator... creators) {
+  public CompositeObjCreator(ObjectCreator... creators) {
     this(Arrays.asList(creators));
   }
 
@@ -30,7 +30,7 @@ public class SSZModelFactory implements ObjectCreator {
    * @param objectCreator Object creator
    * @return updated this
    */
-  public SSZModelFactory registerObjCreator(ObjectCreator objectCreator) {
+  public CompositeObjCreator registerObjCreator(ObjectCreator objectCreator) {
     objectCreators.add(objectCreator);
     return this;
   }

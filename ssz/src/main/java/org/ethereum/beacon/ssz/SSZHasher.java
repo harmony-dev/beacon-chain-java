@@ -9,6 +9,8 @@ import org.ethereum.beacon.ssz.type.SSZContainerType;
 import org.ethereum.beacon.ssz.type.SSZType;
 import org.ethereum.beacon.ssz.type.TypeResolver;
 import org.ethereum.beacon.ssz.visitor.SSZSimpleHasher;
+import org.ethereum.beacon.ssz.visitor.SSZSimpleHasher.MerkleTrie;
+import org.ethereum.beacon.ssz.visitor.SSZVisitor;
 import org.ethereum.beacon.ssz.visitor.SSZVisitorHost;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
@@ -22,10 +24,8 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
  */
 public class SSZHasher implements BytesHasher {
 
-  private static final int BYTES_PER_CHUNK = 32;
-
   private final SSZVisitorHost visitorHost;
-  private final SSZSimpleHasher hasherVisitor;
+  private final SSZVisitor<MerkleTrie, Object> hasherVisitor;
   private final TypeResolver typeResolver;
 
   /**
@@ -33,12 +33,10 @@ public class SSZHasher implements BytesHasher {
    *
    *     org.ethereum.beacon.ssz.access.SSZCodec} function
    */
-  public SSZHasher(Function<BytesValue, Hash32> hashFunction, TypeResolver typeResolver) {
-
-    SSZSerializer serializer = new SSZSerializer(null, null, null, typeResolver);
-    this.visitorHost = new SSZVisitorHost();
+  public SSZHasher(TypeResolver typeResolver, SSZVisitorHost visitorHost, SSZVisitor<MerkleTrie, Object> hasherVisitor) {
+    this.visitorHost = visitorHost;
     this.typeResolver = typeResolver;
-    hasherVisitor = new SSZSimpleHasher(serializer, hashFunction, BYTES_PER_CHUNK);
+    this.hasherVisitor = hasherVisitor;
   }
 
   /** Calculates hash of the input object */

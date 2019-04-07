@@ -1,6 +1,7 @@
 package org.ethereum.beacon.core.state;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
@@ -12,7 +13,8 @@ import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
-import org.ethereum.beacon.ssz.Serializer;
+import org.ethereum.beacon.ssz.SSZBuilder;
+import org.ethereum.beacon.ssz.SSZSerializer;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -419,8 +421,8 @@ public class BeaconStateImpl implements MutableBeaconState {
 
   @Override
   public boolean equals(Object o) {
-    Serializer serializer = Serializer.annotationSerializer();
-    return serializer.encode2(this).equals(serializer.encode2(o));
+    SSZSerializer serializer = new SSZBuilder().buildSerializer();
+    return Arrays.equals(serializer.encode(this), serializer.encode(o));
   }
 
   @Override

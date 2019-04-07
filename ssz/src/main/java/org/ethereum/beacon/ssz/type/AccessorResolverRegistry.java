@@ -10,7 +10,7 @@ import java.util.Optional;
 import java.util.Set;
 import org.ethereum.beacon.ssz.creator.ConstructorObjCreator;
 import org.ethereum.beacon.ssz.SSZAnnotationSchemeBuilder;
-import org.ethereum.beacon.ssz.creator.SSZModelFactory;
+import org.ethereum.beacon.ssz.creator.CompositeObjCreator;
 import org.ethereum.beacon.ssz.SSZSchemeBuilder.SSZScheme.SSZField;
 import org.ethereum.beacon.ssz.creator.SettersObjCreator;
 import org.ethereum.beacon.ssz.access.container.SimpleContainerAccessor;
@@ -28,24 +28,24 @@ import org.ethereum.beacon.ssz.access.list.ListAccessor;
 public class AccessorResolverRegistry implements AccessorResolver {
 
   private Map<Class, List<CodecEntry>> registeredClassHandlers = new HashMap<>();
+  List<SSZListAccessor> listAccessors;
+  List<SSZContainerAccessor> containerAccessors;
 
-  List<SSZListAccessor> listAccessors = Arrays.asList(
-      new ArrayAccessor(),
-      new ListAccessor()
-  );
+  public AccessorResolverRegistry withContainerAccessors(List<SSZContainerAccessor> containerAccessors) {
+    this.containerAccessors = containerAccessors;
+    return this;
+  }
 
-  List<SSZContainerAccessor> containerAccessors =
-      Arrays.asList(
-          new SimpleContainerAccessor(
-              new SSZAnnotationSchemeBuilder(true),
-              new SSZModelFactory(new ConstructorObjCreator(), new SettersObjCreator())));
+  public AccessorResolverRegistry withListAccessors(List<SSZListAccessor> listAccessors) {
+    this.listAccessors = listAccessors;
+    return this;
+  }
 
-  {
-    registerCodec(new UIntPrimitive());
-    registerCodec(new BytesPrimitive());
-    registerCodec(new BooleanPrimitive());
-    registerCodec(new StringPrimitive());
-
+  public AccessorResolverRegistry withBasicCodecs(List<SSZCodec> codecs) {
+    for (SSZCodec codec : codecs) {
+      registerCodec(codec);
+    }
+    return this;
   }
 
   @Override

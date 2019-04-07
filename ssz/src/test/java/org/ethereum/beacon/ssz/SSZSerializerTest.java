@@ -6,7 +6,7 @@ import net.consensys.cava.ssz.SSZ;
 import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import org.ethereum.beacon.ssz.creator.ConstructorObjCreator;
-import org.ethereum.beacon.ssz.creator.SSZModelFactory;
+import org.ethereum.beacon.ssz.creator.CompositeObjCreator;
 import org.ethereum.beacon.ssz.fixtures.AttestationRecord;
 import org.ethereum.beacon.ssz.fixtures.Bitfield;
 import org.ethereum.beacon.ssz.fixtures.Sign;
@@ -48,7 +48,7 @@ public class SSZSerializerTest {
 
   @Before
   public void setup() {
-    sszSerializer = SSZSerializerBuilder.getBakedAnnotationBuilder().build();
+    sszSerializer = new SSZBuilder().buildSerializer();
   }
 
   @Test
@@ -96,13 +96,13 @@ public class SSZSerializerTest {
 
   @Test
   public void explicitAnnotationsAndLoggerTest() {
-    SSZSerializerBuilder builder = new SSZSerializerBuilder(); //
+    SSZBuilder builder = new SSZBuilder(); //
     builder
         .withSSZSchemeBuilder(new SSZAnnotationSchemeBuilder().withLogger(Logger.getLogger("test")))
 //        .withSSZCodecResolver(new SSZCodecRoulette())
-        .withSSZModelFactory(new SSZModelFactory(new ConstructorObjCreator()));
-    builder.addPrimitivesCodecs();
-    SSZSerializer serializer = builder.build();
+        .withObjectCreator(new CompositeObjCreator(new ConstructorObjCreator()));
+    builder.addDefaultBasicCodecs();
+    SSZSerializer serializer = builder.buildSerializer();
 
     AttestationRecord expected =
         new AttestationRecord(
@@ -299,9 +299,9 @@ public class SSZSerializerTest {
             new Child(UInt64.valueOf(5))
         });
 
-    SSZSerializer ssz = SSZSerializerBuilder.getBakedAnnotationBuilder()
-        .addCodec(new UIntCodec())
-        .build();
+    SSZSerializer ssz = new SSZBuilder()
+        .addBasicCodecs(new UIntCodec())
+        .buildSerializer();
 
     byte[] bytes = ssz.encode(w);
 

@@ -9,7 +9,8 @@ import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
-import org.ethereum.beacon.ssz.Serializer;
+import org.ethereum.beacon.ssz.SSZBuilder;
+import org.ethereum.beacon.ssz.SSZSerializer;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
@@ -24,7 +25,7 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
 public class DepositVerifier implements OperationVerifier<Deposit> {
 
   private final SpecHelpers spec;
-  private final Serializer ssz = Serializer.annotationSerializer();
+  private final SSZSerializer ssz = new SSZBuilder().buildSerializer();
 
   public DepositVerifier(SpecHelpers spec) {
     this.spec = spec;
@@ -40,7 +41,7 @@ public class DepositVerifier implements OperationVerifier<Deposit> {
     return depositData
         .getAmount().toBytesBigEndian()
         .concat(depositData.getTimestamp().toBytesBigEndian())
-        .concat(ssz.encode2(depositData.getDepositInput()));
+        .concat(BytesValue.wrap(ssz.encode(depositData.getDepositInput())));
   }
 
   @Override
