@@ -47,12 +47,14 @@ public class SszRunner implements Runner {
     }
 
     this.currentScheme = new SSZSchemeBuilder.SSZScheme();
-    SSZField field = new SSZField();
-    field.name = "value";
-    field.fieldType = BigInteger.class;
-    field.getter = "getValue";
-    field.extraSize = Integer.valueOf(testCase.getType().substring(4));
-    field.extraType = "uint";
+    SSZField field =
+        new SSZField(
+            BigInteger.class,
+            null,
+            "uint",
+            Integer.valueOf(testCase.getType().substring(4)),
+            "value",
+            "getValue");
 
     currentScheme.getFields().add(field);
   }

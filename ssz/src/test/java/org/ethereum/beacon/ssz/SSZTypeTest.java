@@ -293,8 +293,8 @@ public class SSZTypeTest {
     SSZContainerType containerType = (SSZContainerType) sszType;
 
     Assert.assertEquals(2, containerType.getChildTypes().size());
-    Assert.assertEquals("a1", containerType.getChildTypes().get(0).getTypeDescriptor().name);
-    Assert.assertEquals("a2", containerType.getChildTypes().get(1).getTypeDescriptor().name);
+    Assert.assertEquals("a1", containerType.getChildTypes().get(0).getTypeDescriptor().getName());
+    Assert.assertEquals("a2", containerType.getChildTypes().get(1).getTypeDescriptor().getName());
 
     byte[] bytes1 = serializer.encode(new Impl2());
     System.out.println(BytesValue.wrap(bytes1));

@@ -41,10 +41,10 @@ public class SimpleTypeResolver implements TypeResolver {
   }
 
   protected int getVectorSize(SSZField descriptor) {
-    if (descriptor.fieldAnnotation == null) {
+    if (descriptor.getFieldAnnotation() == null) {
       return -1;
     }
-    String vectorSize = descriptor.fieldAnnotation.vectorSize();
+    String vectorSize = descriptor.getFieldAnnotation().vectorSize();
     if (vectorSize.isEmpty()) {
       return -1;
     }

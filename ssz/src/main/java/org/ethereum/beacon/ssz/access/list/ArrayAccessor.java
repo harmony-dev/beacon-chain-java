@@ -8,7 +8,7 @@ public class ArrayAccessor extends AbstractListAccessor {
 
   @Override
   public boolean isSupported(SSZField field) {
-    return field.fieldType.isArray();
+    return field.getRawClass().isArray();
   }
 
   @Override
@@ -23,9 +23,7 @@ public class ArrayAccessor extends AbstractListAccessor {
 
   @Override
   public SSZField getListElementType(SSZField field) {
-    SSZField sszField = new SSZField();
-    sszField.fieldType = field.fieldType.getComponentType();
-    return sszField;
+    return new SSZField(field.getRawClass().getComponentType());
   }
 
 
@@ -34,10 +32,10 @@ public class ArrayAccessor extends AbstractListAccessor {
     return new SimpleInstanceBuilder() {
       @Override
       protected Object buildImpl(List<Object> children) {
-        if (!getListElementType(compositeDescriptor).fieldType.isPrimitive()) {
+        if (!getListElementType(compositeDescriptor).getRawClass().isPrimitive()) {
           return children.toArray(new Object[children.size()]);
         } else {
-          if (getListElementType(compositeDescriptor).fieldType == byte.class) {
+          if (getListElementType(compositeDescriptor).getRawClass() == byte.class) {
             Object ret = Array.newInstance(byte.class);
             for (int i = 0; i < children.size(); i++) {
               Array.setByte(ret, i, (Byte) children.get(i));

@@ -57,7 +57,7 @@ public class SubclassCodec implements SSZCodec {
     SSZField serializableField = getSerializableField(field);
     Object serializableTypeObject = superclassCodec.decode(serializableField, reader);
     return ConstructorObjCreator.createInstanceWithConstructor(
-        field.fieldType, new Class[] {serializableField.fieldType}, new Object[] {serializableTypeObject});
+        field.getRawClass(), new Class[] {serializableField.getRawClass()}, new Object[] {serializableTypeObject});
   }
 
   @Override
@@ -69,20 +69,19 @@ public class SubclassCodec implements SSZCodec {
         .map(
             serializableTypeObject ->
                 ConstructorObjCreator.createInstanceWithConstructor(
-                    field.fieldType,
-                    new Class[] {serializableField.fieldType},
+                    field.getRawClass(),
+                    new Class[] {serializableField.getRawClass()},
                     new Object[] {serializableTypeObject}))
         .collect(Collectors.toList());
   }
 
   private static SSZField getSerializableField(SSZField field) {
-    SSZField ret = new SSZField();
-    ret.fieldType = getSerializableClass(field.fieldType);
-    ret.name = field.name;
-    ret.extraType = field.extraType;
-    ret.extraSize = field.extraSize;
-    ret.getter = field.getter;
-    return ret;
+    return new SSZField(getSerializableClass(field.getRawClass()),
+    field.getFieldAnnotation(),
+    field.getExtraType(),
+    field.getExtraSize(),
+    field.getName(),
+    field.getGetter());
   }
 
   /**

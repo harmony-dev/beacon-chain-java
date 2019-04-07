@@ -48,7 +48,7 @@ public class AccessorResolverRegistry implements AccessorResolver {
 
   @Override
   public SSZCodec resolveBasicTypeCodec(SSZField field) {
-    Class<?> type = field.fieldType;
+    Class<?> type = field.getRawClass();
     boolean subclassCodec = false;
     if (!SubclassCodec.getSerializableClass(type).equals(type)) {
       type = SubclassCodec.getSerializableClass(type);
@@ -58,11 +58,11 @@ public class AccessorResolverRegistry implements AccessorResolver {
     SSZCodec codec = null;
     if (registeredClassHandlers.containsKey(type)) {
       List<CodecEntry> codecs = registeredClassHandlers.get(type);
-      if (field.extraType == null || field.extraType.isEmpty()) {
+      if (field.getExtraType() == null || field.getExtraType().isEmpty()) {
         codec = codecs.get(0).codec;
       } else {
         for (CodecEntry codecEntry : codecs) {
-          if (codecEntry.types.contains(field.extraType)) {
+          if (codecEntry.types.contains(field.getExtraType())) {
             codec = codecEntry.codec;
             break;
           }

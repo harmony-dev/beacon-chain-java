@@ -7,7 +7,7 @@ public class ListAccessor extends AbstractListAccessor {
 
   @Override
   public boolean isSupported(SSZField field) {
-    return List.class.isAssignableFrom(field.fieldType);
+    return List.class.isAssignableFrom(field.getRawClass());
   }
 
   @Override

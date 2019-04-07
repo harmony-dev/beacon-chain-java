@@ -1,5 +1,6 @@
 package org.ethereum.beacon.ssz.access.container;
 
+import java.lang.reflect.Type;
 import java.util.Map.Entry;
 import org.ethereum.beacon.ssz.SSZSchemeException;
 import org.ethereum.beacon.ssz.access.SSZField;
@@ -167,20 +168,18 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
       }
 
       // Construct SSZField
-      SSZField newField = new SSZField();
-      newField.fieldType = type;
-      newField.fieldGenericType = field.getGenericType() instanceof ParameterizedType ?
-          (ParameterizedType) field.getGenericType() : null;
-      newField.fieldAnnotation = annotation;
+      Type fieldType = field.getGenericType();
       String name = field.getName();
-      newField.name = name;
+      String extraType = null;
+      Integer extraSize = null;
       if (typeAnnotation != null) {
         Pair<String, Integer> extra = extractType(typeAnnotation, type);
-        newField.extraType = extra.getValue0();
-        newField.extraSize = extra.getValue1();
+        extraType = extra.getValue0();
+        extraSize = extra.getValue1();
       }
-      newField.getter = fieldGetters.containsKey(name) ? fieldGetters.get(name).getName() : null;
-      scheme.getFields().add(newField);
+      String getter = fieldGetters.containsKey(name) ? fieldGetters.get(name).getName() : null;
+      scheme.getFields().add(
+          new SSZField(fieldType, annotation, extraType, extraSize, name, getter));
     }
 
     if (explicitFieldAnnotation) {
@@ -195,20 +194,18 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
           }
 
           // Construct SSZField
-          SSZField newField = new SSZField();
-          newField.fieldType = method.getReturnType();
-          newField.fieldGenericType = method.getGenericReturnType() instanceof ParameterizedType ?
-              (ParameterizedType) method.getGenericReturnType() : null;
-          newField.fieldAnnotation = annotation;
+          Type fieldType = method.getGenericReturnType();
           String name = entry.getKey();
-          newField.name = name;
+          String extraType = null;
+          Integer extraSize = null;
           if (typeAnnotation != null) {
-            Pair<String, Integer> extra = extractType(typeAnnotation, newField.fieldType);
-            newField.extraType = extra.getValue0();
-            newField.extraSize = extra.getValue1();
+            Pair<String, Integer> extra = extractType(typeAnnotation, method.getReturnType());
+            extraType = extra.getValue0();
+            extraSize = extra.getValue1();
           }
-          newField.getter = method.getName();
-          scheme.getFields().add(newField);
+          String getter = method.getName();
+          scheme.getFields().add(
+              new SSZField(fieldType, annotation, extraType, extraSize, name, getter));
         }
       }
     }

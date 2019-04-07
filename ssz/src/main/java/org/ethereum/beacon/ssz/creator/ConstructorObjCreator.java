@@ -44,7 +44,7 @@ public class ConstructorObjCreator implements ObjectCreator {
     for (int i = 0; i < fieldValuePairs.size(); i++) {
       Pair<SSZField, Object> pair = fieldValuePairs.get(i);
       SSZField field = pair.getValue0();
-      params[i] = field.fieldType;
+      params[i] = field.getRawClass();
 //      switch (field.multipleType) {
 //        case LIST:
 //          {

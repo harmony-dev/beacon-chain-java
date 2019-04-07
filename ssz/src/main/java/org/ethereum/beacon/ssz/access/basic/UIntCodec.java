@@ -134,7 +134,8 @@ public class UIntCodec implements SSZCodec {
           }
       }
     } catch (IOException ex) {
-      String error = String.format("Failed to write data from field \"%s\" to stream", field.name);
+      String error = String.format("Failed to write data from field \"%s\" to stream",
+          field.getName());
       throw new SSZException(error, ex);
     }
   }
@@ -289,7 +290,7 @@ public class UIntCodec implements SSZCodec {
   }
 
   private NumericType parseFieldType(SSZField field) {
-    return classToNumericType.get(field.fieldType);
+    return classToNumericType.get(field.getRawClass());
   }
 
   enum Type {

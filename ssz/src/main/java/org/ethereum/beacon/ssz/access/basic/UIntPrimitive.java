@@ -158,7 +158,8 @@ public class UIntPrimitive implements SSZCodec {
           }
       }
     } catch (IOException ex) {
-      String error = String.format("Failed to write data from field \"%s\" to stream", field.name);
+      String error = String.format("Failed to write data from field \"%s\" to stream",
+          field.getName());
       throw new SSZException(error, ex);
     }
   }
@@ -246,16 +247,17 @@ public class UIntPrimitive implements SSZCodec {
   }
 
   private NumericType parseFieldType(SSZField field) {
-    if (field.extraSize != null && field.extraSize % Byte.SIZE != 0) {
+    if (field.getExtraSize() != null && field.getExtraSize() % Byte.SIZE != 0) {
       String error =
           String.format(
-              "Size of numeric field in bits should match whole bytes, found %s", field.extraSize);
+              "Size of numeric field in bits should match whole bytes, found %s",
+              field.getExtraSize());
       throw new SSZSchemeException(error);
     }
 
-    NumericType res = classToNumericType.get(field.fieldType);
-    if (field.extraSize != null) {
-      res = NumericType.of(res.type, field.extraSize);
+    NumericType res = classToNumericType.get(field.getRawClass());
+    if (field.getExtraSize() != null) {
+      res = NumericType.of(res.type, field.getExtraSize());
     }
 
     return res;

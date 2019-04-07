@@ -66,7 +66,8 @@ public class BooleanPrimitive implements SSZCodec {
       }
       result.write(SSZ.encodeBooleanList(data).toArrayUnsafe());
     } catch (IOException ex) {
-      String error = String.format("Failed to write data from field \"%s\" to stream", field.name);
+      String error = String.format("Failed to write data from field \"%s\" to stream",
+          field.getName());
       throw new SSZException(error, ex);
     }
   }

@@ -109,7 +109,8 @@ public class BytesPrimitive implements SSZCodec {
     try {
       result.write(res.toArrayUnsafe());
     } catch (IOException e) {
-      String error = String.format("Failed to write data of type %s to stream", field.fieldType);
+      String error = String.format("Failed to write data of type %s to stream",
+          field.getRawClass());
       throw new SSZException(error, e);
     }
   }
@@ -147,7 +148,8 @@ public class BytesPrimitive implements SSZCodec {
           }
       }
     } catch (IOException ex) {
-      String error = String.format("Failed to write data from field \"%s\" to stream", field.name);
+      String error = String.format("Failed to write data from field \"%s\" to stream",
+          field.getName());
       throw new SSZException(error, ex);
     }
   }
@@ -206,23 +208,23 @@ public class BytesPrimitive implements SSZCodec {
   }
 
   private BytesType parseFieldType(SSZField field) {
-    Type type = Type.fromValue(field.extraType);
+    Type type = Type.fromValue(field.getExtraType());
 
     if (type == null || type.equals(Type.BYTES)) {
-      return BytesType.of(Type.BYTES, field.extraSize);
+      return BytesType.of(Type.BYTES, field.getExtraSize());
     }
 
     if (type.equals(Type.ADDRESS)) {
-      if (field.extraSize != null) {
+      if (field.getExtraSize() != null) {
         throw new SSZSchemeException("Address is fixed 20 bytes type");
       } else {
         return BytesType.of(Type.ADDRESS, 20);
       }
     } else {
-      if (field.extraSize == null) {
+      if (field.getExtraSize() == null) {
         throw new SSZSchemeException("Hash size is required!");
       } else {
-        return BytesType.of(Type.HASH, field.extraSize);
+        return BytesType.of(Type.HASH, field.getExtraSize());
       }
     }
   }

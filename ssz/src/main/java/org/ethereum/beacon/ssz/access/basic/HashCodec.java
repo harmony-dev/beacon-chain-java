@@ -67,7 +67,8 @@ public class HashCodec implements SSZCodec {
     try {
       result.write(res.toArrayUnsafe());
     } catch (IOException e) {
-      String error = String.format("Failed to write data of type %s to stream", field.fieldType);
+      String error = String.format("Failed to write data of type %s to stream",
+          field.getRawClass());
       throw new SSZException(error, e);
     }
   }
@@ -81,7 +82,8 @@ public class HashCodec implements SSZCodec {
     try {
       result.write(SSZ.encodeHashList(data).toArrayUnsafe());
     } catch (IOException ex) {
-      String error = String.format("Failed to write data from field \"%s\" to stream", field.name);
+      String error = String.format("Failed to write data from field \"%s\" to stream",
+          field.getName());
       throw new SSZException(error, ex);
     }
   }
@@ -98,7 +100,8 @@ public class HashCodec implements SSZCodec {
           }
       }
     } catch (Exception ex) {
-      String error = String.format("Failed to read data from stream to field \"%s\"", field.name);
+      String error = String.format("Failed to read data from stream to field \"%s\"",
+          field.getName());
       throw new SSZException(error, ex);
     }
 
@@ -136,7 +139,7 @@ public class HashCodec implements SSZCodec {
       }
     } catch (Exception ex) {
       String error =
-          String.format("Failed to read list data from stream to field \"%s\"", field.name);
+          String.format("Failed to read list data from stream to field \"%s\"", field.getName());
       throw new SSZException(error, ex);
     }
 
@@ -144,11 +147,12 @@ public class HashCodec implements SSZCodec {
   }
 
   private HashType parseFieldType(SSZField field) {
-    if (field.fieldType.equals(Hash32.class)) {
+    if (field.getRawClass().equals(Hash32.class)) {
       return HashType.of(32);
     }
 
-    throw new SSZSchemeException(String.format("Hash of class %s is not supported", field.fieldType));
+    throw new SSZSchemeException(String.format("Hash of class %s is not supported",
+        field.getRawClass()));
   }
 
   static class HashType {

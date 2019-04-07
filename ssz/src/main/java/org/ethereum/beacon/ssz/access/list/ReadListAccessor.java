@@ -9,7 +9,7 @@ public class ReadListAccessor extends AbstractListAccessor {
 
   @Override
   public boolean isSupported(SSZField field) {
-    return field.fieldType.isAssignableFrom(ReadList.class);
+    return field.getRawClass().isAssignableFrom(ReadList.class);
   }
 
   @Override
@@ -41,7 +41,7 @@ public class ReadListAccessor extends AbstractListAccessor {
       @Override
       protected Object buildImpl(List<Object> children) {
         return ReadList.wrap(children, resolveIndexConverter((Class<?>)
-            listType.fieldGenericType.getActualTypeArguments()[0]));
+            listType.getParametrizedType().getActualTypeArguments()[0]));
       }
     };
   }

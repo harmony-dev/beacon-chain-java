@@ -88,7 +88,8 @@ public class BytesCodec implements SSZCodec {
     try {
       result.write(res.toArrayUnsafe());
     } catch (IOException e) {
-      String error = String.format("Failed to write data of type %s to stream", field.fieldType);
+      String error = String.format("Failed to write data of type %s to stream",
+          field.getRawClass());
       throw new SSZException(error, e);
     }
   }
@@ -108,7 +109,8 @@ public class BytesCodec implements SSZCodec {
       }
       result.write(res.toArrayUnsafe());
     } catch (IOException ex) {
-      String error = String.format("Failed to write data from field \"%s\" to stream", field.name);
+      String error = String.format("Failed to write data from field \"%s\" to stream",
+          field.getName());
       throw new SSZException(error, ex);
     }
   }
@@ -140,7 +142,8 @@ public class BytesCodec implements SSZCodec {
           }
       }
     } catch (Exception ex) {
-      String error = String.format("Failed to read data from stream to field \"%s\"", field.name);
+      String error = String.format("Failed to read data from stream to field \"%s\"",
+          field.getName());
       throw new SSZException(error, ex);
     }
 
@@ -202,7 +205,7 @@ public class BytesCodec implements SSZCodec {
       }
     } catch (Exception ex) {
       String error =
-          String.format("Failed to read list data from stream to field \"%s\"", field.name);
+          String.format("Failed to read list data from stream to field \"%s\"", field.getName());
       throw new SSZException(error, ex);
     }
 
@@ -210,11 +213,12 @@ public class BytesCodec implements SSZCodec {
   }
 
   private BytesType parseFieldType(SSZField field) {
-    if (classToByteType.containsKey(field.fieldType)) {
-      return classToByteType.get(field.fieldType);
+    if (classToByteType.containsKey(field.getRawClass())) {
+      return classToByteType.get(field.getRawClass());
     }
 
-    throw new SSZSchemeException(String.format("Hash of class %s is not supported", field.fieldType));
+    throw new SSZSchemeException(String.format("Hash of class %s is not supported",
+        field.getRawClass()));
   }
 
   static class BytesType {

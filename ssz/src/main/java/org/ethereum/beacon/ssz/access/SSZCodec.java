@@ -110,7 +110,7 @@ public interface SSZCodec {
    */
   default Object throwUnsupportedType(SSZField field)
       throws RuntimeException {
-    throw new SSZSchemeException(String.format("Type [%s] is not supported", field.fieldType));
+    throw new SSZSchemeException(String.format("Type [%s] is not supported", field.getRawClass()));
   }
 
   /**
@@ -123,6 +123,7 @@ public interface SSZCodec {
    */
   default List<Object> throwUnsupportedListType(SSZField field)
       throws RuntimeException {
-    throw new SSZSchemeException(String.format("List of types [%s] is not supported", field.fieldType));
+    throw new SSZSchemeException(String.format("List of types [%s] is not supported",
+        field.getRawClass()));
   }
 }

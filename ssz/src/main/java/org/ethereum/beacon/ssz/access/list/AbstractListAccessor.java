@@ -36,26 +36,17 @@ public abstract class AbstractListAccessor implements SSZListAccessor {
   }
 
   static SSZField extractElementType(SSZField listDescriptor, int genericTypeParamIndex) {
-    SSZField sszField = new SSZField();
-    if (listDescriptor.fieldGenericType == null) {
-      sszField.fieldType = Object.class;
+    if (listDescriptor.getParametrizedType() == null) {
+      return new SSZField(Object.class);
     } else {
-      Type listTypeArgument = listDescriptor.fieldGenericType
+      Type listTypeArgument = listDescriptor.getParametrizedType()
           .getActualTypeArguments()[genericTypeParamIndex];
 
       if (listTypeArgument instanceof WildcardType) {
         listTypeArgument = ((WildcardType) listTypeArgument).getLowerBounds()[0];
       }
 
-      if (listTypeArgument instanceof Class) {
-        sszField.fieldType = (Class<?>) listTypeArgument;
-      } else if (listTypeArgument instanceof ParameterizedType) {
-        sszField.fieldType = (Class<?>) ((ParameterizedType) listTypeArgument).getRawType();
-        sszField.fieldGenericType = (ParameterizedType) listTypeArgument;
-      } else {
-        throw new RuntimeException("Internal error: unknown list type: " + listTypeArgument);
-      }
+      return new SSZField(listTypeArgument);
     }
-    return sszField;
   }
 }

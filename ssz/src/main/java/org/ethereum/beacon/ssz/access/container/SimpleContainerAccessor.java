@@ -27,15 +27,16 @@ public class SimpleContainerAccessor implements SSZContainerAccessor {
 
     public BasicAccessor(SSZField containerDescriptor) {
       this.containerDescriptor = containerDescriptor;
-      scheme = sszSchemeBuilder.build(containerDescriptor.fieldType);
+      scheme = sszSchemeBuilder.build(containerDescriptor.getRawClass());
       getters = new HashMap<>();
       try {
         for (PropertyDescriptor pd :
-            Introspector.getBeanInfo(containerDescriptor.fieldType).getPropertyDescriptors()) {
+            Introspector.getBeanInfo(containerDescriptor.getRawClass()).getPropertyDescriptors()) {
           getters.put(pd.getReadMethod().getName(), pd.getReadMethod());
         }
       } catch (IntrospectionException e) {
-        throw new RuntimeException(String.format("Couldn't enumerate all getters in class %s", containerDescriptor.fieldType.getName()), e);
+        throw new RuntimeException(String.format("Couldn't enumerate all getters in class %s", containerDescriptor
+            .getRawClass().getName()), e);
       }
     }
 
@@ -51,17 +52,17 @@ public class SimpleContainerAccessor implements SSZContainerAccessor {
     @Override
     public Object getChildValue(Object containerInstance, int childIndex) {
       SSZField field = getChildDescriptors().get(childIndex);
-      Method getter = getters.get(field.getter);
+      Method getter = getters.get(field.getGetter());
       try {
         if (getter != null) { // We have getter
           return getter.invoke(getContainerInstance(containerInstance));
         } else { // Trying to access field directly
-          return containerDescriptor.fieldType.getField(field.name)
+          return containerDescriptor.getRawClass().getField(field.getName())
               .get(getContainerInstance(containerInstance));
         }
       } catch (Exception e) {
         throw new SSZSchemeException(String.format("Failed to get value from field %s, "
-            + "you should either have public field or public getter for it", field.name), e);
+            + "you should either have public field or public getter for it", field.getName()), e);
       }
     }
   }
@@ -96,7 +97,7 @@ public class SimpleContainerAccessor implements SSZContainerAccessor {
         }
         values.add(Pair.with(childDescriptor, value));
       }
-      return objectCreator.createObject(containerDescriptor.fieldType, values);
+      return objectCreator.createObject(containerDescriptor.getRawClass(), values);
     }
   }
 
@@ -111,7 +112,7 @@ public class SimpleContainerAccessor implements SSZContainerAccessor {
 
   @Override
   public boolean isSupported(SSZField containerDescriptor) {
-    if (!containerDescriptor.fieldType.isAnnotationPresent(SSZSerializable.class)) {
+    if (!containerDescriptor.getRawClass().isAnnotationPresent(SSZSerializable.class)) {
       return false;
     }
     if (getAccessor(containerDescriptor).getChildDescriptors().isEmpty()) {

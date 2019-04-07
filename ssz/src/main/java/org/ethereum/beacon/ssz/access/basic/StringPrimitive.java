@@ -60,7 +60,8 @@ public class StringPrimitive implements SSZCodec {
       String[] data = value.toArray(new String[0]);
       result.write(SSZ.encodeStringList(data).toArrayUnsafe());
     } catch (IOException ex) {
-      String error = String.format("Failed to write data from field \"%s\" to stream", field.name);
+      String error = String.format("Failed to write data from field \"%s\" to stream",
+          field.getName());
       throw new SSZException(error, ex);
     }
   }

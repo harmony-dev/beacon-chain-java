@@ -63,10 +63,10 @@ public class SettersObjCreator implements ObjectCreator {
     for (int i = 0; i < fields.size(); ++i) {
       SSZField currentField = fields.get(i);
       try { // Try to set by field assignment
-        clazz.getField(currentField.name).set(result, values[i]);
+        clazz.getField(currentField.getName()).set(result, values[i]);
       } catch (Exception e) {
         try { // Try to set using setter
-          fieldSetters.get(currentField.name).invoke(result, values[i]);
+          fieldSetters.get(currentField.getName()).invoke(result, values[i]);
         } catch (Exception ex) { // Cannot set the field
           return null;
         }
