@@ -2,6 +2,7 @@ package org.ethereum.beacon.ssz.type;
 
 import java.util.Optional;
 import org.ethereum.beacon.ssz.ExternalVarResolver;
+import org.ethereum.beacon.ssz.access.AccessorResolver;
 import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.SSZSchemeException;
 import org.ethereum.beacon.ssz.access.SSZCodec;

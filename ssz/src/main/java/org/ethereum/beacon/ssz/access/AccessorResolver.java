@@ -1,4 +1,4 @@
-package org.ethereum.beacon.ssz.type;
+package org.ethereum.beacon.ssz.access;
 
 import java.util.Optional;
 import org.ethereum.beacon.ssz.access.SSZField;

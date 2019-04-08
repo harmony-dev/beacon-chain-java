@@ -1,4 +1,4 @@
-package org.ethereum.beacon.ssz.type;
+package org.ethereum.beacon.ssz.access;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -7,11 +7,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import org.ethereum.beacon.ssz.access.SSZField;
-import org.ethereum.beacon.ssz.access.SSZCodec;
-import org.ethereum.beacon.ssz.access.SSZContainerAccessor;
-import org.ethereum.beacon.ssz.access.SSZListAccessor;
+import org.ethereum.beacon.ssz.SSZSchemeException;
 import org.ethereum.beacon.ssz.access.basic.SubclassCodec;
+import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 
 public class AccessorResolverRegistry implements AccessorResolver {
 
@@ -38,16 +36,43 @@ public class AccessorResolverRegistry implements AccessorResolver {
 
   @Override
   public Optional<SSZListAccessor> resolveListAccessor(SSZField field) {
+    Object accessor = getAccessorFromAnnotation(field);
+    if (accessor instanceof SSZListAccessor) {
+      return Optional.of((SSZListAccessor) accessor);
+    }
     return listAccessors.stream().filter(a -> a.isSupported(field)).findFirst();
   }
 
   @Override
   public Optional<SSZContainerAccessor> resolveContainerAccessor(SSZField field) {
+    Object accessor = getAccessorFromAnnotation(field);
+    if (accessor instanceof SSZContainerAccessor) {
+      return Optional.of((SSZContainerAccessor) accessor);
+    }
+
     return containerAccessors.stream().filter(a -> a.isSupported(field)).findFirst();
+  }
+
+  private Object getAccessorFromAnnotation(SSZField field) {
+    SSZSerializable annotation = field.getRawClass().getAnnotation(SSZSerializable.class);
+    if (annotation == null || annotation.accessor() == void.class) {
+      return null;
+    }
+
+    try {
+      return annotation.accessor().newInstance();
+    } catch (InstantiationException | IllegalAccessException e) {
+      throw new SSZSchemeException("Couldn't create codec instance " + annotation.accessor() + " for field " + field);
+    }
   }
 
   @Override
   public SSZCodec resolveBasicTypeCodec(SSZField field) {
+    Object accessor = getAccessorFromAnnotation(field);
+    if (accessor instanceof SSZCodec) {
+      return (SSZCodec) accessor;
+    }
+
     Class<?> type = field.getRawClass();
     boolean subclassCodec = false;
     if (!SubclassCodec.getSerializableClass(type).equals(type)) {

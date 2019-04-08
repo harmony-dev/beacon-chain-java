@@ -25,7 +25,7 @@ import org.ethereum.beacon.ssz.creator.CompositeObjCreator;
 import org.ethereum.beacon.ssz.creator.ConstructorObjCreator;
 import org.ethereum.beacon.ssz.creator.ObjectCreator;
 import org.ethereum.beacon.ssz.creator.SettersObjCreator;
-import org.ethereum.beacon.ssz.type.AccessorResolverRegistry;
+import org.ethereum.beacon.ssz.access.AccessorResolverRegistry;
 import org.ethereum.beacon.ssz.type.SimpleTypeResolver;
 import org.ethereum.beacon.ssz.type.TypeResolver;
 import org.ethereum.beacon.ssz.visitor.SSZIncrementalHasher;

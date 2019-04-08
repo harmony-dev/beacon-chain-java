@@ -32,4 +32,7 @@ public @interface SSZSerializable {
    * is serializable
    */
   String instanceGetter() default "";
+
+  Class<?> accessor() default void.class;
+
 }
