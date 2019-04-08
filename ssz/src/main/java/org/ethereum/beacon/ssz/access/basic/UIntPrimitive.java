@@ -27,6 +27,7 @@ import static java.util.function.Function.identity;
  * SSZField#extraSize}
  */
 public class UIntPrimitive implements SSZCodec {
+  private static final int DEFAULT_BYTE_SIZE = 8;
   private static final int DEFAULT_SHORT_SIZE = 16;
   private static final int DEFAULT_INT_SIZE = 32;
   private static final int DEFAULT_LONG_SIZE = 64;
@@ -37,6 +38,8 @@ public class UIntPrimitive implements SSZCodec {
   private static Set<Class> supportedClassTypes = new HashSet<>();
 
   static {
+    classToNumericType.put(byte.class, NumericType.of(Type.INT, DEFAULT_BYTE_SIZE));
+    classToNumericType.put(Byte.class, NumericType.of(Type.INT, DEFAULT_BYTE_SIZE));
     classToNumericType.put(int.class, NumericType.of(Type.INT, DEFAULT_INT_SIZE));
     classToNumericType.put(Integer.class, NumericType.of(Type.INT, DEFAULT_INT_SIZE));
     classToNumericType.put(short.class, NumericType.of(Type.INT, DEFAULT_SHORT_SIZE));
@@ -51,6 +54,8 @@ public class UIntPrimitive implements SSZCodec {
   }
 
   static {
+    supportedClassTypes.add(byte.class);
+    supportedClassTypes.add(Byte.class);
     supportedClassTypes.add(int.class);
     supportedClassTypes.add(Integer.class);
     supportedClassTypes.add(short.class);
@@ -61,7 +66,7 @@ public class UIntPrimitive implements SSZCodec {
   }
 
   private static void encodeInt(Object value, NumericType type, OutputStream result) {
-    encodeLong((int) value, type.size, result);
+    encodeLong(((Number) value).intValue() & type.mask, type.size, result);
   }
 
   private static void encodeLong(Object value, NumericType type, OutputStream result) {
@@ -293,10 +298,16 @@ public class UIntPrimitive implements SSZCodec {
   static class NumericType {
     final Type type;
     final int size;
+    final int mask;
 
     NumericType(Type type, int size) {
       this.type = type;
       this.size = size;
+      int mask = 0;
+      for (int i = 0; i < size; i++) {
+        mask = 1 | mask << 1;
+      }
+      this.mask = mask;
     }
 
     static NumericType of(Type type, int size) {
