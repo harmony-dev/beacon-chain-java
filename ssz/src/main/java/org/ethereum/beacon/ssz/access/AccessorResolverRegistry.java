@@ -9,6 +9,7 @@ import java.util.Optional;
 import java.util.Set;
 import org.ethereum.beacon.ssz.SSZSchemeException;
 import org.ethereum.beacon.ssz.access.basic.SubclassCodec;
+import org.ethereum.beacon.ssz.access.list.SubclassListAccessor;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 
 public class AccessorResolverRegistry implements AccessorResolver {
@@ -36,6 +37,11 @@ public class AccessorResolverRegistry implements AccessorResolver {
 
   @Override
   public Optional<SSZListAccessor> resolveListAccessor(SSZField field) {
+    if (!SubclassListAccessor.getSerializableClass(field.getRawClass()).equals(field.getRawClass())) {
+      return resolveListAccessor(SubclassListAccessor.getSerializableField(field))
+          .map(SubclassListAccessor::new);
+    }
+
     Object accessor = getAccessorFromAnnotation(field);
     if (accessor instanceof SSZListAccessor) {
       return Optional.of((SSZListAccessor) accessor);
