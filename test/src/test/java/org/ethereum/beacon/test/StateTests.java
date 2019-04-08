@@ -14,11 +14,14 @@ public class StateTests extends TestUtils {
   @Test
   public void testState() {
     Path stateTestsPath = Paths.get(PATH_TO_TESTS, TESTS_DIR);
-    // TODO remove exclusions after hash_tree_root and state_root tests pass
     runTestsInResourceDir(
         stateTestsPath,
         StateTest.class,
         testCase -> new StateRunner(testCase).run(),
-        Ignored.of("test_skipped_slots", "test_empty_epoch_transition", "test_historical_batch"));
+        Ignored.of(
+            // FIXME: signed_root and hash_tree_root results do not match
+            "test_skipped_slots",
+            "test_empty_epoch_transition",
+            "test_historical_batch"));
   }
 }
