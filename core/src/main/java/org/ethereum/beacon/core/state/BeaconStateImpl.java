@@ -1,8 +1,5 @@
 package org.ethereum.beacon.core.state;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
@@ -13,9 +10,6 @@ import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
-import org.ethereum.beacon.ssz.SSZBuilder;
-import org.ethereum.beacon.ssz.SSZSerializer;
-import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.collections.WriteList;
@@ -26,47 +20,57 @@ public class BeaconStateImpl implements MutableBeaconState {
 
   /* Misc */
 
-  @SSZ private SlotNumber slot = SlotNumber.ZERO;
-  @SSZ private Time genesisTime = Time.ZERO;
-  @SSZ private ForkData forkData = ForkData.EMPTY;
+  private SlotNumber slot = SlotNumber.ZERO;
+  private Time genesisTime = Time.ZERO;
+  private ForkData forkData = ForkData.EMPTY;
 
   /* Validator registry */
 
-  @SSZ private List<ValidatorRecord> validatorRegistryList = new ArrayList<>();
-  @SSZ private List<Gwei> validatorBalancesList = new ArrayList<>();
-  @SSZ private EpochNumber validatorRegistryUpdateEpoch = EpochNumber.ZERO;
+  private WriteList<ValidatorIndex, ValidatorRecord> validatorRegistry =
+      WriteList.create(ValidatorIndex::of);
+  private WriteList<ValidatorIndex, Gwei> validatorBalances =
+      WriteList.create(ValidatorIndex::of);
+  private EpochNumber validatorRegistryUpdateEpoch = EpochNumber.ZERO;
 
   /* Randomness and committees */
 
-  @SSZ private List<Hash32> latestRandaoMixesList = new ArrayList<>();
-  @SSZ private ShardNumber previousShufflingStartShard = ShardNumber.ZERO;
-  @SSZ private ShardNumber currentShufflingStartShard = ShardNumber.ZERO;
-  @SSZ private EpochNumber previousShufflingEpoch = EpochNumber.ZERO;
-  @SSZ private EpochNumber currentShufflingEpoch = EpochNumber.ZERO;
-  @SSZ private Hash32 previousShufflingSeed = Hash32.ZERO;
-  @SSZ private Hash32 currentShufflingSeed = Hash32.ZERO;
+  private WriteList<EpochNumber, Hash32> latestRandaoMixes =
+      WriteList.create(EpochNumber::of);
+  private ShardNumber previousShufflingStartShard = ShardNumber.ZERO;
+  private ShardNumber currentShufflingStartShard = ShardNumber.ZERO;
+  private EpochNumber previousShufflingEpoch = EpochNumber.ZERO;
+  private EpochNumber currentShufflingEpoch = EpochNumber.ZERO;
+  private Hash32 previousShufflingSeed = Hash32.ZERO;
+  private Hash32 currentShufflingSeed = Hash32.ZERO;
 
   /* Finality */
 
-  @SSZ private EpochNumber previousJustifiedEpoch = EpochNumber.ZERO;
-  @SSZ private EpochNumber justifiedEpoch = EpochNumber.ZERO;
-  @SSZ private Bitfield64 justificationBitfield = Bitfield64.ZERO;
-  @SSZ private EpochNumber finalizedEpoch = EpochNumber.ZERO;
+  private EpochNumber previousJustifiedEpoch = EpochNumber.ZERO;
+  private EpochNumber justifiedEpoch = EpochNumber.ZERO;
+  private Bitfield64 justificationBitfield = Bitfield64.ZERO;
+  private EpochNumber finalizedEpoch = EpochNumber.ZERO;
 
   /* Recent state */
 
-  @SSZ private List<Crosslink> latestCrosslinksList = new ArrayList<>();
-  @SSZ private List<Hash32> latestBlockRootsList = new ArrayList<>();
-  @SSZ private List<Hash32> latestActiveIndexRootsList = new ArrayList<>();
-  @SSZ private List<Gwei> latestSlashedBalancesList = new ArrayList<>();
-  @SSZ private List<PendingAttestationRecord> latestAttestationsList = new ArrayList<>();
-  @SSZ private List<Hash32> batchedBlockRootsList = new ArrayList<>();
+  private WriteList<ShardNumber, Crosslink> latestCrosslinks =
+      WriteList.create(ShardNumber::of);
+  private WriteList<SlotNumber, Hash32> latestBlockRoots =
+      WriteList.create(SlotNumber::of);
+  private WriteList<EpochNumber, Hash32> latestActiveIndexRoots =
+      WriteList.create(EpochNumber::of);
+  private WriteList<EpochNumber, Gwei> latestSlashedBalances =
+      WriteList.create(EpochNumber::of);
+  private WriteList<Integer, PendingAttestationRecord> latestAttestations =
+      WriteList.create(Integer::valueOf);
+  private WriteList<Integer, Hash32> batchedBlockRoots =
+      WriteList.create(Integer::valueOf);
 
   /* PoW receipt root */
 
-  @SSZ private Eth1Data latestEth1Data = Eth1Data.EMPTY;
-  @SSZ private List<Eth1DataVote> eth1DataVotesList = new ArrayList<>();
-  @SSZ private UInt64 depositIndex = UInt64.ZERO;
+  private Eth1Data latestEth1Data = Eth1Data.EMPTY;
+  private WriteList<Integer, Eth1DataVote> eth1DataVotes =
+      WriteList.create(Integer::valueOf);
+  private UInt64 depositIndex = UInt64.ZERO;
 
   public BeaconStateImpl() {}
 
@@ -75,11 +79,11 @@ public class BeaconStateImpl implements MutableBeaconState {
         genesisTime = state.getGenesisTime();
         forkData = state.getForkData();
 
-        validatorRegistryList = state.getValidatorRegistry().listCopy();
-        validatorBalancesList = state.getValidatorBalances().listCopy();
+        validatorRegistry = state.getValidatorRegistry().createMutableCopy();
+        validatorBalances = state.getValidatorBalances().createMutableCopy();
         validatorRegistryUpdateEpoch = state.getValidatorRegistryUpdateEpoch();
 
-        latestRandaoMixesList = state.getLatestRandaoMixes().listCopy();
+        latestRandaoMixes = state.getLatestRandaoMixes().createMutableCopy();
         previousShufflingStartShard = state.getPreviousShufflingStartShard();
         currentShufflingStartShard = state.getCurrentShufflingStartShard();
         previousShufflingEpoch = state.getPreviousShufflingEpoch();
@@ -92,20 +96,20 @@ public class BeaconStateImpl implements MutableBeaconState {
         justificationBitfield = state.getJustificationBitfield();
         finalizedEpoch = state.getFinalizedEpoch();
 
-        latestCrosslinksList = state.getLatestCrosslinks().listCopy();
-        latestBlockRootsList = state.getLatestBlockRoots().listCopy();
-        latestActiveIndexRootsList = state.getLatestActiveIndexRoots().listCopy();
-        latestSlashedBalancesList = state.getLatestSlashedBalances().listCopy();
-        latestAttestationsList = state.getLatestAttestations().listCopy();
-        batchedBlockRootsList = state.getBatchedBlockRoots().listCopy();
+        latestCrosslinks = state.getLatestCrosslinks().createMutableCopy();
+        latestBlockRoots = state.getLatestBlockRoots().createMutableCopy();
+        latestActiveIndexRoots = state.getLatestActiveIndexRoots().createMutableCopy();
+        latestSlashedBalances = state.getLatestSlashedBalances().createMutableCopy();
+        latestAttestations = state.getLatestAttestations().createMutableCopy();
+        batchedBlockRoots = state.getBatchedBlockRoots().createMutableCopy();
 
         latestEth1Data = state.getLatestEth1Data();
-        eth1DataVotesList = state.getEth1DataVotes().listCopy();
+        eth1DataVotes = state.getEth1DataVotes().createMutableCopy();
   }
 
   @Override
   public BeaconState createImmutable() {
-    return new ImmutableBeaconStateImpl(this);
+    return new BeaconStateImpl(this);
   }
 
   @Override
@@ -138,24 +142,6 @@ public class BeaconStateImpl implements MutableBeaconState {
     this.forkData = forkData;
   }
 
-  public List<ValidatorRecord> getValidatorRegistryList() {
-    return validatorRegistryList;
-  }
-
-  public void setValidatorRegistryList(
-      List<ValidatorRecord> validatorRegistryList) {
-    this.validatorRegistryList = validatorRegistryList;
-  }
-
-  public List<Gwei> getValidatorBalancesList() {
-    return validatorBalancesList;
-  }
-
-  public void setValidatorBalancesList(
-      List<Gwei> validatorBalancesList) {
-    this.validatorBalancesList = validatorBalancesList;
-  }
-
   @Override
   public EpochNumber getValidatorRegistryUpdateEpoch() {
     return validatorRegistryUpdateEpoch;
@@ -165,15 +151,6 @@ public class BeaconStateImpl implements MutableBeaconState {
   public void setValidatorRegistryUpdateEpoch(
       EpochNumber validatorRegistryUpdateEpoch) {
     this.validatorRegistryUpdateEpoch = validatorRegistryUpdateEpoch;
-  }
-
-  public List<Hash32> getLatestRandaoMixesList() {
-    return latestRandaoMixesList;
-  }
-
-  public void setLatestRandaoMixesList(
-      List<Hash32> latestRandaoMixesList) {
-    this.latestRandaoMixesList = latestRandaoMixesList;
   }
 
   @Override
@@ -278,60 +255,6 @@ public class BeaconStateImpl implements MutableBeaconState {
     this.finalizedEpoch = finalizedEpoch;
   }
 
-  public List<Crosslink> getLatestCrosslinksList() {
-    return latestCrosslinksList;
-  }
-
-  public void setLatestCrosslinksList(
-      List<Crosslink> latestCrosslinksList) {
-    this.latestCrosslinksList = latestCrosslinksList;
-  }
-
-  public List<Hash32> getLatestBlockRootsList() {
-    return latestBlockRootsList;
-  }
-
-  public void setLatestBlockRootsList(
-      List<Hash32> latestBlockRootsList) {
-    this.latestBlockRootsList = latestBlockRootsList;
-  }
-
-  public List<Hash32> getLatestActiveIndexRootsList() {
-    return latestActiveIndexRootsList;
-  }
-
-  public void setLatestActiveIndexRootsList(
-      List<Hash32> latestActiveIndexRootsList) {
-    this.latestActiveIndexRootsList = latestActiveIndexRootsList;
-  }
-
-  public List<Gwei> getLatestSlashedBalancesList() {
-    return latestSlashedBalancesList;
-  }
-
-  public void setLatestSlashedBalancesList(
-      List<Gwei> latestSlashedBalancesList) {
-    this.latestSlashedBalancesList = latestSlashedBalancesList;
-  }
-
-  public List<PendingAttestationRecord> getLatestAttestationsList() {
-    return latestAttestationsList;
-  }
-
-  public void setLatestAttestationsList(
-      List<PendingAttestationRecord> latestAttestationsList) {
-    this.latestAttestationsList = latestAttestationsList;
-  }
-
-  public List<Hash32> getBatchedBlockRootsList() {
-    return batchedBlockRootsList;
-  }
-
-  public void setBatchedBlockRootsList(
-      List<Hash32> batchedBlockRootsList) {
-    this.batchedBlockRootsList = batchedBlockRootsList;
-  }
-
   @Override
   public Eth1Data getLatestEth1Data() {
     return latestEth1Data;
@@ -340,65 +263,6 @@ public class BeaconStateImpl implements MutableBeaconState {
   @Override
   public void setLatestEth1Data(Eth1Data latestEth1Data) {
     this.latestEth1Data = latestEth1Data;
-  }
-
-  public List<Eth1DataVote> getEth1DataVotesList() {
-    return eth1DataVotesList;
-  }
-
-  public void setEth1DataVotesList(
-      List<Eth1DataVote> eth1DataVotesList) {
-    this.eth1DataVotesList = eth1DataVotesList;
-  }
-
-  @Override
-  public WriteList<ValidatorIndex, ValidatorRecord> getValidatorRegistry() {
-    return WriteList.wrap(getValidatorRegistryList(), ValidatorIndex::of);
-  }
-
-  @Override
-  public WriteList<ValidatorIndex, Gwei> getValidatorBalances() {
-    return WriteList.wrap(getValidatorBalancesList(), ValidatorIndex::of);
-  }
-
-  @Override
-  public WriteList<EpochNumber, Hash32> getLatestRandaoMixes() {
-    return WriteList.wrap(getLatestRandaoMixesList(), EpochNumber::of);
-  }
-
-  @Override
-  public WriteList<ShardNumber, Crosslink> getLatestCrosslinks() {
-    return WriteList.wrap(getLatestCrosslinksList(), ShardNumber::of);
-  }
-
-  @Override
-  public WriteList<SlotNumber, Hash32> getLatestBlockRoots() {
-    return WriteList.wrap(getLatestBlockRootsList(), SlotNumber::of);
-  }
-
-  @Override
-  public WriteList<EpochNumber, Hash32> getLatestActiveIndexRoots() {
-    return WriteList.wrap(getLatestActiveIndexRootsList(), EpochNumber::of);
-  }
-
-  @Override
-  public WriteList<EpochNumber, Gwei> getLatestSlashedBalances() {
-    return WriteList.wrap(getLatestSlashedBalancesList(), EpochNumber::of);
-  }
-
-  @Override
-  public WriteList<Integer, PendingAttestationRecord> getLatestAttestations() {
-    return WriteList.wrap(getLatestAttestationsList(), Integer::valueOf);
-  }
-
-  @Override
-  public WriteList<Integer, Hash32> getBatchedBlockRoots() {
-    return WriteList.wrap(getBatchedBlockRootsList(), Integer::valueOf);
-  }
-
-  @Override
-  public WriteList<Integer, Eth1DataVote> getEth1DataVotes() {
-    return WriteList.wrap(getEth1DataVotesList(), Integer::valueOf);
   }
 
   @Override
@@ -411,7 +275,109 @@ public class BeaconStateImpl implements MutableBeaconState {
     this.depositIndex = depositIndex;
   }
 
+  @Override
+  public WriteList<ValidatorIndex, ValidatorRecord> getValidatorRegistry() {
+    return validatorRegistry;
+  }
+
+  public void setValidatorRegistry(
+      WriteList<ValidatorIndex, ValidatorRecord> validatorRegistry) {
+    this.validatorRegistry = validatorRegistry;
+  }
+
+  @Override
+  public WriteList<ValidatorIndex, Gwei> getValidatorBalances() {
+    return validatorBalances;
+  }
+
+  public void setValidatorBalances(
+      WriteList<ValidatorIndex, Gwei> validatorBalances) {
+    this.validatorBalances = validatorBalances;
+  }
+
+  @Override
+  public WriteList<EpochNumber, Hash32> getLatestRandaoMixes() {
+    return latestRandaoMixes;
+  }
+
+  public void setLatestRandaoMixes(
+      WriteList<EpochNumber, Hash32> latestRandaoMixes) {
+    this.latestRandaoMixes = latestRandaoMixes;
+  }
+
+  @Override
+  public WriteList<ShardNumber, Crosslink> getLatestCrosslinks() {
+    return latestCrosslinks;
+  }
+
+  public void setLatestCrosslinks(
+      WriteList<ShardNumber, Crosslink> latestCrosslinks) {
+    this.latestCrosslinks = latestCrosslinks;
+  }
+
+  @Override
+  public WriteList<SlotNumber, Hash32> getLatestBlockRoots() {
+    return latestBlockRoots;
+  }
+
+  public void setLatestBlockRoots(
+      WriteList<SlotNumber, Hash32> latestBlockRoots) {
+    this.latestBlockRoots = latestBlockRoots;
+  }
+
+  @Override
+  public WriteList<EpochNumber, Hash32> getLatestActiveIndexRoots() {
+    return latestActiveIndexRoots;
+  }
+
+  public void setLatestActiveIndexRoots(
+      WriteList<EpochNumber, Hash32> latestActiveIndexRoots) {
+    this.latestActiveIndexRoots = latestActiveIndexRoots;
+  }
+
+  @Override
+  public WriteList<EpochNumber, Gwei> getLatestSlashedBalances() {
+    return latestSlashedBalances;
+  }
+
+  public void setLatestSlashedBalances(
+      WriteList<EpochNumber, Gwei> latestSlashedBalances) {
+    this.latestSlashedBalances = latestSlashedBalances;
+  }
+
+  @Override
+  public WriteList<Integer, PendingAttestationRecord> getLatestAttestations() {
+    return latestAttestations;
+  }
+
+  public void setLatestAttestations(
+      WriteList<Integer, PendingAttestationRecord> latestAttestations) {
+    this.latestAttestations = latestAttestations;
+  }
+
+  @Override
+  public WriteList<Integer, Hash32> getBatchedBlockRoots() {
+    return batchedBlockRoots;
+  }
+
+  public void setBatchedBlockRoots(
+      WriteList<Integer, Hash32> batchedBlockRoots) {
+    this.batchedBlockRoots = batchedBlockRoots;
+  }
+
+  @Override
+  public WriteList<Integer, Eth1DataVote> getEth1DataVotes() {
+    return eth1DataVotes;
+  }
+
+  public void setEth1DataVotes(
+      WriteList<Integer, Eth1DataVote> eth1DataVotes) {
+    this.eth1DataVotes = eth1DataVotes;
+  }
+
   /*********  List Getters/Setter for serialization  **********/
+
+
 
   @Override
   public MutableBeaconState createMutableCopy() {

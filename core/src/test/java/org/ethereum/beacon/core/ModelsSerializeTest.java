@@ -32,6 +32,11 @@ import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.ssz.SSZBuilder;
 import org.ethereum.beacon.ssz.SSZSerializer;
+import org.ethereum.beacon.ssz.access.basic.BytesCodec;
+import org.ethereum.beacon.ssz.access.basic.HashCodec;
+import org.ethereum.beacon.ssz.access.basic.UIntCodec;
+import org.ethereum.beacon.ssz.access.list.BytesValueAccessor;
+import org.ethereum.beacon.ssz.access.list.ReadListAccessor;
 import org.junit.Before;
 import org.junit.Test;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -52,7 +57,15 @@ public class ModelsSerializeTest {
 
   @Before
   public void setup() {
-    sszSerializer = new SSZBuilder().buildSerializer();
+    sszSerializer = new SSZBuilder()
+        .addDefaultBasicCodecs()
+        .addBasicCodecs(new UIntCodec())
+        .addBasicCodecs(new BytesCodec())
+        .addBasicCodecs(new HashCodec())
+        .addDefaultListAccessors()
+        .addListAccessors(new ReadListAccessor())
+        .addListAccessors(new BytesValueAccessor())
+        .buildSerializer();
   }
 
   private AttestationData createAttestationData() {

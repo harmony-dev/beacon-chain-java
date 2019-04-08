@@ -17,6 +17,7 @@ import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
+import org.ethereum.beacon.ssz.annotation.SSZ;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
@@ -38,89 +39,89 @@ public interface BeaconState {
   /** ******* Misc ********* */
 
   /** Slot number that this state was calculated in. */
-  SlotNumber getSlot();
+  @SSZ SlotNumber getSlot();
 
   /** ******* Validator registry ********* */
 
   /** Timestamp of the genesis. */
-  Time getGenesisTime();
+  @SSZ Time getGenesisTime();
 
   /** Fork data corresponding to the {@link #getSlot()}. */
-  ForkData getForkData();
+  @SSZ ForkData getForkData();
 
   /** Validator registry records. */
-  ReadList<ValidatorIndex, ValidatorRecord> getValidatorRegistry();
+  @SSZ ReadList<ValidatorIndex, ValidatorRecord> getValidatorRegistry();
 
   /** Validator balances. */
-  ReadList<ValidatorIndex, Gwei> getValidatorBalances();
+  @SSZ ReadList<ValidatorIndex, Gwei> getValidatorBalances();
 
   /** Slot number of last validator registry change. */
-  EpochNumber getValidatorRegistryUpdateEpoch();
+  @SSZ EpochNumber getValidatorRegistryUpdateEpoch();
 
   /** ******* Randomness and committees ********* */
 
   /** The most recent randao mixes. */
-  ReadList<EpochNumber, Hash32> getLatestRandaoMixes();
+  @SSZ ReadList<EpochNumber, Hash32> getLatestRandaoMixes();
 
-  ShardNumber getPreviousShufflingStartShard();
+  @SSZ ShardNumber getPreviousShufflingStartShard();
 
-  ShardNumber getCurrentShufflingStartShard();
+  @SSZ ShardNumber getCurrentShufflingStartShard();
 
-  EpochNumber getPreviousShufflingEpoch();
+  @SSZ EpochNumber getPreviousShufflingEpoch();
 
-  EpochNumber getCurrentShufflingEpoch();
+  @SSZ EpochNumber getCurrentShufflingEpoch();
 
-  Hash32 getPreviousShufflingSeed();
+  @SSZ Hash32 getPreviousShufflingSeed();
 
-  Hash32 getCurrentShufflingSeed();
+  @SSZ Hash32 getCurrentShufflingSeed();
 
   /********* Finality **********/
 
   /** Latest justified epoch before {@link #getJustifiedEpoch()}. */
-  EpochNumber getPreviousJustifiedEpoch();
+  @SSZ EpochNumber getPreviousJustifiedEpoch();
 
   /** Latest justified epoch. */
-  EpochNumber getJustifiedEpoch();
+  @SSZ EpochNumber getJustifiedEpoch();
 
   /** Bitfield of latest justified slots (epochs). */
-  Bitfield64 getJustificationBitfield();
+  @SSZ Bitfield64 getJustificationBitfield();
 
   /** Latest finalized slot. */
-  EpochNumber getFinalizedEpoch();
+  @SSZ EpochNumber getFinalizedEpoch();
 
   /** ******* Recent state ********* */
 
   /** Latest crosslink record for each shard. */
-  ReadList<ShardNumber, Crosslink> getLatestCrosslinks();
+  @SSZ ReadList<ShardNumber, Crosslink> getLatestCrosslinks();
 
   /** Latest block hashes for each shard. */
-  ReadList<SlotNumber, Hash32> getLatestBlockRoots();
+  @SSZ ReadList<SlotNumber, Hash32> getLatestBlockRoots();
 
   /** Latest block hashes for each shard. */
-  ReadList<EpochNumber, Hash32> getLatestActiveIndexRoots();
+  @SSZ ReadList<EpochNumber, Hash32> getLatestActiveIndexRoots();
 
   /** Balances slashed at every withdrawal period */
-  ReadList<EpochNumber, Gwei> getLatestSlashedBalances();
+  @SSZ ReadList<EpochNumber, Gwei> getLatestSlashedBalances();
 
   /** Attestations that has not been processed yet. */
-  ReadList<Integer, PendingAttestationRecord> getLatestAttestations();
+  @SSZ ReadList<Integer, PendingAttestationRecord> getLatestAttestations();
 
   /**
    * Latest hashes of {@link #getLatestBlockRoots()} list calculated when its length got exceeded
    * LATEST_BLOCK_ROOTS_LENGTH.
    */
-  ReadList<Integer, Hash32> getBatchedBlockRoots();
+  @SSZ ReadList<Integer, Hash32> getBatchedBlockRoots();
 
   /** ******* PoW receipt root ********* */
 
   /** Latest processed eth1 data. */
-  Eth1Data getLatestEth1Data();
+  @SSZ Eth1Data getLatestEth1Data();
 
   /** Eth1 data that voting is still in progress for. */
-  ReadList<Integer, Eth1DataVote> getEth1DataVotes();
+  @SSZ ReadList<Integer, Eth1DataVote> getEth1DataVotes();
 
   /** The most recent Eth1 deposit index */
-  UInt64 getDepositIndex();
+  @SSZ UInt64 getDepositIndex();
 
   /**
    * Returns mutable copy of this state. Any changes made to returned copy shouldn't affect this
