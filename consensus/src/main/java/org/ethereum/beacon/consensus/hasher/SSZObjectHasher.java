@@ -45,7 +45,7 @@ public class SSZObjectHasher implements ObjectHasher<Hash32> {
     if (input instanceof List) {
       throw new RuntimeException("Lists are not supported in truncated hash");
     } else {
-      return Hash32.wrap(Bytes32.wrap(sszHasher.hashTruncate(input, input.getClass())));
+      return Hash32.wrap(Bytes32.wrap(sszHasher.hashTruncateLast(input, input.getClass())));
     }
   }
 }

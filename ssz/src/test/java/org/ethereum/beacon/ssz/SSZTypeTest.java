@@ -357,7 +357,7 @@ public class SSZTypeTest {
 
     byte[] h1h = hasher.hash(h1);
     byte[] h2h = hasher.hash(h2);
-    byte[] h1hTrunc = hasher.hashTruncate(h1, H1.class, "");
+    byte[] h1hTrunc = hasher.hashTruncateLast(h1, H1.class);
 
     Assert.assertArrayEquals(h2h, h1hTrunc);
   }

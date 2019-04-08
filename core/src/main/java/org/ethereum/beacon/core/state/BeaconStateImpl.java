@@ -49,26 +49,35 @@ public class BeaconStateImpl implements MutableBeaconState {
 
   /* Finality */
 
-  @SSZ private List<PendingAttestation> previousEpochAttestationList = new ArrayList<>();
-  @SSZ private List<PendingAttestation> currentEpochAttestationList = new ArrayList<>();
-  @SSZ private EpochNumber previousJustifiedEpoch = EpochNumber.ZERO;
-  @SSZ private EpochNumber currentJustifiedEpoch = EpochNumber.ZERO;
-  @SSZ private Hash32 previousJustifiedRoot = Hash32.ZERO;
-  @SSZ private Hash32 currentJustifiedRoot = Hash32.ZERO;
-  @SSZ private Bitfield64 justificationBitfield = Bitfield64.ZERO;
-  @SSZ private EpochNumber finalizedEpoch = EpochNumber.ZERO;
-  @SSZ private Hash32 finalizedRoot = Hash32.ZERO;
+  private WriteList<Integer, PendingAttestation> previousEpochAttestations =
+      WriteList.create(Integer::valueOf);
+  private WriteList<Integer, PendingAttestation> currentEpochAttestations =
+      WriteList.create(Integer::valueOf);
+  private EpochNumber previousJustifiedEpoch = EpochNumber.ZERO;
+  private EpochNumber currentJustifiedEpoch = EpochNumber.ZERO;
+  private Hash32 previousJustifiedRoot = Hash32.ZERO;
+  private Hash32 currentJustifiedRoot = Hash32.ZERO;
+  private Bitfield64 justificationBitfield = Bitfield64.ZERO;
+  private EpochNumber finalizedEpoch = EpochNumber.ZERO;
+  private Hash32 finalizedRoot = Hash32.ZERO;
 
   /* Recent state */
 
-  @SSZ private List<Crosslink> previousCrosslinksList = new ArrayList<>();
-  @SSZ private List<Crosslink> currentCrosslinksList = new ArrayList<>();
-  @SSZ private List<Hash32> latestBlockRootsList = new ArrayList<>();
-  @SSZ private List<Hash32> latestStateRootsList = new ArrayList<>();
-  @SSZ private List<Hash32> latestActiveIndexRootsList = new ArrayList<>();
-  @SSZ private List<Gwei> latestSlashedBalancesList = new ArrayList<>();
-  @SSZ private BeaconBlockHeader latestBlockHeader = BeaconBlockHeader.EMPTY;
-  @SSZ private List<Hash32> historicalRootList = new ArrayList<>();
+  private WriteList<ShardNumber, Crosslink> previousCrosslinks =
+      WriteList.create(ShardNumber::of);
+  private WriteList<ShardNumber, Crosslink> currentCrosslinks =
+      WriteList.create(ShardNumber::of);
+  private WriteList<SlotNumber, Hash32> latestBlockRoots =
+      WriteList.create(SlotNumber::of);
+  private WriteList<SlotNumber, Hash32> latestStateRoots =
+      WriteList.create(SlotNumber::of);
+  private WriteList<EpochNumber, Hash32> latestActiveIndexRoots =
+      WriteList.create(EpochNumber::of);
+  private WriteList<EpochNumber, Gwei> latestSlashedBalances =
+      WriteList.create(EpochNumber::of);
+  private BeaconBlockHeader latestBlockHeader = BeaconBlockHeader.EMPTY;
+  private WriteList<Integer, Hash32> historicalRoots =
+      WriteList.create(Integer::valueOf);
 
   /* PoW receipt root */
 
@@ -84,20 +93,20 @@ public class BeaconStateImpl implements MutableBeaconState {
     genesisTime = state.getGenesisTime();
     fork = state.getFork();
 
-        validatorRegistry = state.getValidatorRegistry().createMutableCopy();
-        validatorBalances = state.getValidatorBalances().createMutableCopy();
-        validatorRegistryUpdateEpoch = state.getValidatorRegistryUpdateEpoch();
+    validatorRegistry = state.getValidatorRegistry().createMutableCopy();
+    validatorBalances = state.getValidatorBalances().createMutableCopy();
+    validatorRegistryUpdateEpoch = state.getValidatorRegistryUpdateEpoch();
 
-        latestRandaoMixes = state.getLatestRandaoMixes().createMutableCopy();
-        previousShufflingStartShard = state.getPreviousShufflingStartShard();
-        currentShufflingStartShard = state.getCurrentShufflingStartShard();
-        previousShufflingEpoch = state.getPreviousShufflingEpoch();
-        currentShufflingEpoch = state.getCurrentShufflingEpoch();
-        previousShufflingSeed = state.getPreviousShufflingSeed();
-        currentShufflingSeed = state.getCurrentShufflingSeed();
+    latestRandaoMixes = state.getLatestRandaoMixes().createMutableCopy();
+    previousShufflingStartShard = state.getPreviousShufflingStartShard();
+    currentShufflingStartShard = state.getCurrentShufflingStartShard();
+    previousShufflingEpoch = state.getPreviousShufflingEpoch();
+    currentShufflingEpoch = state.getCurrentShufflingEpoch();
+    previousShufflingSeed = state.getPreviousShufflingSeed();
+    currentShufflingSeed = state.getCurrentShufflingSeed();
 
-    previousEpochAttestationList = state.getPreviousEpochAttestations().listCopy();
-    currentEpochAttestationList = state.getCurrentEpochAttestations().listCopy();
+    previousEpochAttestations = state.getPreviousEpochAttestations().createMutableCopy();
+    currentEpochAttestations = state.getCurrentEpochAttestations().createMutableCopy();
     previousJustifiedEpoch = state.getPreviousJustifiedEpoch();
     currentJustifiedEpoch = state.getCurrentJustifiedEpoch();
     previousJustifiedRoot = state.getPreviousJustifiedRoot();
@@ -106,17 +115,18 @@ public class BeaconStateImpl implements MutableBeaconState {
     finalizedEpoch = state.getFinalizedEpoch();
     finalizedRoot = state.getFinalizedRoot();
 
-    previousCrosslinksList = state.getPreviousCrosslinks().listCopy();
-    currentCrosslinksList = state.getCurrentCrosslinks().listCopy();
-    latestBlockRootsList = state.getLatestBlockRoots().listCopy();
-    latestStateRootsList = state.getLatestStateRoots().listCopy();
-    latestActiveIndexRootsList = state.getLatestActiveIndexRoots().listCopy();
-    latestSlashedBalancesList = state.getLatestSlashedBalances().listCopy();
+    previousCrosslinks = state.getPreviousCrosslinks().createMutableCopy();
+    currentCrosslinks = state.getCurrentCrosslinks().createMutableCopy();
+    latestBlockRoots = state.getLatestBlockRoots().createMutableCopy();
+    latestStateRoots = state.getLatestStateRoots().createMutableCopy();
+    latestActiveIndexRoots = state.getLatestActiveIndexRoots().createMutableCopy();
+    latestSlashedBalances = state.getLatestSlashedBalances().createMutableCopy();
     latestBlockHeader = state.getLatestBlockHeader();
-    historicalRootList = state.getHistoricalRoots().listCopy();
+    historicalRoots = state.getHistoricalRoots().createMutableCopy();
 
-        latestEth1Data = state.getLatestEth1Data();
-        eth1DataVotes = state.getEth1DataVotes().createMutableCopy();depositIndex = state.getDepositIndex();
+    latestEth1Data = state.getLatestEth1Data();
+    eth1DataVotes = state.getEth1DataVotes().createMutableCopy();
+    depositIndex = state.getDepositIndex();
   }
 
   @Override
@@ -155,6 +165,26 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
+  public WriteList<ValidatorIndex, ValidatorRecord> getValidatorRegistry() {
+    return validatorRegistry;
+  }
+
+  public void setValidatorRegistry(
+      WriteList<ValidatorIndex, ValidatorRecord> validatorRegistry) {
+    this.validatorRegistry = validatorRegistry;
+  }
+
+  @Override
+  public WriteList<ValidatorIndex, Gwei> getValidatorBalances() {
+    return validatorBalances;
+  }
+
+  public void setValidatorBalances(
+      WriteList<ValidatorIndex, Gwei> validatorBalances) {
+    this.validatorBalances = validatorBalances;
+  }
+
+  @Override
   public EpochNumber getValidatorRegistryUpdateEpoch() {
     return validatorRegistryUpdateEpoch;
   }
@@ -163,6 +193,16 @@ public class BeaconStateImpl implements MutableBeaconState {
   public void setValidatorRegistryUpdateEpoch(
       EpochNumber validatorRegistryUpdateEpoch) {
     this.validatorRegistryUpdateEpoch = validatorRegistryUpdateEpoch;
+  }
+
+  @Override
+  public WriteList<EpochNumber, Hash32> getLatestRandaoMixes() {
+    return latestRandaoMixes;
+  }
+
+  public void setLatestRandaoMixes(
+      WriteList<EpochNumber, Hash32> latestRandaoMixes) {
+    this.latestRandaoMixes = latestRandaoMixes;
   }
 
   @Override
@@ -182,7 +222,8 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
-  public void setCurrentShufflingStartShard(ShardNumber currentShufflingStartShard) {
+  public void setCurrentShufflingStartShard(
+      ShardNumber currentShufflingStartShard) {
     this.currentShufflingStartShard = currentShufflingStartShard;
   }
 
@@ -192,8 +233,7 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
-  public void setPreviousShufflingEpoch(
-      EpochNumber previousShufflingEpoch) {
+  public void setPreviousShufflingEpoch(EpochNumber previousShufflingEpoch) {
     this.previousShufflingEpoch = previousShufflingEpoch;
   }
 
@@ -203,8 +243,7 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
-  public void setCurrentShufflingEpoch(
-      EpochNumber currentShufflingEpoch) {
+  public void setCurrentShufflingEpoch(EpochNumber currentShufflingEpoch) {
     this.currentShufflingEpoch = currentShufflingEpoch;
   }
 
@@ -228,6 +267,24 @@ public class BeaconStateImpl implements MutableBeaconState {
     this.currentShufflingSeed = currentShufflingSeed;
   }
 
+  public WriteList<Integer, PendingAttestation> getPreviousEpochAttestations() {
+    return previousEpochAttestations;
+  }
+
+  public void setPreviousEpochAttestations(
+      WriteList<Integer, PendingAttestation> previousEpochAttestations) {
+    this.previousEpochAttestations = previousEpochAttestations;
+  }
+
+  public WriteList<Integer, PendingAttestation> getCurrentEpochAttestations() {
+    return currentEpochAttestations;
+  }
+
+  public void setCurrentEpochAttestations(
+      WriteList<Integer, PendingAttestation> currentEpochAttestations) {
+    this.currentEpochAttestations = currentEpochAttestations;
+  }
+
   @Override
   public EpochNumber getPreviousJustifiedEpoch() {
     return previousJustifiedEpoch;
@@ -244,22 +301,23 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
+  public void setCurrentJustifiedEpoch(EpochNumber currentJustifiedEpoch) {
+    this.currentJustifiedEpoch = currentJustifiedEpoch;
+  }
+
+  @Override
   public Hash32 getPreviousJustifiedRoot() {
     return previousJustifiedRoot;
   }
 
   @Override
-  public Hash32 getCurrentJustifiedRoot() {
-    return currentJustifiedRoot;
-  }
-
-  public void setCurrentJustifiedEpoch(EpochNumber justifiedEpoch) {
-    this.currentJustifiedEpoch = justifiedEpoch;
+  public void setPreviousJustifiedRoot(Hash32 previousJustifiedRoot) {
+    this.previousJustifiedRoot = previousJustifiedRoot;
   }
 
   @Override
-  public void setPreviousJustifiedRoot(Hash32 previousJustifiedRoot) {
-    this.previousJustifiedRoot = previousJustifiedRoot;
+  public Hash32 getCurrentJustifiedRoot() {
+    return currentJustifiedRoot;
   }
 
   @Override
@@ -283,93 +341,38 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
-  public Hash32 getFinalizedRoot() {
-    return finalizedRoot;
-  }
-
-  @Override
   public void setFinalizedEpoch(EpochNumber finalizedEpoch) {
     this.finalizedEpoch = finalizedEpoch;
   }
 
   @Override
-  public Eth1Data getLatestEth1Data() {
-    return latestEth1Data;
+  public Hash32 getFinalizedRoot() {
+    return finalizedRoot;
   }
 
   @Override
-  public void setLatestEth1Data(Eth1Data latestEth1Data) {
-    this.latestEth1Data = latestEth1Data;
-  }
-
-  @Override
-  public UInt64 getDepositIndex() {
-    return depositIndex;
-  }
-
-  @Override
-  public void setDepositIndex(UInt64 depositIndex) {
-    this.depositIndex = depositIndex;
-  }
-
-  public void setPreviousEpochAttestationList(
-      List<PendingAttestation> previousEpochAttestationList) {
-    this.previousEpochAttestationList = previousEpochAttestationList;
-  }
-
-  public void setCurrentEpochAttestationList(
-      List<PendingAttestation> currentEpochAttestationList) {
-    this.currentEpochAttestationList = currentEpochAttestationList;
-  }
-
-  public void setLatestStateRootsList(
-      List<Hash32> latestStateRootsList) {
-    this.latestStateRootsList = latestStateRootsList;
-  }
-
-  public void setHistoricalRootList(
-      List<Hash32> historicalRootList) {
-    this.historicalRootList = historicalRootList;
-  }
-
-  @Override
-  public WriteList<ValidatorIndex, ValidatorRecord> getValidatorRegistry() {
-    return validatorRegistry;
-  }
-
-  public void setValidatorRegistry(
-      WriteList<ValidatorIndex, ValidatorRecord> validatorRegistry) {
-    this.validatorRegistry = validatorRegistry;
-  }
-
-  @Override
-  public WriteList<ValidatorIndex, Gwei> getValidatorBalances() {
-    return validatorBalances;
-  }
-
-  public void setValidatorBalances(
-      WriteList<ValidatorIndex, Gwei> validatorBalances) {
-    this.validatorBalances = validatorBalances;
-  }
-
-  @Override
-  public WriteList<EpochNumber, Hash32> getLatestRandaoMixes() {
-    return latestRandaoMixes;
-  }
-
-  public void setLatestRandaoMixes(
-      WriteList<EpochNumber, Hash32> latestRandaoMixes) {
-    this.latestRandaoMixes = latestRandaoMixes;
+  public void setFinalizedRoot(Hash32 finalizedRoot) {
+    this.finalizedRoot = finalizedRoot;
   }
 
   @Override
   public WriteList<ShardNumber, Crosslink> getPreviousCrosslinks() {
-    return WriteList.wrap(getPreviousCrosslinksList(), ShardNumber::of);
+    return previousCrosslinks;
+  }
+
+  public void setPreviousCrosslinks(
+      WriteList<ShardNumber, Crosslink> previousCrosslinks) {
+    this.previousCrosslinks = previousCrosslinks;
   }
 
   @Override
   public WriteList<ShardNumber, Crosslink> getCurrentCrosslinks() {
-    return WriteList.wrap(getCurrentCrosslinksList(), ShardNumber::of);
+    return currentCrosslinks;
+  }
+
+  public void setCurrentCrosslinks(
+      WriteList<ShardNumber, Crosslink> currentCrosslinks) {
+    this.currentCrosslinks = currentCrosslinks;
   }
 
   @Override
@@ -384,7 +387,12 @@ public class BeaconStateImpl implements MutableBeaconState {
 
   @Override
   public WriteList<SlotNumber, Hash32> getLatestStateRoots() {
-    return WriteList.wrap(getLatestStateRootsList(), SlotNumber::of);
+    return latestStateRoots;
+  }
+
+  public void setLatestStateRoots(
+      WriteList<SlotNumber, Hash32> latestStateRoots) {
+    this.latestStateRoots = latestStateRoots;
   }
 
   @Override
@@ -413,18 +421,27 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
-  public WriteList<Integer, PendingAttestation> getPreviousEpochAttestations() {
-    return WriteList.wrap(getPreviousEpochAttestationList(), Function.identity());
+  public void setLatestBlockHeader(BeaconBlockHeader latestBlockHeader) {
+    this.latestBlockHeader = latestBlockHeader;
   }
 
-  @Override
-  public WriteList<Integer, PendingAttestation> getCurrentEpochAttestations() {
-    return WriteList.wrap(getCurrentEpochAttestationList(), Function.identity());
-  }
-
-  @Override
   public WriteList<Integer, Hash32> getHistoricalRoots() {
-    return WriteList.wrap(getHistoricalRootList(), Function.identity());
+    return historicalRoots;
+  }
+
+  public void setHistoricalRoots(
+      WriteList<Integer, Hash32> historicalRoots) {
+    this.historicalRoots = historicalRoots;
+  }
+
+  @Override
+  public Eth1Data getLatestEth1Data() {
+    return latestEth1Data;
+  }
+
+  @Override
+  public void setLatestEth1Data(Eth1Data latestEth1Data) {
+    this.latestEth1Data = latestEth1Data;
   }
 
   @Override
@@ -435,6 +452,16 @@ public class BeaconStateImpl implements MutableBeaconState {
   public void setEth1DataVotes(
       WriteList<Integer, Eth1DataVote> eth1DataVotes) {
     this.eth1DataVotes = eth1DataVotes;
+  }
+
+  @Override
+  public UInt64 getDepositIndex() {
+    return depositIndex;
+  }
+
+  @Override
+  public void setDepositIndex(UInt64 depositIndex) {
+    this.depositIndex = depositIndex;
   }
 
   /*********  List Getters/Setter for serialization  **********/

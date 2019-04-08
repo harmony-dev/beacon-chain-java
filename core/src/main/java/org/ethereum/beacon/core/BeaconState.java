@@ -88,9 +88,9 @@ public interface BeaconState {
   /** Latest justified epoch. */
   @SSZ EpochNumber getCurrentJustifiedEpoch();
 
-  Hash32 getPreviousJustifiedRoot();
+  @SSZ Hash32 getPreviousJustifiedRoot();
 
-  Hash32 getCurrentJustifiedRoot();
+  @SSZ Hash32 getCurrentJustifiedRoot();
 
   /** Bitfield of latest justified slots (epochs). */
   @SSZ Bitfield64 getJustificationBitfield();
@@ -98,18 +98,18 @@ public interface BeaconState {
   /** Latest finalized slot. */
   @SSZ EpochNumber getFinalizedEpoch();
 
-  Hash32 getFinalizedRoot();
+  @SSZ Hash32 getFinalizedRoot();
 
   /** ******* Recent state ********* */
 
   /** Latest crosslink record for each shard. */
   @SSZ ReadList<ShardNumber, Crosslink> getPreviousCrosslinks();
 
-  ReadList<ShardNumber, Crosslink> getCurrentCrosslinks();
+  @SSZ ReadList<ShardNumber, Crosslink> getCurrentCrosslinks();
 
   @SSZ ReadList<SlotNumber, Hash32> getLatestBlockRoots();
 
-  ReadList<SlotNumber, Hash32> getLatestStateRoots();
+  @SSZ ReadList<SlotNumber, Hash32> getLatestStateRoots();
 
   @SSZ ReadList<EpochNumber, Hash32> getLatestActiveIndexRoots();
 
@@ -151,16 +151,23 @@ public interface BeaconState {
         && getCurrentShufflingEpoch().equals(other.getCurrentShufflingEpoch())
         && getPreviousShufflingSeed().equals(other.getPreviousShufflingSeed())
         && getCurrentShufflingSeed().equals(other.getCurrentShufflingSeed())
+        && getPreviousEpochAttestations().equals(other.getPreviousEpochAttestations())
+        && getCurrentEpochAttestations().equals(other.getCurrentEpochAttestations())
         && getPreviousJustifiedEpoch().equals(other.getPreviousJustifiedEpoch())
-        && getJustifiedEpoch().equals(other.getJustifiedEpoch())
+        && getCurrentJustifiedEpoch().equals(other.getCurrentJustifiedEpoch())
+        && getPreviousJustifiedRoot().equals(other.getPreviousJustifiedRoot())
+        && getCurrentJustifiedRoot().equals(other.getCurrentJustifiedRoot())
         && getJustificationBitfield().equals(other.getJustificationBitfield())
         && getFinalizedEpoch().equals(other.getFinalizedEpoch())
-        && getLatestCrosslinks().equals(other.getLatestCrosslinks())
+        && getFinalizedRoot().equals(other.getFinalizedRoot())
+        && getPreviousCrosslinks().equals(other.getPreviousCrosslinks())
+        && getCurrentCrosslinks().equals(other.getCurrentCrosslinks())
         && getLatestBlockRoots().equals(other.getLatestBlockRoots())
+        && getLatestStateRoots().equals(other.getLatestStateRoots())
         && getLatestActiveIndexRoots().equals(other.getLatestActiveIndexRoots())
         && getLatestSlashedBalances().equals(other.getLatestSlashedBalances())
-        && getLatestAttestations().equals(other.getLatestAttestations())
-        && getBatchedBlockRoots().equals(other.getBatchedBlockRoots())
+        && getLatestBlockHeader().equals(other.getLatestBlockHeader())
+        && getHistoricalRoots().equals(other.getHistoricalRoots())
         && getLatestEth1Data().equals(other.getLatestEth1Data())
         && getEth1DataVotes().equals(other.getEth1DataVotes())
         && getDepositIndex().equals(other.getDepositIndex());

@@ -45,7 +45,7 @@ public class SSZHasher implements BytesHasher {
   }
 
   @Override
-  public <C> byte[] hashTruncate(@Nullable C input, Class<? extends C> clazz, String field) {
+  public <C> byte[] hashTruncateLast(@Nullable C input, Class<? extends C> clazz) {
     return visitorHost
         .handleAny(
             new TruncatedContainerType(typeResolver.resolveSSZType(new SSZField(clazz))),
