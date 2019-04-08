@@ -7,6 +7,7 @@ import java.beans.PropertyDescriptor;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.ethereum.beacon.ssz.access.SSZField;
@@ -69,7 +70,7 @@ public class SimpleContainerAccessor implements SSZContainerAccessor {
 
   protected class BasicInstanceBuilder implements ContainerInstanceBuilder {
     private final SSZField containerDescriptor;
-    private final Map<SSZField, Object> children = new HashMap<>();
+    private final Map<SSZField, Object> children = new LinkedHashMap<>();
     private final List<SSZField> childDescriptors;
 
     public BasicInstanceBuilder(SSZField containerDescriptor) {

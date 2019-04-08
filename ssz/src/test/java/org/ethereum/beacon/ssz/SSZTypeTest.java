@@ -238,6 +238,29 @@ public class SSZTypeTest {
   }
 
   @SSZSerializable
+  public static class C2 {
+    @SSZ public Boolean b1;
+  }
+
+  @Test
+  public void testSerializer4() {
+    SSZSerializer serializer = new SSZBuilder()
+        .withExternalVarResolver(s -> "testSize".equals(s) ? 3 : null)
+        .buildSerializer();
+
+    C2 obj = new C2();
+    obj.b1 = true;
+
+    byte[] bytes = serializer.encode(obj);
+    System.out.println(BytesValue.wrap(bytes));
+
+    C2 res = serializer.decode(bytes, C2.class);
+    System.out.println(res);
+
+    Assert.assertTrue(obj.b1);
+  }
+
+  @SSZSerializable
   public interface Ifc1 {
     @SSZ int getA1();
     @SSZ long getA2();

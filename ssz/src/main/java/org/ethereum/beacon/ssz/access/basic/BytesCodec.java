@@ -35,7 +35,6 @@ public class BytesCodec implements SSZCodec {
   static {
     supportedClassTypes.add(Bytes48.class);
     supportedClassTypes.add(Bytes96.class);
-    supportedClassTypes.add(BytesValue.class);
     supportedClassTypes.add(Bytes1.class);
     supportedClassTypes.add(Address.class);
   }
@@ -43,7 +42,6 @@ public class BytesCodec implements SSZCodec {
   static {
     classToByteType.put(Bytes48.class, BytesType.of(48));
     classToByteType.put(Bytes96.class, BytesType.of(96));
-    classToByteType.put(BytesValue.class, BytesType.DYNAMIC);
     classToByteType.put(Bytes1.class, BytesType.of(1));
     classToByteType.put(Address.class, BytesType.of(20));
   }
