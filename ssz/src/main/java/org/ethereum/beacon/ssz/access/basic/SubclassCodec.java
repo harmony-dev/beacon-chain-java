@@ -36,7 +36,7 @@ public class SubclassCodec implements SSZCodec {
 
   @Override
   public int getSize(SSZField field) {
-    return superclassCodec.getSize(field);
+    return superclassCodec.getSize(getSerializableField(field));
   }
 
   @Override
