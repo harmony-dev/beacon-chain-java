@@ -294,9 +294,8 @@ public class ImmutableBeaconStateImpl implements BeaconState, Hashable<Hash32> {
   }
 
   @Override
-  public boolean equals(Object o) {
-    SSZSerializer serializer = new SSZBuilder().buildSerializer();
-    return Arrays.equals(serializer.encode(this), serializer.encode(o));
+  public boolean equals(Object obj) {
+    return equalsHelper((BeaconState) obj);
   }
 
   @Override

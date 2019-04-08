@@ -128,6 +128,35 @@ public interface BeaconState {
    */
   MutableBeaconState createMutableCopy();
 
+  default boolean equalsHelper(BeaconState other) {
+    return getSlot().equals(other.getSlot())
+        && getGenesisTime().equals(other.getGenesisTime())
+        && getForkData().equals(other.getForkData())
+        && getValidatorRegistry().equals(other.getValidatorRegistry())
+        && getValidatorBalances().equals(other.getValidatorBalances())
+        && getValidatorRegistryUpdateEpoch().equals(other.getValidatorRegistryUpdateEpoch())
+        && getLatestRandaoMixes().equals(other.getLatestRandaoMixes())
+        && getPreviousShufflingStartShard().equals(other.getPreviousShufflingStartShard())
+        && getCurrentShufflingStartShard().equals(other.getCurrentShufflingStartShard())
+        && getPreviousShufflingEpoch().equals(other.getPreviousShufflingEpoch())
+        && getCurrentShufflingEpoch().equals(other.getCurrentShufflingEpoch())
+        && getPreviousShufflingSeed().equals(other.getPreviousShufflingSeed())
+        && getCurrentShufflingSeed().equals(other.getCurrentShufflingSeed())
+        && getPreviousJustifiedEpoch().equals(other.getPreviousJustifiedEpoch())
+        && getJustifiedEpoch().equals(other.getJustifiedEpoch())
+        && getJustificationBitfield().equals(other.getJustificationBitfield())
+        && getFinalizedEpoch().equals(other.getFinalizedEpoch())
+        && getLatestCrosslinks().equals(other.getLatestCrosslinks())
+        && getLatestBlockRoots().equals(other.getLatestBlockRoots())
+        && getLatestActiveIndexRoots().equals(other.getLatestActiveIndexRoots())
+        && getLatestSlashedBalances().equals(other.getLatestSlashedBalances())
+        && getLatestAttestations().equals(other.getLatestAttestations())
+        && getBatchedBlockRoots().equals(other.getBatchedBlockRoots())
+        && getLatestEth1Data().equals(other.getLatestEth1Data())
+        && getEth1DataVotes().equals(other.getEth1DataVotes())
+        && getDepositIndex().equals(other.getDepositIndex());
+  }
+
   default String toStringShort(@Nullable SpecConstants spec) {
     String ret = "BeaconState["
         + "@ " + getSlot().toString(spec, getGenesisTime())

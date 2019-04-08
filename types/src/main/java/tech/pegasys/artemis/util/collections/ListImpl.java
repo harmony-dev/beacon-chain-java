@@ -128,7 +128,7 @@ class ListImpl<IndexType extends Number, ValueType>
 
   @Override
   public boolean equals(Object o) {
-    return backedList.equals(o);
+    return backedList.equals(((ListImpl)o).backedList);
   }
 
   @Override
