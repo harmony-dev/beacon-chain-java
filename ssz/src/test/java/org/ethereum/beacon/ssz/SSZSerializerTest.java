@@ -49,7 +49,7 @@ public class SSZSerializerTest {
 
   @Before
   public void setup() {
-    sszSerializer = new SSZBuilder().buildSerializer();
+    sszSerializer = new SSZBuilder().withExplicitAnnotations(false).buildSerializer();
   }
 
   @Test
