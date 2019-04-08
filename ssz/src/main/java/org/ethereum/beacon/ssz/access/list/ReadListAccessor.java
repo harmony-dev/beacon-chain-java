@@ -1,7 +1,9 @@
 package org.ethereum.beacon.ssz.access.list;
 
+import java.lang.reflect.Constructor;
 import java.util.List;
 import java.util.function.Function;
+import org.ethereum.beacon.ssz.SSZSerializeException;
 import org.ethereum.beacon.ssz.access.SSZField;
 import tech.pegasys.artemis.util.collections.ReadList;
 
@@ -9,7 +11,7 @@ public class ReadListAccessor extends AbstractListAccessor {
 
   @Override
   public boolean isSupported(SSZField field) {
-    return field.getRawClass().isAssignableFrom(ReadList.class);
+    return ReadList.class.isAssignableFrom(field.getRawClass());
   }
 
   @Override
@@ -17,12 +19,20 @@ public class ReadListAccessor extends AbstractListAccessor {
     return extractElementType(field, 1);
   }
 
-  protected Function<Integer, ? extends Number> resolveIndexConverter(Class indexClass) {
-    if (indexClass.equals(Integer.class)) {
-      return Integer::valueOf;
-    } else {
-      throw new UnsupportedOperationException("Index converter not found for " + indexClass);
+  protected Function<Integer, ? extends Number> resolveIndexConverter(Class<?> indexClass) {
+    try {
+      Constructor intCtor = indexClass.getConstructor(int.class);
+      Function<Integer, ? extends Number> ret = i -> {
+        try {
+          return (Number) intCtor.newInstance(i);
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      };
+      return ret;
+    } catch (NoSuchMethodException e) {
     }
+    throw new SSZSerializeException("Index converter not found for " + indexClass);
   }
 
   @Override

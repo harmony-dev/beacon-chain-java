@@ -18,6 +18,10 @@ public class ValidatorIndex extends UInt64 implements
     super(uint);
   }
 
+  public ValidatorIndex(int i) {
+    super(i);
+  }
+
   @Override
   public ValidatorIndex increment() {
     return new ValidatorIndex(super.increment());

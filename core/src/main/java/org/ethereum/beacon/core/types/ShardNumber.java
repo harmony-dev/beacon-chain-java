@@ -25,6 +25,10 @@ public class ShardNumber extends UInt64 implements
     super(uint);
   }
 
+  public ShardNumber(int i) {
+    super(i);
+  }
+
   public ShardNumber plusModulo(long addend, ShardNumber divisor) {
     return plusModulo(UInt64.valueOf(addend), divisor);
   }

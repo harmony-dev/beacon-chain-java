@@ -36,6 +36,10 @@ public class SlotNumber extends UInt64 implements
     super(uint);
   }
 
+  public SlotNumber(int i) {
+    super(i);
+  }
+
   @Override
   public SlotNumber plus(long unsignedAddend) {
     return new SlotNumber(super.plus(unsignedAddend));
