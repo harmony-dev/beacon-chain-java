@@ -158,32 +158,6 @@ public class SSZSerializerTest {
     sszSerializer.encode(expected4);
   }
 
-  /**
-   * Checks that we build objects with {@link SSZSerializer} in the same way as Consensys's {@link
-   * SSZ}
-   */
-  @Test
-  public void shouldWorkLikeCavaWithObjects() {
-    Bytes bytes =
-        fromHexString(
-            "0x03000000426F62046807B7711F010000000000000000000000000000000000000000000000000000");
-    SomeObject readObject =
-        SSZ.decode(bytes, r -> new SomeObject(r.readString(), r.readInt8(), r.readBigInteger(256)));
-
-    assertEquals("Bob", readObject.name);
-    assertEquals(4, readObject.number);
-    assertEquals(BigInteger.valueOf(1234563434344L), readObject.longNumber);
-
-    // Now try the same with new SSZSerializer
-    SomeObject readObjectAuto =
-        (SomeObject) sszSerializer.decode(bytes.toArrayUnsafe(), SomeObject.class);
-    assertEquals("Bob", readObjectAuto.name);
-    assertEquals(4, readObjectAuto.number);
-    assertEquals(BigInteger.valueOf(1234563434344L), readObjectAuto.longNumber);
-    // and finally check it backwards
-    assertArrayEquals(bytes.toArrayUnsafe(), sszSerializer.encode(readObjectAuto));
-  }
-
   /** Checks that we could handle list placed inside another list */
   @Ignore("Implement me!")
   @Test
