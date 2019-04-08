@@ -112,7 +112,7 @@ public class TestUtils {
           ? ((NamedTestCase) testCase).getName()
           : "Test #" + (total - 1);
       if (exclusions.contains(name)) {
-        System.out.println(String.format("[ ] %s is excluded", name));
+        System.out.println(String.format("[ ] %s ignored", name));
         continue;
       }
 
@@ -182,8 +182,8 @@ public class TestUtils {
       Path dir,
       Class<? extends V> testsType,
       Function<TestCase, Optional<String>> testCaseRunner,
-      Exclusion exclusion) {
-    runTestsInResourceDirImpl(dir, testsType, testCaseRunner, exclusion.excludedTests);
+      Ignored ignored) {
+    runTestsInResourceDirImpl(dir, testsType, testCaseRunner, ignored.testCases);
   }
 
   private static <V extends TestSkeleton> void runTestsInResourceDirImpl(
@@ -203,16 +203,16 @@ public class TestUtils {
     assertFalse(failed);
   }
 
-  public static class Exclusion {
-    private final Set<String> excludedTests;
+  public static class Ignored {
+    private final Set<String> testCases;
 
-    private Exclusion(Set<String> excludedTests) {
-      this.excludedTests = excludedTests;
+    private Ignored(Set<String> testCases) {
+      this.testCases = testCases;
     }
 
-    public static Exclusion of(String... names) {
-      assert names.length > 0;
-      return new Exclusion(new HashSet<>(Arrays.asList(names)));
+    public static Ignored of(String... testCases) {
+      assert testCases.length > 0;
+      return new Ignored(new HashSet<>(Arrays.asList(testCases)));
     }
   }
 }

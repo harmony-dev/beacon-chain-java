@@ -19,6 +19,6 @@ public class StateTests extends TestUtils {
         stateTestsPath,
         StateTest.class,
         testCase -> new StateRunner(testCase).run(),
-        Exclusion.of("test_skipped_slots", "test_empty_epoch_transition", "test_historical_batch"));
+        Ignored.of("test_skipped_slots", "test_empty_epoch_transition", "test_historical_batch"));
   }
 }
