@@ -2,8 +2,8 @@ package org.ethereum.beacon.emulator.config.chainspec;
 
 import java.util.List;
 import org.apache.milagro.amcl.BLS381.ECP;
-import org.ethereum.beacon.consensus.SpecHelpers;
-import org.ethereum.beacon.consensus.util.CachingSpecHelpers;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
+import org.ethereum.beacon.consensus.util.CachingBeaconChainSpec;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.spec.SpecConstants;
@@ -19,28 +19,35 @@ import org.ethereum.beacon.crypto.BLS381.PublicKey;
 import tech.pegasys.artemis.ethereum.core.Address;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes1;
-import tech.pegasys.artemis.util.bytes.Bytes8;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public class SpecBuilder {
 
-  public SpecHelpers buildSpecHelpers(SpecData spec) {
-    return buildSpecHelpers(spec.getSpecHelpersOptions(), spec.getSpecConstants());
+  private SpecData spec;
+
+  public SpecBuilder withSpec(SpecData spec) {
+    this.spec = spec;
+    return this;
   }
 
-  public SpecHelpers buildSpecHelpers(
+  public BeaconChainSpec buildSpec() {
+    assert spec != null;
+    return buildSpec(spec.getSpecHelpersOptions(), spec.getSpecConstants());
+  }
+
+  public BeaconChainSpec buildSpec(
       SpecHelpersData specHelpersOptions, SpecConstantsData specConstantsData) {
-    return buildSpecHelpers(specHelpersOptions, buildSpecConstants(specConstantsData));
+    return buildSpec(specHelpersOptions, buildSpecConstants(specConstantsData));
   }
 
-  public SpecHelpers buildSpecHelpers(
+  public BeaconChainSpec buildSpec(
       SpecHelpersData specHelpersOptions, SpecConstants specConstants) {
 
-    SpecHelpers defaultSpecHelpers = SpecHelpers.createWithSSZHasher(specConstants);
-    return new CachingSpecHelpers(
-        defaultSpecHelpers.getConstants(),
-        defaultSpecHelpers.getHashFunction(),
-        defaultSpecHelpers.getObjectHasher()) {
+    BeaconChainSpec defaultSpec = BeaconChainSpec.createWithSSZHasher(specConstants);
+    return new CachingBeaconChainSpec(
+        defaultSpec.getConstants(),
+        defaultSpec.getHashFunction(),
+        defaultSpec.getObjectHasher()) {
 
       @Override
       public PublicKey bls_aggregate_pubkeys(List<BLSPubkey> publicKeysBytes) {
@@ -53,7 +60,7 @@ public class SpecBuilder {
 
       @Override
       public boolean bls_verify(
-          BLSPubkey publicKey, Hash32 message, BLSSignature signature, Bytes8 domain) {
+          BLSPubkey publicKey, Hash32 message, BLSSignature signature, UInt64 domain) {
         if (specHelpersOptions.isBlsVerify()) {
           return super.bls_verify(publicKey, message, signature, domain);
         } else {
@@ -63,7 +70,7 @@ public class SpecBuilder {
 
       @Override
       public boolean bls_verify(
-          PublicKey blsPublicKey, Hash32 message, BLSSignature signature, Bytes8 domain) {
+          PublicKey blsPublicKey, Hash32 message, BLSSignature signature, UInt64 domain) {
         if (specHelpersOptions.isBlsVerify()) {
           return super.bls_verify(blsPublicKey, message, signature, domain);
         } else {
@@ -76,7 +83,7 @@ public class SpecBuilder {
           List<PublicKey> publicKeys,
           List<Hash32> messages,
           BLSSignature signature,
-          Bytes8 domain) {
+          UInt64 domain) {
         if (specHelpersOptions.isBlsVerify()) {
           return super.bls_verify_multiple(publicKeys, messages, signature, domain);
         } else {
@@ -86,9 +93,14 @@ public class SpecBuilder {
 
       @Override
       public void process_deposit(MutableBeaconState state, Deposit deposit) {
-        super.process_deposit_inner(state, deposit, specHelpersOptions.isBlsVerifyProofOfPosession());
+        super.process_deposit_inner(state, deposit, specHelpersOptions.isBlsVerifyProofOfPossession());
       }
     };
+  }
+
+  public SpecConstants buildSpecConstants() {
+    assert spec != null;
+    return buildSpecConstants(spec.getSpecConstants());
   }
 
   public SpecConstants buildSpecConstants(SpecConstantsData specConstants) {
@@ -258,11 +270,6 @@ public class SpecBuilder {
       }
 
       @Override
-      public SlotNumber getLatestBlockRootsLength() {
-        return stateListLengths.getLatestBlockRootsLength();
-      }
-
-      @Override
       public EpochNumber getLatestRandaoMixesLength() {
         return stateListLengths.getLatestRandaoMixesLength();
       }
@@ -303,14 +310,21 @@ public class SpecBuilder {
       }
 
       @Override
-      public EpochNumber getEth1DataVotingPeriod() {
-        return timeParameters.getEth1DataVotingPeriod();
+      public EpochNumber getEpochsPerEth1VotingPeriod() {
+        return timeParameters.getEpochsPerEth1VotingPeriod();
       }
 
       @Override
       public EpochNumber getMinValidatorWithdrawabilityDelay() {
         return timeParameters.getMinValidatorWithdrawabilityDelay();
       }
+
+      @Override
+      public SlotNumber getSlotsPerHistoricalRoot() {
+        return timeParameters.getSlotsPerHistoricalRoot();
+      }
+
+
     };
   }
 

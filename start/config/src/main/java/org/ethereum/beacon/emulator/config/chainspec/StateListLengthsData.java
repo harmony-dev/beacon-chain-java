@@ -9,20 +9,12 @@ import tech.pegasys.artemis.util.uint.UInt64;
 
 public class StateListLengthsData implements StateListLengths {
 
-  @JsonProperty("LATEST_BLOCK_ROOTS_LENGTH")
-  private String LATEST_BLOCK_ROOTS_LENGTH;
   @JsonProperty("LATEST_RANDAO_MIXES_LENGTH")
   private String LATEST_RANDAO_MIXES_LENGTH;
   @JsonProperty("LATEST_ACTIVE_INDEX_ROOTS_LENGTH")
   private String LATEST_ACTIVE_INDEX_ROOTS_LENGTH;
   @JsonProperty("LATEST_SLASHED_EXIT_LENGTH")
   private String LATEST_SLASHED_EXIT_LENGTH;
-
-  @Override
-  @JsonIgnore
-  public SlotNumber getLatestBlockRootsLength() {
-    return SlotNumber.castFrom(UInt64.valueOf(getLATEST_BLOCK_ROOTS_LENGTH()));
-  }
 
   @Override
   @JsonIgnore
@@ -40,15 +32,6 @@ public class StateListLengthsData implements StateListLengths {
   @JsonIgnore
   public EpochNumber getLatestSlashedExitLength() {
     return new EpochNumber(UInt64.valueOf(getLATEST_SLASHED_EXIT_LENGTH()));
-  }
-
-  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-  public String getLATEST_BLOCK_ROOTS_LENGTH() {
-    return LATEST_BLOCK_ROOTS_LENGTH;
-  }
-
-  public void setLATEST_BLOCK_ROOTS_LENGTH(String LATEST_BLOCK_ROOTS_LENGTH) {
-    this.LATEST_BLOCK_ROOTS_LENGTH = LATEST_BLOCK_ROOTS_LENGTH;
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)

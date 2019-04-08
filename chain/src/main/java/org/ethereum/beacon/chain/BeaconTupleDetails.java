@@ -34,12 +34,6 @@ public class BeaconTupleDetails extends BeaconTuple {
     return Optional.ofNullable(postBlockState);
   }
 
-  public Optional<BeaconStateEx> getPostEpochState() {
-    return getFinalState().getTransition() == TransitionType.EPOCH
-        ? Optional.of(getFinalState())
-        : Optional.empty();
-  }
-
   public BeaconStateEx getFinalState() {
     return getState();
   }

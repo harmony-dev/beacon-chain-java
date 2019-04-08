@@ -1,5 +1,6 @@
 package org.ethereum.beacon.core;
 
+import java.util.List;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
@@ -7,8 +8,8 @@ import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.BeaconStateImpl;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Eth1DataVote;
-import org.ethereum.beacon.core.state.ForkData;
-import org.ethereum.beacon.core.state.PendingAttestationRecord;
+import org.ethereum.beacon.core.state.Fork;
+import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.Bitfield64;
 import org.ethereum.beacon.core.types.EpochNumber;
@@ -27,7 +28,7 @@ import tech.pegasys.artemis.util.uint.UInt64;
  *
  * @see BeaconBlock
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md#beaconstate">BeaconState
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.5.0/specs/core/0_beacon-chain.md#beacon-state">BeaconState
  *     in the spec</a>
  */
 public interface BeaconState {
@@ -47,7 +48,7 @@ public interface BeaconState {
   @SSZ Time getGenesisTime();
 
   /** Fork data corresponding to the {@link #getSlot()}. */
-  @SSZ ForkData getForkData();
+  @SSZ Fork getFork();
 
   /** Validator registry records. */
   @SSZ ReadList<ValidatorIndex, ValidatorRecord> getValidatorRegistry();
@@ -77,11 +78,19 @@ public interface BeaconState {
 
   /********* Finality **********/
 
-  /** Latest justified epoch before {@link #getJustifiedEpoch()}. */
+  ReadList<Integer, PendingAttestation> getPreviousEpochAttestations();
+
+  ReadList<Integer, PendingAttestation> getCurrentEpochAttestations();
+
+  /** Latest justified epoch before {@link #getCurrentJustifiedEpoch()}. */
   @SSZ EpochNumber getPreviousJustifiedEpoch();
 
   /** Latest justified epoch. */
-  @SSZ EpochNumber getJustifiedEpoch();
+  @SSZ EpochNumber getCurrentJustifiedEpoch();
+
+  Hash32 getPreviousJustifiedRoot();
+
+  Hash32 getCurrentJustifiedRoot();
 
   /** Bitfield of latest justified slots (epochs). */
   @SSZ Bitfield64 getJustificationBitfield();
@@ -89,28 +98,27 @@ public interface BeaconState {
   /** Latest finalized slot. */
   @SSZ EpochNumber getFinalizedEpoch();
 
+  Hash32 getFinalizedRoot();
+
   /** ******* Recent state ********* */
 
   /** Latest crosslink record for each shard. */
-  @SSZ ReadList<ShardNumber, Crosslink> getLatestCrosslinks();
+  @SSZ ReadList<ShardNumber, Crosslink> getPreviousCrosslinks();
 
-  /** Latest block hashes for each shard. */
+  ReadList<ShardNumber, Crosslink> getCurrentCrosslinks();
+
   @SSZ ReadList<SlotNumber, Hash32> getLatestBlockRoots();
 
-  /** Latest block hashes for each shard. */
+  ReadList<SlotNumber, Hash32> getLatestStateRoots();
+
   @SSZ ReadList<EpochNumber, Hash32> getLatestActiveIndexRoots();
 
   /** Balances slashed at every withdrawal period */
   @SSZ ReadList<EpochNumber, Gwei> getLatestSlashedBalances();
 
-  /** Attestations that has not been processed yet. */
-  @SSZ ReadList<Integer, PendingAttestationRecord> getLatestAttestations();
+  @SSZ BeaconBlockHeader getLatestBlockHeader();
 
-  /**
-   * Latest hashes of {@link #getLatestBlockRoots()} list calculated when its length got exceeded
-   * LATEST_BLOCK_ROOTS_LENGTH.
-   */
-  @SSZ ReadList<Integer, Hash32> getBatchedBlockRoots();
+  @SSZ ReadList<Integer, Hash32> getHistoricalRoots();
 
   /** ******* PoW receipt root ********* */
 
@@ -132,7 +140,7 @@ public interface BeaconState {
   default boolean equalsHelper(BeaconState other) {
     return getSlot().equals(other.getSlot())
         && getGenesisTime().equals(other.getGenesisTime())
-        && getForkData().equals(other.getForkData())
+        && getFork().equals(other.getFork())
         && getValidatorRegistry().equals(other.getValidatorRegistry())
         && getValidatorBalances().equals(other.getValidatorBalances())
         && getValidatorRegistryUpdateEpoch().equals(other.getValidatorRegistryUpdateEpoch())
@@ -161,20 +169,23 @@ public interface BeaconState {
   default String toStringShort(@Nullable SpecConstants spec) {
     String ret = "BeaconState["
         + "@ " + getSlot().toString(spec, getGenesisTime())
-        + ", " + getForkData().toString(spec)
+        + ", " + getFork().toString(spec)
         + ", validators: " + getValidatorRegistry().size()
         + " updated at epoch " + getValidatorRegistryUpdateEpoch().toString(spec)
-        + ", just/final epoch: " + getJustifiedEpoch().toString(spec) + "/" + getFinalizedEpoch().toString(spec);
+        + ", just/final epoch: " + getCurrentJustifiedEpoch().toString(spec) + "/" + getFinalizedEpoch().toString(spec);
     if (spec != null) {
       ret += ", latestBlocks=[...";
       for (SlotNumber slot : getSlot().minus(3).iterateTo(getSlot())) {
-        Hash32 blockRoot = getLatestBlockRoots().get(slot.modulo(spec.getLatestBlockRootsLength()));
+        Hash32 blockRoot = getLatestBlockRoots().get(slot.modulo(spec.getSlotsPerHistoricalRoot()));
         ret += ", " + blockRoot.toStringShort();
       }
       ret += "]";
 
+      List<PendingAttestation> attestations = getCurrentEpochAttestations().listCopy();
+      attestations.addAll(getPreviousEpochAttestations().listCopy());
+
       ret += ", attest:["
-          + getLatestAttestations().stream().map(ar -> ar.toStringShort(spec)).collect(Collectors.joining(", "))
+          + attestations.stream().map(ar -> ar.toStringShort(spec)).collect(Collectors.joining(", "))
           + "]";
     }
     ret += "]";

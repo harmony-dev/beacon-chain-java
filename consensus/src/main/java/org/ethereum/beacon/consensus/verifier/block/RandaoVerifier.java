@@ -2,14 +2,12 @@ package org.ethereum.beacon.consensus.verifier.block;
 
 import static org.ethereum.beacon.core.spec.SignatureDomains.RANDAO;
 
-import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.state.ValidatorRecord;
-import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.bytes.Bytes32;
 
 /**
  * Verifies RANDAO reveal.
@@ -20,9 +18,9 @@ import tech.pegasys.artemis.util.bytes.Bytes32;
  */
 public class RandaoVerifier implements BeaconBlockVerifier {
 
-  private SpecHelpers spec;
+  private BeaconChainSpec spec;
 
-  public RandaoVerifier(SpecHelpers spec) {
+  public RandaoVerifier(BeaconChainSpec spec) {
     this.spec = spec;
   }
 
@@ -34,16 +32,17 @@ public class RandaoVerifier implements BeaconBlockVerifier {
             .getValidatorRegistry()
             .get(spec.get_beacon_proposer_index(state, state.getSlot()));
 
-    /*
-     Verify that bls_verify(pubkey=proposer.pubkey,
-       message=int_to_bytes32(get_current_epoch(state)), signature=block.randao_reveal,
-       domain=get_domain(state.fork, get_current_epoch(state), DOMAIN_RANDAO))
-    */
+    /* assert bls_verify(
+        pubkey=proposer.pubkey,
+        message_hash=hash_tree_root(get_current_epoch(state)),
+        signature=block.body.randao_reveal,
+        domain=get_domain(state.fork, get_current_epoch(state), DOMAIN_RANDAO)
+       ) */
     if (!spec.bls_verify(
         proposer.getPubKey(),
-        Hash32.wrap(Bytes32.leftPad(spec.get_current_epoch(state).toBytesBigEndian())),
-        block.getRandaoReveal(),
-        spec.get_domain(state.getForkData(), spec.get_current_epoch(state), RANDAO))) {
+        spec.hash_tree_root(spec.get_current_epoch(state)),
+        block.getBody().getRandaoReveal(),
+        spec.get_domain(state.getFork(), spec.get_current_epoch(state), RANDAO))) {
 
       return VerificationResult.failedResult("RANDAO reveal verification failed");
     }

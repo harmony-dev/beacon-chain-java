@@ -1,13 +1,10 @@
 package org.ethereum.beacon.pow.validator;
 
-import java.util.Collections;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.BlockTransition;
-import org.ethereum.beacon.consensus.SpecHelpers;
-import org.ethereum.beacon.consensus.StateTransition;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.transition.PerBlockTransition;
-import org.ethereum.beacon.consensus.transition.PerEpochTransition;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
@@ -32,7 +29,6 @@ import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import tech.pegasys.artemis.ethereum.core.Address;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.bytes.Bytes8;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import javax.annotation.Nullable;
@@ -41,6 +37,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import tech.pegasys.artemis.util.uint.UInt64;
 
 import static java.util.Collections.singletonList;
 import static org.ethereum.beacon.core.spec.SignatureDomains.DEPOSIT;
@@ -53,7 +50,7 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
   private final SingleValueSource<RegistrationStage> stagePersistence;
   private final Schedulers schedulers;
 
-  private final SpecHelpers spec;
+  private final BeaconChainSpec spec;
   private final SSZSerializer sszSerializer;
 
   private Disposable depositSubscription = null;
@@ -76,7 +73,7 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
       DepositContract depositContract,
       Publisher<ObservableBeaconState> observablePublisher,
       SingleValueSource<RegistrationStage> registrationStagePersistence,
-      SpecHelpers spec,
+      BeaconChainSpec spec,
       Schedulers schedulers) {
     this.transactionBuilder = transactionBuilder;
     this.transactionGateway = transactionGateway;
@@ -195,12 +192,10 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
   private void startValidator() {
     if (validatorService == null) {
       BlockTransition<BeaconStateEx> blockTransition = new PerBlockTransition(spec);
-      StateTransition<BeaconStateEx> epochTransition = new PerEpochTransition(spec);
       BeaconChainProposer proposer =
           new BeaconChainProposerImpl(
               spec,
               blockTransition,
-              epochTransition,
               depositContract);
       BeaconChainAttester attester =
           new BeaconChainAttesterImpl(spec);
@@ -279,11 +274,11 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
         new DepositInput(blsCredentials.getPubkey(), withdrawalCredentials, BLSSignature.ZERO);
     // Let proof_of_possession be the result of bls_sign of the hash_tree_root(deposit_input) with
     // domain=DOMAIN_DEPOSIT.
-    Hash32 hash = spec.signed_root(preDepositInput, "proofOfPossession");
+    Hash32 hash = spec.signed_root(preDepositInput);
     BeaconState latestState = getLatestState();
-    Bytes8 domain =
+    UInt64 domain =
         spec.get_domain(
-            latestState.getForkData(), spec.get_current_epoch(latestState), DEPOSIT);
+            latestState.getFork(), spec.get_current_epoch(latestState), DEPOSIT);
     BLSSignature signature = blsCredentials.getSigner().sign(hash, domain);
     // Set deposit_input.proof_of_possession = proof_of_possession.
     DepositInput depositInput = new DepositInput(blsCredentials.getPubkey(), withdrawalCredentials, signature);

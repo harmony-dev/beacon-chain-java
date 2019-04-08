@@ -89,7 +89,7 @@ public class PendingOperationsState implements PendingOperations {
     BLSSignature aggSign = BLSSignature.wrap(aggregatedSignature.getEncoded());
 
     return new Attestation(
-        attestations.get(0).getData(), participants, custody, aggSign);
+        participants, attestations.get(0).getData(), custody, aggSign);
   }
 
   @Override

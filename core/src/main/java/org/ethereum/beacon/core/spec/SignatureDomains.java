@@ -11,15 +11,15 @@ import tech.pegasys.artemis.util.uint.UInt64;
  */
 public interface SignatureDomains {
 
-  UInt64 DEPOSIT = UInt64.valueOf(0);
+  UInt64 BEACON_BLOCK = UInt64.valueOf(0);
 
-  UInt64 ATTESTATION = UInt64.valueOf(1);
+  UInt64 RANDAO = UInt64.valueOf(1);
 
-  UInt64 PROPOSAL = UInt64.valueOf(2);
+  UInt64 ATTESTATION = UInt64.valueOf(2);
 
-  UInt64 EXIT = UInt64.valueOf(3);
+  UInt64 DEPOSIT = UInt64.valueOf(3);
 
-  UInt64 RANDAO = UInt64.valueOf(4);
+  UInt64 VOLUNTARY_EXIT = UInt64.valueOf(4);
 
   UInt64 TRANSFER = UInt64.valueOf(5);
 }

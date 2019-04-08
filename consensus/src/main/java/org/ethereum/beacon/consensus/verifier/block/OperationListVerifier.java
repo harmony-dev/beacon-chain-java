@@ -69,13 +69,14 @@ public abstract class OperationListVerifier<T> implements BeaconBlockVerifier {
       }
     }
 
+    int i = 0;
     for (T operation : operations) {
       VerificationResult result = operationVerifier.verify(operation, state);
       if (result != PASSED) {
         return failedResult(
-            "%s with operation %s: %s", getType().getSimpleName(),
-            operation.getClass().getSimpleName(), result.getMessage());
+            "%s #%d: %s", getType().getSimpleName(), i, result.getMessage());
       }
+      i += 1;
     }
 
     return PASSED;

@@ -8,7 +8,7 @@ import java.util.Collections;
 import java.util.Random;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.util.ObservableBeaconStateTestUtil;
-import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
@@ -33,23 +33,23 @@ public class MultiValidatorServiceTest {
   @Test
   public void recentStateIsKept() {
     Random random = new Random();
-    SpecHelpers specHelpers = Mockito.spy(SpecHelpers.createWithSSZHasher(SpecConstants.DEFAULT));
+    BeaconChainSpec spec = Mockito.spy(BeaconChainSpec.createWithDefaults());
 
     MultiValidatorService validator =
-        ValidatorServiceTestUtil.mockBeaconChainValidator(random, specHelpers);
-    Mockito.doReturn(true).when(specHelpers).is_current_slot(any(), anyLong());
+        ValidatorServiceTestUtil.mockBeaconChainValidator(random, spec);
+    Mockito.doReturn(true).when(spec).is_current_slot(any(), anyLong());
     Mockito.doNothing().when(validator).runTasks(any());
 
     SlotNumber currentSlot = SlotNumber.of(Math.abs(random.nextLong()) % 10 + 10);
     ObservableBeaconState currentSlotState =
-        ObservableBeaconStateTestUtil.createInitialState(random, specHelpers, currentSlot);
+        ObservableBeaconStateTestUtil.createInitialState(random, spec, currentSlot);
 
     // state was kept
     validator.onNewState(currentSlotState);
     Assert.assertEquals(currentSlotState, validator.getRecentState());
 
     ObservableBeaconState updatedState =
-        ObservableBeaconStateTestUtil.createInitialState(random, specHelpers, currentSlot);
+        ObservableBeaconStateTestUtil.createInitialState(random, spec, currentSlot);
 
     // state was updated
     validator.onNewState(updatedState);
@@ -59,21 +59,21 @@ public class MultiValidatorServiceTest {
   @Test
   public void outboundRecentStateIsIgnored() {
     Random random = new Random();
-    SpecHelpers specHelpers = Mockito.spy(SpecHelpers.createWithSSZHasher(SpecConstants.DEFAULT));
+    BeaconChainSpec spec = Mockito.spy(BeaconChainSpec.createWithDefaults());
 
     MultiValidatorService validator =
-        ValidatorServiceTestUtil.mockBeaconChainValidator(random, specHelpers);
+        ValidatorServiceTestUtil.mockBeaconChainValidator(random, spec);
     Mockito.doNothing().when(validator).runTasks(any());
 
     ObservableBeaconState outdatedState =
-        ObservableBeaconStateTestUtil.createInitialState(random, specHelpers, SlotNumber.ZERO);
+        ObservableBeaconStateTestUtil.createInitialState(random, spec, SlotNumber.ZERO);
 
     SlotNumber currentSlot = SlotNumber.of(Math.abs(random.nextLong()) % 10 + 10);
     ObservableBeaconState currentSlotState =
-        ObservableBeaconStateTestUtil.createInitialState(random, specHelpers, currentSlot);
+        ObservableBeaconStateTestUtil.createInitialState(random, spec, currentSlot);
 
     Mockito.doReturn(true)
-        .when(specHelpers)
+        .when(spec)
         .is_current_slot(eq(currentSlotState.getLatestSlotState()), anyLong());
 
     // state wasn't kept
@@ -92,18 +92,18 @@ public class MultiValidatorServiceTest {
   @Test
   public void initService() {
     Random random = new Random();
-    SpecHelpers specHelpers = Mockito.spy(SpecHelpers.createWithSSZHasher(SpecConstants.DEFAULT));
+    BeaconChainSpec spec = Mockito.spy(BeaconChainSpec.createWithDefaults());
 
     BLSPubkey pubkey = BLSPubkey.wrap(Bytes48.random(random));
     MessageSigner<BLSSignature> signer = MessageSignerTestUtil.createBLSSigner();
     BLS381Credentials blsCredentials = new BLS381Credentials(pubkey, signer);
     MultiValidatorService validator =
-        ValidatorServiceTestUtil.mockBeaconChainValidator(random, specHelpers, blsCredentials);
+        ValidatorServiceTestUtil.mockBeaconChainValidator(random, spec, blsCredentials);
 
     ValidatorIndex validatorIndex = ValidatorIndex.of(Math.abs(random.nextInt()) % 10 + 10);
 
     ObservableBeaconState outdatedState =
-        ObservableBeaconStateTestUtil.createInitialState(random, specHelpers, SlotNumber.ZERO);
+        ObservableBeaconStateTestUtil.createInitialState(random, spec, SlotNumber.ZERO);
     validator.onNewState(outdatedState);
     Assert.assertNull(validator.getRecentState());
 
@@ -111,7 +111,7 @@ public class MultiValidatorServiceTest {
 
     SlotNumber currentSlot = SlotNumber.of(Math.abs(random.nextLong()) % 10 + 10);
     ObservableBeaconState currentSlotState =
-        ObservableBeaconStateTestUtil.createInitialState(random, specHelpers, currentSlot);
+        ObservableBeaconStateTestUtil.createInitialState(random, spec, currentSlot);
 
     ReadList<ValidatorIndex, ValidatorRecord> validatorRegistry =
         createRegistry(random, validatorIndex, pubkey);
@@ -119,8 +119,8 @@ public class MultiValidatorServiceTest {
         .when(currentSlotState.getLatestSlotState())
         .getValidatorRegistry();
 
-    Mockito.doReturn(true).when(specHelpers).is_current_slot(any(), anyLong());
-    Mockito.doReturn(validatorIndex).when(specHelpers).get_validator_index_by_pubkey(any(), any());
+    Mockito.doReturn(true).when(spec).is_current_slot(any(), anyLong());
+    Mockito.doReturn(validatorIndex).when(spec).get_validator_index_by_pubkey(any(), any());
     Mockito.doNothing().when(validator).runTasks(any());
 
     validator.onNewState(currentSlotState);
@@ -132,28 +132,28 @@ public class MultiValidatorServiceTest {
   @Test
   public void runValidatorTasks() {
     Random random = new Random();
-    SpecHelpers specHelpers = Mockito.spy(SpecHelpers.createWithSSZHasher(SpecConstants.DEFAULT));
+    BeaconChainSpec spec = Mockito.spy(BeaconChainSpec.createWithDefaults());
 
     BLSPubkey pubkey = BLSPubkey.wrap(Bytes48.random(random));
     MessageSigner<BLSSignature> signer = MessageSignerTestUtil.createBLSSigner();
     BLS381Credentials blsCredentials = new BLS381Credentials(pubkey, signer);
     MultiValidatorService validator =
-        ValidatorServiceTestUtil.mockBeaconChainValidator(random, specHelpers, blsCredentials);
+        ValidatorServiceTestUtil.mockBeaconChainValidator(random, spec, blsCredentials);
 
     ValidatorIndex validatorIndex = ValidatorIndex.of(Math.abs(random.nextInt()) % 10 + 10);
 
     SlotNumber currentSlot = SlotNumber.of(Math.abs(random.nextLong()) % 10 + 10);
     ObservableBeaconState initialState =
-        ObservableBeaconStateTestUtil.createInitialState(random, specHelpers, currentSlot);
+        ObservableBeaconStateTestUtil.createInitialState(random, spec, currentSlot);
     ObservableBeaconState updatedState =
         ObservableBeaconStateTestUtil.createInitialState(
-            random, specHelpers, currentSlot.increment());
+            random, spec, currentSlot.increment());
     ObservableBeaconState sameSlotState =
         ObservableBeaconStateTestUtil.createInitialState(
-            random, specHelpers, currentSlot.increment());
+            random, spec, currentSlot.increment());
     ObservableBeaconState nextSlotState =
         ObservableBeaconStateTestUtil.createInitialState(
-            random, specHelpers, currentSlot.increment().increment());
+            random, spec, currentSlot.increment().increment());
 
     ReadList<ValidatorIndex, ValidatorRecord> validatorRegistry =
         createRegistry(random, validatorIndex, pubkey);
@@ -174,8 +174,8 @@ public class MultiValidatorServiceTest {
         .when(nextSlotState.getLatestSlotState())
         .getValidatorRegistry();
 
-    Mockito.doReturn(true).when(specHelpers).is_current_slot(any(), anyLong());
-    Mockito.doReturn(validatorIndex).when(specHelpers).get_validator_index_by_pubkey(any(), any());
+    Mockito.doReturn(true).when(spec).is_current_slot(any(), anyLong());
+    Mockito.doReturn(validatorIndex).when(spec).get_validator_index_by_pubkey(any(), any());
     Mockito.doNothing().when(validator).runTasks(any());
 
     validator.onNewState(initialState);

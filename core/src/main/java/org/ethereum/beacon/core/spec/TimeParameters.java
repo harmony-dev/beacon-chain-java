@@ -21,7 +21,9 @@ public interface TimeParameters {
   EpochNumber MIN_SEED_LOOKAHEAD = EpochNumber.of(1);
   EpochNumber ACTIVATION_EXIT_DELAY = EpochNumber.of(1 << 2);
   EpochNumber EPOCHS_PER_ETH1_VOTING_PERIOD = EpochNumber.of(1 << 4);
+  SlotNumber SLOTS_PER_HISTORICAL_ROOT = SlotNumber.of(1 << 13); // 8,192
   EpochNumber MIN_VALIDATOR_WITHDRAWABILITY_DELAY = EpochNumber.of(1 << 8);
+  EpochNumber PERSISTENT_COMMITTEE_PERIOD = EpochNumber.of(1 << 11); // 2,048
 
   /* Values defined in the spec. */
 
@@ -45,11 +47,19 @@ public interface TimeParameters {
     return ACTIVATION_EXIT_DELAY;
   }
 
-  default EpochNumber getEth1DataVotingPeriod() {
+  default EpochNumber getEpochsPerEth1VotingPeriod() {
     return EPOCHS_PER_ETH1_VOTING_PERIOD;
+  }
+
+  default SlotNumber getSlotsPerHistoricalRoot() {
+    return SLOTS_PER_HISTORICAL_ROOT;
   }
 
   default EpochNumber getMinValidatorWithdrawabilityDelay() {
     return MIN_VALIDATOR_WITHDRAWABILITY_DELAY;
+  }
+
+  default EpochNumber getPersistentCommitteePeriod() {
+    return PERSISTENT_COMMITTEE_PERIOD;
   }
 }

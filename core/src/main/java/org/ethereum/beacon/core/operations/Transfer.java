@@ -19,9 +19,9 @@ import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 @SSZSerializable
 public class Transfer {
   /** Sender index. */
-  @SSZ private final ValidatorIndex from;
+  @SSZ private final ValidatorIndex sender;
   /** Recipient index. */
-  @SSZ private final ValidatorIndex to;
+  @SSZ private final ValidatorIndex recipient;
   /** Amount in Gwei. */
   @SSZ private final Gwei amount;
   /** Fee in Gwei for block proposer. */
@@ -34,15 +34,15 @@ public class Transfer {
   @SSZ private final BLSSignature signature;
 
   public Transfer(
-      ValidatorIndex from,
-      ValidatorIndex to,
+      ValidatorIndex sender,
+      ValidatorIndex recipient,
       Gwei amount,
       Gwei fee,
       SlotNumber slot,
       BLSPubkey pubkey,
       BLSSignature signature) {
-    this.from = from;
-    this.to = to;
+    this.sender = sender;
+    this.recipient = recipient;
     this.amount = amount;
     this.fee = fee;
     this.slot = slot;
@@ -50,12 +50,12 @@ public class Transfer {
     this.signature = signature;
   }
 
-  public ValidatorIndex getFrom() {
-    return from;
+  public ValidatorIndex getSender() {
+    return sender;
   }
 
-  public ValidatorIndex getTo() {
-    return to;
+  public ValidatorIndex getRecipient() {
+    return recipient;
   }
 
   public Gwei getAmount() {
@@ -87,8 +87,8 @@ public class Transfer {
       return false;
     }
     Transfer transfer = (Transfer) object;
-    return Objects.equal(from, transfer.from)
-        && Objects.equal(to, transfer.to)
+    return Objects.equal(sender, transfer.sender)
+        && Objects.equal(recipient, transfer.recipient)
         && Objects.equal(amount, transfer.amount)
         && Objects.equal(fee, transfer.fee)
         && Objects.equal(slot, transfer.slot)
@@ -98,6 +98,6 @@ public class Transfer {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(from, to, amount, fee, slot, pubkey, signature);
+    return Objects.hashCode(sender, recipient, amount, fee, slot, pubkey, signature);
   }
 }

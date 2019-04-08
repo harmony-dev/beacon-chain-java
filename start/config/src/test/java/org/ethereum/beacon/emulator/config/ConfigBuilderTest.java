@@ -1,6 +1,7 @@
 package org.ethereum.beacon.emulator.config;
 
 import java.util.Collections;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.emulator.config.chainspec.SpecData;
 import org.ethereum.beacon.emulator.config.chainspec.SpecBuilder;
@@ -65,7 +66,7 @@ public class ConfigBuilderTest {
     SpecData unmodified = configBuilder.build();
     SpecConstants specConstants = new SpecBuilder().buildSpecConstants(unmodified.getSpecConstants());
 
-    SpecConstants specConstantsDefault = SpecConstants.DEFAULT;
+    SpecConstants specConstantsDefault = BeaconChainSpec.DEFAULT_CONSTANTS;
     assertEquals(specConstantsDefault.getGenesisEpoch(), specConstants.getGenesisEpoch());
     assertEquals(specConstantsDefault.getEmptySignature(), specConstants.getEmptySignature());
     assertEquals(specConstantsDefault.getSlotsPerEpoch(), specConstants.getSlotsPerEpoch());

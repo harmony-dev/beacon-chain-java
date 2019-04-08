@@ -17,11 +17,11 @@ import org.ethereum.beacon.ssz.annotation.SSZSerializable;
  *
  * @see BeaconState
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md#pendingattestationrecord">PendingAttestationRecord
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.5.0/specs/core/0_beacon-chain.md#pendingattestation">PendingAttestation
  *     in the spec</a>
  */
 @SSZSerializable
-public class PendingAttestationRecord {
+public class PendingAttestation {
 
   /** Proof of custody bitfield. */
   @SSZ private final Bitfield aggregationBitfield;
@@ -32,7 +32,7 @@ public class PendingAttestationRecord {
   /** Slot in which it was included. */
   @SSZ private final SlotNumber inclusionSlot;
 
-  public PendingAttestationRecord(Bitfield aggregationBitfield,
+  public PendingAttestation(Bitfield aggregationBitfield,
       AttestationData data, Bitfield custodyBitfield,
       SlotNumber inclusionSlot) {
     this.aggregationBitfield = aggregationBitfield;
@@ -61,7 +61,7 @@ public class PendingAttestationRecord {
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
-    PendingAttestationRecord that = (PendingAttestationRecord) o;
+    PendingAttestation that = (PendingAttestation) o;
     return Objects.equal(data, that.data)
         && Objects.equal(aggregationBitfield, that.aggregationBitfield)
         && Objects.equal(custodyBitfield, that.custodyBitfield)

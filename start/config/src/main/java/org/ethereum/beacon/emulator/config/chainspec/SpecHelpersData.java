@@ -1,9 +1,11 @@
 package org.ethereum.beacon.emulator.config.chainspec;
 
 public class SpecHelpersData {
+  public static final SpecHelpersData DEFAULT = new SpecHelpersData();
+
   private boolean blsVerify = true;
 
-  private boolean blsVerifyProofOfPosession = true;
+  private boolean blsVerifyProofOfPossession = true;
 
   private boolean blsSign = true;
 
@@ -15,12 +17,12 @@ public class SpecHelpersData {
     this.blsVerify = blsVerify;
   }
 
-  public boolean isBlsVerifyProofOfPosession() {
-    return blsVerifyProofOfPosession;
+  public boolean isBlsVerifyProofOfPossession() {
+    return blsVerifyProofOfPossession;
   }
 
-  public void setBlsVerifyProofOfPosession(boolean blsVerifyProofOfPosession) {
-    this.blsVerifyProofOfPosession = blsVerifyProofOfPosession;
+  public void setBlsVerifyProofOfPossession(boolean blsVerifyProofOfPossession) {
+    this.blsVerifyProofOfPossession = blsVerifyProofOfPossession;
   }
 
   public boolean isBlsSign() {

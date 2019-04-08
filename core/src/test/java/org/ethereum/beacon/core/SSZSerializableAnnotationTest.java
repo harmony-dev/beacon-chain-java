@@ -19,14 +19,14 @@ import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustody
 import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
-import org.ethereum.beacon.core.operations.slashing.Proposal;
 import org.ethereum.beacon.core.operations.slashing.SlashableAttestation;
 import org.ethereum.beacon.core.state.BeaconStateImpl;
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Eth1DataVote;
-import org.ethereum.beacon.core.state.ForkData;
-import org.ethereum.beacon.core.state.PendingAttestationRecord;
+import org.ethereum.beacon.core.state.Fork;
+import org.ethereum.beacon.core.state.HistoricalBatch;
+import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
@@ -126,12 +126,11 @@ public class SSZSerializableAnnotationTest {
                 DepositData.class,
                 DepositInput.class,
                 VoluntaryExit.class,
-                Proposal.class,
                 ProposerSlashing.class,
                 Crosslink.class,
                 Eth1DataVote.class,
-                ForkData.class,
-                PendingAttestationRecord.class,
+                Fork.class,
+                PendingAttestation.class,
                 ValidatorRecord.class,
                 Eth1Data.class,
                 Bitfield.class,
@@ -146,7 +145,9 @@ public class SSZSerializableAnnotationTest {
                 Time.class,
                 Millis.class,
                 ValidatorIndex.class,
-                Transfer.class));
+                Transfer.class,
+                BeaconBlockHeader.class,
+                HistoricalBatch.class));
     Class[] allClasses = getClasses("org.ethereum.beacon.core");
 
     for (Class clazz : allClasses) {

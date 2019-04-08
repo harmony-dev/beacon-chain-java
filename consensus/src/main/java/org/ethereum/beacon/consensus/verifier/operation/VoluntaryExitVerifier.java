@@ -2,9 +2,9 @@ package org.ethereum.beacon.consensus.verifier.operation;
 
 import static org.ethereum.beacon.consensus.verifier.VerificationResult.PASSED;
 import static org.ethereum.beacon.consensus.verifier.VerificationResult.failedResult;
-import static org.ethereum.beacon.core.spec.SignatureDomains.EXIT;
+import static org.ethereum.beacon.core.spec.SignatureDomains.VOLUNTARY_EXIT;
 
-import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.verifier.OperationVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconState;
@@ -21,9 +21,9 @@ import org.ethereum.beacon.core.state.ValidatorRecord;
  */
 public class VoluntaryExitVerifier implements OperationVerifier<VoluntaryExit> {
 
-  private SpecHelpers spec;
+  private BeaconChainSpec spec;
 
-  public VoluntaryExitVerifier(SpecHelpers spec) {
+  public VoluntaryExitVerifier(BeaconChainSpec spec) {
     this.spec = spec;
   }
 
@@ -33,37 +33,37 @@ public class VoluntaryExitVerifier implements OperationVerifier<VoluntaryExit> {
 
     ValidatorRecord validator = state.getValidatorRegistry().get(voluntaryExit.getValidatorIndex());
 
-    // Verify that validator.exit_epoch >
-    // get_delayed_activation_exit_epoch(get_current_epoch(state))
-    if (!validator
-        .getExitEpoch()
-        .greater(spec.get_delayed_activation_exit_epoch(spec.get_current_epoch(state)))) {
-      return failedResult(
-          "ACTIVATION_EXIT_DELAY exceeded, min exit epoch %s, got %s",
-          state.getSlot().plus(spec.getConstants().getActivationExitDelay()),
-          validator.getExitEpoch());
+    // Verify the validator has not yet exited
+    if (!validator.getExitEpoch().equals(spec.getConstants().getFarFutureEpoch())) {
+      return failedResult("validator #%s has already exited", voluntaryExit.getValidatorIndex());
     }
 
-    // Verify that get_current_epoch(state) >= exit.epoch
-    if (!spec.get_current_epoch(state).greaterEqual(voluntaryExit.getEpoch())) {
-      return failedResult("exit.epoch must be greater or equal to current_epoch");
+    // Verify the validator has not initiated an exit
+    if (validator.getInitiatedExit()) {
+      return failedResult("validator #%s has already initiated an exit",
+          voluntaryExit.getValidatorIndex());
     }
 
-    // Let exit_message = hash_tree_root(
-    //    VoluntaryExitVerifier(
-    //        epoch=exit.epoch,
-    //        validator_index=exit.validator_index,
-    //        signature=EMPTY_SIGNATURE)).
-    // Verify that bls_verify(
-    //    pubkey=validator.pubkey,
-    //    message=exit_message,
-    //    signature=exit.signature,
-    //    domain=get_domain(state.fork, exit.epoch, DOMAIN_EXIT)).
+    // Exits must specify an epoch when they become valid; they are not valid before then
+    if (!(spec.get_current_epoch(state).greaterEqual(voluntaryExit.getEpoch()) &&
+        spec.get_current_epoch(state).minus(validator.getActivationEpoch())
+            .greaterEqual(spec.getConstants().getPersistentCommitteePeriod()))) {
+      return failedResult("validator #%s exit epoch boundaries are violated, min exit epoch %s but got %s",
+          validator.getActivationEpoch().plus(spec.getConstants().getPersistentCommitteePeriod()),
+          spec.get_current_epoch(state));
+    }
+
+    /* assert bls_verify(
+         pubkey=validator.pubkey,
+         message_hash=signed_root(exit),
+         signature=exit.signature,
+         domain=get_domain(state.fork, exit.epoch, DOMAIN_VOLUNTARY_EXIT)
+       ) */
     if (!spec.bls_verify(
         validator.getPubKey(),
-        spec.signed_root(voluntaryExit, "signature"),
+        spec.signed_root(voluntaryExit),
         voluntaryExit.getSignature(),
-        spec.get_domain(state.getForkData(), voluntaryExit.getEpoch(), EXIT))) {
+        spec.get_domain(state.getFork(), voluntaryExit.getEpoch(), VOLUNTARY_EXIT))) {
       return failedResult("failed to verify signature");
     }
 

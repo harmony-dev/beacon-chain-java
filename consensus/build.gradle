@@ -11,4 +11,5 @@ dependencies {
   // Gradle does not import test sources alongside with main sources
   // use a workaround until better solution will be found
   testImplementation project(':ssz').sourceSets.test.output
+  testImplementation project(':core').sourceSets.test.output
 }

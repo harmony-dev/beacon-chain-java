@@ -41,11 +41,11 @@ public class SSZObjectHasher implements ObjectHasher<Hash32> {
   }
 
   @Override
-  public Hash32 getHashTruncate(Object input, String field) {
+  public Hash32 getHashTruncateLast(Object input) {
     if (input instanceof List) {
       throw new RuntimeException("Lists are not supported in truncated hash");
     } else {
-      return Hash32.wrap(Bytes32.wrap(sszHasher.hashTruncate(input, input.getClass(), field)));
+      return Hash32.wrap(Bytes32.wrap(sszHasher.hashTruncate(input, input.getClass())));
     }
   }
 }

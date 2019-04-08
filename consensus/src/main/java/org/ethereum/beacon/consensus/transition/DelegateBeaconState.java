@@ -1,14 +1,15 @@
 package org.ethereum.beacon.consensus.transition;
 
 import javax.annotation.Nullable;
+import org.ethereum.beacon.core.BeaconBlockHeader;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Eth1DataVote;
-import org.ethereum.beacon.core.state.ForkData;
-import org.ethereum.beacon.core.state.PendingAttestationRecord;
+import org.ethereum.beacon.core.state.Fork;
+import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.Bitfield64;
 import org.ethereum.beacon.core.types.EpochNumber;
@@ -47,8 +48,8 @@ public class DelegateBeaconState implements BeaconState {
   }
 
   @Override
-  public ForkData getForkData() {
-    return delegate.getForkData();
+  public Fork getFork() {
+    return delegate.getFork();
   }
 
   @Override
@@ -102,13 +103,33 @@ public class DelegateBeaconState implements BeaconState {
   }
 
   @Override
+  public ReadList<Integer, PendingAttestation> getPreviousEpochAttestations() {
+    return delegate.getPreviousEpochAttestations();
+  }
+
+  @Override
+  public ReadList<Integer, PendingAttestation> getCurrentEpochAttestations() {
+    return delegate.getCurrentEpochAttestations();
+  }
+
+  @Override
   public EpochNumber getPreviousJustifiedEpoch() {
     return delegate.getPreviousJustifiedEpoch();
   }
 
   @Override
-  public EpochNumber getJustifiedEpoch() {
-    return delegate.getJustifiedEpoch();
+  public EpochNumber getCurrentJustifiedEpoch() {
+    return delegate.getCurrentJustifiedEpoch();
+  }
+
+  @Override
+  public Hash32 getPreviousJustifiedRoot() {
+    return delegate.getPreviousJustifiedRoot();
+  }
+
+  @Override
+  public Hash32 getCurrentJustifiedRoot() {
+    return delegate.getCurrentJustifiedRoot();
   }
 
   @Override
@@ -122,13 +143,28 @@ public class DelegateBeaconState implements BeaconState {
   }
 
   @Override
-  public ReadList<ShardNumber, Crosslink> getLatestCrosslinks() {
-    return delegate.getLatestCrosslinks();
+  public Hash32 getFinalizedRoot() {
+    return delegate.getFinalizedRoot();
+  }
+
+  @Override
+  public ReadList<ShardNumber, Crosslink> getPreviousCrosslinks() {
+    return delegate.getPreviousCrosslinks();
+  }
+
+  @Override
+  public ReadList<ShardNumber, Crosslink> getCurrentCrosslinks() {
+    return delegate.getCurrentCrosslinks();
   }
 
   @Override
   public ReadList<SlotNumber, Hash32> getLatestBlockRoots() {
     return delegate.getLatestBlockRoots();
+  }
+
+  @Override
+  public ReadList<SlotNumber, Hash32> getLatestStateRoots() {
+    return delegate.getLatestStateRoots();
   }
 
   @Override
@@ -142,13 +178,13 @@ public class DelegateBeaconState implements BeaconState {
   }
 
   @Override
-  public ReadList<Integer, PendingAttestationRecord> getLatestAttestations() {
-    return delegate.getLatestAttestations();
+  public BeaconBlockHeader getLatestBlockHeader() {
+    return delegate.getLatestBlockHeader();
   }
 
   @Override
-  public ReadList<Integer, Hash32> getBatchedBlockRoots() {
-    return delegate.getBatchedBlockRoots();
+  public ReadList<Integer, Hash32> getHistoricalRoots() {
+    return delegate.getHistoricalRoots();
   }
 
   @Override

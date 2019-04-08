@@ -22,20 +22,20 @@ import tech.pegasys.artemis.util.uint.UInt64;
 public class Deposit {
 
   /** A branch of receipt's Merkle trie of the deposit contract on PoW net. */
-  @SSZ private final List<Hash32> branch;
+  @SSZ private final List<Hash32> proof;
   /** An index of receipt's entry in the trie. */
   @SSZ private final UInt64 index;
   /** Deposit data. */
   @SSZ private final DepositData depositData;
 
-  public Deposit(List<Hash32> branch, UInt64 index, DepositData depositData) {
-    this.branch = branch;
+  public Deposit(List<Hash32> proof, UInt64 index, DepositData depositData) {
+    this.proof = proof;
     this.index = index;
     this.depositData = depositData;
   }
 
-  public List<Hash32> getBranch() {
-    return branch;
+  public List<Hash32> getProof() {
+    return proof;
   }
 
   public UInt64 getIndex() {
@@ -51,7 +51,7 @@ public class Deposit {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     Deposit deposit = (Deposit) o;
-    return branch.equals(deposit.branch)
+    return proof.equals(deposit.proof)
         && Objects.equal(index, deposit.index)
         && Objects.equal(depositData, deposit.depositData);
   }

@@ -3,7 +3,7 @@ package org.ethereum.beacon.consensus.verifier.operation;
 import static org.ethereum.beacon.consensus.verifier.VerificationResult.PASSED;
 import static org.ethereum.beacon.consensus.verifier.VerificationResult.failedResult;
 
-import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.verifier.OperationVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconState;
@@ -24,10 +24,10 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
  */
 public class DepositVerifier implements OperationVerifier<Deposit> {
 
-  private final SpecHelpers spec;
+  private final BeaconChainSpec spec;
   private final SSZSerializer ssz = new SSZBuilder().buildSerializer();
 
-  public DepositVerifier(SpecHelpers spec) {
+  public DepositVerifier(BeaconChainSpec spec) {
     this.spec = spec;
   }
 
@@ -51,7 +51,7 @@ public class DepositVerifier implements OperationVerifier<Deposit> {
 
     if (!spec.verify_merkle_branch(
         serializedDataHash,
-        deposit.getBranch(),
+        deposit.getProof(),
         spec.getConstants().getDepositContractTreeDepth(),
         deposit.getIndex(),
         state.getLatestEth1Data().getDepositRoot())) {

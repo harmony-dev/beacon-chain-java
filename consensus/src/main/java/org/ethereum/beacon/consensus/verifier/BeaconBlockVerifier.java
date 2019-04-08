@@ -1,6 +1,6 @@
 package org.ethereum.beacon.consensus.verifier;
 
-import org.ethereum.beacon.consensus.SpecHelpers;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.verifier.block.AttestationListVerifier;
 import org.ethereum.beacon.consensus.verifier.block.DepositListVerifier;
 import org.ethereum.beacon.consensus.verifier.block.TransferListVerifier;
@@ -19,15 +19,15 @@ import org.ethereum.beacon.core.BeaconState;
 /** A common interface for various {@link BeaconBlock} verifications defined by the spec. */
 public interface BeaconBlockVerifier {
 
-  static BeaconBlockVerifier createDefault(SpecHelpers specHelpers) {
+  static BeaconBlockVerifier createDefault(BeaconChainSpec spec) {
     return CompositeBlockVerifier.Builder.createNew()
-        .with(new RandaoVerifier(specHelpers))
-        .with(new BlockSignatureVerifier(specHelpers))
-        .with(new AttestationListVerifier(new AttestationVerifier(specHelpers), specHelpers.getConstants()))
-        .with(new DepositListVerifier(new DepositVerifier(specHelpers), specHelpers.getConstants()))
-        .with(new VoluntaryExitListVerifier(new VoluntaryExitVerifier(specHelpers), specHelpers.getConstants()))
-        .with(new ProposerSlashingListVerifier(new ProposerSlashingVerifier(specHelpers), specHelpers.getConstants()))
-        .with(new TransferListVerifier(new TransferVerifier(specHelpers), specHelpers))
+        .with(new RandaoVerifier(spec))
+        .with(new BlockSignatureVerifier(spec))
+        .with(new AttestationListVerifier(new AttestationVerifier(spec), spec.getConstants()))
+        .with(new DepositListVerifier(new DepositVerifier(spec), spec.getConstants()))
+        .with(new VoluntaryExitListVerifier(new VoluntaryExitVerifier(spec), spec.getConstants()))
+        .with(new ProposerSlashingListVerifier(new ProposerSlashingVerifier(spec), spec.getConstants()))
+        .with(new TransferListVerifier(new TransferVerifier(spec), spec))
         .build();
   }
 
