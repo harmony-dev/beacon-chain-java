@@ -28,7 +28,7 @@ public class BytesValueAccessor extends AbstractListAccessor {
       protected Object buildImpl(List<Object> children) {
         byte[] vals = new byte[children.size()];
         for (int i = 0; i < children.size(); i++) {
-          vals[i] = (Byte) children.get(i);
+          vals[i] = ((Number) children.get(i)).byteValue();
         }
         return BytesValue.wrap(vals);
       }
