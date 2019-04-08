@@ -33,7 +33,8 @@ public class ArrayAccessor extends AbstractListAccessor {
       @Override
       protected Object buildImpl(List<Object> children) {
         if (!getListElementType(compositeDescriptor).getRawClass().isPrimitive()) {
-          return children.toArray(new Object[children.size()]);
+          return children.toArray((Object[]) Array.newInstance(
+              getListElementType(compositeDescriptor).getRawClass(),children.size()));
         } else {
           if (getListElementType(compositeDescriptor).getRawClass() == byte.class) {
             Object ret = Array.newInstance(byte.class);
