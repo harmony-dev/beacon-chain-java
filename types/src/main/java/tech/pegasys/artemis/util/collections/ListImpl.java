@@ -20,15 +20,10 @@ class ListImpl<IndexType extends Number, ValueType>
   private final List<ValueType> backedList;
   private final Function<Integer, IndexType> indexConverter;
 
-  private ListImpl(List<ValueType> backedList,
-      Function<Integer, IndexType> indexConverter) {
-    this.backedList = backedList;
-    this.indexConverter = indexConverter;
-  }
-
   ListImpl(Collection<ValueType> source,
       Function<Integer, IndexType> indexConverter) {
-    this(new ArrayList<>(source), indexConverter);
+    this.backedList = new ArrayList<>(source);
+    this.indexConverter = indexConverter;
   }
 
   ListImpl(Function<Integer, IndexType> indexConverter) {
