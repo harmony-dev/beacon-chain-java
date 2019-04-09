@@ -2,9 +2,23 @@ package org.ethereum.beacon.ssz.access;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.List;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 
 public class SSZField {
+
+  public static SSZField resolveFromValue(Object value, Class<?> clazz) {
+    if (value instanceof List && !((List) value).isEmpty()) {
+      return new SSZField(
+          new ParametrizedTypeImpl(clazz, ((List) value).get(0).getClass()));
+    }
+    return new SSZField(clazz);
+  }
+
+  public static SSZField resolveFromValue(Object value) {
+    return resolveFromValue(value, value.getClass());
+  }
+
   private final Type fieldType;
   private final SSZ fieldAnnotation;
   private final String extraType;
@@ -66,5 +80,30 @@ public class SSZField {
         ", name='" + name + '\'' +
         ", getter='" + getter + '\'' +
         '}';
+  }
+
+  private static class ParametrizedTypeImpl implements ParameterizedType {
+    private final Type rawType;
+    private final Type[] actualTypeArguments;
+
+    public ParametrizedTypeImpl(Type rawType, Type... actualTypeArguments) {
+      this.rawType = rawType;
+      this.actualTypeArguments = actualTypeArguments;
+    }
+
+    @Override
+    public Type[] getActualTypeArguments() {
+      return actualTypeArguments;
+    }
+
+    @Override
+    public Type getRawType() {
+      return rawType;
+    }
+
+    @Override
+    public Type getOwnerType() {
+      return null;
+    }
   }
 }

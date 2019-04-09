@@ -39,7 +39,10 @@ public class SSZHasher implements BytesHasher {
   @Override
   public byte[] hash(@Nullable Object input, Class clazz) {
     return visitorHost
-        .handleAny(typeResolver.resolveSSZType(new SSZField(clazz)), input, hasherVisitor)
+        .handleAny(
+            typeResolver.resolveSSZType(SSZField.resolveFromValue(input, clazz)),
+            input,
+            hasherVisitor)
         .getFinalRoot()
         .extractArray();
   }
@@ -48,7 +51,8 @@ public class SSZHasher implements BytesHasher {
   public <C> byte[] hashTruncateLast(@Nullable C input, Class<? extends C> clazz) {
     return visitorHost
         .handleAny(
-            new TruncatedContainerType(typeResolver.resolveSSZType(new SSZField(clazz))),
+            new TruncatedContainerType(
+                typeResolver.resolveSSZType(SSZField.resolveFromValue(input, clazz))),
             input,
             hasherVisitor)
         .getFinalRoot()
