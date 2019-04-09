@@ -25,7 +25,7 @@ public class DefaultSSZ {
     return createCommonSSZBuilder()
         .withExternalVarResolver(varName -> {
           if (varName.startsWith("spec.")) {
-            return constantsResolver.resolveByName(varName.substring("spec.".length()));
+            return constantsResolver.resolveByName(varName.substring("spec.".length())).orElse(null);
           }
           return null;
         });
