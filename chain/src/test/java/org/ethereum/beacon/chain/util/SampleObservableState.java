@@ -9,7 +9,8 @@ import org.ethereum.beacon.chain.SlotTicker;
 import org.ethereum.beacon.chain.observer.ObservableStateProcessor;
 import org.ethereum.beacon.chain.observer.ObservableStateProcessorImpl;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
-import org.ethereum.beacon.chain.storage.BeaconChainStorageFactory;
+import org.ethereum.beacon.chain.storage.impl.SSZBeaconChainStorageFactory;
+import org.ethereum.beacon.chain.storage.impl.SerializerFactory;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.TestUtils;
 import org.ethereum.beacon.consensus.transition.EmptySlotTransition;
@@ -96,7 +97,10 @@ public class SampleObservableState {
     EmptySlotTransition emptySlotTransition = new EmptySlotTransition(extendedSlotTransition);
 
     db = new InMemoryDatabase();
-    beaconChainStorage = BeaconChainStorageFactory.get().create(db);
+    beaconChainStorage =
+        new SSZBeaconChainStorageFactory(
+                spec.getObjectHasher(), SerializerFactory.createSSZ(specConstants))
+            .create(db);
 
     // TODO
     BeaconBlockVerifier blockVerifier = (block, state) -> VerificationResult.PASSED;

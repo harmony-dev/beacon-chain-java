@@ -185,13 +185,14 @@ public class SimulatorLauncher implements Runnable {
             BLS381Credentials.createWithDummySigner(keyPairs.get(i));
       }
 
+      BeaconChainSpec spec = specBuilder.buildSpec();
       Launcher launcher =
           new Launcher(
-              specBuilder.buildSpec(),
+              spec,
               depositContract,
               bls,
               wireApi,
-              new MemBeaconChainStorageFactory(),
+              new MemBeaconChainStorageFactory(spec.getObjectHasher()),
               schedulers,
               proposeTimeCollector);
 
@@ -206,14 +207,15 @@ public class SimulatorLauncher implements Runnable {
     for (int i = 0; i < observers.size(); i++) {
       PeersConfig config = observers.get(i);
       String name = "O" + i;
+      BeaconChainSpec spec = specBuilder.buildSpec();
       Launcher launcher =
           new Launcher(
-              specBuilder.buildSpec(),
+              spec,
               depositContract,
               null,
               localWireHub.createNewPeer(
                   name, config.getWireInboundDelay(), config.getWireOutboundDelay()),
-              new MemBeaconChainStorageFactory(),
+              new MemBeaconChainStorageFactory(spec.getObjectHasher()),
               controlledSchedulers.createNew(name, config.getSystemTimeShift()));
       peers.add(launcher);
     }
@@ -253,7 +255,7 @@ public class SimulatorLauncher implements Runnable {
             depositContract,
             null,
             wireApi,
-            new MemBeaconChainStorageFactory(),
+            new MemBeaconChainStorageFactory(spec.getObjectHasher()),
             schedulers);
 
     peers.add(observer);

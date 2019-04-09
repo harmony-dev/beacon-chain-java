@@ -4,6 +4,8 @@ import java.util.Collections;
 import java.util.stream.IntStream;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.chain.storage.BeaconChainStorageFactory;
+import org.ethereum.beacon.chain.storage.impl.SSZBeaconChainStorageFactory;
+import org.ethereum.beacon.chain.storage.impl.SerializerFactory;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.BlockTransition;
@@ -47,7 +49,7 @@ public class DefaultBeaconChainTest {
     Assert.assertEquals(
         spec.getConstants().getGenesisSlot(), initialTuple.getBlock().getSlot());
 
-    IntStream.range(0, 10)
+    IntStream.range(0, 100)
         .forEach(
             (idx) -> {
               BeaconTuple recentlyProcessed = beaconChain.getRecentlyProcessed();
@@ -95,7 +97,9 @@ public class DefaultBeaconChainTest {
     BeaconBlockVerifier blockVerifier = (block, state) -> VerificationResult.PASSED;
     BeaconStateVerifier stateVerifier = (block, state) -> VerificationResult.PASSED;
     Database database = Database.inMemoryDB();
-    BeaconChainStorage chainStorage = BeaconChainStorageFactory.get().create(database);
+    BeaconChainStorage chainStorage = new SSZBeaconChainStorageFactory(
+            spec.getObjectHasher(), SerializerFactory.createSSZ(spec.getConstants()))
+            .create(database);
 
     return new DefaultBeaconChain(
         spec,

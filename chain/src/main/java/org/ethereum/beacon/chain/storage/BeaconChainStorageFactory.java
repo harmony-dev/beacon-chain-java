@@ -7,8 +7,4 @@ import org.ethereum.beacon.db.Database;
 public interface BeaconChainStorageFactory {
 
   BeaconChainStorage create(Database database);
-
-  static BeaconChainStorageFactory get() {
-    return new SSZBeaconChainStorageFactory();
-  }
 }
