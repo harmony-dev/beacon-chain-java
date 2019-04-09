@@ -58,25 +58,27 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
   @Override
   public MerkleTrie visitComposite(SSZCompositeType type, Object rawValue,
       BiFunction<Integer, Object, MerkleTrie> childVisitor) {
-    MerkleTrie merkleize;
-    if (type.isList() && ((SSZListType) type).getElementType().isBasicType()) {
+    MerkleTrie merkle;
+    List<BytesValue> chunks = new ArrayList<>();
+    if (type.getChildrenCount(rawValue) == 0) {
+      // empty chunk list
+    } else if (type.isList() && ((SSZListType) type).getElementType().isBasicType()) {
       SSZSimpleSerializer.SSZSerializerResult sszSerializerResult = serializer.visitAny(type, rawValue);
 
-      merkleize = merkleize(pack(sszSerializerResult.serializedBody));
+      chunks = pack(sszSerializerResult.serializedBody);
     } else {
-      List<Hash32> childHashes = new ArrayList<>();
       for (int i = 0; i < type.getChildrenCount(rawValue); i++) {
-        childHashes.add(childVisitor.apply(i, type.getChild(rawValue, i)).getFinalRoot());
+        chunks.add(childVisitor.apply(i, type.getChild(rawValue, i)).getFinalRoot());
       }
-      merkleize = merkleize(childHashes);
     }
+    merkle = merkleize(chunks);
     if (type.isVariableSize()) {
       Hash32 mixInLength = hashFunction.apply(BytesValue.concat(
-          merkleize.getPureRoot(),
+          merkle.getPureRoot(),
           serializeLength(type.getChildrenCount(rawValue))));
-      merkleize.setFinalRoot(mixInLength);
+      merkle.setFinalRoot(mixInLength);
     }
-    return merkleize;
+    return merkle;
   }
 
   protected List<BytesValue> pack(BytesValue value) {
