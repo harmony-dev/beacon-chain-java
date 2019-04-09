@@ -11,6 +11,7 @@ import org.ethereum.beacon.chain.observer.ObservableStateProcessorImpl;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.chain.storage.BeaconChainStorageFactory;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
+import org.ethereum.beacon.consensus.StateTransitions;
 import org.ethereum.beacon.consensus.TestUtils;
 import org.ethereum.beacon.consensus.transition.EmptySlotTransition;
 import org.ethereum.beacon.consensus.transition.ExtendedSlotTransition;
@@ -87,13 +88,8 @@ public class SampleObservableState {
     chainStart = new ChainStart(Time.of(genesisTime.getSeconds()), eth1Data, deposits);
 
     InitialStateTransition initialTransition = new InitialStateTransition(chainStart, spec);
-    PerSlotTransition perSlotTransition = new PerSlotTransition(spec);
-    PerBlockTransition perBlockTransition = new PerBlockTransition(spec);
-    PerEpochTransition perEpochTransition = new PerEpochTransition(spec);
-    StateCachingTransition stateCaching = new StateCachingTransition(spec);
-    ExtendedSlotTransition extendedSlotTransition =
-        new ExtendedSlotTransition(stateCaching, perEpochTransition, perSlotTransition, spec);
-    EmptySlotTransition emptySlotTransition = new EmptySlotTransition(extendedSlotTransition);
+    EmptySlotTransition preBlockTransition = StateTransitions.preBlockTransition(spec);
+    PerBlockTransition blockTransition = StateTransitions.blockTransition(spec);
 
     db = new InMemoryDatabase();
     beaconChainStorage = BeaconChainStorageFactory.get().create(db);
@@ -106,8 +102,8 @@ public class SampleObservableState {
     beaconChain = new DefaultBeaconChain(
         spec,
         initialTransition,
-        emptySlotTransition,
-        perBlockTransition,
+        preBlockTransition,
+        blockTransition,
         blockVerifier,
         stateVerifier,
         beaconChainStorage,
@@ -124,7 +120,7 @@ public class SampleObservableState {
         attestationsSteam,
         beaconChain.getBlockStatesStream(),
         spec,
-        emptySlotTransition,
+        preBlockTransition,
         schedulers);
     observableStateProcessor.start();
 

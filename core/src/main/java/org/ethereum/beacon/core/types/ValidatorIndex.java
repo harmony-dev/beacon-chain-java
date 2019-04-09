@@ -14,6 +14,10 @@ public class ValidatorIndex extends UInt64 implements
     return new ValidatorIndex(UInt64.valueOf(index));
   }
 
+  public static ValidatorIndex of(long index) {
+    return new ValidatorIndex(UInt64.valueOf(index));
+  }
+
   public ValidatorIndex(UInt64 uint) {
     super(uint);
   }

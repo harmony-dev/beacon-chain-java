@@ -7,6 +7,12 @@ dependencies {
   testImplementation project(':ssz')
   testImplementation project(':consensus')
   testImplementation project(':core')
+  testImplementation project(':start:config')
+  testImplementation project(':db:core')
+  testImplementation project(':chain')
+  testImplementation project(':start:simulator')
+  testImplementation project(':util')
+  testImplementation project(':pow:core')
 }
 
 task submodulesUpdate(type:Exec) {

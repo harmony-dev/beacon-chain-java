@@ -1,4 +1,5 @@
 dependencies {
   implementation 'io.projectreactor:reactor-core'
   implementation 'com.google.guava:guava'
+  implementation 'commons-beanutils:commons-beanutils'
 }
