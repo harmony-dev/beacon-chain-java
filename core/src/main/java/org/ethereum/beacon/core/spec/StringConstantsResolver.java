@@ -2,12 +2,12 @@ package org.ethereum.beacon.core.spec;
 
 import com.google.common.base.CaseFormat;
 import com.google.common.base.Converter;
-import com.sun.istack.internal.NotNull;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import javax.annotation.Nonnull;
 
 public class StringConstantsResolver  {
   private final SpecConstants constants;
@@ -30,7 +30,7 @@ public class StringConstantsResolver  {
    * Name should be in the original spec notation (upper underscore), like TARGET_COMMITTEE_SIZE
    * @return <code>empty</code> if the constant not found
    */
-  public Optional<Number> resolveByName(@NotNull String constName) {
+  public Optional<Number> resolveByName(@Nonnull String constName) {
     String convertedName = caseConverter.convert(constName);
     Method getter = constMethods.get("get" + convertedName);
     if (getter == null) {
