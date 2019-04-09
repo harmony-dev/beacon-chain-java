@@ -70,7 +70,7 @@ public class SSZHasher implements BytesHasher {
     public int getSize() {
       int size = delegate.getSize();
       List<SSZType> childTypes = delegate.getChildTypes();
-      return size == -1 ? -1 : size - delegate.getSize() - childTypes.get(childTypes.size() - 1).getSize();
+      return size == -1 ? -1 : size - childTypes.get(childTypes.size() - 1).getSize();
     }
 
     @Override
