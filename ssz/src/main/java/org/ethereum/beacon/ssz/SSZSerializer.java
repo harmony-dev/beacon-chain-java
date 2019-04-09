@@ -1,6 +1,7 @@
 package org.ethereum.beacon.ssz;
 
 import javax.annotation.Nullable;
+import net.consensys.cava.bytes.Bytes;
 import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.creator.CompositeObjCreator;
 import org.ethereum.beacon.ssz.type.SSZType;
@@ -11,7 +12,6 @@ import org.ethereum.beacon.ssz.visitor.SSZSimpleSerializer;
 import org.ethereum.beacon.ssz.visitor.SSZSimpleSerializer.SSZSerializerResult;
 import org.ethereum.beacon.ssz.visitor.SSZVisitorHandler;
 import org.ethereum.beacon.ssz.visitor.SSZVisitorHost;
-import tech.pegasys.artemis.util.bytes.BytesValue;
 
 /** SSZ serializer/deserializer */
 public class SSZSerializer implements BytesSerializer, SSZVisitorHandler<SSZSimpleSerializer.SSZSerializerResult> {
@@ -57,7 +57,7 @@ public class SSZSerializer implements BytesSerializer, SSZVisitorHandler<SSZSimp
   public <C> C decode(byte[] data, Class<? extends C> clazz) {
     DecodeResult decodeResult = sszVisitorHost.handleAny(
         typeResolver.resolveSSZType(new SSZField(clazz)),
-        BytesValue.wrap(data),
+        Bytes.wrap(data),
         new SSZSimpleDeserializer());
     return (C) decodeResult.decodedInstance;
   }

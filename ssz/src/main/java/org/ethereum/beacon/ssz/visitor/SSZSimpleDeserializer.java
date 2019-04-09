@@ -1,17 +1,16 @@
 package org.ethereum.beacon.ssz.visitor;
 
+import java.nio.ByteOrder;
 import java.util.function.BiFunction;
 import net.consensys.cava.bytes.Bytes;
 import net.consensys.cava.ssz.BytesSSZReaderProxy;
 import org.ethereum.beacon.ssz.SSZSerializeException;
+import org.ethereum.beacon.ssz.access.SSZCompositeAccessor.CompositeInstanceBuilder;
 import org.ethereum.beacon.ssz.type.SSZBasicType;
 import org.ethereum.beacon.ssz.type.SSZCompositeType;
-import org.ethereum.beacon.ssz.access.SSZCompositeAccessor.CompositeInstanceBuilder;
 import org.ethereum.beacon.ssz.visitor.SSZSimpleDeserializer.DecodeResult;
-import tech.pegasys.artemis.util.bytes.BytesValue;
-import tech.pegasys.artemis.util.bytes.BytesValues;
 
-public class SSZSimpleDeserializer implements SSZVisitor<DecodeResult, BytesValue> {
+public class SSZSimpleDeserializer implements SSZVisitor<DecodeResult, Bytes> {
   static final int BYTES_PER_LENGTH_PREFIX = 4;
 
   public static class DecodeResult {
@@ -25,8 +24,8 @@ public class SSZSimpleDeserializer implements SSZVisitor<DecodeResult, BytesValu
   }
 
   @Override
-  public DecodeResult visitBasicValue(SSZBasicType sszType, BytesValue param) {
-    BytesSSZReaderProxy reader = new BytesSSZReaderProxy(Bytes.of(param.getArrayUnsafe()));
+  public DecodeResult visitBasicValue(SSZBasicType sszType, Bytes param) {
+    BytesSSZReaderProxy reader = new BytesSSZReaderProxy(param);
     // TODO support basic codecs with variable size
 //    int readBytes = sszType.isFixedSize() ? sszType.getSize() : reader.
     return new DecodeResult(sszType.getValueCodec().decode(sszType.getTypeDescriptor(),
@@ -34,12 +33,12 @@ public class SSZSimpleDeserializer implements SSZVisitor<DecodeResult, BytesValu
   }
 
   @Override
-  public DecodeResult visitComposite(SSZCompositeType type, BytesValue param,
-      BiFunction<Integer, BytesValue, DecodeResult> childVisitor) {
+  public DecodeResult visitComposite(SSZCompositeType type, Bytes param,
+      BiFunction<Integer, Bytes, DecodeResult> childVisitor) {
     int pos = 0;
     int size;
     if (type.isVariableSize()) {
-      size = deserializeLength(param.slice(pos, BYTES_PER_LENGTH_PREFIX)) + BYTES_PER_LENGTH_PREFIX;
+      size = deserializeLength(param.slice(0, 4)) + BYTES_PER_LENGTH_PREFIX;
       pos += BYTES_PER_LENGTH_PREFIX;
     } else {
       size = type.getSize();
@@ -60,8 +59,7 @@ public class SSZSimpleDeserializer implements SSZVisitor<DecodeResult, BytesValu
     return new DecodeResult(instanceBuilder.build(), pos);
   }
 
-  private int deserializeLength(BytesValue lenBytes) {
-    assert lenBytes.size() == 4;
-    return BytesValues.extractIntLittleEndian(lenBytes);
+  private int deserializeLength(Bytes lenBytes) {
+    return lenBytes.toInt(ByteOrder.LITTLE_ENDIAN);
   }
 }
