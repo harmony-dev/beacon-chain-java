@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
 
 /**
  * Provides set of methods which wraps asserts and returns {@link java.util.Optional} assert message
@@ -37,6 +36,16 @@ public class SilentAsserts {
   public static Optional<String> assertEquals(Object expected, Object actual) {
     try {
       Assert.assertEquals(expected, actual);
+    } catch (AssertionError e) {
+      return Optional.of(e.getMessage());
+    }
+
+    return Optional.empty();
+  }
+
+  public static Optional<String> assertTrue(String msg, boolean value) {
+    try {
+      Assert.assertTrue(msg, value);
     } catch (AssertionError e) {
       return Optional.of(e.getMessage());
     }

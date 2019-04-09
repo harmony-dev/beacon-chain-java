@@ -1,13 +1,12 @@
 package org.ethereum.beacon.test;
 
+import static org.junit.Assert.assertFalse;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.base.Charsets;
 import com.google.common.io.CharStreams;
 import com.google.common.io.Resources;
-import org.ethereum.beacon.test.type.TestCase;
-import org.ethereum.beacon.test.type.TestSkeleton;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -17,13 +16,19 @@ import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import static org.junit.Assert.fail;
+import org.ethereum.beacon.test.type.NamedTestCase;
+import org.ethereum.beacon.test.type.TestCase;
+import org.ethereum.beacon.test.type.TestSkeleton;
 
 public class TestUtils {
   static ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
@@ -81,23 +86,49 @@ public class TestUtils {
 
   static <V extends TestSkeleton> Optional<String> runAllTestsInFile(
       File file, Function<TestCase, Optional<String>> testCaseRunner, Class<? extends V> clazz) {
+    return runAllTestsInFile(file, testCaseRunner, clazz, Collections.emptySet());
+  }
+
+  static <V extends TestSkeleton> Optional<String> runAllTestsInFile(
+      File file, Function<TestCase, Optional<String>> testCaseRunner, Class<? extends V> clazz,
+      Collection<String> exclusions) {
     V test = readTest(file, clazz);
-    return runAllCasesInTest(test, testCaseRunner, clazz);
+    return runAllCasesInTest(test, testCaseRunner, clazz, exclusions);
+  }
+  static <V extends TestSkeleton> Optional<String> runAllCasesInTest(
+      V test, Function<TestCase, Optional<String>> testCaseRunner, Class<? extends V> clazz) {
+    return runAllCasesInTest(test, testCaseRunner, clazz, Collections.emptySet());
   }
 
   static <V extends TestSkeleton> Optional<String> runAllCasesInTest(
-      V test, Function<TestCase, Optional<String>> testCaseRunner, Class<? extends V> clazz) {
+      V test, Function<TestCase, Optional<String>> testCaseRunner, Class<? extends V> clazz,
+      Collection<String> exclusions) {
     StringBuilder errors = new StringBuilder();
     AtomicInteger failed = new AtomicInteger(0);
     int total = 0;
     for (TestCase testCase : test.getTestCases()) {
       ++total;
-      runTestCase(testCase, test, testCaseRunner)
-          .ifPresent(
-              str -> {
-                errors.append(str);
-                failed.incrementAndGet();
-              });
+      String name = testCase instanceof NamedTestCase
+          ? ((NamedTestCase) testCase).getName()
+          : "Test #" + (total - 1);
+      if (exclusions.contains(name)) {
+        System.out.println(String.format("[ ] %s ignored", name));
+        continue;
+      }
+
+      long s = System.nanoTime();
+      Optional<String> err = runTestCase(testCase, test, testCaseRunner);
+      long completionTime = System.nanoTime() - s;
+
+      if (err.isPresent()) {
+        errors.append(err.get());
+        failed.incrementAndGet();
+      }
+
+      System.out.println(
+          String.format(
+              "[%s] %s completed in %.3fs",
+              err.isPresent() ? "F" : "P", name, completionTime / 1_000_000_000d));
     }
 
     if (errors.length() == 0) {
@@ -144,14 +175,44 @@ public class TestUtils {
 
   static <V extends TestSkeleton> void runTestsInResourceDir(
       Path dir, Class<? extends V> testsType, Function<TestCase, Optional<String>> testCaseRunner) {
+    runTestsInResourceDirImpl(dir, testsType, testCaseRunner, Collections.emptySet());
+  }
+
+  static <V extends TestSkeleton> void runTestsInResourceDir(
+      Path dir,
+      Class<? extends V> testsType,
+      Function<TestCase, Optional<String>> testCaseRunner,
+      Ignored ignored) {
+    runTestsInResourceDirImpl(dir, testsType, testCaseRunner, ignored.testCases);
+  }
+
+  private static <V extends TestSkeleton> void runTestsInResourceDirImpl(
+      Path dir, Class<? extends V> testsType, Function<TestCase, Optional<String>> testCaseRunner,
+      Collection<String> exclusions) {
     List<File> files = getResourceFiles(dir.toString());
+    boolean failed = false;
     for (File file : files) {
       System.out.println("Running tests in " + file.getName());
-      Optional<String> result = runAllTestsInFile(file, testCaseRunner, testsType);
+      Optional<String> result = runAllTestsInFile(file, testCaseRunner, testsType, exclusions);
       if (result.isPresent()) {
         System.out.println(result.get());
-        fail();
+        System.out.println("\n----===----\n");
+        failed = true;
       }
+    }
+    assertFalse(failed);
+  }
+
+  public static class Ignored {
+    private final Set<String> testCases;
+
+    private Ignored(Set<String> testCases) {
+      this.testCases = testCases;
+    }
+
+    public static Ignored of(String... testCases) {
+      assert testCases.length > 0;
+      return new Ignored(new HashSet<>(Arrays.asList(testCases)));
     }
   }
 }

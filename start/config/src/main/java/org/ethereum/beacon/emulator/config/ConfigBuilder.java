@@ -2,8 +2,7 @@ package org.ethereum.beacon.emulator.config;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.CharStreams;
-import org.apache.commons.beanutils.BeanUtilsBean;
-import org.apache.commons.beanutils.PropertyUtils;
+import org.ethereum.beacon.util.Objects;
 import org.javatuples.Pair;
 
 import java.io.DataInputStream;
@@ -13,7 +12,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -41,105 +39,6 @@ public class ConfigBuilder<C extends Config> {
           String.format("Config type %s should implement Config interface", type));
     }
     supportedConfig = type;
-  }
-
-  /**
-   * "copyProperties" method from <a
-   * href="https://stackoverflow.com/a/24866702">https://stackoverflow.com/a/24866702</a>
-   *
-   * <p>Copies all properties from sources to destination, does not copy null values and any nested
-   * objects will attempted to be either cloned or copied into the existing object. This is
-   * recursive. Should not cause any infinite recursion.
-   *
-   * @param dest object to copy props into (will mutate)
-   * @param sources
-   * @param <T> dest
-   * @return
-   * @throws IllegalAccessException
-   * @throws InvocationTargetException
-   */
-  private static <T> T copyProperties(T dest, Object... sources)
-      throws IllegalAccessException, InvocationTargetException {
-    // to keep from any chance infinite recursion lets limit each object to 1 instance at a time in
-    // the stack
-    final List<Object> lookingAt = new ArrayList<>();
-
-    BeanUtilsBean recursiveBeanUtils =
-        new BeanUtilsBean() {
-
-          /**
-           * Check if the class name is an internal one
-           *
-           * @param name
-           * @return
-           */
-          private boolean isInternal(String name) {
-            return name.startsWith("java.")
-                || name.startsWith("javax.")
-                || name.startsWith("com.sun.")
-                || name.startsWith("javax.")
-                || name.startsWith("oracle.");
-          }
-
-          /**
-           * Override to ensure that we dont end up in infinite recursion
-           *
-           * @param dest
-           * @param orig
-           * @throws IllegalAccessException
-           * @throws InvocationTargetException
-           */
-          @Override
-          public void copyProperties(Object dest, Object orig)
-              throws IllegalAccessException, InvocationTargetException {
-            try {
-              // if we have an object in our list, that means we hit some sort of recursion, stop
-              // here.
-              if (lookingAt.stream().anyMatch(o -> o == dest)) {
-                return; // recursion detected
-              }
-              lookingAt.add(dest);
-              super.copyProperties(dest, orig);
-            } finally {
-              lookingAt.remove(dest);
-            }
-          }
-
-          @Override
-          public void copyProperty(Object dest, String name, Object value)
-              throws IllegalAccessException, InvocationTargetException {
-            // dont copy over null values
-            if (value != null) {
-              // attempt to check if the value is a pojo we can clone using nested calls
-              if (!value.getClass().isPrimitive()
-                  && !value.getClass().isSynthetic()
-                  && !isInternal(value.getClass().getName())) {
-                try {
-                  Object prop = super.getPropertyUtils().getProperty(dest, name);
-                  // get current value, if its null then clone the value and set that to the value
-                  if (prop == null) {
-                    super.setProperty(dest, name, super.cloneBean(value));
-                  } else {
-                    // get the destination value and then recursively call
-                    copyProperties(prop, value);
-                  }
-                } catch (NoSuchMethodException e) {
-                  return;
-                } catch (InstantiationException e) {
-                  throw new RuntimeException("Nested property could not be cloned.", e);
-                }
-              } else {
-                super.copyProperty(dest, name, value);
-              }
-            }
-          }
-        };
-
-    for (Object source : sources) {
-      recursiveBeanUtils.copyProperties(dest, source);
-    }
-
-    return dest;
   }
 
   /**
@@ -235,7 +134,7 @@ public class ConfigBuilder<C extends Config> {
       ConfigSource nextConfigSource = configs.get(i);
       Config nextConfig = getConfigSupplier(nextConfigSource).getConfig();
       try {
-        firstConfig = copyProperties(firstConfig, nextConfig);
+        firstConfig = Objects.copyProperties(firstConfig, nextConfig);
       } catch (Exception ex) {
         throw new RuntimeException(
             String.format("Failed to merge config %s into main config", nextConfigSource), ex);
@@ -245,7 +144,7 @@ public class ConfigBuilder<C extends Config> {
     // Handling string pathValue pairs config overrides
     for (Pair<String, Object> pathValue : pathValueOverrides) {
       try {
-        PropertyUtils.setNestedProperty(firstConfig, pathValue.getValue0(), pathValue.getValue1());
+        Objects.setNestedProperty(firstConfig, pathValue.getValue0(), pathValue.getValue1());
       } catch (Exception e) {
         throw new RuntimeException(
             String.format(

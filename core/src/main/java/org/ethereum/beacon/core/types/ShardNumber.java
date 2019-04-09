@@ -17,6 +17,10 @@ public class ShardNumber extends UInt64 implements
     return new ShardNumber(UInt64.valueOf(i));
   }
 
+  public static ShardNumber of(long i) {
+    return new ShardNumber(UInt64.valueOf(i));
+  }
+
   public static ShardNumber of(UInt64 i) {
     return new ShardNumber(i);
   }

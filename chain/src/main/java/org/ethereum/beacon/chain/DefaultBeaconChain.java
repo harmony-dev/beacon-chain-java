@@ -29,8 +29,8 @@ public class DefaultBeaconChain implements MutableBeaconChain {
 
   private final BeaconChainSpec spec;
   private final BlockTransition<BeaconStateEx> initialTransition;
-  private final EmptySlotTransition emptySlotTransition;
-  private final BlockTransition<BeaconStateEx> onBlockTransition;
+  private final EmptySlotTransition preBlockTransition;
+  private final BlockTransition<BeaconStateEx> blockTransition;
   private final BeaconBlockVerifier blockVerifier;
   private final BeaconStateVerifier stateVerifier;
 
@@ -47,16 +47,16 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   public DefaultBeaconChain(
       BeaconChainSpec spec,
       BlockTransition<BeaconStateEx> initialTransition,
-      EmptySlotTransition emptySlotTransition,
-      BlockTransition<BeaconStateEx> onBlockTransition,
+      EmptySlotTransition preBlockTransition,
+      BlockTransition<BeaconStateEx> blockTransition,
       BeaconBlockVerifier blockVerifier,
       BeaconStateVerifier stateVerifier,
       BeaconChainStorage chainStorage,
       Schedulers schedulers) {
     this.spec = spec;
     this.initialTransition = initialTransition;
-    this.emptySlotTransition = emptySlotTransition;
-    this.onBlockTransition = onBlockTransition;
+    this.preBlockTransition = preBlockTransition;
+    this.blockTransition = blockTransition;
     this.blockVerifier = blockVerifier;
     this.stateVerifier = stateVerifier;
     this.chainStorage = chainStorage;
@@ -117,7 +117,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
 
     BeaconStateEx parentState = pullParentState(block);
 
-    BeaconStateEx preBlockState = emptySlotTransition.apply(parentState, block.getSlot());
+    BeaconStateEx preBlockState = preBlockTransition.apply(parentState, block.getSlot());
     VerificationResult blockVerification =
         blockVerifier.verify(block, preBlockState);
     if (!blockVerification.isPassed()) {
@@ -126,7 +126,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
       return false;
     }
 
-    BeaconStateEx postBlockState = onBlockTransition.apply(preBlockState, block);
+    BeaconStateEx postBlockState = blockTransition.apply(preBlockState, block);
 
     VerificationResult stateVerification =
         stateVerifier.verify(postBlockState, block);

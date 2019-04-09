@@ -3,6 +3,7 @@ package org.ethereum.beacon.util;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
 /**
@@ -15,6 +16,9 @@ import java.util.function.Function;
 public class LRUCache<K, V> implements Cache<K, V> {
 
   private final Map<K, V> cacheData;
+
+  private final AtomicLong hits = new AtomicLong(0);
+  private final AtomicLong queries = new AtomicLong(0);
 
   /**
    * Creates cache
@@ -43,12 +47,27 @@ public class LRUCache<K, V> implements Cache<K, V> {
   @Override
   public V get(K key, Function<K, V> fallback) {
     V result = cacheData.get(key);
+    queries.incrementAndGet();
 
     if (result == null) {
       result = fallback.apply(key);
       cacheData.put(key, result);
+    } else {
+      hits.incrementAndGet();
     }
 
     return result;
+  }
+
+  public long getHits() {
+    return hits.get();
+  }
+
+  public long getQueries() {
+    return queries.get();
+  }
+
+  public double getHitRatio() {
+    return hits.doubleValue() / queries.doubleValue();
   }
 }
