@@ -37,12 +37,12 @@ public interface BeaconState {
     return new BeaconStateImpl();
   }
 
-  /** ******* Misc ********* */
+  /* ******* Misc ********* */
 
   /** Slot number that this state was calculated in. */
   @SSZ SlotNumber getSlot();
 
-  /** ******* Validator registry ********* */
+  /* ******* Validator registry ********* */
 
   /** Timestamp of the genesis. */
   @SSZ Time getGenesisTime();
@@ -59,10 +59,11 @@ public interface BeaconState {
   /** Slot number of last validator registry change. */
   @SSZ EpochNumber getValidatorRegistryUpdateEpoch();
 
-  /** ******* Randomness and committees ********* */
+  /* ******* Randomness and committees ********* */
 
   /** The most recent randao mixes. */
-  @SSZ ReadList<EpochNumber, Hash32> getLatestRandaoMixes();
+  @SSZ(vectorSize = "${spec.LATEST_RANDAO_MIXES_LENGTH}")
+  ReadList<EpochNumber, Hash32> getLatestRandaoMixes();
 
   @SSZ ShardNumber getPreviousShufflingStartShard();
 
@@ -100,27 +101,31 @@ public interface BeaconState {
 
   @SSZ Hash32 getFinalizedRoot();
 
-  /** ******* Recent state ********* */
+  /* ******* Recent state ********* */
 
   /** Latest crosslink record for each shard. */
   @SSZ ReadList<ShardNumber, Crosslink> getPreviousCrosslinks();
 
   @SSZ ReadList<ShardNumber, Crosslink> getCurrentCrosslinks();
 
-  @SSZ ReadList<SlotNumber, Hash32> getLatestBlockRoots();
+  @SSZ(vectorSize = "${spec.SLOTS_PER_HISTORICAL_ROOT}")
+  ReadList<SlotNumber, Hash32> getLatestBlockRoots();
 
-  @SSZ ReadList<SlotNumber, Hash32> getLatestStateRoots();
+  @SSZ(vectorSize = "${spec.SLOTS_PER_HISTORICAL_ROOT}")
+  ReadList<SlotNumber, Hash32> getLatestStateRoots();
 
-  @SSZ ReadList<EpochNumber, Hash32> getLatestActiveIndexRoots();
+  @SSZ(vectorSize = "${spec.LATEST_ACTIVE_INDEX_ROOTS_LENGTH}")
+  ReadList<EpochNumber, Hash32> getLatestActiveIndexRoots();
 
   /** Balances slashed at every withdrawal period */
-  @SSZ ReadList<EpochNumber, Gwei> getLatestSlashedBalances();
+  @SSZ(vectorSize = "${spec.LATEST_SLASHED_EXIT_LENGTH}")
+  ReadList<EpochNumber, Gwei> getLatestSlashedBalances();
 
   @SSZ BeaconBlockHeader getLatestBlockHeader();
 
   @SSZ ReadList<Integer, Hash32> getHistoricalRoots();
 
-  /** ******* PoW receipt root ********* */
+  /* ******* PoW receipt root ********* */
 
   /** Latest processed eth1 data. */
   @SSZ Eth1Data getLatestEth1Data();

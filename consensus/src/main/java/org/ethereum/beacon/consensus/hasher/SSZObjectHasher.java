@@ -1,5 +1,7 @@
 package org.ethereum.beacon.consensus.hasher;
 
+import org.ethereum.beacon.core.spec.SpecConstants;
+import org.ethereum.beacon.core.ssz.DefaultSSZ;
 import org.ethereum.beacon.core.types.Hashable;
 import org.ethereum.beacon.ssz.SSZHasher;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -18,15 +20,28 @@ import java.util.function.Function;
  */
 public class SSZObjectHasher implements ObjectHasher<Hash32> {
 
-  private static final int SSZ_SCHEMES_CACHE_CAPACITY = 128;
   private final SSZHasher sszHasher;
 
   SSZObjectHasher(SSZHasher sszHasher) {
     this.sszHasher = sszHasher;
   }
 
+  public static SSZObjectHasher create(
+      SpecConstants constants, Function<BytesValue, Hash32> hashFunction) {
+
+    SSZHasher sszHasher =
+        DefaultSSZ.createCommonSSZBuilder(constants)
+            .withIncrementalHasher(true)
+            .buildHasher(hashFunction);
+    return new SSZObjectHasher(sszHasher);
+  }
+
   public static SSZObjectHasher create(Function<BytesValue, Hash32> hashFunction) {
-    SSZHasher sszHasher = null; // TODO
+
+    SSZHasher sszHasher =
+        DefaultSSZ.createCommonSSZBuilder()
+            .withIncrementalHasher(true)
+            .buildHasher(hashFunction);
     return new SSZObjectHasher(sszHasher);
   }
 

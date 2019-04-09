@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.ethereum.beacon.crypto.Hashes;
+import org.ethereum.beacon.ssz.ExternalVarResolver.ExternalVariableNotDefined;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import org.ethereum.beacon.ssz.incremental.ObservableComposite;
@@ -161,8 +162,26 @@ public class SSZTypeTest {
             .withExternalVarResolver(s -> "testSize".equals(s) ? 1 : null)
             .getTypeResolver();
 
-    SSZType sszType = typeResolver.resolveSSZType(Container1.class);
-    System.out.println(dumpType(sszType, ""));
+    SSZType sszType1 = typeResolver.resolveSSZType(Container1.class);
+    System.out.println(dumpType(sszType1, ""));
+    Assert.assertTrue(sszType1.isContainer());
+    Assert.assertTrue(sszType1.isVariableSize());
+
+    SSZType sszType2 = typeResolver.resolveSSZType(Container2.class);
+    System.out.println(dumpType(sszType2, ""));
+    Assert.assertTrue(sszType2.isContainer());
+    Assert.assertTrue(sszType2.isFixedSize());
+    Assert.assertTrue(sszType2.getSize() > 0);
+  }
+
+  @Test(expected = ExternalVariableNotDefined.class)
+  public void testTypeResolverMissingExternalVar() {
+    TypeResolver typeResolver = new SSZBuilder()
+            .withExternalVarResolver(s -> null)
+            .getTypeResolver();
+
+    SSZType sszType1 = typeResolver.resolveSSZType(Container1.class);
+    System.out.println(dumpType(sszType1, ""));
   }
 
   @Test

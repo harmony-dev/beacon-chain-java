@@ -1,7 +1,8 @@
 package org.ethereum.beacon.chain.storage.impl;
 
 import java.util.function.Function;
-import org.ethereum.beacon.ssz.SSZBuilder;
+import org.ethereum.beacon.core.spec.SpecConstants;
+import org.ethereum.beacon.core.ssz.DefaultSSZ;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 public interface SerializerFactory {
@@ -11,6 +12,10 @@ public interface SerializerFactory {
   <T> Function<T, BytesValue> getSerializer(Class<T> objectClass);
 
   static SerializerFactory createSSZ() {
-    return new SSZSerializerFactory(new SSZBuilder().buildSerializer());
+    return new SSZSerializerFactory(DefaultSSZ.createSSZSerializer());
+  }
+
+  static SerializerFactory createSSZ(SpecConstants specConstants) {
+    return new SSZSerializerFactory(DefaultSSZ.createSSZSerializer(specConstants));
   }
 }

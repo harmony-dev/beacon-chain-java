@@ -52,7 +52,7 @@ public interface BeaconChainSpec
     Objects.requireNonNull(constants);
 
     Function<BytesValue, Hash32> hashFunction = Hashes::keccak256;
-    ObjectHasher<Hash32> sszHasher = SSZObjectHasher.create(hashFunction);
+    ObjectHasher<Hash32> sszHasher = SSZObjectHasher.create(constants, hashFunction);
     return new BeaconChainSpecImpl(constants, hashFunction, sszHasher);
   }
 
