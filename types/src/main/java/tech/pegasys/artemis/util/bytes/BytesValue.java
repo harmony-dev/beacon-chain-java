@@ -157,11 +157,15 @@ public interface BytesValue extends Comparable<BytesValue> {
     if (vals.isEmpty()) {
       return BytesValue.EMPTY;
     }
-    BytesValue ret = vals.get(0);
-    for (int i = 1; i < vals.size(); i++) {
-      ret = concat(ret, vals.get(i));
+    int size = vals.stream().mapToInt(BytesValue::size).sum();
+    byte[] resBytes = new byte[size];
+    int pos = 0;
+    for (BytesValue val : vals) {
+      byte[] srcArr = val.getArrayUnsafe();
+      System.arraycopy(srcArr, 0, resBytes, pos, srcArr.length);
+      pos += srcArr.length;
     }
-    return ret;
+    return BytesValue.wrap(resBytes);
   }
 
   /**
