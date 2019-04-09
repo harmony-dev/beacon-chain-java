@@ -49,7 +49,7 @@ public class DefaultBeaconChainTest {
     Assert.assertEquals(
         spec.getConstants().getGenesisSlot(), initialTuple.getBlock().getSlot());
 
-    IntStream.range(0, 100)
+    IntStream.range(0, 10)
         .forEach(
             (idx) -> {
               BeaconTuple recentlyProcessed = beaconChain.getRecentlyProcessed();
