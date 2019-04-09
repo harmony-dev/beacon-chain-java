@@ -54,6 +54,8 @@ public class SSZIncrementalHasher extends SSZSimpleHasher {
         }
       }
       tracker.elementsUpdated.clear();
+
+      // TODO recalc mixed in len if needed
       return tracker.merkleTree;
     } else {
       return super.visitComposite(type, rawValue, childVisitor);

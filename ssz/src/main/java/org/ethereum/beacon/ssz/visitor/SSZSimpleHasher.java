@@ -72,7 +72,7 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
       }
     }
     merkle = merkleize(chunks);
-    if (type.isVariableSize()) {
+    if (type.isList() && !((SSZListType) type).isVector()) {
       Hash32 mixInLength = hashFunction.apply(BytesValue.concat(
           merkle.getPureRoot(),
           serializeLength(type.getChildrenCount(rawValue))));
