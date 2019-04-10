@@ -134,7 +134,9 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
     Map<String, Method> fieldGetters = new HashMap<>();
     try {
       for (PropertyDescriptor pd : Introspector.getBeanInfo(clazz).getPropertyDescriptors()) {
-        fieldGetters.put(pd.getName(), pd.getReadMethod());
+        if (pd.getName() != null && pd.getReadMethod() != null) {
+          fieldGetters.put(pd.getName(), pd.getReadMethod());
+        }
       }
     } catch (IntrospectionException e) {
       String error = String.format("Couldn't enumerate all getters in class %s", clazz.getName());

@@ -33,7 +33,9 @@ public class SimpleContainerAccessor implements SSZContainerAccessor {
       try {
         for (PropertyDescriptor pd :
             Introspector.getBeanInfo(containerDescriptor.getRawClass()).getPropertyDescriptors()) {
-          getters.put(pd.getReadMethod().getName(), pd.getReadMethod());
+          if (pd.getReadMethod() != null) {
+            getters.put(pd.getReadMethod().getName(), pd.getReadMethod());
+          }
         }
       } catch (IntrospectionException e) {
         throw new RuntimeException(String.format("Couldn't enumerate all getters in class %s", containerDescriptor
