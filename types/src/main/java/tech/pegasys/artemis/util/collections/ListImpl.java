@@ -102,6 +102,26 @@ class ListImpl<IndexType extends Number, ValueType>
   }
 
   @Override
+  public void setAll(ValueType singleValue) {
+    for (int i = 0; i < backedList.size(); i++) {
+      backedList.set(i, singleValue);
+    }
+  }
+
+  @Override
+  public void setAll(Iterable<ValueType> singleValue) {
+    Iterator<ValueType> it = singleValue.iterator();
+    int idx = 0;
+    while (it.hasNext() && idx < backedList.size()) {
+      backedList.set(idx, it.next());
+      idx++;
+    }
+    if (it.hasNext() || idx < backedList.size()) {
+      throw new IllegalArgumentException("The sizes of this vector and supplied collection differ");
+    }
+  }
+
+  @Override
   public void add(IndexType index, ValueType element) {
     backedList.add(index.intValue(), element);
   }

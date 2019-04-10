@@ -20,6 +20,7 @@ import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.collections.ReadList;
+import tech.pegasys.artemis.util.collections.ReadVector;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public class DelegateBeaconState implements BeaconState {
@@ -27,10 +28,6 @@ public class DelegateBeaconState implements BeaconState {
 
   public DelegateBeaconState(BeaconState delegate) {
     this.delegate = delegate;
-  }
-
-  public static BeaconState getEmpty() {
-    return BeaconState.getEmpty();
   }
 
   public BeaconState getDelegate() {
@@ -68,7 +65,7 @@ public class DelegateBeaconState implements BeaconState {
   }
 
   @Override
-  public ReadList<EpochNumber, Hash32> getLatestRandaoMixes() {
+  public ReadVector<EpochNumber, Hash32> getLatestRandaoMixes() {
     return delegate.getLatestRandaoMixes();
   }
 
@@ -158,22 +155,22 @@ public class DelegateBeaconState implements BeaconState {
   }
 
   @Override
-  public ReadList<SlotNumber, Hash32> getLatestBlockRoots() {
+  public ReadVector<SlotNumber, Hash32> getLatestBlockRoots() {
     return delegate.getLatestBlockRoots();
   }
 
   @Override
-  public ReadList<SlotNumber, Hash32> getLatestStateRoots() {
+  public ReadVector<SlotNumber, Hash32> getLatestStateRoots() {
     return delegate.getLatestStateRoots();
   }
 
   @Override
-  public ReadList<EpochNumber, Hash32> getLatestActiveIndexRoots() {
+  public ReadVector<EpochNumber, Hash32> getLatestActiveIndexRoots() {
     return delegate.getLatestActiveIndexRoots();
   }
 
   @Override
-  public ReadList<EpochNumber, Gwei> getLatestSlashedBalances() {
+  public ReadVector<EpochNumber, Gwei> getLatestSlashedBalances() {
     return delegate.getLatestSlashedBalances();
   }
 

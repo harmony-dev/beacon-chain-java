@@ -1,11 +1,8 @@
 package tech.pegasys.artemis.util.collections;
 
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Function;
-import java.util.function.Predicate;
-import org.jetbrains.annotations.NotNull;
 
 public interface WriteVector<IndexType extends Number, ValueType>
     extends ReadVector<IndexType, ValueType> {
@@ -23,6 +20,10 @@ public interface WriteVector<IndexType extends Number, ValueType>
   void sort(Comparator<? super ValueType> c);
 
   ValueType set(IndexType index, ValueType element);
+
+  void setAll(ValueType singleValue);
+
+  void setAll(Iterable<ValueType> singleValue);
 
   ReadList<IndexType, ValueType> createImmutableCopy();
 

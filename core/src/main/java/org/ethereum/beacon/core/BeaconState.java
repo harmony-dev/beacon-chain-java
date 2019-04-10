@@ -1,5 +1,6 @@
 package org.ethereum.beacon.core;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
@@ -21,6 +22,7 @@ import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.collections.ReadList;
+import tech.pegasys.artemis.util.collections.ReadVector;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 /**
@@ -34,7 +36,22 @@ import tech.pegasys.artemis.util.uint.UInt64;
 public interface BeaconState {
 
   static BeaconState getEmpty() {
-    return new BeaconStateImpl();
+    return getEmpty(new SpecConstants() {});
+  }
+
+  static BeaconState getEmpty(SpecConstants specConst) {
+    BeaconStateImpl ret = new BeaconStateImpl();
+    ret.getLatestRandaoMixes().addAll(
+        Collections.nCopies(specConst.getLatestRandaoMixesLength().intValue(), Hash32.ZERO));
+    ret.getLatestBlockRoots().addAll(
+        Collections.nCopies(specConst.getSlotsPerHistoricalRoot().intValue(), Hash32.ZERO));
+    ret.getLatestStateRoots().addAll(
+        Collections.nCopies(specConst.getSlotsPerHistoricalRoot().intValue(), Hash32.ZERO));
+    ret.getLatestActiveIndexRoots().addAll(
+        Collections.nCopies(specConst.getLatestActiveIndexRootsLength().intValue(), Hash32.ZERO));
+    ret.getLatestSlashedBalances().addAll(
+        Collections.nCopies(specConst.getLatestSlashedExitLength().intValue(), Gwei.ZERO));
+    return ret;
   }
 
   /* ******* Misc ********* */
@@ -63,7 +80,7 @@ public interface BeaconState {
 
   /** The most recent randao mixes. */
   @SSZ(vectorSize = "${spec.LATEST_RANDAO_MIXES_LENGTH}")
-  ReadList<EpochNumber, Hash32> getLatestRandaoMixes();
+  ReadVector<EpochNumber, Hash32> getLatestRandaoMixes();
 
   @SSZ ShardNumber getPreviousShufflingStartShard();
 
@@ -109,17 +126,17 @@ public interface BeaconState {
   @SSZ ReadList<ShardNumber, Crosslink> getCurrentCrosslinks();
 
   @SSZ(vectorSize = "${spec.SLOTS_PER_HISTORICAL_ROOT}")
-  ReadList<SlotNumber, Hash32> getLatestBlockRoots();
+  ReadVector<SlotNumber, Hash32> getLatestBlockRoots();
 
   @SSZ(vectorSize = "${spec.SLOTS_PER_HISTORICAL_ROOT}")
-  ReadList<SlotNumber, Hash32> getLatestStateRoots();
+  ReadVector<SlotNumber, Hash32> getLatestStateRoots();
 
   @SSZ(vectorSize = "${spec.LATEST_ACTIVE_INDEX_ROOTS_LENGTH}")
-  ReadList<EpochNumber, Hash32> getLatestActiveIndexRoots();
+  ReadVector<EpochNumber, Hash32> getLatestActiveIndexRoots();
 
   /** Balances slashed at every withdrawal period */
   @SSZ(vectorSize = "${spec.LATEST_SLASHED_EXIT_LENGTH}")
-  ReadList<EpochNumber, Gwei> getLatestSlashedBalances();
+  ReadVector<EpochNumber, Gwei> getLatestSlashedBalances();
 
   @SSZ BeaconBlockHeader getLatestBlockHeader();
 

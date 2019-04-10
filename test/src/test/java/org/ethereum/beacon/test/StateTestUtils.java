@@ -240,17 +240,17 @@ public abstract class StateTestUtils {
 
     state.getValidatorRegistry().addAll(parseValidatorRegistry(data.getValidatorRegistry()));
     state.getValidatorBalances().addAll(parseBalances(data.getValidatorBalances()));
-    state.getLatestRandaoMixes().addAll(parseHashes(data.getLatestRandaoMixes()));
+    state.getLatestRandaoMixes().setAll(parseHashes(data.getLatestRandaoMixes()));
     state.getPreviousEpochAttestations().addAll(
         parsePendingAttestations(data.getPreviousEpochAttestations()));
     state.getCurrentEpochAttestations().addAll(
         parsePendingAttestations(data.getCurrentEpochAttestations()));
     state.getCurrentCrosslinks().addAll(parseCrosslinks(data.getLatestCrosslinks()));
-    state.getLatestBlockRoots().addAll(parseHashes(data.getLatestBlockRoots()));
-    state.getLatestStateRoots().addAll(parseHashes(data.getLatestStateRoots()));
-    state.getLatestActiveIndexRoots().addAll(parseHashes(data.getLatestActiveIndexRoots()));
+    state.getLatestBlockRoots().setAll(parseHashes(data.getLatestBlockRoots()));
+    state.getLatestStateRoots().setAll(parseHashes(data.getLatestStateRoots()));
+    state.getLatestActiveIndexRoots().setAll(parseHashes(data.getLatestActiveIndexRoots()));
     state.getHistoricalRoots().addAll(parseHashes(data.getHistoricalRoots()));
-    state.getLatestSlashedBalances().addAll(parseBalances(data.getLatestSlashedBalances()));
+    state.getLatestSlashedBalances().setAll(parseBalances(data.getLatestSlashedBalances()));
 
     return state;
   }

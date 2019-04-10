@@ -13,6 +13,8 @@ import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.operations.slashing.SlashableAttestation;
+import org.ethereum.beacon.core.spec.SpecConstants;
+import org.ethereum.beacon.core.ssz.DefaultSSZ;
 import org.ethereum.beacon.core.state.BeaconStateImpl;
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.state.Eth1Data;
@@ -58,14 +60,7 @@ public class ModelsSerializeTest {
 
   @Before
   public void setup() {
-    sszSerializer = new SSZBuilder()
-        .addDefaultBasicCodecs()
-        .addBasicCodecs(new UIntCodec())
-        .addBasicCodecs(new BytesCodec())
-        .addBasicCodecs(new HashCodec())
-        .addDefaultListAccessors()
-        .addListAccessors(new ReadListAccessor())
-        .addListAccessors(new BytesValueAccessor())
+    sszSerializer = DefaultSSZ.createCommonSSZBuilder(new SpecConstants(){})
         .buildSerializer();
   }
 
