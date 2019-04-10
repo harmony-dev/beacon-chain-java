@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Optional;
 import org.apache.commons.codec.binary.Hex;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
+import org.ethereum.beacon.core.ssz.DefaultSSZ;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
@@ -60,7 +61,7 @@ public class StandaloneDepositContractTest {
     Object[] depositRoot = contract.callConstFunction("get_deposit_root");
     System.out.println(Hex.encodeHexString((byte[]) depositRoot[0]));
 
-    SSZSerializer sszSerializer = new SSZBuilder().buildSerializer();
+    SSZSerializer sszSerializer = DefaultSSZ.createSSZSerializer();
 
     for(int i = 0; i < 20; i++) {
       MutableBytes48 pubKey = MutableBytes48.create();
@@ -152,7 +153,7 @@ public class StandaloneDepositContractTest {
     Mono<ChainStart> chainStartMono = Mono.from(depositContract.getChainStartMono());
     chainStartMono.subscribe();
 
-    SSZSerializer sszSerializer = new SSZBuilder().buildSerializer();
+    SSZSerializer sszSerializer = DefaultSSZ.createSSZSerializer();
 
     for(int i = 0; i < 16; i++) {
       sb.createBlock();
