@@ -65,7 +65,7 @@ public class ObservableCompositeHelper implements UpdateListener, ObservableComp
   }
 
   public void addAllListeners(Map<String, UpdateListener> listeners) {
-    listeners.putAll(listeners);
+    this.listeners.putAll(listeners);
   }
 
   @Override
