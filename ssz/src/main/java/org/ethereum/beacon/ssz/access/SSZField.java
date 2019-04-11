@@ -4,6 +4,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.List;
 import org.ethereum.beacon.ssz.annotation.SSZ;
+import tech.pegasys.artemis.util.collections.ReadList;
 
 public class SSZField {
 
@@ -11,6 +12,11 @@ public class SSZField {
     if (value instanceof List && !((List) value).isEmpty()) {
       return new SSZField(
           new ParametrizedTypeImpl(clazz, ((List) value).get(0).getClass()));
+    }
+    if (value instanceof ReadList && !((ReadList) value).isEmpty()) {
+      return new SSZField(
+          new ParametrizedTypeImpl(
+              clazz, ((ReadList) value).size().getClass(), ((ReadList) value).get(0).getClass()));
     }
     return new SSZField(clazz);
   }
