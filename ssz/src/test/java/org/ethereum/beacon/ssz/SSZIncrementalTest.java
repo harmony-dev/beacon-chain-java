@@ -493,7 +493,7 @@ public class SSZIncrementalTest {
       Assert.assertTrue(countingHashInc.counter < countingHashSimp.counter);
     }
 
-    for(int i = 0; i < 10; i++) {
+    for(int i = 0; i < 200; i++) {
       c1.getL1().add(new SimpleContainer1(0x2200 + i));
     }
 
@@ -504,6 +504,19 @@ public class SSZIncrementalTest {
       MerkleTrie mt3 = visitorHost.handleAny(sszType, c1, incrementalHasher);
       Assert.assertEquals(mt2.getFinalRoot(), mt3.getFinalRoot());
       Assert.assertTrue(countingHashInc.counter < countingHashSimp.counter);
+    }
+
+    c1.getL1().update(100, v -> new SimpleContainer1(v.a1 + 1));
+    c1.setA2(0x7777);
+
+    {
+      countingHashInc.counter = 0;
+      countingHashSimp.counter = 0;
+      MerkleTrie mt2 = visitorHost.handleAny(sszType, c1, simpleHasher);
+      MerkleTrie mt3 = visitorHost.handleAny(sszType, c1, incrementalHasher);
+      Assert.assertEquals(mt2.getFinalRoot(), mt3.getFinalRoot());
+      System.out.println("Incremental hashes: " + countingHashInc.counter + ", Simple hashes: " + countingHashSimp.counter);
+      Assert.assertTrue(countingHashInc.counter * 10 < countingHashSimp.counter);
     }
   }
 }
