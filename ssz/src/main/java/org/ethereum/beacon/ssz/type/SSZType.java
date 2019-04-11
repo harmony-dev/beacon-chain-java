@@ -47,4 +47,19 @@ public interface SSZType {
     }
     return "SSZType[" + type + ", size=" + getSize() + ", descr: " + getTypeDescriptor() + "]";
   }
+
+  default String dumpHierarchy(String indent) {
+    String ret = "";
+    ret += indent +  toStringHelper() + "\n";
+    if (isList()) {
+      ret += ((SSZListType) this).getElementType().dumpHierarchy(indent + "  ");
+    }
+    if (isContainer()) {
+      for (SSZType sszType : ((SSZContainerType) this).getChildTypes()) {
+        ret += sszType.dumpHierarchy(indent + "  ");
+      }
+    }
+    return ret;
+  }
+
 }
