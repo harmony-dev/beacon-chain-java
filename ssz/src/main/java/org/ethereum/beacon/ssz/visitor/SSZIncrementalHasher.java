@@ -18,12 +18,28 @@ public class SSZIncrementalHasher extends SSZSimpleHasher {
   private static final String INCREMENTAL_HASHER_OBSERVER_ID = "Hasher";
 
   static class SSZIncrementalTracker implements UpdateListener {
-    SortedSet<Integer> elementsUpdated = new TreeSet<>();
+    TreeSet<Integer> elementsUpdated = new TreeSet<>();
     MerkleTrie merkleTree;
+
+    public SSZIncrementalTracker(TreeSet<Integer> elementsUpdated,
+        MerkleTrie merkleTree) {
+      this.elementsUpdated = elementsUpdated;
+      this.merkleTree = merkleTree;
+    }
+
+    public SSZIncrementalTracker() {
+    }
 
     @Override
     public void childUpdated(int childIndex) {
       elementsUpdated.add(childIndex);
+    }
+
+    @Override
+    public UpdateListener copy() {
+      return new SSZIncrementalTracker(
+          (TreeSet<Integer>) elementsUpdated.clone(),
+          merkleTree == null ? null : merkleTree.copy());
     }
   }
 
@@ -55,7 +71,6 @@ public class SSZIncrementalHasher extends SSZSimpleHasher {
       }
       tracker.elementsUpdated.clear();
 
-      // TODO recalc mixed in len if needed
       return tracker.merkleTree;
     } else {
       return super.visitComposite(type, rawValue, childVisitor);
@@ -91,9 +106,9 @@ public class SSZIncrementalHasher extends SSZSimpleHasher {
         }
       }
     }
-    if (type.isVariableSize()) {
+    if (type.isList() && !((SSZListType) type).isVector()) {
       Hash32 mixInLength = hashFunction.apply(BytesValue.concat(
-          newTrie.getFinalRoot(),
+          newTrie.getPureRoot(),
           serializeLength(type.getChildrenCount(value))));
       newTrie.setFinalRoot(mixInLength);
     } else {
@@ -111,15 +126,27 @@ public class SSZIncrementalHasher extends SSZSimpleHasher {
 
     throw new UnsupportedOperationException();
   }
-
   private MerkleTrie copyWithSize(MerkleTrie trie, int newChunksCount) {
     int newSize = (int) nextPowerOf2(newChunksCount) * 2;
-    MerkleTrie copy = new MerkleTrie(Arrays.copyOf(trie.nodes, newSize));
-    if (copy.nodes.length > trie.nodes.length) {
-      for (int i = newChunksCount; i < newSize; i++) {
-        copy.nodes[i] = Bytes32.ZERO;
+    if (newSize == trie.nodes.length) {
+      return new MerkleTrie(Arrays.copyOf(trie.nodes, newSize));
+    } else if (newSize > trie.nodes.length) {
+      BytesValue[] oldNodes = trie.nodes;
+      BytesValue[] newNodes = new BytesValue[newSize];
+      int oldPos = oldNodes.length / 2;
+      int newPos = newNodes.length / 2;
+      int dist = 0;
+      while (newPos > 0) {
+        System.arraycopy(oldNodes, oldPos, newNodes, newPos, oldPos);
+        Arrays.fill(newNodes, newPos + oldPos, newPos * 2, getZeroHash(dist));
+        oldPos /= 2;
+        newPos /= 2;
+        dist++;
       }
+
+      return new MerkleTrie(newNodes);
+    } else {
+      throw new UnsupportedOperationException("Reducing trie size not implemented yet");
     }
-    return copy;
   }
 }

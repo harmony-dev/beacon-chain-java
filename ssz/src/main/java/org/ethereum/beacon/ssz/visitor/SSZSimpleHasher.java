@@ -35,8 +35,13 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
     public void setFinalRoot(Hash32 mixedInLengthHash) {
       nodes[0] = mixedInLengthHash;
     }
+
+    public MerkleTrie copy() {
+      return new MerkleTrie(Arrays.copyOf(nodes, nodes.length));
+    }
   }
 
+  private final Hash32[] zeroHashes = new Hash32[32];
   final SSZVisitorHandler<SSZSimpleSerializer.SSZSerializerResult> serializer;
   final Function<BytesValue, Hash32> hashFunction;
   final int bytesPerChunk;
@@ -121,6 +126,19 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
     } else {
       return Long.highestOneBit(x - 1) << 1;
     }
+  }
+
+  protected Hash32 getZeroHash(int distanceFromBottom) {
+    if (zeroHashes[distanceFromBottom] == null) {
+      if (distanceFromBottom == 0) {
+        zeroHashes[0] = Hash32.ZERO;
+      } else {
+        Hash32 lowerZeroHash = getZeroHash(distanceFromBottom - 1);
+        zeroHashes[distanceFromBottom] = hashFunction
+            .apply(BytesValue.concat(lowerZeroHash, lowerZeroHash));
+      }
+    }
+    return zeroHashes[distanceFromBottom];
   }
 
   BytesValue serializeLength(long len) {
