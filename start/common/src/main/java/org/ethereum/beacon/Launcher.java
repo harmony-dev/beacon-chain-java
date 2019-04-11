@@ -2,6 +2,7 @@ package org.ethereum.beacon;
 
 import static java.util.Collections.singletonList;
 
+import java.util.List;
 import org.ethereum.beacon.chain.DefaultBeaconChain;
 import org.ethereum.beacon.chain.MutableBeaconChain;
 import org.ethereum.beacon.chain.ProposedBlockProcessor;
@@ -19,7 +20,6 @@ import org.ethereum.beacon.consensus.transition.PerBlockTransition;
 import org.ethereum.beacon.consensus.transition.PerEpochTransition;
 import org.ethereum.beacon.consensus.transition.PerSlotTransition;
 import org.ethereum.beacon.consensus.transition.StateCachingTransition;
-import org.ethereum.beacon.consensus.util.CachingBeaconChainSpec;
 import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
 import org.ethereum.beacon.consensus.verifier.BeaconStateVerifier;
 import org.ethereum.beacon.core.operations.Attestation;
@@ -41,7 +41,7 @@ import reactor.core.publisher.Mono;
 public class Launcher {
   private final BeaconChainSpec spec;
   private final DepositContract depositContract;
-  private final BLS381Credentials validatorCred;
+  private final List<BLS381Credentials> validatorCred;
   private final WireApi wireApi;
   private final BeaconChainStorageFactory storageFactory;
   private final Schedulers schedulers;
@@ -70,7 +70,7 @@ public class Launcher {
   public Launcher(
       BeaconChainSpec spec,
       DepositContract depositContract,
-      BLS381Credentials validatorCred,
+      List<BLS381Credentials> validatorCred,
       WireApi wireApi,
       BeaconChainStorageFactory storageFactory,
       Schedulers schedulers) {
@@ -80,7 +80,7 @@ public class Launcher {
   public Launcher(
       BeaconChainSpec spec,
       DepositContract depositContract,
-      BLS381Credentials validatorCred,
+      List<BLS381Credentials> validatorCred,
       WireApi wireApi,
       BeaconChainStorageFactory storageFactory,
       Schedulers schedulers,
@@ -147,19 +147,19 @@ public class Launcher {
         schedulers);
     observableStateProcessor.start();
 
-    if (validatorCred != null) {beaconChainProposer = new BeaconChainProposerImpl(spec,
-         perBlockTransition, depositContract);
-    beaconChainAttester = new BeaconChainAttesterImpl(spec);
+    if (validatorCred != null) {
+      beaconChainProposer = new BeaconChainProposerImpl(spec, perBlockTransition, depositContract);
+      beaconChainAttester = new BeaconChainAttesterImpl(spec);
 
-    beaconChainValidator = new MultiValidatorService(
-        singletonList(validatorCred),
-        beaconChainProposer,
-        beaconChainAttester,
-        spec,
-        observableStateProcessor.getObservableStateStream(),
-        schedulers,
-        proposeTimeCollector);
-    beaconChainValidator.start();
+      beaconChainValidator = new MultiValidatorService(
+          validatorCred,
+          beaconChainProposer,
+          beaconChainAttester,
+          spec,
+          observableStateProcessor.getObservableStateStream(),
+          schedulers,
+          proposeTimeCollector);
+      beaconChainValidator.start();
 
       ProposedBlockProcessor proposedBlocksProcessor = new ProposedBlockProcessorImpl(
           beaconChain, schedulers);
@@ -186,7 +186,7 @@ public class Launcher {
     return depositContract;
   }
 
-  public BLS381Credentials getValidatorCred() {
+  public List<BLS381Credentials> getValidatorCred() {
     return validatorCred;
   }
 

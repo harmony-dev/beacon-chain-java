@@ -189,7 +189,7 @@ public class SimulatorLauncher implements Runnable {
           new Launcher(
               specBuilder.buildSpec(),
               depositContract,
-              bls,
+              Collections.singletonList(bls),
               wireApi,
               new MemBeaconChainStorageFactory(),
               schedulers,
