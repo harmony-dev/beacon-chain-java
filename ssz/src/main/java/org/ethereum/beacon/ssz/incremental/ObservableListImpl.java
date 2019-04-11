@@ -217,4 +217,9 @@ public class ObservableListImpl<IndexType extends Number, ValueType>
   public Spliterator<ValueType> spliterator() {
     return delegate.spliterator();
   }
+
+  @Override
+  public boolean equals(Object obj) {
+    return delegate.equals(obj);
+  }
 }
