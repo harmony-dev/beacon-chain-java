@@ -3,6 +3,7 @@ package org.ethereum.beacon.ssz.annotation;
 import java.util.*;
 import java.lang.reflect.*;
 import java.lang.annotation.*;
+import org.javatuples.Pair;
 
 /**
  * Taken from here https://stackoverflow.com/a/49164791/9630725
@@ -24,9 +25,9 @@ public final class MCVEReflect {
      * @throws NullPointerException if any argument is {@code null}.
      * @see    MCVEReflect#getAnnotations(Method, Class)
      */
-    public static <A extends Annotation> A getAnnotation(Method m, Class<A> t) {
-        List<A> list = getAnnotations(m, t);
-        return list.isEmpty() ? null : list.get(0);
+    public static <A extends Annotation> Pair<A, Method> getAnnotation(Method m, Class<A> t) {
+      List<Pair<A, Method>> list = getAnnotations(m, t);
+      return list.isEmpty() ? null : list.get(0);
     }
 
     /**
@@ -59,22 +60,24 @@ public final class MCVEReflect {
      *         methods which {@code m} overrides.
      * @throws NullPointerException if any argument is {@code null}.
      */
-    public static <A extends Annotation> List<A> getAnnotations(Method m, Class<A> t) {
-        List<A> list = new ArrayList<>();
-        Collections.addAll(list, m.getAnnotationsByType(t));
-        Class<?> decl = m.getDeclaringClass();
+  public static <A extends Annotation> List<Pair<A, Method>> getAnnotations(Method m, Class<A> t) {
+    List<Pair<A, Method>> list = new ArrayList<>();
+    for (A a : m.getAnnotationsByType(t)) {
+      list.add(Pair.with(a, m));
+    }
+    Class<?> decl = m.getDeclaringClass();
 
-        for (Class<?> supr = decl; (supr = supr.getSuperclass()) != null;) {
-            addAnnotations(list, m, t, supr);
-        }
-        for (Class<?> face : getAllInterfaces(decl)) {
-            addAnnotations(list, m, t, face);
-        }
-
-        return list;
+    for (Class<?> supr = decl; (supr = supr.getSuperclass()) != null;) {
+      addAnnotations(list, m, t, supr);
+    }
+    for (Class<?> face : getAllInterfaces(decl)) {
+      addAnnotations(list, m, t, face);
     }
 
-    private static Set<Class<?>> getAllInterfaces(Class<?> c) {
+    return list;
+  }
+
+  private static Set<Class<?>> getAllInterfaces(Class<?> c) {
         Set<Class<?>> set = new LinkedHashSet<>();
         do {
             addAllInterfaces(set, c);
@@ -89,11 +92,13 @@ public final class MCVEReflect {
         }
     }
     private static <A extends Annotation> void addAnnotations
-            (List<A> list, Method m, Class<A> t, Class<?> decl) {
+            (List<Pair<A, Method>> list, Method m, Class<A> t, Class<?> decl) {
         try {
             Method n = decl.getDeclaredMethod(m.getName(), m.getParameterTypes());
             if (overrides(m, n)) {
-                Collections.addAll(list, n.getAnnotationsByType(t));
+              for (A a : n.getAnnotationsByType(t)) {
+                list.add(Pair.with(a, n));
+              }
             }
         } catch (NoSuchMethodException x) {
         }

@@ -75,4 +75,6 @@ public @interface SSZ {
   String type() default "";
 
   String vectorSize() default "";
+
+  int order() default -1;
 }
