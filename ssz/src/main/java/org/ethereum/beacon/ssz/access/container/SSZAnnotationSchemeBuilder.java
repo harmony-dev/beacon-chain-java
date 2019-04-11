@@ -222,6 +222,10 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
                   "Declaring SSZ properties from distinct interfaces is not supported yet: "
                       + d1.annotationMethod + ", " + d2.annotationMethod);
             }
+            if (d1.annotation.order() == d2.annotation.order()) {
+              throw new SSZSchemeException("Duplicate @SSZ.order "
+                  + d1.annotationMethod + ", " + d2.annotationMethod);
+            }
             return Integer.compare(d1.annotation.order(), d2.annotation.order());
           })
           .collect(Collectors.toList());
