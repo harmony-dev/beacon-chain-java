@@ -20,6 +20,7 @@ import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.ssz.annotation.SSZ;
+import org.ethereum.beacon.ssz.incremental.ObservableComposite;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.collections.ReadVector;
@@ -33,7 +34,7 @@ import tech.pegasys.artemis.util.uint.UInt64;
  *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.5.0/specs/core/0_beacon-chain.md#beacon-state">BeaconState
  *     in the spec</a>
  */
-public interface BeaconState {
+public interface BeaconState extends ObservableComposite {
 
   static BeaconState getEmpty() {
     return getEmpty(new SpecConstants() {});
@@ -57,101 +58,101 @@ public interface BeaconState {
   /* ******* Misc ********* */
 
   /** Slot number that this state was calculated in. */
-  @SSZ SlotNumber getSlot();
+  @SSZ(order = 0) SlotNumber getSlot();
 
   /* ******* Validator registry ********* */
 
   /** Timestamp of the genesis. */
-  @SSZ Time getGenesisTime();
+  @SSZ(order = 1) Time getGenesisTime();
 
   /** Fork data corresponding to the {@link #getSlot()}. */
-  @SSZ Fork getFork();
+  @SSZ(order = 2) Fork getFork();
 
   /** Validator registry records. */
-  @SSZ ReadList<ValidatorIndex, ValidatorRecord> getValidatorRegistry();
+  @SSZ(order = 3) ReadList<ValidatorIndex, ValidatorRecord> getValidatorRegistry();
 
   /** Validator balances. */
-  @SSZ ReadList<ValidatorIndex, Gwei> getValidatorBalances();
+  @SSZ(order = 4) ReadList<ValidatorIndex, Gwei> getValidatorBalances();
 
   /** Slot number of last validator registry change. */
-  @SSZ EpochNumber getValidatorRegistryUpdateEpoch();
+  @SSZ(order = 5) EpochNumber getValidatorRegistryUpdateEpoch();
 
   /* ******* Randomness and committees ********* */
 
   /** The most recent randao mixes. */
-  @SSZ(vectorSize = "${spec.LATEST_RANDAO_MIXES_LENGTH}")
+  @SSZ(order = 6, vectorSize = "${spec.LATEST_RANDAO_MIXES_LENGTH}")
   ReadVector<EpochNumber, Hash32> getLatestRandaoMixes();
 
-  @SSZ ShardNumber getPreviousShufflingStartShard();
+  @SSZ(order = 7) ShardNumber getPreviousShufflingStartShard();
 
-  @SSZ ShardNumber getCurrentShufflingStartShard();
+  @SSZ(order = 8) ShardNumber getCurrentShufflingStartShard();
 
-  @SSZ EpochNumber getPreviousShufflingEpoch();
+  @SSZ(order = 9) EpochNumber getPreviousShufflingEpoch();
 
-  @SSZ EpochNumber getCurrentShufflingEpoch();
+  @SSZ(order = 10) EpochNumber getCurrentShufflingEpoch();
 
-  @SSZ Hash32 getPreviousShufflingSeed();
+  @SSZ(order = 11) Hash32 getPreviousShufflingSeed();
 
-  @SSZ Hash32 getCurrentShufflingSeed();
+  @SSZ(order = 12) Hash32 getCurrentShufflingSeed();
 
   /********* Finality **********/
 
-  ReadList<Integer, PendingAttestation> getPreviousEpochAttestations();
+  @SSZ(order = 13) ReadList<Integer, PendingAttestation> getPreviousEpochAttestations();
 
-  ReadList<Integer, PendingAttestation> getCurrentEpochAttestations();
+  @SSZ(order = 14) ReadList<Integer, PendingAttestation> getCurrentEpochAttestations();
 
   /** Latest justified epoch before {@link #getCurrentJustifiedEpoch()}. */
-  @SSZ EpochNumber getPreviousJustifiedEpoch();
+  @SSZ(order = 15) EpochNumber getPreviousJustifiedEpoch();
 
   /** Latest justified epoch. */
-  @SSZ EpochNumber getCurrentJustifiedEpoch();
+  @SSZ(order = 16) EpochNumber getCurrentJustifiedEpoch();
 
-  @SSZ Hash32 getPreviousJustifiedRoot();
+  @SSZ(order = 17) Hash32 getPreviousJustifiedRoot();
 
-  @SSZ Hash32 getCurrentJustifiedRoot();
+  @SSZ(order = 18) Hash32 getCurrentJustifiedRoot();
 
   /** Bitfield of latest justified slots (epochs). */
-  @SSZ Bitfield64 getJustificationBitfield();
+  @SSZ(order = 19) Bitfield64 getJustificationBitfield();
 
   /** Latest finalized slot. */
-  @SSZ EpochNumber getFinalizedEpoch();
+  @SSZ(order = 20) EpochNumber getFinalizedEpoch();
 
-  @SSZ Hash32 getFinalizedRoot();
+  @SSZ(order = 21) Hash32 getFinalizedRoot();
 
   /* ******* Recent state ********* */
 
   /** Latest crosslink record for each shard. */
-  @SSZ ReadList<ShardNumber, Crosslink> getPreviousCrosslinks();
+  @SSZ(order = 22) ReadList<ShardNumber, Crosslink> getPreviousCrosslinks();
 
-  @SSZ ReadList<ShardNumber, Crosslink> getCurrentCrosslinks();
+  @SSZ(order = 23) ReadList<ShardNumber, Crosslink> getCurrentCrosslinks();
 
-  @SSZ(vectorSize = "${spec.SLOTS_PER_HISTORICAL_ROOT}")
+  @SSZ(order = 24, vectorSize = "${spec.SLOTS_PER_HISTORICAL_ROOT}")
   ReadVector<SlotNumber, Hash32> getLatestBlockRoots();
 
-  @SSZ(vectorSize = "${spec.SLOTS_PER_HISTORICAL_ROOT}")
+  @SSZ(order = 25, vectorSize = "${spec.SLOTS_PER_HISTORICAL_ROOT}")
   ReadVector<SlotNumber, Hash32> getLatestStateRoots();
 
-  @SSZ(vectorSize = "${spec.LATEST_ACTIVE_INDEX_ROOTS_LENGTH}")
+  @SSZ(order = 26, vectorSize = "${spec.LATEST_ACTIVE_INDEX_ROOTS_LENGTH}")
   ReadVector<EpochNumber, Hash32> getLatestActiveIndexRoots();
 
   /** Balances slashed at every withdrawal period */
-  @SSZ(vectorSize = "${spec.LATEST_SLASHED_EXIT_LENGTH}")
+  @SSZ(order = 27, vectorSize = "${spec.LATEST_SLASHED_EXIT_LENGTH}")
   ReadVector<EpochNumber, Gwei> getLatestSlashedBalances();
 
-  @SSZ BeaconBlockHeader getLatestBlockHeader();
+  @SSZ(order = 28) BeaconBlockHeader getLatestBlockHeader();
 
-  @SSZ ReadList<Integer, Hash32> getHistoricalRoots();
+  @SSZ(order = 29) ReadList<Integer, Hash32> getHistoricalRoots();
 
   /* ******* PoW receipt root ********* */
 
   /** Latest processed eth1 data. */
-  @SSZ Eth1Data getLatestEth1Data();
+  @SSZ(order = 30) Eth1Data getLatestEth1Data();
 
   /** Eth1 data that voting is still in progress for. */
-  @SSZ ReadList<Integer, Eth1DataVote> getEth1DataVotes();
+  @SSZ(order = 31) ReadList<Integer, Eth1DataVote> getEth1DataVotes();
 
   /** The most recent Eth1 deposit index */
-  @SSZ UInt64 getDepositIndex();
+  @SSZ(order = 32) UInt64 getDepositIndex();
 
   /**
    * Returns mutable copy of this state. Any changes made to returned copy shouldn't affect this
