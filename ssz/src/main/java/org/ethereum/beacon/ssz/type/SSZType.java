@@ -48,6 +48,10 @@ public interface SSZType {
     return "SSZType[" + type + ", size=" + getSize() + ", descr: " + getTypeDescriptor() + "]";
   }
 
+  default String dumpHierarchy() {
+    return dumpHierarchy("");
+  }
+
   default String dumpHierarchy(String indent) {
     String ret = "";
     ret += indent +  toStringHelper() + "\n";

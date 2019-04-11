@@ -149,12 +149,12 @@ public class SSZTypeTest {
             .getTypeResolver();
 
     SSZType sszType1 = typeResolver.resolveSSZType(Container1.class);
-    System.out.println(sszType1.dumpHierarchy(""));
+    System.out.println(sszType1.dumpHierarchy());
     Assert.assertTrue(sszType1.isContainer());
     Assert.assertTrue(sszType1.isVariableSize());
 
     SSZType sszType2 = typeResolver.resolveSSZType(Container2.class);
-    System.out.println(sszType2.dumpHierarchy(""));
+    System.out.println(sszType2.dumpHierarchy());
     Assert.assertTrue(sszType2.isContainer());
     Assert.assertTrue(sszType2.isFixedSize());
     Assert.assertTrue(sszType2.getSize() > 0);
@@ -167,7 +167,7 @@ public class SSZTypeTest {
             .getTypeResolver();
 
     SSZType sszType1 = typeResolver.resolveSSZType(Container1.class);
-    System.out.println(sszType1.dumpHierarchy(""));
+    System.out.println(sszType1.dumpHierarchy());
   }
 
   @Test
@@ -315,7 +315,7 @@ public class SSZTypeTest {
     SSZSerializer serializer = sszBuilder.buildSerializer();
 
     SSZType sszType = sszBuilder.getTypeResolver().resolveSSZType(Impl2.class);
-    System.out.println(sszType.dumpHierarchy(""));
+    System.out.println(sszType.dumpHierarchy());
 
     Assert.assertTrue(sszType instanceof SSZContainerType);
     SSZContainerType containerType = (SSZContainerType) sszType;
