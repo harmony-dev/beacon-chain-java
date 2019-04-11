@@ -36,7 +36,7 @@ public class SSZIncrementalHasher extends SSZSimpleHasher {
     }
 
     @Override
-    public UpdateListener copy() {
+    public UpdateListener fork() {
       return new SSZIncrementalTracker(
           (TreeSet<Integer>) elementsUpdated.clone(),
           merkleTree == null ? null : merkleTree.copy());
