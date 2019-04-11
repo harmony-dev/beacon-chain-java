@@ -1,5 +1,7 @@
 package org.ethereum.beacon.consensus.transition;
 
+import java.util.Map;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import org.ethereum.beacon.core.BeaconBlockHeader;
 import org.ethereum.beacon.core.BeaconState;
@@ -18,6 +20,7 @@ import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
+import org.ethereum.beacon.ssz.incremental.UpdateListener;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.collections.ReadVector;
@@ -32,6 +35,17 @@ public class DelegateBeaconState implements BeaconState {
 
   public BeaconState getDelegate() {
     return delegate;
+  }
+
+  @Override
+  public UpdateListener getUpdateListener(String observerId,
+      Supplier<UpdateListener> listenerFactory) {
+    return delegate.getUpdateListener(observerId, listenerFactory);
+  }
+
+  @Override
+  public Map<String, UpdateListener> getAllUpdateListeners() {
+    return delegate.getAllUpdateListeners();
   }
 
   @Override
