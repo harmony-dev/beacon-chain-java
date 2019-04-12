@@ -73,10 +73,10 @@ public class AccessorResolverRegistry implements AccessorResolver {
   }
 
   @Override
-  public SSZBasicAccessor resolveBasicTypeCodec(SSZField field) {
+  public Optional<SSZBasicAccessor> resolveBasicAccessor(SSZField field) {
     Object accessor = getAccessorFromAnnotation(field);
     if (accessor instanceof SSZBasicAccessor) {
-      return (SSZBasicAccessor) accessor;
+      return Optional.of((SSZBasicAccessor) accessor);
     }
 
     Class<?> type = field.getRawClass();
@@ -105,7 +105,7 @@ public class AccessorResolverRegistry implements AccessorResolver {
       codec = new SubclassCodec(codec);
     }
 
-    return codec;
+    return Optional.ofNullable(codec);
   }
 
   /**

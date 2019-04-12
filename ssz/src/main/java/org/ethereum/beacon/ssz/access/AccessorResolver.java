@@ -4,7 +4,7 @@ import java.util.Optional;
 
 public interface AccessorResolver {
 
-  SSZBasicAccessor resolveBasicTypeCodec(SSZField field);
+  Optional<SSZBasicAccessor> resolveBasicAccessor(SSZField field);
 
   Optional<SSZListAccessor> resolveListAccessor(SSZField field);
 

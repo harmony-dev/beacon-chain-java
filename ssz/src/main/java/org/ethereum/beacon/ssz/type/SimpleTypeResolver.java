@@ -22,9 +22,9 @@ public class SimpleTypeResolver implements TypeResolver {
 
   @Override
   public SSZType resolveSSZType(SSZField descriptor) {
-    SSZBasicAccessor codec = accessorResolver.resolveBasicTypeCodec(descriptor);
-    if (codec != null) {
-      return new SSZBasicType(descriptor, codec);
+    Optional<SSZBasicAccessor> codec = accessorResolver.resolveBasicAccessor(descriptor);
+    if (codec.isPresent()) {
+      return new SSZBasicType(descriptor, codec.get());
     }
 
     Optional<SSZListAccessor> listAccessor = accessorResolver.resolveListAccessor(descriptor);
