@@ -4,6 +4,7 @@ import net.consensys.cava.bytes.Bytes;
 import net.consensys.cava.ssz.BytesSSZReaderProxy;
 import net.consensys.cava.ssz.SSZ;
 import net.consensys.cava.ssz.SSZException;
+import org.ethereum.beacon.ssz.access.SSZBasicAccessor;
 import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.SSZSchemeException;
 
@@ -15,12 +16,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.ethereum.beacon.ssz.access.SSZCodec;
 
 import static java.util.function.Function.identity;
 
 /**
- * {@link SSZCodec} for {@link byte[]}
+ * {@link SSZBasicAccessor} for {@link byte[]}
  *
  * <p>Supports several SSZ types in one byte array container:
  *
@@ -33,7 +33,7 @@ import static java.util.function.Function.identity;
  * Type could be clarified by {@link
  * SSZField#extraType}
  */
-public class BytesPrimitive implements SSZCodec {
+public class BytesPrimitive implements SSZBasicAccessor {
 
   private static Set<String> supportedTypes = new HashSet<>();
   private static Set<Class> supportedClassTypes = new HashSet<>();

@@ -27,7 +27,7 @@ public class SSZHasher implements BytesHasher {
   /**
    * SSZ hasher with following helpers
    *
-   *     org.ethereum.beacon.ssz.access.SSZCodec} function
+   *     org.ethereum.beacon.ssz.access.SSZBasicAccessor} function
    */
   public SSZHasher(TypeResolver typeResolver, SSZVisitorHost visitorHost, SSZVisitor<MerkleTrie, Object> hasherVisitor) {
     this.visitorHost = visitorHost;

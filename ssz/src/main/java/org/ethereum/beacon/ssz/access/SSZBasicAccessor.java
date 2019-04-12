@@ -13,7 +13,7 @@ import java.util.Set;
  *
  * <p>For more information check {@link SSZSerializer}
  */
-public interface SSZCodec {
+public interface SSZBasicAccessor {
 
   /**
    * Set of compatible SSZ types represented as strings. If type could be extended with numeric
@@ -55,18 +55,6 @@ public interface SSZCodec {
       List<Object> value, SSZField field, OutputStream result);
 
   /**
-   * Encodes array field as SSZ type and writes it to output stream
-   *
-   * @param value Field value
-   * @param field Field type
-   * @param result Output stream
-   */
-  default void encodeArray(
-      Object[] value, SSZField field, OutputStream result) {
-    encodeList(Arrays.asList(value), field, result);
-  }
-
-  /**
    * Decodes SSZ encoded data and returns result
    *
    * @param field Type of field to read at this point
@@ -85,20 +73,6 @@ public interface SSZCodec {
    * @return field list value
    */
   List decodeList(SSZField field, BytesSSZReaderProxy reader);
-
-  /**
-   * Decodes SSZ encoded data and returns result
-   *
-   * @param field Type of field to read at this point, array
-   * @param reader Reader which holds SSZ encoded data at the appropriate point. Pointer will be
-   *     moved to the end of this field/beginning of next one after reading is performed.
-   * @return field array value
-   */
-  default Object[] decodeArray(
-      SSZField field, BytesSSZReaderProxy reader) {
-    List list = decodeList(field, reader);
-    return list.toArray();
-  }
 
   /**
    * Helper designed to throw usual error

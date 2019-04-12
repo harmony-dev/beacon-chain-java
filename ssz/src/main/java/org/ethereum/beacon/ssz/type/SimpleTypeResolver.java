@@ -5,7 +5,7 @@ import org.ethereum.beacon.ssz.ExternalVarResolver;
 import org.ethereum.beacon.ssz.access.AccessorResolver;
 import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.SSZSchemeException;
-import org.ethereum.beacon.ssz.access.SSZCodec;
+import org.ethereum.beacon.ssz.access.SSZBasicAccessor;
 import org.ethereum.beacon.ssz.access.SSZContainerAccessor;
 import org.ethereum.beacon.ssz.access.SSZListAccessor;
 
@@ -22,7 +22,7 @@ public class SimpleTypeResolver implements TypeResolver {
 
   @Override
   public SSZType resolveSSZType(SSZField descriptor) {
-    SSZCodec codec = accessorResolver.resolveBasicTypeCodec(descriptor);
+    SSZBasicAccessor codec = accessorResolver.resolveBasicTypeCodec(descriptor);
     if (codec != null) {
       return new SSZBasicType(descriptor, codec);
     }

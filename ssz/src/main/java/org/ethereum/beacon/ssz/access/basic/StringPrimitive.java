@@ -9,11 +9,12 @@ import java.io.OutputStream;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import org.ethereum.beacon.ssz.access.SSZField;
-import org.ethereum.beacon.ssz.access.SSZCodec;
 
-/** {@link SSZCodec} for {@link String} */
-public class StringPrimitive implements SSZCodec {
+import org.ethereum.beacon.ssz.access.SSZBasicAccessor;
+import org.ethereum.beacon.ssz.access.SSZField;
+
+/** {@link SSZBasicAccessor} for {@link String} */
+public class StringPrimitive implements SSZBasicAccessor {
 
   private static Set<String> supportedTypes = new HashSet<>();
   private static Set<Class> supportedClassTypes = new HashSet<>();

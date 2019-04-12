@@ -5,22 +5,22 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import net.consensys.cava.ssz.BytesSSZReaderProxy;
+import org.ethereum.beacon.ssz.access.SSZBasicAccessor;
 import org.ethereum.beacon.ssz.creator.ConstructorObjCreator;
 import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
-import org.ethereum.beacon.ssz.access.SSZCodec;
 
 /**
- * The SSZCodec which implements logic of {@link SSZSerializable#serializeAs()} attribute
+ * The SSZBasicAccessor which implements logic of {@link SSZSerializable#serializeAs()} attribute
  * It delegates calls to wrapped Codec corresponding to <code>serializeAs</code> class
  * but substitutes <code>field.type</code> with the <code>serializeAs</code> class
  * and decodes result to the original <code>field.type</code>.
  */
-public class SubclassCodec implements SSZCodec {
+public class SubclassCodec implements SSZBasicAccessor {
 
-  private final SSZCodec superclassCodec;
+  private final SSZBasicAccessor superclassCodec;
 
-  public SubclassCodec(SSZCodec superclassCodec) {
+  public SubclassCodec(SSZBasicAccessor superclassCodec) {
     this.superclassCodec = superclassCodec;
   }
 
