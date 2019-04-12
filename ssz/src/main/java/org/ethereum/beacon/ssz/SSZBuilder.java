@@ -39,7 +39,7 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 /**
- * SSZ Builder is designed to create {@link SSZSerializer} up to your needs.
+ * SSZ Builder is designed to create {@link SSZSerializer} or {@link SSZHasher} up to your needs.
  *
  * <p>It uses {@link SSZAnnotationSchemeBuilder}to create SSZ model from Java class with annotations
  *

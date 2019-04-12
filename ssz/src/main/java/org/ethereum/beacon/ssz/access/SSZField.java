@@ -6,8 +6,17 @@ import java.util.List;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import tech.pegasys.artemis.util.collections.ReadList;
 
+/**
+ * Type descriptor which contains all possible data gathered from Class info, annotations
+ * of a class itself or a field annotation from another Class (aka SSZ container)
+ * This data is required to correctly identify the right accessor, children types and work with
+ * raw type instance
+ */
 public class SSZField {
 
+  /**
+   * In case of list types resolves the type with the respect to the list elements type (if not empty list)
+   */
   public static SSZField resolveFromValue(Object value, Class<?> clazz) {
     if (value instanceof List && !((List) value).isEmpty()) {
       return new SSZField(
@@ -21,6 +30,9 @@ public class SSZField {
     return new SSZField(clazz);
   }
 
+  /**
+   * In case of list types resolves the type with the respect to the list elements type (if not empty list)
+   */
   public static SSZField resolveFromValue(Object value) {
     return resolveFromValue(value, value.getClass());
   }
