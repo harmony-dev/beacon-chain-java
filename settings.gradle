@@ -27,6 +27,8 @@ include 'start:simulator'
 include 'start:common'
 // Configuration parser
 include 'start:config'
+// Various CLI tools
+include 'start:tools'
 // Test runners for community tests
 include 'test'
 // Strict types definition

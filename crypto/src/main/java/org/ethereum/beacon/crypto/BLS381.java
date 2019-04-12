@@ -449,6 +449,10 @@ public class BLS381 {
       return new KeyPair(PublicKey.create(privateKey), privateKey);
     }
 
+    public String asString() {
+      return String.format("%s:%s", privateKey.encoded, publicKey.encoded);
+    }
+
     /**
      * Generates a new key pair using Bouncy Castle key generator.
      *
