@@ -87,5 +87,8 @@ public @interface SSZ {
    */
   String vectorSizeVar() default "";
 
+  /**
+   * Defines the order of SSZ property inside a container
+   */
   int order() default -1;
 }
