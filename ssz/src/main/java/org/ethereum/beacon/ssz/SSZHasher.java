@@ -80,12 +80,6 @@ public class SSZHasher implements BytesHasher {
     }
 
     @Override
-    public List<String> getChildNames() {
-      List<String> childNames = delegate.getChildNames();
-      return childNames.subList(0, childNames.size() - 1);
-    }
-
-    @Override
     public SSZContainerAccessor getAccessor() {
       return delegate.getAccessor();
     }

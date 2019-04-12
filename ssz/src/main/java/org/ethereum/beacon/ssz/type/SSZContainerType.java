@@ -51,12 +51,6 @@ public class SSZContainerType implements SSZCompositeType {
         .collect(Collectors.toList());
   }
 
-  public List<String> getChildNames() {
-    return accessor.getChildDescriptors().stream()
-        .map(d -> d.getName())
-        .collect(Collectors.toList());
-  }
-
   public SSZContainerAccessor getAccessor() {
     return containerAccessor;
   }
