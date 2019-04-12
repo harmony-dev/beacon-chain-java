@@ -4,25 +4,15 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 
 import java.util.List;
-import java.util.function.Function;
-import java.util.function.Supplier;
 import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.ssz.ExternalVarResolver.ExternalVariableNotDefined;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
-import org.ethereum.beacon.ssz.incremental.ObservableComposite;
-import org.ethereum.beacon.ssz.incremental.UpdateListener;
 import org.ethereum.beacon.ssz.type.SSZContainerType;
-import org.ethereum.beacon.ssz.type.SSZListType;
 import org.ethereum.beacon.ssz.type.SSZType;
 import org.ethereum.beacon.ssz.type.TypeResolver;
-import org.ethereum.beacon.ssz.visitor.SSZIncrementalHasher;
-import org.ethereum.beacon.ssz.visitor.SSZSimpleHasher;
-import org.ethereum.beacon.ssz.visitor.SSZSimpleHasher.MerkleTrie;
-import org.ethereum.beacon.ssz.visitor.SSZVisitorHost;
 import org.junit.Assert;
 import org.junit.Test;
-import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 public class SSZTypeTest {

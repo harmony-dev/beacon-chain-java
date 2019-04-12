@@ -1,6 +1,5 @@
 package org.ethereum.beacon.ssz;
 
-import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -18,7 +17,7 @@ import org.ethereum.beacon.ssz.type.SSZType;
 import org.ethereum.beacon.ssz.type.TypeResolver;
 import org.ethereum.beacon.ssz.visitor.SSZIncrementalHasher;
 import org.ethereum.beacon.ssz.visitor.SSZSimpleHasher;
-import org.ethereum.beacon.ssz.visitor.SSZSimpleHasher.MerkleTrie;
+import org.ethereum.beacon.ssz.visitor.MerkleTrie;
 import org.ethereum.beacon.ssz.visitor.SSZVisitorHost;
 import org.junit.Assert;
 import org.junit.Test;
