@@ -51,7 +51,7 @@ public class SimpleTypeResolver implements TypeResolver {
     }
     if (vectorSize.startsWith("${") && vectorSize.endsWith("}")) {
       return externalVarResolver
-          .resolveMandatory(vectorSize.substring(2, vectorSize.length() - 1), Number.class)
+          .resolveOrThrow(vectorSize.substring(2, vectorSize.length() - 1), Number.class)
           .intValue();
     }
     try {

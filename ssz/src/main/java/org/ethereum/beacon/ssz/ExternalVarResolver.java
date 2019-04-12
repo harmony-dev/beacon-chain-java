@@ -18,7 +18,7 @@ public interface ExternalVarResolver extends Function<String, Object> {
     }
   }
 
-  default <T> T resolveMandatory(String varName, Class<T> type) {
+  default <T> T resolveOrThrow(String varName, Class<T> type) {
     Object ret = apply(varName);
     if (ret == null) {
       throw new ExternalVariableNotDefined("Mandatory variable not defined: " + varName);
