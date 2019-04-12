@@ -12,6 +12,8 @@ public class SSZContainerType implements SSZCompositeType {
   private final SSZContainerAccessor containerAccessor;
   private final SSZContainerAccessor.ContainerAccessor accessor;
 
+  private List<SSZType> childTypes;
+
   protected SSZContainerType() {
     this.typeResolver = null;
     this.descriptor = null;
@@ -46,9 +48,12 @@ public class SSZContainerType implements SSZCompositeType {
   }
 
   public List<SSZType> getChildTypes() {
-    return accessor.getChildDescriptors().stream()
-        .map(typeResolver::resolveSSZType)
-        .collect(Collectors.toList());
+    if (childTypes == null) {
+      childTypes = accessor.getChildDescriptors().stream()
+          .map(typeResolver::resolveSSZType)
+          .collect(Collectors.toList());
+    }
+    return childTypes;
   }
 
   public SSZContainerAccessor getAccessor() {

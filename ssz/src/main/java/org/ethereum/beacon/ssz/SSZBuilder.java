@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import org.ethereum.beacon.ssz.access.AccessorResolver;
 import org.ethereum.beacon.ssz.access.SSZCodec;
 import org.ethereum.beacon.ssz.access.SSZContainerAccessor;
 import org.ethereum.beacon.ssz.access.SSZListAccessor;
@@ -80,7 +81,7 @@ public class SSZBuilder {
 
   private ObjectCreator objCreator = null;
 
-  private AccessorResolverRegistry accessorResolverRegistry = null;
+  private AccessorResolver accessorResolverRegistry = null;
 
   private ExternalVarResolver externalVarResolver = v -> {throw new SSZSchemeException("Variable resolver not set. Can resolve var: " + v);};
 
@@ -300,7 +301,7 @@ public class SSZBuilder {
     return typeResolver;
   }
 
-  AccessorResolverRegistry getAccessorResolverRegistry() {
+  AccessorResolver getAccessorResolver() {
     buildCommon();
     return accessorResolverRegistry;
   }

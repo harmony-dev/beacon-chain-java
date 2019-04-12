@@ -88,6 +88,42 @@ public class SSZField {
         '}';
   }
 
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    SSZField sszField = (SSZField) o;
+
+    if (!fieldType.equals(sszField.fieldType)) {
+      return false;
+    }
+
+    if (fieldAnnotation != null ? !fieldAnnotation.equals(sszField.fieldAnnotation)
+        : sszField.fieldAnnotation != null) {
+      return false;
+    }
+    if (extraType != null ? !extraType.equals(sszField.extraType) : sszField.extraType != null) {
+      return false;
+    }
+    if (extraSize != null ? !extraSize.equals(sszField.extraSize) : sszField.extraSize != null) {
+      return false;
+    }
+    if (name != null ? !name.equals(sszField.name) : sszField.name != null) {
+      return false;
+    }
+    return getter != null ? getter.equals(sszField.getter) : sszField.getter == null;
+  }
+
+  @Override
+  public int hashCode() {
+    return fieldType.hashCode();
+  }
+
   private static class ParametrizedTypeImpl implements ParameterizedType {
     private final Type rawType;
     private final Type[] actualTypeArguments;

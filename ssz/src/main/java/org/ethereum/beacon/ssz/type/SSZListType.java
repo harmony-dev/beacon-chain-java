@@ -6,10 +6,12 @@ import org.ethereum.beacon.ssz.access.SSZListAccessor;
 
 public class SSZListType implements SSZCompositeType {
 
-  SSZField descriptor;
-  TypeResolver typeResolver;
-  SSZListAccessor accessor;
-  int vectorLength;
+  private final SSZField descriptor;
+  private final TypeResolver typeResolver;
+  private final SSZListAccessor accessor;
+  private final int vectorLength;
+
+  private SSZType elementType;
 
   public SSZListType(SSZField descriptor, TypeResolver typeResolver,
       SSZListAccessor accessor, int vectorLength) {
@@ -41,7 +43,10 @@ public class SSZListType implements SSZCompositeType {
   }
 
   public SSZType getElementType() {
-    return typeResolver.resolveSSZType(getAccessor().getListElementType(getTypeDescriptor()));
+    if (elementType == null) {
+      elementType = typeResolver.resolveSSZType(getAccessor().getListElementType(getTypeDescriptor()));
+    }
+    return elementType;
   }
 
   public SSZListAccessor getAccessor() {

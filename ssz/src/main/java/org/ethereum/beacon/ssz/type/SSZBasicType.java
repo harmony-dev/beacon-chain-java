@@ -7,6 +7,7 @@ public class SSZBasicType implements SSZType {
 
   private final SSZField descriptor;
   private final SSZCodec codec;
+  private int size = Integer.MIN_VALUE;
 
   public SSZBasicType(SSZField descriptor, SSZCodec codec) {
     this.descriptor = descriptor;
@@ -24,7 +25,10 @@ public class SSZBasicType implements SSZType {
 
   @Override
   public int getSize() {
-    return getValueCodec().getSize(getTypeDescriptor());
+    if (size == Integer.MIN_VALUE) {
+      size = getValueCodec().getSize(getTypeDescriptor());
+    }
+    return size;
   }
 
   @Override
