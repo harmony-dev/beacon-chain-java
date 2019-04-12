@@ -7,7 +7,7 @@ import org.ethereum.beacon.ssz.access.SSZContainerAccessor;
 import org.ethereum.beacon.ssz.type.SSZContainerType;
 import org.ethereum.beacon.ssz.type.SSZType;
 import org.ethereum.beacon.ssz.type.TypeResolver;
-import org.ethereum.beacon.ssz.visitor.SSZSimpleHasher.MerkleTrie;
+import org.ethereum.beacon.ssz.visitor.MerkleTrie;
 import org.ethereum.beacon.ssz.visitor.SSZVisitor;
 import org.ethereum.beacon.ssz.visitor.SSZVisitorHost;
 

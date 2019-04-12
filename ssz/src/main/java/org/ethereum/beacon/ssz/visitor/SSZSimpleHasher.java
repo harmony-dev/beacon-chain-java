@@ -1,14 +1,14 @@
 package org.ethereum.beacon.ssz.visitor;
 
+import static tech.pegasys.artemis.util.bytes.BytesValue.concat;
+
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import org.ethereum.beacon.ssz.type.SSZBasicType;
 import org.ethereum.beacon.ssz.type.SSZCompositeType;
 import org.ethereum.beacon.ssz.type.SSZListType;
-import org.ethereum.beacon.ssz.visitor.SSZSimpleHasher.MerkleTrie;
 import org.ethereum.beacon.ssz.visitor.SSZSimpleSerializer.SSZSerializerResult;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
@@ -16,30 +16,6 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.bytes.BytesValues;
 
 public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
-
-  public static class MerkleTrie {
-    final BytesValue[] nodes;
-
-    public MerkleTrie(BytesValue[] nodes) {
-      this.nodes = nodes;
-    }
-
-    public Hash32 getPureRoot() {
-      return Hash32.wrap(Bytes32.leftPad(nodes[1]));
-    }
-
-    public Hash32 getFinalRoot() {
-      return Hash32.wrap(Bytes32.leftPad(nodes[0]));
-    }
-
-    public void setFinalRoot(Hash32 mixedInLengthHash) {
-      nodes[0] = mixedInLengthHash;
-    }
-
-    public MerkleTrie copy() {
-      return new MerkleTrie(Arrays.copyOf(nodes, nodes.length));
-    }
-  }
 
   private final Hash32[] zeroHashes = new Hash32[32];
   final SSZVisitorHandler<SSZSimpleSerializer.SSZSerializerResult> serializer;
@@ -78,7 +54,7 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
     }
     merkle = merkleize(chunks);
     if (type.isList() && !((SSZListType) type).isVector()) {
-      Hash32 mixInLength = hashFunction.apply(BytesValue.concat(
+      Hash32 mixInLength = hashFunction.apply(concat(
           merkle.getPureRoot(),
           serializeLength(type.getChildrenCount(rawValue))));
       merkle.setFinalRoot(mixInLength);
@@ -95,7 +71,7 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
     }
     if (value.size() % bytesPerChunk != 0) {
       BytesValue last = value.slice(i, value.size() - i);
-      BytesValue lastPadded = BytesValue.concat(
+      BytesValue lastPadded = concat(
           last, BytesValue.wrap(new byte[bytesPerChunk - value.size() % bytesPerChunk]));
       ret.add(lastPadded);
     }
@@ -112,11 +88,10 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
     }
 
     for (int i = chunksCount - 1; i > 0; i--) {
-      nodes[i] = hashFunction.apply(BytesValue.concat(nodes[i * 2], nodes[i * 2 + 1]));
+      nodes[i] = hashFunction.apply(concat(nodes[i * 2], nodes[i * 2 + 1]));
     }
+
     nodes[0] = nodes[1];
-//    BytesValue[] trie = new BytesValue[chunksCount];
-//    System.arraycopy(nodes, 0, trie, 0, chunksCount);
     return new MerkleTrie(nodes);
   }
 
@@ -135,13 +110,13 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
       } else {
         Hash32 lowerZeroHash = getZeroHash(distanceFromBottom - 1);
         zeroHashes[distanceFromBottom] = hashFunction
-            .apply(BytesValue.concat(lowerZeroHash, lowerZeroHash));
+            .apply(concat(lowerZeroHash, lowerZeroHash));
       }
     }
     return zeroHashes[distanceFromBottom];
   }
 
   BytesValue serializeLength(long len) {
-    return BytesValue.concat(BytesValues.ofUnsignedIntLittleEndian(len), BytesValue.wrap(new byte[32 - 4]));
+    return concat(BytesValues.ofUnsignedIntLittleEndian(len), BytesValue.wrap(new byte[32 - 4]));
   }
 }
