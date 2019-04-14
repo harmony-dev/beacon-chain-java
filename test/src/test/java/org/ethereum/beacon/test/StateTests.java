@@ -2,8 +2,8 @@ package org.ethereum.beacon.test;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import org.ethereum.beacon.test.runner.StateRunner;
-import org.ethereum.beacon.test.type.StateTest;
+import org.ethereum.beacon.test.runner.state.StateRunner;
+import org.ethereum.beacon.test.type.state.StateTest;
 import org.junit.Test;
 
 public class StateTests extends TestUtils {

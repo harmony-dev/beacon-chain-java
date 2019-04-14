@@ -1,4 +1,4 @@
-package org.ethereum.beacon.test.runner;
+package org.ethereum.beacon.test.runner.ssz;
 
 import static org.ethereum.beacon.test.SilentAsserts.assertEquals;
 
@@ -10,7 +10,8 @@ import org.ethereum.beacon.ssz.SSZSerializer;
 import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.access.container.SSZSchemeBuilder;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
-import org.ethereum.beacon.test.type.SszTestCase;
+import org.ethereum.beacon.test.runner.Runner;
+import org.ethereum.beacon.test.type.ssz.SszTestCase;
 import org.ethereum.beacon.test.type.TestCase;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 

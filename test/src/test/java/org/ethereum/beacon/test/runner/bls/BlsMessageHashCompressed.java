@@ -1,11 +1,12 @@
-package org.ethereum.beacon.test.runner;
+package org.ethereum.beacon.test.runner.bls;
 
 import org.apache.milagro.amcl.BLS381.ECP2;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.crypto.MessageParameters;
 import org.ethereum.beacon.crypto.bls.milagro.MilagroCodecs;
 import org.ethereum.beacon.crypto.bls.milagro.MilagroMessageMapper;
-import org.ethereum.beacon.test.type.BlsTest;
+import org.ethereum.beacon.test.runner.Runner;
+import org.ethereum.beacon.test.type.bls.BlsTest;
 import org.ethereum.beacon.test.type.TestCase;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;

@@ -16,11 +16,12 @@ import java.util.List;
 public abstract class TestSkeleton {
   private String title;
   private String summary;
+  private String version;
   @JsonProperty("test_suite")
   private String testSuite;
   private String fork;
   @JsonProperty("test_cases")
-  List<TestCase> testCases;
+  protected List<TestCase> testCases;
 
   public String getTitle() {
     return title;
@@ -52,6 +53,14 @@ public abstract class TestSkeleton {
 
   public void setFork(String fork) {
     this.fork = fork;
+  }
+
+  public String getVersion() {
+    return version;
+  }
+
+  public void setVersion(String version) {
+    this.version = version;
   }
 
   public List<TestCase> getTestCases() {

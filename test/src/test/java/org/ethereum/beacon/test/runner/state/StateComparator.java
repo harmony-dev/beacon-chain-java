@@ -1,4 +1,4 @@
-package org.ethereum.beacon.test.runner;
+package org.ethereum.beacon.test.runner.state;
 
 import static org.ethereum.beacon.test.SilentAsserts.assertEquals;
 import static org.ethereum.beacon.test.SilentAsserts.assertLists;
@@ -17,7 +17,7 @@ import org.ethereum.beacon.core.types.Bitfield64;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.test.StateTestUtils;
-import org.ethereum.beacon.test.type.StateTestCase;
+import org.ethereum.beacon.test.type.state.StateTestCase;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
 

@@ -1,11 +1,13 @@
-package org.ethereum.beacon.test.type;
+package org.ethereum.beacon.test.type.state;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
-import org.ethereum.beacon.test.type.StateTestCase.BeaconStateData.AttestationData;
-import org.ethereum.beacon.test.type.StateTestCase.BeaconStateData.AttestationData.AttestationDataContainer;
+
+import org.ethereum.beacon.test.type.NamedTestCase;
+import org.ethereum.beacon.test.type.SpecConstantsDataMerged;
+import org.ethereum.beacon.test.type.state.StateTestCase.BeaconStateData.AttestationData.AttestationDataContainer;
 
 /**
  * State test case <a

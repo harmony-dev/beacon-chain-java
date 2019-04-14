@@ -22,7 +22,7 @@ public class SSZObjectHasher implements ObjectHasher<Hash32> {
 
   private final SSZHasher sszHasher;
 
-  SSZObjectHasher(SSZHasher sszHasher) {
+  public SSZObjectHasher(SSZHasher sszHasher) {
     this.sszHasher = sszHasher;
   }
 
