@@ -5,9 +5,7 @@ import org.ethereum.beacon.test.type.TestCase;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Tree hash test case
- */
+/** Tree hash test case with container */
 public class TreeHashContainerTestCase implements TestCase {
   private Map<String, String> type;
   private String root;

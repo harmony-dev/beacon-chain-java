@@ -3,11 +3,8 @@ package org.ethereum.beacon.test.type.hash;
 import org.ethereum.beacon.test.type.TestCase;
 
 import java.util.List;
-import java.util.Map;
 
-/**
- * Tree hash test case
- */
+/** Composite tree hash test case: lists, vectors, containers, everything inside everything */
 public class TreeHashCompositeTestCase implements TestCase {
   private Object type;
   private String root;

@@ -17,7 +17,6 @@ import org.ethereum.beacon.test.type.hash.TreeHashListTestCase;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
-import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -27,21 +26,22 @@ import java.util.stream.Collectors;
 
 import static org.ethereum.beacon.test.SilentAsserts.assertEquals;
 import static org.ethereum.beacon.test.SilentAsserts.assertTrue;
+import static org.ethereum.beacon.test.runner.hash.TreeHashBasicRunner.instantiateValue;
+import static org.ethereum.beacon.test.runner.hash.TreeHashBasicRunner.parseBasicFieldType;
 
-/** TestRunner for {@link TreeHashListTestCase} */
+/** TestRunner for {@link TreeHashListTestCase} for vector cases */
 public class TreeHashVectorRunner implements Runner {
   private TreeHashListTestCase testCase;
-  private BeaconChainSpec spec;
   private SSZObjectHasher hasher;
   private SSZField field;
   private int vectorSize;
 
   public TreeHashVectorRunner(TestCase testCase, BeaconChainSpec spec) {
     if (!(testCase instanceof TreeHashListTestCase)) {
-      throw new RuntimeException("TestCase runner accepts only TreeHashListTestCase.class as input!");
+      throw new RuntimeException(
+          "TestCase runner accepts only TreeHashListTestCase.class as input!");
     }
     this.testCase = (TreeHashListTestCase) testCase;
-    this.spec = spec;
     Function<BytesValue, Hash32> hashFunction = Hashes::keccak256;
     SSZHasher sszHasher =
         DefaultSSZ.createCommonSSZBuilder(spec.getConstants())
@@ -51,68 +51,50 @@ public class TreeHashVectorRunner implements Runner {
                   return new CustomTypeResolver(objects.getValue0(), objects.getValue1());
                 })
             .buildHasher(hashFunction);
-
     this.hasher = new SSZObjectHasher(sszHasher);
-  }
-
-  class CustomTypeResolver extends SimpleTypeResolver {
-    private AccessorResolver accessorResolver;
-
-    public CustomTypeResolver(AccessorResolver accessorResolver, ExternalVarResolver externalVarResolver) {
-      super(accessorResolver, externalVarResolver);
-      this.accessorResolver = accessorResolver;
-    }
-
-    @Override
-    public SSZType resolveSSZType(SSZField descriptor) {
-      if (new HashSet(Arrays.asList(descriptor.getRawClass().getInterfaces())).contains(List.class)) {
-        return new SSZListType(descriptor, this, accessorResolver.resolveListAccessor(
-            descriptor
-        ).get(), vectorSize);
-      } else {
-        return super.resolveSSZType(field);
-      }
-    }
   }
 
   private void activateSchemeMock(String type, int vectorSize) {
     this.vectorSize = vectorSize;
-    if (type.equals("bool")) {
-      this.field = new SSZField(Boolean.class, null, null, null, "value", "getValue");
-    } else if (type.startsWith("uint")) {
-      this.field =
-          new SSZField(
-              BigInteger.class,
-              null,
-              "uint",
-              Integer.valueOf(type.substring(4)),
-              "value",
-              "getValue");
-    } else {
-      throw new RuntimeException("Type " + testCase.getType() + " is not supported");
-    }
+    this.field = parseBasicFieldType(type);
   }
 
   public Optional<String> run() {
-    assertTrue("Only one type lists are supported", testCase.getType().size() == 2);
-    String listType = testCase.getType().get(0);
+    assertTrue("Only two type parameters vectors are supported", testCase.getType().size() == 2);
+    String internalType = testCase.getType().get(0);
     String vectorSize = testCase.getType().get(1);
-    activateSchemeMock(listType, Integer.valueOf(vectorSize));
-    Hash32 res;
-    if (listType.equals("bool")) {
-      List<Boolean> input = testCase.getValue().stream().map(Boolean::valueOf).collect(Collectors.toList());
-      res = hasher.getHash(input);
-    } else if (listType.startsWith("uint")) {
-      List<BigInteger> input = testCase.getValue().stream().map(BigInteger::new).collect(Collectors.toList());
-      res = hasher.getHash(input);
-    } else {
-      throw new RuntimeException("Type " + listType + " is not supported");
-    }
+    activateSchemeMock(internalType, Integer.valueOf(vectorSize));
+    List input =
+        testCase.getValue().stream()
+            .map(v -> instantiateValue(v, internalType))
+            .collect(Collectors.toList());
+    Hash32 res = hasher.getHash(input);
     String expected = testCase.getRoot();
     if (!expected.startsWith("0x")) {
       expected = "0x" + expected;
     }
     String actual = res.toString();
     return assertEquals(expected, actual);
+  }
+
+  class CustomTypeResolver extends SimpleTypeResolver {
+    private AccessorResolver accessorResolver;
+
+    public CustomTypeResolver(
+        AccessorResolver accessorResolver, ExternalVarResolver externalVarResolver) {
+      super(accessorResolver, externalVarResolver);
+      this.accessorResolver = accessorResolver;
+    }
+
+    @Override
+    public SSZType resolveSSZType(SSZField descriptor) {
+      if (new HashSet(Arrays.asList(descriptor.getRawClass().getInterfaces()))
+          .contains(List.class)) {
+        return new SSZListType(
+            descriptor, this, accessorResolver.resolveListAccessor(descriptor).get(), vectorSize);
+      } else {
+        return super.resolveSSZType(field);
+      }
+    }
   }
 }

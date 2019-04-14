@@ -10,7 +10,6 @@ import org.ethereum.beacon.ssz.access.AccessorResolver;
 import org.ethereum.beacon.ssz.access.SSZContainerAccessor;
 import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.access.SSZListAccessor;
-import org.ethereum.beacon.ssz.access.list.ListAccessor;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import org.ethereum.beacon.ssz.type.SSZContainerType;
 import org.ethereum.beacon.ssz.type.SSZListType;
@@ -22,15 +21,12 @@ import org.ethereum.beacon.test.type.TestCase;
 import org.ethereum.beacon.test.type.hash.TreeHashCompositeTestCase;
 import org.ethereum.beacon.test.type.hash.TreeHashContainerTestCase;
 import org.javatuples.Pair;
-import sun.applet.Main;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -40,22 +36,24 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static org.ethereum.beacon.test.SilentAsserts.assertEquals;
-import static org.ethereum.beacon.test.runner.hash.TreeHashContainerRunner.instantiateValue;
-import static org.ethereum.beacon.test.runner.hash.TreeHashContainerRunner.parseBasicFieldType;
+import static org.ethereum.beacon.test.runner.hash.TreeHashBasicRunner.instantiateValue;
+import static org.ethereum.beacon.test.runner.hash.TreeHashBasicRunner.parseBasicFieldType;
 
 /** TestRunner for {@link TreeHashContainerTestCase} */
 public class TreeHashCompositeRunner implements Runner {
+  List<Pair<SSZType, Object>> nodes = new ArrayList<>();
   private TreeHashCompositeTestCase testCase;
-  private BeaconChainSpec spec;
   private SSZObjectHasher hasher;
-  private List<CustomTypeValue> fields;
-
+  private AccessorResolver accessorResolver;
+  private TypeResolver typeResolver;
+  private Integer nodeCounter = 0;
+  private SSZType rootType;
   public TreeHashCompositeRunner(TestCase testCase, BeaconChainSpec spec) {
     if (!(testCase instanceof TreeHashCompositeTestCase)) {
-      throw new RuntimeException("TestCase runner accepts only TreeHashCompositeTestCase.class as input!");
+      throw new RuntimeException(
+          "TestCase runner accepts only TreeHashCompositeTestCase.class as input!");
     }
     this.testCase = (TreeHashCompositeTestCase) testCase;
-    this.spec = spec;
     Function<BytesValue, Hash32> hashFunction = Hashes::keccak256;
     SSZHasher sszHasher =
         DefaultSSZ.createCommonSSZBuilder(spec.getConstants())
@@ -63,56 +61,153 @@ public class TreeHashCompositeRunner implements Runner {
             .withTypeResolverBuilder(
                 objects -> {
                   this.accessorResolver = objects.getValue0();
-                  this.typeResolver = new CustomTypeResolver(objects.getValue0(), objects.getValue1());
+                  this.typeResolver =
+                      new CustomTypeResolver(objects.getValue0(), objects.getValue1());
                   return typeResolver;
                 })
             .buildHasher(hashFunction);
-
     this.hasher = new SSZObjectHasher(sszHasher);
   }
 
-  class CustomTypeResolver extends SimpleTypeResolver {
-    private AccessorResolver accessorResolver;
-
-    public CustomTypeResolver(AccessorResolver accessorResolver, ExternalVarResolver externalVarResolver) {
-      super(accessorResolver, externalVarResolver);
-      this.accessorResolver = accessorResolver;
-    }
-
-    @Override
-    public SSZType resolveSSZType(SSZField descriptor) {
-      if (descriptor.getRawClass().equals(MainMock.class)) {
-        return rootType;
+  private SSZType parseCurrentType(Object typeObj, Object valueObj) {
+    String currentName = String.valueOf(nodeCounter);
+    SSZType result;
+    if (new HashSet(Arrays.asList(typeObj.getClass().getInterfaces())).contains(List.class)) {
+      List objList = (List) typeObj;
+      List valueList = (List) valueObj;
+      SSZField descriptor = new SSZField(ArrayList.class, null, null, null, currentName, null);
+      TestListAccessor listAccessor =
+          new TestListAccessor(() -> parseCurrentType(objList.get(0), valueObj), () -> valueList);
+      if (objList.size() == 1) {
+        this.nodeCounter++;
+        result =
+            new SSZCustomListType(
+                descriptor,
+                typeResolver,
+                listAccessor,
+                -1,
+                () -> parseCurrentType(objList.get(0), valueObj));
+        nodes.add(Pair.with(result, valueObj));
+        return result;
+      } else if (objList.size() == 2) {
+        this.nodeCounter++;
+        result =
+            new SSZCustomListType(
+                descriptor,
+                typeResolver,
+                listAccessor,
+                (Integer) objList.get(1),
+                () -> parseCurrentType(objList.get(0), valueObj));
+        nodes.add(Pair.with(result, valueObj));
+        return result;
       } else {
-        return super.resolveSSZType(descriptor); // FIXME: ???
+        throw new RuntimeException("Cannot parse " + typeObj + " type");
       }
+    } else if (new HashSet(Arrays.asList(typeObj.getClass().getInterfaces())).contains(Map.class)) {
+      Map typeMap = (Map) typeObj;
+      Map valueMap = (Map) valueObj;
+      SSZField descriptor =
+          new SSZField(
+              TreeHashContainerRunner.SerializableContainerMock.class,
+              null,
+              null,
+              null,
+              currentName,
+              null);
+
+      Supplier<List<SSZType>> childTypeSupplier =
+          () -> {
+            List<Map.Entry<String, String>> entries =
+                (List<Map.Entry<String, String>>)
+                    typeMap.entrySet().stream()
+                        .sorted(
+                            Comparator.comparingInt(
+                                (Map.Entry<String, String> entry) -> {
+                                  return Integer.valueOf(entry.getKey().substring(5)); // "fieldXXX"
+                                }))
+                        .collect(Collectors.toList());
+            return entries.stream()
+                .map(entry -> parseCurrentType(entry.getValue(), valueMap.get(entry.getKey())))
+                .collect(Collectors.toList());
+          };
+      SSZContainerAccessor containerAccessor =
+          new TestContainerAccessor(
+              childTypeSupplier,
+              () -> {
+                List<Map.Entry<String, String>> entries =
+                    (List<Map.Entry<String, String>>)
+                        valueMap.entrySet().stream()
+                            .sorted(
+                                Comparator.comparingInt(
+                                    (Map.Entry<String, String> entry) -> {
+                                      return Integer.valueOf(
+                                          entry.getKey().substring(5)); // "fieldXXX"
+                                    }))
+                            .collect(Collectors.toList());
+                return entries.stream()
+                    .map(
+                        entry -> {
+                          Object type = typeMap.get(entry.getKey());
+                          if (type instanceof String) {
+                            return instantiateValue(
+                                entry.getValue(), (String) typeMap.get(entry.getKey()));
+                          } else {
+                            return null;
+                          }
+                        })
+                    .collect(Collectors.toList());
+              });
+      SSZCustomContainerType customContainerType =
+          new SSZCustomContainerType(
+              typeResolver, descriptor, containerAccessor, childTypeSupplier);
+      this.nodeCounter++;
+      result = customContainerType;
+      nodes.add(Pair.with(result, valueObj));
+      return result;
+    } else if (typeObj instanceof String) {
+      this.nodeCounter++;
+      SSZField basic = parseBasicFieldType((String) typeObj);
+      SSZField input =
+          new SSZField(
+              basic.getRawClass(),
+              basic.getFieldAnnotation(),
+              basic.getExtraType(),
+              basic.getExtraSize(),
+              currentName,
+              null);
+      result = typeResolver.resolveSSZType(input);
+      nodes.add(Pair.with(result, valueObj));
+      return result;
+    } else {
+      throw new RuntimeException("Cannot parse " + typeObj + " type");
     }
   }
 
-  static class CustomTypeValue {
-    private Object type;
-    private Object value;
+  public Optional<String> run() {
+    this.nodeCounter = 0;
+    this.nodes = new ArrayList<>();
+    this.rootType = parseCurrentType(testCase.getType(), testCase.getValue());
+    System.out.println(rootType.dumpHierarchy());
+    // TODO: instead we should move along value
+//    this.rootType = parseCurrentValue(testCase.getValue(), testCase.getType());
 
-    public Object getType() {
-      return type;
+    String expected = testCase.getRoot();
+    if (!expected.startsWith("0x")) {
+      expected = "0x" + expected;
     }
-
-    public void setType(Object type) {
-      this.type = type;
-    }
-
-    public Object getValue() {
-      return value;
-    }
-
-    public void setValue(Object value) {
-      this.value = value;
-    }
+    String actual = hasher.getHash(new MainMock()).toString();
+    return assertEquals(expected, actual);
   }
 
   static class SSZCustomListType extends SSZListType {
     Supplier<SSZType> elementTypeSupplier;
-    public SSZCustomListType(SSZField descriptor, TypeResolver typeResolver, SSZListAccessor accessor, int vectorLength, Supplier<SSZType> elementTypeSupplier) {
+
+    public SSZCustomListType(
+        SSZField descriptor,
+        TypeResolver typeResolver,
+        SSZListAccessor accessor,
+        int vectorLength,
+        Supplier<SSZType> elementTypeSupplier) {
       super(descriptor, typeResolver, accessor, vectorLength);
       this.elementTypeSupplier = elementTypeSupplier;
     }
@@ -122,12 +217,121 @@ public class TreeHashCompositeRunner implements Runner {
       return elementTypeSupplier.get();
     }
   }
+  //
+  //  private Pair<Object, SSZType> parseCurrentValue(Object valueObj, Object typeObj) {
+  //    String currentName = String.valueOf(nodeCounter);
+  //    if (new HashSet(Arrays.asList(valueObj.getClass().getInterfaces())).contains(List.class)) {
+  //      List objList = (List) typeObj;
+  //      List valueList = (List) valueObj;
+  //      SSZField descriptor = new SSZField(ArrayList.class, null, null, null, currentName, null);
+  //      TestListAccessor listAccessor = new TestListAccessor(
+  //          () -> parseCurrentValue(valueList.get(0), valueObj),
+  //          () -> valueList
+  //      );
+  //      if (objList.size() == 1) {
+  //        this.nodeCounter++;
+  //        result = new SSZCustomListType(
+  //            descriptor,
+  //            typeResolver,
+  //            listAccessor,
+  //            -1,
+  //            () -> parseCurrentType(objList.get(0), valueObj)
+  //        );
+  //        nodes.add(Pair.with(result, valueObj));
+  //        return result;
+  //      } else if (objList.size() == 2) {
+  //        this.nodeCounter++;
+  //        result = new SSZCustomListType(
+  //            descriptor,
+  //            typeResolver,
+  //            listAccessor,
+  //            (Integer) objList.get(1),
+  //            () -> parseCurrentType(objList.get(0), valueObj)
+  //        );
+  //        nodes.add(Pair.with(result, valueObj));
+  //        return result;
+  //      } else {
+  //        throw new RuntimeException("Cannot parse " + typeObj + " type");
+  //      }
+  //    } else if (new
+  // HashSet(Arrays.asList(typeObj.getClass().getInterfaces())).contains(Map.class)) {
+  //      Map typeMap = (Map) typeObj;
+  //      Map valueMap = (Map) valueObj;
+  //      SSZField descriptor = new
+  // SSZField(TreeHashContainerRunner.SerializableContainerMock.class, null, null, null,
+  // currentName, null);
+  //
+  //      Supplier<List<SSZType>> childTypeSupplier = () -> {
+  //        List<Map.Entry<String, String>> entries = (List<Map.Entry<String, String>>)
+  // typeMap.entrySet().stream().sorted(Comparator.comparingInt((Map.Entry<String, String> entry) ->
+  // {
+  //          return Integer.valueOf(entry.getKey().substring(5));// "fieldXXX"
+  //        })).collect(Collectors.toList());
+  //        return entries.stream().map(entry -> parseCurrentType(entry.getValue(),
+  // valueMap.get(entry.getKey()))).collect(Collectors.toList());
+  //      };
+  //      SSZContainerAccessor containerAccessor =
+  //          new TestContainerAccessor(
+  //              childTypeSupplier,
+  //              () -> {
+  //                List<Map.Entry<String, String>> entries =
+  //                    (List<Map.Entry<String, String>>)
+  //                        valueMap.entrySet().stream()
+  //                            .sorted(
+  //                                Comparator.comparingInt(
+  //                                    (Map.Entry<String, String> entry) -> {
+  //                                      return Integer.valueOf(
+  //                                          entry.getKey().substring(5)); // "fieldXXX"
+  //                                    }))
+  //                            .collect(Collectors.toList());
+  //                return entries.stream()
+  //                    .map(
+  //                        entry -> {
+  //                          Object type = typeMap.get(entry.getKey());
+  //                          if (type instanceof String) {
+  //                            return instantiateValue(entry.getValue(), (String)
+  // typeMap.get(entry.getKey()));
+  //                          } else {
+  //                            return null;
+  //                          }
+  //                        })
+  //                    .collect(Collectors.toList());
+  //              });
+  //      SSZCustomContainerType customContainerType = new SSZCustomContainerType(typeResolver,
+  // descriptor, containerAccessor,
+  //          childTypeSupplier);
+  //      this.nodeCounter++;
+  //      result = customContainerType;
+  //      nodes.add(Pair.with(result, valueObj));
+  //      return result;
+  //    } else if (typeObj instanceof String) {
+  //      this.nodeCounter++;
+  //      SSZField basic = parseBasicFieldType((String) typeObj);
+  //      SSZField input = new SSZField(
+  //          basic.getRawClass(),
+  //          basic.getFieldAnnotation(),
+  //          basic.getExtraType(),
+  //          basic.getExtraSize(),
+  //          currentName,
+  //          null
+  //      );
+  //      result = typeResolver.resolveSSZType(input);
+  //      nodes.add(Pair.with(result, valueObj));
+  //      return result;
+  //    } else {
+  //      throw new RuntimeException("Cannot parse " + typeObj + " type");
+  //    }
+  //  }
 
   static class SSZCustomContainerType extends SSZContainerType {
     Supplier<List<SSZType>> elementTypeSupplier;
     List<SSZType> types = null;
 
-    public SSZCustomContainerType(TypeResolver typeResolver, SSZField descriptor, SSZContainerAccessor accessor, Supplier<List<SSZType>> elementTypeSupplier) {
+    public SSZCustomContainerType(
+        TypeResolver typeResolver,
+        SSZField descriptor,
+        SSZContainerAccessor accessor,
+        Supplier<List<SSZType>> elementTypeSupplier) {
       super(typeResolver, descriptor, accessor);
       this.elementTypeSupplier = elementTypeSupplier;
     }
@@ -157,213 +361,14 @@ public class TreeHashCompositeRunner implements Runner {
       return super.getChild(value, idx);
     }
   }
-  private AccessorResolver accessorResolver;
-  private TypeResolver typeResolver;
-
-  private Integer nodeCounter = 0;
-  List<Pair<SSZType, Object>> nodes = new ArrayList<>();
-
-  private SSZType parseCurrentType(Object typeObj, Object valueObj) {
-    String currentName = String.valueOf(nodeCounter);
-    SSZType result;
-    if (new HashSet(Arrays.asList(typeObj.getClass().getInterfaces())).contains(List.class)) {
-      List objList = (List) typeObj;
-      List valueList = (List) valueObj;
-      SSZField descriptor = new SSZField(ArrayList.class, null, null, null, currentName, null);
-      TestListAccessor listAccessor = new TestListAccessor(
-          () -> parseCurrentType(objList.get(0), valueObj),
-          () -> valueList
-      );
-      if (objList.size() == 1) {
-        this.nodeCounter++;
-        result = new SSZCustomListType(
-            descriptor,
-            typeResolver,
-            listAccessor,
-            -1,
-            () -> parseCurrentType(objList.get(0), valueObj)
-        );
-        nodes.add(Pair.with(result, valueObj));
-        return result;
-      } else if (objList.size() == 2) {
-        this.nodeCounter++;
-        result = new SSZCustomListType(
-            descriptor,
-            typeResolver,
-            listAccessor,
-            (Integer) objList.get(1),
-            () -> parseCurrentType(objList.get(0), valueObj)
-        );
-        nodes.add(Pair.with(result, valueObj));
-        return result;
-      } else {
-        throw new RuntimeException("Cannot parse " + typeObj + " type");
-      }
-    } else if (new HashSet(Arrays.asList(typeObj.getClass().getInterfaces())).contains(Map.class)) {
-      Map typeMap = (Map) typeObj;
-      Map valueMap = (Map) valueObj;
-      SSZField descriptor = new SSZField(TreeHashContainerRunner.SerializableContainerMock.class, null, null, null, currentName, null);
-
-      Supplier<List<SSZType>> childTypeSupplier = () -> {
-        List<Map.Entry<String, String>> entries = (List<Map.Entry<String, String>>) typeMap.entrySet().stream().sorted(Comparator.comparingInt((Map.Entry<String, String> entry) -> {
-          return Integer.valueOf(entry.getKey().substring(5));// "fieldXXX"
-        })).collect(Collectors.toList());
-        return entries.stream().map(entry -> parseCurrentType(entry.getValue(), valueMap.get(entry.getKey()))).collect(Collectors.toList());
-      };
-      SSZContainerAccessor containerAccessor =
-          new TestContainerAccessor(
-              childTypeSupplier,
-              () -> {
-                List<Map.Entry<String, String>> entries =
-                    (List<Map.Entry<String, String>>)
-                        valueMap.entrySet().stream()
-                            .sorted(
-                                Comparator.comparingInt(
-                                    (Map.Entry<String, String> entry) -> {
-                                      return Integer.valueOf(
-                                          entry.getKey().substring(5)); // "fieldXXX"
-                                    }))
-                            .collect(Collectors.toList());
-                return entries.stream()
-                    .map(
-                        entry -> {
-                          Object type = typeMap.get(entry.getKey());
-                          if (type instanceof String) {
-                            return instantiateValue(entry.getValue(), (String) typeMap.get(entry.getKey()));
-                          } else {
-                            return null;
-                          }
-                        })
-                    .collect(Collectors.toList());
-              });
-      SSZCustomContainerType customContainerType = new SSZCustomContainerType(typeResolver, descriptor, containerAccessor,
-          childTypeSupplier);
-      this.nodeCounter++;
-      result = customContainerType;
-      nodes.add(Pair.with(result, valueObj));
-      return result;
-    } else if (typeObj instanceof String) {
-      this.nodeCounter++;
-      SSZField basic = parseBasicFieldType((String) typeObj);
-      SSZField input = new SSZField(
-          basic.getRawClass(),
-          basic.getFieldAnnotation(),
-          basic.getExtraType(),
-          basic.getExtraSize(),
-          currentName,
-          null
-      );
-      result = typeResolver.resolveSSZType(input);
-      nodes.add(Pair.with(result, valueObj));
-      return result;
-    } else {
-      throw new RuntimeException("Cannot parse " + typeObj + " type");
-    }
-  }
-//
-//  private Pair<Object, SSZType> parseCurrentValue(Object valueObj, Object typeObj) {
-//    String currentName = String.valueOf(nodeCounter);
-//    if (new HashSet(Arrays.asList(valueObj.getClass().getInterfaces())).contains(List.class)) {
-//      List objList = (List) typeObj;
-//      List valueList = (List) valueObj;
-//      SSZField descriptor = new SSZField(ArrayList.class, null, null, null, currentName, null);
-//      TestListAccessor listAccessor = new TestListAccessor(
-//          () -> parseCurrentValue(valueList.get(0), valueObj),
-//          () -> valueList
-//      );
-//      if (objList.size() == 1) {
-//        this.nodeCounter++;
-//        result = new SSZCustomListType(
-//            descriptor,
-//            typeResolver,
-//            listAccessor,
-//            -1,
-//            () -> parseCurrentType(objList.get(0), valueObj)
-//        );
-//        nodes.add(Pair.with(result, valueObj));
-//        return result;
-//      } else if (objList.size() == 2) {
-//        this.nodeCounter++;
-//        result = new SSZCustomListType(
-//            descriptor,
-//            typeResolver,
-//            listAccessor,
-//            (Integer) objList.get(1),
-//            () -> parseCurrentType(objList.get(0), valueObj)
-//        );
-//        nodes.add(Pair.with(result, valueObj));
-//        return result;
-//      } else {
-//        throw new RuntimeException("Cannot parse " + typeObj + " type");
-//      }
-//    } else if (new HashSet(Arrays.asList(typeObj.getClass().getInterfaces())).contains(Map.class)) {
-//      Map typeMap = (Map) typeObj;
-//      Map valueMap = (Map) valueObj;
-//      SSZField descriptor = new SSZField(TreeHashContainerRunner.SerializableContainerMock.class, null, null, null, currentName, null);
-//
-//      Supplier<List<SSZType>> childTypeSupplier = () -> {
-//        List<Map.Entry<String, String>> entries = (List<Map.Entry<String, String>>) typeMap.entrySet().stream().sorted(Comparator.comparingInt((Map.Entry<String, String> entry) -> {
-//          return Integer.valueOf(entry.getKey().substring(5));// "fieldXXX"
-//        })).collect(Collectors.toList());
-//        return entries.stream().map(entry -> parseCurrentType(entry.getValue(), valueMap.get(entry.getKey()))).collect(Collectors.toList());
-//      };
-//      SSZContainerAccessor containerAccessor =
-//          new TestContainerAccessor(
-//              childTypeSupplier,
-//              () -> {
-//                List<Map.Entry<String, String>> entries =
-//                    (List<Map.Entry<String, String>>)
-//                        valueMap.entrySet().stream()
-//                            .sorted(
-//                                Comparator.comparingInt(
-//                                    (Map.Entry<String, String> entry) -> {
-//                                      return Integer.valueOf(
-//                                          entry.getKey().substring(5)); // "fieldXXX"
-//                                    }))
-//                            .collect(Collectors.toList());
-//                return entries.stream()
-//                    .map(
-//                        entry -> {
-//                          Object type = typeMap.get(entry.getKey());
-//                          if (type instanceof String) {
-//                            return instantiateValue(entry.getValue(), (String) typeMap.get(entry.getKey()));
-//                          } else {
-//                            return null;
-//                          }
-//                        })
-//                    .collect(Collectors.toList());
-//              });
-//      SSZCustomContainerType customContainerType = new SSZCustomContainerType(typeResolver, descriptor, containerAccessor,
-//          childTypeSupplier);
-//      this.nodeCounter++;
-//      result = customContainerType;
-//      nodes.add(Pair.with(result, valueObj));
-//      return result;
-//    } else if (typeObj instanceof String) {
-//      this.nodeCounter++;
-//      SSZField basic = parseBasicFieldType((String) typeObj);
-//      SSZField input = new SSZField(
-//          basic.getRawClass(),
-//          basic.getFieldAnnotation(),
-//          basic.getExtraType(),
-//          basic.getExtraSize(),
-//          currentName,
-//          null
-//      );
-//      result = typeResolver.resolveSSZType(input);
-//      nodes.add(Pair.with(result, valueObj));
-//      return result;
-//    } else {
-//      throw new RuntimeException("Cannot parse " + typeObj + " type");
-//    }
-//  }
 
   static class TestContainerAccessor implements SSZContainerAccessor {
     private Supplier<List<SSZType>> elementTypeSupplier;
     private Supplier<List<Object>> elementSupplier;
     private List<Object> elements;
 
-    public TestContainerAccessor(Supplier<List<SSZType>> elementTypeSupplier, Supplier<List<Object>> elementSupplier) {
+    public TestContainerAccessor(
+        Supplier<List<SSZType>> elementTypeSupplier, Supplier<List<Object>> elementSupplier) {
       this.elementTypeSupplier = elementTypeSupplier;
       this.elementSupplier = elementSupplier;
     }
@@ -373,12 +378,14 @@ public class TreeHashCompositeRunner implements Runner {
       return new ContainerAccessor() {
         @Override
         public List<SSZField> getChildDescriptors() {
-          return elementTypeSupplier.get().stream().map(SSZType::getTypeDescriptor).collect(Collectors.toList());
+          return elementTypeSupplier.get().stream()
+              .map(SSZType::getTypeDescriptor)
+              .collect(Collectors.toList());
         }
 
         private void cacheElements() {
           if (elements == null) {
-            elements  = elementSupplier.get();
+            elements = elementSupplier.get();
           }
         }
 
@@ -406,14 +413,15 @@ public class TreeHashCompositeRunner implements Runner {
     private Supplier<List<Object>> elementSupplier;
     private List<Object> elements;
 
-    public TestListAccessor(Supplier<SSZType> elementTypeSupplier, Supplier<List<Object>> elementSupplier) {
+    public TestListAccessor(
+        Supplier<SSZType> elementTypeSupplier, Supplier<List<Object>> elementSupplier) {
       this.elementTypeSupplier = elementTypeSupplier;
       this.elementSupplier = elementSupplier;
     }
 
     private void cacheElements() {
       if (elements == null) {
-        elements  = elementSupplier.get();
+        elements = elementSupplier.get();
       }
     }
 
@@ -446,22 +454,24 @@ public class TreeHashCompositeRunner implements Runner {
   }
 
   @SSZSerializable
-  static class MainMock {
-  }
+  static class MainMock {}
 
-  private SSZType rootType;
-  public Optional<String> run() {
-    this.nodeCounter = 0;
-    this.nodes = new ArrayList<>();
-    this.rootType = parseCurrentType(testCase.getType(), testCase.getValue());
-    System.out.println(rootType.dumpHierarchy());
-//    this.rootType = parseCurrentValue(testCase.getValue(), testCase.getType());
+  class CustomTypeResolver extends SimpleTypeResolver {
+    private AccessorResolver accessorResolver;
 
-    String expected = testCase.getRoot();
-    if (!expected.startsWith("0x")) {
-      expected = "0x" + expected;
+    public CustomTypeResolver(
+        AccessorResolver accessorResolver, ExternalVarResolver externalVarResolver) {
+      super(accessorResolver, externalVarResolver);
+      this.accessorResolver = accessorResolver;
     }
-    String actual = hasher.getHash(new MainMock()).toString();
-    return assertEquals(expected, actual);
+
+    @Override
+    public SSZType resolveSSZType(SSZField descriptor) {
+      if (descriptor.getRawClass().equals(MainMock.class)) {
+        return rootType;
+      } else {
+        return super.resolveSSZType(descriptor);
+      }
+    }
   }
 }

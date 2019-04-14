@@ -19,7 +19,6 @@ import org.ethereum.beacon.test.type.hash.TreeHashContainerTestCase;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -32,20 +31,21 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.ethereum.beacon.test.SilentAsserts.assertEquals;
+import static org.ethereum.beacon.test.runner.hash.TreeHashBasicRunner.instantiateValue;
+import static org.ethereum.beacon.test.runner.hash.TreeHashBasicRunner.parseBasicFieldType;
 
 /** TestRunner for {@link TreeHashContainerTestCase} */
 public class TreeHashContainerRunner implements Runner {
   private TreeHashContainerTestCase testCase;
-  private BeaconChainSpec spec;
   private SSZObjectHasher hasher;
   private List<CustomTypeValue> fields;
 
   public TreeHashContainerRunner(TestCase testCase, BeaconChainSpec spec) {
     if (!(testCase instanceof TreeHashContainerTestCase)) {
-      throw new RuntimeException("TestCase runner accepts only TreeHashContainerTestCase.class as input!");
+      throw new RuntimeException(
+          "TestCase runner accepts only TreeHashContainerTestCase.class as input!");
     }
     this.testCase = (TreeHashContainerTestCase) testCase;
-    this.spec = spec;
     Function<BytesValue, Hash32> hashFunction = Hashes::keccak256;
     SSZHasher sszHasher =
         DefaultSSZ.createCommonSSZBuilder(spec.getConstants())
@@ -59,23 +59,40 @@ public class TreeHashContainerRunner implements Runner {
     this.hasher = new SSZObjectHasher(sszHasher);
   }
 
-  class CustomTypeResolver extends SimpleTypeResolver {
-    private AccessorResolver accessorResolver;
+  public Optional<String> run() {
+    // Guaranteeing order when matching type and value content maps
+    List<CustomTypeValue> entries = new ArrayList<>();
+    Map<String, CustomTypeValue> entrySet = new HashMap<>();
+    testCase
+        .getType()
+        .forEach(
+            (key, value) -> {
+              CustomTypeValue entry = new CustomTypeValue();
+              entry.setType(value);
+              entrySet.put(key, entry);
+            });
+    testCase
+        .getValue()
+        .forEach(
+            (key, value) -> {
+              CustomTypeValue entry = entrySet.get(key);
+              entry.setValue(value);
+            });
+    entrySet.entrySet().stream()
+        .sorted(
+            Comparator.comparingInt(
+                (Map.Entry<String, CustomTypeValue> entry) -> {
+                  return Integer.valueOf(entry.getKey().substring(5)); // "fieldXXX"
+                }))
+        .forEachOrdered(e -> entries.add(e.getValue()));
+    this.fields = entries;
 
-    public CustomTypeResolver(AccessorResolver accessorResolver, ExternalVarResolver externalVarResolver) {
-      super(accessorResolver, externalVarResolver);
-      this.accessorResolver = accessorResolver;
+    String expected = testCase.getRoot();
+    if (!expected.startsWith("0x")) {
+      expected = "0x" + expected;
     }
-
-    @Override
-    public SSZType resolveSSZType(SSZField descriptor) {
-      if (new HashSet(Arrays.asList(descriptor.getRawClass().getInterfaces())).contains(List.class)) {
-        TestContainerAccessor containerAccessor = new TestContainerAccessor(fields);
-        return new SSZContainerType(this, descriptor, containerAccessor);
-      } else {
-        return super.resolveSSZType(descriptor);
-      }
-    }
+    String actual = hasher.getHash(entries).toString();
+    return assertEquals(expected, actual);
   }
 
   static class TestContainerAccessor implements SSZContainerAccessor {
@@ -90,10 +107,13 @@ public class TreeHashContainerRunner implements Runner {
       return new ContainerAccessor() {
         @Override
         public List<SSZField> getChildDescriptors() {
-          return fields.stream().map(field -> {
-            String type = field.getType();
-            return parseBasicFieldType(type);
-          }).collect(Collectors.toList());
+          return fields.stream()
+              .map(
+                  field -> {
+                    String type = field.getType();
+                    return parseBasicFieldType(type);
+                  })
+              .collect(Collectors.toList());
         }
 
         @Override
@@ -114,35 +134,6 @@ public class TreeHashContainerRunner implements Runner {
     public boolean isSupported(SSZField field) {
       return field.getRawClass().equals(SerializableContainerMock.class);
     }
-  }
-
-  public static SSZField parseBasicFieldType(String type) {
-    if (type.equals("bool")) {
-      return new SSZField(Boolean.class, null, null, null, "value", "getValue");
-    } else if (type.startsWith("uint")) {
-      return new SSZField(
-          BigInteger.class,
-          null,
-          "uint",
-          Integer.valueOf(type.substring(4)),
-          "value",
-          "getValue");
-    } else {
-      throw new RuntimeException("Type " + type + " is not supported");
-    }
-  }
-
-  public static Object instantiateValue(String value, String type) {
-    Object res;
-    if (type.equals("bool")) {
-      res = Boolean.valueOf(value);
-    } else if (type.startsWith("uint")) {
-      res = new BigInteger(value);
-    } else {
-      throw new RuntimeException("Type " + type + " is not supported");
-    }
-
-    return res;
   }
 
   static class CustomTypeValue {
@@ -167,33 +158,26 @@ public class TreeHashContainerRunner implements Runner {
   }
 
   @SSZSerializable
-  public static class SerializableContainerMock {
+  public static class SerializableContainerMock {}
 
-  }
+  class CustomTypeResolver extends SimpleTypeResolver {
+    private AccessorResolver accessorResolver;
 
-  public Optional<String> run() {
-    // Guaranteeing order
-    List<CustomTypeValue> entries = new ArrayList<>();
-    Map<String, CustomTypeValue> entrySet = new HashMap<>();
-    testCase.getType().forEach((key, value) -> {
-      CustomTypeValue entry = new CustomTypeValue();
-      entry.setType(value);
-      entrySet.put(key, entry);
-    });
-    testCase.getValue().forEach((key, value) -> {
-      CustomTypeValue entry = entrySet.get(key);
-      entry.setValue(value);
-    });
-    entrySet.entrySet().stream().sorted(Comparator.comparingInt((Map.Entry<String, CustomTypeValue> entry) -> {
-      return Integer.valueOf(entry.getKey().substring(5));// "fieldXXX"
-    })).forEachOrdered(e -> entries.add(e.getValue()));
-    this.fields = entries;
-
-    String expected = testCase.getRoot();
-    if (!expected.startsWith("0x")) {
-      expected = "0x" + expected;
+    public CustomTypeResolver(
+        AccessorResolver accessorResolver, ExternalVarResolver externalVarResolver) {
+      super(accessorResolver, externalVarResolver);
+      this.accessorResolver = accessorResolver;
     }
-    String actual = hasher.getHash(entries).toString();
-    return assertEquals(expected, actual);
+
+    @Override
+    public SSZType resolveSSZType(SSZField descriptor) {
+      if (new HashSet(Arrays.asList(descriptor.getRawClass().getInterfaces()))
+          .contains(List.class)) {
+        TestContainerAccessor containerAccessor = new TestContainerAccessor(fields);
+        return new SSZContainerType(this, descriptor, containerAccessor);
+      } else {
+        return super.resolveSSZType(descriptor);
+      }
+    }
   }
 }

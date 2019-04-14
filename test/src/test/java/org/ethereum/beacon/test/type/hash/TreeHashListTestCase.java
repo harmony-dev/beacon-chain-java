@@ -4,9 +4,7 @@ import org.ethereum.beacon.test.type.TestCase;
 
 import java.util.List;
 
-/**
- * Tree hash test case
- */
+/** Tree hash list/vector test case */
 public class TreeHashListTestCase implements TestCase {
   private List<String> type;
   private String root;

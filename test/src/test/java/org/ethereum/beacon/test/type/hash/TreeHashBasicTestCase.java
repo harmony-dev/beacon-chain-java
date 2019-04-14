@@ -4,10 +4,8 @@ import org.ethereum.beacon.test.type.TestCase;
 
 import java.util.List;
 
-/**
- * Tree hash test case
- */
-public class TreeHashSimpleTestCase implements TestCase {
+/** Tree hash test case with basic value like number */
+public class TreeHashBasicTestCase implements TestCase {
   private String type;
   private String root;
   private List<String> tags;

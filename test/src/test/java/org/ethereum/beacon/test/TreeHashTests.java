@@ -4,12 +4,12 @@ import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.test.runner.hash.TreeHashCompositeRunner;
 import org.ethereum.beacon.test.runner.hash.TreeHashContainerRunner;
 import org.ethereum.beacon.test.runner.hash.TreeHashListRunner;
-import org.ethereum.beacon.test.runner.hash.TreeHashSimpleRunner;
+import org.ethereum.beacon.test.runner.hash.TreeHashBasicRunner;
 import org.ethereum.beacon.test.runner.hash.TreeHashVectorRunner;
 import org.ethereum.beacon.test.type.hash.TreeHashCompositeTest;
 import org.ethereum.beacon.test.type.hash.TreeHashContainerTest;
 import org.ethereum.beacon.test.type.hash.TreeHashListTest;
-import org.ethereum.beacon.test.type.hash.TreeHashSimpleTest;
+import org.ethereum.beacon.test.type.hash.TreeHashBasicTest;
 import org.junit.Test;
 
 import java.nio.file.Path;
@@ -27,17 +27,18 @@ public class TreeHashTests extends TestUtils {
   }
 
   @Test
-  public void testSimpleTypeTreeHash() {
+  public void testBasicTypesTreeHash() {
     Path testFilePath = Paths.get(PATH_TO_TESTS, TESTS_DIR, "basic_types.yaml");
-    TreeHashSimpleTest test = readTest(getResourceFile(testFilePath.toString()), TreeHashSimpleTest.class);
+    TreeHashBasicTest test =
+        readTest(getResourceFile(testFilePath.toString()), TreeHashBasicTest.class);
     Optional<String> errors =
         runAllCasesInTest(
             test,
             testCase -> {
-              TreeHashSimpleRunner testRunner = new TreeHashSimpleRunner(testCase, spec);
+              TreeHashBasicRunner testRunner = new TreeHashBasicRunner(testCase, spec);
               return testRunner.run();
             },
-            TreeHashSimpleTest.class);
+            TreeHashBasicTest.class);
     if (errors.isPresent()) {
       System.out.println(errors.get());
       fail();
@@ -47,7 +48,8 @@ public class TreeHashTests extends TestUtils {
   @Test
   public void testListTypeTreeHash() {
     Path testFilePath = Paths.get(PATH_TO_TESTS, TESTS_DIR, "basic_lists.yaml");
-    TreeHashListTest test = readTest(getResourceFile(testFilePath.toString()), TreeHashListTest.class);
+    TreeHashListTest test =
+        readTest(getResourceFile(testFilePath.toString()), TreeHashListTest.class);
     Optional<String> errors =
         runAllCasesInTest(
             test,
@@ -65,7 +67,8 @@ public class TreeHashTests extends TestUtils {
   @Test
   public void testVectorTypeTreeHash() {
     Path testFilePath = Paths.get(PATH_TO_TESTS, TESTS_DIR, "basic_vectors.yaml");
-    TreeHashListTest test = readTest(getResourceFile(testFilePath.toString()), TreeHashListTest.class);
+    TreeHashListTest test =
+        readTest(getResourceFile(testFilePath.toString()), TreeHashListTest.class);
     Optional<String> errors =
         runAllCasesInTest(
             test,
@@ -83,7 +86,8 @@ public class TreeHashTests extends TestUtils {
   @Test
   public void testContainerTypeTreeHash() {
     Path testFilePath = Paths.get(PATH_TO_TESTS, TESTS_DIR, "basic_containers.yaml");
-    TreeHashContainerTest test = readTest(getResourceFile(testFilePath.toString()), TreeHashContainerTest.class);
+    TreeHashContainerTest test =
+        readTest(getResourceFile(testFilePath.toString()), TreeHashContainerTest.class);
     Optional<String> errors =
         runAllCasesInTest(
             test,
@@ -101,7 +105,8 @@ public class TreeHashTests extends TestUtils {
   @Test
   public void testNestedCompositeTypeTreeHash() {
     Path testFilePath = Paths.get(PATH_TO_TESTS, TESTS_DIR, "nested_composites.yaml");
-    TreeHashCompositeTest test = readTest(getResourceFile(testFilePath.toString()), TreeHashCompositeTest.class);
+    TreeHashCompositeTest test =
+        readTest(getResourceFile(testFilePath.toString()), TreeHashCompositeTest.class);
     Optional<String> errors =
         runAllCasesInTest(
             test,

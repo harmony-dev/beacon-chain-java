@@ -5,9 +5,7 @@ import org.ethereum.beacon.test.type.TestSkeleton;
 
 import java.util.List;
 
-/**
- * Container for tree hash tests
- */
+/** Tree hash tests with containers */
 public class TreeHashContainerTest extends TestSkeleton {
   public List<TestCase> getTestCases() {
     return testCases;
