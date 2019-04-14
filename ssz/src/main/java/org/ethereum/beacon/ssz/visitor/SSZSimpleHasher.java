@@ -41,7 +41,6 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
       BiFunction<Integer, Object, MerkleTrie> childVisitor) {
     MerkleTrie merkle;
     List<BytesValue> chunks = new ArrayList<>();
-    try {
     if (type.getChildrenCount(rawValue) == 0) {
       // empty chunk list
     } else if (type.isList() && ((SSZListType) type).getElementType().isBasicType()) {
@@ -52,9 +51,6 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
       for (int i = 0; i < type.getChildrenCount(rawValue); i++) {
         chunks.add(childVisitor.apply(i, type.getChild(rawValue, i)).getFinalRoot());
       }
-    }
-    } catch (Exception ex) {
-      throw ex;
     }
     merkle = merkleize(chunks);
     if (type.isList() && !((SSZListType) type).isVector()) {
