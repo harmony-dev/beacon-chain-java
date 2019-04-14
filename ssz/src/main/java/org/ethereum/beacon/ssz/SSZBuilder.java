@@ -86,7 +86,7 @@ public class SSZBuilder {
 
   private TypeResolver typeResolver = null;
 
-  private Function<Pair<AccessorResolverRegistry, ExternalVarResolver>, TypeResolver> typeResolverBuilder = null;
+  private Function<Pair<AccessorResolver, ExternalVarResolver>, TypeResolver> typeResolverBuilder = null;
 
   private SSZVisitorHost visitorHost = null;
 
@@ -153,7 +153,7 @@ public class SSZBuilder {
     return this;
   }
 
-  public SSZBuilder withTypeResolverBuilder(Function<Pair<AccessorResolverRegistry, ExternalVarResolver>, TypeResolver> typeResolverBuilder) {
+  public SSZBuilder withTypeResolverBuilder(Function<Pair<AccessorResolver, ExternalVarResolver>, TypeResolver> typeResolverBuilder) {
     checkAlreadyInitialized();
     this.typeResolverBuilder = typeResolverBuilder;
     return this;
