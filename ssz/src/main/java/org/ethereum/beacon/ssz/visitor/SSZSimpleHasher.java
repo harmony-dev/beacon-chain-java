@@ -54,7 +54,7 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
       }
     }
     } catch (Exception ex) {
-      return null;
+      throw ex;
     }
     merkle = merkleize(chunks);
     if (type.isList() && !((SSZListType) type).isVector()) {
