@@ -10,6 +10,7 @@ import org.ethereum.beacon.test.type.hash.TreeHashCompositeTest;
 import org.ethereum.beacon.test.type.hash.TreeHashContainerTest;
 import org.ethereum.beacon.test.type.hash.TreeHashListTest;
 import org.ethereum.beacon.test.type.hash.TreeHashBasicTest;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.nio.file.Path;
@@ -27,6 +28,7 @@ public class TreeHashTests extends TestUtils {
   }
 
   @Test
+  @Ignore("Remove when basic_types.yaml is added to `eth2.0-test` repository")
   public void testBasicTypesTreeHash() {
     Path testFilePath = Paths.get(PATH_TO_TESTS, TESTS_DIR, "basic_types.yaml");
     TreeHashBasicTest test =
@@ -46,6 +48,7 @@ public class TreeHashTests extends TestUtils {
   }
 
   @Test
+  @Ignore("Remove when basic_types.yaml is added to `eth2.0-test` repository")
   public void testListTypeTreeHash() {
     Path testFilePath = Paths.get(PATH_TO_TESTS, TESTS_DIR, "basic_lists.yaml");
     TreeHashListTest test =
@@ -65,6 +68,7 @@ public class TreeHashTests extends TestUtils {
   }
 
   @Test
+  @Ignore("Remove when basic_types.yaml is added to `eth2.0-test` repository")
   public void testVectorTypeTreeHash() {
     Path testFilePath = Paths.get(PATH_TO_TESTS, TESTS_DIR, "basic_vectors.yaml");
     TreeHashListTest test =
@@ -84,6 +88,7 @@ public class TreeHashTests extends TestUtils {
   }
 
   @Test
+  @Ignore("Remove when basic_types.yaml is added to `eth2.0-test` repository")
   public void testContainerTypeTreeHash() {
     Path testFilePath = Paths.get(PATH_TO_TESTS, TESTS_DIR, "basic_containers.yaml");
     TreeHashContainerTest test =
