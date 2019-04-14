@@ -1,8 +1,8 @@
 package org.ethereum.beacon.crypto;
 
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.security.Security;
+import org.bouncycastle.jcajce.provider.digest.Keccak;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
@@ -30,10 +30,12 @@ public abstract class Hashes {
   private static byte[] digestUsingAlgorithm(BytesValue input, String algorithm) {
     MessageDigest digest;
     try {
-      digest = MessageDigest.getInstance(algorithm, PROVIDER);
+      // TODO integrate with JCA without performance loose
+//      digest = MessageDigest.getInstance(algorithm, "BC");
+      digest = new Keccak.Digest256();
       input.update(digest);
       return digest.digest();
-    } catch (NoSuchAlgorithmException e) {
+    } catch (Exception e) {
       throw new RuntimeException(e);
     }
   }

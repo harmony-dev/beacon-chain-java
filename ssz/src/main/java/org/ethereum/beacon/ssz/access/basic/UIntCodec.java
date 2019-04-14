@@ -4,9 +4,9 @@ import net.consensys.cava.bytes.Bytes;
 import net.consensys.cava.ssz.BytesSSZReaderProxy;
 import net.consensys.cava.ssz.SSZ;
 import net.consensys.cava.ssz.SSZException;
+import org.ethereum.beacon.ssz.access.SSZBasicAccessor;
 import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.SSZSchemeException;
-import org.ethereum.beacon.ssz.access.SSZCodec;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt256;
@@ -28,7 +28,7 @@ import static java.util.function.Function.identity;
  * SSZ Codec designed to work with fixed numeric data classes, check list in {@link
  * #getSupportedClasses()}
  */
-public class UIntCodec implements SSZCodec {
+public class UIntCodec implements SSZBasicAccessor {
   private static Map<Class, NumericType> classToNumericType = new HashMap<>();
   private static Set<String> supportedTypes = new HashSet<>();
   private static Set<Class> supportedClassTypes = new HashSet<>();

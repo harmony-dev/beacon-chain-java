@@ -1,7 +1,10 @@
 package org.ethereum.beacon.ssz.access.container;
 
 import java.lang.reflect.Type;
-import java.util.Map.Entry;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 import org.ethereum.beacon.ssz.SSZSchemeException;
 import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.annotation.MCVEReflect;
@@ -131,7 +134,7 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
     SSZSerializable mainAnnotation = (SSZSerializable) clazz.getAnnotation(SSZSerializable.class);
 
     // No encode parameter, build scheme field by field
-    Map<String, Method> fieldGetters = new HashMap<>();
+    Map<String, Method> fieldGetters = new LinkedHashMap<>();
     try {
       for (PropertyDescriptor pd : Introspector.getBeanInfo(clazz).getPropertyDescriptors()) {
         if (pd.getName() != null && pd.getReadMethod() != null) {
@@ -185,9 +188,50 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
     }
 
     if (explicitFieldAnnotation) {
-      for (Entry<String, Method> entry : fieldGetters.entrySet()) {
-        Method method = entry.getValue();
-        SSZ annotation = MCVEReflect.getAnnotation(method, SSZ.class);
+      class Data {
+        String name;
+        Method getter;
+        SSZ annotation;
+        Method annotationMethod;
+
+        public Data(String name, Method getter, SSZ annotation, Method annotationMethod) {
+          this.name = name;
+          this.getter = getter;
+          this.annotation = annotation;
+          this.annotationMethod = annotationMethod;
+        }
+      }
+
+      List<Data> fields = fieldGetters.entrySet().stream()
+          .map(e -> {
+            Pair<SSZ, Method> pair = MCVEReflect.getAnnotation(e.getValue(), SSZ.class);
+            if (pair != null) {
+              if (pair.getValue0().order() < 0) {
+                throw new SSZSchemeException("Order of SSZ fields declared by interface should be defined via 'order' @SSZ attribute: " + pair.getValue1());
+              }
+              return new Data(e.getKey(), e.getValue(), pair.getValue0(), pair.getValue1());
+            } else {
+              return null;
+            }
+          })
+          .filter(Objects::nonNull)
+          .sorted((d1, d2) -> {
+            if (!d1.annotationMethod.getDeclaringClass()
+                .equals(d2.annotationMethod.getDeclaringClass())) {
+              throw new SSZSchemeException(
+                  "Declaring SSZ properties from distinct interfaces is not supported yet: "
+                      + d1.annotationMethod + ", " + d2.annotationMethod);
+            }
+            if (d1.annotation.order() == d2.annotation.order()) {
+              throw new SSZSchemeException("Duplicate @SSZ.order "
+                  + d1.annotationMethod + ", " + d2.annotationMethod);
+            }
+            return Integer.compare(d1.annotation.order(), d2.annotation.order());
+          })
+          .collect(Collectors.toList());
+
+      for (Data field : fields) {
+        SSZ annotation = field.annotation;
         if (annotation != null) {
 
           String typeAnnotation = null;
@@ -196,16 +240,16 @@ public class SSZAnnotationSchemeBuilder implements SSZSchemeBuilder {
           }
 
           // Construct SSZField
-          Type fieldType = method.getGenericReturnType();
-          String name = entry.getKey();
+          Type fieldType = field.getter.getGenericReturnType();
+          String name = field.name;
           String extraType = null;
           Integer extraSize = null;
           if (typeAnnotation != null) {
-            Pair<String, Integer> extra = extractType(typeAnnotation, method.getReturnType());
+            Pair<String, Integer> extra = extractType(typeAnnotation, field.getter.getReturnType());
             extraType = extra.getValue0();
             extraSize = extra.getValue1();
           }
-          String getter = method.getName();
+          String getter = field.getter.getName();
           scheme.getFields().add(
               new SSZField(fieldType, annotation, extraType, extraSize, name, getter));
         }

@@ -4,17 +4,35 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.List;
 import org.ethereum.beacon.ssz.annotation.SSZ;
+import tech.pegasys.artemis.util.collections.ReadList;
 
+/**
+ * Type descriptor which contains all possible data gathered from Class info, annotations
+ * of a class itself or a field annotation from another Class (aka SSZ container)
+ * This data is required to correctly identify the right accessor, children types and work with
+ * raw type instance
+ */
 public class SSZField {
 
+  /**
+   * In case of list types resolves the type with the respect to the list elements type (if not empty list)
+   */
   public static SSZField resolveFromValue(Object value, Class<?> clazz) {
     if (value instanceof List && !((List) value).isEmpty()) {
       return new SSZField(
           new ParametrizedTypeImpl(clazz, ((List) value).get(0).getClass()));
     }
+    if (value instanceof ReadList && !((ReadList) value).isEmpty()) {
+      return new SSZField(
+          new ParametrizedTypeImpl(
+              clazz, ((ReadList) value).size().getClass(), ((ReadList) value).get(0).getClass()));
+    }
     return new SSZField(clazz);
   }
 
+  /**
+   * In case of list types resolves the type with the respect to the list elements type (if not empty list)
+   */
   public static SSZField resolveFromValue(Object value) {
     return resolveFromValue(value, value.getClass());
   }
@@ -80,6 +98,42 @@ public class SSZField {
         ", name='" + name + '\'' +
         ", getter='" + getter + '\'' +
         '}';
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    SSZField sszField = (SSZField) o;
+
+    if (!fieldType.equals(sszField.fieldType)) {
+      return false;
+    }
+
+    if (fieldAnnotation != null ? !fieldAnnotation.equals(sszField.fieldAnnotation)
+        : sszField.fieldAnnotation != null) {
+      return false;
+    }
+    if (extraType != null ? !extraType.equals(sszField.extraType) : sszField.extraType != null) {
+      return false;
+    }
+    if (extraSize != null ? !extraSize.equals(sszField.extraSize) : sszField.extraSize != null) {
+      return false;
+    }
+    if (name != null ? !name.equals(sszField.name) : sszField.name != null) {
+      return false;
+    }
+    return getter != null ? getter.equals(sszField.getter) : sszField.getter == null;
+  }
+
+  @Override
+  public int hashCode() {
+    return fieldType.hashCode();
   }
 
   private static class ParametrizedTypeImpl implements ParameterizedType {

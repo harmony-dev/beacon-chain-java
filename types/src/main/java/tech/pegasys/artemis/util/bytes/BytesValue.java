@@ -128,6 +128,12 @@ public interface BytesValue extends Comparable<BytesValue> {
         v2.slice(0, length - lengthInV1).copyTo(res, lengthInV1);
         return res;
       }
+
+      @Override
+      public void update(MessageDigest digest) {
+        v1.update(digest);
+        v2.update(digest);
+      }
     };
   }
 

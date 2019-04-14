@@ -1,14 +1,10 @@
 package org.ethereum.beacon.ssz.access;
 
 import java.util.Optional;
-import org.ethereum.beacon.ssz.access.SSZField;
-import org.ethereum.beacon.ssz.access.SSZCodec;
-import org.ethereum.beacon.ssz.access.SSZContainerAccessor;
-import org.ethereum.beacon.ssz.access.SSZListAccessor;
 
 public interface AccessorResolver {
 
-  SSZCodec resolveBasicTypeCodec(SSZField field);
+  Optional<SSZBasicAccessor> resolveBasicAccessor(SSZField field);
 
   Optional<SSZListAccessor> resolveListAccessor(SSZField field);
 

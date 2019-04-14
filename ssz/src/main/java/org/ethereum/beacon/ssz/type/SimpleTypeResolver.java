@@ -5,7 +5,7 @@ import org.ethereum.beacon.ssz.ExternalVarResolver;
 import org.ethereum.beacon.ssz.access.AccessorResolver;
 import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.SSZSchemeException;
-import org.ethereum.beacon.ssz.access.SSZCodec;
+import org.ethereum.beacon.ssz.access.SSZBasicAccessor;
 import org.ethereum.beacon.ssz.access.SSZContainerAccessor;
 import org.ethereum.beacon.ssz.access.SSZListAccessor;
 
@@ -22,9 +22,9 @@ public class SimpleTypeResolver implements TypeResolver {
 
   @Override
   public SSZType resolveSSZType(SSZField descriptor) {
-    SSZCodec codec = accessorResolver.resolveBasicTypeCodec(descriptor);
-    if (codec != null) {
-      return new SSZBasicType(descriptor, codec);
+    Optional<SSZBasicAccessor> codec = accessorResolver.resolveBasicAccessor(descriptor);
+    if (codec.isPresent()) {
+      return new SSZBasicType(descriptor, codec.get());
     }
 
     Optional<SSZListAccessor> listAccessor = accessorResolver.resolveListAccessor(descriptor);
@@ -45,21 +45,17 @@ public class SimpleTypeResolver implements TypeResolver {
     if (descriptor.getFieldAnnotation() == null) {
       return -1;
     }
-    String vectorSize = descriptor.getFieldAnnotation().vectorSize();
-    if (vectorSize.isEmpty()) {
-      return -1;
+    int vectorSize = descriptor.getFieldAnnotation().vectorSize();
+    if (vectorSize > 0) {
+      return vectorSize;
     }
-    if (vectorSize.startsWith("${") && vectorSize.endsWith("}")) {
+    String vectorSizeVar = descriptor.getFieldAnnotation().vectorSizeVar();
+    if (!vectorSizeVar.isEmpty()) {
       return externalVarResolver
-          .resolveMandatory(vectorSize.substring(2, vectorSize.length() - 1), Number.class)
-          .intValue();
+              .resolveMandatory(vectorSizeVar, Number.class)
+              .intValue();
     }
-    try {
-      return Integer.parseInt(vectorSize);
-    } catch (NumberFormatException e) {
-      throw new RuntimeException(
-          "Unrecognized vectorSize attribute (expected either int or '${varName}'): '"
-              + vectorSize + "'");
-    }
+
+    return -1;
   }
 }

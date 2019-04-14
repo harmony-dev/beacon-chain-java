@@ -4,25 +4,15 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 
 import java.util.List;
-import java.util.function.Function;
-import java.util.function.Supplier;
 import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.ssz.ExternalVarResolver.ExternalVariableNotDefined;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
-import org.ethereum.beacon.ssz.incremental.ObservableComposite;
-import org.ethereum.beacon.ssz.incremental.UpdateListener;
 import org.ethereum.beacon.ssz.type.SSZContainerType;
-import org.ethereum.beacon.ssz.type.SSZListType;
 import org.ethereum.beacon.ssz.type.SSZType;
 import org.ethereum.beacon.ssz.type.TypeResolver;
-import org.ethereum.beacon.ssz.visitor.SSZIncrementalHasher;
-import org.ethereum.beacon.ssz.visitor.SSZSimpleHasher;
-import org.ethereum.beacon.ssz.visitor.SSZSimpleHasher.MerkleTrie;
-import org.ethereum.beacon.ssz.visitor.SSZVisitorHost;
 import org.junit.Assert;
 import org.junit.Test;
-import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 public class SSZTypeTest {
@@ -81,9 +71,9 @@ public class SSZTypeTest {
   public static class Container2 {
     @SSZ int a1;
     @SSZ Container3 b1;
-    @SSZ(vectorSize = "2")
+    @SSZ(vectorSize = 2)
     List<Container3> c1;
-    @SSZ(vectorSize = "${testSize}")
+    @SSZ(vectorSizeVar = "testSize")
     List<Integer> c2;
     @SSZ Container3 b2;
     @SSZ int a2;
@@ -142,20 +132,6 @@ public class SSZTypeTest {
     }
   }
 
-  String dumpType(SSZType type, String indent) {
-    String ret = "";
-    ret += indent +  type.toStringHelper() + "\n";
-    if (type.isList()) {
-      ret += dumpType(((SSZListType) type).getElementType(), indent + "  ");
-    }
-    if (type.isContainer()) {
-      for (SSZType sszType : ((SSZContainerType) type).getChildTypes()) {
-        ret += dumpType(sszType, indent + "  ");
-      }
-    }
-    return ret;
-  }
-
   @Test
   public void testTypeResolver1() {
     TypeResolver typeResolver = new SSZBuilder()
@@ -163,12 +139,12 @@ public class SSZTypeTest {
             .getTypeResolver();
 
     SSZType sszType1 = typeResolver.resolveSSZType(Container1.class);
-    System.out.println(dumpType(sszType1, ""));
+    System.out.println(sszType1.dumpHierarchy());
     Assert.assertTrue(sszType1.isContainer());
     Assert.assertTrue(sszType1.isVariableSize());
 
     SSZType sszType2 = typeResolver.resolveSSZType(Container2.class);
-    System.out.println(dumpType(sszType2, ""));
+    System.out.println(sszType2.dumpHierarchy());
     Assert.assertTrue(sszType2.isContainer());
     Assert.assertTrue(sszType2.isFixedSize());
     Assert.assertTrue(sszType2.getSize() > 0);
@@ -181,7 +157,7 @@ public class SSZTypeTest {
             .getTypeResolver();
 
     SSZType sszType1 = typeResolver.resolveSSZType(Container1.class);
-    System.out.println(dumpType(sszType1, ""));
+    System.out.println(sszType1.dumpHierarchy());
   }
 
   @Test
@@ -329,7 +305,7 @@ public class SSZTypeTest {
     SSZSerializer serializer = sszBuilder.buildSerializer();
 
     SSZType sszType = sszBuilder.getTypeResolver().resolveSSZType(Impl2.class);
-    System.out.println(dumpType(sszType, ""));
+    System.out.println(sszType.dumpHierarchy());
 
     Assert.assertTrue(sszType instanceof SSZContainerType);
     SSZContainerType containerType = (SSZContainerType) sszType;
@@ -379,161 +355,6 @@ public class SSZTypeTest {
     byte[] h1hTrunc = hasher.hashTruncateLast(h1, H1.class);
 
     Assert.assertArrayEquals(h2h, h1hTrunc);
-  }
-
-  @SSZSerializable
-  public static class I1 implements ObservableComposite {
-    UpdateListener updateListener;
-
-    @SSZ private int a1;
-    @SSZ private long a2;
-    @SSZ private int a3;
-
-    public I1(int a1, long a2, int a3) {
-      this.a1 = a1;
-      this.a2 = a2;
-      this.a3 = a3;
-    }
-
-    @Override
-    public UpdateListener getUpdateListener(
-        String observerId, Supplier<UpdateListener> listenerFactory) {
-
-      return updateListener != null ? updateListener : (updateListener = listenerFactory.get());
-    }
-
-    public int getA1() {
-      return a1;
-    }
-
-    public long getA2() {
-      return a2;
-    }
-
-    public int getA3() {
-      return a3;
-    }
-
-    public void setA1(int a1) {
-      this.a1 = a1;
-      updateListener.childUpdated(0);
-    }
-
-    public void setA2(long a2) {
-      this.a2 = a2;
-      updateListener.childUpdated(1);
-    }
-
-    public void setA3(int a3) {
-      this.a3 = a3;
-      updateListener.childUpdated(2);
-    }
-  }
-
-  @Test
-  public void testHashIncremental1() throws Exception {
-    class CountingHash implements Function<BytesValue, Hash32> {
-      int counter = 0;
-
-      @Override
-      public Hash32 apply(BytesValue bytesValue) {
-        counter++;
-        return Hashes.keccak256(bytesValue);
-      }
-    }
-    SSZBuilder sszBuilder = new SSZBuilder();
-    TypeResolver typeResolver = sszBuilder.getTypeResolver();
-
-    SSZVisitorHost visitorHost = new SSZVisitorHost();
-    SSZSerializer serializer = new SSZSerializer(visitorHost, typeResolver);
-    CountingHash countingHashSimp = new CountingHash();
-    CountingHash countingHashInc = new CountingHash();
-    SSZIncrementalHasher incrementalHasher = new SSZIncrementalHasher(serializer, countingHashInc, 32);
-    SSZSimpleHasher simpleHasher = new SSZSimpleHasher(serializer, countingHashSimp, 32);
-
-    I1 i1 = new I1(0x1111, 0x2222, 0x3333);
-
-    {
-      MerkleTrie mt0 = visitorHost
-          .handleAny(typeResolver.resolveSSZType(I1.class), i1, simpleHasher);
-      MerkleTrie mt1 = visitorHost
-          .handleAny(typeResolver.resolveSSZType(I1.class), i1, incrementalHasher);
-      Assert.assertEquals(mt0.getFinalRoot(), mt1.getFinalRoot());
-    }
-
-    i1.setA1(0x4444);
-
-    {
-      countingHashInc.counter = 0;
-      countingHashSimp.counter = 0;
-      MerkleTrie mt2 = visitorHost
-          .handleAny(typeResolver.resolveSSZType(I1.class), i1, simpleHasher);
-      MerkleTrie mt3 = visitorHost
-          .handleAny(typeResolver.resolveSSZType(I1.class), i1, incrementalHasher);
-      Assert.assertEquals(mt2.getFinalRoot(), mt3.getFinalRoot());
-      Assert.assertTrue(countingHashInc.counter < countingHashSimp.counter);
-
-      countingHashInc.counter = 0;
-      MerkleTrie mt4 = visitorHost
-          .handleAny(typeResolver.resolveSSZType(I1.class), i1, incrementalHasher);
-      Assert.assertEquals(mt2.getFinalRoot(), mt4.getFinalRoot());
-      Assert.assertTrue(countingHashInc.counter  == 0);
-    }
-
-    i1.setA2(0x5555);
-
-    {
-      countingHashInc.counter = 0;
-      countingHashSimp.counter = 0;
-      MerkleTrie mt2 = visitorHost
-          .handleAny(typeResolver.resolveSSZType(I1.class), i1, simpleHasher);
-      MerkleTrie mt3 = visitorHost
-          .handleAny(typeResolver.resolveSSZType(I1.class), i1, incrementalHasher);
-      Assert.assertEquals(mt2.getFinalRoot(), mt3.getFinalRoot());
-      Assert.assertTrue(countingHashInc.counter < countingHashSimp.counter);
-    }
-
-    i1.setA3(0x5555);
-
-    {
-      countingHashInc.counter = 0;
-      countingHashSimp.counter = 0;
-      MerkleTrie mt2 = visitorHost
-          .handleAny(typeResolver.resolveSSZType(I1.class), i1, simpleHasher);
-      MerkleTrie mt3 = visitorHost
-          .handleAny(typeResolver.resolveSSZType(I1.class), i1, incrementalHasher);
-      Assert.assertEquals(mt2.getFinalRoot(), mt3.getFinalRoot());
-      Assert.assertTrue(countingHashInc.counter < countingHashSimp.counter);
-    }
-
-    i1.setA1(0x6666);
-    i1.setA2(0x7777);
-
-    {
-      countingHashInc.counter = 0;
-      countingHashSimp.counter = 0;
-      MerkleTrie mt2 = visitorHost
-          .handleAny(typeResolver.resolveSSZType(I1.class), i1, simpleHasher);
-      MerkleTrie mt3 = visitorHost
-          .handleAny(typeResolver.resolveSSZType(I1.class), i1, incrementalHasher);
-      Assert.assertEquals(mt2.getFinalRoot(), mt3.getFinalRoot());
-      Assert.assertTrue(countingHashInc.counter < countingHashSimp.counter);
-    }
-
-    i1.setA1(0xaaaa);
-    i1.setA2(0xbbbb);
-    i1.setA3(0xcccc);
-
-    {
-      countingHashInc.counter = 0;
-      countingHashSimp.counter = 0;
-      MerkleTrie mt2 = visitorHost
-          .handleAny(typeResolver.resolveSSZType(I1.class), i1, simpleHasher);
-      MerkleTrie mt3 = visitorHost
-          .handleAny(typeResolver.resolveSSZType(I1.class), i1, incrementalHasher);
-      Assert.assertEquals(mt2.getFinalRoot(), mt3.getFinalRoot());
-      Assert.assertTrue(countingHashInc.counter == countingHashSimp.counter);
-    }
   }
 }
 

@@ -7,7 +7,7 @@ import org.ethereum.beacon.ssz.access.SSZContainerAccessor;
 import org.ethereum.beacon.ssz.type.SSZContainerType;
 import org.ethereum.beacon.ssz.type.SSZType;
 import org.ethereum.beacon.ssz.type.TypeResolver;
-import org.ethereum.beacon.ssz.visitor.SSZSimpleHasher.MerkleTrie;
+import org.ethereum.beacon.ssz.visitor.MerkleTrie;
 import org.ethereum.beacon.ssz.visitor.SSZVisitor;
 import org.ethereum.beacon.ssz.visitor.SSZVisitorHost;
 
@@ -27,7 +27,7 @@ public class SSZHasher implements BytesHasher {
   /**
    * SSZ hasher with following helpers
    *
-   *     org.ethereum.beacon.ssz.access.SSZCodec} function
+   *     org.ethereum.beacon.ssz.access.SSZBasicAccessor} function
    */
   public SSZHasher(TypeResolver typeResolver, SSZVisitorHost visitorHost, SSZVisitor<MerkleTrie, Object> hasherVisitor) {
     this.visitorHost = visitorHost;
@@ -77,12 +77,6 @@ public class SSZHasher implements BytesHasher {
     public List<SSZType> getChildTypes() {
       List<SSZType> childTypes = delegate.getChildTypes();
       return childTypes.subList(0, childTypes.size() - 1);
-    }
-
-    @Override
-    public List<String> getChildNames() {
-      List<String> childNames = delegate.getChildNames();
-      return childNames.subList(0, childNames.size() - 1);
     }
 
     @Override

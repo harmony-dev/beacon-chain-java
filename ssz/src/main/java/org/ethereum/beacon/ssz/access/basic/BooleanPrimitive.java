@@ -10,10 +10,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.ethereum.beacon.ssz.access.SSZField;
-import org.ethereum.beacon.ssz.access.SSZCodec;
+import org.ethereum.beacon.ssz.access.SSZBasicAccessor;
 
-/** {@link SSZCodec} for {@link Boolean} and {@link boolean} */
-public class BooleanPrimitive implements SSZCodec {
+/** {@link SSZBasicAccessor} for {@link Boolean} and {@link boolean} */
+public class BooleanPrimitive implements SSZBasicAccessor {
 
   private static Set<String> supportedTypes = new HashSet<>();
   private static Set<Class> supportedClassTypes = new HashSet<>();
