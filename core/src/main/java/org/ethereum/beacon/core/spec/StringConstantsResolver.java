@@ -37,6 +37,9 @@ public class StringConstantsResolver  {
       return Optional.empty();
     }
     try {
+      if (!getter.isAccessible()) {
+        getter.setAccessible(true);
+      }
       return Optional.of((Number) getter.invoke(constants));
     } catch (IllegalAccessException | InvocationTargetException e) {
       throw new RuntimeException("Couldn't retrieve constant " + constName, e);
