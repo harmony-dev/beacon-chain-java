@@ -454,6 +454,7 @@ public class TreeHashCompositeRunner implements Runner {
     this.nodeCounter = 0;
     this.nodes = new ArrayList<>();
     this.rootType = parseCurrentType(testCase.getType(), testCase.getValue());
+    System.out.println(rootType.dumpHierarchy());
 //    this.rootType = parseCurrentValue(testCase.getValue(), testCase.getType());
 
     String expected = testCase.getRoot();
