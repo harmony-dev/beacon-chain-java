@@ -83,13 +83,16 @@ public class SSZIncrementalHasher extends SSZSimpleHasher {
       BiFunction<Integer, Object, MerkleTrie> childVisitor,
       MerkleTrie merkleTree,
       SortedSet<Integer> elementsUpdated) {
-    MerkleTrie newTrie = copyWithSize(merkleTree, type.getChildrenCount(value));
+    int newChildrenCount = type.getChildrenCount(value);
+    MerkleTrie newTrie = copyWithSize(merkleTree, newChildrenCount);
 
     int pos = newTrie.nodes.length / 2;
 
     for (int i: elementsUpdated) {
-      MerkleTrie childHash = childVisitor.apply(i, type.getChild(value, i));
-      newTrie.nodes[pos + i] = childHash.getFinalRoot();
+      if (i < newChildrenCount) {
+        MerkleTrie childHash = childVisitor.apply(i, type.getChild(value, i));
+        newTrie.nodes[pos + i] = childHash.getFinalRoot();
+      }
     }
 
     int idxShift = 0;
