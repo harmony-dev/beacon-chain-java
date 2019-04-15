@@ -377,6 +377,19 @@ public class BLS381 {
     }
 
     /**
+     * Instantiates key from encoded <code>G<sub>1</sub></code> point.
+     *
+     * <p><strong>Note:</strong> opposite to {@link #create(Bytes48)} does not run format
+     * validation.
+     *
+     * @param encoded an encoded point.
+     * @return an instance of public key.
+     */
+    public static PublicKey createWithoutValidation(Bytes48 encoded) {
+      return new PublicKey(encoded);
+    }
+
+    /**
      * Aggregates a list of public keys to a single one.
      *
      * <p>In {@code BLS12-381} public key aggregation is done through calculation of a sum of points
@@ -447,6 +460,10 @@ public class BLS381 {
 
     public static KeyPair create(PrivateKey privateKey) {
       return new KeyPair(PublicKey.create(privateKey), privateKey);
+    }
+
+    public String asString() {
+      return String.format("%s:%s", privateKey.encoded, publicKey.encoded);
     }
 
     /**
