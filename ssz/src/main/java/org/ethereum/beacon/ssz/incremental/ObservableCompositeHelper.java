@@ -5,10 +5,21 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
+/**
+ * The helper class which encapsulates {@link ObservableComposite} functionality
+ */
 public class ObservableCompositeHelper implements UpdateListener, ObservableComposite {
 
   private static final String PARENT_OBSERVER_ID = "parent";
 
+  /**
+   * Convenient wrapper for a value inside a Container.
+   * Created to avoid manual field update notifying.
+   * Assigning a new field value is done via {@link #set(Object)} method
+   * which automatically notifies installed listeners on the child update
+   * with the right child index
+   * @see #newValue(Object)
+   */
   public class ObsValue<C> {
     private C value;
     private final int index;
@@ -18,6 +29,11 @@ public class ObservableCompositeHelper implements UpdateListener, ObservableComp
       set(value);
     }
 
+    /**
+     * Sets the wrapper value.
+     * If the value is an instance of {@link ObservableComposite}
+     * then a special listener is added to this value to notify the parent container
+     */
     public void set(C val) {
       if (val instanceof ObservableComposite) {
         ((ObservableComposite)val).getUpdateListener(PARENT_OBSERVER_ID, () ->
@@ -94,6 +110,16 @@ public class ObservableCompositeHelper implements UpdateListener, ObservableComp
     }
   }
 
+  /**
+   * Creates a container field wrapper.
+   * The field wrappers should be created in the order of corresponding SSZ container members
+   * to maintain the correct member index. Class fields can be declared the following way:
+   * <pre>
+   *   ObservableCompositeHelper helper = new ObservableCompositeHelper();
+   *   ObsValue<UInt64> member_0 = helper.newValue(INITIAL_VALUE_0);
+   *   ObsValue<UInt64> member_1 = helper.newValue(INITIAL_VALUE_1);
+   * </pre>
+   */
   public <C> ObsValue<C> newValue(C initialValue) {
     return new ObsValue<>(initialValue, childCounter++);
   }

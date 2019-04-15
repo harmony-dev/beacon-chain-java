@@ -14,6 +14,9 @@ import java.util.stream.Stream;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.collections.WriteList;
 
+/**
+ * {@link WriteList} wrapper supporting {@link ObservableComposite} functionality
+ */
 public class ObservableListImpl<IndexType extends Number, ValueType>
     implements WriteList<IndexType, ValueType>, ObservableComposite {
 

@@ -42,9 +42,18 @@ public @interface SSZSerializable {
    */
   String instanceGetter() default "";
 
+  /**
+   * Specifies custom basic value accessor for SSZ serializable class
+   */
   Class<? extends SSZBasicAccessor> basicAccessor() default VoidBasicAccessor.class;
 
+  /**
+   * Specifies custom list accessor for SSZ serializable class
+   */
   Class<? extends SSZListAccessor> listAccessor() default VoidListAccessor.class;
 
+  /**
+   * Specifies custom container accessor for SSZ serializable class
+   */
   Class<? extends SSZContainerAccessor> containerAccessor() default VoidContainerAccessor.class;
 }
