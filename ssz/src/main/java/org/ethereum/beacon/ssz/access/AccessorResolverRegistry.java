@@ -42,41 +42,40 @@ public class AccessorResolverRegistry implements AccessorResolver {
           .map(SubclassListAccessor::new);
     }
 
-    Object accessor = getAccessorFromAnnotation(field);
-    if (accessor instanceof SSZListAccessor) {
-      return Optional.of((SSZListAccessor) accessor);
+    SSZSerializable annotation = field.getRawClass().getAnnotation(SSZSerializable.class);
+    if (annotation != null && annotation.listAccessor() != SSZSerializable.VoidListAccessor.class) {
+      try {
+        return Optional.of(annotation.listAccessor().newInstance());
+      } catch (InstantiationException | IllegalAccessException e) {
+        throw new SSZSchemeException("Can't instantiate accessor for " + field, e);
+      }
     }
     return listAccessors.stream().filter(a -> a.isSupported(field)).findFirst();
   }
 
   @Override
   public Optional<SSZContainerAccessor> resolveContainerAccessor(SSZField field) {
-    Object accessor = getAccessorFromAnnotation(field);
-    if (accessor instanceof SSZContainerAccessor) {
-      return Optional.of((SSZContainerAccessor) accessor);
+    SSZSerializable annotation = field.getRawClass().getAnnotation(SSZSerializable.class);
+    if (annotation != null && annotation.containerAccessor() != SSZSerializable.VoidContainerAccessor.class) {
+      try {
+        return Optional.of(annotation.containerAccessor().newInstance());
+      } catch (InstantiationException | IllegalAccessException e) {
+        throw new SSZSchemeException("Can't instantiate accessor for " + field, e);
+      }
     }
 
     return containerAccessors.stream().filter(a -> a.isSupported(field)).findFirst();
   }
 
-  private Object getAccessorFromAnnotation(SSZField field) {
-    SSZSerializable annotation = field.getRawClass().getAnnotation(SSZSerializable.class);
-    if (annotation == null || annotation.accessor() == void.class) {
-      return null;
-    }
-
-    try {
-      return annotation.accessor().newInstance();
-    } catch (InstantiationException | IllegalAccessException e) {
-      throw new SSZSchemeException("Couldn't create codec instance " + annotation.accessor() + " for field " + field);
-    }
-  }
-
   @Override
   public SSZCodec resolveBasicTypeCodec(SSZField field) {
-    Object accessor = getAccessorFromAnnotation(field);
-    if (accessor instanceof SSZCodec) {
-      return (SSZCodec) accessor;
+    SSZSerializable annotation = field.getRawClass().getAnnotation(SSZSerializable.class);
+    if (annotation != null && annotation.basicAccessor() != SSZSerializable.VoidBasicCodec.class) {
+      try {
+        return annotation.basicAccessor().newInstance();
+      } catch (InstantiationException | IllegalAccessException e) {
+        throw new SSZSchemeException("Can't instantiate accessor for " + field, e);
+      }
     }
 
     Class<?> type = field.getRawClass();
