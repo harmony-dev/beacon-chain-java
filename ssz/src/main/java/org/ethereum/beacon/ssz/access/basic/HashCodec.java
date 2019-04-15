@@ -12,7 +12,7 @@ import net.consensys.cava.ssz.SSZ;
 import net.consensys.cava.ssz.SSZException;
 import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.SSZSchemeException;
-import org.ethereum.beacon.ssz.access.SSZCodec;
+import org.ethereum.beacon.ssz.access.SSZBasicAccessor;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes48;
@@ -22,7 +22,7 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
  * SSZ Codec designed to work with fixed size bytes data classes representing hashes, check list in
  * {@link #getSupportedClasses()}
  */
-public class HashCodec implements SSZCodec {
+public class HashCodec implements SSZBasicAccessor {
 
   private static Set<String> supportedTypes = new HashSet<>();
 

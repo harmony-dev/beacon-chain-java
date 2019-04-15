@@ -28,8 +28,8 @@ public class AccessorResolverRegistry implements AccessorResolver {
     return this;
   }
 
-  public AccessorResolverRegistry withBasicCodecs(List<SSZCodec> codecs) {
-    for (SSZCodec codec : codecs) {
+  public AccessorResolverRegistry withBasicCodecs(List<SSZBasicAccessor> codecs) {
+    for (SSZBasicAccessor codec : codecs) {
       registerCodec(codec);
     }
     return this;
@@ -68,11 +68,11 @@ public class AccessorResolverRegistry implements AccessorResolver {
   }
 
   @Override
-  public SSZCodec resolveBasicTypeCodec(SSZField field) {
+  public Optional<SSZBasicAccessor> resolveBasicAccessor(SSZField field) {
     SSZSerializable annotation = field.getRawClass().getAnnotation(SSZSerializable.class);
     if (annotation != null && annotation.basicAccessor() != SSZSerializable.VoidBasicCodec.class) {
       try {
-        return annotation.basicAccessor().newInstance();
+        return Optional.of(annotation.basicAccessor().newInstance());
       } catch (InstantiationException | IllegalAccessException e) {
         throw new SSZSchemeException("Can't instantiate accessor for " + field, e);
       }
@@ -85,7 +85,7 @@ public class AccessorResolverRegistry implements AccessorResolver {
       subclassCodec = true;
     }
 
-    SSZCodec codec = null;
+    SSZBasicAccessor codec = null;
     if (registeredClassHandlers.containsKey(type)) {
       List<CodecEntry> codecs = registeredClassHandlers.get(type);
       if (field.getExtraType() == null || field.getExtraType().isEmpty()) {
@@ -104,7 +104,7 @@ public class AccessorResolverRegistry implements AccessorResolver {
       codec = new SubclassCodec(codec);
     }
 
-    return codec;
+    return Optional.ofNullable(codec);
   }
 
   /**
@@ -112,7 +112,7 @@ public class AccessorResolverRegistry implements AccessorResolver {
    *
    * @param codec Codec able to encode/decode of specific class/types
    */
-  public void registerCodec(SSZCodec codec) {
+  public void registerCodec(SSZBasicAccessor codec) {
     for (Class clazz : codec.getSupportedClasses()) {
       if (registeredClassHandlers.get(clazz) != null) {
         registeredClassHandlers.get(clazz).add(new CodecEntry(codec, codec.getSupportedSSZTypes()));
@@ -124,10 +124,10 @@ public class AccessorResolverRegistry implements AccessorResolver {
   }
 
   class CodecEntry {
-    SSZCodec codec;
+    SSZBasicAccessor codec;
     Set<String> types;
 
-    public CodecEntry(SSZCodec codec, Set<String> types) {
+    public CodecEntry(SSZBasicAccessor codec, Set<String> types) {
       this.codec = codec;
       this.types = types;
     }

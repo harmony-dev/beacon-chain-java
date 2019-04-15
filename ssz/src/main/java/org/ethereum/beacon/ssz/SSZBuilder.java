@@ -6,10 +6,9 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import org.ethereum.beacon.ssz.access.AccessorResolver;
-import org.ethereum.beacon.ssz.access.SSZCodec;
-import org.ethereum.beacon.ssz.access.SSZContainerAccessor;
-import org.ethereum.beacon.ssz.access.SSZListAccessor;
+
+import org.ethereum.beacon.ssz.access.*;
+import org.ethereum.beacon.ssz.access.SSZBasicAccessor;
 import org.ethereum.beacon.ssz.access.basic.BooleanPrimitive;
 import org.ethereum.beacon.ssz.access.basic.BytesPrimitive;
 import org.ethereum.beacon.ssz.access.basic.StringPrimitive;
@@ -26,12 +25,10 @@ import org.ethereum.beacon.ssz.creator.CompositeObjCreator;
 import org.ethereum.beacon.ssz.creator.ConstructorObjCreator;
 import org.ethereum.beacon.ssz.creator.ObjectCreator;
 import org.ethereum.beacon.ssz.creator.SettersObjCreator;
-import org.ethereum.beacon.ssz.access.AccessorResolverRegistry;
 import org.ethereum.beacon.ssz.type.SimpleTypeResolver;
 import org.ethereum.beacon.ssz.type.TypeResolver;
 import org.ethereum.beacon.ssz.visitor.SSZIncrementalHasher;
 import org.ethereum.beacon.ssz.visitor.MerkleTrie;
-import org.ethereum.beacon.ssz.visitor.SSZSimpleHasher;
 import org.ethereum.beacon.ssz.visitor.SSZSimpleOptimizedHasher;
 import org.ethereum.beacon.ssz.visitor.SSZVisitor;
 import org.ethereum.beacon.ssz.visitor.SSZVisitorHost;
@@ -39,7 +36,7 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 /**
- * SSZ Builder is designed to create {@link SSZSerializer} up to your needs.
+ * SSZ Builder is designed to create {@link SSZSerializer} or {@link SSZHasher} up to your needs.
  *
  * <p>It uses {@link SSZAnnotationSchemeBuilder}to create SSZ model from Java class with annotations
  *
@@ -71,7 +68,7 @@ public class SSZBuilder {
   private static final int SSZ_SCHEMES_CACHE_CAPACITY = 128;
   private static final int SSZ_HASH_BYTES_PER_CHUNK = 32;
 
-  private List<SSZCodec> basicCodecs = new ArrayList<>();
+  private List<SSZBasicAccessor> basicCodecs = new ArrayList<>();
   private List<SSZListAccessor> listAccessors = new ArrayList<>();
   private List<Supplier<SSZContainerAccessor>> containerAccessors = new ArrayList<>();
 
@@ -187,7 +184,7 @@ public class SSZBuilder {
     return this;
   }
 
-  public SSZBuilder addBasicCodecs(SSZCodec... codec) {
+  public SSZBuilder addBasicCodecs(SSZBasicAccessor... codec) {
     checkAlreadyInitialized();
     basicCodecs.addAll(Arrays.asList(codec));
     return this;
@@ -207,7 +204,7 @@ public class SSZBuilder {
     return this;
   }
 
-  /** Adds {@link SSZCodec}'s to handle almost all Java primitive types */
+  /** Adds {@link SSZBasicAccessor}'s to handle almost all Java primitive types */
   public SSZBuilder addDefaultBasicCodecs() {
     checkAlreadyInitialized();
     basicCodecs.add(new UIntPrimitive());

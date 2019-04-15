@@ -4,6 +4,7 @@ import net.consensys.cava.bytes.Bytes;
 import net.consensys.cava.ssz.BytesSSZReaderProxy;
 import net.consensys.cava.ssz.SSZ;
 import net.consensys.cava.ssz.SSZException;
+import org.ethereum.beacon.ssz.access.SSZBasicAccessor;
 import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.SSZSchemeException;
 import java.io.IOException;
@@ -16,17 +17,16 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.ethereum.beacon.ssz.access.SSZCodec;
 
 import static java.util.function.Function.identity;
 
 /**
- * {@link SSZCodec} for all primitive Java integers and their default wrappers
+ * {@link SSZBasicAccessor} for all primitive Java integers and their default wrappers
  *
  * <p>All numerics are considered unsigned, bit size could be clarified by {@link
  * SSZField#extraSize}
  */
-public class UIntPrimitive implements SSZCodec {
+public class UIntPrimitive implements SSZBasicAccessor {
   private static final int DEFAULT_BYTE_SIZE = 8;
   private static final int DEFAULT_SHORT_SIZE = 16;
   private static final int DEFAULT_INT_SIZE = 32;

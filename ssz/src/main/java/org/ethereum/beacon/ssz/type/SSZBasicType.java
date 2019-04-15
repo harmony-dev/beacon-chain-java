@@ -1,15 +1,15 @@
 package org.ethereum.beacon.ssz.type;
 
+import org.ethereum.beacon.ssz.access.SSZBasicAccessor;
 import org.ethereum.beacon.ssz.access.SSZField;
-import org.ethereum.beacon.ssz.access.SSZCodec;
 
 public class SSZBasicType implements SSZType {
 
   private final SSZField descriptor;
-  private final SSZCodec codec;
+  private final SSZBasicAccessor codec;
   private int size = Integer.MIN_VALUE;
 
-  public SSZBasicType(SSZField descriptor, SSZCodec codec) {
+  public SSZBasicType(SSZField descriptor, SSZBasicAccessor codec) {
     this.descriptor = descriptor;
     this.codec = codec;
   }
@@ -19,7 +19,7 @@ public class SSZBasicType implements SSZType {
     return true;
   }
 
-  public SSZCodec getValueCodec() {
+  public SSZBasicAccessor getValueCodec() {
     return codec;
   }
 

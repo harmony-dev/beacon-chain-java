@@ -6,6 +6,8 @@ import java.lang.annotation.*;
 import org.javatuples.Pair;
 
 /**
+ * Searches an Annotation through a method predecessors (overridden or implemented)
+ *
  * Taken from here https://stackoverflow.com/a/49164791/9630725
  */
 public final class MCVEReflect {
