@@ -15,8 +15,8 @@ public class ReadListAccessor extends AbstractListAccessor {
   }
 
   @Override
-  public SSZField getListElementType(SSZField field) {
-    return extractElementType(field, 1);
+  public SSZField getListElementType(SSZField listTypeDescriptor) {
+    return extractElementType(listTypeDescriptor, 1);
   }
 
   protected Function<Integer, ? extends Number> resolveIndexConverter(Class<?> indexClass) {

@@ -11,8 +11,8 @@ public class ListAccessor extends AbstractListAccessor {
   }
 
   @Override
-  public SSZField getListElementType(SSZField field) {
-    return extractElementType(field, 0);
+  public SSZField getListElementType(SSZField listTypeDescriptor) {
+    return extractElementType(listTypeDescriptor, 0);
   }
 
   @Override
