@@ -29,6 +29,12 @@ public class BlsKeyPairReader {
     this.reader = reader;
   }
 
+  /**
+   * Instantiates reader with predefined key pair source located in {@code /bls-key-pairs/} resource
+   * folder.
+   *
+   * @return an instance of key pair reader.
+   */
   public static BlsKeyPairReader createWithDefaultSource() {
     return createForResource("/bls-key-pairs/bls-pairs-1m-seed_1.gz");
   }
@@ -49,13 +55,20 @@ public class BlsKeyPairReader {
     }
   }
 
-  public static BlsKeyPairReader createFromStream(InputStream input, String name) throws IOException {
+  public static BlsKeyPairReader createFromStream(InputStream input, String name)
+      throws IOException {
     BufferedReader reader =
         new BufferedReader(
             new InputStreamReader(name.endsWith(".gz") ? new GZIPInputStream(input) : input));
     return new BlsKeyPairReader(reader);
   }
 
+  /**
+   * Fetches next pair from the source.
+   *
+   * @return a key pair.
+   * @throws RuntimeException if any error occurred during interaction with underlying source.
+   */
   public KeyPair next() {
     try {
       String parts = reader.readLine();
