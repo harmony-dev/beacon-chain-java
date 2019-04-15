@@ -28,7 +28,7 @@ public class SSZSimpleDeserializer implements SSZVisitor<DecodeResult, Bytes> {
     BytesSSZReaderProxy reader = new BytesSSZReaderProxy(param);
     // TODO support basic codecs with variable size
 //    int readBytes = sszType.isFixedSize() ? sszType.getSize() : reader.
-    return new DecodeResult(sszType.getValueCodec().decode(sszType.getTypeDescriptor(),
+    return new DecodeResult(sszType.getAccessor().decode(sszType.getTypeDescriptor(),
         reader), sszType.getSize());
   }
 

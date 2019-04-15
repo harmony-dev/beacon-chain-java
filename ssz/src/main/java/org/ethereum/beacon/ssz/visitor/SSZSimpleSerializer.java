@@ -48,7 +48,7 @@ public class SSZSimpleSerializer implements SSZVisitor<SSZSimpleSerializer.SSZSe
   @Override
   public SSZSerializerResult visitBasicValue(SSZBasicType type, Object value) {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    type.getValueCodec().encode(value, type.getTypeDescriptor(), baos);
+    type.getAccessor().encode(value, type.getTypeDescriptor(), baos);
     return new SSZSerializerResult(BytesValue.wrap(baos.toByteArray()));
   }
 
