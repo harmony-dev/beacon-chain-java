@@ -376,6 +376,10 @@ public class BLS381 {
       return new PublicKey(encoded);
     }
 
+    public static PublicKey createWithoutValidation(Bytes48 encoded) {
+      return new PublicKey(encoded);
+    }
+
     /**
      * Aggregates a list of public keys to a single one.
      *
