@@ -16,7 +16,7 @@ import org.ethereum.beacon.ssz.fixtures.Bitfield.BitfieldAccessor;
  * <p>All methods that could change payload are cloning source, keeping instances of Bitfield
  * immutable.
  */
-@SSZSerializable(accessor = BitfieldAccessor.class)
+@SSZSerializable(listAccessor = Bitfield.BitfieldAccessor.class)
 public class Bitfield {
 
   public static class BitfieldAccessor extends AbstractListAccessor {
