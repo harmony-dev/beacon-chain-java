@@ -1,6 +1,10 @@
 package org.ethereum.beacon.ssz.visitor;
 
+import static java.lang.Math.min;
+
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.function.BiFunction;
@@ -83,15 +87,21 @@ public class SSZIncrementalHasher extends SSZSimpleHasher {
       BiFunction<Integer, Object, MerkleTrie> childVisitor,
       MerkleTrie merkleTree,
       SortedSet<Integer> elementsUpdated) {
+
     int newChildrenCount = type.getChildrenCount(value);
     MerkleTrie newTrie = copyWithSize(merkleTree, newChildrenCount);
+    int newChunksCount = newTrie.nodes.length / 2;
 
-    int pos = newTrie.nodes.length / 2;
+    int pos = newChunksCount;
 
+    List<Integer> elementsToRecalc = new ArrayList<>();
     for (int i: elementsUpdated) {
-      if (i < newChildrenCount) {
-        MerkleTrie childHash = childVisitor.apply(i, type.getChild(value, i));
-        newTrie.nodes[pos + i] = childHash.getFinalRoot();
+      if (i < newChunksCount) {
+        elementsToRecalc.add(i);
+        if (i < newChildrenCount) {
+          MerkleTrie childHash = childVisitor.apply(i, type.getChild(value, i));
+          newTrie.nodes[pos + i] = childHash.getFinalRoot();
+        }
       }
     }
 
@@ -100,7 +110,7 @@ public class SSZIncrementalHasher extends SSZSimpleHasher {
       pos /= 2;
       idxShift++;
       int lastIdx = Integer.MAX_VALUE;
-      for (int i: elementsUpdated) {
+      for (int i: elementsToRecalc) {
         int idx = pos + (i >> idxShift);
         if (lastIdx != idx) {
           newTrie.nodes[idx] = hashFunction.apply(
@@ -133,23 +143,23 @@ public class SSZIncrementalHasher extends SSZSimpleHasher {
     int newSize = (int) nextPowerOf2(newChunksCount) * 2;
     if (newSize == trie.nodes.length) {
       return new MerkleTrie(Arrays.copyOf(trie.nodes, newSize));
-    } else if (newSize > trie.nodes.length) {
+    } else {
       BytesValue[] oldNodes = trie.nodes;
       BytesValue[] newNodes = new BytesValue[newSize];
       int oldPos = oldNodes.length / 2;
       int newPos = newNodes.length / 2;
+      int size = min(newChunksCount, trie.nodes.length / 2);
       int dist = 0;
-      while (newPos > 0) {
-        System.arraycopy(oldNodes, oldPos, newNodes, newPos, oldPos);
-        Arrays.fill(newNodes, newPos + oldPos, newPos * 2, getZeroHash(dist));
+      while (newPos > 0 ) {
+        System.arraycopy(oldNodes, oldPos, newNodes, newPos, size);
+        Arrays.fill(newNodes, newPos + size, newPos * 2, getZeroHash(dist));
         oldPos /= 2;
         newPos /= 2;
+        size = (size - 1) / 2 + 1;
         dist++;
       }
 
       return new MerkleTrie(newNodes);
-    } else {
-      throw new UnsupportedOperationException("Reducing trie size not implemented yet");
     }
   }
 }
