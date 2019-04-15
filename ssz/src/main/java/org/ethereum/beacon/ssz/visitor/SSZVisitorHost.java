@@ -19,7 +19,6 @@ public class SSZVisitorHost {
 
     } else if (type.isContainer()) {
       SSZContainerType containerType = (SSZContainerType) type;
-      // TODO handle filter
       return visitor.visitComposite(containerType, value, (idx, param) ->
           handleAny(containerType.getChildTypes().get(idx), param, visitor));
     } else {

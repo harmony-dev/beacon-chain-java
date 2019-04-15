@@ -37,8 +37,7 @@ public class SSZSerializer implements BytesSerializer, SSZVisitorHandler<SSZSimp
     return visit(inputObject, inputClazz).getSerialized().getArrayUnsafe();
   }
 
-  @Override
-  public <C> SSZSerializerResult visit(C input, Class<? extends C> clazz) {
+  private <C> SSZSerializerResult visit(C input, Class<? extends C> clazz) {
     return visitAny(typeResolver.resolveSSZType(new SSZField(clazz)), input);
   }
 

@@ -34,7 +34,7 @@ public class SSZSimpleDeserializer implements SSZVisitor<DecodeResult, Bytes> {
 
   @Override
   public DecodeResult visitComposite(SSZCompositeType type, Bytes param,
-      BiFunction<Integer, Bytes, DecodeResult> childVisitor) {
+      ChildVisitor<Bytes, DecodeResult> childVisitor) {
     int pos = 0;
     int size;
     if (type.isVariableSize()) {

@@ -55,7 +55,7 @@ public class SSZIncrementalHasher extends SSZSimpleHasher {
 
   @Override
   public MerkleTrie visitComposite(SSZCompositeType type, Object rawValue,
-      BiFunction<Integer, Object, MerkleTrie> childVisitor) {
+      ChildVisitor<Object, MerkleTrie> childVisitor) {
     if (rawValue instanceof ObservableComposite) {
       SSZIncrementalTracker tracker = (SSZIncrementalTracker)
           ((ObservableComposite) rawValue).getUpdateListener(

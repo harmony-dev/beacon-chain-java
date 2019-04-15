@@ -38,7 +38,7 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
 
   @Override
   public MerkleTrie visitComposite(SSZCompositeType type, Object rawValue,
-      BiFunction<Integer, Object, MerkleTrie> childVisitor) {
+      ChildVisitor<Object, MerkleTrie> childVisitor) {
     MerkleTrie merkle;
     List<BytesValue> chunks = new ArrayList<>();
     if (type.getChildrenCount(rawValue) == 0) {
