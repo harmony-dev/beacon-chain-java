@@ -13,6 +13,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -36,10 +37,9 @@ public class TestUtils {
 
   static File getResourceFile(String relativePath) {
     try {
-      String path = Resources.getResource(relativePath).getPath();
-      final Path filePath = Paths.get(path);
+      final Path filePath = Paths.get(Resources.getResource(relativePath).toURI());
       return filePath.toFile();
-    } catch (IllegalArgumentException e) {
+    } catch (IllegalArgumentException | URISyntaxException e) {
       throw new RuntimeException(
           String.format(
               "Nothing found on path `%s`.\n Maybe you need to pull tests submodule with following command:\n git submodule update --recursive --remote",
@@ -50,13 +50,12 @@ public class TestUtils {
 
   static List<File> getResourceFiles(String dir) {
     try {
-      String fixturesRoot = Resources.getResource(dir).getPath();
-      final Path fixturesRootPath = Paths.get(fixturesRoot);
+      final Path fixturesRootPath = Paths.get(Resources.getResource(dir).toURI());
       return Files.walk(fixturesRootPath)
           .filter(Files::isRegularFile)
           .map(Path::toFile)
           .collect(Collectors.toList());
-    } catch (IllegalArgumentException e) {
+    } catch (IllegalArgumentException | URISyntaxException e) {
       throw new RuntimeException(
           String.format(
               "Nothing found on path `%s`.\n Maybe you need to pull tests submodule with following command:\n git submodule update --recursive --remote",
