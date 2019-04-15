@@ -376,6 +376,15 @@ public class BLS381 {
       return new PublicKey(encoded);
     }
 
+    /**
+     * Instantiates key from encoded <code>G<sub>1</sub></code> point.
+     *
+     * <p><strong>Note:</strong> opposite to {@link #create(Bytes48)} does not run format
+     * validation.
+     *
+     * @param encoded an encoded point.
+     * @return an instance of public key.
+     */
     public static PublicKey createWithoutValidation(Bytes48 encoded) {
       return new PublicKey(encoded);
     }
