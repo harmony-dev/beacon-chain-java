@@ -6,7 +6,7 @@ import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import org.ethereum.beacon.ssz.access.SSZCodec;
+import org.ethereum.beacon.ssz.access.SSZBasicAccessor;
 import org.ethereum.beacon.ssz.access.SSZContainerAccessor;
 import org.ethereum.beacon.ssz.access.SSZListAccessor;
 
@@ -24,7 +24,7 @@ public @interface SSZSerializable {
   interface Void {}
   interface VoidListAccessor extends Void, SSZListAccessor {}
   interface VoidContainerAccessor extends Void, SSZContainerAccessor {}
-  interface VoidBasicCodec extends Void, SSZCodec {}
+  interface VoidBasicAccessor extends Void, SSZBasicAccessor {}
 
   /**
    * Tells the Serializer that this class should be serialized as <code>serializeAs</code> class
@@ -42,7 +42,7 @@ public @interface SSZSerializable {
    */
   String instanceGetter() default "";
 
-  Class<? extends SSZCodec> basicAccessor() default VoidBasicCodec.class;
+  Class<? extends SSZBasicAccessor> basicAccessor() default VoidBasicAccessor.class;
 
   Class<? extends SSZListAccessor> listAccessor() default VoidListAccessor.class;
 

@@ -70,7 +70,7 @@ public class AccessorResolverRegistry implements AccessorResolver {
   @Override
   public Optional<SSZBasicAccessor> resolveBasicAccessor(SSZField field) {
     SSZSerializable annotation = field.getRawClass().getAnnotation(SSZSerializable.class);
-    if (annotation != null && annotation.basicAccessor() != SSZSerializable.VoidBasicCodec.class) {
+    if (annotation != null && annotation.basicAccessor() != SSZSerializable.VoidBasicAccessor.class) {
       try {
         return Optional.of(annotation.basicAccessor().newInstance());
       } catch (InstantiationException | IllegalAccessException e) {
