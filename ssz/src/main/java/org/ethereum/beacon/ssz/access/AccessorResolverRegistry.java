@@ -28,9 +28,9 @@ public class AccessorResolverRegistry implements AccessorResolver {
     return this;
   }
 
-  public AccessorResolverRegistry withBasicCodecs(List<SSZBasicAccessor> codecs) {
-    for (SSZBasicAccessor codec : codecs) {
-      registerCodec(codec);
+  public AccessorResolverRegistry withBasicAccessors(List<SSZBasicAccessor> basicAccessors) {
+    for (SSZBasicAccessor codec : basicAccessors) {
+      registerBasicAccessor(codec);
     }
     return this;
   }
@@ -112,7 +112,7 @@ public class AccessorResolverRegistry implements AccessorResolver {
    *
    * @param codec Codec able to encode/decode of specific class/types
    */
-  public void registerCodec(SSZBasicAccessor codec) {
+  public void registerBasicAccessor(SSZBasicAccessor codec) {
     for (Class clazz : codec.getSupportedClasses()) {
       if (registeredClassHandlers.get(clazz) != null) {
         registeredClassHandlers.get(clazz).add(new CodecEntry(codec, codec.getSupportedSSZTypes()));

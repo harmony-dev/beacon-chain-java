@@ -277,7 +277,7 @@ public class SSZBuilder {
     if (accessorResolverRegistry == null) {
       accessorResolverRegistry =
           new AccessorResolverRegistry()
-              .withBasicCodecs(basicCodecs)
+              .withBasicAccessors(basicCodecs)
               .withListAccessors(listAccessors)
               .withContainerAccessors(
                   containerAccessors.stream().map(Supplier::get).collect(Collectors.toList()));
