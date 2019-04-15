@@ -45,23 +45,6 @@ public class ConstructorObjCreator implements ObjectCreator {
       Pair<SSZField, Object> pair = fieldValuePairs.get(i);
       SSZField field = pair.getValue0();
       params[i] = field.getRawClass();
-//      switch (field.multipleType) {
-//        case LIST:
-//          {
-//            params[i] = List.class;
-//            break;
-//          }
-//        case ARRAY:
-//          {
-//            params[i] = Array.newInstance(field.fieldType, 0).getClass();
-//            break;
-//          }
-//        default:
-//          {
-//            params[i] = field.fieldType;
-//            break;
-//          }
-//      }
     }
     Object[] values = fieldValuePairs.stream().map(Pair::getValue1).toArray();
 
