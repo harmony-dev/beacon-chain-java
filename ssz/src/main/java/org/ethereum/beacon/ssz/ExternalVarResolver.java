@@ -6,7 +6,7 @@ import java.util.function.Function;
 
 /**
  * Resolves external runtime property value.
- * For example see {@link SSZ#vectorSize()} placeholder
+ * For example see {@link SSZ#vectorSizeVar()}
  */
 public interface ExternalVarResolver extends Function<String, Object> {
 
