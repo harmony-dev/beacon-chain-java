@@ -41,7 +41,7 @@ public class DepositVerifier implements OperationVerifier<Deposit> {
     return depositData
         .getAmount().toBytesBigEndian()
         .concat(depositData.getTimestamp().toBytesBigEndian())
-        .concat(BytesValue.wrap(ssz.encode(depositData.getDepositInput())));
+        .concat(ssz.encode2(depositData.getDepositInput()));
   }
 
   @Override

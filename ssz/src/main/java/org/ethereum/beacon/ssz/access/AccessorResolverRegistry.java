@@ -28,9 +28,9 @@ public class AccessorResolverRegistry implements AccessorResolver {
     return this;
   }
 
-  public AccessorResolverRegistry withBasicCodecs(List<SSZBasicAccessor> codecs) {
-    for (SSZBasicAccessor codec : codecs) {
-      registerCodec(codec);
+  public AccessorResolverRegistry withBasicAccessors(List<SSZBasicAccessor> basicAccessors) {
+    for (SSZBasicAccessor codec : basicAccessors) {
+      registerBasicAccessor(codec);
     }
     return this;
   }
@@ -42,41 +42,40 @@ public class AccessorResolverRegistry implements AccessorResolver {
           .map(SubclassListAccessor::new);
     }
 
-    Object accessor = getAccessorFromAnnotation(field);
-    if (accessor instanceof SSZListAccessor) {
-      return Optional.of((SSZListAccessor) accessor);
+    SSZSerializable annotation = field.getRawClass().getAnnotation(SSZSerializable.class);
+    if (annotation != null && annotation.listAccessor() != SSZSerializable.VoidListAccessor.class) {
+      try {
+        return Optional.of(annotation.listAccessor().newInstance());
+      } catch (InstantiationException | IllegalAccessException e) {
+        throw new SSZSchemeException("Can't instantiate accessor for " + field, e);
+      }
     }
     return listAccessors.stream().filter(a -> a.isSupported(field)).findFirst();
   }
 
   @Override
   public Optional<SSZContainerAccessor> resolveContainerAccessor(SSZField field) {
-    Object accessor = getAccessorFromAnnotation(field);
-    if (accessor instanceof SSZContainerAccessor) {
-      return Optional.of((SSZContainerAccessor) accessor);
+    SSZSerializable annotation = field.getRawClass().getAnnotation(SSZSerializable.class);
+    if (annotation != null && annotation.containerAccessor() != SSZSerializable.VoidContainerAccessor.class) {
+      try {
+        return Optional.of(annotation.containerAccessor().newInstance());
+      } catch (InstantiationException | IllegalAccessException e) {
+        throw new SSZSchemeException("Can't instantiate accessor for " + field, e);
+      }
     }
 
     return containerAccessors.stream().filter(a -> a.isSupported(field)).findFirst();
   }
 
-  private Object getAccessorFromAnnotation(SSZField field) {
-    SSZSerializable annotation = field.getRawClass().getAnnotation(SSZSerializable.class);
-    if (annotation == null || annotation.accessor() == void.class) {
-      return null;
-    }
-
-    try {
-      return annotation.accessor().newInstance();
-    } catch (InstantiationException | IllegalAccessException e) {
-      throw new SSZSchemeException("Couldn't create codec instance " + annotation.accessor() + " for field " + field);
-    }
-  }
-
   @Override
   public Optional<SSZBasicAccessor> resolveBasicAccessor(SSZField field) {
-    Object accessor = getAccessorFromAnnotation(field);
-    if (accessor instanceof SSZBasicAccessor) {
-      return Optional.of((SSZBasicAccessor) accessor);
+    SSZSerializable annotation = field.getRawClass().getAnnotation(SSZSerializable.class);
+    if (annotation != null && annotation.basicAccessor() != SSZSerializable.VoidBasicAccessor.class) {
+      try {
+        return Optional.of(annotation.basicAccessor().newInstance());
+      } catch (InstantiationException | IllegalAccessException e) {
+        throw new SSZSchemeException("Can't instantiate accessor for " + field, e);
+      }
     }
 
     Class<?> type = field.getRawClass();
@@ -113,7 +112,7 @@ public class AccessorResolverRegistry implements AccessorResolver {
    *
    * @param codec Codec able to encode/decode of specific class/types
    */
-  public void registerCodec(SSZBasicAccessor codec) {
+  public void registerBasicAccessor(SSZBasicAccessor codec) {
     for (Class clazz : codec.getSupportedClasses()) {
       if (registeredClassHandlers.get(clazz) != null) {
         registeredClassHandlers.get(clazz).add(new CodecEntry(codec, codec.getSupportedSSZTypes()));

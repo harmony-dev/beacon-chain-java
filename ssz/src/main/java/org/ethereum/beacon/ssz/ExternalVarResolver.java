@@ -28,7 +28,7 @@ public interface ExternalVarResolver extends Function<String, Object> {
    * Resolves the variable of specific type.
    * @throws SSZSchemeException if variable is absent or of a wrong type
    */
-  default <T> T resolveMandatory(String varName, Class<T> type) {
+  default <T> T resolveOrThrow(String varName, Class<T> type) {
     Object ret = apply(varName);
     if (ret == null) {
       throw new ExternalVariableNotDefined("Mandatory variable not defined: " + varName);

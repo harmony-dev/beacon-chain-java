@@ -52,7 +52,7 @@ public class SimpleTypeResolver implements TypeResolver {
     String vectorSizeVar = descriptor.getFieldAnnotation().vectorSizeVar();
     if (!vectorSizeVar.isEmpty()) {
       return externalVarResolver
-              .resolveMandatory(vectorSizeVar, Number.class)
+              .resolveOrThrow(vectorSizeVar, Number.class)
               .intValue();
     }
 
