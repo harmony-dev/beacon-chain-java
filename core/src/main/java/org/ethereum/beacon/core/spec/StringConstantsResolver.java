@@ -17,7 +17,7 @@ public class StringConstantsResolver  {
   public StringConstantsResolver(SpecConstants constants) {
     this.constants = constants;
     caseConverter = CaseFormat.UPPER_UNDERSCORE.converterTo(CaseFormat.UPPER_CAMEL);
-    for (Method method : constants.getClass().getMethods()) {
+    for (Method method : SpecConstants.class.getMethods()) {
       if (method.getParameterTypes().length == 0
           && method.getName().startsWith("get")
           && Number.class.isAssignableFrom(method.getReturnType())) {
