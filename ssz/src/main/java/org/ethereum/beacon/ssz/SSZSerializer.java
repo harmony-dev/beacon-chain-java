@@ -59,6 +59,10 @@ public class SSZSerializer implements BytesSerializer, SSZVisitorHandler<SSZSimp
         typeResolver.resolveSSZType(new SSZField(clazz)),
         Bytes.wrap(data),
         new SSZSimpleDeserializer());
+    if (data.length > decodeResult.readBytes) {
+      throw new SSZSerializeException("Invalid SSZ data length (data is bigger than required): "
+          + data.length + " > " + decodeResult.readBytes);
+    }
     return (C) decodeResult.decodedInstance;
   }
 }
