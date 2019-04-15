@@ -257,8 +257,8 @@ public class SSZTypeTest {
 
   @SSZSerializable
   public interface Ifc1 {
-    @SSZ int getA1();
-    @SSZ long getA2();
+    @SSZ(order = 0) int getA1();
+    @SSZ(order = 1) long getA2();
     int getA3();
   }
 
