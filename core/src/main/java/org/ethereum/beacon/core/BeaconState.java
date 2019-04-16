@@ -80,7 +80,7 @@ public interface BeaconState extends ObservableComposite {
   /* ******* Randomness and committees ********* */
 
   /** The most recent randao mixes. */
-  @SSZ(order = 6, vectorSizeVar = "spec.LATEST_RANDAO_MIXES_LENGTH")
+  @SSZ(order = 6, vectorLengthVar = "spec.LATEST_RANDAO_MIXES_LENGTH")
   ReadVector<EpochNumber, Hash32> getLatestRandaoMixes();
 
   @SSZ(order = 7) ShardNumber getPreviousShufflingStartShard();
@@ -126,17 +126,17 @@ public interface BeaconState extends ObservableComposite {
 
   @SSZ(order = 23) ReadList<ShardNumber, Crosslink> getCurrentCrosslinks();
 
-  @SSZ(order = 24, vectorSizeVar = "spec.SLOTS_PER_HISTORICAL_ROOT")
+  @SSZ(order = 24, vectorLengthVar = "spec.SLOTS_PER_HISTORICAL_ROOT")
   ReadVector<SlotNumber, Hash32> getLatestBlockRoots();
 
-  @SSZ(order = 25, vectorSizeVar = "spec.SLOTS_PER_HISTORICAL_ROOT")
+  @SSZ(order = 25, vectorLengthVar = "spec.SLOTS_PER_HISTORICAL_ROOT")
   ReadVector<SlotNumber, Hash32> getLatestStateRoots();
 
-  @SSZ(order = 26, vectorSizeVar = "spec.LATEST_ACTIVE_INDEX_ROOTS_LENGTH")
+  @SSZ(order = 26, vectorLengthVar = "spec.LATEST_ACTIVE_INDEX_ROOTS_LENGTH")
   ReadVector<EpochNumber, Hash32> getLatestActiveIndexRoots();
 
   /** Balances slashed at every withdrawal period */
-  @SSZ(order = 27, vectorSizeVar = "spec.LATEST_SLASHED_EXIT_LENGTH")
+  @SSZ(order = 27, vectorLengthVar = "spec.LATEST_SLASHED_EXIT_LENGTH")
   ReadVector<EpochNumber, Gwei> getLatestSlashedBalances();
 
   @SSZ(order = 28) BeaconBlockHeader getLatestBlockHeader();

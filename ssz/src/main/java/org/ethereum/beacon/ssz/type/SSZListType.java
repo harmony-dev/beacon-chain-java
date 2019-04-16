@@ -44,8 +44,8 @@ public class SSZListType implements SSZCompositeType {
 
   /**
    * If this type represents SSZ Vector then this method returns its length.
-   * @see SSZ#vectorSize()
-   * @see SSZ#vectorSizeVar()
+   * @see SSZ#vectorLength()
+   * @see SSZ#vectorLengthVar()
    */
   public int getVectorLength() {
     return vectorLength;

@@ -75,17 +75,17 @@ public @interface SSZ {
   String type() default "";
 
   /**
-   * Indicates vector type (list with fixed length) and specifies this vector size
+   * Indicates vector type (list with fixed length) and specifies this vector length
    */
-  int vectorSize() default 0;
+  int vectorLength() default 0;
 
   /**
    * Indicates vector type (list with fixed length) and specifies the external variable
-   * name which should be resolved to the vector size at runtime during type hierarchy construction
+   * name which should be resolved to the vector length at runtime during type hierarchy construction
    * The variable is intended to be resolved via {@link org.ethereum.beacon.ssz.ExternalVarResolver}
    * instance
    */
-  String vectorSizeVar() default "";
+  String vectorLengthVar() default "";
 
   /**
    * Defines the order of SSZ property inside a container
