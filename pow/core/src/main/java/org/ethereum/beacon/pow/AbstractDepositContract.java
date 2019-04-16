@@ -8,7 +8,6 @@ import java.util.stream.Collectors;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
-import org.ethereum.beacon.core.ssz.DefaultSSZ;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.Time;
@@ -22,7 +21,6 @@ import reactor.core.publisher.MonoProcessor;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes8;
-import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public abstract class AbstractDepositContract implements DepositContract {
@@ -41,7 +39,7 @@ public abstract class AbstractDepositContract implements DepositContract {
     }
   }
 
-  private final SSZSerializer ssz = DefaultSSZ.createSSZSerializer();
+  private final SSZSerializer ssz = new SSZBuilder().buildSerializer();
 
   private long distanceFromHead;
 

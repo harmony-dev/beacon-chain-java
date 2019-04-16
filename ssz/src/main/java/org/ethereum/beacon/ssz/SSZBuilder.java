@@ -10,14 +10,19 @@ import java.util.stream.Collectors;
 import org.ethereum.beacon.ssz.access.*;
 import org.ethereum.beacon.ssz.access.SSZBasicAccessor;
 import org.ethereum.beacon.ssz.access.basic.BooleanPrimitive;
+import org.ethereum.beacon.ssz.access.basic.BytesCodec;
 import org.ethereum.beacon.ssz.access.basic.BytesPrimitive;
+import org.ethereum.beacon.ssz.access.basic.HashCodec;
 import org.ethereum.beacon.ssz.access.basic.StringPrimitive;
+import org.ethereum.beacon.ssz.access.basic.UIntCodec;
 import org.ethereum.beacon.ssz.access.basic.UIntPrimitive;
 import org.ethereum.beacon.ssz.access.container.SSZAnnotationSchemeBuilder;
 import org.ethereum.beacon.ssz.access.container.SSZSchemeBuilder;
 import org.ethereum.beacon.ssz.access.container.SimpleContainerAccessor;
 import org.ethereum.beacon.ssz.access.list.ArrayAccessor;
+import org.ethereum.beacon.ssz.access.list.BytesValueAccessor;
 import org.ethereum.beacon.ssz.access.list.ListAccessor;
+import org.ethereum.beacon.ssz.access.list.ReadListAccessor;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import org.ethereum.beacon.ssz.annotation.SSZTransient;
@@ -138,6 +143,10 @@ public class SSZBuilder {
     return this;
   }
 
+  public SSZBuilder withExternalVarResolver(Function<String, Object> externalVarResolver) {
+    return withExternalVarResolver(ExternalVarResolver.fromFunction(externalVarResolver));
+  }
+
   public SSZBuilder withExternalVarResolver(ExternalVarResolver externalVarResolver) {
     checkAlreadyInitialized();
     this.externalVarResolver = externalVarResolver;
@@ -211,6 +220,9 @@ public class SSZBuilder {
     basicCodecs.add(new BytesPrimitive());
     basicCodecs.add(new BooleanPrimitive());
     basicCodecs.add(new StringPrimitive());
+    basicCodecs.add(new UIntCodec());
+    basicCodecs.add(new BytesCodec());
+    basicCodecs.add(new HashCodec());
     return this;
   }
 
@@ -218,6 +230,8 @@ public class SSZBuilder {
     checkAlreadyInitialized();
     listAccessors.add(new ArrayAccessor());
     listAccessors.add(new ListAccessor());
+    listAccessors.add(new ReadListAccessor());
+    listAccessors.add(new BytesValueAccessor());
     return this;
   }
 

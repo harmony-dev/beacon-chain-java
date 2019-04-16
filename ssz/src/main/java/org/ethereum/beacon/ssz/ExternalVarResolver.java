@@ -24,6 +24,10 @@ public interface ExternalVarResolver extends Function<String, Object> {
     }
   }
 
+  static ExternalVarResolver fromFunction(Function<String, Object> function) {
+    return function::apply;
+  }
+
   /**
    * Resolves the variable of specific type.
    * @throws SSZSchemeException if variable is absent or of a wrong type

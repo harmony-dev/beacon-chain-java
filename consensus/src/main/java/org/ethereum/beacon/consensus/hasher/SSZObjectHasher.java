@@ -1,15 +1,15 @@
 package org.ethereum.beacon.consensus.hasher;
 
+import java.util.List;
+import java.util.function.Function;
 import org.ethereum.beacon.core.spec.SpecConstants;
-import org.ethereum.beacon.core.ssz.DefaultSSZ;
+import org.ethereum.beacon.core.spec.SpecConstantsResolver;
 import org.ethereum.beacon.core.types.Hashable;
+import org.ethereum.beacon.ssz.SSZBuilder;
 import org.ethereum.beacon.ssz.SSZHasher;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
-
-import java.util.List;
-import java.util.function.Function;
 
 /**
  * An object hasher implementation using Tree Hash algorithm described in the spec.
@@ -30,7 +30,8 @@ public class SSZObjectHasher implements ObjectHasher<Hash32> {
       SpecConstants constants, Function<BytesValue, Hash32> hashFunction) {
 
     SSZHasher sszHasher =
-        DefaultSSZ.createCommonSSZBuilder(constants)
+        new SSZBuilder()
+            .withExternalVarResolver(new SpecConstantsResolver(constants))
             .withIncrementalHasher(true)
             .buildHasher(hashFunction);
     return new SSZObjectHasher(sszHasher);
@@ -39,7 +40,7 @@ public class SSZObjectHasher implements ObjectHasher<Hash32> {
   public static SSZObjectHasher create(Function<BytesValue, Hash32> hashFunction) {
 
     SSZHasher sszHasher =
-        DefaultSSZ.createCommonSSZBuilder()
+        new SSZBuilder()
             .withIncrementalHasher(true)
             .buildHasher(hashFunction);
     return new SSZObjectHasher(sszHasher);
