@@ -155,7 +155,7 @@ public class SSZIncrementalHasher extends SSZSimpleHasher {
         Arrays.fill(newNodes, newPos + size, newPos * 2, getZeroHash(dist));
         oldPos /= 2;
         newPos /= 2;
-        size = (size - 1) / 2 + 1;
+        size = size == 1 ? 0 : (size - 1) / 2 + 1;
         dist++;
       }
 
