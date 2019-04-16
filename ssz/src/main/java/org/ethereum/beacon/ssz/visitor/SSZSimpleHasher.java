@@ -115,7 +115,7 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
     }
   }
 
-  protected Hash32 getZeroHash(int distanceFromBottom) {
+  public Hash32 getZeroHash(int distanceFromBottom) {
     if (zeroHashes[distanceFromBottom] == null) {
       if (distanceFromBottom == 0) {
         zeroHashes[0] = Hash32.ZERO;

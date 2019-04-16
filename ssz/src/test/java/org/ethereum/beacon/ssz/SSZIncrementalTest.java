@@ -555,6 +555,10 @@ public class SSZIncrementalTest {
     SSZType sszType = typeResolver.resolveSSZType(Container1.class);
     System.out.println(sszType.dumpHierarchy(""));
 
+    // warm up zero caches for precise hash counting
+    incrementalHasher.getZeroHash(30);
+    simpleHasher.getZeroHash(30);
+
     {
       countingHashInc.counter = 0;
       countingHashSimp.counter = 0;
