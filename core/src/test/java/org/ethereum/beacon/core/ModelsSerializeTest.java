@@ -20,6 +20,8 @@ import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.operations.slashing.SlashableAttestation;
+import org.ethereum.beacon.core.spec.SpecConstants;
+import org.ethereum.beacon.core.spec.SpecConstantsResolver;
 import org.ethereum.beacon.core.state.BeaconStateImpl;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Eth1DataVote;
@@ -53,6 +55,7 @@ public class ModelsSerializeTest {
   @Before
   public void setup() {
     sszSerializer = new SSZBuilder()
+        .withExternalVarResolver(new SpecConstantsResolver(new SpecConstants() {}))
         .buildSerializer();
   }
 
