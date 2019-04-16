@@ -34,7 +34,7 @@ import org.ethereum.beacon.ssz.type.SimpleTypeResolver;
 import org.ethereum.beacon.ssz.type.TypeResolver;
 import org.ethereum.beacon.ssz.visitor.SSZIncrementalHasher;
 import org.ethereum.beacon.ssz.visitor.MerkleTrie;
-import org.ethereum.beacon.ssz.visitor.SSZSimpleOptimizedHasher;
+import org.ethereum.beacon.ssz.visitor.SSZSimpleHasher;
 import org.ethereum.beacon.ssz.visitor.SSZVisitor;
 import org.ethereum.beacon.ssz.visitor.SSZVisitorHost;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -261,7 +261,7 @@ public class SSZBuilder {
     if (incrementalHasher) {
       hasherVisitor = new SSZIncrementalHasher(buildSerializer(), hashFunction, sszHashBytesPerChunk);
     } else {
-      hasherVisitor = new SSZSimpleOptimizedHasher(buildSerializer(), hashFunction, sszHashBytesPerChunk);
+      hasherVisitor = new SSZSimpleHasher(buildSerializer(), hashFunction, sszHashBytesPerChunk);
     }
     return new SSZHasher(typeResolver, visitorHost, hasherVisitor);
   }

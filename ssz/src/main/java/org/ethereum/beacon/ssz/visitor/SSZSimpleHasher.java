@@ -3,6 +3,7 @@ package org.ethereum.beacon.ssz.visitor;
 import static tech.pegasys.artemis.util.bytes.BytesValue.concat;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -18,7 +19,7 @@ import tech.pegasys.artemis.util.bytes.BytesValues;
 public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
 
   private final Hash32[] zeroHashes = new Hash32[32];
-  final SSZVisitorHandler<SSZSimpleSerializer.SSZSerializerResult> serializer;
+  final SSZVisitorHandler<SSZSerializerResult> serializer;
   final Function<BytesValue, Hash32> hashFunction;
   final int bytesPerChunk;
 
@@ -32,7 +33,7 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
 
   @Override
   public MerkleTrie visitBasicValue(SSZBasicType descriptor, Object value) {
-    SSZSimpleSerializer.SSZSerializerResult sszSerializerResult = serializer.visitAny(descriptor, value);
+    SSZSerializerResult sszSerializerResult = serializer.visitAny(descriptor, value);
     return merkleize(pack(sszSerializerResult.serializedBody));
   }
 
@@ -44,7 +45,7 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
     if (type.getChildrenCount(rawValue) == 0) {
       // empty chunk list
     } else if (type.isList() && ((SSZListType) type).getElementType().isBasicType()) {
-      SSZSimpleSerializer.SSZSerializerResult sszSerializerResult = serializer.visitAny(type, rawValue);
+      SSZSerializerResult sszSerializerResult = serializer.visitAny(type, rawValue);
 
       chunks = pack(sszSerializerResult.serializedBody);
     } else {
@@ -87,8 +88,19 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
       nodes[i + chunksCount] = i < chunks.size() ? chunks.get(i) : Bytes32.ZERO;
     }
 
-    for (int i = chunksCount - 1; i > 0; i--) {
-      nodes[i] = hashFunction.apply(concat(nodes[i * 2], nodes[i * 2 + 1]));
+    int len = (chunks.size() - 1) / 2 + 1;
+    int pos = chunksCount / 2;
+    int level = 1;
+    while (pos > 0) {
+      for (int i = 0; i < len; i++) {
+        nodes[pos + i] = hashFunction.apply(concat(nodes[(pos + i) * 2], nodes[(pos + i) * 2 + 1]));
+      }
+      for (int i = len; i < pos; i++) {
+        nodes[pos + i] = getZeroHash(level);
+      }
+      len = (len - 1) / 2 + 1;
+      pos /= 2;
+      level++;
     }
 
     nodes[0] = nodes[1];
