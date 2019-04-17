@@ -1,8 +1,7 @@
 package org.ethereum.beacon;
 
-import static java.util.Collections.singletonList;
-
 import java.util.List;
+import org.ethereum.beacon.bench.BenchSpecRegistry;
 import org.ethereum.beacon.chain.DefaultBeaconChain;
 import org.ethereum.beacon.chain.MutableBeaconChain;
 import org.ethereum.beacon.chain.ProposedBlockProcessor;
@@ -66,6 +65,7 @@ public class Launcher {
   private MultiValidatorService beaconChainValidator;
 
   private TimeCollector proposeTimeCollector;
+  private BenchSpecRegistry benchSpecRegistry;
 
   public Launcher(
       BeaconChainSpec spec,
@@ -74,7 +74,8 @@ public class Launcher {
       WireApi wireApi,
       BeaconChainStorageFactory storageFactory,
       Schedulers schedulers) {
-    this(spec, depositContract, validatorCred, wireApi, storageFactory, schedulers, new TimeCollector());
+    this(spec, depositContract, validatorCred, wireApi, storageFactory, schedulers, new TimeCollector(),
+        BenchSpecRegistry.NO_BENCHES);
   }
 
   public Launcher(
@@ -85,6 +86,19 @@ public class Launcher {
       BeaconChainStorageFactory storageFactory,
       Schedulers schedulers,
       TimeCollector proposeTimeCollector) {
+    this(spec, depositContract, validatorCred, wireApi, storageFactory, schedulers, proposeTimeCollector,
+        BenchSpecRegistry.NO_BENCHES);
+  }
+
+  public Launcher(
+      BeaconChainSpec spec,
+      DepositContract depositContract,
+      List<BLS381Credentials> validatorCred,
+      WireApi wireApi,
+      BeaconChainStorageFactory storageFactory,
+      Schedulers schedulers,
+      TimeCollector proposeTimeCollector,
+      BenchSpecRegistry benchSpecRegistry) {
 
     this.spec = spec;
     this.depositContract = depositContract;
@@ -93,6 +107,7 @@ public class Launcher {
     this.storageFactory = storageFactory;
     this.schedulers = schedulers;
     this.proposeTimeCollector = proposeTimeCollector;
+    this.benchSpecRegistry = benchSpecRegistry;
 
     if (depositContract != null) {
       Mono.from(depositContract.getChainStartMono()).subscribe(this::chainStarted);
@@ -113,15 +128,16 @@ public class Launcher {
     db = new InMemoryDatabase();
     beaconChainStorage = storageFactory.create(db);
 
-    blockVerifier = BeaconBlockVerifier.createDefault(spec);
-    stateVerifier = BeaconStateVerifier.createDefault(spec);
+    BeaconChainSpec blockBench = benchSpecRegistry.register(BenchSpecRegistry.BLOCK_BENCH, spec);
+    blockVerifier = BeaconBlockVerifier.createDefault(blockBench);
+    stateVerifier = BeaconStateVerifier.createDefault(blockBench);
 
     beaconChain =
         new DefaultBeaconChain(
             spec,
             initialTransition,
-            emptySlotTransition,
-            perBlockTransition,
+            benchEmptySlotTransition(spec),
+            new PerBlockTransition(blockBench),
             blockVerifier,
             stateVerifier,
             beaconChainStorage,
@@ -177,6 +193,17 @@ public class Launcher {
         .subscribe(beaconChain::insert);
   }
 
+  private EmptySlotTransition benchEmptySlotTransition(BeaconChainSpec spec) {
+    BeaconChainSpec slotBench = benchSpecRegistry.register(BenchSpecRegistry.SLOT_BENCH, spec);
+    BeaconChainSpec epochBench = benchSpecRegistry.register(BenchSpecRegistry.EPOCH_BENCH, spec);
+
+    PerSlotTransition perSlotTransition = new PerSlotTransition(slotBench);
+    StateCachingTransition stateCachingTransition = new StateCachingTransition(slotBench);
+    PerEpochTransition perEpochTransition = new PerEpochTransition(epochBench);
+    return new EmptySlotTransition(
+        new ExtendedSlotTransition(
+            stateCachingTransition, perEpochTransition, perSlotTransition, spec));
+  }
 
   public BeaconChainSpec getSpec() {
     return spec;

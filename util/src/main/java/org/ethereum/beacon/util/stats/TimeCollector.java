@@ -9,6 +9,10 @@ public class TimeCollector {
     counter += 1;
   }
 
+  public int getCounter() {
+    return counter;
+  }
+
   public void reset() {
     total = counter = 0;
   }

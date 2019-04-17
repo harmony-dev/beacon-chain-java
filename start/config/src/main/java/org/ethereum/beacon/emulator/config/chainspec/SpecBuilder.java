@@ -69,16 +69,6 @@ public class SpecBuilder {
       }
 
       @Override
-      public boolean bls_verify(
-          PublicKey blsPublicKey, Hash32 message, BLSSignature signature, UInt64 domain) {
-        if (specHelpersOptions.isBlsVerify()) {
-          return super.bls_verify(blsPublicKey, message, signature, domain);
-        } else {
-          return true;
-        }
-      }
-
-      @Override
       public boolean bls_verify_multiple(
           List<PublicKey> publicKeys,
           List<Hash32> messages,

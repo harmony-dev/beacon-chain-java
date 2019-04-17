@@ -967,11 +967,6 @@ public interface HelperFunction extends SpecCommons {
 
   default boolean bls_verify(BLSPubkey publicKey, Hash32 message, BLSSignature signature, UInt64 domain) {
     PublicKey blsPublicKey = PublicKey.create(publicKey);
-    return bls_verify(blsPublicKey, message, signature, domain);
-  }
-
-  default boolean bls_verify(
-      PublicKey blsPublicKey, Hash32 message, BLSSignature signature, UInt64 domain) {
     MessageParameters messageParameters = MessageParameters.create(message, domain);
     Signature blsSignature = Signature.create(signature);
     return BLS381.verify(messageParameters, blsSignature, blsPublicKey);
