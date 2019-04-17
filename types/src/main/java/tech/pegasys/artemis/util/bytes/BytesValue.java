@@ -21,6 +21,7 @@ import java.security.MessageDigest;
 import com.google.common.annotations.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
 import io.vertx.core.buffer.Buffer;
+import java.util.List;
 
 /**
  * A value made of bytes.
@@ -127,6 +128,12 @@ public interface BytesValue extends Comparable<BytesValue> {
         v2.slice(0, length - lengthInV1).copyTo(res, lengthInV1);
         return res;
       }
+
+      @Override
+      public void update(MessageDigest digest) {
+        v1.update(digest);
+        v2.update(digest);
+      }
     };
   }
 
@@ -149,6 +156,22 @@ public interface BytesValue extends Comparable<BytesValue> {
     } else {
       return wrap(v1, v2);
     }
+  }
+
+  static BytesValue concat(List<? extends BytesValue> vals) {
+    // TODO optimize this naive implementation
+    if (vals.isEmpty()) {
+      return BytesValue.EMPTY;
+    }
+    int size = vals.stream().mapToInt(BytesValue::size).sum();
+    byte[] resBytes = new byte[size];
+    int pos = 0;
+    for (BytesValue val : vals) {
+      byte[] srcArr = val.getArrayUnsafe();
+      System.arraycopy(srcArr, 0, resBytes, pos, srcArr.length);
+      pos += srcArr.length;
+    }
+    return BytesValue.wrap(resBytes);
   }
 
   /**

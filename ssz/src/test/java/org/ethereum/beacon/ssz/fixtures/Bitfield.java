@@ -1,11 +1,14 @@
 package org.ethereum.beacon.ssz.fixtures;
 
-import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
 import java.util.Objects;
+import org.ethereum.beacon.ssz.access.SSZField;
+import org.ethereum.beacon.ssz.access.list.AbstractListAccessor;
+import org.ethereum.beacon.ssz.annotation.SSZSerializable;
+import org.ethereum.beacon.ssz.fixtures.Bitfield.BitfieldAccessor;
 
 /**
  * Bitfield is bit array where every bit represents status of attester with corresponding index
@@ -13,8 +16,45 @@ import java.util.Objects;
  * <p>All methods that could change payload are cloning source, keeping instances of Bitfield
  * immutable.
  */
-@SSZSerializable(encode = "getData")
+@SSZSerializable(listAccessor = Bitfield.BitfieldAccessor.class)
 public class Bitfield {
+
+  public static class BitfieldAccessor extends AbstractListAccessor {
+
+    @Override
+    public int getChildrenCount(Object value) {
+      return ((Bitfield) value).size() / 8;
+    }
+
+    @Override
+    public Object getChildValue(Object value, int idx) {
+      return ((Bitfield) value).getData()[idx];
+    }
+
+    @Override
+    public SSZField getListElementType(SSZField listTypeDescriptor) {
+      return new SSZField(byte.class);
+    }
+
+    @Override
+    public ListInstanceBuilder createInstanceBuilder(SSZField listType) {
+      return new SimpleInstanceBuilder() {
+        @Override
+        protected Object buildImpl(List<Object> children) {
+          byte[] vals = new byte[children.size()];
+          for (int i = 0; i < children.size(); i++) {
+            vals[i] = ((Number) children.get(i)).byteValue();
+          }
+          return new Bitfield(vals);
+        }
+      };
+    }
+
+    @Override
+    public boolean isSupported(SSZField field) {
+      return Bitfield.class.isAssignableFrom(field.getRawClass());
+    }
+  }
 
   private final BitSet payload;
   private final int size; // in Bits

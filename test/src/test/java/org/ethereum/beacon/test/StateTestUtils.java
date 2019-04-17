@@ -20,6 +20,7 @@ import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.operations.slashing.SlashableAttestation;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Fork;
 import org.ethereum.beacon.core.state.PendingAttestation;
@@ -209,8 +210,8 @@ public abstract class StateTestUtils {
             : BLSSignature.ZERO);
   }
 
-  public static MutableBeaconState parseBeaconState(BeaconStateData data) {
-    MutableBeaconState state = BeaconState.getEmpty().createMutableCopy();
+  public static MutableBeaconState parseBeaconState(SpecConstants specConstants, BeaconStateData data) {
+    MutableBeaconState state = BeaconState.getEmpty(specConstants).createMutableCopy();
 
     state.setSlot(SlotNumber.castFrom(UInt64.valueOf(data.getSlot())));
     state.setGenesisTime(Time.of(data.getGenesisTime()));
@@ -240,17 +241,17 @@ public abstract class StateTestUtils {
 
     state.getValidatorRegistry().addAll(parseValidatorRegistry(data.getValidatorRegistry()));
     state.getValidatorBalances().addAll(parseBalances(data.getValidatorBalances()));
-    state.getLatestRandaoMixes().addAll(parseHashes(data.getLatestRandaoMixes()));
+    state.getLatestRandaoMixes().setAll(parseHashes(data.getLatestRandaoMixes()));
     state.getPreviousEpochAttestations().addAll(
         parsePendingAttestations(data.getPreviousEpochAttestations()));
     state.getCurrentEpochAttestations().addAll(
         parsePendingAttestations(data.getCurrentEpochAttestations()));
     state.getCurrentCrosslinks().addAll(parseCrosslinks(data.getLatestCrosslinks()));
-    state.getLatestBlockRoots().addAll(parseHashes(data.getLatestBlockRoots()));
-    state.getLatestStateRoots().addAll(parseHashes(data.getLatestStateRoots()));
-    state.getLatestActiveIndexRoots().addAll(parseHashes(data.getLatestActiveIndexRoots()));
+    state.getLatestBlockRoots().setAll(parseHashes(data.getLatestBlockRoots()));
+    state.getLatestStateRoots().setAll(parseHashes(data.getLatestStateRoots()));
+    state.getLatestActiveIndexRoots().setAll(parseHashes(data.getLatestActiveIndexRoots()));
     state.getHistoricalRoots().addAll(parseHashes(data.getHistoricalRoots()));
-    state.getLatestSlashedBalances().addAll(parseBalances(data.getLatestSlashedBalances()));
+    state.getLatestSlashedBalances().setAll(parseBalances(data.getLatestSlashedBalances()));
 
     return state;
   }

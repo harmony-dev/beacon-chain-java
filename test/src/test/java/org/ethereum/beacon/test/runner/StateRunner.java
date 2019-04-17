@@ -78,7 +78,7 @@ public class StateRunner implements Runner {
   }
 
   private BeaconStateEx buildInitialState(BeaconChainSpec spec, BeaconStateData stateData) {
-    BeaconState state = StateTestUtils.parseBeaconState(stateData);
+    BeaconState state = StateTestUtils.parseBeaconState(spec.getConstants(), stateData);
     return new BeaconStateExImpl(
         state, spec.signed_root(state.getLatestBlockHeader()), TransitionType.BLOCK);
   }

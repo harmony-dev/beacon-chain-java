@@ -56,7 +56,7 @@ public interface OnGenesis extends HelperFunction {
   */
   default BeaconState get_genesis_beacon_state(
       List<Deposit> genesisValidatorDeposits, Time genesisTime, Eth1Data genesisEth1Data) {
-    MutableBeaconState state = BeaconState.getEmpty().createMutableCopy();
+    MutableBeaconState state = BeaconState.getEmpty(getConstants()).createMutableCopy();
 
     // Misc
     state.setSlot(getConstants().getGenesisSlot());
@@ -72,8 +72,7 @@ public interface OnGenesis extends HelperFunction {
     state.setValidatorRegistryUpdateEpoch(getConstants().getGenesisEpoch());
 
     // Randomness and committees
-    state.getLatestRandaoMixes().addAll(
-        nCopies(getConstants().getLatestRandaoMixesLength().getIntValue(), Hash32.ZERO));
+    state.getLatestRandaoMixes().setAll(Hash32.ZERO);
     state.setPreviousShufflingStartShard(getConstants().getGenesisStartShard());
     state.setCurrentShufflingStartShard(getConstants().getGenesisStartShard());
     state.setPreviousShufflingEpoch(getConstants().getGenesisEpoch());
@@ -99,14 +98,10 @@ public interface OnGenesis extends HelperFunction {
     state.getCurrentCrosslinks().addAll(
         nCopies(getConstants().getShardCount().getIntValue(),
             new Crosslink(getConstants().getGenesisEpoch(), Hash32.ZERO)));
-    state.getLatestBlockRoots().addAll(
-        nCopies(getConstants().getSlotsPerHistoricalRoot().getIntValue(), Hash32.ZERO));
-    state.getLatestStateRoots().addAll(
-        nCopies(getConstants().getSlotsPerHistoricalRoot().getIntValue(), Hash32.ZERO));
-    state.getLatestActiveIndexRoots().addAll(
-        nCopies(getConstants().getLatestActiveIndexRootsLength().getIntValue(), Hash32.ZERO));
-    state.getLatestSlashedBalances().addAll(
-        nCopies(getConstants().getLatestSlashedExitLength().getIntValue(), Gwei.ZERO));
+    state.getLatestBlockRoots().setAll(Hash32.ZERO);
+    state.getLatestStateRoots().setAll(Hash32.ZERO);
+    state.getLatestActiveIndexRoots().setAll(Hash32.ZERO);
+    state.getLatestSlashedBalances().setAll(Gwei.ZERO);
     state.setLatestBlockHeader(get_temporary_block_header(get_empty_block()));
     state.getHistoricalRoots().clear();
 

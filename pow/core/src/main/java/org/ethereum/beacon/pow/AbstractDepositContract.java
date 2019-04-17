@@ -12,17 +12,15 @@ import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.schedulers.Schedulers;
-import org.ethereum.beacon.ssz.Serializer;
+import org.ethereum.beacon.ssz.SSZBuilder;
+import org.ethereum.beacon.ssz.SSZSerializer;
 import org.ethereum.beacon.stream.SimpleProcessor;
 import org.javatuples.Pair;
 import org.reactivestreams.Publisher;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.MonoProcessor;
-import reactor.core.publisher.ReplayProcessor;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes8;
-import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public abstract class AbstractDepositContract implements DepositContract {
@@ -41,7 +39,7 @@ public abstract class AbstractDepositContract implements DepositContract {
     }
   }
 
-  private final Serializer ssz = Serializer.annotationSerializer();
+  private final SSZSerializer ssz = new SSZBuilder().buildSerializer();
 
   private long distanceFromHead;
 
@@ -119,7 +117,7 @@ public abstract class AbstractDepositContract implements DepositContract {
   private DepositData parseDepositData(byte[] data) {
     Gwei amount = Gwei.castFrom(UInt64.fromBytesBigEndian(Bytes8.wrap(data, 0)));
     Time timestamp = Time.castFrom(UInt64.fromBytesBigEndian(Bytes8.wrap(data, 8)));
-    DepositInput depositInput = ssz.decode(BytesValue.wrap(data, 16, data.length - 16),
+    DepositInput depositInput = ssz.decode(Arrays.copyOfRange(data, 16, data.length),
         DepositInput.class);
     return new DepositData(amount, timestamp, depositInput);
   }

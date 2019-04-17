@@ -6,17 +6,18 @@ import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import org.ethereum.beacon.ssz.access.container.SSZAnnotationSchemeBuilder;
 
 /**
  * SSZ model field annotation. Used at model field definition.
  *
  * <p>Clarifies SSZ encoding/decoding details
  *
- * <p>Required if {@link org.ethereum.beacon.ssz.SSZAnnotationSchemeBuilder}
+ * <p>Required if {@link SSZAnnotationSchemeBuilder}
  * `explicitFieldAnnotation` is set to <b>true</b>, otherwise it's optional.
  */
 @Documented
-@Target(ElementType.FIELD)
+@Target({ElementType.FIELD, ElementType.METHOD})
 @Inherited
 @Retention(RetentionPolicy.RUNTIME)
 public @interface SSZ {
@@ -74,12 +75,20 @@ public @interface SSZ {
   String type() default "";
 
   /**
-   * If true, non-standard field is not handled like container, instead its type is passed through
-   * and reconstructed
-   *
-   * <p>So if you need to have, for example, some field to be stored as "hash32" in SSZ but you
-   * don't want to use byte[] for it in Java representation, you need some class to handle it, this
-   * parameter when set to <b>true</b> marks that it's such kind of field
+   * Indicates vector type (list with fixed length) and specifies this vector length
    */
-  boolean skipContainer() default false;
+  int vectorLength() default 0;
+
+  /**
+   * Indicates vector type (list with fixed length) and specifies the external variable
+   * name which should be resolved to the vector length at runtime during type hierarchy construction
+   * The variable is intended to be resolved via {@link org.ethereum.beacon.ssz.ExternalVarResolver}
+   * instance
+   */
+  String vectorLengthVar() default "";
+
+  /**
+   * Defines the order of SSZ property inside a container
+   */
+  int order() default -1;
 }

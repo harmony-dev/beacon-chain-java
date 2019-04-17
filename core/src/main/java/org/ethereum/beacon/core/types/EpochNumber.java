@@ -24,6 +24,10 @@ public class EpochNumber extends UInt64 implements
     super(uint);
   }
 
+  public EpochNumber(int i) {
+    super(i);
+  }
+
   @Override
   public EpochNumber plus(long unsignedAddend) {
     return new EpochNumber(super.plus(unsignedAddend));

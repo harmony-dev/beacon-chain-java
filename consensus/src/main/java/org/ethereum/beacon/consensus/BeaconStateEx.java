@@ -16,7 +16,12 @@ public interface BeaconStateEx extends BeaconState {
     return new BeaconStateExImpl(BeaconState.getEmpty(), Hash32.ZERO, TransitionType.UNKNOWN);
   }
 
-  Hash32 getHeadBlockHash();
+  static BeaconStateEx getEmpty(SpecConstants specConst) {
+    return new BeaconStateExImpl(BeaconState.getEmpty(specConst), Hash32.ZERO, TransitionType.UNKNOWN);
+  }
+
+
+    Hash32 getHeadBlockHash();
 
   TransitionType getTransition();
 

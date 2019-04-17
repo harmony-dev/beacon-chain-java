@@ -30,7 +30,7 @@ public class UInt64 extends Number implements Comparable<UInt64> {
 
   private final long value;
 
-  private UInt64(long value) {
+  protected UInt64(long value) {
     this.value = value;
   }
 

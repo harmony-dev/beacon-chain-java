@@ -20,15 +20,10 @@ class ListImpl<IndexType extends Number, ValueType>
   private final List<ValueType> backedList;
   private final Function<Integer, IndexType> indexConverter;
 
-  private ListImpl(List<ValueType> backedList,
-      Function<Integer, IndexType> indexConverter) {
-    this.backedList = backedList;
-    this.indexConverter = indexConverter;
-  }
-
   ListImpl(Collection<ValueType> source,
       Function<Integer, IndexType> indexConverter) {
-    this(new ArrayList<>(source), indexConverter);
+    this.backedList = new ArrayList<>(source);
+    this.indexConverter = indexConverter;
   }
 
   ListImpl(Function<Integer, IndexType> indexConverter) {
@@ -107,6 +102,26 @@ class ListImpl<IndexType extends Number, ValueType>
   }
 
   @Override
+  public void setAll(ValueType singleValue) {
+    for (int i = 0; i < backedList.size(); i++) {
+      backedList.set(i, singleValue);
+    }
+  }
+
+  @Override
+  public void setAll(Iterable<ValueType> singleValue) {
+    Iterator<ValueType> it = singleValue.iterator();
+    int idx = 0;
+    while (it.hasNext() && idx < backedList.size()) {
+      backedList.set(idx, it.next());
+      idx++;
+    }
+    if (it.hasNext() || idx < backedList.size()) {
+      throw new IllegalArgumentException("The sizes of this vector and supplied collection differ");
+    }
+  }
+
+  @Override
   public void add(IndexType index, ValueType element) {
     backedList.add(index.intValue(), element);
   }
@@ -128,7 +143,7 @@ class ListImpl<IndexType extends Number, ValueType>
 
   @Override
   public boolean equals(Object o) {
-    return backedList.equals(o);
+    return backedList.equals(((ListImpl)o).backedList);
   }
 
   @Override

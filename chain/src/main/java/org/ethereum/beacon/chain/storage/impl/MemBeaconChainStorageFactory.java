@@ -13,11 +13,14 @@ import org.ethereum.beacon.db.source.impl.HashMapHoleyList;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
 public class MemBeaconChainStorageFactory  implements BeaconChainStorageFactory {
+  private final ObjectHasher<Hash32> objectHasher;
+
+  public MemBeaconChainStorageFactory(ObjectHasher<Hash32> objectHasher) {
+    this.objectHasher = objectHasher;
+  }
 
   @Override
   public BeaconChainStorage create(Database database) {
-    ObjectHasher<Hash32> objectHasher = ObjectHasher.createSSZOverKeccak256();
-
     BeaconBlockStorage blockStorage =
         new BeaconBlockStorageImpl(objectHasher, new HashMapDataSource<>(), new HashMapHoleyList<>());
     BeaconStateStorage stateStorage =

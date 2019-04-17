@@ -22,7 +22,7 @@ public class AttestationRecord {
   @SSZ(type = SSZ.Hash32)
   private final byte[] shardBlockHash;
   // Who is participating
-  @SSZ(type = SSZ.Bytes, skipContainer = true)
+  @SSZ(type = SSZ.Bytes)
   private final Bitfield attesterBitfield;
   @SSZ(type = SSZ.Hash32)
   private final byte[] justifiedBlockHash;
