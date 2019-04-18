@@ -22,6 +22,7 @@ import org.ethereum.beacon.consensus.transition.PerSlotTransition;
 import org.ethereum.beacon.consensus.transition.StateCachingTransition;
 import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
 import org.ethereum.beacon.consensus.verifier.BeaconStateVerifier;
+import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.db.InMemoryDatabase;
 import org.ethereum.beacon.pow.DepositContract;
@@ -130,8 +131,13 @@ public class Launcher {
     beaconChainStorage = storageFactory.create(db);
 
     BeaconChainSpec blockBench = benchmarkController.wrap(BenchmarkRoutine.BLOCK, spec);
-    blockVerifier = BeaconBlockVerifier.createDefault(blockBench);
-    stateVerifier = BeaconStateVerifier.createDefault(blockBench);
+    // do not create block verifier for benchmarks, otherwise verification won't be tracked by
+    // controller
+    blockVerifier =
+        isBenchmarkMode()
+            ? (block, state) -> VerificationResult.PASSED
+            : BeaconBlockVerifier.createDefault(spec);
+    stateVerifier = BeaconStateVerifier.createDefault(spec);
 
     beaconChain =
         new DefaultBeaconChain(
@@ -204,6 +210,10 @@ public class Launcher {
     return new EmptySlotTransition(
         new ExtendedSlotTransition(
             stateCachingTransition, perEpochTransition, perSlotTransition, spec));
+  }
+
+  private boolean isBenchmarkMode() {
+    return benchmarkController != BenchmarkController.NO_BENCHES;
   }
 
   public BeaconChainSpec getSpec() {

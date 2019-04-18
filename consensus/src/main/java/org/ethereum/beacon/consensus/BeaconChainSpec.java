@@ -40,12 +40,11 @@ public interface BeaconChainSpec
   SpecConstants DEFAULT_CONSTANTS = new SpecConstants() {};
 
   /**
-   * Creates a BeaconChainSpec instance with given {@link SpecConstants} and time supplier,
-   * {@link Hashes#keccak256(BytesValue)} as a hash function and {@link SSZObjectHasher} as an object
+   * Creates a BeaconChainSpec instance with given {@link SpecConstants} and time supplier, {@link
+   * Hashes#keccak256(BytesValue)} as a hash function and {@link SSZObjectHasher} as an object
    * hasher.
    *
-   * @param constants a chain getConstants().
-   *    <code>Schedulers::currentTime</code> is passed
+   * @param constants a chain getConstants(). <code>Schedulers::currentTime</code> is passed
    * @return spec helpers instance.
    */
   static BeaconChainSpec createWithSSZHasher(@Nonnull SpecConstants constants) {
@@ -71,7 +70,8 @@ public interface BeaconChainSpec
   default Time get_slot_start_time(BeaconState state, SlotNumber slot) {
     return state
         .getGenesisTime()
-        .plus(getConstants().getSecondsPerSlot().times(slot.minus(getConstants().getGenesisSlot())));
+        .plus(
+            getConstants().getSecondsPerSlot().times(slot.minus(getConstants().getGenesisSlot())));
   }
 
   default Time get_slot_middle_time(BeaconState state, SlotNumber slot) {

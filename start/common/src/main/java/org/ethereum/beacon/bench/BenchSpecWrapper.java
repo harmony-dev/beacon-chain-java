@@ -154,19 +154,11 @@ public class BenchSpecWrapper implements BeaconChainSpec {
 
   @Override
   public void process_attestation(MutableBeaconState state, Attestation attestation) {
-    callAndTrack("process_attestation", () -> delegate.process_attestation(state, attestation));
-  }
-
-  public String buildReport() {
-    StringBuilder sb = new StringBuilder();
-    collectors.forEach(
-        (name, collector) -> {
-          sb.append(
-              String.format(
-                  "%s: avg=%.4fms, count=%d\n",
-                  name, collector.getAvg() / 1_000_000d, collector.getCounter()));
-        });
-    return sb.toString();
+    callAndTrack("process_attestation", () -> {
+      // count verification in benchmark measurements
+      delegate.verify_attestation(state, attestation);
+      delegate.process_attestation(state, attestation);
+    });
   }
 
   void startTracking() {
