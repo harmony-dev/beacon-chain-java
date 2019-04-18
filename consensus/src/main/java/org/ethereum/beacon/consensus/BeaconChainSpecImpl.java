@@ -9,16 +9,22 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
 /** Default implementation of {@link BeaconChainSpec}. */
 public class BeaconChainSpecImpl implements BeaconChainSpec {
   private final SpecConstants constants;
-  private final ObjectHasher<Hash32> objectHasher;
   private final Function<BytesValue, Hash32> hashFunction;
+  private final ObjectHasher<Hash32> objectHasher;
+  private final boolean blsVerify;
+  private final boolean blsVerifyProofOfPossession;
 
   public BeaconChainSpecImpl(
       SpecConstants constants,
       Function<BytesValue, Hash32> hashFunction,
-      ObjectHasher<Hash32> objectHasher) {
+      ObjectHasher<Hash32> objectHasher,
+      boolean blsVerify,
+      boolean blsVerifyProofOfPossession) {
     this.constants = constants;
-    this.objectHasher = objectHasher;
     this.hashFunction = hashFunction;
+    this.objectHasher = objectHasher;
+    this.blsVerify = blsVerify;
+    this.blsVerifyProofOfPossession = blsVerifyProofOfPossession;
   }
 
   @Override
@@ -34,5 +40,15 @@ public class BeaconChainSpecImpl implements BeaconChainSpec {
   @Override
   public Function<BytesValue, Hash32> getHashFunction() {
     return hashFunction;
+  }
+
+  @Override
+  public boolean isBlsVerify() {
+    return blsVerify;
+  }
+
+  @Override
+  public boolean isBlsVerifyProofOfPossession() {
+    return blsVerifyProofOfPossession;
   }
 }

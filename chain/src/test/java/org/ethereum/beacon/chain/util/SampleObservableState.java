@@ -14,12 +14,8 @@ import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.StateTransitions;
 import org.ethereum.beacon.consensus.TestUtils;
 import org.ethereum.beacon.consensus.transition.EmptySlotTransition;
-import org.ethereum.beacon.consensus.transition.ExtendedSlotTransition;
 import org.ethereum.beacon.consensus.transition.InitialStateTransition;
 import org.ethereum.beacon.consensus.transition.PerBlockTransition;
-import org.ethereum.beacon.consensus.transition.PerEpochTransition;
-import org.ethereum.beacon.consensus.transition.PerSlotTransition;
-import org.ethereum.beacon.consensus.transition.StateCachingTransition;
 import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
 import org.ethereum.beacon.consensus.verifier.BeaconStateVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
@@ -77,7 +73,7 @@ public class SampleObservableState {
             return SlotNumber.of(genesisSlot);
           }
         };
-    this.spec = BeaconChainSpec.createWithSSZHasher(specConstants);
+    this.spec = BeaconChainSpec.createWithDefaultHasher(specConstants);
 
     Pair<List<Deposit>, List<KeyPair>> anyDeposits = TestUtils
         .getAnyDeposits(rnd, spec, 8);

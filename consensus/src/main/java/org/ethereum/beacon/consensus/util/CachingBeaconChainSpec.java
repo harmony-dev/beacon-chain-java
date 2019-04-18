@@ -28,15 +28,34 @@ public class CachingBeaconChainSpec extends BeaconChainSpecImpl {
   private ValidatorIndex maxCachedIndex = ValidatorIndex.ZERO;
   private final Map<BLSPubkey, ValidatorIndex> pubkeyToIndexCache = new ConcurrentHashMap<>();
 
+  private final boolean cacheEnabled;
+
   public CachingBeaconChainSpec(
       SpecConstants constants,
       Function<BytesValue, Hash32> hashFunction,
-      ObjectHasher<Hash32> objectHasher) {
-    super(constants, hashFunction, objectHasher);
+      ObjectHasher<Hash32> objectHasher,
+      boolean blsVerify,
+      boolean blsVerifyProofOfPossession,
+      boolean cacheEnabled) {
+    super(constants, hashFunction, objectHasher, blsVerify, blsVerifyProofOfPossession);
+    this.cacheEnabled = cacheEnabled;
+  }
+
+  public CachingBeaconChainSpec(
+      SpecConstants constants,
+      Function<BytesValue, Hash32> hashFunction,
+      ObjectHasher<Hash32> objectHasher,
+      boolean blsVerify,
+      boolean blsVerifyProofOfPossession) {
+    this(constants, hashFunction, objectHasher, blsVerify, blsVerifyProofOfPossession, true);
   }
 
   @Override
   public List<UInt64> get_permuted_list(List<? extends UInt64> indices, Bytes32 seed) {
+    if (!cacheEnabled) {
+      return super.get_permuted_list(indices, seed);
+    }
+
     return shufflerCache.get(
         Pair.with(indices, seed),
         k -> super.get_permuted_list(k.getValue0(), k.getValue1()));
@@ -44,16 +63,28 @@ public class CachingBeaconChainSpec extends BeaconChainSpecImpl {
 
   @Override
   public Hash32 hash_tree_root(Object object) {
+    if (!cacheEnabled) {
+      return super.hash_tree_root(object);
+    }
+
     return hashTreeRootCache.get(object, super::hash_tree_root);
   }
 
   @Override
   public Hash32 signed_root(Object object) {
+    if (!cacheEnabled) {
+      return super.signed_root(object);
+    }
+
     return signedRootCache.get(object, super::signed_root);
   }
 
   @Override
   public ValidatorIndex get_validator_index_by_pubkey(BeaconState state, BLSPubkey pubkey) {
+    if (!cacheEnabled) {
+      return super.get_validator_index_by_pubkey(state, pubkey);
+    }
+
     // relying on the fact that at index -> validator is invariant
     if (state.getValidatorRegistry().size().greater(maxCachedIndex)) {
       for (ValidatorIndex index : maxCachedIndex.iterateTo(state.getValidatorRegistry().size())) {
@@ -62,5 +93,9 @@ public class CachingBeaconChainSpec extends BeaconChainSpecImpl {
       maxCachedIndex = state.getValidatorRegistry().size();
     }
     return pubkeyToIndexCache.getOrDefault(pubkey, ValidatorIndex.MAX);
+  }
+
+  public boolean isCacheEnabled() {
+    return cacheEnabled;
   }
 }

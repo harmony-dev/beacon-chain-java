@@ -40,7 +40,7 @@ public class BenchmarkControllerImpl implements BenchmarkController {
 
   private static class BenchInstance {
     final BenchmarkRoutine routine;
-    final BenchSpecWrapper specWrapper;
+    final BenchmarkingBeaconChainSpec specWrapper;
     final SlotNumber startSlot;
     final SlotNumber measurementPeriod;
     final List<Map<String, TimeCollector>> measurements = new ArrayList<>();
@@ -49,7 +49,7 @@ public class BenchmarkControllerImpl implements BenchmarkController {
 
     private BenchInstance(
         BenchmarkRoutine routine,
-        BenchSpecWrapper specWrapper,
+        BenchmarkingBeaconChainSpec specWrapper,
         SlotNumber startSlot,
         SlotNumber measurementPeriod) {
       this.routine = routine;
@@ -66,14 +66,14 @@ public class BenchmarkControllerImpl implements BenchmarkController {
           // start tracking slots and blocks since the beginning of the 2nd epoch
           return new BenchInstance(
               routine,
-              new BenchSpecWrapper(spec),
+              BenchmarkingBeaconChainSpec.wrap(spec),
               constants.getGenesisSlot().plus(constants.getSlotsPerEpoch()),
               SlotNumber.of(1));
         case EPOCH:
           // start tracking epochs when first epoch transition has happened
           return new BenchInstance(
               routine,
-              new BenchSpecWrapper(spec),
+              BenchmarkingBeaconChainSpec.wrap(spec),
               constants.getGenesisSlot().plus(constants.getSlotsPerEpoch()).increment(),
               constants.getSlotsPerEpoch());
         default:

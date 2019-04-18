@@ -7,6 +7,7 @@ import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -689,7 +690,7 @@ public interface HelperFunction extends SpecCommons {
   default void process_deposit(
       MutableBeaconState state,
       Deposit deposit) {
-    process_deposit_inner(state, deposit, true);
+    process_deposit_inner(state, deposit, isBlsVerifyProofOfPossession());
   }
   /*
     def process_deposit(state: BeaconState, deposit: Deposit) -> None:
@@ -966,6 +967,10 @@ public interface HelperFunction extends SpecCommons {
   }
 
   default boolean bls_verify(BLSPubkey publicKey, Hash32 message, BLSSignature signature, UInt64 domain) {
+    if (!isBlsVerify()) {
+      return true;
+    }
+
     PublicKey blsPublicKey = PublicKey.create(publicKey);
     MessageParameters messageParameters = MessageParameters.create(message, domain);
     Signature blsSignature = Signature.create(signature);
@@ -974,6 +979,10 @@ public interface HelperFunction extends SpecCommons {
 
   default boolean bls_verify_multiple(
       List<PublicKey> publicKeys, List<Hash32> messages, BLSSignature signature, UInt64 domain) {
+    if (!isBlsVerify()) {
+      return true;
+    }
+
     List<MessageParameters> messageParameters =
         messages.stream()
             .map(hash -> MessageParameters.create(hash, domain))
@@ -983,6 +992,10 @@ public interface HelperFunction extends SpecCommons {
   }
 
   default PublicKey bls_aggregate_pubkeys(List<BLSPubkey> publicKeysBytes) {
+    if (!isBlsVerify()) {
+      return PublicKey.aggregate(Collections.emptyList());
+    }
+
     List<PublicKey> publicKeys = publicKeysBytes.stream().map(PublicKey::create).collect(toList());
     return PublicKey.aggregate(publicKeys);
   }

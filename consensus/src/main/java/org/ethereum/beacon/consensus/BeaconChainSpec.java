@@ -12,6 +12,7 @@ import org.ethereum.beacon.consensus.spec.HelperFunction;
 import org.ethereum.beacon.consensus.spec.OnGenesis;
 import org.ethereum.beacon.consensus.spec.SlotProcessing;
 import org.ethereum.beacon.consensus.spec.StateCaching;
+import org.ethereum.beacon.consensus.util.CachingBeaconChainSpec;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.types.Millis;
@@ -40,23 +41,25 @@ public interface BeaconChainSpec
   SpecConstants DEFAULT_CONSTANTS = new SpecConstants() {};
 
   /**
-   * Creates a BeaconChainSpec instance with given {@link SpecConstants} and time supplier, {@link
+   * Creates a BeaconChainSpec instance with given {@link SpecConstants}, {@link
    * Hashes#keccak256(BytesValue)} as a hash function and {@link SSZObjectHasher} as an object
    * hasher.
    *
    * @param constants a chain getConstants(). <code>Schedulers::currentTime</code> is passed
    * @return spec helpers instance.
    */
-  static BeaconChainSpec createWithSSZHasher(@Nonnull SpecConstants constants) {
+  static BeaconChainSpec createWithDefaultHasher(@Nonnull SpecConstants constants) {
     Objects.requireNonNull(constants);
 
-    Function<BytesValue, Hash32> hashFunction = Hashes::keccak256;
-    ObjectHasher<Hash32> sszHasher = SSZObjectHasher.create(hashFunction);
-    return new BeaconChainSpecImpl(constants, hashFunction, sszHasher);
+    return new Builder()
+        .withConstants(constants)
+        .withDefaultHashFunction()
+        .withDefaultHasher()
+        .build();
   }
 
   static BeaconChainSpec createWithDefaults() {
-    return createWithSSZHasher(DEFAULT_CONSTANTS);
+    return createWithDefaultHasher(DEFAULT_CONSTANTS);
   }
 
   default SlotNumber get_current_slot(BeaconState state, long systemTime) {
@@ -84,5 +87,67 @@ public interface BeaconChainSpec
 
   default boolean is_current_slot(BeaconState state, long systemTime) {
     return state.getSlot().equals(get_current_slot(state, systemTime));
+  }
+
+  class Builder {
+    private SpecConstants constants;
+    private Function<BytesValue, Hash32> hashFunction;
+    private ObjectHasher<Hash32> hasher;
+    private boolean cache = false;
+    private boolean blsVerify = true;
+    private boolean blsVerifyProofOfPossession = true;
+
+    public Builder withConstants(SpecConstants constants) {
+      this.constants = constants;
+      return this;
+    }
+
+    public Builder withHashFunction(
+        Function<BytesValue, Hash32> hashFunction) {
+      this.hashFunction = hashFunction;
+      return this;
+    }
+
+    public Builder withHasher(
+        ObjectHasher<Hash32> hasher) {
+      this.hasher = hasher;
+      return this;
+    }
+
+    public Builder withBlsVerify(boolean blsVerify) {
+      this.blsVerify = blsVerify;
+      return this;
+    }
+
+    public Builder withCache(boolean cache) {
+      this.cache = cache;
+      return this;
+    }
+
+    public Builder withBlsVerifyProofOfPossession(boolean blsVerifyProofOfPossession) {
+      this.blsVerifyProofOfPossession = blsVerifyProofOfPossession;
+      return this;
+    }
+
+    public Builder withDefaultHashFunction() {
+      return withHashFunction(Hashes::keccak256);
+    }
+
+    public Builder withDefaultHasher() {
+      return withHasher(SSZObjectHasher.create(Hashes::keccak256));
+    }
+
+    public Builder enableCache() {
+      return withCache(true);
+    }
+
+    public BeaconChainSpec build() {
+      assert constants != null;
+      assert hashFunction != null;
+      assert hasher != null;
+
+      return new CachingBeaconChainSpec(
+          constants, hashFunction, hasher, blsVerify, blsVerifyProofOfPossession, cache);
+    }
   }
 }

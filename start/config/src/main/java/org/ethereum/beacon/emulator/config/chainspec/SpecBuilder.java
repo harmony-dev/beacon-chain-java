@@ -1,13 +1,7 @@
 package org.ethereum.beacon.emulator.config.chainspec;
 
-import java.util.List;
-import org.apache.milagro.amcl.BLS381.ECP;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
-import org.ethereum.beacon.consensus.util.CachingBeaconChainSpec;
-import org.ethereum.beacon.core.MutableBeaconState;
-import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.spec.SpecConstants;
-import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
@@ -15,7 +9,6 @@ import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
-import org.ethereum.beacon.crypto.BLS381.PublicKey;
 import tech.pegasys.artemis.ethereum.core.Address;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes1;
@@ -42,50 +35,14 @@ public class SpecBuilder {
 
   public BeaconChainSpec buildSpec(
       SpecHelpersData specHelpersOptions, SpecConstants specConstants) {
-
-    BeaconChainSpec defaultSpec = BeaconChainSpec.createWithSSZHasher(specConstants);
-    return new CachingBeaconChainSpec(
-        defaultSpec.getConstants(),
-        defaultSpec.getHashFunction(),
-        defaultSpec.getObjectHasher()) {
-
-      @Override
-      public PublicKey bls_aggregate_pubkeys(List<BLSPubkey> publicKeysBytes) {
-        if (specHelpersOptions.isBlsSign()) {
-          return super.bls_aggregate_pubkeys(publicKeysBytes);
-        } else {
-          return PublicKey.create(new ECP());
-        }
-      }
-
-      @Override
-      public boolean bls_verify(
-          BLSPubkey publicKey, Hash32 message, BLSSignature signature, UInt64 domain) {
-        if (specHelpersOptions.isBlsVerify()) {
-          return super.bls_verify(publicKey, message, signature, domain);
-        } else {
-          return true;
-        }
-      }
-
-      @Override
-      public boolean bls_verify_multiple(
-          List<PublicKey> publicKeys,
-          List<Hash32> messages,
-          BLSSignature signature,
-          UInt64 domain) {
-        if (specHelpersOptions.isBlsVerify()) {
-          return super.bls_verify_multiple(publicKeys, messages, signature, domain);
-        } else {
-          return true;
-        }
-      }
-
-      @Override
-      public void process_deposit(MutableBeaconState state, Deposit deposit) {
-        super.process_deposit_inner(state, deposit, specHelpersOptions.isBlsVerifyProofOfPossession());
-      }
-    };
+    return new BeaconChainSpec.Builder()
+        .withDefaultHashFunction()
+        .withDefaultHasher()
+        .withConstants(specConstants)
+        .withBlsVerify(specHelpersOptions.isBlsVerify())
+        .withBlsVerifyProofOfPossession(specHelpersOptions.isBlsVerifyProofOfPossession())
+        .enableCache()
+        .build();
   }
 
   public SpecConstants buildSpecConstants() {

@@ -8,7 +8,6 @@ import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.test.runner.ShuffleRunner;
 import org.ethereum.beacon.test.type.ShuffleTest;
-import org.junit.Ignore;
 import org.junit.Test;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.collections.ReadList;
@@ -54,7 +53,7 @@ public class ShuffleTests extends TestUtils {
             return EpochNumber.of(4);
           }
         };
-    this.spec = BeaconChainSpec.createWithSSZHasher(specConstants);
+    this.spec = BeaconChainSpec.createWithDefaultHasher(specConstants);
   }
 
   @Test

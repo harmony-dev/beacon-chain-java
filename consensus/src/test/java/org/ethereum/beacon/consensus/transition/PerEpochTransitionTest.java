@@ -33,7 +33,7 @@ public class PerEpochTransitionTest {
           }
         };
 
-    BeaconChainSpec spec = BeaconChainSpec.createWithSSZHasher(specConstants);
+    BeaconChainSpec spec = BeaconChainSpec.createWithDefaultHasher(specConstants);
 
     List<Deposit> deposits = TestUtils.getAnyDeposits(rnd, spec, 8).getValue0();
 
