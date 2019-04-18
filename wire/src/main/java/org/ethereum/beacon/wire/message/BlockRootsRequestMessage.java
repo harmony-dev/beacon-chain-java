@@ -6,7 +6,7 @@ import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 @SSZSerializable
-public class BlockRootsRequestMessage extends Message {
+public class BlockRootsRequestMessage extends MessagePayload {
   @SSZ private final SlotNumber startSlot;
   @SSZ private final UInt64 count;
 

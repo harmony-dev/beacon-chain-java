@@ -5,10 +5,9 @@ import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.uint.UInt64;
 
 @SSZSerializable
-public class BlockRootsResponseMessage extends Message {
+public class BlockRootsResponseMessage extends MessagePayload {
 
   @SSZSerializable
   public static class BlockRootSlot {

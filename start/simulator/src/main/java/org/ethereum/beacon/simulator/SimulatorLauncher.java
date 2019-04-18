@@ -55,7 +55,7 @@ import org.ethereum.beacon.simulator.util.SimulateUtils;
 import org.ethereum.beacon.util.stats.TimeCollector;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import org.ethereum.beacon.wire.LocalWireHub;
-import org.ethereum.beacon.wire.WireApi;
+import org.ethereum.beacon.wire.WireApiSub;
 import org.javatuples.Pair;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
@@ -170,7 +170,7 @@ public class SimulatorLauncher implements Runnable {
     for (int i = 0; i < validators.size(); i++) {
       ControlledSchedulers schedulers =
           controlledSchedulers.createNew("V" + i, validators.get(i).getSystemTimeShift());
-      WireApi wireApi =
+      WireApiSub wireApi =
           localWireHub.createNewPeer(
               "" + i,
               validators.get(i).getWireInboundDelay(),
@@ -247,7 +247,7 @@ public class SimulatorLauncher implements Runnable {
 
     // system observer
     ControlledSchedulers schedulers = controlledSchedulers.createNew("X");
-    WireApi wireApi = localWireHub.createNewPeer("X");
+    WireApiSub wireApi = localWireHub.createNewPeer("X");
 
     Launcher observer =
         new Launcher(

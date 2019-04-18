@@ -1,7 +1,5 @@
 package org.ethereum.beacon;
 
-import static java.util.Collections.singletonList;
-
 import java.util.List;
 import org.ethereum.beacon.chain.DefaultBeaconChain;
 import org.ethereum.beacon.chain.MutableBeaconChain;
@@ -33,7 +31,7 @@ import org.ethereum.beacon.validator.MultiValidatorService;
 import org.ethereum.beacon.validator.attester.BeaconChainAttesterImpl;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import org.ethereum.beacon.validator.proposer.BeaconChainProposerImpl;
-import org.ethereum.beacon.wire.WireApi;
+import org.ethereum.beacon.wire.WireApiSub;
 import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -42,7 +40,7 @@ public class Launcher {
   private final BeaconChainSpec spec;
   private final DepositContract depositContract;
   private final List<BLS381Credentials> validatorCred;
-  private final WireApi wireApi;
+  private final WireApiSub wireApi;
   private final BeaconChainStorageFactory storageFactory;
   private final Schedulers schedulers;
 
@@ -71,7 +69,7 @@ public class Launcher {
       BeaconChainSpec spec,
       DepositContract depositContract,
       List<BLS381Credentials> validatorCred,
-      WireApi wireApi,
+      WireApiSub wireApi,
       BeaconChainStorageFactory storageFactory,
       Schedulers schedulers) {
     this(spec, depositContract, validatorCred, wireApi, storageFactory, schedulers, new TimeCollector());
@@ -81,7 +79,7 @@ public class Launcher {
       BeaconChainSpec spec,
       DepositContract depositContract,
       List<BLS381Credentials> validatorCred,
-      WireApi wireApi,
+      WireApiSub wireApi,
       BeaconChainStorageFactory storageFactory,
       Schedulers schedulers,
       TimeCollector proposeTimeCollector) {
@@ -190,7 +188,7 @@ public class Launcher {
     return validatorCred;
   }
 
-  public WireApi getWireApi() {
+  public WireApiSub getWireApi() {
     return wireApi;
   }
 

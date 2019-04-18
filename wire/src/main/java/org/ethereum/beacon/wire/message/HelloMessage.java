@@ -8,7 +8,7 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 @SSZSerializable
-public class HelloMessage extends Message {
+public class HelloMessage extends MessagePayload {
   @SSZ private final byte networkId;
   @SSZ private final UInt64 chainId;
   @SSZ private final Hash32 latestFinalizedRoot;

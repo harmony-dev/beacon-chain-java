@@ -21,7 +21,7 @@ import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
 
 public class LocalWireHub {
-  private class WireImpl implements WireApi {
+  private class WireImpl implements WireApiSub {
     Processor<BeaconBlock, BeaconBlock> blocks =  DirectProcessor.create();
     Processor<Attestation, Attestation> attestations =  DirectProcessor.create();
     String name;
@@ -91,24 +91,6 @@ public class LocalWireHub {
             .delayElements(Duration.ofMillis(inboundDelay), schedulers.reactorEvents());
       }
     }
-
-    @Override
-    public Future<BlockRootsResponseMessage> requestBlockRoots(
-        BlockHeadersRequestMessage requestMessage) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Future<BlockHeadersResponseMessage> requestBlockHeaders(
-        BlockRootsRequestMessage requestMessage) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Future<BlockBodiesResponseMessage> requestBlockBodies(
-        BlockBodiesRequestMessage requestMessage) {
-      throw new UnsupportedOperationException();
-    }
   }
 
   List<WireImpl> peers = new CopyOnWriteArrayList<>();
@@ -120,11 +102,11 @@ public class LocalWireHub {
     this.schedulers = schedulers;
   }
 
-  public WireApi createNewPeer(String name) {
+  public WireApiSub createNewPeer(String name) {
     return createNewPeer(name, 0, 0);
   }
 
-  public WireApi createNewPeer(String name, long inboundDelay, long outboundDelay) {
+  public WireApiSub createNewPeer(String name, long inboundDelay, long outboundDelay) {
     WireImpl ret = new WireImpl(name, inboundDelay, outboundDelay);
     peers.add(ret);
     return ret;

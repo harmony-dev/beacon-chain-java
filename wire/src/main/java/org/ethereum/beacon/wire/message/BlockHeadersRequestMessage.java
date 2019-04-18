@@ -7,7 +7,7 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 @SSZSerializable
-public class BlockHeadersRequestMessage extends Message {
+public class BlockHeadersRequestMessage extends MessagePayload {
 
   @SSZ private final Hash32 startRoot;
   @SSZ private final SlotNumber startSlot;
