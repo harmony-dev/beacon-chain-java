@@ -2,6 +2,7 @@ package org.ethereum.beacon.bench;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,8 +23,7 @@ public class BenchmarkReport {
   enum MeasurementGroup {
     HIGH_LEVEL,
     BLS,
-    HELPERS,
-    SUMMARY;
+    HELPERS;
 
     public String print() {
       return this.name().replaceAll("_", " ");
@@ -33,17 +33,21 @@ public class BenchmarkReport {
   public static class RoutineReport {
     private BenchmarkRoutine routine;
     private List<GroupReport> groups;
+    private RoutineSummary summary;
 
-    public RoutineReport(BenchmarkRoutine routine, List<GroupReport> groups) {
+    public RoutineReport(
+        BenchmarkRoutine routine, List<GroupReport> groups, RoutineSummary summary) {
       this.routine = routine;
       this.groups = groups;
+      this.summary = summary;
     }
 
     public String print() {
       StringBuilder sb = new StringBuilder();
       sb.append(routine.print()).append(":\n\n");
       groups.forEach(group -> sb.append(group.print()).append("\n\n"));
-      return sb.delete(sb.length() - 2, sb.length()).toString();
+      sb.append(summary.print());
+      return sb.toString();
     }
   }
 
@@ -58,10 +62,67 @@ public class BenchmarkReport {
 
     public String print() {
       StringBuilder sb = new StringBuilder();
-      sb.append(FunctionStats.format("[" + group.print() + "]", "min, ms", "avg, ms", "count"))
+      sb.append(
+              FunctionStats.format(
+                  "[" + group.print() + "]", "min, ms", "avg, ms", "count", "total, ms"))
           .append('\n');
       functions.forEach(stats -> sb.append(stats.print()).append('\n'));
       return sb.deleteCharAt(sb.length() - 1).toString();
+    }
+  }
+
+  public static class RoutineSummary {
+    private List<GroupSummary> groupSummaries;
+
+    public RoutineSummary(List<GroupSummary> groupSummaries) {
+      this.groupSummaries = groupSummaries;
+    }
+
+    public String print() {
+      StringBuilder sb = new StringBuilder();
+      sb.append(SummaryStats.format("[SUMMARY]", "min, ms", "avg, ms", "% of total")).append('\n');
+      groupSummaries.forEach(groupSummary -> sb.append(groupSummary.print()).append('\n'));
+      return sb.toString();
+    }
+  }
+
+  public static class GroupSummary {
+    private SummaryStats groupSummary;
+    private List<SummaryStats> functionSummaries;
+
+    public GroupSummary(SummaryStats groupSummary, List<SummaryStats> functionSummaries) {
+      this.groupSummary = groupSummary;
+      this.functionSummaries = functionSummaries;
+    }
+
+    public String print() {
+      StringBuilder sb = new StringBuilder();
+      sb.append(groupSummary.print(false)).append('\n');
+      functionSummaries.forEach(functinSummary -> sb.append(functinSummary.print(true)).append('\n'));
+      return sb.deleteCharAt(sb.length() - 1).toString();
+    }
+  }
+
+  public static class SummaryStats {
+    private String title;
+    private long minTime = 0;
+    private double avgTime = 0;
+    private double ratioToTotal = 0;
+
+    public SummaryStats(String title) {
+      this.title = title;
+    }
+
+    static String format(String title, String minTime, String avgTime, String percentage) {
+      return String.format("%-40s%15s%15s%15s", title, minTime, avgTime, percentage);
+    }
+
+    public String print(boolean leftPad) {
+      return format(
+          (leftPad ? "  " : "") + title,
+          String.format("%.3f", minTime / 1_000_000d),
+          String.format("%.3f", avgTime / 1_000_000d),
+          String.format("%.2f", ratioToTotal * 100));
     }
   }
 
@@ -96,8 +157,9 @@ public class BenchmarkReport {
       return counter;
     }
 
-    static String format(String name, String minTime, String avgTime, String counter) {
-      return String.format("%-40s%15s%15s%10s", name, minTime, avgTime, counter);
+    static String format(
+        String title, String minTime, String avgTime, String counter, String totalTime) {
+      return String.format("%-40s%15s%15s%10s%15s", title, minTime, avgTime, counter, totalTime);
     }
 
     public String print() {
@@ -105,7 +167,8 @@ public class BenchmarkReport {
           name,
           String.format("%.3f", minTime / 1_000_000d / counter),
           String.format("%.3f", avgTime / 1_000_000d / counter),
-          String.valueOf(counter));
+          String.valueOf(counter),
+          String.format("%.3f", avgTime / 1_000_000d));
     }
   }
 
@@ -129,7 +192,11 @@ public class BenchmarkReport {
         if (measurements == null) continue;
 
         List<GroupReport> groupReports = new ArrayList<>();
-        report.routines.add(new RoutineReport(routine, groupReports));
+        List<GroupSummary> groupSummaries = new ArrayList<>();
+        report.routines.add(
+            new RoutineReport(routine, groupReports, new RoutineSummary(groupSummaries)));
+
+        GroupReport highLevelGroupReport = null;
         for (MeasurementGroup group : MeasurementGroup.values()) {
           String[] functionList = getFunctionList(routine, group);
           List<FunctionStats> functionStats =
@@ -152,15 +219,28 @@ public class BenchmarkReport {
                   .collect(Collectors.toList());
 
           if (!functionStats.isEmpty()) {
-            // special case for MeasurementGroup.HIGH_LEVEL: add stats for the whole flow
+            GroupReport groupReport = new GroupReport(group, functionStats);
+            groupReports.add(groupReport);
             if (group == MeasurementGroup.HIGH_LEVEL) {
-              FunctionStats stats = new FunctionStats("total");
-              stats.counter = 1;
-              stats.minTime = functionStats.stream().mapToLong(FunctionStats::getMinTime).sum();
-              stats.avgTime = functionStats.stream().mapToDouble(FunctionStats::getAvgTime).sum();
-              functionStats.add(stats);
+              highLevelGroupReport = groupReport;
             }
-            groupReports.add(new GroupReport(group, functionStats));
+          }
+        }
+
+        if (highLevelGroupReport != null) {
+          double highLevelGroupTime =
+              highLevelGroupReport.functions.stream().mapToDouble(FunctionStats::getAvgTime).sum();
+          if (highLevelGroupTime > 0) {
+            for (GroupReport groupReport : groupReports) {
+              if (groupReport == highLevelGroupReport) {
+                groupSummaries.add(
+                    new GroupSummary(
+                        getGroupSummaryStats("TOTAL", groupReport, highLevelGroupTime),
+                        Collections.emptyList()));
+              } else {
+                groupSummaries.add(getGroupSummary(groupReport, highLevelGroupTime));
+              }
+            }
           }
         }
       }
@@ -168,15 +248,39 @@ public class BenchmarkReport {
       return report;
     }
 
+    private GroupSummary getGroupSummary(GroupReport groupReport, double highLevelGroupTime) {
+      SummaryStats groupSummaryStats =
+          getGroupSummaryStats(groupReport.group.name(), groupReport, highLevelGroupTime);
+      List<SummaryStats> functionSummaries =
+          groupReport.functions.stream()
+              .map(
+                  functionStats -> {
+                    SummaryStats summary = new SummaryStats(functionStats.name);
+                    summary.minTime = functionStats.minTime;
+                    summary.avgTime = functionStats.avgTime;
+                    summary.ratioToTotal = functionStats.avgTime / highLevelGroupTime;
+                    return summary;
+                  })
+              .collect(Collectors.toList());
+
+      return new GroupSummary(groupSummaryStats, functionSummaries);
+    }
+
+    private SummaryStats getGroupSummaryStats(
+        String title, GroupReport groupReport, double highLevelGroupTime) {
+      SummaryStats groupStats = new SummaryStats(title);
+      groupStats.minTime =
+          groupReport.functions.stream().mapToLong(FunctionStats::getMinTime).sum();
+      groupStats.avgTime =
+          groupReport.functions.stream().mapToDouble(FunctionStats::getAvgTime).sum();
+      groupStats.ratioToTotal = groupStats.avgTime / highLevelGroupTime;
+      return groupStats;
+    }
+
     private FunctionStats getFunctionStats(String name, List<TimeCollector> measurements) {
       FunctionStats stats = new FunctionStats(name);
       stats.counter = measurements.stream().mapToInt(TimeCollector::getCounter).max().orElse(0);
-      stats.minTime =
-          measurements.stream()
-              .mapToLong(TimeCollector::getTotal)
-              //              .filter(value -> value > 0)
-              .min()
-              .orElse(0);
+      stats.minTime = measurements.stream().mapToLong(TimeCollector::getTotal).min().orElse(0);
       stats.avgTime = measurements.stream().mapToLong(TimeCollector::getTotal).average().orElse(0);
       return stats;
     }
@@ -193,8 +297,6 @@ public class BenchmarkReport {
           } else {
             return HIGH_LEVEL_FUNCTIONS.get(routine);
           }
-        case SUMMARY:
-          return new String[0];
         default:
           throw new IllegalArgumentException("Unsupported measurement group: " + group);
       }

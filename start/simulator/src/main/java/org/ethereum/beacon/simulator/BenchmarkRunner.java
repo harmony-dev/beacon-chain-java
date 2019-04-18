@@ -53,7 +53,7 @@ import reactor.core.publisher.Mono;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
 public class BenchmarkRunner implements Runnable {
-  private static final Logger logger = LogManager.getLogger("simulator");
+  private static final Logger logger = LogManager.getLogger("benchmaker");
 
   private final int epochCount;
   private final int validatorCount;
@@ -73,7 +73,7 @@ public class BenchmarkRunner implements Runnable {
   }
 
   private void setupLogging() {
-    try (InputStream inputStream = ClassLoader.class.getResourceAsStream("/log4j2.xml")) {
+    try (InputStream inputStream = ClassLoader.class.getResourceAsStream("/log4j2-benchmaker.xml")) {
       ConfigurationSource source = new ConfigurationSource(inputStream);
       Configurator.initialize(null, source);
     } catch (Exception e) {
@@ -82,9 +82,6 @@ public class BenchmarkRunner implements Runnable {
 
     LoggerContext context =
         (org.apache.logging.log4j.core.LoggerContext) LogManager.getContext(false);
-    Configuration config = context.getConfiguration();
-    LoggerConfig loggerConfig = config.getLoggerConfig("simulator");
-    loggerConfig.setLevel(Level.INFO);
     context.updateLoggers();
   }
 
@@ -106,7 +103,6 @@ public class BenchmarkRunner implements Runnable {
   public void run() {
     Time genesisTime = Time.ZERO;
 
-    setupLogging();
     Pair<List<Deposit>, List<KeyPair>> validatorDeposits =
         getValidatorDeposits(spec, validatorCount);
 

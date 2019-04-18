@@ -1,5 +1,8 @@
 package org.ethereum.beacon.simulator;
 
+import java.io.InputStream;
+import org.apache.logging.log4j.core.config.ConfigurationSource;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.ethereum.beacon.emulator.config.ConfigBuilder;
 import org.ethereum.beacon.emulator.config.chainspec.SpecBuilder;
 import org.ethereum.beacon.emulator.config.chainspec.SpecData;
@@ -47,6 +50,12 @@ public class Benchmaker implements Runnable {
     specData.getSpecConstants().getTimeParameters().setSLOTS_PER_EPOCH("8");
     SpecBuilder specBuilder = new SpecBuilder().withSpec(specData);
 
+    try (InputStream inputStream = ClassLoader.class.getResourceAsStream("/log4j2-benchmaker.xml")) {
+      ConfigurationSource source = new ConfigurationSource(inputStream);
+      Configurator.initialize(null, source);
+    } catch (Exception e) {
+      throw new RuntimeException("Cannot read log4j configuration", e);
+    }
     new BenchmarkRunner(epochCount, validatorCount, specBuilder, blsEnabled).run();
   }
 }
