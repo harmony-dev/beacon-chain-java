@@ -4,10 +4,17 @@ import java.time.Duration;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.schedulers.Schedulers;
+import org.ethereum.beacon.wire.message.BlockBodiesRequestMessage;
+import org.ethereum.beacon.wire.message.BlockBodiesResponseMessage;
+import org.ethereum.beacon.wire.message.BlockRootsRequestMessage;
+import org.ethereum.beacon.wire.message.BlockHeadersResponseMessage;
+import org.ethereum.beacon.wire.message.BlockHeadersRequestMessage;
+import org.ethereum.beacon.wire.message.BlockRootsResponseMessage;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.DirectProcessor;
@@ -83,6 +90,24 @@ public class LocalWireHub {
         return Flux.from(attestations)
             .delayElements(Duration.ofMillis(inboundDelay), schedulers.reactorEvents());
       }
+    }
+
+    @Override
+    public Future<BlockRootsResponseMessage> requestBlockRoots(
+        BlockHeadersRequestMessage requestMessage) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Future<BlockHeadersResponseMessage> requestBlockHeaders(
+        BlockRootsRequestMessage requestMessage) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Future<BlockBodiesResponseMessage> requestBlockBodies(
+        BlockBodiesRequestMessage requestMessage) {
+      throw new UnsupportedOperationException();
     }
   }
 

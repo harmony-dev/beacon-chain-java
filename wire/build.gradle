@@ -2,6 +2,9 @@ dependencies {
   implementation project(':types')
   implementation project(':core')
   implementation project(':util')
+  implementation project(':ssz')
+  implementation project(':chain')
+  implementation project(':db:core')
 
   implementation 'com.google.guava:guava'
   implementation 'io.projectreactor:reactor-core'
