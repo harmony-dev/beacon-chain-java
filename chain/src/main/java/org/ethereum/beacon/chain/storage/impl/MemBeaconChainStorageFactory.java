@@ -27,7 +27,12 @@ public class MemBeaconChainStorageFactory  implements BeaconChainStorageFactory 
         new BeaconStateStorageImpl(new HashMapDataSource<>(), objectHasher);
     BeaconTupleStorage tupleStorage = new BeaconTupleStorageImpl(blockStorage, stateStorage);
 
-    return new BeaconChainStorageImpl(blockStorage, stateStorage, tupleStorage,
-        SingleValueSource.memSource(), SingleValueSource.memSource());
+    return new BeaconChainStorageImpl(
+        blockStorage,
+        new DelegateBlockHeaderStorageImpl(blockStorage, objectHasher),
+        stateStorage,
+        tupleStorage,
+        SingleValueSource.memSource(),
+        SingleValueSource.memSource());
   }
 }

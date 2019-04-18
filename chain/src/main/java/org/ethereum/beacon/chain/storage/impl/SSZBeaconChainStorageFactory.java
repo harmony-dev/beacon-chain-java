@@ -41,7 +41,12 @@ public class SSZBeaconChainStorageFactory implements BeaconChainStorageFactory {
     SingleValueSource<Hash32> finalizedStorage = createHash32Storage(database, "finalized-hash");
 
     return new BeaconChainStorageImpl(
-        blockStorage, stateStorage, tupleStorage, justifiedStorage, finalizedStorage);
+        blockStorage,
+        new DelegateBlockHeaderStorageImpl(blockStorage, objectHasher),
+        stateStorage,
+        tupleStorage,
+        justifiedStorage,
+        finalizedStorage);
   }
 
   private SingleValueSource<Hash32> createHash32Storage(Database database, String name) {

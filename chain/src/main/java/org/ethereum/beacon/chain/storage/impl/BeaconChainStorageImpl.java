@@ -4,6 +4,8 @@ import org.ethereum.beacon.chain.storage.BeaconBlockStorage;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.chain.storage.BeaconStateStorage;
 import org.ethereum.beacon.chain.storage.BeaconTupleStorage;
+import org.ethereum.beacon.core.BeaconBlockHeader;
+import org.ethereum.beacon.db.source.DataSource;
 import org.ethereum.beacon.db.source.SingleValueSource;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
@@ -11,6 +13,7 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 public class BeaconChainStorageImpl implements BeaconChainStorage {
 
   private final BeaconBlockStorage blockStorage;
+  private final DataSource<Hash32, BeaconBlockHeader> blockHeaderStorage;
   private final BeaconStateStorage stateStorage;
   private final BeaconTupleStorage tupleStorage;
   private final SingleValueSource<Hash32> justifiedStorage;
@@ -18,11 +21,13 @@ public class BeaconChainStorageImpl implements BeaconChainStorage {
 
   public BeaconChainStorageImpl(
       BeaconBlockStorage blockStorage,
+      DataSource<Hash32, BeaconBlockHeader> blockHeaderStorage,
       BeaconStateStorage stateStorage,
       BeaconTupleStorage tupleStorage,
       SingleValueSource<Hash32> justifiedStorage,
       SingleValueSource<Hash32> finalizedStorage) {
     this.blockStorage = blockStorage;
+    this.blockHeaderStorage = blockHeaderStorage;
     this.stateStorage = stateStorage;
     this.tupleStorage = tupleStorage;
     this.justifiedStorage = justifiedStorage;
@@ -32,6 +37,11 @@ public class BeaconChainStorageImpl implements BeaconChainStorage {
   @Override
   public BeaconBlockStorage getBlockStorage() {
     return blockStorage;
+  }
+
+  @Override
+  public DataSource<Hash32, BeaconBlockHeader> getBlockHeaderStorage() {
+    return blockHeaderStorage;
   }
 
   @Override
