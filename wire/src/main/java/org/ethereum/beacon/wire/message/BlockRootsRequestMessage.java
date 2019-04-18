@@ -6,13 +6,20 @@ import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 @SSZSerializable
-public class BlockRootsRequestMessage extends MessagePayload {
+public class BlockRootsRequestMessage extends RequestMessagePayload {
+  public static final UInt64 METHOD_ID = UInt64.valueOf(0x0);
+
   @SSZ private final SlotNumber startSlot;
   @SSZ private final UInt64 count;
 
   public BlockRootsRequestMessage(SlotNumber startSlot, UInt64 count) {
     this.startSlot = startSlot;
     this.count = count;
+  }
+
+  @Override
+  public UInt64 getMethodId() {
+    return METHOD_ID;
   }
 
   public SlotNumber getStartSlot() {

@@ -7,7 +7,7 @@ import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
 @SSZSerializable
-public class BlockRootsResponseMessage extends MessagePayload {
+public class BlockRootsResponseMessage extends ResponseMessagePayload<BlockRootsRequestMessage> {
 
   @SSZSerializable
   public static class BlockRootSlot {
@@ -30,8 +30,9 @@ public class BlockRootsResponseMessage extends MessagePayload {
 
   @SSZ private final List<BlockRootSlot> roots;
 
-  public BlockRootsResponseMessage(
+  public BlockRootsResponseMessage(BlockRootsRequestMessage request,
       List<BlockRootSlot> roots) {
+    super(request);
     this.roots = roots;
   }
 

@@ -8,7 +8,9 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 @SSZSerializable
-public class HelloMessage extends MessagePayload {
+public class HelloMessage extends RequestMessagePayload {
+  public static final UInt64 METHOD_ID = UInt64.valueOf(0x0);
+
   @SSZ private final byte networkId;
   @SSZ private final UInt64 chainId;
   @SSZ private final Hash32 latestFinalizedRoot;
@@ -25,6 +27,11 @@ public class HelloMessage extends MessagePayload {
     this.latestFinalizedEpoch = latestFinalizedEpoch;
     this.bestRoot = bestRoot;
     this.bestSlot = bestSlot;
+  }
+
+  @Override
+  public UInt64 getMethodId() {
+    return METHOD_ID;
   }
 
   public byte getNetworkId() {

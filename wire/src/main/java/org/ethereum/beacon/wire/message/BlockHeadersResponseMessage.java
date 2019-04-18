@@ -6,11 +6,14 @@ import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 
 @SSZSerializable
-public class BlockHeadersResponseMessage extends MessagePayload {
+public class BlockHeadersResponseMessage extends ResponseMessagePayload<BlockHeadersRequestMessage> {
 
   @SSZ private final List<BeaconBlockHeader> headers;
 
-  public BlockHeadersResponseMessage(List<BeaconBlockHeader> headers) {
+  public BlockHeadersResponseMessage(
+      BlockHeadersRequestMessage request,
+      List<BeaconBlockHeader> headers) {
+    super(request);
     this.headers = headers;
   }
 

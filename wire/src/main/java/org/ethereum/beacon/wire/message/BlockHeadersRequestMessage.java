@@ -7,7 +7,9 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 @SSZSerializable
-public class BlockHeadersRequestMessage extends MessagePayload {
+public class BlockHeadersRequestMessage extends RequestMessagePayload {
+  public static final UInt64 METHOD_ID = UInt64.valueOf(0x0D);
+
 
   @SSZ private final Hash32 startRoot;
   @SSZ private final SlotNumber startSlot;
@@ -20,6 +22,11 @@ public class BlockHeadersRequestMessage extends MessagePayload {
     this.startSlot = startSlot;
     this.maxHeaders = maxHeaders;
     this.skipSlots = skipSlots;
+  }
+
+  @Override
+  public UInt64 getMethodId() {
+    return METHOD_ID;
   }
 
   public Hash32 getStartRoot() {

@@ -46,7 +46,7 @@ public class WireApiSyncServer implements WireApiSync {
           roots.add(new BlockRootSlot(slotRoot, slot));
         }
       }
-      ret.complete(new BlockRootsResponseMessage(roots));
+      ret.complete(new BlockRootsResponseMessage(requestMessage, roots));
     }
     return ret;
   }
@@ -84,10 +84,10 @@ public class WireApiSyncServer implements WireApiSync {
           }
           prevSlot = nonEmptySlot;
         }
-        ret.complete(new BlockHeadersResponseMessage(headers));
+        ret.complete(new BlockHeadersResponseMessage(requestMessage, headers));
       }
     } else {
-      ret.complete(new BlockHeadersResponseMessage(Collections.emptyList()));
+      ret.complete(new BlockHeadersResponseMessage(requestMessage, Collections.emptyList()));
     }
     return ret;
   }
@@ -100,6 +100,6 @@ public class WireApiSyncServer implements WireApiSync {
         .map(blockRoot -> storage.getBlockStorage().get(blockRoot))
         .map(opt -> opt.map(BeaconBlock::getBody).orElse(BeaconBlockBody.EMPTY))
         .collect(Collectors.toList());
-    return CompletableFuture.completedFuture(new BlockBodiesResponseMessage(bodyList));
+    return CompletableFuture.completedFuture(new BlockBodiesResponseMessage(requestMessage, bodyList));
   }
 }

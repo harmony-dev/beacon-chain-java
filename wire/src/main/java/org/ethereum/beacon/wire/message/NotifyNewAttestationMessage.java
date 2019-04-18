@@ -6,6 +6,7 @@ import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 
 @SSZSerializable
 public class NotifyNewAttestationMessage extends MessagePayload {
+
   @SSZ private final Attestation attestation;
 
   public NotifyNewAttestationMessage(Attestation attestation) {
