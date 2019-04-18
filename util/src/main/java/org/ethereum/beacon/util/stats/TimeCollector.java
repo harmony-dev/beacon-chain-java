@@ -20,4 +20,8 @@ public class TimeCollector {
   public long getAvg() {
     return total / counter;
   }
+
+  public long getTotal() {
+    return total;
+  }
 }

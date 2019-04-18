@@ -35,7 +35,7 @@ public class Benchmaker implements Runnable {
   public void run() {
     int epochCount = 1;
     int validatorCount = 8;
-    boolean blsEnabled = true;
+    boolean blsEnabled = false;
 
     SpecData specData =
         new ConfigBuilder<>(SpecData.class)

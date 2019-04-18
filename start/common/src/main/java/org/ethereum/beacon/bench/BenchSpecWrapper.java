@@ -1,5 +1,6 @@
 package org.ethereum.beacon.bench;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -24,8 +25,9 @@ import tech.pegasys.artemis.util.uint.UInt64;
 
 public class BenchSpecWrapper implements BeaconChainSpec {
 
-  private final Map<String, TimeCollector> collectors = new ConcurrentHashMap<>();
   private final BeaconChainSpec delegate;
+
+  private final Map<String, TimeCollector> collectors = new ConcurrentHashMap<>();
   private boolean trackingStarted = false;
 
   public BenchSpecWrapper(BeaconChainSpec delegate) {
@@ -50,109 +52,109 @@ public class BenchSpecWrapper implements BeaconChainSpec {
   @Override
   public boolean bls_verify(
       BLSPubkey publicKey, Hash32 message, BLSSignature signature, UInt64 domain) {
-    return callAndTick(
+    return callAndTrack(
         "bls_verify", () -> delegate.bls_verify(publicKey, message, signature, domain));
   }
 
   @Override
   public boolean bls_verify_multiple(
       List<PublicKey> publicKeys, List<Hash32> messages, BLSSignature signature, UInt64 domain) {
-    return callAndTick(
+    return callAndTrack(
         "bls_verify_multiple",
         () -> delegate.bls_verify_multiple(publicKeys, messages, signature, domain));
   }
 
   @Override
   public PublicKey bls_aggregate_pubkeys(List<BLSPubkey> publicKeysBytes) {
-    return callAndTick(
+    return callAndTrack(
         "bls_aggregate_pubkeys", () -> delegate.bls_aggregate_pubkeys(publicKeysBytes));
   }
 
   @Override
   public void process_deposit(MutableBeaconState state, Deposit deposit) {
-    callAndTick("process_deposit", () -> delegate.process_deposit(state, deposit));
+    callAndTrack("process_deposit", () -> delegate.process_deposit(state, deposit));
   }
 
   @Override
   public Hash32 hash_tree_root(Object object) {
-    return callAndTick("hash_tree_root", () -> delegate.hash_tree_root(object));
+    return callAndTrack("hash_tree_root", () -> delegate.hash_tree_root(object));
   }
 
   @Override
   public Hash32 signed_root(Object object) {
-    return callAndTick("signed_root", () -> delegate.signed_root(object));
+    return callAndTrack("signed_root", () -> delegate.signed_root(object));
   }
 
   @Override
   public ValidatorIndex get_validator_index_by_pubkey(BeaconState state, BLSPubkey pubkey) {
-    return callAndTick(
+    return callAndTrack(
         "get_validator_index_by_pubkey",
         () -> delegate.get_validator_index_by_pubkey(state, pubkey));
   }
 
   @Override
   public List<UInt64> get_permuted_list(List<? extends UInt64> indices, Bytes32 seed) {
-    return callAndTick("get_permuted_list", () -> delegate.get_permuted_list(indices, seed));
+    return callAndTrack("get_permuted_list", () -> delegate.get_permuted_list(indices, seed));
   }
 
   @Override
   public void update_justification_and_finalization(MutableBeaconState state) {
-    callAndTick("update_justification_and_finalization", () -> delegate.update_justification_and_finalization(state));
+    callAndTrack("update_justification_and_finalization", () -> delegate.update_justification_and_finalization(state));
   }
 
   @Override
   public void process_crosslinks(MutableBeaconState state) {
-    callAndTick("process_crosslinks", () -> delegate.process_crosslinks(state));
+    callAndTrack("process_crosslinks", () -> delegate.process_crosslinks(state));
   }
 
   @Override
   public void maybe_reset_eth1_period(MutableBeaconState state) {
-    callAndTick("maybe_reset_eth1_period", () -> delegate.maybe_reset_eth1_period(state));
+    callAndTrack("maybe_reset_eth1_period", () -> delegate.maybe_reset_eth1_period(state));
   }
 
   @Override
   public void apply_rewards(MutableBeaconState state) {
-    callAndTick("apply_rewards", () -> delegate.apply_rewards(state));
+    callAndTrack("apply_rewards", () -> delegate.apply_rewards(state));
   }
 
   @Override
   public List<ValidatorIndex> process_ejections(MutableBeaconState state) {
-    return callAndTick("process_ejections", () -> delegate.process_ejections(state));
+    return callAndTrack("process_ejections", () -> delegate.process_ejections(state));
   }
 
   @Override
   public void update_registry_and_shuffling_data(MutableBeaconState state) {
-    callAndTick("update_registry_and_shuffling_data", () -> delegate.update_registry_and_shuffling_data(state));
+    callAndTrack("update_registry_and_shuffling_data", () -> delegate.update_registry_and_shuffling_data(state));
   }
 
   @Override
   public void process_slashings(MutableBeaconState state) {
-    callAndTick("process_slashings", () -> delegate.process_slashings(state));
+    callAndTrack("process_slashings", () -> delegate.process_slashings(state));
   }
 
   @Override
   public void process_exit_queue(MutableBeaconState state) {
-    callAndTick("process_exit_queue", () -> delegate.process_exit_queue(state));
+    callAndTrack("process_exit_queue", () -> delegate.process_exit_queue(state));
   }
 
   @Override
   public void finish_epoch_update(MutableBeaconState state) {
-    callAndTick("finish_epoch_update", () -> delegate.finish_epoch_update(state));
+    callAndTrack("finish_epoch_update", () -> delegate.finish_epoch_update(state));
   }
 
   @Override
   public void cache_state(MutableBeaconState state) {
-    callAndTick("cache_state", () -> delegate.cache_state(state));
+    callAndTrack("cache_state", () -> delegate.cache_state(state));
   }
 
   @Override
   public void advance_slot(MutableBeaconState state) {
-    callAndTick("advance_slot", () -> delegate.advance_slot(state));
+    callAndTrack("advance_slot", () -> delegate.advance_slot(state));
   }
 
   @Override
   public void process_attestation(MutableBeaconState state, Attestation attestation) {
-    callAndTick("process_attestation", () -> delegate.process_attestation(state, attestation));
+    callAndTrack("process_attestation", () -> delegate.process_attestation(state, attestation));
   }
 
   public String buildReport() {
@@ -167,11 +169,17 @@ public class BenchSpecWrapper implements BeaconChainSpec {
     return sb.toString();
   }
 
-  public void startTracking() {
+  void startTracking() {
     this.trackingStarted = true;
   }
 
-  private void callAndTick(String name, Runnable routine) {
+  Map<String, TimeCollector> drainCollectors() {
+    Map<String, TimeCollector> result = new HashMap<>(collectors);
+    this.collectors.clear();
+    return result;
+  }
+
+  private void callAndTrack(String name, Runnable routine) {
     if (!trackingStarted) {
       routine.run();
       return;
@@ -183,7 +191,7 @@ public class BenchSpecWrapper implements BeaconChainSpec {
     collector.tick(System.nanoTime() - s);
   }
 
-  private <T> T callAndTick(String name, Supplier<T> routine) {
+  private <T> T callAndTrack(String name, Supplier<T> routine) {
     if (!trackingStarted) {
       return routine.get();
     }

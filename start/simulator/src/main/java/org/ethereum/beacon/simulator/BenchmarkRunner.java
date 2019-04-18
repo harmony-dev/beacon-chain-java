@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
@@ -22,12 +21,9 @@ import org.apache.logging.log4j.core.config.ConfigurationSource;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.ethereum.beacon.Launcher;
-import org.ethereum.beacon.bench.BenchSpecRegistry;
-import org.ethereum.beacon.bench.BenchSpecRegistryImpl;
-import org.ethereum.beacon.chain.observer.ObservableBeaconState;
+import org.ethereum.beacon.bench.BenchmarkController;
 import org.ethereum.beacon.chain.storage.impl.MemBeaconChainStorageFactory;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
-import org.ethereum.beacon.consensus.transition.EpochTransitionSummary;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
@@ -35,7 +31,6 @@ import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
-import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.crypto.BLS381;
 import org.ethereum.beacon.crypto.BLS381.KeyPair;
 import org.ethereum.beacon.crypto.util.BlsKeyPairReader;
@@ -46,7 +41,6 @@ import org.ethereum.beacon.schedulers.LoggerMDCExecutor;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.schedulers.TimeController;
 import org.ethereum.beacon.schedulers.TimeControllerImpl;
-import org.ethereum.beacon.bench.BenchSpecWrapper;
 import org.ethereum.beacon.simulator.util.SimulateUtils;
 import org.ethereum.beacon.util.stats.TimeCollector;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
@@ -60,7 +54,6 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 
 public class BenchmarkRunner implements Runnable {
   private static final Logger logger = LogManager.getLogger("simulator");
-  private static final Logger wire = LogManager.getLogger("wire");
 
   private final int epochCount;
   private final int validatorCount;
@@ -127,7 +120,7 @@ public class BenchmarkRunner implements Runnable {
     Eth1Data eth1Data = new Eth1Data(Hash32.ZERO, Hash32.ZERO);
 
     LocalWireHub localWireHub =
-        new LocalWireHub(s -> wire.trace(s), controlledSchedulers.createNew("wire"));
+        new LocalWireHub(s -> {}, controlledSchedulers.createNew("wire"));
     DepositContract.ChainStart chainStart =
         new DepositContract.ChainStart(genesisTime, eth1Data, deposits);
     DepositContract depositContract = new SimpleDepositContract(chainStart);
@@ -151,7 +144,7 @@ public class BenchmarkRunner implements Runnable {
               .collect(Collectors.toList());
     }
 
-    BenchSpecRegistry benchRegistry = BenchSpecRegistry.newInstance();
+    BenchmarkController benchmarkController = BenchmarkController.newInstance();
     Launcher instance =
         new Launcher(
             specBuilder.buildSpec(),
@@ -161,36 +154,20 @@ public class BenchmarkRunner implements Runnable {
             new MemBeaconChainStorageFactory(),
             schedulers,
             proposeTimeCollector,
-            benchRegistry);
+            benchmarkController);
 
     logger.info("All validators created");
 
     List<SlotNumber> slots = new ArrayList<>();
     List<Attestation> attestations = new ArrayList<>();
     List<BeaconBlock> blocks = new ArrayList<>();
-    List<ObservableBeaconState> states = new ArrayList<>();
 
-    Flux.from(instance.getSlotTicker().getTickerStream()).subscribe(slot -> {
-      slots.add(slot);
-      logger.debug("New slot: " + slot.toString(specConstants, genesisTime));
-    });
-    Flux.from(instance.getObservableStateProcessor().getObservableStateStream())
-        .subscribe(os -> {
-          states.add(os);
-          logger.debug("New observable state: " + os.toString(spec));
-        });
+    Flux.from(instance.getSlotTicker().getTickerStream()).subscribe(slots::add);
     Flux.from(instance.getValidatorService().getAttestationsStream())
         .publishOn(instance.getSchedulers().reactorEvents())
-        .subscribe(att -> {
-          attestations.add(att);
-          logger.debug("New attestation received: " + att.toStringShort(specConstants));
-        });
+        .subscribe(attestations::add);
     Flux.from(instance.getBeaconChain().getBlockStatesStream())
-        .subscribe(blockState -> {
-          blocks.add(blockState.getBlock());
-          logger.debug("Block imported: "
-              + blockState.getBlock().toString(specConstants, genesisTime, spec::signed_root));
-        });
+        .subscribe(blockState -> blocks.add(blockState.getBlock()));
 
     logger.info("Time starts running ...");
     controlledSchedulers.setCurrentTime(
@@ -199,15 +176,7 @@ public class BenchmarkRunner implements Runnable {
     // skip 1st epoch, add extra slot to trigger last epoch transition
     int slotsToRun = (epochCount + 1) * specConstants.getSlotsPerEpoch().getIntValue();
     for (int i = 0; i < slotsToRun; i++) {
-      // start tracking slots and blocks since the beginning of the 2nd epoch
-      if (i == specConstants.getSlotsPerEpoch().getIntValue()) {
-        benchRegistry.get(BenchSpecRegistry.SLOT_BENCH).ifPresent(BenchSpecWrapper::startTracking);
-        benchRegistry.get(BenchSpecRegistry.BLOCK_BENCH).ifPresent(BenchSpecWrapper::startTracking);
-      }
-      // start tracking epochs when first epoch transition has happened
-      if (i == specConstants.getSlotsPerEpoch().getIntValue() + 1) {
-        benchRegistry.get(BenchSpecRegistry.EPOCH_BENCH).ifPresent(BenchSpecWrapper::startTracking);
-      }
+      benchmarkController.onBeforeNewSlot(spec.getConstants().getGenesisSlot().plus(i));
 
       controlledSchedulers.addTime(
           Duration.ofMillis(specConstants.getSecondsPerSlot().getMillis().getValue()));
@@ -220,68 +189,16 @@ public class BenchmarkRunner implements Runnable {
       }
 
       logger.info("Slot " + slots.get(0).toStringNumber(specConstants)
-          + ", committee: " + spec
-          .get_crosslink_committees_at_slot(states.get(0).getLatestSlotState(), slots.get(0))
           + ", blocks: " + blocks.size()
           + ", attestations: " + attestations.size());
-
-      ObservableBeaconState latestState = states.get(states.size() - 1);
-      if (latestState.getLatestSlotState().getSlot().increment().modulo(spec.getConstants().getSlotsPerEpoch())
-          .equals(SlotNumber.ZERO)) {
-        ObservableBeaconState preEpochState = latestState;
-        EpochTransitionSummary summary = instance.getExtendedSlotTransition()
-            .applyWithSummary(preEpochState.getLatestSlotState());
-        logger.info("Epoch transition "
-            + spec.get_current_epoch(preEpochState.getLatestSlotState()).toString(specConstants)
-            + "=>"
-            + spec.get_current_epoch(preEpochState.getLatestSlotState()).increment().toString(specConstants)
-            + ": Justified/Finalized epochs: "
-            + summary.getPreState().getCurrentJustifiedEpoch().toString(specConstants)
-            + "/"
-            + summary.getPreState().getFinalizedEpoch().toString(specConstants)
-            + " => "
-            + summary.getPostState().getCurrentJustifiedEpoch().toString(specConstants)
-            + "/"
-            + summary.getPostState().getFinalizedEpoch().toString(specConstants)
-        );
-        logger.info("  Validators rewarded:"
-            + getValidators(" attestations: ", summary.getAttestationRewards())
-            + getValidators(" boundary: ", summary.getBoundaryAttestationRewards())
-            + getValidators(" head: ", summary.getBeaconHeadAttestationRewards())
-            + getValidators(" include distance: ", summary.getInclusionDistanceRewards())
-            + getValidators(" attest inclusion: ", summary.getAttestationInclusionRewards())
-        );
-        logger.info("  Validators penalized:"
-            + getValidators(" attestations: ", summary.getAttestationPenalties())
-            + getValidators(" boundary: ", summary.getBoundaryAttestationPenalties())
-            + getValidators(" head: ", summary.getBeaconHeadAttestationPenalties())
-            + getValidators(" penalized epoch: ", summary.getInitiatedExitPenalties())
-            + getValidators(" no finality: ", summary.getNoFinalityPenalties())
-        );
-      }
 
       slots.clear();
       attestations.clear();
       blocks.clear();
-      states.clear();
     }
 
-    benchRegistry
-        .get(BenchSpecRegistry.SLOT_BENCH)
-        .ifPresent(b -> System.out.println("Slot processing:\n" + b.buildReport()));
-    benchRegistry
-        .get(BenchSpecRegistry.BLOCK_BENCH)
-        .ifPresent(b -> System.out.println("Block processing:\n" + b.buildReport()));
-    benchRegistry
-        .get(BenchSpecRegistry.EPOCH_BENCH)
-        .ifPresent(b -> System.out.println("Epoch processing:\n" + b.buildReport()));
-  }
-
-  private static String getValidators(String info, Map<ValidatorIndex, ?> records) {
-    if (records.isEmpty()) return "";
-    return info + " ["
-        + records.entrySet().stream().map(e -> e.getKey().toString()).collect(Collectors.joining(","))
-        + "]";
+    System.out.println();
+    System.out.println(benchmarkController.createReport().print());
   }
 
   private static class SimpleDepositContract implements DepositContract {
