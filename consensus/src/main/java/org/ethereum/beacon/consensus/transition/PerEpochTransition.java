@@ -48,7 +48,8 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
 
   BeaconStateEx apply(BeaconStateEx origState, EpochTransitionSummary summary) {
     logger.debug(() -> "Applying epoch transition to state: (" +
-        spec.hash_tree_root(origState).toStringShort() + ") " + origState.toString(spec.getConstants()));
+        spec.hash_tree_root(origState).toStringShort() + ") " +
+        origState.toString(spec.getConstants(), spec::signed_root));
 
     TransitionType.EPOCH.checkCanBeAppliedAfter(origState.getTransition());
 
@@ -245,8 +246,7 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
     spec.process_exit_queue(state);
     spec.finish_epoch_update(state);
 
-    BeaconStateEx ret = new BeaconStateExImpl(state.createImmutable(),
-        origState.getHeadBlockHash(), TransitionType.EPOCH);
+    BeaconStateEx ret = new BeaconStateExImpl(state.createImmutable(), TransitionType.EPOCH);
 
     if (summary != null) {
       summary.ejectedValidators = ejectedValidators;
@@ -254,7 +254,8 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
     }
 
     logger.debug(() -> "Epoch transition result state: (" +
-        spec.hash_tree_root(ret).toStringShort() + ") " + ret.toString(spec.getConstants()));
+        spec.hash_tree_root(ret).toStringShort() + ") " +
+        ret.toString(spec.getConstants(), spec::signed_root));
 
     return ret;
   }

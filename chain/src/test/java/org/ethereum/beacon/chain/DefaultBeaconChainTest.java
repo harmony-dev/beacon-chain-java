@@ -71,10 +71,7 @@ public class DefaultBeaconChainTest {
             Hash32.ZERO,
             BeaconBlockBody.EMPTY,
             spec.getConstants().getEmptySignature());
-    BeaconState state =
-        perSlotTransition
-            .apply(
-                new BeaconStateExImpl(parent.getState(), spec.signed_root(parent.getBlock())));
+    BeaconState state = perSlotTransition.apply(new BeaconStateExImpl(parent.getState()));
 
     return block.withStateRoot(spec.hash_tree_root(state));
   }

@@ -9,18 +9,19 @@ import java.util.function.Supplier;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.hasher.ObjectHasher;
 import org.ethereum.beacon.consensus.util.CachingBeaconChainSpec;
+import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
-import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.spec.SpecConstants;
+import org.ethereum.beacon.core.state.ShardCommittee;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.crypto.BLS381.PublicKey;
 import org.ethereum.beacon.util.stats.TimeCollector;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt64;
 
@@ -87,11 +88,6 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
   }
 
   @Override
-  public void process_deposit(MutableBeaconState state, Deposit deposit) {
-    callAndTrack("process_deposit", () -> super.process_deposit(state, deposit));
-  }
-
-  @Override
   public Hash32 hash_tree_root(Object object) {
     return callAndTrack("hash_tree_root", () -> super.hash_tree_root(object));
   }
@@ -102,14 +98,16 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
   }
 
   @Override
-  public ValidatorIndex get_validator_index_by_pubkey(BeaconState state, BLSPubkey pubkey) {
+  public List<ShardCommittee> get_crosslink_committees_at_slot(BeaconState state, SlotNumber slot) {
     return callAndTrack(
-        "get_validator_index_by_pubkey", () -> super.get_validator_index_by_pubkey(state, pubkey));
+        "get_crosslink_committees_at_slot",
+        () -> super.get_crosslink_committees_at_slot(state, slot));
   }
 
   @Override
-  public List<UInt64> get_permuted_list(List<? extends UInt64> indices, Bytes32 seed) {
-    return callAndTrack("get_permuted_list", () -> super.get_permuted_list(indices, seed));
+  public ValidatorIndex get_beacon_proposer_index(BeaconState state, SlotNumber slot) {
+    return callAndTrack(
+        "get_beacon_proposer_index", () -> super.get_beacon_proposer_index(state, slot));
   }
 
   @Override
@@ -180,6 +178,31 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
           super.verify_attestation(state, attestation);
           super.process_attestation(state, attestation);
         });
+  }
+
+  @Override
+  public void process_block_header(MutableBeaconState state, BeaconBlock block) {
+    callAndTrack(
+        "process_block_header",
+        () -> {
+          super.verify_block_header(state, block);
+          super.process_block_header(state, block);
+        });
+  }
+
+  @Override
+  public void process_randao(MutableBeaconState state, BeaconBlock block) {
+    callAndTrack(
+        "process_randao",
+        () -> {
+          super.verify_randao(state, block);
+          super.process_randao(state, block);
+        });
+  }
+
+  @Override
+  public void process_eth1_data(MutableBeaconState state, BeaconBlock block) {
+    callAndTrack("process_eth1_data", () -> super.process_eth1_data(state, block));
   }
 
   void startTracking() {

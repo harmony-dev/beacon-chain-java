@@ -27,19 +27,19 @@ public class PerSlotTransition implements StateTransition<BeaconStateEx> {
   @Override
   public BeaconStateEx apply(BeaconStateEx stateEx) {
     logger.trace(() -> "Applying slot transition to state: (" +
-        spec.hash_tree_root(stateEx).toStringShort() + ") " + stateEx.toString(spec.getConstants()));
+        spec.hash_tree_root(stateEx).toStringShort() + ") " +
+        stateEx.toString(spec.getConstants(), spec::signed_root));
     TransitionType.SLOT.checkCanBeAppliedAfter(stateEx.getTransition());
 
     MutableBeaconState state = stateEx.createMutableCopy();
 
     spec.advance_slot(state);
 
-    BeaconStateEx ret =
-        new BeaconStateExImpl(
-            state.createImmutable(), stateEx.getHeadBlockHash(), TransitionType.SLOT);
+    BeaconStateEx ret = new BeaconStateExImpl(state.createImmutable(), TransitionType.SLOT);
 
     logger.trace(() -> "Slot transition result state: (" +
-        spec.hash_tree_root(ret).toStringShort() + ") " + ret.toString(spec.getConstants()));
+        spec.hash_tree_root(ret).toStringShort() + ") " +
+        ret.toString(spec.getConstants(), spec::signed_root));
 
     return ret;
   }

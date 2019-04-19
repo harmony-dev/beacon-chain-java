@@ -12,14 +12,11 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
-import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.LoggerContext;
-import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.ConfigurationSource;
 import org.apache.logging.log4j.core.config.Configurator;
-import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.ethereum.beacon.Launcher;
 import org.ethereum.beacon.bench.BenchmarkController;
 import org.ethereum.beacon.chain.storage.impl.MemBeaconChainStorageFactory;
@@ -27,14 +24,12 @@ import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
-import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.crypto.BLS381;
 import org.ethereum.beacon.crypto.BLS381.KeyPair;
 import org.ethereum.beacon.crypto.util.BlsKeyPairReader;
-import org.ethereum.beacon.emulator.config.chainspec.SpecBuilder;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.schedulers.ControlledSchedulers;
 import org.ethereum.beacon.schedulers.LoggerMDCExecutor;
@@ -57,32 +52,15 @@ public class BenchmarkRunner implements Runnable {
 
   private final int epochCount;
   private final int validatorCount;
-  private final SpecConstants specConstants;
   private final BeaconChainSpec spec;
-  private final SpecBuilder specBuilder;
-  private final boolean blsEnabled;
+  private final BeaconChainSpec.Builder specBuilder;
 
   public BenchmarkRunner(
-      int epochCount, int validatorCount, SpecBuilder specBuilder, boolean blsEnabled) {
+      int epochCount, int validatorCount, BeaconChainSpec.Builder specBuilder) {
     this.epochCount = epochCount;
     this.validatorCount = validatorCount;
     this.specBuilder = specBuilder;
-    this.specConstants = specBuilder.buildSpecConstants();
-    this.spec = specBuilder.buildSpec();
-    this.blsEnabled = blsEnabled;
-  }
-
-  private void setupLogging() {
-    try (InputStream inputStream = ClassLoader.class.getResourceAsStream("/log4j2-benchmaker.xml")) {
-      ConfigurationSource source = new ConfigurationSource(inputStream);
-      Configurator.initialize(null, source);
-    } catch (Exception e) {
-      throw new RuntimeException("Cannot read log4j default configuration", e);
-    }
-
-    LoggerContext context =
-        (org.apache.logging.log4j.core.LoggerContext) LogManager.getContext(false);
-    context.updateLoggers();
+    this.spec = specBuilder.build();
   }
 
   private Pair<List<Deposit>, List<KeyPair>> getValidatorDeposits(BeaconChainSpec spec, int count) {
@@ -121,14 +99,14 @@ public class BenchmarkRunner implements Runnable {
         new DepositContract.ChainStart(genesisTime, eth1Data, deposits);
     DepositContract depositContract = new SimpleDepositContract(chainStart);
 
-    logger.info("Creating validators...");
+    logger.info("Bootstrapping validators...");
     TimeCollector proposeTimeCollector = new TimeCollector();
 
     ControlledSchedulers schedulers = controlledSchedulers.createNew("V0");
     WireApi wireApi = localWireHub.createNewPeer("0");
 
     List<BLS381Credentials> blsCreds;
-    if (blsEnabled) {
+    if (spec.isBlsVerify()) {
       blsCreds =
           keyPairs.stream()
               .map(BLS381Credentials::createWithInsecureSigner)
@@ -143,7 +121,7 @@ public class BenchmarkRunner implements Runnable {
     BenchmarkController benchmarkController = BenchmarkController.newInstance();
     Launcher instance =
         new Launcher(
-            specBuilder.buildSpec(),
+            specBuilder.build(),
             depositContract,
             blsCreds,
             wireApi,
@@ -151,8 +129,6 @@ public class BenchmarkRunner implements Runnable {
             schedulers,
             proposeTimeCollector,
             benchmarkController);
-
-    logger.info("All validators created");
 
     List<SlotNumber> slots = new ArrayList<>();
     List<Attestation> attestations = new ArrayList<>();
@@ -167,15 +143,15 @@ public class BenchmarkRunner implements Runnable {
 
     logger.info("Time starts running ...");
     controlledSchedulers.setCurrentTime(
-        genesisTime.plus(specConstants.getSecondsPerSlot()).getMillis().getValue() - 9);
+        genesisTime.plus(spec.getConstants().getSecondsPerSlot()).getMillis().getValue() - 9);
 
     // skip 1st epoch, add extra slot to trigger last epoch transition
-    int slotsToRun = (epochCount + 1) * specConstants.getSlotsPerEpoch().getIntValue();
+    int slotsToRun = (epochCount + 1) * spec.getConstants().getSlotsPerEpoch().getIntValue();
     for (int i = 0; i < slotsToRun; i++) {
       benchmarkController.onBeforeNewSlot(spec.getConstants().getGenesisSlot().plus(i));
 
       controlledSchedulers.addTime(
-          Duration.ofMillis(specConstants.getSecondsPerSlot().getMillis().getValue()));
+          Duration.ofMillis(spec.getConstants().getSecondsPerSlot().getMillis().getValue()));
 
       if (slots.size() > 1) {
         logger.warn("More than 1 slot generated: " + slots);
@@ -184,7 +160,7 @@ public class BenchmarkRunner implements Runnable {
         logger.error("No slots generated");
       }
 
-      logger.info("Slot " + slots.get(0).toStringNumber(specConstants)
+      logger.info("Slot " + slots.get(0).toStringNumber(spec.getConstants())
           + ", blocks: " + blocks.size()
           + ", attestations: " + attestations.size());
 

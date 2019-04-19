@@ -2,6 +2,8 @@ package org.ethereum.beacon.consensus.spec;
 
 import static java.util.stream.Collectors.toList;
 import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
+import static org.ethereum.beacon.core.spec.SignatureDomains.BEACON_BLOCK;
+import static org.ethereum.beacon.core.spec.SignatureDomains.RANDAO;
 
 import java.util.Arrays;
 import java.util.List;
@@ -21,6 +23,7 @@ import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.state.Eth1DataVote;
 import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.state.ShardCommittee;
+import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
@@ -39,6 +42,21 @@ import tech.pegasys.artemis.util.uint.UInt64;
  */
 public interface BlockProcessing extends HelperFunction {
 
+  default void verify_block_header(BeaconState state, BeaconBlock block) {
+    Hash32 headerRoot = signed_root(block);
+
+    // Verify that bls_verify(
+    //  pubkey=state.validator_registry[get_beacon_proposer_index(state, state.slot)].pubkey,
+    //  message=proposal_root,
+    //  signature=block.signature,
+    //  domain=get_domain(state.fork, get_current_epoch(state), DOMAIN_PROPOSAL)).
+    ValidatorIndex proposerIndex = get_beacon_proposer_index(state, state.getSlot());
+    BLSPubkey publicKey = state.getValidatorRegistry().get(proposerIndex).getPubKey();
+    UInt64 domain = get_domain(state.getFork(), get_current_epoch(state), BEACON_BLOCK);
+
+    assertTrue(bls_verify(publicKey, headerRoot, block.getSignature(), domain));
+  }
+
   default void process_block_header(MutableBeaconState state, BeaconBlock block) {
     // Verify that the slots match
     assertTrue(block.getSlot().equals(state.getSlot()));
@@ -46,6 +64,26 @@ public interface BlockProcessing extends HelperFunction {
     assertTrue(block.getPreviousBlockRoot().equals(signed_root(state.getLatestBlockHeader())));
     // Save current block as the new latest block
     state.setLatestBlockHeader(get_temporary_block_header(block));
+  }
+
+  default void verify_randao(BeaconState state, BeaconBlock block) {
+    // Let proposer = state.validator_registry[get_beacon_proposer_index(state, state.slot)].
+    ValidatorRecord proposer =
+        state
+            .getValidatorRegistry()
+            .get(get_beacon_proposer_index(state, state.getSlot()));
+
+    /* assert bls_verify(
+        pubkey=proposer.pubkey,
+        message_hash=hash_tree_root(get_current_epoch(state)),
+        signature=block.body.randao_reveal,
+        domain=get_domain(state.fork, get_current_epoch(state), DOMAIN_RANDAO)
+       ) */
+    assertTrue(bls_verify(
+        proposer.getPubKey(),
+        hash_tree_root(get_current_epoch(state)),
+        block.getBody().getRandaoReveal(),
+        get_domain(state.getFork(), get_current_epoch(state), RANDAO)));
   }
 
   default void process_randao(MutableBeaconState state, BeaconBlock block) {

@@ -21,7 +21,7 @@ public class BenchmarkReport {
   }
 
   enum MeasurementGroup {
-    HIGH_LEVEL,
+    TOP_METHODS,
     BLS,
     HELPERS;
 
@@ -44,9 +44,9 @@ public class BenchmarkReport {
 
     public String print() {
       StringBuilder sb = new StringBuilder();
-      sb.append(routine.print()).append(":\n\n");
-      groups.forEach(group -> sb.append(group.print()).append("\n\n"));
-      sb.append(summary.print());
+      sb.append(routine.print()).append("\n");
+      groups.forEach(group -> sb.append(group.print("  ")).append("\n\n"));
+      sb.append(summary.print("  "));
       return sb.toString();
     }
   }
@@ -60,13 +60,13 @@ public class BenchmarkReport {
       this.functions = functions;
     }
 
-    public String print() {
+    public String print(String leftPadding) {
       StringBuilder sb = new StringBuilder();
       sb.append(
               FunctionStats.format(
-                  "[" + group.print() + "]", "min, ms", "avg, ms", "count", "total, ms"))
+                  leftPadding + group.print(), "min, ms", "avg, ms", "count", "total, ms"))
           .append('\n');
-      functions.forEach(stats -> sb.append(stats.print()).append('\n'));
+      functions.forEach(stats -> sb.append(stats.print(leftPadding + leftPadding)).append('\n'));
       return sb.deleteCharAt(sb.length() - 1).toString();
     }
   }
@@ -78,11 +78,13 @@ public class BenchmarkReport {
       this.groupSummaries = groupSummaries;
     }
 
-    public String print() {
+    public String print(String leftPadding) {
       StringBuilder sb = new StringBuilder();
-      sb.append(SummaryStats.format("[SUMMARY]", "min, ms", "avg, ms", "% of total")).append('\n');
-      groupSummaries.forEach(groupSummary -> sb.append(groupSummary.print()).append('\n'));
-      return sb.toString();
+      sb.append(SummaryStats.format(leftPadding + "SUMMARY", "min, ms", "avg, ms", "% of total"))
+          .append('\n');
+      groupSummaries.forEach(
+          groupSummary -> sb.append(groupSummary.print(leftPadding)).append('\n'));
+      return sb.deleteCharAt(sb.length() - 1).toString();
     }
   }
 
@@ -95,10 +97,13 @@ public class BenchmarkReport {
       this.functionSummaries = functionSummaries;
     }
 
-    public String print() {
+    public String print(String leftPadding) {
       StringBuilder sb = new StringBuilder();
-      sb.append(groupSummary.print(false)).append('\n');
-      functionSummaries.forEach(functinSummary -> sb.append(functinSummary.print(true)).append('\n'));
+      sb.append(groupSummary.print(leftPadding + leftPadding)).append('\n');
+      functionSummaries.forEach(
+          functionSummary ->
+              sb.append(functionSummary.print(leftPadding + leftPadding + leftPadding))
+                  .append('\n'));
       return sb.deleteCharAt(sb.length() - 1).toString();
     }
   }
@@ -114,12 +119,12 @@ public class BenchmarkReport {
     }
 
     static String format(String title, String minTime, String avgTime, String percentage) {
-      return String.format("%-40s%15s%15s%15s", title, minTime, avgTime, percentage);
+      return String.format("%-45s%15s%15s%15s", title, minTime, avgTime, percentage);
     }
 
-    public String print(boolean leftPad) {
+    public String print(String leftPadding) {
       return format(
-          (leftPad ? "  " : "") + title,
+          leftPadding + title,
           String.format("%.3f", minTime / 1_000_000d),
           String.format("%.3f", avgTime / 1_000_000d),
           String.format("%.2f", ratioToTotal * 100));
@@ -159,12 +164,12 @@ public class BenchmarkReport {
 
     static String format(
         String title, String minTime, String avgTime, String counter, String totalTime) {
-      return String.format("%-40s%15s%15s%10s%15s", title, minTime, avgTime, counter, totalTime);
+      return String.format("%-45s%15s%15s%15s%15s", title, minTime, avgTime, counter, totalTime);
     }
 
-    public String print() {
+    public String print(String leftPadding) {
       return format(
-          name,
+          leftPadding + name,
           String.format("%.3f", minTime / 1_000_000d / counter),
           String.format("%.3f", avgTime / 1_000_000d / counter),
           String.valueOf(counter),
@@ -215,13 +220,13 @@ public class BenchmarkReport {
                   // filter out functions that hasn't been called
                   .filter(function -> function.counter > 0)
                   // sort by avg time descending
-                  .sorted((o1, o2) -> -1 * Double.compare(o1.avgTime, o2.avgTime))
+                  .sorted((o1, o2) -> Double.compare(o2.avgTime, o1.avgTime))
                   .collect(Collectors.toList());
 
           if (!functionStats.isEmpty()) {
             GroupReport groupReport = new GroupReport(group, functionStats);
             groupReports.add(groupReport);
-            if (group == MeasurementGroup.HIGH_LEVEL) {
+            if (group == MeasurementGroup.TOP_METHODS) {
               highLevelGroupReport = groupReport;
             }
           }
@@ -235,12 +240,16 @@ public class BenchmarkReport {
               if (groupReport == highLevelGroupReport) {
                 groupSummaries.add(
                     new GroupSummary(
-                        getGroupSummaryStats("TOTAL", groupReport, highLevelGroupTime),
+                        getGroupSummaryStats(
+                            groupReport.group.print(), groupReport, highLevelGroupTime),
                         Collections.emptyList()));
               } else {
                 groupSummaries.add(getGroupSummary(groupReport, highLevelGroupTime));
               }
             }
+            Collections.sort(
+                groupSummaries,
+                (o1, o2) -> Double.compare(o2.groupSummary.avgTime, o1.groupSummary.avgTime));
           }
         }
       }
@@ -291,11 +300,11 @@ public class BenchmarkReport {
           return BLS_FUNCTIONS;
         case HELPERS:
           return HELPER_FUNCTIONS;
-        case HIGH_LEVEL:
-          if (!HIGH_LEVEL_FUNCTIONS.containsKey(routine)) {
+        case TOP_METHODS:
+          if (!TOP_METHOD_LIST.containsKey(routine)) {
             throw new IllegalArgumentException("Unsupported benchmark routine: " + routine);
           } else {
-            return HIGH_LEVEL_FUNCTIONS.get(routine);
+            return TOP_METHOD_LIST.get(routine);
           }
         default:
           throw new IllegalArgumentException("Unsupported measurement group: " + group);
@@ -303,12 +312,16 @@ public class BenchmarkReport {
     }
   }
 
-  private static final Map<BenchmarkRoutine, String[]> HIGH_LEVEL_FUNCTIONS = new HashMap<>();
+  private static final Map<BenchmarkRoutine, String[]> TOP_METHOD_LIST = new HashMap<>();
 
   static {
-    HIGH_LEVEL_FUNCTIONS.put(BenchmarkRoutine.SLOT, new String[] {"cache_state", "advance_slot"});
-    HIGH_LEVEL_FUNCTIONS.put(BenchmarkRoutine.BLOCK, new String[] {"process_attestation"});
-    HIGH_LEVEL_FUNCTIONS.put(
+    TOP_METHOD_LIST.put(BenchmarkRoutine.SLOT, new String[] {"cache_state", "advance_slot"});
+    TOP_METHOD_LIST.put(
+        BenchmarkRoutine.BLOCK,
+        new String[] {
+          "process_block_header", "process_randao", "process_eth1_data", "process_attestation"
+        });
+    TOP_METHOD_LIST.put(
         BenchmarkRoutine.EPOCH,
         new String[] {
           "update_justification_and_finalization",
@@ -327,5 +340,7 @@ public class BenchmarkReport {
     "bls_aggregate_pubkeys", "bls_verify_multiple", "bls_verify"
   };
 
-  private static final String[] HELPER_FUNCTIONS = {"hash_tree_root", "signed_root"};
+  private static final String[] HELPER_FUNCTIONS = {
+    "hash_tree_root", "signed_root", "get_crosslink_committees_at_slot", "get_beacon_proposer_index"
+  };
 }

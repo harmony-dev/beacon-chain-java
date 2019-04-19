@@ -1,5 +1,6 @@
 package org.ethereum.beacon.consensus;
 
+import java.util.function.Function;
 import javax.annotation.Nullable;
 import org.ethereum.beacon.consensus.transition.BeaconStateExImpl;
 import org.ethereum.beacon.core.BeaconState;
@@ -13,17 +14,19 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 public interface BeaconStateEx extends BeaconState {
 
   static BeaconStateEx getEmpty() {
-    return new BeaconStateExImpl(BeaconState.getEmpty(), Hash32.ZERO, TransitionType.UNKNOWN);
+    return new BeaconStateExImpl(BeaconState.getEmpty(), TransitionType.UNKNOWN);
   }
-
-  Hash32 getHeadBlockHash();
 
   TransitionType getTransition();
 
   default String toString(
-      @Nullable SpecConstants constants) {
-    return "BeaconStateEx[headBlock=" + getHeadBlockHash().toStringShort()
+      @Nullable SpecConstants constants,
+      @Nullable Function<Object, Hash32> blockHasher) {
+    return "BeaconStateEx[headBlock="
+        + (blockHasher != null ? blockHasher.apply(getLatestBlockHeader()) : Hash32.ZERO)
+            .toStringShort()
         + (getTransition() == TransitionType.UNKNOWN ? "" : ", lastTransition=" + getTransition())
-        + ", " + toStringShort(constants);
+        + ", "
+        + toStringShort(constants);
   }
 }

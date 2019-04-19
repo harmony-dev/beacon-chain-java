@@ -13,7 +13,7 @@ public abstract class StateTransitionTestUtil {
     return (source, block) -> {
       MutableBeaconState newState = source.createMutableCopy();
       newState.setSlot(block.getSlot());
-      return new BeaconStateExImpl(newState, source.getHeadBlockHash());
+      return new BeaconStateExImpl(newState);
     };
   }
 
@@ -25,7 +25,7 @@ public abstract class StateTransitionTestUtil {
     return (source) -> {
       MutableBeaconState result = source.createMutableCopy();
       result.setSlot(result.getSlot().increment());
-      return new BeaconStateExImpl(result, source.getHeadBlockHash());
+      return new BeaconStateExImpl(result);
     };
   }
 }
