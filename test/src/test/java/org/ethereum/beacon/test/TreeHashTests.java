@@ -1,15 +1,13 @@
 package org.ethereum.beacon.test;
 
 import org.ethereum.beacon.consensus.BeaconChainSpec;
-import org.ethereum.beacon.test.runner.hash.TreeHashCompositeRunner;
+import org.ethereum.beacon.test.runner.hash.TreeHashBasicRunner;
 import org.ethereum.beacon.test.runner.hash.TreeHashContainerRunner;
 import org.ethereum.beacon.test.runner.hash.TreeHashListRunner;
-import org.ethereum.beacon.test.runner.hash.TreeHashBasicRunner;
 import org.ethereum.beacon.test.runner.hash.TreeHashVectorRunner;
-import org.ethereum.beacon.test.type.hash.TreeHashCompositeTest;
+import org.ethereum.beacon.test.type.hash.TreeHashBasicTest;
 import org.ethereum.beacon.test.type.hash.TreeHashContainerTest;
 import org.ethereum.beacon.test.type.hash.TreeHashListTest;
-import org.ethereum.beacon.test.type.hash.TreeHashBasicTest;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -101,25 +99,6 @@ public class TreeHashTests extends TestUtils {
               return testRunner.run();
             },
             TreeHashContainerTest.class);
-    if (errors.isPresent()) {
-      System.out.println(errors.get());
-      fail();
-    }
-  }
-
-  @Test
-  public void testNestedCompositeTypeTreeHash() {
-    Path testFilePath = Paths.get(PATH_TO_TESTS, TESTS_DIR, "nested_composites.yaml");
-    TreeHashCompositeTest test =
-        readTest(getResourceFile(testFilePath.toString()), TreeHashCompositeTest.class);
-    Optional<String> errors =
-        runAllCasesInTest(
-            test,
-            testCase -> {
-              TreeHashCompositeRunner testRunner = new TreeHashCompositeRunner(testCase, spec);
-              return testRunner.run();
-            },
-            TreeHashCompositeTest.class);
     if (errors.isPresent()) {
       System.out.println(errors.get());
       fail();
