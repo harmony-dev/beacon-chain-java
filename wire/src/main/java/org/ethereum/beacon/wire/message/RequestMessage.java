@@ -33,7 +33,7 @@ public class RequestMessage extends Message {
   }
 
   @Override
-  public BytesValue getPayloadBytes() {
-    return getBody();
+  public RequestMessagePayload getPayload() {
+    return null;
   }
 }

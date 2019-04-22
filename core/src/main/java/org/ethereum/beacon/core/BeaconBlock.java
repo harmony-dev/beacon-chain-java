@@ -59,6 +59,15 @@ public class BeaconBlock implements Hashable<Hash32> {
     this.signature = signature;
   }
 
+  public BeaconBlock(BeaconBlockHeader header, BeaconBlockBody body) {
+    this(
+        header.getSlot(),
+        header.getPreviousBlockRoot(),
+        header.getStateRoot(),
+        body,
+        header.getSignature());
+  }
+
   @Override
   public Optional<Hash32> getHash() {
     return Optional.ofNullable(hashCache);

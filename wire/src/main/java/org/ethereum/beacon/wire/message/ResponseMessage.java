@@ -34,7 +34,7 @@ public class ResponseMessage extends Message {
   }
 
   @Override
-  public BytesValue getPayloadBytes() {
-    return getResult();
+  public ResponseMessagePayload<?> getPayload() {
+    return null;
   }
 }

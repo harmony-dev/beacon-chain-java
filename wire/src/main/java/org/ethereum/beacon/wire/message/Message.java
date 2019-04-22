@@ -4,5 +4,5 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
 
 public abstract class Message {
 
-  public abstract BytesValue getPayloadBytes();
+  public abstract MessagePayload getPayload();
 }
