@@ -26,13 +26,17 @@ public class SSZObjectHasher implements ObjectHasher<Hash32> {
     this.sszHasher = sszHasher;
   }
 
-  public static SSZObjectHasher create(
+  public static SSZObjectHasher createIncremental(
       SpecConstants constants, Function<BytesValue, Hash32> hashFunction) {
+    return create(constants, hashFunction, true);
+  }
 
+  public static SSZObjectHasher create(
+      SpecConstants constants, Function<BytesValue, Hash32> hashFunction, boolean incremental) {
     SSZHasher sszHasher =
         new SSZBuilder()
             .withExternalVarResolver(new SpecConstantsResolver(constants))
-            .withIncrementalHasher(true)
+            .withIncrementalHasher(incremental)
             .buildHasher(hashFunction);
     return new SSZObjectHasher(sszHasher);
   }

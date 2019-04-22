@@ -2,7 +2,9 @@ package org.ethereum.beacon.benchmaker;
 
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconChainSpec.Builder;
+import org.ethereum.beacon.consensus.hasher.SSZObjectHasher;
 import org.ethereum.beacon.core.spec.SpecConstants;
+import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.emulator.config.ConfigBuilder;
 import org.ethereum.beacon.emulator.config.chainspec.SpecBuilder;
 import org.ethereum.beacon.emulator.config.chainspec.SpecData;
@@ -30,23 +32,26 @@ public class Benchmaker implements Runnable {
   private Integer epochs;
 
   @CommandLine.Option(
-      names = {"--validators"},
-      paramLabel = "validators",
-      description = "Number of validators.",
+      names = {"--registry-size"},
+      paramLabel = "size",
+      description = "Validator registry size.",
       defaultValue = "64")
-  private Integer validators;
+  private Integer registrySize;
 
   @CommandLine.Option(
       names = {"--no-bls"},
-      paramLabel = "no-bls",
       description = "Turns off BLS.")
   private Boolean noBls = false;
 
   @CommandLine.Option(
       names = {"--no-cache"},
-      paramLabel = "no-cache",
       description = "Turns off caches used in the spec execution.")
   private Boolean noCache = false;
+
+  @CommandLine.Option(
+      names = {"--no-increment"},
+      description = "Turns off incremental hashing.")
+  private Boolean noIncrement = false;
 
   public static void main(String[] args) {
     try {
@@ -73,11 +78,11 @@ public class Benchmaker implements Runnable {
         new Builder()
             .withConstants(constants)
             .withDefaultHashFunction()
-            .withDefaultHasher(constants)
+            .withHasher(SSZObjectHasher.create(constants, Hashes::keccak256, !noIncrement))
             .withBlsVerify(!noBls)
             .withCache(!noCache)
             .withBlsVerifyProofOfPossession(false);
 
-    new BenchmarkRunner(epochs, validators, specBuilder).run();
+    new BenchmarkRunner(epochs, registrySize, specBuilder).run();
   }
 }
