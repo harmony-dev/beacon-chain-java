@@ -36,12 +36,11 @@ import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
-import org.ethereum.beacon.crypto.BLS381;
 import org.ethereum.beacon.crypto.BLS381.KeyPair;
 import org.ethereum.beacon.crypto.BLS381.PrivateKey;
 import org.ethereum.beacon.emulator.config.ConfigBuilder;
-import org.ethereum.beacon.emulator.config.chainspec.SpecData;
 import org.ethereum.beacon.emulator.config.chainspec.SpecBuilder;
+import org.ethereum.beacon.emulator.config.chainspec.SpecData;
 import org.ethereum.beacon.emulator.config.main.MainConfig;
 import org.ethereum.beacon.emulator.config.main.plan.SimulationPlan;
 import org.ethereum.beacon.emulator.config.simulator.PeersConfig;
@@ -63,7 +62,7 @@ import reactor.core.publisher.Mono;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 
-public class SimulatorLauncher implements Runnable {
+public class BenchmarkLauncher implements Runnable {
   private static final Logger logger = LogManager.getLogger("simulator");
   private static final Logger wire = LogManager.getLogger("wire");
 
@@ -85,7 +84,7 @@ public class SimulatorLauncher implements Runnable {
    * @param observers observer peers configuration.
    * @param logLevel Log level, Apache log4j type.
    */
-  public SimulatorLauncher(
+  public BenchmarkLauncher(
       MainConfig config,
       SpecBuilder specBuilder,
       List<PeersConfig> validators,
@@ -112,7 +111,7 @@ public class SimulatorLauncher implements Runnable {
     // set logLevel
     if (logLevel != null) {
       LoggerContext context =
-          (org.apache.logging.log4j.core.LoggerContext) LogManager.getContext(false);
+          (LoggerContext) LogManager.getContext(false);
       Configuration config = context.getConfiguration();
       LoggerConfig loggerConfig = config.getLoggerConfig("simulator");
       loggerConfig.setLevel(logLevel);
@@ -120,8 +119,8 @@ public class SimulatorLauncher implements Runnable {
     }
   }
 
-  private Pair<List<Deposit>, List<BLS381.KeyPair>> getValidatorDeposits(Random rnd) {
-    Pair<List<Deposit>, List<BLS381.KeyPair>> deposits =
+  private Pair<List<Deposit>, List<KeyPair>> getValidatorDeposits(Random rnd) {
+    Pair<List<Deposit>, List<KeyPair>> deposits =
         SimulateUtils.getAnyDeposits(rnd, spec, validators.size(),
             config.getChainSpec().getSpecHelpersOptions().isBlsVerifyProofOfPossession());
     for (int i = 0; i < validators.size(); i++) {
@@ -144,11 +143,11 @@ public class SimulatorLauncher implements Runnable {
 
     Random rnd = new Random(simulationPlan.getSeed());
     setupLogging();
-    Pair<List<Deposit>, List<BLS381.KeyPair>> validatorDeposits = getValidatorDeposits(rnd);
+    Pair<List<Deposit>, List<KeyPair>> validatorDeposits = getValidatorDeposits(rnd);
 
     List<Deposit> deposits = validatorDeposits.getValue0().stream()
         .filter(Objects::nonNull).collect(Collectors.toList());
-    List<BLS381.KeyPair> keyPairs = validatorDeposits.getValue1();
+    List<KeyPair> keyPairs = validatorDeposits.getValue1();
 
     Time genesisTime = Time.of(simulationPlan.getGenesisTime());
 
@@ -452,7 +451,7 @@ public class SimulatorLauncher implements Runnable {
 
     public Builder() {}
 
-    public SimulatorLauncher build() {
+    public BenchmarkLauncher build() {
       assert config != null;
       SimulationPlan simulationPlan = (SimulationPlan) config.getPlan();
 
@@ -473,7 +472,7 @@ public class SimulatorLauncher implements Runnable {
 
       SpecBuilder specBuilder = new SpecBuilder().withSpec(spec);
 
-      return new SimulatorLauncher(
+      return new BenchmarkLauncher(
           config,
           specBuilder,
           peers.stream().filter(PeersConfig::isValidator).collect(Collectors.toList()),

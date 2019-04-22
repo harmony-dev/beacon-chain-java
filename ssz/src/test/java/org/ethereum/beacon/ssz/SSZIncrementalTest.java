@@ -357,6 +357,93 @@ public class SSZIncrementalTest {
     }
   }
 
+  @Test
+  public void testListRemove() {
+    class CountingHash implements Function<BytesValue, Hash32> {
+      int counter = 0;
+
+      @Override
+      public Hash32 apply(BytesValue bytesValue) {
+        counter++;
+        return Hashes.keccak256(bytesValue);
+      }
+    }
+    SSZBuilder sszBuilder = new SSZBuilder()
+        .addDefaultListAccessors()
+        .addListAccessors(new ReadListAccessor());
+    TypeResolver typeResolver = sszBuilder.getTypeResolver();
+
+    SSZVisitorHost visitorHost = new SSZVisitorHost();
+    SSZSerializer serializer = new SSZSerializer(visitorHost, typeResolver);
+    CountingHash countingHashSimp = new CountingHash();
+    CountingHash countingHashInc = new CountingHash();
+    SSZIncrementalHasher incrementalHasher = new SSZIncrementalHasher(serializer, countingHashInc, 32);
+    SSZSimpleHasher simpleHasher = new SSZSimpleHasher(serializer, countingHashSimp, 32);
+
+    WriteList<Integer, A1> list1 = new ObservableListImpl<>(WriteList.create(Integer::valueOf));
+    list1.add(new A1(0x1111));
+    list1.add(new A1(0x2222));
+    list1.add(new A1(0x3333));
+    list1.add(new A1(0x4444));
+    list1.add(new A1(0x5555));
+
+    ReadList<Integer, A1> list2 = list1.createImmutableCopy();
+
+    SSZType sszListType = typeResolver.resolveSSZType(SSZField.resolveFromValue(list2));
+
+    {
+      countingHashInc.counter = 0;
+      countingHashSimp.counter = 0;
+      MerkleTrie mt2 = visitorHost.handleAny(sszListType, list2, simpleHasher);
+      MerkleTrie mt3 = visitorHost.handleAny(sszListType, list2, incrementalHasher);
+      Assert.assertEquals(mt2.getFinalRoot(), mt3.getFinalRoot());
+      Assert.assertTrue(countingHashInc.counter == countingHashSimp.counter);
+    }
+
+    WriteList<Integer, A1> list3 = list2.createMutableCopy();
+    list3.remove(4);
+    ReadList<Integer, A1> list4 = list3.createImmutableCopy();
+
+    {
+      countingHashInc.counter = 0;
+      countingHashSimp.counter = 0;
+      MerkleTrie mt2 = visitorHost.handleAny(sszListType, list4, simpleHasher);
+      MerkleTrie mt3 = visitorHost.handleAny(sszListType, list4, incrementalHasher);
+      Assert.assertEquals(mt2.getFinalRoot(), mt3.getFinalRoot());
+      Assert.assertTrue(countingHashInc.counter < countingHashSimp.counter);
+    }
+
+    WriteList<Integer, A1> list5 = list2.createMutableCopy();
+    list5.remove(3);
+    list5.remove(3);
+    ReadList<Integer, A1> list6 = list5.createImmutableCopy();
+
+    {
+      countingHashInc.counter = 0;
+      countingHashSimp.counter = 0;
+      MerkleTrie mt2 = visitorHost.handleAny(sszListType, list6, simpleHasher);
+      MerkleTrie mt3 = visitorHost.handleAny(sszListType, list6, incrementalHasher);
+      Assert.assertEquals(mt2.getFinalRoot(), mt3.getFinalRoot());
+      Assert.assertTrue(countingHashInc.counter < countingHashSimp.counter);
+    }
+
+    WriteList<Integer, A1> list7 = list2.createMutableCopy();
+    list7.remove(2);
+    list7.remove(2);
+    list7.remove(2);
+    ReadList<Integer, A1> list8 = list7.createImmutableCopy();
+
+    {
+      countingHashInc.counter = 0;
+      countingHashSimp.counter = 0;
+      MerkleTrie mt2 = visitorHost.handleAny(sszListType, list8, simpleHasher);
+      MerkleTrie mt3 = visitorHost.handleAny(sszListType, list8, incrementalHasher);
+      Assert.assertEquals(mt2.getFinalRoot(), mt3.getFinalRoot());
+      Assert.assertTrue(countingHashInc.counter < countingHashSimp.counter);
+    }
+  }
+
+
   @SSZSerializable
   public static class SimpleContainer1 {
     @SSZ public int a1;
@@ -467,6 +554,10 @@ public class SSZIncrementalTest {
     Container1 c1 = new Container1();
     SSZType sszType = typeResolver.resolveSSZType(Container1.class);
     System.out.println(sszType.dumpHierarchy(""));
+
+    // warm up zero caches for precise hash counting
+    incrementalHasher.getZeroHash(30);
+    simpleHasher.getZeroHash(30);
 
     {
       countingHashInc.counter = 0;

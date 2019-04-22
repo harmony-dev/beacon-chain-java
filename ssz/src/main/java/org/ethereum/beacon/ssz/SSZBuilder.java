@@ -10,14 +10,19 @@ import java.util.stream.Collectors;
 import org.ethereum.beacon.ssz.access.*;
 import org.ethereum.beacon.ssz.access.SSZBasicAccessor;
 import org.ethereum.beacon.ssz.access.basic.BooleanPrimitive;
+import org.ethereum.beacon.ssz.access.basic.BytesCodec;
 import org.ethereum.beacon.ssz.access.basic.BytesPrimitive;
+import org.ethereum.beacon.ssz.access.basic.HashCodec;
 import org.ethereum.beacon.ssz.access.basic.StringPrimitive;
+import org.ethereum.beacon.ssz.access.basic.UIntCodec;
 import org.ethereum.beacon.ssz.access.basic.UIntPrimitive;
 import org.ethereum.beacon.ssz.access.container.SSZAnnotationSchemeBuilder;
 import org.ethereum.beacon.ssz.access.container.SSZSchemeBuilder;
 import org.ethereum.beacon.ssz.access.container.SimpleContainerAccessor;
 import org.ethereum.beacon.ssz.access.list.ArrayAccessor;
+import org.ethereum.beacon.ssz.access.list.BytesValueAccessor;
 import org.ethereum.beacon.ssz.access.list.ListAccessor;
+import org.ethereum.beacon.ssz.access.list.ReadListAccessor;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import org.ethereum.beacon.ssz.annotation.SSZTransient;
@@ -29,7 +34,7 @@ import org.ethereum.beacon.ssz.type.SimpleTypeResolver;
 import org.ethereum.beacon.ssz.type.TypeResolver;
 import org.ethereum.beacon.ssz.visitor.SSZIncrementalHasher;
 import org.ethereum.beacon.ssz.visitor.MerkleTrie;
-import org.ethereum.beacon.ssz.visitor.SSZSimpleOptimizedHasher;
+import org.ethereum.beacon.ssz.visitor.SSZSimpleHasher;
 import org.ethereum.beacon.ssz.visitor.SSZVisitor;
 import org.ethereum.beacon.ssz.visitor.SSZVisitorHost;
 import org.javatuples.Pair;
@@ -141,6 +146,10 @@ public class SSZBuilder {
     return this;
   }
 
+  public SSZBuilder withExternalVarResolver(Function<String, Object> externalVarResolver) {
+    return withExternalVarResolver(ExternalVarResolver.fromFunction(externalVarResolver));
+  }
+
   public SSZBuilder withExternalVarResolver(ExternalVarResolver externalVarResolver) {
     checkAlreadyInitialized();
     this.externalVarResolver = externalVarResolver;
@@ -220,6 +229,9 @@ public class SSZBuilder {
     basicCodecs.add(new BytesPrimitive());
     basicCodecs.add(new BooleanPrimitive());
     basicCodecs.add(new StringPrimitive());
+    basicCodecs.add(new UIntCodec());
+    basicCodecs.add(new BytesCodec());
+    basicCodecs.add(new HashCodec());
     return this;
   }
 
@@ -227,6 +239,8 @@ public class SSZBuilder {
     checkAlreadyInitialized();
     listAccessors.add(new ArrayAccessor());
     listAccessors.add(new ListAccessor());
+    listAccessors.add(new ReadListAccessor());
+    listAccessors.add(new BytesValueAccessor());
     return this;
   }
 
@@ -256,7 +270,7 @@ public class SSZBuilder {
     if (incrementalHasher) {
       hasherVisitor = new SSZIncrementalHasher(buildSerializer(), hashFunction, sszHashBytesPerChunk);
     } else {
-      hasherVisitor = new SSZSimpleOptimizedHasher(buildSerializer(), hashFunction, sszHashBytesPerChunk);
+      hasherVisitor = new SSZSimpleHasher(buildSerializer(), hashFunction, sszHashBytesPerChunk);
     }
     return new SSZHasher(typeResolver, visitorHost, hasherVisitor);
   }

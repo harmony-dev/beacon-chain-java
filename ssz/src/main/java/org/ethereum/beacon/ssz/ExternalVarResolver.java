@@ -6,7 +6,7 @@ import java.util.function.Function;
 
 /**
  * Resolves external runtime property value.
- * For example see {@link SSZ#vectorSize()} placeholder
+ * For example see {@link SSZ#vectorLengthVar()}
  */
 public interface ExternalVarResolver extends Function<String, Object> {
 
@@ -22,6 +22,10 @@ public interface ExternalVarResolver extends Function<String, Object> {
     public ExternalVariableInvalidType(String message) {
       super(message);
     }
+  }
+
+  static ExternalVarResolver fromFunction(Function<String, Object> function) {
+    return function::apply;
   }
 
   /**

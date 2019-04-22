@@ -6,7 +6,6 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import org.ethereum.beacon.core.ssz.DefaultSSZ;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.ssz.SSZBuilder;
@@ -34,7 +33,7 @@ public class SSZObjectHasherTest {
 
   @Before
   public void setup() {
-    SSZHasher sszHasher = DefaultSSZ.createCommonSSZBuilder()
+    SSZHasher sszHasher = new SSZBuilder()
         .withExplicitAnnotations(false)
         .buildHasher(Hashes::keccak256);
     this.sszHasher = new SSZObjectHasher(sszHasher);

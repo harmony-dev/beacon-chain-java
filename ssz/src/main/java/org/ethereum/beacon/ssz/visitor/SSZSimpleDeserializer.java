@@ -28,13 +28,13 @@ public class SSZSimpleDeserializer implements SSZVisitor<DecodeResult, Bytes> {
     BytesSSZReaderProxy reader = new BytesSSZReaderProxy(param);
     // TODO support basic codecs with variable size
 //    int readBytes = sszType.isFixedSize() ? sszType.getSize() : reader.
-    return new DecodeResult(sszType.getValueCodec().decode(sszType.getTypeDescriptor(),
+    return new DecodeResult(sszType.getAccessor().decode(sszType.getTypeDescriptor(),
         reader), sszType.getSize());
   }
 
   @Override
   public DecodeResult visitComposite(SSZCompositeType type, Bytes param,
-      BiFunction<Integer, Bytes, DecodeResult> childVisitor) {
+      ChildVisitor<Bytes, DecodeResult> childVisitor) {
     int pos = 0;
     int size;
     if (type.isVariableSize()) {

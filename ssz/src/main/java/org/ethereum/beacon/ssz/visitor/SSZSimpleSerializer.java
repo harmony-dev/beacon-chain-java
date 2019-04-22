@@ -48,13 +48,13 @@ public class SSZSimpleSerializer implements SSZVisitor<SSZSimpleSerializer.SSZSe
   @Override
   public SSZSerializerResult visitBasicValue(SSZBasicType type, Object value) {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    type.getValueCodec().encode(value, type.getTypeDescriptor(), baos);
+    type.getAccessor().encode(value, type.getTypeDescriptor(), baos);
     return new SSZSerializerResult(BytesValue.wrap(baos.toByteArray()));
   }
 
   @Override
   public SSZSerializerResult visitList(SSZListType type, Object param,
-      BiFunction<Integer, Object, SSZSerializerResult> childVisitor) {
+      ChildVisitor<Object, SSZSerializerResult> childVisitor) {
 
     if (type.isVector()) {
       if (type.getChildrenCount(param) != type.getVectorLength()) {
@@ -67,7 +67,7 @@ public class SSZSimpleSerializer implements SSZVisitor<SSZSimpleSerializer.SSZSe
 
   @Override
   public SSZSerializerResult visitComposite(SSZCompositeType type, Object rawValue,
-      BiFunction<Integer, Object, SSZSerializerResult> childVisitor) {
+      ChildVisitor<Object, SSZSerializerResult> childVisitor) {
 
     List<BytesValue> childSerializations = new ArrayList<>();
     boolean fixedSize = type.isFixedSize();

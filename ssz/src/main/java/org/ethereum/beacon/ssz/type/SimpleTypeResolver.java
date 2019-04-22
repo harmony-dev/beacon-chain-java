@@ -45,11 +45,11 @@ public class SimpleTypeResolver implements TypeResolver {
     if (descriptor.getFieldAnnotation() == null) {
       return -1;
     }
-    int vectorSize = descriptor.getFieldAnnotation().vectorSize();
+    int vectorSize = descriptor.getFieldAnnotation().vectorLength();
     if (vectorSize > 0) {
       return vectorSize;
     }
-    String vectorSizeVar = descriptor.getFieldAnnotation().vectorSizeVar();
+    String vectorSizeVar = descriptor.getFieldAnnotation().vectorLengthVar();
     if (!vectorSizeVar.isEmpty()) {
       return externalVarResolver
               .resolveOrThrow(vectorSizeVar, Number.class)

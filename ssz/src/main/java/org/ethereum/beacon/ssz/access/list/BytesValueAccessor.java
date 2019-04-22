@@ -17,7 +17,7 @@ public class BytesValueAccessor extends AbstractListAccessor {
   }
 
   @Override
-  public SSZField getListElementType(SSZField field) {
+  public SSZField getListElementType(SSZField listTypeDescriptor) {
     return new SSZField(byte.class);
   }
 

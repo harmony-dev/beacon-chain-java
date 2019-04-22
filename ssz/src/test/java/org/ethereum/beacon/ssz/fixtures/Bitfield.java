@@ -32,7 +32,7 @@ public class Bitfield {
     }
 
     @Override
-    public SSZField getListElementType(SSZField field) {
+    public SSZField getListElementType(SSZField listTypeDescriptor) {
       return new SSZField(byte.class);
     }
 

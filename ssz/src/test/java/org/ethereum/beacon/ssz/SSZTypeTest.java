@@ -71,9 +71,9 @@ public class SSZTypeTest {
   public static class Container2 {
     @SSZ int a1;
     @SSZ Container3 b1;
-    @SSZ(vectorSize = 2)
+    @SSZ(vectorLength = 2)
     List<Container3> c1;
-    @SSZ(vectorSizeVar = "testSize")
+    @SSZ(vectorLengthVar = "testSize")
     List<Integer> c2;
     @SSZ Container3 b2;
     @SSZ int a2;

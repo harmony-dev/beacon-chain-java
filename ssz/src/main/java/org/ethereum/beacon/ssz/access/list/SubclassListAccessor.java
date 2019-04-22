@@ -23,8 +23,9 @@ public class SubclassListAccessor implements SSZListAccessor {
   }
 
   @Override
-  public SSZField getListElementType(SSZField field) {
-    return superclassAccessor.getListElementType(new SSZField(getSerializableClass(field.getRawClass())));
+  public SSZField getListElementType(SSZField listTypeDescriptor) {
+    return superclassAccessor.getListElementType(new SSZField(getSerializableClass(
+        listTypeDescriptor.getRawClass())));
   }
 
   @Override

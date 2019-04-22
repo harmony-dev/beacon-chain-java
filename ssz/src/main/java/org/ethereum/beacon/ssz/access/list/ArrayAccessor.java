@@ -22,8 +22,8 @@ public class ArrayAccessor extends AbstractListAccessor {
   }
 
   @Override
-  public SSZField getListElementType(SSZField field) {
-    return new SSZField(field.getRawClass().getComponentType());
+  public SSZField getListElementType(SSZField listTypeDescriptor) {
+    return new SSZField(listTypeDescriptor.getRawClass().getComponentType());
   }
 
 

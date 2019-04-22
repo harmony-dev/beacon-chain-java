@@ -34,6 +34,7 @@ import org.ethereum.beacon.test.type.TestSkeleton;
 public class TestUtils {
   static ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
   String PATH_TO_TESTS = "eth2.0-tests";
+  private static final String GIT_COMMAND = "git submodule init & git submodule update --recursive --remote";
 
   static File getResourceFile(String relativePath) {
     try {
@@ -42,8 +43,8 @@ public class TestUtils {
     } catch (IllegalArgumentException | URISyntaxException e) {
       throw new RuntimeException(
           String.format(
-              "Nothing found on path `%s`.\n Maybe you need to pull tests submodule with following command:\n git submodule update --recursive --remote",
-              relativePath),
+              "Nothing found on path `%s`.\n Maybe you need to pull tests submodule with following command:\n %s",
+              relativePath, GIT_COMMAND),
           e);
     }
   }
@@ -58,8 +59,8 @@ public class TestUtils {
     } catch (IllegalArgumentException | URISyntaxException e) {
       throw new RuntimeException(
           String.format(
-              "Nothing found on path `%s`.\n Maybe you need to pull tests submodule with following command:\n git submodule update --recursive --remote",
-              dir),
+              "Nothing found on path `%s`.\n Maybe you need to pull tests submodule with following command:\n %s",
+              dir, GIT_COMMAND),
           e);
     } catch (IOException e) {
       throw new RuntimeException(String.format("Failed to read files in directory `%s`.", dir), e);
