@@ -9,7 +9,7 @@ import org.jetbrains.annotations.NotNull;
 import tech.pegasys.artemis.util.uint.UInt24;
 
 public interface WriteList<IndexType extends Number, ValueType>
-    extends ReadList<IndexType, ValueType> {
+    extends WriteVector<IndexType, ValueType> {
 
   static <IndexType extends Number, ValueType> WriteList<IndexType, ValueType>
       wrap(List<ValueType> srcList, Function<Integer, IndexType> indexConverter) {

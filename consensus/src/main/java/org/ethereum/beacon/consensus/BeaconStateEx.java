@@ -17,6 +17,11 @@ public interface BeaconStateEx extends BeaconState {
     return new BeaconStateExImpl(BeaconState.getEmpty(), TransitionType.UNKNOWN);
   }
 
+  static BeaconStateEx getEmpty(SpecConstants specConst) {
+    return new BeaconStateExImpl(BeaconState.getEmpty(specConst), TransitionType.UNKNOWN);
+  }
+
+
   TransitionType getTransition();
 
   default String toString(

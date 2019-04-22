@@ -54,7 +54,7 @@ public interface BeaconChainSpec
     return new Builder()
         .withConstants(constants)
         .withDefaultHashFunction()
-        .withDefaultHasher()
+        .withDefaultHasher(constants)
         .build();
   }
 
@@ -129,8 +129,8 @@ public interface BeaconChainSpec
       return withHashFunction(Hashes::keccak256);
     }
 
-    public Builder withDefaultHasher() {
-      return withHasher(SSZObjectHasher.create(Hashes::keccak256));
+    public Builder withDefaultHasher(SpecConstants constants) {
+      return withHasher(SSZObjectHasher.create(constants, Hashes::keccak256));
     }
 
     public Builder enableCache() {

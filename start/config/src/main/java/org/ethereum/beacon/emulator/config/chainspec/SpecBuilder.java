@@ -37,7 +37,7 @@ public class SpecBuilder {
       SpecHelpersData specHelpersOptions, SpecConstants specConstants) {
     return new BeaconChainSpec.Builder()
         .withDefaultHashFunction()
-        .withDefaultHasher()
+        .withDefaultHasher(specConstants)
         .withConstants(specConstants)
         .withBlsVerify(specHelpersOptions.isBlsVerify())
         .withBlsVerifyProofOfPossession(specHelpersOptions.isBlsVerifyProofOfPossession())

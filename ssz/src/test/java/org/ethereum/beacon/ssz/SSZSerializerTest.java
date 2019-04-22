@@ -4,11 +4,14 @@ import java.util.Arrays;
 import net.consensys.cava.bytes.Bytes;
 import net.consensys.cava.ssz.SSZ;
 import org.ethereum.beacon.crypto.Hashes;
+import org.ethereum.beacon.ssz.access.container.SSZAnnotationSchemeBuilder;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
+import org.ethereum.beacon.ssz.creator.ConstructorObjCreator;
+import org.ethereum.beacon.ssz.creator.CompositeObjCreator;
 import org.ethereum.beacon.ssz.fixtures.AttestationRecord;
 import org.ethereum.beacon.ssz.fixtures.Bitfield;
 import org.ethereum.beacon.ssz.fixtures.Sign;
-import org.ethereum.beacon.ssz.type.UIntCodec;
+import org.ethereum.beacon.ssz.access.basic.UIntCodec;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -46,7 +49,7 @@ public class SSZSerializerTest {
 
   @Before
   public void setup() {
-    sszSerializer = SSZSerializerBuilder.getBakedAnnotationBuilder().build();
+    sszSerializer = new SSZBuilder().withExplicitAnnotations(false).buildSerializer();
   }
 
   @Test
@@ -94,13 +97,13 @@ public class SSZSerializerTest {
 
   @Test
   public void explicitAnnotationsAndLoggerTest() {
-    SSZSerializerBuilder builder = new SSZSerializerBuilder(); //
+    SSZBuilder builder = new SSZBuilder(); //
     builder
         .withSSZSchemeBuilder(new SSZAnnotationSchemeBuilder().withLogger(Logger.getLogger("test")))
-        .withSSZCodecResolver(new SSZCodecRoulette())
-        .withSSZModelFactory(new SSZModelCreator().registerObjCreator(new ConstructorObjCreator()));
-    builder.addPrimitivesCodecs();
-    SSZSerializer serializer = builder.build();
+//        .withSSZCodecResolver(new SSZCodecRoulette())
+        .withObjectCreator(new CompositeObjCreator(new ConstructorObjCreator()));
+    builder.addDefaultBasicCodecs();
+    SSZSerializer serializer = builder.buildSerializer();
 
     AttestationRecord expected =
         new AttestationRecord(
@@ -153,32 +156,6 @@ public class SSZSerializerTest {
             12400L,
             DEFAULT_SIG);
     sszSerializer.encode(expected4);
-  }
-
-  /**
-   * Checks that we build objects with {@link SSZSerializer} in the same way as Consensys's {@link
-   * SSZ}
-   */
-  @Test
-  public void shouldWorkLikeCavaWithObjects() {
-    Bytes bytes =
-        fromHexString(
-            "0x03000000426F62046807B7711F010000000000000000000000000000000000000000000000000000");
-    SomeObject readObject =
-        SSZ.decode(bytes, r -> new SomeObject(r.readString(), r.readInt8(), r.readBigInteger(256)));
-
-    assertEquals("Bob", readObject.name);
-    assertEquals(4, readObject.number);
-    assertEquals(BigInteger.valueOf(1234563434344L), readObject.longNumber);
-
-    // Now try the same with new SSZSerializer
-    SomeObject readObjectAuto =
-        (SomeObject) sszSerializer.decode(bytes.toArrayUnsafe(), SomeObject.class);
-    assertEquals("Bob", readObjectAuto.name);
-    assertEquals(4, readObjectAuto.number);
-    assertEquals(BigInteger.valueOf(1234563434344L), readObjectAuto.longNumber);
-    // and finally check it backwards
-    assertArrayEquals(bytes.toArrayUnsafe(), sszSerializer.encode(readObjectAuto));
   }
 
   /** Checks that we could handle list placed inside another list */
@@ -297,9 +274,9 @@ public class SSZSerializerTest {
             new Child(UInt64.valueOf(5))
         });
 
-    SSZSerializer ssz = SSZSerializerBuilder.getBakedAnnotationBuilder()
-        .addCodec(new UIntCodec())
-        .build();
+    SSZSerializer ssz = new SSZBuilder()
+        .addBasicCodecs(new UIntCodec())
+        .buildSerializer();
 
     byte[] bytes = ssz.encode(w);
 

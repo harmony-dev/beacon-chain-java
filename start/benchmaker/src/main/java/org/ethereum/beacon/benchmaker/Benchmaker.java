@@ -73,7 +73,7 @@ public class Benchmaker implements Runnable {
         new Builder()
             .withConstants(constants)
             .withDefaultHashFunction()
-            .withDefaultHasher()
+            .withDefaultHasher(constants)
             .withBlsVerify(!noBls)
             .withCache(!noCache)
             .withBlsVerifyProofOfPossession(false);

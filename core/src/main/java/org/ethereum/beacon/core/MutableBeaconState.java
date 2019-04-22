@@ -16,6 +16,7 @@ import org.ethereum.beacon.core.types.ValidatorIndex;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.collections.WriteList;
+import tech.pegasys.artemis.util.collections.WriteVector;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public interface MutableBeaconState extends BeaconState {
@@ -35,7 +36,7 @@ public interface MutableBeaconState extends BeaconState {
   void setValidatorRegistryUpdateEpoch(EpochNumber validatorRegistryUpdateEpoch);
 
   @Override
-  WriteList<EpochNumber, Hash32> getLatestRandaoMixes();
+  WriteVector<EpochNumber, Hash32> getLatestRandaoMixes();
 
   void setPreviousShufflingStartShard(ShardNumber previousShufflingStartShard);
 
@@ -72,16 +73,16 @@ public interface MutableBeaconState extends BeaconState {
   WriteList<ShardNumber, Crosslink> getCurrentCrosslinks();
 
   @Override
-  WriteList<SlotNumber, Hash32> getLatestBlockRoots();
+  WriteVector<SlotNumber, Hash32> getLatestBlockRoots();
 
   @Override
-  WriteList<SlotNumber, Hash32> getLatestStateRoots();
+  WriteVector<SlotNumber, Hash32> getLatestStateRoots();
 
   @Override
-  WriteList<EpochNumber, Hash32> getLatestActiveIndexRoots();
+  WriteVector<EpochNumber, Hash32> getLatestActiveIndexRoots();
 
   @Override
-  WriteList<EpochNumber, Gwei> getLatestSlashedBalances();
+  WriteVector<EpochNumber, Gwei> getLatestSlashedBalances();
 
   @Override
   WriteList<Integer, PendingAttestation> getPreviousEpochAttestations();

@@ -130,7 +130,7 @@ public class BenchmarkRunner implements Runnable {
             depositContract,
             blsCreds,
             wireApi,
-            new MemBeaconChainStorageFactory(),
+            new MemBeaconChainStorageFactory(spec.getObjectHasher()),
             schedulers,
             benchmarkController);
 

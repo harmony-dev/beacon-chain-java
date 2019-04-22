@@ -1,14 +1,14 @@
 package org.ethereum.beacon.chain.storage.impl;
 
 import java.util.function.Function;
-import org.ethereum.beacon.ssz.Serializer;
+import org.ethereum.beacon.ssz.SSZSerializer;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 public class SSZSerializerFactory implements SerializerFactory {
 
-  private final Serializer serializer;
+  private final SSZSerializer serializer;
 
-  public SSZSerializerFactory(Serializer serializer) {
+  public SSZSerializerFactory(SSZSerializer serializer) {
     this.serializer = serializer;
   }
 

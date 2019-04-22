@@ -1,5 +1,7 @@
 package org.ethereum.beacon.consensus.transition;
 
+import java.util.Map;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import org.ethereum.beacon.core.BeaconBlockHeader;
 import org.ethereum.beacon.core.BeaconState;
@@ -18,8 +20,10 @@ import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
+import org.ethereum.beacon.ssz.incremental.UpdateListener;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.collections.ReadList;
+import tech.pegasys.artemis.util.collections.ReadVector;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public class DelegateBeaconState implements BeaconState {
@@ -29,12 +33,19 @@ public class DelegateBeaconState implements BeaconState {
     this.delegate = delegate;
   }
 
-  public static BeaconState getEmpty() {
-    return BeaconState.getEmpty();
-  }
-
   public BeaconState getDelegate() {
     return delegate;
+  }
+
+  @Override
+  public UpdateListener getUpdateListener(String observerId,
+      Supplier<UpdateListener> listenerFactory) {
+    return delegate.getUpdateListener(observerId, listenerFactory);
+  }
+
+  @Override
+  public Map<String, UpdateListener> getAllUpdateListeners() {
+    return delegate.getAllUpdateListeners();
   }
 
   @Override
@@ -68,7 +79,7 @@ public class DelegateBeaconState implements BeaconState {
   }
 
   @Override
-  public ReadList<EpochNumber, Hash32> getLatestRandaoMixes() {
+  public ReadVector<EpochNumber, Hash32> getLatestRandaoMixes() {
     return delegate.getLatestRandaoMixes();
   }
 
@@ -158,22 +169,22 @@ public class DelegateBeaconState implements BeaconState {
   }
 
   @Override
-  public ReadList<SlotNumber, Hash32> getLatestBlockRoots() {
+  public ReadVector<SlotNumber, Hash32> getLatestBlockRoots() {
     return delegate.getLatestBlockRoots();
   }
 
   @Override
-  public ReadList<SlotNumber, Hash32> getLatestStateRoots() {
+  public ReadVector<SlotNumber, Hash32> getLatestStateRoots() {
     return delegate.getLatestStateRoots();
   }
 
   @Override
-  public ReadList<EpochNumber, Hash32> getLatestActiveIndexRoots() {
+  public ReadVector<EpochNumber, Hash32> getLatestActiveIndexRoots() {
     return delegate.getLatestActiveIndexRoots();
   }
 
   @Override
-  public ReadList<EpochNumber, Gwei> getLatestSlashedBalances() {
+  public ReadVector<EpochNumber, Gwei> getLatestSlashedBalances() {
     return delegate.getLatestSlashedBalances();
   }
 

@@ -190,6 +190,15 @@ public abstract class BytesValues {
     return res;
   }
 
+  public static int extractIntLittleEndian(BytesValue value) {
+    checkArgument(value.size() == 4, "Cannot extract an int from a value of size %s > 4", value.size());
+
+    return value.get(0) & 0xFF
+        | (value.get(1) & 0xFF) << 8
+        | (value.get(2) & 0xFF) << 16
+        | (value.get(3) & 0xFF) << 24;
+  }
+
   /**
    * Extracts the long value corresponding to the provide bytes, which must be 8 bytes or less.
    *

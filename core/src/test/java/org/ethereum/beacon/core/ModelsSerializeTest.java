@@ -1,20 +1,28 @@
 package org.ethereum.beacon.core;
 
+import static org.junit.Assert.assertEquals;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Random;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.transition.BeaconStateExImpl;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
+import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.Transfer;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
-import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
+import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.operations.slashing.SlashableAttestation;
+import org.ethereum.beacon.core.spec.SpecConstants;
+import org.ethereum.beacon.core.spec.SpecConstantsResolver;
 import org.ethereum.beacon.core.state.BeaconStateImpl;
-import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Eth1DataVote;
 import org.ethereum.beacon.core.state.Fork;
@@ -31,7 +39,8 @@ import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.core.util.BeaconBlockTestUtil;
 import org.ethereum.beacon.crypto.Hashes;
-import org.ethereum.beacon.ssz.Serializer;
+import org.ethereum.beacon.ssz.SSZBuilder;
+import org.ethereum.beacon.ssz.SSZSerializer;
 import org.junit.Before;
 import org.junit.Test;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -40,19 +49,14 @@ import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt64;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
-import static org.junit.Assert.assertEquals;
-
 public class ModelsSerializeTest {
-  private Serializer sszSerializer;
+  private SSZSerializer sszSerializer;
 
   @Before
   public void setup() {
-    sszSerializer = Serializer.annotationSerializer();
+    sszSerializer = new SSZBuilder()
+        .withExternalVarResolver(new SpecConstantsResolver(new SpecConstants() {}))
+        .buildSerializer();
   }
 
   private AttestationData createAttestationData() {

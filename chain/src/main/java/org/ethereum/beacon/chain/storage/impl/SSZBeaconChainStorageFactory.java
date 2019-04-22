@@ -19,12 +19,18 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
  * BeaconChainStorage} instance.
  */
 public class SSZBeaconChainStorageFactory implements BeaconChainStorageFactory {
+  private final ObjectHasher<Hash32> objectHasher;
+  private final SerializerFactory serializerFactory;
+
+  public SSZBeaconChainStorageFactory(
+      ObjectHasher<Hash32> objectHasher,
+      SerializerFactory serializerFactory) {
+    this.objectHasher = objectHasher;
+    this.serializerFactory = serializerFactory;
+  }
 
   @Override
   public BeaconChainStorage create(Database database) {
-    ObjectHasher<Hash32> objectHasher = ObjectHasher.createSSZOverKeccak256();
-    SerializerFactory serializerFactory = SerializerFactory.createSSZ();
-
     BeaconBlockStorage blockStorage =
         BeaconBlockStorageImpl.create(database, objectHasher, serializerFactory);
     BeaconStateStorage stateStorage =

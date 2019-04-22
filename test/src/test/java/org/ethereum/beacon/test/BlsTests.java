@@ -1,14 +1,13 @@
 package org.ethereum.beacon.test;
 
 import org.ethereum.beacon.consensus.BeaconChainSpec;
-import org.ethereum.beacon.core.spec.SpecConstants;
-import org.ethereum.beacon.test.runner.BlsAggregatePubKeys;
-import org.ethereum.beacon.test.runner.BlsAggregateSigs;
-import org.ethereum.beacon.test.runner.BlsMessageHash;
-import org.ethereum.beacon.test.runner.BlsMessageHashCompressed;
-import org.ethereum.beacon.test.runner.BlsPrivateToPublic;
-import org.ethereum.beacon.test.runner.BlsSignMessage;
-import org.ethereum.beacon.test.type.BlsTest;
+import org.ethereum.beacon.test.runner.bls.BlsAggregatePubKeys;
+import org.ethereum.beacon.test.runner.bls.BlsAggregateSigs;
+import org.ethereum.beacon.test.runner.bls.BlsMessageHash;
+import org.ethereum.beacon.test.runner.bls.BlsMessageHashCompressed;
+import org.ethereum.beacon.test.runner.bls.BlsPrivateToPublic;
+import org.ethereum.beacon.test.runner.bls.BlsSignMessage;
+import org.ethereum.beacon.test.type.bls.BlsTest;
 import org.ethereum.beacon.test.type.UniversalTest;
 import org.junit.Ignore;
 import org.junit.Test;

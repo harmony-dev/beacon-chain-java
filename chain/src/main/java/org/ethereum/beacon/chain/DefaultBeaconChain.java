@@ -84,7 +84,8 @@ public class DefaultBeaconChain implements MutableBeaconChain {
 
   private void initializeStorage() {
     BeaconBlock initialGenesis = spec.get_empty_block();
-    BeaconStateEx initialState = initialTransition.apply(BeaconStateEx.getEmpty(), initialGenesis);
+    BeaconStateEx initialState =
+        initialTransition.apply(BeaconStateEx.getEmpty(spec.getConstants()), initialGenesis);
 
     Hash32 initialStateRoot = spec.hash_tree_root(initialState);
     BeaconBlock genesis = initialGenesis.withStateRoot(initialStateRoot);

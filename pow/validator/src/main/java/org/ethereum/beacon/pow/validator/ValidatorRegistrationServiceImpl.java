@@ -15,7 +15,8 @@ import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.db.source.SingleValueSource;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.schedulers.Schedulers;
-import org.ethereum.beacon.ssz.Serializer;
+import org.ethereum.beacon.ssz.SSZBuilder;
+import org.ethereum.beacon.ssz.SSZSerializer;
 import org.ethereum.beacon.validator.BeaconChainAttester;
 import org.ethereum.beacon.validator.BeaconChainProposer;
 import org.ethereum.beacon.validator.MultiValidatorService;
@@ -50,7 +51,7 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
   private final Schedulers schedulers;
 
   private final BeaconChainSpec spec;
-  private final Serializer sszSerializer;
+  private final SSZSerializer sszSerializer;
 
   private Disposable depositSubscription = null;
   private ValidatorService validatorService = null;
@@ -81,7 +82,7 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
     this.stagePersistence = registrationStagePersistence;
     this.spec = spec;
     this.schedulers = schedulers;
-    sszSerializer = Serializer.annotationSerializer();
+    sszSerializer = new SSZBuilder().buildSerializer();
   }
 
   @Override

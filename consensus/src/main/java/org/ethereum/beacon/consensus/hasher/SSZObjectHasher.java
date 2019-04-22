@@ -1,16 +1,15 @@
 package org.ethereum.beacon.consensus.hasher;
 
-import java.util.function.Consumer;
+import java.util.List;
+import java.util.function.Function;
+import org.ethereum.beacon.core.spec.SpecConstants;
+import org.ethereum.beacon.core.spec.SpecConstantsResolver;
 import org.ethereum.beacon.core.types.Hashable;
-import org.ethereum.beacon.ssz.SSZHashSerializer;
-import org.ethereum.beacon.ssz.SSZHashSerializers;
+import org.ethereum.beacon.ssz.SSZBuilder;
+import org.ethereum.beacon.ssz.SSZHasher;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Function;
 
 /**
  * An object hasher implementation using Tree Hash algorithm described in the spec.
@@ -21,22 +20,35 @@ import java.util.function.Function;
  */
 public class SSZObjectHasher implements ObjectHasher<Hash32> {
 
-  private static final int SSZ_SCHEMES_CACHE_CAPACITY = 128;
-  private final SSZHashSerializer sszHashSerializer;
+  private final SSZHasher sszHasher;
 
-  SSZObjectHasher(SSZHashSerializer sszHashSerializer) {
-    this.sszHashSerializer = sszHashSerializer;
+  public SSZObjectHasher(SSZHasher sszHasher) {
+    this.sszHasher = sszHasher;
+  }
+
+  public static SSZObjectHasher create(
+      SpecConstants constants, Function<BytesValue, Hash32> hashFunction) {
+
+    SSZHasher sszHasher =
+        new SSZBuilder()
+            .withExternalVarResolver(new SpecConstantsResolver(constants))
+            .withIncrementalHasher(true)
+            .buildHasher(hashFunction);
+    return new SSZObjectHasher(sszHasher);
   }
 
   public static SSZObjectHasher create(Function<BytesValue, Hash32> hashFunction) {
-    SSZHashSerializer sszHashSerializer =
-        SSZHashSerializers.createWithBeaconChainTypes(hashFunction, true, SSZ_SCHEMES_CACHE_CAPACITY);
-    return new SSZObjectHasher(sszHashSerializer);
+
+    SSZHasher sszHasher =
+        new SSZBuilder()
+            .withIncrementalHasher(true)
+            .buildHasher(hashFunction);
+    return new SSZObjectHasher(sszHasher);
   }
 
   @Override
   public Hash32 getHash(Object input) {
-    Function<Object, Hash32> hasher = o -> Hash32.wrap(Bytes32.wrap(sszHashSerializer.hash(o)));
+    Function<Object, Hash32> hasher = o -> Hash32.wrap(Bytes32.wrap(sszHasher.hash(o)));
     if (input instanceof Hashable) {
       return ((Hashable<Hash32>) input).getHash(hasher);
     } else {
@@ -49,7 +61,7 @@ public class SSZObjectHasher implements ObjectHasher<Hash32> {
     if (input instanceof List) {
       throw new RuntimeException("Lists are not supported in truncated hash");
     } else {
-      return Hash32.wrap(Bytes32.wrap(sszHashSerializer.hashTruncateLast(input, input.getClass())));
+      return Hash32.wrap(Bytes32.wrap(sszHasher.hashTruncateLast(input, input.getClass())));
     }
   }
 }

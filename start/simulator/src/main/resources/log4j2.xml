@@ -32,7 +32,7 @@
       <AppenderRef ref="Console"/>
     </Logger>
 
-    <Root level="trace">
+    <Root level="info">
       <AppenderRef ref="validatorFile"/>
       <AppenderRef ref="allFile"/>
     </Root>

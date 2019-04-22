@@ -1,8 +1,7 @@
 package org.ethereum.beacon.core.state;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Function;
+import java.util.Map;
+import java.util.function.Supplier;
 import org.ethereum.beacon.core.BeaconBlockHeader;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
@@ -14,9 +13,11 @@ import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
-import org.ethereum.beacon.ssz.Serializer;
-import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
+import org.ethereum.beacon.ssz.incremental.ObservableCompositeHelper;
+import org.ethereum.beacon.ssz.incremental.ObservableCompositeHelper.ObsValue;
+import org.ethereum.beacon.ssz.incremental.ObservableListImpl;
+import org.ethereum.beacon.ssz.incremental.UpdateListener;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.collections.WriteList;
 import tech.pegasys.artemis.util.uint.UInt64;
@@ -24,502 +25,474 @@ import tech.pegasys.artemis.util.uint.UInt64;
 @SSZSerializable
 public class BeaconStateImpl implements MutableBeaconState {
 
+  private ObservableCompositeHelper obsHelper = new ObservableCompositeHelper();
+
   /* Misc */
 
-  @SSZ private SlotNumber slot = SlotNumber.ZERO;
-  @SSZ private Time genesisTime = Time.ZERO;
-  @SSZ private Fork fork = Fork.EMPTY;
+  private ObsValue<SlotNumber> slot = obsHelper.newValue(SlotNumber.ZERO);
+  private ObsValue<Time> genesisTime = obsHelper.newValue(Time.ZERO);
+  private ObsValue<Fork> fork = obsHelper.newValue(Fork.EMPTY);
 
   /* Validator registry */
 
-  @SSZ private List<ValidatorRecord> validatorRegistryList = new ArrayList<>();
-  @SSZ private List<Gwei> validatorBalancesList = new ArrayList<>();
-  @SSZ private EpochNumber validatorRegistryUpdateEpoch = EpochNumber.ZERO;
+  private ObsValue<WriteList<ValidatorIndex, ValidatorRecord>> validatorRegistry =
+      obsHelper.newValue(ObservableListImpl.create(ValidatorIndex::of));
+  private ObsValue<WriteList<ValidatorIndex, Gwei>> validatorBalances =
+      obsHelper.newValue(ObservableListImpl.create(ValidatorIndex::of));
+  private ObsValue<EpochNumber> validatorRegistryUpdateEpoch = obsHelper.newValue(EpochNumber.ZERO);
 
   /* Randomness and committees */
 
-  @SSZ private List<Hash32> latestRandaoMixesList = new ArrayList<>();
-  @SSZ private ShardNumber previousShufflingStartShard = ShardNumber.ZERO;
-  @SSZ private ShardNumber currentShufflingStartShard = ShardNumber.ZERO;
-  @SSZ private EpochNumber previousShufflingEpoch = EpochNumber.ZERO;
-  @SSZ private EpochNumber currentShufflingEpoch = EpochNumber.ZERO;
-  @SSZ private Hash32 previousShufflingSeed = Hash32.ZERO;
-  @SSZ private Hash32 currentShufflingSeed = Hash32.ZERO;
+  private ObsValue<WriteList<EpochNumber, Hash32>> latestRandaoMixes =
+      obsHelper.newValue(ObservableListImpl.create(EpochNumber::of));
+  private ObsValue<ShardNumber> previousShufflingStartShard = obsHelper.newValue(ShardNumber.ZERO);
+  private ObsValue<ShardNumber> currentShufflingStartShard = obsHelper.newValue(ShardNumber.ZERO);
+  private ObsValue<EpochNumber> previousShufflingEpoch = obsHelper.newValue(EpochNumber.ZERO);
+  private ObsValue<EpochNumber> currentShufflingEpoch = obsHelper.newValue(EpochNumber.ZERO);
+  private ObsValue<Hash32> previousShufflingSeed = obsHelper.newValue(Hash32.ZERO);
+  private ObsValue<Hash32> currentShufflingSeed = obsHelper.newValue(Hash32.ZERO);
 
   /* Finality */
 
-  @SSZ private List<PendingAttestation> previousEpochAttestationList = new ArrayList<>();
-  @SSZ private List<PendingAttestation> currentEpochAttestationList = new ArrayList<>();
-  @SSZ private EpochNumber previousJustifiedEpoch = EpochNumber.ZERO;
-  @SSZ private EpochNumber currentJustifiedEpoch = EpochNumber.ZERO;
-  @SSZ private Hash32 previousJustifiedRoot = Hash32.ZERO;
-  @SSZ private Hash32 currentJustifiedRoot = Hash32.ZERO;
-  @SSZ private Bitfield64 justificationBitfield = Bitfield64.ZERO;
-  @SSZ private EpochNumber finalizedEpoch = EpochNumber.ZERO;
-  @SSZ private Hash32 finalizedRoot = Hash32.ZERO;
+  private ObsValue<WriteList<Integer, PendingAttestation>> previousEpochAttestations =
+      obsHelper.newValue(ObservableListImpl.create(Integer::valueOf));
+  private ObsValue<WriteList<Integer, PendingAttestation>> currentEpochAttestations =
+      obsHelper.newValue(ObservableListImpl.create(Integer::valueOf));
+  private ObsValue<EpochNumber> previousJustifiedEpoch = obsHelper.newValue(EpochNumber.ZERO);
+  private ObsValue<EpochNumber> currentJustifiedEpoch = obsHelper.newValue(EpochNumber.ZERO);
+  private ObsValue<Hash32> previousJustifiedRoot = obsHelper.newValue(Hash32.ZERO);
+  private ObsValue<Hash32> currentJustifiedRoot = obsHelper.newValue(Hash32.ZERO);
+  private ObsValue<Bitfield64> justificationBitfield = obsHelper.newValue(Bitfield64.ZERO);
+  private ObsValue<EpochNumber> finalizedEpoch = obsHelper.newValue(EpochNumber.ZERO);
+  private ObsValue<Hash32> finalizedRoot = obsHelper.newValue(Hash32.ZERO);
 
   /* Recent state */
 
-  @SSZ private List<Crosslink> previousCrosslinksList = new ArrayList<>();
-  @SSZ private List<Crosslink> currentCrosslinksList = new ArrayList<>();
-  @SSZ private List<Hash32> latestBlockRootsList = new ArrayList<>();
-  @SSZ private List<Hash32> latestStateRootsList = new ArrayList<>();
-  @SSZ private List<Hash32> latestActiveIndexRootsList = new ArrayList<>();
-  @SSZ private List<Gwei> latestSlashedBalancesList = new ArrayList<>();
-  @SSZ private BeaconBlockHeader latestBlockHeader = BeaconBlockHeader.EMPTY;
-  @SSZ private List<Hash32> historicalRootList = new ArrayList<>();
+  private ObsValue<WriteList<ShardNumber, Crosslink>> previousCrosslinks =
+      obsHelper.newValue(ObservableListImpl.create(ShardNumber::of));
+  private ObsValue<WriteList<ShardNumber, Crosslink>> currentCrosslinks =
+      obsHelper.newValue(ObservableListImpl.create(ShardNumber::of));
+  private ObsValue<WriteList<SlotNumber, Hash32>> latestBlockRoots =
+      obsHelper.newValue(ObservableListImpl.create(SlotNumber::of));
+  private ObsValue<WriteList<SlotNumber, Hash32>> latestStateRoots =
+      obsHelper.newValue(ObservableListImpl.create(SlotNumber::of));
+  private ObsValue<WriteList<EpochNumber, Hash32>> latestActiveIndexRoots =
+      obsHelper.newValue(ObservableListImpl.create(EpochNumber::of));
+  private ObsValue<WriteList<EpochNumber, Gwei>> latestSlashedBalances =
+      obsHelper.newValue(ObservableListImpl.create(EpochNumber::of));
+  private ObsValue<BeaconBlockHeader> latestBlockHeader = obsHelper.newValue(BeaconBlockHeader.EMPTY);
+  private ObsValue<WriteList<Integer, Hash32>> historicalRoots =
+      obsHelper.newValue(ObservableListImpl.create(Integer::valueOf));
 
   /* PoW receipt root */
 
-  @SSZ private Eth1Data latestEth1Data = Eth1Data.EMPTY;
-  @SSZ private List<Eth1DataVote> eth1DataVotesList = new ArrayList<>();
-  @SSZ private UInt64 depositIndex = UInt64.ZERO;
+  private ObsValue<Eth1Data> latestEth1Data = obsHelper.newValue(Eth1Data.EMPTY);
+  private ObsValue<WriteList<Integer, Eth1DataVote>> eth1DataVotes =
+      obsHelper.newValue(ObservableListImpl.create(Integer::valueOf));
+  private ObsValue<UInt64> depositIndex = obsHelper.newValue(UInt64.ZERO);
 
   public BeaconStateImpl() {}
 
   BeaconStateImpl(BeaconState state) {
-    slot = state.getSlot();
-    genesisTime = state.getGenesisTime();
-    fork = state.getFork();
+    slot.set(state.getSlot());
+    genesisTime.set(state.getGenesisTime());
+    fork.set(state.getFork());
 
-    validatorRegistryList = state.getValidatorRegistry().listCopy();
-    validatorBalancesList = state.getValidatorBalances().listCopy();
-    validatorRegistryUpdateEpoch = state.getValidatorRegistryUpdateEpoch();
+    validatorRegistry.set(state.getValidatorRegistry().createMutableCopy());
+    validatorBalances.set(state.getValidatorBalances().createMutableCopy());
+    validatorRegistryUpdateEpoch.set(state.getValidatorRegistryUpdateEpoch());
 
-    latestRandaoMixesList = state.getLatestRandaoMixes().listCopy();
-    previousShufflingStartShard = state.getPreviousShufflingStartShard();
-    currentShufflingStartShard = state.getCurrentShufflingStartShard();
-    previousShufflingEpoch = state.getPreviousShufflingEpoch();
-    currentShufflingEpoch = state.getCurrentShufflingEpoch();
-    previousShufflingSeed = state.getPreviousShufflingSeed();
-    currentShufflingSeed = state.getCurrentShufflingSeed();
+    latestRandaoMixes.set(state.getLatestRandaoMixes().createMutableCopy());
+    previousShufflingStartShard.set(state.getPreviousShufflingStartShard());
+    currentShufflingStartShard.set(state.getCurrentShufflingStartShard());
+    previousShufflingEpoch.set(state.getPreviousShufflingEpoch());
+    currentShufflingEpoch.set(state.getCurrentShufflingEpoch());
+    previousShufflingSeed.set(state.getPreviousShufflingSeed());
+    currentShufflingSeed.set(state.getCurrentShufflingSeed());
 
-    previousEpochAttestationList = state.getPreviousEpochAttestations().listCopy();
-    currentEpochAttestationList = state.getCurrentEpochAttestations().listCopy();
-    previousJustifiedEpoch = state.getPreviousJustifiedEpoch();
-    currentJustifiedEpoch = state.getCurrentJustifiedEpoch();
-    previousJustifiedRoot = state.getPreviousJustifiedRoot();
-    currentJustifiedRoot = state.getCurrentJustifiedRoot();
-    justificationBitfield = state.getJustificationBitfield();
-    finalizedEpoch = state.getFinalizedEpoch();
-    finalizedRoot = state.getFinalizedRoot();
+    previousEpochAttestations.set(state.getPreviousEpochAttestations().createMutableCopy());
+    currentEpochAttestations.set(state.getCurrentEpochAttestations().createMutableCopy());
+    previousJustifiedEpoch.set(state.getPreviousJustifiedEpoch());
+    currentJustifiedEpoch.set(state.getCurrentJustifiedEpoch());
+    previousJustifiedRoot.set(state.getPreviousJustifiedRoot());
+    currentJustifiedRoot.set(state.getCurrentJustifiedRoot());
+    justificationBitfield.set(state.getJustificationBitfield());
+    finalizedEpoch.set(state.getFinalizedEpoch());
+    finalizedRoot.set(state.getFinalizedRoot());
 
-    previousCrosslinksList = state.getPreviousCrosslinks().listCopy();
-    currentCrosslinksList = state.getCurrentCrosslinks().listCopy();
-    latestBlockRootsList = state.getLatestBlockRoots().listCopy();
-    latestStateRootsList = state.getLatestStateRoots().listCopy();
-    latestActiveIndexRootsList = state.getLatestActiveIndexRoots().listCopy();
-    latestSlashedBalancesList = state.getLatestSlashedBalances().listCopy();
-    latestBlockHeader = state.getLatestBlockHeader();
-    historicalRootList = state.getHistoricalRoots().listCopy();
+    previousCrosslinks.set(state.getPreviousCrosslinks().createMutableCopy());
+    currentCrosslinks.set(state.getCurrentCrosslinks().createMutableCopy());
+    latestBlockRoots.set(state.getLatestBlockRoots().createMutableCopy());
+    latestStateRoots.set(state.getLatestStateRoots().createMutableCopy());
+    latestActiveIndexRoots.set(state.getLatestActiveIndexRoots().createMutableCopy());
+    latestSlashedBalances.set(state.getLatestSlashedBalances().createMutableCopy());
+    latestBlockHeader.set(state.getLatestBlockHeader());
+    historicalRoots.set(state.getHistoricalRoots().createMutableCopy());
 
-    latestEth1Data = state.getLatestEth1Data();
-    eth1DataVotesList = state.getEth1DataVotes().listCopy();
-    depositIndex = state.getDepositIndex();
+    latestEth1Data.set(state.getLatestEth1Data());
+    eth1DataVotes.set(state.getEth1DataVotes().createMutableCopy());
+    depositIndex.set(state.getDepositIndex());
+
+    obsHelper.addAllListeners(state.getAllUpdateListeners());
+  }
+
+  @Override
+  public Map<String, UpdateListener> getAllUpdateListeners() {
+    return obsHelper.getAllUpdateListeners();
+  }
+
+  @Override
+  public UpdateListener getUpdateListener(String observerId, Supplier<UpdateListener> listenerFactory) {
+    return obsHelper.getUpdateListener(observerId, listenerFactory);
   }
 
   @Override
   public BeaconState createImmutable() {
-    return new ImmutableBeaconStateImpl(this);
+    return new BeaconStateImpl(this);
   }
 
   @Override
   public SlotNumber getSlot() {
-    return slot;
+    return slot.get();
   }
 
   @Override
   public void setSlot(SlotNumber slot) {
-    this.slot = slot;
+    this.slot.set(slot);
   }
 
   @Override
   public Time getGenesisTime() {
-    return genesisTime;
+    return genesisTime.get();
   }
 
   @Override
   public void setGenesisTime(Time genesisTime) {
-    this.genesisTime = genesisTime;
+    this.genesisTime.set(genesisTime);
   }
 
   @Override
   public Fork getFork() {
-    return fork;
+    return fork.get();
   }
 
   @Override
   public void setFork(Fork fork) {
-    this.fork = fork;
+    this.fork.set(fork);
   }
 
-  public List<ValidatorRecord> getValidatorRegistryList() {
-    return validatorRegistryList;
+  @Override
+  public WriteList<ValidatorIndex, ValidatorRecord> getValidatorRegistry() {
+    return validatorRegistry.get();
   }
 
-  public void setValidatorRegistryList(
-      List<ValidatorRecord> validatorRegistryList) {
-    this.validatorRegistryList = validatorRegistryList;
+  public void setValidatorRegistry(
+      WriteList<ValidatorIndex, ValidatorRecord> validatorRegistry) {
+    this.validatorRegistry.set(validatorRegistry);
   }
 
-  public List<Gwei> getValidatorBalancesList() {
-    return validatorBalancesList;
+  @Override
+  public WriteList<ValidatorIndex, Gwei> getValidatorBalances() {
+    return validatorBalances.get();
   }
 
-  public void setValidatorBalancesList(
-      List<Gwei> validatorBalancesList) {
-    this.validatorBalancesList = validatorBalancesList;
+  public void setValidatorBalances(
+      WriteList<ValidatorIndex, Gwei> validatorBalances) {
+    this.validatorBalances.set(validatorBalances);
   }
 
   @Override
   public EpochNumber getValidatorRegistryUpdateEpoch() {
-    return validatorRegistryUpdateEpoch;
+    return validatorRegistryUpdateEpoch.get();
   }
 
   @Override
   public void setValidatorRegistryUpdateEpoch(
       EpochNumber validatorRegistryUpdateEpoch) {
-    this.validatorRegistryUpdateEpoch = validatorRegistryUpdateEpoch;
+    this.validatorRegistryUpdateEpoch.set(validatorRegistryUpdateEpoch);
   }
 
-  public List<Hash32> getLatestRandaoMixesList() {
-    return latestRandaoMixesList;
+  @Override
+  public WriteList<EpochNumber, Hash32> getLatestRandaoMixes() {
+    return latestRandaoMixes.get();
   }
 
-  public void setLatestRandaoMixesList(
-      List<Hash32> latestRandaoMixesList) {
-    this.latestRandaoMixesList = latestRandaoMixesList;
+  public void setLatestRandaoMixes(
+      WriteList<EpochNumber, Hash32> latestRandaoMixes) {
+    this.latestRandaoMixes.set(latestRandaoMixes);
   }
 
   @Override
   public ShardNumber getPreviousShufflingStartShard() {
-    return previousShufflingStartShard;
+    return previousShufflingStartShard.get();
   }
 
   @Override
   public void setPreviousShufflingStartShard(
       ShardNumber previousShufflingStartShard) {
-    this.previousShufflingStartShard = previousShufflingStartShard;
+    this.previousShufflingStartShard.set(previousShufflingStartShard);
   }
 
   @Override
   public ShardNumber getCurrentShufflingStartShard() {
-    return currentShufflingStartShard;
+    return currentShufflingStartShard.get();
   }
 
   @Override
-  public void setCurrentShufflingStartShard(ShardNumber currentShufflingStartShard) {
-    this.currentShufflingStartShard = currentShufflingStartShard;
+  public void setCurrentShufflingStartShard(
+      ShardNumber currentShufflingStartShard) {
+    this.currentShufflingStartShard.set(currentShufflingStartShard);
   }
 
   @Override
   public EpochNumber getPreviousShufflingEpoch() {
-    return previousShufflingEpoch;
+    return previousShufflingEpoch.get();
   }
 
   @Override
-  public void setPreviousShufflingEpoch(
-      EpochNumber previousShufflingEpoch) {
-    this.previousShufflingEpoch = previousShufflingEpoch;
+  public void setPreviousShufflingEpoch(EpochNumber previousShufflingEpoch) {
+    this.previousShufflingEpoch.set(previousShufflingEpoch);
   }
 
   @Override
   public EpochNumber getCurrentShufflingEpoch() {
-    return currentShufflingEpoch;
+    return currentShufflingEpoch.get();
   }
 
   @Override
-  public void setCurrentShufflingEpoch(
-      EpochNumber currentShufflingEpoch) {
-    this.currentShufflingEpoch = currentShufflingEpoch;
+  public void setCurrentShufflingEpoch(EpochNumber currentShufflingEpoch) {
+    this.currentShufflingEpoch.set(currentShufflingEpoch);
   }
 
   @Override
   public Hash32 getPreviousShufflingSeed() {
-    return previousShufflingSeed;
+    return previousShufflingSeed.get();
   }
 
   @Override
   public void setPreviousShufflingSeed(Hash32 previousShufflingSeed) {
-    this.previousShufflingSeed = previousShufflingSeed;
+    this.previousShufflingSeed.set(previousShufflingSeed);
   }
 
   @Override
   public Hash32 getCurrentShufflingSeed() {
-    return currentShufflingSeed;
+    return currentShufflingSeed.get();
   }
 
   @Override
   public void setCurrentShufflingSeed(Hash32 currentShufflingSeed) {
-    this.currentShufflingSeed = currentShufflingSeed;
+    this.currentShufflingSeed.set(currentShufflingSeed);
+  }
+
+  public WriteList<Integer, PendingAttestation> getPreviousEpochAttestations() {
+    return previousEpochAttestations.get();
+  }
+
+  public void setPreviousEpochAttestations(
+      WriteList<Integer, PendingAttestation> previousEpochAttestations) {
+    this.previousEpochAttestations.set(previousEpochAttestations);
+  }
+
+  public WriteList<Integer, PendingAttestation> getCurrentEpochAttestations() {
+    return currentEpochAttestations.get();
+  }
+
+  public void setCurrentEpochAttestations(
+      WriteList<Integer, PendingAttestation> currentEpochAttestations) {
+    this.currentEpochAttestations.set(currentEpochAttestations);
   }
 
   @Override
   public EpochNumber getPreviousJustifiedEpoch() {
-    return previousJustifiedEpoch;
+    return previousJustifiedEpoch.get();
   }
 
   @Override
   public void setPreviousJustifiedEpoch(EpochNumber previousJustifiedEpoch) {
-    this.previousJustifiedEpoch = previousJustifiedEpoch;
+    this.previousJustifiedEpoch.set(previousJustifiedEpoch);
   }
 
   @Override
   public EpochNumber getCurrentJustifiedEpoch() {
-    return currentJustifiedEpoch;
+    return currentJustifiedEpoch.get();
+  }
+
+  @Override
+  public void setCurrentJustifiedEpoch(EpochNumber currentJustifiedEpoch) {
+    this.currentJustifiedEpoch.set(currentJustifiedEpoch);
   }
 
   @Override
   public Hash32 getPreviousJustifiedRoot() {
-    return previousJustifiedRoot;
-  }
-
-  @Override
-  public Hash32 getCurrentJustifiedRoot() {
-    return currentJustifiedRoot;
-  }
-
-  public void setCurrentJustifiedEpoch(EpochNumber justifiedEpoch) {
-    this.currentJustifiedEpoch = justifiedEpoch;
+    return previousJustifiedRoot.get();
   }
 
   @Override
   public void setPreviousJustifiedRoot(Hash32 previousJustifiedRoot) {
-    this.previousJustifiedRoot = previousJustifiedRoot;
+    this.previousJustifiedRoot.set(previousJustifiedRoot);
+  }
+
+  @Override
+  public Hash32 getCurrentJustifiedRoot() {
+    return currentJustifiedRoot.get();
   }
 
   @Override
   public void setCurrentJustifiedRoot(Hash32 currentJustifiedRoot) {
-    this.currentJustifiedRoot = currentJustifiedRoot;
+    this.currentJustifiedRoot.set(currentJustifiedRoot);
   }
 
   @Override
   public Bitfield64 getJustificationBitfield() {
-    return justificationBitfield;
+    return justificationBitfield.get();
   }
 
   @Override
   public void setJustificationBitfield(Bitfield64 justificationBitfield) {
-    this.justificationBitfield = justificationBitfield;
+    this.justificationBitfield.set(justificationBitfield);
   }
 
   @Override
   public EpochNumber getFinalizedEpoch() {
-    return finalizedEpoch;
-  }
-
-  @Override
-  public Hash32 getFinalizedRoot() {
-    return finalizedRoot;
+    return finalizedEpoch.get();
   }
 
   @Override
   public void setFinalizedEpoch(EpochNumber finalizedEpoch) {
-    this.finalizedEpoch = finalizedEpoch;
+    this.finalizedEpoch.set(finalizedEpoch);
+  }
+
+  @Override
+  public Hash32 getFinalizedRoot() {
+    return finalizedRoot.get();
   }
 
   @Override
   public void setFinalizedRoot(Hash32 finalizedRoot) {
-    this.finalizedRoot = finalizedRoot;
-  }
-
-  @Override
-  public void setLatestBlockHeader(BeaconBlockHeader latestBlockHeader) {
-    this.latestBlockHeader = latestBlockHeader;
-  }
-
-  public List<Crosslink> getPreviousCrosslinksList() {
-    return previousCrosslinksList;
-  }
-
-  public void setPreviousCrosslinksList(
-      List<Crosslink> previousCrosslinksList) {
-    this.previousCrosslinksList = previousCrosslinksList;
-  }
-
-  public List<Crosslink> getCurrentCrosslinksList() {
-    return currentCrosslinksList;
-  }
-
-  public void setCurrentCrosslinksList(
-      List<Crosslink> currentCrosslinksList) {
-    this.currentCrosslinksList = currentCrosslinksList;
-  }
-
-  public List<Hash32> getLatestBlockRootsList() {
-    return latestBlockRootsList;
-  }
-
-  public List<PendingAttestation> getPreviousEpochAttestationList() {
-    return previousEpochAttestationList;
-  }
-
-  public List<PendingAttestation> getCurrentEpochAttestationList() {
-    return currentEpochAttestationList;
-  }
-
-  public List<Hash32> getLatestStateRootsList() {
-    return latestStateRootsList;
-  }
-
-  public List<Hash32> getHistoricalRootList() {
-    return historicalRootList;
-  }
-
-  public void setLatestBlockRootsList(
-      List<Hash32> latestBlockRootsList) {
-    this.latestBlockRootsList = latestBlockRootsList;
-  }
-
-  public List<Hash32> getLatestActiveIndexRootsList() {
-    return latestActiveIndexRootsList;
-  }
-
-  public void setLatestActiveIndexRootsList(
-      List<Hash32> latestActiveIndexRootsList) {
-    this.latestActiveIndexRootsList = latestActiveIndexRootsList;
-  }
-
-  public List<Gwei> getLatestSlashedBalancesList() {
-    return latestSlashedBalancesList;
-  }
-
-  public void setLatestSlashedBalancesList(
-      List<Gwei> latestSlashedBalancesList) {
-    this.latestSlashedBalancesList = latestSlashedBalancesList;
-  }
-
-  @Override
-  public Eth1Data getLatestEth1Data() {
-    return latestEth1Data;
-  }
-
-  @Override
-  public void setLatestEth1Data(Eth1Data latestEth1Data) {
-    this.latestEth1Data = latestEth1Data;
-  }
-
-  public List<Eth1DataVote> getEth1DataVotesList() {
-    return eth1DataVotesList;
-  }
-
-  public void setEth1DataVotesList(
-      List<Eth1DataVote> eth1DataVotesList) {
-    this.eth1DataVotesList = eth1DataVotesList;
-  }
-
-  public void setPreviousEpochAttestationList(
-      List<PendingAttestation> previousEpochAttestationList) {
-    this.previousEpochAttestationList = previousEpochAttestationList;
-  }
-
-  public void setCurrentEpochAttestationList(
-      List<PendingAttestation> currentEpochAttestationList) {
-    this.currentEpochAttestationList = currentEpochAttestationList;
-  }
-
-  public void setLatestStateRootsList(
-      List<Hash32> latestStateRootsList) {
-    this.latestStateRootsList = latestStateRootsList;
-  }
-
-  public void setHistoricalRootList(
-      List<Hash32> historicalRootList) {
-    this.historicalRootList = historicalRootList;
-  }
-
-  @Override
-  public WriteList<ValidatorIndex, ValidatorRecord> getValidatorRegistry() {
-    return WriteList.wrap(getValidatorRegistryList(), ValidatorIndex::of);
-  }
-
-  @Override
-  public WriteList<ValidatorIndex, Gwei> getValidatorBalances() {
-    return WriteList.wrap(getValidatorBalancesList(), ValidatorIndex::of);
-  }
-
-  @Override
-  public WriteList<EpochNumber, Hash32> getLatestRandaoMixes() {
-    return WriteList.wrap(getLatestRandaoMixesList(), EpochNumber::of);
+    this.finalizedRoot.set(finalizedRoot);
   }
 
   @Override
   public WriteList<ShardNumber, Crosslink> getPreviousCrosslinks() {
-    return WriteList.wrap(getPreviousCrosslinksList(), ShardNumber::of);
+    return previousCrosslinks.get();
+  }
+
+  public void setPreviousCrosslinks(
+      WriteList<ShardNumber, Crosslink> previousCrosslinks) {
+    this.previousCrosslinks.set(previousCrosslinks);
   }
 
   @Override
   public WriteList<ShardNumber, Crosslink> getCurrentCrosslinks() {
-    return WriteList.wrap(getCurrentCrosslinksList(), ShardNumber::of);
+    return currentCrosslinks.get();
+  }
+
+  public void setCurrentCrosslinks(
+      WriteList<ShardNumber, Crosslink> currentCrosslinks) {
+    this.currentCrosslinks.set(currentCrosslinks);
   }
 
   @Override
   public WriteList<SlotNumber, Hash32> getLatestBlockRoots() {
-    return WriteList.wrap(getLatestBlockRootsList(), SlotNumber::of);
+    return latestBlockRoots.get();
+  }
+
+  public void setLatestBlockRoots(
+      WriteList<SlotNumber, Hash32> latestBlockRoots) {
+    this.latestBlockRoots.set(latestBlockRoots);
   }
 
   @Override
   public WriteList<SlotNumber, Hash32> getLatestStateRoots() {
-    return WriteList.wrap(getLatestStateRootsList(), SlotNumber::of);
+    return latestStateRoots.get();
+  }
+
+  public void setLatestStateRoots(
+      WriteList<SlotNumber, Hash32> latestStateRoots) {
+    this.latestStateRoots.set(latestStateRoots);
   }
 
   @Override
   public WriteList<EpochNumber, Hash32> getLatestActiveIndexRoots() {
-    return WriteList.wrap(getLatestActiveIndexRootsList(), EpochNumber::of);
+    return latestActiveIndexRoots.get();
+  }
+
+  public void setLatestActiveIndexRoots(
+      WriteList<EpochNumber, Hash32> latestActiveIndexRoots) {
+    this.latestActiveIndexRoots.set(latestActiveIndexRoots);
   }
 
   @Override
   public WriteList<EpochNumber, Gwei> getLatestSlashedBalances() {
-    return WriteList.wrap(getLatestSlashedBalancesList(), EpochNumber::of);
+    return latestSlashedBalances.get();
+  }
+
+  public void setLatestSlashedBalances(
+      WriteList<EpochNumber, Gwei> latestSlashedBalances) {
+    this.latestSlashedBalances.set(latestSlashedBalances);
   }
 
   @Override
   public BeaconBlockHeader getLatestBlockHeader() {
-    return latestBlockHeader;
+    return latestBlockHeader.get();
   }
 
   @Override
-  public WriteList<Integer, PendingAttestation> getPreviousEpochAttestations() {
-    return WriteList.wrap(getPreviousEpochAttestationList(), Function.identity());
+  public void setLatestBlockHeader(BeaconBlockHeader latestBlockHeader) {
+    this.latestBlockHeader.set(latestBlockHeader);
   }
 
-  @Override
-  public WriteList<Integer, PendingAttestation> getCurrentEpochAttestations() {
-    return WriteList.wrap(getCurrentEpochAttestationList(), Function.identity());
-  }
-
-  @Override
   public WriteList<Integer, Hash32> getHistoricalRoots() {
-    return WriteList.wrap(getHistoricalRootList(), Function.identity());
+    return historicalRoots.get();
+  }
+
+  public void setHistoricalRoots(
+      WriteList<Integer, Hash32> historicalRoots) {
+    this.historicalRoots.set(historicalRoots);
+  }
+
+  @Override
+  public Eth1Data getLatestEth1Data() {
+    return latestEth1Data.get();
+  }
+
+  @Override
+  public void setLatestEth1Data(Eth1Data latestEth1Data) {
+    this.latestEth1Data.set(latestEth1Data);
   }
 
   @Override
   public WriteList<Integer, Eth1DataVote> getEth1DataVotes() {
-    return WriteList.wrap(getEth1DataVotesList(), Integer::valueOf);
+    return eth1DataVotes.get();
+  }
+
+  public void setEth1DataVotes(
+      WriteList<Integer, Eth1DataVote> eth1DataVotes) {
+    this.eth1DataVotes.set(eth1DataVotes);
   }
 
   @Override
   public UInt64 getDepositIndex() {
-    return depositIndex;
+    return depositIndex.get();
   }
 
   @Override
   public void setDepositIndex(UInt64 depositIndex) {
-    this.depositIndex = depositIndex;
+    this.depositIndex.set(depositIndex);
   }
 
   /*********  List Getters/Setter for serialization  **********/
+
+
 
   @Override
   public MutableBeaconState createMutableCopy() {
     return new BeaconStateImpl(this);
   }
 
-
   @Override
-  public boolean equals(Object o) {
-    Serializer serializer = Serializer.annotationSerializer();
-    return serializer.encode2(this).equals(serializer.encode2(o));
+  public boolean equals(Object obj) {
+    return equalsHelper((BeaconState) obj);
   }
 
   @Override

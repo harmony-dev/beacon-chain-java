@@ -24,6 +24,7 @@ dependencies {
   implementation project(':consensus')
   implementation project(':db:core')
   implementation project(':chain')
+  implementation project(':ssz')
   implementation project(':pow:core')
   implementation project(':validator')
 
