@@ -13,6 +13,8 @@ import org.ethereum.beacon.util.stats.TimeCollector;
 
 public class BenchmarkReport {
 
+  public static final double PERCENTILE_RATIO = 0.95;
+
   private List<RoutineReport> routines;
 
   public String print() {
@@ -141,7 +143,7 @@ public class BenchmarkReport {
     private String name;
     private long minTime = 0;
     private double avgTime = 0;
-    private long percentile95Time = 0;
+    private long percentile = 0;
     private int counter = 0;
 
     public FunctionStats(String name) {
@@ -160,8 +162,8 @@ public class BenchmarkReport {
       return avgTime;
     }
 
-    public long getPercentile95Time() {
-      return percentile95Time;
+    public long getPercentile() {
+      return percentile;
     }
 
     public int getCounter() {
@@ -184,7 +186,7 @@ public class BenchmarkReport {
           leftPadding + name,
           String.format("%.3f", minTime / 1_000_000d / counter),
           String.format("%.3f", avgTime / 1_000_000d / counter),
-          String.format("%.3f", percentile95Time / 1_000_000d),
+          String.format("%.3f", percentile / 1_000_000d),
           String.valueOf(counter),
           String.format("%.3f", avgTime / 1_000_000d));
     }
@@ -304,13 +306,11 @@ public class BenchmarkReport {
       stats.counter = measurements.stream().mapToInt(TimeCollector::getCounter).max().orElse(0);
       stats.minTime = measurements.stream().mapToLong(TimeCollector::getTotal).min().orElse(0);
       stats.avgTime = measurements.stream().mapToLong(TimeCollector::getTotal).average().orElse(0);
-      List<Long> sortedMeasurements =
+      List<Long> measurementChurn =
           measurements.stream()
               .flatMap(m -> m.getMeasurements().stream())
-              .sorted()
               .collect(Collectors.toList());
-      int index = (int) Math.max(0, Math.floor(0.95 * measurements.size()) - 1);
-      stats.percentile95Time = sortedMeasurements.isEmpty() ? 0 : sortedMeasurements.get(index);
+      stats.percentile = BenchmarkUtils.percentile(PERCENTILE_RATIO, measurementChurn);
       return stats;
     }
 

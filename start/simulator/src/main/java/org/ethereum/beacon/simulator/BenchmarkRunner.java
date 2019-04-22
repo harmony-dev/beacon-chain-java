@@ -15,6 +15,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.Launcher;
 import org.ethereum.beacon.bench.BenchmarkController;
+import org.ethereum.beacon.bench.BenchmarkReport;
+import org.ethereum.beacon.bench.BenchmarkUtils;
 import org.ethereum.beacon.chain.storage.impl.MemBeaconChainStorageFactory;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.BeaconBlock;
@@ -33,6 +35,7 @@ import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.schedulers.TimeController;
 import org.ethereum.beacon.schedulers.TimeControllerImpl;
 import org.ethereum.beacon.simulator.util.SimulateUtils;
+import org.ethereum.beacon.util.stats.MeasurementsCollector;
 import org.ethereum.beacon.util.stats.TimeCollector;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import org.ethereum.beacon.wire.LocalWireHub;
@@ -165,7 +168,53 @@ public class BenchmarkRunner implements Runnable {
     }
 
     System.out.println();
+    System.out.println(printOverview(instance));
+
+    System.out.println();
     System.out.println(benchmarkController.createReport().print());
+  }
+
+  private String printOverview(Launcher instance) {
+    return Stats.format("PROCESSING OVERVIEW", "min, ms", "avg, ms", "95%, ms") + '\n'
+        + Stats.createFrom(instance.getSlotCollector()).print("slot", "  ") + '\n'
+        + Stats.createFrom(instance.getBlockCollector()).print("block", "  ") + '\n'
+        + Stats.createFrom(instance.getEpochCollector()).print("epoch", "  ") + '\n';
+  }
+
+  private static class Stats {
+    private long minTime = 0;
+    private double avgTime = 0;
+    private long percentile = 0;
+
+    private Stats() {}
+
+    String print(String title, String leftPadding) {
+      return format(
+          leftPadding + title,
+          String.format("%.3f", minTime / 1_000_000d),
+          String.format("%.3f", avgTime / 1_000_000d),
+          String.format("%.3f", percentile / 1_000_000d));
+    }
+
+    static String format(String title, String minTime, String avgTime, String percentile) {
+      return String.format("%-45s%15s%15s%15s", title, minTime, avgTime, percentile);
+    }
+
+    static Stats createFrom(MeasurementsCollector collector) {
+      Stats stats = new Stats();
+      if (collector.getMeasurements().isEmpty()) {
+        return stats;
+      }
+
+      List<Long> sortedMeasurements =
+          collector.getMeasurements().stream().sorted().collect(Collectors.toList());
+      stats.minTime = sortedMeasurements.get(0);
+      stats.avgTime = collector.getAvg();
+      stats.percentile =
+          BenchmarkUtils.percentile(BenchmarkReport.PERCENTILE_RATIO, sortedMeasurements);
+
+      return stats;
+    }
   }
 
   private static class SimpleDepositContract implements DepositContract {

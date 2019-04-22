@@ -13,6 +13,7 @@ import org.ethereum.beacon.chain.observer.ObservableStateProcessorImpl;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.chain.storage.BeaconChainStorageFactory;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
+import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.transition.EmptySlotTransition;
 import org.ethereum.beacon.consensus.transition.ExtendedSlotTransition;
 import org.ethereum.beacon.consensus.transition.InitialStateTransition;
@@ -23,12 +24,14 @@ import org.ethereum.beacon.consensus.transition.StateCachingTransition;
 import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
 import org.ethereum.beacon.consensus.verifier.BeaconStateVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
+import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
+import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.db.InMemoryDatabase;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.pow.DepositContract.ChainStart;
 import org.ethereum.beacon.schedulers.Schedulers;
-import org.ethereum.beacon.util.stats.TimeCollector;
+import org.ethereum.beacon.util.stats.MeasurementsCollector;
 import org.ethereum.beacon.validator.BeaconChainProposer;
 import org.ethereum.beacon.validator.MultiValidatorService;
 import org.ethereum.beacon.validator.attester.BeaconChainAttesterImpl;
@@ -67,6 +70,10 @@ public class Launcher {
   private MultiValidatorService beaconChainValidator;
 
   private BenchmarkController benchmarkController;
+
+  private MeasurementsCollector slotCollector = new MeasurementsCollector();
+  private MeasurementsCollector epochCollector = new MeasurementsCollector();
+  private MeasurementsCollector blockCollector = new MeasurementsCollector();
 
   public Launcher(
       BeaconChainSpec spec,
@@ -115,7 +122,6 @@ public class Launcher {
     db = new InMemoryDatabase();
     beaconChainStorage = storageFactory.create(db);
 
-    BeaconChainSpec blockBench = benchmarkController.wrap(BenchmarkRoutine.BLOCK, spec);
     // do not create block verifier for benchmarks, otherwise verification won't be tracked by
     // controller
     blockVerifier =
@@ -128,8 +134,8 @@ public class Launcher {
         new DefaultBeaconChain(
             spec,
             initialTransition,
-            benchEmptySlotTransition(spec),
-            new PerBlockTransition(blockBench),
+            isBenchmarkMode() ? benchmarkingEmptySlotTransition(spec) : emptySlotTransition,
+            isBenchmarkMode() ? benchmarkingBlockTransition(spec) : new PerBlockTransition(spec),
             blockVerifier,
             stateVerifier,
             beaconChainStorage,
@@ -184,16 +190,52 @@ public class Launcher {
         .subscribe(beaconChain::insert);
   }
 
-  private EmptySlotTransition benchEmptySlotTransition(BeaconChainSpec spec) {
+  private EmptySlotTransition benchmarkingEmptySlotTransition(BeaconChainSpec spec) {
     BeaconChainSpec slotBench = benchmarkController.wrap(BenchmarkRoutine.SLOT, spec);
     BeaconChainSpec epochBench = benchmarkController.wrap(BenchmarkRoutine.EPOCH, spec);
 
     PerSlotTransition perSlotTransition = new PerSlotTransition(slotBench);
     StateCachingTransition stateCachingTransition = new StateCachingTransition(slotBench);
     PerEpochTransition perEpochTransition = new PerEpochTransition(epochBench);
-    return new EmptySlotTransition(
-        new ExtendedSlotTransition(
-            stateCachingTransition, perEpochTransition, perSlotTransition, spec));
+    ExtendedSlotTransition extendedSlotTransition = new ExtendedSlotTransition(stateCachingTransition,
+        perEpochTransition, perSlotTransition, spec) {
+      @Override
+      public BeaconStateEx apply(BeaconStateEx source) {
+        long s = System.nanoTime();
+        BeaconStateEx result = super.apply(source);
+        long time = System.nanoTime() - s;
+        if (source.getSlot().increment().modulo(spec.getConstants().getSlotsPerEpoch()).equals(
+            SlotNumber.ZERO)) {
+          // always skip first epoch transition as it's not that relevant for benchmarks
+          if (spec.slot_to_epoch(source.getSlot()).greater(spec.getConstants().getGenesisEpoch())) {
+            epochCollector.tick(time);
+          }
+        } else {
+          // count slots starting from the beginning of 2nd epoch
+          if (spec.slot_to_epoch(result.getSlot()).greater(spec.getConstants().getGenesisEpoch())) {
+            slotCollector.tick(time);
+          }
+        }
+        return result;
+      }
+    };
+    return new EmptySlotTransition(extendedSlotTransition);
+  }
+
+  private PerBlockTransition benchmarkingBlockTransition(BeaconChainSpec spec) {
+    BeaconChainSpec blockBench = benchmarkController.wrap(BenchmarkRoutine.BLOCK, spec);
+    return new PerBlockTransition(blockBench) {
+      @Override
+      public BeaconStateEx apply(BeaconStateEx stateEx, BeaconBlock block) {
+        long s = System.nanoTime();
+        BeaconStateEx result = super.apply(stateEx, block);
+        // count blocks starting from the beginning of 2nd epoch
+        if (spec.slot_to_epoch(result.getSlot()).greater(spec.getConstants().getGenesisEpoch())) {
+          blockCollector.tick(System.nanoTime() - s);
+        }
+        return result;
+      }
+    };
   }
 
   private boolean isBenchmarkMode() {
@@ -282,5 +324,17 @@ public class Launcher {
 
   public Schedulers getSchedulers() {
     return schedulers;
+  }
+
+  public MeasurementsCollector getSlotCollector() {
+    return slotCollector;
+  }
+
+  public MeasurementsCollector getEpochCollector() {
+    return epochCollector;
+  }
+
+  public MeasurementsCollector getBlockCollector() {
+    return blockCollector;
   }
 }
