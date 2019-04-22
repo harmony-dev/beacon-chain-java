@@ -1,5 +1,6 @@
 package org.ethereum.beacon.benchmaker;
 
+import com.google.common.base.Preconditions;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconChainSpec.Builder;
 import org.ethereum.beacon.consensus.hasher.SSZObjectHasher;
@@ -68,6 +69,10 @@ public class Benchmaker implements Runnable {
 
   @Override
   public void run() {
+    Preconditions.checkArgument(
+        registrySize <= 1_000_000,
+        "Benchmaker doesn't support registry sizes greater than 1,000,000.");
+
     SpecData specData =
         new ConfigBuilder<>(SpecData.class)
             .addYamlConfigFromResources("/config/spec-constants.yml")
