@@ -1,4 +1,4 @@
-package org.ethereum.beacon.simulator.util;
+package org.ethereum.beacon.util;
 
 import java.util.ArrayList;
 import java.util.Collections;

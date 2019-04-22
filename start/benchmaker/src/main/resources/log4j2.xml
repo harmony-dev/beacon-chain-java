@@ -4,7 +4,7 @@
   <Appenders>
     <Console name="Console" target="SYSTEM_OUT">
       <PatternLayout>
-        <Pattern>%d{HH:mm:ss.SSS} #%X{validatorIndex} %X{validatorTime} %-5level - %msg%n</Pattern>
+        <Pattern>%d{HH:mm:ss.SSS} %-5level- %msg%n</Pattern>
       </PatternLayout>
     </Console>
   </Appenders>

@@ -11,7 +11,7 @@ startScripts.enabled = false
 run.enabled = false
 
 // Call this for each Main class you want to expose with an app script
-createScript(project, 'org.ethereum.beacon.simulator.Simulator', 'simulator')
+createScript(project, 'org.ethereum.beacon.benchmaker.Benchmaker', 'benchmaker')
 
 dependencies {
   implementation project(':types')
@@ -32,6 +32,4 @@ dependencies {
   implementation 'io.projectreactor:reactor-core'
   implementation 'org.apache.logging.log4j:log4j-core'
   implementation 'com.fasterxml.jackson.core:jackson-databind'
-
-  testImplementation 'org.mockito:mockito-core'
 }

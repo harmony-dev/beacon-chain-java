@@ -1,4 +1,4 @@
-package org.ethereum.beacon.simulator;
+package org.ethereum.beacon.benchmaker;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -35,9 +35,8 @@ import org.ethereum.beacon.schedulers.LoggerMDCExecutor;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.schedulers.TimeController;
 import org.ethereum.beacon.schedulers.TimeControllerImpl;
-import org.ethereum.beacon.simulator.util.SimulateUtils;
+import org.ethereum.beacon.util.SimulateUtils;
 import org.ethereum.beacon.util.stats.MeasurementsCollector;
-import org.ethereum.beacon.util.stats.TimeCollector;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import org.ethereum.beacon.wire.LocalWireHub;
 import org.ethereum.beacon.wire.WireApi;
@@ -107,7 +106,6 @@ public class BenchmarkRunner implements Runnable {
     DepositContract depositContract = new SimpleDepositContract(chainStart);
 
     logger.info("Bootstrapping validators...");
-    TimeCollector proposeTimeCollector = new TimeCollector();
 
     ControlledSchedulers schedulers = controlledSchedulers.createNew("V0");
     WireApi wireApi = localWireHub.createNewPeer("0");

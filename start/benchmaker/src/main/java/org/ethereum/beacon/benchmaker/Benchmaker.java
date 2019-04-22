@@ -1,8 +1,5 @@
-package org.ethereum.beacon.simulator;
+package org.ethereum.beacon.benchmaker;
 
-import java.io.InputStream;
-import org.apache.logging.log4j.core.config.ConfigurationSource;
-import org.apache.logging.log4j.core.config.Configurator;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconChainSpec.Builder;
 import org.ethereum.beacon.core.spec.SpecConstants;
@@ -27,7 +24,8 @@ public class Benchmaker implements Runnable {
   @CommandLine.Option(
       names = {"--epochs"},
       paramLabel = "epochs",
-      description = "Number of epochs passed to a benchmark session.\nNote: genesis epoch is not counted in a session.",
+      description =
+          "Number of epochs passed to a benchmark session.\nNote: genesis epoch is not counted in a session.",
       defaultValue = "16")
   private Integer epochs;
 
@@ -80,13 +78,6 @@ public class Benchmaker implements Runnable {
             .withCache(!noCache)
             .withBlsVerifyProofOfPossession(false);
 
-    try (InputStream inputStream =
-        ClassLoader.class.getResourceAsStream("/log4j2-benchmaker.xml")) {
-      ConfigurationSource source = new ConfigurationSource(inputStream);
-      Configurator.initialize(null, source);
-    } catch (Exception e) {
-      throw new RuntimeException("Cannot read log4j configuration", e);
-    }
     new BenchmarkRunner(epochs, validators, specBuilder).run();
   }
 }
