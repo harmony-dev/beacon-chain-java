@@ -2,8 +2,9 @@ package org.ethereum.beacon.test.runner.hash;
 
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.hasher.SSZObjectHasher;
-import org.ethereum.beacon.core.ssz.DefaultSSZ;
+import org.ethereum.beacon.core.spec.SpecConstantsResolver;
 import org.ethereum.beacon.crypto.Hashes;
+import org.ethereum.beacon.ssz.SSZBuilder;
 import org.ethereum.beacon.ssz.SSZHasher;
 import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.type.SimpleTypeResolver;
@@ -34,7 +35,7 @@ public class TreeHashBasicRunner implements Runner {
     this.testCase = (TreeHashBasicTestCase) testCase;
     Function<BytesValue, Hash32> hashFunction = Hashes::keccak256;
     SSZHasher sszHasher =
-        DefaultSSZ.createCommonSSZBuilder(spec.getConstants())
+        new SSZBuilder().withExternalVarResolver(new SpecConstantsResolver(spec.getConstants()))
             .withIncrementalHasher(true)
             .withTypeResolverBuilder(
                 objects -> {
