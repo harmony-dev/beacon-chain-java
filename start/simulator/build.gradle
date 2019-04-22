@@ -12,6 +12,7 @@ run.enabled = false
 
 // Call this for each Main class you want to expose with an app script
 createScript(project, 'org.ethereum.beacon.simulator.Simulator', 'simulator')
+createScript(project, 'org.ethereum.beacon.simulator.Benchmaker', 'benchmaker')
 
 dependencies {
   implementation project(':types')

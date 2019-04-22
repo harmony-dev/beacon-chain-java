@@ -19,6 +19,7 @@ import org.ethereum.beacon.bench.BenchmarkReport;
 import org.ethereum.beacon.bench.BenchmarkUtils;
 import org.ethereum.beacon.chain.storage.impl.MemBeaconChainStorageFactory;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
+import org.ethereum.beacon.consensus.util.CachingBeaconChainSpec;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
@@ -78,6 +79,13 @@ public class BenchmarkRunner implements Runnable {
   }
 
   public void run() {
+    logger.info(
+        "Benchmark session: {} epochs, {} validators, BLS is {}, caches are {}",
+        epochCount,
+        validatorCount,
+        spec.isBlsVerify() ? "enabled" : "disabled",
+        ((CachingBeaconChainSpec) spec).isCacheEnabled() ? "enabled" : "disabled");
+
     Time genesisTime = Time.ZERO;
 
     Pair<List<Deposit>, List<KeyPair>> validatorDeposits =

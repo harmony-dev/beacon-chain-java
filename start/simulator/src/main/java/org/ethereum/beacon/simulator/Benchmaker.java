@@ -13,7 +13,7 @@ import picocli.CommandLine;
 import picocli.CommandLine.RunLast;
 
 @CommandLine.Command(
-    description = "Beacon chain benchmark runner",
+    description = "Benchmark tool for beacon chain spec",
     name = "benchmaker",
     version = "benchmaker " + Benchmaker.VERSION,
     mixinStandardHelpOptions = true)
@@ -23,6 +23,32 @@ public class Benchmaker implements Runnable {
 
   private static final int SUCCESS_EXIT_CODE = 0;
   private static final int ERROR_EXIT_CODE = 1;
+
+  @CommandLine.Option(
+      names = {"--epochs"},
+      paramLabel = "epochs",
+      description = "Number of epochs passed to a benchmark session.\nNote: genesis epoch is not counted in a session.",
+      defaultValue = "16")
+  private Integer epochs;
+
+  @CommandLine.Option(
+      names = {"--validators"},
+      paramLabel = "validators",
+      description = "Number of validators.",
+      defaultValue = "64")
+  private Integer validators;
+
+  @CommandLine.Option(
+      names = {"--no-bls"},
+      paramLabel = "no-bls",
+      description = "Turns off BLS.")
+  private Boolean noBls = false;
+
+  @CommandLine.Option(
+      names = {"--no-cache"},
+      paramLabel = "no-cache",
+      description = "Turns off caches used in the spec execution.")
+  private Boolean noCache = false;
 
   public static void main(String[] args) {
     try {
@@ -39,16 +65,10 @@ public class Benchmaker implements Runnable {
 
   @Override
   public void run() {
-    int epochCount = 3;
-    int validatorCount = 1000;
-    boolean blsEnabled = false;
-    boolean noCaches = false;
-
     SpecData specData =
         new ConfigBuilder<>(SpecData.class)
             .addYamlConfigFromResources("/config/spec-constants.yml")
             .build();
-    specData.getSpecConstants().getTimeParameters().setSLOTS_PER_EPOCH("8");
     SpecConstants constants = SpecBuilder.buildSpecConstants(specData.getSpecConstants());
 
     BeaconChainSpec.Builder specBuilder =
@@ -56,8 +76,8 @@ public class Benchmaker implements Runnable {
             .withConstants(constants)
             .withDefaultHashFunction()
             .withDefaultHasher()
-            .withBlsVerify(blsEnabled)
-            .withCache(!noCaches)
+            .withBlsVerify(!noBls)
+            .withCache(!noCache)
             .withBlsVerifyProofOfPossession(false);
 
     try (InputStream inputStream =
@@ -67,6 +87,6 @@ public class Benchmaker implements Runnable {
     } catch (Exception e) {
       throw new RuntimeException("Cannot read log4j configuration", e);
     }
-    new BenchmarkRunner(epochCount, validatorCount, specBuilder).run();
+    new BenchmarkRunner(epochs, validators, specBuilder).run();
   }
 }
