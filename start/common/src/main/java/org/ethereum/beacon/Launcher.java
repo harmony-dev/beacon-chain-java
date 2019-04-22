@@ -66,7 +66,6 @@ public class Launcher {
   private BeaconChainAttesterImpl beaconChainAttester;
   private MultiValidatorService beaconChainValidator;
 
-  private TimeCollector proposeTimeCollector;
   private BenchmarkController benchmarkController;
 
   public Launcher(
@@ -76,7 +75,7 @@ public class Launcher {
       WireApi wireApi,
       BeaconChainStorageFactory storageFactory,
       Schedulers schedulers) {
-    this(spec, depositContract, validatorCred, wireApi, storageFactory, schedulers, new TimeCollector(),
+    this(spec, depositContract, validatorCred, wireApi, storageFactory, schedulers,
         BenchmarkController.NO_BENCHES);
   }
 
@@ -87,19 +86,6 @@ public class Launcher {
       WireApi wireApi,
       BeaconChainStorageFactory storageFactory,
       Schedulers schedulers,
-      TimeCollector proposeTimeCollector) {
-    this(spec, depositContract, validatorCred, wireApi, storageFactory, schedulers, proposeTimeCollector,
-        BenchmarkController.NO_BENCHES);
-  }
-
-  public Launcher(
-      BeaconChainSpec spec,
-      DepositContract depositContract,
-      List<BLS381Credentials> validatorCred,
-      WireApi wireApi,
-      BeaconChainStorageFactory storageFactory,
-      Schedulers schedulers,
-      TimeCollector proposeTimeCollector,
       BenchmarkController benchmarkController) {
 
     this.spec = spec;
@@ -108,7 +94,6 @@ public class Launcher {
     this.wireApi = wireApi;
     this.storageFactory = storageFactory;
     this.schedulers = schedulers;
-    this.proposeTimeCollector = proposeTimeCollector;
     this.benchmarkController = benchmarkController;
 
     if (depositContract != null) {
@@ -180,8 +165,7 @@ public class Launcher {
           beaconChainAttester,
           spec,
           observableStateProcessor.getObservableStateStream(),
-          schedulers,
-          proposeTimeCollector);
+          schedulers);
       beaconChainValidator.start();
 
       ProposedBlockProcessor proposedBlocksProcessor = new ProposedBlockProcessorImpl(

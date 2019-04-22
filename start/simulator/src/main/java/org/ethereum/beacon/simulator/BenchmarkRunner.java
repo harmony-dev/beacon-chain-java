@@ -1,6 +1,5 @@
 package org.ethereum.beacon.simulator;
 
-import java.io.InputStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
@@ -14,9 +13,6 @@ import java.util.Random;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.core.LoggerContext;
-import org.apache.logging.log4j.core.config.ConfigurationSource;
-import org.apache.logging.log4j.core.config.Configurator;
 import org.ethereum.beacon.Launcher;
 import org.ethereum.beacon.bench.BenchmarkController;
 import org.ethereum.beacon.chain.storage.impl.MemBeaconChainStorageFactory;
@@ -127,7 +123,6 @@ public class BenchmarkRunner implements Runnable {
             wireApi,
             new MemBeaconChainStorageFactory(),
             schedulers,
-            proposeTimeCollector,
             benchmarkController);
 
     List<SlotNumber> slots = new ArrayList<>();

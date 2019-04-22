@@ -66,7 +66,7 @@ public class BeaconChainProposerTest {
     BeaconBlock block = proposer.propose(initialObservedState, signer);
 
     BeaconStateEx stateAfterBlock =
-        perBlockTransition.apply(new BeaconStateExImpl(initialState, Hash32.ZERO), block);
+        perBlockTransition.apply(new BeaconStateExImpl(initialState), block);
 
     Assert.assertEquals(
         spec.hash_tree_root(stateAfterBlock), block.getStateRoot());
@@ -123,7 +123,7 @@ public class BeaconChainProposerTest {
     Mockito.verify(pendingOperations).peekExits(spec.getConstants().getMaxVoluntaryExits());
 
     BeaconStateEx stateAfterBlock =
-        perBlockTransition.apply(new BeaconStateExImpl(initialState, Hash32.ZERO), block);
+        perBlockTransition.apply(new BeaconStateExImpl(initialState), block);
 
     Assert.assertEquals(
         spec.hash_tree_root(stateAfterBlock), block.getStateRoot());
@@ -173,7 +173,7 @@ public class BeaconChainProposerTest {
             Mockito.eq(initialState.getLatestEth1Data()));
 
     BeaconStateEx stateAfterBlock =
-        perBlockTransition.apply(new BeaconStateExImpl(initialState, Hash32.ZERO), block);
+        perBlockTransition.apply(new BeaconStateExImpl(initialState), block);
 
     Assert.assertEquals(
         spec.hash_tree_root(stateAfterBlock), block.getStateRoot());

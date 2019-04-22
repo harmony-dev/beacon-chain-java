@@ -81,10 +81,6 @@ public interface BeaconChainSpec
     return get_slot_start_time(state, slot).plus(getConstants().getSecondsPerSlot().dividedBy(2));
   }
 
-  default boolean is_epoch_end(SlotNumber slot) {
-    return slot.increment().modulo(getConstants().getSlotsPerEpoch()).equals(SlotNumber.ZERO);
-  }
-
   default boolean is_current_slot(BeaconState state, long systemTime) {
     return state.getSlot().equals(get_current_slot(state, systemTime));
   }

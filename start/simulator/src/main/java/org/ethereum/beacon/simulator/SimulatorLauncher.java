@@ -52,7 +52,6 @@ import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.schedulers.TimeController;
 import org.ethereum.beacon.schedulers.TimeControllerImpl;
 import org.ethereum.beacon.simulator.util.SimulateUtils;
-import org.ethereum.beacon.util.stats.TimeCollector;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import org.ethereum.beacon.wire.LocalWireHub;
 import org.ethereum.beacon.wire.WireApi;
@@ -166,7 +165,6 @@ public class SimulatorLauncher implements Runnable {
     List<Launcher> peers = new ArrayList<>();
 
     logger.info("Creating validators...");
-    TimeCollector proposeTimeCollector = new TimeCollector();
     for (int i = 0; i < validators.size(); i++) {
       ControlledSchedulers schedulers =
           controlledSchedulers.createNew("V" + i, validators.get(i).getSystemTimeShift());
@@ -192,8 +190,7 @@ public class SimulatorLauncher implements Runnable {
               Collections.singletonList(bls),
               wireApi,
               new MemBeaconChainStorageFactory(),
-              schedulers,
-              proposeTimeCollector);
+              schedulers);
 
       peers.add(launcher);
 
