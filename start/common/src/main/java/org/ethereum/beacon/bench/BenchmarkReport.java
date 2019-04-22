@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.ethereum.beacon.bench.BenchmarkController.BenchmarkRoutine;
+import org.ethereum.beacon.util.stats.MeasurementsCollector;
 import org.ethereum.beacon.util.stats.TimeCollector;
 
 public class BenchmarkReport {
@@ -64,7 +65,12 @@ public class BenchmarkReport {
       StringBuilder sb = new StringBuilder();
       sb.append(
               FunctionStats.format(
-                  leftPadding + group.print(), "min, ms", "avg, ms", "count", "total, ms"))
+                  leftPadding + group.print(),
+                  "min, ms",
+                  "avg, ms",
+                  "95%, ms",
+                  "count",
+                  "total, ms"))
           .append('\n');
       functions.forEach(stats -> sb.append(stats.print(leftPadding + leftPadding)).append('\n'));
       return sb.deleteCharAt(sb.length() - 1).toString();
@@ -163,8 +169,14 @@ public class BenchmarkReport {
     }
 
     static String format(
-        String title, String minTime, String avgTime, String counter, String totalTime) {
-      return String.format("%-45s%15s%15s%15s%15s", title, minTime, avgTime, counter, totalTime);
+        String title,
+        String minTime,
+        String avgTime,
+        String percentile,
+        String counter,
+        String totalTime) {
+      return String.format(
+          "%-45s%15s%15s%15s%15s%15s", title, minTime, avgTime, percentile, counter, totalTime);
     }
 
     public String print(String leftPadding) {
@@ -172,6 +184,7 @@ public class BenchmarkReport {
           leftPadding + name,
           String.format("%.3f", minTime / 1_000_000d / counter),
           String.format("%.3f", avgTime / 1_000_000d / counter),
+          String.format("%.3f", percentile95Time / 1_000_000d),
           String.valueOf(counter),
           String.format("%.3f", avgTime / 1_000_000d));
     }
@@ -179,11 +192,11 @@ public class BenchmarkReport {
 
   public static class Builder {
 
-    private final Map<BenchmarkRoutine, List<Map<String, TimeCollector>>> measuredRoutines =
+    private final Map<BenchmarkRoutine, List<Map<String, MeasurementsCollector>>> measuredRoutines =
         new HashMap<>();
 
     public Builder addRoutine(
-        BenchmarkRoutine routine, List<Map<String, TimeCollector>> measurements) {
+        BenchmarkRoutine routine, List<Map<String, MeasurementsCollector>> measurements) {
       measuredRoutines.put(routine, measurements);
       return this;
     }
@@ -193,7 +206,7 @@ public class BenchmarkReport {
       report.routines = new ArrayList<>();
 
       for (BenchmarkRoutine routine : BenchmarkRoutine.values()) {
-        List<Map<String, TimeCollector>> measurements = measuredRoutines.get(routine);
+        List<Map<String, MeasurementsCollector>> measurements = measuredRoutines.get(routine);
         if (measurements == null) continue;
 
         List<GroupReport> groupReports = new ArrayList<>();
@@ -209,11 +222,11 @@ public class BenchmarkReport {
                   .map(
                       name -> {
                         // collection stats per function
-                        List<TimeCollector> functionMeasurements =
+                        List<MeasurementsCollector> functionMeasurements =
                             measurements.stream()
                                 .map(
                                     checkpoint ->
-                                        checkpoint.getOrDefault(name, new TimeCollector()))
+                                        checkpoint.getOrDefault(name, new MeasurementsCollector()))
                                 .collect(Collectors.toList());
                         return getFunctionStats(name, functionMeasurements);
                       })
@@ -286,11 +299,18 @@ public class BenchmarkReport {
       return groupStats;
     }
 
-    private FunctionStats getFunctionStats(String name, List<TimeCollector> measurements) {
+    private FunctionStats getFunctionStats(String name, List<MeasurementsCollector> measurements) {
       FunctionStats stats = new FunctionStats(name);
       stats.counter = measurements.stream().mapToInt(TimeCollector::getCounter).max().orElse(0);
       stats.minTime = measurements.stream().mapToLong(TimeCollector::getTotal).min().orElse(0);
       stats.avgTime = measurements.stream().mapToLong(TimeCollector::getTotal).average().orElse(0);
+      List<Long> sortedMeasurements =
+          measurements.stream()
+              .flatMap(m -> m.getMeasurements().stream())
+              .sorted()
+              .collect(Collectors.toList());
+      int index = (int) Math.max(0, Math.floor(0.95 * measurements.size()) - 1);
+      stats.percentile95Time = sortedMeasurements.isEmpty() ? 0 : sortedMeasurements.get(index);
       return stats;
     }
 

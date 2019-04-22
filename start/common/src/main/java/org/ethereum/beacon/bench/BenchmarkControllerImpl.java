@@ -7,6 +7,7 @@ import org.ethereum.beacon.bench.BenchmarkReport.Builder;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.types.SlotNumber;
+import org.ethereum.beacon.util.stats.MeasurementsCollector;
 import org.ethereum.beacon.util.stats.TimeCollector;
 import tech.pegasys.artemis.util.uint.UInt64;
 
@@ -43,7 +44,7 @@ public class BenchmarkControllerImpl implements BenchmarkController {
     final BenchmarkingBeaconChainSpec specWrapper;
     final SlotNumber startSlot;
     final SlotNumber measurementPeriod;
-    final List<Map<String, TimeCollector>> measurements = new ArrayList<>();
+    final List<Map<String, MeasurementsCollector>> measurements = new ArrayList<>();
 
     SlotNumber previousCheckpoint = SlotNumber.castFrom(UInt64.MAX_VALUE);
 

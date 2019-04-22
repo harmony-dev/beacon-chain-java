@@ -20,6 +20,7 @@ import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.crypto.BLS381.PublicKey;
+import org.ethereum.beacon.util.stats.MeasurementsCollector;
 import org.ethereum.beacon.util.stats.TimeCollector;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
@@ -27,7 +28,7 @@ import tech.pegasys.artemis.util.uint.UInt64;
 
 public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
 
-  private final Map<String, TimeCollector> collectors = new ConcurrentHashMap<>();
+  private final Map<String, MeasurementsCollector> collectors = new ConcurrentHashMap<>();
   private boolean trackingStarted = false;
 
   static BenchmarkingBeaconChainSpec wrap(BeaconChainSpec spec) {
@@ -209,8 +210,8 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
     this.trackingStarted = true;
   }
 
-  Map<String, TimeCollector> drainCollectors() {
-    Map<String, TimeCollector> result = new HashMap<>(collectors);
+  Map<String, MeasurementsCollector> drainCollectors() {
+    Map<String, MeasurementsCollector> result = new HashMap<>(collectors);
     this.collectors.clear();
     return result;
   }
@@ -221,7 +222,7 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
       return;
     }
 
-    TimeCollector collector = collectors.computeIfAbsent(name, s -> new TimeCollector());
+    TimeCollector collector = collectors.computeIfAbsent(name, s -> new MeasurementsCollector());
     long s = System.nanoTime();
     routine.run();
     collector.tick(System.nanoTime() - s);
@@ -232,7 +233,7 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
       return routine.get();
     }
 
-    TimeCollector collector = collectors.computeIfAbsent(name, s -> new TimeCollector());
+    TimeCollector collector = collectors.computeIfAbsent(name, s -> new MeasurementsCollector());
     long s = System.nanoTime();
     T result = routine.get();
     collector.tick(System.nanoTime() - s);
