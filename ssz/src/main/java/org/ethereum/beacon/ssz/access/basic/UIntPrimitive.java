@@ -24,7 +24,7 @@ import static java.util.function.Function.identity;
  * {@link SSZBasicAccessor} for all primitive Java integers and their default wrappers
  *
  * <p>All numerics are considered unsigned, bit size could be clarified by {@link
- * SSZField#extraSize}
+ * SSZField#getExtraSize()}
  */
 public class UIntPrimitive implements SSZBasicAccessor {
   private static final int DEFAULT_BYTE_SIZE = 8;

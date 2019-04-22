@@ -37,6 +37,7 @@ import org.ethereum.beacon.ssz.visitor.MerkleTrie;
 import org.ethereum.beacon.ssz.visitor.SSZSimpleHasher;
 import org.ethereum.beacon.ssz.visitor.SSZVisitor;
 import org.ethereum.beacon.ssz.visitor.SSZVisitorHost;
+import org.javatuples.Pair;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
@@ -89,6 +90,8 @@ public class SSZBuilder {
   private ExternalVarResolver externalVarResolver = v -> {throw new SSZSchemeException("Variable resolver not set. Can resolve var: " + v);};
 
   private TypeResolver typeResolver = null;
+
+  private Function<Pair<AccessorResolver, ExternalVarResolver>, TypeResolver> typeResolverBuilder = null;
 
   private SSZVisitorHost visitorHost = null;
 
@@ -156,6 +159,12 @@ public class SSZBuilder {
   public SSZBuilder withTypeResolver(TypeResolver typeResolver) {
     checkAlreadyInitialized();
     this.typeResolver = typeResolver;
+    return this;
+  }
+
+  public SSZBuilder withTypeResolverBuilder(Function<Pair<AccessorResolver, ExternalVarResolver>, TypeResolver> typeResolverBuilder) {
+    checkAlreadyInitialized();
+    this.typeResolverBuilder = typeResolverBuilder;
     return this;
   }
 
@@ -298,7 +307,11 @@ public class SSZBuilder {
     }
 
     if (typeResolver == null) {
-      typeResolver = new SimpleTypeResolver(accessorResolverRegistry, externalVarResolver);
+      if (typeResolverBuilder != null) {
+        typeResolver = typeResolverBuilder.apply(Pair.with(accessorResolverRegistry, externalVarResolver));
+      } else {
+        typeResolver = new SimpleTypeResolver(accessorResolverRegistry, externalVarResolver);
+      }
     }
 
     if (visitorHost == null) {

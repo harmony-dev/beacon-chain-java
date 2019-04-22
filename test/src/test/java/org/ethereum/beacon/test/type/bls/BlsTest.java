@@ -1,6 +1,9 @@
-package org.ethereum.beacon.test.type;
+package org.ethereum.beacon.test.type.bls;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.ethereum.beacon.test.type.TestCase;
+import org.ethereum.beacon.test.type.TestSkeleton;
+import org.ethereum.beacon.test.type.UniversalTest;
 
 import java.util.List;
 

@@ -1,11 +1,12 @@
-package org.ethereum.beacon.test.runner;
+package org.ethereum.beacon.test.runner.shuffle;
 
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
-import org.ethereum.beacon.test.type.ShuffleTestCase;
+import org.ethereum.beacon.test.runner.Runner;
+import org.ethereum.beacon.test.type.shuffle.ShuffleTestCase;
 import org.ethereum.beacon.test.type.TestCase;
 import org.javatuples.Triplet;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -19,7 +20,7 @@ import java.util.function.Function;
 
 import static org.ethereum.beacon.test.SilentAsserts.assertLists;
 
-/** TestRunner for {@link org.ethereum.beacon.test.type.ShuffleTestCase} */
+/** TestRunner for {@link ShuffleTestCase} */
 public class ShuffleRunner implements Runner {
   private ShuffleTestCase testCase;
   private BeaconChainSpec spec;

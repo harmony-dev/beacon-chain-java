@@ -1,9 +1,8 @@
 package org.ethereum.beacon.test;
 
 import org.ethereum.beacon.consensus.BeaconChainSpec;
-import org.ethereum.beacon.core.spec.SpecConstants;
-import org.ethereum.beacon.test.runner.SszRunner;
-import org.ethereum.beacon.test.type.SszTest;
+import org.ethereum.beacon.test.runner.ssz.SszRunner;
+import org.ethereum.beacon.test.type.ssz.SszTest;
 import org.junit.Test;
 
 import java.nio.file.Path;

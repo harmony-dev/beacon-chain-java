@@ -1,4 +1,6 @@
-package org.ethereum.beacon.test.type;
+package org.ethereum.beacon.test.type.shuffle;
+
+import org.ethereum.beacon.test.type.TestCase;
 
 import java.util.List;
 

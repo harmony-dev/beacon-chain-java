@@ -1,4 +1,7 @@
-package org.ethereum.beacon.test.type;
+package org.ethereum.beacon.test.type.ssz;
+
+import org.ethereum.beacon.test.type.TestCase;
+import org.ethereum.beacon.test.type.TestSkeleton;
 
 import java.util.List;
 

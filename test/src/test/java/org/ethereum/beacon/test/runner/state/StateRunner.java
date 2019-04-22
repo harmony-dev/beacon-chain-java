@@ -1,4 +1,4 @@
-package org.ethereum.beacon.test.runner;
+package org.ethereum.beacon.test.runner.state;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -19,8 +19,10 @@ import org.ethereum.beacon.emulator.config.chainspec.SpecData;
 import org.ethereum.beacon.emulator.config.chainspec.SpecDataUtils;
 import org.ethereum.beacon.emulator.config.chainspec.SpecHelpersData;
 import org.ethereum.beacon.test.StateTestUtils;
-import org.ethereum.beacon.test.type.StateTestCase;
-import org.ethereum.beacon.test.type.StateTestCase.BeaconStateData;
+import org.ethereum.beacon.test.runner.Runner;
+import org.ethereum.beacon.test.runner.state.StateComparator;
+import org.ethereum.beacon.test.type.state.StateTestCase;
+import org.ethereum.beacon.test.type.state.StateTestCase.BeaconStateData;
 import org.ethereum.beacon.test.type.TestCase;
 import org.ethereum.beacon.util.Objects;
 import org.javatuples.Pair;
