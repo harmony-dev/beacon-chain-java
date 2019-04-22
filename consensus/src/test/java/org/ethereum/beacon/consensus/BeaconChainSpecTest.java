@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.ethereum.beacon.consensus.hasher.ObjectHasher;
 import org.ethereum.beacon.consensus.hasher.SSZObjectHasher;
 import org.ethereum.beacon.consensus.transition.InitialStateTransition;
 import org.ethereum.beacon.consensus.util.CachingBeaconChainSpec;
@@ -178,7 +179,7 @@ public class BeaconChainSpecTest {
           }
         };
     BeaconChainSpec spec = new CachingBeaconChainSpec(
-        specConstants, Hashes::keccak256, SSZObjectHasher.create(Hashes::keccak256), false, true);
+        specConstants, Hashes::keccak256, ObjectHasher.createSSZOverKeccak256(specConstants), false, true);
 
     System.out.println("Generating deposits...");
     List<Deposit> deposits = TestUtils.generateRandomDepositsWithoutSig(rnd, spec, validatorCount);

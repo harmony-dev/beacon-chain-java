@@ -130,7 +130,7 @@ public interface BeaconChainSpec
     }
 
     public Builder withDefaultHasher(SpecConstants constants) {
-      return withHasher(SSZObjectHasher.create(constants, Hashes::keccak256));
+      return withHasher(ObjectHasher.createSSZOverKeccak256(constants));
     }
 
     public Builder enableCache() {

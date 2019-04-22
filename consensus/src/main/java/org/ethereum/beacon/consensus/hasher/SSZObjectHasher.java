@@ -37,15 +37,6 @@ public class SSZObjectHasher implements ObjectHasher<Hash32> {
     return new SSZObjectHasher(sszHasher);
   }
 
-  public static SSZObjectHasher create(Function<BytesValue, Hash32> hashFunction) {
-
-    SSZHasher sszHasher =
-        new SSZBuilder()
-            .withIncrementalHasher(true)
-            .buildHasher(hashFunction);
-    return new SSZObjectHasher(sszHasher);
-  }
-
   @Override
   public Hash32 getHash(Object input) {
     Function<Object, Hash32> hasher = o -> Hash32.wrap(Bytes32.wrap(sszHasher.hash(o)));

@@ -13,10 +13,6 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
  */
 public interface ObjectHasher<H extends BytesValue> {
 
-  static ObjectHasher<Hash32> createSSZOverKeccak256() {
-    return SSZObjectHasher.create(Hashes::keccak256);
-  }
-
   static ObjectHasher<Hash32> createSSZOverKeccak256(SpecConstants specConstants) {
     return SSZObjectHasher.create(specConstants, Hashes::keccak256);
   }
