@@ -36,13 +36,22 @@ public interface SSZVisitor<ResultType, ParamType> {
     return visitComposite(type, param, childVisitor);
   }
 
-  /**
-   * Invoked on the SSZ Container in the type hierarchy
-   *
-   * NOTE: you should either implement {@link #visitComposite(SSZCompositeType, Object, ChildVisitor)}
-   * method or  both {@link #visitList(SSZListType, Object, ChildVisitor)} and
-   * {@link #visitContainer(SSZContainerType, Object, ChildVisitor)} method
-   */
+  default ResultType visitSubList(
+      SSZListType type,
+      ParamType param,
+      int startIdx,
+      int len,
+      ChildVisitor<ParamType, ResultType> childVisitor) {
+    throw new UnsupportedOperationException();
+  }
+
+    /**
+     * Invoked on the SSZ Container in the type hierarchy
+     *
+     * NOTE: you should either implement {@link #visitComposite(SSZCompositeType, Object, ChildVisitor)}
+     * method or  both {@link #visitList(SSZListType, Object, ChildVisitor)} and
+     * {@link #visitContainer(SSZContainerType, Object, ChildVisitor)} method
+     */
   default ResultType visitContainer(
       SSZContainerType type, ParamType param, ChildVisitor<ParamType, ResultType> childVisitor) {
     return visitComposite(type, param, childVisitor);

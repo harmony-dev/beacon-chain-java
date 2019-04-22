@@ -66,13 +66,23 @@ public class SSZSimpleSerializer implements SSZVisitor<SSZSimpleSerializer.SSZSe
   }
 
   @Override
+  public SSZSerializerResult visitSubList(SSZListType type, Object param,
+      int startIdx, int len, ChildVisitor<Object, SSZSerializerResult> childVisitor) {
+    return visitComposite(type, param, childVisitor, startIdx, len);
+  }
+
+  @Override
   public SSZSerializerResult visitComposite(SSZCompositeType type, Object rawValue,
       ChildVisitor<Object, SSZSerializerResult> childVisitor) {
+    return visitComposite(type, rawValue, childVisitor, 0, type.getChildrenCount(rawValue));
+  }
 
+  private SSZSerializerResult visitComposite(SSZCompositeType type, Object rawValue,
+      ChildVisitor<Object, SSZSerializerResult> childVisitor, int startIdx, int len) {
     List<BytesValue> childSerializations = new ArrayList<>();
     boolean fixedSize = type.isFixedSize();
     int length = 0;
-    for (int i = 0; i < type.getChildrenCount(rawValue); i++) {
+    for (int i = startIdx; i < startIdx + len; i++) {
       SSZSerializerResult res = childVisitor.apply(i, type.getChild(rawValue, i));
       childSerializations.add(res.serializedLength);
       childSerializations.add(res.serializedBody);

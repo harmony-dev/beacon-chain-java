@@ -162,4 +162,12 @@ public class SSZIncrementalHasher extends SSZSimpleHasher {
       return new MerkleTrie(newNodes);
     }
   }
+
+  private BytesValue serializePackedChunk(SSZListType basicListType, Object listValue, int chunkIndex) {
+    return serializer.visitList(
+        basicListType,
+        listValue,
+        chunkIndex * basicListType.getElementType().getSize(),
+        basicListType.getElementType().getSize()).getSerializedBody();
+  }
 }
