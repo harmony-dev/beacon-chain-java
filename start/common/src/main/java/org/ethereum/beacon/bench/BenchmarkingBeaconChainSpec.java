@@ -15,8 +15,10 @@ import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.ShardCommittee;
+import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.crypto.BLS381.PublicKey;
@@ -24,6 +26,7 @@ import org.ethereum.beacon.util.stats.MeasurementsCollector;
 import org.ethereum.beacon.util.stats.TimeCollector;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
@@ -204,6 +207,14 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
   @Override
   public void process_eth1_data(MutableBeaconState state, BeaconBlock block) {
     callAndTrack("process_eth1_data", () -> super.process_eth1_data(state, block));
+  }
+
+  @Override
+  public List<ValidatorIndex> get_active_validator_indices(
+      ReadList<ValidatorIndex, ValidatorRecord> validators, EpochNumber epochNumber) {
+    return callAndTrack(
+        "get_active_validator_indices",
+        () -> super.get_active_validator_indices(validators, epochNumber));
   }
 
   void startTracking() {

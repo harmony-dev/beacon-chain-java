@@ -80,6 +80,7 @@ public class BenchmarkReport {
   }
 
   public static class RoutineSummary {
+    private SummaryStats topMethodsSummary;
     private List<GroupSummary> groupSummaries;
 
     public RoutineSummary(List<GroupSummary> groupSummaries) {
@@ -90,6 +91,7 @@ public class BenchmarkReport {
       StringBuilder sb = new StringBuilder();
       sb.append(SummaryStats.format(leftPadding + "SUMMARY", "min, ms", "avg, ms", "% of total"))
           .append('\n');
+      sb.append(topMethodsSummary.print(leftPadding + leftPadding)).append('\n');
       groupSummaries.forEach(
           groupSummary -> sb.append(groupSummary.print(leftPadding)).append('\n'));
       return sb.deleteCharAt(sb.length() - 1).toString();
@@ -107,7 +109,7 @@ public class BenchmarkReport {
 
     public String print(String leftPadding) {
       StringBuilder sb = new StringBuilder();
-      sb.append(groupSummary.print(leftPadding + leftPadding)).append('\n');
+      sb.append(groupSummary.printTitleOnly(leftPadding + leftPadding)).append('\n');
       functionSummaries.forEach(
           functionSummary ->
               sb.append(functionSummary.print(leftPadding + leftPadding + leftPadding))
@@ -135,7 +137,11 @@ public class BenchmarkReport {
           leftPadding + title,
           String.format("%.3f", minTime / 1_000_000d),
           String.format("%.3f", avgTime / 1_000_000d),
-          String.format("%.2f", ratioToTotal * 100));
+          String.format("%.2f%%", ratioToTotal * 100));
+    }
+
+    public String printTitleOnly(String leftPadding) {
+      return format(leftPadding + title, "", "", "");
     }
   }
 
@@ -213,10 +219,10 @@ public class BenchmarkReport {
 
         List<GroupReport> groupReports = new ArrayList<>();
         List<GroupSummary> groupSummaries = new ArrayList<>();
-        report.routines.add(
-            new RoutineReport(routine, groupReports, new RoutineSummary(groupSummaries)));
+        RoutineSummary routineSummary = new RoutineSummary(groupSummaries);
+        report.routines.add(new RoutineReport(routine, groupReports, routineSummary));
 
-        GroupReport highLevelGroupReport = null;
+        GroupReport topMethodsReport = null;
         for (MeasurementGroup group : MeasurementGroup.values()) {
           String[] functionList = getFunctionList(routine, group);
           List<FunctionStats> functionStats =
@@ -242,22 +248,20 @@ public class BenchmarkReport {
             GroupReport groupReport = new GroupReport(group, functionStats);
             groupReports.add(groupReport);
             if (group == MeasurementGroup.TOP_METHODS) {
-              highLevelGroupReport = groupReport;
+              topMethodsReport = groupReport;
             }
           }
         }
 
-        if (highLevelGroupReport != null) {
+        if (topMethodsReport != null) {
           double highLevelGroupTime =
-              highLevelGroupReport.functions.stream().mapToDouble(FunctionStats::getAvgTime).sum();
+              topMethodsReport.functions.stream().mapToDouble(FunctionStats::getAvgTime).sum();
           if (highLevelGroupTime > 0) {
             for (GroupReport groupReport : groupReports) {
-              if (groupReport == highLevelGroupReport) {
-                groupSummaries.add(
-                    new GroupSummary(
-                        getGroupSummaryStats(
-                            groupReport.group.print(), groupReport, highLevelGroupTime),
-                        Collections.emptyList()));
+              if (groupReport == topMethodsReport) {
+                routineSummary.topMethodsSummary =
+                    getGroupSummaryStats(
+                        groupReport.group.print(), groupReport, highLevelGroupTime);
               } else {
                 groupSummaries.add(getGroupSummary(groupReport, highLevelGroupTime));
               }
@@ -361,6 +365,10 @@ public class BenchmarkReport {
   };
 
   private static final String[] HELPER_FUNCTIONS = {
-    "hash_tree_root", "signed_root", "get_crosslink_committees_at_slot", "get_beacon_proposer_index"
+    "hash_tree_root",
+    "signed_root",
+    "get_crosslink_committees_at_slot",
+    "get_beacon_proposer_index",
+    "get_active_validator_indices"
   };
 }
