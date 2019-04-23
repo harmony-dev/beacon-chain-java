@@ -9,7 +9,10 @@ import org.ethereum.beacon.consensus.hasher.ObjectHasher;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.ShardCommittee;
+import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
+import org.ethereum.beacon.core.types.EpochNumber;
+import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.util.LRUCache;
@@ -17,6 +20,7 @@ import org.javatuples.Pair;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public class CachingBeaconChainSpec extends BeaconChainSpecImpl {
@@ -28,7 +32,11 @@ public class CachingBeaconChainSpec extends BeaconChainSpecImpl {
   private final LRUCache<Object, Hash32> signedRootCache =
       new LRUCache<>(1024);
   private final LRUCache<SlotNumber, List<ShardCommittee>> crosslinkCommitteesCache =
-      new LRUCache<>(1024);
+      new LRUCache<>(128);
+  private final LRUCache<EpochNumber, List<ValidatorIndex>> activeValidatorsCache =
+      new LRUCache<>(32);
+  private final LRUCache<EpochNumber, Gwei> totalBalanceCache =
+      new LRUCache<>(32);
   private ValidatorIndex maxCachedIndex = ValidatorIndex.ZERO;
   private final Map<BLSPubkey, ValidatorIndex> pubkeyToIndexCache = new ConcurrentHashMap<>();
 
@@ -100,13 +108,45 @@ public class CachingBeaconChainSpec extends BeaconChainSpecImpl {
   }
 
   @Override
-  public List<ShardCommittee> get_crosslink_committees_at_slot(BeaconState state, SlotNumber slot) {
+  public List<ShardCommittee> get_crosslink_committees_at_slot(
+      BeaconState state, SlotNumber slot, boolean registry_change) {
     if (!cacheEnabled) {
-      return super.get_crosslink_committees_at_slot(state, slot);
+      return super.get_crosslink_committees_at_slot(state, slot, registry_change);
     }
 
     return crosslinkCommitteesCache.get(
-        slot, s -> super.get_crosslink_committees_at_slot(state, slot));
+        slot, s -> super.get_crosslink_committees_at_slot(state, slot, registry_change));
+  }
+
+  @Override
+  public List<ValidatorIndex> get_active_validator_indices(
+      ReadList<ValidatorIndex, ValidatorRecord> validators, EpochNumber epochNumber) {
+    if (!cacheEnabled) {
+      return super.get_active_validator_indices(validators, epochNumber);
+    }
+
+    return activeValidatorsCache.get(
+        epochNumber, e -> super.get_active_validator_indices(validators, epochNumber));
+  }
+
+  @Override
+  public Gwei get_previous_total_balance(BeaconState state) {
+    if (!cacheEnabled) {
+      return super.get_previous_total_balance(state);
+    }
+
+    return totalBalanceCache.get(
+        get_previous_epoch(state), e -> super.get_previous_total_balance(state));
+  }
+
+  @Override
+  public Gwei get_current_total_balance(BeaconState state) {
+    if (!cacheEnabled) {
+      return super.get_current_total_balance(state);
+    }
+
+    return totalBalanceCache.get(
+        get_current_epoch(state), e -> super.get_current_total_balance(state));
   }
 
   public boolean isCacheEnabled() {

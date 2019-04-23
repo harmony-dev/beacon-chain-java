@@ -372,6 +372,10 @@ public class BenchmarkReport {
     "get_active_validator_indices",
     "get_total_balance",
     "get_attestation_participants",
-    "get_validator_index_by_pubkey"
+    "get_validator_index_by_pubkey",
+    "get_previous_total_balance",
+    "get_current_total_balance",
+    "get_base_reward",
+    "verify_bitfield"
   };
 }

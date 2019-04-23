@@ -240,6 +240,27 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
         "get_validator_index_by_pubkey", () -> super.get_validator_index_by_pubkey(state, pubkey));
   }
 
+  @Override
+  public Gwei get_previous_total_balance(BeaconState state) {
+    return callAndTrack(
+        "get_previous_total_balance", () -> super.get_previous_total_balance(state));
+  }
+
+  @Override
+  public Gwei get_base_reward(BeaconState state, ValidatorIndex index) {
+    return callAndTrack("get_base_reward", () -> super.get_base_reward(state, index));
+  }
+
+  @Override
+  public Gwei get_current_total_balance(BeaconState state) {
+    return callAndTrack("get_current_total_balance", () -> super.get_current_total_balance(state));
+  }
+
+  @Override
+  public boolean verify_bitfield(Bitfield bitfield, int committee_size) {
+    return callAndTrack("verify_bitfield", () -> super.verify_bitfield(bitfield, committee_size));
+  }
+
   void startTracking() {
     this.trackingStarted = true;
   }

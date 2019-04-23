@@ -397,12 +397,13 @@ public interface EpochProcessing extends HelperFunction {
       return get_effective_balance(state, index) // adjusted_quotient // 5
    */
   default Gwei get_base_reward(BeaconState state, ValidatorIndex index) {
-    if (get_previous_total_balance(state).equals(Gwei.ZERO)) {
+    Gwei previous_total_balance = get_previous_total_balance(state);
+    if (previous_total_balance.equals(Gwei.ZERO)) {
       return Gwei.ZERO;
     }
 
-    UInt64 adjusted_quotient = integer_squareroot(
-        get_previous_total_balance(state)).dividedBy(getConstants().getBaseRewardQuotient());
+    UInt64 adjusted_quotient = integer_squareroot(previous_total_balance)
+        .dividedBy(getConstants().getBaseRewardQuotient());
     return get_effective_balance(state, index).dividedBy(adjusted_quotient).dividedBy(5);
   }
 
