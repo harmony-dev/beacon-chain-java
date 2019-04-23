@@ -8,7 +8,6 @@ import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.util.stats.MeasurementsCollector;
-import org.ethereum.beacon.util.stats.TimeCollector;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public class BenchmarkControllerImpl implements BenchmarkController {
@@ -64,18 +63,21 @@ public class BenchmarkControllerImpl implements BenchmarkController {
       switch (routine) {
         case SLOT:
         case BLOCK:
-          // start tracking slots and blocks since the beginning of the 2nd epoch
+          // start tracking slots and blocks when skipping epochs passed
           return new BenchInstance(
               routine,
               BenchmarkingBeaconChainSpec.wrap(spec),
-              constants.getGenesisSlot().plus(constants.getSlotsPerEpoch()),
+              constants.getGenesisSlot().plus(WARM_UP_EPOCHS.mul(constants.getSlotsPerEpoch())),
               SlotNumber.of(1));
         case EPOCH:
-          // start tracking epochs when first epoch transition has happened
+          // start tracking epochs when first skipping epoch transitions have happened
           return new BenchInstance(
               routine,
               BenchmarkingBeaconChainSpec.wrap(spec),
-              constants.getGenesisSlot().plus(constants.getSlotsPerEpoch()).increment(),
+              constants
+                  .getGenesisSlot()
+                  .plus(WARM_UP_EPOCHS.mul(constants.getSlotsPerEpoch()))
+                  .increment(),
               constants.getSlotsPerEpoch());
         default:
           throw new IllegalArgumentException("Unsupported benchmark routine: " + routine);

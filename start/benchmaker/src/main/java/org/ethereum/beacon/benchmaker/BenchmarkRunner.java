@@ -154,7 +154,9 @@ public class BenchmarkRunner implements Runnable {
         genesisTime.plus(spec.getConstants().getSecondsPerSlot()).getMillis().getValue() - 9);
 
     // skip 1st epoch, add extra slot to trigger last epoch transition
-    int slotsToRun = (epochCount + 1) * spec.getConstants().getSlotsPerEpoch().getIntValue();
+    int slotsToRun =
+        (epochCount + BenchmarkController.WARM_UP_EPOCHS.getIntValue())
+            * spec.getConstants().getSlotsPerEpoch().getIntValue();
     for (int i = 0; i < slotsToRun; i++) {
       benchmarkController.onBeforeNewSlot(spec.getConstants().getGenesisSlot().plus(i));
 
@@ -176,8 +178,6 @@ public class BenchmarkRunner implements Runnable {
       attestations.clear();
       blocks.clear();
     }
-
-    printReport(instance, benchmarkController);
   }
 
   private void printReport(Launcher instance, BenchmarkController controller) {

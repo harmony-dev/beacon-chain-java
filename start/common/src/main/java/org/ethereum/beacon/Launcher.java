@@ -197,28 +197,38 @@ public class Launcher {
     PerSlotTransition perSlotTransition = new PerSlotTransition(slotBench);
     StateCachingTransition stateCachingTransition = new StateCachingTransition(slotBench);
     PerEpochTransition perEpochTransition = new PerEpochTransition(epochBench);
-    ExtendedSlotTransition extendedSlotTransition = new ExtendedSlotTransition(stateCachingTransition,
-        perEpochTransition, perSlotTransition, spec) {
-      @Override
-      public BeaconStateEx apply(BeaconStateEx source) {
-        long s = System.nanoTime();
-        BeaconStateEx result = super.apply(source);
-        long time = System.nanoTime() - s;
-        if (source.getSlot().increment().modulo(spec.getConstants().getSlotsPerEpoch()).equals(
-            SlotNumber.ZERO)) {
-          // always skip first epoch transition as it's not that relevant for benchmarks
-          if (spec.slot_to_epoch(source.getSlot()).greater(spec.getConstants().getGenesisEpoch())) {
-            epochCollector.tick(time);
+    ExtendedSlotTransition extendedSlotTransition =
+        new ExtendedSlotTransition(
+            stateCachingTransition, perEpochTransition, perSlotTransition, spec) {
+          @Override
+          public BeaconStateEx apply(BeaconStateEx source) {
+            long s = System.nanoTime();
+            BeaconStateEx result = super.apply(source);
+            long time = System.nanoTime() - s;
+            if (source
+                .getSlot()
+                .increment()
+                .modulo(spec.getConstants().getSlotsPerEpoch())
+                .equals(SlotNumber.ZERO)) {
+              if (spec.slot_to_epoch(source.getSlot())
+                  .greater(
+                      spec.getConstants()
+                          .getGenesisEpoch()
+                          .plus(BenchmarkController.WARM_UP_EPOCHS))) {
+                epochCollector.tick(time);
+              }
+            } else {
+              if (spec.slot_to_epoch(result.getSlot())
+                  .greater(
+                      spec.getConstants()
+                          .getGenesisEpoch()
+                          .plus(BenchmarkController.WARM_UP_EPOCHS))) {
+                slotCollector.tick(time);
+              }
+            }
+            return result;
           }
-        } else {
-          // count slots starting from the beginning of 2nd epoch
-          if (spec.slot_to_epoch(result.getSlot()).greater(spec.getConstants().getGenesisEpoch())) {
-            slotCollector.tick(time);
-          }
-        }
-        return result;
-      }
-    };
+        };
     return new EmptySlotTransition(extendedSlotTransition);
   }
 
