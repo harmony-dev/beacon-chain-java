@@ -145,6 +145,10 @@ public class BenchmarkRunner implements Runnable {
     Flux.from(instance.getBeaconChain().getBlockStatesStream())
         .subscribe(blockState -> blocks.add(blockState.getBlock()));
 
+    // show benchmark report if process exit requested by user
+    Runtime.getRuntime()
+        .addShutdownHook(new Thread(() -> printReport(instance, benchmarkController)));
+
     logger.info("Time starts running ...");
     controlledSchedulers.setCurrentTime(
         genesisTime.plus(spec.getConstants().getSecondsPerSlot()).getMillis().getValue() - 9);
@@ -173,11 +177,15 @@ public class BenchmarkRunner implements Runnable {
       blocks.clear();
     }
 
+    printReport(instance, benchmarkController);
+  }
+
+  private void printReport(Launcher instance, BenchmarkController controller) {
     System.out.println();
     System.out.println(printOverview(instance));
 
     System.out.println();
-    System.out.println(benchmarkController.createReport().print());
+    System.out.println(controller.createReport().print());
   }
 
   private String printOverview(Launcher instance) {
