@@ -369,6 +369,9 @@ public class BenchmarkReport {
     "signed_root",
     "get_crosslink_committees_at_slot",
     "get_beacon_proposer_index",
-    "get_active_validator_indices"
+    "get_active_validator_indices",
+    "get_total_balance",
+    "get_attestation_participants",
+    "get_validator_index_by_pubkey"
   };
 }

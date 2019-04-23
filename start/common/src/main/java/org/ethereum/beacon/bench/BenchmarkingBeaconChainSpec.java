@@ -1,5 +1,6 @@
 package org.ethereum.beacon.bench;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,12 +14,15 @@ import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
+import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.ShardCommittee;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.Bitfield;
 import org.ethereum.beacon.core.types.EpochNumber;
+import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.crypto.BLS381.PublicKey;
@@ -215,6 +219,25 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
     return callAndTrack(
         "get_active_validator_indices",
         () -> super.get_active_validator_indices(validators, epochNumber));
+  }
+
+  @Override
+  public Gwei get_total_balance(BeaconState state, Collection<ValidatorIndex> validators) {
+    return callAndTrack("get_total_balance", () -> super.get_total_balance(state, validators));
+  }
+
+  @Override
+  public List<ValidatorIndex> get_attestation_participants(
+      BeaconState state, AttestationData attestation_data, Bitfield bitfield) {
+    return callAndTrack(
+        "get_attestation_participants",
+        () -> super.get_attestation_participants(state, attestation_data, bitfield));
+  }
+
+  @Override
+  public ValidatorIndex get_validator_index_by_pubkey(BeaconState state, BLSPubkey pubkey) {
+    return callAndTrack(
+        "get_validator_index_by_pubkey", () -> super.get_validator_index_by_pubkey(state, pubkey));
   }
 
   void startTracking() {
