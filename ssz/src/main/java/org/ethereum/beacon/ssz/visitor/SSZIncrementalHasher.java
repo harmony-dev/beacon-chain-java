@@ -136,6 +136,8 @@ public class SSZIncrementalHasher extends SSZSimpleHasher {
         elementsToRecalc.add(i);
         if (i < newChunksCount) {
           newTrie.nodes[pos + i] = childChunkSupplier.apply(i);
+        } else {
+          newTrie.nodes[pos + i] = getZeroHash(0);
         }
       }
     }
@@ -167,9 +169,9 @@ public class SSZIncrementalHasher extends SSZSimpleHasher {
 
   private MerkleTrie copyWithSize(MerkleTrie trie, int newChunksCount) {
     int newSize = (int) nextPowerOf2(newChunksCount) * 2;
-//    if (newSize == trie.nodes.length) {
-//      return new MerkleTrie(Arrays.copyOf(trie.nodes, newSize));
-//    } else {
+    if (newSize == trie.nodes.length) {
+      return new MerkleTrie(Arrays.copyOf(trie.nodes, newSize));
+    } else {
       BytesValue[] oldNodes = trie.nodes;
       BytesValue[] newNodes = new BytesValue[newSize];
       int oldPos = oldNodes.length / 2;
@@ -186,7 +188,7 @@ public class SSZIncrementalHasher extends SSZSimpleHasher {
       }
 
       return new MerkleTrie(newNodes);
-//    }
+    }
   }
 
   private BytesValue serializePackedChunk(SSZListType basicListType, Object listValue, int chunkIndex) {
