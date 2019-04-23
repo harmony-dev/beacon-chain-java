@@ -197,6 +197,11 @@ public class Launcher {
     PerSlotTransition perSlotTransition = new PerSlotTransition(slotBench);
     StateCachingTransition stateCachingTransition = new StateCachingTransition(slotBench);
     PerEpochTransition perEpochTransition = new PerEpochTransition(epochBench);
+
+    SlotNumber startSlot =
+        spec.getConstants()
+            .getGenesisSlot()
+            .plus(BenchmarkController.WARM_UP_EPOCHS.mul(spec.getConstants().getSlotsPerEpoch()));
     ExtendedSlotTransition extendedSlotTransition =
         new ExtendedSlotTransition(
             stateCachingTransition, perEpochTransition, perSlotTransition, spec) {
@@ -205,24 +210,15 @@ public class Launcher {
             long s = System.nanoTime();
             BeaconStateEx result = super.apply(source);
             long time = System.nanoTime() - s;
-            if (source
+            if (result
                 .getSlot()
-                .increment()
                 .modulo(spec.getConstants().getSlotsPerEpoch())
                 .equals(SlotNumber.ZERO)) {
-              if (spec.slot_to_epoch(source.getSlot())
-                  .greater(
-                      spec.getConstants()
-                          .getGenesisEpoch()
-                          .plus(BenchmarkController.WARM_UP_EPOCHS))) {
+              if (result.getSlot().greater(startSlot)) {
                 epochCollector.tick(time);
               }
             } else {
-              if (spec.slot_to_epoch(result.getSlot())
-                  .greater(
-                      spec.getConstants()
-                          .getGenesisEpoch()
-                          .plus(BenchmarkController.WARM_UP_EPOCHS))) {
+              if (result.getSlot().greaterEqual(startSlot)) {
                 slotCollector.tick(time);
               }
             }
@@ -234,14 +230,18 @@ public class Launcher {
 
   private PerBlockTransition benchmarkingBlockTransition(BeaconChainSpec spec) {
     BeaconChainSpec blockBench = benchmarkController.wrap(BenchmarkRoutine.BLOCK, spec);
+    SlotNumber startSlot =
+        spec.getConstants()
+            .getGenesisSlot()
+            .plus(BenchmarkController.WARM_UP_EPOCHS.mul(spec.getConstants().getSlotsPerEpoch()));
     return new PerBlockTransition(blockBench) {
       @Override
       public BeaconStateEx apply(BeaconStateEx stateEx, BeaconBlock block) {
         long s = System.nanoTime();
         BeaconStateEx result = super.apply(stateEx, block);
-        // count blocks starting from the beginning of 2nd epoch
-        if (spec.slot_to_epoch(result.getSlot()).greater(spec.getConstants().getGenesisEpoch())) {
-          blockCollector.tick(System.nanoTime() - s);
+        long time = System.nanoTime() - s;
+        if (result.getSlot().greaterEqual(startSlot)) {
+          blockCollector.tick(time);
         }
         return result;
       }
