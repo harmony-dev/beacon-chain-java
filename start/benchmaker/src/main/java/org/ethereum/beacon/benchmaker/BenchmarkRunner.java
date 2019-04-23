@@ -105,7 +105,7 @@ public class BenchmarkRunner implements Runnable {
         new DepositContract.ChainStart(genesisTime, eth1Data, deposits);
     DepositContract depositContract = new SimpleDepositContract(chainStart);
 
-    logger.info("Bootstrapping validators...");
+    logger.info("Bootstrapping validators ...");
 
     ControlledSchedulers schedulers = controlledSchedulers.createNew("V0");
     WireApi wireApi = localWireHub.createNewPeer("0");

@@ -8,7 +8,9 @@ import org.ethereum.beacon.consensus.BeaconChainSpecImpl;
 import org.ethereum.beacon.consensus.hasher.ObjectHasher;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.spec.SpecConstants;
+import org.ethereum.beacon.core.state.ShardCommittee;
 import org.ethereum.beacon.core.types.BLSPubkey;
+import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.util.LRUCache;
 import org.javatuples.Pair;
@@ -24,6 +26,8 @@ public class CachingBeaconChainSpec extends BeaconChainSpecImpl {
   private final LRUCache<Object, Hash32> hashTreeRootCache =
       new LRUCache<>(1024);
   private final LRUCache<Object, Hash32> signedRootCache =
+      new LRUCache<>(1024);
+  private final LRUCache<SlotNumber, List<ShardCommittee>> crosslinkCommitteesCache =
       new LRUCache<>(1024);
   private ValidatorIndex maxCachedIndex = ValidatorIndex.ZERO;
   private final Map<BLSPubkey, ValidatorIndex> pubkeyToIndexCache = new ConcurrentHashMap<>();
@@ -93,6 +97,16 @@ public class CachingBeaconChainSpec extends BeaconChainSpecImpl {
       maxCachedIndex = state.getValidatorRegistry().size();
     }
     return pubkeyToIndexCache.getOrDefault(pubkey, ValidatorIndex.MAX);
+  }
+
+  @Override
+  public List<ShardCommittee> get_crosslink_committees_at_slot(BeaconState state, SlotNumber slot) {
+    if (!cacheEnabled) {
+      return super.get_crosslink_committees_at_slot(state, slot);
+    }
+
+    return crosslinkCommitteesCache.get(
+        slot, s -> super.get_crosslink_committees_at_slot(state, slot));
   }
 
   public boolean isCacheEnabled() {
