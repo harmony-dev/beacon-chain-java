@@ -307,13 +307,13 @@ public class BenchmarkReport {
 
     private FunctionStats getFunctionStats(String name, List<MeasurementsCollector> measurements) {
       FunctionStats stats = new FunctionStats(name);
-      stats.counter = measurements.stream().mapToInt(TimeCollector::getCounter).max().orElse(0);
-      stats.minTime = measurements.stream().mapToLong(TimeCollector::getTotal).min().orElse(0);
-      stats.avgTime = measurements.stream().mapToLong(TimeCollector::getTotal).average().orElse(0);
       List<Long> measurementChurn =
           measurements.stream()
               .flatMap(m -> m.getMeasurements().stream())
               .collect(Collectors.toList());
+      stats.counter = measurements.stream().mapToInt(TimeCollector::getCounter).max().orElse(0);
+      stats.minTime = measurementChurn.stream().min(Long::compareTo).orElse(0L);
+      stats.avgTime = measurements.stream().mapToLong(TimeCollector::getTotal).average().orElse(0);
       stats.percentile = BenchmarkUtils.percentile(PERCENTILE_RATIO, measurementChurn);
       return stats;
     }
