@@ -68,7 +68,7 @@ public class SSZIncrementalHasher extends SSZSimpleHasher {
       } else if (!tracker.elementsUpdated.isEmpty()){
         if (type.isList() && ((SSZListType) type).getElementType().isBasicType()) {
           tracker.merkleTree =
-              updatePackedTrie((SSZListType) type, rawValue, childVisitor, tracker.merkleTree, tracker.elementsUpdated);
+              updatePackedTrie((SSZListType) type, rawValue, tracker.merkleTree, tracker.elementsUpdated);
         } else {
           tracker.merkleTree =
               updateNonPackedTrie(type, rawValue, childVisitor, tracker.merkleTree, tracker.elementsUpdated);
@@ -101,7 +101,6 @@ public class SSZIncrementalHasher extends SSZSimpleHasher {
   private MerkleTrie updatePackedTrie(
       SSZListType type,
       Object value,
-      BiFunction<Integer, Object, MerkleTrie> childVisitor,
       MerkleTrie oldTrie,
       SortedSet<Integer> elementsUpdated) {
 
@@ -195,7 +194,8 @@ public class SSZIncrementalHasher extends SSZSimpleHasher {
     int typeSize = basicListType.getElementType().getSize();
     int valsPerChunk = bytesPerChunk / typeSize;
     if (valsPerChunk * typeSize != bytesPerChunk) {
-      throw new UnsupportedOperationException("");
+      throw new UnsupportedOperationException("Type size (" + typeSize
+          + ") which is not a factor of hasher chunk size (" + bytesPerChunk + ") is not yet supported.");
     }
     int idx = chunkIndex * valsPerChunk;
     int len = Math.min(valsPerChunk, basicListType.getChildrenCount(listValue) - idx);
