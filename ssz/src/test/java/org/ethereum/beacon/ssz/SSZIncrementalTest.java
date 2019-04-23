@@ -14,6 +14,7 @@ import org.ethereum.beacon.ssz.incremental.ObservableCompositeHelper;
 import org.ethereum.beacon.ssz.incremental.ObservableCompositeHelper.ObsValue;
 import org.ethereum.beacon.ssz.incremental.ObservableListImpl;
 import org.ethereum.beacon.ssz.incremental.UpdateListener;
+import org.ethereum.beacon.ssz.type.SSZListType;
 import org.ethereum.beacon.ssz.type.SSZType;
 import org.ethereum.beacon.ssz.type.TypeResolver;
 import org.ethereum.beacon.ssz.visitor.MerkleTrie;
@@ -377,8 +378,21 @@ public class SSZIncrementalTest {
   }
 
   @Test
+  public void testNonPackedListRandom() {
+    listRandomTest(
+        new ObservableListImpl<>(WriteList.create(Integer::valueOf)),
+        new Supplier<A1>() {
+          int i = 0x0F000000;
+          @Override
+          public A1 get() {
+            return new A1(i++);
+          }
+        });
+  }
+
+  @Test
   public void testPackedListRandom() {
-    packedRandomTest(
+    listRandomTest(
         new ObservableListImpl<>(WriteList.create(Integer::valueOf)),
         new Supplier<UInt64>() {
           UInt64 val = UInt64.valueOf(0xF00000000L);
@@ -389,7 +403,7 @@ public class SSZIncrementalTest {
           }
         });
 
-    packedRandomTest(
+    listRandomTest(
         new ObservableListImpl<>(WriteList.create(Integer::valueOf)),
         new Supplier<Integer>() {
           int val = 0xF000000;
@@ -400,7 +414,7 @@ public class SSZIncrementalTest {
           }
         });
 
-    packedRandomTest(
+    listRandomTest(
         new ObservableListImpl<>(WriteList.create(Integer::valueOf)),
         new Supplier<Hash32>() {
           Random rnd = new Random();
@@ -410,7 +424,7 @@ public class SSZIncrementalTest {
           }
         });
 
-    packedRandomTest(
+    listRandomTest(
         new ObservableListImpl<>(WriteList.create(Integer::valueOf)),
         new Supplier<Byte>() {
           byte val = 0x00;
@@ -422,7 +436,7 @@ public class SSZIncrementalTest {
         });
   }
 
-  private <C> void packedRandomTest(WriteList<Integer, C> list, Supplier<C> numSupplier) {
+  private <C> void listRandomTest(WriteList<Integer, C> list, Supplier<C> numSupplier) {
     SSZBuilder sszBuilder = new SSZBuilder();
     TypeResolver typeResolver = sszBuilder.getTypeResolver();
 
@@ -436,20 +450,11 @@ public class SSZIncrementalTest {
 
     list.add(numSupplier.get());
 
-    SSZType sszListType = typeResolver.resolveSSZType(SSZField.resolveFromValue(list));
+    SSZListType sszListType = (SSZListType) typeResolver.resolveSSZType(SSZField.resolveFromValue(list));
 
     Random rnd = new Random(0);
 
-    for (int i = 0; i < 1000; i++) {
-      countingHashInc.counter = 0;
-      countingHashSimp.counter = 0;
-
-      if (i == 500) {
-        for (int j = 0; j < 1000; j++) {
-          list.add(numSupplier.get());
-        }
-      }
-
+    for (int i = 0; i < 500; i++) {
       for (int j = 0; j < rnd.nextInt(8); j++) {
         if (list.isEmpty()) break;
         list.remove(rnd.nextInt(list.size()));
@@ -467,10 +472,37 @@ public class SSZIncrementalTest {
       MerkleTrie mt2 = visitorHost.handleAny(sszListType, list, simpleHasher);
       MerkleTrie mt3 = visitorHost.handleAny(sszListType, list, incrementalHasher);
       Assert.assertEquals(mt2.getFinalRoot(), mt3.getFinalRoot());
-      if (i > 500) {
+    }
+
+    // adding more elements
+    int elementsPerChunk = sszListType.getElementType().isBasicType() ?
+        32 / sszListType.getElementType().getSize() : 1;
+    for (int j = 0; j < 500 * elementsPerChunk; j++) {
+      list.add(numSupplier.get());
+    }
+
+    // checking add/set takes significantly less hashing for incremental
+    for (int i = 0; i < 500; i++) {
+      countingHashInc.counter = 0;
+      countingHashSimp.counter = 0;
+
+      for (int j = 0; j < rnd.nextInt(8); j++) {
+        list.add(numSupplier.get());
+      }
+
+      for (int j = 0; j < rnd.nextInt(8); j++) {
+        if (list.isEmpty()) break;
+        list.set(rnd.nextInt(list.size()), numSupplier.get());
+      }
+
+      MerkleTrie mt2 = visitorHost.handleAny(sszListType, list, simpleHasher);
+      MerkleTrie mt3 = visitorHost.handleAny(sszListType, list, incrementalHasher);
+      Assert.assertEquals(mt2.getFinalRoot(), mt3.getFinalRoot());
+      if (i > 0) {
         Assert.assertTrue(countingHashInc.counter * 5 < countingHashSimp.counter);
       }
     }
+
   }
 
 
@@ -516,7 +548,7 @@ public class SSZIncrementalTest {
       MerkleTrie mt2 = visitorHost.handleAny(sszListType, list4, simpleHasher);
       MerkleTrie mt3 = visitorHost.handleAny(sszListType, list4, incrementalHasher);
       Assert.assertEquals(mt2.getFinalRoot(), mt3.getFinalRoot());
-      Assert.assertTrue(countingHashInc.counter < countingHashSimp.counter);
+      Assert.assertTrue(countingHashInc.counter <= countingHashSimp.counter);
     }
 
     WriteList<Integer, UInt64> list5 = list2.createMutableCopy();
@@ -530,7 +562,7 @@ public class SSZIncrementalTest {
       MerkleTrie mt2 = visitorHost.handleAny(sszListType, list6, simpleHasher);
       MerkleTrie mt3 = visitorHost.handleAny(sszListType, list6, incrementalHasher);
       Assert.assertEquals(mt2.getFinalRoot(), mt3.getFinalRoot());
-      Assert.assertTrue(countingHashInc.counter < countingHashSimp.counter);
+      Assert.assertTrue(countingHashInc.counter <= countingHashSimp.counter);
     }
 
     WriteList<Integer, UInt64> list7 = list2.createMutableCopy();
@@ -545,7 +577,7 @@ public class SSZIncrementalTest {
       MerkleTrie mt2 = visitorHost.handleAny(sszListType, list8, simpleHasher);
       MerkleTrie mt3 = visitorHost.handleAny(sszListType, list8, incrementalHasher);
       Assert.assertEquals(mt2.getFinalRoot(), mt3.getFinalRoot());
-      Assert.assertTrue(countingHashInc.counter < countingHashSimp.counter);
+      Assert.assertTrue(countingHashInc.counter <= countingHashSimp.counter);
     }
   }
 
