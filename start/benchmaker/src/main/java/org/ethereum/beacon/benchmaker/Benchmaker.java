@@ -69,6 +69,8 @@ public class Benchmaker implements Runnable {
 
   @Override
   public void run() {
+    Preconditions.checkArgument(registrySize > 0, "Invalid registry size number %s.", registrySize);
+    Preconditions.checkArgument(epochs > 0, "Invalid epochs number %s.", epochs);
     Preconditions.checkArgument(
         registrySize <= 1_000_000,
         "Benchmaker doesn't support registry sizes greater than 1,000,000.");
