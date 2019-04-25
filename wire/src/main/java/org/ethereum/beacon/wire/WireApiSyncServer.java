@@ -92,14 +92,17 @@ public class WireApiSyncServer implements WireApiSync {
     return ret;
   }
 
+
+
   @Override
-  public CompletableFuture<BlockBodiesResponseMessage> requestBlockBodies(
+  public CompletableFuture<Feedback<BlockBodiesResponseMessage>> requestBlockBodies(
       BlockBodiesRequestMessage requestMessage) {
 
     List<BeaconBlockBody> bodyList = requestMessage.getBlockTreeRoots().stream()
         .map(blockRoot -> storage.getBlockStorage().get(blockRoot))
         .map(opt -> opt.map(BeaconBlock::getBody).orElse(BeaconBlockBody.EMPTY))
         .collect(Collectors.toList());
-    return CompletableFuture.completedFuture(new BlockBodiesResponseMessage(requestMessage, bodyList));
+    return CompletableFuture.completedFuture(
+        Feedback.of(new BlockBodiesResponseMessage(requestMessage, bodyList)));
   }
 }
