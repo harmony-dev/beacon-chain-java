@@ -1,7 +1,6 @@
 package org.ethereum.beacon.wire.sync;
 
 import java.util.List;
-import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.chain.MutableBeaconChain;
@@ -11,7 +10,7 @@ import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.wire.Feedback;
 import org.ethereum.beacon.wire.WireApiSync;
 import org.ethereum.beacon.wire.exceptions.WireInvalidConsensusDataException;
-import org.ethereum.beacon.wire.message.BlockHeadersRequestMessage;
+import org.ethereum.beacon.wire.message.payload.BlockHeadersRequestMessage;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import tech.pegasys.artemis.ethereum.core.Hash32;

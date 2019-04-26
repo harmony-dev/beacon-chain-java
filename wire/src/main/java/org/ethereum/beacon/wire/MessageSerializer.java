@@ -5,7 +5,7 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
 
 public interface MessageSerializer {
 
-  <C extends Message> BytesValue serialize(C message);
+  BytesValue serialize(Message message);
 
-  <C extends Message> C deserialize(Class<? extends C> messageClass, BytesValue messageBytes);
+  Message deserialize(BytesValue messageBytes);
 }

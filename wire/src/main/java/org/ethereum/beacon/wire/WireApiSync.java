@@ -8,12 +8,12 @@ import org.ethereum.beacon.consensus.hasher.ObjectHasher;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.BeaconBlockHeader;
-import org.ethereum.beacon.wire.message.BlockBodiesRequestMessage;
-import org.ethereum.beacon.wire.message.BlockBodiesResponseMessage;
-import org.ethereum.beacon.wire.message.BlockRootsRequestMessage;
-import org.ethereum.beacon.wire.message.BlockHeadersResponseMessage;
-import org.ethereum.beacon.wire.message.BlockHeadersRequestMessage;
-import org.ethereum.beacon.wire.message.BlockRootsResponseMessage;
+import org.ethereum.beacon.wire.message.payload.BlockBodiesRequestMessage;
+import org.ethereum.beacon.wire.message.payload.BlockBodiesResponseMessage;
+import org.ethereum.beacon.wire.message.payload.BlockRootsRequestMessage;
+import org.ethereum.beacon.wire.message.payload.BlockHeadersResponseMessage;
+import org.ethereum.beacon.wire.message.payload.BlockHeadersRequestMessage;
+import org.ethereum.beacon.wire.message.payload.BlockRootsResponseMessage;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
 public interface WireApiSync {

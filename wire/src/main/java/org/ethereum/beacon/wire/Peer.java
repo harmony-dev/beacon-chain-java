@@ -1,7 +1,7 @@
 package org.ethereum.beacon.wire;
 
 import java.util.concurrent.CompletableFuture;
-import org.ethereum.beacon.wire.message.GoodbyeMessage;
+import org.ethereum.beacon.wire.message.payload.GoodbyeMessage;
 import org.ethereum.beacon.wire.message.Message;
 import org.reactivestreams.Publisher;
 

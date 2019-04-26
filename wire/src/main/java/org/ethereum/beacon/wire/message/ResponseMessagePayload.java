@@ -1,15 +1,15 @@
 package org.ethereum.beacon.wire.message;
 
-public abstract class ResponseMessagePayload<RequestType extends RequestMessagePayload>
+public abstract class ResponseMessagePayload
     extends MessagePayload {
 
-  private final RequestType request;
+  private final Object request;
 
-  public ResponseMessagePayload(RequestType request) {
+  public ResponseMessagePayload(Object request) {
     this.request = request;
   }
 
-  public RequestType getRequest() {
+  public Object getRequest() {
     return request;
   }
 }
