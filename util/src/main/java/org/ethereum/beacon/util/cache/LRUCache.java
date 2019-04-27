@@ -1,10 +1,11 @@
-package org.ethereum.beacon.util;
+package org.ethereum.beacon.util.cache;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
+import org.ethereum.beacon.util.cache.Cache;
 
 /**
  * Cache made around LRU-map with fixed size, removing eldest entries (by added) when the space is
