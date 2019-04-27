@@ -43,7 +43,7 @@ public class SlotTickerTests {
             return Time.of(1);
           }
         };
-    BeaconChainSpec spec = BeaconChainSpec.createWithSSZHasher(specConstants);
+    BeaconChainSpec spec = BeaconChainSpec.createWithDefaultHasher(specConstants);
     genesisSlot = spec.getConstants().getGenesisSlot();
     slotTicker = new SlotTicker(spec, beaconState, Schedulers.createDefault());
   }

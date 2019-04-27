@@ -5,7 +5,7 @@ dependencies {
   implementation project(':consensus')
   implementation project(':db:core')
   implementation project(':pow:core')
-  implementation project(':ssz')
+  api project(':ssz')
   implementation project(':util')
 
   implementation 'com.google.guava:guava'

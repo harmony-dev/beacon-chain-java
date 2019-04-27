@@ -20,7 +20,6 @@ import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.stream.SimpleProcessor;
-import org.ethereum.beacon.util.stats.TimeCollector;
 import org.reactivestreams.Publisher;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
@@ -41,8 +40,6 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   private final Schedulers schedulers;
 
   private BeaconTuple recentlyProcessed;
-
-  private TimeCollector insertTimeCollector = new TimeCollector();
 
   public DefaultBeaconChain(
       BeaconChainSpec spec,
@@ -156,12 +153,6 @@ public class DefaultBeaconChain implements MutableBeaconChain {
                 newTuple.getState().getGenesisTime(),
                 spec::signed_root),
         String.format("%.3f", ((double) total) / 1_000_000_000d));
-
-    if (spec.is_epoch_end(block.getSlot())) {
-      insertTimeCollector.reset();
-    } else {
-      insertTimeCollector.tick(total);
-    }
 
     return true;
   }

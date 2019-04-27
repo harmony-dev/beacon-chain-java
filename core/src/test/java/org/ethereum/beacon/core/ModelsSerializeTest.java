@@ -309,7 +309,7 @@ public class ModelsSerializeTest {
   @Test
   public void beaconStateExTest() {
     BeaconState expected = createBeaconState();
-    BeaconStateEx stateEx = new BeaconStateExImpl(expected, Hash32.ZERO);
+    BeaconStateEx stateEx = new BeaconStateExImpl(expected);
     BytesValue encoded = sszSerializer.encode2(stateEx);
     BeaconState reconstructed = sszSerializer.decode(encoded, BeaconStateImpl.class);
     assertEquals(expected, reconstructed);

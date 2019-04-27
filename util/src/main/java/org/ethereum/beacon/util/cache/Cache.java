@@ -1,4 +1,4 @@
-package org.ethereum.beacon.util;
+package org.ethereum.beacon.util.cache;
 
 import java.util.function.Function;
 

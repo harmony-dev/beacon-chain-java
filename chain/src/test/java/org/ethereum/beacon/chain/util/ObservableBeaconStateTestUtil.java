@@ -38,7 +38,7 @@ public class ObservableBeaconStateTestUtil {
     BeaconBlock modifiedHead =
         BeaconBlock.Builder.fromBlock(originalState.getHead()).withSlot(slotNumber).build();
     return new ObservableBeaconState(
-        modifiedHead, Mockito.spy(new BeaconStateExImpl(modifiedState, Hash32.ZERO)), originalState.getPendingOperations());
+        modifiedHead, Mockito.spy(new BeaconStateExImpl(modifiedState)), originalState.getPendingOperations());
   }
 
   public static ObservableBeaconState createInitialState(

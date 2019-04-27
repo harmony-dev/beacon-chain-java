@@ -33,7 +33,7 @@ public class BeaconTupleStorageImpl implements BeaconTupleStorage {
                     .map(
                         state ->
                             BeaconTuple.of(
-                                block, new BeaconStateExImpl(state, hash, TransitionType.UNKNOWN)))
+                                block, new BeaconStateExImpl(state, TransitionType.UNKNOWN)))
                     .orElseThrow(
                         () -> new IllegalStateException("State inconsistency for block " + block)));
   }

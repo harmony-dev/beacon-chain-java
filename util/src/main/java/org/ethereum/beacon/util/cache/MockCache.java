@@ -1,6 +1,7 @@
-package org.ethereum.beacon.util;
+package org.ethereum.beacon.util.cache;
 
 import java.util.function.Function;
+import org.ethereum.beacon.util.cache.Cache;
 
 /**
  * Cache without cache proxying all requests to fallback function

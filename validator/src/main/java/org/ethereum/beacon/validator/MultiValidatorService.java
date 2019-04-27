@@ -32,7 +32,6 @@ import org.ethereum.beacon.schedulers.RunnableEx;
 import org.ethereum.beacon.schedulers.Scheduler;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.stream.SimpleProcessor;
-import org.ethereum.beacon.util.stats.TimeCollector;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import org.javatuples.Pair;
 import org.reactivestreams.Publisher;
@@ -72,8 +71,6 @@ public class MultiValidatorService implements ValidatorService {
 
   private final LatestExecutor<BeaconState> initExecutor;
 
-  private final TimeCollector proposeTimeCollector;
-
   public MultiValidatorService(
       List<BLS381Credentials> blsCredentials,
       BeaconChainProposer proposer,
@@ -81,17 +78,6 @@ public class MultiValidatorService implements ValidatorService {
       BeaconChainSpec spec,
       Publisher<ObservableBeaconState> stateStream,
       Schedulers schedulers) {
-    this(blsCredentials, proposer, attester, spec, stateStream, schedulers, new TimeCollector());
-  }
-
-  public MultiValidatorService(
-      List<BLS381Credentials> blsCredentials,
-      BeaconChainProposer proposer,
-      BeaconChainAttester attester,
-      BeaconChainSpec spec,
-      Publisher<ObservableBeaconState> stateStream,
-      Schedulers schedulers,
-      TimeCollector proposeTimeCollector) {
     this.uninitialized =
         blsCredentials.stream()
             .collect(Collectors.toMap(BLS381Credentials::getPubkey, Function.identity()));
@@ -107,8 +93,6 @@ public class MultiValidatorService implements ValidatorService {
 
     executor = this.schedulers.newSingleThreadDaemon("validator-service");
     initExecutor = new LatestExecutor<>(schedulers.blocking(), this::initFromLatestBeaconState);
-
-    this.proposeTimeCollector = proposeTimeCollector;
   }
 
   @Override
@@ -277,12 +261,6 @@ public class MultiValidatorService implements ValidatorService {
               observableState.getLatestSlotState().getGenesisTime(),
               spec::signed_root),
           String.format("%.3f", (double) total / 1_000_000_000d));
-
-      if (spec.is_epoch_end(newBlock.getSlot())) {
-        proposeTimeCollector.reset();
-      } else {
-        proposeTimeCollector.tick(total);
-      }
     }
   }
 

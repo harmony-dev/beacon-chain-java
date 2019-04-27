@@ -53,7 +53,7 @@ public class ShuffleTests extends TestUtils {
             return EpochNumber.of(4);
           }
         };
-    this.spec = BeaconChainSpec.createWithSSZHasher(specConstants);
+    this.spec = BeaconChainSpec.createWithDefaultHasher(specConstants);
   }
 
   @Test

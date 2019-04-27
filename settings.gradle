@@ -21,8 +21,10 @@ include 'pow:validator'
 include 'pow:web3j'
 // SSZ (Simple serialization)
 include 'ssz'
-// Command line executable clients
+// Simulator CLI
 include 'start:simulator'
+// Benchmarks CLI
+include 'start:benchmaker'
 // Clients helpers
 include 'start:common'
 // Configuration parser
