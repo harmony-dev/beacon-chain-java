@@ -53,7 +53,10 @@ public abstract class SpecDataUtils {
           {
             setBEACON_CHAIN_SHARD_NUMBER(constants.getBeaconChainShardNumber().toString());
             setMAX_BALANCE_CHURN_QUOTIENT(constants.getMaxBalanceChurnQuotient().toString());
-            setMAX_INDICES_PER_SLASHABLE_VOTE(constants.getMaxIndicesPerSlashableVote().toString());
+            setMAX_INDICES_PER_ATTESTATION(constants.getMaxIndicesPerAttestation().toString());
+            setMIN_PER_EPOCH_CHURN_LIMIT(constants.getMinPerEpochChurnLimit().toString());
+            setCHURN_LIMIT_QUOTIENT(constants.getChurnLimitQuotient().toString());
+            setBASE_REWARDS_PER_EPOCH(constants.getBaseRewardsPerEpoch().toString());
             setSHARD_COUNT(constants.getShardCount().toString());
             setTARGET_COMMITTEE_SIZE(constants.getTargetCommitteeSize().toString());
             setMAX_EXIT_DEQUEUES_PER_EPOCH(constants.getMaxExitDequesPerEpoch().toString());
@@ -64,12 +67,12 @@ public abstract class SpecDataUtils {
         new GweiValuesData() {
           {
             setEJECTION_BALANCE(Long.toUnsignedString(constants.getEjectionBalance().getValue()));
-            setFORK_CHOICE_BALANCE_INCREMENT(
-                Long.toUnsignedString(constants.getForkChoiceBalanceIncrement().getValue()));
+            setEFFECTIVE_BALANCE_INCREMENT(
+                Long.toUnsignedString(constants.getEffectiveBalanceIncrement().getValue()));
             setMIN_DEPOSIT_AMOUNT(
                 Long.toUnsignedString(constants.getMinDepositAmount().getValue()));
-            setMAX_DEPOSIT_AMOUNT(
-                Long.toUnsignedString(constants.getMaxDepositAmount().getValue()));
+            setMAX_EFFECTIVE_BALANCE(
+                Long.toUnsignedString(constants.getMaxEffectiveBalance().getValue()));
           }
         };
 
@@ -78,10 +81,10 @@ public abstract class SpecDataUtils {
           {
             setBASE_REWARD_QUOTIENT(constants.getBaseRewardQuotient().toString());
             setINACTIVITY_PENALTY_QUOTIENT(constants.getInactivityPenaltyQuotient().toString());
-            setWHISTLEBLOWER_REWARD_QUOTIENT(constants.getWhistleblowerRewardQuotient().toString());
-            setATTESTATION_INCLUSION_REWARD_QUOTIENT(
-                constants.getAttestationInclusionRewardQuotient().toString());
-            setMIN_PENALTY_QUOTIENT(constants.getMinPenaltyQuotient().toString());
+            setWHISTLEBLOWING_REWARD_QUOTIENT(constants.getWhistleblowingRewardQuotient().toString());
+            setPROPOSER_REWARD_QUOTIENT(
+                constants.getProposerRewardQuotient().toString());
+            setMIN_SLASHING_PENALTY_QUOTIENT(constants.getMinSlashingPenaltyQuotient().toString());
           }
         };
 
@@ -101,13 +104,14 @@ public abstract class SpecDataUtils {
             setMIN_ATTESTATION_INCLUSION_DELAY(
                 Long.toUnsignedString(constants.getMinAttestationInclusionDelay().getValue()));
             setACTIVATION_EXIT_DELAY(constants.getActivationExitDelay().toString());
-            setEPOCHS_PER_ETH1_VOTING_PERIOD(constants.getEpochsPerEth1VotingPeriod().toString());
+            setSLOTS_PER_ETH1_VOTING_PERIOD(constants.getSlotsPerEth1VotingPeriod().toString());
             setMIN_SEED_LOOKAHEAD(constants.getMinSeedLookahead().toString());
             setMIN_VALIDATOR_WITHDRAWABILITY_DELAY(
                 constants.getMinValidatorWithdrawabilityDelay().toString());
             setSECONDS_PER_SLOT(Long.toString(constants.getSecondsPerSlot().getValue()));
             setSLOTS_PER_EPOCH(Long.toUnsignedString(constants.getSlotsPerEpoch().getValue()));
             setPERSISTENT_COMMITTEE_PERIOD(constants.getPersistentCommitteePeriod().toString());
+            setMAX_CROSSLINK_EPOCHS(constants.getMaxCrosslinkEpochs().toString());
             setSLOTS_PER_HISTORICAL_ROOT(
                 Long.toUnsignedString(constants.getSlotsPerHistoricalRoot().getValue()));
           }

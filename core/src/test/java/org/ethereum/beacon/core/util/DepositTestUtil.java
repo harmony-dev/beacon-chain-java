@@ -38,7 +38,7 @@ public abstract class DepositTestUtil {
 
     DepositData depositData =
         new DepositData(
-            spec.getMaxDepositAmount(), Time.of(System.currentTimeMillis() / 1000), depositInput);
+            spec.getMaxEffectiveBalance(), Time.of(System.currentTimeMillis() / 1000), depositInput);
 
     List<Hash32> merkleBranch =
         Collections.nCopies(spec.getDepositContractTreeDepth().getIntValue(), Hash32.ZERO);

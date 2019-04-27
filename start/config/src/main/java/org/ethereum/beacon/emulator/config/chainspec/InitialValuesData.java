@@ -18,6 +18,8 @@ public class InitialValuesData implements InitialValues {
   private String GENESIS_FORK_VERSION;
   @JsonProperty("GENESIS_SLOT")
   private String GENESIS_SLOT;
+  @JsonProperty("GENESIS_EPOCH")
+  private String GENESIS_EPOCH;
   @JsonProperty("GENESIS_START_SHARD")
   private Integer GENESIS_START_SHARD;
   @JsonProperty("FAR_FUTURE_EPOCH")
@@ -44,7 +46,7 @@ public class InitialValuesData implements InitialValues {
   @Override
   @JsonIgnore
   public EpochNumber getGenesisEpoch() {
-    return null;// XXX: is set in final SpecConstants construction
+    return EpochNumber.castFrom(UInt64.valueOf(getGENESIS_EPOCH()));
   }
 
   @Override
@@ -93,6 +95,15 @@ public class InitialValuesData implements InitialValues {
 
   public void setGENESIS_SLOT(String GENESIS_SLOT) {
     this.GENESIS_SLOT = GENESIS_SLOT;
+  }
+
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+  public String getGENESIS_EPOCH() {
+    return GENESIS_EPOCH;
+  }
+
+  public void setGENESIS_EPOCH(String GENESIS_EPOCH) {
+    this.GENESIS_EPOCH = GENESIS_EPOCH;
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)

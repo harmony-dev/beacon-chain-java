@@ -365,22 +365,22 @@ public interface EpochProcessing extends HelperFunction {
     Note: this function mutates beacon state
 
     def maybe_reset_eth1_period(state: BeaconState) -> None:
-      if (get_current_epoch(state) + 1) % EPOCHS_PER_ETH1_VOTING_PERIOD == 0:
+      if (get_current_epoch(state) + 1) % SLOTS_PER_ETH1_VOTING_PERIOD == 0:
           for eth1_data_vote in state.eth1_data_votes:
               # If a majority of all votes were for a particular eth1_data value,
               # then set that as the new canonical value
-              if eth1_data_vote.vote_count * 2 > EPOCHS_PER_ETH1_VOTING_PERIOD * SLOTS_PER_EPOCH:
+              if eth1_data_vote.vote_count * 2 > SLOTS_PER_ETH1_VOTING_PERIOD * SLOTS_PER_EPOCH:
                   state.latest_eth1_data = eth1_data_vote.eth1_data
           state.eth1_data_votes = []
   */
   default void maybe_reset_eth1_period(MutableBeaconState state) {
-    if (get_current_epoch(state).increment().modulo(getConstants().getEpochsPerEth1VotingPeriod())
+    if (get_current_epoch(state).increment().modulo(getConstants().getSlotsPerEth1VotingPeriod())
         .equals(EpochNumber.ZERO)) {
       for (Eth1DataVote eth1_data_vote : state.getEth1DataVotes()) {
         // If a majority of all votes were for a particular eth1_data value,
         // then set that as the new canonical value
         if (eth1_data_vote.getVoteCount().times(2)
-            .compareTo(getConstants().getEpochsPerEth1VotingPeriod().times(getConstants().getSlotsPerEpoch())) > 0) {
+            .compareTo(getConstants().getSlotsPerEth1VotingPeriod().times(getConstants().getSlotsPerEpoch())) > 0) {
           state.setLatestEth1Data(eth1_data_vote.getEth1Data());
         }
       }
@@ -508,11 +508,11 @@ public interface EpochProcessing extends HelperFunction {
       // Proposer bonus
       /* if index in get_attesting_indices(state, state.previous_epoch_attestations):
             proposer_index = get_beacon_proposer_index(state, inclusion_slot(state, index))
-            deltas[0][proposer_index] += get_base_reward(state, index) // ATTESTATION_INCLUSION_REWARD_QUOTIENT */
+            deltas[0][proposer_index] += get_base_reward(state, index) // PROPOSER_REWARD_QUOTIENT */
       if (get_attesting_indices(state, previous_epoch_attestations).contains(index)) {
         ValidatorIndex proposer_index = get_beacon_proposer_index(state, inclusion_slot(state, index));
         deltas[0][proposer_index.getIntValue()] = deltas[0][proposer_index.getIntValue()].plus(
-            get_base_reward(state, index).dividedBy(getConstants().getAttestationInclusionRewardQuotient()));
+            get_base_reward(state, index).dividedBy(getConstants().getProposerRewardQuotient()));
       }
     }
 
@@ -783,7 +783,7 @@ public interface EpochProcessing extends HelperFunction {
 
     // The maximum balance churn in Gwei (for deposits and exits separately)
     Gwei max_balance_churn = UInt64s.max(
-        getConstants().getMaxDepositAmount(),
+        getConstants().getMaxEffectiveBalance(),
         total_balance.dividedBy(getConstants().getMaxBalanceChurnQuotient().times(2))
     );
 
@@ -791,7 +791,7 @@ public interface EpochProcessing extends HelperFunction {
 
     /*  balance_churn = 0
         for index, validator in enumerate(state.validator_registry):
-            if validator.activation_epoch == FAR_FUTURE_EPOCH and state.validator_balances[index] >= MAX_DEPOSIT_AMOUNT:
+            if validator.activation_epoch == FAR_FUTURE_EPOCH and state.validator_balances[index] >= MAX_EFFECTIVE_BALANCE:
                 # Check the balance churn would be within the allowance
                 balance_churn += get_effective_balance(state, index)
                 if balance_churn > max_balance_churn:
@@ -803,7 +803,7 @@ public interface EpochProcessing extends HelperFunction {
     for (ValidatorIndex index : state.getValidatorRegistry().size()) {
       ValidatorRecord validator = state.getValidatorRegistry().get(index);
       if (validator.getActivationEpoch().equals(getConstants().getFarFutureEpoch()) &&
-          state.getValidatorBalances().get(index).greaterEqual(getConstants().getMaxDepositAmount())) {
+          state.getValidatorBalances().get(index).greaterEqual(getConstants().getMaxEffectiveBalance())) {
 
         // Check the balance churn would be within the allowance
         balance_churn = balance_churn.plus(get_effective_balance(state, index));
@@ -912,7 +912,7 @@ public interface EpochProcessing extends HelperFunction {
         if validator.slashed and current_epoch == validator.withdrawable_epoch - LATEST_SLASHED_EXIT_LENGTH // 2:
             penalty = max(
                 get_effective_balance(state, index) * min(total_penalties * 3, total_balance) // total_balance,
-                get_effective_balance(state, index) // MIN_PENALTY_QUOTIENT
+                get_effective_balance(state, index) // MIN_SLASHING_PENALTY_QUOTIENT
             )
             state.validator_balances[index] -= penalty */
 
@@ -924,7 +924,7 @@ public interface EpochProcessing extends HelperFunction {
         Gwei effective_balance = get_effective_balance(state, index);
         Gwei penalty = UInt64s.max(
             effective_balance.times(UInt64s.min(total_penalties.times(3), total_balance).dividedBy(total_balance)),
-            effective_balance.dividedBy(getConstants().getMinPenaltyQuotient())
+            effective_balance.dividedBy(getConstants().getMinSlashingPenaltyQuotient())
         );
         state.getValidatorBalances().update(index, balance -> balance.minusSat(penalty));
       }

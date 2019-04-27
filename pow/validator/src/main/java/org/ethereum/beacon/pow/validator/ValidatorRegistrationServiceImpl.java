@@ -294,18 +294,18 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
   private CompletableFuture<BytesValue> createTransaction(
       Address eth1From, BytesValue eth1PrivKey, DepositInput depositInput, Gwei amount) {
     // Let amount be the amount in Gwei to be deposited by the validator where MIN_DEPOSIT_AMOUNT <=
-    // amount <= MAX_DEPOSIT_AMOUNT.
+    // amount <= MAX_EFFECTIVE_BALANCE.
     if (amount.compareTo(spec.getConstants().getMinDepositAmount()) < 0) {
       throw new RuntimeException(
           String.format(
               "Deposit amount should be equal or greater than %s (defined by spec)",
               spec.getConstants().getMinDepositAmount()));
     }
-    if (amount.compareTo(spec.getConstants().getMaxDepositAmount()) > 0) {
+    if (amount.compareTo(spec.getConstants().getMaxEffectiveBalance()) > 0) {
       throw new RuntimeException(
           String.format(
               "Deposit amount should be equal or less than %s (defined by spec)",
-              spec.getConstants().getMaxDepositAmount()));
+              spec.getConstants().getMaxEffectiveBalance()));
     }
     // Send a transaction on the Ethereum 1.0 chain to DEPOSIT_CONTRACT_ADDRESS executing deposit
     // along with serialize(deposit_input) as the singular bytes input along with a deposit amount

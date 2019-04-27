@@ -112,7 +112,7 @@ public interface ForkChoice extends HelperFunction {
   /*
     def get_vote_count(block: BeaconBlock) -> int:
       return sum(
-          get_effective_balance(start_state.validator_balances[validator_index]) // FORK_CHOICE_BALANCE_INCREMENT
+          get_effective_balance(start_state.validator_balances[validator_index]) // EFFECTIVE_BALANCE_INCREMENT
           for validator_index, target in attestation_targets
           if get_ancestor(store, target, block.slot) == block
       )
@@ -126,7 +126,7 @@ public interface ForkChoice extends HelperFunction {
     return attestation_targets.stream().filter(
         target -> get_ancestor(target.getValue1(), block.getSlot(), getBlock)
             .filter(ancestor -> ancestor.equals(block)).isPresent())
-        .map(target -> get_effective_balance(startState, target.getValue0()).dividedBy(getConstants().getForkChoiceBalanceIncrement()))
+        .map(target -> get_effective_balance(startState, target.getValue0()).dividedBy(getConstants().getEffectiveBalanceIncrement()))
         .reduce(Gwei.ZERO, Gwei::plus);
   }
 

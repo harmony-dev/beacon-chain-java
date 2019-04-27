@@ -628,7 +628,7 @@ public interface HelperFunction extends SpecCommons {
   default Gwei get_effective_balance(BeaconState state, ValidatorIndex validatorIdx) {
     return UInt64s.min(
         state.getValidatorBalances().get(validatorIdx),
-        getConstants().getMaxDepositAmount());
+        getConstants().getMaxEffectiveBalance());
   }
 
   /*
@@ -825,7 +825,7 @@ public interface HelperFunction extends SpecCommons {
     state.latest_slashed_balances[get_current_epoch(state) % LATEST_SLASHED_EXIT_LENGTH] += get_effective_balance(state, index)
 
     whistleblower_index = get_beacon_proposer_index(state, state.slot)
-    whistleblower_reward = get_effective_balance(state, index) // WHISTLEBLOWER_REWARD_QUOTIENT
+    whistleblower_reward = get_effective_balance(state, index) // WHISTLEBLOWING_REWARD_QUOTIENT
     state.validator_balances[whistleblower_index] += whistleblower_reward
     state.validator_balances[index] -= whistleblower_reward
     validator.slashed = True
@@ -841,7 +841,7 @@ public interface HelperFunction extends SpecCommons {
 
     ValidatorIndex whistleblower_index = get_beacon_proposer_index(state, state.getSlot());
     Gwei whistleblower_reward = get_effective_balance(state, index)
-        .dividedBy(getConstants().getWhistleblowerRewardQuotient());
+        .dividedBy(getConstants().getWhistleblowingRewardQuotient());
     state.getValidatorBalances().update(whistleblower_index,
         oldVal -> oldVal.plus(whistleblower_reward));
     state.getValidatorBalances().update(index,
@@ -1116,10 +1116,10 @@ public interface HelperFunction extends SpecCommons {
       return false;
     }
 
-    //  if len(slashable_attestation.validator_indices) > MAX_INDICES_PER_SLASHABLE_VOTE:
+    //  if len(slashable_attestation.validator_indices) > MAX_INDICES_PER_ATTESTATION:
     //  return False
     if (UInt64.valueOf(slashable_attestation.getValidatorIndices().size()).
-        compareTo(getConstants().getMaxIndicesPerSlashableVote()) > 0) {
+        compareTo(getConstants().getMaxIndicesPerAttestation()) > 0) {
       return false;
     }
 

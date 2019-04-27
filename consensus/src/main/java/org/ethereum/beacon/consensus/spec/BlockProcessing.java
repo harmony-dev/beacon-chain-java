@@ -2,7 +2,7 @@ package org.ethereum.beacon.consensus.spec;
 
 import static java.util.stream.Collectors.toList;
 import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
-import static org.ethereum.beacon.core.spec.SignatureDomains.BEACON_BLOCK;
+import static org.ethereum.beacon.core.spec.SignatureDomains.BEACON_PROPOSER;
 import static org.ethereum.beacon.core.spec.SignatureDomains.RANDAO;
 
 import java.util.Arrays;
@@ -52,7 +52,7 @@ public interface BlockProcessing extends HelperFunction {
     //  domain=get_domain(state.fork, get_current_epoch(state), DOMAIN_PROPOSAL)).
     ValidatorIndex proposerIndex = get_beacon_proposer_index(state, state.getSlot());
     BLSPubkey publicKey = state.getValidatorRegistry().get(proposerIndex).getPubKey();
-    UInt64 domain = get_domain(state.getFork(), get_current_epoch(state), BEACON_BLOCK);
+    UInt64 domain = get_domain(state.getFork(), get_current_epoch(state), BEACON_PROPOSER);
 
     assertTrue(bls_verify(publicKey, headerRoot, block.getSignature(), domain));
   }

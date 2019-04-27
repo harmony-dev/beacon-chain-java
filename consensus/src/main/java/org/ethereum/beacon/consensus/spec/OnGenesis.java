@@ -117,7 +117,7 @@ public interface OnGenesis extends HelperFunction {
 
     // Process genesis activations
     for (ValidatorIndex validatorIndex : state.getValidatorRegistry().size().iterateFromZero()) {
-      if (get_effective_balance(state, validatorIndex).greaterEqual(getConstants().getMaxDepositAmount())) {
+      if (get_effective_balance(state, validatorIndex).greaterEqual(getConstants().getMaxEffectiveBalance())) {
         activate_validator(state, validatorIndex, true);
       }
     }

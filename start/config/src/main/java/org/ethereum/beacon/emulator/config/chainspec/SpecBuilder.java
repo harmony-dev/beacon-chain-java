@@ -82,18 +82,18 @@ public class SpecBuilder {
       }
 
       @Override
-      public Gwei getMaxDepositAmount() {
-        return gweiValues.getMaxDepositAmount();
+      public Gwei getMaxEffectiveBalance() {
+        return gweiValues.getMaxEffectiveBalance();
       }
 
       @Override
-      public Gwei getForkChoiceBalanceIncrement() {
-        return gweiValues.getForkChoiceBalanceIncrement();
+      public Gwei getEffectiveBalanceIncrement() {
+        return gweiValues.getEffectiveBalanceIncrement();
       }
 
       @Override
-      public UInt64 getMinPenaltyQuotient() {
-        return rewardAndPenaltyQuotients.getMinPenaltyQuotient();
+      public UInt64 getMinSlashingPenaltyQuotient() {
+        return rewardAndPenaltyQuotients.getMinSlashingPenaltyQuotient();
       }
 
       @Override
@@ -187,8 +187,23 @@ public class SpecBuilder {
       }
 
       @Override
-      public UInt64 getMaxIndicesPerSlashableVote() {
-        return miscParameters.getMaxIndicesPerSlashableVote();
+      public UInt64 getMaxIndicesPerAttestation() {
+        return miscParameters.getMaxIndicesPerAttestation();
+      }
+
+      @Override
+      public UInt64 getMinPerEpochChurnLimit() {
+        return miscParameters.getMinPerEpochChurnLimit();
+      }
+
+      @Override
+      public UInt64 getChurnLimitQuotient() {
+        return miscParameters.getChurnLimitQuotient();
+      }
+
+      @Override
+      public UInt64 getBaseRewardsPerEpoch() {
+        return miscParameters.getBaseRewardsPerEpoch();
       }
 
       @Override
@@ -202,13 +217,13 @@ public class SpecBuilder {
       }
 
       @Override
-      public UInt64 getWhistleblowerRewardQuotient() {
-        return rewardAndPenaltyQuotients.getWhistleblowerRewardQuotient();
+      public UInt64 getWhistleblowingRewardQuotient() {
+        return rewardAndPenaltyQuotients.getWhistleblowingRewardQuotient();
       }
 
       @Override
-      public UInt64 getAttestationInclusionRewardQuotient() {
-        return rewardAndPenaltyQuotients.getAttestationInclusionRewardQuotient();
+      public UInt64 getProposerRewardQuotient() {
+        return rewardAndPenaltyQuotients.getProposerRewardQuotient();
       }
 
       @Override
@@ -257,8 +272,8 @@ public class SpecBuilder {
       }
 
       @Override
-      public EpochNumber getEpochsPerEth1VotingPeriod() {
-        return timeParameters.getEpochsPerEth1VotingPeriod();
+      public EpochNumber getSlotsPerEth1VotingPeriod() {
+        return timeParameters.getSlotsPerEth1VotingPeriod();
       }
 
       @Override
@@ -267,11 +282,39 @@ public class SpecBuilder {
       }
 
       @Override
+      public EpochNumber getGenesisEpoch() {
+        return initialValues.getGenesisEpoch();
+      }
+
+      @Override
+      public int getMaxTransfers() {
+        return maxOperationsPerBlock.getMaxTransfers();
+      }
+
+      @Override
+      public int getShuffleRoundCount() {
+        return miscParameters.getShuffleRoundCount();
+      }
+
+      @Override
+      public EpochNumber getPersistentCommitteePeriod() {
+        return timeParameters.getPersistentCommitteePeriod();
+      }
+
+      @Override
+      public EpochNumber getMaxCrosslinkEpochs() {
+        return timeParameters.getMaxCrosslinkEpochs();
+      }
+
+      @Override
+      public EpochNumber getMinEpochsToInactivityPenalty() {
+        return timeParameters.getMinEpochsToInactivityPenalty();
+      }
+
+      @Override
       public SlotNumber getSlotsPerHistoricalRoot() {
         return timeParameters.getSlotsPerHistoricalRoot();
       }
-
-
     };
   }
 
