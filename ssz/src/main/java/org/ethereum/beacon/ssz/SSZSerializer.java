@@ -4,6 +4,7 @@ import javax.annotation.Nullable;
 import net.consensys.cava.bytes.Bytes;
 import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.creator.CompositeObjCreator;
+import org.ethereum.beacon.ssz.type.SSZListType;
 import org.ethereum.beacon.ssz.type.SSZType;
 import org.ethereum.beacon.ssz.type.TypeResolver;
 import org.ethereum.beacon.ssz.visitor.SSZSimpleDeserializer;
@@ -44,6 +45,11 @@ public class SSZSerializer implements BytesSerializer, SSZVisitorHandler<SSZSimp
   @Override
   public SSZSerializerResult visitAny(SSZType sszType, Object value) {
     return sszVisitorHost.handleAny(sszType, value, new SSZSimpleSerializer());
+  }
+
+  @Override
+  public SSZSerializerResult visitList(SSZListType descriptor, Object listValue, int startIdx, int len) {
+    return sszVisitorHost.handleSubList(descriptor, listValue, startIdx, len, new SSZSimpleSerializer());
   }
 
   /**
