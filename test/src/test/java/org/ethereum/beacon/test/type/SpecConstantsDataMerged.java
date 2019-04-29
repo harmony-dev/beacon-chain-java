@@ -13,6 +13,7 @@ import org.ethereum.beacon.emulator.config.chainspec.SpecConstantsData;
 import org.ethereum.beacon.emulator.config.chainspec.StateListLengthsData;
 import org.ethereum.beacon.emulator.config.chainspec.TimeParametersData;
 
+// TODO: ADD DOMAIN CONFIGS
 @JsonIgnoreProperties(ignoreUnknown = false)
 public class SpecConstantsDataMerged extends SpecConstantsData {
   @JsonUnwrapped private DepositContractParametersData depositContractParameters;

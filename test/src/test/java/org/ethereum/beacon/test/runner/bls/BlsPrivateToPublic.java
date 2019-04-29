@@ -3,8 +3,8 @@ package org.ethereum.beacon.test.runner.bls;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.crypto.BLS381;
 import org.ethereum.beacon.test.runner.Runner;
-import org.ethereum.beacon.test.type.bls.BlsTest;
 import org.ethereum.beacon.test.type.TestCase;
+import org.ethereum.beacon.test.type.bls.BlsPrivateToPublicCase;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 
 import java.util.Optional;
@@ -12,19 +12,19 @@ import java.util.Optional;
 import static org.ethereum.beacon.test.SilentAsserts.assertHexStrings;
 
 /**
- * TestRunner for {@link BlsTest.BlsPrivateToPublicCase}
+ * TestRunner for {@link BlsPrivateToPublicCase}
  *
  * <p>Verifies public key creation using private key
  */
 public class BlsPrivateToPublic implements Runner {
-  private BlsTest.BlsPrivateToPublicCase testCase;
+  private BlsPrivateToPublicCase testCase;
   private BeaconChainSpec spec;
 
   public BlsPrivateToPublic(TestCase testCase, BeaconChainSpec spec) {
-    if (!(testCase instanceof BlsTest.BlsPrivateToPublicCase)) {
+    if (!(testCase instanceof BlsPrivateToPublicCase)) {
       throw new RuntimeException("TestCase runner accepts only BlsPrivateToPublicCase as input!");
     }
-    this.testCase = (BlsTest.BlsPrivateToPublicCase) testCase;
+    this.testCase = (BlsPrivateToPublicCase) testCase;
     this.spec = spec;
   }
 

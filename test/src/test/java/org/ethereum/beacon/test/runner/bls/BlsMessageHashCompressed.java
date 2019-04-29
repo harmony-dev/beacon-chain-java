@@ -6,8 +6,8 @@ import org.ethereum.beacon.crypto.MessageParameters;
 import org.ethereum.beacon.crypto.bls.milagro.MilagroCodecs;
 import org.ethereum.beacon.crypto.bls.milagro.MilagroMessageMapper;
 import org.ethereum.beacon.test.runner.Runner;
-import org.ethereum.beacon.test.type.bls.BlsTest;
 import org.ethereum.beacon.test.type.TestCase;
+import org.ethereum.beacon.test.type.bls.BlsMessageHashCompressedCase;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes48;
@@ -19,25 +19,21 @@ import java.util.Optional;
 import static org.ethereum.beacon.test.SilentAsserts.assertHexStrings;
 
 /**
- * TestRunner for {@link BlsTest.BlsMessageHashCompressedCase}
+ * TestRunner for {@link BlsMessageHashCompressedCase}
  *
- * <p>Hash message
- * Input:
- * - Message as bytes
- * - domain as uint64
- * Output:
- * - Message hash as a compressed G2 point
+ * <p>Hash message Input: - Message as bytes - domain as uint64 Output: - Message hash as a
+ * compressed G2 point
  */
 public class BlsMessageHashCompressed implements Runner {
-  private BlsTest.BlsMessageHashCompressedCase testCase;
+  private BlsMessageHashCompressedCase testCase;
   private BeaconChainSpec spec;
 
   public BlsMessageHashCompressed(TestCase testCase, BeaconChainSpec spec) {
-    if (!(testCase instanceof BlsTest.BlsMessageHashCompressedCase)) {
+    if (!(testCase instanceof BlsMessageHashCompressedCase)) {
       throw new RuntimeException(
           "TestCase runner accepts only BlsMessageHashCompressedCase as input!");
     }
-    this.testCase = (BlsTest.BlsMessageHashCompressedCase) testCase;
+    this.testCase = (BlsMessageHashCompressedCase) testCase;
     this.spec = spec;
   }
 
