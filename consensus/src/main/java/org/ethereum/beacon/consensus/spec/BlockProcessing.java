@@ -133,8 +133,8 @@ public interface BlockProcessing extends HelperFunction {
    */
   default void process_attester_slashing(MutableBeaconState state, AttesterSlashing attester_slashing) {
     List<ValidatorIndex> slashable_indices =
-        attester_slashing.getSlashableAttestation1().getValidatorIndices().intersection(
-            attester_slashing.getSlashableAttestation2().getValidatorIndices()).stream()
+        attester_slashing.getAttestation1().getCustodyBit0Indices().intersection(
+            attester_slashing.getAttestation2().getCustodyBit0Indices()).stream()
             .filter(index -> !state.getValidatorRegistry().get(index).getSlashed())
             .collect(toList());
 
@@ -183,7 +183,7 @@ public interface BlockProcessing extends HelperFunction {
     ReadList<ShardNumber, Crosslink> crosslinks =
         slot_to_epoch(data.getSlot()).equals(get_current_epoch(state)) ?
             state.getCurrentCrosslinks() : state.getPreviousCrosslinks();
-    assertTrue(crosslinks.get(data.getShard()).equals(data.getPreviousCrosslink()));
+    assertTrue(hash_tree_root(crosslinks.get(data.getShard())).equals(data.getPreviousCrosslinkRoot()));
 
     //  assert attestation.custody_bitfield == b'\x00' * len(attestation.custody_bitfield)  # [TO BE REMOVED IN PHASE 1]
     assertTrue(attestation.getCustodyBitfield().isZero());
@@ -242,7 +242,7 @@ public interface BlockProcessing extends HelperFunction {
         Arrays.asList(
             hash_tree_root(new AttestationDataAndCustodyBit(data, false)),
             hash_tree_root(new AttestationDataAndCustodyBit(data, true))),
-        attestation.getAggregateSignature(),
+        attestation.getSignature(),
         get_domain(state.getFork(), slot_to_epoch(data.getSlot()), ATTESTATION)));
   }
 
@@ -258,7 +258,8 @@ public interface BlockProcessing extends HelperFunction {
         attestation.getAggregationBitfield(),
         attestation.getData(),
         attestation.getCustodyBitfield(),
-        state.getSlot()
+        state.getSlot(),
+        get_beacon_proposer_index(state, state.getSlot())
     );
 
     if (slot_to_epoch(attestation.getData().getSlot()).equals(get_current_epoch(state))) {

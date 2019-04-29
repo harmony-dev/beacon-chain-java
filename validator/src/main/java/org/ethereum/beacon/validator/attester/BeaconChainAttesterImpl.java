@@ -65,7 +65,7 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
             sourceRoot,
             targetRoot,
             shard,
-            previousCrosslink,
+            spec.hash_tree_root(previousCrosslink),
             crosslinkDataRoot);
 
     List<ValidatorIndex> committee = getCommittee(state, shard);

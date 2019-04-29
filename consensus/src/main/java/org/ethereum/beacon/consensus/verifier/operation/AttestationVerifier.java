@@ -113,7 +113,7 @@ public class AttestationVerifier implements OperationVerifier<Attestation> {
     ReadList<ShardNumber, Crosslink> crosslinks =
         spec.slot_to_epoch(data.getSlot()).equals(spec.get_current_epoch(state)) ?
             state.getCurrentCrosslinks() : state.getPreviousCrosslinks();
-    if (!crosslinks.get(data.getShard()).equals(data.getPreviousCrosslink())) {
+    if (!spec.hash_tree_root(crosslinks.get(data.getShard())).equals(data.getPreviousCrosslinkRoot())) {
       return failedResult("attestation.data.latest_crosslink is incorrect");
     }
 
@@ -187,7 +187,7 @@ public class AttestationVerifier implements OperationVerifier<Attestation> {
         Arrays.asList(
           spec.hash_tree_root(new AttestationDataAndCustodyBit(data, false)),
           spec.hash_tree_root(new AttestationDataAndCustodyBit(data, true))),
-        attestation.getAggregateSignature(),
+        attestation.getSignature(),
         spec.get_domain(state.getFork(), spec.slot_to_epoch(data.getSlot()), ATTESTATION))) {
       return failedResult("failed to verify aggregated signature");
     }

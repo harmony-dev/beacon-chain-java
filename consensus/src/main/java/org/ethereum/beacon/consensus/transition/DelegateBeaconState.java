@@ -84,6 +84,11 @@ public class DelegateBeaconState implements BeaconState {
   }
 
   @Override
+  public ShardNumber getLatestStartShard() {
+    return delegate.getLatestStartShard();
+  }
+
+  @Override
   public ShardNumber getPreviousShufflingStartShard() {
     return delegate.getPreviousShufflingStartShard();
   }

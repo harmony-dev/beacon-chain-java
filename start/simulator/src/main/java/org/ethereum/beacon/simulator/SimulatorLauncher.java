@@ -61,6 +61,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
+import tech.pegasys.artemis.util.uint.UInt64;
 
 public class SimulatorLauncher implements Runnable {
   private static final Logger logger = LogManager.getLogger("simulator");
@@ -154,7 +155,7 @@ public class SimulatorLauncher implements Runnable {
     MDCControlledSchedulers controlledSchedulers = new MDCControlledSchedulers();
     controlledSchedulers.setCurrentTime(genesisTime.getMillis().getValue() + 1000);
 
-    Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), Hash32.random(rnd));
+    Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), UInt64.ZERO, Hash32.random(rnd));
 
     LocalWireHub localWireHub =
         new LocalWireHub(s -> wire.trace(s), controlledSchedulers.createNew("wire"));

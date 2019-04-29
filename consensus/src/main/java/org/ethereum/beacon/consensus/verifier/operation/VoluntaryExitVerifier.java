@@ -38,12 +38,6 @@ public class VoluntaryExitVerifier implements OperationVerifier<VoluntaryExit> {
       return failedResult("validator #%s has already exited", voluntaryExit.getValidatorIndex());
     }
 
-    // Verify the validator has not initiated an exit
-    if (validator.getInitiatedExit()) {
-      return failedResult("validator #%s has already initiated an exit",
-          voluntaryExit.getValidatorIndex());
-    }
-
     // Exits must specify an epoch when they become valid; they are not valid before then
     if (!(spec.get_current_epoch(state).greaterEqual(voluntaryExit.getEpoch()) &&
         spec.get_current_epoch(state).minus(validator.getActivationEpoch())

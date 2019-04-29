@@ -354,6 +354,7 @@ public interface EpochProcessing extends HelperFunction {
         if (participating_balance.times(3).greaterEqual(total_balance.times(2))) {
           state.getCurrentCrosslinks().set(shard_and_committee.getShard(), new Crosslink(
               slot_to_epoch(slot),
+              hash_tree_root(state.getCurrentCrosslinks().get(shard_and_committee.getShard())),
               root_and_participants.getValue0()
           ));
         }
@@ -831,8 +832,7 @@ public interface EpochProcessing extends HelperFunction {
     balance_churn = Gwei.ZERO;
     for (ValidatorIndex index : state.getValidatorRegistry().size()) {
       ValidatorRecord validator = state.getValidatorRegistry().get(index);
-      if (validator.getExitEpoch().equals(getConstants().getFarFutureEpoch()) &&
-          validator.getInitiatedExit()) {
+      if (validator.getExitEpoch().equals(getConstants().getFarFutureEpoch())) {
         // Check the balance churn would be within the allowance
         balance_churn = balance_churn.plus(get_effective_balance(state, index));
         if (balance_churn.greater(max_balance_churn)) {

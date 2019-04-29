@@ -38,7 +38,7 @@ public interface OnGenesis extends HelperFunction {
     BeaconBlockBody body =
         new BeaconBlockBody(
             getConstants().getEmptySignature(),
-            new Eth1Data(Hash32.ZERO, Hash32.ZERO),
+            new Eth1Data(Hash32.ZERO, UInt64.ZERO, Hash32.ZERO),
             emptyList(),
             emptyList(),
             emptyList(),
@@ -94,10 +94,10 @@ public interface OnGenesis extends HelperFunction {
     // Recent state
     state.getPreviousCrosslinks().addAll(
         nCopies(getConstants().getShardCount().getIntValue(),
-            new Crosslink(getConstants().getGenesisEpoch(), Hash32.ZERO)));
+            new Crosslink(getConstants().getGenesisEpoch(), Hash32.ZERO, Hash32.ZERO)));
     state.getCurrentCrosslinks().addAll(
         nCopies(getConstants().getShardCount().getIntValue(),
-            new Crosslink(getConstants().getGenesisEpoch(), Hash32.ZERO)));
+            new Crosslink(getConstants().getGenesisEpoch(), Hash32.ZERO, Hash32.ZERO)));
     state.getLatestBlockRoots().setAll(Hash32.ZERO);
     state.getLatestStateRoots().setAll(Hash32.ZERO);
     state.getLatestActiveIndexRoots().setAll(Hash32.ZERO);

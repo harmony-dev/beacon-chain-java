@@ -22,7 +22,7 @@ public class PerSlotTransitionTest {
   public void test1() {
     Random rnd = new Random();
     Time genesisTime = Time.castFrom(UInt64.random(rnd));
-    Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), Hash32.random(rnd));
+    Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), UInt64.ZERO, Hash32.random(rnd));
     SpecConstants specConstants =
         new SpecConstants() {
           @Override

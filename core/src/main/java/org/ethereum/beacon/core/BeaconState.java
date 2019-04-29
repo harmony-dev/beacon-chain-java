@@ -83,6 +83,8 @@ public interface BeaconState extends ObservableComposite {
   @SSZ(order = 6, vectorLengthVar = "spec.LATEST_RANDAO_MIXES_LENGTH")
   ReadVector<EpochNumber, Hash32> getLatestRandaoMixes();
 
+  @SSZ(order = 7) ShardNumber getLatestStartShard();
+
   @SSZ(order = 7) ShardNumber getPreviousShufflingStartShard();
 
   @SSZ(order = 8) ShardNumber getCurrentShufflingStartShard();
@@ -122,9 +124,9 @@ public interface BeaconState extends ObservableComposite {
   /* ******* Recent state ********* */
 
   /** Latest crosslink record for each shard. */
-  @SSZ(order = 22) ReadList<ShardNumber, Crosslink> getPreviousCrosslinks();
+  @SSZ(order = 22) ReadList<ShardNumber, Crosslink> getCurrentCrosslinks();
 
-  @SSZ(order = 23) ReadList<ShardNumber, Crosslink> getCurrentCrosslinks();
+  @SSZ(order = 23) ReadList<ShardNumber, Crosslink> getPreviousCrosslinks();
 
   @SSZ(order = 24, vectorLengthVar = "spec.SLOTS_PER_HISTORICAL_ROOT")
   ReadVector<SlotNumber, Hash32> getLatestBlockRoots();
@@ -168,6 +170,7 @@ public interface BeaconState extends ObservableComposite {
         && getValidatorBalances().equals(other.getValidatorBalances())
         && getValidatorRegistryUpdateEpoch().equals(other.getValidatorRegistryUpdateEpoch())
         && getLatestRandaoMixes().equals(other.getLatestRandaoMixes())
+        && getLatestStartShard().equals(other.getLatestStartShard())
         && getPreviousShufflingStartShard().equals(other.getPreviousShufflingStartShard())
         && getCurrentShufflingStartShard().equals(other.getCurrentShufflingStartShard())
         && getPreviousShufflingEpoch().equals(other.getPreviousShufflingEpoch())

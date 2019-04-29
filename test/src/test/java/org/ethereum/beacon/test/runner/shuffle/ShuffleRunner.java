@@ -4,6 +4,7 @@ import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.EpochNumber;
+import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.test.runner.Runner;
 import org.ethereum.beacon.test.type.shuffle.ShuffleTestCase;
@@ -54,12 +55,13 @@ public class ShuffleRunner implements Runner {
           new ValidatorRecord(
               BLSPubkey.ZERO,
               Hash32.ZERO,
+              spec.getConstants().getFarFutureEpoch(),
               EpochNumber.castFrom(UInt64.valueOf(testValidator.getActivation_epoch())),
               EpochNumber.castFrom(UInt64.valueOf(testValidator.getExit_epoch())),
               EpochNumber.castFrom(UInt64.valueOf(testValidator.getActivation_epoch()))
                   .plus(spec.getConstants().getMinValidatorWithdrawabilityDelay()),
-              false, // XXX: not used
-              false);
+              false,
+              spec.getConstants().getMaxEffectiveBalance());
       validators.add(validatorRecord);
     }
 

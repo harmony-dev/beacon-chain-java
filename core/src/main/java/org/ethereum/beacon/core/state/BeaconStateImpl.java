@@ -45,6 +45,7 @@ public class BeaconStateImpl implements MutableBeaconState {
 
   private ObsValue<WriteList<EpochNumber, Hash32>> latestRandaoMixes =
       obsHelper.newValue(ObservableListImpl.create(EpochNumber::of));
+  private ObsValue<ShardNumber> latestStartShard = obsHelper.newValue(ShardNumber.ZERO);
   private ObsValue<ShardNumber> previousShufflingStartShard = obsHelper.newValue(ShardNumber.ZERO);
   private ObsValue<ShardNumber> currentShufflingStartShard = obsHelper.newValue(ShardNumber.ZERO);
   private ObsValue<EpochNumber> previousShufflingEpoch = obsHelper.newValue(EpochNumber.ZERO);
@@ -220,6 +221,15 @@ public class BeaconStateImpl implements MutableBeaconState {
   public void setLatestRandaoMixes(
       WriteList<EpochNumber, Hash32> latestRandaoMixes) {
     this.latestRandaoMixes.set(latestRandaoMixes);
+  }
+
+  @Override
+  public ShardNumber getLatestStartShard() {
+    return latestStartShard.get();
+  }
+
+  public void setLatestStartShard(ShardNumber latestStartShard) {
+    this.latestStartShard.set(latestStartShard);
   }
 
   @Override

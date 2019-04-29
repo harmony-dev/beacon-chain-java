@@ -20,8 +20,8 @@ import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustodyBit;
-import org.ethereum.beacon.core.operations.deposit.DepositInput;
-import org.ethereum.beacon.core.operations.slashing.SlashableAttestation;
+import org.ethereum.beacon.core.operations.deposit.DepositData;
+import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
 import org.ethereum.beacon.core.spec.SignatureDomains;
 import org.ethereum.beacon.core.state.Fork;
 import org.ethereum.beacon.core.state.ShardCommittee;
@@ -706,7 +706,7 @@ public interface HelperFunction extends SpecCommons {
       boolean verifyProof) {
 
     /* deposit_input = deposit.deposit_data.deposit_input */
-    DepositInput deposit_input = deposit.getDepositData().getDepositInput();
+    DepositData deposit_data = deposit.getData();
 
     /*
       # Increment the next deposit index we are expecting. Note that this
@@ -723,9 +723,9 @@ public interface HelperFunction extends SpecCommons {
       amount = deposit.deposit_data.amount
       withdrawal_credentials = deposit_input.withdrawal_credentials
      */
-    BLSPubkey pubkey = deposit_input.getPubKey();
-    Gwei amount = deposit.getDepositData().getAmount();
-    Hash32 withdrawal_credentials = deposit_input.getWithdrawalCredentials();
+    BLSPubkey pubkey = deposit_data.getPubKey();
+    Gwei amount = deposit.getData().getAmount();
+    Hash32 withdrawal_credentials = deposit_data.getWithdrawalCredentials();
     ValidatorIndex index = get_validator_index_by_pubkey(state, pubkey);
 
     // if pubkey not in validator_pubkeys:
@@ -748,9 +748,9 @@ public interface HelperFunction extends SpecCommons {
       boolean proof_is_valid =
           !verifyProof
               || bls_verify(
-              deposit_input.getPubKey(),
-              signed_root(deposit_input),
-              deposit_input.getProofOfPossession(),
+              deposit_data.getPubKey(),
+              signed_root(deposit_data),
+              deposit_data.getSignature(),
               get_domain(state.getFork(), get_current_epoch(state), SignatureDomains.DEPOSIT));
 
       if (!proof_is_valid) {
@@ -764,8 +764,9 @@ public interface HelperFunction extends SpecCommons {
           getConstants().getFarFutureEpoch(),
           getConstants().getFarFutureEpoch(),
           getConstants().getFarFutureEpoch(),
+          getConstants().getFarFutureEpoch(),
           Boolean.FALSE,
-          Boolean.FALSE);
+          Gwei.castFrom(amount.minus(amount.modulo(getConstants().getEffectiveBalanceIncrement()))));
 
       // Note: In phase 2 registry indices that have been withdrawn for a long time will be
       // recycled.
@@ -857,16 +858,7 @@ public interface HelperFunction extends SpecCommons {
      validator = state.validator_registry[index]
      validator.initiated_exit = True
   */
-  default void initiate_validator_exit(MutableBeaconState state, ValidatorIndex index) {
-    state
-        .getValidatorRegistry()
-        .update(
-            index,
-            v ->
-                v.builder()
-                    .withInitiatedExit(Boolean.TRUE)
-                    .build());
-  }
+  default void initiate_validator_exit(MutableBeaconState state, ValidatorIndex index) {}
 
   /*
     def exit_validator(state: BeaconState, index: ValidatorIndex) -> None:
@@ -1085,40 +1077,30 @@ public interface HelperFunction extends SpecCommons {
   }
 
   /*
-    def verify_slashable_attestation(state: BeaconState, slashable_attestation: SlashableAttestation) -> bool:
+    def verify_slashable_attestation(state: BeaconState, slashable_attestation: IndexedAttestation) -> bool:
       """
       Verify validity of ``slashable_attestation`` fields.
       """
    */
-  default boolean verify_slashable_attestation(BeaconState state, SlashableAttestation slashable_attestation) {
-    //  if slashable_attestation.custody_bitfield != b'\x00' * len(slashable_attestation.custody_bitfield):  # [TO BE REMOVED IN PHASE 1]
-    //    return False
-    if (!slashable_attestation.getCustodyBitfield().isZero()) return false;
-
+  default boolean verify_slashable_attestation(BeaconState state, IndexedAttestation slashable_attestation) {
     //  if len(slashable_attestation.validator_indices) == 0:
     //  return False
-    if (slashable_attestation.getValidatorIndices().size() == 0) return false;
+    if (slashable_attestation.getCustodyBit0Indices().size() == 0) return false;
 
     //  for i in range(len(slashable_attestation.validator_indices) - 1):
     //    if slashable_attestation.validator_indices[i] >= slashable_attestation.validator_indices[i + 1]:
     //      return False
 
-    for (int i = 0; i < slashable_attestation.getValidatorIndices().size() - 1; i++) {
-      if (slashable_attestation.getValidatorIndices().get(i).greaterEqual(
-          slashable_attestation.getValidatorIndices().get(i + 1))) {
+    for (int i = 0; i < slashable_attestation.getCustodyBit0Indices().size() - 1; i++) {
+      if (slashable_attestation.getCustodyBit0Indices().get(i).greaterEqual(
+          slashable_attestation.getCustodyBit0Indices().get(i + 1))) {
         return false;
       }
     }
 
-    //  if not verify_bitfield(slashable_attestation.custody_bitfield, len(slashable_attestation.validator_indices)):
-    //  return False
-    if (!verify_bitfield(slashable_attestation.getCustodyBitfield(), slashable_attestation.getValidatorIndices().size())) {
-      return false;
-    }
-
     //  if len(slashable_attestation.validator_indices) > MAX_INDICES_PER_ATTESTATION:
     //  return False
-    if (UInt64.valueOf(slashable_attestation.getValidatorIndices().size()).
+    if (UInt64.valueOf(slashable_attestation.getCustodyBit0Indices().size()).
         compareTo(getConstants().getMaxIndicesPerAttestation()) > 0) {
       return false;
     }
@@ -1132,16 +1114,8 @@ public interface HelperFunction extends SpecCommons {
           else:
               custody_bit_1_indices.append(validator_index)
     */
-    List<ValidatorIndex> custody_bit_0_indices = new ArrayList<>();
-    List<ValidatorIndex> custody_bit_1_indices = new ArrayList<>();
-    for (int i = 0; i < slashable_attestation.getValidatorIndices().size(); i++) {
-      ValidatorIndex validator_index = slashable_attestation.getValidatorIndices().get(i);
-      if (slashable_attestation.getCustodyBitfield().getBit(i) == false) {
-        custody_bit_0_indices.add(validator_index);
-      } else {
-        custody_bit_1_indices.add(validator_index);
-      }
-    }
+    ReadList<Integer, ValidatorIndex> custody_bit_0_indices = slashable_attestation.getCustodyBit0Indices();
+    ReadList<Integer, ValidatorIndex> custody_bit_1_indices = slashable_attestation.getCustodyBit1Indices();
 
     /*
       return bls_verify(
@@ -1169,7 +1143,7 @@ public interface HelperFunction extends SpecCommons {
         Arrays.asList(
             hash_tree_root(new AttestationDataAndCustodyBit(slashable_attestation.getData(), false)),
             hash_tree_root(new AttestationDataAndCustodyBit(slashable_attestation.getData(), true))),
-        slashable_attestation.getAggregateSingature(),
+        slashable_attestation.getSignature(),
         get_domain(state.getFork(), slot_to_epoch(slashable_attestation.getData().getSlot()), ATTESTATION));
   }
 

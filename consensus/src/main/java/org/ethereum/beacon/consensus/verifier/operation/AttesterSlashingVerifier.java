@@ -8,7 +8,7 @@ import org.ethereum.beacon.consensus.verifier.OperationVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
-import org.ethereum.beacon.core.operations.slashing.SlashableAttestation;
+import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import tech.pegasys.artemis.util.collections.ReadList;
 
@@ -30,35 +30,37 @@ public class AttesterSlashingVerifier implements OperationVerifier<AttesterSlash
 
   @Override
   public VerificationResult verify(AttesterSlashing attesterSlashing, BeaconState state) {
-    SlashableAttestation slashableAttestation1 = attesterSlashing.getSlashableAttestation1();
-    SlashableAttestation slashableAttestation2 = attesterSlashing.getSlashableAttestation2();
+    IndexedAttestation indexedAttestation1 = attesterSlashing.getAttestation1();
+    IndexedAttestation indexedAttestation2 = attesterSlashing.getAttestation2();
 
-    spec.checkIndexRange(state, slashableAttestation1.getValidatorIndices());
-    spec.checkIndexRange(state, slashableAttestation2.getValidatorIndices());
-    spec.checkShardRange(slashableAttestation1.getData().getShard());
-    spec.checkShardRange(slashableAttestation2.getData().getShard());
+    spec.checkIndexRange(state, indexedAttestation1.getCustodyBit0Indices());
+    spec.checkIndexRange(state, indexedAttestation1.getCustodyBit1Indices());
+    spec.checkIndexRange(state, indexedAttestation2.getCustodyBit0Indices());
+    spec.checkIndexRange(state, indexedAttestation2.getCustodyBit1Indices());
+    spec.checkShardRange(indexedAttestation1.getData().getShard());
+    spec.checkShardRange(indexedAttestation2.getData().getShard());
 
-    if (slashableAttestation1.getData().equals(slashableAttestation2.getData())) {
+    if (indexedAttestation1.getData().equals(indexedAttestation2.getData())) {
       return failedResult("slashable_vote_data_1 != slashable_vote_data_2");
     }
 
-    if (!(spec.is_double_vote(slashableAttestation1.getData(), slashableAttestation2.getData())
+    if (!(spec.is_double_vote(indexedAttestation1.getData(), indexedAttestation2.getData())
         || spec.is_surround_vote(
-          slashableAttestation1.getData(), slashableAttestation2.getData()))) {
+          indexedAttestation1.getData(), indexedAttestation2.getData()))) {
       return failedResult("no slashing conditions found");
     }
 
-    if (!spec.verify_slashable_attestation(state, slashableAttestation1)) {
-      return failedResult("slashableAttestation1 is incorrect");
+    if (!spec.verify_slashable_attestation(state, indexedAttestation1)) {
+      return failedResult("indexedAttestation1 is incorrect");
     }
 
-    if (!spec.verify_slashable_attestation(state, slashableAttestation2)) {
-      return failedResult("slashableAttestation2 is incorrect");
+    if (!spec.verify_slashable_attestation(state, indexedAttestation2)) {
+      return failedResult("indexedAttestation2 is incorrect");
     }
 
     ReadList<Integer, ValidatorIndex> intersection =
-        slashableAttestation1.getValidatorIndices().intersection(
-            slashableAttestation2.getValidatorIndices());
+        indexedAttestation1.getCustodyBit0Indices().intersection(
+            indexedAttestation2.getCustodyBit0Indices());
     if (intersection.stream()
         .noneMatch(i -> state.getValidatorRegistry().get(i).getSlashed())) {
       return failedResult("spec assertion failed");

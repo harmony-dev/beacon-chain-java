@@ -8,11 +8,9 @@ import org.ethereum.beacon.consensus.verifier.OperationVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
-import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.ssz.SSZBuilder;
 import org.ethereum.beacon.ssz.SSZSerializer;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.bytes.BytesValue;
 
 /**
  * Verifies {@link Deposit} beacon chain operation.
@@ -31,23 +29,9 @@ public class DepositVerifier implements OperationVerifier<Deposit> {
     this.spec = spec;
   }
 
-  BytesValue serialize(DepositData depositData) {
-    // Let serialized_deposit_data be the serialized form of deposit.deposit_data.
-    // It should be 8 bytes for deposit_data.amount
-    // followed by 8 bytes for deposit_data.timestamp
-    // and then the DepositInput bytes.
-    // That is, it should match deposit_data in the Ethereum 1.0 deposit contract of which
-    // the hash was placed into the Merkle tree.
-    return depositData
-        .getAmount().toBytesBigEndian()
-        .concat(depositData.getTimestamp().toBytesBigEndian())
-        .concat(ssz.encode2(depositData.getDepositInput()));
-  }
-
   @Override
   public VerificationResult verify(Deposit deposit, BeaconState state) {
-    BytesValue serializedDepositData = serialize(deposit.getDepositData());
-    Hash32 serializedDataHash = spec.hash(serializedDepositData);
+    Hash32 serializedDataHash = spec.hash_tree_root(deposit.getData());
 
     if (!spec.verify_merkle_branch(
         serializedDataHash,

@@ -26,12 +26,12 @@ public class Deposit {
   /** An index of receipt's entry in the trie. */
   @SSZ private final UInt64 index;
   /** Deposit data. */
-  @SSZ private final DepositData depositData;
+  @SSZ private final DepositData data;
 
-  public Deposit(List<Hash32> proof, UInt64 index, DepositData depositData) {
+  public Deposit(List<Hash32> proof, UInt64 index, DepositData data) {
     this.proof = proof;
     this.index = index;
-    this.depositData = depositData;
+    this.data = data;
   }
 
   public List<Hash32> getProof() {
@@ -42,8 +42,8 @@ public class Deposit {
     return index;
   }
 
-  public DepositData getDepositData() {
-    return depositData;
+  public DepositData getData() {
+    return data;
   }
 
   @Override
@@ -53,16 +53,16 @@ public class Deposit {
     Deposit deposit = (Deposit) o;
     return proof.equals(deposit.proof)
         && Objects.equal(index, deposit.index)
-        && Objects.equal(depositData, deposit.depositData);
+        && Objects.equal(data, deposit.data);
   }
 
   @Override
   public String toString() {
     return "Deposit["
         + "idx=" + index
-        + "amount=" + depositData.getAmount()
-        + "time=" + depositData.getTimestamp()
-        + "pubkey=" + depositData.getDepositInput().getPubKey()
+        + "pubkey=" + data.getPubKey()
+        + "withdrawalCredentials=" + data.getWithdrawalCredentials()
+        + "amount=" + data.getAmount()
         + "]";
   }
 }

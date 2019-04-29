@@ -10,7 +10,6 @@ import java.util.Random;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.ethereum.beacon.consensus.hasher.ObjectHasher;
-import org.ethereum.beacon.consensus.hasher.SSZObjectHasher;
 import org.ethereum.beacon.consensus.transition.InitialStateTransition;
 import org.ethereum.beacon.consensus.util.CachingBeaconChainSpec;
 import org.ethereum.beacon.core.BeaconBlock;
@@ -19,11 +18,12 @@ import org.ethereum.beacon.core.BeaconBlockHeader;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
-import org.ethereum.beacon.core.operations.deposit.DepositInput;
+import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
@@ -98,14 +98,13 @@ public class BeaconChainSpecTest {
     System.out.println(map);
   }
 
-  private DepositInput createDepositInput() {
-    DepositInput depositInput =
-        new DepositInput(
-            BLSPubkey.wrap(Bytes48.TRUE),
-            Hashes.keccak256(BytesValue.fromHexString("aa")),
-            BLSSignature.wrap(Bytes96.ZERO));
-
-    return depositInput;
+  private DepositData createDepositData() {
+    return new DepositData(
+        BLSPubkey.wrap(Bytes48.TRUE),
+        Hashes.keccak256(BytesValue.fromHexString("aa")),
+        Gwei.ZERO,
+        BLSSignature.wrap(Bytes96.ZERO)
+    );
   }
 
   @Test
@@ -113,7 +112,7 @@ public class BeaconChainSpecTest {
     BeaconChainSpec spec = BeaconChainSpec.createWithDefaults();
 //    Hash32 expected =
 //        Hash32.fromHexString("0x1a2017aea008e5bb8b3eb79d031f14347018353f1c58fc3a54e9fc7af7ab2fe1");
-    Hash32 actual = spec.hash_tree_root(createDepositInput());
+    Hash32 actual = spec.hash_tree_root(createDepositData());
 //    assertEquals(expected, actual);
   }
 
@@ -154,7 +153,7 @@ public class BeaconChainSpecTest {
     Random rnd = new Random(1);
     Time genesisTime = Time.of(10 * 60);
 
-    Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), Hash32.random(rnd));
+    Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), UInt64.ZERO, Hash32.random(rnd));
 
     SpecConstants specConstants =
         new SpecConstants() {

@@ -17,9 +17,8 @@ import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
-import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
-import org.ethereum.beacon.core.operations.slashing.SlashableAttestation;
+import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.spec.SpecConstantsResolver;
 import org.ethereum.beacon.core.state.BeaconStateImpl;
@@ -35,7 +34,6 @@ import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
-import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.core.util.BeaconBlockTestUtil;
 import org.ethereum.beacon.crypto.Hashes;
@@ -68,7 +66,7 @@ public class ModelsSerializeTest {
             Hashes.keccak256(BytesValue.fromHexString("bb")),
             Hashes.keccak256(BytesValue.fromHexString("cc")),
             ShardNumber.of(345),
-            new Crosslink(EpochNumber.ZERO, Hashes.keccak256(BytesValue.fromHexString("dd"))),
+            Hashes.keccak256(BytesValue.fromHexString("dd")),
             Hash32.ZERO);
 
     return expected;
@@ -102,27 +100,12 @@ public class ModelsSerializeTest {
     assertEquals(expected, reconstructed);
   }
 
-  private DepositInput createDepositInput() {
-    DepositInput depositInput =
-        new DepositInput(
-            BLSPubkey.wrap(Bytes48.TRUE),
-            Hashes.keccak256(BytesValue.fromHexString("aa")),
-            BLSSignature.wrap(Bytes96.ZERO));
-
-    return depositInput;
-  }
-
-  @Test
-  public void depositInputTest() {
-    DepositInput expected = createDepositInput();
-    BytesValue encoded = sszSerializer.encode2(expected);
-    DepositInput reconstructed = sszSerializer.decode(encoded, DepositInput.class);
-    assertEquals(expected, reconstructed);
-  }
-
   private DepositData createDepositData() {
     DepositData depositData =
-        new DepositData(Gwei.ZERO, Time.castFrom(UInt64.valueOf(123)), createDepositInput());
+        new DepositData(
+            BLSPubkey.wrap(Bytes48.TRUE),
+            Hashes.keccak256(BytesValue.fromHexString("aa")),
+            Gwei.ZERO, BLSSignature.wrap(Bytes96.ZERO));
 
     return depositData;
   }
@@ -222,7 +205,7 @@ public class ModelsSerializeTest {
     BeaconBlockBody beaconBlockBody =
         new BeaconBlockBody(
             BLSSignature.ZERO,
-            new Eth1Data(Hash32.ZERO, Hash32.ZERO),
+            new Eth1Data(Hash32.ZERO, UInt64.ZERO, Hash32.ZERO),
             proposerSlashings,
             attesterSlashings,
             attestations,
@@ -240,19 +223,19 @@ public class ModelsSerializeTest {
         createSlashableAttestation());
   }
 
-  private SlashableAttestation createSlashableAttestation() {
-    return new SlashableAttestation(
-        Arrays.asList(ValidatorIndex.of(234), ValidatorIndex.of(678)),
+  private IndexedAttestation createSlashableAttestation() {
+    return new IndexedAttestation(
+        Arrays.asList(ValidatorIndex.of(234), ValidatorIndex.of(235)),
+        Arrays.asList(ValidatorIndex.of(678), ValidatorIndex.of(679)),
         createAttestationData(),
-        Bitfield.of(BytesValue.fromHexString("aa19")),
         BLSSignature.wrap(Bytes96.fromHexString("aa")));
   }
 
   @Test
   public void slashableAttestationTest() {
-    SlashableAttestation expected = createSlashableAttestation();
+    IndexedAttestation expected = createSlashableAttestation();
     BytesValue encoded = sszSerializer.encode2(expected);
-    SlashableAttestation reconstructed = sszSerializer.decode(encoded, SlashableAttestation.class);
+    IndexedAttestation reconstructed = sszSerializer.decode(encoded, IndexedAttestation.class);
     assertEquals(expected, reconstructed);
   }
 
@@ -363,7 +346,8 @@ public class ModelsSerializeTest {
             Bitfield.of(BytesValue.fromHexString("aa")),
             createAttestationData(),
             Bitfield.of(BytesValue.fromHexString("bb")),
-            SlotNumber.ZERO);
+            SlotNumber.ZERO,
+            ValidatorIndex.ZERO);
 
     return pendingAttestation;
   }
@@ -379,15 +363,15 @@ public class ModelsSerializeTest {
 
   private ValidatorRecord createValidatorRecord() {
     ValidatorRecord validatorRecord =
-        ValidatorRecord.Builder.fromDepositInput(createDepositInput())
+        ValidatorRecord.Builder.fromDepositData(createDepositData())
             .withPubKey(BLSPubkey.ZERO)
             .withWithdrawalCredentials(Hash32.ZERO)
+            .withActivationEligibilityEpoch(EpochNumber.ZERO)
             .withActivationEpoch(EpochNumber.ZERO)
             .withExitEpoch(EpochNumber.ZERO)
             .withWithdrawableEpoch(EpochNumber.ZERO)
-            .withInitiatedExit(Boolean.FALSE)
-            .withExitEpoch(EpochNumber.ZERO)
             .withSlashed(Boolean.FALSE)
+            .withEffectiveBalance(Gwei.ZERO)
             .build();
 
     return validatorRecord;
