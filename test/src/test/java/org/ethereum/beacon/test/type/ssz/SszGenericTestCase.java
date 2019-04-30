@@ -5,10 +5,12 @@ import org.ethereum.beacon.test.type.TestCase;
 import java.util.List;
 
 /**
- * SSZ test case <a
- * href="https://github.com/ethereum/eth2.0-tests/tree/master/ssz">https://github.com/ethereum/eth2.0-tests/tree/master/ssz</a>
+ * SSZ test case
+ *
+ * <p>Test format description: <a
+ * href="https://github.com/ethereum/eth2.0-specs/tree/dev/specs/test_formats/ssz_generic">https://github.com/ethereum/eth2.0-specs/tree/dev/specs/test_formats/ssz_generic</a>
  */
-public class SszTestCase implements TestCase {
+public class SszGenericTestCase implements TestCase {
   private String type;
   private String valid;
   private String ssz;

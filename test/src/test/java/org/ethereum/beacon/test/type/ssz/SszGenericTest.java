@@ -6,15 +6,14 @@ import org.ethereum.beacon.test.type.TestSkeleton;
 import java.util.List;
 
 /**
- * Container for ssz tests <a
- * href="https://github.com/ethereum/eth2.0-tests/tree/master/ssz">https://github.com/ethereum/eth2.0-tests/tree/master/ssz</a>
+ * Container for generic ssz tests
  */
-public class SszTest extends TestSkeleton {
+public class SszGenericTest extends TestSkeleton {
   public List<TestCase> getTestCases() {
     return testCases;
   }
 
-  public void setTestCases(List<SszTestCase> testCases) {
+  public void setTestCases(List<SszGenericTestCase> testCases) {
     this.testCases = (List<TestCase>) (List<?>) testCases;
   }
 }
