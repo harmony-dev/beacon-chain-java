@@ -15,6 +15,7 @@ import static org.ethereum.beacon.test.SilentAsserts.assertHexStrings;
  * TestRunner for {@link BlsPrivateToPublicCase}
  *
  * <p>Verifies public key creation using private key
+ * Test format description: <a href="https://github.com/ethereum/eth2.0-specs/blob/dev/specs/test_formats/bls/priv_to_pub.md">https://github.com/ethereum/eth2.0-specs/blob/dev/specs/test_formats/bls/priv_to_pub.md</a>
  */
 public class BlsPrivateToPublic implements Runner {
   private BlsPrivateToPublicCase testCase;

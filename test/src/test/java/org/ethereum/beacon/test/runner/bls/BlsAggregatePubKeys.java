@@ -17,6 +17,7 @@ import static org.ethereum.beacon.test.SilentAsserts.assertHexStrings;
  * TestRunner for {@link BlsAggregatePubKeysCase}
  *
  * <p>Aggregates public keys
+ * Test format description: <a href="https://github.com/ethereum/eth2.0-specs/blob/dev/specs/test_formats/bls/aggregate_pubkeys.md">https://github.com/ethereum/eth2.0-specs/blob/dev/specs/test_formats/bls/aggregate_pubkeys.md</a>
  */
 public class BlsAggregatePubKeys implements Runner {
   private BlsAggregatePubKeysCase testCase;

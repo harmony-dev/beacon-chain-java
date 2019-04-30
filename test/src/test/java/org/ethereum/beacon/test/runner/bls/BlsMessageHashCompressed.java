@@ -21,8 +21,8 @@ import static org.ethereum.beacon.test.SilentAsserts.assertHexStrings;
 /**
  * TestRunner for {@link BlsMessageHashCompressedCase}
  *
- * <p>Hash message Input: - Message as bytes - domain as uint64 Output: - Message hash as a
- * compressed G2 point
+ * <p>Hash message as G2 point (compressed)
+ * Test format description: <a href="https://github.com/ethereum/eth2.0-specs/blob/dev/specs/test_formats/bls/msg_hash_g2_compressed.md">https://github.com/ethereum/eth2.0-specs/blob/dev/specs/test_formats/bls/msg_hash_g2_compressed.md</a>
  */
 public class BlsMessageHashCompressed implements Runner {
   private BlsMessageHashCompressedCase testCase;

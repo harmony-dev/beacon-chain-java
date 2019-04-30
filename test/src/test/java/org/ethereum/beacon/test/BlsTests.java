@@ -21,6 +21,10 @@ import java.util.Optional;
 
 import static org.junit.Assert.fail;
 
+/**
+ * Tests for BLS methods.
+ * Test format description: <a href="https://github.com/ethereum/eth2.0-specs/tree/dev/specs/test_formats/bls">https://github.com/ethereum/eth2.0-specs/tree/dev/specs/test_formats/bls</a>
+ */
 public class BlsTests extends TestUtils {
   private String TESTS_DIR = "bls";
 

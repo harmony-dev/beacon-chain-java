@@ -20,6 +20,7 @@ import static org.ethereum.beacon.test.SilentAsserts.assertEquals;
  * TestRunner for {@link BlsSignMessageCase}
  *
  * <p>Signs message by signer defined by private key
+ * Test format description: <a href="https://github.com/ethereum/eth2.0-specs/blob/dev/specs/test_formats/bls/sign_msg.md">https://github.com/ethereum/eth2.0-specs/blob/dev/specs/test_formats/bls/sign_msg.md</a>
  */
 public class BlsSignMessage implements Runner {
   private BlsSignMessageCase testCase;

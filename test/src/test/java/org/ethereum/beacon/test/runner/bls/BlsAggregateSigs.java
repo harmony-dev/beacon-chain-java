@@ -20,6 +20,7 @@ import static org.ethereum.beacon.test.SilentAsserts.assertHexStrings;
  * TestRunner for {@link BlsAggregateSigsCase}
  *
  * <p>Aggregates signatures
+ * Test format description: <a href="https://github.com/ethereum/eth2.0-specs/blob/dev/specs/test_formats/bls/aggregate_sigs.md">https://github.com/ethereum/eth2.0-specs/blob/dev/specs/test_formats/bls/aggregate_sigs.md</a>
  */
 public class BlsAggregateSigs implements Runner {
   private BlsAggregateSigsCase testCase;
