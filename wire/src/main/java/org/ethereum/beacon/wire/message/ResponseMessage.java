@@ -8,11 +8,16 @@ import tech.pegasys.artemis.util.uint.UInt64;
 @SSZSerializable
 public class ResponseMessage extends Message {
   @SSZ
-  private final UInt64 id;
+  private UInt64 id;
   @SSZ(type = "uint16")
   private final int responseCode;
   @SSZ
   private final BytesValue result;
+
+  public ResponseMessage(int responseCode, BytesValue result) {
+    this.responseCode = responseCode;
+    this.result = result;
+  }
 
   public ResponseMessage(UInt64 id, int responseCode,
       BytesValue result) {
@@ -25,6 +30,10 @@ public class ResponseMessage extends Message {
     return id;
   }
 
+  public void setId(UInt64 id) {
+    this.id = id;
+  }
+
   public int getResponseCode() {
     return responseCode;
   }
@@ -34,7 +43,7 @@ public class ResponseMessage extends Message {
   }
 
   @Override
-  public ResponseMessagePayload<?> getPayload() {
+  public ResponseMessagePayload getPayload() {
     return null;
   }
 }

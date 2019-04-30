@@ -31,9 +31,8 @@ public class BlockRootsResponseMessage extends ResponseMessagePayload {
 
   @SSZ private final List<BlockRootSlot> roots;
 
-  public BlockRootsResponseMessage(BlockRootsRequestMessage request,
-      List<BlockRootSlot> roots) {
-    super(request);
+  public BlockRootsResponseMessage(List<BlockRootSlot> roots) {
+    super(null);
     this.roots = roots;
   }
 

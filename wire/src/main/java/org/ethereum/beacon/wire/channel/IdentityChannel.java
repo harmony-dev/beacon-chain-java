@@ -18,12 +18,14 @@ public abstract class IdentityChannel<TMessage> implements ChannelOp<TMessage, T
 
   @Override
   public Publisher<TMessage> inboundMessageStream() {
-    return Flux.from(getInChannel().inboundMessageStream());
+    return Flux.from(getInChannel().inboundMessageStream())
+        .doOnNext(this::onInbound);
   }
 
   @Override
   public void subscribeToOutbound(Publisher<TMessage> outboundMessageStream) {
-    getInChannel().subscribeToOutbound(Flux.from(outboundMessageStream));
+    getInChannel().subscribeToOutbound(Flux.from(outboundMessageStream)
+        .doOnNext(this::onOutbound));
   }
 
   protected void onInbound(TMessage msg) throws RuntimeException {}

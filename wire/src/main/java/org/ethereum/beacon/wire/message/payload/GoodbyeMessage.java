@@ -7,7 +7,7 @@ import tech.pegasys.artemis.util.uint.UInt64;
 
 @SSZSerializable
 public class GoodbyeMessage extends RequestMessagePayload {
-  public static final UInt64 METHOD_ID = UInt64.valueOf(0x1);
+  public static final int METHOD_ID = 0x1;
 
   public static final UInt64 CLIENT_SHUTDOWN = UInt64.valueOf(1);
   public static final UInt64 IRRELEVANT_NETWORK = UInt64.valueOf(2);
@@ -20,7 +20,7 @@ public class GoodbyeMessage extends RequestMessagePayload {
   }
 
   @Override
-  public UInt64 getMethodId() {
+  public int getMethodId() {
     return METHOD_ID;
   }
 

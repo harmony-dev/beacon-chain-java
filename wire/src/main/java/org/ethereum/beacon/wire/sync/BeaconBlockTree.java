@@ -10,7 +10,7 @@ public class BeaconBlockTree extends AbstractBlockTree<Hash32, BlockWrapper, Fee
 
   private final ObjectHasher<Hash32> hasher;
 
-  protected class BlockWrapper implements BlockWrap<Hash32, Feedback<BeaconBlock>> {
+  protected class BlockWrapper implements AbstractBlockTree.BlockWrap<Hash32, Feedback<BeaconBlock>> {
     private final Feedback<BeaconBlock> block;
 
     public BlockWrapper(Feedback<BeaconBlock> block) {

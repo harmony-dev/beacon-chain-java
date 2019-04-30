@@ -65,14 +65,21 @@ public class RpcMessage<TRequest, TResponse> {
   }
 
   public <TNewRequest, TNewResponse> RpcMessage<TNewRequest, TNewResponse> copyWithResponse(TNewResponse newResponse) {
-    if (!isResponse()) {
-      throw new IllegalStateException("");
-    }
     if (getError().isPresent()) {
       throw new IllegalStateException("");
     }
     RpcMessage<TNewRequest, TNewResponse> ret = new RpcMessage<>(null,
         false, newResponse, null);
+    ret.requestContext.putAll(requestContext);
+    return ret;
+  }
+
+  public <TNewRequest, TNewResponse> RpcMessage<TNewRequest, TNewResponse> copyWithResponseError(Throwable error) {
+    if (getError().isPresent()) {
+      throw new IllegalStateException("");
+    }
+    RpcMessage<TNewRequest, TNewResponse> ret = new RpcMessage<>(null,
+        false, null, error);
     ret.requestContext.putAll(requestContext);
     return ret;
   }

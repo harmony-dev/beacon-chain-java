@@ -46,7 +46,7 @@ public class WireApiSyncServer implements WireApiSync {
           roots.add(new BlockRootSlot(slotRoot, slot));
         }
       }
-      ret.complete(new BlockRootsResponseMessage(requestMessage, roots));
+      ret.complete(new BlockRootsResponseMessage(roots));
     }
     return ret;
   }

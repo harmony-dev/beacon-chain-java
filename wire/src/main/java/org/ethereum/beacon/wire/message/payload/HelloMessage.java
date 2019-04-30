@@ -10,7 +10,7 @@ import tech.pegasys.artemis.util.uint.UInt64;
 
 @SSZSerializable
 public class HelloMessage extends RequestMessagePayload {
-  public static final UInt64 METHOD_ID = UInt64.valueOf(0x0);
+  public static final int METHOD_ID = 0x0;
 
   @SSZ private final byte networkId;
   @SSZ private final UInt64 chainId;
@@ -31,7 +31,7 @@ public class HelloMessage extends RequestMessagePayload {
   }
 
   @Override
-  public UInt64 getMethodId() {
+  public int getMethodId() {
     return METHOD_ID;
   }
 

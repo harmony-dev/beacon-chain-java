@@ -58,7 +58,7 @@ public abstract class RpcChannelMapper<TInMessage, TOutRequest, TOutResponse>
         return inMessage;
       }
     } else {
-      TInMessage inMessage = (TInMessage) msg.getResponse();
+      TInMessage inMessage = (TInMessage) msg.getResponse().get();
       setId(inMessage, msg.popRequestContext(CONTEXT_ID_KEY));
       return inMessage;
     }

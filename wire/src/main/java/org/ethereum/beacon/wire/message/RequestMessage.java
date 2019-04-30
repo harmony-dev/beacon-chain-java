@@ -8,11 +8,16 @@ import tech.pegasys.artemis.util.uint.UInt64;
 @SSZSerializable
 public class RequestMessage extends Message {
   @SSZ
-  private final UInt64 id;
+  private UInt64 id;
   @SSZ(type = "uint16")
   private final int methodId;
   @SSZ
   private final BytesValue body;
+
+  public RequestMessage(int methodId, BytesValue body) {
+    this.methodId = methodId;
+    this.body = body;
+  }
 
   public RequestMessage(UInt64 id, int methodId, BytesValue body) {
     this.id = id;
@@ -22,6 +27,10 @@ public class RequestMessage extends Message {
 
   public UInt64 getId() {
     return id;
+  }
+
+  public void setId(UInt64 id) {
+    this.id = id;
   }
 
   public int getMethodId() {

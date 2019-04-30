@@ -28,7 +28,7 @@ public class RpcChannelAdapter<TRequestMessage, TResponseMessage> {
       if (msg.isNotification()) {
         handleNotify(msg.getRequest());
       } else {
-        handleInvoke(msg.getRequest());
+        handleInvoke(msg);
       }
     } else {
       handleResponse(msg);
@@ -49,13 +49,20 @@ public class RpcChannelAdapter<TRequestMessage, TResponseMessage> {
   private void handleNotify(TRequestMessage msg) {
     serverHandler.apply(msg);
   }
-  private void handleInvoke(TRequestMessage msg) {
+
+  private void handleInvoke(RpcMessage<TRequestMessage, TResponseMessage> msg) {
     try {
-      CompletableFuture<TResponseMessage> fut = serverHandler.apply(msg);
-      fut.whenComplete((t, r) -> outboundStream.onNext(
-          t != null ? new RpcMessage<>(msg, t) : new RpcMessage<>(msg, r)));
+      CompletableFuture<TResponseMessage> fut = serverHandler.apply(msg.getRequest());
+      fut.whenComplete(
+              (r, t) ->
+                  outboundStream.onNext(
+                      t != null ? msg.copyWithResponseError(t) : msg.copyWithResponse(r)))
+          .whenComplete(
+              (r, t) -> {
+                if (t != null) t.printStackTrace();
+              });
     } catch (Exception e) {
-      outboundStream.onNext(new RpcMessage<>(msg, e));
+      outboundStream.onNext(msg.copyWithResponseError(e));
     }
   }
 

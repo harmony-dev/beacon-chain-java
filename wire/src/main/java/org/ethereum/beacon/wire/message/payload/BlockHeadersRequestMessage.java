@@ -9,7 +9,7 @@ import tech.pegasys.artemis.util.uint.UInt64;
 
 @SSZSerializable
 public class BlockHeadersRequestMessage extends RequestMessagePayload {
-  public static final UInt64 METHOD_ID = UInt64.valueOf(0x0D);
+  public static final int METHOD_ID = 0x0D;
 
 
   @SSZ private final Hash32 startRoot;
@@ -26,7 +26,7 @@ public class BlockHeadersRequestMessage extends RequestMessagePayload {
   }
 
   @Override
-  public UInt64 getMethodId() {
+  public int getMethodId() {
     return METHOD_ID;
   }
 

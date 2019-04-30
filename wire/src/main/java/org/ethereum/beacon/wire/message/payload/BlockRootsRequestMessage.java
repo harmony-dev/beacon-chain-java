@@ -8,7 +8,7 @@ import tech.pegasys.artemis.util.uint.UInt64;
 
 @SSZSerializable
 public class BlockRootsRequestMessage extends RequestMessagePayload {
-  public static final UInt64 METHOD_ID = UInt64.valueOf(0x0);
+  public static final int METHOD_ID = 0x0F;
 
   @SSZ private final SlotNumber startSlot;
   @SSZ private final UInt64 count;
@@ -19,7 +19,7 @@ public class BlockRootsRequestMessage extends RequestMessagePayload {
   }
 
   @Override
-  public UInt64 getMethodId() {
+  public int getMethodId() {
     return METHOD_ID;
   }
 
