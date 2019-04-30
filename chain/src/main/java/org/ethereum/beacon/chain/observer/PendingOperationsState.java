@@ -71,7 +71,7 @@ public class PendingOperationsState implements PendingOperations {
 
   private Attestation aggregateAttestations(List<Attestation> attestations) {
     assert !attestations.isEmpty();
-    assert attestations.stream().skip(1).allMatch(a -> a.equals(attestations.get(0)));
+    assert attestations.stream().skip(1).allMatch(a -> a.getData().equals(attestations.get(0).getData()));
 
     Bitfield participants =
         attestations.stream()
