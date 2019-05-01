@@ -85,7 +85,7 @@ public class Benchmaker implements Runnable {
         new Builder()
             .withConstants(constants)
             .withDefaultHashFunction()
-            .withHasher(SSZObjectHasher.create(constants, Hashes::keccak256, !noIncrement))
+            .withHasher(SSZObjectHasher.create(constants, Hashes::sha256, !noIncrement))
             .withBlsVerify(!noBls)
             .withCache(!noCache)
             .withBlsVerifyProofOfPossession(false);

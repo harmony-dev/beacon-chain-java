@@ -9,14 +9,14 @@ public class RewardAndPenaltyQuotientsData implements RewardAndPenaltyQuotients 
 
   @JsonProperty("BASE_REWARD_QUOTIENT")
   private String BASE_REWARD_QUOTIENT;
-  @JsonProperty("WHISTLEBLOWER_REWARD_QUOTIENT")
-  private String WHISTLEBLOWER_REWARD_QUOTIENT;
-  @JsonProperty("ATTESTATION_INCLUSION_REWARD_QUOTIENT")
-  private String ATTESTATION_INCLUSION_REWARD_QUOTIENT;
+  @JsonProperty("WHISTLEBLOWING_REWARD_QUOTIENT")
+  private String WHISTLEBLOWING_REWARD_QUOTIENT;
+  @JsonProperty("PROPOSER_REWARD_QUOTIENT")
+  private String PROPOSER_REWARD_QUOTIENT;
   @JsonProperty("INACTIVITY_PENALTY_QUOTIENT")
   private String INACTIVITY_PENALTY_QUOTIENT;
-  @JsonProperty("MIN_PENALTY_QUOTIENT")
-  private String MIN_PENALTY_QUOTIENT;
+  @JsonProperty("MIN_SLASHING_PENALTY_QUOTIENT")
+  private String MIN_SLASHING_PENALTY_QUOTIENT;
 
   @Override
   @JsonIgnore
@@ -26,14 +26,14 @@ public class RewardAndPenaltyQuotientsData implements RewardAndPenaltyQuotients 
 
   @Override
   @JsonIgnore
-  public UInt64 getWhistleblowerRewardQuotient() {
-    return UInt64.valueOf(getWHISTLEBLOWER_REWARD_QUOTIENT());
+  public UInt64 getWhistleblowingRewardQuotient() {
+    return UInt64.valueOf(getWHISTLEBLOWING_REWARD_QUOTIENT());
   }
 
   @Override
   @JsonIgnore
-  public UInt64 getAttestationInclusionRewardQuotient() {
-    return UInt64.valueOf(getATTESTATION_INCLUSION_REWARD_QUOTIENT());
+  public UInt64 getProposerRewardQuotient() {
+    return UInt64.valueOf(getPROPOSER_REWARD_QUOTIENT());
   }
 
   @Override
@@ -44,8 +44,8 @@ public class RewardAndPenaltyQuotientsData implements RewardAndPenaltyQuotients 
 
   @Override
   @JsonIgnore
-  public UInt64 getMinPenaltyQuotient() {
-    return UInt64.valueOf(getMIN_PENALTY_QUOTIENT());
+  public UInt64 getMinSlashingPenaltyQuotient() {
+    return UInt64.valueOf(getMIN_SLASHING_PENALTY_QUOTIENT());
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
@@ -58,21 +58,21 @@ public class RewardAndPenaltyQuotientsData implements RewardAndPenaltyQuotients 
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-  public String getWHISTLEBLOWER_REWARD_QUOTIENT() {
-    return WHISTLEBLOWER_REWARD_QUOTIENT;
+  public String getWHISTLEBLOWING_REWARD_QUOTIENT() {
+    return WHISTLEBLOWING_REWARD_QUOTIENT;
   }
 
-  public void setWHISTLEBLOWER_REWARD_QUOTIENT(String WHISTLEBLOWER_REWARD_QUOTIENT) {
-    this.WHISTLEBLOWER_REWARD_QUOTIENT = WHISTLEBLOWER_REWARD_QUOTIENT;
+  public void setWHISTLEBLOWING_REWARD_QUOTIENT(String WHISTLEBLOWING_REWARD_QUOTIENT) {
+    this.WHISTLEBLOWING_REWARD_QUOTIENT = WHISTLEBLOWING_REWARD_QUOTIENT;
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-  public String getATTESTATION_INCLUSION_REWARD_QUOTIENT() {
-    return ATTESTATION_INCLUSION_REWARD_QUOTIENT;
+  public String getPROPOSER_REWARD_QUOTIENT() {
+    return PROPOSER_REWARD_QUOTIENT;
   }
 
-  public void setATTESTATION_INCLUSION_REWARD_QUOTIENT(String ATTESTATION_INCLUSION_REWARD_QUOTIENT) {
-    this.ATTESTATION_INCLUSION_REWARD_QUOTIENT = ATTESTATION_INCLUSION_REWARD_QUOTIENT;
+  public void setPROPOSER_REWARD_QUOTIENT(String PROPOSER_REWARD_QUOTIENT) {
+    this.PROPOSER_REWARD_QUOTIENT = PROPOSER_REWARD_QUOTIENT;
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
@@ -85,11 +85,11 @@ public class RewardAndPenaltyQuotientsData implements RewardAndPenaltyQuotients 
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-  public String getMIN_PENALTY_QUOTIENT() {
-    return MIN_PENALTY_QUOTIENT;
+  public String getMIN_SLASHING_PENALTY_QUOTIENT() {
+    return MIN_SLASHING_PENALTY_QUOTIENT;
   }
 
-  public void setMIN_PENALTY_QUOTIENT(String MIN_PENALTY_QUOTIENT) {
-    this.MIN_PENALTY_QUOTIENT = MIN_PENALTY_QUOTIENT;
+  public void setMIN_SLASHING_PENALTY_QUOTIENT(String MIN_SLASHING_PENALTY_QUOTIENT) {
+    this.MIN_SLASHING_PENALTY_QUOTIENT = MIN_SLASHING_PENALTY_QUOTIENT;
   }
 }

@@ -83,7 +83,7 @@ public class PendingOperationsState implements PendingOperations {
     BLS381.Signature aggregatedSignature =
         BLS381.Signature.aggregate(
             attestations.stream()
-                .map(Attestation::getAggregateSignature)
+                .map(Attestation::getSignature)
                 .map(BLS381.Signature::create)
                 .collect(Collectors.toList()));
     BLSSignature aggSign = BLSSignature.wrap(aggregatedSignature.getEncoded());

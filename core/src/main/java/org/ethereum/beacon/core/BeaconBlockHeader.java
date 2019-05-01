@@ -4,7 +4,6 @@ import com.google.common.base.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import javax.annotation.Nullable;
-import org.ethereum.beacon.core.spec.InitialValues;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Hashable;
@@ -25,7 +24,7 @@ public class BeaconBlockHeader implements Hashable<Hash32> {
 
   public static final BeaconBlockHeader EMPTY =
       new BeaconBlockHeader(
-          SlotNumber.ZERO, Hash32.ZERO, Hash32.ZERO, Hash32.ZERO, InitialValues.EMPTY_SIGNATURE);
+          SlotNumber.ZERO, Hash32.ZERO, Hash32.ZERO, Hash32.ZERO, BLSSignature.ZERO);
 
   @SSZ private final SlotNumber slot;
   @SSZ private final Hash32 previousBlockRoot;

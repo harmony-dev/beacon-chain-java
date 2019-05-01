@@ -7,18 +7,17 @@ import java.util.Random;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
-import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.spec.SignatureDomains;
 import org.ethereum.beacon.core.state.Fork;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
-import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.crypto.BLS381;
 import org.ethereum.beacon.crypto.BLS381.PrivateKey;
 import org.ethereum.beacon.crypto.MessageParameters;
 import org.javatuples.Pair;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
+import tech.pegasys.artemis.util.bytes.Bytes4;
 import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.uint.UInt64;
@@ -43,20 +42,19 @@ public class SimulateUtils {
 
   public static synchronized Deposit getDepositForKeyPair(
       Random rnd, BLS381.KeyPair keyPair, BeaconChainSpec spec, boolean isProofVerifyEnabled) {
-    Hash32 proofOfPossession = Hash32.random(rnd);
-    DepositInput depositInputWithoutSignature =
-        new DepositInput(
+    Hash32 withdrawalCredentials = Hash32.random(rnd);
+    DepositData depositDataWithoutSignature =
+        new DepositData(
             BLSPubkey.wrap(Bytes48.leftPad(keyPair.getPublic().getEncodedBytes())),
-            proofOfPossession,
+            withdrawalCredentials,
+            spec.getConstants().getMaxEffectiveBalance(),
             BLSSignature.wrap(Bytes96.ZERO));
 
     BLSSignature signature = BLSSignature.ZERO;
 
     if (isProofVerifyEnabled) {
-      Hash32 msgHash = spec.signed_root(depositInputWithoutSignature);
-      UInt64 domain =
-          spec.get_domain(
-              Fork.EMPTY, spec.getConstants().getGenesisEpoch(), SignatureDomains.DEPOSIT);
+      Hash32 msgHash = spec.signing_root(depositDataWithoutSignature);
+      UInt64 domain = spec.get_domain(Bytes4.ZERO, SignatureDomains.DEPOSIT);
       signature =
           BLSSignature.wrap(
               BLS381.sign(MessageParameters.create(msgHash, domain), keyPair).getEncoded());
@@ -67,12 +65,10 @@ public class SimulateUtils {
             Collections.singletonList(Hash32.random(rnd)),
             UInt64.ZERO,
             new DepositData(
-                spec.getConstants().getMaxDepositAmount(),
-                Time.of(0),
-                new DepositInput(
-                    BLSPubkey.wrap(Bytes48.leftPad(keyPair.getPublic().getEncodedBytes())),
-                    proofOfPossession,
-                    signature)));
+                BLSPubkey.wrap(Bytes48.leftPad(keyPair.getPublic().getEncodedBytes())),
+                withdrawalCredentials,
+                spec.getConstants().getMaxEffectiveBalance(),
+                signature));
     return deposit;
   }
 

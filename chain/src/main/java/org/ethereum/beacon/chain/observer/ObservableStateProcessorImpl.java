@@ -123,7 +123,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     for (Attestation attestation : attestations) {
 
       List<ValidatorIndex> participants =
-          spec.get_attestation_participants(
+          spec.get_attesting_indices(
               latestState, attestation.getData(), attestation.getAggregationBitfield());
 
       List<BLSPubkey> pubKeys = spec.mapIndicesToPubKeys(latestState, participants);
@@ -171,7 +171,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     pendingAttestations.addAll(beaconState.getPreviousEpochAttestations().listCopy());
     for (PendingAttestation pendingAttestation : pendingAttestations) {
       List<ValidatorIndex> participants =
-          spec.get_attestation_participants(
+          spec.get_attesting_indices(
               beaconState,
               pendingAttestation.getData(),
               pendingAttestation.getAggregationBitfield());
@@ -266,7 +266,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
             (head) -> {
               BeaconTuple newHeadTuple =
                   tupleStorage
-                      .get(spec.signed_root(head))
+                      .get(spec.signing_root(head))
                       .orElseThrow(
                           () -> new IllegalStateException("Beacon tuple not found for new head "));
               return new BeaconTupleDetails(newHeadTuple);

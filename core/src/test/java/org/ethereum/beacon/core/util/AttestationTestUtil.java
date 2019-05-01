@@ -41,7 +41,7 @@ public abstract class AttestationTestUtil {
         Hash32.random(random),
         Hash32.random(random),
         SpecConstants.BEACON_CHAIN_SHARD_NUMBER,
-        new Crosslink(EpochNumber.ZERO, Hash32.random(random)),
+        Hash32.random(random),
         Hash32.random(random));
   }
 }

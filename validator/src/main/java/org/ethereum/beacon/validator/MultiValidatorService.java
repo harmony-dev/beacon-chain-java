@@ -200,7 +200,7 @@ public class MultiValidatorService implements ValidatorService {
     BeaconStateEx state = observableState.getLatestSlotState();
 
     // trigger proposer
-    ValidatorIndex proposerIndex = spec.get_beacon_proposer_index(state, state.getSlot());
+    ValidatorIndex proposerIndex = spec.get_beacon_proposer_index(state);
     if (initialized.containsKey(proposerIndex) && state.getTransition() == TransitionType.SLOT
         && !isGenesis(state)) {
       runAsync(() -> propose(proposerIndex, observableState));
@@ -259,7 +259,7 @@ public class MultiValidatorService implements ValidatorService {
           newBlock.toString(
               spec.getConstants(),
               observableState.getLatestSlotState().getGenesisTime(),
-              spec::signed_root),
+              spec::signing_root),
           String.format("%.3f", (double) total / 1_000_000_000d));
     }
   }
@@ -293,7 +293,7 @@ public class MultiValidatorService implements ValidatorService {
               .toString(
                   spec.getConstants(),
                   observableState.getLatestSlotState().getGenesisTime(),
-                  spec::signed_root),
+                  spec::signing_root),
           state.getSlot());
     }
   }

@@ -33,6 +33,14 @@ public class EpochNumber extends UInt64 implements
     return new EpochNumber(super.plus(unsignedAddend));
   }
 
+  public EpochNumber plusModulo(long addend, EpochNumber divisor) {
+    return plusModulo(UInt64.valueOf(addend), divisor);
+  }
+
+  public EpochNumber plusModulo(UInt64 addend, EpochNumber divisor) {
+    return new EpochNumber(this.plus(addend).modulo(divisor));
+  }
+
   public EpochNumber minus(EpochNumber subtract) {
     return new EpochNumber(super.minus(subtract));
   }

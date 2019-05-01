@@ -14,6 +14,7 @@ import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.EpochNumber;
+import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
@@ -208,8 +209,9 @@ public class MultiValidatorServiceTest {
                 EpochNumber.ZERO,
                 EpochNumber.ZERO,
                 EpochNumber.ZERO,
+                EpochNumber.ZERO,
                 Boolean.FALSE,
-                Boolean.FALSE)));
+                Gwei.ZERO)));
     validatorRegistry.add(
         new ValidatorRecord(
             pubkey,
@@ -217,8 +219,9 @@ public class MultiValidatorServiceTest {
             EpochNumber.ZERO,
             EpochNumber.ZERO,
             EpochNumber.ZERO,
+            EpochNumber.ZERO,
             Boolean.FALSE,
-            Boolean.FALSE));
+            Gwei.ZERO));
 
     return validatorRegistry;
   }

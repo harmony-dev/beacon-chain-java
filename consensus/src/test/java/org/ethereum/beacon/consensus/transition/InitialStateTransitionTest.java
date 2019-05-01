@@ -20,7 +20,7 @@ public class InitialStateTransitionTest {
   public void handleChainStartCorrectly() {
     Random rnd = new Random();
     Time genesisTime = Time.castFrom(UInt64.random(rnd));
-    Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), Hash32.random(rnd));
+    Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), UInt64.ZERO, Hash32.random(rnd));
 
     BeaconChainSpec spec = BeaconChainSpec.createWithDefaults();
     InitialStateTransition initialStateTransition =

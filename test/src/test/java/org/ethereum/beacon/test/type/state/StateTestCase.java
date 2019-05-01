@@ -476,16 +476,19 @@ public class StateTestCase implements NamedTestCase {
       @JsonProperty("activation_epoch")
       private String activationEpoch;
 
+      @JsonProperty("activation_eligibility_epoch")
+      private String activationEligibilityEpoch;
+
       @JsonProperty("exit_epoch")
       private String exitEpoch;
 
       @JsonProperty("withdrawable_epoch")
       private String withdrawableEpoch;
 
-      @JsonProperty("initiated_exit")
-      private Boolean initiatedExit;
-
       private Boolean slashed;
+
+      @JsonProperty("effective_balance")
+      private String effectiveBalance;
 
       public String getPubkey() {
         return pubkey;
@@ -511,6 +514,14 @@ public class StateTestCase implements NamedTestCase {
         this.activationEpoch = activationEpoch;
       }
 
+      public String getActivationEligibilityEpoch() {
+        return activationEligibilityEpoch;
+      }
+
+      public void setActivationEligibilityEpoch(String activationEligibilityEpoch) {
+        this.activationEligibilityEpoch = activationEligibilityEpoch;
+      }
+
       public String getExitEpoch() {
         return exitEpoch;
       }
@@ -527,20 +538,20 @@ public class StateTestCase implements NamedTestCase {
         this.withdrawableEpoch = withdrawableEpoch;
       }
 
-      public Boolean getInitiatedExit() {
-        return initiatedExit;
-      }
-
-      public void setInitiatedExit(Boolean initiatedExit) {
-        this.initiatedExit = initiatedExit;
-      }
-
       public Boolean getSlashed() {
         return slashed;
       }
 
       public void setSlashed(Boolean slashed) {
         this.slashed = slashed;
+      }
+
+      public String getEffectiveBalance() {
+        return effectiveBalance;
+      }
+
+      public void setEffectiveBalance(String effectiveBalance) {
+        this.effectiveBalance = effectiveBalance;
       }
     }
 
@@ -559,6 +570,9 @@ public class StateTestCase implements NamedTestCase {
 
       @JsonProperty("inclusion_slot")
       private String inclusionSlot;
+
+      @JsonProperty("proposer_index")
+      private Long proposerIndex;
 
       public String getInclusionSlot() {
         return inclusionSlot;
@@ -600,6 +614,14 @@ public class StateTestCase implements NamedTestCase {
         this.aggregateSignature = aggregateSignature;
       }
 
+      public Long getProposerIndex() {
+        return proposerIndex;
+      }
+
+      public void setProposerIndex(Long proposerIndex) {
+        this.proposerIndex = proposerIndex;
+      }
+
       public static class AttestationDataContainer {
         private String slot;
 
@@ -617,8 +639,8 @@ public class StateTestCase implements NamedTestCase {
 
         private Long shard;
 
-        @JsonProperty("previous_crosslink")
-        private CrossLinkData previousCrosslink;
+        @JsonProperty("previous_crosslink_root")
+        private String previousCrosslinkRoot;
 
         @JsonProperty("crosslink_data_root")
         private String crosslinkDataRoot;
@@ -671,12 +693,12 @@ public class StateTestCase implements NamedTestCase {
           this.shard = shard;
         }
 
-        public CrossLinkData getPreviousCrosslink() {
-          return previousCrosslink;
+        public String getPreviousCrosslinkRoot() {
+          return previousCrosslinkRoot;
         }
 
-        public void setPreviousCrosslink(CrossLinkData previousCrosslink) {
-          this.previousCrosslink = previousCrosslink;
+        public void setPreviousCrosslinkRoot(String previousCrosslinkRoot) {
+          this.previousCrosslinkRoot = previousCrosslinkRoot;
         }
 
         public String getCrosslinkDataRoot() {
@@ -692,6 +714,9 @@ public class StateTestCase implements NamedTestCase {
     public static class CrossLinkData {
       private String epoch;
 
+      @JsonProperty("previous_crosslink_root")
+      private String previousCrosslinkRoot;
+
       @JsonProperty("crosslink_data_root")
       private String crosslinkDataRoot;
 
@@ -701,6 +726,14 @@ public class StateTestCase implements NamedTestCase {
 
       public void setEpoch(String epoch) {
         this.epoch = epoch;
+      }
+
+      public String getPreviousCrosslinkRoot() {
+        return previousCrosslinkRoot;
+      }
+
+      public void setPreviousCrosslinkRoot(String previousCrosslinkRoot) {
+        this.previousCrosslinkRoot = previousCrosslinkRoot;
       }
 
       public String getCrosslinkDataRoot() {
@@ -911,6 +944,9 @@ public class StateTestCase implements NamedTestCase {
         @JsonProperty("deposit_root")
         private String depositRoot;
 
+        @JsonProperty("deposit_count")
+        private String depositCount;
+
         @JsonProperty("block_hash")
         private String blockHash;
 
@@ -920,6 +956,14 @@ public class StateTestCase implements NamedTestCase {
 
         public void setDepositRoot(String depositRoot) {
           this.depositRoot = depositRoot;
+        }
+
+        public String getDepositCount() {
+          return depositCount;
+        }
+
+        public void setDepositCount(String depositCount) {
+          this.depositCount = depositCount;
         }
 
         public String getBlockHash() {
@@ -967,21 +1011,37 @@ public class StateTestCase implements NamedTestCase {
       }
 
       public static class SlashableAttestationData {
-        @JsonProperty("validator_indices")
-        private List<Long> validatorIndices;
+        @JsonProperty("custody_bit_0_indices")
+        private List<Long> custodyBit0Indices;
+        @JsonProperty("custody_bit_1_indices")
+        private List<Long> custodyBit1Indices;
         @JsonProperty("data")
         private AttestationDataContainer data;
-        @JsonProperty("custody_bitfield")
-        private String custodyBitfield;
-        @JsonProperty("aggregate_signature")
-        private String aggregateSignature;
+        @JsonProperty("signature")
+        private String signature;
 
-        public List<Long> getValidatorIndices() {
-          return validatorIndices;
+        public String getSignature() {
+          return signature;
         }
 
-        public void setValidatorIndices(List<Long> validatorIndices) {
-          this.validatorIndices = validatorIndices;
+        public void setSignature(String signature) {
+          this.signature = signature;
+        }
+
+        public List<Long> getCustodyBit0Indices() {
+          return custodyBit0Indices;
+        }
+
+        public void setCustodyBit0Indices(List<Long> custodyBit0Indices) {
+          this.custodyBit0Indices = custodyBit0Indices;
+        }
+
+        public List<Long> getCustodyBit1Indices() {
+          return custodyBit1Indices;
+        }
+
+        public void setCustodyBit1Indices(List<Long> custodyBit1Indices) {
+          this.custodyBit1Indices = custodyBit1Indices;
         }
 
         public AttestationDataContainer getData() {
@@ -992,20 +1052,12 @@ public class StateTestCase implements NamedTestCase {
           this.data = data;
         }
 
-        public String getCustodyBitfield() {
-          return custodyBitfield;
-        }
-
-        public void setCustodyBitfield(String custodyBitfield) {
-          this.custodyBitfield = custodyBitfield;
-        }
-
         public String getAggregateSignature() {
-          return aggregateSignature;
+          return signature;
         }
 
         public void setAggregateSignature(String aggregateSignature) {
-          this.aggregateSignature = aggregateSignature;
+          this.signature = aggregateSignature;
         }
       }
 
@@ -1066,11 +1118,11 @@ public class StateTestCase implements NamedTestCase {
         }
 
         public static class DepositDataContainer {
+          private String pubkey;
+          @JsonProperty("withdrawal_credentials")
+          private String withdrawalCredentials;
           private String amount;
-          private Long timestamp;
-
-          @JsonProperty("deposit_input")
-          private DepositInputData depositInput;
+          private String signature;
 
           public String getAmount() {
             return amount;
@@ -1080,54 +1132,28 @@ public class StateTestCase implements NamedTestCase {
             this.amount = amount;
           }
 
-          public Long getTimestamp() {
-            return timestamp;
+          public String getPubkey() {
+            return pubkey;
           }
 
-          public void setTimestamp(Long timestamp) {
-            this.timestamp = timestamp;
+          public void setPubkey(String pubkey) {
+            this.pubkey = pubkey;
           }
 
-          public DepositInputData getDepositInput() {
-            return depositInput;
+          public String getWithdrawalCredentials() {
+            return withdrawalCredentials;
           }
 
-          public void setDepositInput(DepositInputData depositInput) {
-            this.depositInput = depositInput;
+          public void setWithdrawalCredentials(String withdrawalCredentials) {
+            this.withdrawalCredentials = withdrawalCredentials;
           }
 
-          public static class DepositInputData {
-            private String pubkey;
+          public String getSignature() {
+            return signature;
+          }
 
-            @JsonProperty("withdrawal_credentials")
-            private String withdrawalCredentials;
-
-            @JsonProperty("proof_of_possession")
-            private String proofOfPossession;
-
-            public String getPubkey() {
-              return pubkey;
-            }
-
-            public void setPubkey(String pubkey) {
-              this.pubkey = pubkey;
-            }
-
-            public String getWithdrawalCredentials() {
-              return withdrawalCredentials;
-            }
-
-            public void setWithdrawalCredentials(String withdrawalCredentials) {
-              this.withdrawalCredentials = withdrawalCredentials;
-            }
-
-            public String getProofOfPossession() {
-              return proofOfPossession;
-            }
-
-            public void setProofOfPossession(String proofOfPossession) {
-              this.proofOfPossession = proofOfPossession;
-            }
+          public void setSignature(String signature) {
+            this.signature = signature;
           }
         }
       }

@@ -21,7 +21,7 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
 /** Tests of {@link SSZObjectHasher} */
 public class SSZObjectHasherTest {
   private static byte[] DEFAULT_HASH =
-      Hashes.keccak256(BytesValue.fromHexString("aa")).getArrayUnsafe();
+      Hashes.sha256(BytesValue.fromHexString("aa")).getArrayUnsafe();
   private static Sign.Signature DEFAULT_SIG = new Sign.Signature();
 
   static {
@@ -35,7 +35,7 @@ public class SSZObjectHasherTest {
   public void setup() {
     SSZHasher sszHasher = new SSZBuilder()
         .withExplicitAnnotations(false)
-        .buildHasher(Hashes::keccak256);
+        .buildHasher(Hashes::sha256);
     this.sszHasher = new SSZObjectHasher(sszHasher);
   }
 
@@ -103,9 +103,9 @@ public class SSZObjectHasherTest {
   @Test
   public void list32Test() {
     List<byte[]> hashes = new ArrayList<>();
-    hashes.add(Hashes.keccak256(BytesValue.fromHexString("aa")).getArrayUnsafe());
-    hashes.add(Hashes.keccak256(BytesValue.fromHexString("bb")).getArrayUnsafe());
-    hashes.add(Hashes.keccak256(BytesValue.fromHexString("cc")).getArrayUnsafe());
+    hashes.add(Hashes.sha256(BytesValue.fromHexString("aa")).getArrayUnsafe());
+    hashes.add(Hashes.sha256(BytesValue.fromHexString("bb")).getArrayUnsafe());
+    hashes.add(Hashes.sha256(BytesValue.fromHexString("cc")).getArrayUnsafe());
     AttestationRecord attestationRecord =
         new AttestationRecord(
             123,

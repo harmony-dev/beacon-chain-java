@@ -1,6 +1,7 @@
 package org.ethereum.beacon.consensus;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -9,8 +10,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.ethereum.beacon.consensus.hasher.ObjectHasher;
-import org.ethereum.beacon.consensus.hasher.SSZObjectHasher;
 import org.ethereum.beacon.consensus.transition.InitialStateTransition;
 import org.ethereum.beacon.consensus.util.CachingBeaconChainSpec;
 import org.ethereum.beacon.core.BeaconBlock;
@@ -19,11 +20,12 @@ import org.ethereum.beacon.core.BeaconBlockHeader;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
-import org.ethereum.beacon.core.operations.deposit.DepositInput;
+import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
@@ -51,11 +53,11 @@ public class BeaconChainSpecTest {
     BytesValue bytes = BytesValue.wrap(new byte[]{(byte) 1, (byte) 256, (byte) 65656});
 
     int expectedInt = 817593;
-    Hash32 hash = Hashes.keccak256(bytes);
+    Hash32 hash = Hashes.sha256(bytes);
     int res = Bytes3.wrap(hash, 0).asUInt24BigEndian().getValue();
 
 
-//    int[] actual = spec.shuffle(sample, Hashes.keccak256(bytes));
+//    int[] actual = spec.shuffle(sample, Hashes.sha256(bytes));
 //    int[] expected = new int[]{2, 4, 10, 7, 5, 6, 9, 8, 1, 3};
 //
 //    Assert.assertArrayEquals(expected, actual);
@@ -98,14 +100,13 @@ public class BeaconChainSpecTest {
     System.out.println(map);
   }
 
-  private DepositInput createDepositInput() {
-    DepositInput depositInput =
-        new DepositInput(
-            BLSPubkey.wrap(Bytes48.TRUE),
-            Hashes.keccak256(BytesValue.fromHexString("aa")),
-            BLSSignature.wrap(Bytes96.ZERO));
-
-    return depositInput;
+  private DepositData createDepositData() {
+    return new DepositData(
+        BLSPubkey.wrap(Bytes48.TRUE),
+        Hashes.sha256(BytesValue.fromHexString("aa")),
+        Gwei.ZERO,
+        BLSSignature.wrap(Bytes96.ZERO)
+    );
   }
 
   @Test
@@ -113,7 +114,7 @@ public class BeaconChainSpecTest {
     BeaconChainSpec spec = BeaconChainSpec.createWithDefaults();
 //    Hash32 expected =
 //        Hash32.fromHexString("0x1a2017aea008e5bb8b3eb79d031f14347018353f1c58fc3a54e9fc7af7ab2fe1");
-    Hash32 actual = spec.hash_tree_root(createDepositInput());
+    Hash32 actual = spec.hash_tree_root(createDepositData());
 //    assertEquals(expected, actual);
   }
 
@@ -140,7 +141,7 @@ public class BeaconChainSpecTest {
             body,
             emptyBlock.getSignature());
     BeaconBlockHeader header = spec.get_temporary_block_header(block);
-    assertEquals(spec.signed_root(block), spec.signed_root(header));
+    assertEquals(spec.signing_root(block), spec.signing_root(header));
   }
 
   @Ignore
@@ -154,7 +155,7 @@ public class BeaconChainSpecTest {
     Random rnd = new Random(1);
     Time genesisTime = Time.of(10 * 60);
 
-    Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), Hash32.random(rnd));
+    Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), UInt64.ZERO, Hash32.random(rnd));
 
     SpecConstants specConstants =
         new SpecConstants() {
@@ -179,7 +180,7 @@ public class BeaconChainSpecTest {
           }
         };
     BeaconChainSpec spec = new CachingBeaconChainSpec(
-        specConstants, Hashes::keccak256, ObjectHasher.createSSZOverKeccak256(specConstants), false, true);
+        specConstants, Hashes::sha256, ObjectHasher.createSSZOverSHA256(specConstants), false, true);
 
     System.out.println("Generating deposits...");
     List<Deposit> deposits = TestUtils.generateRandomDepositsWithoutSig(rnd, spec, validatorCount);
@@ -191,25 +192,47 @@ public class BeaconChainSpecTest {
             spec.get_empty_block());
     MutableBeaconState state = initialState.createMutableCopy();
 
-    for(int i = 1; i < 128; i++) {
-      System.out.println("get_epoch_committee_count(" + i + ") = " +
-          spec.get_epoch_committee_count(i));
-    }
+    System.out.println("get_epoch_committee_count() = " +
+        spec.get_epoch_committee_count(state, spec.getConstants().getGenesisEpoch()));
 
     for (SlotNumber slot : genesisSlot.iterateTo(genesisSlot.plus(SlotNumber.of(epochLength)))) {
       System.out.println("Slot #" + slot
           + " beacon proposer: "
-          + spec.get_beacon_proposer_index(state, slot)
+          + spec.get_beacon_proposer_index(state)
           + " committee: "
           + spec.get_crosslink_committees_at_slot(state, slot));
       System.out.println("Slot #" + slot
           + " beacon proposer: "
-          + spec.get_beacon_proposer_index(state, slot)
+          + spec.get_beacon_proposer_index(state)
           + " committee: "
           + spec.get_crosslink_committees_at_slot(state, slot).stream()
             .map(c -> c.getShard() + ": [" + c.getCommittee().size() + "]")
             .collect(Collectors.joining(","))
             );
     }
+  }
+
+  @Test
+  public void computeCommittee2ProducesCorrectResult() {
+    BeaconChainSpec spec = BeaconChainSpec.createWithDefaults();
+
+    int committeeSize = 128;
+    int totalCommittees = 64;
+    int validatorCount = committeeSize * totalCommittees + 11;
+    List<ValidatorIndex> validatorIndices = IntStream.range(0, validatorCount).mapToObj(ValidatorIndex::new).collect(
+        Collectors.toList());
+    Hash32 seed = Hash32.random(new Random());
+
+    List<ValidatorIndex> actualIndices = new ArrayList<>();
+    for (int i = 0; i < totalCommittees; i++) {
+      List<ValidatorIndex> committee = spec.compute_committee(validatorIndices, seed, i, totalCommittees);
+      List<ValidatorIndex> committee2 = spec.compute_committee2(validatorIndices, seed, i, totalCommittees);
+      assertEquals(committee, committee2);
+
+      actualIndices.addAll(committee);
+    }
+
+    actualIndices.sort(ValidatorIndex::compareTo);
+    assertEquals(validatorIndices, actualIndices);
   }
 }

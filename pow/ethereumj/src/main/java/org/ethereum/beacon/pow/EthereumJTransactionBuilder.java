@@ -1,5 +1,6 @@
 package org.ethereum.beacon.pow;
 
+import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.pow.validator.TransactionBuilder;
 import org.ethereum.core.CallTransaction;
@@ -37,7 +38,7 @@ public class EthereumJTransactionBuilder implements TransactionBuilder {
 
   @Override
   public CompletableFuture<BytesValue> createTransaction(
-      String fromAddress, BytesValue depositInput, Gwei amount) {
+      String fromAddress, DepositData depositData, Gwei amount) {
     CompletableFuture<BytesValue> result = new CompletableFuture<>();
     executeOnSyncDone(
         () -> {
@@ -46,7 +47,10 @@ public class EthereumJTransactionBuilder implements TransactionBuilder {
                   .getRepository()
                   .getNonce(Address.fromHexString(fromAddress).getArrayUnsafe());
           byte[] data =
-              contract.getByName("deposit").encode((Object) depositInput.getArrayUnsafe());
+              contract.getByName("deposit").encode(
+                  depositData.getPubKey().getArrayUnsafe(),
+                  depositData.getWithdrawalCredentials().getArrayUnsafe(),
+                  depositData.getSignature().getArrayUnsafe());
           Transaction tx =
               ethereum.createTransaction(
                   nonce,

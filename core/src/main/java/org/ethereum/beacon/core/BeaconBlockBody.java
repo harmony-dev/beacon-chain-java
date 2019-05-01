@@ -35,7 +35,7 @@ public class BeaconBlockBody {
   /** A body where all lists are empty. */
   public static final BeaconBlockBody EMPTY =
       new BeaconBlockBody(
-          InitialValues.EMPTY_SIGNATURE,
+          BLSSignature.ZERO,
           Eth1Data.EMPTY,
           emptyList(),
           emptyList(),

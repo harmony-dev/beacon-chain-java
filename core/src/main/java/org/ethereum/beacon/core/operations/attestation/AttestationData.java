@@ -17,7 +17,7 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
  *
  * @see Attestation
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.5.0/specs/core/0_beacon-chain.md#attestationdata">AttestationData
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.6.0/specs/core/0_beacon-chain.md#attestationdata">AttestationData
  *     in the spec</a>
  */
 @SSZSerializable
@@ -43,8 +43,8 @@ public class AttestationData {
 
   /** Shard number. */
   @SSZ private final ShardNumber shard;
-  /** Previous crosslink. */
-  @SSZ private final Crosslink previousCrosslink;
+  /** Previous crosslink root. */
+  @SSZ private final Hash32 previousCrosslinkRoot;
   /** Data from the shard since the last attestation. */
   @SSZ private final Hash32 crosslinkDataRoot;
 
@@ -55,14 +55,14 @@ public class AttestationData {
       Hash32 sourceRoot,
       Hash32 targetRoot,
       ShardNumber shard,
-      Crosslink previousCrosslink,
+      Hash32 previousCrosslinkRoot,
       Hash32 crosslinkDataRoot) {
     this.slot = slot;
     this.shard = shard;
     this.beaconBlockRoot = beaconBlockRoot;
     this.targetRoot = targetRoot;
     this.crosslinkDataRoot = crosslinkDataRoot;
-    this.previousCrosslink = previousCrosslink;
+    this.previousCrosslinkRoot = previousCrosslinkRoot;
     this.sourceEpoch = sourceEpoch;
     this.sourceRoot = sourceRoot;
   }
@@ -87,8 +87,8 @@ public class AttestationData {
     return crosslinkDataRoot;
   }
 
-  public Crosslink getPreviousCrosslink() {
-    return previousCrosslink;
+  public Hash32 getPreviousCrosslinkRoot() {
+    return previousCrosslinkRoot;
   }
 
   public EpochNumber getSourceEpoch() {
@@ -109,7 +109,7 @@ public class AttestationData {
         && Objects.equal(beaconBlockRoot, that.beaconBlockRoot)
         && Objects.equal(targetRoot, that.targetRoot)
         && Objects.equal(crosslinkDataRoot, that.crosslinkDataRoot)
-        && Objects.equal(previousCrosslink, that.previousCrosslink)
+        && Objects.equal(previousCrosslinkRoot, that.previousCrosslinkRoot)
         && Objects.equal(sourceEpoch, that.sourceEpoch)
         && Objects.equal(sourceRoot, that.sourceRoot);
   }
@@ -121,7 +121,7 @@ public class AttestationData {
     result = 31 * result + (beaconBlockRoot != null ? beaconBlockRoot.hashCode() : 0);
     result = 31 * result + (targetRoot != null ? targetRoot.hashCode() : 0);
     result = 31 * result + (crosslinkDataRoot != null ? crosslinkDataRoot.hashCode() : 0);
-    result = 31 * result + (previousCrosslink != null ? previousCrosslink.hashCode() : 0);
+    result = 31 * result + (previousCrosslinkRoot != null ? previousCrosslinkRoot.hashCode() : 0);
     result = 31 * result + (sourceEpoch != null ? sourceEpoch.hashCode() : 0);
     result = 31 * result + (sourceRoot != null ? sourceRoot.hashCode() : 0);
     return result;
@@ -139,7 +139,7 @@ public class AttestationData {
         + ", beaconBlock=" + beaconBlockRoot.toStringShort()
         + ", targetRoot=" + targetRoot.toStringShort()
         + ", shardBlock=" + crosslinkDataRoot.toStringShort()
-        + ", previousCrosslink=" + previousCrosslink.toString(spec)
+        + ", previousCrosslinkRoot=" + previousCrosslinkRoot.toStringShort()
         + ", sourceEpoch=" + sourceEpoch.toString(spec)
         + ", sourceRoot=" + sourceRoot.toStringShort()
         +"]";
