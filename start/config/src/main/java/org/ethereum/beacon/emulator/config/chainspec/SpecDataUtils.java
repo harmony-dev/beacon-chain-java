@@ -48,15 +48,12 @@ public abstract class SpecDataUtils {
     MiscParametersData miscParameters =
         new MiscParametersData() {
           {
-            setBEACON_CHAIN_SHARD_NUMBER(constants.getBeaconChainShardNumber().toString());
-            setMAX_BALANCE_CHURN_QUOTIENT(constants.getMaxBalanceChurnQuotient().toString());
             setMAX_INDICES_PER_ATTESTATION(constants.getMaxIndicesPerAttestation().toString());
             setMIN_PER_EPOCH_CHURN_LIMIT(constants.getMinPerEpochChurnLimit().toString());
             setCHURN_LIMIT_QUOTIENT(constants.getChurnLimitQuotient().toString());
-            setBASE_REWARDS_PER_EPOCH(constants.getBaseRewardsPerEpoch().toString());
             setSHARD_COUNT(constants.getShardCount().toString());
             setTARGET_COMMITTEE_SIZE(constants.getTargetCommitteeSize().toString());
-            setMAX_EXIT_DEQUEUES_PER_EPOCH(constants.getMaxExitDequesPerEpoch().toString());
+            setSHUFFLE_ROUND_COUNT(constants.getShuffleRoundCount());
           }
         };
 
