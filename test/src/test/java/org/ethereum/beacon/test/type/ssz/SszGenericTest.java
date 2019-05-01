@@ -13,7 +13,7 @@ public class SszGenericTest extends TestSkeleton {
     return testCases;
   }
 
-  public void setTestCases(List<SszGenericTestCase> testCases) {
+  public void setTestCases(List<SszGenericCase> testCases) {
     this.testCases = (List<TestCase>) (List<?>) testCases;
   }
 }

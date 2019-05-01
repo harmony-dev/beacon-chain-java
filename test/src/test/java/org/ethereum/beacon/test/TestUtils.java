@@ -24,6 +24,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -183,7 +185,16 @@ public class TestUtils {
       BeaconChainSpec spec,
       V test,
       Function<Pair<TestCase, BeaconChainSpec>, Optional<String>> testCaseRunner) {
-    Optional<String> testCaseErrors = testCaseRunner.apply(Pair.with(testCase, spec));
+    Optional<String> testCaseErrors;
+    try {
+      testCaseErrors = testCaseRunner.apply(Pair.with(testCase, spec));
+    } catch (Exception ex) {
+      StringWriter sw = new StringWriter();
+      PrintWriter pw = new PrintWriter(sw);
+      ex.printStackTrace(pw);
+      String error = String.format("Unexpected error when running case %s: %s", testCase, sw.toString());
+      testCaseErrors = Optional.of(error);
+    }
     if (testCaseErrors.isPresent()) {
       StringBuilder errors = new StringBuilder();
       errors

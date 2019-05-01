@@ -1,22 +1,22 @@
-package org.ethereum.beacon.test.type.hash;
+package org.ethereum.beacon.test.type.ssz;
 
 import org.ethereum.beacon.test.type.TestCase;
 import org.ethereum.beacon.test.type.TestSkeleton;
 
 import java.util.List;
 
-/** Tree hash tests with containers */
-public class TreeHashContainerTest extends TestSkeleton {
+/** Ssz static tests with known containers */
+public class SszStaticTest extends TestSkeleton {
   public List<TestCase> getTestCases() {
     return testCases;
   }
 
-  public void setTestCases(List<TreeHashContainerTestCase> testCases) {
+  public void setTestCases(List<SszStaticCase> testCases) {
     this.testCases = (List<TestCase>) (List<?>) testCases;
   }
 
   @Override
   public String toString() {
-    return "Test \"" + getTitle() + " " + getVersion() + '\"';
+    return "Test \"" + getTitle() + " [" + String.join(",", getForks()) + "]\"";
   }
 }

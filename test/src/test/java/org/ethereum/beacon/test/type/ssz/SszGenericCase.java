@@ -10,7 +10,7 @@ import java.util.List;
  * <p>Test format description: <a
  * href="https://github.com/ethereum/eth2.0-specs/tree/dev/specs/test_formats/ssz_generic">https://github.com/ethereum/eth2.0-specs/tree/dev/specs/test_formats/ssz_generic</a>
  */
-public class SszGenericTestCase implements TestCase {
+public class SszGenericCase implements TestCase {
   private String type;
   private String valid;
   private String ssz;

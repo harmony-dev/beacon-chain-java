@@ -11,24 +11,24 @@ import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.access.container.SSZSchemeBuilder;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import org.ethereum.beacon.test.runner.Runner;
-import org.ethereum.beacon.test.type.ssz.SszGenericTestCase;
+import org.ethereum.beacon.test.type.ssz.SszGenericCase;
 import org.ethereum.beacon.test.type.TestCase;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
-/** TestRunner for {@link SszGenericTestCase}
+/** TestRunner for {@link SszGenericCase}
  * <p>Test format description: <a href="https://github.com/ethereum/eth2.0-specs/tree/dev/specs/test_formats/ssz_generic">https://github.com/ethereum/eth2.0-specs/tree/dev/specs/test_formats/ssz_generic</a>
  */
 public class SszGenericRunner implements Runner {
-  private SszGenericTestCase testCase;
+  private SszGenericCase testCase;
   private BeaconChainSpec spec;
   private SSZSchemeBuilder.SSZScheme currentScheme;
   private SSZSerializer sszSerializer;
 
   public SszGenericRunner(TestCase testCase, BeaconChainSpec spec) {
-    if (!(testCase instanceof SszGenericTestCase)) {
-      throw new RuntimeException("TestCase runner accepts only SszGenericTestCase.class as input!");
+    if (!(testCase instanceof SszGenericCase)) {
+      throw new RuntimeException("TestCase runner accepts only SszGenericCase.class as input!");
     }
-    this.testCase = (SszGenericTestCase) testCase;
+    this.testCase = (SszGenericCase) testCase;
     this.spec = spec;
     SSZBuilder builder = new SSZBuilder();
     builder.withSSZSchemeBuilder(clazz -> currentScheme);
