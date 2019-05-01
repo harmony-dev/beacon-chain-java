@@ -2,11 +2,10 @@ package org.ethereum.beacon.test.runner.ssz.mapper;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.ethereum.beacon.core.operations.slashing.SlashableAttestation;
+import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
 import tech.pegasys.artemis.util.bytes.BytesValue;
-import tech.pegasys.artemis.util.uint.UInt64;
-// TODO: should be IndexedAttestation
-public class IndexedAttestationSerializer implements ObjectSerializer<SlashableAttestation> {
+
+public class IndexedAttestationSerializer implements ObjectSerializer<IndexedAttestation> {
   private com.fasterxml.jackson.databind.ObjectMapper mapper;
   private AttestationDataSerializer attestationDataSerializer;
 
@@ -17,18 +16,20 @@ public class IndexedAttestationSerializer implements ObjectSerializer<SlashableA
 
   @Override
   public Class accepts() {
-    return SlashableAttestation.class;
+    return IndexedAttestation.class;
   }
 
   @Override
-  public ObjectNode map(SlashableAttestation instance) {
+  public ObjectNode map(IndexedAttestation instance) {
     ObjectNode slashableAttestation = mapper.createObjectNode();
     ArrayNode indices0 = mapper.createArrayNode();
-    instance.getValidatorIndices().stream().map(ObjectSerializer::convert).forEachOrdered(indices0::add);
+    instance.getCustodyBit0Indices().stream().map(ObjectSerializer::convert).forEachOrdered(indices0::add);
     slashableAttestation.set("custody_bit_0_indices", indices0);
-//    slashableAttestation.put("custody_bit_1_indices", instance.get); TODO
+    ArrayNode indices1 = mapper.createArrayNode();
+    instance.getCustodyBit1Indices().stream().map(ObjectSerializer::convert).forEachOrdered(indices1::add);
+    slashableAttestation.set("custody_bit_1_indices", indices1);
     slashableAttestation.set("data", attestationDataSerializer.map(instance.getData()));
-    slashableAttestation.put("signature", BytesValue.wrap(instance.getAggregateSingature().getArrayUnsafe()).toString());
+    slashableAttestation.put("signature", BytesValue.wrap(instance.getSignature().getArrayUnsafe()).toString());
     return slashableAttestation;
   }
 }

@@ -2,13 +2,10 @@ package org.ethereum.beacon.test.runner.ssz.mapper;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.ethereum.beacon.core.BeaconBlockBody;
-import org.ethereum.beacon.core.BeaconState;
-import org.ethereum.beacon.core.types.Gwei;
+import org.ethereum.beacon.core.state.BeaconStateImpl;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.uint.UInt64;
 
-public class BeaconStateSerializer implements ObjectSerializer<BeaconState> {
+public class BeaconStateSerializer implements ObjectSerializer<BeaconStateImpl> {
   private com.fasterxml.jackson.databind.ObjectMapper mapper;
   private ForkSerializer forkSerializer;
   private ValidatorSerializer validatorSerializer;
@@ -29,11 +26,11 @@ public class BeaconStateSerializer implements ObjectSerializer<BeaconState> {
 
   @Override
   public Class accepts() {
-    return BeaconState.class;
+    return BeaconStateImpl.class;
   }
 
   @Override
-  public ObjectNode map(BeaconState instance) {
+  public ObjectNode map(BeaconStateImpl instance) {
     ObjectNode beaconState = mapper.createObjectNode();
     ObjectSerializer.setUint64Field(beaconState, "slot", instance.getSlot());
     ObjectSerializer.setUint64Field(beaconState, "genesis_time", instance.getGenesisTime());
@@ -43,7 +40,7 @@ public class BeaconStateSerializer implements ObjectSerializer<BeaconState> {
     instance.getValidatorRegistry().stream().map(o -> validatorSerializer.map(o)).forEachOrdered(validatorRegistryNode::add);
     beaconState.set("validator_registry", validatorRegistryNode);
     ArrayNode balancesNode = mapper.createArrayNode();
-    instance.getValidatorBalances().stream().map(ObjectSerializer::convert).forEachOrdered(balancesNode::add);
+    instance.getBalances().stream().map(ObjectSerializer::convert).forEachOrdered(balancesNode::add);
     beaconState.set("balances", balancesNode);
 
     ArrayNode latestRandaoMixes = mapper.createArrayNode();
@@ -51,7 +48,7 @@ public class BeaconStateSerializer implements ObjectSerializer<BeaconState> {
         .map(Hash32::toString)
         .forEachOrdered(latestRandaoMixes::add);
     beaconState.set("latest_randao_mixes", latestRandaoMixes);
-    ObjectSerializer.setUint64Field(beaconState, "latest_start_shard", instance.getCurrentShufflingStartShard());// TODO
+    ObjectSerializer.setUint64Field(beaconState, "latest_start_shard", instance.getLatestStartShard());
 
     ArrayNode previousEpochAttestationNode = mapper.createArrayNode();
     instance.getPreviousEpochAttestations().stream().map(o -> pendingAttestationSerializer.map(o)).forEachOrdered(previousEpochAttestationNode::add);
@@ -93,9 +90,9 @@ public class BeaconStateSerializer implements ObjectSerializer<BeaconState> {
     beaconState.set("historical_roots", historicalRootsNode);
 
     beaconState.set("latest_eth1_data", eth1DataSerializer.map(instance.getLatestEth1Data()));
-//    ArrayNode eth1DataVotesNode = mapper.createArrayNode(); TODO
-//    instance.getEth1DataVotes().stream().map(o -> eth1DataSerializer.map(o)).forEachOrdered(eth1DataVotesNode::add);
-//    beaconState.set("eth1_data_votes", eth1DataVotesNode);
+    ArrayNode eth1DataVotesNode = mapper.createArrayNode();
+    instance.getEth1DataVotes().stream().map(o -> eth1DataSerializer.map(o)).forEachOrdered(eth1DataVotesNode::add);
+    beaconState.set("eth1_data_votes", eth1DataVotesNode);
     ObjectSerializer.setUint64Field(beaconState, "deposit_index", instance.getDepositIndex());
     return beaconState;
   }

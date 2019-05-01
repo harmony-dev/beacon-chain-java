@@ -20,10 +20,10 @@ public class DepositDataSerializer implements ObjectSerializer<DepositData> {
   @Override
   public ObjectNode map(DepositData instance) {
     ObjectNode depositData = mapper.createObjectNode();
-    depositData.put("pubkey", BytesValue.wrap(instance.getDepositInput().getPubKey().getArrayUnsafe()).toString());
-    depositData.put("withdrawal_credentials", instance.getDepositInput().getWithdrawalCredentials().toString());
+    depositData.put("pubkey", BytesValue.wrap(instance.getPubKey().getArrayUnsafe()).toString());
+    depositData.put("withdrawal_credentials", instance.getWithdrawalCredentials().toString());
     ObjectSerializer.setUint64Field(depositData, "amount", instance.getAmount());
-    depositData.put("signature", BytesValue.wrap(instance.getDepositInput().getProofOfPossession().getArrayUnsafe()).toString());
+    depositData.put("signature", BytesValue.wrap(instance.getSignature().getArrayUnsafe()).toString());
     return depositData;
   }
 }

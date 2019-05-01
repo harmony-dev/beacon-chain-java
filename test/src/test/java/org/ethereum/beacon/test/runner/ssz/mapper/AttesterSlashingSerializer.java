@@ -21,8 +21,8 @@ public class AttesterSlashingSerializer implements ObjectSerializer<AttesterSlas
   @Override
   public ObjectNode map(AttesterSlashing instance) {
     ObjectNode attesterSlashing = mapper.createObjectNode();
-    attesterSlashing.set("attestation_1", indexedAttestationSerializer.map(instance.getSlashableAttestation1()));
-    attesterSlashing.set("attestation_2", indexedAttestationSerializer.map(instance.getSlashableAttestation2()));
+    attesterSlashing.set("attestation_1", indexedAttestationSerializer.map(instance.getAttestation1()));
+    attesterSlashing.set("attestation_2", indexedAttestationSerializer.map(instance.getAttestation2()));
     return attesterSlashing;
   }
 }

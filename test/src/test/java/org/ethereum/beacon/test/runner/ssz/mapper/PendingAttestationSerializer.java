@@ -2,7 +2,6 @@ package org.ethereum.beacon.test.runner.ssz.mapper;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.ethereum.beacon.core.state.PendingAttestation;
-import org.ethereum.beacon.core.state.ValidatorRecord;
 
 public class PendingAttestationSerializer implements ObjectSerializer<PendingAttestation> {
   private com.fasterxml.jackson.databind.ObjectMapper mapper;

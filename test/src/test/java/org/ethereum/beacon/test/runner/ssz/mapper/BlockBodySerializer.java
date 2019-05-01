@@ -3,9 +3,6 @@ package org.ethereum.beacon.test.runner.ssz.mapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.ethereum.beacon.core.BeaconBlockBody;
-import org.ethereum.beacon.core.state.HistoricalBatch;
-
-import java.util.Objects;
 
 public class BlockBodySerializer implements ObjectSerializer<BeaconBlockBody> {
   private com.fasterxml.jackson.databind.ObjectMapper mapper;

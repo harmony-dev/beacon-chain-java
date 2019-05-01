@@ -2,7 +2,6 @@ package org.ethereum.beacon.test.runner.ssz.mapper;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.ethereum.beacon.core.operations.Attestation;
-import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustodyBit;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 public class AttestationSerializer implements ObjectSerializer<Attestation> {
@@ -25,7 +24,7 @@ public class AttestationSerializer implements ObjectSerializer<Attestation> {
     attestation.put("aggregation_bitfield", instance.getAggregationBitfield().toString());
     attestation.set("data", attestationDataSerializer.map(instance.getData()));
     attestation.put("custody_bitfield", instance.getCustodyBitfield().toString());
-    attestation.put("signature", BytesValue.wrap(instance.getAggregateSignature().getArrayUnsafe()).toString());
+    attestation.put("signature", BytesValue.wrap(instance.getSignature().getArrayUnsafe()).toString());
     return attestation;
   }
 }

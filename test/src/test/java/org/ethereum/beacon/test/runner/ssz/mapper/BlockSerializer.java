@@ -1,12 +1,8 @@
 package org.ethereum.beacon.test.runner.ssz.mapper;
 
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.ethereum.beacon.core.BeaconBlock;
-import org.ethereum.beacon.core.operations.Deposit;
 import tech.pegasys.artemis.util.bytes.BytesValue;
-
-import java.util.Objects;
 
 public class BlockSerializer implements ObjectSerializer<BeaconBlock> {
   private com.fasterxml.jackson.databind.ObjectMapper mapper;

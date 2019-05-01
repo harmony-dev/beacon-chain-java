@@ -27,7 +27,7 @@ public class DepositSerializer implements ObjectSerializer<Deposit> {
     instance.getProof().stream().map(Objects::toString).forEachOrdered(proofNode::add);
     attestation.set("proof", proofNode);
     attestation.put("index", instance.getIndex().getValue());
-    attestation.set("data", depositDataSerializer.map(instance.getDepositData()));
+    attestation.set("data", depositDataSerializer.map(instance.getData()));
     return attestation;
   }
 }
