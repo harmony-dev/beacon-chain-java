@@ -1,6 +1,7 @@
 package org.ethereum.beacon.consensus;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -9,6 +10,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.ethereum.beacon.consensus.hasher.ObjectHasher;
 import org.ethereum.beacon.consensus.transition.InitialStateTransition;
 import org.ethereum.beacon.consensus.util.CachingBeaconChainSpec;
@@ -208,5 +210,29 @@ public class BeaconChainSpecTest {
             .collect(Collectors.joining(","))
             );
     }
+  }
+
+  @Test
+  public void computeCommittee2ProducesCorrectResult() {
+    BeaconChainSpec spec = BeaconChainSpec.createWithDefaults();
+
+    int committeeSize = 128;
+    int totalCommittees = 64;
+    int validatorCount = committeeSize * totalCommittees + 11;
+    List<ValidatorIndex> validatorIndices = IntStream.range(0, validatorCount).mapToObj(ValidatorIndex::new).collect(
+        Collectors.toList());
+    Hash32 seed = Hash32.random(new Random());
+
+    List<ValidatorIndex> actualIndices = new ArrayList<>();
+    for (int i = 0; i < totalCommittees; i++) {
+      List<ValidatorIndex> committee = spec.compute_committee(validatorIndices, seed, i, totalCommittees);
+      List<ValidatorIndex> committee2 = spec.compute_committee2(validatorIndices, seed, i, totalCommittees);
+      assertEquals(committee, committee2);
+
+      actualIndices.addAll(committee);
+    }
+
+    actualIndices.sort(ValidatorIndex::compareTo);
+    assertEquals(validatorIndices, actualIndices);
   }
 }

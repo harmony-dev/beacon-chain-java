@@ -153,6 +153,20 @@ public interface HelperFunction extends SpecCommons {
     }).collect(toList());
   }
 
+  /**
+   * An optimized version of {@link #compute_committee(List, Hash32, int, int)}.
+   * Based on {@link #get_permuted_list(List, Bytes32)}.
+   */
+  default List<ValidatorIndex> compute_committee2(
+      List<ValidatorIndex> validator_indices, Hash32 seed, int index, int total_committees) {
+    int start_offset = get_split_offset(validator_indices.size(), total_committees, index);
+    int end_offset = get_split_offset(validator_indices.size(), total_committees, index + 1);
+    List<UInt64> permuted_indices = get_permuted_list(validator_indices, seed);
+
+    return permuted_indices.subList(start_offset, end_offset).stream()
+        .map(ValidatorIndex::new).collect(toList());
+  }
+
   /*
     def get_crosslink_committees_at_slot(state: BeaconState,
                                      slot: Slot) -> List[Tuple[List[ValidatorIndex], Shard]]:
@@ -224,7 +238,7 @@ public interface HelperFunction extends SpecCommons {
     List<ShardCommittee> ret = new ArrayList<>();
     for(int i = 0; i < committees_per_slot; i++) {
       ShardCommittee committee = new ShardCommittee(
-          compute_committee(indices, seed, committees_per_slot * offset + i, committees_per_epoch),
+          compute_committee2(indices, seed, committees_per_slot * offset + i, committees_per_epoch),
           slot_start_shard.plusModulo(i, getConstants().getShardCount()));
       ret.add(committee);
     }
