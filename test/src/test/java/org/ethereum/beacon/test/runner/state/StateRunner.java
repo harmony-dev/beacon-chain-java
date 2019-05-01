@@ -1,103 +1,81 @@
 package org.ethereum.beacon.test.runner.state;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.lang.reflect.InvocationTargetException;
-import java.util.Optional;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
-import org.ethereum.beacon.consensus.BeaconStateEx;
-import org.ethereum.beacon.consensus.BlockTransition;
-import org.ethereum.beacon.consensus.StateTransitions;
-import org.ethereum.beacon.consensus.TransitionType;
-import org.ethereum.beacon.consensus.transition.BeaconStateExImpl;
-import org.ethereum.beacon.consensus.transition.EmptySlotTransition;
-import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.consensus.verifier.operation.AttestationVerifier;
+import org.ethereum.beacon.consensus.verifier.operation.DepositVerifier;
 import org.ethereum.beacon.core.BeaconState;
-import org.ethereum.beacon.emulator.config.chainspec.SpecBuilder;
-import org.ethereum.beacon.emulator.config.chainspec.SpecConstantsData;
-import org.ethereum.beacon.emulator.config.chainspec.SpecData;
-import org.ethereum.beacon.emulator.config.chainspec.SpecDataUtils;
-import org.ethereum.beacon.emulator.config.chainspec.SpecHelpersData;
+import org.ethereum.beacon.core.MutableBeaconState;
+import org.ethereum.beacon.core.operations.Attestation;
+import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.test.StateTestUtils;
 import org.ethereum.beacon.test.runner.Runner;
-import org.ethereum.beacon.test.runner.state.StateComparator;
+import org.ethereum.beacon.test.type.TestCase;
 import org.ethereum.beacon.test.type.state.StateTestCase;
 import org.ethereum.beacon.test.type.state.StateTestCase.BeaconStateData;
-import org.ethereum.beacon.test.type.TestCase;
-import org.ethereum.beacon.util.Objects;
-import org.javatuples.Pair;
 
-/** TestRunner for {@link StateTestCase} */
+import java.util.Optional;
+
+/**
+ * TestRunner for {@link StateTestCase}
+ *
+ * <p>Test format description: <a
+ * href="https://github.com/ethereum/eth2.0-specs/tree/dev/specs/test_formats/operations">https://github.com/ethereum/eth2.0-specs/tree/dev/specs/test_formats/operations</a>
+ */
 public class StateRunner implements Runner {
   private StateTestCase testCase;
+  private BeaconChainSpec spec;
 
-  public StateRunner(TestCase testCase) {
+  public StateRunner(TestCase testCase, BeaconChainSpec spec) {
     if (!(testCase instanceof StateTestCase)) {
       throw new RuntimeException("TestCase runner accepts only StateTestCase.class as input!");
     }
     this.testCase = (StateTestCase) testCase;
+    this.spec = spec;
   }
 
   public Optional<String> run() {
-    BeaconChainSpec spec;
-    try {
-      spec = buildSpec(testCase);
-    } catch (Exception e) {
-      return Optional.of("Failed to build BeaconChainSpec: " + e.getMessage());
-    }
-
-    BeaconStateEx initialState = buildInitialState(spec, testCase.getInitialState());
-    Optional<String> err = StateComparator.compare(testCase.getInitialState(), initialState);
+    BeaconState initialState = buildInitialState(spec, testCase.getPre());
+    Optional<String> err = StateComparator.compare(testCase.getPre(), initialState);
     if (err.isPresent()) {
       return Optional.of("Initial state parsed incorrectly: " + err.get());
     }
-
-    EmptySlotTransition preBlockTransition = StateTransitions.preBlockTransition(spec);
-    BlockTransition<BeaconStateEx> blockTransition = StateTransitions.blockTransition(spec);
-
-    BeaconStateEx latestState = initialState;
-    for (StateTestCase.BlockData blockData : testCase.getBlocks()) {
-      Pair<BeaconBlock, Optional<String>> blockPair = StateTestUtils.parseBlockData(blockData);
-      if (blockPair.getValue1().isPresent()) {
-        return blockPair.getValue1();
-      }
-      BeaconBlock block = blockPair.getValue0();
-
-      BeaconStateEx postBlockState;
-      try {
-        BeaconStateEx preBlockState = preBlockTransition.apply(latestState, block.getSlot());
-        postBlockState = blockTransition.apply(preBlockState, block);
-      } catch (Exception ex) {
-        StringWriter sw = new StringWriter();
-        PrintWriter pw = new PrintWriter(sw);
-        ex.printStackTrace(pw);
-        return Optional.of("Error happened during transition: " + sw.toString());
-      }
-      latestState = postBlockState;
+    BeaconState latestState = initialState;
+    if (testCase.getDeposit() != null) {
+      processDeposit(testCase.getDepositOperation(), latestState);
+    } else if (testCase.getAttestation() != null) {
+      processAttestation(testCase.getAttestationOperation(), latestState);
+    } else {
+      throw new RuntimeException("Only Attestation and Deposit test cases are implemented!!!");
     }
 
-    return StateComparator.compare(testCase.getExpectedState(), latestState);
+    if (testCase.getPost() == null) { // XXX: Not changed
+      return StateComparator.compare(testCase.getPre(), latestState);
+    } else {
+      return StateComparator.compare(testCase.getPost(), latestState);
+    }
   }
 
-  private BeaconStateEx buildInitialState(BeaconChainSpec spec, BeaconStateData stateData) {
-    BeaconState state = StateTestUtils.parseBeaconState(spec.getConstants(), stateData);
-    return new BeaconStateExImpl(state, TransitionType.BLOCK);
+  private void processDeposit(Deposit deposit, BeaconState state) {
+    try {
+      DepositVerifier depositVerifier = new DepositVerifier(spec);
+      assert depositVerifier.verify(deposit, state).isPassed();
+      spec.process_deposit((MutableBeaconState) state, deposit);
+    } catch (Exception | AssertionError ex) {
+      // XXX: there could be invalid deposit, it's ok
+    }
   }
 
-  private BeaconChainSpec buildSpec(StateTestCase testCase)
-      throws InvocationTargetException, IllegalAccessException {
-    SpecConstantsData specConstantsData =
-        Objects.copyProperties(
-            SpecDataUtils.createSpecConstantsData(BeaconChainSpec.DEFAULT_CONSTANTS),
-            testCase.getConfig());
+  private void processAttestation(Attestation attestation, BeaconState state) {
+    try {
+      AttestationVerifier attestationVerifier = new AttestationVerifier(spec);
+      assert attestationVerifier.verify(attestation, state).isPassed();
+      spec.process_attestation((MutableBeaconState) state, attestation);
+    } catch (Exception | AssertionError ex) {
+      // XXX: there could be invalid attestation, it's ok
+    }
+  }
 
-    SpecHelpersData specHelpersData = new SpecHelpersData();
-    specHelpersData.setBlsVerify(testCase.getVerifySignatures());
-
-    SpecData specData = new SpecData();
-    specData.setSpecHelpersOptions(specHelpersData);
-    specData.setSpecConstants(specConstantsData);
-
-    return new SpecBuilder().withSpec(specData).buildSpec();
+  private BeaconState buildInitialState(BeaconChainSpec spec, BeaconStateData stateData) {
+    return StateTestUtils.parseBeaconState(spec.getConstants(), stateData);
   }
 }

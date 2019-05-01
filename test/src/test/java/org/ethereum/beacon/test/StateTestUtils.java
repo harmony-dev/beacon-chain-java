@@ -43,7 +43,7 @@ import org.ethereum.beacon.test.type.state.StateTestCase.BeaconStateData.CrossLi
 import org.ethereum.beacon.test.type.state.StateTestCase.BeaconStateData.ValidatorData;
 import org.ethereum.beacon.test.type.state.StateTestCase.BlockData.BlockBodyData.Eth1;
 import org.ethereum.beacon.test.type.state.StateTestCase.BlockData.BlockBodyData.ProposerSlashingData;
-import org.ethereum.beacon.test.type.state.StateTestCase.BlockData.BlockBodyData.SlashableAttestationData;
+import org.ethereum.beacon.test.type.state.StateTestCase.BlockData.BlockBodyData.IndexedAttestationData;
 import org.javatuples.Pair;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes4;
@@ -70,7 +70,7 @@ public abstract class StateTestUtils {
               Bitfield.of(BytesValue.fromHexString(attestationData.getAggregationBitfield())),
               attestationData1,
               Bitfield.of(BytesValue.fromHexString(attestationData.getCustodyBitfield())),
-              BLSSignature.wrap(Bytes96.fromHexString(attestationData.getAggregateSignature())));
+              BLSSignature.wrap(Bytes96.fromHexString(attestationData.getSignature())));
       attestations.add(attestation);
     }
 
@@ -91,11 +91,11 @@ public abstract class StateTestUtils {
               ReadVector.wrap(depositData.getProof().stream().map(Hash32::fromHexString).collect(Collectors.toList()), Function.identity()),
               UInt64.valueOf(depositData.getIndex()),
               new DepositData(
-                  BLSPubkey.fromHexString(depositData.getDepositData().getPubkey()),
-                  Hash32.fromHexString(depositData.getDepositData().getWithdrawalCredentials()),
-                  Gwei.castFrom(UInt64.valueOf(depositData.getDepositData().getAmount())),
+                  BLSPubkey.fromHexString(depositData.getData().getPubkey()),
+                  Hash32.fromHexString(depositData.getData().getWithdrawalCredentials()),
+                  Gwei.castFrom(UInt64.valueOf(depositData.getData().getAmount())),
                   BLSSignature.wrap(
-                      Bytes96.fromHexString(depositData.getDepositData().getSignature()))));
+                      Bytes96.fromHexString(depositData.getData().getSignature()))));
       deposits.add(deposit);
     }
 
@@ -172,7 +172,7 @@ public abstract class StateTestUtils {
     return Pair.with(block, Optional.empty());
   }
 
-  public static IndexedAttestation parseSlashableAttestation(SlashableAttestationData data) {
+  public static IndexedAttestation parseSlashableAttestation(IndexedAttestationData data) {
     return new IndexedAttestation(
         data.getCustodyBit0Indices().stream().map(ValidatorIndex::of).collect(Collectors.toList()),
         data.getCustodyBit1Indices().stream().map(ValidatorIndex::of).collect(Collectors.toList()),
@@ -202,18 +202,20 @@ public abstract class StateTestUtils {
     state.setDepositIndex(UInt64.valueOf(data.getDepositIndex()));
 
     state.getValidatorRegistry().addAll(parseValidatorRegistry(data.getValidatorRegistry()));
-    state.getBalances().addAll(parseBalances(data.getValidatorBalances()));
+    state.getBalances().addAll(parseBalances(data.getBalances()));
     state.getLatestRandaoMixes().setAll(parseHashes(data.getLatestRandaoMixes()));
     state.getPreviousEpochAttestations().addAll(
         parsePendingAttestations(data.getPreviousEpochAttestations()));
     state.getCurrentEpochAttestations().addAll(
         parsePendingAttestations(data.getCurrentEpochAttestations()));
-    state.getCurrentCrosslinks().addAll(parseCrosslinks(data.getLatestCrosslinks()));
+    state.getCurrentCrosslinks().addAll(parseCrosslinks(data.getCurrentCrosslinks()));
+    state.getPreviousCrosslinks().addAll(parseCrosslinks(data.getPreviousCrosslinks()));
     state.getLatestBlockRoots().setAll(parseHashes(data.getLatestBlockRoots()));
     state.getLatestStateRoots().setAll(parseHashes(data.getLatestStateRoots()));
     state.getLatestActiveIndexRoots().setAll(parseHashes(data.getLatestActiveIndexRoots()));
     state.getHistoricalRoots().addAll(parseHashes(data.getHistoricalRoots()));
     state.getLatestSlashedBalances().setAll(parseBalances(data.getLatestSlashedBalances()));
+    state.setLatestStartShard(ShardNumber.of(UInt64.valueOf(data.getLatestStartShard())));
 
     return state;
   }

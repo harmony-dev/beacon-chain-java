@@ -7,8 +7,9 @@ import static org.ethereum.beacon.test.SilentAsserts.assertTrue;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
-import org.ethereum.beacon.consensus.BeaconStateEx;
+
 import org.ethereum.beacon.core.BeaconBlockHeader;
+import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.PendingAttestation;
@@ -22,14 +23,14 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public class StateComparator {
-  private BeaconStateEx actual;
+  private BeaconState actual;
   private StateTestCase.BeaconStateData expected;
 
-  public static Optional<String> compare(StateTestCase.BeaconStateData expected, BeaconStateEx actual) {
+  public static Optional<String> compare(StateTestCase.BeaconStateData expected, BeaconState actual) {
     return new StateComparator(expected, actual).compare();
   }
 
-  private StateComparator(StateTestCase.BeaconStateData expected, BeaconStateEx actual) {
+  private StateComparator(StateTestCase.BeaconStateData expected, BeaconState actual) {
     this.expected = expected;
     this.actual = actual;
   }
@@ -109,12 +110,12 @@ public class StateComparator {
   }
 
   private Optional<String> compareValidatorBalances() {
-    if (expected.getValidatorBalances() == null) {
+    if (expected.getBalances() == null) {
       return Optional.empty();
     }
 
     return assertLists(
-        StateTestUtils.parseBalances(expected.getValidatorBalances()),
+        StateTestUtils.parseBalances(expected.getBalances()),
         actual.getBalances().listCopy());
   }
 
@@ -185,13 +186,13 @@ public class StateComparator {
   }
 
   private Optional<String> compareLatestCrosslinks() {
-    if (expected.getLatestCrosslinks() == null) {
+    if (expected.getCurrentCrosslinks() == null) {
       return Optional.empty();
     }
 
     // FIXME: already modified by Michael, it couldn't match the test fixtures
     List<Crosslink> expectedCrosslinks =
-        StateTestUtils.parseCrosslinks(expected.getLatestCrosslinks());
+        StateTestUtils.parseCrosslinks(expected.getCurrentCrosslinks());
     return assertLists(expectedCrosslinks, actual.getCurrentCrosslinks().listCopy());
   }
 
