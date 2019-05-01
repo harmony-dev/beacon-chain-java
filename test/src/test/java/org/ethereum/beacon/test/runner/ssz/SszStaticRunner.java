@@ -39,8 +39,6 @@ import static org.ethereum.beacon.test.SilentAsserts.assertHexStrings;
  */
 public class SszStaticRunner implements Runner {
   private SszStaticCase testCase;
-  private SSZObjectHasher baseHasher;
-  private SSZObjectHasher incHasher;
   private SSZSerializer sszSerializer;
   private ObjectMapper yamlMapper;
   private BeaconChainSpec spec;
@@ -52,19 +50,10 @@ public class SszStaticRunner implements Runner {
           "TestCase runner accepts only SszStaticCase.class as input!");
     }
     this.testCase = (SszStaticCase) testCase;
-    Function<BytesValue, Hash32> hashFunction = Hashes::keccak256;
     SSZBuilder builder = new SSZBuilder();
-    this.sszSerializer = builder.buildSerializer();
-    SSZHasher baseSszHasher =
-        new SSZBuilder().withExternalVarResolver(new SpecConstantsResolver(spec.getConstants()))
-            .withIncrementalHasher(false)
-            .buildHasher(hashFunction);
-    this.baseHasher = new SSZObjectHasher(baseSszHasher);
-    SSZHasher incSszHasher =
-        new SSZBuilder().withExternalVarResolver(new SpecConstantsResolver(spec.getConstants()))
-            .withIncrementalHasher(true)
-            .buildHasher(hashFunction);
-    this.incHasher = new SSZObjectHasher(incSszHasher);
+    this.sszSerializer = builder
+        .withExternalVarResolver(new SpecConstantsResolver(spec.getConstants()))
+        .buildSerializer();
     this.yamlMapper = new ObjectMapper(new YAMLFactory());
     Set<ClassInfo> mappers = findClassesInPackage("org.ethereum.beacon.test.runner.ssz.mapper");
     mappers.stream().map(this::fromInfo).map((Class mapperType) -> createInstance(mapperType, yamlMapper)).forEach(m -> {
@@ -110,11 +99,21 @@ public class SszStaticRunner implements Runner {
 
   public Optional<String> run() {
     Set<ClassInfo> coreTypes = findClassesInPackage("org.ethereum.beacon.core");
-    List<ClassInfo> classes = coreTypes.stream().filter((type) -> type.getSimpleName().endsWith(testCase.getTypeName())).collect(Collectors.toList());
+    final String searchName;
+    if (testCase.getTypeName().equals("Validator")) {
+      searchName = "ValidatorRecord";  // XXX: we have different naming
+    } else if (testCase.getTypeName().equals("BeaconState"))  {
+      searchName = "BeaconStateImpl";  // XXX: we have several implementations
+    } else {
+      searchName = testCase.getTypeName();
+    }
+    List<ClassInfo> classes = coreTypes.stream().filter((type) -> type.getSimpleName().equals(searchName)).collect(Collectors.toList());
+    ClassInfo valueTypeInfo;
     if (classes.size() != 1) {
       return Optional.of(String.format("Failed: should be only one appropriate core class for %s (%s classes found) ", testCase.getTypeName(), classes.size()));
+    } else {
+      valueTypeInfo = classes.get(0);
     }
-    ClassInfo valueTypeInfo = classes.get(0);
     Class valueType = fromInfo(valueTypeInfo);
     Object fromSerialized = sszSerializer.decode(BytesValue.fromHexString(testCase.getSerialized()), valueType);
     Object simplified = objectSerializers.get(valueType).map(fromSerialized);
@@ -122,10 +121,9 @@ public class SszStaticRunner implements Runner {
     // XXX: expected goes second as our constructed node contains with overridden `equals` operators
     // which should be used in comparison
     assertEquals(simplified, expectedValue);
-    assertHexStrings(testCase.getRoot(), baseHasher.getHash(fromSerialized).toString());
-    assertHexStrings(testCase.getRoot(), incHasher.getHash(fromSerialized).toString());
+    assertHexStrings(testCase.getRoot(), spec.hash_tree_root(fromSerialized).toString());
     if (testCase.getSigningRoot() != null) {
-      assertHexStrings(testCase.getSigningRoot(), spec.signed_root(fromSerialized).toString());
+      assertHexStrings(testCase.getSigningRoot(), spec.signing_root(fromSerialized).toString());
     }
 
     return Optional.empty();
