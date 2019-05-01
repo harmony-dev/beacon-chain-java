@@ -108,9 +108,11 @@ public interface BeaconState extends ObservableComposite {
   /* ******* Recent state ********* */
 
   /** Latest crosslink record for each shard. */
-  @SSZ(order = 16) ReadList<ShardNumber, Crosslink> getCurrentCrosslinks();
+  @SSZ(order = 16, vectorLengthVar = "spec.SHARD_COUNT")
+  ReadVector<ShardNumber, Crosslink> getCurrentCrosslinks();
 
-  @SSZ(order = 17) ReadList<ShardNumber, Crosslink> getPreviousCrosslinks();
+  @SSZ(order = 17, vectorLengthVar = "spec.SHARD_COUNT")
+  ReadVector<ShardNumber, Crosslink> getPreviousCrosslinks();
 
   @SSZ(order = 18, vectorLengthVar = "spec.SLOTS_PER_HISTORICAL_ROOT")
   ReadVector<SlotNumber, Hash32> getLatestBlockRoots();

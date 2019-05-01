@@ -686,7 +686,7 @@ public interface EpochProcessing extends HelperFunction {
     if (next_epoch.modulo(getConstants().getSlotsPerHistoricalRoot().dividedBy(getConstants().getSlotsPerEpoch()))
         .equals(EpochNumber.ZERO)) {
       HistoricalBatch historical_batch =
-          new HistoricalBatch(state.getLatestBlockRoots().listCopy(), state.getLatestStateRoots().listCopy());
+          new HistoricalBatch(state.getLatestBlockRoots().vectorCopy(), state.getLatestStateRoots().vectorCopy());
       state.getHistoricalRoots().add(hash_tree_root(historical_batch));
     }
 

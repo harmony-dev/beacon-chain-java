@@ -1,14 +1,9 @@
 package org.ethereum.beacon.util;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.spec.SignatureDomains;
-import org.ethereum.beacon.core.state.Fork;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.crypto.BLS381;
@@ -20,7 +15,14 @@ import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes4;
 import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.bytes.Bytes96;
+import tech.pegasys.artemis.util.collections.ReadVector;
 import tech.pegasys.artemis.util.uint.UInt64;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
+import java.util.function.Function;
 
 public class SimulateUtils {
 
@@ -62,7 +64,7 @@ public class SimulateUtils {
 
     Deposit deposit =
         new Deposit(
-            Collections.singletonList(Hash32.random(rnd)),
+            ReadVector.wrap(Collections.singletonList(Hash32.random(rnd)), Function.identity()),
             UInt64.ZERO,
             new DepositData(
                 BLSPubkey.wrap(Bytes48.leftPad(keyPair.getPublic().getEncodedBytes())),

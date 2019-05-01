@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
@@ -24,6 +25,7 @@ import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.bytes.Bytes8;
 import tech.pegasys.artemis.util.bytes.Bytes96;
+import tech.pegasys.artemis.util.collections.ReadVector;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public abstract class AbstractDepositContract implements DepositContract {
@@ -110,7 +112,7 @@ public abstract class AbstractDepositContract implements DepositContract {
     List<Hash32> merkleBranch = Arrays.stream(eventData.merkle_branch)
         .map(bytes -> Hash32.wrap(Bytes32.wrap(bytes)))
         .collect(Collectors.toList());
-    Deposit deposit = new Deposit(merkleBranch,
+    Deposit deposit = new Deposit(ReadVector.wrap(merkleBranch, Function.identity()),
         UInt64.fromBytesBigEndian(Bytes8.wrap(eventData.merkle_tree_index)),
         parseDepositData(eventData.data));
     return new DepositInfo(deposit,

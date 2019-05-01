@@ -1,10 +1,6 @@
 package org.ethereum.beacon.core.operations.slashing;
 
 import com.google.common.base.Objects;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Function;
-import javax.annotation.Nullable;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.types.BLSSignature;
@@ -13,6 +9,10 @@ import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.util.collections.ReadList;
+
+import javax.annotation.Nullable;
+import java.util.List;
+import java.util.function.Function;
 
 /**
  * Slashable attestation data structure.
@@ -25,6 +25,7 @@ import tech.pegasys.artemis.util.collections.ReadList;
 public class IndexedAttestation {
   /** Validator indices */
   @SSZ private final ReadList<Integer, ValidatorIndex> custodyBit0Indices;
+
   @SSZ private final ReadList<Integer, ValidatorIndex> custodyBit1Indices;
   /** Attestation data */
   @SSZ private final AttestationData data;
@@ -36,8 +37,20 @@ public class IndexedAttestation {
       List<ValidatorIndex> custodyBit1Indices,
       AttestationData data,
       BLSSignature signature) {
-    this.custodyBit0Indices = ReadList.wrap(custodyBit0Indices, Function.identity());
-    this.custodyBit1Indices = ReadList.wrap(custodyBit1Indices, Function.identity());
+    this(
+        ReadList.wrap(custodyBit0Indices, Function.identity()),
+        ReadList.wrap(custodyBit1Indices, Function.identity()),
+        data,
+        signature);
+  }
+
+  public IndexedAttestation(
+      ReadList<Integer, ValidatorIndex> custodyBit0Indices,
+      ReadList<Integer, ValidatorIndex> custodyBit1Indices,
+      AttestationData data,
+      BLSSignature signature) {
+    this.custodyBit0Indices = custodyBit0Indices;
+    this.custodyBit1Indices = custodyBit1Indices;
     this.data = data;
     this.signature = signature;
   }
@@ -78,12 +91,16 @@ public class IndexedAttestation {
     return toString(null, null);
   }
 
-  public String toString(@Nullable SpecConstants spec,@Nullable Time beaconStart) {
+  public String toString(@Nullable SpecConstants spec, @Nullable Time beaconStart) {
     return "IndexedAttestation["
-        + "data=" + data.toString(spec, beaconStart)
-        + ", custodyBit0Indices=" + custodyBit0Indices
-        + ", custodyBit1Indices=" + custodyBit1Indices
-        + ", sig=" + signature
+        + "data="
+        + data.toString(spec, beaconStart)
+        + ", custodyBit0Indices="
+        + custodyBit0Indices
+        + ", custodyBit1Indices="
+        + custodyBit1Indices
+        + ", sig="
+        + signature
         + "]";
   }
 }
