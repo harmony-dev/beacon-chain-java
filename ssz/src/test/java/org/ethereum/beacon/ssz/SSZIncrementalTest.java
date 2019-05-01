@@ -37,7 +37,7 @@ public class SSZIncrementalTest {
     @Override
     public Hash32 apply(BytesValue bytesValue) {
       counter++;
-      return Hashes.keccak256(bytesValue);
+      return Hashes.sha256(bytesValue);
     }
   }
 

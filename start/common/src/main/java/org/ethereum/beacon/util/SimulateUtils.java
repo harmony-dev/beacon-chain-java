@@ -17,6 +17,7 @@ import org.ethereum.beacon.crypto.MessageParameters;
 import org.javatuples.Pair;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
+import tech.pegasys.artemis.util.bytes.Bytes4;
 import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.uint.UInt64;
@@ -52,10 +53,8 @@ public class SimulateUtils {
     BLSSignature signature = BLSSignature.ZERO;
 
     if (isProofVerifyEnabled) {
-      Hash32 msgHash = spec.signed_root(depositDataWithoutSignature);
-      UInt64 domain =
-          spec.get_domain(
-              Fork.EMPTY, spec.getConstants().getGenesisEpoch(), SignatureDomains.DEPOSIT);
+      Hash32 msgHash = spec.signing_root(depositDataWithoutSignature);
+      UInt64 domain = spec.get_domain(Bytes4.ZERO, SignatureDomains.DEPOSIT);
       signature =
           BLSSignature.wrap(
               BLS381.sign(MessageParameters.create(msgHash, domain), keyPair).getEncoded());

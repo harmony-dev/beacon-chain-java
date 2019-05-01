@@ -51,11 +51,11 @@ public class BeaconChainSpecTest {
     BytesValue bytes = BytesValue.wrap(new byte[]{(byte) 1, (byte) 256, (byte) 65656});
 
     int expectedInt = 817593;
-    Hash32 hash = Hashes.keccak256(bytes);
+    Hash32 hash = Hashes.sha256(bytes);
     int res = Bytes3.wrap(hash, 0).asUInt24BigEndian().getValue();
 
 
-//    int[] actual = spec.shuffle(sample, Hashes.keccak256(bytes));
+//    int[] actual = spec.shuffle(sample, Hashes.sha256(bytes));
 //    int[] expected = new int[]{2, 4, 10, 7, 5, 6, 9, 8, 1, 3};
 //
 //    Assert.assertArrayEquals(expected, actual);
@@ -101,7 +101,7 @@ public class BeaconChainSpecTest {
   private DepositData createDepositData() {
     return new DepositData(
         BLSPubkey.wrap(Bytes48.TRUE),
-        Hashes.keccak256(BytesValue.fromHexString("aa")),
+        Hashes.sha256(BytesValue.fromHexString("aa")),
         Gwei.ZERO,
         BLSSignature.wrap(Bytes96.ZERO)
     );
@@ -139,7 +139,7 @@ public class BeaconChainSpecTest {
             body,
             emptyBlock.getSignature());
     BeaconBlockHeader header = spec.get_temporary_block_header(block);
-    assertEquals(spec.signed_root(block), spec.signed_root(header));
+    assertEquals(spec.signing_root(block), spec.signing_root(header));
   }
 
   @Ignore
@@ -178,7 +178,7 @@ public class BeaconChainSpecTest {
           }
         };
     BeaconChainSpec spec = new CachingBeaconChainSpec(
-        specConstants, Hashes::keccak256, ObjectHasher.createSSZOverKeccak256(specConstants), false, true);
+        specConstants, Hashes::sha256, ObjectHasher.createSSZOverSHA256(specConstants), false, true);
 
     System.out.println("Generating deposits...");
     List<Deposit> deposits = TestUtils.generateRandomDepositsWithoutSig(rnd, spec, validatorCount);
@@ -190,20 +190,18 @@ public class BeaconChainSpecTest {
             spec.get_empty_block());
     MutableBeaconState state = initialState.createMutableCopy();
 
-    for(int i = 1; i < 128; i++) {
-      System.out.println("get_epoch_committee_count(" + i + ") = " +
-          spec.get_epoch_committee_count(i));
-    }
+    System.out.println("get_epoch_committee_count() = " +
+        spec.get_epoch_committee_count(state, spec.getConstants().getGenesisEpoch()));
 
     for (SlotNumber slot : genesisSlot.iterateTo(genesisSlot.plus(SlotNumber.of(epochLength)))) {
       System.out.println("Slot #" + slot
           + " beacon proposer: "
-          + spec.get_beacon_proposer_index(state, slot)
+          + spec.get_beacon_proposer_index(state)
           + " committee: "
           + spec.get_crosslink_committees_at_slot(state, slot));
       System.out.println("Slot #" + slot
           + " beacon proposer: "
-          + spec.get_beacon_proposer_index(state, slot)
+          + spec.get_beacon_proposer_index(state)
           + " committee: "
           + spec.get_crosslink_committees_at_slot(state, slot).stream()
             .map(c -> c.getShard() + ": [" + c.getCommittee().size() + "]")

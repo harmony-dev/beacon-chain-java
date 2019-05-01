@@ -232,11 +232,11 @@ public class SimulatorLauncher implements Runnable {
           });
       Flux.from(launcher.getBeaconChain().getBlockStatesStream())
           .subscribe(blockState -> logger.trace("Block imported: "
-              + blockState.getBlock().toString(this.specConstants, genesisTime, spec::signed_root)));
+              + blockState.getBlock().toString(this.specConstants, genesisTime, spec::signing_root)));
       if (launcher.getValidatorService() != null) {
         Flux.from(launcher.getValidatorService().getProposedBlocksStream())
             .subscribe(block -> logger.debug("New block created: "
-                + block.toString(this.specConstants, genesisTime, spec::signed_root)));
+                + block.toString(this.specConstants, genesisTime, spec::signing_root)));
         Flux.from(launcher.getValidatorService().getAttestationsStream())
             .subscribe(attest -> logger.debug("New attestation created: "
                 + attest.toString(this.specConstants, genesisTime)));
@@ -283,7 +283,7 @@ public class SimulatorLauncher implements Runnable {
         .subscribe(blockState -> {
           blocks.add(blockState.getBlock());
           logger.debug("Block imported: "
-              + blockState.getBlock().toString(specConstants, genesisTime, spec::signed_root));
+              + blockState.getBlock().toString(specConstants, genesisTime, spec::signing_root));
         });
 
     logger.info("Time starts running ...");

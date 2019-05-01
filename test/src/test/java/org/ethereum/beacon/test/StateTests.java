@@ -13,7 +13,7 @@ public class StateTests extends TestUtils {
   public StateTests() {}
 
   @Test
-  @Ignore("signed_root and hash_tree_root results do not match")
+  @Ignore("signing_root and hash_tree_root results do not match")
   public void testState() {
     Path stateTestsPath = Paths.get(PATH_TO_TESTS, TESTS_DIR);
     runTestsInResourceDir(

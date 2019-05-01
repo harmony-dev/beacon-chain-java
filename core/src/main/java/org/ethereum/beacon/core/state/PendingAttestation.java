@@ -24,12 +24,10 @@ import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 @SSZSerializable
 public class PendingAttestation {
 
-  /** Proof of custody bitfield. */
+  /** Attester aggregation bitfield. */
   @SSZ private final Bitfield aggregationBitfield;
   /** Signed data. */
   @SSZ private final AttestationData data;
-  /** Attester participation bitfield. */
-  @SSZ private final Bitfield custodyBitfield;
   /** Slot in which it was included. */
   @SSZ private final SlotNumber inclusionSlot;
   /** Proposer index. */
@@ -38,12 +36,10 @@ public class PendingAttestation {
   public PendingAttestation(
       Bitfield aggregationBitfield,
       AttestationData data,
-      Bitfield custodyBitfield,
       SlotNumber inclusionSlot,
       ValidatorIndex proposerIndex) {
     this.aggregationBitfield = aggregationBitfield;
     this.data = data;
-    this.custodyBitfield = custodyBitfield;
     this.inclusionSlot = inclusionSlot;
     this.proposerIndex = proposerIndex;
   }
@@ -54,10 +50,6 @@ public class PendingAttestation {
 
   public AttestationData getData() {
     return data;
-  }
-
-  public Bitfield getCustodyBitfield() {
-    return custodyBitfield;
   }
 
   public ValidatorIndex getProposerIndex() {
@@ -75,7 +67,6 @@ public class PendingAttestation {
     PendingAttestation that = (PendingAttestation) o;
     return Objects.equal(data, that.data)
         && Objects.equal(aggregationBitfield, that.aggregationBitfield)
-        && Objects.equal(custodyBitfield, that.custodyBitfield)
         && Objects.equal(proposerIndex, that.proposerIndex)
         && Objects.equal(inclusionSlot, that.inclusionSlot);
   }
@@ -93,7 +84,6 @@ public class PendingAttestation {
     return "Attestation["
         + data.toString(spec, beaconStart)
         + ", attesters=" + getSignerIndices()
-        + ", cusodyBits=" + custodyBitfield
         + ", proposerIndex=" + getProposerIndex()
         + ", inclusionSlot=#" + getInclusionSlot().toStringNumber(spec)
         + "]";

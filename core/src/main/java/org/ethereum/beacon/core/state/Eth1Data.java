@@ -60,6 +60,11 @@ public class Eth1Data {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hashCode(depositRoot, depositCount, blockHash);
+  }
+
+  @Override
   public String toString() {
     return MoreObjects.toStringHelper(this)
         .add("depositRoot", depositRoot.toStringShort())

@@ -27,11 +27,8 @@ public abstract class SpecDataUtils {
         new InitialValuesData() {
           {
             setBLS_WITHDRAWAL_PREFIX_BYTE(constants.getBlsWithdrawalPrefixByte().toString());
-            setEMPTY_SIGNATURE(constants.getEmptySignature().copy().toString());
             setFAR_FUTURE_EPOCH(constants.getFarFutureEpoch().toString());
-            setGENESIS_FORK_VERSION(constants.getGenesisForkVersion().toString());
             setGENESIS_SLOT(Long.toUnsignedString(constants.getGenesisSlot().getValue()));
-            setGENESIS_START_SHARD(constants.getGenesisStartShard().intValue());
             setZERO_HASH(constants.getZeroHash().toString());
           }
         };

@@ -52,7 +52,7 @@ public class InitialStateTransition implements BlockTransition<BeaconStateEx> {
     BeaconStateExImpl ret = new BeaconStateExImpl(genesisState, TransitionType.INITIAL);
 
     logger.debug(() -> "Slot transition result state: (" +
-        spec.hash_tree_root(ret).toStringShort() + ") " + ret.toString(spec.getConstants(), spec::signed_root));
+        spec.hash_tree_root(ret).toStringShort() + ") " + ret.toString(spec.getConstants(), spec::signing_root));
 
     return ret;
   }

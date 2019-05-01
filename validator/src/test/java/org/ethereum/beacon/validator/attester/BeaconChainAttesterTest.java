@@ -13,7 +13,6 @@ import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustodyBit;
-import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.spec.SignatureDomains;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.ShardNumber;
@@ -48,7 +47,7 @@ public class BeaconChainAttesterTest {
 
     Mockito.doReturn(committee).when(attester).getCommittee(any(), any());
     Mockito.doReturn(targetRoot).when(attester).getTargetRoot(any(), any());
-    Mockito.doReturn(Crosslink.EMPTY).when(attester).getPreviousCrosslink(any(), any());
+    Mockito.doReturn(Hash32.ZERO).when(attester).getPreviousCrosslinkRoot(any(), any());
     Mockito.doReturn(sourceRoot).when(attester).getSourceRoot(any(), any());
 
     Attestation attestation =
@@ -60,7 +59,7 @@ public class BeaconChainAttesterTest {
     Assert.assertEquals(state.getSlot(), data.getSlot());
     Assert.assertEquals(shard, data.getShard());
     Assert.assertEquals(
-        spec.signed_root(initiallyObservedState.getHead()), data.getBeaconBlockRoot());
+        spec.signing_root(initiallyObservedState.getHead()), data.getBeaconBlockRoot());
     Assert.assertEquals(targetRoot, data.getTargetRoot());
     Assert.assertEquals(Hash32.ZERO, data.getCrosslinkDataRoot());
     Assert.assertEquals(Hash32.ZERO, data.getPreviousCrosslinkRoot());
@@ -80,10 +79,7 @@ public class BeaconChainAttesterTest {
     BLSSignature expectedSignature =
         signer.sign(
             spec.hash_tree_root(new AttestationDataAndCustodyBit(data, false)),
-            spec.get_domain(
-                state.getFork(),
-                spec.get_current_epoch(state),
-                SignatureDomains.ATTESTATION));
+            spec.get_domain(state, SignatureDomains.ATTESTATION));
 
     Assert.assertEquals(expectedSignature, attestation.getSignature());
   }

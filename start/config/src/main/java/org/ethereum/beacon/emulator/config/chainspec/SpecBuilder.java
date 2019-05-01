@@ -102,18 +102,8 @@ public class SpecBuilder {
       }
 
       @Override
-      public UInt64 getGenesisForkVersion() {
-        return initialValues.getGenesisForkVersion();
-      }
-
-      @Override
       public SlotNumber getGenesisSlot() {
         return initialValues.getGenesisSlot();
-      }
-
-      @Override
-      public ShardNumber getGenesisStartShard() {
-        return initialValues.getGenesisStartShard();
       }
 
       @Override
@@ -124,11 +114,6 @@ public class SpecBuilder {
       @Override
       public Hash32 getZeroHash() {
         return initialValues.getZeroHash();
-      }
-
-      @Override
-      public BLSSignature getEmptySignature() {
-        return initialValues.getEmptySignature();
       }
 
       @Override

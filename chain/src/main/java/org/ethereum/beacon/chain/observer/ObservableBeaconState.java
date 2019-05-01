@@ -56,7 +56,7 @@ public class ObservableBeaconState {
     String committee = "";
     if (spec != null) {
       committee = " Proposer/Committee: "
-          + spec.get_beacon_proposer_index(getLatestSlotState(), getLatestSlotState().getSlot())
+          + spec.get_beacon_proposer_index(getLatestSlotState())
           + " "
           + spec.get_crosslink_committees_at_slot(
               getLatestSlotState(), getLatestSlotState().getSlot()).get(0).getCommittee()
@@ -64,7 +64,7 @@ public class ObservableBeaconState {
     }
 
     return "ObservableBeaconState[head="
-        + (spec != null ? spec.signed_root(head).toStringShort() : head.toString(null ,null, null))
+        + (spec != null ? spec.signing_root(head).toStringShort() : head.toString(null ,null, null))
         + ", latestState: "
         + committee
         + latestSlotState.toStringShort(spec == null ? null : spec.getConstants())

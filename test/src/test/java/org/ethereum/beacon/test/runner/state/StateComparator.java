@@ -54,25 +54,9 @@ public class StateComparator {
     runComparison(
         "Current justified root doesn't match: ", this::compareCurrentJustifiedRoot, error);
     runComparison(
-        "Current shuffling epoch doesn't match: ", this::compareCurrentShufflingEpoch, error);
-    runComparison(
-        "Current shuffling seed doesn't match: ", this::compareCurrentShufflingSeed, error);
-    runComparison(
-        "Current shuffling start shard doesn't match: ",
-        this::compareCurrentShufflingStartShard,
-        error);
-    runComparison(
         "Previous justified epoch doesn't match: ", this::comparePreviousJustifiedEpoch, error);
     runComparison(
         "Previous justified root doesn't match: ", this::comparePreviousJustifiedRoot, error);
-    runComparison(
-        "Previous shuffling epoch doesn't match: ", this::comparePreviousShufflingEpoch, error);
-    runComparison(
-        "Previous shuffling seed doesn't match: ", this::comparePreviousShufflingSeed, error);
-    runComparison(
-        "Previous shuffling start shard doesn't match: ",
-        this::comparePreviousShufflingStartShard,
-        error);
     runComparison("Deposit index doesn't match: ", this::compareDepositIndex, error);
     runComparison("Eth1 data votes doesn't match: ", this::compareEth1DataVotes, error);
     runComparison("Finalized epoch doesn't match: ", this::compareFinalizedEpoch, error);
@@ -89,10 +73,6 @@ public class StateComparator {
     runComparison("Latest randao mixes do not match: ", this::compareLatestRandaoMixes, error);
     runComparison("Latest slashed balances do not match: ", this::compareSlashedBalances, error);
     runComparison("Latest state roots do not match: ", this::compareLatestStateRoots, error);
-    runComparison(
-        "Validator registry update epoch doesn't match: ",
-        this::compareValidatorRegistryUpdateEpoch,
-        error);
 
     return error.length() == 0 ? Optional.empty() : Optional.of(error.toString());
   }
@@ -135,7 +115,7 @@ public class StateComparator {
 
     return assertLists(
         StateTestUtils.parseBalances(expected.getValidatorBalances()),
-        actual.getValidatorBalances().listCopy());
+        actual.getBalances().listCopy());
   }
 
   private Optional<String> compareSlashedBalances() {
@@ -252,35 +232,6 @@ public class StateComparator {
     return assertEquals(expected.getGenesisTime(), actual.getGenesisTime().getValue());
   }
 
-  private Optional<String> compareCurrentShufflingEpoch() {
-    if (expected.getCurrentShufflingEpoch() == null) {
-      return Optional.empty();
-    }
-
-    return assertEquals(
-        EpochNumber.castFrom(UInt64.valueOf(expected.getCurrentShufflingEpoch())),
-        actual.getCurrentShufflingEpoch());
-  }
-
-  private Optional<String> compareCurrentShufflingSeed() {
-    if (expected.getCurrentShufflingSeed() == null) {
-      return Optional.empty();
-    }
-
-    return assertEquals(
-        Hash32.fromHexString(expected.getCurrentShufflingSeed()), actual.getCurrentShufflingSeed());
-  }
-
-  private Optional<String> compareCurrentShufflingStartShard() {
-    if (expected.getCurrentShufflingStartShard() == null) {
-      return Optional.empty();
-    }
-
-    return assertEquals(
-        expected.getCurrentShufflingStartShard(),
-        actual.getCurrentShufflingStartShard().getValue());
-  }
-
   private Optional<String> comparePreviousJustifiedEpoch() {
     if (expected.getPreviousJustifiedEpoch() == null) {
       return Optional.empty();
@@ -299,46 +250,6 @@ public class StateComparator {
     return assertEquals(
         Hash32.fromHexString(expected.getPreviousJustifiedRoot()),
         actual.getPreviousJustifiedRoot());
-  }
-
-  private Optional<String> comparePreviousShufflingEpoch() {
-    if (expected.getPreviousShufflingEpoch() == null) {
-      return Optional.empty();
-    }
-
-    return assertEquals(
-        EpochNumber.castFrom(UInt64.valueOf(expected.getPreviousShufflingEpoch())),
-        actual.getPreviousShufflingEpoch());
-  }
-
-  private Optional<String> compareValidatorRegistryUpdateEpoch() {
-    if (expected.getValidatorRegistryUpdateEpoch() == null) {
-      return Optional.empty();
-    }
-
-    return assertEquals(
-        EpochNumber.castFrom(UInt64.valueOf(expected.getValidatorRegistryUpdateEpoch())),
-        actual.getValidatorRegistryUpdateEpoch());
-  }
-
-  private Optional<String> comparePreviousShufflingSeed() {
-    if (expected.getPreviousShufflingSeed() == null) {
-      return Optional.empty();
-    }
-
-    return assertEquals(
-        Hash32.fromHexString(expected.getPreviousShufflingSeed()),
-        actual.getPreviousShufflingSeed());
-  }
-
-  private Optional<String> comparePreviousShufflingStartShard() {
-    if (expected.getPreviousShufflingStartShard() == null) {
-      return Optional.empty();
-    }
-
-    return assertEquals(
-        expected.getPreviousShufflingStartShard(),
-        actual.getPreviousShufflingStartShard().getValue());
   }
 
   private Optional<String> compareDepositIndex() {

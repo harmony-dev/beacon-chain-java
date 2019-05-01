@@ -188,16 +188,6 @@ public abstract class StateTestUtils {
     state.setSlot(SlotNumber.castFrom(UInt64.valueOf(data.getSlot())));
     state.setGenesisTime(Time.of(data.getGenesisTime()));
     state.setFork(parseFork(data.getFork()));
-    state.setValidatorRegistryUpdateEpoch(
-        EpochNumber.castFrom(UInt64.valueOf(data.getValidatorRegistryUpdateEpoch())));
-    state.setPreviousShufflingStartShard(ShardNumber.of(data.getPreviousShufflingStartShard()));
-    state.setCurrentShufflingStartShard(ShardNumber.of(data.getCurrentShufflingStartShard()));
-    state.setPreviousShufflingEpoch(
-        EpochNumber.castFrom(UInt64.valueOf(data.getPreviousShufflingEpoch())));
-    state.setCurrentShufflingEpoch(
-        EpochNumber.castFrom(UInt64.valueOf(data.getCurrentShufflingEpoch())));
-    state.setPreviousShufflingSeed(Hash32.fromHexString(data.getPreviousShufflingSeed()));
-    state.setCurrentShufflingSeed(Hash32.fromHexString(data.getCurrentShufflingSeed()));
     state.setPreviousJustifiedEpoch(
         EpochNumber.castFrom(UInt64.valueOf(data.getPreviousJustifiedEpoch())));
     state.setCurrentJustifiedEpoch(
@@ -212,7 +202,7 @@ public abstract class StateTestUtils {
     state.setDepositIndex(UInt64.valueOf(data.getDepositIndex()));
 
     state.getValidatorRegistry().addAll(parseValidatorRegistry(data.getValidatorRegistry()));
-    state.getValidatorBalances().addAll(parseBalances(data.getValidatorBalances()));
+    state.getBalances().addAll(parseBalances(data.getValidatorBalances()));
     state.getLatestRandaoMixes().setAll(parseHashes(data.getLatestRandaoMixes()));
     state.getPreviousEpochAttestations().addAll(
         parsePendingAttestations(data.getPreviousEpochAttestations()));
@@ -298,7 +288,6 @@ public abstract class StateTestUtils {
     return new PendingAttestation(
         Bitfield.of(BytesValue.fromHexString(attestationData.getAggregationBitfield())),
         parseAttestationData(attestationData.getData()),
-        Bitfield.of(BytesValue.fromHexString(attestationData.getCustodyBitfield())),
         SlotNumber.castFrom(UInt64.valueOf(attestationData.getInclusionSlot())),
         ValidatorIndex.of(attestationData.getProposerIndex()));
   }

@@ -3,15 +3,17 @@ package org.ethereum.beacon.validator.proposer;
 import static org.ethereum.beacon.core.spec.SignatureDomains.BEACON_PROPOSER;
 import static org.ethereum.beacon.core.spec.SignatureDomains.RANDAO;
 
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.observer.PendingOperations;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.BlockTransition;
-import org.ethereum.beacon.consensus.BeaconChainSpec;
-import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlock.Builder;
 import org.ethereum.beacon.core.BeaconBlockBody;
@@ -23,7 +25,6 @@ import org.ethereum.beacon.core.operations.Transfer;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.state.Eth1Data;
-import org.ethereum.beacon.core.state.Eth1DataVote;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.pow.DepositContract.DepositInfo;
@@ -52,16 +53,6 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
   public BeaconChainProposerImpl(
       BeaconChainSpec spec,
       BlockTransition<BeaconStateEx> perBlockTransition,
-      StateTransition<BeaconStateEx> perEpochTransition,
-      DepositContract depositContract) {
-    this.spec = spec;
-    this.perBlockTransition = perBlockTransition;
-    this.depositContract = depositContract;
-  }
-
-  public BeaconChainProposerImpl(
-      BeaconChainSpec spec,
-      BlockTransition<BeaconStateEx> perBlockTransition,
       DepositContract depositContract) {
     this.spec = spec;
     this.perBlockTransition = perBlockTransition;
@@ -73,7 +64,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
       ObservableBeaconState observableState, MessageSigner<BLSSignature> signer) {
     BeaconStateEx state = observableState.getLatestSlotState();
 
-    Hash32 parentRoot = spec.get_block_root(state, state.getSlot().decrement());
+    Hash32 parentRoot = spec.get_block_root_at_slot(state, state.getSlot().decrement());
     BLSSignature randaoReveal = getRandaoReveal(state, signer);
     Eth1Data eth1Data = getEth1Data(state);
     BeaconBlockBody blockBody =
@@ -85,7 +76,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
         .withSlot(state.getSlot())
         .withParentRoot(parentRoot)
         .withStateRoot(Hash32.ZERO)
-        .withSignature(spec.getConstants().getEmptySignature())
+        .withSignature(BLSSignature.ZERO)
         .withBody(blockBody);
 
     // calculate state_root
@@ -111,9 +102,8 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
    */
   private BLSSignature getProposalSignature(
       BeaconState state, BeaconBlock block, MessageSigner<BLSSignature> signer) {
-    Hash32 proposalRoot = spec.signed_root(block);
-    UInt64 domain = spec.get_domain(state.getFork(),
-        spec.get_current_epoch(state), BEACON_PROPOSER);
+    Hash32 proposalRoot = spec.signing_root(block);
+    UInt64 domain = spec.get_domain(state, BEACON_PROPOSER);
     return signer.sign(proposalRoot, domain);
   }
 
@@ -126,8 +116,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
    */
   private BLSSignature getRandaoReveal(BeaconState state, MessageSigner<BLSSignature> signer) {
     Hash32 hash = spec.hash_tree_root(spec.slot_to_epoch(state.getSlot()));
-    UInt64 domain = spec.get_domain(state.getFork(),
-        spec.get_current_epoch(state), RANDAO);
+    UInt64 domain = spec.get_domain(state, RANDAO);
     return signer.sign(hash, domain);
   }
 
@@ -149,29 +138,24 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
    Set block.eth1_data = Eth1Data(deposit_root=deposit_root, block_hash=block_hash).
   */
   private Eth1Data getEth1Data(BeaconState state) {
-    ReadList<Integer, Eth1DataVote> eth1DataVotes = state.getEth1DataVotes();
+    ReadList<Integer, Eth1Data> eth1DataVotes = state.getEth1DataVotes();
     Optional<Eth1Data> contractData = depositContract.getLatestEth1Data();
 
-    if (eth1DataVotes.isEmpty()) {
-      return contractData.orElse(state.getLatestEth1Data());
+    Map<Eth1Data, Integer> votes = new HashMap<>();
+    for (Eth1Data eth1Data : eth1DataVotes) {
+      votes.compute(eth1Data, (key, count) -> (count == null) ? 1 : count + 1);
     }
 
-    UInt64 maxVotes =
-        eth1DataVotes.stream().map(Eth1DataVote::getVoteCount).max(UInt64::compareTo).get();
-    Eth1DataVote bestVote =
-        eth1DataVotes.stream()
-            .filter(eth1DataVote -> eth1DataVote.getVoteCount().equals(maxVotes))
-            .reduce((first, second) -> second)
-            .get();
+    Optional<Eth1Data> bestVote =
+        votes.keySet().stream().max(Comparator.comparing(votes::get));
 
     // verify best vote data and return if verification passed,
-    // otherwise, return data from contract
-    if (depositContract.hasDepositRoot(
-        bestVote.getEth1Data().getBlockHash(), bestVote.getEth1Data().getDepositRoot())) {
-      return bestVote.getEth1Data();
-    } else {
-      return contractData.orElse(state.getLatestEth1Data());
-    }
+    // otherwise, return data from the contract
+    return bestVote
+        .filter(
+            eth1Data ->
+                depositContract.hasDepositRoot(eth1Data.getBlockHash(), eth1Data.getDepositRoot()))
+        .orElse(contractData.orElse(state.getLatestEth1Data()));
   }
 
   /**

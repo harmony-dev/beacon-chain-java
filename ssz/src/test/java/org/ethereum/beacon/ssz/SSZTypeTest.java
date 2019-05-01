@@ -339,7 +339,7 @@ public class SSZTypeTest {
 
   @Test
   public void testHashTruncated1() throws Exception {
-    SSZHasher hasher = new SSZBuilder().buildHasher(Hashes::keccak256);
+    SSZHasher hasher = new SSZBuilder().buildHasher(Hashes::sha256);
 
     H1 h1 = new H1();
     h1.a1 = 0x1111;

@@ -54,9 +54,9 @@ public class PerEpochTransitionTest {
     // check validators penalized for inactivity
     for (int i = 0; i < deposits.size(); i++) {
       Gwei balanceBefore =
-          states[0].getValidatorBalances().get(ValidatorIndex.of(i));
+          states[0].getBalances().get(ValidatorIndex.of(i));
       Gwei balanceAfter =
-          epochState.getValidatorBalances().get(ValidatorIndex.of(i));
+          epochState.getBalances().get(ValidatorIndex.of(i));
       Assert.assertTrue(balanceAfter.less(balanceBefore));
     }
   }

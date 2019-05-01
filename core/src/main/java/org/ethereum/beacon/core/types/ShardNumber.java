@@ -41,6 +41,14 @@ public class ShardNumber extends UInt64 implements
     return new ShardNumber(this.plus(addend).modulo(divisor));
   }
 
+  public ShardNumber minusModulo(long subtrahend, ShardNumber divisor) {
+    return minusModulo(UInt64.valueOf(subtrahend), divisor);
+  }
+
+  public ShardNumber minusModulo(UInt64 subtrahend, ShardNumber divisor) {
+    return new ShardNumber(this.minus(subtrahend).modulo(divisor));
+  }
+
   public ShardNumber safeModulo(Function<UInt64, UInt64> safeCalc, ShardNumber divisor) {
     return new ShardNumber(safeCalc.apply(this).modulo(divisor));
   }

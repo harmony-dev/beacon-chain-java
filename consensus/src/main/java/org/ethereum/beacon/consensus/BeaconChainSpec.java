@@ -42,7 +42,7 @@ public interface BeaconChainSpec
 
   /**
    * Creates a BeaconChainSpec instance with given {@link SpecConstants}, {@link
-   * Hashes#keccak256(BytesValue)} as a hash function and {@link SSZObjectHasher} as an object
+   * Hashes#sha256(BytesValue)} as a hash function and {@link SSZObjectHasher} as an object
    * hasher.
    *
    * @param constants a chain getConstants(). <code>Schedulers::currentTime</code> is passed
@@ -126,11 +126,11 @@ public interface BeaconChainSpec
     }
 
     public Builder withDefaultHashFunction() {
-      return withHashFunction(Hashes::keccak256);
+      return withHashFunction(Hashes::sha256);
     }
 
     public Builder withDefaultHasher(SpecConstants constants) {
-      return withHasher(ObjectHasher.createSSZOverKeccak256(constants));
+      return withHasher(ObjectHasher.createSSZOverSHA256(constants));
     }
 
     public Builder enableCache() {

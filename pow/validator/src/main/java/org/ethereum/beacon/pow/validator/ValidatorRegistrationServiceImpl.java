@@ -268,16 +268,14 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
     // To submit a deposit:
     //
     //    Instantiate a deposit_data object.
-    //    Set deposit_data.signature = EMPTY_SIGNATURE.
+    //    Set deposit_data.signature = BLSSignature.ZERO.
     DepositData preDepositData = new DepositData(blsCredentials.getPubkey(), withdrawalCredentials,
         amount, BLSSignature.ZERO);
     // Let signature be the result of bls_sign of the signing_hash(deposit_data) with
     // domain=DOMAIN_DEPOSIT.
-    Hash32 hash = spec.signed_root(preDepositData);
+    Hash32 hash = spec.signing_root(preDepositData);
     BeaconState latestState = getLatestState();
-    UInt64 domain =
-        spec.get_domain(
-            latestState.getFork(), spec.get_current_epoch(latestState), DEPOSIT);
+    UInt64 domain = spec.get_domain(latestState, DEPOSIT);
     BLSSignature signature = blsCredentials.getSigner().sign(hash, domain);
     // Set deposit_data.signature = signature.
     return new DepositData(blsCredentials.getPubkey(), withdrawalCredentials, amount, signature);

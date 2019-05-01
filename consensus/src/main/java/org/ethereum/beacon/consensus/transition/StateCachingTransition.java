@@ -28,7 +28,7 @@ public class StateCachingTransition implements StateTransition<BeaconStateEx> {
   public BeaconStateEx apply(BeaconStateEx source) {
     logger.debug(() -> "Applying state caching to state: (" +
         spec.hash_tree_root(source).toStringShort() + ") " +
-        source.toString(spec.getConstants(), spec::signed_root));
+        source.toString(spec.getConstants(), spec::signing_root));
 
     TransitionType.CACHING.checkCanBeAppliedAfter(source.getTransition());
 
@@ -40,7 +40,7 @@ public class StateCachingTransition implements StateTransition<BeaconStateEx> {
 
     logger.debug(() -> "State caching result state: (" +
         spec.hash_tree_root(ret).toStringShort() + ") " +
-        ret.toString(spec.getConstants(), spec::signed_root));
+        ret.toString(spec.getConstants(), spec::signing_root));
 
     return ret;
   }

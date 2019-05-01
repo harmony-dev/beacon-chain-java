@@ -14,7 +14,6 @@ import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.javatuples.Pair;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 /**
@@ -62,13 +61,12 @@ public interface ForkChoice extends HelperFunction {
       Function<Hash32, Optional<BeaconBlock>> getBlock,
       Function<Hash32, List<BeaconBlock>> getChildrenBlocks,
       Function<ValidatorRecord, Optional<Attestation>> get_latest_attestation) {
-    ReadList<ValidatorIndex, ValidatorRecord> validators = state.getValidatorRegistry();
     List<ValidatorIndex> active_validator_indices =
-        get_active_validator_indices(validators, get_current_epoch(state));
+        get_active_validator_indices(state, get_current_epoch(state));
 
     List<Pair<ValidatorIndex, ValidatorRecord>> active_validators = new ArrayList<>();
     for (ValidatorIndex index : active_validator_indices) {
-      active_validators.add(Pair.with(index, validators.get(index)));
+      active_validators.add(Pair.with(index, state.getValidatorRegistry().get(index)));
     }
 
     List<Pair<ValidatorIndex, BeaconBlock>> attestation_targets = new ArrayList<>();
@@ -79,7 +77,7 @@ public interface ForkChoice extends HelperFunction {
 
     BeaconBlock head = startBlock;
     while (true) {
-      List<BeaconBlock> children = getChildrenBlocks.apply(signed_root(head));
+      List<BeaconBlock> children = getChildrenBlocks.apply(signing_root(head));
       if (children.isEmpty()) {
         return head;
       } else {

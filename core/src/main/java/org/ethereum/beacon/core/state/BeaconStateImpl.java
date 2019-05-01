@@ -37,7 +37,7 @@ public class BeaconStateImpl implements MutableBeaconState {
 
   private ObsValue<WriteList<ValidatorIndex, ValidatorRecord>> validatorRegistry =
       obsHelper.newValue(ObservableListImpl.create(ValidatorIndex::of));
-  private ObsValue<WriteList<ValidatorIndex, Gwei>> validatorBalances =
+  private ObsValue<WriteList<ValidatorIndex, Gwei>> balances =
       obsHelper.newValue(ObservableListImpl.create(ValidatorIndex::of));
   private ObsValue<EpochNumber> validatorRegistryUpdateEpoch = obsHelper.newValue(EpochNumber.ZERO);
 
@@ -46,12 +46,6 @@ public class BeaconStateImpl implements MutableBeaconState {
   private ObsValue<WriteList<EpochNumber, Hash32>> latestRandaoMixes =
       obsHelper.newValue(ObservableListImpl.create(EpochNumber::of));
   private ObsValue<ShardNumber> latestStartShard = obsHelper.newValue(ShardNumber.ZERO);
-  private ObsValue<ShardNumber> previousShufflingStartShard = obsHelper.newValue(ShardNumber.ZERO);
-  private ObsValue<ShardNumber> currentShufflingStartShard = obsHelper.newValue(ShardNumber.ZERO);
-  private ObsValue<EpochNumber> previousShufflingEpoch = obsHelper.newValue(EpochNumber.ZERO);
-  private ObsValue<EpochNumber> currentShufflingEpoch = obsHelper.newValue(EpochNumber.ZERO);
-  private ObsValue<Hash32> previousShufflingSeed = obsHelper.newValue(Hash32.ZERO);
-  private ObsValue<Hash32> currentShufflingSeed = obsHelper.newValue(Hash32.ZERO);
 
   /* Finality */
 
@@ -88,7 +82,7 @@ public class BeaconStateImpl implements MutableBeaconState {
   /* PoW receipt root */
 
   private ObsValue<Eth1Data> latestEth1Data = obsHelper.newValue(Eth1Data.EMPTY);
-  private ObsValue<WriteList<Integer, Eth1DataVote>> eth1DataVotes =
+  private ObsValue<WriteList<Integer, Eth1Data>> eth1DataVotes =
       obsHelper.newValue(ObservableListImpl.create(Integer::valueOf));
   private ObsValue<UInt64> depositIndex = obsHelper.newValue(UInt64.ZERO);
 
@@ -100,16 +94,10 @@ public class BeaconStateImpl implements MutableBeaconState {
     fork.set(state.getFork());
 
     validatorRegistry.set(state.getValidatorRegistry().createMutableCopy());
-    validatorBalances.set(state.getValidatorBalances().createMutableCopy());
-    validatorRegistryUpdateEpoch.set(state.getValidatorRegistryUpdateEpoch());
+    balances.set(state.getBalances().createMutableCopy());
 
     latestRandaoMixes.set(state.getLatestRandaoMixes().createMutableCopy());
-    previousShufflingStartShard.set(state.getPreviousShufflingStartShard());
-    currentShufflingStartShard.set(state.getCurrentShufflingStartShard());
-    previousShufflingEpoch.set(state.getPreviousShufflingEpoch());
-    currentShufflingEpoch.set(state.getCurrentShufflingEpoch());
-    previousShufflingSeed.set(state.getPreviousShufflingSeed());
-    currentShufflingSeed.set(state.getCurrentShufflingSeed());
+    latestStartShard.set(state.getLatestStartShard());
 
     previousEpochAttestations.set(state.getPreviousEpochAttestations().createMutableCopy());
     currentEpochAttestations.set(state.getCurrentEpochAttestations().createMutableCopy());
@@ -193,24 +181,13 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
-  public WriteList<ValidatorIndex, Gwei> getValidatorBalances() {
-    return validatorBalances.get();
+  public WriteList<ValidatorIndex, Gwei> getBalances() {
+    return balances.get();
   }
 
-  public void setValidatorBalances(
-      WriteList<ValidatorIndex, Gwei> validatorBalances) {
-    this.validatorBalances.set(validatorBalances);
-  }
-
-  @Override
-  public EpochNumber getValidatorRegistryUpdateEpoch() {
-    return validatorRegistryUpdateEpoch.get();
-  }
-
-  @Override
-  public void setValidatorRegistryUpdateEpoch(
-      EpochNumber validatorRegistryUpdateEpoch) {
-    this.validatorRegistryUpdateEpoch.set(validatorRegistryUpdateEpoch);
+  public void setBalances(
+      WriteList<ValidatorIndex, Gwei> balances) {
+    this.balances.set(balances);
   }
 
   @Override
@@ -228,70 +205,9 @@ public class BeaconStateImpl implements MutableBeaconState {
     return latestStartShard.get();
   }
 
+  @Override
   public void setLatestStartShard(ShardNumber latestStartShard) {
     this.latestStartShard.set(latestStartShard);
-  }
-
-  @Override
-  public ShardNumber getPreviousShufflingStartShard() {
-    return previousShufflingStartShard.get();
-  }
-
-  @Override
-  public void setPreviousShufflingStartShard(
-      ShardNumber previousShufflingStartShard) {
-    this.previousShufflingStartShard.set(previousShufflingStartShard);
-  }
-
-  @Override
-  public ShardNumber getCurrentShufflingStartShard() {
-    return currentShufflingStartShard.get();
-  }
-
-  @Override
-  public void setCurrentShufflingStartShard(
-      ShardNumber currentShufflingStartShard) {
-    this.currentShufflingStartShard.set(currentShufflingStartShard);
-  }
-
-  @Override
-  public EpochNumber getPreviousShufflingEpoch() {
-    return previousShufflingEpoch.get();
-  }
-
-  @Override
-  public void setPreviousShufflingEpoch(EpochNumber previousShufflingEpoch) {
-    this.previousShufflingEpoch.set(previousShufflingEpoch);
-  }
-
-  @Override
-  public EpochNumber getCurrentShufflingEpoch() {
-    return currentShufflingEpoch.get();
-  }
-
-  @Override
-  public void setCurrentShufflingEpoch(EpochNumber currentShufflingEpoch) {
-    this.currentShufflingEpoch.set(currentShufflingEpoch);
-  }
-
-  @Override
-  public Hash32 getPreviousShufflingSeed() {
-    return previousShufflingSeed.get();
-  }
-
-  @Override
-  public void setPreviousShufflingSeed(Hash32 previousShufflingSeed) {
-    this.previousShufflingSeed.set(previousShufflingSeed);
-  }
-
-  @Override
-  public Hash32 getCurrentShufflingSeed() {
-    return currentShufflingSeed.get();
-  }
-
-  @Override
-  public void setCurrentShufflingSeed(Hash32 currentShufflingSeed) {
-    this.currentShufflingSeed.set(currentShufflingSeed);
   }
 
   public WriteList<Integer, PendingAttestation> getPreviousEpochAttestations() {
@@ -472,12 +388,12 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
-  public WriteList<Integer, Eth1DataVote> getEth1DataVotes() {
+  public WriteList<Integer, Eth1Data> getEth1DataVotes() {
     return eth1DataVotes.get();
   }
 
   public void setEth1DataVotes(
-      WriteList<Integer, Eth1DataVote> eth1DataVotes) {
+      WriteList<Integer, Eth1Data> eth1DataVotes) {
     this.eth1DataVotes.set(eth1DataVotes);
   }
 

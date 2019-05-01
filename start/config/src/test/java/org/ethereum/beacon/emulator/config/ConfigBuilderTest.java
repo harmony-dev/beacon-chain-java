@@ -68,7 +68,6 @@ public class ConfigBuilderTest {
 
     SpecConstants specConstantsDefault = BeaconChainSpec.DEFAULT_CONSTANTS;
     assertEquals(specConstantsDefault.getGenesisEpoch(), specConstants.getGenesisEpoch());
-    assertEquals(specConstantsDefault.getEmptySignature(), specConstants.getEmptySignature());
     assertEquals(specConstantsDefault.getSlotsPerEpoch(), specConstants.getSlotsPerEpoch());
     assertEquals(specConstantsDefault.getSecondsPerSlot(), specConstants.getSecondsPerSlot());
 

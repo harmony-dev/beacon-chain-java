@@ -18,20 +18,13 @@ import tech.pegasys.artemis.util.uint.UInt64;
  */
 public interface InitialValues {
 
-  UInt64 GENESIS_FORK_VERSION = UInt64.ZERO;
   SlotNumber GENESIS_SLOT = SlotNumber.ZERO;
   EpochNumber GENESIS_EPOCH = EpochNumber.ZERO;
-  ShardNumber GENESIS_START_SHARD = ShardNumber.of(0);
   EpochNumber FAR_FUTURE_EPOCH = EpochNumber.castFrom(UInt64.MAX_VALUE); // (1 << 64) - 1
   Hash32 ZERO_HASH = Hash32.ZERO;
-  BLSSignature EMPTY_SIGNATURE = BLSSignature.ZERO;
   Bytes1 BLS_WITHDRAWAL_PREFIX_BYTE = Bytes1.ZERO;
 
   /* Values defined in the spec. */
-
-  default UInt64 getGenesisForkVersion() {
-    return GENESIS_FORK_VERSION;
-  }
 
   default SlotNumber getGenesisSlot() {
     return GENESIS_SLOT;
@@ -41,20 +34,12 @@ public interface InitialValues {
     return GENESIS_EPOCH;
   }
 
-  default ShardNumber getGenesisStartShard() {
-    return GENESIS_START_SHARD;
-  }
-
   default EpochNumber getFarFutureEpoch() {
     return FAR_FUTURE_EPOCH;
   }
 
   default Hash32 getZeroHash() {
     return ZERO_HASH;
-  }
-
-  default BLSSignature getEmptySignature() {
-    return EMPTY_SIGNATURE;
   }
 
   default Bytes1 getBlsWithdrawalPrefixByte() {

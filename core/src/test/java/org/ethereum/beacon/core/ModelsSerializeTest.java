@@ -61,12 +61,12 @@ public class ModelsSerializeTest {
     AttestationData expected =
         new AttestationData(
             SlotNumber.of(123),
-            Hashes.keccak256(BytesValue.fromHexString("aa")),
+            Hashes.sha256(BytesValue.fromHexString("aa")),
             EpochNumber.ZERO,
-            Hashes.keccak256(BytesValue.fromHexString("bb")),
-            Hashes.keccak256(BytesValue.fromHexString("cc")),
+            Hashes.sha256(BytesValue.fromHexString("bb")),
+            Hashes.sha256(BytesValue.fromHexString("cc")),
             ShardNumber.of(345),
-            Hashes.keccak256(BytesValue.fromHexString("dd")),
+            Hashes.sha256(BytesValue.fromHexString("dd")),
             Hash32.ZERO);
 
     return expected;
@@ -104,7 +104,7 @@ public class ModelsSerializeTest {
     DepositData depositData =
         new DepositData(
             BLSPubkey.wrap(Bytes48.TRUE),
-            Hashes.keccak256(BytesValue.fromHexString("aa")),
+            Hashes.sha256(BytesValue.fromHexString("aa")),
             Gwei.ZERO, BLSSignature.wrap(Bytes96.ZERO));
 
     return depositData;
@@ -126,8 +126,8 @@ public class ModelsSerializeTest {
 
   private Deposit createDeposit2() {
     ArrayList<Hash32> hashes = new ArrayList<>();
-    hashes.add(Hashes.keccak256(BytesValue.fromHexString("aa")));
-    hashes.add(Hashes.keccak256(BytesValue.fromHexString("bb")));
+    hashes.add(Hashes.sha256(BytesValue.fromHexString("aa")));
+    hashes.add(Hashes.sha256(BytesValue.fromHexString("bb")));
     Deposit deposit = new Deposit(hashes, UInt64.ZERO, createDepositData());
 
     return deposit;
@@ -259,8 +259,8 @@ public class ModelsSerializeTest {
     BeaconBlock beaconBlock =
         new BeaconBlock(
             SlotNumber.castFrom(UInt64.MAX_VALUE),
-            Hashes.keccak256(BytesValue.fromHexString("aa")),
-            Hashes.keccak256(BytesValue.fromHexString("bb")),
+            Hashes.sha256(BytesValue.fromHexString("aa")),
+            Hashes.sha256(BytesValue.fromHexString("bb")),
             createBeaconBlockBody(),
             BLSSignature.wrap(Bytes96.fromHexString("aa")));
 
@@ -345,7 +345,6 @@ public class ModelsSerializeTest {
         new PendingAttestation(
             Bitfield.of(BytesValue.fromHexString("aa")),
             createAttestationData(),
-            Bitfield.of(BytesValue.fromHexString("bb")),
             SlotNumber.ZERO,
             ValidatorIndex.ZERO);
 

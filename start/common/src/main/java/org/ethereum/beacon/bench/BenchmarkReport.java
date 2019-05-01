@@ -366,15 +366,15 @@ public class BenchmarkReport {
 
   private static final String[] HELPER_FUNCTIONS = {
     "hash_tree_root",
-    "signed_root",
+    "signing_root",
     "get_crosslink_committees_at_slot",
     "get_beacon_proposer_index",
     "get_active_validator_indices",
     "get_total_balance",
-    "get_attestation_participants",
+    "get_attesting_indices",
     "get_validator_index_by_pubkey",
     "get_previous_total_balance",
-    "get_current_total_balance",
+    "get_total_active_balance",
     "get_base_reward",
     "verify_bitfield"
   };
