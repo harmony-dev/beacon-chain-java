@@ -306,7 +306,7 @@ public interface BlockProcessing extends HelperFunction {
         ) */
     assertTrue(verify_merkle_branch(
         hash_tree_root(deposit.getData()),
-        deposit.getProof(),
+        deposit.getProof().listCopy(),
         getConstants().getDepositContractTreeDepth(),
         deposit.getIndex(),
         state.getLatestEth1Data().getDepositRoot()

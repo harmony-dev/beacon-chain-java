@@ -1,9 +1,10 @@
 package org.ethereum.beacon.core.state;
 
-import java.util.List;
+import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.collections.ReadVector;
 
 /**
  * A batch of historical data.
@@ -16,20 +17,22 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 public class HistoricalBatch {
 
   /** Block roots. */
-  @SSZ private final List<Hash32> blockRoots;
+  @SSZ(vectorLengthVar = "spec.SLOTS_PER_HISTORICAL_ROOT")
+  private final ReadVector<SlotNumber, Hash32> blockRoots;;
   /** State roots. */
-  @SSZ private final List<Hash32> stateRoots;
+  @SSZ(vectorLengthVar = "spec.SLOTS_PER_HISTORICAL_ROOT")
+  private final ReadVector<SlotNumber, Hash32> stateRoots;;
 
-  public HistoricalBatch(List<Hash32> blockRoots, List<Hash32> stateRoots) {
+  public HistoricalBatch(ReadVector<SlotNumber, Hash32> blockRoots, ReadVector<SlotNumber, Hash32> stateRoots) {
     this.blockRoots = blockRoots;
     this.stateRoots = stateRoots;
   }
 
-  public List<Hash32> getBlockRoots() {
+  public ReadVector<SlotNumber, Hash32> getBlockRoots() {
     return blockRoots;
   }
 
-  public List<Hash32> getStateRoots() {
+  public ReadVector<SlotNumber, Hash32> getStateRoots() {
     return stateRoots;
   }
 }
