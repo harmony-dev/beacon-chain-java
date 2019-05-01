@@ -3,6 +3,7 @@ package org.ethereum.beacon.test;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockBody;
@@ -48,6 +49,7 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes4;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.collections.ReadVector;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 /** Various utility methods aiding state tests development. */
@@ -86,9 +88,7 @@ public abstract class StateTestUtils {
         blockData.getBody().getDeposits()) {
       Deposit deposit =
           new Deposit(
-              depositData.getProof().stream()
-                  .map(Hash32::fromHexString)
-                  .collect(Collectors.toList()),
+              ReadVector.wrap(depositData.getProof().stream().map(Hash32::fromHexString).collect(Collectors.toList()), Function.identity()),
               UInt64.valueOf(depositData.getIndex()),
               new DepositData(
                   BLSPubkey.fromHexString(depositData.getDepositData().getPubkey()),
