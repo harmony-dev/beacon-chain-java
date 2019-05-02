@@ -243,7 +243,6 @@ public class TestUtils {
     File config = getResourceFile(configPath.toString());
 
     SpecConstantsData specConstantsDataRaw = readYamlFile(config, SpecConstantsDataMerged.class);
-    // TODO: Is it required? Yaml should contain all the fields
     SpecConstantsData specConstantsData;
     try {
       specConstantsData =

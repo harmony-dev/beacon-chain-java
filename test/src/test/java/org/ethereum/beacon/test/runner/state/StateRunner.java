@@ -40,6 +40,7 @@ public class StateRunner implements Runner {
       return Optional.of("Initial state parsed incorrectly: " + err.get());
     }
     BeaconState latestState = initialState;
+
     if (testCase.getDeposit() != null) {
       processDeposit(testCase.getDepositOperation(), latestState);
     } else if (testCase.getAttestation() != null) {

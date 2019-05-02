@@ -39,6 +39,7 @@ public class SszStaticRunner implements Runner {
   private ObjectMapper yamlMapper;
   private BeaconChainSpec spec;
   private Map<Class, ObjectSerializer> objectSerializers = new HashMap<>();
+  private Set<ClassInfo> coreTypes;
 
   public SszStaticRunner(TestCase testCase, BeaconChainSpec spec) {
     if (!(testCase instanceof SszStaticCase)) {
@@ -51,21 +52,29 @@ public class SszStaticRunner implements Runner {
             .withExternalVarResolver(new SpecConstantsResolver(spec.getConstants()))
             .buildSerializer();
     this.yamlMapper = new ObjectMapper(new YAMLFactory());
-    Set<ClassInfo> mappers = findClassesInPackage("org.ethereum.beacon.test.runner.ssz.mapper");
-    mappers.stream()
+    this.spec = spec;
+
+    // objectSerializers filling
+    Set<ClassInfo> availableSerializers =
+        findClassesInPackage("org.ethereum.beacon.test.runner.ssz.mapper");
+    availableSerializers.stream()
         .map(this::fromInfo)
         .map((Class mapperType) -> createInstance(mapperType, yamlMapper))
         .forEach(
             m -> {
               if (m == null) {
-                return; // Couldn't create instance, for example, for interface
+                return; // Couldn't create instance, for example, for interface, so it's not a
+                // serializer
               }
               ObjectSerializer mapper = (ObjectSerializer) m;
               objectSerializers.put(mapper.accepts(), mapper);
             });
-    this.spec = spec;
+
+    // Filling set with spec types
+    this.coreTypes = findClassesInPackage("org.ethereum.beacon.core");
   }
 
+  /** Instantiating {@link ObjectSerializer} */
   private ObjectSerializer createInstance(
       Class<? extends ObjectSerializer> mapperType, ObjectMapper jacksonMapper) {
     return ConstructorObjCreator.createInstanceWithConstructor(
@@ -84,6 +93,7 @@ public class SszStaticRunner implements Runner {
     return classes;
   }
 
+  /** {@link ClassInfo} -> {@link Class} mapper */
   private Class fromInfo(ClassInfo classInfo) {
     Class valueType = null;
     try {
@@ -95,15 +105,14 @@ public class SszStaticRunner implements Runner {
     return valueType;
   }
 
-  public Optional<String> run() {
-    Set<ClassInfo> coreTypes = findClassesInPackage("org.ethereum.beacon.core");
+  private Class findSpecClassByName(String name) {
     final String searchName;
-    if (testCase.getTypeName().equals("Validator")) {
+    if (name.equals("Validator")) {
       searchName = "ValidatorRecord"; // XXX: we have different naming
-    } else if (testCase.getTypeName().equals("BeaconState")) {
+    } else if (name.equals("BeaconState")) {
       searchName = "BeaconStateImpl"; // XXX: we have several implementations
     } else {
-      searchName = testCase.getTypeName();
+      searchName = name;
     }
     List<ClassInfo> classes =
         coreTypes.stream()
@@ -111,14 +120,19 @@ public class SszStaticRunner implements Runner {
             .collect(Collectors.toList());
     ClassInfo valueTypeInfo;
     if (classes.size() != 1) {
-      return Optional.of(
+      throw new RuntimeException(
           String.format(
               "Failed: should be only one appropriate core class for %s (%s classes found) ",
-              testCase.getTypeName(), classes.size()));
+              name, classes.size()));
     } else {
       valueTypeInfo = classes.get(0);
     }
-    Class valueType = fromInfo(valueTypeInfo);
+
+    return fromInfo(valueTypeInfo);
+  }
+
+  public Optional<String> run() {
+    Class valueType = findSpecClassByName(testCase.getTypeName());
     Object fromSerialized =
         sszSerializer.decode(BytesValue.fromHexString(testCase.getSerialized()), valueType);
     Object simplified = objectSerializers.get(valueType).map(fromSerialized);
