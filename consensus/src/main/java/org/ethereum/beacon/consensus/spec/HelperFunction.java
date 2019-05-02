@@ -146,6 +146,12 @@ public interface HelperFunction extends SpecCommons {
       List<ValidatorIndex> validator_indices, Hash32 seed, int index, int total_committees) {
     int start_offset = get_split_offset(validator_indices.size(), total_committees, index);
     int end_offset = get_split_offset(validator_indices.size(), total_committees, index + 1);
+
+    return compute_committee(validator_indices, start_offset, end_offset, seed);
+  }
+
+  default List<ValidatorIndex> compute_committee(
+      List<ValidatorIndex> validator_indices, int start_offset, int end_offset, Hash32 seed) {
     return IntStream.range(start_offset, end_offset).mapToObj(i -> {
       UInt64 permuted_index =
           get_permuted_index(UInt64.valueOf(i), UInt64.valueOf(validator_indices.size()), seed);
@@ -161,6 +167,12 @@ public interface HelperFunction extends SpecCommons {
       List<ValidatorIndex> validator_indices, Hash32 seed, int index, int total_committees) {
     int start_offset = get_split_offset(validator_indices.size(), total_committees, index);
     int end_offset = get_split_offset(validator_indices.size(), total_committees, index + 1);
+
+    return compute_committee2(validator_indices, start_offset, end_offset, seed);
+  }
+
+  default List<ValidatorIndex> compute_committee2(
+      List<ValidatorIndex> validator_indices, int start_offset, int end_offset, Hash32 seed) {
     List<UInt64> permuted_indices = get_permuted_list(validator_indices, seed);
 
     return permuted_indices.subList(start_offset, end_offset).stream()
