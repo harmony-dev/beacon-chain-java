@@ -12,6 +12,8 @@ import org.ethereum.beacon.core.types.BLSSignature;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.bytes.Bytes96;
+import tech.pegasys.artemis.util.collections.ReadList;
+import tech.pegasys.artemis.util.collections.ReadVector;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public abstract class DepositTestUtil {
@@ -34,8 +36,8 @@ public abstract class DepositTestUtil {
             Hash32.random(random),
             spec.getMaxEffectiveBalance(), BLSSignature.wrap(Bytes96.random(random)));
 
-    List<Hash32> merkleBranch =
-        Collections.nCopies(spec.getDepositContractTreeDepth().getIntValue(), Hash32.ZERO);
+    ReadVector<Integer, Hash32> merkleBranch =
+        ReadVector.wrap(Collections.nCopies(spec.getDepositContractTreeDepth().getIntValue(), Hash32.ZERO), Integer::new);
 
     return new Deposit(merkleBranch, depositIndex, depositData);
   }

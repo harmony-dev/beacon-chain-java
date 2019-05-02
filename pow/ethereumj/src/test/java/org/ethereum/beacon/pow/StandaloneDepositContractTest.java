@@ -21,6 +21,7 @@ import org.ethereum.util.blockchain.SolidityContract;
 import org.ethereum.util.blockchain.StandaloneBlockchain;
 import org.ethereum.util.blockchain.StandaloneBlockchain.SolidityContractImpl;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import reactor.core.publisher.Mono;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -30,6 +31,7 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.bytes.MutableBytes48;
 import tech.pegasys.artemis.util.uint.UInt64;
 
+@Ignore
 public class StandaloneDepositContractTest {
 
   // modified contract:

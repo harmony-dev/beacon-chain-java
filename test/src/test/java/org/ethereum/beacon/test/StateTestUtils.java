@@ -48,6 +48,7 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes4;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.collections.ReadVector;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 /** Various utility methods aiding state tests development. */
@@ -86,9 +87,9 @@ public abstract class StateTestUtils {
         blockData.getBody().getDeposits()) {
       Deposit deposit =
           new Deposit(
-              depositData.getProof().stream()
+              ReadVector.wrap(depositData.getProof().stream()
                   .map(Hash32::fromHexString)
-                  .collect(Collectors.toList()),
+                  .collect(Collectors.toList()), Integer::new),
               UInt64.valueOf(depositData.getIndex()),
               new DepositData(
                   BLSPubkey.fromHexString(depositData.getDepositData().getPubkey()),

@@ -18,6 +18,7 @@ import java.util.Optional;
 
 import static org.junit.Assert.fail;
 
+@Ignore
 public class BlsTests extends TestUtils {
   private String TESTS_DIR = "bls";
   private String FILENAME = "test_bls.yml";

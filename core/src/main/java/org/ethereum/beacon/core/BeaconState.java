@@ -51,6 +51,10 @@ public interface BeaconState extends ObservableComposite {
         Collections.nCopies(specConst.getLatestActiveIndexRootsLength().intValue(), Hash32.ZERO));
     ret.getLatestSlashedBalances().addAll(
         Collections.nCopies(specConst.getLatestSlashedExitLength().intValue(), Gwei.ZERO));
+    ret.getPreviousCrosslinks().addAll(
+        Collections.nCopies(specConst.getShardCount().intValue(), Crosslink.EMPTY));
+    ret.getCurrentCrosslinks().addAll(
+        Collections.nCopies(specConst.getShardCount().intValue(), Crosslink.EMPTY));
     return ret;
   }
 

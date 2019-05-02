@@ -94,9 +94,7 @@ public class SampleObservableState {
                 spec.getObjectHasher(), SerializerFactory.createSSZ(specConstants))
             .create(db);
 
-    // TODO
     BeaconBlockVerifier blockVerifier = (block, state) -> VerificationResult.PASSED;
-    // TODO
     BeaconStateVerifier stateVerifier = (block, state) -> VerificationResult.PASSED;
 
     beaconChain = new DefaultBeaconChain(
