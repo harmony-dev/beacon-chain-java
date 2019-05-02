@@ -69,7 +69,8 @@ public class StateComparator {
     runComparison(
         "Latest active index roots do not match: ", this::compareLatestActiveIndexRoots, error);
     runComparison("Latest block header doesn't match: ", this::compareLatestBlockHeader, error);
-    runComparison("Latest crosslinks do not match: ", this::compareLatestCrosslinks, error);
+    runComparison("Current crosslinks do not match: ", this::compareCurrentCrosslinks, error);
+    runComparison("Previous crosslinks do not match: ", this::comparePreviousCrosslinks, error);
     runComparison("Latest Eth1 data doesn't match: ", this::compareLatestEth1Data, error);
     runComparison("Latest randao mixes do not match: ", this::compareLatestRandaoMixes, error);
     runComparison("Latest slashed balances do not match: ", this::compareSlashedBalances, error);
@@ -185,15 +186,24 @@ public class StateComparator {
     return assertLists(expectedRoots, actual.getLatestActiveIndexRoots().listCopy());
   }
 
-  private Optional<String> compareLatestCrosslinks() {
+  private Optional<String> compareCurrentCrosslinks() {
     if (expected.getCurrentCrosslinks() == null) {
       return Optional.empty();
     }
 
-    // FIXME: already modified by Michael, it couldn't match the test fixtures
     List<Crosslink> expectedCrosslinks =
         StateTestUtils.parseCrosslinks(expected.getCurrentCrosslinks());
     return assertLists(expectedCrosslinks, actual.getCurrentCrosslinks().listCopy());
+  }
+
+  private Optional<String> comparePreviousCrosslinks() {
+    if (expected.getPreviousCrosslinks() == null) {
+      return Optional.empty();
+    }
+
+    List<Crosslink> expectedCrosslinks =
+        StateTestUtils.parseCrosslinks(expected.getPreviousCrosslinks());
+    return assertLists(expectedCrosslinks, actual.getPreviousCrosslinks().listCopy());
   }
 
   private Optional<String> comparePreviousEpochAttestations() {

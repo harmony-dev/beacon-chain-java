@@ -3,7 +3,6 @@ package org.ethereum.beacon.test;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockBody;
@@ -88,7 +87,9 @@ public abstract class StateTestUtils {
         blockData.getBody().getDeposits()) {
       Deposit deposit =
           new Deposit(
-              ReadVector.wrap(depositData.getProof().stream().map(Hash32::fromHexString).collect(Collectors.toList()), Function.identity()),
+              ReadVector.wrap(depositData.getProof().stream()
+                  .map(Hash32::fromHexString)
+                  .collect(Collectors.toList()), Integer::new),
               UInt64.valueOf(depositData.getIndex()),
               new DepositData(
                   BLSPubkey.fromHexString(depositData.getData().getPubkey()),
@@ -201,18 +202,25 @@ public abstract class StateTestUtils {
     state.setLatestEth1Data(parseEth1Data(data.getLatestEth1Data()));
     state.setDepositIndex(UInt64.valueOf(data.getDepositIndex()));
 
+    state.getValidatorRegistry().clear();
     state.getValidatorRegistry().addAll(parseValidatorRegistry(data.getValidatorRegistry()));
+    state.getBalances().clear();
     state.getBalances().addAll(parseBalances(data.getBalances()));
     state.getLatestRandaoMixes().setAll(parseHashes(data.getLatestRandaoMixes()));
+    state.getPreviousEpochAttestations().clear();
     state.getPreviousEpochAttestations().addAll(
         parsePendingAttestations(data.getPreviousEpochAttestations()));
+    state.getCurrentEpochAttestations().clear();
     state.getCurrentEpochAttestations().addAll(
         parsePendingAttestations(data.getCurrentEpochAttestations()));
+    state.getCurrentCrosslinks().clear();
     state.getCurrentCrosslinks().addAll(parseCrosslinks(data.getCurrentCrosslinks()));
+    state.getPreviousCrosslinks().clear();
     state.getPreviousCrosslinks().addAll(parseCrosslinks(data.getPreviousCrosslinks()));
     state.getLatestBlockRoots().setAll(parseHashes(data.getLatestBlockRoots()));
     state.getLatestStateRoots().setAll(parseHashes(data.getLatestStateRoots()));
     state.getLatestActiveIndexRoots().setAll(parseHashes(data.getLatestActiveIndexRoots()));
+    state.getHistoricalRoots().clear();
     state.getHistoricalRoots().addAll(parseHashes(data.getHistoricalRoots()));
     state.getLatestSlashedBalances().setAll(parseBalances(data.getLatestSlashedBalances()));
     state.setLatestStartShard(ShardNumber.of(UInt64.valueOf(data.getLatestStartShard())));

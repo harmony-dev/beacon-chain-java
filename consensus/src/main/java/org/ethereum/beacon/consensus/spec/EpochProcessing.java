@@ -357,6 +357,9 @@ public interface EpochProcessing extends HelperFunction {
     Gwei total_balance = get_total_active_balance(state);
     Gwei[] rewards = new Gwei[state.getValidatorRegistry().size().getIntValue()];
     Gwei[] penalties = new Gwei[state.getValidatorRegistry().size().getIntValue()];
+    Arrays.fill(rewards, Gwei.ZERO);
+    Arrays.fill(penalties, Gwei.ZERO);
+
     List<ValidatorIndex> eligible_validator_indices = new ArrayList<>();
     for (ValidatorIndex index : state.getValidatorRegistry().size()) {
       ValidatorRecord validator = state.getValidatorRegistry().get(index);
@@ -445,6 +448,8 @@ public interface EpochProcessing extends HelperFunction {
   default Gwei[][] get_crosslink_deltas(BeaconState state) {
     Gwei[] rewards = new Gwei[state.getValidatorRegistry().size().getIntValue()];
     Gwei[] penalties = new Gwei[state.getValidatorRegistry().size().getIntValue()];
+    Arrays.fill(rewards, Gwei.ZERO);
+    Arrays.fill(penalties, Gwei.ZERO);
 
     /* for slot in range(get_epoch_start_slot(get_previous_epoch(state)), get_epoch_start_slot(get_current_epoch(state))): */
     for (SlotNumber slot : get_epoch_start_slot(get_previous_epoch(state)).iterateTo(
@@ -552,13 +557,15 @@ public interface EpochProcessing extends HelperFunction {
       }
     }
     activation_queue.sort(Comparator.comparing(p -> p.getValue1().getActivationEligibilityEpoch()));
+    int limit = get_churn_limit(state).getIntValue();
+    List<Pair<ValidatorIndex, ValidatorRecord>> limited_activation_queue =
+        activation_queue.size() > limit ? activation_queue.subList(0, limit) : activation_queue;
 
     /* Dequeued validators for activation up to churn limit (without resetting activation epoch)
       for index in activation_queue[:get_churn_limit(state)]:
           if validator.activation_epoch == FAR_FUTURE_EPOCH:
               validator.activation_epoch = get_delayed_activation_exit_epoch(get_current_epoch(state)) */
-    for (Pair<ValidatorIndex, ValidatorRecord> p :
-        activation_queue.subList(0, get_churn_limit(state).getIntValue())) {
+    for (Pair<ValidatorIndex, ValidatorRecord> p : limited_activation_queue) {
       if (p.getValue1().getActivationEpoch().equals(getConstants().getFarFutureEpoch())) {
         state.getValidatorRegistry().update(p.getValue0(),
             v -> ValidatorRecord.Builder.fromRecord(v)

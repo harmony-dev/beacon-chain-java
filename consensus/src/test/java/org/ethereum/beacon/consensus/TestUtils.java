@@ -18,6 +18,7 @@ import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes4;
 import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.bytes.Bytes96;
+import tech.pegasys.artemis.util.collections.ReadVector;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 import java.util.ArrayList;
@@ -62,8 +63,8 @@ public class TestUtils {
 
       Deposit deposit =
           new Deposit(
-              Collections.singletonList(Hash32.random(rnd)),
-              UInt64.ZERO,
+              ReadVector.wrap(Collections.singletonList(Hash32.random(rnd)), Integer::new),
+              UInt64.valueOf(i),
               new DepositData(
                   BLSPubkey.wrap(Bytes48.leftPad(keyPair.getPublic().getEncodedBytes())),
                   withdrawalCredentials,
@@ -86,7 +87,7 @@ public class TestUtils {
       BLSPubkey pubkey = BLSPubkey.wrap(Bytes48.leftPad(counter.toBytesBigEndian()));
       Deposit deposit =
           new Deposit(
-              Collections.singletonList(Hash32.random(rnd)),
+              ReadVector.wrap(Collections.singletonList(Hash32.random(rnd)), Integer::new),
               counter,
               new DepositData(
                   pubkey,

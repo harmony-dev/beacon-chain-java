@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.transition.BeaconStateExImpl;
 import org.ethereum.beacon.core.operations.Attestation;
@@ -45,15 +46,18 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.collections.ReadVector;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public class ModelsSerializeTest {
   private SSZSerializer sszSerializer;
+  private SpecConstants specConstants;
 
   @Before
   public void setup() {
+    specConstants = BeaconChainSpec.DEFAULT_CONSTANTS;
     sszSerializer = new SSZBuilder()
-        .withExternalVarResolver(new SpecConstantsResolver(new SpecConstants() {}))
+        .withExternalVarResolver(new SpecConstantsResolver(specConstants))
         .buildSerializer();
   }
 
@@ -119,7 +123,10 @@ public class ModelsSerializeTest {
   }
 
   private Deposit createDeposit1() {
-    Deposit deposit = new Deposit(Collections.emptyList(), UInt64.ZERO, createDepositData());
+    Deposit deposit = new Deposit(
+        ReadVector.wrap(
+            Collections.nCopies(specConstants.getDepositContractTreeDepth().getIntValue(), Hash32.ZERO), Integer::new),
+        UInt64.ZERO, createDepositData());
 
     return deposit;
   }
@@ -128,7 +135,9 @@ public class ModelsSerializeTest {
     ArrayList<Hash32> hashes = new ArrayList<>();
     hashes.add(Hashes.sha256(BytesValue.fromHexString("aa")));
     hashes.add(Hashes.sha256(BytesValue.fromHexString("bb")));
-    Deposit deposit = new Deposit(hashes, UInt64.ZERO, createDepositData());
+    hashes.addAll(Collections.nCopies(specConstants.getDepositContractTreeDepth().getIntValue() - hashes.size(), Hash32.ZERO));
+    ReadVector<Integer, Hash32> proof = ReadVector.wrap(hashes, Integer::new);
+    Deposit deposit = new Deposit(proof, UInt64.ZERO, createDepositData());
 
     return deposit;
   }

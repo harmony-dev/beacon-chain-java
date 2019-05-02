@@ -89,12 +89,8 @@ public interface OnGenesis extends BlockProcessing {
     state.setFinalizedRoot(Hash32.ZERO);
 
     // Recent state
-    state.getPreviousCrosslinks().addAll(
-        nCopies(getConstants().getShardCount().getIntValue(),
-            new Crosslink(getConstants().getGenesisEpoch(), Hash32.ZERO, Hash32.ZERO)));
-    state.getCurrentCrosslinks().addAll(
-        nCopies(getConstants().getShardCount().getIntValue(),
-            new Crosslink(getConstants().getGenesisEpoch(), Hash32.ZERO, Hash32.ZERO)));
+    state.getPreviousCrosslinks().setAll(Crosslink.EMPTY);
+    state.getCurrentCrosslinks().setAll(Crosslink.EMPTY);
     state.getLatestBlockRoots().setAll(Hash32.ZERO);
     state.getLatestStateRoots().setAll(Hash32.ZERO);
     state.getLatestActiveIndexRoots().setAll(Hash32.ZERO);

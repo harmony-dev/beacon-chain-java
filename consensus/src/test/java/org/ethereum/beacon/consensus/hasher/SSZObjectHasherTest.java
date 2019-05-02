@@ -167,7 +167,7 @@ public class SSZObjectHasherTest {
     BytesValue hash = sszHasher.getHash(anotherObjects);
     assertEquals(
         BytesValue.fromHexString(
-            "0x6d3a1eb14c6b37eb4645044d0c1bf38284b408eab24e89238a8058f3b921e5d9"),
+            "0x79674903e05afe130f6b198098124b6cdaeeb2e62da2b14630eac79193332c52"),
         hash);
   }
 
