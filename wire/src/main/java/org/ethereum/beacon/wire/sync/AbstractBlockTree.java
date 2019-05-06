@@ -71,22 +71,22 @@ public abstract class AbstractBlockTree<THash, TBlock extends BlockWrap<THash, T
 
   @Override
   public void setTopBlock(@Nonnull TBlock block) {
-    if (topBlock == null) {
-      topBlock = block;
-      return;
-    }
-    if (!hashMap.containsKey(block.getHash())) {
-      throw new IllegalArgumentException("setTopBlock() should be called with existing block or to initialize");
-    }
-    Iterator<Entry<THash, TBlock>> iterator = hashMap.entrySet().iterator();
-    while (iterator.hasNext()) {
-      Entry<THash, TBlock> entry = iterator.next();
-      if (entry.getValue().getHeight() <= block.getHeight()
-          && !entry.getKey().equals(block.getHash())) {
-        iterator.remove();
-        childrenMap.remove(entry.getKey());
+    if (topBlock != null) {
+      if (!hashMap.containsKey(block.getHash())) {
+        throw new IllegalArgumentException(
+            "setTopBlock() should be called with existing block or to initialize");
+      }
+      Iterator<Entry<THash, TBlock>> iterator = hashMap.entrySet().iterator();
+      while (iterator.hasNext()) {
+        Entry<THash, TBlock> entry = iterator.next();
+        if (entry.getValue().getHeight() <= block.getHeight()
+            && !entry.getKey().equals(block.getHash())) {
+          iterator.remove();
+          childrenMap.remove(entry.getKey());
+        }
       }
     }
+    topBlock = block;
   }
 
   @Nonnull

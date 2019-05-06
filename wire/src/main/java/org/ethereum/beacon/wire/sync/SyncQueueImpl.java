@@ -54,10 +54,8 @@ public class SyncQueueImpl implements SyncQueue {
 
   protected void onNewFinalBlock(BeaconBlock finalBlock) {
     blockTree.setTopBlock(Feedback.of(finalBlock));
-    if (this.finalBlock == null) {
-      this.finalBlock = finalBlock;
-      blockRequests.onNext(createBlockRequests());
-    }
+    this.finalBlock = finalBlock;
+    blockRequests.onNext(createBlockRequests());
   }
 
   protected void onInvalidBlock(BeaconBlock block) {
