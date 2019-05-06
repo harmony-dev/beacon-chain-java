@@ -19,7 +19,7 @@ public class BeaconBlockTree extends AbstractBlockTree<Hash32, BlockWrapper, Fee
 
     @Override
     public Hash32 getHash() {
-      return hasher.getHash(block.get());
+      return hasher.getHashTruncateLast(block.get());
     }
 
     @Override

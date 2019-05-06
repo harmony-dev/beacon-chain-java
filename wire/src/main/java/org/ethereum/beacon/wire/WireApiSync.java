@@ -37,7 +37,7 @@ public interface WireApiSync {
     CompletableFuture<Feedback<List<BeaconBlockBody>>> bodiesFuture = headersFuture
         .thenCompose(headers -> {
           List<Hash32> blockHashes = headers.stream()
-              .map(BeaconBlockHeader::getBlockBodyRoot)
+              .map(hasher::getHashTruncateLast)
               .collect(Collectors.toList());
           return requestBlockBodies(new BlockBodiesRequestMessage(blockHashes))
               .thenApply(bb -> bb.delegate(bb.get().getBlockBodies()));
