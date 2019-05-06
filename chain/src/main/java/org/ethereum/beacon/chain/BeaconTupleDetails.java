@@ -38,4 +38,8 @@ public class BeaconTupleDetails extends BeaconTuple {
     return getState();
   }
 
+  @Override
+  public String toString() {
+    return getFinalState().toString();
+  }
 }
