@@ -76,6 +76,17 @@ public class SimulatorLauncher implements Runnable {
   private final Level logLevel;
   private final SpecBuilder specBuilder;
 
+  private Random rnd;
+  private Time genesisTime;
+  private MDCControlledSchedulers controlledSchedulers;
+  private LocalWireHub localWireHub;
+  private List<BLS381.KeyPair> keyPairs;
+  private Eth1Data eth1Data;
+  private DepositContract depositContract;
+  private TimeCollector proposeTimeCollector;
+
+  private List<Launcher> peers;
+
   /**
    * Creates Simulator launcher with following settings
    *
@@ -99,6 +110,8 @@ public class SimulatorLauncher implements Runnable {
     this.validators = validators;
     this.observers = observers;
     this.logLevel = logLevel;
+
+    init();
   }
 
   private void setupLogging() {
@@ -137,44 +150,70 @@ public class SimulatorLauncher implements Runnable {
     return deposits;
   }
 
-  public void run() {
-    logger.info("Simulation parameters:\n{}", simulationPlan);
-    if (config.getChainSpec().isDefined())
-      logger.info("Overridden beacon chain parameters:\n{}", config.getChainSpec());
-
-    Random rnd = new Random(simulationPlan.getSeed());
+  public void init() {
+    rnd = new Random(simulationPlan.getSeed());
     setupLogging();
     Pair<List<Deposit>, List<BLS381.KeyPair>> validatorDeposits = getValidatorDeposits(rnd);
 
     List<Deposit> deposits = validatorDeposits.getValue0().stream()
         .filter(Objects::nonNull).collect(Collectors.toList());
-    List<BLS381.KeyPair> keyPairs = validatorDeposits.getValue1();
+    keyPairs = validatorDeposits.getValue1();
 
-    Time genesisTime = Time.of(simulationPlan.getGenesisTime());
+    genesisTime = Time.of(simulationPlan.getGenesisTime());
 
-    MDCControlledSchedulers controlledSchedulers = new MDCControlledSchedulers();
+    controlledSchedulers = new MDCControlledSchedulers();
     controlledSchedulers.setCurrentTime(genesisTime.getMillis().getValue() + 1000);
 
-    Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), Hash32.random(rnd));
+    eth1Data = new Eth1Data(Hash32.random(rnd), Hash32.random(rnd));
 
-    LocalWireHub localWireHub =
-        new LocalWireHub(s -> wire.trace(s), controlledSchedulers.createNew("wire"));
+    localWireHub = new LocalWireHub(s -> wire.trace(s), controlledSchedulers.createNew("wire"));
     DepositContract.ChainStart chainStart =
         new DepositContract.ChainStart(genesisTime, eth1Data, deposits);
-    DepositContract depositContract = new SimpleDepositContract(chainStart);
+    depositContract = new SimpleDepositContract(chainStart);
 
-    List<Launcher> peers = new ArrayList<>();
+    proposeTimeCollector = new TimeCollector();
+  }
+
+  public Launcher createPeer(String name) {
+    return createPeer(new PeersConfig(), null, name);
+  }
+  public Launcher createPeer(PeersConfig config, BLS381Credentials bls, String name) {
+    WireApiSub wireApi =
+        localWireHub.createNewPeer(
+            name,
+            config.getWireInboundDelay(),
+            config.getWireOutboundDelay());
+    return createPeer(config, bls, wireApi, name);
+  }
+
+  public Launcher createPeer(PeersConfig config, BLS381Credentials bls, WireApiSub wireApi, String name) {
+    ControlledSchedulers schedulers =
+        controlledSchedulers.createNew(name, config.getSystemTimeShift());
+
+    BeaconChainSpec spec = specBuilder.buildSpec();
+    return new Launcher(
+            spec,
+            depositContract,
+            bls == null ? null : Collections.singletonList(bls),
+            wireApi,
+            new MemBeaconChainStorageFactory(spec.getObjectHasher()),
+            schedulers,
+            proposeTimeCollector);
+  }
+
+  public void run() {
+    run(Integer.MAX_VALUE);
+  }
+
+  public void run(int slotsCount) {
+    logger.info("Simulation parameters:\n{}", simulationPlan);
+    if (config.getChainSpec().isDefined())
+      logger.info("Overridden beacon chain parameters:\n{}", config.getChainSpec());
+
+    peers = new ArrayList<>();
 
     logger.info("Creating validators...");
-    TimeCollector proposeTimeCollector = new TimeCollector();
     for (int i = 0; i < validators.size(); i++) {
-      ControlledSchedulers schedulers =
-          controlledSchedulers.createNew("V" + i, validators.get(i).getSystemTimeShift());
-      WireApiSub wireApi =
-          localWireHub.createNewPeer(
-              "" + i,
-              validators.get(i).getWireInboundDelay(),
-              validators.get(i).getWireOutboundDelay());
 
       BLS381Credentials bls;
       if (keyPairs.get(i) == null) {
@@ -185,18 +224,7 @@ public class SimulatorLauncher implements Runnable {
             BLS381Credentials.createWithDummySigner(keyPairs.get(i));
       }
 
-      BeaconChainSpec spec = specBuilder.buildSpec();
-      Launcher launcher =
-          new Launcher(
-              spec,
-              depositContract,
-              Collections.singletonList(bls),
-              wireApi,
-              new MemBeaconChainStorageFactory(spec.getObjectHasher()),
-              schedulers,
-              proposeTimeCollector);
-
-      peers.add(launcher);
+      peers.add(createPeer(validators.get(i), bls, "V" + i));
 
       if ((i + 1) % 100 == 0)
         logger.info("{} validators created", (i + 1));
@@ -205,19 +233,7 @@ public class SimulatorLauncher implements Runnable {
 
     logger.info("Creating observer peers...");
     for (int i = 0; i < observers.size(); i++) {
-      PeersConfig config = observers.get(i);
-      String name = "O" + i;
-      BeaconChainSpec spec = specBuilder.buildSpec();
-      Launcher launcher =
-          new Launcher(
-              spec,
-              depositContract,
-              null,
-              localWireHub.createNewPeer(
-                  name, config.getWireInboundDelay(), config.getWireOutboundDelay()),
-              new MemBeaconChainStorageFactory(spec.getObjectHasher()),
-              controlledSchedulers.createNew(name, config.getSystemTimeShift()));
-      peers.add(launcher);
+      peers.add(createPeer(observers.get(i), null, "O" + i));
     }
 
     Map<Integer, ObservableBeaconState> latestStates = new HashMap<>();
@@ -246,18 +262,7 @@ public class SimulatorLauncher implements Runnable {
     }
 
     // system observer
-    ControlledSchedulers schedulers = controlledSchedulers.createNew("X");
-    WireApiSub wireApi = localWireHub.createNewPeer("X");
-
-    Launcher observer =
-        new Launcher(
-            spec,
-            depositContract,
-            null,
-            wireApi,
-            new MemBeaconChainStorageFactory(spec.getObjectHasher()),
-            schedulers);
-
+    Launcher observer = createPeer("X");
     peers.add(observer);
 
     List<SlotNumber> slots = new ArrayList<>();
@@ -291,7 +296,7 @@ public class SimulatorLauncher implements Runnable {
     logger.info("Time starts running ...");
     controlledSchedulers.setCurrentTime(
         genesisTime.plus(specConstants.getSecondsPerSlot()).getMillis().getValue() - 9);
-    while (true) {
+    for (int i = 0; i < slotsCount; i++) {
       controlledSchedulers.addTime(
           Duration.ofMillis(specConstants.getSecondsPerSlot().getMillis().getValue()));
 
@@ -362,6 +367,34 @@ public class SimulatorLauncher implements Runnable {
       blocks.clear();
       states.clear();
     }
+  }
+
+  public List<Launcher> getPeers() {
+    return peers;
+  }
+
+  public BeaconChainSpec getSpec() {
+    return spec;
+  }
+
+  public Random getRnd() {
+    return rnd;
+  }
+
+  public Time getGenesisTime() {
+    return genesisTime;
+  }
+
+  public MDCControlledSchedulers getControlledSchedulers() {
+    return controlledSchedulers;
+  }
+
+  public LocalWireHub getLocalWireHub() {
+    return localWireHub;
+  }
+
+  public DepositContract getDepositContract() {
+    return depositContract;
   }
 
   private static String getValidators(String info, Map<ValidatorIndex, ?> records) {
