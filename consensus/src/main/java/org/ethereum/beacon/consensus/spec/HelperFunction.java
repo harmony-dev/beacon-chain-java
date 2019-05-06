@@ -925,7 +925,7 @@ public interface HelperFunction extends SpecCommons {
     List<ValidatorIndex> attesting_indices =
         get_attesting_indices(state, attestation.getData(), attestation.getAggregationBitfield());
     List<ValidatorIndex> custody_bit_1_indices =
-        get_attesting_indices(state, attestation.getData(), attestation.getAggregationBitfield());
+        get_attesting_indices(state, attestation.getData(), attestation.getCustodyBitfield());
     List<ValidatorIndex> custody_bit_0_indices = attesting_indices.stream()
         .filter(index -> !custody_bit_1_indices.contains(index)).collect(toList());
 
