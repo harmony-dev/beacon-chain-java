@@ -366,19 +366,14 @@ public interface HelperFunction extends SpecCommons {
 
   /*
     def get_randao_mix(state: BeaconState,
-                       epoch: EpochNumber) -> Bytes32:
-        """
-        Return the randao mix at a recent ``epoch``.
-        """
-        assert get_current_epoch(state) - LATEST_RANDAO_MIXES_LENGTH < epoch <= get_current_epoch(state)
-        return state.latest_randao_mixes[epoch % LATEST_RANDAO_MIXES_LENGTH]
+                   epoch: Epoch) -> Bytes32:
+      """
+      Return the randao mix at a recent ``epoch``.
+      ``epoch`` expected to be between (current_epoch - LATEST_RANDAO_MIXES_LENGTH, current_epoch].
+      """
+      return state.latest_randao_mixes[epoch % LATEST_RANDAO_MIXES_LENGTH]
     */
   default Hash32 get_randao_mix(BeaconState state, EpochNumber epoch) {
-    EpochNumber current_epoch = get_current_epoch(state);
-    EpochNumber min_epoch = current_epoch.greater(getConstants().getLatestRandaoMixesLength()) ?
-        current_epoch.minus(getConstants().getLatestRandaoMixesLength()).increment() : getConstants().getGenesisEpoch();
-    assertTrue(min_epoch.lessEqual(epoch));
-    assertTrue(epoch.lessEqual(current_epoch));
     return state.getLatestRandaoMixes().get(
         epoch.modulo(getConstants().getLatestRandaoMixesLength()));
   }
@@ -774,26 +769,17 @@ public interface HelperFunction extends SpecCommons {
 
   /*
     def get_active_index_root(state: BeaconState,
-                              epoch: EpochNumber) -> Bytes32:
-        """
-        Return the index root at a recent ``epoch``.
-        """
-        assert get_current_epoch(state) - LATEST_ACTIVE_INDEX_ROOTS_LENGTH + ACTIVATION_EXIT_DELAY < epoch
-            <= get_current_epoch(state) + ACTIVATION_EXIT_DELAY
-        return state.latest_active_index_roots[epoch % LATEST_ACTIVE_INDEX_ROOTS_LENGTH]
+                          epoch: Epoch) -> Bytes32:
+      """
+      Return the index root at a recent ``epoch``.
+      ``epoch`` expected to be between
+      (current_epoch - LATEST_ACTIVE_INDEX_ROOTS_LENGTH + ACTIVATION_EXIT_DELAY, current_epoch + ACTIVATION_EXIT_DELAY].
+      """
+      return state.latest_active_index_roots[epoch % LATEST_ACTIVE_INDEX_ROOTS_LENGTH]
    */
   default Hash32 get_active_index_root(BeaconState state, EpochNumber epoch) {
-    EpochNumber current_epoch = get_current_epoch(state);
-    EpochNumber min_epoch;
-    if (current_epoch.plus(getConstants().getActivationExitDelay()).greater(getConstants().getLatestActiveIndexRootsLength())) {
-      min_epoch = current_epoch.plus(getConstants().getActivationExitDelay()).minus(getConstants().getLatestActiveIndexRootsLength());
-    } else {
-      min_epoch = getConstants().getGenesisEpoch();
-    }
-
-    assertTrue(min_epoch.lessEqual(epoch));
-    assertTrue(epoch.lessEqual(current_epoch.plus(getConstants().getActivationExitDelay())));
-    return state.getLatestActiveIndexRoots().get(epoch.modulo(getConstants().getLatestActiveIndexRootsLength()));
+    return state.getLatestActiveIndexRoots().get(
+        epoch.modulo(getConstants().getLatestActiveIndexRootsLength()));
   }
 
   /*
@@ -803,17 +789,20 @@ public interface HelperFunction extends SpecCommons {
       Generate a seed for the given ``epoch``.
       """
       return hash(
-          get_randao_mix(state, epoch - MIN_SEED_LOOKAHEAD) +
+          get_randao_mix(state, epoch + LATEST_RANDAO_MIXES_LENGTH - MIN_SEED_LOOKAHEAD) +
           get_active_index_root(state, epoch) +
           int_to_bytes32(epoch)
       )
    */
   default Hash32 generate_seed(BeaconState state, EpochNumber epoch) {
-    Hash32 randao_mix = epoch.greaterEqual(getConstants().getMinSeedLookahead()) ?
-        get_randao_mix(state, epoch.minus(getConstants().getMinSeedLookahead())) : Hash32.ZERO;
-    return hash(randao_mix
+    EpochNumber randao_mix_epoch = epoch
+        .plus(getConstants().getLatestRandaoMixesLength())
+        .minus(getConstants().getMinSeedLookahead());
+    return hash(
+        get_randao_mix(state, randao_mix_epoch)
         .concat(get_active_index_root(state, epoch))
-        .concat(int_to_bytes32(epoch)));
+        .concat(int_to_bytes32(epoch))
+    );
   }
 
   default boolean bls_verify(BLSPubkey publicKey, Hash32 message, BLSSignature signature, UInt64 domain) {
