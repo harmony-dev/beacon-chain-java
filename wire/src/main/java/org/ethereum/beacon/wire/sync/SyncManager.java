@@ -20,19 +20,34 @@ public class SyncManager {
 
   MutableBeaconChain chain;
   BeaconChainStorage storage;
-  WireApiSync syncApi;
   BeaconChainSpec spec;
+
+  WireApiSync syncApi;
+  SyncQueue syncQueue;
 
   int maxConcurrentBlockRequests = 32;
 
-  SyncQueue syncQueue;
+  public SyncManager(MutableBeaconChain chain,
+      BeaconChainStorage storage, BeaconChainSpec spec, WireApiSync syncApi,
+      SyncQueue syncQueue, int maxConcurrentBlockRequests) {
+    this.chain = chain;
+    this.storage = storage;
+    this.spec = spec;
+    this.syncApi = syncApi;
+    this.syncQueue = syncQueue;
+    this.maxConcurrentBlockRequests = maxConcurrentBlockRequests;
+  }
 
   public void start() {
+
+    Hash32 genesisBlockRoot =
+        storage.getBlockStorage().getSlotBlocks(spec.getConstants().getGenesisSlot()).get(0);
 
     Flux<Hash32> finalizedBlockRootStream = Flux
         .from(chain.getBlockStatesStream())
         .map(bs -> bs.getFinalState().getFinalizedRoot())
-        .distinct();
+        .distinct()
+        .map(br -> Hash32.ZERO.equals(br) ? genesisBlockRoot : br);
 
     Flux<BeaconBlock> finalizedBlockStream =
         finalizedBlockRootStream.map(
@@ -52,13 +67,13 @@ public class SyncManager {
     Flux<Feedback<List<BeaconBlock>>> wireBlocksStream = Flux
         .from(syncQueue.getBlockRequestsStream())
         .map(req -> new BlockHeadersRequestMessage(
-            req.getStartRoot().get(),
-            req.getStartSlot().get(),
+            req.getStartRoot().orElse(BlockHeadersRequestMessage.NULL_START_ROOT),
+            req.getStartSlot().orElse(BlockHeadersRequestMessage.NULL_START_SLOT),
             req.getMaxCount(),
             req.getStep()))
         .flatMap(req -> Mono.fromFuture(syncApi.requestBlocks(req, spec.getObjectHasher())),
             maxConcurrentBlockRequests)
-        .onErrorContinue((t, o) -> logger.info("SyncApi exception: " + t + ", " + o));
+        .onErrorContinue((t, o) -> logger.info("SyncApi exception: " + t + ", " + o, t));
 
     syncQueue.subscribeToNewBlocks(wireBlocksStream);
   }

@@ -10,7 +10,8 @@ import tech.pegasys.artemis.util.uint.UInt64;
 @SSZSerializable
 public class BlockHeadersRequestMessage extends RequestMessagePayload {
   public static final int METHOD_ID = 0x0D;
-
+  public static final Hash32 NULL_START_ROOT = Hash32.fromHexString("11223344556677889900aabbccddeeff11223344556677889900aabbccddeeff");
+  public static final SlotNumber NULL_START_SLOT = SlotNumber.castFrom(UInt64.MAX_VALUE);
 
   @SSZ private final Hash32 startRoot;
   @SSZ private final SlotNumber startSlot;
