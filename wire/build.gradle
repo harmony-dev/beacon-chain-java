@@ -11,6 +11,9 @@ dependencies {
   implementation 'io.projectreactor:reactor-core'
 
   testImplementation 'org.mockito:mockito-core'
+  testImplementation project(':start:common')
+  testImplementation project(':start:simulator')
+  testImplementation project(':start:simulator').sourceSets.test.output
 
   // Gradle does not import test sources alongside with main sources
   // use a workaround until better solution will be found

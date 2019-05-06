@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="INFO">
+
+  <Appenders>
+
+    <Routing name="validatorFile">
+      <Routes pattern="$${ctx:validatorIndex:-X}">
+        <Route>
+          <File name="dummy" fileName="logs/peer-${ctx:validatorIndex:-X}.log" append="false">
+            <PatternLayout>
+              <Pattern>%d{HH:mm:ss.SSS} [%X{validatorTime}] %p %c{1.} [%t] %m%n</Pattern>
+            </PatternLayout>
+          </File>
+        </Route>
+      </Routes>
+    </Routing>
+
+    <File name="allFile" fileName="logs/all.log" append="false">
+      <PatternLayout>
+        <Pattern>%d{HH:mm:ss.SSS} [%X{validatorTime}] %p %c{1.} [%t] #%X{validatorIndex} %m%n</Pattern>
+      </PatternLayout>
+    </File>
+
+    <Console name="Console" target="SYSTEM_OUT">
+      <PatternLayout>
+        <Pattern>%d{HH:mm:ss.SSS} #%X{validatorIndex} %X{validatorTime} %-5level - %msg%n</Pattern>
+      </PatternLayout>
+    </Console>
+  </Appenders>
+  <Loggers>
+<!--
+    <Logger name="simulator" level="trace" additivity="true">
+      <AppenderRef ref="Console"/>
+    </Logger>
+-->
+
+    <Root level="info">
+      <AppenderRef ref="validatorFile"/>
+      <AppenderRef ref="allFile"/>
+      <AppenderRef ref="Console"/>
+    </Root>
+  </Loggers>
+</Configuration>
