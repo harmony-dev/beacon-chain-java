@@ -9,6 +9,8 @@ dependencies {
 
   implementation 'com.google.guava:guava'
   implementation 'io.projectreactor:reactor-core'
+  implementation 'io.netty:netty-all'
+  implementation 'io.vertx:vertx-core'
 
   testImplementation 'org.mockito:mockito-core'
   testImplementation project(':start:common')
