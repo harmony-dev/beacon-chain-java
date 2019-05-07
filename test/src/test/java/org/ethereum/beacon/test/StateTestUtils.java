@@ -204,26 +204,19 @@ public abstract class StateTestUtils {
     state.setLatestEth1Data(parseEth1Data(data.getLatestEth1Data()));
     state.setDepositIndex(UInt64.valueOf(data.getDepositIndex()));
 
-    state.getValidatorRegistry().clear();
-    state.getValidatorRegistry().addAll(parseValidatorRegistry(data.getValidatorRegistry()));
-    state.getBalances().clear();
-    state.getBalances().addAll(parseBalances(data.getBalances()));
+    state.getValidatorRegistry().replaceAll(parseValidatorRegistry(data.getValidatorRegistry()));
+    state.getBalances().replaceAll(parseBalances(data.getBalances()));
     state.getLatestRandaoMixes().setAll(parseHashes(data.getLatestRandaoMixes()));
-    state.getPreviousEpochAttestations().clear();
-    state.getPreviousEpochAttestations().addAll(
+    state.getPreviousEpochAttestations().replaceAll(
         parsePendingAttestations(data.getPreviousEpochAttestations()));
-    state.getCurrentEpochAttestations().clear();
-    state.getCurrentEpochAttestations().addAll(
+    state.getCurrentEpochAttestations().replaceAll(
         parsePendingAttestations(data.getCurrentEpochAttestations()));
-    state.getCurrentCrosslinks().clear();
-    state.getCurrentCrosslinks().addAll(parseCrosslinks(data.getCurrentCrosslinks()));
-    state.getPreviousCrosslinks().clear();
-    state.getPreviousCrosslinks().addAll(parseCrosslinks(data.getPreviousCrosslinks()));
+    state.getCurrentCrosslinks().replaceAll(parseCrosslinks(data.getCurrentCrosslinks()));
+    state.getPreviousCrosslinks().replaceAll(parseCrosslinks(data.getPreviousCrosslinks()));
     state.getLatestBlockRoots().setAll(parseHashes(data.getLatestBlockRoots()));
     state.getLatestStateRoots().setAll(parseHashes(data.getLatestStateRoots()));
     state.getLatestActiveIndexRoots().setAll(parseHashes(data.getLatestActiveIndexRoots()));
-    state.getHistoricalRoots().clear();
-    state.getHistoricalRoots().addAll(parseHashes(data.getHistoricalRoots()));
+    state.getHistoricalRoots().replaceAll(parseHashes(data.getHistoricalRoots()));
     state.getLatestSlashedBalances().setAll(parseBalances(data.getLatestSlashedBalances()));
     state.setLatestStartShard(ShardNumber.of(UInt64.valueOf(data.getLatestStartShard())));
 
