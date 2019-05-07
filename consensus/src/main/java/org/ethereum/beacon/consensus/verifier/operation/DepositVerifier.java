@@ -1,6 +1,7 @@
 package org.ethereum.beacon.consensus.verifier.operation;
 
 import org.ethereum.beacon.consensus.BeaconChainSpec;
+import org.ethereum.beacon.consensus.spec.SpecCommons;
 import org.ethereum.beacon.consensus.verifier.OperationVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconState;
@@ -30,8 +31,9 @@ public class DepositVerifier implements OperationVerifier<Deposit> {
     try {
       spec.verify_deposit(state, deposit);
       return VerificationResult.PASSED;
-    } catch (Exception e) {
-      return VerificationResult.failedResult(e.getMessage());
+    } catch (SpecCommons.SpecAssertionFailed e) {
+      String error = e.getStackTrace().length > 0 ? e.getStackTrace()[1].toString() : "SpecAssertion";
+      return VerificationResult.failedResult(error);
     }
   }
 }

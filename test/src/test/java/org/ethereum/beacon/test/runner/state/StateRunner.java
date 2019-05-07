@@ -1,6 +1,7 @@
 package org.ethereum.beacon.test.runner.state;
 
 import org.ethereum.beacon.consensus.BeaconChainSpec;
+import org.ethereum.beacon.consensus.spec.SpecCommons;
 import org.ethereum.beacon.consensus.verifier.operation.AttestationVerifier;
 import org.ethereum.beacon.consensus.verifier.operation.DepositVerifier;
 import org.ethereum.beacon.core.BeaconState;
@@ -61,7 +62,7 @@ public class StateRunner implements Runner {
       DepositVerifier depositVerifier = new DepositVerifier(spec);
       assert depositVerifier.verify(deposit, state).isPassed();
       spec.process_deposit((MutableBeaconState) state, deposit);
-    } catch (Exception | AssertionError ex) {
+    } catch (SpecCommons.SpecAssertionFailed | AssertionError ex) {
       // XXX: there could be invalid deposit, it's ok
     }
   }
@@ -71,7 +72,7 @@ public class StateRunner implements Runner {
       AttestationVerifier attestationVerifier = new AttestationVerifier(spec);
       assert attestationVerifier.verify(attestation, state).isPassed();
       spec.process_attestation((MutableBeaconState) state, attestation);
-    } catch (Exception | AssertionError ex) {
+    } catch (SpecCommons.SpecAssertionFailed | AssertionError ex) {
       // XXX: there could be invalid attestation, it's ok
     }
   }
