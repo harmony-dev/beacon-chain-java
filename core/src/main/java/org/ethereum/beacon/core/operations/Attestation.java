@@ -99,8 +99,8 @@ public class Attestation {
   }
 
   public String toStringShort(@Nullable SpecConstants spec) {
-    return getData().getSlot().toStringNumber(spec) + "/"
-        + getData().getShard().toString(spec) + "/"
+    return "epoch=" + getData().getTargetEpoch().toString(spec) + "/"
+        + getData().getShard().toString() + "/"
         + getData().getBeaconBlockRoot().toStringShort() + "/"
         + getSignerIndices();
   }

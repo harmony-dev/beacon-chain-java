@@ -18,7 +18,7 @@ import org.ethereum.beacon.ssz.annotation.SSZSerializable;
  *
  * @see BeaconState
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.6.0/specs/core/0_beacon-chain.md#pendingattestation">PendingAttestation
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.6.1/specs/core/0_beacon-chain.md#pendingattestation">PendingAttestation
  *     in the spec</a>
  */
 @SSZSerializable
@@ -29,18 +29,18 @@ public class PendingAttestation {
   /** Signed data. */
   @SSZ private final AttestationData data;
   /** Slot in which it was included. */
-  @SSZ private final SlotNumber inclusionSlot;
+  @SSZ private final SlotNumber inclusionDelay;
   /** Proposer index. */
   @SSZ private final ValidatorIndex proposerIndex;
 
   public PendingAttestation(
       Bitfield aggregationBitfield,
       AttestationData data,
-      SlotNumber inclusionSlot,
+      SlotNumber inclusionDelay,
       ValidatorIndex proposerIndex) {
     this.aggregationBitfield = aggregationBitfield;
     this.data = data;
-    this.inclusionSlot = inclusionSlot;
+    this.inclusionDelay = inclusionDelay;
     this.proposerIndex = proposerIndex;
   }
 
@@ -56,8 +56,8 @@ public class PendingAttestation {
     return proposerIndex;
   }
 
-  public SlotNumber getInclusionSlot() {
-    return inclusionSlot;
+  public SlotNumber getInclusionDelay() {
+    return inclusionDelay;
   }
 
   @Override
@@ -68,7 +68,7 @@ public class PendingAttestation {
     return Objects.equal(data, that.data)
         && Objects.equal(aggregationBitfield, that.aggregationBitfield)
         && Objects.equal(proposerIndex, that.proposerIndex)
-        && Objects.equal(inclusionSlot, that.inclusionSlot);
+        && Objects.equal(inclusionDelay, that.inclusionDelay);
   }
 
   private String getSignerIndices() {
@@ -85,14 +85,14 @@ public class PendingAttestation {
         + data.toString(spec, beaconStart)
         + ", attesters=" + getSignerIndices()
         + ", proposerIndex=" + getProposerIndex()
-        + ", inclusionSlot=#" + getInclusionSlot().toStringNumber(spec)
+        + ", inclusionDelay=#" + getInclusionDelay().toStringNumber(spec)
         + "]";
   }
 
   public String toStringShort(@Nullable SpecConstants spec) {
-    return "#" + getData().getSlot().toStringNumber(spec) + "/"
-        + "#" + getInclusionSlot().toStringNumber(spec) + "/"
-        + getData().getShard().toString(spec) + "/"
+    return "epoch=" + getData().getTargetEpoch().toString(spec) + "/"
+        + "delay=" + getInclusionDelay().toStringNumber(spec) + "/"
+        + getData().getShard().toString() + "/"
         + getData().getBeaconBlockRoot().toStringShort() + "/"
         + getSignerIndices();
   }

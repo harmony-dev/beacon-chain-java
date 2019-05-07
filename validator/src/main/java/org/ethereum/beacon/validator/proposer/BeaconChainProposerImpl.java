@@ -32,6 +32,7 @@ import org.ethereum.beacon.validator.BeaconChainProposer;
 import org.ethereum.beacon.validator.ValidatorService;
 import org.ethereum.beacon.validator.crypto.MessageSigner;
 import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
 
@@ -178,6 +179,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
     List<Attestation> attestations =
         operations.peekAggregatedAttestations(
             spec.getConstants().getMaxAttestations(),
+            state,
             state.getSlot().minus(spec.getConstants().getSlotsPerEpoch()),
             state.getSlot().minus(spec.getConstants().getMinAttestationInclusionDelay()));
     List<VoluntaryExit> voluntaryExits =
@@ -194,10 +196,12 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
             .stream()
             .map(DepositInfo::getDeposit)
             .collect(Collectors.toList());
+    Bytes32 graffiti = getGraffiti(state);
 
-    return new BeaconBlockBody(
+    return BeaconBlockBody.create(
         randaoReveal,
         eth1Data,
+        graffiti,
         proposerSlashings,
         attesterSlashings,
         attestations,

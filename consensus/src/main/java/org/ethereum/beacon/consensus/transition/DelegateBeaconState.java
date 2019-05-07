@@ -1,5 +1,6 @@
 package org.ethereum.beacon.consensus.transition;
 
+import com.google.common.base.Objects;
 import java.util.Map;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
@@ -190,5 +191,17 @@ public class DelegateBeaconState implements BeaconState {
   @Override
   public String toStringShort(@Nullable SpecConstants constants) {
     return delegate.toStringShort(constants);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    DelegateBeaconState that = (DelegateBeaconState) o;
+    return Objects.equal(delegate, that.delegate);
   }
 }

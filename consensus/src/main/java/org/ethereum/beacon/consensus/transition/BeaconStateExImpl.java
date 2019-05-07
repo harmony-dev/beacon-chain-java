@@ -4,7 +4,6 @@ import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.TransitionType;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
-import tech.pegasys.artemis.ethereum.core.Hash32;
 
 /**
  * Class to hold additional state info which is not included to the
@@ -35,5 +34,20 @@ public class BeaconStateExImpl extends DelegateBeaconState implements BeaconStat
   @Override
   public String toString() {
     return toString(null, null);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (!super.equals(o)) {
+      return false;
+    }
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    BeaconStateExImpl that = (BeaconStateExImpl) o;
+    return lastTransition == that.lastTransition;
   }
 }

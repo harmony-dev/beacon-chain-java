@@ -22,6 +22,7 @@ import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Bitfield;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
+import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.crypto.BLS381.PublicKey;
@@ -104,10 +105,11 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
   }
 
   @Override
-  public List<ShardCommittee> get_crosslink_committees_at_slot(BeaconState state, SlotNumber slot) {
+  public List<ValidatorIndex> get_crosslink_committee(BeaconState state, EpochNumber epoch,
+      ShardNumber shard) {
     return callAndTrack(
-        "get_crosslink_committees_at_slot",
-        () -> super.get_crosslink_committees_at_slot(state, slot));
+        "get_crosslink_committee",
+        () -> super.get_crosslink_committee(state, epoch, shard));
   }
 
   @Override

@@ -53,6 +53,7 @@ public abstract class SpecDataUtils {
             setCHURN_LIMIT_QUOTIENT(constants.getChurnLimitQuotient().toString());
             setSHARD_COUNT(constants.getShardCount().toString());
             setTARGET_COMMITTEE_SIZE(constants.getTargetCommitteeSize().toString());
+            setBASE_REWARDS_PER_EPOCH(constants.getBaseRewardsPerEpoch().toString());
             setSHUFFLE_ROUND_COUNT(constants.getShuffleRoundCount());
           }
         };
