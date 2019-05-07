@@ -6,6 +6,7 @@ import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.wire.Feedback;
 import org.reactivestreams.Publisher;
+import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.ReplayProcessor;
 
@@ -73,13 +74,13 @@ public class SyncQueueImpl implements SyncQueue {
   }
 
   @Override
-  public void subscribeToFinalBlocks(Flux<BeaconBlock> finalBlockRootStream) {
-    Flux.from(finalBlockRootStream).subscribe(this::onNewFinalBlock);
+  public Disposable subscribeToFinalBlocks(Flux<BeaconBlock> finalBlockRootStream) {
+    return Flux.from(finalBlockRootStream).subscribe(this::onNewFinalBlock);
   }
 
   @Override
-  public void subscribeToNewBlocks(Publisher<Feedback<List<BeaconBlock>>> blocksStream) {
-    Flux.from(blocksStream)
+  public Disposable subscribeToNewBlocks(Publisher<Feedback<List<BeaconBlock>>> blocksStream) {
+    return Flux.from(blocksStream)
         .flatMap(resp -> Flux.fromStream(resp.get().stream().map(resp::delegate)))
         .subscribe(this::onNewBlock);
   }

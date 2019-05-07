@@ -466,11 +466,11 @@ public class SimulatorLauncher implements Runnable {
       timeController.setTime(time);
     }
 
-    void addTime(Duration duration) {
+    public void addTime(Duration duration) {
       addTime(duration.toMillis());
     }
 
-    void addTime(long millis) {
+    public void addTime(long millis) {
       setCurrentTime(timeController.getTime() + millis);
     }
 

@@ -6,6 +6,7 @@ import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.wire.Feedback;
 import org.reactivestreams.Publisher;
+import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
@@ -16,9 +17,9 @@ public interface SyncQueue {
 
   Publisher<Feedback<BeaconBlock>> getBlocksStream();
 
-  void subscribeToFinalBlocks(Flux<BeaconBlock> finalBlockRootStream);
+  Disposable subscribeToFinalBlocks(Flux<BeaconBlock> finalBlockRootStream);
 
-  void subscribeToNewBlocks(Publisher<Feedback<List<BeaconBlock>>> blocksStream);
+  Disposable subscribeToNewBlocks(Publisher<Feedback<List<BeaconBlock>>> blocksStream);
 
   class BlockRequest {
     private final SlotNumber startSlot;
