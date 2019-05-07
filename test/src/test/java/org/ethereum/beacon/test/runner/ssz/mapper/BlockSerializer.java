@@ -21,7 +21,7 @@ public class BlockSerializer implements ObjectSerializer<BeaconBlock> {
   @Override
   public ObjectNode map(BeaconBlock instance) {
     ObjectNode beaconBlock = mapper.createObjectNode();
-    ObjectSerializer.setUint64Field(beaconBlock, "slot", instance.getSlot());
+    beaconBlock.set("slot", ComparableBigIntegerNode.valueOf(instance.getSlot()));
     beaconBlock.put("previous_block_root", instance.getPreviousBlockRoot().toString());
     beaconBlock.put("state_root", instance.getStateRoot().toString());
     beaconBlock.set("body", blockBodySerializer.map(instance.getBody()));

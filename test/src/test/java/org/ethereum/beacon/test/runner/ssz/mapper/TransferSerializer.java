@@ -19,11 +19,11 @@ public class TransferSerializer implements ObjectSerializer<Transfer> {
   @Override
   public ObjectNode map(Transfer instance) {
     ObjectNode transfer = mapper.createObjectNode();
-    ObjectSerializer.setUint64Field(transfer, "sender", instance.getSender());
-    ObjectSerializer.setUint64Field(transfer, "recipient", instance.getRecipient());
-    ObjectSerializer.setUint64Field(transfer, "amount", instance.getAmount());
-    ObjectSerializer.setUint64Field(transfer, "fee", instance.getFee());
-    ObjectSerializer.setUint64Field(transfer, "slot", instance.getSlot());
+    transfer.set("sender", ComparableBigIntegerNode.valueOf(instance.getSender()));
+    transfer.set("recipient", ComparableBigIntegerNode.valueOf(instance.getRecipient()));
+    transfer.set("amount", ComparableBigIntegerNode.valueOf(instance.getAmount()));
+    transfer.set("fee", ComparableBigIntegerNode.valueOf(instance.getFee()));
+    transfer.set("slot", ComparableBigIntegerNode.valueOf(instance.getSlot()));
     transfer.put("pubkey", BytesValue.wrap(instance.getPubkey().getArrayUnsafe()).toString());
     transfer.put("signature", BytesValue.wrap(instance.getSignature().getArrayUnsafe()).toString());
     return transfer;

@@ -22,8 +22,8 @@ public class PendingAttestationSerializer implements ObjectSerializer<PendingAtt
     ObjectNode pendingAttestation = mapper.createObjectNode();
     pendingAttestation.put("aggregation_bitfield", instance.getAggregationBitfield().toString());
     pendingAttestation.set("data", attestationDataSerializer.map(instance.getData()));
-    ObjectSerializer.setUint64Field(pendingAttestation, "inclusion_delay", instance.getInclusionDelay());
-    ObjectSerializer.setUint64Field(pendingAttestation, "proposer_index", instance.getProposerIndex());
+    pendingAttestation.set("inclusion_delay", ComparableBigIntegerNode.valueOf(instance.getInclusionDelay()));
+    pendingAttestation.set("proposer_index", ComparableBigIntegerNode.valueOf(instance.getProposerIndex()));
     return pendingAttestation;
   }
 }

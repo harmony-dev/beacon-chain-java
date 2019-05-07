@@ -19,7 +19,7 @@ public class Eth1DataSerializer implements ObjectSerializer<Eth1Data> {
   public ObjectNode map(Eth1Data instance) {
     ObjectNode eth1Data = mapper.createObjectNode();
     eth1Data.put("deposit_root", instance.getDepositRoot().toString());
-    ObjectSerializer.setUint64Field(eth1Data, "deposit_count", instance.getDepositCount());
+    eth1Data.set("deposit_count", ComparableBigIntegerNode.valueOf(instance.getDepositCount()));
     eth1Data.put("block_hash", instance.getBlockHash().toString());
     return eth1Data;
   }

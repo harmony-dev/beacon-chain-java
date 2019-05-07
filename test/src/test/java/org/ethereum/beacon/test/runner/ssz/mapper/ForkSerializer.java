@@ -20,7 +20,7 @@ public class ForkSerializer implements ObjectSerializer<Fork> {
     ObjectNode fork = mapper.createObjectNode();
     fork.put("previous_version", instance.getPreviousVersion().toString());
     fork.put("current_version", instance.getCurrentVersion().toString());
-    ObjectSerializer.setUint64Field(fork, "epoch", instance.getEpoch());
+    fork.set("epoch", ComparableBigIntegerNode.valueOf(instance.getEpoch()));
     return fork;
   }
 }

@@ -19,8 +19,8 @@ public class VoluntaryExitSerializer implements ObjectSerializer<VoluntaryExit> 
   @Override
   public ObjectNode map(VoluntaryExit instance) {
     ObjectNode voluntaryExit = mapper.createObjectNode();
-    ObjectSerializer.setUint64Field(voluntaryExit, "epoch", instance.getEpoch());
-    ObjectSerializer.setUint64Field(voluntaryExit, "validator_index", instance.getValidatorIndex());
+    voluntaryExit.set("epoch", ComparableBigIntegerNode.valueOf(instance.getEpoch()));
+    voluntaryExit.set("validator_index", ComparableBigIntegerNode.valueOf(instance.getValidatorIndex()));
     voluntaryExit.put("signature", BytesValue.wrap(instance.getSignature().getArrayUnsafe()).toString());
     return voluntaryExit;
   }

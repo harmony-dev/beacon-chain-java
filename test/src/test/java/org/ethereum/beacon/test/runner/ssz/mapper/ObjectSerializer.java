@@ -14,32 +14,4 @@ public interface ObjectSerializer<V> {
   Class accepts();
 
   Object map(V instance);
-
-  static void setUint64Field(ObjectNode node, String fieldName, UInt64 value) {
-    node.set(fieldName, convert(value));
-  }
-
-  static JsonNode convert(UInt64 value) {
-    return new ComparableBigIntegerNode(value.toBI());
-  }
-
-  public static class ComparableBigIntegerNode extends BigIntegerNode {
-    ComparableBigIntegerNode(BigInteger v) {
-      super(v);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      boolean superResult = super.equals(o);
-      if (superResult) {
-        return true;
-      }
-
-      if (o instanceof IntNode || o instanceof LongNode) {
-        return ((NumericNode) o).bigIntegerValue().equals(this.bigIntegerValue());
-      }
-
-      return false;
-    }
-  }
 }

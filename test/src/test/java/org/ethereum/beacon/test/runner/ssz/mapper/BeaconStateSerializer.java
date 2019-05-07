@@ -32,15 +32,15 @@ public class BeaconStateSerializer implements ObjectSerializer<BeaconStateImpl> 
   @Override
   public ObjectNode map(BeaconStateImpl instance) {
     ObjectNode beaconState = mapper.createObjectNode();
-    ObjectSerializer.setUint64Field(beaconState, "slot", instance.getSlot());
-    ObjectSerializer.setUint64Field(beaconState, "genesis_time", instance.getGenesisTime());
+    beaconState.set("slot", ComparableBigIntegerNode.valueOf(instance.getSlot()));
+    beaconState.set("genesis_time", ComparableBigIntegerNode.valueOf(instance.getGenesisTime()));
     beaconState.set("fork", forkSerializer.map(instance.getFork()));
 
     ArrayNode validatorRegistryNode = mapper.createArrayNode();
     instance.getValidatorRegistry().stream().map(o -> validatorSerializer.map(o)).forEachOrdered(validatorRegistryNode::add);
     beaconState.set("validator_registry", validatorRegistryNode);
     ArrayNode balancesNode = mapper.createArrayNode();
-    instance.getBalances().stream().map(ObjectSerializer::convert).forEachOrdered(balancesNode::add);
+    instance.getBalances().stream().map(ComparableBigIntegerNode::valueOf).forEachOrdered(balancesNode::add);
     beaconState.set("balances", balancesNode);
 
     ArrayNode latestRandaoMixes = mapper.createArrayNode();
@@ -48,7 +48,7 @@ public class BeaconStateSerializer implements ObjectSerializer<BeaconStateImpl> 
         .map(Hash32::toString)
         .forEachOrdered(latestRandaoMixes::add);
     beaconState.set("latest_randao_mixes", latestRandaoMixes);
-    ObjectSerializer.setUint64Field(beaconState, "latest_start_shard", instance.getLatestStartShard());
+    beaconState.set("latest_start_shard", ComparableBigIntegerNode.valueOf(instance.getLatestStartShard()));
 
     ArrayNode previousEpochAttestationNode = mapper.createArrayNode();
     instance.getPreviousEpochAttestations().stream().map(o -> pendingAttestationSerializer.map(o)).forEachOrdered(previousEpochAttestationNode::add);
@@ -56,12 +56,12 @@ public class BeaconStateSerializer implements ObjectSerializer<BeaconStateImpl> 
     ArrayNode currentEpochAttestationsNode = mapper.createArrayNode();
     instance.getCurrentEpochAttestations().stream().map(o -> pendingAttestationSerializer.map(o)).forEachOrdered(currentEpochAttestationsNode::add);
     beaconState.set("current_epoch_attestations", currentEpochAttestationsNode);
-    ObjectSerializer.setUint64Field(beaconState, "previous_justified_epoch", instance.getPreviousJustifiedEpoch());
-    ObjectSerializer.setUint64Field(beaconState, "current_justified_epoch", instance.getCurrentJustifiedEpoch());
+    beaconState.set("previous_justified_epoch", ComparableBigIntegerNode.valueOf(instance.getPreviousJustifiedEpoch()));
+    beaconState.set("current_justified_epoch", ComparableBigIntegerNode.valueOf(instance.getCurrentJustifiedEpoch()));
     beaconState.put("previous_justified_root", instance.getPreviousJustifiedRoot().toString());
     beaconState.put("current_justified_root", instance.getCurrentJustifiedRoot().toString());
     beaconState.put("justification_bitfield", instance.getJustificationBitfield().toString());
-    ObjectSerializer.setUint64Field(beaconState, "finalized_epoch", instance.getFinalizedEpoch());
+    beaconState.set("finalized_epoch", ComparableBigIntegerNode.valueOf(instance.getFinalizedEpoch()));
     beaconState.put("finalized_root", instance.getFinalizedRoot().toString());
 
     ArrayNode currentCrosslinksNode = mapper.createArrayNode();
@@ -81,7 +81,7 @@ public class BeaconStateSerializer implements ObjectSerializer<BeaconStateImpl> 
     beaconState.set("latest_active_index_roots", latestActiveIndexRootsNode);
     ArrayNode latestSlashedBalancesNode = mapper.createArrayNode();
     instance.getLatestSlashedBalances().stream()
-        .map(ObjectSerializer::convert)
+        .map(ComparableBigIntegerNode::valueOf)
         .forEachOrdered(latestSlashedBalancesNode::add);
     beaconState.set("latest_slashed_balances", latestSlashedBalancesNode);
     beaconState.set("latest_block_header", beaconBlockHeaderSerializer.map(instance.getLatestBlockHeader()));
@@ -93,7 +93,7 @@ public class BeaconStateSerializer implements ObjectSerializer<BeaconStateImpl> 
     ArrayNode eth1DataVotesNode = mapper.createArrayNode();
     instance.getEth1DataVotes().stream().map(o -> eth1DataSerializer.map(o)).forEachOrdered(eth1DataVotesNode::add);
     beaconState.set("eth1_data_votes", eth1DataVotesNode);
-    ObjectSerializer.setUint64Field(beaconState, "deposit_index", instance.getDepositIndex());
+    beaconState.set("deposit_index", ComparableBigIntegerNode.valueOf(instance.getDepositIndex()));
     return beaconState;
   }
 }
