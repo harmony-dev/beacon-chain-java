@@ -107,6 +107,7 @@ public class BeaconChainProposerTest {
     Mockito.verify(pendingOperations)
         .peekAggregatedAttestations(
             spec.getConstants().getMaxAttestations(),
+            initialState,
             initialState
                 .getSlot()
                 .minus(spec.getConstants().getSlotsPerEpoch()),

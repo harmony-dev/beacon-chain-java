@@ -18,10 +18,10 @@ public class AttestationDataSerializer implements ObjectSerializer<AttestationDa
   @Override
   public ObjectNode map(AttestationData instance) {
     ObjectNode attestationData = mapper.createObjectNode();
-    ObjectSerializer.setUint64Field(attestationData, "slot", instance.getSlot());
     attestationData.put("beacon_block_root", instance.getBeaconBlockRoot().toString());
     ObjectSerializer.setUint64Field(attestationData, "source_epoch", instance.getSourceEpoch());
     attestationData.put("source_root", instance.getSourceRoot().toString());
+    ObjectSerializer.setUint64Field(attestationData, "target_epoch", instance.getTargetEpoch());
     attestationData.put("target_root", instance.getTargetRoot().toString());
     ObjectSerializer.setUint64Field(attestationData, "shard", instance.getShard());
     attestationData.put("previous_crosslink_root", instance.getPreviousCrosslinkRoot().toString());

@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
@@ -24,6 +23,8 @@ import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.ShardCommittee;
 import org.ethereum.beacon.core.types.BLSPubkey;
+import org.ethereum.beacon.core.types.EpochNumber;
+import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
@@ -36,6 +37,8 @@ import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import org.javatuples.Pair;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
+import tech.pegasys.artemis.util.uint.UInt64;
+import tech.pegasys.artemis.util.uint.UInt64s;
 
 /** Runs several validators in one instance. */
 public class MultiValidatorService implements ValidatorService {
@@ -135,7 +138,7 @@ public class MultiValidatorService implements ValidatorService {
   /**
    * Keeps the most recent state in memory.
    *
-   * <p>Recent state is required by delayed tasks like {@link #attest(ValidatorIndex)}.
+   * <p>Recent state is required by delayed tasks like {@link #attest(ValidatorIndex, ShardNumber)}.
    *
    * @param state state came from the outside.
    */
@@ -189,8 +192,8 @@ public class MultiValidatorService implements ValidatorService {
    * <ul>
    *   <li>{@link #propose(ValidatorIndex, ObservableBeaconState)} routine is triggered instantly
    *       with received {@code observableState} object.
-   *   <li>{@link #attest(ValidatorIndex)} routine is a delayed task, it's called with {@link
-   *       #recentState} object.
+   *   <li>{@link #attest(ValidatorIndex, ShardNumber)} routine is a delayed task, it's called with
+   *       {@link #recentState} object.
    * </ul>
    *
    * @param observableState a state that validator tasks are executed with.
@@ -208,12 +211,17 @@ public class MultiValidatorService implements ValidatorService {
 
     // trigger attester at a halfway through the slot
     Time startAt = spec.get_slot_middle_time(state, state.getSlot());
-    List<ShardCommittee> committees =
-        spec.get_crosslink_committees_at_slot(state, state.getSlot());
-    for (ShardCommittee sc : committees) {
-      sc.getCommittee().stream()
+    EpochNumber epoch = spec.get_current_epoch(state);
+    UInt64 committeesPerSlot = spec.get_epoch_committee_count(state, epoch)
+        .dividedBy(spec.getConstants().getSlotsPerEpoch());
+    for (UInt64 offset : UInt64s.iterate(committeesPerSlot.times(state.getSlot()),
+        committeesPerSlot.times(state.getSlot().increment()))) {
+      ShardNumber shard = spec.get_epoch_start_shard(state, epoch)
+          .plusModulo(offset, spec.getConstants().getShardCount());
+      List<ValidatorIndex> committee = spec.get_crosslink_committee(state, epoch, shard);
+      committee.stream()
           .filter(initialized::containsKey)
-          .forEach(index -> schedule(startAt, () -> this.attest(index)));
+          .forEach(index -> schedule(startAt, () -> this.attest(index, shard)));
     }
   }
 
@@ -272,17 +280,16 @@ public class MultiValidatorService implements ValidatorService {
    * #recentState}.
    *
    * @param index index of attester.
+   * @param shard number of crosslinking shard.
    */
-  private void attest(ValidatorIndex index) {
+  private void attest(ValidatorIndex index, ShardNumber shard) {
     final ObservableBeaconState observableState = this.recentState;
     final BeaconState state = observableState.getLatestSlotState();
 
-    Optional<ShardCommittee> validatorCommittee = getValidatorCommittee(index, state);
     BLS381Credentials credentials = initialized.get(index);
-    if (validatorCommittee.isPresent() && credentials != null) {
+    if (credentials != null) {
       Attestation attestation =
-          attester.attest(
-              index, validatorCommittee.get().getShard(), observableState, credentials.getSigner());
+          attester.attest(index, shard, observableState, credentials.getSigner());
       propagateAttestation(attestation);
 
       logger.info(
@@ -307,13 +314,6 @@ public class MultiValidatorService implements ValidatorService {
    */
   private void setSlotProcessed(BeaconState state) {
     this.lastProcessedSlot = state.getSlot();
-  }
-
-  /** Returns committee where the validator participates if any */
-  private Optional<ShardCommittee> getValidatorCommittee(ValidatorIndex index, BeaconState state) {
-    List<ShardCommittee> committees =
-        spec.get_crosslink_committees_at_slot(state, state.getSlot());
-    return committees.stream().filter(sc -> sc.getCommittee().contains(index)).findFirst();
   }
 
   /**

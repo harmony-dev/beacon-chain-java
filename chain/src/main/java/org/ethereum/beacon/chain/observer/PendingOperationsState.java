@@ -9,10 +9,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
+import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
+import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.Transfer;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
-import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.types.BLSPubkey;
@@ -24,15 +26,20 @@ import org.ethereum.beacon.crypto.BLS381;
 public class PendingOperationsState implements PendingOperations {
 
   Map<BLSPubkey, List<Attestation>> attestations;
+  private final BeaconChainSpec spec;
 
-  public PendingOperationsState(Map<BLSPubkey, List<Attestation>> attestations) {
+  public PendingOperationsState(
+      BeaconChainSpec spec, Map<BLSPubkey, List<Attestation>> attestations) {
+    this.spec = spec;
     this.attestations = attestations;
   }
 
   @Override
   public Optional<Attestation> getLatestAttestation(BLSPubkey pubKey) {
     return Optional.ofNullable(attestations.get(pubKey))
-        .map(atts -> Collections.max(atts, Comparator.comparing(att -> att.getData().getSlot())));
+        .map(
+            atts ->
+                Collections.max(atts, Comparator.comparing(att -> att.getData().getTargetEpoch())));
   }
 
   @Override
@@ -52,18 +59,22 @@ public class PendingOperationsState implements PendingOperations {
 
   @Override
   public List<Attestation> peekAggregatedAttestations(
-      int maxCount, SlotNumber minSlotExclusive, SlotNumber maxSlotInclusive) {
+      int maxCount, BeaconState state, SlotNumber minSlotExclusive, SlotNumber maxSlotInclusive) {
 
     Map<AttestationData, List<Attestation>> attestationsBySlot =
-        getAttestations()
-            .stream()
-            .filter(attestation -> attestation.getData().getSlot().greater(minSlotExclusive))
-            .filter(attestation -> attestation.getData().getSlot().lessEqual(maxSlotInclusive))
+        getAttestations().stream()
+            .filter(attestation -> {
+              SlotNumber attestationSlot =
+                  spec.get_attestation_slot(state, attestation.getData());
+              // minExclusive < attestationSlot <= maxSlotInclusive
+              return minSlotExclusive.less(attestationSlot)
+                  && attestationSlot.lessEqual(maxSlotInclusive);
+            })
             .collect(groupingBy(Attestation::getData));
     return attestationsBySlot
         .entrySet()
         .stream()
-        .sorted(Comparator.comparing(e -> e.getKey().getSlot()))
+        .sorted(Comparator.comparing(e -> e.getKey().getTargetEpoch()))
         .limit(maxCount)
         .map(entry -> aggregateAttestations(entry.getValue()))
         .collect(Collectors.toList());

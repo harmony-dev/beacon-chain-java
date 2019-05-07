@@ -35,6 +35,7 @@ public class BlockBodySerializer implements ObjectSerializer<BeaconBlockBody> {
     ObjectNode blockBody = mapper.createObjectNode();
     blockBody.put("randao_reveal", instance.getRandaoReveal().toString());
     blockBody.set("eth1_data", eth1DataSerializer.map(instance.getEth1Data()));
+    blockBody.put("graffiti", instance.getGraffiti().toString());
     ArrayNode proposerSlashingNode = mapper.createArrayNode();
     instance.getProposerSlashings().stream().map(o -> proposerSlashingSerializer.map(o)).forEachOrdered(proposerSlashingNode::add);
     blockBody.set("proposer_slashings", proposerSlashingNode);

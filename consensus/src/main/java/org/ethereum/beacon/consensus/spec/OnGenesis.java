@@ -21,13 +21,14 @@ import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 /**
  * On genesis part.
  *
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.6.0/specs/core/0_beacon-chain.md#on-genesis">On
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.6.1/specs/core/0_beacon-chain.md#on-genesis">On
  *     genesis</a> in the spec.
  */
 public interface OnGenesis extends BlockProcessing {
@@ -39,9 +40,10 @@ public interface OnGenesis extends BlockProcessing {
   */
   default BeaconBlock get_empty_block() {
     BeaconBlockBody body =
-        new BeaconBlockBody(
+        BeaconBlockBody.create(
             BLSSignature.ZERO,
             new Eth1Data(Hash32.ZERO, UInt64.ZERO, Hash32.ZERO),
+            Bytes32.ZERO,
             emptyList(),
             emptyList(),
             emptyList(),

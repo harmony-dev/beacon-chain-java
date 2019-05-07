@@ -45,6 +45,7 @@ import org.ethereum.beacon.test.type.state.StateTestCase.BlockData.BlockBodyData
 import org.ethereum.beacon.test.type.state.StateTestCase.BlockData.BlockBodyData.IndexedAttestationData;
 import org.javatuples.Pair;
 import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes4;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
@@ -153,9 +154,10 @@ public abstract class StateTestUtils {
 
     // Finally, creating a block
     BeaconBlockBody blockBody =
-        new BeaconBlockBody(
+        BeaconBlockBody.create(
             BLSSignature.wrap(Bytes96.fromHexString(blockData.getBody().getRandaoReveal())),
             eth1Data1,
+            Bytes32.ZERO,
             proposerSlashings,
             attesterSlashings,
             attestations,
@@ -304,10 +306,10 @@ public abstract class StateTestUtils {
 
   public static AttestationData parseAttestationData(AttestationDataContainer data) {
     return new AttestationData(
-        SlotNumber.castFrom(UInt64.valueOf(data.getSlot())),
         Hash32.fromHexString(data.getBeaconBlockRoot()),
         EpochNumber.castFrom(UInt64.valueOf(data.getSourceEpoch())),
         Hash32.fromHexString(data.getSourceRoot()),
+        EpochNumber.castFrom(UInt64.valueOf(data.getSourceEpoch())),
         Hash32.fromHexString(data.getTargetRoot()),
         ShardNumber.of(data.getShard()),
         Hash32.fromHexString(data.getPreviousCrosslinkRoot()),

@@ -2,8 +2,10 @@ package org.ethereum.beacon.validator;
 
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.validator.crypto.MessageSigner;
+import tech.pegasys.artemis.util.bytes.Bytes32;
 
 /**
  * An interface of beacon chain proposer. A part of beacon validator logic.
@@ -22,4 +24,14 @@ public interface BeaconChainProposer {
    * @return created block.
    */
   BeaconBlock propose(ObservableBeaconState observableState, MessageSigner<BLSSignature> signer);
+
+  /**
+   * Given a state returns graffiti value.
+   *
+   * @param state a state.
+   * @return graffiti value.
+   */
+  default Bytes32 getGraffiti(BeaconState state) {
+    return Bytes32.ZERO;
+  }
 }

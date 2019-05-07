@@ -6,7 +6,7 @@ import org.ethereum.beacon.test.runner.Runner;
 import org.ethereum.beacon.test.type.TestCase;
 import org.ethereum.beacon.test.type.shuffle.ShuffleTestCase;
 import org.javatuples.Triplet;
-import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.bytes.Bytes32;
 
 import java.util.List;
 import java.util.Optional;
@@ -20,13 +20,13 @@ import static org.ethereum.beacon.test.SilentAsserts.assertLists;
 public class ShuffleRunner implements Runner {
   private ShuffleTestCase testCase;
   private BeaconChainSpec spec;
-  private Function<Triplet<List<ValidatorIndex>, Hash32, Integer>, List<ValidatorIndex>>
+  private Function<Triplet<List<ValidatorIndex>, Bytes32, Integer>, List<ValidatorIndex>>
       getShuffling;
 
   public ShuffleRunner(
       TestCase testCase,
       BeaconChainSpec spec,
-      Function<Triplet<List<ValidatorIndex>, Hash32, Integer>, List<ValidatorIndex>>
+      Function<Triplet<List<ValidatorIndex>, Bytes32, Integer>, List<ValidatorIndex>>
           getShuffling) {
     if (!(testCase instanceof ShuffleTestCase)) {
       throw new RuntimeException("TestCase runner accepts only ShuffleTestCase.class as input!");
@@ -47,7 +47,7 @@ public class ShuffleRunner implements Runner {
         getShuffling.apply(
             new Triplet<>(
                 initialValidatorIndices,
-                Hash32.fromHexString(testCase.getSeed()),
+                Bytes32.fromHexString(testCase.getSeed()),
                 testCase.getCount()));
     return assertLists(expectedIndices, validatorIndices);
   }

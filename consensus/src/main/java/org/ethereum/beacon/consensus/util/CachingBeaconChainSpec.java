@@ -8,10 +8,9 @@ import org.ethereum.beacon.consensus.BeaconChainSpecImpl;
 import org.ethereum.beacon.consensus.hasher.ObjectHasher;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.spec.SpecConstants;
-import org.ethereum.beacon.core.state.ShardCommittee;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.EpochNumber;
-import org.ethereum.beacon.core.types.SlotNumber;
+import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.util.cache.Cache;
 import org.ethereum.beacon.util.cache.CacheFactory;
@@ -26,7 +25,7 @@ public class CachingBeaconChainSpec extends BeaconChainSpecImpl {
   private final Cache<Pair<List<? extends UInt64>, Bytes32>, List<UInt64>> shufflerCache;
   private final Cache<Object, Hash32> hashTreeRootCache;
   private final Cache<Object, Hash32> signedRootCache;
-  private final Cache<SlotNumber, List<ShardCommittee>> crosslinkCommitteesCache;
+  private final Cache<Pair<EpochNumber, ShardNumber>, List<ValidatorIndex>> crosslinkCommitteesCache;
   private final Cache<EpochNumber, List<ValidatorIndex>> activeValidatorsCache;
 
   private ValidatorIndex maxCachedIndex = ValidatorIndex.ZERO;
@@ -95,9 +94,9 @@ public class CachingBeaconChainSpec extends BeaconChainSpecImpl {
   }
 
   @Override
-  public List<ShardCommittee> get_crosslink_committees_at_slot(BeaconState state, SlotNumber slot) {
-    return crosslinkCommitteesCache.get(slot,
-        s -> super.get_crosslink_committees_at_slot(state, slot));
+  public List<ValidatorIndex> get_crosslink_committee(BeaconState state, EpochNumber epoch, ShardNumber shard) {
+    return crosslinkCommitteesCache.get(Pair.with(epoch, shard),
+        s -> super.get_crosslink_committee(state, epoch, shard));
   }
 
   @Override

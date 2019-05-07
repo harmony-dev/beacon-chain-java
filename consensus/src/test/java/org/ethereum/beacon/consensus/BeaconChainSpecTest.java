@@ -1,7 +1,6 @@
 package org.ethereum.beacon.consensus;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,6 +40,7 @@ import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt64;
+import tech.pegasys.artemis.util.uint.UInt64s;
 
 public class BeaconChainSpecTest {
 
@@ -124,9 +124,10 @@ public class BeaconChainSpecTest {
     BeaconChainSpec spec = BeaconChainSpec.createWithDefaults();
     BeaconBlock emptyBlock = spec.get_empty_block();
     BeaconBlockBody body =
-        new BeaconBlockBody(
+        BeaconBlockBody.create(
             emptyBlock.getBody().getRandaoReveal(),
             emptyBlock.getBody().getEth1Data(),
+            emptyBlock.getBody().getGraffiti(),
             emptyBlock.getBody().getProposerSlashings().listCopy(),
             emptyBlock.getBody().getAttesterSlashings().listCopy(),
             AttestationTestUtil.createRandomList(rnd, 10),
@@ -224,9 +225,9 @@ public class BeaconChainSpecTest {
     Hash32 seed = Hash32.random(new Random());
 
     List<ValidatorIndex> actualIndices = new ArrayList<>();
-    for (int i = 0; i < totalCommittees; i++) {
-      List<ValidatorIndex> committee = spec.compute_committee(validatorIndices, seed, i, totalCommittees);
-      List<ValidatorIndex> committee2 = spec.compute_committee2(validatorIndices, seed, i, totalCommittees);
+    for (UInt64 i : UInt64s.iterate(UInt64.ZERO, UInt64.valueOf(totalCommittees))) {
+      List<ValidatorIndex> committee = spec.compute_committee(validatorIndices, seed, i, UInt64.valueOf(totalCommittees));
+      List<ValidatorIndex> committee2 = spec.compute_committee2(validatorIndices, seed, i, UInt64.valueOf(totalCommittees));
       assertEquals(committee, committee2);
 
       actualIndices.addAll(committee);

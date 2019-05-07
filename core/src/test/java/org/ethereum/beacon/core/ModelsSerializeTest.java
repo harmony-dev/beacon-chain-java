@@ -43,6 +43,7 @@ import org.ethereum.beacon.ssz.SSZSerializer;
 import org.junit.Before;
 import org.junit.Test;
 import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
@@ -64,10 +65,10 @@ public class ModelsSerializeTest {
   private AttestationData createAttestationData() {
     AttestationData expected =
         new AttestationData(
-            SlotNumber.of(123),
             Hashes.sha256(BytesValue.fromHexString("aa")),
             EpochNumber.ZERO,
             Hashes.sha256(BytesValue.fromHexString("bb")),
+            EpochNumber.of(123),
             Hashes.sha256(BytesValue.fromHexString("cc")),
             ShardNumber.of(345),
             Hashes.sha256(BytesValue.fromHexString("dd")),
@@ -212,9 +213,10 @@ public class ModelsSerializeTest {
     voluntaryExits.add(createExit());
     List<Transfer> transfers = new ArrayList<>();
     BeaconBlockBody beaconBlockBody =
-        new BeaconBlockBody(
+        BeaconBlockBody.create(
             BLSSignature.ZERO,
             new Eth1Data(Hash32.ZERO, UInt64.ZERO, Hash32.ZERO),
+            Bytes32.ZERO,
             proposerSlashings,
             attesterSlashings,
             attestations,

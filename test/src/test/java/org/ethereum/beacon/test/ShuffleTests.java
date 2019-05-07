@@ -4,7 +4,8 @@ import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.test.runner.shuffle.ShuffleRunner;
 import org.ethereum.beacon.test.type.shuffle.ShuffleTest;
 import org.junit.Test;
-import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.bytes.Bytes32;
+import tech.pegasys.artemis.util.uint.UInt64;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -29,14 +30,17 @@ public class ShuffleTests extends TestUtils {
                       input
                           .getValue1()
                           .compute_committee(
-                              objects.getValue0(), 0, objects.getValue2(), objects.getValue1()));
+                              objects.getValue0(),
+                              UInt64.ZERO,
+                              UInt64.valueOf(objects.getValue2()),
+                              objects.getValue1()));
           return testRunner.run();
         });
   }
 
   /**
    * Runs tests on optimized version of get_shuffling, like in {@link
-   * BeaconChainSpec#compute_committee2(List, Hash32, int, int)}
+   * BeaconChainSpec#compute_committee2(List, UInt64, UInt64, Bytes32)}
    */
   @Test
   public void testShuffling2() {
@@ -53,7 +57,10 @@ public class ShuffleTests extends TestUtils {
                       input
                           .getValue1()
                           .compute_committee2(
-                              objects.getValue0(), 0, objects.getValue2(), objects.getValue1()));
+                              objects.getValue0(),
+                              UInt64.ZERO,
+                              UInt64.valueOf(objects.getValue2()),
+                              objects.getValue1()));
           return testRunner.run();
         });
   }

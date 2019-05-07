@@ -23,6 +23,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
 import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.uint.UInt64;
 
 public class BeaconChainAttesterTest {
 
@@ -43,7 +44,8 @@ public class BeaconChainAttesterTest {
     ValidatorIndex validatorIndex = committee.get(indexIntoCommittee);
     Hash32 targetRoot = Hash32.random(random);
     Hash32 sourceRoot = Hash32.random(random);
-    ShardNumber shard = spec.getConstants().getBeaconChainShardNumber();
+    ShardNumber shard = ShardNumber.of(
+        UInt64.random(random).modulo(spec.getConstants().getShardCount()));
 
     Mockito.doReturn(committee).when(attester).getCommittee(any(), any());
     Mockito.doReturn(targetRoot).when(attester).getTargetRoot(any(), any());
@@ -56,7 +58,7 @@ public class BeaconChainAttesterTest {
     AttestationData data = attestation.getData();
     BeaconState state = initiallyObservedState.getLatestSlotState();
 
-    Assert.assertEquals(state.getSlot(), data.getSlot());
+    Assert.assertEquals(spec.get_current_epoch(state), data.getTargetEpoch());
     Assert.assertEquals(shard, data.getShard());
     Assert.assertEquals(
         spec.signing_root(initiallyObservedState.getHead()), data.getBeaconBlockRoot());

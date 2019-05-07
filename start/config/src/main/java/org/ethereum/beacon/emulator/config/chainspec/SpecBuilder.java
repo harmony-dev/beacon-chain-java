@@ -162,16 +162,6 @@ public class SpecBuilder {
       }
 
       @Override
-      public UInt64 getMaxBalanceChurnQuotient() {
-        return miscParameters.getMaxBalanceChurnQuotient();
-      }
-
-      @Override
-      public ShardNumber getBeaconChainShardNumber() {
-        return miscParameters.getBeaconChainShardNumber();
-      }
-
-      @Override
       public UInt64 getMaxIndicesPerAttestation() {
         return miscParameters.getMaxIndicesPerAttestation();
       }
@@ -189,11 +179,6 @@ public class SpecBuilder {
       @Override
       public UInt64 getBaseRewardsPerEpoch() {
         return miscParameters.getBaseRewardsPerEpoch();
-      }
-
-      @Override
-      public UInt64 getMaxExitDequesPerEpoch() {
-        return miscParameters.getMaxExitDequesPerEpoch();
       }
 
       @Override
