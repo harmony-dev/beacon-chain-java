@@ -9,7 +9,9 @@ public enum MessageType {
   Goodbye(GoodbyeMessage.METHOD_ID, GoodbyeMessage.class, null),
   BlockRoots(BlockRootsRequestMessage.METHOD_ID, BlockRootsRequestMessage.class, BlockRootsResponseMessage.class),
   BlockHeaders(BlockHeadersRequestMessage.METHOD_ID, BlockHeadersRequestMessage.class, BlockHeadersResponseMessage.class),
-  BlockBodies(BlockBodiesRequestMessage.METHOD_ID, BlockBodiesRequestMessage.class, BlockBodiesResponseMessage.class);
+  BlockBodies(BlockBodiesRequestMessage.METHOD_ID, BlockBodiesRequestMessage.class, BlockBodiesResponseMessage.class),
+  NewBlock(NotifyNewBlockMessage.METHOD_ID, NotifyNewBlockMessage.class, null),
+  NewAttestation(NotifyNewAttestationMessage.METHOD_ID, NotifyNewAttestationMessage.class, null);
 
   public static MessageType getById(int id) {
     for (MessageType message : MessageType.values()) {

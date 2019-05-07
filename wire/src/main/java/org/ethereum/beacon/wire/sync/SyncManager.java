@@ -1,13 +1,16 @@
 package org.ethereum.beacon.wire.sync;
 
+import java.util.Collections;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.ethereum.beacon.chain.BeaconTuple;
 import org.ethereum.beacon.chain.BeaconTupleDetails;
 import org.ethereum.beacon.chain.MutableBeaconChain;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.stream.RxUtil;
 import org.ethereum.beacon.wire.Feedback;
 import org.ethereum.beacon.wire.WireApiSync;
 import org.ethereum.beacon.wire.exceptions.WireInvalidConsensusDataException;
@@ -27,11 +30,12 @@ public class SyncManager {
   private final BeaconChainSpec spec;
 
   private final WireApiSync syncApi;
+  private Publisher<Feedback<BeaconBlock>> newBlocks;
   private final SyncQueue syncQueue;
 
-  Disposable wireBlocksStreamSub;
-  Disposable finalizedBlockStreamSub;
-  Disposable readyBlocksStreamSub;
+  private Disposable wireBlocksStreamSub;
+  private Disposable finalizedBlockStreamSub;
+  private Disposable readyBlocksStreamSub;
 
   int maxConcurrentBlockRequests = 32;
 
@@ -72,10 +76,8 @@ public class SyncManager {
         .distinct()
         .map(br -> Hash32.ZERO.equals(br) ? genesisBlockRoot : br);
 
-    Flux<BeaconBlock> finalizedBlockStream =
-        finalizedBlockRootStream.map(
-            root ->
-                storage.getBlockStorage().get(root).orElseThrow(() -> new IllegalStateException()));
+    Flux<BeaconBlock> finalizedBlockStream = finalizedBlockRootStream.map(
+            root -> storage.getBlockStorage().get(root).orElseThrow(() -> new IllegalStateException()));
 
     finalizedBlockStreamSub = syncQueue.subscribeToFinalBlocks(finalizedBlockStream);
 
@@ -100,6 +102,17 @@ public class SyncManager {
         .onErrorContinue((t, o) -> logger.info("SyncApi exception: " + t + ", " + o, t));
 
     wireBlocksStreamSub = syncQueue.subscribeToNewBlocks(wireBlocksStream);
+
+    if (newBlocks != null) {
+      syncQueue.subscribeToNewBlocks(Flux.from(newBlocks)
+          .map(blockF -> blockF.map(Collections::singletonList)));
+
+      Publisher<BeaconBlock> freshBlocks =
+          RxUtil.join(
+              Flux.from(newBlocks).map(Feedback::get),
+              Flux.from(blockStatesStream).map(BeaconTuple::getBlock),
+              16);
+    }
   }
 
   public void stop() {

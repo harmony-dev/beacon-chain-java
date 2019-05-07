@@ -79,15 +79,15 @@ public class BeaconPipelineChannelTest {
 
     SSZSerializer sszSerializer = new SSZBuilder().buildSerializer();
 
-    BeaconPipeline peer1Pipeline = new BeaconPipeline(sszSerializer, dummyServer);
+    BeaconPipeline peer1Pipeline = new BeaconPipeline(sszSerializer);
     SimpleChannel<Message> peer1Channel = new SimpleChannel<>(_2to1, _1to2);
-    peer1Pipeline.createFromMessageChannel(peer1Channel);
+    peer1Pipeline.initFromMessageChannel(peer1Channel);
 
-    BeaconPipeline peer2Pipeline = new BeaconPipeline(sszSerializer, dummyServer);
+    BeaconPipeline peer2Pipeline = new BeaconPipeline(sszSerializer);
     SimpleChannel<Message> peer2Channel = new SimpleChannel<>(_1to2, _2to1);
-    peer2Pipeline.createFromMessageChannel(peer2Channel);
+    peer2Pipeline.initFromMessageChannel(peer2Channel);
 
-    WireApiSync peer2SyncClient = peer2Pipeline.getSyncClient();
+    WireApiSync peer2SyncClient = peer2Pipeline.createWireApiSync(dummyServer);
 
     CompletableFuture<BlockRootsResponseMessage> resp = peer2SyncClient
         .requestBlockRoots(new BlockRootsRequestMessage(SlotNumber.ZERO, UInt64.ZERO));

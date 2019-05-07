@@ -1,6 +1,7 @@
 package org.ethereum.beacon.wire;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
 public interface Feedback<TResult> {
 
@@ -17,6 +18,10 @@ public interface Feedback<TResult> {
   CompletableFuture<Void> getFeedback();
 
   <TOtherResult> Feedback<TOtherResult> delegate(TOtherResult otherResult);
+
+  default <TOtherResult> Feedback<TOtherResult> map(Function<TResult, TOtherResult> mapper) {
+    return delegate(mapper.apply(get()));
+  }
 
   class Impl<TResult> implements Feedback<TResult> {
     private final TResult result;
