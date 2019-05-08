@@ -1,8 +1,10 @@
 package org.ethereum.beacon.wire.net;
 
+import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.junit.Assert;
 import org.junit.Test;
@@ -21,7 +23,8 @@ public class NettyChannelTest {
     System.out.println("Server started");
 
     System.out.println("Connecting 1...");
-    CompletableFuture<NettyChannel> chFut1 = nettyClient.connect("localhost", 26666);
+    CompletableFuture<NettyChannel> chFut1 =
+        nettyClient.connect(InetSocketAddress.createUnresolved("localhost", 26666));
     NettyChannel ch1 = chFut1.get(5, TimeUnit.SECONDS);
     System.out.println("Client channel 1 created");
 
@@ -56,7 +59,8 @@ public class NettyChannelTest {
             () -> System.out.println("Server socket closed"));
 
     System.out.println("Connecting 2...");
-    CompletableFuture<NettyChannel> chFut2 = nettyClient.connect("localhost", 26666);
+    CompletableFuture<NettyChannel> chFut2 =
+        nettyClient.connect(InetSocketAddress.createUnresolved("localhost", 26666));
     NettyChannel ch2 = chFut2.get(5, TimeUnit.SECONDS);
     System.out.println("Client channel 2 created");
 
@@ -78,5 +82,15 @@ public class NettyChannelTest {
 
     Thread.sleep(1000);
     System.out.println("Complete");
+  }
+
+  @Test(expected = ExecutionException.class)
+  public void test2() throws Exception {
+    NettyClient nettyClient = new NettyClient();
+
+    System.out.println("Connecting 1...");
+    CompletableFuture<NettyChannel> chFut1 =
+        nettyClient.connect(InetSocketAddress.createUnresolved("localhost", 26667));
+    NettyChannel ch1 = chFut1.get(5, TimeUnit.SECONDS);
   }
 }

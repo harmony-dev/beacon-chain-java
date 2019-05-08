@@ -1,7 +1,10 @@
 package org.ethereum.beacon.wire;
 
+import static org.ethereum.beacon.util.Utils.optionalFlatMap;
+
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import org.ethereum.beacon.consensus.hasher.ObjectHasher;
@@ -43,22 +46,17 @@ public interface WireApiSync {
               .thenApply(bb -> bb.delegate(bb.get().getBlockBodies()));
         });
 
-    return headersFuture.thenCombine(bodiesFuture,
+    return headersFuture.thenCombine(
+        bodiesFuture,
         (headers, bodies) -> {
           Map<Hash32, BeaconBlockBody> bodyMap =
               bodies.get().stream().collect(Collectors.toMap(hasher::getHash, b -> b));
-          return bodies.delegate(headers
-              .stream()
-              .map(
-                  h -> {
-                    BeaconBlockBody body = bodyMap.get(h.getBlockBodyRoot());
-                    if (body != null) {
-                      return new BeaconBlock(h, body);
-                    } else {
-                      return null;
-                    }
-                  })
-              .collect(Collectors.toList()));
+          return bodies.delegate(
+              headers.stream()
+                  .map(h -> Optional.ofNullable(bodyMap.get(h.getBlockBodyRoot()))
+                              .map(body -> new BeaconBlock(h, body)))
+                  .flatMap(optionalFlatMap(b -> b))
+                  .collect(Collectors.toList()));
         });
   }
 }

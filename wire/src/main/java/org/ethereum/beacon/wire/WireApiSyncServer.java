@@ -1,12 +1,13 @@
 package org.ethereum.beacon.wire;
 
+import static org.ethereum.beacon.util.Utils.optionalFlatMap;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockBody;
@@ -15,9 +16,9 @@ import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.wire.exceptions.WireIllegalArgumentsException;
 import org.ethereum.beacon.wire.message.payload.BlockBodiesRequestMessage;
 import org.ethereum.beacon.wire.message.payload.BlockBodiesResponseMessage;
-import org.ethereum.beacon.wire.message.payload.BlockRootsRequestMessage;
-import org.ethereum.beacon.wire.message.payload.BlockHeadersResponseMessage;
 import org.ethereum.beacon.wire.message.payload.BlockHeadersRequestMessage;
+import org.ethereum.beacon.wire.message.payload.BlockHeadersResponseMessage;
+import org.ethereum.beacon.wire.message.payload.BlockRootsRequestMessage;
 import org.ethereum.beacon.wire.message.payload.BlockRootsResponseMessage;
 import org.ethereum.beacon.wire.message.payload.BlockRootsResponseMessage.BlockRootSlot;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -34,7 +35,7 @@ public class WireApiSyncServer implements WireApiSync {
   @Override
   public CompletableFuture<BlockRootsResponseMessage> requestBlockRoots(
       BlockRootsRequestMessage requestMessage) {
-    CompletableFuture<BlockRootsResponseMessage> ret = new CompletableFuture();
+    CompletableFuture<BlockRootsResponseMessage> ret = new CompletableFuture<>();
     if (requestMessage.getCount().compareTo(UInt64.valueOf(MAX_BLOCK_ROOTS_COUNT)) > 0) {
       ret.completeExceptionally(new WireIllegalArgumentsException(
               "Too many block roots requested: " + requestMessage.getCount()));
@@ -100,7 +101,7 @@ public class WireApiSyncServer implements WireApiSync {
 
     List<BeaconBlockBody> bodyList = requestMessage.getBlockTreeRoots().stream()
         .map(blockRoot -> storage.getBlockStorage().get(blockRoot))
-        .flatMap(opt -> opt.isPresent() ? Stream.of(opt.map(BeaconBlock::getBody).get()) : Stream.empty())
+        .flatMap(optionalFlatMap(BeaconBlock::getBody))
         .collect(Collectors.toList());
     return CompletableFuture.completedFuture(
         Feedback.of(new BlockBodiesResponseMessage(requestMessage, bodyList)));

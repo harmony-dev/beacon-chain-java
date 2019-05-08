@@ -1,23 +1,14 @@
 package org.ethereum.beacon.wire;
 
-import java.util.concurrent.CompletableFuture;
-import org.ethereum.beacon.wire.message.payload.GoodbyeMessage;
+import org.ethereum.beacon.wire.channel.Channel;
 import org.ethereum.beacon.wire.message.Message;
 import org.reactivestreams.Publisher;
+import tech.pegasys.artemis.util.bytes.BytesValue;
 
 public interface Peer {
 
-  Publisher<Message> getInboundMessageStream();
-
-  void sendMessage(Message message);
+  Channel<BytesValue> getRawChannel();
 
   boolean isRemoteInitiated();
 
-  CompletableFuture<GoodbyeMessage> getDisconnectFuture();
-
-  void disconnect();
-
-  default boolean isConnected() {
-    return !getDisconnectFuture().isDone();
-  }
 }

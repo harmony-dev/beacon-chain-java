@@ -9,15 +9,13 @@ import io.netty.channel.DefaultMessageSizeEstimator;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LoggingHandler;
-import java.util.concurrent.ExecutionException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.FluxSink;
-import reactor.core.publisher.ReplayProcessor;
 import reactor.core.publisher.UnicastProcessor;
 
-public class NettyServer {
+public class NettyServer implements Server {
   private static final Logger logger = LogManager.getLogger(NettyServer.class);
 
   private UnicastProcessor<NettyChannel> channels = UnicastProcessor.create();
@@ -30,6 +28,7 @@ public class NettyServer {
     this.port = port;
   }
 
+  @Override
   public Publisher<NettyChannel> channelsStream() {
     return channels;
   }
@@ -38,6 +37,7 @@ public class NettyServer {
     channelsSink.next(channel);
   }
 
+  @Override
   public ChannelFuture start() {
     NioEventLoopGroup bossGroup = new NioEventLoopGroup(1,
         new ThreadFactoryBuilder().setNameFormat("netty-service-boss-%d").build());
@@ -83,6 +83,7 @@ public class NettyServer {
     }
   }
 
+  @Override
   public void stop() {
     if (channelFuture == null) {
       throw new IllegalStateException("Not started");

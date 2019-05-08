@@ -4,6 +4,8 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.function.Consumer;
 import org.ethereum.beacon.wire.channel.Channel;
 import org.reactivestreams.Publisher;
@@ -67,5 +69,13 @@ public class NettyChannel extends SimpleChannelInboundHandler<ByteBuf> implement
     byte[] copy = new byte[byteBuf.readableBytes()];
     byteBuf.readBytes(copy);
     inMessagesSink.next(BytesValue.wrap(copy));
+  }
+
+  public SocketAddress getLocalAddress() {
+    return ctx.channel().localAddress();
+  }
+
+  public SocketAddress getRemoteAddress() {
+    return ctx.channel().remoteAddress();
   }
 }
