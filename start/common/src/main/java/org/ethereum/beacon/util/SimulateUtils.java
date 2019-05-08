@@ -33,8 +33,8 @@ public class SimulateUtils {
       Random rnd, BeaconChainSpec spec, int count, boolean isProofVerifyEnabled) {
     if (count > cachedDeposits.getValue0().size()) {
       Pair<List<Deposit>, List<BLS381.KeyPair>> newDeposits =
-          generateRandomDeposits(rnd, spec, count - cachedDeposits.getValue0().size(),
-              isProofVerifyEnabled);
+          generateRandomDeposits(UInt64.valueOf(cachedDeposits.getValue0().size()), rnd, spec,
+              count - cachedDeposits.getValue0().size(), isProofVerifyEnabled);
       cachedDeposits.getValue0().addAll(newDeposits.getValue0());
       cachedDeposits.getValue1().addAll(newDeposits.getValue1());
     }
@@ -42,8 +42,8 @@ public class SimulateUtils {
         cachedDeposits.getValue0().subList(0, count), cachedDeposits.getValue1().subList(0, count));
   }
 
-  public static synchronized Deposit getDepositForKeyPair(
-      Random rnd, BLS381.KeyPair keyPair, BeaconChainSpec spec, boolean isProofVerifyEnabled) {
+  public static synchronized Deposit getDepositForKeyPair(UInt64 depositIndex, Random rnd,
+      BLS381.KeyPair keyPair, BeaconChainSpec spec, boolean isProofVerifyEnabled) {
     Hash32 withdrawalCredentials = Hash32.random(rnd);
     DepositData depositDataWithoutSignature =
         new DepositData(
@@ -65,7 +65,7 @@ public class SimulateUtils {
     Deposit deposit =
         new Deposit(
             ReadVector.wrap(Collections.singletonList(Hash32.random(rnd)), Function.identity()),
-            UInt64.ZERO,
+            depositIndex,
             new DepositData(
                 BLSPubkey.wrap(Bytes48.leftPad(keyPair.getPublic().getEncodedBytes())),
                 withdrawalCredentials,
@@ -75,25 +75,27 @@ public class SimulateUtils {
   }
 
   public static synchronized List<Deposit> getDepositsForKeyPairs(
-      Random rnd, List<BLS381.KeyPair> keyPairs, BeaconChainSpec spec, boolean isProofVerifyEnabled) {
+      UInt64 startIndex, Random rnd, List<BLS381.KeyPair> keyPairs, BeaconChainSpec spec, boolean isProofVerifyEnabled) {
     List<Deposit> deposits = new ArrayList<>();
 
+    UInt64 index = startIndex;
     for (BLS381.KeyPair keyPair : keyPairs) {
-      deposits.add(getDepositForKeyPair(rnd, keyPair, spec, isProofVerifyEnabled));
+      deposits.add(getDepositForKeyPair(index, rnd, keyPair, spec, isProofVerifyEnabled));
+      index = index.increment();
     }
 
     return deposits;
   }
 
   private static synchronized Pair<List<Deposit>, List<BLS381.KeyPair>> generateRandomDeposits(
-      Random rnd, BeaconChainSpec spec, int count, boolean isProofVerifyEnabled) {
+      UInt64 startIndex, Random rnd, BeaconChainSpec spec, int count, boolean isProofVerifyEnabled) {
     List<BLS381.KeyPair> validatorsKeys = new ArrayList<>();
     for (int i = 0; i < count; i++) {
       BLS381.KeyPair keyPair = BLS381.KeyPair.create(PrivateKey.create(Bytes32.random(rnd)));
       validatorsKeys.add(keyPair);
 
     }
-    List<Deposit> deposits = getDepositsForKeyPairs(rnd, validatorsKeys, spec, isProofVerifyEnabled);
+    List<Deposit> deposits = getDepositsForKeyPairs(startIndex, rnd, validatorsKeys, spec, isProofVerifyEnabled);
     return Pair.with(deposits, validatorsKeys);
   }
 }

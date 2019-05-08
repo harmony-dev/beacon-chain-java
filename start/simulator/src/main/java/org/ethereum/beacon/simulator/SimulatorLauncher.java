@@ -128,7 +128,8 @@ public class SimulatorLauncher implements Runnable {
       if (validators.get(i).getBlsPrivateKey() != null) {
         KeyPair keyPair = KeyPair.create(
             PrivateKey.create(Bytes32.fromHexString(validators.get(i).getBlsPrivateKey())));
-        deposits.getValue0().set(i, SimulateUtils.getDepositForKeyPair(rnd, keyPair, spec,
+        Deposit deposit = deposits.getValue0().get(i);
+        deposits.getValue0().set(i, SimulateUtils.getDepositForKeyPair(deposit.getIndex(), rnd, keyPair, spec,
             config.getChainSpec().getSpecHelpersOptions().isBlsVerifyProofOfPossession()));
         deposits.getValue1().set(i, keyPair);
       }
