@@ -29,8 +29,7 @@ public class VoluntaryExitVerifier implements OperationVerifier<VoluntaryExit> {
       spec.verify_voluntary_exit(state, voluntaryExit);
       return VerificationResult.PASSED;
     } catch (SpecCommons.SpecAssertionFailed e) {
-      String error = e.getStackTrace().length > 0 ? e.getStackTrace()[1].toString() : "SpecAssertion";
-      return VerificationResult.failedResult(error);
+      return VerificationResult.failedResult(e.getMessage());
     }
   }
 }

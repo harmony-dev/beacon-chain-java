@@ -29,8 +29,7 @@ public class AttestationVerifier implements OperationVerifier<Attestation> {
       spec.verify_attestation(state, attestation);
       return VerificationResult.PASSED;
     } catch (SpecCommons.SpecAssertionFailed e) {
-      String error = e.getStackTrace().length > 0 ? e.getStackTrace()[1].toString() : "SpecAssertion";
-      return VerificationResult.failedResult(error);
+      return VerificationResult.failedResult(e.getMessage());
     }
   }
 }

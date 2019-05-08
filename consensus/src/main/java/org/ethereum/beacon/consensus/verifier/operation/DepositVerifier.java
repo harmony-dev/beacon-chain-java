@@ -32,8 +32,7 @@ public class DepositVerifier implements OperationVerifier<Deposit> {
       spec.verify_deposit(state, deposit);
       return VerificationResult.PASSED;
     } catch (SpecCommons.SpecAssertionFailed e) {
-      String error = e.getStackTrace().length > 0 ? e.getStackTrace()[1].toString() : "SpecAssertion";
-      return VerificationResult.failedResult(error);
+      return VerificationResult.failedResult(e.getMessage());
     }
   }
 }
