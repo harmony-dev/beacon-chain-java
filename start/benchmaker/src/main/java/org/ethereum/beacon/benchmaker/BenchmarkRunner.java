@@ -72,7 +72,7 @@ public class BenchmarkRunner implements Runnable {
     for (int i = 0; i < count; i++) {
       BLS381.KeyPair keyPair = keyPairReader.next();
       keyPairs.add(keyPair);
-      deposits.add(SimulateUtils.getDepositForKeyPair(rnd, keyPair, spec, false));
+      deposits.add(SimulateUtils.getDepositForKeyPair(UInt64.valueOf(i), rnd, keyPair, spec, false));
     }
 
     return Pair.with(deposits, keyPairs);
