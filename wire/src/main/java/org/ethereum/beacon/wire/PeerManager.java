@@ -12,4 +12,8 @@ public interface PeerManager {
   Publisher<Peer> activePeerStream();
 
   Collection<Peer> getActivePeers();
+
+  WireApiSync getWireApiSync();
+
+  WireApiSub getWireApiSub();
 }

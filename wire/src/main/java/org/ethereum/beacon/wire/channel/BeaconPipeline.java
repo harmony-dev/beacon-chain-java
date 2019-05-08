@@ -128,10 +128,21 @@ public class BeaconPipeline {
   }
 
   private final SSZSerializer sszSerializer;
+  private final WireApiPeer peerServer;
+  private final WireApiSub2 subServer;
+  private final WireApiSync syncServer;
+  private WireApiPeer peerClient;
+  private WireApiSub2 subClient;
+  private WireApiSync syncClient;
+
   private RpcChannel<RequestMessagePayload, ResponseMessagePayload> rpcHub;
 
-  public BeaconPipeline(SSZSerializer sszSerializer) {
+  public BeaconPipeline(SSZSerializer sszSerializer, WireApiPeer peerServer,
+      WireApiSub2 subServer, WireApiSync syncServer) {
     this.sszSerializer = sszSerializer;
+    this.peerServer = peerServer;
+    this.subServer = subServer;
+    this.syncServer = syncServer;
   }
 
   public void initFromBytesChannel(Channel<BytesValue> rawChannel, MessageSerializer messageSerializer) {
@@ -175,10 +186,29 @@ public class BeaconPipeline {
           }
         });
 
-    rpcHub = RpcChannel.from(new ChannelHub<>(inboundResponsePayloadValidator));
+    ChannelHub<RpcMessage<RequestMessagePayload, ResponseMessagePayload>> channelHub = new ChannelHub<>(
+        inboundResponsePayloadValidator, false);
+    rpcHub = RpcChannel.from(channelHub);
+    syncClient = createWireApiSync(syncServer);
+    subClient = createWireApiSub(subServer);
+    peerClient = createWireApiPeer(peerServer);
+
+    channelHub.connect();
   }
 
-  public WireApiSync createWireApiSync(WireApiSync syncServer) {
+  public WireApiPeer getPeerClient() {
+    return peerClient;
+  }
+
+  public WireApiSub2 getSubClient() {
+    return subClient;
+  }
+
+  public WireApiSync getSyncClient() {
+    return syncClient;
+  }
+
+  private WireApiSync createWireApiSync(WireApiSync syncServer) {
     RpcChannelAdapter<BlockRootsRequestMessage, BlockRootsResponseMessage> blockRootsAsync =
         new RpcChannelAdapter<>(new RpcChannelClassFilter<>(rpcHub, BlockRootsRequestMessage.class),
             syncServer::requestBlockRoots);
@@ -212,7 +242,7 @@ public class BeaconPipeline {
     return syncClient;
   }
 
-  public WireApiSub2 createWireApiSub(WireApiSub2 subServer) {
+  private WireApiSub2 createWireApiSub(WireApiSub2 subServer) {
     RpcChannelAdapter<NotifyNewBlockMessage, ResponseMessagePayload> blocks =
         new RpcChannelAdapter<>(new RpcChannelClassFilter<>(rpcHub, NotifyNewBlockMessage.class),
             newBlock -> {
@@ -240,7 +270,7 @@ public class BeaconPipeline {
     };
   }
 
-  public WireApiPeer createWireApiPeer(WireApiPeer peerServer) {
+  private WireApiPeer createWireApiPeer(WireApiPeer peerServer) {
     RpcChannelAdapter<HelloMessage, ResponseMessagePayload> helloRpc =
         new RpcChannelAdapter<>(new RpcChannelClassFilter<>(rpcHub, HelloMessage.class),
             msg -> {

@@ -71,6 +71,11 @@ public class NettyChannel extends SimpleChannelInboundHandler<ByteBuf> implement
     inMessagesSink.next(BytesValue.wrap(copy));
   }
 
+  @Override
+  public void close() {
+    ctx.channel().close();
+  }
+
   public SocketAddress getLocalAddress() {
     return ctx.channel().localAddress();
   }
