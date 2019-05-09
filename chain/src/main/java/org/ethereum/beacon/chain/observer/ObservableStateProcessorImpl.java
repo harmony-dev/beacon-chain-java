@@ -125,7 +125,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     if (latestState == null) {
       return;
     }
-    List<Attestation> attestations = drainAttestations(spec.get_previous_epoch(latestState));
+    List<Attestation> attestations = drainAttestations(spec.get_current_epoch(latestState));
     for (Attestation attestation : attestations) {
 
       List<ValidatorIndex> participants =
@@ -197,7 +197,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   /** Purges all entries for epoch and before */
   private synchronized void purgeAttestations(EpochNumber targetEpoch) {
     attestationCache.entrySet()
-        .removeIf(entry -> entry.getValue().getData().getTargetEpoch().lessEqual(targetEpoch));
+        .removeIf(entry -> entry.getValue().getData().getTargetEpoch().less(targetEpoch));
   }
 
   private synchronized Map<BLSPubkey, List<Attestation>> copyAttestationCache() {
