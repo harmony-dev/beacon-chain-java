@@ -11,10 +11,7 @@ public class BlockHeadersResponseMessage extends ResponseMessagePayload {
 
   @SSZ private final List<BeaconBlockHeader> headers;
 
-  public BlockHeadersResponseMessage(
-      BlockHeadersRequestMessage request,
-      List<BeaconBlockHeader> headers) {
-    super(request);
+  public BlockHeadersResponseMessage(List<BeaconBlockHeader> headers) {
     this.headers = headers;
   }
 

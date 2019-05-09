@@ -11,10 +11,7 @@ public class BlockBodiesResponseMessage extends ResponseMessagePayload {
 
   @SSZ private final List<BeaconBlockBody> blockBodies;
 
-  public BlockBodiesResponseMessage(
-      BlockBodiesRequestMessage request,
-      List<BeaconBlockBody> blockBodies) {
-    super(request);
+  public BlockBodiesResponseMessage(List<BeaconBlockBody> blockBodies) {
     this.blockBodies = blockBodies;
   }
 

@@ -86,9 +86,9 @@ public class WireApiSyncServer implements WireApiSync {
         }
         prevSlot = nonEmptySlot;
       }
-      ret.complete(new BlockHeadersResponseMessage(requestMessage, headers));
+      ret.complete(new BlockHeadersResponseMessage(headers));
     } else {
-      ret.complete(new BlockHeadersResponseMessage(requestMessage, Collections.emptyList()));
+      ret.complete(new BlockHeadersResponseMessage(Collections.emptyList()));
     }
     return ret;
   }
@@ -104,6 +104,6 @@ public class WireApiSyncServer implements WireApiSync {
         .flatMap(optionalFlatMap(BeaconBlock::getBody))
         .collect(Collectors.toList());
     return CompletableFuture.completedFuture(
-        Feedback.of(new BlockBodiesResponseMessage(requestMessage, bodyList)));
+        Feedback.of(new BlockBodiesResponseMessage(bodyList)));
   }
 }

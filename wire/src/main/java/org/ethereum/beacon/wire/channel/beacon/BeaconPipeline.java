@@ -1,6 +1,8 @@
 package org.ethereum.beacon.wire.channel.beacon;
 
 import java.util.concurrent.CompletableFuture;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.ssz.SSZSerializer;
@@ -35,6 +37,7 @@ import org.ethereum.beacon.wire.message.payload.NotifyNewBlockMessage;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 public class BeaconPipeline {
+  private static final Logger logger = LogManager.getLogger(BeaconPipeline.class);
 
   private final SSZSerializer sszSerializer;
   private final WireApiPeer peerServer;
@@ -71,14 +74,30 @@ public class BeaconPipeline {
             RpcMessage<RequestMessagePayload, ResponseMessagePayload>>
         payloadCodec = new BeaconPayloadCodec(rpcMessageChannel, sszSerializer);
 
+    IdentityChannel<RpcMessage<RequestMessagePayload, ResponseMessagePayload>> loggerChannel =
+        new IdentityChannel<RpcMessage<RequestMessagePayload, ResponseMessagePayload>>(
+            payloadCodec) {
+          @Override
+          protected void onInbound(RpcMessage<RequestMessagePayload, ResponseMessagePayload> msg)
+              throws RuntimeException {
+            logger.debug("   ==> " + (msg.isRequest() ? msg.getRequest() : msg.getResponse().get()));
+          }
+
+          @Override
+          protected void onOutbound(RpcMessage<RequestMessagePayload, ResponseMessagePayload> msg)
+              throws RuntimeException {
+            logger.debug(" <==   " + (msg.isRequest() ? msg.getRequest() : msg.getResponse().get()));
+          }
+        };
+
     RpcChannel<RequestMessagePayload, ResponseMessagePayload> inboundResponsePayloadValidator = RpcChannel
         .from(new IdentityChannel<RpcMessage<RequestMessagePayload, ResponseMessagePayload>>(
-            payloadCodec) {
+            loggerChannel) {
           @Override
           protected void onOutbound(RpcMessage<RequestMessagePayload, ResponseMessagePayload> msg)
               throws RuntimeException {
             if (msg.isRequest()) {
-              msg.pushRequestContext("validatorRequestMessgae", msg.getRequest());
+              msg.setRequestContext("validatorRequestMessgae", msg.getRequest());
             }
           }
 
@@ -87,7 +106,7 @@ public class BeaconPipeline {
               throws RuntimeException {
             if (msg.isResponse()) {
               RequestMessagePayload request = (RequestMessagePayload) msg
-                  .popRequestContext("validatorRequestMessgae");
+                  .getRequestContext("validatorRequestMessgae");
               ResponseMessagePayload response = msg.getResponse().get();
 
               // validate response against request

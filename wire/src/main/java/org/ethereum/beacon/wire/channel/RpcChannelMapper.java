@@ -31,7 +31,7 @@ public abstract class RpcChannelMapper<TInMessage, TOutRequest, TOutResponse>
       } else {
         RpcMessage<TOutRequest, TOutResponse> rpcMessage = new RpcMessage<>(
             (TOutRequest) msg, false);
-        rpcMessage.pushRequestContext(CONTEXT_ID_KEY, getId(msg));
+        rpcMessage.setRequestContext(CONTEXT_ID_KEY, getId(msg));
         return rpcMessage;
       }
     } else {
@@ -48,18 +48,18 @@ public abstract class RpcChannelMapper<TInMessage, TOutRequest, TOutResponse>
 
   protected TInMessage toIn(RpcMessage<TOutRequest, TOutResponse> msg) {
     if (msg.isRequest()) {
+      TInMessage inMessage = (TInMessage) msg.getRequest();
+      Object id = generateNextId();
+      setId(inMessage, id);
       if (msg.isNotification()) {
         return (TInMessage) msg.getRequest();
       } else {
-        TInMessage inMessage = (TInMessage) msg.getRequest();
-        Object id = generateNextId();
-        setId(inMessage, id);
         idToContextMap.put(id, msg.getRequestContext());
         return inMessage;
       }
     } else {
       TInMessage inMessage = (TInMessage) msg.getResponse().get();
-      setId(inMessage, msg.popRequestContext(CONTEXT_ID_KEY));
+      setId(inMessage, msg.getRequestContext(CONTEXT_ID_KEY));
       return inMessage;
     }
   }

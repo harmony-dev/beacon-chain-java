@@ -1,5 +1,7 @@
 package org.ethereum.beacon.wire.channel.beacon;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.ssz.SSZSerializer;
 import org.ethereum.beacon.wire.channel.Channel;
 import org.ethereum.beacon.wire.channel.ChannelCodec;
@@ -15,6 +17,8 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
 class BeaconPayloadCodec extends ChannelCodec<
       RpcMessage<RequestMessage, ResponseMessage>,
       RpcMessage<RequestMessagePayload, ResponseMessagePayload>> {
+
+  private static final Logger logger = LogManager.getLogger(BeaconPayloadCodec.class);
 
   private static final Object CONTEXT_REQUEST_MESSAGE_ID = new Object();
 
@@ -34,7 +38,7 @@ class BeaconPayloadCodec extends ChannelCodec<
           .decode(msg.getRequest().getBody(), messageType.getRequestClass());
       return msg.copyWithRequest(messagePayload);
     } else {
-      int methodId = (int) msg.popRequestContext(CONTEXT_REQUEST_MESSAGE_ID);
+      int methodId = (int) msg.getRequestContext(CONTEXT_REQUEST_MESSAGE_ID);
       if (msg.getResponse().get().getResponseCode() == 0) {
         ResponseMessagePayload messagePayload =
             sszSerializer.decode(
@@ -52,7 +56,7 @@ class BeaconPayloadCodec extends ChannelCodec<
       SSZSerializer sszSerializer, RpcMessage<RequestMessagePayload, ResponseMessagePayload> msg) {
     if (msg.isRequest()) {
       int methodId = msg.getRequest().getMethodId();
-      msg.pushRequestContext(CONTEXT_REQUEST_MESSAGE_ID, methodId);
+      msg.setRequestContext(CONTEXT_REQUEST_MESSAGE_ID, methodId);
       BytesValue payloadBytes = sszSerializer.encode2(msg.getRequest());
       return msg.copyWithRequest(new RequestMessage(methodId, payloadBytes));
     } else {

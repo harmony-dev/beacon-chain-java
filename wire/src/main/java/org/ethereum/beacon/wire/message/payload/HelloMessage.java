@@ -12,14 +12,15 @@ import tech.pegasys.artemis.util.uint.UInt64;
 public class HelloMessage extends RequestMessagePayload {
   public static final int METHOD_ID = 0x0;
 
-  @SSZ private final byte networkId;
+  @SSZ(type = "uint8")
+  private final int networkId;
   @SSZ private final UInt64 chainId;
   @SSZ private final Hash32 latestFinalizedRoot;
   @SSZ private final EpochNumber latestFinalizedEpoch;
   @SSZ private final Hash32 bestRoot;
   @SSZ private final SlotNumber bestSlot;
 
-  public HelloMessage(byte networkId, UInt64 chainId,
+  public HelloMessage(int networkId, UInt64 chainId,
       Hash32 latestFinalizedRoot, EpochNumber latestFinalizedEpoch,
       Hash32 bestRoot, SlotNumber bestSlot) {
     this.networkId = networkId;
@@ -35,8 +36,8 @@ public class HelloMessage extends RequestMessagePayload {
     return METHOD_ID;
   }
 
-  public byte getNetworkId() {
-    return networkId;
+  public int getNetworkId() {
+    return (byte) networkId;
   }
 
   public UInt64 getChainId() {

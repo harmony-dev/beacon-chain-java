@@ -7,6 +7,8 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.function.Consumer;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.wire.channel.Channel;
 import org.reactivestreams.Publisher;
 import reactor.core.Disposable;
@@ -16,6 +18,7 @@ import reactor.core.publisher.ReplayProcessor;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 public class NettyChannel extends SimpleChannelInboundHandler<ByteBuf> implements Channel<BytesValue> {
+  private static final Logger logger = LogManager.getLogger(NettyChannel.class);
 
   private final Consumer<NettyChannel> activeChannelListener;
   private final ReplayProcessor<BytesValue> inMessages = ReplayProcessor.create();
@@ -60,6 +63,7 @@ public class NettyChannel extends SimpleChannelInboundHandler<ByteBuf> implement
 
   @Override
   public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+    logger.warn("Exception caught", cause);
     inMessagesSink.error(cause);
   }
 

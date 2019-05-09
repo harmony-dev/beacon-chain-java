@@ -38,7 +38,7 @@ public class RpcChannelAdapter<TRequestMessage, TResponseMessage> {
 
   private void handleResponse(RpcMessage<TRequestMessage, TResponseMessage> msg) {
     CompletableFuture<TResponseMessage> respFut =
-        (CompletableFuture<TResponseMessage>) msg.popRequestContext(CONTEXT_KEY_FUTURE);
+        (CompletableFuture<TResponseMessage>) msg.getRequestContext(CONTEXT_KEY_FUTURE);
 
     if (msg.getResponse().isPresent()) {
       respFut.complete(msg.getResponse().get());
@@ -76,7 +76,7 @@ public class RpcChannelAdapter<TRequestMessage, TResponseMessage> {
     RpcMessage<TRequestMessage, TResponseMessage> requestRpcMsg =
         new RpcMessage<>(request, false);
     CompletableFuture<TResponseMessage> ret = new CompletableFuture<>();
-    requestRpcMsg.pushRequestContext(CONTEXT_KEY_FUTURE, ret);
+    requestRpcMsg.setRequestContext(CONTEXT_KEY_FUTURE, ret);
     outboundStream.onNext(requestRpcMsg);
     return ret;
   }

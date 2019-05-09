@@ -21,7 +21,7 @@ public class RpcChannelClassFilter<TInReq, TInResp, TRequest extends TInReq, TRe
   public Publisher<RpcMessage<TRequest, TResponse>> inboundMessageStream() {
     return Flux.from(inChannel.inboundMessageStream())
         .filter(rpcMsg -> rpcMsg.isRequest() && requestMessageClass.isInstance(rpcMsg.getRequest())
-            || rpcMsg.isResponse() && requestMessageClass == rpcMsg.popRequestContext(CONTEXT_KEY_REQ_CLASS))
+            || rpcMsg.isResponse() && requestMessageClass == rpcMsg.getRequestContext(CONTEXT_KEY_REQ_CLASS))
         .map(msg -> (RpcMessage<TRequest, TResponse>) msg);
   }
 
@@ -33,7 +33,7 @@ public class RpcChannelClassFilter<TInReq, TInResp, TRequest extends TInReq, TRe
             if (!requestMessageClass.isInstance(rpcMsg.getRequest())) {
               throw new IllegalArgumentException("Invalid request class: " + rpcMsg.getRequest().getClass() + ", expected " + requestMessageClass);
             }
-            rpcMsg.pushRequestContext(CONTEXT_KEY_REQ_CLASS, requestMessageClass);
+            rpcMsg.setRequestContext(CONTEXT_KEY_REQ_CLASS, requestMessageClass);
           }
         })
         .map(msg -> (RpcMessage<TInReq, TInResp>) msg)

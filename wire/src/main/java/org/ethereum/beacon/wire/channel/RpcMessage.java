@@ -84,18 +84,18 @@ public class RpcMessage<TRequest, TResponse> {
     return ret;
   }
 
-  public void pushRequestContext(Object key, Object value) {
+  public void setRequestContext(Object key, Object value) {
     if (!isRequest()) {
       throw new IllegalStateException("Context can be added to request only");
     }
     requestContext.put(key, value);
   }
 
-  public Object popRequestContext(Object key) {
+  public Object getRequestContext(Object key) {
     if (!isResponse()) {
       throw new IllegalStateException("Context can be pushed from response only");
     }
-    return requestContext.remove(key);
+    return requestContext.get(key);
   }
 
   Map<Object, Object> getRequestContext() {
