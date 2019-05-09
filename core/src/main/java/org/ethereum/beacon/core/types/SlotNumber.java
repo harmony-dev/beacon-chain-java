@@ -56,8 +56,18 @@ public class SlotNumber extends UInt64 implements
   }
 
   @Override
-  public SlotNumber minus(UInt64 addend) {
-    return new SlotNumber(super.minus(addend));
+  public SlotNumber minus(UInt64 subtrahend) {
+    return new SlotNumber(super.minus(subtrahend));
+  }
+
+  @Override
+  public SlotNumber minusSat(UInt64 subtrahend) {
+    return new SlotNumber(super.minusSat(subtrahend));
+  }
+
+  @Override
+  public SlotNumber minusSat(long subtrahend) {
+    return new SlotNumber(super.minusSat(subtrahend));
   }
 
   @Override

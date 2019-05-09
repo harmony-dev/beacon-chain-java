@@ -104,16 +104,10 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     /* From spec:
     attestation_slot = get_attestation_slot(state, attestation)
     assert attestation_slot + MIN_ATTESTATION_INCLUSION_DELAY <= state.slot <= attestation_slot + SLOTS_PER_EPOCH */
-    SlotNumber slotMinimum =
-        UInt64s.min(
-            newSlot
-                .minus(spec.getConstants().getSlotsPerEpoch())
-                .minus(spec.getConstants().getMinAttestationInclusionDelay()),
-            spec.getConstants().getGenesisSlot());
-    EpochNumber epochMinimum = UInt64s.min(
-        spec.slot_to_epoch(slotMinimum).decrement(),
-        spec.getConstants().getGenesisEpoch()
-    );
+    SlotNumber slotMinimum = newSlot
+        .minusSat(spec.getConstants().getSlotsPerEpoch())
+        .minusSat(spec.getConstants().getMinAttestationInclusionDelay());
+    EpochNumber epochMinimum = spec.slot_to_epoch(slotMinimum);
     runTaskInSeparateThread(
         () -> {
           purgeAttestations(epochMinimum);

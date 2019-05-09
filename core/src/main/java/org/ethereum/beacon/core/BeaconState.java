@@ -190,7 +190,7 @@ public interface BeaconState extends ObservableComposite {
         + ", just/final epoch: " + getCurrentJustifiedEpoch().toString(spec) + "/" + getFinalizedEpoch().toString(spec);
     if (spec != null) {
       ret += ", latestBlocks=[...";
-      for (SlotNumber slot : getSlot().minus(3).iterateTo(getSlot())) {
+      for (SlotNumber slot : getSlot().minusSat(3).iterateTo(getSlot())) {
         Hash32 blockRoot = getLatestBlockRoots().get(slot.modulo(spec.getSlotsPerHistoricalRoot()));
         ret += ", " + blockRoot.toStringShort();
       }
