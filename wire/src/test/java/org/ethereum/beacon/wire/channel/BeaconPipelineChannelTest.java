@@ -8,6 +8,7 @@ import org.ethereum.beacon.ssz.SSZBuilder;
 import org.ethereum.beacon.ssz.SSZSerializer;
 import org.ethereum.beacon.wire.Feedback;
 import org.ethereum.beacon.wire.WireApiSync;
+import org.ethereum.beacon.wire.channel.beacon.BeaconPipeline;
 import org.ethereum.beacon.wire.message.Message;
 import org.ethereum.beacon.wire.message.payload.BlockBodiesRequestMessage;
 import org.ethereum.beacon.wire.message.payload.BlockBodiesResponseMessage;
@@ -79,15 +80,15 @@ public class BeaconPipelineChannelTest {
 
     SSZSerializer sszSerializer = new SSZBuilder().buildSerializer();
 
-    BeaconPipeline peer1Pipeline = new BeaconPipeline(sszSerializer);
+    BeaconPipeline peer1Pipeline = new BeaconPipeline(sszSerializer, null ,null, dummyServer);
     SimpleChannel<Message> peer1Channel = new SimpleChannel<>(_2to1, _1to2);
     peer1Pipeline.initFromMessageChannel(peer1Channel);
 
-    BeaconPipeline peer2Pipeline = new BeaconPipeline(sszSerializer);
+    BeaconPipeline peer2Pipeline = new BeaconPipeline(sszSerializer, null ,null, dummyServer);
     SimpleChannel<Message> peer2Channel = new SimpleChannel<>(_1to2, _2to1);
     peer2Pipeline.initFromMessageChannel(peer2Channel);
 
-    WireApiSync peer2SyncClient = peer2Pipeline.createWireApiSync(dummyServer);
+    WireApiSync peer2SyncClient = peer2Pipeline.getSyncClient();
 
     CompletableFuture<BlockRootsResponseMessage> resp = peer2SyncClient
         .requestBlockRoots(new BlockRootsRequestMessage(SlotNumber.ZERO, UInt64.ZERO));

@@ -2,6 +2,7 @@ package org.ethereum.beacon.wire.channel;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import org.ethereum.beacon.wire.exceptions.WireException;
 import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
 
@@ -47,11 +48,16 @@ public class RpcChannelAdapter<TRequestMessage, TResponseMessage> {
   }
 
   private void handleNotify(TRequestMessage msg) {
-    serverHandler.apply(msg);
+    if (serverHandler != null) {
+      serverHandler.apply(msg);
+    }
   }
 
   private void handleInvoke(RpcMessage<TRequestMessage, TResponseMessage> msg) {
     try {
+      if (serverHandler == null) {
+        throw new WireException("No server to process RPC invoke: " + msg);
+      }
       CompletableFuture<TResponseMessage> fut = serverHandler.apply(msg.getRequest());
       fut.whenComplete(
               (r, t) ->

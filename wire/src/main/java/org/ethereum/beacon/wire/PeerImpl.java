@@ -1,62 +1,15 @@
 package org.ethereum.beacon.wire;
 
 import java.util.concurrent.CompletableFuture;
-import org.ethereum.beacon.core.BeaconBlock;
-import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.ssz.SSZSerializer;
-import org.ethereum.beacon.wire.channel.BeaconPipeline;
+import org.ethereum.beacon.wire.channel.beacon.BeaconPipeline;
 import org.ethereum.beacon.wire.channel.Channel;
+import org.ethereum.beacon.wire.channel.beacon.WireApiSubAdapter;
 import org.ethereum.beacon.wire.message.payload.GoodbyeMessage;
 import org.ethereum.beacon.wire.message.payload.HelloMessage;
-import org.reactivestreams.Publisher;
-import reactor.core.publisher.FluxSink;
-import reactor.core.publisher.ReplayProcessor;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 public class PeerImpl implements Peer {
-
-  private static class WireApiSubHub implements WireApiSub, WireApiSub2 {
-    private final ReplayProcessor<BeaconBlock> blockProcessor = ReplayProcessor.cacheLast();
-    private final FluxSink<BeaconBlock> blockSink = blockProcessor.sink();
-    private final ReplayProcessor<Attestation> attestProcessor = ReplayProcessor.cacheLast();
-    private final FluxSink<Attestation> attestSink = attestProcessor.sink();
-
-    private WireApiSub2 subClient;
-
-    public void setSubClient(WireApiSub2 subClient) {
-      this.subClient = subClient;
-    }
-
-    @Override
-    public void sendProposedBlock(BeaconBlock block) {
-      subClient.newBlock(block);
-    }
-
-    @Override
-    public void sendAttestation(Attestation attestation) {
-      subClient.newAttestation(attestation);
-    }
-
-    @Override
-    public Publisher<BeaconBlock> inboundBlocksStream() {
-      return blockProcessor;
-    }
-
-    @Override
-    public Publisher<Attestation> inboundAttestationsStream() {
-      return attestProcessor;
-    }
-
-    @Override
-    public void newBlock(BeaconBlock block) {
-      blockSink.next(block);
-    }
-
-    @Override
-    public void newAttestation(Attestation attestation) {
-      attestSink.next(attestation);
-    }
-  }
 
   private final Channel<BytesValue> channel;
   private final WireApiPeer apiPeerRemote;
@@ -64,7 +17,7 @@ public class PeerImpl implements Peer {
   private final CompletableFuture<HelloMessage> remoteHelloMessageFut = new CompletableFuture<>();
   private final CompletableFuture<HelloMessage> peerActiveFut = new CompletableFuture<>();
   private final BeaconPipeline beaconPipeline;
-  private final WireApiSubHub wireApiSubHub = new WireApiSubHub();
+  private final WireApiSubAdapter wireApiSubAdapter = new WireApiSubAdapter();
 
   private GoodbyeMessage remoteGoodbye;
   private GoodbyeMessage localGoodbye;
@@ -86,9 +39,9 @@ public class PeerImpl implements Peer {
       public void goodbye(GoodbyeMessage message) {
         onGoodbye(message);
       }
-    }, wireApiSubHub, syncServer);
+    }, wireApiSubAdapter, syncServer);
     beaconPipeline.initFromBytesChannel(channel, messageSerializer);
-    wireApiSubHub.setSubClient(beaconPipeline.getSubClient());
+    wireApiSubAdapter.setSubClient(beaconPipeline.getSubClient());
 
     apiPeerRemote = beaconPipeline.getPeerClient();
     apiPeerRemote.hello(helloMessage);
@@ -137,6 +90,6 @@ public class PeerImpl implements Peer {
 
   @Override
   public WireApiSub getSubApi() {
-    return wireApiSubHub;
+    return wireApiSubAdapter;
   }
 }
