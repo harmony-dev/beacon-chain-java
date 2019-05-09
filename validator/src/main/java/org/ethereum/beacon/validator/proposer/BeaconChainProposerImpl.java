@@ -32,6 +32,7 @@ import org.ethereum.beacon.validator.BeaconChainProposer;
 import org.ethereum.beacon.validator.ValidatorService;
 import org.ethereum.beacon.validator.crypto.MessageSigner;
 import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
 
@@ -146,8 +147,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
       votes.compute(eth1Data, (key, count) -> (count == null) ? 1 : count + 1);
     }
 
-    Optional<Eth1Data> bestVote =
-        votes.keySet().stream().max(Comparator.comparing(votes::get));
+    Optional<Eth1Data> bestVote = votes.keySet().stream().max(Comparator.comparing(votes::get));
 
     // verify best vote data and return if verification passed,
     // otherwise, return data from the contract
@@ -178,8 +178,9 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
     List<Attestation> attestations =
         operations.peekAggregatedAttestations(
             spec.getConstants().getMaxAttestations(),
-            state.getSlot().minus(spec.getConstants().getSlotsPerEpoch()),
-            state.getSlot().minus(spec.getConstants().getMinAttestationInclusionDelay()));
+            state,
+            state.getSlot().minusSat(spec.getConstants().getSlotsPerEpoch()),
+            state.getSlot().minusSat(spec.getConstants().getMinAttestationInclusionDelay()));
     List<VoluntaryExit> voluntaryExits =
         operations.peekExits(spec.getConstants().getMaxVoluntaryExits());
     List<Transfer> transfers = operations.peekTransfers(spec.getConstants().getMaxTransfers());
@@ -194,10 +195,12 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
             .stream()
             .map(DepositInfo::getDeposit)
             .collect(Collectors.toList());
+    Bytes32 graffiti = getGraffiti(state);
 
-    return new BeaconBlockBody(
+    return BeaconBlockBody.create(
         randaoReveal,
         eth1Data,
+        graffiti,
         proposerSlashings,
         attesterSlashings,
         attestations,

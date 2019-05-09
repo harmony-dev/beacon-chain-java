@@ -1,5 +1,7 @@
 package org.ethereum.beacon.consensus.transition;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
@@ -9,21 +11,22 @@ import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.consensus.TransitionType;
 import org.ethereum.beacon.core.MutableBeaconState;
+import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.state.PendingAttestation;
-import org.ethereum.beacon.core.state.ShardCommittee;
+import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ShardNumber;
-import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.javatuples.Pair;
-import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.uint.UInt64;
+import tech.pegasys.artemis.util.uint.UInt64s;
 
 /**
  * Per-epoch transition, which happens at the start of the first slot of every epoch.
  *
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.5.1/specs/core/0_beacon-chain.md#per-epoch-processing">Per-epoch
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.6.1/specs/core/0_beacon-chain.md#per-epoch-processing">Per-epoch
  *     processing</a> in the spec.
  */
 public class PerEpochTransition implements StateTransition<BeaconStateEx> {
@@ -40,12 +43,6 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
     return apply(stateEx, null);
   }
 
-  public EpochTransitionSummary applyWithSummary(BeaconStateEx stateEx) {
-    EpochTransitionSummary summary = new EpochTransitionSummary();
-    apply(stateEx, summary);
-    return summary;
-  }
-
   BeaconStateEx apply(BeaconStateEx origState, EpochTransitionSummary summary) {
     logger.debug(() -> "Applying epoch transition to state: (" +
         spec.hash_tree_root(origState).toStringShort() + ") " +
@@ -60,192 +57,190 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
     MutableBeaconState state = origState.createMutableCopy();
 
     if (summary != null) {
-//      summary.currentEpochSummary.activeAttesters =
-//          spec.get_active_validator_indices(
-//              state.getValidatorRegistry(), spec.get_current_epoch(state));
-//      summary.currentEpochSummary.validatorBalance =
-//          spec.get_total_balance(state, summary.currentEpochSummary.activeAttesters);
-//      List<PendingAttestation> current_epoch_boundary_attestations =
-//          spec.get_current_epoch_boundary_attestations(state);
-//      summary.currentEpochSummary.boundaryAttesters =
-//          current_epoch_boundary_attestations.stream()
-//              .flatMap(
-//                  a ->
-//                      spec
-//                          .get_attesting_indices(
-//                              state, a.getData(), a.getAggregationBitfield())
-//                          .stream())
-//              .collect(Collectors.toList());
-//      summary.currentEpochSummary.boundaryAttestingBalance =
-//          spec.get_attesting_balance(state, current_epoch_boundary_attestations);
-//
-//      summary.previousEpochSummary.activeAttesters =
-//          spec.get_active_validator_indices(
-//              state.getValidatorRegistry(), spec.get_previous_epoch(state));
-//      summary.previousEpochSummary.validatorBalance =
-//          spec.get_total_balance(state, summary.previousEpochSummary.activeAttesters);
-//      List<PendingAttestation> previous_epoch_boundary_attestations =
-//          spec.get_previous_epoch_boundary_attestations(state);
-//      summary.previousEpochSummary.boundaryAttesters =
-//          previous_epoch_boundary_attestations.stream()
-//              .flatMap(
-//                  a ->
-//                      spec
-//                          .get_attesting_indices(
-//                              state, a.getData(), a.getAggregationBitfield())
-//                          .stream())
-//              .collect(Collectors.toList());
-//      summary.previousEpochSummary.boundaryAttestingBalance =
-//          spec.get_attesting_balance(state, previous_epoch_boundary_attestations);
-//      List<PendingAttestation> previous_epoch_matching_head_attestations =
-//          spec.get_previous_epoch_matching_head_attestations(state);
-//      summary.headAttesters =
-//          previous_epoch_matching_head_attestations.stream()
-//              .flatMap(
-//                  a ->
-//                      spec
-//                          .get_attesting_indices(
-//                              state, a.getData(), a.getAggregationBitfield())
-//                          .stream())
-//              .collect(Collectors.toList());
-//      summary.justifiedAttesters.addAll(summary.previousEpochSummary.activeAttesters);
-//      summary.justifiedAttestingBalance = summary.previousEpochSummary.validatorBalance;
-//
-//      EpochNumber epochs_since_finality =
-//          spec.get_current_epoch(state).increment().minus(state.getFinalizedEpoch());
-//
-//      if (epochs_since_finality.lessEqual(EpochNumber.of(4))) {
-//        summary.noFinality = false;
-//
-//        // Some helper variables
-//        List<PendingAttestation> previous_epoch_attestations =
-//            state.getPreviousEpochAttestations().listCopy();
-//        List<PendingAttestation> boundary_attestations = spec.get_previous_epoch_boundary_attestations(state);
-//        Gwei boundary_attesting_balance = spec.get_attesting_balance(state, boundary_attestations);
-//        Gwei total_balance = spec.get_previous_total_balance(state);
-//        Gwei total_attesting_balance = spec.get_attesting_balance(state, previous_epoch_attestations);
-//        List<PendingAttestation> matching_head_attestations =
-//            spec.get_previous_epoch_matching_head_attestations(state);
-//        Gwei matching_head_balance = spec.get_attesting_balance(state, matching_head_attestations);
-//
-//        // Process rewards or penalties for all validators
-//        List<ValidatorIndex> active_validator_indices =
-//            spec.get_active_validator_indices(state.getValidatorRegistry(), spec.get_previous_epoch(state));
-//
-//        for (ValidatorIndex index : active_validator_indices) {
-//          // Expected FFG source
-//          if (spec.get_attesting_indices(state, previous_epoch_attestations).contains(index)) {
-//            summary.attestationRewards.put(index,
-//                spec.get_base_reward(state, index).mulDiv(total_attesting_balance, total_balance));
-//            // Inclusion speed bonus
-//            summary.inclusionDistanceRewards.put(index,
-//                spec.get_base_reward(state, index)
-//                    .mulDiv(Gwei.castFrom(spec.getConstants().getMinAttestationInclusionDelay()),
-//                        Gwei.castFrom(spec.inclusion_distance(state, index))));
-//          } else {
-//            summary.attestationPenalties.put(index, spec.get_base_reward(state, index));
-//          }
-//
-//          // Expected FFG target
-//          if (spec.get_attesting_indices(state, boundary_attestations).contains(index)) {
-//            summary.boundaryAttestationRewards.put(index,
-//                spec.get_base_reward(state, index).mulDiv(boundary_attesting_balance, total_balance));
-//          } else {
-//            summary.boundaryAttestationPenalties.put(index, spec.get_base_reward(state, index));
-//          }
-//
-//          // Expected head
-//          if (spec.get_attesting_indices(state, matching_head_attestations).contains(index)) {
-//            summary.beaconHeadAttestationRewards.put(index,
-//                spec.get_base_reward(state, index).mulDiv(matching_head_balance, total_balance));
-//          } else {
-//            summary.beaconHeadAttestationPenalties.put(index,
-//                spec.get_base_reward(state, index));
-//          }
-//        }
-//
-//      } else {
-//        summary.noFinality = true;
-//
-//        List<PendingAttestation> previous_epoch_attestations =
-//            state.getPreviousEpochAttestations().listCopy();
-//        List<PendingAttestation> boundary_attestations =
-//            spec.get_previous_epoch_boundary_attestations(state);
-//        List<PendingAttestation> matching_head_attestations =
-//            spec.get_previous_epoch_matching_head_attestations(state);
-//        List<ValidatorIndex> active_validator_indices =
-//            spec.get_active_validator_indices(state.getValidatorRegistry(), spec.get_previous_epoch(state));
-//
-//        // for index in active_validator_indices:
-//        for (ValidatorIndex index : active_validator_indices) {
-//          if (!spec.get_attesting_indices(state, previous_epoch_attestations).contains(index)) {
-//            summary.attestationPenalties.put(index,
-//                spec.get_inactivity_penalty(state, index, epochs_since_finality));
-//          } else {
-//            // If a validator did attest, apply a small penalty for getting attestations included late
-//            summary.noFinalityPenalties.put(index, spec.get_base_reward(state, index).mulDiv(
-//                Gwei.castFrom(spec.getConstants().getMinAttestationInclusionDelay()),
-//                Gwei.castFrom(spec.inclusion_distance(state, index))));
-//          }
-//
-//          if (!spec.get_attesting_indices(state, boundary_attestations).contains(index)) {
-//            summary.boundaryAttestationPenalties.put(index,
-//                spec.get_inactivity_penalty(state, index, epochs_since_finality));
-//          }
-//          if (!spec.get_attesting_indices(state, matching_head_attestations).contains(index)) {
-//            summary.beaconHeadAttestationPenalties.put(index, spec.get_base_reward(state, index));
-//          }
-//        }
-//
-//        // Penalize slashed-but-inactive validators as though they were active but offline
-//        for (ValidatorIndex index : state.getValidatorRegistry().size()) {
-//          boolean eligible = !active_validator_indices.contains(index) &&
-//              state.getValidatorRegistry().get(index).getSlashed() &&
-//              spec.get_current_epoch(state).less(state.getValidatorRegistry().get(index).getWithdrawableEpoch());
-//
-//          if (eligible) {
-//            summary.initiatedExitPenalties.put(index,
-//                spec.get_inactivity_penalty(state, index, epochs_since_finality).times(2)
-//                    .plus(spec.get_base_reward(state, index)));
-//          }
-//        }
-//      }
-//
-//
-//      SlotNumber previous_epoch_start_slot = spec.get_epoch_start_slot(spec.get_previous_epoch(state));
-//      SlotNumber current_epoch_start_slot = spec.get_epoch_start_slot(spec.get_current_epoch(state));
-//      for (SlotNumber slot : previous_epoch_start_slot.iterateTo(current_epoch_start_slot)) {
-//        List<ShardCommittee> committees_and_shards = spec.get_crosslink_committees_at_slot(state, slot);
-//        for (ShardCommittee committee_and_shard : committees_and_shards) {
-//          List<ValidatorIndex> crosslink_committee = committee_and_shard.getCommittee();
-//          ShardNumber shard = committee_and_shard.getShard();
-//          Pair<Hash32, List<ValidatorIndex>> winning_root_and_participants =
-//              spec.get_winning_root_and_participants(state, slot, shard);
-//          Gwei participating_balance = spec.get_total_balance(state, winning_root_and_participants.getValue1());
-//          Gwei total_balance = spec.get_total_balance(state, crosslink_committee);
-//
-//          for (ValidatorIndex index : crosslink_committee) {
-//            if (winning_root_and_participants.getValue1().contains(index)) {
-//              summary.attestationInclusionRewards.put(index,
-//                  spec.get_base_reward(state, index).mulDiv(participating_balance, total_balance));
-//            }
-//          }
-//        }
-//      }
+      summary.currentEpochSummary.activeAttesters =
+          spec.get_active_validator_indices(state, spec.get_current_epoch(state));
+      summary.currentEpochSummary.validatorBalance =
+          spec.get_total_balance(state, summary.currentEpochSummary.activeAttesters);
+      List<PendingAttestation> current_epoch_boundary_attestations =
+          spec.get_matching_source_attestations(state, spec.get_current_epoch(state));
+      summary.currentEpochSummary.boundaryAttesters =
+          current_epoch_boundary_attestations.stream()
+              .flatMap(
+                  a ->
+                      spec
+                          .get_attesting_indices(
+                              state, a.getData(), a.getAggregationBitfield())
+                          .stream())
+              .collect(Collectors.toList());
+      summary.currentEpochSummary.boundaryAttestingBalance =
+          spec.get_attesting_balance(state, current_epoch_boundary_attestations);
+
+      summary.previousEpochSummary.activeAttesters =
+          spec.get_active_validator_indices(state, spec.get_previous_epoch(state));
+      summary.previousEpochSummary.validatorBalance =
+          spec.get_total_balance(state, summary.previousEpochSummary.activeAttesters);
+      List<PendingAttestation> previous_epoch_boundary_attestations =
+          spec.get_matching_source_attestations(state, spec.get_previous_epoch(state));
+      summary.previousEpochSummary.boundaryAttesters =
+          previous_epoch_boundary_attestations.stream()
+              .flatMap(
+                  a ->
+                      spec
+                          .get_attesting_indices(
+                              state, a.getData(), a.getAggregationBitfield())
+                          .stream())
+              .collect(Collectors.toList());
+      summary.previousEpochSummary.boundaryAttestingBalance =
+          spec.get_attesting_balance(state, previous_epoch_boundary_attestations);
+      List<PendingAttestation> previous_epoch_matching_head_attestations =
+          spec.get_matching_head_attestations(state, spec.get_previous_epoch(state));
+      summary.headAttesters =
+          previous_epoch_matching_head_attestations.stream()
+              .flatMap(
+                  a ->
+                      spec
+                          .get_attesting_indices(
+                              state, a.getData(), a.getAggregationBitfield())
+                          .stream())
+              .collect(Collectors.toList());
+      summary.justifiedAttesters.addAll(summary.previousEpochSummary.activeAttesters);
+      summary.justifiedAttestingBalance = summary.previousEpochSummary.validatorBalance;
+
+      EpochNumber epochs_since_finality =
+          spec.get_current_epoch(state).increment().minus(state.getFinalizedEpoch());
+
+      if (epochs_since_finality.lessEqual(spec.getConstants().getMinEpochsToInactivityPenalty())) {
+        summary.noFinality = false;
+      } else {
+        summary.noFinality = true;
+      }
+
+      EpochNumber previous_epoch = spec.get_previous_epoch(state);
+      Gwei total_balance = spec.get_total_active_balance(state);
+
+      List<ValidatorIndex> eligible_validator_indices = new ArrayList<>();
+      for (ValidatorIndex index : state.getValidatorRegistry().size()) {
+        ValidatorRecord validator = state.getValidatorRegistry().get(index);
+        if (spec.is_active_validator(validator, previous_epoch)
+            && (validator.getSlashed() && previous_epoch.increment().less(validator.getWithdrawableEpoch()))) {
+          eligible_validator_indices.add(index);
+        }
+      }
+
+      List<PendingAttestation> matching_source_attestations =
+          spec.get_matching_source_attestations(state, previous_epoch);
+      List<PendingAttestation> matching_target_attestations =
+          spec.get_matching_target_attestations(state, previous_epoch);
+      List<PendingAttestation> matching_head_attestations =
+          spec.get_matching_head_attestations(state, previous_epoch);
+
+      // attestation source rewards/penalties
+      {
+        List<ValidatorIndex> unslashed_attesting_indices =
+            spec.get_unslashed_attesting_indices(state, matching_source_attestations);
+        Gwei attesting_balance = spec.get_attesting_balance(state, matching_source_attestations);
+        for (ValidatorIndex index : eligible_validator_indices) {
+          if (unslashed_attesting_indices.contains(index)) {
+            summary.attestationRewards.put(index,
+                spec.get_base_reward(state, index).times(attesting_balance).dividedBy(total_balance));
+          } else {
+            summary.attestationPenalties.put(index, spec.get_base_reward(state, index));
+          }
+        }
+      }
+
+      // attestation target rewards/penalties
+      {
+        List<ValidatorIndex> unslashed_attesting_indices =
+            spec.get_unslashed_attesting_indices(state, matching_target_attestations);
+        Gwei attesting_balance = spec.get_attesting_balance(state, matching_target_attestations);
+        for (ValidatorIndex index : eligible_validator_indices) {
+          if (unslashed_attesting_indices.contains(index)) {
+            summary.boundaryAttestationRewards.put(index,
+                spec.get_base_reward(state, index).times(attesting_balance).dividedBy(total_balance));
+          } else {
+            summary.boundaryAttestationPenalties.put(index, spec.get_base_reward(state, index));
+          }
+        }
+      }
+
+      // chain head rewards/penalties
+      {
+        List<ValidatorIndex> unslashed_attesting_indices =
+            spec.get_unslashed_attesting_indices(state, matching_head_attestations);
+        Gwei attesting_balance = spec.get_attesting_balance(state, matching_head_attestations);
+        for (ValidatorIndex index : eligible_validator_indices) {
+          if (unslashed_attesting_indices.contains(index)) {
+            summary.beaconHeadAttestationRewards.put(index,
+                spec.get_base_reward(state, index).times(attesting_balance).dividedBy(total_balance));
+          } else {
+            summary.beaconHeadAttestationPenalties.put(index, spec.get_base_reward(state, index));
+          }
+        }
+      }
+
+      // inclusion rewards
+      for (ValidatorIndex index : spec.get_unslashed_attesting_indices(state, matching_source_attestations)) {
+        PendingAttestation attestation =
+            matching_source_attestations.stream()
+                .filter(a -> spec.get_attesting_indices(state, a.getData(), a.getAggregationBitfield()).contains(index))
+                .min(Comparator.comparing(PendingAttestation::getInclusionDelay))
+                .get();
+        summary.inclusionDistanceRewards.put(index,
+            spec.get_base_reward(state, index)
+                .times(spec.getConstants().getMinAttestationInclusionDelay())
+                .dividedBy(attestation.getInclusionDelay()));
+      }
+
+      // inactivity penalty
+      EpochNumber finality_delay = previous_epoch.minus(state.getFinalizedEpoch());
+      if (finality_delay.greater(spec.getConstants().getMinEpochsToInactivityPenalty())) {
+        List<ValidatorIndex> matching_target_attesting_indices =
+            spec.get_unslashed_attesting_indices(state, matching_target_attestations);
+        for (ValidatorIndex index : eligible_validator_indices) {
+          summary.noFinalityPenalties.put(index,
+              spec.get_base_reward(state, index).times(spec.getConstants().getBaseRewardsPerEpoch()));
+          if (!matching_target_attesting_indices.contains(index)) {
+            summary.initiatedExitPenalties.put(index,
+                state.getValidatorRegistry().get(index).getEffectiveBalance()
+                    .times(finality_delay)
+                    .dividedBy(spec.getConstants().getInactivityPenaltyQuotient()));
+          }
+        }
+      }
+
+      EpochNumber epoch = previous_epoch;
+      for (UInt64 offset : UInt64s.iterate(UInt64.ZERO, spec.get_epoch_committee_count(state, epoch))) {
+        ShardNumber shard = spec.get_epoch_start_shard(state, epoch)
+            .plusModulo(offset, spec.getConstants().getShardCount());
+        List<ValidatorIndex> crosslink_committee = spec.get_crosslink_committee(state, epoch, shard);
+        Pair<Crosslink, List<ValidatorIndex>> winner =
+            spec.get_winning_crosslink_and_attesting_indices(state, epoch, shard);
+        List<ValidatorIndex> attesting_indices = winner.getValue1();
+        Gwei attesting_balance = spec.get_total_balance(state, attesting_indices);
+        Gwei committee_balance = spec.get_total_balance(state, crosslink_committee);
+        for (ValidatorIndex index : crosslink_committee) {
+          Gwei base_reward = spec.get_base_reward(state, index);
+          if (attesting_indices.contains(index)) {
+            summary.attestationInclusionRewards.put(index,
+                base_reward.times(attesting_balance).dividedBy(committee_balance));
+          }
+        }
+      }
     }
 
     spec.process_justification_and_finalization(state);
     spec.process_crosslinks(state);
     spec.process_rewards_and_penalties(state);
-    spec.process_registry_updates(state);
+    List<ValidatorIndex> ejectedValidators = spec.process_registry_updates(state);
     spec.process_slashings(state);
     spec.process_final_updates(state);
 
     BeaconStateEx ret = new BeaconStateExImpl(state.createImmutable(), TransitionType.EPOCH);
 
     if (summary != null) {
-//      summary.ejectedValidators = ejectedValidators;
-//      summary.postState = ret;
+      summary.ejectedValidators = ejectedValidators;
+      summary.postState = ret;
     }
 
     logger.debug(() -> "Epoch transition result state: (" +

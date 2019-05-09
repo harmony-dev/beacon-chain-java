@@ -11,7 +11,7 @@ import org.ethereum.beacon.core.operations.Attestation;
  *
  * @see Attestation
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.6.0/specs/core/0_beacon-chain.md#attestations">Attesations</a>
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.6.1/specs/core/0_beacon-chain.md#attestations">Attesations</a>
  *     in the spec.
  */
 public class AttestationVerifier implements OperationVerifier<Attestation> {

@@ -10,11 +10,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockHeader;
 import org.ethereum.beacon.core.BeaconState;
@@ -51,7 +48,7 @@ import tech.pegasys.artemis.util.uint.UInt64s;
  * Helper functions.
  *
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.6.0/specs/core/0_beacon-chain.md#helper-functions">Helper
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.6.1/specs/core/0_beacon-chain.md#helper-functions">Helper
  *     functions</a> in ths spec.
  */
 public interface HelperFunction extends SpecCommons {
@@ -97,7 +94,7 @@ public interface HelperFunction extends SpecCommons {
           )
       ) * SLOTS_PER_EPOCH
    */
-  default int get_epoch_committee_count(BeaconState state, EpochNumber epoch) {
+  default UInt64 get_epoch_committee_count(BeaconState state, EpochNumber epoch) {
     List<ValidatorIndex> active_validator_indices = get_active_validator_indices(state, epoch);
 
     return UInt64s.max(
@@ -107,7 +104,7 @@ public interface HelperFunction extends SpecCommons {
             UInt64.valueOf(active_validator_indices.size())
                 .dividedBy(getConstants().getSlotsPerEpoch())
                 .dividedBy(getConstants().getTargetCommitteeSize())
-        )).times(getConstants().getSlotsPerEpoch()).intValue();
+        )).times(getConstants().getSlotsPerEpoch());
   }
 
   /*
@@ -117,130 +114,78 @@ public interface HelperFunction extends SpecCommons {
       """
       return min(get_epoch_committee_count(state, epoch), SHARD_COUNT - SHARD_COUNT // SLOTS_PER_EPOCH)
    */
-  default int get_shard_delta(BeaconState state, EpochNumber epoch) {
-    return Math.min(
+  default UInt64 get_shard_delta(BeaconState state, EpochNumber epoch) {
+    return UInt64s.min(
         get_epoch_committee_count(state, epoch),
         getConstants().getShardCount().minus(
-            getConstants().getShardCount().dividedBy(getConstants().getSlotsPerEpoch())
-        ).getIntValue()
+            getConstants().getShardCount().dividedBy(getConstants().getSlotsPerEpoch()))
     );
   }
 
   /*
-    def compute_committee(validator_indices: List[ValidatorIndex],
-                      seed: Bytes32,
-                      index: int,
-                      total_committees: int) -> List[ValidatorIndex]:
-      """
-      Return the ``index``'th shuffled committee out of a total ``total_committees``
-      using ``validator_indices`` and ``seed``.
-      """
-      start_offset = get_split_offset(len(validator_indices), total_committees, index)
-      end_offset = get_split_offset(len(validator_indices), total_committees, index + 1)
-      return [
-          validator_indices[get_permuted_index(i, len(validator_indices), seed)]
-          for i in range(start_offset, end_offset)
-      ]
+    def get_epoch_start_shard(state: BeaconState, epoch: Epoch) -> Shard:
+      assert epoch <= get_current_epoch(state) + 1
+      check_epoch = get_current_epoch(state) + 1
+      shard = (state.latest_start_shard + get_shard_delta(state, get_current_epoch(state))) % SHARD_COUNT
+      while check_epoch > epoch:
+          check_epoch -= 1
+          shard = (shard + SHARD_COUNT - get_shard_delta(state, check_epoch)) % SHARD_COUNT
+      return shard
    */
-  default List<ValidatorIndex> compute_committee(
-      List<ValidatorIndex> validator_indices, Hash32 seed, int index, int total_committees) {
-    int start_offset = get_split_offset(validator_indices.size(), total_committees, index);
-    int end_offset = get_split_offset(validator_indices.size(), total_committees, index + 1);
-    return IntStream.range(start_offset, end_offset).mapToObj(i -> {
-      UInt64 permuted_index =
-          get_permuted_index(UInt64.valueOf(i), UInt64.valueOf(validator_indices.size()), seed);
-      return validator_indices.get(permuted_index.getIntValue());
-    }).collect(toList());
-  }
+  default ShardNumber get_epoch_start_shard(BeaconState state, EpochNumber epoch) {
+    assertTrue(epoch.lessEqual(get_current_epoch(state).increment()));
+    EpochNumber check_epoch = get_current_epoch(state).increment();
+    ShardNumber shard = state.getLatestStartShard()
+        .plusModulo(get_shard_delta(state, get_current_epoch(state)), getConstants().getShardCount());
+    while ((check_epoch.greater(epoch))) {
+      check_epoch = check_epoch.decrement();
+      shard = ShardNumber.of(
+          shard
+              .plus(getConstants().getShardCount())
+              .minus(get_shard_delta(state, check_epoch))
+              .modulo(getConstants().getShardCount()));
+    }
 
-  /**
-   * An optimized version of {@link #compute_committee(List, Hash32, int, int)}.
-   * Based on {@link #get_permuted_list(List, Bytes32)}.
-   */
-  default List<ValidatorIndex> compute_committee2(
-      List<ValidatorIndex> validator_indices, Hash32 seed, int index, int total_committees) {
-    int start_offset = get_split_offset(validator_indices.size(), total_committees, index);
-    int end_offset = get_split_offset(validator_indices.size(), total_committees, index + 1);
-    List<UInt64> permuted_indices = get_permuted_list(validator_indices, seed);
-
-    return permuted_indices.subList(start_offset, end_offset).stream()
-        .map(ValidatorIndex::new).collect(toList());
+    return shard;
   }
 
   /*
-    def get_crosslink_committees_at_slot(state: BeaconState,
-                                     slot: Slot) -> List[Tuple[List[ValidatorIndex], Shard]]:
-      """
-      Return the list of ``(committee, shard)`` tuples for the ``slot``.
-      """
+    def get_attestation_slot(state: BeaconState, attestation: Attestation) -> Slot:
+      epoch = attestation.data.target_epoch
+      committee_count = get_epoch_committee_count(state, epoch)
+      offset = (attestation.data.shard + SHARD_COUNT - get_epoch_start_shard(state, epoch)) % SHARD_COUNT
+      return get_epoch_start_slot(epoch) + offset // (committee_count // SLOTS_PER_EPOCH)
    */
-  default List<ShardCommittee> get_crosslink_committees_at_slot(
-      BeaconState state, SlotNumber slot) {
-    EpochNumber epoch = slot_to_epoch(slot);
-    EpochNumber currentEpoch = get_current_epoch(state);
-    EpochNumber previousEpoch = get_previous_epoch(state);
-    EpochNumber nextEpoch = currentEpoch.increment();
+  default SlotNumber get_attestation_slot(BeaconState state, AttestationData data) {
+    EpochNumber epoch = data.getTargetEpoch();
+    UInt64 committee_count = get_epoch_committee_count(state, epoch);
+    ShardNumber offset = ShardNumber.of(
+        data.getShard()
+            .plus(getConstants().getShardCount())
+            .minus(get_epoch_start_shard(state, epoch))
+            .modulo(getConstants().getShardCount())
+    );
+    return get_epoch_start_slot(epoch)
+        .plus(offset.dividedBy(committee_count.dividedBy(getConstants().getSlotsPerEpoch())));
+  }
 
-    assertTrue(previousEpoch.lessEqual(epoch) && epoch.lessEqual(nextEpoch));
-    List<ValidatorIndex> indices = get_active_validator_indices(state, epoch);
-
-    ShardNumber start_shard;
-    if (epoch.equals(currentEpoch)) {
-      /*
-        if epoch == current_epoch:
-          start_shard = state.latest_start_shard */
-
-      start_shard = state.getLatestStartShard();
-    } else if (epoch.equals(previousEpoch)) {
-      /*
-        elif epoch == previous_epoch:
-          previous_shard_delta = get_shard_delta(state, previous_epoch)
-          start_shard = (state.latest_start_shard - previous_shard_delta) % SHARD_COUNT */
-
-      int previous_shard_delta = get_shard_delta(state, previousEpoch);
-      start_shard = ShardNumber.of(state.getLatestStartShard()
-          .minusModulo(previous_shard_delta, getConstants().getShardCount()));
-    } else if (epoch.equals(nextEpoch)) {
-      /*
-        elif epoch == next_epoch:
-          current_shard_delta = get_shard_delta(state, current_epoch)
-          start_shard = (state.latest_start_shard + current_shard_delta) % SHARD_COUNT */
-      int current_shard_delta = get_shard_delta(state, currentEpoch);
-      start_shard = ShardNumber.of(state.getLatestStartShard()
-          .plusModulo(current_shard_delta, getConstants().getShardCount()));
-    } else {
-      throw new BeaconChainSpec.SpecAssertionFailed();
-    }
-
-    /*
-      committees_per_epoch = get_epoch_committee_count(state, epoch)
-      committees_per_slot = committees_per_epoch // SLOTS_PER_EPOCH
-      offset = slot % SLOTS_PER_EPOCH
-      slot_start_shard = (start_shard + committees_per_slot * offset) % SHARD_COUNT
-      seed = generate_seed(state, epoch)
-     */
-    int committees_per_epoch = get_epoch_committee_count(state, epoch);
-    int committees_per_slot = committees_per_epoch / getConstants().getSlotsPerEpoch().getIntValue();
-    int offset = slot.modulo(getConstants().getSlotsPerEpoch()).getIntValue();
-    ShardNumber slot_start_shard = start_shard
-        .plusModulo(committees_per_slot * offset, getConstants().getShardCount());
-    Hash32 seed = generate_seed(state, epoch);
-
-    /*
-      return [
-        (
-            compute_committee(indices, seed, committees_per_slot * offset + i, committees_per_epoch),
-            (slot_start_shard + i) % SHARD_COUNT,
-        )
-        for i in range(committees_per_slot)
-      ]
-     */
+  /**
+   * This method has been superseded by {@link #get_crosslink_committee(BeaconState, EpochNumber, ShardNumber)}.
+   * However, it's still convenient for various log outputs, thus, it's been rewritten with usage
+   * of its replacement.
+   */
+  default List<ShardCommittee> get_crosslink_committees_at_slot(BeaconState state, SlotNumber slot) {
     List<ShardCommittee> ret = new ArrayList<>();
-    for(int i = 0; i < committees_per_slot; i++) {
-      ShardCommittee committee = new ShardCommittee(
-          compute_committee2(indices, seed, committees_per_slot * offset + i, committees_per_epoch),
-          slot_start_shard.plusModulo(i, getConstants().getShardCount()));
-      ret.add(committee);
+    EpochNumber epoch = slot_to_epoch(slot);
+    UInt64 committeesPerSlot = get_epoch_committee_count(state, epoch)
+        .dividedBy(getConstants().getSlotsPerEpoch());
+    SlotNumber slotOffset = slot.modulo(getConstants().getSlotsPerEpoch());
+    for (UInt64 offset : UInt64s.iterate(committeesPerSlot.times(slotOffset),
+        committeesPerSlot.times(slotOffset.increment()))) {
+      ShardNumber shard = get_epoch_start_shard(state, epoch)
+          .plusModulo(offset, getConstants().getShardCount());
+      List<ValidatorIndex> committee = get_crosslink_committee(state, epoch, shard);
+      ret.add(new ShardCommittee(committee, shard));
     }
 
     return ret;
@@ -249,15 +194,19 @@ public interface HelperFunction extends SpecCommons {
   /*
     def get_beacon_proposer_index(state: BeaconState) -> ValidatorIndex:
       """
-      Return the beacon proposer index at ``state.slot``.
+      Return the current beacon proposer index.
       """
-      current_epoch = get_current_epoch(state)
-      first_committee, _ = get_crosslink_committees_at_slot(state, state.slot)[0]
+      epoch = get_current_epoch(state)
+      committees_per_slot = get_epoch_committee_count(state, epoch) // SLOTS_PER_EPOCH
+      offset = committees_per_slot * (state.slot % SLOTS_PER_EPOCH)
+      shard = (get_epoch_start_shard(state, epoch) + offset) % SHARD_COUNT
+      first_committee = get_crosslink_committee(state, epoch, shard)
       MAX_RANDOM_BYTE = 2**8 - 1
+      seed = generate_seed(state, epoch)
       i = 0
       while True:
-          candidate_index = first_committee[(current_epoch + i) % len(first_committee)]
-          random_byte = hash(generate_seed(state, current_epoch) + int_to_bytes8(i // 32))[i % 32]
+          candidate_index = first_committee[(epoch + i) % len(first_committee)]
+          random_byte = hash(seed + int_to_bytes8(i // 32))[i % 32]
           effective_balance = state.validator_registry[candidate_index].effective_balance
           if effective_balance * MAX_RANDOM_BYTE >= MAX_EFFECTIVE_BALANCE * random_byte:
               return candidate_index
@@ -265,15 +214,21 @@ public interface HelperFunction extends SpecCommons {
     */
   int MAX_RANDOM_BYTE = (1 << 8) - 1;
   default ValidatorIndex get_beacon_proposer_index(BeaconState state) {
-    EpochNumber current_epoch = get_current_epoch(state);
-    List<ValidatorIndex> first_committee =
-        get_crosslink_committees_at_slot(state, state.getSlot()).get(0).getCommittee();
+    EpochNumber epoch = get_current_epoch(state);
+    UInt64 committees_per_slot = get_epoch_committee_count(state, epoch)
+        .dividedBy(getConstants().getSlotsPerEpoch());
+    SlotNumber offset = SlotNumber.castFrom(
+        committees_per_slot.times(
+            state.getSlot().modulo(getConstants().getSlotsPerEpoch()).getIntValue()));
+    ShardNumber shard = get_epoch_start_shard(state, epoch)
+        .plusModulo(offset, getConstants().getShardCount());
+    List<ValidatorIndex> first_committee = get_crosslink_committee(state, epoch, shard);
+    Hash32 seed = generate_seed(state, epoch);
     int i = 0;
     while (true) {
       ValidatorIndex candidate_index = first_committee.get(
-          current_epoch.plus(i).modulo(first_committee.size()).getIntValue());
-      int random_byte = hash(generate_seed(state, current_epoch)
-          .concat(int_to_bytes8(i / Bytes32.SIZE)))
+          epoch.plus(i).modulo(first_committee.size()).getIntValue());
+      int random_byte = hash(seed.concat(int_to_bytes8(i / Bytes32.SIZE)))
           .get(i % Bytes32.SIZE) & 0xFF;
       Gwei effective_balance = state.getValidatorRegistry().get(candidate_index).getEffectiveBalance();
       if (effective_balance.times(MAX_RANDOM_BYTE).greaterEqual(
@@ -364,48 +319,6 @@ public interface HelperFunction extends SpecCommons {
   default Hash32 get_randao_mix(BeaconState state, EpochNumber epoch) {
     return state.getLatestRandaoMixes().get(
         epoch.modulo(getConstants().getLatestRandaoMixesLength()));
-  }
-
-  /*
-  def get_permuted_index(index: int, list_size: int, seed: Bytes32) -> int:
-    """
-    Return `p(index)` in a pseudorandom permutation `p` of `0...list_size-1` with ``seed`` as entropy.
-
-    Utilizes 'swap or not' shuffling found in
-    https://link.springer.com/content/pdf/10.1007%2F978-3-642-32009-5_1.pdf
-    See the 'generalized domain' algorithm on page 3.
-    """
-    assert index < list_size
-    assert list_size <= 2**40
-
-    for round in range(SHUFFLE_ROUND_COUNT):
-        pivot = bytes_to_int(hash(seed + int_to_bytes1(round))[0:8]) % list_size
-        flip = (pivot - index) % list_size
-        position = max(index, flip)
-        source = hash(seed + int_to_bytes1(round) + int_to_bytes4(position // 256))
-        byte = source[(position % 256) // 8]
-        bit = (byte >> (position % 8)) % 2
-        index = flip if bit else index
-
-    return index
-   */
-  default UInt64 get_permuted_index(UInt64 index, UInt64 listSize, Bytes32 seed) {
-    assertTrue(index.compareTo(listSize) < 0);
-    assertTrue(listSize.compareTo(UInt64.valueOf(1L << 40)) <= 0);
-
-    for (int round = 0; round < getConstants().getShuffleRoundCount(); round++) {
-      Bytes8 pivotBytes = Bytes8.wrap(hash(seed.concat(int_to_bytes1(round))), 0);
-      long pivot = bytes_to_int(pivotBytes).modulo(listSize).getValue();
-      UInt64 flip = UInt64.valueOf(Math.floorMod(pivot - index.getValue(), listSize.getValue()));
-      UInt64 position = UInt64s.max(index, flip);
-      Bytes4 positionBytes = int_to_bytes4(position.dividedBy(UInt64.valueOf(256)));
-      Bytes32 source = hash(seed.concat(int_to_bytes1(round)).concat(positionBytes));
-      int byteV = source.get(position.modulo(256).getIntValue() / 8) & 0xFF;
-      int bit = ((byteV >> (position.modulo(8).getIntValue())) % 2) & 0xFF;
-      index = bit > 0 ? flip : index;
-    }
-
-    return index;
   }
 
   /**
@@ -512,7 +425,7 @@ public interface HelperFunction extends SpecCommons {
        for i in range(split_count)
    ]
   */
-  default  <T> List<List<T>> split(List<T> values, int split_count) {
+  default <T> List<List<T>> split(List<T> values, int split_count) {
     List<List<T>> ret = new ArrayList<>();
     for (int i = 0; i < split_count; i++) {
       int fromIdx = values.size() * i / split_count;
@@ -523,27 +436,90 @@ public interface HelperFunction extends SpecCommons {
   }
 
   /*
-    def get_split_offset(list_size: int, chunks: int, index: int) -> int:
+    def get_shuffled_index(index: ValidatorIndex, index_count: int, seed: Bytes32) -> ValidatorIndex:
       """
-      Returns a value such that for a list L, chunk count k and index i,
-      split(L, k)[i] == L[get_split_offset(len(L), k, i): get_split_offset(len(L), k, i+1)]
+      Return the shuffled validator index corresponding to ``seed`` (and ``index_count``).
       """
-      return (list_size * index) // chunks
+      assert index < index_count
+      assert index_count <= 2**40
+
+      # Swap or not (https://link.springer.com/content/pdf/10.1007%2F978-3-642-32009-5_1.pdf)
+      # See the 'generalized domain' algorithm on page 3
+      for round in range(SHUFFLE_ROUND_COUNT):
+          pivot = bytes_to_int(hash(seed + int_to_bytes1(round))[0:8]) % index_count
+          flip = (pivot - index) % index_count
+          position = max(index, flip)
+          source = hash(seed + int_to_bytes1(round) + int_to_bytes4(position // 256))
+          byte = source[(position % 256) // 8]
+          bit = (byte >> (position % 8)) % 2
+          index = flip if bit else index
+
+      return index
    */
-  default int get_split_offset(int list_size, int chunks, int index) {
-    return (list_size * index) / chunks;
+  default UInt64 get_shuffled_index(UInt64 index, UInt64 index_count, Bytes32 seed) {
+    assertTrue(index.compareTo(index_count) < 0);
+    assertTrue(index_count.compareTo(UInt64.valueOf(1L << 40)) <= 0);
+
+    for (int round = 0; round < getConstants().getShuffleRoundCount(); round++) {
+      Bytes8 pivotBytes = Bytes8.wrap(hash(seed.concat(int_to_bytes1(round))), 0);
+      long pivot = bytes_to_int(pivotBytes).modulo(index_count).getValue();
+      UInt64 flip = UInt64.valueOf(Math.floorMod(pivot - index.getValue(), index_count.getValue()));
+      UInt64 position = UInt64s.max(index, flip);
+      Bytes4 positionBytes = int_to_bytes4(position.dividedBy(UInt64.valueOf(256)));
+      Bytes32 source = hash(seed.concat(int_to_bytes1(round)).concat(positionBytes));
+      int byteV = source.get(position.modulo(256).getIntValue() / 8) & 0xFF;
+      int bit = ((byteV >> (position.modulo(8).getIntValue())) % 2) & 0xFF;
+      index = bit > 0 ? flip : index;
+    }
+
+    return index;
+  }
+
+  /*
+    def compute_committee(indices: List[ValidatorIndex], seed: Bytes32, index: int, count: int) -> List[ValidatorIndex]:
+      start = (len(indices) * index) // count
+      end = (len(indices) * (index + 1)) // count
+      return [indices[get_shuffled_index(i, len(indices), seed)] for i in range(start, end)]
+   */
+  default List<ValidatorIndex> compute_committee(List<ValidatorIndex> indices, Bytes32 seed, UInt64 index, UInt64 count) {
+    UInt64 start = index.times(indices.size()).dividedBy(count);
+    UInt64 end = index.increment().times(indices.size()).dividedBy(count);
+    List<ValidatorIndex> result = new ArrayList<>();
+    for (UInt64 i = start; i.compareTo(end) < 0; i = i.increment()) {
+      UInt64 shuffled_index = get_shuffled_index(i, UInt64.valueOf(indices.size()), seed);
+      result.add(indices.get(shuffled_index.getIntValue()));
+    }
+    return result;
   }
 
   /**
-   * An optimized version of calculating shuffled list.
+   * An optimized version of {@link #compute_committee(List, Bytes32, UInt64, UInt64)}.
    * Based on {@link #get_permuted_list(List, Bytes32)}.
    */
-  default List<List<ValidatorIndex>> get_shuffling2(Hash32 seed,
-      BeaconState state, EpochNumber epoch) {
-    List<ValidatorIndex> active_validator_indices = get_active_validator_indices(state, epoch);
-    List<ValidatorIndex> shuffled_indices = get_permuted_list(active_validator_indices, seed)
+  default List<ValidatorIndex> compute_committee2(List<ValidatorIndex> indices, Bytes32 seed, UInt64 index, UInt64 count) {
+    List<ValidatorIndex> shuffled_indices = get_permuted_list(indices, seed)
         .stream().map(ValidatorIndex::new).collect(toList());
-    return split(shuffled_indices, get_epoch_committee_count(state, epoch));
+    return split(shuffled_indices, count.getIntValue()).get(index.getIntValue());
+  }
+
+  /*
+    def get_crosslink_committee(state: BeaconState, epoch: Epoch, shard: Shard) -> List[ValidatorIndex]:
+      return compute_committee(
+          indices=get_active_validator_indices(state, epoch),
+          seed=generate_seed(state, epoch),
+          index=(shard + SHARD_COUNT - get_epoch_start_shard(state, epoch)) % SHARD_COUNT,
+          count=get_epoch_committee_count(state, epoch),
+      )
+   */
+  default List<ValidatorIndex> get_crosslink_committee(BeaconState state, EpochNumber epoch, ShardNumber shard) {
+    return compute_committee2(
+        get_active_validator_indices(state, epoch),
+        generate_seed(state, epoch),
+        shard.plus(getConstants().getShardCount())
+            .minus(get_epoch_start_shard(state, epoch))
+            .modulo(getConstants().getShardCount()),
+        get_epoch_committee_count(state, epoch)
+    );
   }
 
   /*
@@ -654,7 +630,6 @@ public interface HelperFunction extends SpecCommons {
     def slash_validator(state: BeaconState, slashed_index: ValidatorIndex, whistleblower_index: ValidatorIndex=None) -> None:
       """
       Slash the validator with index ``slashed_index``.
-      Note that this function mutates ``state``.
       """
       current_epoch = get_current_epoch(state)
       initiate_validator_exit(state, slashed_index)
@@ -702,7 +677,6 @@ public interface HelperFunction extends SpecCommons {
     def initiate_validator_exit(state: BeaconState, index: ValidatorIndex) -> None:
       """
       Initiate the validator of the given ``index``.
-      Note that this function mutates ``state``.
       """
   */
   default void initiate_validator_exit(MutableBeaconState state, ValidatorIndex index) {
@@ -854,46 +828,23 @@ public interface HelperFunction extends SpecCommons {
   }
 
   /*
-   def is_double_vote(attestation_data_1: AttestationData,
-                  attestation_data_2: AttestationData) -> bool
-     """
-     Assumes ``attestation_data_1`` is distinct from ``attestation_data_2``.
-     Returns True if the provided ``AttestationData`` are slashable
-     due to a 'double vote'.
-     """
-     target_epoch_1 = attestation_data_1.slot // SLOTS_PER_EPOCH
-     target_epoch_2 = attestation_data_2.slot // SLOTS_PER_EPOCH
-     return target_epoch_1 == target_epoch_2
-  */
-  default boolean is_double_vote(
-      AttestationData attestation_data_1, AttestationData attestation_data_2) {
-    EpochNumber target_epoch_1 = slot_to_epoch(attestation_data_1.getSlot());
-    EpochNumber target_epoch_2 = slot_to_epoch(attestation_data_2.getSlot());
-    return target_epoch_1.equals(target_epoch_2);
-  }
-
-  /*
-   def is_surround_vote(attestation_data_1: AttestationData,
-                     attestation_data_2: AttestationData) -> bool:
-      """
-      Check if ``attestation_data_1`` surrounds ``attestation_data_2``.
-      """
-      source_epoch_1 = attestation_data_1.source_epoch
-      source_epoch_2 = attestation_data_2.source_epoch
-      target_epoch_1 = slot_to_epoch(attestation_data_1.slot)
-      target_epoch_2 = slot_to_epoch(attestation_data_2.slot)
-
-      return source_epoch_1 < source_epoch_2 and target_epoch_2 < target_epoch_1
-  */
-  default boolean is_surround_vote(
-      AttestationData attestation_data_1, AttestationData attestation_data_2) {
-    EpochNumber source_epoch_1 = attestation_data_1.getSourceEpoch();
-    EpochNumber source_epoch_2 = attestation_data_2.getSourceEpoch();
-    EpochNumber target_epoch_1 = slot_to_epoch(attestation_data_1.getSlot());
-    EpochNumber target_epoch_2 = slot_to_epoch(attestation_data_2.getSlot());
-
-    return (source_epoch_1.less(source_epoch_2))
-        && (target_epoch_2.less(target_epoch_1));
+    def is_slashable_attestation_data(data_1: AttestationData, data_2: AttestationData) -> bool:
+    """
+    Check if ``data_1`` and ``data_2`` are slashable according to Casper FFG rules.
+    """
+    return (
+        # Double vote
+        (data_1 != data_2 and data_1.target_epoch == data_2.target_epoch) or
+        # Surround vote
+        (data_1.source_epoch < data_2.source_epoch and data_2.target_epoch < data_1.target_epoch)
+    )
+   */
+  default boolean is_slashable_attestation_data(AttestationData data_1, AttestationData data_2) {
+    return
+        // Double vote
+        (!data_1.equals(data_2) && data_1.getTargetEpoch().equals(data_2.getTargetEpoch()))
+        // Surround vote
+        || (data_1.getSourceEpoch().less(data_2.getSourceEpoch()) && data_2.getTargetEpoch().less(data_1.getTargetEpoch()));
   }
 
   default List<BLSPubkey> mapIndicesToPubKeys(BeaconState state, Iterable<ValidatorIndex> indices) {
@@ -925,7 +876,7 @@ public interface HelperFunction extends SpecCommons {
     List<ValidatorIndex> attesting_indices =
         get_attesting_indices(state, attestation.getData(), attestation.getAggregationBitfield());
     List<ValidatorIndex> custody_bit_1_indices =
-        get_attesting_indices(state, attestation.getData(), attestation.getAggregationBitfield());
+        get_attesting_indices(state, attestation.getData(), attestation.getCustodyBitfield());
     List<ValidatorIndex> custody_bit_0_indices = attesting_indices.stream()
         .filter(index -> !custody_bit_1_indices.contains(index)).collect(toList());
 
@@ -1010,7 +961,7 @@ public interface HelperFunction extends SpecCommons {
             hash_tree_root(new AttestationDataAndCustodyBit(indexed_attestation.getData(), true))
         ),
         indexed_attestation.getSignature(),
-        get_domain(state, ATTESTATION, slot_to_epoch(indexed_attestation.getData().getSlot()))
+        get_domain(state, ATTESTATION, indexed_attestation.getData().getTargetEpoch())
     );
   }
 
@@ -1079,29 +1030,18 @@ public interface HelperFunction extends SpecCommons {
       """
       Return the sorted attesting indices corresponding to ``attestation_data`` and ``bitfield``.
       """
-      crosslink_committees = get_crosslink_committees_at_slot(state, attestation_data.slot)
-      crosslink_committee = [committee for committee, shard in crosslink_committees if shard == attestation_data.shard][0]
-      assert verify_bitfield(bitfield, len(crosslink_committee))
-      return sorted([index for i, index in enumerate(crosslink_committee) if get_bitfield_bit(bitfield, i) == 0b1])
+      committee = get_crosslink_committee(state, attestation_data.target_epoch, attestation_data.shard)
+      assert verify_bitfield(bitfield, len(committee))
+      return sorted([index for i, index in enumerate(committee) if get_bitfield_bit(bitfield, i) == 0b1])
    */
   default List<ValidatorIndex> get_attesting_indices(
       BeaconState state, AttestationData attestation_data, Bitfield bitfield) {
-    List<ShardCommittee> crosslink_committees =
-        get_crosslink_committees_at_slot(state, attestation_data.getSlot());
-
-    assertTrue(crosslink_committees.stream()
-        .anyMatch(cc -> attestation_data.getShard().equals(cc.getShard())));
-    Optional<ShardCommittee> crosslink_committee_opt =
-        crosslink_committees.stream()
-            .filter(committee -> committee.getShard().equals(attestation_data.getShard()))
-            .findFirst();
-    assertTrue(crosslink_committee_opt.isPresent());
-    List<ValidatorIndex> crosslink_committee = crosslink_committee_opt.get().getCommittee();
-    assertTrue(verify_bitfield(bitfield, crosslink_committee.size()));
-
+    List<ValidatorIndex> committee =
+        get_crosslink_committee(state, attestation_data.getTargetEpoch(), attestation_data.getShard());
+    assertTrue(verify_bitfield(bitfield, committee.size()));
     List<ValidatorIndex> participants = new ArrayList<>();
-    for (int i = 0; i < crosslink_committee.size(); i++) {
-      ValidatorIndex validator_index = crosslink_committee.get(i);
+    for (int i = 0; i < committee.size(); i++) {
+      ValidatorIndex validator_index = committee.get(i);
       boolean aggregation_bit = bitfield.getBit(i);
       if (aggregation_bit) {
         participants.add(validator_index);

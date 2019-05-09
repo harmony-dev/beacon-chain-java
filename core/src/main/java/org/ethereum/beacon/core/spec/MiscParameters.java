@@ -15,13 +15,10 @@ public interface MiscParameters {
 
   ShardNumber SHARD_COUNT = ShardNumber.of(1 << 10); // 1024 shards
   ValidatorIndex TARGET_COMMITTEE_SIZE = ValidatorIndex.of(1 << 7); // 128 validators
-  UInt64 MAX_BALANCE_CHURN_QUOTIENT = UInt64.valueOf(1 << 5); // 32
-  ShardNumber BEACON_CHAIN_SHARD_NUMBER = ShardNumber.of(UInt64.MAX_VALUE); // (1 << 64) - 1
   UInt64 MAX_INDICES_PER_ATTESTATION = UInt64.valueOf(1 << 12); // 4096
   UInt64 MIN_PER_EPOCH_CHURN_LIMIT = UInt64.valueOf(1 << 2); // 4
   UInt64 CHURN_LIMIT_QUOTIENT = UInt64.valueOf(1 << 16); // 65_536
   UInt64 BASE_REWARDS_PER_EPOCH = UInt64.valueOf(5);
-  UInt64 MAX_EXIT_DEQUEUES_PER_EPOCH = UInt64.valueOf(1 << 2); // 4
   int SHUFFLE_ROUND_COUNT = 90;
 
   /* Values defined in the spec. */
@@ -32,14 +29,6 @@ public interface MiscParameters {
 
   default ValidatorIndex getTargetCommitteeSize() {
     return TARGET_COMMITTEE_SIZE;
-  }
-
-  default UInt64 getMaxBalanceChurnQuotient() {
-    return MAX_BALANCE_CHURN_QUOTIENT;
-  }
-
-  default ShardNumber getBeaconChainShardNumber() {
-    return BEACON_CHAIN_SHARD_NUMBER;
   }
 
   default UInt64 getMaxIndicesPerAttestation() {
@@ -56,10 +45,6 @@ public interface MiscParameters {
 
   default UInt64 getBaseRewardsPerEpoch() {
     return BASE_REWARDS_PER_EPOCH;
-  }
-
-  default UInt64 getMaxExitDequesPerEpoch() {
-    return MAX_EXIT_DEQUEUES_PER_EPOCH;
   }
 
   default int getShuffleRoundCount() {

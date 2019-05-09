@@ -75,10 +75,6 @@ public class ShuffleTests extends TestUtils {
 //        });
   }
 
-  /**
-   * Runs tests on optimized version of get_shuffling, {@link BeaconChainSpec#get_shuffling2(Hash32,
-   * org.ethereum.beacon.core.BeaconState, EpochNumber)}
-   */
   @Test
   public void testShuffling2() {
     // TODO wait until tests are updated to v0.6.0

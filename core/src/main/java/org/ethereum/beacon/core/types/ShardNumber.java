@@ -67,14 +67,4 @@ public class ShardNumber extends UInt64 implements
   public ShardNumber zeroElement() {
     return ZERO;
   }
-
-  @Override
-  public String toString() {
-    return toString(null);
-  }
-
-  public String toString(@Nullable SpecConstants spec) {
-    return spec == null ? super.toString() :
-        spec.getBeaconChainShardNumber().equals(this) ? "Beacon" : super.toString();
-  }
 }

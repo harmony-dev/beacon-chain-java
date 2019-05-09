@@ -1,6 +1,5 @@
 package org.ethereum.beacon.consensus.spec;
 
-import static java.util.stream.Collectors.toList;
 import static org.ethereum.beacon.core.spec.SignatureDomains.BEACON_PROPOSER;
 import static org.ethereum.beacon.core.spec.SignatureDomains.RANDAO;
 
@@ -24,7 +23,6 @@ import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
-import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
@@ -37,7 +35,7 @@ import tech.pegasys.artemis.util.uint.UInt64s;
  * Block processing part.
  *
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.6.0/specs/core/0_beacon-chain.md#per-block-processing">Per-block
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.6.1/specs/core/0_beacon-chain.md#per-block-processing">Per-block
  *     processing</a> in the spec.
  */
 public interface BlockProcessing extends HelperFunction {
@@ -154,7 +152,6 @@ public interface BlockProcessing extends HelperFunction {
   /*
     """
     Process ``ProposerSlashing`` transaction.
-    Note that this function mutates ``state``.
     """
    */
   default void process_proposer_slashing(MutableBeaconState state, ProposerSlashing proposer_slashing) {
@@ -165,20 +162,10 @@ public interface BlockProcessing extends HelperFunction {
     IndexedAttestation attestation1 = attester_slashing.getAttestation1();
     IndexedAttestation attestation2 = attester_slashing.getAttestation2();
 
-    /* Check that the attestations are conflicting
-      assert attestation1.data != attestation2.data
-      assert (
-          is_double_vote(attestation1.data, attestation2.data) or
-          is_surround_vote(attestation1.data, attestation2.data)
-      ) */
-    assertTrue(!attestation1.getData().equals(attestation2.getData()));
-    assertTrue(
-        is_double_vote(attestation1.getData(), attestation2.getData())
-            || is_surround_vote(attestation1.getData(), attestation2.getData()));
-
-    /*
-      assert verify_indexed_attestation(state, attestation1)
-      assert verify_indexed_attestation(state, attestation2) */
+    /* assert is_slashable_attestation_data(attestation_1.data, attestation_2.data)
+       assert verify_indexed_attestation(state, attestation_1)
+       assert verify_indexed_attestation(state, attestation_2) */
+    assertTrue(is_slashable_attestation_data(attestation1.getData(), attestation2.getData()));
     assertTrue(verify_indexed_attestation(state, attestation1));
     assertTrue(verify_indexed_attestation(state, attestation2));
   }
@@ -186,15 +173,17 @@ public interface BlockProcessing extends HelperFunction {
   /*
     """
     Process ``AttesterSlashing`` transaction.
-    Note that this function mutates ``state``.
     """
    */
   default void process_attester_slashing(MutableBeaconState state, AttesterSlashing attester_slashing) {
     IndexedAttestation attestation1 = attester_slashing.getAttestation1();
     IndexedAttestation attestation2 = attester_slashing.getAttestation2();
 
-    /* attesting_indices_1 = attestation1.custody_bit_0_indices + attestation1.custody_bit_1_indices
+
+    /* slashed_any = False
+       attesting_indices_1 = attestation1.custody_bit_0_indices + attestation1.custody_bit_1_indices
        attesting_indices_2 = attestation2.custody_bit_0_indices + attestation2.custody_bit_1_indices */
+    boolean slashed_any = false;
     List<ValidatorIndex> attesting_indices_1 = new ArrayList<>();
     attesting_indices_1.addAll(attestation1.getCustodyBit0Indices().listCopy());
     attesting_indices_1.addAll(attestation1.getCustodyBit1Indices().listCopy());
@@ -202,51 +191,46 @@ public interface BlockProcessing extends HelperFunction {
     attesting_indices_2.addAll(attestation2.getCustodyBit0Indices().listCopy());
     attesting_indices_2.addAll(attestation2.getCustodyBit1Indices().listCopy());
 
-    /* slashable_indices = [
-          index for index in attesting_indices_1
-          if (
-              index in attesting_indices_2 and
-              is_slashable_validator(state.validator_registry[index], get_current_epoch(state))
-          )
-      ]
-      assert len(slashable_indices) >= 1 */
-    List<ValidatorIndex> slashable_indices = attesting_indices_1.stream()
-        .filter(i -> attesting_indices_2.contains(i)
-            && is_slashable_validator(state.getValidatorRegistry().get(i), get_current_epoch(state)))
-        .collect(toList());
-    assertTrue(slashable_indices.size() >= 1);
-
-    /* for index in slashable_indices:
-        slash_validator(state, index) */
-    for (ValidatorIndex index : slashable_indices) {
-      slash_validator(state, index);
+    /*  for index in set(attesting_indices_1).intersection(attesting_indices_2):
+        if is_slashable_validator(state.validator_registry[index], get_current_epoch(state)):
+            slash_validator(state, index)
+            slashed_any = True
+        assert slashed_any */
+    List<ValidatorIndex> intersection = new ArrayList<>(attesting_indices_1);
+    intersection.retainAll(attesting_indices_2);
+    for (ValidatorIndex index : intersection) {
+      if (is_slashable_validator(state.getValidatorRegistry().get(index), get_current_epoch(state))) {
+        slash_validator(state, index);
+        slashed_any = true;
+      }
     }
+    assertTrue(slashed_any);
   }
 
   default void verify_attestation(BeaconState state, Attestation attestation) {
     AttestationData data = attestation.getData();
 
-    /* min_slot = state.slot - SLOTS_PER_EPOCH if get_current_epoch(state) > GENESIS_EPOCH else GENESIS_SLOT
-       assert min_slot <= data.slot <= state.slot - MIN_ATTESTATION_INCLUSION_DELAY */
-    SlotNumber min_slot = get_current_epoch(state).greater(getConstants().getGenesisEpoch()) ?
-        state.getSlot().minus(getConstants().getSlotsPerEpoch()) : getConstants().getGenesisSlot();
-    assertTrue(min_slot.lessEqual(data.getSlot())
-        && data.getSlot().lessEqual(state.getSlot().minus(getConstants().getMinAttestationInclusionDelay())));
+    /* attestation_slot = get_attestation_slot(state, attestation)
+       assert attestation_slot + MIN_ATTESTATION_INCLUSION_DELAY <= state.slot <= attestation_slot + SLOTS_PER_EPOCH */
+    SlotNumber attestation_slot = get_attestation_slot(state, data);
+    assertTrue(
+        attestation_slot.plus(getConstants().getMinAttestationInclusionDelay()).lessEqual(state.getSlot())
+        && state.getSlot().lessEqual(attestation_slot.plus(getConstants().getSlotsPerEpoch()))
+    );
 
     /* Check target epoch, source epoch, source root, and source crosslink
-      target_epoch = slot_to_epoch(data.slot)
-      assert (target_epoch, data.source_epoch, data.source_root, data.previous_crosslink_root) in {
+      data = attestation.data
+      assert (data.target_epoch, data.source_epoch, data.source_root, data.previous_crosslink_root) in {
           (get_current_epoch(state), state.current_justified_epoch, state.current_justified_root, hash_tree_root(state.current_crosslinks[data.shard])),
           (get_previous_epoch(state), state.previous_justified_epoch, state.previous_justified_root, hash_tree_root(state.previous_crosslinks[data.shard])),
       } */
-    EpochNumber target_epoch = slot_to_epoch(data.getSlot());
     boolean current_epoch_attestation =
-        target_epoch.equals(get_current_epoch(state))
+        data.getTargetEpoch().equals(get_current_epoch(state))
         && data.getSourceEpoch().equals(state.getCurrentJustifiedEpoch())
         && data.getSourceRoot().equals(state.getCurrentJustifiedRoot())
         && data.getPreviousCrosslinkRoot().equals(hash_tree_root(state.getCurrentCrosslinks().get(data.getShard())));
     boolean previous_epoch_attestation =
-        target_epoch.equals(get_previous_epoch(state))
+        data.getTargetEpoch().equals(get_previous_epoch(state))
             && data.getSourceEpoch().equals(state.getPreviousJustifiedEpoch())
             && data.getSourceRoot().equals(state.getPreviousJustifiedRoot())
             && data.getPreviousCrosslinkRoot().equals(hash_tree_root(state.getPreviousCrosslinks().get(data.getShard())));
@@ -264,21 +248,20 @@ public interface BlockProcessing extends HelperFunction {
   /*
    """
    Process ``Attestation`` transaction.
-   Note that this function mutates ``state``.
    """
   */
   default void process_attestation(MutableBeaconState state, Attestation attestation) {
     AttestationData data = attestation.getData();
-    EpochNumber target_epoch = slot_to_epoch(data.getSlot());
+    SlotNumber attestation_slot = get_attestation_slot(state, data);
 
     /* Cache pending attestation
     pending_attestation = PendingAttestation(
         data=data,
         aggregation_bitfield=attestation.aggregation_bitfield,
-        inclusion_slot=state.slot,
+        inclusion_delay=state.slot - attestation_slot,
         proposer_index=get_beacon_proposer_index(state),
     )
-    if target_epoch == get_current_epoch(state):
+    if data.target_epoch == get_current_epoch(state):
         state.current_epoch_attestations.append(pending_attestation)
     else:
         state.previous_epoch_attestations.append(pending_attestation) */
@@ -286,9 +269,9 @@ public interface BlockProcessing extends HelperFunction {
     PendingAttestation pending_attestation = new PendingAttestation(
         attestation.getAggregationBitfield(),
         data,
-        state.getSlot(),
+        state.getSlot().minus(attestation_slot),
         get_beacon_proposer_index(state));
-    if (target_epoch.equals(get_current_epoch(state))) {
+    if (data.getTargetEpoch().equals(get_current_epoch(state))) {
       state.getCurrentEpochAttestations().add(pending_attestation);
     } else {
       state.getPreviousEpochAttestations().add(pending_attestation);
@@ -317,7 +300,6 @@ public interface BlockProcessing extends HelperFunction {
     def process_deposit(state: BeaconState, deposit: Deposit) -> None:
       """
       Process an Eth1 deposit, registering a validator or increasing its balance.
-      Note that this function mutates ``state``.
       """
     */
   default void process_deposit(MutableBeaconState state, Deposit deposit) {
@@ -354,7 +336,7 @@ public interface BlockProcessing extends HelperFunction {
             activation_epoch=FAR_FUTURE_EPOCH,
             exit_epoch=FAR_FUTURE_EPOCH,
             withdrawable_epoch=FAR_FUTURE_EPOCH,
-            effective_balance=amount - amount % EFFECTIVE_BALANCE_INCREMENT
+            effective_balance=min(amount - amount % EFFECTIVE_BALANCE_INCREMENT, MAX_EFFECTIVE_BALANCE)
         ))
         state.balances.append(amount) */
       state.getValidatorRegistry().add(new ValidatorRecord(
@@ -365,7 +347,10 @@ public interface BlockProcessing extends HelperFunction {
           getConstants().getFarFutureEpoch(),
           getConstants().getFarFutureEpoch(),
           Boolean.FALSE,
-          amount.minus(Gwei.castFrom(amount.modulo(getConstants().getEffectiveBalanceIncrement())))
+          UInt64s.min(
+              amount.minus(Gwei.castFrom(amount.modulo(getConstants().getEffectiveBalanceIncrement()))),
+              getConstants().getMaxEffectiveBalance()
+          )
       ));
       state.getBalances().add(amount);
     } else {
@@ -406,7 +391,6 @@ public interface BlockProcessing extends HelperFunction {
   /*
     """
     Process ``VoluntaryExit`` transaction.
-    Note that this function mutates ``state``.
     """
    */
   default void process_voluntary_exit(MutableBeaconState state, VoluntaryExit exit) {
@@ -459,7 +443,6 @@ public interface BlockProcessing extends HelperFunction {
   /*
     """
     Process ``Transfer`` transaction.
-    Note that this function mutates ``state``.
     """
    */
   default void process_transfer(MutableBeaconState state, Transfer transfer) {

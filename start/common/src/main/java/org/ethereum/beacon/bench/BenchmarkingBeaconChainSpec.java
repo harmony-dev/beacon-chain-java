@@ -22,6 +22,7 @@ import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Bitfield;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
+import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.crypto.BLS381.PublicKey;
@@ -72,6 +73,9 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
     return super.getHashFunction();
   }
 
+
+  /** BLS */
+
   @Override
   public boolean bls_verify(
       BLSPubkey publicKey, Hash32 message, BLSSignature signature, UInt64 domain) {
@@ -93,6 +97,9 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
         "bls_aggregate_pubkeys", () -> super.bls_aggregate_pubkeys(publicKeysBytes));
   }
 
+
+  /** HELPERS */
+
   @Override
   public Hash32 hash_tree_root(Object object) {
     return callAndTrack("hash_tree_root", () -> super.hash_tree_root(object));
@@ -104,67 +111,17 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
   }
 
   @Override
-  public List<ShardCommittee> get_crosslink_committees_at_slot(BeaconState state, SlotNumber slot) {
+  public List<ValidatorIndex> get_crosslink_committee(BeaconState state, EpochNumber epoch,
+      ShardNumber shard) {
     return callAndTrack(
-        "get_crosslink_committees_at_slot",
-        () -> super.get_crosslink_committees_at_slot(state, slot));
+        "get_crosslink_committee",
+        () -> super.get_crosslink_committee(state, epoch, shard));
   }
 
   @Override
   public ValidatorIndex get_beacon_proposer_index(BeaconState state) {
     return callAndTrack(
         "get_beacon_proposer_index", () -> super.get_beacon_proposer_index(state));
-  }
-
-  @Override
-  public void process_slashings(MutableBeaconState state) {
-    callAndTrack("process_slashings", () -> super.process_slashings(state));
-  }
-
-  @Override
-  public void cache_state(MutableBeaconState state) {
-    callAndTrack("cache_state", () -> super.cache_state(state));
-  }
-
-  @Override
-  public void advance_slot(MutableBeaconState state) {
-    callAndTrack("advance_slot", () -> super.advance_slot(state));
-  }
-
-  @Override
-  public void process_attestation(MutableBeaconState state, Attestation attestation) {
-    callAndTrack(
-        "process_attestation",
-        () -> {
-          // count verification in benchmark measurements
-          super.verify_attestation(state, attestation);
-          super.process_attestation(state, attestation);
-        });
-  }
-
-  @Override
-  public void process_block_header(MutableBeaconState state, BeaconBlock block) {
-    callAndTrack(
-        "process_block_header",
-        () -> {
-          super.verify_block_header(state, block);
-          super.process_block_header(state, block);
-        });
-  }
-
-  @Override
-  public void process_randao(MutableBeaconState state, BeaconBlock block) {
-    callAndTrack(
-        "process_randao",
-        () -> {
-          super.verify_randao(state, block);
-          super.process_randao(state, block);
-        });
-  }
-
-  @Override
-  public void process_eth1_data(MutableBeaconState state, BeaconBlock block) {
-    callAndTrack("process_eth1_data", () -> super.process_eth1_data(state, block));
   }
 
   @Override
@@ -207,6 +164,93 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
   @Override
   public boolean verify_bitfield(Bitfield bitfield, int committee_size) {
     return callAndTrack("verify_bitfield", () -> super.verify_bitfield(bitfield, committee_size));
+  }
+
+
+  /** STATE CACHING */
+
+  @Override
+  public void cache_state(MutableBeaconState state) {
+    callAndTrack("cache_state", () -> super.cache_state(state));
+  }
+
+  /** SLOT PROCESSING */
+
+  @Override
+  public void advance_slot(MutableBeaconState state) {
+    callAndTrack("advance_slot", () -> super.advance_slot(state));
+  }
+
+
+  /** EPOCH PROCESSING */
+
+  @Override
+  public void process_justification_and_finalization(MutableBeaconState state) {
+    callAndTrack("process_justification_and_finalization",
+        () -> super.process_justification_and_finalization(state));
+  }
+
+  @Override
+  public void process_crosslinks(MutableBeaconState state) {
+    callAndTrack("process_crosslinks", () -> super.process_crosslinks(state));
+  }
+
+  @Override
+  public void process_rewards_and_penalties(MutableBeaconState state) {
+    callAndTrack("process_rewards_and_penalties", () -> super.process_rewards_and_penalties(state));
+  }
+
+  @Override
+  public List<ValidatorIndex> process_registry_updates(MutableBeaconState state) {
+    return callAndTrack("process_registry_updates", () -> super.process_registry_updates(state));
+  }
+
+  @Override
+  public void process_slashings(MutableBeaconState state) {
+    callAndTrack("process_slashings", () -> super.process_slashings(state));
+  }
+
+  @Override
+  public void process_final_updates(MutableBeaconState state) {
+    callAndTrack("process_final_updates", () -> super.process_final_updates(state));
+  }
+
+  /** BLOCK PROCESSING */
+
+  @Override
+  public void process_block_header(MutableBeaconState state, BeaconBlock block) {
+    callAndTrack(
+        "process_block_header",
+        () -> {
+          super.verify_block_header(state, block);
+          super.process_block_header(state, block);
+        });
+  }
+
+  @Override
+  public void process_randao(MutableBeaconState state, BeaconBlock block) {
+    callAndTrack(
+        "process_randao",
+        () -> {
+          super.verify_randao(state, block);
+          super.process_randao(state, block);
+        });
+  }
+
+  @Override
+  public void process_eth1_data(MutableBeaconState state, BeaconBlock block) {
+    callAndTrack("process_eth1_data", () -> super.process_eth1_data(state, block));
+  }
+
+  @Override
+  public void process_attestation(MutableBeaconState state, Attestation attestation) {
+    callAndTrack(
+        "process_attestation",
+        () -> {
+          // count verification in benchmark measurements
+          super.verify_attestation(state, attestation);
+          super.process_attestation(state, attestation);
+        });
   }
 
   void startTracking() {
