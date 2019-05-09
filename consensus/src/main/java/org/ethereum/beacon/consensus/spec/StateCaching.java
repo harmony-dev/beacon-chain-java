@@ -8,7 +8,7 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
  * State caching.
  *
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.6.0/specs/core/0_beacon-chain.md#state-caching">State
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.6.1/specs/core/0_beacon-chain.md#state-caching">State
  *     caching</a> in the spec.
  */
 public interface StateCaching extends HelperFunction {

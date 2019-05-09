@@ -10,7 +10,7 @@ import tech.pegasys.artemis.util.collections.ReadVector;
  * A batch of historical data.
  *
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.5.0/specs/core/0_beacon-chain.md#historicalbatch">HistoricalBatch</a>
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.6.1/specs/core/0_beacon-chain.md#historicalbatch">HistoricalBatch</a>
  *     in the spec.
  */
 @SSZSerializable

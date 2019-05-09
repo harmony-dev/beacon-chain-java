@@ -26,7 +26,7 @@ import tech.pegasys.artemis.util.uint.UInt64s;
  * Per-epoch transition, which happens at the start of the first slot of every epoch.
  *
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.5.1/specs/core/0_beacon-chain.md#per-epoch-processing">Per-epoch
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.6.1/specs/core/0_beacon-chain.md#per-epoch-processing">Per-epoch
  *     processing</a> in the spec.
  */
 public class PerEpochTransition implements StateTransition<BeaconStateEx> {
