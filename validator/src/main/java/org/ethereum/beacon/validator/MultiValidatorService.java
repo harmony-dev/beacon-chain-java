@@ -23,7 +23,6 @@ import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.ShardCommittee;
 import org.ethereum.beacon.core.types.BLSPubkey;
-import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
@@ -37,8 +36,6 @@ import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import org.javatuples.Pair;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
-import tech.pegasys.artemis.util.uint.UInt64;
-import tech.pegasys.artemis.util.uint.UInt64s;
 
 /** Runs several validators in one instance. */
 public class MultiValidatorService implements ValidatorService {
@@ -211,15 +208,11 @@ public class MultiValidatorService implements ValidatorService {
 
     // trigger attester at a halfway through the slot
     Time startAt = spec.get_slot_middle_time(state, state.getSlot());
-    EpochNumber epoch = spec.get_current_epoch(state);
-    UInt64 committeesPerSlot = spec.get_epoch_committee_count(state, epoch)
-        .dividedBy(spec.getConstants().getSlotsPerEpoch());
-    for (UInt64 offset : UInt64s.iterate(committeesPerSlot.times(state.getSlot()),
-        committeesPerSlot.times(state.getSlot().increment()))) {
-      ShardNumber shard = spec.get_epoch_start_shard(state, epoch)
-          .plusModulo(offset, spec.getConstants().getShardCount());
-      List<ValidatorIndex> committee = spec.get_crosslink_committee(state, epoch, shard);
-      committee.stream()
+    List<ShardCommittee> slotCommittees =
+        spec.get_crosslink_committees_at_slot(state, state.getSlot());
+    for (ShardCommittee shardCommittee : slotCommittees) {
+      ShardNumber shard = shardCommittee.getShard();
+      shardCommittee.getCommittee().stream()
           .filter(initialized::containsKey)
           .forEach(index -> schedule(startAt, () -> this.attest(index, shard)));
     }

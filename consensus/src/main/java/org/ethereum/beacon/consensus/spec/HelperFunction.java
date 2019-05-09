@@ -179,8 +179,9 @@ public interface HelperFunction extends SpecCommons {
     EpochNumber epoch = slot_to_epoch(slot);
     UInt64 committeesPerSlot = get_epoch_committee_count(state, epoch)
         .dividedBy(getConstants().getSlotsPerEpoch());
-    for (UInt64 offset : UInt64s.iterate(committeesPerSlot.times(slot),
-        committeesPerSlot.times(slot.increment()))) {
+    SlotNumber slotOffset = slot.modulo(getConstants().getSlotsPerEpoch());
+    for (UInt64 offset : UInt64s.iterate(committeesPerSlot.times(slotOffset),
+        committeesPerSlot.times(slotOffset.increment()))) {
       ShardNumber shard = get_epoch_start_shard(state, epoch)
           .plusModulo(offset, getConstants().getShardCount());
       List<ValidatorIndex> committee = get_crosslink_committee(state, epoch, shard);
