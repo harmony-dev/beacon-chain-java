@@ -43,7 +43,7 @@ public class TreeHashVectorRunner implements Runner {
           "TestCase runner accepts only TreeHashListTestCase.class as input!");
     }
     this.testCase = (TreeHashListTestCase) testCase;
-    Function<BytesValue, Hash32> hashFunction = Hashes::keccak256;
+    Function<BytesValue, Hash32> hashFunction = Hashes::sha256;
     SSZHasher sszHasher =
         new SSZBuilder().withExternalVarResolver(new SpecConstantsResolver(spec.getConstants()))
             .withIncrementalHasher(true)

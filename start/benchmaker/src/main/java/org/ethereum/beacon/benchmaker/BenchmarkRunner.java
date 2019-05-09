@@ -45,6 +45,7 @@ import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.uint.UInt64;
 
 public class BenchmarkRunner implements Runnable {
   private static final Logger logger = LogManager.getLogger("benchmaker");
@@ -71,7 +72,7 @@ public class BenchmarkRunner implements Runnable {
     for (int i = 0; i < count; i++) {
       BLS381.KeyPair keyPair = keyPairReader.next();
       keyPairs.add(keyPair);
-      deposits.add(SimulateUtils.getDepositForKeyPair(rnd, keyPair, spec, false));
+      deposits.add(SimulateUtils.getDepositForKeyPair(UInt64.valueOf(i), rnd, keyPair, spec, false));
     }
 
     return Pair.with(deposits, keyPairs);
@@ -97,7 +98,7 @@ public class BenchmarkRunner implements Runnable {
     MDCControlledSchedulers controlledSchedulers = new MDCControlledSchedulers();
     controlledSchedulers.setCurrentTime(genesisTime.getMillis().getValue() + 1000);
 
-    Eth1Data eth1Data = new Eth1Data(Hash32.ZERO, Hash32.ZERO);
+    Eth1Data eth1Data = new Eth1Data(Hash32.ZERO, UInt64.ZERO, Hash32.ZERO);
 
     LocalWireHub localWireHub =
         new LocalWireHub(s -> {}, controlledSchedulers.createNew("wire"));

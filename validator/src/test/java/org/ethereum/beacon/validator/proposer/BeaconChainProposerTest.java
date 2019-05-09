@@ -23,7 +23,6 @@ import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
-import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.spec.SignatureDomains;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.BLSSignature;
@@ -42,7 +41,6 @@ import org.ethereum.beacon.validator.util.MessageSignerTestUtil;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
-import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public class BeaconChainProposerTest {
@@ -109,12 +107,13 @@ public class BeaconChainProposerTest {
     Mockito.verify(pendingOperations)
         .peekAggregatedAttestations(
             spec.getConstants().getMaxAttestations(),
+            initialState,
             initialState
                 .getSlot()
-                .minus(spec.getConstants().getSlotsPerEpoch()),
+                .minusSat(spec.getConstants().getSlotsPerEpoch()),
             initialState
                 .getSlot()
-                .minus(spec.getConstants().getMinAttestationInclusionDelay()));
+                .minusSat(spec.getConstants().getMinAttestationInclusionDelay()));
 
     Mockito.verify(pendingOperations)
         .peekProposerSlashings(spec.getConstants().getMaxProposerSlashings());
@@ -193,11 +192,8 @@ public class BeaconChainProposerTest {
 
     BLSSignature expectedSignature =
         signer.sign(
-            spec.signed_root(block),
-            spec.get_domain(
-                initialState.getFork(),
-                spec.get_current_epoch(initialState),
-                SignatureDomains.BEACON_BLOCK));
+            spec.signing_root(block),
+            spec.get_domain(initialState, SignatureDomains.BEACON_PROPOSER));
 
     return expectedSignature.equals(block.getSignature());
   }

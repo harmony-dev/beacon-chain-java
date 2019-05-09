@@ -9,11 +9,13 @@ import java.util.Random;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.util.ObservableBeaconStateTestUtil;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
+import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.EpochNumber;
+import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
@@ -23,6 +25,7 @@ import org.ethereum.beacon.validator.util.ValidatorServiceTestUtil;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
+import org.mockito.stubbing.Stubber;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.collections.ReadList;
@@ -72,17 +75,25 @@ public class MultiValidatorServiceTest {
     ObservableBeaconState currentSlotState =
         ObservableBeaconStateTestUtil.createInitialState(random, spec, currentSlot);
 
-    Mockito.doReturn(true)
+    Mockito.doReturn(false)
         .when(spec)
-        .is_current_slot(eq(currentSlotState.getLatestSlotState()), anyLong());
+        .is_current_slot(any(), anyLong());
 
     // state wasn't kept
     validator.onNewState(outdatedState);
     Assert.assertNull(validator.getRecentState());
 
+    Mockito.doReturn(true)
+        .when(spec)
+        .is_current_slot(any(), anyLong());
+
     // state was kept
     validator.onNewState(currentSlotState);
     Assert.assertEquals(currentSlotState, validator.getRecentState());
+
+    Mockito.doReturn(false)
+        .when(spec)
+        .is_current_slot(any(), anyLong());
 
     // state wasn't updated
     validator.onNewState(outdatedState);
@@ -101,12 +112,6 @@ public class MultiValidatorServiceTest {
         ValidatorServiceTestUtil.mockBeaconChainValidator(random, spec, blsCredentials);
 
     ValidatorIndex validatorIndex = ValidatorIndex.of(Math.abs(random.nextInt()) % 10 + 10);
-
-    ObservableBeaconState outdatedState =
-        ObservableBeaconStateTestUtil.createInitialState(random, spec, SlotNumber.ZERO);
-    validator.onNewState(outdatedState);
-    Assert.assertNull(validator.getRecentState());
-
     Mockito.verify(validator, Mockito.never()).runTasks(any());
 
     SlotNumber currentSlot = SlotNumber.of(Math.abs(random.nextLong()) % 10 + 10);
@@ -208,8 +213,9 @@ public class MultiValidatorServiceTest {
                 EpochNumber.ZERO,
                 EpochNumber.ZERO,
                 EpochNumber.ZERO,
+                EpochNumber.ZERO,
                 Boolean.FALSE,
-                Boolean.FALSE)));
+                Gwei.ZERO)));
     validatorRegistry.add(
         new ValidatorRecord(
             pubkey,
@@ -217,8 +223,9 @@ public class MultiValidatorServiceTest {
             EpochNumber.ZERO,
             EpochNumber.ZERO,
             EpochNumber.ZERO,
+            EpochNumber.ZERO,
             Boolean.FALSE,
-            Boolean.FALSE));
+            Gwei.ZERO));
 
     return validatorRegistry;
   }

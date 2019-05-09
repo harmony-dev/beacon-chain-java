@@ -7,7 +7,7 @@ import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.transition.PerBlockTransition;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
-import org.ethereum.beacon.core.operations.deposit.DepositInput;
+import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.EpochNumber;
@@ -254,36 +254,31 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
 
   private Optional<Deposit> onDeposit(Deposit deposit) {
     return Optional.of(deposit)
-        .filter(d -> d.getDepositData().getDepositInput().getPubKey().equals(blsCredentials.getPubkey()));
+        .filter(d -> d.getData().getPubKey().equals(blsCredentials.getPubkey()));
   }
 
   private CompletableFuture<TransactionGateway.TxStatus> submitDeposit(
       Gwei amount, Address eth1From, BytesValue eth1PrivKey) {
-    DepositInput depositInput = createDepositInput();
-    return createTransaction(eth1From, eth1PrivKey, depositInput, amount)
+    DepositData depositData = createDepositData(amount);
+    return createTransaction(eth1From, eth1PrivKey, depositData, amount)
         .thenCompose(transactionGateway::send);
   }
 
-  private DepositInput createDepositInput() {
+  private DepositData createDepositData(Gwei amount) {
     // To submit a deposit:
     //
-    //    Pack the validator's initialization parameters into deposit_input, a DepositInput SSZ
-    // object.
-    //    Set deposit_input.proof_of_possession = EMPTY_SIGNATURE.
-    DepositInput preDepositInput =
-        new DepositInput(blsCredentials.getPubkey(), withdrawalCredentials, BLSSignature.ZERO);
-    // Let proof_of_possession be the result of bls_sign of the hash_tree_root(deposit_input) with
+    //    Instantiate a deposit_data object.
+    //    Set deposit_data.signature = BLSSignature.ZERO.
+    DepositData preDepositData = new DepositData(blsCredentials.getPubkey(), withdrawalCredentials,
+        amount, BLSSignature.ZERO);
+    // Let signature be the result of bls_sign of the signing_hash(deposit_data) with
     // domain=DOMAIN_DEPOSIT.
-    Hash32 hash = spec.signed_root(preDepositInput);
+    Hash32 hash = spec.signing_root(preDepositData);
     BeaconState latestState = getLatestState();
-    UInt64 domain =
-        spec.get_domain(
-            latestState.getFork(), spec.get_current_epoch(latestState), DEPOSIT);
+    UInt64 domain = spec.get_domain(latestState, DEPOSIT);
     BLSSignature signature = blsCredentials.getSigner().sign(hash, domain);
-    // Set deposit_input.proof_of_possession = proof_of_possession.
-    DepositInput depositInput = new DepositInput(blsCredentials.getPubkey(), withdrawalCredentials, signature);
-
-    return depositInput;
+    // Set deposit_data.signature = signature.
+    return new DepositData(blsCredentials.getPubkey(), withdrawalCredentials, amount, signature);
   }
 
   @Override
@@ -292,26 +287,25 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
   }
 
   private CompletableFuture<BytesValue> createTransaction(
-      Address eth1From, BytesValue eth1PrivKey, DepositInput depositInput, Gwei amount) {
+      Address eth1From, BytesValue eth1PrivKey, DepositData depositData, Gwei amount) {
     // Let amount be the amount in Gwei to be deposited by the validator where MIN_DEPOSIT_AMOUNT <=
-    // amount <= MAX_DEPOSIT_AMOUNT.
+    // amount <= MAX_EFFECTIVE_BALANCE.
     if (amount.compareTo(spec.getConstants().getMinDepositAmount()) < 0) {
       throw new RuntimeException(
           String.format(
               "Deposit amount should be equal or greater than %s (defined by spec)",
               spec.getConstants().getMinDepositAmount()));
     }
-    if (amount.compareTo(spec.getConstants().getMaxDepositAmount()) > 0) {
+    if (amount.compareTo(spec.getConstants().getMaxEffectiveBalance()) > 0) {
       throw new RuntimeException(
           String.format(
               "Deposit amount should be equal or less than %s (defined by spec)",
-              spec.getConstants().getMaxDepositAmount()));
+              spec.getConstants().getMaxEffectiveBalance()));
     }
     // Send a transaction on the Ethereum 1.0 chain to DEPOSIT_CONTRACT_ADDRESS executing deposit
-    // along with serialize(deposit_input) as the singular bytes input along with a deposit amount
-    // in Gwei.
+    // along with deposit_data and a deposit amount in Gwei.
     return transactionBuilder
-        .createTransaction(eth1From.toString(), sszSerializer.encode2(depositInput), amount)
+        .createTransaction(eth1From.toString(), depositData, amount)
         .thenCompose(unsignedTx -> transactionBuilder.signTransaction(unsignedTx, eth1PrivKey));
   }
 }

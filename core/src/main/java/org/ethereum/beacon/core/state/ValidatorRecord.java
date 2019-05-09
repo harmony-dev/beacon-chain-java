@@ -2,9 +2,10 @@ package org.ethereum.beacon.core.state;
 
 import com.google.common.base.Objects;
 import org.ethereum.beacon.core.BeaconState;
-import org.ethereum.beacon.core.operations.deposit.DepositInput;
+import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.EpochNumber;
+import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -14,7 +15,7 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
  *
  * @see BeaconState
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.5.0/specs/core/0_beacon-chain.md#validator">Validator
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.6.1/specs/core/0_beacon-chain.md#validator">Validator
  *     in the spec</a>
  */
 @SSZSerializable
@@ -24,32 +25,36 @@ public class ValidatorRecord {
   @SSZ private final BLSPubkey pubKey;
   /** Withdrawal credentials. */
   @SSZ private final Hash32 withdrawalCredentials;
+  /** Epoch when became eligible for activation. */
+  @SSZ private final EpochNumber activationEligibilityEpoch;
   /** Slot when validator activated */
   @SSZ private final EpochNumber activationEpoch;
   /** Slot when validator exited */
   @SSZ private final EpochNumber exitEpoch;
   /** Epoch when validator is eligible to withdraw */
   @SSZ private final EpochNumber withdrawableEpoch;
-  /** Did the validator initiate an exit */
-  @SSZ private final Boolean initiatedExit;
   /** Status flags. */
   @SSZ private final Boolean slashed;
+  /** Effective balance. */
+  @SSZ private final Gwei effectiveBalance;
 
   public ValidatorRecord(
       BLSPubkey pubKey,
       Hash32 withdrawalCredentials,
+      EpochNumber activationEligibilityEpoch,
       EpochNumber activationEpoch,
       EpochNumber exitEpoch,
       EpochNumber withdrawableEpoch,
-      Boolean initiatedExit,
-      Boolean slashed) {
+      Boolean slashed,
+      Gwei effectiveBalance) {
     this.pubKey = pubKey;
     this.withdrawalCredentials = withdrawalCredentials;
+    this.activationEligibilityEpoch = activationEligibilityEpoch;
     this.activationEpoch = activationEpoch;
     this.exitEpoch = exitEpoch;
     this.withdrawableEpoch = withdrawableEpoch;
-    this.initiatedExit = initiatedExit;
     this.slashed = slashed;
+    this.effectiveBalance = effectiveBalance;
   }
 
   public BLSPubkey getPubKey() {
@@ -58,6 +63,10 @@ public class ValidatorRecord {
 
   public Hash32 getWithdrawalCredentials() {
     return withdrawalCredentials;
+  }
+
+  public EpochNumber getActivationEligibilityEpoch() {
+    return activationEligibilityEpoch;
   }
 
   public EpochNumber getActivationEpoch() {
@@ -72,12 +81,12 @@ public class ValidatorRecord {
     return withdrawableEpoch;
   }
 
-  public Boolean getInitiatedExit() {
-    return initiatedExit;
-  }
-
   public Boolean getSlashed() {
     return slashed;
+  }
+
+  public Gwei getEffectiveBalance() {
+    return effectiveBalance;
   }
 
   @Override
@@ -88,10 +97,11 @@ public class ValidatorRecord {
     return Objects.equal(pubKey, that.pubKey)
         && Objects.equal(withdrawalCredentials, that.withdrawalCredentials)
         && Objects.equal(activationEpoch, that.activationEpoch)
+        && Objects.equal(activationEligibilityEpoch, that.activationEligibilityEpoch)
         && Objects.equal(exitEpoch, that.exitEpoch)
         && Objects.equal(withdrawableEpoch, that.withdrawableEpoch)
-        && Objects.equal(initiatedExit, that.initiatedExit)
-        && Objects.equal(slashed, that.slashed);
+        && Objects.equal(slashed, that.slashed)
+        && Objects.equal(effectiveBalance, that.effectiveBalance);
   }
 
   public Builder builder() {
@@ -107,14 +117,16 @@ public class ValidatorRecord {
         + withdrawalCredentials
         + ", activationEpoch="
         + activationEpoch
+        + ", activationEligibilityEpoch="
+        + activationEligibilityEpoch
         + ", exitEpoch="
         + exitEpoch
         + ", withdrawableEpoch="
         + withdrawableEpoch
-        + ", initiatedExit="
-        + initiatedExit
         + ", slashed="
         + slashed
+        + ", effectiveBalance="
+        + effectiveBalance
         + '}';
   }
 
@@ -123,10 +135,11 @@ public class ValidatorRecord {
     private BLSPubkey pubKey;
     private Hash32 withdrawalCredentials;
     private EpochNumber activationEpoch;
+    private EpochNumber activationEligibilityEpoch;
     private EpochNumber exitEpoch;
     private EpochNumber withdrawableEpoch;
-    private Boolean initiatedExit;
     private Boolean slashed;
+    private Gwei effectiveBalance;
 
     private Builder() {}
 
@@ -134,11 +147,11 @@ public class ValidatorRecord {
       return new Builder();
     }
 
-    public static Builder fromDepositInput(DepositInput input) {
+    public static Builder fromDepositData(DepositData data) {
       Builder builder = new Builder();
 
-      builder.pubKey = input.getPubKey();
-      builder.withdrawalCredentials = input.getWithdrawalCredentials();
+      builder.pubKey = data.getPubKey();
+      builder.withdrawalCredentials = data.getWithdrawalCredentials();
 
       return builder;
     }
@@ -149,10 +162,11 @@ public class ValidatorRecord {
       builder.pubKey = record.pubKey;
       builder.withdrawalCredentials = record.withdrawalCredentials;
       builder.activationEpoch = record.activationEpoch;
+      builder.activationEligibilityEpoch = record.activationEligibilityEpoch;
       builder.exitEpoch = record.exitEpoch;
       builder.withdrawableEpoch = record.withdrawableEpoch;
-      builder.initiatedExit = record.initiatedExit;
       builder.slashed = record.slashed;
+      builder.effectiveBalance = record.effectiveBalance;
 
       return builder;
     }
@@ -161,19 +175,21 @@ public class ValidatorRecord {
       assert pubKey != null;
       assert withdrawalCredentials != null;
       assert activationEpoch != null;
+      assert activationEligibilityEpoch != null;
       assert exitEpoch != null;
       assert withdrawableEpoch != null;
-      assert initiatedExit != null;
       assert slashed != null;
+      assert effectiveBalance != null;
 
       return new ValidatorRecord(
           pubKey,
           withdrawalCredentials,
           activationEpoch,
+          activationEligibilityEpoch,
           exitEpoch,
           withdrawableEpoch,
-          initiatedExit,
-          slashed);
+          slashed,
+          effectiveBalance);
     }
 
     public Builder withPubKey(BLSPubkey pubKey) {
@@ -191,6 +207,11 @@ public class ValidatorRecord {
       return this;
     }
 
+    public Builder withActivationEligibilityEpoch(EpochNumber activationEligibilityEpoch) {
+      this.activationEligibilityEpoch = activationEligibilityEpoch;
+      return this;
+    }
+
     public Builder withExitEpoch(EpochNumber exitEpoch) {
       this.exitEpoch = exitEpoch;
       return this;
@@ -201,13 +222,13 @@ public class ValidatorRecord {
       return this;
     }
 
-    public Builder withInitiatedExit(Boolean initiatedExit) {
-      this.initiatedExit = initiatedExit;
+    public Builder withSlashed(Boolean slashed) {
+      this.slashed = slashed;
       return this;
     }
 
-    public Builder withSlashed(Boolean slashed) {
-      this.slashed = slashed;
+    public Builder withEffectiveBalance(Gwei effectiveBalance) {
+      this.effectiveBalance = effectiveBalance;
       return this;
     }
   }

@@ -13,7 +13,7 @@ import org.ethereum.beacon.core.MutableBeaconState;
  * Per-block transition, which happens at every block.
  *
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.5.1/specs/core/0_beacon-chain.md#per-block-processing">Per-block
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.6.1/specs/core/0_beacon-chain.md#per-block-processing">Per-block
  *     processing</a> in the spec.
  */
 public class PerBlockTransition implements BlockTransition<BeaconStateEx> {
@@ -29,8 +29,8 @@ public class PerBlockTransition implements BlockTransition<BeaconStateEx> {
   public BeaconStateEx apply(BeaconStateEx stateEx, BeaconBlock block) {
     logger.trace(() -> "Applying block transition to state: (" +
         spec.hash_tree_root(stateEx).toStringShort() + ") "
-        + stateEx.toString(spec.getConstants(), spec::signed_root) + ", Block: "
-        + block.toString(spec.getConstants(), stateEx.getGenesisTime(), spec::signed_root));
+        + stateEx.toString(spec.getConstants(), spec::signing_root) + ", Block: "
+        + block.toString(spec.getConstants(), stateEx.getGenesisTime(), spec::signing_root));
 
     TransitionType.BLOCK.checkCanBeAppliedAfter(stateEx.getTransition());
 
@@ -70,7 +70,7 @@ public class PerBlockTransition implements BlockTransition<BeaconStateEx> {
 
     logger.trace(() -> "Block transition result state: (" +
         spec.hash_tree_root(ret).toStringShort() + ") " +
-        ret.toString(spec.getConstants(), spec::signed_root));
+        ret.toString(spec.getConstants(), spec::signing_root));
 
     return ret;
   }

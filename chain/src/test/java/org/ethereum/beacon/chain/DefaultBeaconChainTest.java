@@ -3,7 +3,6 @@ package org.ethereum.beacon.chain;
 import java.util.Collections;
 import java.util.stream.IntStream;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
-import org.ethereum.beacon.chain.storage.BeaconChainStorageFactory;
 import org.ethereum.beacon.chain.storage.impl.SSZBeaconChainStorageFactory;
 import org.ethereum.beacon.chain.storage.impl.SerializerFactory;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
@@ -22,8 +21,8 @@ import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.BeaconState;
-import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.Eth1Data;
+import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.db.Database;
 import org.ethereum.beacon.pow.DepositContract.ChainStart;
@@ -69,10 +68,10 @@ public class DefaultBeaconChainTest {
     BeaconBlock block =
         new BeaconBlock(
             spec.get_current_slot(parent.getState(), currentTime),
-            spec.signed_root(parent.getBlock()),
+            spec.signing_root(parent.getBlock()),
             Hash32.ZERO,
             BeaconBlockBody.EMPTY,
-            spec.getConstants().getEmptySignature());
+            BLSSignature.ZERO);
     BeaconState state = perSlotTransition.apply(new BeaconStateExImpl(parent.getState()));
 
     return block.withStateRoot(spec.hash_tree_root(state));

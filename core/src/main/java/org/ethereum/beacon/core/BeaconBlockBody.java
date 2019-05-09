@@ -3,7 +3,6 @@ package org.ethereum.beacon.core;
 import static java.util.Collections.emptyList;
 
 import com.google.common.base.Objects;
-import java.util.ArrayList;
 import java.util.List;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
@@ -11,13 +10,12 @@ import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.Transfer;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
-import org.ethereum.beacon.core.spec.InitialValues;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
+import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.collections.ReadList;
-import tech.pegasys.artemis.util.collections.WriteList;
 
 /**
  * Beacon block body.
@@ -26,7 +24,7 @@ import tech.pegasys.artemis.util.collections.WriteList;
  *
  * @see BeaconBlock
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.5.0/specs/core/0_beacon-chain.md#beaconblockbody">BeaconBlockBody
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.6.1/specs/core/0_beacon-chain.md#beaconblockbody">BeaconBlockBody
  *     in the spec</a>
  */
 @SSZSerializable
@@ -34,9 +32,10 @@ public class BeaconBlockBody {
 
   /** A body where all lists are empty. */
   public static final BeaconBlockBody EMPTY =
-      new BeaconBlockBody(
-          InitialValues.EMPTY_SIGNATURE,
+      BeaconBlockBody.create(
+          BLSSignature.ZERO,
           Eth1Data.EMPTY,
+          Bytes32.ZERO,
           emptyList(),
           emptyList(),
           emptyList(),
@@ -48,36 +47,62 @@ public class BeaconBlockBody {
   @SSZ private final BLSSignature randaoReveal;
   /** Eth1 data that is observed by proposer. */
   @SSZ private final Eth1Data eth1Data;
+  /** Analogue to Eth1 Extra Data. */
+  @SSZ private final Bytes32 graffiti;
   /** A list of proposer slashing challenges. */
-  @SSZ private final List<ProposerSlashing> proposerSlashingsList;
+  @SSZ private final ReadList<Integer, ProposerSlashing> proposerSlashings;
   /** A list of attester slashing challenges. */
-  @SSZ private final List<AttesterSlashing> attesterSlashingsList;
+  @SSZ private final ReadList<Integer, AttesterSlashing> attesterSlashings;
   /** A list of attestations. */
-  @SSZ private final List<Attestation> attestationsList;
+  @SSZ private final ReadList<Integer, Attestation> attestations;
   /** A list of validator deposit proofs. */
-  @SSZ private final List<Deposit> depositsList;
+  @SSZ private final ReadList<Integer, Deposit> deposits;
   /** A list of validator exits. */
-  @SSZ private final List<VoluntaryExit> voluntaryExitsList;
+  @SSZ private final ReadList<Integer, VoluntaryExit> voluntaryExits;
   /** A list of transfers. */
-  @SSZ private final List<Transfer> transferList;
+  @SSZ private final ReadList<Integer, Transfer> transfers;
 
   public BeaconBlockBody(
       BLSSignature randaoReveal,
       Eth1Data eth1Data,
-      List<ProposerSlashing> proposerSlashingsList,
-      List<AttesterSlashing> attesterSlashingsList,
-      List<Attestation> attestationsList,
-      List<Deposit> depositsList,
-      List<VoluntaryExit> voluntaryExitsList,
-      List<Transfer> transferList) {
+      Bytes32 graffiti,
+      ReadList<Integer, ProposerSlashing> proposerSlashings,
+      ReadList<Integer, AttesterSlashing> attesterSlashings,
+      ReadList<Integer, Attestation> attestations,
+      ReadList<Integer, Deposit> deposits,
+      ReadList<Integer, VoluntaryExit> voluntaryExits,
+      ReadList<Integer, Transfer> transfers) {
     this.randaoReveal = randaoReveal;
     this.eth1Data = eth1Data;
-    this.proposerSlashingsList = proposerSlashingsList;
-    this.attesterSlashingsList = attesterSlashingsList;
-    this.attestationsList = attestationsList;
-    this.depositsList = depositsList;
-    this.voluntaryExitsList = voluntaryExitsList;
-    this.transferList = transferList;
+    this.graffiti = graffiti;
+    this.proposerSlashings = proposerSlashings;
+    this.attesterSlashings = attesterSlashings;
+    this.attestations = attestations;
+    this.deposits = deposits;
+    this.voluntaryExits = voluntaryExits;
+    this.transfers = transfers;
+  }
+
+  public static BeaconBlockBody create(
+      BLSSignature randaoReveal,
+      Eth1Data eth1Data,
+      Bytes32 graffiti,
+      List<ProposerSlashing> proposerSlashings,
+      List<AttesterSlashing> attesterSlashings,
+      List<Attestation> attestations,
+      List<Deposit> deposits,
+      List<VoluntaryExit> voluntaryExits,
+      List<Transfer> transfers) {
+    return new BeaconBlockBody(
+        randaoReveal,
+        eth1Data,
+        graffiti,
+        ReadList.wrap(proposerSlashings, Integer::new),
+        ReadList.wrap(attesterSlashings, Integer::new),
+        ReadList.wrap(attestations, Integer::new),
+        ReadList.wrap(deposits, Integer::new),
+        ReadList.wrap(voluntaryExits, Integer::new),
+        ReadList.wrap(transfers, Integer::new));
   }
 
   public BLSSignature getRandaoReveal() {
@@ -88,70 +113,32 @@ public class BeaconBlockBody {
     return eth1Data;
   }
 
+  public Bytes32 getGraffiti() {
+    return graffiti;
+  }
+
   public ReadList<Integer, ProposerSlashing> getProposerSlashings() {
-    return WriteList.wrap(proposerSlashingsList, Integer::intValue);
+    return proposerSlashings;
   }
 
   public ReadList<Integer, AttesterSlashing> getAttesterSlashings() {
-    return WriteList.wrap(attesterSlashingsList, Integer::intValue);
+    return attesterSlashings;
   }
 
   public ReadList<Integer, Attestation> getAttestations() {
-    return WriteList.wrap(attestationsList, Integer::intValue);
+    return attestations;
   }
 
   public ReadList<Integer, Deposit> getDeposits() {
-    return WriteList.wrap(depositsList, Integer::intValue);
+    return deposits;
   }
 
   public ReadList<Integer, VoluntaryExit> getVoluntaryExits() {
-    return WriteList.wrap(voluntaryExitsList, Integer::intValue);
+    return voluntaryExits;
   }
 
   public ReadList<Integer, Transfer> getTransfers() {
-    return WriteList.wrap(transferList, Integer::intValue);
-  }
-
-  /**
-   * @deprecated for serialization only
-   */
-  public List<ProposerSlashing> getProposerSlashingsList() {
-    return proposerSlashingsList;
-  }
-
-  /**
-   * @deprecated for serialization only
-   */
-  public List<AttesterSlashing> getAttesterSlashingsList() {
-    return attesterSlashingsList;
-  }
-
-  /**
-   * @deprecated for serialization only
-   */
-  public List<Attestation> getAttestationsList() {
-    return attestationsList;
-  }
-
-  /**
-   * @deprecated for serialization only
-   */
-  public List<Deposit> getDepositsList() {
-    return depositsList;
-  }
-
-  /**
-   * @deprecated for serialization only
-   */
-  public List<VoluntaryExit> getVoluntaryExitsList() {
-    return voluntaryExitsList;
-  }
-
-  /**
-   * @deprecated for serialization only
-   */
-  public List<Transfer> getTransferList() {
-    return transferList;
+    return transfers;
   }
 
   @Override
@@ -165,12 +152,13 @@ public class BeaconBlockBody {
     BeaconBlockBody blockBody = (BeaconBlockBody) object;
     return Objects.equal(randaoReveal, blockBody.randaoReveal)
         && Objects.equal(eth1Data, blockBody.eth1Data)
-        && Objects.equal(proposerSlashingsList, blockBody.proposerSlashingsList)
-        && Objects.equal(attesterSlashingsList, blockBody.attesterSlashingsList)
-        && Objects.equal(attestationsList, blockBody.attestationsList)
-        && Objects.equal(depositsList, blockBody.depositsList)
-        && Objects.equal(voluntaryExitsList, blockBody.voluntaryExitsList)
-        && Objects.equal(transferList, blockBody.transferList);
+        && Objects.equal(graffiti, blockBody.graffiti)
+        && Objects.equal(proposerSlashings, blockBody.proposerSlashings)
+        && Objects.equal(attesterSlashings, blockBody.attesterSlashings)
+        && Objects.equal(attestations, blockBody.attestations)
+        && Objects.equal(deposits, blockBody.deposits)
+        && Objects.equal(voluntaryExits, blockBody.voluntaryExits)
+        && Objects.equal(transfers, blockBody.transfers);
   }
 
   @Override
@@ -178,11 +166,12 @@ public class BeaconBlockBody {
     return Objects.hashCode(
         randaoReveal,
         eth1Data,
-        proposerSlashingsList,
-        attesterSlashingsList,
-        attestationsList,
-        depositsList,
-        voluntaryExitsList,
-        transferList);
+        graffiti,
+        proposerSlashings,
+        attesterSlashings,
+        attestations,
+        deposits,
+        voluntaryExits,
+        transfers);
   }
 }

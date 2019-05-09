@@ -31,24 +31,12 @@ public interface MutableBeaconState extends BeaconState {
   WriteList<ValidatorIndex, ValidatorRecord> getValidatorRegistry();
 
   @Override
-  WriteList<ValidatorIndex, Gwei> getValidatorBalances();
-
-  void setValidatorRegistryUpdateEpoch(EpochNumber validatorRegistryUpdateEpoch);
+  WriteList<ValidatorIndex, Gwei> getBalances();
 
   @Override
   WriteVector<EpochNumber, Hash32> getLatestRandaoMixes();
 
-  void setPreviousShufflingStartShard(ShardNumber previousShufflingStartShard);
-
-  void setCurrentShufflingStartShard(ShardNumber currentShufflingStartShard);
-
-  void setPreviousShufflingEpoch(EpochNumber previousShufflingEpoch);
-
-  void setCurrentShufflingEpoch(EpochNumber currentShufflingEpoch);
-
-  void setPreviousShufflingSeed(Hash32 previousEpochRandaoMix);
-
-  void setCurrentShufflingSeed(Hash32 currentEpochRandaoMix);
+  void setLatestStartShard(ShardNumber latestStartShard);
 
   void setPreviousJustifiedEpoch(EpochNumber previousJustifiedEpoch);
 
@@ -96,7 +84,7 @@ public interface MutableBeaconState extends BeaconState {
   void setLatestEth1Data(Eth1Data latestEth1Data);
 
   @Override
-  WriteList<Integer, Eth1DataVote> getEth1DataVotes();
+  WriteList<Integer, Eth1Data> getEth1DataVotes();
 
   void setDepositIndex(UInt64 depositIndex);
 

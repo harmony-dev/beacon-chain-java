@@ -13,8 +13,6 @@ import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustodyBit;
-import org.ethereum.beacon.core.operations.attestation.Crosslink;
-import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.spec.SignatureDomains;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.ShardNumber;
@@ -25,6 +23,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
 import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.uint.UInt64;
 
 public class BeaconChainAttesterTest {
 
@@ -45,11 +44,12 @@ public class BeaconChainAttesterTest {
     ValidatorIndex validatorIndex = committee.get(indexIntoCommittee);
     Hash32 targetRoot = Hash32.random(random);
     Hash32 sourceRoot = Hash32.random(random);
-    ShardNumber shard = spec.getConstants().getBeaconChainShardNumber();
+    ShardNumber shard = ShardNumber.of(
+        UInt64.random(random).modulo(spec.getConstants().getShardCount()));
 
     Mockito.doReturn(committee).when(attester).getCommittee(any(), any());
     Mockito.doReturn(targetRoot).when(attester).getTargetRoot(any(), any());
-    Mockito.doReturn(Crosslink.EMPTY).when(attester).getPreviousCrosslink(any(), any());
+    Mockito.doReturn(Hash32.ZERO).when(attester).getPreviousCrosslinkRoot(any(), any());
     Mockito.doReturn(sourceRoot).when(attester).getSourceRoot(any(), any());
 
     Attestation attestation =
@@ -58,13 +58,13 @@ public class BeaconChainAttesterTest {
     AttestationData data = attestation.getData();
     BeaconState state = initiallyObservedState.getLatestSlotState();
 
-    Assert.assertEquals(state.getSlot(), data.getSlot());
+    Assert.assertEquals(spec.get_current_epoch(state), data.getTargetEpoch());
     Assert.assertEquals(shard, data.getShard());
     Assert.assertEquals(
-        spec.signed_root(initiallyObservedState.getHead()), data.getBeaconBlockRoot());
+        spec.signing_root(initiallyObservedState.getHead()), data.getBeaconBlockRoot());
     Assert.assertEquals(targetRoot, data.getTargetRoot());
     Assert.assertEquals(Hash32.ZERO, data.getCrosslinkDataRoot());
-    Assert.assertEquals(Hash32.ZERO, data.getPreviousCrosslink().getCrosslinkDataRoot());
+    Assert.assertEquals(Hash32.ZERO, data.getPreviousCrosslinkRoot());
     Assert.assertEquals(state.getCurrentJustifiedEpoch(), data.getSourceEpoch());
     Assert.assertEquals(sourceRoot, data.getSourceRoot());
 
@@ -81,12 +81,9 @@ public class BeaconChainAttesterTest {
     BLSSignature expectedSignature =
         signer.sign(
             spec.hash_tree_root(new AttestationDataAndCustodyBit(data, false)),
-            spec.get_domain(
-                state.getFork(),
-                spec.get_current_epoch(state),
-                SignatureDomains.ATTESTATION));
+            spec.get_domain(state, SignatureDomains.ATTESTATION));
 
-    Assert.assertEquals(expectedSignature, attestation.getAggregateSignature());
+    Assert.assertEquals(expectedSignature, attestation.getSignature());
   }
 
   private List<ValidatorIndex> getCommittee(int size) {

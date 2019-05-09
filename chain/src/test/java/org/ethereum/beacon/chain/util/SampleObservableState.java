@@ -81,7 +81,7 @@ public class SampleObservableState {
     deposits = anyDeposits.getValue0();
     depositKeys = anyDeposits.getValue1();
 
-    eth1Data = new Eth1Data(Hash32.random(rnd), Hash32.random(rnd));
+    eth1Data = new Eth1Data(Hash32.random(rnd), UInt64.ZERO, Hash32.random(rnd));
     chainStart = new ChainStart(Time.of(genesisTime.getSeconds()), eth1Data, deposits);
 
     InitialStateTransition initialTransition = new InitialStateTransition(chainStart, spec);
@@ -94,9 +94,7 @@ public class SampleObservableState {
                 spec.getObjectHasher(), SerializerFactory.createSSZ(specConstants))
             .create(db);
 
-    // TODO
     BeaconBlockVerifier blockVerifier = (block, state) -> VerificationResult.PASSED;
-    // TODO
     BeaconStateVerifier stateVerifier = (block, state) -> VerificationResult.PASSED;
 
     beaconChain = new DefaultBeaconChain(

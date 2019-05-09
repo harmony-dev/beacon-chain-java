@@ -1,8 +1,6 @@
 package org.ethereum.beacon.ssz;
 
 import java.util.Arrays;
-import net.consensys.cava.bytes.Bytes;
-import net.consensys.cava.ssz.SSZ;
 import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.ssz.access.container.SSZAnnotationSchemeBuilder;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
@@ -32,7 +30,7 @@ import static org.junit.Assert.assertEquals;
 /** Tests of {@link SSZSerializer} */
 public class SSZSerializerTest {
   private static byte[] DEFAULT_HASH =
-      Hashes.keccak256(BytesValue.fromHexString("aa")).getArrayUnsafe();
+      Hashes.sha256(BytesValue.fromHexString("aa")).getArrayUnsafe();
   private static Sign.Signature DEFAULT_SIG = new Sign.Signature();
 
   static {

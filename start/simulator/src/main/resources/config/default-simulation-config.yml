@@ -12,8 +12,6 @@ plan: !simulation
 
 chainSpec:
   specConstants:
-    initialValues:
-      GENESIS_SLOT: 1000000
     miscParameters:
       SHARD_COUNT: 4
       TARGET_COMMITTEE_SIZE: 2

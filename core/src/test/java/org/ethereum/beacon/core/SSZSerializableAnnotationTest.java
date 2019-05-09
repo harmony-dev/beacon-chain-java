@@ -17,9 +17,8 @@ import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustodyBit;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
-import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
-import org.ethereum.beacon.core.operations.slashing.SlashableAttestation;
+import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
 import org.ethereum.beacon.core.state.BeaconStateImpl;
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.state.Eth1Data;
@@ -124,7 +123,6 @@ public class SSZSerializableAnnotationTest {
                 BeaconStateImpl.class,
                 Deposit.class,
                 DepositData.class,
-                DepositInput.class,
                 VoluntaryExit.class,
                 ProposerSlashing.class,
                 Crosslink.class,
@@ -139,7 +137,7 @@ public class SSZSerializableAnnotationTest {
                 BLSSignature.class,
                 EpochNumber.class,
                 Gwei.class,
-                SlashableAttestation.class,
+                IndexedAttestation.class,
                 ShardNumber.class,
                 SlotNumber.class,
                 Time.class,

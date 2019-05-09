@@ -31,17 +31,17 @@ public class Attestation {
   /** Proof of custody bitfield. */
   @SSZ private final Bitfield custodyBitfield;
   /** A product of aggregation of signatures from different validators to {@link #data}. */
-  @SSZ private final BLSSignature aggregateSignature;
+  @SSZ private final BLSSignature signature;
 
   public Attestation(
       Bitfield aggregationBitfield,
       AttestationData data,
       Bitfield custodyBitfield,
-      BLSSignature aggregateSignature) {
+      BLSSignature signature) {
     this.aggregationBitfield = aggregationBitfield;
     this.data = data;
     this.custodyBitfield = custodyBitfield;
-    this.aggregateSignature = aggregateSignature;
+    this.signature = signature;
   }
 
   public AttestationData getData() {
@@ -56,8 +56,8 @@ public class Attestation {
     return custodyBitfield;
   }
 
-  public BLSSignature getAggregateSignature() {
-    return aggregateSignature;
+  public BLSSignature getSignature() {
+    return signature;
   }
 
   @Override
@@ -68,7 +68,7 @@ public class Attestation {
     return Objects.equal(data, that.data)
         && Objects.equal(aggregationBitfield, that.aggregationBitfield)
         && Objects.equal(custodyBitfield, that.custodyBitfield)
-        && Objects.equal(aggregateSignature, that.aggregateSignature);
+        && Objects.equal(signature, that.signature);
   }
 
   @Override
@@ -76,7 +76,7 @@ public class Attestation {
     int result = data.hashCode();
     result = 31 * result + aggregationBitfield.hashCode();
     result = 31 * result + custodyBitfield.hashCode();
-    result = 31 * result + aggregateSignature.hashCode();
+    result = 31 * result + signature.hashCode();
     return result;
   }
 
@@ -94,13 +94,13 @@ public class Attestation {
         + data.toString(spec, beaconStart)
         + ", attesters=" + getSignerIndices()
         + ", cusodyBits=" + custodyBitfield
-        + ", sig=" + aggregateSignature
+        + ", sig=" + signature
         + "]";
   }
 
   public String toStringShort(@Nullable SpecConstants spec) {
-    return getData().getSlot().toStringNumber(spec) + "/"
-        + getData().getShard().toString(spec) + "/"
+    return "epoch=" + getData().getTargetEpoch().toString(spec) + "/"
+        + getData().getShard().toString() + "/"
         + getData().getBeaconBlockRoot().toStringShort() + "/"
         + getSignerIndices();
   }

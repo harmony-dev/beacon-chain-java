@@ -3,11 +3,12 @@ package org.ethereum.beacon.core.util;
 import java.util.Random;
 import org.ethereum.beacon.core.state.Eth1Data;
 import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.uint.UInt64;
 
 public abstract class Eth1DataTestUtil {
   private Eth1DataTestUtil() {}
 
   public static Eth1Data createRandom(Random random) {
-    return new Eth1Data(Hash32.random(random), Hash32.random(random));
+    return new Eth1Data(Hash32.random(random), UInt64.ZERO, Hash32.random(random));
   }
 }

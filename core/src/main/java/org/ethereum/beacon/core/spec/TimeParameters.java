@@ -20,10 +20,12 @@ public interface TimeParameters {
   EpochLength SLOTS_PER_EPOCH = new EpochLength(UInt64.valueOf(1 << 6)); // 64 slots
   EpochNumber MIN_SEED_LOOKAHEAD = EpochNumber.of(1);
   EpochNumber ACTIVATION_EXIT_DELAY = EpochNumber.of(1 << 2);
-  EpochNumber EPOCHS_PER_ETH1_VOTING_PERIOD = EpochNumber.of(1 << 4);
+  EpochNumber SLOTS_PER_ETH1_VOTING_PERIOD = EpochNumber.of(1 << 10); // 1024
   SlotNumber SLOTS_PER_HISTORICAL_ROOT = SlotNumber.of(1 << 13); // 8,192
   EpochNumber MIN_VALIDATOR_WITHDRAWABILITY_DELAY = EpochNumber.of(1 << 8);
   EpochNumber PERSISTENT_COMMITTEE_PERIOD = EpochNumber.of(1 << 11); // 2,048
+  EpochNumber MAX_CROSSLINK_EPOCHS = EpochNumber.of(1 << 6); // 64
+  EpochNumber MIN_EPOCHS_TO_INACTIVITY_PENALTY = EpochNumber.of(1 << 2); // 4
 
   /* Values defined in the spec. */
 
@@ -47,8 +49,8 @@ public interface TimeParameters {
     return ACTIVATION_EXIT_DELAY;
   }
 
-  default EpochNumber getEpochsPerEth1VotingPeriod() {
-    return EPOCHS_PER_ETH1_VOTING_PERIOD;
+  default EpochNumber getSlotsPerEth1VotingPeriod() {
+    return SLOTS_PER_ETH1_VOTING_PERIOD;
   }
 
   default SlotNumber getSlotsPerHistoricalRoot() {
@@ -61,5 +63,13 @@ public interface TimeParameters {
 
   default EpochNumber getPersistentCommitteePeriod() {
     return PERSISTENT_COMMITTEE_PERIOD;
+  }
+
+  default EpochNumber getMaxCrosslinkEpochs() {
+    return MAX_CROSSLINK_EPOCHS;
+  }
+
+  default EpochNumber getMinEpochsToInactivityPenalty() {
+    return MIN_EPOCHS_TO_INACTIVITY_PENALTY;
   }
 }

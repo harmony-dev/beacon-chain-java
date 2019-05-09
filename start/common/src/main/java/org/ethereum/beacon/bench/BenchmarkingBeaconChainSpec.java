@@ -17,12 +17,12 @@ import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.ShardCommittee;
-import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Bitfield;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
+import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.crypto.BLS381.PublicKey;
@@ -30,7 +30,6 @@ import org.ethereum.beacon.util.stats.MeasurementsCollector;
 import org.ethereum.beacon.util.stats.TimeCollector;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
-import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
@@ -74,6 +73,9 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
     return super.getHashFunction();
   }
 
+
+  /** BLS */
+
   @Override
   public boolean bls_verify(
       BLSPubkey publicKey, Hash32 message, BLSSignature signature, UInt64 domain) {
@@ -95,34 +97,97 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
         "bls_aggregate_pubkeys", () -> super.bls_aggregate_pubkeys(publicKeysBytes));
   }
 
+
+  /** HELPERS */
+
   @Override
   public Hash32 hash_tree_root(Object object) {
     return callAndTrack("hash_tree_root", () -> super.hash_tree_root(object));
   }
 
   @Override
-  public Hash32 signed_root(Object object) {
-    return callAndTrack("signed_root", () -> super.signed_root(object));
+  public Hash32 signing_root(Object object) {
+    return callAndTrack("signing_root", () -> super.signing_root(object));
   }
 
   @Override
-  public List<ShardCommittee> get_crosslink_committees_at_slot(BeaconState state, SlotNumber slot) {
+  public List<ValidatorIndex> get_crosslink_committee(BeaconState state, EpochNumber epoch,
+      ShardNumber shard) {
     return callAndTrack(
-        "get_crosslink_committees_at_slot",
-        () -> super.get_crosslink_committees_at_slot(state, slot));
+        "get_crosslink_committee",
+        () -> super.get_crosslink_committee(state, epoch, shard));
   }
 
   @Override
-  public ValidatorIndex get_beacon_proposer_index(BeaconState state, SlotNumber slot) {
+  public ValidatorIndex get_beacon_proposer_index(BeaconState state) {
     return callAndTrack(
-        "get_beacon_proposer_index", () -> super.get_beacon_proposer_index(state, slot));
+        "get_beacon_proposer_index", () -> super.get_beacon_proposer_index(state));
   }
 
   @Override
-  public void update_justification_and_finalization(MutableBeaconState state) {
-    callAndTrack(
-        "update_justification_and_finalization",
-        () -> super.update_justification_and_finalization(state));
+  public List<ValidatorIndex> get_active_validator_indices(
+      BeaconState state, EpochNumber epochNumber) {
+    return callAndTrack(
+        "get_active_validator_indices",
+        () -> super.get_active_validator_indices(state, epochNumber));
+  }
+
+  @Override
+  public Gwei get_total_balance(BeaconState state, Collection<ValidatorIndex> validators) {
+    return callAndTrack("get_total_balance", () -> super.get_total_balance(state, validators));
+  }
+
+  @Override
+  public List<ValidatorIndex> get_attesting_indices(
+      BeaconState state, AttestationData attestation_data, Bitfield bitfield) {
+    return callAndTrack(
+        "get_attesting_indices",
+        () -> super.get_attesting_indices(state, attestation_data, bitfield));
+  }
+
+  @Override
+  public ValidatorIndex get_validator_index_by_pubkey(BeaconState state, BLSPubkey pubkey) {
+    return callAndTrack(
+        "get_validator_index_by_pubkey", () -> super.get_validator_index_by_pubkey(state, pubkey));
+  }
+
+  @Override
+  public Gwei get_base_reward(BeaconState state, ValidatorIndex index) {
+    return callAndTrack("get_base_reward", () -> super.get_base_reward(state, index));
+  }
+
+  @Override
+  public Gwei get_total_active_balance(BeaconState state) {
+    return callAndTrack("get_total_active_balance", () -> super.get_total_active_balance(state));
+  }
+
+  @Override
+  public boolean verify_bitfield(Bitfield bitfield, int committee_size) {
+    return callAndTrack("verify_bitfield", () -> super.verify_bitfield(bitfield, committee_size));
+  }
+
+
+  /** STATE CACHING */
+
+  @Override
+  public void cache_state(MutableBeaconState state) {
+    callAndTrack("cache_state", () -> super.cache_state(state));
+  }
+
+  /** SLOT PROCESSING */
+
+  @Override
+  public void advance_slot(MutableBeaconState state) {
+    callAndTrack("advance_slot", () -> super.advance_slot(state));
+  }
+
+
+  /** EPOCH PROCESSING */
+
+  @Override
+  public void process_justification_and_finalization(MutableBeaconState state) {
+    callAndTrack("process_justification_and_finalization",
+        () -> super.process_justification_and_finalization(state));
   }
 
   @Override
@@ -131,25 +196,13 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
   }
 
   @Override
-  public void maybe_reset_eth1_period(MutableBeaconState state) {
-    callAndTrack("maybe_reset_eth1_period", () -> super.maybe_reset_eth1_period(state));
+  public void process_rewards_and_penalties(MutableBeaconState state) {
+    callAndTrack("process_rewards_and_penalties", () -> super.process_rewards_and_penalties(state));
   }
 
   @Override
-  public void apply_rewards(MutableBeaconState state) {
-    callAndTrack("apply_rewards", () -> super.apply_rewards(state));
-  }
-
-  @Override
-  public List<ValidatorIndex> process_ejections(MutableBeaconState state) {
-    return callAndTrack("process_ejections", () -> super.process_ejections(state));
-  }
-
-  @Override
-  public void update_registry_and_shuffling_data(MutableBeaconState state) {
-    callAndTrack(
-        "update_registry_and_shuffling_data",
-        () -> super.update_registry_and_shuffling_data(state));
+  public List<ValidatorIndex> process_registry_updates(MutableBeaconState state) {
+    return callAndTrack("process_registry_updates", () -> super.process_registry_updates(state));
   }
 
   @Override
@@ -158,35 +211,11 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
   }
 
   @Override
-  public void process_exit_queue(MutableBeaconState state) {
-    callAndTrack("process_exit_queue", () -> super.process_exit_queue(state));
+  public void process_final_updates(MutableBeaconState state) {
+    callAndTrack("process_final_updates", () -> super.process_final_updates(state));
   }
 
-  @Override
-  public void finish_epoch_update(MutableBeaconState state) {
-    callAndTrack("finish_epoch_update", () -> super.finish_epoch_update(state));
-  }
-
-  @Override
-  public void cache_state(MutableBeaconState state) {
-    callAndTrack("cache_state", () -> super.cache_state(state));
-  }
-
-  @Override
-  public void advance_slot(MutableBeaconState state) {
-    callAndTrack("advance_slot", () -> super.advance_slot(state));
-  }
-
-  @Override
-  public void process_attestation(MutableBeaconState state, Attestation attestation) {
-    callAndTrack(
-        "process_attestation",
-        () -> {
-          // count verification in benchmark measurements
-          super.verify_attestation(state, attestation);
-          super.process_attestation(state, attestation);
-        });
-  }
+  /** BLOCK PROCESSING */
 
   @Override
   public void process_block_header(MutableBeaconState state, BeaconBlock block) {
@@ -214,51 +243,14 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
   }
 
   @Override
-  public List<ValidatorIndex> get_active_validator_indices(
-      ReadList<ValidatorIndex, ValidatorRecord> validators, EpochNumber epochNumber) {
-    return callAndTrack(
-        "get_active_validator_indices",
-        () -> super.get_active_validator_indices(validators, epochNumber));
-  }
-
-  @Override
-  public Gwei get_total_balance(BeaconState state, Collection<ValidatorIndex> validators) {
-    return callAndTrack("get_total_balance", () -> super.get_total_balance(state, validators));
-  }
-
-  @Override
-  public List<ValidatorIndex> get_attestation_participants(
-      BeaconState state, AttestationData attestation_data, Bitfield bitfield) {
-    return callAndTrack(
-        "get_attestation_participants",
-        () -> super.get_attestation_participants(state, attestation_data, bitfield));
-  }
-
-  @Override
-  public ValidatorIndex get_validator_index_by_pubkey(BeaconState state, BLSPubkey pubkey) {
-    return callAndTrack(
-        "get_validator_index_by_pubkey", () -> super.get_validator_index_by_pubkey(state, pubkey));
-  }
-
-  @Override
-  public Gwei get_previous_total_balance(BeaconState state) {
-    return callAndTrack(
-        "get_previous_total_balance", () -> super.get_previous_total_balance(state));
-  }
-
-  @Override
-  public Gwei get_base_reward(BeaconState state, ValidatorIndex index) {
-    return callAndTrack("get_base_reward", () -> super.get_base_reward(state, index));
-  }
-
-  @Override
-  public Gwei get_current_total_balance(BeaconState state) {
-    return callAndTrack("get_current_total_balance", () -> super.get_current_total_balance(state));
-  }
-
-  @Override
-  public boolean verify_bitfield(Bitfield bitfield, int committee_size) {
-    return callAndTrack("verify_bitfield", () -> super.verify_bitfield(bitfield, committee_size));
+  public void process_attestation(MutableBeaconState state, Attestation attestation) {
+    callAndTrack(
+        "process_attestation",
+        () -> {
+          // count verification in benchmark measurements
+          super.verify_attestation(state, attestation);
+          super.process_attestation(state, attestation);
+        });
   }
 
   void startTracking() {

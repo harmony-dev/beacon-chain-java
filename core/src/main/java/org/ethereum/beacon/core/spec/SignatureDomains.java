@@ -11,7 +11,7 @@ import tech.pegasys.artemis.util.uint.UInt64;
  */
 public interface SignatureDomains {
 
-  UInt64 BEACON_BLOCK = UInt64.valueOf(0);
+  UInt64 BEACON_PROPOSER = UInt64.valueOf(0);
 
   UInt64 RANDAO = UInt64.valueOf(1);
 

@@ -12,7 +12,7 @@ import org.ethereum.beacon.core.MutableBeaconState;
  * Per-slot transition, which happens at every slot.
  *
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.5.1/specs/core/0_beacon-chain.md#per-slot-processing">Per-slot
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.6.1/specs/core/0_beacon-chain.md#per-slot-processing">Per-slot
  *     processing</a> in the spec.
  */
 public class PerSlotTransition implements StateTransition<BeaconStateEx> {
@@ -28,7 +28,7 @@ public class PerSlotTransition implements StateTransition<BeaconStateEx> {
   public BeaconStateEx apply(BeaconStateEx stateEx) {
     logger.trace(() -> "Applying slot transition to state: (" +
         spec.hash_tree_root(stateEx).toStringShort() + ") " +
-        stateEx.toString(spec.getConstants(), spec::signed_root));
+        stateEx.toString(spec.getConstants(), spec::signing_root));
     TransitionType.SLOT.checkCanBeAppliedAfter(stateEx.getTransition());
 
     MutableBeaconState state = stateEx.createMutableCopy();
@@ -39,7 +39,7 @@ public class PerSlotTransition implements StateTransition<BeaconStateEx> {
 
     logger.trace(() -> "Slot transition result state: (" +
         spec.hash_tree_root(ret).toStringShort() + ") " +
-        ret.toString(spec.getConstants(), spec::signed_root));
+        ret.toString(spec.getConstants(), spec::signing_root));
 
     return ret;
   }

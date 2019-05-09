@@ -1,5 +1,6 @@
 package org.ethereum.beacon.consensus.transition;
 
+import com.google.common.base.Objects;
 import java.util.Map;
 import java.util.function.Supplier;
 import javax.annotation.Nullable;
@@ -9,7 +10,6 @@ import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.state.Eth1Data;
-import org.ethereum.beacon.core.state.Eth1DataVote;
 import org.ethereum.beacon.core.state.Fork;
 import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.state.ValidatorRecord;
@@ -69,13 +69,8 @@ public class DelegateBeaconState implements BeaconState {
   }
 
   @Override
-  public ReadList<ValidatorIndex, Gwei> getValidatorBalances() {
-    return delegate.getValidatorBalances();
-  }
-
-  @Override
-  public EpochNumber getValidatorRegistryUpdateEpoch() {
-    return delegate.getValidatorRegistryUpdateEpoch();
+  public ReadList<ValidatorIndex, Gwei> getBalances() {
+    return delegate.getBalances();
   }
 
   @Override
@@ -84,33 +79,8 @@ public class DelegateBeaconState implements BeaconState {
   }
 
   @Override
-  public ShardNumber getPreviousShufflingStartShard() {
-    return delegate.getPreviousShufflingStartShard();
-  }
-
-  @Override
-  public ShardNumber getCurrentShufflingStartShard() {
-    return delegate.getCurrentShufflingStartShard();
-  }
-
-  @Override
-  public EpochNumber getPreviousShufflingEpoch() {
-    return delegate.getPreviousShufflingEpoch();
-  }
-
-  @Override
-  public EpochNumber getCurrentShufflingEpoch() {
-    return delegate.getCurrentShufflingEpoch();
-  }
-
-  @Override
-  public Hash32 getPreviousShufflingSeed() {
-    return delegate.getPreviousShufflingSeed();
-  }
-
-  @Override
-  public Hash32 getCurrentShufflingSeed() {
-    return delegate.getCurrentShufflingSeed();
+  public ShardNumber getLatestStartShard() {
+    return delegate.getLatestStartShard();
   }
 
   @Override
@@ -159,12 +129,12 @@ public class DelegateBeaconState implements BeaconState {
   }
 
   @Override
-  public ReadList<ShardNumber, Crosslink> getPreviousCrosslinks() {
+  public ReadVector<ShardNumber, Crosslink> getPreviousCrosslinks() {
     return delegate.getPreviousCrosslinks();
   }
 
   @Override
-  public ReadList<ShardNumber, Crosslink> getCurrentCrosslinks() {
+  public ReadVector<ShardNumber, Crosslink> getCurrentCrosslinks() {
     return delegate.getCurrentCrosslinks();
   }
 
@@ -204,7 +174,7 @@ public class DelegateBeaconState implements BeaconState {
   }
 
   @Override
-  public ReadList<Integer, Eth1DataVote> getEth1DataVotes() {
+  public ReadList<Integer, Eth1Data> getEth1DataVotes() {
     return delegate.getEth1DataVotes();
   }
 
@@ -221,5 +191,17 @@ public class DelegateBeaconState implements BeaconState {
   @Override
   public String toStringShort(@Nullable SpecConstants constants) {
     return delegate.toStringShort(constants);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    DelegateBeaconState that = (DelegateBeaconState) o;
+    return Objects.equal(delegate, that.delegate);
   }
 }

@@ -348,15 +348,12 @@ public class BenchmarkReport {
     TOP_METHOD_LIST.put(
         BenchmarkRoutine.EPOCH,
         new String[] {
-          "update_justification_and_finalization",
+          "process_justification_and_finalization",
           "process_crosslinks",
-          "maybe_reset_eth1_period",
-          "apply_rewards",
-          "process_ejections",
-          "update_registry_and_shuffling_data",
+          "process_rewards_and_penalties",
+          "process_registry_updates",
           "process_slashings",
-          "process_exit_queue",
-          "finish_epoch_update"
+          "process_final_updates"
         });
   }
 
@@ -366,15 +363,15 @@ public class BenchmarkReport {
 
   private static final String[] HELPER_FUNCTIONS = {
     "hash_tree_root",
-    "signed_root",
-    "get_crosslink_committees_at_slot",
+    "signing_root",
+    "get_crosslink_committee",
     "get_beacon_proposer_index",
     "get_active_validator_indices",
     "get_total_balance",
-    "get_attestation_participants",
+    "get_attesting_indices",
     "get_validator_index_by_pubkey",
     "get_previous_total_balance",
-    "get_current_total_balance",
+    "get_total_active_balance",
     "get_base_reward",
     "verify_bitfield"
   };

@@ -4,11 +4,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
-import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.state.Eth1Data;
+import org.ethereum.beacon.core.types.BLSPubkey;
+import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.schedulers.Schedulers;
@@ -20,7 +22,10 @@ import org.reactivestreams.Publisher;
 import reactor.core.publisher.MonoProcessor;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
+import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.bytes.Bytes8;
+import tech.pegasys.artemis.util.bytes.Bytes96;
+import tech.pegasys.artemis.util.collections.ReadVector;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public abstract class AbstractDepositContract implements DepositContract {
@@ -74,6 +79,7 @@ public abstract class AbstractDepositContract implements DepositContract {
     ChainStart chainStart = new ChainStart(
         Time.castFrom(UInt64.fromBytesBigEndian(Bytes8.wrap(time))),
         new Eth1Data(Hash32.wrap(Bytes32.wrap(deposit_root)),
+            UInt64.valueOf(initialDeposits.size()),
             Hash32.wrap(Bytes32.wrap(blockHash))),
         initialDeposits);
     chainStartSink.onNext(chainStart);
@@ -106,20 +112,23 @@ public abstract class AbstractDepositContract implements DepositContract {
     List<Hash32> merkleBranch = Arrays.stream(eventData.merkle_branch)
         .map(bytes -> Hash32.wrap(Bytes32.wrap(bytes)))
         .collect(Collectors.toList());
-    Deposit deposit = new Deposit(merkleBranch,
+    Deposit deposit = new Deposit(ReadVector.wrap(merkleBranch, Function.identity()),
         UInt64.fromBytesBigEndian(Bytes8.wrap(eventData.merkle_tree_index)),
         parseDepositData(eventData.data));
     return new DepositInfo(deposit,
         new Eth1Data(Hash32.wrap(Bytes32.wrap(eventData.deposit_root)),
+            UInt64.ZERO,
             Hash32.wrap(Bytes32.wrap(blockHash))));
   }
 
   private DepositData parseDepositData(byte[] data) {
-    Gwei amount = Gwei.castFrom(UInt64.fromBytesBigEndian(Bytes8.wrap(data, 0)));
-    Time timestamp = Time.castFrom(UInt64.fromBytesBigEndian(Bytes8.wrap(data, 8)));
-    DepositInput depositInput = ssz.decode(Arrays.copyOfRange(data, 16, data.length),
-        DepositInput.class);
-    return new DepositData(amount, timestamp, depositInput);
+    BLSPubkey pubkey = BLSPubkey.wrap(Bytes48.wrap(data, 0));
+    Hash32 withdrawalCredentials = Hash32.wrap(Bytes32.wrap(data, 48));
+    Gwei amount =
+        Gwei.castFrom(UInt64.fromBytesLittleEndian(Bytes8.wrap(data, Bytes48.SIZE + Bytes32.SIZE)));
+    BLSSignature signature =
+        BLSSignature.wrap(Bytes96.wrap(data, Bytes48.SIZE + Bytes32.SIZE + Bytes8.SIZE));
+    return new DepositData(pubkey, withdrawalCredentials, amount, signature);
   }
 
   @Override
@@ -134,6 +143,7 @@ public abstract class AbstractDepositContract implements DepositContract {
     return getLatestBlockHashDepositRoot().map(
         r -> new Eth1Data(
             Hash32.wrap(Bytes32.wrap(r.getValue1())),
+            UInt64.ZERO,
             Hash32.wrap(Bytes32.wrap(r.getValue0()))));
   }
 
