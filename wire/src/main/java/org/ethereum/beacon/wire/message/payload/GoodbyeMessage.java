@@ -27,4 +27,11 @@ public class GoodbyeMessage extends RequestMessagePayload {
   public UInt64 getReason() {
     return reason;
   }
+
+  @Override
+  public String toString() {
+    return "GoodbyeMessage{" +
+        "reason=" + reason +
+        '}';
+  }
 }

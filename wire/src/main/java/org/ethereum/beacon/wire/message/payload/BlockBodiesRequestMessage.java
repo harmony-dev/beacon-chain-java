@@ -26,4 +26,11 @@ public class BlockBodiesRequestMessage extends RequestMessagePayload {
   public List<Hash32> getBlockTreeRoots() {
     return blockTreeRoots;
   }
+
+  @Override
+  public String toString() {
+    return "BlockBodiesRequestMessage{" +
+        "blockTreeRoots=" + blockTreeRoots +
+        '}';
+  }
 }

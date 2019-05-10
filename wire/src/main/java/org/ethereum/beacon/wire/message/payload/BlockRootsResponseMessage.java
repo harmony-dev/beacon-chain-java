@@ -38,4 +38,11 @@ public class BlockRootsResponseMessage extends ResponseMessagePayload {
   public List<BlockRootSlot> getRoots() {
     return roots;
   }
+
+  @Override
+  public String toString() {
+    return "BlockRootsResponseMessage{" +
+        "roots=" + roots +
+        '}';
+  }
 }

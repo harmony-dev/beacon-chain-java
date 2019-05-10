@@ -24,4 +24,11 @@ public class NotifyNewBlockMessage extends RequestMessagePayload {
   public int getMethodId() {
     return METHOD_ID;
   }
+
+  @Override
+  public String toString() {
+    return "NotifyNewBlockMessage{" +
+        "block=" + block +
+        '}';
+  }
 }

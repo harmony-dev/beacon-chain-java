@@ -24,4 +24,11 @@ public class NotifyNewAttestationMessage extends RequestMessagePayload {
   public int getMethodId() {
     return METHOD_ID;
   }
+
+  @Override
+  public String toString() {
+    return "NotifyNewAttestationMessage{" +
+        "attestation=" + attestation +
+        '}';
+  }
 }

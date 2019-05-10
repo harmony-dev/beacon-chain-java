@@ -87,4 +87,9 @@ public class NettyChannel extends SimpleChannelInboundHandler<ByteBuf> implement
   public SocketAddress getRemoteAddress() {
     return ctx.channel().remoteAddress();
   }
+
+  @Override
+  public String toString() {
+    return "NettyChannel[" + ctx.channel() + "]";
+  }
 }

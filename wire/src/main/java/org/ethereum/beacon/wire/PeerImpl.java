@@ -1,9 +1,10 @@
 package org.ethereum.beacon.wire;
 
 import java.util.concurrent.CompletableFuture;
+import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.ssz.SSZSerializer;
-import org.ethereum.beacon.wire.channel.beacon.BeaconPipeline;
 import org.ethereum.beacon.wire.channel.Channel;
+import org.ethereum.beacon.wire.channel.beacon.BeaconPipeline;
 import org.ethereum.beacon.wire.channel.beacon.WireApiSubAdapter;
 import org.ethereum.beacon.wire.message.payload.GoodbyeMessage;
 import org.ethereum.beacon.wire.message.payload.HelloMessage;
@@ -91,5 +92,17 @@ public class PeerImpl implements Peer {
   @Override
   public WireApiSub getSubApi() {
     return wireApiSubAdapter;
+  }
+
+  @Override
+  public String toString() {
+    String bestSlot;
+    try {
+      bestSlot =
+          getRemoteHelloMessage().isDone() ? getRemoteHelloMessage().get().getBestSlot().toString()  : null;
+    } catch (Exception e) {
+      bestSlot = "(err )" + e;
+    }
+    return "Peer[" + channel + (bestSlot == null ? "" : ", slot: " + bestSlot) + "]";
   }
 }

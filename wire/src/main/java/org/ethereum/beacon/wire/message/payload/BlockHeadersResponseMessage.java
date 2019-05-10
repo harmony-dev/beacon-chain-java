@@ -18,4 +18,11 @@ public class BlockHeadersResponseMessage extends ResponseMessagePayload {
   public List<BeaconBlockHeader> getHeaders() {
     return headers;
   }
+
+  @Override
+  public String toString() {
+    return "BlockHeadersResponseMessage{" +
+        "headers=" + headers +
+        '}';
+  }
 }

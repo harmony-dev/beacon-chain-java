@@ -18,4 +18,11 @@ public class BlockBodiesResponseMessage extends ResponseMessagePayload {
   public List<BeaconBlockBody> getBlockBodies() {
     return blockBodies;
   }
+
+  @Override
+  public String toString() {
+    return "BlockBodiesResponseMessage{" +
+        "blockBodies=" + blockBodies +
+        '}';
+  }
 }

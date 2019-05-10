@@ -30,4 +30,12 @@ public class BlockRootsRequestMessage extends RequestMessagePayload {
   public UInt64 getCount() {
     return count;
   }
+
+  @Override
+  public String toString() {
+    return "BlockRootsRequestMessage{" +
+        "startSlot=" + startSlot +
+        ", count=" + count +
+        '}';
+  }
 }

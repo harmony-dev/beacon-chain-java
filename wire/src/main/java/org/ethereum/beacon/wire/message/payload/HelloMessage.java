@@ -59,4 +59,16 @@ public class HelloMessage extends RequestMessagePayload {
   public SlotNumber getBestSlot() {
     return bestSlot;
   }
+
+  @Override
+  public String toString() {
+    return "HelloMessage{" +
+        "networkId=" + networkId +
+        ", chainId=" + chainId +
+        ", latestFinalizedRoot=" + latestFinalizedRoot +
+        ", latestFinalizedEpoch=" + latestFinalizedEpoch +
+        ", bestRoot=" + bestRoot +
+        ", bestSlot=" + bestSlot +
+        '}';
+  }
 }

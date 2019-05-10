@@ -46,4 +46,14 @@ public class BlockHeadersRequestMessage extends RequestMessagePayload {
   public UInt64 getSkipSlots() {
     return skipSlots;
   }
+
+  @Override
+  public String toString() {
+    return "BlockHeadersRequestMessage{" +
+        (NULL_START_ROOT.equals(startRoot) ? "" : "startRoot=" + startRoot + ", ") +
+        (NULL_START_SLOT.equals(startSlot) ? "" : "startSlot=" + startSlot + ", ") +
+        "maxHeaders=" + maxHeaders +
+        ", skipSlots=" + skipSlots +
+        '}';
+  }
 }
