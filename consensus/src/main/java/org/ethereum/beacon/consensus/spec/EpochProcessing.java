@@ -358,7 +358,7 @@ public interface EpochProcessing extends HelperFunction {
     for (ValidatorIndex index : state.getValidatorRegistry().size()) {
       ValidatorRecord validator = state.getValidatorRegistry().get(index);
       if (is_active_validator(validator, previous_epoch)
-          && (validator.getSlashed() && previous_epoch.increment().less(validator.getWithdrawableEpoch()))) {
+          || (validator.getSlashed() && previous_epoch.increment().less(validator.getWithdrawableEpoch()))) {
         eligible_validator_indices.add(index);
       }
     }
