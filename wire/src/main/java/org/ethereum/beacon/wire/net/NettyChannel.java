@@ -64,7 +64,7 @@ public class NettyChannel extends SimpleChannelInboundHandler<ByteBuf> implement
   @Override
   public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
     logger.warn("Exception caught", cause);
-    inMessagesSink.error(cause);
+//    inMessagesSink.error(cause);
   }
 
   @Override

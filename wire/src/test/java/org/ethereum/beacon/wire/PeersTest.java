@@ -28,7 +28,9 @@ import org.ethereum.beacon.wire.sync.SyncQueueImpl;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.ReplayProcessor;
 import reactor.core.scheduler.Schedulers;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt64;
@@ -41,6 +43,27 @@ public class PeersTest {
     processor.onNext(1);
     Integer i = Mono.from(processor).block(Duration.ofMillis(300));
     System.out.println(i);
+  }
+
+  @Test
+  public void test01() {
+    ReplayProcessor<Integer> proc = ReplayProcessor.create();
+    FluxSink<Integer> sink = proc.sink();
+
+    sink.next(1);
+    sink.next(2);
+
+    Flux.from(proc)
+        .onErrorContinue((t, o) -> System.out.println("Continue on error: " + t))
+        .subscribe(
+            i -> System.out.println("Next: " + i)
+            ,t -> System.out.println("Err: " + t)
+            ,() -> System.out.println("Complete")
+        );
+
+    sink.error(new RuntimeException("Test"));
+    sink.next(3);
+    sink.complete();
   }
 
   @Test
@@ -77,7 +100,15 @@ public class PeersTest {
           peer0.getBeaconChain().getBlockStatesStream());
 
       Flux.from(peerManager.connectedPeerStream())
-          .subscribe(peer -> System.out.println("Remote peer connected: " + peer));
+          .subscribe(
+              peer -> {
+                System.out.println("Remote peer connected: " + peer);
+                Flux.from(peer.getRawChannel().inboundMessageStream())
+                    .doOnError(e -> System.out.println("#### Error: " + e))
+                    .doOnComplete(() -> System.out.println("#### Complete"))
+                    .doOnNext(msg -> System.out.println("#### on message"))
+                    .subscribe();
+              });
       Flux.from(peerManager.activePeerStream())
           .subscribe(peer -> System.out.println("Remote peer active: " + peer));
       Flux.from(peerManager.disconnectedPeerStream())
@@ -101,26 +132,26 @@ public class PeersTest {
           messageSerializer,
           null,
           peer1.getBeaconChain().getBlockStatesStream());
-      Flux.from(peer1.getBeaconChain().getBlockStatesStream())
-          .subscribe(s -> System.out.println("### " + s));
 
       Flux.from(peerManager.connectedPeerStream())
           .subscribe(peer -> System.out.println("Peer 1 connected: " + peer));
       Flux.from(peerManager.activePeerStream())
-          .subscribe(peer -> System.out.println("Remote peer active: " + peer));
+          .subscribe(peer -> System.out.println("Peer 1 active: " + peer));
       Flux.from(peerManager.disconnectedPeerStream())
-          .subscribe(peer -> System.out.println("Remote peer disconnected: " + peer));
+          .subscribe(peer -> System.out.println("Peer 1 disconnected: " + peer));
 
       BeaconBlockTree blockTree = new BeaconBlockTree(simulatorLauncher.getSpec().getObjectHasher());
       SyncQueue syncQueue = new SyncQueueImpl(blockTree, 4, 16);
 
       SyncManager syncManager = new SyncManager(
           peer1.getBeaconChain(),
+          Flux.from(peerManager.getWireApiSub().inboundBlocksStream()).map(Feedback::of),
           peer1.getBeaconChainStorage(),
           peer1.getSpec(),
           peerManager.getWireApiSync(),
           syncQueue,
-          1);
+          1,
+          peer1.getSchedulers().reactorEvents());
 
       AtomicBoolean synced = new AtomicBoolean();
       Flux.from(peer1.getBeaconChain().getBlockStatesStream())

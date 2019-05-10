@@ -79,11 +79,13 @@ public class SyncTest {
 
     SyncManager syncManager = new SyncManager(
         testPeer.getBeaconChain(),
+        Flux.never(),
         testPeer.getBeaconChainStorage(),
         testPeer.getSpec(),
         asyncSyncServer,
         syncQueue,
-        1);
+        1,
+        testPeer.getSchedulers().reactorEvents());
 
     AtomicBoolean synced = new AtomicBoolean();
     Flux.from(testPeer.getBeaconChain().getBlockStatesStream())
