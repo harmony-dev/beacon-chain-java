@@ -309,7 +309,7 @@ public interface EpochProcessing extends HelperFunction {
     state.getPreviousCrosslinks().clear();
     state.getPreviousCrosslinks().addAll(state.getCurrentCrosslinks().listCopy());
 
-    for (EpochNumber epoch : get_previous_epoch(state).iterateTo(get_current_epoch(state))) {
+    for (EpochNumber epoch : get_previous_epoch(state).iterateTo(get_current_epoch(state).increment())) {
       for (UInt64 offset : UInt64s.iterate(UInt64.ZERO, get_epoch_committee_count(state, epoch))) {
         ShardNumber shard = get_epoch_start_shard(state, epoch)
             .plusModulo(offset, getConstants().getShardCount());
