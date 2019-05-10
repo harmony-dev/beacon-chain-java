@@ -66,6 +66,10 @@ public class PendingOperationsState implements PendingOperations {
             .filter(attestation -> {
               SlotNumber attestationSlot =
                   spec.get_attestation_slot(state, attestation.getData());
+              // handle the case when min minSlotExclusive = maxSlotInclusive = 0
+              if (minSlotExclusive.equals(maxSlotInclusive) && minSlotExclusive.equals(SlotNumber.ZERO)) {
+                return attestationSlot.lessEqual(maxSlotInclusive);
+              }
               // minExclusive < attestationSlot <= maxSlotInclusive
               return minSlotExclusive.less(attestationSlot)
                   && attestationSlot.lessEqual(maxSlotInclusive);
