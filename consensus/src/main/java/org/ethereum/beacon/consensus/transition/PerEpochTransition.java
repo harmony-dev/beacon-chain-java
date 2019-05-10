@@ -103,6 +103,8 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
                               state, a.getData(), a.getAggregationBitfield())
                           .stream())
               .collect(Collectors.toList());
+      summary.headAttestingBalance =
+          spec.get_attesting_balance(state, previous_epoch_matching_head_attestations);
       summary.justifiedAttesters.addAll(summary.previousEpochSummary.activeAttesters);
       summary.justifiedAttestingBalance = summary.previousEpochSummary.validatorBalance;
 
