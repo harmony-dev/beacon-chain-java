@@ -62,7 +62,7 @@ public class MultiValidatorService implements ValidatorService {
   /** Credentials of already initialized validators. */
   private Map<ValidatorIndex, BLS381Credentials> initialized = new ConcurrentHashMap<>();
   /** Latest slot that has been processed. */
-  private SlotNumber lastProcessedSlot = SlotNumber.ZERO;
+  private SlotNumber lastProcessedSlot = SlotNumber.castFrom(SlotNumber.MAX_VALUE);
   /** The most recent beacon state came from the outside. */
   private ObservableBeaconState recentState;
 
@@ -257,7 +257,7 @@ public class MultiValidatorService implements ValidatorService {
       logger.info(
           "validator {}: proposed a {} in {}s",
           index,
-          newBlock.toString(
+          newBlock.toStringFull(
               spec.getConstants(),
               observableState.getLatestSlotState().getGenesisTime(),
               spec::signing_root),
@@ -320,7 +320,7 @@ public class MultiValidatorService implements ValidatorService {
    * @return {@code true} if slot has been processed, {@link false} otherwise.
    */
   private boolean isSlotProcessed(BeaconState state) {
-    return state.getSlot().lessEqual(lastProcessedSlot);
+    return state.getSlot().less(lastProcessedSlot.increment());
   }
 
   /**
