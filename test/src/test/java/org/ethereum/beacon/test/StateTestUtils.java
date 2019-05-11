@@ -302,7 +302,7 @@ public abstract class StateTestUtils {
         Hash32.fromHexString(data.getBeaconBlockRoot()),
         EpochNumber.castFrom(UInt64.valueOf(data.getSourceEpoch())),
         Hash32.fromHexString(data.getSourceRoot()),
-        EpochNumber.castFrom(UInt64.valueOf(data.getSourceEpoch())),
+        EpochNumber.castFrom(UInt64.valueOf(data.getTargetEpoch())),
         Hash32.fromHexString(data.getTargetRoot()),
         ShardNumber.of(data.getShard()),
         Hash32.fromHexString(data.getPreviousCrosslinkRoot()),

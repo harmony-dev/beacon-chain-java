@@ -597,8 +597,6 @@ public class StateTestCase implements NamedTestCase {
       }
 
       public static class AttestationDataContainer {
-        private String slot;
-
         @JsonProperty("beacon_block_root")
         private String beaconBlockRoot;
 
@@ -607,6 +605,9 @@ public class StateTestCase implements NamedTestCase {
 
         @JsonProperty("source_root")
         private String sourceRoot;
+
+        @JsonProperty("target_epoch")
+        private String targetEpoch;
 
         @JsonProperty("target_root")
         private String targetRoot;
@@ -618,14 +619,6 @@ public class StateTestCase implements NamedTestCase {
 
         @JsonProperty("crosslink_data_root")
         private String crosslinkDataRoot;
-
-        public String getSlot() {
-          return slot;
-        }
-
-        public void setSlot(String slot) {
-          this.slot = slot;
-        }
 
         public String getBeaconBlockRoot() {
           return beaconBlockRoot;
@@ -681,6 +674,14 @@ public class StateTestCase implements NamedTestCase {
 
         public void setCrosslinkDataRoot(String crosslinkDataRoot) {
           this.crosslinkDataRoot = crosslinkDataRoot;
+        }
+
+        public String getTargetEpoch() {
+          return targetEpoch;
+        }
+
+        public void setTargetEpoch(String targetEpoch) {
+          this.targetEpoch = targetEpoch;
         }
       }
     }
