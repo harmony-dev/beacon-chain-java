@@ -15,7 +15,7 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
  *
  * @see Deposit
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.6.0/specs/core/0_beacon-chain.md#depositdata">DepositData
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.6.1/specs/core/0_beacon-chain.md#depositdata">DepositData
  *     in the spec</a>
  */
 @SSZSerializable

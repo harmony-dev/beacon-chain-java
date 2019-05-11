@@ -30,7 +30,7 @@ import tech.pegasys.artemis.util.uint.UInt64;
  *
  * @see BeaconBlock
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.5.0/specs/core/0_beacon-chain.md#beacon-state">BeaconState
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.6.1/specs/core/0_beacon-chain.md#beacon-state">BeaconState
  *     in the spec</a>
  */
 public interface BeaconState extends ObservableComposite {
@@ -190,7 +190,7 @@ public interface BeaconState extends ObservableComposite {
         + ", just/final epoch: " + getCurrentJustifiedEpoch().toString(spec) + "/" + getFinalizedEpoch().toString(spec);
     if (spec != null) {
       ret += ", latestBlocks=[...";
-      for (SlotNumber slot : getSlot().minus(3).iterateTo(getSlot())) {
+      for (SlotNumber slot : getSlot().minusSat(3).iterateTo(getSlot())) {
         Hash32 blockRoot = getLatestBlockRoots().get(slot.modulo(spec.getSlotsPerHistoricalRoot()));
         ret += ", " + blockRoot.toStringShort();
       }

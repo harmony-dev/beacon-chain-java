@@ -12,7 +12,7 @@ import org.ethereum.beacon.core.MutableBeaconState;
  * State caching, which happens at the start of every slot.
  *
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.5.1/specs/core/0_beacon-chain.md#state-caching">State
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.6.1/specs/core/0_beacon-chain.md#state-caching">State
  *     caching</a> in the spec.
  */
 public class StateCachingTransition implements StateTransition<BeaconStateEx> {

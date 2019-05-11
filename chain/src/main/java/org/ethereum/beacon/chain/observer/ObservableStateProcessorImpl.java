@@ -104,16 +104,10 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     /* From spec:
     attestation_slot = get_attestation_slot(state, attestation)
     assert attestation_slot + MIN_ATTESTATION_INCLUSION_DELAY <= state.slot <= attestation_slot + SLOTS_PER_EPOCH */
-    SlotNumber slotMinimum =
-        UInt64s.min(
-            newSlot
-                .minus(spec.getConstants().getSlotsPerEpoch())
-                .minus(spec.getConstants().getMinAttestationInclusionDelay()),
-            spec.getConstants().getGenesisSlot());
-    EpochNumber epochMinimum = UInt64s.min(
-        spec.slot_to_epoch(slotMinimum).decrement(),
-        spec.getConstants().getGenesisEpoch()
-    );
+    SlotNumber slotMinimum = newSlot
+        .minusSat(spec.getConstants().getSlotsPerEpoch())
+        .minusSat(spec.getConstants().getMinAttestationInclusionDelay());
+    EpochNumber epochMinimum = spec.slot_to_epoch(slotMinimum);
     runTaskInSeparateThread(
         () -> {
           purgeAttestations(epochMinimum);
@@ -125,7 +119,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     if (latestState == null) {
       return;
     }
-    List<Attestation> attestations = drainAttestations(spec.get_previous_epoch(latestState));
+    List<Attestation> attestations = drainAttestations(spec.get_current_epoch(latestState));
     for (Attestation attestation : attestations) {
 
       List<ValidatorIndex> participants =
@@ -197,7 +191,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   /** Purges all entries for epoch and before */
   private synchronized void purgeAttestations(EpochNumber targetEpoch) {
     attestationCache.entrySet()
-        .removeIf(entry -> entry.getValue().getData().getTargetEpoch().lessEqual(targetEpoch));
+        .removeIf(entry -> entry.getValue().getData().getTargetEpoch().less(targetEpoch));
   }
 
   private synchronized Map<BLSPubkey, List<Attestation>> copyAttestationCache() {

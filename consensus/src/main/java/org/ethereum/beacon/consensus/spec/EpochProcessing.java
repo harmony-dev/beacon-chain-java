@@ -308,7 +308,7 @@ public interface EpochProcessing extends HelperFunction {
   default void process_crosslinks(MutableBeaconState state) {
     state.getPreviousCrosslinks().replaceAll(state.getCurrentCrosslinks().listCopy());
 
-    for (EpochNumber epoch : get_previous_epoch(state).iterateTo(get_current_epoch(state))) {
+    for (EpochNumber epoch : get_previous_epoch(state).iterateTo(get_current_epoch(state).increment())) {
       for (UInt64 offset : UInt64s.iterate(UInt64.ZERO, get_epoch_committee_count(state, epoch))) {
         ShardNumber shard = get_epoch_start_shard(state, epoch)
             .plusModulo(offset, getConstants().getShardCount());
@@ -357,7 +357,7 @@ public interface EpochProcessing extends HelperFunction {
     for (ValidatorIndex index : state.getValidatorRegistry().size()) {
       ValidatorRecord validator = state.getValidatorRegistry().get(index);
       if (is_active_validator(validator, previous_epoch)
-          && (validator.getSlashed() && previous_epoch.increment().less(validator.getWithdrawableEpoch()))) {
+          || (validator.getSlashed() && previous_epoch.increment().less(validator.getWithdrawableEpoch()))) {
         eligible_validator_indices.add(index);
       }
     }
@@ -519,7 +519,7 @@ public interface EpochProcessing extends HelperFunction {
   /*
     def process_registry_updates(state: BeaconState) -> None:
    */
-  default void process_registry_updates(MutableBeaconState state) {
+  default List<ValidatorIndex> process_registry_updates(MutableBeaconState state) {
     /* Process activation eligibility and ejections
       for index, validator in enumerate(state.validator_registry):
           if validator.activation_eligibility_epoch == FAR_FUTURE_EPOCH and validator.effective_balance >= MAX_EFFECTIVE_BALANCE:
@@ -527,6 +527,7 @@ public interface EpochProcessing extends HelperFunction {
 
           if is_active_validator(validator, get_current_epoch(state)) and validator.effective_balance <= EJECTION_BALANCE:
               initiate_validator_exit(state, index) */
+    List<ValidatorIndex> ejected = new ArrayList<>();
     for (ValidatorIndex index : state.getValidatorRegistry().size()) {
       ValidatorRecord validator = state.getValidatorRegistry().get(index);
       if (validator.getActivationEligibilityEpoch().equals(getConstants().getFarFutureEpoch())
@@ -539,6 +540,7 @@ public interface EpochProcessing extends HelperFunction {
       if (is_active_validator(validator, get_current_epoch(state))
           && validator.getEffectiveBalance().lessEqual(getConstants().getEjectionBalance())) {
         initiate_validator_exit(state, index);
+        ejected.add(index);
       }
     }
 
@@ -573,6 +575,8 @@ public interface EpochProcessing extends HelperFunction {
                 .build());
       }
     }
+
+    return ejected;
   }
 
   /*

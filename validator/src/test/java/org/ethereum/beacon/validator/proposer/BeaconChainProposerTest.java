@@ -110,10 +110,10 @@ public class BeaconChainProposerTest {
             initialState,
             initialState
                 .getSlot()
-                .minus(spec.getConstants().getSlotsPerEpoch()),
+                .minusSat(spec.getConstants().getSlotsPerEpoch()),
             initialState
                 .getSlot()
-                .minus(spec.getConstants().getMinAttestationInclusionDelay()));
+                .minusSat(spec.getConstants().getMinAttestationInclusionDelay()));
 
     Mockito.verify(pendingOperations)
         .peekProposerSlashings(spec.getConstants().getMaxProposerSlashings());

@@ -20,7 +20,7 @@ import tech.pegasys.artemis.util.uint.UInt64;
  * Fork choice rule.
  *
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.5.1/specs/core/0_beacon-chain.md#beacon-chain-fork-choice-rule">Beacon
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.6.1/specs/core/0_beacon-chain.md#beacon-chain-fork-choice-rule">Beacon
  *     chain fork choice rule</a> in the spec.
  */
 public interface ForkChoice extends HelperFunction {
