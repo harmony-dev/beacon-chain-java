@@ -1,13 +1,9 @@
 package org.ethereum.beacon.simulator;
 
 import java.io.File;
-import java.io.InputStream;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,8 +16,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.Configuration;
-import org.apache.logging.log4j.core.config.ConfigurationSource;
-import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.ethereum.beacon.Launcher;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
@@ -47,10 +41,7 @@ import org.ethereum.beacon.emulator.config.main.plan.SimulationPlan;
 import org.ethereum.beacon.emulator.config.simulator.PeersConfig;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.schedulers.ControlledSchedulers;
-import org.ethereum.beacon.schedulers.LoggerMDCExecutor;
-import org.ethereum.beacon.schedulers.Schedulers;
-import org.ethereum.beacon.schedulers.TimeController;
-import org.ethereum.beacon.schedulers.TimeControllerImpl;
+import org.ethereum.beacon.simulator.util.MDCControlledSchedulers;
 import org.ethereum.beacon.simulator.util.SimulateUtils;
 import org.ethereum.beacon.util.stats.TimeCollector;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
@@ -115,13 +106,6 @@ public class SimulatorLauncher implements Runnable {
   }
 
   private void setupLogging() {
-    try (InputStream inputStream = ClassLoader.class.getResourceAsStream("/log4j2.xml")) {
-      ConfigurationSource source = new ConfigurationSource(inputStream);
-      Configurator.initialize(null, source);
-    } catch (Exception e) {
-      throw new RuntimeException("Cannot read log4j default configuration", e);
-    }
-
     // set logLevel
     if (logLevel != null) {
       LoggerContext context =
@@ -439,44 +423,6 @@ public class SimulatorLauncher implements Runnable {
 
     @Override
     public void setDistanceFromHead(long distanceFromHead) {}
-  }
-
-  public static class MDCControlledSchedulers {
-    private DateFormat localTimeFormat = new SimpleDateFormat("HH:mm:ss.SSS");
-
-    private TimeController timeController = new TimeControllerImpl();
-
-    public ControlledSchedulers createNew(String validatorId) {
-      return createNew(validatorId, 0);
-    }
-
-    public ControlledSchedulers createNew(String validatorId, long timeShift) {
-      ControlledSchedulers[] newSched = new ControlledSchedulers[1];
-      LoggerMDCExecutor mdcExecutor = new LoggerMDCExecutor()
-          .add("validatorTime", () -> localTimeFormat.format(new Date(newSched[0].getCurrentTime())))
-          .add("validatorIndex", () -> "" + validatorId);
-      newSched[0] = Schedulers.createControlled(() -> mdcExecutor);
-      newSched[0].getTimeController().setParent(timeController);
-      newSched[0].getTimeController().setTimeShift(timeShift);
-
-      return newSched[0];
-    }
-
-    public void setCurrentTime(long time) {
-      timeController.setTime(time);
-    }
-
-    public void addTime(Duration duration) {
-      addTime(duration.toMillis());
-    }
-
-    public void addTime(long millis) {
-      setCurrentTime(timeController.getTime() + millis);
-    }
-
-    public long getCurrentTime() {
-      return timeController.getTime();
-    }
   }
 
   public static class Builder {

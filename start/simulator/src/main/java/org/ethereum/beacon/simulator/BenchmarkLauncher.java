@@ -50,6 +50,7 @@ import org.ethereum.beacon.schedulers.LoggerMDCExecutor;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.schedulers.TimeController;
 import org.ethereum.beacon.schedulers.TimeControllerImpl;
+import org.ethereum.beacon.simulator.util.MDCControlledSchedulers;
 import org.ethereum.beacon.simulator.util.SimulateUtils;
 import org.ethereum.beacon.util.stats.TimeCollector;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
@@ -101,13 +102,6 @@ public class BenchmarkLauncher implements Runnable {
   }
 
   private void setupLogging() {
-    try (InputStream inputStream = ClassLoader.class.getResourceAsStream("/log4j2.xml")) {
-      ConfigurationSource source = new ConfigurationSource(inputStream);
-      Configurator.initialize(null, source);
-    } catch (Exception e) {
-      throw new RuntimeException("Cannot read log4j default configuration", e);
-    }
-
     // set logLevel
     if (logLevel != null) {
       LoggerContext context =
@@ -405,44 +399,6 @@ public class BenchmarkLauncher implements Runnable {
 
     @Override
     public void setDistanceFromHead(long distanceFromHead) {}
-  }
-
-  public static class MDCControlledSchedulers {
-    private DateFormat localTimeFormat = new SimpleDateFormat("HH:mm:ss.SSS");
-
-    private TimeController timeController = new TimeControllerImpl();
-
-    public ControlledSchedulers createNew(String validatorId) {
-      return createNew(validatorId, 0);
-    }
-
-    public ControlledSchedulers createNew(String validatorId, long timeShift) {
-      ControlledSchedulers[] newSched = new ControlledSchedulers[1];
-      LoggerMDCExecutor mdcExecutor = new LoggerMDCExecutor()
-          .add("validatorTime", () -> localTimeFormat.format(new Date(newSched[0].getCurrentTime())))
-          .add("validatorIndex", () -> "" + validatorId);
-      newSched[0] = Schedulers.createControlled(() -> mdcExecutor);
-      newSched[0].getTimeController().setParent(timeController);
-      newSched[0].getTimeController().setTimeShift(timeShift);
-
-      return newSched[0];
-    }
-
-    public void setCurrentTime(long time) {
-      timeController.setTime(time);
-    }
-
-    void addTime(Duration duration) {
-      addTime(duration.toMillis());
-    }
-
-    void addTime(long millis) {
-      setCurrentTime(timeController.getTime() + millis);
-    }
-
-    public long getCurrentTime() {
-      return timeController.getTime();
-    }
   }
 
   public static class Builder {
