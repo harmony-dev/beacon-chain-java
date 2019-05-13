@@ -1,5 +1,6 @@
 package org.ethereum.beacon.ssz.visitor;
 
+import static org.ethereum.beacon.ssz.visitor.SSZSimpleDeserializer.BYTES_PER_LENGTH_PREFIX;
 import static tech.pegasys.artemis.util.bytes.BytesValue.concat;
 
 import java.util.ArrayList;
@@ -129,6 +130,6 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
   }
 
   BytesValue serializeLength(long len) {
-    return concat(BytesValues.ofUnsignedIntLittleEndian(len), BytesValue.wrap(new byte[32 - 4]));
+    return concat(BytesValues.ofUnsignedIntLittleEndian(len), BytesValue.wrap(new byte[Hash32.SIZE - BYTES_PER_LENGTH_PREFIX]));
   }
 }

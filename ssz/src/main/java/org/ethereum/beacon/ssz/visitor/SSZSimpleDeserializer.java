@@ -1,7 +1,6 @@
 package org.ethereum.beacon.ssz.visitor;
 
 import java.nio.ByteOrder;
-import java.util.function.BiFunction;
 import net.consensys.cava.bytes.Bytes;
 import net.consensys.cava.ssz.BytesSSZReaderProxy;
 import org.ethereum.beacon.ssz.SSZSerializeException;
