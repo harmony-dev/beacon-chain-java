@@ -7,7 +7,6 @@ import net.consensys.cava.ssz.SSZException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import org.ethereum.beacon.ssz.access.SSZBasicAccessor;
@@ -55,26 +54,7 @@ public class StringPrimitive implements SSZBasicAccessor {
   }
 
   @Override
-  public void encodeList(
-      List<Object> value, SSZField field, OutputStream result) {
-    try {
-      String[] data = value.toArray(new String[0]);
-      result.write(SSZ.encodeStringList(data).toArrayUnsafe());
-    } catch (IOException ex) {
-      String error = String.format("Failed to write data from field \"%s\" to stream",
-          field.getName());
-      throw new SSZException(error, ex);
-    }
-  }
-
-  @Override
   public Object decode(SSZField field, BytesSSZReaderProxy reader) {
     return reader.readString();
-  }
-
-  @Override
-  public List<Object> decodeList(
-      SSZField field, BytesSSZReaderProxy reader) {
-    return (List<Object>) (List<?>) reader.readStringList();
   }
 }

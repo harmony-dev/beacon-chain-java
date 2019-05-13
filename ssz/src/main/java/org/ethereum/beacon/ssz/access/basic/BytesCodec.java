@@ -21,7 +21,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * SSZ Codec designed to work with fixed size bytes data classes, check list in {@link
@@ -99,27 +98,6 @@ public class BytesCodec implements SSZBasicAccessor {
   }
 
   @Override
-  public void encodeList(
-      List<Object> value, SSZField field, OutputStream result) {
-    Bytes[] data = repackBytesList((List<BytesValue>) (List<?>) value);
-
-    try {
-      Bytes res;
-      BytesType bytesType = parseFieldType(field);
-      if (bytesType.size == null) {
-        res = SSZ.encodeBytesList(data);
-      } else {
-        res = SSZ.encodeHashList(data);
-      }
-      result.write(res.toArrayUnsafe());
-    } catch (IOException ex) {
-      String error = String.format("Failed to write data from field \"%s\" to stream",
-          field.getName());
-      throw new SSZException(error, ex);
-    }
-  }
-
-  @Override
   public Object decode(SSZField field, BytesSSZReaderProxy reader) {
     BytesType bytesType = parseFieldType(field);
 
@@ -160,86 +138,6 @@ public class BytesCodec implements SSZBasicAccessor {
     }
 
     return throwUnsupportedType(field);
-  }
-
-  @Override
-  public List<Object> decodeList(
-      SSZField field, BytesSSZReaderProxy reader) {
-    BytesType bytesType = parseFieldType(field);
-
-    if (bytesType.size == null) {
-      return reader.readBytesList().stream()
-          .map(Bytes::toArrayUnsafe)
-          .map(BytesValue::wrap)
-          .collect(Collectors.toList());
-    }
-    List<BytesValue> res = null;
-    try {
-      List<Bytes> bytesList = reader.readHashList(bytesType.size);
-      switch (bytesType.size) {
-        case 1:
-        {
-          res =
-              bytesList.stream()
-                  .map(Bytes::toArrayUnsafe)
-                  .map(Bytes1::wrap)
-                  .collect(Collectors.toList());
-          break;
-        }
-        case 4:
-        {
-          res =
-              bytesList.stream()
-                  .map(Bytes::toArrayUnsafe)
-                  .map(Bytes4::wrap)
-                  .collect(Collectors.toList());
-          break;
-        }
-        case 20:
-          {
-            res =
-                bytesList.stream()
-                    .map(Bytes::toArrayUnsafe)
-                    .map(BytesValue::wrap)
-                    .map(Address::wrap)
-                    .collect(Collectors.toList());
-            break;
-          }
-        case 32:
-        {
-          res =
-              bytesList.stream()
-                  .map(Bytes::toArrayUnsafe)
-                  .map(Bytes32::wrap)
-                  .collect(Collectors.toList());
-          break;
-        }
-        case 48:
-        {
-          res =
-              bytesList.stream()
-                  .map(Bytes::toArrayUnsafe)
-                  .map(Bytes48::wrap)
-                  .collect(Collectors.toList());
-          break;
-        }
-        case 96:
-          {
-            res =
-                bytesList.stream()
-                    .map(Bytes::toArrayUnsafe)
-                    .map(Bytes96::wrap)
-                    .collect(Collectors.toList());
-            break;
-          }
-      }
-    } catch (Exception ex) {
-      String error =
-          String.format("Failed to read list data from stream to field \"%s\"", field.getName());
-      throw new SSZException(error, ex);
-    }
-
-    return (List<Object>) (List<?>) res;
   }
 
   private BytesType parseFieldType(SSZField field) {

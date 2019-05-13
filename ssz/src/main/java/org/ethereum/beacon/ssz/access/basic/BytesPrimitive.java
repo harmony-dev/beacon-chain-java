@@ -31,7 +31,7 @@ import static java.util.function.Function.identity;
  * </ul>
  *
  * Type could be clarified by {@link
- * SSZField#extraType}
+ * SSZField#getExtraType()}
  */
 public class BytesPrimitive implements SSZBasicAccessor {
 
@@ -40,22 +40,10 @@ public class BytesPrimitive implements SSZBasicAccessor {
 
   static {
     supportedTypes.add("bytes");
-    supportedTypes.add("hash");
-    supportedTypes.add("address");
   }
 
   static {
     supportedClassTypes.add(byte[].class);
-  }
-
-  private static Bytes[] repackBytesList(List<byte[]> list) {
-    Bytes[] data = new Bytes[list.size()];
-    for (int i = 0; i < list.size(); i++) {
-      byte[] el = list.get(i);
-      data[i] = Bytes.of(el);
-    }
-
-    return data;
   }
 
   @Override
@@ -79,31 +67,10 @@ public class BytesPrimitive implements SSZBasicAccessor {
     BytesType byteType = parseFieldType(field);
     Bytes res = null;
     byte[] data = (byte[]) value;
-
-    switch (byteType.type) {
-      case HASH:
-        {
-          res = SSZ.encodeHash(Bytes.of(data));
-          break;
-        }
-      case ADDRESS:
-        {
-          res = SSZ.encodeAddress(Bytes.of(data));
-          break;
-        }
-      case BYTES:
-        {
-          if (byteType.size == null) {
-            res = SSZ.encodeByteArray(data);
-          } else {
-            res = SSZ.encodeHash(Bytes.wrap(data)); // w/o length prefix
-          }
-          break;
-        }
-      default:
-        {
-          throwUnsupportedType(field);
-        }
+    if (byteType.size == null) {
+      res = SSZ.encodeByteArray(data);
+    } else {
+      res = SSZ.encodeHash(Bytes.wrap(data)); // w/o length prefix
     }
 
     try {
@@ -116,123 +83,19 @@ public class BytesPrimitive implements SSZBasicAccessor {
   }
 
   @Override
-  public void encodeList(
-      List<Object> value, SSZField field, OutputStream result) {
-    BytesType bytesType = parseFieldType(field);
-    Bytes[] data = repackBytesList((List<byte[]>) (List<?>) value);
-
-    try {
-      switch (bytesType.type) {
-        case HASH:
-          {
-            result.write(SSZ.encodeHashList(data).toArrayUnsafe());
-            break;
-          }
-        case BYTES:
-          {
-            result.write(SSZ.encodeBytesList(data).toArrayUnsafe());
-            break;
-          }
-        case ADDRESS:
-          {
-            if (bytesType.size == null) {
-              result.write(SSZ.encodeAddressList(data).toArrayUnsafe());
-            } else {
-              result.write(SSZ.encodeHashList(data).toArrayUnsafe());
-            }
-            break;
-          }
-        default:
-          {
-            throwUnsupportedType(field);
-          }
-      }
-    } catch (IOException ex) {
-      String error = String.format("Failed to write data from field \"%s\" to stream",
-          field.getName());
-      throw new SSZException(error, ex);
-    }
-  }
-
-  @Override
   public Object decode(SSZField field, BytesSSZReaderProxy reader) {
     BytesType bytesType = parseFieldType(field);
-    switch (bytesType.type) {
-      case BYTES:
-        {
-          return (bytesType.size == null)
-              ? reader.readBytes().toArrayUnsafe()
-              : reader.readHash(bytesType.size).toArrayUnsafe();
-        }
-      case HASH:
-        {
-          return reader.readHash(bytesType.size).toArrayUnsafe();
-        }
-      case ADDRESS:
-        {
-          return reader.readAddress().toArrayUnsafe();
-        }
-    }
-
-    return throwUnsupportedType(field);
-  }
-
-  @Override
-  public List<Object> decodeList(
-      SSZField field, BytesSSZReaderProxy reader) {
-    BytesType bytesType = parseFieldType(field);
-
-    switch (bytesType.type) {
-      case BYTES:
-        {
-          if (bytesType.size == null) {
-            return (List<Object>) (List<?>) reader.readByteArrayList();
-          } else {
-            return (List<Object>) (List<?>) reader.readHashList(bytesType.size);
-          }
-        }
-      case HASH:
-        {
-          return (List<Object>) (List<?>) reader.readHashList(bytesType.size);
-        }
-      case ADDRESS:
-        {
-          return (List<Object>) (List<?>) reader.readAddressList();
-        }
-
-      default:
-        {
-          return throwUnsupportedListType(field);
-        }
-    }
+    return (bytesType.size == null)
+        ? reader.readBytes().toArrayUnsafe()
+        : reader.readHash(bytesType.size).toArrayUnsafe();
   }
 
   private BytesType parseFieldType(SSZField field) {
-    Type type = Type.fromValue(field.getExtraType());
-
-    if (type == null || type.equals(Type.BYTES)) {
-      return BytesType.of(Type.BYTES, field.getExtraSize());
-    }
-
-    if (type.equals(Type.ADDRESS)) {
-      if (field.getExtraSize() != null) {
-        throw new SSZSchemeException("Address is fixed 20 bytes type");
-      } else {
-        return BytesType.of(Type.ADDRESS, 20);
-      }
-    } else {
-      if (field.getExtraSize() == null) {
-        throw new SSZSchemeException("Hash size is required!");
-      } else {
-        return BytesType.of(Type.HASH, field.getExtraSize());
-      }
-    }
+    return BytesType.of(Type.BYTES, field.getExtraSize());
   }
 
   enum Type {
-    BYTES("bytes"),
-    HASH("hash"),
-    ADDRESS("address");
+    BYTES("bytes");
 
     private static final Map<String, Type> ENUM_MAP;
 

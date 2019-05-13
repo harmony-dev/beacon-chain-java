@@ -46,33 +46,12 @@ public class SubclassCodec implements SSZBasicAccessor {
   }
 
   @Override
-  public void encodeList(List<Object> value,
-      SSZField field, OutputStream result) {
-    superclassCodec.encodeList(value, getSerializableField(field), result);
-  }
-
-  @Override
   public Object decode(SSZField field,
       BytesSSZReaderProxy reader) {
     SSZField serializableField = getSerializableField(field);
     Object serializableTypeObject = superclassCodec.decode(serializableField, reader);
     return ConstructorObjCreator.createInstanceWithConstructor(
         field.getRawClass(), new Class[] {serializableField.getRawClass()}, new Object[] {serializableTypeObject});
-  }
-
-  @Override
-  public List decodeList(SSZField field,
-      BytesSSZReaderProxy reader) {
-    SSZField serializableField = getSerializableField(field);
-    List<?> serializableTypeList = superclassCodec.decodeList(serializableField, reader);
-    return serializableTypeList.stream()
-        .map(
-            serializableTypeObject ->
-                ConstructorObjCreator.createInstanceWithConstructor(
-                    field.getRawClass(),
-                    new Class[] {serializableField.getRawClass()},
-                    new Object[] {serializableTypeObject}))
-        .collect(Collectors.toList());
   }
 
   private static SSZField getSerializableField(SSZField field) {
