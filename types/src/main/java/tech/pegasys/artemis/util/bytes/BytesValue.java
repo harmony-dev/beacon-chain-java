@@ -13,15 +13,15 @@
 
 package tech.pegasys.artemis.util.bytes;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkElementIndex;
-
-import java.security.MessageDigest;
-
 import com.google.common.annotations.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
 import io.vertx.core.buffer.Buffer;
+
+import java.security.MessageDigest;
 import java.util.List;
+
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkElementIndex;
 
 /**
  * A value made of bytes.
@@ -92,49 +92,63 @@ public interface BytesValue extends Comparable<BytesValue> {
    * @return A value representing a view over the concatenation of {@code v1} and {@code v2}.
    */
   static BytesValue wrap(BytesValue v1, BytesValue v2) {
-    return new AbstractBytesValue() {
-      @Override
-      public int size() {
-        return v1.size() + v2.size();
-      }
+    return new MergedBytesValue(v1, v2);
+  }
 
-      @Override
-      public byte get(int i) {
-        checkElementIndex(i, size());
-        return i < v1.size() ? v1.get(i) : v2.get(i - v1.size());
-      }
+  class MergedBytesValue extends AbstractBytesValue {
+    private final BytesValue v1;
+    private final BytesValue v2;
+    private final int generation;
 
-      @Override
-      public BytesValue slice(int i, int length) {
-        if (i == 0 && length == size())
-          return this;
-        if (length == 0)
-          return BytesValue.EMPTY;
+    private MergedBytesValue(BytesValue v1, BytesValue v2) {
+      this.v1 = v1;
+      this.v2 = v2;
+      int v1Generation = v1 instanceof MergedBytesValue ? ((MergedBytesValue) v1).generation : 1;
+      int v2Generation = v2 instanceof MergedBytesValue ? ((MergedBytesValue) v2).generation : 1;
+      this.generation = Math.max(v1Generation, v2Generation) + 1;
+    }
 
-        checkElementIndex(i, size());
-        checkArgument(i + length <= size(),
-            "Provided length %s is too big: the value has size %s and has only %s bytes from %s",
-            length, size(), size() - i, i);
+    @Override
+    public int size() {
+      return v1.size() + v2.size();
+    }
 
-        if (i + length < v1.size())
-          return v1.slice(i, length);
+    @Override
+    public byte get(int i) {
+      checkElementIndex(i, size());
+      return i < v1.size() ? v1.get(i) : v2.get(i - v1.size());
+    }
 
-        if (i >= v1.size())
-          return v2.slice(i - v1.size(), length);
+    @Override
+    public BytesValue slice(int i, int length) {
+      if (i == 0 && length == size())
+        return this;
+      if (length == 0)
+        return BytesValue.EMPTY;
 
-        MutableBytesValue res = MutableBytesValue.create(length);
-        int lengthInV1 = v1.size() - i;
-        v1.slice(i, lengthInV1).copyTo(res, 0);
-        v2.slice(0, length - lengthInV1).copyTo(res, lengthInV1);
-        return res;
-      }
+      checkElementIndex(i, size());
+      checkArgument(i + length <= size(),
+          "Provided length %s is too big: the value has size %s and has only %s bytes from %s",
+          length, size(), size() - i, i);
 
-      @Override
-      public void update(MessageDigest digest) {
-        v1.update(digest);
-        v2.update(digest);
-      }
-    };
+      if (i + length < v1.size())
+        return v1.slice(i, length);
+
+      if (i >= v1.size())
+        return v2.slice(i - v1.size(), length);
+
+      MutableBytesValue res = MutableBytesValue.create(length);
+      int lengthInV1 = v1.size() - i;
+      v1.slice(i, lengthInV1).copyTo(res, 0);
+      v2.slice(0, length - lengthInV1).copyTo(res, lengthInV1);
+      return res;
+    }
+
+    @Override
+    public void update(MessageDigest digest) {
+      v1.update(digest);
+      v2.update(digest);
+    }
   }
 
   /**
@@ -145,7 +159,11 @@ public interface BytesValue extends Comparable<BytesValue> {
    * depending on the target value size
    */
   static BytesValue concat(BytesValue v1, BytesValue v2) {
-    if (v1.size() + v2.size() < 512) {
+    int MAX_GENERATION = 32;
+    if (v1.size() + v2.size() < 512
+        || (v1 instanceof MergedBytesValue && ((MergedBytesValue) v1).generation > MAX_GENERATION)
+        || (v2 instanceof MergedBytesValue && ((MergedBytesValue) v2).generation > MAX_GENERATION)
+    ) {
       // it should be generally cheaper for further usage
       byte[] bb = new byte[v1.size() + v2.size()];
       byte[] arr1 = v1.getArrayUnsafe();
