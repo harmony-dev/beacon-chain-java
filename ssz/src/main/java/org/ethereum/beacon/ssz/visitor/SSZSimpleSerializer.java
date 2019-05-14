@@ -15,8 +15,6 @@ import static org.ethereum.beacon.ssz.visitor.SSZSimpleDeserializer.BYTES_PER_LE
 
 public class SSZSimpleSerializer
     implements SSZVisitor<SSZSimpleSerializer.SSZSerializerResult, Object> {
-  static final int FIXED_LENGTH = -1;
-
   private static BytesValue serializeLength(long len) {
     return BytesValues.ofUnsignedIntLittleEndian(len);
   }
@@ -25,7 +23,8 @@ public class SSZSimpleSerializer
   public SSZSerializerResult visitBasicValue(SSZBasicType type, Object value) {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     type.getAccessor().encode(value, type.getTypeDescriptor(), baos);
-    return new SSZSerializerResult(BytesValue.wrap(baos.toByteArray()), type.isFixedSize() ? FIXED_LENGTH : baos.size());
+    return new SSZSerializerResult(
+        BytesValue.wrap(baos.toByteArray()), baos.size(), type.isFixedSize());
   }
 
   @Override
@@ -89,7 +88,7 @@ public class SSZSimpleSerializer
       composite =
           composite.concat(s.isFixedSize() ? s.serializedBody : serializeLength(currentOffset));
       if (!s.isFixedSize()) {
-        currentOffset = currentOffset + s.variableLength;
+        currentOffset = currentOffset + s.serializedLength;
       }
     }
 
@@ -101,33 +100,30 @@ public class SSZSimpleSerializer
       composite = composite.concat(s.serializedBody);
     }
 
-    return new SSZSerializerResult(composite, fixedSize ? FIXED_LENGTH : currentOffset);
+    return new SSZSerializerResult(composite, currentOffset, fixedSize);
   }
 
   public static class SSZSerializerResult {
     final BytesValue serializedBody;
-    final int variableLength;
+    final int serializedLength;
+    final boolean fixedSize;
 
-    public SSZSerializerResult(BytesValue serializedBody) {
+    public SSZSerializerResult(BytesValue serializedBody, int serializedLength, boolean fixedSize) {
       this.serializedBody = serializedBody;
-      this.variableLength = FIXED_LENGTH;
-    }
-
-    public SSZSerializerResult(BytesValue serializedBody, int variableLength) {
-      this.serializedBody = serializedBody;
-      this.variableLength = variableLength;
+      this.serializedLength = serializedLength;
+      this.fixedSize = fixedSize;
     }
 
     public BytesValue getSerializedBody() {
       return serializedBody;
     }
 
-    public int getVariableLength() {
-      return variableLength;
+    public int getSerializedLength() {
+      return serializedLength;
     }
 
     public boolean isFixedSize() {
-      return variableLength == FIXED_LENGTH;
+      return fixedSize;
     }
   }
 }
