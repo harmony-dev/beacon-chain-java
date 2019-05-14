@@ -1,8 +1,8 @@
 package org.ethereum.beacon.ssz.access.basic;
 
 import net.consensys.cava.bytes.Bytes;
-import net.consensys.cava.ssz.BytesSSZReaderProxy;
-import net.consensys.cava.ssz.SSZ;
+import org.ethereum.beacon.ssz.visitor.SSZReader;
+import org.ethereum.beacon.ssz.visitor.SSZWriter;
 import net.consensys.cava.ssz.SSZException;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -46,7 +46,7 @@ public class BooleanPrimitive implements SSZBasicAccessor {
   @Override
   public void encode(Object value, SSZField field, OutputStream result) {
     boolean boolValue = (boolean) value;
-    Bytes res = SSZ.encodeBoolean(boolValue);
+    Bytes res = SSZWriter.encodeBoolean(boolValue);
     try {
       result.write(res.toArrayUnsafe());
     } catch (IOException e) {
@@ -56,7 +56,7 @@ public class BooleanPrimitive implements SSZBasicAccessor {
   }
 
   @Override
-  public Object decode(SSZField field, BytesSSZReaderProxy reader) {
+  public Object decode(SSZField field, SSZReader reader) {
     return reader.readBoolean();
   }
 }

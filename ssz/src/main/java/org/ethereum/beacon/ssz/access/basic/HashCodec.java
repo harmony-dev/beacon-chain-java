@@ -6,8 +6,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import net.consensys.cava.bytes.Bytes;
-import net.consensys.cava.ssz.BytesSSZReaderProxy;
-import net.consensys.cava.ssz.SSZ;
+import org.ethereum.beacon.ssz.visitor.SSZReader;
+import org.ethereum.beacon.ssz.visitor.SSZWriter;
 import net.consensys.cava.ssz.SSZException;
 import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.SSZSchemeException;
@@ -57,10 +57,9 @@ public class HashCodec implements SSZBasicAccessor {
 
   @Override
   public void encode(Object value, SSZField field, OutputStream result) {
-    HashType hashType = parseFieldType(field);
     Bytes res = null;
     BytesValue data = (BytesValue) value;
-    res = SSZ.encodeHash(Bytes.of(data.getArrayUnsafe()));
+    res = SSZWriter.encodeBytes(Bytes.of(data.getArrayUnsafe()), getSize(field));
 
     try {
       result.write(res.toArrayUnsafe());
@@ -72,23 +71,16 @@ public class HashCodec implements SSZBasicAccessor {
   }
 
   @Override
-  public Object decode(SSZField field, BytesSSZReaderProxy reader) {
+  public Object decode(SSZField field, SSZReader reader) {
     HashType hashType = parseFieldType(field);
 
     try {
-      switch (hashType.size) {
-        case 32:
-          {
-            return Hash32.wrap(Bytes32.wrap(reader.readHash(hashType.size).toArrayUnsafe()));
-          }
-      }
+      return Hash32.wrap(Bytes32.wrap(reader.readHash(hashType.size).toArrayUnsafe()));
     } catch (Exception ex) {
       String error = String.format("Failed to read data from stream to field \"%s\"",
           field.getName());
       throw new SSZException(error, ex);
     }
-
-    return throwUnsupportedType(field);
   }
 
   private HashType parseFieldType(SSZField field) {

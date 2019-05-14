@@ -1,8 +1,8 @@
 package org.ethereum.beacon.ssz.access.basic;
 
 import net.consensys.cava.bytes.Bytes;
-import net.consensys.cava.ssz.BytesSSZReaderProxy;
-import net.consensys.cava.ssz.SSZ;
+import org.ethereum.beacon.ssz.visitor.SSZReader;
+import org.ethereum.beacon.ssz.visitor.SSZWriter;
 import net.consensys.cava.ssz.SSZException;
 import org.ethereum.beacon.ssz.access.SSZBasicAccessor;
 import org.ethereum.beacon.ssz.access.SSZField;
@@ -73,7 +73,7 @@ public class UIntPrimitive implements SSZBasicAccessor {
   }
 
   private static void encodeLong(long value, int bitLength, OutputStream result) {
-    Bytes res = SSZ.encodeULong(value, bitLength);
+    Bytes res = SSZWriter.encodeULong(value, bitLength);
     try {
       result.write(res.toArrayUnsafe());
     } catch (IOException e) {
@@ -83,7 +83,7 @@ public class UIntPrimitive implements SSZBasicAccessor {
 
   private static void encodeBigInt(Object value, NumericType type, OutputStream result) {
     BigInteger valueBI = (BigInteger) value;
-    Bytes res = SSZ.encodeBigInteger(valueBI, type.size);
+    Bytes res = SSZWriter.encodeBigInteger(valueBI, type.size);
 
     try {
       result.write(res.toArrayUnsafe());
@@ -135,7 +135,7 @@ public class UIntPrimitive implements SSZBasicAccessor {
   }
 
   @Override
-  public Object decode(SSZField field, BytesSSZReaderProxy reader) {
+  public Object decode(SSZField field, SSZReader reader) {
     NumericType numericType = parseFieldType(field);
     switch (numericType.type) {
       case INT:
@@ -155,15 +155,15 @@ public class UIntPrimitive implements SSZBasicAccessor {
     return throwUnsupportedType(field);
   }
 
-  private Object decodeInt(NumericType type, BytesSSZReaderProxy reader) {
+  private Object decodeInt(NumericType type, SSZReader reader) {
     return reader.readUInt(type.size);
   }
 
-  private Object decodeLong(NumericType type, BytesSSZReaderProxy reader) {
+  private Object decodeLong(NumericType type, SSZReader reader) {
     return reader.readULong(type.size);
   }
 
-  private Object decodeBigInt(NumericType type, BytesSSZReaderProxy reader) {
+  private Object decodeBigInt(NumericType type, SSZReader reader) {
     return reader.readUnsignedBigInteger(type.size);
   }
 

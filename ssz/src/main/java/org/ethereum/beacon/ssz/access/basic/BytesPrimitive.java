@@ -1,17 +1,15 @@
 package org.ethereum.beacon.ssz.access.basic;
 
 import net.consensys.cava.bytes.Bytes;
-import net.consensys.cava.ssz.BytesSSZReaderProxy;
-import net.consensys.cava.ssz.SSZ;
+import org.ethereum.beacon.ssz.visitor.SSZReader;
+import org.ethereum.beacon.ssz.visitor.SSZWriter;
 import net.consensys.cava.ssz.SSZException;
 import org.ethereum.beacon.ssz.access.SSZBasicAccessor;
 import org.ethereum.beacon.ssz.access.SSZField;
-import org.ethereum.beacon.ssz.SSZSchemeException;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -68,9 +66,9 @@ public class BytesPrimitive implements SSZBasicAccessor {
     Bytes res = null;
     byte[] data = (byte[]) value;
     if (byteType.size == null) {
-      res = SSZ.encodeByteArray(data);
+      res = SSZWriter.encodeByteArray(data);
     } else {
-      res = SSZ.encodeHash(Bytes.wrap(data)); // w/o length prefix
+      res = SSZWriter.encodeBytes(Bytes.wrap(data), byteType.size);
     }
 
     try {
@@ -83,7 +81,7 @@ public class BytesPrimitive implements SSZBasicAccessor {
   }
 
   @Override
-  public Object decode(SSZField field, BytesSSZReaderProxy reader) {
+  public Object decode(SSZField field, SSZReader reader) {
     BytesType bytesType = parseFieldType(field);
     return (bytesType.size == null)
         ? reader.readBytes().toArrayUnsafe()

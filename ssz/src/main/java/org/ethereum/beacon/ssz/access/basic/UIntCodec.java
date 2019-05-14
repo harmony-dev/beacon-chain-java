@@ -1,8 +1,8 @@
 package org.ethereum.beacon.ssz.access.basic;
 
 import net.consensys.cava.bytes.Bytes;
-import net.consensys.cava.ssz.BytesSSZReaderProxy;
-import net.consensys.cava.ssz.SSZ;
+import org.ethereum.beacon.ssz.visitor.SSZReader;
+import org.ethereum.beacon.ssz.visitor.SSZWriter;
 import net.consensys.cava.ssz.SSZException;
 import org.ethereum.beacon.ssz.access.SSZBasicAccessor;
 import org.ethereum.beacon.ssz.access.SSZField;
@@ -85,14 +85,14 @@ public class UIntCodec implements SSZBasicAccessor {
       case 24:
         {
           UInt24 uValue = (UInt24) value;
-          Bytes bytes = SSZ.encodeULong(uValue.getValue(), numericType.size);
+          Bytes bytes = SSZWriter.encodeULong(uValue.getValue(), numericType.size);
           writeBytes(bytes, result);
           break;
         }
       case 64:
         {
           UInt64 uValue = (UInt64) value;
-          Bytes bytes = SSZ.encodeULong(uValue.getValue(), numericType.size);
+          Bytes bytes = SSZWriter.encodeULong(uValue.getValue(), numericType.size);
           writeBytes(bytes, result);
           break;
         }
@@ -110,7 +110,7 @@ public class UIntCodec implements SSZBasicAccessor {
   }
 
   @Override
-  public Object decode(SSZField field, BytesSSZReaderProxy reader) {
+  public Object decode(SSZField field, SSZReader reader) {
     NumericType numericType = parseFieldType(field);
     switch (numericType.type) {
       case LONG:
@@ -126,7 +126,7 @@ public class UIntCodec implements SSZBasicAccessor {
     return throwUnsupportedType(field);
   }
 
-  private Object decodeLong(NumericType type, BytesSSZReaderProxy reader) {
+  private Object decodeLong(NumericType type, SSZReader reader) {
     // XXX: reader.readULong is buggy
     switch (type.size) {
       case 24:
@@ -142,7 +142,7 @@ public class UIntCodec implements SSZBasicAccessor {
     throw new SSZSchemeException(error);
   }
 
-  private Object decodeBigInt(NumericType type, BytesSSZReaderProxy reader) {
+  private Object decodeBigInt(NumericType type, SSZReader reader) {
     switch (type.size) {
       case 256:
         {

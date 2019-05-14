@@ -1,10 +1,9 @@
 package org.ethereum.beacon.ssz.access.basic;
 
 import java.io.OutputStream;
-import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
-import net.consensys.cava.ssz.BytesSSZReaderProxy;
+
+import org.ethereum.beacon.ssz.visitor.SSZReader;
 import org.ethereum.beacon.ssz.access.SSZBasicAccessor;
 import org.ethereum.beacon.ssz.creator.ConstructorObjCreator;
 import org.ethereum.beacon.ssz.access.SSZField;
@@ -46,8 +45,7 @@ public class SubclassCodec implements SSZBasicAccessor {
   }
 
   @Override
-  public Object decode(SSZField field,
-      BytesSSZReaderProxy reader) {
+  public Object decode(SSZField field, SSZReader reader) {
     SSZField serializableField = getSerializableField(field);
     Object serializableTypeObject = superclassCodec.decode(serializableField, reader);
     return ConstructorObjCreator.createInstanceWithConstructor(

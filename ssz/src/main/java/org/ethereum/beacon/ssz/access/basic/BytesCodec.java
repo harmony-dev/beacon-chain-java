@@ -1,8 +1,8 @@
 package org.ethereum.beacon.ssz.access.basic;
 
 import net.consensys.cava.bytes.Bytes;
-import net.consensys.cava.ssz.BytesSSZReaderProxy;
-import net.consensys.cava.ssz.SSZ;
+import org.ethereum.beacon.ssz.visitor.SSZReader;
+import org.ethereum.beacon.ssz.visitor.SSZWriter;
 import net.consensys.cava.ssz.SSZException;
 import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.SSZSchemeException;
@@ -83,9 +83,9 @@ public class BytesCodec implements SSZBasicAccessor {
     BytesValue data = (BytesValue) value;
     BytesType bytesType = parseFieldType(field);
     if (bytesType.size == null) {
-      res = SSZ.encodeBytes(Bytes.of(data.getArrayUnsafe()));
+      res = SSZWriter.encodeBytes(Bytes.of(data.getArrayUnsafe()));
     } else {
-      res = SSZ.encodeHash(Bytes.of(data.getArrayUnsafe()));
+      res = SSZWriter.encodeBytes(Bytes.of(data.getArrayUnsafe()), bytesType.size);
     }
 
     try {
@@ -98,7 +98,7 @@ public class BytesCodec implements SSZBasicAccessor {
   }
 
   @Override
-  public Object decode(SSZField field, BytesSSZReaderProxy reader) {
+  public Object decode(SSZField field, SSZReader reader) {
     BytesType bytesType = parseFieldType(field);
 
     if (bytesType.size == null) {
