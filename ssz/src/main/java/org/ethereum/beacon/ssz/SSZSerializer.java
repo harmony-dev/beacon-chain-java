@@ -13,6 +13,7 @@ import org.ethereum.beacon.ssz.visitor.SSZSimpleSerializer;
 import org.ethereum.beacon.ssz.visitor.SSZSimpleSerializer.SSZSerializerResult;
 import org.ethereum.beacon.ssz.visitor.SSZVisitorHandler;
 import org.ethereum.beacon.ssz.visitor.SSZVisitorHost;
+import org.javatuples.Pair;
 
 /** SSZ serializer/deserializer */
 public class SSZSerializer implements BytesSerializer, SSZVisitorHandler<SSZSimpleSerializer.SSZSerializerResult> {
@@ -35,7 +36,7 @@ public class SSZSerializer implements BytesSerializer, SSZVisitorHandler<SSZSimp
    */
   @Override
   public <C> byte[] encode(@Nullable C inputObject, Class<? extends C> inputClazz) {
-    return visit(inputObject, inputClazz).getSerialized().getArrayUnsafe();
+    return visit(inputObject, inputClazz).getSerializedBody().getArrayUnsafe();
   }
 
   private <C> SSZSerializerResult visit(C input, Class<? extends C> clazz) {
@@ -62,11 +63,10 @@ public class SSZSerializer implements BytesSerializer, SSZVisitorHandler<SSZSimp
   public <C> C decode(byte[] data, Class<? extends C> clazz) {
     DecodeResult decodeResult = sszVisitorHost.handleAny(
         typeResolver.resolveSSZType(new SSZField(clazz)),
-        Bytes.wrap(data),
+        Pair.with(Bytes.wrap(data), null),
         new SSZSimpleDeserializer());
-    if (data.length > decodeResult.readBytes) {
-      throw new SSZSerializeException("Invalid SSZ data length (data is bigger than required): "
-          + data.length + " > " + decodeResult.readBytes);
+    if (data.length != decodeResult.readBytes) {
+      throw new SSZSerializeException(String.format("Invalid SSZ encoding, calculated data size %s bytes, while provided %s bytes", decodeResult.readBytes, data.length));
     }
     return (C) decodeResult.decodedInstance;
   }

@@ -1,10 +1,9 @@
 package org.ethereum.beacon.ssz.access;
 
-import net.consensys.cava.ssz.BytesSSZReaderProxy;
+import org.ethereum.beacon.ssz.visitor.SSZReader;
 import org.ethereum.beacon.ssz.SSZSchemeException;
 import org.ethereum.beacon.ssz.SSZSerializer;
 import java.io.OutputStream;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
@@ -45,16 +44,6 @@ public interface SSZBasicAccessor {
   void encode(Object value, SSZField field, OutputStream result);
 
   /**
-   * Encodes list field as SSZ type and writes it to output stream
-   *
-   * @param value Field value
-   * @param field Field type
-   * @param result Output stream
-   */
-  void encodeList(
-      List<Object> value, SSZField field, OutputStream result);
-
-  /**
    * Decodes SSZ encoded data and returns result
    *
    * @param field Type of field to read at this point
@@ -62,17 +51,7 @@ public interface SSZBasicAccessor {
    *     moved to the end of this field/beginning of next one after reading is performed.
    * @return field value
    */
-  Object decode(SSZField field, BytesSSZReaderProxy reader);
-
-  /**
-   * Decodes SSZ encoded data and returns result
-   *
-   * @param field Type of field to read at this point, list
-   * @param reader Reader which holds SSZ encoded data at the appropriate point. Pointer will be
-   *     moved to the end of this field/beginning of next one after reading is performed.
-   * @return field list value
-   */
-  List decodeList(SSZField field, BytesSSZReaderProxy reader);
+  Object decode(SSZField field, SSZReader reader);
 
   /**
    * Helper designed to throw usual error

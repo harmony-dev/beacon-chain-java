@@ -31,9 +31,7 @@ public @interface SSZ {
   String UInt384 = "uint384";
   String UInt512 = "uint512";
   String Bytes = "bytes";
-  String Hash = "hash";
-  String Hash32 = "hash32";
-  String Hash48 = "hash48";
+  String Hash32 = "bytes32";
   String Bool = "bool";
   String Address = "address";
   String String = "string";
