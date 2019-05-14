@@ -11,14 +11,12 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.ethereum.beacon.ssz.incremental.ObservableComposite;
 import org.ethereum.beacon.ssz.incremental.UpdateListener;
 import org.ethereum.beacon.ssz.type.SSZCompositeType;
 import org.ethereum.beacon.ssz.type.SSZListType;
-import org.ethereum.beacon.ssz.visitor.SSZSimpleSerializer.SSZSerializerResult;
+import org.ethereum.beacon.ssz.visitor.SSZHasherSerializer.SSZHasherSerializerResult;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 public class SSZIncrementalHasher extends SSZSimpleHasher {
@@ -51,7 +49,7 @@ public class SSZIncrementalHasher extends SSZSimpleHasher {
   }
 
   public SSZIncrementalHasher(
-      SSZVisitorHandler<SSZSerializerResult> serializer,
+      SSZVisitorHandler<SSZHasherSerializerResult> serializer,
       Function<BytesValue, Hash32> hashFunction, int bytesPerChunk) {
     super(serializer, hashFunction, bytesPerChunk);
   }
