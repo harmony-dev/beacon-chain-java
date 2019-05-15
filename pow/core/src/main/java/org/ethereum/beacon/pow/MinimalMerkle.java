@@ -7,15 +7,14 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static tech.pegasys.artemis.util.bytes.BytesValue.concat;
 
 /**
  * Minimal merkle tree <a
  * href="https://en.wikipedia.org/wiki/Merkle_tree">https://en.wikipedia.org/wiki/Merkle_tree</a>
- * implementation
+ * implementation, adoption from python code from <a
+ * href="https://github.com/ethereum/research/blob/master/spec_pythonizer/utils/merkle_minimal.py">https://github.com/ethereum/research/blob/master/spec_pythonizer/utils/merkle_minimal.py</a></a>
  */
 public class MinimalMerkle {
 
@@ -29,7 +28,7 @@ public class MinimalMerkle {
     this.zeroHashes = new Hash32[treeDepth];
   }
 
-  public Hash32 getZeroHash(int distanceFromBottom) {
+  private Hash32 getZeroHash(int distanceFromBottom) {
     if (zeroHashes[distanceFromBottom] == null) {
       if (distanceFromBottom == 0) {
         zeroHashes[0] = Hash32.ZERO;

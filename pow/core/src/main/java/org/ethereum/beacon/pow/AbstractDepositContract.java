@@ -8,8 +8,6 @@ import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.schedulers.Schedulers;
-import org.ethereum.beacon.ssz.SSZBuilder;
-import org.ethereum.beacon.ssz.SSZSerializer;
 import org.ethereum.beacon.stream.SimpleProcessor;
 import org.javatuples.Pair;
 import org.javatuples.Triplet;
@@ -34,7 +32,6 @@ import java.util.stream.Collectors;
 
 public abstract class AbstractDepositContract implements DepositContract {
   protected final Schedulers schedulers;
-  private final SSZSerializer ssz = new SSZBuilder().buildSerializer();
   private final MonoProcessor<ChainStart> chainStartSink = MonoProcessor.create();
   private final Publisher<ChainStart> chainStartStream;
   private final SimpleProcessor<Deposit> depositStream;
