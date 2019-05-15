@@ -1,10 +1,9 @@
-package org.ethereum.beacon.wire.net;
+package org.ethereum.beacon.wire.net.netty;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;

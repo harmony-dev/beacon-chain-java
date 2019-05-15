@@ -1,4 +1,4 @@
-package org.ethereum.beacon.wire.net;
+package org.ethereum.beacon.wire.net.netty;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.netty.bootstrap.Bootstrap;
@@ -9,8 +9,9 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import java.net.SocketAddress;
 import java.util.concurrent.CompletableFuture;
+import org.ethereum.beacon.wire.net.Client;
 
-public class NettyClient implements Client<SocketAddress>{
+public class NettyClient implements Client<SocketAddress> {
   private final NioEventLoopGroup workerGroup;
 
   public NettyClient() {

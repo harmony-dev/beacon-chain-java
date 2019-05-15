@@ -1,4 +1,4 @@
-package org.ethereum.beacon.wire.net;
+package org.ethereum.beacon.wire.net.netty;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
@@ -7,10 +7,7 @@ import io.netty.channel.FixedRecvByteBufAllocator;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
-import io.netty.handler.codec.LineBasedFrameDecoder;
-import io.netty.handler.codec.string.StringEncoder;
 import io.netty.handler.timeout.ReadTimeoutHandler;
-import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

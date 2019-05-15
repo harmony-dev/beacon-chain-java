@@ -1,4 +1,4 @@
-package org.ethereum.beacon.wire.net;
+package org.ethereum.beacon.wire.net.netty;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.netty.bootstrap.ServerBootstrap;
@@ -11,6 +11,7 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LoggingHandler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.ethereum.beacon.wire.net.Server;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.UnicastProcessor;
