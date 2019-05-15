@@ -15,7 +15,7 @@ import org.ethereum.beacon.ssz.incremental.ObservableComposite;
 import org.ethereum.beacon.ssz.incremental.UpdateListener;
 import org.ethereum.beacon.ssz.type.SSZCompositeType;
 import org.ethereum.beacon.ssz.type.SSZListType;
-import org.ethereum.beacon.ssz.visitor.SSZHasherSerializer.SSZHasherSerializerResult;
+import org.ethereum.beacon.ssz.visitor.SSZSimpleSerializer.SSZHasherSerializerResult;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 

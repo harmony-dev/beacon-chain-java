@@ -5,8 +5,8 @@ import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.type.SSZListType;
 import org.ethereum.beacon.ssz.type.SSZType;
 import org.ethereum.beacon.ssz.type.TypeResolver;
-import org.ethereum.beacon.ssz.visitor.SSZHasherSerializer;
-import org.ethereum.beacon.ssz.visitor.SSZHasherSerializer.SSZHasherSerializerResult;
+import org.ethereum.beacon.ssz.visitor.SSZSimpleSerializer;
+import org.ethereum.beacon.ssz.visitor.SSZSimpleSerializer.SSZHasherSerializerResult;
 import org.ethereum.beacon.ssz.visitor.SSZVisitorHandler;
 import org.ethereum.beacon.ssz.visitor.SSZVisitorHost;
 
@@ -42,14 +42,14 @@ public class HasherSerializer
 
   @Override
   public SSZHasherSerializerResult visitAny(SSZType sszType, Object value) {
-    return sszVisitorHost.handleAny(sszType, value, new SSZHasherSerializer());
+    return sszVisitorHost.handleAny(sszType, value, new SSZSimpleSerializer());
   }
 
   @Override
   public SSZHasherSerializerResult visitList(
       SSZListType descriptor, Object listValue, int startIdx, int len) {
     return sszVisitorHost.handleSubList(
-        descriptor, listValue, startIdx, len, new SSZHasherSerializer());
+        descriptor, listValue, startIdx, len, new SSZSimpleSerializer());
   }
 
   public <C> C decode(byte[] data, Class<? extends C> clazz) {

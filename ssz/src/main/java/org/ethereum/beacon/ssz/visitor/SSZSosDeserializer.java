@@ -7,7 +7,7 @@ import org.ethereum.beacon.ssz.type.SSZCompositeType;
 import org.ethereum.beacon.ssz.type.SSZContainerType;
 import org.ethereum.beacon.ssz.type.SSZListType;
 import org.ethereum.beacon.ssz.type.SSZType;
-import org.ethereum.beacon.ssz.visitor.SSZSimpleDeserializer.DecodeResult;
+import org.ethereum.beacon.ssz.visitor.SSZSosDeserializer.DecodeResult;
 import org.javatuples.Pair;
 
 import java.nio.ByteOrder;
@@ -15,7 +15,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-public class SSZSimpleDeserializer implements SSZVisitor<DecodeResult, Pair<Bytes, Boolean>> {
+public class SSZSosDeserializer implements SSZVisitor<DecodeResult, Pair<Bytes, Boolean>> {
   static final int BYTES_PER_LENGTH_OFFSET = 4;
 
   /**

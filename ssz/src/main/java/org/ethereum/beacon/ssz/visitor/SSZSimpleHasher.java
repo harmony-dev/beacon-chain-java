@@ -8,7 +8,7 @@ import java.util.function.Function;
 import org.ethereum.beacon.ssz.type.SSZBasicType;
 import org.ethereum.beacon.ssz.type.SSZCompositeType;
 import org.ethereum.beacon.ssz.type.SSZListType;
-import org.ethereum.beacon.ssz.visitor.SSZHasherSerializer.SSZHasherSerializerResult;
+import org.ethereum.beacon.ssz.visitor.SSZSimpleSerializer.SSZHasherSerializerResult;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
