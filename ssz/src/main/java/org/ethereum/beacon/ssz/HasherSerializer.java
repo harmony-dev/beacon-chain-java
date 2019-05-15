@@ -6,7 +6,7 @@ import org.ethereum.beacon.ssz.type.SSZListType;
 import org.ethereum.beacon.ssz.type.SSZType;
 import org.ethereum.beacon.ssz.type.TypeResolver;
 import org.ethereum.beacon.ssz.visitor.SSZSimpleSerializer;
-import org.ethereum.beacon.ssz.visitor.SSZSimpleSerializer.SSZHasherSerializerResult;
+import org.ethereum.beacon.ssz.visitor.SSZSimpleSerializer.SSZSerializerResult;
 import org.ethereum.beacon.ssz.visitor.SSZVisitorHandler;
 import org.ethereum.beacon.ssz.visitor.SSZVisitorHost;
 
@@ -14,7 +14,7 @@ import javax.annotation.Nullable;
 
 /** SSZ hasher serializer */
 public class HasherSerializer
-    implements BytesSerializer, SSZVisitorHandler<SSZHasherSerializerResult> {
+    implements BytesSerializer, SSZVisitorHandler<SSZSerializerResult> {
 
   private final SSZVisitorHost sszVisitorHost;
   private final TypeResolver typeResolver;
@@ -36,17 +36,17 @@ public class HasherSerializer
     return visit(inputObject, inputClazz).getSerializedBody().getArrayUnsafe();
   }
 
-  private <C> SSZHasherSerializerResult visit(C input, Class<? extends C> clazz) {
+  private <C> SSZSerializerResult visit(C input, Class<? extends C> clazz) {
     return visitAny(typeResolver.resolveSSZType(new SSZField(clazz)), input);
   }
 
   @Override
-  public SSZHasherSerializerResult visitAny(SSZType sszType, Object value) {
+  public SSZSerializerResult visitAny(SSZType sszType, Object value) {
     return sszVisitorHost.handleAny(sszType, value, new SSZSimpleSerializer());
   }
 
   @Override
-  public SSZHasherSerializerResult visitList(
+  public SSZSerializerResult visitList(
       SSZListType descriptor, Object listValue, int startIdx, int len) {
     return sszVisitorHost.handleSubList(
         descriptor, listValue, startIdx, len, new SSZSimpleSerializer());

@@ -8,7 +8,7 @@ import java.util.function.Function;
 import org.ethereum.beacon.ssz.type.SSZBasicType;
 import org.ethereum.beacon.ssz.type.SSZCompositeType;
 import org.ethereum.beacon.ssz.type.SSZListType;
-import org.ethereum.beacon.ssz.visitor.SSZSimpleSerializer.SSZHasherSerializerResult;
+import org.ethereum.beacon.ssz.visitor.SSZSimpleSerializer.SSZSerializerResult;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
@@ -17,12 +17,12 @@ import tech.pegasys.artemis.util.bytes.BytesValues;
 public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
 
   private final Hash32[] zeroHashes = new Hash32[32];
-  final SSZVisitorHandler<SSZHasherSerializerResult> serializer;
+  final SSZVisitorHandler<SSZSerializerResult> serializer;
   final Function<BytesValue, Hash32> hashFunction;
   final int bytesPerChunk;
 
   public SSZSimpleHasher(
-      SSZVisitorHandler<SSZHasherSerializerResult> serializer,
+      SSZVisitorHandler<SSZSerializerResult> serializer,
       Function<BytesValue, Hash32> hashFunction, int bytesPerChunk) {
     this.serializer = serializer;
     this.hashFunction = hashFunction;
@@ -31,7 +31,7 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
 
   @Override
   public MerkleTrie visitBasicValue(SSZBasicType descriptor, Object value) {
-    SSZHasherSerializerResult sszSerializerResult = serializer.visitAny(descriptor, value);
+    SSZSerializerResult sszSerializerResult = serializer.visitAny(descriptor, value);
     return merkleize(pack(sszSerializerResult.serializedBody));
   }
 
@@ -43,7 +43,7 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
     if (type.getChildrenCount(rawValue) == 0) {
       // empty chunk list
     } else if (type.isList() && ((SSZListType) type).getElementType().isBasicType()) {
-      SSZHasherSerializerResult sszSerializerResult = serializer.visitAny(type, rawValue);
+      SSZSerializerResult sszSerializerResult = serializer.visitAny(type, rawValue);
 
       chunks = pack(sszSerializerResult.serializedBody);
     } else {

@@ -17,22 +17,22 @@ import static org.ethereum.beacon.ssz.visitor.SSZSosDeserializer.BYTES_PER_LENGT
  * SSZ serializer with offset-based encoding of variable sized elements
  */
 public class SSZSosSerializer
-    implements SSZVisitor<SSZSosSerializer.SSZSerializerResult, Object> {
+    implements SSZVisitor<SSZSosSerializer.SerializerResult, Object> {
   private static BytesValue serializeLength(long len) {
     return BytesValues.ofUnsignedIntLittleEndian(len);
   }
 
   @Override
-  public SSZSerializerResult visitBasicValue(SSZBasicType type, Object value) {
+  public SerializerResult visitBasicValue(SSZBasicType type, Object value) {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     type.getAccessor().encode(value, type.getTypeDescriptor(), baos);
-    return new SSZSerializerResult(
+    return new SerializerResult(
         BytesValue.wrap(baos.toByteArray()), baos.size(), type.isFixedSize());
   }
 
   @Override
-  public SSZSerializerResult visitList(
-      SSZListType type, Object param, ChildVisitor<Object, SSZSerializerResult> childVisitor) {
+  public SerializerResult visitList(
+      SSZListType type, Object param, ChildVisitor<Object, SerializerResult> childVisitor) {
 
     if (type.isVector()) {
       if (type.getChildrenCount(param) != type.getVectorLength()) {
@@ -49,34 +49,34 @@ public class SSZSosSerializer
   }
 
   @Override
-  public SSZSerializerResult visitSubList(
+  public SerializerResult visitSubList(
       SSZListType type,
       Object param,
       int startIdx,
       int len,
-      ChildVisitor<Object, SSZSerializerResult> childVisitor) {
+      ChildVisitor<Object, SerializerResult> childVisitor) {
     return visitComposite(type, param, childVisitor, startIdx, len);
   }
 
   @Override
-  public SSZSerializerResult visitComposite(
+  public SerializerResult visitComposite(
       SSZCompositeType type,
       Object rawValue,
-      ChildVisitor<Object, SSZSerializerResult> childVisitor) {
+      ChildVisitor<Object, SerializerResult> childVisitor) {
     return visitComposite(type, rawValue, childVisitor, 0, type.getChildrenCount(rawValue));
   }
 
-  private SSZSerializerResult visitComposite(
+  private SerializerResult visitComposite(
       SSZCompositeType type,
       Object rawValue,
-      ChildVisitor<Object, SSZSerializerResult> childVisitor,
+      ChildVisitor<Object, SerializerResult> childVisitor,
       int startIdx,
       int len) {
 
-    List<SSZSerializerResult> childSerializations = new ArrayList<>();
+    List<SerializerResult> childSerializations = new ArrayList<>();
     boolean fixedSize = type.isFixedSize();
     for (int i = startIdx; i < startIdx + len; i++) {
-      SSZSerializerResult res = childVisitor.apply(i, type.getChild(rawValue, i));
+      SerializerResult res = childVisitor.apply(i, type.getChild(rawValue, i));
       childSerializations.add(res);
     }
 
@@ -87,7 +87,7 @@ public class SSZSosSerializer
     BytesValue composite = BytesValue.EMPTY;
 
     // Fixed part
-    for (SSZSerializerResult s : childSerializations) {
+    for (SerializerResult s : childSerializations) {
       composite =
           composite.concat(s.isFixedSize() ? s.serializedBody : serializeLength(currentOffset));
       if (!s.isFixedSize()) {
@@ -96,22 +96,22 @@ public class SSZSosSerializer
     }
 
     // Variable part
-    for (SSZSerializerResult s : childSerializations) {
+    for (SerializerResult s : childSerializations) {
       if (s.isFixedSize()) {
         continue;
       }
       composite = composite.concat(s.serializedBody);
     }
 
-    return new SSZSerializerResult(composite, currentOffset, fixedSize);
+    return new SerializerResult(composite, currentOffset, fixedSize);
   }
 
-  public static class SSZSerializerResult {
+  public static class SerializerResult {
     final BytesValue serializedBody;
     final int serializedLength;
     final boolean fixedSize;
 
-    public SSZSerializerResult(BytesValue serializedBody, int serializedLength, boolean fixedSize) {
+    public SerializerResult(BytesValue serializedBody, int serializedLength, boolean fixedSize) {
       this.serializedBody = serializedBody;
       this.serializedLength = serializedLength;
       this.fixedSize = fixedSize;
