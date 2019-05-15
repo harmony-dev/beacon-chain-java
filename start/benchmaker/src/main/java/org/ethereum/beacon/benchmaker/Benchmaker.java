@@ -28,7 +28,7 @@ public class Benchmaker implements Runnable {
       names = {"--epochs"},
       paramLabel = "epochs",
       description =
-          "Number of epochs passed to a benchmark session.\nNote: genesis epoch is not counted in a session.",
+          "Number of epochs passed to a benchmark session.\nNote: first two epochs are not counted during a session.",
       defaultValue = "16")
   private Integer epochs;
 
