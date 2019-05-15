@@ -5,16 +5,16 @@ import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.type.SSZListType;
 import org.ethereum.beacon.ssz.type.SSZType;
 import org.ethereum.beacon.ssz.type.TypeResolver;
-import org.ethereum.beacon.ssz.visitor.SSZSimpleSerializer;
-import org.ethereum.beacon.ssz.visitor.SSZSimpleSerializer.SSZSerializerResult;
 import org.ethereum.beacon.ssz.visitor.SSZVisitorHandler;
 import org.ethereum.beacon.ssz.visitor.SSZVisitorHost;
+import org.ethereum.beacon.ssz.visitor.SosSerializer;
+import org.ethereum.beacon.ssz.visitor.SosSerializer.SerializerResult;
 
 import javax.annotation.Nullable;
 
 /** SSZ hasher serializer */
 public class HasherSerializer
-    implements BytesSerializer, SSZVisitorHandler<SSZSerializerResult> {
+    implements BytesSerializer, SSZVisitorHandler<SerializerResult> {
 
   private final SSZVisitorHost sszVisitorHost;
   private final TypeResolver typeResolver;
@@ -36,20 +36,20 @@ public class HasherSerializer
     return visit(inputObject, inputClazz).getSerializedBody().getArrayUnsafe();
   }
 
-  private <C> SSZSerializerResult visit(C input, Class<? extends C> clazz) {
+  private <C> SerializerResult visit(C input, Class<? extends C> clazz) {
     return visitAny(typeResolver.resolveSSZType(new SSZField(clazz)), input);
   }
 
   @Override
-  public SSZSerializerResult visitAny(SSZType sszType, Object value) {
-    return sszVisitorHost.handleAny(sszType, value, new SSZSimpleSerializer());
+  public SerializerResult visitAny(SSZType sszType, Object value) {
+    return sszVisitorHost.handleAny(sszType, value, new SosSerializer());
   }
 
   @Override
-  public SSZSerializerResult visitList(
+  public SerializerResult visitList(
       SSZListType descriptor, Object listValue, int startIdx, int len) {
     return sszVisitorHost.handleSubList(
-        descriptor, listValue, startIdx, len, new SSZSimpleSerializer());
+        descriptor, listValue, startIdx, len, new SosSerializer());
   }
 
   public <C> C decode(byte[] data, Class<? extends C> clazz) {
