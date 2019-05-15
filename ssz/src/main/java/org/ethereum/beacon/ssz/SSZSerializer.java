@@ -7,16 +7,16 @@ import org.ethereum.beacon.ssz.creator.CompositeObjCreator;
 import org.ethereum.beacon.ssz.type.SSZListType;
 import org.ethereum.beacon.ssz.type.SSZType;
 import org.ethereum.beacon.ssz.type.TypeResolver;
-import org.ethereum.beacon.ssz.visitor.SSZSimpleDeserializer;
-import org.ethereum.beacon.ssz.visitor.SSZSimpleDeserializer.DecodeResult;
-import org.ethereum.beacon.ssz.visitor.SSZSimpleSerializer;
-import org.ethereum.beacon.ssz.visitor.SSZSimpleSerializer.SSZSerializerResult;
+import org.ethereum.beacon.ssz.visitor.SosDeserializer;
+import org.ethereum.beacon.ssz.visitor.SosDeserializer.DecodeResult;
+import org.ethereum.beacon.ssz.visitor.SosSerializer;
+import org.ethereum.beacon.ssz.visitor.SosSerializer.SerializerResult;
 import org.ethereum.beacon.ssz.visitor.SSZVisitorHandler;
 import org.ethereum.beacon.ssz.visitor.SSZVisitorHost;
 import org.javatuples.Pair;
 
 /** SSZ serializer/deserializer */
-public class SSZSerializer implements BytesSerializer, SSZVisitorHandler<SSZSimpleSerializer.SSZSerializerResult> {
+public class SSZSerializer implements BytesSerializer, SSZVisitorHandler<SerializerResult> {
 
   private final SSZVisitorHost sszVisitorHost;
   private final TypeResolver typeResolver;
@@ -39,18 +39,18 @@ public class SSZSerializer implements BytesSerializer, SSZVisitorHandler<SSZSimp
     return visit(inputObject, inputClazz).getSerializedBody().getArrayUnsafe();
   }
 
-  private <C> SSZSerializerResult visit(C input, Class<? extends C> clazz) {
+  private <C> SerializerResult visit(C input, Class<? extends C> clazz) {
     return visitAny(typeResolver.resolveSSZType(new SSZField(clazz)), input);
   }
 
   @Override
-  public SSZSerializerResult visitAny(SSZType sszType, Object value) {
-    return sszVisitorHost.handleAny(sszType, value, new SSZSimpleSerializer());
+  public SerializerResult visitAny(SSZType sszType, Object value) {
+    return sszVisitorHost.handleAny(sszType, value, new SosSerializer());
   }
 
   @Override
-  public SSZSerializerResult visitList(SSZListType descriptor, Object listValue, int startIdx, int len) {
-    return sszVisitorHost.handleSubList(descriptor, listValue, startIdx, len, new SSZSimpleSerializer());
+  public SerializerResult visitList(SSZListType descriptor, Object listValue, int startIdx, int len) {
+    return sszVisitorHost.handleSubList(descriptor, listValue, startIdx, len, new SosSerializer());
   }
 
   /**
@@ -64,7 +64,7 @@ public class SSZSerializer implements BytesSerializer, SSZVisitorHandler<SSZSimp
     DecodeResult decodeResult = sszVisitorHost.handleAny(
         typeResolver.resolveSSZType(new SSZField(clazz)),
         Pair.with(Bytes.wrap(data), null),
-        new SSZSimpleDeserializer());
+        new SosDeserializer());
     if (data.length != decodeResult.readBytes) {
       throw new SSZSerializeException(String.format("Invalid SSZ encoding, calculated data size %s bytes, while provided %s bytes", decodeResult.readBytes, data.length));
     }
