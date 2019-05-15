@@ -15,6 +15,9 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
+/**
+ * SSZ deserializer with offset-based decoding of variable sized elements
+ */
 public class SSZSosDeserializer implements SSZVisitor<DecodeResult, Pair<Bytes, Boolean>> {
   static final int BYTES_PER_LENGTH_OFFSET = 4;
 
