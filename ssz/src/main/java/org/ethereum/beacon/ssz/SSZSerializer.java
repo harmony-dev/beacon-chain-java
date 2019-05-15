@@ -7,10 +7,10 @@ import org.ethereum.beacon.ssz.creator.CompositeObjCreator;
 import org.ethereum.beacon.ssz.type.SSZListType;
 import org.ethereum.beacon.ssz.type.SSZType;
 import org.ethereum.beacon.ssz.type.TypeResolver;
-import org.ethereum.beacon.ssz.visitor.SSZSosDeserializer;
-import org.ethereum.beacon.ssz.visitor.SSZSosDeserializer.DecodeResult;
-import org.ethereum.beacon.ssz.visitor.SSZSosSerializer;
-import org.ethereum.beacon.ssz.visitor.SSZSosSerializer.SerializerResult;
+import org.ethereum.beacon.ssz.visitor.SosDeserializer;
+import org.ethereum.beacon.ssz.visitor.SosDeserializer.DecodeResult;
+import org.ethereum.beacon.ssz.visitor.SosSerializer;
+import org.ethereum.beacon.ssz.visitor.SosSerializer.SerializerResult;
 import org.ethereum.beacon.ssz.visitor.SSZVisitorHandler;
 import org.ethereum.beacon.ssz.visitor.SSZVisitorHost;
 import org.javatuples.Pair;
@@ -45,12 +45,12 @@ public class SSZSerializer implements BytesSerializer, SSZVisitorHandler<Seriali
 
   @Override
   public SerializerResult visitAny(SSZType sszType, Object value) {
-    return sszVisitorHost.handleAny(sszType, value, new SSZSosSerializer());
+    return sszVisitorHost.handleAny(sszType, value, new SosSerializer());
   }
 
   @Override
   public SerializerResult visitList(SSZListType descriptor, Object listValue, int startIdx, int len) {
-    return sszVisitorHost.handleSubList(descriptor, listValue, startIdx, len, new SSZSosSerializer());
+    return sszVisitorHost.handleSubList(descriptor, listValue, startIdx, len, new SosSerializer());
   }
 
   /**
@@ -64,7 +64,7 @@ public class SSZSerializer implements BytesSerializer, SSZVisitorHandler<Seriali
     DecodeResult decodeResult = sszVisitorHost.handleAny(
         typeResolver.resolveSSZType(new SSZField(clazz)),
         Pair.with(Bytes.wrap(data), null),
-        new SSZSosDeserializer());
+        new SosDeserializer());
     if (data.length != decodeResult.readBytes) {
       throw new SSZSerializeException(String.format("Invalid SSZ encoding, calculated data size %s bytes, while provided %s bytes", decodeResult.readBytes, data.length));
     }

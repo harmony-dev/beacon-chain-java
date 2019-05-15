@@ -11,13 +11,13 @@ import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.ethereum.beacon.ssz.visitor.SSZSosDeserializer.BYTES_PER_LENGTH_OFFSET;
+import static org.ethereum.beacon.ssz.visitor.SosDeserializer.BYTES_PER_LENGTH_OFFSET;
 
 /**
  * SSZ serializer with offset-based encoding of variable sized elements
  */
-public class SSZSosSerializer
-    implements SSZVisitor<SSZSosSerializer.SerializerResult, Object> {
+public class SosSerializer
+    implements SSZVisitor<SosSerializer.SerializerResult, Object> {
   private static BytesValue serializeLength(long len) {
     return BytesValues.ofUnsignedIntLittleEndian(len);
   }
