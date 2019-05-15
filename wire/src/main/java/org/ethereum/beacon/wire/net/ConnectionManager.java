@@ -35,11 +35,13 @@ public class ConnectionManager<TAddress> {
   }
 
   public CompletableFuture<Channel<BytesValue>> connect(TAddress peerAddress) {
-    return client.connect(peerAddress)
-        .thenApply(a -> {
-          clientConnectionsSink.next(a);
-          return a;
-        });
+    return client
+        .connect(peerAddress)
+        .thenApply(
+            a -> {
+              clientConnectionsSink.next(a);
+              return a;
+            });
   }
 
   public void addActivePeer(TAddress peerAddress) {

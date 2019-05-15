@@ -2,6 +2,7 @@ package org.ethereum.beacon.wire;
 
 import java.util.concurrent.CompletableFuture;
 import org.ethereum.beacon.core.types.SlotNumber;
+import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.ssz.SSZSerializer;
 import org.ethereum.beacon.wire.channel.Channel;
 import org.ethereum.beacon.wire.channel.beacon.BeaconPipeline;
@@ -19,6 +20,7 @@ public class PeerImpl implements Peer {
   private final CompletableFuture<HelloMessage> peerActiveFut = new CompletableFuture<>();
   private final BeaconPipeline beaconPipeline;
   private final WireApiSubAdapter wireApiSubAdapter = new WireApiSubAdapter();
+  private final Schedulers schedulers;
 
   private GoodbyeMessage remoteGoodbye;
   private GoodbyeMessage localGoodbye;
@@ -28,10 +30,12 @@ public class PeerImpl implements Peer {
       HelloMessage helloMessage,
       SSZSerializer ssz,
       MessageSerializer messageSerializer,
-      WireApiSync syncServer) {
+      WireApiSync syncServer,
+      Schedulers schedulers) {
 
     this.channel = channel;
     this.localHelloMessage = helloMessage;
+    this.schedulers = schedulers;
 
     beaconPipeline = new BeaconPipeline(ssz, new WireApiPeer() {
       public void hello(HelloMessage message) {
@@ -40,7 +44,7 @@ public class PeerImpl implements Peer {
       public void goodbye(GoodbyeMessage message) {
         onGoodbye(message);
       }
-    }, wireApiSubAdapter, syncServer);
+    }, wireApiSubAdapter, syncServer, schedulers);
     beaconPipeline.initFromBytesChannel(channel, messageSerializer);
     wireApiSubAdapter.setSubClient(beaconPipeline.getSubClient());
 

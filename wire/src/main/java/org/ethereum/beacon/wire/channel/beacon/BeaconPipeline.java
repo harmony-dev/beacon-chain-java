@@ -1,10 +1,12 @@
 package org.ethereum.beacon.wire.channel.beacon;
 
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
+import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.ssz.SSZSerializer;
 import org.ethereum.beacon.wire.Feedback;
 import org.ethereum.beacon.wire.MessageSerializer;
@@ -43,18 +45,27 @@ public class BeaconPipeline {
   private final WireApiPeer peerServer;
   private final WireApiSubRpc subServer;
   private final WireApiSync syncServer;
+  private final Schedulers schedulers;
   private WireApiPeer peerClient;
   private WireApiSubRpc subClient;
   private WireApiSync syncClient;
+  private Duration rpsTimeout = RpcChannelAdapter.DEFAULT_RPC_TIMEOUT;
 
   private RpcChannel<RequestMessagePayload, ResponseMessagePayload> rpcHub;
 
   public BeaconPipeline(SSZSerializer sszSerializer, WireApiPeer peerServer,
-      WireApiSubRpc subServer, WireApiSync syncServer) {
+      WireApiSubRpc subServer, WireApiSync syncServer,
+      Schedulers schedulers) {
     this.sszSerializer = sszSerializer;
     this.peerServer = peerServer;
     this.subServer = subServer;
     this.syncServer = syncServer;
+    this.schedulers = schedulers;
+  }
+
+  public BeaconPipeline setRpsTimeout(Duration rpsTimeout) {
+    this.rpsTimeout = rpsTimeout;
+    return this;
   }
 
   public void initFromBytesChannel(Channel<BytesValue> rawChannel, MessageSerializer messageSerializer) {
@@ -68,6 +79,8 @@ public class BeaconPipeline {
   public void initFromMessageChannel(Channel<Message> messageChannel) {
     RpcChannelMapper<Message, RequestMessage, ResponseMessage> rpcMessageChannel =
         new BeaconRpcMapper(messageChannel);
+
+    messageChannel.getCloseFuture().thenAccept(v -> System.out.println("### Closed"));
 
     ChannelCodec<
             RpcMessage<RequestMessage, ResponseMessage>,
@@ -139,13 +152,14 @@ public class BeaconPipeline {
   private WireApiSync createWireApiSync(WireApiSync syncServer) {
     RpcChannelAdapter<BlockRootsRequestMessage, BlockRootsResponseMessage> blockRootsAsync =
         new RpcChannelAdapter<>(new RpcChannelClassFilter<>(rpcHub, BlockRootsRequestMessage.class),
-            syncServer != null ? syncServer::requestBlockRoots : null);
+            syncServer != null ? syncServer::requestBlockRoots : null, schedulers.events());
     RpcChannelAdapter<BlockHeadersRequestMessage, BlockHeadersResponseMessage> blockHeadersAsync =
         new RpcChannelAdapter<>(new RpcChannelClassFilter<>(rpcHub, BlockHeadersRequestMessage.class),
-            syncServer != null ? syncServer::requestBlockHeaders : null);
+            syncServer != null ? syncServer::requestBlockHeaders : null, schedulers.events());
     RpcChannelAdapter<BlockBodiesRequestMessage, BlockBodiesResponseMessage> blockBodiesAsync =
         new RpcChannelAdapter<>(new RpcChannelClassFilter<>(rpcHub, BlockBodiesRequestMessage.class),
-            syncServer != null ? req -> syncServer.requestBlockBodies(req).thenApply(Feedback::get) : null);
+            syncServer != null ? req -> syncServer.requestBlockBodies(req).thenApply(Feedback::get) : null,
+            schedulers.events());
 
     return new WireApiSync() {
       @Override
@@ -174,14 +188,14 @@ public class BeaconPipeline {
             subServer == null ? null : newBlock -> {
               subServer.newBlock(newBlock.getBlock());
               return null;
-            });
+            }, schedulers.events());
 
     RpcChannelAdapter<NotifyNewAttestationMessage, ResponseMessagePayload> attestations =
         new RpcChannelAdapter<>(new RpcChannelClassFilter<>(rpcHub, NotifyNewAttestationMessage.class),
             subServer == null ? null : newAttest -> {
               subServer.newAttestation(newAttest.getAttestation());
               return null;
-            });
+            }, schedulers.events());
 
     return new WireApiSubRpc() {
       @Override
@@ -202,14 +216,14 @@ public class BeaconPipeline {
             peerServer == null ? null : msg -> {
               peerServer.hello(msg);
               return null;
-            });
+            }, schedulers.events());
 
     RpcChannelAdapter<GoodbyeMessage, ResponseMessagePayload> goodbyeRpc =
         new RpcChannelAdapter<>(new RpcChannelClassFilter<>(rpcHub, GoodbyeMessage.class),
             peerServer == null ? null : msg -> {
               peerServer.goodbye(msg);
               return null;
-            });
+            }, schedulers.events());
 
     return new WireApiPeer() {
       @Override

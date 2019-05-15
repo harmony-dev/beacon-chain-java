@@ -6,23 +6,19 @@ import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.ethereum.beacon.Launcher;
-import org.ethereum.beacon.core.BeaconBlock;
-import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.simulator.SimulatorLauncher;
 import org.ethereum.beacon.simulator.SimulatorLauncher.Builder;
 import org.ethereum.beacon.ssz.SSZBuilder;
 import org.ethereum.beacon.ssz.SSZSerializer;
 import org.ethereum.beacon.stream.SimpleProcessor;
 import org.ethereum.beacon.wire.channel.Channel;
-import org.ethereum.beacon.wire.channel.beacon.WireApiSubRpc;
 import org.ethereum.beacon.wire.message.SSZMessageSerializer;
-import org.ethereum.beacon.wire.net.Client;
 import org.ethereum.beacon.wire.net.ConnectionManager;
 import org.ethereum.beacon.wire.net.NettyClient;
 import org.ethereum.beacon.wire.net.NettyServer;
 import org.ethereum.beacon.wire.net.Server;
 import org.ethereum.beacon.wire.sync.BeaconBlockTree;
-import org.ethereum.beacon.wire.sync.SyncManager;
+import org.ethereum.beacon.wire.sync.SyncManagerImpl;
 import org.ethereum.beacon.wire.sync.SyncQueue;
 import org.ethereum.beacon.wire.sync.SyncQueueImpl;
 import org.junit.Assert;
@@ -68,7 +64,7 @@ public class PeersTest {
 
   @Test
   public void test1() throws Exception {
-    int slotCount = 1;
+    int slotCount = 32;
     SimulatorLauncher simulatorLauncher = new Builder()
         .withConfigFromResource("/sync-simulation-config.yml")
         .build();
@@ -96,6 +92,7 @@ public class PeersTest {
           ssz,
           peer0.getSpec(),
           messageSerializer,
+          peer0.getSchedulers(),
           syncServer,
           peer0.getBeaconChain().getBlockStatesStream());
 
@@ -130,6 +127,7 @@ public class PeersTest {
           ssz,
           peer1.getSpec(),
           messageSerializer,
+          peer0.getSchedulers(),
           null,
           peer1.getBeaconChain().getBlockStatesStream());
 
@@ -143,7 +141,7 @@ public class PeersTest {
       BeaconBlockTree blockTree = new BeaconBlockTree(simulatorLauncher.getSpec().getObjectHasher());
       SyncQueue syncQueue = new SyncQueueImpl(blockTree, 4, 16);
 
-      SyncManager syncManager = new SyncManager(
+      SyncManagerImpl syncManager = new SyncManagerImpl(
           peer1.getBeaconChain(),
           Flux.from(peerManager.getWireApiSub().inboundBlocksStream()).map(Feedback::of),
           peer1.getBeaconChainStorage(),

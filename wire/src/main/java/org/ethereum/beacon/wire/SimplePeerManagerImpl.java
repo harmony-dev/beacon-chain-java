@@ -9,6 +9,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.chain.BeaconTupleDetails;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
+import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.ssz.SSZSerializer;
 import org.ethereum.beacon.wire.channel.Channel;
 import org.ethereum.beacon.wire.message.payload.HelloMessage;
@@ -29,6 +30,7 @@ public class SimplePeerManagerImpl implements PeerManager {
   private final SSZSerializer ssz;
   private final BeaconChainSpec spec;
   private final MessageSerializer messageSerializer;
+  private final Schedulers schedulers;
   private final WireApiSync syncServer;
   private final Publisher<BeaconTupleDetails> headStream;
   private final WireApiSyncRouter wireApiSyncRouter;
@@ -45,6 +47,7 @@ public class SimplePeerManagerImpl implements PeerManager {
       SSZSerializer ssz,
       BeaconChainSpec spec,
       MessageSerializer messageSerializer,
+      Schedulers schedulers,
       WireApiSync syncServer,
       Publisher<BeaconTupleDetails> headStream) {
 
@@ -54,6 +57,7 @@ public class SimplePeerManagerImpl implements PeerManager {
     this.ssz = ssz;
     this.spec = spec;
     this.messageSerializer = messageSerializer;
+    this.schedulers = schedulers;
     this.syncServer = syncServer;
     this.headStream = headStream;
 
@@ -82,7 +86,7 @@ public class SimplePeerManagerImpl implements PeerManager {
   }
 
   protected PeerImpl createPeer(Channel<BytesValue> channel) {
-    return new PeerImpl(channel, createLocalHello(), ssz, messageSerializer, syncServer);
+    return new PeerImpl(channel, createLocalHello(), ssz, messageSerializer, syncServer, schedulers);
   }
 
   @Override

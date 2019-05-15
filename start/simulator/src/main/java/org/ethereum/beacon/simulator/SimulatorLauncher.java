@@ -8,7 +8,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.Level;
@@ -42,15 +41,14 @@ import org.ethereum.beacon.emulator.config.simulator.PeersConfig;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.schedulers.ControlledSchedulers;
 import org.ethereum.beacon.simulator.util.MDCControlledSchedulers;
+import org.ethereum.beacon.simulator.util.SimpleDepositContract;
 import org.ethereum.beacon.simulator.util.SimulateUtils;
 import org.ethereum.beacon.util.stats.TimeCollector;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import org.ethereum.beacon.wire.LocalWireHub;
 import org.ethereum.beacon.wire.WireApiSub;
 import org.javatuples.Pair;
-import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 
@@ -386,43 +384,6 @@ public class SimulatorLauncher implements Runnable {
     return info + " ["
         + records.entrySet().stream().map(e -> e.getKey().toString()).collect(Collectors.joining(","))
         + "]";
-  }
-
-  private static class SimpleDepositContract implements DepositContract {
-    private final ChainStart chainStart;
-
-    public SimpleDepositContract(ChainStart chainStart) {
-      this.chainStart = chainStart;
-    }
-
-    @Override
-    public Publisher<ChainStart> getChainStartMono() {
-      return Mono.just(chainStart);
-    }
-
-    @Override
-    public Publisher<Deposit> getDepositStream() {
-      return Mono.empty();
-    }
-
-    @Override
-    public List<DepositInfo> peekDeposits(
-        int maxCount, Eth1Data fromDepositExclusive, Eth1Data tillDepositInclusive) {
-      return Collections.emptyList();
-    }
-
-    @Override
-    public boolean hasDepositRoot(Hash32 blockHash, Hash32 depositRoot) {
-      return true;
-    }
-
-    @Override
-    public Optional<Eth1Data> getLatestEth1Data() {
-      return Optional.of(chainStart.getEth1Data());
-    }
-
-    @Override
-    public void setDistanceFromHead(long distanceFromHead) {}
   }
 
   public static class Builder {

@@ -28,13 +28,13 @@
     </Console>
   </Appenders>
   <Loggers>
-<!--
-    <Logger name="simulator" level="trace" additivity="true">
+
+    <Logger name="org.ethereum.beacon.consensus.transition" level="info" additivity="false">
       <AppenderRef ref="Console"/>
     </Logger>
--->
 
-    <Root level="info">
+
+    <Root level="debug">
       <AppenderRef ref="validatorFile"/>
       <AppenderRef ref="allFile"/>
       <AppenderRef ref="Console"/>

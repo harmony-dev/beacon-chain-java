@@ -6,8 +6,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.Launcher;
-import org.ethereum.beacon.chain.BeaconTupleDetails;
-import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.schedulers.Scheduler;
 import org.ethereum.beacon.simulator.SimulatorLauncher;
 import org.ethereum.beacon.simulator.SimulatorLauncher.Builder;
@@ -22,7 +20,6 @@ import org.ethereum.beacon.wire.message.payload.BlockRootsRequestMessage;
 import org.ethereum.beacon.wire.message.payload.BlockRootsResponseMessage;
 import org.junit.Assert;
 import org.junit.Test;
-import reactor.core.publisher.ConnectableFlux;
 import reactor.core.publisher.Flux;
 
 public class SyncTest {
@@ -63,6 +60,7 @@ public class SyncTest {
     int slotCount = 64;
     SimulatorLauncher simulatorLauncher = new Builder()
         .withConfigFromResource("/sync-simulation-config.yml")
+        .withLogLevel(null)
         .build();
     simulatorLauncher.run(slotCount);
     Launcher peer0 = simulatorLauncher.getPeers().get(0);
@@ -77,7 +75,7 @@ public class SyncTest {
     BeaconBlockTree blockTree = new BeaconBlockTree(simulatorLauncher.getSpec().getObjectHasher());
     SyncQueue syncQueue = new SyncQueueImpl(blockTree, 4, 16);
 
-    SyncManager syncManager = new SyncManager(
+    SyncManagerImpl syncManager = new SyncManagerImpl(
         testPeer.getBeaconChain(),
         Flux.never(),
         testPeer.getBeaconChainStorage(),

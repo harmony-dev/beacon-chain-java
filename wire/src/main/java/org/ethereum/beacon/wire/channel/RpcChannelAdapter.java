@@ -1,27 +1,51 @@
 package org.ethereum.beacon.wire.channel;
 
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.ethereum.beacon.schedulers.Scheduler;
 import org.ethereum.beacon.wire.exceptions.WireException;
+import org.ethereum.beacon.wire.exceptions.WireRpcClosedException;
+import org.ethereum.beacon.wire.exceptions.WireRpcTimeoutException;
 import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
 
 public class RpcChannelAdapter<TRequestMessage, TResponseMessage> {
+  private static final Logger logger = LogManager.getLogger(RpcChannelAdapter.class);
 
   private static final Object CONTEXT_KEY_FUTURE = new Object();
+  public static final Duration DEFAULT_RPC_TIMEOUT = Duration.ofSeconds(10);
 
+  private final Scheduler timeoutScheduler;
+  private Duration rpcCallTimeout = DEFAULT_RPC_TIMEOUT;
   private final RpcChannel<TRequestMessage, TResponseMessage> inChannel;
   private final Function<TRequestMessage, CompletableFuture<TResponseMessage>> serverHandler;
-  private final DirectProcessor<RpcMessage<TRequestMessage, TResponseMessage>> outboundStream =
-      DirectProcessor.create();
+  private FluxSink<RpcMessage<TRequestMessage, TResponseMessage>> outboundSink;
+  private volatile boolean closed;
 
 
   public RpcChannelAdapter(RpcChannel<TRequestMessage, TResponseMessage> inChannel,
-      Function<TRequestMessage, CompletableFuture<TResponseMessage>> serverHandler) {
+      Function<TRequestMessage, CompletableFuture<TResponseMessage>> serverHandler,
+      Scheduler timeoutScheduler) {
     this.inChannel = inChannel;
     this.serverHandler = serverHandler;
-    inChannel.subscribeToOutbound(outboundStream);
-    Flux.from(inChannel.inboundMessageStream()).subscribe(this::onInbound);
+    this.timeoutScheduler = timeoutScheduler;
+    inChannel.subscribeToOutbound(Flux.create(s -> outboundSink = s));
+    Flux.from(inChannel.inboundMessageStream())
+        .subscribe(this::onInbound, err -> logger.warn("Unexpected error", err), this::onClose);
+  }
+
+  public RpcChannelAdapter<TRequestMessage, TResponseMessage> withRpcCallTimeout(
+      Duration rpcCallTimeout) {
+    this.rpcCallTimeout = rpcCallTimeout;
+    return this;
+  }
+
+  private void onClose() {
+    closed = true;
   }
 
   private void onInbound(RpcMessage<TRequestMessage, TResponseMessage> msg) {
@@ -61,27 +85,34 @@ public class RpcChannelAdapter<TRequestMessage, TResponseMessage> {
       CompletableFuture<TResponseMessage> fut = serverHandler.apply(msg.getRequest());
       fut.whenComplete(
               (r, t) ->
-                  outboundStream.onNext(
+                  outboundSink.next(
                       t != null ? msg.copyWithResponseError(t) : msg.copyWithResponse(r)))
           .whenComplete(
               (r, t) -> {
                 if (t != null) t.printStackTrace();
               });
     } catch (Exception e) {
-      outboundStream.onNext(msg.copyWithResponseError(e));
+      outboundSink.next(msg.copyWithResponseError(e));
     }
   }
 
   public CompletableFuture<TResponseMessage> invokeRemote(TRequestMessage request) {
-    RpcMessage<TRequestMessage, TResponseMessage> requestRpcMsg =
-        new RpcMessage<>(request, false);
     CompletableFuture<TResponseMessage> ret = new CompletableFuture<>();
-    requestRpcMsg.setRequestContext(CONTEXT_KEY_FUTURE, ret);
-    outboundStream.onNext(requestRpcMsg);
-    return ret;
+
+    if(closed) {
+      ret.completeExceptionally(new WireRpcClosedException("Channel already closed: " + inChannel));
+      return ret;
+    } else {
+      RpcMessage<TRequestMessage, TResponseMessage> requestRpcMsg =
+          new RpcMessage<>(request, false);
+      requestRpcMsg.setRequestContext(CONTEXT_KEY_FUTURE, ret);
+      outboundSink.next(requestRpcMsg);
+      return timeoutScheduler.orTimeout(
+          ret, rpcCallTimeout, () -> new WireRpcTimeoutException("RPC call timeout."));
+    }
   }
 
   public void notifyRemote(TRequestMessage request) {
-    outboundStream.onNext(new RpcMessage<>(request, true));
+    outboundSink.next(new RpcMessage<>(request, true));
   }
 }

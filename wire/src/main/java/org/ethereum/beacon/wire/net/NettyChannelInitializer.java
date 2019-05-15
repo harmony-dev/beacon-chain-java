@@ -16,7 +16,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 class NettyChannelInitializer extends ChannelInitializer<NioSocketChannel> {
-  private static final int READ_TIMEOUT_SEC = 5;
+  private static final int READ_TIMEOUT_SEC = 600;
   private static final Logger logger = LogManager.getLogger(NettyChannelInitializer.class);
 
   private final Consumer<NettyChannel> activeChannelListener;

@@ -6,6 +6,7 @@ dependencies {
   implementation project(':db:core')
   implementation project(':chain')
   implementation project(':pow:core')
+  implementation project(':ssz')
   implementation project(':validator')
   implementation project(':wire')
   implementation project(':util')
@@ -22,4 +23,5 @@ dependencies {
   testImplementation project(':consensus').sourceSets.test.output
   testImplementation project(':chain').sourceSets.test.output
   testImplementation project(':pow:core').sourceSets.test.output
+  testImplementation project(':start:simulator')
 }
