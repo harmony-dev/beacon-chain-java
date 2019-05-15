@@ -105,15 +105,7 @@ public class BeaconChainProposerTest {
     BeaconBlock block = proposer.propose(initialObservedState, signer);
 
     Mockito.verify(pendingOperations)
-        .peekAggregatedAttestations(
-            spec.getConstants().getMaxAttestations(),
-            initialState,
-            initialState
-                .getSlot()
-                .minusSat(spec.getConstants().getSlotsPerEpoch()),
-            initialState
-                .getSlot()
-                .minusSat(spec.getConstants().getMinAttestationInclusionDelay()));
+        .peekAggregateAttestations(spec.getConstants().getMaxAttestations());
 
     Mockito.verify(pendingOperations)
         .peekProposerSlashings(spec.getConstants().getMaxProposerSlashings());

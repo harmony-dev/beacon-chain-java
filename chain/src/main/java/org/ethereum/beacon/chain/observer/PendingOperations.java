@@ -17,14 +17,11 @@ public interface PendingOperations {
 
   List<Attestation> getAttestations();
 
-  Optional<Attestation> getLatestAttestation(BLSPubkey pubKey);
-
   List<ProposerSlashing> peekProposerSlashings(int maxCount);
 
   List<AttesterSlashing> peekAttesterSlashings(int maxCount);
 
-  List<Attestation> peekAggregatedAttestations(
-      int maxCount, BeaconState state, SlotNumber minSlotExclusive, SlotNumber maxSlotInclusive);
+  List<Attestation> peekAggregateAttestations(int maxCount);
 
   List<VoluntaryExit> peekExits(int maxCount);
 

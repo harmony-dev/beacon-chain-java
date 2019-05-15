@@ -2,49 +2,32 @@ package org.ethereum.beacon.chain.observer;
 
 import static java.util.stream.Collectors.groupingBy;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
-import org.ethereum.beacon.consensus.BeaconChainSpec;
-import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.Transfer;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
-import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Bitfield;
-import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.crypto.BLS381;
 
 public class PendingOperationsState implements PendingOperations {
 
-  Map<BLSPubkey, List<Attestation>> attestations;
-  private final BeaconChainSpec spec;
+  private final List<Attestation> attestations;
 
-  public PendingOperationsState(
-      BeaconChainSpec spec, Map<BLSPubkey, List<Attestation>> attestations) {
-    this.spec = spec;
+  public PendingOperationsState(List<Attestation> attestations) {
     this.attestations = attestations;
   }
 
   @Override
-  public Optional<Attestation> getLatestAttestation(BLSPubkey pubKey) {
-    return Optional.ofNullable(attestations.get(pubKey))
-        .map(
-            atts ->
-                Collections.max(atts, Comparator.comparing(att -> att.getData().getTargetEpoch())));
-  }
-
-  @Override
   public List<Attestation> getAttestations() {
-    return attestations.values().stream().flatMap(Collection::stream).collect(Collectors.toList());
+    return attestations;
   }
 
   @Override
@@ -58,29 +41,13 @@ public class PendingOperationsState implements PendingOperations {
   }
 
   @Override
-  public List<Attestation> peekAggregatedAttestations(
-      int maxCount, BeaconState state, SlotNumber minSlotExclusive, SlotNumber maxSlotInclusive) {
-
+  public List<Attestation> peekAggregateAttestations(int maxCount) {
     Map<AttestationData, List<Attestation>> attestationsBySlot =
-        getAttestations().stream()
-            .filter(attestation -> {
-              SlotNumber attestationSlot =
-                  spec.get_attestation_slot(state, attestation.getData());
-              // handle the case when min minSlotExclusive = maxSlotInclusive = 0
-              if (minSlotExclusive.equals(maxSlotInclusive) && minSlotExclusive.equals(SlotNumber.ZERO)) {
-                return attestationSlot.lessEqual(maxSlotInclusive);
-              }
-              // minExclusive < attestationSlot <= maxSlotInclusive
-              return minSlotExclusive.less(attestationSlot)
-                  && attestationSlot.lessEqual(maxSlotInclusive);
-            })
-            .collect(groupingBy(Attestation::getData));
-    return attestationsBySlot
-        .entrySet()
-        .stream()
+        attestations.stream().collect(groupingBy(Attestation::getData));
+    return attestationsBySlot.entrySet().stream()
         .sorted(Comparator.comparing(e -> e.getKey().getTargetEpoch()))
-        .limit(maxCount)
         .map(entry -> aggregateAttestations(entry.getValue()))
+        .limit(maxCount)
         .collect(Collectors.toList());
   }
 
