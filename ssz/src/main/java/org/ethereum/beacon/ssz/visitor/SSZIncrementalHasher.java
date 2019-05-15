@@ -15,7 +15,7 @@ import org.ethereum.beacon.ssz.incremental.ObservableComposite;
 import org.ethereum.beacon.ssz.incremental.UpdateListener;
 import org.ethereum.beacon.ssz.type.SSZCompositeType;
 import org.ethereum.beacon.ssz.type.SSZListType;
-import org.ethereum.beacon.ssz.visitor.SSZSimpleSerializer.SSZSerializerResult;
+import org.ethereum.beacon.ssz.visitor.SosSerializer.SerializerResult;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
@@ -49,7 +49,7 @@ public class SSZIncrementalHasher extends SSZSimpleHasher {
   }
 
   public SSZIncrementalHasher(
-      SSZVisitorHandler<SSZSerializerResult> serializer,
+      SSZVisitorHandler<SerializerResult> serializer,
       Function<BytesValue, Hash32> hashFunction, int bytesPerChunk) {
     super(serializer, hashFunction, bytesPerChunk);
   }
