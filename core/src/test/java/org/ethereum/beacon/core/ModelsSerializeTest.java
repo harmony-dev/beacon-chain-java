@@ -59,7 +59,7 @@ public class ModelsSerializeTest {
         .buildSerializer();
   }
 
-  private AttestationData createAttestationData() {
+  public static AttestationData createAttestationData() {
     AttestationData expected =
         new AttestationData(
             SlotNumber.of(123),
@@ -82,11 +82,15 @@ public class ModelsSerializeTest {
     assertEquals(expected, reconstructed);
   }
 
-  private Attestation createAttestation() {
+  public static Attestation createAttestation() {
+    return createAttestation(BytesValue.fromHexString("aa"));
+  }
+
+  public static Attestation createAttestation(BytesValue someValue) {
     AttestationData attestationData = createAttestationData();
     Attestation attestation =
         new Attestation(
-            Bitfield.of(BytesValue.fromHexString("aa")),
+            Bitfield.of(someValue),
             attestationData,
             Bitfield.of(BytesValue.fromHexString("bb")),
             BLSSignature.wrap(Bytes96.fromHexString("cc")));
@@ -102,7 +106,7 @@ public class ModelsSerializeTest {
     assertEquals(expected, reconstructed);
   }
 
-  private DepositInput createDepositInput() {
+  public static DepositInput createDepositInput() {
     DepositInput depositInput =
         new DepositInput(
             BLSPubkey.wrap(Bytes48.TRUE),
@@ -120,7 +124,7 @@ public class ModelsSerializeTest {
     assertEquals(expected, reconstructed);
   }
 
-  private DepositData createDepositData() {
+  public static DepositData createDepositData() {
     DepositData depositData =
         new DepositData(Gwei.ZERO, Time.castFrom(UInt64.valueOf(123)), createDepositInput());
 
@@ -135,13 +139,13 @@ public class ModelsSerializeTest {
     assertEquals(expected, reconstructed);
   }
 
-  private Deposit createDeposit1() {
+  public static Deposit createDeposit1() {
     Deposit deposit = new Deposit(Collections.emptyList(), UInt64.ZERO, createDepositData());
 
     return deposit;
   }
 
-  private Deposit createDeposit2() {
+  public static Deposit createDeposit2() {
     ArrayList<Hash32> hashes = new ArrayList<>();
     hashes.add(Hashes.keccak256(BytesValue.fromHexString("aa")));
     hashes.add(Hashes.keccak256(BytesValue.fromHexString("bb")));
@@ -162,7 +166,7 @@ public class ModelsSerializeTest {
     assertEquals(expected2, reconstructed2);
   }
 
-  private VoluntaryExit createExit() {
+  public static VoluntaryExit createExit() {
     VoluntaryExit voluntaryExit = new VoluntaryExit(EpochNumber.of(123), ValidatorIndex.MAX, BLSSignature.wrap(Bytes96.fromHexString("aa")));
 
     return voluntaryExit;
@@ -185,7 +189,7 @@ public class ModelsSerializeTest {
     assertEquals(expected, reconstructed);
   }
 
-  private ProposerSlashing createProposerSlashing(Random random) {
+  public static  ProposerSlashing createProposerSlashing(Random random) {
     ProposerSlashing proposerSlashing =
         new ProposerSlashing(
             ValidatorIndex.MAX,
@@ -197,15 +201,15 @@ public class ModelsSerializeTest {
 
   @Test
   public void proposerSlashingTest() {
-    Random random = new Random();
+    Random random = new Random(1);
     ProposerSlashing expected = createProposerSlashing(random);
     BytesValue encoded = sszSerializer.encode2(expected);
     ProposerSlashing reconstructed = sszSerializer.decode(encoded, ProposerSlashing.class);
     assertEquals(expected, reconstructed);
   }
 
-  private BeaconBlockBody createBeaconBlockBody() {
-    Random random = new Random();
+  public static BeaconBlockBody createBeaconBlockBody() {
+    Random random = new Random(1);
     List<ProposerSlashing> proposerSlashings = new ArrayList<>();
     proposerSlashings.add(createProposerSlashing(random));
     List<AttesterSlashing> attesterSlashings = new ArrayList<>();
@@ -234,13 +238,13 @@ public class ModelsSerializeTest {
     return beaconBlockBody;
   }
 
-  private AttesterSlashing createAttesterSlashings() {
+  public static AttesterSlashing createAttesterSlashings() {
     return new AttesterSlashing(
         createSlashableAttestation(),
         createSlashableAttestation());
   }
 
-  private SlashableAttestation createSlashableAttestation() {
+  public static  SlashableAttestation createSlashableAttestation() {
     return new SlashableAttestation(
         Arrays.asList(ValidatorIndex.of(234), ValidatorIndex.of(678)),
         createAttestationData(),
@@ -272,11 +276,15 @@ public class ModelsSerializeTest {
     assertEquals(expected, reconstructed);
   }
 
-  private BeaconBlock createBeaconBlock() {
+  public static BeaconBlock createBeaconBlock() {
+    return createBeaconBlock(BytesValue.fromHexString("aa"));
+  }
+
+  public static BeaconBlock createBeaconBlock(BytesValue someValue) {
     BeaconBlock beaconBlock =
         new BeaconBlock(
             SlotNumber.castFrom(UInt64.MAX_VALUE),
-            Hashes.keccak256(BytesValue.fromHexString("aa")),
+            Hashes.keccak256(someValue),
             Hashes.keccak256(BytesValue.fromHexString("bb")),
             createBeaconBlockBody(),
             BLSSignature.wrap(Bytes96.fromHexString("aa")));

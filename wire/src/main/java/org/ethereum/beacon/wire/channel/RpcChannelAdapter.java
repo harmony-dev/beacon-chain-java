@@ -33,7 +33,10 @@ public class RpcChannelAdapter<TRequestMessage, TResponseMessage> {
     this.inChannel = inChannel;
     this.serverHandler = serverHandler;
     this.timeoutScheduler = timeoutScheduler;
-    inChannel.subscribeToOutbound(Flux.create(s -> outboundSink = s));
+    inChannel.subscribeToOutbound(
+        Flux.<RpcMessage<TRequestMessage, TResponseMessage>>create(s -> outboundSink = s)
+            .publish(1)
+            .autoConnect());
     Flux.from(inChannel.inboundMessageStream())
         .subscribe(this::onInbound, err -> logger.warn("Unexpected error", err), this::onClose);
   }
