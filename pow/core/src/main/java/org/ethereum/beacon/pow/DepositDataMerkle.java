@@ -75,4 +75,11 @@ abstract class DepositDataMerkle implements MerkleTree<DepositData> {
     }
     return zeroHashes[distanceFromBottom];
   }
+
+  void verifyIndexNotTooBig(int index) {
+    if (index > getLastIndex()) {
+      throw new RuntimeException(
+          String.format("Max element index is %s, asked for %s!", getLastIndex(), index));
+    }
+  }
 }

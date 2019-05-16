@@ -105,7 +105,7 @@ public class DepositIncrementalMerkle extends DepositDataMerkle {
           String.format("Max size is %s, asked for size %s!", getLastIndex() + 1, size));
     }
     List<BytesValue> branchCopy = new ArrayList<>(branch);
-    for (int i = branchDepositCount; i < index + 1; ++i) {
+    for (int i = branchDepositCount; i < size; ++i) {
       add_value(branchCopy, i, lastElements.get(i - branchDepositCount));
     }
 
@@ -132,13 +132,6 @@ public class DepositIncrementalMerkle extends DepositDataMerkle {
     if (index < branchDepositCount) {
       throw new RuntimeException(
           String.format("Too old element index queried, %s, minimum: %s!", index, branchDepositCount));
-    }
-  }
-
-  private void verifyIndexNotTooBig(int index) {
-    if (index > getLastIndex()) {
-      throw new RuntimeException(
-          String.format("Max element index is %s, asked for %s!", getLastIndex(), index));
     }
   }
 

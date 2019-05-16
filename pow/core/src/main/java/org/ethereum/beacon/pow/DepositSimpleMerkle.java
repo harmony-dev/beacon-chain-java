@@ -100,9 +100,10 @@ public class DepositSimpleMerkle extends DepositDataMerkle {
 
   @Override
   public ReadVector<Integer, Hash32> getProof(int index, int size) {
-    if (index > getLastIndex() || size > (getLastIndex() + 1)) {
+    verifyIndexNotTooBig(index);
+    if (size > (getLastIndex() + 1)) {
       throw new RuntimeException(
-          String.format("Max element index is %s, asked for %s and size %s!", getLastIndex(), index, size));
+          String.format("Max size is %s, asked for size %s!", getLastIndex() + 1, size));
     }
     return ReadVector.wrap(
         get_merkle_proof(calc_merkle_tree_from_leaves(deposits.subList(0, size)), index),
@@ -111,10 +112,7 @@ public class DepositSimpleMerkle extends DepositDataMerkle {
 
   @Override
   public Hash32 getDepositRoot(UInt64 index) {
-    if (index.intValue() > getLastIndex()) {
-      throw new RuntimeException(
-          String.format("Max element index is %s, asked for %s!", getLastIndex(), index));
-    }
+    verifyIndexNotTooBig(index.intValue());
     return Hash32.wrap(Bytes32.leftPad(get_merkle_root(deposits.subList(0, index.intValue() + 1))));
   }
 
