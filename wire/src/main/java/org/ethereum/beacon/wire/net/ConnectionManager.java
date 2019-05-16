@@ -18,6 +18,7 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
 
 public class ConnectionManager<TAddress> {
   private static final Logger logger = LogManager.getLogger(ConnectionManager.class);
+  private static final int RECONNECT_TIMEOUT_SECONDS = 1;
 
   private final Server server;
   private final Client<TAddress> client;
@@ -46,19 +47,20 @@ public class ConnectionManager<TAddress> {
 
   public void addActivePeer(TAddress peerAddress) {
     activePeers.add(peerAddress);
-    // TODO make sure this woodoo magic actually works
+
     Flux.just(peerAddress)
         .doOnNext(addr -> logger.info("Connecting to active peer " + peerAddress))
         .map(client::connect)
         .flatMap(Mono::fromFuture, 1, 1)
-        .onErrorContinue((t, o) -> logger.info("Couldn't connect to active peer " + peerAddress + ": " + t))
+        .doOnError(t-> logger.info("Couldn't connect to active peer " + peerAddress + ": " + t))
         .doOnNext(ch -> logger.info("Connected to active peer " + peerAddress))
         .doOnNext(clientConnectionsSink::next)
         .map(Channel::getCloseFuture)
-        .flatMap(Mono::fromFuture, 1, 1)
+        .onErrorResume(t -> Flux.just(CompletableFuture.completedFuture(null)))
+        .flatMap(f -> Mono.fromFuture(f.thenApply(v -> "")), 1, 1)
         .doOnNext(ch -> logger.info("Disconnected from active peer " + peerAddress))
+        .delayElements(Duration.ofSeconds(RECONNECT_TIMEOUT_SECONDS), rxScheduler)
         .repeat(() -> activePeers.contains(peerAddress))
-        .delayElements(Duration.ofSeconds(1), rxScheduler)
         .subscribe();
   }
 

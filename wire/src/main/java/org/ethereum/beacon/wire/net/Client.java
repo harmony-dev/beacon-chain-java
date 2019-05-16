@@ -6,6 +6,6 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
 
 public interface Client<TAddress> {
 
-  CompletableFuture<? extends Channel<BytesValue>> connect(TAddress address);
+  <C extends Channel<BytesValue>> CompletableFuture<C> connect(TAddress address);
 
 }
