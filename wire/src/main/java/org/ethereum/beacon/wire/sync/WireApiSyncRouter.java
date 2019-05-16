@@ -1,9 +1,11 @@
 package org.ethereum.beacon.wire.sync;
 
+import java.util.ArrayList;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import org.ethereum.beacon.stream.RxUtil;
 import org.ethereum.beacon.util.Utils;
 import org.ethereum.beacon.wire.Feedback;
 import org.ethereum.beacon.wire.WireApiSync;
@@ -13,6 +15,7 @@ import org.ethereum.beacon.wire.message.payload.BlockHeadersRequestMessage;
 import org.ethereum.beacon.wire.message.payload.BlockHeadersResponseMessage;
 import org.ethereum.beacon.wire.message.payload.BlockRootsRequestMessage;
 import org.ethereum.beacon.wire.message.payload.BlockRootsResponseMessage;
+import org.javatuples.Pair;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
@@ -24,13 +27,21 @@ public class WireApiSyncRouter implements WireApiSync {
   private final ReplayProcessor<Consumer<WireApiSync>> tasks = ReplayProcessor.create(64);
   private final FluxSink<Consumer<WireApiSync>> tasksSink = tasks.sink();
 
+  enum Op {
+    ADDED, REMOVED
+  };
+
   public WireApiSyncRouter(
       Publisher<WireApiSync> addedPeersStream,
       Publisher<WireApiSync> removedPeersStream) {
 
     // TODO simple unlimited first peer here, need something more smart
-    Publisher<WireApiSync> freePeersStream = Flux.from(addedPeersStream)
-        .flatMap(api -> Flux.just(api).repeat());
+    Publisher<WireApiSync> freePeersStream =
+        RxUtil.collect(addedPeersStream, removedPeersStream)
+            .switchMap(
+                activePeers ->
+                    activePeers.isEmpty() ? Flux.never() : Flux.fromIterable(activePeers).repeat(),
+                1);
 
     Flux.zip(freePeersStream, tasks)
       .subscribe(p -> p.getT2().accept(p.getT1()));

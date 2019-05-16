@@ -108,7 +108,11 @@ public class RpcChannelAdapter<TRequestMessage, TResponseMessage> {
       requestRpcMsg.setRequestContext(CONTEXT_KEY_FUTURE, ret);
       outboundSink.next(requestRpcMsg);
       return timeoutScheduler.orTimeout(
-          ret, rpcCallTimeout, () -> new WireRpcTimeoutException("RPC call timeout."));
+          ret,
+          rpcCallTimeout,
+          () -> closed
+                  ? new WireRpcClosedException("Channel was closed during call execution")
+                  : new WireRpcTimeoutException("RPC call timeout."));
     }
   }
 

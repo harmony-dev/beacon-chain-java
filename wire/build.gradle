@@ -13,6 +13,7 @@ dependencies {
   implementation 'io.vertx:vertx-core'
 
   testImplementation 'org.mockito:mockito-core'
+  testImplementation 'io.projectreactor:reactor-test'
   testImplementation project(':start:common')
   testImplementation project(':start:simulator')
   testImplementation project(':start:simulator').sourceSets.test.output
