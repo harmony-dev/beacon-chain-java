@@ -16,6 +16,7 @@ import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
+import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.types.BLSPubkey;
@@ -24,6 +25,7 @@ import org.ethereum.beacon.core.types.Bitfield;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ShardNumber;
+import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.crypto.BLS381.PublicKey;
 import org.ethereum.beacon.util.stats.MeasurementsCollector;
@@ -74,9 +76,7 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
     return super.getHashFunction();
   }
 
-
   /** BLS */
-
   @Override
   public boolean bls_verify(
       BLSPubkey publicKey, Hash32 message, BLSSignature signature, UInt64 domain) {
@@ -98,9 +98,7 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
         "bls_aggregate_pubkeys", () -> super.bls_aggregate_pubkeys(publicKeysBytes));
   }
 
-
   /** HELPERS */
-
   @Override
   public Hash32 hash_tree_root(Object object) {
     return callAndTrack("hash_tree_root", () -> super.hash_tree_root(object));
@@ -112,17 +110,15 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
   }
 
   @Override
-  public List<ValidatorIndex> get_crosslink_committee(BeaconState state, EpochNumber epoch,
-      ShardNumber shard) {
+  public List<ValidatorIndex> get_crosslink_committee(
+      BeaconState state, EpochNumber epoch, ShardNumber shard) {
     return callAndTrack(
-        "get_crosslink_committee",
-        () -> super.get_crosslink_committee(state, epoch, shard));
+        "get_crosslink_committee", () -> super.get_crosslink_committee(state, epoch, shard));
   }
 
   @Override
   public ValidatorIndex get_beacon_proposer_index(BeaconState state) {
-    return callAndTrack(
-        "get_beacon_proposer_index", () -> super.get_beacon_proposer_index(state));
+    return callAndTrack("get_beacon_proposer_index", () -> super.get_beacon_proposer_index(state));
   }
 
   @Override
@@ -136,6 +132,11 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
   @Override
   public Gwei get_total_balance(BeaconState state, Collection<ValidatorIndex> validators) {
     return callAndTrack("get_total_balance", () -> super.get_total_balance(state, validators));
+  }
+
+  @Override
+  public UInt64 get_churn_limit(BeaconState state) {
+    return callAndTrack("get_churn_limit", () -> super.get_churn_limit(state));
   }
 
   @Override
@@ -158,8 +159,11 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
   }
 
   @Override
-  public boolean verify_bitfield(Bitfield bitfield, int committee_size) {
-    return callAndTrack("verify_bitfield", () -> super.verify_bitfield(bitfield, committee_size));
+  public boolean verify_indexed_attestation(
+      BeaconState state, IndexedAttestation indexed_attestation) {
+    return callAndTrack(
+        "verify_indexed_attestation",
+        () -> super.verify_indexed_attestation(state, indexed_attestation));
   }
 
   @Override
@@ -183,26 +187,55 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
         () -> super.get_winning_crosslink_and_attesting_indices(state, epoch, shard));
   }
 
-  /** STATE CACHING */
+  @Override
+  public UInt64 get_shard_delta(BeaconState state, EpochNumber epoch) {
+    return callAndTrack("get_shard_delta", () -> super.get_shard_delta(state, epoch));
+  }
 
+  @Override
+  public ShardNumber get_epoch_start_shard(BeaconState state, EpochNumber epoch) {
+    return callAndTrack("get_epoch_start_shard", () -> super.get_epoch_start_shard(state, epoch));
+  }
+
+  @Override
+  public SlotNumber get_attestation_slot(BeaconState state, AttestationData data) {
+    return callAndTrack("get_attestation_slot", () -> super.get_attestation_slot(state, data));
+  }
+
+  @Override
+  public UInt64 get_epoch_committee_count(BeaconState state, EpochNumber epoch) {
+    return callAndTrack(
+        "get_epoch_committee_count", () -> super.get_epoch_committee_count(state, epoch));
+  }
+
+  @Override
+  public Gwei get_total_active_balance(BeaconState state) {
+    return callAndTrack("get_total_active_balance", () -> super.get_total_active_balance(state));
+  }
+
+  @Override
+  public Gwei get_attesting_balance(BeaconState state, List<PendingAttestation> attestations) {
+    return callAndTrack(
+        "get_attesting_balance", () -> super.get_attesting_balance(state, attestations));
+  }
+
+  /** STATE CACHING */
   @Override
   public void cache_state(MutableBeaconState state) {
     callAndTrack("cache_state", () -> super.cache_state(state));
   }
 
   /** SLOT PROCESSING */
-
   @Override
   public void advance_slot(MutableBeaconState state) {
     callAndTrack("advance_slot", () -> super.advance_slot(state));
   }
 
-
   /** EPOCH PROCESSING */
-
   @Override
   public void process_justification_and_finalization(MutableBeaconState state) {
-    callAndTrack("process_justification_and_finalization",
+    callAndTrack(
+        "process_justification_and_finalization",
         () -> super.process_justification_and_finalization(state));
   }
 
@@ -232,7 +265,6 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
   }
 
   /** BLOCK PROCESSING */
-
   @Override
   public void process_block_header(MutableBeaconState state, BeaconBlock block) {
     callAndTrack(
