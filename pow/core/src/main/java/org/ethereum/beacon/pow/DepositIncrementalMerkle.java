@@ -27,6 +27,14 @@ public class DepositIncrementalMerkle extends DepositDataMerkle {
   private int branchDepositCount = 0;
   private List<BytesValue> branch;
 
+  /**
+   * Incremental Merkle using
+   *
+   * @param hashFunction hash function
+   * @param treeDepth tree with depth of
+   * @param bufferDeposits number of not committed deposits, we could easily roll to any state
+   *     backwards if it doesn't involve skipping more than this number of deposits
+   */
   public DepositIncrementalMerkle(
       Function<BytesValue, Hash32> hashFunction, int treeDepth, int bufferDeposits) {
     super(hashFunction, treeDepth);
