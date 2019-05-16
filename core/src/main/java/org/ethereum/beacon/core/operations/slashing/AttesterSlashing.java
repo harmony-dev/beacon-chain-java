@@ -36,6 +36,13 @@ public class AttesterSlashing {
   }
 
   @Override
+  public int hashCode() {
+    int result = slashableAttestation1.hashCode();
+    result = 31 * result + slashableAttestation2.hashCode();
+    return result;
+  }
+
+  @Override
   public String toString() {
     return toString(null, null);
   }

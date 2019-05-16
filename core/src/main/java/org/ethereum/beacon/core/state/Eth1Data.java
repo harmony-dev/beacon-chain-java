@@ -50,6 +50,13 @@ public class Eth1Data {
   }
 
   @Override
+  public int hashCode() {
+    int result = depositRoot.hashCode();
+    result = 31 * result + blockHash.hashCode();
+    return result;
+  }
+
+  @Override
   public String toString() {
     return "Eth1Data[deposit=" + depositRoot.toStringShort() + ", block=" + blockHash.toStringShort() + "]";
   }

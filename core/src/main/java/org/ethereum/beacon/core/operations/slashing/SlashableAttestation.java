@@ -77,6 +77,15 @@ public class SlashableAttestation {
   }
 
   @Override
+  public int hashCode() {
+    int result = validatorIndicesList.hashCode();
+    result = 31 * result + data.hashCode();
+    result = 31 * result + custodyBitfield.hashCode();
+    result = 31 * result + aggregateSingature.hashCode();
+    return result;
+  }
+
+  @Override
   public String toString() {
     return toString(null, null);
   }

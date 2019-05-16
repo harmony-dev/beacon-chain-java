@@ -57,6 +57,14 @@ public class Deposit {
   }
 
   @Override
+  public int hashCode() {
+    int result = proof.hashCode();
+    result = 31 * result + index.hashCode();
+    result = 31 * result + depositData.hashCode();
+    return result;
+  }
+
+  @Override
   public String toString() {
     return "Deposit["
         + "idx=" + index

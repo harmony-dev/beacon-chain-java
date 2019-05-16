@@ -53,4 +53,12 @@ public class DepositData {
         && Objects.equal(amount, that.amount)
         && Objects.equal(timestamp, that.timestamp);
   }
+
+  @Override
+  public int hashCode() {
+    int result = amount.hashCode();
+    result = 31 * result + timestamp.hashCode();
+    result = 31 * result + depositInput.hashCode();
+    return result;
+  }
 }

@@ -55,4 +55,12 @@ public class DepositInput {
         && Objects.equal(withdrawalCredentials, that.withdrawalCredentials)
         && Objects.equal(proofOfPossession, that.proofOfPossession);
   }
+
+  @Override
+  public int hashCode() {
+    int result = pubKey.hashCode();
+    result = 31 * result + withdrawalCredentials.hashCode();
+    result = 31 * result + proofOfPossession.hashCode();
+    return result;
+  }
 }

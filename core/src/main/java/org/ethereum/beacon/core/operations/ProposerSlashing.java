@@ -47,6 +47,14 @@ public class ProposerSlashing {
   }
 
   @Override
+  public int hashCode() {
+    int result = proposerIndex.hashCode();
+    result = 31 * result + header1.hashCode();
+    result = 31 * result + header2.hashCode();
+    return result;
+  }
+
+  @Override
   public String toString() {
     return toString(null, null);
   }
