@@ -1,43 +1,41 @@
 package org.ethereum.beacon.pow;
 
+import org.ethereum.beacon.core.operations.deposit.DepositData;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.collections.ReadVector;
+import tech.pegasys.artemis.util.uint.UInt64;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
-
-import static tech.pegasys.artemis.util.bytes.BytesValue.concat;
+import java.util.stream.Stream;
 
 /**
- * Minimal merkle tree <a
+ * Simplest implementation that keeps all input values in memory and recalculates tree on any query.
+ * Values could be backed up via {@link #getDepositStream()} and loaded using alternative
+ * constructor
+ *
+ * <p>Minimal merkle tree <a
  * href="https://en.wikipedia.org/wiki/Merkle_tree">https://en.wikipedia.org/wiki/Merkle_tree</a>
  * implementation, adoption from python code from <a
  * href="https://github.com/ethereum/research/blob/master/spec_pythonizer/utils/merkle_minimal.py">https://github.com/ethereum/research/blob/master/spec_pythonizer/utils/merkle_minimal.py</a></a>
  */
-public class MinimalMerkle {
+public class DepositSimpleMerkle extends DepositDataMerkle {
 
   private final int treeDepth;
-  private final Hash32[] zeroHashes;
-  private final Function<BytesValue, Hash32> hashFunction;
+  private List<BytesValue> deposits = new ArrayList<>();
 
-  public MinimalMerkle(Function<BytesValue, Hash32> hashFunction, int treeDepth) {
-    this.hashFunction = hashFunction;
+  public DepositSimpleMerkle(Function<BytesValue, Hash32> hashFunction, int treeDepth) {
+    super(hashFunction, treeDepth);
     this.treeDepth = treeDepth;
-    this.zeroHashes = new Hash32[treeDepth];
   }
 
-  private Hash32 getZeroHash(int distanceFromBottom) {
-    if (zeroHashes[distanceFromBottom] == null) {
-      if (distanceFromBottom == 0) {
-        zeroHashes[0] = Hash32.ZERO;
-      } else {
-        Hash32 lowerZeroHash = getZeroHash(distanceFromBottom - 1);
-        zeroHashes[distanceFromBottom] = hashFunction.apply(concat(lowerZeroHash, lowerZeroHash));
-      }
-    }
-    return zeroHashes[distanceFromBottom];
+  public DepositSimpleMerkle(
+      Function<BytesValue, Hash32> hashFunction, int treeDepth, List<BytesValue> deposits) {
+    this(hashFunction, treeDepth);
+    this.deposits = deposits;
   }
 
   // # Compute a Merkle root of a right-zerobyte-padded 2**32 sized tree
@@ -50,7 +48,7 @@ public class MinimalMerkle {
   //        values = [hash(values[i] + values[i+1]) for i in range(0, len(values), 2)]
   //        tree.append(values[::])
   //    return tree
-  public List<List<BytesValue>> calc_merkle_tree_from_leaves(List<BytesValue> valueList) {
+  private List<List<BytesValue>> calc_merkle_tree_from_leaves(List<BytesValue> valueList) {
     List<BytesValue> values = new ArrayList<>(valueList);
     List<List<BytesValue>> tree = new ArrayList<>();
     tree.add(values);
@@ -60,7 +58,7 @@ public class MinimalMerkle {
       }
       List<BytesValue> valuesTemp = new ArrayList<>();
       for (int i = 0; i < values.size(); i += 2) {
-        valuesTemp.add(hashFunction.apply(values.get(i).concat(values.get(i + 1))));
+        valuesTemp.add(getHashFunction().apply(values.get(i).concat(values.get(i + 1))));
       }
       values = valuesTemp;
       tree.add(values);
@@ -71,7 +69,7 @@ public class MinimalMerkle {
 
   // def get_merkle_root(values):
   //    return calc_merkle_tree_from_leaves(values)[-1][0]
-  public BytesValue get_merkle_root(List<BytesValue> values) {
+  private BytesValue get_merkle_root(List<BytesValue> values) {
     List<List<BytesValue>> tree = calc_merkle_tree_from_leaves(values);
     try {
       return tree.get(tree.size() - 1).get(0);
@@ -86,7 +84,7 @@ public class MinimalMerkle {
   //        subindex = (item_index//2**i)^1
   //        proof.append(tree[i][subindex] if subindex < len(tree[i]) else zerohashes[i])
   //    return proof
-  public List<Hash32> get_merkle_proof(List<List<BytesValue>> tree, int item_index) {
+  private List<Hash32> get_merkle_proof(List<List<BytesValue>> tree, int item_index) {
     List<Hash32> proof = new ArrayList<>();
     for (int i = 0; i < treeDepth; ++i) {
       int subIndex = (item_index / (1 << i)) ^ 1;
@@ -98,5 +96,43 @@ public class MinimalMerkle {
     }
 
     return proof;
+  }
+
+  @Override
+  public ReadVector<Integer, Hash32> getProof(int index, int size) {
+    if (index > getLastIndex() || size > (getLastIndex() + 1)) {
+      throw new RuntimeException(
+          String.format("Max element index is %s, asked for %s and size %s!", getLastIndex(), index, size));
+    }
+    return ReadVector.wrap(
+        get_merkle_proof(calc_merkle_tree_from_leaves(deposits.subList(0, size)), index),
+        Integer::new);
+  }
+
+  @Override
+  public Hash32 getDepositRoot(UInt64 index) {
+    if (index.intValue() > getLastIndex()) {
+      throw new RuntimeException(
+          String.format("Max element index is %s, asked for %s!", getLastIndex(), index));
+    }
+    return Hash32.wrap(Bytes32.leftPad(get_merkle_root(deposits.subList(0, index.intValue() + 1))));
+  }
+
+  @Override
+  public void insertValue(DepositData depositData) {
+    insertDepositData(createDepositDataValue(depositData, getHashFunction()).extractArray());
+  }
+
+  public Stream<BytesValue> getDepositStream() {
+    return deposits.stream();
+  }
+
+  private void insertDepositData(byte[] depositData) {
+    this.deposits.add(BytesValue.wrap(depositData));
+  }
+
+  @Override
+  public int getLastIndex() {
+    return deposits.size() - 1;
   }
 }

@@ -35,12 +35,11 @@ public abstract class AbstractDepositContract implements DepositContract {
   private final MonoProcessor<ChainStart> chainStartSink = MonoProcessor.create();
   private final Publisher<ChainStart> chainStartStream;
   private final SimpleProcessor<Deposit> depositStream;
-  private final MinimalMerkle minimalMerkle;
-  private final Function<BytesValue, Hash32> hashFunction;
+  private final MerkleTree<DepositData> tree;
   private long distanceFromHead;
   private List<Deposit> initialDeposits = new ArrayList<>();
   private boolean startChainSubscribed;
-  private List<BytesValue> deposits = new ArrayList<>();
+
   public AbstractDepositContract(
       Schedulers schedulers, Function<BytesValue, Hash32> hashFunction, int treeDepth) {
     this.schedulers = schedulers;
@@ -51,14 +50,14 @@ public abstract class AbstractDepositContract implements DepositContract {
             .doOnSubscribe(s -> chainStartSubscribedPriv())
             .name("PowClient.chainStart");
     depositStream = new SimpleProcessor<>(this.schedulers.reactorEvents(), "PowClient.deposit");
-    this.hashFunction = hashFunction;
-    this.minimalMerkle = new MinimalMerkle(hashFunction, treeDepth);
+    this.tree = new DepositSimpleMerkle(hashFunction, treeDepth);
   }
 
   /**
    * Stores deposits data from invocation list eventDataList
-   * @param eventDataList     All deposit events in blockHash
-   * @param blockHash         Block hash
+   *
+   * @param eventDataList All deposit events in blockHash
+   * @param blockHash Block hash
    */
   protected synchronized void newDeposits(List<DepositEventData> eventDataList, byte[] blockHash) {
     List<Deposit> deposits =
@@ -70,7 +69,9 @@ public abstract class AbstractDepositContract implements DepositContract {
     for (Deposit deposit : deposits) {
       Deposit depositProofed =
           new Deposit(
-              getProof(deposit.getIndex().intValue(), size), deposit.getIndex(), deposit.getData());
+              tree.getProof(deposit.getIndex().intValue(), size),
+              deposit.getIndex(),
+              deposit.getData());
       if (startChainSubscribed && !chainStartSink.isTerminated()) {
         initialDeposits.add(depositProofed);
       }
@@ -93,7 +94,7 @@ public abstract class AbstractDepositContract implements DepositContract {
         .map(
             deposit ->
                 new Deposit(
-                    getProof(deposit.getIndex().intValue(), size),
+                    tree.getProof(deposit.getIndex().intValue(), size),
                     deposit.getIndex(),
                     deposit.getData()))
         .map(
@@ -101,22 +102,28 @@ public abstract class AbstractDepositContract implements DepositContract {
                 new DepositInfo(
                     d,
                     new Eth1Data(
-                        getDepositRoot(d.getIndex()),
+                        tree.getDepositRoot(d.getIndex()),
                         d.getIndex().decrement(),
                         Hash32.wrap(Bytes32.wrap(blockHash)))))
         .collect(Collectors.toList());
   }
 
   /**
-   * Inserts deposit in storage and returns it
-   * NOTE: returns Deposit with empty proof, proof should be filled by someone else
-   * @param eventData   Deposit event
+   * Inserts deposit in storage and returns it NOTE: returns Deposit with empty proof, proof should
+   * be filled by someone else
+   *
+   * @param eventData Deposit event
    * @return Deposit
    */
   private Deposit newDeposit(DepositEventData eventData) {
     Deposit deposit = createUnProofedDeposit(eventData);
-    insertDepositData(createDepositDataValue(deposit.getData()).extractArray());
+    tree.insertValue(deposit.getData());
     return deposit;
+  }
+
+  public Hash32 getDepositRoot(byte[] merkleTreeIndex) {
+    UInt64 index = UInt64.fromBytesLittleEndian(Bytes8.wrap(merkleTreeIndex));
+    return tree.getDepositRoot(index);
   }
 
   protected synchronized void chainStart(
@@ -146,66 +153,6 @@ public abstract class AbstractDepositContract implements DepositContract {
   protected abstract void chainStartSubscribed();
 
   protected abstract void chainStartDone();
-
-  protected ReadVector<Integer, Hash32> getProof(int index, int size) {
-    return ReadVector.wrap(
-        minimalMerkle.get_merkle_proof(
-            minimalMerkle.calc_merkle_tree_from_leaves(deposits.subList(0, size)), index),
-        Integer::new);
-  }
-
-  private Hash32 getDepositRoot(UInt64 index) {
-    return Hash32.wrap(
-        Bytes32.leftPad(minimalMerkle.get_merkle_root(deposits.subList(0, index.intValue() + 1))));
-  }
-
-  protected Hash32 getDepositRoot(byte[] merkleTreeIndex) {
-    UInt64 index = UInt64.fromBytesLittleEndian(Bytes8.wrap(merkleTreeIndex));
-    return getDepositRoot(index);
-  }
-
-  private void insertDepositData(byte[] depositData) {
-    deposits.add(BytesValue.wrap(depositData));
-  }
-
-  //     zero_bytes_32: bytes32
-  //    pubkey_root: bytes32 = sha256(concat(pubkey, slice(zero_bytes_32, start=0, len=16)))
-  //    signature_root: bytes32 = sha256(concat(
-  //        sha256(slice(signature, start=0, len=64)),
-  //        sha256(concat(slice(signature, start=64, len=32), zero_bytes_32))
-  //    ))
-  //    value: bytes32 = sha256(concat(
-  //        sha256(concat(pubkey_root, withdrawal_credentials)),
-  //        sha256(concat(
-  //            amount,
-  //            slice(zero_bytes_32, start=0, len=24),
-  //            signature_root,
-  //        ))
-  //    ))
-  private Hash32 createDepositDataValue(DepositData depositData) {
-    BytesValue zero_bytes_32 = Bytes32.ZERO.slice(0);
-    Hash32 pubkey_root =
-        hashFunction.apply(depositData.getPubKey().concat(zero_bytes_32.slice(0, 16)));
-    Hash32 signature_root =
-        hashFunction.apply(
-            hashFunction
-                .apply(depositData.getSignature().slice(0, 64))
-                .concat(
-                    hashFunction.apply(
-                        depositData.getSignature().slice(64, 32).concat(zero_bytes_32))));
-    Hash32 value =
-        hashFunction.apply(
-            hashFunction
-                .apply(pubkey_root.concat(depositData.getWithdrawalCredentials()))
-                .concat(
-                    hashFunction.apply(
-                        depositData
-                            .getAmount()
-                            .toBytes8LittleEndian()
-                            .concat(zero_bytes_32.slice(0, 24).concat(signature_root)))));
-
-    return value;
-  }
 
   @Override
   public Publisher<ChainStart> getChainStartMono() {
