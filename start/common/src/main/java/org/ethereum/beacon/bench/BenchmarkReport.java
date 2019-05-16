@@ -129,7 +129,7 @@ public class BenchmarkReport {
     }
 
     static String format(String title, String minTime, String avgTime, String percentage) {
-      return String.format("%-45s%15s%15s%15s", title, minTime, avgTime, percentage);
+      return String.format("%-50s%15s%15s%15s", title, minTime, avgTime, percentage);
     }
 
     public String print(String leftPadding) {
@@ -184,7 +184,7 @@ public class BenchmarkReport {
         String counter,
         String totalTime) {
       return String.format(
-          "%-45s%15s%15s%15s%15s%15s", title, minTime, avgTime, percentile, counter, totalTime);
+          "%-50s%15s%15s%15s%15s%15s", title, minTime, avgTime, percentile, counter, totalTime);
     }
 
     public String print(String leftPadding) {
@@ -370,9 +370,10 @@ public class BenchmarkReport {
     "get_total_balance",
     "get_attesting_indices",
     "get_validator_index_by_pubkey",
-    "get_previous_total_balance",
-    "get_total_active_balance",
     "get_base_reward",
-    "verify_bitfield"
+    "verify_bitfield",
+    "generate_seed",
+    "get_unslashed_attesting_indices",
+    "get_winning_crosslink_and_attesting_indices"
   };
 }

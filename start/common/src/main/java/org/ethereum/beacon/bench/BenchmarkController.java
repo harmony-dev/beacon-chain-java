@@ -8,7 +8,7 @@ import org.ethereum.beacon.util.stats.MeasurementsCollector;
 
 public interface BenchmarkController {
 
-  EpochNumber WARM_UP_EPOCHS = EpochNumber.of(1);
+  EpochNumber WARM_UP_EPOCHS = EpochNumber.of(2);
 
   enum BenchmarkRoutine {
     SLOT,

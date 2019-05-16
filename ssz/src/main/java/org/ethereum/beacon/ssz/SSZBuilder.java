@@ -264,23 +264,13 @@ public class SSZBuilder {
     return new SSZSerializer(visitorHost, typeResolver);
   }
 
-  /**
-   * Finalizes build of {@link HasherSerializer} with builder
-   *
-   * @return {@link HasherSerializer}
-   */
-  public HasherSerializer buildHasherSerializer() {
-    buildCommon();
-    return new HasherSerializer(visitorHost, typeResolver);
-  }
-
   public SSZHasher buildHasher(Function<BytesValue, Hash32> hashFunction) {
     buildCommon();
     SSZVisitor<MerkleTrie, Object> hasherVisitor;
     if (incrementalHasher) {
-      hasherVisitor = new SSZIncrementalHasher(buildHasherSerializer(), hashFunction, sszHashBytesPerChunk);
+      hasherVisitor = new SSZIncrementalHasher(buildSerializer(), hashFunction, sszHashBytesPerChunk);
     } else {
-      hasherVisitor = new SSZSimpleHasher(buildHasherSerializer(), hashFunction, sszHashBytesPerChunk);
+      hasherVisitor = new SSZSimpleHasher(buildSerializer(), hashFunction, sszHashBytesPerChunk);
     }
     return new SSZHasher(typeResolver, visitorHost, hasherVisitor);
   }

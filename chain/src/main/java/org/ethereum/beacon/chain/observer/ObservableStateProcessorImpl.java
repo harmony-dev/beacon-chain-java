@@ -2,6 +2,9 @@ package org.ethereum.beacon.chain.observer;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -34,7 +37,6 @@ import org.ethereum.beacon.util.cache.LRUCache;
 import org.javatuples.Pair;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
-import tech.pegasys.artemis.util.uint.UInt64s;
 
 public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   private static final int MAX_TUPLE_CACHE_SIZE = 256;
@@ -101,16 +103,12 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   }
 
   private void onNewSlot(SlotNumber newSlot) {
-    /* From spec:
-    attestation_slot = get_attestation_slot(state, attestation)
-    assert attestation_slot + MIN_ATTESTATION_INCLUSION_DELAY <= state.slot <= attestation_slot + SLOTS_PER_EPOCH */
-    SlotNumber slotMinimum = newSlot
-        .minusSat(spec.getConstants().getSlotsPerEpoch())
-        .minusSat(spec.getConstants().getMinAttestationInclusionDelay());
-    EpochNumber epochMinimum = spec.slot_to_epoch(slotMinimum);
+    EpochNumber currentEpoch = spec.slot_to_epoch(newSlot);
+    EpochNumber previousEpoch = currentEpoch.greater(EpochNumber.ZERO) ?
+        currentEpoch.decrement() : currentEpoch;
     runTaskInSeparateThread(
         () -> {
-          purgeAttestations(epochMinimum);
+          purgeAttestations(previousEpoch);
           newSlot(newSlot);
         });
   }
@@ -188,7 +186,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     attestationCache.remove(Pair.with(pubkey, epoch));
   }
 
-  /** Purges all entries for epoch and before */
+  /** Purges all entries for epochs before  {@code targetEpoch}*/
   private synchronized void purgeAttestations(EpochNumber targetEpoch) {
     attestationCache.entrySet()
         .removeIf(entry -> entry.getValue().getData().getTargetEpoch().less(targetEpoch));
@@ -228,7 +226,8 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   private void updateCurrentObservableState(BeaconTupleDetails head, SlotNumber slot) {
     assert slot.greaterEqual(head.getBlock().getSlot());
 
-    PendingOperations pendingOperations = new PendingOperationsState(spec, copyAttestationCache());
+    PendingOperations pendingOperations =
+        getPendingOperations(head.getFinalState(), copyAttestationCache());
     if (slot.greater(head.getBlock().getSlot())) {
       BeaconStateEx stateUponASlot = emptySlotTransition.apply(head.getFinalState(), slot);
       latestState = stateUponASlot;
@@ -252,11 +251,38 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     }
   }
 
+  private PendingOperations getPendingOperations(
+      BeaconState state, Map<BLSPubkey, List<Attestation>> attestationMap) {
+    List<Attestation> attestations = attestationMap.values().stream()
+        .flatMap(Collection::stream)
+        .filter(attestation -> {
+          /* attestation_slot = get_attestation_slot(state, attestation)
+             assert attestation_slot + MIN_ATTESTATION_INCLUSION_DELAY <= state.slot <= attestation_slot + SLOTS_PER_EPOCH */
+          SlotNumber attestationSlot = spec.get_attestation_slot(state, attestation.getData());
+          SlotNumber lowerBoundary =
+              attestationSlot.plus(spec.getConstants().getMinAttestationInclusionDelay());
+          SlotNumber upperBoundary = attestationSlot.plus(spec.getConstants().getSlotsPerEpoch());
+          return lowerBoundary.lessEqual(state.getSlot())
+              && state.getSlot().lessEqual(upperBoundary);
+        })
+        .sorted(Comparator.comparing(attestation -> attestation.getData().getTargetEpoch()))
+        .collect(Collectors.toList());
+
+    return new PendingOperationsState(attestations);
+  }
+
   private void updateHead() {
-    PendingOperations pendingOperations = new PendingOperationsState(spec, copyAttestationCache());
+    Map<BLSPubkey, List<Attestation>> attestationCacheCopy = copyAttestationCache();
     BeaconBlock newHead =
         headFunction.getHead(
-            validatorRecord -> pendingOperations.getLatestAttestation(validatorRecord.getPubKey()));
+            validatorRecord -> {
+              List<Attestation> validatorAttestations =
+                  attestationCacheCopy.getOrDefault(
+                      validatorRecord.getPubKey(), Collections.emptyList());
+
+              return validatorAttestations.stream()
+                  .max(Comparator.comparing(attestation -> attestation.getData().getTargetEpoch()));
+            });
     if (this.head != null && this.head.getBlock().equals(newHead)) {
       return; // == old
     }

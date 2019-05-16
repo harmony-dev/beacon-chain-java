@@ -103,7 +103,7 @@ public class SSZIncrementalTest {
     TypeResolver typeResolver = sszBuilder.getTypeResolver();
 
     SSZVisitorHost visitorHost = new SSZVisitorHost();
-    HasherSerializer serializer = new HasherSerializer(visitorHost, typeResolver);
+    SSZSerializer serializer = new SSZSerializer(visitorHost, typeResolver);
     CountingHash countingHashSimp = new CountingHash();
     CountingHash countingHashInc = new CountingHash();
     SSZIncrementalHasher incrementalHasher = new SSZIncrementalHasher(serializer, countingHashInc, 32);
@@ -212,7 +212,7 @@ public class SSZIncrementalTest {
     TypeResolver typeResolver = sszBuilder.getTypeResolver();
 
     SSZVisitorHost visitorHost = new SSZVisitorHost();
-    HasherSerializer serializer = new HasherSerializer(visitorHost, typeResolver);
+    SSZSerializer serializer = new SSZSerializer(visitorHost, typeResolver);
     CountingHash countingHashSimp = new CountingHash();
     CountingHash countingHashInc = new CountingHash();
     SSZIncrementalHasher incrementalHasher = new SSZIncrementalHasher(serializer, countingHashInc, 32);
@@ -350,7 +350,7 @@ public class SSZIncrementalTest {
     TypeResolver typeResolver = sszBuilder.getTypeResolver();
 
     SSZVisitorHost visitorHost = new SSZVisitorHost();
-    HasherSerializer serializer = new HasherSerializer(visitorHost, typeResolver);
+    SSZSerializer serializer = new SSZSerializer(visitorHost, typeResolver);
     CountingHash countingHashSimp = new CountingHash();
     CountingHash countingHashInc = new CountingHash();
     SSZIncrementalHasher incrementalHasher = new SSZIncrementalHasher(serializer, countingHashInc,
@@ -441,7 +441,7 @@ public class SSZIncrementalTest {
     TypeResolver typeResolver = sszBuilder.getTypeResolver();
 
     SSZVisitorHost visitorHost = new SSZVisitorHost();
-    HasherSerializer serializer = new HasherSerializer(visitorHost, typeResolver);
+    SSZSerializer serializer = new SSZSerializer(visitorHost, typeResolver);
     CountingHash countingHashSimp = new CountingHash();
     CountingHash countingHashInc = new CountingHash();
     SSZIncrementalHasher incrementalHasher = new SSZIncrementalHasher(serializer, countingHashInc,
@@ -512,7 +512,7 @@ public class SSZIncrementalTest {
     TypeResolver typeResolver = sszBuilder.getTypeResolver();
 
     SSZVisitorHost visitorHost = new SSZVisitorHost();
-    HasherSerializer serializer = new HasherSerializer(visitorHost, typeResolver);
+    SSZSerializer serializer = new SSZSerializer(visitorHost, typeResolver);
     CountingHash countingHashSimp = new CountingHash();
     CountingHash countingHashInc = new CountingHash();
     SSZIncrementalHasher incrementalHasher = new SSZIncrementalHasher(serializer, countingHashInc, 32);
@@ -587,7 +587,7 @@ public class SSZIncrementalTest {
     TypeResolver typeResolver = sszBuilder.getTypeResolver();
 
     SSZVisitorHost visitorHost = new SSZVisitorHost();
-    HasherSerializer serializer = new HasherSerializer(visitorHost, typeResolver);
+    SSZSerializer serializer = new SSZSerializer(visitorHost, typeResolver);
     CountingHash countingHashSimp = new CountingHash();
     CountingHash countingHashInc = new CountingHash();
     SSZIncrementalHasher incrementalHasher = new SSZIncrementalHasher(serializer, countingHashInc, 32);
@@ -749,7 +749,7 @@ public class SSZIncrementalTest {
     TypeResolver typeResolver = sszBuilder.getTypeResolver();
 
     SSZVisitorHost visitorHost = new SSZVisitorHost();
-    HasherSerializer serializer = new HasherSerializer(visitorHost, typeResolver);
+    SSZSerializer serializer = new SSZSerializer(visitorHost, typeResolver);
     CountingHash countingHashSimp = new CountingHash();
     CountingHash countingHashInc = new CountingHash();
     SSZIncrementalHasher incrementalHasher = new SSZIncrementalHasher(serializer, countingHashInc, 32);

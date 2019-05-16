@@ -188,19 +188,6 @@ public interface EpochProcessing extends HelperFunction {
             get_attestations_for(state, shard_attestations, winning_crosslink)));
   }
 
-  /*
-    def get_earliest_attestation(state: BeaconState, attestations: List[PendingAttestation], index: ValidatorIndex) -> PendingAttestation:
-      return min([
-          a for a in attestations if index in get_attesting_indices(state, a.data, a.aggregation_bitfield)
-      ], key=lambda a: a.inclusion_slot)
-   */
-  default PendingAttestation get_earliest_attestation(BeaconState state, List<PendingAttestation> attestations, ValidatorIndex index) {
-    return attestations.stream()
-        .filter(a -> get_attesting_indices(state, a.getData(), a.getAggregationBitfield()).contains(index))
-        .min(Comparator.comparing(PendingAttestation::getInclusionDelay))
-        .get();
-  }
-
 
   /*
     def process_justification_and_finalization(state: BeaconState) -> None:

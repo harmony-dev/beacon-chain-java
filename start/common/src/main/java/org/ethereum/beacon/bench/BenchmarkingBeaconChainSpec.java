@@ -15,19 +15,20 @@ import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
+import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.spec.SpecConstants;
-import org.ethereum.beacon.core.state.ShardCommittee;
+import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Bitfield;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ShardNumber;
-import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.crypto.BLS381.PublicKey;
 import org.ethereum.beacon.util.stats.MeasurementsCollector;
 import org.ethereum.beacon.util.stats.TimeCollector;
+import org.javatuples.Pair;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt64;
@@ -157,15 +158,30 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
   }
 
   @Override
-  public Gwei get_total_active_balance(BeaconState state) {
-    return callAndTrack("get_total_active_balance", () -> super.get_total_active_balance(state));
-  }
-
-  @Override
   public boolean verify_bitfield(Bitfield bitfield, int committee_size) {
     return callAndTrack("verify_bitfield", () -> super.verify_bitfield(bitfield, committee_size));
   }
 
+  @Override
+  public List<ValidatorIndex> get_unslashed_attesting_indices(
+      BeaconState state, List<PendingAttestation> attestations) {
+    return callAndTrack(
+        "get_unslashed_attesting_indices",
+        () -> super.get_unslashed_attesting_indices(state, attestations));
+  }
+
+  @Override
+  public Hash32 generate_seed(BeaconState state, EpochNumber epoch) {
+    return callAndTrack("generate_seed", () -> super.generate_seed(state, epoch));
+  }
+
+  @Override
+  public Pair<Crosslink, List<ValidatorIndex>> get_winning_crosslink_and_attesting_indices(
+      BeaconState state, EpochNumber epoch, ShardNumber shard) {
+    return callAndTrack(
+        "get_winning_crosslink_and_attesting_indices",
+        () -> super.get_winning_crosslink_and_attesting_indices(state, epoch, shard));
+  }
 
   /** STATE CACHING */
 
