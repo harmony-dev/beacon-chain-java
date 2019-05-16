@@ -105,7 +105,7 @@ public class AttestationRecord {
     return slot == that.slot
         && shardId == that.shardId
         && justifiedSlot == that.justifiedSlot
-        && Objects.equals(obliqueParentHashes, that.obliqueParentHashes)
+        && Arrays.deepEquals(obliqueParentHashes.toArray(), that.obliqueParentHashes.toArray())
         && Arrays.equals(shardBlockHash, that.shardBlockHash)
         && Objects.equals(attesterBitfield, that.attesterBitfield)
         && Arrays.equals(justifiedBlockHash, that.justifiedBlockHash)
