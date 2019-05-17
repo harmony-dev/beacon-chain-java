@@ -41,13 +41,20 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
   private boolean trackingStarted = false;
 
   static BenchmarkingBeaconChainSpec wrap(BeaconChainSpec spec) {
-    return new BenchmarkingBeaconChainSpec(
+    BenchmarkingBeaconChainSpec wrapped = new BenchmarkingBeaconChainSpec(
         spec.getConstants(),
         spec.getHashFunction(),
         spec.getObjectHasher(),
         spec.isBlsVerify(),
         spec.isBlsVerifyProofOfPossession(),
         spec instanceof CachingBeaconChainSpec && ((CachingBeaconChainSpec) spec).isCacheEnabled());
+
+    // share caches between all instances to avoid cache duplication
+    if (spec instanceof CachingBeaconChainSpec) {
+      wrapped.caches = ((CachingBeaconChainSpec) spec).getCaches();
+    }
+
+    return wrapped;
   }
 
   public BenchmarkingBeaconChainSpec(
