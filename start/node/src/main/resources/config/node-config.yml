@@ -1,0 +1,64 @@
+config:
+  db: file://db
+  networks:
+    - type: netty
+      listenPort: 40001
+      activePeers:
+        - tcp://localhost:40002
+        - tcp://localhost:40003
+
+  validator:
+    contract:
+      handler: ethereumj
+      distanceFromHead: 1000
+      contractAddress: 0xd47c61f2c25aaa677dcf23e65765fac04c85d6a0
+      contractBlock: 8000000
+      contractAbi: file://Contract.abi
+    signer:
+      implementation:
+        class: InsecureBLS381MessageSigner
+        input:
+          privKeys:
+            - 0x0000000000000000000000000000000000000000000000000000000000000000
+            - 0x0000000000000000000000000000000000000000000000000000000000000000
+            - 0x0000000000000000000000000000000000000000000000000000000000000000
+
+plan: !general
+  sync:
+    - action: run
+  validator:
+    - action: deposit
+      creator: ethereumj
+      sender: ethereumj
+      gasLimit: 2000000
+      eth1From: 0x0000000000000000000000000000000000000000
+      eth1PrivKey: 0x0000000000000000000000000000000000000000000000000000000000000000
+      withdrawalCredentials: 0x0000000000000000000000000000000000000000
+      amount: 32
+
+    - action: run
+
+chainSpec:
+  specConstants:
+    initialValues:
+      GENESIS_SLOT: 1000000
+    miscParameters:
+      SHARD_COUNT: 4
+      TARGET_COMMITTEE_SIZE: 2
+    timeParameters:
+      SECONDS_PER_SLOT: 10
+      MIN_ATTESTATION_INCLUSION_DELAY: 1
+      SLOTS_PER_EPOCH: 4
+      SLOTS_PER_HISTORICAL_ROOT: 64
+
+    honestValidatorParameters:
+      ETH1_FOLLOW_DISTANCE: 1
+    stateListLengths:
+      LATEST_RANDAO_MIXES_LENGTH: 64
+      LATEST_ACTIVE_INDEX_ROOTS_LENGTH: 64
+      LATEST_SLASHED_EXIT_LENGTH: 64
+
+  specHelpersOptions:
+    blsVerify: false
+    blsVerifyProofOfPossession: false
+    blsSign: false

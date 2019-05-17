@@ -1,4 +1,4 @@
-package org.ethereum.beacon;
+package org.ethereum.beacon.start.common;
 
 import java.util.List;
 import org.ethereum.beacon.chain.DefaultBeaconChain;

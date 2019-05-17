@@ -1,4 +1,4 @@
-package org.ethereum.beacon.simulator.util;
+package org.ethereum.beacon.start.common.util;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;

@@ -6,19 +6,14 @@ import static tech.pegasys.artemis.util.bytes.BytesValue.fromHexString;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import org.ethereum.beacon.core.BeaconBlock;
-import org.ethereum.beacon.core.ModelsSerializeTest;
 import org.ethereum.beacon.core.operations.Attestation;
-import org.ethereum.beacon.util.Utils;
 import org.ethereum.beacon.wire.WireApiSubRouterTest.TestRouter.Connection;
 import org.ethereum.beacon.wire.channel.beacon.WireApiSubAdapter;
 import org.junit.Assert;
 import org.junit.Test;
-import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
-import tech.pegasys.artemis.util.bytes.BytesValue;
 
 public class WireApiSubRouterTest {
 

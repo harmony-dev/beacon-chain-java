@@ -23,6 +23,7 @@ include 'pow:web3j'
 include 'ssz'
 // Command line executable clients
 include 'start:simulator'
+include 'start:node'
 // Clients helpers
 include 'start:common'
 // Configuration parser

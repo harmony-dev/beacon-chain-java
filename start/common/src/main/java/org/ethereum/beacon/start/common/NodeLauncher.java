@@ -1,4 +1,4 @@
-package org.ethereum.beacon;
+package org.ethereum.beacon.start.common;
 
 import java.net.SocketAddress;
 import java.util.List;
