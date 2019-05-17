@@ -13,7 +13,6 @@ import java.util.Random;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.ethereum.beacon.Launcher;
 import org.ethereum.beacon.bench.BenchmarkController;
 import org.ethereum.beacon.bench.BenchmarkReport;
 import org.ethereum.beacon.bench.BenchmarkUtils;
@@ -35,11 +34,12 @@ import org.ethereum.beacon.schedulers.LoggerMDCExecutor;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.schedulers.TimeController;
 import org.ethereum.beacon.schedulers.TimeControllerImpl;
+import org.ethereum.beacon.start.common.Launcher;
 import org.ethereum.beacon.start.common.util.SimulateUtils;
 import org.ethereum.beacon.util.stats.MeasurementsCollector;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import org.ethereum.beacon.wire.LocalWireHub;
-import org.ethereum.beacon.wire.WireApi;
+import org.ethereum.beacon.wire.WireApiSub;
 import org.javatuples.Pair;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
@@ -109,7 +109,7 @@ public class BenchmarkRunner implements Runnable {
     logger.info("Bootstrapping validators ...");
 
     ControlledSchedulers schedulers = controlledSchedulers.createNew("V0");
-    WireApi wireApi = localWireHub.createNewPeer("0");
+    WireApiSub wireApi = localWireHub.createNewPeer("0");
 
     List<BLS381Credentials> blsCreds;
     if (spec.isBlsVerify()) {

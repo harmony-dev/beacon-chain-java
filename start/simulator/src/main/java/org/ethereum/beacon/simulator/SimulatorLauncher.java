@@ -16,7 +16,6 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
-import org.ethereum.beacon.start.common.Launcher;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.storage.impl.MemBeaconChainStorageFactory;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
@@ -33,17 +32,17 @@ import org.ethereum.beacon.crypto.BLS381;
 import org.ethereum.beacon.crypto.BLS381.KeyPair;
 import org.ethereum.beacon.crypto.BLS381.PrivateKey;
 import org.ethereum.beacon.emulator.config.ConfigBuilder;
-import org.ethereum.beacon.emulator.config.chainspec.SpecData;
 import org.ethereum.beacon.emulator.config.chainspec.SpecBuilder;
+import org.ethereum.beacon.emulator.config.chainspec.SpecData;
 import org.ethereum.beacon.emulator.config.main.MainConfig;
 import org.ethereum.beacon.emulator.config.main.plan.SimulationPlan;
 import org.ethereum.beacon.emulator.config.simulator.PeersConfig;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.schedulers.ControlledSchedulers;
+import org.ethereum.beacon.start.common.Launcher;
 import org.ethereum.beacon.start.common.util.MDCControlledSchedulers;
 import org.ethereum.beacon.start.common.util.SimpleDepositContract;
 import org.ethereum.beacon.start.common.util.SimulateUtils;
-import org.ethereum.beacon.util.stats.TimeCollector;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import org.ethereum.beacon.wire.LocalWireHub;
 import org.ethereum.beacon.wire.WireApiSub;
@@ -73,7 +72,6 @@ public class SimulatorLauncher implements Runnable {
   private List<BLS381.KeyPair> keyPairs;
   private Eth1Data eth1Data;
   private DepositContract depositContract;
-  private TimeCollector proposeTimeCollector;
 
   private List<Launcher> peers;
 
@@ -154,8 +152,6 @@ public class SimulatorLauncher implements Runnable {
     DepositContract.ChainStart chainStart =
         new DepositContract.ChainStart(genesisTime, eth1Data, deposits);
     depositContract = new SimpleDepositContract(chainStart);
-
-    proposeTimeCollector = new TimeCollector();
   }
 
   public Launcher createPeer(String name) {
@@ -181,8 +177,7 @@ public class SimulatorLauncher implements Runnable {
             bls == null ? null : Collections.singletonList(bls),
             wireApi,
             new MemBeaconChainStorageFactory(spec.getObjectHasher()),
-            schedulers,
-            proposeTimeCollector);
+            schedulers);
   }
 
   public void run() {

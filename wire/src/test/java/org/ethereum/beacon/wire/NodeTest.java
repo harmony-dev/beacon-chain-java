@@ -39,6 +39,7 @@ import org.javatuples.Pair;
 import org.junit.Test;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.uint.UInt64;
 
 public class NodeTest {
 
@@ -54,15 +55,16 @@ public class NodeTest {
     SpecBuilder specBuilder = new SpecBuilder().withSpec(specData);
     BeaconChainSpec spec = specBuilder.buildSpec();
 
+    int depositCount = 16;
     Pair<List<Deposit>, List<KeyPair>> depositPairs =
-        SimulateUtils.getAnyDeposits(rnd, spec, 16, false);
+        SimulateUtils.getAnyDeposits(rnd, spec, depositCount, false);
 
     Time genesisTime = Time.of(60000);
 
     MDCControlledSchedulers controlledSchedulers = new MDCControlledSchedulers();
     controlledSchedulers.setCurrentTime(genesisTime.getMillis().getValue() + 1000);
 
-    Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), Hash32.random(rnd));
+    Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), UInt64.valueOf(depositCount), Hash32.random(rnd));
 
     DepositContract.ChainStart chainStart =
         new DepositContract.ChainStart(genesisTime, eth1Data, depositPairs.getValue0());
