@@ -73,12 +73,4 @@ public class ConnectionManager<TAddress> {
         server == null ? Flux.empty() : server.channelsStream(),
         client == null ? Flux.empty() : clientConnections);
   }
-
-  public static void main(String[] args) throws Exception {
-    Flux.merge(
-            Flux.just(1).delayElements(Duration.ofMillis(1000)),
-            Flux.just(2).delayElements(Duration.ofMillis(100)))
-        .subscribe(i -> System.out.println(i));
-    Thread.sleep(2000);
-  }
 }

@@ -6,6 +6,7 @@ import org.ethereum.beacon.wire.WireApiSync;
 import org.reactivestreams.Publisher;
 import reactor.core.Disposable;
 
+// TODO: revisit and complete this interface
 public interface SyncManager {
 
   Disposable subscribeToOnlineBlocks(Publisher<Feedback<BeaconBlock>> onlineBlocks);
