@@ -39,7 +39,7 @@ import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 
 public class ObservableStateProcessorImpl implements ObservableStateProcessor {
-  private static final int MAX_TUPLE_CACHE_SIZE = 256;
+  private static final int MAX_TUPLE_CACHE_SIZE = 32;
   private final BeaconTupleStorage tupleStorage;
 
   private final HeadFunction headFunction;
