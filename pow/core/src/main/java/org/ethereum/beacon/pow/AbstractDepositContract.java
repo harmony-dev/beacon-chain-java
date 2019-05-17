@@ -50,7 +50,7 @@ public abstract class AbstractDepositContract implements DepositContract {
             .doOnSubscribe(s -> chainStartSubscribedPriv())
             .name("PowClient.chainStart");
     depositStream = new SimpleProcessor<>(this.schedulers.reactorEvents(), "PowClient.deposit");
-    this.tree = new DepositSimpleMerkle(hashFunction, treeDepth);
+    this.tree = new DepositBufferedMerkle(hashFunction, treeDepth, 1000);
   }
 
   /**

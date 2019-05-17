@@ -10,12 +10,9 @@ import tech.pegasys.artemis.util.uint.UInt64;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 /**
  * Simplest implementation that keeps all input values in memory and recalculates tree on any query.
- * Values could be backed up via {@link #getDepositStream()} and loaded using alternative
- * constructor
  *
  * <p>Minimal merkle tree <a
  * href="https://en.wikipedia.org/wiki/Merkle_tree">https://en.wikipedia.org/wiki/Merkle_tree</a>
@@ -30,12 +27,6 @@ public class DepositSimpleMerkle extends DepositDataMerkle {
   public DepositSimpleMerkle(Function<BytesValue, Hash32> hashFunction, int treeDepth) {
     super(hashFunction, treeDepth);
     this.treeDepth = treeDepth;
-  }
-
-  public DepositSimpleMerkle(
-      Function<BytesValue, Hash32> hashFunction, int treeDepth, List<BytesValue> deposits) {
-    this(hashFunction, treeDepth);
-    this.deposits = deposits;
   }
 
   // # Compute a Merkle root of a right-zerobyte-padded 2**32 sized tree
@@ -71,11 +62,7 @@ public class DepositSimpleMerkle extends DepositDataMerkle {
   //    return calc_merkle_tree_from_leaves(values)[-1][0]
   private BytesValue get_merkle_root(List<BytesValue> values) {
     List<List<BytesValue>> tree = calc_merkle_tree_from_leaves(values);
-    try {
-      return tree.get(tree.size() - 1).get(0);
-    } catch (Exception ex) {
-      throw ex;
-    }
+    return tree.get(tree.size() - 1).get(0);
   }
 
   // def get_merkle_proof(tree, item_index):
@@ -119,10 +106,6 @@ public class DepositSimpleMerkle extends DepositDataMerkle {
   @Override
   public void insertValue(DepositData depositData) {
     insertDepositData(createDepositDataValue(depositData, getHashFunction()).extractArray());
-  }
-
-  public Stream<BytesValue> getDepositStream() {
-    return deposits.stream();
   }
 
   private void insertDepositData(byte[] depositData) {
