@@ -1,13 +1,7 @@
 package org.ethereum.beacon.emulator.config.chainspec;
 
-import java.util.List;
-import org.apache.milagro.amcl.BLS381.ECP;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
-import org.ethereum.beacon.consensus.util.CachingBeaconChainSpec;
-import org.ethereum.beacon.core.MutableBeaconState;
-import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.spec.SpecConstants;
-import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
@@ -15,7 +9,6 @@ import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
-import org.ethereum.beacon.crypto.BLS381.PublicKey;
 import tech.pegasys.artemis.ethereum.core.Address;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes1;
@@ -42,60 +35,14 @@ public class SpecBuilder {
 
   public BeaconChainSpec buildSpec(
       SpecHelpersData specHelpersOptions, SpecConstants specConstants) {
-
-    BeaconChainSpec defaultSpec = BeaconChainSpec.createWithSSZHasher(specConstants);
-    return new CachingBeaconChainSpec(
-        defaultSpec.getConstants(),
-        defaultSpec.getHashFunction(),
-        defaultSpec.getObjectHasher()) {
-
-      @Override
-      public PublicKey bls_aggregate_pubkeys(List<BLSPubkey> publicKeysBytes) {
-        if (specHelpersOptions.isBlsSign()) {
-          return super.bls_aggregate_pubkeys(publicKeysBytes);
-        } else {
-          return PublicKey.create(new ECP());
-        }
-      }
-
-      @Override
-      public boolean bls_verify(
-          BLSPubkey publicKey, Hash32 message, BLSSignature signature, UInt64 domain) {
-        if (specHelpersOptions.isBlsVerify()) {
-          return super.bls_verify(publicKey, message, signature, domain);
-        } else {
-          return true;
-        }
-      }
-
-      @Override
-      public boolean bls_verify(
-          PublicKey blsPublicKey, Hash32 message, BLSSignature signature, UInt64 domain) {
-        if (specHelpersOptions.isBlsVerify()) {
-          return super.bls_verify(blsPublicKey, message, signature, domain);
-        } else {
-          return true;
-        }
-      }
-
-      @Override
-      public boolean bls_verify_multiple(
-          List<PublicKey> publicKeys,
-          List<Hash32> messages,
-          BLSSignature signature,
-          UInt64 domain) {
-        if (specHelpersOptions.isBlsVerify()) {
-          return super.bls_verify_multiple(publicKeys, messages, signature, domain);
-        } else {
-          return true;
-        }
-      }
-
-      @Override
-      public void process_deposit(MutableBeaconState state, Deposit deposit) {
-        super.process_deposit_inner(state, deposit, specHelpersOptions.isBlsVerifyProofOfPossession());
-      }
-    };
+    return new BeaconChainSpec.Builder()
+        .withDefaultHashFunction()
+        .withDefaultHasher(specConstants)
+        .withConstants(specConstants)
+        .withBlsVerify(specHelpersOptions.isBlsVerify())
+        .withBlsVerifyProofOfPossession(specHelpersOptions.isBlsVerifyProofOfPossession())
+        .enableCache()
+        .build();
   }
 
   public SpecConstants buildSpecConstants() {
@@ -135,18 +82,18 @@ public class SpecBuilder {
       }
 
       @Override
-      public Gwei getMaxDepositAmount() {
-        return gweiValues.getMaxDepositAmount();
+      public Gwei getMaxEffectiveBalance() {
+        return gweiValues.getMaxEffectiveBalance();
       }
 
       @Override
-      public Gwei getForkChoiceBalanceIncrement() {
-        return gweiValues.getForkChoiceBalanceIncrement();
+      public Gwei getEffectiveBalanceIncrement() {
+        return gweiValues.getEffectiveBalanceIncrement();
       }
 
       @Override
-      public UInt64 getMinPenaltyQuotient() {
-        return rewardAndPenaltyQuotients.getMinPenaltyQuotient();
+      public UInt64 getMinSlashingPenaltyQuotient() {
+        return rewardAndPenaltyQuotients.getMinSlashingPenaltyQuotient();
       }
 
       @Override
@@ -155,18 +102,8 @@ public class SpecBuilder {
       }
 
       @Override
-      public UInt64 getGenesisForkVersion() {
-        return initialValues.getGenesisForkVersion();
-      }
-
-      @Override
       public SlotNumber getGenesisSlot() {
         return initialValues.getGenesisSlot();
-      }
-
-      @Override
-      public ShardNumber getGenesisStartShard() {
-        return initialValues.getGenesisStartShard();
       }
 
       @Override
@@ -177,11 +114,6 @@ public class SpecBuilder {
       @Override
       public Hash32 getZeroHash() {
         return initialValues.getZeroHash();
-      }
-
-      @Override
-      public BLSSignature getEmptySignature() {
-        return initialValues.getEmptySignature();
       }
 
       @Override
@@ -230,23 +162,23 @@ public class SpecBuilder {
       }
 
       @Override
-      public UInt64 getMaxBalanceChurnQuotient() {
-        return miscParameters.getMaxBalanceChurnQuotient();
+      public UInt64 getMaxIndicesPerAttestation() {
+        return miscParameters.getMaxIndicesPerAttestation();
       }
 
       @Override
-      public ShardNumber getBeaconChainShardNumber() {
-        return miscParameters.getBeaconChainShardNumber();
+      public UInt64 getMinPerEpochChurnLimit() {
+        return miscParameters.getMinPerEpochChurnLimit();
       }
 
       @Override
-      public UInt64 getMaxIndicesPerSlashableVote() {
-        return miscParameters.getMaxIndicesPerSlashableVote();
+      public UInt64 getChurnLimitQuotient() {
+        return miscParameters.getChurnLimitQuotient();
       }
 
       @Override
-      public UInt64 getMaxExitDequesPerEpoch() {
-        return miscParameters.getMaxExitDequesPerEpoch();
+      public UInt64 getBaseRewardsPerEpoch() {
+        return miscParameters.getBaseRewardsPerEpoch();
       }
 
       @Override
@@ -255,13 +187,13 @@ public class SpecBuilder {
       }
 
       @Override
-      public UInt64 getWhistleblowerRewardQuotient() {
-        return rewardAndPenaltyQuotients.getWhistleblowerRewardQuotient();
+      public UInt64 getWhistleblowingRewardQuotient() {
+        return rewardAndPenaltyQuotients.getWhistleblowingRewardQuotient();
       }
 
       @Override
-      public UInt64 getAttestationInclusionRewardQuotient() {
-        return rewardAndPenaltyQuotients.getAttestationInclusionRewardQuotient();
+      public UInt64 getProposerRewardQuotient() {
+        return rewardAndPenaltyQuotients.getProposerRewardQuotient();
       }
 
       @Override
@@ -310,8 +242,8 @@ public class SpecBuilder {
       }
 
       @Override
-      public EpochNumber getEpochsPerEth1VotingPeriod() {
-        return timeParameters.getEpochsPerEth1VotingPeriod();
+      public EpochNumber getSlotsPerEth1VotingPeriod() {
+        return timeParameters.getSlotsPerEth1VotingPeriod();
       }
 
       @Override
@@ -320,11 +252,39 @@ public class SpecBuilder {
       }
 
       @Override
+      public EpochNumber getGenesisEpoch() {
+        return initialValues.getGenesisEpoch();
+      }
+
+      @Override
+      public int getMaxTransfers() {
+        return maxOperationsPerBlock.getMaxTransfers();
+      }
+
+      @Override
+      public int getShuffleRoundCount() {
+        return miscParameters.getShuffleRoundCount();
+      }
+
+      @Override
+      public EpochNumber getPersistentCommitteePeriod() {
+        return timeParameters.getPersistentCommitteePeriod();
+      }
+
+      @Override
+      public EpochNumber getMaxCrosslinkEpochs() {
+        return timeParameters.getMaxCrosslinkEpochs();
+      }
+
+      @Override
+      public EpochNumber getMinEpochsToInactivityPenalty() {
+        return timeParameters.getMinEpochsToInactivityPenalty();
+      }
+
+      @Override
       public SlotNumber getSlotsPerHistoricalRoot() {
         return timeParameters.getSlotsPerHistoricalRoot();
       }
-
-
     };
   }
 

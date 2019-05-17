@@ -22,7 +22,7 @@ public class PerSlotTransitionTest {
   public void test1() {
     Random rnd = new Random();
     Time genesisTime = Time.castFrom(UInt64.random(rnd));
-    Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), Hash32.random(rnd));
+    Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), UInt64.ZERO, Hash32.random(rnd));
     SpecConstants specConstants =
         new SpecConstants() {
           @Override
@@ -30,7 +30,7 @@ public class PerSlotTransitionTest {
             return new SlotNumber.EpochLength(UInt64.valueOf(8));
           }
         };
-    BeaconChainSpec spec = BeaconChainSpec.createWithSSZHasher(specConstants);
+    BeaconChainSpec spec = BeaconChainSpec.createWithDefaultHasher(specConstants);
 
     List<Deposit> deposits = TestUtils.getAnyDeposits(rnd, spec, 8).getValue0();
 

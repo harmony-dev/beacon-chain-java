@@ -20,7 +20,6 @@ import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.stream.SimpleProcessor;
-import org.ethereum.beacon.util.stats.TimeCollector;
 import org.reactivestreams.Publisher;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
@@ -41,8 +40,6 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   private final Schedulers schedulers;
 
   private BeaconTuple recentlyProcessed;
-
-  private TimeCollector insertTimeCollector = new TimeCollector();
 
   public DefaultBeaconChain(
       BeaconChainSpec spec,
@@ -92,7 +89,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
 
     Hash32 initialStateRoot = spec.hash_tree_root(initialState);
     BeaconBlock genesis = initialGenesis.withStateRoot(initialStateRoot);
-    Hash32 genesisRoot = spec.signed_root(genesis);
+    Hash32 genesisRoot = spec.signing_root(genesis);
     BeaconTuple tuple = BeaconTuple.of(genesis, initialState);
 
     tupleStorage.put(tuple);
@@ -123,7 +120,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
         blockVerifier.verify(block, preBlockState);
     if (!blockVerification.isPassed()) {
       logger.warn("Block verification failed: " + blockVerification + ": " +
-          block.toString(spec.getConstants(), parentState.getGenesisTime(), spec::signed_root));
+          block.toString(spec.getConstants(), parentState.getGenesisTime(), spec::signing_root));
       return false;
     }
 
@@ -154,14 +151,8 @@ public class DefaultBeaconChain implements MutableBeaconChain {
             .toString(
                 spec.getConstants(),
                 newTuple.getState().getGenesisTime(),
-                spec::signed_root),
+                spec::signing_root),
         String.format("%.3f", ((double) total) / 1_000_000_000d));
-
-    if (spec.is_epoch_end(block.getSlot())) {
-      insertTimeCollector.reset();
-    } else {
-      insertTimeCollector.tick(total);
-    }
 
     return true;
   }
@@ -174,13 +165,13 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   private void updateFinality(BeaconState previous, BeaconState current) {
     if (previous.getFinalizedEpoch().less(current.getFinalizedEpoch())) {
       Hash32 finalizedRoot =
-          spec.get_block_root(
+          spec.get_block_root_at_slot(
               current, spec.get_epoch_start_slot(current.getFinalizedEpoch()));
       chainStorage.getFinalizedStorage().set(finalizedRoot);
     }
     if (previous.getCurrentJustifiedEpoch().less(current.getCurrentJustifiedEpoch())) {
       Hash32 justifiedRoot =
-          spec.get_block_root(
+          spec.get_block_root_at_slot(
               current, spec.get_epoch_start_slot(current.getCurrentJustifiedEpoch()));
       chainStorage.getJustifiedStorage().set(justifiedRoot);
     }
@@ -195,7 +186,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   }
 
   private boolean exist(BeaconBlock block) {
-    Hash32 blockHash = spec.signed_root(block);
+    Hash32 blockHash = spec.signing_root(block);
     return chainStorage.getBlockStorage().get(blockHash).isPresent();
   }
 

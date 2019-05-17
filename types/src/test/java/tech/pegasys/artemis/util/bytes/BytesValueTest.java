@@ -173,7 +173,7 @@ public class BytesValueTest {
   }
 
   @Test
-  public void concatenatedWrapReflectsUpdates() {
+  public void concatenatedWrapDoesntReflectsUpdates() {
     byte[] first = new byte[] {1, 2, 3};
     byte[] second = new byte[] {4, 5};
     byte[] expected1 = new byte[] {1, 2, 3, 4, 5};
@@ -182,8 +182,7 @@ public class BytesValueTest {
 
     first[1] = 42;
     second[0] = 42;
-    byte[] expected2 = new byte[] {1, 42, 3, 42, 5};
-    assertArrayEquals(expected2, res.extractArray());
+    assertArrayEquals(expected1, res.extractArray());
   }
 
   @Test

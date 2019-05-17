@@ -51,6 +51,7 @@ import org.javatuples.Pair;
 import reactor.core.publisher.Flux;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
+import tech.pegasys.artemis.util.uint.UInt64;
 
 public class SimulatorLauncher implements Runnable {
   private static final Logger logger = LogManager.getLogger("simulator");
@@ -123,7 +124,8 @@ public class SimulatorLauncher implements Runnable {
       if (validators.get(i).getBlsPrivateKey() != null) {
         KeyPair keyPair = KeyPair.create(
             PrivateKey.create(Bytes32.fromHexString(validators.get(i).getBlsPrivateKey())));
-        deposits.getValue0().set(i, SimulateUtils.getDepositForKeyPair(rnd, keyPair, spec,
+        Deposit deposit = deposits.getValue0().get(i);
+        deposits.getValue0().set(i, SimulateUtils.getDepositForKeyPair(deposit.getIndex(), rnd, keyPair, spec,
             config.getChainSpec().getSpecHelpersOptions().isBlsVerifyProofOfPossession()));
         deposits.getValue1().set(i, keyPair);
       }
@@ -146,7 +148,7 @@ public class SimulatorLauncher implements Runnable {
     controlledSchedulers = new MDCControlledSchedulers();
     controlledSchedulers.setCurrentTime(genesisTime.getMillis().getValue() + 1000);
 
-    eth1Data = new Eth1Data(Hash32.random(rnd), Hash32.random(rnd));
+    eth1Data = new Eth1Data(Hash32.random(rnd), UInt64.ZERO, Hash32.random(rnd));
 
     localWireHub = new LocalWireHub(s -> wire.trace(s), controlledSchedulers.createNew("wire"));
     DepositContract.ChainStart chainStart =
@@ -232,11 +234,11 @@ public class SimulatorLauncher implements Runnable {
           });
       Flux.from(launcher.getBeaconChain().getBlockStatesStream())
           .subscribe(blockState -> logger.trace("Block imported: "
-              + blockState.getBlock().toString(this.specConstants, genesisTime, spec::signed_root)));
+              + blockState.getBlock().toString(this.specConstants, genesisTime, spec::signing_root)));
       if (launcher.getValidatorService() != null) {
         Flux.from(launcher.getValidatorService().getProposedBlocksStream())
             .subscribe(block -> logger.debug("New block created: "
-                + block.toString(this.specConstants, genesisTime, spec::signed_root)));
+                + block.toString(this.specConstants, genesisTime, spec::signing_root)));
         Flux.from(launcher.getValidatorService().getAttestationsStream())
             .subscribe(attest -> logger.debug("New attestation created: "
                 + attest.toString(this.specConstants, genesisTime)));
@@ -272,7 +274,7 @@ public class SimulatorLauncher implements Runnable {
         .subscribe(blockState -> {
           blocks.add(blockState.getBlock());
           logger.debug("Block imported: "
-              + blockState.getBlock().toString(specConstants, genesisTime, spec::signed_root));
+              + blockState.getBlock().toString(specConstants, genesisTime, spec::signing_root));
         });
 
     logger.info("Time starts running ...");
@@ -397,7 +399,8 @@ public class SimulatorLauncher implements Runnable {
       SimulationPlan simulationPlan = (SimulationPlan) config.getPlan();
 
       ConfigBuilder<SpecData> specConfigBuilder =
-          new ConfigBuilder<>(SpecData.class).addYamlConfigFromResources("/config/spec-constants.yml");
+          new ConfigBuilder<>(SpecData.class).addYamlConfigFromResources(
+              "/config/spec-constants.yml");
       if (config.getChainSpec().isDefined()) {
         specConfigBuilder.addConfig(config.getChainSpec());
       }

@@ -2,6 +2,7 @@ package org.ethereum.beacon.chain.observer;
 
 import java.util.List;
 import java.util.Optional;
+import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.Transfer;
@@ -16,14 +17,11 @@ public interface PendingOperations {
 
   List<Attestation> getAttestations();
 
-  Optional<Attestation> getLatestAttestation(BLSPubkey pubKey);
-
   List<ProposerSlashing> peekProposerSlashings(int maxCount);
 
   List<AttesterSlashing> peekAttesterSlashings(int maxCount);
 
-  List<Attestation> peekAggregatedAttestations(
-      int maxCount, SlotNumber minSlotExclusive, SlotNumber maxSlotInclusive);
+  List<Attestation> peekAggregateAttestations(int maxCount);
 
   List<VoluntaryExit> peekExits(int maxCount);
 

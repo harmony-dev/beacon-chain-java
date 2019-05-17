@@ -2,42 +2,32 @@ package org.ethereum.beacon.chain.observer;
 
 import static java.util.stream.Collectors.groupingBy;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import org.ethereum.beacon.core.operations.Attestation;
+import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.Transfer;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
-import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
-import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Bitfield;
-import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.crypto.BLS381;
 
 public class PendingOperationsState implements PendingOperations {
 
-  Map<BLSPubkey, List<Attestation>> attestations;
+  private final List<Attestation> attestations;
 
-  public PendingOperationsState(Map<BLSPubkey, List<Attestation>> attestations) {
+  public PendingOperationsState(List<Attestation> attestations) {
     this.attestations = attestations;
   }
 
   @Override
-  public Optional<Attestation> getLatestAttestation(BLSPubkey pubKey) {
-    return Optional.ofNullable(attestations.get(pubKey))
-        .map(atts -> Collections.max(atts, Comparator.comparing(att -> att.getData().getSlot())));
-  }
-
-  @Override
   public List<Attestation> getAttestations() {
-    return attestations.values().stream().flatMap(Collection::stream).collect(Collectors.toList());
+    return attestations;
   }
 
   @Override
@@ -51,21 +41,13 @@ public class PendingOperationsState implements PendingOperations {
   }
 
   @Override
-  public List<Attestation> peekAggregatedAttestations(
-      int maxCount, SlotNumber minSlotExclusive, SlotNumber maxSlotInclusive) {
-
+  public List<Attestation> peekAggregateAttestations(int maxCount) {
     Map<AttestationData, List<Attestation>> attestationsBySlot =
-        getAttestations()
-            .stream()
-            .filter(attestation -> attestation.getData().getSlot().greater(minSlotExclusive))
-            .filter(attestation -> attestation.getData().getSlot().lessEqual(maxSlotInclusive))
-            .collect(groupingBy(Attestation::getData));
-    return attestationsBySlot
-        .entrySet()
-        .stream()
-        .sorted(Comparator.comparing(e -> e.getKey().getSlot()))
-        .limit(maxCount)
+        attestations.stream().collect(groupingBy(Attestation::getData));
+    return attestationsBySlot.entrySet().stream()
+        .sorted(Comparator.comparing(e -> e.getKey().getTargetEpoch()))
         .map(entry -> aggregateAttestations(entry.getValue()))
+        .limit(maxCount)
         .collect(Collectors.toList());
   }
 
@@ -83,7 +65,7 @@ public class PendingOperationsState implements PendingOperations {
     BLS381.Signature aggregatedSignature =
         BLS381.Signature.aggregate(
             attestations.stream()
-                .map(Attestation::getAggregateSignature)
+                .map(Attestation::getSignature)
                 .map(BLS381.Signature::create)
                 .collect(Collectors.toList()));
     BLSSignature aggSign = BLSSignature.wrap(aggregatedSignature.getEncoded());

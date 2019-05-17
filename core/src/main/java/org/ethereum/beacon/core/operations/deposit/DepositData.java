@@ -2,46 +2,56 @@ package org.ethereum.beacon.core.operations.deposit;
 
 import com.google.common.base.Objects;
 import org.ethereum.beacon.core.operations.Deposit;
+import org.ethereum.beacon.core.types.BLSPubkey;
+import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
-import tech.pegasys.artemis.util.uint.UInt64;
+import tech.pegasys.artemis.ethereum.core.Hash32;
 
 /**
  * A data of validator registration deposit.
  *
  * @see Deposit
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md#depositdata">DepositData
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.6.1/specs/core/0_beacon-chain.md#depositdata">DepositData
  *     in the spec</a>
  */
 @SSZSerializable
 public class DepositData {
 
-  /** Value in Gwei. */
+  /** BLS public key. */
+  @SSZ private final BLSPubkey pubKey;
+  /** Withdrawal credentials. */
+  @SSZ private final Hash32 withdrawalCredentials;
+  /** Amount in Gwei. */
   @SSZ private final Gwei amount;
-  /** Timestamp from deposit contract. */
-  @SSZ private final Time timestamp;
-  /** Deposit parameters. */
-  @SSZ private final DepositInput depositInput;
+  /** Container self-signature */
+  @SSZ private final BLSSignature signature;
 
-  public DepositData(Gwei amount, Time timestamp, DepositInput depositInput) {
+  public DepositData(
+      BLSPubkey pubKey, Hash32 withdrawalCredentials, Gwei amount, BLSSignature signature) {
+    this.pubKey = pubKey;
+    this.withdrawalCredentials = withdrawalCredentials;
     this.amount = amount;
-    this.timestamp = timestamp;
-    this.depositInput = depositInput;
+    this.signature = signature;
   }
 
   public Gwei getAmount() {
     return amount;
   }
 
-  public Time getTimestamp() {
-    return timestamp;
+  public BLSPubkey getPubKey() {
+    return pubKey;
   }
 
-  public DepositInput getDepositInput() {
-    return depositInput;
+  public Hash32 getWithdrawalCredentials() {
+    return withdrawalCredentials;
+  }
+
+  public BLSSignature getSignature() {
+    return signature;
   }
 
   @Override
@@ -49,16 +59,18 @@ public class DepositData {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     DepositData that = (DepositData) o;
-    return Objects.equal(depositInput, that.depositInput)
+    return Objects.equal(pubKey, that.pubKey)
+        && Objects.equal(withdrawalCredentials, that.withdrawalCredentials)
         && Objects.equal(amount, that.amount)
-        && Objects.equal(timestamp, that.timestamp);
+        && Objects.equal(signature, that.signature);
   }
 
   @Override
   public int hashCode() {
-    int result = amount.hashCode();
-    result = 31 * result + timestamp.hashCode();
-    result = 31 * result + depositInput.hashCode();
+    int result = pubKey.hashCode();
+    result = 31 * result + withdrawalCredentials.hashCode();
+    result = 31 * result + amount.hashCode();
+    result = 31 * result + signature.hashCode();
     return result;
   }
 }

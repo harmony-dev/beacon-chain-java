@@ -4,7 +4,6 @@ import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.TransitionType;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
-import tech.pegasys.artemis.ethereum.core.Hash32;
 
 /**
  * Class to hold additional state info which is not included to the
@@ -13,28 +12,18 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 @SSZSerializable(instanceGetter = "getDelegate")
 public class BeaconStateExImpl extends DelegateBeaconState implements BeaconStateEx {
 
-  private final Hash32 latestChainBlock;
   private final TransitionType lastTransition;
 
-  public BeaconStateExImpl(BeaconState canonicalState,
-      Hash32 latestChainBlock,
-      TransitionType lastTransition) {
+  public BeaconStateExImpl(BeaconState canonicalState, TransitionType lastTransition) {
     super(canonicalState);
-    this.latestChainBlock = latestChainBlock;
     this.lastTransition = lastTransition;
   }
 
   /**
    * @param canonicalState regular BeaconState
-   * @param latestChainBlock  latest block which was processed on this state chain
    */
-  public BeaconStateExImpl(BeaconState canonicalState, Hash32 latestChainBlock) {
-    this(canonicalState, latestChainBlock, TransitionType.UNKNOWN);
-  }
-
-  @Override
-  public Hash32 getHeadBlockHash() {
-    return latestChainBlock;
+  public BeaconStateExImpl(BeaconState canonicalState) {
+    this(canonicalState, TransitionType.UNKNOWN);
   }
 
   @Override
@@ -44,6 +33,21 @@ public class BeaconStateExImpl extends DelegateBeaconState implements BeaconStat
 
   @Override
   public String toString() {
-    return toString(null);
+    return toString(null, null);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (!super.equals(o)) {
+      return false;
+    }
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    BeaconStateExImpl that = (BeaconStateExImpl) o;
+    return lastTransition == that.lastTransition;
   }
 }

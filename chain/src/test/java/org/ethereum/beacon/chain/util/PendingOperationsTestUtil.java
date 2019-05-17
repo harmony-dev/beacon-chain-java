@@ -34,7 +34,7 @@ public class PendingOperationsTestUtil {
     when(pendingOperations.getAttestations()).thenReturn(attestations);
     when(pendingOperations.peekProposerSlashings(anyInt())).thenReturn(proposerSlashings);
     when(pendingOperations.peekAttesterSlashings(anyInt())).thenReturn(attesterSlashings);
-    when(pendingOperations.peekAggregatedAttestations(anyInt(), any(), any()))
+    when(pendingOperations.peekAggregateAttestations(anyInt()))
         .thenReturn(aggregateAttestations);
     when(pendingOperations.peekExits(anyInt())).thenReturn(voluntaryExits);
     return pendingOperations;

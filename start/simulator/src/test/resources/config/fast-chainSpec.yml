@@ -1,5 +1,5 @@
 initialValues:
-  GENESIS_SLOT: 1000000
+  GENESIS_SLOT: 0
 miscParameters:
   TARGET_COMMITTEE_SIZE: 1
 timeParameters:

@@ -10,10 +10,10 @@ public class GweiValuesData implements GweiValues {
 
   @JsonProperty("MIN_DEPOSIT_AMOUNT")
   private String MIN_DEPOSIT_AMOUNT;
-  @JsonProperty("MAX_DEPOSIT_AMOUNT")
-  private String MAX_DEPOSIT_AMOUNT;
-  @JsonProperty("FORK_CHOICE_BALANCE_INCREMENT")
-  private String FORK_CHOICE_BALANCE_INCREMENT;
+  @JsonProperty("MAX_EFFECTIVE_BALANCE")
+  private String MAX_EFFECTIVE_BALANCE;
+  @JsonProperty("EFFECTIVE_BALANCE_INCREMENT")
+  private String EFFECTIVE_BALANCE_INCREMENT;
   @JsonProperty("EJECTION_BALANCE")
   private String EJECTION_BALANCE;
 
@@ -25,14 +25,14 @@ public class GweiValuesData implements GweiValues {
 
   @Override
   @JsonIgnore
-  public Gwei getMaxDepositAmount() {
-    return Gwei.castFrom(UInt64.valueOf(getMAX_DEPOSIT_AMOUNT()));
+  public Gwei getMaxEffectiveBalance() {
+    return Gwei.castFrom(UInt64.valueOf(getMAX_EFFECTIVE_BALANCE()));
   }
 
   @Override
   @JsonIgnore
-  public Gwei getForkChoiceBalanceIncrement() {
-    return Gwei.castFrom(UInt64.valueOf(getFORK_CHOICE_BALANCE_INCREMENT()));
+  public Gwei getEffectiveBalanceIncrement() {
+    return Gwei.castFrom(UInt64.valueOf(getEFFECTIVE_BALANCE_INCREMENT()));
   }
 
   @Override
@@ -51,21 +51,21 @@ public class GweiValuesData implements GweiValues {
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-  public String getMAX_DEPOSIT_AMOUNT() {
-    return MAX_DEPOSIT_AMOUNT;
+  public String getMAX_EFFECTIVE_BALANCE() {
+    return MAX_EFFECTIVE_BALANCE;
   }
 
-  public void setMAX_DEPOSIT_AMOUNT(String MAX_DEPOSIT_AMOUNT) {
-    this.MAX_DEPOSIT_AMOUNT = MAX_DEPOSIT_AMOUNT;
+  public void setMAX_EFFECTIVE_BALANCE(String MAX_EFFECTIVE_BALANCE) {
+    this.MAX_EFFECTIVE_BALANCE = MAX_EFFECTIVE_BALANCE;
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-  public String getFORK_CHOICE_BALANCE_INCREMENT() {
-    return FORK_CHOICE_BALANCE_INCREMENT;
+  public String getEFFECTIVE_BALANCE_INCREMENT() {
+    return EFFECTIVE_BALANCE_INCREMENT;
   }
 
-  public void setFORK_CHOICE_BALANCE_INCREMENT(String FORK_CHOICE_BALANCE_INCREMENT) {
-    this.FORK_CHOICE_BALANCE_INCREMENT = FORK_CHOICE_BALANCE_INCREMENT;
+  public void setEFFECTIVE_BALANCE_INCREMENT(String EFFECTIVE_BALANCE_INCREMENT) {
+    this.EFFECTIVE_BALANCE_INCREMENT = EFFECTIVE_BALANCE_INCREMENT;
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)

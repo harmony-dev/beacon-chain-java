@@ -24,7 +24,7 @@ public class PerEpochTransitionTest {
   public void test1() {
     Random rnd = new Random();
     Time genesisTime = Time.castFrom(UInt64.random(rnd));
-    Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), Hash32.random(rnd));
+    Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), UInt64.ZERO, Hash32.random(rnd));
     SpecConstants specConstants =
         new SpecConstants() {
           @Override
@@ -33,7 +33,7 @@ public class PerEpochTransitionTest {
           }
         };
 
-    BeaconChainSpec spec = BeaconChainSpec.createWithSSZHasher(specConstants);
+    BeaconChainSpec spec = BeaconChainSpec.createWithDefaultHasher(specConstants);
 
     List<Deposit> deposits = TestUtils.getAnyDeposits(rnd, spec, 8).getValue0();
 
@@ -54,9 +54,9 @@ public class PerEpochTransitionTest {
     // check validators penalized for inactivity
     for (int i = 0; i < deposits.size(); i++) {
       Gwei balanceBefore =
-          states[0].getValidatorBalances().get(ValidatorIndex.of(i));
+          states[0].getBalances().get(ValidatorIndex.of(i));
       Gwei balanceAfter =
-          epochState.getValidatorBalances().get(ValidatorIndex.of(i));
+          epochState.getBalances().get(ValidatorIndex.of(i));
       Assert.assertTrue(balanceAfter.less(balanceBefore));
     }
   }

@@ -13,15 +13,15 @@
 
 package tech.pegasys.artemis.util.bytes;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkElementIndex;
-
-import java.security.MessageDigest;
-
 import com.google.common.annotations.VisibleForTesting;
 import io.netty.buffer.ByteBuf;
 import io.vertx.core.buffer.Buffer;
+
+import java.security.MessageDigest;
 import java.util.List;
+
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkElementIndex;
 
 /**
  * A value made of bytes.
@@ -80,82 +80,28 @@ public interface BytesValue extends Comparable<BytesValue> {
   }
 
   /**
-   * Wraps two other value into a concatenated view.
-   *
-   * <p>
-   * Note that the values are not copied, only wrapped, and thus any future update to {@code v1} or
-   * {@code v2} will be reflected in the returned value. If copying the inputs is desired instead,
-   * please use {@link BytesValues#concatenate(BytesValue...)}.
+   * Wraps two other value into the new concatenated value.
    *
    * @param v1 The first value to wrap.
    * @param v2 The second value to wrap.
-   * @return A value representing a view over the concatenation of {@code v1} and {@code v2}.
+   * @return v1 concatenated with v2.
    */
   static BytesValue wrap(BytesValue v1, BytesValue v2) {
-    return new AbstractBytesValue() {
-      @Override
-      public int size() {
-        return v1.size() + v2.size();
-      }
-
-      @Override
-      public byte get(int i) {
-        checkElementIndex(i, size());
-        return i < v1.size() ? v1.get(i) : v2.get(i - v1.size());
-      }
-
-      @Override
-      public BytesValue slice(int i, int length) {
-        if (i == 0 && length == size())
-          return this;
-        if (length == 0)
-          return BytesValue.EMPTY;
-
-        checkElementIndex(i, size());
-        checkArgument(i + length <= size(),
-            "Provided length %s is too big: the value has size %s and has only %s bytes from %s",
-            length, size(), size() - i, i);
-
-        if (i + length < v1.size())
-          return v1.slice(i, length);
-
-        if (i >= v1.size())
-          return v2.slice(i - v1.size(), length);
-
-        MutableBytesValue res = MutableBytesValue.create(length);
-        int lengthInV1 = v1.size() - i;
-        v1.slice(i, lengthInV1).copyTo(res, 0);
-        v2.slice(0, length - lengthInV1).copyTo(res, lengthInV1);
-        return res;
-      }
-
-      @Override
-      public void update(MessageDigest digest) {
-        v1.update(digest);
-        v2.update(digest);
-      }
-    };
+    return v1.concat(v2);
   }
 
   /**
    * Concatenates two values
    *
-   * The resulting value would be either backed by supplied values with
-   * {@link #wrap(BytesValue, BytesValue)} or create a copy of backing bytes
-   * depending on the target value size
+   * The resulting value would be a copy of backing bytes
    */
   static BytesValue concat(BytesValue v1, BytesValue v2) {
-    if (v1.size() + v2.size() < 512) {
-      // it should be generally cheaper for further usage
-      byte[] bb = new byte[v1.size() + v2.size()];
-      byte[] arr1 = v1.getArrayUnsafe();
-      byte[] arr2 = v2.getArrayUnsafe();
-      System.arraycopy(arr1, 0, bb, 0, arr1.length);
-      System.arraycopy(arr2, 0, bb, arr1.length, arr2.length);
-      return wrap(bb);
-    } else {
-      return wrap(v1, v2);
-    }
+    byte[] bb = new byte[v1.size() + v2.size()];
+    byte[] arr1 = v1.getArrayUnsafe();
+    byte[] arr2 = v2.getArrayUnsafe();
+    System.arraycopy(arr1, 0, bb, 0, arr1.length);
+    System.arraycopy(arr2, 0, bb, arr1.length, arr2.length);
+    return wrap(bb);
   }
 
   static BytesValue concat(List<? extends BytesValue> vals) {

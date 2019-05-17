@@ -1,5 +1,5 @@
 ext {
-  cavaVersion = '1.0.0-876579-snapshot'
+  cavaVersion = '1.0.0-955810-snapshot'
   jacksonVersion = '2.9.8'
   log4j2Version = '2.11.2'
 }

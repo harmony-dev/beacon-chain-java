@@ -14,7 +14,7 @@ public interface MaxOperationsPerBlock {
   int MAX_ATTESTATIONS = 1 << 7; // 128
   int MAX_DEPOSITS = 1 << 4; // 16
   int MAX_VOLUNTARY_EXITS = 1 << 4; // 16
-  int MAX_TRANSFERS = 1 << 4; // 16
+  int MAX_TRANSFERS = 0;
 
   /* Values defined in the spec. */
 

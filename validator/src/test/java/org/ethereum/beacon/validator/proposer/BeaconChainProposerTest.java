@@ -23,7 +23,6 @@ import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
-import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.spec.SignatureDomains;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.BLSSignature;
@@ -42,7 +41,6 @@ import org.ethereum.beacon.validator.util.MessageSignerTestUtil;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
-import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public class BeaconChainProposerTest {
@@ -66,7 +64,7 @@ public class BeaconChainProposerTest {
     BeaconBlock block = proposer.propose(initialObservedState, signer);
 
     BeaconStateEx stateAfterBlock =
-        perBlockTransition.apply(new BeaconStateExImpl(initialState, Hash32.ZERO), block);
+        perBlockTransition.apply(new BeaconStateExImpl(initialState), block);
 
     Assert.assertEquals(
         spec.hash_tree_root(stateAfterBlock), block.getStateRoot());
@@ -107,14 +105,7 @@ public class BeaconChainProposerTest {
     BeaconBlock block = proposer.propose(initialObservedState, signer);
 
     Mockito.verify(pendingOperations)
-        .peekAggregatedAttestations(
-            spec.getConstants().getMaxAttestations(),
-            initialState
-                .getSlot()
-                .minus(spec.getConstants().getSlotsPerEpoch()),
-            initialState
-                .getSlot()
-                .minus(spec.getConstants().getMinAttestationInclusionDelay()));
+        .peekAggregateAttestations(spec.getConstants().getMaxAttestations());
 
     Mockito.verify(pendingOperations)
         .peekProposerSlashings(spec.getConstants().getMaxProposerSlashings());
@@ -123,7 +114,7 @@ public class BeaconChainProposerTest {
     Mockito.verify(pendingOperations).peekExits(spec.getConstants().getMaxVoluntaryExits());
 
     BeaconStateEx stateAfterBlock =
-        perBlockTransition.apply(new BeaconStateExImpl(initialState, Hash32.ZERO), block);
+        perBlockTransition.apply(new BeaconStateExImpl(initialState), block);
 
     Assert.assertEquals(
         spec.hash_tree_root(stateAfterBlock), block.getStateRoot());
@@ -173,7 +164,7 @@ public class BeaconChainProposerTest {
             Mockito.eq(initialState.getLatestEth1Data()));
 
     BeaconStateEx stateAfterBlock =
-        perBlockTransition.apply(new BeaconStateExImpl(initialState, Hash32.ZERO), block);
+        perBlockTransition.apply(new BeaconStateExImpl(initialState), block);
 
     Assert.assertEquals(
         spec.hash_tree_root(stateAfterBlock), block.getStateRoot());
@@ -193,11 +184,8 @@ public class BeaconChainProposerTest {
 
     BLSSignature expectedSignature =
         signer.sign(
-            spec.signed_root(block),
-            spec.get_domain(
-                initialState.getFork(),
-                spec.get_current_epoch(initialState),
-                SignatureDomains.BEACON_BLOCK));
+            spec.signing_root(block),
+            spec.get_domain(initialState, SignatureDomains.BEACON_PROPOSER));
 
     return expectedSignature.equals(block.getSignature());
   }

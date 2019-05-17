@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
@@ -24,6 +23,7 @@ import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.ShardCommittee;
 import org.ethereum.beacon.core.types.BLSPubkey;
+import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
@@ -32,7 +32,6 @@ import org.ethereum.beacon.schedulers.RunnableEx;
 import org.ethereum.beacon.schedulers.Scheduler;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.stream.SimpleProcessor;
-import org.ethereum.beacon.util.stats.TimeCollector;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import org.javatuples.Pair;
 import org.reactivestreams.Publisher;
@@ -63,7 +62,7 @@ public class MultiValidatorService implements ValidatorService {
   /** Credentials of already initialized validators. */
   private Map<ValidatorIndex, BLS381Credentials> initialized = new ConcurrentHashMap<>();
   /** Latest slot that has been processed. */
-  private SlotNumber lastProcessedSlot = SlotNumber.ZERO;
+  private SlotNumber lastProcessedSlot = SlotNumber.castFrom(SlotNumber.MAX_VALUE);
   /** The most recent beacon state came from the outside. */
   private ObservableBeaconState recentState;
 
@@ -72,8 +71,6 @@ public class MultiValidatorService implements ValidatorService {
 
   private final LatestExecutor<BeaconState> initExecutor;
 
-  private final TimeCollector proposeTimeCollector;
-
   public MultiValidatorService(
       List<BLS381Credentials> blsCredentials,
       BeaconChainProposer proposer,
@@ -81,17 +78,6 @@ public class MultiValidatorService implements ValidatorService {
       BeaconChainSpec spec,
       Publisher<ObservableBeaconState> stateStream,
       Schedulers schedulers) {
-    this(blsCredentials, proposer, attester, spec, stateStream, schedulers, new TimeCollector());
-  }
-
-  public MultiValidatorService(
-      List<BLS381Credentials> blsCredentials,
-      BeaconChainProposer proposer,
-      BeaconChainAttester attester,
-      BeaconChainSpec spec,
-      Publisher<ObservableBeaconState> stateStream,
-      Schedulers schedulers,
-      TimeCollector proposeTimeCollector) {
     this.uninitialized =
         blsCredentials.stream()
             .collect(Collectors.toMap(BLS381Credentials::getPubkey, Function.identity()));
@@ -107,8 +93,6 @@ public class MultiValidatorService implements ValidatorService {
 
     executor = this.schedulers.newSingleThreadDaemon("validator-service");
     initExecutor = new LatestExecutor<>(schedulers.blocking(), this::initFromLatestBeaconState);
-
-    this.proposeTimeCollector = proposeTimeCollector;
   }
 
   @Override
@@ -151,7 +135,7 @@ public class MultiValidatorService implements ValidatorService {
   /**
    * Keeps the most recent state in memory.
    *
-   * <p>Recent state is required by delayed tasks like {@link #attest(ValidatorIndex)}.
+   * <p>Recent state is required by delayed tasks like {@link #attest(ValidatorIndex, ShardNumber)}.
    *
    * @param state state came from the outside.
    */
@@ -205,8 +189,8 @@ public class MultiValidatorService implements ValidatorService {
    * <ul>
    *   <li>{@link #propose(ValidatorIndex, ObservableBeaconState)} routine is triggered instantly
    *       with received {@code observableState} object.
-   *   <li>{@link #attest(ValidatorIndex)} routine is a delayed task, it's called with {@link
-   *       #recentState} object.
+   *   <li>{@link #attest(ValidatorIndex, ShardNumber)} routine is a delayed task, it's called with
+   *       {@link #recentState} object.
    * </ul>
    *
    * @param observableState a state that validator tasks are executed with.
@@ -216,7 +200,7 @@ public class MultiValidatorService implements ValidatorService {
     BeaconStateEx state = observableState.getLatestSlotState();
 
     // trigger proposer
-    ValidatorIndex proposerIndex = spec.get_beacon_proposer_index(state, state.getSlot());
+    ValidatorIndex proposerIndex = spec.get_beacon_proposer_index(state);
     if (initialized.containsKey(proposerIndex) && state.getTransition() == TransitionType.SLOT
         && !isGenesis(state)) {
       runAsync(() -> propose(proposerIndex, observableState));
@@ -224,12 +208,13 @@ public class MultiValidatorService implements ValidatorService {
 
     // trigger attester at a halfway through the slot
     Time startAt = spec.get_slot_middle_time(state, state.getSlot());
-    List<ShardCommittee> committees =
+    List<ShardCommittee> slotCommittees =
         spec.get_crosslink_committees_at_slot(state, state.getSlot());
-    for (ShardCommittee sc : committees) {
-      sc.getCommittee().stream()
+    for (ShardCommittee shardCommittee : slotCommittees) {
+      ShardNumber shard = shardCommittee.getShard();
+      shardCommittee.getCommittee().stream()
           .filter(initialized::containsKey)
-          .forEach(index -> schedule(startAt, () -> this.attest(index)));
+          .forEach(index -> schedule(startAt, () -> this.attest(index, shard)));
     }
   }
 
@@ -272,17 +257,11 @@ public class MultiValidatorService implements ValidatorService {
       logger.info(
           "validator {}: proposed a {} in {}s",
           index,
-          newBlock.toString(
+          newBlock.toStringFull(
               spec.getConstants(),
               observableState.getLatestSlotState().getGenesisTime(),
-              spec::signed_root),
+              spec::signing_root),
           String.format("%.3f", (double) total / 1_000_000_000d));
-
-      if (spec.is_epoch_end(newBlock.getSlot())) {
-        proposeTimeCollector.reset();
-      } else {
-        proposeTimeCollector.tick(total);
-      }
     }
   }
 
@@ -294,17 +273,16 @@ public class MultiValidatorService implements ValidatorService {
    * #recentState}.
    *
    * @param index index of attester.
+   * @param shard number of crosslinking shard.
    */
-  private void attest(ValidatorIndex index) {
+  private void attest(ValidatorIndex index, ShardNumber shard) {
     final ObservableBeaconState observableState = this.recentState;
     final BeaconState state = observableState.getLatestSlotState();
 
-    Optional<ShardCommittee> validatorCommittee = getValidatorCommittee(index, state);
     BLS381Credentials credentials = initialized.get(index);
-    if (validatorCommittee.isPresent() && credentials != null) {
+    if (credentials != null) {
       Attestation attestation =
-          attester.attest(
-              index, validatorCommittee.get().getShard(), observableState, credentials.getSigner());
+          attester.attest(index, shard, observableState, credentials.getSigner());
       propagateAttestation(attestation);
 
       logger.info(
@@ -315,7 +293,7 @@ public class MultiValidatorService implements ValidatorService {
               .toString(
                   spec.getConstants(),
                   observableState.getLatestSlotState().getGenesisTime(),
-                  spec::signed_root),
+                  spec::signing_root),
           state.getSlot());
     }
   }
@@ -331,13 +309,6 @@ public class MultiValidatorService implements ValidatorService {
     this.lastProcessedSlot = state.getSlot();
   }
 
-  /** Returns committee where the validator participates if any */
-  private Optional<ShardCommittee> getValidatorCommittee(ValidatorIndex index, BeaconState state) {
-    List<ShardCommittee> committees =
-        spec.get_crosslink_committees_at_slot(state, state.getSlot());
-    return committees.stream().filter(sc -> sc.getCommittee().contains(index)).findFirst();
-  }
-
   /**
    * Checks whether slot of the state was already processed.
    *
@@ -349,7 +320,7 @@ public class MultiValidatorService implements ValidatorService {
    * @return {@code true} if slot has been processed, {@link false} otherwise.
    */
   private boolean isSlotProcessed(BeaconState state) {
-    return state.getSlot().lessEqual(lastProcessedSlot);
+    return state.getSlot().less(lastProcessedSlot.increment());
   }
 
   /**

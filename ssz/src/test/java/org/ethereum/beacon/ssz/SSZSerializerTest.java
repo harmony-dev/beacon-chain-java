@@ -1,8 +1,8 @@
 package org.ethereum.beacon.ssz;
 
 import java.util.Arrays;
-import net.consensys.cava.bytes.Bytes;
-import net.consensys.cava.ssz.SSZ;
+
+import com.google.common.base.Objects;
 import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.ssz.access.container.SSZAnnotationSchemeBuilder;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
@@ -32,7 +32,7 @@ import static org.junit.Assert.assertEquals;
 /** Tests of {@link SSZSerializer} */
 public class SSZSerializerTest {
   private static byte[] DEFAULT_HASH =
-      Hashes.keccak256(BytesValue.fromHexString("aa")).getArrayUnsafe();
+      Hashes.sha256(BytesValue.fromHexString("aa")).getArrayUnsafe();
   private static Sign.Signature DEFAULT_SIG = new Sign.Signature();
 
   static {
@@ -77,10 +77,13 @@ public class SSZSerializerTest {
 
   @Test
   public void simpleTest() {
+    List<byte[]> obliqueParentHashes = new ArrayList<>();
+    obliqueParentHashes.add(new byte[] {0x12, 0x34, 0x56});
+    obliqueParentHashes.add(new byte[] {0x55, 0x66, 0x77});
     AttestationRecord expected =
         new AttestationRecord(
             123,
-            Collections.emptyList(),
+            obliqueParentHashes,
             DEFAULT_HASH,
             new Bitfield(BytesValue.fromHexString("abcdef45").getArrayUnsafe()),
             DEFAULT_HASH,
@@ -158,8 +161,49 @@ public class SSZSerializerTest {
     sszSerializer.encode(expected4);
   }
 
+  @SSZSerializable
+  public static class ListsObject {
+    private final List<Integer> list1;
+    private final List<String> list2;
+
+    public ListsObject(List<Integer> list1, List<String> list2) {
+      this.list1 = list1;
+      this.list2 = list2;
+    }
+
+    public List<Integer> getList1() {
+      return list1;
+    }
+
+    public List<String> getList2() {
+      return list2;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      ListsObject that = (ListsObject) o;
+      return Objects.equal(list1, that.list1) &&
+          Objects.equal(list2, that.list2);
+    }
+  }
+
+  @Test
+  public void shouldHandleLists() {
+    List<Integer> list1 = new ArrayList<>();
+    list1.add(1);
+    list1.add(2);
+    List<String> list2 = new ArrayList<>();
+    list2.add("aa");
+    ListsObject expected = new ListsObject(list1, list2);
+    byte[] encoded = sszSerializer.encode(expected);
+    ListsObject actual = sszSerializer.decode(encoded, ListsObject.class);
+
+    assertEquals(expected, actual);
+  }
+
   /** Checks that we could handle list placed inside another list */
-  @Ignore("Implement me!")
   @Test
   public void shouldHandleListList() {
     List<String> list1 = new ArrayList<>();

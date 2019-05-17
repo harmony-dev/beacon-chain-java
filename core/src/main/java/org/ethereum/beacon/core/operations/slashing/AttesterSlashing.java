@@ -8,22 +8,22 @@ import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 
 @SSZSerializable
 public class AttesterSlashing {
-  @SSZ private final SlashableAttestation slashableAttestation1;
-  @SSZ private final SlashableAttestation slashableAttestation2;
+  @SSZ private final IndexedAttestation attestation1;
+  @SSZ private final IndexedAttestation attestation2;
 
   public AttesterSlashing(
-      SlashableAttestation slashableAttestation1,
-      SlashableAttestation slashableAttestation2) {
-    this.slashableAttestation1 = slashableAttestation1;
-    this.slashableAttestation2 = slashableAttestation2;
+      IndexedAttestation attestation1,
+      IndexedAttestation attestation2) {
+    this.attestation1 = attestation1;
+    this.attestation2 = attestation2;
   }
 
-  public SlashableAttestation getSlashableAttestation1() {
-    return slashableAttestation1;
+  public IndexedAttestation getAttestation1() {
+    return attestation1;
   }
 
-  public SlashableAttestation getSlashableAttestation2() {
-    return slashableAttestation2;
+  public IndexedAttestation getAttestation2() {
+    return attestation2;
   }
 
   @Override
@@ -31,14 +31,14 @@ public class AttesterSlashing {
     if (this == o) {return true;}
     if (o == null || getClass() != o.getClass()) {return false;}
     AttesterSlashing that = (AttesterSlashing) o;
-    if (!slashableAttestation1.equals(that.slashableAttestation1)) {return false;}
-    return slashableAttestation2.equals(that.slashableAttestation2);
+    if (!attestation1.equals(that.attestation1)) {return false;}
+    return attestation2.equals(that.attestation2);
   }
 
   @Override
   public int hashCode() {
-    int result = slashableAttestation1.hashCode();
-    result = 31 * result + slashableAttestation2.hashCode();
+    int result = attestation1.hashCode();
+    result = 31 * result + attestation2.hashCode();
     return result;
   }
 
@@ -49,8 +49,8 @@ public class AttesterSlashing {
 
   public String toString(@Nullable SpecConstants spec,@Nullable Time beaconStart) {
     return "AttesterSlashing["
-        + "att1=" + slashableAttestation1.toString(spec, beaconStart)
-        + "att2=" + slashableAttestation2.toString(spec, beaconStart)
+        + "att1=" + attestation1.toString(spec, beaconStart)
+        + "att2=" + attestation2.toString(spec, beaconStart)
         + "]";
   }
 }

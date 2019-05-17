@@ -1,23 +1,17 @@
 package org.ethereum.beacon.consensus.verifier.operation;
 
-import static org.ethereum.beacon.consensus.verifier.VerificationResult.PASSED;
-import static org.ethereum.beacon.consensus.verifier.VerificationResult.failedResult;
-
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.verifier.OperationVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
-import org.ethereum.beacon.core.operations.slashing.SlashableAttestation;
-import org.ethereum.beacon.core.types.ValidatorIndex;
-import tech.pegasys.artemis.util.collections.ReadList;
 
 /**
  * Verifies {@link AttesterSlashing} beacon chain operation.
  *
  * @see AttesterSlashing
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md#attester-slashings-1">
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.6.1/specs/core/0_beacon-chain.md#attester-slashings">
  *     Attester slashings</a> in the spec.
  */
 public class AttesterSlashingVerifier implements OperationVerifier<AttesterSlashing> {
@@ -30,40 +24,11 @@ public class AttesterSlashingVerifier implements OperationVerifier<AttesterSlash
 
   @Override
   public VerificationResult verify(AttesterSlashing attesterSlashing, BeaconState state) {
-    SlashableAttestation slashableAttestation1 = attesterSlashing.getSlashableAttestation1();
-    SlashableAttestation slashableAttestation2 = attesterSlashing.getSlashableAttestation2();
-
-    spec.checkIndexRange(state, slashableAttestation1.getValidatorIndices());
-    spec.checkIndexRange(state, slashableAttestation2.getValidatorIndices());
-    spec.checkShardRange(slashableAttestation1.getData().getShard());
-    spec.checkShardRange(slashableAttestation2.getData().getShard());
-
-    if (slashableAttestation1.getData().equals(slashableAttestation2.getData())) {
-      return failedResult("slashable_vote_data_1 != slashable_vote_data_2");
+    try {
+      spec.verify_attester_slashing(state, attesterSlashing);
+      return VerificationResult.PASSED;
+    } catch (Exception e) {
+      return VerificationResult.failedResult(e.getMessage());
     }
-
-    if (!(spec.is_double_vote(slashableAttestation1.getData(), slashableAttestation2.getData())
-        || spec.is_surround_vote(
-          slashableAttestation1.getData(), slashableAttestation2.getData()))) {
-      return failedResult("no slashing conditions found");
-    }
-
-    if (!spec.verify_slashable_attestation(state, slashableAttestation1)) {
-      return failedResult("slashableAttestation1 is incorrect");
-    }
-
-    if (!spec.verify_slashable_attestation(state, slashableAttestation2)) {
-      return failedResult("slashableAttestation2 is incorrect");
-    }
-
-    ReadList<Integer, ValidatorIndex> intersection =
-        slashableAttestation1.getValidatorIndices().intersection(
-            slashableAttestation2.getValidatorIndices());
-    if (intersection.stream()
-        .noneMatch(i -> state.getValidatorRegistry().get(i).getSlashed())) {
-      return failedResult("spec assertion failed");
-    }
-
-    return PASSED;
   }
 }

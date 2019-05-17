@@ -21,14 +21,18 @@ public class TimeParametersData implements TimeParameters {
   private String MIN_SEED_LOOKAHEAD;
   @JsonProperty("ACTIVATION_EXIT_DELAY")
   private String ACTIVATION_EXIT_DELAY;
-  @JsonProperty("EPOCHS_PER_ETH1_VOTING_PERIOD")
-  private String EPOCHS_PER_ETH1_VOTING_PERIOD;
+  @JsonProperty("SLOTS_PER_ETH1_VOTING_PERIOD")
+  private String SLOTS_PER_ETH1_VOTING_PERIOD;
   @JsonProperty("SLOTS_PER_HISTORICAL_ROOT")
   private String SLOTS_PER_HISTORICAL_ROOT;
   @JsonProperty("MIN_VALIDATOR_WITHDRAWABILITY_DELAY")
   private String MIN_VALIDATOR_WITHDRAWABILITY_DELAY;
   @JsonProperty("PERSISTENT_COMMITTEE_PERIOD")
   private String PERSISTENT_COMMITTEE_PERIOD;
+  @JsonProperty("MAX_CROSSLINK_EPOCHS")
+  private String MAX_CROSSLINK_EPOCHS;
+  @JsonProperty("MIN_EPOCHS_TO_INACTIVITY_PENALTY")
+  private String MIN_EPOCHS_TO_INACTIVITY_PENALTY;
 
   @Override
   @JsonIgnore
@@ -62,8 +66,8 @@ public class TimeParametersData implements TimeParameters {
 
   @Override
   @JsonIgnore
-  public EpochNumber getEpochsPerEth1VotingPeriod() {
-    return new EpochNumber(UInt64.valueOf(getEPOCHS_PER_ETH1_VOTING_PERIOD()));
+  public EpochNumber getSlotsPerEth1VotingPeriod() {
+    return new EpochNumber(UInt64.valueOf(getSLOTS_PER_ETH1_VOTING_PERIOD()));
   }
 
   @Override
@@ -82,6 +86,18 @@ public class TimeParametersData implements TimeParameters {
   @JsonIgnore
   public EpochNumber getPersistentCommitteePeriod() {
     return new EpochNumber(UInt64.valueOf(getPERSISTENT_COMMITTEE_PERIOD()));
+  }
+
+  @Override
+  @JsonIgnore
+  public EpochNumber getMaxCrosslinkEpochs() {
+    return new EpochNumber(UInt64.valueOf(getMAX_CROSSLINK_EPOCHS()));
+  }
+
+  @Override
+  @JsonIgnore
+  public EpochNumber getMinEpochsToInactivityPenalty() {
+    return new EpochNumber(UInt64.valueOf(getMIN_EPOCHS_TO_INACTIVITY_PENALTY()));
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
@@ -130,12 +146,12 @@ public class TimeParametersData implements TimeParameters {
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-  public String getEPOCHS_PER_ETH1_VOTING_PERIOD() {
-    return EPOCHS_PER_ETH1_VOTING_PERIOD;
+  public String getSLOTS_PER_ETH1_VOTING_PERIOD() {
+    return SLOTS_PER_ETH1_VOTING_PERIOD;
   }
 
-  public void setEPOCHS_PER_ETH1_VOTING_PERIOD(String EPOCHS_PER_ETH1_VOTING_PERIOD) {
-    this.EPOCHS_PER_ETH1_VOTING_PERIOD = EPOCHS_PER_ETH1_VOTING_PERIOD;
+  public void setSLOTS_PER_ETH1_VOTING_PERIOD(String SLOTS_PER_ETH1_VOTING_PERIOD) {
+    this.SLOTS_PER_ETH1_VOTING_PERIOD = SLOTS_PER_ETH1_VOTING_PERIOD;
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
@@ -156,11 +172,30 @@ public class TimeParametersData implements TimeParameters {
     this.MIN_VALIDATOR_WITHDRAWABILITY_DELAY = MIN_VALIDATOR_WITHDRAWABILITY_DELAY;
   }
 
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
   public String getPERSISTENT_COMMITTEE_PERIOD() {
     return PERSISTENT_COMMITTEE_PERIOD;
   }
 
   public void setPERSISTENT_COMMITTEE_PERIOD(String PERSISTENT_COMMITTEE_PERIOD) {
     this.PERSISTENT_COMMITTEE_PERIOD = PERSISTENT_COMMITTEE_PERIOD;
+  }
+
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+  public String getMAX_CROSSLINK_EPOCHS() {
+    return MAX_CROSSLINK_EPOCHS;
+  }
+
+  public void setMAX_CROSSLINK_EPOCHS(String MAX_CROSSLINK_EPOCHS) {
+    this.MAX_CROSSLINK_EPOCHS = MAX_CROSSLINK_EPOCHS;
+  }
+
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+  public String getMIN_EPOCHS_TO_INACTIVITY_PENALTY() {
+    return MIN_EPOCHS_TO_INACTIVITY_PENALTY;
+  }
+
+  public void setMIN_EPOCHS_TO_INACTIVITY_PENALTY(String MIN_EPOCHS_TO_INACTIVITY_PENALTY) {
+    this.MIN_EPOCHS_TO_INACTIVITY_PENALTY = MIN_EPOCHS_TO_INACTIVITY_PENALTY;
   }
 }

@@ -25,4 +25,11 @@ public class SSZVisitorHost {
       throw new IllegalArgumentException("Unknown type: " + type);
     }
   }
+
+  public  <ResultType, ParamType> ResultType handleSubList(
+      SSZListType type, ParamType value, int startIdx, int len, SSZVisitor<ResultType, ParamType> visitor) {
+
+    return visitor.visitSubList(type, value, startIdx, len, (idx, param) ->
+        handleAny(type.getElementType(), param, visitor));
+  }
 }

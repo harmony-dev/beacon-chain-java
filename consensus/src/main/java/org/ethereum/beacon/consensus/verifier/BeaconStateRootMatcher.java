@@ -19,9 +19,10 @@ public class BeaconStateRootMatcher implements BeaconStateVerifier {
 
   @Override
   public VerificationResult verify(BeaconState state, BeaconBlock block) {
-    if (block.getStateRoot().equals(spec.hash_tree_root(state))) {
+    try {
+      spec.verify_block_state_root(state, block);
       return VerificationResult.PASSED;
-    } else {
+    } catch (Exception e) {
       return VerificationResult.failedResult(
           "State root doesn't match, expected %s but got %s",
           block.getStateRoot(), spec.hash_tree_root(state));

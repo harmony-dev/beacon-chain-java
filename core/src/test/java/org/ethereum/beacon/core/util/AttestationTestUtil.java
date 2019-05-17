@@ -12,6 +12,7 @@ import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Bitfield;
 import org.ethereum.beacon.core.types.EpochNumber;
+import org.ethereum.beacon.core.types.ShardNumber;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
@@ -35,13 +36,13 @@ public abstract class AttestationTestUtil {
 
   public static AttestationData createRandomAttestationData(Random random) {
     return new AttestationData(
-        SpecConstants.GENESIS_SLOT,
         Hash32.random(random),
         BeaconChainSpec.DEFAULT_CONSTANTS.getGenesisEpoch(),
         Hash32.random(random),
+        BeaconChainSpec.DEFAULT_CONSTANTS.getGenesisEpoch().increment(),
         Hash32.random(random),
-        SpecConstants.BEACON_CHAIN_SHARD_NUMBER,
-        new Crosslink(EpochNumber.ZERO, Hash32.random(random)),
+        ShardNumber.ZERO,
+        Hash32.random(random),
         Hash32.random(random));
   }
 }

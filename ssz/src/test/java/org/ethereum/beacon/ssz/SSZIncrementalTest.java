@@ -1,6 +1,7 @@
 package org.ethereum.beacon.ssz;
 
 import java.util.Map;
+import java.util.Random;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.ethereum.beacon.crypto.Hashes;
@@ -13,11 +14,12 @@ import org.ethereum.beacon.ssz.incremental.ObservableCompositeHelper;
 import org.ethereum.beacon.ssz.incremental.ObservableCompositeHelper.ObsValue;
 import org.ethereum.beacon.ssz.incremental.ObservableListImpl;
 import org.ethereum.beacon.ssz.incremental.UpdateListener;
+import org.ethereum.beacon.ssz.type.SSZListType;
 import org.ethereum.beacon.ssz.type.SSZType;
 import org.ethereum.beacon.ssz.type.TypeResolver;
+import org.ethereum.beacon.ssz.visitor.MerkleTrie;
 import org.ethereum.beacon.ssz.visitor.SSZIncrementalHasher;
 import org.ethereum.beacon.ssz.visitor.SSZSimpleHasher;
-import org.ethereum.beacon.ssz.visitor.MerkleTrie;
 import org.ethereum.beacon.ssz.visitor.SSZVisitorHost;
 import org.junit.Assert;
 import org.junit.Test;
@@ -25,8 +27,20 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.collections.WriteList;
+import tech.pegasys.artemis.util.uint.UInt64;
 
 public class SSZIncrementalTest {
+
+  private static class CountingHash implements Function<BytesValue, Hash32> {
+    int counter = 0;
+
+    @Override
+    public Hash32 apply(BytesValue bytesValue) {
+      counter++;
+      return Hashes.sha256(bytesValue);
+    }
+  }
+
 
   @SSZSerializable
   public static class I1 implements ObservableComposite {
@@ -85,15 +99,6 @@ public class SSZIncrementalTest {
 
   @Test
   public void testHashIncremental1() throws Exception {
-    class CountingHash implements Function<BytesValue, Hash32> {
-      int counter = 0;
-
-      @Override
-      public Hash32 apply(BytesValue bytesValue) {
-        counter++;
-        return Hashes.keccak256(bytesValue);
-      }
-    }
     SSZBuilder sszBuilder = new SSZBuilder();
     TypeResolver typeResolver = sszBuilder.getTypeResolver();
 
@@ -201,15 +206,6 @@ public class SSZIncrementalTest {
 
   @Test
   public void testReadList() {
-    class CountingHash implements Function<BytesValue, Hash32> {
-      int counter = 0;
-
-      @Override
-      public Hash32 apply(BytesValue bytesValue) {
-        counter++;
-        return Hashes.keccak256(bytesValue);
-      }
-    }
     SSZBuilder sszBuilder = new SSZBuilder()
         .addDefaultListAccessors()
         .addListAccessors(new ReadListAccessor());
@@ -265,15 +261,6 @@ public class SSZIncrementalTest {
 
   @Test
   public void testReadListBranching() {
-    class CountingHash implements Function<BytesValue, Hash32> {
-      int counter = 0;
-
-      @Override
-      public Hash32 apply(BytesValue bytesValue) {
-        counter++;
-        return Hashes.keccak256(bytesValue);
-      }
-    }
     CountingHash countingHashSimp = new CountingHash();
     CountingHash countingHashInc = new CountingHash();
 
@@ -358,19 +345,245 @@ public class SSZIncrementalTest {
   }
 
   @Test
-  public void testListRemove() {
-    class CountingHash implements Function<BytesValue, Hash32> {
-      int counter = 0;
+  public void testPackedList1() {
+    SSZBuilder sszBuilder = new SSZBuilder();
+    TypeResolver typeResolver = sszBuilder.getTypeResolver();
 
-      @Override
-      public Hash32 apply(BytesValue bytesValue) {
-        counter++;
-        return Hashes.keccak256(bytesValue);
+    SSZVisitorHost visitorHost = new SSZVisitorHost();
+    SSZSerializer serializer = new SSZSerializer(visitorHost, typeResolver);
+    CountingHash countingHashSimp = new CountingHash();
+    CountingHash countingHashInc = new CountingHash();
+    SSZIncrementalHasher incrementalHasher = new SSZIncrementalHasher(serializer, countingHashInc,
+        32);
+    SSZSimpleHasher simpleHasher = new SSZSimpleHasher(serializer, countingHashSimp, 32);
+
+    WriteList<Integer, UInt64> list1 = new ObservableListImpl<>(WriteList.create(Integer::valueOf));
+    for (int i = 0; i < 17; i++) {
+      list1.add(UInt64.valueOf(0xF00000000L + i));
+      SSZType sszListType = typeResolver.resolveSSZType(SSZField.resolveFromValue(list1));
+
+      MerkleTrie mt2 = visitorHost.handleAny(sszListType, list1, simpleHasher);
+      MerkleTrie mt3 = visitorHost.handleAny(sszListType, list1, incrementalHasher);
+      Assert.assertEquals(mt2.getFinalRoot(), mt3.getFinalRoot());
+    }
+
+    for (int i = 0; i < 17; i++) {
+      list1.set(i, UInt64.valueOf(0xF000A0000L + i));
+      SSZType sszListType = typeResolver.resolveSSZType(SSZField.resolveFromValue(list1));
+
+      MerkleTrie mt2 = visitorHost.handleAny(sszListType, list1, simpleHasher);
+      MerkleTrie mt3 = visitorHost.handleAny(sszListType, list1, incrementalHasher);
+      Assert.assertEquals(mt2.getFinalRoot(), mt3.getFinalRoot());
+    }
+  }
+
+  @Test
+  public void testNonPackedListRandom() {
+    listRandomTest(
+        new ObservableListImpl<>(WriteList.create(Integer::valueOf)),
+        new Supplier<A1>() {
+          int i = 0x0F000000;
+          @Override
+          public A1 get() {
+            return new A1(i++);
+          }
+        });
+  }
+
+  @Test
+  public void testPackedListRandom() {
+    listRandomTest(
+        new ObservableListImpl<>(WriteList.create(Integer::valueOf)),
+        new Supplier<UInt64>() {
+          UInt64 val = UInt64.valueOf(0xF00000000L);
+          @Override
+          public UInt64 get() {
+            val = val.increment();
+            return val;
+          }
+        });
+
+    listRandomTest(
+        new ObservableListImpl<>(WriteList.create(Integer::valueOf)),
+        new Supplier<Integer>() {
+          int val = 0xF000000;
+          @Override
+          public Integer get() {
+            val++;
+            return val;
+          }
+        });
+
+    listRandomTest(
+        new ObservableListImpl<>(WriteList.create(Integer::valueOf)),
+        new Supplier<Hash32>() {
+          Random rnd = new Random();
+          @Override
+          public Hash32 get() {
+            return Hash32.random(rnd);
+          }
+        });
+
+    listRandomTest(
+        new ObservableListImpl<>(WriteList.create(Integer::valueOf)),
+        new Supplier<Byte>() {
+          byte val = 0x00;
+          @Override
+          public Byte get() {
+            val++;
+            return val;
+          }
+        });
+  }
+
+  private <C> void listRandomTest(WriteList<Integer, C> list, Supplier<C> numSupplier) {
+    SSZBuilder sszBuilder = new SSZBuilder();
+    TypeResolver typeResolver = sszBuilder.getTypeResolver();
+
+    SSZVisitorHost visitorHost = new SSZVisitorHost();
+    SSZSerializer serializer = new SSZSerializer(visitorHost, typeResolver);
+    CountingHash countingHashSimp = new CountingHash();
+    CountingHash countingHashInc = new CountingHash();
+    SSZIncrementalHasher incrementalHasher = new SSZIncrementalHasher(serializer, countingHashInc,
+        32);
+    SSZSimpleHasher simpleHasher = new SSZSimpleHasher(serializer, countingHashSimp, 32);
+
+    list.add(numSupplier.get());
+
+    SSZListType sszListType = (SSZListType) typeResolver.resolveSSZType(SSZField.resolveFromValue(list));
+
+    Random rnd = new Random(0);
+
+    for (int i = 0; i < 500; i++) {
+      for (int j = 0; j < rnd.nextInt(8); j++) {
+        if (list.isEmpty()) break;
+        list.remove(rnd.nextInt(list.size()));
+      }
+
+      for (int j = 0; j < rnd.nextInt(8); j++) {
+        list.add(rnd.nextInt(list.size() + 1), numSupplier.get());
+      }
+
+      for (int j = 0; j < rnd.nextInt(8); j++) {
+        if (list.isEmpty()) break;
+        list.set(rnd.nextInt(list.size()), numSupplier.get());
+      }
+
+      MerkleTrie mt2 = visitorHost.handleAny(sszListType, list, simpleHasher);
+      MerkleTrie mt3 = visitorHost.handleAny(sszListType, list, incrementalHasher);
+      Assert.assertEquals(mt2.getFinalRoot(), mt3.getFinalRoot());
+    }
+
+    // adding more elements
+    int elementsPerChunk = sszListType.getElementType().isBasicType() ?
+        32 / sszListType.getElementType().getSize() : 1;
+    for (int j = 0; j < 500 * elementsPerChunk; j++) {
+      list.add(numSupplier.get());
+    }
+
+    // checking add/set takes significantly less hashing for incremental
+    for (int i = 0; i < 500; i++) {
+      countingHashInc.counter = 0;
+      countingHashSimp.counter = 0;
+
+      for (int j = 0; j < rnd.nextInt(8); j++) {
+        list.add(numSupplier.get());
+      }
+
+      for (int j = 0; j < rnd.nextInt(8); j++) {
+        if (list.isEmpty()) break;
+        list.set(rnd.nextInt(list.size()), numSupplier.get());
+      }
+
+      MerkleTrie mt2 = visitorHost.handleAny(sszListType, list, simpleHasher);
+      MerkleTrie mt3 = visitorHost.handleAny(sszListType, list, incrementalHasher);
+      Assert.assertEquals(mt2.getFinalRoot(), mt3.getFinalRoot());
+      if (i > 0) {
+        Assert.assertTrue(countingHashInc.counter * 5 < countingHashSimp.counter);
       }
     }
-    SSZBuilder sszBuilder = new SSZBuilder()
-        .addDefaultListAccessors()
-        .addListAccessors(new ReadListAccessor());
+
+  }
+
+
+  @Test
+  public void testPackedListRemove1() {
+    SSZBuilder sszBuilder = new SSZBuilder();
+    TypeResolver typeResolver = sszBuilder.getTypeResolver();
+
+    SSZVisitorHost visitorHost = new SSZVisitorHost();
+    SSZSerializer serializer = new SSZSerializer(visitorHost, typeResolver);
+    CountingHash countingHashSimp = new CountingHash();
+    CountingHash countingHashInc = new CountingHash();
+    SSZIncrementalHasher incrementalHasher = new SSZIncrementalHasher(serializer, countingHashInc, 32);
+    SSZSimpleHasher simpleHasher = new SSZSimpleHasher(serializer, countingHashSimp, 32);
+
+    WriteList<Integer, UInt64> list1 = new ObservableListImpl<>(WriteList.create(Integer::valueOf));
+    list1.add(UInt64.valueOf(0x1111));
+    list1.add(UInt64.valueOf(0x2222));
+    list1.add(UInt64.valueOf(0x3333));
+    list1.add(UInt64.valueOf(0x4444));
+    list1.add(UInt64.valueOf(0x5555));
+
+    ReadList<Integer, UInt64> list2 = list1.createImmutableCopy();
+
+    SSZType sszListType = typeResolver.resolveSSZType(SSZField.resolveFromValue(list2));
+
+    {
+      countingHashInc.counter = 0;
+      countingHashSimp.counter = 0;
+      MerkleTrie mt2 = visitorHost.handleAny(sszListType, list2, simpleHasher);
+      MerkleTrie mt3 = visitorHost.handleAny(sszListType, list2, incrementalHasher);
+      Assert.assertEquals(mt2.getFinalRoot(), mt3.getFinalRoot());
+      Assert.assertTrue(countingHashInc.counter == countingHashSimp.counter);
+    }
+
+    WriteList<Integer, UInt64> list3 = list2.createMutableCopy();
+    list3.remove(4);
+    ReadList<Integer, UInt64> list4 = list3.createImmutableCopy();
+
+    {
+      countingHashInc.counter = 0;
+      countingHashSimp.counter = 0;
+      MerkleTrie mt2 = visitorHost.handleAny(sszListType, list4, simpleHasher);
+      MerkleTrie mt3 = visitorHost.handleAny(sszListType, list4, incrementalHasher);
+      Assert.assertEquals(mt2.getFinalRoot(), mt3.getFinalRoot());
+      Assert.assertTrue(countingHashInc.counter <= countingHashSimp.counter);
+    }
+
+    WriteList<Integer, UInt64> list5 = list2.createMutableCopy();
+    list5.remove(3);
+    list5.remove(3);
+    ReadList<Integer, UInt64> list6 = list5.createImmutableCopy();
+
+    {
+      countingHashInc.counter = 0;
+      countingHashSimp.counter = 0;
+      MerkleTrie mt2 = visitorHost.handleAny(sszListType, list6, simpleHasher);
+      MerkleTrie mt3 = visitorHost.handleAny(sszListType, list6, incrementalHasher);
+      Assert.assertEquals(mt2.getFinalRoot(), mt3.getFinalRoot());
+      Assert.assertTrue(countingHashInc.counter <= countingHashSimp.counter);
+    }
+
+    WriteList<Integer, UInt64> list7 = list2.createMutableCopy();
+    list7.remove(2);
+    list7.remove(2);
+    list7.remove(2);
+    ReadList<Integer, UInt64> list8 = list7.createImmutableCopy();
+
+    {
+      countingHashInc.counter = 0;
+      countingHashSimp.counter = 0;
+      MerkleTrie mt2 = visitorHost.handleAny(sszListType, list8, simpleHasher);
+      MerkleTrie mt3 = visitorHost.handleAny(sszListType, list8, incrementalHasher);
+      Assert.assertEquals(mt2.getFinalRoot(), mt3.getFinalRoot());
+      Assert.assertTrue(countingHashInc.counter <= countingHashSimp.counter);
+    }
+  }
+
+  @Test
+  public void testListRemove() {
+    SSZBuilder sszBuilder = new SSZBuilder();
     TypeResolver typeResolver = sszBuilder.getTypeResolver();
 
     SSZVisitorHost visitorHost = new SSZVisitorHost();
@@ -530,15 +743,6 @@ public class SSZIncrementalTest {
 
   @Test
   public void testComplexStruct() {
-    class CountingHash implements Function<BytesValue, Hash32> {
-      int counter = 0;
-
-      @Override
-      public Hash32 apply(BytesValue bytesValue) {
-        counter++;
-        return Hashes.keccak256(bytesValue);
-      }
-    }
     SSZBuilder sszBuilder = new SSZBuilder()
         .addDefaultListAccessors()
         .addListAccessors(new ReadListAccessor());

@@ -6,14 +6,14 @@ import java.util.List;
 import java.util.Random;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
-import org.ethereum.beacon.core.operations.deposit.DepositInput;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
-import org.ethereum.beacon.core.types.Time;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.bytes.Bytes96;
+import tech.pegasys.artemis.util.collections.ReadList;
+import tech.pegasys.artemis.util.collections.ReadVector;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public abstract class DepositTestUtil {
@@ -30,18 +30,14 @@ public abstract class DepositTestUtil {
   }
 
   public static Deposit createRandom(Random random, SpecConstants spec, UInt64 depositIndex) {
-    DepositInput depositInput =
-        new DepositInput(
-            BLSPubkey.wrap(Bytes48.random(random)),
-            Hash32.random(random),
-            BLSSignature.wrap(Bytes96.random(random)));
-
     DepositData depositData =
         new DepositData(
-            spec.getMaxDepositAmount(), Time.of(System.currentTimeMillis() / 1000), depositInput);
+            BLSPubkey.wrap(Bytes48.random(random)),
+            Hash32.random(random),
+            spec.getMaxEffectiveBalance(), BLSSignature.wrap(Bytes96.random(random)));
 
-    List<Hash32> merkleBranch =
-        Collections.nCopies(spec.getDepositContractTreeDepth().getIntValue(), Hash32.ZERO);
+    ReadVector<Integer, Hash32> merkleBranch =
+        ReadVector.wrap(Collections.nCopies(spec.getDepositContractTreeDepth().getIntValue(), Hash32.ZERO), Integer::new);
 
     return new Deposit(merkleBranch, depositIndex, depositData);
   }

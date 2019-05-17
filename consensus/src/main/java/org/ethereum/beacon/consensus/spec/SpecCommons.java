@@ -20,6 +20,10 @@ public interface SpecCommons {
 
   Function<BytesValue, Hash32> getHashFunction();
 
+  boolean isBlsVerify();
+
+  boolean isBlsVerifyProofOfPossession();
+
   default void assertTrue(boolean assertion) {
     if (!assertion) {
       throw new SpecAssertionFailed();

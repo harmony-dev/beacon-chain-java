@@ -20,7 +20,7 @@ import org.ethereum.beacon.pow.DepositContract;
  *
  * @see DepositContract
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.5.1/specs/core/0_beacon-chain.md#on-genesis">On
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.6.1/specs/core/0_beacon-chain.md#on-genesis">On
  *     genesis</a> in the spec.
  */
 public class InitialStateTransition implements BlockTransition<BeaconStateEx> {
@@ -48,13 +48,11 @@ public class InitialStateTransition implements BlockTransition<BeaconStateEx> {
             depositContractStart.getInitialDeposits(),
             depositContractStart.getTime(),
             depositContractStart.getEth1Data());
-    BeaconBlock genesisBlock = block.withStateRoot(spec.hash_tree_root(genesisState));
 
-    BeaconStateExImpl ret = new BeaconStateExImpl(
-        genesisState, spec.signed_root(genesisBlock), TransitionType.INITIAL);
+    BeaconStateExImpl ret = new BeaconStateExImpl(genesisState, TransitionType.INITIAL);
 
     logger.debug(() -> "Slot transition result state: (" +
-        spec.hash_tree_root(ret).toStringShort() + ") " + ret.toString(spec.getConstants()));
+        spec.hash_tree_root(ret).toStringShort() + ") " + ret.toString(spec.getConstants(), spec::signing_root));
 
     return ret;
   }
