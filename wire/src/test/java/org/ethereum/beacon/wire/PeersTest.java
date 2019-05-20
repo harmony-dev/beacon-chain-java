@@ -4,6 +4,8 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.ethereum.beacon.start.common.Launcher;
 import org.ethereum.beacon.simulator.SimulatorLauncher;
@@ -151,14 +153,14 @@ public class PeersTest {
           1,
           peer1.getSchedulers().reactorEvents());
 
-      AtomicBoolean synced = new AtomicBoolean();
+      CountDownLatch syncLatch = new CountDownLatch(1);
       Flux.from(peer1.getBeaconChain().getBlockStatesStream())
           .subscribe(s -> {
             System.out.println(s);
             if (s.getFinalState().getSlot().equals(
                 simulatorLauncher.getSpec().getConstants().getGenesisSlot().plus(slotCount))) {
               syncManager.stop();
-              synced.set(true);
+              syncLatch.countDown();
             }
           });
 
@@ -173,9 +175,7 @@ public class PeersTest {
       localhost.get();
       System.out.println("Peer 1: connected to peer 0");
 
-
-      Thread.sleep(10000000);
-      Assert.assertTrue(synced.get());
+      Assert.assertTrue(syncLatch.await(1, TimeUnit.MINUTES));
       System.out.println("Done");
     }
   }
