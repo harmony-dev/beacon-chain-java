@@ -1,14 +1,9 @@
 package org.ethereum.beacon.benchmaker;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
@@ -30,20 +25,16 @@ import org.ethereum.beacon.crypto.BLS381.KeyPair;
 import org.ethereum.beacon.crypto.util.BlsKeyPairReader;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.schedulers.ControlledSchedulers;
-import org.ethereum.beacon.schedulers.LoggerMDCExecutor;
-import org.ethereum.beacon.schedulers.Schedulers;
-import org.ethereum.beacon.schedulers.TimeController;
-import org.ethereum.beacon.schedulers.TimeControllerImpl;
 import org.ethereum.beacon.start.common.Launcher;
+import org.ethereum.beacon.start.common.util.MDCControlledSchedulers;
+import org.ethereum.beacon.start.common.util.SimpleDepositContract;
 import org.ethereum.beacon.start.common.util.SimulateUtils;
 import org.ethereum.beacon.util.stats.MeasurementsCollector;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import org.ethereum.beacon.wire.LocalWireHub;
 import org.ethereum.beacon.wire.WireApiSub;
 import org.javatuples.Pair;
-import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
 
@@ -229,81 +220,6 @@ public class BenchmarkRunner implements Runnable {
           BenchmarkUtils.percentile(BenchmarkReport.PERCENTILE_RATIO, sortedMeasurements);
 
       return stats;
-    }
-  }
-
-  private static class SimpleDepositContract implements DepositContract {
-    private final ChainStart chainStart;
-
-    public SimpleDepositContract(ChainStart chainStart) {
-      this.chainStart = chainStart;
-    }
-
-    @Override
-    public Publisher<ChainStart> getChainStartMono() {
-      return Mono.just(chainStart);
-    }
-
-    @Override
-    public Publisher<Deposit> getDepositStream() {
-      return Mono.empty();
-    }
-
-    @Override
-    public List<DepositInfo> peekDeposits(
-        int maxCount, Eth1Data fromDepositExclusive, Eth1Data tillDepositInclusive) {
-      return Collections.emptyList();
-    }
-
-    @Override
-    public boolean hasDepositRoot(Hash32 blockHash, Hash32 depositRoot) {
-      return true;
-    }
-
-    @Override
-    public Optional<Eth1Data> getLatestEth1Data() {
-      return Optional.of(chainStart.getEth1Data());
-    }
-
-    @Override
-    public void setDistanceFromHead(long distanceFromHead) {}
-  }
-
-  public static class MDCControlledSchedulers {
-    private DateFormat localTimeFormat = new SimpleDateFormat("HH:mm:ss.SSS");
-
-    private TimeController timeController = new TimeControllerImpl();
-
-    public ControlledSchedulers createNew(String validatorId) {
-      return createNew(validatorId, 0);
-    }
-
-    public ControlledSchedulers createNew(String validatorId, long timeShift) {
-      ControlledSchedulers[] newSched = new ControlledSchedulers[1];
-      LoggerMDCExecutor mdcExecutor = new LoggerMDCExecutor()
-          .add("validatorTime", () -> localTimeFormat.format(new Date(newSched[0].getCurrentTime())))
-          .add("validatorIndex", () -> "" + validatorId);
-      newSched[0] = Schedulers.createControlled(() -> mdcExecutor);
-      newSched[0].getTimeController().setParent(timeController);
-      newSched[0].getTimeController().setTimeShift(timeShift);
-
-      return newSched[0];
-    }
-
-    public void setCurrentTime(long time) {
-      timeController.setTime(time);
-    }
-
-    void addTime(Duration duration) {
-      addTime(duration.toMillis());
-    }
-
-    void addTime(long millis) {
-      setCurrentTime(timeController.getTime() + millis);
-    }
-
-    public long getCurrentTime() {
-      return timeController.getTime();
     }
   }
 }
