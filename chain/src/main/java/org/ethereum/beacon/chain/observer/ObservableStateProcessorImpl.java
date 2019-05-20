@@ -255,6 +255,8 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
       BeaconState state, Map<BLSPubkey, List<Attestation>> attestationMap) {
     List<Attestation> attestations = attestationMap.values().stream()
         .flatMap(Collection::stream)
+        .filter(attestation ->
+            attestation.getData().getTargetEpoch().lessEqual(spec.get_current_epoch(state)))
         .filter(attestation -> {
           /* attestation_slot = get_attestation_slot(state, attestation)
              assert attestation_slot + MIN_ATTESTATION_INCLUSION_DELAY <= state.slot <= attestation_slot + SLOTS_PER_EPOCH */
