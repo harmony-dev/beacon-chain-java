@@ -25,10 +25,18 @@ public class Benchmaker implements Runnable {
   private static final int ERROR_EXIT_CODE = 1;
 
   @CommandLine.Option(
+      names = {"--warmup-epochs"},
+      paramLabel = "epochs",
+      description =
+          "Number of epoch transitions passed before benchmark session starts.\nSession starts from a 3rd epoch by default.",
+      defaultValue = "2")
+  private Integer warmUpEpochs;
+
+  @CommandLine.Option(
       names = {"--epochs"},
       paramLabel = "epochs",
       description =
-          "Length of benchmark session in epochs.\nNote: session starts from a 3rd epoch.",
+          "Length of benchmark session in epochs.",
       defaultValue = "16")
   private Integer epochs;
 
@@ -90,6 +98,6 @@ public class Benchmaker implements Runnable {
             .withCache(!noCache)
             .withBlsVerifyProofOfPossession(false);
 
-    new BenchmarkRunner(epochs, registrySize, specBuilder).run();
+    new BenchmarkRunner(epochs, registrySize, specBuilder, warmUpEpochs).run();
   }
 }
