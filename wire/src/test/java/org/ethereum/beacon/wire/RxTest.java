@@ -43,10 +43,4 @@ public class RxTest {
 
     test.expectNext(new ArrayList<>(asList(1, 3)));
   }
-
-  @Test
-  public void test2() {
-    Flux.fromIterable(Collections.emptyList()).repeat().subscribe(e -> System.out.println("a"));
-    System.out.println("Complete");
-  }
 }
