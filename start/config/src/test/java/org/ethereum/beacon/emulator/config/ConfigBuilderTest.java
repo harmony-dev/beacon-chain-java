@@ -1,6 +1,7 @@
 package org.ethereum.beacon.emulator.config;
 
 import java.util.Collections;
+import java.util.Date;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.emulator.config.chainspec.SpecData;
@@ -53,13 +54,14 @@ public class ConfigBuilderTest {
     assertTrue(merged.getConfig().getValidator().getContract() instanceof EmulatorContract);
     assertEquals(3, (long) ((ValidatorKeys.Private)((EmulatorContract)
         merged.getConfig().getValidator().getContract()).getKeys().get(1)).getKeys().size());
+    assertEquals(
+        new Date(1526835300000L),
+        ((EmulatorContract) merged.getConfig().getValidator().getContract()).getGenesisTime());
 
     configBuilder.addConfigOverride("config.db", "file://test-db");
-    configBuilder.addConfigOverride("config.validator.contract.genesisTime", 888L);
     MainConfig overrided = configBuilder.build();
     assertEquals("file://test-db", overrided.getConfig().getDb());
     assertEquals(2, ((GeneralPlan) overrided.getPlan()).getValidator().size());
-    assertEquals(888, (long) ((EmulatorContract)overrided.getConfig().getValidator().getContract()).getGenesisTime());
   }
 
   @Test

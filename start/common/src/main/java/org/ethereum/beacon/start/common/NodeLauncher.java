@@ -82,7 +82,7 @@ public class NodeLauncher {
 
   private WireApiSub wireApiSub;
   private WireApiSync wireApiSyncRemote;
-  private final ConnectionManager<SocketAddress> connectionManager;
+  private final ConnectionManager<?> connectionManager;
   private SimplePeerManagerImpl peerManager;
   private BeaconBlockTree blockTree;
   private SyncQueue syncQueue;
@@ -93,7 +93,7 @@ public class NodeLauncher {
       BeaconChainSpec spec,
       DepositContract depositContract,
       List<BLS381Credentials> validatorCred,
-      ConnectionManager<SocketAddress> connectionManager,
+      ConnectionManager<?> connectionManager,
       BeaconChainStorageFactory storageFactory,
       Schedulers schedulers,
       boolean startSyncManager) {

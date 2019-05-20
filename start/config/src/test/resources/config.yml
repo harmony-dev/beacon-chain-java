@@ -8,7 +8,7 @@ config:
         - tcp://localhost:40003
   validator:
     contract: !emulator
-      genesisTime: 7777
+      genesisTime: 2018-05-20 16:55:00
       keys:
         - !generate
           count: 16
