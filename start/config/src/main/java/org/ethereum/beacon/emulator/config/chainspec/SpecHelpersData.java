@@ -9,6 +9,8 @@ public class SpecHelpersData {
 
   private boolean blsSign = true;
 
+  private boolean enableCache = true;
+
   public boolean isBlsVerify() {
     return blsVerify;
   }
@@ -31,5 +33,13 @@ public class SpecHelpersData {
 
   public void setBlsSign(boolean blsSign) {
     this.blsSign = blsSign;
+  }
+
+  public boolean isEnableCache() {
+    return enableCache;
+  }
+
+  public void setEnableCache(boolean enableCache) {
+    this.enableCache = enableCache;
   }
 }
