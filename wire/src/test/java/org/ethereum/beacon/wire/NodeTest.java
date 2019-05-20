@@ -35,8 +35,13 @@ import org.ethereum.beacon.wire.channel.Channel;
 import org.ethereum.beacon.wire.net.ConnectionManager;
 import org.ethereum.beacon.wire.net.netty.NettyClient;
 import org.ethereum.beacon.wire.net.netty.NettyServer;
+import org.ethereum.beacon.wire.sync.SyncManager;
+import org.ethereum.beacon.wire.sync.SyncManagerImpl;
+import org.ethereum.beacon.wire.sync.SyncManagerImpl.SyncMode;
 import org.javatuples.Pair;
+import org.junit.Assert;
 import org.junit.Test;
+import reactor.core.publisher.Flux;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt64;
@@ -71,13 +76,14 @@ public class NodeTest {
     SimpleDepositContract depositContract = new SimpleDepositContract(chainStart);
 
     // master node with all validators
+    NodeLauncher masterNode;
     {
       ControlledSchedulers schedulers = controlledSchedulers.createNew("master");
       NettyServer nettyServer = new NettyServer(40001);
       nettyServer.start();
       ConnectionManager<SocketAddress> connectionManager = new ConnectionManager<>(
           nettyServer, null, schedulers.reactorEvents());
-      NodeLauncher masterNode = new NodeLauncher(
+      masterNode = new NodeLauncher(
           specBuilder.buildSpec(),
           depositContract,
           depositPairs
@@ -97,12 +103,13 @@ public class NodeTest {
     // slave node
     ConnectionManager<SocketAddress> slaveConnectionManager;
     CompletableFuture<Channel<BytesValue>> connectFut;
+    NodeLauncher slaveNode;
     {
       ControlledSchedulers schedulers = controlledSchedulers.createNew("slave");
       NettyClient nettyClient = new NettyClient();
       slaveConnectionManager = new ConnectionManager<>(
           null, nettyClient, schedulers.reactorEvents());
-      NodeLauncher slaveNode = new NodeLauncher(
+      slaveNode = new NodeLauncher(
           specBuilder.buildSpec(),
           depositContract,
           null,
@@ -142,11 +149,14 @@ public class NodeTest {
     System.out.println("Slave connected");
 
     System.out.println("Some time in 'realtime' mode...");
-    for (int i = 0; i < 50000; i++) {
+    for (int i = 0; i < 100; i++) {
       controlledSchedulers.addTime(Duration.ofSeconds(1));
       Thread.sleep(50);
     }
-    Thread.sleep(10000000);
+
+    SyncMode syncMode = Flux.from(slaveNode.getSyncManager().getSyncModeStream())
+        .blockLast(Duration.ofSeconds(1));
+    Assert.assertEquals(SyncMode.Short, syncMode);
   }
 
   public static Integer getValue() {

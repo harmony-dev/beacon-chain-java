@@ -308,4 +308,8 @@ public class NodeLauncher {
   public Schedulers getSchedulers() {
     return schedulers;
   }
+
+  public SyncManagerImpl getSyncManager() {
+    return syncManager;
+  }
 }
