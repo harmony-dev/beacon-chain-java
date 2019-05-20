@@ -18,7 +18,6 @@ import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.util.cache.Cache;
 import org.ethereum.beacon.util.cache.CacheFactory;
 import org.javatuples.Pair;
-import org.javatuples.Triplet;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
@@ -26,6 +25,27 @@ import tech.pegasys.artemis.util.uint.UInt64;
 
 public class CachingBeaconChainSpec extends BeaconChainSpecImpl {
 
+  private static class Caches {
+    private Cache<Pair<List<? extends UInt64>, Bytes32>, List<UInt64>> shufflerCache;
+    private Cache<Object, Hash32> hashTreeRootCache;
+    private Cache<EpochNumber, List<ValidatorIndex>> activeValidatorsCache;
+    private Cache<Pair<EpochNumber, ShardNumber>, List<ValidatorIndex>> crosslinkCommitteesCache;
+    private Cache<EpochNumber, Gwei> totalActiveBalanceCache;
+    private Cache<Pair<AttestationData, Bitfield>, List<ValidatorIndex>> attestingIndicesCache;
+
+    private ValidatorIndex maxCachedIndex = ValidatorIndex.ZERO;
+    private final Map<BLSPubkey, ValidatorIndex> pubkeyToIndexCache = new ConcurrentHashMap<>();
+
+    private Caches(CacheFactory factory) {
+      this.shufflerCache = factory.createLRUCache(128);
+      this.hashTreeRootCache = factory.createLRUCache(32);
+      this.crosslinkCommitteesCache = factory.createLRUCache(128);
+      this.activeValidatorsCache = factory.createLRUCache(32);
+      this.totalActiveBalanceCache = factory.createLRUCache(32);
+      this.attestingIndicesCache = factory.createLRUCache(1024);
+    }
+  }
+  
   protected Caches caches;
 
   private final boolean cacheEnabled;
@@ -83,8 +103,8 @@ public class CachingBeaconChainSpec extends BeaconChainSpecImpl {
 
   @Override
   public List<ValidatorIndex> get_crosslink_committee(BeaconState state, EpochNumber epoch, ShardNumber shard) {
-    return caches.crosslinkCommitteesCache.get(Triplet.with(hash(state), epoch, shard),
-        s -> super.get_crosslink_committee(state, epoch, shard));
+    return caches.crosslinkCommitteesCache.get(
+        Pair.with(epoch, shard), s -> super.get_crosslink_committee(state, epoch, shard));
   }
 
   @Override
@@ -102,7 +122,7 @@ public class CachingBeaconChainSpec extends BeaconChainSpecImpl {
   public List<ValidatorIndex> get_attesting_indices(
       BeaconState state, AttestationData attestation_data, Bitfield bitfield) {
     return caches.attestingIndicesCache.get(
-        Triplet.with(hash(state), attestation_data, bitfield),
+        Pair.with(attestation_data, bitfield),
         e -> super.get_attesting_indices(state, attestation_data, bitfield));
   }
 
@@ -110,35 +130,7 @@ public class CachingBeaconChainSpec extends BeaconChainSpecImpl {
     return cacheEnabled;
   }
 
-  /**
-   * Do not use {@link #hash_tree_root(Object)} directly as it causes false counts in benchmarks.
-   */
-  private Hash32 hash(Object object) {
-    return caches.hashTreeRootCache.get(object, (o) -> getObjectHasher().getHash(o));
-  }
-
   public Caches getCaches() {
     return caches;
-  }
-
-  private static class Caches {
-    private Cache<Pair<List<? extends UInt64>, Bytes32>, List<UInt64>> shufflerCache;
-    private Cache<Object, Hash32> hashTreeRootCache;
-    private Cache<EpochNumber, List<ValidatorIndex>> activeValidatorsCache;
-    private Cache<Triplet<Hash32, EpochNumber, ShardNumber>, List<ValidatorIndex>> crosslinkCommitteesCache;
-    private Cache<EpochNumber, Gwei> totalActiveBalanceCache;
-    private Cache<Triplet<Hash32, AttestationData, Bitfield>, List<ValidatorIndex>> attestingIndicesCache;
-
-    private ValidatorIndex maxCachedIndex = ValidatorIndex.ZERO;
-    private final Map<BLSPubkey, ValidatorIndex> pubkeyToIndexCache = new ConcurrentHashMap<>();
-
-    private Caches(CacheFactory factory) {
-      this.shufflerCache = factory.createLRUCache(128);
-      this.hashTreeRootCache = factory.createLRUCache(32);
-      this.crosslinkCommitteesCache = factory.createLRUCache(128);
-      this.activeValidatorsCache = factory.createLRUCache(32);
-      this.totalActiveBalanceCache = factory.createLRUCache(32);
-      this.attestingIndicesCache = factory.createLRUCache(1024);
-    }
   }
 }
