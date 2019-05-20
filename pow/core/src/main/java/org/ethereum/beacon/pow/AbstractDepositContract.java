@@ -102,7 +102,7 @@ public abstract class AbstractDepositContract implements DepositContract {
                 new DepositInfo(
                     d,
                     new Eth1Data(
-                        tree.getDepositRoot(d.getIndex()),
+                        tree.getRoot(d.getIndex()),
                         d.getIndex().decrement(),
                         Hash32.wrap(Bytes32.wrap(blockHash)))))
         .collect(Collectors.toList());
@@ -117,13 +117,13 @@ public abstract class AbstractDepositContract implements DepositContract {
    */
   private Deposit newDeposit(DepositEventData eventData) {
     Deposit deposit = createUnProofedDeposit(eventData);
-    tree.insertValue(deposit.getData());
+    tree.addValue(deposit.getData());
     return deposit;
   }
 
   public Hash32 getDepositRoot(byte[] merkleTreeIndex) {
     UInt64 index = UInt64.fromBytesLittleEndian(Bytes8.wrap(merkleTreeIndex));
-    return tree.getDepositRoot(index);
+    return tree.getRoot(index);
   }
 
   protected synchronized void chainStart(

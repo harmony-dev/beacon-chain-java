@@ -113,7 +113,7 @@ public class DepositBufferedMerkle extends DepositDataMerkle {
   }
 
   @Override
-  public Hash32 getDepositRoot(UInt64 index) {
+  public Hash32 getRoot(UInt64 index) {
     List<List<BytesValue>> tree = buildTreeForIndex(index.intValue());
     BytesValue root = get_merkle_root(tree);
     return Hash32.wrap(Bytes32.leftPad(root));
@@ -128,7 +128,7 @@ public class DepositBufferedMerkle extends DepositDataMerkle {
   }
 
   @Override
-  public void insertValue(DepositData value) {
+  public void addValue(DepositData value) {
     lastElements.add(createDepositDataValue(value, getHashFunction()));
   }
 

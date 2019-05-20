@@ -98,13 +98,13 @@ public class DepositSimpleMerkle extends DepositDataMerkle {
   }
 
   @Override
-  public Hash32 getDepositRoot(UInt64 index) {
+  public Hash32 getRoot(UInt64 index) {
     verifyIndexNotTooBig(index.intValue());
     return Hash32.wrap(Bytes32.leftPad(get_merkle_root(deposits.subList(0, index.intValue() + 1))));
   }
 
   @Override
-  public void insertValue(DepositData depositData) {
+  public void addValue(DepositData depositData) {
     insertDepositData(createDepositDataValue(depositData, getHashFunction()).extractArray());
   }
 

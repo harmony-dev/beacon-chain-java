@@ -13,7 +13,7 @@ import tech.pegasys.artemis.util.uint.UInt64;
  */
 public interface MerkleTree<V> {
   /**
-   * Proofs for element
+   * Proofs for element with provided index on tree with specified size
    *
    * @param index at index
    * @param size with all tree made of size elements
@@ -22,19 +22,19 @@ public interface MerkleTree<V> {
   ReadVector<Integer, Hash32> getProof(int index, int size);
 
   /**
-   * Deposit Root of merkle tree with all elements up to index
+   * Root of merkle tree with all elements up to index
    *
    * @param index last element index
-   * @return deposit root
+   * @return tree root
    */
-  Hash32 getDepositRoot(UInt64 index);
+  Hash32 getRoot(UInt64 index);
 
   /**
    * Inserts value in tree / storage
    *
    * @param value Element value
    */
-  void insertValue(V value);
+  void addValue(V value);
 
   /** @return Index of last/highest element */
   int getLastIndex();

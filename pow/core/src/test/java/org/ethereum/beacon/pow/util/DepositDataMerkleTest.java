@@ -26,15 +26,15 @@ public class DepositDataMerkleTest {
     MerkleTree<DepositData> incremental = new DepositBufferedMerkle(Hashes::sha256, 32, 3);
     Consumer<Integer> insertInBoth =
         integer -> {
-          simple.insertValue(createDepositData(integer));
-          incremental.insertValue(createDepositData(integer));
+          simple.addValue(createDepositData(integer));
+          incremental.addValue(createDepositData(integer));
         };
     for (int i = 1; i < 20; ++i) {
       System.out.println(i);
       insertInBoth.accept(i);
       assertEquals(
-          simple.getDepositRoot(UInt64.valueOf(i - 1)),
-          incremental.getDepositRoot(UInt64.valueOf(i - 1)));
+          simple.getRoot(UInt64.valueOf(i - 1)),
+          incremental.getRoot(UInt64.valueOf(i - 1)));
     }
     int someIndex = simple.getLastIndex() + 1;
     for (int i = 20; i < 40; ++i) {
