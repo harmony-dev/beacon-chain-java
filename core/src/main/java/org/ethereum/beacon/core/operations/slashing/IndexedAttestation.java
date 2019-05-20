@@ -87,6 +87,15 @@ public class IndexedAttestation {
   }
 
   @Override
+  public int hashCode() {
+    int result = custodyBit0Indices.hashCode();
+    result = 31 * result + custodyBit1Indices.hashCode();
+    result = 31 * result + data.hashCode();
+    result = 31 * result + signature.hashCode();
+    return result;
+  }
+
+  @Override
   public String toString() {
     return toString(null, null);
   }
