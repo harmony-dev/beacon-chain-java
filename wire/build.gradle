@@ -14,6 +14,9 @@ dependencies {
 
   testImplementation 'org.mockito:mockito-core'
   testImplementation 'io.projectreactor:reactor-test'
+  testImplementation project(':crypto')
+  testImplementation project(':validator')
+  testImplementation project(':pow:core')
   testImplementation project(':start:common')
   testImplementation project(':start:config')
   testImplementation project(':start:simulator')
