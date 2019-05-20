@@ -42,6 +42,7 @@ import org.javatuples.Pair;
 import org.junit.Assert;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt64;
@@ -57,7 +58,8 @@ public class NodeTest {
             .addYamlConfigFromResources("/config/spec-constants.yml")
             .addYamlConfigFromResources("/test-spec-config.yml");
     SpecData specData = specConfigBuilder.build();
-    SpecBuilder specBuilder = new SpecBuilder().withSpec(specData);
+    SpecBuilder specBuilder = new SpecBuilder()
+        .withSpec(specData);
     BeaconChainSpec spec = specBuilder.buildSpec();
 
     int depositCount = 16;
@@ -122,9 +124,17 @@ public class NodeTest {
       System.out.println("Connected! " + connectFut.get());
     }
 
+    Assert.assertEquals(
+        SyncMode.Long,
+        Mono.from(slaveNode.getSyncManager().getSyncModeStream()).block(Duration.ZERO));
+
     // generate some new blocks
     System.out.println("Generating online blocks");
     controlledSchedulers.addTime(Duration.ofSeconds(3 * 10));
+
+    Flux.from(slaveNode.getSyncManager().getSyncModeStream())
+        .filter(mode -> mode == SyncMode.Short)
+        .blockFirst(Duration.ofSeconds(30));
 
     // 'realtime' mode
     System.out.println("Some time in 'realtime' mode...");
@@ -148,15 +158,22 @@ public class NodeTest {
     connectFut1.get();
     System.out.println("Slave connected");
 
+    System.out.println("Generating online blocks");
+    controlledSchedulers.addTime(Duration.ofSeconds(10 * 10));
+
+    Flux.from(slaveNode.getSyncManager().getSyncModeStream())
+        .filter(mode -> mode == SyncMode.Long)
+        .blockFirst(Duration.ofSeconds(30));
+
     System.out.println("Some time in 'realtime' mode...");
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 50; i++) {
       controlledSchedulers.addTime(Duration.ofSeconds(1));
       Thread.sleep(50);
     }
 
-    SyncMode syncMode = Flux.from(slaveNode.getSyncManager().getSyncModeStream())
-        .blockLast(Duration.ofSeconds(1));
-    Assert.assertEquals(SyncMode.Short, syncMode);
+    Flux.from(slaveNode.getSyncManager().getSyncModeStream())
+        .filter(mode -> mode == SyncMode.Short)
+        .blockFirst(Duration.ofSeconds(30));
   }
 
   public static Integer getValue() {
