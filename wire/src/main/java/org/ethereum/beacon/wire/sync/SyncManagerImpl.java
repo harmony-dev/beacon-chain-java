@@ -137,7 +137,7 @@ public class SyncManagerImpl {
             req.getStep()))
         .flatMap(req -> Mono.fromFuture(syncApi.requestBlocks(req, spec.getObjectHasher())),
             maxConcurrentBlockRequests)
-        .onErrorContinue((t, o) -> logger.info("SyncApi exception: " + t + ", " + o, t));
+        .onErrorContinue((t, o) -> logger.info("SyncApi exception: " + t + ", " + o));
 
     if (newBlocks != null) {
       wireBlocksStream = wireBlocksStream.mergeWith(
@@ -176,7 +176,7 @@ public class SyncManagerImpl {
                     s1.retainAll(s2);
                     return s1.isEmpty() ? SyncMode.Long : SyncMode.Short;
                   })
-              .distinct();
+              .distinctUntilChanged();
     }
 
     private <A> ArrayList<A> listAddLimited(ArrayList<A> list, A elem, int maxSize) {
