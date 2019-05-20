@@ -50,7 +50,7 @@ import tech.pegasys.artemis.util.uint.UInt64;
 public class NodeTest {
 
   @Test
-  public void test1() throws ExecutionException, InterruptedException {
+  public void test1() throws Exception {
     Random rnd = new Random();
 
     ConfigBuilder<SpecData> specConfigBuilder =
@@ -77,103 +77,104 @@ public class NodeTest {
         new DepositContract.ChainStart(genesisTime, eth1Data, depositPairs.getValue0());
     SimpleDepositContract depositContract = new SimpleDepositContract(chainStart);
 
-    // master node with all validators
-    NodeLauncher masterNode;
-    {
-      ControlledSchedulers schedulers = controlledSchedulers.createNew("master");
-      NettyServer nettyServer = new NettyServer(40001);
-      nettyServer.start();
-      ConnectionManager<SocketAddress> connectionManager = new ConnectionManager<>(
-          nettyServer, null, schedulers.reactorEvents());
-      masterNode = new NodeLauncher(
-          specBuilder.buildSpec(),
-          depositContract,
-          depositPairs
-              .getValue1()
-              .stream()
-              .map(BLS381Credentials::createWithDummySigner)
-              .collect(Collectors.toList()),
-          connectionManager,
-          new MemBeaconChainStorageFactory(spec.getObjectHasher()),
-          schedulers,
-          false);
-    }
+    try (NettyServer nettyServer = new NettyServer(40001)) {
+      // master node with all validators
+      NodeLauncher masterNode;
+      {
+        ControlledSchedulers schedulers = controlledSchedulers.createNew("master");
+        nettyServer.start();
+        ConnectionManager<SocketAddress> connectionManager = new ConnectionManager<>(
+            nettyServer, null, schedulers.reactorEvents());
+        masterNode = new NodeLauncher(
+            specBuilder.buildSpec(),
+            depositContract,
+            depositPairs
+                .getValue1()
+                .stream()
+                .map(BLS381Credentials::createWithDummySigner)
+                .collect(Collectors.toList()),
+            connectionManager,
+            new MemBeaconChainStorageFactory(spec.getObjectHasher()),
+            schedulers,
+            false);
+      }
 
-    // generate some blocks
-    controlledSchedulers.addTime(Duration.ofSeconds(64 * 10));
+      // generate some blocks
+      controlledSchedulers.addTime(Duration.ofSeconds(64 * 10));
 
-    // slave node
-    ConnectionManager<SocketAddress> slaveConnectionManager;
-    CompletableFuture<Channel<BytesValue>> connectFut;
-    NodeLauncher slaveNode;
-    {
-      ControlledSchedulers schedulers = controlledSchedulers.createNew("slave");
-      NettyClient nettyClient = new NettyClient();
-      slaveConnectionManager = new ConnectionManager<>(
-          null, nettyClient, schedulers.reactorEvents());
-      slaveNode = new NodeLauncher(
-          specBuilder.buildSpec(),
-          depositContract,
-          null,
-          slaveConnectionManager,
-          new MemBeaconChainStorageFactory(spec.getObjectHasher()),
-          schedulers,
-          true);
-      connectFut = slaveConnectionManager
+      // slave node
+      ConnectionManager<SocketAddress> slaveConnectionManager;
+      CompletableFuture<Channel<BytesValue>> connectFut;
+      NodeLauncher slaveNode;
+      {
+        ControlledSchedulers schedulers = controlledSchedulers.createNew("slave");
+        NettyClient nettyClient = new NettyClient();
+        slaveConnectionManager = new ConnectionManager<>(
+            null, nettyClient, schedulers.reactorEvents());
+        slaveNode = new NodeLauncher(
+            specBuilder.buildSpec(),
+            depositContract,
+            null,
+            slaveConnectionManager,
+            new MemBeaconChainStorageFactory(spec.getObjectHasher()),
+            schedulers,
+            true);
+        connectFut = slaveConnectionManager
+            .connect(InetSocketAddress.createUnresolved("localhost", 40001));
+        System.out.println("Connected! " + connectFut.get());
+      }
+
+      Assert.assertEquals(
+          SyncMode.Long,
+          Mono.from(slaveNode.getSyncManager().getSyncModeStream()).block(Duration.ZERO));
+
+      // generate some new blocks
+      System.out.println("Generating online blocks");
+      controlledSchedulers.addTime(Duration.ofSeconds(3 * 10));
+
+      Flux.from(slaveNode.getSyncManager().getSyncModeStream())
+          .filter(mode -> mode == SyncMode.Short)
+          .blockFirst(Duration.ofSeconds(30));
+
+      // 'realtime' mode
+      System.out.println("Some time in 'realtime' mode...");
+      for (int i = 0; i < 50; i++) {
+        controlledSchedulers.addTime(Duration.ofSeconds(1));
+        Thread.sleep(50);
+      }
+
+      // disconnecting slave
+      System.out.println("Disconnecting slave");
+      connectFut.get().close();
+
+      // generate new blocks on master
+      System.out.println("Generate new blocks on master");
+      controlledSchedulers.addTime(Duration.ofSeconds(32 * 10));
+
+      // connect the slave again
+      System.out.println("Connect the slave again");
+      CompletableFuture<Channel<BytesValue>> connectFut1 = slaveConnectionManager
           .connect(InetSocketAddress.createUnresolved("localhost", 40001));
-      System.out.println("Connected! " + connectFut.get());
+      connectFut1.get();
+      System.out.println("Slave connected");
+
+      System.out.println("Generating online blocks");
+      controlledSchedulers.addTime(Duration.ofSeconds(10 * 10));
+
+      Flux.from(slaveNode.getSyncManager().getSyncModeStream())
+          .filter(mode -> mode == SyncMode.Long)
+          .blockFirst(Duration.ofSeconds(30));
+
+      System.out.println("Some time in 'realtime' mode...");
+      for (int i = 0; i < 50; i++) {
+        controlledSchedulers.addTime(Duration.ofSeconds(1));
+        Thread.sleep(50);
+      }
+
+      Flux.from(slaveNode.getSyncManager().getSyncModeStream())
+          .filter(mode -> mode == SyncMode.Short)
+          .blockFirst(Duration.ofSeconds(30));
     }
-
-    Assert.assertEquals(
-        SyncMode.Long,
-        Mono.from(slaveNode.getSyncManager().getSyncModeStream()).block(Duration.ZERO));
-
-    // generate some new blocks
-    System.out.println("Generating online blocks");
-    controlledSchedulers.addTime(Duration.ofSeconds(3 * 10));
-
-    Flux.from(slaveNode.getSyncManager().getSyncModeStream())
-        .filter(mode -> mode == SyncMode.Short)
-        .blockFirst(Duration.ofSeconds(30));
-
-    // 'realtime' mode
-    System.out.println("Some time in 'realtime' mode...");
-    for (int i = 0; i < 50; i++) {
-      controlledSchedulers.addTime(Duration.ofSeconds(1));
-      Thread.sleep(50);
-    }
-
-    // disconnecting slave
-    System.out.println("Disconnecting slave");
-    connectFut.get().close();
-
-    // generate new blocks on master
-    System.out.println("Generate new blocks on master");
-    controlledSchedulers.addTime(Duration.ofSeconds(32 * 10));
-
-    // connect the slave again
-    System.out.println("Connect the slave again");
-    CompletableFuture<Channel<BytesValue>> connectFut1 = slaveConnectionManager
-        .connect(InetSocketAddress.createUnresolved("localhost", 40001));
-    connectFut1.get();
-    System.out.println("Slave connected");
-
-    System.out.println("Generating online blocks");
-    controlledSchedulers.addTime(Duration.ofSeconds(10 * 10));
-
-    Flux.from(slaveNode.getSyncManager().getSyncModeStream())
-        .filter(mode -> mode == SyncMode.Long)
-        .blockFirst(Duration.ofSeconds(30));
-
-    System.out.println("Some time in 'realtime' mode...");
-    for (int i = 0; i < 50; i++) {
-      controlledSchedulers.addTime(Duration.ofSeconds(1));
-      Thread.sleep(50);
-    }
-
-    Flux.from(slaveNode.getSyncManager().getSyncModeStream())
-        .filter(mode -> mode == SyncMode.Short)
-        .blockFirst(Duration.ofSeconds(30));
   }
 
   public static Integer getValue() {

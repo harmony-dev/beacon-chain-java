@@ -76,107 +76,109 @@ public class PeersTest {
 
     Launcher peer1 = simulatorLauncher.createPeer("test");
 
-    {
-      // peer 0
-      Server server = new NettyServer(40001);
-      server.start().await();
-      System.out.println("Peer 0 listening on port 40001");
-      ConnectionManager<SocketAddress> connectionManager = new ConnectionManager<>(
-          server, null, Schedulers.single());
+    try (Server server = new NettyServer(40001)) {
+      {
+        // peer 0
+        server.start().await();
+        System.out.println("Peer 0 listening on port 40001");
+        ConnectionManager<SocketAddress> connectionManager = new ConnectionManager<>(
+            server, null, Schedulers.single());
 
-      SSZSerializer ssz = new SSZBuilder().buildSerializer();
-      MessageSerializer messageSerializer = new SSZMessageSerializer(ssz);
-      WireApiSyncServer syncServer = new WireApiSyncServer(peer0.getBeaconChainStorage());
-      SimplePeerManagerImpl peerManager = new SimplePeerManagerImpl(
-          (byte) 1,
-          UInt64.valueOf(1),
-          connectionManager.channelsStream(),
-          ssz,
-          peer0.getSpec(),
-          messageSerializer,
-          peer0.getSchedulers(),
-          syncServer,
-          peer0.getBeaconChain().getBlockStatesStream());
+        SSZSerializer ssz = new SSZBuilder().buildSerializer();
+        MessageSerializer messageSerializer = new SSZMessageSerializer(ssz);
+        WireApiSyncServer syncServer = new WireApiSyncServer(peer0.getBeaconChainStorage());
+        SimplePeerManagerImpl peerManager = new SimplePeerManagerImpl(
+            (byte) 1,
+            UInt64.valueOf(1),
+            connectionManager.channelsStream(),
+            ssz,
+            peer0.getSpec(),
+            messageSerializer,
+            peer0.getSchedulers(),
+            syncServer,
+            peer0.getBeaconChain().getBlockStatesStream());
 
-      Flux.from(peerManager.connectedPeerStream())
-          .subscribe(
-              peer -> {
-                System.out.println("Remote peer connected: " + peer);
-                Flux.from(peer.getRawChannel().inboundMessageStream())
-                    .doOnError(e -> System.out.println("#### Error: " + e))
-                    .doOnComplete(() -> System.out.println("#### Complete"))
-                    .doOnNext(msg -> System.out.println("#### on message"))
-                    .subscribe();
-              });
-      Flux.from(peerManager.activePeerStream())
-          .subscribe(peer -> System.out.println("Remote peer active: " + peer));
-      Flux.from(peerManager.disconnectedPeerStream())
-          .subscribe(peer -> System.out.println("Remote peer disconnected: " + peer));
-      System.out.println("Peer 0 is ready.");
-    }
+        Flux.from(peerManager.connectedPeerStream())
+            .subscribe(
+                peer -> {
+                  System.out.println("Remote peer connected: " + peer);
+                  Flux.from(peer.getRawChannel().inboundMessageStream())
+                      .doOnError(e -> System.out.println("#### Error: " + e))
+                      .doOnComplete(() -> System.out.println("#### Complete"))
+                      .doOnNext(msg -> System.out.println("#### on message"))
+                      .subscribe();
+                });
+        Flux.from(peerManager.activePeerStream())
+            .subscribe(peer -> System.out.println("Remote peer active: " + peer));
+        Flux.from(peerManager.disconnectedPeerStream())
+            .subscribe(peer -> System.out.println("Remote peer disconnected: " + peer));
+        System.out.println("Peer 0 is ready.");
+      }
 
-    {
-      // peer 1
-      ConnectionManager<SocketAddress> connectionManager = new ConnectionManager<>(
-          null, new NettyClient(), Schedulers.single());
+      {
+        // peer 1
+        ConnectionManager<SocketAddress> connectionManager = new ConnectionManager<>(
+            null, new NettyClient(), Schedulers.single());
 
-      SSZSerializer ssz = new SSZBuilder().buildSerializer();
-      MessageSerializer messageSerializer = new SSZMessageSerializer(ssz);
-      SimplePeerManagerImpl peerManager = new SimplePeerManagerImpl(
-          (byte) 1,
-          UInt64.valueOf(1),
-          connectionManager.channelsStream(),
-          ssz,
-          peer1.getSpec(),
-          messageSerializer,
-          peer0.getSchedulers(),
-          null,
-          peer1.getBeaconChain().getBlockStatesStream());
+        SSZSerializer ssz = new SSZBuilder().buildSerializer();
+        MessageSerializer messageSerializer = new SSZMessageSerializer(ssz);
+        SimplePeerManagerImpl peerManager = new SimplePeerManagerImpl(
+            (byte) 1,
+            UInt64.valueOf(1),
+            connectionManager.channelsStream(),
+            ssz,
+            peer1.getSpec(),
+            messageSerializer,
+            peer0.getSchedulers(),
+            null,
+            peer1.getBeaconChain().getBlockStatesStream());
 
-      Flux.from(peerManager.connectedPeerStream())
-          .subscribe(peer -> System.out.println("Peer 1 connected: " + peer));
-      Flux.from(peerManager.activePeerStream())
-          .subscribe(peer -> System.out.println("Peer 1 active: " + peer));
-      Flux.from(peerManager.disconnectedPeerStream())
-          .subscribe(peer -> System.out.println("Peer 1 disconnected: " + peer));
+        Flux.from(peerManager.connectedPeerStream())
+            .subscribe(peer -> System.out.println("Peer 1 connected: " + peer));
+        Flux.from(peerManager.activePeerStream())
+            .subscribe(peer -> System.out.println("Peer 1 active: " + peer));
+        Flux.from(peerManager.disconnectedPeerStream())
+            .subscribe(peer -> System.out.println("Peer 1 disconnected: " + peer));
 
-      BeaconBlockTree blockTree = new BeaconBlockTree(simulatorLauncher.getSpec().getObjectHasher());
-      SyncQueue syncQueue = new SyncQueueImpl(blockTree, 4, 16);
+        BeaconBlockTree blockTree = new BeaconBlockTree(
+            simulatorLauncher.getSpec().getObjectHasher());
+        SyncQueue syncQueue = new SyncQueueImpl(blockTree, 4, 16);
 
-      SyncManagerImpl syncManager = new SyncManagerImpl(
-          peer1.getBeaconChain(),
-          Flux.from(peerManager.getWireApiSub().inboundBlocksStream()).map(Feedback::of),
-          peer1.getBeaconChainStorage(),
-          peer1.getSpec(),
-          peerManager.getWireApiSync(),
-          syncQueue,
-          1,
-          peer1.getSchedulers().reactorEvents());
+        SyncManagerImpl syncManager = new SyncManagerImpl(
+            peer1.getBeaconChain(),
+            Flux.from(peerManager.getWireApiSub().inboundBlocksStream()).map(Feedback::of),
+            peer1.getBeaconChainStorage(),
+            peer1.getSpec(),
+            peerManager.getWireApiSync(),
+            syncQueue,
+            1,
+            peer1.getSchedulers().reactorEvents());
 
-      CountDownLatch syncLatch = new CountDownLatch(1);
-      Flux.from(peer1.getBeaconChain().getBlockStatesStream())
-          .subscribe(s -> {
-            System.out.println(s);
-            if (s.getFinalState().getSlot().equals(
-                simulatorLauncher.getSpec().getConstants().getGenesisSlot().plus(slotCount))) {
-              syncManager.stop();
-              syncLatch.countDown();
-            }
-          });
+        CountDownLatch syncLatch = new CountDownLatch(1);
+        Flux.from(peer1.getBeaconChain().getBlockStatesStream())
+            .subscribe(s -> {
+              System.out.println(s);
+              if (s.getFinalState().getSlot().equals(
+                  simulatorLauncher.getSpec().getConstants().getGenesisSlot().plus(slotCount))) {
+                syncManager.stop();
+                syncLatch.countDown();
+              }
+            });
 
-      System.out.println("Peer 1: starting sync manager");
-      syncManager.start();
+        System.out.println("Peer 1: starting sync manager");
+        syncManager.start();
 
-      // simulatorLauncher.getControlledSchedulers().addTime(3000);
+        // simulatorLauncher.getControlledSchedulers().addTime(3000);
 
-      System.out.println("Peer 1: connecting to peer 0 for syncing...");
-      CompletableFuture<Channel<BytesValue>> localhost = connectionManager
-          .connect(InetSocketAddress.createUnresolved("localhost", 40001));
-      localhost.get();
-      System.out.println("Peer 1: connected to peer 0");
+        System.out.println("Peer 1: connecting to peer 0 for syncing...");
+        CompletableFuture<Channel<BytesValue>> localhost = connectionManager
+            .connect(InetSocketAddress.createUnresolved("localhost", 40001));
+        localhost.get();
+        System.out.println("Peer 1: connected to peer 0");
 
-      Assert.assertTrue(syncLatch.await(1, TimeUnit.MINUTES));
-      System.out.println("Done");
+        Assert.assertTrue(syncLatch.await(1, TimeUnit.MINUTES));
+        System.out.println("Done");
+      }
     }
   }
 }
