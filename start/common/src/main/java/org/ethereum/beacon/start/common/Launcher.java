@@ -201,7 +201,7 @@ public class Launcher {
     SlotNumber startSlot =
         spec.getConstants()
             .getGenesisSlot()
-            .plus(BenchmarkController.WARM_UP_EPOCHS.mul(spec.getConstants().getSlotsPerEpoch()));
+            .plus(benchmarkController.getWarmUpEpochs().mul(spec.getConstants().getSlotsPerEpoch()));
     ExtendedSlotTransition extendedSlotTransition =
         new ExtendedSlotTransition(
             stateCachingTransition, perEpochTransition, perSlotTransition, spec) {
@@ -233,7 +233,7 @@ public class Launcher {
     SlotNumber startSlot =
         spec.getConstants()
             .getGenesisSlot()
-            .plus(BenchmarkController.WARM_UP_EPOCHS.mul(spec.getConstants().getSlotsPerEpoch()));
+            .plus(benchmarkController.getWarmUpEpochs().mul(spec.getConstants().getSlotsPerEpoch()));
     return new PerBlockTransition(blockBench) {
       @Override
       public BeaconStateEx apply(BeaconStateEx stateEx, BeaconBlock block) {

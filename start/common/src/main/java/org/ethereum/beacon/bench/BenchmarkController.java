@@ -8,8 +8,6 @@ import org.ethereum.beacon.util.stats.MeasurementsCollector;
 
 public interface BenchmarkController {
 
-  EpochNumber WARM_UP_EPOCHS = EpochNumber.of(2);
-
   enum BenchmarkRoutine {
     SLOT,
     BLOCK,
@@ -22,6 +20,10 @@ public interface BenchmarkController {
 
   BenchmarkController NO_BENCHES = new BenchmarkController() {};
 
+  default EpochNumber getWarmUpEpochs() {
+    return EpochNumber.ZERO;
+  }
+
   default BeaconChainSpec wrap(BenchmarkRoutine routine, BeaconChainSpec spec) {
     return spec;
   }
@@ -32,7 +34,7 @@ public interface BenchmarkController {
 
   default void onBeforeNewSlot(SlotNumber slot) {}
 
-  static BenchmarkController newInstance() {
-    return new BenchmarkControllerImpl();
+  static BenchmarkController newInstance(int warmUpEpochs) {
+    return new BenchmarkControllerImpl(EpochNumber.of(warmUpEpochs));
   }
 }
