@@ -1,18 +1,13 @@
 package org.ethereum.beacon.core.util;
 
-import static org.junit.Assert.assertEquals;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
-import org.ethereum.beacon.consensus.BeaconStateEx;
-import org.ethereum.beacon.consensus.transition.BeaconStateExImpl;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockBody;
-import org.ethereum.beacon.core.BeaconBlockHeader;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
@@ -25,8 +20,6 @@ import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
 import org.ethereum.beacon.core.spec.SpecConstants;
-import org.ethereum.beacon.core.spec.SpecConstantsResolver;
-import org.ethereum.beacon.core.state.BeaconStateImpl;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Eth1DataVote;
 import org.ethereum.beacon.core.state.Fork;
@@ -41,9 +34,6 @@ import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.crypto.Hashes;
-import org.ethereum.beacon.ssz.SSZBuilder;
-import org.ethereum.beacon.ssz.SSZSerializer;
-import org.junit.Ignore;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes48;
@@ -55,22 +45,13 @@ import tech.pegasys.artemis.util.uint.UInt64;
 
 public class TestDataFactory {
   private SpecConstants specConstants;
-  private SSZSerializer sszSerializer;
 
   public TestDataFactory() {
     this(BeaconChainSpec.DEFAULT_CONSTANTS);
   }
 
   public TestDataFactory(SpecConstants specConstants) {
-    this(specConstants, new SSZBuilder()
-        .withExternalVarResolver(new SpecConstantsResolver(specConstants))
-        .buildSerializer());
-  }
-
-  public TestDataFactory(SpecConstants specConstants,
-      SSZSerializer sszSerializer) {
     this.specConstants = specConstants;
-    this.sszSerializer = sszSerializer;
   }
 
   public AttestationData createAttestationData() {
