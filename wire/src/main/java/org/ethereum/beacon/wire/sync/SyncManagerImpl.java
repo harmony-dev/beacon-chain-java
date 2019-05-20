@@ -27,6 +27,12 @@ import reactor.core.scheduler.Scheduler;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
 public class SyncManagerImpl {
+
+  public enum SyncMode {
+    Long,
+    Short
+  }
+
   private static final Logger logger = LogManager.getLogger(SyncManagerImpl.class);
 
   private final Publisher<BeaconTupleDetails> blockStatesStream;
@@ -35,6 +41,9 @@ public class SyncManagerImpl {
   private final WireApiSync syncApi;
   private Publisher<Feedback<BeaconBlock>> newBlocks;
   private final SyncQueue syncQueue;
+  private final ModeDetector modeDetector;
+  private final Flux<SyncMode> syncModeFlux;
+
   FluxSink<Publisher<BlockRequest>> requestsStreams;
   Flux<BlockRequest> blockRequestFlux;
   Scheduler delayScheduler;
@@ -65,12 +74,11 @@ public class SyncManagerImpl {
     this.maxConcurrentBlockRequests = maxConcurrentBlockRequests;
     this.delayScheduler = delayScheduler;
 
-    ModeDetector modeDetector =
-        new ModeDetector(
-            Flux.from(chain.getBlockStatesStream()).map(BeaconTuple::getBlock),
-            Flux.from(newBlocks).map(Feedback::get));
-    blockRequestFlux =
-        Flux.from(modeDetector.getSyncModeStream())
+    modeDetector = new ModeDetector(
+        Flux.from(chain.getBlockStatesStream()).map(BeaconTuple::getBlock),
+        Flux.from(newBlocks).map(Feedback::get));
+    syncModeFlux = Flux.from(modeDetector.getSyncModeStream()).replay(1).autoConnect();
+    blockRequestFlux = syncModeFlux
             .doOnNext(mode -> logger.info("Switch sync to mode " + mode))
             .switchMap(
                 mode -> {
@@ -145,9 +153,8 @@ public class SyncManagerImpl {
     readyBlocksStreamSub.dispose();
   }
 
-  enum SyncMode {
-    Long,
-    Short
+  public Publisher<SyncMode> getSyncModeStream() {
+    return syncModeFlux;
   }
 
   class ModeDetector {
