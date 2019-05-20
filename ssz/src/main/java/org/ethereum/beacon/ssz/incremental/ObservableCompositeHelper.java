@@ -57,6 +57,11 @@ public class ObservableCompositeHelper implements UpdateListener, ObservableComp
     public C get() {
       return value;
     }
+
+    @Override
+    public String toString() {
+      return value == null ? "null" : value.toString();
+    }
   }
 
   private Map<String, UpdateListener> listeners;
