@@ -1,17 +1,17 @@
 package org.ethereum.beacon.emulator.config.main;
 
-import java.util.Map;
+import org.ethereum.beacon.emulator.config.main.conract.Contract;
 
 /** Validator settings */
 public class Validator {
-  private Map<String, String> contract;
+  private Contract contract;
   private Signer signer;
 
-  public Map<String, String> getContract() {
+  public Contract getContract() {
     return contract;
   }
 
-  public void setContract(Map<String, String> contract) {
+  public void setContract(Contract contract) {
     this.contract = contract;
   }
 

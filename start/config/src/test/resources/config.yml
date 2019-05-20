@@ -7,18 +7,26 @@ config:
         - tcp://localhost:40002
         - tcp://localhost:40003
   validator:
-    contract:
-      handler: ethereumj
-      distanceFromHead: 1000
-      contractAddress: 0xd47c61f2c25aaa677dcf23e65765fac04c85d6a0
-      contractBlock: 8000000
-      contractAbi: file://Contract.abi
-    signer:
-      implementation:
-        class: InsecureBLS381MessageSigner
-        input:
-          pubKey: 1
-          privKey: 1
+    contract: !emulator
+      genesisTime: 7777
+      keys:
+        - !generate
+          count: 16
+          seed: 666
+        - !private
+          keys:
+            - 0x3564c032070e518026e47b32b6d34bca57c192d56f62e41b33e4b952e7b04d7a
+            - 0x3564c032070e518026e47b32b6d34bca57c192d56f62e41b33e4b952e7b04d7b
+            - 0x3564c032070e518026e47b32b6d34bca57c192d56f62e41b33e4b952e7b04d7c
+    signer: !insecure
+      keys:
+        - !generate
+          startIndex: 15
+          count: 1
+          seed: 666
+        - !private
+          keys:
+            - 0x3564c032070e518026e47b32b6d34bca57c192d56f62e41b33e4b952e7b04d7a
 
 plan: !general
   sync:
