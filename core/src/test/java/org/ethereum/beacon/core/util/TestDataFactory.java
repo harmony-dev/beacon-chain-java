@@ -43,7 +43,7 @@ import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.ssz.SSZBuilder;
 import org.ethereum.beacon.ssz.SSZSerializer;
-import org.junit.Test;
+import org.junit.Ignore;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes48;
@@ -51,6 +51,7 @@ import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.collections.ReadVector;
 import tech.pegasys.artemis.util.uint.UInt64;
+
 
 public class TestDataFactory {
   private SpecConstants specConstants;
@@ -214,15 +215,6 @@ public class TestDataFactory {
     BeaconState beaconState = BeaconState.getEmpty();
 
     return beaconState;
-  }
-
-  @Test
-  public void beaconStateExTest() {
-    BeaconState expected = createBeaconState();
-    BeaconStateEx stateEx = new BeaconStateExImpl(expected);
-    BytesValue encoded = sszSerializer.encode2(stateEx);
-    BeaconState reconstructed = sszSerializer.decode(encoded, BeaconStateImpl.class);
-    assertEquals(expected, reconstructed);
   }
 
   public Crosslink createCrosslink() {
