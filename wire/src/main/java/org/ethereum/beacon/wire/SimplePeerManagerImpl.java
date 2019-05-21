@@ -61,7 +61,9 @@ public class SimplePeerManagerImpl implements PeerManager {
     this.syncServer = syncServer;
     this.headStream = headStream;
 
-    connectedPeersStream = Flux.from(channelsStream).map(this::createPeer).publish().autoConnect();
+    connectedPeersStream = Flux.from(channelsStream)
+        .map(this::createPeer)
+        .replay(1).autoConnect();
 
     Flux.from(activePeerStream()).subscribe(this::onNewActivePeer);
 
@@ -86,6 +88,7 @@ public class SimplePeerManagerImpl implements PeerManager {
   }
 
   protected PeerImpl createPeer(Channel<BytesValue> channel) {
+    logger.info("Creating a peer from new channel: " + channel);
     return new PeerImpl(channel, createLocalHello(), ssz, messageSerializer, syncServer, schedulers);
   }
 
@@ -107,6 +110,7 @@ public class SimplePeerManagerImpl implements PeerManager {
   }
 
   protected void onNewActivePeer(Peer peer) {
+    logger.info("New active peer: " + peer);
     activePeers.add(peer);
     peer.getRawChannel().getCloseFuture().thenAccept(v -> activePeers.remove(peer));
   }
