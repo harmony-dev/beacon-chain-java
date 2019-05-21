@@ -8,19 +8,18 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public final class ConsumerList<E> extends LinkedList<E> {
+public final class ConsumerList<E> implements List<E> {
 
+  @VisibleForTesting final int maxSize;
   private final LinkedList<E> delegate;
   private final Consumer<E> spillOutConsumer;
-
-  @VisibleForTesting
-  final int maxSize;
 
   private ConsumerList(int maxSize, Consumer<E> spillOutConsumer) {
     checkArgument(maxSize >= 0, "maxSize (%s) must >= 0", maxSize);
@@ -38,7 +37,6 @@ public final class ConsumerList<E> extends LinkedList<E> {
   public static <E> ConsumerList<E> create(int maxSize, Consumer<E> spillOutConsumer) {
     return new ConsumerList<>(maxSize, spillOutConsumer);
   }
-
 
   /**
    * Returns the number of additional elements that this list can accept without consuming; zero if
@@ -78,7 +76,7 @@ public final class ConsumerList<E> extends LinkedList<E> {
   public boolean addAll(Collection<? extends E> collection) {
     int size = collection.size();
     if (size >= maxSize) {
-      while(!delegate.isEmpty()) {
+      while (!delegate.isEmpty()) {
         spillOutConsumer.accept(delegate.remove());
       }
       int numberToSkip = size - maxSize;
@@ -104,16 +102,6 @@ public final class ConsumerList<E> extends LinkedList<E> {
   }
 
   @Override
-  public E getFirst() {
-    return delegate.getFirst();
-  }
-
-  @Override
-  public E getLast() {
-    return delegate.getLast();
-  }
-
-  @Override
   public E get(int index) {
     return delegate.get(index);
   }
@@ -121,5 +109,97 @@ public final class ConsumerList<E> extends LinkedList<E> {
   @Override
   public Stream<E> stream() {
     return delegate.stream();
+  }
+
+  @Override
+  public boolean isEmpty() {
+    return delegate.isEmpty();
+  }
+
+  @Override
+  public Iterator<E> iterator() {
+    return delegate.iterator();
+  }
+
+  @Override
+  public Object[] toArray() {
+    return delegate.toArray();
+  }
+
+  @Override
+  public <T> T[] toArray(T[] a) {
+    return delegate.toArray(a);
+  }
+
+  @Override
+  public boolean remove(Object o) {
+    return delegate.remove(o);
+  }
+
+  @Override
+  public boolean containsAll(Collection<?> c) {
+    return delegate.containsAll(c);
+  }
+
+  @Override
+  public boolean addAll(int index, Collection<? extends E> c) {
+    throw new RuntimeException("Not implemented yet!");
+  }
+
+  @Override
+  public boolean removeAll(Collection<?> c) {
+    return delegate.removeAll(c);
+  }
+
+  @Override
+  public boolean retainAll(Collection<?> c) {
+    return delegate.retainAll(c);
+  }
+
+  @Override
+  public void clear() {
+    delegate.clear();
+  }
+
+  @Override
+  public E set(int index, E element) {
+    throw new RuntimeException("Not implememnted yet!");
+  }
+
+  @Override
+  public void add(int index, E element) {
+    throw new RuntimeException("Not implememnted yet!");
+  }
+
+  @Override
+  public E remove(int index) {
+    return delegate.remove(index);
+  }
+
+  @Override
+  public int indexOf(Object o) {
+    return delegate.indexOf(o);
+  }
+
+  @Override
+  public int lastIndexOf(Object o) {
+    return delegate.lastIndexOf(o);
+  }
+
+  @Override
+  public ListIterator<E> listIterator() {
+    return delegate.listIterator();
+  }
+
+  @Override
+  public ListIterator<E> listIterator(int index) {
+    return delegate.listIterator(index);
+  }
+
+  @Override
+  public List<E> subList(int fromIndex, int toIndex) {
+    ConsumerList<E> res = create(maxSize, spillOutConsumer);
+    res.addAll(delegate.subList(fromIndex, toIndex));
+    return res;
   }
 }
