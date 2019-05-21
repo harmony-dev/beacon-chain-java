@@ -72,18 +72,23 @@ public class WireApiSyncServer implements WireApiSync {
       SlotNumber maxSlot = storage.getBlockStorage().getMaxSlot();
       SlotNumber prevSlot = SlotNumber.ZERO;
       for(int i = 0; i < requestMessage.getMaxHeaders().intValue(); i++) {
-
-        List<Hash32> slotBlocks = Collections.emptyList();
-        SlotNumber nonEmptySlot = slot;
-        while (slotBlocks.isEmpty() && nonEmptySlot.greater(prevSlot)) {
-          slotBlocks = storage.getBlockStorage().getSlotBlocks(nonEmptySlot);
-          nonEmptySlot = nonEmptySlot.decrement();
-        }
-        headers.add(storage.getBlockHeaderStorage().get(slotBlocks.get(0)).get());
-        slot = slot.plus(increment);
         if (slot.greater(maxSlot)) {
           break;
         }
+        List<Hash32> slotBlocks = Collections.emptyList();
+        SlotNumber nonEmptySlot = slot;
+        while (nonEmptySlot.greater(prevSlot)) {
+          slotBlocks = storage.getBlockStorage().getSlotBlocks(nonEmptySlot);
+          if (!slotBlocks.isEmpty()) {
+            break;
+          }
+          nonEmptySlot = nonEmptySlot.decrement();
+        }
+
+        if (nonEmptySlot.greater(prevSlot)) {
+          headers.add(storage.getBlockHeaderStorage().get(slotBlocks.get(0)).get());
+        }
+        slot = slot.plus(increment);
         prevSlot = nonEmptySlot;
       }
       ret.complete(new BlockHeadersResponseMessage(headers));
