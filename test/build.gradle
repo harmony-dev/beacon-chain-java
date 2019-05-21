@@ -17,6 +17,7 @@ dependencies {
 
 task submodulesUpdate(type:Exec) {
   description 'Updates (and inits) git submodules'
+  commandLine 'git', 'lfs', 'install'
   commandLine 'git', 'submodule', 'update', '--init', '--recursive'
   group 'Build Setup'
 }
