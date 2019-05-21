@@ -175,7 +175,7 @@ public class NodeLauncher {
     wireApiSyncRemote = peerManager.getWireApiSync();
 
     blockTree = new BeaconBlockTree(spec.getObjectHasher());
-    syncQueue = new SyncQueueImpl(blockTree, 4, 16);
+    syncQueue = new SyncQueueImpl(blockTree);
 
     syncManager = new SyncManagerImpl(
         beaconChain,
