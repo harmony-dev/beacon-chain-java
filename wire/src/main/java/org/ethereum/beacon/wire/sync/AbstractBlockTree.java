@@ -34,7 +34,7 @@ public abstract class AbstractBlockTree<THash, TBlock extends BlockWrap<THash, T
 
   @Nonnull
   @Override
-  public List<TBlock> addBlock(@Nonnull TBlock block) {
+  public synchronized List<TBlock> addBlock(@Nonnull TBlock block) {
     if (topBlock == null) {
       throw new IllegalStateException("Top block should be set first");
     }
@@ -70,7 +70,7 @@ public abstract class AbstractBlockTree<THash, TBlock extends BlockWrap<THash, T
   }
 
   @Override
-  public void setTopBlock(@Nonnull TBlock block) {
+  public synchronized void setTopBlock(@Nonnull TBlock block) {
     if (topBlock != null) {
       if (!hashMap.containsKey(block.getHash())) {
         throw new IllegalArgumentException(
@@ -91,7 +91,7 @@ public abstract class AbstractBlockTree<THash, TBlock extends BlockWrap<THash, T
 
   @Nonnull
   @Override
-  public TBlock getTopBlock() {
+  public synchronized TBlock getTopBlock() {
     return topBlock;
   }
 }
