@@ -21,7 +21,7 @@ jobs:
       - run:
           name: Install git-lfs for submodules with large files
           command: |
-            sudo sh -c "echo 'deb http://http.debian.net/debian wheezy-backports main' >> /etc/apt/sources.list"
+            sudo sh -c "echo 'deb [trusted=yes] http://http.debian.net/debian wheezy-backports main' >> /etc/apt/sources.list"
             curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
             sudo apt-get update && sudo apt-get install -y git-lfs
       - run:
