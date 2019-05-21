@@ -18,7 +18,9 @@ jobs:
           keys:
             - v1-gradle-dir-{{ checksum "build.gradle" }}
             - v1-gradle-dir-
-
+      - run:
+          name: Install git-lfs for submodules with large files
+          command: sudo apt-get update && sudo apt-get install -y git-lfs
       - run:
           name: Downloading dependencies
           command: ./gradlew allDependencies
