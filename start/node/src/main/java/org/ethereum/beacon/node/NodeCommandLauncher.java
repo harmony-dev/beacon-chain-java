@@ -150,7 +150,7 @@ public class NodeCommandLauncher implements Runnable {
         connectionManager,
         new MemBeaconChainStorageFactory(spec.getObjectHasher()),
         schedulers,
-        false);
+        true);
 
     while (true) {
       try {
