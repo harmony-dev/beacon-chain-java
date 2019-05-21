@@ -1,12 +1,5 @@
 package org.ethereum.beacon.pow;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 import org.ethereum.beacon.schedulers.LatestExecutor;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.core.Block;
@@ -21,17 +14,30 @@ import org.ethereum.facade.SyncStatus.SyncStage;
 import org.ethereum.listener.EthereumListenerAdapter;
 import org.ethereum.vm.LogInfo;
 import org.javatuples.Pair;
+import org.javatuples.Triplet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tech.pegasys.artemis.ethereum.core.Address;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
+import tech.pegasys.artemis.util.bytes.Bytes8;
+import tech.pegasys.artemis.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.uint.UInt64;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class EthereumJDepositContract extends AbstractDepositContract {
   private static final Logger logger = LoggerFactory.getLogger(EthereumJDepositContract.class);
 
   private static final String DEPOSIT_EVENT_NAME = "Deposit";
-  private static final String CHAIN_START_EVENT_NAME = "ChainStart";
+  private static final String CHAIN_START_EVENT_NAME = "Eth2Genesis";
 
   private final LatestExecutor<Long> blockExecutor;
 
@@ -45,9 +51,14 @@ public class EthereumJDepositContract extends AbstractDepositContract {
   private volatile long processedUpToBlock;
   private boolean chainStartComplete;
 
-  public EthereumJDepositContract(Ethereum ethereum, long contractDeployBlock,
-      String contractDeployAddress, Schedulers schedulers) {
-    super(schedulers);
+  public EthereumJDepositContract(
+      Ethereum ethereum,
+      long contractDeployBlock,
+      String contractDeployAddress,
+      Schedulers schedulers,
+      Function<BytesValue, Hash32> hashFunction,
+      int merkleTreeDepth) {
+    super(schedulers, hashFunction, merkleTreeDepth);
     this.ethereum = ethereum;
     this.contractDeployAddress = Address.fromHexString(contractDeployAddress);
     contractDeployAddressHash =
@@ -61,19 +72,20 @@ public class EthereumJDepositContract extends AbstractDepositContract {
 
   @Override
   protected void chainStartSubscribed() {
-    ethereum.addListener(new EthereumListenerAdapter() {
-      @Override
-      public void onSyncDone(SyncState state) {
-        if (state == SyncState.COMPLETE) {
-          onEthereumUpdated();
-        }
-      }
+    ethereum.addListener(
+        new EthereumListenerAdapter() {
+          @Override
+          public void onSyncDone(SyncState state) {
+            if (state == SyncState.COMPLETE) {
+              onEthereumUpdated();
+            }
+          }
 
-      @Override
-      public void onBlock(Block block, List<TransactionReceipt> receipts) {
-        onEthereumUpdated();
-      }
-    });
+          @Override
+          public void onBlock(Block block, List<TransactionReceipt> receipts) {
+            onEthereumUpdated();
+          }
+        });
 
     if (ethereum.getSyncStatus().getStage() == SyncStage.Complete) {
       processConfirmedBlocks();
@@ -86,20 +98,21 @@ public class EthereumJDepositContract extends AbstractDepositContract {
   }
 
   private void onEthereumUpdated() {
-    if (!chainStartComplete) {
-      processConfirmedBlocks();
-    }
+    processConfirmedBlocks();
+  }
+
+  private long getBestConfirmedBlock() {
+    return ethereum.getBlockchain().getBestBlock().getNumber() - getDistanceFromHead();
   }
 
   private void processConfirmedBlocks() {
-    long bestConfirmedBlock =
-        ethereum.getBlockchain().getBestBlock().getNumber() - getDistanceFromHead();
+    long bestConfirmedBlock = getBestConfirmedBlock();
     blockExecutor.newEvent(bestConfirmedBlock);
   }
 
   private void processBlocksUpTo(long bestConfirmedBlock) {
     try {
-      for (long number = processedUpToBlock; number < bestConfirmedBlock; number++) {
+      for (long number = processedUpToBlock; number <= bestConfirmedBlock; number++) {
         Block block = ethereum.getBlockchain().getBlockByNumber(number);
         onConfirmedBlock(block);
         processedUpToBlock = number + 1;
@@ -116,30 +129,41 @@ public class EthereumJDepositContract extends AbstractDepositContract {
         .collect(Collectors.toList());
   }
 
-  private void onConfirmedBlock(Block block) {
+  private synchronized void onConfirmedBlock(Block block) {
+    List<DepositEventData> depositEventDataList = new ArrayList<>();
     for (Invocation invocation : getContractEvents(block)) {
       if (DEPOSIT_EVENT_NAME.equals(invocation.function.name)) {
-        newDeposit(createDepositEventData(invocation), block.getHash());
+        depositEventDataList.add(createDepositEventData(invocation));
       } else if (CHAIN_START_EVENT_NAME.equals(invocation.function.name)) {
-        chainStart((byte[]) invocation.args[0], (byte[]) invocation.args[1], block.getHash());
+        if (!depositEventDataList.isEmpty()) {
+          newDeposits(depositEventDataList, block.getHash());
+        }
+        depositEventDataList.clear();
+        chainStart(
+            (byte[]) invocation.args[0],
+            (byte[]) invocation.args[1],
+            (byte[]) invocation.args[2],
+            block.getHash());
       } else {
         throw new IllegalStateException("Invalid event from the contract: " + invocation);
       }
     }
+    if (!depositEventDataList.isEmpty()) {
+      newDeposits(depositEventDataList, block.getHash());
+    }
   }
 
+  /**
+   * @param depositEvent Deposit: event({ pubkey: bytes[48], withdrawal_credentials: bytes[32],
+   *     amount: bytes[8], signature: bytes[96], merkle_tree_index: bytes[8], })
+   */
   private DepositEventData createDepositEventData(Invocation depositEvent) {
-    Object[] merkle_branch_obj = (Object[]) depositEvent.args[3];
-    byte[][] merkle_branch_arr = new byte[merkle_branch_obj.length][];
-    for (int i = 0; i < merkle_branch_obj.length; i++) {
-      merkle_branch_arr[i] = (byte[]) merkle_branch_obj[i];
-    }
-
     return new DepositEventData(
         (byte[]) depositEvent.args[0],
         (byte[]) depositEvent.args[1],
         (byte[]) depositEvent.args[2],
-        merkle_branch_arr);
+        (byte[]) depositEvent.args[3],
+        (byte[]) depositEvent.args[4]);
   }
 
   private List<Invocation> getContractEvents(Block block) {
@@ -166,7 +190,7 @@ public class EthereumJDepositContract extends AbstractDepositContract {
     if (block == null) {
       return false;
     }
-    if (ethereum.getBlockchain().getBestBlock().getNumber() - block.getNumber() < getDistanceFromHead()) {
+    if (block.getNumber() > getBestConfirmedBlock()) {
       return false;
     }
 
@@ -176,17 +200,28 @@ public class EthereumJDepositContract extends AbstractDepositContract {
   }
 
   @Override
-  protected Optional<Pair<byte[], byte[]>> getLatestBlockHashDepositRoot() {
-    long bestBlock = ethereum.getBlockchain().getBestBlock().getNumber() - getDistanceFromHead();
-    for(long blockNum = bestBlock; blockNum >= contractDeployBlock; blockNum--) {
+  protected synchronized Optional<Triplet<byte[], Integer, byte[]>>
+      getLatestBlockHashDepositRoot() {
+    long bestBlock = getBestConfirmedBlock();
+    for (long blockNum = bestBlock; blockNum >= contractDeployBlock; blockNum--) {
       Block block = ethereum.getBlockchain().getBlockByNumber(blockNum);
       List<Invocation> contractEvents = getContractEvents(block);
       Collections.reverse(contractEvents);
       for (Invocation contractEvent : contractEvents) {
         if (CHAIN_START_EVENT_NAME.equals(contractEvent.function.name)) {
-          return Optional.of(Pair.with(block.getHash(), (byte[]) contractEvent.args[0]));
+          return Optional.of(
+              Triplet.with(
+                  (byte[]) contractEvent.args[0],
+                  UInt64.fromBytesLittleEndian(Bytes8.wrap((byte[]) contractEvent.args[1]))
+                      .intValue(),
+                  block.getHash()));
         } else {
-          return Optional.of(Pair.with(block.getHash(), (byte[]) contractEvent.args[0]));
+          byte[] merkleTreeIndex = (byte[]) contractEvent.args[4];
+          return Optional.of(
+              Triplet.with(
+                  getDepositRoot(merkleTreeIndex).extractArray(),
+                  UInt64.fromBytesLittleEndian(Bytes8.wrap(merkleTreeIndex)).increment().intValue(),
+                  block.getHash()));
         }
       }
     }
@@ -194,16 +229,17 @@ public class EthereumJDepositContract extends AbstractDepositContract {
   }
 
   @Override
-  protected List<Pair<byte[], DepositEventData>> peekDepositsImpl(int count, byte[] startBlockHash,
-      byte[] startDepositRoot, byte[] endBlockHash, byte[] endDepositRoot) {
-    List<Pair<byte[], DepositEventData>> ret = new ArrayList<>();
+  protected List<Pair<byte[], List<DepositEventData>>> peekDepositsImpl(
+      int count, byte[] startBlockHash, byte[] endBlockHash) {
+    List<Pair<byte[], List<DepositEventData>>> ret = new ArrayList<>();
     Block startBlock = ethereum.getBlockchain().getBlockByHash(startBlockHash);
     Block endBlock = ethereum.getBlockchain().getBlockByHash(endBlockHash);
 
-    Iterator<Pair<Block, DepositEventData>> iterator = iterateDepositEvents(startBlock, endBlock);
+    Iterator<Pair<Block, List<DepositEventData>>> iterator =
+        iterateDepositEvents(startBlock, endBlock);
     boolean started = false;
     while (iterator.hasNext()) {
-      if (Arrays.equals(startDepositRoot, iterator.next().getValue1().deposit_root)) {
+      if (Arrays.equals(startBlockHash, iterator.next().getValue0().getHash())) {
         started = true;
         break;
       }
@@ -214,10 +250,10 @@ public class EthereumJDepositContract extends AbstractDepositContract {
     }
 
     while (iterator.hasNext() && count > 0) {
-      Pair<Block, DepositEventData> event = iterator.next();
+      Pair<Block, List<DepositEventData>> event = iterator.next();
       ret.add(Pair.with(event.getValue0().getHash(), event.getValue1()));
       count--;
-      if (Arrays.equals(endDepositRoot, event.getValue1().deposit_root)){
+      if (Arrays.equals(endBlockHash, event.getValue0().getHash())) {
         break;
       }
     }
@@ -225,10 +261,10 @@ public class EthereumJDepositContract extends AbstractDepositContract {
     return ret;
   }
 
-  private Iterator<Pair<Block, DepositEventData>> iterateDepositEvents(Block fromInclusive,
-      Block tillInclusive) {
-    return new Iterator<Pair<Block, DepositEventData>>() {
-      Iterator<Invocation> iterator = Collections.emptyIterator();
+  private Iterator<Pair<Block, List<DepositEventData>>> iterateDepositEvents(
+      Block fromInclusive, Block tillInclusive) {
+    return new Iterator<Pair<Block, List<DepositEventData>>>() {
+      Iterator<List<Invocation>> iterator = Collections.emptyIterator();
       Block curBlock;
 
       @Override
@@ -240,24 +276,31 @@ public class EthereumJDepositContract extends AbstractDepositContract {
             if (curBlock.getNumber() >= tillInclusive.getNumber()) {
               return false;
             }
-            if (ethereum.getBlockchain().getBestBlock().getNumber() - getDistanceFromHead()
-                <= curBlock.getNumber()) {
+            if (getBestConfirmedBlock() <= curBlock.getNumber()) {
               return false;
             }
             curBlock = ethereum.getBlockchain().getBlockByNumber(curBlock.getNumber() + 1);
           }
-          iterator =
-              getContractEvents(curBlock)
-                  .stream()
+          List<Invocation> cur =
+              getContractEvents(curBlock).stream()
                   .filter(invocation -> DEPOSIT_EVENT_NAME.equals(invocation.function.name))
-                  .iterator();
+                  .collect(Collectors.toList());
+          if (!cur.isEmpty()) {
+            List<List<Invocation>> iteratorList = new ArrayList<>();
+            iteratorList.add(cur);
+            iterator = iteratorList.iterator();
+          }
         }
         return true;
       }
 
       @Override
-      public Pair<Block, DepositEventData> next() {
-        return Pair.with(curBlock, createDepositEventData(iterator.next()));
+      public Pair<Block, List<DepositEventData>> next() {
+        return Pair.with(
+            curBlock,
+            iterator.next().stream()
+                .map(i -> createDepositEventData(i))
+                .collect(Collectors.toList()));
       }
     };
   }
