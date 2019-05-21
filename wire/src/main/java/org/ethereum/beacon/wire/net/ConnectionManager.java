@@ -13,6 +13,7 @@ import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.ReplayProcessor;
 import reactor.core.scheduler.Scheduler;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
@@ -24,7 +25,7 @@ public class ConnectionManager<TAddress> {
   private final Client<TAddress> client;
   private final Scheduler rxScheduler;
 
-  private final DirectProcessor<Channel<BytesValue>> clientConnections = DirectProcessor.create();
+  private final ReplayProcessor<Channel<BytesValue>> clientConnections = ReplayProcessor.create();
   private final FluxSink<Channel<BytesValue>> clientConnectionsSink = clientConnections.sink();
   private final Set<TAddress> activePeers = Collections.synchronizedSet(new HashSet<>());
 
@@ -54,7 +55,7 @@ public class ConnectionManager<TAddress> {
         .flatMap(Mono::fromFuture, 1, 1)
         .doOnError(t-> logger.info("Couldn't connect to active peer " + peerAddress + ": " + t))
         .doOnNext(ch -> logger.info("Connected to active peer " + peerAddress))
-        .doOnNext(clientConnectionsSink::next)
+        .doOnNext(ch -> clientConnectionsSink.next(ch))
         .map(Channel::getCloseFuture)
         .onErrorResume(t -> Flux.just(CompletableFuture.completedFuture(null)))
         .flatMap(f -> Mono.fromFuture(f.thenApply(v -> "")), 1, 1)
@@ -70,7 +71,9 @@ public class ConnectionManager<TAddress> {
 
   public Publisher<Channel<BytesValue>> channelsStream() {
     return Flux.merge(
-        server == null ? Flux.empty() : server.channelsStream(),
-        client == null ? Flux.empty() : clientConnections);
+            server == null ? Flux.empty() : server.channelsStream(),
+            client == null ? Flux.empty() :
+                clientConnections)
+        .doOnNext(ch -> System.out.println(ch));
   }
 }
