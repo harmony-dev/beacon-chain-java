@@ -5,8 +5,12 @@ import java.io.File;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -23,8 +27,13 @@ import org.ethereum.beacon.emulator.config.ConfigBuilder;
 import org.ethereum.beacon.emulator.config.chainspec.SpecBuilder;
 import org.ethereum.beacon.emulator.config.chainspec.SpecData;
 import org.ethereum.beacon.emulator.config.main.MainConfig;
+import org.ethereum.beacon.emulator.config.main.Signer.Insecure;
+import org.ethereum.beacon.emulator.config.main.ValidatorKeys;
+import org.ethereum.beacon.emulator.config.main.ValidatorKeys.Private;
+import org.ethereum.beacon.emulator.config.main.conract.EmulatorContract;
 import org.ethereum.beacon.emulator.config.main.network.NettyNetwork;
 import org.ethereum.beacon.emulator.config.main.network.Network;
+import org.ethereum.beacon.node.command.RunNode;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.start.common.NodeLauncher;
@@ -142,11 +151,20 @@ public class NodeCommandLauncher implements Runnable {
         new MemBeaconChainStorageFactory(spec.getObjectHasher()),
         schedulers,
         false);
+
+    while (true) {
+      try {
+        Thread.sleep(1000000L);
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
+    }
   }
 
   public static class Builder {
     private MainConfig config;
     private Level logLevel = Level.INFO;
+    private RunNode cliOptions;
 
     public Builder() {}
 
@@ -162,6 +180,60 @@ public class NodeCommandLauncher implements Runnable {
       SpecData spec = specConfigBuilder.build();
 
       SpecBuilder specBuilder = new SpecBuilder().withSpec(spec);
+
+      if (cliOptions.getListenPort() != null || cliOptions.getActivePeers() != null) {
+        NettyNetwork network = (NettyNetwork) config
+                .getConfig()
+                .getNetworks()
+                .stream()
+                .filter(n -> n instanceof NettyNetwork)
+                .findFirst().orElse(null);
+
+        if (network == null) {
+          network = new NettyNetwork();
+          config.getConfig().getNetworks().add(network);
+        }
+
+        if (cliOptions.getListenPort() != null) {
+          network.setListenPort(cliOptions.getListenPort());
+        }
+
+        if (cliOptions.getActivePeers() != null) {
+          network.setActivePeers(cliOptions.getActivePeers());
+        }
+      }
+
+      if (cliOptions.getValidators() != null) {
+        List<String> validatorKeys = new ArrayList<>();
+        List<KeyPair> depositKeypairs = null;
+        for (String key : cliOptions.getValidators()) {
+          if (key.startsWith("0x")) {
+            validatorKeys.add(key);
+          } else {
+            if (depositKeypairs == null) {
+              depositKeypairs = ConfigUtils
+                  .createKeyPairs(((EmulatorContract)config.getConfig().getValidator().getContract()).getKeys());
+            }
+            List<KeyPair> finalDepositKeypairs = depositKeypairs;
+
+            IntStream indices;
+            if (key.contains("-")) {
+              int idx = key.indexOf("-");
+              int start = Integer.parseInt(key.substring(0, idx));
+              int end = Integer.parseInt(key.substring(idx + 1));
+              indices = IntStream.range(start, end + 1);
+            } else {
+              indices = IntStream.of(Integer.parseInt(key));
+            }
+            indices
+                .mapToObj(i -> finalDepositKeypairs.get(i).getPrivate().getEncodedBytes().toString())
+                .forEach(validatorKeys::add);
+          }
+        }
+        Insecure signer = new Insecure();
+        signer.setKeys(Collections.singletonList(new Private(validatorKeys)));
+        config.getConfig().getValidator().setSigner(signer);
+      }
 
       return new NodeCommandLauncher(
           config,
@@ -184,6 +256,11 @@ public class NodeCommandLauncher implements Runnable {
 
     public Builder withLogLevel(Level logLevel) {
       this.logLevel = logLevel;
+      return this;
+    }
+
+    public Builder withCliOptions(RunNode runNode) {
+      cliOptions = runNode;
       return this;
     }
   }

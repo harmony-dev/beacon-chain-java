@@ -1,12 +1,13 @@
 package org.ethereum.beacon.emulator.config.main;
 
+import java.util.ArrayList;
 import java.util.List;
 import org.ethereum.beacon.emulator.config.main.network.Network;
 
 /** Beacon chain configuration */
 public class Configuration {
   private String db;
-  private List<Network> networks;
+  private List<Network> networks = new ArrayList<>();
   private Validator validator;
 
   public String getDb() {

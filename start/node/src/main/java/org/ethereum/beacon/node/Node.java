@@ -7,7 +7,7 @@ import picocli.CommandLine.RunLast;
 @CommandLine.Command(
     description = "Beacon chain node",
     name = "node",
-    version = "simulator " + Node.VERSION,
+    version = "node " + Node.VERSION,
     mixinStandardHelpOptions = true,
     subcommands = {RunNode.class})
 public class Node implements Runnable {

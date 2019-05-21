@@ -54,6 +54,15 @@ public abstract class ValidatorKeys {
     }
   }
 
-  public static class Private extends ExplicitKeys {}
+  public static class Private extends ExplicitKeys {
+
+    public Private() {
+    }
+
+    public Private(List<String> keys) {
+      setKeys(keys);
+    }
+  }
+
   public static class Public extends ExplicitKeys {}
 }

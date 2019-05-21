@@ -1,10 +1,11 @@
 package org.ethereum.beacon.emulator.config.main.network;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class NettyNetwork extends Network {
   private Integer listenPort;
-  private List<String> activePeers;
+  private List<String> activePeers = new ArrayList<>();
 
   public Integer getListenPort() {
     return listenPort;

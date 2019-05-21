@@ -28,11 +28,12 @@
     </Console>
   </Appenders>
   <Loggers>
-    <Logger name="simulator" level="trace" additivity="true">
-      <AppenderRef ref="Console"/>
-    </Logger>
+    <!--<Logger name="simulator" level="trace" additivity="true">-->
+      <!--<AppenderRef ref="Console"/>-->
+    <!--</Logger>-->
 
-    <Root level="info">
+    <Root level="debug">
+      <AppenderRef ref="Console"/>
       <AppenderRef ref="validatorFile"/>
       <AppenderRef ref="allFile"/>
     </Root>

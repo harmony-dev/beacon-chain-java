@@ -30,6 +30,9 @@ import tech.pegasys.artemis.util.uint.UInt64;
 public class ConfigUtils {
 
   public static List<BLS381Credentials> createCredentials(Signer config, boolean isBlsSign) {
+    if (config == null) {
+      return null;
+    }
     if (config instanceof Signer.Insecure) {
       return createKeyPairs(((Insecure) config).getKeys())
           .stream()
