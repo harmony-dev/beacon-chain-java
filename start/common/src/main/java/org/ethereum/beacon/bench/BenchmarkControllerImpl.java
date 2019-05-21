@@ -6,6 +6,7 @@ import java.util.Map;
 import org.ethereum.beacon.bench.BenchmarkReport.Builder;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.spec.SpecConstants;
+import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.util.stats.MeasurementsCollector;
 import tech.pegasys.artemis.util.uint.UInt64;
@@ -13,10 +14,21 @@ import tech.pegasys.artemis.util.uint.UInt64;
 public class BenchmarkControllerImpl implements BenchmarkController {
 
   private final List<BenchInstance> benchingInstances = new ArrayList<>();
+  private final EpochNumber warmUpEpochs;
+
+  public BenchmarkControllerImpl(EpochNumber warmUpEpochs) {
+    this.warmUpEpochs = warmUpEpochs;
+  }
+
+  @Override
+  public EpochNumber getWarmUpEpochs() {
+    return warmUpEpochs;
+  }
 
   @Override
   public BeaconChainSpec wrap(BenchmarkRoutine routine, BeaconChainSpec spec) {
-    BenchInstance newInstance = BenchInstance.create(spec, routine, spec.getConstants());
+    BenchInstance newInstance =
+        BenchInstance.create(spec, routine, spec.getConstants(), getWarmUpEpochs());
     benchingInstances.add(newInstance);
     return newInstance.specWrapper;
   }
@@ -59,7 +71,10 @@ public class BenchmarkControllerImpl implements BenchmarkController {
     }
 
     static BenchInstance create(
-        BeaconChainSpec spec, BenchmarkRoutine routine, SpecConstants constants) {
+        BeaconChainSpec spec,
+        BenchmarkRoutine routine,
+        SpecConstants constants,
+        EpochNumber warmUpEpochs) {
       switch (routine) {
         case SLOT:
         case BLOCK:
@@ -67,7 +82,7 @@ public class BenchmarkControllerImpl implements BenchmarkController {
           return new BenchInstance(
               routine,
               BenchmarkingBeaconChainSpec.wrap(spec),
-              constants.getGenesisSlot().plus(WARM_UP_EPOCHS.mul(constants.getSlotsPerEpoch())),
+              constants.getGenesisSlot().plus(warmUpEpochs.mul(constants.getSlotsPerEpoch())),
               SlotNumber.of(1));
         case EPOCH:
           // start tracking epochs when first skipping epoch transitions have happened
@@ -76,7 +91,7 @@ public class BenchmarkControllerImpl implements BenchmarkController {
               BenchmarkingBeaconChainSpec.wrap(spec),
               constants
                   .getGenesisSlot()
-                  .plus(WARM_UP_EPOCHS.mul(constants.getSlotsPerEpoch()))
+                  .plus(warmUpEpochs.mul(constants.getSlotsPerEpoch()))
                   .increment(),
               constants.getSlotsPerEpoch());
         default:

@@ -39,7 +39,6 @@ public class BeaconStateImpl implements MutableBeaconState {
       obsHelper.newValue(ObservableListImpl.create(ValidatorIndex::of));
   private ObsValue<WriteList<ValidatorIndex, Gwei>> balances =
       obsHelper.newValue(ObservableListImpl.create(ValidatorIndex::of));
-  private ObsValue<EpochNumber> validatorRegistryUpdateEpoch = obsHelper.newValue(EpochNumber.ZERO);
 
   /* Randomness and committees */
 

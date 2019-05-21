@@ -223,6 +223,10 @@ public class ObservableListImpl<IndexType extends Number, ValueType>
 
   @Override
   public boolean equals(Object obj) {
+    if (getClass().equals(obj.getClass())) {
+      return this.delegate.equals(((ObservableListImpl) obj).delegate);
+    }
+
     return delegate.equals(obj);
   }
 }

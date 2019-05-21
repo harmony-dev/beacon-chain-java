@@ -368,12 +368,19 @@ public class BenchmarkReport {
     "get_beacon_proposer_index",
     "get_active_validator_indices",
     "get_total_balance",
+    "get_churn_limit",
     "get_attesting_indices",
     "get_validator_index_by_pubkey",
     "get_base_reward",
-    "verify_bitfield",
-    "generate_seed",
+    "verify_indexed_attestation",
     "get_unslashed_attesting_indices",
-    "get_winning_crosslink_and_attesting_indices"
+    "generate_seed",
+    "get_winning_crosslink_and_attesting_indices",
+    "get_shard_delta",
+    "get_epoch_start_shard",
+    "get_attestation_slot",
+    "get_epoch_committee_count",
+    "get_total_active_balance",
+    "get_attesting_balance",
   };
 }
