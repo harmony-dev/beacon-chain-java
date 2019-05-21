@@ -5,8 +5,6 @@ import org.ethereum.beacon.util.ConsumerList;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
-import tech.pegasys.artemis.util.collections.ReadVector;
-import tech.pegasys.artemis.util.uint.UInt64;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -79,7 +77,7 @@ public class DepositBufferedMerkle extends DepositDataMerkle {
   }
 
   @Override
-  public ReadVector<Integer, Hash32> getProof(int index, int size) {
+  public List<Hash32> getProof(int index, int size) {
     List<List<BytesValue>> tree = buildTreeForIndex(size - 1);
     List<Hash32> proof = new ArrayList<>();
     for (int i = 0; i < treeDepth; ++i) {
@@ -91,7 +89,7 @@ public class DepositBufferedMerkle extends DepositDataMerkle {
       }
     }
 
-    return ReadVector.wrap(proof, Integer::new);
+    return proof;
   }
 
   private BytesValue get_merkle_root(List<List<BytesValue>> tree) {
@@ -113,8 +111,8 @@ public class DepositBufferedMerkle extends DepositDataMerkle {
   }
 
   @Override
-  public Hash32 getRoot(UInt64 index) {
-    List<List<BytesValue>> tree = buildTreeForIndex(index.intValue());
+  public Hash32 getRoot(int index) {
+    List<List<BytesValue>> tree = buildTreeForIndex(index);
     BytesValue root = get_merkle_root(tree);
     return Hash32.wrap(Bytes32.leftPad(root));
   }

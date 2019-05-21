@@ -69,7 +69,7 @@ public abstract class AbstractDepositContract implements DepositContract {
     for (Deposit deposit : deposits) {
       Deposit depositProofed =
           new Deposit(
-              tree.getProof(deposit.getIndex().intValue(), size),
+              ReadVector.wrap(tree.getProof(deposit.getIndex().intValue(), size), Integer::new),
               deposit.getIndex(),
               deposit.getData());
       if (startChainSubscribed && !chainStartSink.isTerminated()) {
@@ -94,7 +94,7 @@ public abstract class AbstractDepositContract implements DepositContract {
         .map(
             deposit ->
                 new Deposit(
-                    tree.getProof(deposit.getIndex().intValue(), size),
+                    ReadVector.wrap(tree.getProof(deposit.getIndex().intValue(), size), Integer::new),
                     deposit.getIndex(),
                     deposit.getData()))
         .map(
@@ -102,7 +102,7 @@ public abstract class AbstractDepositContract implements DepositContract {
                 new DepositInfo(
                     d,
                     new Eth1Data(
-                        tree.getRoot(d.getIndex()),
+                        tree.getRoot(d.getIndex().intValue()),
                         d.getIndex().decrement(),
                         Hash32.wrap(Bytes32.wrap(blockHash)))))
         .collect(Collectors.toList());
@@ -123,7 +123,7 @@ public abstract class AbstractDepositContract implements DepositContract {
 
   public Hash32 getDepositRoot(byte[] merkleTreeIndex) {
     UInt64 index = UInt64.fromBytesLittleEndian(Bytes8.wrap(merkleTreeIndex));
-    return tree.getRoot(index);
+    return tree.getRoot(index.intValue());
   }
 
   protected synchronized void chainStart(

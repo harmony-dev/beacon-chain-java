@@ -33,15 +33,15 @@ public class DepositDataMerkleTest {
       System.out.println(i);
       insertInBoth.accept(i);
       assertEquals(
-          simple.getRoot(UInt64.valueOf(i - 1)),
-          incremental.getRoot(UInt64.valueOf(i - 1)));
+          simple.getRoot(i - 1),
+          incremental.getRoot(i - 1));
     }
     int someIndex = simple.getLastIndex() + 1;
     for (int i = 20; i < 40; ++i) {
       insertInBoth.accept(i);
       assertArrayEquals(
-          simple.getProof(someIndex, i).listCopy().toArray(),
-          incremental.getProof(someIndex, i).listCopy().toArray());
+          simple.getProof(someIndex, i).toArray(),
+          incremental.getProof(someIndex, i).toArray());
     }
   }
 

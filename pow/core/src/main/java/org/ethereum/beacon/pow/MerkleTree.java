@@ -1,8 +1,8 @@
 package org.ethereum.beacon.pow;
 
 import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.collections.ReadVector;
-import tech.pegasys.artemis.util.uint.UInt64;
+
+import java.util.List;
 
 /**
  * Merkle Hash Tree <a
@@ -19,7 +19,7 @@ public interface MerkleTree<V> {
    * @param size with all tree made of size elements
    * @return proofs
    */
-  ReadVector<Integer, Hash32> getProof(int index, int size);
+  List<Hash32> getProof(int index, int size);
 
   /**
    * Root of merkle tree with all elements up to index
@@ -27,7 +27,7 @@ public interface MerkleTree<V> {
    * @param index last element index
    * @return tree root
    */
-  Hash32 getRoot(UInt64 index);
+  Hash32 getRoot(int index);
 
   /**
    * Inserts value in tree / storage

@@ -86,21 +86,19 @@ public class DepositSimpleMerkle extends DepositDataMerkle {
   }
 
   @Override
-  public ReadVector<Integer, Hash32> getProof(int index, int size) {
+  public List<Hash32> getProof(int index, int size) {
     verifyIndexNotTooBig(index);
     if (size > (getLastIndex() + 1)) {
       throw new RuntimeException(
           String.format("Max size is %s, asked for size %s!", getLastIndex() + 1, size));
     }
-    return ReadVector.wrap(
-        get_merkle_proof(calc_merkle_tree_from_leaves(deposits.subList(0, size)), index),
-        Integer::new);
+    return get_merkle_proof(calc_merkle_tree_from_leaves(deposits.subList(0, size)), index);
   }
 
   @Override
-  public Hash32 getRoot(UInt64 index) {
-    verifyIndexNotTooBig(index.intValue());
-    return Hash32.wrap(Bytes32.leftPad(get_merkle_root(deposits.subList(0, index.intValue() + 1))));
+  public Hash32 getRoot(int index) {
+    verifyIndexNotTooBig(index);
+    return Hash32.wrap(Bytes32.leftPad(get_merkle_root(deposits.subList(0, index + 1))));
   }
 
   @Override
