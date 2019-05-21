@@ -48,7 +48,7 @@ public class TestUtils {
       "git submodule init & git submodule update --recursive --remote";
   static ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
   static String PATH_TO_TESTS = "eth2.0-spec-tests/tests";
-  static String PATH_TO_CONFIGS = "eth2.0-spec-tests/configs";
+  static String PATH_TO_CONFIGS = "eth2.0-temp-test-configs";
   static String SPEC_CONFIG_DIR = "constant_presets";
   static String FORK_CONFIG_DIR = "fork_timelines";
 
