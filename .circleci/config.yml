@@ -20,7 +20,10 @@ jobs:
             - v1-gradle-dir-
       - run:
           name: Install git-lfs for submodules with large files
-          command: sudo apt-get update && sudo apt-get install -y git-lfs
+          command: |
+            echo 'deb http://http.debian.net/debian wheezy-backports main' > /etc/apt/sources.list.d/wheezy-backports-main.list
+            curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
+            sudo apt-get update && sudo apt-get install -y git-lfs
       - run:
           name: Downloading dependencies
           command: ./gradlew allDependencies
