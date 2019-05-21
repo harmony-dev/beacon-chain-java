@@ -1,6 +1,3 @@
-[submodule "test/src/test/resources/eth2.0-tests"]
-	path = test/src/test/resources/eth2.0-tests
-	url = https://github.com/ethereum/eth2.0-tests.git
 [submodule "crypto/src/main/resources/bls-key-pairs"]
 	path = crypto/src/main/resources/bls-key-pairs
 	url = https://github.com/harmony-dev/bls-key-pairs
