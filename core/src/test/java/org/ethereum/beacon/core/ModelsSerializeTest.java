@@ -62,7 +62,7 @@ public class ModelsSerializeTest {
     sszSerializer = new SSZBuilder()
         .withExternalVarResolver(new SpecConstantsResolver(specConstants))
         .buildSerializer();
-    dataFactory = new TestDataFactory(specConstants, sszSerializer);
+    dataFactory = new TestDataFactory(specConstants);
   }
 
   @Test
