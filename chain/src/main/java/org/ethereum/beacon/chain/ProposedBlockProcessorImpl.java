@@ -19,10 +19,10 @@ public class ProposedBlockProcessorImpl implements ProposedBlockProcessor {
   }
 
   @Override
-  public void newBlockProposed(BeaconBlock newBlcok) {
-    boolean result = beaconChain.insert(newBlcok);
+  public void newBlockProposed(BeaconBlock newBlock) {
+    boolean result = beaconChain.insert(newBlock);
     if (result) {
-      blocksStream.onNext(newBlcok);
+      blocksStream.onNext(newBlock);
     }
   }
 
