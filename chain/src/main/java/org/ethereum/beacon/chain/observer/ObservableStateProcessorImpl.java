@@ -226,14 +226,26 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   private void updateCurrentObservableState(BeaconTupleDetails head, SlotNumber slot) {
     assert slot.greaterEqual(head.getBlock().getSlot());
 
-    PendingOperations pendingOperations =
-        getPendingOperations(head.getFinalState(), copyAttestationCache());
     if (slot.greater(head.getBlock().getSlot())) {
-      BeaconStateEx stateUponASlot = emptySlotTransition.apply(head.getFinalState(), slot);
+      BeaconStateEx stateUponASlot;
+      if (latestState.getSlot().greater(spec.getConstants().getGenesisSlot())
+          && spec.getObjectHasher()
+              .getHashTruncateLast(head.getBlock())
+              .equals(
+                  spec.get_block_root_at_slot(latestState, latestState.getSlot().decrement()))) {
+
+        // latestState is actual with respect to current head
+        stateUponASlot = emptySlotTransition.apply(latestState, slot);
+      } else {
+        // recalculate all empty slots starting from the head
+        stateUponASlot = emptySlotTransition.apply(head.getFinalState(), slot);
+      }
       latestState = stateUponASlot;
+      PendingOperations pendingOperations = getPendingOperations(stateUponASlot, copyAttestationCache());
       observableStateStream.onNext(
           new ObservableBeaconState(head.getBlock(), stateUponASlot, pendingOperations));
     } else {
+      PendingOperations pendingOperations = getPendingOperations(head.getFinalState(), copyAttestationCache());
       if (head.getPostSlotState().isPresent()) {
         latestState = head.getPostSlotState().get();
         observableStateStream.onNext(new ObservableBeaconState(
