@@ -56,6 +56,17 @@ public class RunNode implements Runnable {
   )
   private List<String> validators;
 
+  @CommandLine.Option(
+      names = {"--name"},
+      paramLabel = "node-name",
+      description = "Node name for logs identification (when several nodes running)"
+  )
+  private String name;
+
+  public String getName() {
+    return name;
+  }
+
   public Integer getListenPort() {
     return listenPort;
   }

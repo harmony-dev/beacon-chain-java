@@ -6,9 +6,18 @@ import org.ethereum.beacon.emulator.config.main.network.Network;
 
 /** Beacon chain configuration */
 public class Configuration {
+  private String name;
   private String db;
   private List<Network> networks = new ArrayList<>();
   private Validator validator;
+
+  public String getName() {
+    return name;
+  }
+
+  public void setName(String name) {
+    this.name = name;
+  }
 
   public String getDb() {
     return db;

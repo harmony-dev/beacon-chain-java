@@ -9,6 +9,7 @@ import io.netty.channel.DefaultMessageSizeEstimator;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LoggingHandler;
+import java.util.concurrent.Executor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.wire.net.Server;
@@ -23,10 +24,20 @@ public class NettyServer implements Server {
   private FluxSink<NettyChannel> channelsSink = channels.sink();
   private final int port;
   private ChannelFuture channelFuture;
+  private final NioEventLoopGroup workerGroup;
 
+  public NettyServer(int port, NioEventLoopGroup workerGroup) {
+    this.port = port;
+    this.workerGroup = workerGroup;
+  }
+
+  public NettyServer(int port, Executor executor) {
+    this(port, new NioEventLoopGroup(16, executor));
+  }
 
   public NettyServer(int port) {
-    this.port = port;
+    this(port, new NioEventLoopGroup(16,
+        new ThreadFactoryBuilder().setNameFormat("netty-service-worker-%d").build()));
   }
 
   @Override
@@ -40,15 +51,11 @@ public class NettyServer implements Server {
 
   @Override
   public ChannelFuture start() {
-    NioEventLoopGroup bossGroup = new NioEventLoopGroup(1,
-        new ThreadFactoryBuilder().setNameFormat("netty-service-boss-%d").build());
-    NioEventLoopGroup workerGroup = new NioEventLoopGroup(16,
-        new ThreadFactoryBuilder().setNameFormat("netty-service-worker-%d").build());
 
     try {
       ServerBootstrap b = new ServerBootstrap();
 
-      b.group(bossGroup, workerGroup);
+      b.group(workerGroup, workerGroup);
       b.channel(NioServerSocketChannel.class);
 
       b.option(ChannelOption.MESSAGE_SIZE_ESTIMATOR, DefaultMessageSizeEstimator.DEFAULT);
@@ -73,7 +80,6 @@ public class NettyServer implements Server {
       channelFuture.channel().closeFuture().addListener(aa -> {
         logger.debug("Incoming port is closed: " + port);
         workerGroup.shutdownGracefully();
-        bossGroup.shutdownGracefully();
         channelsSink.complete();
       });
 

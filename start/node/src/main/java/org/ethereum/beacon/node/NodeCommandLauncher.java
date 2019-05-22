@@ -1,5 +1,6 @@
 package org.ethereum.beacon.node;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.netty.channel.ChannelFutureListener;
 import java.io.File;
 import java.net.InetSocketAddress;
@@ -9,11 +10,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.ThreadFactory;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.ThreadContext;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
@@ -28,13 +30,14 @@ import org.ethereum.beacon.emulator.config.chainspec.SpecBuilder;
 import org.ethereum.beacon.emulator.config.chainspec.SpecData;
 import org.ethereum.beacon.emulator.config.main.MainConfig;
 import org.ethereum.beacon.emulator.config.main.Signer.Insecure;
-import org.ethereum.beacon.emulator.config.main.ValidatorKeys;
 import org.ethereum.beacon.emulator.config.main.ValidatorKeys.Private;
 import org.ethereum.beacon.emulator.config.main.conract.EmulatorContract;
 import org.ethereum.beacon.emulator.config.main.network.NettyNetwork;
 import org.ethereum.beacon.emulator.config.main.network.Network;
 import org.ethereum.beacon.node.command.RunNode;
 import org.ethereum.beacon.pow.DepositContract;
+import org.ethereum.beacon.schedulers.DefaultSchedulers;
+import org.ethereum.beacon.schedulers.Scheduler;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.start.common.NodeLauncher;
 import org.ethereum.beacon.start.common.util.MDCControlledSchedulers;
@@ -96,11 +99,30 @@ public class NodeCommandLauncher implements Runnable {
   }
 
   public void run() {
+    String nodeName = config.getConfig().getName();
+    if (nodeName != null) {
+      ThreadContext.put("validatorIndex", nodeName);
+    }
+
     if (config.getChainSpec().isDefined())
       logger.info("Overridden beacon chain parameters:\n{}", config.getChainSpec());
 
-    Random rnd = new Random();
-    Schedulers schedulers = Schedulers.createDefault();
+    Schedulers schedulers =
+        new DefaultSchedulers() {
+          @Override
+          protected ThreadFactory createThreadFactory(String namePattern) {
+            ThreadFactory factory = new ThreadFactoryBuilder().setDaemon(true)
+                    .setNameFormat((nodeName == null ? "" : nodeName + "-") + namePattern).build();
+            if (nodeName == null) {
+              return factory;
+            } else {
+              return r -> factory.newThread(() -> {
+                ThreadContext.put("validatorIndex", nodeName);
+                r.run();
+              });
+            }
+          }
+        };
 
     depositContract = ConfigUtils.createDepositContract(
         config.getConfig().getValidator().getContract(),
@@ -120,7 +142,8 @@ public class NodeCommandLauncher implements Runnable {
       NettyNetwork nettyConfig = (NettyNetwork) networkCfg;
       NettyServer nettyServer = null;
       if (nettyConfig.getListenPort() != null) {
-        nettyServer = new NettyServer(nettyConfig.getListenPort());
+        Scheduler serverScheduler = schedulers.newParallelDaemon("netty-server-%d", 16);
+        nettyServer = new NettyServer(nettyConfig.getListenPort(), serverScheduler::executeR);
         nettyServer.start().addListener((ChannelFutureListener) channelFuture -> {
           try {
             channelFuture.get();
@@ -130,7 +153,8 @@ public class NodeCommandLauncher implements Runnable {
           }
         });
       }
-      NettyClient nettyClient = new NettyClient();
+      Scheduler clientScheduler = schedulers.newParallelDaemon("netty-client-%d", 2);
+      NettyClient nettyClient = new NettyClient(clientScheduler::executeR);
       ConnectionManager<SocketAddress> tcpConnectionManager =
           new ConnectionManager<>(nettyServer, nettyClient, schedulers.reactorEvents());
       connectionManager = tcpConnectionManager;
@@ -180,6 +204,11 @@ public class NodeCommandLauncher implements Runnable {
       SpecData spec = specConfigBuilder.build();
 
       SpecBuilder specBuilder = new SpecBuilder().withSpec(spec);
+
+      if (cliOptions.getName() != null) {
+        config.getConfig().setName(cliOptions.getName());
+      }
+
 
       if (cliOptions.getListenPort() != null || cliOptions.getActivePeers() != null) {
         NettyNetwork network = (NettyNetwork) config

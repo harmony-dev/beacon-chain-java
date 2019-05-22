@@ -3,6 +3,7 @@ package org.ethereum.beacon.schedulers;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 import java.util.function.Consumer;
 
 public class DefaultSchedulers extends AbstractSchedulers {
@@ -29,7 +30,10 @@ public class DefaultSchedulers extends AbstractSchedulers {
   @Override
   protected ScheduledExecutorService createExecutor(String namePattern, int threads) {
     started = true;
-    return Executors.newScheduledThreadPool(
-        threads, new ThreadFactoryBuilder().setDaemon(true).setNameFormat(namePattern).build());
+    return Executors.newScheduledThreadPool(threads, createThreadFactory(namePattern));
+  }
+
+  protected ThreadFactory createThreadFactory(String namePattern) {
+    return new ThreadFactoryBuilder().setDaemon(true).setNameFormat(namePattern).build();
   }
 }

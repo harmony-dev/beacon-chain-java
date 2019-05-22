@@ -16,8 +16,16 @@ public interface Scheduler {
 
   CompletableFuture<Void> executeAtFixedRate(Duration initialDelay, Duration period, RunnableEx task);
 
+  default CompletableFuture<Void> executeR(Runnable task) {
+    return execute(task::run);
+  }
+
   default CompletableFuture<Void> execute(RunnableEx task) {
     return execute(() -> {task.run(); return null;});
+  }
+
+  default CompletableFuture<Void> executeWithDelayR(Duration delay, Runnable task) {
+    return executeWithDelay(delay, task::run);
   }
 
   default CompletableFuture<Void> executeWithDelay(Duration delay, RunnableEx task) {

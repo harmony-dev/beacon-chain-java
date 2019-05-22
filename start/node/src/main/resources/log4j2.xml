@@ -6,22 +6,23 @@
     <Routing name="validatorFile">
       <Routes pattern="$${ctx:validatorIndex:-X}">
         <Route>
-          <File name="dummy" fileName="logs/peer-${ctx:validatorIndex:-X}.log" append="false">
+          <File name="dummy" fileName="logs/node-${ctx:validatorIndex:-X}.log" append="false">
             <PatternLayout>
-              <Pattern>%d{HH:mm:ss.SSS} [%X{validatorTime}] %p %c{1.} [%t] %m%n</Pattern>
+              <Pattern>%d{HH:mm:ss.SSS} %p %c{1.} [%t] %m%n</Pattern>
             </PatternLayout>
           </File>
         </Route>
       </Routes>
     </Routing>
 
-    <File name="allFile" fileName="logs/all.log" append="false">
+    <File name="allFile" fileName="logs/all.log" append="true" locking="true">
       <PatternLayout>
-        <Pattern>%d{HH:mm:ss.SSS} [%X{validatorTime}] %p %c{1.} [%t] #%X{validatorIndex} %m%n</Pattern>
+        <Pattern>%d{HH:mm:ss.SSS} [#%X{validatorIndex}] %p %c{1.} [%t] %m%n</Pattern>
       </PatternLayout>
     </File>
 
     <Console name="Console" target="SYSTEM_OUT">
+      <ThresholdFilter level="info"/>
       <PatternLayout>
         <Pattern>%d{HH:mm:ss.SSS} #%X{validatorIndex} %X{validatorTime} %-5level - %msg%n</Pattern>
       </PatternLayout>

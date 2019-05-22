@@ -9,14 +9,23 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import java.net.SocketAddress;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import org.ethereum.beacon.wire.net.Client;
 
 public class NettyClient implements Client<SocketAddress> {
   private final NioEventLoopGroup workerGroup;
 
+  public NettyClient(NioEventLoopGroup workerGroup) {
+    this.workerGroup = workerGroup;
+  }
+
+  public NettyClient(Executor executor) {
+    this(new NioEventLoopGroup(2, executor));
+  }
+
   public NettyClient() {
-    workerGroup = new NioEventLoopGroup(2,
-        new ThreadFactoryBuilder().setNameFormat("netty-client-worker-%d").build());
+    this(new NioEventLoopGroup(2,
+        new ThreadFactoryBuilder().setNameFormat("netty-client-worker-%d").build()));
   }
 
   @Override
