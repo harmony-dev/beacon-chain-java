@@ -84,10 +84,11 @@ public class SyncManagerImpl {
                 mode -> {
                   switch (mode) {
                     case Long:
-                      return syncQueue.getBlockRequestsStream();
-                    case Short:
                       return Flux.from(syncQueue.getBlockRequestsStream())
                           .delayElements(Duration.ofSeconds(1), delayScheduler);
+                    case Short:
+                      return Flux.from(syncQueue.getBlockRequestsStream())
+                          .delayElements(Duration.ofSeconds(5), delayScheduler);
                     default:
                       throw new IllegalStateException();
                   }
@@ -137,7 +138,7 @@ public class SyncManagerImpl {
             req.getStep()))
         .flatMap(req -> Mono.fromFuture(syncApi.requestBlocks(req, spec.getObjectHasher())),
             maxConcurrentBlockRequests)
-        .onErrorContinue((t, o) -> logger.info("SyncApi exception: " + t + ", " + o));
+        .onErrorContinue((t, o) -> logger.warn("SyncApi exception: " + t + ", " + o));
 
     if (newBlocks != null) {
       wireBlocksStream = wireBlocksStream.mergeWith(
