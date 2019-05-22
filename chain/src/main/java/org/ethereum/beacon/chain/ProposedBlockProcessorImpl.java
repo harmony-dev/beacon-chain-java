@@ -1,5 +1,6 @@
 package org.ethereum.beacon.chain;
 
+import org.ethereum.beacon.chain.MutableBeaconChain.ImportResult;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.stream.SimpleProcessor;
@@ -20,8 +21,8 @@ public class ProposedBlockProcessorImpl implements ProposedBlockProcessor {
 
   @Override
   public void newBlockProposed(BeaconBlock newBlock) {
-    boolean result = beaconChain.insert(newBlock);
-    if (result) {
+    ImportResult result = beaconChain.insert(newBlock);
+    if (result == ImportResult.OK) {
       blocksStream.onNext(newBlock);
     }
   }

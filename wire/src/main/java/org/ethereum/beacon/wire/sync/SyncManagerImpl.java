@@ -1,5 +1,12 @@
 package org.ethereum.beacon.wire.sync;
 
+import static org.ethereum.beacon.chain.MutableBeaconChain.ImportResult.ExistingBlock;
+import static org.ethereum.beacon.chain.MutableBeaconChain.ImportResult.ExpiredBlock;
+import static org.ethereum.beacon.chain.MutableBeaconChain.ImportResult.InvalidBlock;
+import static org.ethereum.beacon.chain.MutableBeaconChain.ImportResult.NoParent;
+import static org.ethereum.beacon.chain.MutableBeaconChain.ImportResult.OK;
+import static org.ethereum.beacon.chain.MutableBeaconChain.ImportResult.StateMismatch;
+
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -10,6 +17,7 @@ import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.chain.BeaconTuple;
 import org.ethereum.beacon.chain.BeaconTupleDetails;
 import org.ethereum.beacon.chain.MutableBeaconChain;
+import org.ethereum.beacon.chain.MutableBeaconChain.ImportResult;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.BeaconBlock;
@@ -112,12 +120,20 @@ public class SyncManagerImpl {
         Flux.from(syncQueue.getBlocksStream())
             .subscribe(
                 block -> {
-                  if (!chain.insert(block.get())) {
+                  ImportResult result = chain.insert(block.get());
+                  if (result == InvalidBlock || result == StateMismatch || result == ExpiredBlock) {
                     block.feedbackError(
                         new WireInvalidConsensusDataException(
                             "Couldn't insert block: " + block.get()));
                   } else {
                     block.feedbackSuccess();
+                    if (result == NoParent) {
+                      logger.warn("No parent for block: " + block.get());
+                    } else if (result == ExistingBlock) {
+                      logger.info("Trying to import existing block: " + block.get());
+                    } else if (result != OK) {
+                      logger.info("Other error importing block: " + block.get());
+                    }
                   }
                 });
   }

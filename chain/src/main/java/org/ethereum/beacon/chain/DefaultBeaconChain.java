@@ -98,17 +98,17 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   }
 
   @Override
-  public synchronized boolean insert(BeaconBlock block) {
+  public synchronized ImportResult insert(BeaconBlock block) {
     if (rejectedByTime(block)) {
-      return false;
+      return ImportResult.ExpiredBlock;
     }
 
     if (exist(block)) {
-      return false;
+      return ImportResult.ExistingBlock;
     }
 
     if (!hasParent(block)) {
-      return false;
+      return ImportResult.NoParent;
     }
 
     long s = System.nanoTime();
@@ -121,7 +121,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     if (!blockVerification.isPassed()) {
       logger.warn("Block verification failed: " + blockVerification + ": " +
           block.toString(spec.getConstants(), parentState.getGenesisTime(), spec::signing_root));
-      return false;
+      return ImportResult.InvalidBlock;
     }
 
     BeaconStateEx postBlockState = blockTransition.apply(preBlockState, block);
@@ -130,7 +130,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
         stateVerifier.verify(postBlockState, block);
     if (!stateVerification.isPassed()) {
       logger.warn("State verification failed: " + stateVerification);
-      return false;
+      return ImportResult.StateMismatch;
     }
 
     BeaconTuple newTuple = BeaconTuple.of(block, postBlockState);
@@ -154,7 +154,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
                 spec::signing_root),
         String.format("%.3f", ((double) total) / 1_000_000_000d));
 
-    return true;
+    return ImportResult.OK;
   }
 
   @Override
