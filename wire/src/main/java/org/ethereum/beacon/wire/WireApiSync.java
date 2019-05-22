@@ -50,7 +50,7 @@ public interface WireApiSync {
         bodiesFuture,
         (headers, bodies) -> {
           Map<Hash32, BeaconBlockBody> bodyMap =
-              bodies.get().stream().collect(Collectors.toMap(hasher::getHash, b -> b));
+              bodies.get().stream().collect(Collectors.toMap(hasher::getHash, b -> b, (b1, b2) -> b1));
           return bodies.delegate(
               headers.stream()
                   .map(h -> Optional.ofNullable(bodyMap.get(h.getBlockBodyRoot()))
