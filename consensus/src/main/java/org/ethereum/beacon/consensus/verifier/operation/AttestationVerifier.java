@@ -25,8 +25,10 @@ public class AttestationVerifier implements OperationVerifier<Attestation> {
   @Override
   public VerificationResult verify(Attestation attestation, BeaconState state) {
     try {
-      spec.verify_attestation(state, attestation);
-      return VerificationResult.PASSED;
+      return spec.verify_attestation(state, attestation)
+          ? VerificationResult.PASSED
+          : VerificationResult.failedResult(
+              "Failed to verify attestation %s against state %s", attestation, state);
     } catch (Exception e) {
       return VerificationResult.failedResult(e.getMessage());
     }

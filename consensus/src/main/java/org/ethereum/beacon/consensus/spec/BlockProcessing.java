@@ -207,16 +207,17 @@ public interface BlockProcessing extends HelperFunction {
     assertTrue(slashed_any);
   }
 
-  default void verify_attestation(BeaconState state, Attestation attestation) {
+  default boolean verify_attestation(BeaconState state, Attestation attestation) {
     AttestationData data = attestation.getData();
 
     /* attestation_slot = get_attestation_slot(state, attestation)
        assert attestation_slot + MIN_ATTESTATION_INCLUSION_DELAY <= state.slot <= attestation_slot + SLOTS_PER_EPOCH */
     SlotNumber attestation_slot = get_attestation_slot(state, data);
-    assertTrue(
+    if (!
         attestation_slot.plus(getConstants().getMinAttestationInclusionDelay()).lessEqual(state.getSlot())
-        && state.getSlot().lessEqual(attestation_slot.plus(getConstants().getSlotsPerEpoch()))
-    );
+        && state.getSlot().lessEqual(attestation_slot.plus(getConstants().getSlotsPerEpoch()))) {
+      return false;
+    }
 
     /* Check target epoch, source epoch, source root, and source crosslink
       data = attestation.data
@@ -234,15 +235,19 @@ public interface BlockProcessing extends HelperFunction {
             && data.getSourceEpoch().equals(state.getPreviousJustifiedEpoch())
             && data.getSourceRoot().equals(state.getPreviousJustifiedRoot())
             && data.getPreviousCrosslinkRoot().equals(hash_tree_root(state.getPreviousCrosslinks().get(data.getShard())));
-    assertTrue(current_epoch_attestation || previous_epoch_attestation);
+    if (!(current_epoch_attestation || previous_epoch_attestation)) {
+      return false;
+    }
 
     /* Check crosslink data root
       assert data.crosslink_data_root == ZERO_HASH  # [to be removed in phase 1] */
-    assertTrue(data.getCrosslinkDataRoot().equals(Hash32.ZERO));
+    if (!(data.getCrosslinkDataRoot().equals(Hash32.ZERO))) {
+      return false;
+    }
 
     /* Check signature and bitfields
       assert verify_indexed_attestation(state, convert_to_indexed(state, attestation)) */
-    assertTrue(verify_indexed_attestation(state, convert_to_indexed(state, attestation)));
+    return verify_indexed_attestation(state, convert_to_indexed(state, attestation));
   }
 
   /*

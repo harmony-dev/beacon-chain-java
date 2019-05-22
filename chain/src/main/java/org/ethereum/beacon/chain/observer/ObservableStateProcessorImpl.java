@@ -269,16 +269,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
         .flatMap(Collection::stream)
         .filter(attestation ->
             attestation.getData().getTargetEpoch().lessEqual(spec.get_current_epoch(state)))
-        .filter(attestation -> {
-          /* attestation_slot = get_attestation_slot(state, attestation)
-             assert attestation_slot + MIN_ATTESTATION_INCLUSION_DELAY <= state.slot <= attestation_slot + SLOTS_PER_EPOCH */
-          SlotNumber attestationSlot = spec.get_attestation_slot(state, attestation.getData());
-          SlotNumber lowerBoundary =
-              attestationSlot.plus(spec.getConstants().getMinAttestationInclusionDelay());
-          SlotNumber upperBoundary = attestationSlot.plus(spec.getConstants().getSlotsPerEpoch());
-          return lowerBoundary.lessEqual(state.getSlot())
-              && state.getSlot().lessEqual(upperBoundary);
-        })
+        .filter(attestation -> spec.verify_attestation(state, attestation))
         .sorted(Comparator.comparing(attestation -> attestation.getData().getTargetEpoch()))
         .collect(Collectors.toList());
 
