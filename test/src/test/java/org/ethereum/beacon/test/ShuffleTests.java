@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
+/** Committee shuffle test */
 public class ShuffleTests extends TestUtils {
   private String TESTS_DIR = "shuffling";
   private String TESTS_SUBDIR = "core";
