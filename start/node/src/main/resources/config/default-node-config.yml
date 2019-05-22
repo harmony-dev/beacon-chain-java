@@ -5,7 +5,8 @@ config:
 
   validator:
     contract: !emulator
-      genesisTime: 2019-05-21 11:00:00
+      genesisTime: 2019-05-22 11:50:00
+      balance: 55
       keys:
         - !generate
           count: 16
@@ -40,3 +41,5 @@ chainSpec:
     blsVerify: false
     blsVerifyProofOfPossession: false
     blsSign: false
+    enableCache: false
+

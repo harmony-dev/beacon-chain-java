@@ -6,6 +6,7 @@ import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.spec.SignatureDomains;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.crypto.BLS381;
 import org.ethereum.beacon.crypto.BLS381.PrivateKey;
 import org.ethereum.beacon.crypto.MessageParameters;
@@ -42,14 +43,25 @@ public class SimulateUtils {
         cachedDeposits.getValue0().subList(0, count), cachedDeposits.getValue1().subList(0, count));
   }
 
-  public static synchronized Deposit getDepositForKeyPair(UInt64 depositIndex, Random rnd,
+  public static Deposit getDepositForKeyPair(UInt64 depositIndex, Random rnd,
       BLS381.KeyPair keyPair, BeaconChainSpec spec, boolean isProofVerifyEnabled) {
+    return getDepositForKeyPair(
+        depositIndex,
+        rnd,
+        keyPair,
+        spec,
+        spec.getConstants().getMaxEffectiveBalance(),
+        isProofVerifyEnabled);
+  }
+
+  public static synchronized Deposit getDepositForKeyPair(UInt64 depositIndex, Random rnd,
+      BLS381.KeyPair keyPair, BeaconChainSpec spec, Gwei initBalance, boolean isProofVerifyEnabled) {
     Hash32 withdrawalCredentials = Hash32.random(rnd);
     DepositData depositDataWithoutSignature =
         new DepositData(
             BLSPubkey.wrap(Bytes48.leftPad(keyPair.getPublic().getEncodedBytes())),
             withdrawalCredentials,
-            spec.getConstants().getMaxEffectiveBalance(),
+            initBalance,
             BLSSignature.wrap(Bytes96.ZERO));
 
     BLSSignature signature = BLSSignature.ZERO;
@@ -75,12 +87,33 @@ public class SimulateUtils {
   }
 
   public static synchronized List<Deposit> getDepositsForKeyPairs(
-      UInt64 startIndex, Random rnd, List<BLS381.KeyPair> keyPairs, BeaconChainSpec spec, boolean isProofVerifyEnabled) {
+      UInt64 startIndex,
+      Random rnd,
+      List<BLS381.KeyPair> keyPairs,
+      BeaconChainSpec spec,
+      boolean isProofVerifyEnabled) {
+    return getDepositsForKeyPairs(
+        startIndex,
+        rnd,
+        keyPairs,
+        spec,
+        spec.getConstants().getMaxEffectiveBalance(),
+        isProofVerifyEnabled);
+  }
+
+  public static synchronized List<Deposit> getDepositsForKeyPairs(
+      UInt64 startIndex,
+      Random rnd,
+      List<BLS381.KeyPair> keyPairs,
+      BeaconChainSpec spec,
+      Gwei initBalance,
+      boolean isProofVerifyEnabled) {
+
     List<Deposit> deposits = new ArrayList<>();
 
     UInt64 index = startIndex;
     for (BLS381.KeyPair keyPair : keyPairs) {
-      deposits.add(getDepositForKeyPair(index, rnd, keyPair, spec, isProofVerifyEnabled));
+      deposits.add(getDepositForKeyPair(index, rnd, keyPair, spec, initBalance, isProofVerifyEnabled));
       index = index.increment();
     }
 

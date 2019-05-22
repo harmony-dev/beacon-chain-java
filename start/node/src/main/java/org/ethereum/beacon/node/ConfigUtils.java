@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.state.Eth1Data;
+import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.crypto.BLS381.KeyPair;
 import org.ethereum.beacon.crypto.BLS381.PrivateKey;
@@ -82,8 +83,12 @@ public class ConfigUtils {
       EmulatorContract eConfig = (EmulatorContract) config;
       List<KeyPair> keyPairs = createKeyPairs(eConfig.getKeys());
       Random random = new Random(1);
+      Gwei amount =
+          eConfig.getBalance() != null
+              ? Gwei.ofEthers(eConfig.getBalance())
+              : spec.getConstants().getMaxEffectiveBalance();
       List<Deposit> deposits = SimulateUtils
-          .getDepositsForKeyPairs(UInt64.ZERO, random, keyPairs, spec, verifyProof);
+          .getDepositsForKeyPairs(UInt64.ZERO, random, keyPairs, spec, amount, verifyProof);
       Eth1Data eth1Data =
           new Eth1Data(
               Hash32.random(random), UInt64.valueOf(deposits.size()), Hash32.random(random));

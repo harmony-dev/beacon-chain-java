@@ -9,7 +9,9 @@ public class EmulatorContract extends Contract {
 
   @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT")
   private Date genesisTime;
-  List<ValidatorKeys> keys;
+
+  private Integer balance;
+  private List<ValidatorKeys> keys;
 
   public Date getGenesisTime() {
     return genesisTime;
@@ -17,6 +19,14 @@ public class EmulatorContract extends Contract {
 
   public void setGenesisTime(Date genesisTime) {
     this.genesisTime = genesisTime;
+  }
+
+  public Integer getBalance() {
+    return balance;
+  }
+
+  public void setBalance(Integer balance) {
+    this.balance = balance;
   }
 
   public List<ValidatorKeys> getKeys() {
