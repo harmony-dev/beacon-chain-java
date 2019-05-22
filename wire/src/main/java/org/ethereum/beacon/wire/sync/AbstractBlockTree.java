@@ -9,6 +9,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.wire.sync.AbstractBlockTree.BlockWrap;
 
 public abstract class AbstractBlockTree<THash, TBlock extends BlockWrap<THash, TRawBlock>, TRawBlock>
@@ -17,6 +19,8 @@ public abstract class AbstractBlockTree<THash, TBlock extends BlockWrap<THash, T
   interface BlockWrap<THash, TRawBlock> extends Block<THash> {
     TRawBlock get();
   }
+
+  private static final Logger logger = LogManager.getLogger(AbstractBlockTree.class);
 
   private TBlock topBlock;
   private final Map<THash, TBlock> hashMap = new HashMap<>();
@@ -38,17 +42,23 @@ public abstract class AbstractBlockTree<THash, TBlock extends BlockWrap<THash, T
     if (topBlock == null) {
       throw new IllegalStateException("Top block should be set first");
     }
-    if (hashMap.containsKey(block.getHash())) return Collections.emptyList();
-    if (topBlock.getHeight() >= block.getHeight()) return Collections.emptyList();
-    hashMap.put(block.getHash(), block);
-    childrenMap.computeIfAbsent(block.getParentHash(), r -> new ArrayList<>()).add(block.getHash());
+    try {
+      if (hashMap.containsKey(block.getHash())) return Collections.emptyList();
+      if (topBlock.getHeight() >= block.getHeight()) return Collections.emptyList();
+      hashMap.put(block.getHash(), block);
+      childrenMap.computeIfAbsent(block.getParentHash(), r -> new ArrayList<>()).add(block.getHash());
 
-    List<TBlock> ret = new ArrayList<>();
-    if (isRootSuccessor(block)) {
-      ret.add(block);
-      addChildrenRecursively(block.getHash(), ret);
+      List<TBlock> ret = new ArrayList<>();
+      if (isRootSuccessor(block)) {
+        ret.add(block);
+        addChildrenRecursively(block.getHash(), ret);
+      }
+      logger.debug("Returning " + ret.size() + " ready blocks on added block " + block + " ~~> " + ret);
+      return ret;
+    } catch (Exception e) {
+      logger.error("Exception adding block: " + block, e);
+      throw new RuntimeException(e);
     }
-    return ret;
   }
 
   private boolean isRootSuccessor(TBlock block) {

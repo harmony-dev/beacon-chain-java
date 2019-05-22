@@ -21,6 +21,7 @@ import org.ethereum.beacon.consensus.transition.PerSlotTransition;
 import org.ethereum.beacon.consensus.transition.StateCachingTransition;
 import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
 import org.ethereum.beacon.consensus.verifier.BeaconStateVerifier;
+import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.db.InMemoryDatabase;
 import org.ethereum.beacon.pow.DepositContract;
@@ -177,20 +178,7 @@ public class NodeLauncher {
     blockTree = new BeaconBlockTree(spec.getObjectHasher());
     syncQueue = new SyncQueueImpl(blockTree);
 
-    syncManager = new SyncManagerImpl(
-        beaconChain,
-        Flux.from(wireApiSub.inboundBlocksStream()).map(Feedback::of),
-        beaconChainStorage,
-        spec,
-        wireApiSyncRemote,
-        syncQueue,
-        1,
-        schedulers.reactorEvents());
-
-    if (startSyncManager) {
-      syncManager.start();
-    }
-
+    Flux<BeaconBlock> ownBlocks = Flux.empty();
     if (validatorCred != null) {
       beaconChainProposer = new BeaconChainProposerImpl(spec, perBlockTransition, depositContract);
       beaconChainAttester = new BeaconChainAttesterImpl(spec);
@@ -213,11 +201,28 @@ public class NodeLauncher {
 
       Flux.from(beaconChainValidator.getAttestationsStream()).subscribe(wireApiSub::sendAttestation);
       Flux.from(beaconChainValidator.getAttestationsStream()).subscribe(allAttestations);
+
+      ownBlocks = Flux.from(proposedBlocksProcessor.processedBlocksStream());
     }
 
     Flux.from(wireApiSub.inboundAttestationsStream())
         .publishOn(schedulers.reactorEvents())
         .subscribe(allAttestations);
+
+    Flux<BeaconBlock> allNewBlocks = Flux.merge(ownBlocks, wireApiSub.inboundBlocksStream());
+    syncManager = new SyncManagerImpl(
+        beaconChain,
+        allNewBlocks.map(Feedback::of),
+        beaconChainStorage,
+        spec,
+        wireApiSyncRemote,
+        syncQueue,
+        1,
+        schedulers.reactorEvents());
+
+    if (startSyncManager) {
+      syncManager.start();
+    }
 
 //    Flux.from(wireApiSub.inboundBlocksStream())
 //        .publishOn(schedulers.reactorEvents())
