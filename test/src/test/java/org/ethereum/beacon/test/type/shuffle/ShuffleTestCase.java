@@ -6,28 +6,12 @@ import java.util.List;
 
 /**
  * Shuffling test case <a
- * href="https://github.com/ethereum/eth2.0-tests/tree/master/shuffling">https://github.com/ethereum/eth2.0-tests/tree/master/shuffling</a>
+ * href="https://github.com/ethereum/eth2.0-specs/tree/dev/specs/test_formats/shuffling">https://github.com/ethereum/eth2.0-specs/tree/dev/specs/test_formats/shuffling</a>
  */
 public class ShuffleTestCase implements TestCase {
-  private ShuffleInput input;
-  private List<List<Integer>> output;
   private String seed;
-
-  public ShuffleInput getInput() {
-    return input;
-  }
-
-  public void setInput(ShuffleInput input) {
-    this.input = input;
-  }
-
-  public List<List<Integer>> getOutput() {
-    return output;
-  }
-
-  public void setOutput(List<List<Integer>> output) {
-    this.output = output;
-  }
+  private Integer count;
+  private List<Integer> shuffled;
 
   public String getSeed() {
     return seed;
@@ -37,94 +21,32 @@ public class ShuffleTestCase implements TestCase {
     this.seed = seed;
   }
 
+  public Integer getCount() {
+    return count;
+  }
+
+  public void setCount(Integer count) {
+    this.count = count;
+  }
+
+  public List<Integer> getShuffled() {
+    return shuffled;
+  }
+
+  public void setShuffled(List<Integer> shuffled) {
+    this.shuffled = shuffled;
+  }
+
   @Override
   public String toString() {
     return "ShuffleTestCase{"
-        + "input="
-        + input
-        + ", output=[...]"
-        + ", seed='"
+        + "seed='"
         + seed
         + '\''
+        + ", count="
+        + count
+        + ", shuffled="
+        + shuffled
         + '}';
-  }
-
-  public static class ShuffleInput {
-    private String epoch;
-    private List<ShuffleTestValidator> validators;
-
-    public String getEpoch() {
-      return epoch;
-    }
-
-    public void setEpoch(String epoch) {
-      this.epoch = epoch;
-    }
-
-    public List<ShuffleTestValidator> getValidators() {
-      return validators;
-    }
-
-    public void setValidators(List<ShuffleTestValidator> validators) {
-      this.validators = validators;
-    }
-
-    @Override
-    public String toString() {
-      return "Input{"
-          + "epoch='"
-          + epoch
-          + '\''
-          + ", validators="
-          + (validators.isEmpty() ? "" : validators.get(0))
-          + " (total "
-          + validators.size()
-          + " validators)"
-          + '}';
-    }
-
-    public static class ShuffleTestValidator {
-      private String activation_epoch;
-      private String exit_epoch;
-      private Integer original_index;
-
-      public String getActivation_epoch() {
-        return activation_epoch;
-      }
-
-      public void setActivation_epoch(String activation_epoch) {
-        this.activation_epoch = activation_epoch;
-      }
-
-      public String getExit_epoch() {
-        return exit_epoch;
-      }
-
-      public void setExit_epoch(String exit_epoch) {
-        this.exit_epoch = exit_epoch;
-      }
-
-      public Integer getOriginal_index() {
-        return original_index;
-      }
-
-      public void setOriginal_index(Integer original_index) {
-        this.original_index = original_index;
-      }
-
-      @Override
-      public String toString() {
-        return "Validator{"
-            + "activation_epoch='"
-            + activation_epoch
-            + '\''
-            + ", exit_epoch='"
-            + exit_epoch
-            + '\''
-            + ", original_index="
-            + original_index
-            + '}';
-      }
-    }
   }
 }

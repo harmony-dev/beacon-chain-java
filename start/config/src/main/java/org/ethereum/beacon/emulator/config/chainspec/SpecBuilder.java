@@ -253,7 +253,7 @@ public class SpecBuilder {
 
       @Override
       public EpochNumber getGenesisEpoch() {
-        return initialValues.getGenesisEpoch();
+        return getGenesisSlot().dividedBy(getSlotsPerEpoch());
       }
 
       @Override

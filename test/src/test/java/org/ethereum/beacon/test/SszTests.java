@@ -1,30 +1,38 @@
 package org.ethereum.beacon.test;
 
-import org.ethereum.beacon.consensus.BeaconChainSpec;
-import org.ethereum.beacon.test.runner.ssz.SszRunner;
-import org.ethereum.beacon.test.type.ssz.SszTest;
+import org.ethereum.beacon.test.runner.ssz.SszGenericRunner;
+import org.ethereum.beacon.test.runner.ssz.SszStaticRunner;
+import org.ethereum.beacon.test.type.ssz.SszGenericTest;
+import org.ethereum.beacon.test.type.ssz.SszStaticTest;
 import org.junit.Test;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+/** SSZ tests, generic with primitive values and static, with known container types */
 public class SszTests extends TestUtils {
-  private String TESTS_DIR = "ssz";
-  private BeaconChainSpec spec;
 
-  public SszTests() {
-    this.spec = BeaconChainSpec.createWithDefaults();
+  @Test
+  public void testSszGeneric() {
+    Path testFileDir = Paths.get(PATH_TO_TESTS, "ssz_generic", "uint");
+    runTestsInResourceDir(
+        testFileDir,
+        SszGenericTest.class,
+        input -> {
+          SszGenericRunner testRunner = new SszGenericRunner(input.getValue0(), input.getValue1());
+          return testRunner.run();
+        });
   }
 
   @Test
-  public void testSsz() {
-    Path sszTestsPath = Paths.get(PATH_TO_TESTS, TESTS_DIR);
+  public void testSszStatic() {
+    Path testFileDir = Paths.get(PATH_TO_TESTS, "ssz_static", "core");
     runTestsInResourceDir(
-        sszTestsPath,
-        SszTest.class,
-        testCase -> {
-          SszRunner testCaseRunner = new SszRunner(testCase, spec);
-          return testCaseRunner.run();
+        testFileDir,
+        SszStaticTest.class,
+        input -> {
+          SszStaticRunner testRunner = new SszStaticRunner(input.getValue0(), input.getValue1());
+          return testRunner.run();
         });
   }
 }

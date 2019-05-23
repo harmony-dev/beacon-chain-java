@@ -14,6 +14,8 @@
 package tech.pegasys.artemis.util.uint;
 
 import com.google.common.primitives.UnsignedLongs;
+
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Objects;
@@ -432,6 +434,10 @@ public class UInt64 extends Number implements Comparable<UInt64> {
   @Override
   public long longValue() {
     return getValue();
+  }
+
+  public BigInteger toBI() {
+    return new BigInteger(1, toBytesBigEndian().extractArray());
   }
 
   @Override

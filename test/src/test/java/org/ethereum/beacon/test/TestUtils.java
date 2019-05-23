@@ -1,18 +1,31 @@
 package org.ethereum.beacon.test;
 
-import static org.junit.Assert.assertFalse;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.base.Charsets;
 import com.google.common.io.CharStreams;
 import com.google.common.io.Resources;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
+import org.ethereum.beacon.emulator.config.chainspec.SpecBuilder;
+import org.ethereum.beacon.emulator.config.chainspec.SpecConstantsData;
+import org.ethereum.beacon.emulator.config.chainspec.SpecData;
+import org.ethereum.beacon.emulator.config.chainspec.SpecDataUtils;
+import org.ethereum.beacon.emulator.config.chainspec.SpecHelpersData;
+import org.ethereum.beacon.test.type.NamedTestCase;
+import org.ethereum.beacon.test.type.SpecConstantsDataMerged;
+import org.ethereum.beacon.test.type.TestCase;
+import org.ethereum.beacon.test.type.TestSkeleton;
+import org.ethereum.beacon.util.Objects;
+import org.javatuples.Pair;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -27,14 +40,17 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.ethereum.beacon.test.type.NamedTestCase;
-import org.ethereum.beacon.test.type.TestCase;
-import org.ethereum.beacon.test.type.TestSkeleton;
+
+import static org.junit.Assert.assertFalse;
 
 public class TestUtils {
+  private static final String GIT_COMMAND =
+      "git submodule init & git submodule update --recursive --remote";
   static ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
-  String PATH_TO_TESTS = "eth2.0-tests";
-  private static final String GIT_COMMAND = "git submodule init & git submodule update --recursive --remote";
+  static String PATH_TO_TESTS = "eth2.0-spec-tests/tests";
+  static String PATH_TO_CONFIGS = "eth2.0-temp-test-configs";
+  static String SPEC_CONFIG_DIR = "constant_presets";
+  static String FORK_CONFIG_DIR = "fork_timelines";
 
   static File getResourceFile(String relativePath) {
     try {
@@ -68,6 +84,10 @@ public class TestUtils {
   }
 
   static <V extends TestSkeleton> V readTest(File file, Class<? extends V> clazz) {
+    return readYamlFile(file, clazz);
+  }
+
+  private static <V> V readYamlFile(File file, Class<? extends V> clazz) {
     String content;
     try (InputStream inputStream = new FileInputStream(file);
         InputStreamReader streamReader = new InputStreamReader(inputStream, Charsets.UTF_8)) {
@@ -79,45 +99,63 @@ public class TestUtils {
           String.format("Error reading contents of file: %s", file.toPath().toString()), e);
     }
 
-    V test = readTest(content, clazz);
-
-    return test;
+    return parseYamlData(content, clazz);
   }
 
   static <V extends TestSkeleton> Optional<String> runAllTestsInFile(
-      File file, Function<TestCase, Optional<String>> testCaseRunner, Class<? extends V> clazz) {
+      File file,
+      Function<Pair<TestCase, BeaconChainSpec>, Optional<String>> testCaseRunner,
+      Class<? extends V> clazz) {
     return runAllTestsInFile(file, testCaseRunner, clazz, Collections.emptySet());
   }
 
   static <V extends TestSkeleton> Optional<String> runAllTestsInFile(
-      File file, Function<TestCase, Optional<String>> testCaseRunner, Class<? extends V> clazz,
+      File file,
+      Function<Pair<TestCase, BeaconChainSpec>, Optional<String>> testCaseRunner,
+      Class<? extends V> clazz,
       Collection<String> exclusions) {
     V test = readTest(file, clazz);
-    return runAllCasesInTest(test, testCaseRunner, clazz, exclusions);
-  }
-  static <V extends TestSkeleton> Optional<String> runAllCasesInTest(
-      V test, Function<TestCase, Optional<String>> testCaseRunner, Class<? extends V> clazz) {
-    return runAllCasesInTest(test, testCaseRunner, clazz, Collections.emptySet());
+    return runAllCasesInTest(test, testCaseRunner, clazz, exclusions, false);
   }
 
   static <V extends TestSkeleton> Optional<String> runAllCasesInTest(
-      V test, Function<TestCase, Optional<String>> testCaseRunner, Class<? extends V> clazz,
-      Collection<String> exclusions) {
+      V test,
+      Function<Pair<TestCase, BeaconChainSpec>, Optional<String>> testCaseRunner,
+      Class<? extends V> clazz) {
+    return runAllCasesInTest(test, testCaseRunner, clazz, Collections.emptySet(), false);
+  }
+
+  static <V extends TestSkeleton> Optional<String> runAllCasesInTest(
+      V test,
+      Function<Pair<TestCase, BeaconChainSpec>, Optional<String>> testCaseRunner,
+      Class<? extends V> clazz,
+      boolean isBlsVerified) {
+    return runAllCasesInTest(test, testCaseRunner, clazz, Collections.emptySet(), isBlsVerified);
+  }
+
+  static <V extends TestSkeleton> Optional<String> runAllCasesInTest(
+      V test,
+      Function<Pair<TestCase, BeaconChainSpec>, Optional<String>> testCaseRunner,
+      Class<? extends V> clazz,
+      Collection<String> exclusions,
+      boolean isBlsVerified) {
     StringBuilder errors = new StringBuilder();
     AtomicInteger failed = new AtomicInteger(0);
     int total = 0;
     for (TestCase testCase : test.getTestCases()) {
       ++total;
-      String name = testCase instanceof NamedTestCase
-          ? ((NamedTestCase) testCase).getName()
-          : "Test #" + (total - 1);
+      String name =
+          testCase instanceof NamedTestCase
+              ? ((NamedTestCase) testCase).getName()
+              : "Test #" + (total - 1);
       if (exclusions.contains(name)) {
         System.out.println(String.format("[ ] %s ignored", name));
         continue;
       }
 
       long s = System.nanoTime();
-      Optional<String> err = runTestCase(testCase, test, testCaseRunner);
+      BeaconChainSpec spec = loadSpecByName(test.getConfig(), isBlsVerified);
+      Optional<String> err = runTestCase(testCase, spec, test, testCaseRunner);
       long completionTime = System.nanoTime() - s;
 
       if (err.isPresent()) {
@@ -143,8 +181,20 @@ public class TestUtils {
   }
 
   static <V extends TestSkeleton> Optional<String> runTestCase(
-      TestCase testCase, V test, Function<TestCase, Optional<String>> testCaseRunner) {
-    Optional<String> testCaseErrors = testCaseRunner.apply(testCase);
+      TestCase testCase,
+      BeaconChainSpec spec,
+      V test,
+      Function<Pair<TestCase, BeaconChainSpec>, Optional<String>> testCaseRunner) {
+    Optional<String> testCaseErrors;
+    try {
+      testCaseErrors = testCaseRunner.apply(Pair.with(testCase, spec));
+    } catch (Exception ex) {
+      StringWriter sw = new StringWriter();
+      PrintWriter pw = new PrintWriter(sw);
+      ex.printStackTrace(pw);
+      String error = String.format("Unexpected error when running case %s: %s", testCase, sw.toString());
+      testCaseErrors = Optional.of(error);
+    }
     if (testCaseErrors.isPresent()) {
       StringBuilder errors = new StringBuilder();
       errors
@@ -163,7 +213,7 @@ public class TestUtils {
     return Optional.empty();
   }
 
-  static <V> V readTest(String content, Class<? extends V> clazz) {
+  static <V> V parseYamlData(String content, Class<? extends V> clazz) {
     try {
       return yamlMapper.readValue(content, clazz);
     } catch (IOException e) {
@@ -174,20 +224,49 @@ public class TestUtils {
   }
 
   static <V extends TestSkeleton> void runTestsInResourceDir(
-      Path dir, Class<? extends V> testsType, Function<TestCase, Optional<String>> testCaseRunner) {
+      Path dir,
+      Class<? extends V> testsType,
+      Function<Pair<TestCase, BeaconChainSpec>, Optional<String>> testCaseRunner) {
     runTestsInResourceDirImpl(dir, testsType, testCaseRunner, Collections.emptySet());
   }
 
   static <V extends TestSkeleton> void runTestsInResourceDir(
       Path dir,
       Class<? extends V> testsType,
-      Function<TestCase, Optional<String>> testCaseRunner,
+      Function<Pair<TestCase, BeaconChainSpec>, Optional<String>> testCaseRunner,
       Ignored ignored) {
     runTestsInResourceDirImpl(dir, testsType, testCaseRunner, ignored.testCases);
   }
 
+  static BeaconChainSpec loadSpecByName(String name, boolean isBlsVerified) {
+    Path configPath = Paths.get(PATH_TO_CONFIGS, SPEC_CONFIG_DIR, name + ".yaml");
+    File config = getResourceFile(configPath.toString());
+
+    SpecConstantsData specConstantsDataRaw = readYamlFile(config, SpecConstantsDataMerged.class);
+    SpecConstantsData specConstantsData;
+    try {
+      specConstantsData =
+          Objects.copyProperties(
+              SpecDataUtils.createSpecConstantsData(BeaconChainSpec.DEFAULT_CONSTANTS),
+              specConstantsDataRaw);
+    } catch (Exception ex) {
+      throw new RuntimeException("Cannot merge spec constants with default settings");
+    }
+
+    SpecHelpersData specHelpersData = new SpecHelpersData();
+    specHelpersData.setBlsVerify(isBlsVerified);
+
+    SpecData specData = new SpecData();
+    specData.setSpecHelpersOptions(specHelpersData);
+    specData.setSpecConstants(specConstantsData);
+
+    return new SpecBuilder().withSpec(specData).buildSpec();
+  }
+
   private static <V extends TestSkeleton> void runTestsInResourceDirImpl(
-      Path dir, Class<? extends V> testsType, Function<TestCase, Optional<String>> testCaseRunner,
+      Path dir,
+      Class<? extends V> testsType,
+      Function<Pair<TestCase, BeaconChainSpec>, Optional<String>> testCaseRunner,
       Collection<String> exclusions) {
     List<File> files = getResourceFiles(dir.toString());
     boolean failed = false;

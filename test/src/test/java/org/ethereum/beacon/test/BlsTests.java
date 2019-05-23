@@ -1,14 +1,17 @@
 package org.ethereum.beacon.test;
 
-import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.test.runner.bls.BlsAggregatePubKeys;
 import org.ethereum.beacon.test.runner.bls.BlsAggregateSigs;
 import org.ethereum.beacon.test.runner.bls.BlsMessageHash;
 import org.ethereum.beacon.test.runner.bls.BlsMessageHashCompressed;
 import org.ethereum.beacon.test.runner.bls.BlsPrivateToPublic;
 import org.ethereum.beacon.test.runner.bls.BlsSignMessage;
-import org.ethereum.beacon.test.type.bls.BlsTest;
-import org.ethereum.beacon.test.type.UniversalTest;
+import org.ethereum.beacon.test.type.bls.BlsAggregatePubKeysTest;
+import org.ethereum.beacon.test.type.bls.BlsAggregateSigsTest;
+import org.ethereum.beacon.test.type.bls.BlsMessageHashCompressedTest;
+import org.ethereum.beacon.test.type.bls.BlsMessageHashTest;
+import org.ethereum.beacon.test.type.bls.BlsPrivateToPublicTest;
+import org.ethereum.beacon.test.type.bls.BlsSignMessageTest;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -18,29 +21,29 @@ import java.util.Optional;
 
 import static org.junit.Assert.fail;
 
-@Ignore
+/**
+ * Tests for BLS methods.
+ * Test format description: <a href="https://github.com/ethereum/eth2.0-specs/tree/dev/specs/test_formats/bls">https://github.com/ethereum/eth2.0-specs/tree/dev/specs/test_formats/bls</a>
+ */
 public class BlsTests extends TestUtils {
   private String TESTS_DIR = "bls";
-  private String FILENAME = "test_bls.yml";
-  private BeaconChainSpec spec;
-
-  public BlsTests() {
-    this.spec = BeaconChainSpec.createWithDefaults();
-  }
 
   @Test
   @Ignore("Fixtures uses Jacobian coordinates, testBlsMessageHashCompressed covers same cases")
   public void testBlsMessageHash() {
-    Path testFilePath = Paths.get(PATH_TO_TESTS, TESTS_DIR, FILENAME);
-    BlsTest test = readTest(getResourceFile(testFilePath.toString()), BlsTest.class);
+    Path testFilePath =
+        Paths.get(PATH_TO_TESTS, TESTS_DIR, "msg_hash_g2_uncompressed", "g2_uncompressed.yaml");
+    BlsMessageHashTest test =
+        readTest(getResourceFile(testFilePath.toString()), BlsMessageHashTest.class);
     Optional<String> errors =
         runAllCasesInTest(
-            test.buildBlsMessageHashTest(),
-            testCase -> {
-              BlsMessageHash testRunner = new BlsMessageHash(testCase, spec);
+            test,
+            input -> {
+              BlsMessageHash testRunner = new BlsMessageHash(input.getValue0(), input.getValue1());
               return testRunner.run();
             },
-            UniversalTest.class);
+            BlsMessageHashTest.class,
+            true);
     if (errors.isPresent()) {
       System.out.println(errors.get());
       fail();
@@ -48,18 +51,22 @@ public class BlsTests extends TestUtils {
   }
 
   @Test
+  @Ignore("Fixtures should be updated with sha256 as hash function instead of keccak256")
   public void testBlsMessageHashCompressed() {
-    Path testFilePath = Paths.get(PATH_TO_TESTS, TESTS_DIR, FILENAME);
-    BlsTest test = readTest(getResourceFile(testFilePath.toString()), BlsTest.class);
+    Path testFilePath =
+        Paths.get(PATH_TO_TESTS, TESTS_DIR, "msg_hash_g2_compressed", "g2_compressed.yaml");
+    BlsMessageHashCompressedTest test =
+        readTest(getResourceFile(testFilePath.toString()), BlsMessageHashCompressedTest.class);
     Optional<String> errors =
         runAllCasesInTest(
-            test.buildBlsMessageHashCompressedTest(),
-            testCase -> {
+            test,
+            input -> {
               BlsMessageHashCompressed testRunner =
-                  new BlsMessageHashCompressed(testCase, spec);
+                  new BlsMessageHashCompressed(input.getValue0(), input.getValue1());
               return testRunner.run();
             },
-            UniversalTest.class);
+            BlsMessageHashCompressedTest.class,
+            true);
     if (errors.isPresent()) {
       System.out.println(errors.get());
       fail();
@@ -68,16 +75,19 @@ public class BlsTests extends TestUtils {
 
   @Test
   public void testBlsPrivateToPublic() {
-    Path testFilePath = Paths.get(PATH_TO_TESTS, TESTS_DIR, FILENAME);
-    BlsTest test = readTest(getResourceFile(testFilePath.toString()), BlsTest.class);
+    Path testFilePath = Paths.get(PATH_TO_TESTS, TESTS_DIR, "priv_to_pub", "priv_to_pub.yaml");
+    BlsPrivateToPublicTest test =
+        readTest(getResourceFile(testFilePath.toString()), BlsPrivateToPublicTest.class);
     Optional<String> errors =
         runAllCasesInTest(
-            test.buildBlsPrivateToPublicTest(),
-            testCase -> {
-              BlsPrivateToPublic testRunner = new BlsPrivateToPublic(testCase, spec);
+            test,
+            input -> {
+              BlsPrivateToPublic testRunner =
+                  new BlsPrivateToPublic(input.getValue0(), input.getValue1());
               return testRunner.run();
             },
-            UniversalTest.class);
+            BlsPrivateToPublicTest.class,
+            true);
     if (errors.isPresent()) {
       System.out.println(errors.get());
       fail();
@@ -85,17 +95,20 @@ public class BlsTests extends TestUtils {
   }
 
   @Test
+  @Ignore("Fixtures should be updated with sha256 as hash function instead of keccak256")
   public void testBlsSignMessage() {
-    Path testFilePath = Paths.get(PATH_TO_TESTS, TESTS_DIR, FILENAME);
-    BlsTest test = readTest(getResourceFile(testFilePath.toString()), BlsTest.class);
+    Path testFilePath = Paths.get(PATH_TO_TESTS, TESTS_DIR, "sign_msg", "sign_msg.yaml");
+    BlsSignMessageTest test =
+        readTest(getResourceFile(testFilePath.toString()), BlsSignMessageTest.class);
     Optional<String> errors =
         runAllCasesInTest(
-            test.buildBlsSignMessageTest(),
-            testCase -> {
-              BlsSignMessage testRunner = new BlsSignMessage(testCase, spec);
+            test,
+            input -> {
+              BlsSignMessage testRunner = new BlsSignMessage(input.getValue0(), input.getValue1());
               return testRunner.run();
             },
-            UniversalTest.class);
+            BlsSignMessageTest.class,
+            true);
     if (errors.isPresent()) {
       System.out.println(errors.get());
       fail();
@@ -104,16 +117,20 @@ public class BlsTests extends TestUtils {
 
   @Test
   public void testBlsAggregateSigs() {
-    Path testFilePath = Paths.get(PATH_TO_TESTS, TESTS_DIR, FILENAME);
-    BlsTest test = readTest(getResourceFile(testFilePath.toString()), BlsTest.class);
+    Path testFilePath =
+        Paths.get(PATH_TO_TESTS, TESTS_DIR, "aggregate_sigs", "aggregate_sigs.yaml");
+    BlsAggregateSigsTest test =
+        readTest(getResourceFile(testFilePath.toString()), BlsAggregateSigsTest.class);
     Optional<String> errors =
         runAllCasesInTest(
-            test.buildBlsAggregateSigsTest(),
-            testCase -> {
-              BlsAggregateSigs testRunner = new BlsAggregateSigs(testCase, spec);
+            test,
+            input -> {
+              BlsAggregateSigs testRunner =
+                  new BlsAggregateSigs(input.getValue0(), input.getValue1());
               return testRunner.run();
             },
-            UniversalTest.class);
+            BlsAggregateSigsTest.class,
+            true);
     if (errors.isPresent()) {
       System.out.println(errors.get());
       fail();
@@ -122,16 +139,20 @@ public class BlsTests extends TestUtils {
 
   @Test
   public void testBlsAggregatePubKeys() {
-    Path testFilePath = Paths.get(PATH_TO_TESTS, TESTS_DIR, FILENAME);
-    BlsTest test = readTest(getResourceFile(testFilePath.toString()), BlsTest.class);
+    Path testFilePath =
+        Paths.get(PATH_TO_TESTS, TESTS_DIR, "aggregate_pubkeys", "aggregate_pubkeys.yaml");
+    BlsAggregatePubKeysTest test =
+        readTest(getResourceFile(testFilePath.toString()), BlsAggregatePubKeysTest.class);
     Optional<String> errors =
         runAllCasesInTest(
-            test.buildBlsAggregatePubKeysTest(),
-            testCase -> {
-              BlsAggregatePubKeys testRunner = new BlsAggregatePubKeys(testCase, spec);
+            test,
+            input -> {
+              BlsAggregatePubKeys testRunner =
+                  new BlsAggregatePubKeys(input.getValue0(), input.getValue1());
               return testRunner.run();
             },
-            UniversalTest.class);
+            BlsAggregatePubKeysTest.class,
+            true);
     if (errors.isPresent()) {
       System.out.println(errors.get());
       fail();

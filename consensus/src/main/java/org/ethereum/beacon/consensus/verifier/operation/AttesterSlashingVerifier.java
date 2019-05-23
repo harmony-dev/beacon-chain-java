@@ -1,6 +1,7 @@
 package org.ethereum.beacon.consensus.verifier.operation;
 
 import org.ethereum.beacon.consensus.BeaconChainSpec;
+import org.ethereum.beacon.consensus.spec.SpecCommons;
 import org.ethereum.beacon.consensus.verifier.OperationVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconState;
@@ -27,7 +28,7 @@ public class AttesterSlashingVerifier implements OperationVerifier<AttesterSlash
     try {
       spec.verify_attester_slashing(state, attesterSlashing);
       return VerificationResult.PASSED;
-    } catch (Exception e) {
+    } catch (SpecCommons.SpecAssertionFailed e) {
       return VerificationResult.failedResult(e.getMessage());
     }
   }

@@ -484,10 +484,15 @@ public interface HelperFunction extends SpecCommons {
   default List<ValidatorIndex> compute_committee(List<ValidatorIndex> indices, Bytes32 seed, UInt64 index, UInt64 count) {
     UInt64 start = index.times(indices.size()).dividedBy(count);
     UInt64 end = index.increment().times(indices.size()).dividedBy(count);
+
+    return compute_committee(indices, start, end, seed);
+  }
+
+  default List<ValidatorIndex> compute_committee(List<ValidatorIndex> validator_indices, UInt64 start, UInt64 end, Bytes32 seed) {
     List<ValidatorIndex> result = new ArrayList<>();
     for (UInt64 i = start; i.compareTo(end) < 0; i = i.increment()) {
-      UInt64 shuffled_index = get_shuffled_index(i, UInt64.valueOf(indices.size()), seed);
-      result.add(indices.get(shuffled_index.getIntValue()));
+      UInt64 shuffled_index = get_shuffled_index(i, UInt64.valueOf(validator_indices.size()), seed);
+      result.add(validator_indices.get(shuffled_index.getIntValue()));
     }
     return result;
   }
@@ -497,9 +502,15 @@ public interface HelperFunction extends SpecCommons {
    * Based on {@link #get_permuted_list(List, Bytes32)}.
    */
   default List<ValidatorIndex> compute_committee2(List<ValidatorIndex> indices, Bytes32 seed, UInt64 index, UInt64 count) {
-    List<ValidatorIndex> shuffled_indices = get_permuted_list(indices, seed)
+    UInt64 start = index.times(indices.size()).dividedBy(count);
+    UInt64 end = index.increment().times(indices.size()).dividedBy(count);
+    return compute_committee2(indices, start, end, seed);
+  }
+
+  default List<ValidatorIndex> compute_committee2(List<ValidatorIndex> validator_indices, UInt64 start, UInt64 end, Bytes32 seed) {
+    List<ValidatorIndex> shuffled_indices = get_permuted_list(validator_indices, seed)
         .stream().map(ValidatorIndex::new).collect(toList());
-    return split(shuffled_indices, count.getIntValue()).get(index.getIntValue());
+    return shuffled_indices.subList(start.intValue(), end.intValue());
   }
 
   /*

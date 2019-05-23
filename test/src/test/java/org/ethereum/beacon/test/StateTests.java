@@ -1,24 +1,38 @@
 package org.ethereum.beacon.test;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import org.ethereum.beacon.test.runner.state.StateRunner;
 import org.ethereum.beacon.test.type.state.StateTest;
 import org.junit.Ignore;
 import org.junit.Test;
 
-public class StateTests extends TestUtils {
-  private String TESTS_DIR = "state";
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
-  public StateTests() {}
+public class StateTests extends TestUtils {
+  private String OPERATIONS_TESTS_DIR = "operations";
 
   @Test
-  @Ignore("signing_root and hash_tree_root results do not match")
-  public void testState() {
-    Path stateTestsPath = Paths.get(PATH_TO_TESTS, TESTS_DIR);
+  @Ignore("Postponed till generator updates")
+  public void testAttestationOperations() {
+    Path testFileDir = Paths.get(PATH_TO_TESTS, OPERATIONS_TESTS_DIR, "attestations");
     runTestsInResourceDir(
-        stateTestsPath,
+        testFileDir,
         StateTest.class,
-        testCase -> new StateRunner(testCase).run());
+        input -> {
+          StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1());
+          return testRunner.run();
+        });
+  }
+
+  @Test
+  public void testDepositOperations() {
+    Path testFileDir = Paths.get(PATH_TO_TESTS, OPERATIONS_TESTS_DIR, "deposits");
+    runTestsInResourceDir(
+        testFileDir,
+        StateTest.class,
+        input -> {
+          StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1());
+          return testRunner.run();
+        });
   }
 }
