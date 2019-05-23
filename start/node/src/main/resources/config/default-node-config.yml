@@ -5,7 +5,7 @@ config:
 
   validator:
     contract: !emulator
-      genesisTime: 2019-05-22 11:50:00
+      genesisTime: 2019-05-23 08:00:00
       balance: 55
       keys:
         - !generate
@@ -20,7 +20,7 @@ config:
 chainSpec:
   specConstants:
     initialValues:
-      GENESIS_SLOT: 1000000
+      GENESIS_SLOT: 0
     miscParameters:
       SHARD_COUNT: 4
       TARGET_COMMITTEE_SIZE: 2
