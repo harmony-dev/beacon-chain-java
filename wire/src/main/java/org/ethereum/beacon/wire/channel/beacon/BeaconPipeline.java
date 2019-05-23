@@ -152,14 +152,18 @@ public class BeaconPipeline {
   private WireApiSync createWireApiSync(WireApiSync syncServer) {
     RpcChannelAdapter<BlockRootsRequestMessage, BlockRootsResponseMessage> blockRootsAsync =
         new RpcChannelAdapter<>(new RpcChannelClassFilter<>(rpcHub, BlockRootsRequestMessage.class),
-            syncServer != null ? syncServer::requestBlockRoots : null, schedulers.events());
+            syncServer != null ? syncServer::requestBlockRoots : null, schedulers.events())
+        .withRpcCallTimeout(rpsTimeout);
     RpcChannelAdapter<BlockHeadersRequestMessage, BlockHeadersResponseMessage> blockHeadersAsync =
         new RpcChannelAdapter<>(new RpcChannelClassFilter<>(rpcHub, BlockHeadersRequestMessage.class),
-            syncServer != null ? syncServer::requestBlockHeaders : null, schedulers.events());
+            syncServer != null ? syncServer::requestBlockHeaders : null, schedulers.events())
+            .withRpcCallTimeout(rpsTimeout);
     RpcChannelAdapter<BlockBodiesRequestMessage, BlockBodiesResponseMessage> blockBodiesAsync =
         new RpcChannelAdapter<>(new RpcChannelClassFilter<>(rpcHub, BlockBodiesRequestMessage.class),
             syncServer != null ? req -> syncServer.requestBlockBodies(req).thenApply(Feedback::get) : null,
             schedulers.events());
+    blockBodiesAsync.withRpcCallTimeout(rpsTimeout);
+
 
     return new WireApiSync() {
       @Override
@@ -188,14 +192,16 @@ public class BeaconPipeline {
             subServer == null ? null : newBlock -> {
               subServer.newBlock(newBlock.getBlock());
               return null;
-            }, schedulers.events());
+            }, schedulers.events())
+            .withRpcCallTimeout(rpsTimeout);
 
     RpcChannelAdapter<NotifyNewAttestationMessage, ResponseMessagePayload> attestations =
         new RpcChannelAdapter<>(new RpcChannelClassFilter<>(rpcHub, NotifyNewAttestationMessage.class),
             subServer == null ? null : newAttest -> {
               subServer.newAttestation(newAttest.getAttestation());
               return null;
-            }, schedulers.events());
+            }, schedulers.events())
+            .withRpcCallTimeout(rpsTimeout);
 
     return new WireApiSubRpc() {
       @Override

@@ -77,7 +77,7 @@ public class NodeTest {
         new DepositContract.ChainStart(genesisTime, eth1Data, depositPairs.getValue0());
     SimpleDepositContract depositContract = new SimpleDepositContract(chainStart);
 
-    try (NettyServer nettyServer = new NettyServer(40001)) {
+    try (NettyServer nettyServer = new NettyServer(41001)) {
       // master node with all validators
       NodeLauncher masterNode;
       {
@@ -120,7 +120,7 @@ public class NodeTest {
             schedulers,
             true);
         connectFut = slaveConnectionManager
-            .connect(InetSocketAddress.createUnresolved("localhost", 40001));
+            .connect(InetSocketAddress.createUnresolved("localhost", 41001));
         System.out.println("Connected! " + connectFut.get());
       }
 
@@ -130,7 +130,10 @@ public class NodeTest {
 
       // generate some new blocks
       System.out.println("Generating online blocks");
-      controlledSchedulers.addTime(Duration.ofSeconds(3 * 10));
+      for (int i = 0; i < 10; i++) {
+        controlledSchedulers.addTime(Duration.ofSeconds(1));
+        Thread.sleep(100);
+      }
 
       Flux.from(slaveNode.getSyncManager().getSyncModeStream())
           .filter(mode -> mode == SyncMode.Short)
@@ -154,7 +157,7 @@ public class NodeTest {
       // connect the slave again
       System.out.println("Connect the slave again");
       CompletableFuture<Channel<BytesValue>> connectFut1 = slaveConnectionManager
-          .connect(InetSocketAddress.createUnresolved("localhost", 40001));
+          .connect(InetSocketAddress.createUnresolved("localhost", 41001));
       connectFut1.get();
       System.out.println("Slave connected");
 

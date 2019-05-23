@@ -75,7 +75,7 @@ public class PeersTest {
 
     Launcher peer1 = simulatorLauncher.createPeer("test");
 
-    try (Server server = new NettyServer(40001)) {
+    try (Server server = new NettyServer(41001)) {
       {
         // peer 0
         server.start().await();
@@ -171,7 +171,7 @@ public class PeersTest {
 
         System.out.println("Peer 1: connecting to peer 0 for syncing...");
         CompletableFuture<Channel<BytesValue>> localhost = connectionManager
-            .connect(InetSocketAddress.createUnresolved("localhost", 40001));
+            .connect(InetSocketAddress.createUnresolved("localhost", 41001));
         localhost.get();
         System.out.println("Peer 1: connected to peer 0");
 
