@@ -11,14 +11,44 @@ import reactor.core.publisher.Flux;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
 
+/**
+ * The class which declares what blocks are wanted to be downloaded, consumes
+ * downloaded blocks, builds chains of blocks linked to the finalized block and
+ * streams them for importing.
+ */
 public interface SyncQueue {
 
+  /**
+   * Potentially unbounded stream of blocks wanted to be downloaded.
+   * The stream may be unbounded because the queue tries to retrieve any
+   * new blocks above the final block again and again with the hope that
+   * something new can be discovered. Thus the consumer should have a mechanism
+   * of limiting these requests to prevent traffic overhead.
+   */
   Publisher<BlockRequest> getBlockRequestsStream();
 
+  /**
+   * The stream of blocks ready to be imported to the blockchain.
+   * Any issued block must be a child of some block issued before.
+   * Blocks are wrapped to a {@link Feedback} instance so
+   * block verification and importing result should be reported via this {@link Feedback}
+   */
   Publisher<Feedback<BeaconBlock>> getBlocksStream();
 
+  /**
+   *  finalBlockRootStream notifies the {@link SyncQueue} on finalized blocks
+   *  so the queue may stick to those blocks and perform necessary cleanup
+   *  of outdated blocks
+   */
   Disposable subscribeToFinalBlocks(Flux<BeaconBlock> finalBlockRootStream);
 
+  /**
+   * All new blocks are streamed via blocksStream.
+   * Those blocks may include:
+   * - downloaded per {@link SyncQueue} requests blocks
+   * - new fresh blocks broadcasted from remote parties
+   * - new blocks proposed by local validators
+   */
   Disposable subscribeToNewBlocks(Publisher<Feedback<List<BeaconBlock>>> blocksStream);
 
   class BlockRequest {

@@ -18,6 +18,11 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.ReplayProcessor;
 
+/**
+ * Tracks and aggregates {@link WireApiSync} instances from separate peers
+ * This is a pretty simple implementation which just delegates API calls in a round robin fashion
+ * When no single delegate api available all calls are queued until any api arises
+ */
 public class WireApiSyncRouter implements WireApiSync {
 
   private final ReplayProcessor<Consumer<WireApiSync>> tasks = ReplayProcessor.create(64);

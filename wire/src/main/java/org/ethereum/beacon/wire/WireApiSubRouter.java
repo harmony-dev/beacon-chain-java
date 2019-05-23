@@ -13,6 +13,10 @@ import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 
+/**
+ * Tracks and aggregates {@link WireApiSub} instances from separate peers
+ * The class realizes flood pub strategy for notifications propagation
+ */
 public class WireApiSubRouter implements WireApiSub {
   private static final int DUPLICATE_DETECTION_SET_SIZE = 64;
 

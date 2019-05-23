@@ -24,6 +24,9 @@ import org.ethereum.beacon.wire.message.payload.BlockRootsResponseMessage.BlockR
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
 
+/**
+ * Serves {@link WireApiSync} requests supplying local blockchain information to remote party
+ */
 public class WireApiSyncServer implements WireApiSync {
 
   private final BeaconChainStorage storage;

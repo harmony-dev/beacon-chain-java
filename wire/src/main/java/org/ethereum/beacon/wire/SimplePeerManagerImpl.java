@@ -2,7 +2,6 @@ package org.ethereum.beacon.wire;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import org.apache.logging.log4j.LogManager;
@@ -65,14 +64,14 @@ public class SimplePeerManagerImpl implements PeerManager {
         .map(this::createPeer)
         .replay(1).autoConnect();
 
-    Flux.from(activePeerStream()).subscribe(this::onNewActivePeer);
+    Flux.from(activatedPeerStream()).subscribe(this::onNewActivePeer);
 
     wireApiSyncRouter = new WireApiSyncRouter(
-        Flux.from(activePeerStream()).map(Peer::getSyncApi),
+        Flux.from(activatedPeerStream()).map(Peer::getSyncApi),
         Flux.from(disconnectedPeerStream()).map(Peer::getSyncApi));
 
     wireApiSubRouter = new WireApiSubRouter(
-        Flux.from(activePeerStream()).map(Peer::getSubApi),
+        Flux.from(activatedPeerStream()).map(Peer::getSubApi),
         Flux.from(disconnectedPeerStream()).map(Peer::getSubApi));
   }
 
@@ -104,7 +103,7 @@ public class SimplePeerManagerImpl implements PeerManager {
   }
 
   @Override
-  public Publisher<Peer> activePeerStream() {
+  public Publisher<Peer> activatedPeerStream() {
     return connectedPeersStream.flatMap(
         peer -> Mono.fromFuture(peer.getPeerActiveFuture().thenApply(v -> peer)));
   }
@@ -113,11 +112,6 @@ public class SimplePeerManagerImpl implements PeerManager {
     logger.info("New active peer: " + peer);
     activePeers.add(peer);
     peer.getRawChannel().getCloseFuture().thenAccept(v -> activePeers.remove(peer));
-  }
-
-  @Override
-  public Collection<Peer> getActivePeers() {
-    return activePeers;
   }
 
   @Override
