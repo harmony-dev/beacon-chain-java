@@ -1,5 +1,6 @@
 package org.ethereum.beacon.wire.sync;
 
+import static java.lang.Math.max;
 import static org.ethereum.beacon.chain.MutableBeaconChain.ImportResult.ExistingBlock;
 import static org.ethereum.beacon.chain.MutableBeaconChain.ImportResult.ExpiredBlock;
 import static org.ethereum.beacon.chain.MutableBeaconChain.ImportResult.InvalidBlock;
@@ -193,15 +194,14 @@ public class SyncManagerImpl {
                     s1.retainAll(s2);
                     return s1.isEmpty() ? SyncMode.Long : SyncMode.Short;
                   })
-              .distinctUntilChanged();
+              .distinctUntilChanged()
+              .onErrorContinue((t, o) -> logger.error("Unexpected error: ", t));
     }
 
     private <A> ArrayList<A> listAddLimited(ArrayList<A> list, A elem, int maxSize) {
-      list.add(elem);
-      if (list.size() > maxSize) {
-        list.remove(0);
-      }
-      return list;
+      ArrayList<A> ret = new ArrayList<>(list.subList(max(0, list.size() + 1 - maxSize), list.size()));
+      ret.add(elem);
+      return ret;
     }
 
     public Publisher<SyncMode> getSyncModeStream() {
