@@ -62,6 +62,9 @@ public class SyncManagerImpl {
   private Disposable finalizedBlockStreamSub;
   private Disposable readyBlocksStreamSub;
 
+  private Duration requestsDelayLongMode = Duration.ZERO;
+  private Duration requestsDelayShortMode = Duration.ofSeconds(1);
+
   // TODO: make this parameter dynamic depending on active peers number
   int maxConcurrentBlockRequests = 2;
 
@@ -93,11 +96,12 @@ public class SyncManagerImpl {
                 mode -> {
                   switch (mode) {
                     case Long:
-                      return Flux.from(syncQueue.getBlockRequestsStream())
-                          .delayElements(Duration.ofSeconds(1), delayScheduler);
+                      Flux<BlockRequest> blockRequestFlux = Flux.from(syncQueue.getBlockRequestsStream());
+                      return requestsDelayLongMode.toMillis() == 0 ? blockRequestFlux
+                          : blockRequestFlux.delayElements(requestsDelayLongMode, delayScheduler);
                     case Short:
                       return Flux.from(syncQueue.getBlockRequestsStream())
-                          .delayElements(Duration.ofSeconds(5), delayScheduler);
+                          .delayElements(requestsDelayShortMode, delayScheduler);
                     default:
                       throw new IllegalStateException();
                   }
@@ -141,6 +145,11 @@ public class SyncManagerImpl {
 
   public Publisher<Feedback<BeaconBlock>> getBlocksReadyToImport() {
     return syncQueue.getBlocksStream();
+  }
+
+  public void setRequestsDelay(Duration longMode, Duration shortMode) {
+    this.requestsDelayLongMode = longMode;
+    this.requestsDelayShortMode = shortMode;
   }
 
   public void start() {

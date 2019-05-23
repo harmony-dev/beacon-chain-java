@@ -1,6 +1,6 @@
 package org.ethereum.beacon.start.common;
 
-import java.net.SocketAddress;
+import java.time.Duration;
 import java.util.List;
 import org.ethereum.beacon.chain.DefaultBeaconChain;
 import org.ethereum.beacon.chain.MutableBeaconChain;
@@ -219,6 +219,7 @@ public class NodeLauncher {
         syncQueue,
         1,
         schedulers.reactorEvents());
+    syncManager.setRequestsDelay(Duration.ofSeconds(1), Duration.ofSeconds(5));
 
     if (startSyncManager) {
       syncManager.start();
