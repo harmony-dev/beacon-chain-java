@@ -13,9 +13,6 @@ jobs:
 
     steps:
       - checkout
-      - add_ssh_keys:
-          fingerprints:
-            - "e3:93:00:5a:9c:d5:36:da:08:ef:16:81:92:d0:98:d9"
       - restore_cache:
           name: Restoring cached gradle dependencies
           keys:
