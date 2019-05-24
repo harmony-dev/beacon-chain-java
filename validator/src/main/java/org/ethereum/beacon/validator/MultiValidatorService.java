@@ -361,7 +361,10 @@ public class MultiValidatorService implements ValidatorService {
   }
 
   private void subscribeToStateUpdates(Consumer<ObservableBeaconState> payload) {
-    Flux.from(stateStream).subscribe(payload);
+    Flux.from(stateStream)
+        .doOnNext(payload)
+        .onErrorContinue((t,o) -> logger.warn("Validator error: ", t))
+        .subscribe();
   }
 
   @VisibleForTesting
