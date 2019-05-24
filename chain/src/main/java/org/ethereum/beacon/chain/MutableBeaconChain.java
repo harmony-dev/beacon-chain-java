@@ -11,7 +11,7 @@ public interface MutableBeaconChain extends BeaconChain {
     ExpiredBlock,
     InvalidBlock,
     StateMismatch,
-    OtherError
+    UnexpectedError
   }
 
   /**
