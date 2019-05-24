@@ -1,6 +1,5 @@
 package org.ethereum.beacon.node;
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.netty.channel.ChannelFutureListener;
 import java.io.File;
 import java.net.InetSocketAddress;
@@ -116,15 +115,17 @@ public class NodeCommandLauncher implements Runnable {
         new DefaultSchedulers() {
           @Override
           protected ThreadFactory createThreadFactory(String namePattern) {
-            ThreadFactory factory = new ThreadFactoryBuilder().setDaemon(true)
-                    .setNameFormat((nodeName == null ? "" : nodeName + "-") + namePattern).build();
+            ThreadFactory factory =
+                createThreadFactoryBuilder((nodeName == null ? "" : nodeName + "-") + namePattern).build();
             if (nodeName == null) {
               return factory;
             } else {
-              return r -> factory.newThread(() -> {
-                ThreadContext.put("validatorIndex", nodeName);
-                r.run();
-              });
+              return r ->
+                  factory.newThread(
+                      () -> {
+                        ThreadContext.put("validatorIndex", nodeName);
+                        r.run();
+                      });
             }
           }
         };

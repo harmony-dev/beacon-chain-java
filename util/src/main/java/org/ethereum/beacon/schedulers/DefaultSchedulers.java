@@ -34,6 +34,13 @@ public class DefaultSchedulers extends AbstractSchedulers {
   }
 
   protected ThreadFactory createThreadFactory(String namePattern) {
-    return new ThreadFactoryBuilder().setDaemon(true).setNameFormat(namePattern).build();
+    return createThreadFactoryBuilder(namePattern).build();
+  }
+
+  protected ThreadFactoryBuilder createThreadFactoryBuilder(String namePattern) {
+    return new ThreadFactoryBuilder()
+        .setDaemon(true)
+        .setNameFormat(namePattern)
+        .setUncaughtExceptionHandler((thread, thr) -> errorHandler.accept(thr));
   }
 }
