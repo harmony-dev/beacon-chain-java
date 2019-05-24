@@ -4,6 +4,7 @@ import org.ethereum.beacon.ssz.SSZSerializeException;
 import org.ethereum.beacon.ssz.type.SSZBasicType;
 import org.ethereum.beacon.ssz.type.SSZCompositeType;
 import org.ethereum.beacon.ssz.type.SSZListType;
+import org.ethereum.beacon.ssz.type.SSZType;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.bytes.BytesValues;
 
@@ -89,7 +90,7 @@ public class SosSerializer
     // Fixed part
     for (SerializerResult s : childSerializations) {
       composite =
-          composite.concat(s.isFixedSize() ? s.serializedBody : serializeLength(currentOffset));
+          composite.concat(s.isFixedSize() ? s.serializedBody : serializeLength(currentOffset + s.serializedLength));
       if (!s.isFixedSize()) {
         currentOffset = currentOffset + s.serializedLength;
       }
