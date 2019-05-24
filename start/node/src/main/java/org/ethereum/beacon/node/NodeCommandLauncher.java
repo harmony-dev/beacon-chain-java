@@ -6,10 +6,14 @@ import java.io.File;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.URI;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Random;
+import java.util.TimeZone;
 import java.util.concurrent.ThreadFactory;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.Level;
@@ -26,6 +30,7 @@ import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.crypto.BLS381.KeyPair;
 import org.ethereum.beacon.emulator.config.ConfigBuilder;
+import org.ethereum.beacon.emulator.config.ConfigException;
 import org.ethereum.beacon.emulator.config.chainspec.SpecBuilder;
 import org.ethereum.beacon.emulator.config.chainspec.SpecData;
 import org.ethereum.beacon.emulator.config.main.MainConfig;
@@ -264,7 +269,61 @@ public class NodeCommandLauncher implements Runnable {
         config.getConfig().getValidator().setSigner(signer);
       }
 
-      return new NodeCommandLauncher(
+      if (cliOptions.getGenesisTime() != null) {
+        SimpleDateFormat[]  supportedFormats = new SimpleDateFormat[] {
+            new SimpleDateFormat("yyyy-MM-dd HH:mm"),
+            new SimpleDateFormat("HH:mm")};
+
+        Date time = null;
+        for (SimpleDateFormat format : supportedFormats) {
+          format.setTimeZone(TimeZone.getTimeZone("GMT"));
+          try {
+            time = format.parse(cliOptions.getGenesisTime());
+            break;
+          } catch (ParseException e) {
+            continue;
+          }
+        }
+        if (time == null) {
+          throw new ConfigException(
+              "Couldn't parse --genesisTime option value: '" + cliOptions.getGenesisTime() + "'");
+        }
+        if (time.getYear() + 1900 == 1970) {
+          Date now = new Date();
+          time.setYear(now.getYear());
+          time.setMonth(now.getMonth());
+          time.setDate(now.getDate());
+        }
+
+        if (!(config.getConfig().getValidator().getContract() instanceof EmulatorContract)) {
+          throw new ConfigException("Genesis time can only be set for 'emulator' contract type");
+        }
+        EmulatorContract contract = (EmulatorContract) config.getConfig().getValidator().getContract();
+        contract.setGenesisTime(time);
+
+        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        format.setTimeZone(TimeZone.getTimeZone("GMT"));
+        logger.info("Genesis time from cli option: "
+            + format.format(time) + " GMT");
+      }
+
+      if (config.getConfig().getValidator().getContract() instanceof EmulatorContract) {
+        EmulatorContract contract = (EmulatorContract) config.getConfig().getValidator().getContract();
+        if (contract.getGenesisTime() == null) {
+          Date defaultTime = new Date();
+          defaultTime.setMinutes(0);
+          defaultTime.setSeconds(0);
+          defaultTime = new Date(defaultTime.getTime() / 1000 * 1000);
+          contract.setGenesisTime(defaultTime);
+
+          SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+          format.setTimeZone(TimeZone.getTimeZone("GMT"));
+          logger.warn("Genesis time not specified. Default genesisTime was generated: "
+                  + format.format(defaultTime) + " GMT");
+        }
+      }
+
+        return new NodeCommandLauncher(
           config,
           specBuilder,
           logLevel);

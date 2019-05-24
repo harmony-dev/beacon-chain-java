@@ -63,6 +63,14 @@ public class RunNode implements Runnable {
   )
   private String name;
 
+  @CommandLine.Option(
+      names = {"--genesis-time"},
+      paramLabel = "time",
+      description = "Genesis time in GMT+0 timezone. In either form: '2019-05-24 11:23', or just"
+          + " '11:23' (current day is taken). Default value is start of the current hour."
+  )
+  private String genesisTime;
+
   public String getName() {
     return name;
   }
@@ -77,6 +85,10 @@ public class RunNode implements Runnable {
 
   public List<String> getValidators() {
     return validators;
+  }
+
+  public String getGenesisTime() {
+    return genesisTime;
   }
 
   @Override
