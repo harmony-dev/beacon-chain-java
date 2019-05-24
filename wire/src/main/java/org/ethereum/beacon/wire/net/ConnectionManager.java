@@ -3,13 +3,14 @@ package org.ethereum.beacon.wire.net;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.wire.channel.Channel;
 import org.reactivestreams.Publisher;
-import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
@@ -28,6 +29,7 @@ public class ConnectionManager<TAddress> {
   private final ReplayProcessor<Channel<BytesValue>> clientConnections = ReplayProcessor.create();
   private final FluxSink<Channel<BytesValue>> clientConnectionsSink = clientConnections.sink();
   private final Set<TAddress> activePeers = Collections.synchronizedSet(new HashSet<>());
+  private final Map<TAddress, Channel<?>> activePeerConnections = new ConcurrentHashMap<>();
 
   public ConnectionManager(Server server, Client<TAddress> client,
       Scheduler rxScheduler) {
@@ -47,6 +49,9 @@ public class ConnectionManager<TAddress> {
   }
 
   public void addActivePeer(TAddress peerAddress) {
+    if (activePeers.contains(peerAddress)) {
+      throw new RuntimeException("Already have active peer address: " + peerAddress);
+    }
     activePeers.add(peerAddress);
 
     Flux.just(peerAddress)
@@ -55,18 +60,30 @@ public class ConnectionManager<TAddress> {
         .flatMap(Mono::fromFuture, 1, 1)
         .doOnError(t-> logger.info("Couldn't connect to active peer " + peerAddress + ": " + t))
         .doOnNext(ch -> logger.info("Connected to active peer " + peerAddress))
-        .doOnNext(ch -> clientConnectionsSink.next(ch))
+        .doOnNext(ch -> {
+          activePeerConnections.put(peerAddress, ch);
+          clientConnectionsSink.next(ch);
+        })
         .map(Channel::getCloseFuture)
         .onErrorResume(t -> Flux.just(CompletableFuture.completedFuture(null)))
         .flatMap(f -> Mono.fromFuture(f.thenApply(v -> "")), 1, 1)
-        .doOnNext(ch -> logger.info("Disconnected from active peer " + peerAddress))
+        .doOnNext(ch -> {
+          activePeerConnections.remove(peerAddress);
+          logger.info("Disconnected from active peer " + peerAddress);
+        })
         .delayElements(Duration.ofSeconds(RECONNECT_TIMEOUT_SECONDS), rxScheduler)
         .repeat(() -> activePeers.contains(peerAddress))
         .subscribe();
   }
 
-  public void removeActivePeer(TAddress peerAddress) {
+  public void removeActivePeer(TAddress peerAddress, boolean disconnect) {
     activePeers.remove(peerAddress);
+    if (disconnect) {
+      Channel<?> channel = activePeerConnections.remove(peerAddress);
+      if (channel != null) {
+        channel.close();
+      }
+    }
   }
 
   public Publisher<Channel<BytesValue>> channelsStream() {
