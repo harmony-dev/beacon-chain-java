@@ -39,7 +39,7 @@ public interface BlockTree<THash, TBlock extends Block<THash>> {
    *   this block + all its descendants returned
    *
    * Blocks with height less than {@link #getTopBlock()} are dropped
-   * Blocks with height bigger than some threshold above {@link #getTopBlock()} are dropped
+   * Blocks with height bigger than {@link #getTopBlock()} + threshold are dropped
    * Duplicate blocks are ignored
    */
   @Nonnull List<TBlock> addBlock(@Nonnull TBlock block);
