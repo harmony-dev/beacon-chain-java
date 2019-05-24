@@ -86,7 +86,7 @@ public class ConnectionManagerTest {
     testChannel2.close();
 
     Assert.assertEquals(3, client.connections.size());
-    manager.removeActivePeer("1");
+    manager.removeActivePeer("1", true);
     schedulers.addTime(Duration.ofSeconds(10));
     Assert.assertEquals(3, client.connections.size());
   }
