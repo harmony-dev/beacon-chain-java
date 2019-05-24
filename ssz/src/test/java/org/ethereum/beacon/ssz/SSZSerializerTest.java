@@ -210,11 +210,12 @@ public class SSZSerializerTest {
     list1.add("aa");
     list1.add("bb");
     List<String> list2 = new ArrayList<>();
-    list1.add("cc");
-    list1.add("dd");
+    list2.add("cc");
+    list2.add("dd");
     List<List<String>> listOfLists = new ArrayList<>();
     listOfLists.add(list1);
     listOfLists.add(list2);
+    listOfLists.add(new ArrayList<>());
     ListListObject expected = new ListListObject(listOfLists);
     byte[] encoded = sszSerializer.encode(expected);
     ListListObject actual = sszSerializer.decode(encoded, ListListObject.class);
