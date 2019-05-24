@@ -96,9 +96,11 @@ public class SyncTest {
           }
         });
 
+    System.out.println("Starting sync manager...");
     syncManager.start();
 
-    simulatorLauncher.getControlledSchedulers().addTime(3000);
+    System.out.println("Adding 3 seconds...");
+    simulatorLauncher.getControlledSchedulers().addTime(5000);
 
     Assert.assertTrue(synced.get());
     System.out.println("Done");
