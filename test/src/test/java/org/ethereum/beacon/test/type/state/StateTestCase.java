@@ -4,82 +4,113 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
+import org.ethereum.beacon.core.operations.Attestation;
+import org.ethereum.beacon.core.operations.Deposit;
+import org.ethereum.beacon.core.operations.deposit.DepositData;
+import org.ethereum.beacon.core.types.BLSPubkey;
+import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.Bitfield;
+import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.test.type.NamedTestCase;
-import org.ethereum.beacon.test.type.SpecConstantsDataMerged;
 import org.ethereum.beacon.test.type.state.StateTestCase.BeaconStateData.AttestationData.AttestationDataContainer;
+import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.bytes.Bytes96;
+import tech.pegasys.artemis.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.collections.ReadVector;
+import tech.pegasys.artemis.util.uint.UInt64;
+
+import static org.ethereum.beacon.test.StateTestUtils.parseAttestationData;
 
 /**
  * State test case <a
  * href="https://github.com/ethereum/eth2.0-tests/tree/master/state">https://github.com/ethereum/eth2.0-tests/tree/master/state</a>
  */
 public class StateTestCase implements NamedTestCase {
-  private String name;
-  private SpecConstantsDataMerged config;
+  private String description;
+  @JsonProperty
+  private BlockData.BlockBodyData.DepositData deposit;
+  @JsonProperty
+  private BeaconStateData.AttestationData attestation;
+  private BeaconStateData pre;
+  private BeaconStateData post;
 
-  @JsonProperty("verify_signatures")
-  private Boolean verifySignatures;
+  public String getDescription() {
+    return description;
+  }
 
-  @JsonProperty("initial_state")
-  private BeaconStateData initialState;
+  public void setDescription(String description) {
+    this.description = description;
+  }
 
-  private List<BlockData> blocks;
+  public BlockData.BlockBodyData.DepositData getDeposit() {
+    return deposit;
+  }
 
-  @JsonProperty("expected_state")
-  private BeaconStateData expectedState;
+  public Deposit getDepositOperation() {
+    Deposit deposit =
+        new Deposit(
+            ReadVector.wrap(getDeposit().getProof().stream().map(Hash32::fromHexString).collect(Collectors.toList()), Function.identity()),
+            UInt64.valueOf(getDeposit().getIndex()),
+            new DepositData(
+                BLSPubkey.fromHexString(getDeposit().getData().getPubkey()),
+                Hash32.fromHexString(getDeposit().getData().getWithdrawalCredentials()),
+                Gwei.castFrom(UInt64.valueOf(getDeposit().getData().getAmount())),
+                BLSSignature.wrap(
+                    Bytes96.fromHexString(getDeposit().getData().getSignature()))));
+
+    return deposit;
+  }
+
+  public void setDeposit(BlockData.BlockBodyData.DepositData deposit) {
+    this.deposit = deposit;
+  }
+
+  public BeaconStateData.AttestationData getAttestation() {
+    return attestation;
+  }
+
+  public Attestation getAttestationOperation() {
+    Attestation attestation =
+        new Attestation(
+            Bitfield.of(BytesValue.fromHexString(getAttestation().getAggregationBitfield())),
+            parseAttestationData((getAttestation().getData())),
+            Bitfield.of(BytesValue.fromHexString(getAttestation().getCustodyBitfield())),
+            BLSSignature.wrap(Bytes96.fromHexString(getAttestation().getSignature())));
+
+    return attestation;
+  }
+
+  public void setAttestation(BeaconStateData.AttestationData attestation) {
+    this.attestation = attestation;
+  }
+
+  public BeaconStateData getPre() {
+    return pre;
+  }
+
+  public void setPre(BeaconStateData pre) {
+    this.pre = pre;
+  }
+
+  public BeaconStateData getPost() {
+    return post;
+  }
+
+  public void setPost(BeaconStateData post) {
+    this.post = post;
+  }
 
   @Override
   public String getName() {
-    return name;
-  }
-
-  public void setName(String name) {
-    this.name = name;
-  }
-
-  public SpecConstantsDataMerged getConfig() {
-    return config;
-  }
-
-  public void setConfig(SpecConstantsDataMerged config) {
-    this.config = config;
-  }
-
-  public Boolean getVerifySignatures() {
-    return verifySignatures;
-  }
-
-  public void setVerifySignatures(Boolean verifySignatures) {
-    this.verifySignatures = verifySignatures;
-  }
-
-  public BeaconStateData getInitialState() {
-    return initialState;
-  }
-
-  public void setInitialState(BeaconStateData initialState) {
-    this.initialState = initialState;
-  }
-
-  public List<BlockData> getBlocks() {
-    return blocks;
-  }
-
-  public void setBlocks(List<BlockData> blocks) {
-    this.blocks = blocks;
-  }
-
-  public BeaconStateData getExpectedState() {
-    return expectedState;
-  }
-
-  public void setExpectedState(BeaconStateData expectedState) {
-    this.expectedState = expectedState;
+    return getDescription();
   }
 
   @Override
   public String toString() {
-    return "StateTestCase{" + "name='" + name + '\'' + '}';
+    return "StateTestCase{" + "description='" + description + '\'' + '}';
   }
 
   public static class BeaconStateData {
@@ -93,32 +124,13 @@ public class StateTestCase implements NamedTestCase {
     @JsonProperty("validator_registry")
     private List<ValidatorData> validatorRegistry;
 
-    @JsonProperty("validator_balances")
-    private List<String> validatorBalances;
-
-    @JsonProperty("validator_registry_update_epoch")
-    private String validatorRegistryUpdateEpoch;
+    private List<String> balances;
 
     @JsonProperty("latest_randao_mixes")
     private List<String> latestRandaoMixes;
 
-    @JsonProperty("previous_shuffling_start_shard")
-    private Long previousShufflingStartShard;
-
-    @JsonProperty("current_shuffling_start_shard")
-    private Long currentShufflingStartShard;
-
-    @JsonProperty("previous_shuffling_epoch")
-    private String previousShufflingEpoch;
-
-    @JsonProperty("current_shuffling_epoch")
-    private String currentShufflingEpoch;
-
-    @JsonProperty("previous_shuffling_seed")
-    private String previousShufflingSeed;
-
-    @JsonProperty("current_shuffling_seed")
-    private String currentShufflingSeed;
+    @JsonProperty("latest_start_shard")
+    private Long latestStartShard;
 
     @JsonProperty("previous_epoch_attestations")
     private List<AttestationData> previousEpochAttestations;
@@ -147,8 +159,11 @@ public class StateTestCase implements NamedTestCase {
     @JsonProperty("finalized_root")
     private String finalizedRoot;
 
-    @JsonProperty("latest_crosslinks")
-    private List<CrossLinkData> latestCrosslinks;
+    @JsonProperty("current_crosslinks")
+    private List<CrossLinkData> currentCrosslinks;
+
+    @JsonProperty("previous_crosslinks")
+    private List<CrossLinkData> previousCrosslinks;
 
     @JsonProperty("latest_block_roots")
     private List<String> latestBlockRoots;
@@ -172,7 +187,7 @@ public class StateTestCase implements NamedTestCase {
     private BlockData.BlockBodyData.Eth1 latestEth1Data;
 
     @JsonProperty("eth1_data_votes")
-    private List<Eth1Vote> eth1DataVotes;
+    private List<BlockData.BlockBodyData.Eth1> eth1DataVotes;
 
     @JsonProperty("deposit_index")
     private Long depositIndex;
@@ -209,20 +224,12 @@ public class StateTestCase implements NamedTestCase {
       this.validatorRegistry = validatorRegistry;
     }
 
-    public List<String> getValidatorBalances() {
-      return validatorBalances;
+    public List<String> getBalances() {
+      return balances;
     }
 
-    public void setValidatorBalances(List<String> validatorBalances) {
-      this.validatorBalances = validatorBalances;
-    }
-
-    public String getValidatorRegistryUpdateEpoch() {
-      return validatorRegistryUpdateEpoch;
-    }
-
-    public void setValidatorRegistryUpdateEpoch(String validatorRegistryUpdateEpoch) {
-      this.validatorRegistryUpdateEpoch = validatorRegistryUpdateEpoch;
+    public void setBalances(List<String> balances) {
+      this.balances = balances;
     }
 
     public List<String> getLatestRandaoMixes() {
@@ -233,52 +240,12 @@ public class StateTestCase implements NamedTestCase {
       this.latestRandaoMixes = latestRandaoMixes;
     }
 
-    public Long getPreviousShufflingStartShard() {
-      return previousShufflingStartShard;
+    public Long getLatestStartShard() {
+      return latestStartShard;
     }
 
-    public void setPreviousShufflingStartShard(Long previousShufflingStartShard) {
-      this.previousShufflingStartShard = previousShufflingStartShard;
-    }
-
-    public Long getCurrentShufflingStartShard() {
-      return currentShufflingStartShard;
-    }
-
-    public void setCurrentShufflingStartShard(Long currentShufflingStartShard) {
-      this.currentShufflingStartShard = currentShufflingStartShard;
-    }
-
-    public String getPreviousShufflingEpoch() {
-      return previousShufflingEpoch;
-    }
-
-    public void setPreviousShufflingEpoch(String previousShufflingEpoch) {
-      this.previousShufflingEpoch = previousShufflingEpoch;
-    }
-
-    public String getCurrentShufflingEpoch() {
-      return currentShufflingEpoch;
-    }
-
-    public void setCurrentShufflingEpoch(String currentShufflingEpoch) {
-      this.currentShufflingEpoch = currentShufflingEpoch;
-    }
-
-    public String getPreviousShufflingSeed() {
-      return previousShufflingSeed;
-    }
-
-    public void setPreviousShufflingSeed(String previousShufflingSeed) {
-      this.previousShufflingSeed = previousShufflingSeed;
-    }
-
-    public String getCurrentShufflingSeed() {
-      return currentShufflingSeed;
-    }
-
-    public void setCurrentShufflingSeed(String currentShufflingSeed) {
-      this.currentShufflingSeed = currentShufflingSeed;
+    public void setLatestStartShard(Long latestStartShard) {
+      this.latestStartShard = latestStartShard;
     }
 
     public List<AttestationData> getPreviousEpochAttestations() {
@@ -353,12 +320,20 @@ public class StateTestCase implements NamedTestCase {
       this.finalizedRoot = finalizedRoot;
     }
 
-    public List<CrossLinkData> getLatestCrosslinks() {
-      return latestCrosslinks;
+    public List<CrossLinkData> getCurrentCrosslinks() {
+      return currentCrosslinks;
     }
 
-    public void setLatestCrosslinks(List<CrossLinkData> latestCrosslinks) {
-      this.latestCrosslinks = latestCrosslinks;
+    public void setCurrentCrosslinks(List<CrossLinkData> currentCrosslinks) {
+      this.currentCrosslinks = currentCrosslinks;
+    }
+
+    public List<CrossLinkData> getPreviousCrosslinks() {
+      return previousCrosslinks;
+    }
+
+    public void setPreviousCrosslinks(List<CrossLinkData> previousCrosslinks) {
+      this.previousCrosslinks = previousCrosslinks;
     }
 
     public List<String> getLatestBlockRoots() {
@@ -417,11 +392,11 @@ public class StateTestCase implements NamedTestCase {
       this.latestEth1Data = latestEth1Data;
     }
 
-    public List<Eth1Vote> getEth1DataVotes() {
+    public List<BlockData.BlockBodyData.Eth1> getEth1DataVotes() {
       return eth1DataVotes;
     }
 
-    public void setEth1DataVotes(List<Eth1Vote> eth1DataVotes) {
+    public void setEth1DataVotes(List<BlockData.BlockBodyData.Eth1> eth1DataVotes) {
       this.eth1DataVotes = eth1DataVotes;
     }
 
@@ -565,8 +540,7 @@ public class StateTestCase implements NamedTestCase {
       @JsonProperty("custody_bitfield")
       private String custodyBitfield;
 
-      @JsonProperty("aggregate_signature")
-      private String aggregateSignature;
+      private String signature;
 
       @JsonProperty("inclusion_slot")
       private String inclusionSlot;
@@ -606,12 +580,12 @@ public class StateTestCase implements NamedTestCase {
         this.custodyBitfield = custodyBitfield;
       }
 
-      public String getAggregateSignature() {
-        return aggregateSignature;
+      public String getSignature() {
+        return signature;
       }
 
-      public void setAggregateSignature(String aggregateSignature) {
-        this.aggregateSignature = aggregateSignature;
+      public void setSignature(String signature) {
+        this.signature = signature;
       }
 
       public Long getProposerIndex() {
@@ -623,8 +597,6 @@ public class StateTestCase implements NamedTestCase {
       }
 
       public static class AttestationDataContainer {
-        private String slot;
-
         @JsonProperty("beacon_block_root")
         private String beaconBlockRoot;
 
@@ -633,6 +605,9 @@ public class StateTestCase implements NamedTestCase {
 
         @JsonProperty("source_root")
         private String sourceRoot;
+
+        @JsonProperty("target_epoch")
+        private String targetEpoch;
 
         @JsonProperty("target_root")
         private String targetRoot;
@@ -644,14 +619,6 @@ public class StateTestCase implements NamedTestCase {
 
         @JsonProperty("crosslink_data_root")
         private String crosslinkDataRoot;
-
-        public String getSlot() {
-          return slot;
-        }
-
-        public void setSlot(String slot) {
-          this.slot = slot;
-        }
 
         public String getBeaconBlockRoot() {
           return beaconBlockRoot;
@@ -707,6 +674,14 @@ public class StateTestCase implements NamedTestCase {
 
         public void setCrosslinkDataRoot(String crosslinkDataRoot) {
           this.crosslinkDataRoot = crosslinkDataRoot;
+        }
+
+        public String getTargetEpoch() {
+          return targetEpoch;
+        }
+
+        public void setTargetEpoch(String targetEpoch) {
+          this.targetEpoch = targetEpoch;
         }
       }
     }
@@ -799,8 +774,6 @@ public class StateTestCase implements NamedTestCase {
         this.signature = signature;
       }
     }
-
-    public static class Eth1Vote {}
   }
 
   public static class BlockData {
@@ -1010,7 +983,7 @@ public class StateTestCase implements NamedTestCase {
         }
       }
 
-      public static class SlashableAttestationData {
+      public static class IndexedAttestationData {
         @JsonProperty("custody_bit_0_indices")
         private List<Long> custodyBit0Indices;
         @JsonProperty("custody_bit_1_indices")
@@ -1063,25 +1036,25 @@ public class StateTestCase implements NamedTestCase {
 
       public static class AttesterSlashingData {
         @JsonProperty("slashable_attestation_1")
-        private SlashableAttestationData slashableAttestation1;
+        private IndexedAttestationData slashableAttestation1;
         @JsonProperty("slashable_attestation_2")
-        private SlashableAttestationData slashableAttestation2;
+        private IndexedAttestationData slashableAttestation2;
 
-        public SlashableAttestationData getSlashableAttestation1() {
+        public IndexedAttestationData getSlashableAttestation1() {
           return slashableAttestation1;
         }
 
         public void setSlashableAttestation1(
-            SlashableAttestationData slashableAttestation1) {
+            IndexedAttestationData slashableAttestation1) {
           this.slashableAttestation1 = slashableAttestation1;
         }
 
-        public SlashableAttestationData getSlashableAttestation2() {
+        public IndexedAttestationData getSlashableAttestation2() {
           return slashableAttestation2;
         }
 
         public void setSlashableAttestation2(
-            SlashableAttestationData slashableAttestation2) {
+            IndexedAttestationData slashableAttestation2) {
           this.slashableAttestation2 = slashableAttestation2;
         }
       }
@@ -1090,8 +1063,7 @@ public class StateTestCase implements NamedTestCase {
         private List<String> proof;
         private Long index;
 
-        @JsonProperty("deposit_data")
-        private DepositDataContainer depositData;
+        private DepositDataContainer data;
 
         public List<String> getProof() {
           return proof;
@@ -1109,12 +1081,12 @@ public class StateTestCase implements NamedTestCase {
           this.index = index;
         }
 
-        public DepositDataContainer getDepositData() {
-          return depositData;
+        public DepositDataContainer getData() {
+          return data;
         }
 
-        public void setDepositData(DepositDataContainer depositData) {
-          this.depositData = depositData;
+        public void setData(DepositDataContainer data) {
+          this.data = data;
         }
 
         public static class DepositDataContainer {

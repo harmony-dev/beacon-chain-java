@@ -6,8 +6,8 @@ import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.crypto.MessageParameters;
 import org.ethereum.beacon.crypto.bls.milagro.MilagroMessageMapper;
 import org.ethereum.beacon.test.runner.Runner;
-import org.ethereum.beacon.test.type.bls.BlsTest;
 import org.ethereum.beacon.test.type.TestCase;
+import org.ethereum.beacon.test.type.bls.BlsMessageHashCase;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes8;
@@ -19,24 +19,20 @@ import java.util.Optional;
 import static org.ethereum.beacon.test.SilentAsserts.assertLists;
 
 /**
- * TestRunner for {@link BlsTest.BlsMessageHashCase}
+ * TestRunner for {@link BlsMessageHashCase}
  *
- * <p>Hash message
- * Input:
- * - Message as bytes
- * - domain as uint64
- * Output:
- * - Message hash as a G2 point (uncompressed)
+ * <p>Hash message as G2 point (uncompressed)
+ * Test format description: <a href="https://github.com/ethereum/eth2.0-specs/blob/dev/specs/test_formats/bls/msg_hash_g2_uncompressed.md">https://github.com/ethereum/eth2.0-specs/blob/dev/specs/test_formats/bls/msg_hash_g2_uncompressed.md</a>
  */
 public class BlsMessageHash implements Runner {
-  private BlsTest.BlsMessageHashCase testCase;
+  private BlsMessageHashCase testCase;
   private BeaconChainSpec spec;
 
   public BlsMessageHash(TestCase testCase, BeaconChainSpec spec) {
-    if (!(testCase instanceof BlsTest.BlsMessageHashCase)) {
+    if (!(testCase instanceof BlsMessageHashCase)) {
       throw new RuntimeException("TestCase runner accepts only BlsMessageHashCase as input!");
     }
-    this.testCase = (BlsTest.BlsMessageHashCase) testCase;
+    this.testCase = (BlsMessageHashCase) testCase;
     this.spec = spec;
   }
 
@@ -49,12 +45,9 @@ public class BlsMessageHash implements Runner {
     MilagroMessageMapper milagroMessageMapper = new MilagroMessageMapper();
     ECP2 point = milagroMessageMapper.map(messageParameters);
 
-    Optional<String> compareX =
-        assertLists(testCase.getOutput().get(0), serialize(point.getX()));
-    Optional<String> compareY =
-        assertLists(testCase.getOutput().get(1), serialize(point.getY()));
-    Optional<String> compareZ =
-        assertLists(testCase.getOutput().get(2), serialize(point.getz()));
+    Optional<String> compareX = assertLists(testCase.getOutput().get(0), serialize(point.getX()));
+    Optional<String> compareY = assertLists(testCase.getOutput().get(1), serialize(point.getY()));
+    Optional<String> compareZ = assertLists(testCase.getOutput().get(2), serialize(point.getz()));
 
     if (!compareX.isPresent() && !compareY.isPresent() && !compareZ.isPresent()) {
       return Optional.empty();

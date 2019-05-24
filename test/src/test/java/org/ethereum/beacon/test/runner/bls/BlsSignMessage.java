@@ -1,34 +1,36 @@
 package org.ethereum.beacon.test.runner.bls;
 
-import static org.ethereum.beacon.test.SilentAsserts.assertEquals;
-
-import java.util.Optional;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.crypto.BLS381;
 import org.ethereum.beacon.crypto.MessageParameters;
 import org.ethereum.beacon.test.runner.Runner;
-import org.ethereum.beacon.test.type.bls.BlsTest;
 import org.ethereum.beacon.test.type.TestCase;
+import org.ethereum.beacon.test.type.bls.BlsSignMessageCase;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes8;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 
+import java.util.Optional;
+
+import static org.ethereum.beacon.test.SilentAsserts.assertEquals;
+
 /**
- * TestRunner for {@link BlsTest.BlsSignMessageCase}
+ * TestRunner for {@link BlsSignMessageCase}
  *
  * <p>Signs message by signer defined by private key
+ * Test format description: <a href="https://github.com/ethereum/eth2.0-specs/blob/dev/specs/test_formats/bls/sign_msg.md">https://github.com/ethereum/eth2.0-specs/blob/dev/specs/test_formats/bls/sign_msg.md</a>
  */
 public class BlsSignMessage implements Runner {
-  private BlsTest.BlsSignMessageCase testCase;
+  private BlsSignMessageCase testCase;
   private BeaconChainSpec spec;
 
   public BlsSignMessage(TestCase testCase, BeaconChainSpec spec) {
-    if (!(testCase instanceof BlsTest.BlsSignMessageCase)) {
+    if (!(testCase instanceof BlsSignMessageCase)) {
       throw new RuntimeException("TestCase runner accepts only BlsSignMessageCase as input!");
     }
-    this.testCase = (BlsTest.BlsSignMessageCase) testCase;
+    this.testCase = (BlsSignMessageCase) testCase;
     this.spec = spec;
   }
 

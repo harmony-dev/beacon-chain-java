@@ -1,6 +1,7 @@
 package org.ethereum.beacon.consensus.verifier.operation;
 
 import org.ethereum.beacon.consensus.BeaconChainSpec;
+import org.ethereum.beacon.consensus.spec.SpecCommons;
 import org.ethereum.beacon.consensus.verifier.OperationVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconState;
@@ -25,11 +26,9 @@ public class AttestationVerifier implements OperationVerifier<Attestation> {
   @Override
   public VerificationResult verify(Attestation attestation, BeaconState state) {
     try {
-      return spec.verify_attestation(state, attestation)
-          ? VerificationResult.PASSED
-          : VerificationResult.failedResult(
-              "Failed to verify attestation %s against state %s", attestation, state);
-    } catch (Exception e) {
+      spec.verify_attestation(state, attestation);
+      return VerificationResult.PASSED;
+    } catch (SpecCommons.SpecAssertionFailed e) {
       return VerificationResult.failedResult(e.getMessage());
     }
   }

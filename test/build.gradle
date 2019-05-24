@@ -15,8 +15,20 @@ dependencies {
   testImplementation project(':pow:core')
 }
 
+task activateLfs(type:Exec) {
+  description 'Activates lfs for repo'
+  ignoreExitValue true
+  commandLine 'git', 'lfs', 'install'
+  doLast {
+    if (execResult.exitValue != 0) {
+      throw new GradleException("Git-lfs is required to run tests from `tests` module. Install git-lfs first!")
+    }
+  }
+}
+
 task submodulesUpdate(type:Exec) {
   description 'Updates (and inits) git submodules'
+  dependsOn(activateLfs)
   commandLine 'git', 'submodule', 'update', '--init', '--recursive'
   group 'Build Setup'
 }

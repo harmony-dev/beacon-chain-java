@@ -293,8 +293,7 @@ public interface EpochProcessing extends HelperFunction {
                   state.current_crosslinks[shard] = winning_crosslink
    */
   default void process_crosslinks(MutableBeaconState state) {
-    state.getPreviousCrosslinks().clear();
-    state.getPreviousCrosslinks().addAll(state.getCurrentCrosslinks().listCopy());
+    state.getPreviousCrosslinks().replaceAll(state.getCurrentCrosslinks().listCopy());
 
     for (EpochNumber epoch : get_previous_epoch(state).iterateTo(get_current_epoch(state).increment())) {
       for (UInt64 offset : UInt64s.iterate(UInt64.ZERO, get_epoch_committee_count(state, epoch))) {
@@ -694,8 +693,7 @@ public interface EpochProcessing extends HelperFunction {
     /* Rotate current/previous epoch attestations
       state.previous_epoch_attestations = state.current_epoch_attestations
       state.current_epoch_attestations = [] */
-    state.getPreviousEpochAttestations().clear();
-    state.getPreviousEpochAttestations().addAll(state.getCurrentEpochAttestations().listCopy());
+    state.getPreviousEpochAttestations().replaceAll(state.getCurrentEpochAttestations().listCopy());
     state.getCurrentEpochAttestations().clear();
   }
 }

@@ -3,23 +3,28 @@
     "name": "Deposit",
     "inputs": [
       {
-        "type": "bytes32",
-        "name": "deposit_root",
+        "type": "bytes",
+        "name": "pubkey",
         "indexed": false
       },
       {
         "type": "bytes",
-        "name": "data",
+        "name": "withdrawal_credentials",
+        "indexed": false
+      },
+      {
+        "type": "bytes",
+        "name": "amount",
+        "indexed": false
+      },
+      {
+        "type": "bytes",
+        "name": "signature",
         "indexed": false
       },
       {
         "type": "bytes",
         "name": "merkle_tree_index",
-        "indexed": false
-      },
-      {
-        "type": "bytes32[32]",
-        "name": "branch",
         "indexed": false
       }
     ],
@@ -27,11 +32,16 @@
     "type": "event"
   },
   {
-    "name": "ChainStart",
+    "name": "Eth2Genesis",
     "inputs": [
       {
         "type": "bytes32",
         "name": "deposit_root",
+        "indexed": false
+      },
+      {
+        "type": "bytes",
+        "name": "deposit_count",
         "indexed": false
       },
       {
@@ -44,12 +54,47 @@
     "type": "event"
   },
   {
-    "name": "__init__",
     "outputs": [],
     "inputs": [],
     "constant": false,
     "payable": false,
     "type": "constructor"
+  },
+  {
+    "name": "to_little_endian_64",
+    "outputs": [
+      {
+        "type": "bytes",
+        "name": "out"
+      }
+    ],
+    "inputs": [
+      {
+        "type": "uint256",
+        "name": "value"
+      }
+    ],
+    "constant": true,
+    "payable": false,
+    "type": "function"
+  },
+  {
+    "name": "from_little_endian_64",
+    "outputs": [
+      {
+        "type": "uint256",
+        "name": "out"
+      }
+    ],
+    "inputs": [
+      {
+        "type": "bytes",
+        "name": "value"
+      }
+    ],
+    "constant": true,
+    "payable": false,
+    "type": "function"
   },
   {
     "name": "get_deposit_root",
@@ -65,16 +110,50 @@
     "type": "function"
   },
   {
+    "name": "get_deposit_count",
+    "outputs": [
+      {
+        "type": "bytes",
+        "name": "out"
+      }
+    ],
+    "inputs": [],
+    "constant": true,
+    "payable": false,
+    "type": "function"
+  },
+  {
     "name": "deposit",
     "outputs": [],
     "inputs": [
       {
         "type": "bytes",
-        "name": "deposit_input"
+        "name": "pubkey"
+      },
+      {
+        "type": "bytes",
+        "name": "withdrawal_credentials"
+      },
+      {
+        "type": "bytes",
+        "name": "signature"
       }
     ],
     "constant": false,
     "payable": true,
+    "type": "function"
+  },
+  {
+    "name": "chainStarted",
+    "outputs": [
+      {
+        "type": "bool",
+        "name": "out"
+      }
+    ],
+    "inputs": [],
+    "constant": true,
+    "payable": false,
     "type": "function"
   }
 ]

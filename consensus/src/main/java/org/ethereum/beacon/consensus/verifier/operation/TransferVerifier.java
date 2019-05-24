@@ -1,6 +1,7 @@
 package org.ethereum.beacon.consensus.verifier.operation;
 
 import org.ethereum.beacon.consensus.BeaconChainSpec;
+import org.ethereum.beacon.consensus.spec.SpecCommons;
 import org.ethereum.beacon.consensus.verifier.OperationVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconState;
@@ -26,7 +27,7 @@ public class TransferVerifier implements OperationVerifier<Transfer> {
     try {
       spec.verify_transfer(state, transfer);
       return VerificationResult.PASSED;
-    } catch (Exception e) {
+    } catch (SpecCommons.SpecAssertionFailed e) {
       return VerificationResult.failedResult(e.getMessage());
     }
   }

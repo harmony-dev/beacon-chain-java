@@ -29,6 +29,11 @@ public interface WriteList<IndexType extends Number, ValueType>
 
   boolean addAll(IndexType index, @NotNull Collection<? extends ValueType> c);
 
+  default void replaceAll(@NotNull Collection<? extends ValueType> c) {
+    this.clear();
+    this.addAll(c);
+  }
+
   void sort(Comparator<? super ValueType> c);
 
   void clear();
