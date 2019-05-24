@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.chain.BeaconChainHead;
 import org.ethereum.beacon.chain.BeaconTuple;
 import org.ethereum.beacon.chain.BeaconTupleDetails;
@@ -39,7 +41,12 @@ import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 
 public class ObservableStateProcessorImpl implements ObservableStateProcessor {
+  private static final Logger logger = LogManager.getLogger(ObservableStateProcessorImpl.class);
+
   private static final int MAX_TUPLE_CACHE_SIZE = 32;
+
+  private final int maxEmptySlotTransitions = 256;
+
   private final BeaconTupleStorage tupleStorage;
 
   private final HeadFunction headFunction;
@@ -218,8 +225,14 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
 
   private void newSlot(SlotNumber newSlot) {
     if (head.getBlock().getSlot().greater(newSlot)) {
+      logger.info("Ignore new slot " + newSlot + " below head block: " + head.getBlock());
       return;
     }
+    if (newSlot.greater(head.getBlock().getSlot().plus(maxEmptySlotTransitions))) {
+      logger.debug("Ignore new slot " + newSlot + " far above head block: " + head.getBlock());
+      return;
+    }
+
     updateCurrentObservableState(head, newSlot);
   }
 
