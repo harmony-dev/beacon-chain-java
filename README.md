@@ -11,7 +11,7 @@ If you want to take part in Ethereum 2.0 development and use our code, we split 
 You can build one module jar with gradle `assemble` task executed on desired module:
 ```bash
 ./gradlew :crypto:assemble
-cp crypto/build/libs/beacon-crypto-0.1.0.jar <jar-destination>
+cp crypto/build/libs/beacon-crypto-0.2.0.jar <jar-destination>
 ``` 
 
 ## Simulator
