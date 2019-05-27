@@ -26,7 +26,7 @@ public class StateCachingTransition implements StateTransition<BeaconStateEx> {
 
   @Override
   public BeaconStateEx apply(BeaconStateEx source) {
-    logger.debug(() -> "Applying state caching to state: (" +
+    logger.trace(() -> "Applying state caching to state: (" +
         spec.hash_tree_root(source).toStringShort() + ") " +
         source.toString(spec.getConstants(), spec::signing_root));
 
@@ -38,7 +38,7 @@ public class StateCachingTransition implements StateTransition<BeaconStateEx> {
 
     BeaconStateEx ret = new BeaconStateExImpl(state.createImmutable(), TransitionType.CACHING);
 
-    logger.debug(() -> "State caching result state: (" +
+    logger.trace(() -> "State caching result state: (" +
         spec.hash_tree_root(ret).toStringShort() + ") " +
         ret.toString(spec.getConstants(), spec::signing_root));
 

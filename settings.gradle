@@ -25,6 +25,8 @@ include 'ssz'
 include 'start:simulator'
 // Benchmarks CLI
 include 'start:benchmaker'
+// Beacon node
+include 'start:node'
 // Clients helpers
 include 'start:common'
 // Configuration parser

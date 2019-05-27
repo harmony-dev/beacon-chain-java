@@ -41,7 +41,7 @@ public class SpecBuilder {
         .withConstants(specConstants)
         .withBlsVerify(specHelpersOptions.isBlsVerify())
         .withBlsVerifyProofOfPossession(specHelpersOptions.isBlsVerifyProofOfPossession())
-        .enableCache()
+        .withCache(spec.getSpecHelpersOptions().isEnableCache())
         .build();
   }
 

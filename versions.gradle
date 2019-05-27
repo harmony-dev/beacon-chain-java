@@ -25,6 +25,7 @@ dependencyManagement {
     dependency "net.consensys.cava:cava-ssz:${cavaVersion}"
     dependency "net.consensys.cava:cava-units:${cavaVersion}"
     dependency "io.projectreactor:reactor-core:3.2.5.RELEASE"
+    dependency "io.projectreactor:reactor-test:3.2.5.RELEASE"
     dependency "org.reactivestreams:reactive-streams:1.0.2"
 
     dependency "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${jacksonVersion}"
@@ -32,5 +33,6 @@ dependencyManagement {
     dependency "commons-beanutils:commons-beanutils:1.9.3"
 
     dependency "info.picocli:picocli:3.9.4"
+    dependency "io.netty:netty-all:4.1.36.Final"
   }
 }

@@ -64,4 +64,13 @@ public class DepositData {
         && Objects.equal(amount, that.amount)
         && Objects.equal(signature, that.signature);
   }
+
+  @Override
+  public int hashCode() {
+    int result = pubKey.hashCode();
+    result = 31 * result + withdrawalCredentials.hashCode();
+    result = 31 * result + amount.hashCode();
+    result = 31 * result + signature.hashCode();
+    return result;
+  }
 }

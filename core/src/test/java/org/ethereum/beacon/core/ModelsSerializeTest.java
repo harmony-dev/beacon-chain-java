@@ -37,6 +37,7 @@ import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.core.util.BeaconBlockTestUtil;
+import org.ethereum.beacon.core.util.TestDataFactory;
 import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.ssz.SSZBuilder;
 import org.ethereum.beacon.ssz.SSZSerializer;
@@ -53,6 +54,7 @@ import tech.pegasys.artemis.util.uint.UInt64;
 public class ModelsSerializeTest {
   private SSZSerializer sszSerializer;
   private SpecConstants specConstants;
+  private TestDataFactory dataFactory;
 
   @Before
   public void setup() {
@@ -60,93 +62,37 @@ public class ModelsSerializeTest {
     sszSerializer = new SSZBuilder()
         .withExternalVarResolver(new SpecConstantsResolver(specConstants))
         .buildSerializer();
-  }
-
-  private AttestationData createAttestationData() {
-    AttestationData expected =
-        new AttestationData(
-            Hashes.sha256(BytesValue.fromHexString("aa")),
-            EpochNumber.ZERO,
-            Hashes.sha256(BytesValue.fromHexString("bb")),
-            EpochNumber.of(123),
-            Hashes.sha256(BytesValue.fromHexString("cc")),
-            ShardNumber.of(345),
-            Hashes.sha256(BytesValue.fromHexString("dd")),
-            Hash32.ZERO);
-
-    return expected;
+    dataFactory = new TestDataFactory(specConstants);
   }
 
   @Test
   public void attestationDataTest() {
-    AttestationData expected = createAttestationData();
+    AttestationData expected = dataFactory.createAttestationData();
     BytesValue encoded = sszSerializer.encode2(expected);
     AttestationData reconstructed = sszSerializer.decode(encoded, AttestationData.class);
     assertEquals(expected, reconstructed);
   }
 
-  private Attestation createAttestation() {
-    AttestationData attestationData = createAttestationData();
-    Attestation attestation =
-        new Attestation(
-            Bitfield.of(BytesValue.fromHexString("aa")),
-            attestationData,
-            Bitfield.of(BytesValue.fromHexString("bb")),
-            BLSSignature.wrap(Bytes96.fromHexString("cc")));
-
-    return attestation;
-  }
-
   @Test
   public void attestationTest() {
-    Attestation expected = createAttestation();
+    Attestation expected = dataFactory.createAttestation();
     BytesValue encoded = sszSerializer.encode2(expected);
     Attestation reconstructed = sszSerializer.decode(encoded, Attestation.class);
     assertEquals(expected, reconstructed);
   }
 
-  private DepositData createDepositData() {
-    DepositData depositData =
-        new DepositData(
-            BLSPubkey.wrap(Bytes48.TRUE),
-            Hashes.sha256(BytesValue.fromHexString("aa")),
-            Gwei.ZERO, BLSSignature.wrap(Bytes96.ZERO));
-
-    return depositData;
-  }
-
   @Test
   public void depositDataTest() {
-    DepositData expected = createDepositData();
+    DepositData expected = dataFactory.createDepositData();
     BytesValue encoded = sszSerializer.encode2(expected);
     DepositData reconstructed = sszSerializer.decode(encoded, DepositData.class);
     assertEquals(expected, reconstructed);
   }
 
-  private Deposit createDeposit1() {
-    Deposit deposit = new Deposit(
-        ReadVector.wrap(
-            Collections.nCopies(specConstants.getDepositContractTreeDepth().getIntValue(), Hash32.ZERO), Integer::new),
-        UInt64.ZERO, createDepositData());
-
-    return deposit;
-  }
-
-  private Deposit createDeposit2() {
-    ArrayList<Hash32> hashes = new ArrayList<>();
-    hashes.add(Hashes.sha256(BytesValue.fromHexString("aa")));
-    hashes.add(Hashes.sha256(BytesValue.fromHexString("bb")));
-    hashes.addAll(Collections.nCopies(specConstants.getDepositContractTreeDepth().getIntValue() - hashes.size(), Hash32.ZERO));
-    ReadVector<Integer, Hash32> proof = ReadVector.wrap(hashes, Integer::new);
-    Deposit deposit = new Deposit(proof, UInt64.ZERO, createDepositData());
-
-    return deposit;
-  }
-
   @Test
   public void depositTest() {
-    Deposit expected1 = createDeposit1();
-    Deposit expected2 = createDeposit2();
+    Deposit expected1 = dataFactory.createDeposit1();
+    Deposit expected2 = dataFactory.createDeposit2();
     BytesValue encoded1 = sszSerializer.encode2(expected1);
     BytesValue encoded2 = sszSerializer.encode2(expected2);
     Deposit reconstructed1 = sszSerializer.decode(encoded1, Deposit.class);
@@ -155,15 +101,9 @@ public class ModelsSerializeTest {
     assertEquals(expected2, reconstructed2);
   }
 
-  private VoluntaryExit createExit() {
-    VoluntaryExit voluntaryExit = new VoluntaryExit(EpochNumber.of(123), ValidatorIndex.MAX, BLSSignature.wrap(Bytes96.fromHexString("aa")));
-
-    return voluntaryExit;
-  }
-
   @Test
   public void exitTest() {
-    VoluntaryExit expected = createExit();
+    VoluntaryExit expected = dataFactory.createExit();
     BytesValue encoded = sszSerializer.encode2(expected);
     VoluntaryExit reconstructed = sszSerializer.decode(encoded, VoluntaryExit.class);
     assertEquals(expected, reconstructed);
@@ -178,73 +118,18 @@ public class ModelsSerializeTest {
     assertEquals(expected, reconstructed);
   }
 
-  private ProposerSlashing createProposerSlashing(Random random) {
-    ProposerSlashing proposerSlashing =
-        new ProposerSlashing(
-            ValidatorIndex.MAX,
-            BeaconBlockTestUtil.createRandomHeader(random),
-            BeaconBlockTestUtil.createRandomHeader(random));
-
-    return proposerSlashing;
-  }
-
   @Test
   public void proposerSlashingTest() {
-    Random random = new Random();
-    ProposerSlashing expected = createProposerSlashing(random);
+    Random random = new Random(1);
+    ProposerSlashing expected = dataFactory.createProposerSlashing(random);
     BytesValue encoded = sszSerializer.encode2(expected);
     ProposerSlashing reconstructed = sszSerializer.decode(encoded, ProposerSlashing.class);
     assertEquals(expected, reconstructed);
   }
 
-  private BeaconBlockBody createBeaconBlockBody() {
-    Random random = new Random();
-    List<ProposerSlashing> proposerSlashings = new ArrayList<>();
-    proposerSlashings.add(createProposerSlashing(random));
-    List<AttesterSlashing> attesterSlashings = new ArrayList<>();
-    attesterSlashings.add(createAttesterSlashings());
-    attesterSlashings.add(createAttesterSlashings());
-    List<Attestation> attestations = new ArrayList<>();
-    attestations.add(createAttestation());
-    List<Deposit> deposits = new ArrayList<>();
-    deposits.add(createDeposit1());
-    deposits.add(createDeposit2());
-    List<VoluntaryExit> voluntaryExits = new ArrayList<>();
-    voluntaryExits.add(createExit());
-    List<Transfer> transfers = new ArrayList<>();
-    BeaconBlockBody beaconBlockBody =
-        BeaconBlockBody.create(
-            BLSSignature.ZERO,
-            new Eth1Data(Hash32.ZERO, UInt64.ZERO, Hash32.ZERO),
-            Bytes32.ZERO,
-            proposerSlashings,
-            attesterSlashings,
-            attestations,
-            deposits,
-            voluntaryExits,
-            transfers
-            );
-
-    return beaconBlockBody;
-  }
-
-  private AttesterSlashing createAttesterSlashings() {
-    return new AttesterSlashing(
-        createSlashableAttestation(),
-        createSlashableAttestation());
-  }
-
-  private IndexedAttestation createSlashableAttestation() {
-    return new IndexedAttestation(
-        Arrays.asList(ValidatorIndex.of(234), ValidatorIndex.of(235)),
-        Arrays.asList(ValidatorIndex.of(678), ValidatorIndex.of(679)),
-        createAttestationData(),
-        BLSSignature.wrap(Bytes96.fromHexString("aa")));
-  }
-
   @Test
   public void slashableAttestationTest() {
-    IndexedAttestation expected = createSlashableAttestation();
+    IndexedAttestation expected = dataFactory.createSlashableAttestation();
     BytesValue encoded = sszSerializer.encode2(expected);
     IndexedAttestation reconstructed = sszSerializer.decode(encoded, IndexedAttestation.class);
     assertEquals(expected, reconstructed);
@@ -252,7 +137,7 @@ public class ModelsSerializeTest {
 
   @Test
   public void attesterSlashingTest() {
-    AttesterSlashing expected = createAttesterSlashings();
+    AttesterSlashing expected = dataFactory.createAttesterSlashings();
     BytesValue encoded = sszSerializer.encode2(expected);
     AttesterSlashing reconstructed = sszSerializer.decode(encoded, AttesterSlashing.class);
     assertEquals(expected, reconstructed);
@@ -260,41 +145,23 @@ public class ModelsSerializeTest {
 
   @Test
   public void beaconBlockBodyTest() {
-    BeaconBlockBody expected = createBeaconBlockBody();
+    BeaconBlockBody expected = dataFactory.createBeaconBlockBody();
     BytesValue encoded = sszSerializer.encode2(expected);
     BeaconBlockBody reconstructed = sszSerializer.decode(encoded, BeaconBlockBody.class);
     assertEquals(expected, reconstructed);
   }
 
-  private BeaconBlock createBeaconBlock() {
-    BeaconBlock beaconBlock =
-        new BeaconBlock(
-            SlotNumber.castFrom(UInt64.MAX_VALUE),
-            Hashes.sha256(BytesValue.fromHexString("aa")),
-            Hashes.sha256(BytesValue.fromHexString("bb")),
-            createBeaconBlockBody(),
-            BLSSignature.wrap(Bytes96.fromHexString("aa")));
-
-    return beaconBlock;
-  }
-
   @Test
   public void beaconBlockTest() {
-    BeaconBlock expected = createBeaconBlock();
+    BeaconBlock expected = dataFactory.createBeaconBlock();
     BytesValue encoded = sszSerializer.encode2(expected);
     BeaconBlock reconstructed = sszSerializer.decode(encoded, BeaconBlock.class);
     assertEquals(expected, reconstructed);
   }
 
-  private BeaconState createBeaconState() {
-    BeaconState beaconState = BeaconState.getEmpty();
-
-    return beaconState;
-  }
-
   @Test
   public void beaconStateTest() {
-    BeaconState expected = createBeaconState();
+    BeaconState expected = dataFactory.createBeaconState();
     BytesValue encoded = sszSerializer.encode2(expected);
     BeaconState reconstructed = sszSerializer.decode(encoded, BeaconStateImpl.class);
     assertEquals(expected, reconstructed);
@@ -302,94 +169,49 @@ public class ModelsSerializeTest {
 
   @Test
   public void beaconStateExTest() {
-    BeaconState expected = createBeaconState();
+    BeaconState expected = dataFactory.createBeaconState();
     BeaconStateEx stateEx = new BeaconStateExImpl(expected);
     BytesValue encoded = sszSerializer.encode2(stateEx);
     BeaconState reconstructed = sszSerializer.decode(encoded, BeaconStateImpl.class);
     assertEquals(expected, reconstructed);
   }
 
-  private Crosslink createCrosslink() {
-    Crosslink crosslink = Crosslink.EMPTY;
-
-    return crosslink;
-  }
-
   @Test
   public void crosslinkTest() {
-    Crosslink expected = createCrosslink();
+    Crosslink expected = dataFactory.createCrosslink();
     BytesValue encoded = sszSerializer.encode2(expected);
     Crosslink reconstructed = sszSerializer.decode(encoded, Crosslink.class);
     assertEquals(expected, reconstructed);
   }
 
-  private Eth1DataVote createEth1DataVote() {
-    Eth1DataVote eth1DataVote = new Eth1DataVote(Eth1Data.EMPTY, UInt64.MAX_VALUE);
-
-    return eth1DataVote;
-  }
-
   @Test
   public void eth1DataVoteTest() {
-    Eth1DataVote expected = createEth1DataVote();
+    Eth1DataVote expected = dataFactory.createEth1DataVote();
     BytesValue encoded = sszSerializer.encode2(expected);
     Eth1DataVote reconstructed = sszSerializer.decode(encoded, Eth1DataVote.class);
     assertEquals(expected, reconstructed);
   }
 
-  private Fork createFork() {
-    Fork fork = Fork.EMPTY;
-
-    return fork;
-  }
-
   @Test
   public void forkTest() {
-    Fork expected = createFork();
+    Fork expected = dataFactory.createFork();
     BytesValue encoded = sszSerializer.encode2(expected);
     Fork reconstructed = sszSerializer.decode(encoded, Fork.class);
     assertEquals(expected, reconstructed);
   }
 
-  private PendingAttestation createPendingAttestation() {
-    PendingAttestation pendingAttestation =
-        new PendingAttestation(
-            Bitfield.of(BytesValue.fromHexString("aa")),
-            createAttestationData(),
-            SlotNumber.ZERO,
-            ValidatorIndex.ZERO);
-
-    return pendingAttestation;
-  }
-
   @Test
   public void pendingAttestationTest() {
-    PendingAttestation expected = createPendingAttestation();
+    PendingAttestation expected = dataFactory.createPendingAttestation();
     BytesValue encoded = sszSerializer.encode2(expected);
     PendingAttestation reconstructed =
         sszSerializer.decode(encoded, PendingAttestation.class);
     assertEquals(expected, reconstructed);
   }
 
-  private ValidatorRecord createValidatorRecord() {
-    ValidatorRecord validatorRecord =
-        ValidatorRecord.Builder.fromDepositData(createDepositData())
-            .withPubKey(BLSPubkey.ZERO)
-            .withWithdrawalCredentials(Hash32.ZERO)
-            .withActivationEligibilityEpoch(EpochNumber.ZERO)
-            .withActivationEpoch(EpochNumber.ZERO)
-            .withExitEpoch(EpochNumber.ZERO)
-            .withWithdrawableEpoch(EpochNumber.ZERO)
-            .withSlashed(Boolean.FALSE)
-            .withEffectiveBalance(Gwei.ZERO)
-            .build();
-
-    return validatorRecord;
-  }
-
   @Test
   public void validatorRecordTest() {
-    ValidatorRecord expected = createValidatorRecord();
+    ValidatorRecord expected = dataFactory.createValidatorRecord();
     BytesValue encoded = sszSerializer.encode2(expected);
     ValidatorRecord reconstructed = sszSerializer.decode(encoded, ValidatorRecord.class);
     assertEquals(expected, reconstructed);

@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.chain.BeaconChainHead;
 import org.ethereum.beacon.chain.BeaconTuple;
 import org.ethereum.beacon.chain.BeaconTupleDetails;
@@ -39,7 +41,12 @@ import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 
 public class ObservableStateProcessorImpl implements ObservableStateProcessor {
+  private static final Logger logger = LogManager.getLogger(ObservableStateProcessorImpl.class);
+
   private static final int MAX_TUPLE_CACHE_SIZE = 32;
+
+  private final int maxEmptySlotTransitions = 256;
+
   private final BeaconTupleStorage tupleStorage;
 
   private final HeadFunction headFunction;
@@ -218,22 +225,40 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
 
   private void newSlot(SlotNumber newSlot) {
     if (head.getBlock().getSlot().greater(newSlot)) {
+      logger.info("Ignore new slot " + newSlot + " below head block: " + head.getBlock());
       return;
     }
+    if (newSlot.greater(head.getBlock().getSlot().plus(maxEmptySlotTransitions))) {
+      logger.debug("Ignore new slot " + newSlot + " far above head block: " + head.getBlock());
+      return;
+    }
+
     updateCurrentObservableState(head, newSlot);
   }
 
   private void updateCurrentObservableState(BeaconTupleDetails head, SlotNumber slot) {
     assert slot.greaterEqual(head.getBlock().getSlot());
 
-    PendingOperations pendingOperations =
-        getPendingOperations(head.getFinalState(), copyAttestationCache());
     if (slot.greater(head.getBlock().getSlot())) {
-      BeaconStateEx stateUponASlot = emptySlotTransition.apply(head.getFinalState(), slot);
+      BeaconStateEx stateUponASlot;
+      if (latestState.getSlot().greater(spec.getConstants().getGenesisSlot())
+          && spec.getObjectHasher()
+              .getHashTruncateLast(head.getBlock())
+              .equals(
+                  spec.get_block_root_at_slot(latestState, latestState.getSlot().decrement()))) {
+
+        // latestState is actual with respect to current head
+        stateUponASlot = emptySlotTransition.apply(latestState, slot);
+      } else {
+        // recalculate all empty slots starting from the head
+        stateUponASlot = emptySlotTransition.apply(head.getFinalState(), slot);
+      }
       latestState = stateUponASlot;
+      PendingOperations pendingOperations = getPendingOperations(stateUponASlot, copyAttestationCache());
       observableStateStream.onNext(
           new ObservableBeaconState(head.getBlock(), stateUponASlot, pendingOperations));
     } else {
+      PendingOperations pendingOperations = getPendingOperations(head.getFinalState(), copyAttestationCache());
       if (head.getPostSlotState().isPresent()) {
         latestState = head.getPostSlotState().get();
         observableStateStream.onNext(new ObservableBeaconState(
@@ -255,16 +280,9 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
       BeaconState state, Map<BLSPubkey, List<Attestation>> attestationMap) {
     List<Attestation> attestations = attestationMap.values().stream()
         .flatMap(Collection::stream)
-        .filter(attestation -> {
-          /* attestation_slot = get_attestation_slot(state, attestation)
-             assert attestation_slot + MIN_ATTESTATION_INCLUSION_DELAY <= state.slot <= attestation_slot + SLOTS_PER_EPOCH */
-          SlotNumber attestationSlot = spec.get_attestation_slot(state, attestation.getData());
-          SlotNumber lowerBoundary =
-              attestationSlot.plus(spec.getConstants().getMinAttestationInclusionDelay());
-          SlotNumber upperBoundary = attestationSlot.plus(spec.getConstants().getSlotsPerEpoch());
-          return lowerBoundary.lessEqual(state.getSlot())
-              && state.getSlot().lessEqual(upperBoundary);
-        })
+        .filter(attestation ->
+            attestation.getData().getTargetEpoch().lessEqual(spec.get_current_epoch(state)))
+        .filter(attestation -> spec.verify_attestation(state, attestation))
         .sorted(Comparator.comparing(attestation -> attestation.getData().getTargetEpoch()))
         .collect(Collectors.toList());
 

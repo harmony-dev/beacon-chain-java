@@ -13,8 +13,7 @@ public interface SerializerFactory {
   <T> Function<T, BytesValue> getSerializer(Class<T> objectClass);
 
   static SerializerFactory createSSZ(SpecConstants specConstants) {
-    return new SSZSerializerFactory(
-        new SSZBuilder()
+    return new SSZSerializerFactory(new SSZBuilder()
             .withExternalVarResolver(new SpecConstantsResolver(specConstants))
             .buildSerializer());
   }

@@ -3,15 +3,16 @@ package org.ethereum.beacon.schedulers;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 import java.util.function.Consumer;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class DefaultSchedulers extends AbstractSchedulers {
 
-  private Consumer<Throwable> errorHandler =
-      t -> {
-        System.err.println("ErrorHandlingScheduler (default error handler):");
-        t.printStackTrace();
-      };
+  private static final Logger logger = LogManager.getLogger(DefaultSchedulers.class);
+
+  private Consumer<Throwable> errorHandler = t -> logger.error("Unhandled exception:", t);
   private volatile boolean started;
 
   public void setErrorHandler(Consumer<Throwable> errorHandler) {
@@ -29,7 +30,17 @@ public class DefaultSchedulers extends AbstractSchedulers {
   @Override
   protected ScheduledExecutorService createExecutor(String namePattern, int threads) {
     started = true;
-    return Executors.newScheduledThreadPool(
-        threads, new ThreadFactoryBuilder().setDaemon(true).setNameFormat(namePattern).build());
+    return Executors.newScheduledThreadPool(threads, createThreadFactory(namePattern));
+  }
+
+  protected ThreadFactory createThreadFactory(String namePattern) {
+    return createThreadFactoryBuilder(namePattern).build();
+  }
+
+  protected ThreadFactoryBuilder createThreadFactoryBuilder(String namePattern) {
+    return new ThreadFactoryBuilder()
+        .setDaemon(true)
+        .setNameFormat(namePattern)
+        .setUncaughtExceptionHandler((thread, thr) -> errorHandler.accept(thr));
   }
 }

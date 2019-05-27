@@ -1,12 +1,26 @@
 dependencies {
   implementation project(':types')
   implementation project(':core')
+  implementation project(':consensus')
   implementation project(':util')
+  implementation project(':ssz')
+  implementation project(':chain')
+  implementation project(':db:core')
 
   implementation 'com.google.guava:guava'
   implementation 'io.projectreactor:reactor-core'
+  implementation 'io.netty:netty-all'
+  implementation 'io.vertx:vertx-core'
 
   testImplementation 'org.mockito:mockito-core'
+  testImplementation 'io.projectreactor:reactor-test'
+  testImplementation project(':crypto')
+  testImplementation project(':validator')
+  testImplementation project(':pow:core')
+  testImplementation project(':start:common')
+  testImplementation project(':start:config')
+  testImplementation project(':start:simulator')
+  testImplementation project(':start:simulator').sourceSets.test.output
 
   // Gradle does not import test sources alongside with main sources
   // use a workaround until better solution will be found

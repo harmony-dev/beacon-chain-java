@@ -2,6 +2,7 @@ package org.ethereum.beacon.chain;
 
 import java.util.Collections;
 import java.util.stream.IntStream;
+import org.ethereum.beacon.chain.MutableBeaconChain.ImportResult;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.chain.storage.impl.SSZBeaconChainStorageFactory;
 import org.ethereum.beacon.chain.storage.impl.SerializerFactory;
@@ -54,7 +55,7 @@ public class DefaultBeaconChainTest {
               BeaconTuple recentlyProcessed = beaconChain.getRecentlyProcessed();
               BeaconBlock aBlock = createBlock(recentlyProcessed, spec,
                   schedulers.getCurrentTime(), perSlotTransition);
-              Assert.assertTrue(beaconChain.insert(aBlock));
+              Assert.assertEquals(ImportResult.OK, beaconChain.insert(aBlock));
               Assert.assertEquals(aBlock, beaconChain.getRecentlyProcessed().getBlock());
 
               System.out.println("Inserted block: " + (idx + 1));

@@ -68,6 +68,14 @@ public class VoluntaryExit {
   }
 
   @Override
+  public int hashCode() {
+    int result = epoch.hashCode();
+    result = 31 * result + validatorIndex.hashCode();
+    result = 31 * result + signature.hashCode();
+    return result;
+  }
+
+  @Override
   public String toString() {
     return toString(null);
   }

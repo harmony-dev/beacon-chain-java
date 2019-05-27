@@ -1,0 +1,25 @@
+specConstants:
+  initialValues:
+    GENESIS_SLOT: 1000000
+  miscParameters:
+    SHARD_COUNT: 4
+    TARGET_COMMITTEE_SIZE: 2
+  timeParameters:
+    SECONDS_PER_SLOT: 10
+    MIN_ATTESTATION_INCLUSION_DELAY: 1
+    SLOTS_PER_EPOCH: 4
+    SLOTS_PER_HISTORICAL_ROOT: 64
+
+  honestValidatorParameters:
+    ETH1_FOLLOW_DISTANCE: 1
+  stateListLengths:
+    LATEST_RANDAO_MIXES_LENGTH: 64
+    LATEST_ACTIVE_INDEX_ROOTS_LENGTH: 64
+    LATEST_SLASHED_EXIT_LENGTH: 64
+
+specHelpersOptions:
+  blsVerify: false
+  blsVerifyProofOfPossession: false
+  blsSign: false
+  enableCache: false
+

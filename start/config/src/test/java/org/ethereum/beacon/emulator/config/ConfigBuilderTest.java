@@ -1,13 +1,17 @@
 package org.ethereum.beacon.emulator.config;
 
 import java.util.Collections;
+import java.util.Date;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.emulator.config.chainspec.SpecData;
 import org.ethereum.beacon.emulator.config.chainspec.SpecBuilder;
 import org.ethereum.beacon.emulator.config.main.Configuration;
 import org.ethereum.beacon.emulator.config.main.MainConfig;
+import org.ethereum.beacon.emulator.config.main.ValidatorKeys;
 import org.ethereum.beacon.emulator.config.main.action.ActionRun;
+import org.ethereum.beacon.emulator.config.main.conract.EmulatorContract;
+import org.ethereum.beacon.emulator.config.main.conract.EthereumJContract;
 import org.ethereum.beacon.emulator.config.main.plan.GeneralPlan;
 import org.junit.Test;
 import tech.pegasys.artemis.util.uint.UInt64;
@@ -16,6 +20,7 @@ import java.io.File;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 
 public class ConfigBuilderTest {
 
@@ -46,14 +51,17 @@ public class ConfigBuilderTest {
     MainConfig merged = configBuilder.build();
     assertEquals("file://second/path", merged.getConfig().getDb());
     assertEquals(2, ((GeneralPlan) merged.getPlan()).getValidator().size());
-    assertEquals("ethereumj", merged.getConfig().getValidator().getContract().get("handler"));
+    assertTrue(merged.getConfig().getValidator().getContract() instanceof EmulatorContract);
+    assertEquals(3, (long) ((ValidatorKeys.Private)((EmulatorContract)
+        merged.getConfig().getValidator().getContract()).getKeys().get(1)).getKeys().size());
+    assertEquals(
+        new Date(1526835300000L),
+        ((EmulatorContract) merged.getConfig().getValidator().getContract()).getGenesisTime());
 
     configBuilder.addConfigOverride("config.db", "file://test-db");
-    configBuilder.addConfigOverride("config.validator.contract.handler", "unknown");
     MainConfig overrided = configBuilder.build();
     assertEquals("file://test-db", overrided.getConfig().getDb());
     assertEquals(2, ((GeneralPlan) overrided.getPlan()).getValidator().size());
-    assertEquals("unknown", overrided.getConfig().getValidator().getContract().get("handler"));
   }
 
   @Test

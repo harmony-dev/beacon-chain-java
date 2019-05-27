@@ -3,6 +3,7 @@ package org.ethereum.beacon.util.cache;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import org.ethereum.beacon.util.cache.Cache;
@@ -58,6 +59,10 @@ public class LRUCache<K, V> implements Cache<K, V> {
     }
 
     return result;
+  }
+
+  public Optional<V> getExisting(K key) {
+    return Optional.ofNullable(cacheData.get(key));
   }
 
   public long getHits() {
