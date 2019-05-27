@@ -220,7 +220,7 @@ public interface EpochProcessing extends HelperFunction {
     Gwei previous_epoch_matching_target_balance =
         get_attesting_balance(state, get_matching_target_attestations(state, previous_epoch));
     if (previous_epoch_matching_target_balance.times(3)
-        .greaterEqual(get_total_active_balance(state).times(2))) {
+        .greater(get_total_active_balance(state).times(2))) {
       state.setCurrentJustifiedEpoch(previous_epoch);
       state.setCurrentJustifiedRoot(get_block_root(state, state.getCurrentJustifiedEpoch()));
       state.setJustificationBitfield(state.getJustificationBitfield().or(2));
@@ -234,7 +234,7 @@ public interface EpochProcessing extends HelperFunction {
     Gwei current_epoch_matching_target_balance =
         get_attesting_balance(state, get_matching_target_attestations(state, current_epoch));
     if (current_epoch_matching_target_balance.times(3)
-        .greaterEqual(get_total_active_balance(state).times(2))) {
+        .greater(get_total_active_balance(state).times(2))) {
       state.setCurrentJustifiedEpoch(current_epoch);
       state.setCurrentJustifiedRoot(get_block_root(state, state.getCurrentJustifiedEpoch()));
       state.setJustificationBitfield(state.getJustificationBitfield().or(1));
