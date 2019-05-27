@@ -152,7 +152,6 @@ public class NodeCommandLauncher implements Runnable {
         nettyServer.start().addListener((ChannelFutureListener) channelFuture -> {
           try {
             channelFuture.get();
-            logger.info("Listening for inbound connections on port " + nettyConfig.getListenPort());
           } catch (Exception e) {
             logger.error("Unable to open inbound port " + nettyConfig.getListenPort(), e);
           }
