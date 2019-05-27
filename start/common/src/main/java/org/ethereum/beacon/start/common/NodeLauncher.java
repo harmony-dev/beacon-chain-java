@@ -1,5 +1,7 @@
 package org.ethereum.beacon.start.common;
 
+import static org.ethereum.beacon.chain.observer.ObservableStateProcessorImpl.DEFAULT_EMPTY_SLOT_TRANSITIONS_LIMIT;
+
 import java.time.Duration;
 import java.util.List;
 import org.ethereum.beacon.chain.DefaultBeaconChain;
@@ -147,6 +149,7 @@ public class NodeLauncher {
 
     DirectProcessor<Attestation> allAttestations = DirectProcessor.create();
 
+
     observableStateProcessor = new ObservableStateProcessorImpl(
         beaconChainStorage,
         slotTicker.getTickerStream(),
@@ -154,7 +157,8 @@ public class NodeLauncher {
         beaconChain.getBlockStatesStream(),
         spec,
         emptySlotTransition,
-        schedulers);
+        schedulers,
+        validatorCred != null ? Integer.MAX_VALUE : DEFAULT_EMPTY_SLOT_TRANSITIONS_LIMIT);
     observableStateProcessor.start();
 
     SSZSerializer ssz = new SSZBuilder().buildSerializer();

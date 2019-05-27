@@ -44,8 +44,9 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   private static final Logger logger = LogManager.getLogger(ObservableStateProcessorImpl.class);
 
   private static final int MAX_TUPLE_CACHE_SIZE = 32;
+  public static final int DEFAULT_EMPTY_SLOT_TRANSITIONS_LIMIT = 1024;
 
-  private final int maxEmptySlotTransitions = 256;
+  private final int maxEmptySlotTransitions;
 
   private final BeaconTupleStorage tupleStorage;
 
@@ -78,6 +79,26 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
       BeaconChainSpec spec,
       EmptySlotTransition emptySlotTransition,
       Schedulers schedulers) {
+    this(
+        chainStorage,
+        slotTicker,
+        attestationPublisher,
+        beaconPublisher,
+        spec,
+        emptySlotTransition,
+        schedulers,
+        DEFAULT_EMPTY_SLOT_TRANSITIONS_LIMIT);
+  }
+
+  public ObservableStateProcessorImpl(
+      BeaconChainStorage chainStorage,
+      Publisher<SlotNumber> slotTicker,
+      Publisher<Attestation> attestationPublisher,
+      Publisher<BeaconTupleDetails> beaconPublisher,
+      BeaconChainSpec spec,
+      EmptySlotTransition emptySlotTransition,
+      Schedulers schedulers,
+      int maxEmptySlotTransitions) {
     this.tupleStorage = chainStorage.getTupleStorage();
     this.spec = spec;
     this.emptySlotTransition = emptySlotTransition;
@@ -86,6 +107,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     this.attestationPublisher = attestationPublisher;
     this.beaconPublisher = beaconPublisher;
     this.schedulers = schedulers;
+    this.maxEmptySlotTransitions = maxEmptySlotTransitions;
 
     headStream = new SimpleProcessor<>(this.schedulers.reactorEvents(), "ObservableStateProcessor.head");
     observableStateStream = new SimpleProcessor<>(this.schedulers.reactorEvents(), "ObservableStateProcessor.observableState");
