@@ -45,6 +45,7 @@ public class SyncTest {
     @Override
     public CompletableFuture<BlockHeadersResponseMessage> requestBlockHeaders(
         BlockHeadersRequestMessage requestMessage) {
+      System.out.println("Headers requested: " + requestMessage);
       return scheduler.executeWithDelay(delay, () -> delegate.requestBlockHeaders(requestMessage).get());
     }
 
@@ -73,7 +74,7 @@ public class SyncTest {
         testPeer.getSchedulers().blocking(), Duration.ofMillis(10));
 
     BeaconBlockTree blockTree = new BeaconBlockTree(simulatorLauncher.getSpec().getObjectHasher());
-    SyncQueue syncQueue = new SyncQueueImpl(blockTree, 4, 16);
+    SyncQueue syncQueue = new SyncQueueImpl(blockTree, 4, 20);
 
     SyncManagerImpl syncManager = new SyncManagerImpl(
         testPeer.getBeaconChain(),

@@ -141,7 +141,7 @@ public class PeersTest {
 
         BeaconBlockTree blockTree = new BeaconBlockTree(
             simulatorLauncher.getSpec().getObjectHasher());
-        SyncQueue syncQueue = new SyncQueueImpl(blockTree, 4, 16);
+        SyncQueue syncQueue = new SyncQueueImpl(blockTree, 4, 20);
 
         SyncManagerImpl syncManager = new SyncManagerImpl(
             peer1.getBeaconChain(),
