@@ -37,11 +37,16 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.fail;
 
 public class TestUtils {
   private static final String GIT_COMMAND =
@@ -192,7 +197,8 @@ public class TestUtils {
       StringWriter sw = new StringWriter();
       PrintWriter pw = new PrintWriter(sw);
       ex.printStackTrace(pw);
-      String error = String.format("Unexpected error when running case %s: %s", testCase, sw.toString());
+      String error =
+          String.format("Unexpected error when running case %s: %s", testCase, sw.toString());
       testCaseErrors = Optional.of(error);
     }
     if (testCaseErrors.isPresent()) {
@@ -227,7 +233,15 @@ public class TestUtils {
       Path dir,
       Class<? extends V> testsType,
       Function<Pair<TestCase, BeaconChainSpec>, Optional<String>> testCaseRunner) {
-    runTestsInResourceDirImpl(dir, testsType, testCaseRunner, Collections.emptySet());
+    runTestsInResourceDirImpl(dir, testsType, testCaseRunner, Collections.emptySet(), 1);
+  }
+
+  static <V extends TestSkeleton> void runTestsInResourceDir(
+      Path dir,
+      Class<? extends V> testsType,
+      Function<Pair<TestCase, BeaconChainSpec>, Optional<String>> testCaseRunner,
+      int threadNum) {
+    runTestsInResourceDirImpl(dir, testsType, testCaseRunner, Collections.emptySet(), threadNum);
   }
 
   static <V extends TestSkeleton> void runTestsInResourceDir(
@@ -235,7 +249,7 @@ public class TestUtils {
       Class<? extends V> testsType,
       Function<Pair<TestCase, BeaconChainSpec>, Optional<String>> testCaseRunner,
       Ignored ignored) {
-    runTestsInResourceDirImpl(dir, testsType, testCaseRunner, ignored.testCases);
+    runTestsInResourceDirImpl(dir, testsType, testCaseRunner, ignored.testCases, 1);
   }
 
   static BeaconChainSpec loadSpecByName(String name, boolean isBlsVerified) {
@@ -267,19 +281,43 @@ public class TestUtils {
       Path dir,
       Class<? extends V> testsType,
       Function<Pair<TestCase, BeaconChainSpec>, Optional<String>> testCaseRunner,
-      Collection<String> exclusions) {
+      Collection<String> exclusions,
+      int threadNum) {
     List<File> files = getResourceFiles(dir.toString());
-    boolean failed = false;
+    AtomicBoolean failed = new AtomicBoolean(false);
+    System.out.println("Running tests in " + dir + " with " + threadNum + " thread(s)");
+    ThreadPoolExecutor executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(threadNum);
+    AtomicInteger counter = new AtomicInteger(0);
+    CountDownLatch awaitLatch = new CountDownLatch(files.size());
     for (File file : files) {
-      System.out.println("Running tests in " + file.getName());
-      Optional<String> result = runAllTestsInFile(file, testCaseRunner, testsType, exclusions);
-      if (result.isPresent()) {
-        System.out.println(result.get());
-        System.out.println("\n----===----\n");
-        failed = true;
-      }
+      Runnable task =
+          () -> {
+            int num = counter.getAndIncrement();
+            System.out.println(num + ". Running tests in " + file.getName());
+            Optional<String> result =
+                runAllTestsInFile(file, testCaseRunner, testsType, exclusions);
+            if (result.isPresent()) {
+              System.out.println(num + ". " + result.get());
+              System.out.println(num + ". \n----===----\n");
+              failed.set(true);
+            }
+            awaitLatch.countDown();
+          };
+      executor.execute(task);
     }
-    assertFalse(failed);
+
+    try {
+      awaitLatch.await();
+    } catch (InterruptedException e) {
+      System.out.println("\n Something breaks down execution, Exception goes next.\n");
+      e.printStackTrace();
+      fail();
+    }
+    assertFalse(failed.get());
+  }
+
+  public static int getRecommendedThreadCount() {
+    return Math.max(Runtime.getRuntime().availableProcessors() / 2, 1);
   }
 
   public static class Ignored {
