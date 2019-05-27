@@ -12,5 +12,4 @@ pow/ethereumj/logs
 work
 
 # logs
-/logs
-test/logs
+logs/

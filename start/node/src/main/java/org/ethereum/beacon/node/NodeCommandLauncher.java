@@ -38,7 +38,6 @@ import org.ethereum.beacon.emulator.config.main.ValidatorKeys.Private;
 import org.ethereum.beacon.emulator.config.main.conract.EmulatorContract;
 import org.ethereum.beacon.emulator.config.main.network.NettyNetwork;
 import org.ethereum.beacon.emulator.config.main.network.Network;
-import org.ethereum.beacon.node.command.RunNode;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.schedulers.DefaultSchedulers;
 import org.ethereum.beacon.schedulers.Scheduler;
@@ -194,7 +193,7 @@ public class NodeCommandLauncher implements Runnable {
   public static class Builder {
     private MainConfig config;
     private Level logLevel = Level.INFO;
-    private RunNode cliOptions;
+    private Node cliOptions;
 
     public Builder() {}
 
@@ -348,8 +347,8 @@ public class NodeCommandLauncher implements Runnable {
       return this;
     }
 
-    public Builder withCliOptions(RunNode runNode) {
-      cliOptions = runNode;
+    public Builder withCliOptions(Node node) {
+      cliOptions = node;
       return this;
     }
   }
