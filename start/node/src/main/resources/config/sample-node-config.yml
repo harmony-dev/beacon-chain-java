@@ -1,0 +1,71 @@
+config:
+  # location of database
+  db: file://db
+
+  # the list of networks
+  networks:
+    # Simple proprietary protocol base on Netty TCP stack
+    - type: netty
+      # TCP port the node should listen for incoming connections
+      listenPort: 40001
+      # list of remote peers this peer will be actively connecting to
+      activePeers:
+        - tcp://localhost:40002
+        - tcp://localhost:40003
+
+  # Config for a validator service
+  validator:
+    # emulates the deposit contract with a list of initial validators and genesis time
+    contract: !emulator
+      # genesis time. Should be not too far from the current time (e.g. 30 mins)
+      genesisTime: 2018-05-20 16:55:00
+      # Initial deposit value for all validators
+      balance: 55
+      # the list of initial validators specified via random seed or explicit private keys
+      keys:
+        # generates [count] of validator private keys from a given random [seed]
+        - !generate
+          count: 16
+          seed: 0
+        # explicit list of private keys
+        - !private
+          - 0x1111111111111111111111111111111111111111111111111111111111111111
+          - 0x2222222222222222222222222222222222222222222222222222222222222222
+    # validator signer config
+    signer: !insecure
+      # the list of validator keys specified via random seed or explicit private keys
+      keys:
+        # take validator keys #8 and #9 from the same seed and range used in the emulate contract
+        - !generate
+          count: 2
+          startIndex: 8
+          seed: 0
+        # explicit list of private keys (should exist in the emulate contract config)
+        - !private
+          - 0x1111111111111111111111111111111111111111111111111111111111111111
+          - 0x2222222222222222222222222222222222222222222222222222222222222222
+
+chainSpec:
+  specConstants:
+    initialValues:
+      GENESIS_SLOT: 1000000
+    miscParameters:
+      SHARD_COUNT: 4
+      TARGET_COMMITTEE_SIZE: 2
+    timeParameters:
+      SECONDS_PER_SLOT: 10
+      MIN_ATTESTATION_INCLUSION_DELAY: 1
+      SLOTS_PER_EPOCH: 4
+      SLOTS_PER_HISTORICAL_ROOT: 64
+
+    honestValidatorParameters:
+      ETH1_FOLLOW_DISTANCE: 1
+    stateListLengths:
+      LATEST_RANDAO_MIXES_LENGTH: 64
+      LATEST_ACTIVE_INDEX_ROOTS_LENGTH: 64
+      LATEST_SLASHED_EXIT_LENGTH: 64
+
+  specHelpersOptions:
+    blsVerify: false
+    blsVerifyProofOfPossession: false
+    blsSign: false
