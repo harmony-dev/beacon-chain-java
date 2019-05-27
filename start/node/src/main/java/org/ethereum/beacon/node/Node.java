@@ -2,22 +2,22 @@ package org.ethereum.beacon.node;
 
 import java.io.File;
 import java.util.List;
+import org.ethereum.beacon.node.Node.VersionProvider;
 import org.ethereum.beacon.node.command.LogLevel;
+import org.ethereum.beacon.start.common.ClientInfo;
 import picocli.CommandLine;
+import picocli.CommandLine.IVersionProvider;
 import picocli.CommandLine.RunLast;
 
 @CommandLine.Command(
     description = "Beacon chain node",
     name = "node",
-    version = "node " + Node.VERSION,
+    versionProvider = VersionProvider.class,
     mixinStandardHelpOptions = true)
 public class Node implements Runnable {
 
-  static final String VERSION = "0.1.0";
-
   private static final int SUCCESS_EXIT_CODE = 0;
   private static final int ERROR_EXIT_CODE = 1;
-
 
   @CommandLine.Parameters(
       index = "0",
@@ -138,5 +138,12 @@ public class Node implements Runnable {
     }
 
     nodeBuilder.build().run();
+  }
+
+  static class VersionProvider implements IVersionProvider {
+    @Override
+    public String[] getVersion() throws Exception {
+      return new String[] { "node " + ClientInfo.version() };
+    }
   }
 }

@@ -1,6 +1,7 @@
 package org.ethereum.beacon.benchmaker;
 
 import com.google.common.base.Preconditions;
+import org.ethereum.beacon.benchmaker.Benchmaker.VersionProvider;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconChainSpec.Builder;
 import org.ethereum.beacon.consensus.hasher.SSZObjectHasher;
@@ -9,17 +10,17 @@ import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.emulator.config.ConfigBuilder;
 import org.ethereum.beacon.emulator.config.chainspec.SpecBuilder;
 import org.ethereum.beacon.emulator.config.chainspec.SpecData;
+import org.ethereum.beacon.start.common.ClientInfo;
 import picocli.CommandLine;
+import picocli.CommandLine.IVersionProvider;
 import picocli.CommandLine.RunLast;
 
 @CommandLine.Command(
     description = "Benchmark tool for beacon chain spec",
     name = "benchmaker",
-    version = "benchmaker " + Benchmaker.VERSION,
+    versionProvider = VersionProvider.class,
     mixinStandardHelpOptions = true)
 public class Benchmaker implements Runnable {
-
-  static final String VERSION = "0.1.0";
 
   private static final int SUCCESS_EXIT_CODE = 0;
   private static final int ERROR_EXIT_CODE = 1;
@@ -99,5 +100,12 @@ public class Benchmaker implements Runnable {
             .withBlsVerifyProofOfPossession(false);
 
     new BenchmarkRunner(epochs, registrySize, specBuilder, warmUpEpochs).run();
+  }
+
+  static class VersionProvider implements IVersionProvider {
+    @Override
+    public String[] getVersion() throws Exception {
+      return new String[] { "benchmaker " + ClientInfo.version() };
+    }
   }
 }
