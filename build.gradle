@@ -46,12 +46,6 @@ allprojects {
     }
   }
 
-  tasks.withType(Test) {
-    if (!['wire'].contains(project.name)) { // some tests in `wire` listen dedicated ports
-      maxParallelForks = Runtime.runtime.availableProcessors().intdiv(2) ?: 1
-    }
-  }
-
   javadoc {
     options.author = true
     options.header = project.name
