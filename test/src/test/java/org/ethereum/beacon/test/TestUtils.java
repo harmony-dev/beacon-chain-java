@@ -11,6 +11,8 @@ import org.ethereum.beacon.emulator.config.chainspec.SpecConstantsData;
 import org.ethereum.beacon.emulator.config.chainspec.SpecData;
 import org.ethereum.beacon.emulator.config.chainspec.SpecDataUtils;
 import org.ethereum.beacon.emulator.config.chainspec.SpecHelpersData;
+import org.ethereum.beacon.schedulers.Scheduler;
+import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.test.type.NamedTestCase;
 import org.ethereum.beacon.test.type.SpecConstantsDataMerged;
 import org.ethereum.beacon.test.type.TestCase;
@@ -30,6 +32,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -37,6 +40,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -46,6 +51,7 @@ import static org.junit.Assert.assertFalse;
 public class TestUtils {
   private static final String GIT_COMMAND =
       "git submodule init & git submodule update --recursive --remote";
+  private static final Schedulers schedulers = Schedulers.createDefault();
   static ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
   static String PATH_TO_TESTS = "eth2.0-spec-tests/tests";
   static String PATH_TO_CONFIGS = "eth2.0-temp-test-configs";
@@ -192,7 +198,8 @@ public class TestUtils {
       StringWriter sw = new StringWriter();
       PrintWriter pw = new PrintWriter(sw);
       ex.printStackTrace(pw);
-      String error = String.format("Unexpected error when running case %s: %s", testCase, sw.toString());
+      String error =
+          String.format("Unexpected error when running case %s: %s", testCase, sw.toString());
       testCaseErrors = Optional.of(error);
     }
     if (testCaseErrors.isPresent()) {
@@ -227,7 +234,15 @@ public class TestUtils {
       Path dir,
       Class<? extends V> testsType,
       Function<Pair<TestCase, BeaconChainSpec>, Optional<String>> testCaseRunner) {
-    runTestsInResourceDirImpl(dir, testsType, testCaseRunner, Collections.emptySet());
+    runTestsInResourceDirImpl(dir, testsType, testCaseRunner, Collections.emptySet(), false);
+  }
+
+  static <V extends TestSkeleton> void runTestsInResourceDir(
+      Path dir,
+      Class<? extends V> testsType,
+      Function<Pair<TestCase, BeaconChainSpec>, Optional<String>> testCaseRunner,
+      boolean parallel) {
+    runTestsInResourceDirImpl(dir, testsType, testCaseRunner, Collections.emptySet(), parallel);
   }
 
   static <V extends TestSkeleton> void runTestsInResourceDir(
@@ -235,7 +250,7 @@ public class TestUtils {
       Class<? extends V> testsType,
       Function<Pair<TestCase, BeaconChainSpec>, Optional<String>> testCaseRunner,
       Ignored ignored) {
-    runTestsInResourceDirImpl(dir, testsType, testCaseRunner, ignored.testCases);
+    runTestsInResourceDirImpl(dir, testsType, testCaseRunner, ignored.testCases, false);
   }
 
   static BeaconChainSpec loadSpecByName(String name, boolean isBlsVerified) {
@@ -267,19 +282,34 @@ public class TestUtils {
       Path dir,
       Class<? extends V> testsType,
       Function<Pair<TestCase, BeaconChainSpec>, Optional<String>> testCaseRunner,
-      Collection<String> exclusions) {
+      Collection<String> exclusions,
+      boolean parallel) {
     List<File> files = getResourceFiles(dir.toString());
-    boolean failed = false;
+    Scheduler scheduler =
+        parallel ? schedulers.cpuHeavy() : schedulers.newSingleThreadDaemon("tests");
+    AtomicBoolean failed = new AtomicBoolean(false);
+    System.out.println("Running tests in " + dir + " with parallel execution set as " + parallel);
+    AtomicInteger counter = new AtomicInteger(0);
+    List<CompletableFuture> tasks = new ArrayList<>();
     for (File file : files) {
-      System.out.println("Running tests in " + file.getName());
-      Optional<String> result = runAllTestsInFile(file, testCaseRunner, testsType, exclusions);
-      if (result.isPresent()) {
-        System.out.println(result.get());
-        System.out.println("\n----===----\n");
-        failed = true;
-      }
+      Runnable task =
+          () -> {
+            int num = counter.getAndIncrement();
+            System.out.println(num + ". Running tests in " + file.getName());
+            Optional<String> result =
+                runAllTestsInFile(file, testCaseRunner, testsType, exclusions);
+            if (result.isPresent()) {
+              System.out.println(num + ". " + result.get());
+              System.out.println(num + ". \n----===----\n");
+              failed.set(true);
+            }
+          };
+      tasks.add(scheduler.executeR(task));
     }
-    assertFalse(failed);
+
+    CompletableFuture[] cfs = tasks.toArray(new CompletableFuture[] {});
+    CompletableFuture.allOf(cfs).join();
+    assertFalse(failed.get());
   }
 
   public static class Ignored {
