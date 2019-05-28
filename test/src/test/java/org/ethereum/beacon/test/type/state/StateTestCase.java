@@ -14,6 +14,7 @@ import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Bitfield;
 import org.ethereum.beacon.core.types.Gwei;
+import org.ethereum.beacon.test.type.BlsVerifiedTestCase;
 import org.ethereum.beacon.test.type.NamedTestCase;
 import org.ethereum.beacon.test.type.state.StateTestCase.BeaconStateData.AttestationData.AttestationDataContainer;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -28,7 +29,7 @@ import static org.ethereum.beacon.test.StateTestUtils.parseAttestationData;
  * State test case <a
  * href="https://github.com/ethereum/eth2.0-tests/tree/master/state">https://github.com/ethereum/eth2.0-tests/tree/master/state</a>
  */
-public class StateTestCase implements NamedTestCase {
+public class StateTestCase implements NamedTestCase, BlsVerifiedTestCase {
   private String description;
   @JsonProperty
   private BlockData.BlockBodyData.DepositData deposit;
@@ -36,6 +37,8 @@ public class StateTestCase implements NamedTestCase {
   private BeaconStateData.AttestationData attestation;
   private BeaconStateData pre;
   private BeaconStateData post;
+  @JsonProperty("bls_required")
+  private boolean blsRequired;
 
   public String getDescription() {
     return description;
@@ -101,6 +104,15 @@ public class StateTestCase implements NamedTestCase {
 
   public void setPost(BeaconStateData post) {
     this.post = post;
+  }
+
+  @Override
+  public boolean isBlsRequired() {
+    return blsRequired;
+  }
+
+  public void setBlsRequired(boolean blsRequired) {
+    this.blsRequired = blsRequired;
   }
 
   @Override
@@ -542,18 +554,18 @@ public class StateTestCase implements NamedTestCase {
 
       private String signature;
 
-      @JsonProperty("inclusion_slot")
-      private String inclusionSlot;
+      @JsonProperty("inclusion_delay")
+      private String inclusionDelay;
 
       @JsonProperty("proposer_index")
       private Long proposerIndex;
 
-      public String getInclusionSlot() {
-        return inclusionSlot;
+      public String getInclusionDelay() {
+        return inclusionDelay;
       }
 
-      public void setInclusionSlot(String inclusionSlot) {
-        this.inclusionSlot = inclusionSlot;
+      public void setInclusionDelay(String inclusionDelay) {
+        this.inclusionDelay = inclusionDelay;
       }
 
       public String getAggregationBitfield() {

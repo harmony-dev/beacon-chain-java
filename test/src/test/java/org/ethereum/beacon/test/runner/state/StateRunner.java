@@ -105,7 +105,7 @@ public class StateRunner implements Runner {
       } else {
         return Optional.of(verificationResult.getMessage());
       }
-    } catch (SpecCommons.SpecAssertionFailed ex) {
+    } catch (SpecCommons.SpecAssertionFailed | IllegalArgumentException ex) {
       return Optional.of(ex.getMessage());
     }
   }

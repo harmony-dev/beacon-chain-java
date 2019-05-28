@@ -293,7 +293,7 @@ public abstract class StateTestUtils {
     return new PendingAttestation(
         Bitfield.of(BytesValue.fromHexString(attestationData.getAggregationBitfield())),
         parseAttestationData(attestationData.getData()),
-        SlotNumber.castFrom(UInt64.valueOf(attestationData.getInclusionSlot())),
+        SlotNumber.castFrom(UInt64.valueOf(attestationData.getInclusionDelay())),
         ValidatorIndex.of(attestationData.getProposerIndex()));
   }
 
