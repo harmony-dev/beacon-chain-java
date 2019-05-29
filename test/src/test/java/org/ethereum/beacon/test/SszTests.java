@@ -33,6 +33,8 @@ public class SszTests extends TestUtils {
         input -> {
           SszStaticRunner testRunner = new SszStaticRunner(input.getValue0(), input.getValue1());
           return testRunner.run();
-        });
+        },
+        true // run it in parallel, a lot of tests
+        );
   }
 }
