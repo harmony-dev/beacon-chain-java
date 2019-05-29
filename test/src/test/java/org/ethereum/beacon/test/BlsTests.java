@@ -51,7 +51,7 @@ public class BlsTests extends TestUtils {
   }
 
   @Test
-  @Ignore("Fixtures should be updated with sha256 as hash function instead of keccak256")
+  @Ignore("#5 case have leading zeroes trimmed in expected output, issue #3 created, ignored until resolved")
   public void testBlsMessageHashCompressed() {
     Path testFilePath =
         Paths.get(PATH_TO_TESTS, TESTS_DIR, "msg_hash_g2_compressed", "g2_compressed.yaml");
@@ -95,7 +95,6 @@ public class BlsTests extends TestUtils {
   }
 
   @Test
-  @Ignore("Fixtures should be updated with sha256 as hash function instead of keccak256")
   public void testBlsSignMessage() {
     Path testFilePath = Paths.get(PATH_TO_TESTS, TESTS_DIR, "sign_msg", "sign_msg.yaml");
     BlsSignMessageTest test =
