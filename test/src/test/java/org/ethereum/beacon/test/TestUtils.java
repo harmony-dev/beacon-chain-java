@@ -11,7 +11,7 @@ import org.ethereum.beacon.emulator.config.chainspec.SpecConstantsData;
 import org.ethereum.beacon.emulator.config.chainspec.SpecData;
 import org.ethereum.beacon.emulator.config.chainspec.SpecDataUtils;
 import org.ethereum.beacon.emulator.config.chainspec.SpecHelpersData;
-import org.ethereum.beacon.test.type.BlsVerifiedTestCase;
+import org.ethereum.beacon.test.type.BlsSignedTestCase;
 import org.ethereum.beacon.test.type.NamedTestCase;
 import org.ethereum.beacon.test.type.SpecConstantsDataMerged;
 import org.ethereum.beacon.test.type.TestCase;
@@ -158,8 +158,9 @@ public class TestUtils {
       boolean isBlsVerified = false;
       if (forceBlsVerified != null) {
         isBlsVerified = forceBlsVerified;
-      } else if (testCase instanceof BlsVerifiedTestCase) {
-        isBlsVerified = ((BlsVerifiedTestCase) testCase).isBlsRequired();
+      } else if (testCase instanceof BlsSignedTestCase) {
+        Integer blsFlag = ((BlsSignedTestCase) testCase).getBlsSetting();
+        isBlsVerified = blsFlag != null && blsFlag < 2;
       }
       BeaconChainSpec spec = loadSpecByName(test.getConfig(), isBlsVerified);
       Optional<String> err = runTestCase(testCase, spec, test, testCaseRunner);

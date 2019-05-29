@@ -14,7 +14,7 @@ import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Bitfield;
 import org.ethereum.beacon.core.types.Gwei;
-import org.ethereum.beacon.test.type.BlsVerifiedTestCase;
+import org.ethereum.beacon.test.type.BlsSignedTestCase;
 import org.ethereum.beacon.test.type.NamedTestCase;
 import org.ethereum.beacon.test.type.state.StateTestCase.BeaconStateData.AttestationData.AttestationDataContainer;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -29,7 +29,7 @@ import static org.ethereum.beacon.test.StateTestUtils.parseAttestationData;
  * State test case <a
  * href="https://github.com/ethereum/eth2.0-tests/tree/master/state">https://github.com/ethereum/eth2.0-tests/tree/master/state</a>
  */
-public class StateTestCase implements NamedTestCase, BlsVerifiedTestCase {
+public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
   private String description;
   @JsonProperty
   private BlockData.BlockBodyData.DepositData deposit;
@@ -37,8 +37,8 @@ public class StateTestCase implements NamedTestCase, BlsVerifiedTestCase {
   private BeaconStateData.AttestationData attestation;
   private BeaconStateData pre;
   private BeaconStateData post;
-  @JsonProperty("bls_required")
-  private boolean blsRequired;
+  @JsonProperty("bls_setting")
+  private Integer blsSetting;
 
   public String getDescription() {
     return description;
@@ -107,12 +107,12 @@ public class StateTestCase implements NamedTestCase, BlsVerifiedTestCase {
   }
 
   @Override
-  public boolean isBlsRequired() {
-    return blsRequired;
+  public Integer getBlsSetting() {
+    return blsSetting;
   }
 
-  public void setBlsRequired(boolean blsRequired) {
-    this.blsRequired = blsRequired;
+  public void setBlsSetting(Integer blsSetting) {
+    this.blsSetting = blsSetting;
   }
 
   @Override
