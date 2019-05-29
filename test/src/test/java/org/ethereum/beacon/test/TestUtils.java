@@ -122,14 +122,14 @@ public class TestUtils {
       Class<? extends V> clazz,
       Collection<String> exclusions) {
     V test = readTest(file, clazz);
-    return runAllCasesInTest(test, testCaseRunner, clazz, exclusions, false);
+    return runAllCasesInTest(test, testCaseRunner, clazz, exclusions, null);
   }
 
   static <V extends TestSkeleton> Optional<String> runAllCasesInTest(
       V test,
       Function<Pair<TestCase, BeaconChainSpec>, Optional<String>> testCaseRunner,
       Class<? extends V> clazz) {
-    return runAllCasesInTest(test, testCaseRunner, clazz, Collections.emptySet(), false);
+    return runAllCasesInTest(test, testCaseRunner, clazz, Collections.emptySet(), null);
   }
 
   static <V extends TestSkeleton> Optional<String> runAllCasesInTest(

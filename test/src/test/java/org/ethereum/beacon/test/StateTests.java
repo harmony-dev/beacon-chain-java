@@ -12,7 +12,6 @@ public class StateTests extends TestUtils {
   private String OPERATIONS_TESTS_DIR = "operations";
 
   @Test
-  @Ignore("Postponed till generator updates")
   public void testAttestationOperations() {
     Path testFileDir = Paths.get(PATH_TO_TESTS, OPERATIONS_TESTS_DIR, "attestation");
     runTestsInResourceDir(

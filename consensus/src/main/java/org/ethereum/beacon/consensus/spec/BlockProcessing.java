@@ -213,9 +213,11 @@ public interface BlockProcessing extends HelperFunction {
     /* attestation_slot = get_attestation_slot(state, attestation)
        assert attestation_slot + MIN_ATTESTATION_INCLUSION_DELAY <= state.slot <= attestation_slot + SLOTS_PER_EPOCH */
     SlotNumber attestation_slot = get_attestation_slot(state, data);
-    if (!
-        attestation_slot.plus(getConstants().getMinAttestationInclusionDelay()).lessEqual(state.getSlot())
-        && state.getSlot().lessEqual(attestation_slot.plus(getConstants().getSlotsPerEpoch()))) {
+
+    if (!attestation_slot.plus(getConstants().getMinAttestationInclusionDelay()).lessEqual(state.getSlot())) {
+      return false;
+    }
+    if (!state.getSlot().lessEqual(attestation_slot.plus(getConstants().getSlotsPerEpoch()))) {
       return false;
     }
 
