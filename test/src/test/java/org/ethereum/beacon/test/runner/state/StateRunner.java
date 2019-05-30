@@ -5,11 +5,13 @@ import org.ethereum.beacon.consensus.spec.SpecCommons;
 import org.ethereum.beacon.consensus.verifier.OperationVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.consensus.verifier.operation.AttestationVerifier;
+import org.ethereum.beacon.consensus.verifier.operation.AttesterSlashingVerifier;
 import org.ethereum.beacon.consensus.verifier.operation.DepositVerifier;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
+import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.test.StateTestUtils;
 import org.ethereum.beacon.test.runner.Runner;
 import org.ethereum.beacon.test.type.TestCase;
@@ -51,8 +53,10 @@ public class StateRunner implements Runner {
       processingError = processDeposit(testCase.getDepositOperation(), latestState);
     } else if (testCase.getAttestation() != null) {
       processingError = processAttestation(testCase.getAttestationOperation(), latestState);
+    } else if (testCase.getAttesterSlashing() != null) {
+      processingError = processAttesterSlashing(testCase.getAttesterSlashingOperation(), latestState);
     } else {
-      throw new RuntimeException("Only Attestation and Deposit test cases are implemented!!!");
+      throw new RuntimeException("This type of state test is not supported");
     }
 
     if (testCase.getPost() == null) { // XXX: Not changed
@@ -89,6 +93,17 @@ public class StateRunner implements Runner {
         attestationVerifier,
         objects ->
             spec.process_attestation(
+                (MutableBeaconState) objects.getValue1(), objects.getValue0()));
+  }
+
+  private Optional<String> processAttesterSlashing(AttesterSlashing attesterSlashing, BeaconState state) {
+    AttesterSlashingVerifier slashingVerifier = new AttesterSlashingVerifier(spec);
+    return processOperation(
+        attesterSlashing,
+        state,
+        slashingVerifier,
+        objects ->
+            spec.process_attester_slashing(
                 (MutableBeaconState) objects.getValue1(), objects.getValue0()));
   }
 
