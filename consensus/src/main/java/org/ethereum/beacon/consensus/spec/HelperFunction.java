@@ -787,10 +787,14 @@ public interface HelperFunction extends SpecCommons {
       return true;
     }
 
-    PublicKey blsPublicKey = PublicKey.create(publicKey);
-    MessageParameters messageParameters = MessageParameters.create(message, domain);
-    Signature blsSignature = Signature.create(signature);
-    return BLS381.verify(messageParameters, blsSignature, blsPublicKey);
+    try {
+      PublicKey blsPublicKey = PublicKey.create(publicKey);
+      MessageParameters messageParameters = MessageParameters.create(message, domain);
+      Signature blsSignature = Signature.create(signature);
+      return BLS381.verify(messageParameters, blsSignature, blsPublicKey);
+    } catch (Exception e) {
+      return false;
+    }
   }
 
   default boolean bls_verify_multiple(
