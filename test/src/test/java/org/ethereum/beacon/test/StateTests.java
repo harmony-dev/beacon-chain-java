@@ -61,6 +61,18 @@ public class StateTests extends TestUtils {
   }
 
   @Test
+  public void testVoluntaryExitOperations() {
+    Path testFileDir = Paths.get(PATH_TO_TESTS, OPERATIONS_TESTS_DIR, "voluntary_exit");
+    runTestsInResourceDir(
+        testFileDir,
+        StateTest.class,
+        input -> {
+          StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1());
+          return testRunner.run();
+        });
+  }
+
+  @Test
   public void testDepositOperations() {
     Path testFileDir = Paths.get(PATH_TO_TESTS, OPERATIONS_TESTS_DIR, "deposit");
     runTestsInResourceDir(

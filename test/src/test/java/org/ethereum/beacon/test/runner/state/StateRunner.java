@@ -9,12 +9,14 @@ import org.ethereum.beacon.consensus.verifier.operation.AttesterSlashingVerifier
 import org.ethereum.beacon.consensus.verifier.operation.DepositVerifier;
 import org.ethereum.beacon.consensus.verifier.operation.ProposerSlashingVerifier;
 import org.ethereum.beacon.consensus.verifier.operation.TransferVerifier;
+import org.ethereum.beacon.consensus.verifier.operation.VoluntaryExitVerifier;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.Transfer;
+import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.state.BeaconStateImpl;
 import org.ethereum.beacon.test.StateTestUtils;
@@ -65,6 +67,8 @@ public class StateRunner implements Runner {
       processingError = processProposerSlashing(testCase.getProposerSlashingOperation(), latestState);
     } else if (testCase.getTransfer() != null) {
       processingError = processTransfer(testCase.getTransferOperation(), latestState);
+    } else if (testCase.getVoluntaryExit() != null) {
+      processingError = processVoluntaryExit(testCase.getVoluntaryExitOperation(), latestState);
     } else {
       throw new RuntimeException("This type of state test is not supported");
     }
@@ -139,6 +143,17 @@ public class StateRunner implements Runner {
         verifier,
         objects ->
             spec.process_transfer(
+                (MutableBeaconState) objects.getValue1(), objects.getValue0()));
+  }
+
+  private Optional<String> processVoluntaryExit(VoluntaryExit voluntaryExit, BeaconState state) {
+    VoluntaryExitVerifier verifier = new VoluntaryExitVerifier(spec);
+    return processOperation(
+        voluntaryExit,
+        state,
+        verifier,
+        objects ->
+            spec.process_voluntary_exit(
                 (MutableBeaconState) objects.getValue1(), objects.getValue0()));
   }
 

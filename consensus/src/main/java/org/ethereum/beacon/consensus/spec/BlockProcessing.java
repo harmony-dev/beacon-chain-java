@@ -370,6 +370,7 @@ public interface BlockProcessing extends HelperFunction {
   }
 
   default void verify_voluntary_exit(BeaconState state, VoluntaryExit exit) {
+    checkIndexRange(state, exit.getValidatorIndex());
     ValidatorRecord validator = state.getValidatorRegistry().get(exit.getValidatorIndex());
 
     /* Verify the validator is active

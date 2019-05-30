@@ -137,12 +137,7 @@ public abstract class StateTestUtils {
     // Voluntary exits
     List<VoluntaryExit> voluntaryExits =
         blockData.getBody().getVoluntaryExits().stream()
-            .map(e -> new VoluntaryExit(
-                EpochNumber.castFrom(UInt64.valueOf(e.getEpoch())),
-                ValidatorIndex.of(e.getValidatorIndex()),
-                e.getSignature() != null
-                    ? BLSSignature.wrap(Bytes96.fromHexString(e.getSignature()))
-                    : BLSSignature.ZERO))
+            .map(StateTestUtils::parseVoluntaryExit)
             .collect(Collectors.toList());
 
     // Finally, creating a block
@@ -312,4 +307,13 @@ public abstract class StateTestUtils {
         BLSPubkey.fromHexString(data.getPubkey()),
         BLSSignature.wrap(Bytes96.fromHexString(data.getSignature())));
   }
+
+  public static VoluntaryExit parseVoluntaryExit(StateTestCase.BlockData.BlockBodyData.VoluntaryExitData data) {
+    return new VoluntaryExit(
+        EpochNumber.castFrom(UInt64.valueOf(data.getEpoch())),
+        ValidatorIndex.of(data.getValidatorIndex()),
+        data.getSignature() != null
+            ? BLSSignature.wrap(Bytes96.fromHexString(data.getSignature()))
+            : BLSSignature.ZERO);
+    }
 }

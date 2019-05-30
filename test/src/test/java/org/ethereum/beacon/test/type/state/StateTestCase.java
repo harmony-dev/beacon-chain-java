@@ -6,6 +6,7 @@ import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.Transfer;
+import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.types.BLSPubkey;
@@ -30,6 +31,7 @@ import static org.ethereum.beacon.test.StateTestUtils.parseAttestationData;
 import static org.ethereum.beacon.test.StateTestUtils.parseBeaconBlockHeader;
 import static org.ethereum.beacon.test.StateTestUtils.parseSlashableAttestation;
 import static org.ethereum.beacon.test.StateTestUtils.parseTransfer;
+import static org.ethereum.beacon.test.StateTestUtils.parseVoluntaryExit;
 
 /**
  * State test case <a
@@ -52,6 +54,8 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
   private BlockData.BlockBodyData.ProposerSlashingData proposerSlashing;
   @JsonProperty
   private BlockData.BlockBodyData.TransferData transfer;
+  @JsonProperty("voluntary_exit")
+  private BlockData.BlockBodyData.VoluntaryExitData voluntaryExit;
 
   public String getDescription() {
     return description;
@@ -116,6 +120,10 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
     return parseTransfer(getTransfer());
   }
 
+  public VoluntaryExit getVoluntaryExitOperation() {
+    return parseVoluntaryExit(getVoluntaryExit());
+  }
+
   public void setAttestation(BeaconStateData.AttestationData attestation) {
     this.attestation = attestation;
   }
@@ -142,6 +150,14 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
 
   public void setTransfer(BlockData.BlockBodyData.TransferData transfer) {
     this.transfer = transfer;
+  }
+
+  public BlockData.BlockBodyData.VoluntaryExitData getVoluntaryExit() {
+    return voluntaryExit;
+  }
+
+  public void setVoluntaryExit(BlockData.BlockBodyData.VoluntaryExitData voluntaryExit) {
+    this.voluntaryExit = voluntaryExit;
   }
 
   public BeaconStateData getPre() {
@@ -911,7 +927,7 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
       private List<DepositData> deposits;
 
       @JsonProperty("voluntary_exits")
-      private List<ExitData> voluntaryExits;
+      private List<VoluntaryExitData> voluntaryExits;
 
       private List<TransferData> transfers;
 
@@ -963,11 +979,11 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
         this.deposits = deposits;
       }
 
-      public List<ExitData> getVoluntaryExits() {
+      public List<VoluntaryExitData> getVoluntaryExits() {
         return voluntaryExits;
       }
 
-      public void setVoluntaryExits(List<ExitData> voluntaryExits) {
+      public void setVoluntaryExits(List<VoluntaryExitData> voluntaryExits) {
         this.voluntaryExits = voluntaryExits;
       }
 
@@ -1196,7 +1212,7 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
         }
       }
 
-      public static class ExitData {
+      public static class VoluntaryExitData {
         private String epoch;
 
         @JsonProperty("validator_index")

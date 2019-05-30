@@ -730,7 +730,7 @@ public interface HelperFunction extends SpecCommons {
     state.getValidatorRegistry().update(index,
         validator -> ValidatorRecord.Builder.fromRecord(validator)
             .withExitEpoch(exitEpoch)
-            .withWithdrawableEpoch(validator.getExitEpoch().plus(HelperFunction.this.getConstants().getMinValidatorWithdrawabilityDelay()))
+            .withWithdrawableEpoch(exitEpoch.plus(HelperFunction.this.getConstants().getMinValidatorWithdrawabilityDelay()))
             .build());
   }
 
