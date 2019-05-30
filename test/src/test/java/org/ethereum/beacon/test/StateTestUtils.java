@@ -1,9 +1,5 @@
 package org.ethereum.beacon.test;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.BeaconBlockHeader;
@@ -41,8 +37,8 @@ import org.ethereum.beacon.test.type.state.StateTestCase.BeaconStateData.BlockHe
 import org.ethereum.beacon.test.type.state.StateTestCase.BeaconStateData.CrossLinkData;
 import org.ethereum.beacon.test.type.state.StateTestCase.BeaconStateData.ValidatorData;
 import org.ethereum.beacon.test.type.state.StateTestCase.BlockData.BlockBodyData.Eth1;
-import org.ethereum.beacon.test.type.state.StateTestCase.BlockData.BlockBodyData.ProposerSlashingData;
 import org.ethereum.beacon.test.type.state.StateTestCase.BlockData.BlockBodyData.IndexedAttestationData;
+import org.ethereum.beacon.test.type.state.StateTestCase.BlockData.BlockBodyData.ProposerSlashingData;
 import org.javatuples.Pair;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
@@ -51,6 +47,11 @@ import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.collections.ReadVector;
 import tech.pegasys.artemis.util.uint.UInt64;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 /** Various utility methods aiding state tests development. */
 public abstract class StateTestUtils {
@@ -129,15 +130,7 @@ public abstract class StateTestUtils {
     List<Transfer> transfers = new ArrayList<>();
     for (StateTestCase.BlockData.BlockBodyData.TransferData transferData :
         blockData.getBody().getTransfers()) {
-      Transfer transfer =
-          new Transfer(
-              ValidatorIndex.of(transferData.getSender()),
-              ValidatorIndex.of(transferData.getRecipient()),
-              Gwei.castFrom(UInt64.valueOf(transferData.getAmount())),
-              Gwei.castFrom(UInt64.valueOf(transferData.getFee())),
-              SlotNumber.castFrom(UInt64.valueOf(transferData.getSlot())),
-              BLSPubkey.fromHexString(transferData.getPubkey()),
-              BLSSignature.wrap(Bytes96.fromHexString(transferData.getSignature())));
+      Transfer transfer = parseTransfer(transferData);
       transfers.add(transfer);
     }
 
@@ -307,5 +300,16 @@ public abstract class StateTestUtils {
         ShardNumber.of(data.getShard()),
         Hash32.fromHexString(data.getPreviousCrosslinkRoot()),
         Hash32.fromHexString(data.getCrosslinkDataRoot()));
+  }
+
+  public static Transfer parseTransfer(StateTestCase.BlockData.BlockBodyData.TransferData data) {
+    return new Transfer(
+        ValidatorIndex.of(data.getSender()),
+        ValidatorIndex.of(data.getRecipient()),
+        Gwei.castFrom(UInt64.valueOf(data.getAmount())),
+        Gwei.castFrom(UInt64.valueOf(data.getFee())),
+        SlotNumber.castFrom(UInt64.valueOf(data.getSlot())),
+        BLSPubkey.fromHexString(data.getPubkey()),
+        BLSSignature.wrap(Bytes96.fromHexString(data.getSignature())));
   }
 }

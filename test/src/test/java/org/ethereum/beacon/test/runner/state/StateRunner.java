@@ -8,12 +8,15 @@ import org.ethereum.beacon.consensus.verifier.operation.AttestationVerifier;
 import org.ethereum.beacon.consensus.verifier.operation.AttesterSlashingVerifier;
 import org.ethereum.beacon.consensus.verifier.operation.DepositVerifier;
 import org.ethereum.beacon.consensus.verifier.operation.ProposerSlashingVerifier;
+import org.ethereum.beacon.consensus.verifier.operation.TransferVerifier;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
+import org.ethereum.beacon.core.operations.Transfer;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
+import org.ethereum.beacon.core.state.BeaconStateImpl;
 import org.ethereum.beacon.test.StateTestUtils;
 import org.ethereum.beacon.test.runner.Runner;
 import org.ethereum.beacon.test.type.TestCase;
@@ -51,6 +54,7 @@ public class StateRunner implements Runner {
     BeaconState latestState = initialState;
     Optional<String> processingError;
 
+    BeaconState stateBackup = latestState.createMutableCopy();
     if (testCase.getDeposit() != null) {
       processingError = processDeposit(testCase.getDepositOperation(), latestState);
     } else if (testCase.getAttestation() != null) {
@@ -59,8 +63,13 @@ public class StateRunner implements Runner {
       processingError = processAttesterSlashing(testCase.getAttesterSlashingOperation(), latestState);
     } else if (testCase.getProposerSlashing() != null) {
       processingError = processProposerSlashing(testCase.getProposerSlashingOperation(), latestState);
+    } else if (testCase.getTransfer() != null) {
+      processingError = processTransfer(testCase.getTransferOperation(), latestState);
     } else {
       throw new RuntimeException("This type of state test is not supported");
+    }
+    if (processingError.isPresent()) {
+      latestState = stateBackup;
     }
 
     if (testCase.getPost() == null) { // XXX: Not changed
@@ -119,6 +128,17 @@ public class StateRunner implements Runner {
         slashingVerifier,
         objects ->
             spec.process_proposer_slashing(
+                (MutableBeaconState) objects.getValue1(), objects.getValue0()));
+  }
+
+  private Optional<String> processTransfer(Transfer transfer, BeaconState state) {
+    TransferVerifier verifier = new TransferVerifier(spec);
+    return processOperation(
+        transfer,
+        state,
+        verifier,
+        objects ->
+            spec.process_transfer(
                 (MutableBeaconState) objects.getValue1(), objects.getValue0()));
   }
 

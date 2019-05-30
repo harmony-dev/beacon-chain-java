@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
+import org.ethereum.beacon.core.operations.Transfer;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.types.BLSPubkey;
@@ -28,6 +29,7 @@ import java.util.stream.Collectors;
 import static org.ethereum.beacon.test.StateTestUtils.parseAttestationData;
 import static org.ethereum.beacon.test.StateTestUtils.parseBeaconBlockHeader;
 import static org.ethereum.beacon.test.StateTestUtils.parseSlashableAttestation;
+import static org.ethereum.beacon.test.StateTestUtils.parseTransfer;
 
 /**
  * State test case <a
@@ -35,6 +37,11 @@ import static org.ethereum.beacon.test.StateTestUtils.parseSlashableAttestation;
  */
 public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
   private String description;
+  private BeaconStateData pre;
+  private BeaconStateData post;
+  @JsonProperty("bls_setting")
+  private Integer blsSetting;
+
   @JsonProperty
   private BlockData.BlockBodyData.DepositData deposit;
   @JsonProperty
@@ -43,10 +50,8 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
   private BlockData.BlockBodyData.AttesterSlashingData attesterSlashing;
   @JsonProperty("proposer_slashing")
   private BlockData.BlockBodyData.ProposerSlashingData proposerSlashing;
-  private BeaconStateData pre;
-  private BeaconStateData post;
-  @JsonProperty("bls_setting")
-  private Integer blsSetting;
+  @JsonProperty
+  private BlockData.BlockBodyData.TransferData transfer;
 
   public String getDescription() {
     return description;
@@ -107,6 +112,10 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
         parseBeaconBlockHeader(getProposerSlashing().getHeader2()));
   }
 
+  public Transfer getTransferOperation() {
+    return parseTransfer(getTransfer());
+  }
+
   public void setAttestation(BeaconStateData.AttestationData attestation) {
     this.attestation = attestation;
   }
@@ -125,6 +134,14 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
 
   public void setProposerSlashing(BlockData.BlockBodyData.ProposerSlashingData proposerSlashing) {
     this.proposerSlashing = proposerSlashing;
+  }
+
+  public BlockData.BlockBodyData.TransferData getTransfer() {
+    return transfer;
+  }
+
+  public void setTransfer(BlockData.BlockBodyData.TransferData transfer) {
+    this.transfer = transfer;
   }
 
   public BeaconStateData getPre() {
