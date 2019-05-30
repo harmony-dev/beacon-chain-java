@@ -7,10 +7,12 @@ import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.consensus.verifier.operation.AttestationVerifier;
 import org.ethereum.beacon.consensus.verifier.operation.AttesterSlashingVerifier;
 import org.ethereum.beacon.consensus.verifier.operation.DepositVerifier;
+import org.ethereum.beacon.consensus.verifier.operation.ProposerSlashingVerifier;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
+import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.test.StateTestUtils;
 import org.ethereum.beacon.test.runner.Runner;
@@ -55,6 +57,8 @@ public class StateRunner implements Runner {
       processingError = processAttestation(testCase.getAttestationOperation(), latestState);
     } else if (testCase.getAttesterSlashing() != null) {
       processingError = processAttesterSlashing(testCase.getAttesterSlashingOperation(), latestState);
+    } else if (testCase.getProposerSlashing() != null) {
+      processingError = processProposerSlashing(testCase.getProposerSlashingOperation(), latestState);
     } else {
       throw new RuntimeException("This type of state test is not supported");
     }
@@ -104,6 +108,17 @@ public class StateRunner implements Runner {
         slashingVerifier,
         objects ->
             spec.process_attester_slashing(
+                (MutableBeaconState) objects.getValue1(), objects.getValue0()));
+  }
+
+  private Optional<String> processProposerSlashing(ProposerSlashing proposerSlashing, BeaconState state) {
+    ProposerSlashingVerifier slashingVerifier = new ProposerSlashingVerifier(spec);
+    return processOperation(
+        proposerSlashing,
+        state,
+        slashingVerifier,
+        objects ->
+            spec.process_proposer_slashing(
                 (MutableBeaconState) objects.getValue1(), objects.getValue0()));
   }
 

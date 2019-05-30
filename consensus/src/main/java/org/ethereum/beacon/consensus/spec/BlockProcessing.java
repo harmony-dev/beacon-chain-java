@@ -119,6 +119,7 @@ public interface BlockProcessing extends HelperFunction {
   }
 
   default void verify_proposer_slashing(BeaconState state, ProposerSlashing proposer_slashing) {
+    checkIndexRange(state, proposer_slashing.getProposerIndex());
     ValidatorRecord proposer = state.getValidatorRegistry().get(proposer_slashing.getProposerIndex());
 
     /* Verify that the epoch is the same

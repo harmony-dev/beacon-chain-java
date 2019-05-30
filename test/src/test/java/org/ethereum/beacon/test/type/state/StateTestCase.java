@@ -4,12 +4,14 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
+import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Bitfield;
 import org.ethereum.beacon.core.types.Gwei;
+import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.test.type.BlsSignedTestCase;
 import org.ethereum.beacon.test.type.NamedTestCase;
 import org.ethereum.beacon.test.type.state.StateTestCase.BeaconStateData.AttestationData.AttestationDataContainer;
@@ -24,6 +26,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.ethereum.beacon.test.StateTestUtils.parseAttestationData;
+import static org.ethereum.beacon.test.StateTestUtils.parseBeaconBlockHeader;
 import static org.ethereum.beacon.test.StateTestUtils.parseSlashableAttestation;
 
 /**
@@ -38,6 +41,8 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
   private BeaconStateData.AttestationData attestation;
   @JsonProperty("attester_slashing")
   private BlockData.BlockBodyData.AttesterSlashingData attesterSlashing;
+  @JsonProperty("proposer_slashing")
+  private BlockData.BlockBodyData.ProposerSlashingData proposerSlashing;
   private BeaconStateData pre;
   private BeaconStateData post;
   @JsonProperty("bls_setting")
@@ -95,6 +100,13 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
         parseSlashableAttestation(getAttesterSlashing().slashableAttestation2));
   }
 
+  public ProposerSlashing getProposerSlashingOperation() {
+    return new ProposerSlashing(
+        ValidatorIndex.of(getProposerSlashing().proposerIndex),
+        parseBeaconBlockHeader(getProposerSlashing().getHeader1()),
+        parseBeaconBlockHeader(getProposerSlashing().getHeader2()));
+  }
+
   public void setAttestation(BeaconStateData.AttestationData attestation) {
     this.attestation = attestation;
   }
@@ -105,6 +117,14 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
 
   public void setAttesterSlashing(BlockData.BlockBodyData.AttesterSlashingData attesterSlashing) {
     this.attesterSlashing = attesterSlashing;
+  }
+
+  public BlockData.BlockBodyData.ProposerSlashingData getProposerSlashing() {
+    return proposerSlashing;
+  }
+
+  public void setProposerSlashing(BlockData.BlockBodyData.ProposerSlashingData proposerSlashing) {
+    this.proposerSlashing = proposerSlashing;
   }
 
   public BeaconStateData getPre() {
