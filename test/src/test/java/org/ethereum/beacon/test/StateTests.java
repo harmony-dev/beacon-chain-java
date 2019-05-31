@@ -11,6 +11,7 @@ import java.nio.file.Paths;
 public class StateTests extends TestUtils {
   private String OPERATIONS_TESTS_DIR = "operations";
   private String EPOCH_PROCESSING_DIR = "epoch_processing";
+  private String SANITY_PROCESSING_DIR = "sanity";
 
   @Test
   public void testAttestationOperations() {
@@ -26,8 +27,7 @@ public class StateTests extends TestUtils {
   }
 
   @Test
-  @Ignore(
-      "Success cases fail because validators order is guaranteed, delayed until fixtures regeneration")
+  @Ignore("Success cases fail because validators order is guaranteed, delayed until fixtures regeneration")
   public void testAttesterSlashingOperations() {
     final String type = "attester_slashing";
     Path testFileDir = Paths.get(PATH_TO_TESTS, OPERATIONS_TESTS_DIR, type);
@@ -122,6 +122,19 @@ public class StateTests extends TestUtils {
   public void testRegistryUpdates() {
     final String type = "registry_updates";
     Path testFileDir = Paths.get(PATH_TO_TESTS, EPOCH_PROCESSING_DIR, type);
+    runTestsInResourceDir(
+        testFileDir,
+        StateTest.class,
+        input -> {
+          StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1(), type);
+          return testRunner.run();
+        });
+  }
+
+  @Test
+  public void testSanitySlots() {
+    final String type = "slots";
+    Path testFileDir = Paths.get(PATH_TO_TESTS, SANITY_PROCESSING_DIR, type);
     runTestsInResourceDir(
         testFileDir,
         StateTest.class,

@@ -1,7 +1,15 @@
 package org.ethereum.beacon.test.runner.state;
 
 import org.ethereum.beacon.consensus.BeaconChainSpec;
+import org.ethereum.beacon.consensus.BeaconStateEx;
+import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.consensus.spec.SpecCommons;
+import org.ethereum.beacon.consensus.transition.BeaconStateExImpl;
+import org.ethereum.beacon.consensus.transition.EmptySlotTransition;
+import org.ethereum.beacon.consensus.transition.ExtendedSlotTransition;
+import org.ethereum.beacon.consensus.transition.PerEpochTransition;
+import org.ethereum.beacon.consensus.transition.PerSlotTransition;
+import org.ethereum.beacon.consensus.transition.StateCachingTransition;
 import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
 import org.ethereum.beacon.consensus.verifier.OperationVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
@@ -87,6 +95,13 @@ public class StateRunner implements Runner {
         break;
       case "registry_updates":
         processingError = processRegistryUpdates(latestState);
+        break;
+      case "slots":
+        Pair<Optional<String>, BeaconState> res = processSlots(testCase.getSlots(), latestState);
+        processingError = res.getValue0();
+        if (!processingError.isPresent()) {
+          latestState = res.getValue1();
+        }
         break;
       default:
         throw new RuntimeException("This type of state test is not supported");
@@ -206,6 +221,27 @@ public class StateRunner implements Runner {
       return Optional.empty();
     } catch (SpecCommons.SpecAssertionFailed | IllegalArgumentException ex) {
       return Optional.of(ex.getMessage());
+    }
+  }
+
+  private Pair<Optional<String>, BeaconState> processSlots(int slots, BeaconState state) {
+    StateTransition<BeaconStateEx> stateCaching = new StateCachingTransition(spec);
+    StateTransition<BeaconStateEx> perEpochTransition = new PerEpochTransition(spec);
+    StateTransition<BeaconStateEx> perSlotTransition = new PerSlotTransition(spec);
+    EmptySlotTransition slotTransition = new EmptySlotTransition(
+        new ExtendedSlotTransition(stateCaching, new PerEpochTransition(spec) {
+          @Override
+          public BeaconStateEx apply(BeaconStateEx stateEx) {
+            return perEpochTransition.apply(stateEx);
+          }
+        }, perSlotTransition, spec));
+
+    BeaconStateEx stateEx = new BeaconStateExImpl(state);
+    try {
+      BeaconStateEx res = slotTransition.apply(stateEx, stateEx.getSlot().plus(slots));
+      return Pair.with(Optional.empty(), res.createMutableCopy());
+    } catch (SpecCommons.SpecAssertionFailed | IllegalArgumentException ex) {
+      return Pair.with(Optional.of(ex.getMessage()), null);
     }
   }
 

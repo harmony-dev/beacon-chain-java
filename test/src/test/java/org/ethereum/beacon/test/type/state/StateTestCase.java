@@ -60,6 +60,8 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
   private BlockData.BlockBodyData.VoluntaryExitData voluntaryExit;
   @JsonProperty
   private BlockData block;
+  @JsonProperty
+  private Integer slots;
 
   public String getDescription() {
     return description;
@@ -175,6 +177,14 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
 
   public void setBlock(BlockData block) {
     this.block = block;
+  }
+
+  public Integer getSlots() {
+    return slots;
+  }
+
+  public void setSlots(Integer slots) {
+    this.slots = slots;
   }
 
   public BeaconStateData getPre() {
