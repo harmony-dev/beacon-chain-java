@@ -2,6 +2,7 @@ package org.ethereum.beacon.test.runner.state;
 
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.spec.SpecCommons;
+import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
 import org.ethereum.beacon.consensus.verifier.OperationVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.consensus.verifier.operation.AttestationVerifier;
@@ -10,6 +11,8 @@ import org.ethereum.beacon.consensus.verifier.operation.DepositVerifier;
 import org.ethereum.beacon.consensus.verifier.operation.ProposerSlashingVerifier;
 import org.ethereum.beacon.consensus.verifier.operation.TransferVerifier;
 import org.ethereum.beacon.consensus.verifier.operation.VoluntaryExitVerifier;
+import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.BeaconBlockHeader;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
@@ -18,7 +21,6 @@ import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.Transfer;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
-import org.ethereum.beacon.core.state.BeaconStateImpl;
 import org.ethereum.beacon.test.StateTestUtils;
 import org.ethereum.beacon.test.runner.Runner;
 import org.ethereum.beacon.test.type.TestCase;
@@ -69,6 +71,8 @@ public class StateRunner implements Runner {
       processingError = processTransfer(testCase.getTransferOperation(), latestState);
     } else if (testCase.getVoluntaryExit() != null) {
       processingError = processVoluntaryExit(testCase.getVoluntaryExitOperation(), latestState);
+    } else if (testCase.getBlock() != null) {
+      processingError = processBlockHeader(testCase.getBeaconBlock(), latestState);
     } else {
       throw new RuntimeException("This type of state test is not supported");
     }
@@ -155,6 +159,21 @@ public class StateRunner implements Runner {
         objects ->
             spec.process_voluntary_exit(
                 (MutableBeaconState) objects.getValue1(), objects.getValue0()));
+  }
+
+  private Optional<String> processBlockHeader(BeaconBlock block, BeaconState state) {
+    BeaconBlockVerifier verifier = BeaconBlockVerifier.createDefault(spec);
+    try {
+      VerificationResult verificationResult = verifier.verify(block, state);
+      if (verificationResult.isPassed()) {
+        spec.process_block_header((MutableBeaconState) state, block);
+        return Optional.empty();
+      } else {
+        return Optional.of(verificationResult.getMessage());
+      }
+    } catch (SpecCommons.SpecAssertionFailed | IllegalArgumentException ex) {
+      return Optional.of(ex.getMessage());
+    }
   }
 
   private <O> Optional<String> processOperation(

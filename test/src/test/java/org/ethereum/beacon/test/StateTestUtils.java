@@ -145,7 +145,7 @@ public abstract class StateTestUtils {
         BeaconBlockBody.create(
             BLSSignature.wrap(Bytes96.fromHexString(blockData.getBody().getRandaoReveal())),
             eth1Data1,
-            Bytes32.ZERO,
+            Bytes32.fromHexString(blockData.getBody().getGraffiti()),
             proposerSlashings,
             attesterSlashings,
             attestations,

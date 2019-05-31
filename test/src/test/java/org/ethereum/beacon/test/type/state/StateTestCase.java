@@ -2,6 +2,7 @@ package org.ethereum.beacon.test.type.state;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
@@ -29,6 +30,7 @@ import java.util.stream.Collectors;
 
 import static org.ethereum.beacon.test.StateTestUtils.parseAttestationData;
 import static org.ethereum.beacon.test.StateTestUtils.parseBeaconBlockHeader;
+import static org.ethereum.beacon.test.StateTestUtils.parseBlockData;
 import static org.ethereum.beacon.test.StateTestUtils.parseSlashableAttestation;
 import static org.ethereum.beacon.test.StateTestUtils.parseTransfer;
 import static org.ethereum.beacon.test.StateTestUtils.parseVoluntaryExit;
@@ -56,6 +58,8 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
   private BlockData.BlockBodyData.TransferData transfer;
   @JsonProperty("voluntary_exit")
   private BlockData.BlockBodyData.VoluntaryExitData voluntaryExit;
+  @JsonProperty
+  private BlockData block;
 
   public String getDescription() {
     return description;
@@ -124,6 +128,11 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
     return parseVoluntaryExit(getVoluntaryExit());
   }
 
+  public BeaconBlock getBeaconBlock() {
+    return parseBlockData(getBlock()).getValue0();
+  }
+
+
   public void setAttestation(BeaconStateData.AttestationData attestation) {
     this.attestation = attestation;
   }
@@ -158,6 +167,14 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
 
   public void setVoluntaryExit(BlockData.BlockBodyData.VoluntaryExitData voluntaryExit) {
     this.voluntaryExit = voluntaryExit;
+  }
+
+  public BlockData getBlock() {
+    return block;
+  }
+
+  public void setBlock(BlockData block) {
+    this.block = block;
   }
 
   public BeaconStateData getPre() {
@@ -917,6 +934,8 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
       @JsonProperty("eth1_data")
       private Eth1 eth1Data;
 
+      private String graffiti;
+
       @JsonProperty("proposer_slashings")
       private List<ProposerSlashingData> proposerSlashings;
 
@@ -945,6 +964,14 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
 
       public void setEth1Data(Eth1 eth1Data) {
         this.eth1Data = eth1Data;
+      }
+
+      public String getGraffiti() {
+        return graffiti;
+      }
+
+      public void setGraffiti(String graffiti) {
+        this.graffiti = graffiti;
       }
 
       public List<ProposerSlashingData> getProposerSlashings() {
