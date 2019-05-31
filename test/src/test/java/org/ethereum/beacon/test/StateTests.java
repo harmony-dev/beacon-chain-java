@@ -10,88 +10,110 @@ import java.nio.file.Paths;
 
 public class StateTests extends TestUtils {
   private String OPERATIONS_TESTS_DIR = "operations";
+  private String EPOCH_PROCESSING_DIR = "epoch_processing";
 
   @Test
   public void testAttestationOperations() {
-    Path testFileDir = Paths.get(PATH_TO_TESTS, OPERATIONS_TESTS_DIR, "attestation");
+    final String type = "attestation";
+    Path testFileDir = Paths.get(PATH_TO_TESTS, OPERATIONS_TESTS_DIR, type);
     runTestsInResourceDir(
         testFileDir,
         StateTest.class,
         input -> {
-          StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1());
+          StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1(), type);
           return testRunner.run();
         });
   }
 
   @Test
-  @Ignore("Success cases fail because validators order is guaranteed, delayed until fixtures regeneration")
+  @Ignore(
+      "Success cases fail because validators order is guaranteed, delayed until fixtures regeneration")
   public void testAttesterSlashingOperations() {
-    Path testFileDir = Paths.get(PATH_TO_TESTS, OPERATIONS_TESTS_DIR, "attester_slashing");
+    final String type = "attester_slashing";
+    Path testFileDir = Paths.get(PATH_TO_TESTS, OPERATIONS_TESTS_DIR, type);
     runTestsInResourceDir(
         testFileDir,
         StateTest.class,
         input -> {
-          StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1());
+          StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1(), type);
           return testRunner.run();
         });
   }
 
   @Test
   public void testProposerSlashingOperations() {
-    Path testFileDir = Paths.get(PATH_TO_TESTS, OPERATIONS_TESTS_DIR, "proposer_slashing");
+    final String type = "proposer_slashing";
+    Path testFileDir = Paths.get(PATH_TO_TESTS, OPERATIONS_TESTS_DIR, type);
     runTestsInResourceDir(
         testFileDir,
         StateTest.class,
         input -> {
-          StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1());
+          StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1(), type);
           return testRunner.run();
         });
   }
 
   @Test
   public void testTransferOperations() {
-    Path testFileDir = Paths.get(PATH_TO_TESTS, OPERATIONS_TESTS_DIR, "transfer");
+    final String type = "transfer";
+    Path testFileDir = Paths.get(PATH_TO_TESTS, OPERATIONS_TESTS_DIR, type);
     runTestsInResourceDir(
         testFileDir,
         StateTest.class,
         input -> {
-          StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1());
+          StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1(), type);
           return testRunner.run();
         });
   }
 
   @Test
   public void testVoluntaryExitOperations() {
-    Path testFileDir = Paths.get(PATH_TO_TESTS, OPERATIONS_TESTS_DIR, "voluntary_exit");
+    final String type = "voluntary_exit";
+    Path testFileDir = Paths.get(PATH_TO_TESTS, OPERATIONS_TESTS_DIR, type);
     runTestsInResourceDir(
         testFileDir,
         StateTest.class,
         input -> {
-          StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1());
+          StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1(), type);
           return testRunner.run();
         });
   }
 
   @Test
   public void testBlockProcessing() {
-    Path testFileDir = Paths.get(PATH_TO_TESTS, OPERATIONS_TESTS_DIR, "block_header");
+    final String type = "block_header";
+    Path testFileDir = Paths.get(PATH_TO_TESTS, OPERATIONS_TESTS_DIR, type);
     runTestsInResourceDir(
         testFileDir,
         StateTest.class,
         input -> {
-          StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1());
+          StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1(), type);
           return testRunner.run();
         });
   }
 
   @Test
   public void testDepositOperations() {
-    Path testFileDir = Paths.get(PATH_TO_TESTS, OPERATIONS_TESTS_DIR, "deposit");
+    final String type = "deposit";
+    Path testFileDir = Paths.get(PATH_TO_TESTS, OPERATIONS_TESTS_DIR, type);
     runTestsInResourceDir(
         testFileDir,
         StateTest.class,
         input -> {
-          StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1());
+          StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1(), type);
+          return testRunner.run();
+        });
+  }
+
+  @Test
+  public void testCrosslinksProcessing() {
+    final String type = "crosslinks";
+    Path testFileDir = Paths.get(PATH_TO_TESTS, EPOCH_PROCESSING_DIR, type);
+    runTestsInResourceDir(
+        testFileDir,
+        StateTest.class,
+        input -> {
+          StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1(), type);
           return testRunner.run();
         });
   }

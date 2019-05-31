@@ -12,7 +12,6 @@ import org.ethereum.beacon.consensus.verifier.operation.ProposerSlashingVerifier
 import org.ethereum.beacon.consensus.verifier.operation.TransferVerifier;
 import org.ethereum.beacon.consensus.verifier.operation.VoluntaryExitVerifier;
 import org.ethereum.beacon.core.BeaconBlock;
-import org.ethereum.beacon.core.BeaconBlockHeader;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
@@ -40,13 +39,15 @@ import java.util.function.Consumer;
 public class StateRunner implements Runner {
   private StateTestCase testCase;
   private BeaconChainSpec spec;
+  private String handler;
 
-  public StateRunner(TestCase testCase, BeaconChainSpec spec) {
+  public StateRunner(TestCase testCase, BeaconChainSpec spec, String handler) {
     if (!(testCase instanceof StateTestCase)) {
       throw new RuntimeException("TestCase runner accepts only StateTestCase.class as input!");
     }
     this.testCase = (StateTestCase) testCase;
     this.spec = spec;
+    this.handler = handler;
   }
 
   public Optional<String> run() {
@@ -59,22 +60,33 @@ public class StateRunner implements Runner {
     Optional<String> processingError;
 
     BeaconState stateBackup = latestState.createMutableCopy();
-    if (testCase.getDeposit() != null) {
-      processingError = processDeposit(testCase.getDepositOperation(), latestState);
-    } else if (testCase.getAttestation() != null) {
-      processingError = processAttestation(testCase.getAttestationOperation(), latestState);
-    } else if (testCase.getAttesterSlashing() != null) {
-      processingError = processAttesterSlashing(testCase.getAttesterSlashingOperation(), latestState);
-    } else if (testCase.getProposerSlashing() != null) {
-      processingError = processProposerSlashing(testCase.getProposerSlashingOperation(), latestState);
-    } else if (testCase.getTransfer() != null) {
-      processingError = processTransfer(testCase.getTransferOperation(), latestState);
-    } else if (testCase.getVoluntaryExit() != null) {
-      processingError = processVoluntaryExit(testCase.getVoluntaryExitOperation(), latestState);
-    } else if (testCase.getBlock() != null) {
-      processingError = processBlockHeader(testCase.getBeaconBlock(), latestState);
-    } else {
-      throw new RuntimeException("This type of state test is not supported");
+    switch (handler) {
+      case "deposit":
+        processingError = processDeposit(testCase.getDepositOperation(), latestState);
+        break;
+      case "attestation":
+        processingError = processAttestation(testCase.getAttestationOperation(), latestState);
+        break;
+      case "attester_slashing":
+        processingError = processAttesterSlashing(testCase.getAttesterSlashingOperation(), latestState);
+        break;
+      case "proposer_slashing":
+        processingError = processProposerSlashing(testCase.getProposerSlashingOperation(), latestState);
+        break;
+      case "transfer":
+        processingError = processTransfer(testCase.getTransferOperation(), latestState);
+        break;
+      case "voluntary_exit":
+        processingError = processVoluntaryExit(testCase.getVoluntaryExitOperation(), latestState);
+        break;
+      case "block_header":
+        processingError = processBlockHeader(testCase.getBeaconBlock(), latestState);
+        break;
+      case "crosslinks":
+        processingError = processCrosslinks(latestState);
+        break;
+      default:
+        throw new RuntimeException("This type of state test is not supported");
     }
     if (processingError.isPresent()) {
       latestState = stateBackup;
@@ -171,6 +183,15 @@ public class StateRunner implements Runner {
       } else {
         return Optional.of(verificationResult.getMessage());
       }
+    } catch (SpecCommons.SpecAssertionFailed | IllegalArgumentException ex) {
+      return Optional.of(ex.getMessage());
+    }
+  }
+
+  private Optional<String> processCrosslinks(BeaconState state) {
+    try {
+      spec.process_crosslinks((MutableBeaconState) state);
+      return Optional.empty();
     } catch (SpecCommons.SpecAssertionFailed | IllegalArgumentException ex) {
       return Optional.of(ex.getMessage());
     }
