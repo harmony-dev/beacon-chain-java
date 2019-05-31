@@ -85,6 +85,9 @@ public class StateRunner implements Runner {
       case "crosslinks":
         processingError = processCrosslinks(latestState);
         break;
+      case "registry_updates":
+        processingError = processRegistryUpdates(latestState);
+        break;
       default:
         throw new RuntimeException("This type of state test is not supported");
     }
@@ -191,6 +194,15 @@ public class StateRunner implements Runner {
   private Optional<String> processCrosslinks(BeaconState state) {
     try {
       spec.process_crosslinks((MutableBeaconState) state);
+      return Optional.empty();
+    } catch (SpecCommons.SpecAssertionFailed | IllegalArgumentException ex) {
+      return Optional.of(ex.getMessage());
+    }
+  }
+
+  private Optional<String> processRegistryUpdates(BeaconState state) {
+    try {
+      spec.process_registry_updates((MutableBeaconState) state);
       return Optional.empty();
     } catch (SpecCommons.SpecAssertionFailed | IllegalArgumentException ex) {
       return Optional.of(ex.getMessage());
