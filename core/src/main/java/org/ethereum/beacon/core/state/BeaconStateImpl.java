@@ -176,7 +176,7 @@ public class BeaconStateImpl implements MutableBeaconState {
 
   public void setValidatorRegistry(
       WriteList<ValidatorIndex, ValidatorRecord> validatorRegistry) {
-    this.validatorRegistry.set(validatorRegistry);
+    this.validatorRegistry.set(ObservableListImpl.wrapIfNeeded(validatorRegistry));
   }
 
   @Override
@@ -186,7 +186,7 @@ public class BeaconStateImpl implements MutableBeaconState {
 
   public void setBalances(
       WriteList<ValidatorIndex, Gwei> balances) {
-    this.balances.set(balances);
+    this.balances.set(ObservableListImpl.wrapIfNeeded(balances));
   }
 
   @Override
@@ -196,7 +196,7 @@ public class BeaconStateImpl implements MutableBeaconState {
 
   public void setLatestRandaoMixes(
       WriteList<EpochNumber, Hash32> latestRandaoMixes) {
-    this.latestRandaoMixes.set(latestRandaoMixes);
+    this.latestRandaoMixes.set(ObservableListImpl.wrapIfNeeded(latestRandaoMixes));
   }
 
   @Override
@@ -215,7 +215,7 @@ public class BeaconStateImpl implements MutableBeaconState {
 
   public void setPreviousEpochAttestations(
       WriteList<Integer, PendingAttestation> previousEpochAttestations) {
-    this.previousEpochAttestations.set(previousEpochAttestations);
+    this.previousEpochAttestations.set(ObservableListImpl.wrapIfNeeded(previousEpochAttestations));
   }
 
   public WriteList<Integer, PendingAttestation> getCurrentEpochAttestations() {
@@ -224,7 +224,7 @@ public class BeaconStateImpl implements MutableBeaconState {
 
   public void setCurrentEpochAttestations(
       WriteList<Integer, PendingAttestation> currentEpochAttestations) {
-    this.currentEpochAttestations.set(currentEpochAttestations);
+    this.currentEpochAttestations.set(ObservableListImpl.wrapIfNeeded(currentEpochAttestations));
   }
 
   @Override
@@ -304,7 +304,7 @@ public class BeaconStateImpl implements MutableBeaconState {
 
   public void setPreviousCrosslinks(
       WriteList<ShardNumber, Crosslink> previousCrosslinks) {
-    this.previousCrosslinks.set(previousCrosslinks);
+    this.previousCrosslinks.set(ObservableListImpl.wrapIfNeeded(previousCrosslinks));
   }
 
   @Override
@@ -314,7 +314,7 @@ public class BeaconStateImpl implements MutableBeaconState {
 
   public void setCurrentCrosslinks(
       WriteList<ShardNumber, Crosslink> currentCrosslinks) {
-    this.currentCrosslinks.set(currentCrosslinks);
+    this.currentCrosslinks.set(ObservableListImpl.wrapIfNeeded(currentCrosslinks));
   }
 
   @Override
@@ -324,7 +324,7 @@ public class BeaconStateImpl implements MutableBeaconState {
 
   public void setLatestBlockRoots(
       WriteList<SlotNumber, Hash32> latestBlockRoots) {
-    this.latestBlockRoots.set(latestBlockRoots);
+    this.latestBlockRoots.set(ObservableListImpl.wrapIfNeeded(latestBlockRoots));
   }
 
   @Override
@@ -334,7 +334,7 @@ public class BeaconStateImpl implements MutableBeaconState {
 
   public void setLatestStateRoots(
       WriteList<SlotNumber, Hash32> latestStateRoots) {
-    this.latestStateRoots.set(latestStateRoots);
+    this.latestStateRoots.set(ObservableListImpl.wrapIfNeeded(latestStateRoots));
   }
 
   @Override
@@ -344,7 +344,7 @@ public class BeaconStateImpl implements MutableBeaconState {
 
   public void setLatestActiveIndexRoots(
       WriteList<EpochNumber, Hash32> latestActiveIndexRoots) {
-    this.latestActiveIndexRoots.set(latestActiveIndexRoots);
+    this.latestActiveIndexRoots.set(ObservableListImpl.wrapIfNeeded(latestActiveIndexRoots));
   }
 
   @Override
@@ -354,7 +354,7 @@ public class BeaconStateImpl implements MutableBeaconState {
 
   public void setLatestSlashedBalances(
       WriteList<EpochNumber, Gwei> latestSlashedBalances) {
-    this.latestSlashedBalances.set(latestSlashedBalances);
+    this.latestSlashedBalances.set(ObservableListImpl.wrapIfNeeded(latestSlashedBalances));
   }
 
   @Override
@@ -373,7 +373,7 @@ public class BeaconStateImpl implements MutableBeaconState {
 
   public void setHistoricalRoots(
       WriteList<Integer, Hash32> historicalRoots) {
-    this.historicalRoots.set(historicalRoots);
+    this.historicalRoots.set(ObservableListImpl.wrapIfNeeded(historicalRoots));
   }
 
   @Override
@@ -393,7 +393,7 @@ public class BeaconStateImpl implements MutableBeaconState {
 
   public void setEth1DataVotes(
       WriteList<Integer, Eth1Data> eth1DataVotes) {
-    this.eth1DataVotes.set(eth1DataVotes);
+    this.eth1DataVotes.set(ObservableListImpl.wrapIfNeeded(eth1DataVotes));
   }
 
   @Override

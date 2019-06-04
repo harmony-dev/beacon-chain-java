@@ -41,6 +41,15 @@ public class ObservableListImpl<IndexType extends Number, ValueType>
     return new ObservableListImpl<>(WriteList.wrap(srcList, indexConverter));
   }
 
+  public static <IndexType1 extends Number, ValueType1> WriteList<IndexType1, ValueType1> wrapIfNeeded(
+      WriteList<IndexType1, ValueType1> writeList) {
+    if (!(writeList instanceof ObservableListImpl)) {
+      return new ObservableListImpl<>(writeList);
+    }
+
+    return writeList;
+  }
+
   public static <IndexType1 extends Number, ValueType1> WriteList<IndexType1, ValueType1> create(
       Function<Integer, IndexType1> indexConverter) {
     return new ObservableListImpl<>(WriteList.create(indexConverter));

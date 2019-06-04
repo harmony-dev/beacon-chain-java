@@ -35,6 +35,9 @@ public class ObservableCompositeHelper implements UpdateListener, ObservableComp
      * then a special listener is added to this value to notify the parent container
      */
     public void set(C val) {
+      if (value instanceof ObservableComposite && !(val instanceof ObservableComposite)) {
+        throw new RuntimeException("An attempt to override observable value with non-observable");
+      }
       if (val instanceof ObservableComposite) {
         ((ObservableComposite)val).getUpdateListener(PARENT_OBSERVER_ID, () ->
             new UpdateListener() {
