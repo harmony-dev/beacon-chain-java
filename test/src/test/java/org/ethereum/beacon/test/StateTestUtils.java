@@ -57,7 +57,7 @@ import java.util.stream.Collectors;
 public abstract class StateTestUtils {
   private StateTestUtils() {}
 
-  public static Pair<BeaconBlock, Optional<String>> parseBlockData(
+  public static BeaconBlock parseBlockData(
       StateTestCase.BlockData blockData) {
     Eth1Data eth1Data1 = parseEth1Data(blockData.getBody().getEth1Data());
 
@@ -160,7 +160,7 @@ public abstract class StateTestUtils {
             blockBody,
             BLSSignature.wrap(Bytes96.fromHexString(blockData.getSignature())));
 
-    return Pair.with(block, Optional.empty());
+    return block;
   }
 
   public static IndexedAttestation parseSlashableAttestation(IndexedAttestationData data) {

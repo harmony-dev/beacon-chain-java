@@ -2,11 +2,13 @@ package org.ethereum.beacon.test.runner.state;
 
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconStateEx;
+import org.ethereum.beacon.consensus.BlockTransition;
 import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.consensus.spec.SpecCommons;
 import org.ethereum.beacon.consensus.transition.BeaconStateExImpl;
 import org.ethereum.beacon.consensus.transition.EmptySlotTransition;
 import org.ethereum.beacon.consensus.transition.ExtendedSlotTransition;
+import org.ethereum.beacon.consensus.transition.PerBlockTransition;
 import org.ethereum.beacon.consensus.transition.PerEpochTransition;
 import org.ethereum.beacon.consensus.transition.PerSlotTransition;
 import org.ethereum.beacon.consensus.transition.StateCachingTransition;
@@ -35,6 +37,7 @@ import org.ethereum.beacon.test.type.state.StateTestCase;
 import org.ethereum.beacon.test.type.state.StateTestCase.BeaconStateData;
 import org.javatuples.Pair;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 
@@ -97,10 +100,17 @@ public class StateRunner implements Runner {
         processingError = processRegistryUpdates(latestState);
         break;
       case "slots":
-        Pair<Optional<String>, BeaconState> res = processSlots(testCase.getSlots(), latestState);
-        processingError = res.getValue0();
+        Pair<Optional<String>, BeaconState> processingSlots = processSlots(testCase.getSlots(), latestState);
+        processingError = processingSlots.getValue0();
         if (!processingError.isPresent()) {
-          latestState = res.getValue1();
+          latestState = processingSlots.getValue1();
+        }
+        break;
+      case "blocks":
+        Pair<Optional<String>, BeaconState> processingBlocks = processBlocks(testCase.getBeaconBlocks(), latestState);
+        processingError = processingBlocks.getValue0();
+        if (!processingError.isPresent()) {
+          latestState = processingBlocks.getValue1();
         }
         break;
       default:
@@ -240,6 +250,31 @@ public class StateRunner implements Runner {
     try {
       BeaconStateEx res = slotTransition.apply(stateEx, stateEx.getSlot().plus(slots));
       return Pair.with(Optional.empty(), res.createMutableCopy());
+    } catch (SpecCommons.SpecAssertionFailed | IllegalArgumentException ex) {
+      return Pair.with(Optional.of(ex.getMessage()), null);
+    }
+  }
+
+  private Pair<Optional<String>, BeaconState> processBlocks(List<BeaconBlock> blocks, BeaconState state) {
+    StateTransition<BeaconStateEx> stateCaching = new StateCachingTransition(spec);
+    StateTransition<BeaconStateEx> perEpochTransition = new PerEpochTransition(spec);
+    StateTransition<BeaconStateEx> perSlotTransition = new PerSlotTransition(spec);
+    BlockTransition<BeaconStateEx> perBlockTransition = new PerBlockTransition(spec);
+    EmptySlotTransition slotTransition = new EmptySlotTransition(
+        new ExtendedSlotTransition(stateCaching, new PerEpochTransition(spec) {
+          @Override
+          public BeaconStateEx apply(BeaconStateEx stateEx) {
+            return perEpochTransition.apply(stateEx);
+          }
+        }, perSlotTransition, spec));
+
+    BeaconStateEx stateEx = new BeaconStateExImpl(state);
+    try {
+      for (BeaconBlock block : blocks) {
+        stateEx = slotTransition.apply(stateEx, block.getSlot());
+        stateEx = perBlockTransition.apply(stateEx, block);
+      }
+      return Pair.with(Optional.empty(), stateEx.createMutableCopy());
     } catch (SpecCommons.SpecAssertionFailed | IllegalArgumentException ex) {
       return Pair.with(Optional.of(ex.getMessage()), null);
     }

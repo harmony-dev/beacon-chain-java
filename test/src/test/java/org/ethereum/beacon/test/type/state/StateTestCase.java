@@ -15,6 +15,7 @@ import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Bitfield;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ValidatorIndex;
+import org.ethereum.beacon.test.StateTestUtils;
 import org.ethereum.beacon.test.type.BlsSignedTestCase;
 import org.ethereum.beacon.test.type.NamedTestCase;
 import org.ethereum.beacon.test.type.state.StateTestCase.BeaconStateData.AttestationData.AttestationDataContainer;
@@ -60,6 +61,8 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
   private BlockData.BlockBodyData.VoluntaryExitData voluntaryExit;
   @JsonProperty
   private BlockData block;
+  @JsonProperty
+  private List<BlockData> blocks;
   @JsonProperty
   private Integer slots;
 
@@ -131,7 +134,7 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
   }
 
   public BeaconBlock getBeaconBlock() {
-    return parseBlockData(getBlock()).getValue0();
+    return parseBlockData(getBlock());
   }
 
 
@@ -185,6 +188,18 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
 
   public void setSlots(Integer slots) {
     this.slots = slots;
+  }
+
+  public List<BlockData> getBlocks() {
+    return blocks;
+  }
+
+  public List<BeaconBlock> getBeaconBlocks() {
+    return blocks.stream().map(StateTestUtils::parseBlockData).collect(Collectors.toList());
+  }
+
+  public void setBlocks(List<BlockData> blocks) {
+    this.blocks = blocks;
   }
 
   public BeaconStateData getPre() {

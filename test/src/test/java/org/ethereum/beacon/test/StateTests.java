@@ -143,4 +143,17 @@ public class StateTests extends TestUtils {
           return testRunner.run();
         });
   }
+
+  @Test
+  public void testSanityBlocks() {
+    final String type = "blocks";
+    Path testFileDir = Paths.get(PATH_TO_TESTS, SANITY_PROCESSING_DIR, type);
+    runTestsInResourceDir(
+        testFileDir,
+        StateTest.class,
+        input -> {
+          StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1(), type);
+          return testRunner.run();
+        });
+  }
 }
