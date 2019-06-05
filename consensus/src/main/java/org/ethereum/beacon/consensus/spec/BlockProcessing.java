@@ -4,6 +4,7 @@ import static org.ethereum.beacon.core.spec.SignatureDomains.BEACON_PROPOSER;
 import static org.ethereum.beacon.core.spec.SignatureDomains.RANDAO;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
 import org.ethereum.beacon.core.BeaconBlock;
@@ -199,6 +200,7 @@ public interface BlockProcessing extends HelperFunction {
         assert slashed_any */
     List<ValidatorIndex> intersection = new ArrayList<>(attesting_indices_1);
     intersection.retainAll(attesting_indices_2);
+    intersection.sort(Comparator.comparingLong(UInt64::longValue));
     for (ValidatorIndex index : intersection) {
       if (is_slashable_validator(state.getValidatorRegistry().get(index), get_current_epoch(state))) {
         slash_validator(state, index);

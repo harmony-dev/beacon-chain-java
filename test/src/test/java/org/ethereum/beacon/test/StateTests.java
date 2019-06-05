@@ -27,7 +27,6 @@ public class StateTests extends TestUtils {
   }
 
   @Test
-  @Ignore("Success cases fail because validators order is guaranteed, delayed until fixtures regeneration")
   public void testAttesterSlashingOperations() {
     final String type = "attester_slashing";
     Path testFileDir = Paths.get(PATH_TO_TESTS, OPERATIONS_TESTS_DIR, type);

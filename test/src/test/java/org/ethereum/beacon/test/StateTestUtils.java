@@ -46,6 +46,7 @@ import tech.pegasys.artemis.util.bytes.Bytes4;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.collections.ReadVector;
+import tech.pegasys.artemis.util.collections.WriteList;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 import java.util.ArrayList;
@@ -190,6 +191,7 @@ public abstract class StateTestUtils {
     state.setFinalizedRoot(Hash32.fromHexString(data.getFinalizedRoot()));
     state.setLatestBlockHeader(parseBeaconBlockHeader(data.getLatestBlockHeader()));
     state.setLatestEth1Data(parseEth1Data(data.getLatestEth1Data()));
+    state.setEth1DataVotes(WriteList.wrap(data.getEth1DataVotes().stream().map(StateTestUtils::parseEth1Data).collect(Collectors.toList()), Integer::new));
     state.setDepositIndex(UInt64.valueOf(data.getDepositIndex()));
 
     state.getValidatorRegistry().replaceAll(parseValidatorRegistry(data.getValidatorRegistry()));

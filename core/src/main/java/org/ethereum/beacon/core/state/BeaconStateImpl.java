@@ -391,6 +391,7 @@ public class BeaconStateImpl implements MutableBeaconState {
     return eth1DataVotes.get();
   }
 
+  @Override
   public void setEth1DataVotes(
       WriteList<Integer, Eth1Data> eth1DataVotes) {
     this.eth1DataVotes.get().replaceAll(eth1DataVotes);
