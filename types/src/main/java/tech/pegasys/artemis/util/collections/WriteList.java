@@ -25,11 +25,11 @@ public interface WriteList<IndexType extends Number, ValueType>
 
   boolean remove(ValueType o);
 
-  boolean addAll(@NotNull Collection<? extends ValueType> c);
+  boolean addAll(@NotNull Iterable<? extends ValueType> c);
 
-  boolean addAll(IndexType index, @NotNull Collection<? extends ValueType> c);
+  boolean addAll(IndexType index, @NotNull Iterable<? extends ValueType> c);
 
-  default void replaceAll(@NotNull Collection<? extends ValueType> c) {
+  default void replaceAll(@NotNull Iterable<? extends ValueType> c) {
     this.clear();
     this.addAll(c);
   }
