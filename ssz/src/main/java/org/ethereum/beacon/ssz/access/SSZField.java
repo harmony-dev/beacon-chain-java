@@ -1,9 +1,11 @@
 package org.ethereum.beacon.ssz.access;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.List;
 import org.ethereum.beacon.ssz.annotation.SSZ;
+import org.ethereum.beacon.ssz.incremental.ObservableListImpl;
 import tech.pegasys.artemis.util.collections.ReadList;
 
 /**
@@ -23,11 +25,53 @@ public class SSZField {
           new ParametrizedTypeImpl(clazz, ((List) value).get(0).getClass()));
     }
     if (value instanceof ReadList && !((ReadList) value).isEmpty()) {
-      return new SSZField(
-          new ParametrizedTypeImpl(
-              clazz, ((ReadList) value).size().getClass(), ((ReadList) value).get(0).getClass()));
+      if (value instanceof ObservableListImpl && ((ObservableListImpl) value).isVector()) {
+        // XXX: because we lost this without annotations
+        final int vectorSize = ((ObservableListImpl) value).size().intValue();
+        return new SSZField(
+            new ParametrizedTypeImpl(
+                clazz, ((ReadList) value).size().getClass(), ((ReadList) value).get(0).getClass()),
+        new SSZVector(vectorSize), null, null, null, null);
+      } else {
+        return new SSZField(
+            new ParametrizedTypeImpl(
+                clazz, ((ReadList) value).size().getClass(), ((ReadList) value).get(0).getClass()));
+      }
     }
     return new SSZField(clazz);
+  }
+
+  static class SSZVector implements SSZ {
+    private int vectorLength;
+
+    public SSZVector(int vectorLength) {
+      this.vectorLength = vectorLength;
+    }
+
+    @Override
+    public java.lang.String type() {
+      return null;
+    }
+
+    @Override
+    public int vectorLength() {
+      return vectorLength;
+    }
+
+    @Override
+    public java.lang.String vectorLengthVar() {
+      return null;
+    }
+
+    @Override
+    public int order() {
+      return 0;
+    }
+
+    @Override
+    public Class<? extends Annotation> annotationType() {
+      return SSZ.class;
+    }
   }
 
   /**

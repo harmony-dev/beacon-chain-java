@@ -43,7 +43,7 @@ public class BeaconStateImpl implements MutableBeaconState {
   /* Randomness and committees */
 
   private ObsValue<WriteList<EpochNumber, Hash32>> latestRandaoMixes =
-      obsHelper.newValue(ObservableListImpl.create(EpochNumber::of));
+      obsHelper.newValue(ObservableListImpl.create(EpochNumber::of, true));
   private ObsValue<ShardNumber> latestStartShard = obsHelper.newValue(ShardNumber.ZERO);
 
   /* Finality */
@@ -63,17 +63,17 @@ public class BeaconStateImpl implements MutableBeaconState {
   /* Recent state */
 
   private ObsValue<WriteList<ShardNumber, Crosslink>> previousCrosslinks =
-      obsHelper.newValue(ObservableListImpl.create(ShardNumber::of));
+      obsHelper.newValue(ObservableListImpl.create(ShardNumber::of, true));
   private ObsValue<WriteList<ShardNumber, Crosslink>> currentCrosslinks =
-      obsHelper.newValue(ObservableListImpl.create(ShardNumber::of));
+      obsHelper.newValue(ObservableListImpl.create(ShardNumber::of, true));
   private ObsValue<WriteList<SlotNumber, Hash32>> latestBlockRoots =
-      obsHelper.newValue(ObservableListImpl.create(SlotNumber::of));
+      obsHelper.newValue(ObservableListImpl.create(SlotNumber::of, true));
   private ObsValue<WriteList<SlotNumber, Hash32>> latestStateRoots =
-      obsHelper.newValue(ObservableListImpl.create(SlotNumber::of));
+      obsHelper.newValue(ObservableListImpl.create(SlotNumber::of, true));
   private ObsValue<WriteList<EpochNumber, Hash32>> latestActiveIndexRoots =
-      obsHelper.newValue(ObservableListImpl.create(EpochNumber::of));
+      obsHelper.newValue(ObservableListImpl.create(EpochNumber::of, true));
   private ObsValue<WriteList<EpochNumber, Gwei>> latestSlashedBalances =
-      obsHelper.newValue(ObservableListImpl.create(EpochNumber::of));
+      obsHelper.newValue(ObservableListImpl.create(EpochNumber::of, true));
   private ObsValue<BeaconBlockHeader> latestBlockHeader = obsHelper.newValue(BeaconBlockHeader.EMPTY);
   private ObsValue<WriteList<Integer, Hash32>> historicalRoots =
       obsHelper.newValue(ObservableListImpl.create(Integer::valueOf));

@@ -21,17 +21,26 @@ public class ObservableListImpl<IndexType extends Number, ValueType>
 
   private final WriteList<IndexType, ValueType> delegate;
   private final ObservableCompositeHelper observableHelper;
+  private final boolean vector;
 
   public ObservableListImpl(
       WriteList<IndexType, ValueType> delegate) {
-    this(delegate,  new ObservableCompositeHelper());
+    this(delegate,false);
   }
 
   public ObservableListImpl(
       WriteList<IndexType, ValueType> delegate,
-      ObservableCompositeHelper observableHelper) {
+      boolean vector) {
+    this(delegate,  new ObservableCompositeHelper(), vector);
+  }
+
+  public ObservableListImpl(
+      WriteList<IndexType, ValueType> delegate,
+      ObservableCompositeHelper observableHelper,
+      boolean vector) {
     this.delegate = delegate;
     this.observableHelper = observableHelper;
+    this.vector = vector;
   }
 
   public static <IndexType1 extends Number, ValueType1> WriteList<IndexType1, ValueType1> wrap(
@@ -45,16 +54,21 @@ public class ObservableListImpl<IndexType extends Number, ValueType>
     return new ObservableListImpl<>(WriteList.create(indexConverter));
   }
 
+  public static <IndexType1 extends Number, ValueType1> WriteList<IndexType1, ValueType1> create(
+      Function<Integer, IndexType1> indexConverter, boolean vector) {
+    return new ObservableListImpl<>(WriteList.create(indexConverter), vector);
+  }
+
   @Override
   public WriteList<IndexType, ValueType> createMutableCopy() {
-    return new ObservableListImpl<>(delegate.createMutableCopy(), observableHelper.fork());
+    return new ObservableListImpl<>(delegate.createMutableCopy(), observableHelper.fork(), vector);
   }
 
   @Override
   public ReadList<IndexType, ValueType> createImmutableCopy() {
     // TODO dirty hack with cast
     return new ObservableListImpl<>(
-        (WriteList<IndexType, ValueType>) delegate.createImmutableCopy(), observableHelper.fork());
+        (WriteList<IndexType, ValueType>) delegate.createImmutableCopy(), observableHelper.fork(), vector);
   }
 
 
@@ -227,5 +241,9 @@ public class ObservableListImpl<IndexType extends Number, ValueType>
     }
 
     return delegate.equals(obj);
+  }
+
+  public boolean isVector() {
+    return vector;
   }
 }
