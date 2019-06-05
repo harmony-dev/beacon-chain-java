@@ -1,6 +1,5 @@
 package org.ethereum.beacon.ssz.incremental;
 
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
@@ -39,15 +38,6 @@ public class ObservableListImpl<IndexType extends Number, ValueType>
       List<ValueType1> srcList,
       Function<Integer, IndexType1> indexConverter) {
     return new ObservableListImpl<>(WriteList.wrap(srcList, indexConverter));
-  }
-
-  public static <IndexType1 extends Number, ValueType1> WriteList<IndexType1, ValueType1> wrapIfNeeded(
-      WriteList<IndexType1, ValueType1> writeList) {
-    if (!(writeList instanceof ObservableListImpl)) {
-      return new ObservableListImpl<>(writeList);
-    }
-
-    return writeList;
   }
 
   public static <IndexType1 extends Number, ValueType1> WriteList<IndexType1, ValueType1> create(
