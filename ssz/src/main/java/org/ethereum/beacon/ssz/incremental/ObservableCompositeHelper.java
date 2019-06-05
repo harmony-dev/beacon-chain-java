@@ -36,7 +36,7 @@ public class ObservableCompositeHelper implements UpdateListener, ObservableComp
      */
     public void set(C val) {
       if (value instanceof ObservableComposite && !(val instanceof ObservableComposite)) {
-        throw new RuntimeException("An attempt to override observable value with non-observable");
+        throw new IllegalArgumentException("An attempt to override observable value with non-observable");
       }
       if (val instanceof ObservableComposite) {
         ((ObservableComposite)val).getUpdateListener(PARENT_OBSERVER_ID, () ->
