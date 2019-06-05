@@ -72,13 +72,34 @@ class ListImpl<IndexType extends Number, ValueType>
   }
 
   @Override
-  public boolean addAll(@NotNull Collection<? extends ValueType> c) {
-    return backedList.addAll(c);
+  public boolean addAll(@NotNull Iterable<? extends ValueType> c) {
+    if (c instanceof Collection) {
+      return backedList.addAll((Collection<? extends ValueType>) c);
+    } else if (c instanceof ListImpl) {
+      return backedList.addAll(((ListImpl<?, ? extends ValueType>) c).backedList);
+    } else {
+      boolean hasAny = false;
+      for (ValueType val : c) {
+        backedList.add(val);
+        hasAny = true;
+      }
+      return hasAny;
+    }
   }
 
   @Override
-  public boolean addAll(IndexType index, @NotNull Collection<? extends ValueType> c) {
-    return backedList.addAll(index.intValue(), c);
+  public boolean addAll(IndexType index, @NotNull Iterable<? extends ValueType> c) {
+    if (c instanceof Collection) {
+      return backedList.addAll(index.intValue(), (Collection<? extends ValueType>) c);
+    } else if (c instanceof ListImpl) {
+      return backedList.addAll(index.intValue(), ((ListImpl<?, ? extends ValueType>) c).backedList);
+    } else {
+      int idx = index.intValue();
+      for (ValueType val : c) {
+        backedList.add(idx++, val);
+      }
+      return idx > index.intValue();
+    }
   }
 
   @Override

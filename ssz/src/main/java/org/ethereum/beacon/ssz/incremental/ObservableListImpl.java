@@ -97,15 +97,15 @@ public class ObservableListImpl<IndexType extends Number, ValueType>
   }
 
   @Override
-  public boolean addAll(Collection<? extends ValueType> c) {
+  public boolean addAll(Iterable<? extends ValueType> c) {
     int size = size().intValue();
     boolean ret = delegate.addAll(c);
-    observableHelper.childrenUpdated(size, c.size());
+    observableHelper.childrenUpdated(size, ReadList.sizeOf(c));
     return ret;
   }
 
   @Override
-  public boolean addAll(IndexType index, Collection<? extends ValueType> c) {
+  public boolean addAll(IndexType index, Iterable<? extends ValueType> c) {
     boolean ret = delegate.addAll(index, c);
     observableHelper.childrenUpdated(index.intValue(), size().intValue() - index.intValue());
     return ret;
