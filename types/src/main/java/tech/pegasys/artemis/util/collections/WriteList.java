@@ -11,12 +11,22 @@ public interface WriteList<IndexType extends Number, ValueType>
 
   static <IndexType extends Number, ValueType> WriteList<IndexType, ValueType>
       wrap(List<ValueType> srcList, Function<Integer, IndexType> indexConverter) {
-    return ListImpl.wrap(srcList, indexConverter);
+    return WriteList.wrap(srcList, indexConverter, false);
   }
 
   static <IndexType extends Number, ValueType> WriteList<IndexType, ValueType>
       create(Function<Integer, IndexType> indexConverter) {
-    return new ListImpl<>(indexConverter);
+    return WriteList.create(indexConverter, false);
+  }
+
+  static <IndexType extends Number, ValueType> WriteList<IndexType, ValueType>
+  wrap(List<ValueType> srcList, Function<Integer, IndexType> indexConverter, boolean vector) {
+    return ListImpl.wrap(srcList, indexConverter, vector);
+  }
+
+  static <IndexType extends Number, ValueType> WriteList<IndexType, ValueType>
+  create(Function<Integer, IndexType> indexConverter, boolean vector) {
+    return new ListImpl<>(indexConverter, vector);
   }
 
   boolean add(ValueType valueType);

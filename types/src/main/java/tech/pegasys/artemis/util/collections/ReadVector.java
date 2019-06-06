@@ -10,7 +10,7 @@ public interface ReadVector<IndexType extends Number, ValueType>
   /** Wraps with creating of new vector */
   static <IndexType extends Number, ValueType> ReadVector<IndexType, ValueType> wrap(
       List<ValueType> srcList, Function<Integer, IndexType> indexConverter) {
-    return ListImpl.wrap(new ArrayList<>(srcList), indexConverter);
+    return ListImpl.wrap(new ArrayList<>(srcList), indexConverter, true);
   }
 
   default ReadVector<IndexType, ValueType> vectorCopy() {

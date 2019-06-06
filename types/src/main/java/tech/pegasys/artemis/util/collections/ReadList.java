@@ -12,7 +12,7 @@ public interface ReadList<IndexType extends Number, ValueType> extends Iterable<
   /** Wraps with creating of new list */
   static <IndexType extends Number, ValueType> ReadList<IndexType, ValueType> wrap(
       List<ValueType> srcList, Function<Integer, IndexType> indexConverter) {
-    return ListImpl.wrap(new ArrayList<>(srcList), indexConverter);
+    return ListImpl.wrap(new ArrayList<>(srcList), indexConverter, false);
   }
 
   IndexType size();
@@ -57,5 +57,9 @@ public interface ReadList<IndexType extends Number, ValueType> extends Iterable<
       }
       return counter;
     }
+  }
+
+  default boolean isVector() {
+    return false;
   }
 }
