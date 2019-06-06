@@ -25,17 +25,18 @@ public class SSZField {
           new ParametrizedTypeImpl(clazz, ((List) value).get(0).getClass()));
     }
     if (value instanceof ReadList && !((ReadList) value).isEmpty()) {
-      if (value instanceof ObservableListImpl && ((ObservableListImpl) value).isVector()) {
+      ReadList readList = (ReadList) value;
+      if (readList.isVector()) {
         // XXX: because we lost this without annotations
-        final int vectorSize = ((ObservableListImpl) value).size().intValue();
+        final int vectorSize = readList.size().intValue();
         return new SSZField(
             new ParametrizedTypeImpl(
-                clazz, ((ReadList) value).size().getClass(), ((ReadList) value).get(0).getClass()),
+                clazz, ((ReadList) value).size().getClass(), readList.get(0).getClass()),
         new SSZVector(vectorSize), null, null, null, null);
       } else {
         return new SSZField(
             new ParametrizedTypeImpl(
-                clazz, ((ReadList) value).size().getClass(), ((ReadList) value).get(0).getClass()));
+                clazz, ((ReadList) value).size().getClass(), readList.get(0).getClass()));
       }
     }
     return new SSZField(clazz);
