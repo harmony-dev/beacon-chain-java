@@ -210,7 +210,7 @@ public class NodeLauncher {
     }
 
     Flux.from(wireApiSub.inboundAttestationsStream())
-        .publishOn(schedulers.reactorEvents())
+        .publishOn(schedulers.events().toReactor())
         .subscribe(allAttestations);
 
     Flux<BeaconBlock> allNewBlocks = Flux.merge(ownBlocks, wireApiSub.inboundBlocksStream());
@@ -222,7 +222,7 @@ public class NodeLauncher {
         wireApiSyncRemote,
         syncQueue,
         1,
-        schedulers.reactorEvents());
+        schedulers.events());
     syncManager.setRequestsDelay(Duration.ofSeconds(1), Duration.ofSeconds(5));
 
     if (startSyncManager) {

@@ -260,7 +260,7 @@ public class SimulatorLauncher implements Runnable {
           logger.debug("New observable state: " + os.toString(spec));
         });
     Flux.from(observer.getWireApi().inboundAttestationsStream())
-        .publishOn(observer.getSchedulers().reactorEvents())
+        .publishOn(observer.getSchedulers().events().toReactor())
         .subscribe(att -> {
           attestations.add(att);
           logger.debug("New attestation received: " + att.toStringShort(specConstants));

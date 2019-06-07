@@ -6,13 +6,17 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 public class ExecutorScheduler implements Scheduler {
 
   private final ScheduledExecutorService executorService;
+  private final Supplier<Long> timeSupplier;
+  private reactor.core.scheduler.Scheduler cachedReactor;
 
-  public ExecutorScheduler(ScheduledExecutorService executorService) {
+  public ExecutorScheduler(ScheduledExecutorService executorService, Supplier<Long> timeSupplier) {
     this.executorService = executorService;
+    this.timeSupplier = timeSupplier;
   }
 
   @Override
@@ -62,5 +66,22 @@ public class ExecutorScheduler implements Scheduler {
     }, initialDelay.toMillis(), period.toMillis(), TimeUnit.MILLISECONDS);
 
     return ret;
+  }
+
+  @Override
+  public reactor.core.scheduler.Scheduler toReactor() {
+    if (cachedReactor == null) {
+      cachedReactor = convertToReactor(this);
+    }
+    return cachedReactor;
+  }
+
+  @Override
+  public long getCurrentTime() {
+    return timeSupplier.get();
+  }
+
+  public ScheduledExecutorService getExecutorService() {
+    return executorService;
   }
 }

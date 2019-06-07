@@ -84,7 +84,7 @@ public class NodeTest {
         ControlledSchedulers schedulers = controlledSchedulers.createNew("master");
         nettyServer.start();
         ConnectionManager<SocketAddress> connectionManager = new ConnectionManager<>(
-            nettyServer, null, schedulers.reactorEvents());
+            nettyServer, null, schedulers.events());
         masterNode = new NodeLauncher(
             specBuilder.buildSpec(),
             depositContract,
@@ -110,7 +110,7 @@ public class NodeTest {
         ControlledSchedulers schedulers = controlledSchedulers.createNew("slave");
         NettyClient nettyClient = new NettyClient();
         slaveConnectionManager = new ConnectionManager<>(
-            null, nettyClient, schedulers.reactorEvents());
+            null, nettyClient, schedulers.events());
         slaveNode = new NodeLauncher(
             specBuilder.buildSpec(),
             depositContract,

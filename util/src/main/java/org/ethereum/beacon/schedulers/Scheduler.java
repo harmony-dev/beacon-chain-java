@@ -16,6 +16,12 @@ public interface Scheduler {
 
   CompletableFuture<Void> executeAtFixedRate(Duration initialDelay, Duration period, RunnableEx task);
 
+  long getCurrentTime();
+
+  default reactor.core.scheduler.Scheduler toReactor() {
+    return convertToReactor(this);
+  }
+
   default CompletableFuture<Void> executeR(Runnable task) {
     return execute(task::run);
   }
@@ -38,4 +44,17 @@ public interface Scheduler {
         executeWithDelay(futureTimeout,
             () -> {throw exceptionSupplier.get();}));
   }
+
+  default reactor.core.scheduler.Scheduler convertToReactor(Scheduler scheduler) {
+    if (scheduler instanceof ExecutorScheduler) {
+      return new DelegatingReactorScheduler(
+          reactor.core.scheduler.Schedulers.fromExecutorService(
+              ((ExecutorScheduler) scheduler).getExecutorService()),
+          this::getCurrentTime);
+    } else {
+      throw new UnsupportedOperationException(
+          "Conversion from custom Scheduler to Reactor Scheduler not implemented yet.");
+    }
+  }
 }
+

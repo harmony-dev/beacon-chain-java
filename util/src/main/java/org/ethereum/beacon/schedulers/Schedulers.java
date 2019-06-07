@@ -73,12 +73,6 @@ public interface Schedulers {
   Scheduler events();
 
   /**
-   * Reactor Scheduler decorator for {@link #events()} Scheduler. Those two shares the
-   * same thread/pool
-   */
-  reactor.core.scheduler.Scheduler reactorEvents();
-
-  /**
    * Creates new single thread Scheduler with the specified thread name
    */
   default Scheduler newSingleThreadDaemon(String threadName) {

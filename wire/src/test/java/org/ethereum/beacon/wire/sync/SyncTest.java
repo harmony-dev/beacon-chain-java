@@ -84,7 +84,7 @@ public class SyncTest {
         asyncSyncServer,
         syncQueue,
         1,
-        testPeer.getSchedulers().reactorEvents());
+        testPeer.getSchedulers().events());
 
     AtomicBoolean synced = new AtomicBoolean();
     Flux.from(testPeer.getBeaconChain().getBlockStatesStream())

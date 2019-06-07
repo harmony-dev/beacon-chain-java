@@ -25,7 +25,7 @@ public abstract class AbstractSchedulers implements Schedulers {
   protected abstract ScheduledExecutorService createExecutor(String namePattern, int threads);
 
   protected Scheduler createExecutorScheduler(ScheduledExecutorService executorService) {
-    return new ExecutorScheduler(executorService);
+    return new ExecutorScheduler(executorService, this::getCurrentTime);
   }
 
   @Override
@@ -89,22 +89,6 @@ public abstract class AbstractSchedulers implements Schedulers {
       eventsExecutor = createExecutor("Schedulers-events", 1);
     }
     return eventsExecutor;
-  }
-
-  @Override
-  public reactor.core.scheduler.Scheduler reactorEvents() {
-    if (eventsReactorScheduler == null) {
-      synchronized (this) {
-        if (eventsReactorScheduler == null) {
-          eventsReactorScheduler = createReactorEvents();
-        }
-      }
-    }
-    return eventsReactorScheduler;
-  }
-
-  protected reactor.core.scheduler.Scheduler createReactorEvents() {
-    return reactor.core.scheduler.Schedulers.fromExecutor(getEventsExecutor());
   }
 
   @Override

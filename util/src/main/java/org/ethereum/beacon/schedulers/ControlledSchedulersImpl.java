@@ -19,7 +19,8 @@ public class ControlledSchedulersImpl extends AbstractSchedulers implements Cont
 
   @Override
   protected Scheduler createExecutorScheduler(ScheduledExecutorService executorService) {
-    return new ErrorHandlingScheduler(new ExecutorScheduler(executorService), e -> e.printStackTrace());
+    return new ErrorHandlingScheduler(
+        new ExecutorScheduler(executorService, this::getCurrentTime), e -> e.printStackTrace());
   }
 
   @Override

@@ -6,6 +6,7 @@ import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.start.common.Launcher;
 import org.ethereum.beacon.simulator.SimulatorLauncher;
 import org.ethereum.beacon.simulator.SimulatorLauncher.Builder;
@@ -28,7 +29,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.ReplayProcessor;
-import reactor.core.scheduler.Schedulers;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt64;
 
@@ -36,7 +36,7 @@ public class PeersTest {
 
   @Test
   public void test0() {
-    SimpleProcessor<Integer> processor = new SimpleProcessor<>(Schedulers.single(), "aaa");
+    SimpleProcessor<Integer> processor = new SimpleProcessor<>(Schedulers.createDefault().events(), "aaa");
     processor.onNext(1);
     Integer i = Mono.from(processor).block(Duration.ofMillis(300));
     System.out.println(i);
@@ -81,7 +81,7 @@ public class PeersTest {
         server.start().await();
         System.out.println("Peer 0 listening on port 40001");
         ConnectionManager<SocketAddress> connectionManager = new ConnectionManager<>(
-            server, null, Schedulers.single());
+            server, null, Schedulers.createDefault().events());
 
         SSZSerializer ssz = new SSZBuilder().buildSerializer();
         MessageSerializer messageSerializer = new SSZMessageSerializer(ssz);
@@ -117,7 +117,7 @@ public class PeersTest {
       {
         // peer 1
         ConnectionManager<SocketAddress> connectionManager = new ConnectionManager<>(
-            null, new NettyClient(), Schedulers.single());
+            null, new NettyClient(), Schedulers.createDefault().events());
 
         SSZSerializer ssz = new SSZBuilder().buildSerializer();
         MessageSerializer messageSerializer = new SSZMessageSerializer(ssz);
@@ -151,7 +151,7 @@ public class PeersTest {
             peerManager.getWireApiSync(),
             syncQueue,
             1,
-            peer1.getSchedulers().reactorEvents());
+            peer1.getSchedulers().events());
 
         CountDownLatch syncLatch = new CountDownLatch(1);
         Flux.from(peer1.getBeaconChain().getBlockStatesStream())

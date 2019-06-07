@@ -1,5 +1,6 @@
 package org.ethereum.beacon.stream;
 
+import org.ethereum.beacon.schedulers.Scheduler;
 import org.reactivestreams.Processor;
 import org.reactivestreams.Subscriber;
 import org.reactivestreams.Subscription;
@@ -7,7 +8,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxProcessor;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.ReplayProcessor;
-import reactor.core.scheduler.Scheduler;
 
 public class SimpleProcessor<T> implements Processor<T, T> {
   FluxProcessor<T, T> subscriber;
@@ -16,6 +16,10 @@ public class SimpleProcessor<T> implements Processor<T, T> {
   boolean subscribed;
 
   public SimpleProcessor(Scheduler scheduler, String name) {
+    this(scheduler.toReactor(), name);
+  }
+
+  public SimpleProcessor(reactor.core.scheduler.Scheduler scheduler, String name) {
     ReplayProcessor<T> processor = ReplayProcessor.cacheLast();
     subscriber = processor;
     sink = subscriber.sink();

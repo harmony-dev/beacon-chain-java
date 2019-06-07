@@ -46,10 +46,10 @@ public abstract class AbstractDepositContract implements DepositContract {
 
     chainStartStream =
         chainStartSink
-            .publishOn(this.schedulers.reactorEvents())
+            .publishOn(this.schedulers.events().toReactor())
             .doOnSubscribe(s -> chainStartSubscribedPriv())
             .name("PowClient.chainStart");
-    depositStream = new SimpleProcessor<>(this.schedulers.reactorEvents(), "PowClient.deposit");
+    depositStream = new SimpleProcessor<>(this.schedulers.events(), "PowClient.deposit");
     this.tree = new DepositBufferedMerkle(hashFunction, treeDepth, 1000);
   }
 

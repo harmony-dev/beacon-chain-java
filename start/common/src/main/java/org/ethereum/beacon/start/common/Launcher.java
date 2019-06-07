@@ -148,7 +148,7 @@ public class Launcher {
 
     DirectProcessor<Attestation> allAttestations = DirectProcessor.create();
     Flux.from(wireApi.inboundAttestationsStream())
-        .publishOn(schedulers.reactorEvents())
+        .publishOn(schedulers.events().toReactor())
         .subscribe(allAttestations);
 
     observableStateProcessor = new ObservableStateProcessorImpl(
@@ -186,7 +186,7 @@ public class Launcher {
     }
 
     Flux.from(wireApi.inboundBlocksStream())
-        .publishOn(schedulers.reactorEvents())
+        .publishOn(schedulers.events().toReactor())
         .subscribe(beaconChain::insert);
   }
 
