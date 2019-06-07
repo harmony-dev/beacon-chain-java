@@ -53,7 +53,7 @@ public class ConnectionManagerTest {
     TestClient client = new TestClient();
     ControlledSchedulers schedulers = Schedulers.createControlled();
     ConnectionManager<String> manager = new ConnectionManager<>(null, client,
-        schedulers.reactorEvents());
+        schedulers.events());
     Flux.from(manager.channelsStream()).subscribe(channels::add);
 
     manager.addActivePeer("1");

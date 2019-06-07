@@ -16,7 +16,7 @@ public class ProposedBlockProcessorImpl implements ProposedBlockProcessor {
 
   public ProposedBlockProcessorImpl(MutableBeaconChain beaconChain, Schedulers schedulers) {
     this.beaconChain = beaconChain;
-    blocksStream = new SimpleProcessor<>(schedulers.reactorEvents(), "ProposedBlocksProcessor.blocks");
+    blocksStream = new SimpleProcessor<>(schedulers.events(), "ProposedBlocksProcessor.blocks");
   }
 
   @Override

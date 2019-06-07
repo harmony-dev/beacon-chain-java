@@ -4,12 +4,17 @@ import java.time.Duration;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
+import javax.annotation.Nonnull;
+import reactor.core.Disposable;
 
 public class ErrorHandlingScheduler implements Scheduler {
 
   private final Scheduler delegate;
   private final Consumer<Throwable> errorHandler;
+  private reactor.core.scheduler.Scheduler cachedReactor;
 
   public ErrorHandlingScheduler(Scheduler delegate,
       Consumer<Throwable> errorHandler) {
@@ -46,6 +51,20 @@ public class ErrorHandlingScheduler implements Scheduler {
     return delegate.executeWithDelay(delay, () -> runAndHandleError(task));
   }
 
+  @Override
+  public long getCurrentTime() {
+    return delegate.getCurrentTime();
+  }
+
+  @Override
+  public reactor.core.scheduler.Scheduler toReactor() {
+    if (cachedReactor == null) {
+      cachedReactor = new ErrorHandlingReactorScheduler(delegate.toReactor(),
+          delegate::getCurrentTime);
+    }
+    return cachedReactor;
+  }
+
   private void runAndHandleError(RunnableEx runnable) throws Exception {
     try {
       runnable.run();
@@ -55,6 +74,67 @@ public class ErrorHandlingScheduler implements Scheduler {
     } catch (Throwable t) {
       errorHandler.accept(t);
       throw new ExecutionException(t);
+    }
+  }
+
+  private class ErrorHandlingReactorScheduler extends DelegatingReactorScheduler {
+
+    public ErrorHandlingReactorScheduler(reactor.core.scheduler.Scheduler delegate,
+        Supplier<Long> timeSupplier) {
+      super(delegate, timeSupplier);
+    }
+
+    @Nonnull
+    @Override
+    public Disposable schedule(@Nonnull Runnable task) {
+      return super.schedule(() -> runAndHandleError(task));
+    }
+
+    @Nonnull
+    @Override
+    public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
+      return super.schedule(() -> runAndHandleError(task), delay, unit);
+    }
+
+    @Nonnull
+    @Override
+    public Disposable schedulePeriodically(Runnable task, long initialDelay, long period,
+        TimeUnit unit) {
+      return super.schedulePeriodically(() -> runAndHandleError(task), initialDelay, period, unit);
+    }
+
+    @Nonnull
+    @Override
+    public Worker createWorker() {
+      return new DelegateWorker(super.createWorker()) {
+        @Nonnull
+        @Override
+        public Disposable schedule(@Nonnull Runnable task) {
+          return super.schedule(() -> runAndHandleError(task));
+        }
+
+        @Nonnull
+        @Override
+        public Disposable schedule(Runnable task, long delay, TimeUnit unit) {
+          return super.schedule(() -> runAndHandleError(task), delay, unit);
+        }
+
+        @Nonnull
+        @Override
+        public Disposable schedulePeriodically(Runnable task, long initialDelay, long period,
+            TimeUnit unit) {
+          return super.schedulePeriodically(() -> runAndHandleError(task), initialDelay, period, unit);
+        }
+      };
+    }
+
+    private void runAndHandleError(Runnable runnable) {
+      try {
+        runnable.run();
+      } catch (Throwable t) {
+        errorHandler.accept(t);
+        throw new RuntimeException(t);
+      }
     }
   }
 }

@@ -13,13 +13,11 @@ import org.ethereum.beacon.bench.BenchmarkReport;
 import org.ethereum.beacon.bench.BenchmarkUtils;
 import org.ethereum.beacon.chain.storage.impl.MemBeaconChainStorageFactory;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
-import org.ethereum.beacon.consensus.BeaconChainSpec.Builder;
 import org.ethereum.beacon.consensus.util.CachingBeaconChainSpec;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.state.Eth1Data;
-import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.crypto.BLS381;
@@ -136,7 +134,7 @@ public class BenchmarkRunner implements Runnable {
 
     Flux.from(instance.getSlotTicker().getTickerStream()).subscribe(slots::add);
     Flux.from(instance.getValidatorService().getAttestationsStream())
-        .publishOn(instance.getSchedulers().reactorEvents())
+        .publishOn(instance.getSchedulers().events().toReactor())
         .subscribe(attestations::add);
     Flux.from(instance.getBeaconChain().getBlockStatesStream())
         .subscribe(blockState -> blocks.add(blockState.getBlock()));

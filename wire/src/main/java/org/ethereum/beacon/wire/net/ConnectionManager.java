@@ -9,13 +9,13 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.ethereum.beacon.schedulers.Scheduler;
 import org.ethereum.beacon.wire.channel.Channel;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.ReplayProcessor;
-import reactor.core.scheduler.Scheduler;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 public class ConnectionManager<TAddress> {
@@ -71,7 +71,7 @@ public class ConnectionManager<TAddress> {
           activePeerConnections.remove(peerAddress);
           logger.info("Disconnected from active peer " + peerAddress);
         })
-        .delayElements(Duration.ofSeconds(RECONNECT_TIMEOUT_SECONDS), rxScheduler)
+        .delayElements(Duration.ofSeconds(RECONNECT_TIMEOUT_SECONDS), rxScheduler.toReactor())
         .repeat(() -> activePeers.contains(peerAddress))
         .subscribe();
   }

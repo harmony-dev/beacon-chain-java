@@ -22,6 +22,7 @@ import org.ethereum.beacon.chain.MutableBeaconChain.ImportResult;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.schedulers.Scheduler;
 import org.ethereum.beacon.wire.Feedback;
 import org.ethereum.beacon.wire.WireApiSync;
 import org.ethereum.beacon.wire.exceptions.WireInvalidConsensusDataException;
@@ -32,7 +33,6 @@ import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Scheduler;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
 public class SyncManagerImpl {
@@ -55,7 +55,6 @@ public class SyncManagerImpl {
 
   FluxSink<Publisher<BlockRequest>> requestsStreams;
   Flux<BlockRequest> blockRequestFlux;
-  Scheduler delayScheduler;
   Flux<BeaconBlock> finalizedBlockStream;
 
   private Disposable wireBlocksStreamSub;
@@ -84,7 +83,6 @@ public class SyncManagerImpl {
     this.syncApi = syncApi;
     this.syncQueue = syncQueue;
     this.maxConcurrentBlockRequests = maxConcurrentBlockRequests;
-    this.delayScheduler = delayScheduler;
 
     modeDetector = new ModeDetector(
         Flux.from(chain.getBlockStatesStream()).map(BeaconTuple::getBlock),
@@ -98,10 +96,10 @@ public class SyncManagerImpl {
                     case Long:
                       Flux<BlockRequest> blockRequestFlux = Flux.from(syncQueue.getBlockRequestsStream());
                       return requestsDelayLongMode.toMillis() == 0 ? blockRequestFlux
-                          : blockRequestFlux.delayElements(requestsDelayLongMode, delayScheduler);
+                          : blockRequestFlux.delayElements(requestsDelayLongMode, delayScheduler.toReactor());
                     case Short:
                       return Flux.from(syncQueue.getBlockRequestsStream())
-                          .delayElements(requestsDelayShortMode, delayScheduler);
+                          .delayElements(requestsDelayShortMode, delayScheduler.toReactor());
                     default:
                       throw new IllegalStateException();
                   }

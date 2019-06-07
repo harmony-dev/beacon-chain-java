@@ -29,7 +29,7 @@ public class LatestExecutorTest {
         return super.decorateTask(callable, task);
       }
     };
-    ExecutorScheduler scheduler = new ExecutorScheduler(executor);
+    ExecutorScheduler scheduler = new ExecutorScheduler(executor, System::currentTimeMillis);
 
     List<Integer> processedEvents = new ArrayList<>();
     LatestExecutor<Integer> latestExecutor = new LatestExecutor<>(scheduler, i -> {

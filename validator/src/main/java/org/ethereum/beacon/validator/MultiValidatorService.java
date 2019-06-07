@@ -87,9 +87,9 @@ public class MultiValidatorService implements ValidatorService {
     this.stateStream = stateStream;
     this.schedulers = schedulers;
 
-    blocksStream = new SimpleProcessor<>(this.schedulers.reactorEvents(), "BeaconChainValidator.block");
-    attestationsStream = new SimpleProcessor<>(this.schedulers.reactorEvents(), "BeaconChainValidator.attestation");
-    initializedStream = new SimpleProcessor<>(this.schedulers.reactorEvents(), "BeaconChainValidator.init");
+    blocksStream = new SimpleProcessor<>(this.schedulers.events(), "BeaconChainValidator.block");
+    attestationsStream = new SimpleProcessor<>(this.schedulers.events(), "BeaconChainValidator.attestation");
+    initializedStream = new SimpleProcessor<>(this.schedulers.events(), "BeaconChainValidator.init");
 
     executor = this.schedulers.newSingleThreadDaemon("validator-service");
     initExecutor = new LatestExecutor<>(schedulers.blocking(), this::initFromLatestBeaconState);

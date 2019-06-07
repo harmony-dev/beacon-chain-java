@@ -33,7 +33,7 @@ public class SlotTicker implements Ticker<SlotNumber> {
     this.state = state;
     this.schedulers = schedulers;
 
-    slotStream = new SimpleProcessor<>(this.schedulers.reactorEvents(), "SlotTicker.slot");
+    slotStream = new SimpleProcessor<>(this.schedulers.events(), "SlotTicker.slot");
   }
 
   /** Execute to start {@link SlotNumber} propagation */
@@ -58,7 +58,7 @@ public class SlotTicker implements Ticker<SlotNumber> {
     Flux.interval(
             Duration.ofMillis(delayMillis),
             Duration.ofSeconds(period.getValue()),
-            schedulers.reactorEvents())
+            schedulers.events().toReactor())
         .subscribe(tick -> slotStream.onNext(this.startSlot.plus(tick)));
   }
 

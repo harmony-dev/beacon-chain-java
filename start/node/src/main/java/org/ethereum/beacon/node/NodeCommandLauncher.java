@@ -160,7 +160,7 @@ public class NodeCommandLauncher implements Runnable {
       Scheduler clientScheduler = schedulers.newParallelDaemon("netty-client-%d", 2);
       NettyClient nettyClient = new NettyClient(clientScheduler::executeR);
       ConnectionManager<SocketAddress> tcpConnectionManager =
-          new ConnectionManager<>(nettyServer, nettyClient, schedulers.reactorEvents());
+          new ConnectionManager<>(nettyServer, nettyClient, schedulers.events());
       connectionManager = tcpConnectionManager;
       for (String addr : nettyConfig.getActivePeers()) {
         URI uri = URI.create(addr);

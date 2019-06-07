@@ -60,7 +60,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     this.tupleStorage = chainStorage.getTupleStorage();
     this.schedulers = schedulers;
 
-    blockStream = new SimpleProcessor<>(schedulers.reactorEvents(), "DefaultBeaconChain.block");
+    blockStream = new SimpleProcessor<>(schedulers.events(), "DefaultBeaconChain.block");
   }
 
   @Override

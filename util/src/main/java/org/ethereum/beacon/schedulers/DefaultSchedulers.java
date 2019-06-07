@@ -24,7 +24,8 @@ public class DefaultSchedulers extends AbstractSchedulers {
 
   @Override
   protected Scheduler createExecutorScheduler(ScheduledExecutorService executorService) {
-    return new ErrorHandlingScheduler(new ExecutorScheduler(executorService), errorHandler);
+    return new ErrorHandlingScheduler(
+        new ExecutorScheduler(executorService, this::getCurrentTime), errorHandler);
   }
 
   @Override

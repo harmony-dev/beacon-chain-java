@@ -71,7 +71,7 @@ public class LocalWireHub {
         return blocks;
       } else {
         return Flux.from(blocks)
-            .delayElements(Duration.ofMillis(inboundDelay), schedulers.reactorEvents());
+            .delayElements(Duration.ofMillis(inboundDelay), schedulers.events().toReactor());
       }
     }
 
@@ -81,7 +81,7 @@ public class LocalWireHub {
         return attestations;
       } else {
         return Flux.from(attestations)
-            .delayElements(Duration.ofMillis(inboundDelay), schedulers.reactorEvents());
+            .delayElements(Duration.ofMillis(inboundDelay), schedulers.events().toReactor());
       }
     }
   }

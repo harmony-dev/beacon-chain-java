@@ -109,9 +109,9 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     this.schedulers = schedulers;
     this.maxEmptySlotTransitions = maxEmptySlotTransitions;
 
-    headStream = new SimpleProcessor<>(this.schedulers.reactorEvents(), "ObservableStateProcessor.head");
-    observableStateStream = new SimpleProcessor<>(this.schedulers.reactorEvents(), "ObservableStateProcessor.observableState");
-    pendingOperationsStream = new SimpleProcessor<>(this.schedulers.reactorEvents(), "PendingOperationsProcessor.pendingOperations");
+    headStream = new SimpleProcessor<>(this.schedulers.events(), "ObservableStateProcessor.head");
+    observableStateStream = new SimpleProcessor<>(this.schedulers.events(), "ObservableStateProcessor.observableState");
+    pendingOperationsStream = new SimpleProcessor<>(this.schedulers.events(), "PendingOperationsProcessor.pendingOperations");
   }
 
   @Override
