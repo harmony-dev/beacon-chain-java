@@ -1,5 +1,7 @@
 package tech.pegasys.artemis.util.collections;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -7,27 +9,26 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
-import org.jetbrains.annotations.NotNull;
 
-class ListImpl<IndexType extends Number, ValueType>
-    implements WriteList<IndexType, ValueType> {
-
-  static <IndexType extends Number, ValueType> WriteList<IndexType, ValueType>
-      wrap(List<ValueType> backedList, Function<Integer, IndexType> indexConverter) {
-    return new ListImpl<>(backedList, indexConverter);
-  }
+class ListImpl<IndexType extends Number, ValueType> implements WriteList<IndexType, ValueType> {
 
   private final List<ValueType> backedList;
   private final Function<Integer, IndexType> indexConverter;
-
-  ListImpl(Collection<ValueType> source,
-      Function<Integer, IndexType> indexConverter) {
+  private final boolean vector;
+  ListImpl(
+      Collection<ValueType> source, Function<Integer, IndexType> indexConverter, boolean vector) {
     this.backedList = new ArrayList<>(source);
     this.indexConverter = indexConverter;
+    this.vector = vector;
   }
 
-  ListImpl(Function<Integer, IndexType> indexConverter) {
-    this(new ArrayList<>(), indexConverter);
+  ListImpl(Function<Integer, IndexType> indexConverter, boolean vector) {
+    this(new ArrayList<>(), indexConverter, vector);
+  }
+
+  static <IndexType extends Number, ValueType> WriteList<IndexType, ValueType> wrap(
+      List<ValueType> backedList, Function<Integer, IndexType> indexConverter, boolean vector) {
+    return new ListImpl<>(backedList, indexConverter, vector);
   }
 
   @Override
@@ -42,12 +43,13 @@ class ListImpl<IndexType extends Number, ValueType>
 
   @Override
   public ListImpl<IndexType, ValueType> subList(IndexType fromIndex, IndexType toIndex) {
-    return new ListImpl<>(backedList.subList(fromIndex.intValue(), toIndex.intValue()), indexConverter);
+    return new ListImpl<>(
+        backedList.subList(fromIndex.intValue(), toIndex.intValue()), indexConverter, vector);
   }
 
   @Override
   public WriteList<IndexType, ValueType> createMutableCopy() {
-    return new ListImpl<>(backedList, indexConverter);
+    return new ListImpl<>(backedList, indexConverter, vector);
   }
 
   @NotNull
@@ -72,13 +74,34 @@ class ListImpl<IndexType extends Number, ValueType>
   }
 
   @Override
-  public boolean addAll(@NotNull Collection<? extends ValueType> c) {
-    return backedList.addAll(c);
+  public boolean addAll(@NotNull Iterable<? extends ValueType> c) {
+    if (c instanceof Collection) {
+      return backedList.addAll((Collection<? extends ValueType>) c);
+    } else if (c instanceof ListImpl) {
+      return backedList.addAll(((ListImpl<?, ? extends ValueType>) c).backedList);
+    } else {
+      boolean hasAny = false;
+      for (ValueType val : c) {
+        backedList.add(val);
+        hasAny = true;
+      }
+      return hasAny;
+    }
   }
 
   @Override
-  public boolean addAll(IndexType index, @NotNull Collection<? extends ValueType> c) {
-    return backedList.addAll(index.intValue(), c);
+  public boolean addAll(IndexType index, @NotNull Iterable<? extends ValueType> c) {
+    if (c instanceof Collection) {
+      return backedList.addAll(index.intValue(), (Collection<? extends ValueType>) c);
+    } else if (c instanceof ListImpl) {
+      return backedList.addAll(index.intValue(), ((ListImpl<?, ? extends ValueType>) c).backedList);
+    } else {
+      int idx = index.intValue();
+      for (ValueType val : c) {
+        backedList.add(idx++, val);
+      }
+      return idx > index.intValue();
+    }
   }
 
   @Override
@@ -138,12 +161,17 @@ class ListImpl<IndexType extends Number, ValueType>
 
   @Override
   public ReadList<IndexType, ValueType> createImmutableCopy() {
-    return new ListImpl<>(backedList, indexConverter);
+    return new ListImpl<>(backedList, indexConverter, vector);
+  }
+
+  @Override
+  public boolean isVector() {
+    return vector;
   }
 
   @Override
   public boolean equals(Object o) {
-    return backedList.equals(((ListImpl)o).backedList);
+    return backedList.equals(((ListImpl) o).backedList);
   }
 
   @Override

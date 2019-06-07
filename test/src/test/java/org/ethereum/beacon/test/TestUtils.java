@@ -13,6 +13,7 @@ import org.ethereum.beacon.emulator.config.chainspec.SpecDataUtils;
 import org.ethereum.beacon.emulator.config.chainspec.SpecHelpersData;
 import org.ethereum.beacon.schedulers.Scheduler;
 import org.ethereum.beacon.schedulers.Schedulers;
+import org.ethereum.beacon.test.type.BlsSignedTestCase;
 import org.ethereum.beacon.test.type.NamedTestCase;
 import org.ethereum.beacon.test.type.SpecConstantsDataMerged;
 import org.ethereum.beacon.test.type.TestCase;
@@ -121,22 +122,22 @@ public class TestUtils {
       Class<? extends V> clazz,
       Collection<String> exclusions) {
     V test = readTest(file, clazz);
-    return runAllCasesInTest(test, testCaseRunner, clazz, exclusions, false);
+    return runAllCasesInTest(test, testCaseRunner, clazz, exclusions, null);
   }
 
   static <V extends TestSkeleton> Optional<String> runAllCasesInTest(
       V test,
       Function<Pair<TestCase, BeaconChainSpec>, Optional<String>> testCaseRunner,
       Class<? extends V> clazz) {
-    return runAllCasesInTest(test, testCaseRunner, clazz, Collections.emptySet(), false);
+    return runAllCasesInTest(test, testCaseRunner, clazz, Collections.emptySet(), null);
   }
 
   static <V extends TestSkeleton> Optional<String> runAllCasesInTest(
       V test,
       Function<Pair<TestCase, BeaconChainSpec>, Optional<String>> testCaseRunner,
       Class<? extends V> clazz,
-      boolean isBlsVerified) {
-    return runAllCasesInTest(test, testCaseRunner, clazz, Collections.emptySet(), isBlsVerified);
+      Boolean forceBlsVerified) {
+    return runAllCasesInTest(test, testCaseRunner, clazz, Collections.emptySet(), forceBlsVerified);
   }
 
   static <V extends TestSkeleton> Optional<String> runAllCasesInTest(
@@ -144,7 +145,7 @@ public class TestUtils {
       Function<Pair<TestCase, BeaconChainSpec>, Optional<String>> testCaseRunner,
       Class<? extends V> clazz,
       Collection<String> exclusions,
-      boolean isBlsVerified) {
+      Boolean forceBlsVerified) {
     StringBuilder errors = new StringBuilder();
     AtomicInteger failed = new AtomicInteger(0);
     int total = 0;
@@ -160,6 +161,13 @@ public class TestUtils {
       }
 
       long s = System.nanoTime();
+      boolean isBlsVerified = false;
+      if (forceBlsVerified != null) {
+        isBlsVerified = forceBlsVerified;
+      } else if (testCase instanceof BlsSignedTestCase) {
+        Integer blsFlag = ((BlsSignedTestCase) testCase).getBlsSetting();
+        isBlsVerified = blsFlag != null && blsFlag < 2;
+      }
       BeaconChainSpec spec = loadSpecByName(test.getConfig(), isBlsVerified);
       Optional<String> err = runTestCase(testCase, spec, test, testCaseRunner);
       long completionTime = System.nanoTime() - s;

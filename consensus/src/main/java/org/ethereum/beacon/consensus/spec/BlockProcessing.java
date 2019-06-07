@@ -4,6 +4,7 @@ import static org.ethereum.beacon.core.spec.SignatureDomains.BEACON_PROPOSER;
 import static org.ethereum.beacon.core.spec.SignatureDomains.RANDAO;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
 import org.ethereum.beacon.core.BeaconBlock;
@@ -119,6 +120,7 @@ public interface BlockProcessing extends HelperFunction {
   }
 
   default void verify_proposer_slashing(BeaconState state, ProposerSlashing proposer_slashing) {
+    checkIndexRange(state, proposer_slashing.getProposerIndex());
     ValidatorRecord proposer = state.getValidatorRegistry().get(proposer_slashing.getProposerIndex());
 
     /* Verify that the epoch is the same
@@ -198,6 +200,7 @@ public interface BlockProcessing extends HelperFunction {
         assert slashed_any */
     List<ValidatorIndex> intersection = new ArrayList<>(attesting_indices_1);
     intersection.retainAll(attesting_indices_2);
+    intersection.sort(Comparator.comparingLong(UInt64::longValue));
     for (ValidatorIndex index : intersection) {
       if (is_slashable_validator(state.getValidatorRegistry().get(index), get_current_epoch(state))) {
         slash_validator(state, index);
@@ -213,9 +216,11 @@ public interface BlockProcessing extends HelperFunction {
     /* attestation_slot = get_attestation_slot(state, attestation)
        assert attestation_slot + MIN_ATTESTATION_INCLUSION_DELAY <= state.slot <= attestation_slot + SLOTS_PER_EPOCH */
     SlotNumber attestation_slot = get_attestation_slot(state, data);
-    if (!
-        attestation_slot.plus(getConstants().getMinAttestationInclusionDelay()).lessEqual(state.getSlot())
-        && state.getSlot().lessEqual(attestation_slot.plus(getConstants().getSlotsPerEpoch()))) {
+
+    if (!attestation_slot.plus(getConstants().getMinAttestationInclusionDelay()).lessEqual(state.getSlot())) {
+      return false;
+    }
+    if (!state.getSlot().lessEqual(attestation_slot.plus(getConstants().getSlotsPerEpoch()))) {
       return false;
     }
 
@@ -367,6 +372,7 @@ public interface BlockProcessing extends HelperFunction {
   }
 
   default void verify_voluntary_exit(BeaconState state, VoluntaryExit exit) {
+    checkIndexRange(state, exit.getValidatorIndex());
     ValidatorRecord validator = state.getValidatorRegistry().get(exit.getValidatorIndex());
 
     /* Verify the validator is active

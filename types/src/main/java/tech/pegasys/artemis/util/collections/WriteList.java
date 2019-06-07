@@ -1,35 +1,43 @@
 package tech.pegasys.artemis.util.collections;
 
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import org.jetbrains.annotations.NotNull;
-import tech.pegasys.artemis.util.uint.UInt24;
 
 public interface WriteList<IndexType extends Number, ValueType>
     extends WriteVector<IndexType, ValueType> {
 
   static <IndexType extends Number, ValueType> WriteList<IndexType, ValueType>
       wrap(List<ValueType> srcList, Function<Integer, IndexType> indexConverter) {
-    return ListImpl.wrap(srcList, indexConverter);
+    return WriteList.wrap(srcList, indexConverter, false);
   }
 
   static <IndexType extends Number, ValueType> WriteList<IndexType, ValueType>
       create(Function<Integer, IndexType> indexConverter) {
-    return new ListImpl<>(indexConverter);
+    return WriteList.create(indexConverter, false);
+  }
+
+  static <IndexType extends Number, ValueType> WriteList<IndexType, ValueType>
+  wrap(List<ValueType> srcList, Function<Integer, IndexType> indexConverter, boolean vector) {
+    return ListImpl.wrap(srcList, indexConverter, vector);
+  }
+
+  static <IndexType extends Number, ValueType> WriteList<IndexType, ValueType>
+  create(Function<Integer, IndexType> indexConverter, boolean vector) {
+    return new ListImpl<>(indexConverter, vector);
   }
 
   boolean add(ValueType valueType);
 
   boolean remove(ValueType o);
 
-  boolean addAll(@NotNull Collection<? extends ValueType> c);
+  boolean addAll(@NotNull Iterable<? extends ValueType> c);
 
-  boolean addAll(IndexType index, @NotNull Collection<? extends ValueType> c);
+  boolean addAll(IndexType index, @NotNull Iterable<? extends ValueType> c);
 
-  default void replaceAll(@NotNull Collection<? extends ValueType> c) {
+  default void replaceAll(@NotNull Iterable<? extends ValueType> c) {
     this.clear();
     this.addAll(c);
   }

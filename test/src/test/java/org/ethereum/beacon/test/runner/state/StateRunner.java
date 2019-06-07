@@ -1,15 +1,35 @@
 package org.ethereum.beacon.test.runner.state;
 
 import org.ethereum.beacon.consensus.BeaconChainSpec;
+import org.ethereum.beacon.consensus.BeaconStateEx;
+import org.ethereum.beacon.consensus.BlockTransition;
+import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.consensus.spec.SpecCommons;
+import org.ethereum.beacon.consensus.transition.BeaconStateExImpl;
+import org.ethereum.beacon.consensus.transition.EmptySlotTransition;
+import org.ethereum.beacon.consensus.transition.ExtendedSlotTransition;
+import org.ethereum.beacon.consensus.transition.PerBlockTransition;
+import org.ethereum.beacon.consensus.transition.PerEpochTransition;
+import org.ethereum.beacon.consensus.transition.PerSlotTransition;
+import org.ethereum.beacon.consensus.transition.StateCachingTransition;
+import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
 import org.ethereum.beacon.consensus.verifier.OperationVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.consensus.verifier.operation.AttestationVerifier;
+import org.ethereum.beacon.consensus.verifier.operation.AttesterSlashingVerifier;
 import org.ethereum.beacon.consensus.verifier.operation.DepositVerifier;
+import org.ethereum.beacon.consensus.verifier.operation.ProposerSlashingVerifier;
+import org.ethereum.beacon.consensus.verifier.operation.TransferVerifier;
+import org.ethereum.beacon.consensus.verifier.operation.VoluntaryExitVerifier;
+import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
+import org.ethereum.beacon.core.operations.ProposerSlashing;
+import org.ethereum.beacon.core.operations.Transfer;
+import org.ethereum.beacon.core.operations.VoluntaryExit;
+import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.test.StateTestUtils;
 import org.ethereum.beacon.test.runner.Runner;
 import org.ethereum.beacon.test.type.TestCase;
@@ -17,6 +37,7 @@ import org.ethereum.beacon.test.type.state.StateTestCase;
 import org.ethereum.beacon.test.type.state.StateTestCase.BeaconStateData;
 import org.javatuples.Pair;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 
@@ -29,13 +50,15 @@ import java.util.function.Consumer;
 public class StateRunner implements Runner {
   private StateTestCase testCase;
   private BeaconChainSpec spec;
+  private String handler;
 
-  public StateRunner(TestCase testCase, BeaconChainSpec spec) {
+  public StateRunner(TestCase testCase, BeaconChainSpec spec, String handler) {
     if (!(testCase instanceof StateTestCase)) {
       throw new RuntimeException("TestCase runner accepts only StateTestCase.class as input!");
     }
     this.testCase = (StateTestCase) testCase;
     this.spec = spec;
+    this.handler = handler;
   }
 
   public Optional<String> run() {
@@ -47,12 +70,54 @@ public class StateRunner implements Runner {
     BeaconState latestState = initialState;
     Optional<String> processingError;
 
-    if (testCase.getDeposit() != null) {
-      processingError = processDeposit(testCase.getDepositOperation(), latestState);
-    } else if (testCase.getAttestation() != null) {
-      processingError = processAttestation(testCase.getAttestationOperation(), latestState);
-    } else {
-      throw new RuntimeException("Only Attestation and Deposit test cases are implemented!!!");
+    BeaconState stateBackup = latestState.createMutableCopy();
+    switch (handler) {
+      case "deposit":
+        processingError = processDeposit(testCase.getDepositOperation(), latestState);
+        break;
+      case "attestation":
+        processingError = processAttestation(testCase.getAttestationOperation(), latestState);
+        break;
+      case "attester_slashing":
+        processingError = processAttesterSlashing(testCase.getAttesterSlashingOperation(), latestState);
+        break;
+      case "proposer_slashing":
+        processingError = processProposerSlashing(testCase.getProposerSlashingOperation(), latestState);
+        break;
+      case "transfer":
+        processingError = processTransfer(testCase.getTransferOperation(), latestState);
+        break;
+      case "voluntary_exit":
+        processingError = processVoluntaryExit(testCase.getVoluntaryExitOperation(), latestState);
+        break;
+      case "block_header":
+        processingError = processBlockHeader(testCase.getBeaconBlock(), latestState);
+        break;
+      case "crosslinks":
+        processingError = processCrosslinks(latestState);
+        break;
+      case "registry_updates":
+        processingError = processRegistryUpdates(latestState);
+        break;
+      case "slots":
+        Pair<Optional<String>, BeaconState> processingSlots = processSlots(testCase.getSlots(), latestState);
+        processingError = processingSlots.getValue0();
+        if (!processingError.isPresent()) {
+          latestState = processingSlots.getValue1();
+        }
+        break;
+      case "blocks":
+        Pair<Optional<String>, BeaconState> processingBlocks = processBlocks(testCase.getBeaconBlocks(), latestState);
+        processingError = processingBlocks.getValue0();
+        if (!processingError.isPresent()) {
+          latestState = processingBlocks.getValue1();
+        }
+        break;
+      default:
+        throw new RuntimeException("This type of state test is not supported");
+    }
+    if (processingError.isPresent()) {
+      latestState = stateBackup;
     }
 
     if (testCase.getPost() == null) { // XXX: Not changed
@@ -92,6 +157,129 @@ public class StateRunner implements Runner {
                 (MutableBeaconState) objects.getValue1(), objects.getValue0()));
   }
 
+  private Optional<String> processAttesterSlashing(AttesterSlashing attesterSlashing, BeaconState state) {
+    AttesterSlashingVerifier slashingVerifier = new AttesterSlashingVerifier(spec);
+    return processOperation(
+        attesterSlashing,
+        state,
+        slashingVerifier,
+        objects ->
+            spec.process_attester_slashing(
+                (MutableBeaconState) objects.getValue1(), objects.getValue0()));
+  }
+
+  private Optional<String> processProposerSlashing(ProposerSlashing proposerSlashing, BeaconState state) {
+    ProposerSlashingVerifier slashingVerifier = new ProposerSlashingVerifier(spec);
+    return processOperation(
+        proposerSlashing,
+        state,
+        slashingVerifier,
+        objects ->
+            spec.process_proposer_slashing(
+                (MutableBeaconState) objects.getValue1(), objects.getValue0()));
+  }
+
+  private Optional<String> processTransfer(Transfer transfer, BeaconState state) {
+    TransferVerifier verifier = new TransferVerifier(spec);
+    return processOperation(
+        transfer,
+        state,
+        verifier,
+        objects ->
+            spec.process_transfer(
+                (MutableBeaconState) objects.getValue1(), objects.getValue0()));
+  }
+
+  private Optional<String> processVoluntaryExit(VoluntaryExit voluntaryExit, BeaconState state) {
+    VoluntaryExitVerifier verifier = new VoluntaryExitVerifier(spec);
+    return processOperation(
+        voluntaryExit,
+        state,
+        verifier,
+        objects ->
+            spec.process_voluntary_exit(
+                (MutableBeaconState) objects.getValue1(), objects.getValue0()));
+  }
+
+  private Optional<String> processBlockHeader(BeaconBlock block, BeaconState state) {
+    BeaconBlockVerifier verifier = BeaconBlockVerifier.createDefault(spec);
+    try {
+      VerificationResult verificationResult = verifier.verify(block, state);
+      if (verificationResult.isPassed()) {
+        spec.process_block_header((MutableBeaconState) state, block);
+        return Optional.empty();
+      } else {
+        return Optional.of(verificationResult.getMessage());
+      }
+    } catch (SpecCommons.SpecAssertionFailed | IllegalArgumentException ex) {
+      return Optional.of(ex.getMessage());
+    }
+  }
+
+  private Optional<String> processCrosslinks(BeaconState state) {
+    try {
+      spec.process_crosslinks((MutableBeaconState) state);
+      return Optional.empty();
+    } catch (SpecCommons.SpecAssertionFailed | IllegalArgumentException ex) {
+      return Optional.of(ex.getMessage());
+    }
+  }
+
+  private Optional<String> processRegistryUpdates(BeaconState state) {
+    try {
+      spec.process_registry_updates((MutableBeaconState) state);
+      return Optional.empty();
+    } catch (SpecCommons.SpecAssertionFailed | IllegalArgumentException ex) {
+      return Optional.of(ex.getMessage());
+    }
+  }
+
+  private Pair<Optional<String>, BeaconState> processSlots(int slots, BeaconState state) {
+    StateTransition<BeaconStateEx> stateCaching = new StateCachingTransition(spec);
+    StateTransition<BeaconStateEx> perEpochTransition = new PerEpochTransition(spec);
+    StateTransition<BeaconStateEx> perSlotTransition = new PerSlotTransition(spec);
+    EmptySlotTransition slotTransition = new EmptySlotTransition(
+        new ExtendedSlotTransition(stateCaching, new PerEpochTransition(spec) {
+          @Override
+          public BeaconStateEx apply(BeaconStateEx stateEx) {
+            return perEpochTransition.apply(stateEx);
+          }
+        }, perSlotTransition, spec));
+
+    BeaconStateEx stateEx = new BeaconStateExImpl(state);
+    try {
+      BeaconStateEx res = slotTransition.apply(stateEx, stateEx.getSlot().plus(slots));
+      return Pair.with(Optional.empty(), res.createMutableCopy());
+    } catch (SpecCommons.SpecAssertionFailed | IllegalArgumentException ex) {
+      return Pair.with(Optional.of(ex.getMessage()), null);
+    }
+  }
+
+  private Pair<Optional<String>, BeaconState> processBlocks(List<BeaconBlock> blocks, BeaconState state) {
+    StateTransition<BeaconStateEx> stateCaching = new StateCachingTransition(spec);
+    StateTransition<BeaconStateEx> perEpochTransition = new PerEpochTransition(spec);
+    StateTransition<BeaconStateEx> perSlotTransition = new PerSlotTransition(spec);
+    BlockTransition<BeaconStateEx> perBlockTransition = new PerBlockTransition(spec);
+    EmptySlotTransition slotTransition = new EmptySlotTransition(
+        new ExtendedSlotTransition(stateCaching, new PerEpochTransition(spec) {
+          @Override
+          public BeaconStateEx apply(BeaconStateEx stateEx) {
+            return perEpochTransition.apply(stateEx);
+          }
+        }, perSlotTransition, spec));
+
+    BeaconStateEx stateEx = new BeaconStateExImpl(state);
+    try {
+      for (BeaconBlock block : blocks) {
+        stateEx = slotTransition.apply(stateEx, block.getSlot());
+        stateEx = perBlockTransition.apply(stateEx, block);
+      }
+      return Pair.with(Optional.empty(), stateEx.createMutableCopy());
+    } catch (SpecCommons.SpecAssertionFailed | IllegalArgumentException ex) {
+      return Pair.with(Optional.of(ex.getMessage()), null);
+    }
+  }
+
   private <O> Optional<String> processOperation(
       O operation,
       BeaconState state,
@@ -105,7 +293,7 @@ public class StateRunner implements Runner {
       } else {
         return Optional.of(verificationResult.getMessage());
       }
-    } catch (SpecCommons.SpecAssertionFailed ex) {
+    } catch (SpecCommons.SpecAssertionFailed | IllegalArgumentException ex) {
       return Optional.of(ex.getMessage());
     }
   }

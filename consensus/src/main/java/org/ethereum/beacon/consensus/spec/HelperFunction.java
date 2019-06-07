@@ -676,7 +676,7 @@ public interface HelperFunction extends SpecCommons {
     Gwei whistleblowing_reward = slashed_balance.dividedBy(getConstants().getWhistleblowingRewardQuotient());
     Gwei proposer_reward = whistleblowing_reward.dividedBy(getConstants().getProposerRewardQuotient());
     increase_balance(state, proposer_index, proposer_reward);
-    increase_balance(state, whistleblower_index, whistleblowing_reward);
+    increase_balance(state, whistleblower_index, whistleblowing_reward.minus(proposer_reward));
     decrease_balance(state, slashed_index, whistleblowing_reward);
   }
 
@@ -713,20 +713,24 @@ public interface HelperFunction extends SpecCommons {
         Stream.of(get_delayed_activation_exit_epoch(get_current_epoch(state)))
     ).max(EpochNumber::compareTo).get();
 
-    long exit_queue_churn = state.getValidatorRegistry().stream()
-        .filter(v -> v.getExitEpoch().equals(exit_queue_epoch))
-        .count();
+    long exit_queue_churn = 0;
+    for (ValidatorRecord validatorRecord : state.getValidatorRegistry()) {
+      if (validatorRecord.getExitEpoch().equals(exit_queue_epoch)) {
+        ++exit_queue_churn;
+      }
+    }
     if (UInt64.valueOf(exit_queue_churn).compareTo(get_churn_limit(state)) >= 0) {
-      exit_queue_epoch.increment();
+      exit_queue_epoch = exit_queue_epoch.increment();
     }
 
     /* # Set validator exit epoch and withdrawable epoch
       validator.exit_epoch = exit_queue_epoch
       validator.withdrawable_epoch = validator.exit_epoch + MIN_VALIDATOR_WITHDRAWABILITY_DELAY */
+    final EpochNumber exitEpoch = exit_queue_epoch;
     state.getValidatorRegistry().update(index,
         validator -> ValidatorRecord.Builder.fromRecord(validator)
-            .withExitEpoch(exit_queue_epoch)
-            .withWithdrawableEpoch(validator.getExitEpoch().plus(getConstants().getMinValidatorWithdrawabilityDelay()))
+            .withExitEpoch(exitEpoch)
+            .withWithdrawableEpoch(exitEpoch.plus(HelperFunction.this.getConstants().getMinValidatorWithdrawabilityDelay()))
             .build());
   }
 
@@ -783,10 +787,14 @@ public interface HelperFunction extends SpecCommons {
       return true;
     }
 
-    PublicKey blsPublicKey = PublicKey.create(publicKey);
-    MessageParameters messageParameters = MessageParameters.create(message, domain);
-    Signature blsSignature = Signature.create(signature);
-    return BLS381.verify(messageParameters, blsSignature, blsPublicKey);
+    try {
+      PublicKey blsPublicKey = PublicKey.create(publicKey);
+      MessageParameters messageParameters = MessageParameters.create(message, domain);
+      Signature blsSignature = Signature.create(signature);
+      return BLS381.verify(messageParameters, blsSignature, blsPublicKey);
+    } catch (Exception e) {
+      return false;
+    }
   }
 
   default boolean bls_verify_multiple(

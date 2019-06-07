@@ -2,11 +2,11 @@ package org.ethereum.beacon.test.runner.state;
 
 import static org.ethereum.beacon.test.SilentAsserts.assertEquals;
 import static org.ethereum.beacon.test.SilentAsserts.assertLists;
-import static org.ethereum.beacon.test.SilentAsserts.assertTrue;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import org.ethereum.beacon.core.BeaconBlockHeader;
 import org.ethereum.beacon.core.BeaconState;
@@ -275,10 +275,9 @@ public class StateComparator {
     if (expected.getEth1DataVotes() == null) {
       return Optional.empty();
     }
-    // XXX: not used in tests
-    return assertTrue(
-        "Expected that eth1DataVotes is empty but it's not true",
-        actual.getEth1DataVotes().isEmpty());
+    List<Eth1Data> expectedVotes = expected.getEth1DataVotes().stream().map(StateTestUtils::parseEth1Data).collect(Collectors.toList());
+
+    return assertLists(expectedVotes, actual.getEth1DataVotes().listCopy());
   }
 
   private Optional<String> compareFinalizedEpoch() {

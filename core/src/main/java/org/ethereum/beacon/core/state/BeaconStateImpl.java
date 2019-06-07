@@ -43,7 +43,7 @@ public class BeaconStateImpl implements MutableBeaconState {
   /* Randomness and committees */
 
   private ObsValue<WriteList<EpochNumber, Hash32>> latestRandaoMixes =
-      obsHelper.newValue(ObservableListImpl.create(EpochNumber::of));
+      obsHelper.newValue(ObservableListImpl.create(EpochNumber::of, true));
   private ObsValue<ShardNumber> latestStartShard = obsHelper.newValue(ShardNumber.ZERO);
 
   /* Finality */
@@ -63,17 +63,17 @@ public class BeaconStateImpl implements MutableBeaconState {
   /* Recent state */
 
   private ObsValue<WriteList<ShardNumber, Crosslink>> previousCrosslinks =
-      obsHelper.newValue(ObservableListImpl.create(ShardNumber::of));
+      obsHelper.newValue(ObservableListImpl.create(ShardNumber::of, true));
   private ObsValue<WriteList<ShardNumber, Crosslink>> currentCrosslinks =
-      obsHelper.newValue(ObservableListImpl.create(ShardNumber::of));
+      obsHelper.newValue(ObservableListImpl.create(ShardNumber::of, true));
   private ObsValue<WriteList<SlotNumber, Hash32>> latestBlockRoots =
-      obsHelper.newValue(ObservableListImpl.create(SlotNumber::of));
+      obsHelper.newValue(ObservableListImpl.create(SlotNumber::of, true));
   private ObsValue<WriteList<SlotNumber, Hash32>> latestStateRoots =
-      obsHelper.newValue(ObservableListImpl.create(SlotNumber::of));
+      obsHelper.newValue(ObservableListImpl.create(SlotNumber::of, true));
   private ObsValue<WriteList<EpochNumber, Hash32>> latestActiveIndexRoots =
-      obsHelper.newValue(ObservableListImpl.create(EpochNumber::of));
+      obsHelper.newValue(ObservableListImpl.create(EpochNumber::of, true));
   private ObsValue<WriteList<EpochNumber, Gwei>> latestSlashedBalances =
-      obsHelper.newValue(ObservableListImpl.create(EpochNumber::of));
+      obsHelper.newValue(ObservableListImpl.create(EpochNumber::of, true));
   private ObsValue<BeaconBlockHeader> latestBlockHeader = obsHelper.newValue(BeaconBlockHeader.EMPTY);
   private ObsValue<WriteList<Integer, Hash32>> historicalRoots =
       obsHelper.newValue(ObservableListImpl.create(Integer::valueOf));
@@ -176,7 +176,7 @@ public class BeaconStateImpl implements MutableBeaconState {
 
   public void setValidatorRegistry(
       WriteList<ValidatorIndex, ValidatorRecord> validatorRegistry) {
-    this.validatorRegistry.set(validatorRegistry);
+    this.validatorRegistry.get().replaceAll(validatorRegistry);
   }
 
   @Override
@@ -186,7 +186,7 @@ public class BeaconStateImpl implements MutableBeaconState {
 
   public void setBalances(
       WriteList<ValidatorIndex, Gwei> balances) {
-    this.balances.set(balances);
+    this.balances.get().replaceAll(balances);
   }
 
   @Override
@@ -196,7 +196,7 @@ public class BeaconStateImpl implements MutableBeaconState {
 
   public void setLatestRandaoMixes(
       WriteList<EpochNumber, Hash32> latestRandaoMixes) {
-    this.latestRandaoMixes.set(latestRandaoMixes);
+    this.latestRandaoMixes.get().replaceAll(latestRandaoMixes);
   }
 
   @Override
@@ -215,7 +215,7 @@ public class BeaconStateImpl implements MutableBeaconState {
 
   public void setPreviousEpochAttestations(
       WriteList<Integer, PendingAttestation> previousEpochAttestations) {
-    this.previousEpochAttestations.set(previousEpochAttestations);
+    this.previousEpochAttestations.get().replaceAll(previousEpochAttestations);
   }
 
   public WriteList<Integer, PendingAttestation> getCurrentEpochAttestations() {
@@ -224,7 +224,7 @@ public class BeaconStateImpl implements MutableBeaconState {
 
   public void setCurrentEpochAttestations(
       WriteList<Integer, PendingAttestation> currentEpochAttestations) {
-    this.currentEpochAttestations.set(currentEpochAttestations);
+    this.currentEpochAttestations.get().replaceAll(currentEpochAttestations);
   }
 
   @Override
@@ -304,7 +304,7 @@ public class BeaconStateImpl implements MutableBeaconState {
 
   public void setPreviousCrosslinks(
       WriteList<ShardNumber, Crosslink> previousCrosslinks) {
-    this.previousCrosslinks.set(previousCrosslinks);
+    this.previousCrosslinks.get().replaceAll(previousCrosslinks);
   }
 
   @Override
@@ -314,7 +314,7 @@ public class BeaconStateImpl implements MutableBeaconState {
 
   public void setCurrentCrosslinks(
       WriteList<ShardNumber, Crosslink> currentCrosslinks) {
-    this.currentCrosslinks.set(currentCrosslinks);
+    this.currentCrosslinks.get().replaceAll(currentCrosslinks);
   }
 
   @Override
@@ -324,7 +324,7 @@ public class BeaconStateImpl implements MutableBeaconState {
 
   public void setLatestBlockRoots(
       WriteList<SlotNumber, Hash32> latestBlockRoots) {
-    this.latestBlockRoots.set(latestBlockRoots);
+    this.latestBlockRoots.get().replaceAll(latestBlockRoots);
   }
 
   @Override
@@ -334,7 +334,7 @@ public class BeaconStateImpl implements MutableBeaconState {
 
   public void setLatestStateRoots(
       WriteList<SlotNumber, Hash32> latestStateRoots) {
-    this.latestStateRoots.set(latestStateRoots);
+    this.latestStateRoots.get().replaceAll(latestStateRoots);
   }
 
   @Override
@@ -344,7 +344,7 @@ public class BeaconStateImpl implements MutableBeaconState {
 
   public void setLatestActiveIndexRoots(
       WriteList<EpochNumber, Hash32> latestActiveIndexRoots) {
-    this.latestActiveIndexRoots.set(latestActiveIndexRoots);
+    this.latestActiveIndexRoots.get().replaceAll(latestActiveIndexRoots);
   }
 
   @Override
@@ -354,7 +354,7 @@ public class BeaconStateImpl implements MutableBeaconState {
 
   public void setLatestSlashedBalances(
       WriteList<EpochNumber, Gwei> latestSlashedBalances) {
-    this.latestSlashedBalances.set(latestSlashedBalances);
+    this.latestSlashedBalances.get().replaceAll(latestSlashedBalances);
   }
 
   @Override
@@ -373,7 +373,7 @@ public class BeaconStateImpl implements MutableBeaconState {
 
   public void setHistoricalRoots(
       WriteList<Integer, Hash32> historicalRoots) {
-    this.historicalRoots.set(historicalRoots);
+    this.historicalRoots.get().replaceAll(historicalRoots);
   }
 
   @Override
@@ -391,9 +391,10 @@ public class BeaconStateImpl implements MutableBeaconState {
     return eth1DataVotes.get();
   }
 
+  @Override
   public void setEth1DataVotes(
       WriteList<Integer, Eth1Data> eth1DataVotes) {
-    this.eth1DataVotes.set(eth1DataVotes);
+    this.eth1DataVotes.get().replaceAll(eth1DataVotes);
   }
 
   @Override

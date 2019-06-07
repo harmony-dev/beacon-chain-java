@@ -2,18 +2,21 @@ package org.ethereum.beacon.test.type.state;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
-import java.util.List;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
+import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
+import org.ethereum.beacon.core.operations.ProposerSlashing;
+import org.ethereum.beacon.core.operations.Transfer;
+import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
+import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Bitfield;
 import org.ethereum.beacon.core.types.Gwei;
+import org.ethereum.beacon.core.types.ValidatorIndex;
+import org.ethereum.beacon.test.StateTestUtils;
+import org.ethereum.beacon.test.type.BlsSignedTestCase;
 import org.ethereum.beacon.test.type.NamedTestCase;
 import org.ethereum.beacon.test.type.state.StateTestCase.BeaconStateData.AttestationData.AttestationDataContainer;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -22,20 +25,46 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.collections.ReadVector;
 import tech.pegasys.artemis.util.uint.UInt64;
 
+import java.util.List;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
 import static org.ethereum.beacon.test.StateTestUtils.parseAttestationData;
+import static org.ethereum.beacon.test.StateTestUtils.parseBeaconBlockHeader;
+import static org.ethereum.beacon.test.StateTestUtils.parseBlockData;
+import static org.ethereum.beacon.test.StateTestUtils.parseSlashableAttestation;
+import static org.ethereum.beacon.test.StateTestUtils.parseTransfer;
+import static org.ethereum.beacon.test.StateTestUtils.parseVoluntaryExit;
 
 /**
  * State test case <a
  * href="https://github.com/ethereum/eth2.0-tests/tree/master/state">https://github.com/ethereum/eth2.0-tests/tree/master/state</a>
  */
-public class StateTestCase implements NamedTestCase {
+public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
   private String description;
+  private BeaconStateData pre;
+  private BeaconStateData post;
+  @JsonProperty("bls_setting")
+  private Integer blsSetting;
+
   @JsonProperty
   private BlockData.BlockBodyData.DepositData deposit;
   @JsonProperty
   private BeaconStateData.AttestationData attestation;
-  private BeaconStateData pre;
-  private BeaconStateData post;
+  @JsonProperty("attester_slashing")
+  private BlockData.BlockBodyData.AttesterSlashingData attesterSlashing;
+  @JsonProperty("proposer_slashing")
+  private BlockData.BlockBodyData.ProposerSlashingData proposerSlashing;
+  @JsonProperty
+  private BlockData.BlockBodyData.TransferData transfer;
+  @JsonProperty("voluntary_exit")
+  private BlockData.BlockBodyData.VoluntaryExitData voluntaryExit;
+  @JsonProperty
+  private BlockData block;
+  @JsonProperty
+  private List<BlockData> blocks;
+  @JsonProperty
+  private Integer slots;
 
   public String getDescription() {
     return description;
@@ -83,8 +112,94 @@ public class StateTestCase implements NamedTestCase {
     return attestation;
   }
 
+  public AttesterSlashing getAttesterSlashingOperation() {
+    return new AttesterSlashing(
+        parseSlashableAttestation(getAttesterSlashing().slashableAttestation1),
+        parseSlashableAttestation(getAttesterSlashing().slashableAttestation2));
+  }
+
+  public ProposerSlashing getProposerSlashingOperation() {
+    return new ProposerSlashing(
+        ValidatorIndex.of(getProposerSlashing().proposerIndex),
+        parseBeaconBlockHeader(getProposerSlashing().getHeader1()),
+        parseBeaconBlockHeader(getProposerSlashing().getHeader2()));
+  }
+
+  public Transfer getTransferOperation() {
+    return parseTransfer(getTransfer());
+  }
+
+  public VoluntaryExit getVoluntaryExitOperation() {
+    return parseVoluntaryExit(getVoluntaryExit());
+  }
+
+  public BeaconBlock getBeaconBlock() {
+    return parseBlockData(getBlock());
+  }
+
+
   public void setAttestation(BeaconStateData.AttestationData attestation) {
     this.attestation = attestation;
+  }
+
+  public BlockData.BlockBodyData.AttesterSlashingData getAttesterSlashing() {
+    return attesterSlashing;
+  }
+
+  public void setAttesterSlashing(BlockData.BlockBodyData.AttesterSlashingData attesterSlashing) {
+    this.attesterSlashing = attesterSlashing;
+  }
+
+  public BlockData.BlockBodyData.ProposerSlashingData getProposerSlashing() {
+    return proposerSlashing;
+  }
+
+  public void setProposerSlashing(BlockData.BlockBodyData.ProposerSlashingData proposerSlashing) {
+    this.proposerSlashing = proposerSlashing;
+  }
+
+  public BlockData.BlockBodyData.TransferData getTransfer() {
+    return transfer;
+  }
+
+  public void setTransfer(BlockData.BlockBodyData.TransferData transfer) {
+    this.transfer = transfer;
+  }
+
+  public BlockData.BlockBodyData.VoluntaryExitData getVoluntaryExit() {
+    return voluntaryExit;
+  }
+
+  public void setVoluntaryExit(BlockData.BlockBodyData.VoluntaryExitData voluntaryExit) {
+    this.voluntaryExit = voluntaryExit;
+  }
+
+  public BlockData getBlock() {
+    return block;
+  }
+
+  public void setBlock(BlockData block) {
+    this.block = block;
+  }
+
+  public Integer getSlots() {
+    return slots;
+  }
+
+  public void setSlots(Integer slots) {
+    this.slots = slots;
+  }
+
+  public List<BlockData> getBlocks() {
+    return blocks;
+  }
+
+  public List<BeaconBlock> getBeaconBlocks() {
+    return blocks.stream().map(StateTestUtils::parseBlockData).collect(Collectors.toList());
+  }
+
+  public void setBlocks(List<BlockData> blocks) {
+    this.blocks = blocks;
   }
 
   public BeaconStateData getPre() {
@@ -101,6 +216,15 @@ public class StateTestCase implements NamedTestCase {
 
   public void setPost(BeaconStateData post) {
     this.post = post;
+  }
+
+  @Override
+  public Integer getBlsSetting() {
+    return blsSetting;
+  }
+
+  public void setBlsSetting(Integer blsSetting) {
+    this.blsSetting = blsSetting;
   }
 
   @Override
@@ -542,18 +666,18 @@ public class StateTestCase implements NamedTestCase {
 
       private String signature;
 
-      @JsonProperty("inclusion_slot")
-      private String inclusionSlot;
+      @JsonProperty("inclusion_delay")
+      private String inclusionDelay;
 
       @JsonProperty("proposer_index")
       private Long proposerIndex;
 
-      public String getInclusionSlot() {
-        return inclusionSlot;
+      public String getInclusionDelay() {
+        return inclusionDelay;
       }
 
-      public void setInclusionSlot(String inclusionSlot) {
-        this.inclusionSlot = inclusionSlot;
+      public void setInclusionDelay(String inclusionDelay) {
+        this.inclusionDelay = inclusionDelay;
       }
 
       public String getAggregationBitfield() {
@@ -835,6 +959,8 @@ public class StateTestCase implements NamedTestCase {
       @JsonProperty("eth1_data")
       private Eth1 eth1Data;
 
+      private String graffiti;
+
       @JsonProperty("proposer_slashings")
       private List<ProposerSlashingData> proposerSlashings;
 
@@ -845,7 +971,7 @@ public class StateTestCase implements NamedTestCase {
       private List<DepositData> deposits;
 
       @JsonProperty("voluntary_exits")
-      private List<ExitData> voluntaryExits;
+      private List<VoluntaryExitData> voluntaryExits;
 
       private List<TransferData> transfers;
 
@@ -863,6 +989,14 @@ public class StateTestCase implements NamedTestCase {
 
       public void setEth1Data(Eth1 eth1Data) {
         this.eth1Data = eth1Data;
+      }
+
+      public String getGraffiti() {
+        return graffiti;
+      }
+
+      public void setGraffiti(String graffiti) {
+        this.graffiti = graffiti;
       }
 
       public List<ProposerSlashingData> getProposerSlashings() {
@@ -897,11 +1031,11 @@ public class StateTestCase implements NamedTestCase {
         this.deposits = deposits;
       }
 
-      public List<ExitData> getVoluntaryExits() {
+      public List<VoluntaryExitData> getVoluntaryExits() {
         return voluntaryExits;
       }
 
-      public void setVoluntaryExits(List<ExitData> voluntaryExits) {
+      public void setVoluntaryExits(List<VoluntaryExitData> voluntaryExits) {
         this.voluntaryExits = voluntaryExits;
       }
 
@@ -1035,9 +1169,9 @@ public class StateTestCase implements NamedTestCase {
       }
 
       public static class AttesterSlashingData {
-        @JsonProperty("slashable_attestation_1")
+        @JsonProperty("attestation_1")
         private IndexedAttestationData slashableAttestation1;
-        @JsonProperty("slashable_attestation_2")
+        @JsonProperty("attestation_2")
         private IndexedAttestationData slashableAttestation2;
 
         public IndexedAttestationData getSlashableAttestation1() {
@@ -1130,7 +1264,7 @@ public class StateTestCase implements NamedTestCase {
         }
       }
 
-      public static class ExitData {
+      public static class VoluntaryExitData {
         private String epoch;
 
         @JsonProperty("validator_index")

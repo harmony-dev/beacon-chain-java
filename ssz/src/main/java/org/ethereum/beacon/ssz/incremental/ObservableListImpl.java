@@ -1,6 +1,5 @@
 package org.ethereum.beacon.ssz.incremental;
 
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
@@ -46,6 +45,11 @@ public class ObservableListImpl<IndexType extends Number, ValueType>
     return new ObservableListImpl<>(WriteList.create(indexConverter));
   }
 
+  public static <IndexType1 extends Number, ValueType1> WriteList<IndexType1, ValueType1> create(
+      Function<Integer, IndexType1> indexConverter, boolean vector) {
+    return new ObservableListImpl<>(WriteList.create(indexConverter, vector));
+  }
+
   @Override
   public WriteList<IndexType, ValueType> createMutableCopy() {
     return new ObservableListImpl<>(delegate.createMutableCopy(), observableHelper.fork());
@@ -88,15 +92,15 @@ public class ObservableListImpl<IndexType extends Number, ValueType>
   }
 
   @Override
-  public boolean addAll(Collection<? extends ValueType> c) {
+  public boolean addAll(Iterable<? extends ValueType> c) {
     int size = size().intValue();
     boolean ret = delegate.addAll(c);
-    observableHelper.childrenUpdated(size, c.size());
+    observableHelper.childrenUpdated(size, ReadList.sizeOf(c));
     return ret;
   }
 
   @Override
-  public boolean addAll(IndexType index, Collection<? extends ValueType> c) {
+  public boolean addAll(IndexType index, Iterable<? extends ValueType> c) {
     boolean ret = delegate.addAll(index, c);
     observableHelper.childrenUpdated(index.intValue(), size().intValue() - index.intValue());
     return ret;
@@ -228,5 +232,10 @@ public class ObservableListImpl<IndexType extends Number, ValueType>
     }
 
     return delegate.equals(obj);
+  }
+
+  @Override
+  public boolean isVector() {
+    return delegate.isVector();
   }
 }

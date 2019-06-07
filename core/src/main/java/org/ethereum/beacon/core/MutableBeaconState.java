@@ -86,6 +86,8 @@ public interface MutableBeaconState extends BeaconState {
   @Override
   WriteList<Integer, Eth1Data> getEth1DataVotes();
 
+  void setEth1DataVotes(WriteList<Integer, Eth1Data> eth1DataVotes);
+
   void setDepositIndex(UInt64 depositIndex);
 
   BeaconState createImmutable();
