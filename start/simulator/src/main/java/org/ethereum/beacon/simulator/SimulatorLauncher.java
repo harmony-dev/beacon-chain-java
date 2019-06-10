@@ -3,6 +3,7 @@ package org.ethereum.beacon.simulator;
 import java.io.File;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -25,6 +26,7 @@ import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.Eth1Data;
+import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
@@ -326,18 +328,12 @@ public class SimulatorLauncher implements Runnable {
             + summary.getPostState().getFinalizedEpoch().toString(specConstants)
         );
         logger.info("  Validators rewarded:"
-            + getValidators(" attestations: ", summary.getAttestationRewards())
-            + getValidators(" boundary: ", summary.getBoundaryAttestationRewards())
-            + getValidators(" head: ", summary.getBeaconHeadAttestationRewards())
-            + getValidators(" include distance: ", summary.getInclusionDistanceRewards())
-            + getValidators(" attest inclusion: ", summary.getAttestationInclusionRewards())
+            + getValidators(" attestations: ", summary.getAttestationDeltas()[0])
+            + getValidators(" crosslinks: ", summary.getCrosslinkDeltas()[0])
         );
         logger.info("  Validators penalized:"
-            + getValidators(" attestations: ", summary.getAttestationPenalties())
-            + getValidators(" boundary: ", summary.getBoundaryAttestationPenalties())
-            + getValidators(" head: ", summary.getBeaconHeadAttestationPenalties())
-            + getValidators(" penalized epoch: ", summary.getInitiatedExitPenalties())
-            + getValidators(" no finality: ", summary.getNoFinalityPenalties())
+            + getValidators(" attestations: ", summary.getAttestationDeltas()[1])
+            + getValidators(" crosslinks: ", summary.getCrosslinkDeltas()[1])
         );
       }
 
@@ -376,10 +372,15 @@ public class SimulatorLauncher implements Runnable {
     return depositContract;
   }
 
-  private static String getValidators(String info, Map<ValidatorIndex, ?> records) {
-    if (records.isEmpty()) return "";
-    return info + " ["
-        + records.entrySet().stream().map(e -> e.getKey().toString()).collect(Collectors.joining(","))
+  private static String getValidators(String info, Gwei[] balances) {
+    List<Integer> indices = new ArrayList<>();
+    for (int i = 0; i < balances.length; i++) {
+      if (balances[i].greater(Gwei.ZERO)) {
+        indices.add(i);
+      }
+    }
+    return indices.isEmpty() ? "" : info + " ["
+        + indices.stream().map(String::valueOf).collect(Collectors.joining(","))
         + "]";
   }
 
