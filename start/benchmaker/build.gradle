@@ -19,7 +19,7 @@ dependencies {
   implementation project(':db:core')
   implementation project(':chain')
   implementation project(':pow:core')
-  implementation project(':validator')
+  implementation project(':validator:embedded')
 
   implementation 'info.picocli:picocli'
   implementation 'com.google.guava:guava'

@@ -39,7 +39,7 @@ include 'test'
 include 'types'
 // Standalone utils without any relation to Ethereum 2.0
 include 'util'
-// Validator services
-include 'validator'
+// Built-in validator services
+include 'validator:embedded'
 // Wire API mock
 include 'wire'
