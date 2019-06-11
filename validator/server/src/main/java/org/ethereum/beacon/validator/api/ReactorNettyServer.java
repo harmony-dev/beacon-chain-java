@@ -28,8 +28,7 @@ public class ReactorNettyServer implements RestServer {
   private static final String SERVER_HOST = "localhost";
   private static final int SERVER_PORT = 1234;
   private DisposableServer server;
-  private ObjectMapper mapper =
-      new ObjectMapper().configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, true);
+  private ObjectMapper mapper = new ObjectMapper();
   private VersionResponse versionResponse = null;
   private TimeResponse timeResponse = null;
 
