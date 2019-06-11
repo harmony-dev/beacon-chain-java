@@ -41,5 +41,7 @@ include 'types'
 include 'util'
 // Built-in validator services
 include 'validator:embedded'
+// Validator server-side api
+include 'validator:server'
 // Wire API mock
 include 'wire'

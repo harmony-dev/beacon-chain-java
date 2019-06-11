@@ -1,0 +1,12 @@
+dependencies {
+  implementation project(':chain')
+  implementation project(':util')
+  
+  // Http Server
+  implementation 'io.projectreactor.netty:reactor-netty'
+
+  // REST Client
+  implementation 'org.glassfish.jersey.core:jersey-client:2.28'
+  implementation 'org.glassfish.jersey.inject:jersey-hk2:2.28'
+  implementation 'com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:2.9.9'
+}

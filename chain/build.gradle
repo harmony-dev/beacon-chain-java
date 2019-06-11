@@ -1,9 +1,9 @@
 dependencies {
-  implementation project(':types')
-  implementation project(':core')
+  api project(':core')
+  api project(':consensus')
+  api project(':db:core')
+  api project(':types')
   implementation project(':crypto')
-  implementation project(':consensus')
-  implementation project(':db:core')
   implementation project(':pow:core')
   api project(':ssz')
   implementation project(':util')

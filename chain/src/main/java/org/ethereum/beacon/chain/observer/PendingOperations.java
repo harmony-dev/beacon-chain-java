@@ -1,5 +1,6 @@
 package org.ethereum.beacon.chain.observer;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.ethereum.beacon.core.BeaconState;
@@ -14,6 +15,40 @@ import org.ethereum.beacon.core.types.SlotNumber;
 
 /** A pending state interface. */
 public interface PendingOperations {
+
+  static PendingOperations getEmpty() {
+    return new PendingOperations() {
+      @Override
+      public List<Attestation> getAttestations() {
+        return Collections.emptyList();
+      }
+
+      @Override
+      public List<ProposerSlashing> peekProposerSlashings(int maxCount) {
+        return Collections.emptyList();
+      }
+
+      @Override
+      public List<AttesterSlashing> peekAttesterSlashings(int maxCount) {
+        return Collections.emptyList();
+      }
+
+      @Override
+      public List<Attestation> peekAggregateAttestations(int maxCount) {
+        return Collections.emptyList();
+      }
+
+      @Override
+      public List<VoluntaryExit> peekExits(int maxCount) {
+        return Collections.emptyList();
+      }
+
+      @Override
+      public List<Transfer> peekTransfers(int maxCount) {
+        return Collections.emptyList();
+      }
+    };
+  }
 
   List<Attestation> getAttestations();
 
