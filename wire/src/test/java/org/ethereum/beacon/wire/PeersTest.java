@@ -151,7 +151,8 @@ public class PeersTest {
             peerManager.getWireApiSync(),
             syncQueue,
             1,
-            peer1.getSchedulers().events());
+            peer1.getSchedulers(),
+            peerManager.getMaxSlotStream());
 
         CountDownLatch syncLatch = new CountDownLatch(1);
         Flux.from(peer1.getBeaconChain().getBlockStatesStream())

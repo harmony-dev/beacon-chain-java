@@ -1,6 +1,7 @@
 package org.ethereum.beacon.validator.api;
 
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+import org.ethereum.beacon.validator.api.model.SyncingResponse;
 import org.ethereum.beacon.validator.api.model.TimeResponse;
 import org.ethereum.beacon.validator.api.model.VersionResponse;
 
@@ -31,5 +32,13 @@ public class RestClient {
         .path("/node/genesis_time")
         .request(MediaType.APPLICATION_JSON)
         .get(TimeResponse.class);
+  }
+
+  public SyncingResponse getSyncing() {
+    return client
+        .target(url)
+        .path("/node/syncing")
+        .request(MediaType.APPLICATION_JSON)
+        .get(SyncingResponse.class);
   }
 }

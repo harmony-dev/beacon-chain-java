@@ -1,7 +1,9 @@
 dependencies {
   implementation project(':chain')
   implementation project(':util')
-  
+  implementation project(':wire')
+  testImplementation project(':start:common')
+
   // Http Server
   implementation 'io.projectreactor.netty:reactor-netty'
 

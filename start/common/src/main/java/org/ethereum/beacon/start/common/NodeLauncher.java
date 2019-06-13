@@ -222,7 +222,8 @@ public class NodeLauncher {
         wireApiSyncRemote,
         syncQueue,
         1,
-        schedulers.events());
+        schedulers,
+        peerManager.getMaxSlotStream());
     syncManager.setRequestsDelay(Duration.ofSeconds(1), Duration.ofSeconds(5));
 
     if (startSyncManager) {

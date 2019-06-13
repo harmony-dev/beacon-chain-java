@@ -1,18 +1,5 @@
 package org.ethereum.beacon.wire.sync;
 
-import static java.lang.Math.max;
-import static org.ethereum.beacon.chain.MutableBeaconChain.ImportResult.ExistingBlock;
-import static org.ethereum.beacon.chain.MutableBeaconChain.ImportResult.ExpiredBlock;
-import static org.ethereum.beacon.chain.MutableBeaconChain.ImportResult.InvalidBlock;
-import static org.ethereum.beacon.chain.MutableBeaconChain.ImportResult.NoParent;
-import static org.ethereum.beacon.chain.MutableBeaconChain.ImportResult.OK;
-import static org.ethereum.beacon.chain.MutableBeaconChain.ImportResult.StateMismatch;
-
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.chain.BeaconTuple;
@@ -22,7 +9,10 @@ import org.ethereum.beacon.chain.MutableBeaconChain.ImportResult;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.schedulers.Scheduler;
+import org.ethereum.beacon.schedulers.Schedulers;
+import org.ethereum.beacon.stream.SimpleProcessor;
 import org.ethereum.beacon.wire.Feedback;
 import org.ethereum.beacon.wire.WireApiSync;
 import org.ethereum.beacon.wire.exceptions.WireInvalidConsensusDataException;
@@ -35,37 +25,43 @@ import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
-public class SyncManagerImpl {
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 
-  public enum SyncMode {
-    Long,
-    Short
-  }
+import static java.lang.Math.max;
+import static org.ethereum.beacon.chain.MutableBeaconChain.ImportResult.ExistingBlock;
+import static org.ethereum.beacon.chain.MutableBeaconChain.ImportResult.ExpiredBlock;
+import static org.ethereum.beacon.chain.MutableBeaconChain.ImportResult.InvalidBlock;
+import static org.ethereum.beacon.chain.MutableBeaconChain.ImportResult.NoParent;
+import static org.ethereum.beacon.chain.MutableBeaconChain.ImportResult.OK;
+import static org.ethereum.beacon.chain.MutableBeaconChain.ImportResult.StateMismatch;
+
+public class SyncManagerImpl implements SyncManager {
 
   private static final Logger logger = LogManager.getLogger(SyncManagerImpl.class);
 
   private final Publisher<BeaconTupleDetails> blockStatesStream;
+  private final SimpleProcessor<SyncStatus> syncStatusStream;
   private final BeaconChainSpec spec;
-
   private final WireApiSync syncApi;
-  private Publisher<Feedback<BeaconBlock>> newBlocks;
   private final SyncQueue syncQueue;
   private final ModeDetector modeDetector;
   private final Flux<SyncMode> syncModeFlux;
-
   FluxSink<Publisher<BlockRequest>> requestsStreams;
   Flux<BlockRequest> blockRequestFlux;
   Flux<BeaconBlock> finalizedBlockStream;
-
+  // TODO: make this parameter dynamic depending on active peers number
+  int maxConcurrentBlockRequests = 2;
+  private SyncStatus syncStatus = new SyncStatus(false, null, null, null);
+  private Publisher<Feedback<BeaconBlock>> newBlocks;
   private Disposable wireBlocksStreamSub;
   private Disposable finalizedBlockStreamSub;
   private Disposable readyBlocksStreamSub;
-
   private Duration requestsDelayLongMode = Duration.ZERO;
   private Duration requestsDelayShortMode = Duration.ofSeconds(1);
-
-  // TODO: make this parameter dynamic depending on active peers number
-  int maxConcurrentBlockRequests = 2;
 
   public SyncManagerImpl(
       MutableBeaconChain chain,
@@ -75,7 +71,8 @@ public class SyncManagerImpl {
       WireApiSync syncApi,
       SyncQueue syncQueue,
       int maxConcurrentBlockRequests,
-      Scheduler delayScheduler) {
+      Schedulers schedulers,
+      Publisher<SlotNumber> bestKnownSlotStream) {
 
     this.blockStatesStream = chain.getBlockStatesStream();
     this.newBlocks = newBlocks;
@@ -84,26 +81,33 @@ public class SyncManagerImpl {
     this.syncQueue = syncQueue;
     this.maxConcurrentBlockRequests = maxConcurrentBlockRequests;
 
-    modeDetector = new ModeDetector(
-        Flux.from(chain.getBlockStatesStream()).map(BeaconTuple::getBlock),
-        Flux.from(newBlocks).map(Feedback::get));
+    modeDetector =
+        new ModeDetector(
+            Flux.from(chain.getBlockStatesStream()).map(BeaconTuple::getBlock),
+            Flux.from(newBlocks).map(Feedback::get));
     syncModeFlux = Flux.from(modeDetector.getSyncModeStream()).replay(1).autoConnect();
-    blockRequestFlux = syncModeFlux
+    final Scheduler delayScheduler = schedulers.events();
+    blockRequestFlux =
+        syncModeFlux
             .doOnNext(mode -> logger.info("Switch sync to mode " + mode))
             .switchMap(
                 mode -> {
                   switch (mode) {
                     case Long:
-                      Flux<BlockRequest> blockRequestFlux = Flux.from(syncQueue.getBlockRequestsStream());
-                      return requestsDelayLongMode.toMillis() == 0 ? blockRequestFlux
-                          : blockRequestFlux.delayElements(requestsDelayLongMode, delayScheduler.toReactor());
+                      Flux<BlockRequest> blockRequestFlux =
+                          Flux.from(syncQueue.getBlockRequestsStream());
+                      return requestsDelayLongMode.toMillis() == 0
+                          ? blockRequestFlux
+                          : blockRequestFlux.delayElements(
+                              requestsDelayLongMode, delayScheduler.toReactor());
                     case Short:
                       return Flux.from(syncQueue.getBlockRequestsStream())
                           .delayElements(requestsDelayShortMode, delayScheduler.toReactor());
                     default:
                       throw new IllegalStateException();
                   }
-                }, 1);
+                },
+                1);
 
     Hash32 genesisBlockRoot =
         storage.getBlockStorage().getSlotBlocks(spec.getConstants().getGenesisSlot()).get(0);
@@ -139,8 +143,50 @@ public class SyncManagerImpl {
                     }
                   }
                 });
+
+    syncStatusStream = new SimpleProcessor<>(schedulers.events(), "SyncManager.syncStatus");
+    syncStatusUpdated();
+    this.syncStatus =
+        new SyncStatus(
+            syncStatus.isSyncing(),
+            chain.getRecentlyProcessed().getBlock().getSlot(),
+            syncStatus.getBestKnown(),
+            chain.getRecentlyProcessed().getBlock().getSlot());
+    Flux.from(bestKnownSlotStream)
+        .subscribe(
+            slotNumber -> {
+              this.syncStatus =
+                  new SyncStatus(
+                      syncStatus.isSyncing(),
+                      syncStatus.getStart(),
+                      slotNumber,
+                      syncStatus.getCurrent());
+              syncStatusUpdated();
+            });
+    Flux.from(blockStatesStream)
+        .subscribe(
+            beaconTupleDetails -> {
+              beaconTupleDetails
+                  .getPostSlotState()
+                  .map(
+                      beaconStateEx -> {
+                        SlotNumber slotNumber = beaconStateEx.getSlot();
+                        if (syncStatus.getCurrent() != null
+                            && syncStatus.getCurrent().less(slotNumber)) {
+                          this.syncStatus =
+                              new SyncStatus(
+                                  syncStatus.isSyncing(),
+                                  syncStatus.getStart(),
+                                  syncStatus.getBestKnown(),
+                                  slotNumber);
+                          syncStatusUpdated();
+                        }
+                        return slotNumber;
+                      });
+            });
   }
 
+  @Override
   public Publisher<Feedback<BeaconBlock>> getBlocksReadyToImport() {
     return syncQueue.getBlocksStream();
   }
@@ -150,44 +196,71 @@ public class SyncManagerImpl {
     this.requestsDelayShortMode = shortMode;
   }
 
+  @Override
   public void start() {
 
     finalizedBlockStreamSub = syncQueue.subscribeToFinalBlocks(finalizedBlockStream);
 
-    Flux<Feedback<List<BeaconBlock>>> wireBlocksStream = blockRequestFlux
-        .map(req -> new BlockHeadersRequestMessage(
-            req.getStartRoot().orElse(BlockHeadersRequestMessage.NULL_START_ROOT),
-            req.getStartSlot().orElse(BlockHeadersRequestMessage.NULL_START_SLOT),
-            req.getMaxCount(),
-            req.getStep()))
-        .flatMap(req -> Mono.fromFuture(syncApi.requestBlocks(req, spec.getObjectHasher())),
-            maxConcurrentBlockRequests)
-        .onErrorContinue((t, o) -> logger.warn("SyncApi exception: " + t + ", " + o));
+    Flux<Feedback<List<BeaconBlock>>> wireBlocksStream =
+        blockRequestFlux
+            .map(
+                req ->
+                    new BlockHeadersRequestMessage(
+                        req.getStartRoot().orElse(BlockHeadersRequestMessage.NULL_START_ROOT),
+                        req.getStartSlot().orElse(BlockHeadersRequestMessage.NULL_START_SLOT),
+                        req.getMaxCount(),
+                        req.getStep()))
+            .flatMap(
+                req -> Mono.fromFuture(syncApi.requestBlocks(req, spec.getObjectHasher())),
+                maxConcurrentBlockRequests)
+            .onErrorContinue((t, o) -> logger.warn("SyncApi exception: " + t + ", " + o));
 
     if (newBlocks != null) {
-      wireBlocksStream = wireBlocksStream.mergeWith(
-          Flux.from(newBlocks).map(blockF -> blockF.map(Collections::singletonList)));
+      wireBlocksStream =
+          wireBlocksStream.mergeWith(
+              Flux.from(newBlocks).map(blockF -> blockF.map(Collections::singletonList)));
     }
 
     wireBlocksStreamSub = syncQueue.subscribeToNewBlocks(wireBlocksStream);
+
+    this.syncStatus =
+        new SyncStatus(
+            true, syncStatus.getStart(), syncStatus.getBestKnown(), syncStatus.getCurrent());
+    syncStatusUpdated();
   }
 
+  private void syncStatusUpdated() {
+    if (!syncStatus.isSyncing()) {
+      return;
+    }
+
+    syncStatusStream.onNext(syncStatus);
+  }
+
+  @Override
   public void stop() {
     wireBlocksStreamSub.dispose();
     finalizedBlockStreamSub.dispose();
     readyBlocksStreamSub.dispose();
+    this.syncStatus = new SyncStatus(false, null, null, null);
+    syncStatusStream.onNext(syncStatus);
   }
 
+  @Override
   public Publisher<SyncMode> getSyncModeStream() {
     return syncModeFlux;
+  }
+
+  @Override
+  public Publisher<SyncStatus> getSyncStatusStream() {
+    return syncStatusStream;
   }
 
   class ModeDetector {
     Publisher<SyncMode> syncModeStream;
 
     public ModeDetector(
-        Publisher<BeaconBlock> importedBlocks,
-        Publisher<BeaconBlock> onlineBlocks) {
+        Publisher<BeaconBlock> importedBlocks, Publisher<BeaconBlock> onlineBlocks) {
 
       syncModeStream =
           Flux.combineLatest(
@@ -206,7 +279,8 @@ public class SyncManagerImpl {
     }
 
     private <A> ArrayList<A> listAddLimited(ArrayList<A> list, A elem, int maxSize) {
-      ArrayList<A> ret = new ArrayList<>(list.subList(max(0, list.size() + 1 - maxSize), list.size()));
+      ArrayList<A> ret =
+          new ArrayList<>(list.subList(max(0, list.size() + 1 - maxSize), list.size()));
       ret.add(elem);
       return ret;
     }

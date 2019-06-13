@@ -2,11 +2,12 @@ package org.ethereum.beacon.validator.api;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import org.ethereum.beacon.chain.observer.ObservableStateProcessor;
 import org.ethereum.beacon.schedulers.Schedulers;
+import org.ethereum.beacon.validator.api.model.SyncingResponse;
 import org.ethereum.beacon.validator.api.model.TimeResponse;
 import org.ethereum.beacon.validator.api.model.VersionResponse;
+import org.ethereum.beacon.wire.sync.SyncManager;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -16,6 +17,7 @@ import reactor.netty.http.server.HttpServerRequest;
 import reactor.netty.http.server.HttpServerResponse;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.net.URL;
 import java.util.Enumeration;
 import java.util.Properties;
@@ -31,8 +33,9 @@ public class ReactorNettyServer implements RestServer {
   private ObjectMapper mapper = new ObjectMapper();
   private VersionResponse versionResponse = null;
   private TimeResponse timeResponse = null;
+  private SyncingResponse syncingResponse = null;
 
-  public ReactorNettyServer(ObservableStateProcessor stateProcessor) {
+  public ReactorNettyServer(ObservableStateProcessor stateProcessor, SyncManager syncManager) {
     Flux.from(stateProcessor.getObservableStateStream())
         .subscribe(
             observableBeaconState -> {
@@ -42,6 +45,22 @@ public class ReactorNettyServer implements RestServer {
                         observableBeaconState.getLatestSlotState().getGenesisTime().getValue());
               }
             });
+    Flux.from(syncManager.getSyncStatusStream())
+        .subscribe(
+            syncStatus ->
+                syncingResponse =
+                    new SyncingResponse(
+                        syncStatus.isSyncing(),
+                        syncStatus.getStart() == null
+                            ? BigInteger.ZERO
+                            : syncStatus.getStart().toBI(),
+                        syncStatus.getCurrent() == null
+                            ? BigInteger.ZERO
+                            : syncStatus.getCurrent().toBI(),
+                        syncStatus.getBestKnown() == null
+                            ? BigInteger.ZERO
+                            : syncStatus.getBestKnown().toBI()));
+
     HttpServer httpServer = HttpServer.create().host(SERVER_HOST).port(SERVER_PORT);
     final HttpServer serverWithRoutes = addRoutes(httpServer);
 
@@ -79,8 +98,10 @@ public class ReactorNettyServer implements RestServer {
     return httpServer.route(
         routes ->
             routes
-                .get("/node/version", wrapJsonProducer(this::produceVersionJson))
+                .get("/node/version", wrapJsonProducer(this::produceVersionResponse))
                 .get("/node/genesis_time", wrapJsonProducer(this::produceGenesisTimeResponse))
+                .get("/node/syncing", wrapJsonProducer(this::produceSyncingResponse))
+        // TODO: Remove examples
         //                .post("/echo",
         //                    (request, response) -> response.send(request.receive().retain()))
         //                .get("/path/{param}",
@@ -89,7 +110,7 @@ public class ReactorNettyServer implements RestServer {
         );
   }
 
-  private String produceVersionJson() {
+  private String produceVersionResponse() {
     if (versionResponse == null) {
       Properties props = loadResources("rest-server.properties", this.getClass().getClassLoader());
       final String version = props.getProperty("versionNumber");
@@ -97,6 +118,14 @@ public class ReactorNettyServer implements RestServer {
     }
     try {
       return mapper.writeValueAsString(versionResponse);
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private String produceSyncingResponse() {
+    try {
+      return mapper.writeValueAsString(syncingResponse);
     } catch (JsonProcessingException e) {
       throw new RuntimeException(e);
     }

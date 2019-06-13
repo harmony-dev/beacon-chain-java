@@ -9,8 +9,11 @@ import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.SlotNumber;
+import org.ethereum.beacon.validator.api.model.SyncingResponse;
 import org.ethereum.beacon.validator.api.model.TimeResponse;
 import org.ethereum.beacon.validator.api.model.VersionResponse;
+import org.ethereum.beacon.wire.Feedback;
+import org.ethereum.beacon.wire.sync.SyncManager;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -19,6 +22,7 @@ import reactor.core.publisher.Mono;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class ReactorNettyApiTest {
@@ -59,6 +63,28 @@ public class ReactorNettyApiTest {
               public Publisher<PendingOperations> getPendingOperationsStream() {
                 return null;
               }
+            },
+            new SyncManager() {
+              @Override
+              public Publisher<Feedback<BeaconBlock>> getBlocksReadyToImport() {
+                return null;
+              }
+
+              @Override
+              public void start() {}
+
+              @Override
+              public void stop() {}
+
+              @Override
+              public Publisher<SyncMode> getSyncModeStream() {
+                return null;
+              }
+
+              @Override
+              public Publisher<SyncStatus> getSyncStatusStream() {
+                return Mono.just(new SyncStatus(false, null, null, null));
+              }
             });
   }
 
@@ -80,5 +106,11 @@ public class ReactorNettyApiTest {
     TimeResponse response = client.getGenesisTime();
     long time = response.getTime();
     assertEquals(0, time);
+  }
+
+  @Test
+  public void testSyncing() {
+    SyncingResponse response = client.getSyncing();
+    assertFalse(response.isSyncing());
   }
 }
