@@ -41,4 +41,8 @@ public class BLSPubkey extends DelegatingBytes48 {
     String s = super.toString();
     return s.substring(2, 6) + "..." + s.substring(94);
   }
+
+  public String toHexString() {
+    return super.toString();
+  }
 }

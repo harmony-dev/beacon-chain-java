@@ -1,17 +1,6 @@
 package org.ethereum.beacon.consensus.spec;
 
-import static java.lang.Math.min;
-import static java.util.stream.Collectors.toList;
-import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
-
 import com.google.common.collect.Ordering;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockHeader;
 import org.ethereum.beacon.core.BeaconState;
@@ -34,6 +23,7 @@ import org.ethereum.beacon.crypto.BLS381;
 import org.ethereum.beacon.crypto.BLS381.PublicKey;
 import org.ethereum.beacon.crypto.BLS381.Signature;
 import org.ethereum.beacon.crypto.MessageParameters;
+import org.javatuples.Pair;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes4;
@@ -43,6 +33,20 @@ import tech.pegasys.artemis.util.bytes.BytesValues;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
 import tech.pegasys.artemis.util.uint.UInt64s;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static java.lang.Math.min;
+import static java.util.stream.Collectors.toList;
+import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
 
 /**
  * Helper functions.
@@ -191,6 +195,43 @@ public interface HelperFunction extends SpecCommons {
     return ret;
   }
 
+  /**
+   * Produces map of validator duties (attesting and proposing) for provided epoch with provided
+   * state
+   *
+   * @param epoch Epoch
+   * @param state Beacon state
+   * @return Map: Slot: Pair with [Proposer, Attesters]
+   */
+  default Map<SlotNumber, Pair<ValidatorIndex, List<ShardCommittee>>>
+      get_validator_duties_for_epoch(BeaconState state, EpochNumber epoch) {
+    SlotNumber epochStart = get_epoch_start_slot(epoch);
+    UInt64 committeesPerSlot =
+        get_epoch_committee_count(state, epoch).dividedBy(getConstants().getSlotsPerEpoch());
+    Map<SlotNumber, Pair<ValidatorIndex, List<ShardCommittee>>> epochCommitees = new HashMap<>();
+    for (SlotNumber slotOffset = SlotNumber.ZERO;
+        slotOffset.less(getConstants().getSlotsPerEpoch());
+        slotOffset = slotOffset.increment()) {
+      List<ShardCommittee> ret = new ArrayList<>();
+      ValidatorIndex proposerIndex = null;
+      for (UInt64 offset :
+          UInt64s.iterate(
+              committeesPerSlot.times(slotOffset),
+              committeesPerSlot.times(slotOffset.increment()))) {
+        ShardNumber shard =
+            get_epoch_start_shard(state, epoch).plusModulo(offset, getConstants().getShardCount());
+        List<ValidatorIndex> committee = get_crosslink_committee(state, epoch, shard);
+        if (ret.isEmpty()) { // first committee
+          proposerIndex = get_beacon_proposer_index_for_committee(state, epoch, committee);
+        }
+        ret.add(new ShardCommittee(committee, shard));
+      }
+      epochCommitees.put(slotOffset.plus(epochStart), Pair.with(proposerIndex, ret));
+    }
+
+    return epochCommitees;
+  }
+
   /*
     def get_beacon_proposer_index(state: BeaconState) -> ValidatorIndex:
       """
@@ -223,6 +264,16 @@ public interface HelperFunction extends SpecCommons {
     ShardNumber shard = get_epoch_start_shard(state, epoch)
         .plusModulo(offset, getConstants().getShardCount());
     List<ValidatorIndex> first_committee = get_crosslink_committee(state, epoch, shard);
+
+    return  get_beacon_proposer_index_for_committee(state, epoch, first_committee);
+  }
+
+  /**
+   * Artificial method dedicated to {@link #get_beacon_proposer_index(BeaconState)} calculation with
+   * first committee already found
+   */
+  default ValidatorIndex get_beacon_proposer_index_for_committee(
+      BeaconState state, EpochNumber epoch, List<ValidatorIndex> first_committee) {
     Hash32 seed = generate_seed(state, epoch);
     int i = 0;
     while (true) {

@@ -4,6 +4,7 @@ import org.ethereum.beacon.chain.BeaconChainHead;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.observer.ObservableStateProcessor;
 import org.ethereum.beacon.chain.observer.PendingOperations;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockBody;
@@ -11,6 +12,7 @@ import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.validator.api.model.SyncingResponse;
 import org.ethereum.beacon.validator.api.model.TimeResponse;
+import org.ethereum.beacon.validator.api.model.ValidatorDutiesResponse;
 import org.ethereum.beacon.validator.api.model.VersionResponse;
 import org.ethereum.beacon.wire.Feedback;
 import org.ethereum.beacon.wire.sync.SyncManager;
@@ -20,6 +22,8 @@ import org.junit.Test;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 import tech.pegasys.artemis.ethereum.core.Hash32;
+
+import javax.ws.rs.ServiceUnavailableException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -35,6 +39,7 @@ public class ReactorNettyApiTest {
     this.client = new RestClient(SERVER_URL);
     this.server =
         new ReactorNettyServer(
+            BeaconChainSpec.createWithDefaults(),
             new ObservableStateProcessor() {
               @Override
               public void start() {}
@@ -83,7 +88,7 @@ public class ReactorNettyApiTest {
 
               @Override
               public Publisher<SyncStatus> getSyncStatusStream() {
-                return Mono.just(new SyncStatus(false, null, null, null));
+                return Mono.just(new SyncStatus(false, null, null, null, null));
               }
             });
   }
@@ -112,5 +117,20 @@ public class ReactorNettyApiTest {
   public void testSyncing() {
     SyncingResponse response = client.getSyncing();
     assertFalse(response.isSyncing());
+  }
+
+  @Test(expected = ServiceUnavailableException.class) // 503
+  public void testValidatorDuties() {
+    String pubkey1 =
+        "0x5F1847060C89CB12A92AFF4EF140C9FC3A3F026796EC15105F1847060C89CB12A92AFF4EF140C9FC3A3F026796EC1510";
+    ValidatorDutiesResponse response1 = client.getValidatorDuties(0L, new String[] {pubkey1});
+    assertEquals(1, response1.getValdatorDutyList().size());
+    ValidatorDutiesResponse.ValidatorDuty validatorDuty = response1.getValdatorDutyList().get(0);
+    assertEquals(pubkey1.toLowerCase(), validatorDuty.getValidatorPubkey().toLowerCase());
+    // TODO:
+    // 200 OK
+    // 400 Invalid request syntax.
+    // 406 Duties cannot be provided for the requested epoch.
+    // 500 Beacon node internal error.
   }
 }

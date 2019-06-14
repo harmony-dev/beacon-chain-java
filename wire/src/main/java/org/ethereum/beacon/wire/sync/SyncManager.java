@@ -26,12 +26,14 @@ public interface SyncManager {
     private final SlotNumber start;
     private final SlotNumber bestKnown;
     private final SlotNumber current;
+    private final SyncMode syncMode;
 
-    public SyncStatus(boolean syncing, SlotNumber start, SlotNumber bestKnown, SlotNumber current) {
+    public SyncStatus(boolean syncing, SlotNumber start, SlotNumber bestKnown, SlotNumber current, SyncMode syncMode) {
       this.syncing = syncing;
       this.start = start;
       this.bestKnown = bestKnown;
       this.current = current;
+      this.syncMode = syncMode;
     }
 
     public boolean isSyncing() {
@@ -48,6 +50,10 @@ public interface SyncManager {
 
     public SlotNumber getCurrent() {
       return current;
+    }
+
+    public SyncMode getSyncMode() {
+      return syncMode;
     }
   }
 }

@@ -3,6 +3,7 @@ package org.ethereum.beacon.validator.api;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import org.ethereum.beacon.validator.api.model.SyncingResponse;
 import org.ethereum.beacon.validator.api.model.TimeResponse;
+import org.ethereum.beacon.validator.api.model.ValidatorDutiesResponse;
 import org.ethereum.beacon.validator.api.model.VersionResponse;
 
 import javax.ws.rs.client.Client;
@@ -40,5 +41,15 @@ public class RestClient {
         .path("/node/syncing")
         .request(MediaType.APPLICATION_JSON)
         .get(SyncingResponse.class);
+  }
+
+  public ValidatorDutiesResponse getValidatorDuties(Long epoch, String[] pubKeys) {
+    return client
+        .target(url)
+        .path("/validator/duties")
+        .queryParam("validator_pubkeys", (Object[]) pubKeys)
+        .queryParam("epoch", epoch)
+        .request(MediaType.APPLICATION_JSON)
+        .get(ValidatorDutiesResponse.class);
   }
 }

@@ -55,7 +55,7 @@ public class SyncManagerImpl implements SyncManager {
   Flux<BeaconBlock> finalizedBlockStream;
   // TODO: make this parameter dynamic depending on active peers number
   int maxConcurrentBlockRequests = 2;
-  private SyncStatus syncStatus = new SyncStatus(false, null, null, null);
+  private SyncStatus syncStatus = new SyncStatus(false, null, null, null, null);
   private Publisher<Feedback<BeaconBlock>> newBlocks;
   private Disposable wireBlocksStreamSub;
   private Disposable finalizedBlockStreamSub;
@@ -151,7 +151,17 @@ public class SyncManagerImpl implements SyncManager {
             syncStatus.isSyncing(),
             chain.getRecentlyProcessed().getBlock().getSlot(),
             syncStatus.getBestKnown(),
-            chain.getRecentlyProcessed().getBlock().getSlot());
+            chain.getRecentlyProcessed().getBlock().getSlot(),
+            syncStatus.getSyncMode());
+    Flux.from(syncModeFlux).subscribe(
+        syncMode -> this.syncStatus =
+            new SyncStatus(
+                syncStatus.isSyncing(),
+                syncStatus.getStart(),
+                syncStatus.getBestKnown(),
+                syncStatus.getCurrent(),
+                syncMode)
+    );
     Flux.from(bestKnownSlotStream)
         .subscribe(
             slotNumber -> {
@@ -160,7 +170,8 @@ public class SyncManagerImpl implements SyncManager {
                       syncStatus.isSyncing(),
                       syncStatus.getStart(),
                       slotNumber,
-                      syncStatus.getCurrent());
+                      syncStatus.getCurrent(),
+                      syncStatus.getSyncMode());
               syncStatusUpdated();
             });
     Flux.from(blockStatesStream)
@@ -178,7 +189,8 @@ public class SyncManagerImpl implements SyncManager {
                                   syncStatus.isSyncing(),
                                   syncStatus.getStart(),
                                   syncStatus.getBestKnown(),
-                                  slotNumber);
+                                  slotNumber,
+                                  syncStatus.getSyncMode());
                           syncStatusUpdated();
                         }
                         return slotNumber;
@@ -225,7 +237,7 @@ public class SyncManagerImpl implements SyncManager {
 
     this.syncStatus =
         new SyncStatus(
-            true, syncStatus.getStart(), syncStatus.getBestKnown(), syncStatus.getCurrent());
+            true, syncStatus.getStart(), syncStatus.getBestKnown(), syncStatus.getCurrent(), syncStatus.getSyncMode());
     syncStatusUpdated();
   }
 
@@ -242,7 +254,7 @@ public class SyncManagerImpl implements SyncManager {
     wireBlocksStreamSub.dispose();
     finalizedBlockStreamSub.dispose();
     readyBlocksStreamSub.dispose();
-    this.syncStatus = new SyncStatus(false, null, null, null);
+    this.syncStatus = new SyncStatus(false, null, null, null, null);
     syncStatusStream.onNext(syncStatus);
   }
 
