@@ -2,6 +2,7 @@ dependencies {
   implementation project(':chain')
   implementation project(':util')
   implementation project(':wire')
+  implementation project(':validator:embedded')
   testImplementation project(':start:common')
 
   // Http Server

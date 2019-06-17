@@ -3,15 +3,19 @@ package org.ethereum.beacon.validator.api;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.observer.ObservableStateProcessor;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
-import org.ethereum.beacon.consensus.BeaconStateEx;
+import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.state.ShardCommittee;
 import org.ethereum.beacon.core.types.BLSPubkey;
+import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.schedulers.Schedulers;
+import org.ethereum.beacon.validator.BeaconChainProposer;
+import org.ethereum.beacon.validator.api.convert.BlockDataToBlock;
 import org.ethereum.beacon.validator.api.model.SyncingResponse;
 import org.ethereum.beacon.validator.api.model.TimeResponse;
 import org.ethereum.beacon.validator.api.model.ValidatorDutiesResponse;
@@ -25,6 +29,7 @@ import reactor.netty.DisposableServer;
 import reactor.netty.http.server.HttpServer;
 import reactor.netty.http.server.HttpServerRequest;
 import reactor.netty.http.server.HttpServerResponse;
+import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 import java.io.IOException;
@@ -52,21 +57,26 @@ public class ReactorNettyServer implements RestServer {
   private static final String SERVER_HOST = "localhost";
   private static final int SERVER_PORT = 1234;
   private final BeaconChainSpec spec;
+  private final BeaconChainProposer beaconChainProposer;
   private DisposableServer server;
   private ObjectMapper mapper = new ObjectMapper();
   private VersionResponse versionResponse = null;
   private TimeResponse timeResponse = null;
   private SyncingResponse syncingResponse = null;
   private boolean shortSync = false;
-  private BeaconStateEx latestState = null;
+  private ObservableBeaconState observableBeaconState = null;
 
   public ReactorNettyServer(
-      BeaconChainSpec spec, ObservableStateProcessor stateProcessor, SyncManager syncManager) {
+      BeaconChainSpec spec,
+      ObservableStateProcessor stateProcessor,
+      SyncManager syncManager,
+      BeaconChainProposer beaconChainProposer) {
     this.spec = spec;
+    this.beaconChainProposer = beaconChainProposer;
     Flux.from(stateProcessor.getObservableStateStream())
         .subscribe(
             observableBeaconState -> {
-              this.latestState = observableBeaconState.getLatestSlotState();
+              this.observableBeaconState = observableBeaconState;
               if (timeResponse == null) {
                 timeResponse =
                     new TimeResponse(
@@ -151,7 +161,8 @@ public class ReactorNettyServer implements RestServer {
                 .get("/node/version", wrapJsonSupplier(this::produceVersionResponse))
                 .get("/node/genesis_time", wrapJsonSupplier(this::produceGenesisTimeResponse))
                 .get("/node/syncing", wrapJsonSupplier(this::produceSyncingResponse))
-                .get("/validator/duties", wrapJsonFunction(this::produceValidatorDutiesResponse)));
+                .get("/validator/duties", wrapJsonFunction(this::produceValidatorDutiesResponse))
+                .get("/validator/block", wrapJsonFunction(this::produceValidatorBlockResponse)));
   }
 
   private String produceVersionResponse() {
@@ -187,11 +198,12 @@ public class ReactorNettyServer implements RestServer {
               .map(BLSPubkey::fromHexString)
               .collect(Collectors.toList());
       Map<SlotNumber, Pair<ValidatorIndex, List<ShardCommittee>>> validatorDuties =
-          spec.get_validator_duties_for_epoch(latestState, epoch);
+          spec.get_validator_duties_for_epoch(observableBeaconState.getLatestSlotState(), epoch);
 
       List<ValidatorDutiesResponse.ValidatorDuty> responseList = new ArrayList<>();
       for (BLSPubkey pubkey : pubKeys) {
-        ValidatorIndex validatorIndex = spec.get_validator_index_by_pubkey(latestState, pubkey);
+        ValidatorIndex validatorIndex =
+            spec.get_validator_index_by_pubkey(observableBeaconState.getLatestSlotState(), pubkey);
         ValidatorDutiesResponse.ValidatorDuty duty = new ValidatorDutiesResponse.ValidatorDuty();
         boolean attesterFound = false;
         boolean proposerFound = false;
@@ -226,6 +238,26 @@ public class ReactorNettyServer implements RestServer {
       // TODO: 406 Duties cannot be provided for the requested epoch. What epochs?
 
       return mapper.writeValueAsString(new ValidatorDutiesResponse(responseList));
+    } catch (AssertionError | UnsupportedEncodingException | URISyntaxException ex) {
+      throw new InvalidRequestSyntaxException(ex);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private String produceValidatorBlockResponse(HttpServerRequest request) {
+    try {
+      Map<String, List<String>> params = splitQuery(new URI(request.uri()));
+      assert params.containsKey("randao_reveal");
+      assert params.get("randao_reveal").size() == 1;
+      assert params.containsKey("slot");
+      assert params.get("slot").size() == 1;
+      SlotNumber slot = SlotNumber.castFrom(UInt64.valueOf(params.get("slot").get(0)));
+      BLSSignature randaoReveal =
+          BLSSignature.wrap(Bytes96.fromHexString(params.get("randao_reveal").get(0)));
+      BeaconBlock.Builder builder =
+          beaconChainProposer.prepareBuilder(slot, randaoReveal, observableBeaconState);
+      return mapper.writeValueAsString(BlockDataToBlock.serialize(builder.build()));
     } catch (AssertionError | UnsupportedEncodingException | URISyntaxException ex) {
       throw new InvalidRequestSyntaxException(ex);
     } catch (Exception e) {

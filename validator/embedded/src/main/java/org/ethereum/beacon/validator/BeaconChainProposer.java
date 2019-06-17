@@ -4,6 +4,7 @@ import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.validator.crypto.MessageSigner;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 
@@ -24,6 +25,17 @@ public interface BeaconChainProposer {
    * @return created block.
    */
   BeaconBlock propose(ObservableBeaconState observableState, MessageSigner<BLSSignature> signer);
+
+  /**
+   * Prepares builder with complete block without signature to sign it off later.
+   * Part of {@link #propose(ObservableBeaconState, MessageSigner)} logic without signing and distribution
+   * @param slot                Slot number we are going to create block for
+   * @param randaoReveal        Signer RANDAO reveal
+   * @param observableState     A state on top of which new block is created.
+   * @return builder with unsigned block, ready for sign and distribution
+   */
+  BeaconBlock.Builder prepareBuilder(
+      SlotNumber slot, BLSSignature randaoReveal, ObservableBeaconState observableState);
 
   /**
    * Given a state returns graffiti value.

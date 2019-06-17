@@ -1,14 +1,5 @@
 package org.ethereum.beacon.validator.proposer;
 
-import static org.ethereum.beacon.core.spec.SignatureDomains.BEACON_PROPOSER;
-import static org.ethereum.beacon.core.spec.SignatureDomains.RANDAO;
-
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.observer.PendingOperations;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
@@ -26,6 +17,7 @@ import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.pow.DepositContract.DepositInfo;
 import org.ethereum.beacon.validator.BeaconChainProposer;
@@ -35,6 +27,16 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
+
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import static org.ethereum.beacon.core.spec.SignatureDomains.BEACON_PROPOSER;
+import static org.ethereum.beacon.core.spec.SignatureDomains.RANDAO;
 
 /**
  * An implementation of beacon chain proposer.
@@ -64,9 +66,20 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
   public BeaconBlock propose(
       ObservableBeaconState observableState, MessageSigner<BLSSignature> signer) {
     BeaconStateEx state = observableState.getLatestSlotState();
-
-    Hash32 parentRoot = spec.get_block_root_at_slot(state, state.getSlot().decrement());
     BLSSignature randaoReveal = getRandaoReveal(state, signer);
+    Builder builder = prepareBuilder(state.getSlot(), randaoReveal, observableState);
+    BLSSignature signature = getProposalSignature(state, builder.build(), signer);
+    builder.withSignature(signature);
+
+    return builder.build();
+  }
+
+  /** Prepares builder with complete block without signature to sign it off later */
+  public Builder prepareBuilder(
+      SlotNumber slot, BLSSignature randaoReveal, ObservableBeaconState observableState) {
+    BeaconStateEx state = observableState.getLatestSlotState();
+
+    Hash32 parentRoot = spec.get_block_root_at_slot(state, slot.decrement());
     Eth1Data eth1Data = getEth1Data(state);
     BeaconBlockBody blockBody =
         getBlockBody(state, observableState.getPendingOperations(), randaoReveal, eth1Data);
@@ -74,7 +87,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
     // create new block
     Builder builder = BeaconBlock.Builder.createEmpty();
     builder
-        .withSlot(state.getSlot())
+        .withSlot(slot)
         .withParentRoot(parentRoot)
         .withStateRoot(Hash32.ZERO)
         .withSignature(BLSSignature.ZERO)
@@ -85,12 +98,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
     BeaconState newState = perBlockTransition.apply(state, newBlock);
     builder.withStateRoot(spec.hash_tree_root(newState));
 
-    // sign off on proposal
-    BeaconBlock blockWithoutSignature = builder.build();
-    BLSSignature signature = getProposalSignature(state, blockWithoutSignature, signer);
-    builder.withSignature(signature);
-
-    return builder.build();
+    return builder;
   }
 
   /**

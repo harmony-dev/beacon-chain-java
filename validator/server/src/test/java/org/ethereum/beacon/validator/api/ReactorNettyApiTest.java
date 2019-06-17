@@ -10,10 +10,13 @@ import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.SlotNumber;
+import org.ethereum.beacon.validator.BeaconChainProposer;
+import org.ethereum.beacon.validator.api.model.BlockData;
 import org.ethereum.beacon.validator.api.model.SyncingResponse;
 import org.ethereum.beacon.validator.api.model.TimeResponse;
 import org.ethereum.beacon.validator.api.model.ValidatorDutiesResponse;
 import org.ethereum.beacon.validator.api.model.VersionResponse;
+import org.ethereum.beacon.validator.crypto.MessageSigner;
 import org.ethereum.beacon.wire.Feedback;
 import org.ethereum.beacon.wire.sync.SyncManager;
 import org.junit.After;
@@ -24,6 +27,7 @@ import reactor.core.publisher.Mono;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
 import javax.ws.rs.ServiceUnavailableException;
+import java.math.BigInteger;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -90,6 +94,22 @@ public class ReactorNettyApiTest {
               public Publisher<SyncStatus> getSyncStatusStream() {
                 return Mono.just(new SyncStatus(false, null, null, null, null));
               }
+            },
+            new BeaconChainProposer() {
+              @Override
+              public BeaconBlock propose(
+                  ObservableBeaconState observableState, MessageSigner<BLSSignature> signer) {
+                return null;
+              }
+
+              @Override
+              public BeaconBlock.Builder prepareBuilder(
+                  SlotNumber slot,
+                  BLSSignature randaoReveal,
+                  ObservableBeaconState observableState) {
+                // TODO
+                return null;
+              }
             });
   }
 
@@ -131,6 +151,17 @@ public class ReactorNettyApiTest {
     // 200 OK
     // 400 Invalid request syntax.
     // 406 Duties cannot be provided for the requested epoch.
+    // 500 Beacon node internal error.
+  }
+
+  @Test(expected = ServiceUnavailableException.class) // 503
+  public void testBlock() {
+    String randaoReveal =
+        "0x5F1847060C89CB12A92AFF4EF140C9FC3A3F026796EC15105F1847060C89CB12A92AFF4EF140C9FC3A3F026796EC1510";
+    BlockData response1 = client.getBlock(BigInteger.valueOf(1), randaoReveal);
+    // TODO:
+    // 200 OK
+    // 400 Invalid request syntax.
     // 500 Beacon node internal error.
   }
 }

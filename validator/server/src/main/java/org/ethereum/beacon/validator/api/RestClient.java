@@ -1,6 +1,7 @@
 package org.ethereum.beacon.validator.api;
 
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+import org.ethereum.beacon.validator.api.model.BlockData;
 import org.ethereum.beacon.validator.api.model.SyncingResponse;
 import org.ethereum.beacon.validator.api.model.TimeResponse;
 import org.ethereum.beacon.validator.api.model.ValidatorDutiesResponse;
@@ -9,6 +10,7 @@ import org.ethereum.beacon.validator.api.model.VersionResponse;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.core.MediaType;
+import java.math.BigInteger;
 
 public class RestClient {
   private final Client client;
@@ -51,5 +53,15 @@ public class RestClient {
         .queryParam("epoch", epoch)
         .request(MediaType.APPLICATION_JSON)
         .get(ValidatorDutiesResponse.class);
+  }
+
+  public BlockData getBlock(BigInteger slot, String randaoReveal) {
+    return client
+        .target(url)
+        .path("/validator/block")
+        .queryParam("slot", slot)
+        .queryParam("randao_reveal", randaoReveal)
+        .request(MediaType.APPLICATION_JSON)
+        .get(BlockData.class);
   }
 }
