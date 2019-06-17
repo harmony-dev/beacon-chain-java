@@ -2,7 +2,10 @@ package org.ethereum.beacon.validator.api;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Charsets;
+import com.google.common.io.CharStreams;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import org.ethereum.beacon.chain.MutableBeaconChain;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.observer.ObservableStateProcessor;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
@@ -16,10 +19,13 @@ import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.validator.BeaconChainProposer;
 import org.ethereum.beacon.validator.api.convert.BlockDataToBlock;
+import org.ethereum.beacon.validator.api.model.AcceptBlock;
+import org.ethereum.beacon.validator.api.model.BlockSubmit;
 import org.ethereum.beacon.validator.api.model.SyncingResponse;
 import org.ethereum.beacon.validator.api.model.TimeResponse;
 import org.ethereum.beacon.validator.api.model.ValidatorDutiesResponse;
 import org.ethereum.beacon.validator.api.model.VersionResponse;
+import org.ethereum.beacon.wire.WireApiSub;
 import org.ethereum.beacon.wire.sync.SyncManager;
 import org.javatuples.Pair;
 import org.reactivestreams.Publisher;
@@ -33,6 +39,7 @@ import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.net.URI;
@@ -58,6 +65,8 @@ public class ReactorNettyServer implements RestServer {
   private static final int SERVER_PORT = 1234;
   private final BeaconChainSpec spec;
   private final BeaconChainProposer beaconChainProposer;
+  private final WireApiSub wireApiSub;
+  private final MutableBeaconChain beaconChain;
   private DisposableServer server;
   private ObjectMapper mapper = new ObjectMapper();
   private VersionResponse versionResponse = null;
@@ -70,9 +79,13 @@ public class ReactorNettyServer implements RestServer {
       BeaconChainSpec spec,
       ObservableStateProcessor stateProcessor,
       SyncManager syncManager,
-      BeaconChainProposer beaconChainProposer) {
+      BeaconChainProposer beaconChainProposer,
+      WireApiSub wireApiSub,
+      MutableBeaconChain beaconChain) {
     this.spec = spec;
     this.beaconChainProposer = beaconChainProposer;
+    this.wireApiSub = wireApiSub;
+    this.beaconChain = beaconChain;
     Flux.from(stateProcessor.getObservableStateStream())
         .subscribe(
             observableBeaconState -> {
@@ -162,7 +175,8 @@ public class ReactorNettyServer implements RestServer {
                 .get("/node/genesis_time", wrapJsonSupplier(this::produceGenesisTimeResponse))
                 .get("/node/syncing", wrapJsonSupplier(this::produceSyncingResponse))
                 .get("/validator/duties", wrapJsonFunction(this::produceValidatorDutiesResponse))
-                .get("/validator/block", wrapJsonFunction(this::produceValidatorBlockResponse)));
+                .get("/validator/block", wrapJsonFunction(this::produceValidatorBlockResponse))
+                .post("/validator/block", wrapJsonPublisher(this::produceAcceptBlockResponse)));
   }
 
   private String produceVersionResponse() {
@@ -265,6 +279,36 @@ public class ReactorNettyServer implements RestServer {
     }
   }
 
+  private Publisher<? extends String> produceAcceptBlockResponse(HttpServerRequest request) {
+    return request
+        .receive()
+        .asInputStream()
+        .map(
+            inputStream -> {
+              try {
+                String result =
+                    CharStreams.toString(new InputStreamReader(inputStream, Charsets.UTF_8));
+                BeaconBlock block =
+                    BlockDataToBlock.deserialize(
+                        mapper.readValue(result, BlockSubmit.class).getBeaconBlock());
+                // Import
+                MutableBeaconChain.ImportResult importResult = beaconChain.insert(block);
+                if (!MutableBeaconChain.ImportResult.OK.equals(importResult)) {
+                  throw new ImportFailureException(importResult.toString());
+                }
+                // Broadcast
+                wireApiSub.sendProposedBlock(block);
+                return mapper.writeValueAsString(new AcceptBlock());
+              } catch (ImportFailureException e) {
+                throw e;
+              } catch (AssertionError ex) {
+                throw new InvalidRequestSyntaxException(ex);
+              } catch (Exception e) {
+                throw new RuntimeException(e);
+              }
+            });
+  }
+
   private BiFunction<HttpServerRequest, HttpServerResponse, Publisher<Void>> wrapJsonSupplier(
       Supplier<String> response) {
     return (httpServerRequest, httpServerResponse) ->
@@ -276,13 +320,16 @@ public class ReactorNettyServer implements RestServer {
   /**
    * Executes response function to produce reponse JSON and adds apropriate headers to the response
    *
-   * <p>Responses with 503 SERVICE UNAVAILABLE when not in short sync mode
+   * <p>Responses with 202 ACCEPTED when catches {@link ImportFailureException} from response
+   * function
    *
    * <p>Responses with 400 BAD REQUEST when catches {@link InvalidRequestSyntaxException} from
    * response function
+   *
+   * <p>Responses with 503 SERVICE UNAVAILABLE when not in short sync mode
    */
-  private BiFunction<HttpServerRequest, HttpServerResponse, Publisher<Void>> wrapJsonFunction(
-      Function<HttpServerRequest, String> response) {
+  private BiFunction<HttpServerRequest, HttpServerResponse, Publisher<Void>> wrapJsonPublisher(
+      Function<HttpServerRequest, Publisher<? extends String>> response) {
     return (httpServerRequest, httpServerResponse) -> {
       if (!shortSync) {
         // 503 Beacon node is currently syncing, try again later.
@@ -292,11 +339,22 @@ public class ReactorNettyServer implements RestServer {
       try {
         return httpServerResponse
             .addHeader("Content-type", "application/json")
-            .sendString(Mono.just(response.apply(httpServerRequest)));
+            .sendString(response.apply(httpServerRequest));
+      } catch (ImportFailureException ex) {
+        return httpServerResponse.status(HttpResponseStatus.ACCEPTED).send();
       } catch (InvalidRequestSyntaxException ex) {
         return httpServerResponse.status(HttpResponseStatus.BAD_REQUEST).send();
       }
     };
+  }
+
+  /** Wrapper over {@link #wrapJsonPublisher(Function)} with Mono.just */
+  private BiFunction<HttpServerRequest, HttpServerResponse, Publisher<Void>> wrapJsonFunction(
+      Function<HttpServerRequest, String> response) {
+    return wrapJsonPublisher(
+        (httpServerRequest) -> {
+          return Mono.just(response.apply(httpServerRequest));
+        });
   }
 
   private String produceGenesisTimeResponse() {

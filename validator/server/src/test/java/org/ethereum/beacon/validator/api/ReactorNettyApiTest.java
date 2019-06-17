@@ -1,6 +1,9 @@
 package org.ethereum.beacon.validator.api;
 
 import org.ethereum.beacon.chain.BeaconChainHead;
+import org.ethereum.beacon.chain.BeaconTuple;
+import org.ethereum.beacon.chain.BeaconTupleDetails;
+import org.ethereum.beacon.chain.MutableBeaconChain;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.observer.ObservableStateProcessor;
 import org.ethereum.beacon.chain.observer.PendingOperations;
@@ -8,9 +11,11 @@ import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockBody;
+import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.validator.BeaconChainProposer;
+import org.ethereum.beacon.validator.api.convert.BlockDataToBlock;
 import org.ethereum.beacon.validator.api.model.BlockData;
 import org.ethereum.beacon.validator.api.model.SyncingResponse;
 import org.ethereum.beacon.validator.api.model.TimeResponse;
@@ -18,6 +23,7 @@ import org.ethereum.beacon.validator.api.model.ValidatorDutiesResponse;
 import org.ethereum.beacon.validator.api.model.VersionResponse;
 import org.ethereum.beacon.validator.crypto.MessageSigner;
 import org.ethereum.beacon.wire.Feedback;
+import org.ethereum.beacon.wire.WireApiSub;
 import org.ethereum.beacon.wire.sync.SyncManager;
 import org.junit.After;
 import org.junit.Before;
@@ -27,6 +33,7 @@ import reactor.core.publisher.Mono;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
 import javax.ws.rs.ServiceUnavailableException;
+import javax.ws.rs.core.Response;
 import java.math.BigInteger;
 
 import static org.junit.Assert.assertEquals;
@@ -46,7 +53,8 @@ public class ReactorNettyApiTest {
             BeaconChainSpec.createWithDefaults(),
             new ObservableStateProcessor() {
               @Override
-              public void start() {}
+              public void start() {
+              }
 
               @Override
               public Publisher<BeaconChainHead> getHeadStream() {
@@ -80,10 +88,12 @@ public class ReactorNettyApiTest {
               }
 
               @Override
-              public void start() {}
+              public void start() {
+              }
 
               @Override
-              public void stop() {}
+              public void stop() {
+              }
 
               @Override
               public Publisher<SyncMode> getSyncModeStream() {
@@ -109,6 +119,47 @@ public class ReactorNettyApiTest {
                   ObservableBeaconState observableState) {
                 // TODO
                 return null;
+              }
+            }, new WireApiSub() {
+          @Override
+          public void sendProposedBlock(BeaconBlock block) {
+
+          }
+
+          @Override
+          public void sendAttestation(Attestation attestation) {
+
+          }
+
+          @Override
+          public Publisher<BeaconBlock> inboundBlocksStream() {
+            return null;
+          }
+
+          @Override
+          public Publisher<Attestation> inboundAttestationsStream() {
+            return null;
+          }
+        },
+            new MutableBeaconChain() {
+              @Override
+              public ImportResult insert(BeaconBlock block) {
+                return ImportResult.NoParent;
+              }
+
+              @Override
+              public Publisher<BeaconTupleDetails> getBlockStatesStream() {
+                return null;
+              }
+
+              @Override
+              public BeaconTuple getRecentlyProcessed() {
+                return null;
+              }
+
+              @Override
+              public void init() {
+
               }
             });
   }
@@ -161,6 +212,23 @@ public class ReactorNettyApiTest {
     BlockData response1 = client.getBlock(BigInteger.valueOf(1), randaoReveal);
     // TODO:
     // 200 OK
+    // 400 Invalid request syntax.
+    // 500 Beacon node internal error.
+  }
+
+  @Test
+  public void testBlockSubmit() {
+    BeaconBlock block = BeaconBlock.Builder.createEmpty()
+        .withSignature(BLSSignature.ZERO)
+        .withStateRoot(Hash32.ZERO)
+        .withSlot(SlotNumber.ZERO)
+        .withBody(BeaconBlockBody.EMPTY)
+        .withParentRoot(Hash32.ZERO).build();
+    Response response = client.postBlock(BlockDataToBlock.serialize(block));
+    assertEquals(503, response.getStatus()); // Still syncing
+    // TODO:
+    // 200 The block was validated successfully and has been broadcast. It has also been integrated into the beacon node's database.
+    // 202 The block failed validation, but was successfully broadcast anyway. It was not integrated into the beacon node's database.
     // 400 Invalid request syntax.
     // 500 Beacon node internal error.
   }

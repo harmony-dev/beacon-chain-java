@@ -5,6 +5,8 @@ dependencies {
   implementation project(':validator:embedded')
   testImplementation project(':start:common')
 
+  implementation 'com.google.guava:guava'
+
   // Http Server
   implementation 'io.projectreactor.netty:reactor-netty'
 
