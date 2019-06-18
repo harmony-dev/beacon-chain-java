@@ -9,18 +9,27 @@ import org.ethereum.beacon.chain.MutableBeaconChain;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.observer.ObservableStateProcessor;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
+import org.ethereum.beacon.consensus.spec.SpecCommons;
+import org.ethereum.beacon.consensus.verifier.operation.AttestationVerifier;
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.MutableBeaconState;
+import org.ethereum.beacon.core.operations.Attestation;
+import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
 import org.ethereum.beacon.core.state.ShardCommittee;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.Bitfield;
 import org.ethereum.beacon.core.types.EpochNumber;
+import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.schedulers.Schedulers;
+import org.ethereum.beacon.validator.BeaconChainAttester;
 import org.ethereum.beacon.validator.BeaconChainProposer;
 import org.ethereum.beacon.validator.api.convert.BlockDataToBlock;
-import org.ethereum.beacon.validator.api.model.AcceptBlock;
+import org.ethereum.beacon.validator.api.model.AttestationSubmit;
 import org.ethereum.beacon.validator.api.model.BlockSubmit;
+import org.ethereum.beacon.validator.api.model.Empty;
 import org.ethereum.beacon.validator.api.model.SyncingResponse;
 import org.ethereum.beacon.validator.api.model.TimeResponse;
 import org.ethereum.beacon.validator.api.model.ValidatorDutiesResponse;
@@ -35,6 +44,7 @@ import reactor.netty.DisposableServer;
 import reactor.netty.http.server.HttpServer;
 import reactor.netty.http.server.HttpServerRequest;
 import reactor.netty.http.server.HttpServerResponse;
+import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.uint.UInt64;
 
@@ -65,6 +75,7 @@ public class ReactorNettyServer implements RestServer {
   private static final int SERVER_PORT = 1234;
   private final BeaconChainSpec spec;
   private final BeaconChainProposer beaconChainProposer;
+  private final BeaconChainAttester beaconChainAttester;
   private final WireApiSub wireApiSub;
   private final MutableBeaconChain beaconChain;
   private DisposableServer server;
@@ -80,12 +91,15 @@ public class ReactorNettyServer implements RestServer {
       ObservableStateProcessor stateProcessor,
       SyncManager syncManager,
       BeaconChainProposer beaconChainProposer,
+      BeaconChainAttester beaconChainAttester,
       WireApiSub wireApiSub,
       MutableBeaconChain beaconChain) {
     this.spec = spec;
     this.beaconChainProposer = beaconChainProposer;
+    this.beaconChainAttester = beaconChainAttester;
     this.wireApiSub = wireApiSub;
     this.beaconChain = beaconChain;
+
     Flux.from(stateProcessor.getObservableStateStream())
         .subscribe(
             observableBeaconState -> {
@@ -96,6 +110,7 @@ public class ReactorNettyServer implements RestServer {
                         observableBeaconState.getLatestSlotState().getGenesisTime().getValue());
               }
             });
+
     Flux.from(syncManager.getSyncStatusStream())
         .subscribe(
             syncStatus -> {
@@ -176,7 +191,13 @@ public class ReactorNettyServer implements RestServer {
                 .get("/node/syncing", wrapJsonSupplier(this::produceSyncingResponse))
                 .get("/validator/duties", wrapJsonFunction(this::produceValidatorDutiesResponse))
                 .get("/validator/block", wrapJsonFunction(this::produceValidatorBlockResponse))
-                .post("/validator/block", wrapJsonPublisher(this::produceAcceptBlockResponse)));
+                .post("/validator/block", wrapJsonPublisher(this::produceAcceptBlockResponse))
+                .get(
+                    "/validator/attestation",
+                    wrapJsonFunction(this::produceValidatorAttestationResponse))
+                .post(
+                    "/validator/attestation",
+                    wrapJsonPublisher(this::produceAcceptAttestationResponse)));
   }
 
   private String produceVersionResponse() {
@@ -286,19 +307,110 @@ public class ReactorNettyServer implements RestServer {
         .map(
             inputStream -> {
               try {
-                String result =
+                String json =
                     CharStreams.toString(new InputStreamReader(inputStream, Charsets.UTF_8));
                 BeaconBlock block =
                     BlockDataToBlock.deserialize(
-                        mapper.readValue(result, BlockSubmit.class).getBeaconBlock());
+                        mapper.readValue(json, BlockSubmit.class).getBeaconBlock());
                 // Import
                 MutableBeaconChain.ImportResult importResult = beaconChain.insert(block);
+                // Broadcast
+                wireApiSub.sendProposedBlock(block);
                 if (!MutableBeaconChain.ImportResult.OK.equals(importResult)) {
                   throw new ImportFailureException(importResult.toString());
                 }
-                // Broadcast
-                wireApiSub.sendProposedBlock(block);
-                return mapper.writeValueAsString(new AcceptBlock());
+                return mapper.writeValueAsString(new Empty());
+              } catch (ImportFailureException e) {
+                throw e;
+              } catch (AssertionError ex) {
+                throw new InvalidRequestSyntaxException(ex);
+              } catch (Exception e) {
+                throw new RuntimeException(e);
+              }
+            });
+  }
+
+  private String produceValidatorAttestationResponse(HttpServerRequest request) {
+    try {
+      Map<String, List<String>> params = splitQuery(new URI(request.uri()));
+      assert params.containsKey("validator_pubkey");
+      assert params.get("validator_pubkey").size() == 1;
+      assert params.containsKey("poc_bit");
+      assert params.get("poc_bit").size() == 1;
+      assert params.containsKey("slot");
+      assert params.get("slot").size() == 1;
+      assert params.containsKey("shard");
+      assert params.get("shard").size() == 1;
+      SlotNumber slot = SlotNumber.castFrom(UInt64.valueOf(params.get("slot").get(0)));
+      BLSPubkey validatorPubkey =
+          BLSPubkey.wrap(Bytes48.fromHexString(params.get("validator_pubkey").get(0)));
+      Long pocBit =
+          Long.valueOf(params.get("poc_bit").get(0)); // XXX: Proof of custody is a stub at Phase 0
+      ShardNumber shard = ShardNumber.of(UInt64.valueOf(params.get("slot").get(0)));
+
+      ValidatorIndex validatorIndex =
+          spec.get_validator_index_by_pubkey(
+              observableBeaconState.getLatestSlotState().createMutableCopy(), validatorPubkey);
+      Attestation attestation =
+          beaconChainAttester.prepareAttestation(
+              validatorIndex, shard, observableBeaconState, slot);
+      IndexedAttestation indexedAttestation =
+          spec.convert_to_indexed(
+              observableBeaconState.getLatestSlotState().createMutableCopy(), attestation);
+      return mapper.writeValueAsString(
+          BlockDataToBlock.presentIndexedAttestation(indexedAttestation));
+    } catch (AssertionError | UnsupportedEncodingException | URISyntaxException ex) {
+      throw new InvalidRequestSyntaxException(ex);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private Publisher<? extends String> produceAcceptAttestationResponse(HttpServerRequest request) {
+    return request
+        .receive()
+        .asInputStream()
+        .map(
+            inputStream -> {
+              try {
+                String json =
+                    CharStreams.toString(new InputStreamReader(inputStream, Charsets.UTF_8));
+                IndexedAttestation indexedAttestation =
+                    BlockDataToBlock.parseIndexedAttestation(
+                        mapper.readValue(json, AttestationSubmit.class).getAttestation());
+                // Verification
+                MutableBeaconState state =
+                    observableBeaconState.getLatestSlotState().createMutableCopy();
+                List<ValidatorIndex> committee =
+                    spec.get_crosslink_committee(
+                        state,
+                        indexedAttestation.getData().getTargetEpoch(),
+                        indexedAttestation.getData().getShard());
+                Bitfield bitfield =
+                    new Bitfield(
+                        committee.size(),
+                        indexedAttestation.getCustodyBit0Indices().listCopy().stream()
+                            .map(ValidatorIndex::intValue)
+                            .collect(Collectors.toList()));
+                Attestation attestation =
+                    new Attestation(
+                        bitfield,
+                        indexedAttestation.getData(),
+                        bitfield,
+                        indexedAttestation.getSignature());
+                try {
+                  if (new AttestationVerifier(spec).verify(attestation, state).isPassed()) {
+                    spec.process_attestation(state, attestation);
+                  } else {
+                    throw new ImportFailureException("Verification not passed for attestation");
+                  }
+                } catch (SpecCommons.SpecAssertionFailed | IllegalArgumentException ex) {
+                  throw new ImportFailureException(ex);
+                } finally {
+                  // Broadcast
+                  wireApiSub.sendAttestation(attestation);
+                }
+                return mapper.writeValueAsString(new Empty());
               } catch (ImportFailureException e) {
                 throw e;
               } catch (AssertionError ex) {

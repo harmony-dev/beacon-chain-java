@@ -10,6 +10,7 @@ import tech.pegasys.artemis.util.bytes.MutableBytesValue;
 
 @SSZSerializable(serializeAs = BytesValue.class)
 public class Bitfield extends DelegatingBytesValue {
+  private final static int BYTE_SIZE = Byte.SIZE;
 
   public static final Bitfield EMPTY = new Bitfield(BytesValue.of());
 
@@ -19,6 +20,13 @@ public class Bitfield extends DelegatingBytesValue {
 
   public Bitfield(BytesValue bytes) {
     super(bytes);
+  }
+
+  public Bitfield(Integer size, List<Integer> bits) {
+    super(BytesValue.wrap(new byte[(size + BYTE_SIZE - 1) / BYTE_SIZE]));
+    for (Integer bit : bits) {
+      setBit(bit, true);
+    }
   }
 
   public Bitfield setBit(int bitIndex, boolean bit) {
@@ -36,7 +44,7 @@ public class Bitfield extends DelegatingBytesValue {
 
   public List<Integer> getBits() {
     List<Integer> ret = new ArrayList<>();
-    for (int i = 0; i < size() * 8; i++) {
+    for (int i = 0; i < size() * BYTE_SIZE; i++) {
       if (getBit(i)) {
         ret.add(i);
       }

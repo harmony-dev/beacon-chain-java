@@ -5,11 +5,9 @@ import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustodyBit;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.ShardNumber;
+import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.validator.crypto.MessageSigner;
-import tech.pegasys.artemis.util.bytes.Bytes96;
-import tech.pegasys.artemis.util.uint.UInt24;
-import tech.pegasys.artemis.util.uint.UInt64;
 
 /**
  * An interface of beacon chain attester. A part of beacon validator logic.
@@ -32,4 +30,21 @@ public interface BeaconChainAttester {
       ShardNumber shard,
       ObservableBeaconState observableState,
       MessageSigner<BLSSignature> signer);
+
+  /**
+   * Main part of {@link #attest(ValidatorIndex, ShardNumber, ObservableBeaconState, MessageSigner)}
+   * logic Prepares attestation with signature stubbed with zero BLS Signature Later signer could
+   * easily sign it
+   *
+   * @param validatorIndex index of the validator.
+   * @param shard shard number.
+   * @param observableState a state that attestation is based on.
+   * @param slot attestation slot
+   * @return unsigned attestation
+   */
+  Attestation prepareAttestation(
+      ValidatorIndex validatorIndex,
+      ShardNumber shard,
+      ObservableBeaconState observableState,
+      SlotNumber slot);
 }

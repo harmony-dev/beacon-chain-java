@@ -47,9 +47,22 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
       ObservableBeaconState observableState,
       MessageSigner<BLSSignature> signer) {
     BeaconState state = observableState.getLatestSlotState();
+    Attestation attestation = prepareAttestation(validatorIndex, shard, observableState, state.getSlot());
+    BLSSignature aggregateSignature = getAggregateSignature(state, attestation.getData(), signer);
+
+    return new Attestation(
+        attestation.getAggregationBitfield(), attestation.getData(), attestation.getCustodyBitfield(), aggregateSignature);
+  }
+
+  @Override
+  public Attestation prepareAttestation(ValidatorIndex validatorIndex,
+                                 ShardNumber shard,
+                                 ObservableBeaconState observableState,
+                                 SlotNumber slot) {
+    BeaconState state = observableState.getLatestSlotState();
 
     Hash32 beaconBlockRoot = spec.signing_root(observableState.getHead());
-    EpochNumber targetEpoch = spec.slot_to_epoch(state.getSlot());
+    EpochNumber targetEpoch = spec.slot_to_epoch(slot);
     Hash32 targetRoot = getTargetRoot(state, observableState.getHead());
     Hash32 crosslinkDataRoot = Hash32.ZERO; // Note: This is a stub for phase 0.
     Hash32 previousCrosslinkRoot = getPreviousCrosslinkRoot(state, shard);
@@ -69,11 +82,11 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
     List<ValidatorIndex> committee = getCommittee(state, shard);
     BytesValue participationBitfield = getParticipationBitfield(validatorIndex, committee);
     BytesValue custodyBitfield = getCustodyBitfield(validatorIndex, committee);
-    BLSSignature aggregateSignature = getAggregateSignature(state, data, signer);
 
     return new Attestation(
-        Bitfield.of(participationBitfield), data, Bitfield.of(custodyBitfield), aggregateSignature);
+        Bitfield.of(participationBitfield), data, Bitfield.of(custodyBitfield), BLSSignature.ZERO);
   }
+
 
   /**
    * Returns a committee at a state slot for a given shard.

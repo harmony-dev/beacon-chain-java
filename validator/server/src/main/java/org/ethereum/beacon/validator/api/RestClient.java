@@ -1,6 +1,7 @@
 package org.ethereum.beacon.validator.api;
 
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+import org.ethereum.beacon.validator.api.model.AttestationSubmit;
 import org.ethereum.beacon.validator.api.model.BlockData;
 import org.ethereum.beacon.validator.api.model.BlockSubmit;
 import org.ethereum.beacon.validator.api.model.SyncingResponse;
@@ -75,5 +76,26 @@ public class RestClient {
         .path("/validator/block")
         .request(MediaType.APPLICATION_JSON)
         .post(Entity.entity(blockSubmit, MediaType.APPLICATION_JSON));
+  }
+
+  public BlockData.BlockBodyData.IndexedAttestationData getAttestation(String validatorPubkey, Long pocBit, BigInteger slot, Integer shard) {
+    return client
+        .target(url)
+        .path("/validator/attestation")
+        .queryParam("validator_pubkey", validatorPubkey)
+        .queryParam("poc_bit", pocBit)
+        .queryParam("slot", slot)
+        .queryParam("shard", shard)
+        .request(MediaType.APPLICATION_JSON)
+        .get(BlockData.BlockBodyData.IndexedAttestationData.class);
+  }
+
+  public Response postAttestation(BlockData.BlockBodyData.IndexedAttestationData attestationData) {
+    AttestationSubmit attestationSubmit = new AttestationSubmit(attestationData);
+    return client
+        .target(url)
+        .path("/validator/attestation")
+        .request(MediaType.APPLICATION_JSON)
+        .post(Entity.entity(attestationSubmit, MediaType.APPLICATION_JSON));
   }
 }
