@@ -30,6 +30,7 @@ import org.ethereum.beacon.validator.api.convert.BlockDataToBlock;
 import org.ethereum.beacon.validator.api.model.AttestationSubmit;
 import org.ethereum.beacon.validator.api.model.BlockSubmit;
 import org.ethereum.beacon.validator.api.model.Empty;
+import org.ethereum.beacon.validator.api.model.ForkResponse;
 import org.ethereum.beacon.validator.api.model.SyncingResponse;
 import org.ethereum.beacon.validator.api.model.TimeResponse;
 import org.ethereum.beacon.validator.api.model.ValidatorDutiesResponse;
@@ -78,6 +79,7 @@ public class ReactorNettyServer implements RestServer {
   private final BeaconChainAttester beaconChainAttester;
   private final WireApiSub wireApiSub;
   private final MutableBeaconChain beaconChain;
+  private final UInt64 chainId;
   private DisposableServer server;
   private ObjectMapper mapper = new ObjectMapper();
   private VersionResponse versionResponse = null;
@@ -90,6 +92,7 @@ public class ReactorNettyServer implements RestServer {
       BeaconChainSpec spec,
       ObservableStateProcessor stateProcessor,
       SyncManager syncManager,
+      UInt64 chainId,
       BeaconChainProposer beaconChainProposer,
       BeaconChainAttester beaconChainAttester,
       WireApiSub wireApiSub,
@@ -99,6 +102,7 @@ public class ReactorNettyServer implements RestServer {
     this.beaconChainAttester = beaconChainAttester;
     this.wireApiSub = wireApiSub;
     this.beaconChain = beaconChain;
+    this.chainId = chainId;
 
     Flux.from(stateProcessor.getObservableStateStream())
         .subscribe(
@@ -197,7 +201,8 @@ public class ReactorNettyServer implements RestServer {
                     wrapJsonFunction(this::produceValidatorAttestationResponse))
                 .post(
                     "/validator/attestation",
-                    wrapJsonPublisher(this::produceAcceptAttestationResponse)));
+                    wrapJsonPublisher(this::produceAcceptAttestationResponse))
+                .get("/node/fork", wrapJsonSupplier(this::produceForkResponse)));
   }
 
   private String produceVersionResponse() {
@@ -216,6 +221,20 @@ public class ReactorNettyServer implements RestServer {
   private String produceSyncingResponse() {
     try {
       return mapper.writeValueAsString(syncingResponse);
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private String produceForkResponse() {
+    try {
+      ForkResponse forkResponse =
+          new ForkResponse(
+              observableBeaconState.getLatestSlotState().getFork().getCurrentVersion().toString(),
+              observableBeaconState.getLatestSlotState().getFork().getPreviousVersion().toString(),
+              spec.slot_to_epoch(observableBeaconState.getLatestSlotState().getSlot()).longValue(),
+              chainId.toBI());
+      return mapper.writeValueAsString(forkResponse);
     } catch (JsonProcessingException e) {
       throw new RuntimeException(e);
     }

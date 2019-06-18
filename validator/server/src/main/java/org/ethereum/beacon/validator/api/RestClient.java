@@ -4,6 +4,7 @@ import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import org.ethereum.beacon.validator.api.model.AttestationSubmit;
 import org.ethereum.beacon.validator.api.model.BlockData;
 import org.ethereum.beacon.validator.api.model.BlockSubmit;
+import org.ethereum.beacon.validator.api.model.ForkResponse;
 import org.ethereum.beacon.validator.api.model.SyncingResponse;
 import org.ethereum.beacon.validator.api.model.TimeResponse;
 import org.ethereum.beacon.validator.api.model.ValidatorDutiesResponse;
@@ -78,7 +79,8 @@ public class RestClient {
         .post(Entity.entity(blockSubmit, MediaType.APPLICATION_JSON));
   }
 
-  public BlockData.BlockBodyData.IndexedAttestationData getAttestation(String validatorPubkey, Long pocBit, BigInteger slot, Integer shard) {
+  public BlockData.BlockBodyData.IndexedAttestationData getAttestation(
+      String validatorPubkey, Long pocBit, BigInteger slot, Integer shard) {
     return client
         .target(url)
         .path("/validator/attestation")
@@ -97,5 +99,13 @@ public class RestClient {
         .path("/validator/attestation")
         .request(MediaType.APPLICATION_JSON)
         .post(Entity.entity(attestationSubmit, MediaType.APPLICATION_JSON));
+  }
+
+  public ForkResponse getFork() {
+    return client
+        .target(url)
+        .path("/node/fork")
+        .request(MediaType.APPLICATION_JSON)
+        .get(ForkResponse.class);
   }
 }

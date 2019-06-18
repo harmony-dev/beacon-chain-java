@@ -23,6 +23,7 @@ import org.ethereum.beacon.validator.BeaconChainAttester;
 import org.ethereum.beacon.validator.BeaconChainProposer;
 import org.ethereum.beacon.validator.api.convert.BlockDataToBlock;
 import org.ethereum.beacon.validator.api.model.BlockData;
+import org.ethereum.beacon.validator.api.model.ForkResponse;
 import org.ethereum.beacon.validator.api.model.SyncingResponse;
 import org.ethereum.beacon.validator.api.model.TimeResponse;
 import org.ethereum.beacon.validator.api.model.ValidatorDutiesResponse;
@@ -37,6 +38,8 @@ import org.junit.Test;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.bytes.Bytes4;
+import tech.pegasys.artemis.util.uint.UInt64;
 
 import javax.ws.rs.ServiceUnavailableException;
 import javax.ws.rs.core.Response;
@@ -110,6 +113,7 @@ public class ReactorNettyApiTest {
                 return Mono.just(new SyncStatus(false, null, null, null, null));
               }
             },
+            UInt64.valueOf(13),
             new BeaconChainProposer() {
               @Override
               public BeaconBlock propose(
@@ -297,5 +301,14 @@ public class ReactorNettyApiTest {
     // into the beacon node's database.
     // 400 Invalid request syntax.
     // 500 Beacon node internal error.
+  }
+
+  @Test
+  public void testFork() {
+    ForkResponse forkResponse = client.getFork();
+    assertEquals(BigInteger.valueOf(13), forkResponse.getChainId());
+    assertEquals(Long.valueOf(0), forkResponse.getFork().getEpoch());
+    assertEquals(Bytes4.ZERO.toString(), forkResponse.getFork().getCurrentVersion());
+    assertEquals(Bytes4.ZERO.toString(), forkResponse.getFork().getPreviousVersion());
   }
 }
