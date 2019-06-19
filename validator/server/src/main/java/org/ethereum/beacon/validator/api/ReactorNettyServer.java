@@ -23,7 +23,6 @@ import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
-import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.validator.BeaconChainAttester;
 import org.ethereum.beacon.validator.BeaconChainProposer;
 import org.ethereum.beacon.validator.api.convert.BlockDataToBlock;
@@ -45,6 +44,7 @@ import reactor.netty.DisposableServer;
 import reactor.netty.http.server.HttpServer;
 import reactor.netty.http.server.HttpServerRequest;
 import reactor.netty.http.server.HttpServerResponse;
+import reactor.netty.resources.LoopResources;
 import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.uint.UInt64;
@@ -64,7 +64,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.concurrent.CountDownLatch;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -74,13 +73,16 @@ public class ReactorNettyServer implements RestServer {
 
   private static final String SERVER_HOST = "localhost";
   private static final int SERVER_PORT = 1234;
+
   private final BeaconChainSpec spec;
   private final BeaconChainProposer beaconChainProposer;
   private final BeaconChainAttester beaconChainAttester;
   private final WireApiSub wireApiSub;
   private final MutableBeaconChain beaconChain;
   private final UInt64 chainId;
+
   private DisposableServer server;
+  private LoopResources serverRes;
   private ObjectMapper mapper = new ObjectMapper();
   private VersionResponse versionResponse = null;
   private TimeResponse timeResponse = null;
@@ -133,23 +135,14 @@ public class ReactorNettyServer implements RestServer {
                           : syncStatus.getBestKnown().toBI());
             });
 
-    HttpServer httpServer = HttpServer.create().host(SERVER_HOST).port(SERVER_PORT);
+    serverRes = LoopResources.create("server");
+    HttpServer httpServer =
+        HttpServer.create()
+            .tcpConfiguration(tcpServer -> tcpServer.runOn(serverRes))
+            .host(SERVER_HOST)
+            .port(SERVER_PORT);
     final HttpServer serverWithRoutes = addRoutes(httpServer);
-
-    CountDownLatch waitForStart = new CountDownLatch(1);
-    Schedulers.createDefault()
-        .newSingleThreadDaemon("api-server")
-        .executeR(
-            () -> {
-              this.server = serverWithRoutes.bindNow();
-              waitForStart.countDown();
-              server.onDispose().block();
-            });
-    try {
-      waitForStart.await();
-    } catch (InterruptedException e) {
-      throw new RuntimeException(e);
-    }
+    this.server = serverWithRoutes.bindNow();
   }
 
   /** TODO: move to utils Copied from https://stackoverflow.com/a/13592567 */
@@ -502,5 +495,6 @@ public class ReactorNettyServer implements RestServer {
   @Override
   public void shutdown() {
     server.disposeNow();
+    serverRes.dispose();
   }
 }
