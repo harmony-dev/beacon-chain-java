@@ -8,12 +8,15 @@ import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.observer.ObservableStateProcessor;
 import org.ethereum.beacon.chain.observer.PendingOperations;
 import org.ethereum.beacon.consensus.BeaconStateEx;
+import org.ethereum.beacon.consensus.transition.BeaconStateExImpl;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockBody;
+import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
+import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.validator.BeaconChainAttester;
 import org.ethereum.beacon.validator.BeaconChainProposer;
@@ -26,6 +29,7 @@ import reactor.core.publisher.Mono;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
 public class ServiceFactory {
+
   public static ObservableStateProcessor createObservableStateProcessor() {
     return new ObservableStateProcessor() {
       @Override
@@ -48,6 +52,40 @@ public class ServiceFactory {
                     .withBody(BeaconBlockBody.EMPTY)
                     .build(),
                 BeaconStateEx.getEmpty(),
+                PendingOperations.getEmpty()));
+      }
+
+      @Override
+      public Publisher<PendingOperations> getPendingOperationsStream() {
+        return null;
+      }
+    };
+  }
+
+  public static ObservableStateProcessor createObservableStateProcessorGenesisTimeModifiedTo10() {
+    return new ObservableStateProcessor() {
+      @Override
+      public void start() {}
+
+      @Override
+      public Publisher<BeaconChainHead> getHeadStream() {
+        return null;
+      }
+
+      @Override
+      public Publisher<ObservableBeaconState> getObservableStateStream() {
+        MutableBeaconState state = BeaconStateEx.getEmpty().createMutableCopy();
+        state.setGenesisTime(Time.of(10));
+        return Mono.just(
+            new ObservableBeaconState(
+                BeaconBlock.Builder.createEmpty()
+                    .withSlot(SlotNumber.ZERO)
+                    .withParentRoot(Hash32.ZERO)
+                    .withStateRoot(Hash32.ZERO)
+                    .withSignature(BLSSignature.ZERO)
+                    .withBody(BeaconBlockBody.EMPTY)
+                    .build(),
+                new BeaconStateExImpl(state.createImmutable()),
                 PendingOperations.getEmpty()));
       }
 

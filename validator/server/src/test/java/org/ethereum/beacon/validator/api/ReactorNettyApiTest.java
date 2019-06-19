@@ -37,12 +37,7 @@ import static org.junit.Assert.assertTrue;
 public class ReactorNettyApiTest {
   private final String SERVER_URL = "http://localhost:1234";
   private RestServer server;
-  private RestClient client;
-
-  @Before
-  public void setup() {
-    this.client = new RestClient(SERVER_URL);
-  }
+  private RestClient client  = new RestClient(SERVER_URL);
 
   private ReactorNettyServer createDefaultServer() {
     return new ReactorNettyServer(
@@ -72,10 +67,18 @@ public class ReactorNettyApiTest {
 
   @Test
   public void testGenesisTime() {
-    this.server = createDefaultServer();
+    this.server = new ReactorNettyServer(
+        BeaconChainSpec.createWithDefaults(),
+        ServiceFactory.createObservableStateProcessorGenesisTimeModifiedTo10(),
+        ServiceFactory.createSyncManager(),
+        UInt64.valueOf(13),
+        ServiceFactory.createBeaconChainProposer(),
+        ServiceFactory.createBeaconChainAttester(),
+        ServiceFactory.createWireApiSub(),
+        ServiceFactory.createMutableBeaconChain());
     TimeResponse response = client.getGenesisTime();
     long time = response.getTime();
-    assertEquals(0, time);
+    assertEquals(10, time);
   }
 
   @Test
