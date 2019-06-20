@@ -1,7 +1,6 @@
 package org.ethereum.beacon.consensus.spec;
 
 import static java.util.Collections.emptyList;
-import static java.util.Collections.nCopies;
 
 import java.util.List;
 import org.ethereum.beacon.core.BeaconBlock;
@@ -28,10 +27,10 @@ import tech.pegasys.artemis.util.uint.UInt64;
  * On genesis part.
  *
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.6.1/specs/core/0_beacon-chain.md#on-genesis">On
- *     genesis</a> in the spec.
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.7.0/specs/core/0_beacon-chain.md#genesis">Genesis</a>
+ *     in the spec.
  */
-public interface OnGenesis extends BlockProcessing {
+public interface GenesisFunction extends BlockProcessing {
 
   /*
    """

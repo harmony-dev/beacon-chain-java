@@ -7,9 +7,10 @@ import org.ethereum.beacon.chain.observer.PendingOperations;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.transition.BeaconStateExImpl;
+import org.ethereum.beacon.consensus.transition.ExtendedSlotTransition;
 import org.ethereum.beacon.consensus.transition.InitialStateTransition;
+import org.ethereum.beacon.consensus.transition.PerEpochTransition;
 import org.ethereum.beacon.consensus.transition.PerSlotTransition;
-import org.ethereum.beacon.consensus.transition.StateCachingTransition;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.state.Eth1Data;
@@ -53,8 +54,7 @@ public class ObservableBeaconStateTestUtil {
     InitialStateTransition stateTransition = new InitialStateTransition(chainStart, spec);
 
     BeaconStateEx state = stateTransition.apply(genesis);
-    state = new StateCachingTransition(spec).apply(state);
-    state = new PerSlotTransition(spec).apply(state);
+    state = ExtendedSlotTransition.create(spec).apply(state);
     return new ObservableBeaconState(genesis, state, operations);
   }
 }

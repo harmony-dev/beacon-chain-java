@@ -1,10 +1,15 @@
 package org.ethereum.beacon.consensus.transition;
 
 import org.ethereum.beacon.consensus.BeaconStateEx;
+import org.ethereum.beacon.consensus.spec.SpecStateTransition;
+import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.types.SlotNumber;
 
 /**
  * Runs state transition up to a given slot as if all slots were empty, i.e. without a block.
+ *
+ * <p>Reflects {@link SpecStateTransition#process_slots(MutableBeaconState, SlotNumber)}
+ * function behaviour.
  *
  * @see ExtendedSlotTransition
  */

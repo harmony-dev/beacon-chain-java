@@ -44,13 +44,9 @@ public class AttesterSlashing {
 
   @Override
   public String toString() {
-    return toString(null, null);
-  }
-
-  public String toString(@Nullable SpecConstants spec,@Nullable Time beaconStart) {
     return "AttesterSlashing["
-        + "att1=" + attestation1.toString(spec, beaconStart)
-        + "att2=" + attestation2.toString(spec, beaconStart)
+        + "att1=" + attestation1
+        + "att2=" + attestation2
         + "]";
   }
 }

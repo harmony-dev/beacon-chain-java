@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.ethereum.beacon.consensus.hasher.ObjectHasher;
 import org.ethereum.beacon.consensus.transition.InitialStateTransition;
-import org.ethereum.beacon.consensus.util.CachingBeaconChainSpec;
+import org.ethereum.beacon.consensus.util.TransitionBeaconChainSpecSpec;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.BeaconBlockHeader;
@@ -137,7 +137,7 @@ public class BeaconChainSpecTest {
     BeaconBlock block =
         new BeaconBlock(
             emptyBlock.getSlot(),
-            emptyBlock.getPreviousBlockRoot(),
+            emptyBlock.getParentRoot(),
             emptyBlock.getStateRoot(),
             body,
             emptyBlock.getSignature());
@@ -155,8 +155,6 @@ public class BeaconChainSpecTest {
     SlotNumber genesisSlot = SlotNumber.of(1_000_000);
     Random rnd = new Random(1);
     Time genesisTime = Time.of(10 * 60);
-
-    Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), UInt64.ZERO, Hash32.random(rnd));
 
     SpecConstants specConstants =
         new SpecConstants() {
@@ -180,11 +178,12 @@ public class BeaconChainSpecTest {
             return ShardNumber.of(shardCount);
           }
         };
-    BeaconChainSpec spec = new CachingBeaconChainSpec(
+    BeaconChainSpec spec = new TransitionBeaconChainSpecSpec(
         specConstants, Hashes::sha256, ObjectHasher.createSSZOverSHA256(specConstants), false, true);
 
     System.out.println("Generating deposits...");
     List<Deposit> deposits = TestUtils.generateRandomDepositsWithoutSig(rnd, spec, validatorCount);
+    Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), UInt64.valueOf(deposits.size()), Hash32.random(rnd));
     InitialStateTransition initialStateTransition =
         new InitialStateTransition(new ChainStart(genesisTime, eth1Data, deposits), spec);
 

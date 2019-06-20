@@ -3,7 +3,7 @@ package org.ethereum.beacon.pow;
 import org.apache.commons.codec.binary.Hex;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.hasher.ObjectHasher;
-import org.ethereum.beacon.consensus.util.CachingBeaconChainSpec;
+import org.ethereum.beacon.consensus.util.TransitionBeaconChainSpecSpec;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
@@ -121,7 +121,6 @@ public class StandaloneDepositContractTest {
             .getBlockByHash(chainStart.getEth1Data().getBlockHash().extractArray())
             .getNumber());
     for (int i = 0; i < 16; i++) {
-      Assert.assertEquals(UInt64.valueOf(i), chainStart.getInitialDeposits().get(i).getIndex());
       Assert.assertEquals(
           (byte) i, chainStart.getInitialDeposits().get(i).getData().getPubKey().get(0));
     }
@@ -215,7 +214,6 @@ public class StandaloneDepositContractTest {
             .getBlockByHash(chainStart.getEth1Data().getBlockHash().extractArray())
             .getNumber());
     for (int i = 0; i < 16; i++) {
-      Assert.assertEquals(UInt64.valueOf(i), chainStart.getInitialDeposits().get(i).getIndex());
       Assert.assertEquals(
           (byte) i, chainStart.getInitialDeposits().get(i).getData().getPubKey().get(0));
     }
@@ -346,7 +344,7 @@ public class StandaloneDepositContractTest {
 
     BlsKeyPairGenerator generator = BlsKeyPairGenerator.createWithoutSeed();
     BeaconChainSpec spec =
-        new CachingBeaconChainSpec(
+        new TransitionBeaconChainSpecSpec(
             BeaconChainSpec.DEFAULT_CONSTANTS,
             Hashes::sha256,
             ObjectHasher.createSSZOverSHA256(BeaconChainSpec.DEFAULT_CONSTANTS),

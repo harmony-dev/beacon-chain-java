@@ -68,7 +68,7 @@ public interface WireApiSync {
               bodies.get().stream().collect(Collectors.toMap(hasher::getHash, b -> b, (b1, b2) -> b1));
           return bodies.delegate(
               headers.stream()
-                  .map(h -> Optional.ofNullable(bodyMap.get(h.getBlockBodyRoot()))
+                  .map(h -> Optional.ofNullable(bodyMap.get(h.getBodyRoot()))
                               .map(body -> new BeaconBlock(h, body)))
                   .flatMap(optionalFlatMap(b -> b))
                   .collect(Collectors.toList()));

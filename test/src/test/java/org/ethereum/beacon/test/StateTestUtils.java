@@ -272,10 +272,12 @@ public abstract class StateTestUtils {
   }
 
   public static Crosslink parseCrosslink(CrossLinkData data) {
-    return new Crosslink(
-        EpochNumber.castFrom(UInt64.valueOf(data.getEpoch())),
-        Hash32.fromHexString(data.getPreviousCrosslinkRoot()),
-        Hash32.fromHexString(data.getCrosslinkDataRoot()));
+    // TODO update within new tests
+//    return new Crosslink(
+//        EpochNumber.castFrom(UInt64.valueOf(data.getEpoch())),
+//        Hash32.fromHexString(data.getPreviousCrosslinkRoot()),
+//        Hash32.fromHexString(data.getCrosslinkDataRoot()));
+    return Crosslink.EMPTY;
   }
 
   public static PendingAttestation parsePendingAttestation(
@@ -294,9 +296,11 @@ public abstract class StateTestUtils {
         Hash32.fromHexString(data.getSourceRoot()),
         EpochNumber.castFrom(UInt64.valueOf(data.getTargetEpoch())),
         Hash32.fromHexString(data.getTargetRoot()),
-        ShardNumber.of(data.getShard()),
-        Hash32.fromHexString(data.getPreviousCrosslinkRoot()),
-        Hash32.fromHexString(data.getCrosslinkDataRoot()));
+        // TODO update within new tests
+//        ShardNumber.of(data.getShard()),
+//        Hash32.fromHexString(data.getPreviousCrosslinkRoot()),
+//        Hash32.fromHexString(data.getCrosslinkDataRoot()));
+        Crosslink.EMPTY);
   }
 
   public static Transfer parseTransfer(StateTestCase.BlockData.BlockBodyData.TransferData data) {

@@ -7,8 +7,8 @@ import tech.pegasys.artemis.util.uint.UInt64;
 
 public class RewardAndPenaltyQuotientsData implements RewardAndPenaltyQuotients {
 
-  @JsonProperty("BASE_REWARD_QUOTIENT")
-  private String BASE_REWARD_QUOTIENT;
+  @JsonProperty("BASE_REWARD_FACTOR")
+  private String BASE_REWARD_FACTOR;
   @JsonProperty("WHISTLEBLOWING_REWARD_QUOTIENT")
   private String WHISTLEBLOWING_REWARD_QUOTIENT;
   @JsonProperty("PROPOSER_REWARD_QUOTIENT")
@@ -20,8 +20,8 @@ public class RewardAndPenaltyQuotientsData implements RewardAndPenaltyQuotients 
 
   @Override
   @JsonIgnore
-  public UInt64 getBaseRewardQuotient() {
-    return UInt64.valueOf(getBASE_REWARD_QUOTIENT());
+  public UInt64 getBaseRewardFactor() {
+    return UInt64.valueOf(getBASE_REWARD_FACTOR());
   }
 
   @Override
@@ -49,12 +49,12 @@ public class RewardAndPenaltyQuotientsData implements RewardAndPenaltyQuotients 
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-  public String getBASE_REWARD_QUOTIENT() {
-    return BASE_REWARD_QUOTIENT;
+  public String getBASE_REWARD_FACTOR() {
+    return BASE_REWARD_FACTOR;
   }
 
-  public void setBASE_REWARD_QUOTIENT(String BASE_REWARD_QUOTIENT) {
-    this.BASE_REWARD_QUOTIENT = BASE_REWARD_QUOTIENT;
+  public void setBASE_REWARD_FACTOR(String BASE_REWARD_FACTOR) {
+    this.BASE_REWARD_FACTOR = BASE_REWARD_FACTOR;
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)

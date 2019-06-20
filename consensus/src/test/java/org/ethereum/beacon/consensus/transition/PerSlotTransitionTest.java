@@ -22,7 +22,6 @@ public class PerSlotTransitionTest {
   public void test1() {
     Random rnd = new Random();
     Time genesisTime = Time.castFrom(UInt64.random(rnd));
-    Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), UInt64.ZERO, Hash32.random(rnd));
     SpecConstants specConstants =
         new SpecConstants() {
           @Override
@@ -33,7 +32,7 @@ public class PerSlotTransitionTest {
     BeaconChainSpec spec = BeaconChainSpec.createWithDefaultHasher(specConstants);
 
     List<Deposit> deposits = TestUtils.getAnyDeposits(rnd, spec, 8).getValue0();
-
+    Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), UInt64.valueOf(deposits.size()), Hash32.random(rnd));
     InitialStateTransition initialStateTransition =
         new InitialStateTransition(
             new ChainStart(genesisTime, eth1Data, deposits),
@@ -41,12 +40,9 @@ public class PerSlotTransitionTest {
 
     BeaconStateEx initialState =
         initialStateTransition.apply(spec.get_empty_block());
-    BeaconStateEx c1State = new StateCachingTransition(spec).apply(initialState);
-    BeaconStateEx s1State = new PerSlotTransition(spec).apply(c1State);
-    BeaconStateEx c2State = new StateCachingTransition(spec).apply(s1State);
-    BeaconStateEx s2State = new PerSlotTransition(spec).apply(c2State);
-    BeaconStateEx c3State = new StateCachingTransition(spec).apply(s2State);
-    BeaconStateEx s3State = new PerSlotTransition(spec).apply(c3State);
+    BeaconStateEx s1State = ExtendedSlotTransition.create(spec).apply(initialState);
+    BeaconStateEx s2State = ExtendedSlotTransition.create(spec).apply(s1State);
+    BeaconStateEx s3State = ExtendedSlotTransition.create(spec).apply(s2State);
 
     Assert.assertEquals(specConstants.getGenesisSlot().plus(3), s3State.getSlot());
   }

@@ -30,7 +30,7 @@ import tech.pegasys.artemis.util.uint.UInt64;
  *
  * @see BeaconBlock
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.6.1/specs/core/0_beacon-chain.md#beacon-state">BeaconState
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.7.0/specs/core/0_beacon-chain.md#beacon-state">BeaconState
  *     in the spec</a>
  */
 public interface BeaconState extends ObservableComposite {
@@ -200,7 +200,7 @@ public interface BeaconState extends ObservableComposite {
       attestations.addAll(getPreviousEpochAttestations().listCopy());
 
       ret += ", attest:["
-          + attestations.stream().map(ar -> ar.toStringShort(spec)).collect(Collectors.joining(", "))
+          + attestations.stream().map(ar -> ar.toStringShort()).collect(Collectors.joining(", "))
           + "]";
     }
     ret += "]";

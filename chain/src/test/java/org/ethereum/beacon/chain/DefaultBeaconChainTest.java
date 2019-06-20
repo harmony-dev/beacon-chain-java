@@ -84,8 +84,6 @@ public class DefaultBeaconChainTest {
     ChainStart chainStart = new ChainStart(start, Eth1Data.EMPTY, Collections.emptyList());
     BlockTransition<BeaconStateEx> initialTransition =
         new InitialStateTransition(chainStart, spec);
-    StateTransition<BeaconStateEx> stateCaching =
-        StateTransitionTestUtil.createStateWithNoTransition();
     BlockTransition<BeaconStateEx> perBlockTransition =
         StateTransitionTestUtil.createPerBlockTransition();
     StateTransition<BeaconStateEx> perEpochTransition =
@@ -102,7 +100,7 @@ public class DefaultBeaconChainTest {
         spec,
         initialTransition,
         new EmptySlotTransition(
-            new ExtendedSlotTransition(stateCaching, new PerEpochTransition(spec) {
+            new ExtendedSlotTransition(new PerEpochTransition(spec) {
               @Override
               public BeaconStateEx apply(BeaconStateEx stateEx) {
                 return perEpochTransition.apply(stateEx);

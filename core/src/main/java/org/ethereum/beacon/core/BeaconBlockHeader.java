@@ -16,7 +16,7 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
  * Beacon block header structure.
  *
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.6.1/specs/core/0_beacon-chain.md#beaconblockheader">BeaconBlockHeader</a>
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.7.0/specs/core/0_beacon-chain.md#beaconblockheader">BeaconBlockHeader</a>
  *     in the spec.
  */
 @SSZSerializable
@@ -27,23 +27,23 @@ public class BeaconBlockHeader implements Hashable<Hash32> {
           SlotNumber.ZERO, Hash32.ZERO, Hash32.ZERO, Hash32.ZERO, BLSSignature.ZERO);
 
   @SSZ private final SlotNumber slot;
-  @SSZ private final Hash32 previousBlockRoot;
+  @SSZ private final Hash32 parentRoot;
   @SSZ private final Hash32 stateRoot;
-  @SSZ private final Hash32 blockBodyRoot;
+  @SSZ private final Hash32 bodyRoot;
   @SSZ private final BLSSignature signature;
 
   private Hash32 hashCache = null;
 
   public BeaconBlockHeader(
       SlotNumber slot,
-      Hash32 previousBlockRoot,
+      Hash32 parentRoot,
       Hash32 stateRoot,
-      Hash32 blockBodyRoot,
+      Hash32 bodyRoot,
       BLSSignature signature) {
     this.slot = slot;
-    this.previousBlockRoot = previousBlockRoot;
+    this.parentRoot = parentRoot;
     this.stateRoot = stateRoot;
-    this.blockBodyRoot = blockBodyRoot;
+    this.bodyRoot = bodyRoot;
     this.signature = signature;
   }
 
@@ -51,16 +51,16 @@ public class BeaconBlockHeader implements Hashable<Hash32> {
     return slot;
   }
 
-  public Hash32 getPreviousBlockRoot() {
-    return previousBlockRoot;
+  public Hash32 getParentRoot() {
+    return parentRoot;
   }
 
   public Hash32 getStateRoot() {
     return stateRoot;
   }
 
-  public Hash32 getBlockBodyRoot() {
-    return blockBodyRoot;
+  public Hash32 getBodyRoot() {
+    return bodyRoot;
   }
 
   public BLSSignature getSignature() {
@@ -68,7 +68,7 @@ public class BeaconBlockHeader implements Hashable<Hash32> {
   }
 
   public BeaconBlockHeader withStateRoot(Hash32 stateRoot) {
-    return new BeaconBlockHeader(slot, previousBlockRoot, stateRoot, blockBodyRoot, signature);
+    return new BeaconBlockHeader(slot, parentRoot, stateRoot, bodyRoot, signature);
   }
 
   @Override
@@ -90,15 +90,15 @@ public class BeaconBlockHeader implements Hashable<Hash32> {
     }
     BeaconBlockHeader that = (BeaconBlockHeader) object;
     return Objects.equal(slot, that.slot)
-        && Objects.equal(previousBlockRoot, that.previousBlockRoot)
+        && Objects.equal(parentRoot, that.parentRoot)
         && Objects.equal(stateRoot, that.stateRoot)
-        && Objects.equal(blockBodyRoot, that.blockBodyRoot)
+        && Objects.equal(bodyRoot, that.bodyRoot)
         && Objects.equal(signature, that.signature);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(slot, previousBlockRoot, stateRoot, blockBodyRoot, signature);
+    return Objects.hashCode(slot, parentRoot, stateRoot, bodyRoot, signature);
   }
 
   @Override
@@ -115,16 +115,16 @@ public class BeaconBlockHeader implements Hashable<Hash32> {
   public String toString(@Nullable SpecConstants constants,
       @Nullable Function<? super BeaconBlockHeader, Hash32> hasher) {
     return (hasher == null ? "?" : hasher.apply(this).toStringShort())
-        + " <~ " + previousBlockRoot.toStringShort();
+        + " <~ " + parentRoot.toStringShort();
   }
 
   private String toStringPriv(@Nullable SpecConstants constants,
       @Nullable Function<? super Hashable<Hash32>, Hash32> hasher) {
     return (hasher == null ? "?" : hasher.apply(this).toStringShort())
-        + " <~ " + previousBlockRoot.toStringShort()
+        + " <~ " + parentRoot.toStringShort()
         + ", @slot " + slot.toStringNumber(constants)
         + ", state=" + stateRoot.toStringShort()
-        + ", body=" + blockBodyRoot.toStringShort()
+        + ", body=" + bodyRoot.toStringShort()
         + ", sig=" + signature;
   }
 }

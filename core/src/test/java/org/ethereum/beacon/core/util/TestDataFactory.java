@@ -62,9 +62,7 @@ public class TestDataFactory {
             Hashes.sha256(BytesValue.fromHexString("bb")),
             EpochNumber.of(123),
             Hashes.sha256(BytesValue.fromHexString("cc")),
-            ShardNumber.of(345),
-            Hashes.sha256(BytesValue.fromHexString("dd")),
-            Hash32.ZERO);
+            Crosslink.EMPTY);
 
     return expected;
   }

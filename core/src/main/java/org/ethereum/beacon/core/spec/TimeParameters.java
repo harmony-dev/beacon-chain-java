@@ -24,7 +24,7 @@ public interface TimeParameters {
   SlotNumber SLOTS_PER_HISTORICAL_ROOT = SlotNumber.of(1 << 13); // 8,192
   EpochNumber MIN_VALIDATOR_WITHDRAWABILITY_DELAY = EpochNumber.of(1 << 8);
   EpochNumber PERSISTENT_COMMITTEE_PERIOD = EpochNumber.of(1 << 11); // 2,048
-  EpochNumber MAX_CROSSLINK_EPOCHS = EpochNumber.of(1 << 6); // 64
+  EpochNumber MAX_EPOCHS_PER_CROSSLINK = EpochNumber.of(1 << 6); // 64
   EpochNumber MIN_EPOCHS_TO_INACTIVITY_PENALTY = EpochNumber.of(1 << 2); // 4
 
   /* Values defined in the spec. */
@@ -65,8 +65,8 @@ public interface TimeParameters {
     return PERSISTENT_COMMITTEE_PERIOD;
   }
 
-  default EpochNumber getMaxCrosslinkEpochs() {
-    return MAX_CROSSLINK_EPOCHS;
+  default EpochNumber getMaxEpochsPerCrosslink() {
+    return MAX_EPOCHS_PER_CROSSLINK;
   }
 
   default EpochNumber getMinEpochsToInactivityPenalty() {

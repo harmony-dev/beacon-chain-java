@@ -5,6 +5,7 @@ import java.util.Random;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.TestUtils;
+import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.Eth1Data;
@@ -24,7 +25,6 @@ public class PerEpochTransitionTest {
   public void test1() {
     Random rnd = new Random();
     Time genesisTime = Time.castFrom(UInt64.random(rnd));
-    Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), UInt64.ZERO, Hash32.random(rnd));
     SpecConstants specConstants =
         new SpecConstants() {
           @Override
@@ -36,27 +36,23 @@ public class PerEpochTransitionTest {
     BeaconChainSpec spec = BeaconChainSpec.createWithDefaultHasher(specConstants);
 
     List<Deposit> deposits = TestUtils.getAnyDeposits(rnd, spec, 8).getValue0();
-
+    Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), UInt64.valueOf(deposits.size()), Hash32.random(rnd));
     InitialStateTransition initialStateTransition =
         new InitialStateTransition(new ChainStart(genesisTime, eth1Data, deposits), spec);
 
-    BeaconStateEx[] states = new BeaconStateExImpl[9];
-
-    states[0] = initialStateTransition.apply(spec.get_empty_block());
-    for (int i = 1; i < 9; i++) {
-      BeaconStateEx cachedState = new StateCachingTransition(spec).apply(states[i - 1]);
-      states[i] = new PerSlotTransition(spec).apply(cachedState);
+    BeaconStateEx initialState = initialStateTransition.apply(spec.get_empty_block());
+    BeaconStateEx currentState = initialState;
+    ExtendedSlotTransition extendedSlotTransition = ExtendedSlotTransition.create(spec);
+    for (int i = 0; i < 2 * spec.getConstants().getSlotsPerEpoch().getIntValue(); i++) {
+      currentState = extendedSlotTransition.apply(currentState);
     }
-    PerEpochTransition perEpochTransition = new PerEpochTransition(spec);
-    BeaconStateEx cachedState = new StateCachingTransition(spec).apply(states[8]);
-    BeaconStateEx epochState = perEpochTransition.apply(cachedState);
 
     // check validators penalized for inactivity
     for (int i = 0; i < deposits.size(); i++) {
       Gwei balanceBefore =
-          states[0].getBalances().get(ValidatorIndex.of(i));
+          initialState.getBalances().get(ValidatorIndex.of(i));
       Gwei balanceAfter =
-          epochState.getBalances().get(ValidatorIndex.of(i));
+          currentState.getBalances().get(ValidatorIndex.of(i));
       Assert.assertTrue(balanceAfter.less(balanceBefore));
     }
   }
