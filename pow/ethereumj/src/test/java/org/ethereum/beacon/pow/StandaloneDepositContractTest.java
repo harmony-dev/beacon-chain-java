@@ -1,5 +1,12 @@
 package org.ethereum.beacon.pow;
 
+import java.math.BigInteger;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.function.Function;
 import org.apache.commons.codec.binary.Hex;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.hasher.ObjectHasher;
@@ -37,18 +44,11 @@ import reactor.core.publisher.Mono;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes48;
+import tech.pegasys.artemis.util.bytes.Bytes8;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.bytes.MutableBytes48;
 import tech.pegasys.artemis.util.uint.UInt64;
-
-import java.math.BigInteger;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.function.Function;
 
 @Ignore
 public class StandaloneDepositContractTest {
@@ -296,7 +296,7 @@ public class StandaloneDepositContractTest {
             super.newDeposits(eventDataList, blockHash);
             for (DepositEventData eventData : eventDataList) {
               System.arraycopy(
-                  getDepositRoot(eventData.merkleTreeIndex).extractArray(),
+                  getDepositRoot(eventData.index).extractArray(),
                   0,
                   latestCalculatedDepositRoot,
                   0,
@@ -349,12 +349,13 @@ public class StandaloneDepositContractTest {
             Hashes::sha256,
             ObjectHasher.createSSZOverSHA256(BeaconChainSpec.DEFAULT_CONSTANTS),
             true,
-            true);
+            false);
     List<Eth1Data> eth1DataList = new ArrayList<>();
     for (int i = 0; i < 20; i++) {
       BLS381.KeyPair keyPair = generator.next();
       Bytes48 pubKey = keyPair.getPublic().getEncodedBytes();
-      Hash32 withdrawalCredentials = Hash32.ZERO;
+      Hash32 withdrawalCredentials =
+          Hash32.wrap(Bytes32.leftPad(UInt64.valueOf(i).toBytesBigEndian()));
       DepositData depositData =
           new DepositData(
               BLSPubkey.wrap(pubKey),
@@ -378,10 +379,19 @@ public class StandaloneDepositContractTest {
       Assert.assertTrue(result.isSuccessful());
 
       depositRoot = contract.callConstFunction("get_deposit_root");
+      Object[] depositCount = contract.callConstFunction("get_deposit_count");
       Eth1Data lastDepositEthData =
           new Eth1Data(
-              Hash32.wrap(Bytes32.wrap((byte[]) depositRoot[0])), UInt64.valueOf(i), Hash32.ZERO);
+              Hash32.wrap(Bytes32.wrap((byte[]) depositRoot[0])),
+              UInt64.fromBytesLittleEndian(Bytes8.wrap((byte[]) depositCount[0])),
+              Hash32.ZERO);
       eth1DataList.add(lastDepositEthData);
+
+      System.out.println(
+          String.format(
+              "root %d: %s",
+              lastDepositEthData.getDepositCount().decrement().getValue(),
+              lastDepositEthData.getDepositRoot()));
 
       Assert.assertEquals(i == 15 ? 2 : 1, result.getEvents().size());
     }
@@ -406,14 +416,17 @@ public class StandaloneDepositContractTest {
 
     Assert.assertEquals(16, chainStart.getInitialDeposits().size());
     MutableBeaconState beaconState = BeaconState.getEmpty().createMutableCopy();
+    int i = 0;
     for (Deposit deposit : chainStart.getInitialDeposits()) {
       //       The proof for each deposit must be constructed against the deposit root contained in
       // state.latest_eth1_data rather than the deposit root at the time the deposit was initially
       // logged from the 1.0 chain. This entails storing a full deposit merkle tree locally and
       // computing updated proofs against the latest_eth1_data.deposit_root as needed. See
       // minimal_merkle.py for a sample implementation.
-      beaconState.setLatestEth1Data(eth1DataList.get(deposit.getIndex().intValue()));
+      beaconState.setLatestEth1Data(eth1DataList.get(i));
       spec.verify_deposit(beaconState, deposit);
+      spec.process_deposit(beaconState, deposit);
+      i += 1;
     }
 
     depositRoot = contract.callConstFunction("get_deposit_root");
@@ -431,8 +444,9 @@ public class StandaloneDepositContractTest {
     Assert.assertEquals(4, depositInfos1.size());
     for (DepositInfo depositInfo : depositInfos1) {
       beaconState.setLatestEth1Data(
-          eth1DataList.get(depositInfo.getDeposit().getIndex().intValue()));
+          eth1DataList.get(depositInfo.getEth1Data().getDepositCount().decrement().intValue()));
       spec.verify_deposit(beaconState, depositInfo.getDeposit());
+      spec.process_deposit(beaconState, depositInfo.getDeposit());
     }
   }
 

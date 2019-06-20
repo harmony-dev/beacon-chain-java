@@ -80,9 +80,8 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
 
   public Deposit getDepositOperation() {
     Deposit deposit =
-        new Deposit(
-            ReadVector.wrap(getDeposit().getProof().stream().map(Hash32::fromHexString).collect(Collectors.toList()), Function.identity()),
-            UInt64.valueOf(getDeposit().getIndex()),
+        Deposit.create(
+            getDeposit().getProof().stream().map(Hash32::fromHexString).collect(Collectors.toList()),
             new DepositData(
                 BLSPubkey.fromHexString(getDeposit().getData().getPubkey()),
                 Hash32.fromHexString(getDeposit().getData().getWithdrawalCredentials()),

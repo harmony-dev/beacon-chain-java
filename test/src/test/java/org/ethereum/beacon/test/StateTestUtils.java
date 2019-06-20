@@ -89,11 +89,10 @@ public abstract class StateTestUtils {
     for (StateTestCase.BlockData.BlockBodyData.DepositData depositData :
         blockData.getBody().getDeposits()) {
       Deposit deposit =
-          new Deposit(
-              ReadVector.wrap(depositData.getProof().stream()
+          Deposit.create(
+              depositData.getProof().stream()
                   .map(Hash32::fromHexString)
-                  .collect(Collectors.toList()), Integer::new),
-              UInt64.valueOf(depositData.getIndex()),
+                  .collect(Collectors.toList()),
               new DepositData(
                   BLSPubkey.fromHexString(depositData.getData().getPubkey()),
                   Hash32.fromHexString(depositData.getData().getWithdrawalCredentials()),

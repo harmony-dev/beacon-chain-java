@@ -30,7 +30,6 @@ import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Bitfield;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
-import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.crypto.Hashes;
@@ -94,10 +93,11 @@ public class TestDataFactory {
   }
 
   public Deposit createDeposit1() {
-    Deposit deposit = new Deposit(
-        ReadVector.wrap(
-            Collections.nCopies(specConstants.getDepositContractTreeDepth().getIntValue(), Hash32.ZERO), Integer::new),
-        UInt64.ZERO, createDepositData());
+    Deposit deposit =
+        Deposit.create(
+            Collections.nCopies(
+                specConstants.getDepositContractTreeDepth().getIntValue(), Hash32.ZERO),
+            createDepositData());
 
     return deposit;
   }
@@ -107,8 +107,7 @@ public class TestDataFactory {
     hashes.add(Hashes.sha256(BytesValue.fromHexString("aa")));
     hashes.add(Hashes.sha256(BytesValue.fromHexString("bb")));
     hashes.addAll(Collections.nCopies(specConstants.getDepositContractTreeDepth().getIntValue() - hashes.size(), Hash32.ZERO));
-    ReadVector<Integer, Hash32> proof = ReadVector.wrap(hashes, Integer::new);
-    Deposit deposit = new Deposit(proof, UInt64.ZERO, createDepositData());
+    Deposit deposit = Deposit.create(hashes, createDepositData());
 
     return deposit;
   }

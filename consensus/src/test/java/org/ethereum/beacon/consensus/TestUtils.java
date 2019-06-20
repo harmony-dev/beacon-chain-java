@@ -2,9 +2,12 @@ package org.ethereum.beacon.consensus;
 
 import static org.ethereum.beacon.core.spec.SignatureDomains.DEPOSIT;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
-import org.ethereum.beacon.core.state.Fork;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.crypto.BLS381;
@@ -18,13 +21,7 @@ import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes4;
 import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.bytes.Bytes96;
-import tech.pegasys.artemis.util.collections.ReadVector;
 import tech.pegasys.artemis.util.uint.UInt64;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
 
 public class TestUtils {
 
@@ -62,15 +59,13 @@ public class TestUtils {
       validatorsKeys.add(keyPair);
 
       Deposit deposit =
-          new Deposit(
-              ReadVector.wrap(Collections.singletonList(Hash32.random(rnd)), Integer::new),
-              UInt64.valueOf(i),
+          Deposit.create(
+              Collections.singletonList(Hash32.random(rnd)),
               new DepositData(
                   BLSPubkey.wrap(Bytes48.leftPad(keyPair.getPublic().getEncodedBytes())),
                   withdrawalCredentials,
                   spec.getConstants().getMaxEffectiveBalance(),
-                  BLSSignature.wrap(signature.getEncoded()))
-          );
+                  BLSSignature.wrap(signature.getEncoded())));
       deposits.add(deposit);
     }
 
@@ -86,9 +81,8 @@ public class TestUtils {
 
       BLSPubkey pubkey = BLSPubkey.wrap(Bytes48.leftPad(counter.toBytesBigEndian()));
       Deposit deposit =
-          new Deposit(
-              ReadVector.wrap(Collections.singletonList(Hash32.random(rnd)), Integer::new),
-              counter,
+          Deposit.create(
+              Collections.singletonList(Hash32.random(rnd)),
               new DepositData(
                   pubkey,
                   withdrawalCredentials,

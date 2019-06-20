@@ -1,13 +1,13 @@
 package org.ethereum.beacon.core.operations;
 
 import com.google.common.base.Objects;
+import java.util.List;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.collections.ReadVector;
-import tech.pegasys.artemis.util.uint.UInt64;
 
 /**
  * Requests to add validator to the validator registry.
@@ -27,9 +27,8 @@ public class Deposit {
   /** Deposit data. */
   @SSZ private final DepositData data;
 
-  public Deposit(ReadVector<Integer, Hash32> proof, UInt64 index, DepositData data) {
-    this.proof = proof;
-    this.data = data;
+  public static Deposit create(List<Hash32> proof, DepositData data) {
+    return new Deposit(ReadVector.wrap(proof, Integer::new), data);
   }
 
   public Deposit(ReadVector<Integer, Hash32> proof, DepositData data) {
@@ -39,10 +38,6 @@ public class Deposit {
 
   public ReadVector<Integer, Hash32> getProof() {
     return proof;
-  }
-
-  public UInt64 getIndex() {
-    return UInt64.ZERO;
   }
 
   public DepositData getData() {
