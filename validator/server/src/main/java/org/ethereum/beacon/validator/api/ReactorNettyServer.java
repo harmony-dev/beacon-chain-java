@@ -2,13 +2,12 @@ package org.ethereum.beacon.validator.api;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Charsets;
-import com.google.common.io.CharStreams;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import org.ethereum.beacon.chain.MutableBeaconChain;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.observer.ObservableStateProcessor;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
+import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.spec.SpecCommons;
 import org.ethereum.beacon.consensus.verifier.operation.AttestationVerifier;
 import org.ethereum.beacon.core.BeaconBlock;
@@ -28,7 +27,6 @@ import org.ethereum.beacon.validator.BeaconChainProposer;
 import org.ethereum.beacon.validator.api.convert.BlockDataToBlock;
 import org.ethereum.beacon.validator.api.model.AttestationSubmit;
 import org.ethereum.beacon.validator.api.model.BlockSubmit;
-import org.ethereum.beacon.validator.api.model.Empty;
 import org.ethereum.beacon.validator.api.model.ForkResponse;
 import org.ethereum.beacon.validator.api.model.SyncingResponse;
 import org.ethereum.beacon.validator.api.model.TimeResponse;
@@ -49,8 +47,8 @@ import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.uint.UInt64;
 
+import javax.ws.rs.NotAcceptableException;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.net.URI;
@@ -63,6 +61,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.function.BiFunction;
 import java.util.function.Function;
@@ -242,15 +241,19 @@ public class ReactorNettyServer implements RestServer {
       EpochNumber epoch = EpochNumber.castFrom(UInt64.valueOf(params.get("epoch").get(0)));
       List<BLSPubkey> pubKeys =
           params.get("validator_pubkeys").stream()
-              .map(BLSPubkey::fromHexString)
+              .map(Bytes48::fromHexStringStrict)
+              .map(BLSPubkey::wrap)
               .collect(Collectors.toList());
+      BeaconStateEx stateEx = observableBeaconState.getLatestSlotState();
+      if (!epoch.lessEqual(spec.get_current_epoch(stateEx).increment())) {
+        throw new NotAcceptableInputException("Couldn't provide duties for requested epoch");
+      }
       Map<SlotNumber, Pair<ValidatorIndex, List<ShardCommittee>>> validatorDuties =
-          spec.get_validator_duties_for_epoch(observableBeaconState.getLatestSlotState(), epoch);
+          spec.get_validator_duties_for_epoch(stateEx, epoch);
 
       List<ValidatorDutiesResponse.ValidatorDuty> responseList = new ArrayList<>();
       for (BLSPubkey pubkey : pubKeys) {
-        ValidatorIndex validatorIndex =
-            spec.get_validator_index_by_pubkey(observableBeaconState.getLatestSlotState(), pubkey);
+        ValidatorIndex validatorIndex = spec.get_validator_index_by_pubkey(stateEx, pubkey);
         ValidatorDutiesResponse.ValidatorDuty duty = new ValidatorDutiesResponse.ValidatorDuty();
         boolean attesterFound = false;
         boolean proposerFound = false;
@@ -282,11 +285,15 @@ public class ReactorNettyServer implements RestServer {
           responseList.add(duty);
         }
       }
-      // TODO: 406 Duties cannot be provided for the requested epoch. What epochs?
 
       return mapper.writeValueAsString(new ValidatorDutiesResponse(responseList));
-    } catch (AssertionError | UnsupportedEncodingException | URISyntaxException ex) {
-      throw new InvalidRequestSyntaxException(ex);
+    } catch (AssertionError
+        | UnsupportedEncodingException
+        | URISyntaxException
+        | IllegalArgumentException ex) {
+      throw new InvalidInputException(ex);
+    } catch (NotAcceptableInputException ex) {
+      throw ex;
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -301,26 +308,28 @@ public class ReactorNettyServer implements RestServer {
       assert params.get("slot").size() == 1;
       SlotNumber slot = SlotNumber.castFrom(UInt64.valueOf(params.get("slot").get(0)));
       BLSSignature randaoReveal =
-          BLSSignature.wrap(Bytes96.fromHexString(params.get("randao_reveal").get(0)));
+          BLSSignature.wrap(Bytes96.fromHexStringStrict(params.get("randao_reveal").get(0)));
       BeaconBlock.Builder builder =
           beaconChainProposer.prepareBuilder(slot, randaoReveal, observableBeaconState);
       return mapper.writeValueAsString(BlockDataToBlock.serialize(builder.build()));
-    } catch (AssertionError | UnsupportedEncodingException | URISyntaxException ex) {
-      throw new InvalidRequestSyntaxException(ex);
+    } catch (AssertionError
+        | UnsupportedEncodingException
+        | URISyntaxException
+        | IllegalArgumentException ex) {
+      throw new InvalidInputException(ex);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
   }
 
-  private Publisher<? extends String> produceAcceptBlockResponse(HttpServerRequest request) {
+  private Mono<Optional<Throwable>> produceAcceptBlockResponse(HttpServerRequest request) {
     return request
         .receive()
-        .asInputStream()
+        .aggregate()
+        .asString()
         .map(
-            inputStream -> {
+            json -> {
               try {
-                String json =
-                    CharStreams.toString(new InputStreamReader(inputStream, Charsets.UTF_8));
                 BeaconBlock block =
                     BlockDataToBlock.deserialize(
                         mapper.readValue(json, BlockSubmit.class).getBeaconBlock());
@@ -329,15 +338,15 @@ public class ReactorNettyServer implements RestServer {
                 // Broadcast
                 wireApiSub.sendProposedBlock(block);
                 if (!MutableBeaconChain.ImportResult.OK.equals(importResult)) {
-                  throw new ImportFailureException(importResult.toString());
+                  throw new PartiallyFailedException(importResult.toString());
                 }
-                return mapper.writeValueAsString(new Empty());
-              } catch (ImportFailureException e) {
-                throw e;
+                return Optional.empty();
+              } catch (PartiallyFailedException e) {
+                return Optional.of(e);
               } catch (AssertionError ex) {
-                throw new InvalidRequestSyntaxException(ex);
+                return Optional.of(new InvalidInputException(ex));
               } catch (Exception e) {
-                throw new RuntimeException(e);
+                return Optional.of(new RuntimeException(e));
               }
             });
   }
@@ -355,10 +364,10 @@ public class ReactorNettyServer implements RestServer {
       assert params.get("shard").size() == 1;
       SlotNumber slot = SlotNumber.castFrom(UInt64.valueOf(params.get("slot").get(0)));
       BLSPubkey validatorPubkey =
-          BLSPubkey.wrap(Bytes48.fromHexString(params.get("validator_pubkey").get(0)));
+          BLSPubkey.wrap(Bytes48.fromHexStringStrict(params.get("validator_pubkey").get(0)));
       Long pocBit =
           Long.valueOf(params.get("poc_bit").get(0)); // XXX: Proof of custody is a stub at Phase 0
-      ShardNumber shard = ShardNumber.of(UInt64.valueOf(params.get("slot").get(0)));
+      ShardNumber shard = ShardNumber.of(UInt64.valueOf(params.get("shard").get(0)));
 
       ValidatorIndex validatorIndex =
           spec.get_validator_index_by_pubkey(
@@ -371,22 +380,24 @@ public class ReactorNettyServer implements RestServer {
               observableBeaconState.getLatestSlotState().createMutableCopy(), attestation);
       return mapper.writeValueAsString(
           BlockDataToBlock.presentIndexedAttestation(indexedAttestation));
-    } catch (AssertionError | UnsupportedEncodingException | URISyntaxException ex) {
-      throw new InvalidRequestSyntaxException(ex);
+    } catch (AssertionError
+        | UnsupportedEncodingException
+        | URISyntaxException
+        | IllegalArgumentException ex) {
+      throw new InvalidInputException(ex);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
   }
 
-  private Publisher<? extends String> produceAcceptAttestationResponse(HttpServerRequest request) {
+  private Mono<Optional<Throwable>> produceAcceptAttestationResponse(HttpServerRequest request) {
     return request
         .receive()
-        .asInputStream()
+        .aggregate()
+        .asString()
         .map(
-            inputStream -> {
+            json -> {
               try {
-                String json =
-                    CharStreams.toString(new InputStreamReader(inputStream, Charsets.UTF_8));
                 IndexedAttestation indexedAttestation =
                     BlockDataToBlock.parseIndexedAttestation(
                         mapper.readValue(json, AttestationSubmit.class).getAttestation());
@@ -414,21 +425,21 @@ public class ReactorNettyServer implements RestServer {
                   if (new AttestationVerifier(spec).verify(attestation, state).isPassed()) {
                     spec.process_attestation(state, attestation);
                   } else {
-                    throw new ImportFailureException("Verification not passed for attestation");
+                    throw new PartiallyFailedException("Verification not passed for attestation");
                   }
                 } catch (SpecCommons.SpecAssertionFailed | IllegalArgumentException ex) {
-                  throw new ImportFailureException(ex);
+                  throw new PartiallyFailedException(ex);
                 } finally {
                   // Broadcast
                   wireApiSub.sendAttestation(attestation);
                 }
-                return mapper.writeValueAsString(new Empty());
-              } catch (ImportFailureException e) {
-                throw e;
+                return Optional.empty();
+              } catch (PartiallyFailedException e) {
+                return Optional.of(e);
               } catch (AssertionError ex) {
-                throw new InvalidRequestSyntaxException(ex);
+                return Optional.of(new InvalidInputException(ex));
               } catch (Exception e) {
-                throw new RuntimeException(e);
+                return Optional.of(new RuntimeException(e));
               }
             });
   }
@@ -444,16 +455,48 @@ public class ReactorNettyServer implements RestServer {
   /**
    * Executes response function to produce reponse JSON and adds apropriate headers to the response
    *
-   * <p>Responses with 202 ACCEPTED when catches {@link ImportFailureException} from response
+   * <p>Responses with 202 ACCEPTED when catches {@link PartiallyFailedException} from response
    * function
    *
-   * <p>Responses with 400 BAD REQUEST when catches {@link InvalidRequestSyntaxException} from
-   * response function
+   * <p>Responses with 400 BAD REQUEST when catches {@link InvalidInputException} from response
+   * function
    *
    * <p>Responses with 503 SERVICE UNAVAILABLE when not in short sync mode
    */
   private BiFunction<HttpServerRequest, HttpServerResponse, Publisher<Void>> wrapJsonPublisher(
-      Function<HttpServerRequest, Publisher<? extends String>> response) {
+      Function<HttpServerRequest, Mono<Optional<Throwable>>> response) {
+    return (httpServerRequest, httpServerResponse) -> {
+      if (!shortSync) {
+        // 503 Beacon node is currently syncing, try again later.
+        return httpServerResponse.status(HttpResponseStatus.SERVICE_UNAVAILABLE).send();
+      }
+
+      return response
+          .apply(httpServerRequest)
+          .flatMap(
+              throwable -> {
+                if (!throwable.isPresent()) {
+                  return httpServerResponse.status(HttpResponseStatus.ACCEPTED).send();
+                } else {
+                  Throwable ex = throwable.get();
+                  if (ex instanceof PartiallyFailedException) {
+                    return httpServerResponse.status(HttpResponseStatus.ACCEPTED).send();
+                  } else if (ex instanceof InvalidInputException) {
+                    return httpServerResponse.status(HttpResponseStatus.BAD_REQUEST).send();
+                  } else if (ex instanceof NotAcceptableException) {
+                    return httpServerResponse.status(HttpResponseStatus.NOT_ACCEPTABLE).send();
+                  } else {
+                    return httpServerResponse
+                        .status(HttpResponseStatus.INTERNAL_SERVER_ERROR)
+                        .send();
+                  }
+                }
+              });
+    };
+  }
+
+  private BiFunction<HttpServerRequest, HttpServerResponse, Publisher<Void>> wrapJsonFunction(
+      Function<HttpServerRequest, String> response) {
     return (httpServerRequest, httpServerResponse) -> {
       if (!shortSync) {
         // 503 Beacon node is currently syncing, try again later.
@@ -463,22 +506,13 @@ public class ReactorNettyServer implements RestServer {
       try {
         return httpServerResponse
             .addHeader("Content-type", "application/json")
-            .sendString(response.apply(httpServerRequest));
-      } catch (ImportFailureException ex) {
-        return httpServerResponse.status(HttpResponseStatus.ACCEPTED).send();
-      } catch (InvalidRequestSyntaxException ex) {
+            .sendString(Mono.just(response.apply(httpServerRequest)));
+      } catch (NotAcceptableInputException ex) {
+        return httpServerResponse.status(HttpResponseStatus.NOT_ACCEPTABLE).send();
+      } catch (InvalidInputException ex) {
         return httpServerResponse.status(HttpResponseStatus.BAD_REQUEST).send();
       }
     };
-  }
-
-  /** Wrapper over {@link #wrapJsonPublisher(Function)} with Mono.just */
-  private BiFunction<HttpServerRequest, HttpServerResponse, Publisher<Void>> wrapJsonFunction(
-      Function<HttpServerRequest, String> response) {
-    return wrapJsonPublisher(
-        (httpServerRequest) -> {
-          return Mono.just(response.apply(httpServerRequest));
-        });
   }
 
   private String produceGenesisTimeResponse() {

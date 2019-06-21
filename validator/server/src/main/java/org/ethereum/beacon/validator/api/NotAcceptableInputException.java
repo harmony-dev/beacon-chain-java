@@ -1,0 +1,17 @@
+package org.ethereum.beacon.validator.api;
+
+public class NotAcceptableInputException extends RuntimeException {
+  public NotAcceptableInputException() {}
+
+  public NotAcceptableInputException(String message) {
+    super(message);
+  }
+
+  public NotAcceptableInputException(String message, Throwable cause) {
+    super(message, cause);
+  }
+
+  public NotAcceptableInputException(Throwable cause) {
+    super(cause);
+  }
+}
