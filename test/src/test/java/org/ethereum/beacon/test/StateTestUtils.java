@@ -10,6 +10,7 @@ import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
 import org.ethereum.beacon.core.spec.SpecConstants;
+import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Fork;
 import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.state.ValidatorRecord;
@@ -119,6 +120,10 @@ public abstract class StateTestUtils {
         EpochNumber.castFrom(UInt64.valueOf(data.getWithdrawableEpoch())),
         data.getSlashed(),
         Gwei.castFrom(UInt64.valueOf(data.getEffectiveBalance())));
+  }
+
+  public static Eth1Data parseEth1Data(BlockData.BlockBodyData.Eth1 data) {
+    return BlockDataToBlock.parseEth1Data(data);
   }
 
   public static Fork parseFork(BeaconStateData.Fork data) {

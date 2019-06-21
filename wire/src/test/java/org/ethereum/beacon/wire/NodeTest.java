@@ -36,8 +36,6 @@ import org.ethereum.beacon.wire.net.ConnectionManager;
 import org.ethereum.beacon.wire.net.netty.NettyClient;
 import org.ethereum.beacon.wire.net.netty.NettyServer;
 import org.ethereum.beacon.wire.sync.SyncManager;
-import org.ethereum.beacon.wire.sync.SyncManagerImpl;
-import org.ethereum.beacon.wire.sync.SyncManagerImpl.SyncMode;
 import org.javatuples.Pair;
 import org.junit.Assert;
 import org.junit.Test;
@@ -125,7 +123,7 @@ public class NodeTest {
       }
 
       Assert.assertEquals(
-          SyncMode.Long,
+          SyncManager.SyncMode.Long,
           Mono.from(slaveNode.getSyncManager().getSyncModeStream()).block(Duration.ZERO));
 
       // generate some new blocks
@@ -136,7 +134,7 @@ public class NodeTest {
       }
 
       Flux.from(slaveNode.getSyncManager().getSyncModeStream())
-          .filter(mode -> mode == SyncMode.Short)
+          .filter(mode -> mode == SyncManager.SyncMode.Short)
           .blockFirst(Duration.ofSeconds(30));
 
       // 'realtime' mode
@@ -165,7 +163,7 @@ public class NodeTest {
       controlledSchedulers.addTime(Duration.ofSeconds(10 * 10));
 
       Flux.from(slaveNode.getSyncManager().getSyncModeStream())
-          .filter(mode -> mode == SyncMode.Long)
+          .filter(mode -> mode == SyncManager.SyncMode.Long)
           .blockFirst(Duration.ofSeconds(30));
 
       System.out.println("Some time in 'realtime' mode...");
@@ -175,7 +173,7 @@ public class NodeTest {
       }
 
       Flux.from(slaveNode.getSyncManager().getSyncModeStream())
-          .filter(mode -> mode == SyncMode.Short)
+          .filter(mode -> mode == SyncManager.SyncMode.Short)
           .blockFirst(Duration.ofSeconds(30));
     }
   }
