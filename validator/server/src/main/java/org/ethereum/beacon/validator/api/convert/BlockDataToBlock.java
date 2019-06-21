@@ -34,6 +34,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Converts {@link BeaconBlock} to its representation {@link BlockData} plus parts in both
+ * directions
+ */
 public abstract class BlockDataToBlock {
   public BlockDataToBlock() {}
 

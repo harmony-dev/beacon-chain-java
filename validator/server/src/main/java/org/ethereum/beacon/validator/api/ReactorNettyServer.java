@@ -71,9 +71,6 @@ import java.util.stream.Collectors;
 
 public class ReactorNettyServer implements RestServer {
 
-  private static final String SERVER_HOST = "localhost";
-  private static final int SERVER_PORT = 1234;
-
   private final BeaconChainSpec spec;
   private final BeaconChainProposer beaconChainProposer;
   private final BeaconChainAttester beaconChainAttester;
@@ -92,6 +89,8 @@ public class ReactorNettyServer implements RestServer {
   private ObservableBeaconState observableBeaconState = null;
 
   public ReactorNettyServer(
+      String serverHost,
+      Integer serverPort,
       BeaconChainSpec spec,
       ObservableStateProcessor stateProcessor,
       SyncManager syncManager,
@@ -141,13 +140,13 @@ public class ReactorNettyServer implements RestServer {
     HttpServer httpServer =
         HttpServer.create()
             .tcpConfiguration(tcpServer -> tcpServer.runOn(serverRes))
-            .host(SERVER_HOST)
-            .port(SERVER_PORT);
+            .host(serverHost)
+            .port(serverPort);
     final HttpServer serverWithRoutes = addRoutes(httpServer);
     this.server = serverWithRoutes.bindNow();
   }
 
-  /** TODO: move to utils Copied from https://stackoverflow.com/a/13592567 */
+  /** Adopted from https://stackoverflow.com/a/13592567 */
   public static Map<String, List<String>> splitQuery(URI uri) throws UnsupportedEncodingException {
     final Map<String, List<String>> query_pairs = new LinkedHashMap<>();
     final String[] pairs = uri.getQuery().split("&");
@@ -166,7 +165,6 @@ public class ReactorNettyServer implements RestServer {
     return query_pairs;
   }
 
-  // TODO: move to utils
   private Properties loadResources(final String name, final ClassLoader classLoader) {
     try {
       final Enumeration<URL> systemResources =
@@ -190,13 +188,9 @@ public class ReactorNettyServer implements RestServer {
                 .get("/node/syncing", wrapJsonSupplier(this::produceSyncingResponse))
                 .get("/validator/duties", wrapJsonFunction(this::produceValidatorDutiesResponse))
                 .get("/validator/block", wrapJsonFunction(this::produceValidatorBlockResponse))
-                .post("/validator/block", wrapJsonPublisher(this::produceAcceptBlockResponse))
-                .get(
-                    "/validator/attestation",
-                    wrapJsonFunction(this::produceValidatorAttestationResponse))
-                .post(
-                    "/validator/attestation",
-                    wrapJsonPublisher(this::produceAcceptAttestationResponse))
+                .post("/validator/block", acceptPostData(this::acceptBlockSubmit))
+                .get("/validator/attestation", wrapJsonFunction(this::produceAttestationResponse))
+                .post("/validator/attestation", acceptPostData(this::acceptAttestationSubmit))
                 .get("/node/fork", wrapJsonSupplier(this::produceForkResponse)));
   }
 
@@ -306,7 +300,7 @@ public class ReactorNettyServer implements RestServer {
     }
   }
 
-  private Mono<Optional<Throwable>> produceAcceptBlockResponse(HttpServerRequest request) {
+  private Mono<Optional<Throwable>> acceptBlockSubmit(HttpServerRequest request) {
     return request
         .receive()
         .aggregate()
@@ -335,7 +329,7 @@ public class ReactorNettyServer implements RestServer {
             });
   }
 
-  private String produceValidatorAttestationResponse(HttpServerRequest request) {
+  private String produceAttestationResponse(HttpServerRequest request) {
     try {
       Map<String, List<String>> params = splitQuery(new URI(request.uri()));
       assert params.containsKey("validator_pubkey");
@@ -374,7 +368,7 @@ public class ReactorNettyServer implements RestServer {
     }
   }
 
-  private Mono<Optional<Throwable>> produceAcceptAttestationResponse(HttpServerRequest request) {
+  private Mono<Optional<Throwable>> acceptAttestationSubmit(HttpServerRequest request) {
     return request
         .receive()
         .aggregate()
@@ -437,26 +431,23 @@ public class ReactorNettyServer implements RestServer {
   }
 
   /**
-   * Executes response function to produce reponse JSON and adds apropriate headers to the response
+   * Executes func with `HttpServerRequest` input and returns 200 OK if everything was ok
    *
-   * <p>Responses with 202 ACCEPTED when catches {@link PartiallyFailedException} from response
-   * function
+   * <p>Responses with 202 ACCEPTED when catches {@link PartiallyFailedException} from func function
    *
-   * <p>Responses with 400 BAD REQUEST when catches {@link InvalidInputException} from response
-   * function
+   * <p>Responses with 400 BAD REQUEST when catches {@link InvalidInputException} from func function
    *
    * <p>Responses with 503 SERVICE UNAVAILABLE when not in short sync mode
    */
-  private BiFunction<HttpServerRequest, HttpServerResponse, Publisher<Void>> wrapJsonPublisher(
-      Function<HttpServerRequest, Mono<Optional<Throwable>>> response) {
+  private BiFunction<HttpServerRequest, HttpServerResponse, Publisher<Void>> acceptPostData(
+      Function<HttpServerRequest, Mono<Optional<Throwable>>> func) {
     return (httpServerRequest, httpServerResponse) -> {
       if (!shortSync) {
         // 503 Beacon node is currently syncing, try again later.
         return httpServerResponse.status(HttpResponseStatus.SERVICE_UNAVAILABLE).send();
       }
 
-      return response
-          .apply(httpServerRequest)
+      return func.apply(httpServerRequest)
           .flatMap(
               throwable -> {
                 if (!throwable.isPresent()) {
