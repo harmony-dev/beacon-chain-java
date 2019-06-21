@@ -153,15 +153,16 @@ public class SyncManagerImpl implements SyncManager {
             syncStatus.getBestKnown(),
             chain.getRecentlyProcessed().getBlock().getSlot(),
             syncStatus.getSyncMode());
-    Flux.from(syncModeFlux).subscribe(
-        syncMode -> this.syncStatus =
-            new SyncStatus(
-                syncStatus.isSyncing(),
-                syncStatus.getStart(),
-                syncStatus.getBestKnown(),
-                syncStatus.getCurrent(),
-                syncMode)
-    );
+    Flux.from(syncModeFlux)
+        .subscribe(
+            syncMode ->
+                this.syncStatus =
+                    new SyncStatus(
+                        syncStatus.isSyncing(),
+                        syncStatus.getStart(),
+                        syncStatus.getBestKnown(),
+                        syncStatus.getCurrent(),
+                        syncMode));
     Flux.from(bestKnownSlotStream)
         .subscribe(
             slotNumber -> {
@@ -237,7 +238,11 @@ public class SyncManagerImpl implements SyncManager {
 
     this.syncStatus =
         new SyncStatus(
-            true, syncStatus.getStart(), syncStatus.getBestKnown(), syncStatus.getCurrent(), syncStatus.getSyncMode());
+            true,
+            syncStatus.getStart(),
+            syncStatus.getBestKnown(),
+            syncStatus.getCurrent(),
+            syncStatus.getSyncMode());
     syncStatusUpdated();
   }
 
@@ -266,6 +271,21 @@ public class SyncManagerImpl implements SyncManager {
   @Override
   public Publisher<SyncStatus> getSyncStatusStream() {
     return syncStatusStream;
+  }
+
+  @Override
+  public Disposable subscribeToOnlineBlocks(Publisher<Feedback<BeaconBlock>> onlineBlocks) {
+    throw new RuntimeException("Not implemented yet!");
+  }
+
+  @Override
+  public Disposable subscribeToFinalizedBlocks(Publisher<BeaconBlock> finalBlocks) {
+    throw new RuntimeException("Not implemented yet!");
+  }
+
+  @Override
+  public void setSyncApi(WireApiSync syncApi) {
+    throw new RuntimeException("Not implemented yet!");
   }
 
   class ModeDetector {
