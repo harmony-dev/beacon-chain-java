@@ -30,8 +30,10 @@ import org.ethereum.beacon.validator.MultiValidatorServiceTest;
 import org.ethereum.beacon.validator.crypto.MessageSigner;
 import org.ethereum.beacon.wire.Feedback;
 import org.ethereum.beacon.wire.WireApiSub;
+import org.ethereum.beacon.wire.WireApiSync;
 import org.ethereum.beacon.wire.sync.SyncManager;
 import org.reactivestreams.Publisher;
+import reactor.core.Disposable;
 import reactor.core.publisher.Mono;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
@@ -166,6 +168,21 @@ public class ServiceFactory {
       public Publisher<SyncStatus> getSyncStatusStream() {
         return Mono.just(new SyncStatus(false, null, null, null, null));
       }
+
+      @Override
+      public Disposable subscribeToOnlineBlocks(Publisher<Feedback<BeaconBlock>> onlineBlocks) {
+        return null;
+      }
+
+      @Override
+      public Disposable subscribeToFinalizedBlocks(Publisher<BeaconBlock> finalBlocks) {
+        return null;
+      }
+
+      @Override
+      public void setSyncApi(WireApiSync syncApi) {
+
+      }
     };
   }
 
@@ -193,6 +210,21 @@ public class ServiceFactory {
             new SyncStatus(
                 true, SlotNumber.ZERO, SlotNumber.of(1000), SlotNumber.ZERO, SyncMode.Long));
       }
+
+      @Override
+      public Disposable subscribeToOnlineBlocks(Publisher<Feedback<BeaconBlock>> onlineBlocks) {
+        return null;
+      }
+
+      @Override
+      public Disposable subscribeToFinalizedBlocks(Publisher<BeaconBlock> finalBlocks) {
+        return null;
+      }
+
+      @Override
+      public void setSyncApi(WireApiSync syncApi) {
+
+      }
     };
   }
 
@@ -219,6 +251,21 @@ public class ServiceFactory {
         return Mono.just(
             new SyncStatus(
                 true, SlotNumber.ZERO, SlotNumber.ZERO, SlotNumber.ZERO, SyncMode.Short));
+      }
+
+      @Override
+      public Disposable subscribeToOnlineBlocks(Publisher<Feedback<BeaconBlock>> onlineBlocks) {
+        return null;
+      }
+
+      @Override
+      public Disposable subscribeToFinalizedBlocks(Publisher<BeaconBlock> finalBlocks) {
+        return null;
+      }
+
+      @Override
+      public void setSyncApi(WireApiSync syncApi) {
+
       }
     };
   }
