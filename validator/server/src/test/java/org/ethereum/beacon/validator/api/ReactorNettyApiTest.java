@@ -40,12 +40,15 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class ReactorNettyApiTest {
-  private final String SERVER_URL = "http://localhost:1234";
+  private final String SERVER_HOST = "localhost";
+  private final Integer SERVER_PORT = 1234;
+  private final String SERVER_URL = "http://" + SERVER_HOST + ":" + SERVER_PORT;
   private RestServer server;
   private RestClient client = new RestClient(SERVER_URL);
 
   private ReactorNettyServer createSyncNotStartedServer() {
     return new ReactorNettyServer(
+        SERVER_HOST, SERVER_PORT,
         BeaconChainSpec.createWithDefaults(),
         ServiceFactory.createObservableStateProcessor(),
         ServiceFactory.createSyncManagerSyncNotStarted(),
@@ -58,6 +61,7 @@ public class ReactorNettyApiTest {
 
   private ReactorNettyServer createLongSyncServer() {
     return new ReactorNettyServer(
+        SERVER_HOST, SERVER_PORT,
         BeaconChainSpec.createWithDefaults(),
         ServiceFactory.createObservableStateProcessor(),
         ServiceFactory.createSyncManagerSyncStarted(),
@@ -70,6 +74,7 @@ public class ReactorNettyApiTest {
 
   private ReactorNettyServer createShortSyncServer() {
     return new ReactorNettyServer(
+        SERVER_HOST, SERVER_PORT,
         BeaconChainSpec.createWithDefaults(),
         ServiceFactory.createObservableStateProcessor(),
         ServiceFactory.createSyncManagerShortSync(),
@@ -98,6 +103,7 @@ public class ReactorNettyApiTest {
   public void testGenesisTime() {
     this.server =
         new ReactorNettyServer(
+            SERVER_HOST, SERVER_PORT,
             BeaconChainSpec.createWithDefaults(),
             ServiceFactory.createObservableStateProcessorGenesisTimeModifiedTo10(),
             ServiceFactory.createSyncManagerSyncNotStarted(),
@@ -165,6 +171,7 @@ public class ReactorNettyApiTest {
     BLSPubkey blsPubkey = BLSPubkey.fromHexString(pubkey);
     this.server =
         new ReactorNettyServer(
+            SERVER_HOST, SERVER_PORT,
             BeaconChainSpec.createWithDefaults(),
             ServiceFactory.createObservableStateProcessorWithValidators(blsPubkey),
             ServiceFactory.createSyncManagerShortSync(),
@@ -198,6 +205,7 @@ public class ReactorNettyApiTest {
   public void testBlock() {
     this.server =
         new ReactorNettyServer(
+            SERVER_HOST, SERVER_PORT,
             BeaconChainSpec.createWithDefaults(),
             ServiceFactory.createObservableStateProcessor(),
             ServiceFactory.createSyncManagerShortSync(),
@@ -233,6 +241,7 @@ public class ReactorNettyApiTest {
     WireApiSub wireApiSub = ServiceFactory.createWireApiSubWithMirror();
     this.server =
         new ReactorNettyServer(
+            SERVER_HOST, SERVER_PORT,
             BeaconChainSpec.createWithDefaults(),
             ServiceFactory.createObservableStateProcessor(),
             ServiceFactory.createSyncManagerShortSync(),
@@ -283,6 +292,7 @@ public class ReactorNettyApiTest {
   public void testAttestation() {
     this.server =
         new ReactorNettyServer(
+            SERVER_HOST, SERVER_PORT,
             BeaconChainSpec.createWithDefaults(),
             ServiceFactory.createObservableStateProcessor(),
             ServiceFactory.createSyncManagerShortSync(),
@@ -330,6 +340,7 @@ public class ReactorNettyApiTest {
         "0x5F1847060C89CB12A92AFF4EF140C9FC3A3F026796EC15105F1847060C89CB12A92AFF4EF140C9FC3A3F026796EC1510";
     this.server =
         new ReactorNettyServer(
+            SERVER_HOST, SERVER_PORT,
             BeaconChainSpec.createWithDefaults(),
             ServiceFactory.createObservableStateProcessorWithValidators(
                 BLSPubkey.fromHexString(pubKey)),
