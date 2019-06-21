@@ -1,17 +1,14 @@
 package org.ethereum.beacon.chain.observer;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.Transfer;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.spec.SpecConstants;
-import org.ethereum.beacon.core.types.BLSPubkey;
-import org.ethereum.beacon.core.types.SlotNumber;
+
+import java.util.Collections;
+import java.util.List;
 
 /** A pending state interface. */
 public interface PendingOperations {
