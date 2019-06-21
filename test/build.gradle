@@ -1,8 +1,8 @@
 dependencies {
-  testImplementation project(':validator:server')
   testImplementation 'com.google.guava:guava'
   testImplementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
   testImplementation 'com.fasterxml.jackson.core:jackson-databind'
+  testImplementation project(':validator:server')
   testImplementation project(':types')
   testImplementation project(':crypto')
   testImplementation project(':ssz')

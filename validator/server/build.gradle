@@ -13,7 +13,7 @@ dependencies {
   // REST Client
   implementation 'org.glassfish.jersey.core:jersey-client:2.28'
   implementation 'org.glassfish.jersey.inject:jersey-hk2:2.28'
-  implementation 'com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:2.9.9'
+  implementation 'com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider'
 
   // Gradle does not import test sources alongside with main sources
   // use a workaround until better solution will be found
