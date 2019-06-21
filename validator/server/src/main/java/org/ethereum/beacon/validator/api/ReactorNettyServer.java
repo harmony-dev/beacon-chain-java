@@ -35,6 +35,7 @@ import org.ethereum.beacon.validator.api.model.VersionResponse;
 import org.ethereum.beacon.wire.WireApiSub;
 import org.ethereum.beacon.wire.sync.SyncManager;
 import org.javatuples.Pair;
+import org.javatuples.Triplet;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -78,6 +79,7 @@ public class ReactorNettyServer implements RestServer {
   private final BeaconChainAttester beaconChainAttester;
   private final WireApiSub wireApiSub;
   private final MutableBeaconChain beaconChain;
+  private final ValidatorDutiesService validatorDutiesService;
   private final UInt64 chainId;
 
   private DisposableServer server;
@@ -104,6 +106,7 @@ public class ReactorNettyServer implements RestServer {
     this.wireApiSub = wireApiSub;
     this.beaconChain = beaconChain;
     this.chainId = chainId;
+    this.validatorDutiesService = new ValidatorDutiesService(spec);
 
     Flux.from(stateProcessor.getObservableStateStream())
         .subscribe(
@@ -249,40 +252,21 @@ public class ReactorNettyServer implements RestServer {
         throw new NotAcceptableInputException("Couldn't provide duties for requested epoch");
       }
       Map<SlotNumber, Pair<ValidatorIndex, List<ShardCommittee>>> validatorDuties =
-          spec.get_validator_duties_for_epoch(stateEx, epoch);
+          validatorDutiesService.getValidatorDuties(stateEx, epoch);
 
       List<ValidatorDutiesResponse.ValidatorDuty> responseList = new ArrayList<>();
       for (BLSPubkey pubkey : pubKeys) {
         ValidatorIndex validatorIndex = spec.get_validator_index_by_pubkey(stateEx, pubkey);
-        ValidatorDutiesResponse.ValidatorDuty duty = new ValidatorDutiesResponse.ValidatorDuty();
-        boolean attesterFound = false;
-        boolean proposerFound = false;
-        for (Map.Entry<SlotNumber, Pair<ValidatorIndex, List<ShardCommittee>>> entry :
-            validatorDuties.entrySet()) {
-          if (!proposerFound && entry.getValue().getValue0().equals(validatorIndex)) {
-            duty.setBlockProposalSlot(entry.getKey().toBI());
-            proposerFound = true;
-          }
-
-          if (!attesterFound) {
-            for (ShardCommittee shardCommittee : entry.getValue().getValue1()) {
-              if (shardCommittee.getCommittee().contains(validatorIndex)) {
-                duty.setAttestationShard(shardCommittee.getShard().intValue());
-                duty.setAttestationSlot(entry.getKey().toBI());
-                attesterFound = true;
-                break;
-              }
-            }
-          }
-
-          if (proposerFound && attesterFound) {
-            break;
-          }
-        }
-
-        if (duty.getAttestationSlot() != null) {
-          duty.setValidatorPubkey(pubkey.toHexString());
-          responseList.add(duty);
+        Triplet<BigInteger, Integer, BigInteger> duty =
+            validatorDutiesService.findDutyForValidator(validatorIndex, validatorDuties);
+        if (duty.getValue1() != null) {
+          ValidatorDutiesResponse.ValidatorDuty dutyResponse =
+              new ValidatorDutiesResponse.ValidatorDuty();
+          dutyResponse.setValidatorPubkey(pubkey.toHexString());
+          dutyResponse.setBlockProposalSlot(duty.getValue0());
+          dutyResponse.setAttestationSlot(duty.getValue2());
+          dutyResponse.setAttestationShard(duty.getValue1());
+          responseList.add(dutyResponse);
         }
       }
 

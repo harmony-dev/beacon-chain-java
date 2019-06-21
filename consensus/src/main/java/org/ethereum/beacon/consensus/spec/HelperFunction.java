@@ -195,43 +195,6 @@ public interface HelperFunction extends SpecCommons {
     return ret;
   }
 
-  /**
-   * Produces map of validator duties (attesting and proposing) for provided epoch with provided
-   * state
-   *
-   * @param epoch Epoch
-   * @param state Beacon state
-   * @return Map: Slot: Pair with [Proposer, Attesters]
-   */
-  default Map<SlotNumber, Pair<ValidatorIndex, List<ShardCommittee>>>
-      get_validator_duties_for_epoch(BeaconState state, EpochNumber epoch) {
-    SlotNumber epochStart = get_epoch_start_slot(epoch);
-    UInt64 committeesPerSlot =
-        get_epoch_committee_count(state, epoch).dividedBy(getConstants().getSlotsPerEpoch());
-    Map<SlotNumber, Pair<ValidatorIndex, List<ShardCommittee>>> epochCommitees = new HashMap<>();
-    for (SlotNumber slotOffset = SlotNumber.ZERO;
-        slotOffset.less(getConstants().getSlotsPerEpoch());
-        slotOffset = slotOffset.increment()) {
-      List<ShardCommittee> ret = new ArrayList<>();
-      ValidatorIndex proposerIndex = null;
-      for (UInt64 offset :
-          UInt64s.iterate(
-              committeesPerSlot.times(slotOffset),
-              committeesPerSlot.times(slotOffset.increment()))) {
-        ShardNumber shard =
-            get_epoch_start_shard(state, epoch).plusModulo(offset, getConstants().getShardCount());
-        List<ValidatorIndex> committee = get_crosslink_committee(state, epoch, shard);
-        if (ret.isEmpty()) { // first committee
-          proposerIndex = get_beacon_proposer_index_for_committee(state, epoch, committee);
-        }
-        ret.add(new ShardCommittee(committee, shard));
-      }
-      epochCommitees.put(slotOffset.plus(epochStart), Pair.with(proposerIndex, ret));
-    }
-
-    return epochCommitees;
-  }
-
   /*
     def get_beacon_proposer_index(state: BeaconState) -> ValidatorIndex:
       """
