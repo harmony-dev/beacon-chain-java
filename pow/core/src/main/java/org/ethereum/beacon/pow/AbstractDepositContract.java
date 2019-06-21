@@ -7,6 +7,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
+import org.ethereum.beacon.consensus.ChainStart;
+import org.ethereum.beacon.consensus.spec.SpecCommons.SpecAssertionFailed;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.state.Eth1Data;
@@ -30,6 +35,8 @@ import tech.pegasys.artemis.util.uint.UInt64;
 
 public abstract class AbstractDepositContract implements DepositContract {
 
+  private static final Logger logger = LogManager.getLogger(AbstractDepositContract.class);
+
   private static final int MAX_REORG_HEIGHT = 1000;
 
   protected final Schedulers schedulers;
@@ -37,12 +44,13 @@ public abstract class AbstractDepositContract implements DepositContract {
   private final Publisher<ChainStart> chainStartStream;
   private final SimpleProcessor<Deposit> depositStream;
   private final MerkleTree<DepositData> tree;
+  private final BeaconChainSpec spec;
   private long distanceFromHead;
-  private List<Deposit> initialDeposits = new ArrayList<>();
+  private List<DepositData> initialDeposits = new ArrayList<>();
   private boolean startChainSubscribed;
 
   public AbstractDepositContract(
-      Schedulers schedulers, Function<BytesValue, Hash32> hashFunction, int treeDepth) {
+      Schedulers schedulers, Function<BytesValue, Hash32> hashFunction, int treeDepth, BeaconChainSpec spec) {
     this.schedulers = schedulers;
 
     chainStartStream =
@@ -52,6 +60,7 @@ public abstract class AbstractDepositContract implements DepositContract {
             .name("PowClient.chainStart");
     depositStream = new SimpleProcessor<>(this.schedulers.events(), "PowClient.deposit");
     this.tree = new DepositBufferedMerkle(hashFunction, treeDepth, MAX_REORG_HEIGHT);
+    this.spec = spec;
   }
 
   /**
@@ -59,8 +68,9 @@ public abstract class AbstractDepositContract implements DepositContract {
    *
    * @param eventDataList All deposit events in blockHash
    * @param blockHash Block hash
+   * @param blockTimestamp Block timestamp
    */
-  protected synchronized void newDeposits(List<DepositEventData> eventDataList, byte[] blockHash) {
+  protected synchronized void newDeposits(List<DepositEventData> eventDataList, byte[] blockHash, long blockTimestamp) {
     if (eventDataList.isEmpty()) {
       return;
     }
@@ -76,14 +86,42 @@ public abstract class AbstractDepositContract implements DepositContract {
           Deposit.create(tree.getProof(data.getIndex().intValue(), depositCount), depositData);
 
       if (startChainSubscribed && !chainStartSink.isTerminated()) {
-        initialDeposits.add(deposit);
+        initialDeposits.add(depositData);
+
+        if (initialDeposits.size() >= spec.getConstants().getGenesisActiveValidatorCount()) {
+          tryChainStart(blockHash, blockTimestamp);
+        }
       }
+
       depositStream.onNext(deposit);
     }
   }
 
+  private void tryChainStart(byte[] blockHash, long blockTimestamp) {
+    // instantiate initial deposits
+    List<Deposit> genesisDeposits = new ArrayList<>();
+    for (int i = 0; i < initialDeposits.size(); i++) {
+      genesisDeposits.add(
+          Deposit.create(tree.getProof(i, initialDeposits.size()), initialDeposits.get(i)));
+    }
+    try {
+      // check if genesis conditions met
+      Eth1Data genesisEth1Data =
+          new Eth1Data(
+              tree.getRoot(genesisDeposits.size() - 1),
+              UInt64.valueOf(genesisDeposits.size()),
+              Hash32.wrap(Bytes32.wrap(blockHash)));
+      if (spec.is_genesis_trigger(
+          genesisDeposits, genesisEth1Data, UInt64.valueOf(blockTimestamp))) {
+        chainStart(genesisEth1Data, genesisDeposits, blockTimestamp);
+      }
+    } catch (SpecAssertionFailed e) {
+      logger.warn("Failed to trigger genesis event", e);
+    }
+  }
+
   /**
-   * Same as {@link #newDeposits(List, byte[])} but doesn't store deposits data, instead expects its
+   * Same as {@link #newDeposits(List, byte[], long)} but doesn't store deposits data, instead expects its
    * already stored
    */
   private List<DepositInfo> restoreDeposits(List<DepositEventData> eventDataList, byte[] blockHash) {
@@ -115,18 +153,12 @@ public abstract class AbstractDepositContract implements DepositContract {
     return tree.getRoot(index.intValue());
   }
 
-  protected synchronized void chainStart(
-      byte[] deposit_root, byte[] deposit_count, byte[] time, byte[] blockHash) {
-    assert UInt64.fromBytesLittleEndian(Bytes8.wrap(deposit_count)).intValue()
-        == initialDeposits.size();
-    ChainStart chainStart =
-        new ChainStart(
-            Time.castFrom(UInt64.fromBytesLittleEndian(Bytes8.wrap(time))),
-            new Eth1Data(
-                Hash32.wrap(Bytes32.wrap(deposit_root)),
-                UInt64.valueOf(initialDeposits.size()),
-                Hash32.wrap(Bytes32.wrap(blockHash))),
-            initialDeposits);
+  protected synchronized void chainStart(Eth1Data genesisEth1Data, List<Deposit> genesisDeposits, long timestamp) {
+    // genesis_time = timestamp - timestamp % SECONDS_PER_DAY + 2 * SECONDS_PER_DAY
+    long genesisTime = timestamp - timestamp % spec.getConstants().getSecondsPerDay() +
+        2 * spec.getConstants().getSecondsPerDay();
+
+    ChainStart chainStart = new ChainStart(Time.of(genesisTime), genesisEth1Data, genesisDeposits);
     chainStartSink.onNext(chainStart);
     chainStartSink.onComplete();
     chainStartDone();

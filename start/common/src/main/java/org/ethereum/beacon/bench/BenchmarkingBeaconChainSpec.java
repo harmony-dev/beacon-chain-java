@@ -9,7 +9,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.hasher.ObjectHasher;
-import org.ethereum.beacon.consensus.util.TransitionBeaconChainSpecSpec;
+import org.ethereum.beacon.consensus.util.CachingBeaconChainSpec;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.BeaconState;
@@ -36,7 +36,7 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt64;
 
-public class BenchmarkingBeaconChainSpec extends TransitionBeaconChainSpecSpec {
+public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
 
   private final Map<String, MeasurementsCollector> collectors = new ConcurrentHashMap<>();
   private boolean trackingStarted = false;
@@ -48,11 +48,11 @@ public class BenchmarkingBeaconChainSpec extends TransitionBeaconChainSpecSpec {
         spec.getObjectHasher(),
         spec.isBlsVerify(),
         spec.isBlsVerifyProofOfPossession(),
-        spec instanceof TransitionBeaconChainSpecSpec && ((TransitionBeaconChainSpecSpec) spec).isCacheEnabled());
+        spec instanceof CachingBeaconChainSpec && ((CachingBeaconChainSpec) spec).isCacheEnabled());
 
     // share caches between all instances to avoid cache duplication
-    if (spec instanceof TransitionBeaconChainSpecSpec) {
-      wrapped.caches = ((TransitionBeaconChainSpecSpec) spec).getCaches();
+    if (spec instanceof CachingBeaconChainSpec) {
+      wrapped.caches = ((CachingBeaconChainSpec) spec).getCaches();
     }
 
     return wrapped;

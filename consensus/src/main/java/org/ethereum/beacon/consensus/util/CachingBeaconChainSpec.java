@@ -25,7 +25,7 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.bytes.BytesValues;
 import tech.pegasys.artemis.util.uint.UInt64;
 
-public class TransitionBeaconChainSpecSpec extends BeaconChainSpecImpl {
+public class CachingBeaconChainSpec extends BeaconChainSpecImpl {
 
   private static class Caches {
     private Cache<Pair<List<? extends UInt64>, Bytes32>, List<UInt64>> shufflerCache;
@@ -52,7 +52,7 @@ public class TransitionBeaconChainSpecSpec extends BeaconChainSpecImpl {
 
   private final boolean cacheEnabled;
 
-  public TransitionBeaconChainSpecSpec(
+  public CachingBeaconChainSpec(
       SpecConstants constants,
       Function<BytesValue, Hash32> hashFunction,
       ObjectHasher<Hash32> objectHasher,
@@ -66,7 +66,7 @@ public class TransitionBeaconChainSpecSpec extends BeaconChainSpecImpl {
     this.caches = new Caches(factory);
   }
 
-  public TransitionBeaconChainSpecSpec(
+  public CachingBeaconChainSpec(
       SpecConstants constants,
       Function<BytesValue, Hash32> hashFunction,
       ObjectHasher<Hash32> objectHasher,

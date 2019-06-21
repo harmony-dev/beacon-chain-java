@@ -129,4 +129,25 @@ public interface GenesisFunction extends BlockProcessing {
 
     return state.createImmutable();
   }
+
+  default boolean is_genesis_trigger(List<Deposit> deposits, Eth1Data genesisEth1Data, UInt64 timestamp) {
+    // Process deposits
+    MutableBeaconState state = BeaconState.getEmpty(getConstants()).createMutableCopy();
+    state.setLatestEth1Data(genesisEth1Data);
+    deposits.forEach(d -> {
+      verify_deposit(state, d);
+      process_deposit(state, d);
+    });
+
+    // Count active validators at genesis
+    int active_validator_count = 0;
+    for (ValidatorRecord validator : state.getValidatorRegistry()) {
+      if (validator.getEffectiveBalance().equals(getConstants().getMaxEffectiveBalance())) {
+        active_validator_count += 1;
+      }
+    }
+
+    // Check effective balance to trigger genesis
+    return active_validator_count == getConstants().getGenesisActiveValidatorCount();
+  }
 }

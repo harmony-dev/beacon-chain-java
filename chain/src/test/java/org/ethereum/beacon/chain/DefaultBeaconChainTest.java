@@ -26,7 +26,7 @@ import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.db.Database;
-import org.ethereum.beacon.pow.DepositContract.ChainStart;
+import org.ethereum.beacon.consensus.ChainStart;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.junit.Assert;
 import org.junit.Test;

@@ -11,7 +11,7 @@ import org.ethereum.beacon.consensus.spec.ForkChoice;
 import org.ethereum.beacon.consensus.spec.GenesisFunction;
 import org.ethereum.beacon.consensus.spec.HelperFunction;
 import org.ethereum.beacon.consensus.spec.SpecStateTransition;
-import org.ethereum.beacon.consensus.util.TransitionBeaconChainSpecSpec;
+import org.ethereum.beacon.consensus.util.CachingBeaconChainSpec;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.types.Millis;
@@ -131,6 +131,11 @@ public interface BeaconChainSpec
       return withHasher(ObjectHasher.createSSZOverSHA256(constants));
     }
 
+    public Builder withDefaultHasher() {
+      assert constants != null;
+      return withHasher(ObjectHasher.createSSZOverSHA256(constants));
+    }
+
     public Builder enableCache() {
       return withCache(true);
     }
@@ -140,7 +145,7 @@ public interface BeaconChainSpec
       assert hashFunction != null;
       assert hasher != null;
 
-      return new TransitionBeaconChainSpecSpec(
+      return new CachingBeaconChainSpec(
           constants, hashFunction, hasher, blsVerify, blsVerifyProofOfPossession, cache);
     }
   }

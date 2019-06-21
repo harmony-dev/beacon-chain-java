@@ -19,6 +19,7 @@ import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.storage.impl.MemBeaconChainStorageFactory;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
+import org.ethereum.beacon.consensus.ChainStart;
 import org.ethereum.beacon.consensus.transition.EpochTransitionSummary;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
@@ -148,8 +149,8 @@ public class SimulatorLauncher implements Runnable {
     eth1Data = new Eth1Data(Hash32.random(rnd), UInt64.valueOf(deposits.size()), Hash32.random(rnd));
 
     localWireHub = new LocalWireHub(s -> wire.trace(s), controlledSchedulers.createNew("wire"));
-    DepositContract.ChainStart chainStart =
-        new DepositContract.ChainStart(genesisTime, eth1Data, deposits);
+    ChainStart chainStart =
+        new ChainStart(genesisTime, eth1Data, deposits);
     depositContract = new SimpleDepositContract(chainStart);
   }
 

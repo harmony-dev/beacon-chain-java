@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.ethereum.beacon.consensus.hasher.ObjectHasher;
 import org.ethereum.beacon.consensus.transition.InitialStateTransition;
-import org.ethereum.beacon.consensus.util.TransitionBeaconChainSpecSpec;
+import org.ethereum.beacon.consensus.util.CachingBeaconChainSpec;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.BeaconBlockHeader;
@@ -31,7 +31,6 @@ import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.core.util.AttestationTestUtil;
 import org.ethereum.beacon.crypto.Hashes;
-import org.ethereum.beacon.pow.DepositContract.ChainStart;
 import org.junit.Ignore;
 import org.junit.Test;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -178,7 +177,7 @@ public class BeaconChainSpecTest {
             return ShardNumber.of(shardCount);
           }
         };
-    BeaconChainSpec spec = new TransitionBeaconChainSpecSpec(
+    BeaconChainSpec spec = new CachingBeaconChainSpec(
         specConstants, Hashes::sha256, ObjectHasher.createSSZOverSHA256(specConstants), false, true);
 
     System.out.println("Generating deposits...");

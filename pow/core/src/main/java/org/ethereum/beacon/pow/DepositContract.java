@@ -3,12 +3,11 @@ package org.ethereum.beacon.pow;
 import com.google.common.base.Objects;
 import java.util.List;
 import java.util.Optional;
+import org.ethereum.beacon.consensus.ChainStart;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.state.Eth1Data;
-import org.ethereum.beacon.core.types.Time;
 import org.reactivestreams.Publisher;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.uint.UInt64;
 
 /**
  * Interface to the Eth1.0 Deposit contract
@@ -113,32 +112,4 @@ public interface DepositContract {
     }
   }
 
-  /**
-   * Container for the deposit contract <code>ChainStartEvent</code>
-   */
-  class ChainStart {
-    private final Time time;
-    private final Eth1Data eth1Data;
-    private final List<Deposit> initialDeposits;
-
-
-    public ChainStart(Time time, Eth1Data eth1Data,
-        List<Deposit> initialDeposits) {
-      this.time = time;
-      this.eth1Data = eth1Data;
-      this.initialDeposits = initialDeposits;
-    }
-
-    public Time getTime() {
-      return time;
-    }
-
-    public Eth1Data getEth1Data() {
-      return eth1Data;
-    }
-
-    public List<Deposit> getInitialDeposits() {
-      return initialDeposits;
-    }
-  }
 }

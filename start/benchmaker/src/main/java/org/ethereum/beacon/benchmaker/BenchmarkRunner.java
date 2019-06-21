@@ -13,7 +13,8 @@ import org.ethereum.beacon.bench.BenchmarkReport;
 import org.ethereum.beacon.bench.BenchmarkUtils;
 import org.ethereum.beacon.chain.storage.impl.MemBeaconChainStorageFactory;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
-import org.ethereum.beacon.consensus.util.TransitionBeaconChainSpecSpec;
+import org.ethereum.beacon.consensus.ChainStart;
+import org.ethereum.beacon.consensus.util.CachingBeaconChainSpec;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
@@ -77,7 +78,7 @@ public class BenchmarkRunner implements Runnable {
         epochCount,
         validatorCount,
         spec.isBlsVerify() ? "enabled" : "disabled",
-        ((TransitionBeaconChainSpecSpec) spec).isCacheEnabled() ? "enabled" : "disabled");
+        ((CachingBeaconChainSpec) spec).isCacheEnabled() ? "enabled" : "disabled");
 
     Time genesisTime = Time.ZERO;
 
@@ -95,8 +96,8 @@ public class BenchmarkRunner implements Runnable {
 
     LocalWireHub localWireHub =
         new LocalWireHub(s -> {}, controlledSchedulers.createNew("wire"));
-    DepositContract.ChainStart chainStart =
-        new DepositContract.ChainStart(genesisTime, eth1Data, deposits);
+    ChainStart chainStart =
+        new ChainStart(genesisTime, eth1Data, deposits);
     DepositContract depositContract = new SimpleDepositContract(chainStart);
 
     logger.info("Bootstrapping validators ...");

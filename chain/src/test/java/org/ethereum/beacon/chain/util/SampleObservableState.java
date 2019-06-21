@@ -28,7 +28,7 @@ import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.crypto.BLS381.KeyPair;
 import org.ethereum.beacon.db.InMemoryDatabase;
-import org.ethereum.beacon.pow.DepositContract.ChainStart;
+import org.ethereum.beacon.consensus.ChainStart;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.javatuples.Pair;
 import org.reactivestreams.Publisher;
