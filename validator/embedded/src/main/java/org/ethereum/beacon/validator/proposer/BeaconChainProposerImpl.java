@@ -26,7 +26,6 @@ import org.ethereum.beacon.validator.crypto.MessageSigner;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.collections.ReadList;
-import tech.pegasys.artemis.util.uint.UInt64;
 
 import java.util.Comparator;
 import java.util.HashMap;
@@ -34,9 +33,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
-
-import static org.ethereum.beacon.core.spec.SignatureDomains.BEACON_PROPOSER;
-import static org.ethereum.beacon.core.spec.SignatureDomains.RANDAO;
 
 /**
  * An implementation of beacon chain proposer.
@@ -111,9 +107,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
    */
   private BLSSignature getProposalSignature(
       BeaconState state, BeaconBlock block, MessageSigner<BLSSignature> signer) {
-    Hash32 proposalRoot = spec.signing_root(block);
-    UInt64 domain = spec.get_domain(state, BEACON_PROPOSER);
-    return signer.sign(proposalRoot, domain);
+    return BeaconChainProposer.getProposalSignature(state, block, signer, spec);
   }
 
   /**
@@ -124,9 +118,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
    * @return next RANDAO reveal.
    */
   private BLSSignature getRandaoReveal(BeaconState state, MessageSigner<BLSSignature> signer) {
-    Hash32 hash = spec.hash_tree_root(spec.slot_to_epoch(state.getSlot()));
-    UInt64 domain = spec.get_domain(state, RANDAO);
-    return signer.sign(hash, domain);
+    return BeaconChainProposer.getRandaoReveal(state, signer, spec);
   }
 
   /*

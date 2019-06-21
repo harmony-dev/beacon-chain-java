@@ -1,9 +1,6 @@
 package org.ethereum.beacon.validator.attester;
 
-import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
-
 import com.google.common.annotations.VisibleForTesting;
-import java.util.List;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.BeaconBlock;
@@ -23,7 +20,8 @@ import org.ethereum.beacon.validator.crypto.MessageSigner;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.bytes.MutableBytesValue;
-import tech.pegasys.artemis.util.uint.UInt64;
+
+import java.util.List;
 
 /**
  * An implementation of beacon chain attester.
@@ -47,18 +45,23 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
       ObservableBeaconState observableState,
       MessageSigner<BLSSignature> signer) {
     BeaconState state = observableState.getLatestSlotState();
-    Attestation attestation = prepareAttestation(validatorIndex, shard, observableState, state.getSlot());
+    Attestation attestation =
+        prepareAttestation(validatorIndex, shard, observableState, state.getSlot());
     BLSSignature aggregateSignature = getAggregateSignature(state, attestation.getData(), signer);
 
     return new Attestation(
-        attestation.getAggregationBitfield(), attestation.getData(), attestation.getCustodyBitfield(), aggregateSignature);
+        attestation.getAggregationBitfield(),
+        attestation.getData(),
+        attestation.getCustodyBitfield(),
+        aggregateSignature);
   }
 
   @Override
-  public Attestation prepareAttestation(ValidatorIndex validatorIndex,
-                                 ShardNumber shard,
-                                 ObservableBeaconState observableState,
-                                 SlotNumber slot) {
+  public Attestation prepareAttestation(
+      ValidatorIndex validatorIndex,
+      ShardNumber shard,
+      ObservableBeaconState observableState,
+      SlotNumber slot) {
     BeaconState state = observableState.getLatestSlotState();
 
     Hash32 beaconBlockRoot = spec.signing_root(observableState.getHead());
@@ -86,7 +89,6 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
     return new Attestation(
         Bitfield.of(participationBitfield), data, Bitfield.of(custodyBitfield), BLSSignature.ZERO);
   }
-
 
   /**
    * Returns a committee at a state slot for a given shard.
@@ -172,10 +174,6 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
    */
   private BLSSignature getAggregateSignature(
       BeaconState state, AttestationData data, MessageSigner<BLSSignature> signer) {
-    AttestationDataAndCustodyBit attestationDataAndCustodyBit =
-        new AttestationDataAndCustodyBit(data, false);
-    Hash32 hash = spec.hash_tree_root(attestationDataAndCustodyBit);
-    UInt64 domain = spec.get_domain(state, ATTESTATION);
-    return signer.sign(hash, domain);
+    return BeaconChainAttester.getAggregateSignature(state, data, signer, spec);
   }
 }
