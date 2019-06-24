@@ -2,9 +2,8 @@ package org.ethereum.beacon.consensus;
 
 public enum TransitionType {
   INITIAL,
-  CACHING,
-  EPOCH,
   SLOT,
+  EPOCH,
   BLOCK,
   UNKNOWN;
 
@@ -14,23 +13,13 @@ public enum TransitionType {
       case INITIAL:
         switch (this) {
           case INITIAL: return false;
-          case CACHING: return true;
           case EPOCH: return false;
-          case SLOT: return false;
-          case BLOCK: return false;
-        }
-      case CACHING:
-        switch (this) {
-          case INITIAL: return false;
-          case CACHING: return false;
-          case EPOCH: return true;
           case SLOT: return true;
           case BLOCK: return false;
         }
       case EPOCH:
         switch (this) {
           case INITIAL: return false;
-          case CACHING: return false;
           case EPOCH: return false;
           case SLOT: return true;
           case BLOCK: return false;
@@ -38,17 +27,15 @@ public enum TransitionType {
       case SLOT:
         switch (this) {
           case INITIAL: return false;
-          case CACHING: return true;
-          case EPOCH: return false;
-          case SLOT: return false;
+          case EPOCH: return true;
+          case SLOT: return true;
           case BLOCK: return true;
         }
       case BLOCK:
         switch (this) {
           case INITIAL: return false;
-          case CACHING: return true;
           case EPOCH: return false;
-          case SLOT: return false;
+          case SLOT: return true;
           case BLOCK: return false;
         }
     }

@@ -1,7 +1,6 @@
 package org.ethereum.beacon.consensus.spec;
 
 import static java.util.Collections.emptyList;
-import static java.util.Collections.nCopies;
 
 import java.util.List;
 import org.ethereum.beacon.core.BeaconBlock;
@@ -28,10 +27,10 @@ import tech.pegasys.artemis.util.uint.UInt64;
  * On genesis part.
  *
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.6.1/specs/core/0_beacon-chain.md#on-genesis">On
- *     genesis</a> in the spec.
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.7.1/specs/core/0_beacon-chain.md#genesis">Genesis</a>
+ *     in the spec.
  */
-public interface OnGenesis extends BlockProcessing {
+public interface GenesisFunction extends BlockProcessing {
 
   /*
    """
@@ -129,5 +128,26 @@ public interface OnGenesis extends BlockProcessing {
     }
 
     return state.createImmutable();
+  }
+
+  default boolean is_genesis_trigger(List<Deposit> deposits, Eth1Data genesisEth1Data, UInt64 timestamp) {
+    // Process deposits
+    MutableBeaconState state = BeaconState.getEmpty(getConstants()).createMutableCopy();
+    state.setLatestEth1Data(genesisEth1Data);
+    deposits.forEach(d -> {
+      verify_deposit(state, d);
+      process_deposit(state, d);
+    });
+
+    // Count active validators at genesis
+    int active_validator_count = 0;
+    for (ValidatorRecord validator : state.getValidatorRegistry()) {
+      if (validator.getEffectiveBalance().equals(getConstants().getMaxEffectiveBalance())) {
+        active_validator_count += 1;
+      }
+    }
+
+    // Check effective balance to trigger genesis
+    return active_validator_count == getConstants().getGenesisActiveValidatorCount();
   }
 }

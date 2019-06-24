@@ -20,7 +20,6 @@ import org.ethereum.beacon.consensus.transition.InitialStateTransition;
 import org.ethereum.beacon.consensus.transition.PerBlockTransition;
 import org.ethereum.beacon.consensus.transition.PerEpochTransition;
 import org.ethereum.beacon.consensus.transition.PerSlotTransition;
-import org.ethereum.beacon.consensus.transition.StateCachingTransition;
 import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
 import org.ethereum.beacon.consensus.verifier.BeaconStateVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
@@ -29,7 +28,7 @@ import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.db.InMemoryDatabase;
 import org.ethereum.beacon.pow.DepositContract;
-import org.ethereum.beacon.pow.DepositContract.ChainStart;
+import org.ethereum.beacon.consensus.ChainStart;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.util.stats.MeasurementsCollector;
 import org.ethereum.beacon.validator.BeaconChainProposer;
@@ -51,7 +50,6 @@ public class Launcher {
   private final Schedulers schedulers;
 
   private InitialStateTransition initialTransition;
-  private StateCachingTransition stateCachingTransition;
   private PerSlotTransition perSlotTransition;
   private PerBlockTransition perBlockTransition;
   private PerEpochTransition perEpochTransition;
@@ -110,13 +108,11 @@ public class Launcher {
 
   void chainStarted(ChainStart chainStartEvent) {
     initialTransition = new InitialStateTransition(chainStartEvent, spec);
-    stateCachingTransition = new StateCachingTransition(spec);
     perSlotTransition = new PerSlotTransition(spec);
     perBlockTransition = new PerBlockTransition(spec);
     perEpochTransition = new PerEpochTransition(spec);
     extendedSlotTransition =
-        new ExtendedSlotTransition(
-            stateCachingTransition, perEpochTransition, perSlotTransition, spec);
+        new ExtendedSlotTransition(perEpochTransition, perSlotTransition, spec);
     emptySlotTransition = new EmptySlotTransition(extendedSlotTransition);
 
     db = new InMemoryDatabase();
@@ -195,7 +191,6 @@ public class Launcher {
     BeaconChainSpec epochBench = benchmarkController.wrap(BenchmarkRoutine.EPOCH, spec);
 
     PerSlotTransition perSlotTransition = new PerSlotTransition(slotBench);
-    StateCachingTransition stateCachingTransition = new StateCachingTransition(slotBench);
     PerEpochTransition perEpochTransition = new PerEpochTransition(epochBench);
 
     SlotNumber startSlot =
@@ -203,8 +198,7 @@ public class Launcher {
             .getGenesisSlot()
             .plus(benchmarkController.getWarmUpEpochs().mul(spec.getConstants().getSlotsPerEpoch()));
     ExtendedSlotTransition extendedSlotTransition =
-        new ExtendedSlotTransition(
-            stateCachingTransition, perEpochTransition, perSlotTransition, spec) {
+        new ExtendedSlotTransition(perEpochTransition, perSlotTransition, spec) {
           @Override
           public BeaconStateEx apply(BeaconStateEx source) {
             long s = System.nanoTime();

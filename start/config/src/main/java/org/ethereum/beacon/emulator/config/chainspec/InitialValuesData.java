@@ -3,12 +3,9 @@ package org.ethereum.beacon.emulator.config.chainspec;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.ethereum.beacon.core.spec.InitialValues;
-import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.bytes.Bytes1;
-import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public class InitialValuesData implements InitialValues {
@@ -21,8 +18,8 @@ public class InitialValuesData implements InitialValues {
   private String FAR_FUTURE_EPOCH;
   @JsonProperty("ZERO_HASH")
   private String ZERO_HASH;
-  @JsonProperty("BLS_WITHDRAWAL_PREFIX_BYTE")
-  private String BLS_WITHDRAWAL_PREFIX_BYTE;
+  @JsonProperty("BLS_WITHDRAWAL_PREFIX")
+  private String BLS_WITHDRAWAL_PREFIX;
 
   @Override
   @JsonIgnore
@@ -50,8 +47,8 @@ public class InitialValuesData implements InitialValues {
 
   @Override
   @JsonIgnore
-  public Bytes1 getBlsWithdrawalPrefixByte() {
-    return Bytes1.fromHexString(getBLS_WITHDRAWAL_PREFIX_BYTE());
+  public UInt64 getBlsWithdrawalPrefix() {
+    return UInt64.valueOf(getBLS_WITHDRAWAL_PREFIX());
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
@@ -91,11 +88,11 @@ public class InitialValuesData implements InitialValues {
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-  public String getBLS_WITHDRAWAL_PREFIX_BYTE() {
-    return BLS_WITHDRAWAL_PREFIX_BYTE;
+  public String getBLS_WITHDRAWAL_PREFIX() {
+    return BLS_WITHDRAWAL_PREFIX;
   }
 
-  public void setBLS_WITHDRAWAL_PREFIX_BYTE(String BLS_WITHDRAWAL_PREFIX_BYTE) {
-    this.BLS_WITHDRAWAL_PREFIX_BYTE = BLS_WITHDRAWAL_PREFIX_BYTE;
+  public void setBLS_WITHDRAWAL_PREFIX(String BLS_WITHDRAWAL_PREFIX) {
+    this.BLS_WITHDRAWAL_PREFIX = BLS_WITHDRAWAL_PREFIX;
   }
 }

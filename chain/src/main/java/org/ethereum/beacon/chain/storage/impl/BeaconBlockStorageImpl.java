@@ -119,7 +119,7 @@ public class BeaconBlockStorageImpl implements BeaconBlockStorage {
     }
 
     if (!isEmpty() && checkParentExistOnAdd) {
-      if (!get(newBlock.getPreviousBlockRoot()).isPresent()) {
+      if (!get(newBlock.getParentRoot()).isPresent()) {
         throw new IllegalArgumentException("No parent found for added block: " + newBlock);
       }
     }
@@ -173,7 +173,7 @@ public class BeaconBlockStorageImpl implements BeaconBlockStorage {
       getSlotBlocks(curSlot).stream()
           .map(this::get)
           .filter(Optional::isPresent)
-          .filter(b -> b.get().getPreviousBlockRoot().equals(parent))
+          .filter(b -> b.get().getParentRoot().equals(parent))
           .forEach(b -> children.add(b.get()));
     }
 

@@ -201,7 +201,9 @@ public class MultiValidatorService implements ValidatorService {
 
     // trigger proposer
     ValidatorIndex proposerIndex = spec.get_beacon_proposer_index(state);
-    if (initialized.containsKey(proposerIndex) && state.getTransition() == TransitionType.SLOT
+    if (initialized.containsKey(proposerIndex)
+        && (state.getTransition() == TransitionType.SLOT
+            || state.getTransition() == TransitionType.EPOCH)
         && !isGenesis(state)) {
       runAsync(() -> propose(proposerIndex, observableState));
     }

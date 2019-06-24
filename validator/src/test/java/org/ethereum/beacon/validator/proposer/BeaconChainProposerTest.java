@@ -136,7 +136,6 @@ public class BeaconChainProposerTest {
         DepositTestUtil.createRandomList(
             random,
             spec.getConstants(),
-            UInt64.ZERO,
             spec.getConstants().getMaxDeposits());
     Eth1Data eth1Data = Eth1DataTestUtil.createRandom(random);
     List<DepositInfo> depositInfos =

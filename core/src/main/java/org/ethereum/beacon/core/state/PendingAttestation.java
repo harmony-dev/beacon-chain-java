@@ -18,7 +18,7 @@ import org.ethereum.beacon.ssz.annotation.SSZSerializable;
  *
  * @see BeaconState
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.6.1/specs/core/0_beacon-chain.md#pendingattestation">PendingAttestation
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.7.1/specs/core/0_beacon-chain.md#pendingattestation">PendingAttestation
  *     in the spec</a>
  */
 @SSZSerializable
@@ -77,22 +77,18 @@ public class PendingAttestation {
 
   @Override
   public String toString() {
-    return toString(null, null);
-  }
-
-  public String toString(@Nullable SpecConstants spec,@Nullable Time beaconStart) {
     return "Attestation["
-        + data.toString(spec, beaconStart)
+        + data.toString()
         + ", attesters=" + getSignerIndices()
         + ", proposerIndex=" + getProposerIndex()
-        + ", inclusionDelay=#" + getInclusionDelay().toStringNumber(spec)
+        + ", inclusionDelay=#" + getInclusionDelay()
         + "]";
   }
 
-  public String toStringShort(@Nullable SpecConstants spec) {
-    return "epoch=" + getData().getTargetEpoch().toString(spec) + "/"
-        + "delay=" + getInclusionDelay().toStringNumber(spec) + "/"
-        + getData().getShard().toString() + "/"
+  public String toStringShort() {
+    return "epoch=" + getData().getTargetEpoch() + "/"
+        + "delay=" + getInclusionDelay() + "/"
+        + getData().getCrosslink().getShard().toString() + "/"
         + getData().getBeaconBlockRoot().toStringShort() + "/"
         + getSignerIndices();
   }

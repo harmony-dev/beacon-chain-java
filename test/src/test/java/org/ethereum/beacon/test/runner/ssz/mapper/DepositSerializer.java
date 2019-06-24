@@ -26,7 +26,6 @@ public class DepositSerializer implements ObjectSerializer<Deposit> {
     ArrayNode proofNode = mapper.createArrayNode();
     instance.getProof().stream().map(Objects::toString).forEachOrdered(proofNode::add);
     attestation.set("proof", proofNode);
-    attestation.put("index", instance.getIndex().getValue());
     attestation.set("data", depositDataSerializer.map(instance.getData()));
     return attestation;
   }

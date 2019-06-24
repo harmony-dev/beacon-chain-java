@@ -3,7 +3,6 @@ package org.ethereum.beacon.simulator;
 import java.io.File;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -20,6 +19,7 @@ import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.storage.impl.MemBeaconChainStorageFactory;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
+import org.ethereum.beacon.consensus.ChainStart;
 import org.ethereum.beacon.consensus.transition.EpochTransitionSummary;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
@@ -29,7 +29,6 @@ import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
-import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.crypto.BLS381;
 import org.ethereum.beacon.crypto.BLS381.KeyPair;
 import org.ethereum.beacon.crypto.BLS381.PrivateKey;
@@ -124,8 +123,7 @@ public class SimulatorLauncher implements Runnable {
       if (validators.get(i).getBlsPrivateKey() != null) {
         KeyPair keyPair = KeyPair.create(
             PrivateKey.create(Bytes32.fromHexString(validators.get(i).getBlsPrivateKey())));
-        Deposit deposit = deposits.getValue0().get(i);
-        deposits.getValue0().set(i, SimulateUtils.getDepositForKeyPair(deposit.getIndex(), rnd, keyPair, spec,
+        deposits.getValue0().set(i, SimulateUtils.getDepositForKeyPair(rnd, keyPair, spec,
             config.getChainSpec().getSpecHelpersOptions().isBlsVerifyProofOfPossession()));
         deposits.getValue1().set(i, keyPair);
       }
@@ -148,11 +146,11 @@ public class SimulatorLauncher implements Runnable {
     controlledSchedulers = new MDCControlledSchedulers();
     controlledSchedulers.setCurrentTime(genesisTime.getMillis().getValue() + 1000);
 
-    eth1Data = new Eth1Data(Hash32.random(rnd), UInt64.ZERO, Hash32.random(rnd));
+    eth1Data = new Eth1Data(Hash32.random(rnd), UInt64.valueOf(deposits.size()), Hash32.random(rnd));
 
     localWireHub = new LocalWireHub(s -> wire.trace(s), controlledSchedulers.createNew("wire"));
-    DepositContract.ChainStart chainStart =
-        new DepositContract.ChainStart(genesisTime, eth1Data, deposits);
+    ChainStart chainStart =
+        new ChainStart(genesisTime, eth1Data, deposits);
     depositContract = new SimpleDepositContract(chainStart);
   }
 
@@ -313,7 +311,7 @@ public class SimulatorLauncher implements Runnable {
           .equals(SlotNumber.ZERO)) {
         ObservableBeaconState preEpochState = latestState;
         EpochTransitionSummary summary = observer.getExtendedSlotTransition()
-            .applyWithSummary(preEpochState.getLatestSlotState());
+            .getEpochTransitionSummary(preEpochState.getLatestSlotState());
         logger.info("Epoch transition "
             + spec.get_current_epoch(preEpochState.getLatestSlotState()).toString(specConstants)
             + "=>"

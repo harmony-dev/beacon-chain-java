@@ -1,12 +1,9 @@
 package org.ethereum.beacon.core.spec;
 
-import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.EpochNumber;
-import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes1;
-import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 /**
@@ -22,7 +19,7 @@ public interface InitialValues {
   EpochNumber GENESIS_EPOCH = EpochNumber.ZERO;
   EpochNumber FAR_FUTURE_EPOCH = EpochNumber.castFrom(UInt64.MAX_VALUE); // (1 << 64) - 1
   Hash32 ZERO_HASH = Hash32.ZERO;
-  Bytes1 BLS_WITHDRAWAL_PREFIX_BYTE = Bytes1.ZERO;
+  UInt64 BLS_WITHDRAWAL_PREFIX = UInt64.ZERO;
 
   /* Values defined in the spec. */
 
@@ -42,7 +39,7 @@ public interface InitialValues {
     return ZERO_HASH;
   }
 
-  default Bytes1 getBlsWithdrawalPrefixByte() {
-    return BLS_WITHDRAWAL_PREFIX_BYTE;
+  default UInt64 getBlsWithdrawalPrefix() {
+    return BLS_WITHDRAWAL_PREFIX;
   }
 }

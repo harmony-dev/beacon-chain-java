@@ -24,7 +24,7 @@ public class BeaconBlockTree extends AbstractBlockTree<Hash32, BlockWrapper, Fee
 
     @Override
     public Hash32 getParentHash() {
-      return block.get().getPreviousBlockRoot();
+      return block.get().getParentRoot();
     }
 
     @Override

@@ -3,6 +3,7 @@ package org.ethereum.beacon.start.common.util;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import org.ethereum.beacon.consensus.ChainStart;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.pow.DepositContract;

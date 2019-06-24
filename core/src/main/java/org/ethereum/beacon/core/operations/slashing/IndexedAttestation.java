@@ -18,7 +18,7 @@ import java.util.function.Function;
  * Slashable attestation data structure.
  *
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.6.1/specs/core/0_beacon-chain.md#indexedattestation">IndexedAttestation</a>
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.7.1/specs/core/0_beacon-chain.md#indexedattestation">IndexedAttestation</a>
  *     in the spec.
  */
 @SSZSerializable
@@ -97,13 +97,9 @@ public class IndexedAttestation {
 
   @Override
   public String toString() {
-    return toString(null, null);
-  }
-
-  public String toString(@Nullable SpecConstants spec, @Nullable Time beaconStart) {
     return "IndexedAttestation["
         + "data="
-        + data.toString(spec, beaconStart)
+        + data.toString()
         + ", custodyBit0Indices="
         + custodyBit0Indices
         + ", custodyBit1Indices="

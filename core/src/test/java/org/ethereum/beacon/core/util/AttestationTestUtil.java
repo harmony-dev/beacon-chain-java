@@ -41,8 +41,6 @@ public abstract class AttestationTestUtil {
         Hash32.random(random),
         BeaconChainSpec.DEFAULT_CONSTANTS.getGenesisEpoch().increment(),
         Hash32.random(random),
-        ShardNumber.ZERO,
-        Hash32.random(random),
-        Hash32.random(random));
+        Crosslink.EMPTY);
   }
 }

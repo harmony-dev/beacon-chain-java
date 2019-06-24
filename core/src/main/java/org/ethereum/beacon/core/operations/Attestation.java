@@ -91,7 +91,7 @@ public class Attestation {
 
   public String toString(@Nullable SpecConstants spec,@Nullable Time beaconStart) {
     return "Attestation["
-        + data.toString(spec, beaconStart)
+        + data.toString()
         + ", attesters=" + getSignerIndices()
         + ", cusodyBits=" + custodyBitfield
         + ", sig=" + signature
@@ -99,8 +99,8 @@ public class Attestation {
   }
 
   public String toStringShort(@Nullable SpecConstants spec) {
-    return "epoch=" + getData().getTargetEpoch().toString(spec) + "/"
-        + getData().getShard().toString() + "/"
+    return "epoch=" + getData().getTargetEpoch().toString() + "/"
+        + getData().getCrosslink().getShard().toString() + "/"
         + getData().getBeaconBlockRoot().toStringShort() + "/"
         + getSignerIndices();
   }

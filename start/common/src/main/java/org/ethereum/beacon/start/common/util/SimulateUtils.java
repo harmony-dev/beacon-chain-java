@@ -43,10 +43,9 @@ public class SimulateUtils {
         cachedDeposits.getValue0().subList(0, count), cachedDeposits.getValue1().subList(0, count));
   }
 
-  public static Deposit getDepositForKeyPair(UInt64 depositIndex, Random rnd,
+  public static Deposit getDepositForKeyPair(Random rnd,
       BLS381.KeyPair keyPair, BeaconChainSpec spec, boolean isProofVerifyEnabled) {
     return getDepositForKeyPair(
-        depositIndex,
         rnd,
         keyPair,
         spec,
@@ -54,7 +53,7 @@ public class SimulateUtils {
         isProofVerifyEnabled);
   }
 
-  public static synchronized Deposit getDepositForKeyPair(UInt64 depositIndex, Random rnd,
+  public static synchronized Deposit getDepositForKeyPair(Random rnd,
       BLS381.KeyPair keyPair, BeaconChainSpec spec, Gwei initBalance, boolean isProofVerifyEnabled) {
     Hash32 withdrawalCredentials = Hash32.random(rnd);
     DepositData depositDataWithoutSignature =
@@ -68,16 +67,15 @@ public class SimulateUtils {
 
     if (isProofVerifyEnabled) {
       Hash32 msgHash = spec.signing_root(depositDataWithoutSignature);
-      UInt64 domain = spec.get_domain(Bytes4.ZERO, SignatureDomains.DEPOSIT);
+      UInt64 domain = spec.bls_domain(SignatureDomains.DEPOSIT, Bytes4.ZERO);
       signature =
           BLSSignature.wrap(
               BLS381.sign(MessageParameters.create(msgHash, domain), keyPair).getEncoded());
     }
 
     Deposit deposit =
-        new Deposit(
-            ReadVector.wrap(Collections.singletonList(Hash32.random(rnd)), Function.identity()),
-            depositIndex,
+        Deposit.create(
+            Collections.singletonList(Hash32.random(rnd)),
             new DepositData(
                 BLSPubkey.wrap(Bytes48.leftPad(keyPair.getPublic().getEncodedBytes())),
                 withdrawalCredentials,
@@ -111,10 +109,8 @@ public class SimulateUtils {
 
     List<Deposit> deposits = new ArrayList<>();
 
-    UInt64 index = startIndex;
     for (BLS381.KeyPair keyPair : keyPairs) {
-      deposits.add(getDepositForKeyPair(index, rnd, keyPair, spec, initBalance, isProofVerifyEnabled));
-      index = index.increment();
+      deposits.add(getDepositForKeyPair(rnd, keyPair, spec, initBalance, isProofVerifyEnabled));
     }
 
     return deposits;

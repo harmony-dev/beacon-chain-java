@@ -11,6 +11,7 @@ import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.hasher.ObjectHasher;
 import org.ethereum.beacon.consensus.util.CachingBeaconChainSpec;
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
@@ -166,11 +167,11 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
   }
 
   @Override
-  public boolean verify_indexed_attestation(
+  public boolean validate_indexed_attestation(
       BeaconState state, IndexedAttestation indexed_attestation) {
     return callAndTrack(
-        "verify_indexed_attestation",
-        () -> super.verify_indexed_attestation(state, indexed_attestation));
+        "validate_indexed_attestation",
+        () -> super.validate_indexed_attestation(state, indexed_attestation));
   }
 
   @Override
@@ -205,8 +206,8 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
   }
 
   @Override
-  public SlotNumber get_attestation_slot(BeaconState state, AttestationData data) {
-    return callAndTrack("get_attestation_slot", () -> super.get_attestation_slot(state, data));
+  public SlotNumber get_attestation_data_slot(BeaconState state, AttestationData data) {
+    return callAndTrack("get_attestation_data_slot", () -> super.get_attestation_data_slot(state, data));
   }
 
   @Override
@@ -226,16 +227,10 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
         "get_attesting_balance", () -> super.get_attesting_balance(state, attestations));
   }
 
-  /** STATE CACHING */
-  @Override
-  public void cache_state(MutableBeaconState state) {
-    callAndTrack("cache_state", () -> super.cache_state(state));
-  }
-
   /** SLOT PROCESSING */
   @Override
-  public void advance_slot(MutableBeaconState state) {
-    callAndTrack("advance_slot", () -> super.advance_slot(state));
+  public void process_slot(MutableBeaconState state) {
+    callAndTrack("process_slot", () -> super.process_slot(state));
   }
 
   /** EPOCH PROCESSING */
@@ -283,18 +278,18 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
   }
 
   @Override
-  public void process_randao(MutableBeaconState state, BeaconBlock block) {
+  public void process_randao(MutableBeaconState state, BeaconBlockBody body) {
     callAndTrack(
         "process_randao",
         () -> {
-          super.verify_randao(state, block);
-          super.process_randao(state, block);
+          super.verify_randao(state, body);
+          super.process_randao(state, body);
         });
   }
 
   @Override
-  public void process_eth1_data(MutableBeaconState state, BeaconBlock block) {
-    callAndTrack("process_eth1_data", () -> super.process_eth1_data(state, block));
+  public void process_eth1_data(MutableBeaconState state, BeaconBlockBody body) {
+    callAndTrack("process_eth1_data", () -> super.process_eth1_data(state, body));
   }
 
   @Override

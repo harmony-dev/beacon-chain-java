@@ -31,7 +31,7 @@ public class DelegateBlockHeaderStorageImpl implements DataSource<Hash32, Beacon
   private BeaconBlockHeader createHeader(BeaconBlock block) {
     return new BeaconBlockHeader(
         block.getSlot(),
-        block.getPreviousBlockRoot(),
+        block.getParentRoot(),
         block.getStateRoot(),
         objectHasher.getHash(block.getBody()),
         block.getSignature());

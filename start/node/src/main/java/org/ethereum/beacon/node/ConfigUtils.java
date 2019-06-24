@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
+import org.ethereum.beacon.consensus.ChainStart;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.Gwei;
@@ -25,7 +26,6 @@ import org.ethereum.beacon.start.common.util.SimulateUtils;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
-import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public class ConfigUtils {
@@ -92,8 +92,8 @@ public class ConfigUtils {
       Eth1Data eth1Data =
           new Eth1Data(
               Hash32.random(random), UInt64.valueOf(deposits.size()), Hash32.random(random));
-      DepositContract.ChainStart chainStart =
-          new DepositContract.ChainStart(
+      ChainStart chainStart =
+          new ChainStart(
               Time.of(eConfig.getGenesisTime().getTime() / 1000), eth1Data, deposits);
       SimpleDepositContract depositContract = new SimpleDepositContract(chainStart);
       return depositContract;

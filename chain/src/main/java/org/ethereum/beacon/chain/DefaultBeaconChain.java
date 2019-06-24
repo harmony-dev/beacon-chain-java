@@ -178,7 +178,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   }
 
   private BeaconStateEx pullParentState(BeaconBlock block) {
-    Optional<BeaconTuple> parent = tupleStorage.get(block.getPreviousBlockRoot());
+    Optional<BeaconTuple> parent = tupleStorage.get(block.getParentRoot());
     checkArgument(parent.isPresent(), "No parent for block %s", block);
     BeaconTuple parentTuple = parent.get();
 
@@ -191,7 +191,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   }
 
   private boolean hasParent(BeaconBlock block) {
-    return chainStorage.getBlockStorage().get(block.getPreviousBlockRoot()).isPresent();
+    return chainStorage.getBlockStorage().get(block.getParentRoot()).isPresent();
   }
 
   /**
