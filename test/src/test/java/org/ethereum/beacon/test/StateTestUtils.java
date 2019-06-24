@@ -152,7 +152,7 @@ public abstract class StateTestUtils {
     BeaconBlock block =
         new BeaconBlock(
             SlotNumber.castFrom(UInt64.valueOf(blockData.getSlot())),
-            Hash32.fromHexString(blockData.getPreviousBlockRoot()),
+            Hash32.fromHexString(blockData.getParentRoot()),
             Hash32.fromHexString(blockData.getStateRoot()),
             blockBody,
             BLSSignature.wrap(Bytes96.fromHexString(blockData.getSignature())));

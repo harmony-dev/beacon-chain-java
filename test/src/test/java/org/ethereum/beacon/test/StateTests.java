@@ -79,7 +79,6 @@ public class StateTests extends TestUtils {
   }
 
   @Test
-  @Ignore("Requires fixes")
   public void testBlockProcessing() {
     final String type = "block_header";
     Path testFileDir = Paths.get(PATH_TO_TESTS, OPERATIONS_TESTS_DIR, type);

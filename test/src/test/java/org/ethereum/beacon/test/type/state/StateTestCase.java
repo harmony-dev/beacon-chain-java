@@ -896,8 +896,8 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
   public static class BlockData {
     private String slot;
 
-    @JsonProperty("previous_block_root")
-    private String previousBlockRoot;
+    @JsonProperty("parent_root")
+    private String parentRoot;
 
     @JsonProperty("state_root")
     private String stateRoot;
@@ -913,12 +913,12 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
       this.slot = slot;
     }
 
-    public String getPreviousBlockRoot() {
-      return previousBlockRoot;
+    public String getParentRoot() {
+      return parentRoot;
     }
 
-    public void setPreviousBlockRoot(String previousBlockRoot) {
-      this.previousBlockRoot = previousBlockRoot;
+    public void setParentRoot(String parentRoot) {
+      this.parentRoot = parentRoot;
     }
 
     public String getStateRoot() {
