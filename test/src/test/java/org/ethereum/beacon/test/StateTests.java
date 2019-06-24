@@ -14,7 +14,6 @@ public class StateTests extends TestUtils {
   private String SANITY_PROCESSING_DIR = "sanity";
 
   @Test
-  @Ignore("Requires fixtures update")
   public void testAttestationOperations() {
     final String type = "attestation";
     Path testFileDir = Paths.get(PATH_TO_TESTS, OPERATIONS_TESTS_DIR, type);
@@ -80,6 +79,7 @@ public class StateTests extends TestUtils {
   }
 
   @Test
+  @Ignore("Requires fixes")
   public void testBlockProcessing() {
     final String type = "block_header";
     Path testFileDir = Paths.get(PATH_TO_TESTS, OPERATIONS_TESTS_DIR, type);
@@ -132,7 +132,7 @@ public class StateTests extends TestUtils {
   }
 
   @Test
-  @Ignore("Requires fixtures update")
+  @Ignore("Requires fixes")
   public void testSanitySlots() {
     final String type = "slots";
     Path testFileDir = Paths.get(PATH_TO_TESTS, SANITY_PROCESSING_DIR, type);
@@ -146,7 +146,7 @@ public class StateTests extends TestUtils {
   }
 
   @Test
-  @Ignore("Requires fixtures update")
+  @Ignore("Requires fixes")
   public void testSanityBlocks() {
     final String type = "blocks";
     Path testFileDir = Paths.get(PATH_TO_TESTS, SANITY_PROCESSING_DIR, type);

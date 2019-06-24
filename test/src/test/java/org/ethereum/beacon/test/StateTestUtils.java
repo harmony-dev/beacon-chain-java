@@ -39,19 +39,16 @@ import org.ethereum.beacon.test.type.state.StateTestCase.BeaconStateData.Validat
 import org.ethereum.beacon.test.type.state.StateTestCase.BlockData.BlockBodyData.Eth1;
 import org.ethereum.beacon.test.type.state.StateTestCase.BlockData.BlockBodyData.IndexedAttestationData;
 import org.ethereum.beacon.test.type.state.StateTestCase.BlockData.BlockBodyData.ProposerSlashingData;
-import org.javatuples.Pair;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes4;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
-import tech.pegasys.artemis.util.collections.ReadVector;
 import tech.pegasys.artemis.util.collections.WriteList;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 /** Various utility methods aiding state tests development. */
@@ -109,16 +106,16 @@ public abstract class StateTestUtils {
       BeaconBlockHeader header1 =
           new BeaconBlockHeader(
               SlotNumber.castFrom(UInt64.valueOf(proposerSlashingData.getHeader1().getSlot())),
-              Hash32.fromHexString(proposerSlashingData.getHeader1().getPreviousBlockRoot()),
+              Hash32.fromHexString(proposerSlashingData.getHeader1().getParentRoot()),
               Hash32.fromHexString(proposerSlashingData.getHeader1().getStateRoot()),
-              Hash32.fromHexString(proposerSlashingData.getHeader1().getBlockBodyRoot()),
+              Hash32.fromHexString(proposerSlashingData.getHeader1().getBodyRoot()),
               BLSSignature.wrap(Bytes96.fromHexString(proposerSlashingData.getHeader1().getSignature())));
       BeaconBlockHeader header2 =
           new BeaconBlockHeader(
               SlotNumber.castFrom(UInt64.valueOf(proposerSlashingData.getHeader2().getSlot())),
-              Hash32.fromHexString(proposerSlashingData.getHeader2().getPreviousBlockRoot()),
+              Hash32.fromHexString(proposerSlashingData.getHeader2().getParentRoot()),
               Hash32.fromHexString(proposerSlashingData.getHeader2().getStateRoot()),
-              Hash32.fromHexString(proposerSlashingData.getHeader2().getBlockBodyRoot()),
+              Hash32.fromHexString(proposerSlashingData.getHeader2().getBodyRoot()),
               BLSSignature.wrap(Bytes96.fromHexString(proposerSlashingData.getHeader2().getSignature())));
       ProposerSlashing proposerSlashing =
           new ProposerSlashing(
@@ -255,9 +252,9 @@ public abstract class StateTestUtils {
   public static BeaconBlockHeader parseBeaconBlockHeader(BlockHeaderData data) {
     return new BeaconBlockHeader(
         SlotNumber.castFrom(UInt64.valueOf(data.getSlot())),
-        Hash32.fromHexString(data.getPreviousBlockRoot()),
+        Hash32.fromHexString(data.getParentRoot()),
         Hash32.fromHexString(data.getStateRoot()),
-        Hash32.fromHexString(data.getBlockBodyRoot()),
+        Hash32.fromHexString(data.getBodyRoot()),
         data.getSignature() == null
             ? BLSSignature.ZERO
             : BLSSignature.wrap(Bytes96.fromHexString(data.getSignature())));
@@ -271,12 +268,13 @@ public abstract class StateTestUtils {
   }
 
   public static Crosslink parseCrosslink(CrossLinkData data) {
-    // TODO update within new tests
-//    return new Crosslink(
-//        EpochNumber.castFrom(UInt64.valueOf(data.getEpoch())),
-//        Hash32.fromHexString(data.getPreviousCrosslinkRoot()),
-//        Hash32.fromHexString(data.getCrosslinkDataRoot()));
-    return Crosslink.EMPTY;
+    return new Crosslink(
+        ShardNumber.of(data.getShard()),
+        EpochNumber.castFrom(UInt64.valueOf(data.getStartEpoch())),
+        EpochNumber.castFrom(UInt64.valueOf(data.getEndEpoch())),
+        Hash32.fromHexString(data.getParentRoot()),
+        Hash32.fromHexString(data.getDataRoot())
+    );
   }
 
   public static PendingAttestation parsePendingAttestation(
@@ -295,11 +293,7 @@ public abstract class StateTestUtils {
         Hash32.fromHexString(data.getSourceRoot()),
         EpochNumber.castFrom(UInt64.valueOf(data.getTargetEpoch())),
         Hash32.fromHexString(data.getTargetRoot()),
-        // TODO update within new tests
-//        ShardNumber.of(data.getShard()),
-//        Hash32.fromHexString(data.getPreviousCrosslinkRoot()),
-//        Hash32.fromHexString(data.getCrosslinkDataRoot()));
-        Crosslink.EMPTY);
+        parseCrosslink(data.getCrosslink()));
   }
 
   public static Transfer parseTransfer(StateTestCase.BlockData.BlockBodyData.TransferData data) {
