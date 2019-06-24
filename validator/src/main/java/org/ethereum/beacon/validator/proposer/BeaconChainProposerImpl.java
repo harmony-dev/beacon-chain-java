@@ -155,7 +155,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
         .filter(
             eth1Data ->
                 depositContract.hasDepositRoot(eth1Data.getBlockHash(), eth1Data.getDepositRoot()))
-        // TODO throw exception if contract data can't be red
+        // TODO throw exception if contract data can't be read
         .orElse(contractData.orElse(state.getLatestEth1Data()));
   }
 
