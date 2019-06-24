@@ -24,7 +24,7 @@ public class Crosslink {
   /** Shard number. */
   @SSZ private final ShardNumber shard;
   /** Crosslinking data from epochs [start....end-1]. */
-   @SSZ private final EpochNumber startEpoch;
+@SSZ private final EpochNumber startEpoch;
   @SSZ private final EpochNumber endEpoch;
   /** Root of the previous crosslink. */
   @SSZ private final Hash32 parentRoot;
