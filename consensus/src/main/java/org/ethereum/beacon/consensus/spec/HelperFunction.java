@@ -49,7 +49,7 @@ import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
  * Helper functions.
  *
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.6.1/specs/core/0_beacon-chain.md#helper-functions">Helper
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.7.1/specs/core/0_beacon-chain.md#helper-functions">Helper
  *     functions</a> in ths spec.
  */
 public interface HelperFunction extends SpecCommons {
@@ -75,7 +75,7 @@ public interface HelperFunction extends SpecCommons {
   default BeaconBlockHeader get_temporary_block_header(BeaconBlock block) {
     return new BeaconBlockHeader(
         block.getSlot(),
-        block.getPreviousBlockRoot(),
+        block.getParentRoot(),
         Hash32.ZERO,
         hash_tree_root(block.getBody()),
         BLSSignature.ZERO);
@@ -151,22 +151,20 @@ public interface HelperFunction extends SpecCommons {
   }
 
   /*
-    def get_attestation_slot(state: BeaconState, attestation: Attestation) -> Slot:
-      epoch = attestation.data.target_epoch
-      committee_count = get_epoch_committee_count(state, epoch)
-      offset = (attestation.data.shard + SHARD_COUNT - get_epoch_start_shard(state, epoch)) % SHARD_COUNT
-      return get_epoch_start_slot(epoch) + offset // (committee_count // SLOTS_PER_EPOCH)
+    def get_attestation_data_slot(state: BeaconState, data: AttestationData) -> Slot:
+      committee_count = get_epoch_committee_count(state, data.target_epoch)
+      offset = (data.crosslink.shard + SHARD_COUNT - get_epoch_start_shard(state, data.target_epoch)) % SHARD_COUNT
+      return get_epoch_start_slot(data.target_epoch) + offset // (committee_count // SLOTS_PER_EPOCH)
    */
-  default SlotNumber get_attestation_slot(BeaconState state, AttestationData data) {
-    EpochNumber epoch = data.getTargetEpoch();
-    UInt64 committee_count = get_epoch_committee_count(state, epoch);
+  default SlotNumber get_attestation_data_slot(BeaconState state, AttestationData data) {
+    UInt64 committee_count = get_epoch_committee_count(state, data.getTargetEpoch());
     ShardNumber offset = ShardNumber.of(
-        data.getShard()
+        data.getCrosslink().getShard()
             .plus(getConstants().getShardCount())
-            .minus(get_epoch_start_shard(state, epoch))
+            .minus(get_epoch_start_shard(state, data.getTargetEpoch()))
             .modulo(getConstants().getShardCount())
     );
-    return get_epoch_start_slot(epoch)
+    return get_epoch_start_slot(data.getTargetEpoch())
         .plus(offset.dividedBy(committee_count.dividedBy(getConstants().getSlotsPerEpoch())));
   }
 
@@ -409,6 +407,10 @@ public interface HelperFunction extends SpecCommons {
     return BytesValues.ofUnsignedByte(value);
   }
 
+  default BytesValue int_to_bytes1(UInt64 value) {
+    return int_to_bytes1(value.getIntValue());
+  }
+
   default Bytes4 int_to_bytes4(long value) {
     return Bytes4.ofUnsignedIntLittleEndian(value & 0xFFFFFF);
   }
@@ -474,7 +476,8 @@ public interface HelperFunction extends SpecCommons {
     for (int round = 0; round < getConstants().getShuffleRoundCount(); round++) {
       Bytes8 pivotBytes = Bytes8.wrap(hash(seed.concat(int_to_bytes1(round))), 0);
       long pivot = bytes_to_int(pivotBytes).modulo(index_count).getValue();
-      UInt64 flip = UInt64.valueOf(Math.floorMod(pivot - index.getValue(), index_count.getValue()));
+      UInt64 flip = UInt64.valueOf(Math.floorMod(pivot + index_count.getValue() - index.getValue(),
+          index_count.getValue()));
       UInt64 position = UInt64s.max(index, flip);
       Bytes4 positionBytes = int_to_bytes4(position.dividedBy(UInt64.valueOf(256)));
       Bytes32 source = hash(seed.concat(int_to_bytes1(round)).concat(positionBytes));
@@ -588,14 +591,14 @@ public interface HelperFunction extends SpecCommons {
   /*
     def get_total_balance(state: BeaconState, indices: List[ValidatorIndex]) -> Gwei:
       """
-      Return the combined effective balance of an array of ``validators``.
+      Return the combined effective balance of the ``indices``. (1 Gwei minimum to avoid divisions by zero.)
       """
-      return sum([state.validator_registry[index].effective_balance for index in indices])
+      return max(sum([state.validator_registry[index].effective_balance for index in indices]), 1)
    */
   default Gwei get_total_balance(BeaconState state, Collection<ValidatorIndex> indices) {
-    return indices.stream()
+    return UInt64s.max(indices.stream()
         .map(index -> state.getValidatorRegistry().get(index).getEffectiveBalance())
-        .reduce(Gwei.ZERO, Gwei::plus);
+        .reduce(Gwei.ZERO, Gwei::plus), Gwei.of(1));
   }
 
   /*
@@ -840,21 +843,17 @@ public interface HelperFunction extends SpecCommons {
       """
       epoch = get_current_epoch(state) if message_epoch is None else message_epoch
       fork_version = state.fork.previous_version if epoch < state.fork.epoch else state.fork.current_version
-      return bytes_to_int(fork_version + int_to_bytes4(domain_type))
+      return bls_domain(domain_type, fork_version)
    */
   default UInt64 get_domain(BeaconState state, UInt64 domain_type, EpochNumber message_epoch) {
     EpochNumber epoch = message_epoch == null ? get_current_epoch(state) : message_epoch;
     Bytes4 fork_version = epoch.less(state.getFork().getEpoch()) ?
         state.getFork().getPreviousVersion() : state.getFork().getCurrentVersion();
-    return get_domain(fork_version, domain_type);
+    return bls_domain(domain_type, fork_version);
   }
 
   default UInt64 get_domain(BeaconState state, UInt64 domain_type) {
     return get_domain(state, domain_type, null);
-  }
-
-  default UInt64 get_domain(Bytes4 fork_version, UInt64 domain_type) {
-    return bytes_to_int(fork_version.concat(int_to_bytes4(domain_type)));
   }
 
   /*
@@ -918,51 +917,40 @@ public interface HelperFunction extends SpecCommons {
   }
 
   /*
-    def verify_indexed_attestation(state: BeaconState, indexed_attestation: IndexedAttestation) -> bool:
+    def validate_indexed_attestation(state: BeaconState, indexed_attestation: IndexedAttestation) -> None:
       """
-      Verify validity of ``indexed_attestation`` fields.
+      Verify validity of ``indexed_attestation``.
       """
    */
-  default boolean verify_indexed_attestation(BeaconState state, IndexedAttestation indexed_attestation) {
+  default boolean validate_indexed_attestation(BeaconState state, IndexedAttestation indexed_attestation) {
     /*
-      custody_bit_0_indices = indexed_attestation.custody_bit_0_indices
-      custody_bit_1_indices = indexed_attestation.custody_bit_1_indices
+      bit_0_indices = indexed_attestation.custody_bit_0_indices
+      bit_1_indices = indexed_attestation.custody_bit_1_indices
      */
-    ReadList<Integer, ValidatorIndex> custody_bit_0_indices = indexed_attestation.getCustodyBit0Indices();
-    ReadList<Integer, ValidatorIndex> custody_bit_1_indices = indexed_attestation.getCustodyBit1Indices();
+    ReadList<Integer, ValidatorIndex> bit_0_indices = indexed_attestation.getCustodyBit0Indices();
+    ReadList<Integer, ValidatorIndex> bit_1_indices = indexed_attestation.getCustodyBit1Indices();
 
-    // Ensure no duplicate indices across custody bits
-    assertTrue(custody_bit_0_indices.intersection(custody_bit_1_indices).size() == 0);
-
-    /*
-      if len(custody_bit_1_indices) > 0:  # [TO BE REMOVED IN PHASE 1]
-        return False
-     */
-    if (custody_bit_1_indices.size() > 0) {
+    // Verify no index has custody bit equal to 1 [to be removed in phase 1]
+    if (bit_1_indices.size() > 0) {
       return false;
     }
 
-    /*
-      if not (1 <= len(custody_bit_0_indices) + len(custody_bit_1_indices) <= MAX_INDICES_PER_ATTESTATION):
-        return False
-     */
-    int indices_in_total = custody_bit_0_indices.size() + custody_bit_1_indices.size();
-    if (indices_in_total < 1
-        || indices_in_total > getConstants().getMaxIndicesPerAttestation().getIntValue()) {
+    // Verify max number of indices
+    int indices_in_total = bit_0_indices.size() + bit_1_indices.size();
+    if (indices_in_total > getConstants().getMaxIndicesPerAttestation().getIntValue()) {
       return false;
     }
 
-    /*
-      if custody_bit_0_indices != sorted(custody_bit_0_indices):
-        return False
-      if custody_bit_1_indices != sorted(custody_bit_1_indices):
-        return False
-     */
-    if (!Ordering.natural().isOrdered(custody_bit_0_indices)) {
+    // Verify index sets are disjoint
+    if (bit_0_indices.intersection(bit_1_indices).size() > 0) {
       return false;
     }
 
-    if (!Ordering.natural().isOrdered(custody_bit_1_indices)) {
+    // Verify indices are sorted
+    if (!Ordering.natural().isOrdered(bit_0_indices)) {
+      return false;
+    }
+    if (!Ordering.natural().isOrdered(bit_1_indices)) {
       return false;
     }
 
@@ -982,9 +970,9 @@ public interface HelperFunction extends SpecCommons {
      */
     return bls_verify_multiple(
         Arrays.asList(
-            bls_aggregate_pubkeys(custody_bit_0_indices.stream()
+            bls_aggregate_pubkeys(bit_0_indices.stream()
                 .map(i -> state.getValidatorRegistry().get(i).getPubKey()).collect(Collectors.toList())),
-            bls_aggregate_pubkeys(custody_bit_1_indices.stream()
+            bls_aggregate_pubkeys(bit_1_indices.stream()
                 .map(i -> state.getValidatorRegistry().get(i).getPubKey()).collect(Collectors.toList()))),
         Arrays.asList(
             hash_tree_root(new AttestationDataAndCustodyBit(indexed_attestation.getData(), false)),
@@ -1060,14 +1048,15 @@ public interface HelperFunction extends SpecCommons {
       """
       Return the sorted attesting indices corresponding to ``attestation_data`` and ``bitfield``.
       """
-      committee = get_crosslink_committee(state, attestation_data.target_epoch, attestation_data.shard)
+      committee = get_crosslink_committee(state, attestation_data.target_epoch, attestation_data.crosslink.shard)
       assert verify_bitfield(bitfield, len(committee))
       return sorted([index for i, index in enumerate(committee) if get_bitfield_bit(bitfield, i) == 0b1])
    */
   default List<ValidatorIndex> get_attesting_indices(
       BeaconState state, AttestationData attestation_data, Bitfield bitfield) {
     List<ValidatorIndex> committee =
-        get_crosslink_committee(state, attestation_data.getTargetEpoch(), attestation_data.getShard());
+        get_crosslink_committee(state, attestation_data.getTargetEpoch(),
+            attestation_data.getCrosslink().getShard());
     assertTrue(verify_bitfield(bitfield, committee.size()));
     List<ValidatorIndex> participants = new ArrayList<>();
     for (int i = 0; i < committee.size(); i++) {
@@ -1095,6 +1084,20 @@ public interface HelperFunction extends SpecCommons {
   }
 
   /*
+    def bls_domain(domain_type: int, fork_version: bytes=b'\x00\x00\x00\x00') -> int:
+      """
+      Return the bls domain given by the ``domain_type`` and optional 4 byte ``fork_version`` (defaults to zero).
+      """
+      return bytes_to_int(int_to_bytes(domain_type, length=4) + fork_version)
+   */
+  default UInt64 bls_domain(UInt64 domain_type, Bytes4 fork_version) {
+    return bytes_to_int(int_to_bytes4(domain_type).concat(fork_version));
+  }
+  default UInt64 bls_domain(UInt64 domain_type) {
+    return bls_domain(domain_type, Bytes4.ZERO);
+  }
+
+  /*
    def slot_to_epoch(slot: SlotNumber) -> EpochNumber:
        return slot // SLOTS_PER_EPOCH
   */
@@ -1109,12 +1112,12 @@ public interface HelperFunction extends SpecCommons {
       Return the current epoch if it's genesis epoch.
       """
       current_epoch = get_current_epoch(state)
-      return (current_epoch - 1) if current_epoch > GENESIS_EPOCH else current_epoch
+      return GENESIS_EPOCH if current_epoch == GENESIS_EPOCH else current_epoch - 1
    */
   default EpochNumber get_previous_epoch(BeaconState state) {
     EpochNumber current_epoch = get_current_epoch(state);
-    return current_epoch.greater(getConstants().getGenesisEpoch()) ?
-        current_epoch.decrement() : current_epoch;
+    return current_epoch.equals(getConstants().getGenesisEpoch()) ?
+        getConstants().getGenesisEpoch() : current_epoch.decrement();
   }
 
   /*

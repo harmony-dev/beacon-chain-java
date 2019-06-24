@@ -7,31 +7,16 @@ import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.Transfer;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
-import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
-import org.ethereum.beacon.core.types.BLSPubkey;
-import org.ethereum.beacon.core.types.BLSSignature;
-import org.ethereum.beacon.core.types.Bitfield;
-import org.ethereum.beacon.core.types.Gwei;
-import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.test.StateTestUtils;
 import org.ethereum.beacon.test.type.BlsSignedTestCase;
 import org.ethereum.beacon.test.type.NamedTestCase;
 import org.ethereum.beacon.validator.api.model.BlockData;
-import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.bytes.Bytes96;
-import tech.pegasys.artemis.util.bytes.BytesValue;
-import tech.pegasys.artemis.util.collections.ReadVector;
-import tech.pegasys.artemis.util.uint.UInt64;
 
 import java.util.List;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.ethereum.beacon.test.StateTestUtils.parseAttestationData;
-import static org.ethereum.beacon.test.StateTestUtils.parseBeaconBlockHeader;
 import static org.ethereum.beacon.test.StateTestUtils.parseBlockData;
-import static org.ethereum.beacon.test.StateTestUtils.parseIndexedAttestation;
 import static org.ethereum.beacon.test.StateTestUtils.parseTransfer;
 import static org.ethereum.beacon.test.StateTestUtils.parseVoluntaryExit;
 
@@ -82,21 +67,7 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
   }
 
   public Deposit getDepositOperation() {
-    Deposit deposit =
-        new Deposit(
-            ReadVector.wrap(
-                getDeposit().getProof().stream()
-                    .map(Hash32::fromHexString)
-                    .collect(Collectors.toList()),
-                Function.identity()),
-            UInt64.valueOf(getDeposit().getIndex()),
-            new DepositData(
-                BLSPubkey.fromHexString(getDeposit().getData().getPubkey()),
-                Hash32.fromHexString(getDeposit().getData().getWithdrawalCredentials()),
-                Gwei.castFrom(UInt64.valueOf(getDeposit().getData().getAmount())),
-                BLSSignature.wrap(Bytes96.fromHexString(getDeposit().getData().getSignature()))));
-
-    return deposit;
+    return StateTestUtils.parseDeposit(getDeposit());
   }
 
   public BlockData.AttestationData getAttestation() {
@@ -108,27 +79,15 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
   }
 
   public Attestation getAttestationOperation() {
-    Attestation attestation =
-        new Attestation(
-            Bitfield.of(BytesValue.fromHexString(getAttestation().getAggregationBitfield())),
-            parseAttestationData((getAttestation().getData())),
-            Bitfield.of(BytesValue.fromHexString(getAttestation().getCustodyBitfield())),
-            BLSSignature.wrap(Bytes96.fromHexString(getAttestation().getSignature())));
-
-    return attestation;
+    return StateTestUtils.parseAttestation(getAttestation());
   }
 
   public AttesterSlashing getAttesterSlashingOperation() {
-    return new AttesterSlashing(
-        parseIndexedAttestation(getAttesterSlashing().getSlashableAttestation1()),
-        parseIndexedAttestation(getAttesterSlashing().getSlashableAttestation2()));
+    return StateTestUtils.parseAttesterSlashing(getAttesterSlashing());
   }
 
   public ProposerSlashing getProposerSlashingOperation() {
-    return new ProposerSlashing(
-        ValidatorIndex.of(getProposerSlashing().getProposerIndex()),
-        parseBeaconBlockHeader(getProposerSlashing().getHeader1()),
-        parseBeaconBlockHeader(getProposerSlashing().getHeader2()));
+    return StateTestUtils.parseProposerSlashing(getProposerSlashing());
   }
 
   public Transfer getTransferOperation() {
@@ -285,10 +244,10 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
     private String finalizedRoot;
 
     @JsonProperty("current_crosslinks")
-    private List<CrossLinkData> currentCrosslinks;
+    private List<BlockData.CrossLinkData> currentCrosslinks;
 
     @JsonProperty("previous_crosslinks")
-    private List<CrossLinkData> previousCrosslinks;
+    private List<BlockData.CrossLinkData> previousCrosslinks;
 
     @JsonProperty("latest_block_roots")
     private List<String> latestBlockRoots;
@@ -447,19 +406,19 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
       this.finalizedRoot = finalizedRoot;
     }
 
-    public List<CrossLinkData> getCurrentCrosslinks() {
+    public List<BlockData.CrossLinkData> getCurrentCrosslinks() {
       return currentCrosslinks;
     }
 
-    public void setCurrentCrosslinks(List<CrossLinkData> currentCrosslinks) {
+    public void setCurrentCrosslinks(List<BlockData.CrossLinkData> currentCrosslinks) {
       this.currentCrosslinks = currentCrosslinks;
     }
 
-    public List<CrossLinkData> getPreviousCrosslinks() {
+    public List<BlockData.CrossLinkData> getPreviousCrosslinks() {
       return previousCrosslinks;
     }
 
-    public void setPreviousCrosslinks(List<CrossLinkData> previousCrosslinks) {
+    public void setPreviousCrosslinks(List<BlockData.CrossLinkData> previousCrosslinks) {
       this.previousCrosslinks = previousCrosslinks;
     }
 
@@ -654,40 +613,6 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
 
       public void setEffectiveBalance(String effectiveBalance) {
         this.effectiveBalance = effectiveBalance;
-      }
-    }
-
-    public static class CrossLinkData {
-      private String epoch;
-
-      @JsonProperty("previous_crosslink_root")
-      private String previousCrosslinkRoot;
-
-      @JsonProperty("crosslink_data_root")
-      private String crosslinkDataRoot;
-
-      public String getEpoch() {
-        return epoch;
-      }
-
-      public void setEpoch(String epoch) {
-        this.epoch = epoch;
-      }
-
-      public String getPreviousCrosslinkRoot() {
-        return previousCrosslinkRoot;
-      }
-
-      public void setPreviousCrosslinkRoot(String previousCrosslinkRoot) {
-        this.previousCrosslinkRoot = previousCrosslinkRoot;
-      }
-
-      public String getCrosslinkDataRoot() {
-        return crosslinkDataRoot;
-      }
-
-      public void setCrosslinkDataRoot(String crosslinkDataRoot) {
-        this.crosslinkDataRoot = crosslinkDataRoot;
       }
     }
   }

@@ -28,7 +28,7 @@ import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.crypto.BLS381.KeyPair;
 import org.ethereum.beacon.db.InMemoryDatabase;
-import org.ethereum.beacon.pow.DepositContract.ChainStart;
+import org.ethereum.beacon.consensus.ChainStart;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.javatuples.Pair;
 import org.reactivestreams.Publisher;
@@ -81,7 +81,7 @@ public class SampleObservableState {
     deposits = anyDeposits.getValue0();
     depositKeys = anyDeposits.getValue1();
 
-    eth1Data = new Eth1Data(Hash32.random(rnd), UInt64.ZERO, Hash32.random(rnd));
+    eth1Data = new Eth1Data(Hash32.random(rnd), UInt64.valueOf(deposits.size()), Hash32.random(rnd));
     chainStart = new ChainStart(Time.of(genesisTime.getSeconds()), eth1Data, deposits);
 
     InitialStateTransition initialTransition = new InitialStateTransition(chainStart, spec);

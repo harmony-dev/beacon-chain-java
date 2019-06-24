@@ -20,14 +20,13 @@ import org.ethereum.beacon.consensus.transition.InitialStateTransition;
 import org.ethereum.beacon.consensus.transition.PerBlockTransition;
 import org.ethereum.beacon.consensus.transition.PerEpochTransition;
 import org.ethereum.beacon.consensus.transition.PerSlotTransition;
-import org.ethereum.beacon.consensus.transition.StateCachingTransition;
 import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
 import org.ethereum.beacon.consensus.verifier.BeaconStateVerifier;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.db.InMemoryDatabase;
 import org.ethereum.beacon.pow.DepositContract;
-import org.ethereum.beacon.pow.DepositContract.ChainStart;
+import org.ethereum.beacon.consensus.ChainStart;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.ssz.SSZBuilder;
 import org.ethereum.beacon.ssz.SSZSerializer;
@@ -61,7 +60,6 @@ public class NodeLauncher {
   private final Schedulers schedulers;
 
   private InitialStateTransition initialTransition;
-  private StateCachingTransition stateCachingTransition;
   private PerSlotTransition perSlotTransition;
   private PerBlockTransition perBlockTransition;
   private PerEpochTransition perEpochTransition;
@@ -116,13 +114,11 @@ public class NodeLauncher {
 
   void chainStarted(ChainStart chainStartEvent) {
     initialTransition = new InitialStateTransition(chainStartEvent, spec);
-    stateCachingTransition = new StateCachingTransition(spec);
     perSlotTransition = new PerSlotTransition(spec);
     perBlockTransition = new PerBlockTransition(spec);
     perEpochTransition = new PerEpochTransition(spec);
     extendedSlotTransition =
-        new ExtendedSlotTransition(
-            stateCachingTransition, perEpochTransition, perSlotTransition, spec);
+        new ExtendedSlotTransition(perEpochTransition, perSlotTransition, spec);
     emptySlotTransition = new EmptySlotTransition(extendedSlotTransition);
 
     db = new InMemoryDatabase();

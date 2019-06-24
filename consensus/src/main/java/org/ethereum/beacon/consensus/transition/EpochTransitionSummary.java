@@ -1,9 +1,7 @@
 package org.ethereum.beacon.consensus.transition;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ValidatorIndex;
@@ -46,16 +44,8 @@ public class EpochTransitionSummary {
   List<ValidatorIndex> justifiedAttesters = new ArrayList<>();
 
   boolean noFinality;
-  Map<ValidatorIndex, Gwei> attestationRewards = new HashMap<>();
-  Map<ValidatorIndex, Gwei> attestationPenalties = new HashMap<>();
-  Map<ValidatorIndex, Gwei> boundaryAttestationRewards = new HashMap<>();
-  Map<ValidatorIndex, Gwei> boundaryAttestationPenalties = new HashMap<>();
-  Map<ValidatorIndex, Gwei> beaconHeadAttestationRewards = new HashMap<>();
-  Map<ValidatorIndex, Gwei> beaconHeadAttestationPenalties = new HashMap<>();
-  Map<ValidatorIndex, Gwei> inclusionDistanceRewards = new HashMap<>();
-  Map<ValidatorIndex, Gwei> initiatedExitPenalties = new HashMap<>();
-  Map<ValidatorIndex, Gwei> noFinalityPenalties = new HashMap<>();
-  Map<ValidatorIndex, Gwei> attestationInclusionRewards = new HashMap<>();
+  Gwei[][] attestationDeltas = { new Gwei[0], new Gwei[0] };
+  Gwei[][] crosslinkDeltas = { new Gwei[0], new Gwei[0] };
 
   List<ValidatorIndex> ejectedValidators = new ArrayList<>();
 
@@ -95,44 +85,12 @@ public class EpochTransitionSummary {
     return noFinality;
   }
 
-  public Map<ValidatorIndex, Gwei> getAttestationRewards() {
-    return attestationRewards;
+  public Gwei[][] getAttestationDeltas() {
+    return attestationDeltas;
   }
 
-  public Map<ValidatorIndex, Gwei> getAttestationPenalties() {
-    return attestationPenalties;
-  }
-
-  public Map<ValidatorIndex, Gwei> getBoundaryAttestationRewards() {
-    return boundaryAttestationRewards;
-  }
-
-  public Map<ValidatorIndex, Gwei> getBoundaryAttestationPenalties() {
-    return boundaryAttestationPenalties;
-  }
-
-  public Map<ValidatorIndex, Gwei> getBeaconHeadAttestationRewards() {
-    return beaconHeadAttestationRewards;
-  }
-
-  public Map<ValidatorIndex, Gwei> getBeaconHeadAttestationPenalties() {
-    return beaconHeadAttestationPenalties;
-  }
-
-  public Map<ValidatorIndex, Gwei> getInclusionDistanceRewards() {
-    return inclusionDistanceRewards;
-  }
-
-  public Map<ValidatorIndex, Gwei> getInitiatedExitPenalties() {
-    return initiatedExitPenalties;
-  }
-
-  public Map<ValidatorIndex, Gwei> getNoFinalityPenalties() {
-    return noFinalityPenalties;
-  }
-
-  public Map<ValidatorIndex, Gwei> getAttestationInclusionRewards() {
-    return attestationInclusionRewards;
+  public Gwei[][] getCrosslinkDeltas() {
+    return crosslinkDeltas;
   }
 
   public List<ValidatorIndex> getEjectedValidators() {

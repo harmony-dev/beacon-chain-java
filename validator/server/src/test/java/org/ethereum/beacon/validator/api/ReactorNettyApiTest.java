@@ -4,6 +4,7 @@ import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
+import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
@@ -305,7 +306,7 @@ public class ReactorNettyApiTest {
         "0x5F1847060C89CB12A92AFF4EF140C9FC3A3F026796EC15105F1847060C89CB12A92AFF4EF140C9FC3A3F026796EC1510";
     BlockData.BlockBodyData.IndexedAttestationData response =
         client.getAttestation(pubKey, 1L, BigInteger.ONE, 14);
-    assertEquals(Long.valueOf(14), response.getData().getShard());
+    assertEquals(Long.valueOf(14), response.getData().getCrosslink().getShard());
   }
 
   @Test
@@ -318,9 +319,7 @@ public class ReactorNettyApiTest {
             Hash32.ZERO,
             EpochNumber.ZERO,
             Hash32.ZERO,
-            ShardNumber.of(1),
-            Hash32.ZERO,
-            Hash32.ZERO);
+            Crosslink.EMPTY);
     List<ValidatorIndex> custodyBit0Indices = new ArrayList<>();
     custodyBit0Indices.add(ValidatorIndex.of(0));
     List<ValidatorIndex> custodyBit1Indices = new ArrayList<>();
@@ -363,9 +362,7 @@ public class ReactorNettyApiTest {
             Hash32.ZERO,
             EpochNumber.ZERO,
             Hash32.ZERO,
-            ShardNumber.of(1),
-            Hash32.ZERO,
-            Hash32.ZERO);
+            Crosslink.EMPTY);
     List<ValidatorIndex> custodyBit0Indices = new ArrayList<>();
     custodyBit0Indices.add(ValidatorIndex.of(0));
     List<ValidatorIndex> custodyBit1Indices = new ArrayList<>();

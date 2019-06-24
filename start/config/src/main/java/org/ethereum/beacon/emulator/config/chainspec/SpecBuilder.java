@@ -2,7 +2,6 @@ package org.ethereum.beacon.emulator.config.chainspec;
 
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.spec.SpecConstants;
-import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ShardNumber;
@@ -117,8 +116,8 @@ public class SpecBuilder {
       }
 
       @Override
-      public Bytes1 getBlsWithdrawalPrefixByte() {
-        return initialValues.getBlsWithdrawalPrefixByte();
+      public UInt64 getBlsWithdrawalPrefix() {
+        return initialValues.getBlsWithdrawalPrefix();
       }
 
       @Override
@@ -182,8 +181,8 @@ public class SpecBuilder {
       }
 
       @Override
-      public UInt64 getBaseRewardQuotient() {
-        return rewardAndPenaltyQuotients.getBaseRewardQuotient();
+      public UInt64 getBaseRewardFactor() {
+        return rewardAndPenaltyQuotients.getBaseRewardFactor();
       }
 
       @Override
@@ -272,8 +271,8 @@ public class SpecBuilder {
       }
 
       @Override
-      public EpochNumber getMaxCrosslinkEpochs() {
-        return timeParameters.getMaxCrosslinkEpochs();
+      public EpochNumber getMaxEpochsPerCrosslink() {
+        return timeParameters.getMaxEpochsPerCrosslink();
       }
 
       @Override

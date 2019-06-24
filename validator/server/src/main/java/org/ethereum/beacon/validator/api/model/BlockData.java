@@ -8,8 +8,8 @@ import java.util.List;
 public class BlockData {
   private String slot;
 
-  @JsonProperty("previous_block_root")
-  private String previousBlockRoot;
+  @JsonProperty("parent_root")
+  private String parentRoot;
 
   @JsonProperty("state_root")
   private String stateRoot;
@@ -25,12 +25,12 @@ public class BlockData {
     this.slot = slot;
   }
 
-  public String getPreviousBlockRoot() {
-    return previousBlockRoot;
+  public String getParentRoot() {
+    return parentRoot;
   }
 
-  public void setPreviousBlockRoot(String previousBlockRoot) {
-    this.previousBlockRoot = previousBlockRoot;
+  public void setParentRoot(String parentRoot) {
+    this.parentRoot = parentRoot;
   }
 
   public String getStateRoot() {
@@ -225,10 +225,13 @@ public class BlockData {
     public static class IndexedAttestationData {
       @JsonProperty("custody_bit_0_indices")
       private List<Long> custodyBit0Indices;
+
       @JsonProperty("custody_bit_1_indices")
       private List<Long> custodyBit1Indices;
+
       @JsonProperty("data")
       private AttestationData.AttestationDataContainer data;
+
       @JsonProperty("signature")
       private String signature;
 
@@ -276,6 +279,7 @@ public class BlockData {
     public static class AttesterSlashingData {
       @JsonProperty("attestation_1")
       private IndexedAttestationData slashableAttestation1;
+
       @JsonProperty("attestation_2")
       private IndexedAttestationData slashableAttestation2;
 
@@ -283,8 +287,7 @@ public class BlockData {
         return slashableAttestation1;
       }
 
-      public void setSlashableAttestation1(
-          IndexedAttestationData slashableAttestation1) {
+      public void setSlashableAttestation1(IndexedAttestationData slashableAttestation1) {
         this.slashableAttestation1 = slashableAttestation1;
       }
 
@@ -292,16 +295,13 @@ public class BlockData {
         return slashableAttestation2;
       }
 
-      public void setSlashableAttestation2(
-          IndexedAttestationData slashableAttestation2) {
+      public void setSlashableAttestation2(IndexedAttestationData slashableAttestation2) {
         this.slashableAttestation2 = slashableAttestation2;
       }
     }
 
     public static class DepositData {
       private List<String> proof;
-      private Long index;
-
       private DepositDataContainer data;
 
       public List<String> getProof() {
@@ -310,14 +310,6 @@ public class BlockData {
 
       public void setProof(List<String> proof) {
         this.proof = proof;
-      }
-
-      public Long getIndex() {
-        return index;
-      }
-
-      public void setIndex(Long index) {
-        this.index = index;
       }
 
       public DepositDataContainer getData() {
@@ -330,8 +322,10 @@ public class BlockData {
 
       public static class DepositDataContainer {
         private String pubkey;
+
         @JsonProperty("withdrawal_credentials")
         private String withdrawalCredentials;
+
         private String amount;
         private String signature;
 
@@ -469,7 +463,6 @@ public class BlockData {
     }
   }
 
-
   @JsonIgnoreProperties(ignoreUnknown = true)
   public static class AttestationData {
     @JsonProperty("aggregation_bitfield")
@@ -552,13 +545,7 @@ public class BlockData {
       @JsonProperty("target_root")
       private String targetRoot;
 
-      private Long shard;
-
-      @JsonProperty("previous_crosslink_root")
-      private String previousCrosslinkRoot;
-
-      @JsonProperty("crosslink_data_root")
-      private String crosslinkDataRoot;
+      private CrossLinkData crosslink;
 
       public String getBeaconBlockRoot() {
         return beaconBlockRoot;
@@ -592,30 +579,6 @@ public class BlockData {
         this.targetRoot = targetRoot;
       }
 
-      public Long getShard() {
-        return shard;
-      }
-
-      public void setShard(Long shard) {
-        this.shard = shard;
-      }
-
-      public String getPreviousCrosslinkRoot() {
-        return previousCrosslinkRoot;
-      }
-
-      public void setPreviousCrosslinkRoot(String previousCrosslinkRoot) {
-        this.previousCrosslinkRoot = previousCrosslinkRoot;
-      }
-
-      public String getCrosslinkDataRoot() {
-        return crosslinkDataRoot;
-      }
-
-      public void setCrosslinkDataRoot(String crosslinkDataRoot) {
-        this.crosslinkDataRoot = crosslinkDataRoot;
-      }
-
       public String getTargetEpoch() {
         return targetEpoch;
       }
@@ -623,21 +586,84 @@ public class BlockData {
       public void setTargetEpoch(String targetEpoch) {
         this.targetEpoch = targetEpoch;
       }
+
+      public CrossLinkData getCrosslink() {
+        return crosslink;
+      }
+
+      public void setCrosslink(CrossLinkData crosslink) {
+        this.crosslink = crosslink;
+      }
     }
   }
 
+  public static class CrossLinkData {
+    private Long shard;
+
+    @JsonProperty("start_epoch")
+    private String startEpoch;
+
+    @JsonProperty("end_epoch")
+    private String endEpoch;
+
+    @JsonProperty("parent_root")
+    private String parentRoot;
+
+    @JsonProperty("data_root")
+    private String dataRoot;
+
+    public Long getShard() {
+      return shard;
+    }
+
+    public void setShard(Long shard) {
+      this.shard = shard;
+    }
+
+    public String getStartEpoch() {
+      return startEpoch;
+    }
+
+    public void setStartEpoch(String startEpoch) {
+      this.startEpoch = startEpoch;
+    }
+
+    public String getEndEpoch() {
+      return endEpoch;
+    }
+
+    public void setEndEpoch(String endEpoch) {
+      this.endEpoch = endEpoch;
+    }
+
+    public String getParentRoot() {
+      return parentRoot;
+    }
+
+    public void setParentRoot(String parentRoot) {
+      this.parentRoot = parentRoot;
+    }
+
+    public String getDataRoot() {
+      return dataRoot;
+    }
+
+    public void setDataRoot(String dataRoot) {
+      this.dataRoot = dataRoot;
+    }
+  }
 
   public static class BlockHeaderData {
     private String slot;
 
-    @JsonProperty("previous_block_root")
-    private String previousBlockRoot;
+    @JsonProperty("parent_root")
+    private String parentRoot;
 
     @JsonProperty("state_root")
     private String stateRoot;
 
-    @JsonProperty("block_body_root")
-    private String blockBodyRoot;
+    @JsonProperty("body_root")
+    private String bodyRoot;
 
     private String signature;
 
@@ -649,12 +675,12 @@ public class BlockData {
       this.slot = slot;
     }
 
-    public String getPreviousBlockRoot() {
-      return previousBlockRoot;
+    public String getParentRoot() {
+      return parentRoot;
     }
 
-    public void setPreviousBlockRoot(String previousBlockRoot) {
-      this.previousBlockRoot = previousBlockRoot;
+    public void setParentRoot(String parentRoot) {
+      this.parentRoot = parentRoot;
     }
 
     public String getStateRoot() {
@@ -665,12 +691,12 @@ public class BlockData {
       this.stateRoot = stateRoot;
     }
 
-    public String getBlockBodyRoot() {
-      return blockBodyRoot;
+    public String getBodyRoot() {
+      return bodyRoot;
     }
 
-    public void setBlockBodyRoot(String blockBodyRoot) {
-      this.blockBodyRoot = blockBodyRoot;
+    public void setBodyRoot(String bodyRoot) {
+      this.bodyRoot = bodyRoot;
     }
 
     public String getSignature() {

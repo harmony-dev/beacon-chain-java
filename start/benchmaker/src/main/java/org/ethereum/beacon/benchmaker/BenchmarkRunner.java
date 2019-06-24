@@ -13,6 +13,7 @@ import org.ethereum.beacon.bench.BenchmarkReport;
 import org.ethereum.beacon.bench.BenchmarkUtils;
 import org.ethereum.beacon.chain.storage.impl.MemBeaconChainStorageFactory;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
+import org.ethereum.beacon.consensus.ChainStart;
 import org.ethereum.beacon.consensus.util.CachingBeaconChainSpec;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
@@ -65,7 +66,7 @@ public class BenchmarkRunner implements Runnable {
     for (int i = 0; i < count; i++) {
       BLS381.KeyPair keyPair = keyPairReader.next();
       keyPairs.add(keyPair);
-      deposits.add(SimulateUtils.getDepositForKeyPair(UInt64.valueOf(i), rnd, keyPair, spec, false));
+      deposits.add(SimulateUtils.getDepositForKeyPair(rnd, keyPair, spec, false));
     }
 
     return Pair.with(deposits, keyPairs);
@@ -91,12 +92,12 @@ public class BenchmarkRunner implements Runnable {
     MDCControlledSchedulers controlledSchedulers = new MDCControlledSchedulers();
     controlledSchedulers.setCurrentTime(genesisTime.getMillis().getValue() + 1000);
 
-    Eth1Data eth1Data = new Eth1Data(Hash32.ZERO, UInt64.ZERO, Hash32.ZERO);
+    Eth1Data eth1Data = new Eth1Data(Hash32.ZERO, UInt64.valueOf(deposits.size()), Hash32.ZERO);
 
     LocalWireHub localWireHub =
         new LocalWireHub(s -> {}, controlledSchedulers.createNew("wire"));
-    DepositContract.ChainStart chainStart =
-        new DepositContract.ChainStart(genesisTime, eth1Data, deposits);
+    ChainStart chainStart =
+        new ChainStart(genesisTime, eth1Data, deposits);
     DepositContract depositContract = new SimpleDepositContract(chainStart);
 
     logger.info("Bootstrapping validators ...");

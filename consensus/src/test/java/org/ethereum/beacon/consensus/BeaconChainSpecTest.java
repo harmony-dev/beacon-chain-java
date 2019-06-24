@@ -31,7 +31,6 @@ import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.core.util.AttestationTestUtil;
 import org.ethereum.beacon.crypto.Hashes;
-import org.ethereum.beacon.pow.DepositContract.ChainStart;
 import org.junit.Ignore;
 import org.junit.Test;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -137,7 +136,7 @@ public class BeaconChainSpecTest {
     BeaconBlock block =
         new BeaconBlock(
             emptyBlock.getSlot(),
-            emptyBlock.getPreviousBlockRoot(),
+            emptyBlock.getParentRoot(),
             emptyBlock.getStateRoot(),
             body,
             emptyBlock.getSignature());
@@ -155,8 +154,6 @@ public class BeaconChainSpecTest {
     SlotNumber genesisSlot = SlotNumber.of(1_000_000);
     Random rnd = new Random(1);
     Time genesisTime = Time.of(10 * 60);
-
-    Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), UInt64.ZERO, Hash32.random(rnd));
 
     SpecConstants specConstants =
         new SpecConstants() {
@@ -185,6 +182,7 @@ public class BeaconChainSpecTest {
 
     System.out.println("Generating deposits...");
     List<Deposit> deposits = TestUtils.generateRandomDepositsWithoutSig(rnd, spec, validatorCount);
+    Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), UInt64.valueOf(deposits.size()), Hash32.random(rnd));
     InitialStateTransition initialStateTransition =
         new InitialStateTransition(new ChainStart(genesisTime, eth1Data, deposits), spec);
 

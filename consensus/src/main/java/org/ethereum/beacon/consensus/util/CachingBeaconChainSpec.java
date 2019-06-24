@@ -136,7 +136,7 @@ public class CachingBeaconChainSpec extends BeaconChainSpecImpl {
         objectHash(state.getValidatorRegistry()),
         objectHash(state.getLatestRandaoMixes()),
         attestation_data.getTargetEpoch().toBytes8(),
-        attestation_data.getShard().toBytes8(),
+        attestation_data.getCrosslink().getShard().toBytes8(),
         bitfield
     );
     return caches.attestingIndicesCache.get(

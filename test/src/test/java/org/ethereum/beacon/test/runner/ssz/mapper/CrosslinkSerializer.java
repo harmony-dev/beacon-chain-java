@@ -18,9 +18,9 @@ public class CrosslinkSerializer implements ObjectSerializer<Crosslink> {
   @Override
   public ObjectNode map(Crosslink instance) {
     ObjectNode crosslink = mapper.createObjectNode();
-    crosslink.set("epoch", ComparableBigIntegerNode.valueOf(instance.getEpoch()));
-    crosslink.put("previous_crosslink_root", instance.getPreviousCrosslinkRoot().toString());
-    crosslink.put("crosslink_data_root", instance.getCrosslinkDataRoot().toString());
+//    crosslink.set("epoch", ComparableBigIntegerNode.valueOf(instance.getEpoch()));
+//    crosslink.put("previous_crosslink_root", instance.getPreviousCrosslinkRoot().toString());
+//    crosslink.put("crosslink_data_root", instance.getCrosslinkDataRoot().toString());
     return crosslink;
   }
 }

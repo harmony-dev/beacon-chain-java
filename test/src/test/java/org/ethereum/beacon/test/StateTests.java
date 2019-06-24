@@ -2,7 +2,6 @@ package org.ethereum.beacon.test;
 
 import org.ethereum.beacon.test.runner.state.StateRunner;
 import org.ethereum.beacon.test.type.state.StateTest;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.nio.file.Path;

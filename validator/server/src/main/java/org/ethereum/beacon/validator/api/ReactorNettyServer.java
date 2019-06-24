@@ -386,7 +386,7 @@ public class ReactorNettyServer implements RestServer {
                     spec.get_crosslink_committee(
                         state,
                         indexedAttestation.getData().getTargetEpoch(),
-                        indexedAttestation.getData().getShard());
+                        indexedAttestation.getData().getCrosslink().getShard());
                 Bitfield bitfield =
                     new Bitfield(
                         committee.size(),

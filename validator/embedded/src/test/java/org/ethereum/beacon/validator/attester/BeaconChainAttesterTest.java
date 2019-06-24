@@ -8,8 +8,10 @@ import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustodyBit;
+import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.spec.SignatureDomains;
 import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.validator.BeaconChainAttester;
@@ -20,6 +22,7 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
+import tech.pegasys.artemis.util.uint.UInt64s;
 
 import java.util.List;
 import java.util.Random;
@@ -52,7 +55,6 @@ public class BeaconChainAttesterTest {
 
     Mockito.doReturn(committee).when(attester).getCommittee(any(), any());
     Mockito.doReturn(targetRoot).when(attester).getTargetRoot(any(), any());
-    Mockito.doReturn(Hash32.ZERO).when(attester).getPreviousCrosslinkRoot(any(), any());
     Mockito.doReturn(sourceRoot).when(attester).getSourceRoot(any(), any());
 
     Attestation attestation =
@@ -62,12 +64,22 @@ public class BeaconChainAttesterTest {
     BeaconState state = initiallyObservedState.getLatestSlotState();
 
     Assert.assertEquals(spec.get_current_epoch(state), data.getTargetEpoch());
-    Assert.assertEquals(shard, data.getShard());
+    Assert.assertEquals(shard, data.getCrosslink().getShard());
     Assert.assertEquals(
         spec.signing_root(initiallyObservedState.getHead()), data.getBeaconBlockRoot());
     Assert.assertEquals(targetRoot, data.getTargetRoot());
-    Assert.assertEquals(Hash32.ZERO, data.getCrosslinkDataRoot());
-    Assert.assertEquals(Hash32.ZERO, data.getPreviousCrosslinkRoot());
+
+    Hash32 dataRoot = Hash32.ZERO; // Note: This is a stub for phase 0.
+    Crosslink parentCrosslink = state.getCurrentCrosslinks().get(shard);
+    Hash32 parentRoot = spec.hash_tree_root(parentCrosslink);
+    EpochNumber startEpoch = parentCrosslink.getEndEpoch();
+    EpochNumber endEpoch =
+        UInt64s.min(
+            spec.slot_to_epoch(state.getSlot()),
+            parentCrosslink.getEndEpoch().plus(spec.getConstants().getMaxEpochsPerCrosslink()));
+
+    Assert.assertEquals(
+        new Crosslink(shard, startEpoch, endEpoch, parentRoot, dataRoot), data.getCrosslink());
     Assert.assertEquals(state.getCurrentJustifiedEpoch(), data.getSourceEpoch());
     Assert.assertEquals(sourceRoot, data.getSourceRoot());
 
@@ -111,7 +123,6 @@ public class BeaconChainAttesterTest {
 
     Mockito.doReturn(committee).when(attester).getCommittee(any(), any());
     Mockito.doReturn(targetRoot).when(attester).getTargetRoot(any(), any());
-    Mockito.doReturn(Hash32.ZERO).when(attester).getPreviousCrosslinkRoot(any(), any());
     Mockito.doReturn(sourceRoot).when(attester).getSourceRoot(any(), any());
 
     BeaconStateEx stateEx = initiallyObservedState.getLatestSlotState();
@@ -133,12 +144,22 @@ public class BeaconChainAttesterTest {
     BeaconState state = initiallyObservedState.getLatestSlotState();
 
     Assert.assertEquals(spec.get_current_epoch(state), data.getTargetEpoch());
-    Assert.assertEquals(shard, data.getShard());
+    Assert.assertEquals(shard, data.getCrosslink().getShard());
     Assert.assertEquals(
         spec.signing_root(initiallyObservedState.getHead()), data.getBeaconBlockRoot());
     Assert.assertEquals(targetRoot, data.getTargetRoot());
-    Assert.assertEquals(Hash32.ZERO, data.getCrosslinkDataRoot());
-    Assert.assertEquals(Hash32.ZERO, data.getPreviousCrosslinkRoot());
+
+    Hash32 dataRoot = Hash32.ZERO; // Note: This is a stub for phase 0.
+    Crosslink parentCrosslink = state.getCurrentCrosslinks().get(shard);
+    Hash32 parentRoot = spec.hash_tree_root(parentCrosslink);
+    EpochNumber startEpoch = parentCrosslink.getEndEpoch();
+    EpochNumber endEpoch =
+        UInt64s.min(
+            spec.slot_to_epoch(state.getSlot()),
+            parentCrosslink.getEndEpoch().plus(spec.getConstants().getMaxEpochsPerCrosslink()));
+
+    Assert.assertEquals(
+        new Crosslink(shard, startEpoch, endEpoch, parentRoot, dataRoot), data.getCrosslink());
     Assert.assertEquals(state.getCurrentJustifiedEpoch(), data.getSourceEpoch());
     Assert.assertEquals(sourceRoot, data.getSourceRoot());
 

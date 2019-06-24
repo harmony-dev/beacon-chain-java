@@ -12,7 +12,7 @@ import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
  *
  * @see AttesterSlashing
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.6.1/specs/core/0_beacon-chain.md#attester-slashings">
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.7.1/specs/core/0_beacon-chain.md#attester-slashings">
  *     Attester slashings</a> in the spec.
  */
 public class AttesterSlashingVerifier implements OperationVerifier<AttesterSlashing> {

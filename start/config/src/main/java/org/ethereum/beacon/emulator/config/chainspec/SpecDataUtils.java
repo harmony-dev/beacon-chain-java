@@ -26,7 +26,7 @@ public abstract class SpecDataUtils {
     InitialValuesData initialValues =
         new InitialValuesData() {
           {
-            setBLS_WITHDRAWAL_PREFIX_BYTE(constants.getBlsWithdrawalPrefixByte().toString());
+            setBLS_WITHDRAWAL_PREFIX(constants.getBlsWithdrawalPrefix().toString());
             setFAR_FUTURE_EPOCH(constants.getFarFutureEpoch().toString());
             setGENESIS_SLOT(Long.toUnsignedString(constants.getGenesisSlot().getValue()));
             setZERO_HASH(constants.getZeroHash().toString());
@@ -74,7 +74,7 @@ public abstract class SpecDataUtils {
     RewardAndPenaltyQuotientsData rewardAndPenaltyQuotients =
         new RewardAndPenaltyQuotientsData() {
           {
-            setBASE_REWARD_QUOTIENT(constants.getBaseRewardQuotient().toString());
+            setBASE_REWARD_FACTOR(constants.getBaseRewardFactor().toString());
             setINACTIVITY_PENALTY_QUOTIENT(constants.getInactivityPenaltyQuotient().toString());
             setWHISTLEBLOWING_REWARD_QUOTIENT(constants.getWhistleblowingRewardQuotient().toString());
             setPROPOSER_REWARD_QUOTIENT(
@@ -106,7 +106,7 @@ public abstract class SpecDataUtils {
             setSECONDS_PER_SLOT(Long.toString(constants.getSecondsPerSlot().getValue()));
             setSLOTS_PER_EPOCH(Long.toUnsignedString(constants.getSlotsPerEpoch().getValue()));
             setPERSISTENT_COMMITTEE_PERIOD(constants.getPersistentCommitteePeriod().toString());
-            setMAX_CROSSLINK_EPOCHS(constants.getMaxCrosslinkEpochs().toString());
+            setMAX_EPOCHS_PER_CROSSLINK(constants.getMaxEpochsPerCrosslink().toString());
             setSLOTS_PER_HISTORICAL_ROOT(
                 Long.toUnsignedString(constants.getSlotsPerHistoricalRoot().getValue()));
           }

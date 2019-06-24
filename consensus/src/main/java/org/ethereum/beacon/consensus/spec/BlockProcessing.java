@@ -8,6 +8,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.BeaconBlockHeader;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
@@ -17,6 +18,7 @@ import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.Transfer;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
+import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
 import org.ethereum.beacon.core.spec.SignatureDomains;
@@ -36,7 +38,7 @@ import tech.pegasys.artemis.util.uint.UInt64s;
  * Block processing part.
  *
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.6.1/specs/core/0_beacon-chain.md#per-block-processing">Per-block
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.7.1/specs/core/0_beacon-chain.md#block-processing">Block
  *     processing</a> in the spec.
  */
 public interface BlockProcessing extends HelperFunction {
@@ -47,7 +49,7 @@ public interface BlockProcessing extends HelperFunction {
     assertTrue(block.getSlot().equals(state.getSlot()));
     /* Verify that the parent matches
       assert block.previous_block_root == signing_root(state.latest_block_header) */
-    assertTrue(block.getPreviousBlockRoot().equals(signing_root(state.getLatestBlockHeader())));
+    assertTrue(block.getParentRoot().equals(signing_root(state.getLatestBlockHeader())));
 
     /* Verify proposer is not slashed
     proposer = state.validator_registry[get_beacon_proposer_index(state)]
@@ -74,13 +76,13 @@ public interface BlockProcessing extends HelperFunction {
     ) */
     state.setLatestBlockHeader(new BeaconBlockHeader(
         block.getSlot(),
-        block.getPreviousBlockRoot(),
+        block.getParentRoot(),
         Hash32.ZERO,
         hash_tree_root(block.getBody()),
         BLSSignature.ZERO));
   }
 
-  default void verify_randao(BeaconState state, BeaconBlock block) {
+  default void verify_randao(BeaconState state, BeaconBlockBody body) {
     /* proposer = state.validator_registry[get_beacon_proposer_index(state)]
     Verify that the provided randao value is valid
     assert bls_verify(proposer.pubkey, hash_tree_root(get_current_epoch(state)), block.body.randao_reveal, get_domain(state, DOMAIN_RANDAO)) */
@@ -89,18 +91,18 @@ public interface BlockProcessing extends HelperFunction {
         bls_verify(
             proposer.getPubKey(),
             hash_tree_root(get_current_epoch(state)),
-            block.getBody().getRandaoReveal(),
+            body.getRandaoReveal(),
             get_domain(state, RANDAO)
         )
     );
   }
 
-  default void process_randao(MutableBeaconState state, BeaconBlock block) {
+  default void process_randao(MutableBeaconState state, BeaconBlockBody body) {
     // Mix it in
     state.getLatestRandaoMixes().set(get_current_epoch(state).modulo(getConstants().getLatestRandaoMixesLength()),
         Hash32.wrap(Bytes32s.xor(
             get_randao_mix(state, get_current_epoch(state)),
-            hash(block.getBody().getRandaoReveal()))));
+            hash(body.getRandaoReveal()))));
   }
 
   /*
@@ -109,13 +111,13 @@ public interface BlockProcessing extends HelperFunction {
       if state.eth1_data_votes.count(block.body.eth1_data) * 2 > SLOTS_PER_ETH1_VOTING_PERIOD:
           state.latest_eth1_data = block.body.eth1_data
    */
-  default void process_eth1_data(MutableBeaconState state, BeaconBlock block) {
-    state.getEth1DataVotes().add(block.getBody().getEth1Data());
+  default void process_eth1_data(MutableBeaconState state, BeaconBlockBody body) {
+    state.getEth1DataVotes().add(body.getEth1Data());
     long votes_count = state.getEth1DataVotes().stream()
-        .filter(v -> v.equals(block.getBody().getEth1Data()))
+        .filter(v -> v.equals(body.getEth1Data()))
         .count();
     if (votes_count * 2 > getConstants().getSlotsPerEth1VotingPeriod().getValue()) {
-      state.setLatestEth1Data(block.getBody().getEth1Data());
+      state.setLatestEth1Data(body.getEth1Data());
     }
   }
 
@@ -165,11 +167,11 @@ public interface BlockProcessing extends HelperFunction {
     IndexedAttestation attestation2 = attester_slashing.getAttestation2();
 
     /* assert is_slashable_attestation_data(attestation_1.data, attestation_2.data)
-       assert verify_indexed_attestation(state, attestation_1)
-       assert verify_indexed_attestation(state, attestation_2) */
+       assert validate_indexed_attestation(state, attestation_1)
+       assert validate_indexed_attestation(state, attestation_2) */
     assertTrue(is_slashable_attestation_data(attestation1.getData(), attestation2.getData()));
-    assertTrue(verify_indexed_attestation(state, attestation1));
-    assertTrue(verify_indexed_attestation(state, attestation2));
+    assertTrue(validate_indexed_attestation(state, attestation1));
+    assertTrue(validate_indexed_attestation(state, attestation2));
   }
 
   /*
@@ -213,9 +215,9 @@ public interface BlockProcessing extends HelperFunction {
   default boolean verify_attestation(BeaconState state, Attestation attestation) {
     AttestationData data = attestation.getData();
 
-    /* attestation_slot = get_attestation_slot(state, attestation)
+    /* attestation_slot = get_attestation_data_slot(state, data)
        assert attestation_slot + MIN_ATTESTATION_INCLUSION_DELAY <= state.slot <= attestation_slot + SLOTS_PER_EPOCH */
-    SlotNumber attestation_slot = get_attestation_slot(state, data);
+    SlotNumber attestation_slot = get_attestation_data_slot(state, data);
 
     if (!attestation_slot.plus(getConstants().getMinAttestationInclusionDelay()).lessEqual(state.getSlot())) {
       return false;
@@ -224,58 +226,72 @@ public interface BlockProcessing extends HelperFunction {
       return false;
     }
 
-    /* Check target epoch, source epoch, source root, and source crosslink
-      data = attestation.data
-      assert (data.target_epoch, data.source_epoch, data.source_root, data.previous_crosslink_root) in {
-          (get_current_epoch(state), state.current_justified_epoch, state.current_justified_root, hash_tree_root(state.current_crosslinks[data.shard])),
-          (get_previous_epoch(state), state.previous_justified_epoch, state.previous_justified_root, hash_tree_root(state.previous_crosslinks[data.shard])),
-      } */
-    boolean current_epoch_attestation =
-        data.getTargetEpoch().equals(get_current_epoch(state))
-        && data.getSourceEpoch().equals(state.getCurrentJustifiedEpoch())
-        && data.getSourceRoot().equals(state.getCurrentJustifiedRoot())
-        && data.getPreviousCrosslinkRoot().equals(hash_tree_root(state.getCurrentCrosslinks().get(data.getShard())));
-    boolean previous_epoch_attestation =
-        data.getTargetEpoch().equals(get_previous_epoch(state))
-            && data.getSourceEpoch().equals(state.getPreviousJustifiedEpoch())
-            && data.getSourceRoot().equals(state.getPreviousJustifiedRoot())
-            && data.getPreviousCrosslinkRoot().equals(hash_tree_root(state.getPreviousCrosslinks().get(data.getShard())));
-    if (!(current_epoch_attestation || previous_epoch_attestation)) {
+    // assert data.target_epoch in (get_previous_epoch(state), get_current_epoch(state))
+    if (!data.getTargetEpoch().equals(get_previous_epoch(state))
+        && !data.getTargetEpoch().equals(get_current_epoch(state))) {
       return false;
     }
 
-    /* Check crosslink data root
-      assert data.crosslink_data_root == ZERO_HASH  # [to be removed in phase 1] */
-    if (!(data.getCrosslinkDataRoot().equals(Hash32.ZERO))) {
-      return false;
+    /* if data.target_epoch == get_current_epoch(state):
+        ffg_data = (state.current_justified_epoch, state.current_justified_root, get_current_epoch(state))
+        parent_crosslink = state.current_crosslinks[data.crosslink.shard]
+       else:
+        ffg_data = (state.previous_justified_epoch, state.previous_justified_root, get_previous_epoch(state))
+        parent_crosslink = state.previous_crosslinks[data.crosslink.shard] */
+    Crosslink parent_crosslink;
+    boolean is_ffg_data_correct;
+    if (data.getTargetEpoch().equals(get_current_epoch(state))) {
+      is_ffg_data_correct = data.getTargetEpoch().equals(get_current_epoch(state))
+          && data.getSourceEpoch().equals(state.getCurrentJustifiedEpoch())
+          && data.getSourceRoot().equals(state.getCurrentJustifiedRoot());
+      parent_crosslink = state.getCurrentCrosslinks().get(data.getCrosslink().getShard());
+    } else {
+      is_ffg_data_correct = data.getTargetEpoch().equals(get_previous_epoch(state))
+          && data.getSourceEpoch().equals(state.getPreviousJustifiedEpoch())
+          && data.getSourceRoot().equals(state.getPreviousJustifiedRoot());
+      parent_crosslink = state.getPreviousCrosslinks().get(data.getCrosslink().getShard());
     }
 
-    /* Check signature and bitfields
-      assert verify_indexed_attestation(state, convert_to_indexed(state, attestation)) */
-    return verify_indexed_attestation(state, convert_to_indexed(state, attestation));
+    /*  assert ffg_data == (data.source_epoch, data.source_root, data.target_epoch)
+        assert data.crosslink.start_epoch == parent_crosslink.end_epoch
+        assert data.crosslink.end_epoch == min(data.target_epoch, parent_crosslink.end_epoch + MAX_EPOCHS_PER_CROSSLINK)
+        assert data.crosslink.parent_root == hash_tree_root(parent_crosslink)
+        assert data.crosslink.data_root == ZERO_HASH  # [to be removed in phase 1]
+        validate_indexed_attestation(state, convert_to_indexed(state, attestation)) */
+    if (!is_ffg_data_correct) {
+      return false;
+    }
+    if (!data.getCrosslink().getStartEpoch().equals(parent_crosslink.getEndEpoch())) {
+      return false;
+    }
+    if (!data.getCrosslink().getEndEpoch().equals(UInt64s.min(
+        data.getTargetEpoch(),
+        parent_crosslink.getEndEpoch().plus(getConstants().getMaxEpochsPerCrosslink())))) {
+      return false;
+    }
+    if (!data.getCrosslink().getParentRoot().equals(hash_tree_root(parent_crosslink))) {
+      return false;
+    }
+    if (!data.getCrosslink().getDataRoot().equals(Hash32.ZERO)) {
+      return false;
+    }
+    return validate_indexed_attestation(state, convert_to_indexed(state, attestation));
   }
 
   /*
    """
-   Process ``Attestation`` transaction.
+   Process ``Attestation`` operation.
    """
   */
   default void process_attestation(MutableBeaconState state, Attestation attestation) {
     AttestationData data = attestation.getData();
-    SlotNumber attestation_slot = get_attestation_slot(state, data);
+    SlotNumber attestation_slot = get_attestation_data_slot(state, data);
 
-    /* Cache pending attestation
-    pending_attestation = PendingAttestation(
+    /*  pending_attestation = PendingAttestation(
         data=data,
         aggregation_bitfield=attestation.aggregation_bitfield,
         inclusion_delay=state.slot - attestation_slot,
-        proposer_index=get_beacon_proposer_index(state),
-    )
-    if data.target_epoch == get_current_epoch(state):
-        state.current_epoch_attestations.append(pending_attestation)
-    else:
-        state.previous_epoch_attestations.append(pending_attestation) */
-
+        proposer_index=get_beacon_proposer_index(state)) */
     PendingAttestation pending_attestation = new PendingAttestation(
         attestation.getAggregationBitfield(),
         data,
@@ -301,7 +317,7 @@ public interface BlockProcessing extends HelperFunction {
         hash_tree_root(deposit.getData()),
         deposit.getProof().listCopy(),
         getConstants().getDepositContractTreeDepth(),
-        deposit.getIndex(),
+        state.getDepositIndex(),
         state.getLatestEth1Data().getDepositRoot()
     ));
   }
@@ -313,10 +329,7 @@ public interface BlockProcessing extends HelperFunction {
       """
     */
   default void process_deposit(MutableBeaconState state, Deposit deposit) {
-    /* Deposits must be processed in order
-      assert deposit.index == state.deposit_index
-      state.deposit_index += 1 */
-    assertTrue(deposit.getIndex().equals(state.getDepositIndex()));
+    // state.deposit_index += 1
     state.setDepositIndex(state.getDepositIndex().increment());
 
     BLSPubkey pubkey = deposit.getData().getPubKey();
@@ -325,15 +338,16 @@ public interface BlockProcessing extends HelperFunction {
 
     /* if pubkey not in validator_pubkeys: */
     if (index.equals(ValidatorIndex.MAX)) {
-      /* Verify the deposit signature (proof of possession)
-          if not bls_verify(pubkey, signing_root(deposit.data), deposit.data.signature, get_domain(state, DOMAIN_DEPOSIT)):
-              return */
+      /* Verify the deposit signature (proof of possession).
+         Invalid signatures are allowed by the deposit contract,
+         and hence included on-chain, but must not be processed.
+         Note: deposits are valid across forks, hence the deposit domain is retrieved directly from `bls_domain` */
       if (isBlsVerifyProofOfPossession() &&
           !bls_verify(
               pubkey,
               signing_root(deposit.getData()),
               deposit.getData().getSignature(),
-              get_domain(state, SignatureDomains.DEPOSIT))
+              bls_domain(SignatureDomains.DEPOSIT))
       ) {
         return;
       }
@@ -388,9 +402,9 @@ public interface BlockProcessing extends HelperFunction {
     assertTrue(get_current_epoch(state).greaterEqual(exit.getEpoch()));
 
     /* Verify the validator has been active long enough
-    assert get_current_epoch(state) - validator.activation_epoch >= PERSISTENT_COMMITTEE_PERIOD */
-    assertTrue(get_current_epoch(state).minus(validator.getActivationEpoch())
-        .greaterEqual(getConstants().getPersistentCommitteePeriod()));
+    assert get_current_epoch(state) >= validator.activation_epoch + PERSISTENT_COMMITTEE_PERIOD */
+    assertTrue(get_current_epoch(state).greaterEqual(
+        validator.getActivationEpoch().plus(getConstants().getPersistentCommitteePeriod())));
 
     /* Verify signature
     domain = get_domain(state, DOMAIN_VOLUNTARY_EXIT, exit.epoch)
@@ -436,10 +450,10 @@ public interface BlockProcessing extends HelperFunction {
     /* Verify that the pubkey is valid
     assert (
         state.validator_registry[transfer.sender].withdrawal_credentials ==
-        BLS_WITHDRAWAL_PREFIX_BYTE + hash(transfer.pubkey)[1:]
+        BLS_WITHDRAWAL_PREFIX + hash(transfer.pubkey)[1:]
     ) */
     assertTrue(state.getValidatorRegistry().get(transfer.getSender()).getWithdrawalCredentials()
-        .equals(getConstants().getBlsWithdrawalPrefixByte().concat(hash(transfer.getPubkey()).slice(1))));
+        .equals(int_to_bytes1(getConstants().getBlsWithdrawalPrefix()).concat(hash(transfer.getPubkey()).slice(1))));
 
     /* Verify that the signature is valid
     assert bls_verify(transfer.pubkey, signing_root(transfer), transfer.signature, get_domain(state, DOMAIN_TRANSFER)) */
@@ -480,5 +494,79 @@ public interface BlockProcessing extends HelperFunction {
    */
   default void verify_block_state_root(BeaconState state, BeaconBlock block) {
     assertTrue(block.getStateRoot().equals(hash_tree_root(state)));
+  }
+
+  default void process_operations(MutableBeaconState state, BeaconBlockBody body) {
+    // Verify that outstanding deposits are processed up to the maximum number of deposits
+    assertTrue(
+        body.getDeposits().size() ==
+            Math.min(
+                getConstants().getMaxDeposits(),
+                state.getLatestEth1Data().getDepositCount().minus(state.getDepositIndex()).getIntValue())
+    );
+    // Verify that there are no duplicate transfers
+    assertTrue(body.getTransfers().size() == body.getTransfers().stream().distinct().count());
+
+    /* for operations, max_operations, function in (
+        (body.proposer_slashings, MAX_PROPOSER_SLASHINGS, process_proposer_slashing),
+        (body.attester_slashings, MAX_ATTESTER_SLASHINGS, process_attester_slashing),
+        (body.attestations, MAX_ATTESTATIONS, process_attestation),
+        (body.deposits, MAX_DEPOSITS, process_deposit),
+        (body.voluntary_exits, MAX_VOLUNTARY_EXITS, process_voluntary_exit),
+        (body.transfers, MAX_TRANSFERS, process_transfer),
+      ):
+          assert len(operations) <= max_operations
+          for operation in operations:
+              function(state, operation) */
+    assertTrue(body.getProposerSlashings().size() <= getConstants().getMaxProposerSlashings());
+    assertTrue(body.getAttesterSlashings().size() <= getConstants().getMaxAttesterSlashings());
+    assertTrue(body.getAttestations().size() <= getConstants().getMaxAttestations());
+    assertTrue(body.getDeposits().size() <= getConstants().getMaxDeposits());
+    assertTrue(body.getVoluntaryExits().size() <= getConstants().getMaxVoluntaryExits());
+    assertTrue(body.getTransfers().size() <= getConstants().getMaxTransfers());
+
+    body.getProposerSlashings().forEach(o -> {
+      verify_proposer_slashing(state, o);
+      process_proposer_slashing(state, o);
+    });
+
+    body.getAttesterSlashings().forEach(o -> {
+      verify_attester_slashing(state, o);
+      process_attester_slashing(state, o);
+    });
+
+    body.getAttestations().forEach(o -> {
+      assertTrue(verify_attestation(state, o));
+      process_attestation(state, o);
+    });
+
+    body.getDeposits().forEach(o -> {
+      verify_deposit(state, o);
+      process_deposit(state, o);
+    });
+
+    body.getVoluntaryExits().forEach(o -> {
+      verify_voluntary_exit(state, o);
+      process_voluntary_exit(state, o);
+    });
+
+    body.getTransfers().forEach(o -> {
+      verify_transfer(state, o);
+      process_transfer(state, o);
+    });
+  }
+
+  /*
+    def process_block(state: BeaconState, block: BeaconBlock) -> None:
+      process_block_header(state, block)
+      process_randao(state, block.body)
+      process_eth1_data(state, block.body)
+      process_operations(state, block.body)
+   */
+  default void process_block(MutableBeaconState state, BeaconBlock block) {
+    process_block_header(state, block);
+    process_randao(state, block.getBody());
+    process_eth1_data(state, block.getBody());
+    process_operations(state, block.getBody());
   }
 }

@@ -8,6 +8,7 @@ import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustodyBit;
+import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Bitfield;
 import org.ethereum.beacon.core.types.EpochNumber;
@@ -22,6 +23,7 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.bytes.MutableBytesValue;
 
 import java.util.List;
+import tech.pegasys.artemis.util.uint.UInt64s;
 
 /**
  * An implementation of beacon chain attester.
@@ -67,20 +69,12 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
     Hash32 beaconBlockRoot = spec.signing_root(observableState.getHead());
     EpochNumber targetEpoch = spec.slot_to_epoch(slot);
     Hash32 targetRoot = getTargetRoot(state, observableState.getHead());
-    Hash32 crosslinkDataRoot = Hash32.ZERO; // Note: This is a stub for phase 0.
-    Hash32 previousCrosslinkRoot = getPreviousCrosslinkRoot(state, shard);
     EpochNumber sourceEpoch = state.getCurrentJustifiedEpoch();
     Hash32 sourceRoot = getSourceRoot(state, observableState.getHead());
+    Crosslink crosslink = getCrosslink(state, shard, targetEpoch);
     AttestationData data =
         new AttestationData(
-            beaconBlockRoot,
-            sourceEpoch,
-            sourceRoot,
-            targetEpoch,
-            targetRoot,
-            shard,
-            previousCrosslinkRoot,
-            crosslinkDataRoot);
+            beaconBlockRoot, sourceEpoch, sourceRoot, targetEpoch, targetRoot, crosslink);
 
     List<ValidatorIndex> committee = getCommittee(state, shard);
     BytesValue participationBitfield = getParticipationBitfield(validatorIndex, committee);
@@ -118,15 +112,6 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
   }
 
   /*
-   Set attestation_data.latest_crosslink_root = state.latest_crosslinks[shard].crosslink_data_root
-     where state is the beacon state at head and shard is the validator's assigned shard.
-  */
-  @VisibleForTesting
-  Hash32 getPreviousCrosslinkRoot(BeaconState state, ShardNumber shard) {
-    return spec.hash_tree_root(state.getCurrentCrosslinks().get(shard));
-  }
-
-  /*
    Set attestation_data.justified_block_root = hash_tree_root(justified_block)
      where justified_block is the block at state.justified_slot in the chain defined by head.
 
@@ -135,6 +120,19 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
   @VisibleForTesting
   Hash32 getSourceRoot(BeaconState state, BeaconBlock head) {
     return state.getCurrentJustifiedRoot();
+  }
+
+  private Crosslink getCrosslink(BeaconState state, ShardNumber shard, EpochNumber targetEpoch) {
+    Hash32 dataRoot = Hash32.ZERO; // Note: This is a stub for phase 0.
+    Crosslink parentCrosslink = state.getCurrentCrosslinks().get(shard);
+    Hash32 parentRoot = spec.hash_tree_root(parentCrosslink);
+    EpochNumber startEpoch = parentCrosslink.getEndEpoch();
+    EpochNumber endEpoch =
+        UInt64s.min(
+            targetEpoch,
+            parentCrosslink.getEndEpoch().plus(spec.getConstants().getMaxEpochsPerCrosslink()));
+
+    return new Crosslink(shard, startEpoch, endEpoch, parentRoot, dataRoot);
   }
 
   /*

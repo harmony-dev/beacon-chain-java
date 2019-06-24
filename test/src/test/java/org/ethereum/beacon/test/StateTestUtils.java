@@ -4,10 +4,14 @@ import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockHeader;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
+import org.ethereum.beacon.core.operations.Attestation;
+import org.ethereum.beacon.core.operations.Deposit;
+import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.Transfer;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
+import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.Eth1Data;
@@ -22,7 +26,6 @@ import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.test.type.state.StateTestCase.BeaconStateData;
-import org.ethereum.beacon.test.type.state.StateTestCase.BeaconStateData.CrossLinkData;
 import org.ethereum.beacon.test.type.state.StateTestCase.BeaconStateData.ValidatorData;
 import org.ethereum.beacon.validator.api.convert.BlockDataToBlock;
 import org.ethereum.beacon.validator.api.model.BlockData;
@@ -89,7 +92,7 @@ public abstract class StateTestUtils {
     return state;
   }
 
-  public static List<Crosslink> parseCrosslinks(List<CrossLinkData> data) {
+  public static List<Crosslink> parseCrosslinks(List<BlockData.CrossLinkData> data) {
     return data.stream().map(StateTestUtils::parseCrosslink).collect(Collectors.toList());
   }
 
@@ -133,11 +136,8 @@ public abstract class StateTestUtils {
         EpochNumber.castFrom(UInt64.valueOf(data.getEpoch())));
   }
 
-  public static Crosslink parseCrosslink(CrossLinkData data) {
-    return new Crosslink(
-        EpochNumber.castFrom(UInt64.valueOf(data.getEpoch())),
-        Hash32.fromHexString(data.getPreviousCrosslinkRoot()),
-        Hash32.fromHexString(data.getCrosslinkDataRoot()));
+  public static Crosslink parseCrosslink(BlockData.CrossLinkData data) {
+    return BlockDataToBlock.parseCrossLinkData(data);
   }
 
   public static PendingAttestation parsePendingAttestation(
@@ -165,5 +165,23 @@ public abstract class StateTestUtils {
   public static IndexedAttestation parseIndexedAttestation(
       BlockData.BlockBodyData.IndexedAttestationData data) {
     return BlockDataToBlock.parseIndexedAttestation(data);
+  }
+
+  public static Deposit parseDeposit(BlockData.BlockBodyData.DepositData data) {
+    return BlockDataToBlock.parseDeposit(data);
+  }
+
+  public static Attestation parseAttestation(BlockData.AttestationData data) {
+    return BlockDataToBlock.parseAttestation(data);
+  }
+
+  public static AttesterSlashing parseAttesterSlashing(
+      BlockData.BlockBodyData.AttesterSlashingData data) {
+    return BlockDataToBlock.parseAttesterSlashing(data);
+  }
+
+  public static ProposerSlashing parseProposerSlashing(
+      BlockData.BlockBodyData.ProposerSlashingData data) {
+    return BlockDataToBlock.parseProposerSlashing(data);
   }
 }

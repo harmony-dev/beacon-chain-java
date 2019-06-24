@@ -9,6 +9,7 @@ import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.Transfer;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
+import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
@@ -27,7 +28,6 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
-import tech.pegasys.artemis.util.collections.ReadVector;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 import java.util.ArrayList;
@@ -43,7 +43,7 @@ public abstract class BlockDataToBlock {
 
   public static BlockData serialize(BeaconBlock block) {
     BlockData data = new BlockData();
-    data.setPreviousBlockRoot(block.getPreviousBlockRoot().toString());
+    data.setParentRoot(block.getParentRoot().toString());
     data.setSignature(block.getSignature().toHexString());
     data.setSlot(block.getSlot().toStringNumber(null));
     data.setStateRoot(block.getStateRoot().toString());
@@ -87,7 +87,6 @@ public abstract class BlockDataToBlock {
             d -> {
               BlockData.BlockBodyData.DepositData deposit =
                   new BlockData.BlockBodyData.DepositData();
-              deposit.setIndex(d.getIndex().longValue());
               deposit.setProof(
                   d.getProof().stream().map(Hash32::toString).collect(Collectors.toList()));
               BlockData.BlockBodyData.DepositData.DepositDataContainer depositData =
@@ -163,8 +162,8 @@ public abstract class BlockDataToBlock {
 
   public static BlockData.BlockHeaderData presentBlockHeader(BeaconBlockHeader header) {
     BlockData.BlockHeaderData headerData = new BlockData.BlockHeaderData();
-    headerData.setBlockBodyRoot(header.getBlockBodyRoot().toString());
-    headerData.setPreviousBlockRoot(header.getPreviousBlockRoot().toString());
+    headerData.setBodyRoot(header.getBodyRoot().toString());
+    headerData.setParentRoot(header.getParentRoot().toString());
     headerData.setSignature(header.getSignature().toHexString());
     headerData.setSlot(header.getSlot().toStringNumber(null));
     headerData.setStateRoot(header.getStateRoot().toString());
@@ -195,9 +194,7 @@ public abstract class BlockDataToBlock {
     BlockData.AttestationData.AttestationDataContainer attestationData =
         new BlockData.AttestationData.AttestationDataContainer();
     attestationData.setBeaconBlockRoot(data.getBeaconBlockRoot().toString());
-    attestationData.setCrosslinkDataRoot(data.getCrosslinkDataRoot().toString());
-    attestationData.setPreviousCrosslinkRoot(data.getPreviousCrosslinkRoot().toString());
-    attestationData.setShard(data.getShard().longValue());
+    attestationData.setCrosslink(presentCrossLink(data.getCrosslink()));
     attestationData.setSourceEpoch(data.getSourceEpoch().toString());
     attestationData.setSourceRoot(data.getSourceRoot().toString());
     attestationData.setTargetEpoch(data.getTargetEpoch().toString());
@@ -212,42 +209,20 @@ public abstract class BlockDataToBlock {
     // Attestations
     List<Attestation> attestations = new ArrayList<>();
     for (BlockData.AttestationData attestationData : blockData.getBody().getAttestations()) {
-      AttestationData attestationData1 = parseAttestationData(attestationData.getData());
-      Attestation attestation =
-          new Attestation(
-              Bitfield.of(BytesValue.fromHexString(attestationData.getAggregationBitfield())),
-              attestationData1,
-              Bitfield.of(BytesValue.fromHexString(attestationData.getCustodyBitfield())),
-              BLSSignature.wrap(Bytes96.fromHexString(attestationData.getSignature())));
+      Attestation attestation = parseAttestation(attestationData);
       attestations.add(attestation);
     }
 
     // Attestation slashings
     List<AttesterSlashing> attesterSlashings =
         blockData.getBody().getAttesterSlashings().stream()
-            .map(
-                s ->
-                    new AttesterSlashing(
-                        parseIndexedAttestation(s.getSlashableAttestation1()),
-                        parseIndexedAttestation(s.getSlashableAttestation2())))
+            .map(BlockDataToBlock::parseAttesterSlashing)
             .collect(Collectors.toList());
 
     // Deposits
     List<Deposit> deposits = new ArrayList<>();
     for (BlockData.BlockBodyData.DepositData depositData : blockData.getBody().getDeposits()) {
-      Deposit deposit =
-          new Deposit(
-              ReadVector.wrap(
-                  depositData.getProof().stream()
-                      .map(Hash32::fromHexString)
-                      .collect(Collectors.toList()),
-                  Integer::new),
-              UInt64.valueOf(depositData.getIndex()),
-              new DepositData(
-                  BLSPubkey.fromHexString(depositData.getData().getPubkey()),
-                  Hash32.fromHexString(depositData.getData().getWithdrawalCredentials()),
-                  Gwei.castFrom(UInt64.valueOf(depositData.getData().getAmount())),
-                  BLSSignature.wrap(Bytes96.fromHexString(depositData.getData().getSignature()))));
+      Deposit deposit = parseDeposit(depositData);
       deposits.add(deposit);
     }
 
@@ -255,26 +230,7 @@ public abstract class BlockDataToBlock {
     List<ProposerSlashing> proposerSlashings = new ArrayList<>();
     for (BlockData.BlockBodyData.ProposerSlashingData proposerSlashingData :
         blockData.getBody().getProposerSlashings()) {
-      BeaconBlockHeader header1 =
-          new BeaconBlockHeader(
-              SlotNumber.castFrom(UInt64.valueOf(proposerSlashingData.getHeader1().getSlot())),
-              Hash32.fromHexString(proposerSlashingData.getHeader1().getPreviousBlockRoot()),
-              Hash32.fromHexString(proposerSlashingData.getHeader1().getStateRoot()),
-              Hash32.fromHexString(proposerSlashingData.getHeader1().getBlockBodyRoot()),
-              BLSSignature.wrap(
-                  Bytes96.fromHexString(proposerSlashingData.getHeader1().getSignature())));
-      BeaconBlockHeader header2 =
-          new BeaconBlockHeader(
-              SlotNumber.castFrom(UInt64.valueOf(proposerSlashingData.getHeader2().getSlot())),
-              Hash32.fromHexString(proposerSlashingData.getHeader2().getPreviousBlockRoot()),
-              Hash32.fromHexString(proposerSlashingData.getHeader2().getStateRoot()),
-              Hash32.fromHexString(proposerSlashingData.getHeader2().getBlockBodyRoot()),
-              BLSSignature.wrap(
-                  Bytes96.fromHexString(proposerSlashingData.getHeader2().getSignature())));
-      ProposerSlashing proposerSlashing =
-          new ProposerSlashing(
-              ValidatorIndex.of(proposerSlashingData.getProposerIndex()), header1, header2);
-      proposerSlashings.add(proposerSlashing);
+      proposerSlashings.add(parseProposerSlashing(proposerSlashingData));
     }
 
     // Transfers
@@ -305,12 +261,22 @@ public abstract class BlockDataToBlock {
     BeaconBlock block =
         new BeaconBlock(
             SlotNumber.castFrom(UInt64.valueOf(blockData.getSlot())),
-            Hash32.fromHexString(blockData.getPreviousBlockRoot()),
+            Hash32.fromHexString(blockData.getParentRoot()),
             Hash32.fromHexString(blockData.getStateRoot()),
             blockBody,
             BLSSignature.wrap(Bytes96.fromHexString(blockData.getSignature())));
 
     return block;
+  }
+
+  public static Deposit parseDeposit(BlockData.BlockBodyData.DepositData data) {
+    return Deposit.create(
+        data.getProof().stream().map(Hash32::fromHexString).collect(Collectors.toList()),
+        new DepositData(
+            BLSPubkey.fromHexString(data.getData().getPubkey()),
+            Hash32.fromHexString(data.getData().getWithdrawalCredentials()),
+            Gwei.castFrom(UInt64.valueOf(data.getData().getAmount())),
+            BLSSignature.wrap(Bytes96.fromHexString(data.getData().getSignature()))));
   }
 
   public static IndexedAttestation parseIndexedAttestation(
@@ -334,9 +300,9 @@ public abstract class BlockDataToBlock {
   public static BeaconBlockHeader parseBeaconBlockHeader(BlockData.BlockHeaderData data) {
     return new BeaconBlockHeader(
         SlotNumber.castFrom(UInt64.valueOf(data.getSlot())),
-        Hash32.fromHexString(data.getPreviousBlockRoot()),
+        Hash32.fromHexString(data.getParentRoot()),
         Hash32.fromHexString(data.getStateRoot()),
-        Hash32.fromHexString(data.getBlockBodyRoot()),
+        Hash32.fromHexString(data.getBodyRoot()),
         data.getSignature() == null
             ? BLSSignature.ZERO
             : BLSSignature.wrap(Bytes96.fromHexString(data.getSignature())));
@@ -359,9 +325,30 @@ public abstract class BlockDataToBlock {
         Hash32.fromHexString(data.getSourceRoot()),
         EpochNumber.castFrom(UInt64.valueOf(data.getTargetEpoch())),
         Hash32.fromHexString(data.getTargetRoot()),
-        ShardNumber.of(data.getShard()),
-        Hash32.fromHexString(data.getPreviousCrosslinkRoot()),
-        Hash32.fromHexString(data.getCrosslinkDataRoot()));
+        parseCrossLinkData(data.getCrosslink()));
+  }
+
+  public static Attestation parseAttestation(BlockData.AttestationData attestationData) {
+    return new Attestation(
+        Bitfield.of(BytesValue.fromHexString(attestationData.getAggregationBitfield())),
+        parseAttestationData((attestationData.getData())),
+        Bitfield.of(BytesValue.fromHexString(attestationData.getCustodyBitfield())),
+        BLSSignature.wrap(Bytes96.fromHexString(attestationData.getSignature())));
+  }
+
+  public static AttesterSlashing parseAttesterSlashing(
+      BlockData.BlockBodyData.AttesterSlashingData data) {
+    return new AttesterSlashing(
+        parseIndexedAttestation(data.getSlashableAttestation1()),
+        parseIndexedAttestation(data.getSlashableAttestation2()));
+  }
+
+  public static ProposerSlashing parseProposerSlashing(
+      BlockData.BlockBodyData.ProposerSlashingData data) {
+    return new ProposerSlashing(
+        ValidatorIndex.of(data.getProposerIndex()),
+        parseBeaconBlockHeader(data.getHeader1()),
+        parseBeaconBlockHeader(data.getHeader2()));
   }
 
   public static Transfer parseTransfer(BlockData.BlockBodyData.TransferData data) {
@@ -382,5 +369,24 @@ public abstract class BlockDataToBlock {
         data.getSignature() != null
             ? BLSSignature.wrap(Bytes96.fromHexString(data.getSignature()))
             : BLSSignature.ZERO);
+  }
+
+  public static Crosslink parseCrossLinkData(BlockData.CrossLinkData data) {
+    return new Crosslink(
+        ShardNumber.of(data.getShard()),
+        EpochNumber.castFrom(UInt64.valueOf(data.getStartEpoch())),
+        EpochNumber.castFrom(UInt64.valueOf(data.getEndEpoch())),
+        Hash32.fromHexString(data.getParentRoot()),
+        Hash32.fromHexString(data.getDataRoot()));
+  }
+
+  public static BlockData.CrossLinkData presentCrossLink(Crosslink crosslink) {
+    BlockData.CrossLinkData crossLinkData = new BlockData.CrossLinkData();
+    crossLinkData.setShard(crosslink.getShard().longValue());
+    crossLinkData.setStartEpoch(crosslink.getStartEpoch().toString());
+    crossLinkData.setEndEpoch(crosslink.getEndEpoch().toString());
+    crossLinkData.setDataRoot(crosslink.getDataRoot().toString());
+    crossLinkData.setParentRoot(crosslink.getParentRoot().toString());
+    return crossLinkData;
   }
 }

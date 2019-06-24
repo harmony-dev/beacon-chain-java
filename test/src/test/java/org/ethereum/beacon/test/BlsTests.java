@@ -51,7 +51,6 @@ public class BlsTests extends TestUtils {
   }
 
   @Test
-  @Ignore("#5 case have leading zeroes trimmed in expected output, issue #3 created, ignored until resolved")
   public void testBlsMessageHashCompressed() {
     Path testFilePath =
         Paths.get(PATH_TO_TESTS, TESTS_DIR, "msg_hash_g2_compressed", "g2_compressed.yaml");

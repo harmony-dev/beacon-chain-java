@@ -1,5 +1,12 @@
 package org.ethereum.beacon.validator.proposer;
 
+import static org.ethereum.beacon.validator.proposer.BeaconChainProposerTestUtil.mockProposer;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.Random;
+import java.util.stream.Collectors;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.observer.PendingOperations;
 import org.ethereum.beacon.chain.util.ObservableBeaconStateTestUtil;
@@ -13,8 +20,8 @@ import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
-import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
+import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.spec.SignatureDomains;
 import org.ethereum.beacon.core.state.Eth1Data;
@@ -35,14 +42,6 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
 import tech.pegasys.artemis.util.uint.UInt64;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.Random;
-import java.util.stream.Collectors;
-
-import static org.ethereum.beacon.validator.proposer.BeaconChainProposerTestUtil.mockProposer;
 
 public class BeaconChainProposerTest {
 
@@ -161,7 +160,9 @@ public class BeaconChainProposerTest {
 
     List<Deposit> deposits =
         DepositTestUtil.createRandomList(
-            random, spec.getConstants(), UInt64.ZERO, spec.getConstants().getMaxDeposits());
+            random,
+            spec.getConstants(),
+            spec.getConstants().getMaxDeposits());
     Eth1Data eth1Data = Eth1DataTestUtil.createRandom(random);
     List<DepositInfo> depositInfos =
         deposits.stream()

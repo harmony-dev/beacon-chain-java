@@ -8,10 +8,9 @@ import org.ethereum.beacon.consensus.hasher.SSZObjectHasher;
 import org.ethereum.beacon.consensus.spec.BlockProcessing;
 import org.ethereum.beacon.consensus.spec.EpochProcessing;
 import org.ethereum.beacon.consensus.spec.ForkChoice;
+import org.ethereum.beacon.consensus.spec.GenesisFunction;
 import org.ethereum.beacon.consensus.spec.HelperFunction;
-import org.ethereum.beacon.consensus.spec.OnGenesis;
-import org.ethereum.beacon.consensus.spec.SlotProcessing;
-import org.ethereum.beacon.consensus.spec.StateCaching;
+import org.ethereum.beacon.consensus.spec.SpecStateTransition;
 import org.ethereum.beacon.consensus.util.CachingBeaconChainSpec;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.spec.SpecConstants;
@@ -26,17 +25,16 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
  * Beacon chain spec.
  *
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/core/0_beacon-chain.md">Beacon
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.7.1/specs/core/0_beacon-chain.md">Beacon
  *     chain</a>
  */
 public interface BeaconChainSpec
     extends HelperFunction,
-        OnGenesis,
+        GenesisFunction,
         ForkChoice,
-        StateCaching,
         EpochProcessing,
-        SlotProcessing,
-        BlockProcessing {
+        BlockProcessing,
+    SpecStateTransition {
 
   SpecConstants DEFAULT_CONSTANTS = new SpecConstants() {};
 
@@ -130,6 +128,11 @@ public interface BeaconChainSpec
     }
 
     public Builder withDefaultHasher(SpecConstants constants) {
+      return withHasher(ObjectHasher.createSSZOverSHA256(constants));
+    }
+
+    public Builder withDefaultHasher() {
+      assert constants != null;
       return withHasher(ObjectHasher.createSSZOverSHA256(constants));
     }
 

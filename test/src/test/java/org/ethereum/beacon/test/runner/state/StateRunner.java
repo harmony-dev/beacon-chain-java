@@ -11,7 +11,6 @@ import org.ethereum.beacon.consensus.transition.ExtendedSlotTransition;
 import org.ethereum.beacon.consensus.transition.PerBlockTransition;
 import org.ethereum.beacon.consensus.transition.PerEpochTransition;
 import org.ethereum.beacon.consensus.transition.PerSlotTransition;
-import org.ethereum.beacon.consensus.transition.StateCachingTransition;
 import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
 import org.ethereum.beacon.consensus.verifier.OperationVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
@@ -235,11 +234,10 @@ public class StateRunner implements Runner {
   }
 
   private Pair<Optional<String>, BeaconState> processSlots(int slots, BeaconState state) {
-    StateTransition<BeaconStateEx> stateCaching = new StateCachingTransition(spec);
     StateTransition<BeaconStateEx> perEpochTransition = new PerEpochTransition(spec);
     StateTransition<BeaconStateEx> perSlotTransition = new PerSlotTransition(spec);
     EmptySlotTransition slotTransition = new EmptySlotTransition(
-        new ExtendedSlotTransition(stateCaching, new PerEpochTransition(spec) {
+        new ExtendedSlotTransition(new PerEpochTransition(spec) {
           @Override
           public BeaconStateEx apply(BeaconStateEx stateEx) {
             return perEpochTransition.apply(stateEx);
@@ -256,12 +254,11 @@ public class StateRunner implements Runner {
   }
 
   private Pair<Optional<String>, BeaconState> processBlocks(List<BeaconBlock> blocks, BeaconState state) {
-    StateTransition<BeaconStateEx> stateCaching = new StateCachingTransition(spec);
     StateTransition<BeaconStateEx> perEpochTransition = new PerEpochTransition(spec);
     StateTransition<BeaconStateEx> perSlotTransition = new PerSlotTransition(spec);
     BlockTransition<BeaconStateEx> perBlockTransition = new PerBlockTransition(spec);
     EmptySlotTransition slotTransition = new EmptySlotTransition(
-        new ExtendedSlotTransition(stateCaching, new PerEpochTransition(spec) {
+        new ExtendedSlotTransition(new PerEpochTransition(spec) {
           @Override
           public BeaconStateEx apply(BeaconStateEx stateEx) {
             return perEpochTransition.apply(stateEx);

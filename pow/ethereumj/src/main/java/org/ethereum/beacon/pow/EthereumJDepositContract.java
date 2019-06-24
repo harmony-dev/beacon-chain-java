@@ -1,5 +1,7 @@
 package org.ethereum.beacon.pow;
 
+import org.ethereum.beacon.consensus.BeaconChainSpec;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.schedulers.LatestExecutor;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.core.Block;
@@ -37,7 +39,6 @@ public class EthereumJDepositContract extends AbstractDepositContract {
   private static final Logger logger = LoggerFactory.getLogger(EthereumJDepositContract.class);
 
   private static final String DEPOSIT_EVENT_NAME = "Deposit";
-  private static final String CHAIN_START_EVENT_NAME = "Eth2Genesis";
 
   private final LatestExecutor<Long> blockExecutor;
 
@@ -57,8 +58,9 @@ public class EthereumJDepositContract extends AbstractDepositContract {
       String contractDeployAddress,
       Schedulers schedulers,
       Function<BytesValue, Hash32> hashFunction,
-      int merkleTreeDepth) {
-    super(schedulers, hashFunction, merkleTreeDepth);
+      int merkleTreeDepth,
+      BeaconChainSpec spec) {
+    super(schedulers, hashFunction, merkleTreeDepth, spec);
     this.ethereum = ethereum;
     this.contractDeployAddress = Address.fromHexString(contractDeployAddress);
     contractDeployAddressHash =
@@ -101,16 +103,16 @@ public class EthereumJDepositContract extends AbstractDepositContract {
     processConfirmedBlocks();
   }
 
-  private long getBestConfirmedBlock() {
+  protected long getBestConfirmedBlock() {
     return ethereum.getBlockchain().getBestBlock().getNumber() - getDistanceFromHead();
   }
 
-  private void processConfirmedBlocks() {
+  protected void processConfirmedBlocks() {
     long bestConfirmedBlock = getBestConfirmedBlock();
     blockExecutor.newEvent(bestConfirmedBlock);
   }
 
-  private void processBlocksUpTo(long bestConfirmedBlock) {
+  protected void processBlocksUpTo(long bestConfirmedBlock) {
     try {
       for (long number = processedUpToBlock; number <= bestConfirmedBlock; number++) {
         Block block = ethereum.getBlockchain().getBlockByNumber(number);
@@ -134,22 +136,10 @@ public class EthereumJDepositContract extends AbstractDepositContract {
     for (Invocation invocation : getContractEvents(block)) {
       if (DEPOSIT_EVENT_NAME.equals(invocation.function.name)) {
         depositEventDataList.add(createDepositEventData(invocation));
-      } else if (CHAIN_START_EVENT_NAME.equals(invocation.function.name)) {
-        if (!depositEventDataList.isEmpty()) {
-          newDeposits(depositEventDataList, block.getHash());
-        }
-        depositEventDataList.clear();
-        chainStart(
-            (byte[]) invocation.args[0],
-            (byte[]) invocation.args[1],
-            (byte[]) invocation.args[2],
-            block.getHash());
-      } else {
-        throw new IllegalStateException("Invalid event from the contract: " + invocation);
       }
     }
     if (!depositEventDataList.isEmpty()) {
-      newDeposits(depositEventDataList, block.getHash());
+      newDeposits(depositEventDataList, block.getHash(), block.getTimestamp());
     }
   }
 
@@ -208,21 +198,12 @@ public class EthereumJDepositContract extends AbstractDepositContract {
       List<Invocation> contractEvents = getContractEvents(block);
       Collections.reverse(contractEvents);
       for (Invocation contractEvent : contractEvents) {
-        if (CHAIN_START_EVENT_NAME.equals(contractEvent.function.name)) {
-          return Optional.of(
-              Triplet.with(
-                  (byte[]) contractEvent.args[0],
-                  UInt64.fromBytesLittleEndian(Bytes8.wrap((byte[]) contractEvent.args[1]))
-                      .intValue(),
-                  block.getHash()));
-        } else {
-          byte[] merkleTreeIndex = (byte[]) contractEvent.args[4];
-          return Optional.of(
-              Triplet.with(
-                  getDepositRoot(merkleTreeIndex).extractArray(),
-                  UInt64.fromBytesLittleEndian(Bytes8.wrap(merkleTreeIndex)).increment().intValue(),
-                  block.getHash()));
-        }
+        byte[] merkleTreeIndex = (byte[]) contractEvent.args[4];
+        return Optional.of(
+            Triplet.with(
+                getDepositRoot(merkleTreeIndex).extractArray(),
+                UInt64.fromBytesLittleEndian(Bytes8.wrap(merkleTreeIndex)).increment().intValue(),
+                block.getHash()));
       }
     }
     return Optional.empty();

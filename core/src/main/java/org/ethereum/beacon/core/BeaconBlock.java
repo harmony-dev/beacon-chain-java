@@ -11,7 +11,6 @@ import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.spec.SpecConstants;
-import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Hashable;
 import org.ethereum.beacon.core.types.SlotNumber;
@@ -27,7 +26,7 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
  *
  * @see BeaconBlockBody
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.6.1/specs/core/0_beacon-chain.md#beaconblock">BeaconBlock
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.7.1/specs/core/0_beacon-chain.md#beaconblock">BeaconBlock
  *     in the spec</a>
  */
 @SSZSerializable
@@ -36,7 +35,7 @@ public class BeaconBlock implements Hashable<Hash32> {
   /** Number of a slot that block does belong to. */
   @SSZ private final SlotNumber slot;
   /** A hash of parent block. */
-  @SSZ private final Hash32 previousBlockRoot;
+  @SSZ private final Hash32 parentRoot;
   /** A hash of the state that is created by applying a block to the previous state. */
   @SSZ private final Hash32 stateRoot;
   /** Block body. */
@@ -48,12 +47,12 @@ public class BeaconBlock implements Hashable<Hash32> {
 
   public BeaconBlock(
       SlotNumber slot,
-      Hash32 previousBlockRoot,
+      Hash32 parentRoot,
       Hash32 stateRoot,
       BeaconBlockBody body,
       BLSSignature signature) {
     this.slot = slot;
-    this.previousBlockRoot = previousBlockRoot;
+    this.parentRoot = parentRoot;
     this.stateRoot = stateRoot;
     this.body = body;
     this.signature = signature;
@@ -62,7 +61,7 @@ public class BeaconBlock implements Hashable<Hash32> {
   public BeaconBlock(BeaconBlockHeader header, BeaconBlockBody body) {
     this(
         header.getSlot(),
-        header.getPreviousBlockRoot(),
+        header.getParentRoot(),
         header.getStateRoot(),
         body,
         header.getSignature());
@@ -79,15 +78,15 @@ public class BeaconBlock implements Hashable<Hash32> {
   }
 
   public BeaconBlock withStateRoot(Hash32 stateRoot) {
-    return new BeaconBlock(slot, previousBlockRoot, stateRoot, body, signature);
+    return new BeaconBlock(slot, parentRoot, stateRoot, body, signature);
   }
 
   public SlotNumber getSlot() {
     return slot;
   }
 
-  public Hash32 getPreviousBlockRoot() {
-    return previousBlockRoot;
+  public Hash32 getParentRoot() {
+    return parentRoot;
   }
 
   public Hash32 getStateRoot() {
@@ -112,7 +111,7 @@ public class BeaconBlock implements Hashable<Hash32> {
     }
     BeaconBlock block = (BeaconBlock) o;
     return Objects.equal(slot, block.slot) &&
-        Objects.equal(previousBlockRoot, block.previousBlockRoot) &&
+        Objects.equal(parentRoot, block.parentRoot) &&
         Objects.equal(stateRoot, block.stateRoot) &&
         Objects.equal(signature, block.signature) &&
         Objects.equal(body, block.body);
@@ -120,7 +119,7 @@ public class BeaconBlock implements Hashable<Hash32> {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(slot, previousBlockRoot, stateRoot, signature, body);
+    return Objects.hashCode(slot, parentRoot, stateRoot, signature, body);
   }
 
   @Override
@@ -147,7 +146,7 @@ public class BeaconBlock implements Hashable<Hash32> {
     }
 
     for (AttesterSlashing attesterSlashing : body.getAttesterSlashings()) {
-      ret.append("  " + attesterSlashing.toString(constants, beaconStart) + "\n");
+      ret.append("  " + attesterSlashing.toString() + "\n");
     }
 
     return ret.toString();
@@ -163,7 +162,7 @@ public class BeaconBlock implements Hashable<Hash32> {
     }
     if (!body.getDeposits().isEmpty()) {
       ret += ", depos: [" + body.getDeposits().stream()
-          .map(a -> a.toString())
+          .map(Deposit::toString)
           .collect(Collectors.joining(", ")) + "]";
     }
     if (!body.getVoluntaryExits().isEmpty()) {
@@ -173,7 +172,7 @@ public class BeaconBlock implements Hashable<Hash32> {
     }
     if (!body.getAttesterSlashings().isEmpty()) {
       ret += ", attSlash: [" + body.getAttesterSlashings().stream()
-          .map(a -> a.toString(constants, beaconStart))
+          .map(AttesterSlashing::toString)
           .collect(Collectors.joining(", ")) + "]";
     }
     if (!body.getProposerSlashings().isEmpty()) {
@@ -189,7 +188,7 @@ public class BeaconBlock implements Hashable<Hash32> {
   private String toStringPriv(@Nullable SpecConstants constants, @Nullable Time beaconStart,
       @Nullable Function<? super Hashable<Hash32>, Hash32> hasher) {
     return (hasher == null ? "?" : hasher.apply(this).toStringShort())
-        + " <~ " + previousBlockRoot.toStringShort()
+        + " <~ " + parentRoot.toStringShort()
         + ", @slot " + slot.toStringNumber(constants)
         + ", state=" + stateRoot.toStringShort()
         + ", randao=" + body.getRandaoReveal().toString()
@@ -214,7 +213,7 @@ public class BeaconBlock implements Hashable<Hash32> {
       Builder builder = new Builder();
 
       builder.slot = block.slot;
-      builder.parentRoot = block.previousBlockRoot;
+      builder.parentRoot = block.parentRoot;
       builder.stateRoot = block.stateRoot;
       builder.signature = block.signature;
       builder.body = block.body;

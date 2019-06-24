@@ -29,8 +29,8 @@ public class TimeParametersData implements TimeParameters {
   private String MIN_VALIDATOR_WITHDRAWABILITY_DELAY;
   @JsonProperty("PERSISTENT_COMMITTEE_PERIOD")
   private String PERSISTENT_COMMITTEE_PERIOD;
-  @JsonProperty("MAX_CROSSLINK_EPOCHS")
-  private String MAX_CROSSLINK_EPOCHS;
+  @JsonProperty("MAX_EPOCHS_PER_CROSSLINK")
+  private String MAX_EPOCHS_PER_CROSSLINK;
   @JsonProperty("MIN_EPOCHS_TO_INACTIVITY_PENALTY")
   private String MIN_EPOCHS_TO_INACTIVITY_PENALTY;
 
@@ -90,8 +90,8 @@ public class TimeParametersData implements TimeParameters {
 
   @Override
   @JsonIgnore
-  public EpochNumber getMaxCrosslinkEpochs() {
-    return new EpochNumber(UInt64.valueOf(getMAX_CROSSLINK_EPOCHS()));
+  public EpochNumber getMaxEpochsPerCrosslink() {
+    return new EpochNumber(UInt64.valueOf(getMAX_EPOCHS_PER_CROSSLINK()));
   }
 
   @Override
@@ -182,12 +182,12 @@ public class TimeParametersData implements TimeParameters {
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-  public String getMAX_CROSSLINK_EPOCHS() {
-    return MAX_CROSSLINK_EPOCHS;
+  public String getMAX_EPOCHS_PER_CROSSLINK() {
+    return MAX_EPOCHS_PER_CROSSLINK;
   }
 
-  public void setMAX_CROSSLINK_EPOCHS(String MAX_CROSSLINK_EPOCHS) {
-    this.MAX_CROSSLINK_EPOCHS = MAX_CROSSLINK_EPOCHS;
+  public void setMAX_EPOCHS_PER_CROSSLINK(String MAX_EPOCHS_PER_CROSSLINK) {
+    this.MAX_EPOCHS_PER_CROSSLINK = MAX_EPOCHS_PER_CROSSLINK;
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)

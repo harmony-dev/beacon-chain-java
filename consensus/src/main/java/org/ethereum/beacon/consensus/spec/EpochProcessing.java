@@ -4,7 +4,6 @@ import static java.util.stream.Collectors.toList;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -27,10 +26,10 @@ import tech.pegasys.artemis.util.uint.UInt64;
 import tech.pegasys.artemis.util.uint.UInt64s;
 
 /**
- * Per epoch processing.
+ * Epoch processing part.
  *
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.6.1/specs/core/0_beacon-chain.md#per-epoch-processing">Per-epoch
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.7.1/specs/core/0_beacon-chain.md#epoch-processing">Epoch
  *     processing</a> in the spec.
  */
 public interface EpochProcessing extends HelperFunction {
@@ -72,13 +71,13 @@ public interface EpochProcessing extends HelperFunction {
     def get_matching_head_attestations(state: BeaconState, epoch: Epoch) -> List[PendingAttestation]:
       return [
           a for a in get_matching_source_attestations(state, epoch)
-          if a.data.beacon_block_root == get_block_root_at_slot(state, get_attestation_slot(state, a))
+          if a.data.beacon_block_root == get_block_root_at_slot(state, get_attestation_data_slot(state, a))
       ]
    */
   default List<PendingAttestation> get_matching_head_attestations(BeaconState state, EpochNumber epoch) {
     return get_matching_source_attestations(state, epoch).stream()
         .filter(a -> a.getData().getBeaconBlockRoot().equals(
-            get_block_root_at_slot(state, get_attestation_slot(state, a.getData()))))
+            get_block_root_at_slot(state, get_attestation_data_slot(state, a.getData()))))
         .collect(toList());
   }
 
@@ -107,85 +106,49 @@ public interface EpochProcessing extends HelperFunction {
   }
 
   /*
-    def get_crosslink_from_attestation_data(state: BeaconState, data: AttestationData) -> Crosslink:
-      return Crosslink(
-          epoch=min(data.target_epoch, state.current_crosslinks[data.shard].epoch + MAX_CROSSLINK_EPOCHS),
-          previous_crosslink_root=data.previous_crosslink_root,
-          crosslink_data_root=data.crosslink_data_root,
-      )
-   */
-  default Crosslink get_crosslink_from_attestation_data(BeaconState state, AttestationData data) {
-    return new Crosslink(
-        UInt64s.min(
-            data.getTargetEpoch(),
-            state.getCurrentCrosslinks().get(data.getShard()).getEpoch()
-                .plus(getConstants().getMaxCrosslinkEpochs())),
-        data.getPreviousCrosslinkRoot(),
-        data.getCrosslinkDataRoot()
-    );
-  }
-
-  /*
-    def get_attestations_for(crosslink: Crosslink) -> List[PendingAttestation]:
-      return [a for a in shard_attestations if get_crosslink_from_attestation_data(state, a.data) == crosslink]
-   */
-  default List<PendingAttestation> get_attestations_for(
-      BeaconState state, List<PendingAttestation> shard_attestations, Crosslink crosslink) {
-    return shard_attestations.stream()
-        .filter(a -> get_crosslink_from_attestation_data(state, a.getData()).equals(crosslink))
-        .collect(toList());
-  }
-
-  /*
-    def get_winning_crosslink_and_attesting_indices(state: BeaconState, epoch: Epoch, shard: Shard) -> Tuple[Crosslink, List[ValidatorIndex]]:
-      shard_attestations = [a for a in get_matching_source_attestations(state, epoch) if a.data.shard == shard]
-      shard_crosslinks = [get_crosslink_from_attestation_data(state, a.data) for a in shard_attestations]
-      candidate_crosslinks = [
-          c for c in shard_crosslinks
-          if hash_tree_root(state.current_crosslinks[shard]) in (c.previous_crosslink_root, hash_tree_root(c))
-      ]
-      if len(candidate_crosslinks) == 0:
-          return Crosslink(), []
-
-      def get_attestations_for(crosslink: Crosslink) -> List[PendingAttestation]:
-          return [a for a in shard_attestations if get_crosslink_from_attestation_data(state, a.data) == crosslink]
-      # Winning crosslink has the crosslink data root with the most balance voting for it (ties broken lexicographically)
-      winning_crosslink = max(candidate_crosslinks, key=lambda crosslink: (
-          get_attesting_balance(state, get_attestations_for(crosslink)), crosslink.crosslink_data_root
+    def get_winning_crosslink_and_attesting_indices(state: BeaconState,
+                                                epoch: Epoch,
+                                                shard: Shard) -> Tuple[Crosslink, List[ValidatorIndex]]:
+      attestations = [a for a in get_matching_source_attestations(state, epoch) if a.data.crosslink.shard == shard]
+      crosslinks = list(filter(
+          lambda c: hash_tree_root(state.current_crosslinks[shard]) in (c.parent_root, hash_tree_root(c)),
+          [a.data.crosslink for a in attestations]
       ))
-
-      return winning_crosslink, get_unslashed_attesting_indices(state, get_attestations_for(winning_crosslink))
+      # Winning crosslink has the crosslink data root with the most balance voting for it (ties broken lexicographically)
+      winning_crosslink = max(crosslinks, key=lambda c: (
+          get_attesting_balance(state, [a for a in attestations if a.data.crosslink == c]), c.data_root
+      ), default=Crosslink())
+      winning_attestations = [a for a in attestations if a.data.crosslink == winning_crosslink]
+      return winning_crosslink, get_unslashed_attesting_indices(state, winning_attestations)
    */
   default Pair<Crosslink, List<ValidatorIndex>> get_winning_crosslink_and_attesting_indices(
       BeaconState state, EpochNumber epoch, ShardNumber shard) {
-    List<PendingAttestation> shard_attestations = get_matching_source_attestations(state, epoch)
-        .stream().filter(a -> a.getData().getShard().equals(shard)).collect(toList());
-    List<Crosslink> shard_crosslinks = shard_attestations.stream()
-        .map(a -> get_crosslink_from_attestation_data(state, a.getData())).collect(toList());
-    List<Crosslink> candidate_crosslinks = shard_crosslinks.stream()
+    List<PendingAttestation> attestations = get_matching_source_attestations(state, epoch)
+        .stream().filter(a -> a.getData().getCrosslink().getShard().equals(shard)).collect(toList());
+    List<Crosslink> crosslinks = attestations.stream()
+        .map(a -> a.getData().getCrosslink())
         .filter(c -> {
           Hash32 root = hash_tree_root(state.getCurrentCrosslinks().get(shard));
-          return root.equals(c.getPreviousCrosslinkRoot()) || root.equals(hash_tree_root(c));
+          return root.equals(c.getParentRoot()) || root.equals(hash_tree_root(c));
         }).collect(toList());
-    if (candidate_crosslinks.isEmpty()) {
-      return Pair.with(new Crosslink(getConstants().getGenesisEpoch(), Hash32.ZERO, Hash32.ZERO),
-          Collections.emptyList());
-    }
 
-    Crosslink winning_crosslink = candidate_crosslinks.stream()
+    Crosslink winning_crosslink = crosslinks.stream()
         .max((c1, c2) -> {
-          Gwei b1 = get_attesting_balance(state, get_attestations_for(state, shard_attestations, c1));
-          Gwei b2 = get_attesting_balance(state, get_attestations_for(state, shard_attestations, c2));
+          Gwei b1 = get_attesting_balance(state,
+              attestations.stream().filter(a -> a.getData().getCrosslink().equals(c1)).collect(toList()));
+          Gwei b2 = get_attesting_balance(state,
+              attestations.stream().filter(a -> a.getData().getCrosslink().equals(c2)).collect(toList()));
           if (b1.equals(b2)) {
-            return c1.getCrosslinkDataRoot().toString().compareTo(c2.getCrosslinkDataRoot().toString());
+            return c1.getDataRoot().toString().compareTo(c2.getDataRoot().toString());
           } else {
             return b1.compareTo(b2);
           }
-        }).get();
+        }).orElse(Crosslink.EMPTY);
+    List<PendingAttestation> winning_attestations = attestations.stream()
+        .filter(a -> a.getData().getCrosslink().equals(winning_crosslink)).collect(toList());
 
     return Pair.with(winning_crosslink,
-        get_unslashed_attesting_indices(state,
-            get_attestations_for(state, shard_attestations, winning_crosslink)));
+        get_unslashed_attesting_indices(state, winning_attestations));
   }
 
 
@@ -245,37 +208,37 @@ public interface EpochProcessing extends HelperFunction {
     Bitfield64 bitfield = state.getJustificationBitfield();
 
     /* The 2nd/3rd/4th most recent epochs are justified, the 2nd using the 4th as source
-       if (bitfield >> 1) % 8 == 0b111 and old_previous_justified_epoch == current_epoch - 3:
+       if (bitfield >> 1) % 8 == 0b111 and old_previous_justified_epoch + 3 == current_epoch:
            state.finalized_epoch = old_previous_justified_epoch
            state.finalized_root = get_block_root(state, state.finalized_epoch) */
-    if ((bitfield.getValue() >>> 1) % 8 == 0b111 && old_previous_justified_epoch.equals(current_epoch.minus(3))) {
+    if ((bitfield.getValue() >>> 1) % 8 == 0b111 && old_previous_justified_epoch.plus(3).equals(current_epoch)) {
       state.setFinalizedEpoch(old_current_justified_epoch);
       state.setFinalizedRoot(get_block_root(state, state.getFinalizedEpoch()));
     }
 
     /* The 2nd/3rd most recent epochs are justified, the 2nd using the 3rd as source
-       if (bitfield >> 1) % 4 == 0b11 and old_previous_justified_epoch == current_epoch - 2:
+       if (bitfield >> 1) % 4 == 0b11 and old_previous_justified_epoch + 2 == current_epoch:
            state.finalized_epoch = old_previous_justified_epoch
            state.finalized_root = get_block_root(state, state.finalized_epoch) */
-    if ((bitfield.getValue() >>> 1) % 4 == 0b11 && old_previous_justified_epoch.equals(current_epoch.minus(2))) {
+    if ((bitfield.getValue() >>> 1) % 4 == 0b11 && old_previous_justified_epoch.plus(2).equals(current_epoch)) {
       state.setFinalizedEpoch(old_current_justified_epoch);
       state.setFinalizedRoot(get_block_root(state, state.getFinalizedEpoch()));
     }
 
     /* The 1st/2nd/3rd most recent epochs are justified, the 1st using the 3rd as source
-       if (bitfield >> 0) % 8 == 0b111 and old_current_justified_epoch == current_epoch - 2:
+       if (bitfield >> 0) % 8 == 0b111 and old_current_justified_epoch + 2 == current_epoch:
            state.finalized_epoch = old_current_justified_epoch
            state.finalized_root = get_block_root(state, state.finalized_epoch) */
-    if (bitfield.getValue() % 8 == 0b111 && old_previous_justified_epoch.equals(current_epoch.minus(2))) {
+    if (bitfield.getValue() % 8 == 0b111 && old_previous_justified_epoch.plus(2).equals(current_epoch)) {
       state.setFinalizedEpoch(old_current_justified_epoch);
       state.setFinalizedRoot(get_block_root(state, state.getFinalizedEpoch()));
     }
 
     /* The 1st/2nd most recent epochs are justified, the 1st using the 2nd as source
-       if (bitfield >> 0) % 4 == 0b11 and old_current_justified_epoch == current_epoch - 1:
+       if (bitfield >> 0) % 4 == 0b11 and old_current_justified_epoch + 1 == current_epoch:
            state.finalized_epoch = old_current_justified_epoch
            state.finalized_root = get_block_root(state, state.finalized_epoch) */
-    if (bitfield.getValue() % 4 == 0b11 && old_previous_justified_epoch.equals(current_epoch.minus(1))) {
+    if (bitfield.getValue() % 4 == 0b11 && old_previous_justified_epoch.plus(1).equals(current_epoch)) {
       state.setFinalizedEpoch(old_current_justified_epoch);
       state.setFinalizedRoot(get_block_root(state, state.getFinalizedEpoch()));
     }
@@ -314,19 +277,16 @@ public interface EpochProcessing extends HelperFunction {
 
   /*
     def get_base_reward(state: BeaconState, index: ValidatorIndex) -> Gwei:
-      adjusted_quotient = integer_squareroot(get_total_active_balance(state)) // BASE_REWARD_QUOTIENT
-      if adjusted_quotient == 0:
-          return 0
-      return state.validator_registry[index].effective_balance // adjusted_quotient // BASE_REWARDS_PER_EPOCH
+      total_balance = get_total_active_balance(state)
+      effective_balance = state.validator_registry[index].effective_balance
+      return effective_balance * BASE_REWARD_FACTOR // integer_squareroot(total_balance) // BASE_REWARDS_PER_EPOCH
    */
   default Gwei get_base_reward(BeaconState state, ValidatorIndex index) {
-    UInt64 adjusted_quotient = integer_squareroot(get_total_active_balance(state))
-        .dividedBy(getConstants().getBaseRewardQuotient());
-    if (adjusted_quotient.equals(UInt64.ZERO)) {
-      return Gwei.ZERO;
-    }
-    return state.getValidatorRegistry().get(index).getEffectiveBalance()
-        .dividedBy(adjusted_quotient).dividedBy(getConstants().getBaseRewardsPerEpoch());
+    UInt64 total_balance = get_total_active_balance(state);
+    Gwei effective_balance = state.getValidatorRegistry().get(index).getEffectiveBalance();
+    return effective_balance.times(getConstants().getBaseRewardFactor())
+        .dividedBy(integer_squareroot(total_balance))
+        .dividedBy(getConstants().getBaseRewardsPerEpoch());
   }
 
   /*
@@ -359,7 +319,7 @@ public interface EpochProcessing extends HelperFunction {
 
     /*  for attestations in (matching_source_attestations, matching_target_attestations, matching_head_attestations):
           unslashed_attesting_indices = get_unslashed_attesting_indices(state, attestations)
-          attesting_balance = get_attesting_balance(state, attestations)
+          attesting_balance = get_total_balance(state, unslashed_attesting_indices)
           for index in eligible_validator_indices:
               if index in unslashed_attesting_indices:
                   rewards[index] += get_base_reward(state, index) * attesting_balance // total_balance
@@ -368,7 +328,7 @@ public interface EpochProcessing extends HelperFunction {
     for (List<PendingAttestation> attestations :
         Arrays.asList(matching_source_attestations, matching_target_attestations, matching_head_attestations)) {
       List<ValidatorIndex> unslashed_attesting_indices = get_unslashed_attesting_indices(state, attestations);
-      Gwei attesting_balance = get_attesting_balance(state, attestations);
+      Gwei attesting_balance = get_total_balance(state, unslashed_attesting_indices);
       for (ValidatorIndex index : eligible_validator_indices) {
         if (unslashed_attesting_indices.contains(index)) {
           rewards[index.getIntValue()] = rewards[index.getIntValue()]
@@ -571,11 +531,9 @@ public interface EpochProcessing extends HelperFunction {
    */
   default void process_slashings(MutableBeaconState state) {
     /* current_epoch = get_current_epoch(state)
-       active_validator_indices = get_active_validator_indices(state, current_epoch)
-       total_balance = get_total_balance(state, active_validator_indices) */
+       total_balance = get_total_active_balance(state) */
     EpochNumber current_epoch = get_current_epoch(state);
-    List<ValidatorIndex> active_validator_indices = get_active_validator_indices(state, current_epoch);
-    Gwei total_balance = get_total_balance(state, active_validator_indices);
+    Gwei total_balance = get_total_active_balance(state);
 
     /* Compute `total_penalties`
       total_at_start = state.latest_slashed_balances[(current_epoch + 1) % LATEST_SLASHED_EXIT_LENGTH]
@@ -695,5 +653,29 @@ public interface EpochProcessing extends HelperFunction {
       state.current_epoch_attestations = [] */
     state.getPreviousEpochAttestations().replaceAll(state.getCurrentEpochAttestations().listCopy());
     state.getCurrentEpochAttestations().clear();
+  }
+
+  /*
+    def process_epoch(state: BeaconState) -> None:
+      process_justification_and_finalization(state)
+      process_crosslinks(state)
+      process_rewards_and_penalties(state)
+      process_registry_updates(state)
+      # @process_reveal_deadlines
+      # @process_challenge_deadlines
+      process_slashings(state)
+      process_final_updates(state)
+      # @after_process_final_updates
+   */
+  default void process_epoch(MutableBeaconState state) {
+    process_justification_and_finalization(state);
+    process_crosslinks(state);
+    process_rewards_and_penalties(state);
+    process_registry_updates(state);
+    // @process_reveal_deadlines
+    // @process_challenge_deadlines
+    process_slashings(state);
+    process_final_updates(state);
+    // @after_process_final_updates
   }
 }

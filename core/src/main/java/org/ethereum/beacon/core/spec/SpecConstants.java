@@ -11,7 +11,8 @@ public interface SpecConstants
         RewardAndPenaltyQuotients,
         MaxOperationsPerBlock,
         HonestValidatorParameters,
-        GweiValues {
+        GweiValues,
+        ChainStartParameters {
 
   @Override
   default EpochNumber getGenesisEpoch() {

@@ -6,7 +6,6 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -15,6 +14,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
+import org.ethereum.beacon.consensus.ChainStart;
 import org.ethereum.beacon.start.common.NodeLauncher;
 import org.ethereum.beacon.chain.storage.impl.MemBeaconChainStorageFactory;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
@@ -25,7 +25,6 @@ import org.ethereum.beacon.crypto.BLS381.KeyPair;
 import org.ethereum.beacon.emulator.config.ConfigBuilder;
 import org.ethereum.beacon.emulator.config.chainspec.SpecBuilder;
 import org.ethereum.beacon.emulator.config.chainspec.SpecData;
-import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.schedulers.ControlledSchedulers;
 import org.ethereum.beacon.start.common.util.MDCControlledSchedulers;
 import org.ethereum.beacon.start.common.util.SimpleDepositContract;
@@ -71,8 +70,8 @@ public class NodeTest {
 
     Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), UInt64.valueOf(depositCount), Hash32.random(rnd));
 
-    DepositContract.ChainStart chainStart =
-        new DepositContract.ChainStart(genesisTime, eth1Data, depositPairs.getValue0());
+    ChainStart chainStart =
+        new ChainStart(genesisTime, eth1Data, depositPairs.getValue0());
     SimpleDepositContract depositContract = new SimpleDepositContract(chainStart);
 
     try (NettyServer nettyServer = new NettyServer(41001)) {
