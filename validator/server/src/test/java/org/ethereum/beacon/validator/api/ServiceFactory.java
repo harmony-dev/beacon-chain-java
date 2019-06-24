@@ -64,7 +64,7 @@ public class ServiceFactory {
                     .withBody(BeaconBlockBody.EMPTY)
                     .build(),
                 BeaconStateEx.getEmpty(),
-                PendingOperations.getEmpty()));
+                PendingOperations.EMPTY));
       }
 
       @Override
@@ -98,7 +98,7 @@ public class ServiceFactory {
                     .withBody(BeaconBlockBody.EMPTY)
                     .build(),
                 new BeaconStateExImpl(state.createImmutable()),
-                PendingOperations.getEmpty()));
+                PendingOperations.EMPTY));
       }
 
       @Override
@@ -137,7 +137,7 @@ public class ServiceFactory {
                     .withBody(BeaconBlockBody.EMPTY)
                     .build(),
                 new BeaconStateExImpl(state.createImmutable()),
-                PendingOperations.getEmpty()));
+                PendingOperations.EMPTY));
       }
 
       @Override
