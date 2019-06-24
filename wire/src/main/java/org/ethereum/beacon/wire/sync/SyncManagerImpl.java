@@ -1,5 +1,19 @@
 package org.ethereum.beacon.wire.sync;
 
+import static java.lang.Math.max;
+import static org.ethereum.beacon.chain.MutableBeaconChain.ImportResult.ExistingBlock;
+import static org.ethereum.beacon.chain.MutableBeaconChain.ImportResult.ExpiredBlock;
+import static org.ethereum.beacon.chain.MutableBeaconChain.ImportResult.InvalidBlock;
+import static org.ethereum.beacon.chain.MutableBeaconChain.ImportResult.NoParent;
+import static org.ethereum.beacon.chain.MutableBeaconChain.ImportResult.OK;
+import static org.ethereum.beacon.chain.MutableBeaconChain.ImportResult.StateMismatch;
+import static org.ethereum.beacon.stream.RxUtil.fromOptional;
+
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.chain.BeaconTuple;
@@ -9,9 +23,11 @@ import org.ethereum.beacon.chain.MutableBeaconChain.ImportResult;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.schedulers.Scheduler;
 import org.ethereum.beacon.schedulers.Schedulers;
+import org.ethereum.beacon.stream.RxUtil;
 import org.ethereum.beacon.stream.SimpleProcessor;
 import org.ethereum.beacon.wire.Feedback;
 import org.ethereum.beacon.wire.WireApiSync;
@@ -24,38 +40,25 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-
-import static java.lang.Math.max;
-import static org.ethereum.beacon.chain.MutableBeaconChain.ImportResult.ExistingBlock;
-import static org.ethereum.beacon.chain.MutableBeaconChain.ImportResult.ExpiredBlock;
-import static org.ethereum.beacon.chain.MutableBeaconChain.ImportResult.InvalidBlock;
-import static org.ethereum.beacon.chain.MutableBeaconChain.ImportResult.NoParent;
-import static org.ethereum.beacon.chain.MutableBeaconChain.ImportResult.OK;
-import static org.ethereum.beacon.chain.MutableBeaconChain.ImportResult.StateMismatch;
+import tech.pegasys.artemis.util.uint.UInt64s;
 
 public class SyncManagerImpl implements SyncManager {
 
   private static final Logger logger = LogManager.getLogger(SyncManagerImpl.class);
 
   private final Publisher<BeaconTupleDetails> blockStatesStream;
-  private final SimpleProcessor<SyncStatus> syncStatusStream;
+  private final Flux<SyncStatus> syncStatusStream;
   private final BeaconChainSpec spec;
   private final WireApiSync syncApi;
   private final SyncQueue syncQueue;
   private final ModeDetector modeDetector;
   private final Flux<SyncMode> syncModeFlux;
+  private final SimpleProcessor<Boolean> isSyncing;
   FluxSink<Publisher<BlockRequest>> requestsStreams;
   Flux<BlockRequest> blockRequestFlux;
   Flux<BeaconBlock> finalizedBlockStream;
   // TODO: make this parameter dynamic depending on active peers number
   int maxConcurrentBlockRequests = 2;
-  private SyncStatus syncStatus = new SyncStatus(false, null, null, null, null);
   private Publisher<Feedback<BeaconBlock>> newBlocks;
   private Disposable wireBlocksStreamSub;
   private Disposable finalizedBlockStreamSub;
@@ -144,59 +147,25 @@ public class SyncManagerImpl implements SyncManager {
                   }
                 });
 
-    syncStatusStream = new SimpleProcessor<>(schedulers.events(), "SyncManager.syncStatus");
-    syncStatusUpdated();
-    this.syncStatus =
-        new SyncStatus(
-            syncStatus.isSyncing(),
-            chain.getRecentlyProcessed().getBlock().getSlot(),
-            syncStatus.getBestKnown(),
-            chain.getRecentlyProcessed().getBlock().getSlot(),
-            syncStatus.getSyncMode());
-    Flux.from(syncModeFlux)
-        .subscribe(
-            syncMode ->
-                this.syncStatus =
-                    new SyncStatus(
-                        syncStatus.isSyncing(),
-                        syncStatus.getStart(),
-                        syncStatus.getBestKnown(),
-                        syncStatus.getCurrent(),
-                        syncMode));
-    Flux.from(bestKnownSlotStream)
-        .subscribe(
-            slotNumber -> {
-              this.syncStatus =
-                  new SyncStatus(
-                      syncStatus.isSyncing(),
-                      syncStatus.getStart(),
-                      slotNumber,
-                      syncStatus.getCurrent(),
-                      syncStatus.getSyncMode());
-              syncStatusUpdated();
-            });
-    Flux.from(blockStatesStream)
-        .subscribe(
-            beaconTupleDetails -> {
-              beaconTupleDetails
-                  .getPostSlotState()
-                  .map(
-                      beaconStateEx -> {
-                        SlotNumber slotNumber = beaconStateEx.getSlot();
-                        if (syncStatus.getCurrent() != null
-                            && syncStatus.getCurrent().less(slotNumber)) {
-                          this.syncStatus =
-                              new SyncStatus(
-                                  syncStatus.isSyncing(),
-                                  syncStatus.getStart(),
-                                  syncStatus.getBestKnown(),
-                                  slotNumber,
-                                  syncStatus.getSyncMode());
-                          syncStatusUpdated();
-                        }
-                        return slotNumber;
-                      });
-            });
+    isSyncing = new SimpleProcessor<>(delayScheduler, "SyncManager.isSyncing", false);
+
+    Flux<SlotNumber> lastImportedMaxSlot =
+        Flux.from(blockStatesStream)
+            .flatMap(s -> fromOptional(s.getPostSlotState()))
+            .map(BeaconState::getSlot)
+            .scan(UInt64s::max)
+            .distinctUntilChanged();
+
+    SlotNumber startSlot = chain.getRecentlyProcessed().getBlock().getSlot();
+    syncStatusStream =
+        RxUtil.combineLatest(
+                syncModeFlux,
+                bestKnownSlotStream,
+                lastImportedMaxSlot,
+                isSyncing,
+                (syncMode, bestSlot, lastSlot, isSync) ->
+                    new SyncStatus(isSync, startSlot, bestSlot, lastSlot, syncMode))
+            .onErrorContinue((t, o) -> logger.error("Unexpected error: ", t));
   }
 
   @Override
@@ -236,22 +205,7 @@ public class SyncManagerImpl implements SyncManager {
 
     wireBlocksStreamSub = syncQueue.subscribeToNewBlocks(wireBlocksStream);
 
-    this.syncStatus =
-        new SyncStatus(
-            true,
-            syncStatus.getStart(),
-            syncStatus.getBestKnown(),
-            syncStatus.getCurrent(),
-            syncStatus.getSyncMode());
-    syncStatusUpdated();
-  }
-
-  private void syncStatusUpdated() {
-    if (!syncStatus.isSyncing()) {
-      return;
-    }
-
-    syncStatusStream.onNext(syncStatus);
+    isSyncing.onNext(true);
   }
 
   @Override
@@ -259,8 +213,7 @@ public class SyncManagerImpl implements SyncManager {
     wireBlocksStreamSub.dispose();
     finalizedBlockStreamSub.dispose();
     readyBlocksStreamSub.dispose();
-    this.syncStatus = new SyncStatus(false, null, null, null, null);
-    syncStatusStream.onNext(syncStatus);
+    isSyncing.onNext(false);
   }
 
   @Override
