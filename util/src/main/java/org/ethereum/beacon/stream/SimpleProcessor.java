@@ -15,6 +15,11 @@ public class SimpleProcessor<T> implements Processor<T, T> {
   Flux<T> publisher;
   boolean subscribed;
 
+  public SimpleProcessor(Scheduler scheduler, String name, T initialValue) {
+    this(scheduler.toReactor(), name);
+    onNext(initialValue);
+  }
+
   public SimpleProcessor(Scheduler scheduler, String name) {
     this(scheduler.toReactor(), name);
   }
