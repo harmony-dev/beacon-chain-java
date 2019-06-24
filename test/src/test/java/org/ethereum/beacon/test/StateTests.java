@@ -2,7 +2,6 @@ package org.ethereum.beacon.test;
 
 import org.ethereum.beacon.test.runner.state.StateRunner;
 import org.ethereum.beacon.test.type.state.StateTest;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.nio.file.Path;
@@ -131,7 +130,6 @@ public class StateTests extends TestUtils {
   }
 
   @Test
-  @Ignore("Requires fixes")
   public void testSanitySlots() {
     final String type = "slots";
     Path testFileDir = Paths.get(PATH_TO_TESTS, SANITY_PROCESSING_DIR, type);
@@ -145,7 +143,6 @@ public class StateTests extends TestUtils {
   }
 
   @Test
-  @Ignore("Requires fixes")
   public void testSanityBlocks() {
     final String type = "blocks";
     Path testFileDir = Paths.get(PATH_TO_TESTS, SANITY_PROCESSING_DIR, type);
