@@ -14,7 +14,7 @@ import tech.pegasys.artemis.util.bytes.Bytes4;
  *
  * @see BeaconState
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.7.0/specs/core/0_beacon-chain.md#fork">Fork
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.7.1/specs/core/0_beacon-chain.md#fork">Fork
  *     in the spec</a>
  */
 @SSZSerializable

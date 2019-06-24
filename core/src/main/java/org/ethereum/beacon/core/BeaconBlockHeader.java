@@ -16,7 +16,7 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
  * Beacon block header structure.
  *
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.7.0/specs/core/0_beacon-chain.md#beaconblockheader">BeaconBlockHeader</a>
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.7.1/specs/core/0_beacon-chain.md#beaconblockheader">BeaconBlockHeader</a>
  *     in the spec.
  */
 @SSZSerializable

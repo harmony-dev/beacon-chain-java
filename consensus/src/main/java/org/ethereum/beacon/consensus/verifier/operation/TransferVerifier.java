@@ -11,7 +11,7 @@ import org.ethereum.beacon.core.operations.Transfer;
  * Verifies {@link Transfer} beacon chain operation.
  *
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.7.0/specs/core/0_beacon-chain.md#transfers">Transfers</a>
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.7.1/specs/core/0_beacon-chain.md#transfers">Transfers</a>
  *     section in the spec.
  */
 public class TransferVerifier implements OperationVerifier<Transfer> {

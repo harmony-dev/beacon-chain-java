@@ -15,7 +15,7 @@ import tech.pegasys.artemis.util.collections.ReadVector;
  * @see BeaconBlockBody
  * @see DepositData
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.7.0/specs/core/0_beacon-chain.md#deposit>Deposit</a>
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.7.1/specs/core/0_beacon-chain.md#deposit>Deposit</a>
  *     in the spec.
  */
 @SSZSerializable

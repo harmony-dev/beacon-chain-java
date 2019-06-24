@@ -12,7 +12,7 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
  * A Crosslink record.
  *
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.7.0/specs/core/0_beacon-chain.md#crosslink">Crosslink</a>
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.7.1/specs/core/0_beacon-chain.md#crosslink">Crosslink</a>
  *     in the spec.
  */
 @SSZSerializable
