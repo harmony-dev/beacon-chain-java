@@ -36,8 +36,8 @@ public class SSZContainerType implements SSZCompositeType {
   }
 
   @Override
-  public boolean isContainer() {
-    return true;
+  public Type getType() {
+    return Type.CONTAINER;
   }
 
   @Override

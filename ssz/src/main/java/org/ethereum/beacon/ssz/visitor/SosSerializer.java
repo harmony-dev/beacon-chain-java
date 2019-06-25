@@ -4,6 +4,7 @@ import org.ethereum.beacon.ssz.SSZSerializeException;
 import org.ethereum.beacon.ssz.type.SSZBasicType;
 import org.ethereum.beacon.ssz.type.SSZCompositeType;
 import org.ethereum.beacon.ssz.type.SSZListType;
+import org.ethereum.beacon.ssz.type.SSZType.Type;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.bytes.BytesValues;
 
@@ -11,6 +12,7 @@ import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.ethereum.beacon.ssz.type.SSZType.Type.VECTOR;
 import static org.ethereum.beacon.ssz.visitor.SosDeserializer.BYTES_PER_LENGTH_OFFSET;
 
 /**
@@ -34,7 +36,7 @@ public class SosSerializer
   public SerializerResult visitList(
       SSZListType type, Object param, ChildVisitor<Object, SerializerResult> childVisitor) {
 
-    if (type.isVector()) {
+    if (type.getType() == VECTOR) {
       if (type.getChildrenCount(param) != type.getVectorLength()) {
         throw new SSZSerializeException(
             "Vector type length doesn't match actual list length: "

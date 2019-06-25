@@ -9,34 +9,37 @@ import org.ethereum.beacon.ssz.access.SSZField;
  */
 public interface SSZType {
 
+  enum Type {
+    /**
+     * Can be safely cast to {@link SSZBasicType}
+     */
+    BASIC,
+    /**
+     * Can be safely cast to {@link SSZContainerType} or {@link SSZCompositeType}
+     */
+    CONTAINER,
+    /**
+     * Indicates this is List SSZ type.
+     * Can be safely cast to {@link SSZListType} or {@link SSZCompositeType}
+     */
+    LIST,
+    /**
+     * Indicates this is Vector SSZ type.
+     * Can be safely cast to {@link SSZListType} or {@link SSZCompositeType}
+     */
+    VECTOR,
+    UNION
+  }
+
   /**
    * Constant size indicating variable size
    */
   int VARIABLE_SIZE = -1;
 
   /**
-   * Indicates this is basic SSZ type.
-   * If true can be safely cast to {@link SSZBasicType}
+   * See SSZ types in the {@link Type} enum
    */
-  default boolean isBasicType() {
-    return false;
-  }
-
-  /**
-   * Indicates this is Container SSZ type.
-   * If true can be safely cast to {@link SSZContainerType} or {@link SSZCompositeType}
-   */
-  default boolean isContainer() {
-    return false;
-  }
-
-  /**
-   * Indicates this is List SSZ type.
-   * If true can be safely cast to {@link SSZListType} or {@link SSZCompositeType}
-   */
-  default boolean isList() {
-    return false;
-  }
+  Type getType();
 
   /**
    * Indicates this is fixed size type.
@@ -67,21 +70,7 @@ public interface SSZType {
   SSZField getTypeDescriptor();
 
   default String toStringHelper() {
-    String type;
-    if (isBasicType()) {
-      type = "Basic";
-    } else if (isContainer()) {
-      type = "Container";
-    } else if (isList()) {
-      if (isFixedSize()) {
-        type = "Vector";
-      } else {
-        type = "List";
-      }
-    } else {
-      type = "Unknown";
-    }
-    return "SSZType[" + type + ", size=" + getSize() + ", descr: " + getTypeDescriptor() + "]";
+    return "SSZType[" + getType() + ", size=" + getSize() + ", descr: " + getTypeDescriptor() + "]";
   }
 
   default String dumpHierarchy() {
@@ -91,10 +80,10 @@ public interface SSZType {
   default String dumpHierarchy(String indent) {
     String ret = "";
     ret += indent +  toStringHelper() + "\n";
-    if (isList()) {
+    if (getType() == Type.LIST || getType() == Type.VECTOR) {
       ret += ((SSZListType) this).getElementType().dumpHierarchy(indent + "  ");
     }
-    if (isContainer()) {
+    if (getType() == Type.CONTAINER) {
       for (SSZType sszType : ((SSZContainerType) this).getChildTypes()) {
         ret += sszType.dumpHierarchy(indent + "  ");
       }

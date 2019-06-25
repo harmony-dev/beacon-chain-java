@@ -30,16 +30,8 @@ public class SSZListType implements SSZCompositeType {
   }
 
   @Override
-  public boolean isList() {
-    return true;
-  }
-
-  /**
-   * Indicates if this type represents fixed-length SSZ Vector.
-   * if <code>false</code> this type represents variable-length SSZ List
-   */
-  public boolean isVector() {
-    return vectorLength >= 0;
+  public Type getType() {
+    return vectorLength >= 0 ? Type.VECTOR : Type.LIST;
   }
 
   /**
@@ -53,7 +45,7 @@ public class SSZListType implements SSZCompositeType {
 
   @Override
   public int getSize() {
-    if (!isVector() || getElementType().isVariableSize()) {
+    if (getType() == Type.LIST || getElementType().isVariableSize()) {
       return VARIABLE_SIZE;
     }
     return getElementType().getSize() * vectorLength;

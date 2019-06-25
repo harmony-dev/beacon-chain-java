@@ -1,5 +1,8 @@
 package org.ethereum.beacon.ssz.visitor;
 
+import static org.ethereum.beacon.ssz.type.SSZType.Type.BASIC;
+import static org.ethereum.beacon.ssz.type.SSZType.Type.LIST;
+import static org.ethereum.beacon.ssz.type.SSZType.Type.VECTOR;
 import static tech.pegasys.artemis.util.bytes.BytesValue.concat;
 
 import java.util.ArrayList;
@@ -42,7 +45,8 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
     List<BytesValue> chunks = new ArrayList<>();
     if (type.getChildrenCount(rawValue) == 0) {
       // empty chunk list
-    } else if (type.isList() && ((SSZListType) type).getElementType().isBasicType()) {
+    } else if ((type.getType() == LIST || type.getType() == VECTOR)
+        && ((SSZListType) type).getElementType().getType() == BASIC) {
       SerializerResult sszSerializerResult = serializer.visitAny(type, rawValue);
 
       chunks = pack(sszSerializerResult.serializedBody);
@@ -52,7 +56,7 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
       }
     }
     merkle = merkleize(chunks);
-    if (type.isList() && !((SSZListType) type).isVector()) {
+    if (type.getType() == LIST) {
       Hash32 mixInLength = hashFunction.apply(concat(
           merkle.getPureRoot(),
           serializeLength(type.getChildrenCount(rawValue))));

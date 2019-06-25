@@ -16,6 +16,7 @@ import org.ethereum.beacon.ssz.incremental.ObservableListImpl;
 import org.ethereum.beacon.ssz.incremental.UpdateListener;
 import org.ethereum.beacon.ssz.type.SSZListType;
 import org.ethereum.beacon.ssz.type.SSZType;
+import org.ethereum.beacon.ssz.type.SSZType.Type;
 import org.ethereum.beacon.ssz.type.TypeResolver;
 import org.ethereum.beacon.ssz.visitor.MerkleTrie;
 import org.ethereum.beacon.ssz.visitor.SSZIncrementalHasher;
@@ -475,7 +476,7 @@ public class SSZIncrementalTest {
     }
 
     // adding more elements
-    int elementsPerChunk = sszListType.getElementType().isBasicType() ?
+    int elementsPerChunk = sszListType.getElementType().getType() == Type.BASIC ?
         32 / sszListType.getElementType().getSize() : 1;
     for (int j = 0; j < 500 * elementsPerChunk; j++) {
       list.add(numSupplier.get());

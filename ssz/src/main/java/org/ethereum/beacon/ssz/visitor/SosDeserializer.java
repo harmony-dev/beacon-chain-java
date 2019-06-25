@@ -1,5 +1,7 @@
 package org.ethereum.beacon.ssz.visitor;
 
+import static org.ethereum.beacon.ssz.type.SSZType.Type.VECTOR;
+
 import net.consensys.cava.bytes.Bytes;
 import org.ethereum.beacon.ssz.access.SSZCompositeAccessor.CompositeInstanceBuilder;
 import org.ethereum.beacon.ssz.type.SSZBasicType;
@@ -7,6 +9,7 @@ import org.ethereum.beacon.ssz.type.SSZCompositeType;
 import org.ethereum.beacon.ssz.type.SSZContainerType;
 import org.ethereum.beacon.ssz.type.SSZListType;
 import org.ethereum.beacon.ssz.type.SSZType;
+import org.ethereum.beacon.ssz.type.SSZType.Type;
 import org.ethereum.beacon.ssz.visitor.SosDeserializer.DecodeResult;
 import org.javatuples.Pair;
 
@@ -135,7 +138,7 @@ public class SosDeserializer implements SSZVisitor<DecodeResult, Pair<Bytes, Boo
     int maxIndex = Integer.MAX_VALUE;
     if (type instanceof SSZContainerType) {
       maxIndex = ((SSZContainerType) type).getChildTypes().size();
-    } else if (type instanceof SSZListType && ((SSZListType) type).isVector()) {
+    } else if (type.getType() == VECTOR) {
       maxIndex = ((SSZListType) type).getVectorLength();
     }
 
