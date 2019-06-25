@@ -70,7 +70,7 @@ public class SimpleContainerAccessor implements SSZContainerAccessor {
     }
   }
 
-  protected class BasicInstanceBuilder implements ContainerInstanceBuilder {
+  protected class BasicInstanceBuilder implements CompositeInstanceBuilder {
     private final SSZField containerDescriptor;
     private final Map<SSZField, Object> children = new LinkedHashMap<>();
     private final List<SSZField> childDescriptors;
@@ -81,13 +81,8 @@ public class SimpleContainerAccessor implements SSZContainerAccessor {
     }
 
     @Override
-    public void setChild(SSZField childDescriptor, Object childValue) {
-      children.put(childDescriptor, childValue);
-    }
-
-    @Override
     public void setChild(int idx, Object childValue) {
-      setChild(childDescriptors.get(idx), childValue);
+      children.put(childDescriptors.get(idx), childValue);
     }
 
     @Override
@@ -130,7 +125,7 @@ public class SimpleContainerAccessor implements SSZContainerAccessor {
   }
 
   @Override
-  public ContainerInstanceBuilder createInstanceBuilder(SSZField containerDescriptor) {
+  public CompositeInstanceBuilder createInstanceBuilder(SSZField containerDescriptor) {
     return new BasicInstanceBuilder(containerDescriptor);
   }
 }
