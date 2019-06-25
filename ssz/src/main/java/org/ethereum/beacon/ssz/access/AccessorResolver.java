@@ -49,4 +49,11 @@ public interface AccessorResolver {
    *    <code>{@link Optional#empty()}</code> otherwise
    */
   Optional<SSZContainerAccessor> resolveContainerAccessor(SSZField field);
+
+  /**
+   * Resolves union accessor given the type descriptor.
+   * @return non-empty value if the given type is supported union type
+   *    <code>{@link Optional#empty()}</code> otherwise
+   */
+  Optional<SSZUnionAccessor> resolveUnionAccessor(SSZField field);
 }

@@ -2,8 +2,8 @@ package org.ethereum.beacon.ssz.type;
 
 import java.util.List;
 import java.util.stream.Collectors;
-import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.access.SSZContainerAccessor;
+import org.ethereum.beacon.ssz.access.SSZField;
 
 /**
  * Represent specific SSZ Container type with specific members which defined
@@ -11,7 +11,7 @@ import org.ethereum.beacon.ssz.access.SSZContainerAccessor;
  * <a href="https://github.com/ethereum/eth2.0-specs/blob/dev/specs/simple-serialize.md#composite-types">
  *   SSZ spec</a>
  */
-public class SSZContainerType implements SSZCompositeType {
+public class SSZContainerType implements SSZHeteroCompositeType {
 
   private final TypeResolver typeResolver;
   private final SSZField descriptor;
@@ -53,9 +53,7 @@ public class SSZContainerType implements SSZCompositeType {
     return size;
   }
 
-  /**
-   * Returns a list of this Container children types
-   */
+  @Override
   public List<SSZType> getChildTypes() {
     if (childTypes == null) {
       childTypes = accessor.getChildDescriptors().stream()

@@ -35,7 +35,7 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
   @Override
   public MerkleTrie visitBasicValue(SSZBasicType descriptor, Object value) {
     SerializerResult sszSerializerResult = serializer.visitAny(descriptor, value);
-    return merkleize(pack(sszSerializerResult.serializedBody));
+    return merkleize(pack(sszSerializerResult.getSerializedBody()));
   }
 
   @Override
@@ -49,7 +49,7 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
         && ((SSZListType) type).getElementType().getType() == BASIC) {
       SerializerResult sszSerializerResult = serializer.visitAny(type, rawValue);
 
-      chunks = pack(sszSerializerResult.serializedBody);
+      chunks = pack(sszSerializerResult.getSerializedBody());
     } else {
       for (int i = 0; i < type.getChildrenCount(rawValue); i++) {
         chunks.add(childVisitor.apply(i, type.getChild(rawValue, i)).getFinalRoot());

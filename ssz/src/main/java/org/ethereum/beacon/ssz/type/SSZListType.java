@@ -12,7 +12,7 @@ import org.ethereum.beacon.ssz.annotation.SSZ;
  * <a href="https://github.com/ethereum/eth2.0-specs/blob/dev/specs/simple-serialize.md#composite-types">
  *   SSZ spec</a>
  */
-public class SSZListType implements SSZCompositeType {
+public class SSZListType implements SSZHomoCompositeType {
 
   private final SSZField descriptor;
   private final TypeResolver typeResolver;
@@ -54,6 +54,7 @@ public class SSZListType implements SSZCompositeType {
   /**
    * Returns the {@link SSZType} of this list elements
    */
+  @Override
   public SSZType getElementType() {
     if (elementType == null) {
       elementType = typeResolver.resolveSSZType(getAccessor().getListElementType(getTypeDescriptor()));

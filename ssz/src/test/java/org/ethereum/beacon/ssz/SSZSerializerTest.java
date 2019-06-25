@@ -1,33 +1,32 @@
 package org.ethereum.beacon.ssz;
 
-import java.util.Arrays;
+import static org.junit.Assert.assertEquals;
 
 import com.google.common.base.Objects;
+import java.math.BigInteger;
+import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.logging.Logger;
 import org.ethereum.beacon.crypto.Hashes;
+import org.ethereum.beacon.ssz.access.basic.UIntCodec;
 import org.ethereum.beacon.ssz.access.container.SSZAnnotationSchemeBuilder;
+import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
-import org.ethereum.beacon.ssz.creator.ConstructorObjCreator;
 import org.ethereum.beacon.ssz.creator.CompositeObjCreator;
+import org.ethereum.beacon.ssz.creator.ConstructorObjCreator;
 import org.ethereum.beacon.ssz.fixtures.AttestationRecord;
 import org.ethereum.beacon.ssz.fixtures.Bitfield;
 import org.ethereum.beacon.ssz.fixtures.Sign;
-import org.ethereum.beacon.ssz.access.basic.UIntCodec;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import tech.pegasys.artemis.util.bytes.BytesValue;
-import java.math.BigInteger;
-import java.security.SecureRandom;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.logging.Logger;
+import tech.pegasys.artemis.util.collections.UnionImpl;
 import tech.pegasys.artemis.util.uint.UInt64;
-
-import static net.consensys.cava.bytes.Bytes.fromHexString;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
 
 /** Tests of {@link SSZSerializer} */
 public class SSZSerializerTest {
@@ -227,10 +226,10 @@ public class SSZSerializerTest {
   public static class SomeObject {
     private final String name;
 
-    @org.ethereum.beacon.ssz.annotation.SSZ(type = "uint8")
+    @SSZ(type = "uint8")
     private final int number;
 
-    @org.ethereum.beacon.ssz.annotation.SSZ(type = "uint256")
+    @SSZ(type = "uint256")
     private final BigInteger longNumber;
 
     public SomeObject(String name, int number, BigInteger longNumber) {
@@ -282,13 +281,13 @@ public class SSZSerializerTest {
 
   @SSZSerializable
   public static class Wrapper {
-    @org.ethereum.beacon.ssz.annotation.SSZ
+    @SSZ
     public Child c1;
 
-    @org.ethereum.beacon.ssz.annotation.SSZ
+    @SSZ
     public List<Child> c2;
 
-    @org.ethereum.beacon.ssz.annotation.SSZ
+    @SSZ
     public Child[] c3;
 
     public Wrapper(Child c1, List<Child> c2, Child[] c3) {
@@ -332,9 +331,9 @@ public class SSZSerializerTest {
 
   @SSZSerializable
   public static class Base1 {
-    @org.ethereum.beacon.ssz.annotation.SSZ
+    @SSZ
     public int a;
-    @org.ethereum.beacon.ssz.annotation.SSZ
+    @SSZ
     public String b;
 
     public Base1(int a, String b) {
@@ -359,13 +358,13 @@ public class SSZSerializerTest {
 
   @SSZSerializable
   public static class Wrapper1 {
-    @org.ethereum.beacon.ssz.annotation.SSZ
+    @SSZ
     public Child1 c1;
 
-    @org.ethereum.beacon.ssz.annotation.SSZ
+    @SSZ
     public List<Child1> c2;
 
-    @org.ethereum.beacon.ssz.annotation.SSZ
+    @SSZ
     public Child1[] c3;
 
     @Override
@@ -399,6 +398,28 @@ public class SSZSerializerTest {
     Wrapper1 w1 = ssz.decode(bytes, Wrapper1.class);
 
     Assert.assertEquals(w, w1);
+  }
+
+  @SSZSerializable
+  public static class Union1 extends UnionImpl {
+    @SSZ
+    private Null ignore;
+
+    @SSZ
+    private UInt64 intMember;
+  }
+
+  @Test
+  public void testUnion1() {
+    Union1 union1 = new Union1();
+    union1.setValue(0, null);
+
+    byte[] bytes1 = sszSerializer.encode(union1);
+    Assert.assertArrayEquals(new byte[4], bytes1);
+
+    union1.setValue(1, UInt64.ZERO);
+    BytesValue bytes2 = sszSerializer.encode2(union1);
+    Assert.assertEquals(BytesValue.fromHexString("010000000000000000000000"), bytes2);
   }
 
 }
