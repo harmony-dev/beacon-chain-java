@@ -22,11 +22,9 @@ import org.ethereum.beacon.test.type.state.StateTestCase.BeaconStateData.Attesta
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
-import tech.pegasys.artemis.util.collections.ReadVector;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 import java.util.List;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.ethereum.beacon.test.StateTestUtils.parseAttestationData;
@@ -735,13 +733,7 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
         @JsonProperty("target_root")
         private String targetRoot;
 
-        private Long shard;
-
-        @JsonProperty("previous_crosslink_root")
-        private String previousCrosslinkRoot;
-
-        @JsonProperty("crosslink_data_root")
-        private String crosslinkDataRoot;
+        private CrossLinkData crosslink;
 
         public String getBeaconBlockRoot() {
           return beaconBlockRoot;
@@ -775,30 +767,6 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
           this.targetRoot = targetRoot;
         }
 
-        public Long getShard() {
-          return shard;
-        }
-
-        public void setShard(Long shard) {
-          this.shard = shard;
-        }
-
-        public String getPreviousCrosslinkRoot() {
-          return previousCrosslinkRoot;
-        }
-
-        public void setPreviousCrosslinkRoot(String previousCrosslinkRoot) {
-          this.previousCrosslinkRoot = previousCrosslinkRoot;
-        }
-
-        public String getCrosslinkDataRoot() {
-          return crosslinkDataRoot;
-        }
-
-        public void setCrosslinkDataRoot(String crosslinkDataRoot) {
-          this.crosslinkDataRoot = crosslinkDataRoot;
-        }
-
         public String getTargetEpoch() {
           return targetEpoch;
         }
@@ -806,54 +774,80 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
         public void setTargetEpoch(String targetEpoch) {
           this.targetEpoch = targetEpoch;
         }
+
+        public CrossLinkData getCrosslink() {
+          return crosslink;
+        }
+
+        public void setCrosslink(CrossLinkData crosslink) {
+          this.crosslink = crosslink;
+        }
       }
     }
 
     public static class CrossLinkData {
-      private String epoch;
+      private Long shard;
+      @JsonProperty("start_epoch")
+      private String startEpoch;
+      @JsonProperty("end_epoch")
+      private String endEpoch;
+      @JsonProperty("parent_root")
+      private String parentRoot;
+      @JsonProperty("data_root")
+      private String dataRoot;
 
-      @JsonProperty("previous_crosslink_root")
-      private String previousCrosslinkRoot;
-
-      @JsonProperty("crosslink_data_root")
-      private String crosslinkDataRoot;
-
-      public String getEpoch() {
-        return epoch;
+      public Long getShard() {
+        return shard;
       }
 
-      public void setEpoch(String epoch) {
-        this.epoch = epoch;
+      public void setShard(Long shard) {
+        this.shard = shard;
       }
 
-      public String getPreviousCrosslinkRoot() {
-        return previousCrosslinkRoot;
+      public String getStartEpoch() {
+        return startEpoch;
       }
 
-      public void setPreviousCrosslinkRoot(String previousCrosslinkRoot) {
-        this.previousCrosslinkRoot = previousCrosslinkRoot;
+      public void setStartEpoch(String startEpoch) {
+        this.startEpoch = startEpoch;
       }
 
-      public String getCrosslinkDataRoot() {
-        return crosslinkDataRoot;
+      public String getEndEpoch() {
+        return endEpoch;
       }
 
-      public void setCrosslinkDataRoot(String crosslinkDataRoot) {
-        this.crosslinkDataRoot = crosslinkDataRoot;
+      public void setEndEpoch(String endEpoch) {
+        this.endEpoch = endEpoch;
+      }
+
+      public String getParentRoot() {
+        return parentRoot;
+      }
+
+      public void setParentRoot(String parentRoot) {
+        this.parentRoot = parentRoot;
+      }
+
+      public String getDataRoot() {
+        return dataRoot;
+      }
+
+      public void setDataRoot(String dataRoot) {
+        this.dataRoot = dataRoot;
       }
     }
 
     public static class BlockHeaderData {
       private String slot;
 
-      @JsonProperty("previous_block_root")
-      private String previousBlockRoot;
+      @JsonProperty("parent_root")
+      private String parentRoot;
 
       @JsonProperty("state_root")
       private String stateRoot;
 
-      @JsonProperty("block_body_root")
-      private String blockBodyRoot;
+      @JsonProperty("body_root")
+      private String bodyRoot;
 
       private String signature;
 
@@ -865,12 +859,12 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
         this.slot = slot;
       }
 
-      public String getPreviousBlockRoot() {
-        return previousBlockRoot;
+      public String getParentRoot() {
+        return parentRoot;
       }
 
-      public void setPreviousBlockRoot(String previousBlockRoot) {
-        this.previousBlockRoot = previousBlockRoot;
+      public void setParentRoot(String parentRoot) {
+        this.parentRoot = parentRoot;
       }
 
       public String getStateRoot() {
@@ -881,12 +875,12 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
         this.stateRoot = stateRoot;
       }
 
-      public String getBlockBodyRoot() {
-        return blockBodyRoot;
+      public String getBodyRoot() {
+        return bodyRoot;
       }
 
-      public void setBlockBodyRoot(String blockBodyRoot) {
-        this.blockBodyRoot = blockBodyRoot;
+      public void setBodyRoot(String bodyRoot) {
+        this.bodyRoot = bodyRoot;
       }
 
       public String getSignature() {
@@ -902,8 +896,8 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
   public static class BlockData {
     private String slot;
 
-    @JsonProperty("previous_block_root")
-    private String previousBlockRoot;
+    @JsonProperty("parent_root")
+    private String parentRoot;
 
     @JsonProperty("state_root")
     private String stateRoot;
@@ -919,12 +913,12 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
       this.slot = slot;
     }
 
-    public String getPreviousBlockRoot() {
-      return previousBlockRoot;
+    public String getParentRoot() {
+      return parentRoot;
     }
 
-    public void setPreviousBlockRoot(String previousBlockRoot) {
-      this.previousBlockRoot = previousBlockRoot;
+    public void setParentRoot(String parentRoot) {
+      this.parentRoot = parentRoot;
     }
 
     public String getStateRoot() {

@@ -4,7 +4,6 @@ import org.ethereum.beacon.test.runner.ssz.SszGenericRunner;
 import org.ethereum.beacon.test.runner.ssz.SszStaticRunner;
 import org.ethereum.beacon.test.type.ssz.SszGenericTest;
 import org.ethereum.beacon.test.type.ssz.SszStaticTest;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.nio.file.Path;
@@ -26,7 +25,6 @@ public class SszTests extends TestUtils {
   }
 
   @Test
-  @Ignore("Requires fixtures update")
   public void testSszStatic() {
     Path testFileDir = Paths.get(PATH_TO_TESTS, "ssz_static", "core");
     runTestsInResourceDir(
