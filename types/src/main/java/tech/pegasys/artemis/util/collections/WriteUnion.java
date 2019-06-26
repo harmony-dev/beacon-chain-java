@@ -2,30 +2,15 @@ package tech.pegasys.artemis.util.collections;
 
 import javax.annotation.Nullable;
 
+/**
+ * See {@link ReadUnion} docs for details
+ */
 public interface WriteUnion extends ReadUnion {
 
-  <C> void setValue(int index, @Nullable C value);
-
-//  default <C> void setValue(@Nullable C value) {
-//    if (value == null) {
-//      if (!hasNullType()) {
-//        throw new IllegalArgumentException("This union has no null type");
-//      }
-//      setValue(0, null);
-//    } else {
-//      int idx = -1;
-//      for (int i = 0; i < getMembersCount(); i++) {
-//        if (getMemberType(i).isAssignableFrom(value.getClass())) {
-//          if (idx >= 0) {
-//            throw new IllegalArgumentException(
-//                "Ambiguity when assigning Union value. At least two type indices suit (" + idx + ", " + i + ") for value " + value);
-//          }
-//          idx = i;
-//        }
-//      }
-//      setValue(idx, value);
-//    }
-//  }
+  /**
+   * Sets the value and the typeIndex of this Union
+   */
+  <C> void setValue(int typeIndex, @Nullable C value);
 
   interface U2<P1, P2> extends WriteUnion, ReadUnion.U2<P1, P2> {
     default void setMember1(P1 val) {

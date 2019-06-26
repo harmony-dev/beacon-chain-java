@@ -8,7 +8,12 @@ import org.ethereum.beacon.ssz.access.container.SSZSchemeBuilder.SSZScheme;
 import tech.pegasys.artemis.util.collections.ReadUnion;
 import tech.pegasys.artemis.util.collections.WriteUnion;
 
-public class UnionAccessor implements SSZUnionAccessor {
+/**
+ * Gathers information about Union member types from declared @{@link org.ethereum.beacon.ssz.annotation.SSZ}
+ * fields of the {@link ReadUnion} subclass like it is done with regular SSZ containers
+ * See javadoc at {@link ReadUnion} for more details
+ */
+public class SchemeSSZUnionAccessor implements SSZUnionAccessor {
 
   class SchemeUnionAccessor implements UnionAccessor {
     private final SSZScheme scheme;
@@ -35,7 +40,7 @@ public class UnionAccessor implements SSZUnionAccessor {
 
   private final SSZSchemeBuilder sszSchemeBuilder;
 
-  public UnionAccessor(SSZSchemeBuilder sszSchemeBuilder) {
+  public SchemeSSZUnionAccessor(SSZSchemeBuilder sszSchemeBuilder) {
     this.sszSchemeBuilder = sszSchemeBuilder;
   }
 

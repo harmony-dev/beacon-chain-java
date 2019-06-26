@@ -27,8 +27,8 @@ import org.ethereum.beacon.ssz.access.list.ArrayAccessor;
 import org.ethereum.beacon.ssz.access.list.BytesValueAccessor;
 import org.ethereum.beacon.ssz.access.list.ListAccessor;
 import org.ethereum.beacon.ssz.access.list.ReadListAccessor;
-import org.ethereum.beacon.ssz.access.union.GenericTypeUnionAccessor;
-import org.ethereum.beacon.ssz.access.union.UnionAccessor;
+import org.ethereum.beacon.ssz.access.union.GenericTypeSSZUnionAccessor;
+import org.ethereum.beacon.ssz.access.union.SchemeSSZUnionAccessor;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import org.ethereum.beacon.ssz.annotation.SSZTransient;
@@ -264,13 +264,13 @@ public class SSZBuilder {
 
   public SSZBuilder addDefaultUnionAccessors() {
     checkAlreadyInitialized();
-    unionAccessors.add(GenericTypeUnionAccessor::new);
+    unionAccessors.add(GenericTypeSSZUnionAccessor::new);
     unionAccessors.add(this::createDefaultUnionAccessor);
     return this;
   }
 
   private SSZUnionAccessor createDefaultUnionAccessor() {
-    return new UnionAccessor(sszSchemeBuilder);
+    return new SchemeSSZUnionAccessor(sszSchemeBuilder);
   }
 
   /**

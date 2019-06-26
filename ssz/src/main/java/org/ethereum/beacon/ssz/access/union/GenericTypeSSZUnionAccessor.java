@@ -10,7 +10,12 @@ import tech.pegasys.artemis.util.collections.ReadUnion;
 import tech.pegasys.artemis.util.collections.UnionImpl;
 import tech.pegasys.artemis.util.collections.WriteUnion;
 
-public class GenericTypeUnionAccessor implements SSZUnionAccessor {
+/**
+ * Gathers information about Union member types from the generic types arguments
+ * see {@link WriteUnion.U2}, {@link WriteUnion.U3}, etc.
+ * Also see javadoc at {@link ReadUnion}
+ */
+public class GenericTypeSSZUnionAccessor implements SSZUnionAccessor {
 
   class GenericUnionAccessor implements UnionAccessor {
     private final List<SSZField> descriptors;
