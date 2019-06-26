@@ -13,8 +13,8 @@ public class UnionAccessor implements SSZUnionAccessor {
   class SchemeUnionAccessor implements UnionAccessor {
     private final SSZScheme scheme;
 
-    public SchemeUnionAccessor(SSZField containerDescriptor) {
-      scheme = sszSchemeBuilder.build(containerDescriptor.getRawClass());
+    public SchemeUnionAccessor(SSZField unionDescriptor) {
+      scheme = sszSchemeBuilder.build(unionDescriptor.getRawClass());
     }
 
     @Override

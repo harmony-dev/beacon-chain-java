@@ -25,7 +25,9 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import tech.pegasys.artemis.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.collections.ReadUnion.Null;
 import tech.pegasys.artemis.util.collections.UnionImpl;
+import tech.pegasys.artemis.util.collections.WriteUnion;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 /** Tests of {@link SSZSerializer} */
@@ -435,6 +437,45 @@ public class SSZSerializerTest {
   }
 
   @SSZSerializable
+  public static class SafeUnion extends UnionImpl {
+
+    public SafeUnion() {
+      setValue(0, null);
+    }
+
+    public SafeUnion(UInt64 intMember) {
+      setValue(1, intMember);
+    }
+
+    @SSZ(order = 1)
+    public Null getNull() {
+      throw new RuntimeException("Shouldn't be called");
+    }
+
+    @SSZ(order = 2)
+    public UInt64 getIntMember() {
+      return getValueSafe(1);
+    }
+  }
+
+  @Test
+  public void testUnionSafe() {
+    SSZSerializer sszSerializer = new SSZBuilder().withExplicitAnnotations(true).buildSerializer();
+    SafeUnion union1 = new SafeUnion();
+
+    byte[] bytes1 = sszSerializer.encode(union1);
+    Assert.assertArrayEquals(new byte[4], bytes1);
+    SafeUnion decode1 = sszSerializer.decode(bytes1, SafeUnion.class);
+    Assert.assertEquals(union1, decode1);
+
+    union1 = new SafeUnion(UInt64.ZERO);
+    BytesValue bytes2 = sszSerializer.encode2(union1);
+    Assert.assertEquals(BytesValue.fromHexString("010000000000000000000000"), bytes2);
+    SafeUnion decode2 = sszSerializer.decode(bytes2, SafeUnion.class);
+    Assert.assertEquals(union1, decode2);
+  }
+
+  @SSZSerializable
   public static class Union2 extends UnionImpl {
 
     @SSZ
@@ -477,6 +518,56 @@ public class SSZSerializerTest {
       byte[] bytes1 = sszSerializer.encode(union1);
       Union2 decode1 = sszSerializer.decode(bytes1, Union2.class);
       Assert.assertEquals(union1, decode1);
+    }
+  }
+
+  @SSZSerializable
+  public static class AnonymousUnionContainer {
+
+    @SSZ
+    public List<Integer> l1;
+
+    @SSZ
+    public WriteUnion.U3<Null, UInt64, List<Integer>> union = WriteUnion.U3.create();
+
+    @SSZ
+    public int i1;
+
+    @Override
+    public boolean equals(Object o) {
+      AnonymousUnionContainer that = (AnonymousUnionContainer) o;
+      if (i1 != that.i1) {
+        return false;
+      }
+      if (l1 != null ? !l1.equals(that.l1) : that.l1 != null) {
+        return false;
+      }
+      return union != null ? union.equals(that.union) : that.union == null;
+    }
+  }
+
+  @Test
+  public void testAnonymousUnion1() {
+    AnonymousUnionContainer c = new AnonymousUnionContainer();
+    c.union.setMember2(UInt64.valueOf(0x1234));
+    c.i1 = 0x8989898;
+    c.l1 = Arrays.asList(11, 22, 33);
+    {
+      byte[] bytes1 = sszSerializer.encode(c);
+      AnonymousUnionContainer decode1 = sszSerializer.decode(bytes1, AnonymousUnionContainer.class);
+      Assert.assertEquals(c, decode1);
+    }
+    {
+      c.union.setMember3(Arrays.asList(11, 22, 33));
+      byte[] bytes1 = sszSerializer.encode(c);
+      AnonymousUnionContainer decode1 = sszSerializer.decode(bytes1, AnonymousUnionContainer.class);
+      Assert.assertEquals(c, decode1);
+    }
+    {
+      c.union.setMember1(null);
+      byte[] bytes1 = sszSerializer.encode(c);
+      AnonymousUnionContainer decode1 = sszSerializer.decode(bytes1, AnonymousUnionContainer.class);
+      Assert.assertEquals(c, decode1);
     }
   }
 }
