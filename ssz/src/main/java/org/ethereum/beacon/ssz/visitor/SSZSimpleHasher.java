@@ -1,5 +1,7 @@
 package org.ethereum.beacon.ssz.visitor;
 
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
 import static org.ethereum.beacon.ssz.type.SSZType.Type.BASIC;
 import static org.ethereum.beacon.ssz.type.SSZType.Type.LIST;
 import static org.ethereum.beacon.ssz.type.SSZType.Type.VECTOR;
@@ -8,9 +10,11 @@ import static tech.pegasys.artemis.util.bytes.BytesValue.concat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
+import org.ethereum.beacon.ssz.access.SSZUnionAccessor.UnionAccessor;
 import org.ethereum.beacon.ssz.type.SSZBasicType;
 import org.ethereum.beacon.ssz.type.SSZCompositeType;
 import org.ethereum.beacon.ssz.type.SSZListType;
+import org.ethereum.beacon.ssz.type.SSZUnionType;
 import org.ethereum.beacon.ssz.visitor.SosSerializer.SerializerResult;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
@@ -36,6 +40,24 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
   public MerkleTrie visitBasicValue(SSZBasicType descriptor, Object value) {
     SerializerResult sszSerializerResult = serializer.visitAny(descriptor, value);
     return merkleize(pack(sszSerializerResult.getSerializedBody()));
+  }
+
+  @Override
+  public MerkleTrie visitUnion(SSZUnionType type, Object param,
+      ChildVisitor<Object, MerkleTrie> childVisitor) {
+    UnionAccessor unionAccessor = type.getAccessor().getAccessor(type.getTypeDescriptor());
+    int typeIndex = unionAccessor.getTypeIndex(param);
+    List<BytesValue> chunks;
+    if (type.isNullable() && typeIndex == 0) {
+      chunks = emptyList();
+    } else {
+      Object value = unionAccessor.getChildValue(param, typeIndex);
+      chunks = singletonList(childVisitor.apply(typeIndex, value).getFinalRoot());
+    }
+    MerkleTrie merkle = merkleize(chunks);
+    Hash32 mixInType = hashFunction.apply(concat(merkle.getPureRoot(), serializeLength(typeIndex)));
+    merkle.setFinalRoot(mixInType);
+    return merkle;
   }
 
   @Override

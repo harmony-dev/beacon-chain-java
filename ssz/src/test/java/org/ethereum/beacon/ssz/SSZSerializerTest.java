@@ -24,6 +24,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.collections.ReadUnion.Null;
 import tech.pegasys.artemis.util.collections.UnionImpl;
@@ -461,12 +462,17 @@ public class SSZSerializerTest {
   @Test
   public void testUnionSafe() {
     SSZSerializer sszSerializer = new SSZBuilder().withExplicitAnnotations(true).buildSerializer();
+    SSZHasher sszHasher = new SSZBuilder().buildHasher(Hashes::sha256);
     SafeUnion union1 = new SafeUnion();
 
     byte[] bytes1 = sszSerializer.encode(union1);
     Assert.assertArrayEquals(new byte[4], bytes1);
     SafeUnion decode1 = sszSerializer.decode(bytes1, SafeUnion.class);
     Assert.assertEquals(union1, decode1);
+    byte[] hash = sszHasher.hash(union1);
+    Assert.assertArrayEquals(
+        Hashes.sha256(Bytes32.ZERO.concat(Bytes32.ZERO)).extractArray(),
+        hash);
 
     union1 = new SafeUnion(UInt64.ZERO);
     BytesValue bytes2 = sszSerializer.encode2(union1);
