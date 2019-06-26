@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.access.SSZUnionAccessor;
+import tech.pegasys.artemis.util.collections.GenericUnionImpl;
 import tech.pegasys.artemis.util.collections.ReadUnion;
-import tech.pegasys.artemis.util.collections.UnionImpl;
 import tech.pegasys.artemis.util.collections.WriteUnion;
 
 /**
@@ -52,7 +52,7 @@ public class GenericTypeSSZUnionAccessor implements SSZUnionAccessor {
 
       @Override
       public void setChild(int idx, Object childValue) {
-        union = new UnionImpl();
+        union = new GenericUnionImpl();
         union.setValue(idx, childValue);
       }
 

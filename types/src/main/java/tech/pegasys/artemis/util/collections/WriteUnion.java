@@ -20,7 +20,7 @@ public interface WriteUnion extends ReadUnion {
       setValue(1, val);
     }
     static <P1, P2> WriteUnion.U2<P1, P2> create() {
-      return new UnionImpl();
+      return new GenericUnionImpl();
     }
   }
   interface U3<P1, P2, P3> extends U2<P1, P2>, ReadUnion.U3<P1, P2, P3> {
@@ -28,7 +28,7 @@ public interface WriteUnion extends ReadUnion {
       setValue(2, val);
     }
     static <P1, P2, P3> WriteUnion.U3<P1, P2, P3> create() {
-      return new UnionImpl();
+      return new GenericUnionImpl();
     }
   }
   interface U4<P1, P2, P3, P4> extends U3<P1, P2, P3>, ReadUnion.U4<P1, P2, P3, P4> {
@@ -36,7 +36,7 @@ public interface WriteUnion extends ReadUnion {
       setValue(3, val);
     }
     static <P1, P2, P3, P4> WriteUnion.U4<P1, P2, P3, P4> create() {
-      return new UnionImpl();
+      return new GenericUnionImpl();
     }
   }
   interface U5<P1, P2, P3, P4, P5> extends U4<P1, P2, P3, P4>, ReadUnion.U5<P1, P2, P3, P4, P5> {
@@ -44,7 +44,7 @@ public interface WriteUnion extends ReadUnion {
       setValue(4, val);
     }
     static <P1, P2, P3, P4, P5> WriteUnion.U5<P1, P2, P3, P4, P5> create() {
-      return new UnionImpl();
+      return new GenericUnionImpl();
     }
   }
 }

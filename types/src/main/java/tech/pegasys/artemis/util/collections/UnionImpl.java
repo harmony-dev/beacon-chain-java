@@ -1,12 +1,8 @@
 package tech.pegasys.artemis.util.collections;
 
 import javax.annotation.Nullable;
-import tech.pegasys.artemis.util.collections.WriteUnion.U2;
-import tech.pegasys.artemis.util.collections.WriteUnion.U3;
-import tech.pegasys.artemis.util.collections.WriteUnion.U4;
-import tech.pegasys.artemis.util.collections.WriteUnion.U5;
 
-public class UnionImpl implements WriteUnion, U2, U3, U4, U5 {
+public class UnionImpl implements WriteUnion {
 
   private int typeIndex = 0;
   private Object value;
