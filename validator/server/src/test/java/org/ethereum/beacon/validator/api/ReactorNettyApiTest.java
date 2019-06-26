@@ -11,7 +11,6 @@ import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
-import org.ethereum.beacon.validator.api.convert.BlockDataToBlock;
 import org.ethereum.beacon.validator.api.model.BlockData;
 import org.ethereum.beacon.validator.api.model.ForkResponse;
 import org.ethereum.beacon.validator.api.model.SyncingResponse;
@@ -191,14 +190,14 @@ public class ReactorNettyApiTest {
     this.server = createLongSyncServer();
     String randaoReveal =
         "0x5F1847060C89CB12A92AFF4EF140C9FC3A3F026796EC15105F1847060C89CB12A92AFF4EF140C9FC3A3F026796EC1510";
-    BlockData response = client.getBlock(BigInteger.valueOf(1), randaoReveal);
+    BeaconBlock block = client.getBlock(BigInteger.valueOf(1), randaoReveal);
   }
 
   @Test(expected = BadRequestException.class) // 400
   public void testBlockInvalidInput() {
     this.server = createShortSyncServer();
     String randaoReveal = "0x5F1";
-    BlockData response = client.getBlock(BigInteger.valueOf(1), randaoReveal);
+    BeaconBlock block = client.getBlock(BigInteger.valueOf(1), randaoReveal);
   }
 
   @Test
@@ -216,8 +215,7 @@ public class ReactorNettyApiTest {
             ServiceFactory.createMutableBeaconChain());
     String randaoReveal =
         "0x5F1847060C89CB12A92AFF4EF140C9FC3A3F026796EC15105F1847060C89CB12A92AFF4EF140C9FC3A3F026796EC15105F1847060C89CB12A92AFF4EF140C9FC3A3F026796EC15105F1847060C89CB12A92AFF4EF140C9FC3A3F026796EC1510";
-    BlockData response = client.getBlock(BigInteger.valueOf(13), randaoReveal);
-    BeaconBlock block = BlockDataToBlock.deserialize(response);
+    BeaconBlock block = client.getBlock(BigInteger.valueOf(13), randaoReveal);
     assertEquals(13, block.getSlot().intValue());
   }
 
@@ -232,7 +230,7 @@ public class ReactorNettyApiTest {
             .withBody(BeaconBlockBody.EMPTY)
             .withParentRoot(Hash32.ZERO)
             .build();
-    Response response = client.postBlock(BlockDataToBlock.serialize(block));
+    Response response = client.postBlock(block);
     assertEquals(503, response.getStatus()); // Still syncing
   }
 
@@ -264,7 +262,7 @@ public class ReactorNettyApiTest {
             .withBody(BeaconBlockBody.EMPTY)
             .withParentRoot(Hash32.ZERO)
             .build();
-    Response response = client.postBlock(BlockDataToBlock.serialize(block));
+    Response response = client.postBlock(block);
     assertEquals(202, response.getStatus());
     // 202 The block failed validation, but was successfully broadcast anyway. It was not integrated
     // into the beacon node's database.
@@ -327,7 +325,7 @@ public class ReactorNettyApiTest {
         new IndexedAttestation(
             custodyBit0Indices, custodyBit1Indices, attestationData, BLSSignature.ZERO);
     Response response =
-        client.postAttestation(BlockDataToBlock.presentIndexedAttestation(indexedAttestation));
+        client.postAttestation(indexedAttestation);
     assertEquals(503, response.getStatus()); // Still syncing
   }
 
@@ -370,7 +368,7 @@ public class ReactorNettyApiTest {
         new IndexedAttestation(
             custodyBit0Indices, custodyBit1Indices, attestationData, BLSSignature.ZERO);
     Response response =
-        client.postAttestation(BlockDataToBlock.presentIndexedAttestation(indexedAttestation));
+        client.postAttestation(indexedAttestation);
     assertEquals(202, response.getStatus());
     // 202 The block failed validation, but was successfully broadcast anyway. It was not integrated
     // into the beacon node's database.

@@ -38,8 +38,8 @@ import java.util.stream.Collectors;
  * Converts {@link BeaconBlock} to its representation {@link BlockData} plus parts in both
  * directions
  */
-public abstract class BlockDataToBlock {
-  public BlockDataToBlock() {}
+public abstract class BeaconBlockConverter {
+  public BeaconBlockConverter() {}
 
   public static BlockData serialize(BeaconBlock block) {
     BlockData data = new BlockData();
@@ -216,7 +216,7 @@ public abstract class BlockDataToBlock {
     // Attestation slashings
     List<AttesterSlashing> attesterSlashings =
         blockData.getBody().getAttesterSlashings().stream()
-            .map(BlockDataToBlock::parseAttesterSlashing)
+            .map(BeaconBlockConverter::parseAttesterSlashing)
             .collect(Collectors.toList());
 
     // Deposits
@@ -243,7 +243,7 @@ public abstract class BlockDataToBlock {
     // Voluntary exits
     List<VoluntaryExit> voluntaryExits =
         blockData.getBody().getVoluntaryExits().stream()
-            .map(BlockDataToBlock::parseVoluntaryExit)
+            .map(BeaconBlockConverter::parseVoluntaryExit)
             .collect(Collectors.toList());
 
     // Finally, creating a block

@@ -1,6 +1,8 @@
 package org.ethereum.beacon.validator.api;
 
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
 import org.ethereum.beacon.validator.api.model.AttestationSubmit;
 import org.ethereum.beacon.validator.api.model.BlockData;
 import org.ethereum.beacon.validator.api.model.BlockSubmit;
@@ -60,18 +62,19 @@ public class RestClient {
         .get(ValidatorDutiesResponse.class);
   }
 
-  public BlockData getBlock(BigInteger slot, String randaoReveal) {
+  public BeaconBlock getBlock(BigInteger slot, String randaoReveal) {
     return client
         .target(url)
         .path("/validator/block")
         .queryParam("slot", slot)
         .queryParam("randao_reveal", randaoReveal)
         .request(MediaType.APPLICATION_JSON)
-        .get(BlockData.class);
+        .get(BlockData.class)
+        .createBlock();
   }
 
-  public Response postBlock(BlockData blockData) {
-    BlockSubmit blockSubmit = new BlockSubmit(blockData);
+  public Response postBlock(BeaconBlock block) {
+    BlockSubmit blockSubmit = BlockSubmit.fromBeaconBlock(block);
     return client
         .target(url)
         .path("/validator/block")
@@ -92,8 +95,8 @@ public class RestClient {
         .get(BlockData.BlockBodyData.IndexedAttestationData.class);
   }
 
-  public Response postAttestation(BlockData.BlockBodyData.IndexedAttestationData attestationData) {
-    AttestationSubmit attestationSubmit = new AttestationSubmit(attestationData);
+  public Response postAttestation(IndexedAttestation attestation) {
+    AttestationSubmit attestationSubmit = AttestationSubmit.fromAttestation(attestation);
     return client
         .target(url)
         .path("/validator/attestation")

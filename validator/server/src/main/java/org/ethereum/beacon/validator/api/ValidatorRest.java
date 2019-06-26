@@ -22,7 +22,7 @@ import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
-import org.ethereum.beacon.validator.api.convert.BlockDataToBlock;
+import org.ethereum.beacon.validator.api.convert.BeaconBlockConverter;
 import org.ethereum.beacon.validator.api.model.AttestationSubmit;
 import org.ethereum.beacon.validator.api.model.BlockSubmit;
 import org.ethereum.beacon.validator.api.model.ForkResponse;
@@ -57,6 +57,10 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+/**
+ * REST service for beacon chain validator according to <a
+ * href="https://github.com/ethereum/eth2.0-specs/blob/v0.7.1/specs/validator/beacon_node_oapi.yaml">https://github.com/ethereum/eth2.0-specs/blob/v0.7.1/specs/validator/beacon_node_oapi.yaml</a>
+ */
 public class ValidatorRest extends ReactorNettyServer {
 
   private final BeaconChainSpec spec;
@@ -245,7 +249,7 @@ public class ValidatorRest extends ReactorNettyServer {
           BLSSignature.wrap(Bytes96.fromHexStringStrict(getParamString("randao_reveal", params)));
       BeaconBlock.Builder builder =
           validatorDutiesService.prepareBlock(slot, randaoReveal, observableBeaconState);
-      return mapper.writeValueAsString(BlockDataToBlock.serialize(builder.build()));
+      return mapper.writeValueAsString(BeaconBlockConverter.serialize(builder.build()));
     } catch (IllegalArgumentException ex) {
       throw new InvalidInputException(ex);
     } catch (Exception e) {
@@ -261,9 +265,7 @@ public class ValidatorRest extends ReactorNettyServer {
         .map(
             json -> {
               try {
-                BeaconBlock block =
-                    BlockDataToBlock.deserialize(
-                        mapper.readValue(json, BlockSubmit.class).getBeaconBlock());
+                BeaconBlock block = mapper.readValue(json, BlockSubmit.class).createBeaconBlock();
                 // Import
                 MutableBeaconChain.ImportResult importResult = beaconChain.insert(block);
                 // Broadcast
@@ -303,7 +305,7 @@ public class ValidatorRest extends ReactorNettyServer {
           spec.convert_to_indexed(
               observableBeaconState.getLatestSlotState().createMutableCopy(), attestation);
       return mapper.writeValueAsString(
-          BlockDataToBlock.presentIndexedAttestation(indexedAttestation));
+          BeaconBlockConverter.presentIndexedAttestation(indexedAttestation));
     } catch (IllegalArgumentException ex) {
       throw new InvalidInputException(ex);
     } catch (Exception e) {
@@ -320,8 +322,7 @@ public class ValidatorRest extends ReactorNettyServer {
             json -> {
               try {
                 IndexedAttestation indexedAttestation =
-                    BlockDataToBlock.parseIndexedAttestation(
-                        mapper.readValue(json, AttestationSubmit.class).getAttestation());
+                    mapper.readValue(json, AttestationSubmit.class).createAttestation();
                 // Verification
                 MutableBeaconState state =
                     observableBeaconState.getLatestSlotState().createMutableCopy();

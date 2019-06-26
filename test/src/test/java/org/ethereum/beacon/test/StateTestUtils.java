@@ -27,7 +27,7 @@ import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.test.type.state.StateTestCase.BeaconStateData;
 import org.ethereum.beacon.test.type.state.StateTestCase.BeaconStateData.ValidatorData;
-import org.ethereum.beacon.validator.api.convert.BlockDataToBlock;
+import org.ethereum.beacon.validator.api.convert.BeaconBlockConverter;
 import org.ethereum.beacon.validator.api.model.BlockData;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes4;
@@ -42,7 +42,7 @@ public abstract class StateTestUtils {
   private StateTestUtils() {}
 
   public static BeaconBlock parseBlockData(BlockData blockData) {
-    return BlockDataToBlock.deserialize(blockData);
+    return BeaconBlockConverter.deserialize(blockData);
   }
 
   public static MutableBeaconState parseBeaconState(
@@ -62,11 +62,11 @@ public abstract class StateTestUtils {
     state.setFinalizedEpoch(EpochNumber.castFrom(UInt64.valueOf(data.getFinalizedEpoch())));
     state.setFinalizedRoot(Hash32.fromHexString(data.getFinalizedRoot()));
     state.setLatestBlockHeader(parseBeaconBlockHeader(data.getLatestBlockHeader()));
-    state.setLatestEth1Data(BlockDataToBlock.parseEth1Data(data.getLatestEth1Data()));
+    state.setLatestEth1Data(BeaconBlockConverter.parseEth1Data(data.getLatestEth1Data()));
     state.setEth1DataVotes(
         WriteList.wrap(
             data.getEth1DataVotes().stream()
-                .map(BlockDataToBlock::parseEth1Data)
+                .map(BeaconBlockConverter::parseEth1Data)
                 .collect(Collectors.toList()),
             Integer::new));
     state.setDepositIndex(UInt64.valueOf(data.getDepositIndex()));
@@ -126,7 +126,7 @@ public abstract class StateTestUtils {
   }
 
   public static Eth1Data parseEth1Data(BlockData.BlockBodyData.Eth1 data) {
-    return BlockDataToBlock.parseEth1Data(data);
+    return BeaconBlockConverter.parseEth1Data(data);
   }
 
   public static Fork parseFork(BeaconStateData.Fork data) {
@@ -137,51 +137,51 @@ public abstract class StateTestUtils {
   }
 
   public static Crosslink parseCrosslink(BlockData.CrossLinkData data) {
-    return BlockDataToBlock.parseCrossLinkData(data);
+    return BeaconBlockConverter.parseCrossLinkData(data);
   }
 
   public static PendingAttestation parsePendingAttestation(
       BlockData.AttestationData attestationData) {
-    return BlockDataToBlock.parsePendingAttestation(attestationData);
+    return BeaconBlockConverter.parsePendingAttestation(attestationData);
   }
 
   public static AttestationData parseAttestationData(
       BlockData.AttestationData.AttestationDataContainer data) {
-    return BlockDataToBlock.parseAttestationData(data);
+    return BeaconBlockConverter.parseAttestationData(data);
   }
 
   public static Transfer parseTransfer(BlockData.BlockBodyData.TransferData data) {
-    return BlockDataToBlock.parseTransfer(data);
+    return BeaconBlockConverter.parseTransfer(data);
   }
 
   public static VoluntaryExit parseVoluntaryExit(BlockData.BlockBodyData.VoluntaryExitData data) {
-    return BlockDataToBlock.parseVoluntaryExit(data);
+    return BeaconBlockConverter.parseVoluntaryExit(data);
   }
 
   public static BeaconBlockHeader parseBeaconBlockHeader(BlockData.BlockHeaderData data) {
-    return BlockDataToBlock.parseBeaconBlockHeader(data);
+    return BeaconBlockConverter.parseBeaconBlockHeader(data);
   }
 
   public static IndexedAttestation parseIndexedAttestation(
       BlockData.BlockBodyData.IndexedAttestationData data) {
-    return BlockDataToBlock.parseIndexedAttestation(data);
+    return BeaconBlockConverter.parseIndexedAttestation(data);
   }
 
   public static Deposit parseDeposit(BlockData.BlockBodyData.DepositData data) {
-    return BlockDataToBlock.parseDeposit(data);
+    return BeaconBlockConverter.parseDeposit(data);
   }
 
   public static Attestation parseAttestation(BlockData.AttestationData data) {
-    return BlockDataToBlock.parseAttestation(data);
+    return BeaconBlockConverter.parseAttestation(data);
   }
 
   public static AttesterSlashing parseAttesterSlashing(
       BlockData.BlockBodyData.AttesterSlashingData data) {
-    return BlockDataToBlock.parseAttesterSlashing(data);
+    return BeaconBlockConverter.parseAttesterSlashing(data);
   }
 
   public static ProposerSlashing parseProposerSlashing(
       BlockData.BlockBodyData.ProposerSlashingData data) {
-    return BlockDataToBlock.parseProposerSlashing(data);
+    return BeaconBlockConverter.parseProposerSlashing(data);
   }
 }

@@ -2,6 +2,8 @@ package org.ethereum.beacon.validator.api.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.validator.api.convert.BeaconBlockConverter;
 
 import java.util.List;
 
@@ -55,6 +57,10 @@ public class BlockData {
 
   public void setSignature(String signature) {
     this.signature = signature;
+  }
+
+  public BeaconBlock createBlock() {
+    return BeaconBlockConverter.deserialize(this);
   }
 
   public static class BlockBodyData {
