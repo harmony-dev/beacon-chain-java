@@ -14,9 +14,7 @@ import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.validator.api.model.BlockData;
 import org.ethereum.beacon.validator.api.model.ForkResponse;
 import org.ethereum.beacon.validator.api.model.SyncingResponse;
-import org.ethereum.beacon.validator.api.model.TimeResponse;
 import org.ethereum.beacon.validator.api.model.ValidatorDutiesResponse;
-import org.ethereum.beacon.validator.api.model.VersionResponse;
 import org.ethereum.beacon.wire.WireApiSub;
 import org.junit.After;
 import org.junit.Test;
@@ -92,8 +90,7 @@ public class ReactorNettyApiTest {
   @Test
   public void testVersion() {
     this.server = createSyncNotStartedServer();
-    VersionResponse response = client.getVersion();
-    String version = response.getVersion();
+    String version = client.getVersion();
     assertTrue(version.startsWith("Beacon"));
     assertTrue(version.contains("0."));
   }
@@ -111,8 +108,7 @@ public class ReactorNettyApiTest {
             ServiceFactory.createValidatorDutiesService(),
             ServiceFactory.createWireApiSub(),
             ServiceFactory.createMutableBeaconChain());
-    TimeResponse response = client.getGenesisTime();
-    long time = response.getTime();
+    long time = client.getGenesisTime();
     assertEquals(10, time);
   }
 

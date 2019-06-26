@@ -21,15 +21,14 @@ import org.ethereum.beacon.core.types.Bitfield;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
+import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.validator.api.convert.BeaconBlockConverter;
 import org.ethereum.beacon.validator.api.model.AttestationSubmit;
 import org.ethereum.beacon.validator.api.model.BlockSubmit;
 import org.ethereum.beacon.validator.api.model.ForkResponse;
 import org.ethereum.beacon.validator.api.model.SyncingResponse;
-import org.ethereum.beacon.validator.api.model.TimeResponse;
 import org.ethereum.beacon.validator.api.model.ValidatorDutiesResponse;
-import org.ethereum.beacon.validator.api.model.VersionResponse;
 import org.ethereum.beacon.wire.WireApiSub;
 import org.ethereum.beacon.wire.sync.SyncManager;
 import org.javatuples.Pair;
@@ -70,8 +69,8 @@ public class ValidatorRest extends ReactorNettyServer {
   private final UInt64 chainId;
 
   private ObjectMapper mapper = new ObjectMapper();
-  private VersionResponse versionResponse = null;
-  private TimeResponse timeResponse = null;
+  private String version = null;
+  private Time time = null;
   private SyncingResponse syncingResponse = null;
   private boolean shortSync = false;
   private ObservableBeaconState observableBeaconState = null;
@@ -97,10 +96,8 @@ public class ValidatorRest extends ReactorNettyServer {
         .subscribe(
             observableBeaconState -> {
               this.observableBeaconState = observableBeaconState;
-              if (timeResponse == null) {
-                timeResponse =
-                    new TimeResponse(
-                        observableBeaconState.getLatestSlotState().getGenesisTime().getValue());
+              if (time == null) {
+                time = observableBeaconState.getLatestSlotState().getGenesisTime();
               }
             });
 
@@ -145,16 +142,12 @@ public class ValidatorRest extends ReactorNettyServer {
   }
 
   private String produceVersionResponse() {
-    if (versionResponse == null) {
+    if (version == null) {
       Properties props = loadResources("rest-server.properties", this.getClass().getClassLoader());
       final String version = props.getProperty("versionNumber");
-      this.versionResponse = new VersionResponse(String.format("Beacon Chain Java %s", version));
+      this.version = String.format("Beacon Chain Java %s", version);
     }
-    try {
-      return mapper.writeValueAsString(versionResponse);
-    } catch (JsonProcessingException e) {
-      throw new RuntimeException(e);
-    }
+    return version;
   }
 
   private Properties loadResources(final String name, final ClassLoader classLoader) {
@@ -367,14 +360,10 @@ public class ValidatorRest extends ReactorNettyServer {
   }
 
   private String produceGenesisTimeResponse() {
-    if (timeResponse == null) {
+    if (time == null) {
       throw new RuntimeException("Genesis time is not yet known!");
     }
-    try {
-      return mapper.writeValueAsString(timeResponse);
-    } catch (JsonProcessingException e) {
-      throw new RuntimeException(e);
-    }
+    return "" + time.getValue();
   }
 
   private BiFunction<HttpServerRequest, HttpServerResponse, Publisher<Void>> processGetRequestImpl(

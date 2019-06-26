@@ -8,9 +8,7 @@ import org.ethereum.beacon.validator.api.model.BlockData;
 import org.ethereum.beacon.validator.api.model.BlockSubmit;
 import org.ethereum.beacon.validator.api.model.ForkResponse;
 import org.ethereum.beacon.validator.api.model.SyncingResponse;
-import org.ethereum.beacon.validator.api.model.TimeResponse;
 import org.ethereum.beacon.validator.api.model.ValidatorDutiesResponse;
-import org.ethereum.beacon.validator.api.model.VersionResponse;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -28,20 +26,20 @@ public class RestClient {
     this.url = url;
   }
 
-  public VersionResponse getVersion() {
+  public String getVersion() {
     return client
         .target(url)
         .path("/node/version")
         .request(MediaType.APPLICATION_JSON)
-        .get(VersionResponse.class);
+        .get(String.class);
   }
 
-  public TimeResponse getGenesisTime() {
+  public Long getGenesisTime() {
     return client
         .target(url)
         .path("/node/genesis_time")
         .request(MediaType.APPLICATION_JSON)
-        .get(TimeResponse.class);
+        .get(Long.class);
   }
 
   public SyncingResponse getSyncing() {
