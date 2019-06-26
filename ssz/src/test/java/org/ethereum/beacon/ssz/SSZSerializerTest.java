@@ -402,6 +402,14 @@ public class SSZSerializerTest {
 
   @SSZSerializable
   public static class Union1 extends UnionImpl {
+
+    public Union1() {
+    }
+
+    public Union1(UInt64 intMember) {
+      setValue(1, intMember);
+    }
+
     @SSZ
     private Null ignore;
 
@@ -416,10 +424,59 @@ public class SSZSerializerTest {
 
     byte[] bytes1 = sszSerializer.encode(union1);
     Assert.assertArrayEquals(new byte[4], bytes1);
+    Union1 decode1 = sszSerializer.decode(bytes1, Union1.class);
+    Assert.assertEquals(union1, decode1);
 
     union1.setValue(1, UInt64.ZERO);
     BytesValue bytes2 = sszSerializer.encode2(union1);
     Assert.assertEquals(BytesValue.fromHexString("010000000000000000000000"), bytes2);
+    Union1 decode2 = sszSerializer.decode(bytes2, Union1.class);
+    Assert.assertEquals(union1, decode2);
   }
 
+  @SSZSerializable
+  public static class Union2 extends UnionImpl {
+
+    @SSZ
+    private Null ignore;
+
+    @SSZ
+    private Union1 union1;
+
+    @SSZ
+    private List<Union1> unionList;
+  }
+
+  @Test
+  public void testUnion2() {
+    Union2 union1 = new Union2();
+
+    {
+      union1.setValue(0, null);
+      byte[] bytes1 = sszSerializer.encode(union1);
+      Assert.assertArrayEquals(new byte[4], bytes1);
+      Union2 decode1 = sszSerializer.decode(bytes1, Union2.class);
+      Assert.assertEquals(union1, decode1);
+    }
+    {
+      union1.setValue(1, new Union1());
+      byte[] bytes1 = sszSerializer.encode(union1);
+      Union2 decode1 = sszSerializer.decode(bytes1, Union2.class);
+      Assert.assertEquals(union1, decode1);
+    }
+    {
+      union1.setValue(2, Collections.emptyList());
+      byte[] bytes1 = sszSerializer.encode(union1);
+      Union2 decode1 = sszSerializer.decode(bytes1, Union2.class);
+      Assert.assertEquals(union1, decode1);
+    }
+    {
+      union1.setValue(2, Arrays
+          .asList(
+              new Union1(), new Union1(UInt64.valueOf(0x1122334455667788L)), new Union1()));
+      byte[] bytes1 = sszSerializer.encode(union1);
+      Union2 decode1 = sszSerializer.decode(bytes1, Union2.class);
+      Assert.assertEquals(union1, decode1);
+    }
+  }
 }

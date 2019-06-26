@@ -53,6 +53,7 @@ public class UnionAccessor implements SSZUnionAccessor {
       public void setChild(int idx, Object childValue) {
         try {
           union = (WriteUnion) compositeDescriptor.getRawClass().newInstance();
+          union.setValue(idx, childValue);
         } catch (InstantiationException | IllegalAccessException e) {
           throw new RuntimeException(e);
         }
