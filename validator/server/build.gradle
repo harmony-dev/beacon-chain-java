@@ -2,7 +2,9 @@ dependencies {
   implementation project(':chain')
   implementation project(':util')
   implementation project(':wire')
-  implementation project(':validator:embedded')
+  implementation project(':pow:core')
+  implementation project(':crypto')
+  api project(':validator:core')
   testImplementation project(':start:common')
 
   implementation 'com.google.guava:guava'

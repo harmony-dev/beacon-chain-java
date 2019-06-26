@@ -9,7 +9,6 @@ import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.EpochNumber;
-import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.validator.api.convert.BlockDataToBlock;
@@ -49,39 +48,39 @@ public class ReactorNettyApiTest {
 
   private ReactorNettyServer createSyncNotStartedServer() {
     return new ReactorNettyServer(
-        SERVER_HOST, SERVER_PORT,
+        SERVER_HOST,
+        SERVER_PORT,
         BeaconChainSpec.createWithDefaults(),
         ServiceFactory.createObservableStateProcessor(),
         ServiceFactory.createSyncManagerSyncNotStarted(),
         UInt64.valueOf(13),
-        ServiceFactory.createBeaconChainProposer(),
-        ServiceFactory.createBeaconChainAttester(),
+        ServiceFactory.createValidatorDutiesService(),
         ServiceFactory.createWireApiSub(),
         ServiceFactory.createMutableBeaconChain());
   }
 
   private ReactorNettyServer createLongSyncServer() {
     return new ReactorNettyServer(
-        SERVER_HOST, SERVER_PORT,
+        SERVER_HOST,
+        SERVER_PORT,
         BeaconChainSpec.createWithDefaults(),
         ServiceFactory.createObservableStateProcessor(),
         ServiceFactory.createSyncManagerSyncStarted(),
         UInt64.valueOf(13),
-        ServiceFactory.createBeaconChainProposer(),
-        ServiceFactory.createBeaconChainAttester(),
+        ServiceFactory.createValidatorDutiesService(),
         ServiceFactory.createWireApiSub(),
         ServiceFactory.createMutableBeaconChain());
   }
 
   private ReactorNettyServer createShortSyncServer() {
     return new ReactorNettyServer(
-        SERVER_HOST, SERVER_PORT,
+        SERVER_HOST,
+        SERVER_PORT,
         BeaconChainSpec.createWithDefaults(),
         ServiceFactory.createObservableStateProcessor(),
         ServiceFactory.createSyncManagerShortSync(),
         UInt64.valueOf(13),
-        ServiceFactory.createBeaconChainProposer(),
-        ServiceFactory.createBeaconChainAttester(),
+        ServiceFactory.createValidatorDutiesService(),
         ServiceFactory.createWireApiSub(),
         ServiceFactory.createMutableBeaconChain());
   }
@@ -104,13 +103,13 @@ public class ReactorNettyApiTest {
   public void testGenesisTime() {
     this.server =
         new ReactorNettyServer(
-            SERVER_HOST, SERVER_PORT,
+            SERVER_HOST,
+            SERVER_PORT,
             BeaconChainSpec.createWithDefaults(),
             ServiceFactory.createObservableStateProcessorGenesisTimeModifiedTo10(),
             ServiceFactory.createSyncManagerSyncNotStarted(),
             UInt64.valueOf(13),
-            ServiceFactory.createBeaconChainProposer(),
-            ServiceFactory.createBeaconChainAttester(),
+            ServiceFactory.createValidatorDutiesService(),
             ServiceFactory.createWireApiSub(),
             ServiceFactory.createMutableBeaconChain());
     TimeResponse response = client.getGenesisTime();
@@ -172,13 +171,13 @@ public class ReactorNettyApiTest {
     BLSPubkey blsPubkey = BLSPubkey.fromHexString(pubkey);
     this.server =
         new ReactorNettyServer(
-            SERVER_HOST, SERVER_PORT,
+            SERVER_HOST,
+            SERVER_PORT,
             BeaconChainSpec.createWithDefaults(),
             ServiceFactory.createObservableStateProcessorWithValidators(blsPubkey),
             ServiceFactory.createSyncManagerShortSync(),
             UInt64.valueOf(13),
-            ServiceFactory.createBeaconChainProposer(),
-            ServiceFactory.createBeaconChainAttester(),
+            ServiceFactory.createValidatorDutiesService(),
             ServiceFactory.createWireApiSub(),
             ServiceFactory.createMutableBeaconChain());
     ValidatorDutiesResponse response1 = client.getValidatorDuties(0L, new String[] {pubkey});
@@ -206,13 +205,13 @@ public class ReactorNettyApiTest {
   public void testBlock() {
     this.server =
         new ReactorNettyServer(
-            SERVER_HOST, SERVER_PORT,
+            SERVER_HOST,
+            SERVER_PORT,
             BeaconChainSpec.createWithDefaults(),
             ServiceFactory.createObservableStateProcessor(),
             ServiceFactory.createSyncManagerShortSync(),
             UInt64.valueOf(13),
-            ServiceFactory.createBeaconChainProposerWithPredefinedBuilder(),
-            ServiceFactory.createBeaconChainAttester(),
+            ServiceFactory.createValidatorDutiesService(),
             ServiceFactory.createWireApiSub(),
             ServiceFactory.createMutableBeaconChain());
     String randaoReveal =
@@ -242,13 +241,13 @@ public class ReactorNettyApiTest {
     WireApiSub wireApiSub = ServiceFactory.createWireApiSubWithMirror();
     this.server =
         new ReactorNettyServer(
-            SERVER_HOST, SERVER_PORT,
+            SERVER_HOST,
+            SERVER_PORT,
             BeaconChainSpec.createWithDefaults(),
             ServiceFactory.createObservableStateProcessor(),
             ServiceFactory.createSyncManagerShortSync(),
             UInt64.valueOf(13),
-            ServiceFactory.createBeaconChainProposer(),
-            ServiceFactory.createBeaconChainAttester(),
+            ServiceFactory.createValidatorDutiesService(),
             wireApiSub,
             ServiceFactory.createMutableBeaconChain());
     AtomicInteger wireCounter = new AtomicInteger(0);
@@ -293,13 +292,13 @@ public class ReactorNettyApiTest {
   public void testAttestation() {
     this.server =
         new ReactorNettyServer(
-            SERVER_HOST, SERVER_PORT,
+            SERVER_HOST,
+            SERVER_PORT,
             BeaconChainSpec.createWithDefaults(),
             ServiceFactory.createObservableStateProcessor(),
             ServiceFactory.createSyncManagerShortSync(),
             UInt64.valueOf(13),
-            ServiceFactory.createBeaconChainProposer(),
-            ServiceFactory.createBeaconChainAttesterWithPredefinedPrepare(),
+            ServiceFactory.createValidatorDutiesService(),
             ServiceFactory.createWireApiSub(),
             ServiceFactory.createMutableBeaconChain());
     String pubKey =
@@ -339,14 +338,14 @@ public class ReactorNettyApiTest {
         "0x5F1847060C89CB12A92AFF4EF140C9FC3A3F026796EC15105F1847060C89CB12A92AFF4EF140C9FC3A3F026796EC1510";
     this.server =
         new ReactorNettyServer(
-            SERVER_HOST, SERVER_PORT,
+            SERVER_HOST,
+            SERVER_PORT,
             BeaconChainSpec.createWithDefaults(),
             ServiceFactory.createObservableStateProcessorWithValidators(
                 BLSPubkey.fromHexString(pubKey)),
             ServiceFactory.createSyncManagerShortSync(),
             UInt64.valueOf(13),
-            ServiceFactory.createBeaconChainProposer(),
-            ServiceFactory.createBeaconChainAttester(),
+            ServiceFactory.createValidatorDutiesService(),
             wireApiSub,
             ServiceFactory.createMutableBeaconChain());
     AtomicInteger wireCounter = new AtomicInteger(0);

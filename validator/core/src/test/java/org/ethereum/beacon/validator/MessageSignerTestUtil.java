@@ -1,11 +1,10 @@
-package org.ethereum.beacon.validator.util;
+package org.ethereum.beacon.validator;
 
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.crypto.BLS381;
 import org.ethereum.beacon.validator.crypto.InsecureBLS381MessageSigner;
 import org.ethereum.beacon.validator.crypto.MessageSigner;
 import tech.pegasys.artemis.util.bytes.Bytes32;
-import tech.pegasys.artemis.util.bytes.Bytes96;
 
 public class MessageSignerTestUtil {
 

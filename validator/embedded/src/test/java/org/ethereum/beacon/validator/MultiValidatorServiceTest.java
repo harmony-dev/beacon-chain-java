@@ -12,7 +12,6 @@ import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import org.ethereum.beacon.validator.crypto.MessageSigner;
-import org.ethereum.beacon.validator.util.MessageSignerTestUtil;
 import org.ethereum.beacon.validator.util.ValidatorServiceTestUtil;
 import org.junit.Assert;
 import org.junit.Test;

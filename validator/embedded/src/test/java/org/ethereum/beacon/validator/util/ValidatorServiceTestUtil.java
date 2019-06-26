@@ -14,6 +14,7 @@ import org.ethereum.beacon.pow.util.DepositContractTestUtil;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.validator.BeaconChainAttester;
 import org.ethereum.beacon.validator.BeaconChainProposer;
+import org.ethereum.beacon.validator.MessageSignerTestUtil;
 import org.ethereum.beacon.validator.MultiValidatorService;
 import org.ethereum.beacon.validator.attester.BeaconChainAttesterTestUtil;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;

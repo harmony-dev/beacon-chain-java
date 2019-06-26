@@ -22,8 +22,6 @@ import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
-import org.ethereum.beacon.validator.BeaconChainAttester;
-import org.ethereum.beacon.validator.BeaconChainProposer;
 import org.ethereum.beacon.validator.api.convert.BlockDataToBlock;
 import org.ethereum.beacon.validator.api.model.AttestationSubmit;
 import org.ethereum.beacon.validator.api.model.BlockSubmit;
@@ -72,8 +70,6 @@ import java.util.stream.Collectors;
 public class ReactorNettyServer implements RestServer {
 
   private final BeaconChainSpec spec;
-  private final BeaconChainProposer beaconChainProposer;
-  private final BeaconChainAttester beaconChainAttester;
   private final WireApiSub wireApiSub;
   private final MutableBeaconChain beaconChain;
   private final ValidatorDutiesService validatorDutiesService;
@@ -95,17 +91,14 @@ public class ReactorNettyServer implements RestServer {
       ObservableStateProcessor stateProcessor,
       SyncManager syncManager,
       UInt64 chainId,
-      BeaconChainProposer beaconChainProposer,
-      BeaconChainAttester beaconChainAttester,
+      ValidatorDutiesService validatorDutiesService,
       WireApiSub wireApiSub,
       MutableBeaconChain beaconChain) {
     this.spec = spec;
-    this.beaconChainProposer = beaconChainProposer;
-    this.beaconChainAttester = beaconChainAttester;
     this.wireApiSub = wireApiSub;
     this.beaconChain = beaconChain;
     this.chainId = chainId;
-    this.validatorDutiesService = new ValidatorDutiesService(spec);
+    this.validatorDutiesService = validatorDutiesService;
 
     Flux.from(stateProcessor.getObservableStateStream())
         .subscribe(
@@ -288,7 +281,7 @@ public class ReactorNettyServer implements RestServer {
       BLSSignature randaoReveal =
           BLSSignature.wrap(Bytes96.fromHexStringStrict(params.get("randao_reveal").get(0)));
       BeaconBlock.Builder builder =
-          beaconChainProposer.prepareBuilder(slot, randaoReveal, observableBeaconState);
+          validatorDutiesService.prepareBlock(slot, randaoReveal, observableBeaconState);
       return mapper.writeValueAsString(BlockDataToBlock.serialize(builder.build()));
     } catch (AssertionError
         | UnsupportedEncodingException
@@ -351,7 +344,7 @@ public class ReactorNettyServer implements RestServer {
           spec.get_validator_index_by_pubkey(
               observableBeaconState.getLatestSlotState().createMutableCopy(), validatorPubkey);
       Attestation attestation =
-          beaconChainAttester.prepareAttestation(
+          validatorDutiesService.prepareAttestation(
               validatorIndex, shard, observableBeaconState, slot);
       IndexedAttestation indexedAttestation =
           spec.convert_to_indexed(

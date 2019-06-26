@@ -7,6 +7,7 @@ import org.ethereum.beacon.chain.MutableBeaconChain;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.observer.ObservableStateProcessor;
 import org.ethereum.beacon.chain.observer.PendingOperations;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.transition.BeaconStateExImpl;
 import org.ethereum.beacon.core.BeaconBlock;
@@ -25,10 +26,7 @@ import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.stream.SimpleProcessor;
-import org.ethereum.beacon.validator.BeaconChainAttester;
-import org.ethereum.beacon.validator.BeaconChainProposer;
 import org.ethereum.beacon.validator.MultiValidatorServiceTest;
-import org.ethereum.beacon.validator.crypto.MessageSigner;
 import org.ethereum.beacon.wire.Feedback;
 import org.ethereum.beacon.wire.WireApiSub;
 import org.ethereum.beacon.wire.WireApiSync;
@@ -181,9 +179,7 @@ public class ServiceFactory {
       }
 
       @Override
-      public void setSyncApi(WireApiSync syncApi) {
-
-      }
+      public void setSyncApi(WireApiSync syncApi) {}
     };
   }
 
@@ -223,9 +219,7 @@ public class ServiceFactory {
       }
 
       @Override
-      public void setSyncApi(WireApiSync syncApi) {
-
-      }
+      public void setSyncApi(WireApiSync syncApi) {}
     };
   }
 
@@ -265,39 +259,15 @@ public class ServiceFactory {
       }
 
       @Override
-      public void setSyncApi(WireApiSync syncApi) {
-
-      }
+      public void setSyncApi(WireApiSync syncApi) {}
     };
   }
 
-  public static BeaconChainProposer createBeaconChainProposer() {
-    return new BeaconChainProposer() {
+  public static ValidatorDutiesService createValidatorDutiesService() {
+    return new ValidatorDutiesService(BeaconChainSpec.createWithDefaults(), null, null) {
       @Override
-      public BeaconBlock propose(
-          ObservableBeaconState observableState, MessageSigner<BLSSignature> signer) {
-        return null;
-      }
-
-      @Override
-      public BeaconBlock.Builder prepareBuilder(
-          SlotNumber slot, BLSSignature randaoReveal, ObservableBeaconState observableState) {
-        return null;
-      }
-    };
-  }
-
-  public static BeaconChainProposer createBeaconChainProposerWithPredefinedBuilder() {
-    return new BeaconChainProposer() {
-      @Override
-      public BeaconBlock propose(
-          ObservableBeaconState observableState, MessageSigner<BLSSignature> signer) {
-        return null;
-      }
-
-      @Override
-      public BeaconBlock.Builder prepareBuilder(
-          SlotNumber slot, BLSSignature randaoReveal, ObservableBeaconState observableState) {
+      public BeaconBlock.Builder prepareBlock(
+          SlotNumber slot, BLSSignature randaoReveal, ObservableBeaconState observableBeaconState) {
         BeaconBlock.Builder builder =
             BeaconBlock.Builder.createEmpty()
                 .withSlot(slot)
@@ -308,47 +278,12 @@ public class ServiceFactory {
 
         return builder;
       }
-    };
-  }
-
-  public static BeaconChainAttester createBeaconChainAttester() {
-    return new BeaconChainAttester() {
-      @Override
-      public Attestation attest(
-          ValidatorIndex validatorIndex,
-          ShardNumber shard,
-          ObservableBeaconState observableState,
-          MessageSigner<BLSSignature> signer) {
-        return null;
-      }
 
       @Override
       public Attestation prepareAttestation(
           ValidatorIndex validatorIndex,
           ShardNumber shard,
-          ObservableBeaconState observableState,
-          SlotNumber slot) {
-        return null;
-      }
-    };
-  }
-
-  public static BeaconChainAttester createBeaconChainAttesterWithPredefinedPrepare() {
-    return new BeaconChainAttester() {
-      @Override
-      public Attestation attest(
-          ValidatorIndex validatorIndex,
-          ShardNumber shard,
-          ObservableBeaconState observableState,
-          MessageSigner<BLSSignature> signer) {
-        return null;
-      }
-
-      @Override
-      public Attestation prepareAttestation(
-          ValidatorIndex validatorIndex,
-          ShardNumber shard,
-          ObservableBeaconState observableState,
+          ObservableBeaconState observableBeaconState,
           SlotNumber slot) {
         return new Attestation(
             Bitfield.EMPTY,
@@ -358,12 +293,7 @@ public class ServiceFactory {
                 Hash32.ZERO,
                 EpochNumber.ZERO,
                 Hash32.ZERO,
-                new Crosslink(
-                    shard,
-                    EpochNumber.ZERO,
-                    EpochNumber.ZERO,
-                    Hash32.ZERO,
-                    Hash32.ZERO)),
+                new Crosslink(shard, EpochNumber.ZERO, EpochNumber.ZERO, Hash32.ZERO, Hash32.ZERO)),
             Bitfield.EMPTY,
             BLSSignature.ZERO);
       }
