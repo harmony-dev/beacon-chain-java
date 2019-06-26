@@ -27,6 +27,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Validator tasks service: searching for tasks, proposing and attesting
+ */
 public class ValidatorDutiesService {
   private final BeaconChainSpec spec;
   private final BeaconAttesterSpec attesterSpec;

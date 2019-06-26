@@ -47,7 +47,7 @@ public class ReactorNettyApiTest {
   private RestClient client = new RestClient(SERVER_URL);
 
   private ReactorNettyServer createSyncNotStartedServer() {
-    return new ReactorNettyServer(
+    return new ValidatorRest(
         SERVER_HOST,
         SERVER_PORT,
         BeaconChainSpec.createWithDefaults(),
@@ -60,7 +60,7 @@ public class ReactorNettyApiTest {
   }
 
   private ReactorNettyServer createLongSyncServer() {
-    return new ReactorNettyServer(
+    return new ValidatorRest(
         SERVER_HOST,
         SERVER_PORT,
         BeaconChainSpec.createWithDefaults(),
@@ -73,7 +73,7 @@ public class ReactorNettyApiTest {
   }
 
   private ReactorNettyServer createShortSyncServer() {
-    return new ReactorNettyServer(
+    return new ValidatorRest(
         SERVER_HOST,
         SERVER_PORT,
         BeaconChainSpec.createWithDefaults(),
@@ -102,7 +102,7 @@ public class ReactorNettyApiTest {
   @Test
   public void testGenesisTime() {
     this.server =
-        new ReactorNettyServer(
+        new ValidatorRest(
             SERVER_HOST,
             SERVER_PORT,
             BeaconChainSpec.createWithDefaults(),
@@ -170,7 +170,7 @@ public class ReactorNettyApiTest {
         "0x5F1847060C89CB12A92AFF4EF140C9FC3A3F026796EC15105F1847060C89CB12A92AFF4EF140C9FC3A3F026796EC1510";
     BLSPubkey blsPubkey = BLSPubkey.fromHexString(pubkey);
     this.server =
-        new ReactorNettyServer(
+        new ValidatorRest(
             SERVER_HOST,
             SERVER_PORT,
             BeaconChainSpec.createWithDefaults(),
@@ -204,7 +204,7 @@ public class ReactorNettyApiTest {
   @Test
   public void testBlock() {
     this.server =
-        new ReactorNettyServer(
+        new ValidatorRest(
             SERVER_HOST,
             SERVER_PORT,
             BeaconChainSpec.createWithDefaults(),
@@ -240,7 +240,7 @@ public class ReactorNettyApiTest {
   public void testBlockSubmit() {
     WireApiSub wireApiSub = ServiceFactory.createWireApiSubWithMirror();
     this.server =
-        new ReactorNettyServer(
+        new ValidatorRest(
             SERVER_HOST,
             SERVER_PORT,
             BeaconChainSpec.createWithDefaults(),
@@ -291,7 +291,7 @@ public class ReactorNettyApiTest {
   @Test
   public void testAttestation() {
     this.server =
-        new ReactorNettyServer(
+        new ValidatorRest(
             SERVER_HOST,
             SERVER_PORT,
             BeaconChainSpec.createWithDefaults(),
@@ -337,7 +337,7 @@ public class ReactorNettyApiTest {
     String pubKey =
         "0x5F1847060C89CB12A92AFF4EF140C9FC3A3F026796EC15105F1847060C89CB12A92AFF4EF140C9FC3A3F026796EC1510";
     this.server =
-        new ReactorNettyServer(
+        new ValidatorRest(
             SERVER_HOST,
             SERVER_PORT,
             BeaconChainSpec.createWithDefaults(),
