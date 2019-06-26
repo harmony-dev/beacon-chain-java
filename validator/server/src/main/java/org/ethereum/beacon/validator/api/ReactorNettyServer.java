@@ -226,15 +226,20 @@ public class ReactorNettyServer implements RestServer {
     try {
       Map<String, List<String>> params = splitQuery(new URI(request.uri()));
       assert params.containsKey("validator_pubkeys");
-      assert params.containsKey("epoch");
-      assert params.get("epoch").size() == 1;
-      EpochNumber epoch = EpochNumber.castFrom(UInt64.valueOf(params.get("epoch").get(0)));
+
+      EpochNumber epoch;
+      BeaconStateEx stateEx = observableBeaconState.getLatestSlotState();
+      if (params.containsKey("epoch")) {
+        epoch = EpochNumber.castFrom(UInt64.valueOf(params.get("epoch").get(0)));
+      } else { // Epoch is not required
+        epoch = spec.get_current_epoch(stateEx).increment();
+      }
+
       List<BLSPubkey> pubKeys =
           params.get("validator_pubkeys").stream()
               .map(Bytes48::fromHexStringStrict)
               .map(BLSPubkey::wrap)
               .collect(Collectors.toList());
-      BeaconStateEx stateEx = observableBeaconState.getLatestSlotState();
       if (!epoch.lessEqual(spec.get_current_epoch(stateEx).increment())) {
         throw new NotAcceptableInputException("Couldn't provide duties for requested epoch");
       }
