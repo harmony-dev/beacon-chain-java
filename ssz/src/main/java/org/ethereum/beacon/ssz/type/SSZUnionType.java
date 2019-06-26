@@ -2,6 +2,7 @@ package org.ethereum.beacon.ssz.type;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import org.ethereum.beacon.ssz.SSZSchemeException;
 import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.access.SSZUnionAccessor;
 import tech.pegasys.artemis.util.collections.ReadUnion;
@@ -44,8 +45,17 @@ public class SSZUnionType implements SSZHeteroCompositeType {
   @Override
   public List<SSZType> getChildTypes() {
     if (childTypes == null) {
-      childTypes = accessor.getAccessor(getTypeDescriptor()).getChildDescriptors()
-          .stream()
+      List<SSZField> sszFields = accessor.getAccessor(getTypeDescriptor())
+          .getChildDescriptors();
+      if (sszFields.isEmpty()) {
+        throw new SSZSchemeException("No Union members found: " + this.getTypeDescriptor());
+      }
+      for (int i = 1; i < sszFields.size(); i++) {
+        if (sszFields.get(i).getRawClass() == ReadUnion.Null.class) {
+          throw new SSZSchemeException("Union Null should be the only Null member at index 0");
+        }
+      }
+      childTypes = sszFields.stream()
           .map(typeResolver::resolveSSZType)
           .collect(Collectors.toList());
     }
