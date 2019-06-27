@@ -266,7 +266,7 @@ public class ServiceFactory {
   public static ValidatorDutiesService createValidatorDutiesService() {
     return new ValidatorDutiesService(BeaconChainSpec.createWithDefaults(), null, null) {
       @Override
-      public BeaconBlock.Builder prepareBlock(
+      public BeaconBlock prepareBlock(
           SlotNumber slot, BLSSignature randaoReveal, ObservableBeaconState observableBeaconState) {
         BeaconBlock.Builder builder =
             BeaconBlock.Builder.createEmpty()
@@ -276,11 +276,12 @@ public class ServiceFactory {
                 .withSignature(BLSSignature.ZERO)
                 .withBody(BeaconBlockBody.EMPTY);
 
-        return builder;
+        return builder.build();
       }
 
       @Override
       public Attestation prepareAttestation(
+          SlotNumber slot,
           ValidatorIndex validatorIndex,
           ShardNumber shard,
           ObservableBeaconState observableBeaconState) {

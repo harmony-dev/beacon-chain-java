@@ -13,15 +13,19 @@ import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.pow.util.DepositContractTestUtil;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.validator.BeaconAttestationSigner;
+import org.ethereum.beacon.validator.BeaconBlockSigner;
 import org.ethereum.beacon.validator.BeaconChainAttester;
 import org.ethereum.beacon.validator.BeaconChainProposer;
 import org.ethereum.beacon.validator.MessageSignerTestUtil;
-import org.ethereum.beacon.validator.local.MultiValidatorService;
+import org.ethereum.beacon.validator.RandaoGenerator;
 import org.ethereum.beacon.validator.attester.BeaconAttestationSignerImpl;
 import org.ethereum.beacon.validator.attester.BeaconChainAttesterTestUtil;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import org.ethereum.beacon.validator.crypto.MessageSigner;
+import org.ethereum.beacon.validator.local.MultiValidatorService;
+import org.ethereum.beacon.validator.proposer.BeaconBlockSignerImpl;
 import org.ethereum.beacon.validator.proposer.BeaconChainProposerTestUtil;
+import org.ethereum.beacon.validator.proposer.RandaoGeneratorImpl;
 import org.mockito.Mockito;
 import reactor.core.publisher.Mono;
 import tech.pegasys.artemis.util.bytes.Bytes48;
@@ -65,9 +69,19 @@ public abstract class ValidatorServiceTestUtil {
             perBlockTransition, depositContract, spec);
     BeaconChainAttester attester = BeaconChainAttesterTestUtil.mockAttester(spec);
     BeaconAttestationSigner attestationSigner = new BeaconAttestationSignerImpl(spec);
+    BeaconBlockSigner blockSigner = new BeaconBlockSignerImpl(spec);
+    RandaoGenerator randaoGenerator = new RandaoGeneratorImpl(spec);
 
     return Mockito.spy(
         new MultiValidatorService(
-            blsCredentials, proposer, attester, attestationSigner, spec, Mono.empty(), schedulers));
+            blsCredentials,
+            proposer,
+            blockSigner,
+            randaoGenerator,
+            attester,
+            attestationSigner,
+            spec,
+            Mono.empty(),
+            schedulers));
   }
 }

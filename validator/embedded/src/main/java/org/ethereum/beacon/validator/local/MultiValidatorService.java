@@ -23,6 +23,7 @@ import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.ShardCommittee;
 import org.ethereum.beacon.core.types.BLSPubkey;
+import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
@@ -33,8 +34,10 @@ import org.ethereum.beacon.schedulers.Scheduler;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.stream.SimpleProcessor;
 import org.ethereum.beacon.validator.BeaconAttestationSigner;
+import org.ethereum.beacon.validator.BeaconBlockSigner;
 import org.ethereum.beacon.validator.BeaconChainAttester;
 import org.ethereum.beacon.validator.BeaconChainProposer;
+import org.ethereum.beacon.validator.RandaoGenerator;
 import org.ethereum.beacon.validator.ValidatorService;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import org.javatuples.Pair;
@@ -54,9 +57,13 @@ public class MultiValidatorService implements ValidatorService {
 
   /** Proposer logic. */
   private BeaconChainProposer proposer;
+  /** Block signer. */
+  private BeaconBlockSigner blockSigner;
+  /** RANDAO generator. */
+  private RandaoGenerator randao;
   /** Attester logic. */
   private BeaconChainAttester attester;
-
+  /** Attestation signer. */
   private BeaconAttestationSigner attestationSigner;
   /** The spec. */
   private BeaconChainSpec spec;
@@ -80,6 +87,8 @@ public class MultiValidatorService implements ValidatorService {
   public MultiValidatorService(
       List<BLS381Credentials> blsCredentials,
       BeaconChainProposer proposer,
+      BeaconBlockSigner blockSigner,
+      RandaoGenerator randao,
       BeaconChainAttester attester,
       BeaconAttestationSigner attestationSigner,
       BeaconChainSpec spec,
@@ -89,6 +98,8 @@ public class MultiValidatorService implements ValidatorService {
         blsCredentials.stream()
             .collect(Collectors.toMap(BLS381Credentials::getPubkey, Function.identity()));
     this.proposer = proposer;
+    this.blockSigner = blockSigner;
+    this.randao = randao;
     this.attester = attester;
     this.attestationSigner = attestationSigner;
     this.spec = spec;
@@ -262,15 +273,21 @@ public class MultiValidatorService implements ValidatorService {
   private void propose(ValidatorIndex index, final ObservableBeaconState observableState) {
     BLS381Credentials credentials = initialized.get(index);
     if (credentials != null) {
+      BeaconState state = observableState.getLatestSlotState();
       long s = System.nanoTime();
-      BeaconBlock newBlock = proposer.propose(observableState, credentials.getSigner());
+      BLSSignature randaoReveal =
+          randao.reveal(spec.get_current_epoch(state), state.getFork(), credentials.getSigner());
+      BeaconBlock newBlock =
+          proposer.propose(state, randaoReveal, observableState.getPendingOperations());
+      BeaconBlock signedBlock =
+          blockSigner.sign(newBlock, state.getFork(), credentials.getSigner());
       long total = System.nanoTime() - s;
-      propagateBlock(newBlock);
+      propagateBlock(signedBlock);
 
       logger.info(
           "validator {}: proposed a {} in {}s",
           index,
-          newBlock.toStringFull(
+          signedBlock.toStringFull(
               spec.getConstants(),
               observableState.getLatestSlotState().getGenesisTime(),
               spec::signing_root),
@@ -294,12 +311,12 @@ public class MultiValidatorService implements ValidatorService {
 
     BLS381Credentials credentials = initialized.get(index);
     if (credentials != null) {
-      Attestation unsignedAttestation =
+      Attestation newAttestation =
           attester.attest(
               index, shard, observableState.getLatestSlotState(), observableState.getHead());
-      Attestation attestation =
-          attestationSigner.sign(unsignedAttestation, state.getFork(), credentials.getSigner());
-      propagateAttestation(attestation);
+      Attestation signedAttestation =
+          attestationSigner.sign(newAttestation, state.getFork(), credentials.getSigner());
+      propagateAttestation(signedAttestation);
 
       logger.info(
           "validator {}: attested to head: {} in a slot: {}",

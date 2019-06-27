@@ -20,8 +20,9 @@ import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.validator.BeaconChainAttester;
-import org.ethereum.beacon.validator.BeaconProposerSpec;
+import org.ethereum.beacon.validator.BeaconChainProposer;
 import org.ethereum.beacon.validator.attester.BeaconChainAttesterImpl;
+import org.ethereum.beacon.validator.proposer.BeaconChainProposerImpl;
 import org.javatuples.Pair;
 import org.javatuples.Triplet;
 import tech.pegasys.artemis.util.uint.UInt64;
@@ -33,23 +34,24 @@ import tech.pegasys.artemis.util.uint.UInt64s;
 public class ValidatorDutiesService {
   private final BeaconChainSpec spec;
   private final BeaconChainAttester attester;
-  private final BeaconProposerSpec proposerSpec;
-  private final BlockTransition<BeaconStateEx> perBlockTransition;
-  private final DepositContract depositContract;
+  private final BeaconChainProposer proposer;
 
   public ValidatorDutiesService(BeaconChainSpec spec, BlockTransition<BeaconStateEx> perBlockTransition, DepositContract depositContract) {
     this.spec = spec;
     this.attester = new BeaconChainAttesterImpl(spec);
-    this.proposerSpec = new BeaconProposerSpec(spec);
-    this.perBlockTransition = perBlockTransition;
-    this.depositContract = depositContract;
+    this.proposer = new BeaconChainProposerImpl(spec, perBlockTransition, depositContract);
   }
 
-  public BeaconBlock.Builder prepareBlock(SlotNumber slot, BLSSignature randaoReveal, ObservableBeaconState observableBeaconState) {
-    return proposerSpec.prepareBuilder(perBlockTransition, depositContract, slot, randaoReveal, observableBeaconState);
+  public BeaconBlock prepareBlock(
+      SlotNumber slot, BLSSignature randaoReveal, ObservableBeaconState observableBeaconState) {
+    return proposer.propose(
+        observableBeaconState.getLatestSlotState(),
+        randaoReveal,
+        observableBeaconState.getPendingOperations());
   }
 
   public Attestation prepareAttestation(
+      SlotNumber slot,
       ValidatorIndex validatorIndex,
       ShardNumber shard,
       ObservableBeaconState observableBeaconState) {

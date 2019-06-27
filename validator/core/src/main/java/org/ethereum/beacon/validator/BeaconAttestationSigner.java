@@ -6,7 +6,7 @@ import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.validator.crypto.MessageSigner;
 
 /**
- * Updates given attestation with signature.
+ * Updates given attestation with its signature.
  *
  * @see BeaconChainAttester
  */

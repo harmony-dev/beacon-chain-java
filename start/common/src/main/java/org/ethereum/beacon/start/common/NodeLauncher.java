@@ -31,12 +31,15 @@ import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.ssz.SSZBuilder;
 import org.ethereum.beacon.ssz.SSZSerializer;
 import org.ethereum.beacon.validator.BeaconAttestationSigner;
+import org.ethereum.beacon.validator.BeaconBlockSigner;
 import org.ethereum.beacon.validator.BeaconChainProposer;
 import org.ethereum.beacon.validator.local.MultiValidatorService;
 import org.ethereum.beacon.validator.attester.BeaconAttestationSignerImpl;
 import org.ethereum.beacon.validator.attester.BeaconChainAttesterImpl;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
+import org.ethereum.beacon.validator.proposer.BeaconBlockSignerImpl;
 import org.ethereum.beacon.validator.proposer.BeaconChainProposerImpl;
+import org.ethereum.beacon.validator.proposer.RandaoGeneratorImpl;
 import org.ethereum.beacon.wire.Feedback;
 import org.ethereum.beacon.wire.MessageSerializer;
 import org.ethereum.beacon.wire.SimplePeerManagerImpl;
@@ -184,13 +187,14 @@ public class NodeLauncher {
     if (validatorCred != null) {
       beaconChainProposer = new BeaconChainProposerImpl(spec, perBlockTransition, depositContract);
       beaconChainAttester = new BeaconChainAttesterImpl(spec);
-      BeaconAttestationSigner attestationSigner = new BeaconAttestationSignerImpl(spec);
 
       beaconChainValidator = new MultiValidatorService(
           validatorCred,
           beaconChainProposer,
+          new BeaconBlockSignerImpl(spec),
+          new RandaoGeneratorImpl(spec),
           beaconChainAttester,
-          attestationSigner,
+          new BeaconAttestationSignerImpl(spec),
           spec,
           observableStateProcessor.getObservableStateStream(),
           schedulers);
