@@ -1,4 +1,4 @@
-package org.ethereum.beacon.validator;
+package org.ethereum.beacon.validator.local;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.time.Duration;
@@ -32,6 +32,10 @@ import org.ethereum.beacon.schedulers.RunnableEx;
 import org.ethereum.beacon.schedulers.Scheduler;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.stream.SimpleProcessor;
+import org.ethereum.beacon.validator.BeaconAttestationSigner;
+import org.ethereum.beacon.validator.BeaconChainAttester;
+import org.ethereum.beacon.validator.BeaconChainProposer;
+import org.ethereum.beacon.validator.ValidatorService;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import org.javatuples.Pair;
 import org.reactivestreams.Publisher;
@@ -52,6 +56,8 @@ public class MultiValidatorService implements ValidatorService {
   private BeaconChainProposer proposer;
   /** Attester logic. */
   private BeaconChainAttester attester;
+
+  private BeaconAttestationSigner attestationSigner;
   /** The spec. */
   private BeaconChainSpec spec;
 
@@ -75,6 +81,7 @@ public class MultiValidatorService implements ValidatorService {
       List<BLS381Credentials> blsCredentials,
       BeaconChainProposer proposer,
       BeaconChainAttester attester,
+      BeaconAttestationSigner attestationSigner,
       BeaconChainSpec spec,
       Publisher<ObservableBeaconState> stateStream,
       Schedulers schedulers) {
@@ -83,13 +90,16 @@ public class MultiValidatorService implements ValidatorService {
             .collect(Collectors.toMap(BLS381Credentials::getPubkey, Function.identity()));
     this.proposer = proposer;
     this.attester = attester;
+    this.attestationSigner = attestationSigner;
     this.spec = spec;
     this.stateStream = stateStream;
     this.schedulers = schedulers;
 
     blocksStream = new SimpleProcessor<>(this.schedulers.events(), "BeaconChainValidator.block");
-    attestationsStream = new SimpleProcessor<>(this.schedulers.events(), "BeaconChainValidator.attestation");
-    initializedStream = new SimpleProcessor<>(this.schedulers.events(), "BeaconChainValidator.init");
+    attestationsStream =
+        new SimpleProcessor<>(this.schedulers.events(), "BeaconChainValidator.attestation");
+    initializedStream =
+        new SimpleProcessor<>(this.schedulers.events(), "BeaconChainValidator.init");
 
     executor = this.schedulers.newSingleThreadDaemon("validator-service");
     initExecutor = new LatestExecutor<>(schedulers.blocking(), this::initFromLatestBeaconState);
@@ -123,7 +133,8 @@ public class MultiValidatorService implements ValidatorService {
     }
 
     this.initialized.putAll(intoCommittees);
-    intoCommittees.forEach((vIdx, bls) -> initializedStream.onNext(Pair.with(vIdx, bls.getPubkey())));
+    intoCommittees.forEach(
+        (vIdx, bls) -> initializedStream.onNext(Pair.with(vIdx, bls.getPubkey())));
     if (uninitialized.isEmpty()) {
       initializedStream.onComplete();
     }
@@ -283,8 +294,11 @@ public class MultiValidatorService implements ValidatorService {
 
     BLS381Credentials credentials = initialized.get(index);
     if (credentials != null) {
+      Attestation unsignedAttestation =
+          attester.attest(
+              index, shard, observableState.getLatestSlotState(), observableState.getHead());
       Attestation attestation =
-          attester.attest(index, shard, observableState, credentials.getSigner());
+          attestationSigner.sign(unsignedAttestation, state.getFork(), credentials.getSigner());
       propagateAttestation(attestation);
 
       logger.info(
@@ -365,7 +379,7 @@ public class MultiValidatorService implements ValidatorService {
   private void subscribeToStateUpdates(Consumer<ObservableBeaconState> payload) {
     Flux.from(stateStream)
         .doOnNext(payload)
-        .onErrorContinue((t,o) -> logger.warn("Validator error: ", t))
+        .onErrorContinue((t, o) -> logger.warn("Validator error: ", t))
         .subscribe();
   }
 

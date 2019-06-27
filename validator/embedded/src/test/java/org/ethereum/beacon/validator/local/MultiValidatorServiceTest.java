@@ -1,4 +1,4 @@
-package org.ethereum.beacon.validator;
+package org.ethereum.beacon.validator.local;
 
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.util.ObservableBeaconStateTestUtil;
@@ -10,9 +10,10 @@ import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
+import org.ethereum.beacon.validator.MessageSignerTestUtil;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import org.ethereum.beacon.validator.crypto.MessageSigner;
-import org.ethereum.beacon.validator.util.ValidatorServiceTestUtil;
+import org.ethereum.beacon.validator.local.util.ValidatorServiceTestUtil;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;

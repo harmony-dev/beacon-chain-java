@@ -1,6 +1,17 @@
 package org.ethereum.beacon.consensus.spec;
 
+import static java.lang.Math.min;
+import static java.util.stream.Collectors.toList;
+import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
+
 import com.google.common.collect.Ordering;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockHeader;
 import org.ethereum.beacon.core.BeaconState;
@@ -9,6 +20,7 @@ import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustodyBit;
 import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
+import org.ethereum.beacon.core.state.Fork;
 import org.ethereum.beacon.core.state.ShardCommittee;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
@@ -32,18 +44,6 @@ import tech.pegasys.artemis.util.bytes.BytesValues;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
 import tech.pegasys.artemis.util.uint.UInt64s;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static java.lang.Math.min;
-import static java.util.stream.Collectors.toList;
-import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
 
 /**
  * Helper functions.
@@ -847,8 +847,7 @@ public interface HelperFunction extends SpecCommons {
    */
   default UInt64 get_domain(BeaconState state, UInt64 domain_type, EpochNumber message_epoch) {
     EpochNumber epoch = message_epoch == null ? get_current_epoch(state) : message_epoch;
-    Bytes4 fork_version = epoch.less(state.getFork().getEpoch()) ?
-        state.getFork().getPreviousVersion() : state.getFork().getCurrentVersion();
+    Bytes4 fork_version = fork_version(epoch, state.getFork());
     return bls_domain(domain_type, fork_version);
   }
 
@@ -1095,6 +1094,10 @@ public interface HelperFunction extends SpecCommons {
   }
   default UInt64 bls_domain(UInt64 domain_type) {
     return bls_domain(domain_type, Bytes4.ZERO);
+  }
+
+  default Bytes4 fork_version(EpochNumber epoch, Fork fork) {
+    return epoch.less(fork.getEpoch()) ? fork.getPreviousVersion() : fork.getCurrentVersion();
   }
 
   /*

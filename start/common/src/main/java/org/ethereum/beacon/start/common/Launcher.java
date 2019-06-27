@@ -31,8 +31,10 @@ import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.consensus.ChainStart;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.util.stats.MeasurementsCollector;
+import org.ethereum.beacon.validator.BeaconAttestationSigner;
 import org.ethereum.beacon.validator.BeaconChainProposer;
-import org.ethereum.beacon.validator.MultiValidatorService;
+import org.ethereum.beacon.validator.local.MultiValidatorService;
+import org.ethereum.beacon.validator.attester.BeaconAttestationSignerImpl;
 import org.ethereum.beacon.validator.attester.BeaconChainAttesterImpl;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import org.ethereum.beacon.validator.proposer.BeaconChainProposerImpl;
@@ -160,11 +162,13 @@ public class Launcher {
     if (validatorCred != null) {
       beaconChainProposer = new BeaconChainProposerImpl(spec, perBlockTransition, depositContract);
       beaconChainAttester = new BeaconChainAttesterImpl(spec);
+      BeaconAttestationSigner attestationSigner = new BeaconAttestationSignerImpl(spec);
 
       beaconChainValidator = new MultiValidatorService(
           validatorCred,
           beaconChainProposer,
           beaconChainAttester,
+          attestationSigner,
           spec,
           observableStateProcessor.getObservableStateStream(),
           schedulers);

@@ -292,8 +292,7 @@ public class ValidatorRest extends ReactorNettyServer {
           spec.get_validator_index_by_pubkey(
               observableBeaconState.getLatestSlotState().createMutableCopy(), validatorPubkey);
       Attestation attestation =
-          validatorDutiesService.prepareAttestation(
-              validatorIndex, shard, observableBeaconState, slot);
+          validatorDutiesService.prepareAttestation(validatorIndex, shard, observableBeaconState);
       IndexedAttestation indexedAttestation =
           spec.convert_to_indexed(
               observableBeaconState.getLatestSlotState().createMutableCopy(), attestation);

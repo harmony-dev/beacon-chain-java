@@ -1,5 +1,10 @@
 package org.ethereum.beacon.validator.api;
 
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconStateEx;
@@ -14,32 +19,27 @@ import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.pow.DepositContract;
-import org.ethereum.beacon.validator.BeaconAttesterSpec;
+import org.ethereum.beacon.validator.BeaconChainAttester;
 import org.ethereum.beacon.validator.BeaconProposerSpec;
+import org.ethereum.beacon.validator.attester.BeaconChainAttesterImpl;
 import org.javatuples.Pair;
 import org.javatuples.Triplet;
 import tech.pegasys.artemis.util.uint.UInt64;
 import tech.pegasys.artemis.util.uint.UInt64s;
-
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Validator tasks service: searching for tasks, proposing and attesting
  */
 public class ValidatorDutiesService {
   private final BeaconChainSpec spec;
-  private final BeaconAttesterSpec attesterSpec;
+  private final BeaconChainAttester attester;
   private final BeaconProposerSpec proposerSpec;
   private final BlockTransition<BeaconStateEx> perBlockTransition;
   private final DepositContract depositContract;
 
   public ValidatorDutiesService(BeaconChainSpec spec, BlockTransition<BeaconStateEx> perBlockTransition, DepositContract depositContract) {
     this.spec = spec;
-    this.attesterSpec = new BeaconAttesterSpec(spec);
+    this.attester = new BeaconChainAttesterImpl(spec);
     this.proposerSpec = new BeaconProposerSpec(spec);
     this.perBlockTransition = perBlockTransition;
     this.depositContract = depositContract;
@@ -49,8 +49,15 @@ public class ValidatorDutiesService {
     return proposerSpec.prepareBuilder(perBlockTransition, depositContract, slot, randaoReveal, observableBeaconState);
   }
 
-  public Attestation prepareAttestation(ValidatorIndex validatorIndex, ShardNumber shard, ObservableBeaconState observableBeaconState, SlotNumber slot) {
-    return attesterSpec.prepareAttestation(validatorIndex, shard, observableBeaconState, slot);
+  public Attestation prepareAttestation(
+      ValidatorIndex validatorIndex,
+      ShardNumber shard,
+      ObservableBeaconState observableBeaconState) {
+    return attester.attest(
+        validatorIndex,
+        shard,
+        observableBeaconState.getLatestSlotState(),
+        observableBeaconState.getHead());
   }
 
   /**

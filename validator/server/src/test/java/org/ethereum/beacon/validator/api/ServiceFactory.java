@@ -26,7 +26,7 @@ import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.stream.SimpleProcessor;
-import org.ethereum.beacon.validator.MultiValidatorServiceTest;
+import org.ethereum.beacon.validator.local.MultiValidatorServiceTest;
 import org.ethereum.beacon.wire.Feedback;
 import org.ethereum.beacon.wire.WireApiSub;
 import org.ethereum.beacon.wire.WireApiSync;
@@ -283,8 +283,7 @@ public class ServiceFactory {
       public Attestation prepareAttestation(
           ValidatorIndex validatorIndex,
           ShardNumber shard,
-          ObservableBeaconState observableBeaconState,
-          SlotNumber slot) {
+          ObservableBeaconState observableBeaconState) {
         return new Attestation(
             Bitfield.EMPTY,
             new AttestationData(

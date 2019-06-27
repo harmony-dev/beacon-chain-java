@@ -1,4 +1,4 @@
-package org.ethereum.beacon.validator.util;
+package org.ethereum.beacon.validator.local.util;
 
 import java.util.Collections;
 import java.util.List;
@@ -12,10 +12,12 @@ import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.pow.util.DepositContractTestUtil;
 import org.ethereum.beacon.schedulers.Schedulers;
+import org.ethereum.beacon.validator.BeaconAttestationSigner;
 import org.ethereum.beacon.validator.BeaconChainAttester;
 import org.ethereum.beacon.validator.BeaconChainProposer;
 import org.ethereum.beacon.validator.MessageSignerTestUtil;
-import org.ethereum.beacon.validator.MultiValidatorService;
+import org.ethereum.beacon.validator.local.MultiValidatorService;
+import org.ethereum.beacon.validator.attester.BeaconAttestationSignerImpl;
 import org.ethereum.beacon.validator.attester.BeaconChainAttesterTestUtil;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import org.ethereum.beacon.validator.crypto.MessageSigner;
@@ -62,9 +64,10 @@ public abstract class ValidatorServiceTestUtil {
         BeaconChainProposerTestUtil.mockProposer(
             perBlockTransition, depositContract, spec);
     BeaconChainAttester attester = BeaconChainAttesterTestUtil.mockAttester(spec);
+    BeaconAttestationSigner attestationSigner = new BeaconAttestationSignerImpl(spec);
 
     return Mockito.spy(
         new MultiValidatorService(
-            blsCredentials, proposer, attester, spec, Mono.empty(), schedulers));
+            blsCredentials, proposer, attester, attestationSigner, spec, Mono.empty(), schedulers));
   }
 }
