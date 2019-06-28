@@ -8,7 +8,7 @@ import java.util.List;
  */
 public interface SSZUnionAccessor extends SSZCompositeAccessor {
 
-  interface UnionAccessor extends CompositeAccessor {
+  interface UnionInstanceAccessor extends CompositeInstanceAccessor {
 
     /**
      * Returns Union children type descriptors
@@ -23,5 +23,5 @@ public interface SSZUnionAccessor extends SSZCompositeAccessor {
     }
   }
 
-  UnionAccessor getAccessor(SSZField containerDescriptor);
+  UnionInstanceAccessor getInstanceAccessor(SSZField containerDescriptor);
 }

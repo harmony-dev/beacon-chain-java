@@ -15,10 +15,10 @@ import tech.pegasys.artemis.util.collections.Union;
  */
 public class SchemeSSZUnionAccessor implements SSZUnionAccessor {
 
-  class SchemeUnionAccessor implements UnionAccessor {
+  class SchemeUnionInstanceInstanceAccessor implements UnionInstanceAccessor {
     private final SSZScheme scheme;
 
-    public SchemeUnionAccessor(SSZField unionDescriptor) {
+    public SchemeUnionInstanceInstanceAccessor(SSZField unionDescriptor) {
       scheme = sszSchemeBuilder.build(unionDescriptor.getRawClass());
     }
 
@@ -72,7 +72,7 @@ public class SchemeSSZUnionAccessor implements SSZUnionAccessor {
   }
 
   @Override
-  public UnionAccessor getAccessor(SSZField compositeDescriptor) {
-    return new SchemeUnionAccessor(compositeDescriptor);
+  public UnionInstanceAccessor getInstanceAccessor(SSZField compositeDescriptor) {
+    return new SchemeUnionInstanceInstanceAccessor(compositeDescriptor);
   }
 }

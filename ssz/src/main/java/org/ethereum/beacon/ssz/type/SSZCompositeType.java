@@ -14,7 +14,7 @@ public interface SSZCompositeType extends SSZType {
    * Returns the children count of the composite value Java representation instance
    */
   default int getChildrenCount(Object value) {
-    return getAccessor().getAccessor(getTypeDescriptor()).getChildrenCount(value);
+    return getAccessor().getInstanceAccessor(getTypeDescriptor()).getChildrenCount(value);
   }
 
   /**
@@ -23,7 +23,7 @@ public interface SSZCompositeType extends SSZType {
    * Returns the child at index of the composite value Java representation instance
    */
   default Object getChild(Object value, int idx) {
-    return getAccessor().getAccessor(getTypeDescriptor()).getChildValue(value, idx);
+    return getAccessor().getInstanceAccessor(getTypeDescriptor()).getChildValue(value, idx);
   }
 
   /**

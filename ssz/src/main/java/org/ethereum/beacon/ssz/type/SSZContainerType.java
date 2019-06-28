@@ -3,6 +3,7 @@ package org.ethereum.beacon.ssz.type;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.ethereum.beacon.ssz.access.SSZContainerAccessor;
+import org.ethereum.beacon.ssz.access.SSZContainerAccessor.ContainerInstanceAccessor;
 import org.ethereum.beacon.ssz.access.SSZField;
 
 /**
@@ -16,7 +17,7 @@ public class SSZContainerType implements SSZHeteroCompositeType {
   private final TypeResolver typeResolver;
   private final SSZField descriptor;
   private final SSZContainerAccessor containerAccessor;
-  private final SSZContainerAccessor.ContainerAccessor accessor;
+  private final ContainerInstanceAccessor accessor;
 
   private List<SSZType> childTypes;
 
@@ -32,7 +33,7 @@ public class SSZContainerType implements SSZHeteroCompositeType {
     this.typeResolver = typeResolver;
     this.descriptor = descriptor;
     this.containerAccessor = accessor;
-    this.accessor = accessor.getAccessor(descriptor);
+    this.accessor = accessor.getInstanceAccessor(descriptor);
   }
 
   @Override

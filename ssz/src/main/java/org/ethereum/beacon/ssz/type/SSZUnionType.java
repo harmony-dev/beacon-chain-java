@@ -45,7 +45,7 @@ public class SSZUnionType implements SSZHeteroCompositeType {
   @Override
   public List<SSZType> getChildTypes() {
     if (childTypes == null) {
-      List<SSZField> sszFields = accessor.getAccessor(getTypeDescriptor())
+      List<SSZField> sszFields = accessor.getInstanceAccessor(getTypeDescriptor())
           .getChildDescriptors();
       if (sszFields.isEmpty()) {
         throw new SSZSchemeException("No Union members found: " + this.getTypeDescriptor());

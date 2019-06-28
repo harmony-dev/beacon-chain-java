@@ -17,10 +17,10 @@ import tech.pegasys.artemis.util.collections.Union;
  */
 public class GenericTypeSSZUnionAccessor implements SSZUnionAccessor {
 
-  class GenericUnionAccessor implements UnionAccessor {
+  class GenericUnionInstanceInstanceAccessor implements UnionInstanceAccessor {
     private final List<SSZField> descriptors;
 
-    public GenericUnionAccessor(SSZField unionDescriptor) {
+    public GenericUnionInstanceInstanceAccessor(SSZField unionDescriptor) {
       descriptors = getChildDescriptorsFromGenericType(unionDescriptor);
     }
 
@@ -64,8 +64,8 @@ public class GenericTypeSSZUnionAccessor implements SSZUnionAccessor {
   }
 
   @Override
-  public UnionAccessor getAccessor(SSZField compositeDescriptor) {
-    return new GenericUnionAccessor(compositeDescriptor);
+  public UnionInstanceAccessor getInstanceAccessor(SSZField compositeDescriptor) {
+    return new GenericUnionInstanceInstanceAccessor(compositeDescriptor);
   }
 
   private List<SSZField> getChildDescriptorsFromGenericType(SSZField unionDescriptor) {

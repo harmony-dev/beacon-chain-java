@@ -10,7 +10,7 @@ import static tech.pegasys.artemis.util.bytes.BytesValue.concat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
-import org.ethereum.beacon.ssz.access.SSZUnionAccessor.UnionAccessor;
+import org.ethereum.beacon.ssz.access.SSZUnionAccessor.UnionInstanceAccessor;
 import org.ethereum.beacon.ssz.type.SSZBasicType;
 import org.ethereum.beacon.ssz.type.SSZCompositeType;
 import org.ethereum.beacon.ssz.type.SSZListType;
@@ -45,13 +45,13 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
   @Override
   public MerkleTrie visitUnion(SSZUnionType type, Object param,
       ChildVisitor<Object, MerkleTrie> childVisitor) {
-    UnionAccessor unionAccessor = type.getAccessor().getAccessor(type.getTypeDescriptor());
-    int typeIndex = unionAccessor.getTypeIndex(param);
+    UnionInstanceAccessor unionInstanceAccessor = type.getAccessor().getInstanceAccessor(type.getTypeDescriptor());
+    int typeIndex = unionInstanceAccessor.getTypeIndex(param);
     List<BytesValue> chunks;
     if (type.isNullable() && typeIndex == 0) {
       chunks = emptyList();
     } else {
-      Object value = unionAccessor.getChildValue(param, typeIndex);
+      Object value = unionInstanceAccessor.getChildValue(param, typeIndex);
       chunks = singletonList(childVisitor.apply(typeIndex, value).getFinalRoot());
     }
     MerkleTrie merkle = merkleize(chunks);

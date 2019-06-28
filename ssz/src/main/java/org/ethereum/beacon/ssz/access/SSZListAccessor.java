@@ -1,15 +1,17 @@
 package org.ethereum.beacon.ssz.access;
 
+import org.ethereum.beacon.ssz.access.SSZCompositeAccessor.CompositeInstanceAccessor;
+
 /**
  * Handles collections of homogeneous objects (e.g. java array, {@link java.util.List}, etc)
  * which includes both ssz types: vectors and lists
  * List accessor is responsible of accessing list elements, their type and new instance creation
  *
- * This interface also serves as its own {@link org.ethereum.beacon.ssz.access.SSZCompositeAccessor.CompositeAccessor}
+ * This interface also serves as its own {@link CompositeInstanceAccessor}
  * since there is normally no information to cache about the list type
  * (as opposed to {@link SSZContainerAccessor})
  */
-public interface SSZListAccessor extends SSZCompositeAccessor, SSZCompositeAccessor.CompositeAccessor{
+public interface SSZListAccessor extends SSZCompositeAccessor, CompositeInstanceAccessor {
 
   interface ListInstanceBuilder extends CompositeInstanceBuilder {
 
@@ -36,7 +38,7 @@ public interface SSZListAccessor extends SSZCompositeAccessor, SSZCompositeAcces
   ListInstanceBuilder createInstanceBuilder(SSZField listType);
 
   @Override
-  default CompositeAccessor getAccessor(SSZField compositeDescriptor) {
+  default CompositeInstanceAccessor getInstanceAccessor(SSZField compositeDescriptor) {
     return this;
   }
 }

@@ -7,7 +7,7 @@ import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import org.ethereum.beacon.ssz.SSZSerializeException;
-import org.ethereum.beacon.ssz.access.SSZUnionAccessor.UnionAccessor;
+import org.ethereum.beacon.ssz.access.SSZUnionAccessor.UnionInstanceAccessor;
 import org.ethereum.beacon.ssz.type.SSZBasicType;
 import org.ethereum.beacon.ssz.type.SSZCompositeType;
 import org.ethereum.beacon.ssz.type.SSZListType;
@@ -63,12 +63,13 @@ public class SosSerializer
   @Override
   public SerializerResult visitUnion(SSZUnionType type, Object param,
       ChildVisitor<Object, SerializerResult> childVisitor) {
-    UnionAccessor unionAccessor = type.getAccessor().getAccessor(type.getTypeDescriptor());
-    int typeIndex = unionAccessor.getTypeIndex(param);
+    UnionInstanceAccessor unionInstanceAccessor = type.getAccessor().getInstanceAccessor(type.getTypeDescriptor());
+    int typeIndex = unionInstanceAccessor.getTypeIndex(param);
     BytesValue typeIndexBytes = serializeLength(typeIndex);
     BytesValue body = BytesValue.EMPTY;
     if (typeIndex > 0 || !type.isNullable()) {
-      SerializerResult result = childVisitor.apply(typeIndex, unionAccessor.getChildValue(param, typeIndex));
+      SerializerResult result = childVisitor.apply(typeIndex, unionInstanceAccessor
+          .getChildValue(param, typeIndex));
       body = result.getSerializedBody();
     }
     return new SerializerResult(typeIndexBytes.concat(body), false);

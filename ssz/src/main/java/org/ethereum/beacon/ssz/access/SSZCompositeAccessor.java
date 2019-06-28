@@ -22,7 +22,7 @@ public interface SSZCompositeAccessor {
   /**
    * Interface for accessing child values of a java object representing SSZ List or Container
    */
-  interface CompositeAccessor {
+  interface CompositeInstanceAccessor {
 
     Object getChildValue(Object compositeInstance, int childIndex);
 
@@ -43,7 +43,7 @@ public interface SSZCompositeAccessor {
 
   /**
    * Creates corresponding java object accessor
-   * @see CompositeAccessor
+   * @see CompositeInstanceAccessor
    */
-  CompositeAccessor getAccessor(SSZField compositeDescriptor);
+  CompositeInstanceAccessor getInstanceAccessor(SSZField compositeDescriptor);
 }
