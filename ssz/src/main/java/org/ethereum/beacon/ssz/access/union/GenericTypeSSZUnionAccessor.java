@@ -69,7 +69,7 @@ public class GenericTypeSSZUnionAccessor implements SSZUnionAccessor {
   }
 
   private List<SSZField> getChildDescriptorsFromGenericType(SSZField unionDescriptor) {
-    if (!ReadUnion.GenericTypedUnion.class.isAssignableFrom(unionDescriptor.getRawClass())) {
+    if (!isSupported(unionDescriptor)) {
       throw new IllegalArgumentException("Unknown union class: " + unionDescriptor);
     }
     Type[] typeArguments = unionDescriptor.getParametrizedType().getActualTypeArguments();
