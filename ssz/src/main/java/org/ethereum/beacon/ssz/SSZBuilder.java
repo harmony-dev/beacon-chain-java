@@ -254,23 +254,15 @@ public class SSZBuilder {
 
   public SSZBuilder addDefaultContainerAccessors() {
     checkAlreadyInitialized();
-    containerAccessors.add(this::createDefaultContainerAccessor);
+    containerAccessors.add(() -> new SimpleContainerAccessor(sszSchemeBuilder, objCreator));
     return this;
-  }
-
-  private SSZContainerAccessor createDefaultContainerAccessor() {
-    return new SimpleContainerAccessor(sszSchemeBuilder, objCreator);
   }
 
   public SSZBuilder addDefaultUnionAccessors() {
     checkAlreadyInitialized();
-    unionAccessors.add(GenericTypeSSZUnionAccessor::new);
-    unionAccessors.add(this::createDefaultUnionAccessor);
+    unionAccessors.add(() -> new GenericTypeSSZUnionAccessor());
+    unionAccessors.add(() -> new SchemeSSZUnionAccessor(sszSchemeBuilder));
     return this;
-  }
-
-  private SSZUnionAccessor createDefaultUnionAccessor() {
-    return new SchemeSSZUnionAccessor(sszSchemeBuilder);
   }
 
   /**
