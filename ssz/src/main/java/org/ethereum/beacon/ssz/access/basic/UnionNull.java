@@ -6,7 +6,7 @@ import java.util.Set;
 import org.ethereum.beacon.ssz.access.SSZBasicAccessor;
 import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.visitor.SSZReader;
-import tech.pegasys.artemis.util.collections.ReadUnion;
+import tech.pegasys.artemis.util.collections.Union;
 
 /** special dummy accessor for dedicated ReadUnion.Null class */
 public class UnionNull implements SSZBasicAccessor {
@@ -18,7 +18,7 @@ public class UnionNull implements SSZBasicAccessor {
 
   @Override
   public Set<Class> getSupportedClasses() {
-    return Collections.singleton(ReadUnion.Null.class);
+    return Collections.singleton(Union.Null.class);
   }
 
 

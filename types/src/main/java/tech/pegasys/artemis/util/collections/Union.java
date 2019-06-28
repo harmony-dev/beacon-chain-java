@@ -52,10 +52,10 @@ import javax.annotation.Nullable;
  * Please note that the latter usecase is only possible when the Union is a member of another SSZ
  * container since only in this case generic types specialization is available at runtime
  *
- * This class denotes read-only Union. See {@link WriteUnion} for read-write version and
+ * This class denotes read-only Union. See {@link MutableUnion} for read-write version and
  * {@link UnionImpl} for implementing class
  */
-public interface ReadUnion {
+public interface Union {
 
   /**
    * Special class representing Null SSZ Union member
@@ -85,7 +85,7 @@ public interface ReadUnion {
     return getValue();
   }
 
-  interface GenericTypedUnion extends ReadUnion {}
+  interface GenericTypedUnion extends Union {}
 
   interface U2<P1, P2> extends GenericTypedUnion {
     default P1 getMember1() {

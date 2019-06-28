@@ -5,13 +5,13 @@ import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.access.SSZUnionAccessor;
 import org.ethereum.beacon.ssz.access.container.SSZSchemeBuilder;
 import org.ethereum.beacon.ssz.access.container.SSZSchemeBuilder.SSZScheme;
-import tech.pegasys.artemis.util.collections.ReadUnion;
-import tech.pegasys.artemis.util.collections.WriteUnion;
+import tech.pegasys.artemis.util.collections.MutableUnion;
+import tech.pegasys.artemis.util.collections.Union;
 
 /**
  * Gathers information about Union member types from declared @{@link org.ethereum.beacon.ssz.annotation.SSZ}
- * fields of the {@link ReadUnion} subclass like it is done with regular SSZ containers
- * See javadoc at {@link ReadUnion} for more details
+ * fields of the {@link Union} subclass like it is done with regular SSZ containers
+ * See javadoc at {@link Union} for more details
  */
 public class SchemeSSZUnionAccessor implements SSZUnionAccessor {
 
@@ -29,12 +29,12 @@ public class SchemeSSZUnionAccessor implements SSZUnionAccessor {
 
     @Override
     public Object getChildValue(Object compositeInstance, int childIndex) {
-      return ((ReadUnion) compositeInstance).getValue();
+      return ((Union) compositeInstance).getValue();
     }
 
     @Override
     public int getTypeIndex(Object unionInstance) {
-      return ((ReadUnion) unionInstance).getTypeIndex();
+      return ((Union) unionInstance).getTypeIndex();
     }
   }
 
@@ -46,18 +46,18 @@ public class SchemeSSZUnionAccessor implements SSZUnionAccessor {
 
   @Override
   public boolean isSupported(SSZField field) {
-    return ReadUnion.class.isAssignableFrom(field.getRawClass());
+    return Union.class.isAssignableFrom(field.getRawClass());
   }
 
   @Override
   public CompositeInstanceBuilder createInstanceBuilder(SSZField compositeDescriptor) {
     return new CompositeInstanceBuilder() {
-      private WriteUnion union;
+      private MutableUnion union;
 
       @Override
       public void setChild(int idx, Object childValue) {
         try {
-          union = (WriteUnion) compositeDescriptor.getRawClass().newInstance();
+          union = (MutableUnion) compositeDescriptor.getRawClass().newInstance();
           union.setValue(idx, childValue);
         } catch (InstantiationException | IllegalAccessException e) {
           throw new RuntimeException(e);

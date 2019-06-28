@@ -2,7 +2,7 @@ package tech.pegasys.artemis.util.collections;
 
 import javax.annotation.Nullable;
 
-public class UnionImpl implements WriteUnion {
+public class UnionImpl implements MutableUnion {
 
   private int typeIndex = 0;
   private Object value;

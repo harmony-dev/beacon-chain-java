@@ -26,9 +26,9 @@ import org.junit.Ignore;
 import org.junit.Test;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
-import tech.pegasys.artemis.util.collections.ReadUnion.Null;
+import tech.pegasys.artemis.util.collections.MutableUnion;
+import tech.pegasys.artemis.util.collections.Union.Null;
 import tech.pegasys.artemis.util.collections.UnionImpl;
-import tech.pegasys.artemis.util.collections.WriteUnion;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 /** Tests of {@link SSZSerializer} */
@@ -534,7 +534,7 @@ public class SSZSerializerTest {
     public List<Integer> l1;
 
     @SSZ
-    public WriteUnion.U3<Null, UInt64, List<Integer>> union = WriteUnion.U3.create();
+    public MutableUnion.U3<Null, UInt64, List<Integer>> union = MutableUnion.U3.create();
 
     @SSZ
     public int i1;

@@ -7,13 +7,13 @@ import java.util.stream.Collectors;
 import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.access.SSZUnionAccessor;
 import tech.pegasys.artemis.util.collections.GenericUnionImpl;
-import tech.pegasys.artemis.util.collections.ReadUnion;
-import tech.pegasys.artemis.util.collections.WriteUnion;
+import tech.pegasys.artemis.util.collections.MutableUnion;
+import tech.pegasys.artemis.util.collections.Union;
 
 /**
  * Gathers information about Union member types from the generic types arguments
- * see {@link WriteUnion.U2}, {@link WriteUnion.U3}, etc.
- * Also see javadoc at {@link ReadUnion}
+ * see {@link MutableUnion.U2}, {@link MutableUnion.U3}, etc.
+ * Also see javadoc at {@link Union}
  */
 public class GenericTypeSSZUnionAccessor implements SSZUnionAccessor {
 
@@ -31,24 +31,24 @@ public class GenericTypeSSZUnionAccessor implements SSZUnionAccessor {
 
     @Override
     public Object getChildValue(Object compositeInstance, int childIndex) {
-      return ((ReadUnion) compositeInstance).getValue();
+      return ((Union) compositeInstance).getValue();
     }
 
     @Override
     public int getTypeIndex(Object unionInstance) {
-      return ((ReadUnion) unionInstance).getTypeIndex();
+      return ((Union) unionInstance).getTypeIndex();
     }
   }
 
   @Override
   public boolean isSupported(SSZField field) {
-    return ReadUnion.GenericTypedUnion.class.isAssignableFrom(field.getRawClass());
+    return Union.GenericTypedUnion.class.isAssignableFrom(field.getRawClass());
   }
 
   @Override
   public CompositeInstanceBuilder createInstanceBuilder(SSZField unionDescriptor) {
     return new CompositeInstanceBuilder() {
-      private WriteUnion union;
+      private MutableUnion union;
 
       @Override
       public void setChild(int idx, Object childValue) {

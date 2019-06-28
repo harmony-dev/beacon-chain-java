@@ -5,7 +5,7 @@ import java.util.stream.Collectors;
 import org.ethereum.beacon.ssz.SSZSchemeException;
 import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.access.SSZUnionAccessor;
-import tech.pegasys.artemis.util.collections.ReadUnion;
+import tech.pegasys.artemis.util.collections.Union;
 
 public class SSZUnionType implements SSZHeteroCompositeType {
 
@@ -51,7 +51,7 @@ public class SSZUnionType implements SSZHeteroCompositeType {
         throw new SSZSchemeException("No Union members found: " + this.getTypeDescriptor());
       }
       for (int i = 1; i < sszFields.size(); i++) {
-        if (sszFields.get(i).getRawClass() == ReadUnion.Null.class) {
+        if (sszFields.get(i).getRawClass() == Union.Null.class) {
           throw new SSZSchemeException("Union Null should be the only Null member at index 0");
         }
       }
@@ -63,6 +63,6 @@ public class SSZUnionType implements SSZHeteroCompositeType {
   }
 
   public boolean isNullable() {
-    return getChildTypes().get(0).getTypeDescriptor().getRawClass() == ReadUnion.Null.class;
+    return getChildTypes().get(0).getTypeDescriptor().getRawClass() == Union.Null.class;
   }
 }
