@@ -15,38 +15,38 @@ import javax.annotation.Nullable;
  * Direct subclassing with declaring all the SSZ Union types explicitly like the following:
  *
  * <code>
-      @SSZSerializable
-      public static class SafeUnion extends UnionImpl {
-
-        public SafeUnion() {
-          setValue(0, null);
-        }
-
-        public SafeUnion(UInt64 intMember) {
-          setValue(1, intMember);
-        }
-
-        @SSZ(order = 1)
-        public Null getNull() {
-          throw new RuntimeException("Shouldn't be called");
-        }
-
-        @SSZ(order = 2)
-        public UInt64 getIntMember() {
-          return getValueSafe(1);
-        }
-      }
+ *     @SSZSerializable
+ *     public static class SafeUnion extends UnionImpl {
+ *
+ *       public SafeUnion() {
+ *         setValue(0, null);
+ *       }
+ *
+ *       public SafeUnion(UInt64 intMember) {
+ *         setValue(1, intMember);
+ *       }
+ *
+ *       @SSZ(order = 1)
+ *       public Null getNull() {
+ *         throw new RuntimeException("Shouldn't be called");
+ *       }
+ *
+ *       @SSZ(order = 2)
+ *       public UInt64 getIntMember() {
+ *         return getValueSafe(1);
+ *       }
+ *     }
  * </code>
  *
  * or by using anonymous helpers ({@link U2}, {@link U3} ...) which incorporate Union types
  * information withing generic type arguments. Like below:
  *
  * <code>
-      @SSZSerializable
-      public static class AnonymousUnionContainer {
-        @SSZ
-        public WriteUnion.U3<Null, UInt64, List<Integer>> union = WriteUnion.U3.create();
-      }
+ *     @SSZSerializable
+ *     public static class AnonymousUnionContainer {
+ *       @SSZ
+ *       public WriteUnion.U3<Null, UInt64, List<Integer>> union = WriteUnion.U3.create();
+ *     }
  * </code>
  *
  * Please note that the latter usecase is only possible when the Union is a member of another SSZ
