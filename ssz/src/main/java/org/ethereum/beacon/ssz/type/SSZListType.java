@@ -12,7 +12,7 @@ import org.ethereum.beacon.ssz.annotation.SSZ;
  * <a href="https://github.com/ethereum/eth2.0-specs/blob/dev/specs/simple-serialize.md#composite-types">
  *   SSZ spec</a>
  */
-public class SSZListType implements SSZCompositeType {
+public class SSZListType implements SSZHomoCompositeType {
 
   private final SSZField descriptor;
   private final TypeResolver typeResolver;
@@ -30,16 +30,8 @@ public class SSZListType implements SSZCompositeType {
   }
 
   @Override
-  public boolean isList() {
-    return true;
-  }
-
-  /**
-   * Indicates if this type represents fixed-length SSZ Vector.
-   * if <code>false</code> this type represents variable-length SSZ List
-   */
-  public boolean isVector() {
-    return vectorLength >= 0;
+  public Type getType() {
+    return vectorLength >= 0 ? Type.VECTOR : Type.LIST;
   }
 
   /**
@@ -53,7 +45,7 @@ public class SSZListType implements SSZCompositeType {
 
   @Override
   public int getSize() {
-    if (!isVector() || getElementType().isVariableSize()) {
+    if (getType() == Type.LIST || getElementType().isVariableSize()) {
       return VARIABLE_SIZE;
     }
     return getElementType().getSize() * vectorLength;
@@ -62,6 +54,7 @@ public class SSZListType implements SSZCompositeType {
   /**
    * Returns the {@link SSZType} of this list elements
    */
+  @Override
   public SSZType getElementType() {
     if (elementType == null) {
       elementType = typeResolver.resolveSSZType(getAccessor().getListElementType(getTypeDescriptor()));

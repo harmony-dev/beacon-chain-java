@@ -21,8 +21,8 @@ public class SSZBasicType implements SSZType {
   }
 
   @Override
-  public boolean isBasicType() {
-    return true;
+  public Type getType() {
+    return Type.BASIC;
   }
 
   /**

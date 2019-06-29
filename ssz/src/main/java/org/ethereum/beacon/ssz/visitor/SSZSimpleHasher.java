@@ -1,13 +1,20 @@
 package org.ethereum.beacon.ssz.visitor;
 
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
+import static org.ethereum.beacon.ssz.type.SSZType.Type.BASIC;
+import static org.ethereum.beacon.ssz.type.SSZType.Type.LIST;
+import static org.ethereum.beacon.ssz.type.SSZType.Type.VECTOR;
 import static tech.pegasys.artemis.util.bytes.BytesValue.concat;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
+import org.ethereum.beacon.ssz.access.SSZUnionAccessor.UnionInstanceAccessor;
 import org.ethereum.beacon.ssz.type.SSZBasicType;
 import org.ethereum.beacon.ssz.type.SSZCompositeType;
 import org.ethereum.beacon.ssz.type.SSZListType;
+import org.ethereum.beacon.ssz.type.SSZUnionType;
 import org.ethereum.beacon.ssz.visitor.SosSerializer.SerializerResult;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
@@ -32,7 +39,25 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
   @Override
   public MerkleTrie visitBasicValue(SSZBasicType descriptor, Object value) {
     SerializerResult sszSerializerResult = serializer.visitAny(descriptor, value);
-    return merkleize(pack(sszSerializerResult.serializedBody));
+    return merkleize(pack(sszSerializerResult.getSerializedBody()));
+  }
+
+  @Override
+  public MerkleTrie visitUnion(SSZUnionType type, Object param,
+      ChildVisitor<Object, MerkleTrie> childVisitor) {
+    UnionInstanceAccessor unionInstanceAccessor = type.getAccessor().getInstanceAccessor(type.getTypeDescriptor());
+    int typeIndex = unionInstanceAccessor.getTypeIndex(param);
+    List<BytesValue> chunks;
+    if (type.isNullable() && typeIndex == 0) {
+      chunks = emptyList();
+    } else {
+      Object value = unionInstanceAccessor.getChildValue(param, typeIndex);
+      chunks = singletonList(childVisitor.apply(typeIndex, value).getFinalRoot());
+    }
+    MerkleTrie merkle = merkleize(chunks);
+    Hash32 mixInType = hashFunction.apply(concat(merkle.getPureRoot(), serializeLength(typeIndex)));
+    merkle.setFinalRoot(mixInType);
+    return merkle;
   }
 
   @Override
@@ -42,17 +67,18 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
     List<BytesValue> chunks = new ArrayList<>();
     if (type.getChildrenCount(rawValue) == 0) {
       // empty chunk list
-    } else if (type.isList() && ((SSZListType) type).getElementType().isBasicType()) {
+    } else if ((type.getType() == LIST || type.getType() == VECTOR)
+        && ((SSZListType) type).getElementType().getType() == BASIC) {
       SerializerResult sszSerializerResult = serializer.visitAny(type, rawValue);
 
-      chunks = pack(sszSerializerResult.serializedBody);
+      chunks = pack(sszSerializerResult.getSerializedBody());
     } else {
       for (int i = 0; i < type.getChildrenCount(rawValue); i++) {
         chunks.add(childVisitor.apply(i, type.getChild(rawValue, i)).getFinalRoot());
       }
     }
     merkle = merkleize(chunks);
-    if (type.isList() && !((SSZListType) type).isVector()) {
+    if (type.getType() == LIST) {
       Hash32 mixInLength = hashFunction.apply(concat(
           merkle.getPureRoot(),
           serializeLength(type.getChildrenCount(rawValue))));

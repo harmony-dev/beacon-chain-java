@@ -62,8 +62,8 @@ public class SubclassListAccessor implements SSZListAccessor {
   }
 
   @Override
-  public CompositeAccessor getAccessor(SSZField compositeDescriptor) {
-    return superclassAccessor.getAccessor(compositeDescriptor);
+  public CompositeInstanceAccessor getInstanceAccessor(SSZField compositeDescriptor) {
+    return superclassAccessor.getInstanceAccessor(compositeDescriptor);
   }
 
   @Override

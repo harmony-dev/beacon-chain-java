@@ -42,7 +42,7 @@ public class SSZField {
     return new SSZField(clazz);
   }
 
-  static class SSZVector implements SSZ {
+  private static class SSZVector implements SSZ {
     private int vectorLength;
 
     public SSZVector(int vectorLength) {

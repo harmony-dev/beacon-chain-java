@@ -8,15 +8,7 @@ import java.util.List;
  */
 public interface SSZContainerAccessor extends SSZCompositeAccessor {
 
-  interface ContainerInstanceBuilder extends CompositeInstanceBuilder {
-
-    /**
-     * Sets the future instance child value by its descriptor
-     */
-    void setChild(SSZField childDescriptor, Object childValue);
-  }
-
-  interface ContainerAccessor extends CompositeAccessor {
+  interface ContainerInstanceAccessor extends CompositeInstanceAccessor {
 
     /**
      * Returns Container children type descriptors
@@ -29,8 +21,5 @@ public interface SSZContainerAccessor extends SSZCompositeAccessor {
     }
   }
 
-  ContainerAccessor getAccessor(SSZField containerDescriptor);
-
-  ContainerInstanceBuilder createInstanceBuilder(SSZField containerDescriptor);
-
+  ContainerInstanceAccessor getInstanceAccessor(SSZField containerDescriptor);
 }

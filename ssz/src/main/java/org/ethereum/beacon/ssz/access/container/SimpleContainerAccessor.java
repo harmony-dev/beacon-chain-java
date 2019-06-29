@@ -10,23 +10,23 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.ethereum.beacon.ssz.access.SSZField;
-import org.ethereum.beacon.ssz.creator.ObjectCreator;
-import org.ethereum.beacon.ssz.access.container.SSZSchemeBuilder.SSZScheme;
 import org.ethereum.beacon.ssz.SSZSchemeException;
 import org.ethereum.beacon.ssz.SSZSerializeException;
-import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import org.ethereum.beacon.ssz.access.SSZContainerAccessor;
+import org.ethereum.beacon.ssz.access.SSZField;
+import org.ethereum.beacon.ssz.access.container.SSZSchemeBuilder.SSZScheme;
+import org.ethereum.beacon.ssz.annotation.SSZSerializable;
+import org.ethereum.beacon.ssz.creator.ObjectCreator;
 import org.javatuples.Pair;
 
 public class SimpleContainerAccessor implements SSZContainerAccessor {
 
-  protected class BasicAccessor implements ContainerAccessor {
+  protected class BasicInstanceAccessor implements ContainerInstanceAccessor {
     private final SSZField containerDescriptor;
     private final SSZScheme scheme;
     private final Map<String, Method> getters;
 
-    public BasicAccessor(SSZField containerDescriptor) {
+    public BasicInstanceAccessor(SSZField containerDescriptor) {
       this.containerDescriptor = containerDescriptor;
       scheme = sszSchemeBuilder.build(containerDescriptor.getRawClass());
       getters = new HashMap<>();
@@ -70,24 +70,19 @@ public class SimpleContainerAccessor implements SSZContainerAccessor {
     }
   }
 
-  protected class BasicInstanceBuilder implements ContainerInstanceBuilder {
+  protected class BasicInstanceBuilder implements CompositeInstanceBuilder {
     private final SSZField containerDescriptor;
     private final Map<SSZField, Object> children = new LinkedHashMap<>();
     private final List<SSZField> childDescriptors;
 
     public BasicInstanceBuilder(SSZField containerDescriptor) {
       this.containerDescriptor = containerDescriptor;
-      childDescriptors = getAccessor(containerDescriptor).getChildDescriptors();
-    }
-
-    @Override
-    public void setChild(SSZField childDescriptor, Object childValue) {
-      children.put(childDescriptor, childValue);
+      childDescriptors = getInstanceAccessor(containerDescriptor).getChildDescriptors();
     }
 
     @Override
     public void setChild(int idx, Object childValue) {
-      setChild(childDescriptors.get(idx), childValue);
+      children.put(childDescriptors.get(idx), childValue);
     }
 
     @Override
@@ -118,19 +113,19 @@ public class SimpleContainerAccessor implements SSZContainerAccessor {
     if (!containerDescriptor.getRawClass().isAnnotationPresent(SSZSerializable.class)) {
       return false;
     }
-    if (getAccessor(containerDescriptor).getChildDescriptors().isEmpty()) {
+    if (getInstanceAccessor(containerDescriptor).getChildDescriptors().isEmpty()) {
       return false;
     }
     return true;
   }
 
   @Override
-  public ContainerAccessor getAccessor(SSZField containerDescriptor) {
-    return new BasicAccessor(containerDescriptor);
+  public ContainerInstanceAccessor getInstanceAccessor(SSZField containerDescriptor) {
+    return new BasicInstanceAccessor(containerDescriptor);
   }
 
   @Override
-  public ContainerInstanceBuilder createInstanceBuilder(SSZField containerDescriptor) {
+  public CompositeInstanceBuilder createInstanceBuilder(SSZField containerDescriptor) {
     return new BasicInstanceBuilder(containerDescriptor);
   }
 }

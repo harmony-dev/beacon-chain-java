@@ -6,9 +6,12 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
-import org.ethereum.beacon.ssz.access.*;
+import org.ethereum.beacon.ssz.access.AccessorResolver;
+import org.ethereum.beacon.ssz.access.AccessorResolverRegistry;
 import org.ethereum.beacon.ssz.access.SSZBasicAccessor;
+import org.ethereum.beacon.ssz.access.SSZContainerAccessor;
+import org.ethereum.beacon.ssz.access.SSZListAccessor;
+import org.ethereum.beacon.ssz.access.SSZUnionAccessor;
 import org.ethereum.beacon.ssz.access.basic.BooleanPrimitive;
 import org.ethereum.beacon.ssz.access.basic.BytesCodec;
 import org.ethereum.beacon.ssz.access.basic.BytesPrimitive;
@@ -16,6 +19,7 @@ import org.ethereum.beacon.ssz.access.basic.HashCodec;
 import org.ethereum.beacon.ssz.access.basic.StringPrimitive;
 import org.ethereum.beacon.ssz.access.basic.UIntCodec;
 import org.ethereum.beacon.ssz.access.basic.UIntPrimitive;
+import org.ethereum.beacon.ssz.access.basic.UnionNull;
 import org.ethereum.beacon.ssz.access.container.SSZAnnotationSchemeBuilder;
 import org.ethereum.beacon.ssz.access.container.SSZSchemeBuilder;
 import org.ethereum.beacon.ssz.access.container.SimpleContainerAccessor;
@@ -23,6 +27,8 @@ import org.ethereum.beacon.ssz.access.list.ArrayAccessor;
 import org.ethereum.beacon.ssz.access.list.BytesValueAccessor;
 import org.ethereum.beacon.ssz.access.list.ListAccessor;
 import org.ethereum.beacon.ssz.access.list.ReadListAccessor;
+import org.ethereum.beacon.ssz.access.union.GenericTypeSSZUnionAccessor;
+import org.ethereum.beacon.ssz.access.union.SchemeSSZUnionAccessor;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import org.ethereum.beacon.ssz.annotation.SSZTransient;
@@ -32,8 +38,8 @@ import org.ethereum.beacon.ssz.creator.ObjectCreator;
 import org.ethereum.beacon.ssz.creator.SettersObjCreator;
 import org.ethereum.beacon.ssz.type.SimpleTypeResolver;
 import org.ethereum.beacon.ssz.type.TypeResolver;
-import org.ethereum.beacon.ssz.visitor.SSZIncrementalHasher;
 import org.ethereum.beacon.ssz.visitor.MerkleTrie;
+import org.ethereum.beacon.ssz.visitor.SSZIncrementalHasher;
 import org.ethereum.beacon.ssz.visitor.SSZSimpleHasher;
 import org.ethereum.beacon.ssz.visitor.SSZVisitor;
 import org.ethereum.beacon.ssz.visitor.SSZVisitorHost;
@@ -77,6 +83,7 @@ public class SSZBuilder {
   private List<SSZBasicAccessor> basicCodecs = new ArrayList<>();
   private List<SSZListAccessor> listAccessors = new ArrayList<>();
   private List<Supplier<SSZContainerAccessor>> containerAccessors = new ArrayList<>();
+  private List<Supplier<SSZUnionAccessor>> unionAccessors = new ArrayList<>();
 
   private boolean schemeBuilderExplicitAnnotations = true;
   private int schemeBuilderCacheSize = SSZ_SCHEMES_CACHE_CAPACITY;
@@ -232,6 +239,7 @@ public class SSZBuilder {
     basicCodecs.add(new UIntCodec());
     basicCodecs.add(new BytesCodec());
     basicCodecs.add(new HashCodec());
+    basicCodecs.add(new UnionNull());
     return this;
   }
 
@@ -246,12 +254,15 @@ public class SSZBuilder {
 
   public SSZBuilder addDefaultContainerAccessors() {
     checkAlreadyInitialized();
-    containerAccessors.add(this::createDefaultContainerAccessor);
+    containerAccessors.add(() -> new SimpleContainerAccessor(sszSchemeBuilder, objCreator));
     return this;
   }
 
-  private SSZContainerAccessor createDefaultContainerAccessor() {
-    return new SimpleContainerAccessor(sszSchemeBuilder, objCreator);
+  public SSZBuilder addDefaultUnionAccessors() {
+    checkAlreadyInitialized();
+    unionAccessors.add(() -> new GenericTypeSSZUnionAccessor());
+    unionAccessors.add(() -> new SchemeSSZUnionAccessor(sszSchemeBuilder));
+    return this;
   }
 
   /**
@@ -296,6 +307,9 @@ public class SSZBuilder {
     if (containerAccessors.isEmpty()) {
       addDefaultContainerAccessors();
     }
+    if (unionAccessors.isEmpty()) {
+      addDefaultUnionAccessors();
+    }
 
     if (accessorResolverRegistry == null) {
       accessorResolverRegistry =
@@ -303,7 +317,9 @@ public class SSZBuilder {
               .withBasicAccessors(basicCodecs)
               .withListAccessors(listAccessors)
               .withContainerAccessors(
-                  containerAccessors.stream().map(Supplier::get).collect(Collectors.toList()));
+                  containerAccessors.stream().map(Supplier::get).collect(Collectors.toList()))
+              .withUnionAccessors(
+                  unionAccessors.stream().map(Supplier::get).collect(Collectors.toList()));
     }
 
     if (typeResolver == null) {

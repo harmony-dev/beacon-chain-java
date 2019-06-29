@@ -1,5 +1,11 @@
 package org.ethereum.beacon.ssz.visitor;
 
+import static org.ethereum.beacon.ssz.type.SSZType.Type.CONTAINER;
+import static org.javatuples.Pair.with;
+
+import java.nio.ByteOrder;
+import java.util.ArrayList;
+import java.util.List;
 import net.consensys.cava.bytes.Bytes;
 import org.ethereum.beacon.ssz.access.SSZCompositeAccessor.CompositeInstanceBuilder;
 import org.ethereum.beacon.ssz.type.SSZBasicType;
@@ -7,174 +13,100 @@ import org.ethereum.beacon.ssz.type.SSZCompositeType;
 import org.ethereum.beacon.ssz.type.SSZContainerType;
 import org.ethereum.beacon.ssz.type.SSZListType;
 import org.ethereum.beacon.ssz.type.SSZType;
-import org.ethereum.beacon.ssz.visitor.SosDeserializer.DecodeResult;
+import org.ethereum.beacon.ssz.type.SSZUnionType;
 import org.javatuples.Pair;
-
-import java.nio.ByteOrder;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 
 /**
  * SSZ deserializer with offset-based decoding of variable sized elements
  */
-public class SosDeserializer implements SSZVisitor<DecodeResult, Pair<Bytes, Boolean>> {
+public class SosDeserializer implements SSZVisitor<Object, Bytes> {
   static final int BYTES_PER_LENGTH_OFFSET = 4;
 
   /**
    *  Decodes basic value
    *
    * @param sszType     Type of field, should be some basic type
-   * @param param       Bytes data / Boolean flag whether to extract body or offset for variable size types.
-   *                    If type is with variable size and this flag is set to TRUE, offset is extracted. Otherwise body.
-   * @return  DecodeResult
+   * @param bytes       Bytes data
+   * @return  Decoded object
    */
   @Override
-  public DecodeResult visitBasicValue(SSZBasicType sszType, Pair<Bytes, Boolean> param) {
-    Optional<DecodeResult> offsetLength = extractVariableTypeOffset(sszType, param);
-    if (offsetLength.isPresent()) {
-      return offsetLength.get();
-    }
-
-    SSZReader reader = new SSZReader(param.getValue0());
-    if (sszType.isFixedSize()) {
-      int readBytes = sszType.getSize();
-      return new DecodeResult(
-          sszType.getAccessor().decode(sszType.getTypeDescriptor(), reader), readBytes, true);
-    } else {
-      return new DecodeResult(
-          sszType.getAccessor().decode(sszType.getTypeDescriptor(), reader),
-          param.getValue0().size(),
-          false);
-    }
+  public Object visitBasicValue(SSZBasicType sszType, Bytes bytes) {
+    return sszType.getAccessor().decode(sszType.getTypeDescriptor(), new SSZReader(bytes));
   }
 
-  private Optional<DecodeResult> extractVariableTypeOffset(SSZType sszType, Pair<Bytes, Boolean> param) {
-    if (Boolean.TRUE.equals(param.getValue1()) && !sszType.isFixedSize()) {
-      return Optional.of(new DecodeResult(
-          deserializeLength(param.getValue0().slice(0, BYTES_PER_LENGTH_OFFSET)),
-          BYTES_PER_LENGTH_OFFSET,
-          false));
-    }
+  @Override
+  public Object visitUnion(SSZUnionType type, Bytes bytes,
+      ChildVisitor<Bytes, Object> childVisitor) {
+    int typeIndex = deserializeLength(bytes.slice(0, BYTES_PER_LENGTH_OFFSET));
+    Bytes body = bytes.slice(BYTES_PER_LENGTH_OFFSET);
 
-    return Optional.empty();
+    CompositeInstanceBuilder instanceBuilder = type.getAccessor()
+        .createInstanceBuilder(type.getTypeDescriptor());
+    if (typeIndex == 0 && type.isNullable()) {
+      instanceBuilder.setChild(typeIndex, null);
+    } else {
+      Object decodeResult = childVisitor.apply(typeIndex, body);
+      instanceBuilder.setChild(typeIndex, decodeResult);
+    }
+    return instanceBuilder.build();
   }
 
   /**
    * Decodes composite value
    *
    * @param type        Type of field, should be some composite type
-   * @param param       Bytes data / Boolean flag whether to extract body or offset for variable size types.
-   *                    If type is with variable size and this flag is set to TRUE, offset is extracted. Otherwise body.
+   * @param bytes       Bytes data
    * @param childVisitor  Visitor which will be used for children
-   * @return DecodeResult
+   * @return Decoded object
    */
   @Override
-  public DecodeResult visitComposite(
+  public Object visitComposite(
       SSZCompositeType type,
-      Pair<Bytes, Boolean> param,
-      ChildVisitor<Pair<Bytes, Boolean>, DecodeResult> childVisitor) {
-    Optional<DecodeResult> offsetLength = extractVariableTypeOffset(type, param);
-    if (offsetLength.isPresent()) {
-      return offsetLength.get();
-    }
+      Bytes bytes,
+      ChildVisitor<Bytes, Object> childVisitor) {
 
-    int fixedPos = 0;
-    AtomicInteger variablePartConsumed = new AtomicInteger(0);
-    int idx = 0;
     CompositeInstanceBuilder instanceBuilder =
         type.getAccessor().createInstanceBuilder(type.getTypeDescriptor());
-    boolean isFixedSize = true;
-    VisitLater visitLater = null;
-    int maxIndex = calcTypeMaxIndex(type);
-    int firstOffset = Integer.MAX_VALUE;
-    while (fixedPos < param.getValue0().size() && idx < maxIndex && fixedPos < firstOffset) {
-      DecodeResult childRes =
-          childVisitor.apply(idx, Pair.with(param.getValue0().slice(fixedPos), true));
-      if (childRes.isFixedSize) {
-        instanceBuilder.setChild(idx, childRes.decodedInstance);
+    int fixedPartEnd = bytes.size();
+    int curOff = 0;
+    int childIndex = 0;
+    List<Pair<Integer, Integer>> varSizeChildren = new ArrayList<>();
+    while (curOff < fixedPartEnd) {
+      int childSize = getChildSize(type, childIndex);
+      if (childSize == SSZType.VARIABLE_SIZE) {
+        int bodyOff = deserializeLength(bytes.slice(curOff, BYTES_PER_LENGTH_OFFSET));
+        fixedPartEnd = fixedPartEnd > bodyOff ? bodyOff : fixedPartEnd;
+        varSizeChildren.add(with(childIndex, bodyOff));
+        curOff += BYTES_PER_LENGTH_OFFSET;
       } else {
-        isFixedSize = false;
-        int offset = (Integer) childRes.decodedInstance;
-
-        // First time we found some item with variable size
-        if (firstOffset == Integer.MAX_VALUE) {
-          firstOffset = offset;
-        }
-
-        final int idxBackup = idx;
-        if (visitLater != null) {
-          visitLater.run(offset);
-        }
-        visitLater =
-            new VisitLater(
-                param.getValue0().slice(offset),
-                offset,
-                objects -> {
-                  DecodeResult res =
-                      childVisitor.apply(
-                          idxBackup,
-                          Pair.with(objects.getValue0().slice(0, objects.getValue1()), false));
-                  variablePartConsumed.addAndGet(res.readBytes);
-                  instanceBuilder.setChild(idxBackup, res.decodedInstance);
-                });
+        Object result = childVisitor.apply(childIndex, bytes.slice(curOff, childSize));
+        curOff += childSize;
+        instanceBuilder.setChild(childIndex, result);
       }
-      fixedPos += childRes.readBytes;
-      idx++;
+      childIndex++;
     }
-
-    if (visitLater != null) {
-      visitLater.run();
+    varSizeChildren.add(with(-1, bytes.size()));
+    for (int i = 0; i < varSizeChildren.size() - 1; i++) {
+      Pair<Integer, Integer> child = varSizeChildren.get(i);
+      childIndex = child.getValue0();
+      int childStart = child.getValue1();
+      int childEnd = varSizeChildren.get(i + 1).getValue1();
+      Object result =
+          childVisitor.apply(childIndex, bytes.slice(childStart, childEnd - childStart));
+      instanceBuilder.setChild(childIndex, result);
     }
-    fixedPos += variablePartConsumed.get();
-
-    return new DecodeResult(instanceBuilder.build(), fixedPos, isFixedSize);
+    return instanceBuilder.build();
   }
 
-  private int calcTypeMaxIndex(SSZType type) {
-    int maxIndex = Integer.MAX_VALUE;
-    if (type instanceof SSZContainerType) {
-      maxIndex = ((SSZContainerType) type).getChildTypes().size();
-    } else if (type instanceof SSZListType && ((SSZListType) type).isVector()) {
-      maxIndex = ((SSZListType) type).getVectorLength();
+  private int getChildSize(SSZCompositeType type, int index) {
+    if (type.getType() == CONTAINER) {
+      return ((SSZContainerType) type).getChildTypes().get(index).getSize();
+    } else {
+      return ((SSZListType) type).getElementType().getSize();
     }
-
-    return maxIndex;
   }
 
   private int deserializeLength(Bytes lenBytes) {
     return lenBytes.toInt(ByteOrder.LITTLE_ENDIAN);
-  }
-
-  public static class DecodeResult {
-    public final Object decodedInstance;
-    public final int readBytes;
-    public final boolean isFixedSize;
-
-    public DecodeResult(Object decodedInstance, int readBytes, boolean isFixedSize) {
-      this.decodedInstance = decodedInstance;
-      this.readBytes = readBytes;
-      this.isFixedSize = isFixedSize;
-    }
-  }
-
-  class VisitLater {
-    private final Bytes input;
-    private final int inputOffset;
-    private final Consumer<Pair<Bytes, Integer>> runLater;
-
-    public VisitLater(Bytes input, int inputOffset, Consumer<Pair<Bytes, Integer>> runLater) {
-      this.input = input;
-      this.inputOffset = inputOffset;
-      this.runLater = runLater;
-    }
-
-    public void run(int end) {
-      runLater.accept(Pair.with(input, end - inputOffset));
-    }
-
-    public void run() {
-      runLater.accept(Pair.with(input, input.size()));
-    }
   }
 }
