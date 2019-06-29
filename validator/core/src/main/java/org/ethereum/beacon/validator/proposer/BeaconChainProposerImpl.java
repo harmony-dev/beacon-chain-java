@@ -147,7 +147,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
             .stream()
             .map(DepositInfo::getDeposit)
             .collect(Collectors.toList());
-    Bytes32 graffiti = getGraffiti(state);
+    Bytes32 graffiti = getGraffiti();
 
     return BeaconBlockBody.create(
         randaoReveal,
@@ -159,5 +159,9 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
         deposits,
         voluntaryExits,
         transfers);
+  }
+
+  private Bytes32 getGraffiti() {
+    return Bytes32.ZERO;
   }
 }

@@ -20,13 +20,15 @@ import tech.pegasys.artemis.util.uint.UInt64;
 public class RandaoGeneratorImpl implements RandaoGenerator {
 
   private final BeaconChainSpec spec;
+  private final MessageSigner<BLSSignature> signer;
 
-  public RandaoGeneratorImpl(BeaconChainSpec spec) {
+  public RandaoGeneratorImpl(BeaconChainSpec spec, MessageSigner<BLSSignature> signer) {
     this.spec = spec;
+    this.signer = signer;
   }
 
   @Override
-  public BLSSignature reveal(EpochNumber epoch, Fork fork, MessageSigner<BLSSignature> signer) {
+  public BLSSignature reveal(EpochNumber epoch, Fork fork) {
     Bytes4 forkVersion = spec.fork_version(epoch, fork);
     Hash32 hash = spec.hash_tree_root(epoch);
     UInt64 domain = spec.bls_domain(RANDAO, forkVersion);

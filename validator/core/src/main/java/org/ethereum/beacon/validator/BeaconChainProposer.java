@@ -28,14 +28,4 @@ public interface BeaconChainProposer {
    */
   BeaconBlock propose(
       BeaconState state, BLSSignature randaoReveal, PendingOperations pendingOperations);
-
-  /**
-   * Given a state returns graffiti value.
-   *
-   * @param state a state.
-   * @return graffiti value.
-   */
-  default Bytes32 getGraffiti(BeaconState state) {
-    return Bytes32.ZERO;
-  }
 }

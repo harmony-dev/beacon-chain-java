@@ -56,15 +56,14 @@ public class BeaconChainProposerTest {
     BlockTransition<BeaconStateEx> perBlockTransition =
         StateTransitionTestUtil.createPerBlockTransition();
     BeaconChainProposer proposer = mockProposer(perBlockTransition, depositContract, spec);
-    RandaoGenerator randao = new RandaoGeneratorImpl(spec);
-    BeaconBlockSigner blockSigner = new BeaconBlockSignerImpl(spec);
     MessageSigner<BLSSignature> signer = MessageSignerTestUtil.createBLSSigner();
 
     ObservableBeaconState initialObservedState =
         ObservableBeaconStateTestUtil.createInitialState(random, spec);
     BeaconState initialState = initialObservedState.getLatestSlotState();
     BLSSignature randaoReveal =
-        randao.reveal(spec.get_current_epoch(initialState), initialState.getFork(), signer);
+        RandaoGenerator.getInstance(spec, signer)
+            .reveal(spec.get_current_epoch(initialState), initialState.getFork());
     BeaconBlock block =
         proposer.propose(initialState, randaoReveal, initialObservedState.getPendingOperations());
 
@@ -73,7 +72,8 @@ public class BeaconChainProposerTest {
 
     Assert.assertEquals(spec.hash_tree_root(stateAfterBlock), block.getStateRoot());
 
-    BeaconBlock signedBlock = blockSigner.sign(block, initialState.getFork(), signer);
+    BeaconBlock signedBlock =
+        BeaconBlockSigner.getInstance(spec, signer).sign(block, initialState.getFork());
     Assert.assertTrue(verifySignature(spec, initialState, signedBlock, signer));
   }
 
@@ -87,8 +87,6 @@ public class BeaconChainProposerTest {
     BlockTransition<BeaconStateEx> perBlockTransition =
         StateTransitionTestUtil.createPerBlockTransition();
     BeaconChainProposer proposer = mockProposer(perBlockTransition, depositContract, spec);
-    RandaoGenerator randao = new RandaoGeneratorImpl(spec);
-    BeaconBlockSigner blockSigner = new BeaconBlockSignerImpl(spec);
     MessageSigner<BLSSignature> signer = MessageSignerTestUtil.createBLSSigner();
 
     List<Attestation> attestations =
@@ -109,7 +107,8 @@ public class BeaconChainProposerTest {
         ObservableBeaconStateTestUtil.createInitialState(random, spec, pendingOperations);
     BeaconState initialState = initialObservedState.getLatestSlotState();
     BLSSignature randaoReveal =
-        randao.reveal(spec.get_current_epoch(initialState), initialState.getFork(), signer);
+        RandaoGenerator.getInstance(spec, signer)
+            .reveal(spec.get_current_epoch(initialState), initialState.getFork());
     BeaconBlock block =
         proposer.propose(initialState, randaoReveal, initialObservedState.getPendingOperations());
 
@@ -127,7 +126,8 @@ public class BeaconChainProposerTest {
 
     Assert.assertEquals(spec.hash_tree_root(stateAfterBlock), block.getStateRoot());
 
-    BeaconBlock signedBlock = blockSigner.sign(block, initialState.getFork(), signer);
+    BeaconBlock signedBlock =
+        BeaconBlockSigner.getInstance(spec, signer).sign(block, initialState.getFork());
     Assert.assertTrue(verifySignature(spec, initialState, signedBlock, signer));
 
     Assert.assertEquals(attestations, block.getBody().getAttestations().listCopy());
@@ -144,9 +144,7 @@ public class BeaconChainProposerTest {
 
     List<Deposit> deposits =
         DepositTestUtil.createRandomList(
-            random,
-            spec.getConstants(),
-            spec.getConstants().getMaxDeposits());
+            random, spec.getConstants(), spec.getConstants().getMaxDeposits());
     Eth1Data eth1Data = Eth1DataTestUtil.createRandom(random);
     List<DepositInfo> depositInfos =
         deposits.stream()
@@ -157,8 +155,6 @@ public class BeaconChainProposerTest {
     BlockTransition<BeaconStateEx> perBlockTransition =
         StateTransitionTestUtil.createPerBlockTransition();
     BeaconChainProposer proposer = mockProposer(perBlockTransition, depositContract, spec);
-    RandaoGenerator randao = new RandaoGeneratorImpl(spec);
-    BeaconBlockSigner blockSigner = new BeaconBlockSignerImpl(spec);
     MessageSigner<BLSSignature> signer = MessageSignerTestUtil.createBLSSigner();
 
     ObservableBeaconState initialObservedState =
@@ -166,7 +162,8 @@ public class BeaconChainProposerTest {
             random, spec, PendingOperationsTestUtil.createEmptyPendingOperations());
     BeaconState initialState = initialObservedState.getLatestSlotState();
     BLSSignature randaoReveal =
-        randao.reveal(spec.get_current_epoch(initialState), initialState.getFork(), signer);
+        RandaoGenerator.getInstance(spec, signer)
+            .reveal(spec.get_current_epoch(initialState), initialState.getFork());
     BeaconBlock block =
         proposer.propose(initialState, randaoReveal, initialObservedState.getPendingOperations());
 
@@ -181,7 +178,8 @@ public class BeaconChainProposerTest {
 
     Assert.assertEquals(spec.hash_tree_root(stateAfterBlock), block.getStateRoot());
 
-    BeaconBlock signedBlock = blockSigner.sign(block, initialState.getFork(), signer);
+    BeaconBlock signedBlock =
+        BeaconBlockSigner.getInstance(spec, signer).sign(block, initialState.getFork());
     Assert.assertTrue(verifySignature(spec, initialState, signedBlock, signer));
 
     Assert.assertEquals(

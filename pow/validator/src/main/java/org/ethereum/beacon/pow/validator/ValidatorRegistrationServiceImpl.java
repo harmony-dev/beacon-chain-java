@@ -1,9 +1,18 @@
 package org.ethereum.beacon.pow.validator;
 
+import static java.util.Collections.singletonList;
+import static org.ethereum.beacon.core.spec.SignatureDomains.DEPOSIT;
+
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import javax.annotation.Nullable;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.BlockTransition;
-import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.transition.PerBlockTransition;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
@@ -19,31 +28,18 @@ import org.ethereum.beacon.ssz.SSZBuilder;
 import org.ethereum.beacon.ssz.SSZSerializer;
 import org.ethereum.beacon.validator.BeaconChainAttester;
 import org.ethereum.beacon.validator.BeaconChainProposer;
-import org.ethereum.beacon.validator.local.MultiValidatorService;
 import org.ethereum.beacon.validator.ValidatorService;
-import org.ethereum.beacon.validator.attester.BeaconAttestationSignerImpl;
 import org.ethereum.beacon.validator.attester.BeaconChainAttesterImpl;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
-import org.ethereum.beacon.validator.proposer.BeaconBlockSignerImpl;
+import org.ethereum.beacon.validator.local.MultiValidatorService;
 import org.ethereum.beacon.validator.proposer.BeaconChainProposerImpl;
-import org.ethereum.beacon.validator.proposer.RandaoGeneratorImpl;
 import org.reactivestreams.Publisher;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import tech.pegasys.artemis.ethereum.core.Address;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
-
-import javax.annotation.Nullable;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import tech.pegasys.artemis.util.uint.UInt64;
-
-import static java.util.Collections.singletonList;
-import static org.ethereum.beacon.core.spec.SignatureDomains.DEPOSIT;
 
 public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationService {
   private final TransactionBuilder transactionBuilder;
@@ -206,10 +202,7 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
           new MultiValidatorService(
               singletonList(blsCredentials),
               proposer,
-              new BeaconBlockSignerImpl(spec),
-              new RandaoGeneratorImpl(spec),
               attester,
-              new BeaconAttestationSignerImpl(spec),
               spec,
               observablePublisher,
               schedulers);

@@ -21,13 +21,15 @@ import tech.pegasys.artemis.util.uint.UInt64;
 public class BeaconAttestationSignerImpl implements BeaconAttestationSigner {
 
   private final BeaconChainSpec spec;
+  private final MessageSigner<BLSSignature> signer;
 
-  public BeaconAttestationSignerImpl(BeaconChainSpec spec) {
+  public BeaconAttestationSignerImpl(BeaconChainSpec spec, MessageSigner<BLSSignature> signer) {
     this.spec = spec;
+    this.signer = signer;
   }
 
   @Override
-  public Attestation sign(Attestation attestation, Fork fork, MessageSigner<BLSSignature> signer) {
+  public Attestation sign(Attestation attestation, Fork fork) {
     AttestationDataAndCustodyBit attestationDataAndCustodyBit =
         new AttestationDataAndCustodyBit(attestation.getData(), false);
     Hash32 hash = spec.hash_tree_root(attestationDataAndCustodyBit);

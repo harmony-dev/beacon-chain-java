@@ -39,7 +39,6 @@ public class BeaconChainAttesterTest {
 
     MessageSigner<BLSSignature> signer = MessageSignerTestUtil.createBLSSigner();
     BeaconChainAttesterImpl attester = BeaconChainAttesterTestUtil.mockAttester(spec);
-    BeaconAttestationSigner attestationSigner = new BeaconAttestationSignerImpl(spec);
     ObservableBeaconState initiallyObservedState =
         ObservableBeaconStateTestUtil.createInitialState(random, spec);
 
@@ -49,8 +48,8 @@ public class BeaconChainAttesterTest {
     ValidatorIndex validatorIndex = committee.get(indexIntoCommittee);
     Hash32 targetRoot = Hash32.random(random);
     Hash32 sourceRoot = Hash32.random(random);
-    ShardNumber shard = ShardNumber.of(
-        UInt64.random(random).modulo(spec.getConstants().getShardCount()));
+    ShardNumber shard =
+        ShardNumber.of(UInt64.random(random).modulo(spec.getConstants().getShardCount()));
 
     Mockito.doReturn(committee).when(attester).getCommittee(any(), any());
     Mockito.doReturn(targetRoot).when(attester).getTargetRoot(any(), any());
@@ -96,7 +95,8 @@ public class BeaconChainAttesterTest {
     byte aByte = attestation.getAggregationBitfield().get(indexIntoCommittee / 8);
     Assert.assertEquals(1, ((aByte & 0xFF) >>> (indexIntoCommittee % 8)));
 
-    Attestation signedAttestation = attestationSigner.sign(attestation, state.getFork(), signer);
+    Attestation signedAttestation =
+        BeaconAttestationSigner.getInstance(spec, signer).sign(attestation, state.getFork());
 
     BLSSignature expectedSignature =
         signer.sign(

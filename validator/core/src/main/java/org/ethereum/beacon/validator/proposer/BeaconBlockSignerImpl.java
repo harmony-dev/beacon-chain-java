@@ -20,13 +20,15 @@ import tech.pegasys.artemis.util.uint.UInt64;
 public class BeaconBlockSignerImpl implements BeaconBlockSigner {
 
   private final BeaconChainSpec spec;
+  private final MessageSigner<BLSSignature> signer;
 
-  public BeaconBlockSignerImpl(BeaconChainSpec spec) {
+  public BeaconBlockSignerImpl(BeaconChainSpec spec, MessageSigner<BLSSignature> signer) {
     this.spec = spec;
+    this.signer = signer;
   }
 
   @Override
-  public BeaconBlock sign(BeaconBlock block, Fork fork, MessageSigner<BLSSignature> signer) {
+  public BeaconBlock sign(BeaconBlock block, Fork fork) {
     Hash32 proposalRoot = spec.signing_root(block);
     Bytes4 forkVersion = spec.fork_version(spec.slot_to_epoch(block.getSlot()), fork);
     UInt64 domain = spec.bls_domain(BEACON_PROPOSER, forkVersion);

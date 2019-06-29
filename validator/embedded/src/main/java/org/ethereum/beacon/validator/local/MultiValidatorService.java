@@ -57,14 +57,8 @@ public class MultiValidatorService implements ValidatorService {
 
   /** Proposer logic. */
   private BeaconChainProposer proposer;
-  /** Block signer. */
-  private BeaconBlockSigner blockSigner;
-  /** RANDAO generator. */
-  private RandaoGenerator randao;
   /** Attester logic. */
   private BeaconChainAttester attester;
-  /** Attestation signer. */
-  private BeaconAttestationSigner attestationSigner;
   /** The spec. */
   private BeaconChainSpec spec;
 
@@ -87,10 +81,7 @@ public class MultiValidatorService implements ValidatorService {
   public MultiValidatorService(
       List<BLS381Credentials> blsCredentials,
       BeaconChainProposer proposer,
-      BeaconBlockSigner blockSigner,
-      RandaoGenerator randao,
       BeaconChainAttester attester,
-      BeaconAttestationSigner attestationSigner,
       BeaconChainSpec spec,
       Publisher<ObservableBeaconState> stateStream,
       Schedulers schedulers) {
@@ -98,10 +89,7 @@ public class MultiValidatorService implements ValidatorService {
         blsCredentials.stream()
             .collect(Collectors.toMap(BLS381Credentials::getPubkey, Function.identity()));
     this.proposer = proposer;
-    this.blockSigner = blockSigner;
-    this.randao = randao;
     this.attester = attester;
-    this.attestationSigner = attestationSigner;
     this.spec = spec;
     this.stateStream = stateStream;
     this.schedulers = schedulers;
@@ -276,11 +264,13 @@ public class MultiValidatorService implements ValidatorService {
       BeaconState state = observableState.getLatestSlotState();
       long s = System.nanoTime();
       BLSSignature randaoReveal =
-          randao.reveal(spec.get_current_epoch(state), state.getFork(), credentials.getSigner());
+          RandaoGenerator.getInstance(spec, credentials.getSigner())
+              .reveal(spec.get_current_epoch(state), state.getFork());
       BeaconBlock newBlock =
           proposer.propose(state, randaoReveal, observableState.getPendingOperations());
       BeaconBlock signedBlock =
-          blockSigner.sign(newBlock, state.getFork(), credentials.getSigner());
+          BeaconBlockSigner.getInstance(spec, credentials.getSigner())
+              .sign(newBlock, state.getFork());
       long total = System.nanoTime() - s;
       propagateBlock(signedBlock);
 
@@ -315,7 +305,8 @@ public class MultiValidatorService implements ValidatorService {
           attester.attest(
               index, shard, observableState.getLatestSlotState(), observableState.getHead());
       Attestation signedAttestation =
-          attestationSigner.sign(newAttestation, state.getFork(), credentials.getSigner());
+          BeaconAttestationSigner.getInstance(spec, credentials.getSigner())
+              .sign(newAttestation, state.getFork());
       propagateAttestation(signedAttestation);
 
       logger.info(
