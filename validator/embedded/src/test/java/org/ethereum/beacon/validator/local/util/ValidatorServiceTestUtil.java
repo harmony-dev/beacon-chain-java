@@ -1,4 +1,4 @@
-package org.ethereum.beacon.validator.util;
+package org.ethereum.beacon.validator.local.util;
 
 import java.util.Collections;
 import java.util.List;
@@ -15,10 +15,10 @@ import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.validator.BeaconChainAttester;
 import org.ethereum.beacon.validator.BeaconChainProposer;
 import org.ethereum.beacon.validator.MessageSignerTestUtil;
-import org.ethereum.beacon.validator.MultiValidatorService;
 import org.ethereum.beacon.validator.attester.BeaconChainAttesterTestUtil;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import org.ethereum.beacon.validator.crypto.MessageSigner;
+import org.ethereum.beacon.validator.local.MultiValidatorService;
 import org.ethereum.beacon.validator.proposer.BeaconChainProposerTestUtil;
 import org.mockito.Mockito;
 import reactor.core.publisher.Mono;
@@ -33,20 +33,13 @@ public abstract class ValidatorServiceTestUtil {
     MessageSigner<BLSSignature> signer = MessageSignerTestUtil.createBLSSigner();
     BLS381Credentials blsCredentials = new BLS381Credentials(pubkey, signer);
     return mockBeaconChainValidator(
-        random,
-        spec,
-        Collections.singletonList(blsCredentials),
-        Schedulers.createControlled());
+        random, spec, Collections.singletonList(blsCredentials), Schedulers.createControlled());
   }
-
 
   public static MultiValidatorService mockBeaconChainValidator(
       Random random, BeaconChainSpec spec, BLS381Credentials credentials) {
     return mockBeaconChainValidator(
-        random,
-        spec,
-        Collections.singletonList(credentials),
-        Schedulers.createControlled());
+        random, spec, Collections.singletonList(credentials), Schedulers.createControlled());
   }
 
   public static MultiValidatorService mockBeaconChainValidator(
@@ -59,8 +52,7 @@ public abstract class ValidatorServiceTestUtil {
     DepositContract depositContract =
         DepositContractTestUtil.mockDepositContract(random, Collections.emptyList());
     BeaconChainProposer proposer =
-        BeaconChainProposerTestUtil.mockProposer(
-            perBlockTransition, depositContract, spec);
+        BeaconChainProposerTestUtil.mockProposer(perBlockTransition, depositContract, spec);
     BeaconChainAttester attester = BeaconChainAttesterTestUtil.mockAttester(spec);
 
     return Mockito.spy(

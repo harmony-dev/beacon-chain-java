@@ -240,9 +240,9 @@ public class ValidatorRest extends ReactorNettyServer {
       SlotNumber slot = SlotNumber.castFrom(UInt64.valueOf(getParamString("slot", params)));
       BLSSignature randaoReveal =
           BLSSignature.wrap(Bytes96.fromHexStringStrict(getParamString("randao_reveal", params)));
-      BeaconBlock.Builder builder =
+      BeaconBlock block =
           validatorDutiesService.prepareBlock(slot, randaoReveal, observableBeaconState);
-      return mapper.writeValueAsString(BeaconBlockConverter.serialize(builder.build()));
+      return mapper.writeValueAsString(BeaconBlockConverter.serialize(block));
     } catch (IllegalArgumentException ex) {
       throw new InvalidInputException(ex);
     } catch (Exception e) {
@@ -292,8 +292,7 @@ public class ValidatorRest extends ReactorNettyServer {
           spec.get_validator_index_by_pubkey(
               observableBeaconState.getLatestSlotState().createMutableCopy(), validatorPubkey);
       Attestation attestation =
-          validatorDutiesService.prepareAttestation(
-              validatorIndex, shard, observableBeaconState, slot);
+          validatorDutiesService.prepareAttestation(slot, validatorIndex, shard, observableBeaconState);
       IndexedAttestation indexedAttestation =
           spec.convert_to_indexed(
               observableBeaconState.getLatestSlotState().createMutableCopy(), attestation);

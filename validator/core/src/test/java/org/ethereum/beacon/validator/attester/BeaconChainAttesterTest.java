@@ -1,9 +1,14 @@
-package org.ethereum.beacon.validator;
+package org.ethereum.beacon.validator.attester;
 
+import static org.mockito.ArgumentMatchers.any;
+
+import java.util.List;
+import java.util.Random;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.util.ObservableBeaconStateTestUtil;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
-import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
@@ -14,6 +19,8 @@ import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
+import org.ethereum.beacon.validator.BeaconAttestationSigner;
+import org.ethereum.beacon.validator.MessageSignerTestUtil;
 import org.ethereum.beacon.validator.crypto.MessageSigner;
 import org.junit.Assert;
 import org.junit.Test;
@@ -22,13 +29,7 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
 import tech.pegasys.artemis.util.uint.UInt64s;
 
-import java.util.List;
-import java.util.Random;
-
-import static org.ethereum.beacon.validator.ValidatorSpecTestUtil.getCommittee;
-import static org.mockito.ArgumentMatchers.any;
-
-public class BeaconAttesterSpecTest {
+public class BeaconChainAttesterTest {
 
   @Test
   public void attestASlot() {
@@ -37,6 +38,7 @@ public class BeaconAttesterSpecTest {
     BeaconChainSpec spec = BeaconChainSpec.createWithDefaults();
 
     MessageSigner<BLSSignature> signer = MessageSignerTestUtil.createBLSSigner();
+    BeaconChainAttesterImpl attester = BeaconChainAttesterTestUtil.mockAttester(spec);
     ObservableBeaconState initiallyObservedState =
         ObservableBeaconStateTestUtil.createInitialState(random, spec);
 
@@ -48,23 +50,17 @@ public class BeaconAttesterSpecTest {
     Hash32 sourceRoot = Hash32.random(random);
     ShardNumber shard =
         ShardNumber.of(UInt64.random(random).modulo(spec.getConstants().getShardCount()));
-    BeaconAttesterSpec attesterSpec = getAttesterSpecMock(spec, committee, targetRoot, sourceRoot);
 
-
-    BeaconStateEx stateEx = initiallyObservedState.getLatestSlotState();
-    Attestation unsignedAttestation =
-        attesterSpec.prepareAttestation(
-            validatorIndex, shard, initiallyObservedState, stateEx.getSlot());
-    BLSSignature aggregateSignature =
-        attesterSpec.getAggregateSignature(
-            stateEx, unsignedAttestation.getData(), signer);
+    Mockito.doReturn(committee).when(attester).getCommittee(any(), any());
+    Mockito.doReturn(targetRoot).when(attester).getTargetRoot(any(), any());
+    Mockito.doReturn(sourceRoot).when(attester).getSourceRoot(any());
 
     Attestation attestation =
-        new Attestation(
-            unsignedAttestation.getAggregationBitfield(),
-            unsignedAttestation.getData(),
-            unsignedAttestation.getCustodyBitfield(),
-            aggregateSignature);
+        attester.attest(
+            validatorIndex,
+            shard,
+            initiallyObservedState.getLatestSlotState(),
+            initiallyObservedState.getHead());
 
     AttestationData data = attestation.getData();
     BeaconState state = initiallyObservedState.getLatestSlotState();
@@ -99,21 +95,18 @@ public class BeaconAttesterSpecTest {
     byte aByte = attestation.getAggregationBitfield().get(indexIntoCommittee / 8);
     Assert.assertEquals(1, ((aByte & 0xFF) >>> (indexIntoCommittee % 8)));
 
+    Attestation signedAttestation =
+        BeaconAttestationSigner.getInstance(spec, signer).sign(attestation, state.getFork());
+
     BLSSignature expectedSignature =
         signer.sign(
             spec.hash_tree_root(new AttestationDataAndCustodyBit(data, false)),
             spec.get_domain(state, SignatureDomains.ATTESTATION));
 
-    Assert.assertEquals(expectedSignature, attestation.getSignature());
+    Assert.assertEquals(expectedSignature, signedAttestation.getSignature());
   }
 
-  public static BeaconAttesterSpec getAttesterSpecMock(BeaconChainSpec spec, List<ValidatorIndex> committee, Hash32 targetRoot, Hash32 sourceRoot) {
-    BeaconAttesterSpec attesterSpec = Mockito.spy(new BeaconAttesterSpec(spec));
-
-    Mockito.doReturn(committee).when(attesterSpec).getCommittee(any(), any());
-    Mockito.doReturn(targetRoot).when(attesterSpec).getTargetRoot(any(), any());
-    Mockito.doReturn(sourceRoot).when(attesterSpec).getSourceRoot(any(), any());
-
-    return attesterSpec;
+  private List<ValidatorIndex> getCommittee(int size) {
+    return IntStream.range(0, size).mapToObj(ValidatorIndex::of).collect(Collectors.toList());
   }
 }

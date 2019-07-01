@@ -26,7 +26,7 @@ import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.stream.SimpleProcessor;
-import org.ethereum.beacon.validator.MultiValidatorServiceTest;
+import org.ethereum.beacon.validator.local.MultiValidatorServiceTest;
 import org.ethereum.beacon.wire.Feedback;
 import org.ethereum.beacon.wire.WireApiSub;
 import org.ethereum.beacon.wire.WireApiSync;
@@ -266,7 +266,7 @@ public class ServiceFactory {
   public static ValidatorDutiesService createValidatorDutiesService() {
     return new ValidatorDutiesService(BeaconChainSpec.createWithDefaults(), null, null) {
       @Override
-      public BeaconBlock.Builder prepareBlock(
+      public BeaconBlock prepareBlock(
           SlotNumber slot, BLSSignature randaoReveal, ObservableBeaconState observableBeaconState) {
         BeaconBlock.Builder builder =
             BeaconBlock.Builder.createEmpty()
@@ -276,15 +276,15 @@ public class ServiceFactory {
                 .withSignature(BLSSignature.ZERO)
                 .withBody(BeaconBlockBody.EMPTY);
 
-        return builder;
+        return builder.build();
       }
 
       @Override
       public Attestation prepareAttestation(
+          SlotNumber slot,
           ValidatorIndex validatorIndex,
           ShardNumber shard,
-          ObservableBeaconState observableBeaconState,
-          SlotNumber slot) {
+          ObservableBeaconState observableBeaconState) {
         return new Attestation(
             Bitfield.EMPTY,
             new AttestationData(

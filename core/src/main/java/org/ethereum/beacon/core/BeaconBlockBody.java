@@ -141,6 +141,19 @@ public class BeaconBlockBody {
     return transfers;
   }
 
+  public BeaconBlockBody withRandaoReveal(BLSSignature randaoReveal) {
+    return new BeaconBlockBody(
+        randaoReveal,
+        eth1Data,
+        graffiti,
+        proposerSlashings,
+        attesterSlashings,
+        attestations,
+        deposits,
+        voluntaryExits,
+        transfers);
+  }
+
   @Override
   public boolean equals(Object object) {
     if (this == object) {
