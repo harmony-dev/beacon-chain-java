@@ -99,7 +99,7 @@ public interface BlockProcessing extends HelperFunction {
 
   default void process_randao(MutableBeaconState state, BeaconBlockBody body) {
     // Mix it in
-    state.getLatestRandaoMixes().set(get_current_epoch(state).modulo(getConstants().getLatestRandaoMixesLength()),
+    state.getLatestRandaoMixes().set(get_current_epoch(state).modulo(getConstants().getEpochsPerHistoricalVector()),
         Hash32.wrap(Bytes32s.xor(
             get_randao_mix(state, get_current_epoch(state)),
             hash(body.getRandaoReveal()))));

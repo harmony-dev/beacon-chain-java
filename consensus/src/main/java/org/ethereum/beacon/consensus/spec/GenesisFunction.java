@@ -123,7 +123,7 @@ public interface GenesisFunction extends BlockProcessing {
     Hash32 genesisActiveIndexRoot = hash_tree_root(
         get_active_validator_indices(state, getConstants().getGenesisEpoch()));
 
-    for (EpochNumber index : getConstants().getLatestActiveIndexRootsLength().iterateFrom(EpochNumber.ZERO)) {
+    for (EpochNumber index : getConstants().getEpochsPerHistoricalVector().iterateFrom(EpochNumber.ZERO)) {
       state.getLatestActiveIndexRoots().set(index, genesisActiveIndexRoot);
     }
 

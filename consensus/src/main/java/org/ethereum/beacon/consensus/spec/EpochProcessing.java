@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
-import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.state.HistoricalBatch;
 import org.ethereum.beacon.core.state.PendingAttestation;
@@ -536,17 +535,17 @@ public interface EpochProcessing extends HelperFunction {
     Gwei total_balance = get_total_active_balance(state);
 
     /* Compute `total_penalties`
-      total_at_start = state.latest_slashed_balances[(current_epoch + 1) % LATEST_SLASHED_EXIT_LENGTH]
-      total_at_end = state.latest_slashed_balances[current_epoch % LATEST_SLASHED_EXIT_LENGTH]
+      total_at_start = state.latest_slashed_balances[(current_epoch + 1) % EPOCHS_PER_SLASHINGS_VECTOR]
+      total_at_end = state.latest_slashed_balances[current_epoch % EPOCHS_PER_SLASHINGS_VECTOR]
       total_penalties = total_at_end - total_at_start */
     Gwei total_at_start = state.getLatestSlashedBalances().get(
-        current_epoch.increment().modulo(getConstants().getLatestSlashedExitLength()));
+        current_epoch.increment().modulo(getConstants().getEpochsPerSlashingsVector()));
     Gwei total_at_end = state.getLatestSlashedBalances().get(
-        current_epoch.modulo(getConstants().getLatestSlashedExitLength()));
+        current_epoch.modulo(getConstants().getEpochsPerSlashingsVector()));
     Gwei total_penalties = total_at_end.minus(total_at_start);
 
     /* for index, validator in enumerate(state.validator_registry):
-        if validator.slashed and current_epoch == validator.withdrawable_epoch - LATEST_SLASHED_EXIT_LENGTH // 2:
+        if validator.slashed and current_epoch == validator.withdrawable_epoch - EPOCHS_PER_SLASHINGS_VECTOR // 2:
             penalty = max(
                 validator.effective_balance * min(total_penalties * 3, total_balance) // total_balance,
                 validator.effective_balance // MIN_SLASHING_PENALTY_QUOTIENT
@@ -556,7 +555,7 @@ public interface EpochProcessing extends HelperFunction {
       ValidatorRecord validator = state.getValidatorRegistry().get(index);
       if (validator.getSlashed()
           && current_epoch.equals(
-              validator.getWithdrawableEpoch().minus(getConstants().getLatestSlashedExitLength().half()))) {
+              validator.getWithdrawableEpoch().minus(getConstants().getEpochsPerSlashingsVector().half()))) {
         Gwei total_penalty_multiplier = UInt64s.min(total_penalties.times(3), total_balance);
         Gwei penalty = UInt64s.max(
             validator.getEffectiveBalance().times(total_penalty_multiplier).dividedBy(total_balance),
@@ -612,26 +611,26 @@ public interface EpochProcessing extends HelperFunction {
         .plusModulo(get_shard_delta(state, current_epoch), getConstants().getShardCount()));
 
     /* Set active index root
-      index_root_position = (next_epoch + ACTIVATION_EXIT_DELAY) % LATEST_ACTIVE_INDEX_ROOTS_LENGTH
+      index_root_position = (next_epoch + ACTIVATION_EXIT_DELAY) % EPOCHS_PER_HISTORICAL_VECTOR
       state.latest_active_index_roots[index_root_position] = hash_tree_root(
           get_active_validator_indices(state, next_epoch + ACTIVATION_EXIT_DELAY)
       ) */
     EpochNumber index_root_position = next_epoch.plusModulo(getConstants().getActivationExitDelay(),
-        getConstants().getLatestActiveIndexRootsLength());
+        getConstants().getEpochsPerHistoricalVector());
     state.getLatestActiveIndexRoots().set(index_root_position,
         hash_tree_root(
             get_active_validator_indices(state, next_epoch.plus(getConstants().getActivationExitDelay()))));
 
     /* Set total slashed balances
-      state.latest_slashed_balances[next_epoch % LATEST_SLASHED_EXIT_LENGTH] = (
-          state.latest_slashed_balances[current_epoch % LATEST_SLASHED_EXIT_LENGTH]
+      state.latest_slashed_balances[next_epoch % EPOCHS_PER_SLASHINGS_VECTOR] = (
+          state.latest_slashed_balances[current_epoch % EPOCHS_PER_SLASHINGS_VECTOR]
       ) */
-    state.getLatestSlashedBalances().set(next_epoch.modulo(getConstants().getLatestSlashedExitLength()),
-        state.getLatestSlashedBalances().get(current_epoch.modulo(getConstants().getLatestSlashedExitLength())));
+    state.getLatestSlashedBalances().set(next_epoch.modulo(getConstants().getEpochsPerSlashingsVector()),
+        state.getLatestSlashedBalances().get(current_epoch.modulo(getConstants().getEpochsPerSlashingsVector())));
 
     /* Set randao mix
-      state.latest_randao_mixes[next_epoch % LATEST_RANDAO_MIXES_LENGTH] = get_randao_mix(state, current_epoch) */
-    state.getLatestRandaoMixes().set(next_epoch.modulo(getConstants().getLatestRandaoMixesLength()),
+      state.latest_randao_mixes[next_epoch % EPOCHS_PER_HISTORICAL_VECTOR] = get_randao_mix(state, current_epoch) */
+    state.getLatestRandaoMixes().set(next_epoch.modulo(getConstants().getEpochsPerHistoricalVector()),
         get_randao_mix(state, current_epoch));
 
     /* Set historical root accumulator

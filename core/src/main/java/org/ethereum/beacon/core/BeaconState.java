@@ -42,15 +42,15 @@ public interface BeaconState extends ObservableComposite {
   static BeaconState getEmpty(SpecConstants specConst) {
     BeaconStateImpl ret = new BeaconStateImpl();
     ret.getLatestRandaoMixes().addAll(
-        Collections.nCopies(specConst.getLatestRandaoMixesLength().intValue(), Hash32.ZERO));
+        Collections.nCopies(specConst.getEpochsPerHistoricalVector().intValue(), Hash32.ZERO));
     ret.getLatestBlockRoots().addAll(
         Collections.nCopies(specConst.getSlotsPerHistoricalRoot().intValue(), Hash32.ZERO));
     ret.getLatestStateRoots().addAll(
         Collections.nCopies(specConst.getSlotsPerHistoricalRoot().intValue(), Hash32.ZERO));
     ret.getLatestActiveIndexRoots().addAll(
-        Collections.nCopies(specConst.getLatestActiveIndexRootsLength().intValue(), Hash32.ZERO));
+        Collections.nCopies(specConst.getEpochsPerHistoricalVector().intValue(), Hash32.ZERO));
     ret.getLatestSlashedBalances().addAll(
-        Collections.nCopies(specConst.getLatestSlashedExitLength().intValue(), Gwei.ZERO));
+        Collections.nCopies(specConst.getEpochsPerSlashingsVector().intValue(), Gwei.ZERO));
     ret.getPreviousCrosslinks().addAll(
         Collections.nCopies(specConst.getShardCount().intValue(), Crosslink.EMPTY));
     ret.getCurrentCrosslinks().addAll(
@@ -80,7 +80,7 @@ public interface BeaconState extends ObservableComposite {
   /* ******* Randomness and committees ********* */
 
   /** The most recent randao mixes. */
-  @SSZ(order = 5, vectorLengthVar = "spec.LATEST_RANDAO_MIXES_LENGTH")
+  @SSZ(order = 5, vectorLengthVar = "spec.EPOCHS_PER_HISTORICAL_VECTOR")
   ReadVector<EpochNumber, Hash32> getLatestRandaoMixes();
 
   @SSZ(order = 6) ShardNumber getLatestStartShard();
@@ -124,11 +124,11 @@ public interface BeaconState extends ObservableComposite {
   @SSZ(order = 19, vectorLengthVar = "spec.SLOTS_PER_HISTORICAL_ROOT")
   ReadVector<SlotNumber, Hash32> getLatestStateRoots();
 
-  @SSZ(order = 20, vectorLengthVar = "spec.LATEST_ACTIVE_INDEX_ROOTS_LENGTH")
+  @SSZ(order = 20, vectorLengthVar = "spec.EPOCHS_PER_HISTORICAL_VECTOR")
   ReadVector<EpochNumber, Hash32> getLatestActiveIndexRoots();
 
   /** Balances slashed at every withdrawal period */
-  @SSZ(order = 21, vectorLengthVar = "spec.LATEST_SLASHED_EXIT_LENGTH")
+  @SSZ(order = 21, vectorLengthVar = "spec.EPOCHS_PER_SLASHINGS_VECTOR")
   ReadVector<EpochNumber, Gwei> getLatestSlashedBalances();
 
   @SSZ(order = 22) BeaconBlockHeader getLatestBlockHeader();

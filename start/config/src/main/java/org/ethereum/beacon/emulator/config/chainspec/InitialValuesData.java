@@ -14,8 +14,6 @@ public class InitialValuesData implements InitialValues {
   private String GENESIS_SLOT;
   @JsonProperty("GENESIS_EPOCH")
   private String GENESIS_EPOCH;
-  @JsonProperty("ZERO_HASH")
-  private String ZERO_HASH;
   @JsonProperty("BLS_WITHDRAWAL_PREFIX")
   private String BLS_WITHDRAWAL_PREFIX;
 
@@ -29,12 +27,6 @@ public class InitialValuesData implements InitialValues {
   @JsonIgnore
   public EpochNumber getGenesisEpoch() {
     return EpochNumber.castFrom(UInt64.valueOf(getGENESIS_EPOCH()));
-  }
-
-  @Override
-  @JsonIgnore
-  public Hash32 getZeroHash() {
-    return Hash32.fromHexString(getZERO_HASH());
   }
 
   @Override
@@ -59,15 +51,6 @@ public class InitialValuesData implements InitialValues {
 
   public void setGENESIS_EPOCH(String GENESIS_EPOCH) {
     this.GENESIS_EPOCH = GENESIS_EPOCH;
-  }
-
-  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-  public String getZERO_HASH() {
-    return ZERO_HASH;
-  }
-
-  public void setZERO_HASH(String ZERO_HASH) {
-    this.ZERO_HASH = ZERO_HASH;
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)

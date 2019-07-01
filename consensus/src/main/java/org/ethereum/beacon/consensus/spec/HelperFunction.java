@@ -310,13 +310,13 @@ public interface HelperFunction extends SpecCommons {
                    epoch: Epoch) -> Bytes32:
       """
       Return the randao mix at a recent ``epoch``.
-      ``epoch`` expected to be between (current_epoch - LATEST_RANDAO_MIXES_LENGTH, current_epoch].
+      ``epoch`` expected to be between (current_epoch - EPOCHS_PER_HISTORICAL_VECTOR, current_epoch].
       """
-      return state.latest_randao_mixes[epoch % LATEST_RANDAO_MIXES_LENGTH]
+      return state.latest_randao_mixes[epoch % EPOCHS_PER_HISTORICAL_VECTOR]
     */
   default Hash32 get_randao_mix(BeaconState state, EpochNumber epoch) {
     return state.getLatestRandaoMixes().get(
-        epoch.modulo(getConstants().getLatestRandaoMixesLength()));
+        epoch.modulo(getConstants().getEpochsPerHistoricalVector()));
   }
 
   /**
@@ -648,14 +648,14 @@ public interface HelperFunction extends SpecCommons {
       current_epoch = get_current_epoch(state)
       initiate_validator_exit(state, slashed_index)
       state.validator_registry[slashed_index].slashed = True
-      state.validator_registry[slashed_index].withdrawable_epoch = current_epoch + LATEST_SLASHED_EXIT_LENGTH
+      state.validator_registry[slashed_index].withdrawable_epoch = current_epoch + EPOCHS_PER_SLASHINGS_VECTOR
       slashed_balance = state.validator_registry[slashed_index].effective_balance
-      state.latest_slashed_balances[current_epoch % LATEST_SLASHED_EXIT_LENGTH] += slashed_balance
+      state.latest_slashed_balances[current_epoch % EPOCHS_PER_SLASHINGS_VECTOR] += slashed_balance
 
       proposer_index = get_beacon_proposer_index(state)
       if whistleblower_index is None:
           whistleblower_index = proposer_index
-      whistleblowing_reward = slashed_balance // WHISTLEBLOWING_REWARD_QUOTIENT
+      whistleblowing_reward = slashed_balance // WHISTLEBLOWER_REWARD_QUOTIENT
       proposer_reward = whistleblowing_reward // PROPOSER_REWARD_QUOTIENT
       increase_balance(state, proposer_index, proposer_reward)
       increase_balance(state, whistleblower_index, whistleblowing_reward - proposer_reward)
@@ -667,16 +667,16 @@ public interface HelperFunction extends SpecCommons {
     state.getValidatorRegistry().update(slashed_index,
         validator -> ValidatorRecord.Builder.fromRecord(validator)
             .withSlashed(Boolean.TRUE)
-            .withWithdrawableEpoch(current_epoch.plus(getConstants().getLatestSlashedExitLength())).build());
+            .withWithdrawableEpoch(current_epoch.plus(getConstants().getEpochsPerSlashingsVector())).build());
     Gwei slashed_balance = state.getValidatorRegistry().get(slashed_index).getEffectiveBalance();
-    state.getLatestSlashedBalances().update(current_epoch.modulo(getConstants().getLatestSlashedExitLength()),
+    state.getLatestSlashedBalances().update(current_epoch.modulo(getConstants().getEpochsPerSlashingsVector()),
         balance -> balance.plus(slashed_balance));
 
     ValidatorIndex proposer_index = get_beacon_proposer_index(state);
     if (whistleblower_index == null) {
       whistleblower_index = proposer_index;
     }
-    Gwei whistleblowing_reward = slashed_balance.dividedBy(getConstants().getWhistleblowingRewardQuotient());
+    Gwei whistleblowing_reward = slashed_balance.dividedBy(getConstants().getWhistleblowerRewardQuotient());
     Gwei proposer_reward = whistleblowing_reward.dividedBy(getConstants().getProposerRewardQuotient());
     increase_balance(state, proposer_index, proposer_reward);
     increase_balance(state, whistleblower_index, whistleblowing_reward.minus(proposer_reward));
@@ -753,13 +753,13 @@ public interface HelperFunction extends SpecCommons {
       """
       Return the index root at a recent ``epoch``.
       ``epoch`` expected to be between
-      (current_epoch - LATEST_ACTIVE_INDEX_ROOTS_LENGTH + ACTIVATION_EXIT_DELAY, current_epoch + ACTIVATION_EXIT_DELAY].
+      (current_epoch - EPOCHS_PER_HISTORICAL_VECTOR + ACTIVATION_EXIT_DELAY, current_epoch + ACTIVATION_EXIT_DELAY].
       """
-      return state.latest_active_index_roots[epoch % LATEST_ACTIVE_INDEX_ROOTS_LENGTH]
+      return state.latest_active_index_roots[epoch % EPOCHS_PER_HISTORICAL_VECTOR]
    */
   default Hash32 get_active_index_root(BeaconState state, EpochNumber epoch) {
     return state.getLatestActiveIndexRoots().get(
-        epoch.modulo(getConstants().getLatestActiveIndexRootsLength()));
+        epoch.modulo(getConstants().getEpochsPerHistoricalVector()));
   }
 
   /*
@@ -769,14 +769,14 @@ public interface HelperFunction extends SpecCommons {
       Generate a seed for the given ``epoch``.
       """
       return hash(
-          get_randao_mix(state, epoch + LATEST_RANDAO_MIXES_LENGTH - MIN_SEED_LOOKAHEAD) +
+          get_randao_mix(state, epoch + EPOCHS_PER_HISTORICAL_VECTOR - MIN_SEED_LOOKAHEAD) +
           get_active_index_root(state, epoch) +
           int_to_bytes32(epoch)
       )
    */
   default Hash32 generate_seed(BeaconState state, EpochNumber epoch) {
     EpochNumber randao_mix_epoch = epoch
-        .plus(getConstants().getLatestRandaoMixesLength())
+        .plus(getConstants().getEpochsPerHistoricalVector())
         .minus(getConstants().getMinSeedLookahead());
     return hash(
         get_randao_mix(state, randao_mix_epoch)
@@ -926,7 +926,7 @@ public interface HelperFunction extends SpecCommons {
 
     // Verify max number of indices
     int indices_in_total = bit_0_indices.size() + bit_1_indices.size();
-    if (indices_in_total > getConstants().getMaxIndicesPerAttestation().getIntValue()) {
+    if (indices_in_total > getConstants().getMaxValidatorsPerCommittee().getIntValue()) {
       return false;
     }
 
