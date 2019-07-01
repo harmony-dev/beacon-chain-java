@@ -2,6 +2,7 @@ package org.ethereum.beacon.core.operations.attestation;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
+import java.util.function.Function;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.ssz.annotation.SSZ;
@@ -83,6 +84,16 @@ public class Crosslink {
   @Override
   public int hashCode() {
     return Objects.hashCode(shard, startEpoch, endEpoch, parentRoot, dataRoot);
+  }
+
+  public String toStringShort(Function<Object, Hash32> hasher) {
+    return String.format(
+        "%s: {[%s..%s], %s <~ %s}",
+        shard,
+        startEpoch,
+        endEpoch,
+        parentRoot.toStringShort(),
+        hasher.apply(this).toStringShort());
   }
 
   @Override
