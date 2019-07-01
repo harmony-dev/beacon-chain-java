@@ -21,7 +21,7 @@ import tech.pegasys.artemis.util.collections.ReadVector;
 @SSZSerializable
 public class Deposit {
 
-  /** A branch of receipt's Merkle trie of the deposit contract on PoW net. */
+  /** Merkle path to deposit data list root. */
   @SSZ(vectorLengthVar = "spec.DEPOSIT_CONTRACT_TREE_DEPTH")
   private final ReadVector<Integer, Hash32> proof;
   /** Deposit data. */

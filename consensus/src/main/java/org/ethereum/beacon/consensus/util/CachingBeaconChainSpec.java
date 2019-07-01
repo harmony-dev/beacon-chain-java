@@ -135,7 +135,7 @@ public class CachingBeaconChainSpec extends BeaconChainSpecImpl {
     Hash32 digest = getDigest(
         objectHash(state.getValidatorRegistry()),
         objectHash(state.getLatestRandaoMixes()),
-        attestation_data.getTargetEpoch().toBytes8(),
+        attestation_data.getTarget().getEpoch().toBytes8(),
         attestation_data.getCrosslink().getShard().toBytes8(),
         bitfield
     );

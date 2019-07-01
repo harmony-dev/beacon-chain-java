@@ -3,7 +3,7 @@ package org.ethereum.beacon.core.operations.attestation;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import org.ethereum.beacon.core.operations.Attestation;
-import org.ethereum.beacon.core.types.EpochNumber;
+import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -26,31 +26,18 @@ public class AttestationData {
 
   // FFG vote:
 
-  /** FFG source epoch. */
-  @SSZ private final EpochNumber sourceEpoch;
-  /** FFG source block root. */
-  @SSZ private final Hash32 sourceRoot;
-  /** FFG target epoch. */
-  @SSZ private final EpochNumber targetEpoch;
-  /** FFG target block root. */
-  @SSZ private final Hash32 targetRoot;
+  @SSZ private final Checkpoint source;
+  @SSZ private final Checkpoint target;
 
   // Crosslink vote:
 
   @SSZ private final Crosslink crosslink;
 
   public AttestationData(
-      Hash32 beaconBlockRoot,
-      EpochNumber sourceEpoch,
-      Hash32 sourceRoot,
-      EpochNumber targetEpoch,
-      Hash32 targetRoot,
-      Crosslink crosslink) {
+      Hash32 beaconBlockRoot, Checkpoint source, Checkpoint target, Crosslink crosslink) {
     this.beaconBlockRoot = beaconBlockRoot;
-    this.sourceEpoch = sourceEpoch;
-    this.sourceRoot = sourceRoot;
-    this.targetEpoch = targetEpoch;
-    this.targetRoot = targetRoot;
+    this.source = source;
+    this.target = target;
     this.crosslink = crosslink;
   }
 
@@ -58,20 +45,12 @@ public class AttestationData {
     return beaconBlockRoot;
   }
 
-  public EpochNumber getTargetEpoch() {
-    return targetEpoch;
+  public Checkpoint getSource() {
+    return source;
   }
 
-  public Hash32 getTargetRoot() {
-    return targetRoot;
-  }
-
-  public EpochNumber getSourceEpoch() {
-    return sourceEpoch;
-  }
-
-  public Hash32 getSourceRoot() {
-    return sourceRoot;
+  public Checkpoint getTarget() {
+    return target;
   }
 
   public Crosslink getCrosslink() {
@@ -88,17 +67,14 @@ public class AttestationData {
     }
     AttestationData that = (AttestationData) o;
     return Objects.equal(beaconBlockRoot, that.beaconBlockRoot)
-        && Objects.equal(sourceEpoch, that.sourceEpoch)
-        && Objects.equal(sourceRoot, that.sourceRoot)
-        && Objects.equal(targetEpoch, that.targetEpoch)
-        && Objects.equal(targetRoot, that.targetRoot)
+        && Objects.equal(source, that.source)
+        && Objects.equal(target, that.target)
         && Objects.equal(crosslink, that.crosslink);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(
-        beaconBlockRoot, sourceEpoch, sourceRoot, targetEpoch, targetRoot, crosslink);
+    return Objects.hashCode(beaconBlockRoot, source, target, crosslink);
   }
 
   @Override
@@ -106,10 +82,10 @@ public class AttestationData {
     return MoreObjects.toStringHelper(this)
         .add("crosslink", crosslink)
         .add("beaconBlockRoot", beaconBlockRoot.toStringShort())
-        .add("sourceEpoch", sourceEpoch)
-        .add("sourceRoot", sourceRoot.toStringShort())
-        .add("targetEpoch", targetEpoch)
-        .add("targetRoot", targetRoot.toStringShort())
+        .add("sourceEpoch", source.getEpoch())
+        .add("sourceRoot", source.getRoot().toStringShort())
+        .add("targetEpoch", target.getEpoch())
+        .add("targetRoot", target.getRoot().toStringShort())
         .toString();
   }
 }

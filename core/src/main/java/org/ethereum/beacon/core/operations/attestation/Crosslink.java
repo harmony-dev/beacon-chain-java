@@ -20,28 +20,28 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 public class Crosslink {
 
   public static final Crosslink EMPTY =
-      new Crosslink(ShardNumber.ZERO, EpochNumber.ZERO, EpochNumber.ZERO, Hash32.ZERO, Hash32.ZERO);
+      new Crosslink(ShardNumber.ZERO, Hash32.ZERO, EpochNumber.ZERO, EpochNumber.ZERO, Hash32.ZERO);
 
   /** Shard number. */
   @SSZ private final ShardNumber shard;
+  /** Root of the previous crosslink. */
+  @SSZ private final Hash32 parentRoot;
   /** Crosslinking data from epochs [start....end-1]. */
   @SSZ private final EpochNumber startEpoch;
   @SSZ private final EpochNumber endEpoch;
-  /** Root of the previous crosslink. */
-  @SSZ private final Hash32 parentRoot;
   /** Root of the crosslinked shard data since the previous crosslink. */
   @SSZ private final Hash32 dataRoot;
 
   public Crosslink(
       ShardNumber shard,
+      Hash32 parentRoot,
       EpochNumber startEpoch,
       EpochNumber endEpoch,
-      Hash32 parentRoot,
       Hash32 dataRoot) {
     this.shard = shard;
+    this.parentRoot = parentRoot;
     this.startEpoch = startEpoch;
     this.endEpoch = endEpoch;
-    this.parentRoot = parentRoot;
     this.dataRoot = dataRoot;
   }
 

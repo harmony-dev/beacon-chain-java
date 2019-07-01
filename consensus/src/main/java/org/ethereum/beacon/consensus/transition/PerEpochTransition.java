@@ -81,7 +81,7 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
                 a ->
                     spec
                         .get_attesting_indices(
-                            state, a.getData(), a.getAggregationBitfield())
+                            state, a.getData(), a.getAggregationBits())
                         .stream())
             .collect(Collectors.toList());
     summary.currentEpochSummary.boundaryAttestingBalance =
@@ -99,7 +99,7 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
                 a ->
                     spec
                         .get_attesting_indices(
-                            state, a.getData(), a.getAggregationBitfield())
+                            state, a.getData(), a.getAggregationBits())
                         .stream())
             .collect(Collectors.toList());
     summary.previousEpochSummary.boundaryAttestingBalance =
@@ -112,7 +112,7 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
                 a ->
                     spec
                         .get_attesting_indices(
-                            state, a.getData(), a.getAggregationBitfield())
+                            state, a.getData(), a.getAggregationBits())
                         .stream())
             .collect(Collectors.toList());
     summary.headAttestingBalance =

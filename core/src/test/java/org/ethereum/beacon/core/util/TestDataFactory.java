@@ -20,6 +20,7 @@ import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
 import org.ethereum.beacon.core.spec.SpecConstants;
+import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Eth1DataVote;
 import org.ethereum.beacon.core.state.Fork;
@@ -38,7 +39,6 @@ import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
-import tech.pegasys.artemis.util.collections.ReadVector;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 
@@ -57,10 +57,8 @@ public class TestDataFactory {
     AttestationData expected =
         new AttestationData(
             Hashes.sha256(BytesValue.fromHexString("aa")),
-            EpochNumber.ZERO,
-            Hashes.sha256(BytesValue.fromHexString("bb")),
-            EpochNumber.of(123),
-            Hashes.sha256(BytesValue.fromHexString("cc")),
+            new Checkpoint(EpochNumber.ZERO, Hashes.sha256(BytesValue.fromHexString("bb"))),
+            new Checkpoint(EpochNumber.of(123), Hashes.sha256(BytesValue.fromHexString("cc"))),
             Crosslink.EMPTY);
 
     return expected;

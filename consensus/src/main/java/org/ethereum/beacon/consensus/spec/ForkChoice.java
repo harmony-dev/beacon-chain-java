@@ -104,7 +104,7 @@ public interface ForkChoice extends HelperFunction {
       Function<ValidatorRecord, Optional<Attestation>> get_latest_attestation,
       Function<Hash32, Optional<BeaconBlock>> getBlock) {
     Optional<Attestation> latest = get_latest_attestation.apply(validatorRecord);
-    return latest.flatMap(at -> getBlock.apply(at.getData().getSourceRoot()));
+    return latest.flatMap(at -> getBlock.apply(at.getData().getSource().getRoot()));
   }
 
   /*

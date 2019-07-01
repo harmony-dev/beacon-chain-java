@@ -156,14 +156,14 @@ public interface HelperFunction extends SpecCommons {
       return get_epoch_start_slot(data.target_epoch) + offset // (committee_count // SLOTS_PER_EPOCH)
    */
   default SlotNumber get_attestation_data_slot(BeaconState state, AttestationData data) {
-    UInt64 committee_count = get_epoch_committee_count(state, data.getTargetEpoch());
+    UInt64 committee_count = get_epoch_committee_count(state, data.getTarget().getEpoch());
     ShardNumber offset = ShardNumber.of(
         data.getCrosslink().getShard()
             .plus(getConstants().getShardCount())
-            .minus(get_epoch_start_shard(state, data.getTargetEpoch()))
+            .minus(get_epoch_start_shard(state, data.getTarget().getEpoch()))
             .modulo(getConstants().getShardCount())
     );
-    return get_epoch_start_slot(data.getTargetEpoch())
+    return get_epoch_start_slot(data.getTarget().getEpoch())
         .plus(offset.dividedBy(committee_count.dividedBy(getConstants().getSlotsPerEpoch())));
   }
 
@@ -860,9 +860,9 @@ public interface HelperFunction extends SpecCommons {
   default boolean is_slashable_attestation_data(AttestationData data_1, AttestationData data_2) {
     return
         // Double vote
-        (!data_1.equals(data_2) && data_1.getTargetEpoch().equals(data_2.getTargetEpoch()))
+        (!data_1.equals(data_2) && data_1.getTarget().getEpoch().equals(data_2.getTarget().getEpoch()))
         // Surround vote
-        || (data_1.getSourceEpoch().less(data_2.getSourceEpoch()) && data_2.getTargetEpoch().less(data_1.getTargetEpoch()));
+        || (data_1.getSource().getEpoch().less(data_2.getSource().getEpoch()) && data_2.getTarget().getEpoch().less(data_1.getTarget().getEpoch()));
   }
 
   default List<BLSPubkey> mapIndicesToPubKeys(BeaconState state, Iterable<ValidatorIndex> indices) {
@@ -892,9 +892,9 @@ public interface HelperFunction extends SpecCommons {
    */
   default IndexedAttestation convert_to_indexed(BeaconState state, Attestation attestation) {
     List<ValidatorIndex> attesting_indices =
-        get_attesting_indices(state, attestation.getData(), attestation.getAggregationBitfield());
+        get_attesting_indices(state, attestation.getData(), attestation.getAggregationBits());
     List<ValidatorIndex> custody_bit_1_indices =
-        get_attesting_indices(state, attestation.getData(), attestation.getCustodyBitfield());
+        get_attesting_indices(state, attestation.getData(), attestation.getCustodyBits());
     List<ValidatorIndex> custody_bit_0_indices = attesting_indices.stream()
         .filter(index -> !custody_bit_1_indices.contains(index)).collect(toList());
 
@@ -968,7 +968,7 @@ public interface HelperFunction extends SpecCommons {
             hash_tree_root(new AttestationDataAndCustodyBit(indexed_attestation.getData(), true))
         ),
         indexed_attestation.getSignature(),
-        get_domain(state, ATTESTATION, indexed_attestation.getData().getTargetEpoch())
+        get_domain(state, ATTESTATION, indexed_attestation.getData().getTarget().getEpoch())
     );
   }
 
@@ -1044,7 +1044,7 @@ public interface HelperFunction extends SpecCommons {
   default List<ValidatorIndex> get_attesting_indices(
       BeaconState state, AttestationData attestation_data, Bitfield bitfield) {
     List<ValidatorIndex> committee =
-        get_crosslink_committee(state, attestation_data.getTargetEpoch(),
+        get_crosslink_committee(state, attestation_data.getTarget().getEpoch(),
             attestation_data.getCrosslink().getShard());
     assertTrue(verify_bitfield(bitfield, committee.size()));
     List<ValidatorIndex> participants = new ArrayList<>();

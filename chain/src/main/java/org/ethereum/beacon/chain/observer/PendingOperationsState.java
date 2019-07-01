@@ -45,7 +45,7 @@ public class PendingOperationsState implements PendingOperations {
     Map<AttestationData, List<Attestation>> attestationsBySlot =
         attestations.stream().collect(groupingBy(Attestation::getData));
     return attestationsBySlot.entrySet().stream()
-        .sorted(Comparator.comparing(e -> e.getKey().getTargetEpoch()))
+        .sorted(Comparator.comparing(e -> e.getKey().getTarget().getEpoch()))
         .map(entry -> aggregateAttestations(entry.getValue()))
         .limit(maxCount)
         .collect(Collectors.toList());
@@ -57,11 +57,11 @@ public class PendingOperationsState implements PendingOperations {
 
     Bitfield participants =
         attestations.stream()
-            .map(Attestation::getAggregationBitfield)
+            .map(Attestation::getAggregationBits)
             .reduce(Bitfield::or)
             .get();
     Bitfield custody =
-        attestations.stream().map(Attestation::getCustodyBitfield).reduce(Bitfield::or).get();
+        attestations.stream().map(Attestation::getCustodyBits).reduce(Bitfield::or).get();
     BLS381.Signature aggregatedSignature =
         BLS381.Signature.aggregate(
             attestations.stream()

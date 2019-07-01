@@ -1,5 +1,8 @@
 package org.ethereum.beacon.test;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.BeaconBlockHeader;
@@ -16,6 +19,7 @@ import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
 import org.ethereum.beacon.core.spec.SpecConstants;
+import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Fork;
 import org.ethereum.beacon.core.state.PendingAttestation;
@@ -46,10 +50,6 @@ import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.collections.WriteList;
 import tech.pegasys.artemis.util.uint.UInt64;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
 
 /** Various utility methods aiding state tests development. */
 public abstract class StateTestUtils {
@@ -234,12 +234,12 @@ public abstract class StateTestUtils {
     return new ValidatorRecord(
         BLSPubkey.fromHexString(data.getPubkey()),
         Hash32.fromHexString(data.getWithdrawalCredentials()),
+        Gwei.castFrom(UInt64.valueOf(data.getEffectiveBalance())),
+        data.getSlashed(),
         EpochNumber.castFrom(UInt64.valueOf(data.getActivationEligibilityEpoch())),
         EpochNumber.castFrom(UInt64.valueOf(data.getActivationEpoch())),
         EpochNumber.castFrom(UInt64.valueOf(data.getExitEpoch())),
-        EpochNumber.castFrom(UInt64.valueOf(data.getWithdrawableEpoch())),
-        data.getSlashed(),
-        Gwei.castFrom(UInt64.valueOf(data.getEffectiveBalance())));
+        EpochNumber.castFrom(UInt64.valueOf(data.getWithdrawableEpoch())));
   }
 
   public static Eth1Data parseEth1Data(Eth1 data) {
@@ -270,9 +270,9 @@ public abstract class StateTestUtils {
   public static Crosslink parseCrosslink(CrossLinkData data) {
     return new Crosslink(
         ShardNumber.of(data.getShard()),
+        Hash32.fromHexString(data.getParentRoot()),
         EpochNumber.castFrom(UInt64.valueOf(data.getStartEpoch())),
         EpochNumber.castFrom(UInt64.valueOf(data.getEndEpoch())),
-        Hash32.fromHexString(data.getParentRoot()),
         Hash32.fromHexString(data.getDataRoot())
     );
   }
@@ -289,10 +289,12 @@ public abstract class StateTestUtils {
   public static AttestationData parseAttestationData(AttestationDataContainer data) {
     return new AttestationData(
         Hash32.fromHexString(data.getBeaconBlockRoot()),
-        EpochNumber.castFrom(UInt64.valueOf(data.getSourceEpoch())),
-        Hash32.fromHexString(data.getSourceRoot()),
-        EpochNumber.castFrom(UInt64.valueOf(data.getTargetEpoch())),
-        Hash32.fromHexString(data.getTargetRoot()),
+        new Checkpoint(
+            EpochNumber.castFrom(UInt64.valueOf(data.getSourceEpoch())),
+            Hash32.fromHexString(data.getSourceRoot())),
+        new Checkpoint(
+            EpochNumber.castFrom(UInt64.valueOf(data.getTargetEpoch())),
+            Hash32.fromHexString(data.getTargetRoot())),
         parseCrosslink(data.getCrosslink()));
   }
 

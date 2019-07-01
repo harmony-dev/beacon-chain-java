@@ -7,12 +7,10 @@ import java.util.stream.Stream;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
-import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
+import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Bitfield;
-import org.ethereum.beacon.core.types.EpochNumber;
-import org.ethereum.beacon.core.types.ShardNumber;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
@@ -37,10 +35,9 @@ public abstract class AttestationTestUtil {
   public static AttestationData createRandomAttestationData(Random random) {
     return new AttestationData(
         Hash32.random(random),
-        BeaconChainSpec.DEFAULT_CONSTANTS.getGenesisEpoch(),
-        Hash32.random(random),
-        BeaconChainSpec.DEFAULT_CONSTANTS.getGenesisEpoch().increment(),
-        Hash32.random(random),
+        new Checkpoint(BeaconChainSpec.DEFAULT_CONSTANTS.getGenesisEpoch(), Hash32.random(random)),
+        new Checkpoint(
+            BeaconChainSpec.DEFAULT_CONSTANTS.getGenesisEpoch().increment(), Hash32.random(random)),
         Crosslink.EMPTY);
   }
 }

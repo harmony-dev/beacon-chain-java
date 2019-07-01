@@ -25,22 +25,22 @@ import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 public class Attestation {
 
   /** A bitfield where each bit corresponds to a validator attested to the {@link #data}. */
-  @SSZ private final Bitfield aggregationBitfield;
+  @SSZ private final Bitfield aggregationBits;
   /** Attestation data object. */
   @SSZ private final AttestationData data;
   /** Proof of custody bitfield. */
-  @SSZ private final Bitfield custodyBitfield;
+  @SSZ private final Bitfield custodyBits;
   /** A product of aggregation of signatures from different validators to {@link #data}. */
   @SSZ private final BLSSignature signature;
 
   public Attestation(
-      Bitfield aggregationBitfield,
+      Bitfield aggregationBits,
       AttestationData data,
-      Bitfield custodyBitfield,
+      Bitfield custodyBits,
       BLSSignature signature) {
-    this.aggregationBitfield = aggregationBitfield;
+    this.aggregationBits = aggregationBits;
     this.data = data;
-    this.custodyBitfield = custodyBitfield;
+    this.custodyBits = custodyBits;
     this.signature = signature;
   }
 
@@ -48,12 +48,12 @@ public class Attestation {
     return data;
   }
 
-  public Bitfield getAggregationBitfield() {
-    return aggregationBitfield;
+  public Bitfield getAggregationBits() {
+    return aggregationBits;
   }
 
-  public Bitfield getCustodyBitfield() {
-    return custodyBitfield;
+  public Bitfield getCustodyBits() {
+    return custodyBits;
   }
 
   public BLSSignature getSignature() {
@@ -66,16 +66,16 @@ public class Attestation {
     if (o == null || getClass() != o.getClass()) return false;
     Attestation that = (Attestation) o;
     return Objects.equal(data, that.data)
-        && Objects.equal(aggregationBitfield, that.aggregationBitfield)
-        && Objects.equal(custodyBitfield, that.custodyBitfield)
+        && Objects.equal(aggregationBits, that.aggregationBits)
+        && Objects.equal(custodyBits, that.custodyBits)
         && Objects.equal(signature, that.signature);
   }
 
   @Override
   public int hashCode() {
     int result = data.hashCode();
-    result = 31 * result + aggregationBitfield.hashCode();
-    result = 31 * result + custodyBitfield.hashCode();
+    result = 31 * result + aggregationBits.hashCode();
+    result = 31 * result + custodyBits.hashCode();
     result = 31 * result + signature.hashCode();
     return result;
   }
@@ -86,20 +86,20 @@ public class Attestation {
   }
 
   private String getSignerIndices() {
-    return aggregationBitfield.getBits().stream().map(i -> "" + i).collect(Collectors.joining("+"));
+    return aggregationBits.getBits().stream().map(i -> "" + i).collect(Collectors.joining("+"));
   }
 
   public String toString(@Nullable SpecConstants spec,@Nullable Time beaconStart) {
     return "Attestation["
         + data.toString()
         + ", attesters=" + getSignerIndices()
-        + ", cusodyBits=" + custodyBitfield
+        + ", cusodyBits=" + custodyBits
         + ", sig=" + signature
         + "]";
   }
 
   public String toStringShort(@Nullable SpecConstants spec) {
-    return "epoch=" + getData().getTargetEpoch().toString() + "/"
+    return "epoch=" + getData().getTarget().getEpoch().toString() + "/"
         + getData().getCrosslink().getShard().toString() + "/"
         + getData().getBeaconBlockRoot().toStringShort() + "/"
         + getSignerIndices();

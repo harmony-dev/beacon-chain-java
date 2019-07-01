@@ -23,9 +23,9 @@ import java.util.function.Function;
  */
 @SSZSerializable
 public class IndexedAttestation {
-  /** Validator indices */
+  /** Indices with custody bit equal to 0. */
   @SSZ private final ReadList<Integer, ValidatorIndex> custodyBit0Indices;
-
+  /** Indices with custody bit equal to 1. */
   @SSZ private final ReadList<Integer, ValidatorIndex> custodyBit1Indices;
   /** Attestation data */
   @SSZ private final AttestationData data;

@@ -2,13 +2,10 @@ package org.ethereum.beacon.core.state;
 
 import com.google.common.base.Objects;
 import java.util.stream.Collectors;
-import javax.annotation.Nullable;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
-import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.types.Bitfield;
 import org.ethereum.beacon.core.types.SlotNumber;
-import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
@@ -25,7 +22,7 @@ import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 public class PendingAttestation {
 
   /** Attester aggregation bitfield. */
-  @SSZ private final Bitfield aggregationBitfield;
+  @SSZ private final Bitfield aggregationBits;
   /** Signed data. */
   @SSZ private final AttestationData data;
   /** Slot in which it was included. */
@@ -34,18 +31,18 @@ public class PendingAttestation {
   @SSZ private final ValidatorIndex proposerIndex;
 
   public PendingAttestation(
-      Bitfield aggregationBitfield,
+      Bitfield aggregationBits,
       AttestationData data,
       SlotNumber inclusionDelay,
       ValidatorIndex proposerIndex) {
-    this.aggregationBitfield = aggregationBitfield;
+    this.aggregationBits = aggregationBits;
     this.data = data;
     this.inclusionDelay = inclusionDelay;
     this.proposerIndex = proposerIndex;
   }
 
-  public Bitfield getAggregationBitfield() {
-    return aggregationBitfield;
+  public Bitfield getAggregationBits() {
+    return aggregationBits;
   }
 
   public AttestationData getData() {
@@ -66,13 +63,13 @@ public class PendingAttestation {
     if (o == null || getClass() != o.getClass()) return false;
     PendingAttestation that = (PendingAttestation) o;
     return Objects.equal(data, that.data)
-        && Objects.equal(aggregationBitfield, that.aggregationBitfield)
+        && Objects.equal(aggregationBits, that.aggregationBits)
         && Objects.equal(proposerIndex, that.proposerIndex)
         && Objects.equal(inclusionDelay, that.inclusionDelay);
   }
 
   private String getSignerIndices() {
-    return aggregationBitfield.getBits().stream().map(i -> "" + i).collect(Collectors.joining("+"));
+    return aggregationBits.getBits().stream().map(i -> "" + i).collect(Collectors.joining("+"));
   }
 
   @Override
@@ -86,7 +83,7 @@ public class PendingAttestation {
   }
 
   public String toStringShort() {
-    return "epoch=" + getData().getTargetEpoch() + "/"
+    return "epoch=" + getData().getTarget().getEpoch() + "/"
         + "delay=" + getInclusionDelay() + "/"
         + getData().getCrosslink().getShard().toString() + "/"
         + getData().getBeaconBlockRoot().toStringShort() + "/"

@@ -151,7 +151,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
 
       List<ValidatorIndex> participants =
           spec.get_attesting_indices(
-              latestState, attestation.getData(), attestation.getAggregationBitfield());
+              latestState, attestation.getData(), attestation.getAggregationBits());
 
       List<BLSPubkey> pubKeys = spec.mapIndicesToPubKeys(latestState, participants);
 
@@ -162,7 +162,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   }
 
   private synchronized void addValidatorAttestation(BLSPubkey pubKey, Attestation attestation) {
-    attestationCache.put(Pair.with(pubKey, attestation.getData().getTargetEpoch()), attestation);
+    attestationCache.put(Pair.with(pubKey, attestation.getData().getTarget().getEpoch()), attestation);
   }
 
   private synchronized void onNewAttestation(Attestation attestation) {
@@ -174,7 +174,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     Iterator<Attestation> it = attestationBuffer.iterator();
     while (it.hasNext()) {
       Attestation att = it.next();
-      if (att.getData().getTargetEpoch().lessEqual(upToEpochInclusive)) {
+      if (att.getData().getTarget().getEpoch().lessEqual(upToEpochInclusive)) {
         ret.add(att);
         it.remove();
       }
@@ -201,9 +201,9 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
           spec.get_attesting_indices(
               beaconState,
               pendingAttestation.getData(),
-              pendingAttestation.getAggregationBitfield());
+              pendingAttestation.getAggregationBits());
       List<BLSPubkey> pubKeys = spec.mapIndicesToPubKeys(beaconState, participants);
-      EpochNumber targetEpoch = pendingAttestation.getData().getTargetEpoch();
+      EpochNumber targetEpoch = pendingAttestation.getData().getTarget().getEpoch();
       pubKeys.forEach(
           pubKey -> {
             removeValidatorAttestation(pubKey, targetEpoch);
@@ -218,7 +218,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   /** Purges all entries for epochs before  {@code targetEpoch}*/
   private synchronized void purgeAttestations(EpochNumber targetEpoch) {
     attestationCache.entrySet()
-        .removeIf(entry -> entry.getValue().getData().getTargetEpoch().less(targetEpoch));
+        .removeIf(entry -> entry.getValue().getData().getTarget().getEpoch().less(targetEpoch));
   }
 
   private synchronized Map<BLSPubkey, List<Attestation>> copyAttestationCache() {
@@ -303,9 +303,9 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     List<Attestation> attestations = attestationMap.values().stream()
         .flatMap(Collection::stream)
         .filter(attestation ->
-            attestation.getData().getTargetEpoch().lessEqual(spec.get_current_epoch(state)))
+            attestation.getData().getTarget().getEpoch().lessEqual(spec.get_current_epoch(state)))
         .filter(attestation -> spec.verify_attestation(state, attestation))
-        .sorted(Comparator.comparing(attestation -> attestation.getData().getTargetEpoch()))
+        .sorted(Comparator.comparing(attestation -> attestation.getData().getTarget().getEpoch()))
         .collect(Collectors.toList());
 
     return new PendingOperationsState(attestations);
@@ -321,7 +321,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
                       validatorRecord.getPubKey(), Collections.emptyList());
 
               return validatorAttestations.stream()
-                  .max(Comparator.comparing(attestation -> attestation.getData().getTargetEpoch()));
+                  .max(Comparator.comparing(attestation -> attestation.getData().getTarget().getEpoch()));
             });
     if (this.head != null && this.head.getBlock().equals(newHead)) {
       return; // == old

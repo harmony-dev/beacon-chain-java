@@ -227,8 +227,8 @@ public interface BlockProcessing extends HelperFunction {
     }
 
     // assert data.target_epoch in (get_previous_epoch(state), get_current_epoch(state))
-    if (!data.getTargetEpoch().equals(get_previous_epoch(state))
-        && !data.getTargetEpoch().equals(get_current_epoch(state))) {
+    if (!data.getTarget().getEpoch().equals(get_previous_epoch(state))
+        && !data.getTarget().getEpoch().equals(get_current_epoch(state))) {
       return false;
     }
 
@@ -240,15 +240,15 @@ public interface BlockProcessing extends HelperFunction {
         parent_crosslink = state.previous_crosslinks[data.crosslink.shard] */
     Crosslink parent_crosslink;
     boolean is_ffg_data_correct;
-    if (data.getTargetEpoch().equals(get_current_epoch(state))) {
-      is_ffg_data_correct = data.getTargetEpoch().equals(get_current_epoch(state))
-          && data.getSourceEpoch().equals(state.getCurrentJustifiedEpoch())
-          && data.getSourceRoot().equals(state.getCurrentJustifiedRoot());
+    if (data.getTarget().getEpoch().equals(get_current_epoch(state))) {
+      is_ffg_data_correct = data.getTarget().getEpoch().equals(get_current_epoch(state))
+          && data.getSource().getEpoch().equals(state.getCurrentJustifiedEpoch())
+          && data.getSource().getRoot().equals(state.getCurrentJustifiedRoot());
       parent_crosslink = state.getCurrentCrosslinks().get(data.getCrosslink().getShard());
     } else {
-      is_ffg_data_correct = data.getTargetEpoch().equals(get_previous_epoch(state))
-          && data.getSourceEpoch().equals(state.getPreviousJustifiedEpoch())
-          && data.getSourceRoot().equals(state.getPreviousJustifiedRoot());
+      is_ffg_data_correct = data.getTarget().getEpoch().equals(get_previous_epoch(state))
+          && data.getSource().getEpoch().equals(state.getPreviousJustifiedEpoch())
+          && data.getSource().getRoot().equals(state.getPreviousJustifiedRoot());
       parent_crosslink = state.getPreviousCrosslinks().get(data.getCrosslink().getShard());
     }
 
@@ -265,7 +265,7 @@ public interface BlockProcessing extends HelperFunction {
       return false;
     }
     if (!data.getCrosslink().getEndEpoch().equals(UInt64s.min(
-        data.getTargetEpoch(),
+        data.getTarget().getEpoch(),
         parent_crosslink.getEndEpoch().plus(getConstants().getMaxEpochsPerCrosslink())))) {
       return false;
     }
@@ -293,11 +293,11 @@ public interface BlockProcessing extends HelperFunction {
         inclusion_delay=state.slot - attestation_slot,
         proposer_index=get_beacon_proposer_index(state)) */
     PendingAttestation pending_attestation = new PendingAttestation(
-        attestation.getAggregationBitfield(),
+        attestation.getAggregationBits(),
         data,
         state.getSlot().minus(attestation_slot),
         get_beacon_proposer_index(state));
-    if (data.getTargetEpoch().equals(get_current_epoch(state))) {
+    if (data.getTarget().getEpoch().equals(get_current_epoch(state))) {
       state.getCurrentEpochAttestations().add(pending_attestation);
     } else {
       state.getPreviousEpochAttestations().add(pending_attestation);
@@ -366,15 +366,15 @@ public interface BlockProcessing extends HelperFunction {
       state.getValidatorRegistry().add(new ValidatorRecord(
           pubkey,
           deposit.getData().getWithdrawalCredentials(),
-          getConstants().getFarFutureEpoch(),
-          getConstants().getFarFutureEpoch(),
-          getConstants().getFarFutureEpoch(),
-          getConstants().getFarFutureEpoch(),
-          Boolean.FALSE,
           UInt64s.min(
               amount.minus(Gwei.castFrom(amount.modulo(getConstants().getEffectiveBalanceIncrement()))),
               getConstants().getMaxEffectiveBalance()
-          )
+          ),
+          Boolean.FALSE,
+          getConstants().getFarFutureEpoch(),
+          getConstants().getFarFutureEpoch(),
+          getConstants().getFarFutureEpoch(),
+          getConstants().getFarFutureEpoch()
       ));
       state.getBalances().add(amount);
     } else {

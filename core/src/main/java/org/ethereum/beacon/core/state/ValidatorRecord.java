@@ -23,38 +23,38 @@ public class ValidatorRecord {
 
   /** BLS public key. */
   @SSZ private final BLSPubkey pubKey;
-  /** Withdrawal credentials. */
+  /** Commitment to pubkey for withdrawals and transfers. */
   @SSZ private final Hash32 withdrawalCredentials;
-  /** Epoch when became eligible for activation. */
-  @SSZ private final EpochNumber activationEligibilityEpoch;
-  /** Slot when validator activated */
-  @SSZ private final EpochNumber activationEpoch;
-  /** Slot when validator exited */
-  @SSZ private final EpochNumber exitEpoch;
-  /** Epoch when validator is eligible to withdraw */
-  @SSZ private final EpochNumber withdrawableEpoch;
+  /** Balance at stake. */
+  @SSZ private final Gwei effectiveBalance;
   /** Status flags. */
   @SSZ private final Boolean slashed;
-  /** Effective balance. */
-  @SSZ private final Gwei effectiveBalance;
+  /** When criteria for activation were met. */
+  @SSZ private final EpochNumber activationEligibilityEpoch;
+  /** Slot when validator activated. */
+  @SSZ private final EpochNumber activationEpoch;
+  /** Slot when validator exited. */
+  @SSZ private final EpochNumber exitEpoch;
+  /** When validator can withdraw or transfer funds. */
+  @SSZ private final EpochNumber withdrawableEpoch;
 
   public ValidatorRecord(
       BLSPubkey pubKey,
       Hash32 withdrawalCredentials,
+      Gwei effectiveBalance,
+      Boolean slashed,
       EpochNumber activationEligibilityEpoch,
       EpochNumber activationEpoch,
       EpochNumber exitEpoch,
-      EpochNumber withdrawableEpoch,
-      Boolean slashed,
-      Gwei effectiveBalance) {
+      EpochNumber withdrawableEpoch) {
     this.pubKey = pubKey;
     this.withdrawalCredentials = withdrawalCredentials;
+    this.effectiveBalance = effectiveBalance;
+    this.slashed = slashed;
     this.activationEligibilityEpoch = activationEligibilityEpoch;
     this.activationEpoch = activationEpoch;
     this.exitEpoch = exitEpoch;
     this.withdrawableEpoch = withdrawableEpoch;
-    this.slashed = slashed;
-    this.effectiveBalance = effectiveBalance;
   }
 
   public BLSPubkey getPubKey() {
@@ -184,12 +184,12 @@ public class ValidatorRecord {
       return new ValidatorRecord(
           pubKey,
           withdrawalCredentials,
+          effectiveBalance,
+          slashed,
           activationEpoch,
           activationEligibilityEpoch,
           exitEpoch,
-          withdrawableEpoch,
-          slashed,
-          effectiveBalance);
+          withdrawableEpoch);
     }
 
     public Builder withPubKey(BLSPubkey pubKey) {

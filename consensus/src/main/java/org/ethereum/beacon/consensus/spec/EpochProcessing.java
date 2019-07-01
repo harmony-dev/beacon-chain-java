@@ -62,7 +62,7 @@ public interface EpochProcessing extends HelperFunction {
    */
   default List<PendingAttestation> get_matching_target_attestations(BeaconState state, EpochNumber epoch) {
     return get_matching_source_attestations(state, epoch).stream()
-        .filter(a -> a.getData().getTargetRoot().equals(get_block_root(state, epoch)))
+        .filter(a -> a.getData().getTarget().getRoot().equals(get_block_root(state, epoch)))
         .collect(toList());
   }
 
@@ -89,7 +89,7 @@ public interface EpochProcessing extends HelperFunction {
    */
   default List<ValidatorIndex> get_unslashed_attesting_indices(BeaconState state, List<PendingAttestation> attestations) {
     return attestations.stream()
-        .flatMap(a -> get_attesting_indices(state, a.getData(), a.getAggregationBitfield()).stream())
+        .flatMap(a -> get_attesting_indices(state, a.getData(), a.getAggregationBits()).stream())
         .distinct()
         .filter(i -> !state.getValidatorRegistry().get(i).getSlashed())
         .sorted()
@@ -350,7 +350,7 @@ public interface EpochProcessing extends HelperFunction {
     for (ValidatorIndex index : get_unslashed_attesting_indices(state, matching_source_attestations)) {
       PendingAttestation attestation =
           matching_source_attestations.stream()
-              .filter(a -> get_attesting_indices(state, a.getData(), a.getAggregationBitfield()).contains(index))
+              .filter(a -> get_attesting_indices(state, a.getData(), a.getAggregationBits()).contains(index))
               .min(Comparator.comparing(PendingAttestation::getInclusionDelay))
               .get();
       rewards[attestation.getProposerIndex().getIntValue()] = rewards[attestation.getProposerIndex().getIntValue()]
