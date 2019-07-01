@@ -19,8 +19,6 @@ public class MiscParametersData implements MiscParameters {
   private String MIN_PER_EPOCH_CHURN_LIMIT;
   @JsonProperty("CHURN_LIMIT_QUOTIENT")
   private String CHURN_LIMIT_QUOTIENT;
-  @JsonProperty("BASE_REWARDS_PER_EPOCH")
-  private String BASE_REWARDS_PER_EPOCH;
   @JsonProperty("SHUFFLE_ROUND_COUNT")
   private String SHUFFLE_ROUND_COUNT;
 
@@ -58,12 +56,6 @@ public class MiscParametersData implements MiscParameters {
   @JsonIgnore
   public int getShuffleRoundCount() {
     return Integer.valueOf(getSHUFFLE_ROUND_COUNT());
-  }
-
-  @Override
-  @JsonIgnore
-  public UInt64 getBaseRewardsPerEpoch() {
-    return UInt64.valueOf(getBASE_REWARDS_PER_EPOCH());
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
@@ -109,15 +101,6 @@ public class MiscParametersData implements MiscParameters {
 
   public void setCHURN_LIMIT_QUOTIENT(String CHURN_LIMIT_QUOTIENT) {
     this.CHURN_LIMIT_QUOTIENT = CHURN_LIMIT_QUOTIENT;
-  }
-
-  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-  public String getBASE_REWARDS_PER_EPOCH() {
-    return BASE_REWARDS_PER_EPOCH;
-  }
-
-  public void setBASE_REWARDS_PER_EPOCH(String BASE_REWARDS_PER_EPOCH) {
-    this.BASE_REWARDS_PER_EPOCH = BASE_REWARDS_PER_EPOCH;
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)

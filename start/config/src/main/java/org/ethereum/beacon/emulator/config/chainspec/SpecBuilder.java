@@ -71,11 +71,6 @@ public class SpecBuilder {
       }
 
       @Override
-      public UInt64 getDepositContractTreeDepth() {
-        return depositContractParameters.getDepositContractTreeDepth();
-      }
-
-      @Override
       public Gwei getMinDepositAmount() {
         return gweiValues.getMinDepositAmount();
       }
@@ -103,11 +98,6 @@ public class SpecBuilder {
       @Override
       public SlotNumber getGenesisSlot() {
         return initialValues.getGenesisSlot();
-      }
-
-      @Override
-      public EpochNumber getFarFutureEpoch() {
-        return initialValues.getFarFutureEpoch();
       }
 
       @Override
@@ -173,11 +163,6 @@ public class SpecBuilder {
       @Override
       public UInt64 getChurnLimitQuotient() {
         return miscParameters.getChurnLimitQuotient();
-      }
-
-      @Override
-      public UInt64 getBaseRewardsPerEpoch() {
-        return miscParameters.getBaseRewardsPerEpoch();
       }
 
       @Override

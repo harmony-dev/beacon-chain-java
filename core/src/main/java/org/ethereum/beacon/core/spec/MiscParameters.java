@@ -18,7 +18,6 @@ public interface MiscParameters {
   UInt64 MAX_INDICES_PER_ATTESTATION = UInt64.valueOf(1 << 12); // 4096
   UInt64 MIN_PER_EPOCH_CHURN_LIMIT = UInt64.valueOf(1 << 2); // 4
   UInt64 CHURN_LIMIT_QUOTIENT = UInt64.valueOf(1 << 16); // 65_536
-  UInt64 BASE_REWARDS_PER_EPOCH = UInt64.valueOf(5);
   int SHUFFLE_ROUND_COUNT = 90;
 
   /* Values defined in the spec. */
@@ -41,10 +40,6 @@ public interface MiscParameters {
 
   default UInt64 getChurnLimitQuotient() {
     return CHURN_LIMIT_QUOTIENT;
-  }
-
-  default UInt64 getBaseRewardsPerEpoch() {
-    return BASE_REWARDS_PER_EPOCH;
   }
 
   default int getShuffleRoundCount() {

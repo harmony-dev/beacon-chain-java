@@ -17,7 +17,6 @@ public interface InitialValues {
 
   SlotNumber GENESIS_SLOT = SlotNumber.ZERO;
   EpochNumber GENESIS_EPOCH = EpochNumber.ZERO;
-  EpochNumber FAR_FUTURE_EPOCH = EpochNumber.castFrom(UInt64.MAX_VALUE); // (1 << 64) - 1
   Hash32 ZERO_HASH = Hash32.ZERO;
   UInt64 BLS_WITHDRAWAL_PREFIX = UInt64.ZERO;
 
@@ -29,10 +28,6 @@ public interface InitialValues {
 
   default EpochNumber getGenesisEpoch() {
     return GENESIS_EPOCH;
-  }
-
-  default EpochNumber getFarFutureEpoch() {
-    return FAR_FUTURE_EPOCH;
   }
 
   default Hash32 getZeroHash() {

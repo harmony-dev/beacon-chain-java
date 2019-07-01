@@ -12,7 +12,6 @@ public abstract class SpecDataUtils {
         new DepositContractParametersData() {
           {
             setDEPOSIT_CONTRACT_ADDRESS(constants.getDepositContractAddress().toString());
-            setDEPOSIT_CONTRACT_TREE_DEPTH(constants.getDepositContractTreeDepth().toString());
           }
         };
 
@@ -27,7 +26,6 @@ public abstract class SpecDataUtils {
         new InitialValuesData() {
           {
             setBLS_WITHDRAWAL_PREFIX(constants.getBlsWithdrawalPrefix().toString());
-            setFAR_FUTURE_EPOCH(constants.getFarFutureEpoch().toString());
             setGENESIS_SLOT(Long.toUnsignedString(constants.getGenesisSlot().getValue()));
             setZERO_HASH(constants.getZeroHash().toString());
           }
@@ -53,7 +51,6 @@ public abstract class SpecDataUtils {
             setCHURN_LIMIT_QUOTIENT(constants.getChurnLimitQuotient().toString());
             setSHARD_COUNT(constants.getShardCount().toString());
             setTARGET_COMMITTEE_SIZE(constants.getTargetCommitteeSize().toString());
-            setBASE_REWARDS_PER_EPOCH(constants.getBaseRewardsPerEpoch().toString());
             setSHUFFLE_ROUND_COUNT(constants.getShuffleRoundCount());
           }
         };
