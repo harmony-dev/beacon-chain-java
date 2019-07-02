@@ -3,7 +3,7 @@ dependencies {
   implementation project(':core')
   implementation project(':consensus')
   implementation project(':ssz')
-  implementation project(':util')
+  implementation project(':util:core')
   implementation project(':crypto')
 
   implementation 'io.projectreactor:reactor-core'

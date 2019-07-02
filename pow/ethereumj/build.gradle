@@ -9,7 +9,7 @@ dependencies {
   implementation project(':types')
   implementation project(':core')
   implementation project(':consensus')
-  implementation project(':util')
+  implementation project(':util:core')
   implementation ("org.ethereum:ethereumj-core") {
     changing = true
 

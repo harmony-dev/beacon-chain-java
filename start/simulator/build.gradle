@@ -16,7 +16,7 @@ createScript(project, 'org.ethereum.beacon.simulator.Simulator', 'simulator')
 dependencies {
   implementation project(':types')
   implementation project(':wire')
-  implementation project(':util')
+  implementation project(':util:core')
   implementation project(':start:common')
   implementation project(':start:config')
   implementation project(':crypto')

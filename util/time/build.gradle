@@ -1,0 +1,9 @@
+dependencies {
+  implementation project(':util:core')
+  implementation project(':core')
+
+  implementation 'io.projectreactor:reactor-core'
+  implementation 'commons-net:commons-net'
+
+  testImplementation 'junit:junit'
+}

@@ -38,7 +38,9 @@ include 'test'
 // Strict types definition
 include 'types'
 // Standalone utils without any relation to Ethereum 2.0
-include 'util'
+include 'util:core'
+// Eth2.0 time utilities
+include 'util:time'
 // Validator services
 include 'validator'
 // Wire API mock

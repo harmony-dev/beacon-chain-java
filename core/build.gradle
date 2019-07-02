@@ -1,5 +1,5 @@
 dependencies {
-  implementation project(':types')
+  api project(':types')
   implementation project(':crypto')
   implementation project(':ssz')
 
