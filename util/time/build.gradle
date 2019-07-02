@@ -5,5 +5,7 @@ dependencies {
   implementation 'io.projectreactor:reactor-core'
   implementation 'commons-net:commons-net'
 
+  testImplementation project(':consensus')
+  testImplementation project(':ssz')
   testImplementation 'junit:junit'
 }

@@ -1,4 +1,4 @@
-package org.ethereum.beacon.time;
+package org.ethereum.beacon.time.provider;
 
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.schedulers.Schedulers;

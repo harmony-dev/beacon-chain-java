@@ -1,4 +1,4 @@
-package org.ethereum.beacon.time;
+package org.ethereum.beacon.time.provider;
 
 import org.apache.commons.net.ntp.NTPUDPClient;
 import org.apache.commons.net.ntp.TimeInfo;
