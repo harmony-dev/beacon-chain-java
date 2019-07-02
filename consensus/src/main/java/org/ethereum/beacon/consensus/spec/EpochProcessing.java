@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
+import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.state.HistoricalBatch;
 import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.state.ValidatorRecord;
@@ -91,7 +92,7 @@ public interface EpochProcessing extends HelperFunction {
     return attestations.stream()
         .flatMap(a -> get_attesting_indices(state, a.getData(), a.getAggregationBits()).stream())
         .distinct()
-        .filter(i -> !state.getValidatorRegistry().get(i).getSlashed())
+        .filter(i -> !state.getValidators().get(i).getSlashed())
         .sorted()
         .collect(Collectors.toList());
   }
@@ -163,16 +164,15 @@ public interface EpochProcessing extends HelperFunction {
 
     EpochNumber previous_epoch = get_previous_epoch(state);
     EpochNumber current_epoch = get_current_epoch(state);
-    EpochNumber old_previous_justified_epoch = state.getPreviousJustifiedEpoch();
-    EpochNumber old_current_justified_epoch = state.getCurrentJustifiedEpoch();
+    EpochNumber old_previous_justified_epoch = state.getPreviousJustifiedCheckpoint().getEpoch();
+    EpochNumber old_current_justified_epoch = state.getCurrentJustifiedCheckpoint().getEpoch();
 
     /* Process justifications
       state.previous_justified_epoch = state.current_justified_epoch
       state.previous_justified_root = state.current_justified_root
       state.justification_bitfield = (state.justification_bitfield << 1) % 2**64 */
-    state.setPreviousJustifiedEpoch(state.getCurrentJustifiedEpoch());
-    state.setPreviousJustifiedRoot(state.getCurrentJustifiedRoot());
-    state.setJustificationBitfield(state.getJustificationBitfield().shl(1));
+    state.setPreviousJustifiedCheckpoint(state.getCurrentJustifiedCheckpoint());
+    state.setJustificationBits(state.getJustificationBits().shl(1));
 
     /* previous_epoch_matching_target_balance = get_attesting_balance(state, get_matching_target_attestations(state, previous_epoch))
        if previous_epoch_matching_target_balance * 3 >= get_total_active_balance(state) * 2:
@@ -183,9 +183,11 @@ public interface EpochProcessing extends HelperFunction {
         get_attesting_balance(state, get_matching_target_attestations(state, previous_epoch));
     if (previous_epoch_matching_target_balance.times(3)
         .greater(get_total_active_balance(state).times(2))) {
-      state.setCurrentJustifiedEpoch(previous_epoch);
-      state.setCurrentJustifiedRoot(get_block_root(state, state.getCurrentJustifiedEpoch()));
-      state.setJustificationBitfield(state.getJustificationBitfield().or(2));
+      state.setCurrentJustifiedCheckpoint(
+          new Checkpoint(
+              previous_epoch,
+              get_block_root(state, state.getCurrentJustifiedCheckpoint().getEpoch())));
+      state.setJustificationBits(state.getJustificationBits().or(2));
     }
 
     /* current_epoch_matching_target_balance = get_attesting_balance(state, get_matching_target_attestations(state, current_epoch))
@@ -197,22 +199,26 @@ public interface EpochProcessing extends HelperFunction {
         get_attesting_balance(state, get_matching_target_attestations(state, current_epoch));
     if (current_epoch_matching_target_balance.times(3)
         .greater(get_total_active_balance(state).times(2))) {
-      state.setCurrentJustifiedEpoch(current_epoch);
-      state.setCurrentJustifiedRoot(get_block_root(state, state.getCurrentJustifiedEpoch()));
-      state.setJustificationBitfield(state.getJustificationBitfield().or(1));
+      state.setCurrentJustifiedCheckpoint(
+          new Checkpoint(
+              current_epoch,
+              get_block_root(state, state.getCurrentJustifiedCheckpoint().getEpoch())));
+      state.setJustificationBits(state.getJustificationBits().or(1));
     }
 
     /* Process finalizations
        bitfield = state.justification_bitfield */
-    Bitfield64 bitfield = state.getJustificationBitfield();
+    Bitfield64 bitfield = state.getJustificationBits();
 
     /* The 2nd/3rd/4th most recent epochs are justified, the 2nd using the 4th as source
        if (bitfield >> 1) % 8 == 0b111 and old_previous_justified_epoch + 3 == current_epoch:
            state.finalized_epoch = old_previous_justified_epoch
            state.finalized_root = get_block_root(state, state.finalized_epoch) */
     if ((bitfield.getValue() >>> 1) % 8 == 0b111 && old_previous_justified_epoch.plus(3).equals(current_epoch)) {
-      state.setFinalizedEpoch(old_current_justified_epoch);
-      state.setFinalizedRoot(get_block_root(state, state.getFinalizedEpoch()));
+      state.setFinalizedCheckpoint(
+          new Checkpoint(
+              old_current_justified_epoch,
+              get_block_root(state, state.getFinalizedCheckpoint().getEpoch())));
     }
 
     /* The 2nd/3rd most recent epochs are justified, the 2nd using the 3rd as source
@@ -220,8 +226,10 @@ public interface EpochProcessing extends HelperFunction {
            state.finalized_epoch = old_previous_justified_epoch
            state.finalized_root = get_block_root(state, state.finalized_epoch) */
     if ((bitfield.getValue() >>> 1) % 4 == 0b11 && old_previous_justified_epoch.plus(2).equals(current_epoch)) {
-      state.setFinalizedEpoch(old_current_justified_epoch);
-      state.setFinalizedRoot(get_block_root(state, state.getFinalizedEpoch()));
+      state.setFinalizedCheckpoint(
+          new Checkpoint(
+              old_current_justified_epoch,
+              get_block_root(state, state.getFinalizedCheckpoint().getEpoch())));
     }
 
     /* The 1st/2nd/3rd most recent epochs are justified, the 1st using the 3rd as source
@@ -229,8 +237,10 @@ public interface EpochProcessing extends HelperFunction {
            state.finalized_epoch = old_current_justified_epoch
            state.finalized_root = get_block_root(state, state.finalized_epoch) */
     if (bitfield.getValue() % 8 == 0b111 && old_previous_justified_epoch.plus(2).equals(current_epoch)) {
-      state.setFinalizedEpoch(old_current_justified_epoch);
-      state.setFinalizedRoot(get_block_root(state, state.getFinalizedEpoch()));
+      state.setFinalizedCheckpoint(
+          new Checkpoint(
+              old_current_justified_epoch,
+              get_block_root(state, state.getFinalizedCheckpoint().getEpoch())));
     }
 
     /* The 1st/2nd most recent epochs are justified, the 1st using the 2nd as source
@@ -238,8 +248,10 @@ public interface EpochProcessing extends HelperFunction {
            state.finalized_epoch = old_current_justified_epoch
            state.finalized_root = get_block_root(state, state.finalized_epoch) */
     if (bitfield.getValue() % 4 == 0b11 && old_previous_justified_epoch.plus(1).equals(current_epoch)) {
-      state.setFinalizedEpoch(old_current_justified_epoch);
-      state.setFinalizedRoot(get_block_root(state, state.getFinalizedEpoch()));
+      state.setFinalizedCheckpoint(
+          new Checkpoint(
+              old_current_justified_epoch,
+              get_block_root(state, state.getFinalizedCheckpoint().getEpoch())));
     }
   }
 
@@ -282,7 +294,7 @@ public interface EpochProcessing extends HelperFunction {
    */
   default Gwei get_base_reward(BeaconState state, ValidatorIndex index) {
     UInt64 total_balance = get_total_active_balance(state);
-    Gwei effective_balance = state.getValidatorRegistry().get(index).getEffectiveBalance();
+    Gwei effective_balance = state.getValidators().get(index).getEffectiveBalance();
     return effective_balance.times(getConstants().getBaseRewardFactor())
         .dividedBy(integer_squareroot(total_balance))
         .dividedBy(getConstants().getBaseRewardsPerEpoch());
@@ -294,14 +306,14 @@ public interface EpochProcessing extends HelperFunction {
   default Gwei[][] get_attestation_deltas(BeaconState state) {
     EpochNumber previous_epoch = get_previous_epoch(state);
     Gwei total_balance = get_total_active_balance(state);
-    Gwei[] rewards = new Gwei[state.getValidatorRegistry().size().getIntValue()];
-    Gwei[] penalties = new Gwei[state.getValidatorRegistry().size().getIntValue()];
+    Gwei[] rewards = new Gwei[state.getValidators().size().getIntValue()];
+    Gwei[] penalties = new Gwei[state.getValidators().size().getIntValue()];
     Arrays.fill(rewards, Gwei.ZERO);
     Arrays.fill(penalties, Gwei.ZERO);
 
     List<ValidatorIndex> eligible_validator_indices = new ArrayList<>();
-    for (ValidatorIndex index : state.getValidatorRegistry().size()) {
-      ValidatorRecord validator = state.getValidatorRegistry().get(index);
+    for (ValidatorIndex index : state.getValidators().size()) {
+      ValidatorRecord validator = state.getValidators().get(index);
       if (is_active_validator(validator, previous_epoch)
           || (validator.getSlashed() && previous_epoch.increment().less(validator.getWithdrawableEpoch()))) {
         eligible_validator_indices.add(index);
@@ -369,7 +381,7 @@ public interface EpochProcessing extends HelperFunction {
               penalties[index] += BASE_REWARDS_PER_EPOCH * get_base_reward(state, index)
               if index not in matching_target_attesting_indices:
                   penalties[index] += state.validator_registry[index].effective_balance * finality_delay // INACTIVITY_PENALTY_QUOTIENT */
-    EpochNumber finality_delay = previous_epoch.minus(state.getFinalizedEpoch());
+    EpochNumber finality_delay = previous_epoch.minus(state.getFinalizedCheckpoint().getEpoch());
     if (finality_delay.greater(getConstants().getMinEpochsToInactivityPenalty())) {
       List<ValidatorIndex> matching_target_attesting_indices = get_unslashed_attesting_indices(state, matching_target_attestations);
       for (ValidatorIndex index : eligible_validator_indices) {
@@ -377,7 +389,7 @@ public interface EpochProcessing extends HelperFunction {
             .plus(get_base_reward(state, index).times(getConstants().getBaseRewardsPerEpoch()));
         if (!matching_target_attesting_indices.contains(index)) {
           penalties[index.getIntValue()] = penalties[index.getIntValue()]
-              .plus(state.getValidatorRegistry().get(index).getEffectiveBalance()
+              .plus(state.getValidators().get(index).getEffectiveBalance()
                   .times(finality_delay).dividedBy(getConstants().getInactivityPenaltyQuotient()));
         }
       }
@@ -406,8 +418,8 @@ public interface EpochProcessing extends HelperFunction {
     return rewards, penalties
   */
   default Gwei[][] get_crosslink_deltas(BeaconState state) {
-    Gwei[] rewards = new Gwei[state.getValidatorRegistry().size().getIntValue()];
-    Gwei[] penalties = new Gwei[state.getValidatorRegistry().size().getIntValue()];
+    Gwei[] rewards = new Gwei[state.getValidators().size().getIntValue()];
+    Gwei[] penalties = new Gwei[state.getValidators().size().getIntValue()];
     Arrays.fill(rewards, Gwei.ZERO);
     Arrays.fill(penalties, Gwei.ZERO);
 
@@ -456,7 +468,7 @@ public interface EpochProcessing extends HelperFunction {
     Gwei[] rewards1 = deltas1[0], penalties1 = deltas1[1];
     Gwei[][] deltas2 = get_crosslink_deltas(state);
     Gwei[] rewards2 = deltas2[0], penalties2 = deltas2[1];
-    for (ValidatorIndex i : state.getValidatorRegistry().size()) {
+    for (ValidatorIndex i : state.getValidators().size()) {
       increase_balance(state, i, rewards1[i.getIntValue()].plus(rewards2[i.getIntValue()]));
       decrease_balance(state, i, penalties1[i.getIntValue()].plus(penalties2[i.getIntValue()]));
     }
@@ -474,11 +486,11 @@ public interface EpochProcessing extends HelperFunction {
           if is_active_validator(validator, get_current_epoch(state)) and validator.effective_balance <= EJECTION_BALANCE:
               initiate_validator_exit(state, index) */
     List<ValidatorIndex> ejected = new ArrayList<>();
-    for (ValidatorIndex index : state.getValidatorRegistry().size()) {
-      ValidatorRecord validator = state.getValidatorRegistry().get(index);
+    for (ValidatorIndex index : state.getValidators().size()) {
+      ValidatorRecord validator = state.getValidators().get(index);
       if (validator.getActivationEligibilityEpoch().equals(getConstants().getFarFutureEpoch())
           && validator.getEffectiveBalance().greaterEqual(getConstants().getMaxEffectiveBalance())) {
-        state.getValidatorRegistry().update(index,
+        state.getValidators().update(index,
             v -> ValidatorRecord.Builder.fromRecord(v)
                 .withActivationEligibilityEpoch(get_current_epoch(state)).build());
       }
@@ -497,10 +509,10 @@ public interface EpochProcessing extends HelperFunction {
           validator.activation_epoch >= get_delayed_activation_exit_epoch(state.finalized_epoch)
       ], key=lambda index: state.validator_registry[index].activation_eligibility_epoch) */
     List<Pair<ValidatorIndex, ValidatorRecord>> activation_queue = new ArrayList<>();
-    for (ValidatorIndex index : state.getValidatorRegistry().size()) {
-      ValidatorRecord v = state.getValidatorRegistry().get(index);
+    for (ValidatorIndex index : state.getValidators().size()) {
+      ValidatorRecord v = state.getValidators().get(index);
       if (!v.getActivationEligibilityEpoch().equals(getConstants().getFarFutureEpoch())
-          && v.getActivationEpoch().greaterEqual(get_delayed_activation_exit_epoch(state.getFinalizedEpoch()))) {
+          && v.getActivationEpoch().greaterEqual(get_delayed_activation_exit_epoch(state.getFinalizedCheckpoint().getEpoch()))) {
         activation_queue.add(Pair.with(index, v));
       }
     }
@@ -515,7 +527,7 @@ public interface EpochProcessing extends HelperFunction {
               validator.activation_epoch = get_delayed_activation_exit_epoch(get_current_epoch(state)) */
     for (Pair<ValidatorIndex, ValidatorRecord> p : limited_activation_queue) {
       if (p.getValue1().getActivationEpoch().equals(getConstants().getFarFutureEpoch())) {
-        state.getValidatorRegistry().update(p.getValue0(),
+        state.getValidators().update(p.getValue0(),
             v -> ValidatorRecord.Builder.fromRecord(v)
                 .withActivationEpoch(get_delayed_activation_exit_epoch(get_current_epoch(state)))
                 .build());
@@ -538,9 +550,9 @@ public interface EpochProcessing extends HelperFunction {
       total_at_start = state.latest_slashed_balances[(current_epoch + 1) % EPOCHS_PER_SLASHINGS_VECTOR]
       total_at_end = state.latest_slashed_balances[current_epoch % EPOCHS_PER_SLASHINGS_VECTOR]
       total_penalties = total_at_end - total_at_start */
-    Gwei total_at_start = state.getLatestSlashedBalances().get(
+    Gwei total_at_start = state.getSlashings().get(
         current_epoch.increment().modulo(getConstants().getEpochsPerSlashingsVector()));
-    Gwei total_at_end = state.getLatestSlashedBalances().get(
+    Gwei total_at_end = state.getSlashings().get(
         current_epoch.modulo(getConstants().getEpochsPerSlashingsVector()));
     Gwei total_penalties = total_at_end.minus(total_at_start);
 
@@ -551,8 +563,8 @@ public interface EpochProcessing extends HelperFunction {
                 validator.effective_balance // MIN_SLASHING_PENALTY_QUOTIENT
             )
             decrease_balance(state, index, penalty) */
-    for (ValidatorIndex index : state.getValidatorRegistry().size()) {
-      ValidatorRecord validator = state.getValidatorRegistry().get(index);
+    for (ValidatorIndex index : state.getValidators().size()) {
+      ValidatorRecord validator = state.getValidators().get(index);
       if (validator.getSlashed()
           && current_epoch.equals(
               validator.getWithdrawableEpoch().minus(getConstants().getEpochsPerSlashingsVector().half()))) {
@@ -590,12 +602,12 @@ public interface EpochProcessing extends HelperFunction {
           if balance < validator.effective_balance or validator.effective_balance + 3 * HALF_INCREMENT < balance:
               validator.effective_balance = min(balance - balance % EFFECTIVE_BALANCE_INCREMENT, MAX_EFFECTIVE_BALANCE) */
     Gwei half_increment = getConstants().getEffectiveBalanceIncrement().dividedBy(2);
-    for (ValidatorIndex index : state.getValidatorRegistry().size()) {
-      ValidatorRecord validator = state.getValidatorRegistry().get(index);
+    for (ValidatorIndex index : state.getValidators().size()) {
+      ValidatorRecord validator = state.getValidators().get(index);
       Gwei balance = state.getBalances().get(index);
       if (balance.less(validator.getEffectiveBalance())
           || validator.getEffectiveBalance().plus(half_increment.times(3)).less(balance)) {
-        state.getValidatorRegistry().update(index,
+        state.getValidators().update(index,
             v -> ValidatorRecord.Builder.fromRecord(v)
                 .withEffectiveBalance(
                     UInt64s.min(
@@ -607,7 +619,7 @@ public interface EpochProcessing extends HelperFunction {
 
     /* Update start shard
       state.latest_start_shard = (state.latest_start_shard + get_shard_delta(state, current_epoch)) % SHARD_COUNT */
-    state.setLatestStartShard(state.getLatestStartShard()
+    state.setStartShard(state.getStartShard()
         .plusModulo(get_shard_delta(state, current_epoch), getConstants().getShardCount()));
 
     /* Set active index root
@@ -617,7 +629,7 @@ public interface EpochProcessing extends HelperFunction {
       ) */
     EpochNumber index_root_position = next_epoch.plusModulo(getConstants().getActivationExitDelay(),
         getConstants().getEpochsPerHistoricalVector());
-    state.getLatestActiveIndexRoots().set(index_root_position,
+    state.getActiveIndexRoots().set(index_root_position,
         hash_tree_root(
             get_active_validator_indices(state, next_epoch.plus(getConstants().getActivationExitDelay()))));
 
@@ -625,12 +637,12 @@ public interface EpochProcessing extends HelperFunction {
       state.latest_slashed_balances[next_epoch % EPOCHS_PER_SLASHINGS_VECTOR] = (
           state.latest_slashed_balances[current_epoch % EPOCHS_PER_SLASHINGS_VECTOR]
       ) */
-    state.getLatestSlashedBalances().set(next_epoch.modulo(getConstants().getEpochsPerSlashingsVector()),
-        state.getLatestSlashedBalances().get(current_epoch.modulo(getConstants().getEpochsPerSlashingsVector())));
+    state.getSlashings().set(next_epoch.modulo(getConstants().getEpochsPerSlashingsVector()),
+        state.getSlashings().get(current_epoch.modulo(getConstants().getEpochsPerSlashingsVector())));
 
     /* Set randao mix
       state.latest_randao_mixes[next_epoch % EPOCHS_PER_HISTORICAL_VECTOR] = get_randao_mix(state, current_epoch) */
-    state.getLatestRandaoMixes().set(next_epoch.modulo(getConstants().getEpochsPerHistoricalVector()),
+    state.getRandaoMixes().set(next_epoch.modulo(getConstants().getEpochsPerHistoricalVector()),
         get_randao_mix(state, current_epoch));
 
     /* Set historical root accumulator
@@ -643,7 +655,7 @@ public interface EpochProcessing extends HelperFunction {
     if (next_epoch.modulo(getConstants().getSlotsPerHistoricalRoot().dividedBy(getConstants().getSlotsPerEpoch()))
         .equals(EpochNumber.ZERO)) {
       HistoricalBatch historical_batch =
-          new HistoricalBatch(state.getLatestBlockRoots().vectorCopy(), state.getLatestStateRoots().vectorCopy());
+          new HistoricalBatch(state.getBlockRoots().vectorCopy(), state.getStateRoots().vectorCopy());
       state.getHistoricalRoots().add(hash_tree_root(historical_batch));
     }
 

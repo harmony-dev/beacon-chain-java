@@ -32,7 +32,7 @@ public interface SpecCommons {
   }
 
   default void checkIndexRange(BeaconState state, ValidatorIndex index) {
-    assertTrue(index.less(state.getValidatorRegistry().size()));
+    assertTrue(index.less(state.getValidators().size()));
   }
 
   default void checkIndexRange(BeaconState state, Iterable<ValidatorIndex> indices) {

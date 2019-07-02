@@ -156,7 +156,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
             eth1Data ->
                 depositContract.hasDepositRoot(eth1Data.getBlockHash(), eth1Data.getDepositRoot()))
         // TODO throw exception if contract data can't be read
-        .orElse(contractData.orElse(state.getLatestEth1Data()));
+        .orElse(contractData.orElse(state.getEth1Data()));
   }
 
   /**
@@ -188,7 +188,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
             .peekDeposits(
                 spec.getConstants().getMaxDeposits(),
                 latestProcessedDeposit,
-                state.getLatestEth1Data())
+                state.getEth1Data())
             .stream()
             .map(DepositInfo::getDeposit)
             .collect(Collectors.toList());

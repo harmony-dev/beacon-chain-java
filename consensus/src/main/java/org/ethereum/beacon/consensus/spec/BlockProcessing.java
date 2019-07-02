@@ -54,7 +54,7 @@ public interface BlockProcessing extends HelperFunction {
     /* Verify proposer is not slashed
     proposer = state.validator_registry[get_beacon_proposer_index(state)]
     assert not proposer.slashed */
-    ValidatorRecord proposer = state.getValidatorRegistry().get(get_beacon_proposer_index(state));
+    ValidatorRecord proposer = state.getValidators().get(get_beacon_proposer_index(state));
     assertTrue(!proposer.getSlashed());
 
     /* Verify proposer signature
@@ -86,7 +86,7 @@ public interface BlockProcessing extends HelperFunction {
     /* proposer = state.validator_registry[get_beacon_proposer_index(state)]
     Verify that the provided randao value is valid
     assert bls_verify(proposer.pubkey, hash_tree_root(get_current_epoch(state)), block.body.randao_reveal, get_domain(state, DOMAIN_RANDAO)) */
-    ValidatorRecord proposer = state.getValidatorRegistry().get(get_beacon_proposer_index(state));
+    ValidatorRecord proposer = state.getValidators().get(get_beacon_proposer_index(state));
     assertTrue(
         bls_verify(
             proposer.getPubKey(),
@@ -99,7 +99,7 @@ public interface BlockProcessing extends HelperFunction {
 
   default void process_randao(MutableBeaconState state, BeaconBlockBody body) {
     // Mix it in
-    state.getLatestRandaoMixes().set(get_current_epoch(state).modulo(getConstants().getEpochsPerHistoricalVector()),
+    state.getRandaoMixes().set(get_current_epoch(state).modulo(getConstants().getEpochsPerHistoricalVector()),
         Hash32.wrap(Bytes32s.xor(
             get_randao_mix(state, get_current_epoch(state)),
             hash(body.getRandaoReveal()))));
@@ -117,13 +117,13 @@ public interface BlockProcessing extends HelperFunction {
         .filter(v -> v.equals(body.getEth1Data()))
         .count();
     if (votes_count * 2 > getConstants().getSlotsPerEth1VotingPeriod().getValue()) {
-      state.setLatestEth1Data(body.getEth1Data());
+      state.setEth1Data(body.getEth1Data());
     }
   }
 
   default void verify_proposer_slashing(BeaconState state, ProposerSlashing proposer_slashing) {
     checkIndexRange(state, proposer_slashing.getProposerIndex());
-    ValidatorRecord proposer = state.getValidatorRegistry().get(proposer_slashing.getProposerIndex());
+    ValidatorRecord proposer = state.getValidators().get(proposer_slashing.getProposerIndex());
 
     /* Verify that the epoch is the same
       assert slot_to_epoch(proposer_slashing.header_1.slot) == slot_to_epoch(proposer_slashing.header_2.slot) */
@@ -204,7 +204,7 @@ public interface BlockProcessing extends HelperFunction {
     intersection.retainAll(attesting_indices_2);
     intersection.sort(Comparator.comparingLong(UInt64::longValue));
     for (ValidatorIndex index : intersection) {
-      if (is_slashable_validator(state.getValidatorRegistry().get(index), get_current_epoch(state))) {
+      if (is_slashable_validator(state.getValidators().get(index), get_current_epoch(state))) {
         slash_validator(state, index);
         slashed_any = true;
       }
@@ -242,13 +242,13 @@ public interface BlockProcessing extends HelperFunction {
     boolean is_ffg_data_correct;
     if (data.getTarget().getEpoch().equals(get_current_epoch(state))) {
       is_ffg_data_correct = data.getTarget().getEpoch().equals(get_current_epoch(state))
-          && data.getSource().getEpoch().equals(state.getCurrentJustifiedEpoch())
-          && data.getSource().getRoot().equals(state.getCurrentJustifiedRoot());
+          && data.getSource().getEpoch().equals(state.getCurrentJustifiedCheckpoint().getEpoch())
+          && data.getSource().getRoot().equals(state.getCurrentJustifiedCheckpoint().getRoot());
       parent_crosslink = state.getCurrentCrosslinks().get(data.getCrosslink().getShard());
     } else {
       is_ffg_data_correct = data.getTarget().getEpoch().equals(get_previous_epoch(state))
-          && data.getSource().getEpoch().equals(state.getPreviousJustifiedEpoch())
-          && data.getSource().getRoot().equals(state.getPreviousJustifiedRoot());
+          && data.getSource().getEpoch().equals(state.getPreviousJustifiedCheckpoint().getEpoch())
+          && data.getSource().getRoot().equals(state.getPreviousJustifiedCheckpoint().getRoot());
       parent_crosslink = state.getPreviousCrosslinks().get(data.getCrosslink().getShard());
     }
 
@@ -317,8 +317,8 @@ public interface BlockProcessing extends HelperFunction {
         hash_tree_root(deposit.getData()),
         deposit.getProof().listCopy(),
         getConstants().getDepositContractTreeDepth(),
-        state.getDepositIndex(),
-        state.getLatestEth1Data().getDepositRoot()
+        state.getEth1DepositIndex(),
+        state.getEth1Data().getDepositRoot()
     ));
   }
 
@@ -330,7 +330,7 @@ public interface BlockProcessing extends HelperFunction {
     */
   default void process_deposit(MutableBeaconState state, Deposit deposit) {
     // state.deposit_index += 1
-    state.setDepositIndex(state.getDepositIndex().increment());
+    state.setEth1DepositIndex(state.getEth1DepositIndex().increment());
 
     BLSPubkey pubkey = deposit.getData().getPubKey();
     Gwei amount = deposit.getData().getAmount();
@@ -363,7 +363,7 @@ public interface BlockProcessing extends HelperFunction {
             effective_balance=min(amount - amount % EFFECTIVE_BALANCE_INCREMENT, MAX_EFFECTIVE_BALANCE)
         ))
         state.balances.append(amount) */
-      state.getValidatorRegistry().add(new ValidatorRecord(
+      state.getValidators().add(new ValidatorRecord(
           pubkey,
           deposit.getData().getWithdrawalCredentials(),
           UInt64s.min(
@@ -387,7 +387,7 @@ public interface BlockProcessing extends HelperFunction {
 
   default void verify_voluntary_exit(BeaconState state, VoluntaryExit exit) {
     checkIndexRange(state, exit.getValidatorIndex());
-    ValidatorRecord validator = state.getValidatorRegistry().get(exit.getValidatorIndex());
+    ValidatorRecord validator = state.getValidators().get(exit.getValidatorIndex());
 
     /* Verify the validator is active
     assert is_active_validator(validator, get_current_epoch(state)) */
@@ -439,10 +439,10 @@ public interface BlockProcessing extends HelperFunction {
         transfer.amount + transfer.fee + MAX_EFFECTIVE_BALANCE <= state.balances[transfer.sender]
     ) */
     assertTrue(
-        state.getValidatorRegistry().get(transfer.getSender()).getActivationEligibilityEpoch()
+        state.getValidators().get(transfer.getSender()).getActivationEligibilityEpoch()
             .equals(getConstants().getFarFutureEpoch())
         || get_current_epoch(state)
-            .greaterEqual(state.getValidatorRegistry().get(transfer.getSender()).getWithdrawableEpoch())
+            .greaterEqual(state.getValidators().get(transfer.getSender()).getWithdrawableEpoch())
         || transfer.getAmount().plus(transfer.getFee()).plus(getConstants().getMaxEffectiveBalance())
             .lessEqual(state.getBalances().get(transfer.getSender()))
     );
@@ -452,7 +452,7 @@ public interface BlockProcessing extends HelperFunction {
         state.validator_registry[transfer.sender].withdrawal_credentials ==
         BLS_WITHDRAWAL_PREFIX + hash(transfer.pubkey)[1:]
     ) */
-    assertTrue(state.getValidatorRegistry().get(transfer.getSender()).getWithdrawalCredentials()
+    assertTrue(state.getValidators().get(transfer.getSender()).getWithdrawalCredentials()
         .equals(int_to_bytes1(getConstants().getBlsWithdrawalPrefix()).concat(hash(transfer.getPubkey()).slice(1))));
 
     /* Verify that the signature is valid
@@ -502,7 +502,7 @@ public interface BlockProcessing extends HelperFunction {
         body.getDeposits().size() ==
             Math.min(
                 getConstants().getMaxDeposits(),
-                state.getLatestEth1Data().getDepositCount().minus(state.getDepositIndex()).getIntValue())
+                state.getEth1Data().getDepositCount().minus(state.getEth1DepositIndex()).getIntValue())
     );
     // Verify that there are no duplicate transfers
     assertTrue(body.getTransfers().size() == body.getTransfers().stream().distinct().count());

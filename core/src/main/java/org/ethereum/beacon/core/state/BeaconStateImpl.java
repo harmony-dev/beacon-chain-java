@@ -20,6 +20,7 @@ import org.ethereum.beacon.ssz.incremental.ObservableListImpl;
 import org.ethereum.beacon.ssz.incremental.UpdateListener;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.collections.WriteList;
+import tech.pegasys.artemis.util.collections.WriteVector;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 @SSZSerializable
@@ -27,99 +28,101 @@ public class BeaconStateImpl implements MutableBeaconState {
 
   private ObservableCompositeHelper obsHelper = new ObservableCompositeHelper();
 
-  /* Misc */
-
-  private ObsValue<SlotNumber> slot = obsHelper.newValue(SlotNumber.ZERO);
+  /* Versioning */
   private ObsValue<Time> genesisTime = obsHelper.newValue(Time.ZERO);
+  private ObsValue<SlotNumber> slot = obsHelper.newValue(SlotNumber.ZERO);
   private ObsValue<Fork> fork = obsHelper.newValue(Fork.EMPTY);
 
-  /* Validator registry */
+  /* History */
+  private ObsValue<BeaconBlockHeader> latestBlockHeader =
+      obsHelper.newValue(BeaconBlockHeader.EMPTY);
+  private ObsValue<WriteList<SlotNumber, Hash32>> blockRoots =
+      obsHelper.newValue(ObservableListImpl.create(SlotNumber::of, true));
+  private ObsValue<WriteList<SlotNumber, Hash32>> stateRoots =
+      obsHelper.newValue(ObservableListImpl.create(SlotNumber::of, true));
+  private ObsValue<WriteList<Integer, Hash32>> historicalRoots =
+      obsHelper.newValue(ObservableListImpl.create(Integer::valueOf));
 
-  private ObsValue<WriteList<ValidatorIndex, ValidatorRecord>> validatorRegistry =
+  /* Eth1 */
+  private ObsValue<Eth1Data> eth1Data = obsHelper.newValue(Eth1Data.EMPTY);
+  private ObsValue<WriteList<Integer, Eth1Data>> eth1DataVotes =
+      obsHelper.newValue(ObservableListImpl.create(Integer::valueOf));
+  private ObsValue<UInt64> eth1DepositIndex = obsHelper.newValue(UInt64.ZERO);
+
+  /* Registry */
+  private ObsValue<WriteList<ValidatorIndex, ValidatorRecord>> validators =
       obsHelper.newValue(ObservableListImpl.create(ValidatorIndex::of));
   private ObsValue<WriteList<ValidatorIndex, Gwei>> balances =
       obsHelper.newValue(ObservableListImpl.create(ValidatorIndex::of));
 
-  /* Randomness and committees */
-
-  private ObsValue<WriteList<EpochNumber, Hash32>> latestRandaoMixes =
+  /* Shuffling */
+  private ObsValue<ShardNumber> startShard = obsHelper.newValue(ShardNumber.ZERO);
+  private ObsValue<WriteList<EpochNumber, Hash32>> randaoMixes =
       obsHelper.newValue(ObservableListImpl.create(EpochNumber::of, true));
-  private ObsValue<ShardNumber> latestStartShard = obsHelper.newValue(ShardNumber.ZERO);
+  private ObsValue<WriteList<EpochNumber, Hash32>> activeIndexRoots =
+      obsHelper.newValue(ObservableListImpl.create(EpochNumber::of, true));
+  private ObsValue<WriteList<EpochNumber, Hash32>> compactCommitteesRoots =
+      obsHelper.newValue(ObservableListImpl.create(EpochNumber::of, true));
 
-  /* Finality */
+  /* Slashings */
+  private ObsValue<WriteList<EpochNumber, Gwei>> slashings =
+      obsHelper.newValue(ObservableListImpl.create(EpochNumber::of, true));
 
+  /* Attestations */
   private ObsValue<WriteList<Integer, PendingAttestation>> previousEpochAttestations =
       obsHelper.newValue(ObservableListImpl.create(Integer::valueOf));
   private ObsValue<WriteList<Integer, PendingAttestation>> currentEpochAttestations =
       obsHelper.newValue(ObservableListImpl.create(Integer::valueOf));
-  private ObsValue<EpochNumber> previousJustifiedEpoch = obsHelper.newValue(EpochNumber.ZERO);
-  private ObsValue<EpochNumber> currentJustifiedEpoch = obsHelper.newValue(EpochNumber.ZERO);
-  private ObsValue<Hash32> previousJustifiedRoot = obsHelper.newValue(Hash32.ZERO);
-  private ObsValue<Hash32> currentJustifiedRoot = obsHelper.newValue(Hash32.ZERO);
-  private ObsValue<Bitfield64> justificationBitfield = obsHelper.newValue(Bitfield64.ZERO);
-  private ObsValue<EpochNumber> finalizedEpoch = obsHelper.newValue(EpochNumber.ZERO);
-  private ObsValue<Hash32> finalizedRoot = obsHelper.newValue(Hash32.ZERO);
 
-  /* Recent state */
-
+  /* Crosslinks */
   private ObsValue<WriteList<ShardNumber, Crosslink>> previousCrosslinks =
       obsHelper.newValue(ObservableListImpl.create(ShardNumber::of, true));
   private ObsValue<WriteList<ShardNumber, Crosslink>> currentCrosslinks =
       obsHelper.newValue(ObservableListImpl.create(ShardNumber::of, true));
-  private ObsValue<WriteList<SlotNumber, Hash32>> latestBlockRoots =
-      obsHelper.newValue(ObservableListImpl.create(SlotNumber::of, true));
-  private ObsValue<WriteList<SlotNumber, Hash32>> latestStateRoots =
-      obsHelper.newValue(ObservableListImpl.create(SlotNumber::of, true));
-  private ObsValue<WriteList<EpochNumber, Hash32>> latestActiveIndexRoots =
-      obsHelper.newValue(ObservableListImpl.create(EpochNumber::of, true));
-  private ObsValue<WriteList<EpochNumber, Gwei>> latestSlashedBalances =
-      obsHelper.newValue(ObservableListImpl.create(EpochNumber::of, true));
-  private ObsValue<BeaconBlockHeader> latestBlockHeader = obsHelper.newValue(BeaconBlockHeader.EMPTY);
-  private ObsValue<WriteList<Integer, Hash32>> historicalRoots =
-      obsHelper.newValue(ObservableListImpl.create(Integer::valueOf));
 
-  /* PoW receipt root */
 
-  private ObsValue<Eth1Data> latestEth1Data = obsHelper.newValue(Eth1Data.EMPTY);
-  private ObsValue<WriteList<Integer, Eth1Data>> eth1DataVotes =
-      obsHelper.newValue(ObservableListImpl.create(Integer::valueOf));
-  private ObsValue<UInt64> depositIndex = obsHelper.newValue(UInt64.ZERO);
+  /* Finality */
+  private ObsValue<Bitfield64> justificationBits = obsHelper.newValue(Bitfield64.ZERO);
+  private ObsValue<Checkpoint> previousJustifiedCheckpoint = obsHelper.newValue(Checkpoint.EMPTY);
+  private ObsValue<Checkpoint> currentJustifiedCheckpoint = obsHelper.newValue(Checkpoint.EMPTY);
+  private ObsValue<Checkpoint> finalizedCheckpoint = obsHelper.newValue(Checkpoint.EMPTY);
 
   public BeaconStateImpl() {}
 
   BeaconStateImpl(BeaconState state) {
-    slot.set(state.getSlot());
     genesisTime.set(state.getGenesisTime());
+    slot.set(state.getSlot());
     fork.set(state.getFork());
 
-    validatorRegistry.set(state.getValidatorRegistry().createMutableCopy());
+    latestBlockHeader.set(state.getLatestBlockHeader());
+    blockRoots.set(state.getBlockRoots().createMutableCopy());
+    stateRoots.set(state.getStateRoots().createMutableCopy());
+    historicalRoots.set(state.getHistoricalRoots().createMutableCopy());
+
+    eth1Data.set(state.getEth1Data());
+    eth1DataVotes.set(state.getEth1DataVotes().createMutableCopy());
+    eth1DepositIndex.set(state.getEth1DepositIndex());
+
+    validators.set(state.getValidators().createMutableCopy());
     balances.set(state.getBalances().createMutableCopy());
 
-    latestRandaoMixes.set(state.getLatestRandaoMixes().createMutableCopy());
-    latestStartShard.set(state.getLatestStartShard());
+    startShard.set(state.getStartShard());
+    randaoMixes.set(state.getRandaoMixes().createMutableCopy());
+    activeIndexRoots.set(state.getActiveIndexRoots().createMutableCopy());
+    compactCommitteesRoots.set(state.getCompactCommitteesRoots().createMutableCopy());
+
+    slashings.set(state.getSlashings().createMutableCopy());
 
     previousEpochAttestations.set(state.getPreviousEpochAttestations().createMutableCopy());
     currentEpochAttestations.set(state.getCurrentEpochAttestations().createMutableCopy());
-    previousJustifiedEpoch.set(state.getPreviousJustifiedEpoch());
-    currentJustifiedEpoch.set(state.getCurrentJustifiedEpoch());
-    previousJustifiedRoot.set(state.getPreviousJustifiedRoot());
-    currentJustifiedRoot.set(state.getCurrentJustifiedRoot());
-    justificationBitfield.set(state.getJustificationBitfield());
-    finalizedEpoch.set(state.getFinalizedEpoch());
-    finalizedRoot.set(state.getFinalizedRoot());
 
     previousCrosslinks.set(state.getPreviousCrosslinks().createMutableCopy());
     currentCrosslinks.set(state.getCurrentCrosslinks().createMutableCopy());
-    latestBlockRoots.set(state.getLatestBlockRoots().createMutableCopy());
-    latestStateRoots.set(state.getLatestStateRoots().createMutableCopy());
-    latestActiveIndexRoots.set(state.getLatestActiveIndexRoots().createMutableCopy());
-    latestSlashedBalances.set(state.getLatestSlashedBalances().createMutableCopy());
-    latestBlockHeader.set(state.getLatestBlockHeader());
-    historicalRoots.set(state.getHistoricalRoots().createMutableCopy());
 
-    latestEth1Data.set(state.getLatestEth1Data());
-    eth1DataVotes.set(state.getEth1DataVotes().createMutableCopy());
-    depositIndex.set(state.getDepositIndex());
+    justificationBits.set(state.getJustificationBits());
+    previousJustifiedCheckpoint.set(state.getPreviousJustifiedCheckpoint());
+    currentJustifiedCheckpoint.set(state.getCurrentJustifiedCheckpoint());
+    finalizedCheckpoint.set(state.getFinalizedCheckpoint());
 
     obsHelper.addAllListeners(state.getAllUpdateListeners());
   }
@@ -170,13 +173,13 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
-  public WriteList<ValidatorIndex, ValidatorRecord> getValidatorRegistry() {
-    return validatorRegistry.get();
+  public WriteList<ValidatorIndex, ValidatorRecord> getValidators() {
+    return validators.get();
   }
 
-  public void setValidatorRegistry(
-      WriteList<ValidatorIndex, ValidatorRecord> validatorRegistry) {
-    this.validatorRegistry.get().replaceAll(validatorRegistry);
+  public void setValidators(
+      WriteList<ValidatorIndex, ValidatorRecord> validators) {
+    this.validators.get().replaceAll(validators);
   }
 
   @Override
@@ -190,23 +193,23 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
-  public WriteList<EpochNumber, Hash32> getLatestRandaoMixes() {
-    return latestRandaoMixes.get();
+  public WriteList<EpochNumber, Hash32> getRandaoMixes() {
+    return randaoMixes.get();
   }
 
-  public void setLatestRandaoMixes(
-      WriteList<EpochNumber, Hash32> latestRandaoMixes) {
-    this.latestRandaoMixes.get().replaceAll(latestRandaoMixes);
-  }
-
-  @Override
-  public ShardNumber getLatestStartShard() {
-    return latestStartShard.get();
+  public void setRandaoMixes(
+      WriteList<EpochNumber, Hash32> randaoMixes) {
+    this.randaoMixes.get().replaceAll(randaoMixes);
   }
 
   @Override
-  public void setLatestStartShard(ShardNumber latestStartShard) {
-    this.latestStartShard.set(latestStartShard);
+  public ShardNumber getStartShard() {
+    return startShard.get();
+  }
+
+  @Override
+  public void setStartShard(ShardNumber startShard) {
+    this.startShard.set(startShard);
   }
 
   public WriteList<Integer, PendingAttestation> getPreviousEpochAttestations() {
@@ -228,73 +231,13 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
-  public EpochNumber getPreviousJustifiedEpoch() {
-    return previousJustifiedEpoch.get();
+  public Bitfield64 getJustificationBits() {
+    return justificationBits.get();
   }
 
   @Override
-  public void setPreviousJustifiedEpoch(EpochNumber previousJustifiedEpoch) {
-    this.previousJustifiedEpoch.set(previousJustifiedEpoch);
-  }
-
-  @Override
-  public EpochNumber getCurrentJustifiedEpoch() {
-    return currentJustifiedEpoch.get();
-  }
-
-  @Override
-  public void setCurrentJustifiedEpoch(EpochNumber currentJustifiedEpoch) {
-    this.currentJustifiedEpoch.set(currentJustifiedEpoch);
-  }
-
-  @Override
-  public Hash32 getPreviousJustifiedRoot() {
-    return previousJustifiedRoot.get();
-  }
-
-  @Override
-  public void setPreviousJustifiedRoot(Hash32 previousJustifiedRoot) {
-    this.previousJustifiedRoot.set(previousJustifiedRoot);
-  }
-
-  @Override
-  public Hash32 getCurrentJustifiedRoot() {
-    return currentJustifiedRoot.get();
-  }
-
-  @Override
-  public void setCurrentJustifiedRoot(Hash32 currentJustifiedRoot) {
-    this.currentJustifiedRoot.set(currentJustifiedRoot);
-  }
-
-  @Override
-  public Bitfield64 getJustificationBitfield() {
-    return justificationBitfield.get();
-  }
-
-  @Override
-  public void setJustificationBitfield(Bitfield64 justificationBitfield) {
-    this.justificationBitfield.set(justificationBitfield);
-  }
-
-  @Override
-  public EpochNumber getFinalizedEpoch() {
-    return finalizedEpoch.get();
-  }
-
-  @Override
-  public void setFinalizedEpoch(EpochNumber finalizedEpoch) {
-    this.finalizedEpoch.set(finalizedEpoch);
-  }
-
-  @Override
-  public Hash32 getFinalizedRoot() {
-    return finalizedRoot.get();
-  }
-
-  @Override
-  public void setFinalizedRoot(Hash32 finalizedRoot) {
-    this.finalizedRoot.set(finalizedRoot);
+  public void setJustificationBits(Bitfield64 justificationBits) {
+    this.justificationBits.set(justificationBits);
   }
 
   @Override
@@ -318,43 +261,52 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
-  public WriteList<SlotNumber, Hash32> getLatestBlockRoots() {
-    return latestBlockRoots.get();
+  public WriteList<SlotNumber, Hash32> getBlockRoots() {
+    return blockRoots.get();
   }
 
-  public void setLatestBlockRoots(
-      WriteList<SlotNumber, Hash32> latestBlockRoots) {
-    this.latestBlockRoots.get().replaceAll(latestBlockRoots);
-  }
-
-  @Override
-  public WriteList<SlotNumber, Hash32> getLatestStateRoots() {
-    return latestStateRoots.get();
-  }
-
-  public void setLatestStateRoots(
-      WriteList<SlotNumber, Hash32> latestStateRoots) {
-    this.latestStateRoots.get().replaceAll(latestStateRoots);
+  public void setBlockRoots(
+      WriteList<SlotNumber, Hash32> blockRoots) {
+    this.blockRoots.get().replaceAll(blockRoots);
   }
 
   @Override
-  public WriteList<EpochNumber, Hash32> getLatestActiveIndexRoots() {
-    return latestActiveIndexRoots.get();
+  public WriteList<SlotNumber, Hash32> getStateRoots() {
+    return stateRoots.get();
   }
 
-  public void setLatestActiveIndexRoots(
-      WriteList<EpochNumber, Hash32> latestActiveIndexRoots) {
-    this.latestActiveIndexRoots.get().replaceAll(latestActiveIndexRoots);
+  public void setStateRoots(
+      WriteList<SlotNumber, Hash32> stateRoots) {
+    this.stateRoots.get().replaceAll(stateRoots);
   }
 
   @Override
-  public WriteList<EpochNumber, Gwei> getLatestSlashedBalances() {
-    return latestSlashedBalances.get();
+  public WriteList<EpochNumber, Hash32> getActiveIndexRoots() {
+    return activeIndexRoots.get();
   }
 
-  public void setLatestSlashedBalances(
-      WriteList<EpochNumber, Gwei> latestSlashedBalances) {
-    this.latestSlashedBalances.get().replaceAll(latestSlashedBalances);
+  public void setActiveIndexRoots(
+      WriteList<EpochNumber, Hash32> activeIndexRoots) {
+    this.activeIndexRoots.get().replaceAll(activeIndexRoots);
+  }
+
+  @Override
+  public WriteVector<EpochNumber, Hash32> getCompactCommitteesRoots() {
+    return compactCommitteesRoots.get();
+  }
+
+  public void setCompactCommitteesRoots(WriteList<EpochNumber, Hash32> compactCommitteesRoots) {
+    this.compactCommitteesRoots.get().replaceAll(compactCommitteesRoots);
+  }
+
+  @Override
+  public WriteList<EpochNumber, Gwei> getSlashings() {
+    return slashings.get();
+  }
+
+  public void setSlashings(
+      WriteList<EpochNumber, Gwei> slashings) {
+    this.slashings.get().replaceAll(slashings);
   }
 
   @Override
@@ -377,13 +329,13 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
-  public Eth1Data getLatestEth1Data() {
-    return latestEth1Data.get();
+  public Eth1Data getEth1Data() {
+    return eth1Data.get();
   }
 
   @Override
-  public void setLatestEth1Data(Eth1Data latestEth1Data) {
-    this.latestEth1Data.set(latestEth1Data);
+  public void setEth1Data(Eth1Data latestEth1Data) {
+    this.eth1Data.set(latestEth1Data);
   }
 
   @Override
@@ -398,13 +350,40 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
-  public UInt64 getDepositIndex() {
-    return depositIndex.get();
+  public UInt64 getEth1DepositIndex() {
+    return eth1DepositIndex.get();
   }
 
   @Override
-  public void setDepositIndex(UInt64 depositIndex) {
-    this.depositIndex.set(depositIndex);
+  public void setEth1DepositIndex(UInt64 depositIndex) {
+    this.eth1DepositIndex.set(depositIndex);
+  }
+
+  @Override
+  public Checkpoint getPreviousJustifiedCheckpoint() {
+    return previousJustifiedCheckpoint.get();
+  }
+
+  @Override
+  public Checkpoint getCurrentJustifiedCheckpoint() {
+    return currentJustifiedCheckpoint.get();
+  }
+
+  @Override
+  public Checkpoint getFinalizedCheckpoint() {
+    return finalizedCheckpoint.get();
+  }
+
+  public void setPreviousJustifiedCheckpoint(Checkpoint previousJustifiedCheckpoint) {
+    this.previousJustifiedCheckpoint.set(previousJustifiedCheckpoint);
+  }
+
+  public void setCurrentJustifiedCheckpoint(Checkpoint currentJustifiedCheckpoint) {
+    this.currentJustifiedCheckpoint.set(currentJustifiedCheckpoint);
+  }
+
+  public void setFinalizedCheckpoint(Checkpoint finalizedCheckpoint) {
+    this.finalizedCheckpoint.set(finalizedCheckpoint);
   }
 
   /*********  List Getters/Setter for serialization  **********/

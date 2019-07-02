@@ -1,8 +1,8 @@
 package org.ethereum.beacon.core;
 
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
+import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.state.Eth1Data;
-import org.ethereum.beacon.core.state.Eth1DataVote;
 import org.ethereum.beacon.core.state.Fork;
 import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.state.ValidatorRecord;
@@ -14,7 +14,6 @@ import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.collections.WriteList;
 import tech.pegasys.artemis.util.collections.WriteVector;
 import tech.pegasys.artemis.util.uint.UInt64;
@@ -28,31 +27,28 @@ public interface MutableBeaconState extends BeaconState {
   void setFork(Fork fork);
 
   @Override
-  WriteList<ValidatorIndex, ValidatorRecord> getValidatorRegistry();
+  WriteList<ValidatorIndex, ValidatorRecord> getValidators();
 
   @Override
   WriteList<ValidatorIndex, Gwei> getBalances();
 
   @Override
-  WriteVector<EpochNumber, Hash32> getLatestRandaoMixes();
+  WriteVector<EpochNumber, Hash32> getRandaoMixes();
 
-  void setLatestStartShard(ShardNumber latestStartShard);
+  void setStartShard(ShardNumber startShard);
 
-  void setPreviousJustifiedEpoch(EpochNumber previousJustifiedEpoch);
-
-  void setCurrentJustifiedEpoch(EpochNumber currentJustifiedSlot);
-
-  void setPreviousJustifiedRoot(Hash32 previousJustifiedRoot);
-
-  void setCurrentJustifiedRoot(Hash32 currentJustifiedRoot);
-
-  void setJustificationBitfield(Bitfield64 justificationBitfield);
-
-  void setFinalizedEpoch(EpochNumber finalizedEpoch);
-
-  void setFinalizedRoot(Hash32 finalizedRoot);
+  void setJustificationBits(Bitfield64 justificationBits);
 
   void setLatestBlockHeader(BeaconBlockHeader latestBlockHeader);
+
+  void setPreviousJustifiedCheckpoint(Checkpoint previousJustifiedCheckpoint);
+
+  void setCurrentJustifiedCheckpoint(Checkpoint currentJustifiedCheckpoint);
+
+  void setFinalizedCheckpoint(Checkpoint finalizedCheckpoint);
+
+  @Override
+  Bitfield64 getJustificationBits();
 
   @Override
   WriteList<ShardNumber, Crosslink> getPreviousCrosslinks();
@@ -61,16 +57,19 @@ public interface MutableBeaconState extends BeaconState {
   WriteList<ShardNumber, Crosslink> getCurrentCrosslinks();
 
   @Override
-  WriteVector<SlotNumber, Hash32> getLatestBlockRoots();
+  WriteVector<SlotNumber, Hash32> getBlockRoots();
 
   @Override
-  WriteVector<SlotNumber, Hash32> getLatestStateRoots();
+  WriteVector<SlotNumber, Hash32> getStateRoots();
 
   @Override
-  WriteVector<EpochNumber, Hash32> getLatestActiveIndexRoots();
+  WriteVector<EpochNumber, Hash32> getActiveIndexRoots();
 
   @Override
-  WriteVector<EpochNumber, Gwei> getLatestSlashedBalances();
+  WriteVector<EpochNumber, Hash32> getCompactCommitteesRoots();
+
+  @Override
+  WriteVector<EpochNumber, Gwei> getSlashings();
 
   @Override
   WriteList<Integer, PendingAttestation> getPreviousEpochAttestations();
@@ -81,14 +80,14 @@ public interface MutableBeaconState extends BeaconState {
   @Override
   WriteList<Integer, Hash32> getHistoricalRoots();
 
-  void setLatestEth1Data(Eth1Data latestEth1Data);
+  void setEth1Data(Eth1Data latestEth1Data);
 
   @Override
   WriteList<Integer, Eth1Data> getEth1DataVotes();
 
   void setEth1DataVotes(WriteList<Integer, Eth1Data> eth1DataVotes);
 
-  void setDepositIndex(UInt64 depositIndex);
+  void setEth1DepositIndex(UInt64 depositIndex);
 
   BeaconState createImmutable();
 }

@@ -107,7 +107,7 @@ public class StateComparator {
 
     return assertLists(
         StateTestUtils.parseHashes(expected.getLatestBlockRoots()),
-        actual.getLatestBlockRoots().listCopy());
+        actual.getBlockRoots().listCopy());
   }
 
   private Optional<String> compareValidatorBalances() {
@@ -127,7 +127,7 @@ public class StateComparator {
 
     return assertLists(
         StateTestUtils.parseBalances(expected.getLatestSlashedBalances()),
-        actual.getLatestSlashedBalances().listCopy());
+        actual.getSlashings().listCopy());
   }
 
   private Optional<String> compareValidatorRegistry() {
@@ -137,7 +137,7 @@ public class StateComparator {
 
     List<ValidatorRecord> expectedValidators =
         StateTestUtils.parseValidatorRegistry(expected.getValidatorRegistry());
-    return assertLists(expectedValidators, actual.getValidatorRegistry().listCopy());
+    return assertLists(expectedValidators, actual.getValidators().listCopy());
   }
 
   private Optional<String> compareCurrentEpochAttestations() {
@@ -165,7 +165,7 @@ public class StateComparator {
     }
 
     List<Hash32> expectedRandaoMixes = StateTestUtils.parseHashes(expected.getLatestRandaoMixes());
-    return assertLists(expectedRandaoMixes, actual.getLatestRandaoMixes().listCopy());
+    return assertLists(expectedRandaoMixes, actual.getRandaoMixes().listCopy());
   }
 
   private Optional<String> compareLatestStateRoots() {
@@ -174,7 +174,7 @@ public class StateComparator {
     }
 
     List<Hash32> expectedRoots = StateTestUtils.parseHashes(expected.getLatestStateRoots());
-    return assertLists(expectedRoots, actual.getLatestStateRoots().listCopy());
+    return assertLists(expectedRoots, actual.getStateRoots().listCopy());
   }
 
   private Optional<String> compareLatestActiveIndexRoots() {
@@ -183,7 +183,7 @@ public class StateComparator {
     }
 
     List<Hash32> expectedRoots = StateTestUtils.parseHashes(expected.getLatestActiveIndexRoots());
-    return assertLists(expectedRoots, actual.getLatestActiveIndexRoots().listCopy());
+    return assertLists(expectedRoots, actual.getActiveIndexRoots().listCopy());
   }
 
   private Optional<String> compareCurrentCrosslinks() {
@@ -223,7 +223,7 @@ public class StateComparator {
 
     return assertEquals(
         EpochNumber.castFrom(UInt64.valueOf(expected.getCurrentJustifiedEpoch())),
-        actual.getCurrentJustifiedEpoch());
+        actual.getCurrentJustifiedCheckpoint().getEpoch());
   }
 
   private Optional<String> compareCurrentJustifiedRoot() {
@@ -232,7 +232,7 @@ public class StateComparator {
     }
 
     return assertEquals(
-        Hash32.fromHexString(expected.getCurrentJustifiedRoot()), actual.getCurrentJustifiedRoot());
+        Hash32.fromHexString(expected.getCurrentJustifiedRoot()), actual.getCurrentJustifiedCheckpoint().getRoot());
   }
 
   private Optional<String> compareGenesisTime() {
@@ -250,7 +250,7 @@ public class StateComparator {
 
     return assertEquals(
         EpochNumber.castFrom(UInt64.valueOf(expected.getPreviousJustifiedEpoch())),
-        actual.getPreviousJustifiedEpoch());
+        actual.getPreviousJustifiedCheckpoint().getEpoch());
   }
 
   private Optional<String> comparePreviousJustifiedRoot() {
@@ -260,7 +260,7 @@ public class StateComparator {
 
     return assertEquals(
         Hash32.fromHexString(expected.getPreviousJustifiedRoot()),
-        actual.getPreviousJustifiedRoot());
+        actual.getPreviousJustifiedCheckpoint().getRoot());
   }
 
   private Optional<String> compareDepositIndex() {
@@ -268,7 +268,7 @@ public class StateComparator {
       return Optional.empty();
     }
 
-    return assertEquals(expected.getDepositIndex(), actual.getDepositIndex().getValue());
+    return assertEquals(expected.getDepositIndex(), actual.getEth1DepositIndex().getValue());
   }
 
   private Optional<String> compareEth1DataVotes() {
@@ -287,7 +287,7 @@ public class StateComparator {
 
     return assertEquals(
         EpochNumber.castFrom(UInt64.valueOf(expected.getFinalizedEpoch())),
-        actual.getFinalizedEpoch());
+        actual.getFinalizedCheckpoint().getEpoch());
   }
 
   private Optional<String> compareFinalizedRoot() {
@@ -296,7 +296,7 @@ public class StateComparator {
     }
 
     return assertEquals(
-        Hash32.fromHexString(expected.getFinalizedRoot()), actual.getFinalizedRoot());
+        Hash32.fromHexString(expected.getFinalizedRoot()), actual.getFinalizedCheckpoint().getRoot());
   }
 
   private Optional<String> compareFork() {
@@ -314,7 +314,7 @@ public class StateComparator {
 
     return assertEquals(
         new Bitfield64(UInt64.valueOf(expected.getJustificationBitfield())),
-        actual.getJustificationBitfield());
+        actual.getJustificationBits());
   }
 
   private Optional<String> compareLatestBlockHeader() {
@@ -334,6 +334,6 @@ public class StateComparator {
     }
 
     Eth1Data expectedData = StateTestUtils.parseEth1Data(expected.getLatestEth1Data());
-    return assertEquals(expectedData, actual.getLatestEth1Data());
+    return assertEquals(expectedData, actual.getEth1Data());
   }
 }

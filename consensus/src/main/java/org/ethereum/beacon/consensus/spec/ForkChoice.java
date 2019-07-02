@@ -66,7 +66,7 @@ public interface ForkChoice extends HelperFunction {
 
     List<Pair<ValidatorIndex, ValidatorRecord>> active_validators = new ArrayList<>();
     for (ValidatorIndex index : active_validator_indices) {
-      active_validators.add(Pair.with(index, state.getValidatorRegistry().get(index)));
+      active_validators.add(Pair.with(index, state.getValidators().get(index)));
     }
 
     List<Pair<ValidatorIndex, BeaconBlock>> attestation_targets = new ArrayList<>();

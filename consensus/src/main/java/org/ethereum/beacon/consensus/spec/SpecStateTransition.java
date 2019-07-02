@@ -2,7 +2,6 @@ package org.ethereum.beacon.consensus.spec;
 
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockHeader;
-import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.types.SlotNumber;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -33,7 +32,7 @@ public interface SpecStateTransition extends EpochProcessing, BlockProcessing {
   default void process_slot(MutableBeaconState state) {
     // Cache state root
     Hash32 previous_state_root = hash_tree_root(state);
-    state.getLatestStateRoots().update(
+    state.getStateRoots().update(
         state.getSlot().modulo(getConstants().getSlotsPerHistoricalRoot()),
         root -> previous_state_root);
 
@@ -50,7 +49,7 @@ public interface SpecStateTransition extends EpochProcessing, BlockProcessing {
 
     // Cache block root
     Hash32 previous_block_root = signing_root(state.getLatestBlockHeader());
-    state.getLatestBlockRoots().update(
+    state.getBlockRoots().update(
         state.getSlot().modulo(getConstants().getSlotsPerHistoricalRoot()),
         root -> previous_block_root);
   }

@@ -41,7 +41,6 @@ import org.ethereum.beacon.validator.util.MessageSignerTestUtil;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
-import tech.pegasys.artemis.util.uint.UInt64;
 
 public class BeaconChainProposerTest {
 
@@ -160,7 +159,7 @@ public class BeaconChainProposerTest {
         .peekDeposits(
             Mockito.eq(spec.getConstants().getMaxDeposits()),
             Mockito.any(),
-            Mockito.eq(initialState.getLatestEth1Data()));
+            Mockito.eq(initialState.getEth1Data()));
 
     BeaconStateEx stateAfterBlock =
         perBlockTransition.apply(new BeaconStateExImpl(initialState), block);

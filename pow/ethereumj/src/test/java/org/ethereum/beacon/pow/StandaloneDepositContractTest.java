@@ -436,7 +436,7 @@ public class StandaloneDepositContractTest {
 
     Assert.assertEquals(16, chainStart.getInitialDeposits().size());
     MutableBeaconState beaconState = BeaconState.getEmpty().createMutableCopy();
-    beaconState.setLatestEth1Data(chainStart.getEth1Data());
+    beaconState.setEth1Data(chainStart.getEth1Data());
     for (Deposit deposit : chainStart.getInitialDeposits()) {
       //       The proof for each deposit must be constructed against the deposit root contained in
       // state.latest_eth1_data rather than the deposit root at the time the deposit was initially
@@ -461,7 +461,7 @@ public class StandaloneDepositContractTest {
 
     Assert.assertEquals(4, depositInfos1.size());
     for (DepositInfo depositInfo : depositInfos1) {
-      beaconState.setLatestEth1Data(
+      beaconState.setEth1Data(
           eth1DataList.get(depositInfo.getEth1Data().getDepositCount().decrement().intValue()));
       spec.verify_deposit(beaconState, depositInfo.getDeposit());
       spec.process_deposit(beaconState, depositInfo.getDeposit());

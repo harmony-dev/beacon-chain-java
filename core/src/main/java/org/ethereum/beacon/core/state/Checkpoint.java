@@ -13,6 +13,9 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
  *     in the spec.
  */
 public class Checkpoint {
+
+  public static final Checkpoint EMPTY = new Checkpoint(EpochNumber.ZERO, Hash32.ZERO);
+
   @SSZ private final EpochNumber epoch;
   @SSZ private final Hash32 root;
 

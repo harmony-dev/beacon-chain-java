@@ -118,7 +118,7 @@ public class MultiValidatorServiceTest {
         createRegistry(random, validatorIndex, pubkey);
     Mockito.doReturn(validatorRegistry)
         .when(currentSlotState.getLatestSlotState())
-        .getValidatorRegistry();
+        .getValidators();
 
     Mockito.doReturn(true).when(spec).is_current_slot(any(), anyLong());
     Mockito.doReturn(validatorIndex).when(spec).get_validator_index_by_pubkey(any(), any());
@@ -161,19 +161,19 @@ public class MultiValidatorServiceTest {
 
     Mockito.doReturn(validatorRegistry)
         .when(initialState.getLatestSlotState())
-        .getValidatorRegistry();
+        .getValidators();
 
     Mockito.doReturn(validatorRegistry)
         .when(updatedState.getLatestSlotState())
-        .getValidatorRegistry();
+        .getValidators();
 
     Mockito.doReturn(validatorRegistry)
         .when(sameSlotState.getLatestSlotState())
-        .getValidatorRegistry();
+        .getValidators();
 
     Mockito.doReturn(validatorRegistry)
         .when(nextSlotState.getLatestSlotState())
-        .getValidatorRegistry();
+        .getValidators();
 
     Mockito.doReturn(true).when(spec).is_current_slot(any(), anyLong());
     Mockito.doReturn(validatorIndex).when(spec).get_validator_index_by_pubkey(any(), any());

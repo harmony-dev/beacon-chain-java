@@ -176,35 +176,39 @@ public abstract class StateTestUtils {
     state.setSlot(SlotNumber.castFrom(UInt64.valueOf(data.getSlot())));
     state.setGenesisTime(Time.of(data.getGenesisTime()));
     state.setFork(parseFork(data.getFork()));
-    state.setPreviousJustifiedEpoch(
-        EpochNumber.castFrom(UInt64.valueOf(data.getPreviousJustifiedEpoch())));
-    state.setCurrentJustifiedEpoch(
-        EpochNumber.castFrom(UInt64.valueOf(data.getCurrentJustifiedEpoch())));
-    state.setPreviousJustifiedRoot(Hash32.fromHexString(data.getPreviousJustifiedRoot()));
-    state.setCurrentJustifiedRoot(Hash32.fromHexString(data.getCurrentJustifiedRoot()));
-    state.setJustificationBitfield(new Bitfield64(UInt64.valueOf(data.getJustificationBitfield())));
-    state.setFinalizedEpoch(EpochNumber.castFrom(UInt64.valueOf(data.getFinalizedEpoch())));
-    state.setFinalizedRoot(Hash32.fromHexString(data.getFinalizedRoot()));
+    state.setPreviousJustifiedCheckpoint(
+        new Checkpoint(
+            EpochNumber.castFrom(UInt64.valueOf(data.getPreviousJustifiedEpoch())),
+            Hash32.fromHexString(data.getPreviousJustifiedRoot())));
+    state.setCurrentJustifiedCheckpoint(
+        new Checkpoint(
+            EpochNumber.castFrom(UInt64.valueOf(data.getCurrentJustifiedEpoch())),
+            Hash32.fromHexString(data.getCurrentJustifiedRoot())));
+    state.setJustificationBits(new Bitfield64(UInt64.valueOf(data.getJustificationBitfield())));
+    state.setFinalizedCheckpoint(
+        new Checkpoint(
+            EpochNumber.castFrom(UInt64.valueOf(data.getFinalizedEpoch())),
+            Hash32.fromHexString(data.getFinalizedRoot())));
     state.setLatestBlockHeader(parseBeaconBlockHeader(data.getLatestBlockHeader()));
-    state.setLatestEth1Data(parseEth1Data(data.getLatestEth1Data()));
+    state.setEth1Data(parseEth1Data(data.getLatestEth1Data()));
     state.setEth1DataVotes(WriteList.wrap(data.getEth1DataVotes().stream().map(StateTestUtils::parseEth1Data).collect(Collectors.toList()), Integer::new));
-    state.setDepositIndex(UInt64.valueOf(data.getDepositIndex()));
+    state.setEth1DepositIndex(UInt64.valueOf(data.getDepositIndex()));
 
-    state.getValidatorRegistry().replaceAll(parseValidatorRegistry(data.getValidatorRegistry()));
+    state.getValidators().replaceAll(parseValidatorRegistry(data.getValidatorRegistry()));
     state.getBalances().replaceAll(parseBalances(data.getBalances()));
-    state.getLatestRandaoMixes().setAll(parseHashes(data.getLatestRandaoMixes()));
+    state.getRandaoMixes().setAll(parseHashes(data.getLatestRandaoMixes()));
     state.getPreviousEpochAttestations().replaceAll(
         parsePendingAttestations(data.getPreviousEpochAttestations()));
     state.getCurrentEpochAttestations().replaceAll(
         parsePendingAttestations(data.getCurrentEpochAttestations()));
     state.getCurrentCrosslinks().replaceAll(parseCrosslinks(data.getCurrentCrosslinks()));
     state.getPreviousCrosslinks().replaceAll(parseCrosslinks(data.getPreviousCrosslinks()));
-    state.getLatestBlockRoots().setAll(parseHashes(data.getLatestBlockRoots()));
-    state.getLatestStateRoots().setAll(parseHashes(data.getLatestStateRoots()));
-    state.getLatestActiveIndexRoots().setAll(parseHashes(data.getLatestActiveIndexRoots()));
+    state.getBlockRoots().setAll(parseHashes(data.getLatestBlockRoots()));
+    state.getStateRoots().setAll(parseHashes(data.getLatestStateRoots()));
+    state.getActiveIndexRoots().setAll(parseHashes(data.getLatestActiveIndexRoots()));
     state.getHistoricalRoots().replaceAll(parseHashes(data.getHistoricalRoots()));
-    state.getLatestSlashedBalances().setAll(parseBalances(data.getLatestSlashedBalances()));
-    state.setLatestStartShard(ShardNumber.of(UInt64.valueOf(data.getLatestStartShard())));
+    state.getSlashings().setAll(parseBalances(data.getLatestSlashedBalances()));
+    state.setStartShard(ShardNumber.of(UInt64.valueOf(data.getLatestStartShard())));
 
     return state;
   }

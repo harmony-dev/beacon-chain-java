@@ -94,11 +94,11 @@ public class CachingBeaconChainSpec extends BeaconChainSpecImpl {
     }
 
     // relying on the fact that at index -> validator is invariant
-    if (state.getValidatorRegistry().size().greater(caches.maxCachedIndex)) {
-      for (ValidatorIndex index : caches.maxCachedIndex.iterateTo(state.getValidatorRegistry().size())) {
-        caches.pubkeyToIndexCache.put(state.getValidatorRegistry().get(index).getPubKey(), index);
+    if (state.getValidators().size().greater(caches.maxCachedIndex)) {
+      for (ValidatorIndex index : caches.maxCachedIndex.iterateTo(state.getValidators().size())) {
+        caches.pubkeyToIndexCache.put(state.getValidators().get(index).getPubKey(), index);
       }
-      caches.maxCachedIndex = state.getValidatorRegistry().size();
+      caches.maxCachedIndex = state.getValidators().size();
     }
     return caches.pubkeyToIndexCache.getOrDefault(pubkey, ValidatorIndex.MAX);
   }
@@ -106,8 +106,8 @@ public class CachingBeaconChainSpec extends BeaconChainSpecImpl {
   @Override
   public List<ValidatorIndex> get_crosslink_committee(BeaconState state, EpochNumber epoch, ShardNumber shard) {
     Hash32 digest = getDigest(
-        objectHash(state.getValidatorRegistry()),
-        objectHash(state.getLatestRandaoMixes()),
+        objectHash(state.getValidators()),
+        objectHash(state.getRandaoMixes()),
         epoch.toBytes8(),
         shard.toBytes8()
     );
@@ -117,7 +117,7 @@ public class CachingBeaconChainSpec extends BeaconChainSpecImpl {
 
   @Override
   public List<ValidatorIndex> get_active_validator_indices(BeaconState state, EpochNumber epoch) {
-    Hash32 digest = getDigest(objectHash(state.getValidatorRegistry()), epoch.toBytes8());
+    Hash32 digest = getDigest(objectHash(state.getValidators()), epoch.toBytes8());
     return caches.activeValidatorsCache.get(
         digest, e -> super.get_active_validator_indices(state, epoch));
   }
@@ -125,7 +125,7 @@ public class CachingBeaconChainSpec extends BeaconChainSpecImpl {
   @Override
   public Gwei get_total_active_balance(BeaconState state) {
     Hash32 digest = getDigest(
-        objectHash(state.getValidatorRegistry()), get_current_epoch(state).toBytes8());
+        objectHash(state.getValidators()), get_current_epoch(state).toBytes8());
     return caches.totalActiveBalanceCache.get(digest, e -> super.get_total_active_balance(state));
   }
 
@@ -133,8 +133,8 @@ public class CachingBeaconChainSpec extends BeaconChainSpecImpl {
   public List<ValidatorIndex> get_attesting_indices(
       BeaconState state, AttestationData attestation_data, Bitfield bitfield) {
     Hash32 digest = getDigest(
-        objectHash(state.getValidatorRegistry()),
-        objectHash(state.getLatestRandaoMixes()),
+        objectHash(state.getValidators()),
+        objectHash(state.getRandaoMixes()),
         attestation_data.getTarget().getEpoch().toBytes8(),
         attestation_data.getCrosslink().getShard().toBytes8(),
         bitfield

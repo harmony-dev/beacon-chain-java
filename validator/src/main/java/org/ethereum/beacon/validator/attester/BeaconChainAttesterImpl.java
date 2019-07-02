@@ -94,7 +94,7 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
 
   @VisibleForTesting
   Checkpoint getSource(BeaconState state) {
-    return new Checkpoint(state.getCurrentJustifiedEpoch(), state.getCurrentJustifiedRoot());
+    return state.getCurrentJustifiedCheckpoint();
   }
 
   private Crosslink getCrosslink(BeaconState state, ShardNumber shard, EpochNumber targetEpoch) {

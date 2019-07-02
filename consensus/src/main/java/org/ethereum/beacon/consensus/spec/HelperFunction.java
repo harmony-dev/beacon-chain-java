@@ -135,7 +135,7 @@ public interface HelperFunction extends SpecCommons {
   default ShardNumber get_epoch_start_shard(BeaconState state, EpochNumber epoch) {
     assertTrue(epoch.lessEqual(get_current_epoch(state).increment()));
     EpochNumber check_epoch = get_current_epoch(state).increment();
-    ShardNumber shard = state.getLatestStartShard()
+    ShardNumber shard = state.getStartShard()
         .plusModulo(get_shard_delta(state, get_current_epoch(state)), getConstants().getShardCount());
     while ((check_epoch.greater(epoch))) {
       check_epoch = check_epoch.decrement();
@@ -228,7 +228,7 @@ public interface HelperFunction extends SpecCommons {
           epoch.plus(i).modulo(first_committee.size()).getIntValue());
       int random_byte = hash(seed.concat(int_to_bytes8(i / Bytes32.SIZE)))
           .get(i % Bytes32.SIZE) & 0xFF;
-      Gwei effective_balance = state.getValidatorRegistry().get(candidate_index).getEffectiveBalance();
+      Gwei effective_balance = state.getValidators().get(candidate_index).getEffectiveBalance();
       if (effective_balance.times(MAX_RANDOM_BYTE).greaterEqual(
           getConstants().getMaxEffectiveBalance().times(random_byte))) {
         return candidate_index;
@@ -271,8 +271,8 @@ public interface HelperFunction extends SpecCommons {
     */
   default List<ValidatorIndex> get_active_validator_indices(BeaconState state, EpochNumber epoch) {
     ArrayList<ValidatorIndex> ret = new ArrayList<>();
-    for (ValidatorIndex i : state.getValidatorRegistry().size()) {
-      if (is_active_validator(state.getValidatorRegistry().get(i), epoch)) {
+    for (ValidatorIndex i : state.getValidators().size()) {
+      if (is_active_validator(state.getValidators().get(i), epoch)) {
         ret.add(i);
       }
     }
@@ -315,7 +315,7 @@ public interface HelperFunction extends SpecCommons {
       return state.latest_randao_mixes[epoch % EPOCHS_PER_HISTORICAL_VECTOR]
     */
   default Hash32 get_randao_mix(BeaconState state, EpochNumber epoch) {
-    return state.getLatestRandaoMixes().get(
+    return state.getRandaoMixes().get(
         epoch.modulo(getConstants().getEpochsPerHistoricalVector()));
   }
 
@@ -586,7 +586,7 @@ public interface HelperFunction extends SpecCommons {
    */
   default Gwei get_total_balance(BeaconState state, Collection<ValidatorIndex> indices) {
     return UInt64s.max(indices.stream()
-        .map(index -> state.getValidatorRegistry().get(index).getEffectiveBalance())
+        .map(index -> state.getValidators().get(index).getEffectiveBalance())
         .reduce(Gwei.ZERO, Gwei::plus), Gwei.of(1));
   }
 
@@ -664,12 +664,12 @@ public interface HelperFunction extends SpecCommons {
   default void slash_validator(MutableBeaconState state, ValidatorIndex slashed_index, ValidatorIndex whistleblower_index) {
     EpochNumber current_epoch = get_current_epoch(state);
     initiate_validator_exit(state, slashed_index);
-    state.getValidatorRegistry().update(slashed_index,
+    state.getValidators().update(slashed_index,
         validator -> ValidatorRecord.Builder.fromRecord(validator)
             .withSlashed(Boolean.TRUE)
             .withWithdrawableEpoch(current_epoch.plus(getConstants().getEpochsPerSlashingsVector())).build());
-    Gwei slashed_balance = state.getValidatorRegistry().get(slashed_index).getEffectiveBalance();
-    state.getLatestSlashedBalances().update(current_epoch.modulo(getConstants().getEpochsPerSlashingsVector()),
+    Gwei slashed_balance = state.getValidators().get(slashed_index).getEffectiveBalance();
+    state.getSlashings().update(current_epoch.modulo(getConstants().getEpochsPerSlashingsVector()),
         balance -> balance.plus(slashed_balance));
 
     ValidatorIndex proposer_index = get_beacon_proposer_index(state);
@@ -699,7 +699,7 @@ public interface HelperFunction extends SpecCommons {
       if validator.exit_epoch != FAR_FUTURE_EPOCH:
           return */
     checkIndexRange(state, index);
-    if (!state.getValidatorRegistry().get(index).getExitEpoch().equals(getConstants().getFarFutureEpoch())) {
+    if (!state.getValidators().get(index).getExitEpoch().equals(getConstants().getFarFutureEpoch())) {
       return;
     }
 
@@ -710,14 +710,14 @@ public interface HelperFunction extends SpecCommons {
       if exit_queue_churn >= get_churn_limit(state):
           exit_queue_epoch += 1 */
     EpochNumber exit_queue_epoch = Stream.concat(
-        state.getValidatorRegistry().stream()
+        state.getValidators().stream()
             .filter(v -> !v.getExitEpoch().equals(getConstants().getFarFutureEpoch()))
             .map(ValidatorRecord::getExitEpoch),
         Stream.of(get_delayed_activation_exit_epoch(get_current_epoch(state)))
     ).max(EpochNumber::compareTo).get();
 
     long exit_queue_churn = 0;
-    for (ValidatorRecord validatorRecord : state.getValidatorRegistry()) {
+    for (ValidatorRecord validatorRecord : state.getValidators()) {
       if (validatorRecord.getExitEpoch().equals(exit_queue_epoch)) {
         ++exit_queue_churn;
       }
@@ -730,7 +730,7 @@ public interface HelperFunction extends SpecCommons {
       validator.exit_epoch = exit_queue_epoch
       validator.withdrawable_epoch = validator.exit_epoch + MIN_VALIDATOR_WITHDRAWABILITY_DELAY */
     final EpochNumber exitEpoch = exit_queue_epoch;
-    state.getValidatorRegistry().update(index,
+    state.getValidators().update(index,
         validator -> ValidatorRecord.Builder.fromRecord(validator)
             .withExitEpoch(exitEpoch)
             .withWithdrawableEpoch(exitEpoch.plus(HelperFunction.this.getConstants().getMinValidatorWithdrawabilityDelay()))
@@ -758,7 +758,7 @@ public interface HelperFunction extends SpecCommons {
       return state.latest_active_index_roots[epoch % EPOCHS_PER_HISTORICAL_VECTOR]
    */
   default Hash32 get_active_index_root(BeaconState state, EpochNumber epoch) {
-    return state.getLatestActiveIndexRoots().get(
+    return state.getActiveIndexRoots().get(
         epoch.modulo(getConstants().getEpochsPerHistoricalVector()));
   }
 
@@ -869,7 +869,7 @@ public interface HelperFunction extends SpecCommons {
     List<BLSPubkey> publicKeys = new ArrayList<>();
     for (ValidatorIndex index : indices) {
       checkIndexRange(state, index);
-      publicKeys.add(state.getValidatorRegistry().get(index).getPubKey());
+      publicKeys.add(state.getValidators().get(index).getPubKey());
     }
     return publicKeys;
   }
@@ -960,9 +960,9 @@ public interface HelperFunction extends SpecCommons {
     return bls_verify_multiple(
         Arrays.asList(
             bls_aggregate_pubkeys(bit_0_indices.stream()
-                .map(i -> state.getValidatorRegistry().get(i).getPubKey()).collect(Collectors.toList())),
+                .map(i -> state.getValidators().get(i).getPubKey()).collect(Collectors.toList())),
             bls_aggregate_pubkeys(bit_1_indices.stream()
-                .map(i -> state.getValidatorRegistry().get(i).getPubKey()).collect(Collectors.toList()))),
+                .map(i -> state.getValidators().get(i).getPubKey()).collect(Collectors.toList()))),
         Arrays.asList(
             hash_tree_root(new AttestationDataAndCustodyBit(indexed_attestation.getData(), false)),
             hash_tree_root(new AttestationDataAndCustodyBit(indexed_attestation.getData(), true))
@@ -1015,7 +1015,7 @@ public interface HelperFunction extends SpecCommons {
   default Hash32 get_block_root_at_slot(BeaconState state, SlotNumber slot) {
     assertTrue(slot.less(state.getSlot()));
     assertTrue(state.getSlot().lessEqual(slot.plus(getConstants().getSlotsPerHistoricalRoot())));
-    return state.getLatestBlockRoots().get(slot.modulo(getConstants().getSlotsPerHistoricalRoot()));
+    return state.getBlockRoots().get(slot.modulo(getConstants().getSlotsPerHistoricalRoot()));
   }
 
   /*
@@ -1062,8 +1062,8 @@ public interface HelperFunction extends SpecCommons {
 
   default ValidatorIndex get_validator_index_by_pubkey(BeaconState state, BLSPubkey pubkey) {
     ValidatorIndex index = ValidatorIndex.MAX;
-    for (ValidatorIndex i : state.getValidatorRegistry().size()) {
-      if (state.getValidatorRegistry().get(i).getPubKey().equals(pubkey)) {
+    for (ValidatorIndex i : state.getValidators().size()) {
+      if (state.getValidators().get(i).getPubKey().equals(pubkey)) {
         index = i;
         break;
       }

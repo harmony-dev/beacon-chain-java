@@ -121,7 +121,7 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
     summary.justifiedAttestingBalance = summary.previousEpochSummary.validatorBalance;
 
     EpochNumber epochs_since_finality =
-        spec.get_current_epoch(state).increment().minus(state.getFinalizedEpoch());
+        spec.get_current_epoch(state).increment().minus(state.getFinalizedCheckpoint().getEpoch());
 
     if (epochs_since_finality.lessEqual(spec.getConstants().getMinEpochsToInactivityPenalty())) {
       summary.noFinality = false;

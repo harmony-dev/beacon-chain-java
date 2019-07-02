@@ -31,6 +31,6 @@ public class InitialStateTransitionTest {
         initialStateTransition.apply(spec.get_empty_block());
 
     assertThat(initialState.getGenesisTime()).isEqualTo(genesisTime);
-    assertThat(initialState.getLatestEth1Data()).isEqualTo(eth1Data);
+    assertThat(initialState.getEth1Data()).isEqualTo(eth1Data);
   }
 }

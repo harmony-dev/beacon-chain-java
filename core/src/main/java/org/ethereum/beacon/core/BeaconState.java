@@ -7,6 +7,7 @@ import javax.annotation.Nullable;
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.BeaconStateImpl;
+import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Fork;
 import org.ethereum.beacon.core.state.PendingAttestation;
@@ -41,15 +42,15 @@ public interface BeaconState extends ObservableComposite {
 
   static BeaconState getEmpty(SpecConstants specConst) {
     BeaconStateImpl ret = new BeaconStateImpl();
-    ret.getLatestRandaoMixes().addAll(
+    ret.getRandaoMixes().addAll(
         Collections.nCopies(specConst.getEpochsPerHistoricalVector().intValue(), Hash32.ZERO));
-    ret.getLatestBlockRoots().addAll(
+    ret.getBlockRoots().addAll(
         Collections.nCopies(specConst.getSlotsPerHistoricalRoot().intValue(), Hash32.ZERO));
-    ret.getLatestStateRoots().addAll(
+    ret.getStateRoots().addAll(
         Collections.nCopies(specConst.getSlotsPerHistoricalRoot().intValue(), Hash32.ZERO));
-    ret.getLatestActiveIndexRoots().addAll(
+    ret.getActiveIndexRoots().addAll(
         Collections.nCopies(specConst.getEpochsPerHistoricalVector().intValue(), Hash32.ZERO));
-    ret.getLatestSlashedBalances().addAll(
+    ret.getSlashings().addAll(
         Collections.nCopies(specConst.getEpochsPerSlashingsVector().intValue(), Gwei.ZERO));
     ret.getPreviousCrosslinks().addAll(
         Collections.nCopies(specConst.getShardCount().intValue(), Crosslink.EMPTY));
@@ -58,93 +59,96 @@ public interface BeaconState extends ObservableComposite {
     return ret;
   }
 
-  /* ******* Misc ********* */
-
-  /** Slot number that this state was calculated in. */
-  @SSZ(order = 0) SlotNumber getSlot();
-
-  /* ******* Validator registry ********* */
+  /* ******* Versioning ********* */
 
   /** Timestamp of the genesis. */
-  @SSZ(order = 1) Time getGenesisTime();
+  @SSZ(order = 0) Time getGenesisTime();
+
+  /** Slot number that this state was calculated in. */
+  @SSZ(order = 1) SlotNumber getSlot();
 
   /** Fork data corresponding to the {@link #getSlot()}. */
   @SSZ(order = 2) Fork getFork();
 
-  /** Validator registry records. */
-  @SSZ(order = 3) ReadList<ValidatorIndex, ValidatorRecord> getValidatorRegistry();
+  /* ******* History ********* */
 
-  /** Validator balances. */
-  @SSZ(order = 4) ReadList<ValidatorIndex, Gwei> getBalances();
+  @SSZ(order = 3) BeaconBlockHeader getLatestBlockHeader();
 
-  /* ******* Randomness and committees ********* */
+  @SSZ(order = 4, vectorLengthVar = "spec.SLOTS_PER_HISTORICAL_ROOT")
+  ReadVector<SlotNumber, Hash32> getBlockRoots();
 
-  /** The most recent randao mixes. */
-  @SSZ(order = 5, vectorLengthVar = "spec.EPOCHS_PER_HISTORICAL_VECTOR")
-  ReadVector<EpochNumber, Hash32> getLatestRandaoMixes();
+  @SSZ(order = 5, vectorLengthVar = "spec.SLOTS_PER_HISTORICAL_ROOT")
+  ReadVector<SlotNumber, Hash32> getStateRoots();
 
-  @SSZ(order = 6) ShardNumber getLatestStartShard();
+  @SSZ(order = 6) ReadList<Integer, Hash32> getHistoricalRoots();
 
-  /********* Finality **********/
-
-  @SSZ(order = 7) ReadList<Integer, PendingAttestation> getPreviousEpochAttestations();
-
-  @SSZ(order = 8) ReadList<Integer, PendingAttestation> getCurrentEpochAttestations();
-
-  /** Latest justified epoch before {@link #getCurrentJustifiedEpoch()}. */
-  @SSZ(order = 9) EpochNumber getPreviousJustifiedEpoch();
-
-  /** Latest justified epoch. */
-  @SSZ(order = 10) EpochNumber getCurrentJustifiedEpoch();
-
-  @SSZ(order = 11) Hash32 getPreviousJustifiedRoot();
-
-  @SSZ(order = 12) Hash32 getCurrentJustifiedRoot();
-
-  /** Bitfield of latest justified slots (epochs). */
-  @SSZ(order = 13) Bitfield64 getJustificationBitfield();
-
-  /** Latest finalized slot. */
-  @SSZ(order = 14) EpochNumber getFinalizedEpoch();
-
-  @SSZ(order = 15) Hash32 getFinalizedRoot();
-
-  /* ******* Recent state ********* */
-
-  /** Latest crosslink record for each shard. */
-  @SSZ(order = 16, vectorLengthVar = "spec.SHARD_COUNT")
-  ReadVector<ShardNumber, Crosslink> getCurrentCrosslinks();
-
-  @SSZ(order = 17, vectorLengthVar = "spec.SHARD_COUNT")
-  ReadVector<ShardNumber, Crosslink> getPreviousCrosslinks();
-
-  @SSZ(order = 18, vectorLengthVar = "spec.SLOTS_PER_HISTORICAL_ROOT")
-  ReadVector<SlotNumber, Hash32> getLatestBlockRoots();
-
-  @SSZ(order = 19, vectorLengthVar = "spec.SLOTS_PER_HISTORICAL_ROOT")
-  ReadVector<SlotNumber, Hash32> getLatestStateRoots();
-
-  @SSZ(order = 20, vectorLengthVar = "spec.EPOCHS_PER_HISTORICAL_VECTOR")
-  ReadVector<EpochNumber, Hash32> getLatestActiveIndexRoots();
-
-  /** Balances slashed at every withdrawal period */
-  @SSZ(order = 21, vectorLengthVar = "spec.EPOCHS_PER_SLASHINGS_VECTOR")
-  ReadVector<EpochNumber, Gwei> getLatestSlashedBalances();
-
-  @SSZ(order = 22) BeaconBlockHeader getLatestBlockHeader();
-
-  @SSZ(order = 23) ReadList<Integer, Hash32> getHistoricalRoots();
-
-  /* ******* PoW receipt root ********* */
+  /* ******* Eth1 ********* */
 
   /** Latest processed eth1 data. */
-  @SSZ(order = 24) Eth1Data getLatestEth1Data();
+  @SSZ(order = 7) Eth1Data getEth1Data();
 
   /** Eth1 data that voting is still in progress for. */
-  @SSZ(order = 25) ReadList<Integer, Eth1Data> getEth1DataVotes();
+  @SSZ(order = 8) ReadList<Integer, Eth1Data> getEth1DataVotes();
 
   /** The most recent Eth1 deposit index */
-  @SSZ(order = 26) UInt64 getDepositIndex();
+  @SSZ(order = 9) UInt64 getEth1DepositIndex();
+
+  /* ******* Registry ********* */
+
+  /** Validator registry records. */
+  @SSZ(order = 10) ReadList<ValidatorIndex, ValidatorRecord> getValidators();
+
+  /** Validator balances. */
+  @SSZ(order = 11) ReadList<ValidatorIndex, Gwei> getBalances();
+
+  /* ******* Shuffling ********* */
+
+  /** The most recent randao mixes. */
+  @SSZ(order = 12) ShardNumber getStartShard();
+
+  @SSZ(order = 13, vectorLengthVar = "spec.EPOCHS_PER_HISTORICAL_VECTOR")
+  ReadVector<EpochNumber, Hash32> getRandaoMixes();
+
+  /** Active index digests for light clients. */
+  @SSZ(order = 14, vectorLengthVar = "spec.EPOCHS_PER_HISTORICAL_VECTOR")
+  ReadVector<EpochNumber, Hash32> getActiveIndexRoots();
+
+  /** Committee digests for light clients. */
+  @SSZ(order = 15, vectorLengthVar = "spec.EPOCHS_PER_HISTORICAL_VECTOR")
+  ReadVector<EpochNumber, Hash32> getCompactCommitteesRoots();
+
+  /* ******** Slashings ********* */
+
+  /** Per-epoch sums of slashed effective balances. */
+  @SSZ(order = 16, vectorLengthVar = "spec.EPOCHS_PER_SLASHINGS_VECTOR")
+  ReadVector<EpochNumber, Gwei> getSlashings();
+
+  /* ******** Attestations ********* */
+
+  @SSZ(order = 17) ReadList<Integer, PendingAttestation> getPreviousEpochAttestations();
+
+  @SSZ(order = 18) ReadList<Integer, PendingAttestation> getCurrentEpochAttestations();
+
+  /* ******** Crosslinks ********* */
+
+  /** Previous epoch snapshot. */
+  @SSZ(order = 19, vectorLengthVar = "spec.SHARD_COUNT")
+  ReadVector<ShardNumber, Crosslink> getCurrentCrosslinks();
+
+  @SSZ(order = 20, vectorLengthVar = "spec.SHARD_COUNT")
+  ReadVector<ShardNumber, Crosslink> getPreviousCrosslinks();
+
+  /* ******** Finality ********* */
+
+  /** Bit set for every recent justified epoch. */
+  @SSZ(order = 21) Bitfield64 getJustificationBits();
+
+  /** Previous epoch snapshot. */
+  @SSZ(order = 22) Checkpoint getPreviousJustifiedCheckpoint();
+
+  @SSZ(order = 23) Checkpoint getCurrentJustifiedCheckpoint();
+
+  @SSZ(order = 24) Checkpoint getFinalizedCheckpoint();
 
   /**
    * Returns mutable copy of this state. Any changes made to returned copy shouldn't affect this
@@ -156,42 +160,39 @@ public interface BeaconState extends ObservableComposite {
     return getSlot().equals(other.getSlot())
         && getGenesisTime().equals(other.getGenesisTime())
         && getFork().equals(other.getFork())
-        && getValidatorRegistry().equals(other.getValidatorRegistry())
+        && getValidators().equals(other.getValidators())
         && getBalances().equals(other.getBalances())
-        && getLatestRandaoMixes().equals(other.getLatestRandaoMixes())
-        && getLatestStartShard().equals(other.getLatestStartShard())
+        && getRandaoMixes().equals(other.getRandaoMixes())
+        && getStartShard().equals(other.getStartShard())
         && getPreviousEpochAttestations().equals(other.getPreviousEpochAttestations())
         && getCurrentEpochAttestations().equals(other.getCurrentEpochAttestations())
-        && getPreviousJustifiedEpoch().equals(other.getPreviousJustifiedEpoch())
-        && getCurrentJustifiedEpoch().equals(other.getCurrentJustifiedEpoch())
-        && getPreviousJustifiedRoot().equals(other.getPreviousJustifiedRoot())
-        && getCurrentJustifiedRoot().equals(other.getCurrentJustifiedRoot())
-        && getJustificationBitfield().equals(other.getJustificationBitfield())
-        && getFinalizedEpoch().equals(other.getFinalizedEpoch())
-        && getFinalizedRoot().equals(other.getFinalizedRoot())
+        && getPreviousJustifiedCheckpoint().equals(other.getPreviousJustifiedCheckpoint())
+        && getCurrentJustifiedCheckpoint().equals(other.getCurrentJustifiedCheckpoint())
         && getPreviousCrosslinks().equals(other.getPreviousCrosslinks())
         && getCurrentCrosslinks().equals(other.getCurrentCrosslinks())
-        && getLatestBlockRoots().equals(other.getLatestBlockRoots())
-        && getLatestStateRoots().equals(other.getLatestStateRoots())
-        && getLatestActiveIndexRoots().equals(other.getLatestActiveIndexRoots())
-        && getLatestSlashedBalances().equals(other.getLatestSlashedBalances())
+        && getBlockRoots().equals(other.getBlockRoots())
+        && getStateRoots().equals(other.getStateRoots())
+        && getActiveIndexRoots().equals(other.getActiveIndexRoots())
+        && getSlashings().equals(other.getSlashings())
         && getLatestBlockHeader().equals(other.getLatestBlockHeader())
         && getHistoricalRoots().equals(other.getHistoricalRoots())
-        && getLatestEth1Data().equals(other.getLatestEth1Data())
+        && getEth1Data().equals(other.getEth1Data())
         && getEth1DataVotes().equals(other.getEth1DataVotes())
-        && getDepositIndex().equals(other.getDepositIndex());
+        && getEth1DepositIndex().equals(other.getEth1DepositIndex())
+        && getCompactCommitteesRoots().equals(other.getCompactCommitteesRoots())
+        && getJustificationBits().equals(other.getJustificationBits());
   }
 
   default String toStringShort(@Nullable SpecConstants spec) {
     String ret = "BeaconState["
         + "@ " + getSlot().toString(spec, getGenesisTime())
         + ", " + getFork().toString(spec)
-        + ", validators: " + getValidatorRegistry().size()
-        + ", just/final epoch: " + getCurrentJustifiedEpoch().toString(spec) + "/" + getFinalizedEpoch().toString(spec);
+        + ", validators: " + getValidators().size()
+        + ", just/final epoch: " + getCurrentJustifiedCheckpoint().getEpoch().toString(spec) + "/" + getFinalizedCheckpoint().getEpoch().toString(spec);
     if (spec != null) {
       ret += ", latestBlocks=[...";
       for (SlotNumber slot : getSlot().minusSat(3).iterateTo(getSlot())) {
-        Hash32 blockRoot = getLatestBlockRoots().get(slot.modulo(spec.getSlotsPerHistoricalRoot()));
+        Hash32 blockRoot = getBlockRoots().get(slot.modulo(spec.getSlotsPerHistoricalRoot()));
         ret += ", " + blockRoot.toStringShort();
       }
       ret += "]";

@@ -2,6 +2,7 @@ package org.ethereum.beacon.consensus.spec;
 
 import static java.util.Collections.emptyList;
 
+import java.util.Arrays;
 import java.util.List;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockBody;
@@ -9,6 +10,7 @@ import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
+import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Fork;
 import org.ethereum.beacon.core.state.ValidatorRecord;
@@ -71,38 +73,37 @@ public interface GenesisFunction extends BlockProcessing {
         getConstants().getGenesisEpoch()));
 
     // Validator registry
-    state.getValidatorRegistry().clear();
+    state.getValidators().clear();
     state.getBalances().clear();
 
     // Randomness and committees
-    state.getLatestRandaoMixes().setAll(Hash32.ZERO);
-    state.setLatestStartShard(ShardNumber.ZERO);
+    state.getRandaoMixes().setAll(Hash32.ZERO);
+    state.setStartShard(ShardNumber.ZERO);
 
     // Finality
     state.getPreviousEpochAttestations().clear();
     state.getCurrentEpochAttestations().clear();
-    state.setPreviousJustifiedEpoch(getConstants().getGenesisEpoch());
-    state.setCurrentJustifiedEpoch(getConstants().getGenesisEpoch());
-    state.setPreviousJustifiedRoot(Hash32.ZERO);
-    state.setCurrentJustifiedRoot(Hash32.ZERO);
-    state.setJustificationBitfield(Bitfield64.ZERO);
-    state.setFinalizedEpoch(getConstants().getGenesisEpoch());
-    state.setFinalizedRoot(Hash32.ZERO);
+    state.setPreviousJustifiedCheckpoint(
+        new Checkpoint(getConstants().getGenesisEpoch(), Hash32.ZERO));
+    state.setCurrentJustifiedCheckpoint(
+        new Checkpoint(getConstants().getGenesisEpoch(), Hash32.ZERO));
+    state.setJustificationBits(Bitfield64.ZERO);
+    state.setFinalizedCheckpoint(new Checkpoint(getConstants().getGenesisEpoch(), Hash32.ZERO));
 
     // Recent state
     state.getPreviousCrosslinks().setAll(Crosslink.EMPTY);
     state.getCurrentCrosslinks().setAll(Crosslink.EMPTY);
-    state.getLatestBlockRoots().setAll(Hash32.ZERO);
-    state.getLatestStateRoots().setAll(Hash32.ZERO);
-    state.getLatestActiveIndexRoots().setAll(Hash32.ZERO);
-    state.getLatestSlashedBalances().setAll(Gwei.ZERO);
+    state.getBlockRoots().setAll(Hash32.ZERO);
+    state.getStateRoots().setAll(Hash32.ZERO);
+    state.getActiveIndexRoots().setAll(Hash32.ZERO);
+    state.getSlashings().setAll(Gwei.ZERO);
     state.setLatestBlockHeader(get_temporary_block_header(get_empty_block()));
     state.getHistoricalRoots().clear();
 
     // Ethereum 1.0 chain data
-    state.setLatestEth1Data(genesisEth1Data);
+    state.setEth1Data(genesisEth1Data);
     state.getEth1DataVotes().clear();
-    state.setDepositIndex(UInt64.ZERO);
+    state.setEth1DepositIndex(UInt64.ZERO);
 
     // Process genesis deposits
     for (Deposit deposit : genesisValidatorDeposits) {
@@ -110,10 +111,10 @@ public interface GenesisFunction extends BlockProcessing {
     }
 
     // Process genesis activations
-    for (ValidatorIndex validatorIndex : state.getValidatorRegistry().size().iterateFromZero()) {
-      ValidatorRecord validator = state.getValidatorRegistry().get(validatorIndex);
+    for (ValidatorIndex validatorIndex : state.getValidators().size().iterateFromZero()) {
+      ValidatorRecord validator = state.getValidators().get(validatorIndex);
       if (validator.getEffectiveBalance().greaterEqual(getConstants().getMaxEffectiveBalance())) {
-        state.getValidatorRegistry().update(validatorIndex,
+        state.getValidators().update(validatorIndex,
             record -> ValidatorRecord.Builder.fromRecord(record)
                 .withActivationEpoch(getConstants().getGenesisEpoch())
                 .withActivationEligibilityEpoch(getConstants().getGenesisEpoch()).build());
@@ -124,7 +125,7 @@ public interface GenesisFunction extends BlockProcessing {
         get_active_validator_indices(state, getConstants().getGenesisEpoch()));
 
     for (EpochNumber index : getConstants().getEpochsPerHistoricalVector().iterateFrom(EpochNumber.ZERO)) {
-      state.getLatestActiveIndexRoots().set(index, genesisActiveIndexRoot);
+      state.getActiveIndexRoots().set(index, genesisActiveIndexRoot);
     }
 
     return state.createImmutable();
@@ -133,7 +134,7 @@ public interface GenesisFunction extends BlockProcessing {
   default boolean is_genesis_trigger(List<Deposit> deposits, Eth1Data genesisEth1Data, UInt64 timestamp) {
     // Process deposits
     MutableBeaconState state = BeaconState.getEmpty(getConstants()).createMutableCopy();
-    state.setLatestEth1Data(genesisEth1Data);
+    state.setEth1Data(genesisEth1Data);
     deposits.forEach(d -> {
       verify_deposit(state, d);
       process_deposit(state, d);
@@ -141,7 +142,7 @@ public interface GenesisFunction extends BlockProcessing {
 
     // Count active validators at genesis
     int active_validator_count = 0;
-    for (ValidatorRecord validator : state.getValidatorRegistry()) {
+    for (ValidatorRecord validator : state.getValidators()) {
       if (validator.getEffectiveBalance().equals(getConstants().getMaxEffectiveBalance())) {
         active_validator_count += 1;
       }

@@ -56,7 +56,7 @@ public class BeaconChainAttesterTest {
     Mockito.doReturn(new Checkpoint(spec.get_current_epoch(state), targetRoot))
         .when(attester)
         .getTarget(any(), any(), any());
-    Mockito.doReturn(new Checkpoint(state.getCurrentJustifiedEpoch(), sourceRoot))
+    Mockito.doReturn(new Checkpoint(state.getCurrentJustifiedCheckpoint().getEpoch(), sourceRoot))
         .when(attester)
         .getSource(any());
 
@@ -84,7 +84,7 @@ public class BeaconChainAttesterTest {
     Assert.assertEquals(
         new Crosslink(shard, parentRoot, startEpoch, endEpoch, dataRoot), data.getCrosslink());
     Assert.assertEquals(
-        new Checkpoint(state.getCurrentJustifiedEpoch(), sourceRoot), data.getSource());
+        new Checkpoint(state.getCurrentJustifiedCheckpoint().getEpoch(), sourceRoot), data.getSource());
 
     int bitfieldSize = (committee.size() - 1) / 8 + 1;
 
