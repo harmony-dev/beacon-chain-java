@@ -102,12 +102,11 @@ public class SosSerializer
             .mapToInt(r -> r.isFixedSize() ? r.serializedBody.size() : BYTES_PER_LENGTH_OFFSET)
             .sum();
 
-    BytesValue composite = BytesValue.EMPTY;
+    List<BytesValue> pieces = new ArrayList<>();
 
     // Fixed part
     for (SerializerResult s : childSerializations) {
-      composite =
-          composite.concat(s.isFixedSize() ? s.getSerializedBody() : serializeLength(currentOffset));
+      pieces.add(s.isFixedSize() ? s.getSerializedBody() : serializeLength(currentOffset));
       if (!s.isFixedSize()) {
         currentOffset = currentOffset + s.getSerializedBody().size();
       }
@@ -116,11 +115,11 @@ public class SosSerializer
     // Variable part
     for (SerializerResult s : childSerializations) {
       if (!s.isFixedSize()) {
-        composite = composite.concat(s.getSerializedBody());
+        pieces.add(s.getSerializedBody());
       }
     }
 
-    return new SerializerResult(composite, type.isFixedSize());
+    return new SerializerResult(BytesValue.concat(pieces), type.isFixedSize());
   }
 
   public static class SerializerResult {
