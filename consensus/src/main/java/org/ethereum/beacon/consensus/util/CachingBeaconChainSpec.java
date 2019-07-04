@@ -107,7 +107,8 @@ public class CachingBeaconChainSpec extends BeaconChainSpecImpl {
   public List<ValidatorIndex> get_crosslink_committee(BeaconState state, EpochNumber epoch, ShardNumber shard) {
     Hash32 digest = getDigest(
         objectHash(state.getValidators()),
-        objectHash(state.getRandaoMixes()),
+        get_seed(state, epoch),
+        get_start_shard(state, epoch).toBytes8(),
         epoch.toBytes8(),
         shard.toBytes8()
     );
