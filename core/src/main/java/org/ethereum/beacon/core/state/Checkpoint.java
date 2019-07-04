@@ -3,6 +3,7 @@ package org.ethereum.beacon.core.state;
 import com.google.common.base.Objects;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.ssz.annotation.SSZ;
+import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
 /**
@@ -12,6 +13,7 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
  *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.8.0/specs/core/0_beacon-chain.md#checkpoint">Checkpoint</a>
  *     in the spec.
  */
+@SSZSerializable
 public class Checkpoint {
 
   public static final Checkpoint EMPTY = new Checkpoint(EpochNumber.ZERO, Hash32.ZERO);

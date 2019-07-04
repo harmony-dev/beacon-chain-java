@@ -291,7 +291,7 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
-  public WriteVector<EpochNumber, Hash32> getCompactCommitteesRoots() {
+  public WriteList<EpochNumber, Hash32> getCompactCommitteesRoots() {
     return compactCommitteesRoots.get();
   }
 

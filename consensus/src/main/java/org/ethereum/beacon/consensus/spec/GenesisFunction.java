@@ -6,7 +6,6 @@ import java.util.stream.Collectors;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
-import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.state.Eth1Data;
@@ -41,15 +40,6 @@ public interface GenesisFunction extends BlockProcessing {
   default BeaconState initialize_beacon_state_from_eth1(
       Hash32 eth1_block_hash, Time eth1_timestamp, List<Deposit> deposits) {
     MutableBeaconState state = BeaconState.getEmpty(getConstants()).createMutableCopy();
-
-    // Initialize vectors
-    state.getRandaoMixes().setAll(Hash32.ZERO);
-    state.getPreviousCrosslinks().setAll(Crosslink.EMPTY);
-    state.getCurrentCrosslinks().setAll(Crosslink.EMPTY);
-    state.getBlockRoots().setAll(Hash32.ZERO);
-    state.getStateRoots().setAll(Hash32.ZERO);
-    state.getActiveIndexRoots().setAll(Hash32.ZERO);
-    state.getSlashings().setAll(Gwei.ZERO);
 
     state.setPreviousJustifiedCheckpoint(
         new Checkpoint(getConstants().getGenesisEpoch(), Hash32.ZERO));

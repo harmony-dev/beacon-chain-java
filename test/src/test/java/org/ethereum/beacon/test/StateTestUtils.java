@@ -201,8 +201,8 @@ public abstract class StateTestUtils {
         parsePendingAttestations(data.getPreviousEpochAttestations()));
     state.getCurrentEpochAttestations().replaceAll(
         parsePendingAttestations(data.getCurrentEpochAttestations()));
-    state.getCurrentCrosslinks().replaceAll(parseCrosslinks(data.getCurrentCrosslinks()));
-    state.getPreviousCrosslinks().replaceAll(parseCrosslinks(data.getPreviousCrosslinks()));
+    state.getCurrentCrosslinks().setAll(parseCrosslinks(data.getCurrentCrosslinks()));
+    state.getPreviousCrosslinks().setAll(parseCrosslinks(data.getPreviousCrosslinks()));
     state.getBlockRoots().setAll(parseHashes(data.getLatestBlockRoots()));
     state.getStateRoots().setAll(parseHashes(data.getLatestStateRoots()));
     state.getActiveIndexRoots().setAll(parseHashes(data.getLatestActiveIndexRoots()));

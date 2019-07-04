@@ -8,6 +8,7 @@ import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.BeaconStateImpl;
 import org.ethereum.beacon.core.state.Checkpoint;
+import org.ethereum.beacon.core.state.CompactCommittee;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Fork;
 import org.ethereum.beacon.core.state.PendingAttestation;
@@ -56,6 +57,8 @@ public interface BeaconState extends ObservableComposite {
         Collections.nCopies(specConst.getShardCount().intValue(), Crosslink.EMPTY));
     ret.getCurrentCrosslinks().addAll(
         Collections.nCopies(specConst.getShardCount().intValue(), Crosslink.EMPTY));
+    ret.getCompactCommitteesRoots().addAll(
+        Collections.nCopies(specConst.getEpochsPerHistoricalVector().intValue(), Hash32.ZERO));
     return ret;
   }
 

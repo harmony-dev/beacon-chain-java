@@ -46,6 +46,7 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.bytes.BytesValues;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.collections.ReadVector;
+import tech.pegasys.artemis.util.collections.WriteList;
 import tech.pegasys.artemis.util.uint.UInt64;
 import tech.pegasys.artemis.util.uint.UInt64s;
 
@@ -197,23 +198,26 @@ public interface HelperFunction extends SpecCommons {
       return hash_tree_root(Vector[CompactCommittee, SHARD_COUNT](committees))
    */
   default Hash32 get_compact_committees_root(BeaconState state, EpochNumber epoch) {
-    List<CompactCommittee> committees =
-        Collections.nCopies(getConstants().getShardCount().getIntValue(), CompactCommittee.EMPTY);
+    List<CompactCommittee> committees = new ArrayList<>();
     ShardNumber start_shard = get_start_shard(state, epoch);
 
     for (UInt64 committee_number: UInt64s.iterate(UInt64.ZERO, get_committee_count(state, epoch))) {
       ShardNumber shard = start_shard.plusModulo(committee_number, getConstants().getShardCount());
+      List<BLSPubkey> pubkeys = new ArrayList<>();
+      List<UInt64> compactValidators = new ArrayList<>();
       for (ValidatorIndex index : get_crosslink_committee(state, epoch, shard)) {
         ValidatorRecord validator = state.getValidators().get(index);
-        committees.get(shard.getIntValue()).getPubkeys().add(validator.getPubKey());
+        pubkeys.add(validator.getPubKey());
         Gwei compact_balance = validator.getEffectiveBalance().dividedBy(getConstants().getEffectiveBalanceIncrement());
         // `index` (top 6 bytes) + `slashed` (16th bit) + `compact_balance` (bottom 15 bits)
         UInt64 compact_validator = UInt64.valueOf((
             index.getValue() << 16) |
             (validator.getSlashed() ? (1L << 15) : 0) |
             compact_balance.getValue());
-        committees.get(shard.getIntValue()).getCompactValidators().add(compact_validator);
+        compactValidators.add(compact_validator);
       }
+
+      committees.add(CompactCommittee.create(pubkeys, compactValidators));
     }
 
     return hash_tree_root(ReadVector.wrap(committees, Integer::valueOf));

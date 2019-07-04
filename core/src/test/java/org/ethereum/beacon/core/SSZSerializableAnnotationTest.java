@@ -21,6 +21,8 @@ import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
 import org.ethereum.beacon.core.state.BeaconStateImpl;
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
+import org.ethereum.beacon.core.state.Checkpoint;
+import org.ethereum.beacon.core.state.CompactCommittee;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Eth1DataVote;
 import org.ethereum.beacon.core.state.Fork;
@@ -145,7 +147,9 @@ public class SSZSerializableAnnotationTest {
                 ValidatorIndex.class,
                 Transfer.class,
                 BeaconBlockHeader.class,
-                HistoricalBatch.class));
+                HistoricalBatch.class,
+                Checkpoint.class,
+                CompactCommittee.class));
     Class[] allClasses = getClasses("org.ethereum.beacon.core");
 
     for (Class clazz : allClasses) {

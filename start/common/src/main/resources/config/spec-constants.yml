@@ -1,7 +1,6 @@
 specConstants:
   depositContractParameters:
     DEPOSIT_CONTRACT_ADDRESS: 0x0000000000000000000000000000000000000000
-    DEPOSIT_CONTRACT_TREE_DEPTH: 32
   honestValidatorParameters:
     ETH1_FOLLOW_DISTANCE: 1024
   initialValues:

@@ -162,8 +162,12 @@ public class ModelsSerializeTest {
   @Test
   public void beaconStateTest() {
     BeaconState expected = dataFactory.createBeaconState();
+    long s = System.nanoTime();
     BytesValue encoded = sszSerializer.encode2(expected);
+    System.out.println(String.format("encode(state) = %.3fs", (System.nanoTime() - s) / 1_000_000_000d));
+    s = System.nanoTime();
     BeaconState reconstructed = sszSerializer.decode(encoded, BeaconStateImpl.class);
+    System.out.println(String.format("decode(state) = %.3fs", (System.nanoTime() - s) / 1_000_000_000d));
     assertEquals(expected, reconstructed);
   }
 
