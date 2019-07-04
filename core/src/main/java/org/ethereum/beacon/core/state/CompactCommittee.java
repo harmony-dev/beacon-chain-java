@@ -1,9 +1,13 @@
 package org.ethereum.beacon.core.state;
 
+import static java.util.Collections.emptyList;
+
+import java.util.Collections;
 import java.util.List;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.ssz.annotation.SSZ;
+import tech.pegasys.artemis.util.uint.UInt64;
 
 /**
  * Compact committee type.
@@ -14,10 +18,12 @@ import org.ethereum.beacon.ssz.annotation.SSZ;
  */
 public class CompactCommittee {
 
-  @SSZ private final List<BLSPubkey> pubkeys;
-  @SSZ private final List<ValidatorIndex> compactValidators;
+  public static final CompactCommittee EMPTY = new CompactCommittee(emptyList(), emptyList());
 
-  public CompactCommittee(List<BLSPubkey> pubkeys, List<ValidatorIndex> compactValidators) {
+  @SSZ private final List<BLSPubkey> pubkeys;
+  @SSZ private final List<UInt64> compactValidators;
+
+  public CompactCommittee(List<BLSPubkey> pubkeys, List<UInt64> compactValidators) {
     this.pubkeys = pubkeys;
     this.compactValidators = compactValidators;
   }
@@ -26,7 +32,7 @@ public class CompactCommittee {
     return pubkeys;
   }
 
-  public List<ValidatorIndex> getCompactValidators() {
+  public List<UInt64> getCompactValidators() {
     return compactValidators;
   }
 }

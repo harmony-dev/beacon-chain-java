@@ -140,7 +140,7 @@ public class BeaconChainSpecTest {
             emptyBlock.getStateRoot(),
             body,
             emptyBlock.getSignature());
-    BeaconBlockHeader header = spec.get_temporary_block_header(block);
+    BeaconBlockHeader header = spec.get_block_header(block);
     assertEquals(spec.signing_root(block), spec.signing_root(header));
   }
 
@@ -191,8 +191,8 @@ public class BeaconChainSpecTest {
             spec.get_empty_block());
     MutableBeaconState state = initialState.createMutableCopy();
 
-    System.out.println("get_epoch_committee_count() = " +
-        spec.get_epoch_committee_count(state, spec.getConstants().getGenesisEpoch()));
+    System.out.println("get_committee_count() = " +
+        spec.get_committee_count(state, spec.getConstants().getGenesisEpoch()));
 
     for (SlotNumber slot : genesisSlot.iterateTo(genesisSlot.plus(SlotNumber.of(epochLength)))) {
       System.out.println("Slot #" + slot

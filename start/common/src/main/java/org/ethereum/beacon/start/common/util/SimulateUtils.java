@@ -16,14 +16,12 @@ import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes4;
 import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.bytes.Bytes96;
-import tech.pegasys.artemis.util.collections.ReadVector;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-import java.util.function.Function;
 
 public class SimulateUtils {
 
@@ -67,7 +65,7 @@ public class SimulateUtils {
 
     if (isProofVerifyEnabled) {
       Hash32 msgHash = spec.signing_root(depositDataWithoutSignature);
-      UInt64 domain = spec.bls_domain(SignatureDomains.DEPOSIT, Bytes4.ZERO);
+      UInt64 domain = spec.compute_domain(SignatureDomains.DEPOSIT, Bytes4.ZERO);
       signature =
           BLSSignature.wrap(
               BLS381.sign(MessageParameters.create(msgHash, domain), keyPair).getEncoded());

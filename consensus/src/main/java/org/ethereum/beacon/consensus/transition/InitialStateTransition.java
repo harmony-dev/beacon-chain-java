@@ -41,10 +41,11 @@ public class InitialStateTransition implements BlockTransition<BeaconStateEx> {
     assert block.getSlot().equals(spec.getConstants().getGenesisSlot());
 
     BeaconState genesisState =
-        spec.get_genesis_beacon_state(
-            depositContractStart.getInitialDeposits(),
+        spec.initialize_beacon_state_from_eth1(
+            depositContractStart.getEth1Data().getBlockHash(),
             depositContractStart.getTime(),
-            depositContractStart.getEth1Data());
+            depositContractStart.getInitialDeposits()
+        );
 
     BeaconStateExImpl ret = new BeaconStateExImpl(genesisState, TransitionType.INITIAL);
 

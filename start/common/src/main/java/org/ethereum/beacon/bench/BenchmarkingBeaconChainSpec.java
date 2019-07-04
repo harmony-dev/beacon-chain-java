@@ -143,8 +143,8 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
   }
 
   @Override
-  public UInt64 get_churn_limit(BeaconState state) {
-    return callAndTrack("get_churn_limit", () -> super.get_churn_limit(state));
+  public UInt64 get_validator_churn_limit(BeaconState state) {
+    return callAndTrack("get_validator_churn_limit", () -> super.get_validator_churn_limit(state));
   }
 
   @Override
@@ -167,11 +167,11 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
   }
 
   @Override
-  public boolean validate_indexed_attestation(
+  public boolean is_valid_indexed_attestation(
       BeaconState state, IndexedAttestation indexed_attestation) {
     return callAndTrack(
-        "validate_indexed_attestation",
-        () -> super.validate_indexed_attestation(state, indexed_attestation));
+        "is_valid_indexed_attestation",
+        () -> super.is_valid_indexed_attestation(state, indexed_attestation));
   }
 
   @Override
@@ -183,8 +183,8 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
   }
 
   @Override
-  public Hash32 generate_seed(BeaconState state, EpochNumber epoch) {
-    return callAndTrack("generate_seed", () -> super.generate_seed(state, epoch));
+  public Hash32 get_seed(BeaconState state, EpochNumber epoch) {
+    return callAndTrack("get_seed", () -> super.get_seed(state, epoch));
   }
 
   @Override
@@ -201,8 +201,8 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
   }
 
   @Override
-  public ShardNumber get_epoch_start_shard(BeaconState state, EpochNumber epoch) {
-    return callAndTrack("get_epoch_start_shard", () -> super.get_epoch_start_shard(state, epoch));
+  public ShardNumber get_start_shard(BeaconState state, EpochNumber epoch) {
+    return callAndTrack("get_start_shard", () -> super.get_start_shard(state, epoch));
   }
 
   @Override
@@ -211,9 +211,9 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
   }
 
   @Override
-  public UInt64 get_epoch_committee_count(BeaconState state, EpochNumber epoch) {
+  public UInt64 get_committee_count(BeaconState state, EpochNumber epoch) {
     return callAndTrack(
-        "get_epoch_committee_count", () -> super.get_epoch_committee_count(state, epoch));
+        "get_committee_count", () -> super.get_committee_count(state, epoch));
   }
 
   @Override

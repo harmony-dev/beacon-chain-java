@@ -84,7 +84,7 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
 
   @VisibleForTesting
   Checkpoint getTarget(BeaconState state, BeaconBlock head, EpochNumber targetEpoch) {
-    SlotNumber epochBoundarySlot = spec.get_epoch_start_slot(spec.slot_to_epoch(head.getSlot()));
+    SlotNumber epochBoundarySlot = spec.compute_start_slot_of_epoch(spec.compute_epoch_of_slot(head.getSlot()));
     if (epochBoundarySlot.equals(head.getSlot())) {
       return new Checkpoint(targetEpoch, spec.signing_root(head));
     } else {

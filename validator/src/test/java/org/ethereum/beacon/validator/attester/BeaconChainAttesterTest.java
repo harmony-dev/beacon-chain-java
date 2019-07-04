@@ -78,7 +78,7 @@ public class BeaconChainAttesterTest {
     EpochNumber startEpoch = parentCrosslink.getEndEpoch();
     EpochNumber endEpoch =
         UInt64s.min(
-            spec.slot_to_epoch(state.getSlot()),
+            spec.compute_epoch_of_slot(state.getSlot()),
             parentCrosslink.getEndEpoch().plus(spec.getConstants().getMaxEpochsPerCrosslink()));
 
     Assert.assertEquals(

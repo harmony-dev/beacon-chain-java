@@ -51,10 +51,10 @@ public interface MutableBeaconState extends BeaconState {
   Bitfield64 getJustificationBits();
 
   @Override
-  WriteList<ShardNumber, Crosslink> getPreviousCrosslinks();
+  WriteVector<ShardNumber, Crosslink> getPreviousCrosslinks();
 
   @Override
-  WriteList<ShardNumber, Crosslink> getCurrentCrosslinks();
+  WriteVector<ShardNumber, Crosslink> getCurrentCrosslinks();
 
   @Override
   WriteVector<SlotNumber, Hash32> getBlockRoots();

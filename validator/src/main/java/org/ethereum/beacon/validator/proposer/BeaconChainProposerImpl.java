@@ -116,7 +116,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
    * @return next RANDAO reveal.
    */
   private BLSSignature getRandaoReveal(BeaconState state, MessageSigner<BLSSignature> signer) {
-    Hash32 hash = spec.hash_tree_root(spec.slot_to_epoch(state.getSlot()));
+    Hash32 hash = spec.hash_tree_root(spec.compute_epoch_of_slot(state.getSlot()));
     UInt64 domain = spec.get_domain(state, RANDAO);
     return signer.sign(hash, domain);
   }

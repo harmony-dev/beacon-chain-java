@@ -12,6 +12,7 @@ import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.ChainStart;
 import org.ethereum.beacon.consensus.spec.SpecCommons.SpecAssertionFailed;
+import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.state.Eth1Data;
@@ -111,9 +112,13 @@ public abstract class AbstractDepositContract implements DepositContract {
               tree.getRoot(genesisDeposits.size() - 1),
               UInt64.valueOf(genesisDeposits.size()),
               Hash32.wrap(Bytes32.wrap(blockHash)));
-      if (spec.is_genesis_trigger(
-          genesisDeposits, genesisEth1Data, UInt64.valueOf(blockTimestamp))) {
-        chainStart(genesisEth1Data, genesisDeposits, blockTimestamp);
+      BeaconState initialState = spec.initialize_beacon_state_from_eth1(
+          genesisEth1Data.getBlockHash(),
+          Time.of(blockTimestamp),
+          genesisDeposits
+      );
+      if (spec.is_genesis_trigger(initialState)) {
+        chainStart(genesisEth1Data, genesisDeposits, initialState.getGenesisTime());
       }
     } catch (SpecAssertionFailed e) {
       logger.warn("Failed to trigger genesis event", e);
@@ -153,12 +158,8 @@ public abstract class AbstractDepositContract implements DepositContract {
     return tree.getRoot(index.intValue());
   }
 
-  protected synchronized void chainStart(Eth1Data genesisEth1Data, List<Deposit> genesisDeposits, long timestamp) {
-    // genesis_time = timestamp - timestamp % SECONDS_PER_DAY + 2 * SECONDS_PER_DAY
-    long genesisTime = timestamp - timestamp % spec.getConstants().getSecondsPerDay() +
-        2 * spec.getConstants().getSecondsPerDay();
-
-    ChainStart chainStart = new ChainStart(Time.of(genesisTime), genesisEth1Data, genesisDeposits);
+  protected synchronized void chainStart(Eth1Data genesisEth1Data, List<Deposit> genesisDeposits, Time genesisTime) {
+    ChainStart chainStart = new ChainStart(genesisTime, genesisEth1Data, genesisDeposits);
     chainStartSink.onNext(chainStart);
     chainStartSink.onComplete();
     chainStartDone();

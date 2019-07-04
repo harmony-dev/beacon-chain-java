@@ -166,13 +166,13 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     if (previous.getFinalizedCheckpoint().getEpoch().less(current.getFinalizedCheckpoint().getEpoch())) {
       Hash32 finalizedRoot =
           spec.get_block_root_at_slot(
-              current, spec.get_epoch_start_slot(current.getFinalizedCheckpoint().getEpoch()));
+              current, spec.compute_start_slot_of_epoch(current.getFinalizedCheckpoint().getEpoch()));
       chainStorage.getFinalizedStorage().set(finalizedRoot);
     }
     if (previous.getCurrentJustifiedCheckpoint().getEpoch().less(current.getCurrentJustifiedCheckpoint().getEpoch())) {
       Hash32 justifiedRoot =
           spec.get_block_root_at_slot(
-              current, spec.get_epoch_start_slot(current.getCurrentJustifiedCheckpoint().getEpoch()));
+              current, spec.compute_start_slot_of_epoch(current.getCurrentJustifiedCheckpoint().getEpoch()));
       chainStorage.getJustifiedStorage().set(justifiedRoot);
     }
   }

@@ -35,14 +35,6 @@ public interface SpecCommons {
     assertTrue(index.less(state.getValidators().size()));
   }
 
-  default void checkIndexRange(BeaconState state, Iterable<ValidatorIndex> indices) {
-    indices.forEach(index -> checkIndexRange(state, index));
-  }
-
-  default void checkShardRange(ShardNumber shard) {
-    assertTrue(shard.less(getConstants().getShardCount()));
-  }
-
   class SpecAssertionFailed extends RuntimeException {
     @Override
     public String getMessage() {

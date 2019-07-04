@@ -52,7 +52,7 @@ public class TestUtils {
           BLSSignature.wrap(Bytes96.ZERO)
       );
       Hash32 msgHash = spec.signing_root(depositDataWithoutSignature);
-      UInt64 domain = spec.bls_domain(DEPOSIT, Bytes4.ZERO);
+      UInt64 domain = spec.compute_domain(DEPOSIT, Bytes4.ZERO);
       Signature signature = BLS381
           .sign(MessageParameters.create(msgHash, domain), keyPair);
 
