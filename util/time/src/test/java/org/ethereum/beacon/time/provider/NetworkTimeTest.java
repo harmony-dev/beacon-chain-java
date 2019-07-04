@@ -14,8 +14,13 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
+@Ignore("30 seconds test")
 public class NetworkTimeTest {
-  @Ignore("10 seconds test")
+  private static final int CORRECTION_PERIOD_MS = 5500;
+  private List<String> ntpServers = new ArrayList<String>() {{
+    add("pool.ntp.org");
+  }};
+
   @Test
   public void testNegativeOffset() {
     Schedulers schedulers = Schedulers.createDefault();
@@ -24,7 +29,8 @@ public class NetworkTimeTest {
             schedulers.events(),
             schedulers.newSingleThreadDaemon("system-time"),
             schedulers.newSingleThreadDaemon("network-time"),
-            5000) {
+            ntpServers,
+            CORRECTION_PERIOD_MS) {
           private int currentQuery = 0;
 
           @Override
@@ -69,7 +75,6 @@ public class NetworkTimeTest {
     }
   }
 
-  @Ignore("10 seconds test")
   @Test
   public void testBigNegativeOffset() {
     Schedulers schedulers = Schedulers.createDefault();
@@ -78,7 +83,8 @@ public class NetworkTimeTest {
             schedulers.events(),
             schedulers.newSingleThreadDaemon("system-time"),
             schedulers.newSingleThreadDaemon("network-time"),
-            5000) {
+            ntpServers,
+            CORRECTION_PERIOD_MS) {
           @Override
           long pullOffset(String serverHost) {
             return -4500;
@@ -113,7 +119,6 @@ public class NetworkTimeTest {
     }
   }
 
-  @Ignore("10 seconds test")
   @Test
   public void testNegativePositiveOffset() {
     Schedulers schedulers = Schedulers.createDefault();
@@ -122,7 +127,8 @@ public class NetworkTimeTest {
             schedulers.events(),
             schedulers.newSingleThreadDaemon("system-time"),
             schedulers.newSingleThreadDaemon("network-time"),
-            5000) {
+            ntpServers,
+            CORRECTION_PERIOD_MS) {
           private int currentQuery = 0;
 
           @Override

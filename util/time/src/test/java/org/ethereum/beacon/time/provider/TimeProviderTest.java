@@ -16,9 +16,16 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
+@Ignore("10 seconds test")
 public class TimeProviderTest {
+  private static final int CORRECTION_PERIOD_MS = 5500;
+  private List<String> ntpServers =
+      new ArrayList<String>() {
+        {
+          add("pool.ntp.org");
+        }
+      };
 
-  @Ignore("10 seconds test")
   @Test
   public void testSystem() {
     TimeProvider provider =
@@ -37,7 +44,8 @@ public class TimeProviderTest {
             schedulers.events(),
             schedulers.newSingleThreadDaemon("system-time"),
             schedulers.newSingleThreadDaemon("network-time"),
-            5000);
+            ntpServers,
+            CORRECTION_PERIOD_MS);
     standardTester(provider);
   }
 
@@ -51,7 +59,8 @@ public class TimeProviderTest {
             schedulers.events(),
             schedulers.newSingleThreadDaemon("system-time"),
             schedulers.newSingleThreadDaemon("network-time"),
-            5000) {
+            ntpServers,
+            CORRECTION_PERIOD_MS) {
           @Override
           long pullOffset(String serverHost) {
             return 1000;
@@ -63,7 +72,8 @@ public class TimeProviderTest {
             schedulers.events(),
             schedulers.newSingleThreadDaemon("system-time"),
             schedulers.newSingleThreadDaemon("network-time"),
-            5000) {
+            ntpServers,
+            CORRECTION_PERIOD_MS) {
           @Override
           long pullOffset(String serverHost) {
             return 4000;
@@ -75,7 +85,8 @@ public class TimeProviderTest {
             schedulers.events(),
             schedulers.newSingleThreadDaemon("system-time"),
             schedulers.newSingleThreadDaemon("network-time"),
-            5000) {
+            ntpServers,
+            CORRECTION_PERIOD_MS) {
           @Override
           long pullOffset(String serverHost) {
             return 5000;

@@ -8,22 +8,33 @@ import org.ethereum.beacon.stream.SimpleProcessor;
 import org.reactivestreams.Publisher;
 
 import java.net.InetAddress;
+import java.security.SecureRandom;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoField;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
-/**
- * Time provider using NTP servers to correct time every defined period
- */
+/** Time provider using NTP servers to correct time every defined period */
 public class NetworkTime implements TimeProvider {
   private static final int MILLIS_IN_SEC = 1000;
+  private static final int DOUBLE_CHECK_DIFF = 5 * MILLIS_IN_SEC;
   private final SimpleProcessor<Time> timeProcessor;
+
+  private final List<String> ntpServers;
+  private final SecureRandom random = new SecureRandom();
   private final AtomicLong latest = new AtomicLong(-1);
   private final AtomicLong offset = new AtomicLong(0);
+  private String latestServer = "";
 
   public NetworkTime(
-      Scheduler events, Scheduler worker, Scheduler networkWorker, long correctionPerioidMs) {
+      Scheduler events,
+      Scheduler worker,
+      Scheduler networkWorker,
+      List<String> ntpServers,
+      long correctionPeriodMs) {
+    this.ntpServers = ntpServers;
     this.timeProcessor = new SimpleProcessor<Time>(events, "TimeProvider.system");
     worker.executeR(
         () -> {
@@ -33,16 +44,23 @@ public class NetworkTime implements TimeProvider {
         });
     networkWorker.executeAtFixedRate(
         Duration.ZERO,
-        Duration.ofMillis(correctionPerioidMs),
+        Duration.ofMillis(correctionPeriodMs),
         () -> {
           try {
-          long newOffset = pullOffset(getNextServer());
+            String server = getNextServer(latestServer);
+            long newOffset = pullOffset(server);
+            // If we get big difference - recheck
+            if (Math.abs(newOffset - offset.get()) > DOUBLE_CHECK_DIFF) {
+              server = getNextServer(server);
+              newOffset = pullOffset(server);
+            }
+            this.latestServer = server;
 
-          // Reset latest if offset has changed dramatically to reset emitting
-          if (Math.abs(newOffset - offset.get()) > MILLIS_IN_SEC) {
-            latest.set(-1);
-          }
-          offset.set(newOffset);
+            // Reset latest if offset has changed dramatically to reset emitting
+            if (Math.abs(newOffset - offset.get()) > MILLIS_IN_SEC) {
+              latest.set(-1);
+            }
+            offset.set(newOffset);
           } catch (Exception e) {
             e.printStackTrace();
             // TODO: log me
@@ -64,9 +82,14 @@ public class NetworkTime implements TimeProvider {
     }
   }
 
-  private String getNextServer() {
-    // TODO: get it from resources with some kind of rotation
-    return "pool.ntp.org";
+  private String getNextServer(String filter) {
+    List<String> remaining =
+        ntpServers.stream().filter(s -> !s.equals(filter)).collect(Collectors.toList());
+    if (remaining.isEmpty()) {
+      remaining = ntpServers;
+    }
+
+    return remaining.get(random.nextInt(remaining.size()));
   }
 
   private void emitTime() {
