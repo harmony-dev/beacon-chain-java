@@ -40,7 +40,7 @@ public class StatisticsTime implements TimeProvider {
       int secondsBuffer,
       int filterOutliers,
       Publisher<Time>... objectTimeStreams) {
-    this.timeProcessor = new SimpleProcessor<Time>(events, "TimeProvider.system");
+    this.timeProcessor = new SimpleProcessor<Time>(events, "TimeProvider.statistics");
     SystemTime systemTime = new SystemTime(events, worker);
     Flux.from(systemTime.getTimeStream())
         .subscribe(

@@ -1,5 +1,7 @@
 package org.ethereum.beacon.time;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.schedulers.Scheduler;
 import org.ethereum.beacon.stream.SimpleProcessor;
@@ -18,6 +20,7 @@ public class NetworkFirstStrategy implements TimeStrategy {
   private final SimpleProcessor<Time> timeProcessor;
   private final AtomicLong latestNetwork = new AtomicLong(-1);
   private final AtomicLong latestStatistics = new AtomicLong(-1);
+  private static final Logger logger = LogManager.getLogger("time");
 
   public NetworkFirstStrategy(
       Scheduler scheduler,
@@ -44,6 +47,7 @@ public class NetworkFirstStrategy implements TimeStrategy {
                 return;
               }
               if (Math.abs(latestNetwork.get() - latestStatistics.get()) > allowedDelta) {
+                logger.trace(() -> String.format("Using time from statistics time provider: %s", t.getValue()));
                 timeProcessor.onNext(t);
               }
             });

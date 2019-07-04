@@ -2,6 +2,8 @@ package org.ethereum.beacon.time.provider;
 
 import org.apache.commons.net.ntp.NTPUDPClient;
 import org.apache.commons.net.ntp.TimeInfo;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.schedulers.Scheduler;
 import org.ethereum.beacon.stream.SimpleProcessor;
@@ -20,8 +22,9 @@ import java.util.stream.Collectors;
 public class NetworkTime implements TimeProvider {
   private static final int MILLIS_IN_SEC = 1000;
   private static final int DOUBLE_CHECK_DIFF = 5 * MILLIS_IN_SEC;
-  private final SimpleProcessor<Time> timeProcessor;
+  private static final Logger logger = LogManager.getLogger("time");
 
+  private final SimpleProcessor<Time> timeProcessor;
   private final List<String> ntpServers;
   private final SecureRandom random = new SecureRandom();
   private final AtomicLong latest = new AtomicLong(-1);
@@ -35,7 +38,7 @@ public class NetworkTime implements TimeProvider {
       List<String> ntpServers,
       long correctionPeriodMs) {
     this.ntpServers = ntpServers;
-    this.timeProcessor = new SimpleProcessor<Time>(events, "TimeProvider.system");
+    this.timeProcessor = new SimpleProcessor<Time>(events, "TimeProvider.network");
     worker.executeR(
         () -> {
           while (!Thread.interrupted()) {
@@ -43,40 +46,57 @@ public class NetworkTime implements TimeProvider {
           }
         });
     networkWorker.executeAtFixedRate(
-        Duration.ZERO,
-        Duration.ofMillis(correctionPeriodMs),
-        () -> {
-          try {
-            String server = getNextServer(latestServer);
-            long newOffset = pullOffset(server);
-            // If we get big difference - recheck
-            if (Math.abs(newOffset - offset.get()) > DOUBLE_CHECK_DIFF) {
-              server = getNextServer(server);
-              newOffset = pullOffset(server);
-            }
-            this.latestServer = server;
+        Duration.ZERO, Duration.ofMillis(correctionPeriodMs), this::updateOffset);
+  }
 
-            // Reset latest if offset has changed dramatically to reset emitting
-            if (Math.abs(newOffset - offset.get()) > MILLIS_IN_SEC) {
-              latest.set(-1);
-            }
-            offset.set(newOffset);
-          } catch (Exception e) {
-            e.printStackTrace();
-            // TODO: log me
-          }
-        });
+  private void updateOffset() {
+    try {
+      String server = getNextServer(latestServer);
+      long newOffset = pullOffset(server);
+      // If we get big difference - recheck
+      if (Math.abs(newOffset - offset.get()) > DOUBLE_CHECK_DIFF && !latestServer.isEmpty()) {
+        final String finalServer = server;
+        final long finalNewOffset = newOffset;
+        logger.warn(
+            String.format(
+                "Offset from previous NTP server `%s`(%s) was changed above threshold(%s ms) according to data from "
+                    + "NTP server `%s`(%s). Retrying request with new server",
+                latestServer, offset.get(), DOUBLE_CHECK_DIFF, finalServer, finalNewOffset));
+        server = getNextServer(server);
+        newOffset = pullOffset(server);
+      }
+      this.latestServer = server;
+
+      // Reset latest if offset has changed dramatically to reset emitting
+      if (Math.abs(newOffset - offset.get()) > MILLIS_IN_SEC) {
+        latest.set(-1);
+      }
+      offset.set(newOffset);
+      logger.trace(
+          () ->
+              String.format(
+                  "Offset set to %s using data from NTP server `%s`", offset, latestServer));
+    } catch (Exception e) {
+      logger.error("Failed to update offset", e);
+    }
   }
 
   /** Clock offset in ms needed to adjust local clock to match remote clock */
   long pullOffset(String serverHost) {
+    logger.trace(() -> String.format("Requesting time offset from NTP server `%s`", serverHost));
     try {
       NTPUDPClient timeClient = new NTPUDPClient();
       InetAddress inetAddress = InetAddress.getByName(serverHost);
       TimeInfo timeInfo = timeClient.getTime(inetAddress);
       timeInfo.computeDetails();
+      logger.trace(
+          () ->
+              String.format(
+                  "Received time offset from NTP server `%s`: %s",
+                  serverHost, timeInfo.getOffset()));
       return timeInfo.getOffset();
     } catch (Exception ex) {
+      logger.debug(() -> String.format("Failed to get offset from NTP server `%s`", serverHost));
       throw new RuntimeException(
           String.format("Failed to get time from server %s", serverHost), ex);
     }
