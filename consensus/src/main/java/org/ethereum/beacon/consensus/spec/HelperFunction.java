@@ -956,6 +956,9 @@ public interface HelperFunction extends SpecCommons {
     List<ValidatorIndex> custody_bit_0_indices = attesting_indices.stream()
         .filter(index -> !custody_bit_1_indices.contains(index)).collect(toList());
 
+    Collections.sort(custody_bit_0_indices);
+    Collections.sort(custody_bit_1_indices);
+
     return new IndexedAttestation(
         custody_bit_0_indices,
         custody_bit_1_indices,

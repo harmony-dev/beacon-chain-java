@@ -229,7 +229,7 @@ public interface BlockProcessing extends HelperFunction {
        assert data.crosslink.shard < SHARD_COUNT
        assert data.target.epoch in (get_previous_epoch(state), get_current_epoch(state)) */
     AttestationData data = attestation.getData();
-    if (data.getCrosslink().getShard().less(getConstants().getShardCount())) {
+    if (!data.getCrosslink().getShard().less(getConstants().getShardCount())) {
       return false;
     }
     if (!data.getTarget().getEpoch().equals(get_previous_epoch(state))
