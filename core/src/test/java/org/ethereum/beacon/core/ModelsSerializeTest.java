@@ -1,5 +1,8 @@
 package org.ethereum.beacon.core;
 
+import static org.junit.Assert.assertEquals;
+
+import java.util.Random;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.transition.BeaconStateExImpl;
@@ -15,7 +18,6 @@ import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.spec.SpecConstantsResolver;
 import org.ethereum.beacon.core.state.BeaconStateImpl;
-import org.ethereum.beacon.core.state.Eth1DataVote;
 import org.ethereum.beacon.core.state.Fork;
 import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.state.ValidatorRecord;
@@ -27,10 +29,6 @@ import org.junit.Before;
 import org.junit.Test;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
-import java.util.Random;
-
-import static org.junit.Assert.assertEquals;
-
 public class ModelsSerializeTest {
   private SSZSerializer sszSerializer;
   private SpecConstants specConstants;
@@ -39,10 +37,9 @@ public class ModelsSerializeTest {
   @Before
   public void setup() {
     specConstants = BeaconChainSpec.DEFAULT_CONSTANTS;
-    sszSerializer =
-        new SSZBuilder()
-            .withExternalVarResolver(new SpecConstantsResolver(specConstants))
-            .buildSerializer();
+    sszSerializer = new SSZBuilder()
+        .withExternalVarResolver(new SpecConstantsResolver(specConstants))
+        .buildSerializer();
     dataFactory = new TestDataFactory(specConstants);
   }
 
@@ -168,14 +165,6 @@ public class ModelsSerializeTest {
     Crosslink expected = dataFactory.createCrosslink();
     BytesValue encoded = sszSerializer.encode2(expected);
     Crosslink reconstructed = sszSerializer.decode(encoded, Crosslink.class);
-    assertEquals(expected, reconstructed);
-  }
-
-  @Test
-  public void eth1DataVoteTest() {
-    Eth1DataVote expected = dataFactory.createEth1DataVote();
-    BytesValue encoded = sszSerializer.encode2(expected);
-    Eth1DataVote reconstructed = sszSerializer.decode(encoded, Eth1DataVote.class);
     assertEquals(expected, reconstructed);
   }
 
