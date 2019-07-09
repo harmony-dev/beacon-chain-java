@@ -101,11 +101,11 @@ public class Bitlist extends DelegatingBytesValue {
   }
 
   public Bitlist and(Bitlist other) {
-    return Bitlist.of(Math.max(size, other.size), BytesValues.and(this, other), maxSize);
+    return Bitlist.of(Math.max(size, other.size), BytesValues.and(this.wrapped, other.wrapped), maxSize);
   }
 
   public Bitlist or(Bitlist other) {
-    return Bitlist.of(size, BytesValues.or(this, other), maxSize);
+    return Bitlist.of(size, BytesValues.or(this.wrapped, other.wrapped), maxSize);
   }
 
   @Override
