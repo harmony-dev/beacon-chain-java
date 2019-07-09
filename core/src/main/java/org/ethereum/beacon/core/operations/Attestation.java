@@ -95,7 +95,7 @@ public class Attestation {
     return "Attestation["
         + data.toString()
         + ", attesters=" + getSignerIndices()
-        + ", cusodyBits=" + custodyBits
+        + ", custodyBits=" + custodyBits
         + ", sig=" + signature
         + "]";
   }

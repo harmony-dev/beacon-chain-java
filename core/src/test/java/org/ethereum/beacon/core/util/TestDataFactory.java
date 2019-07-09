@@ -71,9 +71,9 @@ public class TestDataFactory {
     AttestationData attestationData = createAttestationData();
     Attestation attestation =
         new Attestation(
-            Bitlist.of(someValue.size() * 8, someValue, Integer.MAX_VALUE),
+            Bitlist.of(someValue.size() * 8, someValue, specConstants.getMaxValidatorsPerCommittee().getValue()),
             attestationData,
-            Bitlist.of(16, BytesValue.fromHexString("bb"), Integer.MAX_VALUE),
+            Bitlist.of(8, BytesValue.fromHexString("bb"),  specConstants.getMaxValidatorsPerCommittee().getValue()),
             BLSSignature.wrap(Bytes96.fromHexString("cc")));
 
     return attestation;
@@ -131,8 +131,8 @@ public class TestDataFactory {
     proposerSlashings.add(createProposerSlashing(random));
     List<AttesterSlashing> attesterSlashings = new ArrayList<>();
     attesterSlashings.add(createAttesterSlashings());
-    attesterSlashings.add(createAttesterSlashings());
     List<Attestation> attestations = new ArrayList<>();
+    attestations.add(createAttestation());
     attestations.add(createAttestation());
     List<Deposit> deposits = new ArrayList<>();
     deposits.add(createDeposit1());
@@ -207,7 +207,7 @@ public class TestDataFactory {
   public PendingAttestation createPendingAttestation() {
     PendingAttestation pendingAttestation =
         new PendingAttestation(
-            Bitlist.of(16, BytesValue.fromHexString("aa"), Integer.MAX_VALUE),
+            Bitlist.of(8, BytesValue.fromHexString("aa"), specConstants.getMaxValidatorsPerCommittee().getValue()),
             createAttestationData(),
             SlotNumber.ZERO,
             ValidatorIndex.ZERO);

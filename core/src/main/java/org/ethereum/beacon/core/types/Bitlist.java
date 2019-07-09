@@ -144,7 +144,12 @@ public class Bitlist extends DelegatingBytesValue {
     return size;
   }
 
-  public int byteSize() {
+  private int byteSize() {
+    // bits to bytes
+    return (size + 7) / 8;
+  }
+
+  private int fullByteSize() {
     // bits to bytes + size bit
     return (size + 8) / 8;
   }
@@ -153,7 +158,7 @@ public class Bitlist extends DelegatingBytesValue {
 
     @Override
     public int getChildrenCount(Object value) {
-      return ((Bitlist) value).byteSize();
+      return ((Bitlist) value).fullByteSize();
     }
 
     @Override
@@ -171,7 +176,7 @@ public class Bitlist extends DelegatingBytesValue {
     @Override
     public Object getChildValue(Object value, int idx) {
       Bitlist bitlist = ((Bitlist) value);
-      if ((idx + 1) == bitlist.byteSize()) {
+      if ((idx + 1) == bitlist.fullByteSize()) {
         byte withoutSize = idx < ((bitlist.size() + 7) / 8) ? bitlist.wrapped.get(idx) : 0;
         int bitNumber = bitlist.size() % 8;
         return withoutSize | (1 << bitNumber); // add size bit
