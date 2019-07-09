@@ -31,8 +31,8 @@ public interface SSZListAccessor extends SSZCompositeAccessor, CompositeInstance
    * it's 1:1, but assuming Bit List we have elements that are smaller than byte (atoms) which are
    * accessible as bytes
    */
-  default int fromAtomicSize(int claimedSize) {
-    return claimedSize;
+  default long fromAtomicSize(long elementSize) {
+    return elementSize;
   }
 
   @Override

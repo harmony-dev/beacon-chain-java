@@ -136,8 +136,10 @@ public class Bitvector extends DelegatingBytesValue {
     }
 
     @Override
-    public int fromAtomicSize(int claimedSize) {
-      return claimedSize == SSZType.VARIABLE_SIZE ? claimedSize : (claimedSize + 7) / 8; // bits to bytes
+    public long fromAtomicSize(long elementSize) {
+      return elementSize == SSZType.VARIABLE_SIZE
+          ? elementSize
+          : (elementSize + 7) / 8; // bits to bytes
     }
 
     @Override

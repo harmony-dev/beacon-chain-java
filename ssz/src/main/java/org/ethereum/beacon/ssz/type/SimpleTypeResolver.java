@@ -67,7 +67,7 @@ public class SimpleTypeResolver implements TypeResolver {
     return SSZType.VARIABLE_SIZE;
   }
 
-  protected int getMaxSize(SSZField descriptor) {
+  protected long getMaxSize(SSZField descriptor) {
     if (descriptor.getFieldAnnotation() == null) {
       return SSZType.VARIABLE_SIZE;
     }

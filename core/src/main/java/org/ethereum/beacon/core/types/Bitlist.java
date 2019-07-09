@@ -18,16 +18,16 @@ import java.util.List;
 @SSZSerializable(listAccessor = Bitlist.BitListAccessor.class)
 public class Bitlist extends DelegatingBytesValue {
   private final int size;
-  private final int maxSize;
+  private final long maxSize;
 
-  Bitlist(int size, BytesValue bytes, int maxSize) {
+  Bitlist(int size, BytesValue bytes, long maxSize) {
     super(checkSize(bytes, size));
     this.size = size;
     this.maxSize = maxSize;
   }
 
   /** Assumes that size info is encoded in bytes\ */
-  public static Bitlist of(BytesValue bytes, int maxSize) {
+  public static Bitlist of(BytesValue bytes, long maxSize) {
     int size = (bytes.size() - 1) * 8;
     byte lastByte = bytes.get(bytes.size() - 1);
     int addon = 0;
@@ -49,7 +49,7 @@ public class Bitlist extends DelegatingBytesValue {
     return new Bitlist(size, finalBlank, maxSize);
   }
 
-  public static Bitlist of(int size, BytesValue bytes, int maxSize) {
+  public static Bitlist of(int size, BytesValue bytes, long maxSize) {
     return new Bitlist(size, bytes, maxSize);
   }
 
@@ -57,7 +57,7 @@ public class Bitlist extends DelegatingBytesValue {
     return new Bitlist(0, BytesValue.EMPTY, maxSize);
   }
 
-  public static Bitlist of(int size, long bytes, int maxSize) {
+  public static Bitlist of(int size, long bytes, long maxSize) {
     UInt64 blank = UInt64.valueOf(bytes);
     if (blank.getUsedBitCount() > size) {
       throw new IndexOutOfBoundsException(
@@ -157,10 +157,10 @@ public class Bitlist extends DelegatingBytesValue {
     }
 
     @Override
-    public int fromAtomicSize(int claimedSize) {
-      return claimedSize == SSZType.VARIABLE_SIZE
-          ? claimedSize
-          : (claimedSize + 8) / 8; // bits to bytes + size bit
+    public long fromAtomicSize(long elementSize) {
+      return elementSize == SSZType.VARIABLE_SIZE
+          ? elementSize
+          : (elementSize + 8) / 8; // bits to bytes + size bit
     }
 
     @Override

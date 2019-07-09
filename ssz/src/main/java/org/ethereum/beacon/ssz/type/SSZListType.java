@@ -18,7 +18,7 @@ public class SSZListType implements SSZHomoCompositeType {
   private final TypeResolver typeResolver;
   private final SSZListAccessor accessor;
   private final int vectorLength;
-  private final int maxSize;
+  private final long maxSize;
 
   private SSZType elementType;
 
@@ -27,7 +27,7 @@ public class SSZListType implements SSZHomoCompositeType {
       TypeResolver typeResolver,
       SSZListAccessor accessor,
       int vectorLength,
-      int maxSize) {
+      long maxSize) {
     if (vectorLength > VARIABLE_SIZE && maxSize > VARIABLE_SIZE) {
       throw new RuntimeException("Only vectorLength or maxSize should be set at time");
     }
@@ -50,7 +50,7 @@ public class SSZListType implements SSZHomoCompositeType {
    * @see SSZ#vectorLengthVar()
    */
   public int getVectorLength() {
-    return accessor.fromAtomicSize(vectorLength);
+    return (int) accessor.fromAtomicSize(vectorLength);
   }
 
   @Override
@@ -65,11 +65,11 @@ public class SSZListType implements SSZHomoCompositeType {
     return vectorLength;
   }
 
-  public int getMaxSize() {
+  public long getMaxSize() {
     return accessor.fromAtomicSize(maxSize);
   }
 
-  public int getMaxAtomicSize() {
+  public long getMaxAtomicSize() {
     return maxSize;
   }
 
