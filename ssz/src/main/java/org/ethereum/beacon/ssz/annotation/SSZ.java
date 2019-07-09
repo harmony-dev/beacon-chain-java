@@ -80,7 +80,7 @@ public @interface SSZ {
   /**
    * Indicates list maximum size
    */
-  int maxSize() default 0;
+  long maxSize() default 0;
 
   /**
    * Indicates vector type (list with fixed length) and specifies the external variable

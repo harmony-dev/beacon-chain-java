@@ -71,7 +71,7 @@ public class SimpleTypeResolver implements TypeResolver {
     if (descriptor.getFieldAnnotation() == null) {
       return SSZType.VARIABLE_SIZE;
     }
-    int maxSize = descriptor.getFieldAnnotation().maxSize();
+    long maxSize = descriptor.getFieldAnnotation().maxSize();
     if (maxSize > 0) {
       return maxSize;
     }
@@ -79,7 +79,7 @@ public class SimpleTypeResolver implements TypeResolver {
     if (!maxSizeVar.isEmpty()) {
       return externalVarResolver
           .resolveOrThrow(maxSizeVar, Number.class)
-          .intValue();
+          .longValue();
     }
 
     return SSZType.VARIABLE_SIZE;

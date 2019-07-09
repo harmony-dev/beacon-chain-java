@@ -66,7 +66,7 @@ public class SSZField {
     }
 
     @Override
-    public int maxSize() {
+    public long maxSize() {
       return VARIABLE_SIZE;
     }
 
