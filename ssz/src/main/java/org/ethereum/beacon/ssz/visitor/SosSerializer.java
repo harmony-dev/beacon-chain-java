@@ -1,11 +1,5 @@
 package org.ethereum.beacon.ssz.visitor;
 
-import static org.ethereum.beacon.ssz.type.SSZType.Type.VECTOR;
-import static org.ethereum.beacon.ssz.visitor.SosDeserializer.BYTES_PER_LENGTH_OFFSET;
-
-import java.io.ByteArrayOutputStream;
-import java.util.ArrayList;
-import java.util.List;
 import org.ethereum.beacon.ssz.SSZSerializeException;
 import org.ethereum.beacon.ssz.access.SSZUnionAccessor.UnionInstanceAccessor;
 import org.ethereum.beacon.ssz.type.SSZBasicType;
@@ -14,6 +8,15 @@ import org.ethereum.beacon.ssz.type.SSZListType;
 import org.ethereum.beacon.ssz.type.SSZUnionType;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.bytes.BytesValues;
+
+import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.ethereum.beacon.ssz.type.SSZType.Type.LIST;
+import static org.ethereum.beacon.ssz.type.SSZType.Type.VECTOR;
+import static org.ethereum.beacon.ssz.type.SSZType.VARIABLE_SIZE;
+import static org.ethereum.beacon.ssz.visitor.SosDeserializer.BYTES_PER_LENGTH_OFFSET;
 
 /**
  * SSZ serializer with offset-based encoding of variable sized elements
@@ -39,12 +42,16 @@ public class SosSerializer
     if (type.getType() == VECTOR) {
       if (type.getChildrenCount(param) != type.getVectorLength()) {
         throw new SSZSerializeException(
-            "Vector type length doesn't match actual list length: "
-                + type.getVectorLength()
-                + " !=  "
-                + type.getChildrenCount(param)
-                + " for "
-                + type.toStringHelper());
+            String.format(
+                "Vector type length doesn't match actual list length: %d !=  %d for %s",
+                type.getVectorLength(), type.getChildrenCount(param), type.toStringHelper()));
+      }
+    } else if (type.getType() == LIST && type.getMaxSize() > VARIABLE_SIZE) {
+      if (type.getChildrenCount(param) > type.getMaxSize()) {
+        throw new SSZSerializeException(
+            String.format(
+                "Maximum size of list is exceeded with actual number of elements: %d > %d for %s",
+                type.getChildrenCount(param), type.getMaxSize(), type.toStringHelper()));
       }
     }
     return visitComposite(type, param, childVisitor);

@@ -8,13 +8,14 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.BeaconBlockHeader;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.state.ValidatorRecord;
-import org.ethereum.beacon.core.types.Bitfield64;
+import org.ethereum.beacon.core.types.Bitvector;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.test.StateTestUtils;
@@ -25,14 +26,16 @@ import tech.pegasys.artemis.util.uint.UInt64;
 public class StateComparator {
   private BeaconState actual;
   private StateTestCase.BeaconStateData expected;
+  private BeaconChainSpec spec;
 
-  public static Optional<String> compare(StateTestCase.BeaconStateData expected, BeaconState actual) {
-    return new StateComparator(expected, actual).compare();
+  public static Optional<String> compare(StateTestCase.BeaconStateData expected, BeaconState actual, BeaconChainSpec spec) {
+    return new StateComparator(expected, actual, spec).compare();
   }
 
-  private StateComparator(StateTestCase.BeaconStateData expected, BeaconState actual) {
+  private StateComparator(StateTestCase.BeaconStateData expected, BeaconState actual, BeaconChainSpec spec) {
     this.expected = expected;
     this.actual = actual;
+    this.spec = spec;
   }
 
   public Optional<String> compare() {
@@ -313,7 +316,8 @@ public class StateComparator {
     }
 
     return assertEquals(
-        new Bitfield64(UInt64.valueOf(expected.getJustificationBitfield())),
+        Bitvector.of(spec.getConstants().getJustificationBitsLength(),
+            UInt64.valueOf(expected.getJustificationBitfield()).longValue()),
         actual.getJustificationBits());
   }
 

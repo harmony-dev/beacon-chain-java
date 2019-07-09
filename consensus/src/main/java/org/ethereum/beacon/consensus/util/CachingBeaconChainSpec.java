@@ -10,7 +10,7 @@ import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.types.BLSPubkey;
-import org.ethereum.beacon.core.types.Bitfield;
+import org.ethereum.beacon.core.types.Bitlist;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ShardNumber;
@@ -132,16 +132,16 @@ public class CachingBeaconChainSpec extends BeaconChainSpecImpl {
 
   @Override
   public List<ValidatorIndex> get_attesting_indices(
-      BeaconState state, AttestationData attestation_data, Bitfield bitfield) {
+      BeaconState state, AttestationData attestation_data, Bitlist bitlist) {
     Hash32 digest = getDigest(
         objectHash(state.getValidators()),
         objectHash(state.getRandaoMixes()),
         attestation_data.getTarget().getEpoch().toBytes8(),
         attestation_data.getCrosslink().getShard().toBytes8(),
-        bitfield
+        bitlist
     );
     return caches.attestingIndicesCache.get(
-        digest, e -> super.get_attesting_indices(state, attestation_data, bitfield));
+        digest, e -> super.get_attesting_indices(state, attestation_data, bitlist));
   }
 
   /**

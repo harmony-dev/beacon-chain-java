@@ -5,6 +5,7 @@ import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.access.SSZUnionAccessor;
 import org.ethereum.beacon.ssz.access.container.SSZSchemeBuilder;
 import org.ethereum.beacon.ssz.access.container.SSZSchemeBuilder.SSZScheme;
+import org.ethereum.beacon.ssz.type.SSZType;
 import tech.pegasys.artemis.util.collections.MutableUnion;
 import tech.pegasys.artemis.util.collections.Union;
 
@@ -50,13 +51,14 @@ public class SchemeSSZUnionAccessor implements SSZUnionAccessor {
   }
 
   @Override
-  public CompositeInstanceBuilder createInstanceBuilder(SSZField compositeDescriptor) {
+  public CompositeInstanceBuilder createInstanceBuilder(SSZType sszType) {
     return new CompositeInstanceBuilder() {
       private MutableUnion union;
 
       @Override
       public void setChild(int idx, Object childValue) {
         try {
+          SSZField compositeDescriptor = sszType.getTypeDescriptor();
           union = (MutableUnion) compositeDescriptor.getRawClass().newInstance();
           union.setValue(idx, childValue);
         } catch (InstantiationException | IllegalAccessException e) {

@@ -1,15 +1,6 @@
 package org.ethereum.beacon.ssz.visitor;
 
-import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonList;
-import static org.ethereum.beacon.ssz.type.SSZType.Type.BASIC;
-import static org.ethereum.beacon.ssz.type.SSZType.Type.LIST;
-import static org.ethereum.beacon.ssz.type.SSZType.Type.VECTOR;
-import static tech.pegasys.artemis.util.bytes.BytesValue.concat;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Function;
+import org.ethereum.beacon.ssz.access.SSZListAccessor;
 import org.ethereum.beacon.ssz.access.SSZUnionAccessor.UnionInstanceAccessor;
 import org.ethereum.beacon.ssz.type.SSZBasicType;
 import org.ethereum.beacon.ssz.type.SSZCompositeType;
@@ -20,6 +11,17 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.bytes.BytesValues;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
+
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
+import static org.ethereum.beacon.ssz.type.SSZType.Type.BASIC;
+import static org.ethereum.beacon.ssz.type.SSZType.Type.LIST;
+import static org.ethereum.beacon.ssz.type.SSZType.Type.VECTOR;
+import static tech.pegasys.artemis.util.bytes.BytesValue.concat;
 
 public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
 
@@ -70,8 +72,11 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
     } else if ((type.getType() == LIST || type.getType() == VECTOR)
         && ((SSZListType) type).getElementType().getType() == BASIC) {
       SerializerResult sszSerializerResult = serializer.visitAny(type, rawValue);
-
-      chunks = pack(sszSerializerResult.getSerializedBody());
+      SSZListAccessor listAccessor =
+          (SSZListAccessor) type.getAccessor().getInstanceAccessor(type.getTypeDescriptor());
+      BytesValue serialization =
+          listAccessor.removeListSize(rawValue, sszSerializerResult.getSerializedBody());
+      chunks = pack(serialization);
     } else {
       for (int i = 0; i < type.getChildrenCount(rawValue); i++) {
         chunks.add(childVisitor.apply(i, type.getChild(rawValue, i)).getFinalRoot());
@@ -79,9 +84,11 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
     }
     merkle = merkleize(chunks);
     if (type.getType() == LIST) {
-      Hash32 mixInLength = hashFunction.apply(concat(
-          merkle.getPureRoot(),
-          serializeLength(type.getChildrenCount(rawValue))));
+      SSZListAccessor listAccessor =
+          (SSZListAccessor) type.getAccessor().getInstanceAccessor(type.getTypeDescriptor());
+      int atomicElementCount = listAccessor.getAtomicChildrenCount(rawValue);
+      Hash32 mixInLength =
+          hashFunction.apply(concat(merkle.getPureRoot(), serializeLength(atomicElementCount)));
       merkle.setFinalRoot(mixInLength);
     }
     return merkle;

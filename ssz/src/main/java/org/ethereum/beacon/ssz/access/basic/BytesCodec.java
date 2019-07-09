@@ -18,7 +18,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -49,16 +48,6 @@ public class BytesCodec implements SSZBasicAccessor {
     classToByteType.put(Bytes48.class, BytesType.of(48));
     classToByteType.put(Bytes96.class, BytesType.of(96));
     classToByteType.put(Address.class, BytesType.of(20));
-  }
-
-  private static Bytes[] repackBytesList(List<BytesValue> list) {
-    Bytes[] data = new Bytes[list.size()];
-    for (int i = 0; i < list.size(); i++) {
-      byte[] el = list.get(i).getArrayUnsafe();
-      data[i] = Bytes.of(el);
-    }
-
-    return data;
   }
 
   @Override
@@ -150,7 +139,6 @@ public class BytesCodec implements SSZBasicAccessor {
   }
 
   static class BytesType {
-    public static BytesType DYNAMIC = new BytesType(null);
     final Integer size;
 
     BytesType(Integer size) {

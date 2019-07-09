@@ -14,7 +14,7 @@ import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Fork;
 import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.state.ValidatorRecord;
-import org.ethereum.beacon.core.types.Bitfield64;
+import org.ethereum.beacon.core.types.Bitvector;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ShardNumber;
@@ -155,7 +155,7 @@ public class DelegateBeaconState implements BeaconState {
   }
 
   @Override
-  public Bitfield64 getJustificationBits() {
+  public Bitvector getJustificationBits() {
     return delegate.getJustificationBits();
   }
 

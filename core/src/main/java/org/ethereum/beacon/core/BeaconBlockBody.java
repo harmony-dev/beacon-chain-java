@@ -50,17 +50,23 @@ public class BeaconBlockBody {
   /** Analogue to Eth1 Extra Data. */
   @SSZ private final Bytes32 graffiti;
   /** A list of proposer slashing challenges. */
-  @SSZ private final ReadList<Integer, ProposerSlashing> proposerSlashings;
+  @SSZ(maxSizeVar = "spec.MAX_PROPOSER_SLASHINGS")
+  private final ReadList<Integer, ProposerSlashing> proposerSlashings;
   /** A list of attester slashing challenges. */
-  @SSZ private final ReadList<Integer, AttesterSlashing> attesterSlashings;
+  @SSZ(maxSizeVar = "spec.MAX_ATTESTER_SLASHINGS")
+  private final ReadList<Integer, AttesterSlashing> attesterSlashings;
   /** A list of attestations. */
-  @SSZ private final ReadList<Integer, Attestation> attestations;
+  @SSZ(maxSizeVar = "spec.MAX_ATTESTATIONS")
+  private final ReadList<Integer, Attestation> attestations;
   /** A list of validator deposit proofs. */
-  @SSZ private final ReadList<Integer, Deposit> deposits;
+  @SSZ(maxSizeVar = "spec.MAX_DEPOSITS")
+  private final ReadList<Integer, Deposit> deposits;
   /** A list of validator exits. */
-  @SSZ private final ReadList<Integer, VoluntaryExit> voluntaryExits;
+  @SSZ(maxSizeVar = "spec.MAX_VOLUNTARY_EXITS")
+  private final ReadList<Integer, VoluntaryExit> voluntaryExits;
   /** A list of transfers. */
-  @SSZ private final ReadList<Integer, Transfer> transfers;
+  @SSZ(maxSizeVar = "spec.MAX_TRANSFERS")
+  private final ReadList<Integer, Transfer> transfers;
 
   public BeaconBlockBody(
       BLSSignature randaoReveal,

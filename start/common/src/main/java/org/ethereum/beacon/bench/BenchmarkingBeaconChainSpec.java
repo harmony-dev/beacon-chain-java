@@ -22,7 +22,7 @@ import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
-import org.ethereum.beacon.core.types.Bitfield;
+import org.ethereum.beacon.core.types.Bitlist;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ShardNumber;
@@ -149,10 +149,10 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
 
   @Override
   public List<ValidatorIndex> get_attesting_indices(
-      BeaconState state, AttestationData attestation_data, Bitfield bitfield) {
+      BeaconState state, AttestationData attestation_data, Bitlist bitlist) {
     return callAndTrack(
         "get_attesting_indices",
-        () -> super.get_attesting_indices(state, attestation_data, bitfield));
+        () -> super.get_attesting_indices(state, attestation_data, bitlist));
   }
 
   @Override

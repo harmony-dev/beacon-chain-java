@@ -14,7 +14,7 @@ import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.state.HistoricalBatch;
 import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.state.ValidatorRecord;
-import org.ethereum.beacon.core.types.Bitfield64;
+import org.ethereum.beacon.core.types.Bitvector;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ShardNumber;
@@ -175,7 +175,7 @@ public interface EpochProcessing extends HelperFunction {
         .greaterEqual(get_total_active_balance(state).times(2))) {
       state.setCurrentJustifiedCheckpoint(
           new Checkpoint(previous_epoch, get_block_root(state, previous_epoch)));
-      state.setJustificationBits(state.getJustificationBits().or(2));
+      state.setJustificationBits(state.getJustificationBits().setBit(1, 0b1));
     }
 
     /* matching_target_attestations = get_matching_target_attestations(state, current_epoch)  # Current epoch
@@ -189,12 +189,12 @@ public interface EpochProcessing extends HelperFunction {
         .greaterEqual(get_total_active_balance(state).times(2))) {
       state.setCurrentJustifiedCheckpoint(
           new Checkpoint(current_epoch, get_block_root(state, current_epoch)));
-      state.setJustificationBits(state.getJustificationBits().or(1));
+      state.setJustificationBits(state.getJustificationBits().setBit(0, 0b1));
     }
 
     /* # Process finalizations
        bits = state.justification_bits */
-    Bitfield64 bits = state.getJustificationBits();
+    Bitvector bits = state.getJustificationBits();
 
     /* # The 2nd/3rd/4th most recent epochs are justified, the 2nd using the 4th as source
        if all(bits[1:4]) and old_previous_justified_checkpoint.epoch + 3 == current_epoch:

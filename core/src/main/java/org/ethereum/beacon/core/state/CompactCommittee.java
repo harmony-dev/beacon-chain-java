@@ -21,8 +21,10 @@ public class CompactCommittee {
 
   public static final CompactCommittee EMPTY = CompactCommittee.create(emptyList(), emptyList());
 
-  @SSZ private final ReadList<Integer, BLSPubkey> pubkeys;
-  @SSZ private final ReadList<Integer, UInt64> compactValidators;
+  @SSZ(maxSizeVar = "spec.MAX_VALIDATORS_PER_COMMITTEE")
+  private final ReadList<Integer, BLSPubkey> pubkeys;
+  @SSZ(maxSizeVar = "spec.MAX_VALIDATORS_PER_COMMITTEE")
+  private final ReadList<Integer, UInt64> compactValidators;
 
   public static CompactCommittee create(List<BLSPubkey> pubkeys, List<UInt64> compactValidators) {
     return new CompactCommittee(

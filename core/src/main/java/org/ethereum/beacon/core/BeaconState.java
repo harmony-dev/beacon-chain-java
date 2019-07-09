@@ -8,12 +8,11 @@ import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.BeaconStateImpl;
 import org.ethereum.beacon.core.state.Checkpoint;
-import org.ethereum.beacon.core.state.CompactCommittee;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Fork;
 import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.state.ValidatorRecord;
-import org.ethereum.beacon.core.types.Bitfield64;
+import org.ethereum.beacon.core.types.Bitvector;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ShardNumber;
@@ -59,6 +58,7 @@ public interface BeaconState extends ObservableComposite {
         Collections.nCopies(specConst.getShardCount().intValue(), Crosslink.EMPTY));
     ret.getCompactCommitteesRoots().addAll(
         Collections.nCopies(specConst.getEpochsPerHistoricalVector().intValue(), Hash32.ZERO));
+    ret.setJustificationBits(Bitvector.of(specConst.getJustificationBitsLength(), 0));
     return ret;
   }
 
@@ -83,7 +83,8 @@ public interface BeaconState extends ObservableComposite {
   @SSZ(order = 5, vectorLengthVar = "spec.SLOTS_PER_HISTORICAL_ROOT")
   ReadVector<SlotNumber, Hash32> getStateRoots();
 
-  @SSZ(order = 6) ReadList<Integer, Hash32> getHistoricalRoots();
+  @SSZ(order = 6, maxSizeVar = "spec.HISTORICAL_ROOTS_LIMIT")
+  ReadList<Integer, Hash32> getHistoricalRoots();
 
   /* ******* Eth1 ********* */
 
@@ -91,7 +92,8 @@ public interface BeaconState extends ObservableComposite {
   @SSZ(order = 7) Eth1Data getEth1Data();
 
   /** Eth1 data that voting is still in progress for. */
-  @SSZ(order = 8) ReadList<Integer, Eth1Data> getEth1DataVotes();
+  @SSZ(order = 8, maxSizeVar = "spec.SLOTS_PER_ETH1_VOTING_PERIOD")
+  ReadList<Integer, Eth1Data> getEth1DataVotes();
 
   /** The most recent Eth1 deposit index */
   @SSZ(order = 9) UInt64 getEth1DepositIndex();
@@ -99,10 +101,12 @@ public interface BeaconState extends ObservableComposite {
   /* ******* Registry ********* */
 
   /** Validator registry records. */
-  @SSZ(order = 10) ReadList<ValidatorIndex, ValidatorRecord> getValidators();
+  @SSZ(order = 10, maxSizeVar = "spec.VALIDATOR_REGISTRY_LIMIT")
+  ReadList<ValidatorIndex, ValidatorRecord> getValidators();
 
   /** Validator balances. */
-  @SSZ(order = 11) ReadList<ValidatorIndex, Gwei> getBalances();
+  @SSZ(order = 11, maxSizeVar = "spec.VALIDATOR_REGISTRY_LIMIT")
+  ReadList<ValidatorIndex, Gwei> getBalances();
 
   /* ******* Shuffling ********* */
 
@@ -128,9 +132,11 @@ public interface BeaconState extends ObservableComposite {
 
   /* ******** Attestations ********* */
 
-  @SSZ(order = 17) ReadList<Integer, PendingAttestation> getPreviousEpochAttestations();
+  @SSZ(order = 17, maxSizeVar = "spec.MAX_EPOCH_ATTESTATIONS")
+  ReadList<Integer, PendingAttestation> getPreviousEpochAttestations();
 
-  @SSZ(order = 18) ReadList<Integer, PendingAttestation> getCurrentEpochAttestations();
+  @SSZ(order = 18, maxSizeVar = "spec.MAX_EPOCH_ATTESTATIONS")
+  ReadList<Integer, PendingAttestation> getCurrentEpochAttestations();
 
   /* ******** Crosslinks ********* */
 
@@ -144,7 +150,8 @@ public interface BeaconState extends ObservableComposite {
   /* ******** Finality ********* */
 
   /** Bit set for every recent justified epoch. */
-  @SSZ(order = 21) Bitfield64 getJustificationBits();
+  @SSZ(order = 21, vectorLengthVar = "spec.JUSTIFICATION_BITS_LENGTH")
+  Bitvector getJustificationBits();
 
   /** Previous epoch snapshot. */
   @SSZ(order = 22) Checkpoint getPreviousJustifiedCheckpoint();

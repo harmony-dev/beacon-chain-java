@@ -18,29 +18,39 @@ public class SSZListType implements SSZHomoCompositeType {
   private final TypeResolver typeResolver;
   private final SSZListAccessor accessor;
   private final int vectorLength;
+  private final int maxSize;
 
   private SSZType elementType;
 
-  public SSZListType(SSZField descriptor, TypeResolver typeResolver,
-      SSZListAccessor accessor, int vectorLength) {
+  public SSZListType(
+      SSZField descriptor,
+      TypeResolver typeResolver,
+      SSZListAccessor accessor,
+      int vectorLength,
+      int maxSize) {
+    if (vectorLength > VARIABLE_SIZE && maxSize > VARIABLE_SIZE) {
+      throw new RuntimeException("Only vectorLength or maxSize should be set at time");
+    }
     this.descriptor = descriptor;
     this.typeResolver = typeResolver;
     this.accessor = accessor;
     this.vectorLength = vectorLength;
+    this.maxSize = maxSize;
   }
 
   @Override
   public Type getType() {
-    return vectorLength >= 0 ? Type.VECTOR : Type.LIST;
+    return getVectorLength() > VARIABLE_SIZE ? Type.VECTOR : Type.LIST;
   }
 
   /**
    * If this type represents SSZ Vector then this method returns its length.
+   *
    * @see SSZ#vectorLength()
    * @see SSZ#vectorLengthVar()
    */
   public int getVectorLength() {
-    return vectorLength;
+    return accessor.fromAtomicSize(vectorLength);
   }
 
   @Override
@@ -48,12 +58,22 @@ public class SSZListType implements SSZHomoCompositeType {
     if (getType() == Type.LIST || getElementType().isVariableSize()) {
       return VARIABLE_SIZE;
     }
-    return getElementType().getSize() * vectorLength;
+    return getElementType().getSize() * getVectorLength();
   }
 
-  /**
-   * Returns the {@link SSZType} of this list elements
-   */
+  public int getAtomicSize() {
+    return vectorLength;
+  }
+
+  public int getMaxSize() {
+    return accessor.fromAtomicSize(maxSize);
+  }
+
+  public int getMaxAtomicSize() {
+    return maxSize;
+  }
+
+  /** Returns the {@link SSZType} of this list elements */
   @Override
   public SSZType getElementType() {
     if (elementType == null) {

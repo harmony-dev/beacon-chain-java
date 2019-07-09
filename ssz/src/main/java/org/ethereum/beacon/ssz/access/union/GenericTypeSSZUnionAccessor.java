@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.access.SSZUnionAccessor;
+import org.ethereum.beacon.ssz.type.SSZType;
 import tech.pegasys.artemis.util.collections.GenericUnionImpl;
 import tech.pegasys.artemis.util.collections.MutableUnion;
 import tech.pegasys.artemis.util.collections.Union;
@@ -46,7 +47,7 @@ public class GenericTypeSSZUnionAccessor implements SSZUnionAccessor {
   }
 
   @Override
-  public CompositeInstanceBuilder createInstanceBuilder(SSZField unionDescriptor) {
+  public CompositeInstanceBuilder createInstanceBuilder(SSZType sszType) {
     return new CompositeInstanceBuilder() {
       private MutableUnion union;
 

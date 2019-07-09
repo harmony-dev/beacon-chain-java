@@ -1,19 +1,11 @@
 package org.ethereum.beacon.core;
 
-import static org.junit.Assert.assertEquals;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.transition.BeaconStateExImpl;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
-import org.ethereum.beacon.core.operations.Transfer;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
@@ -23,33 +15,21 @@ import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.spec.SpecConstantsResolver;
 import org.ethereum.beacon.core.state.BeaconStateImpl;
-import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Eth1DataVote;
 import org.ethereum.beacon.core.state.Fork;
 import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.state.ValidatorRecord;
-import org.ethereum.beacon.core.types.BLSPubkey;
-import org.ethereum.beacon.core.types.BLSSignature;
-import org.ethereum.beacon.core.types.Bitfield;
-import org.ethereum.beacon.core.types.EpochNumber;
-import org.ethereum.beacon.core.types.Gwei;
-import org.ethereum.beacon.core.types.ShardNumber;
-import org.ethereum.beacon.core.types.SlotNumber;
-import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.core.util.BeaconBlockTestUtil;
 import org.ethereum.beacon.core.util.TestDataFactory;
-import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.ssz.SSZBuilder;
 import org.ethereum.beacon.ssz.SSZSerializer;
 import org.junit.Before;
 import org.junit.Test;
-import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.bytes.Bytes32;
-import tech.pegasys.artemis.util.bytes.Bytes48;
-import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
-import tech.pegasys.artemis.util.collections.ReadVector;
-import tech.pegasys.artemis.util.uint.UInt64;
+
+import java.util.Random;
+
+import static org.junit.Assert.assertEquals;
 
 public class ModelsSerializeTest {
   private SSZSerializer sszSerializer;
@@ -59,9 +39,10 @@ public class ModelsSerializeTest {
   @Before
   public void setup() {
     specConstants = BeaconChainSpec.DEFAULT_CONSTANTS;
-    sszSerializer = new SSZBuilder()
-        .withExternalVarResolver(new SpecConstantsResolver(specConstants))
-        .buildSerializer();
+    sszSerializer =
+        new SSZBuilder()
+            .withExternalVarResolver(new SpecConstantsResolver(specConstants))
+            .buildSerializer();
     dataFactory = new TestDataFactory(specConstants);
   }
 
@@ -164,10 +145,12 @@ public class ModelsSerializeTest {
     BeaconState expected = dataFactory.createBeaconState();
     long s = System.nanoTime();
     BytesValue encoded = sszSerializer.encode2(expected);
-    System.out.println(String.format("encode(state) = %.3fs", (System.nanoTime() - s) / 1_000_000_000d));
+    System.out.println(
+        String.format("encode(state) = %.3fs", (System.nanoTime() - s) / 1_000_000_000d));
     s = System.nanoTime();
     BeaconState reconstructed = sszSerializer.decode(encoded, BeaconStateImpl.class);
-    System.out.println(String.format("decode(state) = %.3fs", (System.nanoTime() - s) / 1_000_000_000d));
+    System.out.println(
+        String.format("decode(state) = %.3fs", (System.nanoTime() - s) / 1_000_000_000d));
     assertEquals(expected, reconstructed);
   }
 
@@ -208,8 +191,7 @@ public class ModelsSerializeTest {
   public void pendingAttestationTest() {
     PendingAttestation expected = dataFactory.createPendingAttestation();
     BytesValue encoded = sszSerializer.encode2(expected);
-    PendingAttestation reconstructed =
-        sszSerializer.decode(encoded, PendingAttestation.class);
+    PendingAttestation reconstructed = sszSerializer.decode(encoded, PendingAttestation.class);
     assertEquals(expected, reconstructed);
   }
 

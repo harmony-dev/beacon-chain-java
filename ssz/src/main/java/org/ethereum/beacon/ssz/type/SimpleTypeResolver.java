@@ -30,7 +30,8 @@ public class SimpleTypeResolver implements TypeResolver {
 
     Optional<SSZListAccessor> listAccessor = accessorResolver.resolveListAccessor(descriptor);
     if (listAccessor.isPresent()) {
-      return new SSZListType(descriptor, this, listAccessor.get(), getVectorSize(descriptor));
+      SSZListAccessor accessor = listAccessor.get();
+      return new SSZListType(descriptor, this, accessor, getVectorSize(descriptor), getMaxSize(descriptor));
     }
 
     Optional<SSZUnionAccessor> unionAccessor = accessorResolver
@@ -50,7 +51,7 @@ public class SimpleTypeResolver implements TypeResolver {
 
   protected int getVectorSize(SSZField descriptor) {
     if (descriptor.getFieldAnnotation() == null) {
-      return -1;
+      return SSZType.VARIABLE_SIZE;
     }
     int vectorSize = descriptor.getFieldAnnotation().vectorLength();
     if (vectorSize > 0) {
@@ -63,6 +64,24 @@ public class SimpleTypeResolver implements TypeResolver {
               .intValue();
     }
 
-    return -1;
+    return SSZType.VARIABLE_SIZE;
+  }
+
+  protected int getMaxSize(SSZField descriptor) {
+    if (descriptor.getFieldAnnotation() == null) {
+      return SSZType.VARIABLE_SIZE;
+    }
+    int maxSize = descriptor.getFieldAnnotation().maxSize();
+    if (maxSize > 0) {
+      return maxSize;
+    }
+    String maxSizeVar = descriptor.getFieldAnnotation().maxSizeVar();
+    if (!maxSizeVar.isEmpty()) {
+      return externalVarResolver
+          .resolveOrThrow(maxSizeVar, Number.class)
+          .intValue();
+    }
+
+    return SSZType.VARIABLE_SIZE;
   }
 }

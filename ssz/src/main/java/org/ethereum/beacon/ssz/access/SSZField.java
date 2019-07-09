@@ -5,8 +5,9 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.List;
 import org.ethereum.beacon.ssz.annotation.SSZ;
-import org.ethereum.beacon.ssz.incremental.ObservableListImpl;
 import tech.pegasys.artemis.util.collections.ReadList;
+
+import static org.ethereum.beacon.ssz.type.SSZType.VARIABLE_SIZE;
 
 /**
  * Type descriptor which contains all possible data gathered from Class info, annotations
@@ -61,7 +62,17 @@ public class SSZField {
 
     @Override
     public java.lang.String vectorLengthVar() {
-      return null;
+      return "";
+    }
+
+    @Override
+    public int maxSize() {
+      return VARIABLE_SIZE;
+    }
+
+    @Override
+    public java.lang.String maxSizeVar() {
+      return "";
     }
 
     @Override

@@ -28,7 +28,7 @@ import org.ethereum.beacon.core.state.ShardCommittee;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
-import org.ethereum.beacon.core.types.Bitfield;
+import org.ethereum.beacon.core.types.Bitlist;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ShardNumber;
@@ -46,7 +46,6 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.bytes.BytesValues;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.collections.ReadVector;
-import tech.pegasys.artemis.util.collections.WriteList;
 import tech.pegasys.artemis.util.uint.UInt64;
 import tech.pegasys.artemis.util.uint.UInt64s;
 
@@ -1069,14 +1068,14 @@ public interface HelperFunction extends SpecCommons {
       return set(index for i, index in enumerate(committee) if bits[i])
    */
   default List<ValidatorIndex> get_attesting_indices(
-      BeaconState state, AttestationData attestation_data, Bitfield bitfield) {
+      BeaconState state, AttestationData attestation_data, Bitlist bitList) {
     List<ValidatorIndex> committee =
         get_crosslink_committee(state, attestation_data.getTarget().getEpoch(),
             attestation_data.getCrosslink().getShard());
     List<ValidatorIndex> participants = new ArrayList<>();
     for (int i = 0; i < committee.size(); i++) {
       ValidatorIndex validator_index = committee.get(i);
-      boolean aggregation_bit = bitfield.getBit(i);
+      boolean aggregation_bit = bitList.getBit(i);
       if (aggregation_bit) {
         participants.add(validator_index);
       }

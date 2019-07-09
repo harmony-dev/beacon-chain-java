@@ -28,7 +28,7 @@ import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
-import org.ethereum.beacon.core.types.Bitfield;
+import org.ethereum.beacon.core.types.Bitlist;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.SlotNumber;
@@ -72,9 +72,9 @@ public class TestDataFactory {
     AttestationData attestationData = createAttestationData();
     Attestation attestation =
         new Attestation(
-            Bitfield.of(someValue),
+            Bitlist.of(someValue.size() * 8, someValue, Integer.MAX_VALUE),
             attestationData,
-            Bitfield.of(BytesValue.fromHexString("bb")),
+            Bitlist.of(16, BytesValue.fromHexString("bb"), Integer.MAX_VALUE),
             BLSSignature.wrap(Bytes96.fromHexString("cc")));
 
     return attestation;
@@ -214,7 +214,7 @@ public class TestDataFactory {
   public PendingAttestation createPendingAttestation() {
     PendingAttestation pendingAttestation =
         new PendingAttestation(
-            Bitfield.of(BytesValue.fromHexString("aa")),
+            Bitlist.of(16, BytesValue.fromHexString("aa"), Integer.MAX_VALUE),
             createAttestationData(),
             SlotNumber.ZERO,
             ValidatorIndex.ZERO);

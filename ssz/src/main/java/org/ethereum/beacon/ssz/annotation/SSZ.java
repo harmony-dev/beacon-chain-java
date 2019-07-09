@@ -78,12 +78,25 @@ public @interface SSZ {
   int vectorLength() default 0;
 
   /**
+   * Indicates list maximum size
+   */
+  int maxSize() default 0;
+
+  /**
    * Indicates vector type (list with fixed length) and specifies the external variable
    * name which should be resolved to the vector length at runtime during type hierarchy construction
    * The variable is intended to be resolved via {@link org.ethereum.beacon.ssz.ExternalVarResolver}
    * instance
    */
   String vectorLengthVar() default "";
+
+  /**
+   * Indicates list type (list with maximum size) and specifies the external variable
+   * name which should be resolved to the maximum size at runtime during type hierarchy construction
+   * The variable is intended to be resolved via {@link org.ethereum.beacon.ssz.ExternalVarResolver}
+   * instance
+   */
+  String maxSizeVar() default "";
 
   /**
    * Defines the order of SSZ property inside a container

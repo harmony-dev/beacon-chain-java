@@ -14,7 +14,7 @@ import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.types.BLSSignature;
-import org.ethereum.beacon.core.types.Bitfield;
+import org.ethereum.beacon.core.types.Bitlist;
 import org.ethereum.beacon.crypto.BLS381;
 
 public class PendingOperationsState implements PendingOperations {
@@ -55,13 +55,13 @@ public class PendingOperationsState implements PendingOperations {
     assert !attestations.isEmpty();
     assert attestations.stream().skip(1).allMatch(a -> a.getData().equals(attestations.get(0).getData()));
 
-    Bitfield participants =
+    Bitlist participants =
         attestations.stream()
             .map(Attestation::getAggregationBits)
-            .reduce(Bitfield::or)
+            .reduce(Bitlist::or)
             .get();
-    Bitfield custody =
-        attestations.stream().map(Attestation::getCustodyBits).reduce(Bitfield::or).get();
+    Bitlist custody =
+        attestations.stream().map(Attestation::getCustodyBits).reduce(Bitlist::or).get();
     BLS381.Signature aggregatedSignature =
         BLS381.Signature.aggregate(
             attestations.stream()
