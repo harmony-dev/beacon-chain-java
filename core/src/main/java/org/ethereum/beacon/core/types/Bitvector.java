@@ -125,7 +125,7 @@ public class Bitvector extends DelegatingBytesValue {
   }
 
   public long getValue() {
-    return UInt64.fromBytesLittleEndian(Bytes8.leftPad(wrapped)).getValue();
+    return UInt64.fromBytesLittleEndian(Bytes8.rightPad(wrapped)).getValue();
   }
 
   public static class BitVectorAccessor extends AbstractListAccessor {
