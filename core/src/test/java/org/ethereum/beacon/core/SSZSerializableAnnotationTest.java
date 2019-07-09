@@ -24,7 +24,6 @@ import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.state.CompactCommittee;
 import org.ethereum.beacon.core.state.Eth1Data;
-import org.ethereum.beacon.core.state.Eth1DataVote;
 import org.ethereum.beacon.core.state.Fork;
 import org.ethereum.beacon.core.state.HistoricalBatch;
 import org.ethereum.beacon.core.state.PendingAttestation;
@@ -128,7 +127,6 @@ public class SSZSerializableAnnotationTest {
                 VoluntaryExit.class,
                 ProposerSlashing.class,
                 Crosslink.class,
-                Eth1DataVote.class,
                 Fork.class,
                 PendingAttestation.class,
                 ValidatorRecord.class,

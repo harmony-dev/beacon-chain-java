@@ -10,6 +10,7 @@ import org.ethereum.beacon.consensus.spec.EpochProcessing;
 import org.ethereum.beacon.consensus.spec.ForkChoice;
 import org.ethereum.beacon.consensus.spec.GenesisFunction;
 import org.ethereum.beacon.consensus.spec.HelperFunction;
+import org.ethereum.beacon.consensus.spec.HonestValidator;
 import org.ethereum.beacon.consensus.spec.SpecStateTransition;
 import org.ethereum.beacon.consensus.util.CachingBeaconChainSpec;
 import org.ethereum.beacon.core.BeaconState;
@@ -34,7 +35,8 @@ public interface BeaconChainSpec
         ForkChoice,
         EpochProcessing,
         BlockProcessing,
-    SpecStateTransition {
+        SpecStateTransition,
+        HonestValidator {
 
   SpecConstants DEFAULT_CONSTANTS = new SpecConstants() {};
 

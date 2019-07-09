@@ -22,7 +22,6 @@ import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.state.Eth1Data;
-import org.ethereum.beacon.core.state.Eth1DataVote;
 import org.ethereum.beacon.core.state.Fork;
 import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.state.ValidatorRecord;
@@ -197,12 +196,6 @@ public class TestDataFactory {
     Crosslink crosslink = Crosslink.EMPTY;
 
     return crosslink;
-  }
-
-  public Eth1DataVote createEth1DataVote() {
-    Eth1DataVote eth1DataVote = new Eth1DataVote(Eth1Data.EMPTY, UInt64.MAX_VALUE);
-
-    return eth1DataVote;
   }
 
   public Fork createFork() {

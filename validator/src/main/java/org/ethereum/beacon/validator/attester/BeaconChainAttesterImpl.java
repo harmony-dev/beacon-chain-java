@@ -150,7 +150,7 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
     AttestationDataAndCustodyBit attestationDataAndCustodyBit =
         new AttestationDataAndCustodyBit(data, false);
     Hash32 hash = spec.hash_tree_root(attestationDataAndCustodyBit);
-    UInt64 domain = spec.get_domain(state, ATTESTATION);
+    UInt64 domain = spec.get_domain(state, ATTESTATION, data.getTarget().getEpoch());
     return signer.sign(hash, domain);
   }
 }
