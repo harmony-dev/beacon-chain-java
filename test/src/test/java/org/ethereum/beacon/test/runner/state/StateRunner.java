@@ -290,7 +290,7 @@ public class StateRunner implements Runner {
       } else {
         return Optional.of(verificationResult.getMessage());
       }
-    } catch (SpecCommons.SpecAssertionFailed | IllegalArgumentException ex) {
+    } catch (SpecCommons.SpecAssertionFailed | IllegalArgumentException | IndexOutOfBoundsException ex) {
       return Optional.of(ex.getMessage());
     }
   }
