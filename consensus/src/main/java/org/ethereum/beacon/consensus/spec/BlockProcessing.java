@@ -435,7 +435,7 @@ public interface BlockProcessing extends HelperFunction {
   default void verify_transfer(BeaconState state, Transfer transfer) {
     // Verify the balance the covers amount and fee (with overflow protection)
     assertTrue(state.getBalances().get(transfer.getSender())
-            .greater(UInt64s.max(
+            .greaterEqual(UInt64s.max(
                 transfer.getAmount().plus(transfer.getFee()),
                 UInt64s.max(transfer.getAmount(), transfer.getFee()))));
 
@@ -459,7 +459,7 @@ public interface BlockProcessing extends HelperFunction {
     assertTrue(
         state.getValidators().get(transfer.getSender()).getWithdrawalCredentials().equals(
             getConstants().getBlsWithdrawalPrefix().toBytes8LittleEndian().slice(0, 1)
-                .concat(hash(transfer.getPubkey().slice(1))))
+                .concat(hash(transfer.getPubkey()).slice(1)))
     );
 
     // Verify that the signature is valid
