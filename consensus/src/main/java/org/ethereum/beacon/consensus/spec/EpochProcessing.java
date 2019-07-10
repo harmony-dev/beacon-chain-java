@@ -600,7 +600,6 @@ public interface EpochProcessing extends HelperFunction {
       state.active_index_roots[index_root_position] = hash_tree_root(indices_list) */
     EpochNumber index_epoch = next_epoch.plus(getConstants().getActivationExitDelay());
     EpochNumber index_root_position = index_epoch.modulo(getConstants().getEpochsPerHistoricalVector());
-    // TODO switch indices_list to limited list
     List<ValidatorIndex> indices_list = new ArrayList<>(get_active_validator_indices(state, index_epoch));
     state.getActiveIndexRoots().set(index_root_position, hash_tree_root(indices_list));
 
