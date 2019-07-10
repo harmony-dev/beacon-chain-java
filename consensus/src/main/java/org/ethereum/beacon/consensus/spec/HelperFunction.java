@@ -1,18 +1,6 @@
 package org.ethereum.beacon.consensus.spec;
 
-import static java.lang.Math.min;
-import static java.util.Collections.emptyList;
-import static java.util.stream.Collectors.toList;
-import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
-
 import com.google.common.collect.Ordering;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.BeaconBlockHeader;
@@ -48,6 +36,18 @@ import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.collections.ReadVector;
 import tech.pegasys.artemis.util.uint.UInt64;
 import tech.pegasys.artemis.util.uint.UInt64s;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static java.util.Collections.emptyList;
+import static java.util.stream.Collectors.toList;
+import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
 
 /**
  * Helper functions.
@@ -714,10 +714,19 @@ public interface HelperFunction extends SpecCommons {
   default void slash_validator(MutableBeaconState state, ValidatorIndex slashed_index, ValidatorIndex whistleblower_index) {
     EpochNumber epoch = get_current_epoch(state);
     initiate_validator_exit(state, slashed_index);
-    state.getValidators().update(slashed_index,
-        validator -> ValidatorRecord.Builder.fromRecord(validator)
-            .withSlashed(Boolean.TRUE)
-            .withWithdrawableEpoch(epoch.plus(getConstants().getEpochsPerSlashingsVector())).build());
+    state
+        .getValidators()
+        .update(
+            slashed_index,
+            validator ->
+                ValidatorRecord.Builder.fromRecord(validator)
+                    .withSlashed(Boolean.TRUE)
+                    .withWithdrawableEpoch(
+                        EpochNumber.castFrom(
+                            UInt64s.max(
+                                validator.getWithdrawableEpoch(),
+                                epoch.plus(getConstants().getEpochsPerSlashingsVector()))))
+                    .build());
     Gwei slashed_balance = state.getValidators().get(slashed_index).getEffectiveBalance();
     state.getSlashings().update(epoch.modulo(getConstants().getEpochsPerSlashingsVector()),
         balance -> balance.plus(slashed_balance));
