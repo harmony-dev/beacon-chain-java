@@ -149,7 +149,7 @@ public class StateComparator {
     }
 
     List<PendingAttestation> expectedAttestations =
-        StateTestUtils.parsePendingAttestations(expected.getCurrentEpochAttestations());
+        StateTestUtils.parsePendingAttestations(expected.getCurrentEpochAttestations(), spec.getConstants());
     return assertLists(expectedAttestations, actual.getCurrentEpochAttestations().listCopy());
   }
 
@@ -224,7 +224,7 @@ public class StateComparator {
     }
 
     List<PendingAttestation> expectedAttestations =
-        StateTestUtils.parsePendingAttestations(expected.getPreviousEpochAttestations());
+        StateTestUtils.parsePendingAttestations(expected.getPreviousEpochAttestations(), spec.getConstants());
     return assertLists(expectedAttestations, actual.getPreviousEpochAttestations().listCopy());
   }
 

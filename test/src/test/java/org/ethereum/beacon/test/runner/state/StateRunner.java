@@ -75,7 +75,7 @@ public class StateRunner implements Runner {
         processingError = processDeposit(testCase.getDepositOperation(), latestState);
         break;
       case "attestation":
-        processingError = processAttestation(testCase.getAttestationOperation(), latestState);
+        processingError = processAttestation(testCase.getAttestationOperation(spec.getConstants()), latestState);
         break;
       case "attester_slashing":
         processingError = processAttesterSlashing(testCase.getAttesterSlashingOperation(), latestState);

@@ -10,6 +10,7 @@ import org.ethereum.beacon.core.operations.Transfer;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Bitlist;
@@ -103,15 +104,15 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
     this.attestation = attestation;
   }
 
-  public Attestation getAttestationOperation() {
-    BytesValue aggValue = BytesValue.fromHexString(getAttestation().getAggregationBitfield());
-    BytesValue cusValue = BytesValue.fromHexString(getAttestation().getCustodyBitfield());
+  public Attestation getAttestationOperation(SpecConstants constants) {
+    BytesValue aggValue = BytesValue.fromHexString(getAttestation().getAggregationBits());
+    BytesValue cusValue = BytesValue.fromHexString(getAttestation().getCustodyBits());
 
     Attestation attestation =
         new Attestation(
-            Bitlist.of(aggValue.size(), aggValue, Integer.MAX_VALUE),
+            Bitlist.of(aggValue, constants.getValidatorRegistryLimit().getValue()),
             parseAttestationData((getAttestation().getData())),
-            Bitlist.of(cusValue.size(), cusValue, Integer.MAX_VALUE),
+            Bitlist.of(cusValue, constants.getValidatorRegistryLimit().getValue()),
             BLSSignature.wrap(Bytes96.fromHexString(getAttestation().getSignature())));
 
     return attestation;
@@ -653,13 +654,13 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class AttestationData {
-      @JsonProperty("aggregation_bitfield")
-      private String aggregationBitfield;
+      @JsonProperty("aggregation_bits")
+      private String aggregationBits;
 
       private AttestationDataContainer data;
 
-      @JsonProperty("custody_bitfield")
-      private String custodyBitfield;
+      @JsonProperty("custody_bits")
+      private String custodyBits;
 
       private String signature;
 
@@ -677,12 +678,12 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
         this.inclusionDelay = inclusionDelay;
       }
 
-      public String getAggregationBitfield() {
-        return aggregationBitfield;
+      public String getAggregationBits() {
+        return aggregationBits;
       }
 
-      public void setAggregationBitfield(String aggregationBitfield) {
-        this.aggregationBitfield = aggregationBitfield;
+      public void setAggregationBits(String aggregationBits) {
+        this.aggregationBits = aggregationBits;
       }
 
       public AttestationDataContainer getData() {
@@ -693,12 +694,12 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
         this.data = data;
       }
 
-      public String getCustodyBitfield() {
-        return custodyBitfield;
+      public String getCustodyBits() {
+        return custodyBits;
       }
 
-      public void setCustodyBitfield(String custodyBitfield) {
-        this.custodyBitfield = custodyBitfield;
+      public void setCustodyBits(String custodyBits) {
+        this.custodyBits = custodyBits;
       }
 
       public String getSignature() {

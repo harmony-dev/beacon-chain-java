@@ -64,8 +64,8 @@ public abstract class StateTestUtils {
     for (StateTestCase.BeaconStateData.AttestationData attestationData :
         blockData.getBody().getAttestations()) {
       AttestationData attestationData1 = parseAttestationData(attestationData.getData());
-      BytesValue aggValue = BytesValue.fromHexString(attestationData.getAggregationBitfield());
-      BytesValue cusValue = BytesValue.fromHexString(attestationData.getCustodyBitfield());
+      BytesValue aggValue = BytesValue.fromHexString(attestationData.getAggregationBits());
+      BytesValue cusValue = BytesValue.fromHexString(attestationData.getCustodyBits());
       Attestation attestation =
           new Attestation(
               Bitlist.of(aggValue.size(), aggValue, Integer.MAX_VALUE),
@@ -203,10 +203,10 @@ public abstract class StateTestUtils {
     state.getRandaoMixes().setAll(parseHashes(data.getRandaoMixes()));
     state
         .getPreviousEpochAttestations()
-        .replaceAll(parsePendingAttestations(data.getPreviousEpochAttestations()));
+        .replaceAll(parsePendingAttestations(data.getPreviousEpochAttestations(), specConstants));
     state
         .getCurrentEpochAttestations()
-        .replaceAll(parsePendingAttestations(data.getCurrentEpochAttestations()));
+        .replaceAll(parsePendingAttestations(data.getCurrentEpochAttestations(), specConstants));
     state.getCurrentCrosslinks().setAll(parseCrosslinks(data.getCurrentCrosslinks()));
     state.getPreviousCrosslinks().setAll(parseCrosslinks(data.getPreviousCrosslinks()));
     state.getBlockRoots().setAll(parseHashes(data.getBlockRoots()));
@@ -225,8 +225,8 @@ public abstract class StateTestUtils {
   }
 
   public static List<PendingAttestation> parsePendingAttestations(
-      List<BeaconStateData.AttestationData> data) {
-    return data.stream().map(StateTestUtils::parsePendingAttestation).collect(Collectors.toList());
+      List<BeaconStateData.AttestationData> data, SpecConstants constants) {
+    return data.stream().map((BeaconStateData.AttestationData attestationData) -> parsePendingAttestation(attestationData, constants)).collect(Collectors.toList());
   }
 
   public static List<Hash32> parseHashes(List<String> data) {
@@ -294,10 +294,10 @@ public abstract class StateTestUtils {
   }
 
   public static PendingAttestation parsePendingAttestation(
-      StateTestCase.BeaconStateData.AttestationData attestationData) {
-    BytesValue aggValue = BytesValue.fromHexString(attestationData.getAggregationBitfield());
+      StateTestCase.BeaconStateData.AttestationData attestationData, SpecConstants constants) {
+    BytesValue aggValue = BytesValue.fromHexString(attestationData.getAggregationBits());
     return new PendingAttestation(
-        Bitlist.of(aggValue.size(), aggValue, Integer.MAX_VALUE),
+        Bitlist.of(aggValue, constants.getValidatorRegistryLimit().getValue()),
         parseAttestationData(attestationData.getData()),
         SlotNumber.castFrom(UInt64.valueOf(attestationData.getInclusionDelay())),
         ValidatorIndex.of(attestationData.getProposerIndex()));
