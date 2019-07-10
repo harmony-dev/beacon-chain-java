@@ -42,27 +42,27 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
   private String description;
   private BeaconStateData pre;
   private BeaconStateData post;
+
   @JsonProperty("bls_setting")
   private Integer blsSetting;
 
-  @JsonProperty
-  private BlockData.BlockBodyData.DepositData deposit;
-  @JsonProperty
-  private BeaconStateData.AttestationData attestation;
+  @JsonProperty private BlockData.BlockBodyData.DepositData deposit;
+  @JsonProperty private BeaconStateData.AttestationData attestation;
+
   @JsonProperty("attester_slashing")
   private BlockData.BlockBodyData.AttesterSlashingData attesterSlashing;
+
   @JsonProperty("proposer_slashing")
   private BlockData.BlockBodyData.ProposerSlashingData proposerSlashing;
-  @JsonProperty
-  private BlockData.BlockBodyData.TransferData transfer;
+
+  @JsonProperty private BlockData.BlockBodyData.TransferData transfer;
+
   @JsonProperty("voluntary_exit")
   private BlockData.BlockBodyData.VoluntaryExitData voluntaryExit;
-  @JsonProperty
-  private BlockData block;
-  @JsonProperty
-  private List<BlockData> blocks;
-  @JsonProperty
-  private Integer slots;
+
+  @JsonProperty private BlockData block;
+  @JsonProperty private List<BlockData> blocks;
+  @JsonProperty private Integer slots;
 
   public String getDescription() {
     return description;
@@ -76,26 +76,31 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
     return deposit;
   }
 
-  public Deposit getDepositOperation() {
-    Deposit deposit =
-        Deposit.create(
-            getDeposit().getProof().stream().map(Hash32::fromHexString).collect(Collectors.toList()),
-            new DepositData(
-                BLSPubkey.fromHexString(getDeposit().getData().getPubkey()),
-                Hash32.fromHexString(getDeposit().getData().getWithdrawalCredentials()),
-                Gwei.castFrom(UInt64.valueOf(getDeposit().getData().getAmount())),
-                BLSSignature.wrap(
-                    Bytes96.fromHexString(getDeposit().getData().getSignature()))));
-
-    return deposit;
-  }
-
   public void setDeposit(BlockData.BlockBodyData.DepositData deposit) {
     this.deposit = deposit;
   }
 
+  public Deposit getDepositOperation() {
+    Deposit deposit =
+        Deposit.create(
+            getDeposit().getProof().stream()
+                .map(Hash32::fromHexString)
+                .collect(Collectors.toList()),
+            new DepositData(
+                BLSPubkey.fromHexString(getDeposit().getData().getPubkey()),
+                Hash32.fromHexString(getDeposit().getData().getWithdrawalCredentials()),
+                Gwei.castFrom(UInt64.valueOf(getDeposit().getData().getAmount())),
+                BLSSignature.wrap(Bytes96.fromHexString(getDeposit().getData().getSignature()))));
+
+    return deposit;
+  }
+
   public BeaconStateData.AttestationData getAttestation() {
     return attestation;
+  }
+
+  public void setAttestation(BeaconStateData.AttestationData attestation) {
+    this.attestation = attestation;
   }
 
   public Attestation getAttestationOperation() {
@@ -135,11 +140,6 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
 
   public BeaconBlock getBeaconBlock() {
     return parseBlockData(getBlock());
-  }
-
-
-  public void setAttestation(BeaconStateData.AttestationData attestation) {
-    this.attestation = attestation;
   }
 
   public BlockData.BlockBodyData.AttesterSlashingData getAttesterSlashing() {
@@ -194,12 +194,12 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
     return blocks;
   }
 
-  public List<BeaconBlock> getBeaconBlocks() {
-    return blocks.stream().map(StateTestUtils::parseBlockData).collect(Collectors.toList());
-  }
-
   public void setBlocks(List<BlockData> blocks) {
     this.blocks = blocks;
+  }
+
+  public List<BeaconBlock> getBeaconBlocks() {
+    return blocks.stream().map(StateTestUtils::parseBlockData).collect(Collectors.toList());
   }
 
   public BeaconStateData getPre() {
@@ -245,16 +245,15 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
 
     private Fork fork;
 
-    @JsonProperty("validator_registry")
-    private List<ValidatorData> validatorRegistry;
+    private List<ValidatorData> validators;
 
     private List<String> balances;
 
-    @JsonProperty("latest_randao_mixes")
-    private List<String> latestRandaoMixes;
+    @JsonProperty("randao_mixes")
+    private List<String> randaoMixes;
 
-    @JsonProperty("latest_start_shard")
-    private Long latestStartShard;
+    @JsonProperty("start_shard")
+    private Long startShard;
 
     @JsonProperty("previous_epoch_attestations")
     private List<AttestationData> previousEpochAttestations;
@@ -262,26 +261,17 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
     @JsonProperty("current_epoch_attestations")
     private List<AttestationData> currentEpochAttestations;
 
-    @JsonProperty("previous_justified_epoch")
-    private String previousJustifiedEpoch;
+    @JsonProperty("previous_justified_checkpoint")
+    private CheckpointData previousJustifiedCheckpoint;
 
-    @JsonProperty("current_justified_epoch")
-    private String currentJustifiedEpoch;
+    @JsonProperty("current_justified_checkpoint")
+    private CheckpointData currentJustifiedCheckpoint;
 
-    @JsonProperty("previous_justified_root")
-    private String previousJustifiedRoot;
+    @JsonProperty("justification_bits")
+    private String justificationBits;
 
-    @JsonProperty("current_justified_root")
-    private String currentJustifiedRoot;
-
-    @JsonProperty("justification_bitfield")
-    private String justificationBitfield;
-
-    @JsonProperty("finalized_epoch")
-    private String finalizedEpoch;
-
-    @JsonProperty("finalized_root")
-    private String finalizedRoot;
+    @JsonProperty("finalized_checkpoint")
+    private CheckpointData finalizedCheckpoint;
 
     @JsonProperty("current_crosslinks")
     private List<CrossLinkData> currentCrosslinks;
@@ -289,32 +279,34 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
     @JsonProperty("previous_crosslinks")
     private List<CrossLinkData> previousCrosslinks;
 
-    @JsonProperty("latest_block_roots")
-    private List<String> latestBlockRoots;
+    @JsonProperty("block_roots")
+    private List<String> blockRoots;
 
-    @JsonProperty("latest_state_roots")
-    private List<String> latestStateRoots;
-
-    @JsonProperty("latest_active_index_roots")
-    private List<String> latestActiveIndexRoots;
-
-    @JsonProperty("latest_slashed_balances")
-    private List<String> latestSlashedBalances;
-
-    @JsonProperty("latest_block_header")
-    private BlockHeaderData latestBlockHeader;
+    @JsonProperty("state_roots")
+    private List<String> stateRoots;
 
     @JsonProperty("historical_roots")
     private List<String> historicalRoots;
 
-    @JsonProperty("latest_eth1_data")
-    private BlockData.BlockBodyData.Eth1 latestEth1Data;
+    @JsonProperty("active_index_roots")
+    private List<String> activeIndexRoots;
+
+    @JsonProperty("compact_committees_roots")
+    private List<String> compactCommitteesRoots;
+
+    private List<String> slashings;
+
+    @JsonProperty("latest_block_header")
+    private BlockHeaderData latestBlockHeader;
+
+    @JsonProperty("eth1_data")
+    private BlockData.BlockBodyData.Eth1 eth1Data;
 
     @JsonProperty("eth1_data_votes")
     private List<BlockData.BlockBodyData.Eth1> eth1DataVotes;
 
-    @JsonProperty("deposit_index")
-    private Long depositIndex;
+    @JsonProperty("eth1_deposit_index")
+    private Long eth1DepositIndex;
 
     public String getSlot() {
       return slot;
@@ -340,12 +332,12 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
       this.fork = fork;
     }
 
-    public List<ValidatorData> getValidatorRegistry() {
-      return validatorRegistry;
+    public List<ValidatorData> getValidators() {
+      return validators;
     }
 
-    public void setValidatorRegistry(List<ValidatorData> validatorRegistry) {
-      this.validatorRegistry = validatorRegistry;
+    public void setValidators(List<ValidatorData> validators) {
+      this.validators = validators;
     }
 
     public List<String> getBalances() {
@@ -356,20 +348,20 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
       this.balances = balances;
     }
 
-    public List<String> getLatestRandaoMixes() {
-      return latestRandaoMixes;
+    public List<String> getRandaoMixes() {
+      return randaoMixes;
     }
 
-    public void setLatestRandaoMixes(List<String> latestRandaoMixes) {
-      this.latestRandaoMixes = latestRandaoMixes;
+    public void setRandaoMixes(List<String> randaoMixes) {
+      this.randaoMixes = randaoMixes;
     }
 
-    public Long getLatestStartShard() {
-      return latestStartShard;
+    public Long getStartShard() {
+      return startShard;
     }
 
-    public void setLatestStartShard(Long latestStartShard) {
-      this.latestStartShard = latestStartShard;
+    public void setStartShard(Long startShard) {
+      this.startShard = startShard;
     }
 
     public List<AttestationData> getPreviousEpochAttestations() {
@@ -388,60 +380,36 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
       this.currentEpochAttestations = currentEpochAttestations;
     }
 
-    public String getPreviousJustifiedEpoch() {
-      return previousJustifiedEpoch;
+    public CheckpointData getPreviousJustifiedCheckpoint() {
+      return previousJustifiedCheckpoint;
     }
 
-    public void setPreviousJustifiedEpoch(String previousJustifiedEpoch) {
-      this.previousJustifiedEpoch = previousJustifiedEpoch;
+    public void setPreviousJustifiedCheckpoint(CheckpointData previousJustifiedCheckpoint) {
+      this.previousJustifiedCheckpoint = previousJustifiedCheckpoint;
     }
 
-    public String getCurrentJustifiedEpoch() {
-      return currentJustifiedEpoch;
+    public CheckpointData getCurrentJustifiedCheckpoint() {
+      return currentJustifiedCheckpoint;
     }
 
-    public void setCurrentJustifiedEpoch(String currentJustifiedEpoch) {
-      this.currentJustifiedEpoch = currentJustifiedEpoch;
+    public void setCurrentJustifiedCheckpoint(CheckpointData currentJustifiedCheckpoint) {
+      this.currentJustifiedCheckpoint = currentJustifiedCheckpoint;
     }
 
-    public String getPreviousJustifiedRoot() {
-      return previousJustifiedRoot;
+    public String getJustificationBits() {
+      return justificationBits;
     }
 
-    public void setPreviousJustifiedRoot(String previousJustifiedRoot) {
-      this.previousJustifiedRoot = previousJustifiedRoot;
+    public void setJustificationBits(String justificationBits) {
+      this.justificationBits = justificationBits;
     }
 
-    public String getCurrentJustifiedRoot() {
-      return currentJustifiedRoot;
+    public CheckpointData getFinalizedCheckpoint() {
+      return finalizedCheckpoint;
     }
 
-    public void setCurrentJustifiedRoot(String currentJustifiedRoot) {
-      this.currentJustifiedRoot = currentJustifiedRoot;
-    }
-
-    public String getJustificationBitfield() {
-      return justificationBitfield;
-    }
-
-    public void setJustificationBitfield(String justificationBitfield) {
-      this.justificationBitfield = justificationBitfield;
-    }
-
-    public String getFinalizedEpoch() {
-      return finalizedEpoch;
-    }
-
-    public void setFinalizedEpoch(String finalizedEpoch) {
-      this.finalizedEpoch = finalizedEpoch;
-    }
-
-    public String getFinalizedRoot() {
-      return finalizedRoot;
-    }
-
-    public void setFinalizedRoot(String finalizedRoot) {
-      this.finalizedRoot = finalizedRoot;
+    public void setFinalizedCheckpoint(CheckpointData finalizedCheckpoint) {
+      this.finalizedCheckpoint = finalizedCheckpoint;
     }
 
     public List<CrossLinkData> getCurrentCrosslinks() {
@@ -460,36 +428,44 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
       this.previousCrosslinks = previousCrosslinks;
     }
 
-    public List<String> getLatestBlockRoots() {
-      return latestBlockRoots;
+    public List<String> getBlockRoots() {
+      return blockRoots;
     }
 
-    public void setLatestBlockRoots(List<String> latestBlockRoots) {
-      this.latestBlockRoots = latestBlockRoots;
+    public void setBlockRoots(List<String> blockRoots) {
+      this.blockRoots = blockRoots;
     }
 
-    public List<String> getLatestStateRoots() {
-      return latestStateRoots;
+    public List<String> getStateRoots() {
+      return stateRoots;
     }
 
-    public void setLatestStateRoots(List<String> latestStateRoots) {
-      this.latestStateRoots = latestStateRoots;
+    public void setStateRoots(List<String> stateRoots) {
+      this.stateRoots = stateRoots;
     }
 
-    public List<String> getLatestActiveIndexRoots() {
-      return latestActiveIndexRoots;
+    public List<String> getActiveIndexRoots() {
+      return activeIndexRoots;
     }
 
-    public void setLatestActiveIndexRoots(List<String> latestActiveIndexRoots) {
-      this.latestActiveIndexRoots = latestActiveIndexRoots;
+    public void setActiveIndexRoots(List<String> activeIndexRoots) {
+      this.activeIndexRoots = activeIndexRoots;
     }
 
-    public List<String> getLatestSlashedBalances() {
-      return latestSlashedBalances;
+    public List<String> getCompactCommitteesRoots() {
+      return compactCommitteesRoots;
     }
 
-    public void setLatestSlashedBalances(List<String> latestSlashedBalances) {
-      this.latestSlashedBalances = latestSlashedBalances;
+    public void setCompactCommitteesRoots(List<String> compactCommitteesRoots) {
+      this.compactCommitteesRoots = compactCommitteesRoots;
+    }
+
+    public List<String> getSlashings() {
+      return slashings;
+    }
+
+    public void setSlashings(List<String> slashings) {
+      this.slashings = slashings;
     }
 
     public BlockHeaderData getLatestBlockHeader() {
@@ -508,12 +484,12 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
       this.historicalRoots = historicalRoots;
     }
 
-    public BlockData.BlockBodyData.Eth1 getLatestEth1Data() {
-      return latestEth1Data;
+    public BlockData.BlockBodyData.Eth1 getEth1Data() {
+      return eth1Data;
     }
 
-    public void setLatestEth1Data(BlockData.BlockBodyData.Eth1 latestEth1Data) {
-      this.latestEth1Data = latestEth1Data;
+    public void setEth1Data(BlockData.BlockBodyData.Eth1 eth1Data) {
+      this.eth1Data = eth1Data;
     }
 
     public List<BlockData.BlockBodyData.Eth1> getEth1DataVotes() {
@@ -524,12 +500,12 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
       this.eth1DataVotes = eth1DataVotes;
     }
 
-    public Long getDepositIndex() {
-      return depositIndex;
+    public Long getEth1DepositIndex() {
+      return eth1DepositIndex;
     }
 
-    public void setDepositIndex(Long depositIndex) {
-      this.depositIndex = depositIndex;
+    public void setEth1DepositIndex(Long eth1DepositIndex) {
+      this.eth1DepositIndex = eth1DepositIndex;
     }
 
     public static class Fork {
@@ -654,6 +630,27 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
       }
     }
 
+    public static class CheckpointData {
+      private String root;
+      private Long epoch;
+
+      public String getRoot() {
+        return root;
+      }
+
+      public void setRoot(String root) {
+        this.root = root;
+      }
+
+      public Long getEpoch() {
+        return epoch;
+      }
+
+      public void setEpoch(Long epoch) {
+        this.epoch = epoch;
+      }
+    }
+
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class AttestationData {
       @JsonProperty("aggregation_bitfield")
@@ -724,17 +721,9 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
         @JsonProperty("beacon_block_root")
         private String beaconBlockRoot;
 
-        @JsonProperty("source_epoch")
-        private String sourceEpoch;
+        private CheckpointData source;
 
-        @JsonProperty("source_root")
-        private String sourceRoot;
-
-        @JsonProperty("target_epoch")
-        private String targetEpoch;
-
-        @JsonProperty("target_root")
-        private String targetRoot;
+        private CheckpointData target;
 
         private CrossLinkData crosslink;
 
@@ -746,36 +735,20 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
           this.beaconBlockRoot = beaconBlockRoot;
         }
 
-        public String getSourceEpoch() {
-          return sourceEpoch;
+        public CheckpointData getSource() {
+          return source;
         }
 
-        public void setSourceEpoch(String sourceEpoch) {
-          this.sourceEpoch = sourceEpoch;
+        public void setSource(CheckpointData source) {
+          this.source = source;
         }
 
-        public String getSourceRoot() {
-          return sourceRoot;
+        public CheckpointData getTarget() {
+          return target;
         }
 
-        public void setSourceRoot(String sourceRoot) {
-          this.sourceRoot = sourceRoot;
-        }
-
-        public String getTargetRoot() {
-          return targetRoot;
-        }
-
-        public void setTargetRoot(String targetRoot) {
-          this.targetRoot = targetRoot;
-        }
-
-        public String getTargetEpoch() {
-          return targetEpoch;
-        }
-
-        public void setTargetEpoch(String targetEpoch) {
-          this.targetEpoch = targetEpoch;
+        public void setTarget(CheckpointData target) {
+          this.target = target;
         }
 
         public CrossLinkData getCrosslink() {
@@ -790,12 +763,16 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
 
     public static class CrossLinkData {
       private Long shard;
+
       @JsonProperty("start_epoch")
       private String startEpoch;
+
       @JsonProperty("end_epoch")
       private String endEpoch;
+
       @JsonProperty("parent_root")
       private String parentRoot;
+
       @JsonProperty("data_root")
       private String dataRoot;
 
@@ -1116,10 +1093,13 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
       public static class IndexedAttestationData {
         @JsonProperty("custody_bit_0_indices")
         private List<Long> custodyBit0Indices;
+
         @JsonProperty("custody_bit_1_indices")
         private List<Long> custodyBit1Indices;
+
         @JsonProperty("data")
         private AttestationDataContainer data;
+
         @JsonProperty("signature")
         private String signature;
 
@@ -1167,6 +1147,7 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
       public static class AttesterSlashingData {
         @JsonProperty("attestation_1")
         private IndexedAttestationData slashableAttestation1;
+
         @JsonProperty("attestation_2")
         private IndexedAttestationData slashableAttestation2;
 
@@ -1174,8 +1155,7 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
           return slashableAttestation1;
         }
 
-        public void setSlashableAttestation1(
-            IndexedAttestationData slashableAttestation1) {
+        public void setSlashableAttestation1(IndexedAttestationData slashableAttestation1) {
           this.slashableAttestation1 = slashableAttestation1;
         }
 
@@ -1183,8 +1163,7 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
           return slashableAttestation2;
         }
 
-        public void setSlashableAttestation2(
-            IndexedAttestationData slashableAttestation2) {
+        public void setSlashableAttestation2(IndexedAttestationData slashableAttestation2) {
           this.slashableAttestation2 = slashableAttestation2;
         }
       }
@@ -1221,8 +1200,10 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
 
         public static class DepositDataContainer {
           private String pubkey;
+
           @JsonProperty("withdrawal_credentials")
           private String withdrawalCredentials;
+
           private String amount;
           private String signature;
 

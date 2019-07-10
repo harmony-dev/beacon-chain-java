@@ -56,8 +56,7 @@ import java.util.stream.Collectors;
 public abstract class StateTestUtils {
   private StateTestUtils() {}
 
-  public static BeaconBlock parseBlockData(
-      StateTestCase.BlockData blockData) {
+  public static BeaconBlock parseBlockData(StateTestCase.BlockData blockData) {
     Eth1Data eth1Data1 = parseEth1Data(blockData.getBody().getEth1Data());
 
     // Attestations
@@ -79,9 +78,11 @@ public abstract class StateTestUtils {
     // Attestation slashings
     List<AttesterSlashing> attesterSlashings =
         blockData.getBody().getAttesterSlashings().stream()
-            .map(s -> new AttesterSlashing(
-                parseSlashableAttestation(s.getSlashableAttestation1()),
-                parseSlashableAttestation(s.getSlashableAttestation2())))
+            .map(
+                s ->
+                    new AttesterSlashing(
+                        parseSlashableAttestation(s.getSlashableAttestation1()),
+                        parseSlashableAttestation(s.getSlashableAttestation2())))
             .collect(Collectors.toList());
 
     // Deposits
@@ -97,29 +98,29 @@ public abstract class StateTestUtils {
                   BLSPubkey.fromHexString(depositData.getData().getPubkey()),
                   Hash32.fromHexString(depositData.getData().getWithdrawalCredentials()),
                   Gwei.castFrom(UInt64.valueOf(depositData.getData().getAmount())),
-                  BLSSignature.wrap(
-                      Bytes96.fromHexString(depositData.getData().getSignature()))));
+                  BLSSignature.wrap(Bytes96.fromHexString(depositData.getData().getSignature()))));
       deposits.add(deposit);
     }
 
     // Proposer slashings
     List<ProposerSlashing> proposerSlashings = new ArrayList<>();
-    for (ProposerSlashingData proposerSlashingData :
-        blockData.getBody().getProposerSlashings()) {
+    for (ProposerSlashingData proposerSlashingData : blockData.getBody().getProposerSlashings()) {
       BeaconBlockHeader header1 =
           new BeaconBlockHeader(
               SlotNumber.castFrom(UInt64.valueOf(proposerSlashingData.getHeader1().getSlot())),
               Hash32.fromHexString(proposerSlashingData.getHeader1().getParentRoot()),
               Hash32.fromHexString(proposerSlashingData.getHeader1().getStateRoot()),
               Hash32.fromHexString(proposerSlashingData.getHeader1().getBodyRoot()),
-              BLSSignature.wrap(Bytes96.fromHexString(proposerSlashingData.getHeader1().getSignature())));
+              BLSSignature.wrap(
+                  Bytes96.fromHexString(proposerSlashingData.getHeader1().getSignature())));
       BeaconBlockHeader header2 =
           new BeaconBlockHeader(
               SlotNumber.castFrom(UInt64.valueOf(proposerSlashingData.getHeader2().getSlot())),
               Hash32.fromHexString(proposerSlashingData.getHeader2().getParentRoot()),
               Hash32.fromHexString(proposerSlashingData.getHeader2().getStateRoot()),
               Hash32.fromHexString(proposerSlashingData.getHeader2().getBodyRoot()),
-              BLSSignature.wrap(Bytes96.fromHexString(proposerSlashingData.getHeader2().getSignature())));
+              BLSSignature.wrap(
+                  Bytes96.fromHexString(proposerSlashingData.getHeader2().getSignature())));
       ProposerSlashing proposerSlashing =
           new ProposerSlashing(
               ValidatorIndex.of(proposerSlashingData.getProposerIndex()), header1, header2);
@@ -173,48 +174,48 @@ public abstract class StateTestUtils {
             : BLSSignature.ZERO);
   }
 
-  public static MutableBeaconState parseBeaconState(SpecConstants specConstants, BeaconStateData data) {
+  public static MutableBeaconState parseBeaconState(
+      SpecConstants specConstants, BeaconStateData data) {
     MutableBeaconState state = BeaconState.getEmpty(specConstants).createMutableCopy();
 
     state.setSlot(SlotNumber.castFrom(UInt64.valueOf(data.getSlot())));
     state.setGenesisTime(Time.of(data.getGenesisTime()));
     state.setFork(parseFork(data.getFork()));
-    state.setPreviousJustifiedCheckpoint(
-        new Checkpoint(
-            EpochNumber.castFrom(UInt64.valueOf(data.getPreviousJustifiedEpoch())),
-            Hash32.fromHexString(data.getPreviousJustifiedRoot())));
-    state.setCurrentJustifiedCheckpoint(
-        new Checkpoint(
-            EpochNumber.castFrom(UInt64.valueOf(data.getCurrentJustifiedEpoch())),
-            Hash32.fromHexString(data.getCurrentJustifiedRoot())));
+    state.setPreviousJustifiedCheckpoint(parseCheckpoint(data.getPreviousJustifiedCheckpoint()));
+    state.setCurrentJustifiedCheckpoint(parseCheckpoint(data.getCurrentJustifiedCheckpoint()));
     state.setJustificationBits(
         Bitvector.of(
             specConstants.getJustificationBitsLength(),
-            UInt64.valueOf(data.getJustificationBitfield()).longValue()));
-    state.setFinalizedCheckpoint(
-        new Checkpoint(
-            EpochNumber.castFrom(UInt64.valueOf(data.getFinalizedEpoch())),
-            Hash32.fromHexString(data.getFinalizedRoot())));
+            BytesValue.fromHexString(data.getJustificationBits())));
+    state.setFinalizedCheckpoint(parseCheckpoint(data.getFinalizedCheckpoint()));
     state.setLatestBlockHeader(parseBeaconBlockHeader(data.getLatestBlockHeader()));
-    state.setEth1Data(parseEth1Data(data.getLatestEth1Data()));
-    state.setEth1DataVotes(WriteList.wrap(data.getEth1DataVotes().stream().map(StateTestUtils::parseEth1Data).collect(Collectors.toList()), Integer::new));
-    state.setEth1DepositIndex(UInt64.valueOf(data.getDepositIndex()));
+    state.setEth1Data(parseEth1Data(data.getEth1Data()));
+    state.setEth1DataVotes(
+        WriteList.wrap(
+            data.getEth1DataVotes().stream()
+                .map(StateTestUtils::parseEth1Data)
+                .collect(Collectors.toList()),
+            Integer::new));
+    state.setEth1DepositIndex(UInt64.valueOf(data.getEth1DepositIndex()));
 
-    state.getValidators().replaceAll(parseValidatorRegistry(data.getValidatorRegistry()));
+    state.getValidators().replaceAll(parseValidatorRegistry(data.getValidators()));
     state.getBalances().replaceAll(parseBalances(data.getBalances()));
-    state.getRandaoMixes().setAll(parseHashes(data.getLatestRandaoMixes()));
-    state.getPreviousEpochAttestations().replaceAll(
-        parsePendingAttestations(data.getPreviousEpochAttestations()));
-    state.getCurrentEpochAttestations().replaceAll(
-        parsePendingAttestations(data.getCurrentEpochAttestations()));
+    state.getRandaoMixes().setAll(parseHashes(data.getRandaoMixes()));
+    state
+        .getPreviousEpochAttestations()
+        .replaceAll(parsePendingAttestations(data.getPreviousEpochAttestations()));
+    state
+        .getCurrentEpochAttestations()
+        .replaceAll(parsePendingAttestations(data.getCurrentEpochAttestations()));
     state.getCurrentCrosslinks().setAll(parseCrosslinks(data.getCurrentCrosslinks()));
     state.getPreviousCrosslinks().setAll(parseCrosslinks(data.getPreviousCrosslinks()));
-    state.getBlockRoots().setAll(parseHashes(data.getLatestBlockRoots()));
-    state.getStateRoots().setAll(parseHashes(data.getLatestStateRoots()));
-    state.getActiveIndexRoots().setAll(parseHashes(data.getLatestActiveIndexRoots()));
+    state.getBlockRoots().setAll(parseHashes(data.getBlockRoots()));
+    state.getStateRoots().setAll(parseHashes(data.getStateRoots()));
+    state.getActiveIndexRoots().setAll(parseHashes(data.getActiveIndexRoots()));
+    state.getCompactCommitteesRoots().setAll(parseHashes(data.getCompactCommitteesRoots()));
     state.getHistoricalRoots().replaceAll(parseHashes(data.getHistoricalRoots()));
-    state.getSlashings().setAll(parseBalances(data.getLatestSlashedBalances()));
-    state.setStartShard(ShardNumber.of(UInt64.valueOf(data.getLatestStartShard())));
+    state.getSlashings().setAll(parseBalances(data.getSlashings()));
+    state.setStartShard(ShardNumber.of(UInt64.valueOf(data.getStartShard())));
 
     return state;
   }
@@ -252,6 +253,12 @@ public abstract class StateTestUtils {
         EpochNumber.castFrom(UInt64.valueOf(data.getWithdrawableEpoch())));
   }
 
+  public static Checkpoint parseCheckpoint(BeaconStateData.CheckpointData data) {
+    return new Checkpoint(
+        EpochNumber.castFrom(UInt64.valueOf(data.getEpoch())),
+        Hash32.fromHexString(data.getRoot()));
+  }
+
   public static Eth1Data parseEth1Data(Eth1 data) {
     return new Eth1Data(
         Hash32.fromHexString(data.getDepositRoot()),
@@ -283,8 +290,7 @@ public abstract class StateTestUtils {
         Hash32.fromHexString(data.getParentRoot()),
         EpochNumber.castFrom(UInt64.valueOf(data.getStartEpoch())),
         EpochNumber.castFrom(UInt64.valueOf(data.getEndEpoch())),
-        Hash32.fromHexString(data.getDataRoot())
-    );
+        Hash32.fromHexString(data.getDataRoot()));
   }
 
   public static PendingAttestation parsePendingAttestation(
@@ -300,12 +306,8 @@ public abstract class StateTestUtils {
   public static AttestationData parseAttestationData(AttestationDataContainer data) {
     return new AttestationData(
         Hash32.fromHexString(data.getBeaconBlockRoot()),
-        new Checkpoint(
-            EpochNumber.castFrom(UInt64.valueOf(data.getSourceEpoch())),
-            Hash32.fromHexString(data.getSourceRoot())),
-        new Checkpoint(
-            EpochNumber.castFrom(UInt64.valueOf(data.getTargetEpoch())),
-            Hash32.fromHexString(data.getTargetRoot())),
+        parseCheckpoint(data.getSource()),
+        parseCheckpoint(data.getTarget()),
         parseCrosslink(data.getCrosslink()));
   }
 
@@ -320,12 +322,13 @@ public abstract class StateTestUtils {
         BLSSignature.wrap(Bytes96.fromHexString(data.getSignature())));
   }
 
-  public static VoluntaryExit parseVoluntaryExit(StateTestCase.BlockData.BlockBodyData.VoluntaryExitData data) {
+  public static VoluntaryExit parseVoluntaryExit(
+      StateTestCase.BlockData.BlockBodyData.VoluntaryExitData data) {
     return new VoluntaryExit(
         EpochNumber.castFrom(UInt64.valueOf(data.getEpoch())),
         ValidatorIndex.of(data.getValidatorIndex()),
         data.getSignature() != null
             ? BLSSignature.wrap(Bytes96.fromHexString(data.getSignature()))
             : BLSSignature.ZERO);
-    }
+  }
 }
