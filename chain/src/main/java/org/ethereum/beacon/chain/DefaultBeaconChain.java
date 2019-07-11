@@ -17,6 +17,7 @@ import org.ethereum.beacon.consensus.verifier.BeaconStateVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
+import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.stream.SimpleProcessor;
@@ -93,8 +94,10 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     BeaconTuple tuple = BeaconTuple.of(genesis, initialState);
 
     tupleStorage.put(tuple);
-    chainStorage.getJustifiedStorage().set(genesisRoot);
-    chainStorage.getFinalizedStorage().set(genesisRoot);
+    chainStorage.getJustifiedStorage().set(
+        new Checkpoint(initialState.getCurrentJustifiedCheckpoint().getEpoch(), genesisRoot));
+    chainStorage.getFinalizedStorage().set(
+        new Checkpoint(initialState.getFinalizedCheckpoint().getEpoch(), genesisRoot));
   }
 
   @Override
@@ -163,17 +166,11 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   }
 
   private void updateFinality(BeaconState previous, BeaconState current) {
-    if (previous.getFinalizedCheckpoint().getEpoch().less(current.getFinalizedCheckpoint().getEpoch())) {
-      Hash32 finalizedRoot =
-          spec.get_block_root_at_slot(
-              current, spec.compute_start_slot_of_epoch(current.getFinalizedCheckpoint().getEpoch()));
-      chainStorage.getFinalizedStorage().set(finalizedRoot);
+    if (!previous.getFinalizedCheckpoint().equals(current.getFinalizedCheckpoint())) {
+      chainStorage.getFinalizedStorage().set(current.getFinalizedCheckpoint());
     }
-    if (previous.getCurrentJustifiedCheckpoint().getEpoch().less(current.getCurrentJustifiedCheckpoint().getEpoch())) {
-      Hash32 justifiedRoot =
-          spec.get_block_root_at_slot(
-              current, spec.compute_start_slot_of_epoch(current.getCurrentJustifiedCheckpoint().getEpoch()));
-      chainStorage.getJustifiedStorage().set(justifiedRoot);
+    if (!previous.getCurrentJustifiedCheckpoint().equals(current.getCurrentJustifiedCheckpoint())) {
+      chainStorage.getJustifiedStorage().set(current.getCurrentJustifiedCheckpoint());
     }
   }
 
