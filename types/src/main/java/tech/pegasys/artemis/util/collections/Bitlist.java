@@ -55,7 +55,7 @@ public class Bitlist extends DelegatingBytesValue {
   public static Bitlist of(int size, long bytes, long maxSize) {
     UInt64 blank = UInt64.valueOf(bytes);
     if (blank.getUsedBitCount() > size) {
-      throw new IndexOutOfBoundsException(
+      throw new IllegalArgumentException(
           String.format("Input data %s exceeds Bitlist size of %s", bytes, size));
     }
 

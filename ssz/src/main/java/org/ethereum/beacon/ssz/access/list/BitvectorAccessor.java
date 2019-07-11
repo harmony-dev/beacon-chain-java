@@ -1,5 +1,6 @@
 package org.ethereum.beacon.ssz.access.list;
 
+import org.ethereum.beacon.ssz.SSZDeserializeException;
 import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.type.SSZBitListType;
 import org.ethereum.beacon.ssz.type.SSZType;
@@ -8,9 +9,7 @@ import tech.pegasys.artemis.util.collections.Bitvector;
 
 import java.util.List;
 
-/**
- * {@link Bitvector} accessor
- */
+/** {@link Bitvector} accessor */
 public class BitvectorAccessor extends BitlistAccessor {
 
   @Override
@@ -29,7 +28,12 @@ public class BitvectorAccessor extends BitlistAccessor {
           blank.set(i, ((Integer) children.get(i)).byteValue());
         }
 
-        return Bitvector.of(((SSZBitListType) type).getBitSize(), blank.copy());
+        try {
+          return Bitvector.of(((SSZBitListType) type).getBitSize(), blank.copy());
+        } catch (IllegalArgumentException ex) {
+          throw new SSZDeserializeException(
+              "Failed to create Bitvector instance from input data", ex);
+        }
       }
     };
   }
