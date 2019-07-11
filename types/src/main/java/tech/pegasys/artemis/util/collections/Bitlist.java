@@ -1,11 +1,7 @@
-package org.ethereum.beacon.core.types;
+package tech.pegasys.artemis.util.collections;
 
 import com.google.common.base.Objects;
-import org.ethereum.beacon.ssz.access.SSZField;
-import org.ethereum.beacon.ssz.access.list.AbstractListAccessor;
-import org.ethereum.beacon.ssz.annotation.SSZSerializable;
-import org.ethereum.beacon.ssz.type.SSZListType;
-import org.ethereum.beacon.ssz.type.SSZType;
+import tech.pegasys.artemis.util.bytes.Bytes8;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.bytes.BytesValues;
 import tech.pegasys.artemis.util.bytes.DelegatingBytesValue;
@@ -15,7 +11,6 @@ import tech.pegasys.artemis.util.uint.UInt64;
 import java.util.ArrayList;
 import java.util.List;
 
-@SSZSerializable(listAccessor = Bitlist.BitListAccessor.class)
 public class Bitlist extends DelegatingBytesValue {
   private final int size;
   private final long maxSize;
@@ -60,7 +55,7 @@ public class Bitlist extends DelegatingBytesValue {
   public static Bitlist of(int size, long bytes, long maxSize) {
     UInt64 blank = UInt64.valueOf(bytes);
     if (blank.getUsedBitCount() > size) {
-      throw new IndexOutOfBoundsException(
+      throw new IllegalArgumentException(
           String.format("Input data %s exceeds Bitlist size of %s", bytes, size));
     }
 
@@ -73,21 +68,30 @@ public class Bitlist extends DelegatingBytesValue {
     if (neededBytes != input.size()) {
       throw new IllegalArgumentException(
           String.format(
-              "An attempt to initialize Bitlist with size %s using value %s with another size",
+              "An attempt to initialize Bitlist/Bitvector with size %s using value %s with another size",
               size, input));
     }
 
     return input;
   }
 
-  public Bitlist setBit(int bitIndex, boolean bit) {
-    if (bitIndex > maxSize) {
+  public Bitlist setBit(int bitIndex, int bit) {
+    assert bit == 0 || bit == 1;
+    return setBit(bitIndex, bit == 1);
+  }
+
+  void verifyBitModification(int bitIndex) {
+    if (bitIndex > maxSize()) {
       throw new IndexOutOfBoundsException(
           String.format("An attempt to set bit #%s for Bitlist with maxSize %s", bitIndex, size));
     }
+  }
+
+  public Bitlist setBit(int bitIndex, boolean bit) {
+    verifyBitModification(bitIndex);
     MutableBytesValue mutableCopy = mutableCopy();
     mutableCopy.setBit(bitIndex, bit);
-    return new Bitlist(size, mutableCopy, maxSize);
+    return new Bitlist(size, mutableCopy, maxSize());
   }
 
   public List<Integer> getBits() {
@@ -101,17 +105,31 @@ public class Bitlist extends DelegatingBytesValue {
   }
 
   public Bitlist and(Bitlist other) {
-    return Bitlist.of(Math.max(size, other.size), BytesValues.and(this.wrapped, other.wrapped), maxSize);
+    return Bitlist.of(
+        Math.max(size, other.size), BytesValues.and(this.wrapped, other.wrapped), maxSize());
   }
 
   public Bitlist or(Bitlist other) {
-    return Bitlist.of(size, BytesValues.or(this.wrapped, other.wrapped), maxSize);
+    return Bitlist.of(size, BytesValues.or(this.wrapped, other.wrapped), maxSize());
+  }
+
+  public Bitlist shl(int i) {
+    List<Integer> oldSet = getBits();
+    MutableBytesValue mutableBytes = MutableBytesValue.create(byteSize());
+    for (Integer index : oldSet) {
+      if ((index + 1) == size) { // skip last one
+        continue;
+      }
+      mutableBytes.setBit(index + 1, true);
+    }
+
+    return new Bitlist(size, mutableBytes.copy(), maxSize());
   }
 
   @Override
   public String toString() {
     StringBuilder ret = new StringBuilder("0b");
-    for (int i = 0; i < byteSize(); i++) {
+    for (int i = 0; i < rawByteSize(); i++) {
       ret.append(toBinaryString(get(i)));
     }
     return ret.toString();
@@ -124,7 +142,7 @@ public class Bitlist extends DelegatingBytesValue {
     Bitlist bitList = (Bitlist) o;
     return size == bitList.size
         && wrapped.equals(((Bitlist) o).wrapped)
-        && maxSize == bitList.maxSize;
+        && maxSize() == bitList.maxSize();
   }
 
   @Override
@@ -144,78 +162,26 @@ public class Bitlist extends DelegatingBytesValue {
     return size;
   }
 
-  private int byteSize() {
+  public long maxSize() {
+    return maxSize;
+  }
+
+  int rawByteSize() {
     // bits to bytes
     return (size + 7) / 8;
   }
 
-  private int fullByteSize() {
+  public int byteSize() {
     // bits to bytes + size bit
     return (size + 8) / 8;
   }
 
-  public static class BitListAccessor extends AbstractListAccessor {
+  BytesValue getWrapped() {
+    return wrapped;
+  }
 
-    @Override
-    public int getChildrenCount(Object value) {
-      return ((Bitlist) value).fullByteSize();
-    }
-
-    @Override
-    public long fromAtomicSize(long elementSize) {
-      return elementSize == SSZType.VARIABLE_SIZE
-          ? elementSize
-          : (elementSize + 8) / 8; // bits to bytes + size bit
-    }
-
-    @Override
-    public int getAtomicChildrenCount(Object value) {
-      return ((Bitlist) value).size;
-    }
-
-    @Override
-    public Object getChildValue(Object value, int idx) {
-      Bitlist bitlist = ((Bitlist) value);
-      if ((idx + 1) == bitlist.fullByteSize()) {
-        byte withoutSize = idx < ((bitlist.size() + 7) / 8) ? bitlist.wrapped.get(idx) : 0;
-        int bitNumber = bitlist.size() % 8;
-        return withoutSize | (1 << bitNumber); // add size bit
-      } else {
-        return bitlist.wrapped.get(idx);
-      }
-    }
-
-    @Override
-    public SSZField getListElementType(SSZField listTypeDescriptor) {
-      return new SSZField(byte.class);
-    }
-
-    @Override
-    public ListInstanceBuilder createInstanceBuilder(SSZType type) {
-      return new SimpleInstanceBuilder() {
-        @Override
-        protected Object buildImpl(List<Object> children) {
-          MutableBytesValue blank = MutableBytesValue.create(children.size());
-          for (int i = 0; i < children.size(); i++) {
-            blank.set(i, ((Integer) children.get(i)).byteValue());
-          }
-
-          return Bitlist.of(blank, ((SSZListType) type).getMaxAtomicSize());
-        }
-      };
-    }
-
-    @Override
-    public BytesValue removeListSize(Object value, BytesValue serialization) {
-      MutableBytesValue encoded = serialization.mutableCopy();
-      Bitlist obj = (Bitlist) value;
-      encoded.setBit(obj.size, false);
-      return encoded.copy();
-    }
-
-    @Override
-    public boolean isSupported(SSZField field) {
-      return Bitlist.class.isAssignableFrom(field.getRawClass());
-    }
+  public long getValue() {
+    assert wrapped.size() <= 8;
+    return UInt64.fromBytesLittleEndian(Bytes8.rightPad(wrapped)).getValue();
   }
 }

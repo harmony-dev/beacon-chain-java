@@ -8,7 +8,7 @@ import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.state.ValidatorRecord;
-import org.ethereum.beacon.core.types.Bitvector;
+import tech.pegasys.artemis.util.collections.Bitvector;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.test.StateTestUtils;
 import org.ethereum.beacon.test.type.state.StateTestCase;

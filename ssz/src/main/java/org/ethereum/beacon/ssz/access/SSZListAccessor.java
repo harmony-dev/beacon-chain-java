@@ -2,7 +2,6 @@ package org.ethereum.beacon.ssz.access;
 
 import org.ethereum.beacon.ssz.access.SSZCompositeAccessor.CompositeInstanceAccessor;
 import org.ethereum.beacon.ssz.type.SSZType;
-import tech.pegasys.artemis.util.bytes.BytesValue;
 
 /**
  * Handles collections of homogeneous objects (e.g. java array, {@link java.util.List}, etc) which
@@ -17,24 +16,6 @@ public interface SSZListAccessor extends SSZCompositeAccessor, CompositeInstance
   @Override
   int getChildrenCount(Object value);
 
-  /**
-   * Returns atomic size of a list. Normally it's 1:1 to element size, see {@link
-   * #getChildrenCount(Object)}, but assuming structures like Bit List we have elements that are
-   * smaller than byte (atoms) which are accessible as bytes
-   */
-  default int getAtomicChildrenCount(Object value) {
-    return getChildrenCount(value);
-  }
-
-  /**
-   * Converts atomic size of a list to size of the list with minimal obtainable elements. Normally
-   * it's 1:1, but assuming Bit List we have elements that are smaller than byte (atoms) which are
-   * accessible as bytes
-   */
-  default long fromAtomicSize(long elementSize) {
-    return elementSize;
-  }
-
   @Override
   Object getChildValue(Object value, int idx);
 
@@ -48,14 +29,6 @@ public interface SSZListAccessor extends SSZCompositeAccessor, CompositeInstance
 
   @Override
   ListInstanceBuilder createInstanceBuilder(SSZType sszType);
-
-  /**
-   * Some types of lists have extra size information encoded during serialization, which should be
-   * removed for hashing. Just use this method.
-   */
-  default BytesValue removeListSize(Object value, BytesValue serialization) {
-    return serialization;
-  }
 
   @Override
   default CompositeInstanceAccessor getInstanceAccessor(SSZField compositeDescriptor) {

@@ -50,8 +50,7 @@ public class SyncQueueImpl implements SyncQueue {
             slot = finalBlock.getSlot();
           }
           sink.next(new BlockRequest(slot, null, maxBlocksRequest, false, 0));
-          SlotNumber tmp =  slot.plus(maxBlocksRequest);
-          return tmp;
+          return slot.plus(maxBlocksRequest);
         });
   }
 

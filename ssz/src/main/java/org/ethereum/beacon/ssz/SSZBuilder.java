@@ -24,6 +24,8 @@ import org.ethereum.beacon.ssz.access.container.SSZAnnotationSchemeBuilder;
 import org.ethereum.beacon.ssz.access.container.SSZSchemeBuilder;
 import org.ethereum.beacon.ssz.access.container.SimpleContainerAccessor;
 import org.ethereum.beacon.ssz.access.list.ArrayAccessor;
+import org.ethereum.beacon.ssz.access.list.BitlistAccessor;
+import org.ethereum.beacon.ssz.access.list.BitvectorAccessor;
 import org.ethereum.beacon.ssz.access.list.BytesValueAccessor;
 import org.ethereum.beacon.ssz.access.list.ListAccessor;
 import org.ethereum.beacon.ssz.access.list.ReadListAccessor;
@@ -245,6 +247,9 @@ public class SSZBuilder {
 
   public SSZBuilder addDefaultListAccessors() {
     checkAlreadyInitialized();
+    // XXX: Bitlist and Bitvector should be at top or BytesValue intercepts it
+    listAccessors.add(new BitvectorAccessor());
+    listAccessors.add(new BitlistAccessor());
     listAccessors.add(new ArrayAccessor());
     listAccessors.add(new ListAccessor());
     listAccessors.add(new ReadListAccessor());

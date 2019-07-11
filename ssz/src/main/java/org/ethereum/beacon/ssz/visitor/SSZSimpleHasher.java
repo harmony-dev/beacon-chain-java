@@ -3,6 +3,7 @@ package org.ethereum.beacon.ssz.visitor;
 import org.ethereum.beacon.ssz.access.SSZListAccessor;
 import org.ethereum.beacon.ssz.access.SSZUnionAccessor.UnionInstanceAccessor;
 import org.ethereum.beacon.ssz.type.SSZBasicType;
+import org.ethereum.beacon.ssz.type.SSZBitListType;
 import org.ethereum.beacon.ssz.type.SSZCompositeType;
 import org.ethereum.beacon.ssz.type.SSZListType;
 import org.ethereum.beacon.ssz.type.SSZUnionType;
@@ -11,6 +12,8 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.bytes.BytesValues;
+import tech.pegasys.artemis.util.bytes.MutableBytesValue;
+import tech.pegasys.artemis.util.collections.Bitlist;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -72,10 +75,13 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
     } else if ((type.getType() == LIST || type.getType() == VECTOR)
         && ((SSZListType) type).getElementType().getType() == BASIC) {
       SerializerResult sszSerializerResult = serializer.visitAny(type, rawValue);
-      SSZListAccessor listAccessor =
-          (SSZListAccessor) type.getAccessor().getInstanceAccessor(type.getTypeDescriptor());
-      BytesValue serialization =
-          listAccessor.removeListSize(rawValue, sszSerializerResult.getSerializedBody());
+      BytesValue serialization;
+      // Strip size bit in Bitlist
+      if (type.getType() == LIST && type instanceof SSZBitListType) {
+        serialization = removeBitListSize(rawValue, sszSerializerResult.getSerializedBody());
+      } else {
+        serialization = sszSerializerResult.getSerializedBody();
+      }
       chunks = pack(serialization);
     } else {
       for (int i = 0; i < type.getChildrenCount(rawValue); i++) {
@@ -86,12 +92,24 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
     if (type.getType() == LIST) {
       SSZListAccessor listAccessor =
           (SSZListAccessor) type.getAccessor().getInstanceAccessor(type.getTypeDescriptor());
-      int atomicElementCount = listAccessor.getAtomicChildrenCount(rawValue);
+      int elementCount;
+      if (type instanceof SSZBitListType) {
+        elementCount = ((Bitlist) rawValue).size();
+      } else {
+        elementCount = listAccessor.getChildrenCount(rawValue);
+      }
       Hash32 mixInLength =
-          hashFunction.apply(concat(merkle.getPureRoot(), serializeLength(atomicElementCount)));
+          hashFunction.apply(concat(merkle.getPureRoot(), serializeLength(elementCount)));
       merkle.setFinalRoot(mixInLength);
     }
     return merkle;
+  }
+
+  private BytesValue removeBitListSize(Object value, BytesValue bitlist) {
+    MutableBytesValue encoded = bitlist.mutableCopy();
+    Bitlist obj = (Bitlist) value;
+    encoded.setBit(obj.size(), false);
+    return encoded.copy();
   }
 
   protected List<BytesValue> pack(BytesValue value) {
