@@ -1,6 +1,5 @@
 package org.ethereum.beacon.ssz.type;
 
-import java.util.Optional;
 import org.ethereum.beacon.ssz.ExternalVarResolver;
 import org.ethereum.beacon.ssz.SSZSchemeException;
 import org.ethereum.beacon.ssz.access.AccessorResolver;
@@ -9,6 +8,9 @@ import org.ethereum.beacon.ssz.access.SSZContainerAccessor;
 import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.access.SSZListAccessor;
 import org.ethereum.beacon.ssz.access.SSZUnionAccessor;
+import org.ethereum.beacon.ssz.access.list.BitlistAccessor;
+
+import java.util.Optional;
 
 public class SimpleTypeResolver implements TypeResolver {
 
@@ -31,7 +33,13 @@ public class SimpleTypeResolver implements TypeResolver {
     Optional<SSZListAccessor> listAccessor = accessorResolver.resolveListAccessor(descriptor);
     if (listAccessor.isPresent()) {
       SSZListAccessor accessor = listAccessor.get();
-      return new SSZListType(descriptor, this, accessor, getVectorSize(descriptor), getMaxSize(descriptor));
+      if (accessor instanceof BitlistAccessor) {
+        return new SSZBitListType(
+            descriptor, this, accessor, getVectorSize(descriptor), getMaxSize(descriptor));
+      } else {
+        return new SSZListType(
+            descriptor, this, accessor, getVectorSize(descriptor), getMaxSize(descriptor));
+      }
     }
 
     Optional<SSZUnionAccessor> unionAccessor = accessorResolver

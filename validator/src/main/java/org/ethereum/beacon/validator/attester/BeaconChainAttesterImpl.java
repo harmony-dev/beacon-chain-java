@@ -14,7 +14,7 @@ import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustody
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.types.BLSSignature;
-import org.ethereum.beacon.core.types.Bitlist;
+import tech.pegasys.artemis.util.collections.Bitlist;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;

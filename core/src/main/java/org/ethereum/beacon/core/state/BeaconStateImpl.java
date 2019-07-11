@@ -6,7 +6,7 @@ import org.ethereum.beacon.core.BeaconBlockHeader;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
-import org.ethereum.beacon.core.types.Bitvector;
+import tech.pegasys.artemis.util.collections.Bitvector;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ShardNumber;

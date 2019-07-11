@@ -1,8 +1,8 @@
 package org.ethereum.beacon.core;
 
 import com.google.common.base.Objects;
-import org.ethereum.beacon.core.types.Bitlist;
-import org.ethereum.beacon.core.types.Bitvector;
+import tech.pegasys.artemis.util.collections.Bitlist;
+import tech.pegasys.artemis.util.collections.Bitvector;
 import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.ssz.SSZBuilder;
 import org.ethereum.beacon.ssz.SSZHasher;

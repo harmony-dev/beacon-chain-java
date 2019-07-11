@@ -40,17 +40,16 @@ public class SSZListType implements SSZHomoCompositeType {
 
   @Override
   public Type getType() {
-    return getVectorLength() > VARIABLE_SIZE ? Type.VECTOR : Type.LIST;
+    return vectorLength > VARIABLE_SIZE ? Type.VECTOR : Type.LIST;
   }
 
   /**
    * If this type represents SSZ Vector then this method returns its length.
-   *
    * @see SSZ#vectorLength()
    * @see SSZ#vectorLengthVar()
    */
   public int getVectorLength() {
-    return (int) accessor.fromAtomicSize(vectorLength);
+    return vectorLength;
   }
 
   @Override
@@ -61,15 +60,7 @@ public class SSZListType implements SSZHomoCompositeType {
     return getElementType().getSize() * getVectorLength();
   }
 
-  public int getAtomicSize() {
-    return vectorLength;
-  }
-
   public long getMaxSize() {
-    return accessor.fromAtomicSize(maxSize);
-  }
-
-  public long getMaxAtomicSize() {
     return maxSize;
   }
 

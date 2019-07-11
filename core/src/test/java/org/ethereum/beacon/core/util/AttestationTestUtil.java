@@ -10,7 +10,7 @@ import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.types.BLSSignature;
-import org.ethereum.beacon.core.types.Bitlist;
+import tech.pegasys.artemis.util.collections.Bitlist;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 
