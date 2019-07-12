@@ -77,7 +77,7 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
       SerializerResult sszSerializerResult = serializer.visitAny(type, rawValue);
       BytesValue serialization;
       // Strip size bit in Bitlist
-      if (type.getType() == LIST && type instanceof SSZBitListType) {
+      if (type.getType() == LIST && type.isBitType()) {
         serialization = removeBitListSize(rawValue, sszSerializerResult.getSerializedBody());
       } else {
         serialization = sszSerializerResult.getSerializedBody();
@@ -93,7 +93,7 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
       SSZListAccessor listAccessor =
           (SSZListAccessor) type.getAccessor().getInstanceAccessor(type.getTypeDescriptor());
       int elementCount;
-      if (type instanceof SSZBitListType) {
+      if (type.isBitType()) {
         elementCount = ((Bitlist) rawValue).size();
       } else {
         elementCount = listAccessor.getChildrenCount(rawValue);
