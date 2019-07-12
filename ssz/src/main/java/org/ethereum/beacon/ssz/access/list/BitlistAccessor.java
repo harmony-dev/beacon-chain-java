@@ -12,6 +12,7 @@ import java.util.List;
 /** {@link Bitlist} accessor */
 public class BitlistAccessor extends AbstractListAccessor {
 
+  /** Assumes children as bytes, not bits, as bytes are the smallest element recognized by SSZ */
   @Override
   public int getChildrenCount(Object value) {
     return ((Bitlist) value).byteSize();

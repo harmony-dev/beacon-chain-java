@@ -2,7 +2,6 @@ package org.ethereum.beacon.ssz.type;
 
 import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.access.SSZListAccessor;
-import org.ethereum.beacon.ssz.annotation.SSZ;
 
 /**
  * {@link tech.pegasys.artemis.util.collections.Bitlist} and {@link
@@ -23,10 +22,9 @@ public class SSZBitListType extends SSZListType {
   }
 
   /**
-   * If this type represents SSZ Vector then this method returns its length.
-   *
-   * @see SSZ#vectorLength()
-   * @see SSZ#vectorLengthVar()
+   * Returns byte size of Bitlist/Bitvector which is not the same that number of elements (bits) in
+   * it. Its a length of list when measured in elements recognizable by SSZ - bytes. Use {@link
+   * #getBitSize()} for bit size
    */
   @Override
   public int getVectorLength() {
@@ -37,11 +35,20 @@ public class SSZBitListType extends SSZListType {
     return super.getVectorLength();
   }
 
+  /**
+   * Bits -> Bytes
+   */
   private long fromAtomicSize(long atomicSize) {
+    // List requires one more bit for size info, vector is fixed size
     int addon = getType() == Type.LIST ? 8 : 7;
     return atomicSize == SSZType.VARIABLE_SIZE ? atomicSize : (atomicSize + addon) / 8;
   }
 
+  /**
+   * Returns maximum byte size of Bitlist/Bitvector which is not the same that maximum number of
+   * elements (bits) in it. Its a maximum size of elements recognizable by SSZ - bytes. Use {@link
+   * #getMaxBitSize()} for maximum bit size
+   */
   @Override
   public long getMaxSize() {
     return fromAtomicSize(super.getMaxSize());
@@ -49,5 +56,10 @@ public class SSZBitListType extends SSZListType {
 
   public long getMaxBitSize() {
     return super.getMaxSize();
+  }
+
+  @Override
+  public boolean isBitType() {
+    return true;
   }
 }
