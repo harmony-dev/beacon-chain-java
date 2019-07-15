@@ -5,6 +5,7 @@ import static java.util.stream.Collectors.toList;
 import static org.ethereum.beacon.ssz.type.SSZType.Type.BASIC;
 import static org.ethereum.beacon.ssz.type.SSZType.Type.LIST;
 import static org.ethereum.beacon.ssz.type.SSZType.Type.VECTOR;
+import static tech.pegasys.artemis.util.bytes.BytesValue.concat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -159,8 +160,17 @@ public class SSZIncrementalHasher extends SSZSimpleHasher {
       }
     }
     if (type.getType() == LIST) {
+      Hash32 pureRoot = newTrie.getPureRoot();
+      long padFor = chunkCount(type);
+      if (padFor > newTrieWidth) {
+        int baseLevel = nextBinaryLog(newTrieWidth);
+        int virtualLevel = nextBinaryLog(padFor);
+        for (int i = baseLevel; i < virtualLevel; ++i) {
+          pureRoot = hashFunction.apply(concat(pureRoot, getZeroHash(i)));
+        }
+      }
       Hash32 mixInLength = hashFunction.apply(BytesValue.concat(
-          newTrie.getPureRoot(),
+          pureRoot,
           serializeLength(type.getChildrenCount(value))));
       newTrie.setFinalRoot(mixInLength);
     } else {

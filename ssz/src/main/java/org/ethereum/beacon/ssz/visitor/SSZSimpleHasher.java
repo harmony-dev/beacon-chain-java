@@ -1,11 +1,14 @@
 package org.ethereum.beacon.ssz.visitor;
 
+import net.consensys.cava.ssz.SSZException;
 import org.ethereum.beacon.ssz.access.SSZListAccessor;
 import org.ethereum.beacon.ssz.access.SSZUnionAccessor.UnionInstanceAccessor;
 import org.ethereum.beacon.ssz.type.SSZBasicType;
 import org.ethereum.beacon.ssz.type.SSZBitListType;
 import org.ethereum.beacon.ssz.type.SSZCompositeType;
+import org.ethereum.beacon.ssz.type.SSZContainerType;
 import org.ethereum.beacon.ssz.type.SSZListType;
+import org.ethereum.beacon.ssz.type.SSZType;
 import org.ethereum.beacon.ssz.type.SSZUnionType;
 import org.ethereum.beacon.ssz.visitor.SosSerializer.SerializerResult;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -15,6 +18,7 @@ import tech.pegasys.artemis.util.bytes.BytesValues;
 import tech.pegasys.artemis.util.bytes.MutableBytesValue;
 import tech.pegasys.artemis.util.collections.Bitlist;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -28,7 +32,7 @@ import static tech.pegasys.artemis.util.bytes.BytesValue.concat;
 
 public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
 
-  private final Hash32[] zeroHashes = new Hash32[32];
+  private final Hash32[] zeroHashes = new Hash32[64];
   final SSZVisitorHandler<SerializerResult> serializer;
   final Function<BytesValue, Hash32> hashFunction;
   final int bytesPerChunk;
@@ -44,7 +48,7 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
   @Override
   public MerkleTrie visitBasicValue(SSZBasicType descriptor, Object value) {
     SerializerResult sszSerializerResult = serializer.visitAny(descriptor, value);
-    return merkleize(pack(sszSerializerResult.getSerializedBody()));
+    return merkleize(pack(sszSerializerResult.getSerializedBody()), null);
   }
 
   @Override
@@ -59,7 +63,7 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
       Object value = unionInstanceAccessor.getChildValue(param, typeIndex);
       chunks = singletonList(childVisitor.apply(typeIndex, value).getFinalRoot());
     }
-    MerkleTrie merkle = merkleize(chunks);
+    MerkleTrie merkle = merkleize(chunks, null);
     Hash32 mixInType = hashFunction.apply(concat(merkle.getPureRoot(), serializeLength(typeIndex)));
     merkle.setFinalRoot(mixInType);
     return merkle;
@@ -88,7 +92,11 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
         chunks.add(childVisitor.apply(i, type.getChild(rawValue, i)).getFinalRoot());
       }
     }
-    merkle = merkleize(chunks);
+    Long padFor = null;
+    if (type.getType() == LIST) {
+      padFor = chunkCount(type);
+    }
+    merkle = merkleize(chunks, padFor);
     if (type.getType() == LIST) {
       SSZListAccessor listAccessor =
           (SSZListAccessor) type.getAccessor().getInstanceAccessor(type.getTypeDescriptor());
@@ -128,17 +136,53 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
     return ret;
   }
 
-  public MerkleTrie merkleize(List<? extends BytesValue> chunks) {
-    int chunksCount = (int) nextPowerOf2(chunks.size());
-    BytesValue[] nodes = new BytesValue[chunksCount * 2];
+  /**
+   * Merkleize chunks using merkle trie
+   * @param chunks   chunks of standard size
+   * @param padFor   if provided, chunks are padded with zero chunks to next power of 2 (padFor)
+   * @return result trie
+   */
+  public MerkleTrie merkleize(List<? extends BytesValue> chunks, @Nullable Long padFor) {
+    int chunksCount = nextPowerOf2(chunks.size());
+    if (padFor != null && padFor == 0) { // FIXME: hack, remove after tests regeneration
+      padFor = 2L; // FIXME: hack, remove after tests regeneration
+    } // FIXME: hack, remove after tests regeneration
+    if (padFor != null && padFor > chunksCount) {
+      return merkleize(chunks, chunksCount, padFor);
+    } else {
+      return merkleize(chunks, chunksCount);
+    }
+  }
 
-    // TODO optimize: no need to recalc zero hashes on upper trie levels, e.g. hash(zeroHash + zeroHash)
-    for (int i = 0; i < chunksCount; i++) {
-      nodes[i + chunksCount] = i < chunks.size() ? chunks.get(i) : Bytes32.ZERO;
+  /**
+   * Extension of {@link #merkleize(List, int)}, designed to virtually deal with large number of
+   * zero leaves added to chunksLeaves up to padFor number
+   *
+   * @return virtual trie without actual nodes, only with calculated root
+   */
+  VirtualMerkleTrie merkleize(
+      List<? extends BytesValue> chunks, int chunksLeaves, long padFor) {
+    int baseLevel = nextBinaryLog(chunks.size());
+    int virtualLevel = nextBinaryLog(padFor);
+    BytesValue root = merkleize(chunks, chunksLeaves).getPureRoot();
+    for (int i = baseLevel; i < virtualLevel; ++i) {
+      root = hashFunction.apply(concat(root, getZeroHash(i)));
+    }
+
+    return new VirtualMerkleTrie(root);
+  }
+
+  /**
+   * Merkleize chunks using binary tree, using zero hashes on leaves non-occupied by chunks elements
+   */
+  MerkleTrie merkleize(List<? extends BytesValue> chunks, int chunksLeaves) {
+    BytesValue[] nodes = new BytesValue[chunksLeaves * 2];
+    for (int i = 0; i < chunksLeaves; i++) {
+      nodes[i + chunksLeaves] = i < chunks.size() ? chunks.get(i) : Bytes32.ZERO;
     }
 
     int len = (chunks.size() - 1) / 2 + 1;
-    int pos = chunksCount / 2;
+    int pos = chunksLeaves / 2;
     int level = 1;
     while (pos > 0) {
       for (int i = 0; i < len; i++) {
@@ -156,11 +200,54 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
     return new MerkleTrie(nodes);
   }
 
-  protected long nextPowerOf2(int x) {
+  private long itemLength(SSZType type) {
+    if (type instanceof SSZBasicType) {
+      return type.getSize();
+    } else {
+      return 32;
+    }
+  }
+
+  long chunkCount(SSZType type) {
+    if (type instanceof SSZBasicType) {
+      return 1;
+    } else if (type instanceof SSZBitListType) {
+      SSZBitListType bitListType = (SSZBitListType) type;
+      long bitSize = type.isFixedSize() ? bitListType.getBitSize() : bitListType.getMaxBitSize();
+      return (bitSize + 255) / 256;
+    } else if (type instanceof SSZListType) {
+      SSZListType listType = (SSZListType) type;
+      long size = type.isFixedSize() ? listType.getSize() : listType.getMaxSize();
+      if (size <= 0) {
+        return 0;
+      }
+      return (size * itemLength(listType.getElementType()) + 31) / 32;
+    } else if (type instanceof SSZContainerType) {
+      SSZContainerType containerType = (SSZContainerType) type;
+      return containerType.getChildTypes().stream()
+          .map(this::itemLength)
+          .mapToLong(Long::new)
+          .sum();
+    } else {
+      throw new SSZException(
+          String.format("Hasher doesn't know how to calculate chunk count for type %s", type));
+    }
+  }
+
+  protected int nextPowerOf2(int x) {
     if (x <= 1) {
       return 1;
     } else {
-      return Long.highestOneBit(x - 1) << 1;
+      return Integer.highestOneBit(x - 1) << 1;
+    }
+  }
+
+  /** Returns exponent of 2 to get x or a bit more (next power of 2) 7 -> 3, 8 -> 3, 9 -> 4 */
+  int nextBinaryLog(long x) {
+    if (x <= 1) {
+      return 0;
+    } else {
+      return Long.BYTES * Byte.SIZE - Long.numberOfLeadingZeros(x - 1);
     }
   }
 
