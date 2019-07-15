@@ -3,7 +3,6 @@ package org.ethereum.beacon.ssz.visitor;
 import org.ethereum.beacon.ssz.access.SSZListAccessor;
 import org.ethereum.beacon.ssz.access.SSZUnionAccessor.UnionInstanceAccessor;
 import org.ethereum.beacon.ssz.type.SSZBasicType;
-import org.ethereum.beacon.ssz.type.SSZBitListType;
 import org.ethereum.beacon.ssz.type.SSZCompositeType;
 import org.ethereum.beacon.ssz.type.SSZListType;
 import org.ethereum.beacon.ssz.type.SSZUnionType;
@@ -68,6 +67,9 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
   @Override
   public MerkleTrie visitComposite(SSZCompositeType type, Object rawValue,
       ChildVisitor<Object, MerkleTrie> childVisitor) {
+    if (type instanceof SSZListType) {
+      SosSerializer.verifyListLimit((SSZListType) type, rawValue);
+    }
     MerkleTrie merkle;
     List<BytesValue> chunks = new ArrayList<>();
     if (type.getChildrenCount(rawValue) == 0) {

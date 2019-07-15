@@ -18,14 +18,29 @@ import static org.ethereum.beacon.ssz.type.SSZType.Type.VECTOR;
 import static org.ethereum.beacon.ssz.type.SSZType.VARIABLE_SIZE;
 import static org.ethereum.beacon.ssz.visitor.SosDeserializer.BYTES_PER_LENGTH_OFFSET;
 
-/**
- * SSZ serializer with offset-based encoding of variable sized elements
- */
-public class SosSerializer
-    implements SSZVisitor<SosSerializer.SerializerResult, Object> {
+/** SSZ serializer with offset-based encoding of variable sized elements */
+public class SosSerializer implements SSZVisitor<SosSerializer.SerializerResult, Object> {
 
   private static BytesValue serializeLength(long len) {
     return BytesValues.ofUnsignedIntLittleEndian(len);
+  }
+
+  static void verifyListLimit(SSZListType type, Object param) {
+    if (type.getType() == VECTOR && !type.isBitType()) {
+      if (type.getChildrenCount(param) != type.getVectorLength()) {
+        throw new SSZSerializeException(
+            String.format(
+                "Vector type length doesn't match actual list length: %d !=  %d for %s",
+                type.getVectorLength(), type.getChildrenCount(param), type.toStringHelper()));
+      }
+    } else if (type.getType() == LIST && type.getMaxSize() > VARIABLE_SIZE && !type.isBitType()) {
+      if (type.getChildrenCount(param) > type.getMaxSize()) {
+        throw new SSZSerializeException(
+            String.format(
+                "Maximum size of list is exceeded with actual number of elements: %d > %d for %s",
+                type.getChildrenCount(param), type.getMaxSize(), type.toStringHelper()));
+      }
+    }
   }
 
   @Override
@@ -38,22 +53,7 @@ public class SosSerializer
   @Override
   public SerializerResult visitList(
       SSZListType type, Object param, ChildVisitor<Object, SerializerResult> childVisitor) {
-
-    if (type.getType() == VECTOR) {
-      if (type.getChildrenCount(param) != type.getVectorLength()) {
-        throw new SSZSerializeException(
-            String.format(
-                "Vector type length doesn't match actual list length: %d !=  %d for %s",
-                type.getVectorLength(), type.getChildrenCount(param), type.toStringHelper()));
-      }
-    } else if (type.getType() == LIST && type.getMaxSize() > VARIABLE_SIZE) {
-      if (type.getChildrenCount(param) > type.getMaxSize()) {
-        throw new SSZSerializeException(
-            String.format(
-                "Maximum size of list is exceeded with actual number of elements: %d > %d for %s",
-                type.getChildrenCount(param), type.getMaxSize(), type.toStringHelper()));
-      }
-    }
+    verifyListLimit(type, param);
     return visitComposite(type, param, childVisitor);
   }
 
@@ -68,15 +68,16 @@ public class SosSerializer
   }
 
   @Override
-  public SerializerResult visitUnion(SSZUnionType type, Object param,
-      ChildVisitor<Object, SerializerResult> childVisitor) {
-    UnionInstanceAccessor unionInstanceAccessor = type.getAccessor().getInstanceAccessor(type.getTypeDescriptor());
+  public SerializerResult visitUnion(
+      SSZUnionType type, Object param, ChildVisitor<Object, SerializerResult> childVisitor) {
+    UnionInstanceAccessor unionInstanceAccessor =
+        type.getAccessor().getInstanceAccessor(type.getTypeDescriptor());
     int typeIndex = unionInstanceAccessor.getTypeIndex(param);
     BytesValue typeIndexBytes = serializeLength(typeIndex);
     BytesValue body = BytesValue.EMPTY;
     if (typeIndex > 0 || !type.isNullable()) {
-      SerializerResult result = childVisitor.apply(typeIndex, unionInstanceAccessor
-          .getChildValue(param, typeIndex));
+      SerializerResult result =
+          childVisitor.apply(typeIndex, unionInstanceAccessor.getChildValue(param, typeIndex));
       body = result.getSerializedBody();
     }
     return new SerializerResult(typeIndexBytes.concat(body), false);
@@ -84,9 +85,7 @@ public class SosSerializer
 
   @Override
   public SerializerResult visitComposite(
-      SSZCompositeType type,
-      Object rawValue,
-      ChildVisitor<Object, SerializerResult> childVisitor) {
+      SSZCompositeType type, Object rawValue, ChildVisitor<Object, SerializerResult> childVisitor) {
     return visitComposite(type, rawValue, childVisitor, 0, type.getChildrenCount(rawValue));
   }
 
