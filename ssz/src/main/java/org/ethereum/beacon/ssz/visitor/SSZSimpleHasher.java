@@ -144,9 +144,6 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
    */
   public MerkleTrie merkleize(List<? extends BytesValue> chunks, @Nullable Long padFor) {
     int chunksCount = nextPowerOf2(chunks.size());
-    if (padFor != null && padFor == 0) { // FIXME: hack, remove after tests regeneration
-      padFor = 2L; // FIXME: hack, remove after tests regeneration
-    } // FIXME: hack, remove after tests regeneration
     if (padFor != null && padFor > chunksCount) {
       return merkleize(chunks, chunksCount, padFor);
     } else {
