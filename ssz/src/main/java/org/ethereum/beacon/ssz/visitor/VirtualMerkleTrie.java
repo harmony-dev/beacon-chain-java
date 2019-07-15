@@ -4,12 +4,12 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
-/** Just imitates {@link MerkleTrie}, and stores only root, replicating interface */
+/** Replaces root of {@link MerkleTrie}, replicating interface */
 public class VirtualMerkleTrie extends MerkleTrie {
   private Hash32 root;
 
-  public VirtualMerkleTrie(BytesValue root) {
-    super(new BytesValue[] {});
+  public VirtualMerkleTrie(BytesValue[] nodes, BytesValue root) {
+    super(nodes);
     this.root = Hash32.wrap(Bytes32.leftPad(root));
   }
 
@@ -30,6 +30,6 @@ public class VirtualMerkleTrie extends MerkleTrie {
 
   @Override
   public VirtualMerkleTrie copy() {
-    return new VirtualMerkleTrie(root.copy());
+    return new VirtualMerkleTrie(super.nodes, root.copy());
   }
 }

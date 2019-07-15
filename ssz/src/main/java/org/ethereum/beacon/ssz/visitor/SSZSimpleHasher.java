@@ -161,12 +161,13 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
       List<? extends BytesValue> chunks, int chunksLeaves, long padFor) {
     int baseLevel = nextBinaryLog(chunks.size());
     int virtualLevel = nextBinaryLog(padFor);
-    BytesValue root = merkleize(chunks, chunksLeaves).getPureRoot();
+    MerkleTrie original = merkleize(chunks, chunksLeaves);
+    BytesValue root = original.getPureRoot();
     for (int i = baseLevel; i < virtualLevel; ++i) {
       root = hashFunction.apply(concat(root, getZeroHash(i)));
     }
 
-    return new VirtualMerkleTrie(root);
+    return new VirtualMerkleTrie(original.nodes, root);
   }
 
   /**
