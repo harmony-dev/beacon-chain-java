@@ -222,10 +222,7 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
       return (size * itemLength(listType.getElementType()) + 31) / 32;
     } else if (type instanceof SSZContainerType) {
       SSZContainerType containerType = (SSZContainerType) type;
-      return containerType.getChildTypes().stream()
-          .map(this::itemLength)
-          .mapToLong(Long::new)
-          .sum();
+      return containerType.getChildTypes().size();
     } else {
       throw new SSZException(
           String.format("Hasher doesn't know how to calculate chunk count for type %s", type));
