@@ -15,20 +15,27 @@ class ListImpl<IndexType extends Number, ValueType> implements WriteList<IndexTy
   private final List<ValueType> backedList;
   private final Function<Integer, IndexType> indexConverter;
   private final boolean vector;
+  private final long maxSize;
   ListImpl(
-      Collection<ValueType> source, Function<Integer, IndexType> indexConverter, boolean vector) {
+      Collection<ValueType> source, Function<Integer, IndexType> indexConverter, boolean vector, long maxSize) {
     this.backedList = new ArrayList<>(source);
     this.indexConverter = indexConverter;
     this.vector = vector;
+    this.maxSize = maxSize;
   }
 
   ListImpl(Function<Integer, IndexType> indexConverter, boolean vector) {
-    this(new ArrayList<>(), indexConverter, vector);
+    this(new ArrayList<>(), indexConverter, vector, -1);
   }
 
   static <IndexType extends Number, ValueType> WriteList<IndexType, ValueType> wrap(
       List<ValueType> backedList, Function<Integer, IndexType> indexConverter, boolean vector) {
-    return new ListImpl<>(backedList, indexConverter, vector);
+    return new ListImpl<>(backedList, indexConverter, vector, -1);
+  }
+
+  static <IndexType extends Number, ValueType> WriteList<IndexType, ValueType> wrap(
+      List<ValueType> backedList, Function<Integer, IndexType> indexConverter, long limit) {
+    return new ListImpl<>(backedList, indexConverter, false, limit);
   }
 
   @Override
@@ -44,12 +51,12 @@ class ListImpl<IndexType extends Number, ValueType> implements WriteList<IndexTy
   @Override
   public ListImpl<IndexType, ValueType> subList(IndexType fromIndex, IndexType toIndex) {
     return new ListImpl<>(
-        backedList.subList(fromIndex.intValue(), toIndex.intValue()), indexConverter, vector);
+        backedList.subList(fromIndex.intValue(), toIndex.intValue()), indexConverter, vector, maxSize);
   }
 
   @Override
   public WriteList<IndexType, ValueType> createMutableCopy() {
-    return new ListImpl<>(backedList, indexConverter, vector);
+    return new ListImpl<>(backedList, indexConverter, vector, maxSize);
   }
 
   @NotNull
@@ -161,12 +168,17 @@ class ListImpl<IndexType extends Number, ValueType> implements WriteList<IndexTy
 
   @Override
   public ReadList<IndexType, ValueType> createImmutableCopy() {
-    return new ListImpl<>(backedList, indexConverter, vector);
+    return new ListImpl<>(backedList, indexConverter, vector, maxSize);
   }
 
   @Override
   public boolean isVector() {
     return vector;
+  }
+
+  @Override
+  public long maxSize() {
+    return maxSize;
   }
 
   @Override
