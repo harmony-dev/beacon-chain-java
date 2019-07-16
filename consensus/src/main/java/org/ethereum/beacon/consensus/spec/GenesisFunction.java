@@ -17,6 +17,7 @@ import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes4;
+import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
 import tech.pegasys.artemis.util.uint.UInt64s;
 
@@ -55,10 +56,13 @@ public interface GenesisFunction extends BlockProcessing {
 
     // Process deposits
     // Spec maintains initial deposit proofs and roots in incremental fashion,
-    // i.e. new root is computed for each new update of deposit list.
+    // i.e. new root is computed for each deposit added to the list.
     // Our impl works in more efficient way: one root to proof them all
-    List<DepositData> deposit_data_list =
-        deposits.stream().map(Deposit::getData).collect(Collectors.toList());
+    ReadList<Integer, DepositData> deposit_data_list =
+        ReadList.wrap(
+            deposits.stream().map(Deposit::getData).collect(Collectors.toList()),
+            Integer::new,
+            1L << getConstants().getDepositContractTreeDepth().getIntValue());
     state.setEth1Data(new Eth1Data(
         hash_tree_root(deposit_data_list), UInt64.valueOf(deposits.size()), eth1_block_hash));
     for (Deposit deposit : deposits) {
