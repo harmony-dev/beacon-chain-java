@@ -81,4 +81,11 @@ public class SSZListType implements SSZHomoCompositeType {
   public SSZField getTypeDescriptor() {
     return descriptor;
   }
+
+  /**
+   * Indicates list bit type
+   */
+  public boolean isBitType() {
+    return false;
+  }
 }

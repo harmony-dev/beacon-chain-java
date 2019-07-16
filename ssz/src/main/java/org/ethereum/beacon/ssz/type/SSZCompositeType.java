@@ -30,11 +30,4 @@ public interface SSZCompositeType extends SSZType {
    * Returns the corresponding {@link SSZCompositeAccessor} instance
    */
   SSZCompositeAccessor getAccessor();
-
-  /**
-   * Indicates composite bit type
-   */
-  default boolean isBitType() {
-    return false;
-  }
 }
