@@ -1,5 +1,5 @@
 [{
-  "name": "Deposit",
+  "name": "DepositEvent",
   "inputs": [{
     "type": "bytes",
     "name": "pubkey",
@@ -30,7 +30,7 @@
   "payable": false,
   "type": "constructor"
 }, {
-  "name": "get_deposit_root",
+  "name": "get_hash_tree_root",
   "outputs": [{
     "type": "bytes32",
     "name": "out"
@@ -39,7 +39,7 @@
   "constant": true,
   "payable": false,
   "type": "function",
-  "gas": 79221
+  "gas": 91674
 }, {
   "name": "get_deposit_count",
   "outputs": [{

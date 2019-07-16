@@ -315,6 +315,10 @@ public interface BlockProcessing extends HelperFunction {
   }
 
   default void verify_deposit(BeaconState state, Deposit deposit) {
+    if (!isVerifyDepositProof()) {
+      return;
+    }
+
     /* Verify the Merkle branch
     assert is_valid_merkle_branch(
         leaf=hash_tree_root(deposit.data),
