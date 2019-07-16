@@ -25,24 +25,6 @@ public class SosSerializer implements SSZVisitor<SosSerializer.SerializerResult,
     return BytesValues.ofUnsignedIntLittleEndian(len);
   }
 
-  static void verifyListLimit(SSZListType type, Object param) {
-    if (type.getType() == VECTOR && !type.isBitType()) {
-      if (type.getChildrenCount(param) != type.getVectorLength()) {
-        throw new SSZSerializeException(
-            String.format(
-                "Vector type length doesn't match actual list length: %d !=  %d for %s",
-                type.getVectorLength(), type.getChildrenCount(param), type.toStringHelper()));
-      }
-    } else if (type.getType() == LIST && type.getMaxSize() > VARIABLE_SIZE && !type.isBitType()) {
-      if (type.getChildrenCount(param) > type.getMaxSize()) {
-        throw new SSZSerializeException(
-            String.format(
-                "Maximum size of list is exceeded with actual number of elements: %d > %d for %s",
-                type.getChildrenCount(param), type.getMaxSize(), type.toStringHelper()));
-      }
-    }
-  }
-
   @Override
   public SerializerResult visitBasicValue(SSZBasicType type, Object value) {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -53,7 +35,7 @@ public class SosSerializer implements SSZVisitor<SosSerializer.SerializerResult,
   @Override
   public SerializerResult visitList(
       SSZListType type, Object param, ChildVisitor<Object, SerializerResult> childVisitor) {
-    verifyListLimit(type, param);
+    type.verifyLimit(param);
     return visitComposite(type, param, childVisitor);
   }
 

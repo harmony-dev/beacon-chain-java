@@ -68,7 +68,7 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
   public MerkleTrie visitComposite(SSZCompositeType type, Object rawValue,
       ChildVisitor<Object, MerkleTrie> childVisitor) {
     if (type instanceof SSZListType) {
-      SosSerializer.verifyListLimit((SSZListType) type, rawValue);
+      ((SSZListType) type).verifyLimit(rawValue);
     }
     MerkleTrie merkle;
     List<BytesValue> chunks = new ArrayList<>();

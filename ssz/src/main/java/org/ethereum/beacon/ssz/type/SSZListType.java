@@ -1,16 +1,16 @@
 package org.ethereum.beacon.ssz.type;
 
-
+import org.ethereum.beacon.ssz.SSZSerializeException;
 import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.access.SSZListAccessor;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 
 /**
- * Represent specific SSZ List or Vector type with child elements of specific type which defined
- * as 'ordered variable-length (for List) or fixed-length (for Vector)
- * homogenous collection of values ' by the
- * <a href="https://github.com/ethereum/eth2.0-specs/blob/dev/specs/simple-serialize.md#composite-types">
- *   SSZ spec</a>
+ * Represent specific SSZ List or Vector type with child elements of specific type which defined as
+ * 'ordered variable-length (for List) or fixed-length (for Vector) homogenous collection of values
+ * ' by the <a
+ * href="https://github.com/ethereum/eth2.0-specs/blob/dev/specs/simple-serialize.md#composite-types">
+ * SSZ spec</a>
  */
 public class SSZListType implements SSZHomoCompositeType {
 
@@ -38,6 +38,24 @@ public class SSZListType implements SSZHomoCompositeType {
     this.maxSize = maxSize;
   }
 
+  public void verifyLimit(Object param) {
+    if (getType() == Type.VECTOR && !isBitType()) {
+      if (getChildrenCount(param) != getVectorLength()) {
+        throw new SSZSerializeException(
+            String.format(
+                "Vector type length doesn't match actual list length: %d !=  %d for %s",
+                getVectorLength(), getChildrenCount(param), toStringHelper()));
+      }
+    } else if (getType() == Type.LIST && getMaxSize() > VARIABLE_SIZE && !isBitType()) {
+      if (getChildrenCount(param) > getMaxSize()) {
+        throw new SSZSerializeException(
+            String.format(
+                "Maximum size of list is exceeded with actual number of elements: %d > %d for %s",
+                getChildrenCount(param), getMaxSize(), toStringHelper()));
+      }
+    }
+  }
+
   @Override
   public Type getType() {
     return vectorLength > VARIABLE_SIZE ? Type.VECTOR : Type.LIST;
@@ -45,6 +63,7 @@ public class SSZListType implements SSZHomoCompositeType {
 
   /**
    * If this type represents SSZ Vector then this method returns its length.
+   *
    * @see SSZ#vectorLength()
    * @see SSZ#vectorLengthVar()
    */
@@ -68,7 +87,8 @@ public class SSZListType implements SSZHomoCompositeType {
   @Override
   public SSZType getElementType() {
     if (elementType == null) {
-      elementType = typeResolver.resolveSSZType(getAccessor().getListElementType(getTypeDescriptor()));
+      elementType =
+          typeResolver.resolveSSZType(getAccessor().getListElementType(getTypeDescriptor()));
     }
     return elementType;
   }
@@ -82,9 +102,7 @@ public class SSZListType implements SSZHomoCompositeType {
     return descriptor;
   }
 
-  /**
-   * Indicates list bit type
-   */
+  /** Indicates list bit type */
   public boolean isBitType() {
     return false;
   }
