@@ -829,14 +829,15 @@ public interface HelperFunction extends SpecCommons {
       """
       Return the seed at ``epoch``.
       """
-      mix = get_randao_mix(state, Epoch(epoch + EPOCHS_PER_HISTORICAL_VECTOR - MIN_SEED_LOOKAHEAD))  # Avoid underflow
+      mix = get_randao_mix(state, Epoch(epoch + EPOCHS_PER_HISTORICAL_VECTOR - MIN_SEED_LOOKAHEAD - 1))  # Avoid underflow
       active_index_root = state.active_index_roots[epoch % EPOCHS_PER_HISTORICAL_VECTOR]
       return hash(mix + active_index_root + int_to_bytes(epoch, length=32))
    */
   default Hash32 get_seed(BeaconState state, EpochNumber epoch) {
     Hash32 mix = get_randao_mix(state,
         epoch.plus(getConstants().getEpochsPerHistoricalVector()
-            .minus(getConstants().getMinSeedLookahead())));
+            .minus(getConstants().getMinSeedLookahead())
+            .decrement()));
     Hash32 active_index_root = state.getActiveIndexRoots()
         .get(epoch.modulo(getConstants().getEpochsPerHistoricalVector()));
     return hash(mix.concat(active_index_root.concat(int_to_bytes32(epoch))));
