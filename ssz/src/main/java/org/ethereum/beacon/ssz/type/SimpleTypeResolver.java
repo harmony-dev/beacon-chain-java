@@ -9,6 +9,12 @@ import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.access.SSZListAccessor;
 import org.ethereum.beacon.ssz.access.SSZUnionAccessor;
 import org.ethereum.beacon.ssz.access.list.BitlistAccessor;
+import org.ethereum.beacon.ssz.annotation.SSZSerializable;
+import tech.pegasys.artemis.util.bytes.Bytes1;
+import tech.pegasys.artemis.util.bytes.Bytes32;
+import tech.pegasys.artemis.util.bytes.Bytes4;
+import tech.pegasys.artemis.util.bytes.Bytes48;
+import tech.pegasys.artemis.util.bytes.Bytes96;
 
 import java.util.Optional;
 
@@ -58,18 +64,37 @@ public class SimpleTypeResolver implements TypeResolver {
   }
 
   protected int getVectorSize(SSZField descriptor) {
-    if (descriptor.getFieldAnnotation() == null) {
-      return SSZType.VARIABLE_SIZE;
+    if (descriptor.getFieldAnnotation() != null) {
+      int vectorSize = descriptor.getFieldAnnotation().vectorLength();
+      if (vectorSize > 0) {
+        return vectorSize;
+      }
+      String vectorSizeVar = descriptor.getFieldAnnotation().vectorLengthVar();
+      if (!vectorSizeVar.isEmpty()) {
+        return externalVarResolver.resolveOrThrow(vectorSizeVar, Number.class).intValue();
+      }
     }
-    int vectorSize = descriptor.getFieldAnnotation().vectorLength();
-    if (vectorSize > 0) {
-      return vectorSize;
+    // TODO: refactor meeeeee pleeeease
+    SSZSerializable annotation = descriptor.getRawClass().getAnnotation(SSZSerializable.class);
+    if (descriptor.getRawClass().isAssignableFrom(Bytes1.class) ||
+        (annotation != null && annotation.serializeAs().isAssignableFrom(Bytes1.class))) {
+      return 1;
     }
-    String vectorSizeVar = descriptor.getFieldAnnotation().vectorLengthVar();
-    if (!vectorSizeVar.isEmpty()) {
-      return externalVarResolver
-              .resolveOrThrow(vectorSizeVar, Number.class)
-              .intValue();
+    if (descriptor.getRawClass().isAssignableFrom(Bytes4.class) ||
+        (annotation != null && annotation.serializeAs().isAssignableFrom(Bytes4.class))) {
+      return 4;
+    }
+    if (descriptor.getRawClass().isAssignableFrom(Bytes32.class) ||
+        (annotation != null && annotation.serializeAs().isAssignableFrom(Bytes32.class))) {
+      return 32;
+    }
+    if (descriptor.getRawClass().isAssignableFrom(Bytes48.class) ||
+        (annotation != null && annotation.serializeAs().isAssignableFrom(Bytes48.class))) {
+      return 48;
+    }
+    if (descriptor.getRawClass().isAssignableFrom(Bytes96.class) ||
+        (annotation != null && annotation.serializeAs().isAssignableFrom(Bytes96.class))) {
+      return 96;
     }
 
     return SSZType.VARIABLE_SIZE;

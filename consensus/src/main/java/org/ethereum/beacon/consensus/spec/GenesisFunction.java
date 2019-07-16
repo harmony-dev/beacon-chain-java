@@ -1,8 +1,5 @@
 package org.ethereum.beacon.consensus.spec;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
@@ -20,6 +17,10 @@ import tech.pegasys.artemis.util.bytes.Bytes4;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
 import tech.pegasys.artemis.util.uint.UInt64s;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * On genesis part.
@@ -92,8 +93,11 @@ public interface GenesisFunction extends BlockProcessing {
     }
 
     // Populate active_index_roots and compact_committees_roots
-    List<ValidatorIndex> indices_list =
+    List<ValidatorIndex> indices =
         new ArrayList<>(get_active_validator_indices(state, getConstants().getGenesisEpoch()));
+    ReadList<Integer, ValidatorIndex> indices_list =
+        ReadList.wrap(
+            indices, Integer::new, getConstants().getValidatorRegistryLimit().longValue());
     Hash32 active_index_root = hash_tree_root(indices_list);
     Hash32 committee_root = get_compact_committees_root(state, getConstants().getGenesisEpoch());
 

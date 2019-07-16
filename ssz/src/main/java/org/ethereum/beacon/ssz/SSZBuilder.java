@@ -13,7 +13,6 @@ import org.ethereum.beacon.ssz.access.SSZContainerAccessor;
 import org.ethereum.beacon.ssz.access.SSZListAccessor;
 import org.ethereum.beacon.ssz.access.SSZUnionAccessor;
 import org.ethereum.beacon.ssz.access.basic.BooleanPrimitive;
-import org.ethereum.beacon.ssz.access.basic.BytesCodec;
 import org.ethereum.beacon.ssz.access.basic.BytesPrimitive;
 import org.ethereum.beacon.ssz.access.basic.HashCodec;
 import org.ethereum.beacon.ssz.access.basic.StringPrimitive;
@@ -239,7 +238,6 @@ public class SSZBuilder {
     basicCodecs.add(new BooleanPrimitive());
     basicCodecs.add(new StringPrimitive());
     basicCodecs.add(new UIntCodec());
-    basicCodecs.add(new BytesCodec());
     basicCodecs.add(new HashCodec());
     basicCodecs.add(new UnionNull());
     return this;

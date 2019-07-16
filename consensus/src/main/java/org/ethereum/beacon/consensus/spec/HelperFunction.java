@@ -16,7 +16,6 @@ import org.ethereum.beacon.core.state.ShardCommittee;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
-import tech.pegasys.artemis.util.collections.Bitlist;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ShardNumber;
@@ -32,6 +31,7 @@ import tech.pegasys.artemis.util.bytes.Bytes4;
 import tech.pegasys.artemis.util.bytes.Bytes8;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.bytes.BytesValues;
+import tech.pegasys.artemis.util.collections.Bitlist;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.collections.ReadVector;
 import tech.pegasys.artemis.util.uint.UInt64;
@@ -199,6 +199,7 @@ public interface HelperFunction extends SpecCommons {
   default Hash32 get_compact_committees_root(BeaconState state, EpochNumber epoch) {
     List<CompactCommittee> committees = new ArrayList<>();
     ShardNumber start_shard = get_start_shard(state, epoch);
+    UInt64s.iterate(UInt64.ZERO, getConstants().getShardCount()).forEach(i -> committees.add(CompactCommittee.EMPTY));
 
     for (UInt64 committee_number: UInt64s.iterate(UInt64.ZERO, get_committee_count(state, epoch))) {
       ShardNumber shard = start_shard.plusModulo(committee_number, getConstants().getShardCount());
@@ -216,7 +217,7 @@ public interface HelperFunction extends SpecCommons {
         compactValidators.add(compact_validator);
       }
 
-      committees.add(CompactCommittee.create(pubkeys, compactValidators));
+      committees.set(shard.intValue(), CompactCommittee.create(pubkeys, compactValidators));
     }
 
     return hash_tree_root(ReadVector.wrap(committees, Integer::valueOf));
