@@ -4,7 +4,6 @@ import net.consensys.cava.ssz.SSZException;
 import org.ethereum.beacon.ssz.access.SSZListAccessor;
 import org.ethereum.beacon.ssz.access.SSZUnionAccessor.UnionInstanceAccessor;
 import org.ethereum.beacon.ssz.type.SSZBasicType;
-import org.ethereum.beacon.ssz.type.SSZBitListType;
 import org.ethereum.beacon.ssz.type.SSZCompositeType;
 import org.ethereum.beacon.ssz.type.SSZContainerType;
 import org.ethereum.beacon.ssz.type.SSZListType;
@@ -72,6 +71,9 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
   @Override
   public MerkleTrie visitComposite(SSZCompositeType type, Object rawValue,
       ChildVisitor<Object, MerkleTrie> childVisitor) {
+    if (type instanceof SSZListType) {
+      ((SSZListType) type).verifyLimit(rawValue);
+    }
     MerkleTrie merkle;
     List<BytesValue> chunks = new ArrayList<>();
     if (type.getChildrenCount(rawValue) == 0) {
@@ -81,7 +83,7 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
       SerializerResult sszSerializerResult = serializer.visitAny(type, rawValue);
       BytesValue serialization;
       // Strip size bit in Bitlist
-      if (type.getType() == LIST && type.isBitType()) {
+      if (type.getType() == LIST && ((SSZListType) type).isBitType()) {
         serialization = removeBitListSize(rawValue, sszSerializerResult.getSerializedBody());
       } else {
         serialization = sszSerializerResult.getSerializedBody();
@@ -101,7 +103,7 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
       SSZListAccessor listAccessor =
           (SSZListAccessor) type.getAccessor().getInstanceAccessor(type.getTypeDescriptor());
       int elementCount;
-      if (type.isBitType()) {
+      if (((SSZListType) type).isBitType()) {
         elementCount = ((Bitlist) rawValue).size();
       } else {
         elementCount = listAccessor.getChildrenCount(rawValue);
