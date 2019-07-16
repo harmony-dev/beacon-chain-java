@@ -89,7 +89,8 @@ public abstract class AbstractDepositContract implements DepositContract {
       if (startChainSubscribed && !chainStartSink.isTerminated()) {
         initialDeposits.add(depositData);
 
-        if (initialDeposits.size() >= spec.getConstants().getGenesisActiveValidatorCount()) {
+        if (initialDeposits.size() >=
+            spec.getConstants().getMinGenesisActiveValidatorCount().getIntValue()) {
           tryChainStart(blockHash, blockTimestamp);
         }
       }

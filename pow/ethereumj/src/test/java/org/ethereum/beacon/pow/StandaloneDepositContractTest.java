@@ -20,6 +20,7 @@ import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Gwei;
+import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.crypto.BLS381;
 import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.crypto.MessageParameters;
@@ -69,13 +70,18 @@ public class StandaloneDepositContractTest {
         .withConstants(
             new SpecConstants() {
               @Override
-              public int getGenesisActiveValidatorCount() {
-                return 16;
+              public UInt64 getMinGenesisActiveValidatorCount() {
+                return UInt64.valueOf(16);
               }
 
               @Override
               public long getSecondsPerDay() {
                 return 5;
+              }
+
+              @Override
+              public Time getMinGenesisTime() {
+                return Time.of(0);
               }
             })
         .withDefaultHasher()
