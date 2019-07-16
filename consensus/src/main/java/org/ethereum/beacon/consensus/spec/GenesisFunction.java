@@ -62,6 +62,7 @@ public interface GenesisFunction extends BlockProcessing {
     state.setEth1Data(new Eth1Data(
         hash_tree_root(deposit_data_list), UInt64.valueOf(deposits.size()), eth1_block_hash));
     for (Deposit deposit : deposits) {
+      verify_deposit(state, deposit);
       process_deposit(state, deposit);
     }
 

@@ -92,6 +92,7 @@ public interface BeaconChainSpec
     private boolean cache = false;
     private boolean blsVerify = true;
     private boolean blsVerifyProofOfPossession = true;
+    private boolean verifyDepositProof = true;
 
     public Builder withConstants(SpecConstants constants) {
       this.constants = constants;
@@ -142,13 +143,24 @@ public interface BeaconChainSpec
       return withCache(true);
     }
 
+    public Builder withVerifyDepositProof(boolean verifyDepositProof) {
+      this.verifyDepositProof = verifyDepositProof;
+      return this;
+    }
+
     public BeaconChainSpec build() {
       assert constants != null;
       assert hashFunction != null;
       assert hasher != null;
 
       return new CachingBeaconChainSpec(
-          constants, hashFunction, hasher, blsVerify, blsVerifyProofOfPossession, cache);
+          constants,
+          hashFunction,
+          hasher,
+          blsVerify,
+          blsVerifyProofOfPossession,
+          verifyDepositProof,
+          cache);
     }
   }
 }

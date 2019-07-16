@@ -25,6 +25,8 @@ public interface SpecCommons {
 
   boolean isBlsVerifyProofOfPossession();
 
+  boolean isVerifyDepositProof();
+
   default void assertTrue(boolean assertion) {
     if (!assertion) {
       throw new SpecAssertionFailed();
