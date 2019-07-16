@@ -8,9 +8,9 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
 
 public interface SerializerFactory {
 
-  <T> Function<BytesValue, T> getDeserializer(Class<T> objectClass);
+  <T> Function<BytesValue, T> getDeserializer(Class<? extends T> objectClass);
 
-  <T> Function<T, BytesValue> getSerializer(Class<T> objectClass);
+  <T> Function<T, BytesValue> getSerializer(Class<? extends T> objectClass);
 
   static SerializerFactory createSSZ(SpecConstants specConstants) {
     return new SSZSerializerFactory(new SSZBuilder()

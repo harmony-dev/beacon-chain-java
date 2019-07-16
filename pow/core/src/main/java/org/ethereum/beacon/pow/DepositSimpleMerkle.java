@@ -92,13 +92,19 @@ public class DepositSimpleMerkle extends DepositDataMerkle {
       throw new RuntimeException(
           String.format("Max size is %s, asked for size %s!", getLastIndex() + 1, size));
     }
-    return get_merkle_proof(calc_merkle_tree_from_leaves(deposits.subList(0, size)), index);
+    List<Hash32> proof =
+        get_merkle_proof(calc_merkle_tree_from_leaves(deposits.subList(0, size)), index);
+
+    // add encoded length
+    proof.add(Hash32.wrap(encodeLength(size)));
+
+    return proof;
   }
 
   @Override
   public Hash32 getRoot(int index) {
     verifyIndexNotTooBig(index);
-    return Hash32.wrap(Bytes32.leftPad(get_merkle_root(deposits.subList(0, index + 1))));
+    return mixinLength(get_merkle_root(deposits.subList(0, index + 1)), index + 1);
   }
 
   @Override
