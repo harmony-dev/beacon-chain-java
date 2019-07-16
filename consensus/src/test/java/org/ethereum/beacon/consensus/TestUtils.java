@@ -60,7 +60,9 @@ public class TestUtils {
 
       Deposit deposit =
           Deposit.create(
-              Collections.singletonList(Hash32.random(rnd)),
+              Collections.nCopies(
+                  spec.getConstants().getDepositContractTreeDepth().getIntValue() + 1,
+                  Hash32.random(rnd)),
               new DepositData(
                   BLSPubkey.wrap(Bytes48.leftPad(keyPair.getPublic().getEncodedBytes())),
                   withdrawalCredentials,

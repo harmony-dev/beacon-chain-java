@@ -1,5 +1,6 @@
 package org.ethereum.beacon.ssz.type;
 
+import org.ethereum.beacon.ssz.SSZDeserializeException;
 import org.ethereum.beacon.ssz.SSZSerializeException;
 import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.access.SSZListAccessor;
@@ -36,6 +37,24 @@ public class SSZListType implements SSZHomoCompositeType {
     this.accessor = accessor;
     this.vectorLength = vectorLength;
     this.maxSize = maxSize;
+  }
+
+  public void verifyMovingLimit(int childrenCount) {
+    if (getType() == Type.VECTOR && !isBitType()) {
+      if (childrenCount > getVectorLength()) {
+        throw new SSZDeserializeException(
+            String.format(
+                "Vector type length exceeds actual list length: %d !=  %d for %s",
+                getVectorLength(), childrenCount, toStringHelper()));
+      }
+    } else if (getType() == Type.LIST && getMaxSize() > VARIABLE_SIZE && !isBitType()) {
+      if (childrenCount > getMaxSize()) {
+        throw new SSZDeserializeException(
+            String.format(
+                "Maximum size of list is exceeded with actual number of elements: %d > %d for %s",
+                childrenCount, getMaxSize(), toStringHelper()));
+      }
+    }
   }
 
   public void verifyLimit(Object param) {

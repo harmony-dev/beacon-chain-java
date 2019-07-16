@@ -13,12 +13,12 @@ public class SSZSerializerFactory implements SerializerFactory {
   }
 
   @Override
-  public <T> Function<BytesValue, T> getDeserializer(Class<T> objectClass) {
+  public <T> Function<BytesValue, T> getDeserializer(Class<? extends T> objectClass) {
     return bytes -> serializer.decode(bytes, objectClass);
   }
 
   @Override
-  public <T> Function<T, BytesValue> getSerializer(Class<T> objectClass) {
+  public <T> Function<T, BytesValue> getSerializer(Class<? extends T> objectClass) {
     return serializer::encode2;
   }
 }

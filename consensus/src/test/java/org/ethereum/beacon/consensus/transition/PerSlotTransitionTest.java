@@ -29,7 +29,13 @@ public class PerSlotTransitionTest {
             return new SlotNumber.EpochLength(UInt64.valueOf(8));
           }
         };
-    BeaconChainSpec spec = BeaconChainSpec.createWithDefaultHasher(specConstants);
+    BeaconChainSpec spec =
+        new BeaconChainSpec.Builder()
+            .withConstants(specConstants)
+            .withDefaultHasher(specConstants)
+            .withDefaultHashFunction()
+            .withVerifyDepositProof(false)
+            .build();
 
     List<Deposit> deposits = TestUtils.getAnyDeposits(rnd, spec, 8).getValue0();
     Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), UInt64.valueOf(deposits.size()), Hash32.random(rnd));

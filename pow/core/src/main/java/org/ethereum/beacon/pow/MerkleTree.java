@@ -15,6 +15,8 @@ public interface MerkleTree<V> {
   /**
    * Proofs for element with provided index on tree with specified size
    *
+   * <p><strong>Note:</strong> result has encoded deposit count value as last element.
+   *
    * @param index at index
    * @param size with all tree made of size elements
    * @return proofs
@@ -23,6 +25,8 @@ public interface MerkleTree<V> {
 
   /**
    * Root of merkle tree with all elements up to index
+   *
+   * <p><strong>Note:</strong> computed root includes deposit count by mixing it with tree root.
    *
    * @param index last element index
    * @return tree root
