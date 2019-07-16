@@ -4,6 +4,7 @@ import net.consensys.cava.ssz.SSZException;
 import org.ethereum.beacon.ssz.access.SSZListAccessor;
 import org.ethereum.beacon.ssz.access.SSZUnionAccessor.UnionInstanceAccessor;
 import org.ethereum.beacon.ssz.type.SSZBasicType;
+import org.ethereum.beacon.ssz.type.SSZBitListType;
 import org.ethereum.beacon.ssz.type.SSZCompositeType;
 import org.ethereum.beacon.ssz.type.SSZContainerType;
 import org.ethereum.beacon.ssz.type.SSZListType;
