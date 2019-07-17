@@ -9,6 +9,7 @@ import org.ethereum.beacon.consensus.hasher.ObjectHasher;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.spec.SpecConstants;
+import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import tech.pegasys.artemis.util.collections.Bitlist;
 import org.ethereum.beacon.core.types.EpochNumber;
@@ -23,6 +24,7 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.bytes.BytesValues;
+import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public class CachingBeaconChainSpec extends BeaconChainSpecImpl {
@@ -120,8 +122,11 @@ public class CachingBeaconChainSpec extends BeaconChainSpecImpl {
 
   @Override
   public List<ValidatorIndex> get_crosslink_committee(BeaconState state, EpochNumber epoch, ShardNumber shard) {
+    ReadList<ValidatorIndex, ValidatorRecord> validators =
+        ReadList.wrap(
+            state.getValidators().listCopy(), ValidatorIndex::of, getConstants().getValidatorRegistryLimit().longValue());
     Hash32 digest = getDigest(
-        objectHash(state.getValidators()),
+        objectHash(validators),
         get_seed(state, epoch),
         get_start_shard(state, epoch).toBytes8(),
         epoch.toBytes8(),
@@ -133,24 +138,36 @@ public class CachingBeaconChainSpec extends BeaconChainSpecImpl {
 
   @Override
   public List<ValidatorIndex> get_active_validator_indices(BeaconState state, EpochNumber epoch) {
-    Hash32 digest = getDigest(objectHash(state.getValidators()), epoch.toBytes8());
+    ReadList<ValidatorIndex, ValidatorRecord> validators =
+        ReadList.wrap(
+            state.getValidators().listCopy(), ValidatorIndex::of, getConstants().getValidatorRegistryLimit().longValue());
+    Hash32 digest = getDigest(objectHash(validators), epoch.toBytes8());
     return caches.activeValidatorsCache.get(
         digest, e -> super.get_active_validator_indices(state, epoch));
   }
 
   @Override
   public Gwei get_total_active_balance(BeaconState state) {
+    ReadList<ValidatorIndex, ValidatorRecord> validators =
+        ReadList.wrap(
+            state.getValidators().listCopy(), ValidatorIndex::of, getConstants().getValidatorRegistryLimit().longValue());
     Hash32 digest = getDigest(
-        objectHash(state.getValidators()), get_current_epoch(state).toBytes8());
+        objectHash(validators), get_current_epoch(state).toBytes8());
     return caches.totalActiveBalanceCache.get(digest, e -> super.get_total_active_balance(state));
   }
 
   @Override
   public List<ValidatorIndex> get_attesting_indices(
       BeaconState state, AttestationData attestation_data, Bitlist bitlist) {
+    ReadList<ValidatorIndex, ValidatorRecord> validators =
+        ReadList.wrap(
+            state.getValidators().listCopy(), ValidatorIndex::of, getConstants().getValidatorRegistryLimit().longValue());
+    ReadList<EpochNumber, Hash32> randaoMixes =
+        ReadList.wrap(
+            state.getRandaoMixes().listCopy(), EpochNumber::of, getConstants().getEpochsPerHistoricalVector().longValue());
     Hash32 digest = getDigest(
-        objectHash(state.getValidators()),
-        objectHash(state.getRandaoMixes()),
+        objectHash(validators),
+        objectHash(randaoMixes),
         attestation_data.getTarget().getEpoch().toBytes8(),
         attestation_data.getCrosslink().getShard().toBytes8(),
         bitlist
