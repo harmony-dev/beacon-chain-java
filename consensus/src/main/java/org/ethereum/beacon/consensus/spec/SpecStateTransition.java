@@ -10,7 +10,7 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
  * State transition.
  *
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.7.1/specs/core/0_beacon-chain.md#beacon-chain-state-transition-function">Beacon
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.8.1/specs/core/0_beacon-chain.md#beacon-chain-state-transition-function">Beacon
  *     chain state transition function</a> in the spec.
  */
 public interface SpecStateTransition extends EpochProcessing, BlockProcessing {
