@@ -110,9 +110,9 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
 
     Attestation attestation =
         new Attestation(
-            Bitlist.of(aggValue, constants.getValidatorRegistryLimit().getValue()),
+            Bitlist.of(aggValue, constants.getMaxValidatorsPerCommittee().getValue()),
             parseAttestationData((getAttestation().getData())),
-            Bitlist.of(cusValue, constants.getValidatorRegistryLimit().getValue()),
+            Bitlist.of(cusValue, constants.getMaxValidatorsPerCommittee().getValue()),
             BLSSignature.wrap(Bytes96.fromHexString(getAttestation().getSignature())));
 
     return attestation;
@@ -139,8 +139,8 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
     return parseVoluntaryExit(getVoluntaryExit());
   }
 
-  public BeaconBlock getBeaconBlock() {
-    return parseBlockData(getBlock());
+  public BeaconBlock getBeaconBlock(SpecConstants constants) {
+    return parseBlockData(getBlock(), constants);
   }
 
   public BlockData.BlockBodyData.AttesterSlashingData getAttesterSlashing() {
@@ -199,8 +199,8 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
     this.blocks = blocks;
   }
 
-  public List<BeaconBlock> getBeaconBlocks() {
-    return blocks.stream().map(StateTestUtils::parseBlockData).collect(Collectors.toList());
+  public List<BeaconBlock> getBeaconBlocks(SpecConstants constants) {
+    return blocks.stream().map((BlockData blockData) -> StateTestUtils.parseBlockData(blockData, constants)).collect(Collectors.toList());
   }
 
   public BeaconStateData getPre() {

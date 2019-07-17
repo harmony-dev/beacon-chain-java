@@ -56,7 +56,7 @@ import java.util.stream.Collectors;
 public abstract class StateTestUtils {
   private StateTestUtils() {}
 
-  public static BeaconBlock parseBlockData(StateTestCase.BlockData blockData) {
+  public static BeaconBlock parseBlockData(StateTestCase.BlockData blockData, SpecConstants constants) {
     Eth1Data eth1Data1 = parseEth1Data(blockData.getBody().getEth1Data());
 
     // Attestations
@@ -68,9 +68,9 @@ public abstract class StateTestUtils {
       BytesValue cusValue = BytesValue.fromHexString(attestationData.getCustodyBits());
       Attestation attestation =
           new Attestation(
-              Bitlist.of(aggValue.size(), aggValue, Integer.MAX_VALUE),
+              Bitlist.of(aggValue, constants.getMaxValidatorsPerCommittee().longValue()),
               attestationData1,
-              Bitlist.of(cusValue.size(), cusValue, Integer.MAX_VALUE),
+              Bitlist.of(cusValue, constants.getMaxValidatorsPerCommittee().longValue()),
               BLSSignature.wrap(Bytes96.fromHexString(attestationData.getSignature())));
       attestations.add(attestation);
     }
@@ -297,7 +297,7 @@ public abstract class StateTestUtils {
       StateTestCase.BeaconStateData.AttestationData attestationData, SpecConstants constants) {
     BytesValue aggValue = BytesValue.fromHexString(attestationData.getAggregationBits());
     return new PendingAttestation(
-        Bitlist.of(aggValue, constants.getValidatorRegistryLimit().getValue()),
+        Bitlist.of(aggValue, constants.getMaxValidatorsPerCommittee().getValue()),
         parseAttestationData(attestationData.getData()),
         SlotNumber.castFrom(UInt64.valueOf(attestationData.getInclusionDelay())),
         ValidatorIndex.of(attestationData.getProposerIndex()));
