@@ -142,10 +142,10 @@ public interface BeaconState extends ObservableComposite {
 
   /** Previous epoch snapshot. */
   @SSZ(order = 19, vectorLengthVar = "spec.SHARD_COUNT")
-  ReadVector<ShardNumber, Crosslink> getCurrentCrosslinks();
+  ReadVector<ShardNumber, Crosslink> getPreviousCrosslinks();
 
   @SSZ(order = 20, vectorLengthVar = "spec.SHARD_COUNT")
-  ReadVector<ShardNumber, Crosslink> getPreviousCrosslinks();
+  ReadVector<ShardNumber, Crosslink> getCurrentCrosslinks();
 
   /* ******** Finality ********* */
 
