@@ -2,6 +2,7 @@ package org.ethereum.beacon.ssz.access.list;
 
 import java.util.List;
 import org.ethereum.beacon.ssz.access.SSZField;
+import org.ethereum.beacon.ssz.type.SSZType;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 public class BytesValueAccessor extends AbstractListAccessor {
@@ -22,7 +23,7 @@ public class BytesValueAccessor extends AbstractListAccessor {
   }
 
   @Override
-  public ListInstanceBuilder createInstanceBuilder(SSZField listType) {
+  public ListInstanceBuilder createInstanceBuilder(SSZType sszType) {
     return new SimpleInstanceBuilder() {
       @Override
       protected Object buildImpl(List<Object> children) {

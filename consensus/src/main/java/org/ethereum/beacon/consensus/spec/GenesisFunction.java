@@ -88,7 +88,6 @@ public interface GenesisFunction extends BlockProcessing {
     }
 
     // Populate active_index_roots and compact_committees_roots
-    // TODO switch indices_list to limited list
     List<ValidatorIndex> indices_list =
         new ArrayList<>(get_active_validator_indices(state, getConstants().getGenesisEpoch()));
     Hash32 active_index_root = hash_tree_root(indices_list);

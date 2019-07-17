@@ -86,7 +86,7 @@ public class BeaconChainAttesterTest {
     Assert.assertEquals(
         new Checkpoint(state.getCurrentJustifiedCheckpoint().getEpoch(), sourceRoot), data.getSource());
 
-    int bitfieldSize = (committee.size() - 1) / 8 + 1;
+    int bitfieldSize = committee.size();
 
     Assert.assertEquals(bitfieldSize, attestation.getAggregationBits().size());
     Assert.assertEquals(bitfieldSize, attestation.getCustodyBits().size());

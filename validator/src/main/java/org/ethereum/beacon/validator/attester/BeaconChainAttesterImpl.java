@@ -14,7 +14,7 @@ import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustody
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.types.BLSSignature;
-import org.ethereum.beacon.core.types.Bitfield;
+import tech.pegasys.artemis.util.collections.Bitlist;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
@@ -62,11 +62,12 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
 
     List<ValidatorIndex> committee = getCommittee(state, shard);
     BytesValue participationBitfield = getParticipationBitfield(validatorIndex, committee);
+    Bitlist participation = Bitlist.of(committee.size(), participationBitfield, spec.getConstants().getMaxValidatorsPerCommittee().intValue());
     BytesValue custodyBitfield = getCustodyBitfield(validatorIndex, committee);
+    Bitlist custody = Bitlist.of(committee.size(), custodyBitfield, spec.getConstants().getMaxValidatorsPerCommittee().intValue());
     BLSSignature aggregateSignature = getAggregateSignature(state, data, signer);
 
-    return new Attestation(
-        Bitfield.of(participationBitfield), data, Bitfield.of(custodyBitfield), aggregateSignature);
+    return new Attestation(participation, data, custody, aggregateSignature);
   }
 
   /**

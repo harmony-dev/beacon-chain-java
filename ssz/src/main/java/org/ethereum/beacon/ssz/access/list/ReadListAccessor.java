@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.function.Function;
 import org.ethereum.beacon.ssz.SSZSerializeException;
 import org.ethereum.beacon.ssz.access.SSZField;
+import org.ethereum.beacon.ssz.type.SSZType;
 import tech.pegasys.artemis.util.collections.ReadList;
 
 public class ReadListAccessor extends AbstractListAccessor {
@@ -46,12 +47,12 @@ public class ReadListAccessor extends AbstractListAccessor {
   }
 
   @Override
-  public ListInstanceBuilder createInstanceBuilder(SSZField listType) {
+  public ListInstanceBuilder createInstanceBuilder(SSZType sszType) {
     return new SimpleInstanceBuilder() {
       @Override
       protected Object buildImpl(List<Object> children) {
         return ReadList.wrap(children, resolveIndexConverter((Class<?>)
-            listType.getParametrizedType().getActualTypeArguments()[0]));
+            sszType.getTypeDescriptor().getParametrizedType().getActualTypeArguments()[0]));
       }
     };
   }

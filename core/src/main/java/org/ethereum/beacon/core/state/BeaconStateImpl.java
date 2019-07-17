@@ -6,7 +6,7 @@ import org.ethereum.beacon.core.BeaconBlockHeader;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
-import org.ethereum.beacon.core.types.Bitfield64;
+import tech.pegasys.artemis.util.collections.Bitvector;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ShardNumber;
@@ -20,7 +20,6 @@ import org.ethereum.beacon.ssz.incremental.ObservableListImpl;
 import org.ethereum.beacon.ssz.incremental.UpdateListener;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.collections.WriteList;
-import tech.pegasys.artemis.util.collections.WriteVector;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 @SSZSerializable
@@ -82,7 +81,7 @@ public class BeaconStateImpl implements MutableBeaconState {
 
 
   /* Finality */
-  private ObsValue<Bitfield64> justificationBits = obsHelper.newValue(Bitfield64.ZERO);
+  private ObsValue<Bitvector> justificationBits = obsHelper.newValue(Bitvector.EMPTY);
   private ObsValue<Checkpoint> previousJustifiedCheckpoint = obsHelper.newValue(Checkpoint.EMPTY);
   private ObsValue<Checkpoint> currentJustifiedCheckpoint = obsHelper.newValue(Checkpoint.EMPTY);
   private ObsValue<Checkpoint> finalizedCheckpoint = obsHelper.newValue(Checkpoint.EMPTY);
@@ -231,12 +230,12 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
-  public Bitfield64 getJustificationBits() {
+  public Bitvector getJustificationBits() {
     return justificationBits.get();
   }
 
   @Override
-  public void setJustificationBits(Bitfield64 justificationBits) {
+  public void setJustificationBits(Bitvector justificationBits) {
     this.justificationBits.set(justificationBits);
   }
 

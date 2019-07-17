@@ -27,7 +27,7 @@ import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
-import org.ethereum.beacon.core.types.Bitfield;
+import tech.pegasys.artemis.util.collections.Bitlist;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.SlotNumber;
@@ -71,9 +71,9 @@ public class TestDataFactory {
     AttestationData attestationData = createAttestationData();
     Attestation attestation =
         new Attestation(
-            Bitfield.of(someValue),
+            Bitlist.of(someValue.size() * 8, someValue, specConstants.getMaxValidatorsPerCommittee().getValue()),
             attestationData,
-            Bitfield.of(BytesValue.fromHexString("bb")),
+            Bitlist.of(8, BytesValue.fromHexString("bb"),  specConstants.getMaxValidatorsPerCommittee().getValue()),
             BLSSignature.wrap(Bytes96.fromHexString("cc")));
 
     return attestation;
@@ -131,8 +131,8 @@ public class TestDataFactory {
     proposerSlashings.add(createProposerSlashing(random));
     List<AttesterSlashing> attesterSlashings = new ArrayList<>();
     attesterSlashings.add(createAttesterSlashings());
-    attesterSlashings.add(createAttesterSlashings());
     List<Attestation> attestations = new ArrayList<>();
+    attestations.add(createAttestation());
     attestations.add(createAttestation());
     List<Deposit> deposits = new ArrayList<>();
     deposits.add(createDeposit1());
@@ -207,7 +207,7 @@ public class TestDataFactory {
   public PendingAttestation createPendingAttestation() {
     PendingAttestation pendingAttestation =
         new PendingAttestation(
-            Bitfield.of(BytesValue.fromHexString("aa")),
+            Bitlist.of(8, BytesValue.fromHexString("aa"), specConstants.getMaxValidatorsPerCommittee().getValue()),
             createAttestationData(),
             SlotNumber.ZERO,
             ValidatorIndex.ZERO);

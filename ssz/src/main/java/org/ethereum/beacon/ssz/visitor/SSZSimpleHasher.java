@@ -1,15 +1,6 @@
 package org.ethereum.beacon.ssz.visitor;
 
-import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonList;
-import static org.ethereum.beacon.ssz.type.SSZType.Type.BASIC;
-import static org.ethereum.beacon.ssz.type.SSZType.Type.LIST;
-import static org.ethereum.beacon.ssz.type.SSZType.Type.VECTOR;
-import static tech.pegasys.artemis.util.bytes.BytesValue.concat;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Function;
+import org.ethereum.beacon.ssz.access.SSZListAccessor;
 import org.ethereum.beacon.ssz.access.SSZUnionAccessor.UnionInstanceAccessor;
 import org.ethereum.beacon.ssz.type.SSZBasicType;
 import org.ethereum.beacon.ssz.type.SSZCompositeType;
@@ -20,6 +11,19 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.bytes.BytesValues;
+import tech.pegasys.artemis.util.bytes.MutableBytesValue;
+import tech.pegasys.artemis.util.collections.Bitlist;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
+
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
+import static org.ethereum.beacon.ssz.type.SSZType.Type.BASIC;
+import static org.ethereum.beacon.ssz.type.SSZType.Type.LIST;
+import static org.ethereum.beacon.ssz.type.SSZType.Type.VECTOR;
+import static tech.pegasys.artemis.util.bytes.BytesValue.concat;
 
 public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
 
@@ -63,6 +67,9 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
   @Override
   public MerkleTrie visitComposite(SSZCompositeType type, Object rawValue,
       ChildVisitor<Object, MerkleTrie> childVisitor) {
+    if (type instanceof SSZListType) {
+      ((SSZListType) type).verifyLimit(rawValue);
+    }
     MerkleTrie merkle;
     List<BytesValue> chunks = new ArrayList<>();
     if (type.getChildrenCount(rawValue) == 0) {
@@ -70,8 +77,14 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
     } else if ((type.getType() == LIST || type.getType() == VECTOR)
         && ((SSZListType) type).getElementType().getType() == BASIC) {
       SerializerResult sszSerializerResult = serializer.visitAny(type, rawValue);
-
-      chunks = pack(sszSerializerResult.getSerializedBody());
+      BytesValue serialization;
+      // Strip size bit in Bitlist
+      if (type.getType() == LIST && ((SSZListType) type).isBitType()) {
+        serialization = removeBitListSize(rawValue, sszSerializerResult.getSerializedBody());
+      } else {
+        serialization = sszSerializerResult.getSerializedBody();
+      }
+      chunks = pack(serialization);
     } else {
       for (int i = 0; i < type.getChildrenCount(rawValue); i++) {
         chunks.add(childVisitor.apply(i, type.getChild(rawValue, i)).getFinalRoot());
@@ -79,12 +92,26 @@ public class SSZSimpleHasher implements SSZVisitor<MerkleTrie, Object> {
     }
     merkle = merkleize(chunks);
     if (type.getType() == LIST) {
-      Hash32 mixInLength = hashFunction.apply(concat(
-          merkle.getPureRoot(),
-          serializeLength(type.getChildrenCount(rawValue))));
+      SSZListAccessor listAccessor =
+          (SSZListAccessor) type.getAccessor().getInstanceAccessor(type.getTypeDescriptor());
+      int elementCount;
+      if (((SSZListType) type).isBitType()) {
+        elementCount = ((Bitlist) rawValue).size();
+      } else {
+        elementCount = listAccessor.getChildrenCount(rawValue);
+      }
+      Hash32 mixInLength =
+          hashFunction.apply(concat(merkle.getPureRoot(), serializeLength(elementCount)));
       merkle.setFinalRoot(mixInLength);
     }
     return merkle;
+  }
+
+  private BytesValue removeBitListSize(Object value, BytesValue bitlist) {
+    MutableBytesValue encoded = bitlist.mutableCopy();
+    Bitlist obj = (Bitlist) value;
+    encoded.setBit(obj.size(), false);
+    return encoded.copy();
   }
 
   protected List<BytesValue> pack(BytesValue value) {

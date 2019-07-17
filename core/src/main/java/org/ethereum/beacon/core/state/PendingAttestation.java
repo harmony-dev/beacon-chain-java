@@ -1,14 +1,15 @@
 package org.ethereum.beacon.core.state;
 
 import com.google.common.base.Objects;
-import java.util.stream.Collectors;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
-import org.ethereum.beacon.core.types.Bitfield;
+import tech.pegasys.artemis.util.collections.Bitlist;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
+
+import java.util.stream.Collectors;
 
 /**
  * An attestation data that have not been processed yet.
@@ -22,7 +23,8 @@ import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 public class PendingAttestation {
 
   /** Attester aggregation bitfield. */
-  @SSZ private final Bitfield aggregationBits;
+  @SSZ(maxSizeVar = "spec.MAX_VALIDATORS_PER_COMMITTEE")
+  private final Bitlist aggregationBits;
   /** Signed data. */
   @SSZ private final AttestationData data;
   /** Slot in which it was included. */
@@ -31,7 +33,7 @@ public class PendingAttestation {
   @SSZ private final ValidatorIndex proposerIndex;
 
   public PendingAttestation(
-      Bitfield aggregationBits,
+      Bitlist aggregationBits,
       AttestationData data,
       SlotNumber inclusionDelay,
       ValidatorIndex proposerIndex) {
@@ -41,7 +43,7 @@ public class PendingAttestation {
     this.proposerIndex = proposerIndex;
   }
 
-  public Bitfield getAggregationBits() {
+  public Bitlist getAggregationBits() {
     return aggregationBits;
   }
 

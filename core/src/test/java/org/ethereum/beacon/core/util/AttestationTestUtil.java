@@ -10,10 +10,9 @@ import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.types.BLSSignature;
-import org.ethereum.beacon.core.types.Bitfield;
+import tech.pegasys.artemis.util.collections.Bitlist;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes96;
-import tech.pegasys.artemis.util.bytes.BytesValue;
 
 public abstract class AttestationTestUtil {
   private AttestationTestUtil() {}
@@ -26,9 +25,9 @@ public abstract class AttestationTestUtil {
 
   public static Attestation createRandomAttestation(Random random) {
     return new Attestation(
-        Bitfield.of(BytesValue.wrap(new byte[64])),
+        Bitlist.of(64),
         createRandomAttestationData(random),
-        Bitfield.of(BytesValue.wrap(new byte[64])),
+        Bitlist.of(64),
         BLSSignature.wrap(Bytes96.random(random)));
   }
 

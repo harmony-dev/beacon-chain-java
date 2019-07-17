@@ -2,15 +2,12 @@ package org.ethereum.beacon.core.operations.slashing;
 
 import com.google.common.base.Objects;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
-import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.types.BLSSignature;
-import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.util.collections.ReadList;
 
-import javax.annotation.Nullable;
 import java.util.List;
 import java.util.function.Function;
 
@@ -24,9 +21,11 @@ import java.util.function.Function;
 @SSZSerializable
 public class IndexedAttestation {
   /** Indices with custody bit equal to 0. */
-  @SSZ private final ReadList<Integer, ValidatorIndex> custodyBit0Indices;
+  @SSZ(maxSizeVar = "spec.MAX_VALIDATORS_PER_COMMITTEE")
+  private final ReadList<Integer, ValidatorIndex> custodyBit0Indices;
   /** Indices with custody bit equal to 1. */
-  @SSZ private final ReadList<Integer, ValidatorIndex> custodyBit1Indices;
+  @SSZ(maxSizeVar = "spec.MAX_VALIDATORS_PER_COMMITTEE")
+  private final ReadList<Integer, ValidatorIndex> custodyBit1Indices;
   /** Attestation data */
   @SSZ private final AttestationData data;
   /** Aggregate signature */

@@ -7,7 +7,7 @@ import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.types.BLSSignature;
-import org.ethereum.beacon.core.types.Bitfield;
+import tech.pegasys.artemis.util.collections.Bitlist;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
@@ -25,18 +25,20 @@ import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 public class Attestation {
 
   /** A bitfield where each bit corresponds to a validator attested to the {@link #data}. */
-  @SSZ private final Bitfield aggregationBits;
+  @SSZ(maxSizeVar = "spec.MAX_VALIDATORS_PER_COMMITTEE")
+  private final Bitlist aggregationBits;
   /** Attestation data object. */
   @SSZ private final AttestationData data;
   /** Proof of custody bitfield. */
-  @SSZ private final Bitfield custodyBits;
+  @SSZ(maxSizeVar = "spec.MAX_VALIDATORS_PER_COMMITTEE")
+  private final Bitlist custodyBits;
   /** A product of aggregation of signatures from different validators to {@link #data}. */
   @SSZ private final BLSSignature signature;
 
   public Attestation(
-      Bitfield aggregationBits,
+      Bitlist aggregationBits,
       AttestationData data,
-      Bitfield custodyBits,
+      Bitlist custodyBits,
       BLSSignature signature) {
     this.aggregationBits = aggregationBits;
     this.data = data;
@@ -48,11 +50,11 @@ public class Attestation {
     return data;
   }
 
-  public Bitfield getAggregationBits() {
+  public Bitlist getAggregationBits() {
     return aggregationBits;
   }
 
-  public Bitfield getCustodyBits() {
+  public Bitlist getCustodyBits() {
     return custodyBits;
   }
 
@@ -93,7 +95,7 @@ public class Attestation {
     return "Attestation["
         + data.toString()
         + ", attesters=" + getSignerIndices()
-        + ", cusodyBits=" + custodyBits
+        + ", custodyBits=" + custodyBits
         + ", sig=" + signature
         + "]";
   }

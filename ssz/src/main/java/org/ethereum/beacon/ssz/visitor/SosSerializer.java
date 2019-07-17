@@ -1,11 +1,5 @@
 package org.ethereum.beacon.ssz.visitor;
 
-import static org.ethereum.beacon.ssz.type.SSZType.Type.VECTOR;
-import static org.ethereum.beacon.ssz.visitor.SosDeserializer.BYTES_PER_LENGTH_OFFSET;
-
-import java.io.ByteArrayOutputStream;
-import java.util.ArrayList;
-import java.util.List;
 import org.ethereum.beacon.ssz.SSZSerializeException;
 import org.ethereum.beacon.ssz.access.SSZUnionAccessor.UnionInstanceAccessor;
 import org.ethereum.beacon.ssz.type.SSZBasicType;
@@ -15,11 +9,17 @@ import org.ethereum.beacon.ssz.type.SSZUnionType;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.bytes.BytesValues;
 
-/**
- * SSZ serializer with offset-based encoding of variable sized elements
- */
-public class SosSerializer
-    implements SSZVisitor<SosSerializer.SerializerResult, Object> {
+import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.ethereum.beacon.ssz.type.SSZType.Type.LIST;
+import static org.ethereum.beacon.ssz.type.SSZType.Type.VECTOR;
+import static org.ethereum.beacon.ssz.type.SSZType.VARIABLE_SIZE;
+import static org.ethereum.beacon.ssz.visitor.SosDeserializer.BYTES_PER_LENGTH_OFFSET;
+
+/** SSZ serializer with offset-based encoding of variable sized elements */
+public class SosSerializer implements SSZVisitor<SosSerializer.SerializerResult, Object> {
 
   private static BytesValue serializeLength(long len) {
     return BytesValues.ofUnsignedIntLittleEndian(len);
@@ -35,18 +35,7 @@ public class SosSerializer
   @Override
   public SerializerResult visitList(
       SSZListType type, Object param, ChildVisitor<Object, SerializerResult> childVisitor) {
-
-    if (type.getType() == VECTOR) {
-      if (type.getChildrenCount(param) != type.getVectorLength()) {
-        throw new SSZSerializeException(
-            "Vector type length doesn't match actual list length: "
-                + type.getVectorLength()
-                + " !=  "
-                + type.getChildrenCount(param)
-                + " for "
-                + type.toStringHelper());
-      }
-    }
+    type.verifyLimit(param);
     return visitComposite(type, param, childVisitor);
   }
 
@@ -61,15 +50,16 @@ public class SosSerializer
   }
 
   @Override
-  public SerializerResult visitUnion(SSZUnionType type, Object param,
-      ChildVisitor<Object, SerializerResult> childVisitor) {
-    UnionInstanceAccessor unionInstanceAccessor = type.getAccessor().getInstanceAccessor(type.getTypeDescriptor());
+  public SerializerResult visitUnion(
+      SSZUnionType type, Object param, ChildVisitor<Object, SerializerResult> childVisitor) {
+    UnionInstanceAccessor unionInstanceAccessor =
+        type.getAccessor().getInstanceAccessor(type.getTypeDescriptor());
     int typeIndex = unionInstanceAccessor.getTypeIndex(param);
     BytesValue typeIndexBytes = serializeLength(typeIndex);
     BytesValue body = BytesValue.EMPTY;
     if (typeIndex > 0 || !type.isNullable()) {
-      SerializerResult result = childVisitor.apply(typeIndex, unionInstanceAccessor
-          .getChildValue(param, typeIndex));
+      SerializerResult result =
+          childVisitor.apply(typeIndex, unionInstanceAccessor.getChildValue(param, typeIndex));
       body = result.getSerializedBody();
     }
     return new SerializerResult(typeIndexBytes.concat(body), false);
@@ -77,9 +67,7 @@ public class SosSerializer
 
   @Override
   public SerializerResult visitComposite(
-      SSZCompositeType type,
-      Object rawValue,
-      ChildVisitor<Object, SerializerResult> childVisitor) {
+      SSZCompositeType type, Object rawValue, ChildVisitor<Object, SerializerResult> childVisitor) {
     return visitComposite(type, rawValue, childVisitor, 0, type.getChildrenCount(rawValue));
   }
 

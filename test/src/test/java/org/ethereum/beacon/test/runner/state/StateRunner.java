@@ -62,7 +62,7 @@ public class StateRunner implements Runner {
 
   public Optional<String> run() {
     BeaconState initialState = buildInitialState(spec, testCase.getPre());
-    Optional<String> err = StateComparator.compare(testCase.getPre(), initialState);
+    Optional<String> err = StateComparator.compare(testCase.getPre(), initialState, spec);
     if (err.isPresent()) {
       return Optional.of("Initial state parsed incorrectly: " + err.get());
     }
@@ -120,9 +120,9 @@ public class StateRunner implements Runner {
     }
 
     if (testCase.getPost() == null) { // XXX: Not changed
-      return StateComparator.compare(testCase.getPre(), latestState);
+      return StateComparator.compare(testCase.getPre(), latestState, spec);
     } else {
-      Optional compareResult = StateComparator.compare(testCase.getPost(), latestState);
+      Optional compareResult = StateComparator.compare(testCase.getPost(), latestState, spec);
       if (!compareResult.isPresent()) {
         return Optional.empty();
       }

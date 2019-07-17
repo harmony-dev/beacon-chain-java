@@ -21,6 +21,7 @@ import java.nio.ByteOrder;
 import java.util.Objects;
 import java.util.Random;
 import tech.pegasys.artemis.util.bytes.Bytes8;
+import tech.pegasys.artemis.util.bytes.BytesValue;
 
 /** An immutable unsigned 64-bit precision integer. */
 public class UInt64 extends Number implements Comparable<UInt64> {
@@ -29,6 +30,7 @@ public class UInt64 extends Number implements Comparable<UInt64> {
   public static final UInt64 MIN_VALUE = valueOf(0);
 
   public static final UInt64 ZERO = MIN_VALUE;
+  public static final int BIT_SIZE = 64;
 
   private final long value;
 
@@ -363,12 +365,8 @@ public class UInt64 extends Number implements Comparable<UInt64> {
     return new UInt64(value >>> number);
   }
 
-  public int getBitCount() {
-    return Long.bitCount(value);
-  }
-
-  public boolean isPowerOf2() {
-    return getBitCount() == 1;
+  public int getUsedBitCount() {
+    return BIT_SIZE - Long.numberOfLeadingZeros(value);
   }
 
   /**
@@ -399,6 +397,11 @@ public class UInt64 extends Number implements Comparable<UInt64> {
   public Bytes8 toBytesBigEndian() {
     byte[] array = ByteBuffer.allocate(Long.BYTES).order(ByteOrder.BIG_ENDIAN).putLong(value).array();
     return Bytes8.wrap(array);
+  }
+
+  public BytesValue toBytesValue() {
+    byte[] array = ByteBuffer.allocate(Long.BYTES).order(ByteOrder.LITTLE_ENDIAN).putLong(value).array();
+    return BytesValue.wrap(array);
   }
 
   @Override

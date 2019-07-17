@@ -142,10 +142,12 @@ public class ModelsSerializeTest {
     BeaconState expected = dataFactory.createBeaconState();
     long s = System.nanoTime();
     BytesValue encoded = sszSerializer.encode2(expected);
-    System.out.println(String.format("encode(state) = %.3fs", (System.nanoTime() - s) / 1_000_000_000d));
+    System.out.println(
+        String.format("encode(state) = %.3fs", (System.nanoTime() - s) / 1_000_000_000d));
     s = System.nanoTime();
     BeaconState reconstructed = sszSerializer.decode(encoded, BeaconStateImpl.class);
-    System.out.println(String.format("decode(state) = %.3fs", (System.nanoTime() - s) / 1_000_000_000d));
+    System.out.println(
+        String.format("decode(state) = %.3fs", (System.nanoTime() - s) / 1_000_000_000d));
     assertEquals(expected, reconstructed);
   }
 
@@ -178,8 +180,7 @@ public class ModelsSerializeTest {
   public void pendingAttestationTest() {
     PendingAttestation expected = dataFactory.createPendingAttestation();
     BytesValue encoded = sszSerializer.encode2(expected);
-    PendingAttestation reconstructed =
-        sszSerializer.decode(encoded, PendingAttestation.class);
+    PendingAttestation reconstructed = sszSerializer.decode(encoded, PendingAttestation.class);
     assertEquals(expected, reconstructed);
   }
 

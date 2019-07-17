@@ -8,7 +8,6 @@ import java.util.stream.Stream;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
 import org.ethereum.beacon.core.types.BLSSignature;
-import org.ethereum.beacon.core.types.Bitfield;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 
 public abstract class AttesterSlashingTestUtil {

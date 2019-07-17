@@ -12,7 +12,7 @@ import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
-import org.ethereum.beacon.core.types.Bitfield;
+import tech.pegasys.artemis.util.collections.Bitlist;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.test.StateTestUtils;
@@ -99,11 +99,14 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
   }
 
   public Attestation getAttestationOperation() {
+    BytesValue aggValue = BytesValue.fromHexString(getAttestation().getAggregationBitfield());
+    BytesValue cusValue = BytesValue.fromHexString(getAttestation().getCustodyBitfield());
+
     Attestation attestation =
         new Attestation(
-            Bitfield.of(BytesValue.fromHexString(getAttestation().getAggregationBitfield())),
+            Bitlist.of(aggValue.size(), aggValue, Integer.MAX_VALUE),
             parseAttestationData((getAttestation().getData())),
-            Bitfield.of(BytesValue.fromHexString(getAttestation().getCustodyBitfield())),
+            Bitlist.of(cusValue.size(), cusValue, Integer.MAX_VALUE),
             BLSSignature.wrap(Bytes96.fromHexString(getAttestation().getSignature())));
 
     return attestation;

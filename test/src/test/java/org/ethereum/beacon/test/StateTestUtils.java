@@ -1,8 +1,5 @@
 package org.ethereum.beacon.test;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.BeaconBlockHeader;
@@ -26,8 +23,8 @@ import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
-import org.ethereum.beacon.core.types.Bitfield;
-import org.ethereum.beacon.core.types.Bitfield64;
+import tech.pegasys.artemis.util.collections.Bitlist;
+import tech.pegasys.artemis.util.collections.Bitvector;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ShardNumber;
@@ -51,6 +48,10 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.collections.WriteList;
 import tech.pegasys.artemis.util.uint.UInt64;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
 /** Various utility methods aiding state tests development. */
 public abstract class StateTestUtils {
   private StateTestUtils() {}
@@ -64,11 +65,13 @@ public abstract class StateTestUtils {
     for (StateTestCase.BeaconStateData.AttestationData attestationData :
         blockData.getBody().getAttestations()) {
       AttestationData attestationData1 = parseAttestationData(attestationData.getData());
+      BytesValue aggValue = BytesValue.fromHexString(attestationData.getAggregationBitfield());
+      BytesValue cusValue = BytesValue.fromHexString(attestationData.getCustodyBitfield());
       Attestation attestation =
           new Attestation(
-              Bitfield.of(BytesValue.fromHexString(attestationData.getAggregationBitfield())),
+              Bitlist.of(aggValue.size(), aggValue, Integer.MAX_VALUE),
               attestationData1,
-              Bitfield.of(BytesValue.fromHexString(attestationData.getCustodyBitfield())),
+              Bitlist.of(cusValue.size(), cusValue, Integer.MAX_VALUE),
               BLSSignature.wrap(Bytes96.fromHexString(attestationData.getSignature())));
       attestations.add(attestation);
     }
@@ -184,7 +187,10 @@ public abstract class StateTestUtils {
         new Checkpoint(
             EpochNumber.castFrom(UInt64.valueOf(data.getCurrentJustifiedEpoch())),
             Hash32.fromHexString(data.getCurrentJustifiedRoot())));
-    state.setJustificationBits(new Bitfield64(UInt64.valueOf(data.getJustificationBitfield())));
+    state.setJustificationBits(
+        Bitvector.of(
+            specConstants.getJustificationBitsLength(),
+            UInt64.valueOf(data.getJustificationBitfield()).longValue()));
     state.setFinalizedCheckpoint(
         new Checkpoint(
             EpochNumber.castFrom(UInt64.valueOf(data.getFinalizedEpoch())),
@@ -283,8 +289,9 @@ public abstract class StateTestUtils {
 
   public static PendingAttestation parsePendingAttestation(
       StateTestCase.BeaconStateData.AttestationData attestationData) {
+    BytesValue aggValue = BytesValue.fromHexString(attestationData.getAggregationBitfield());
     return new PendingAttestation(
-        Bitfield.of(BytesValue.fromHexString(attestationData.getAggregationBitfield())),
+        Bitlist.of(aggValue.size(), aggValue, Integer.MAX_VALUE),
         parseAttestationData(attestationData.getData()),
         SlotNumber.castFrom(UInt64.valueOf(attestationData.getInclusionDelay())),
         ValidatorIndex.of(attestationData.getProposerIndex()));

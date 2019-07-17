@@ -1,6 +1,5 @@
 package org.ethereum.beacon.ssz.type;
 
-import java.util.Optional;
 import org.ethereum.beacon.ssz.ExternalVarResolver;
 import org.ethereum.beacon.ssz.SSZSchemeException;
 import org.ethereum.beacon.ssz.access.AccessorResolver;
@@ -9,6 +8,9 @@ import org.ethereum.beacon.ssz.access.SSZContainerAccessor;
 import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.access.SSZListAccessor;
 import org.ethereum.beacon.ssz.access.SSZUnionAccessor;
+import org.ethereum.beacon.ssz.access.list.BitlistAccessor;
+
+import java.util.Optional;
 
 public class SimpleTypeResolver implements TypeResolver {
 
@@ -30,7 +32,14 @@ public class SimpleTypeResolver implements TypeResolver {
 
     Optional<SSZListAccessor> listAccessor = accessorResolver.resolveListAccessor(descriptor);
     if (listAccessor.isPresent()) {
-      return new SSZListType(descriptor, this, listAccessor.get(), getVectorSize(descriptor));
+      SSZListAccessor accessor = listAccessor.get();
+      if (accessor instanceof BitlistAccessor) {
+        return new SSZBitListType(
+            descriptor, this, accessor, getVectorSize(descriptor), getMaxSize(descriptor));
+      } else {
+        return new SSZListType(
+            descriptor, this, accessor, getVectorSize(descriptor), getMaxSize(descriptor));
+      }
     }
 
     Optional<SSZUnionAccessor> unionAccessor = accessorResolver
@@ -50,7 +59,7 @@ public class SimpleTypeResolver implements TypeResolver {
 
   protected int getVectorSize(SSZField descriptor) {
     if (descriptor.getFieldAnnotation() == null) {
-      return -1;
+      return SSZType.VARIABLE_SIZE;
     }
     int vectorSize = descriptor.getFieldAnnotation().vectorLength();
     if (vectorSize > 0) {
@@ -63,6 +72,24 @@ public class SimpleTypeResolver implements TypeResolver {
               .intValue();
     }
 
-    return -1;
+    return SSZType.VARIABLE_SIZE;
+  }
+
+  protected long getMaxSize(SSZField descriptor) {
+    if (descriptor.getFieldAnnotation() == null) {
+      return SSZType.VARIABLE_SIZE;
+    }
+    long maxSize = descriptor.getFieldAnnotation().maxSize();
+    if (maxSize > 0) {
+      return maxSize;
+    }
+    String maxSizeVar = descriptor.getFieldAnnotation().maxSizeVar();
+    if (!maxSizeVar.isEmpty()) {
+      return externalVarResolver
+          .resolveOrThrow(maxSizeVar, Number.class)
+          .longValue();
+    }
+
+    return SSZType.VARIABLE_SIZE;
   }
 }

@@ -41,7 +41,7 @@ public class SosDeserializer implements SSZVisitor<Object, Bytes> {
     Bytes body = bytes.slice(BYTES_PER_LENGTH_OFFSET);
 
     CompositeInstanceBuilder instanceBuilder = type.getAccessor()
-        .createInstanceBuilder(type.getTypeDescriptor());
+        .createInstanceBuilder(type);
     if (typeIndex == 0 && type.isNullable()) {
       instanceBuilder.setChild(typeIndex, null);
     } else {
@@ -66,12 +66,15 @@ public class SosDeserializer implements SSZVisitor<Object, Bytes> {
       ChildVisitor<Bytes, Object> childVisitor) {
 
     CompositeInstanceBuilder instanceBuilder =
-        type.getAccessor().createInstanceBuilder(type.getTypeDescriptor());
+        type.getAccessor().createInstanceBuilder(type);
     int fixedPartEnd = bytes.size();
     int curOff = 0;
     int childIndex = 0;
     List<Pair<Integer, Integer>> varSizeChildren = new ArrayList<>();
     while (curOff < fixedPartEnd) {
+      if (type instanceof SSZListType) {
+        ((SSZListType) type).verifyMovingLimit(childIndex + 1);
+      }
       int childSize = getChildSize(type, childIndex);
       if (childSize == SSZType.VARIABLE_SIZE) {
         int bodyOff = deserializeLength(bytes.slice(curOff, BYTES_PER_LENGTH_OFFSET));

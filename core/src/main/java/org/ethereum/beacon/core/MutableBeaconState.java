@@ -6,7 +6,7 @@ import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Fork;
 import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.state.ValidatorRecord;
-import org.ethereum.beacon.core.types.Bitfield64;
+import tech.pegasys.artemis.util.collections.Bitvector;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ShardNumber;
@@ -37,7 +37,7 @@ public interface MutableBeaconState extends BeaconState {
 
   void setStartShard(ShardNumber startShard);
 
-  void setJustificationBits(Bitfield64 justificationBits);
+  void setJustificationBits(Bitvector justificationBits);
 
   void setLatestBlockHeader(BeaconBlockHeader latestBlockHeader);
 
@@ -48,7 +48,7 @@ public interface MutableBeaconState extends BeaconState {
   void setFinalizedCheckpoint(Checkpoint finalizedCheckpoint);
 
   @Override
-  Bitfield64 getJustificationBits();
+  Bitvector getJustificationBits();
 
   @Override
   WriteVector<ShardNumber, Crosslink> getPreviousCrosslinks();

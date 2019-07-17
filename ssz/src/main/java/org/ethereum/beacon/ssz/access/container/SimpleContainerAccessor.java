@@ -17,6 +17,7 @@ import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.access.container.SSZSchemeBuilder.SSZScheme;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import org.ethereum.beacon.ssz.creator.ObjectCreator;
+import org.ethereum.beacon.ssz.type.SSZType;
 import org.javatuples.Pair;
 
 public class SimpleContainerAccessor implements SSZContainerAccessor {
@@ -125,7 +126,7 @@ public class SimpleContainerAccessor implements SSZContainerAccessor {
   }
 
   @Override
-  public CompositeInstanceBuilder createInstanceBuilder(SSZField containerDescriptor) {
-    return new BasicInstanceBuilder(containerDescriptor);
+  public CompositeInstanceBuilder createInstanceBuilder(SSZType sszType) {
+    return new BasicInstanceBuilder(sszType.getTypeDescriptor());
   }
 }

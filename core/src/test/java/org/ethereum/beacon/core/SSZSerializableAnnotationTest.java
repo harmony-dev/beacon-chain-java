@@ -30,8 +30,8 @@ import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
-import org.ethereum.beacon.core.types.Bitfield;
-import org.ethereum.beacon.core.types.Bitfield64;
+import tech.pegasys.artemis.util.collections.Bitlist;
+import tech.pegasys.artemis.util.collections.Bitvector;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.Millis;
@@ -131,8 +131,8 @@ public class SSZSerializableAnnotationTest {
                 PendingAttestation.class,
                 ValidatorRecord.class,
                 Eth1Data.class,
-                Bitfield.class,
-                Bitfield64.class,
+                Bitvector.class,
+                Bitlist.class,
                 BLSPubkey.class,
                 BLSSignature.class,
                 EpochNumber.class,

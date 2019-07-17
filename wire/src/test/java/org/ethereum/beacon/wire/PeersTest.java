@@ -6,6 +6,8 @@ import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
+import org.ethereum.beacon.core.spec.SpecConstantsResolver;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.start.common.Launcher;
 import org.ethereum.beacon.simulator.SimulatorLauncher;
@@ -83,7 +85,9 @@ public class PeersTest {
         ConnectionManager<SocketAddress> connectionManager = new ConnectionManager<>(
             server, null, Schedulers.createDefault().events());
 
-        SSZSerializer ssz = new SSZBuilder().buildSerializer();
+        SSZSerializer ssz = new SSZBuilder()
+            .withExternalVarResolver(new SpecConstantsResolver(peer0.getSpec().getConstants()))
+            .buildSerializer();
         MessageSerializer messageSerializer = new SSZMessageSerializer(ssz);
         WireApiSyncServer syncServer = new WireApiSyncServer(peer0.getBeaconChainStorage());
         SimplePeerManagerImpl peerManager = new SimplePeerManagerImpl(
@@ -119,7 +123,9 @@ public class PeersTest {
         ConnectionManager<SocketAddress> connectionManager = new ConnectionManager<>(
             null, new NettyClient(), Schedulers.createDefault().events());
 
-        SSZSerializer ssz = new SSZBuilder().buildSerializer();
+        SSZSerializer ssz = new SSZBuilder()
+            .withExternalVarResolver(new SpecConstantsResolver(peer1.getSpec().getConstants()))
+            .buildSerializer();
         MessageSerializer messageSerializer = new SSZMessageSerializer(ssz);
         SimplePeerManagerImpl peerManager = new SimplePeerManagerImpl(
             (byte) 1,
@@ -156,7 +162,7 @@ public class PeersTest {
         CountDownLatch syncLatch = new CountDownLatch(1);
         Flux.from(peer1.getBeaconChain().getBlockStatesStream())
             .subscribe(s -> {
-              System.out.println(s);
+              System.out.println("Peer 1, inserted: " + s);
               if (s.getFinalState().getSlot().equals(
                   simulatorLauncher.getSpec().getConstants().getGenesisSlot().plus(slotCount))) {
                 syncManager.stop();
