@@ -58,21 +58,22 @@ public class SSZListType implements SSZHomoCompositeType {
   }
 
   public void verifyLimit(Object param) {
-    if (getType() == Type.VECTOR && !isBitType()) {
-      if (getChildrenCount(param) != getVectorLength()) {
-        throw new SSZSerializeException(
-            String.format(
-                "Vector type length doesn't match actual list length: %d !=  %d for %s",
-                getVectorLength(), getChildrenCount(param), toStringHelper()));
-      }
-    } else if (getType() == Type.LIST && getMaxSize() > VARIABLE_SIZE && !isBitType()) {
-      if (getChildrenCount(param) > getMaxSize()) {
-        throw new SSZSerializeException(
-            String.format(
-                "Maximum size of list is exceeded with actual number of elements: %d > %d for %s",
-                getChildrenCount(param), getMaxSize(), toStringHelper()));
-      }
-    }
+    // FIXME: when called from IncrementalHasher, param could be temporarily extended to bigger vector
+//    if (getType() == Type.VECTOR && !isBitType()) {
+//      if (getChildrenCount(param) != getVectorLength()) {
+//        throw new SSZSerializeException(
+//            String.format(
+//                "Vector type length doesn't match actual list length: %d !=  %d for %s",
+//                getVectorLength(), getChildrenCount(param), toStringHelper()));
+//      }
+//    } else if (getType() == Type.LIST && getMaxSize() > VARIABLE_SIZE && !isBitType()) {
+//      if (getChildrenCount(param) > getMaxSize()) {
+//        throw new SSZSerializeException(
+//            String.format(
+//                "Maximum size of list is exceeded with actual number of elements: %d > %d for %s",
+//                getChildrenCount(param), getMaxSize(), toStringHelper()));
+//      }
+//    }
   }
 
   @Override
