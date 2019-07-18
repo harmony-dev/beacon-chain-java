@@ -24,7 +24,7 @@ import tech.pegasys.artemis.util.collections.ReadList;
  *
  * @see BeaconBlock
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.7.1/specs/core/0_beacon-chain.md#beaconblockbody">BeaconBlockBody
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.8.1/specs/core/0_beacon-chain.md#beaconblockbody">BeaconBlockBody
  *     in the spec</a>
  */
 @SSZSerializable

@@ -31,7 +31,7 @@ import static java.util.stream.Collectors.toList;
  * Epoch processing part.
  *
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.7.1/specs/core/0_beacon-chain.md#epoch-processing">Epoch
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.8.1/specs/core/0_beacon-chain.md#epoch-processing">Epoch
  *     processing</a> in the spec.
  */
 public interface EpochProcessing extends HelperFunction {

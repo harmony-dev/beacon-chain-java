@@ -15,7 +15,7 @@ import java.util.function.Function;
  * Slashable attestation data structure.
  *
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.7.1/specs/core/0_beacon-chain.md#indexedattestation">IndexedAttestation</a>
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.8.1/specs/core/0_beacon-chain.md#indexedattestation">IndexedAttestation</a>
  *     in the spec.
  */
 @SSZSerializable
