@@ -323,14 +323,14 @@ public interface BlockProcessing extends HelperFunction {
     assert is_valid_merkle_branch(
         leaf=hash_tree_root(deposit.data),
         proof=deposit.proof,
-        depth=DEPOSIT_CONTRACT_TREE_DEPTH,
+        depth=DEPOSIT_CONTRACT_TREE_DEPTH + 1,
         index=deposit.index,
         root=state.latest_eth1_data.deposit_root,
         ) */
     assertTrue(is_valid_merkle_branch(
         hash_tree_root(deposit.getData()),
         deposit.getProof().listCopy(),
-        getConstants().getDepositContractTreeDepth().increment(), // Add 1 for the `List` length mix-in
+        getConstants().getDepositContractTreeDepthPlusOne(), // Add 1 for the `List` length mix-in
         state.getEth1DepositIndex(),
         state.getEth1Data().getDepositRoot()
     ));

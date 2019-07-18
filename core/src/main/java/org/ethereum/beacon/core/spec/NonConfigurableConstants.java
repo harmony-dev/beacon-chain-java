@@ -22,8 +22,12 @@ public interface NonConfigurableConstants {
     return DEPOSIT_CONTRACT_TREE_DEPTH;
   }
 
+  /**
+   * Used in vector size specification, search for string
+   * spec.DEPOSIT_CONTRACT_TREE_DEPTH_PLUS_ONE
+   */
   default UInt64 getDepositContractTreeDepthPlusOne() {
-    return getDepositContractTreeDepth().plus(UInt64.valueOf(1));
+    return getDepositContractTreeDepth().increment();
   }
 
   default long getSecondsPerDay() {

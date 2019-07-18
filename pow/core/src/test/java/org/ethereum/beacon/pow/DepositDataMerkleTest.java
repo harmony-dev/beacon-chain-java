@@ -142,7 +142,7 @@ public class DepositDataMerkleTest {
             spec.is_valid_merkle_branch(
                 leaf,
                 proof,
-                spec.getConstants().getDepositContractTreeDepth().increment(),
+                spec.getConstants().getDepositContractTreeDepthPlusOne(),
                 UInt64.valueOf(i),
                 spec.hash_tree_root(depositDataList)));
       }

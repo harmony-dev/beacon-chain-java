@@ -20,6 +20,10 @@ public interface SpecConstants
     return getGenesisSlot().dividedBy(getSlotsPerEpoch());
   }
 
+  /**
+   * Used in list max size specification, search for string
+   * spec.MAX_EPOCH_ATTESTATIONS
+   */
   default UInt64 getMaxEpochAttestations() {
     return getSlotsPerEpoch().times(getMaxAttestations());
   }
