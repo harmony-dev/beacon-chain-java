@@ -537,7 +537,7 @@ public interface EpochProcessing extends HelperFunction {
     /* for index, validator in enumerate(state.validators):
         if validator.slashed and epoch + EPOCHS_PER_SLASHINGS_VECTOR // 2 == validator.withdrawable_epoch:
             increment = EFFECTIVE_BALANCE_INCREMENT  # Factored out from penalty numerator to avoid uint64 overflow
-            penalty_numerator = validator.effective_balance // increment * min(sum(state.slashings) * 3, total_balance)
+            penalty_numerator = ( validator.effective_balance // increment ) * min(sum(state.slashings) * 3, total_balance)
             penalty = penalty_numerator // total_balance * increment
             decrease_balance(state, ValidatorIndex(index), penalty) */
     for (ValidatorIndex index : state.getValidators().size()) {
@@ -545,7 +545,12 @@ public interface EpochProcessing extends HelperFunction {
       if (validator.getSlashed()
           && epoch.plus(getConstants().getEpochsPerSlashingsVector().half()).equals(validator.getWithdrawableEpoch())) {
         Gwei increment = getConstants().getEffectiveBalanceIncrement();
-        Gwei penalty_numerator = validator.getEffectiveBalance();
+        Gwei stateSlashings = state.getSlashings().stream().reduce(Gwei::plus).orElse(Gwei.ZERO);
+        Gwei penalty_numerator =
+            validator
+                .getEffectiveBalance()
+                .dividedBy(increment)
+                .times(UInt64s.min(stateSlashings.times(3), total_balance));
         Gwei penalty = penalty_numerator.dividedBy(total_balance).times(increment);
         decrease_balance(state, index, penalty);
       }

@@ -109,6 +109,9 @@ public class StateRunner implements Runner {
       case "justification_and_finalization":
         processingError = processJustificationAndFinalization(latestState);
         break;
+      case "slashings":
+        processingError = processSlashings(latestState);
+        break;
       case "slots":
         Pair<Optional<String>, BeaconState> processingSlots =
             processSlots(testCase.getSlots(), latestState);
@@ -259,6 +262,15 @@ public class StateRunner implements Runner {
   private Optional<String> processJustificationAndFinalization(BeaconState state) {
     try {
       spec.process_justification_and_finalization((MutableBeaconState) state);
+      return Optional.empty();
+    } catch (SpecCommons.SpecAssertionFailed | IllegalArgumentException ex) {
+      return Optional.of(ex.getMessage());
+    }
+  }
+
+  private Optional<String> processSlashings(BeaconState state) {
+    try {
+      spec.process_slashings((MutableBeaconState) state);
       return Optional.empty();
     } catch (SpecCommons.SpecAssertionFailed | IllegalArgumentException ex) {
       return Optional.of(ex.getMessage());
