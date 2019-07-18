@@ -22,7 +22,7 @@ import tech.pegasys.artemis.util.collections.ReadVector;
 public class Deposit {
 
   /** Merkle path to deposit data list root. */
-  @SSZ(vectorLengthVar = "spec.DEPOSIT_CONTRACT_TREE_DEPTH")
+  @SSZ(vectorLengthVar = "spec.DEPOSIT_CONTRACT_TREE_DEPTH_PLUS_ONE")
   private final ReadVector<Integer, Hash32> proof;
   /** Deposit data. */
   @SSZ private final DepositData data;

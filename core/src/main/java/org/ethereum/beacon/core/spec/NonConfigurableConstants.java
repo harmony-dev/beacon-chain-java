@@ -22,6 +22,10 @@ public interface NonConfigurableConstants {
     return DEPOSIT_CONTRACT_TREE_DEPTH;
   }
 
+  default UInt64 getDepositContractTreeDepthPlusOne() {
+    return getDepositContractTreeDepth().plus(UInt64.valueOf(1));
+  }
+
   default long getSecondsPerDay() {
     return SECONDS_PER_DAY;
   }
