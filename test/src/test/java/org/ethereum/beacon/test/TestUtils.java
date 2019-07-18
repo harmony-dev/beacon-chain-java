@@ -278,6 +278,7 @@ public class TestUtils {
 
     SpecHelpersData specHelpersData = new SpecHelpersData();
     specHelpersData.setBlsVerify(isBlsVerified);
+    specHelpersData.setVerifyDepositProof(true);
 
     SpecData specData = new SpecData();
     specData.setSpecHelpersOptions(specHelpersData);
