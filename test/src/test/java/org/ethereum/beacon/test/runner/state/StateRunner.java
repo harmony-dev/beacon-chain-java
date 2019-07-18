@@ -103,6 +103,9 @@ public class StateRunner implements Runner {
       case "registry_updates":
         processingError = processRegistryUpdates(latestState);
         break;
+      case "final_updates":
+        processingError = processFinalUpdates(latestState);
+        break;
       case "slots":
         Pair<Optional<String>, BeaconState> processingSlots =
             processSlots(testCase.getSlots(), latestState);
@@ -235,6 +238,15 @@ public class StateRunner implements Runner {
   private Optional<String> processRegistryUpdates(BeaconState state) {
     try {
       spec.process_registry_updates((MutableBeaconState) state);
+      return Optional.empty();
+    } catch (SpecCommons.SpecAssertionFailed | IllegalArgumentException ex) {
+      return Optional.of(ex.getMessage());
+    }
+  }
+
+  private Optional<String> processFinalUpdates(BeaconState state) {
+    try {
+      spec.process_final_updates((MutableBeaconState) state);
       return Optional.empty();
     } catch (SpecCommons.SpecAssertionFailed | IllegalArgumentException ex) {
       return Optional.of(ex.getMessage());
