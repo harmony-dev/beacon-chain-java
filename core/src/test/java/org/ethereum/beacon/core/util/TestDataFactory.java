@@ -93,7 +93,7 @@ public class TestDataFactory {
     Deposit deposit =
         Deposit.create(
             Collections.nCopies(
-                specConstants.getDepositContractTreeDepth().getIntValue(), Hash32.ZERO),
+                specConstants.getDepositContractTreeDepthPlusOne().getIntValue(), Hash32.ZERO),
             createDepositData());
 
     return deposit;
@@ -103,7 +103,7 @@ public class TestDataFactory {
     ArrayList<Hash32> hashes = new ArrayList<>();
     hashes.add(Hashes.sha256(BytesValue.fromHexString("aa")));
     hashes.add(Hashes.sha256(BytesValue.fromHexString("bb")));
-    hashes.addAll(Collections.nCopies(specConstants.getDepositContractTreeDepth().getIntValue() - hashes.size(), Hash32.ZERO));
+    hashes.addAll(Collections.nCopies(specConstants.getDepositContractTreeDepthPlusOne().getIntValue() - hashes.size(), Hash32.ZERO));
     Deposit deposit = Deposit.create(hashes, createDepositData());
 
     return deposit;
