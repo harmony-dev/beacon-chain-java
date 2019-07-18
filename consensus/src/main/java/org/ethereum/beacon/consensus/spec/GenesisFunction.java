@@ -22,6 +22,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.ethereum.beacon.core.spec.NonConfigurableConstants.SECONDS_PER_DAY;
+
 /**
  * On genesis part.
  *
@@ -51,7 +53,11 @@ public interface GenesisFunction extends BlockProcessing {
         new Checkpoint(getConstants().getGenesisEpoch(), Hash32.ZERO));
 
     state.setSlot(getConstants().getGenesisSlot());
-    state.setGenesisTime(eth1_timestamp);
+    state.setGenesisTime(
+        Time.castFrom(
+            eth1_timestamp
+                .minus(eth1_timestamp.modulo(UInt64.valueOf(SECONDS_PER_DAY)))
+                .plus(UInt64.valueOf(SECONDS_PER_DAY).times(2))));
     state.setFork(new Fork(Bytes4.ZERO, Bytes4.ZERO, getConstants().getGenesisEpoch()));
     state.setLatestBlockHeader(get_block_header(get_empty_block()));
 
@@ -117,7 +123,7 @@ public interface GenesisFunction extends BlockProcessing {
           return False
       return True
    */
-  default boolean is_genesis_trigger(BeaconState state) {
+  default boolean is_valid_genesis_state(BeaconState state) {
     if (state.getGenesisTime().less(getConstants().getMinGenesisTime())) {
       return false;
     }

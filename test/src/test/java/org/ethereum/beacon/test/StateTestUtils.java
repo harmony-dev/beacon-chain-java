@@ -23,8 +23,6 @@ import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
-import tech.pegasys.artemis.util.collections.Bitlist;
-import tech.pegasys.artemis.util.collections.Bitvector;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ShardNumber;
@@ -45,6 +43,8 @@ import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes4;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.collections.Bitlist;
+import tech.pegasys.artemis.util.collections.Bitvector;
 import tech.pegasys.artemis.util.collections.WriteList;
 import tech.pegasys.artemis.util.uint.UInt64;
 
@@ -89,16 +89,7 @@ public abstract class StateTestUtils {
     List<Deposit> deposits = new ArrayList<>();
     for (StateTestCase.BlockData.BlockBodyData.DepositData depositData :
         blockData.getBody().getDeposits()) {
-      Deposit deposit =
-          Deposit.create(
-              depositData.getProof().stream()
-                  .map(Hash32::fromHexString)
-                  .collect(Collectors.toList()),
-              new DepositData(
-                  BLSPubkey.fromHexString(depositData.getData().getPubkey()),
-                  Hash32.fromHexString(depositData.getData().getWithdrawalCredentials()),
-                  Gwei.castFrom(UInt64.valueOf(depositData.getData().getAmount())),
-                  BLSSignature.wrap(Bytes96.fromHexString(depositData.getData().getSignature()))));
+      Deposit deposit = parseDeposit(depositData);
       deposits.add(deposit);
     }
 
@@ -275,6 +266,18 @@ public abstract class StateTestUtils {
         data.getSignature() == null
             ? BLSSignature.ZERO
             : BLSSignature.wrap(Bytes96.fromHexString(data.getSignature())));
+  }
+
+  public static Deposit parseDeposit(StateTestCase.BlockData.BlockBodyData.DepositData data) {
+    return Deposit.create(
+        data.getProof().stream()
+            .map(Hash32::fromHexString)
+            .collect(Collectors.toList()),
+        new DepositData(
+            BLSPubkey.fromHexString(data.getData().getPubkey()),
+            Hash32.fromHexString(data.getData().getWithdrawalCredentials()),
+            Gwei.castFrom(UInt64.valueOf(data.getData().getAmount())),
+            BLSSignature.wrap(Bytes96.fromHexString(data.getData().getSignature()))));
   }
 
   public static Fork parseFork(BeaconStateData.Fork data) {
