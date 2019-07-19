@@ -76,24 +76,24 @@ public class SimpleTypeResolver implements TypeResolver {
     }
     // TODO: refactor meeeeee pleeeease
     SSZSerializable annotation = descriptor.getRawClass().getAnnotation(SSZSerializable.class);
-    if (descriptor.getRawClass().isAssignableFrom(Bytes1.class) ||
-        (annotation != null && annotation.serializeAs().isAssignableFrom(Bytes1.class))) {
+    if (Bytes1.class.isAssignableFrom(descriptor.getRawClass())
+        || (annotation != null && Bytes1.class.isAssignableFrom(annotation.serializeAs()))) {
       return 1;
     }
-    if (descriptor.getRawClass().isAssignableFrom(Bytes4.class) ||
-        (annotation != null && annotation.serializeAs().isAssignableFrom(Bytes4.class))) {
+    if (Bytes4.class.isAssignableFrom(descriptor.getRawClass())
+        || (annotation != null && Bytes4.class.isAssignableFrom(annotation.serializeAs()))) {
       return 4;
     }
-    if (descriptor.getRawClass().isAssignableFrom(Bytes32.class) ||
-        (annotation != null && annotation.serializeAs().isAssignableFrom(Bytes32.class))) {
+    if (Bytes32.class.isAssignableFrom(descriptor.getRawClass())
+        || (annotation != null && Bytes32.class.isAssignableFrom(annotation.serializeAs()))) {
       return 32;
     }
-    if (descriptor.getRawClass().isAssignableFrom(Bytes48.class) ||
-        (annotation != null && annotation.serializeAs().isAssignableFrom(Bytes48.class))) {
+    if (Bytes48.class.isAssignableFrom(descriptor.getRawClass())
+        || (annotation != null && Bytes48.class.isAssignableFrom(annotation.serializeAs()))) {
       return 48;
     }
-    if (descriptor.getRawClass().isAssignableFrom(Bytes96.class) ||
-        (annotation != null && annotation.serializeAs().isAssignableFrom(Bytes96.class))) {
+    if (Bytes96.class.isAssignableFrom(descriptor.getRawClass())
+        || (annotation != null && Bytes96.class.isAssignableFrom(annotation.serializeAs()))) {
       return 96;
     }
 
