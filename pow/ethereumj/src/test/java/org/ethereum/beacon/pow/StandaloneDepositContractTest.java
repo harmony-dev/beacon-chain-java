@@ -75,8 +75,8 @@ public class StandaloneDepositContractTest {
               }
 
               @Override
-              public long getSecondsPerDay() {
-                return 5;
+              public Time getSecondsPerDay() {
+                return Time.of(5);
               }
 
               @Override

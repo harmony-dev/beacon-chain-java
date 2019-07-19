@@ -177,8 +177,15 @@ public class BeaconChainSpecTest {
             return ShardNumber.of(shardCount);
           }
         };
-    BeaconChainSpec spec = new CachingBeaconChainSpec(
-        specConstants, Hashes::sha256, ObjectHasher.createSSZOverSHA256(specConstants), false, false, true);
+    BeaconChainSpec spec =
+        new CachingBeaconChainSpec(
+            specConstants,
+            Hashes::sha256,
+            ObjectHasher.createSSZOverSHA256(specConstants),
+            false,
+            false,
+            false,
+            true);
 
     System.out.println("Generating deposits...");
     List<Deposit> deposits = TestUtils.generateRandomDepositsWithoutSig(rnd, spec, validatorCount);

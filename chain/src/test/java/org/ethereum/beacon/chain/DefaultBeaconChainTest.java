@@ -9,6 +9,7 @@ import org.ethereum.beacon.chain.storage.impl.SerializerFactory;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.BlockTransition;
+import org.ethereum.beacon.consensus.ChainStart;
 import org.ethereum.beacon.consensus.StateTransition;
 import org.ethereum.beacon.consensus.transition.BeaconStateExImpl;
 import org.ethereum.beacon.consensus.transition.EmptySlotTransition;
@@ -26,7 +27,6 @@ import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.db.Database;
-import org.ethereum.beacon.consensus.ChainStart;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.junit.Assert;
 import org.junit.Test;
@@ -39,7 +39,11 @@ public class DefaultBeaconChainTest {
   public void insertAChain() {
     Schedulers schedulers = Schedulers.createDefault();
 
-    BeaconChainSpec spec = BeaconChainSpec.createWithDefaults();
+    BeaconChainSpec spec =
+        BeaconChainSpec.Builder.createWithDefaultParams()
+            .withComputableGenesisTime(false)
+            .withVerifyDepositProof(false)
+            .build();
     StateTransition<BeaconStateEx> perSlotTransition =
         StateTransitionTestUtil.createNextSlotTransition();
     MutableBeaconChain beaconChain = createBeaconChain(spec, perSlotTransition, schedulers);

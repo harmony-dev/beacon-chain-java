@@ -34,4 +34,3 @@ chainSpec:
     blsVerifyProofOfPossession: false
     blsSign: false
     enableCache: true
-    verifyDepositProof: false

@@ -22,7 +22,6 @@ import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
-import tech.pegasys.artemis.util.collections.Bitlist;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ShardNumber;
@@ -34,6 +33,7 @@ import org.ethereum.beacon.util.stats.TimeCollector;
 import org.javatuples.Pair;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.collections.Bitlist;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
@@ -48,6 +48,8 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
         spec.getObjectHasher(),
         spec.isBlsVerify(),
         spec.isBlsVerifyProofOfPossession(),
+        spec.isVerifyDepositProof(),
+        spec.isComputableGenesisTime(),
         spec instanceof CachingBeaconChainSpec && ((CachingBeaconChainSpec) spec).isCacheEnabled());
 
     // share caches between all instances to avoid cache duplication
@@ -64,9 +66,18 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
       ObjectHasher<Hash32> objectHasher,
       boolean blsVerify,
       boolean blsVerifyProofOfPossession,
+      boolean verifyDepositProof,
+      boolean computableGenesisTime,
       boolean cacheEnabled) {
     super(
-        constants, hashFunction, objectHasher, blsVerify, blsVerifyProofOfPossession, cacheEnabled);
+        constants,
+        hashFunction,
+        objectHasher,
+        blsVerify,
+        blsVerifyProofOfPossession,
+        verifyDepositProof,
+        computableGenesisTime,
+        cacheEnabled);
   }
 
   @Override

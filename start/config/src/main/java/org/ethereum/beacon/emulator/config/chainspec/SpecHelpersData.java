@@ -11,8 +11,6 @@ public class SpecHelpersData {
 
   private boolean enableCache = true;
 
-  private boolean verifyDepositProof = false;
-
   public boolean isBlsVerify() {
     return blsVerify;
   }
@@ -43,13 +41,5 @@ public class SpecHelpersData {
 
   public void setEnableCache(boolean enableCache) {
     this.enableCache = enableCache;
-  }
-
-  public boolean isVerifyDepositProof() {
-    return verifyDepositProof;
-  }
-
-  public void setVerifyDepositProof(boolean verifyDepositProof) {
-    this.verifyDepositProof = verifyDepositProof;
   }
 }

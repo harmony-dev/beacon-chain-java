@@ -110,6 +110,13 @@ public interface BeaconChainSpec
     private boolean blsVerify = true;
     private boolean blsVerifyProofOfPossession = true;
     private boolean verifyDepositProof = true;
+    private boolean computableGenesisTime = true;
+
+    public static Builder createWithDefaultParams() {
+      return new Builder().withConstants(BeaconChainSpec.DEFAULT_CONSTANTS)
+          .withDefaultHashFunction()
+          .withDefaultHasher();
+    }
 
     public Builder withConstants(SpecConstants constants) {
       this.constants = constants;
@@ -165,6 +172,11 @@ public interface BeaconChainSpec
       return this;
     }
 
+    public Builder withComputableGenesisTime(boolean computeGenesisTime) {
+      this.computableGenesisTime = computeGenesisTime;
+      return this;
+    }
+
     public BeaconChainSpec build() {
       assert constants != null;
       assert hashFunction != null;
@@ -177,6 +189,7 @@ public interface BeaconChainSpec
           blsVerify,
           blsVerifyProofOfPossession,
           verifyDepositProof,
+          computableGenesisTime,
           cache);
     }
   }

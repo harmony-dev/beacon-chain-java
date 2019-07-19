@@ -61,6 +61,7 @@ public class CachingBeaconChainSpec extends BeaconChainSpecImpl {
       boolean blsVerify,
       boolean blsVerifyProofOfPossession,
       boolean verifyDepositProof,
+      boolean computableGenesisTime,
       boolean cacheEnabled) {
     super(
         constants,
@@ -68,7 +69,8 @@ public class CachingBeaconChainSpec extends BeaconChainSpecImpl {
         objectHasher,
         blsVerify,
         blsVerifyProofOfPossession,
-        verifyDepositProof);
+        verifyDepositProof,
+        computableGenesisTime);
     this.cacheEnabled = cacheEnabled;
 
     CacheFactory factory = CacheFactory.create(cacheEnabled);
@@ -81,7 +83,8 @@ public class CachingBeaconChainSpec extends BeaconChainSpecImpl {
       ObjectHasher<Hash32> objectHasher,
       boolean blsVerify,
       boolean blsVerifyProofOfPossession,
-      boolean verifyDepositProof) {
+      boolean verifyDepositProof,
+      boolean computableGenesisTime) {
     this(
         constants,
         hashFunction,
@@ -89,6 +92,7 @@ public class CachingBeaconChainSpec extends BeaconChainSpecImpl {
         blsVerify,
         blsVerifyProofOfPossession,
         verifyDepositProof,
+        computableGenesisTime,
         true);
   }
 

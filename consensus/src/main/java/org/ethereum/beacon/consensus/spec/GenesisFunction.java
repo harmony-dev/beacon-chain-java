@@ -1,5 +1,8 @@
 package org.ethereum.beacon.consensus.spec;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
@@ -17,12 +20,6 @@ import tech.pegasys.artemis.util.bytes.Bytes4;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
 import tech.pegasys.artemis.util.uint.UInt64s;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import static org.ethereum.beacon.core.spec.NonConfigurableConstants.SECONDS_PER_DAY;
 
 /**
  * On genesis part.
@@ -53,11 +50,7 @@ public interface GenesisFunction extends BlockProcessing {
         new Checkpoint(getConstants().getGenesisEpoch(), Hash32.ZERO));
 
     state.setSlot(getConstants().getGenesisSlot());
-    state.setGenesisTime(
-        Time.castFrom(
-            eth1_timestamp
-                .minus(eth1_timestamp.modulo(UInt64.valueOf(SECONDS_PER_DAY)))
-                .plus(UInt64.valueOf(SECONDS_PER_DAY).times(2))));
+    state.setGenesisTime(compute_genesis_time(eth1_timestamp));
     state.setFork(new Fork(Bytes4.ZERO, Bytes4.ZERO, getConstants().getGenesisEpoch()));
     state.setLatestBlockHeader(get_block_header(get_empty_block()));
 
@@ -115,6 +108,17 @@ public interface GenesisFunction extends BlockProcessing {
     }
 
     return state.createImmutable();
+  }
+
+  default Time compute_genesis_time(Time eth1_timestamp) {
+    if (!isComputableGenesisTime()) {
+      return eth1_timestamp;
+    }
+
+    return Time.castFrom(
+        eth1_timestamp
+            .minus(eth1_timestamp.modulo(getConstants().getSecondsPerDay()))
+            .plus(getConstants().getSecondsPerDay().times(2)));
   }
 
   /*
