@@ -1,8 +1,5 @@
 package org.ethereum.beacon.consensus;
 
-import java.util.Objects;
-import java.util.function.Function;
-import javax.annotation.Nonnull;
 import org.ethereum.beacon.consensus.hasher.ObjectHasher;
 import org.ethereum.beacon.consensus.hasher.SSZObjectHasher;
 import org.ethereum.beacon.consensus.spec.BlockProcessing;
@@ -21,6 +18,10 @@ import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.crypto.Hashes;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
+
+import javax.annotation.Nonnull;
+import java.util.Objects;
+import java.util.function.Function;
 
 /**
  * Beacon chain spec.
@@ -59,7 +60,8 @@ public interface BeaconChainSpec
   }
 
   /**
-   * Creates beacon chain spec with default preferences and disabled deposit root verification.
+   * Creates beacon chain spec with default preferences, disabled deposit root verification and
+   * disabled genesis time computation.
    *
    * @param constants spec constants object.
    * @return spec object.
@@ -72,6 +74,7 @@ public interface BeaconChainSpec
         .withDefaultHashFunction()
         .withDefaultHasher(constants)
         .withVerifyDepositProof(false)
+        .withComputableGenesisTime(false)
         .build();
   }
 
