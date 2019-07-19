@@ -31,3 +31,5 @@ chainSpec:
     blsVerify: false
     blsVerifyProofOfPossession: false
     blsSign: false
+    verifyDepositProof: false
+

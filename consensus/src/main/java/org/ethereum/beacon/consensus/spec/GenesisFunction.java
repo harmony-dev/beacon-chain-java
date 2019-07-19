@@ -63,8 +63,10 @@ public interface GenesisFunction extends BlockProcessing {
 
     // Process deposits
     // Spec maintains initial deposit proofs and roots in incremental fashion,
-    // i.e. new root is computed for each deposit added to the list.
-    // Our impl works in more efficient way: one root to proof them all
+    // i.e. new root is computed for each new update of deposit list.
+    // Hence, each genesis deposit has its own root.
+    // Our impl works in more efficient way: one root to proof them all.
+    // Which implies all genesis deposit being a part of the same merkle tree instance.
     ReadList<Integer, DepositData> deposit_data_list =
         ReadList.wrap(
             deposits.stream().map(Deposit::getData).collect(Collectors.toList()),

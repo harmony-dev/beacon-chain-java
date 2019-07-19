@@ -74,7 +74,7 @@ public class SampleObservableState {
             return SlotNumber.of(genesisSlot);
           }
         };
-    this.spec = BeaconChainSpec.createWithDefaultHasher(specConstants);
+    this.spec = BeaconChainSpec.createWithoutDepositVerification(specConstants);
 
     Pair<List<Deposit>, List<KeyPair>> anyDeposits = TestUtils
         .getAnyDeposits(rnd, spec, 8);

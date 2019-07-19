@@ -58,6 +58,23 @@ public interface BeaconChainSpec
         .build();
   }
 
+  /**
+   * Creates beacon chain spec with default preferences and disabled deposit root verification.
+   *
+   * @param constants spec constants object.
+   * @return spec object.
+   */
+  static BeaconChainSpec createWithoutDepositVerification(@Nonnull SpecConstants constants) {
+    Objects.requireNonNull(constants);
+
+    return new Builder()
+        .withConstants(constants)
+        .withDefaultHashFunction()
+        .withDefaultHasher(constants)
+        .withVerifyDepositProof(false)
+        .build();
+  }
+
   static BeaconChainSpec createWithDefaults() {
     return createWithDefaultHasher(DEFAULT_CONSTANTS);
   }
