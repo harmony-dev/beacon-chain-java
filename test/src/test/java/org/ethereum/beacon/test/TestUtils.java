@@ -279,6 +279,7 @@ public class TestUtils {
     SpecHelpersData specHelpersData = new SpecHelpersData();
     specHelpersData.setBlsVerify(isBlsVerified);
     specHelpersData.setVerifyDepositProof(true);
+    specHelpersData.setComputableGenesisTime(true);
 
     SpecData specData = new SpecData();
     specData.setSpecHelpersOptions(specHelpersData);

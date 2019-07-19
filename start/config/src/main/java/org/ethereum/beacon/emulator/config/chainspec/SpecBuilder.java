@@ -39,8 +39,8 @@ public class SpecBuilder {
         .withBlsVerify(specHelpersOptions.isBlsVerify())
         .withBlsVerifyProofOfPossession(specHelpersOptions.isBlsVerifyProofOfPossession())
         .withCache(spec.getSpecHelpersOptions().isEnableCache())
-        .withVerifyDepositProof(false)
-        .withComputableGenesisTime(false)
+        .withVerifyDepositProof(specHelpersOptions.isVerifyDepositProof())
+        .withComputableGenesisTime(specHelpersOptions.isComputableGenesisTime())
         .build();
   }
 
