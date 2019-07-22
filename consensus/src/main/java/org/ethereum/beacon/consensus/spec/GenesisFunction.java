@@ -55,19 +55,15 @@ public interface GenesisFunction extends BlockProcessing {
     state.setLatestBlockHeader(get_block_header(get_empty_block()));
 
     // Process deposits
-    // Spec maintains initial deposit proofs and roots in incremental fashion,
-    // i.e. new root is computed for each new update of deposit list.
-    // Hence, each genesis deposit has its own root.
-    // Our impl works in more efficient way: one root to proof them all.
-    // Which implies all genesis deposit being a part of the same merkle tree instance.
-    ReadList<Integer, DepositData> deposit_data_list =
-        ReadList.wrap(
-            deposits.stream().map(Deposit::getData).collect(Collectors.toList()),
-            Integer::new,
-            1L << getConstants().getDepositContractTreeDepth().getIntValue());
-    state.setEth1Data(new Eth1Data(
-        hash_tree_root(deposit_data_list), UInt64.valueOf(deposits.size()), eth1_block_hash));
-    for (Deposit deposit : deposits) {
+    for (int index = 0; index < deposits.size(); index++) {
+      Deposit deposit = deposits.get(index);
+      ReadList<Integer, DepositData> deposit_data_list =
+          ReadList.wrap(
+              deposits.stream().map(Deposit::getData).limit(index + 1).collect(Collectors.toList()),
+              Integer::new,
+              1L << getConstants().getDepositContractTreeDepth().getIntValue());
+      state.setEth1Data(new Eth1Data(
+          hash_tree_root(deposit_data_list), UInt64.valueOf(deposits.size()), eth1_block_hash));
       verify_deposit(state, deposit);
       process_deposit(state, deposit);
     }
