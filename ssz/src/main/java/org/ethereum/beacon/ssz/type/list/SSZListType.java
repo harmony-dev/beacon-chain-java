@@ -1,10 +1,13 @@
-package org.ethereum.beacon.ssz.type;
+package org.ethereum.beacon.ssz.type.list;
 
 import org.ethereum.beacon.ssz.SSZDeserializeException;
 import org.ethereum.beacon.ssz.SSZSerializeException;
 import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.access.SSZListAccessor;
 import org.ethereum.beacon.ssz.annotation.SSZ;
+import org.ethereum.beacon.ssz.type.SSZHomoCompositeType;
+import org.ethereum.beacon.ssz.type.SSZType;
+import org.ethereum.beacon.ssz.type.TypeResolver;
 
 /**
  * Represent specific SSZ List or Vector type with child elements of specific type which defined as

@@ -2,7 +2,7 @@ package org.ethereum.beacon.ssz.access.list;
 
 import org.ethereum.beacon.ssz.SSZDeserializeException;
 import org.ethereum.beacon.ssz.access.SSZField;
-import org.ethereum.beacon.ssz.type.SSZBitListType;
+import org.ethereum.beacon.ssz.type.list.SSZBitListType;
 import org.ethereum.beacon.ssz.type.SSZType;
 import tech.pegasys.artemis.util.bytes.MutableBytesValue;
 import tech.pegasys.artemis.util.collections.Bitvector;

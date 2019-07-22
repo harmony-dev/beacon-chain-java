@@ -99,8 +99,6 @@ public class SSZBuilder {
 
   private TypeResolver typeResolver = null;
 
-  private Function<Pair<AccessorResolver, ExternalVarResolver>, TypeResolver> typeResolverBuilder = null;
-
   private SSZVisitorHost visitorHost = null;
 
   private int sszHashBytesPerChunk = SSZ_HASH_BYTES_PER_CHUNK;
@@ -167,12 +165,6 @@ public class SSZBuilder {
   public SSZBuilder withTypeResolver(TypeResolver typeResolver) {
     checkAlreadyInitialized();
     this.typeResolver = typeResolver;
-    return this;
-  }
-
-  public SSZBuilder withTypeResolverBuilder(Function<Pair<AccessorResolver, ExternalVarResolver>, TypeResolver> typeResolverBuilder) {
-    checkAlreadyInitialized();
-    this.typeResolverBuilder = typeResolverBuilder;
     return this;
   }
 
@@ -326,11 +318,7 @@ public class SSZBuilder {
     }
 
     if (typeResolver == null) {
-      if (typeResolverBuilder != null) {
-        typeResolver = typeResolverBuilder.apply(Pair.with(accessorResolverRegistry, externalVarResolver));
-      } else {
-        typeResolver = new SimpleTypeResolver(accessorResolverRegistry, externalVarResolver);
-      }
+      typeResolver = new SimpleTypeResolver(accessorResolverRegistry, externalVarResolver);
     }
 
     if (visitorHost == null) {

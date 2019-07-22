@@ -8,7 +8,7 @@ import static org.ethereum.beacon.ssz.type.SSZType.Type.VECTOR;
 
 import org.ethereum.beacon.ssz.type.SSZBasicType;
 import org.ethereum.beacon.ssz.type.SSZContainerType;
-import org.ethereum.beacon.ssz.type.SSZListType;
+import org.ethereum.beacon.ssz.type.list.SSZListType;
 import org.ethereum.beacon.ssz.type.SSZType;
 import org.ethereum.beacon.ssz.type.SSZUnionType;
 

@@ -1,7 +1,9 @@
-package org.ethereum.beacon.ssz.type;
+package org.ethereum.beacon.ssz.type.list;
 
 import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.access.SSZListAccessor;
+import org.ethereum.beacon.ssz.type.SSZType;
+import org.ethereum.beacon.ssz.type.TypeResolver;
 
 /**
  * {@link tech.pegasys.artemis.util.collections.Bitlist} and {@link
