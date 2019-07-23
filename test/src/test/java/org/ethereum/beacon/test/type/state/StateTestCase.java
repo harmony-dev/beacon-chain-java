@@ -118,10 +118,10 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
     return attestation;
   }
 
-  public AttesterSlashing getAttesterSlashingOperation() {
+  public AttesterSlashing getAttesterSlashingOperation(SpecConstants specConstants) {
     return new AttesterSlashing(
-        parseSlashableAttestation(getAttesterSlashing().slashableAttestation1),
-        parseSlashableAttestation(getAttesterSlashing().slashableAttestation2));
+        parseSlashableAttestation(getAttesterSlashing().slashableAttestation1, specConstants),
+        parseSlashableAttestation(getAttesterSlashing().slashableAttestation2, specConstants));
   }
 
   public ProposerSlashing getProposerSlashingOperation() {

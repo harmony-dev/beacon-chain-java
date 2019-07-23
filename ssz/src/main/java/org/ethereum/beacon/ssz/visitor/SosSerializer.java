@@ -31,7 +31,6 @@ public class SosSerializer implements SSZVisitor<SosSerializer.SerializerResult,
   @Override
   public SerializerResult visitList(
       SSZListType type, Object param, ChildVisitor<Object, SerializerResult> childVisitor) {
-    type.verifyLimit(param);
     return visitComposite(type, param, childVisitor);
   }
 

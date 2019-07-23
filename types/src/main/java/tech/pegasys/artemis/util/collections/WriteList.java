@@ -15,8 +15,18 @@ public interface WriteList<IndexType extends Number, ValueType>
   }
 
   static <IndexType extends Number, ValueType> WriteList<IndexType, ValueType>
-      create(Function<Integer, IndexType> indexConverter) {
-    return WriteList.create(indexConverter, false);
+  create(Function<Integer, IndexType> indexConverter) {
+    return WriteList.create(indexConverter, false, VARIABLE_SIZE);
+  }
+
+  static <IndexType extends Number, ValueType> WriteList<IndexType, ValueType>
+  create(Function<Integer, IndexType> indexConverter, long maxSize) {
+    return WriteList.create(indexConverter, false, maxSize);
+  }
+
+  static <IndexType extends Number, ValueType> WriteList<IndexType, ValueType>
+  create(Function<Integer, IndexType> indexConverter, boolean vector) {
+    return WriteList.create(indexConverter, vector, VARIABLE_SIZE);
   }
 
   static <IndexType extends Number, ValueType> WriteList<IndexType, ValueType>
@@ -25,8 +35,8 @@ public interface WriteList<IndexType extends Number, ValueType>
   }
 
   static <IndexType extends Number, ValueType> WriteList<IndexType, ValueType>
-  create(Function<Integer, IndexType> indexConverter, boolean vector) {
-    return new ListImpl<>(indexConverter, vector);
+  create(Function<Integer, IndexType> indexConverter, boolean vector, long maxSize) {
+    return new ListImpl<>(indexConverter, vector, maxSize);
   }
 
   boolean add(ValueType valueType);

@@ -117,25 +117,6 @@ public class BitListTest {
     }
   }
 
-  @Test(expected = SSZSerializeException.class)
-  public void testBitList1() {
-    SSZSerializer serializer = new SSZBuilder()
-        .withExternalVarResolver(s -> "testSize".equals(s) ? 4 : null)
-        .buildSerializer();
-
-    Bitlist bitlist = Bitlist.of(8, 0b01011101, 1234);
-    Container5 c5 = new Container5(
-        14, bitlist
-    );
-
-    byte[] bytes = serializer.encode(c5);
-    System.out.println(BytesValue.wrap(bytes));
-
-    Container5 res = serializer.decode(bytes, Container5.class);
-    assertEquals(c5, res);
-    System.out.println(res);
-  }
-
   @Test
   public void testBitList2() {
     SSZSerializer serializer = new SSZBuilder()

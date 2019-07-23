@@ -72,9 +72,6 @@ public class SosDeserializer implements SSZVisitor<Object, Bytes> {
     int childIndex = 0;
     List<Pair<Integer, Integer>> varSizeChildren = new ArrayList<>();
     while (curOff < fixedPartEnd) {
-      if (type instanceof SSZListType) {
-        ((SSZListType) type).verifyMovingLimit(childIndex + 1);
-      }
       int childSize = getChildSize(type, childIndex);
       if (childSize == SSZType.VARIABLE_SIZE) {
         int bodyOff = deserializeLength(bytes.slice(curOff, BYTES_PER_LENGTH_OFFSET));

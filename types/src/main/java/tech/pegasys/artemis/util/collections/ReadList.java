@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public interface ReadList<IndexType extends Number, ValueType> extends Iterable<ValueType> {
+  long VARIABLE_SIZE = -1;
 
   /** Wraps with creating of new list */
   static <IndexType extends Number, ValueType> ReadList<IndexType, ValueType> wrap(
@@ -17,8 +18,8 @@ public interface ReadList<IndexType extends Number, ValueType> extends Iterable<
 
   /** Wraps with creating of new list */
   static <IndexType extends Number, ValueType> ReadList<IndexType, ValueType> wrap(
-      List<ValueType> srcList, Function<Integer, IndexType> indexConverter, long limit) {
-    return ListImpl.wrap(new ArrayList<>(srcList), indexConverter, limit);
+      List<ValueType> srcList, Function<Integer, IndexType> indexConverter, long maxSize) {
+    return ListImpl.wrap(new ArrayList<>(srcList), indexConverter, maxSize);
   }
 
   IndexType size();
@@ -28,6 +29,8 @@ public interface ReadList<IndexType extends Number, ValueType> extends Iterable<
   ReadList<IndexType, ValueType> subList(IndexType fromIndex, IndexType toIndex);
 
   WriteList<IndexType, ValueType> createMutableCopy();
+
+  ReadList<IndexType, ValueType> cappedCopy(long maxSize);
 
   Stream<ValueType> stream();
 
@@ -70,6 +73,6 @@ public interface ReadList<IndexType extends Number, ValueType> extends Iterable<
   }
 
   default long maxSize() {
-    return -1;
+    return VARIABLE_SIZE;
   }
 }

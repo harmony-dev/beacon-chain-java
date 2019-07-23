@@ -152,7 +152,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
     List<AttesterSlashing> attesterSlashings =
         operations.peekAttesterSlashings(spec.getConstants().getMaxAttesterSlashings());
     List<Attestation> attestations =
-        operations.peekAggregateAttestations(spec.getConstants().getMaxAttestations());
+        operations.peekAggregateAttestations(spec.getConstants().getMaxAttestations(), spec.getConstants());
     List<VoluntaryExit> voluntaryExits =
         operations.peekExits(spec.getConstants().getMaxVoluntaryExits());
     List<Transfer> transfers = operations.peekTransfers(spec.getConstants().getMaxTransfers());
@@ -169,7 +169,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
             .collect(Collectors.toList());
     Bytes32 graffiti = getGraffiti(state);
 
-    return BeaconBlockBody.create(
+    return new BeaconBlockBody(
         randaoReveal,
         eth1Data,
         graffiti,
@@ -178,6 +178,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
         attestations,
         deposits,
         voluntaryExits,
-        transfers);
+        transfers,
+        spec.getConstants());
   }
 }

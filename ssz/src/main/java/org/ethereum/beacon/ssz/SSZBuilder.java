@@ -1,11 +1,5 @@
 package org.ethereum.beacon.ssz;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import org.ethereum.beacon.ssz.access.AccessorResolver;
 import org.ethereum.beacon.ssz.access.AccessorResolverRegistry;
 import org.ethereum.beacon.ssz.access.SSZBasicAccessor;
@@ -34,8 +28,10 @@ import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import org.ethereum.beacon.ssz.annotation.SSZTransient;
 import org.ethereum.beacon.ssz.creator.CompositeObjCreator;
+import org.ethereum.beacon.ssz.creator.ConstructorExtraObjCreator;
 import org.ethereum.beacon.ssz.creator.ConstructorObjCreator;
 import org.ethereum.beacon.ssz.creator.ObjectCreator;
+import org.ethereum.beacon.ssz.creator.SettersExtraObjCreator;
 import org.ethereum.beacon.ssz.creator.SettersObjCreator;
 import org.ethereum.beacon.ssz.type.SimpleTypeResolver;
 import org.ethereum.beacon.ssz.type.TypeResolver;
@@ -44,9 +40,15 @@ import org.ethereum.beacon.ssz.visitor.SSZIncrementalHasher;
 import org.ethereum.beacon.ssz.visitor.SSZSimpleHasher;
 import org.ethereum.beacon.ssz.visitor.SSZVisitor;
 import org.ethereum.beacon.ssz.visitor.SSZVisitorHost;
-import org.javatuples.Pair;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * SSZ Builder is designed to create {@link SSZSerializer} or {@link SSZHasher} up to your needs.
@@ -149,6 +151,22 @@ public class SSZBuilder {
   public SSZBuilder withObjectCreator(ObjectCreator modelFactory) {
     checkAlreadyInitialized();
     this.objCreator = modelFactory;
+    return this;
+  }
+
+  /**
+   * With default object creators and object creator which adds extraValue of type extraType to the
+   * end of constructor parameters plus setter-based creator which calls constructor with extraType
+   * before setters
+   */
+  public SSZBuilder withExtraObjectCreator(Class extraType, Object extraValue) {
+    checkAlreadyInitialized();
+    this.objCreator =
+        new CompositeObjCreator(
+            new ConstructorExtraObjCreator(extraType, extraValue),
+            new SettersExtraObjCreator(extraType, extraValue),
+            new ConstructorObjCreator(),
+            new SettersObjCreator());
     return this;
   }
 

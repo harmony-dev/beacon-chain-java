@@ -306,7 +306,8 @@ public interface BlockProcessing extends HelperFunction {
         attestation.getAggregationBits(),
         data,
         state.getSlot().minus(attestation_slot),
-        get_beacon_proposer_index(state));
+        get_beacon_proposer_index(state),
+        getConstants());
     if (data.getTarget().getEpoch().equals(get_current_epoch(state))) {
       state.getCurrentEpochAttestations().add(pending_attestation);
     } else {

@@ -91,7 +91,7 @@ public class BeaconChainProposerTest {
             random, spec.getConstants().getMaxProposerSlashings());
     List<AttesterSlashing> casperSlashings =
         AttesterSlashingTestUtil.createRandomList(
-            random, spec.getConstants().getMaxAttesterSlashings());
+            random, spec.getConstants().getMaxAttesterSlashings(), spec.getConstants());
     List<VoluntaryExit> voluntaryExits =
         ExitTestUtil.createRandomList(random, spec.getConstants().getMaxVoluntaryExits());
 
@@ -104,7 +104,7 @@ public class BeaconChainProposerTest {
     BeaconBlock block = proposer.propose(initialObservedState, signer);
 
     Mockito.verify(pendingOperations)
-        .peekAggregateAttestations(spec.getConstants().getMaxAttestations());
+        .peekAggregateAttestations(spec.getConstants().getMaxAttestations(), spec.getConstants());
 
     Mockito.verify(pendingOperations)
         .peekProposerSlashings(spec.getConstants().getMaxProposerSlashings());

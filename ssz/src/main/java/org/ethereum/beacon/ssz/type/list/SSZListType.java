@@ -1,7 +1,5 @@
 package org.ethereum.beacon.ssz.type.list;
 
-import org.ethereum.beacon.ssz.SSZDeserializeException;
-import org.ethereum.beacon.ssz.SSZSerializeException;
 import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.access.SSZListAccessor;
 import org.ethereum.beacon.ssz.annotation.SSZ;
@@ -40,43 +38,6 @@ public class SSZListType implements SSZHomoCompositeType {
     this.accessor = accessor;
     this.vectorLength = vectorLength;
     this.maxSize = maxSize;
-  }
-
-  public void verifyMovingLimit(int childrenCount) {
-    if (getType() == Type.VECTOR && !isBitType()) {
-      if (childrenCount > getVectorLength()) {
-        throw new SSZDeserializeException(
-            String.format(
-                "Vector type length exceeds actual list length: %d !=  %d for %s",
-                getVectorLength(), childrenCount, toStringHelper()));
-      }
-    } else if (getType() == Type.LIST && getMaxSize() > VARIABLE_SIZE && !isBitType()) {
-      if (childrenCount > getMaxSize()) {
-        throw new SSZDeserializeException(
-            String.format(
-                "Maximum size of list is exceeded with actual number of elements: %d > %d for %s",
-                childrenCount, getMaxSize(), toStringHelper()));
-      }
-    }
-  }
-
-  public void verifyLimit(Object param) {
-    // FIXME: when called from IncrementalHasher, param could be temporarily extended to bigger vector
-//    if (getType() == Type.VECTOR && !isBitType()) {
-//      if (getChildrenCount(param) != getVectorLength()) {
-//        throw new SSZSerializeException(
-//            String.format(
-//                "Vector type length doesn't match actual list length: %d !=  %d for %s",
-//                getVectorLength(), getChildrenCount(param), toStringHelper()));
-//      }
-//    } else if (getType() == Type.LIST && getMaxSize() > VARIABLE_SIZE && !isBitType()) {
-//      if (getChildrenCount(param) > getMaxSize()) {
-//        throw new SSZSerializeException(
-//            String.format(
-//                "Maximum size of list is exceeded with actual number of elements: %d > %d for %s",
-//                getChildrenCount(param), getMaxSize(), toStringHelper()));
-//      }
-//    }
   }
 
   @Override

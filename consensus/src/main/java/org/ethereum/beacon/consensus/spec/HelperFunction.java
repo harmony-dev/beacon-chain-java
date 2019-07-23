@@ -10,6 +10,7 @@ import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustodyBit;
 import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.CompactCommittee;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.ShardCommittee;
@@ -65,7 +66,7 @@ public interface HelperFunction extends SpecCommons {
 
   default BeaconBlock get_empty_block() {
     BeaconBlockBody body =
-        BeaconBlockBody.create(
+        new BeaconBlockBody(
             BLSSignature.ZERO,
             new Eth1Data(Hash32.ZERO, UInt64.ZERO, Hash32.ZERO),
             Bytes32.ZERO,
@@ -74,7 +75,8 @@ public interface HelperFunction extends SpecCommons {
             emptyList(),
             emptyList(),
             emptyList(),
-            emptyList());
+            emptyList(),
+            getConstants());
     return new BeaconBlock(
         getConstants().getGenesisSlot(), Hash32.ZERO, Hash32.ZERO, body, BLSSignature.ZERO);
   }
@@ -199,7 +201,7 @@ public interface HelperFunction extends SpecCommons {
   default Hash32 get_compact_committees_root(BeaconState state, EpochNumber epoch) {
     List<CompactCommittee> committees = new ArrayList<>();
     ShardNumber start_shard = get_start_shard(state, epoch);
-    UInt64s.iterate(UInt64.ZERO, getConstants().getShardCount()).forEach(i -> committees.add(CompactCommittee.EMPTY));
+    UInt64s.iterate(UInt64.ZERO, getConstants().getShardCount()).forEach(i -> committees.add(CompactCommittee.getEmpty(getConstants())));
 
     for (UInt64 committee_number: UInt64s.iterate(UInt64.ZERO, get_committee_count(state, epoch))) {
       ShardNumber shard = start_shard.plusModulo(committee_number, getConstants().getShardCount());
@@ -217,7 +219,7 @@ public interface HelperFunction extends SpecCommons {
         compactValidators.add(compact_validator);
       }
 
-      committees.set(shard.intValue(), CompactCommittee.create(pubkeys, compactValidators));
+      committees.set(shard.intValue(), new CompactCommittee(pubkeys, compactValidators, getConstants()));
     }
 
     return hash_tree_root(ReadVector.wrap(committees, Integer::valueOf));
@@ -333,6 +335,16 @@ public interface HelperFunction extends SpecCommons {
       }
     }
     return ret;
+  }
+
+  /**
+   * {@link #get_active_validator_indices(BeaconState, EpochNumber)} wrapped with limited list
+   */
+  default ReadList<Integer, ValidatorIndex> get_active_validator_indices_list(BeaconState state, EpochNumber epoch) {
+    List<ValidatorIndex> indices =
+        new ArrayList<>(get_active_validator_indices(state, getConstants().getGenesisEpoch()));
+    return ReadList.wrap(
+        indices, Integer::new, getConstants().getValidatorRegistryLimit().longValue());
   }
 
   /*
@@ -973,7 +985,8 @@ public interface HelperFunction extends SpecCommons {
         custody_bit_0_indices,
         custody_bit_1_indices,
         attestation.getData(),
-        attestation.getSignature());
+        attestation.getSignature(),
+        getConstants());
   }
 
   /*

@@ -1,18 +1,19 @@
 package org.ethereum.beacon.core.util;
 
-import java.util.List;
-import java.util.Random;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.types.BLSSignature;
-import tech.pegasys.artemis.util.collections.Bitlist;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes96;
+import tech.pegasys.artemis.util.collections.Bitlist;
+
+import java.util.List;
+import java.util.Random;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public abstract class AttestationTestUtil {
   private AttestationTestUtil() {}
@@ -28,7 +29,8 @@ public abstract class AttestationTestUtil {
         Bitlist.of(64),
         createRandomAttestationData(random),
         Bitlist.of(64),
-        BLSSignature.wrap(Bytes96.random(random)));
+        BLSSignature.wrap(Bytes96.random(random)),
+        BeaconChainSpec.DEFAULT_CONSTANTS);
   }
 
   public static AttestationData createRandomAttestationData(Random random) {

@@ -81,8 +81,8 @@ public abstract class StateTestUtils {
             .map(
                 s ->
                     new AttesterSlashing(
-                        parseSlashableAttestation(s.getSlashableAttestation1()),
-                        parseSlashableAttestation(s.getSlashableAttestation2())))
+                        parseSlashableAttestation(s.getSlashableAttestation1(), constants),
+                        parseSlashableAttestation(s.getSlashableAttestation2(), constants)))
             .collect(Collectors.toList());
 
     // Deposits
@@ -134,7 +134,7 @@ public abstract class StateTestUtils {
 
     // Finally, creating a block
     BeaconBlockBody blockBody =
-        BeaconBlockBody.create(
+        new BeaconBlockBody(
             BLSSignature.wrap(Bytes96.fromHexString(blockData.getBody().getRandaoReveal())),
             eth1Data1,
             Bytes32.fromHexString(blockData.getBody().getGraffiti()),
@@ -143,7 +143,8 @@ public abstract class StateTestUtils {
             attestations,
             deposits,
             voluntaryExits,
-            transfers);
+            transfers,
+            constants);
     BeaconBlock block =
         new BeaconBlock(
             SlotNumber.castFrom(UInt64.valueOf(blockData.getSlot())),
@@ -155,14 +156,16 @@ public abstract class StateTestUtils {
     return block;
   }
 
-  public static IndexedAttestation parseSlashableAttestation(IndexedAttestationData data) {
+  public static IndexedAttestation parseSlashableAttestation(
+      IndexedAttestationData data, SpecConstants specConstants) {
     return new IndexedAttestation(
         data.getCustodyBit0Indices().stream().map(ValidatorIndex::of).collect(Collectors.toList()),
         data.getCustodyBit1Indices().stream().map(ValidatorIndex::of).collect(Collectors.toList()),
         parseAttestationData(data.getData()),
         data.getAggregateSignature() != null
             ? BLSSignature.wrap(Bytes96.fromHexString(data.getAggregateSignature()))
-            : BLSSignature.ZERO);
+            : BLSSignature.ZERO,
+        specConstants);
   }
 
   public static MutableBeaconState parseBeaconState(

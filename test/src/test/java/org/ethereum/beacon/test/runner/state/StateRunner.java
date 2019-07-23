@@ -81,7 +81,7 @@ public class StateRunner implements Runner {
         break;
       case "attester_slashing":
         processingError =
-            processAttesterSlashing(testCase.getAttesterSlashingOperation(), latestState);
+            processAttesterSlashing(testCase.getAttesterSlashingOperation(spec.getConstants()), latestState);
         break;
       case "proposer_slashing":
         processingError =

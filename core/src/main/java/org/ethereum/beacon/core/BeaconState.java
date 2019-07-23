@@ -41,7 +41,7 @@ public interface BeaconState extends ObservableComposite {
   }
 
   static BeaconState getEmpty(SpecConstants specConst) {
-    BeaconStateImpl ret = new BeaconStateImpl();
+    BeaconStateImpl ret = new BeaconStateImpl(specConst);
     ret.getRandaoMixes().addAll(
         Collections.nCopies(specConst.getEpochsPerHistoricalVector().intValue(), Hash32.ZERO));
     ret.getBlockRoots().addAll(
@@ -83,7 +83,7 @@ public interface BeaconState extends ObservableComposite {
   @SSZ(order = 5, vectorLengthVar = "spec.SLOTS_PER_HISTORICAL_ROOT")
   ReadVector<SlotNumber, Hash32> getStateRoots();
 
-  @SSZ(order = 6, maxSizeVar = "spec.HISTORICAL_ROOTS_LIMIT")
+  @SSZ(order = 6)
   ReadList<Integer, Hash32> getHistoricalRoots();
 
   /* ******* Eth1 ********* */
@@ -92,7 +92,7 @@ public interface BeaconState extends ObservableComposite {
   @SSZ(order = 7) Eth1Data getEth1Data();
 
   /** Eth1 data that voting is still in progress for. */
-  @SSZ(order = 8, maxSizeVar = "spec.SLOTS_PER_ETH1_VOTING_PERIOD")
+  @SSZ(order = 8)
   ReadList<Integer, Eth1Data> getEth1DataVotes();
 
   /** The most recent Eth1 deposit index */
@@ -101,11 +101,11 @@ public interface BeaconState extends ObservableComposite {
   /* ******* Registry ********* */
 
   /** Validator registry records. */
-  @SSZ(order = 10, maxSizeVar = "spec.VALIDATOR_REGISTRY_LIMIT")
+  @SSZ(order = 10)
   ReadList<ValidatorIndex, ValidatorRecord> getValidators();
 
   /** Validator balances. */
-  @SSZ(order = 11, maxSizeVar = "spec.VALIDATOR_REGISTRY_LIMIT")
+  @SSZ(order = 11)
   ReadList<ValidatorIndex, Gwei> getBalances();
 
   /* ******* Shuffling ********* */
@@ -132,10 +132,10 @@ public interface BeaconState extends ObservableComposite {
 
   /* ******** Attestations ********* */
 
-  @SSZ(order = 17, maxSizeVar = "spec.MAX_EPOCH_ATTESTATIONS")
+  @SSZ(order = 17)
   ReadList<Integer, PendingAttestation> getPreviousEpochAttestations();
 
-  @SSZ(order = 18, maxSizeVar = "spec.MAX_EPOCH_ATTESTATIONS")
+  @SSZ(order = 18)
   ReadList<Integer, PendingAttestation> getCurrentEpochAttestations();
 
   /* ******** Crosslinks ********* */

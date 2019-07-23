@@ -123,7 +123,7 @@ public class BeaconChainSpecTest {
     BeaconChainSpec spec = BeaconChainSpec.createWithDefaults();
     BeaconBlock emptyBlock = spec.get_empty_block();
     BeaconBlockBody body =
-        BeaconBlockBody.create(
+        new BeaconBlockBody(
             emptyBlock.getBody().getRandaoReveal(),
             emptyBlock.getBody().getEth1Data(),
             emptyBlock.getBody().getGraffiti(),
@@ -132,7 +132,8 @@ public class BeaconChainSpecTest {
             AttestationTestUtil.createRandomList(rnd, 10),
             emptyBlock.getBody().getDeposits().listCopy(),
             emptyBlock.getBody().getVoluntaryExits().listCopy(),
-            emptyBlock.getBody().getTransfers().listCopy());
+            emptyBlock.getBody().getTransfers().listCopy(),
+            spec.getConstants());
     BeaconBlock block =
         new BeaconBlock(
             emptyBlock.getSlot(),

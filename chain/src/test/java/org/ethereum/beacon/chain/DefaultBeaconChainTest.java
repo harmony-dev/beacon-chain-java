@@ -75,7 +75,7 @@ public class DefaultBeaconChainTest {
             spec.get_current_slot(parent.getState(), currentTime),
             spec.signing_root(parent.getBlock()),
             Hash32.ZERO,
-            BeaconBlockBody.EMPTY,
+            BeaconBlockBody.getEmpty(spec.getConstants()),
             BLSSignature.ZERO);
     BeaconState state = perSlotTransition.apply(new BeaconStateExImpl(parent.getState()));
 
