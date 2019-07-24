@@ -8,8 +8,8 @@ jobs:
 
     environment:
       JAVA_TOOL_OPTIONS: -Xmx3G
-      GRADLE_OPTS: -Dorg.gradle.daemon=false -Dorg.gradle.workers.max=2
-      GRADLE_MAX_TEST_FORKS: 2
+      GRADLE_OPTS: -Dorg.gradle.daemon=false -Dorg.gradle.workers.max=1
+      GRADLE_MAX_TEST_FORKS: 1
 
     steps:
       - checkout
