@@ -195,8 +195,6 @@ public class StandaloneDepositContractTest {
     Mono<ChainStart> chainStartMono = Mono.from(depositContract.getChainStartMono());
     chainStartMono.subscribe();
 
-    SSZSerializer sszSerializer = new SSZBuilder().buildSerializer();
-
     for (int i = 0; i < 16; i++) {
       sb.createBlock();
     }
