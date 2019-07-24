@@ -113,7 +113,8 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
             Bitlist.of(aggValue, constants.getMaxValidatorsPerCommittee().getValue()),
             parseAttestationData((getAttestation().getData())),
             Bitlist.of(cusValue, constants.getMaxValidatorsPerCommittee().getValue()),
-            BLSSignature.wrap(Bytes96.fromHexString(getAttestation().getSignature())));
+            BLSSignature.wrap(Bytes96.fromHexString(getAttestation().getSignature())),
+            constants);
 
     return attestation;
   }

@@ -71,7 +71,8 @@ public abstract class StateTestUtils {
               Bitlist.of(aggValue, constants.getMaxValidatorsPerCommittee().longValue()),
               attestationData1,
               Bitlist.of(cusValue, constants.getMaxValidatorsPerCommittee().longValue()),
-              BLSSignature.wrap(Bytes96.fromHexString(attestationData.getSignature())));
+              BLSSignature.wrap(Bytes96.fromHexString(attestationData.getSignature())),
+              constants);
       attestations.add(attestation);
     }
 
@@ -306,7 +307,8 @@ public abstract class StateTestUtils {
         Bitlist.of(aggValue, constants.getMaxValidatorsPerCommittee().getValue()),
         parseAttestationData(attestationData.getData()),
         SlotNumber.castFrom(UInt64.valueOf(attestationData.getInclusionDelay())),
-        ValidatorIndex.of(attestationData.getProposerIndex()));
+        ValidatorIndex.of(attestationData.getProposerIndex()),
+        constants);
   }
 
   public static AttestationData parseAttestationData(AttestationDataContainer data) {
