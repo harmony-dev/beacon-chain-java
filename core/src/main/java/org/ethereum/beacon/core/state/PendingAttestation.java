@@ -26,7 +26,8 @@ import static tech.pegasys.artemis.util.collections.ReadList.VARIABLE_SIZE;
 public class PendingAttestation {
 
   /** Attester aggregation bitfield. */
-  @SSZ private final Bitlist aggregationBits;
+  @SSZ(maxSizeVar = "spec.MAX_VALIDATORS_PER_COMMITTEE")
+  private final Bitlist aggregationBits;
   /** Signed data. */
   @SSZ private final AttestationData data;
   /** Slot in which it was included. */

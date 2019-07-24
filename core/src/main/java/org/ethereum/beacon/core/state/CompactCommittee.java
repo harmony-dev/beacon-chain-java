@@ -21,8 +21,10 @@ import static java.util.Collections.emptyList;
 @SSZSerializable
 public class CompactCommittee {
 
-  @SSZ private final ReadList<Integer, BLSPubkey> pubkeys;
-  @SSZ private final ReadList<Integer, UInt64> compactValidators;
+  @SSZ(maxSizeVar = "spec.MAX_VALIDATORS_PER_COMMITTEE")
+  private final ReadList<Integer, BLSPubkey> pubkeys;
+  @SSZ(maxSizeVar = "spec.MAX_VALIDATORS_PER_COMMITTEE")
+  private final ReadList<Integer, UInt64> compactValidators;
 
   private CompactCommittee(
       ReadList<Integer, BLSPubkey> pubkeys, ReadList<Integer, UInt64> compactValidators) {

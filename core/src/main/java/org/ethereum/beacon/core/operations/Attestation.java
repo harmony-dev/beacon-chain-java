@@ -28,11 +28,13 @@ import static tech.pegasys.artemis.util.collections.ReadList.VARIABLE_SIZE;
 public class Attestation {
 
   /** A bitfield where each bit corresponds to a validator attested to the {@link #data}. */
-  @SSZ private final Bitlist aggregationBits;
+  @SSZ(maxSizeVar = "spec.MAX_VALIDATORS_PER_COMMITTEE")
+  private final Bitlist aggregationBits;
   /** Attestation data object. */
   @SSZ private final AttestationData data;
   /** Proof of custody bitfield. */
-  @SSZ private final Bitlist custodyBits;
+  @SSZ(maxSizeVar = "spec.MAX_VALIDATORS_PER_COMMITTEE")
+  private final Bitlist custodyBits;
   /** A product of aggregation of signatures from different validators to {@link #data}. */
   @SSZ private final BLSSignature signature;
 
