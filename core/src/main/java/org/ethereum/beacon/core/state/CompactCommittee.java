@@ -10,6 +10,7 @@ import tech.pegasys.artemis.util.uint.UInt64;
 import java.util.List;
 
 import static java.util.Collections.emptyList;
+import static tech.pegasys.artemis.util.collections.ReadList.VARIABLE_SIZE;
 
 /**
  * Compact committee type.
@@ -23,17 +24,22 @@ public class CompactCommittee {
 
   @SSZ(maxSizeVar = "spec.MAX_VALIDATORS_PER_COMMITTEE")
   private final ReadList<Integer, BLSPubkey> pubkeys;
+
   @SSZ(maxSizeVar = "spec.MAX_VALIDATORS_PER_COMMITTEE")
   private final ReadList<Integer, UInt64> compactValidators;
 
-  private CompactCommittee(
-      ReadList<Integer, BLSPubkey> pubkeys, ReadList<Integer, UInt64> compactValidators) {
-    this.pubkeys = pubkeys;
-    this.compactValidators = compactValidators;
-  }
-
-  public static CompactCommittee getEmpty(SpecConstants specConstants) {
-    return new CompactCommittee(emptyList(), emptyList(), specConstants);
+  public CompactCommittee(
+      ReadList<Integer, BLSPubkey> pubkeys,
+      ReadList<Integer, UInt64> compactValidators,
+      SpecConstants specConstants) {
+    this.pubkeys =
+        pubkeys.maxSize() == VARIABLE_SIZE
+            ? pubkeys.cappedCopy(specConstants.getMaxValidatorsPerCommittee().longValue())
+            : pubkeys;
+    this.compactValidators =
+        compactValidators.maxSize() == VARIABLE_SIZE
+            ? compactValidators.cappedCopy(specConstants.getMaxValidatorsPerCommittee().longValue())
+            : compactValidators;
   }
 
   public CompactCommittee(
@@ -44,7 +50,12 @@ public class CompactCommittee {
         ReadList.wrap(
             compactValidators,
             Integer::new,
-            specConstants.getMaxValidatorsPerCommittee().longValue()));
+            specConstants.getMaxValidatorsPerCommittee().longValue()),
+        specConstants);
+  }
+
+  public static CompactCommittee getEmpty(SpecConstants specConstants) {
+    return new CompactCommittee(emptyList(), emptyList(), specConstants);
   }
 
   public ReadList<Integer, BLSPubkey> getPubkeys() {
