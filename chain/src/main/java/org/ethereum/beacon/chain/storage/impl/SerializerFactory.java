@@ -15,6 +15,7 @@ public interface SerializerFactory {
   static SerializerFactory createSSZ(SpecConstants specConstants) {
     return new SSZSerializerFactory(new SSZBuilder()
             .withExternalVarResolver(new SpecConstantsResolver(specConstants))
+            .withExtraObjectCreator(SpecConstants.class, specConstants)
             .buildSerializer());
   }
 }
