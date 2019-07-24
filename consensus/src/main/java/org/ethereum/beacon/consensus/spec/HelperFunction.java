@@ -10,7 +10,6 @@ import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustodyBit;
 import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
-import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.CompactCommittee;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.ShardCommittee;
@@ -337,12 +336,10 @@ public interface HelperFunction extends SpecCommons {
     return ret;
   }
 
-  /**
-   * {@link #get_active_validator_indices(BeaconState, EpochNumber)} wrapped with limited list
-   */
-  default ReadList<Integer, ValidatorIndex> get_active_validator_indices_list(BeaconState state, EpochNumber epoch) {
-    List<ValidatorIndex> indices =
-        new ArrayList<>(get_active_validator_indices(state, getConstants().getGenesisEpoch()));
+  /** {@link #get_active_validator_indices(BeaconState, EpochNumber)} wrapped with limited list */
+  default ReadList<Integer, ValidatorIndex> get_active_validator_indices_list(
+      BeaconState state, EpochNumber epoch) {
+    List<ValidatorIndex> indices = new ArrayList<>(get_active_validator_indices(state, epoch));
     return ReadList.wrap(
         indices, Integer::new, getConstants().getValidatorRegistryLimit().longValue());
   }
