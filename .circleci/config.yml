@@ -46,7 +46,7 @@ jobs:
 
       - run:
           name: Running tests
-          command: ./gradlew --stacktrace --no-daemon clean cleanTest test --continue
+          command: ./gradlew --info clean cleanTest test --continue
 
       - run:
           name: Collecting test results
