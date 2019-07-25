@@ -7,7 +7,7 @@ jobs:
     working_directory: ~/beacon-chain
 
     environment:
-      JAVA_TOOL_OPTIONS: -Xmx3500M
+      JAVA_TOOL_OPTIONS: -Xmx3000M
       GRADLE_OPTS: -Dorg.gradle.daemon=false
 
     steps:
