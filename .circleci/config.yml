@@ -9,7 +9,6 @@ jobs:
     environment:
       JAVA_TOOL_OPTIONS: -Xmx3G
       GRADLE_OPTS: -Dorg.gradle.daemon=false
-      GRADLE_MAX_TEST_FORKS: 1
 
     steps:
       - checkout
