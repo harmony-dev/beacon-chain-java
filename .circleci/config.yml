@@ -47,7 +47,7 @@ jobs:
 
       - run:
           name: Running tests
-          command: ./gradlew test:test --info clean cleanTest test --continue
+          command: ./gradlew --info clean cleanTest test --continue
 
       - run:
           name: Collecting test results
