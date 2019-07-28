@@ -24,12 +24,15 @@ import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
+import org.ethereum.beacon.core.types.SlotNumber.EpochLength;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.core.util.AttestationTestUtil;
+import org.ethereum.beacon.core.util.BeaconBlockTestUtil;
 import org.ethereum.beacon.crypto.Hashes;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -241,5 +244,37 @@ public class BeaconChainSpecTest {
 
     actualIndices.sort(ValidatorIndex::compareTo);
     assertEquals(validatorIndices, actualIndices);
+  }
+
+  @Test
+  public void edgeCaseWithGetSeed() {
+    BeaconChainSpec spec =
+        BeaconChainSpec.createWithDefaultHasher(
+            new SpecConstants() {
+              @Override
+              public EpochLength getSlotsPerEpoch() {
+                return new EpochLength(UInt64.valueOf(4));
+              }
+            });
+    Random rnd = new Random();
+
+    MutableBeaconState state = BeaconState.getEmpty().createMutableCopy();
+
+    EpochNumber startEpoch = spec.get_current_epoch(state);
+    spec.get_seed(state, startEpoch);
+    Hash32 nextEpochSeed = spec.get_seed(state, startEpoch.increment());
+
+    for (EpochNumber epoch = startEpoch; epoch.less(startEpoch.plus(10)); epoch = epoch.increment()) {
+      BeaconBlockBody body =
+          BeaconBlockTestUtil.createRandomBodyWithNoOperations(rnd, spec.getConstants());
+      spec.process_randao(state, body);
+      state.setSlot(state.getSlot().plus(spec.getConstants().getSlotsPerEpoch()));
+      spec.process_final_updates(state);
+
+      EpochNumber currentEpoch = spec.get_current_epoch(state);
+
+      assertEquals(nextEpochSeed, spec.get_seed(state, currentEpoch));
+      nextEpochSeed = spec.get_seed(state, currentEpoch.increment());
+    }
   }
 }
