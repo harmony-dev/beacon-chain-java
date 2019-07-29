@@ -19,7 +19,11 @@ class ListImpl<IndexType extends Number, ValueType> implements WriteList<IndexTy
   private final long maxSize;
 
   private ListImpl(
-      Collection<ValueType> source, Function<Integer, IndexType> indexConverter, boolean vector, long maxSize) {
+      Collection<ValueType> source,
+      Function<Integer, IndexType> indexConverter,
+      boolean vector,
+      long maxSize) {
+    checkCapacity(source.size(), maxSize);
     this.backedList = new ArrayList<>(source);
     this.indexConverter = indexConverter;
     this.vector = vector;
@@ -53,7 +57,10 @@ class ListImpl<IndexType extends Number, ValueType> implements WriteList<IndexTy
   @Override
   public ListImpl<IndexType, ValueType> subList(IndexType fromIndex, IndexType toIndex) {
     return new ListImpl<>(
-        backedList.subList(fromIndex.intValue(), toIndex.intValue()), indexConverter, vector, maxSize);
+        backedList.subList(fromIndex.intValue(), toIndex.intValue()),
+        indexConverter,
+        vector,
+        maxSize);
   }
 
   @Override
@@ -80,16 +87,8 @@ class ListImpl<IndexType extends Number, ValueType> implements WriteList<IndexTy
 
   @Override
   public boolean add(ValueType valueType) {
-    ensureCouldAddOne(valueType);
+    checkCapacity(size().longValue() + 1);
     return backedList.add(valueType);
-  }
-
-  private void ensureCouldAddOne(ValueType value) {
-    if (maxSize() != VARIABLE_SIZE && backedList.size() == maxSize()) {
-      throw new MaxSizeOverflowException(
-          String.format(
-              "Cannot add element %s, maxSize of %s is filled with elements", value, maxSize()));
-    }
   }
 
   @Override
@@ -100,15 +99,15 @@ class ListImpl<IndexType extends Number, ValueType> implements WriteList<IndexTy
   @Override
   public boolean addAll(@NotNull Iterable<? extends ValueType> c) {
     if (c instanceof Collection) {
-      ensureCouldAddMany((Collection) c);
+      checkCapacity(size().longValue() + ((Collection) c).size());
       return backedList.addAll((Collection<? extends ValueType>) c);
     } else if (c instanceof ListImpl) {
-      ensureCouldAddMany(((ListImpl<?, ? extends ValueType>) c).backedList);
+      checkCapacity(size().longValue() + (((ListImpl) c).backedList).size());
       return backedList.addAll(((ListImpl<?, ? extends ValueType>) c).backedList);
     } else {
       boolean hasAny = false;
       for (ValueType val : c) {
-        ensureCouldAddOne(val);
+        checkCapacity(size().longValue() + 1);
         backedList.add(val);
         hasAny = true;
       }
@@ -116,26 +115,31 @@ class ListImpl<IndexType extends Number, ValueType> implements WriteList<IndexTy
     }
   }
 
-  private void ensureCouldAddMany(Collection c) {
-    if (maxSize() != VARIABLE_SIZE && (backedList.size() + c.size()) > maxSize()) {
+  private void checkCapacity(long newCapacity) {
+    checkCapacity(newCapacity, maxSize());
+  }
+
+  private void checkCapacity(long newCapacity, long maxSize) {
+    if (maxSize != VARIABLE_SIZE && newCapacity > maxSize) {
       throw new MaxSizeOverflowException(
           String.format(
-              "Cannot add collection, maxSize of %s will be overflown with elements (Currently: %s)", maxSize(), backedList.size()));
+              "Cannot create collection, capacity %s is greater than maxSize of %s ",
+              newCapacity, maxSize));
     }
   }
 
   @Override
   public boolean addAll(IndexType index, @NotNull Iterable<? extends ValueType> c) {
     if (c instanceof Collection) {
-      ensureCouldAddMany((Collection) c);
+      checkCapacity(size().longValue() + ((Collection) c).size());
       return backedList.addAll(index.intValue(), (Collection<? extends ValueType>) c);
     } else if (c instanceof ListImpl) {
-      ensureCouldAddMany(((ListImpl<?, ? extends ValueType>) c).backedList);
+      checkCapacity(size().longValue() + (((ListImpl) c).backedList).size());
       return backedList.addAll(index.intValue(), ((ListImpl<?, ? extends ValueType>) c).backedList);
     } else {
       int idx = index.intValue();
       for (ValueType val : c) {
-        ensureCouldAddOne(val);
+        checkCapacity(size().longValue() + 1);
         backedList.add(idx++, val);
       }
       return idx > index.intValue();
@@ -184,7 +188,7 @@ class ListImpl<IndexType extends Number, ValueType> implements WriteList<IndexTy
 
   @Override
   public void add(IndexType index, ValueType element) {
-    ensureCouldAddOne(element);
+    checkCapacity(size().longValue() + 1);
     backedList.add(index.intValue(), element);
   }
 
@@ -218,9 +222,9 @@ class ListImpl<IndexType extends Number, ValueType> implements WriteList<IndexTy
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     ListImpl<?, ?> list = (ListImpl<?, ?>) o;
-    return vector == list.vector &&
-        maxSize == list.maxSize &&
-        Objects.equal(backedList, list.backedList);
+    return vector == list.vector
+        && maxSize == list.maxSize
+        && Objects.equal(backedList, list.backedList);
   }
 
   @Override
