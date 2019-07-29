@@ -243,7 +243,7 @@ public class TestUtils {
       Class<? extends V> testsType,
       Function<Pair<TestCase, BeaconChainSpec>, Optional<String>> testCaseRunner) {
     runTestsInResourceDirImpl(
-        dir, testsType, testCaseRunner, Collections.emptySet(), Collections.emptySet(), false);
+        dir, testsType, testCaseRunner, Ignored.EMPTY, false);
   }
 
   static <V extends TestSkeleton> void runTestsInResourceDir(
@@ -252,7 +252,7 @@ public class TestUtils {
       Function<Pair<TestCase, BeaconChainSpec>, Optional<String>> testCaseRunner,
       boolean parallel) {
     runTestsInResourceDirImpl(
-        dir, testsType, testCaseRunner, Collections.emptySet(), Collections.emptySet(), parallel);
+        dir, testsType, testCaseRunner, Ignored.EMPTY, parallel);
   }
 
   static <V extends TestSkeleton> void runTestsInResourceDir(
@@ -262,7 +262,7 @@ public class TestUtils {
       Ignored ignored,
       boolean parallel) {
     runTestsInResourceDirImpl(
-        dir, testsType, testCaseRunner, ignored.fileNames, ignored.testCases, parallel);
+        dir, testsType, testCaseRunner, ignored, parallel);
   }
 
   static <V extends TestSkeleton> void runTestsInResourceDir(
@@ -271,7 +271,7 @@ public class TestUtils {
       Function<Pair<TestCase, BeaconChainSpec>, Optional<String>> testCaseRunner,
       Ignored ignored) {
     runTestsInResourceDirImpl(
-        dir, testsType, testCaseRunner, ignored.fileNames, ignored.testCases, false);
+        dir, testsType, testCaseRunner, ignored, false);
   }
 
   static BeaconChainSpec loadSpecByName(String name, boolean isBlsVerified) {
@@ -305,10 +305,12 @@ public class TestUtils {
       Path dir,
       Class<? extends V> testsType,
       Function<Pair<TestCase, BeaconChainSpec>, Optional<String>> testCaseRunner,
-      Collection<String> fileNamesExclusions,
-      Collection<String> testCaseExclusions,
+      Ignored ignored,
       boolean parallel) {
     List<File> files = getResourceFiles(dir.toString());
+    boolean isCI = Boolean.parseBoolean(System.getenv("CI"));
+    Collection<String> fileNamesExclusions = isCI == ignored.forCI ? ignored.fileNames : Collections.emptySet();
+    Collection<String> testCaseExclusions = isCI == ignored.forCI ? ignored.testCases : Collections.emptySet();
     Scheduler scheduler =
         parallel ? schedulers.cpuHeavy() : schedulers.newSingleThreadDaemon("tests");
     AtomicBoolean failed = new AtomicBoolean(false);
@@ -341,22 +343,29 @@ public class TestUtils {
   }
 
   public static class Ignored {
+    private static Ignored EMPTY = new Ignored(Collections.emptySet(), Collections.emptySet(), false);
     private final Set<String> testCases;
     private final Set<String> fileNames;
+    private final boolean forCI;
 
-    private Ignored(Set<String> testCases, Set<String> fileNames) {
+    private Ignored(Set<String> testCases, Set<String> fileNames, boolean forCI) {
       this.testCases = testCases;
       this.fileNames = fileNames;
+      this.forCI = forCI;
     }
 
     public static Ignored casesOf(String... testCases) {
       assert testCases.length > 0;
-      return new Ignored(new HashSet<>(Arrays.asList(testCases)), new HashSet<>());
+      return new Ignored(new HashSet<>(Arrays.asList(testCases)), new HashSet<>(), false);
     }
 
     public static Ignored filesOf(String... fileNames) {
       assert fileNames.length > 0;
-      return new Ignored(new HashSet<>(), new HashSet<>(Arrays.asList(fileNames)));
+      return new Ignored(new HashSet<>(), new HashSet<>(Arrays.asList(fileNames)), false);
+    }
+
+    public Ignored forCI() {
+      return new Ignored(new HashSet<>(testCases), new HashSet<>(fileNames), true);
     }
   }
 }

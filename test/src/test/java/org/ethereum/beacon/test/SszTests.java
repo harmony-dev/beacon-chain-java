@@ -34,7 +34,7 @@ public class SszTests extends TestUtils {
           SszStaticRunner testRunner = new SszStaticRunner(input.getValue0(), input.getValue1());
           return testRunner.run();
         },
-        Ignored.filesOf("ssz_mainnet_random.yaml"),
+        Ignored.filesOf("ssz_mainnet_random.yaml").forCI(),
         true // run it in parallel, a lot of tests
         );
   }

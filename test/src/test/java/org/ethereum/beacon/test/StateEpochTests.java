@@ -61,7 +61,7 @@ public class StateEpochTests extends TestUtils {
           StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1(), type);
           return testRunner.run();
         },
-        Ignored.filesOf("justification_and_finalization_mainnet.yaml"));
+        Ignored.filesOf("justification_and_finalization_mainnet.yaml").forCI());
   }
 
   @Test

@@ -35,6 +35,6 @@ public class StateSanityTests extends TestUtils {
           StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1(), type);
           return testRunner.run();
         },
-        Ignored.filesOf("sanity_blocks_mainnet.yaml"));
+        Ignored.filesOf("sanity_blocks_mainnet.yaml").forCI());
   }
 }

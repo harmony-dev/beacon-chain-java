@@ -22,7 +22,7 @@ public class StateOperationsTests extends TestUtils {
           StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1(), type);
           return testRunner.run();
         },
-        Ignored.filesOf("attestation_mainnet.yaml"));
+        Ignored.filesOf("attestation_mainnet.yaml").forCI());
   }
 
   @Test
@@ -36,7 +36,7 @@ public class StateOperationsTests extends TestUtils {
           StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1(), type);
           return testRunner.run();
         },
-        Ignored.filesOf("attester_slashing_mainnet.yaml"));
+        Ignored.filesOf("attester_slashing_mainnet.yaml").forCI());
   }
 
   @Test
@@ -102,6 +102,6 @@ public class StateOperationsTests extends TestUtils {
           StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1(), type);
           return testRunner.run();
         },
-        Ignored.filesOf("deposit_mainnet.yaml"));
+        Ignored.filesOf("deposit_mainnet.yaml").forCI());
   }
 }
