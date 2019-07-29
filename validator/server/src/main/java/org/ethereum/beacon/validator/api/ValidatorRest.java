@@ -1,8 +1,12 @@
 package org.ethereum.beacon.validator.api;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.netty.handler.codec.http.HttpResponseStatus;
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Handler;
+import io.vertx.core.MultiMap;
+import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.json.Json;
+import io.vertx.ext.web.Router;
+import io.vertx.ext.web.RoutingContext;
 import org.ethereum.beacon.chain.MutableBeaconChain;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.observer.ObservableStateProcessor;
@@ -33,12 +37,7 @@ import org.ethereum.beacon.wire.WireApiSub;
 import org.ethereum.beacon.wire.sync.SyncManager;
 import org.javatuples.Pair;
 import org.javatuples.Triplet;
-import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
-import reactor.netty.http.server.HttpServer;
-import reactor.netty.http.server.HttpServerRequest;
-import reactor.netty.http.server.HttpServerResponse;
 import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.uint.UInt64;
@@ -52,15 +51,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
  * REST service for beacon chain validator according to <a
  * href="https://github.com/ethereum/eth2.0-specs/blob/v0.7.1/specs/validator/beacon_node_oapi.yaml">https://github.com/ethereum/eth2.0-specs/blob/v0.7.1/specs/validator/beacon_node_oapi.yaml</a>
  */
-public class ValidatorRest extends ReactorNettyServer {
+public class ValidatorRest extends AbstractVerticle {
+
+  private final Integer serverPort;
 
   private final BeaconChainSpec spec;
   private final WireApiSub wireApiSub;
@@ -68,7 +69,6 @@ public class ValidatorRest extends ReactorNettyServer {
   private final ValidatorDutiesService validatorDutiesService;
   private final UInt64 chainId;
 
-  private ObjectMapper mapper = new ObjectMapper();
   private String version = null;
   private Time time = null;
   private SyncingResponse syncingResponse = null;
@@ -76,7 +76,6 @@ public class ValidatorRest extends ReactorNettyServer {
   private ObservableBeaconState observableBeaconState = null;
 
   public ValidatorRest(
-      String serverHost,
       Integer serverPort,
       BeaconChainSpec spec,
       ObservableStateProcessor stateProcessor,
@@ -85,7 +84,7 @@ public class ValidatorRest extends ReactorNettyServer {
       ValidatorDutiesService validatorDutiesService,
       WireApiSub wireApiSub,
       MutableBeaconChain beaconChain) {
-    super(serverHost, serverPort);
+    this.serverPort = serverPort;
     this.spec = spec;
     this.wireApiSub = wireApiSub;
     this.beaconChain = beaconChain;
@@ -120,25 +119,65 @@ public class ValidatorRest extends ReactorNettyServer {
             });
   }
 
+  static String getParamString(String param, MultiMap params) throws InvalidInputException {
+    try {
+      assert params.contains(param);
+      assert params.getAll(param).size() == 1;
+      return params.get(param);
+    } catch (AssertionError e) {
+      throw new InvalidInputException(
+          String.format("Parameters map doesn't contain required param `%s`", param));
+    }
+  }
+
+  static List<String> getParamStringList(String param, MultiMap params)
+      throws InvalidInputException {
+    try {
+      assert params.contains(param);
+      return params.getAll(param);
+    } catch (AssertionError e) {
+      throw new InvalidInputException(
+          String.format("Parameters map doesn't contain required param `%s`", param));
+    }
+  }
+
   @Override
-  HttpServer addRoutes(HttpServer httpServer) {
-    return httpServer.route(
-        routes ->
-            routes
-                .get("/node/version", doJsonResponse(this::produceVersionResponse))
-                .get("/node/genesis_time", doJsonResponse(this::produceGenesisTimeResponse))
-                .get("/node/syncing", doJsonResponse(this::produceSyncingResponse))
-                .get(
-                    "/validator/duties",
-                    processGetRequestImpl(this::produceValidatorDutiesResponse))
-                .get("/validator/block", processGetRequestImpl(this::produceValidatorBlockResponse))
-                .post("/validator/block", processPostRequestImpl(this::acceptBlockSubmit))
-                .get(
-                    "/validator/attestation",
-                    processGetRequestImpl(this::produceAttestationResponse))
-                .post(
-                    "/validator/attestation", processPostRequestImpl(this::acceptAttestationSubmit))
-                .get("/node/fork", doJsonResponse(this::produceForkResponse)));
+  public void start() {
+    // Create a router object.
+    Router router = Router.router(vertx);
+    router.get("/node/version").handler(doJsonResponse(this::produceVersionResponse));
+    router.get("/node/genesis_time").handler(doJsonResponse(this::produceGenesisTimeResponse));
+    router.get("/node/syncing").handler(doJsonResponse(this::produceSyncingResponse));
+    router
+        .get("/validator/duties")
+        .handler(processGetRequestImpl(this::produceValidatorDutiesResponse));
+    router
+        .get("/validator/block")
+        .handler(processGetRequestImpl(this::produceValidatorBlockResponse));
+    router.post("/validator/block").handler(processPostRequestImpl(this::acceptBlockSubmit));
+    router
+        .get("/validator/attestation")
+        .handler(processGetRequestImpl(this::produceAttestationResponse));
+    router
+        .post("/validator/attestation")
+        .handler(processPostRequestImpl(this::acceptAttestationSubmit));
+    router.get("/node/fork").handler(doJsonResponse(this::produceForkResponse));
+    // Create the HTTP server and pass the "accept" method to the request handler.
+    vertx.createHttpServer().requestHandler(router).listen(serverPort);
+  }
+
+  /**
+   * Produces json response using supplier
+   *
+   * @param response Json string supplier
+   * @return request/response handling function
+   */
+  private Handler<RoutingContext> doJsonResponse(Supplier<Object> response) {
+    return event ->
+        event
+            .response()
+            .putHeader("content-type", "application/json; charset=utf-8")
+            .end(Json.encodePrettily(response.get()));
   }
 
   private String produceVersionResponse() {
@@ -164,35 +203,27 @@ public class ValidatorRest extends ReactorNettyServer {
     }
   }
 
-  private String produceSyncingResponse() {
-    try {
-      return mapper.writeValueAsString(syncingResponse);
-    } catch (JsonProcessingException e) {
-      throw new RuntimeException(e);
-    }
+  private Object produceSyncingResponse() {
+    return syncingResponse;
   }
 
-  private String produceForkResponse() {
-    try {
-      ForkResponse forkResponse =
-          new ForkResponse(
-              observableBeaconState.getLatestSlotState().getFork().getCurrentVersion().toString(),
-              observableBeaconState.getLatestSlotState().getFork().getPreviousVersion().toString(),
-              spec.slot_to_epoch(observableBeaconState.getLatestSlotState().getSlot()).longValue(),
-              chainId.toBI());
-      return mapper.writeValueAsString(forkResponse);
-    } catch (JsonProcessingException e) {
-      throw new RuntimeException(e);
-    }
+  private Object produceForkResponse() {
+    ForkResponse forkResponse =
+        new ForkResponse(
+            observableBeaconState.getLatestSlotState().getFork().getCurrentVersion().toString(),
+            observableBeaconState.getLatestSlotState().getFork().getPreviousVersion().toString(),
+            spec.slot_to_epoch(observableBeaconState.getLatestSlotState().getSlot()).longValue(),
+            chainId.toBI());
+    return forkResponse;
   }
 
-  private String produceValidatorDutiesResponse(HttpServerRequest request) {
+  private Object produceValidatorDutiesResponse(HttpServerRequest request) {
     try {
-      Map<String, List<String>> params = getRequestParams(request);
+      MultiMap params = request.params();
       EpochNumber epoch;
       BeaconStateEx stateEx = observableBeaconState.getLatestSlotState();
-      if (params.containsKey("epoch")) {
-        epoch = EpochNumber.castFrom(UInt64.valueOf(params.get("epoch").get(0)));
+      if (params.contains("epoch")) {
+        epoch = EpochNumber.castFrom(UInt64.valueOf(getParamString("epoch", params)));
       } else { // Epoch is not required
         epoch = spec.get_current_epoch(stateEx).increment();
       }
@@ -224,7 +255,7 @@ public class ValidatorRest extends ReactorNettyServer {
         }
       }
 
-      return mapper.writeValueAsString(new ValidatorDutiesResponse(responseList));
+      return new ValidatorDutiesResponse(responseList);
     } catch (IllegalArgumentException ex) {
       throw new InvalidInputException(ex);
     } catch (InvalidInputException | NotAcceptableInputException ex) {
@@ -234,15 +265,15 @@ public class ValidatorRest extends ReactorNettyServer {
     }
   }
 
-  private String produceValidatorBlockResponse(HttpServerRequest request) {
+  private Object produceValidatorBlockResponse(HttpServerRequest request) {
     try {
-      Map<String, List<String>> params = getRequestParams(request);
+      MultiMap params = request.params();
       SlotNumber slot = SlotNumber.castFrom(UInt64.valueOf(getParamString("slot", params)));
       BLSSignature randaoReveal =
           BLSSignature.wrap(Bytes96.fromHexStringStrict(getParamString("randao_reveal", params)));
       BeaconBlock block =
           validatorDutiesService.prepareBlock(slot, randaoReveal, observableBeaconState);
-      return mapper.writeValueAsString(BeaconBlockConverter.serialize(block));
+      return BeaconBlockConverter.serialize(block);
     } catch (IllegalArgumentException ex) {
       throw new InvalidInputException(ex);
     } catch (Exception e) {
@@ -250,36 +281,31 @@ public class ValidatorRest extends ReactorNettyServer {
     }
   }
 
-  private Mono<Optional<Throwable>> acceptBlockSubmit(HttpServerRequest request) {
-    return request
-        .receive()
-        .aggregate()
-        .asString()
-        .map(
-            json -> {
-              try {
-                BeaconBlock block = mapper.readValue(json, BlockSubmit.class).createBeaconBlock();
-                // Import
-                MutableBeaconChain.ImportResult importResult = beaconChain.insert(block);
-                // Broadcast
-                wireApiSub.sendProposedBlock(block);
-                if (!MutableBeaconChain.ImportResult.OK.equals(importResult)) {
-                  throw new PartiallyFailedException(importResult.toString());
-                }
-                return Optional.empty();
-              } catch (PartiallyFailedException e) {
-                return Optional.of(e);
-              } catch (AssertionError ex) {
-                return Optional.of(new InvalidInputException(ex));
-              } catch (Exception e) {
-                return Optional.of(new RuntimeException(e));
-              }
-            });
+  private Optional<Throwable> acceptBlockSubmit(String body) {
+    final BlockSubmit submitData = Json.decodeValue(body, BlockSubmit.class);
+
+    try {
+      BeaconBlock block = submitData.createBeaconBlock();
+      // Import
+      MutableBeaconChain.ImportResult importResult = beaconChain.insert(block);
+      // Broadcast
+      wireApiSub.sendProposedBlock(block);
+      if (!MutableBeaconChain.ImportResult.OK.equals(importResult)) {
+        throw new PartiallyFailedException(importResult.toString());
+      }
+      return Optional.empty();
+    } catch (PartiallyFailedException e) {
+      return Optional.of(e);
+    } catch (AssertionError ex) {
+      return Optional.of(new InvalidInputException(ex));
+    } catch (Exception e) {
+      return Optional.of(new RuntimeException(e));
+    }
   }
 
-  private String produceAttestationResponse(HttpServerRequest request) {
+  private Object produceAttestationResponse(HttpServerRequest request) {
     try {
-      Map<String, List<String>> params = getRequestParams(request);
+      MultiMap params = request.params();
       SlotNumber slot = SlotNumber.castFrom(UInt64.valueOf(getParamString("slot", params)));
       BLSPubkey validatorPubkey =
           BLSPubkey.wrap(Bytes48.fromHexStringStrict(getParamString("validator_pubkey", params)));
@@ -292,12 +318,12 @@ public class ValidatorRest extends ReactorNettyServer {
           spec.get_validator_index_by_pubkey(
               observableBeaconState.getLatestSlotState().createMutableCopy(), validatorPubkey);
       Attestation attestation =
-          validatorDutiesService.prepareAttestation(slot, validatorIndex, shard, observableBeaconState);
+          validatorDutiesService.prepareAttestation(
+              slot, validatorIndex, shard, observableBeaconState);
       IndexedAttestation indexedAttestation =
           spec.convert_to_indexed(
               observableBeaconState.getLatestSlotState().createMutableCopy(), attestation);
-      return mapper.writeValueAsString(
-          BeaconBlockConverter.presentIndexedAttestation(indexedAttestation));
+      return BeaconBlockConverter.presentIndexedAttestation(indexedAttestation);
     } catch (IllegalArgumentException ex) {
       throw new InvalidInputException(ex);
     } catch (Exception e) {
@@ -305,57 +331,46 @@ public class ValidatorRest extends ReactorNettyServer {
     }
   }
 
-  private Mono<Optional<Throwable>> acceptAttestationSubmit(HttpServerRequest request) {
-    return request
-        .receive()
-        .aggregate()
-        .asString()
-        .map(
-            json -> {
-              try {
-                IndexedAttestation indexedAttestation =
-                    mapper.readValue(json, AttestationSubmit.class).createAttestation();
-                // Verification
-                MutableBeaconState state =
-                    observableBeaconState.getLatestSlotState().createMutableCopy();
-                List<ValidatorIndex> committee =
-                    spec.get_crosslink_committee(
-                        state,
-                        indexedAttestation.getData().getTargetEpoch(),
-                        indexedAttestation.getData().getCrosslink().getShard());
-                Bitfield bitfield =
-                    new Bitfield(
-                        committee.size(),
-                        indexedAttestation.getCustodyBit0Indices().listCopy().stream()
-                            .map(ValidatorIndex::intValue)
-                            .collect(Collectors.toList()));
-                Attestation attestation =
-                    new Attestation(
-                        bitfield,
-                        indexedAttestation.getData(),
-                        bitfield,
-                        indexedAttestation.getSignature());
-                try {
-                  if (new AttestationVerifier(spec).verify(attestation, state).isPassed()) {
-                    spec.process_attestation(state, attestation);
-                  } else {
-                    throw new PartiallyFailedException("Verification not passed for attestation");
-                  }
-                } catch (SpecCommons.SpecAssertionFailed | IllegalArgumentException ex) {
-                  throw new PartiallyFailedException(ex);
-                } finally {
-                  // Broadcast
-                  wireApiSub.sendAttestation(attestation);
-                }
-                return Optional.empty();
-              } catch (PartiallyFailedException e) {
-                return Optional.of(e);
-              } catch (AssertionError ex) {
-                return Optional.of(new InvalidInputException(ex));
-              } catch (Exception e) {
-                return Optional.of(new RuntimeException(e));
-              }
-            });
+  private Optional<Throwable> acceptAttestationSubmit(String body) {
+    final AttestationSubmit submitData = Json.decodeValue(body, AttestationSubmit.class);
+    try {
+      IndexedAttestation indexedAttestation = submitData.createAttestation();
+      // Verification
+      MutableBeaconState state = observableBeaconState.getLatestSlotState().createMutableCopy();
+      List<ValidatorIndex> committee =
+          spec.get_crosslink_committee(
+              state,
+              indexedAttestation.getData().getTargetEpoch(),
+              indexedAttestation.getData().getCrosslink().getShard());
+      Bitfield bitfield =
+          new Bitfield(
+              committee.size(),
+              indexedAttestation.getCustodyBit0Indices().listCopy().stream()
+                  .map(ValidatorIndex::intValue)
+                  .collect(Collectors.toList()));
+      Attestation attestation =
+          new Attestation(
+              bitfield, indexedAttestation.getData(), bitfield, indexedAttestation.getSignature());
+      try {
+        if (new AttestationVerifier(spec).verify(attestation, state).isPassed()) {
+          spec.process_attestation(state, attestation);
+        } else {
+          throw new PartiallyFailedException("Verification not passed for attestation");
+        }
+      } catch (SpecCommons.SpecAssertionFailed | IllegalArgumentException ex) {
+        throw new PartiallyFailedException(ex);
+      } finally {
+        // Broadcast
+        wireApiSub.sendAttestation(attestation);
+      }
+      return Optional.empty();
+    } catch (PartiallyFailedException e) {
+      return Optional.of(e);
+    } catch (AssertionError ex) {
+      return Optional.of(new InvalidInputException(ex));
+    } catch (Exception e) {
+      return Optional.of(new RuntimeException(e));
+    }
   }
 
   private String produceGenesisTimeResponse() {
@@ -365,25 +380,79 @@ public class ValidatorRest extends ReactorNettyServer {
     return "" + time.getValue();
   }
 
-  private BiFunction<HttpServerRequest, HttpServerResponse, Publisher<Void>> processGetRequestImpl(
-      Function<HttpServerRequest, String> response) {
-    return (httpServerRequest, httpServerResponse) -> {
+  /**
+   * GET Endpoint helper
+   *
+   * <p>Executes func with `HttpServerRequest` input and returns 200 OK if everything was ok
+   *
+   * <p>Responses with 400 BAD REQUEST when catches {@link InvalidInputException} from func function
+   *
+   * <p>Responses with 406 NOT ACCEPTABLE when catches {@link NotAcceptableInputException} from func
+   * function
+   *
+   * <p>Responses with 500 INTERNAL SERVER ERROR for all other errors
+   */
+  private Handler<RoutingContext> processGetRequestImpl(
+      Function<HttpServerRequest, Object> response) {
+    return event -> {
       if (!shortSync) {
         // 503 Beacon node is currently syncing, try again later.
-        return httpServerResponse.status(HttpResponseStatus.SERVICE_UNAVAILABLE).send();
+        event.response().setStatusCode(503).end();
+      } else {
+        try {
+          event
+              .response()
+              .putHeader("content-type", "application/json; charset=utf-8")
+              .end(Json.encodePrettily(response.apply(event.request())));
+        } catch (InvalidInputException ex) {
+          event.response().setStatusCode(400).end();
+        } catch (NotAcceptableInputException ex) {
+          event.response().setStatusCode(406).end();
+        } catch (Exception ex) {
+          event.response().setStatusCode(500).end();
+        }
       }
-      return processGetRequest(httpServerRequest, httpServerResponse, response);
     };
   }
 
-  private BiFunction<HttpServerRequest, HttpServerResponse, Publisher<Void>> processPostRequestImpl(
-      Function<HttpServerRequest, Mono<Optional<Throwable>>> func) {
-    return (httpServerRequest, httpServerResponse) -> {
+  /**
+   * POST Endpoint helper
+   *
+   * <p>Executes func with `HttpServerRequest` input and returns 200 OK if everything was ok
+   *
+   * <p>Responses with 202 ACCEPTED when catches {@link PartiallyFailedException} from func function
+   *
+   * <p>Responses with 400 BAD REQUEST when catches {@link InvalidInputException} from func function
+   *
+   * <p>Responses with 406 NOT ACCEPTABLE when catches {@link NotAcceptableInputException} from func
+   * function
+   *
+   * <p>Responses with 500 INTERNAL SERVER ERROR for all other errors
+   */
+  private Handler<RoutingContext> processPostRequestImpl(
+      Function<String, Optional<Throwable>> func) {
+    return event -> {
       if (!shortSync) {
         // 503 Beacon node is currently syncing, try again later.
-        return httpServerResponse.status(HttpResponseStatus.SERVICE_UNAVAILABLE).send();
+        event.response().setStatusCode(503).end();
+      } else {
+        Optional<Throwable> result = func.apply(event.getBodyAsString());
+        if (!result.isPresent()) {
+          event.response().setStatusCode(200).end();
+        } else {
+          Throwable ex = result.get();
+          if (ex instanceof PartiallyFailedException) {
+            event.response().setStatusCode(202).end();
+          } else if (ex instanceof InvalidInputException) {
+            event.response().setStatusCode(400).end();
+          } else if (ex instanceof NotAcceptableInputException) {
+            event.response().setStatusCode(406).end();
+          } else {
+            event.response().setStatusCode(500).end();
+          }
+        }
       }
-      return processPostRequest(httpServerRequest, httpServerResponse, func);
+      ;
     };
   }
 }

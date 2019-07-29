@@ -26,12 +26,6 @@ allprojects {
     testImplementation 'org.assertj:assertj-core'
   }
 
-  dependencyManagement {
-    imports {
-      mavenBom "io.projectreactor:reactor-bom:Californium-RELEASE"
-    }
-  }
-
   repositories {
     jcenter()
   }
