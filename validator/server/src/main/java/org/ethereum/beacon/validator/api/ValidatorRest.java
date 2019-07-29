@@ -145,8 +145,8 @@ public class ValidatorRest extends AbstractVerticle {
   public void start() {
     // Create a router object.
     Router router = Router.router(vertx);
-    router.get("/node/version").handler(doJsonResponse(this::produceVersionResponse));
-    router.get("/node/genesis_time").handler(doJsonResponse(this::produceGenesisTimeResponse));
+    router.get("/node/version").handler(doStringResponse(this::produceVersionResponse));
+    router.get("/node/genesis_time").handler(doStringResponse(this::produceGenesisTimeResponse));
     router.get("/node/syncing").handler(doJsonResponse(this::produceSyncingResponse));
     router
         .get("/validator/duties")
@@ -178,6 +178,20 @@ public class ValidatorRest extends AbstractVerticle {
             .response()
             .putHeader("content-type", "application/json; charset=utf-8")
             .end(Json.encodePrettily(response.get()));
+  }
+
+  /**
+   * Produces json response using supplier
+   *
+   * @param response Json string supplier
+   * @return request/response handling function
+   */
+  private Handler<RoutingContext> doStringResponse(Supplier<String> response) {
+    return event ->
+        event
+            .response()
+            .putHeader("content-type", "application/json; charset=utf-8")
+            .end(response.get());
   }
 
   private String produceVersionResponse() {
@@ -282,9 +296,8 @@ public class ValidatorRest extends AbstractVerticle {
   }
 
   private Optional<Throwable> acceptBlockSubmit(String body) {
-    final BlockSubmit submitData = Json.decodeValue(body, BlockSubmit.class);
-
     try {
+      final BlockSubmit submitData = Json.decodeValue(body, BlockSubmit.class);
       BeaconBlock block = submitData.createBeaconBlock();
       // Import
       MutableBeaconChain.ImportResult importResult = beaconChain.insert(block);
@@ -332,8 +345,8 @@ public class ValidatorRest extends AbstractVerticle {
   }
 
   private Optional<Throwable> acceptAttestationSubmit(String body) {
-    final AttestationSubmit submitData = Json.decodeValue(body, AttestationSubmit.class);
     try {
+      final AttestationSubmit submitData = Json.decodeValue(body, AttestationSubmit.class);
       IndexedAttestation indexedAttestation = submitData.createAttestation();
       // Verification
       MutableBeaconState state = observableBeaconState.getLatestSlotState().createMutableCopy();
@@ -436,23 +449,27 @@ public class ValidatorRest extends AbstractVerticle {
         // 503 Beacon node is currently syncing, try again later.
         event.response().setStatusCode(503).end();
       } else {
-        Optional<Throwable> result = func.apply(event.getBodyAsString());
-        if (!result.isPresent()) {
-          event.response().setStatusCode(200).end();
-        } else {
-          Throwable ex = result.get();
-          if (ex instanceof PartiallyFailedException) {
-            event.response().setStatusCode(202).end();
-          } else if (ex instanceof InvalidInputException) {
-            event.response().setStatusCode(400).end();
-          } else if (ex instanceof NotAcceptableInputException) {
-            event.response().setStatusCode(406).end();
-          } else {
-            event.response().setStatusCode(500).end();
-          }
-        }
+        event
+            .request()
+            .bodyHandler(
+                buffer -> {
+                  Optional<Throwable> result = func.apply(buffer.toString());
+                  if (!result.isPresent()) {
+                    event.response().setStatusCode(200).end();
+                  } else {
+                    Throwable ex = result.get();
+                    if (ex instanceof PartiallyFailedException) {
+                      event.response().setStatusCode(202).end();
+                    } else if (ex instanceof InvalidInputException) {
+                      event.response().setStatusCode(400).end();
+                    } else if (ex instanceof NotAcceptableInputException) {
+                      event.response().setStatusCode(406).end();
+                    } else {
+                      event.response().setStatusCode(500).end();
+                    }
+                  }
+                });
       }
-      ;
     };
   }
 }
