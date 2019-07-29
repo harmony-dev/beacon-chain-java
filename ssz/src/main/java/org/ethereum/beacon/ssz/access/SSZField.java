@@ -28,7 +28,7 @@ public class SSZField {
     }
     if (value instanceof ReadList && !((ReadList) value).isVector() && ((ReadList) value).maxSize() > VARIABLE_SIZE) {
       ReadList readList = (ReadList) value;
-      Class elementClass = Object.class; //XXX: doesn't matter
+      Class elementClass = Long.class; //XXX: some number
       if (!readList.isEmpty()) {
         elementClass = readList.get(0).getClass();
       }
