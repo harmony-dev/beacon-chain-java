@@ -268,8 +268,8 @@ public class BeaconChainSpecTest {
       BeaconBlockBody body =
           BeaconBlockTestUtil.createRandomBodyWithNoOperations(rnd, spec.getConstants());
       spec.process_randao(state, body);
-      state.setSlot(state.getSlot().plus(spec.getConstants().getSlotsPerEpoch()));
       spec.process_final_updates(state);
+      state.setSlot(state.getSlot().plus(spec.getConstants().getSlotsPerEpoch()));
 
       EpochNumber currentEpoch = spec.get_current_epoch(state);
 
