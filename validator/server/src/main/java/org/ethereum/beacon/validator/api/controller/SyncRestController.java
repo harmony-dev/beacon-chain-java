@@ -2,7 +2,6 @@ package org.ethereum.beacon.validator.api.controller;
 
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpServerRequest;
-import io.vertx.core.json.Json;
 import io.vertx.ext.web.RoutingContext;
 import org.ethereum.beacon.validator.api.InvalidInputException;
 import org.ethereum.beacon.validator.api.NotAcceptableInputException;
@@ -43,10 +42,7 @@ public abstract class SyncRestController extends RestController {
         event.response().setStatusCode(503).end();
       } else {
         try {
-          event
-              .response()
-              .putHeader("content-type", "application/json; charset=utf-8")
-              .end(Json.encodePrettily(response.apply(event.request())));
+          doJsonResponse(event, () -> response.apply(event.request()));
         } catch (InvalidInputException ex) {
           event.response().setStatusCode(400).end();
         } catch (NotAcceptableInputException ex) {

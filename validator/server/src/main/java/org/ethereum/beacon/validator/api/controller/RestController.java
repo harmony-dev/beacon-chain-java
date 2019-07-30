@@ -33,17 +33,34 @@ public abstract class RestController implements Controller {
   }
 
   /**
+   * Initiates json response using supplier to the context
+   *
+   * @param response Json string supplier
+   */
+  void doStringResponse(RoutingContext context, Supplier<String> response) {
+    context
+        .response()
+        .putHeader("content-type", "application/json; charset=utf-8")
+        .end(response.get());
+  }
+
+  /**
+   * Initiates json response using supplier of java object to the context
+   *
+   * @param response Json string supplier
+   */
+  void doJsonResponse(RoutingContext context, Supplier<Object> response) {
+    doStringResponse(context, () -> Json.encodePrettily(response.get()));
+  }
+
+  /**
    * Produces json response using supplier
    *
    * @param response Json string supplier
    * @return request/response handling function
    */
   Handler<RoutingContext> doStringResponse(Supplier<String> response) {
-    return event ->
-        event
-            .response()
-            .putHeader("content-type", "application/json; charset=utf-8")
-            .end(response.get());
+    return event -> doStringResponse(event, response);
   }
 
   /**
@@ -53,10 +70,6 @@ public abstract class RestController implements Controller {
    * @return request/response handling function
    */
   Handler<RoutingContext> doJsonResponse(Supplier<Object> response) {
-    return event ->
-        event
-            .response()
-            .putHeader("content-type", "application/json; charset=utf-8")
-            .end(Json.encodePrettily(response.get()));
+    return event -> doJsonResponse(event, response);
   }
 }
