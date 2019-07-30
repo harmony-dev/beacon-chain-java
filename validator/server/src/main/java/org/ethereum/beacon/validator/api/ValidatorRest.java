@@ -96,7 +96,7 @@ public class ValidatorRest {
       vertx.undeploy(id);
       this.id = null;
     } catch (Exception e) {
-      logger.error("Failed to stop Validator REST with id #{}", id);
+      logger.error(String.format("Failed to stop Validator REST with id #%s", id), e);
     }
   }
 }
