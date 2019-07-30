@@ -41,7 +41,6 @@ import org.ethereum.beacon.validator.util.MessageSignerTestUtil;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
-import tech.pegasys.artemis.util.uint.UInt64;
 
 public class BeaconChainProposerTest {
 
@@ -92,7 +91,7 @@ public class BeaconChainProposerTest {
             random, spec.getConstants().getMaxProposerSlashings());
     List<AttesterSlashing> casperSlashings =
         AttesterSlashingTestUtil.createRandomList(
-            random, spec.getConstants().getMaxAttesterSlashings());
+            random, spec.getConstants().getMaxAttesterSlashings(), spec.getConstants());
     List<VoluntaryExit> voluntaryExits =
         ExitTestUtil.createRandomList(random, spec.getConstants().getMaxVoluntaryExits());
 
@@ -105,7 +104,7 @@ public class BeaconChainProposerTest {
     BeaconBlock block = proposer.propose(initialObservedState, signer);
 
     Mockito.verify(pendingOperations)
-        .peekAggregateAttestations(spec.getConstants().getMaxAttestations());
+        .peekAggregateAttestations(spec.getConstants().getMaxAttestations(), spec.getConstants());
 
     Mockito.verify(pendingOperations)
         .peekProposerSlashings(spec.getConstants().getMaxProposerSlashings());
@@ -160,7 +159,7 @@ public class BeaconChainProposerTest {
         .peekDeposits(
             Mockito.eq(spec.getConstants().getMaxDeposits()),
             Mockito.any(),
-            Mockito.eq(initialState.getLatestEth1Data()));
+            Mockito.eq(initialState.getEth1Data()));
 
     BeaconStateEx stateAfterBlock =
         perBlockTransition.apply(new BeaconStateExImpl(initialState), block);

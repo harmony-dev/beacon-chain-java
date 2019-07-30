@@ -1,7 +1,7 @@
 package org.ethereum.beacon.core.spec;
 
 import org.ethereum.beacon.core.types.EpochNumber;
-import org.ethereum.beacon.core.types.SlotNumber;
+import tech.pegasys.artemis.util.uint.UInt64;
 
 /**
  * State list lengths.
@@ -12,19 +12,24 @@ import org.ethereum.beacon.core.types.SlotNumber;
  */
 public interface StateListLengths {
 
-  EpochNumber LATEST_RANDAO_MIXES_LENGTH = EpochNumber.of(1 << 13); // 8192 randao mixes
-  EpochNumber LATEST_ACTIVE_INDEX_ROOTS_LENGTH = EpochNumber.of(1 << 13);
-  EpochNumber LATEST_SLASHED_EXIT_LENGTH = EpochNumber.of(1 << 13); // 8192 epochs
+  EpochNumber EPOCHS_PER_HISTORICAL_VECTOR = EpochNumber.of(1 << 16); // 65,536 epochs
+  EpochNumber EPOCHS_PER_SLASHINGS_VECTOR = EpochNumber.of(1 << 13); // 8,192 epochs
+  UInt64 HISTORICAL_ROOTS_LIMIT = UInt64.valueOf(1 << 24); // 16,777,216
+  UInt64 VALIDATOR_REGISTRY_LIMIT = UInt64.valueOf(1L << 40); // 1,099,511,627,776 validators
 
-  default EpochNumber getLatestRandaoMixesLength() {
-    return LATEST_RANDAO_MIXES_LENGTH;
+  default EpochNumber getEpochsPerHistoricalVector() {
+    return EPOCHS_PER_HISTORICAL_VECTOR;
   }
 
-  default EpochNumber getLatestActiveIndexRootsLength() {
-    return LATEST_ACTIVE_INDEX_ROOTS_LENGTH;
+  default EpochNumber getEpochsPerSlashingsVector() {
+    return EPOCHS_PER_SLASHINGS_VECTOR;
   }
 
-  default EpochNumber getLatestSlashedExitLength() {
-    return LATEST_SLASHED_EXIT_LENGTH;
+  default UInt64 getHistoricalRootsLimit() {
+    return HISTORICAL_ROOTS_LIMIT;
+  }
+
+  default UInt64 getValidatorRegistryLimit() {
+    return VALIDATOR_REGISTRY_LIMIT;
   }
 }

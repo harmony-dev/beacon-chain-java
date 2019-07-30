@@ -11,7 +11,7 @@ import org.ethereum.beacon.ssz.access.SSZCompositeAccessor.CompositeInstanceBuil
 import org.ethereum.beacon.ssz.type.SSZBasicType;
 import org.ethereum.beacon.ssz.type.SSZCompositeType;
 import org.ethereum.beacon.ssz.type.SSZContainerType;
-import org.ethereum.beacon.ssz.type.SSZListType;
+import org.ethereum.beacon.ssz.type.list.SSZListType;
 import org.ethereum.beacon.ssz.type.SSZType;
 import org.ethereum.beacon.ssz.type.SSZUnionType;
 import org.javatuples.Pair;
@@ -41,7 +41,7 @@ public class SosDeserializer implements SSZVisitor<Object, Bytes> {
     Bytes body = bytes.slice(BYTES_PER_LENGTH_OFFSET);
 
     CompositeInstanceBuilder instanceBuilder = type.getAccessor()
-        .createInstanceBuilder(type.getTypeDescriptor());
+        .createInstanceBuilder(type);
     if (typeIndex == 0 && type.isNullable()) {
       instanceBuilder.setChild(typeIndex, null);
     } else {
@@ -66,7 +66,7 @@ public class SosDeserializer implements SSZVisitor<Object, Bytes> {
       ChildVisitor<Bytes, Object> childVisitor) {
 
     CompositeInstanceBuilder instanceBuilder =
-        type.getAccessor().createInstanceBuilder(type.getTypeDescriptor());
+        type.getAccessor().createInstanceBuilder(type);
     int fixedPartEnd = bytes.size();
     int curOff = 0;
     int childIndex = 0;

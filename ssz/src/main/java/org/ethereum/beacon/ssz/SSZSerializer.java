@@ -4,7 +4,7 @@ import javax.annotation.Nullable;
 import net.consensys.cava.bytes.Bytes;
 import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.creator.CompositeObjCreator;
-import org.ethereum.beacon.ssz.type.SSZListType;
+import org.ethereum.beacon.ssz.type.list.SSZListType;
 import org.ethereum.beacon.ssz.type.SSZType;
 import org.ethereum.beacon.ssz.type.TypeResolver;
 import org.ethereum.beacon.ssz.visitor.SSZVisitorHandler;

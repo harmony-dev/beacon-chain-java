@@ -21,9 +21,9 @@ public class AttestationSerializer implements ObjectSerializer<Attestation> {
   @Override
   public ObjectNode map(Attestation instance) {
     ObjectNode attestation = mapper.createObjectNode();
-    attestation.put("aggregation_bitfield", instance.getAggregationBitfield().toString());
+    attestation.put("aggregation_bitfield", instance.getAggregationBits().toString());
     attestation.set("data", attestationDataSerializer.map(instance.getData()));
-    attestation.put("custody_bitfield", instance.getCustodyBitfield().toString());
+    attestation.put("custody_bitfield", instance.getCustodyBits().toString());
     attestation.put("signature", BytesValue.wrap(instance.getSignature().getArrayUnsafe()).toString());
     return attestation;
   }

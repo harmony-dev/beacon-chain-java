@@ -15,15 +15,10 @@ public interface DepositContractParameters {
 
   Address DEPOSIT_CONTRACT_ADDRESS =
       Address.fromHexString("0x0000000000000000000000000000000000000000"); // TBD
-  UInt64 DEPOSIT_CONTRACT_TREE_DEPTH = UInt64.valueOf(1 << 5); // 32
 
   /* Values defined in the spec. */
 
   default Address getDepositContractAddress() {
     return DEPOSIT_CONTRACT_ADDRESS;
-  }
-
-  default UInt64 getDepositContractTreeDepth() {
-    return DEPOSIT_CONTRACT_TREE_DEPTH;
   }
 }

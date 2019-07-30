@@ -8,7 +8,7 @@ import java.util.Objects;
 import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.access.list.AbstractListAccessor;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
-import org.ethereum.beacon.ssz.fixtures.Bitfield.BitfieldAccessor;
+import org.ethereum.beacon.ssz.type.SSZType;
 
 /**
  * Bitfield is bit array where every bit represents status of attester with corresponding index
@@ -37,7 +37,7 @@ public class Bitfield {
     }
 
     @Override
-    public ListInstanceBuilder createInstanceBuilder(SSZField listType) {
+    public ListInstanceBuilder createInstanceBuilder(SSZType sszType) {
       return new SimpleInstanceBuilder() {
         @Override
         protected Object buildImpl(List<Object> children) {

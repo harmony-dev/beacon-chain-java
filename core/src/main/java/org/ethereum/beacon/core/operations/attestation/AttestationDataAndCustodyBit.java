@@ -16,7 +16,7 @@ public class AttestationDataAndCustodyBit {
 
   /** Attestation data. */
   @SSZ private final AttestationData data;
-  /** Custody bit. */
+  /** Challengeable bit (SSZ-bool, 1 byte) for the custody of crosslink data. */
   @SSZ private final boolean custodyBit;
 
   public AttestationDataAndCustodyBit(AttestationData data, boolean custodyBit) {

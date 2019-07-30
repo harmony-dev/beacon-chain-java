@@ -14,7 +14,7 @@ import org.ethereum.beacon.ssz.incremental.ObservableCompositeHelper;
 import org.ethereum.beacon.ssz.incremental.ObservableCompositeHelper.ObsValue;
 import org.ethereum.beacon.ssz.incremental.ObservableListImpl;
 import org.ethereum.beacon.ssz.incremental.UpdateListener;
-import org.ethereum.beacon.ssz.type.SSZListType;
+import org.ethereum.beacon.ssz.type.list.SSZListType;
 import org.ethereum.beacon.ssz.type.SSZType;
 import org.ethereum.beacon.ssz.type.SSZType.Type;
 import org.ethereum.beacon.ssz.type.TypeResolver;

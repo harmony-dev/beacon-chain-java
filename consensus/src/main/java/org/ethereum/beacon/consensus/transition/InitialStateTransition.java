@@ -17,7 +17,7 @@ import org.ethereum.beacon.core.BeaconState;
  * Preferred input for {@code state} parameter is {@link BeaconState#getEmpty()}.
  *
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.7.1/specs/core/0_beacon-chain.md#genesis-state">Genesis
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.8.1/specs/core/0_beacon-chain.md#genesis-state">Genesis
  *     state</a> in the spec.
  */
 public class InitialStateTransition implements BlockTransition<BeaconStateEx> {
@@ -41,10 +41,11 @@ public class InitialStateTransition implements BlockTransition<BeaconStateEx> {
     assert block.getSlot().equals(spec.getConstants().getGenesisSlot());
 
     BeaconState genesisState =
-        spec.get_genesis_beacon_state(
-            depositContractStart.getInitialDeposits(),
+        spec.initialize_beacon_state_from_eth1(
+            depositContractStart.getEth1Data().getBlockHash(),
             depositContractStart.getTime(),
-            depositContractStart.getEth1Data());
+            depositContractStart.getInitialDeposits()
+        );
 
     BeaconStateExImpl ret = new BeaconStateExImpl(genesisState, TransitionType.INITIAL);
 

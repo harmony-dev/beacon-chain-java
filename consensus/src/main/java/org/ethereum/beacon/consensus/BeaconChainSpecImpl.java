@@ -13,18 +13,24 @@ public class BeaconChainSpecImpl implements BeaconChainSpec {
   private final ObjectHasher<Hash32> objectHasher;
   private final boolean blsVerify;
   private final boolean blsVerifyProofOfPossession;
+  private final boolean verifyDepositProof;
+  private final boolean computableGenesisTime;
 
   public BeaconChainSpecImpl(
       SpecConstants constants,
       Function<BytesValue, Hash32> hashFunction,
       ObjectHasher<Hash32> objectHasher,
       boolean blsVerify,
-      boolean blsVerifyProofOfPossession) {
+      boolean blsVerifyProofOfPossession,
+      boolean verifyDepositProof,
+      boolean computableGenesisTime) {
     this.constants = constants;
     this.hashFunction = hashFunction;
     this.objectHasher = objectHasher;
     this.blsVerify = blsVerify;
     this.blsVerifyProofOfPossession = blsVerifyProofOfPossession;
+    this.verifyDepositProof = verifyDepositProof;
+    this.computableGenesisTime = computableGenesisTime;
   }
 
   @Override
@@ -50,5 +56,15 @@ public class BeaconChainSpecImpl implements BeaconChainSpec {
   @Override
   public boolean isBlsVerifyProofOfPossession() {
     return blsVerifyProofOfPossession;
+  }
+
+  @Override
+  public boolean isVerifyDepositProof() {
+    return verifyDepositProof;
+  }
+
+  @Override
+  public boolean isComputableGenesisTime() {
+    return computableGenesisTime;
   }
 }

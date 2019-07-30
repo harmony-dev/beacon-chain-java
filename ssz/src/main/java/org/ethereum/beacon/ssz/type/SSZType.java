@@ -1,6 +1,7 @@
 package org.ethereum.beacon.ssz.type;
 
 import org.ethereum.beacon.ssz.access.SSZField;
+import org.ethereum.beacon.ssz.type.list.SSZListType;
 
 /**
  * Describes the specific SSZ type.

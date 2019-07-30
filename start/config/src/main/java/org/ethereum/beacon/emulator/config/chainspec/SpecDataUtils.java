@@ -12,7 +12,6 @@ public abstract class SpecDataUtils {
         new DepositContractParametersData() {
           {
             setDEPOSIT_CONTRACT_ADDRESS(constants.getDepositContractAddress().toString());
-            setDEPOSIT_CONTRACT_TREE_DEPTH(constants.getDepositContractTreeDepth().toString());
           }
         };
 
@@ -27,9 +26,7 @@ public abstract class SpecDataUtils {
         new InitialValuesData() {
           {
             setBLS_WITHDRAWAL_PREFIX(constants.getBlsWithdrawalPrefix().toString());
-            setFAR_FUTURE_EPOCH(constants.getFarFutureEpoch().toString());
             setGENESIS_SLOT(Long.toUnsignedString(constants.getGenesisSlot().getValue()));
-            setZERO_HASH(constants.getZeroHash().toString());
           }
         };
 
@@ -48,13 +45,14 @@ public abstract class SpecDataUtils {
     MiscParametersData miscParameters =
         new MiscParametersData() {
           {
-            setMAX_INDICES_PER_ATTESTATION(constants.getMaxIndicesPerAttestation().toString());
+            setMAX_VALIDATORS_PER_COMMITTEE(constants.getMaxValidatorsPerCommittee().toString());
             setMIN_PER_EPOCH_CHURN_LIMIT(constants.getMinPerEpochChurnLimit().toString());
             setCHURN_LIMIT_QUOTIENT(constants.getChurnLimitQuotient().toString());
             setSHARD_COUNT(constants.getShardCount().toString());
             setTARGET_COMMITTEE_SIZE(constants.getTargetCommitteeSize().toString());
-            setBASE_REWARDS_PER_EPOCH(constants.getBaseRewardsPerEpoch().toString());
             setSHUFFLE_ROUND_COUNT(constants.getShuffleRoundCount());
+            setMIN_GENESIS_ACTIVE_VALIDATOR_COUNT(constants.getMinGenesisActiveValidatorCount().toString());
+            setMIN_GENESIS_TIME(constants.getMinGenesisTime().toString());
           }
         };
 
@@ -76,7 +74,7 @@ public abstract class SpecDataUtils {
           {
             setBASE_REWARD_FACTOR(constants.getBaseRewardFactor().toString());
             setINACTIVITY_PENALTY_QUOTIENT(constants.getInactivityPenaltyQuotient().toString());
-            setWHISTLEBLOWING_REWARD_QUOTIENT(constants.getWhistleblowingRewardQuotient().toString());
+            setWHISTLEBLOWER_REWARD_QUOTIENT(constants.getWhistleblowerRewardQuotient().toString());
             setPROPOSER_REWARD_QUOTIENT(
                 constants.getProposerRewardQuotient().toString());
             setMIN_SLASHING_PENALTY_QUOTIENT(constants.getMinSlashingPenaltyQuotient().toString());
@@ -86,10 +84,10 @@ public abstract class SpecDataUtils {
     StateListLengthsData stateListLengths =
         new StateListLengthsData() {
           {
-            setLATEST_RANDAO_MIXES_LENGTH(constants.getLatestRandaoMixesLength().toString());
-            setLATEST_ACTIVE_INDEX_ROOTS_LENGTH(
-                constants.getLatestActiveIndexRootsLength().toString());
-            setLATEST_SLASHED_EXIT_LENGTH(constants.getLatestSlashedExitLength().toString());
+            setEPOCHS_PER_HISTORICAL_VECTOR(constants.getEpochsPerHistoricalVector().toString());
+            setEPOCHS_PER_SLASHINGS_VECTOR(constants.getEpochsPerSlashingsVector().toString());
+            setHISTORICAL_ROOTS_LIMIT(constants.getHistoricalRootsLimit().toString());
+            setVALIDATOR_REGISTRY_LIMIT(constants.getValidatorRegistryLimit().toString());
           }
         };
 

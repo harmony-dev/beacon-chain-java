@@ -2,15 +2,12 @@ package org.ethereum.beacon.validator;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
 
 import java.util.Collections;
 import java.util.Random;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.util.ObservableBeaconStateTestUtil;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
-import org.ethereum.beacon.core.BeaconState;
-import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
@@ -25,7 +22,6 @@ import org.ethereum.beacon.validator.util.ValidatorServiceTestUtil;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
-import org.mockito.stubbing.Stubber;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.collections.ReadList;
@@ -122,7 +118,7 @@ public class MultiValidatorServiceTest {
         createRegistry(random, validatorIndex, pubkey);
     Mockito.doReturn(validatorRegistry)
         .when(currentSlotState.getLatestSlotState())
-        .getValidatorRegistry();
+        .getValidators();
 
     Mockito.doReturn(true).when(spec).is_current_slot(any(), anyLong());
     Mockito.doReturn(validatorIndex).when(spec).get_validator_index_by_pubkey(any(), any());
@@ -165,19 +161,19 @@ public class MultiValidatorServiceTest {
 
     Mockito.doReturn(validatorRegistry)
         .when(initialState.getLatestSlotState())
-        .getValidatorRegistry();
+        .getValidators();
 
     Mockito.doReturn(validatorRegistry)
         .when(updatedState.getLatestSlotState())
-        .getValidatorRegistry();
+        .getValidators();
 
     Mockito.doReturn(validatorRegistry)
         .when(sameSlotState.getLatestSlotState())
-        .getValidatorRegistry();
+        .getValidators();
 
     Mockito.doReturn(validatorRegistry)
         .when(nextSlotState.getLatestSlotState())
-        .getValidatorRegistry();
+        .getValidators();
 
     Mockito.doReturn(true).when(spec).is_current_slot(any(), anyLong());
     Mockito.doReturn(validatorIndex).when(spec).get_validator_index_by_pubkey(any(), any());
@@ -210,22 +206,22 @@ public class MultiValidatorServiceTest {
             new ValidatorRecord(
                 BLSPubkey.wrap(Bytes48.random(random)),
                 Hash32.ZERO,
-                EpochNumber.ZERO,
-                EpochNumber.ZERO,
-                EpochNumber.ZERO,
-                EpochNumber.ZERO,
+                Gwei.ZERO,
                 Boolean.FALSE,
-                Gwei.ZERO)));
+                EpochNumber.ZERO,
+                EpochNumber.ZERO,
+                EpochNumber.ZERO,
+                EpochNumber.ZERO)));
     validatorRegistry.add(
         new ValidatorRecord(
             pubkey,
             Hash32.ZERO,
-            EpochNumber.ZERO,
-            EpochNumber.ZERO,
-            EpochNumber.ZERO,
-            EpochNumber.ZERO,
+            Gwei.ZERO,
             Boolean.FALSE,
-            Gwei.ZERO));
+            EpochNumber.ZERO,
+            EpochNumber.ZERO,
+            EpochNumber.ZERO,
+            EpochNumber.ZERO));
 
     return validatorRegistry;
   }

@@ -110,7 +110,7 @@ public class SyncManagerImpl {
 
     Flux<Hash32> finalizedBlockRootStream =
         Flux.from(blockStatesStream)
-            .map(bs -> bs.getFinalState().getFinalizedRoot())
+            .map(bs -> bs.getFinalState().getFinalizedCheckpoint().getRoot())
             .distinct()
             .map(br -> Hash32.ZERO.equals(br) ? genesisBlockRoot : br);
 

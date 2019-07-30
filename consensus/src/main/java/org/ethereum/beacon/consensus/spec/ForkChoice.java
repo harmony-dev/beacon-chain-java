@@ -1,155 +1,148 @@
 package org.ethereum.beacon.consensus.spec;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
-import org.ethereum.beacon.core.operations.Attestation;
-import org.ethereum.beacon.core.state.ValidatorRecord;
+import org.ethereum.beacon.core.state.Checkpoint;
+import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
-import org.javatuples.Pair;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.uint.UInt64;
 
 /**
  * Fork choice rule.
  *
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.7.1/specs/core/0_fork-choice.md">Beacon
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.8.1/specs/core/0_fork-choice.md">Beacon
  *     Chain Fork Choice</a> in the spec.
  */
 public interface ForkChoice extends HelperFunction {
 
   /*
-    def lmd_ghost(store: Store, start_state: BeaconState, start_block: BeaconBlock) -> BeaconBlock:
-      """
-      Execute the LMD-GHOST algorithm to find the head ``BeaconBlock``.
-      """
-      validators = start_state.validator_registry
-      active_validators = [
-          validators[i]
-          for i in get_active_validator_indices(validators, start_state.slot)
-      ]
-      attestation_targets = [
-          get_latest_attestation_target(store, validator)
-          for validator in active_validators
-      ]
-
-      def get_vote_count(block: BeaconBlock) -> int:
-          return len([
-              target
-              for target in attestation_targets
-              if get_ancestor(store, target, block.slot) == block
-          ])
-
-      head = start_block
-      while 1:
-          children = get_children(store, head)
-          if len(children) == 0:
-              return head
-          head = max(children, key=get_vote_count)
+    def get_ancestor(store: Store, root: Hash, slot: Slot) -> Hash:
+      block = store.blocks[root]
+      assert block.slot >= slot
+      return root if block.slot == slot else get_ancestor(store, block.parent_root, slot)
    */
-  // FIXME should be epoch parameter get_active_validator_indices(validators, start_state.slot)
-  default BeaconBlock lmd_ghost(
-      BeaconBlock startBlock,
-      BeaconState state,
-      Function<Hash32, Optional<BeaconBlock>> getBlock,
-      Function<Hash32, List<BeaconBlock>> getChildrenBlocks,
-      Function<ValidatorRecord, Optional<Attestation>> get_latest_attestation) {
-    List<ValidatorIndex> active_validator_indices =
-        get_active_validator_indices(state, get_current_epoch(state));
-
-    List<Pair<ValidatorIndex, ValidatorRecord>> active_validators = new ArrayList<>();
-    for (ValidatorIndex index : active_validator_indices) {
-      active_validators.add(Pair.with(index, state.getValidatorRegistry().get(index)));
+  default Optional<Hash32> get_ancestor(Store store, Hash32 root, SlotNumber slot) {
+    Optional<BeaconBlock> aBlock = store.getBlock(root);
+    if (!aBlock.isPresent()) {
+      return Optional.empty();
+    }
+    if (aBlock.get().getSlot().less(slot)) {
+      return Optional.empty();
     }
 
-    List<Pair<ValidatorIndex, BeaconBlock>> attestation_targets = new ArrayList<>();
-    for (Pair<ValidatorIndex, ValidatorRecord> validatorRecord : active_validators) {
-      get_latest_attestation_target(validatorRecord.getValue1(), get_latest_attestation, getBlock)
-          .ifPresent(block -> attestation_targets.add(Pair.with(validatorRecord.getValue0(), block)));
-    }
-
-    BeaconBlock head = startBlock;
-    while (true) {
-      List<BeaconBlock> children = getChildrenBlocks.apply(signing_root(head));
-      if (children.isEmpty()) {
-        return head;
-      } else {
-        head =
-            children.stream()
-                .max(
-                    Comparator.comparing(o -> get_vote_count(state, o, attestation_targets, getBlock),
-                        UInt64::compareTo))
-                .get();
-      }
-    }
-  }
-
-  /**
-   * Let get_latest_attestation_target(store, validator) be the target block in the attestation
-   * get_latest_attestation(store, validator).
-   *
-   * @param get_latest_attestation Let get_latest_attestation(store, validator) be the attestation
-   *     with the highest slot number in store from validator. If several such attestations exist,
-   *     use the one the validator v observed first.
-   */
-  default Optional<BeaconBlock> get_latest_attestation_target(
-      ValidatorRecord validatorRecord,
-      Function<ValidatorRecord, Optional<Attestation>> get_latest_attestation,
-      Function<Hash32, Optional<BeaconBlock>> getBlock) {
-    Optional<Attestation> latest = get_latest_attestation.apply(validatorRecord);
-    return latest.flatMap(at -> getBlock.apply(at.getData().getSourceRoot()));
+    BeaconBlock block = aBlock.get();
+    return block.getSlot().equals(slot) ?
+        Optional.of(root) : get_ancestor(store, block.getParentRoot(), slot);
   }
 
   /*
-    def get_vote_count(block: BeaconBlock) -> int:
-      return sum(
-          get_effective_balance(start_state.validator_balances[validator_index]) // EFFECTIVE_BALANCE_INCREMENT
-          for validator_index, target in attestation_targets
-          if get_ancestor(store, target, block.slot) == block
-      )
+    def get_latest_attesting_balance(store: Store, root: Hash) -> Gwei:
+      state = store.checkpoint_states[store.justified_checkpoint]
+      active_indices = get_active_validator_indices(state, get_current_epoch(state))
+      return Gwei(sum(
+          state.validators[i].effective_balance for i in active_indices
+          if (i in store.latest_messages
+              and get_ancestor(store, store.latest_messages[i].root, store.blocks[root].slot) == root)
+      ))
    */
-  default UInt64 get_vote_count(
-      BeaconState startState,
-      BeaconBlock block,
-      List<Pair<ValidatorIndex, BeaconBlock>> attestation_targets,
-      Function<Hash32, Optional<BeaconBlock>> getBlock) {
+  default Gwei get_latest_attesting_balance(Store store, Hash32 root) {
+    Optional<BeaconState> state = store.getCheckpointState(store.getJustifiedCheckpoint());
+    if (!state.isPresent()) {
+      return Gwei.ZERO;
+    }
 
-    return attestation_targets.stream().filter(
-        target -> get_ancestor(target.getValue1(), block.getSlot(), getBlock)
-            .filter(ancestor -> ancestor.equals(block)).isPresent())
-        .map(target -> get_effective_balance(startState, target.getValue0()).dividedBy(getConstants().getEffectiveBalanceIncrement()))
+    List<ValidatorIndex> active_indices =
+        get_active_validator_indices(state.get(), get_current_epoch(state.get()));
+
+    return active_indices.stream()
+        .filter(i -> {
+          Optional<LatestMessage> latest_message = store.getLatestMessage(i);
+          Optional<BeaconBlock> block = store.getBlock(root);
+
+          if (!latest_message.isPresent() || !block.isPresent()) {
+            return false;
+          }
+
+          Optional<Hash32> ancestor =
+              get_ancestor(store, latest_message.get().root, block.get().getSlot());
+
+          return ancestor.map(hash32 -> hash32.equals(root)).orElse(false);
+        })
+        .map(i -> state.get().getValidators().get(i).getEffectiveBalance())
         .reduce(Gwei.ZERO, Gwei::plus);
   }
 
   /*
-    def get_ancestor(store: Store, block: BeaconBlock, slot: SlotNumber) -> BeaconBlock:
-      """
-      Get the ancestor of ``block`` with slot number ``slot``; return ``None`` if not found.
-      """
-      if block.slot == slot:
-          return block
-      elif block.slot < slot:
-          return None
-      else:
-          return get_ancestor(store, store.get_parent(block), slot)
+    def get_head(store: Store) -> Hash:
+      # Execute the LMD-GHOST fork choice
+      head = store.justified_checkpoint.root
+      justified_slot = compute_start_slot_of_epoch(store.justified_checkpoint.epoch)
+      while True:
+          children = [
+              root for root in store.blocks.keys()
+              if store.blocks[root].parent_root == head and store.blocks[root].slot > justified_slot
+          ]
+          if len(children) == 0:
+              return head
+          # Sort by latest attesting balance with ties broken lexicographically
+          head = max(children, key=lambda root: (get_latest_attesting_balance(store, root), root))
    */
-  default Optional<BeaconBlock> get_ancestor(
-      BeaconBlock block, SlotNumber slot, Function<Hash32, Optional<BeaconBlock>> getBlock) {
-    if (block.getSlot().equals(slot)) {
-      return Optional.of(block);
-    } else if (block.getSlot().less(slot)) {
-      return Optional.empty();
-    } else {
-      return getBlock
-          .apply(block.getParentRoot())
-          .flatMap(parent -> get_ancestor(parent, slot, getBlock));
+  default Hash32 get_head(Store store) {
+    // Execute the LMD-GHOST fork choice
+    Hash32 head = store.getJustifiedCheckpoint().getRoot();
+    while (true) {
+      List<Hash32> children = store.getChildren(head);
+      if (children.isEmpty()) {
+        return head;
+      }
+
+      head = children.stream()
+          .max(Comparator.comparing(root -> get_latest_attesting_balance(store, root)))
+          .get();
     }
+  }
+
+  class LatestMessage {
+    private final EpochNumber epoch;
+    private final Hash32 root;
+
+    public LatestMessage(EpochNumber epoch, Hash32 root) {
+      this.epoch = epoch;
+      this.root = root;
+    }
+
+    public EpochNumber getEpoch() {
+      return epoch;
+    }
+
+    public Hash32 getRoot() {
+      return root;
+    }
+  }
+
+  interface Store {
+    Checkpoint getJustifiedCheckpoint();
+
+    Checkpoint getFinalizedCheckpoint();
+
+    Optional<BeaconBlock> getBlock(Hash32 root);
+
+    Optional<BeaconState> getState(Hash32 root);
+
+    default Optional<BeaconState> getCheckpointState(Checkpoint checkpoint) {
+      Optional<BeaconBlock> block = getBlock(checkpoint.getRoot());
+      Optional<Hash32> root = block.flatMap(b -> Optional.of(b.getStateRoot()));
+      return root.flatMap(this::getState);
+    }
+
+    Optional<LatestMessage> getLatestMessage(ValidatorIndex index);
+
+    List<Hash32> getChildren(Hash32 root);
   }
 }

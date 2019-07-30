@@ -10,6 +10,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -22,12 +23,12 @@ import org.ethereum.beacon.chain.storage.BeaconTupleStorage;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.HeadFunction;
+import org.ethereum.beacon.consensus.spec.ForkChoice.LatestMessage;
 import org.ethereum.beacon.consensus.transition.EmptySlotTransition;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.state.PendingAttestation;
-import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
@@ -64,7 +65,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   private Cache<BeaconBlock, BeaconTupleDetails> tupleDetails = new LRUCache<>(MAX_TUPLE_CACHE_SIZE);
 
   private final List<Attestation> attestationBuffer = new ArrayList<>();
-  private final Map<Pair<BLSPubkey, EpochNumber>, Attestation> attestationCache = new HashMap<>();
+  private final Map<Pair<ValidatorIndex, EpochNumber>, Attestation> attestationCache = new HashMap<>();
   private final Schedulers schedulers;
 
   private final SimpleProcessor<BeaconChainHead> headStream;
@@ -132,7 +133,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   }
 
   private void onNewSlot(SlotNumber newSlot) {
-    EpochNumber currentEpoch = spec.slot_to_epoch(newSlot);
+    EpochNumber currentEpoch = spec.compute_epoch_of_slot(newSlot);
     EpochNumber previousEpoch = currentEpoch.greater(EpochNumber.ZERO) ?
         currentEpoch.decrement() : currentEpoch;
     runTaskInSeparateThread(
@@ -151,18 +152,14 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
 
       List<ValidatorIndex> participants =
           spec.get_attesting_indices(
-              latestState, attestation.getData(), attestation.getAggregationBitfield());
+              latestState, attestation.getData(), attestation.getAggregationBits());
 
-      List<BLSPubkey> pubKeys = spec.mapIndicesToPubKeys(latestState, participants);
-
-      for (BLSPubkey pubKey : pubKeys) {
-        addValidatorAttestation(pubKey, attestation);
-      }
+      participants.forEach(index -> addValidatorAttestation(index, attestation));
     }
   }
 
-  private synchronized void addValidatorAttestation(BLSPubkey pubKey, Attestation attestation) {
-    attestationCache.put(Pair.with(pubKey, attestation.getData().getTargetEpoch()), attestation);
+  private synchronized void addValidatorAttestation(ValidatorIndex index, Attestation attestation) {
+    attestationCache.put(Pair.with(index, attestation.getData().getTarget().getEpoch()), attestation);
   }
 
   private synchronized void onNewAttestation(Attestation attestation) {
@@ -174,7 +171,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     Iterator<Attestation> it = attestationBuffer.iterator();
     while (it.hasNext()) {
       Attestation att = it.next();
-      if (att.getData().getTargetEpoch().lessEqual(upToEpochInclusive)) {
+      if (att.getData().getTarget().getEpoch().lessEqual(upToEpochInclusive)) {
         ret.add(att);
         it.remove();
       }
@@ -188,7 +185,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     runTaskInSeparateThread(
         () -> {
           addAttestationsFromState(beaconTuple.getState());
-          updateHead();
+          updateHead(beaconTuple.getState());
         });
   }
 
@@ -201,27 +198,26 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
           spec.get_attesting_indices(
               beaconState,
               pendingAttestation.getData(),
-              pendingAttestation.getAggregationBitfield());
-      List<BLSPubkey> pubKeys = spec.mapIndicesToPubKeys(beaconState, participants);
-      EpochNumber targetEpoch = pendingAttestation.getData().getTargetEpoch();
-      pubKeys.forEach(
-          pubKey -> {
-            removeValidatorAttestation(pubKey, targetEpoch);
+              pendingAttestation.getAggregationBits());
+      EpochNumber targetEpoch = pendingAttestation.getData().getTarget().getEpoch();
+      participants.forEach(
+          index -> {
+            removeValidatorAttestation(index, targetEpoch);
           });
     }
   }
 
-  private synchronized void removeValidatorAttestation(BLSPubkey pubkey, EpochNumber epoch) {
-    attestationCache.remove(Pair.with(pubkey, epoch));
+  private synchronized void removeValidatorAttestation(ValidatorIndex index, EpochNumber epoch) {
+    attestationCache.remove(Pair.with(index, epoch));
   }
 
   /** Purges all entries for epochs before  {@code targetEpoch}*/
   private synchronized void purgeAttestations(EpochNumber targetEpoch) {
     attestationCache.entrySet()
-        .removeIf(entry -> entry.getValue().getData().getTargetEpoch().less(targetEpoch));
+        .removeIf(entry -> entry.getValue().getData().getTarget().getEpoch().less(targetEpoch));
   }
 
-  private synchronized Map<BLSPubkey, List<Attestation>> copyAttestationCache() {
+  private synchronized Map<ValidatorIndex, List<Attestation>> copyAttestationCache() {
     return attestationCache.entrySet().stream()
         .collect(
             Collectors.groupingBy(
@@ -299,29 +295,32 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   }
 
   private PendingOperations getPendingOperations(
-      BeaconState state, Map<BLSPubkey, List<Attestation>> attestationMap) {
+      BeaconState state, Map<ValidatorIndex, List<Attestation>> attestationMap) {
     List<Attestation> attestations = attestationMap.values().stream()
         .flatMap(Collection::stream)
         .filter(attestation ->
-            attestation.getData().getTargetEpoch().lessEqual(spec.get_current_epoch(state)))
+            attestation.getData().getTarget().getEpoch().lessEqual(spec.get_current_epoch(state)))
         .filter(attestation -> spec.verify_attestation(state, attestation))
-        .sorted(Comparator.comparing(attestation -> attestation.getData().getTargetEpoch()))
+        .sorted(Comparator.comparing(attestation -> attestation.getData().getTarget().getEpoch()))
         .collect(Collectors.toList());
 
     return new PendingOperationsState(attestations);
   }
 
-  private void updateHead() {
-    Map<BLSPubkey, List<Attestation>> attestationCacheCopy = copyAttestationCache();
+  private void updateHead(BeaconState state) {
+    Map<ValidatorIndex, List<Attestation>> attestationCacheCopy = copyAttestationCache();
     BeaconBlock newHead =
         headFunction.getHead(
-            validatorRecord -> {
+            validatorIndex -> {
               List<Attestation> validatorAttestations =
-                  attestationCacheCopy.getOrDefault(
-                      validatorRecord.getPubKey(), Collections.emptyList());
+                  attestationCacheCopy.getOrDefault(validatorIndex, Collections.emptyList());
 
               return validatorAttestations.stream()
-                  .max(Comparator.comparing(attestation -> attestation.getData().getTargetEpoch()));
+                  .max(Comparator.comparing(attestation -> attestation.getData().getTarget().getEpoch()))
+                  .flatMap(a -> Optional.of(
+                      new LatestMessage(
+                          spec.compute_epoch_of_slot(spec.get_attestation_data_slot(state, a.getData())),
+                          a.getData().getBeaconBlockRoot())));
             });
     if (this.head != null && this.head.getBlock().equals(newHead)) {
       return; // == old

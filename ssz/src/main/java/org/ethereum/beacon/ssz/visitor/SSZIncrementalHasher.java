@@ -5,6 +5,7 @@ import static java.util.stream.Collectors.toList;
 import static org.ethereum.beacon.ssz.type.SSZType.Type.BASIC;
 import static org.ethereum.beacon.ssz.type.SSZType.Type.LIST;
 import static org.ethereum.beacon.ssz.type.SSZType.Type.VECTOR;
+import static tech.pegasys.artemis.util.bytes.BytesValue.concat;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -17,8 +18,7 @@ import java.util.function.Function;
 import org.ethereum.beacon.ssz.incremental.ObservableComposite;
 import org.ethereum.beacon.ssz.incremental.UpdateListener;
 import org.ethereum.beacon.ssz.type.SSZCompositeType;
-import org.ethereum.beacon.ssz.type.SSZListType;
-import org.ethereum.beacon.ssz.type.SSZType.Type;
+import org.ethereum.beacon.ssz.type.list.SSZListType;
 import org.ethereum.beacon.ssz.visitor.SosSerializer.SerializerResult;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
@@ -159,8 +159,17 @@ public class SSZIncrementalHasher extends SSZSimpleHasher {
       }
     }
     if (type.getType() == LIST) {
+      Hash32 pureRoot = newTrie.getPureRoot();
+      long padFor = chunkCount(type);
+      if (padFor > newTrieWidth) {
+        int baseLevel = nextBinaryLog(newTrieWidth);
+        int virtualLevel = nextBinaryLog(padFor);
+        for (int i = baseLevel; i < virtualLevel; ++i) {
+          pureRoot = hashFunction.apply(concat(pureRoot, getZeroHash(i)));
+        }
+      }
       Hash32 mixInLength = hashFunction.apply(BytesValue.concat(
-          newTrie.getPureRoot(),
+          pureRoot,
           serializeLength(type.getChildrenCount(value))));
       newTrie.setFinalRoot(mixInLength);
     } else {
