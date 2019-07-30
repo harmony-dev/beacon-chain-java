@@ -1,5 +1,6 @@
 package org.ethereum.beacon.validator.api;
 
+/* Indicates incorrect set of input data: not enough data provided, bad type etc. */
 public class InvalidInputException extends RuntimeException {
   public InvalidInputException() {}
 

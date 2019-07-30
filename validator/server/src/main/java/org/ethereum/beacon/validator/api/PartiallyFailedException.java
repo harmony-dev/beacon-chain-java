@@ -1,5 +1,6 @@
 package org.ethereum.beacon.validator.api;
 
+/* Indicates non-fatal failure */
 public class PartiallyFailedException extends RuntimeException {
   public PartiallyFailedException() {}
 
