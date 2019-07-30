@@ -3,12 +3,19 @@ package org.ethereum.beacon.chain;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.HeadFunction;
+import org.ethereum.beacon.consensus.spec.ForkChoice.LatestMessage;
+import org.ethereum.beacon.consensus.spec.ForkChoice.Store;
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
+import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.state.ValidatorRecord;
+import org.ethereum.beacon.core.types.Time;
+import org.ethereum.beacon.core.types.ValidatorIndex;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
 /**
@@ -30,29 +37,57 @@ public class LMDGhostHeadFunction implements HeadFunction {
 
   @Override
   public BeaconBlock getHead(
-      Function<ValidatorRecord, Optional<Attestation>> latestAttestationStorage) {
+      Function<ValidatorIndex, Optional<LatestMessage>> latestAttestationStorage) {
     Hash32 justifiedRoot =
         chainStorage
             .getJustifiedStorage()
             .get()
-            .orElseThrow(() -> new RuntimeException("Justified root is not found"));
-    BeaconTuple justifiedTuple =
-        chainStorage
-            .getTupleStorage()
-            .get(justifiedRoot)
-            .orElseThrow(() -> new RuntimeException("Justified block is not found"));
+            .orElseThrow(() -> new RuntimeException("Justified root is not found"))
+            .getRoot();
+    Optional<BeaconTuple> justifiedTuple = chainStorage
+        .getTupleStorage()
+        .get(justifiedRoot);
+    if (!justifiedTuple.isPresent()) {
+      throw new RuntimeException("Justified block is not found");
+    }
 
-    Function<Hash32, List<BeaconBlock>> getChildrenBlocks =
-        (hash) -> chainStorage.getBlockStorage().getChildren(hash, SEARCH_LIMIT);
-    BeaconBlock newHead =
-        spec.lmd_ghost(
-            justifiedTuple.getBlock(),
-            justifiedTuple.getState(),
-            chainStorage.getBlockStorage()::get,
-            getChildrenBlocks,
-            validatorRecord -> get_latest_attestation(latestAttestationStorage, validatorRecord));
+    Hash32 headRoot = spec.get_head(new Store() {
 
-    return newHead;
+      @Override
+      public Checkpoint getJustifiedCheckpoint() {
+        return chainStorage.getJustifiedStorage().get().get();
+      }
+
+      @Override
+      public Checkpoint getFinalizedCheckpoint() {
+        return chainStorage.getFinalizedStorage().get().get();
+      }
+
+      @Override
+      public Optional<BeaconBlock> getBlock(Hash32 root) {
+        return chainStorage.getBlockStorage().get(root);
+      }
+
+      @Override
+      public Optional<BeaconState> getState(Hash32 root) {
+        return chainStorage.getStateStorage().get(root);
+      }
+
+      @Override
+      public Optional<LatestMessage> getLatestMessage(ValidatorIndex index) {
+        return latestAttestationStorage.apply(index);
+      }
+
+      @Override
+      public List<Hash32> getChildren(Hash32 root) {
+        return chainStorage.getBlockStorage().getChildren(root, SEARCH_LIMIT).stream()
+            .map(spec::signing_root).collect(Collectors.toList());
+      }
+    });
+
+    // Forcing get() call is save here as
+    // it's been checked above that this particular root matches to a block
+    return chainStorage.getBlockStorage().get(headRoot).get();
   }
 
   /**

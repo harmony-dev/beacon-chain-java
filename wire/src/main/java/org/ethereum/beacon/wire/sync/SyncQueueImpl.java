@@ -4,6 +4,7 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.wire.Feedback;
 import org.reactivestreams.Publisher;
 import reactor.core.Disposable;
@@ -54,7 +55,7 @@ public class SyncQueueImpl implements SyncQueue {
   }
 
   protected void onNewFinalBlock(BeaconBlock finalBlock) {
-    logger.debug(() -> "New final bock: " + finalBlock);
+    logger.debug(() -> "New final block: " + finalBlock);
     blockTree.setTopBlock(Feedback.of(finalBlock));
     this.finalBlock = finalBlock;
     blockRequests.onNext(createBlockRequests());
@@ -71,6 +72,7 @@ public class SyncQueueImpl implements SyncQueue {
       }
     });
 
+    logger.trace(() -> String.format("Adding block %s to the tree", block.get()));
     blockTree.addBlock(block).forEach(readyBlocks::onNext);
   }
 

@@ -21,21 +21,12 @@ import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 @SSZSerializable
 public class VoluntaryExit {
 
-  /**
-   * Minimum slot for processing exit.
-   */
-  @SSZ
-  private final EpochNumber epoch;
-  /**
-   * Index of the exiting validator.
-   */
-  @SSZ
-  private final ValidatorIndex validatorIndex;
-  /**
-   * Validator signature.
-   */
-  @SSZ
-  private final BLSSignature signature;
+  /** Earliest epoch when voluntary exit can be processed. */
+  @SSZ private final EpochNumber epoch;
+  /** Index of the exiting validator. */
+  @SSZ private final ValidatorIndex validatorIndex;
+  /** Validator signature. */
+  @SSZ private final BLSSignature signature;
 
   public VoluntaryExit(EpochNumber epoch, ValidatorIndex validatorIndex, BLSSignature signature) {
     this.epoch = epoch;

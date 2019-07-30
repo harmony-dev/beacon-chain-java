@@ -130,7 +130,7 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
   private Optional<RegistrationStage> findRegistrationStage() {
     BeaconState latestState = getLatestState();
     Optional<ValidatorRecord> validatorRecordOptional =
-        latestState.getValidatorRegistry().stream()
+        latestState.getValidators().stream()
             .filter(record -> record.getPubKey().equals(blsCredentials.getPubkey()))
             .findFirst();
     if (!validatorRecordOptional.isPresent()) {
@@ -232,7 +232,7 @@ public class ValidatorRegistrationServiceImpl implements ValidatorRegistrationSe
                             d -> {
                               changeCurrentStage(RegistrationStage.AWAIT_ACTIVATION);
                               validatorRecord =
-                                  getLatestState().getValidatorRegistry().stream()
+                                  getLatestState().getValidators().stream()
                                       .filter(
                                           record -> {
                                             return record.getPubKey().equals(blsCredentials.getPubkey());

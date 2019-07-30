@@ -16,7 +16,7 @@ import tech.pegasys.artemis.util.uint.UInt64;
 public interface TimeParameters {
 
   Time SECONDS_PER_SLOT = Time.of(6); // 6 seconds
-  SlotNumber MIN_ATTESTATION_INCLUSION_DELAY = SlotNumber.of(1 << 2); // 4 slots
+  SlotNumber MIN_ATTESTATION_INCLUSION_DELAY = SlotNumber.of(1); // 1 slot
   EpochLength SLOTS_PER_EPOCH = new EpochLength(UInt64.valueOf(1 << 6)); // 64 slots
   EpochNumber MIN_SEED_LOOKAHEAD = EpochNumber.of(1);
   EpochNumber ACTIVATION_EXIT_DELAY = EpochNumber.of(1 << 2);

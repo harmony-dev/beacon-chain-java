@@ -87,8 +87,8 @@ public class SimplePeerManagerImpl implements PeerManager {
     return new HelloMessage(
         networkId,
         chainId,
-        head.getFinalState().getFinalizedRoot(),
-        head.getFinalState().getFinalizedEpoch(),
+        head.getFinalState().getFinalizedCheckpoint().getRoot(),
+        head.getFinalState().getFinalizedCheckpoint().getEpoch(),
         spec.getObjectHasher().getHashTruncateLast(head.getBlock()),
         head.getBlock().getSlot());
   }

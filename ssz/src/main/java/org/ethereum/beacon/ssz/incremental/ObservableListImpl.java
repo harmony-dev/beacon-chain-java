@@ -1,5 +1,8 @@
 package org.ethereum.beacon.ssz.incremental;
 
+import tech.pegasys.artemis.util.collections.ReadList;
+import tech.pegasys.artemis.util.collections.WriteList;
+
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
@@ -10,39 +13,33 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-import tech.pegasys.artemis.util.collections.ReadList;
-import tech.pegasys.artemis.util.collections.WriteList;
 
-/**
- * {@link WriteList} wrapper supporting {@link ObservableComposite} functionality
- */
+/** {@link WriteList} wrapper supporting {@link ObservableComposite} functionality */
 public class ObservableListImpl<IndexType extends Number, ValueType>
     implements WriteList<IndexType, ValueType>, ObservableComposite {
 
   private final WriteList<IndexType, ValueType> delegate;
   private final ObservableCompositeHelper observableHelper;
 
-  public ObservableListImpl(
-      WriteList<IndexType, ValueType> delegate) {
-    this(delegate,  new ObservableCompositeHelper());
+  public ObservableListImpl(WriteList<IndexType, ValueType> delegate) {
+    this(delegate, new ObservableCompositeHelper());
   }
 
-  public ObservableListImpl(
-      WriteList<IndexType, ValueType> delegate,
-      ObservableCompositeHelper observableHelper) {
+  private ObservableListImpl(
+      WriteList<IndexType, ValueType> delegate, ObservableCompositeHelper observableHelper) {
     this.delegate = delegate;
     this.observableHelper = observableHelper;
   }
 
-  public static <IndexType1 extends Number, ValueType1> WriteList<IndexType1, ValueType1> wrap(
-      List<ValueType1> srcList,
+  /* TESTS ONLY */
+  public static <IndexType1 extends Number, ValueType1> WriteList<IndexType1, ValueType1> create(
       Function<Integer, IndexType1> indexConverter) {
-    return new ObservableListImpl<>(WriteList.wrap(srcList, indexConverter));
+    return new ObservableListImpl<>(WriteList.create(indexConverter, VARIABLE_SIZE));
   }
 
   public static <IndexType1 extends Number, ValueType1> WriteList<IndexType1, ValueType1> create(
-      Function<Integer, IndexType1> indexConverter) {
-    return new ObservableListImpl<>(WriteList.create(indexConverter));
+      Function<Integer, IndexType1> indexConverter, long maxSize) {
+    return new ObservableListImpl<>(WriteList.create(indexConverter, maxSize));
   }
 
   public static <IndexType1 extends Number, ValueType1> WriteList<IndexType1, ValueType1> create(
@@ -56,16 +53,22 @@ public class ObservableListImpl<IndexType extends Number, ValueType>
   }
 
   @Override
+  public WriteList<IndexType, ValueType> cappedCopy(long maxSize) {
+    // TODO dirty hack with cast
+    return new ObservableListImpl<>(
+        (WriteList<IndexType, ValueType>) delegate.cappedCopy(maxSize), observableHelper.fork());
+  }
+
+  @Override
   public ReadList<IndexType, ValueType> createImmutableCopy() {
     // TODO dirty hack with cast
     return new ObservableListImpl<>(
         (WriteList<IndexType, ValueType>) delegate.createImmutableCopy(), observableHelper.fork());
   }
 
-
   @Override
-  public UpdateListener getUpdateListener(String observerId,
-      Supplier<UpdateListener> listenerFactory) {
+  public UpdateListener getUpdateListener(
+      String observerId, Supplier<UpdateListener> listenerFactory) {
     return observableHelper.getUpdateListener(observerId, listenerFactory);
   }
 
@@ -74,8 +77,7 @@ public class ObservableListImpl<IndexType extends Number, ValueType>
     return observableHelper.getAllUpdateListeners();
   }
 
-  /*******  update methods  ******/
-
+  /** ***** update methods ***** */
   @Override
   public boolean add(ValueType valueType) {
     int size = size().intValue();
@@ -172,8 +174,7 @@ public class ObservableListImpl<IndexType extends Number, ValueType>
     observableHelper.childrenUpdated(0, size().intValue());
   }
 
-  /*******  read methods  ******/
-
+  /** ***** read methods ***** */
   @Override
   public IndexType size() {
     return delegate.size();
@@ -205,8 +206,7 @@ public class ObservableListImpl<IndexType extends Number, ValueType>
   }
 
   @Override
-  public ReadList<IndexType, ValueType> intersection(
-      ReadList<IndexType, ValueType> other) {
+  public ReadList<IndexType, ValueType> intersection(ReadList<IndexType, ValueType> other) {
     return delegate.intersection(other);
   }
 
@@ -237,5 +237,10 @@ public class ObservableListImpl<IndexType extends Number, ValueType>
   @Override
   public boolean isVector() {
     return delegate.isVector();
+  }
+
+  @Override
+  public long maxSize() {
+    return delegate.maxSize();
   }
 }

@@ -1,13 +1,18 @@
 package org.ethereum.beacon.validator.local;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+
+import java.util.Collections;
+import java.util.Random;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.util.ObservableBeaconStateTestUtil;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
-import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.EpochNumber;
+import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.validator.MessageSignerTestUtil;
@@ -22,46 +27,7 @@ import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.collections.WriteList;
 
-import java.util.Collections;
-import java.util.Random;
-import java.util.stream.IntStream;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-
 public class MultiValidatorServiceTest {
-
-  public static ReadList<ValidatorIndex, ValidatorRecord> createRegistry(
-      Random random, ValidatorIndex validatorIndex, BLSPubkey pubkey) {
-    WriteList<ValidatorIndex, ValidatorRecord> validatorRegistry =
-        WriteList.create(ValidatorIndex::of);
-    IntStream.range(0, validatorIndex.getIntValue())
-        .forEach(
-            value -> {
-              validatorRegistry.add(
-                  new ValidatorRecord(
-                      BLSPubkey.wrap(Bytes48.random(random)),
-                      Hash32.ZERO,
-                      EpochNumber.ZERO,
-                      EpochNumber.ZERO,
-                      SpecConstants.FAR_FUTURE_EPOCH,
-                      EpochNumber.ZERO,
-                      Boolean.FALSE,
-                      SpecConstants.MAX_EFFECTIVE_BALANCE));
-            });
-    validatorRegistry.add(
-        new ValidatorRecord(
-            pubkey,
-            Hash32.ZERO,
-            EpochNumber.ZERO,
-            EpochNumber.ZERO,
-            SpecConstants.FAR_FUTURE_EPOCH,
-            EpochNumber.ZERO,
-            Boolean.FALSE,
-            SpecConstants.MAX_EFFECTIVE_BALANCE));
-
-    return validatorRegistry;
-  }
 
   @Test
   public void recentStateIsKept() {
@@ -105,19 +71,25 @@ public class MultiValidatorServiceTest {
     ObservableBeaconState currentSlotState =
         ObservableBeaconStateTestUtil.createInitialState(random, spec, currentSlot);
 
-    Mockito.doReturn(false).when(spec).is_current_slot(any(), anyLong());
+    Mockito.doReturn(false)
+        .when(spec)
+        .is_current_slot(any(), anyLong());
 
     // state wasn't kept
     validator.onNewState(outdatedState);
     Assert.assertNull(validator.getRecentState());
 
-    Mockito.doReturn(true).when(spec).is_current_slot(any(), anyLong());
+    Mockito.doReturn(true)
+        .when(spec)
+        .is_current_slot(any(), anyLong());
 
     // state was kept
     validator.onNewState(currentSlotState);
     Assert.assertEquals(currentSlotState, validator.getRecentState());
 
-    Mockito.doReturn(false).when(spec).is_current_slot(any(), anyLong());
+    Mockito.doReturn(false)
+        .when(spec)
+        .is_current_slot(any(), anyLong());
 
     // state wasn't updated
     validator.onNewState(outdatedState);
@@ -146,7 +118,7 @@ public class MultiValidatorServiceTest {
         createRegistry(random, validatorIndex, pubkey);
     Mockito.doReturn(validatorRegistry)
         .when(currentSlotState.getLatestSlotState())
-        .getValidatorRegistry();
+        .getValidators();
 
     Mockito.doReturn(true).when(spec).is_current_slot(any(), anyLong());
     Mockito.doReturn(validatorIndex).when(spec).get_validator_index_by_pubkey(any(), any());
@@ -175,9 +147,11 @@ public class MultiValidatorServiceTest {
     ObservableBeaconState initialState =
         ObservableBeaconStateTestUtil.createInitialState(random, spec, currentSlot);
     ObservableBeaconState updatedState =
-        ObservableBeaconStateTestUtil.createInitialState(random, spec, currentSlot.increment());
+        ObservableBeaconStateTestUtil.createInitialState(
+            random, spec, currentSlot.increment());
     ObservableBeaconState sameSlotState =
-        ObservableBeaconStateTestUtil.createInitialState(random, spec, currentSlot.increment());
+        ObservableBeaconStateTestUtil.createInitialState(
+            random, spec, currentSlot.increment());
     ObservableBeaconState nextSlotState =
         ObservableBeaconStateTestUtil.createInitialState(
             random, spec, currentSlot.increment().increment());
@@ -187,19 +161,19 @@ public class MultiValidatorServiceTest {
 
     Mockito.doReturn(validatorRegistry)
         .when(initialState.getLatestSlotState())
-        .getValidatorRegistry();
+        .getValidators();
 
     Mockito.doReturn(validatorRegistry)
         .when(updatedState.getLatestSlotState())
-        .getValidatorRegistry();
+        .getValidators();
 
     Mockito.doReturn(validatorRegistry)
         .when(sameSlotState.getLatestSlotState())
-        .getValidatorRegistry();
+        .getValidators();
 
     Mockito.doReturn(validatorRegistry)
         .when(nextSlotState.getLatestSlotState())
-        .getValidatorRegistry();
+        .getValidators();
 
     Mockito.doReturn(true).when(spec).is_current_slot(any(), anyLong());
     Mockito.doReturn(validatorIndex).when(spec).get_validator_index_by_pubkey(any(), any());
@@ -220,5 +194,35 @@ public class MultiValidatorServiceTest {
     // runTasks was called again when a state for a new slot came
     validator.onNewState(nextSlotState);
     Mockito.verify(validator, Mockito.times(3)).runTasks(any());
+  }
+
+  public static ReadList<ValidatorIndex, ValidatorRecord> createRegistry(
+      Random random, ValidatorIndex validatorIndex, BLSPubkey pubkey) {
+    WriteList<ValidatorIndex, ValidatorRecord> validatorRegistry =
+        WriteList.create(ValidatorIndex::of);
+    validatorRegistry.addAll(
+        Collections.nCopies(
+            validatorIndex.getIntValue(),
+            new ValidatorRecord(
+                BLSPubkey.wrap(Bytes48.random(random)),
+                Hash32.ZERO,
+                Gwei.ZERO,
+                Boolean.FALSE,
+                EpochNumber.ZERO,
+                EpochNumber.ZERO,
+                EpochNumber.ZERO,
+                EpochNumber.ZERO)));
+    validatorRegistry.add(
+        new ValidatorRecord(
+            pubkey,
+            Hash32.ZERO,
+            Gwei.ZERO,
+            Boolean.FALSE,
+            EpochNumber.ZERO,
+            EpochNumber.ZERO,
+            EpochNumber.ZERO,
+            EpochNumber.ZERO));
+
+    return validatorRegistry;
   }
 }

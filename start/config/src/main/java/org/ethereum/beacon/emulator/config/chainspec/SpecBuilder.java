@@ -9,8 +9,6 @@ import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import tech.pegasys.artemis.ethereum.core.Address;
-import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.bytes.Bytes1;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public class SpecBuilder {
@@ -41,6 +39,8 @@ public class SpecBuilder {
         .withBlsVerify(specHelpersOptions.isBlsVerify())
         .withBlsVerifyProofOfPossession(specHelpersOptions.isBlsVerifyProofOfPossession())
         .withCache(spec.getSpecHelpersOptions().isEnableCache())
+        .withVerifyDepositProof(specHelpersOptions.isVerifyDepositProof())
+        .withComputableGenesisTime(specHelpersOptions.isComputableGenesisTime())
         .build();
   }
 
@@ -71,11 +71,6 @@ public class SpecBuilder {
       }
 
       @Override
-      public UInt64 getDepositContractTreeDepth() {
-        return depositContractParameters.getDepositContractTreeDepth();
-      }
-
-      @Override
       public Gwei getMinDepositAmount() {
         return gweiValues.getMinDepositAmount();
       }
@@ -103,16 +98,6 @@ public class SpecBuilder {
       @Override
       public SlotNumber getGenesisSlot() {
         return initialValues.getGenesisSlot();
-      }
-
-      @Override
-      public EpochNumber getFarFutureEpoch() {
-        return initialValues.getFarFutureEpoch();
-      }
-
-      @Override
-      public Hash32 getZeroHash() {
-        return initialValues.getZeroHash();
       }
 
       @Override
@@ -161,8 +146,8 @@ public class SpecBuilder {
       }
 
       @Override
-      public UInt64 getMaxIndicesPerAttestation() {
-        return miscParameters.getMaxIndicesPerAttestation();
+      public UInt64 getMaxValidatorsPerCommittee() {
+        return miscParameters.getMaxValidatorsPerCommittee();
       }
 
       @Override
@@ -176,18 +161,13 @@ public class SpecBuilder {
       }
 
       @Override
-      public UInt64 getBaseRewardsPerEpoch() {
-        return miscParameters.getBaseRewardsPerEpoch();
-      }
-
-      @Override
       public UInt64 getBaseRewardFactor() {
         return rewardAndPenaltyQuotients.getBaseRewardFactor();
       }
 
       @Override
-      public UInt64 getWhistleblowingRewardQuotient() {
-        return rewardAndPenaltyQuotients.getWhistleblowingRewardQuotient();
+      public UInt64 getWhistleblowerRewardQuotient() {
+        return rewardAndPenaltyQuotients.getWhistleblowerRewardQuotient();
       }
 
       @Override
@@ -201,18 +181,23 @@ public class SpecBuilder {
       }
 
       @Override
-      public EpochNumber getLatestRandaoMixesLength() {
-        return stateListLengths.getLatestRandaoMixesLength();
+      public EpochNumber getEpochsPerHistoricalVector() {
+        return stateListLengths.getEpochsPerHistoricalVector();
       }
 
       @Override
-      public EpochNumber getLatestActiveIndexRootsLength() {
-        return stateListLengths.getLatestActiveIndexRootsLength();
+      public EpochNumber getEpochsPerSlashingsVector() {
+        return stateListLengths.getEpochsPerSlashingsVector();
       }
 
       @Override
-      public EpochNumber getLatestSlashedExitLength() {
-        return stateListLengths.getLatestSlashedExitLength();
+      public UInt64 getHistoricalRootsLimit() {
+        return stateListLengths.getHistoricalRootsLimit();
+      }
+
+      @Override
+      public UInt64 getValidatorRegistryLimit() {
+        return stateListLengths.getValidatorRegistryLimit();
       }
 
       @Override
@@ -263,6 +248,16 @@ public class SpecBuilder {
       @Override
       public int getShuffleRoundCount() {
         return miscParameters.getShuffleRoundCount();
+      }
+
+      @Override
+      public UInt64 getMinGenesisActiveValidatorCount() {
+        return miscParameters.getMinGenesisActiveValidatorCount();
+      }
+
+      @Override
+      public Time getMinGenesisTime() {
+        return miscParameters.getMinGenesisTime();
       }
 
       @Override

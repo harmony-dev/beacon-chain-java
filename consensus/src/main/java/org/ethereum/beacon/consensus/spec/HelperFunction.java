@@ -1,18 +1,8 @@
 package org.ethereum.beacon.consensus.spec;
 
-import static java.lang.Math.min;
-import static java.util.stream.Collectors.toList;
-import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
-
 import com.google.common.collect.Ordering;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.BeaconBlockHeader;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
@@ -20,12 +10,12 @@ import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustodyBit;
 import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
-import org.ethereum.beacon.core.state.Fork;
+import org.ethereum.beacon.core.state.CompactCommittee;
+import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.ShardCommittee;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
-import org.ethereum.beacon.core.types.Bitfield;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ShardNumber;
@@ -41,15 +31,29 @@ import tech.pegasys.artemis.util.bytes.Bytes4;
 import tech.pegasys.artemis.util.bytes.Bytes8;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.bytes.BytesValues;
+import tech.pegasys.artemis.util.collections.Bitlist;
 import tech.pegasys.artemis.util.collections.ReadList;
+import tech.pegasys.artemis.util.collections.ReadVector;
 import tech.pegasys.artemis.util.uint.UInt64;
 import tech.pegasys.artemis.util.uint.UInt64s;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static java.util.Collections.emptyList;
+import static java.util.stream.Collectors.toList;
+import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
 
 /**
  * Helper functions.
  *
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.7.1/specs/core/0_beacon-chain.md#helper-functions">Helper
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.8.1/specs/core/0_beacon-chain.md#helper-functions">Helper
  *     functions</a> in ths spec.
  */
 public interface HelperFunction extends SpecCommons {
@@ -58,21 +62,25 @@ public interface HelperFunction extends SpecCommons {
     return getHashFunction().apply(data);
   }
 
-  /*
-   def get_temporary_block_header(block: BeaconBlock) -> BeaconBlockHeader:
-     """
-     Return the block header corresponding to a block with ``state_root`` set to ``ZERO_HASH``.
-     """
-     return BeaconBlockHeader(
-         slot=block.slot,
-         previous_block_root=block.previous_block_root,
-         state_root=ZERO_HASH,
-         block_body_root=hash_tree_root(block.body),
-         # signing_root(block) is used for block id purposes so signature is a stub
-         signature=BLSSignature.ZERO,
-     )
-  */
-  default BeaconBlockHeader get_temporary_block_header(BeaconBlock block) {
+
+  default BeaconBlock get_empty_block() {
+    BeaconBlockBody body =
+        new BeaconBlockBody(
+            BLSSignature.ZERO,
+            new Eth1Data(Hash32.ZERO, UInt64.ZERO, Hash32.ZERO),
+            Bytes32.ZERO,
+            emptyList(),
+            emptyList(),
+            emptyList(),
+            emptyList(),
+            emptyList(),
+            emptyList(),
+            getConstants());
+    return new BeaconBlock(
+        getConstants().getGenesisSlot(), Hash32.ZERO, Hash32.ZERO, body, BLSSignature.ZERO);
+  }
+
+  default BeaconBlockHeader get_block_header(BeaconBlock block) {
     return new BeaconBlockHeader(
         block.getSlot(),
         block.getParentRoot(),
@@ -82,61 +90,61 @@ public interface HelperFunction extends SpecCommons {
   }
 
   /*
-    def get_epoch_committee_count(state: BeaconState, epoch: Epoch) -> int:
+    def get_committee_count(state: BeaconState, epoch: Epoch) -> uint64:
       """
       Return the number of committees at ``epoch``.
       """
-      active_validator_indices = get_active_validator_indices(state, epoch)
-      return max(
-          1,
-          min(
-              SHARD_COUNT // SLOTS_PER_EPOCH,
-              len(active_validator_indices) // SLOTS_PER_EPOCH // TARGET_COMMITTEE_SIZE,
-          )
-      ) * SLOTS_PER_EPOCH
+      committees_per_slot = max(1, min(
+          SHARD_COUNT // SLOTS_PER_EPOCH,
+          len(get_active_validator_indices(state, epoch)) // SLOTS_PER_EPOCH // TARGET_COMMITTEE_SIZE,
+      ))
+      return committees_per_slot * SLOTS_PER_EPOCH
    */
-  default UInt64 get_epoch_committee_count(BeaconState state, EpochNumber epoch) {
-    List<ValidatorIndex> active_validator_indices = get_active_validator_indices(state, epoch);
-
-    return UInt64s.max(
+  default UInt64 get_committee_count(BeaconState state, EpochNumber epoch) {
+    UInt64 committees_per_slot = UInt64s.max(
         UInt64.valueOf(1),
         UInt64s.min(
             getConstants().getShardCount().dividedBy(getConstants().getSlotsPerEpoch()),
-            UInt64.valueOf(active_validator_indices.size())
+            UInt64.valueOf(get_active_validator_indices(state, epoch).size())
                 .dividedBy(getConstants().getSlotsPerEpoch())
                 .dividedBy(getConstants().getTargetCommitteeSize())
-        )).times(getConstants().getSlotsPerEpoch());
+    ));
+
+    return committees_per_slot.times(getConstants().getSlotsPerEpoch());
   }
 
   /*
-    def get_shard_delta(state: BeaconState, epoch: Epoch) -> int:
+    def get_shard_delta(state: BeaconState, epoch: Epoch) -> uint64:
       """
-      Return the number of shards to increment ``state.latest_start_shard`` during ``epoch``.
+      Return the number of shards to increment ``state.start_shard`` at ``epoch``.
       """
-      return min(get_epoch_committee_count(state, epoch), SHARD_COUNT - SHARD_COUNT // SLOTS_PER_EPOCH)
+      return min(get_committee_count(state, epoch), SHARD_COUNT - SHARD_COUNT // SLOTS_PER_EPOCH)
    */
   default UInt64 get_shard_delta(BeaconState state, EpochNumber epoch) {
     return UInt64s.min(
-        get_epoch_committee_count(state, epoch),
+        get_committee_count(state, epoch),
         getConstants().getShardCount().minus(
             getConstants().getShardCount().dividedBy(getConstants().getSlotsPerEpoch()))
     );
   }
 
   /*
-    def get_epoch_start_shard(state: BeaconState, epoch: Epoch) -> Shard:
+    def get_start_shard(state: BeaconState, epoch: Epoch) -> Shard:
+      """
+      Return the start shard of the 0th committee at ``epoch``.
+      """
       assert epoch <= get_current_epoch(state) + 1
-      check_epoch = get_current_epoch(state) + 1
-      shard = (state.latest_start_shard + get_shard_delta(state, get_current_epoch(state))) % SHARD_COUNT
+      check_epoch = Epoch(get_current_epoch(state) + 1)
+      shard = Shard((state.start_shard + get_shard_delta(state, get_current_epoch(state))) % SHARD_COUNT)
       while check_epoch > epoch:
-          check_epoch -= 1
-          shard = (shard + SHARD_COUNT - get_shard_delta(state, check_epoch)) % SHARD_COUNT
+          check_epoch -= Epoch(1)
+          shard = Shard((shard + SHARD_COUNT - get_shard_delta(state, check_epoch)) % SHARD_COUNT)
       return shard
    */
-  default ShardNumber get_epoch_start_shard(BeaconState state, EpochNumber epoch) {
+  default ShardNumber get_start_shard(BeaconState state, EpochNumber epoch) {
     assertTrue(epoch.lessEqual(get_current_epoch(state).increment()));
     EpochNumber check_epoch = get_current_epoch(state).increment();
-    ShardNumber shard = state.getLatestStartShard()
+    ShardNumber shard = state.getStartShard()
         .plusModulo(get_shard_delta(state, get_current_epoch(state)), getConstants().getShardCount());
     while ((check_epoch.greater(epoch))) {
       check_epoch = check_epoch.decrement();
@@ -152,20 +160,68 @@ public interface HelperFunction extends SpecCommons {
 
   /*
     def get_attestation_data_slot(state: BeaconState, data: AttestationData) -> Slot:
-      committee_count = get_epoch_committee_count(state, data.target_epoch)
-      offset = (data.crosslink.shard + SHARD_COUNT - get_epoch_start_shard(state, data.target_epoch)) % SHARD_COUNT
-      return get_epoch_start_slot(data.target_epoch) + offset // (committee_count // SLOTS_PER_EPOCH)
+      """
+      Return the slot corresponding to the attestation ``data``.
+      """
+      committee_count = get_committee_count(state, data.target.epoch)
+      offset = (data.crosslink.shard + SHARD_COUNT - get_start_shard(state, data.target.epoch)) % SHARD_COUNT
+      return Slot(compute_start_slot_of_epoch(data.target.epoch) + offset // (committee_count // SLOTS_PER_EPOCH))
    */
   default SlotNumber get_attestation_data_slot(BeaconState state, AttestationData data) {
-    UInt64 committee_count = get_epoch_committee_count(state, data.getTargetEpoch());
+    UInt64 committee_count = get_committee_count(state, data.getTarget().getEpoch());
     ShardNumber offset = ShardNumber.of(
         data.getCrosslink().getShard()
             .plus(getConstants().getShardCount())
-            .minus(get_epoch_start_shard(state, data.getTargetEpoch()))
+            .minus(get_start_shard(state, data.getTarget().getEpoch()))
             .modulo(getConstants().getShardCount())
     );
-    return get_epoch_start_slot(data.getTargetEpoch())
+    return compute_start_slot_of_epoch(data.getTarget().getEpoch())
         .plus(offset.dividedBy(committee_count.dividedBy(getConstants().getSlotsPerEpoch())));
+  }
+
+  /*
+    def get_compact_committees_root(state: BeaconState, epoch: Epoch) -> Hash:
+      """
+      Return the compact committee root at ``epoch``.
+      """
+      committees = [CompactCommittee() for _ in range(SHARD_COUNT)]
+      start_shard = get_start_shard(state, epoch)
+      for committee_number in range(get_committee_count(state, epoch)):
+          shard = Shard((start_shard + committee_number) % SHARD_COUNT)
+          for index in get_crosslink_committee(state, epoch, shard):
+              validator = state.validators[index]
+              committees[shard].pubkeys.append(validator.pubkey)
+              compact_balance = validator.effective_balance // EFFECTIVE_BALANCE_INCREMENT
+              # `index` (top 6 bytes) + `slashed` (16th bit) + `compact_balance` (bottom 15 bits)
+              compact_validator = uint64((index << 16) + (validator.slashed << 15) + compact_balance)
+              committees[shard].compact_validators.append(compact_validator)
+      return hash_tree_root(Vector[CompactCommittee, SHARD_COUNT](committees))
+   */
+  default Hash32 get_compact_committees_root(BeaconState state, EpochNumber epoch) {
+    List<CompactCommittee> committees = new ArrayList<>();
+    ShardNumber start_shard = get_start_shard(state, epoch);
+    UInt64s.iterate(UInt64.ZERO, getConstants().getShardCount()).forEach(i -> committees.add(CompactCommittee.getEmpty(getConstants())));
+
+    for (UInt64 committee_number: UInt64s.iterate(UInt64.ZERO, get_committee_count(state, epoch))) {
+      ShardNumber shard = start_shard.plusModulo(committee_number, getConstants().getShardCount());
+      List<BLSPubkey> pubkeys = new ArrayList<>();
+      List<UInt64> compactValidators = new ArrayList<>();
+      for (ValidatorIndex index : get_crosslink_committee(state, epoch, shard)) {
+        ValidatorRecord validator = state.getValidators().get(index);
+        pubkeys.add(validator.getPubKey());
+        Gwei compact_balance = validator.getEffectiveBalance().dividedBy(getConstants().getEffectiveBalanceIncrement());
+        // `index` (top 6 bytes) + `slashed` (16th bit) + `compact_balance` (bottom 15 bits)
+        UInt64 compact_validator = UInt64.valueOf((
+            index.getValue() << 16) |
+            (validator.getSlashed() ? (1L << 15) : 0) |
+            compact_balance.getValue());
+        compactValidators.add(compact_validator);
+      }
+
+      committees.set(shard.intValue(), new CompactCommittee(pubkeys, compactValidators, getConstants()));
+    }
+
+    return hash_tree_root(ReadVector.wrap(committees, Integer::valueOf));
   }
 
   /**
@@ -175,13 +231,13 @@ public interface HelperFunction extends SpecCommons {
    */
   default List<ShardCommittee> get_crosslink_committees_at_slot(BeaconState state, SlotNumber slot) {
     List<ShardCommittee> ret = new ArrayList<>();
-    EpochNumber epoch = slot_to_epoch(slot);
-    UInt64 committeesPerSlot = get_epoch_committee_count(state, epoch)
+    EpochNumber epoch = compute_epoch_of_slot(slot);
+    UInt64 committeesPerSlot = get_committee_count(state, epoch)
         .dividedBy(getConstants().getSlotsPerEpoch());
     SlotNumber slotOffset = slot.modulo(getConstants().getSlotsPerEpoch());
     for (UInt64 offset : UInt64s.iterate(committeesPerSlot.times(slotOffset),
         committeesPerSlot.times(slotOffset.increment()))) {
-      ShardNumber shard = get_epoch_start_shard(state, epoch)
+      ShardNumber shard = get_start_shard(state, epoch)
           .plusModulo(offset, getConstants().getShardCount());
       List<ValidatorIndex> committee = get_crosslink_committee(state, epoch, shard);
       ret.add(new ShardCommittee(committee, shard));
@@ -193,53 +249,43 @@ public interface HelperFunction extends SpecCommons {
   /*
     def get_beacon_proposer_index(state: BeaconState) -> ValidatorIndex:
       """
-      Return the current beacon proposer index.
+      Return the beacon proposer index at the current slot.
       """
       epoch = get_current_epoch(state)
-      committees_per_slot = get_epoch_committee_count(state, epoch) // SLOTS_PER_EPOCH
+      committees_per_slot = get_committee_count(state, epoch) // SLOTS_PER_EPOCH
       offset = committees_per_slot * (state.slot % SLOTS_PER_EPOCH)
-      shard = (get_epoch_start_shard(state, epoch) + offset) % SHARD_COUNT
+      shard = Shard((get_start_shard(state, epoch) + offset) % SHARD_COUNT)
       first_committee = get_crosslink_committee(state, epoch, shard)
       MAX_RANDOM_BYTE = 2**8 - 1
-      seed = generate_seed(state, epoch)
+      seed = get_seed(state, epoch)
       i = 0
       while True:
           candidate_index = first_committee[(epoch + i) % len(first_committee)]
-          random_byte = hash(seed + int_to_bytes8(i // 32))[i % 32]
-          effective_balance = state.validator_registry[candidate_index].effective_balance
+          random_byte = hash(seed + int_to_bytes(i // 32, length=8))[i % 32]
+          effective_balance = state.validators[candidate_index].effective_balance
           if effective_balance * MAX_RANDOM_BYTE >= MAX_EFFECTIVE_BALANCE * random_byte:
-              return candidate_index
+              return ValidatorIndex(candidate_index)
           i += 1
     */
   int MAX_RANDOM_BYTE = (1 << 8) - 1;
   default ValidatorIndex get_beacon_proposer_index(BeaconState state) {
     EpochNumber epoch = get_current_epoch(state);
-    UInt64 committees_per_slot = get_epoch_committee_count(state, epoch)
+    UInt64 committees_per_slot = get_committee_count(state, epoch)
         .dividedBy(getConstants().getSlotsPerEpoch());
     SlotNumber offset = SlotNumber.castFrom(
         committees_per_slot.times(
             state.getSlot().modulo(getConstants().getSlotsPerEpoch()).getIntValue()));
-    ShardNumber shard = get_epoch_start_shard(state, epoch)
+    ShardNumber shard = get_start_shard(state, epoch)
         .plusModulo(offset, getConstants().getShardCount());
     List<ValidatorIndex> first_committee = get_crosslink_committee(state, epoch, shard);
-
-    return  get_beacon_proposer_index_for_committee(state, epoch, first_committee);
-  }
-
-  /**
-   * Artificial method dedicated to {@link #get_beacon_proposer_index(BeaconState)} calculation with
-   * first committee already found
-   */
-  default ValidatorIndex get_beacon_proposer_index_for_committee(
-      BeaconState state, EpochNumber epoch, List<ValidatorIndex> first_committee) {
-    Hash32 seed = generate_seed(state, epoch);
+    Hash32 seed = get_seed(state, epoch);
     int i = 0;
     while (true) {
       ValidatorIndex candidate_index = first_committee.get(
           epoch.plus(i).modulo(first_committee.size()).getIntValue());
       int random_byte = hash(seed.concat(int_to_bytes8(i / Bytes32.SIZE)))
           .get(i % Bytes32.SIZE) & 0xFF;
-      Gwei effective_balance = state.getValidatorRegistry().get(candidate_index).getEffectiveBalance();
+      Gwei effective_balance = state.getValidators().get(candidate_index).getEffectiveBalance();
       if (effective_balance.times(MAX_RANDOM_BYTE).greaterEqual(
           getConstants().getMaxEffectiveBalance().times(random_byte))) {
         return candidate_index;
@@ -274,26 +320,34 @@ public interface HelperFunction extends SpecCommons {
   }
 
   /*
-    def get_active_validator_indices(state: BeaconState, epoch: Epoch) -> List[ValidatorIndex]:
+    def get_active_validator_indices(state: BeaconState, epoch: Epoch) -> Sequence[ValidatorIndex]:
       """
-      Get active validator indices at ``epoch``.
+      Return the sequence of active validator indices at ``epoch``.
       """
-      return [i for i, v in enumerate(state.validator_registry) if is_active_validator(v, epoch)]
+      return [ValidatorIndex(i) for i, v in enumerate(state.validators) if is_active_validator(v, epoch)]
     */
   default List<ValidatorIndex> get_active_validator_indices(BeaconState state, EpochNumber epoch) {
     ArrayList<ValidatorIndex> ret = new ArrayList<>();
-    for (ValidatorIndex i : state.getValidatorRegistry().size()) {
-      if (is_active_validator(state.getValidatorRegistry().get(i), epoch)) {
+    for (ValidatorIndex i : state.getValidators().size()) {
+      if (is_active_validator(state.getValidators().get(i), epoch)) {
         ret.add(i);
       }
     }
     return ret;
   }
 
+  /** {@link #get_active_validator_indices(BeaconState, EpochNumber)} wrapped with limited list */
+  default ReadList<Integer, ValidatorIndex> get_active_validator_indices_list(
+      BeaconState state, EpochNumber epoch) {
+    List<ValidatorIndex> indices = new ArrayList<>(get_active_validator_indices(state, epoch));
+    return ReadList.wrap(
+        indices, Integer::new, getConstants().getValidatorRegistryLimit().longValue());
+  }
+
   /*
     def increase_balance(state: BeaconState, index: ValidatorIndex, delta: Gwei) -> None:
       """
-      Increase validator balance by ``delta``.
+      Increase the validator balance at index ``index`` by ``delta``.
       """
       state.balances[index] += delta
    */
@@ -304,7 +358,7 @@ public interface HelperFunction extends SpecCommons {
   /*
     def decrease_balance(state: BeaconState, index: ValidatorIndex, delta: Gwei) -> None:
       """
-      Decrease validator balance by ``delta`` with underflow protection.
+      Decrease the validator balance at index ``index`` by ``delta``, with underflow protection.
       """
       state.balances[index] = 0 if delta > state.balances[index] else state.balances[index] - delta
    */
@@ -317,17 +371,15 @@ public interface HelperFunction extends SpecCommons {
   }
 
   /*
-    def get_randao_mix(state: BeaconState,
-                   epoch: Epoch) -> Bytes32:
+    def get_randao_mix(state: BeaconState, epoch: Epoch) -> Hash:
       """
       Return the randao mix at a recent ``epoch``.
-      ``epoch`` expected to be between (current_epoch - LATEST_RANDAO_MIXES_LENGTH, current_epoch].
       """
-      return state.latest_randao_mixes[epoch % LATEST_RANDAO_MIXES_LENGTH]
+      return state.randao_mixes[epoch % EPOCHS_PER_HISTORICAL_VECTOR]
     */
   default Hash32 get_randao_mix(BeaconState state, EpochNumber epoch) {
-    return state.getLatestRandaoMixes().get(
-        epoch.modulo(getConstants().getLatestRandaoMixesLength()));
+    return state.getRandaoMixes().get(
+        epoch.modulo(getConstants().getEpochsPerHistoricalVector()));
   }
 
   /**
@@ -428,33 +480,11 @@ public interface HelperFunction extends SpecCommons {
   }
 
   /*
-   def split(values: List[Any], split_count: int) -> List[Any]:
-   """
-   Splits ``values`` into ``split_count`` pieces.
-   """
-   list_length = len(values)
-   return [
-       values[(list_length * i // split_count): (list_length * (i + 1) // split_count)]
-       for i in range(split_count)
-   ]
-  */
-  default <T> List<List<T>> split(List<T> values, int split_count) {
-    List<List<T>> ret = new ArrayList<>();
-    for (int i = 0; i < split_count; i++) {
-      int fromIdx = values.size() * i / split_count;
-      int toIdx = min(values.size() * (i + 1) / split_count, values.size());
-      ret.add(values.subList(fromIdx, toIdx));
-    }
-    return ret;
-  }
-
-  /*
-    def get_shuffled_index(index: ValidatorIndex, index_count: int, seed: Bytes32) -> ValidatorIndex:
+    def compute_shuffled_index(index: ValidatorIndex, index_count: int, seed: Bytes32) -> ValidatorIndex:
       """
       Return the shuffled validator index corresponding to ``seed`` (and ``index_count``).
       """
       assert index < index_count
-      assert index_count <= 2**40
 
       # Swap or not (https://link.springer.com/content/pdf/10.1007%2F978-3-642-32009-5_1.pdf)
       # See the 'generalized domain' algorithm on page 3
@@ -469,9 +499,8 @@ public interface HelperFunction extends SpecCommons {
 
       return index
    */
-  default UInt64 get_shuffled_index(UInt64 index, UInt64 index_count, Bytes32 seed) {
+  default UInt64 compute_shuffled_index(UInt64 index, UInt64 index_count, Bytes32 seed) {
     assertTrue(index.compareTo(index_count) < 0);
-    assertTrue(index_count.compareTo(UInt64.valueOf(1L << 40)) <= 0);
 
     for (int round = 0; round < getConstants().getShuffleRoundCount(); round++) {
       Bytes8 pivotBytes = Bytes8.wrap(hash(seed.concat(int_to_bytes1(round))), 0);
@@ -493,7 +522,7 @@ public interface HelperFunction extends SpecCommons {
     def compute_committee(indices: List[ValidatorIndex], seed: Bytes32, index: int, count: int) -> List[ValidatorIndex]:
       start = (len(indices) * index) // count
       end = (len(indices) * (index + 1)) // count
-      return [indices[get_shuffled_index(i, len(indices), seed)] for i in range(start, end)]
+      return [indices[compute_shuffled_index(i, len(indices), seed)] for i in range(start, end)]
    */
   default List<ValidatorIndex> compute_committee(List<ValidatorIndex> indices, Bytes32 seed, UInt64 index, UInt64 count) {
     UInt64 start = index.times(indices.size()).dividedBy(count);
@@ -505,7 +534,7 @@ public interface HelperFunction extends SpecCommons {
   default List<ValidatorIndex> compute_committee(List<ValidatorIndex> validator_indices, UInt64 start, UInt64 end, Bytes32 seed) {
     List<ValidatorIndex> result = new ArrayList<>();
     for (UInt64 i = start; i.compareTo(end) < 0; i = i.increment()) {
-      UInt64 shuffled_index = get_shuffled_index(i, UInt64.valueOf(validator_indices.size()), seed);
+      UInt64 shuffled_index = compute_shuffled_index(i, UInt64.valueOf(validator_indices.size()), seed);
       result.add(validator_indices.get(shuffled_index.getIntValue()));
     }
     return result;
@@ -528,27 +557,30 @@ public interface HelperFunction extends SpecCommons {
   }
 
   /*
-    def get_crosslink_committee(state: BeaconState, epoch: Epoch, shard: Shard) -> List[ValidatorIndex]:
+    def get_crosslink_committee(state: BeaconState, epoch: Epoch, shard: Shard) -> Sequence[ValidatorIndex]:
+      """
+      Return the crosslink committee at ``epoch`` for ``shard``.
+      """
       return compute_committee(
           indices=get_active_validator_indices(state, epoch),
-          seed=generate_seed(state, epoch),
-          index=(shard + SHARD_COUNT - get_epoch_start_shard(state, epoch)) % SHARD_COUNT,
-          count=get_epoch_committee_count(state, epoch),
+          seed=get_seed(state, epoch),
+          index=(shard + SHARD_COUNT - get_start_shard(state, epoch)) % SHARD_COUNT,
+          count=get_committee_count(state, epoch),
       )
    */
   default List<ValidatorIndex> get_crosslink_committee(BeaconState state, EpochNumber epoch, ShardNumber shard) {
     return compute_committee2(
         get_active_validator_indices(state, epoch),
-        generate_seed(state, epoch),
+        get_seed(state, epoch),
         shard.plus(getConstants().getShardCount())
-            .minus(get_epoch_start_shard(state, epoch))
+            .minus(get_start_shard(state, epoch))
             .modulo(getConstants().getShardCount()),
-        get_epoch_committee_count(state, epoch)
+        get_committee_count(state, epoch)
     );
   }
 
   /*
-   def verify_merkle_branch(leaf: Bytes32, proof: List[Bytes32], depth: int, index: int, root: Bytes32) -> bool:
+   def is_valid_merkle_branch(leaf: Bytes32, proof: List[Bytes32], depth: int, index: int, root: Bytes32) -> bool:
     """
     Verify that the given ``leaf`` is on the merkle branch ``proof``
     starting with the given ``root``.
@@ -561,7 +593,7 @@ public interface HelperFunction extends SpecCommons {
             value = hash(value + proof[i])
     return value == root
   */
-  default boolean verify_merkle_branch(
+  default boolean is_valid_merkle_branch(
       Hash32 leaf, List<Hash32> proof, UInt64 depth, UInt64 index, Hash32 root) {
     Hash32 value = leaf;
     for (int i = 0; i < depth.getIntValue(); i++) {
@@ -589,16 +621,28 @@ public interface HelperFunction extends SpecCommons {
   }
 
   /*
-    def get_total_balance(state: BeaconState, indices: List[ValidatorIndex]) -> Gwei:
+    def get_total_balance(state: BeaconState, indices: Set[ValidatorIndex]) -> Gwei:
       """
       Return the combined effective balance of the ``indices``. (1 Gwei minimum to avoid divisions by zero.)
       """
-      return max(sum([state.validator_registry[index].effective_balance for index in indices]), 1)
+      return Gwei(max(sum([state.validators[index].effective_balance for index in indices]), 1))
    */
   default Gwei get_total_balance(BeaconState state, Collection<ValidatorIndex> indices) {
     return UInt64s.max(indices.stream()
-        .map(index -> state.getValidatorRegistry().get(index).getEffectiveBalance())
+        .map(index -> state.getValidators().get(index).getEffectiveBalance())
         .reduce(Gwei.ZERO, Gwei::plus), Gwei.of(1));
+  }
+
+  /*
+    def get_total_active_balance(state: BeaconState) -> Gwei:
+      """
+      Return the combined effective balance of the active validators.
+      """
+      return get_total_balance(state, set(get_active_validator_indices(state, get_current_epoch(state))))
+   */
+  default Gwei get_total_active_balance(BeaconState state) {
+    return get_total_balance(state,
+        get_active_validator_indices(state, get_current_epoch(state)));
   }
 
   /*
@@ -625,73 +669,88 @@ public interface HelperFunction extends SpecCommons {
   }
 
   /*
-    def get_delayed_activation_exit_epoch(epoch: EpochNumber) -> EpochNumber:
-        """
-        An entry or exit triggered in the ``epoch`` given by the input takes effect at
-        the epoch given by the output.
-        """
-        return epoch + 1 + ACTIVATION_EXIT_DELAY
+    def compute_activation_exit_epoch(epoch: Epoch) -> Epoch:
+      """
+      Return the epoch during which validator activations and exits initiated in ``epoch`` take effect.
+      """
+      return Epoch(epoch + 1 + ACTIVATION_EXIT_DELAY)
    */
-  default EpochNumber get_delayed_activation_exit_epoch(EpochNumber epoch) {
+  default EpochNumber compute_activation_exit_epoch(EpochNumber epoch) {
     return epoch.plus(1).plus(getConstants().getActivationExitDelay());
   }
 
   /*
-    def get_churn_limit(state: BeaconState) -> int:
-      return max(
-          MIN_PER_EPOCH_CHURN_LIMIT,
-          len(get_active_validator_indices(state, get_current_epoch(state))) // CHURN_LIMIT_QUOTIENT
-      )
+    def get_validator_churn_limit(state: BeaconState) -> uint64:
+      """
+      Return the validator churn limit for the current epoch.
+      """
+      active_validator_indices = get_active_validator_indices(state, get_current_epoch(state))
+      return max(MIN_PER_EPOCH_CHURN_LIMIT, len(active_validator_indices) // CHURN_LIMIT_QUOTIENT)
    */
-  default UInt64 get_churn_limit(BeaconState state) {
+  default UInt64 get_validator_churn_limit(BeaconState state) {
+    List<ValidatorIndex> active_validator_indices =
+        get_active_validator_indices(state, get_current_epoch(state));
     return UInt64s.max(
         getConstants().getMinPerEpochChurnLimit(),
-        UInt64.valueOf(get_active_validator_indices(state, get_current_epoch(state)).size())
+        UInt64.valueOf(active_validator_indices.size())
             .dividedBy(getConstants().getChurnLimitQuotient())
     );
   }
 
   /*
-    def slash_validator(state: BeaconState, slashed_index: ValidatorIndex, whistleblower_index: ValidatorIndex=None) -> None:
+    def slash_validator(state: BeaconState,
+                    slashed_index: ValidatorIndex,
+                    whistleblower_index: ValidatorIndex=None) -> None:
       """
       Slash the validator with index ``slashed_index``.
       """
-      current_epoch = get_current_epoch(state)
+      epoch = get_current_epoch(state)
       initiate_validator_exit(state, slashed_index)
-      state.validator_registry[slashed_index].slashed = True
-      state.validator_registry[slashed_index].withdrawable_epoch = current_epoch + LATEST_SLASHED_EXIT_LENGTH
-      slashed_balance = state.validator_registry[slashed_index].effective_balance
-      state.latest_slashed_balances[current_epoch % LATEST_SLASHED_EXIT_LENGTH] += slashed_balance
+      validator = state.validators[slashed_index]
+      validator.slashed = True
+      validator.withdrawable_epoch = max(validator.withdrawable_epoch, Epoch(epoch + EPOCHS_PER_SLASHINGS_VECTOR))
+      state.slashings[epoch % EPOCHS_PER_SLASHINGS_VECTOR] += validator.effective_balance
+      decrease_balance(state, slashed_index, validator.effective_balance // MIN_SLASHING_PENALTY_QUOTIENT)
 
+      # Apply proposer and whistleblower rewards
       proposer_index = get_beacon_proposer_index(state)
       if whistleblower_index is None:
           whistleblower_index = proposer_index
-      whistleblowing_reward = slashed_balance // WHISTLEBLOWING_REWARD_QUOTIENT
-      proposer_reward = whistleblowing_reward // PROPOSER_REWARD_QUOTIENT
+      whistleblower_reward = Gwei(validator.effective_balance // WHISTLEBLOWER_REWARD_QUOTIENT)
+      proposer_reward = Gwei(whistleblower_reward // PROPOSER_REWARD_QUOTIENT)
       increase_balance(state, proposer_index, proposer_reward)
-      increase_balance(state, whistleblower_index, whistleblowing_reward - proposer_reward)
-      decrease_balance(state, slashed_index, whistleblowing_reward)
+      increase_balance(state, whistleblower_index, whistleblower_reward - proposer_reward)
     */
   default void slash_validator(MutableBeaconState state, ValidatorIndex slashed_index, ValidatorIndex whistleblower_index) {
-    EpochNumber current_epoch = get_current_epoch(state);
+    EpochNumber epoch = get_current_epoch(state);
     initiate_validator_exit(state, slashed_index);
-    state.getValidatorRegistry().update(slashed_index,
-        validator -> ValidatorRecord.Builder.fromRecord(validator)
-            .withSlashed(Boolean.TRUE)
-            .withWithdrawableEpoch(current_epoch.plus(getConstants().getLatestSlashedExitLength())).build());
-    Gwei slashed_balance = state.getValidatorRegistry().get(slashed_index).getEffectiveBalance();
-    state.getLatestSlashedBalances().update(current_epoch.modulo(getConstants().getLatestSlashedExitLength()),
+    state
+        .getValidators()
+        .update(
+            slashed_index,
+            validator ->
+                ValidatorRecord.Builder.fromRecord(validator)
+                    .withSlashed(Boolean.TRUE)
+                    .withWithdrawableEpoch(
+                        EpochNumber.castFrom(
+                            UInt64s.max(
+                                validator.getWithdrawableEpoch(),
+                                epoch.plus(getConstants().getEpochsPerSlashingsVector()))))
+                    .build());
+    Gwei slashed_balance = state.getValidators().get(slashed_index).getEffectiveBalance();
+    state.getSlashings().update(epoch.modulo(getConstants().getEpochsPerSlashingsVector()),
         balance -> balance.plus(slashed_balance));
+    decrease_balance(state, slashed_index, state.getValidators().get(slashed_index)
+        .getEffectiveBalance().dividedBy(getConstants().getMinSlashingPenaltyQuotient()));
 
     ValidatorIndex proposer_index = get_beacon_proposer_index(state);
     if (whistleblower_index == null) {
       whistleblower_index = proposer_index;
     }
-    Gwei whistleblowing_reward = slashed_balance.dividedBy(getConstants().getWhistleblowingRewardQuotient());
+    Gwei whistleblowing_reward = slashed_balance.dividedBy(getConstants().getWhistleblowerRewardQuotient());
     Gwei proposer_reward = whistleblowing_reward.dividedBy(getConstants().getProposerRewardQuotient());
     increase_balance(state, proposer_index, proposer_reward);
     increase_balance(state, whistleblower_index, whistleblowing_reward.minus(proposer_reward));
-    decrease_balance(state, slashed_index, whistleblowing_reward);
   }
 
   default void slash_validator(MutableBeaconState state, ValidatorIndex slashed_index) {
@@ -701,47 +760,58 @@ public interface HelperFunction extends SpecCommons {
   /*
     def initiate_validator_exit(state: BeaconState, index: ValidatorIndex) -> None:
       """
-      Initiate the validator of the given ``index``.
+      Initiate the exit of the validator with index ``index``.
       """
+
+      # Compute exit queue epoch
+      exit_epochs = [v.exit_epoch for v in state.validators if v.exit_epoch != FAR_FUTURE_EPOCH]
+      exit_queue_epoch = max(exit_epochs + [compute_activation_exit_epoch(get_current_epoch(state))])
+      exit_queue_churn = len([v for v in state.validators if v.exit_epoch == exit_queue_epoch])
+      if exit_queue_churn >= get_validator_churn_limit(state):
+          exit_queue_epoch += Epoch(1)
+
+      # Set validator exit epoch and withdrawable epoch
+      validator.exit_epoch = exit_queue_epoch
+      validator.withdrawable_epoch = Epoch(validator.exit_epoch + MIN_VALIDATOR_WITHDRAWABILITY_DELAY)
   */
   default void initiate_validator_exit(MutableBeaconState state, ValidatorIndex index) {
     /* # Return if validator already initiated exit
-      validator = state.validator_registry[index]
+      validator = state.validators[index]
       if validator.exit_epoch != FAR_FUTURE_EPOCH:
           return */
     checkIndexRange(state, index);
-    if (!state.getValidatorRegistry().get(index).getExitEpoch().equals(getConstants().getFarFutureEpoch())) {
+    if (!state.getValidators().get(index).getExitEpoch().equals(getConstants().getFarFutureEpoch())) {
       return;
     }
 
     /* # Compute exit queue epoch
-      exit_epochs = [v.exit_epoch for v in state.validator_registry if v.exit_epoch != FAR_FUTURE_EPOCH]
-      exit_queue_epoch = max(exit_epochs + [get_delayed_activation_exit_epoch(get_current_epoch(state))])
-      exit_queue_churn = len([v for v in state.validator_registry if v.exit_epoch == exit_queue_epoch])
-      if exit_queue_churn >= get_churn_limit(state):
-          exit_queue_epoch += 1 */
+      exit_epochs = [v.exit_epoch for v in state.validators if v.exit_epoch != FAR_FUTURE_EPOCH]
+      exit_queue_epoch = max(exit_epochs + [compute_activation_exit_epoch(get_current_epoch(state))])
+      exit_queue_churn = len([v for v in state.validators if v.exit_epoch == exit_queue_epoch])
+      if exit_queue_churn >= get_validator_churn_limit(state):
+          exit_queue_epoch += Epoch(1) */
     EpochNumber exit_queue_epoch = Stream.concat(
-        state.getValidatorRegistry().stream()
+        state.getValidators().stream()
             .filter(v -> !v.getExitEpoch().equals(getConstants().getFarFutureEpoch()))
             .map(ValidatorRecord::getExitEpoch),
-        Stream.of(get_delayed_activation_exit_epoch(get_current_epoch(state)))
+        Stream.of(compute_activation_exit_epoch(get_current_epoch(state)))
     ).max(EpochNumber::compareTo).get();
 
     long exit_queue_churn = 0;
-    for (ValidatorRecord validatorRecord : state.getValidatorRegistry()) {
+    for (ValidatorRecord validatorRecord : state.getValidators()) {
       if (validatorRecord.getExitEpoch().equals(exit_queue_epoch)) {
         ++exit_queue_churn;
       }
     }
-    if (UInt64.valueOf(exit_queue_churn).compareTo(get_churn_limit(state)) >= 0) {
+    if (UInt64.valueOf(exit_queue_churn).compareTo(get_validator_churn_limit(state)) >= 0) {
       exit_queue_epoch = exit_queue_epoch.increment();
     }
 
     /* # Set validator exit epoch and withdrawable epoch
       validator.exit_epoch = exit_queue_epoch
-      validator.withdrawable_epoch = validator.exit_epoch + MIN_VALIDATOR_WITHDRAWABILITY_DELAY */
+      validator.withdrawable_epoch = Epoch(validator.exit_epoch + MIN_VALIDATOR_WITHDRAWABILITY_DELAY) */
     final EpochNumber exitEpoch = exit_queue_epoch;
-    state.getValidatorRegistry().update(index,
+    state.getValidators().update(index,
         validator -> ValidatorRecord.Builder.fromRecord(validator)
             .withExitEpoch(exitEpoch)
             .withWithdrawableEpoch(exitEpoch.plus(HelperFunction.this.getConstants().getMinValidatorWithdrawabilityDelay()))
@@ -764,36 +834,32 @@ public interface HelperFunction extends SpecCommons {
       """
       Return the index root at a recent ``epoch``.
       ``epoch`` expected to be between
-      (current_epoch - LATEST_ACTIVE_INDEX_ROOTS_LENGTH + ACTIVATION_EXIT_DELAY, current_epoch + ACTIVATION_EXIT_DELAY].
+      (current_epoch - EPOCHS_PER_HISTORICAL_VECTOR + ACTIVATION_EXIT_DELAY, current_epoch + ACTIVATION_EXIT_DELAY].
       """
-      return state.latest_active_index_roots[epoch % LATEST_ACTIVE_INDEX_ROOTS_LENGTH]
+      return state.latest_active_index_roots[epoch % EPOCHS_PER_HISTORICAL_VECTOR]
    */
   default Hash32 get_active_index_root(BeaconState state, EpochNumber epoch) {
-    return state.getLatestActiveIndexRoots().get(
-        epoch.modulo(getConstants().getLatestActiveIndexRootsLength()));
+    return state.getActiveIndexRoots().get(
+        epoch.modulo(getConstants().getEpochsPerHistoricalVector()));
   }
 
   /*
-    def generate_seed(state: BeaconState,
-                  epoch: Epoch) -> Bytes32:
+    def get_seed(state: BeaconState, epoch: Epoch) -> Hash:
       """
-      Generate a seed for the given ``epoch``.
+      Return the seed at ``epoch``.
       """
-      return hash(
-          get_randao_mix(state, epoch + LATEST_RANDAO_MIXES_LENGTH - MIN_SEED_LOOKAHEAD) +
-          get_active_index_root(state, epoch) +
-          int_to_bytes32(epoch)
-      )
+      mix = get_randao_mix(state, Epoch(epoch + EPOCHS_PER_HISTORICAL_VECTOR - MIN_SEED_LOOKAHEAD - 1))  # Avoid underflow
+      active_index_root = state.active_index_roots[epoch % EPOCHS_PER_HISTORICAL_VECTOR]
+      return hash(mix + active_index_root + int_to_bytes(epoch, length=32))
    */
-  default Hash32 generate_seed(BeaconState state, EpochNumber epoch) {
-    EpochNumber randao_mix_epoch = epoch
-        .plus(getConstants().getLatestRandaoMixesLength())
-        .minus(getConstants().getMinSeedLookahead());
-    return hash(
-        get_randao_mix(state, randao_mix_epoch)
-        .concat(get_active_index_root(state, epoch))
-        .concat(int_to_bytes32(epoch))
-    );
+  default Hash32 get_seed(BeaconState state, EpochNumber epoch) {
+    Hash32 mix = get_randao_mix(state,
+        epoch.plus(getConstants().getEpochsPerHistoricalVector()
+            .minus(getConstants().getMinSeedLookahead())
+            .decrement()));
+    Hash32 active_index_root = state.getActiveIndexRoots()
+        .get(epoch.modulo(getConstants().getEpochsPerHistoricalVector()));
+    return hash(mix.concat(active_index_root.concat(int_to_bytes32(epoch))));
   }
 
   default boolean bls_verify(BLSPubkey publicKey, Hash32 message, BLSSignature signature, UInt64 domain) {
@@ -835,20 +901,19 @@ public interface HelperFunction extends SpecCommons {
   }
 
   /*
-    def get_domain(state: BeaconState,
-               domain_type: int,
-               message_epoch: int=None) -> int:
+    def get_domain(state: BeaconState, domain_type: DomainType, message_epoch: Epoch=None) -> Domain:
       """
       Return the signature domain (fork version concatenated with domain type) of a message.
       """
       epoch = get_current_epoch(state) if message_epoch is None else message_epoch
       fork_version = state.fork.previous_version if epoch < state.fork.epoch else state.fork.current_version
-      return bls_domain(domain_type, fork_version)
+      return compute_domain(domain_type, fork_version)
    */
   default UInt64 get_domain(BeaconState state, UInt64 domain_type, EpochNumber message_epoch) {
     EpochNumber epoch = message_epoch == null ? get_current_epoch(state) : message_epoch;
-    Bytes4 fork_version = fork_version(epoch, state.getFork());
-    return bls_domain(domain_type, fork_version);
+    Bytes4 fork_version = epoch.less(state.getFork().getEpoch()) ?
+        state.getFork().getPreviousVersion() : state.getFork().getCurrentVersion();
+    return compute_domain(domain_type, fork_version);
   }
 
   default UInt64 get_domain(BeaconState state, UInt64 domain_type) {
@@ -857,71 +922,77 @@ public interface HelperFunction extends SpecCommons {
 
   /*
     def is_slashable_attestation_data(data_1: AttestationData, data_2: AttestationData) -> bool:
-    """
-    Check if ``data_1`` and ``data_2`` are slashable according to Casper FFG rules.
-    """
-    return (
-        # Double vote
-        (data_1 != data_2 and data_1.target_epoch == data_2.target_epoch) or
-        # Surround vote
-        (data_1.source_epoch < data_2.source_epoch and data_2.target_epoch < data_1.target_epoch)
-    )
+      """
+      Check if ``data_1`` and ``data_2`` are slashable according to Casper FFG rules.
+      """
+      return (
+          # Double vote
+          (data_1 != data_2 and data_1.target.epoch == data_2.target.epoch) or
+          # Surround vote
+          (data_1.source.epoch < data_2.source.epoch and data_2.target.epoch < data_1.target.epoch)
+      )
    */
   default boolean is_slashable_attestation_data(AttestationData data_1, AttestationData data_2) {
     return
         // Double vote
-        (!data_1.equals(data_2) && data_1.getTargetEpoch().equals(data_2.getTargetEpoch()))
+        (!data_1.equals(data_2) && data_1.getTarget().getEpoch().equals(data_2.getTarget().getEpoch()))
         // Surround vote
-        || (data_1.getSourceEpoch().less(data_2.getSourceEpoch()) && data_2.getTargetEpoch().less(data_1.getTargetEpoch()));
+        || (data_1.getSource().getEpoch().less(data_2.getSource().getEpoch())
+            && data_2.getTarget().getEpoch().less(data_1.getTarget().getEpoch()));
   }
 
   default List<BLSPubkey> mapIndicesToPubKeys(BeaconState state, Iterable<ValidatorIndex> indices) {
     List<BLSPubkey> publicKeys = new ArrayList<>();
     for (ValidatorIndex index : indices) {
       checkIndexRange(state, index);
-      publicKeys.add(state.getValidatorRegistry().get(index).getPubKey());
+      publicKeys.add(state.getValidators().get(index).getPubKey());
     }
     return publicKeys;
   }
 
   /*
-    def convert_to_indexed(state: BeaconState, attestation: Attestation) -> IndexedAttestation:
+    def get_indexed_attestation(state: BeaconState, attestation: Attestation) -> IndexedAttestation:
       """
-      Convert ``attestation`` to (almost) indexed-verifiable form.
+      Return the indexed attestation corresponding to ``attestation``.
       """
-      attesting_indices = get_attesting_indices(state, attestation.data, attestation.aggregation_bitfield)
-      custody_bit_1_indices = get_attesting_indices(state, attestation.data, attestation.custody_bitfield)
-      custody_bit_0_indices = [index for index in attesting_indices if index not in custody_bit_1_indices]
+      attesting_indices = get_attesting_indices(state, attestation.data, attestation.aggregation_bits)
+      custody_bit_1_indices = get_attesting_indices(state, attestation.data, attestation.custody_bits)
+      assert custody_bit_1_indices.issubset(attesting_indices)
+      custody_bit_0_indices = attesting_indices.difference(custody_bit_1_indices)
 
       return IndexedAttestation(
-          custody_bit_0_indices=custody_bit_0_indices,
-          custody_bit_1_indices=custody_bit_1_indices,
+          custody_bit_0_indices=sorted(custody_bit_0_indices),
+          custody_bit_1_indices=sorted(custody_bit_1_indices),
           data=attestation.data,
           signature=attestation.signature,
       )
    */
-  default IndexedAttestation convert_to_indexed(BeaconState state, Attestation attestation) {
+  default IndexedAttestation get_indexed_attestation(BeaconState state, Attestation attestation) {
     List<ValidatorIndex> attesting_indices =
-        get_attesting_indices(state, attestation.getData(), attestation.getAggregationBitfield());
+        get_attesting_indices(state, attestation.getData(), attestation.getAggregationBits());
     List<ValidatorIndex> custody_bit_1_indices =
-        get_attesting_indices(state, attestation.getData(), attestation.getCustodyBitfield());
+        get_attesting_indices(state, attestation.getData(), attestation.getCustodyBits());
     List<ValidatorIndex> custody_bit_0_indices = attesting_indices.stream()
         .filter(index -> !custody_bit_1_indices.contains(index)).collect(toList());
+
+    Collections.sort(custody_bit_0_indices);
+    Collections.sort(custody_bit_1_indices);
 
     return new IndexedAttestation(
         custody_bit_0_indices,
         custody_bit_1_indices,
         attestation.getData(),
-        attestation.getSignature());
+        attestation.getSignature(),
+        getConstants());
   }
 
   /*
-    def validate_indexed_attestation(state: BeaconState, indexed_attestation: IndexedAttestation) -> None:
+    def is_valid_indexed_attestation(state: BeaconState, indexed_attestation: IndexedAttestation) -> None:
       """
       Verify validity of ``indexed_attestation``.
       """
    */
-  default boolean validate_indexed_attestation(BeaconState state, IndexedAttestation indexed_attestation) {
+  default boolean is_valid_indexed_attestation(BeaconState state, IndexedAttestation indexed_attestation) {
     /*
       bit_0_indices = indexed_attestation.custody_bit_0_indices
       bit_1_indices = indexed_attestation.custody_bit_1_indices
@@ -936,7 +1007,7 @@ public interface HelperFunction extends SpecCommons {
 
     // Verify max number of indices
     int indices_in_total = bit_0_indices.size() + bit_1_indices.size();
-    if (indices_in_total > getConstants().getMaxIndicesPerAttestation().getIntValue()) {
+    if (indices_in_total > getConstants().getMaxValidatorsPerCommittee().getIntValue()) {
       return false;
     }
 
@@ -964,116 +1035,80 @@ public interface HelperFunction extends SpecCommons {
               hash_tree_root(AttestationDataAndCustodyBit(data=indexed_attestation.data, custody_bit=0b1)),
           ],
           signature=indexed_attestation.signature,
-          domain=get_domain(state, DOMAIN_ATTESTATION, slot_to_epoch(indexed_attestation.data.slot)),
+          domain=get_domain(state, DOMAIN_ATTESTATION, compute_epoch_of_slot(indexed_attestation.data.slot)),
       )
      */
     return bls_verify_multiple(
         Arrays.asList(
             bls_aggregate_pubkeys(bit_0_indices.stream()
-                .map(i -> state.getValidatorRegistry().get(i).getPubKey()).collect(Collectors.toList())),
+                .map(i -> state.getValidators().get(i).getPubKey()).collect(Collectors.toList())),
             bls_aggregate_pubkeys(bit_1_indices.stream()
-                .map(i -> state.getValidatorRegistry().get(i).getPubKey()).collect(Collectors.toList()))),
+                .map(i -> state.getValidators().get(i).getPubKey()).collect(Collectors.toList()))),
         Arrays.asList(
             hash_tree_root(new AttestationDataAndCustodyBit(indexed_attestation.getData(), false)),
             hash_tree_root(new AttestationDataAndCustodyBit(indexed_attestation.getData(), true))
         ),
         indexed_attestation.getSignature(),
-        get_domain(state, ATTESTATION, indexed_attestation.getData().getTargetEpoch())
+        get_domain(state, ATTESTATION, indexed_attestation.getData().getTarget().getEpoch())
     );
   }
 
   /*
-  def verify_bitfield(bitfield: bytes, committee_size: int) -> bool:
-    """
-    Verify ``bitfield`` against the ``committee_size``.
-    """
-    if len(bitfield) != (committee_size + 7) // 8:
-        return False
-
-    for i in range(committee_size, len(bitfield) * 8):
-        if get_bitfield_bit(bitfield, i) == 0b1:
-            return False
-
-    return True
-   */
-  default boolean verify_bitfield(Bitfield bitfield, int committee_size) {
-    if (bitfield.size() != (committee_size + 7) / 8) {
-      return false;
-    }
-
-    for(int i = committee_size; i < bitfield.size() * 8; i++) {
-      try {
-        if (bitfield.getBit(i)) {
-          return false;
-        }
-      } catch (Exception e) {
-        e.printStackTrace();
-      }
-    }
-    return true;
-  }
-
-  /*
-    def get_block_root_at_slot(state: BeaconState,
-                           slot: Slot) -> Bytes32:
+    def get_block_root_at_slot(state: BeaconState, slot: Slot) -> Hash:
       """
       Return the block root at a recent ``slot``.
       """
       assert slot < state.slot <= slot + SLOTS_PER_HISTORICAL_ROOT
-      return state.latest_block_roots[slot % SLOTS_PER_HISTORICAL_ROOT]
+      return state.block_roots[slot % SLOTS_PER_HISTORICAL_ROOT]
   */
   default Hash32 get_block_root_at_slot(BeaconState state, SlotNumber slot) {
     assertTrue(slot.less(state.getSlot()));
     assertTrue(state.getSlot().lessEqual(slot.plus(getConstants().getSlotsPerHistoricalRoot())));
-    return state.getLatestBlockRoots().get(slot.modulo(getConstants().getSlotsPerHistoricalRoot()));
+    return state.getBlockRoots().get(slot.modulo(getConstants().getSlotsPerHistoricalRoot()));
   }
 
   /*
-    def get_block_root(state: BeaconState,
-                   epoch: Epoch) -> Bytes32:
+    def get_block_root(state: BeaconState, epoch: Epoch) -> Hash:
       """
-      Return the block root at a recent ``epoch``.
+      Return the block root at the start of a recent ``epoch``.
       """
-      return get_block_root_at_slot(state, get_epoch_start_slot(epoch))
+      return get_block_root_at_slot(state, compute_start_slot_of_epoch(epoch))
    */
   default Hash32 get_block_root(BeaconState state, EpochNumber epoch) {
-    return get_block_root_at_slot(state, get_epoch_start_slot(epoch));
+    return get_block_root_at_slot(state, compute_start_slot_of_epoch(epoch));
   }
 
   /*
     def get_attesting_indices(state: BeaconState,
-                          attestation_data: AttestationData,
-                          bitfield: bytes) -> List[ValidatorIndex]:
+                          data: AttestationData,
+                          bits: Bitlist[MAX_VALIDATORS_PER_COMMITTEE]) -> Set[ValidatorIndex]:
       """
-      Return the sorted attesting indices corresponding to ``attestation_data`` and ``bitfield``.
+      Return the set of attesting indices corresponding to ``data`` and ``bits``.
       """
-      committee = get_crosslink_committee(state, attestation_data.target_epoch, attestation_data.crosslink.shard)
-      assert verify_bitfield(bitfield, len(committee))
-      return sorted([index for i, index in enumerate(committee) if get_bitfield_bit(bitfield, i) == 0b1])
+      committee = get_crosslink_committee(state, data.target.epoch, data.crosslink.shard)
+      return set(index for i, index in enumerate(committee) if bits[i])
    */
   default List<ValidatorIndex> get_attesting_indices(
-      BeaconState state, AttestationData attestation_data, Bitfield bitfield) {
+      BeaconState state, AttestationData attestation_data, Bitlist bitList) {
     List<ValidatorIndex> committee =
-        get_crosslink_committee(state, attestation_data.getTargetEpoch(),
+        get_crosslink_committee(state, attestation_data.getTarget().getEpoch(),
             attestation_data.getCrosslink().getShard());
-    assertTrue(verify_bitfield(bitfield, committee.size()));
     List<ValidatorIndex> participants = new ArrayList<>();
     for (int i = 0; i < committee.size(); i++) {
       ValidatorIndex validator_index = committee.get(i);
-      boolean aggregation_bit = bitfield.getBit(i);
+      boolean aggregation_bit = bitList.getBit(i);
       if (aggregation_bit) {
         participants.add(validator_index);
       }
     }
-    participants.sort(UInt64::compareTo);
 
     return participants;
   }
 
   default ValidatorIndex get_validator_index_by_pubkey(BeaconState state, BLSPubkey pubkey) {
     ValidatorIndex index = ValidatorIndex.MAX;
-    for (ValidatorIndex i : state.getValidatorRegistry().size()) {
-      if (state.getValidatorRegistry().get(i).getPubKey().equals(pubkey)) {
+    for (ValidatorIndex i : state.getValidators().size()) {
+      if (state.getValidators().get(i).getPubKey().equals(pubkey)) {
         index = i;
         break;
       }
@@ -1083,39 +1118,38 @@ public interface HelperFunction extends SpecCommons {
   }
 
   /*
-    def bls_domain(domain_type: int, fork_version: bytes=b'\x00\x00\x00\x00') -> int:
+    def compute_domain(domain_type: DomainType, fork_version: Version=Version()) -> Domain:
       """
-      Return the bls domain given by the ``domain_type`` and optional 4 byte ``fork_version`` (defaults to zero).
+      Return the domain for the ``domain_type`` and ``fork_version``.
       """
-      return bytes_to_int(int_to_bytes(domain_type, length=4) + fork_version)
+      return Domain(domain_type + fork_version)
    */
-  default UInt64 bls_domain(UInt64 domain_type, Bytes4 fork_version) {
+  default UInt64 compute_domain(UInt64 domain_type, Bytes4 fork_version) {
     return bytes_to_int(int_to_bytes4(domain_type).concat(fork_version));
   }
-  default UInt64 bls_domain(UInt64 domain_type) {
-    return bls_domain(domain_type, Bytes4.ZERO);
-  }
 
-  default Bytes4 fork_version(EpochNumber epoch, Fork fork) {
-    return epoch.less(fork.getEpoch()) ? fork.getPreviousVersion() : fork.getCurrentVersion();
+  default UInt64 compute_domain(UInt64 domain_type) {
+    return compute_domain(domain_type, Bytes4.ZERO);
   }
 
   /*
-   def slot_to_epoch(slot: SlotNumber) -> EpochNumber:
-       return slot // SLOTS_PER_EPOCH
+   def compute_epoch_of_slot(slot: Slot) -> Epoch:
+      """
+      Return the epoch number of ``slot``.
+      """
+      return Epoch(slot // SLOTS_PER_EPOCH)
   */
-  default EpochNumber slot_to_epoch(SlotNumber slot) {
+  default EpochNumber compute_epoch_of_slot(SlotNumber slot) {
     return slot.dividedBy(getConstants().getSlotsPerEpoch());
   }
 
   /*
     def get_previous_epoch(state: BeaconState) -> Epoch:
       """`
-      Return the previous epoch of the given ``state``.
-      Return the current epoch if it's genesis epoch.
+      Return the previous epoch (unless the current epoch is ``GENESIS_EPOCH``).
       """
       current_epoch = get_current_epoch(state)
-      return GENESIS_EPOCH if current_epoch == GENESIS_EPOCH else current_epoch - 1
+      return GENESIS_EPOCH if current_epoch == GENESIS_EPOCH else Epoch(current_epoch - 1)
    */
   default EpochNumber get_previous_epoch(BeaconState state) {
     EpochNumber current_epoch = get_current_epoch(state);
@@ -1124,17 +1158,24 @@ public interface HelperFunction extends SpecCommons {
   }
 
   /*
-   def get_current_epoch(state: BeaconState) -> EpochNumber:
-       return slot_to_epoch(state.slot)
+   def get_current_epoch(state: BeaconState) -> Epoch:
+      """
+      Return the current epoch.
+      """
+      return compute_epoch_of_slot(state.slot)
   */
   default EpochNumber get_current_epoch(BeaconState state) {
-    return slot_to_epoch(state.getSlot());
+    return compute_epoch_of_slot(state.getSlot());
   }
+
   /*
-   def get_epoch_start_slot(epoch: EpochNumber) -> SlotNumber:
-     return epoch * SLOTS_PER_EPOCH
-  */
-  default SlotNumber get_epoch_start_slot(EpochNumber epoch) {
+    def compute_start_slot_of_epoch(epoch: Epoch) -> Slot:
+      """
+      Return the start slot of ``epoch``.
+      """
+      return Slot(epoch * SLOTS_PER_EPOCH)
+   */
+  default SlotNumber compute_start_slot_of_epoch(EpochNumber epoch) {
     return epoch.mul(getConstants().getSlotsPerEpoch());
   }
 }

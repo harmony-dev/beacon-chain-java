@@ -3,6 +3,7 @@ package org.ethereum.beacon.validator.api.model;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.validator.api.convert.BeaconBlockConverter;
 
 import java.util.List;
@@ -59,8 +60,8 @@ public class BlockData {
     this.signature = signature;
   }
 
-  public BeaconBlock createBlock() {
-    return BeaconBlockConverter.deserialize(this);
+  public BeaconBlock createBlock(SpecConstants constants) {
+    return BeaconBlockConverter.deserialize(this, constants);
   }
 
   public static class BlockBodyData {
@@ -308,6 +309,8 @@ public class BlockData {
 
     public static class DepositData {
       private List<String> proof;
+      private Long index;
+
       private DepositDataContainer data;
 
       public List<String> getProof() {
@@ -316,6 +319,14 @@ public class BlockData {
 
       public void setProof(List<String> proof) {
         this.proof = proof;
+      }
+
+      public Long getIndex() {
+        return index;
+      }
+
+      public void setIndex(Long index) {
+        this.index = index;
       }
 
       public DepositDataContainer getData() {
@@ -471,13 +482,13 @@ public class BlockData {
 
   @JsonIgnoreProperties(ignoreUnknown = true)
   public static class AttestationData {
-    @JsonProperty("aggregation_bitfield")
-    private String aggregationBitfield;
+    @JsonProperty("aggregation_bits")
+    private String aggregationBits;
 
     private AttestationDataContainer data;
 
-    @JsonProperty("custody_bitfield")
-    private String custodyBitfield;
+    @JsonProperty("custody_bits")
+    private String custodyBits;
 
     private String signature;
 
@@ -495,12 +506,12 @@ public class BlockData {
       this.inclusionDelay = inclusionDelay;
     }
 
-    public String getAggregationBitfield() {
-      return aggregationBitfield;
+    public String getAggregationBits() {
+      return aggregationBits;
     }
 
-    public void setAggregationBitfield(String aggregationBitfield) {
-      this.aggregationBitfield = aggregationBitfield;
+    public void setAggregationBits(String aggregationBits) {
+      this.aggregationBits = aggregationBits;
     }
 
     public AttestationDataContainer getData() {
@@ -511,12 +522,12 @@ public class BlockData {
       this.data = data;
     }
 
-    public String getCustodyBitfield() {
-      return custodyBitfield;
+    public String getCustodyBits() {
+      return custodyBits;
     }
 
-    public void setCustodyBitfield(String custodyBitfield) {
-      this.custodyBitfield = custodyBitfield;
+    public void setCustodyBits(String custodyBits) {
+      this.custodyBits = custodyBits;
     }
 
     public String getSignature() {
@@ -539,17 +550,9 @@ public class BlockData {
       @JsonProperty("beacon_block_root")
       private String beaconBlockRoot;
 
-      @JsonProperty("source_epoch")
-      private String sourceEpoch;
+      private CheckpointData source;
 
-      @JsonProperty("source_root")
-      private String sourceRoot;
-
-      @JsonProperty("target_epoch")
-      private String targetEpoch;
-
-      @JsonProperty("target_root")
-      private String targetRoot;
+      private CheckpointData target;
 
       private CrossLinkData crosslink;
 
@@ -561,36 +564,20 @@ public class BlockData {
         this.beaconBlockRoot = beaconBlockRoot;
       }
 
-      public String getSourceEpoch() {
-        return sourceEpoch;
+      public CheckpointData getSource() {
+        return source;
       }
 
-      public void setSourceEpoch(String sourceEpoch) {
-        this.sourceEpoch = sourceEpoch;
+      public void setSource(CheckpointData source) {
+        this.source = source;
       }
 
-      public String getSourceRoot() {
-        return sourceRoot;
+      public CheckpointData getTarget() {
+        return target;
       }
 
-      public void setSourceRoot(String sourceRoot) {
-        this.sourceRoot = sourceRoot;
-      }
-
-      public String getTargetRoot() {
-        return targetRoot;
-      }
-
-      public void setTargetRoot(String targetRoot) {
-        this.targetRoot = targetRoot;
-      }
-
-      public String getTargetEpoch() {
-        return targetEpoch;
-      }
-
-      public void setTargetEpoch(String targetEpoch) {
-        this.targetEpoch = targetEpoch;
+      public void setTarget(CheckpointData target) {
+        this.target = target;
       }
 
       public CrossLinkData getCrosslink() {
@@ -711,6 +698,27 @@ public class BlockData {
 
     public void setSignature(String signature) {
       this.signature = signature;
+    }
+  }
+
+  public static class CheckpointData {
+    private String root;
+    private Long epoch;
+
+    public String getRoot() {
+      return root;
+    }
+
+    public void setRoot(String root) {
+      this.root = root;
+    }
+
+    public Long getEpoch() {
+      return epoch;
+    }
+
+    public void setEpoch(Long epoch) {
+      this.epoch = epoch;
     }
   }
 }

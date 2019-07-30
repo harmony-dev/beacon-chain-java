@@ -1,10 +1,8 @@
 package org.ethereum.beacon.validator;
 
-import org.ethereum.beacon.chain.observer.PendingOperations;
+import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.core.BeaconBlock;
-import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.types.BLSSignature;
-import tech.pegasys.artemis.util.bytes.Bytes32;
 
 /**
  * An interface of beacon chain proposer. A part of beacon validator logic.
@@ -21,11 +19,9 @@ public interface BeaconChainProposer {
   /**
    * Create beacon chain block with empty signature and randao reveal.
    *
-   * @param state a state on top of which new block is created.
+   * @param observableState a state on top of which new block is created.
    * @param randaoReveal revealed randao signature.
-   * @param pendingOperations beacon operations yet not included on chain.
    * @return created block.
    */
-  BeaconBlock propose(
-      BeaconState state, BLSSignature randaoReveal, PendingOperations pendingOperations);
+  BeaconBlock propose(ObservableBeaconState observableState, BLSSignature randaoReveal);
 }

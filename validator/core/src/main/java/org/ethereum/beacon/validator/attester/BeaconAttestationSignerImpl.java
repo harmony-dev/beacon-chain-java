@@ -3,6 +3,7 @@ package org.ethereum.beacon.validator.attester;
 import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
 
 import org.ethereum.beacon.consensus.BeaconChainSpec;
+import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustodyBit;
 import org.ethereum.beacon.core.state.Fork;
@@ -29,18 +30,18 @@ public class BeaconAttestationSignerImpl implements BeaconAttestationSigner {
   }
 
   @Override
-  public Attestation sign(Attestation attestation, Fork fork) {
+  public Attestation sign(Attestation attestation, BeaconState state) {
     AttestationDataAndCustodyBit attestationDataAndCustodyBit =
         new AttestationDataAndCustodyBit(attestation.getData(), false);
     Hash32 hash = spec.hash_tree_root(attestationDataAndCustodyBit);
-    Bytes4 forkVersion = spec.fork_version(attestation.getData().getTargetEpoch(), fork);
-    UInt64 domain = spec.bls_domain(ATTESTATION, forkVersion);
+    UInt64 domain = spec.get_domain(state, ATTESTATION, attestation.getData().getTarget().getEpoch());
     BLSSignature signature = signer.sign(hash, domain);
 
     return new Attestation(
-        attestation.getAggregationBitfield(),
+        attestation.getAggregationBits(),
         attestation.getData(),
-        attestation.getCustodyBitfield(),
-        signature);
+        attestation.getCustodyBits(),
+        signature,
+        spec.getConstants());
   }
 }

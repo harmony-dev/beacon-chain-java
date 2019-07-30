@@ -2,13 +2,14 @@ package org.ethereum.beacon.core.spec;
 
 import com.google.common.base.CaseFormat;
 import com.google.common.base.Converter;
+
+import javax.annotation.Nonnull;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
-import javax.annotation.Nonnull;
 
 public class SpecConstantsResolver implements Function<String, Object> {
   private final static String SPEC_CONST_PREFIX = "spec.";
@@ -23,10 +24,18 @@ public class SpecConstantsResolver implements Function<String, Object> {
     for (Method method : SpecConstants.class.getMethods()) {
       if (method.getParameterTypes().length == 0
           && method.getName().startsWith("get")
-          && Number.class.isAssignableFrom(method.getReturnType())) {
+          && isNumber(method.getReturnType())) {
         constMethods.put(method.getName(), method);
       }
     }
+  }
+
+  private boolean isNumber(Class type) {
+    return type == int.class
+        || type == long.class
+        || type == byte.class
+        || Number.class.isAssignableFrom(
+            type); // XXX: `isAssignable` is eligible only for non-primitives
   }
 
   @Override

@@ -6,6 +6,7 @@ import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.hasher.ObjectHasher;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockBody;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.db.Database;
@@ -28,7 +29,7 @@ public class BeaconBlockStorageTest {
     return new BeaconBlock(SlotNumber.of(slot),
         parent == null ? Hash32.ZERO : parentHash,
         Hash32.wrap(Bytes32.leftPad(BytesValues.toMinimalBytes(counter++))),
-        BeaconBlockBody.EMPTY, BLSSignature.ZERO);
+        BeaconBlockBody.getEmpty(BeaconChainSpec.DEFAULT_CONSTANTS), BLSSignature.ZERO);
   }
 
 // TODO: Test smth

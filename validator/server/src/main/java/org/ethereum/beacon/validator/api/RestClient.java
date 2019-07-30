@@ -3,6 +3,7 @@ package org.ethereum.beacon.validator.api;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.validator.api.model.AttestationSubmit;
 import org.ethereum.beacon.validator.api.model.BlockData;
 import org.ethereum.beacon.validator.api.model.BlockSubmit;
@@ -60,7 +61,7 @@ public class RestClient {
         .get(ValidatorDutiesResponse.class);
   }
 
-  public BeaconBlock getBlock(BigInteger slot, String randaoReveal) {
+  public BeaconBlock getBlock(BigInteger slot, String randaoReveal, SpecConstants constants) {
     return client
         .target(url)
         .path("/validator/block")
@@ -68,7 +69,7 @@ public class RestClient {
         .queryParam("randao_reveal", randaoReveal)
         .request(MediaType.APPLICATION_JSON)
         .get(BlockData.class)
-        .createBlock();
+        .createBlock(constants);
   }
 
   public Response postBlock(BeaconBlock block) {

@@ -1,10 +1,5 @@
 package org.ethereum.beacon.validator.api;
 
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconStateEx;
@@ -28,15 +23,22 @@ import org.javatuples.Triplet;
 import tech.pegasys.artemis.util.uint.UInt64;
 import tech.pegasys.artemis.util.uint.UInt64s;
 
-/**
- * Validator tasks service: searching for tasks, proposing and attesting
- */
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/** Validator tasks service: searching for tasks, proposing and attesting */
 public class ValidatorDutiesService {
   private final BeaconChainSpec spec;
   private final BeaconChainAttester attester;
   private final BeaconChainProposer proposer;
 
-  public ValidatorDutiesService(BeaconChainSpec spec, BlockTransition<BeaconStateEx> perBlockTransition, DepositContract depositContract) {
+  public ValidatorDutiesService(
+      BeaconChainSpec spec,
+      BlockTransition<BeaconStateEx> perBlockTransition,
+      DepositContract depositContract) {
     this.spec = spec;
     this.attester = new BeaconChainAttesterImpl(spec);
     this.proposer = new BeaconChainProposerImpl(spec, perBlockTransition, depositContract);
@@ -44,10 +46,7 @@ public class ValidatorDutiesService {
 
   public BeaconBlock prepareBlock(
       SlotNumber slot, BLSSignature randaoReveal, ObservableBeaconState observableBeaconState) {
-    return proposer.propose(
-        observableBeaconState.getLatestSlotState(),
-        randaoReveal,
-        observableBeaconState.getPendingOperations());
+    return proposer.propose(observableBeaconState, randaoReveal);
   }
 
   public Attestation prepareAttestation(
@@ -72,10 +71,9 @@ public class ValidatorDutiesService {
    */
   public Map<SlotNumber, Pair<ValidatorIndex, List<ShardCommittee>>> getValidatorDuties(
       BeaconState state, EpochNumber epoch) {
-    SlotNumber epochStart = spec.get_epoch_start_slot(epoch);
+    SlotNumber epochStart = spec.compute_start_slot_of_epoch(epoch);
     UInt64 committeesPerSlot =
-        spec.get_epoch_committee_count(state, epoch)
-            .dividedBy(spec.getConstants().getSlotsPerEpoch());
+        spec.get_committee_count(state, epoch).dividedBy(spec.getConstants().getSlotsPerEpoch());
     Map<SlotNumber, Pair<ValidatorIndex, List<ShardCommittee>>> epochCommitees = new HashMap<>();
     for (SlotNumber slotOffset = SlotNumber.ZERO;
         slotOffset.less(spec.getConstants().getSlotsPerEpoch());
@@ -87,11 +85,11 @@ public class ValidatorDutiesService {
               committeesPerSlot.times(slotOffset),
               committeesPerSlot.times(slotOffset.increment()))) {
         ShardNumber shard =
-            spec.get_epoch_start_shard(state, epoch)
+            spec.get_start_shard(state, epoch)
                 .plusModulo(offset, spec.getConstants().getShardCount());
         List<ValidatorIndex> committee = spec.get_crosslink_committee(state, epoch, shard);
         if (ret.isEmpty()) { // first committee
-          proposerIndex = spec.get_beacon_proposer_index_for_committee(state, epoch, committee);
+          proposerIndex = spec.get_beacon_proposer_index(state);
         }
         ret.add(new ShardCommittee(committee, shard));
       }

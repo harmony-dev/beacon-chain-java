@@ -20,14 +20,14 @@ import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
 import org.ethereum.beacon.core.spec.SpecConstants;
+import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.state.Eth1Data;
-import org.ethereum.beacon.core.state.Eth1DataVote;
 import org.ethereum.beacon.core.state.Fork;
 import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
-import org.ethereum.beacon.core.types.Bitfield;
+import tech.pegasys.artemis.util.collections.Bitlist;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.SlotNumber;
@@ -38,7 +38,6 @@ import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
-import tech.pegasys.artemis.util.collections.ReadVector;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 
@@ -57,10 +56,8 @@ public class TestDataFactory {
     AttestationData expected =
         new AttestationData(
             Hashes.sha256(BytesValue.fromHexString("aa")),
-            EpochNumber.ZERO,
-            Hashes.sha256(BytesValue.fromHexString("bb")),
-            EpochNumber.of(123),
-            Hashes.sha256(BytesValue.fromHexString("cc")),
+            new Checkpoint(EpochNumber.ZERO, Hashes.sha256(BytesValue.fromHexString("bb"))),
+            new Checkpoint(EpochNumber.of(123), Hashes.sha256(BytesValue.fromHexString("cc"))),
             Crosslink.EMPTY);
 
     return expected;
@@ -74,10 +71,11 @@ public class TestDataFactory {
     AttestationData attestationData = createAttestationData();
     Attestation attestation =
         new Attestation(
-            Bitfield.of(someValue),
+            Bitlist.of(someValue.size() * 8, someValue, specConstants.getMaxValidatorsPerCommittee().getValue()),
             attestationData,
-            Bitfield.of(BytesValue.fromHexString("bb")),
-            BLSSignature.wrap(Bytes96.fromHexString("cc")));
+            Bitlist.of(8, BytesValue.fromHexString("bb"),  specConstants.getMaxValidatorsPerCommittee().getValue()),
+            BLSSignature.wrap(Bytes96.fromHexString("cc")),
+            specConstants);
 
     return attestation;
   }
@@ -96,7 +94,7 @@ public class TestDataFactory {
     Deposit deposit =
         Deposit.create(
             Collections.nCopies(
-                specConstants.getDepositContractTreeDepth().getIntValue(), Hash32.ZERO),
+                specConstants.getDepositContractTreeDepthPlusOne().getIntValue(), Hash32.ZERO),
             createDepositData());
 
     return deposit;
@@ -106,7 +104,7 @@ public class TestDataFactory {
     ArrayList<Hash32> hashes = new ArrayList<>();
     hashes.add(Hashes.sha256(BytesValue.fromHexString("aa")));
     hashes.add(Hashes.sha256(BytesValue.fromHexString("bb")));
-    hashes.addAll(Collections.nCopies(specConstants.getDepositContractTreeDepth().getIntValue() - hashes.size(), Hash32.ZERO));
+    hashes.addAll(Collections.nCopies(specConstants.getDepositContractTreeDepthPlusOne().getIntValue() - hashes.size(), Hash32.ZERO));
     Deposit deposit = Deposit.create(hashes, createDepositData());
 
     return deposit;
@@ -134,8 +132,8 @@ public class TestDataFactory {
     proposerSlashings.add(createProposerSlashing(random));
     List<AttesterSlashing> attesterSlashings = new ArrayList<>();
     attesterSlashings.add(createAttesterSlashings());
-    attesterSlashings.add(createAttesterSlashings());
     List<Attestation> attestations = new ArrayList<>();
+    attestations.add(createAttestation());
     attestations.add(createAttestation());
     List<Deposit> deposits = new ArrayList<>();
     deposits.add(createDeposit1());
@@ -144,7 +142,7 @@ public class TestDataFactory {
     voluntaryExits.add(createExit());
     List<Transfer> transfers = new ArrayList<>();
     BeaconBlockBody beaconBlockBody =
-        BeaconBlockBody.create(
+        new BeaconBlockBody(
             BLSSignature.ZERO,
             new Eth1Data(Hash32.ZERO, UInt64.ZERO, Hash32.ZERO),
             Bytes32.ZERO,
@@ -153,7 +151,8 @@ public class TestDataFactory {
             attestations,
             deposits,
             voluntaryExits,
-            transfers
+            transfers,
+            specConstants
         );
 
     return beaconBlockBody;
@@ -170,7 +169,8 @@ public class TestDataFactory {
         Arrays.asList(ValidatorIndex.of(234), ValidatorIndex.of(235)),
         Arrays.asList(ValidatorIndex.of(678), ValidatorIndex.of(679)),
         createAttestationData(),
-        BLSSignature.wrap(Bytes96.fromHexString("aa")));
+        BLSSignature.wrap(Bytes96.fromHexString("aa")),
+        specConstants);
   }
 
   public BeaconBlock createBeaconBlock() {
@@ -201,12 +201,6 @@ public class TestDataFactory {
     return crosslink;
   }
 
-  public Eth1DataVote createEth1DataVote() {
-    Eth1DataVote eth1DataVote = new Eth1DataVote(Eth1Data.EMPTY, UInt64.MAX_VALUE);
-
-    return eth1DataVote;
-  }
-
   public Fork createFork() {
     Fork fork = Fork.EMPTY;
 
@@ -216,10 +210,11 @@ public class TestDataFactory {
   public PendingAttestation createPendingAttestation() {
     PendingAttestation pendingAttestation =
         new PendingAttestation(
-            Bitfield.of(BytesValue.fromHexString("aa")),
+            Bitlist.of(8, BytesValue.fromHexString("aa"), specConstants.getMaxValidatorsPerCommittee().getValue()),
             createAttestationData(),
             SlotNumber.ZERO,
-            ValidatorIndex.ZERO);
+            ValidatorIndex.ZERO,
+            specConstants);
 
     return pendingAttestation;
   }

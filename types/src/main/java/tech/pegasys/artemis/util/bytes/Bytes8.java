@@ -144,6 +144,22 @@ public interface Bytes8 extends BytesValue {
   }
 
   /**
+   * Right pad a {@link BytesValue} with zero bytes to create a {@link Bytes8}
+   *
+   * @param value The bytes value pad.
+   * @return A {@link Bytes8} that exposes the right-padded bytes of {@code value}.
+   * @throws IllegalArgumentException if {@code value.size() &gt; 8}.
+   */
+  static Bytes8 rightPad(BytesValue value) {
+    checkArgument(value.size() <= SIZE, "Expected at most %s bytes but got only %s", SIZE,
+        value.size());
+
+    MutableBytes8 bytes = MutableBytes8.create();
+    value.copyTo(bytes, 0);
+    return bytes;
+  }
+
+  /**
    * Parse an hexadecimal string into a {@link Bytes8}.
    *
    * <p>

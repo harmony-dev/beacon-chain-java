@@ -20,7 +20,7 @@ import org.ethereum.beacon.core.types.ValidatorIndex;
  * <p>Calls {@link BeaconChainSpec#process_epoch(MutableBeaconState)}.
  *
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.7.1/specs/core/0_beacon-chain.md#epoch-processing">Epoch
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.8.1/specs/core/0_beacon-chain.md#epoch-processing">Epoch
  *     processing</a> in the spec.
  */
 public class PerEpochTransition implements StateTransition<BeaconStateEx> {
@@ -81,7 +81,7 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
                 a ->
                     spec
                         .get_attesting_indices(
-                            state, a.getData(), a.getAggregationBitfield())
+                            state, a.getData(), a.getAggregationBits())
                         .stream())
             .collect(Collectors.toList());
     summary.currentEpochSummary.boundaryAttestingBalance =
@@ -99,7 +99,7 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
                 a ->
                     spec
                         .get_attesting_indices(
-                            state, a.getData(), a.getAggregationBitfield())
+                            state, a.getData(), a.getAggregationBits())
                         .stream())
             .collect(Collectors.toList());
     summary.previousEpochSummary.boundaryAttestingBalance =
@@ -112,7 +112,7 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
                 a ->
                     spec
                         .get_attesting_indices(
-                            state, a.getData(), a.getAggregationBitfield())
+                            state, a.getData(), a.getAggregationBits())
                         .stream())
             .collect(Collectors.toList());
     summary.headAttestingBalance =
@@ -121,7 +121,7 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
     summary.justifiedAttestingBalance = summary.previousEpochSummary.validatorBalance;
 
     EpochNumber epochs_since_finality =
-        spec.get_current_epoch(state).increment().minus(state.getFinalizedEpoch());
+        spec.get_current_epoch(state).increment().minus(state.getFinalizedCheckpoint().getEpoch());
 
     if (epochs_since_finality.lessEqual(spec.getConstants().getMinEpochsToInactivityPenalty())) {
       summary.noFinality = false;

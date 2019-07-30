@@ -4,6 +4,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.json.Json;
 import io.vertx.ext.web.RoutingContext;
 import org.ethereum.beacon.chain.MutableBeaconChain;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.validator.api.InvalidInputException;
 import org.ethereum.beacon.validator.api.PartiallyFailedException;
@@ -16,12 +17,14 @@ import java.util.Optional;
 public class BlockSubmitController extends SyncRestController {
   private final MutableBeaconChain beaconChain;
   private final WireApiSub wireApiSub;
+  private final BeaconChainSpec spec;
 
   public BlockSubmitController(
-      SyncManager syncManager, WireApiSub wireApiSub, MutableBeaconChain beaconChain) {
+      SyncManager syncManager, WireApiSub wireApiSub, MutableBeaconChain beaconChain, BeaconChainSpec spec) {
     super(syncManager);
     this.beaconChain = beaconChain;
     this.wireApiSub = wireApiSub;
+    this.spec = spec;
   }
 
   @Override
@@ -32,7 +35,7 @@ public class BlockSubmitController extends SyncRestController {
   private Optional<Throwable> acceptBlockSubmit(String body) {
     try {
       final BlockSubmit submitData = Json.decodeValue(body, BlockSubmit.class);
-      BeaconBlock block = submitData.createBeaconBlock();
+      BeaconBlock block = submitData.createBeaconBlock(spec.getConstants());
       // Import
       MutableBeaconChain.ImportResult importResult = beaconChain.insert(block);
       // Broadcast

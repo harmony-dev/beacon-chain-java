@@ -24,6 +24,8 @@ import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
 import org.ethereum.beacon.consensus.verifier.BeaconStateVerifier;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
+import org.ethereum.beacon.core.spec.SpecConstants;
+import org.ethereum.beacon.core.spec.SpecConstantsResolver;
 import org.ethereum.beacon.db.InMemoryDatabase;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.consensus.ChainStart;
@@ -157,7 +159,10 @@ public class NodeLauncher {
         validatorCred != null ? Integer.MAX_VALUE : DEFAULT_EMPTY_SLOT_TRANSITIONS_LIMIT);
     observableStateProcessor.start();
 
-    SSZSerializer ssz = new SSZBuilder().buildSerializer();
+    SSZSerializer ssz = new SSZBuilder()
+        .withExternalVarResolver(new SpecConstantsResolver(spec.getConstants()))
+        .withExtraObjectCreator(SpecConstants.class, spec.getConstants())
+        .buildSerializer();
     MessageSerializer messageSerializer = new SSZMessageSerializer(ssz);
     syncServer = new WireApiSyncServer(beaconChainStorage);
 

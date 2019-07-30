@@ -13,7 +13,7 @@ import tech.pegasys.artemis.util.uint.UInt64;
  *
  * @see BeaconState
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.7.1/specs/core/0_beacon-chain.md#eth1data">Eth1Data</a>
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.8.1/specs/core/0_beacon-chain.md#eth1data">Eth1Data</a>
  *     in the spec.
  */
 @SSZSerializable

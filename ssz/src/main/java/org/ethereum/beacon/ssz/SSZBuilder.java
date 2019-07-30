@@ -1,45 +1,54 @@
 package org.ethereum.beacon.ssz;
 
+import org.ethereum.beacon.ssz.access.AccessorResolver;
+import org.ethereum.beacon.ssz.access.AccessorResolverRegistry;
+import org.ethereum.beacon.ssz.access.SSZBasicAccessor;
+import org.ethereum.beacon.ssz.access.SSZContainerAccessor;
+import org.ethereum.beacon.ssz.access.SSZListAccessor;
+import org.ethereum.beacon.ssz.access.SSZUnionAccessor;
+import org.ethereum.beacon.ssz.access.basic.BooleanPrimitive;
+import org.ethereum.beacon.ssz.access.basic.BytesPrimitive;
+import org.ethereum.beacon.ssz.access.basic.HashCodec;
+import org.ethereum.beacon.ssz.access.basic.StringPrimitive;
+import org.ethereum.beacon.ssz.access.basic.UIntCodec;
+import org.ethereum.beacon.ssz.access.basic.UIntPrimitive;
+import org.ethereum.beacon.ssz.access.basic.UnionNull;
+import org.ethereum.beacon.ssz.access.container.SSZAnnotationSchemeBuilder;
+import org.ethereum.beacon.ssz.access.container.SSZSchemeBuilder;
+import org.ethereum.beacon.ssz.access.container.SimpleContainerAccessor;
+import org.ethereum.beacon.ssz.access.list.ArrayAccessor;
+import org.ethereum.beacon.ssz.access.list.BitlistAccessor;
+import org.ethereum.beacon.ssz.access.list.BitvectorAccessor;
+import org.ethereum.beacon.ssz.access.list.BytesValueAccessor;
+import org.ethereum.beacon.ssz.access.list.ListAccessor;
+import org.ethereum.beacon.ssz.access.list.ReadListAccessor;
+import org.ethereum.beacon.ssz.access.union.GenericTypeSSZUnionAccessor;
+import org.ethereum.beacon.ssz.access.union.SchemeSSZUnionAccessor;
+import org.ethereum.beacon.ssz.annotation.SSZ;
+import org.ethereum.beacon.ssz.annotation.SSZSerializable;
+import org.ethereum.beacon.ssz.annotation.SSZTransient;
+import org.ethereum.beacon.ssz.creator.CompositeObjCreator;
+import org.ethereum.beacon.ssz.creator.ConstructorExtraObjCreator;
+import org.ethereum.beacon.ssz.creator.ConstructorObjCreator;
+import org.ethereum.beacon.ssz.creator.ObjectCreator;
+import org.ethereum.beacon.ssz.creator.SettersExtraObjCreator;
+import org.ethereum.beacon.ssz.creator.SettersObjCreator;
+import org.ethereum.beacon.ssz.type.SimpleTypeResolver;
+import org.ethereum.beacon.ssz.type.TypeResolver;
+import org.ethereum.beacon.ssz.visitor.MerkleTrie;
+import org.ethereum.beacon.ssz.visitor.SSZIncrementalHasher;
+import org.ethereum.beacon.ssz.visitor.SSZSimpleHasher;
+import org.ethereum.beacon.ssz.visitor.SSZVisitor;
+import org.ethereum.beacon.ssz.visitor.SSZVisitorHost;
+import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.bytes.BytesValue;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
-import org.ethereum.beacon.ssz.access.*;
-import org.ethereum.beacon.ssz.access.SSZBasicAccessor;
-import org.ethereum.beacon.ssz.access.basic.BooleanPrimitive;
-import org.ethereum.beacon.ssz.access.basic.BytesCodec;
-import org.ethereum.beacon.ssz.access.basic.BytesPrimitive;
-import org.ethereum.beacon.ssz.access.basic.HashCodec;
-import org.ethereum.beacon.ssz.access.basic.StringPrimitive;
-import org.ethereum.beacon.ssz.access.basic.UIntCodec;
-import org.ethereum.beacon.ssz.access.basic.UIntPrimitive;
-import org.ethereum.beacon.ssz.access.container.SSZAnnotationSchemeBuilder;
-import org.ethereum.beacon.ssz.access.container.SSZSchemeBuilder;
-import org.ethereum.beacon.ssz.access.container.SimpleContainerAccessor;
-import org.ethereum.beacon.ssz.access.list.ArrayAccessor;
-import org.ethereum.beacon.ssz.access.list.BytesValueAccessor;
-import org.ethereum.beacon.ssz.access.list.ListAccessor;
-import org.ethereum.beacon.ssz.access.list.ReadListAccessor;
-import org.ethereum.beacon.ssz.annotation.SSZ;
-import org.ethereum.beacon.ssz.annotation.SSZSerializable;
-import org.ethereum.beacon.ssz.annotation.SSZTransient;
-import org.ethereum.beacon.ssz.creator.CompositeObjCreator;
-import org.ethereum.beacon.ssz.creator.ConstructorObjCreator;
-import org.ethereum.beacon.ssz.creator.ObjectCreator;
-import org.ethereum.beacon.ssz.creator.SettersObjCreator;
-import org.ethereum.beacon.ssz.type.SimpleTypeResolver;
-import org.ethereum.beacon.ssz.type.TypeResolver;
-import org.ethereum.beacon.ssz.visitor.SSZIncrementalHasher;
-import org.ethereum.beacon.ssz.visitor.MerkleTrie;
-import org.ethereum.beacon.ssz.visitor.SSZSimpleHasher;
-import org.ethereum.beacon.ssz.visitor.SSZVisitor;
-import org.ethereum.beacon.ssz.visitor.SSZVisitorHost;
-import org.javatuples.Pair;
-import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.bytes.BytesValue;
 
 /**
  * SSZ Builder is designed to create {@link SSZSerializer} or {@link SSZHasher} up to your needs.
@@ -77,6 +86,7 @@ public class SSZBuilder {
   private List<SSZBasicAccessor> basicCodecs = new ArrayList<>();
   private List<SSZListAccessor> listAccessors = new ArrayList<>();
   private List<Supplier<SSZContainerAccessor>> containerAccessors = new ArrayList<>();
+  private List<Supplier<SSZUnionAccessor>> unionAccessors = new ArrayList<>();
 
   private boolean schemeBuilderExplicitAnnotations = true;
   private int schemeBuilderCacheSize = SSZ_SCHEMES_CACHE_CAPACITY;
@@ -90,8 +100,6 @@ public class SSZBuilder {
   private ExternalVarResolver externalVarResolver = v -> {throw new SSZSchemeException("Variable resolver not set. Can resolve var: " + v);};
 
   private TypeResolver typeResolver = null;
-
-  private Function<Pair<AccessorResolver, ExternalVarResolver>, TypeResolver> typeResolverBuilder = null;
 
   private SSZVisitorHost visitorHost = null;
 
@@ -146,6 +154,22 @@ public class SSZBuilder {
     return this;
   }
 
+  /**
+   * With default object creators and object creator which adds extraValue of type extraType to the
+   * end of constructor parameters plus setter-based creator which calls constructor with extraType
+   * before setters
+   */
+  public SSZBuilder withExtraObjectCreator(Class extraType, Object extraValue) {
+    checkAlreadyInitialized();
+    this.objCreator =
+        new CompositeObjCreator(
+            new ConstructorExtraObjCreator(extraType, extraValue),
+            new SettersExtraObjCreator(extraType, extraValue),
+            new ConstructorObjCreator(),
+            new SettersObjCreator());
+    return this;
+  }
+
   public SSZBuilder withExternalVarResolver(Function<String, Object> externalVarResolver) {
     return withExternalVarResolver(ExternalVarResolver.fromFunction(externalVarResolver));
   }
@@ -159,12 +183,6 @@ public class SSZBuilder {
   public SSZBuilder withTypeResolver(TypeResolver typeResolver) {
     checkAlreadyInitialized();
     this.typeResolver = typeResolver;
-    return this;
-  }
-
-  public SSZBuilder withTypeResolverBuilder(Function<Pair<AccessorResolver, ExternalVarResolver>, TypeResolver> typeResolverBuilder) {
-    checkAlreadyInitialized();
-    this.typeResolverBuilder = typeResolverBuilder;
     return this;
   }
 
@@ -230,13 +248,16 @@ public class SSZBuilder {
     basicCodecs.add(new BooleanPrimitive());
     basicCodecs.add(new StringPrimitive());
     basicCodecs.add(new UIntCodec());
-    basicCodecs.add(new BytesCodec());
     basicCodecs.add(new HashCodec());
+    basicCodecs.add(new UnionNull());
     return this;
   }
 
   public SSZBuilder addDefaultListAccessors() {
     checkAlreadyInitialized();
+    // XXX: Bitlist and Bitvector should be at top or BytesValue intercepts it
+    listAccessors.add(new BitvectorAccessor());
+    listAccessors.add(new BitlistAccessor());
     listAccessors.add(new ArrayAccessor());
     listAccessors.add(new ListAccessor());
     listAccessors.add(new ReadListAccessor());
@@ -246,12 +267,15 @@ public class SSZBuilder {
 
   public SSZBuilder addDefaultContainerAccessors() {
     checkAlreadyInitialized();
-    containerAccessors.add(this::createDefaultContainerAccessor);
+    containerAccessors.add(() -> new SimpleContainerAccessor(sszSchemeBuilder, objCreator));
     return this;
   }
 
-  private SSZContainerAccessor createDefaultContainerAccessor() {
-    return new SimpleContainerAccessor(sszSchemeBuilder, objCreator);
+  public SSZBuilder addDefaultUnionAccessors() {
+    checkAlreadyInitialized();
+    unionAccessors.add(() -> new GenericTypeSSZUnionAccessor());
+    unionAccessors.add(() -> new SchemeSSZUnionAccessor(sszSchemeBuilder));
+    return this;
   }
 
   /**
@@ -296,6 +320,9 @@ public class SSZBuilder {
     if (containerAccessors.isEmpty()) {
       addDefaultContainerAccessors();
     }
+    if (unionAccessors.isEmpty()) {
+      addDefaultUnionAccessors();
+    }
 
     if (accessorResolverRegistry == null) {
       accessorResolverRegistry =
@@ -303,15 +330,13 @@ public class SSZBuilder {
               .withBasicAccessors(basicCodecs)
               .withListAccessors(listAccessors)
               .withContainerAccessors(
-                  containerAccessors.stream().map(Supplier::get).collect(Collectors.toList()));
+                  containerAccessors.stream().map(Supplier::get).collect(Collectors.toList()))
+              .withUnionAccessors(
+                  unionAccessors.stream().map(Supplier::get).collect(Collectors.toList()));
     }
 
     if (typeResolver == null) {
-      if (typeResolverBuilder != null) {
-        typeResolver = typeResolverBuilder.apply(Pair.with(accessorResolverRegistry, externalVarResolver));
-      } else {
-        typeResolver = new SimpleTypeResolver(accessorResolverRegistry, externalVarResolver);
-      }
+      typeResolver = new SimpleTypeResolver(accessorResolverRegistry, externalVarResolver);
     }
 
     if (visitorHost == null) {

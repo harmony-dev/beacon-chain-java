@@ -52,7 +52,7 @@ public class TestUtils {
           BLSSignature.wrap(Bytes96.ZERO)
       );
       Hash32 msgHash = spec.signing_root(depositDataWithoutSignature);
-      UInt64 domain = spec.bls_domain(DEPOSIT, Bytes4.ZERO);
+      UInt64 domain = spec.compute_domain(DEPOSIT, Bytes4.ZERO);
       Signature signature = BLS381
           .sign(MessageParameters.create(msgHash, domain), keyPair);
 
@@ -60,7 +60,9 @@ public class TestUtils {
 
       Deposit deposit =
           Deposit.create(
-              Collections.singletonList(Hash32.random(rnd)),
+              Collections.nCopies(
+                  spec.getConstants().getDepositContractTreeDepthPlusOne().getIntValue(),
+                  Hash32.random(rnd)),
               new DepositData(
                   BLSPubkey.wrap(Bytes48.leftPad(keyPair.getPublic().getEncodedBytes())),
                   withdrawalCredentials,

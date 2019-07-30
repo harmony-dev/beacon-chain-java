@@ -97,7 +97,7 @@ public class NodeTest {
       }
 
       // generate some blocks
-      controlledSchedulers.addTime(Duration.ofSeconds(64 * 10));
+      controlledSchedulers.addTime(Duration.ofSeconds(64 * 3));
 
       // slave node
       ConnectionManager<SocketAddress> slaveConnectionManager;
@@ -149,7 +149,7 @@ public class NodeTest {
 
       // generate new blocks on master
       System.out.println("Generate new blocks on master");
-      controlledSchedulers.addTime(Duration.ofSeconds(32 * 10));
+      controlledSchedulers.addTime(Duration.ofSeconds(32 * 6));
 
       // connect the slave again
       System.out.println("Connect the slave again");

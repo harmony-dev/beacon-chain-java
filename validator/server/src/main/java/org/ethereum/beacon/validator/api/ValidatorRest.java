@@ -64,7 +64,7 @@ public class ValidatorRest {
         ControllerRoute.of(
             POST,
             "/validator/block",
-            new BlockSubmitController(syncManager, wireApiSub, beaconChain)));
+            new BlockSubmitController(syncManager, wireApiSub, beaconChain, spec)));
     controllers.add(
         ControllerRoute.of(
             GET,

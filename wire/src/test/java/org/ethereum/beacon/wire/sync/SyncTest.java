@@ -59,7 +59,7 @@ public class SyncTest {
 
   @Test(timeout = 30000)
   public void test1() throws Exception {
-    int slotCount = 64;
+    int slotCount = 32;
     SimulatorLauncher simulatorLauncher = new Builder()
         .withConfigFromResource("/sync-simulation-config.yml")
         .withLogLevel(null)

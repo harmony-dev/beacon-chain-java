@@ -4,6 +4,7 @@ import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.access.SSZListAccessor;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import org.ethereum.beacon.ssz.creator.ConstructorObjCreator;
+import org.ethereum.beacon.ssz.type.SSZType;
 
 public class SubclassListAccessor implements SSZListAccessor {
   private final SSZListAccessor superclassAccessor;
@@ -29,8 +30,9 @@ public class SubclassListAccessor implements SSZListAccessor {
   }
 
   @Override
-  public ListInstanceBuilder createInstanceBuilder(SSZField listType) {
-    ListInstanceBuilder instanceBuilder = superclassAccessor.createInstanceBuilder(listType);
+  public ListInstanceBuilder createInstanceBuilder(SSZType sszType) {
+    SSZField listType = sszType.getTypeDescriptor();
+    ListInstanceBuilder instanceBuilder = superclassAccessor.createInstanceBuilder(sszType);
     return new ListInstanceBuilder() {
       @Override
       public void addChild(Object childValue) {
@@ -62,8 +64,8 @@ public class SubclassListAccessor implements SSZListAccessor {
   }
 
   @Override
-  public CompositeAccessor getAccessor(SSZField compositeDescriptor) {
-    return superclassAccessor.getAccessor(compositeDescriptor);
+  public CompositeInstanceAccessor getInstanceAccessor(SSZField compositeDescriptor) {
+    return superclassAccessor.getInstanceAccessor(compositeDescriptor);
   }
 
   @Override

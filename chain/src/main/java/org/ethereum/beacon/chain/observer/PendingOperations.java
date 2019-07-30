@@ -1,43 +1,31 @@
 package org.ethereum.beacon.chain.observer;
 
+import java.util.List;
+import java.util.Optional;
+import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.Transfer;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.spec.SpecConstants;
-
-import java.util.Collections;
-import java.util.List;
+import org.ethereum.beacon.core.types.BLSPubkey;
+import org.ethereum.beacon.core.types.SlotNumber;
 
 /** A pending state interface. */
 public interface PendingOperations {
 
-  PendingOperations EMPTY = new PendingOperations() {};
+  List<Attestation> getAttestations();
 
-  default List<Attestation> getAttestations() {
-    return Collections.emptyList();
-  };
+  List<ProposerSlashing> peekProposerSlashings(int maxCount);
 
-  default List<ProposerSlashing> peekProposerSlashings(int maxCount) {
-    return Collections.emptyList();
-  }
+  List<AttesterSlashing> peekAttesterSlashings(int maxCount);
 
-  default List<AttesterSlashing> peekAttesterSlashings(int maxCount) {
-    return Collections.emptyList();
-  }
+  List<Attestation> peekAggregateAttestations(int maxCount, SpecConstants specConstants);
 
-  default List<Attestation> peekAggregateAttestations(int maxCount) {
-    return Collections.emptyList();
-  }
+  List<VoluntaryExit> peekExits(int maxCount);
 
-  default List<VoluntaryExit> peekExits(int maxCount) {
-    return Collections.emptyList();
-  }
-
-  default List<Transfer> peekTransfers(int maxCount) {
-    return Collections.emptyList();
-  }
+  List<Transfer> peekTransfers(int maxCount);
 
   default String toStringShort() {
     return "PendingOperations["

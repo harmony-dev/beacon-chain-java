@@ -13,11 +13,6 @@ public interface WriteVector<IndexType extends Number, ValueType>
     return ListImpl.wrap(srcList, indexConverter, true);
   }
 
-  static <IndexType extends Number, ValueType> WriteVector<IndexType, ValueType>
-      create(Function<Integer, IndexType> indexConverter) {
-    return new ListImpl<>(indexConverter, true);
-  }
-
   void sort(Comparator<? super ValueType> c);
 
   ValueType set(IndexType index, ValueType element);

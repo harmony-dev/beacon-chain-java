@@ -1,6 +1,7 @@
 package org.ethereum.beacon.validator.api.model;
 
 import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.validator.api.convert.BeaconBlockConverter;
 
 public class AttestationSubmit {
@@ -16,8 +17,8 @@ public class AttestationSubmit {
     return new AttestationSubmit(BeaconBlockConverter.presentIndexedAttestation(attestation));
   }
 
-  public IndexedAttestation createAttestation() {
-    return BeaconBlockConverter.parseIndexedAttestation(getAttestation());
+  public IndexedAttestation createAttestation(SpecConstants constants) {
+    return BeaconBlockConverter.parseIndexedAttestation(getAttestation(), constants);
   }
 
   public BlockData.BlockBodyData.IndexedAttestationData getAttestation() {

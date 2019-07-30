@@ -63,9 +63,9 @@ public class BeaconChainProposerTest {
     BeaconState initialState = initialObservedState.getLatestSlotState();
     BLSSignature randaoReveal =
         RandaoGenerator.getInstance(spec, signer)
-            .reveal(spec.get_current_epoch(initialState), initialState.getFork());
+            .reveal(spec.get_current_epoch(initialState), initialState);
     BeaconBlock block =
-        proposer.propose(initialState, randaoReveal, initialObservedState.getPendingOperations());
+        proposer.propose(initialObservedState, randaoReveal);
 
     BeaconStateEx stateAfterBlock =
         perBlockTransition.apply(new BeaconStateExImpl(initialState), block);
@@ -73,7 +73,7 @@ public class BeaconChainProposerTest {
     Assert.assertEquals(spec.hash_tree_root(stateAfterBlock), block.getStateRoot());
 
     BeaconBlock signedBlock =
-        BeaconBlockSigner.getInstance(spec, signer).sign(block, initialState.getFork());
+        BeaconBlockSigner.getInstance(spec, signer).sign(block, initialState);
     Assert.assertTrue(verifySignature(spec, initialState, signedBlock, signer));
   }
 
@@ -96,7 +96,7 @@ public class BeaconChainProposerTest {
             random, spec.getConstants().getMaxProposerSlashings());
     List<AttesterSlashing> casperSlashings =
         AttesterSlashingTestUtil.createRandomList(
-            random, spec.getConstants().getMaxAttesterSlashings());
+            random, spec.getConstants().getMaxAttesterSlashings(), spec.getConstants());
     List<VoluntaryExit> voluntaryExits =
         ExitTestUtil.createRandomList(random, spec.getConstants().getMaxVoluntaryExits());
 
@@ -108,12 +108,12 @@ public class BeaconChainProposerTest {
     BeaconState initialState = initialObservedState.getLatestSlotState();
     BLSSignature randaoReveal =
         RandaoGenerator.getInstance(spec, signer)
-            .reveal(spec.get_current_epoch(initialState), initialState.getFork());
+            .reveal(spec.get_current_epoch(initialState), initialState);
     BeaconBlock block =
-        proposer.propose(initialState, randaoReveal, initialObservedState.getPendingOperations());
+        proposer.propose(initialObservedState, randaoReveal);
 
     Mockito.verify(pendingOperations)
-        .peekAggregateAttestations(spec.getConstants().getMaxAttestations());
+        .peekAggregateAttestations(spec.getConstants().getMaxAttestations(), spec.getConstants());
 
     Mockito.verify(pendingOperations)
         .peekProposerSlashings(spec.getConstants().getMaxProposerSlashings());
@@ -127,7 +127,7 @@ public class BeaconChainProposerTest {
     Assert.assertEquals(spec.hash_tree_root(stateAfterBlock), block.getStateRoot());
 
     BeaconBlock signedBlock =
-        BeaconBlockSigner.getInstance(spec, signer).sign(block, initialState.getFork());
+        BeaconBlockSigner.getInstance(spec, signer).sign(block, initialState);
     Assert.assertTrue(verifySignature(spec, initialState, signedBlock, signer));
 
     Assert.assertEquals(attestations, block.getBody().getAttestations().listCopy());
@@ -163,15 +163,15 @@ public class BeaconChainProposerTest {
     BeaconState initialState = initialObservedState.getLatestSlotState();
     BLSSignature randaoReveal =
         RandaoGenerator.getInstance(spec, signer)
-            .reveal(spec.get_current_epoch(initialState), initialState.getFork());
+            .reveal(spec.get_current_epoch(initialState), initialState);
     BeaconBlock block =
-        proposer.propose(initialState, randaoReveal, initialObservedState.getPendingOperations());
+        proposer.propose(initialObservedState, randaoReveal);
 
     Mockito.verify(depositContract)
         .peekDeposits(
             Mockito.eq(spec.getConstants().getMaxDeposits()),
             Mockito.any(),
-            Mockito.eq(initialState.getLatestEth1Data()));
+            Mockito.eq(initialState.getEth1Data()));
 
     BeaconStateEx stateAfterBlock =
         perBlockTransition.apply(new BeaconStateExImpl(initialState), block);
@@ -179,7 +179,7 @@ public class BeaconChainProposerTest {
     Assert.assertEquals(spec.hash_tree_root(stateAfterBlock), block.getStateRoot());
 
     BeaconBlock signedBlock =
-        BeaconBlockSigner.getInstance(spec, signer).sign(block, initialState.getFork());
+        BeaconBlockSigner.getInstance(spec, signer).sign(block, initialState);
     Assert.assertTrue(verifySignature(spec, initialState, signedBlock, signer));
 
     Assert.assertEquals(

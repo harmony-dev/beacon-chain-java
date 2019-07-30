@@ -11,7 +11,6 @@ import org.ethereum.beacon.consensus.verifier.operation.AttestationVerifier;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
-import org.ethereum.beacon.core.types.Bitfield;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.validator.api.InvalidInputException;
 import org.ethereum.beacon.validator.api.PartiallyFailedException;
@@ -19,6 +18,7 @@ import org.ethereum.beacon.validator.api.model.AttestationSubmit;
 import org.ethereum.beacon.wire.WireApiSub;
 import org.ethereum.beacon.wire.sync.SyncManager;
 import reactor.core.publisher.Flux;
+import tech.pegasys.artemis.util.collections.Bitlist;
 
 import java.util.List;
 import java.util.Optional;
@@ -52,23 +52,28 @@ public class AttestationSubmitController extends SyncRestController {
   private Optional<Throwable> acceptAttestationSubmit(String body) {
     try {
       final AttestationSubmit submitData = Json.decodeValue(body, AttestationSubmit.class);
-      IndexedAttestation indexedAttestation = submitData.createAttestation();
+      IndexedAttestation indexedAttestation = submitData.createAttestation(spec.getConstants());
       // Verification
       MutableBeaconState state = observableBeaconState.getLatestSlotState().createMutableCopy();
       List<ValidatorIndex> committee =
           spec.get_crosslink_committee(
               state,
-              indexedAttestation.getData().getTargetEpoch(),
+              indexedAttestation.getData().getTarget().getEpoch(),
               indexedAttestation.getData().getCrosslink().getShard());
-      Bitfield bitfield =
-          new Bitfield(
+      Bitlist bitlist =
+          Bitlist.of(
               committee.size(),
               indexedAttestation.getCustodyBit0Indices().listCopy().stream()
                   .map(ValidatorIndex::intValue)
-                  .collect(Collectors.toList()));
+                  .collect(Collectors.toList()),
+              spec.getConstants().getMaxValidatorsPerCommittee().intValue());
       Attestation attestation =
           new Attestation(
-              bitfield, indexedAttestation.getData(), bitfield, indexedAttestation.getSignature());
+              bitlist,
+              indexedAttestation.getData(),
+              bitlist,
+              indexedAttestation.getSignature(),
+              spec.getConstants());
       try {
         if (new AttestationVerifier(spec).verify(attestation, state).isPassed()) {
           spec.process_attestation(state, attestation);

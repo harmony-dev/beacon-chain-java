@@ -1,31 +1,33 @@
 package org.ethereum.beacon.core.state;
 
 import com.google.common.base.Objects;
-import java.util.stream.Collectors;
-import javax.annotation.Nullable;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.spec.SpecConstants;
-import org.ethereum.beacon.core.types.Bitfield;
 import org.ethereum.beacon.core.types.SlotNumber;
-import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
+import tech.pegasys.artemis.util.collections.Bitlist;
+
+import java.util.stream.Collectors;
+
+import static tech.pegasys.artemis.util.collections.ReadList.VARIABLE_SIZE;
 
 /**
  * An attestation data that have not been processed yet.
  *
  * @see BeaconState
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.7.1/specs/core/0_beacon-chain.md#pendingattestation">PendingAttestation
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.8.1/specs/core/0_beacon-chain.md#pendingattestation">PendingAttestation
  *     in the spec</a>
  */
 @SSZSerializable
 public class PendingAttestation {
 
   /** Attester aggregation bitfield. */
-  @SSZ private final Bitfield aggregationBitfield;
+  @SSZ(maxSizeVar = "spec.MAX_VALIDATORS_PER_COMMITTEE")
+  private final Bitlist aggregationBits;
   /** Signed data. */
   @SSZ private final AttestationData data;
   /** Slot in which it was included. */
@@ -34,18 +36,33 @@ public class PendingAttestation {
   @SSZ private final ValidatorIndex proposerIndex;
 
   public PendingAttestation(
-      Bitfield aggregationBitfield,
+      Bitlist aggregationBits,
+      AttestationData data,
+      SlotNumber inclusionDelay,
+      ValidatorIndex proposerIndex,
+      SpecConstants specConstants) {
+    this(
+        aggregationBits.maxSize() == VARIABLE_SIZE
+            ? aggregationBits.cappedCopy(specConstants.getMaxValidatorsPerCommittee().longValue())
+            : aggregationBits,
+        data,
+        inclusionDelay,
+        proposerIndex);
+  }
+
+  private PendingAttestation(
+      Bitlist aggregationBits,
       AttestationData data,
       SlotNumber inclusionDelay,
       ValidatorIndex proposerIndex) {
-    this.aggregationBitfield = aggregationBitfield;
+    this.aggregationBits = aggregationBits;
     this.data = data;
     this.inclusionDelay = inclusionDelay;
     this.proposerIndex = proposerIndex;
   }
 
-  public Bitfield getAggregationBitfield() {
-    return aggregationBitfield;
+  public Bitlist getAggregationBits() {
+    return aggregationBits;
   }
 
   public AttestationData getData() {
@@ -66,30 +83,39 @@ public class PendingAttestation {
     if (o == null || getClass() != o.getClass()) return false;
     PendingAttestation that = (PendingAttestation) o;
     return Objects.equal(data, that.data)
-        && Objects.equal(aggregationBitfield, that.aggregationBitfield)
+        && Objects.equal(aggregationBits, that.aggregationBits)
         && Objects.equal(proposerIndex, that.proposerIndex)
         && Objects.equal(inclusionDelay, that.inclusionDelay);
   }
 
   private String getSignerIndices() {
-    return aggregationBitfield.getBits().stream().map(i -> "" + i).collect(Collectors.joining("+"));
+    return aggregationBits.getBits().stream().map(i -> "" + i).collect(Collectors.joining("+"));
   }
 
   @Override
   public String toString() {
     return "Attestation["
         + data.toString()
-        + ", attesters=" + getSignerIndices()
-        + ", proposerIndex=" + getProposerIndex()
-        + ", inclusionDelay=#" + getInclusionDelay()
+        + ", attesters="
+        + getSignerIndices()
+        + ", proposerIndex="
+        + getProposerIndex()
+        + ", inclusionDelay=#"
+        + getInclusionDelay()
         + "]";
   }
 
   public String toStringShort() {
-    return "epoch=" + getData().getTargetEpoch() + "/"
-        + "delay=" + getInclusionDelay() + "/"
-        + getData().getCrosslink().getShard().toString() + "/"
-        + getData().getBeaconBlockRoot().toStringShort() + "/"
+    return "epoch="
+        + getData().getTarget().getEpoch()
+        + "/"
+        + "delay="
+        + getInclusionDelay()
+        + "/"
+        + getData().getCrosslink().getShard().toString()
+        + "/"
+        + getData().getBeaconBlockRoot().toStringShort()
+        + "/"
         + getSignerIndices();
   }
 }

@@ -4,7 +4,8 @@ import java.util.function.BiFunction;
 import org.ethereum.beacon.ssz.type.SSZBasicType;
 import org.ethereum.beacon.ssz.type.SSZCompositeType;
 import org.ethereum.beacon.ssz.type.SSZContainerType;
-import org.ethereum.beacon.ssz.type.SSZListType;
+import org.ethereum.beacon.ssz.type.list.SSZListType;
+import org.ethereum.beacon.ssz.type.SSZUnionType;
 
 /**
  * Abstract Visitor interface for modified Visitor Pattern
@@ -49,8 +50,7 @@ public interface SSZVisitor<ResultType, ParamType> {
      * Invoked on the SSZ Container in the type hierarchy
      *
      * NOTE: you should either implement {@link #visitComposite(SSZCompositeType, Object, ChildVisitor)}
-     * method or  both {@link #visitList(SSZListType, Object, ChildVisitor)} and
-     * {@link #visitContainer(SSZContainerType, Object, ChildVisitor)} method
+     * method or this method
      */
   default ResultType visitContainer(
       SSZContainerType type, ParamType param, ChildVisitor<ParamType, ResultType> childVisitor) {
@@ -58,11 +58,21 @@ public interface SSZVisitor<ResultType, ParamType> {
   }
 
   /**
+   * Invoked on the SSZ Union in the type hierarchy
+   *
+   * NOTE: you should either implement {@link #visitComposite(SSZCompositeType, Object, ChildVisitor)}
+   * method or this method
+   */
+  default ResultType visitUnion(
+      SSZUnionType type, ParamType param, ChildVisitor<ParamType, ResultType> childVisitor) {
+    return visitComposite(type, param, childVisitor);
+  }
+
+  /**
    * Invoked on either SSZ Container or SSZ List in the type hierarchy
    *
    * NOTE: you should either implement {@link #visitComposite(SSZCompositeType, Object, ChildVisitor)}
-   * method or  both {@link #visitList(SSZListType, Object, ChildVisitor)} and
-   * {@link #visitContainer(SSZContainerType, Object, ChildVisitor)} method
+   * or all methods delegating to it by default
    */
   default ResultType visitComposite(
       SSZCompositeType type, ParamType param, ChildVisitor<ParamType, ResultType> childVisitor) {

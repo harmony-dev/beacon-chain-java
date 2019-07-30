@@ -63,7 +63,7 @@ public class AttestationController extends SyncRestController {
       Attestation attestation =
           service.prepareAttestation(slot, validatorIndex, shard, observableBeaconState);
       IndexedAttestation indexedAttestation =
-          spec.convert_to_indexed(
+          spec.get_indexed_attestation(
               observableBeaconState.getLatestSlotState().createMutableCopy(), attestation);
       return BeaconBlockConverter.presentIndexedAttestation(indexedAttestation);
     } catch (IllegalArgumentException ex) {

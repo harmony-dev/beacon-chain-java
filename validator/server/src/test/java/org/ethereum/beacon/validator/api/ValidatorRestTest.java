@@ -6,9 +6,10 @@ import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
+import org.ethereum.beacon.core.spec.SpecConstants;
+import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
-import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.validator.api.model.BlockData;
@@ -42,15 +43,17 @@ public class ValidatorRestTest {
   private final String SERVER_URL = "http://" + SERVER_HOST + ":" + SERVER_PORT;
   private ValidatorRest server;
   private RestClient client = new RestClient(SERVER_URL);
+  private BeaconChainSpec SPEC = BeaconChainSpec.createWithDefaults();
+  private SpecConstants CONSTANTS = SPEC.getConstants();
 
   private ValidatorRest createSyncNotStartedServer() {
     return new ValidatorRest(
         SERVER_PORT,
-        BeaconChainSpec.createWithDefaults(),
-        ServiceFactory.createObservableStateProcessor(),
+        SPEC,
+        ServiceFactory.createObservableStateProcessor(CONSTANTS),
         ServiceFactory.createSyncManagerSyncNotStarted(),
         UInt64.valueOf(13),
-        ServiceFactory.createValidatorDutiesService(),
+        ServiceFactory.createValidatorDutiesService(CONSTANTS),
         ServiceFactory.createWireApiSub(),
         ServiceFactory.createMutableBeaconChain());
   }
@@ -58,11 +61,11 @@ public class ValidatorRestTest {
   private ValidatorRest createLongSyncServer() {
     return new ValidatorRest(
         SERVER_PORT,
-        BeaconChainSpec.createWithDefaults(),
-        ServiceFactory.createObservableStateProcessor(),
+        SPEC,
+        ServiceFactory.createObservableStateProcessor(CONSTANTS),
         ServiceFactory.createSyncManagerSyncStarted(),
         UInt64.valueOf(13),
-        ServiceFactory.createValidatorDutiesService(),
+        ServiceFactory.createValidatorDutiesService(CONSTANTS),
         ServiceFactory.createWireApiSub(),
         ServiceFactory.createMutableBeaconChain());
   }
@@ -70,11 +73,11 @@ public class ValidatorRestTest {
   private ValidatorRest createShortSyncServer() {
     return new ValidatorRest(
         SERVER_PORT,
-        BeaconChainSpec.createWithDefaults(),
-        ServiceFactory.createObservableStateProcessor(),
+        SPEC,
+        ServiceFactory.createObservableStateProcessor(CONSTANTS),
         ServiceFactory.createSyncManagerShortSync(),
         UInt64.valueOf(13),
-        ServiceFactory.createValidatorDutiesService(),
+        ServiceFactory.createValidatorDutiesService(CONSTANTS),
         ServiceFactory.createWireApiSub(),
         ServiceFactory.createMutableBeaconChain());
   }
@@ -98,11 +101,11 @@ public class ValidatorRestTest {
     this.server =
         new ValidatorRest(
             SERVER_PORT,
-            BeaconChainSpec.createWithDefaults(),
-            ServiceFactory.createObservableStateProcessorGenesisTimeModifiedTo10(),
+            SPEC,
+            ServiceFactory.createObservableStateProcessorGenesisTimeModifiedTo10(CONSTANTS),
             ServiceFactory.createSyncManagerSyncNotStarted(),
             UInt64.valueOf(13),
-            ServiceFactory.createValidatorDutiesService(),
+            ServiceFactory.createValidatorDutiesService(CONSTANTS),
             ServiceFactory.createWireApiSub(),
             ServiceFactory.createMutableBeaconChain());
     server.start();
@@ -171,11 +174,11 @@ public class ValidatorRestTest {
     this.server =
         new ValidatorRest(
             SERVER_PORT,
-            BeaconChainSpec.createWithDefaults(),
-            ServiceFactory.createObservableStateProcessorWithValidators(blsPubkey),
+            SPEC,
+            ServiceFactory.createObservableStateProcessorWithValidators(blsPubkey, CONSTANTS),
             ServiceFactory.createSyncManagerShortSync(),
             UInt64.valueOf(13),
-            ServiceFactory.createValidatorDutiesService(),
+            ServiceFactory.createValidatorDutiesService(CONSTANTS),
             ServiceFactory.createWireApiSub(),
             ServiceFactory.createMutableBeaconChain());
     server.start();
@@ -191,7 +194,7 @@ public class ValidatorRestTest {
     server.start();
     String randaoReveal =
         "0x5F1847060C89CB12A92AFF4EF140C9FC3A3F026796EC15105F1847060C89CB12A92AFF4EF140C9FC3A3F026796EC1510";
-    BeaconBlock block = client.getBlock(BigInteger.valueOf(1), randaoReveal);
+    BeaconBlock block = client.getBlock(BigInteger.valueOf(1), randaoReveal, CONSTANTS);
   }
 
   @Test(expected = BadRequestException.class) // 400
@@ -199,7 +202,7 @@ public class ValidatorRestTest {
     this.server = createShortSyncServer();
     server.start();
     String randaoReveal = "0x5F1";
-    BeaconBlock block = client.getBlock(BigInteger.valueOf(1), randaoReveal);
+    BeaconBlock block = client.getBlock(BigInteger.valueOf(1), randaoReveal, CONSTANTS);
   }
 
   @Test
@@ -207,17 +210,17 @@ public class ValidatorRestTest {
     this.server =
         new ValidatorRest(
             SERVER_PORT,
-            BeaconChainSpec.createWithDefaults(),
-            ServiceFactory.createObservableStateProcessor(),
+            SPEC,
+            ServiceFactory.createObservableStateProcessor(CONSTANTS),
             ServiceFactory.createSyncManagerShortSync(),
             UInt64.valueOf(13),
-            ServiceFactory.createValidatorDutiesService(),
+            ServiceFactory.createValidatorDutiesService(CONSTANTS),
             ServiceFactory.createWireApiSub(),
             ServiceFactory.createMutableBeaconChain());
     server.start();
     String randaoReveal =
         "0x5F1847060C89CB12A92AFF4EF140C9FC3A3F026796EC15105F1847060C89CB12A92AFF4EF140C9FC3A3F026796EC15105F1847060C89CB12A92AFF4EF140C9FC3A3F026796EC15105F1847060C89CB12A92AFF4EF140C9FC3A3F026796EC1510";
-    BeaconBlock block = client.getBlock(BigInteger.valueOf(13), randaoReveal);
+    BeaconBlock block = client.getBlock(BigInteger.valueOf(13), randaoReveal, CONSTANTS);
     assertEquals(13, block.getSlot().intValue());
   }
 
@@ -230,7 +233,7 @@ public class ValidatorRestTest {
             .withSignature(BLSSignature.ZERO)
             .withStateRoot(Hash32.ZERO)
             .withSlot(SlotNumber.ZERO)
-            .withBody(BeaconBlockBody.EMPTY)
+            .withBody(BeaconBlockBody.getEmpty(CONSTANTS))
             .withParentRoot(Hash32.ZERO)
             .build();
     Response response = client.postBlock(block);
@@ -243,11 +246,11 @@ public class ValidatorRestTest {
     this.server =
         new ValidatorRest(
             SERVER_PORT,
-            BeaconChainSpec.createWithDefaults(),
-            ServiceFactory.createObservableStateProcessor(),
+            SPEC,
+            ServiceFactory.createObservableStateProcessor(CONSTANTS),
             ServiceFactory.createSyncManagerShortSync(),
             UInt64.valueOf(13),
-            ServiceFactory.createValidatorDutiesService(),
+            ServiceFactory.createValidatorDutiesService(CONSTANTS),
             wireApiSub,
             ServiceFactory.createMutableBeaconChain());
     server.start();
@@ -262,7 +265,7 @@ public class ValidatorRestTest {
             .withSignature(BLSSignature.ZERO)
             .withStateRoot(Hash32.ZERO)
             .withSlot(SlotNumber.ZERO)
-            .withBody(BeaconBlockBody.EMPTY)
+            .withBody(BeaconBlockBody.getEmpty(CONSTANTS))
             .withParentRoot(Hash32.ZERO)
             .build();
     Response response = client.postBlock(block);
@@ -296,11 +299,11 @@ public class ValidatorRestTest {
     this.server =
         new ValidatorRest(
             SERVER_PORT,
-            BeaconChainSpec.createWithDefaults(),
-            ServiceFactory.createObservableStateProcessor(),
+            SPEC,
+            ServiceFactory.createObservableStateProcessor(CONSTANTS),
             ServiceFactory.createSyncManagerShortSync(),
             UInt64.valueOf(13),
-            ServiceFactory.createValidatorDutiesService(),
+            ServiceFactory.createValidatorDutiesService(CONSTANTS),
             ServiceFactory.createWireApiSub(),
             ServiceFactory.createMutableBeaconChain());
     server.start();
@@ -315,13 +318,7 @@ public class ValidatorRestTest {
   public void testAttestationSubmitDuringSync() {
     this.server = createLongSyncServer();
     AttestationData attestationData =
-        new AttestationData(
-            Hash32.ZERO,
-            EpochNumber.ZERO,
-            Hash32.ZERO,
-            EpochNumber.ZERO,
-            Hash32.ZERO,
-            Crosslink.EMPTY);
+        new AttestationData(Hash32.ZERO, Checkpoint.EMPTY, Checkpoint.EMPTY, Crosslink.EMPTY);
     server.start();
     List<ValidatorIndex> custodyBit0Indices = new ArrayList<>();
     custodyBit0Indices.add(ValidatorIndex.of(0));
@@ -329,7 +326,7 @@ public class ValidatorRestTest {
     custodyBit1Indices.add(ValidatorIndex.of(1));
     IndexedAttestation indexedAttestation =
         new IndexedAttestation(
-            custodyBit0Indices, custodyBit1Indices, attestationData, BLSSignature.ZERO);
+            custodyBit0Indices, custodyBit1Indices, attestationData, BLSSignature.ZERO, CONSTANTS);
     Response response = client.postAttestation(indexedAttestation);
     assertEquals(503, response.getStatus()); // Still syncing
   }
@@ -342,12 +339,12 @@ public class ValidatorRestTest {
     this.server =
         new ValidatorRest(
             SERVER_PORT,
-            BeaconChainSpec.createWithDefaults(),
+            SPEC,
             ServiceFactory.createObservableStateProcessorWithValidators(
-                BLSPubkey.fromHexString(pubKey)),
+                BLSPubkey.fromHexString(pubKey), CONSTANTS),
             ServiceFactory.createSyncManagerShortSync(),
             UInt64.valueOf(13),
-            ServiceFactory.createValidatorDutiesService(),
+            ServiceFactory.createValidatorDutiesService(CONSTANTS),
             wireApiSub,
             ServiceFactory.createMutableBeaconChain());
     server.start();
@@ -358,20 +355,14 @@ public class ValidatorRestTest {
               wireCounter.incrementAndGet();
             });
     AttestationData attestationData =
-        new AttestationData(
-            Hash32.ZERO,
-            EpochNumber.ZERO,
-            Hash32.ZERO,
-            EpochNumber.ZERO,
-            Hash32.ZERO,
-            Crosslink.EMPTY);
+        new AttestationData(Hash32.ZERO, Checkpoint.EMPTY, Checkpoint.EMPTY, Crosslink.EMPTY);
     List<ValidatorIndex> custodyBit0Indices = new ArrayList<>();
     custodyBit0Indices.add(ValidatorIndex.of(0));
     List<ValidatorIndex> custodyBit1Indices = new ArrayList<>();
     custodyBit1Indices.add(ValidatorIndex.of(1));
     IndexedAttestation indexedAttestation =
         new IndexedAttestation(
-            custodyBit0Indices, custodyBit1Indices, attestationData, BLSSignature.ZERO);
+            custodyBit0Indices, custodyBit1Indices, attestationData, BLSSignature.ZERO, CONSTANTS);
     Response response = client.postAttestation(indexedAttestation);
     assertEquals(202, response.getStatus());
     // 202 The block failed validation, but was successfully broadcast anyway. It was not integrated

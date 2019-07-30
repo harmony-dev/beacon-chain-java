@@ -19,10 +19,10 @@ public class AttestationDataSerializer implements ObjectSerializer<AttestationDa
   public ObjectNode map(AttestationData instance) {
     ObjectNode attestationData = mapper.createObjectNode();
     attestationData.put("beacon_block_root", instance.getBeaconBlockRoot().toString());
-    attestationData.set("source_epoch", ComparableBigIntegerNode.valueOf(instance.getSourceEpoch()));
-    attestationData.put("source_root", instance.getSourceRoot().toString());
-    attestationData.set("target_epoch", ComparableBigIntegerNode.valueOf(instance.getTargetEpoch()));
-    attestationData.put("target_root", instance.getTargetRoot().toString());
+    attestationData.set("source_epoch", ComparableBigIntegerNode.valueOf(instance.getSource().getEpoch()));
+    attestationData.put("source_root", instance.getSource().getRoot().toString());
+    attestationData.set("target_epoch", ComparableBigIntegerNode.valueOf(instance.getTarget().getEpoch()));
+    attestationData.put("target_root", instance.getTarget().getRoot().toString());
     attestationData.set("shard", ComparableBigIntegerNode.valueOf(instance.getCrosslink().getShard()));
     attestationData.put("previous_crosslink_root", instance.getCrosslink().getParentRoot().toString());
     attestationData.put("crosslink_data_root", instance.getCrosslink().getDataRoot().toString());

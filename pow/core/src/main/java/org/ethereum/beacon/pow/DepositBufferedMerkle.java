@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.IntStream;
+import tech.pegasys.artemis.util.uint.UInt64;
 
 /**
  * Sames as {@link DepositSimpleMerkle} but it's not keeping all elements, so any sliced tree could
@@ -89,6 +90,8 @@ public class DepositBufferedMerkle extends DepositDataMerkle {
       }
     }
 
+    proof.add(Hash32.wrap(encodeLength(size)));
+
     return proof;
   }
 
@@ -114,7 +117,7 @@ public class DepositBufferedMerkle extends DepositDataMerkle {
   public Hash32 getRoot(int index) {
     List<List<BytesValue>> tree = buildTreeForIndex(index);
     BytesValue root = get_merkle_root(tree);
-    return Hash32.wrap(Bytes32.leftPad(root));
+    return mixinLength(root, index + 1);
   }
 
   private void verifyIndexNotTooOld(int index) {

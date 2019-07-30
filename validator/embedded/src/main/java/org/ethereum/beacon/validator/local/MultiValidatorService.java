@@ -120,9 +120,9 @@ public class MultiValidatorService implements ValidatorService {
   private void initFromLatestBeaconState(BeaconState state) {
     Map<ValidatorIndex, BLS381Credentials> intoCommittees = new HashMap<>();
 
-    for (ValidatorIndex i : state.getValidatorRegistry().size()) {
+    for (ValidatorIndex i : state.getValidators().size()) {
       BLS381Credentials credentials =
-          uninitialized.remove(state.getValidatorRegistry().get(i).getPubKey());
+          uninitialized.remove(state.getValidators().get(i).getPubKey());
       if (credentials != null) {
         intoCommittees.put(i, credentials);
       }
@@ -265,12 +265,12 @@ public class MultiValidatorService implements ValidatorService {
       long s = System.nanoTime();
       BLSSignature randaoReveal =
           RandaoGenerator.getInstance(spec, credentials.getSigner())
-              .reveal(spec.get_current_epoch(state), state.getFork());
+              .reveal(spec.get_current_epoch(state), state);
       BeaconBlock newBlock =
-          proposer.propose(state, randaoReveal, observableState.getPendingOperations());
+          proposer.propose(observableState, randaoReveal);
       BeaconBlock signedBlock =
           BeaconBlockSigner.getInstance(spec, credentials.getSigner())
-              .sign(newBlock, state.getFork());
+              .sign(newBlock, state);
       long total = System.nanoTime() - s;
       propagateBlock(signedBlock);
 
@@ -306,7 +306,7 @@ public class MultiValidatorService implements ValidatorService {
               index, shard, observableState.getLatestSlotState(), observableState.getHead());
       Attestation signedAttestation =
           BeaconAttestationSigner.getInstance(spec, credentials.getSigner())
-              .sign(newAttestation, state.getFork());
+              .sign(newAttestation, state);
       propagateAttestation(signedAttestation);
 
       logger.info(

@@ -7,6 +7,7 @@ import org.ethereum.beacon.chain.MutableBeaconChain;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.observer.ObservableStateProcessor;
 import org.ethereum.beacon.chain.observer.PendingOperations;
+import org.ethereum.beacon.chain.observer.PendingOperationsState;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.transition.BeaconStateExImpl;
@@ -16,9 +17,10 @@ import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
+import org.ethereum.beacon.core.spec.SpecConstants;
+import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
-import org.ethereum.beacon.core.types.Bitfield;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
@@ -35,12 +37,14 @@ import org.reactivestreams.Publisher;
 import reactor.core.Disposable;
 import reactor.core.publisher.Mono;
 import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.collections.Bitlist;
 
+import java.util.Collections;
 import java.util.Random;
 
 public class ServiceFactory {
 
-  public static ObservableStateProcessor createObservableStateProcessor() {
+  public static ObservableStateProcessor createObservableStateProcessor(SpecConstants constants) {
     return new ObservableStateProcessor() {
       @Override
       public void start() {}
@@ -59,10 +63,10 @@ public class ServiceFactory {
                     .withParentRoot(Hash32.ZERO)
                     .withStateRoot(Hash32.ZERO)
                     .withSignature(BLSSignature.ZERO)
-                    .withBody(BeaconBlockBody.EMPTY)
+                    .withBody(BeaconBlockBody.getEmpty(constants))
                     .build(),
                 BeaconStateEx.getEmpty(),
-                PendingOperations.EMPTY));
+                new PendingOperationsState(Collections.emptyList())));
       }
 
       @Override
@@ -72,7 +76,8 @@ public class ServiceFactory {
     };
   }
 
-  public static ObservableStateProcessor createObservableStateProcessorGenesisTimeModifiedTo10() {
+  public static ObservableStateProcessor createObservableStateProcessorGenesisTimeModifiedTo10(
+      SpecConstants constants) {
     return new ObservableStateProcessor() {
       @Override
       public void start() {}
@@ -93,10 +98,10 @@ public class ServiceFactory {
                     .withParentRoot(Hash32.ZERO)
                     .withStateRoot(Hash32.ZERO)
                     .withSignature(BLSSignature.ZERO)
-                    .withBody(BeaconBlockBody.EMPTY)
+                    .withBody(BeaconBlockBody.getEmpty(constants))
                     .build(),
                 new BeaconStateExImpl(state.createImmutable()),
-                PendingOperations.EMPTY));
+                new PendingOperationsState(Collections.emptyList())));
       }
 
       @Override
@@ -107,7 +112,7 @@ public class ServiceFactory {
   }
 
   public static ObservableStateProcessor createObservableStateProcessorWithValidators(
-      BLSPubkey pubkey) {
+      BLSPubkey pubkey, SpecConstants constants) {
     return new ObservableStateProcessor() {
       @Override
       public void start() {}
@@ -121,7 +126,7 @@ public class ServiceFactory {
       public Publisher<ObservableBeaconState> getObservableStateStream() {
         MutableBeaconState state = BeaconStateEx.getEmpty().createMutableCopy();
         state
-            .getValidatorRegistry()
+            .getValidators()
             .addAll(
                 MultiValidatorServiceTest.createRegistry(
                     new Random(), ValidatorIndex.of(127), pubkey));
@@ -132,10 +137,10 @@ public class ServiceFactory {
                     .withParentRoot(Hash32.ZERO)
                     .withStateRoot(Hash32.ZERO)
                     .withSignature(BLSSignature.ZERO)
-                    .withBody(BeaconBlockBody.EMPTY)
+                    .withBody(BeaconBlockBody.getEmpty(constants))
                     .build(),
                 new BeaconStateExImpl(state.createImmutable()),
-                PendingOperations.EMPTY));
+                new PendingOperationsState(Collections.emptyList())));
       }
 
       @Override
@@ -263,7 +268,7 @@ public class ServiceFactory {
     };
   }
 
-  public static ValidatorDutiesService createValidatorDutiesService() {
+  public static ValidatorDutiesService createValidatorDutiesService(SpecConstants constants) {
     return new ValidatorDutiesService(BeaconChainSpec.createWithDefaults(), null, null) {
       @Override
       public BeaconBlock prepareBlock(
@@ -274,7 +279,7 @@ public class ServiceFactory {
                 .withParentRoot(Hash32.ZERO)
                 .withStateRoot(Hash32.ZERO)
                 .withSignature(BLSSignature.ZERO)
-                .withBody(BeaconBlockBody.EMPTY);
+                .withBody(BeaconBlockBody.getEmpty(constants));
 
         return builder.build();
       }
@@ -286,16 +291,15 @@ public class ServiceFactory {
           ShardNumber shard,
           ObservableBeaconState observableBeaconState) {
         return new Attestation(
-            Bitfield.EMPTY,
+            Bitlist.of(0),
             new AttestationData(
                 Hash32.ZERO,
-                EpochNumber.ZERO,
-                Hash32.ZERO,
-                EpochNumber.ZERO,
-                Hash32.ZERO,
-                new Crosslink(shard, EpochNumber.ZERO, EpochNumber.ZERO, Hash32.ZERO, Hash32.ZERO)),
-            Bitfield.EMPTY,
-            BLSSignature.ZERO);
+                Checkpoint.EMPTY,
+                Checkpoint.EMPTY,
+                new Crosslink(shard, Hash32.ZERO, EpochNumber.ZERO, EpochNumber.ZERO, Hash32.ZERO)),
+            Bitlist.of(0),
+            BLSSignature.ZERO,
+            constants);
       }
     };
   }

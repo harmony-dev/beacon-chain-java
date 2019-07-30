@@ -2,6 +2,7 @@ package org.ethereum.beacon.validator;
 
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.state.Fork;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.validator.crypto.MessageSigner;
@@ -19,10 +20,10 @@ public interface BeaconBlockSigner {
    * signature.
    *
    * @param block a block with empty signature.
-   * @param fork fork object from the state.
+   * @param state Beacon state
    * @return a block with revealed randao and signature.
    */
-  BeaconBlock sign(BeaconBlock block, Fork fork);
+  BeaconBlock sign(BeaconBlock block, BeaconState state);
 
   static BeaconBlockSigner getInstance(BeaconChainSpec spec, MessageSigner<BLSSignature> signer) {
     return new BeaconBlockSignerImpl(spec, signer);
