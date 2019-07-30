@@ -42,7 +42,7 @@ public class ValidatorRestTest {
   private final Integer SERVER_PORT = 1234;
   private final String SERVER_URL = "http://" + SERVER_HOST + ":" + SERVER_PORT;
   private ValidatorRest server;
-  private RestClient client = new RestClient(SERVER_URL);
+  private ValidatorClient client = new RestClient(SERVER_URL);
   private BeaconChainSpec SPEC = BeaconChainSpec.createWithDefaults();
   private SpecConstants CONSTANTS = SPEC.getConstants();
 

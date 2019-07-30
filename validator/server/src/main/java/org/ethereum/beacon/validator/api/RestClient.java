@@ -18,7 +18,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.math.BigInteger;
 
-public class RestClient {
+public class RestClient implements ValidatorClient {
   private final Client client;
   private final String url;
 
@@ -27,6 +27,7 @@ public class RestClient {
     this.url = url;
   }
 
+  @Override
   public String getVersion() {
     return client
         .target(url)
@@ -35,6 +36,7 @@ public class RestClient {
         .get(String.class);
   }
 
+  @Override
   public Long getGenesisTime() {
     return client
         .target(url)
@@ -43,6 +45,7 @@ public class RestClient {
         .get(Long.class);
   }
 
+  @Override
   public SyncingResponse getSyncing() {
     return client
         .target(url)
@@ -51,6 +54,7 @@ public class RestClient {
         .get(SyncingResponse.class);
   }
 
+  @Override
   public ValidatorDutiesResponse getValidatorDuties(Long epoch, String[] pubKeys) {
     return client
         .target(url)
@@ -61,6 +65,7 @@ public class RestClient {
         .get(ValidatorDutiesResponse.class);
   }
 
+  @Override
   public BeaconBlock getBlock(BigInteger slot, String randaoReveal, SpecConstants constants) {
     return client
         .target(url)
@@ -72,6 +77,7 @@ public class RestClient {
         .createBlock(constants);
   }
 
+  @Override
   public Response postBlock(BeaconBlock block) {
     BlockSubmit blockSubmit = BlockSubmit.fromBeaconBlock(block);
     return client
@@ -81,6 +87,7 @@ public class RestClient {
         .post(Entity.entity(blockSubmit, MediaType.APPLICATION_JSON));
   }
 
+  @Override
   public BlockData.BlockBodyData.IndexedAttestationData getAttestation(
       String validatorPubkey, Long pocBit, BigInteger slot, Integer shard) {
     return client
@@ -94,6 +101,7 @@ public class RestClient {
         .get(BlockData.BlockBodyData.IndexedAttestationData.class);
   }
 
+  @Override
   public Response postAttestation(IndexedAttestation attestation) {
     AttestationSubmit attestationSubmit = AttestationSubmit.fromAttestation(attestation);
     return client
@@ -103,6 +111,7 @@ public class RestClient {
         .post(Entity.entity(attestationSubmit, MediaType.APPLICATION_JSON));
   }
 
+  @Override
   public ForkResponse getFork() {
     return client
         .target(url)
