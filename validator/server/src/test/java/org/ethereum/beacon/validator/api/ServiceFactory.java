@@ -129,7 +129,7 @@ public class ServiceFactory {
             .getValidators()
             .addAll(
                 MultiValidatorServiceTest.createRegistry(
-                    new Random(), ValidatorIndex.of(127), pubkey));
+                    new Random(), ValidatorIndex.of(127), pubkey, constants));
         return Mono.just(
             new ObservableBeaconState(
                 BeaconBlock.Builder.createEmpty()

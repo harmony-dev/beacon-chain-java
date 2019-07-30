@@ -8,6 +8,7 @@ import java.util.Random;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.util.ObservableBeaconStateTestUtil;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
@@ -115,7 +116,7 @@ public class MultiValidatorServiceTest {
         ObservableBeaconStateTestUtil.createInitialState(random, spec, currentSlot);
 
     ReadList<ValidatorIndex, ValidatorRecord> validatorRegistry =
-        createRegistry(random, validatorIndex, pubkey);
+        createRegistry(random, validatorIndex, pubkey, spec.getConstants());
     Mockito.doReturn(validatorRegistry)
         .when(currentSlotState.getLatestSlotState())
         .getValidators();
@@ -157,7 +158,7 @@ public class MultiValidatorServiceTest {
             random, spec, currentSlot.increment().increment());
 
     ReadList<ValidatorIndex, ValidatorRecord> validatorRegistry =
-        createRegistry(random, validatorIndex, pubkey);
+        createRegistry(random, validatorIndex, pubkey, spec.getConstants());
 
     Mockito.doReturn(validatorRegistry)
         .when(initialState.getLatestSlotState())
@@ -197,7 +198,7 @@ public class MultiValidatorServiceTest {
   }
 
   public static ReadList<ValidatorIndex, ValidatorRecord> createRegistry(
-      Random random, ValidatorIndex validatorIndex, BLSPubkey pubkey) {
+      Random random, ValidatorIndex validatorIndex, BLSPubkey pubkey, SpecConstants constants) {
     WriteList<ValidatorIndex, ValidatorRecord> validatorRegistry =
         WriteList.create(ValidatorIndex::of);
     validatorRegistry.addAll(
@@ -210,7 +211,7 @@ public class MultiValidatorServiceTest {
                 Boolean.FALSE,
                 EpochNumber.ZERO,
                 EpochNumber.ZERO,
-                EpochNumber.ZERO,
+                constants.getFarFutureEpoch(),
                 EpochNumber.ZERO)));
     validatorRegistry.add(
         new ValidatorRecord(
@@ -220,7 +221,7 @@ public class MultiValidatorServiceTest {
             Boolean.FALSE,
             EpochNumber.ZERO,
             EpochNumber.ZERO,
-            EpochNumber.ZERO,
+            constants.getFarFutureEpoch(),
             EpochNumber.ZERO));
 
     return validatorRegistry;

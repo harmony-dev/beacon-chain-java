@@ -206,7 +206,7 @@ public abstract class BeaconBlockConverter {
     BlockData.CheckpointData target = new BlockData.CheckpointData();
     target.setEpoch(data.getTarget().getEpoch().longValue());
     target.setRoot(data.getTarget().getRoot().toString());
-    attestationData.setSource(target);
+    attestationData.setTarget(target);
 
     return attestationData;
   }
