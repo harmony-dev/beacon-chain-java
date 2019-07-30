@@ -41,7 +41,7 @@ public interface BeaconState extends ObservableComposite {
   }
 
   static BeaconState getEmpty(SpecConstants specConst) {
-    BeaconStateImpl ret = new BeaconStateImpl();
+    BeaconStateImpl ret = new BeaconStateImpl(specConst);
     ret.getRandaoMixes().addAll(
         Collections.nCopies(specConst.getEpochsPerHistoricalVector().intValue(), Hash32.ZERO));
     ret.getBlockRoots().addAll(
@@ -142,10 +142,10 @@ public interface BeaconState extends ObservableComposite {
 
   /** Previous epoch snapshot. */
   @SSZ(order = 19, vectorLengthVar = "spec.SHARD_COUNT")
-  ReadVector<ShardNumber, Crosslink> getCurrentCrosslinks();
+  ReadVector<ShardNumber, Crosslink> getPreviousCrosslinks();
 
   @SSZ(order = 20, vectorLengthVar = "spec.SHARD_COUNT")
-  ReadVector<ShardNumber, Crosslink> getPreviousCrosslinks();
+  ReadVector<ShardNumber, Crosslink> getCurrentCrosslinks();
 
   /* ******** Finality ********* */
 

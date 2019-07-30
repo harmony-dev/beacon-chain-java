@@ -306,7 +306,8 @@ public interface BlockProcessing extends HelperFunction {
         attestation.getAggregationBits(),
         data,
         state.getSlot().minus(attestation_slot),
-        get_beacon_proposer_index(state));
+        get_beacon_proposer_index(state),
+        getConstants());
     if (data.getTarget().getEpoch().equals(get_current_epoch(state))) {
       state.getCurrentEpochAttestations().add(pending_attestation);
     } else {
@@ -323,14 +324,14 @@ public interface BlockProcessing extends HelperFunction {
     assert is_valid_merkle_branch(
         leaf=hash_tree_root(deposit.data),
         proof=deposit.proof,
-        depth=DEPOSIT_CONTRACT_TREE_DEPTH,
+        depth=DEPOSIT_CONTRACT_TREE_DEPTH + 1,
         index=deposit.index,
         root=state.latest_eth1_data.deposit_root,
         ) */
     assertTrue(is_valid_merkle_branch(
         hash_tree_root(deposit.getData()),
         deposit.getProof().listCopy(),
-        getConstants().getDepositContractTreeDepth().increment(), // Add 1 for the `List` length mix-in
+        getConstants().getDepositContractTreeDepthPlusOne(), // Add 1 for the `List` length mix-in
         state.getEth1DepositIndex(),
         state.getEth1Data().getDepositRoot()
     ));
@@ -439,7 +440,7 @@ public interface BlockProcessing extends HelperFunction {
   default void verify_transfer(BeaconState state, Transfer transfer) {
     // Verify the balance the covers amount and fee (with overflow protection)
     assertTrue(state.getBalances().get(transfer.getSender())
-            .greater(UInt64s.max(
+            .greaterEqual(UInt64s.max(
                 transfer.getAmount().plus(transfer.getFee()),
                 UInt64s.max(transfer.getAmount(), transfer.getFee()))));
 
@@ -463,7 +464,7 @@ public interface BlockProcessing extends HelperFunction {
     assertTrue(
         state.getValidators().get(transfer.getSender()).getWithdrawalCredentials().equals(
             getConstants().getBlsWithdrawalPrefix().toBytes8LittleEndian().slice(0, 1)
-                .concat(hash(transfer.getPubkey().slice(1))))
+                .concat(hash(transfer.getPubkey()).slice(1)))
     );
 
     // Verify that the signature is valid

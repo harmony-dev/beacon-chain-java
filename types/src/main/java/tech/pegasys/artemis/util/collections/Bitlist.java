@@ -180,6 +180,10 @@ public class Bitlist extends DelegatingBytesValue {
     return wrapped;
   }
 
+  public Bitlist cappedCopy(long maxSize) {
+    return of(size, wrapped, maxSize);
+  }
+
   public long getValue() {
     assert wrapped.size() <= 8;
     return UInt64.fromBytesLittleEndian(Bytes8.rightPad(wrapped)).getValue();

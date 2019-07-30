@@ -1,21 +1,23 @@
 package org.ethereum.beacon.core;
 
-import static java.util.Collections.emptyList;
-
 import com.google.common.base.Objects;
-import java.util.List;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.Transfer;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.collections.ReadList;
+
+import java.util.List;
+
+import static java.util.Collections.emptyList;
 
 /**
  * Beacon block body.
@@ -29,19 +31,6 @@ import tech.pegasys.artemis.util.collections.ReadList;
  */
 @SSZSerializable
 public class BeaconBlockBody {
-
-  /** A body where all lists are empty. */
-  public static final BeaconBlockBody EMPTY =
-      BeaconBlockBody.create(
-          BLSSignature.ZERO,
-          Eth1Data.EMPTY,
-          Bytes32.ZERO,
-          emptyList(),
-          emptyList(),
-          emptyList(),
-          emptyList(),
-          emptyList(),
-          emptyList());
 
   /** RANDAO signature submitted by proposer. */
   @SSZ private final BLSSignature randaoReveal;
@@ -77,19 +66,38 @@ public class BeaconBlockBody {
       ReadList<Integer, Attestation> attestations,
       ReadList<Integer, Deposit> deposits,
       ReadList<Integer, VoluntaryExit> voluntaryExits,
-      ReadList<Integer, Transfer> transfers) {
+      ReadList<Integer, Transfer> transfers,
+      SpecConstants specConstants) {
     this.randaoReveal = randaoReveal;
     this.eth1Data = eth1Data;
     this.graffiti = graffiti;
-    this.proposerSlashings = proposerSlashings;
-    this.attesterSlashings = attesterSlashings;
-    this.attestations = attestations;
-    this.deposits = deposits;
-    this.voluntaryExits = voluntaryExits;
-    this.transfers = transfers;
+    this.proposerSlashings =
+        proposerSlashings.maxSize() == ReadList.VARIABLE_SIZE
+            ? proposerSlashings.cappedCopy(specConstants.getMaxProposerSlashings())
+            : proposerSlashings;
+    this.attesterSlashings =
+        attesterSlashings.maxSize() == ReadList.VARIABLE_SIZE
+            ? attesterSlashings.cappedCopy(specConstants.getMaxAttesterSlashings())
+            : attesterSlashings;
+    this.attestations =
+        attestations.maxSize() == ReadList.VARIABLE_SIZE
+            ? attestations.cappedCopy(specConstants.getMaxAttestations())
+            : attestations;
+    this.deposits =
+        deposits.maxSize() == ReadList.VARIABLE_SIZE
+            ? deposits.cappedCopy(specConstants.getMaxDeposits())
+            : deposits;
+    this.voluntaryExits =
+        voluntaryExits.maxSize() == ReadList.VARIABLE_SIZE
+            ? voluntaryExits.cappedCopy(specConstants.getMaxVoluntaryExits())
+            : voluntaryExits;
+    this.transfers =
+        transfers.maxSize() == ReadList.VARIABLE_SIZE
+            ? transfers.cappedCopy(specConstants.getMaxTransfers())
+            : transfers;
   }
 
-  public static BeaconBlockBody create(
+  public BeaconBlockBody(
       BLSSignature randaoReveal,
       Eth1Data eth1Data,
       Bytes32 graffiti,
@@ -98,17 +106,34 @@ public class BeaconBlockBody {
       List<Attestation> attestations,
       List<Deposit> deposits,
       List<VoluntaryExit> voluntaryExits,
-      List<Transfer> transfers) {
-    return new BeaconBlockBody(
+      List<Transfer> transfers,
+      SpecConstants specConstants) {
+    this(
         randaoReveal,
         eth1Data,
         graffiti,
-        ReadList.wrap(proposerSlashings, Integer::new),
-        ReadList.wrap(attesterSlashings, Integer::new),
-        ReadList.wrap(attestations, Integer::new),
-        ReadList.wrap(deposits, Integer::new),
-        ReadList.wrap(voluntaryExits, Integer::new),
-        ReadList.wrap(transfers, Integer::new));
+        ReadList.wrap(proposerSlashings, Integer::new, specConstants.getMaxProposerSlashings()),
+        ReadList.wrap(attesterSlashings, Integer::new, specConstants.getMaxAttesterSlashings()),
+        ReadList.wrap(attestations, Integer::new, specConstants.getMaxAttestations()),
+        ReadList.wrap(deposits, Integer::new, specConstants.getMaxDeposits()),
+        ReadList.wrap(voluntaryExits, Integer::new, specConstants.getMaxVoluntaryExits()),
+        ReadList.wrap(transfers, Integer::new, specConstants.getMaxTransfers()),
+        specConstants);
+  }
+
+  /** A body where all lists are empty. */
+  public static BeaconBlockBody getEmpty(SpecConstants specConstants) {
+    return new BeaconBlockBody(
+        BLSSignature.ZERO,
+        Eth1Data.EMPTY,
+        Bytes32.ZERO,
+        emptyList(),
+        emptyList(),
+        emptyList(),
+        emptyList(),
+        emptyList(),
+        emptyList(),
+        specConstants);
   }
 
   public BLSSignature getRandaoReveal() {

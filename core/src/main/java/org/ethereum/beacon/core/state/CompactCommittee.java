@@ -1,13 +1,16 @@
 package org.ethereum.beacon.core.state;
 
-import static java.util.Collections.emptyList;
-
-import java.util.List;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
+
+import java.util.List;
+
+import static java.util.Collections.emptyList;
+import static tech.pegasys.artemis.util.collections.ReadList.VARIABLE_SIZE;
 
 /**
  * Compact committee type.
@@ -19,22 +22,40 @@ import tech.pegasys.artemis.util.uint.UInt64;
 @SSZSerializable
 public class CompactCommittee {
 
-  public static final CompactCommittee EMPTY = CompactCommittee.create(emptyList(), emptyList());
-
   @SSZ(maxSizeVar = "spec.MAX_VALIDATORS_PER_COMMITTEE")
   private final ReadList<Integer, BLSPubkey> pubkeys;
+
   @SSZ(maxSizeVar = "spec.MAX_VALIDATORS_PER_COMMITTEE")
   private final ReadList<Integer, UInt64> compactValidators;
 
-  public static CompactCommittee create(List<BLSPubkey> pubkeys, List<UInt64> compactValidators) {
-    return new CompactCommittee(
-        ReadList.wrap(pubkeys, Integer::new), ReadList.wrap(compactValidators, Integer::new));
+  public CompactCommittee(
+      ReadList<Integer, BLSPubkey> pubkeys,
+      ReadList<Integer, UInt64> compactValidators,
+      SpecConstants specConstants) {
+    this.pubkeys =
+        pubkeys.maxSize() == VARIABLE_SIZE
+            ? pubkeys.cappedCopy(specConstants.getMaxValidatorsPerCommittee().longValue())
+            : pubkeys;
+    this.compactValidators =
+        compactValidators.maxSize() == VARIABLE_SIZE
+            ? compactValidators.cappedCopy(specConstants.getMaxValidatorsPerCommittee().longValue())
+            : compactValidators;
   }
 
   public CompactCommittee(
-      ReadList<Integer, BLSPubkey> pubkeys, ReadList<Integer, UInt64> compactValidators) {
-    this.pubkeys = pubkeys;
-    this.compactValidators = compactValidators;
+      List<BLSPubkey> pubkeys, List<UInt64> compactValidators, SpecConstants specConstants) {
+    this(
+        ReadList.wrap(
+            pubkeys, Integer::new, specConstants.getMaxValidatorsPerCommittee().longValue()),
+        ReadList.wrap(
+            compactValidators,
+            Integer::new,
+            specConstants.getMaxValidatorsPerCommittee().longValue()),
+        specConstants);
+  }
+
+  public static CompactCommittee getEmpty(SpecConstants specConstants) {
+    return new CompactCommittee(emptyList(), emptyList(), specConstants);
   }
 
   public ReadList<Integer, BLSPubkey> getPubkeys() {

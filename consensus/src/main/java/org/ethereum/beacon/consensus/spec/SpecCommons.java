@@ -27,6 +27,8 @@ public interface SpecCommons {
 
   boolean isVerifyDepositProof();
 
+  boolean isComputableGenesisTime();
+
   default void assertTrue(boolean assertion) {
     if (!assertion) {
       throw new SpecAssertionFailed();

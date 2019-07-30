@@ -1,6 +1,7 @@
 package org.ethereum.beacon.ssz.type;
 
 import org.ethereum.beacon.ssz.access.SSZCompositeAccessor;
+import org.ethereum.beacon.ssz.type.list.SSZListType;
 
 /**
  * Common superinterface for {@link SSZListType} and {@link SSZContainerType} types

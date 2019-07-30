@@ -1,18 +1,6 @@
 package org.ethereum.beacon.consensus.spec;
 
-import static java.lang.Math.min;
-import static java.util.Collections.emptyList;
-import static java.util.stream.Collectors.toList;
-import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
-
 import com.google.common.collect.Ordering;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.BeaconBlockHeader;
@@ -28,7 +16,6 @@ import org.ethereum.beacon.core.state.ShardCommittee;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
-import tech.pegasys.artemis.util.collections.Bitlist;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ShardNumber;
@@ -44,10 +31,23 @@ import tech.pegasys.artemis.util.bytes.Bytes4;
 import tech.pegasys.artemis.util.bytes.Bytes8;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.bytes.BytesValues;
+import tech.pegasys.artemis.util.collections.Bitlist;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.collections.ReadVector;
 import tech.pegasys.artemis.util.uint.UInt64;
 import tech.pegasys.artemis.util.uint.UInt64s;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static java.util.Collections.emptyList;
+import static java.util.stream.Collectors.toList;
+import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
 
 /**
  * Helper functions.
@@ -65,7 +65,7 @@ public interface HelperFunction extends SpecCommons {
 
   default BeaconBlock get_empty_block() {
     BeaconBlockBody body =
-        BeaconBlockBody.create(
+        new BeaconBlockBody(
             BLSSignature.ZERO,
             new Eth1Data(Hash32.ZERO, UInt64.ZERO, Hash32.ZERO),
             Bytes32.ZERO,
@@ -74,7 +74,8 @@ public interface HelperFunction extends SpecCommons {
             emptyList(),
             emptyList(),
             emptyList(),
-            emptyList());
+            emptyList(),
+            getConstants());
     return new BeaconBlock(
         getConstants().getGenesisSlot(), Hash32.ZERO, Hash32.ZERO, body, BLSSignature.ZERO);
   }
@@ -199,6 +200,7 @@ public interface HelperFunction extends SpecCommons {
   default Hash32 get_compact_committees_root(BeaconState state, EpochNumber epoch) {
     List<CompactCommittee> committees = new ArrayList<>();
     ShardNumber start_shard = get_start_shard(state, epoch);
+    UInt64s.iterate(UInt64.ZERO, getConstants().getShardCount()).forEach(i -> committees.add(CompactCommittee.getEmpty(getConstants())));
 
     for (UInt64 committee_number: UInt64s.iterate(UInt64.ZERO, get_committee_count(state, epoch))) {
       ShardNumber shard = start_shard.plusModulo(committee_number, getConstants().getShardCount());
@@ -216,7 +218,7 @@ public interface HelperFunction extends SpecCommons {
         compactValidators.add(compact_validator);
       }
 
-      committees.add(CompactCommittee.create(pubkeys, compactValidators));
+      committees.set(shard.intValue(), new CompactCommittee(pubkeys, compactValidators, getConstants()));
     }
 
     return hash_tree_root(ReadVector.wrap(committees, Integer::valueOf));
@@ -332,6 +334,14 @@ public interface HelperFunction extends SpecCommons {
       }
     }
     return ret;
+  }
+
+  /** {@link #get_active_validator_indices(BeaconState, EpochNumber)} wrapped with limited list */
+  default ReadList<Integer, ValidatorIndex> get_active_validator_indices_list(
+      BeaconState state, EpochNumber epoch) {
+    List<ValidatorIndex> indices = new ArrayList<>(get_active_validator_indices(state, epoch));
+    return ReadList.wrap(
+        indices, Integer::new, getConstants().getValidatorRegistryLimit().longValue());
   }
 
   /*
@@ -714,10 +724,19 @@ public interface HelperFunction extends SpecCommons {
   default void slash_validator(MutableBeaconState state, ValidatorIndex slashed_index, ValidatorIndex whistleblower_index) {
     EpochNumber epoch = get_current_epoch(state);
     initiate_validator_exit(state, slashed_index);
-    state.getValidators().update(slashed_index,
-        validator -> ValidatorRecord.Builder.fromRecord(validator)
-            .withSlashed(Boolean.TRUE)
-            .withWithdrawableEpoch(epoch.plus(getConstants().getEpochsPerSlashingsVector())).build());
+    state
+        .getValidators()
+        .update(
+            slashed_index,
+            validator ->
+                ValidatorRecord.Builder.fromRecord(validator)
+                    .withSlashed(Boolean.TRUE)
+                    .withWithdrawableEpoch(
+                        EpochNumber.castFrom(
+                            UInt64s.max(
+                                validator.getWithdrawableEpoch(),
+                                epoch.plus(getConstants().getEpochsPerSlashingsVector()))))
+                    .build());
     Gwei slashed_balance = state.getValidators().get(slashed_index).getEffectiveBalance();
     state.getSlashings().update(epoch.modulo(getConstants().getEpochsPerSlashingsVector()),
         balance -> balance.plus(slashed_balance));
@@ -963,7 +982,8 @@ public interface HelperFunction extends SpecCommons {
         custody_bit_0_indices,
         custody_bit_1_indices,
         attestation.getData(),
-        attestation.getSignature());
+        attestation.getSignature(),
+        getConstants());
   }
 
   /*

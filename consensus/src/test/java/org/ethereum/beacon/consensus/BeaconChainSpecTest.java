@@ -24,12 +24,15 @@ import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
+import org.ethereum.beacon.core.types.SlotNumber.EpochLength;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.core.util.AttestationTestUtil;
+import org.ethereum.beacon.core.util.BeaconBlockTestUtil;
 import org.ethereum.beacon.crypto.Hashes;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -123,7 +126,7 @@ public class BeaconChainSpecTest {
     BeaconChainSpec spec = BeaconChainSpec.createWithDefaults();
     BeaconBlock emptyBlock = spec.get_empty_block();
     BeaconBlockBody body =
-        BeaconBlockBody.create(
+        new BeaconBlockBody(
             emptyBlock.getBody().getRandaoReveal(),
             emptyBlock.getBody().getEth1Data(),
             emptyBlock.getBody().getGraffiti(),
@@ -132,7 +135,8 @@ public class BeaconChainSpecTest {
             AttestationTestUtil.createRandomList(rnd, 10),
             emptyBlock.getBody().getDeposits().listCopy(),
             emptyBlock.getBody().getVoluntaryExits().listCopy(),
-            emptyBlock.getBody().getTransfers().listCopy());
+            emptyBlock.getBody().getTransfers().listCopy(),
+            spec.getConstants());
     BeaconBlock block =
         new BeaconBlock(
             emptyBlock.getSlot(),
@@ -177,8 +181,15 @@ public class BeaconChainSpecTest {
             return ShardNumber.of(shardCount);
           }
         };
-    BeaconChainSpec spec = new CachingBeaconChainSpec(
-        specConstants, Hashes::sha256, ObjectHasher.createSSZOverSHA256(specConstants), false, false, true);
+    BeaconChainSpec spec =
+        new CachingBeaconChainSpec(
+            specConstants,
+            Hashes::sha256,
+            ObjectHasher.createSSZOverSHA256(specConstants),
+            false,
+            false,
+            false,
+            true);
 
     System.out.println("Generating deposits...");
     List<Deposit> deposits = TestUtils.generateRandomDepositsWithoutSig(rnd, spec, validatorCount);
@@ -233,5 +244,37 @@ public class BeaconChainSpecTest {
 
     actualIndices.sort(ValidatorIndex::compareTo);
     assertEquals(validatorIndices, actualIndices);
+  }
+
+  @Test
+  public void edgeCaseWithGetSeed() {
+    BeaconChainSpec spec =
+        BeaconChainSpec.createWithDefaultHasher(
+            new SpecConstants() {
+              @Override
+              public EpochLength getSlotsPerEpoch() {
+                return new EpochLength(UInt64.valueOf(4));
+              }
+            });
+    Random rnd = new Random();
+
+    MutableBeaconState state = BeaconState.getEmpty().createMutableCopy();
+
+    EpochNumber startEpoch = spec.get_current_epoch(state);
+    spec.get_seed(state, startEpoch);
+    Hash32 nextEpochSeed = spec.get_seed(state, startEpoch.increment());
+
+    for (EpochNumber epoch = startEpoch; epoch.less(startEpoch.plus(10)); epoch = epoch.increment()) {
+      BeaconBlockBody body =
+          BeaconBlockTestUtil.createRandomBodyWithNoOperations(rnd, spec.getConstants());
+      spec.process_randao(state, body);
+      spec.process_final_updates(state);
+      state.setSlot(state.getSlot().plus(spec.getConstants().getSlotsPerEpoch()));
+
+      EpochNumber currentEpoch = spec.get_current_epoch(state);
+
+      assertEquals(nextEpochSeed, spec.get_seed(state, currentEpoch));
+      nextEpochSeed = spec.get_seed(state, currentEpoch.increment());
+    }
   }
 }

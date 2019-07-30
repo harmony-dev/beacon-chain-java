@@ -36,6 +36,7 @@ public class SSZObjectHasher implements ObjectHasher<Hash32> {
     SSZHasher sszHasher =
         new SSZBuilder()
             .withExternalVarResolver(new SpecConstantsResolver(constants))
+            .withExtraObjectCreator(SpecConstants.class, constants)
             .withIncrementalHasher(incremental)
             .buildHasher(hashFunction);
     return new SSZObjectHasher(sszHasher);

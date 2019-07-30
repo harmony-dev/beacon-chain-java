@@ -186,8 +186,8 @@ public class ValidatorRecord {
           withdrawalCredentials,
           effectiveBalance,
           slashed,
-          activationEpoch,
           activationEligibilityEpoch,
+          activationEpoch,
           exitEpoch,
           withdrawableEpoch);
     }

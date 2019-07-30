@@ -6,6 +6,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.reflect.ClassPath;
 import com.google.common.reflect.ClassPath.ClassInfo;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.spec.SpecConstantsResolver;
 import org.ethereum.beacon.ssz.SSZBuilder;
 import org.ethereum.beacon.ssz.SSZSerializer;
@@ -50,6 +51,7 @@ public class SszStaticRunner implements Runner {
     this.sszSerializer =
         builder
             .withExternalVarResolver(new SpecConstantsResolver(spec.getConstants()))
+            .withExtraObjectCreator(SpecConstants.class, spec.getConstants())
             .buildSerializer();
     this.yamlMapper = new ObjectMapper(new YAMLFactory());
     this.spec = spec;
@@ -135,7 +137,11 @@ public class SszStaticRunner implements Runner {
     Class valueType = findSpecClassByName(testCase.getTypeName());
     Object fromSerialized =
         sszSerializer.decode(BytesValue.fromHexString(testCase.getSerialized()), valueType);
-    Object simplified = objectSerializers.get(valueType).map(fromSerialized);
+    ObjectSerializer serializer = objectSerializers.get(valueType);
+    if (serializer == null) {
+      return Optional.of(String.format("No object mapper found for %s", testCase.getTypeName()));
+    }
+    Object simplified = serializer.map(fromSerialized);
     ObjectNode expectedValue = yamlMapper.convertValue(testCase.getValue(), ObjectNode.class);
     // XXX: expected goes second as our constructed node contains with overridden `equals` operators
     // which should be used in comparison

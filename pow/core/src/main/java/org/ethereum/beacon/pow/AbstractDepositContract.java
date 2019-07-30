@@ -89,7 +89,8 @@ public abstract class AbstractDepositContract implements DepositContract {
       if (startChainSubscribed && !chainStartSink.isTerminated()) {
         initialDeposits.add(depositData);
 
-        if (initialDeposits.size() >= spec.getConstants().getGenesisActiveValidatorCount()) {
+        if (initialDeposits.size() >=
+            spec.getConstants().getMinGenesisActiveValidatorCount().getIntValue()) {
           tryChainStart(blockHash, blockTimestamp);
         }
       }
@@ -117,7 +118,7 @@ public abstract class AbstractDepositContract implements DepositContract {
           Time.of(blockTimestamp),
           genesisDeposits
       );
-      if (spec.is_genesis_trigger(initialState)) {
+      if (spec.is_valid_genesis_state(initialState)) {
         chainStart(genesisEth1Data, genesisDeposits, initialState.getGenesisTime());
       }
     } catch (SpecAssertionFailed e) {

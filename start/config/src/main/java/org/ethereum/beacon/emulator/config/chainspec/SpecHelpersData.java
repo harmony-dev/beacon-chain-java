@@ -9,9 +9,11 @@ public class SpecHelpersData {
 
   private boolean blsSign = true;
 
-  private boolean enableCache = true;
-
   private boolean verifyDepositProof = false;
+
+  private boolean computableGenesisTime = false;
+
+  private boolean enableCache = true;
 
   public boolean isBlsVerify() {
     return blsVerify;
@@ -51,5 +53,13 @@ public class SpecHelpersData {
 
   public void setVerifyDepositProof(boolean verifyDepositProof) {
     this.verifyDepositProof = verifyDepositProof;
+  }
+
+  public boolean isComputableGenesisTime() {
+    return computableGenesisTime;
+  }
+
+  public void setComputableGenesisTime(boolean computableGenesisTime) {
+    this.computableGenesisTime = computableGenesisTime;
   }
 }

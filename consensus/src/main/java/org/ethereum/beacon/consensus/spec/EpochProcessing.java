@@ -1,12 +1,5 @@
 package org.ethereum.beacon.consensus.spec;
 
-import static java.util.stream.Collectors.toList;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
-import java.util.stream.Collectors;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
@@ -14,7 +7,6 @@ import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.state.HistoricalBatch;
 import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.state.ValidatorRecord;
-import tech.pegasys.artemis.util.collections.Bitvector;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ShardNumber;
@@ -22,8 +14,18 @@ import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.javatuples.Pair;
 import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.collections.Bitvector;
+import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
 import tech.pegasys.artemis.util.uint.UInt64s;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toList;
 
 /**
  * Epoch processing part.
@@ -535,7 +537,7 @@ public interface EpochProcessing extends HelperFunction {
     /* for index, validator in enumerate(state.validators):
         if validator.slashed and epoch + EPOCHS_PER_SLASHINGS_VECTOR // 2 == validator.withdrawable_epoch:
             increment = EFFECTIVE_BALANCE_INCREMENT  # Factored out from penalty numerator to avoid uint64 overflow
-            penalty_numerator = validator.effective_balance // increment * min(sum(state.slashings) * 3, total_balance)
+            penalty_numerator = ( validator.effective_balance // increment ) * min(sum(state.slashings) * 3, total_balance)
             penalty = penalty_numerator // total_balance * increment
             decrease_balance(state, ValidatorIndex(index), penalty) */
     for (ValidatorIndex index : state.getValidators().size()) {
@@ -543,7 +545,12 @@ public interface EpochProcessing extends HelperFunction {
       if (validator.getSlashed()
           && epoch.plus(getConstants().getEpochsPerSlashingsVector().half()).equals(validator.getWithdrawableEpoch())) {
         Gwei increment = getConstants().getEffectiveBalanceIncrement();
-        Gwei penalty_numerator = validator.getEffectiveBalance();
+        Gwei stateSlashings = state.getSlashings().stream().reduce(Gwei::plus).orElse(Gwei.ZERO);
+        Gwei penalty_numerator =
+            validator
+                .getEffectiveBalance()
+                .dividedBy(increment)
+                .times(UInt64s.min(stateSlashings.times(3), total_balance));
         Gwei penalty = penalty_numerator.dividedBy(total_balance).times(increment);
         decrease_balance(state, index, penalty);
       }
@@ -601,7 +608,7 @@ public interface EpochProcessing extends HelperFunction {
       state.active_index_roots[index_root_position] = hash_tree_root(indices_list) */
     EpochNumber index_epoch = next_epoch.plus(getConstants().getActivationExitDelay());
     EpochNumber index_root_position = index_epoch.modulo(getConstants().getEpochsPerHistoricalVector());
-    List<ValidatorIndex> indices_list = new ArrayList<>(get_active_validator_indices(state, index_epoch));
+    ReadList<Integer, ValidatorIndex> indices_list = get_active_validator_indices_list(state, index_epoch);
     state.getActiveIndexRoots().set(index_root_position, hash_tree_root(indices_list));
 
     /* # Set committees root

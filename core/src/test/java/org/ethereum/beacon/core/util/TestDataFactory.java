@@ -74,7 +74,8 @@ public class TestDataFactory {
             Bitlist.of(someValue.size() * 8, someValue, specConstants.getMaxValidatorsPerCommittee().getValue()),
             attestationData,
             Bitlist.of(8, BytesValue.fromHexString("bb"),  specConstants.getMaxValidatorsPerCommittee().getValue()),
-            BLSSignature.wrap(Bytes96.fromHexString("cc")));
+            BLSSignature.wrap(Bytes96.fromHexString("cc")),
+            specConstants);
 
     return attestation;
   }
@@ -93,7 +94,7 @@ public class TestDataFactory {
     Deposit deposit =
         Deposit.create(
             Collections.nCopies(
-                specConstants.getDepositContractTreeDepth().getIntValue(), Hash32.ZERO),
+                specConstants.getDepositContractTreeDepthPlusOne().getIntValue(), Hash32.ZERO),
             createDepositData());
 
     return deposit;
@@ -103,7 +104,7 @@ public class TestDataFactory {
     ArrayList<Hash32> hashes = new ArrayList<>();
     hashes.add(Hashes.sha256(BytesValue.fromHexString("aa")));
     hashes.add(Hashes.sha256(BytesValue.fromHexString("bb")));
-    hashes.addAll(Collections.nCopies(specConstants.getDepositContractTreeDepth().getIntValue() - hashes.size(), Hash32.ZERO));
+    hashes.addAll(Collections.nCopies(specConstants.getDepositContractTreeDepthPlusOne().getIntValue() - hashes.size(), Hash32.ZERO));
     Deposit deposit = Deposit.create(hashes, createDepositData());
 
     return deposit;
@@ -141,7 +142,7 @@ public class TestDataFactory {
     voluntaryExits.add(createExit());
     List<Transfer> transfers = new ArrayList<>();
     BeaconBlockBody beaconBlockBody =
-        BeaconBlockBody.create(
+        new BeaconBlockBody(
             BLSSignature.ZERO,
             new Eth1Data(Hash32.ZERO, UInt64.ZERO, Hash32.ZERO),
             Bytes32.ZERO,
@@ -150,7 +151,8 @@ public class TestDataFactory {
             attestations,
             deposits,
             voluntaryExits,
-            transfers
+            transfers,
+            specConstants
         );
 
     return beaconBlockBody;
@@ -167,7 +169,8 @@ public class TestDataFactory {
         Arrays.asList(ValidatorIndex.of(234), ValidatorIndex.of(235)),
         Arrays.asList(ValidatorIndex.of(678), ValidatorIndex.of(679)),
         createAttestationData(),
-        BLSSignature.wrap(Bytes96.fromHexString("aa")));
+        BLSSignature.wrap(Bytes96.fromHexString("aa")),
+        specConstants);
   }
 
   public BeaconBlock createBeaconBlock() {
@@ -210,7 +213,8 @@ public class TestDataFactory {
             Bitlist.of(8, BytesValue.fromHexString("aa"), specConstants.getMaxValidatorsPerCommittee().getValue()),
             createAttestationData(),
             SlotNumber.ZERO,
-            ValidatorIndex.ZERO);
+            ValidatorIndex.ZERO,
+            specConstants);
 
     return pendingAttestation;
   }

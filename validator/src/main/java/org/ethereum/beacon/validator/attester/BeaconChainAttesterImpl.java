@@ -67,7 +67,7 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
     Bitlist custody = Bitlist.of(committee.size(), custodyBitfield, spec.getConstants().getMaxValidatorsPerCommittee().intValue());
     BLSSignature aggregateSignature = getAggregateSignature(state, data, signer);
 
-    return new Attestation(participation, data, custody, aggregateSignature);
+    return new Attestation(participation, data, custody, aggregateSignature, spec.getConstants());
   }
 
   /**

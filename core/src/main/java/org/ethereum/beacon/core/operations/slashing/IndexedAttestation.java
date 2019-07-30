@@ -2,6 +2,7 @@ package org.ethereum.beacon.core.operations.slashing;
 
 import com.google.common.base.Objects;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.ssz.annotation.SSZ;
@@ -35,15 +36,41 @@ public class IndexedAttestation {
       List<ValidatorIndex> custodyBit0Indices,
       List<ValidatorIndex> custodyBit1Indices,
       AttestationData data,
-      BLSSignature signature) {
+      BLSSignature signature,
+      SpecConstants specConstants) {
     this(
-        ReadList.wrap(custodyBit0Indices, Function.identity()),
-        ReadList.wrap(custodyBit1Indices, Function.identity()),
+        ReadList.wrap(
+            custodyBit0Indices,
+            Function.identity(),
+            specConstants.getMaxValidatorsPerCommittee().longValue()),
+        ReadList.wrap(
+            custodyBit1Indices,
+            Function.identity(),
+            specConstants.getMaxValidatorsPerCommittee().longValue()),
         data,
         signature);
   }
 
   public IndexedAttestation(
+      ReadList<Integer, ValidatorIndex> custodyBit0Indices,
+      ReadList<Integer, ValidatorIndex> custodyBit1Indices,
+      AttestationData data,
+      BLSSignature signature,
+      SpecConstants specConstants) {
+    this(
+        custodyBit0Indices.maxSize() == ReadList.VARIABLE_SIZE
+            ? custodyBit0Indices.cappedCopy(
+                specConstants.getMaxValidatorsPerCommittee().longValue())
+            : custodyBit0Indices,
+        custodyBit1Indices.maxSize() == ReadList.VARIABLE_SIZE
+            ? custodyBit1Indices.cappedCopy(
+            specConstants.getMaxValidatorsPerCommittee().longValue())
+            : custodyBit1Indices,
+        data,
+        signature);
+  }
+
+  private IndexedAttestation(
       ReadList<Integer, ValidatorIndex> custodyBit0Indices,
       ReadList<Integer, ValidatorIndex> custodyBit1Indices,
       AttestationData data,

@@ -13,6 +13,7 @@ import org.ethereum.beacon.core.operations.Transfer;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.types.BLSSignature;
 import tech.pegasys.artemis.util.collections.Bitlist;
 import org.ethereum.beacon.crypto.BLS381;
@@ -41,17 +42,17 @@ public class PendingOperationsState implements PendingOperations {
   }
 
   @Override
-  public List<Attestation> peekAggregateAttestations(int maxCount) {
+  public List<Attestation> peekAggregateAttestations(int maxCount, SpecConstants specConstants) {
     Map<AttestationData, List<Attestation>> attestationsBySlot =
         attestations.stream().collect(groupingBy(Attestation::getData));
     return attestationsBySlot.entrySet().stream()
         .sorted(Comparator.comparing(e -> e.getKey().getTarget().getEpoch()))
-        .map(entry -> aggregateAttestations(entry.getValue()))
+        .map(entry -> aggregateAttestations(entry.getValue(), specConstants))
         .limit(maxCount)
         .collect(Collectors.toList());
   }
 
-  private Attestation aggregateAttestations(List<Attestation> attestations) {
+  private Attestation aggregateAttestations(List<Attestation> attestations, SpecConstants specConstants) {
     assert !attestations.isEmpty();
     assert attestations.stream().skip(1).allMatch(a -> a.getData().equals(attestations.get(0).getData()));
 
@@ -71,7 +72,7 @@ public class PendingOperationsState implements PendingOperations {
     BLSSignature aggSign = BLSSignature.wrap(aggregatedSignature.getEncoded());
 
     return new Attestation(
-        participants, attestations.get(0).getData(), custody, aggSign);
+        participants, attestations.get(0).getData(), custody, aggSign, specConstants);
   }
 
   @Override

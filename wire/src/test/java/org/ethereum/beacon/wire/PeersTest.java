@@ -7,6 +7,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.spec.SpecConstantsResolver;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.start.common.Launcher;
@@ -87,6 +88,7 @@ public class PeersTest {
 
         SSZSerializer ssz = new SSZBuilder()
             .withExternalVarResolver(new SpecConstantsResolver(peer0.getSpec().getConstants()))
+            .withExtraObjectCreator(SpecConstants.class, peer0.getSpec().getConstants())
             .buildSerializer();
         MessageSerializer messageSerializer = new SSZMessageSerializer(ssz);
         WireApiSyncServer syncServer = new WireApiSyncServer(peer0.getBeaconChainStorage());
@@ -125,6 +127,7 @@ public class PeersTest {
 
         SSZSerializer ssz = new SSZBuilder()
             .withExternalVarResolver(new SpecConstantsResolver(peer1.getSpec().getConstants()))
+            .withExtraObjectCreator(SpecConstants.class, peer1.getSpec().getConstants())
             .buildSerializer();
         MessageSerializer messageSerializer = new SSZMessageSerializer(ssz);
         SimplePeerManagerImpl peerManager = new SimplePeerManagerImpl(

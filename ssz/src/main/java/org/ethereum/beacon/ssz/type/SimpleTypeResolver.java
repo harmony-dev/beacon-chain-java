@@ -6,21 +6,19 @@ import org.ethereum.beacon.ssz.access.AccessorResolver;
 import org.ethereum.beacon.ssz.access.SSZBasicAccessor;
 import org.ethereum.beacon.ssz.access.SSZContainerAccessor;
 import org.ethereum.beacon.ssz.access.SSZField;
-import org.ethereum.beacon.ssz.access.SSZListAccessor;
 import org.ethereum.beacon.ssz.access.SSZUnionAccessor;
-import org.ethereum.beacon.ssz.access.list.BitlistAccessor;
 
 import java.util.Optional;
 
 public class SimpleTypeResolver implements TypeResolver {
 
   private final AccessorResolver accessorResolver;
-  private final ExternalVarResolver externalVarResolver;
+  private final ListTypeResolver listTypeResolver;
 
-  public SimpleTypeResolver(AccessorResolver accessorResolver,
-      ExternalVarResolver externalVarResolver) {
+  public SimpleTypeResolver(
+      AccessorResolver accessorResolver, ExternalVarResolver externalVarResolver) {
     this.accessorResolver = accessorResolver;
-    this.externalVarResolver = externalVarResolver;
+    this.listTypeResolver = new ListTypeResolver(accessorResolver, this, externalVarResolver);
   }
 
   @Override
@@ -30,66 +28,22 @@ public class SimpleTypeResolver implements TypeResolver {
       return new SSZBasicType(descriptor, codec.get());
     }
 
-    Optional<SSZListAccessor> listAccessor = accessorResolver.resolveListAccessor(descriptor);
-    if (listAccessor.isPresent()) {
-      SSZListAccessor accessor = listAccessor.get();
-      if (accessor instanceof BitlistAccessor) {
-        return new SSZBitListType(
-            descriptor, this, accessor, getVectorSize(descriptor), getMaxSize(descriptor));
-      } else {
-        return new SSZListType(
-            descriptor, this, accessor, getVectorSize(descriptor), getMaxSize(descriptor));
-      }
-    }
-
-    Optional<SSZUnionAccessor> unionAccessor = accessorResolver
-        .resolveUnionAccessor(descriptor);
+    Optional<SSZUnionAccessor> unionAccessor = accessorResolver.resolveUnionAccessor(descriptor);
     if (unionAccessor.isPresent()) {
       return new SSZUnionType(unionAccessor.get(), descriptor, this);
     }
 
-    Optional<SSZContainerAccessor> containerAccessor = accessorResolver
-        .resolveContainerAccessor(descriptor);
+    SSZType listType = listTypeResolver.resolveSSZType(descriptor);
+    if (listType != null) {
+      return listType;
+    }
+
+    Optional<SSZContainerAccessor> containerAccessor =
+        accessorResolver.resolveContainerAccessor(descriptor);
     if (containerAccessor.isPresent()) {
       return new SSZContainerType(this, descriptor, containerAccessor.get());
     }
 
     throw new SSZSchemeException("Couldn't resolve type for descriptor " + descriptor);
-  }
-
-  protected int getVectorSize(SSZField descriptor) {
-    if (descriptor.getFieldAnnotation() == null) {
-      return SSZType.VARIABLE_SIZE;
-    }
-    int vectorSize = descriptor.getFieldAnnotation().vectorLength();
-    if (vectorSize > 0) {
-      return vectorSize;
-    }
-    String vectorSizeVar = descriptor.getFieldAnnotation().vectorLengthVar();
-    if (!vectorSizeVar.isEmpty()) {
-      return externalVarResolver
-              .resolveOrThrow(vectorSizeVar, Number.class)
-              .intValue();
-    }
-
-    return SSZType.VARIABLE_SIZE;
-  }
-
-  protected long getMaxSize(SSZField descriptor) {
-    if (descriptor.getFieldAnnotation() == null) {
-      return SSZType.VARIABLE_SIZE;
-    }
-    long maxSize = descriptor.getFieldAnnotation().maxSize();
-    if (maxSize > 0) {
-      return maxSize;
-    }
-    String maxSizeVar = descriptor.getFieldAnnotation().maxSizeVar();
-    if (!maxSizeVar.isEmpty()) {
-      return externalVarResolver
-          .resolveOrThrow(maxSizeVar, Number.class)
-          .longValue();
-    }
-
-    return SSZType.VARIABLE_SIZE;
   }
 }

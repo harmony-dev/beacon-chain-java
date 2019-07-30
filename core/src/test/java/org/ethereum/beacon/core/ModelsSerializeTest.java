@@ -39,6 +39,7 @@ public class ModelsSerializeTest {
     specConstants = BeaconChainSpec.DEFAULT_CONSTANTS;
     sszSerializer = new SSZBuilder()
         .withExternalVarResolver(new SpecConstantsResolver(specConstants))
+        .withExtraObjectCreator(SpecConstants.class, specConstants)
         .buildSerializer();
     dataFactory = new TestDataFactory(specConstants);
   }

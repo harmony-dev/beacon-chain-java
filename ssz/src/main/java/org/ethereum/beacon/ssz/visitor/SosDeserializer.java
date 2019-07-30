@@ -11,7 +11,7 @@ import org.ethereum.beacon.ssz.access.SSZCompositeAccessor.CompositeInstanceBuil
 import org.ethereum.beacon.ssz.type.SSZBasicType;
 import org.ethereum.beacon.ssz.type.SSZCompositeType;
 import org.ethereum.beacon.ssz.type.SSZContainerType;
-import org.ethereum.beacon.ssz.type.SSZListType;
+import org.ethereum.beacon.ssz.type.list.SSZListType;
 import org.ethereum.beacon.ssz.type.SSZType;
 import org.ethereum.beacon.ssz.type.SSZUnionType;
 import org.javatuples.Pair;
@@ -72,9 +72,6 @@ public class SosDeserializer implements SSZVisitor<Object, Bytes> {
     int childIndex = 0;
     List<Pair<Integer, Integer>> varSizeChildren = new ArrayList<>();
     while (curOff < fixedPartEnd) {
-      if (type instanceof SSZListType) {
-        ((SSZListType) type).verifyMovingLimit(childIndex + 1);
-      }
       int childSize = getChildSize(type, childIndex);
       if (childSize == SSZType.VARIABLE_SIZE) {
         int bodyOff = deserializeLength(bytes.slice(curOff, BYTES_PER_LENGTH_OFFSET));

@@ -1,11 +1,5 @@
 package org.ethereum.beacon.ssz;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import org.ethereum.beacon.ssz.access.AccessorResolver;
 import org.ethereum.beacon.ssz.access.AccessorResolverRegistry;
 import org.ethereum.beacon.ssz.access.SSZBasicAccessor;
@@ -13,7 +7,6 @@ import org.ethereum.beacon.ssz.access.SSZContainerAccessor;
 import org.ethereum.beacon.ssz.access.SSZListAccessor;
 import org.ethereum.beacon.ssz.access.SSZUnionAccessor;
 import org.ethereum.beacon.ssz.access.basic.BooleanPrimitive;
-import org.ethereum.beacon.ssz.access.basic.BytesCodec;
 import org.ethereum.beacon.ssz.access.basic.BytesPrimitive;
 import org.ethereum.beacon.ssz.access.basic.HashCodec;
 import org.ethereum.beacon.ssz.access.basic.StringPrimitive;
@@ -35,8 +28,10 @@ import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import org.ethereum.beacon.ssz.annotation.SSZTransient;
 import org.ethereum.beacon.ssz.creator.CompositeObjCreator;
+import org.ethereum.beacon.ssz.creator.ConstructorExtraObjCreator;
 import org.ethereum.beacon.ssz.creator.ConstructorObjCreator;
 import org.ethereum.beacon.ssz.creator.ObjectCreator;
+import org.ethereum.beacon.ssz.creator.SettersExtraObjCreator;
 import org.ethereum.beacon.ssz.creator.SettersObjCreator;
 import org.ethereum.beacon.ssz.type.SimpleTypeResolver;
 import org.ethereum.beacon.ssz.type.TypeResolver;
@@ -45,9 +40,15 @@ import org.ethereum.beacon.ssz.visitor.SSZIncrementalHasher;
 import org.ethereum.beacon.ssz.visitor.SSZSimpleHasher;
 import org.ethereum.beacon.ssz.visitor.SSZVisitor;
 import org.ethereum.beacon.ssz.visitor.SSZVisitorHost;
-import org.javatuples.Pair;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * SSZ Builder is designed to create {@link SSZSerializer} or {@link SSZHasher} up to your needs.
@@ -99,8 +100,6 @@ public class SSZBuilder {
   private ExternalVarResolver externalVarResolver = v -> {throw new SSZSchemeException("Variable resolver not set. Can resolve var: " + v);};
 
   private TypeResolver typeResolver = null;
-
-  private Function<Pair<AccessorResolver, ExternalVarResolver>, TypeResolver> typeResolverBuilder = null;
 
   private SSZVisitorHost visitorHost = null;
 
@@ -155,6 +154,22 @@ public class SSZBuilder {
     return this;
   }
 
+  /**
+   * With default object creators and object creator which adds extraValue of type extraType to the
+   * end of constructor parameters plus setter-based creator which calls constructor with extraType
+   * before setters
+   */
+  public SSZBuilder withExtraObjectCreator(Class extraType, Object extraValue) {
+    checkAlreadyInitialized();
+    this.objCreator =
+        new CompositeObjCreator(
+            new ConstructorExtraObjCreator(extraType, extraValue),
+            new SettersExtraObjCreator(extraType, extraValue),
+            new ConstructorObjCreator(),
+            new SettersObjCreator());
+    return this;
+  }
+
   public SSZBuilder withExternalVarResolver(Function<String, Object> externalVarResolver) {
     return withExternalVarResolver(ExternalVarResolver.fromFunction(externalVarResolver));
   }
@@ -168,12 +183,6 @@ public class SSZBuilder {
   public SSZBuilder withTypeResolver(TypeResolver typeResolver) {
     checkAlreadyInitialized();
     this.typeResolver = typeResolver;
-    return this;
-  }
-
-  public SSZBuilder withTypeResolverBuilder(Function<Pair<AccessorResolver, ExternalVarResolver>, TypeResolver> typeResolverBuilder) {
-    checkAlreadyInitialized();
-    this.typeResolverBuilder = typeResolverBuilder;
     return this;
   }
 
@@ -239,7 +248,6 @@ public class SSZBuilder {
     basicCodecs.add(new BooleanPrimitive());
     basicCodecs.add(new StringPrimitive());
     basicCodecs.add(new UIntCodec());
-    basicCodecs.add(new BytesCodec());
     basicCodecs.add(new HashCodec());
     basicCodecs.add(new UnionNull());
     return this;
@@ -328,11 +336,7 @@ public class SSZBuilder {
     }
 
     if (typeResolver == null) {
-      if (typeResolverBuilder != null) {
-        typeResolver = typeResolverBuilder.apply(Pair.with(accessorResolverRegistry, externalVarResolver));
-      } else {
-        typeResolver = new SimpleTypeResolver(accessorResolverRegistry, externalVarResolver);
-      }
+      typeResolver = new SimpleTypeResolver(accessorResolverRegistry, externalVarResolver);
     }
 
     if (visitorHost == null) {

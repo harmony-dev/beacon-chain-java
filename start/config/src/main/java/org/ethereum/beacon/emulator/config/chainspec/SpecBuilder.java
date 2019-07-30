@@ -40,6 +40,7 @@ public class SpecBuilder {
         .withBlsVerifyProofOfPossession(specHelpersOptions.isBlsVerifyProofOfPossession())
         .withCache(spec.getSpecHelpersOptions().isEnableCache())
         .withVerifyDepositProof(specHelpersOptions.isVerifyDepositProof())
+        .withComputableGenesisTime(specHelpersOptions.isComputableGenesisTime())
         .build();
   }
 

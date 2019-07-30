@@ -1,12 +1,10 @@
 package org.ethereum.beacon.core.state;
 
-import java.util.Map;
-import java.util.function.Supplier;
 import org.ethereum.beacon.core.BeaconBlockHeader;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
-import tech.pegasys.artemis.util.collections.Bitvector;
+import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ShardNumber;
@@ -19,76 +17,130 @@ import org.ethereum.beacon.ssz.incremental.ObservableCompositeHelper.ObsValue;
 import org.ethereum.beacon.ssz.incremental.ObservableListImpl;
 import org.ethereum.beacon.ssz.incremental.UpdateListener;
 import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.collections.Bitvector;
 import tech.pegasys.artemis.util.collections.WriteList;
 import tech.pegasys.artemis.util.uint.UInt64;
+
+import java.util.Map;
+import java.util.function.Supplier;
 
 @SSZSerializable
 public class BeaconStateImpl implements MutableBeaconState {
 
-  private ObservableCompositeHelper obsHelper = new ObservableCompositeHelper();
+  private final ObservableCompositeHelper obsHelper = new ObservableCompositeHelper();
+  private final SpecConstants specConstants; // backup
 
   /* Versioning */
-  private ObsValue<Time> genesisTime = obsHelper.newValue(Time.ZERO);
-  private ObsValue<SlotNumber> slot = obsHelper.newValue(SlotNumber.ZERO);
-  private ObsValue<Fork> fork = obsHelper.newValue(Fork.EMPTY);
+  private final ObsValue<Time> genesisTime;
+  private final ObsValue<SlotNumber> slot;
+  private final ObsValue<Fork> fork;
 
   /* History */
-  private ObsValue<BeaconBlockHeader> latestBlockHeader =
-      obsHelper.newValue(BeaconBlockHeader.EMPTY);
-  private ObsValue<WriteList<SlotNumber, Hash32>> blockRoots =
-      obsHelper.newValue(ObservableListImpl.create(SlotNumber::of, true));
-  private ObsValue<WriteList<SlotNumber, Hash32>> stateRoots =
-      obsHelper.newValue(ObservableListImpl.create(SlotNumber::of, true));
-  private ObsValue<WriteList<Integer, Hash32>> historicalRoots =
-      obsHelper.newValue(ObservableListImpl.create(Integer::valueOf));
+  private final ObsValue<BeaconBlockHeader> latestBlockHeader;
+  private final ObsValue<WriteList<SlotNumber, Hash32>> blockRoots;
+  private final ObsValue<WriteList<SlotNumber, Hash32>> stateRoots;
+  private final ObsValue<WriteList<Integer, Hash32>> historicalRoots;
 
   /* Eth1 */
-  private ObsValue<Eth1Data> eth1Data = obsHelper.newValue(Eth1Data.EMPTY);
-  private ObsValue<WriteList<Integer, Eth1Data>> eth1DataVotes =
-      obsHelper.newValue(ObservableListImpl.create(Integer::valueOf));
-  private ObsValue<UInt64> eth1DepositIndex = obsHelper.newValue(UInt64.ZERO);
+  private final ObsValue<Eth1Data> eth1Data;
+  private final ObsValue<WriteList<Integer, Eth1Data>> eth1DataVotes;
+  private final ObsValue<UInt64> eth1DepositIndex;
 
   /* Registry */
-  private ObsValue<WriteList<ValidatorIndex, ValidatorRecord>> validators =
-      obsHelper.newValue(ObservableListImpl.create(ValidatorIndex::of));
-  private ObsValue<WriteList<ValidatorIndex, Gwei>> balances =
-      obsHelper.newValue(ObservableListImpl.create(ValidatorIndex::of));
+  private final ObsValue<WriteList<ValidatorIndex, ValidatorRecord>> validators;
+  private final ObsValue<WriteList<ValidatorIndex, Gwei>> balances;
 
   /* Shuffling */
-  private ObsValue<ShardNumber> startShard = obsHelper.newValue(ShardNumber.ZERO);
-  private ObsValue<WriteList<EpochNumber, Hash32>> randaoMixes =
-      obsHelper.newValue(ObservableListImpl.create(EpochNumber::of, true));
-  private ObsValue<WriteList<EpochNumber, Hash32>> activeIndexRoots =
-      obsHelper.newValue(ObservableListImpl.create(EpochNumber::of, true));
-  private ObsValue<WriteList<EpochNumber, Hash32>> compactCommitteesRoots =
-      obsHelper.newValue(ObservableListImpl.create(EpochNumber::of, true));
+  private final ObsValue<ShardNumber> startShard;
+  private final ObsValue<WriteList<EpochNumber, Hash32>> randaoMixes;
+  private final ObsValue<WriteList<EpochNumber, Hash32>> activeIndexRoots;
+  private final ObsValue<WriteList<EpochNumber, Hash32>> compactCommitteesRoots;
 
   /* Slashings */
-  private ObsValue<WriteList<EpochNumber, Gwei>> slashings =
-      obsHelper.newValue(ObservableListImpl.create(EpochNumber::of, true));
+  private final ObsValue<WriteList<EpochNumber, Gwei>> slashings;
 
   /* Attestations */
-  private ObsValue<WriteList<Integer, PendingAttestation>> previousEpochAttestations =
-      obsHelper.newValue(ObservableListImpl.create(Integer::valueOf));
-  private ObsValue<WriteList<Integer, PendingAttestation>> currentEpochAttestations =
-      obsHelper.newValue(ObservableListImpl.create(Integer::valueOf));
+  private final ObsValue<WriteList<Integer, PendingAttestation>> previousEpochAttestations;
+  private final ObsValue<WriteList<Integer, PendingAttestation>> currentEpochAttestations;
 
   /* Crosslinks */
-  private ObsValue<WriteList<ShardNumber, Crosslink>> previousCrosslinks =
-      obsHelper.newValue(ObservableListImpl.create(ShardNumber::of, true));
-  private ObsValue<WriteList<ShardNumber, Crosslink>> currentCrosslinks =
-      obsHelper.newValue(ObservableListImpl.create(ShardNumber::of, true));
+  private final ObsValue<WriteList<ShardNumber, Crosslink>> previousCrosslinks;
+  private final ObsValue<WriteList<ShardNumber, Crosslink>> currentCrosslinks;
 
 
   /* Finality */
-  private ObsValue<Bitvector> justificationBits = obsHelper.newValue(Bitvector.EMPTY);
-  private ObsValue<Checkpoint> previousJustifiedCheckpoint = obsHelper.newValue(Checkpoint.EMPTY);
-  private ObsValue<Checkpoint> currentJustifiedCheckpoint = obsHelper.newValue(Checkpoint.EMPTY);
-  private ObsValue<Checkpoint> finalizedCheckpoint = obsHelper.newValue(Checkpoint.EMPTY);
+  private final ObsValue<Bitvector> justificationBits;
+  private final ObsValue<Checkpoint> previousJustifiedCheckpoint;
+  private final ObsValue<Checkpoint> currentJustifiedCheckpoint;
+  private final ObsValue<Checkpoint> finalizedCheckpoint;
 
-  public BeaconStateImpl() {}
+  public BeaconStateImpl(SpecConstants specConstants) {
+    this.specConstants = specConstants;
+    // Versioning
+    this.genesisTime = obsHelper.newValue(Time.ZERO);
+    this.slot = obsHelper.newValue(SlotNumber.ZERO);
+    this.fork = obsHelper.newValue(Fork.EMPTY);
 
-  BeaconStateImpl(BeaconState state) {
+    // History
+    this.latestBlockHeader = obsHelper.newValue(BeaconBlockHeader.EMPTY);
+    this.blockRoots = obsHelper.newValue(ObservableListImpl.create(SlotNumber::of, true));
+    this.stateRoots = obsHelper.newValue(ObservableListImpl.create(SlotNumber::of, true));
+    this.historicalRoots =
+        obsHelper.newValue(
+            ObservableListImpl.create(
+                Integer::valueOf, specConstants.getHistoricalRootsLimit().longValue()));
+
+    // Eth1
+    this.eth1Data = obsHelper.newValue(Eth1Data.EMPTY);
+    this.eth1DataVotes =
+        obsHelper.newValue(
+            ObservableListImpl.create(
+                Integer::valueOf, specConstants.getSlotsPerEth1VotingPeriod().longValue()));
+    this.eth1DepositIndex = obsHelper.newValue(UInt64.ZERO);
+
+    // Registry
+    this.validators =
+        obsHelper.newValue(
+            ObservableListImpl.create(
+                ValidatorIndex::of, specConstants.getValidatorRegistryLimit().longValue()));
+    this.balances =
+        obsHelper.newValue(
+            ObservableListImpl.create(
+                ValidatorIndex::of, specConstants.getValidatorRegistryLimit().longValue()));
+
+    // Shuffling
+    this.startShard = obsHelper.newValue(ShardNumber.ZERO);
+    this.randaoMixes = obsHelper.newValue(ObservableListImpl.create(EpochNumber::of, true));
+    this.activeIndexRoots = obsHelper.newValue(ObservableListImpl.create(EpochNumber::of, true));
+    this.compactCommitteesRoots =
+        obsHelper.newValue(ObservableListImpl.create(EpochNumber::of, true));
+
+    // Slashings
+    this.slashings = obsHelper.newValue(ObservableListImpl.create(EpochNumber::of, true));
+
+    // Attestations
+    this.previousEpochAttestations =
+        obsHelper.newValue(
+            ObservableListImpl.create(
+                Integer::valueOf, specConstants.getMaxEpochAttestations().longValue()));
+    this.currentEpochAttestations =
+        obsHelper.newValue(
+            ObservableListImpl.create(
+                Integer::valueOf, specConstants.getMaxEpochAttestations().longValue()));
+
+    // Crosslinks
+    this.previousCrosslinks = obsHelper.newValue(ObservableListImpl.create(ShardNumber::of, true));
+    this.currentCrosslinks = obsHelper.newValue(ObservableListImpl.create(ShardNumber::of, true));
+
+    // Finality
+    this.justificationBits = obsHelper.newValue(Bitvector.EMPTY);
+    this.previousJustifiedCheckpoint = obsHelper.newValue(Checkpoint.EMPTY);
+    this.currentJustifiedCheckpoint = obsHelper.newValue(Checkpoint.EMPTY);
+    this.finalizedCheckpoint = obsHelper.newValue(Checkpoint.EMPTY);
+  }
+
+  private BeaconStateImpl(BeaconState state, SpecConstants specConstants) {
+    this(specConstants);
     genesisTime.set(state.getGenesisTime());
     slot.set(state.getSlot());
     fork.set(state.getFork());
@@ -138,7 +190,7 @@ public class BeaconStateImpl implements MutableBeaconState {
 
   @Override
   public BeaconState createImmutable() {
-    return new BeaconStateImpl(this);
+    return new BeaconStateImpl(this, specConstants);
   }
 
   @Override
@@ -391,7 +443,7 @@ public class BeaconStateImpl implements MutableBeaconState {
 
   @Override
   public MutableBeaconState createMutableCopy() {
-    return new BeaconStateImpl(this);
+    return new BeaconStateImpl(this, specConstants);
   }
 
   @Override

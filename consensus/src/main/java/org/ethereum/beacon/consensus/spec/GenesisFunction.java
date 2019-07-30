@@ -1,8 +1,5 @@
 package org.ethereum.beacon.consensus.spec;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
@@ -17,8 +14,12 @@ import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes4;
+import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
 import tech.pegasys.artemis.util.uint.UInt64s;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * On genesis part.
@@ -49,21 +50,20 @@ public interface GenesisFunction extends BlockProcessing {
         new Checkpoint(getConstants().getGenesisEpoch(), Hash32.ZERO));
 
     state.setSlot(getConstants().getGenesisSlot());
-    state.setGenesisTime(eth1_timestamp);
+    state.setGenesisTime(compute_genesis_time(eth1_timestamp));
     state.setFork(new Fork(Bytes4.ZERO, Bytes4.ZERO, getConstants().getGenesisEpoch()));
     state.setLatestBlockHeader(get_block_header(get_empty_block()));
 
     // Process deposits
-    // Spec maintains initial deposit proofs and roots in incremental fashion,
-    // i.e. new root is computed for each new update of deposit list.
-    // Hence, each genesis deposit has its own root.
-    // Our impl works in more efficient way: one root to proof them all.
-    // Which implies all genesis deposit being a part of the same merkle tree instance.
-    List<DepositData> deposit_data_list =
-        deposits.stream().map(Deposit::getData).collect(Collectors.toList());
-    state.setEth1Data(new Eth1Data(
-        hash_tree_root(deposit_data_list), UInt64.valueOf(deposits.size()), eth1_block_hash));
-    for (Deposit deposit : deposits) {
+    for (int index = 0; index < deposits.size(); index++) {
+      Deposit deposit = deposits.get(index);
+      ReadList<Integer, DepositData> deposit_data_list =
+          ReadList.wrap(
+              deposits.stream().map(Deposit::getData).limit(index + 1).collect(Collectors.toList()),
+              Integer::new,
+              1L << getConstants().getDepositContractTreeDepth().getIntValue());
+      state.setEth1Data(new Eth1Data(
+          hash_tree_root(deposit_data_list), UInt64.valueOf(deposits.size()), eth1_block_hash));
       verify_deposit(state, deposit);
       process_deposit(state, deposit);
     }
@@ -90,8 +90,8 @@ public interface GenesisFunction extends BlockProcessing {
     }
 
     // Populate active_index_roots and compact_committees_roots
-    List<ValidatorIndex> indices_list =
-        new ArrayList<>(get_active_validator_indices(state, getConstants().getGenesisEpoch()));
+    ReadList<Integer, ValidatorIndex> indices_list =
+        get_active_validator_indices_list(state, getConstants().getGenesisEpoch());
     Hash32 active_index_root = hash_tree_root(indices_list);
     Hash32 committee_root = get_compact_committees_root(state, getConstants().getGenesisEpoch());
 
@@ -103,6 +103,17 @@ public interface GenesisFunction extends BlockProcessing {
     return state.createImmutable();
   }
 
+  default Time compute_genesis_time(Time eth1_timestamp) {
+    if (!isComputableGenesisTime()) {
+      return eth1_timestamp;
+    }
+
+    return Time.castFrom(
+        eth1_timestamp
+            .minus(eth1_timestamp.modulo(getConstants().getSecondsPerDay()))
+            .plus(getConstants().getSecondsPerDay().times(2)));
+  }
+
   /*
     def is_valid_genesis_state(state: BeaconState) -> bool:
       if state.genesis_time < MIN_GENESIS_TIME:
@@ -111,7 +122,7 @@ public interface GenesisFunction extends BlockProcessing {
           return False
       return True
    */
-  default boolean is_genesis_trigger(BeaconState state) {
+  default boolean is_valid_genesis_state(BeaconState state) {
     if (state.getGenesisTime().less(getConstants().getMinGenesisTime())) {
       return false;
     }

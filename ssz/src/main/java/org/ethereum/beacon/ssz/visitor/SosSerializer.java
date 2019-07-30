@@ -1,10 +1,9 @@
 package org.ethereum.beacon.ssz.visitor;
 
-import org.ethereum.beacon.ssz.SSZSerializeException;
 import org.ethereum.beacon.ssz.access.SSZUnionAccessor.UnionInstanceAccessor;
 import org.ethereum.beacon.ssz.type.SSZBasicType;
 import org.ethereum.beacon.ssz.type.SSZCompositeType;
-import org.ethereum.beacon.ssz.type.SSZListType;
+import org.ethereum.beacon.ssz.type.list.SSZListType;
 import org.ethereum.beacon.ssz.type.SSZUnionType;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.bytes.BytesValues;
@@ -13,9 +12,6 @@ import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.ethereum.beacon.ssz.type.SSZType.Type.LIST;
-import static org.ethereum.beacon.ssz.type.SSZType.Type.VECTOR;
-import static org.ethereum.beacon.ssz.type.SSZType.VARIABLE_SIZE;
 import static org.ethereum.beacon.ssz.visitor.SosDeserializer.BYTES_PER_LENGTH_OFFSET;
 
 /** SSZ serializer with offset-based encoding of variable sized elements */
@@ -35,7 +31,6 @@ public class SosSerializer implements SSZVisitor<SosSerializer.SerializerResult,
   @Override
   public SerializerResult visitList(
       SSZListType type, Object param, ChildVisitor<Object, SerializerResult> childVisitor) {
-    type.verifyLimit(param);
     return visitComposite(type, param, childVisitor);
   }
 

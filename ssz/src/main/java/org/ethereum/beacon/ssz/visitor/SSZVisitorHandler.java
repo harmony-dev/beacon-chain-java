@@ -1,6 +1,6 @@
 package org.ethereum.beacon.ssz.visitor;
 
-import org.ethereum.beacon.ssz.type.SSZListType;
+import org.ethereum.beacon.ssz.type.list.SSZListType;
 import org.ethereum.beacon.ssz.type.SSZType;
 
 /**

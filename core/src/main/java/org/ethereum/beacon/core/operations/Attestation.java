@@ -1,16 +1,19 @@
 package org.ethereum.beacon.core.operations;
 
 import com.google.common.base.Objects;
-import java.util.stream.Collectors;
-import javax.annotation.Nullable;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.types.BLSSignature;
-import tech.pegasys.artemis.util.collections.Bitlist;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
+import tech.pegasys.artemis.util.collections.Bitlist;
+
+import javax.annotation.Nullable;
+import java.util.stream.Collectors;
+
+import static tech.pegasys.artemis.util.collections.ReadList.VARIABLE_SIZE;
 
 /**
  * Attests on a block linked to particular slot in particular shard.
@@ -39,7 +42,21 @@ public class Attestation {
       Bitlist aggregationBits,
       AttestationData data,
       Bitlist custodyBits,
-      BLSSignature signature) {
+      BLSSignature signature,
+      SpecConstants specConstants) {
+    this(
+        aggregationBits.maxSize() == VARIABLE_SIZE
+            ? aggregationBits.cappedCopy(specConstants.getMaxValidatorsPerCommittee().longValue())
+            : aggregationBits,
+        data,
+        custodyBits.maxSize() == VARIABLE_SIZE
+            ? custodyBits.cappedCopy(specConstants.getMaxValidatorsPerCommittee().longValue())
+            : custodyBits,
+        signature);
+  }
+
+  private Attestation(
+      Bitlist aggregationBits, AttestationData data, Bitlist custodyBits, BLSSignature signature) {
     this.aggregationBits = aggregationBits;
     this.data = data;
     this.custodyBits = custodyBits;
@@ -91,19 +108,26 @@ public class Attestation {
     return aggregationBits.getBits().stream().map(i -> "" + i).collect(Collectors.joining("+"));
   }
 
-  public String toString(@Nullable SpecConstants spec,@Nullable Time beaconStart) {
+  public String toString(@Nullable SpecConstants spec, @Nullable Time beaconStart) {
     return "Attestation["
         + data.toString()
-        + ", attesters=" + getSignerIndices()
-        + ", custodyBits=" + custodyBits
-        + ", sig=" + signature
+        + ", attesters="
+        + getSignerIndices()
+        + ", custodyBits="
+        + custodyBits
+        + ", sig="
+        + signature
         + "]";
   }
 
   public String toStringShort(@Nullable SpecConstants spec) {
-    return "epoch=" + getData().getTarget().getEpoch().toString() + "/"
-        + getData().getCrosslink().getShard().toString() + "/"
-        + getData().getBeaconBlockRoot().toStringShort() + "/"
+    return "epoch="
+        + getData().getTarget().getEpoch().toString()
+        + "/"
+        + getData().getCrosslink().getShard().toString()
+        + "/"
+        + getData().getBeaconBlockRoot().toStringShort()
+        + "/"
         + getSignerIndices();
   }
 }
