@@ -105,7 +105,7 @@ public class Benchmaker implements Runnable {
   static class VersionProvider implements IVersionProvider {
     @Override
     public String[] getVersion() throws Exception {
-      return new String[] { "benchmaker " + ClientInfo.version() };
+      return new String[] {ClientInfo.fullTitleVersion(Benchmaker.class)};
     }
   }
 }

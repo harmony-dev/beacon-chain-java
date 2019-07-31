@@ -1,11 +1,11 @@
 dependencies {
+  api project(':validator:core')
   implementation project(':chain')
   implementation project(':util')
   implementation project(':wire')
   implementation project(':pow:core')
   implementation project(':crypto')
-  api project(':validator:core')
-  testImplementation project(':start:common')
+  implementation project(':start:common')
 
   implementation 'com.google.guava:guava'
   implementation 'io.projectreactor:reactor-core'

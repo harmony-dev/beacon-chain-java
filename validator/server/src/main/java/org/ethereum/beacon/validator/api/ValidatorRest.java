@@ -30,7 +30,7 @@ import static org.ethereum.beacon.validator.api.controller.ControllerRoute.Reque
  * REST service for beacon chain validator according to <a
  * href="https://github.com/ethereum/eth2.0-specs/blob/v0.7.1/specs/validator/beacon_node_oapi.yaml">https://github.com/ethereum/eth2.0-specs/blob/v0.7.1/specs/validator/beacon_node_oapi.yaml</a>
  */
-public class ValidatorRest {
+public class ValidatorRest implements ValidatorServer {
   private static final Logger logger = LogManager.getLogger(ValidatorRest.class);
   private final RestServerVerticle server;
   private String id;
@@ -77,20 +77,22 @@ public class ValidatorRest {
             new AttestationSubmitController(syncManager, wireApiSub, stateProcessor, spec)));
     controllers.add(
         ControllerRoute.of(GET, "/node/fork", new ForkController(stateProcessor, spec, chainId)));
-    server = new RestServerVerticle(serverPort, controllers);
+    this.server = new RestServerVerticle(serverPort, controllers);
   }
 
-  public void start() {
+  @Override
+  public synchronized void start() {
     logger.info("Starting Validator REST on {} port", server.getServerPort());
     vertx.deployVerticle(
         server,
         event -> {
-          id = event.result();
+          this.id = event.result();
           logger.info("Validator REST started on {} port with id #{}", server.getServerPort(), id);
         });
   }
 
-  public void stop() {
+  @Override
+  public synchronized void stop() {
     try {
       server.stop();
       vertx.undeploy(id);

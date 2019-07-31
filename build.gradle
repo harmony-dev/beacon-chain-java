@@ -34,14 +34,16 @@ allprojects {
 
   // Customize module jars so every module and sub-module receives right name
   tasks.withType(Jar) {
+    def titleAddon = ''
     if (rootProject == project) {
       baseName = project.name
     } else {
       def projectCustomName = project.path.replaceAll(":", "-");
       baseName = rootProject.name + projectCustomName
+      titleAddon = ' ' + projectCustomName.substring(1) // cut starting -
     }
     manifest {
-      attributes('Implementation-Title': baseName,
+      attributes('Implementation-Title': rootProject.title + titleAddon,
           'Implementation-Version': project.version)
     }
   }

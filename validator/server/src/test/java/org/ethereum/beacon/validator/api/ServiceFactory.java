@@ -1,5 +1,8 @@
 package org.ethereum.beacon.validator.api;
 
+import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
+import io.vertx.ext.web.RoutingContext;
 import org.ethereum.beacon.chain.BeaconChainHead;
 import org.ethereum.beacon.chain.BeaconTuple;
 import org.ethereum.beacon.chain.BeaconTupleDetails;
@@ -28,6 +31,8 @@ import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.stream.SimpleProcessor;
+import org.ethereum.beacon.validator.api.controller.ControllerRoute;
+import org.ethereum.beacon.validator.api.controller.VersionController;
 import org.ethereum.beacon.validator.local.MultiValidatorServiceTest;
 import org.ethereum.beacon.wire.Feedback;
 import org.ethereum.beacon.wire.WireApiSub;
@@ -39,10 +44,60 @@ import reactor.core.publisher.Mono;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.collections.Bitlist;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Random;
 
 public class ServiceFactory {
+
+  /** {@link VersionController} uses data which is accessible only in assembled jar */
+  public static ValidatorServer createVersionOverride(Integer serverPort) {
+    return new ValidatorServer() {
+      private RestServerVerticle server =
+          new RestServerVerticle(
+              serverPort,
+              new ArrayList<ControllerRoute>() {
+                {
+                  add(
+                      ControllerRoute.of(
+                          ControllerRoute.RequestType.GET,
+                          "/node/version",
+                          new VersionController() {
+                            @Override
+                            public Handler<RoutingContext> getHandler() {
+                              return event ->
+                                  event
+                                      .response()
+                                      .putHeader("content-type", "application/json; charset=utf-8")
+                                      .end("Beacon Chain Java validator-server v0.2.0");
+                            }
+                          }));
+                }
+              });
+      private String id;
+      private Vertx vertx = Vertx.vertx();
+
+      @Override
+      public void start() {
+        vertx.deployVerticle(
+            server,
+            event -> {
+              this.id = event.result();
+            });
+      }
+
+      @Override
+      public void stop() {
+        try {
+          server.stop();
+          vertx.undeploy(id);
+          this.id = null;
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      }
+    };
+  }
 
   public static ObservableStateProcessor createObservableStateProcessor(SpecConstants constants) {
     return new ObservableStateProcessor() {

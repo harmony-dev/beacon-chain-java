@@ -41,12 +41,12 @@ public class ValidatorRestTest {
   private final String SERVER_HOST = "localhost";
   private final Integer SERVER_PORT = 1234;
   private final String SERVER_URL = "http://" + SERVER_HOST + ":" + SERVER_PORT;
-  private ValidatorRest server;
+  private ValidatorServer server;
   private ValidatorClient client = new RestClient(SERVER_URL);
   private BeaconChainSpec SPEC = BeaconChainSpec.createWithDefaults();
   private SpecConstants CONSTANTS = SPEC.getConstants();
 
-  private ValidatorRest createSyncNotStartedServer() {
+  private ValidatorServer createSyncNotStartedServer() {
     return new ValidatorRest(
         SERVER_PORT,
         SPEC,
@@ -58,7 +58,7 @@ public class ValidatorRestTest {
         ServiceFactory.createMutableBeaconChain());
   }
 
-  private ValidatorRest createLongSyncServer() {
+  private ValidatorServer createLongSyncServer() {
     return new ValidatorRest(
         SERVER_PORT,
         SPEC,
@@ -70,7 +70,7 @@ public class ValidatorRestTest {
         ServiceFactory.createMutableBeaconChain());
   }
 
-  private ValidatorRest createShortSyncServer() {
+  private ValidatorServer createShortSyncServer() {
     return new ValidatorRest(
         SERVER_PORT,
         SPEC,
@@ -89,7 +89,7 @@ public class ValidatorRestTest {
 
   @Test
   public void testVersion() {
-    this.server = createSyncNotStartedServer();
+    this.server = ServiceFactory.createVersionOverride(SERVER_PORT);
     server.start();
     String version = client.getVersion();
     assertTrue(version.startsWith("Beacon"));
