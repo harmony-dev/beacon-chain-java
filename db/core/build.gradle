@@ -1,3 +1,5 @@
 dependencies {
     api project(':types')
+
+    api "org.rocksdb:rocksdbjni"
 }
