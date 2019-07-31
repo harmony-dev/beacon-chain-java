@@ -19,7 +19,7 @@ public class SyncingResponse {
     this.syncStatus = new SyncStatus(startingSlot, currentSlot, highestSlot);
   }
 
-  public static SyncingResponse fromManagerStatus(SyncManager.SyncStatus status) {
+  public static SyncingResponse create(SyncManager.SyncStatus status) {
     return new SyncingResponse(
         status.isSyncing(),
         status.getStart() == null

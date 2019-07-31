@@ -13,7 +13,7 @@ public class SyncingController extends RestController {
     Flux.from(syncManager.getSyncStatusStream())
         .subscribe(
             syncStatus -> {
-              syncingResponse = SyncingResponse.fromManagerStatus(syncStatus);
+              syncingResponse = SyncingResponse.create(syncStatus);
             });
   }
 
