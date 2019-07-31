@@ -35,6 +35,8 @@ import org.ethereum.beacon.validator.api.controller.ControllerRoute;
 import org.ethereum.beacon.validator.api.controller.VersionController;
 import org.ethereum.beacon.validator.local.MultiValidatorServiceTest;
 import org.ethereum.beacon.wire.Feedback;
+import org.ethereum.beacon.wire.Peer;
+import org.ethereum.beacon.wire.PeerManager;
 import org.ethereum.beacon.wire.WireApiSub;
 import org.ethereum.beacon.wire.WireApiSync;
 import org.ethereum.beacon.wire.sync.SyncManager;
@@ -220,12 +222,22 @@ public class ServiceFactory {
 
       @Override
       public Publisher<SyncMode> getSyncModeStream() {
-        return null;
+        return Mono.just(SyncMode.Long);
       }
 
       @Override
-      public Publisher<SyncStatus> getSyncStatusStream() {
-        return Mono.just(new SyncStatus(false, null, null, null, null));
+      public Publisher<Boolean> getIsSyncingStream() {
+        return Mono.just(false);
+      }
+
+      @Override
+      public Publisher<SlotNumber> getStartSlotStream() {
+        return Mono.just(SlotNumber.ZERO);
+      }
+
+      @Override
+      public Publisher<SlotNumber> getLastSlotStream() {
+        return Mono.just(SlotNumber.ZERO);
       }
 
       @Override
@@ -258,14 +270,22 @@ public class ServiceFactory {
 
       @Override
       public Publisher<SyncMode> getSyncModeStream() {
-        return null;
+        return Mono.just(SyncMode.Long);
       }
 
       @Override
-      public Publisher<SyncStatus> getSyncStatusStream() {
-        return Mono.just(
-            new SyncStatus(
-                true, SlotNumber.ZERO, SlotNumber.of(1000), SlotNumber.ZERO, SyncMode.Long));
+      public Publisher<Boolean> getIsSyncingStream() {
+        return Mono.just(true);
+      }
+
+      @Override
+      public Publisher<SlotNumber> getStartSlotStream() {
+        return Mono.just(SlotNumber.ZERO);
+      }
+
+      @Override
+      public Publisher<SlotNumber> getLastSlotStream() {
+        return Mono.just(SlotNumber.ZERO);
       }
 
       @Override
@@ -298,14 +318,22 @@ public class ServiceFactory {
 
       @Override
       public Publisher<SyncMode> getSyncModeStream() {
-        return null;
+        return Mono.just(SyncMode.Short);
       }
 
       @Override
-      public Publisher<SyncStatus> getSyncStatusStream() {
-        return Mono.just(
-            new SyncStatus(
-                true, SlotNumber.ZERO, SlotNumber.ZERO, SlotNumber.ZERO, SyncMode.Short));
+      public Publisher<Boolean> getIsSyncingStream() {
+        return Mono.just(true);
+      }
+
+      @Override
+      public Publisher<SlotNumber> getStartSlotStream() {
+        return Mono.just(SlotNumber.ZERO);
+      }
+
+      @Override
+      public Publisher<SlotNumber> getLastSlotStream() {
+        return Mono.just(SlotNumber.ZERO);
       }
 
       @Override
@@ -359,54 +387,68 @@ public class ServiceFactory {
     };
   }
 
-  public static WireApiSub createWireApiSub() {
-    return new WireApiSub() {
-      @Override
-      public void sendProposedBlock(BeaconBlock block) {}
+  public static PeerManager createPeerManagerWithSubMirror() {
+    final WireApiSub wireApiSub =
+        new WireApiSub() {
+          SimpleProcessor<BeaconBlock> blockProcessor =
+              new SimpleProcessor<BeaconBlock>(
+                  Schedulers.createDefault().newSingleThreadDaemon("blockProcessor"),
+                  "blockProcessor");
+          SimpleProcessor<Attestation> attestationProcessor =
+              new SimpleProcessor<Attestation>(
+                  Schedulers.createDefault().newSingleThreadDaemon("attestationProcessor"),
+                  "attestationProcessor");
 
-      @Override
-      public void sendAttestation(Attestation attestation) {}
+          @Override
+          public void sendProposedBlock(BeaconBlock block) {
+            blockProcessor.onNext(block);
+          }
 
+          @Override
+          public void sendAttestation(Attestation attestation) {
+            attestationProcessor.onNext(attestation);
+          }
+
+          @Override
+          public Publisher<BeaconBlock> inboundBlocksStream() {
+            return blockProcessor;
+          }
+
+          @Override
+          public Publisher<Attestation> inboundAttestationsStream() {
+            return attestationProcessor;
+          }
+        };
+
+    return new PeerManager() {
       @Override
-      public Publisher<BeaconBlock> inboundBlocksStream() {
+      public Publisher<Peer> connectedPeerStream() {
         return null;
       }
 
       @Override
-      public Publisher<Attestation> inboundAttestationsStream() {
+      public Publisher<Peer> disconnectedPeerStream() {
         return null;
       }
-    };
-  }
-
-  public static WireApiSub createWireApiSubWithMirror() {
-    return new WireApiSub() {
-      SimpleProcessor<BeaconBlock> blockProcessor =
-          new SimpleProcessor<BeaconBlock>(
-              Schedulers.createDefault().newSingleThreadDaemon("blockProcessor"), "blockProcessor");
-      SimpleProcessor<Attestation> attestationProcessor =
-          new SimpleProcessor<Attestation>(
-              Schedulers.createDefault().newSingleThreadDaemon("attestationProcessor"),
-              "attestationProcessor");
 
       @Override
-      public void sendProposedBlock(BeaconBlock block) {
-        blockProcessor.onNext(block);
+      public Publisher<Peer> activatedPeerStream() {
+        return null;
       }
 
       @Override
-      public void sendAttestation(Attestation attestation) {
-        attestationProcessor.onNext(attestation);
+      public WireApiSync getWireApiSync() {
+        return null;
       }
 
       @Override
-      public Publisher<BeaconBlock> inboundBlocksStream() {
-        return blockProcessor;
+      public WireApiSub getWireApiSub() {
+        return wireApiSub;
       }
 
       @Override
-      public Publisher<Attestation> inboundAttestationsStream() {
-        return attestationProcessor;
+      public Publisher<SlotNumber> getMaxSlotStream() {
+        return Mono.just(SlotNumber.of(1000));
       }
     };
   }

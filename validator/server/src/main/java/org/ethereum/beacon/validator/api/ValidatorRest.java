@@ -16,7 +16,7 @@ import org.ethereum.beacon.validator.api.controller.ForkController;
 import org.ethereum.beacon.validator.api.controller.SyncingController;
 import org.ethereum.beacon.validator.api.controller.TimeController;
 import org.ethereum.beacon.validator.api.controller.VersionController;
-import org.ethereum.beacon.wire.WireApiSub;
+import org.ethereum.beacon.wire.PeerManager;
 import org.ethereum.beacon.wire.sync.SyncManager;
 import tech.pegasys.artemis.util.uint.UInt64;
 
@@ -40,16 +40,17 @@ public class ValidatorRest implements ValidatorServer {
       Integer serverPort,
       BeaconChainSpec spec,
       ObservableStateProcessor stateProcessor,
+      PeerManager peerManager,
       SyncManager syncManager,
       UInt64 chainId,
       ValidatorDutiesService validatorDutiesService,
-      WireApiSub wireApiSub,
       MutableBeaconChain beaconChain) {
     List<ControllerRoute> controllers = new ArrayList<>();
     controllers.add(ControllerRoute.of(GET, "/node/version", new VersionController()));
     controllers.add(
         ControllerRoute.of(GET, "/node/genesis_time", new TimeController(stateProcessor)));
-    controllers.add(ControllerRoute.of(GET, "/node/syncing", new SyncingController(syncManager)));
+    controllers.add(
+        ControllerRoute.of(GET, "/node/syncing", new SyncingController(syncManager, peerManager)));
     controllers.add(
         ControllerRoute.of(
             GET,
@@ -64,7 +65,8 @@ public class ValidatorRest implements ValidatorServer {
         ControllerRoute.of(
             POST,
             "/validator/block",
-            new BlockSubmitController(syncManager, wireApiSub, beaconChain, spec)));
+            new BlockSubmitController(
+                syncManager, peerManager.getWireApiSub(), beaconChain, spec)));
     controllers.add(
         ControllerRoute.of(
             GET,
@@ -74,7 +76,8 @@ public class ValidatorRest implements ValidatorServer {
         ControllerRoute.of(
             POST,
             "/validator/attestation",
-            new AttestationSubmitController(syncManager, wireApiSub, stateProcessor, spec)));
+            new AttestationSubmitController(
+                syncManager, peerManager.getWireApiSub(), stateProcessor, spec)));
     controllers.add(
         ControllerRoute.of(GET, "/node/fork", new ForkController(stateProcessor, spec, chainId)));
     this.server = new RestServerVerticle(serverPort, controllers);

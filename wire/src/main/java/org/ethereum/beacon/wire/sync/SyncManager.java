@@ -24,46 +24,14 @@ public interface SyncManager {
 
   Publisher<SyncMode> getSyncModeStream();
 
-  Publisher<SyncStatus> getSyncStatusStream();
+  Publisher<Boolean> getIsSyncingStream();
+
+  Publisher<SlotNumber> getStartSlotStream();
+
+  Publisher<SlotNumber> getLastSlotStream();
 
   enum SyncMode {
     Long,
     Short
-  }
-
-  class SyncStatus {
-    private final boolean syncing;
-    private final SlotNumber start;
-    private final SlotNumber bestKnown;
-    private final SlotNumber current;
-    private final SyncMode syncMode;
-
-    public SyncStatus(boolean syncing, SlotNumber start, SlotNumber bestKnown, SlotNumber current, SyncMode syncMode) {
-      this.syncing = syncing;
-      this.start = start;
-      this.bestKnown = bestKnown;
-      this.current = current;
-      this.syncMode = syncMode;
-    }
-
-    public boolean isSyncing() {
-      return syncing;
-    }
-
-    public SlotNumber getStart() {
-      return start;
-    }
-
-    public SlotNumber getBestKnown() {
-      return bestKnown;
-    }
-
-    public SlotNumber getCurrent() {
-      return current;
-    }
-
-    public SyncMode getSyncMode() {
-      return syncMode;
-    }
   }
 }

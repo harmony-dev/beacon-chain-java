@@ -16,6 +16,7 @@ import org.ethereum.beacon.validator.api.model.BlockData;
 import org.ethereum.beacon.validator.api.model.ForkResponse;
 import org.ethereum.beacon.validator.api.model.SyncingResponse;
 import org.ethereum.beacon.validator.api.model.ValidatorDutiesResponse;
+import org.ethereum.beacon.wire.PeerManager;
 import org.ethereum.beacon.wire.WireApiSub;
 import org.junit.After;
 import org.junit.Test;
@@ -51,10 +52,10 @@ public class ValidatorRestTest {
         SERVER_PORT,
         SPEC,
         ServiceFactory.createObservableStateProcessor(CONSTANTS),
+        ServiceFactory.createPeerManagerWithSubMirror(),
         ServiceFactory.createSyncManagerSyncNotStarted(),
         UInt64.valueOf(13),
         ServiceFactory.createValidatorDutiesService(CONSTANTS),
-        ServiceFactory.createWireApiSub(),
         ServiceFactory.createMutableBeaconChain());
   }
 
@@ -63,10 +64,10 @@ public class ValidatorRestTest {
         SERVER_PORT,
         SPEC,
         ServiceFactory.createObservableStateProcessor(CONSTANTS),
+        ServiceFactory.createPeerManagerWithSubMirror(),
         ServiceFactory.createSyncManagerSyncStarted(),
         UInt64.valueOf(13),
         ServiceFactory.createValidatorDutiesService(CONSTANTS),
-        ServiceFactory.createWireApiSub(),
         ServiceFactory.createMutableBeaconChain());
   }
 
@@ -75,10 +76,10 @@ public class ValidatorRestTest {
         SERVER_PORT,
         SPEC,
         ServiceFactory.createObservableStateProcessor(CONSTANTS),
+        ServiceFactory.createPeerManagerWithSubMirror(),
         ServiceFactory.createSyncManagerShortSync(),
         UInt64.valueOf(13),
         ServiceFactory.createValidatorDutiesService(CONSTANTS),
-        ServiceFactory.createWireApiSub(),
         ServiceFactory.createMutableBeaconChain());
   }
 
@@ -103,10 +104,10 @@ public class ValidatorRestTest {
             SERVER_PORT,
             SPEC,
             ServiceFactory.createObservableStateProcessorGenesisTimeModifiedTo10(CONSTANTS),
+            ServiceFactory.createPeerManagerWithSubMirror(),
             ServiceFactory.createSyncManagerSyncNotStarted(),
             UInt64.valueOf(13),
             ServiceFactory.createValidatorDutiesService(CONSTANTS),
-            ServiceFactory.createWireApiSub(),
             ServiceFactory.createMutableBeaconChain());
     server.start();
     long time = client.getGenesisTime();
@@ -176,10 +177,10 @@ public class ValidatorRestTest {
             SERVER_PORT,
             SPEC,
             ServiceFactory.createObservableStateProcessorWithValidators(blsPubkey, CONSTANTS),
+            ServiceFactory.createPeerManagerWithSubMirror(),
             ServiceFactory.createSyncManagerShortSync(),
             UInt64.valueOf(13),
             ServiceFactory.createValidatorDutiesService(CONSTANTS),
-            ServiceFactory.createWireApiSub(),
             ServiceFactory.createMutableBeaconChain());
     server.start();
     ValidatorDutiesResponse response1 = client.getValidatorDuties(0L, new String[] {pubkey});
@@ -212,10 +213,10 @@ public class ValidatorRestTest {
             SERVER_PORT,
             SPEC,
             ServiceFactory.createObservableStateProcessor(CONSTANTS),
+            ServiceFactory.createPeerManagerWithSubMirror(),
             ServiceFactory.createSyncManagerShortSync(),
             UInt64.valueOf(13),
             ServiceFactory.createValidatorDutiesService(CONSTANTS),
-            ServiceFactory.createWireApiSub(),
             ServiceFactory.createMutableBeaconChain());
     server.start();
     String randaoReveal =
@@ -242,16 +243,17 @@ public class ValidatorRestTest {
 
   @Test
   public void testBlockSubmit() {
-    WireApiSub wireApiSub = ServiceFactory.createWireApiSubWithMirror();
+    PeerManager peerManager = ServiceFactory.createPeerManagerWithSubMirror();
+    WireApiSub wireApiSub = peerManager.getWireApiSub();
     this.server =
         new ValidatorRest(
             SERVER_PORT,
             SPEC,
             ServiceFactory.createObservableStateProcessor(CONSTANTS),
+            peerManager,
             ServiceFactory.createSyncManagerShortSync(),
             UInt64.valueOf(13),
             ServiceFactory.createValidatorDutiesService(CONSTANTS),
-            wireApiSub,
             ServiceFactory.createMutableBeaconChain());
     server.start();
     AtomicInteger wireCounter = new AtomicInteger(0);
@@ -301,10 +303,10 @@ public class ValidatorRestTest {
             SERVER_PORT,
             SPEC,
             ServiceFactory.createObservableStateProcessor(CONSTANTS),
+            ServiceFactory.createPeerManagerWithSubMirror(),
             ServiceFactory.createSyncManagerShortSync(),
             UInt64.valueOf(13),
             ServiceFactory.createValidatorDutiesService(CONSTANTS),
-            ServiceFactory.createWireApiSub(),
             ServiceFactory.createMutableBeaconChain());
     server.start();
     String pubKey =
@@ -333,7 +335,8 @@ public class ValidatorRestTest {
 
   @Test
   public void testAttestationSubmit() {
-    WireApiSub wireApiSub = ServiceFactory.createWireApiSubWithMirror();
+    PeerManager peerManager = ServiceFactory.createPeerManagerWithSubMirror();
+    WireApiSub wireApiSub = peerManager.getWireApiSub();
     String pubKey =
         "0x5F1847060C89CB12A92AFF4EF140C9FC3A3F026796EC15105F1847060C89CB12A92AFF4EF140C9FC3A3F026796EC1510";
     this.server =
@@ -342,10 +345,10 @@ public class ValidatorRestTest {
             SPEC,
             ServiceFactory.createObservableStateProcessorWithValidators(
                 BLSPubkey.fromHexString(pubKey), CONSTANTS),
+            peerManager,
             ServiceFactory.createSyncManagerShortSync(),
             UInt64.valueOf(13),
             ServiceFactory.createValidatorDutiesService(CONSTANTS),
-            wireApiSub,
             ServiceFactory.createMutableBeaconChain());
     server.start();
     AtomicInteger wireCounter = new AtomicInteger(0);

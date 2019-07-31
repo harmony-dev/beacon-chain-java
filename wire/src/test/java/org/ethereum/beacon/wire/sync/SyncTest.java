@@ -85,8 +85,7 @@ public class SyncTest {
         asyncSyncServer,
         syncQueue,
         1,
-        testPeer.getSchedulers(),
-        new SimpleProcessor<>(testPeer.getSchedulers().events(), "bestKnownSlotStream"));
+        testPeer.getSchedulers());
 
     AtomicBoolean synced = new AtomicBoolean();
     Flux.from(testPeer.getBeaconChain().getBlockStatesStream())

@@ -16,11 +16,9 @@ public abstract class SyncRestController extends RestController {
   private boolean shortSync = false;
 
   public SyncRestController(SyncManager syncManager) {
-    Flux.from(syncManager.getSyncStatusStream())
-        .subscribe(
-            syncStatus -> {
-              shortSync = SyncManager.SyncMode.Short.equals(syncStatus.getSyncMode());
-            });
+    Flux.from(syncManager.getSyncModeStream())
+        .map(s -> s.equals(SyncManager.SyncMode.Short))
+        .subscribe(s -> shortSync = s);
   }
 
   /**

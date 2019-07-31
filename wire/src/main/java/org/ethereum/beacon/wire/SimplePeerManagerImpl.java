@@ -130,6 +130,7 @@ public class SimplePeerManagerImpl implements PeerManager {
     peer.getRawChannel().getCloseFuture().thenAccept(v -> activePeers.remove(peer));
   }
 
+  @Override
   public Publisher<SlotNumber> getMaxSlotStream() {
     return maxSlotStream;
   }
