@@ -1,5 +1,7 @@
 dependencies {
     api project(':types')
+    api project(':crypto')
 
     api "org.rocksdb:rocksdbjni"
+    api "com.googlecode.concurrent-locks:concurrent-locks"
 }

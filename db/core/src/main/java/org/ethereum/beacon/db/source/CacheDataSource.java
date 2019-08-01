@@ -1,7 +1,7 @@
 package org.ethereum.beacon.db.source;
 
-import javax.annotation.Nonnull;
 import java.util.Optional;
+import javax.annotation.Nonnull;
 
 /**
  * Represents {@link DataSource} which caches upstream key-value entries (either on read, write or both)
@@ -22,4 +22,10 @@ public interface CacheDataSource<KeyType, ValueType>
    */
   Optional<Optional<ValueType>> getCacheEntry(@Nonnull KeyType key);
 
+  /**
+   * Evaluates a number of bytes occupied by cached objects in memory.
+   *
+   * @return size in memory.
+   */
+  long evaluateSize();
 }
