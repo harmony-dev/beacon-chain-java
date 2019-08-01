@@ -16,21 +16,22 @@ public class ForkController extends RestController {
 
   public ForkController(
       ObservableStateProcessor stateProcessor, BeaconChainSpec spec, UInt64 chainId) {
-    Flux.from(stateProcessor.getObservableStateStream())
-        .subscribe(
-            observableBeaconState -> {
-              this.observableBeaconState = observableBeaconState;
-            });
+    Flux.from(stateProcessor.getObservableStateStream()).subscribe(this::updateState);
     this.spec = spec;
     this.chainId = chainId;
   }
 
-  private Object produceForkResponse() {
+  private synchronized void updateState(ObservableBeaconState observableBeaconState) {
+    this.observableBeaconState = observableBeaconState;
+  }
+
+  private synchronized Object produceForkResponse() {
     ForkResponse forkResponse =
         new ForkResponse(
             observableBeaconState.getLatestSlotState().getFork().getCurrentVersion().toString(),
             observableBeaconState.getLatestSlotState().getFork().getPreviousVersion().toString(),
-            spec.compute_epoch_of_slot(observableBeaconState.getLatestSlotState().getSlot()).longValue(),
+            spec.compute_epoch_of_slot(observableBeaconState.getLatestSlotState().getSlot())
+                .longValue(),
             chainId.toBI());
     return forkResponse;
   }
