@@ -49,13 +49,18 @@ public class AttestationController extends SyncRestController {
   private synchronized Object produceAttestationResponse(HttpServerRequest request) {
     try {
       MultiMap params = request.params();
-      SlotNumber slot = SlotNumber.castFrom(UInt64.valueOf(getParamString("slot", params)));
+      SlotNumber slot =
+          SlotNumber.castFrom(UInt64.valueOf(ControllerUtils.getParamString("slot", params)));
       BLSPubkey validatorPubkey =
-          BLSPubkey.wrap(Bytes48.fromHexStringStrict(getParamString("validator_pubkey", params)));
+          BLSPubkey.wrap(
+              Bytes48.fromHexStringStrict(
+                  ControllerUtils.getParamString("validator_pubkey", params)));
       Long pocBit =
           Long.valueOf(
-              getParamString("poc_bit", params)); // XXX: Proof of custody is a stub at Phase 0
-      ShardNumber shard = ShardNumber.of(UInt64.valueOf(getParamString("shard", params)));
+              ControllerUtils.getParamString(
+                  "poc_bit", params)); // XXX: Proof of custody is a stub at Phase 0
+      ShardNumber shard =
+          ShardNumber.of(UInt64.valueOf(ControllerUtils.getParamString("shard", params)));
 
       ValidatorIndex validatorIndex =
           spec.get_validator_index_by_pubkey(

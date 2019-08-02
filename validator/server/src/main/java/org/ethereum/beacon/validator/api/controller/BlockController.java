@@ -42,9 +42,9 @@ public class BlockController extends SyncRestController {
   private synchronized Object produceValidatorBlockResponse(HttpServerRequest request) {
     try {
       MultiMap params = request.params();
-      SlotNumber slot = SlotNumber.castFrom(UInt64.valueOf(getParamString("slot", params)));
+      SlotNumber slot = SlotNumber.castFrom(UInt64.valueOf(ControllerUtils.getParamString("slot", params)));
       BLSSignature randaoReveal =
-          BLSSignature.wrap(Bytes96.fromHexStringStrict(getParamString("randao_reveal", params)));
+          BLSSignature.wrap(Bytes96.fromHexStringStrict(ControllerUtils.getParamString("randao_reveal", params)));
       BeaconBlock block = service.prepareBlock(slot, randaoReveal, observableBeaconState);
       return BeaconBlockConverter.serialize(block);
     } catch (IllegalArgumentException ex) {

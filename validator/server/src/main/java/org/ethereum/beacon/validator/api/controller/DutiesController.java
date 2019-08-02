@@ -41,8 +41,7 @@ public class DutiesController extends SyncRestController {
       SyncManager syncManager,
       BeaconChainSpec spec) {
     super(syncManager);
-    Flux.from(stateProcessor.getObservableStateStream())
-        .subscribe(this::updateState);
+    Flux.from(stateProcessor.getObservableStateStream()).subscribe(this::updateState);
     this.spec = spec;
     this.service = service;
   }
@@ -62,13 +61,14 @@ public class DutiesController extends SyncRestController {
       EpochNumber epoch;
       BeaconStateEx stateEx = observableBeaconState.getLatestSlotState();
       if (params.contains("epoch")) {
-        epoch = EpochNumber.castFrom(UInt64.valueOf(getParamString("epoch", params)));
+        epoch =
+            EpochNumber.castFrom(UInt64.valueOf(ControllerUtils.getParamString("epoch", params)));
       } else { // Epoch is not required
         epoch = spec.get_current_epoch(stateEx).increment();
       }
 
       List<BLSPubkey> pubKeys =
-          getParamStringList("validator_pubkeys", params).stream()
+          ControllerUtils.getParamStringList("validator_pubkeys", params).stream()
               .map(Bytes48::fromHexStringStrict)
               .map(BLSPubkey::wrap)
               .collect(Collectors.toList());
