@@ -11,7 +11,7 @@ dependencies {
   testImplementation project(':db:core')
   testImplementation project(':chain')
   testImplementation project(':start:simulator')
-  testImplementation project(':util')
+  testImplementation project(':util:core')
   testImplementation project(':pow:core')
 }
 

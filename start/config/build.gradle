@@ -3,7 +3,7 @@ dependencies {
   implementation project(':consensus')
   implementation project(':crypto')
   implementation project(':types')
-  implementation project(':util')
+  implementation project(':util:core')
 
   implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
   implementation 'com.fasterxml.jackson.core:jackson-databind'

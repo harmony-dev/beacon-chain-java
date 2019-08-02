@@ -9,7 +9,7 @@ dependencies {
   implementation project(':ssz')
   implementation project(':validator')
   implementation project(':wire')
-  implementation project(':util')
+  implementation project(':util:core')
 
   implementation 'com.google.guava:guava'
   implementation 'io.projectreactor:reactor-core'
