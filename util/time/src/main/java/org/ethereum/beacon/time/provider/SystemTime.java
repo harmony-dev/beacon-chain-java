@@ -38,7 +38,7 @@ public class SystemTime implements TimeProvider {
     try {
       Thread.sleep(MILLIS_IN_SEC - currentMs);
     } catch (InterruptedException e) {
-      throw new RuntimeException("SystemTime stream thread interrupted!", e);
+      Thread.currentThread().interrupt();
     }
   }
 
