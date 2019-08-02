@@ -41,7 +41,7 @@ public class NetworkTime implements TimeProvider {
     this.timeProcessor = new SimpleProcessor<Time>(events, "TimeProvider.network");
     worker.executeR(
         () -> {
-          while (!Thread.interrupted()) {
+          while (!Thread.currentThread().isInterrupted()) {
             emitTime();
           }
         });
