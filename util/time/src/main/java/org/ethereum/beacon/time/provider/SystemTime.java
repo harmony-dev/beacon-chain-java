@@ -21,7 +21,7 @@ public class SystemTime implements TimeProvider {
     this.timeProcessor = new SimpleProcessor<Time>(events, "TimeProvider.system");
     worker.executeR(
         () -> {
-          while (!Thread.interrupted()) {
+          while (!Thread.currentThread().isInterrupted()) {
             emitTime();
           }
         });
