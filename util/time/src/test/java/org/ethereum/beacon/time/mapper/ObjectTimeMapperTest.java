@@ -64,7 +64,7 @@ public class ObjectTimeMapperTest {
               }
             });
 
-    LongStream.range(0, 5).mapToObj(this::createBlockWithSlot).forEach(blockStream::onNext);
+    LongStream.range(0, 5).mapToObj((long slot) -> createBlockWithSlot(slot, spec.getConstants())).forEach(blockStream::onNext);
     try {
       assert getFive.await(100, TimeUnit.MILLISECONDS);
     } catch (InterruptedException e) {
@@ -72,9 +72,9 @@ public class ObjectTimeMapperTest {
     }
   }
 
-  private BeaconBlock createBlockWithSlot(long slot) {
+  private BeaconBlock createBlockWithSlot(long slot, SpecConstants constants) {
     return BeaconBlock.Builder.createEmpty()
-        .withBody(BeaconBlockBody.EMPTY)
+        .withBody(BeaconBlockBody.getEmpty(constants))
         .withParentRoot(Hash32.ZERO)
         .withSignature(BLSSignature.ZERO)
         .withStateRoot(Hash32.ZERO)
