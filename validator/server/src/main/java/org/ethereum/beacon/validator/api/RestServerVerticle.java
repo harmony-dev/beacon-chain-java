@@ -20,25 +20,8 @@ public class RestServerVerticle extends AbstractVerticle {
     Router router = Router.router(vertx);
     controllers.forEach(
         controller -> {
-          switch (controller.getRequestType()) {
-            case GET:
-              {
-                router.get(controller.getPath()).handler(controller.getController().getHandler());
-                break;
-              }
-            case POST:
-              {
-                router.post(controller.getPath()).handler(controller.getController().getHandler());
-                break;
-              }
-            default:
-              {
-                throw new RuntimeException(
-                    String.format(
-                        "Request type %s is not yet supported for controller registration",
-                        controller.getRequestType()));
-              }
-          }
+          router.get(controller.getPath()).handler(controller.getController().getHandler());
+          router.post(controller.getPath()).handler(controller.getController().postHandler());
         });
     vertx.createHttpServer().requestHandler(router).listen(serverPort);
   }

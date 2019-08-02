@@ -62,7 +62,6 @@ public class ServiceFactory {
                 {
                   add(
                       ControllerRoute.of(
-                          ControllerRoute.RequestType.GET,
                           "/node/version",
                           new VersionController() {
                             @Override

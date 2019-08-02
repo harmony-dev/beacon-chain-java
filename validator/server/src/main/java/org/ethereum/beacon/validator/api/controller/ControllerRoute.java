@@ -1,22 +1,16 @@
 package org.ethereum.beacon.validator.api.controller;
 
 public class ControllerRoute {
-  private final RequestType requestType;
   private final String path;
   private final Controller controller;
 
-  private ControllerRoute(RequestType requestType, String path, Controller controller) {
-    this.requestType = requestType;
+  private ControllerRoute(String path, Controller controller) {
     this.path = path;
     this.controller = controller;
   }
 
-  public static ControllerRoute of(RequestType requestType, String path, Controller controller) {
-    return new ControllerRoute(requestType, path, controller);
-  }
-
-  public RequestType getRequestType() {
-    return requestType;
+  public static ControllerRoute of(String path, Controller controller) {
+    return new ControllerRoute(path, controller);
   }
 
   public String getPath() {
@@ -26,9 +20,4 @@ public class ControllerRoute {
   public Controller getController() {
     return controller;
   }
-
-  public enum RequestType {
-    GET,
-    POST
-  };
 }

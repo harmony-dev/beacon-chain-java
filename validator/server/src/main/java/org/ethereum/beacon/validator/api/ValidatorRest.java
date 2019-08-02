@@ -7,9 +7,7 @@ import org.ethereum.beacon.chain.MutableBeaconChain;
 import org.ethereum.beacon.chain.observer.ObservableStateProcessor;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.validator.api.controller.AttestationController;
-import org.ethereum.beacon.validator.api.controller.AttestationSubmitController;
 import org.ethereum.beacon.validator.api.controller.BlockController;
-import org.ethereum.beacon.validator.api.controller.BlockSubmitController;
 import org.ethereum.beacon.validator.api.controller.ControllerRoute;
 import org.ethereum.beacon.validator.api.controller.DutiesController;
 import org.ethereum.beacon.validator.api.controller.ForkController;
@@ -22,9 +20,6 @@ import tech.pegasys.artemis.util.uint.UInt64;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.ethereum.beacon.validator.api.controller.ControllerRoute.RequestType.GET;
-import static org.ethereum.beacon.validator.api.controller.ControllerRoute.RequestType.POST;
 
 /**
  * REST service for beacon chain validator according to <a
@@ -46,40 +41,35 @@ public class ValidatorRest implements ValidatorServer {
       ValidatorDutiesService validatorDutiesService,
       MutableBeaconChain beaconChain) {
     List<ControllerRoute> controllers = new ArrayList<>();
-    controllers.add(ControllerRoute.of(GET, "/node/version", new VersionController()));
+    controllers.add(ControllerRoute.of("/node/version", new VersionController()));
+    controllers.add(ControllerRoute.of("/node/genesis_time", new TimeController(stateProcessor)));
     controllers.add(
-        ControllerRoute.of(GET, "/node/genesis_time", new TimeController(stateProcessor)));
-    controllers.add(
-        ControllerRoute.of(GET, "/node/syncing", new SyncingController(syncManager, peerManager)));
+        ControllerRoute.of("/node/syncing", new SyncingController(syncManager, peerManager)));
     controllers.add(
         ControllerRoute.of(
-            GET,
             "/validator/duties",
             new DutiesController(stateProcessor, validatorDutiesService, syncManager, spec)));
     controllers.add(
         ControllerRoute.of(
-            GET,
             "/validator/block",
-            new BlockController(stateProcessor, validatorDutiesService, syncManager)));
+            new BlockController(
+                stateProcessor,
+                peerManager.getWireApiSub(),
+                beaconChain,
+                validatorDutiesService,
+                syncManager,
+                spec)));
     controllers.add(
         ControllerRoute.of(
-            POST,
-            "/validator/block",
-            new BlockSubmitController(
-                syncManager, peerManager.getWireApiSub(), beaconChain, spec)));
-    controllers.add(
-        ControllerRoute.of(
-            GET,
             "/validator/attestation",
-            new AttestationController(stateProcessor, validatorDutiesService, syncManager, spec)));
+            new AttestationController(
+                stateProcessor,
+                peerManager.getWireApiSub(),
+                validatorDutiesService,
+                syncManager,
+                spec)));
     controllers.add(
-        ControllerRoute.of(
-            POST,
-            "/validator/attestation",
-            new AttestationSubmitController(
-                syncManager, peerManager.getWireApiSub(), stateProcessor, spec)));
-    controllers.add(
-        ControllerRoute.of(GET, "/node/fork", new ForkController(stateProcessor, spec, chainId)));
+        ControllerRoute.of("/node/fork", new ForkController(stateProcessor, spec, chainId)));
     this.server = new RestServerVerticle(serverPort, controllers);
   }
 
