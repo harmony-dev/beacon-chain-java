@@ -7,24 +7,31 @@ import java.util.List;
 
 public abstract class ControllerUtils {
   static String getParamString(String param, MultiMap params) throws InvalidInputException {
-    try {
-      assert params.contains(param);
-      assert params.getAll(param).size() == 1;
-      return params.get(param);
-    } catch (AssertionError e) {
-      throw new InvalidInputException(
-          String.format("Parameters map doesn't contain 1 required param `%s`", param));
+    if (!params.contains(param)) {
+      throwNoParamInMap(param);
     }
+    if (params.getAll(param).size() != 1) {
+      throwMoreThanOneParamInMap(param);
+    }
+    return params.get(param);
   }
 
   static List<String> getParamStringList(String param, MultiMap params)
       throws InvalidInputException {
-    try {
-      assert params.contains(param);
-      return params.getAll(param);
-    } catch (AssertionError e) {
-      throw new InvalidInputException(
-          String.format("Parameters map doesn't contain required param `%s`", param));
+    if (!params.contains(param)) {
+      throwNoParamInMap(param);
     }
+    return params.getAll(param);
+  }
+
+  private static void throwNoParamInMap(String param) {
+    throw new InvalidInputException(
+        String.format("Parameters map doesn't contain required param `%s`", param));
+  }
+
+  private static void throwMoreThanOneParamInMap(String param) {
+    throw new InvalidInputException(
+        String.format(
+            "Parameters map contains more than one value for param `%s` but shouldn't", param));
   }
 }
