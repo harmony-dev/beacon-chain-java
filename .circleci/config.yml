@@ -10,6 +10,7 @@ jobs:
       JAVA_TOOL_OPTIONS: -Xmx2G
       GRADLE_OPTS: -Dorg.gradle.daemon=false -Dorg.gradle.workers.max=2
       GRADLE_MAX_TEST_FORKS: 2
+      CI: true
 
     steps:
       - checkout
@@ -47,7 +48,7 @@ jobs:
 
       - run:
           name: Running tests
-          command: ./gradlew --stacktrace clean cleanTest test --continue
+          command: ./gradlew --info clean cleanTest test --continue
 
       - run:
           name: Collecting test results

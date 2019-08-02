@@ -6,6 +6,7 @@ import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import java.util.function.Function;
+import tech.pegasys.artemis.util.uint.UInt64;
 
 import static tech.pegasys.artemis.util.bytes.BytesValue.concat;
 
@@ -81,5 +82,14 @@ abstract class DepositDataMerkle implements MerkleTree<DepositData> {
       throw new RuntimeException(
           String.format("Max element index is %s, asked for %s!", getLastIndex(), index));
     }
+  }
+
+
+  Hash32 mixinLength(BytesValue node, int length) {
+    return getHashFunction().apply(BytesValue.concat(node, encodeLength(length)));
+  }
+
+  Bytes32 encodeLength(int length) {
+    return Bytes32.rightPad(UInt64.valueOf(length).toBytes8LittleEndian());
   }
 }

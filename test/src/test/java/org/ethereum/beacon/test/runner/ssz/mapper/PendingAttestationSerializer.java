@@ -20,7 +20,7 @@ public class PendingAttestationSerializer implements ObjectSerializer<PendingAtt
   @Override
   public ObjectNode map(PendingAttestation instance) {
     ObjectNode pendingAttestation = mapper.createObjectNode();
-    pendingAttestation.put("aggregation_bitfield", instance.getAggregationBitfield().toString());
+    pendingAttestation.put("aggregation_bitfield", instance.getAggregationBits().toString());
     pendingAttestation.set("data", attestationDataSerializer.map(instance.getData()));
     pendingAttestation.set("inclusion_delay", ComparableBigIntegerNode.valueOf(instance.getInclusionDelay()));
     pendingAttestation.set("proposer_index", ComparableBigIntegerNode.valueOf(instance.getProposerIndex()));

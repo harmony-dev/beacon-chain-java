@@ -111,9 +111,9 @@ public class MultiValidatorService implements ValidatorService {
   private void initFromLatestBeaconState(BeaconState state) {
     Map<ValidatorIndex, BLS381Credentials> intoCommittees = new HashMap<>();
 
-    for (ValidatorIndex i : state.getValidatorRegistry().size()) {
+    for (ValidatorIndex i : state.getValidators().size()) {
       BLS381Credentials credentials =
-          uninitialized.remove(state.getValidatorRegistry().get(i).getPubKey());
+          uninitialized.remove(state.getValidators().get(i).getPubKey());
       if (credentials != null) {
         intoCommittees.put(i, credentials);
       }

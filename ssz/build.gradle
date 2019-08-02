@@ -1,9 +1,9 @@
 apply plugin: 'java-library'
 
 dependencies {
+    api 'net.consensys.cava:cava-ssz'
     implementation project(':types')
     implementation project(':util:core')
-    implementation 'net.consensys.cava:cava-ssz'
     implementation 'net.consensys.cava:cava-units'
 
     testImplementation 'junit:junit'

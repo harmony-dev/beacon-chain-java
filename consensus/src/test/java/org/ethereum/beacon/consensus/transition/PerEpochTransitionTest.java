@@ -32,7 +32,7 @@ public class PerEpochTransitionTest {
           }
         };
 
-    BeaconChainSpec spec = BeaconChainSpec.createWithDefaultHasher(specConstants);
+    BeaconChainSpec spec = BeaconChainSpec.createWithoutDepositVerification(specConstants);
 
     List<Deposit> deposits = TestUtils.getAnyDeposits(rnd, spec, 8).getValue0();
     Eth1Data eth1Data = new Eth1Data(Hash32.random(rnd), UInt64.valueOf(deposits.size()), Hash32.random(rnd));

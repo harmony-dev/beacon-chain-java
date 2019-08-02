@@ -10,6 +10,7 @@ import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import org.ethereum.beacon.ssz.type.SSZContainerType;
 import org.ethereum.beacon.ssz.type.SSZType;
+import org.ethereum.beacon.ssz.type.SSZType.Type;
 import org.ethereum.beacon.ssz.type.TypeResolver;
 import org.junit.Assert;
 import org.junit.Test;
@@ -140,12 +141,12 @@ public class SSZTypeTest {
 
     SSZType sszType1 = typeResolver.resolveSSZType(Container1.class);
     System.out.println(sszType1.dumpHierarchy());
-    Assert.assertTrue(sszType1.isContainer());
+    Assert.assertEquals(Type.CONTAINER, sszType1.getType());
     Assert.assertTrue(sszType1.isVariableSize());
 
     SSZType sszType2 = typeResolver.resolveSSZType(Container2.class);
     System.out.println(sszType2.dumpHierarchy());
-    Assert.assertTrue(sszType2.isContainer());
+    Assert.assertEquals(Type.CONTAINER, sszType2.getType());
     Assert.assertTrue(sszType2.isFixedSize());
     Assert.assertTrue(sszType2.getSize() > 0);
   }

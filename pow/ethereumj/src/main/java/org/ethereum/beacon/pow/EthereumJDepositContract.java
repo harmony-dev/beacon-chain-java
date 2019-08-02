@@ -1,7 +1,6 @@
 package org.ethereum.beacon.pow;
 
 import org.ethereum.beacon.consensus.BeaconChainSpec;
-import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.schedulers.LatestExecutor;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.core.Block;
@@ -38,7 +37,7 @@ import java.util.stream.Collectors;
 public class EthereumJDepositContract extends AbstractDepositContract {
   private static final Logger logger = LoggerFactory.getLogger(EthereumJDepositContract.class);
 
-  private static final String DEPOSIT_EVENT_NAME = "Deposit";
+  private static final String DEPOSIT_EVENT_NAME = "DepositEvent";
 
   private final LatestExecutor<Long> blockExecutor;
 

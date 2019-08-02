@@ -9,6 +9,10 @@ public class SpecHelpersData {
 
   private boolean blsSign = true;
 
+  private boolean verifyDepositProof = false;
+
+  private boolean computableGenesisTime = false;
+
   private boolean enableCache = true;
 
   public boolean isBlsVerify() {
@@ -41,5 +45,21 @@ public class SpecHelpersData {
 
   public void setEnableCache(boolean enableCache) {
     this.enableCache = enableCache;
+  }
+
+  public boolean isVerifyDepositProof() {
+    return verifyDepositProof;
+  }
+
+  public void setVerifyDepositProof(boolean verifyDepositProof) {
+    this.verifyDepositProof = verifyDepositProof;
+  }
+
+  public boolean isComputableGenesisTime() {
+    return computableGenesisTime;
+  }
+
+  public void setComputableGenesisTime(boolean computableGenesisTime) {
+    this.computableGenesisTime = computableGenesisTime;
   }
 }

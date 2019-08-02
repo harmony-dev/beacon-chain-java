@@ -1,8 +1,5 @@
 package org.ethereum.beacon.consensus;
 
-import java.util.Objects;
-import java.util.function.Function;
-import javax.annotation.Nonnull;
 import org.ethereum.beacon.consensus.hasher.ObjectHasher;
 import org.ethereum.beacon.consensus.hasher.SSZObjectHasher;
 import org.ethereum.beacon.consensus.spec.BlockProcessing;
@@ -10,6 +7,7 @@ import org.ethereum.beacon.consensus.spec.EpochProcessing;
 import org.ethereum.beacon.consensus.spec.ForkChoice;
 import org.ethereum.beacon.consensus.spec.GenesisFunction;
 import org.ethereum.beacon.consensus.spec.HelperFunction;
+import org.ethereum.beacon.consensus.spec.HonestValidator;
 import org.ethereum.beacon.consensus.spec.SpecStateTransition;
 import org.ethereum.beacon.consensus.util.CachingBeaconChainSpec;
 import org.ethereum.beacon.core.BeaconState;
@@ -21,11 +19,15 @@ import org.ethereum.beacon.crypto.Hashes;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
+import javax.annotation.Nonnull;
+import java.util.Objects;
+import java.util.function.Function;
+
 /**
  * Beacon chain spec.
  *
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.7.1/specs/core/0_beacon-chain.md">Beacon
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.8.1/specs/core/0_beacon-chain.md">Beacon
  *     chain</a>
  */
 public interface BeaconChainSpec
@@ -34,7 +36,8 @@ public interface BeaconChainSpec
         ForkChoice,
         EpochProcessing,
         BlockProcessing,
-    SpecStateTransition {
+        SpecStateTransition,
+        HonestValidator {
 
   SpecConstants DEFAULT_CONSTANTS = new SpecConstants() {};
 
@@ -53,6 +56,25 @@ public interface BeaconChainSpec
         .withConstants(constants)
         .withDefaultHashFunction()
         .withDefaultHasher(constants)
+        .build();
+  }
+
+  /**
+   * Creates beacon chain spec with default preferences, disabled deposit root verification and
+   * disabled genesis time computation.
+   *
+   * @param constants spec constants object.
+   * @return spec object.
+   */
+  static BeaconChainSpec createWithoutDepositVerification(@Nonnull SpecConstants constants) {
+    Objects.requireNonNull(constants);
+
+    return new Builder()
+        .withConstants(constants)
+        .withDefaultHashFunction()
+        .withDefaultHasher(constants)
+        .withVerifyDepositProof(false)
+        .withComputableGenesisTime(false)
         .build();
   }
 
@@ -90,6 +112,14 @@ public interface BeaconChainSpec
     private boolean cache = false;
     private boolean blsVerify = true;
     private boolean blsVerifyProofOfPossession = true;
+    private boolean verifyDepositProof = true;
+    private boolean computableGenesisTime = true;
+
+    public static Builder createWithDefaultParams() {
+      return new Builder().withConstants(BeaconChainSpec.DEFAULT_CONSTANTS)
+          .withDefaultHashFunction()
+          .withDefaultHasher();
+    }
 
     public Builder withConstants(SpecConstants constants) {
       this.constants = constants;
@@ -140,13 +170,30 @@ public interface BeaconChainSpec
       return withCache(true);
     }
 
+    public Builder withVerifyDepositProof(boolean verifyDepositProof) {
+      this.verifyDepositProof = verifyDepositProof;
+      return this;
+    }
+
+    public Builder withComputableGenesisTime(boolean computeGenesisTime) {
+      this.computableGenesisTime = computeGenesisTime;
+      return this;
+    }
+
     public BeaconChainSpec build() {
       assert constants != null;
       assert hashFunction != null;
       assert hasher != null;
 
       return new CachingBeaconChainSpec(
-          constants, hashFunction, hasher, blsVerify, blsVerifyProofOfPossession, cache);
+          constants,
+          hashFunction,
+          hasher,
+          blsVerify,
+          blsVerifyProofOfPossession,
+          verifyDepositProof,
+          computableGenesisTime,
+          cache);
     }
   }
 }

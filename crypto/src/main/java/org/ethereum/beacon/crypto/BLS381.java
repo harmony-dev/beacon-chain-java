@@ -141,9 +141,10 @@ public class BLS381 {
     FP12 lhs = new FP12(1);
     for (int i = 0; i < messages.size(); i++) {
       ECP2 messagePoint = MESSAGE_MAPPER.map(messages.get(i));
-      FP12 product = pairingProduct(publicKeys.get(i).asEcPoint(), messagePoint);
+      FP12 product = PAIR.ate(messagePoint, publicKeys.get(i).asEcPoint());
       lhs.mul(product);
     }
+    lhs = PAIR.fexp(lhs);
     FP12 rhs = pairingProduct(ECP.generator(), signature.asEcPoint());
 
     return lhs.equals(rhs);

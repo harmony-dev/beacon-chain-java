@@ -5,8 +5,10 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.List;
 import org.ethereum.beacon.ssz.annotation.SSZ;
-import org.ethereum.beacon.ssz.incremental.ObservableListImpl;
 import tech.pegasys.artemis.util.collections.ReadList;
+import tech.pegasys.artemis.util.uint.UInt64;
+
+import static org.ethereum.beacon.ssz.type.SSZType.VARIABLE_SIZE;
 
 /**
  * Type descriptor which contains all possible data gathered from Class info, annotations
@@ -24,6 +26,17 @@ public class SSZField {
       return new SSZField(
           new ParametrizedTypeImpl(clazz, ((List) value).get(0).getClass()));
     }
+    if (value instanceof ReadList && !((ReadList) value).isVector() && ((ReadList) value).maxSize() > VARIABLE_SIZE) {
+      ReadList readList = (ReadList) value;
+      Class elementClass = Long.class; //XXX: some number
+      if (!readList.isEmpty()) {
+        elementClass = readList.get(0).getClass();
+      }
+      return new SSZField(
+          new ParametrizedTypeImpl(
+              clazz, ((ReadList) value).size().getClass(), elementClass),
+          new SSZListMock(VARIABLE_SIZE, readList.maxSize()), null, null, null, null);
+    }
     if (value instanceof ReadList && !((ReadList) value).isEmpty()) {
       ReadList readList = (ReadList) value;
       if (readList.isVector()) {
@@ -32,7 +45,7 @@ public class SSZField {
         return new SSZField(
             new ParametrizedTypeImpl(
                 clazz, ((ReadList) value).size().getClass(), readList.get(0).getClass()),
-        new SSZVector(vectorSize), null, null, null, null);
+        new SSZListMock(vectorSize, VARIABLE_SIZE), null, null, null, null);
       } else {
         return new SSZField(
             new ParametrizedTypeImpl(
@@ -42,11 +55,13 @@ public class SSZField {
     return new SSZField(clazz);
   }
 
-  static class SSZVector implements SSZ {
+  private static class SSZListMock implements SSZ {
     private int vectorLength;
+    private long maxSize;
 
-    public SSZVector(int vectorLength) {
+    public SSZListMock(int vectorLength, long maxSize) {
       this.vectorLength = vectorLength;
+      this.maxSize = maxSize;
     }
 
     @Override
@@ -61,7 +76,17 @@ public class SSZField {
 
     @Override
     public java.lang.String vectorLengthVar() {
-      return null;
+      return "";
+    }
+
+    @Override
+    public long maxSize() {
+      return maxSize;
+    }
+
+    @Override
+    public java.lang.String maxSizeVar() {
+      return "";
     }
 
     @Override

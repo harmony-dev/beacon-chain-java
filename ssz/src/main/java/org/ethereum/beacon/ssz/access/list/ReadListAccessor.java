@@ -1,11 +1,14 @@
 package org.ethereum.beacon.ssz.access.list;
 
+import org.ethereum.beacon.ssz.SSZSerializeException;
+import org.ethereum.beacon.ssz.access.SSZField;
+import org.ethereum.beacon.ssz.type.SSZType;
+import tech.pegasys.artemis.util.collections.ReadList;
+import tech.pegasys.artemis.util.collections.ReadVector;
+
 import java.lang.reflect.Constructor;
 import java.util.List;
 import java.util.function.Function;
-import org.ethereum.beacon.ssz.SSZSerializeException;
-import org.ethereum.beacon.ssz.access.SSZField;
-import tech.pegasys.artemis.util.collections.ReadList;
 
 public class ReadListAccessor extends AbstractListAccessor {
 
@@ -22,13 +25,14 @@ public class ReadListAccessor extends AbstractListAccessor {
   protected Function<Integer, ? extends Number> resolveIndexConverter(Class<?> indexClass) {
     try {
       Constructor intCtor = indexClass.getConstructor(int.class);
-      Function<Integer, ? extends Number> ret = i -> {
-        try {
-          return (Number) intCtor.newInstance(i);
-        } catch (Exception e) {
-          throw new RuntimeException(e);
-        }
-      };
+      Function<Integer, ? extends Number> ret =
+          i -> {
+            try {
+              return (Number) intCtor.newInstance(i);
+            } catch (Exception e) {
+              throw new RuntimeException(e);
+            }
+          };
       return ret;
     } catch (NoSuchMethodException e) {
     }
@@ -46,12 +50,27 @@ public class ReadListAccessor extends AbstractListAccessor {
   }
 
   @Override
-  public ListInstanceBuilder createInstanceBuilder(SSZField listType) {
+  public ListInstanceBuilder createInstanceBuilder(SSZType sszType) {
     return new SimpleInstanceBuilder() {
       @Override
       protected Object buildImpl(List<Object> children) {
-        return ReadList.wrap(children, resolveIndexConverter((Class<?>)
-            listType.getParametrizedType().getActualTypeArguments()[0]));
+        return sszType.isFixedSize()
+            ? ReadVector.wrap(
+                children,
+                resolveIndexConverter(
+                    (Class<?>)
+                        sszType
+                            .getTypeDescriptor()
+                            .getParametrizedType()
+                            .getActualTypeArguments()[0]))
+            : ReadList.wrap(
+                children,
+                resolveIndexConverter(
+                    (Class<?>)
+                        sszType
+                            .getTypeDescriptor()
+                            .getParametrizedType()
+                            .getActualTypeArguments()[0]));
       }
     };
   }

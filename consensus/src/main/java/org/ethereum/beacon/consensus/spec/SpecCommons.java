@@ -25,6 +25,10 @@ public interface SpecCommons {
 
   boolean isBlsVerifyProofOfPossession();
 
+  boolean isVerifyDepositProof();
+
+  boolean isComputableGenesisTime();
+
   default void assertTrue(boolean assertion) {
     if (!assertion) {
       throw new SpecAssertionFailed();
@@ -32,15 +36,7 @@ public interface SpecCommons {
   }
 
   default void checkIndexRange(BeaconState state, ValidatorIndex index) {
-    assertTrue(index.less(state.getValidatorRegistry().size()));
-  }
-
-  default void checkIndexRange(BeaconState state, Iterable<ValidatorIndex> indices) {
-    indices.forEach(index -> checkIndexRange(state, index));
-  }
-
-  default void checkShardRange(ShardNumber shard) {
-    assertTrue(shard.less(getConstants().getShardCount()));
+    assertTrue(index.less(state.getValidators().size()));
   }
 
   class SpecAssertionFailed extends RuntimeException {

@@ -2,8 +2,6 @@ package org.ethereum.beacon.core.spec;
 
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
-import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.bytes.Bytes1;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 /**
@@ -17,8 +15,6 @@ public interface InitialValues {
 
   SlotNumber GENESIS_SLOT = SlotNumber.ZERO;
   EpochNumber GENESIS_EPOCH = EpochNumber.ZERO;
-  EpochNumber FAR_FUTURE_EPOCH = EpochNumber.castFrom(UInt64.MAX_VALUE); // (1 << 64) - 1
-  Hash32 ZERO_HASH = Hash32.ZERO;
   UInt64 BLS_WITHDRAWAL_PREFIX = UInt64.ZERO;
 
   /* Values defined in the spec. */
@@ -29,14 +25,6 @@ public interface InitialValues {
 
   default EpochNumber getGenesisEpoch() {
     return GENESIS_EPOCH;
-  }
-
-  default EpochNumber getFarFutureEpoch() {
-    return FAR_FUTURE_EPOCH;
-  }
-
-  default Hash32 getZeroHash() {
-    return ZERO_HASH;
   }
 
   default UInt64 getBlsWithdrawalPrefix() {

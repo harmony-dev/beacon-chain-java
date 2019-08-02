@@ -22,7 +22,6 @@ import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
-import org.ethereum.beacon.core.types.Bitfield;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ShardNumber;
@@ -34,6 +33,7 @@ import org.ethereum.beacon.util.stats.TimeCollector;
 import org.javatuples.Pair;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.collections.Bitlist;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
@@ -48,6 +48,8 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
         spec.getObjectHasher(),
         spec.isBlsVerify(),
         spec.isBlsVerifyProofOfPossession(),
+        spec.isVerifyDepositProof(),
+        spec.isComputableGenesisTime(),
         spec instanceof CachingBeaconChainSpec && ((CachingBeaconChainSpec) spec).isCacheEnabled());
 
     // share caches between all instances to avoid cache duplication
@@ -64,9 +66,18 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
       ObjectHasher<Hash32> objectHasher,
       boolean blsVerify,
       boolean blsVerifyProofOfPossession,
+      boolean verifyDepositProof,
+      boolean computableGenesisTime,
       boolean cacheEnabled) {
     super(
-        constants, hashFunction, objectHasher, blsVerify, blsVerifyProofOfPossession, cacheEnabled);
+        constants,
+        hashFunction,
+        objectHasher,
+        blsVerify,
+        blsVerifyProofOfPossession,
+        verifyDepositProof,
+        computableGenesisTime,
+        cacheEnabled);
   }
 
   @Override
@@ -143,16 +154,16 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
   }
 
   @Override
-  public UInt64 get_churn_limit(BeaconState state) {
-    return callAndTrack("get_churn_limit", () -> super.get_churn_limit(state));
+  public UInt64 get_validator_churn_limit(BeaconState state) {
+    return callAndTrack("get_validator_churn_limit", () -> super.get_validator_churn_limit(state));
   }
 
   @Override
   public List<ValidatorIndex> get_attesting_indices(
-      BeaconState state, AttestationData attestation_data, Bitfield bitfield) {
+      BeaconState state, AttestationData attestation_data, Bitlist bitlist) {
     return callAndTrack(
         "get_attesting_indices",
-        () -> super.get_attesting_indices(state, attestation_data, bitfield));
+        () -> super.get_attesting_indices(state, attestation_data, bitlist));
   }
 
   @Override
@@ -167,11 +178,11 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
   }
 
   @Override
-  public boolean validate_indexed_attestation(
+  public boolean is_valid_indexed_attestation(
       BeaconState state, IndexedAttestation indexed_attestation) {
     return callAndTrack(
-        "validate_indexed_attestation",
-        () -> super.validate_indexed_attestation(state, indexed_attestation));
+        "is_valid_indexed_attestation",
+        () -> super.is_valid_indexed_attestation(state, indexed_attestation));
   }
 
   @Override
@@ -183,8 +194,8 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
   }
 
   @Override
-  public Hash32 generate_seed(BeaconState state, EpochNumber epoch) {
-    return callAndTrack("generate_seed", () -> super.generate_seed(state, epoch));
+  public Hash32 get_seed(BeaconState state, EpochNumber epoch) {
+    return callAndTrack("get_seed", () -> super.get_seed(state, epoch));
   }
 
   @Override
@@ -201,8 +212,8 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
   }
 
   @Override
-  public ShardNumber get_epoch_start_shard(BeaconState state, EpochNumber epoch) {
-    return callAndTrack("get_epoch_start_shard", () -> super.get_epoch_start_shard(state, epoch));
+  public ShardNumber get_start_shard(BeaconState state, EpochNumber epoch) {
+    return callAndTrack("get_start_shard", () -> super.get_start_shard(state, epoch));
   }
 
   @Override
@@ -211,9 +222,9 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
   }
 
   @Override
-  public UInt64 get_epoch_committee_count(BeaconState state, EpochNumber epoch) {
+  public UInt64 get_committee_count(BeaconState state, EpochNumber epoch) {
     return callAndTrack(
-        "get_epoch_committee_count", () -> super.get_epoch_committee_count(state, epoch));
+        "get_committee_count", () -> super.get_committee_count(state, epoch));
   }
 
   @Override

@@ -2,6 +2,7 @@ package org.ethereum.beacon.ssz.access.list;
 
 import java.util.List;
 import org.ethereum.beacon.ssz.access.SSZField;
+import org.ethereum.beacon.ssz.type.SSZType;
 
 public class ListAccessor extends AbstractListAccessor {
 
@@ -26,7 +27,7 @@ public class ListAccessor extends AbstractListAccessor {
   }
 
   @Override
-  public ListInstanceBuilder createInstanceBuilder(SSZField listType) {
+  public ListInstanceBuilder createInstanceBuilder(SSZType sszType) {
     return new SimpleInstanceBuilder() {
       @Override
       protected Object buildImpl(List<Object> children) {

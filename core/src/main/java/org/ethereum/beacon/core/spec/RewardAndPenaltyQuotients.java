@@ -11,8 +11,8 @@ import tech.pegasys.artemis.util.uint.UInt64;
  */
 public interface RewardAndPenaltyQuotients {
 
-  UInt64 BASE_REWARD_FACTOR = UInt64.valueOf(1 << 5); // 1024
-  UInt64 WHISTLEBLOWING_REWARD_QUOTIENT = UInt64.valueOf(1 << 9); // 512
+  UInt64 BASE_REWARD_FACTOR = UInt64.valueOf(1 << 6); // 2048
+  UInt64 WHISTLEBLOWER_REWARD_QUOTIENT = UInt64.valueOf(1 << 9); // 512
   UInt64 PROPOSER_REWARD_QUOTIENT = UInt64.valueOf(1 << 3); // 8
   UInt64 INACTIVITY_PENALTY_QUOTIENT = UInt64.valueOf(1 << 25); // 33_554_432
   UInt64 MIN_SLASHING_PENALTY_QUOTIENT = UInt64.valueOf(1 << 5); // 32
@@ -23,8 +23,8 @@ public interface RewardAndPenaltyQuotients {
     return BASE_REWARD_FACTOR;
   }
 
-  default UInt64 getWhistleblowingRewardQuotient() {
-    return WHISTLEBLOWING_REWARD_QUOTIENT;
+  default UInt64 getWhistleblowerRewardQuotient() {
+    return WHISTLEBLOWER_REWARD_QUOTIENT;
   }
 
   default UInt64 getProposerRewardQuotient() {

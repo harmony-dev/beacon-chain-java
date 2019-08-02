@@ -15,14 +15,14 @@ import tech.pegasys.artemis.util.collections.ReadVector;
  * @see BeaconBlockBody
  * @see DepositData
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.7.1/specs/core/0_beacon-chain.md#deposit>Deposit</a>
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.8.1/specs/core/0_beacon-chain.md#deposit>Deposit</a>
  *     in the spec.
  */
 @SSZSerializable
 public class Deposit {
 
-  /** A branch of receipt's Merkle trie of the deposit contract on PoW net. */
-  @SSZ(vectorLengthVar = "spec.DEPOSIT_CONTRACT_TREE_DEPTH")
+  /** Merkle path to deposit data list root. */
+  @SSZ(vectorLengthVar = "spec.DEPOSIT_CONTRACT_TREE_DEPTH_PLUS_ONE")
   private final ReadVector<Integer, Hash32> proof;
   /** Deposit data. */
   @SSZ private final DepositData data;

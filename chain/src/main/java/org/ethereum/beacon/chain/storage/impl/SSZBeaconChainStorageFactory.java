@@ -7,6 +7,7 @@ import org.ethereum.beacon.chain.storage.BeaconStateStorage;
 import org.ethereum.beacon.chain.storage.BeaconTupleStorage;
 import org.ethereum.beacon.consensus.hasher.ObjectHasher;
 import org.ethereum.beacon.consensus.hasher.SSZObjectHasher;
+import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.db.Database;
 import org.ethereum.beacon.db.source.DataSource;
 import org.ethereum.beacon.db.source.SingleValueSource;
@@ -37,8 +38,10 @@ public class SSZBeaconChainStorageFactory implements BeaconChainStorageFactory {
         BeaconStateStorageImpl.create(database, objectHasher, serializerFactory);
     BeaconTupleStorage tupleStorage = new BeaconTupleStorageImpl(blockStorage, stateStorage);
 
-    SingleValueSource<Hash32> justifiedStorage = createHash32Storage(database, "justified-hash");
-    SingleValueSource<Hash32> finalizedStorage = createHash32Storage(database, "finalized-hash");
+    SingleValueSource<Checkpoint> justifiedStorage =
+        createSingleValueStorage(database, "justified-hash", Checkpoint.class);
+    SingleValueSource<Checkpoint> finalizedStorage =
+        createSingleValueStorage(database, "finalized-hash", Checkpoint.class);
 
     return new BeaconChainStorageImpl(
         blockStorage,
@@ -49,12 +52,13 @@ public class SSZBeaconChainStorageFactory implements BeaconChainStorageFactory {
         finalizedStorage);
   }
 
-  private SingleValueSource<Hash32> createHash32Storage(Database database, String name) {
+  private <U> SingleValueSource<U> createSingleValueStorage(
+      Database database, String name, Class<? extends U> type) {
     DataSource<BytesValue, BytesValue> justifiedStorageSource = database.createStorage(name);
     return SingleValueSource.fromDataSource(
         justifiedStorageSource,
         BytesValue.wrap(name.getBytes()),
-        hash -> hash,
-        bytes -> Hash32.wrap(Bytes32.wrap(bytes, 0)));
+        serializerFactory.getSerializer(type),
+        serializerFactory.getDeserializer(type));
   }
 }

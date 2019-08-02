@@ -65,7 +65,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
       ObservableBeaconState observableState, MessageSigner<BLSSignature> signer) {
     BeaconStateEx state = observableState.getLatestSlotState();
 
-    Hash32 parentRoot = spec.get_block_root_at_slot(state, state.getSlot().decrement());
+    Hash32 parentRoot = spec.signing_root(observableState.getHead());
     BLSSignature randaoReveal = getRandaoReveal(state, signer);
     Eth1Data eth1Data = getEth1Data(state);
     BeaconBlockBody blockBody =
@@ -104,7 +104,8 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
   private BLSSignature getProposalSignature(
       BeaconState state, BeaconBlock block, MessageSigner<BLSSignature> signer) {
     Hash32 proposalRoot = spec.signing_root(block);
-    UInt64 domain = spec.get_domain(state, BEACON_PROPOSER);
+    UInt64 domain =
+        spec.get_domain(state, BEACON_PROPOSER, spec.compute_epoch_of_slot(state.getSlot()));
     return signer.sign(proposalRoot, domain);
   }
 
@@ -116,47 +117,21 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
    * @return next RANDAO reveal.
    */
   private BLSSignature getRandaoReveal(BeaconState state, MessageSigner<BLSSignature> signer) {
-    Hash32 hash = spec.hash_tree_root(spec.slot_to_epoch(state.getSlot()));
-    UInt64 domain = spec.get_domain(state, RANDAO);
+    Hash32 hash = spec.hash_tree_root(spec.compute_epoch_of_slot(state.getSlot()));
+    UInt64 domain = spec.get_domain(state, RANDAO, spec.compute_epoch_of_slot(state.getSlot()));
     return signer.sign(hash, domain);
   }
 
-  /*
-   Let D be the set of Eth1DataVote objects vote in state.eth1_data_votes.
-
-   If D is empty:
-     Let block_hash be the block hash of the ETH1_FOLLOW_DISTANCEth ancestor of the head of the
-       canonical eth1.0 chain.
-     Let deposit_root be the deposit root of the eth1.0 deposit contract at the block defined by
-       block_hash.
-
-   If D is nonempty:
-     Let best_vote be the member of D that has the highest vote.eth1_data.vote_count,
-       breaking ties by favoring block hashes with higher associated block height.
-     Let block_hash = best_vote.eth1_data.block_hash.
-     Let deposit_root = best_vote.eth1_data.deposit_root.
-
-   Set block.eth1_data = Eth1Data(deposit_root=deposit_root, block_hash=block_hash).
-  */
+  /**
+   * Returns Eth1 data vote.
+   *
+   * @param state state at the slot of proposing block.
+   * @return voted eth1 data.
+   */
   private Eth1Data getEth1Data(BeaconState state) {
-    ReadList<Integer, Eth1Data> eth1DataVotes = state.getEth1DataVotes();
-    Optional<Eth1Data> contractData = depositContract.getLatestEth1Data();
-
-    Map<Eth1Data, Integer> votes = new HashMap<>();
-    for (Eth1Data eth1Data : eth1DataVotes) {
-      votes.compute(eth1Data, (key, count) -> (count == null) ? 1 : count + 1);
-    }
-
-    Optional<Eth1Data> bestVote = votes.keySet().stream().max(Comparator.comparing(votes::get));
-
-    // verify best vote data and return if verification passed,
-    // otherwise, return data from the contract
-    return bestVote
-        .filter(
-            eth1Data ->
-                depositContract.hasDepositRoot(eth1Data.getBlockHash(), eth1Data.getDepositRoot()))
-        // TODO throw exception if contract data can't be read
-        .orElse(contractData.orElse(state.getLatestEth1Data()));
+    UInt64 previousEth1Distance = UInt64.ZERO;
+    return spec.get_eth1_vote(state, previousEth1Distance,
+        distance -> depositContract.getLatestEth1Data().orElse(state.getEth1Data()));
   }
 
   /**
@@ -177,7 +152,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
     List<AttesterSlashing> attesterSlashings =
         operations.peekAttesterSlashings(spec.getConstants().getMaxAttesterSlashings());
     List<Attestation> attestations =
-        operations.peekAggregateAttestations(spec.getConstants().getMaxAttestations());
+        operations.peekAggregateAttestations(spec.getConstants().getMaxAttestations(), spec.getConstants());
     List<VoluntaryExit> voluntaryExits =
         operations.peekExits(spec.getConstants().getMaxVoluntaryExits());
     List<Transfer> transfers = operations.peekTransfers(spec.getConstants().getMaxTransfers());
@@ -188,13 +163,13 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
             .peekDeposits(
                 spec.getConstants().getMaxDeposits(),
                 latestProcessedDeposit,
-                state.getLatestEth1Data())
+                state.getEth1Data())
             .stream()
             .map(DepositInfo::getDeposit)
             .collect(Collectors.toList());
     Bytes32 graffiti = getGraffiti(state);
 
-    return BeaconBlockBody.create(
+    return new BeaconBlockBody(
         randaoReveal,
         eth1Data,
         graffiti,
@@ -203,6 +178,7 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
         attestations,
         deposits,
         voluntaryExits,
-        transfers);
+        transfers,
+        spec.getConstants());
   }
 }

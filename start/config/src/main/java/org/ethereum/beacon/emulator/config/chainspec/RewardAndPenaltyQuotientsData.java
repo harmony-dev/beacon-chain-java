@@ -9,8 +9,8 @@ public class RewardAndPenaltyQuotientsData implements RewardAndPenaltyQuotients 
 
   @JsonProperty("BASE_REWARD_FACTOR")
   private String BASE_REWARD_FACTOR;
-  @JsonProperty("WHISTLEBLOWING_REWARD_QUOTIENT")
-  private String WHISTLEBLOWING_REWARD_QUOTIENT;
+  @JsonProperty("WHISTLEBLOWER_REWARD_QUOTIENT")
+  private String WHISTLEBLOWER_REWARD_QUOTIENT;
   @JsonProperty("PROPOSER_REWARD_QUOTIENT")
   private String PROPOSER_REWARD_QUOTIENT;
   @JsonProperty("INACTIVITY_PENALTY_QUOTIENT")
@@ -26,8 +26,8 @@ public class RewardAndPenaltyQuotientsData implements RewardAndPenaltyQuotients 
 
   @Override
   @JsonIgnore
-  public UInt64 getWhistleblowingRewardQuotient() {
-    return UInt64.valueOf(getWHISTLEBLOWING_REWARD_QUOTIENT());
+  public UInt64 getWhistleblowerRewardQuotient() {
+    return UInt64.valueOf(getWHISTLEBLOWER_REWARD_QUOTIENT());
   }
 
   @Override
@@ -58,12 +58,12 @@ public class RewardAndPenaltyQuotientsData implements RewardAndPenaltyQuotients 
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
-  public String getWHISTLEBLOWING_REWARD_QUOTIENT() {
-    return WHISTLEBLOWING_REWARD_QUOTIENT;
+  public String getWHISTLEBLOWER_REWARD_QUOTIENT() {
+    return WHISTLEBLOWER_REWARD_QUOTIENT;
   }
 
-  public void setWHISTLEBLOWING_REWARD_QUOTIENT(String WHISTLEBLOWING_REWARD_QUOTIENT) {
-    this.WHISTLEBLOWING_REWARD_QUOTIENT = WHISTLEBLOWING_REWARD_QUOTIENT;
+  public void setWHISTLEBLOWER_REWARD_QUOTIENT(String WHISTLEBLOWER_REWARD_QUOTIENT) {
+    this.WHISTLEBLOWER_REWARD_QUOTIENT = WHISTLEBLOWER_REWARD_QUOTIENT;
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)

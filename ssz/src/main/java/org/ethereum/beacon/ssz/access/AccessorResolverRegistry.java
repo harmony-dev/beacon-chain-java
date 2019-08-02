@@ -17,6 +17,12 @@ public class AccessorResolverRegistry implements AccessorResolver {
   private Map<Class, List<CodecEntry>> registeredClassHandlers = new HashMap<>();
   List<SSZListAccessor> listAccessors;
   List<SSZContainerAccessor> containerAccessors;
+  List<SSZUnionAccessor> unionAccessors;
+
+  public AccessorResolverRegistry withUnionAccessors(List<SSZUnionAccessor> unionAccessors) {
+    this.unionAccessors = unionAccessors;
+    return this;
+  }
 
   public AccessorResolverRegistry withContainerAccessors(List<SSZContainerAccessor> containerAccessors) {
     this.containerAccessors = containerAccessors;
@@ -65,6 +71,11 @@ public class AccessorResolverRegistry implements AccessorResolver {
     }
 
     return containerAccessors.stream().filter(a -> a.isSupported(field)).findFirst();
+  }
+
+  @Override
+  public Optional<SSZUnionAccessor> resolveUnionAccessor(SSZField field) {
+    return unionAccessors.stream().filter(a -> a.isSupported(field)).findFirst();
   }
 
   @Override
