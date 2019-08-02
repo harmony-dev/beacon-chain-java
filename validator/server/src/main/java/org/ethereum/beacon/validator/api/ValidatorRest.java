@@ -33,7 +33,7 @@ import static org.ethereum.beacon.validator.api.controller.ControllerRoute.Reque
 public class ValidatorRest implements ValidatorServer {
   private static final Logger logger = LogManager.getLogger(ValidatorRest.class);
   private final RestServerVerticle server;
-  private String id;
+  private String id = null;
   private Vertx vertx = Vertx.vertx();
 
   public ValidatorRest(
@@ -85,6 +85,11 @@ public class ValidatorRest implements ValidatorServer {
 
   @Override
   public synchronized void start() {
+    if (id != null) {
+      throw new RuntimeException(
+          String.format(
+              "Validator REST already started on %s port with id #%s", server.getServerPort(), id));
+    }
     logger.info("Starting Validator REST on {} port", server.getServerPort());
     vertx.deployVerticle(
         server,
