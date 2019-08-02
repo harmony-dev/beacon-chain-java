@@ -32,13 +32,13 @@ public class AttestationController extends SyncRestController {
       SyncManager syncManager,
       BeaconChainSpec spec) {
     super(syncManager);
-    Flux.from(stateProcessor.getObservableStateStream())
-        .subscribe(
-            observableBeaconState -> {
-              this.observableBeaconState = observableBeaconState;
-            });
+    Flux.from(stateProcessor.getObservableStateStream()).subscribe(this::updateState);
     this.service = service;
     this.spec = spec;
+  }
+
+  private synchronized void updateState(ObservableBeaconState observableBeaconState) {
+    this.observableBeaconState = observableBeaconState;
   }
 
   @Override
@@ -46,7 +46,7 @@ public class AttestationController extends SyncRestController {
     return processGetRequestImpl(this::produceAttestationResponse);
   }
 
-  private Object produceAttestationResponse(HttpServerRequest request) {
+  private synchronized Object produceAttestationResponse(HttpServerRequest request) {
     try {
       MultiMap params = request.params();
       SlotNumber slot = SlotNumber.castFrom(UInt64.valueOf(getParamString("slot", params)));

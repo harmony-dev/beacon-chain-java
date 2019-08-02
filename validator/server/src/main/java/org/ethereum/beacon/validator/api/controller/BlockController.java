@@ -26,12 +26,12 @@ public class BlockController extends SyncRestController {
       ValidatorDutiesService service,
       SyncManager syncManager) {
     super(syncManager);
-    Flux.from(stateProcessor.getObservableStateStream())
-        .subscribe(
-            observableBeaconState -> {
-              this.observableBeaconState = observableBeaconState;
-            });
+    Flux.from(stateProcessor.getObservableStateStream()).subscribe(this::updateState);
     this.service = service;
+  }
+
+  private synchronized void updateState(ObservableBeaconState observableBeaconState) {
+    this.observableBeaconState = observableBeaconState;
   }
 
   @Override
@@ -39,7 +39,7 @@ public class BlockController extends SyncRestController {
     return processGetRequestImpl(this::produceValidatorBlockResponse);
   }
 
-  private Object produceValidatorBlockResponse(HttpServerRequest request) {
+  private synchronized Object produceValidatorBlockResponse(HttpServerRequest request) {
     try {
       MultiMap params = request.params();
       SlotNumber slot = SlotNumber.castFrom(UInt64.valueOf(getParamString("slot", params)));

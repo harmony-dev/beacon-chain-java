@@ -42,12 +42,13 @@ public class DutiesController extends SyncRestController {
       BeaconChainSpec spec) {
     super(syncManager);
     Flux.from(stateProcessor.getObservableStateStream())
-        .subscribe(
-            observableBeaconState -> {
-              this.observableBeaconState = observableBeaconState;
-            });
+        .subscribe(this::updateState);
     this.spec = spec;
     this.service = service;
+  }
+
+  private synchronized void updateState(ObservableBeaconState observableBeaconState) {
+    this.observableBeaconState = observableBeaconState;
   }
 
   @Override
@@ -55,7 +56,7 @@ public class DutiesController extends SyncRestController {
     return processGetRequestImpl(this::produceValidatorDutiesResponse);
   }
 
-  private Object produceValidatorDutiesResponse(HttpServerRequest request) {
+  private synchronized Object produceValidatorDutiesResponse(HttpServerRequest request) {
     try {
       MultiMap params = request.params();
       EpochNumber epoch;

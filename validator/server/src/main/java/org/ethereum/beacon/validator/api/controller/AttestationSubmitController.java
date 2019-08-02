@@ -35,13 +35,13 @@ public class AttestationSubmitController extends SyncRestController {
       ObservableStateProcessor stateProcessor,
       BeaconChainSpec spec) {
     super(syncManager);
-    Flux.from(stateProcessor.getObservableStateStream())
-        .subscribe(
-            observableBeaconState -> {
-              this.observableBeaconState = observableBeaconState;
-            });
+    Flux.from(stateProcessor.getObservableStateStream()).subscribe(this::updateState);
     this.wireApiSub = wireApiSub;
     this.spec = spec;
+  }
+
+  private synchronized void updateState(ObservableBeaconState observableBeaconState) {
+    this.observableBeaconState = observableBeaconState;
   }
 
   @Override
@@ -49,7 +49,7 @@ public class AttestationSubmitController extends SyncRestController {
     return processPostRequestImpl(this::acceptAttestationSubmit);
   }
 
-  private Optional<Throwable> acceptAttestationSubmit(String body) {
+  private synchronized Optional<Throwable> acceptAttestationSubmit(String body) {
     try {
       final AttestationSubmit submitData = Json.decodeValue(body, AttestationSubmit.class);
       IndexedAttestation indexedAttestation = submitData.createAttestation(spec.getConstants());

@@ -20,12 +20,16 @@ public class SyncingController extends RestController {
             syncManager.getLastSlotStream(),
             peerManager.getMaxSlotStream(),
             SyncingResponse::create)
-        .doOnNext(r -> syncingResponse = r)
+        .doOnNext(this::updateResponse)
         .onErrorContinue((t, o) -> logger.error("Unexpected error: ", t))
         .subscribe();
   }
 
-  private Object produceSyncingResponse() {
+  private synchronized void updateResponse(SyncingResponse syncingResponse) {
+    this.syncingResponse = syncingResponse;
+  }
+
+  private synchronized Object produceSyncingResponse() {
     return syncingResponse;
   }
 
