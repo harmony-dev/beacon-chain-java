@@ -1341,9 +1341,6 @@ public class StateTestCase implements NamedTestCase, BlsSignedTestCase {
           this.signature = signature;
         }
       }
-
-      @JsonIgnoreProperties(ignoreUnknown = false)
-      public static class SomeData {}
     }
   }
 }

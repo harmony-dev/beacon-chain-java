@@ -6,7 +6,7 @@ dependencies {
   implementation project(':crypto')
   implementation project(':chain')
   implementation project(':consensus')
-  implementation project(':validator')
+  implementation project(':validator:embedded')
   implementation project(':util')
   implementation project(':db:core')
 

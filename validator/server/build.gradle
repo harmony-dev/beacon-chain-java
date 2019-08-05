@@ -1,0 +1,27 @@
+dependencies {
+  api project(':validator:core')
+  implementation project(':chain')
+  implementation project(':util')
+  implementation project(':wire')
+  implementation project(':pow:core')
+  implementation project(':crypto')
+  implementation project(':start:common')
+
+  implementation 'com.google.guava:guava'
+  implementation 'io.projectreactor:reactor-core'
+  implementation 'org.apache.logging.log4j:log4j-core'
+
+  // Http Server
+  implementation 'io.vertx:vertx-core:3.8.0'
+  implementation 'io.vertx:vertx-web:3.8.0'
+
+  // REST Client
+  implementation 'org.glassfish.jersey.core:jersey-client:2.28'
+  implementation 'org.glassfish.jersey.inject:jersey-hk2:2.28'
+  implementation 'com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider'
+
+  // Gradle does not import test sources alongside with main sources
+  // use a workaround until better solution will be found
+  testImplementation project(':validator:embedded').sourceSets.test.output
+  testImplementation project(':validator:core').sourceSets.test.output
+}
