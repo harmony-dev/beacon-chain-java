@@ -46,7 +46,7 @@ public class DutiesController extends SyncRestController {
     this.service = service;
   }
 
-  private synchronized void updateState(ObservableBeaconState observableBeaconState) {
+  private void updateState(ObservableBeaconState observableBeaconState) {
     this.observableBeaconState = observableBeaconState;
   }
 
@@ -55,11 +55,12 @@ public class DutiesController extends SyncRestController {
     return processGetRequestImpl(this::produceValidatorDutiesResponse);
   }
 
-  private synchronized Object produceValidatorDutiesResponse(HttpServerRequest request) {
+  private Object produceValidatorDutiesResponse(HttpServerRequest request) {
     try {
+      final ObservableBeaconState observableBeaconStateCopy = observableBeaconState;
       MultiMap params = request.params();
       EpochNumber epoch;
-      BeaconStateEx stateEx = observableBeaconState.getLatestSlotState();
+      BeaconStateEx stateEx = observableBeaconStateCopy.getLatestSlotState();
       if (params.contains("epoch")) {
         epoch =
             EpochNumber.castFrom(UInt64.valueOf(ControllerUtils.getParamString("epoch", params)));

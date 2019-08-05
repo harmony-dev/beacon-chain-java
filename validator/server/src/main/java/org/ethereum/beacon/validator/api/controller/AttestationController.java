@@ -52,7 +52,7 @@ public class AttestationController extends SyncRestController {
     this.spec = spec;
   }
 
-  private synchronized void updateState(ObservableBeaconState observableBeaconState) {
+  private void updateState(ObservableBeaconState observableBeaconState) {
     this.observableBeaconState = observableBeaconState;
   }
 
@@ -66,8 +66,9 @@ public class AttestationController extends SyncRestController {
     return processPostRequestImpl(this::acceptAttestationSubmit);
   }
 
-  private synchronized Object produceAttestationResponse(HttpServerRequest request) {
+  private Object produceAttestationResponse(HttpServerRequest request) {
     try {
+      final ObservableBeaconState observableBeaconStateCopy = observableBeaconState;
       MultiMap params = request.params();
       SlotNumber slot =
           SlotNumber.castFrom(UInt64.valueOf(ControllerUtils.getParamString("slot", params)));
@@ -84,12 +85,12 @@ public class AttestationController extends SyncRestController {
 
       ValidatorIndex validatorIndex =
           spec.get_validator_index_by_pubkey(
-              observableBeaconState.getLatestSlotState().createMutableCopy(), validatorPubkey);
+              observableBeaconStateCopy.getLatestSlotState().createMutableCopy(), validatorPubkey);
       Attestation attestation =
-          service.prepareAttestation(slot, validatorIndex, shard, observableBeaconState);
+          service.prepareAttestation(slot, validatorIndex, shard, observableBeaconStateCopy);
       IndexedAttestation indexedAttestation =
           spec.get_indexed_attestation(
-              observableBeaconState.getLatestSlotState().createMutableCopy(), attestation);
+              observableBeaconStateCopy.getLatestSlotState().createMutableCopy(), attestation);
       return BeaconBlockConverter.presentIndexedAttestation(indexedAttestation);
     } catch (IllegalArgumentException ex) {
       throw new InvalidInputException(ex);
@@ -98,12 +99,13 @@ public class AttestationController extends SyncRestController {
     }
   }
 
-  private synchronized Optional<Throwable> acceptAttestationSubmit(String body) {
+  private Optional<Throwable> acceptAttestationSubmit(String body) {
     try {
+      final ObservableBeaconState observableBeaconStateCopy = observableBeaconState;
       final AttestationSubmit submitData = Json.decodeValue(body, AttestationSubmit.class);
       IndexedAttestation indexedAttestation = submitData.createAttestation(spec.getConstants());
       // Verification
-      MutableBeaconState state = observableBeaconState.getLatestSlotState().createMutableCopy();
+      MutableBeaconState state = observableBeaconStateCopy.getLatestSlotState().createMutableCopy();
       List<ValidatorIndex> committee =
           spec.get_crosslink_committee(
               state,

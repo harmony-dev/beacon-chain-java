@@ -47,7 +47,7 @@ public class BlockController extends SyncRestController {
     this.service = service;
   }
 
-  private synchronized void updateState(ObservableBeaconState observableBeaconState) {
+  private void updateState(ObservableBeaconState observableBeaconState) {
     this.observableBeaconState = observableBeaconState;
   }
 
@@ -61,15 +61,16 @@ public class BlockController extends SyncRestController {
     return processPostRequestImpl(this::acceptBlockSubmit);
   }
 
-  private synchronized Object produceValidatorBlockResponse(HttpServerRequest request) {
+  private Object produceValidatorBlockResponse(HttpServerRequest request) {
     try {
+      final ObservableBeaconState observableBeaconStateCopy = observableBeaconState;
       MultiMap params = request.params();
       SlotNumber slot =
           SlotNumber.castFrom(UInt64.valueOf(ControllerUtils.getParamString("slot", params)));
       BLSSignature randaoReveal =
           BLSSignature.wrap(
               Bytes96.fromHexStringStrict(ControllerUtils.getParamString("randao_reveal", params)));
-      BeaconBlock block = service.prepareBlock(slot, randaoReveal, observableBeaconState);
+      BeaconBlock block = service.prepareBlock(slot, randaoReveal, observableBeaconStateCopy);
       return BeaconBlockConverter.serialize(block);
     } catch (IllegalArgumentException ex) {
       throw new InvalidInputException(ex);

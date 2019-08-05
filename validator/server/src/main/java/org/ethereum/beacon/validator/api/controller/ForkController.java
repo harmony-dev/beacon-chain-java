@@ -21,16 +21,21 @@ public class ForkController extends RestController {
     this.chainId = chainId;
   }
 
-  private synchronized void updateState(ObservableBeaconState observableBeaconState) {
+  private void updateState(ObservableBeaconState observableBeaconState) {
     this.observableBeaconState = observableBeaconState;
   }
 
-  private synchronized Object produceForkResponse() {
+  private Object produceForkResponse() {
+    final ObservableBeaconState observableBeaconStateCopy = observableBeaconState;
     ForkResponse forkResponse =
         new ForkResponse(
-            observableBeaconState.getLatestSlotState().getFork().getCurrentVersion().toString(),
-            observableBeaconState.getLatestSlotState().getFork().getPreviousVersion().toString(),
-            spec.compute_epoch_of_slot(observableBeaconState.getLatestSlotState().getSlot())
+            observableBeaconStateCopy.getLatestSlotState().getFork().getCurrentVersion().toString(),
+            observableBeaconStateCopy
+                .getLatestSlotState()
+                .getFork()
+                .getPreviousVersion()
+                .toString(),
+            spec.compute_epoch_of_slot(observableBeaconStateCopy.getLatestSlotState().getSlot())
                 .longValue(),
             chainId.toBI());
     return forkResponse;

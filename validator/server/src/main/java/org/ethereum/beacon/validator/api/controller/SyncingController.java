@@ -25,11 +25,11 @@ public class SyncingController extends RestController {
         .subscribe();
   }
 
-  private synchronized void updateResponse(SyncingResponse syncingResponse) {
+  private void updateResponse(SyncingResponse syncingResponse) {
     this.syncingResponse = syncingResponse;
   }
 
-  private synchronized Object produceSyncingResponse() {
+  private Object produceSyncingResponse() {
     return syncingResponse;
   }
 
