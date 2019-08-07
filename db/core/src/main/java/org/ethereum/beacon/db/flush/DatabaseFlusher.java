@@ -8,11 +8,22 @@ public interface DatabaseFlusher {
 
   void commit();
 
+  static DatabaseFlusher create(WriteBuffer buffer, long bufferSizeLimit) {
+    return bufferSizeLimit > 0
+        ? new BufferSizeObserver(buffer, bufferSizeLimit)
+        : new InstantFlusher(buffer);
+  }
+
   static DatabaseFlusher instant(WriteBuffer buffer) {
     return new InstantFlusher(buffer);
   }
 
   static DatabaseFlusher limitedToSize(WriteBuffer buffer, long bufferSizeLimit) {
-    return new BufferLimitFlusher(buffer, bufferSizeLimit);
+    return new BufferSizeObserver(buffer, bufferSizeLimit);
+  }
+
+  enum Type {
+    Instant,
+    BufferSizeObserver
   }
 }

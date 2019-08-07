@@ -30,11 +30,13 @@ public class StateListLengthsData implements StateListLengths {
   }
 
   @Override
+  @JsonIgnore
   public UInt64 getHistoricalRootsLimit() {
     return UInt64.valueOf(getHISTORICAL_ROOTS_LIMIT());
   }
 
   @Override
+  @JsonIgnore
   public UInt64 getValidatorRegistryLimit() {
     return UInt64.valueOf(getVALIDATOR_REGISTRY_LIMIT());
   }

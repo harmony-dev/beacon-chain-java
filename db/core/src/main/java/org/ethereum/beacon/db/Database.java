@@ -1,6 +1,9 @@
 package org.ethereum.beacon.db;
 
+import java.nio.file.Paths;
+import org.ethereum.beacon.db.rocksdb.RocksDbSource;
 import org.ethereum.beacon.db.source.DataSource;
+import org.ethereum.beacon.db.source.StorageEngineSource;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 public interface Database {
@@ -23,5 +26,10 @@ public interface Database {
 
   static Database inMemoryDB() {
     return new InMemoryDatabase();
+  }
+
+  static Database rocksDB(String dbPath, long bufferLimitInBytes) {
+    StorageEngineSource<BytesValue> source = new RocksDbSource(Paths.get(dbPath));
+    return EngineDrivenDatabase.create(source, bufferLimitInBytes);
   }
 }

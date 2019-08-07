@@ -124,7 +124,7 @@ public class EngineDrivenDatabaseTest {
   @Test
   public void checkBufferSizeFlusher() {
     TestStorageSource engineSource = new TestStorageSource();
-    EngineDrivenDatabase db = EngineDrivenDatabase.createWithBufferLimitFlusher(engineSource, 512);
+    EngineDrivenDatabase db = EngineDrivenDatabase.create(engineSource, 512);
 
     Random rnd = new Random();
 

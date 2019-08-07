@@ -2,12 +2,12 @@ package org.ethereum.beacon.db.flush;
 
 import org.ethereum.beacon.db.source.WriteBuffer;
 
-public class BufferLimitFlusher implements DatabaseFlusher {
+public class BufferSizeObserver implements DatabaseFlusher {
 
   private final WriteBuffer buffer;
   private final long bufferSizeLimit;
 
-  public BufferLimitFlusher(WriteBuffer buffer, long bufferSizeLimit) {
+  public BufferSizeObserver(WriteBuffer buffer, long bufferSizeLimit) {
     this.buffer = buffer;
     this.bufferSizeLimit = bufferSizeLimit;
   }

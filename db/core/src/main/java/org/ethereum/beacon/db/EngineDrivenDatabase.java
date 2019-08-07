@@ -14,44 +14,38 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
 
 public class EngineDrivenDatabase implements Database {
 
-  private final StorageEngineSource<BytesValue> storageEngineSource;
+  private final StorageEngineSource<BytesValue> source;
   private final WriteBuffer<BytesValue, BytesValue> writeBuffer;
   private final DatabaseFlusher flusher;
 
   EngineDrivenDatabase(
-      StorageEngineSource<BytesValue> storageEngineSource,
+      StorageEngineSource<BytesValue> source,
       WriteBuffer<BytesValue, BytesValue> writeBuffer,
       DatabaseFlusher flusher) {
-    this.storageEngineSource = storageEngineSource;
+    this.source = source;
     this.writeBuffer = writeBuffer;
     this.flusher = flusher;
   }
 
-  public static EngineDrivenDatabase createWithInstantFlusher(
-      StorageEngineSource<BytesValue> storageEngineSource) {
-    BatchWriter<BytesValue, BytesValue> batchWriter = new BatchWriter<>(storageEngineSource);
-    WriteBuffer<BytesValue, BytesValue> writeBuffer =
-        new WriteBuffer<>(
-            batchWriter, CacheSizeEvaluator.getInstance(MemSizeEvaluators.BytesValueEvaluator));
-    DatabaseFlusher flusher = DatabaseFlusher.instant(writeBuffer);
-
-    return new EngineDrivenDatabase(storageEngineSource, writeBuffer, flusher);
-  }
-
-  public static EngineDrivenDatabase createWithBufferLimitFlusher(
+  public static EngineDrivenDatabase create(
       StorageEngineSource<BytesValue> storageEngineSource, long bufferLimitInBytes) {
     BatchWriter<BytesValue, BytesValue> batchWriter = new BatchWriter<>(storageEngineSource);
     WriteBuffer<BytesValue, BytesValue> writeBuffer =
         new WriteBuffer<>(
             batchWriter, CacheSizeEvaluator.getInstance(MemSizeEvaluators.BytesValueEvaluator));
-    DatabaseFlusher flusher = DatabaseFlusher.limitedToSize(writeBuffer, bufferLimitInBytes);
+    DatabaseFlusher flusher = DatabaseFlusher.create(writeBuffer, bufferLimitInBytes);
 
     return new EngineDrivenDatabase(storageEngineSource, writeBuffer, flusher);
   }
 
+  public static EngineDrivenDatabase createWithInstantFlusher(
+      StorageEngineSource<BytesValue> storageEngineSource) {
+    return create(storageEngineSource, -1);
+  }
+
   @Override
   public DataSource<BytesValue, BytesValue> createStorage(String name) {
-    storageEngineSource.open();
+    source.open();
     return new XorDataSource<>(writeBuffer, Hashes.sha256(BytesValue.wrap(name.getBytes())));
   }
 
@@ -62,7 +56,8 @@ public class EngineDrivenDatabase implements Database {
 
   @Override
   public void close() {
-    storageEngineSource.close();
+    flusher.flush();
+    source.close();
   }
 
   @VisibleForTesting
