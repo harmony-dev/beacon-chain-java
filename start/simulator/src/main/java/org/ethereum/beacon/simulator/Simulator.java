@@ -40,7 +40,7 @@ public class Simulator implements Runnable {
   static class VersionProvider implements IVersionProvider {
     @Override
     public String[] getVersion() throws Exception {
-      return new String[] { "simulator " + ClientInfo.version() };
+      return new String[] {"simulator " + ClientInfo.fullTitleVersion(Simulator.class)};
     }
   }
 }

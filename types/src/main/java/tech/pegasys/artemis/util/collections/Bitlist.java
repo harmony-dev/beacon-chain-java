@@ -48,6 +48,14 @@ public class Bitlist extends DelegatingBytesValue {
     return new Bitlist(size, bytes, maxSize);
   }
 
+  public static Bitlist of(int size, List<Integer> bits, long maxSize) {
+    MutableBytesValue bytes = MutableBytesValue.create((size + 7)/ 8);
+    for (Integer bit : bits) {
+      bytes.setBit(bit, true);
+    }
+    return new Bitlist(size, bytes, maxSize);
+  }
+
   public static Bitlist of(int maxSize) {
     return new Bitlist(0, BytesValue.EMPTY, maxSize);
   }

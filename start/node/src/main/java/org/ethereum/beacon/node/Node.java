@@ -1,13 +1,14 @@
 package org.ethereum.beacon.node;
 
-import java.io.File;
-import java.util.List;
 import org.ethereum.beacon.node.Node.VersionProvider;
 import org.ethereum.beacon.node.command.LogLevel;
 import org.ethereum.beacon.start.common.ClientInfo;
 import picocli.CommandLine;
 import picocli.CommandLine.IVersionProvider;
 import picocli.CommandLine.RunLast;
+
+import java.io.File;
+import java.util.List;
 
 @CommandLine.Command(
     description = "Beacon chain node",
@@ -143,7 +144,7 @@ public class Node implements Runnable {
   static class VersionProvider implements IVersionProvider {
     @Override
     public String[] getVersion() throws Exception {
-      return new String[] { "node " + ClientInfo.version() };
+      return new String[] {ClientInfo.fullTitleVersion(Node.class)};
     }
   }
 }

@@ -33,7 +33,7 @@ import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.ssz.SSZBuilder;
 import org.ethereum.beacon.ssz.SSZSerializer;
 import org.ethereum.beacon.validator.BeaconChainProposer;
-import org.ethereum.beacon.validator.MultiValidatorService;
+import org.ethereum.beacon.validator.local.MultiValidatorService;
 import org.ethereum.beacon.validator.attester.BeaconChainAttesterImpl;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import org.ethereum.beacon.validator.proposer.BeaconChainProposerImpl;
@@ -223,7 +223,7 @@ public class NodeLauncher {
         wireApiSyncRemote,
         syncQueue,
         1,
-        schedulers.events());
+        schedulers);
     syncManager.setRequestsDelay(Duration.ofSeconds(1), Duration.ofSeconds(5));
 
     if (startSyncManager) {

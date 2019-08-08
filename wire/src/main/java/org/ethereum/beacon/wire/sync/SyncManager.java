@@ -1,6 +1,7 @@
 package org.ethereum.beacon.wire.sync;
 
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.wire.Feedback;
 import org.ethereum.beacon.wire.WireApiSync;
 import org.reactivestreams.Publisher;
@@ -16,4 +17,21 @@ public interface SyncManager {
   void setSyncApi(WireApiSync syncApi);
 
   Publisher<Feedback<BeaconBlock>> getBlocksReadyToImport();
+
+  void start();
+
+  void stop();
+
+  Publisher<SyncMode> getSyncModeStream();
+
+  Publisher<Boolean> getIsSyncingStream();
+
+  Publisher<SlotNumber> getStartSlotStream();
+
+  Publisher<SlotNumber> getLastSlotStream();
+
+  enum SyncMode {
+    Long,
+    Short
+  }
 }

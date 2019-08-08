@@ -9,6 +9,7 @@ import org.ethereum.beacon.start.common.Launcher;
 import org.ethereum.beacon.schedulers.Scheduler;
 import org.ethereum.beacon.simulator.SimulatorLauncher;
 import org.ethereum.beacon.simulator.SimulatorLauncher.Builder;
+import org.ethereum.beacon.stream.SimpleProcessor;
 import org.ethereum.beacon.wire.Feedback;
 import org.ethereum.beacon.wire.WireApiSync;
 import org.ethereum.beacon.wire.WireApiSyncServer;
@@ -84,7 +85,7 @@ public class SyncTest {
         asyncSyncServer,
         syncQueue,
         1,
-        testPeer.getSchedulers().events());
+        testPeer.getSchedulers());
 
     AtomicBoolean synced = new AtomicBoolean();
     Flux.from(testPeer.getBeaconChain().getBlockStatesStream())

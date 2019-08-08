@@ -26,7 +26,7 @@ dependencies {
   implementation project(':chain')
   implementation project(':ssz')
   implementation project(':pow:core')
-  implementation project(':validator')
+  implementation project(':validator:embedded')
 
   implementation 'info.picocli:picocli'
   implementation 'com.google.guava:guava'
