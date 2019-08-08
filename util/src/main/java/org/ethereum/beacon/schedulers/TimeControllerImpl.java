@@ -1,16 +1,29 @@
 package org.ethereum.beacon.schedulers;
 
-import com.google.common.collect.SortedMultiset;
 import com.google.common.collect.TreeMultimap;
 import java.util.Comparator;
-import java.util.Iterator;
-import java.util.SortedSet;
+import java.util.NavigableSet;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class TimeControllerImpl implements TimeController {
+  private static AtomicLong id = new AtomicLong();
   TimeController parent;
 
-  TreeMultimap<Long, Task> tasks = TreeMultimap.create(
-          Comparator.naturalOrder(), Comparator.comparing(System::identityHashCode));
+  private static class OrderedTask {
+    final long order = id.incrementAndGet();
+    final Task task;
+
+    public OrderedTask(Task task) {
+      this.task = task;
+    }
+
+    public long getOrder() {
+      return order;
+    }
+  }
+
+  TreeMultimap<Long, OrderedTask> tasks = TreeMultimap.create(
+      Comparator.naturalOrder(), Comparator.comparing(OrderedTask::getOrder));
   long curTime;
   long timeShift;
 
@@ -34,10 +47,11 @@ public class TimeControllerImpl implements TimeController {
     }
     newTime += timeShift;
     while (!tasks.isEmpty()) {
-      Task task = tasks.values().iterator().next();
+      OrderedTask orderedTask = tasks.values().iterator().next();
+      Task task = orderedTask.task;
       if (task.getTime() <= newTime) {
         curTime = task.getTime();
-        tasks.remove(task.getTime(), task);
+        tasks.remove(task.getTime(), orderedTask);
         task.execute();
       } else {
         break;
@@ -53,7 +67,7 @@ public class TimeControllerImpl implements TimeController {
       return;
     }
 
-    tasks.put(task.getTime(), task);
+    tasks.put(task.getTime(), new OrderedTask(task));
   }
 
   @Override
@@ -63,7 +77,13 @@ public class TimeControllerImpl implements TimeController {
       return;
     }
 
-    tasks.remove(task.getTime(), task);
+    NavigableSet<OrderedTask> tasks = this.tasks.get(task.getTime());
+    for (OrderedTask orderedTask : tasks) {
+      if (orderedTask.task == task) {
+        this.tasks.remove(task.getTime(), orderedTask);
+        return;
+      }
+    }
   }
 
   @Override
