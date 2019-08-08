@@ -278,19 +278,11 @@ public class StateRunner implements Runner {
   }
 
   private Pair<Optional<String>, BeaconState> processSlots(int slots, BeaconState state) {
-    StateTransition<BeaconStateEx> perEpochTransition = new PerEpochTransition(spec);
+    PerEpochTransition perEpochTransition = new PerEpochTransition(spec);
     StateTransition<BeaconStateEx> perSlotTransition = new PerSlotTransition(spec);
     EmptySlotTransition slotTransition =
         new EmptySlotTransition(
-            new ExtendedSlotTransition(
-                new PerEpochTransition(spec) {
-                  @Override
-                  public BeaconStateEx apply(BeaconStateEx stateEx) {
-                    return perEpochTransition.apply(stateEx);
-                  }
-                },
-                perSlotTransition,
-                spec));
+            new ExtendedSlotTransition(perEpochTransition, perSlotTransition, spec));
 
     BeaconStateEx stateEx = new BeaconStateExImpl(state);
     try {
