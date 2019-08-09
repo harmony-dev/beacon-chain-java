@@ -60,6 +60,9 @@ public class TimeControllerImpl implements TimeController {
     curTime = newTime;
   }
 
+  /**
+   * Adding the same task instance is prohibited
+   */
   @Override
   public void addTask(Task task) {
     if (parent != null) {
