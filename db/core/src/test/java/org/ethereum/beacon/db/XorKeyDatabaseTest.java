@@ -6,7 +6,7 @@ import org.ethereum.beacon.db.configuration.*;
 import org.ethereum.beacon.db.source.DataSource;
 import org.ethereum.beacon.db.source.impl.XorDataSource;
 import org.junit.runner.RunWith;
-import tech.pegasys.artemis.util.bytes.*;
+import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import java.util.function.Function;
 
@@ -40,18 +40,6 @@ public class XorKeyDatabaseTest {
         final BytesValue value = BytesValue.EMPTY;
         actual.put(key, value);
         assertThat(actual.get(key)).isPresent().hasValue(value);
-    }
-
-    private BytesValue xorLongest(BytesValue v1, BytesValue v2) {
-        BytesValue longVal = v1.size() >= v2.size() ? v1 : v2;
-        BytesValue shortVal = v1.size() < v2.size() ? v1 : v2;
-        MutableBytesValue ret = longVal.mutableCopy();
-        int longLen = longVal.size();
-        int shortLen = shortVal.size();
-        for (int i = 0; i < shortLen; i++) {
-            ret.set(longLen - i - 1, (byte) (ret.get(longLen - i - 1) ^ shortVal.get(shortLen - i - 1)));
-        }
-        return ret;
     }
 
     @Property
