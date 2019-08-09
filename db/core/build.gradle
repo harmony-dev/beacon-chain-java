@@ -1,3 +1,6 @@
 dependencies {
     api project(':types')
+    
+    testImplementation 'com.pholser:junit-quickcheck-core:0.7'
+    testImplementation 'ru.vyarus:generics-resolver:3.0.0'
 }
