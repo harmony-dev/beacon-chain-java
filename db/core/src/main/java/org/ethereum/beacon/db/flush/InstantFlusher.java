@@ -11,12 +11,10 @@ public class InstantFlusher implements DatabaseFlusher {
   }
 
   @Override
-  public void flush() {
-    buffer.flush();
-  }
+  public void flush() {}
 
   @Override
   public void commit() {
-    this.flush();
+    buffer.flush();
   }
 }

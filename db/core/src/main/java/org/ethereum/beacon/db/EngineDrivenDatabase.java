@@ -4,7 +4,9 @@ import com.google.common.annotations.VisibleForTesting;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.crypto.Hashes;
+import org.ethereum.beacon.db.flush.BufferSizeObserver;
 import org.ethereum.beacon.db.flush.DatabaseFlusher;
+import org.ethereum.beacon.db.flush.InstantFlusher;
 import org.ethereum.beacon.db.source.BatchWriter;
 import org.ethereum.beacon.db.source.CacheSizeEvaluator;
 import org.ethereum.beacon.db.source.DataSource;
@@ -34,12 +36,17 @@ public class EngineDrivenDatabase implements Database {
   public static EngineDrivenDatabase create(
       StorageEngineSource<BytesValue> storageEngineSource, long bufferLimitInBytes) {
     BatchWriter<BytesValue, BytesValue> batchWriter = new BatchWriter<>(storageEngineSource);
-    WriteBuffer<BytesValue, BytesValue> writeBuffer =
+    WriteBuffer<BytesValue, BytesValue> buffer =
         new WriteBuffer<>(
-            batchWriter, CacheSizeEvaluator.getInstance(MemSizeEvaluators.BytesValueEvaluator));
-    DatabaseFlusher flusher = DatabaseFlusher.create(writeBuffer, bufferLimitInBytes);
+            batchWriter,
+            CacheSizeEvaluator.getInstance(MemSizeEvaluators.BytesValueEvaluator),
+            true);
+    DatabaseFlusher flusher =
+        bufferLimitInBytes > 0
+            ? BufferSizeObserver.create(buffer, bufferLimitInBytes)
+            : new InstantFlusher(buffer);
 
-    return new EngineDrivenDatabase(storageEngineSource, writeBuffer, flusher);
+    return new EngineDrivenDatabase(storageEngineSource, buffer, flusher);
   }
 
   public static EngineDrivenDatabase createWithInstantFlusher(

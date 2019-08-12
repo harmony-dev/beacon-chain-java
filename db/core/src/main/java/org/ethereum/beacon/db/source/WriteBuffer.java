@@ -6,8 +6,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.ethereum.beacon.db.util.AutoCloseableLock;
@@ -31,16 +29,17 @@ public class WriteBuffer<K, V> extends AbstractLinkedDataSource<K, V, K, V>
 
   public WriteBuffer(
       @Nonnull final DataSource<K, V> upstreamSource,
-      @Nonnull final CacheSizeEvaluator<K, V> sizeEvaluator) {
-    super(upstreamSource, true);
+      @Nonnull final CacheSizeEvaluator<K, V> sizeEvaluator,
+      final boolean upstreamFlush) {
+    super(upstreamSource, upstreamFlush);
     Objects.requireNonNull(upstreamSource);
     Objects.requireNonNull(sizeEvaluator);
 
     this.sizeEvaluator = sizeEvaluator;
   }
 
-  public WriteBuffer(@Nonnull DataSource<K, V> upstreamSource) {
-    this(upstreamSource, CacheSizeEvaluator.noSizeEvaluator());
+  public WriteBuffer(@Nonnull final DataSource<K, V> upstreamSource, final boolean upstreamFlush) {
+    this(upstreamSource, CacheSizeEvaluator.noSizeEvaluator(), upstreamFlush);
   }
 
   @Override
