@@ -13,17 +13,4 @@ public interface DatabaseFlusher {
         ? new BufferSizeObserver(buffer, bufferSizeLimit)
         : new InstantFlusher(buffer);
   }
-
-  static DatabaseFlusher instant(WriteBuffer buffer) {
-    return new InstantFlusher(buffer);
-  }
-
-  static DatabaseFlusher limitedToSize(WriteBuffer buffer, long bufferSizeLimit) {
-    return new BufferSizeObserver(buffer, bufferSizeLimit);
-  }
-
-  enum Type {
-    Instant,
-    BufferSizeObserver
-  }
 }

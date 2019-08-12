@@ -183,6 +183,8 @@ public class NodeCommandLauncher implements Runnable {
         schedulers,
         true);
 
+    Runtime.getRuntime().addShutdownHook(new Thread(node::stop));
+
     while (true) {
       try {
         Thread.sleep(1000000L);

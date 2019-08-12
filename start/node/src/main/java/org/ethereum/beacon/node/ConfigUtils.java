@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.ChainStart;
 import org.ethereum.beacon.core.operations.Deposit;
+import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.Time;
@@ -26,6 +27,7 @@ import org.ethereum.beacon.start.common.util.SimulateUtils;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
+import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public class ConfigUtils {
@@ -35,8 +37,7 @@ public class ConfigUtils {
       return null;
     }
     if (config instanceof Signer.Insecure) {
-      return createKeyPairs(((Insecure) config).getKeys())
-          .stream()
+      return createKeyPairs(((Insecure) config).getKeys()).stream()
           .map(
               key ->
                   isBlsSign
@@ -57,11 +58,12 @@ public class ConfigUtils {
     if (keys instanceof Public) {
       throw new IllegalArgumentException("Can't generate key pairs from public keys: " + keys);
     } else if (keys instanceof Private) {
-      return ((Private) keys).getKeys().stream()
-          .map(Bytes32::fromHexString)
-          .map(PrivateKey::create)
-          .map(KeyPair::create)
-          .collect(Collectors.toList());
+      return ((Private) keys)
+          .getKeys().stream()
+              .map(Bytes32::fromHexString)
+              .map(PrivateKey::create)
+              .map(KeyPair::create)
+              .collect(Collectors.toList());
     } else if (keys instanceof Generate) {
       Generate genKeys = (Generate) keys;
       Random random = new Random(genKeys.getSeed());
@@ -87,14 +89,21 @@ public class ConfigUtils {
           eConfig.getBalance() != null
               ? Gwei.ofEthers(eConfig.getBalance())
               : spec.getConstants().getMaxEffectiveBalance();
-      List<Deposit> deposits = SimulateUtils
-          .getDepositsForKeyPairs(UInt64.ZERO, random, keyPairs, spec, amount, verifyProof);
+      List<Deposit> deposits =
+          SimulateUtils.getDepositsForKeyPairs(
+              UInt64.ZERO, random, keyPairs, spec, amount, verifyProof);
+      ReadList<Integer, DepositData> depositDataList =
+          ReadList.wrap(
+              deposits.stream().map(Deposit::getData).collect(Collectors.toList()),
+              Integer::new,
+              1L << spec.getConstants().getDepositContractTreeDepth().getIntValue());
       Eth1Data eth1Data =
           new Eth1Data(
-              Hash32.random(random), UInt64.valueOf(deposits.size()), Hash32.random(random));
+              spec.hash_tree_root(depositDataList),
+              UInt64.valueOf(deposits.size()),
+              Hash32.random(random));
       ChainStart chainStart =
-          new ChainStart(
-              Time.of(eConfig.getGenesisTime().getTime() / 1000), eth1Data, deposits);
+          new ChainStart(Time.of(eConfig.getGenesisTime().getTime() / 1000), eth1Data, deposits);
       SimpleDepositContract depositContract = new SimpleDepositContract(chainStart);
       return depositContract;
     } else {

@@ -1,6 +1,8 @@
 package org.ethereum.beacon.db;
 
 import com.google.common.annotations.VisibleForTesting;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.db.flush.DatabaseFlusher;
 import org.ethereum.beacon.db.source.BatchWriter;
@@ -13,6 +15,8 @@ import org.ethereum.beacon.db.source.impl.XorDataSource;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 public class EngineDrivenDatabase implements Database {
+
+  private static final Logger logger = LogManager.getLogger(EngineDrivenDatabase.class);
 
   private final StorageEngineSource<BytesValue> source;
   private final WriteBuffer<BytesValue, BytesValue> writeBuffer;
@@ -56,6 +60,7 @@ public class EngineDrivenDatabase implements Database {
 
   @Override
   public void close() {
+    logger.info("Closing underlying database storage...");
     flusher.flush();
     source.close();
   }
