@@ -1,26 +1,25 @@
 package org.ethereum.beacon.db.source;
 
-import com.pholser.junit.quickcheck.*;
-import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
-import org.ethereum.beacon.db.configuration.HashMapDatasourceGenerator;
-import org.junit.runner.RunWith;
+import org.ethereum.beacon.db.source.impl.HashMapDataSource;
+import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@RunWith(JUnitQuickcheck.class)
 public class WriteCacheImplTest {
 
-    private final String TEST_ENTITY_KEY = "TEST_ENTITY_KEY";
+    private final String TEST_KEY = "test_key";
 
-    @Property
-    public void get(@From(HashMapDatasourceGenerator.class) DataSource dataSource) {
-        final CacheDataSource<String, String> cacheDataSource = new WriteCacheImpl<String, String>(dataSource);
-        assertThat(cacheDataSource.get(TEST_ENTITY_KEY)).isNotPresent();
+    @Test
+    public void get() {
+        final WriteCacheImpl<String, String> dataSource = new WriteCacheImpl<>(new HashMapDataSource<>());
+        assertThat(dataSource).isNotNull();
+        assertThat(dataSource.get(TEST_KEY)).isEmpty();
     }
 
-    @Property
-    public void getCacheEntry(@From(HashMapDatasourceGenerator.class) DataSource dataSource) {
-        final CacheDataSource<String, String> cacheDataSource = new WriteCacheImpl<String, String>(dataSource);
-        assertThat(cacheDataSource.get(TEST_ENTITY_KEY)).isNotPresent();
+    @Test
+    public void getCacheEntry() {
+        final WriteCacheImpl<String, String> dataSource = new WriteCacheImpl<>(new HashMapDataSource<>());
+        assertThat(dataSource).isNotNull();
+        assertThat(dataSource.getCacheEntry(TEST_KEY)).isEmpty();
     }
 }

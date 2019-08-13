@@ -4,7 +4,6 @@ import com.pholser.junit.quickcheck.*;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import org.ethereum.beacon.db.configuration.*;
 import org.ethereum.beacon.db.source.DataSource;
-import org.ethereum.beacon.db.source.impl.XorDataSource;
 import org.junit.runner.RunWith;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
@@ -32,14 +31,13 @@ public class XorKeyDatabaseTest {
             }
         };
 
-        final DataSource<BytesValue, BytesValue> actual = database.createStorage(TEST_STORAGE_NAME);
-        assertThat(actual).isNotNull();
-        assertThat(actual).isInstanceOf(XorDataSource.class);
+        final DataSource<BytesValue, BytesValue> storage = database.createStorage(TEST_STORAGE_NAME);
+        assertThat(storage).isNotNull();
 
         final BytesValue key = BytesValue.wrap(TEST_ENTITY_KEY.getBytes());
         final BytesValue value = BytesValue.EMPTY;
-        actual.put(key, value);
-        assertThat(actual.get(key)).isPresent().hasValue(value);
+        storage.put(key, value);
+        assertThat(storage.get(key)).isPresent().hasValue(value);
     }
 
     @Property
