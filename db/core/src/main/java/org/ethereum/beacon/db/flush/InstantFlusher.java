@@ -2,6 +2,7 @@ package org.ethereum.beacon.db.flush;
 
 import org.ethereum.beacon.db.source.WriteBuffer;
 
+/** A trivial strategy that flushes data per each commit. */
 public class InstantFlusher implements DatabaseFlusher {
 
   private final WriteBuffer buffer;

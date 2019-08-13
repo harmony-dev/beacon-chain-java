@@ -3,6 +3,12 @@ package org.ethereum.beacon.db.source.impl;
 import java.util.function.Function;
 import org.ethereum.beacon.db.source.CacheSizeEvaluator;
 
+/**
+ * A straightforward implementation of cache size evaluator.
+ *
+ * @param <KeyType> a key type.
+ * @param <ValueType> a value type.
+ */
 public class CacheSizeEvaluatorImpl<KeyType, ValueType>
     implements CacheSizeEvaluator<KeyType, ValueType> {
 

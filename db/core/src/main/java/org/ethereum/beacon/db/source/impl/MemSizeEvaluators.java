@@ -4,6 +4,7 @@ import java.util.function.Function;
 import tech.pegasys.artemis.util.bytes.ArrayWrappingBytesValue;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
+/** Evaluators of memory footprints for various structures. */
 public abstract class MemSizeEvaluators {
   private MemSizeEvaluators() {}
 

@@ -16,6 +16,19 @@ import org.ethereum.beacon.db.source.impl.MemSizeEvaluators;
 import org.ethereum.beacon.db.source.impl.XorDataSource;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
+/**
+ * A database that designed to work on top of various key-value storage engines like RocksDB,
+ * LevelDB, etc.
+ *
+ * <p>Main design parts:
+ *
+ * <ul>
+ *   <li>source of {@link StorageEngineSource} type -- represents underlying storage engine
+ *   <li>an instance of {@link WriteBuffer} -- memory buffer that accumulates changes made between
+ *       flushes
+ *   <li>an instance of {@link DatabaseFlusher} -- flushing strategy
+ * </ul>
+ */
 public class EngineDrivenDatabase implements Database {
 
   private static final Logger logger = LogManager.getLogger(EngineDrivenDatabase.class);
@@ -33,6 +46,17 @@ public class EngineDrivenDatabase implements Database {
     this.flusher = flusher;
   }
 
+  /**
+   * Given storage engine and buffer size creates a new instance of {@link EngineDrivenDatabase}.
+   *
+   * <p><strong>Note:</strong> instantiated flushing strategy depends on buffer limit value; if this
+   * value is greater than zero then {@link BufferSizeObserver} is used as a strategy, otherwise,
+   * {@link InstantFlusher} is created.
+   *
+   * @param storageEngineSource an engine-based source.
+   * @param bufferLimitInBytes a buffer limit in bytes.
+   * @return a new instance.
+   */
   public static EngineDrivenDatabase create(
       StorageEngineSource<BytesValue> storageEngineSource, long bufferLimitInBytes) {
     BatchWriter<BytesValue, BytesValue> batchWriter = new BatchWriter<>(storageEngineSource);
@@ -49,6 +73,12 @@ public class EngineDrivenDatabase implements Database {
     return new EngineDrivenDatabase(storageEngineSource, buffer, flusher);
   }
 
+  /**
+   * A shortcut that spawns an instance with {@link InstantFlusher} flushing strategy.
+   *
+   * @param storageEngineSource an engine-based source.
+   * @return a new instance.
+   */
   public static EngineDrivenDatabase createWithInstantFlusher(
       StorageEngineSource<BytesValue> storageEngineSource) {
     return create(storageEngineSource, -1);

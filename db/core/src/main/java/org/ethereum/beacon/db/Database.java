@@ -24,10 +24,23 @@ public interface Database {
    */
   void close();
 
+  /**
+   * Creates in-memory database instance.
+   *
+   * @return database instance.
+   */
   static Database inMemoryDB() {
     return new InMemoryDatabase();
   }
 
+  /**
+   * Creates database instance driven by <a href="https://github.com/facebook/rocksdb">RocksDB</a>
+   * storage engine.
+   *
+   * @param dbPath path to database folder.
+   * @param bufferLimitInBytes limit of write buffer in bytes.
+   * @return an instance of database driven by RocksDB.
+   */
   static Database rocksDB(String dbPath, long bufferLimitInBytes) {
     StorageEngineSource<BytesValue> source = new RocksDbSource(Paths.get(dbPath));
     return EngineDrivenDatabase.create(source, bufferLimitInBytes);

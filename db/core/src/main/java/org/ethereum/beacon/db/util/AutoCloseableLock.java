@@ -2,6 +2,17 @@ package org.ethereum.beacon.db.util;
 
 import java.util.concurrent.locks.Lock;
 
+/**
+ * Releases lock after exit from try block.
+ *
+ * <p>Usage:
+ *
+ * <pre>
+ *    try (AutoCloseableLock l = lock.lock()) {
+ *      ...
+ *    }
+ * </pre>
+ */
 public final class AutoCloseableLock implements AutoCloseable {
 
   private final Lock delegate;

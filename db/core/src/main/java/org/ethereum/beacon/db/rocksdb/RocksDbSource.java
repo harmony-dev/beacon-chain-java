@@ -22,6 +22,9 @@ import org.rocksdb.WriteBatch;
 import org.rocksdb.WriteOptions;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
+/**
+ * Data source supplied by <a href="https://github.com/facebook/rocksdb">RocksDB</a> storage engine.
+ */
 public class RocksDbSource implements StorageEngineSource<BytesValue> {
 
   private static final Logger logger = LogManager.getLogger(RocksDbSource.class);

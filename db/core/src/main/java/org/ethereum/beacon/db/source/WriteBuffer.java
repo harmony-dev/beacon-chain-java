@@ -11,18 +11,24 @@ import javax.annotation.Nullable;
 import org.ethereum.beacon.db.util.AutoCloseableLock;
 
 /**
- * This is stub implementation
+ * Accumulates changes made to underlying data source and flushes them upon a {@link #flush()} call.
+ *
+ * <p>This implementation is thread-safe and featured with cache size evaluator.
  *
  * <p>Created by Anton Nashatyrev on 12.11.2018.
  */
 public class WriteBuffer<K, V> extends AbstractLinkedDataSource<K, V, K, V>
     implements CacheDataSource<K, V> {
 
+  /** A buffer. */
   private final Map<K, CacheEntry<V>> buffer = new HashMap<>();
 
+  /** A size evaluator. */
   private final CacheSizeEvaluator<K, V> sizeEvaluator;
 
+  /** CRUD locks. */
   private final ReadWriteUpdateLock rwuLock = new ReentrantReadWriteUpdateLock();
+
   private final AutoCloseableLock readLock = AutoCloseableLock.wrap(rwuLock.readLock());
   private final AutoCloseableLock writeLock = AutoCloseableLock.wrap(rwuLock.writeLock());
   private final AutoCloseableLock updateLock = AutoCloseableLock.wrap(rwuLock.updateLock());
@@ -114,7 +120,14 @@ public class WriteBuffer<K, V> extends AbstractLinkedDataSource<K, V, K, V>
     return sizeEvaluator.getEvaluatedSize();
   }
 
+  /**
+   * A structure holding cache entry.
+   *
+   * @param <V> a value type.
+   */
   private static final class CacheEntry<V> {
+
+    /** Indicates removed value. */
     private static final CacheEntry REMOVED = CacheEntry.of(null);
 
     private V value;

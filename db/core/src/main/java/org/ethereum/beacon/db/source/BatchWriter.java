@@ -5,6 +5,17 @@ import java.util.Map;
 import java.util.Optional;
 import javax.annotation.Nonnull;
 
+/**
+ * A clue in between {@link DataSource} of any kind and {@link BatchUpdateDataSource}.
+ *
+ * <p>Accumulates changes in buffer and then flushes them in a batch via {@link
+ * BatchUpdateDataSource#batchUpdate(Map)}.
+ *
+ * <p>Removals are stored as key-value pairs with value equal to {@code null}.
+ *
+ * @param <KeyType> a key type.
+ * @param <ValueType> a value type.
+ */
 public class BatchWriter<KeyType, ValueType>
     extends AbstractLinkedDataSource<KeyType, ValueType, KeyType, ValueType> {
 

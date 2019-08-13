@@ -4,12 +4,19 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.db.source.WriteBuffer;
 
+/**
+ * Flushing strategy that observes a size of given buffer and emits a flush whenever size limit is
+ * exceeded.
+ */
 public class BufferSizeObserver implements DatabaseFlusher {
 
   private static final Logger logger = LogManager.getLogger(BufferSizeObserver.class);
 
+  /** A buffer. */
   private final WriteBuffer buffer;
+  /** A commit track. Aids forced flushes consistency. */
   private final WriteBuffer commitTrack;
+  /** A limit of buffer size in bytes. */
   private final long bufferSizeLimit;
 
   BufferSizeObserver(WriteBuffer buffer, WriteBuffer commitTrack, long bufferSizeLimit) {
