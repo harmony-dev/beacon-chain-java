@@ -111,8 +111,11 @@ public class WriteBuffer<K, V> extends AbstractLinkedDataSource<K, V, K, V>
   @Override
   public Optional<Optional<V>> getCacheEntry(@Nonnull final K key) {
     Objects.requireNonNull(key);
-    CacheEntry<V> entry = buffer.get(key);
-    return Optional.ofNullable(entry == null ? null : entry.getValue());
+
+    try (AutoCloseableLock l = readLock.lock()) {
+      CacheEntry<V> entry = buffer.get(key);
+      return Optional.ofNullable(entry == null ? null : entry.getValue());
+    }
   }
 
   @Override
