@@ -63,6 +63,8 @@ public class RocksDbDrivenDatabaseTest {
     db.commit();
     assertEquals(wrap("UNO_FOURTH"), uno.get(wrap("FOUR")).get());
     assertFalse(dos.get(wrap("FOUR")).isPresent());
+
+    db.close();
   }
 
   @Test
@@ -82,6 +84,8 @@ public class RocksDbDrivenDatabaseTest {
     assertEquals(wrap("FIRST"), storage.get(wrap("ONE")).get());
     assertEquals(wrap("SECOND"), storage.get(wrap("TWO")).get());
     assertEquals(wrap("THIRD"), storage.get(wrap("THREE")).get());
+
+    db.close();
   }
 
   private BytesValue wrap(String value) {

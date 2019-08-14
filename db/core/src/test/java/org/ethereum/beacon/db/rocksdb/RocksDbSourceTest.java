@@ -55,6 +55,8 @@ public class RocksDbSourceTest {
     assertFalse(rocksDb.get(wrap("THREE")).isPresent());
     assertEquals(wrap("FOURTH"), rocksDb.get(wrap("FOUR")).get());
     assertFalse(rocksDb.get(wrap("FIVE")).isPresent());
+
+    rocksDb.close();
   }
 
   private BytesValue wrap(String value) {
