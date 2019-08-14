@@ -39,10 +39,8 @@ public class BufferSizeObserver implements DatabaseFlusher {
   public void commit() {
     commitTrack.flush();
     if (buffer.evaluateSize() >= bufferSizeLimit) {
-      logger.trace(
-          "Flush db buffer due to {}M >= {}M",
-          buffer.evaluateSize() >>> 20,
-          bufferSizeLimit >>> 20);
+      logger.debug(
+          "Flush db buffer due to size limit: {} >= {}", buffer.evaluateSize(), bufferSizeLimit);
       flush();
     }
   }
