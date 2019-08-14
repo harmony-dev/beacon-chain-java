@@ -37,5 +37,8 @@ dependencyManagement {
 
     dependency "info.picocli:picocli:3.9.4"
     dependency "io.netty:netty-all:4.1.36.Final"
+
+    dependency "org.rocksdb:rocksdbjni:5.5.1"
+    dependency "com.googlecode.concurrent-locks:concurrent-locks:1.0.0"
   }
 }

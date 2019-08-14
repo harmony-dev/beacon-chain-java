@@ -2,6 +2,7 @@ package org.ethereum.beacon.start.common;
 
 import static org.ethereum.beacon.chain.observer.ObservableStateProcessorImpl.DEFAULT_EMPTY_SLOT_TRANSITIONS_LIMIT;
 
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.List;
 import org.ethereum.beacon.chain.DefaultBeaconChain;
@@ -14,6 +15,7 @@ import org.ethereum.beacon.chain.observer.ObservableStateProcessorImpl;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.chain.storage.BeaconChainStorageFactory;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
+import org.ethereum.beacon.consensus.ChainStart;
 import org.ethereum.beacon.consensus.transition.EmptySlotTransition;
 import org.ethereum.beacon.consensus.transition.ExtendedSlotTransition;
 import org.ethereum.beacon.consensus.transition.InitialStateTransition;
@@ -26,9 +28,8 @@ import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.spec.SpecConstantsResolver;
-import org.ethereum.beacon.db.InMemoryDatabase;
+import org.ethereum.beacon.db.Database;
 import org.ethereum.beacon.pow.DepositContract;
-import org.ethereum.beacon.consensus.ChainStart;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.ssz.SSZBuilder;
 import org.ethereum.beacon.ssz.SSZSerializer;
@@ -55,6 +56,9 @@ import reactor.core.publisher.Mono;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public class NodeLauncher {
+
+  private final static long DB_BUFFER_SIZE = 64L << 20; // 64Mb
+
   private final BeaconChainSpec spec;
   private final DepositContract depositContract;
   private final List<BLS381Credentials> validatorCred;
@@ -70,7 +74,7 @@ public class NodeLauncher {
   private BeaconBlockVerifier blockVerifier;
   private BeaconStateVerifier stateVerifier;
 
-  private InMemoryDatabase db;
+  private Database db;
   private BeaconChainStorage beaconChainStorage;
   private MutableBeaconChain beaconChain;
   private SlotTicker slotTicker;
@@ -123,7 +127,7 @@ public class NodeLauncher {
         new ExtendedSlotTransition(perEpochTransition, perSlotTransition, spec);
     emptySlotTransition = new EmptySlotTransition(extendedSlotTransition);
 
-    db = new InMemoryDatabase();
+    db = Database.rocksDB(Paths.get(computeDbName(chainStartEvent)).toString(), DB_BUFFER_SIZE);
     beaconChainStorage = storageFactory.create(db);
 
     blockVerifier = BeaconBlockVerifier.createDefault(spec);
@@ -235,6 +239,15 @@ public class NodeLauncher {
 //        .subscribe(beaconChain::insert);
   }
 
+  private String computeDbName(ChainStart chainStart) {
+    return String.format(
+        "db_start_time_%d_dep_root_%s",
+        chainStart.getTime().getValue(), chainStart.getEth1Data().getDepositRoot().toStringShort());
+  }
+
+  public void stop() {
+    db.close();
+  }
 
   public BeaconChainSpec getSpec() {
     return spec;
@@ -280,7 +293,7 @@ public class NodeLauncher {
     return stateVerifier;
   }
 
-  public InMemoryDatabase getDb() {
+  public Database getDb() {
     return db;
   }
 

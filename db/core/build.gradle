@@ -1,6 +1,10 @@
 dependencies {
     api project(':types')
-    
+    api project(':crypto')
+
+    api "org.rocksdb:rocksdbjni"
+    api "com.googlecode.concurrent-locks:concurrent-locks"
+
     testImplementation 'com.pholser:junit-quickcheck-core:0.7'
     testImplementation 'ru.vyarus:generics-resolver:3.0.0'
 }
