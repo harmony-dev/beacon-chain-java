@@ -1,5 +1,12 @@
 package org.ethereum.beacon.consensus.spec;
 
+import static java.util.stream.Collectors.toList;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
@@ -18,14 +25,6 @@ import tech.pegasys.artemis.util.collections.Bitvector;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
 import tech.pegasys.artemis.util.uint.UInt64s;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import static java.util.stream.Collectors.toList;
 
 /**
  * Epoch processing part.
@@ -636,6 +635,12 @@ public interface EpochProcessing extends HelperFunction {
           new HistoricalBatch(state.getBlockRoots().vectorCopy(), state.getStateRoots().vectorCopy());
       state.getHistoricalRoots().add(hash_tree_root(historical_batch));
     }
+
+    /* # Update start shard
+    state.start_shard = Shard((state.start_shard + get_shard_delta(state, current_epoch)) % SHARD_COUNT) */
+    state.setStartShard(state
+            .getStartShard()
+            .plusModulo(get_shard_delta(state, current_epoch), getConstants().getShardCount()));
 
     /* # Rotate current/previous epoch attestations
       state.previous_epoch_attestations = state.current_epoch_attestations
