@@ -65,7 +65,7 @@ public class EthereumJDepositContract extends AbstractDepositContract {
     contractDeployAddressHash =
         Hash32.wrap(Bytes32.wrap(HashUtil.sha3(this.contractDeployAddress.extractArray())));
     this.contractAddressBloom = Bloom.create(contractDeployAddressHash.extractArray());
-    this.contract = new Contract(ContractAbi.getContractAbi());
+    this.contract = new Contract(ContractSource.getContractAbi());
     this.contractDeployBlock = contractDeployBlock;
     processedUpToBlock = contractDeployBlock;
     blockExecutor = new LatestExecutor<>(this.schedulers.blocking(), this::processBlocksUpTo);

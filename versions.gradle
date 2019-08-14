@@ -9,7 +9,9 @@ dependencyManagement {
 
     dependency "org.apache.logging.log4j:log4j-api:${log4j2Version}"
     dependency "org.apache.logging.log4j:log4j-core:${log4j2Version}"
+    dependency "org.slf4j:slf4j-simple:1.7.28"
     dependency 'org.ethereum:ethereumj-core:1+'
+    dependency "org.web3j:core:4.2.0"
 
     dependency 'org.bouncycastle:bcprov-jdk15on:1.60'
     dependency 'org.miracl.milagro.amcl:milagro-crypto-java:0.4.0'

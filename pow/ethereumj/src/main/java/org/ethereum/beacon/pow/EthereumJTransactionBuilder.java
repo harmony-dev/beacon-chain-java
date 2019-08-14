@@ -27,7 +27,7 @@ public class EthereumJTransactionBuilder implements TransactionBuilder {
   public EthereumJTransactionBuilder(Ethereum ethereum, String contractDeployAddress) {
     this.ethereum = ethereum;
     this.contractDeployAddress = Address.fromHexString(contractDeployAddress);
-    this.contract = new CallTransaction.Contract(ContractAbi.getContractAbi());
+    this.contract = new CallTransaction.Contract(ContractSource.getContractAbi());
     this.gasPriceTracker = new RecommendedGasPriceTracker();
     ethereum.addListener(gasPriceTracker);
   }
