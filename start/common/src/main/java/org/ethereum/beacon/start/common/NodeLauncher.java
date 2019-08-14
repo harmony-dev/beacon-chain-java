@@ -56,6 +56,9 @@ import reactor.core.publisher.Mono;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public class NodeLauncher {
+
+  private final static long DB_BUFFER_SIZE = 64L << 20; // 64Mb
+
   private final BeaconChainSpec spec;
   private final DepositContract depositContract;
   private final List<BLS381Credentials> validatorCred;
@@ -124,7 +127,7 @@ public class NodeLauncher {
         new ExtendedSlotTransition(perEpochTransition, perSlotTransition, spec);
     emptySlotTransition = new EmptySlotTransition(extendedSlotTransition);
 
-    db = Database.rocksDB(Paths.get(computeDbName(chainStartEvent)).toString(), 64L << 20);
+    db = Database.rocksDB(Paths.get(computeDbName(chainStartEvent)).toString(), DB_BUFFER_SIZE);
     beaconChainStorage = storageFactory.create(db);
 
     blockVerifier = BeaconBlockVerifier.createDefault(spec);
