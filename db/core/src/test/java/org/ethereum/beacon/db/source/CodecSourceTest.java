@@ -1,7 +1,7 @@
 package org.ethereum.beacon.db.source;
 
 import org.ethereum.beacon.db.source.impl.HashMapDataSource;
-import org.junit.Test;
+import org.junit.*;
 
 import java.util.function.Function;
 
@@ -12,6 +12,15 @@ public class CodecSourceTest {
 
     private final String TEST_KEY = "test_key";
     private final String TEST_VALUE = "test_value";
+
+    private CodecSource<String, String, String, String> source;
+
+    @Before
+    public void setUp() {
+        source = new CodecSource<>(new HashMapDataSource<>(), Function.identity(), Function.identity(), Function.identity());
+        assertThat(source).isNotNull();
+        assertThat(source.get(TEST_KEY)).isNotPresent();
+    }
 
     @Test
     public void testValidSourceCreation() {
@@ -45,10 +54,6 @@ public class CodecSourceTest {
 
     @Test
     public void testPutGetRemove() {
-        final CodecSource<String, String, String, String> source = new CodecSource<>(new HashMapDataSource<>(), Function.identity(), Function.identity(), Function.identity());
-        assertThat(source).isNotNull();
-        assertThat(source.get(TEST_KEY)).isNotPresent();
-
         source.put(TEST_KEY, TEST_VALUE);
         assertThat(source.get(TEST_KEY)).isPresent().hasValue(TEST_VALUE);
 
@@ -58,7 +63,9 @@ public class CodecSourceTest {
 
     @Test
     public void testKeyConversion() {
-        final CodecSource<String, String, String, String> source = new CodecSource<>(new HashMapDataSource<>(), key -> encode(key, TEST_KEY), Function.identity(), Function.identity());
+        source = new CodecSource<>(new HashMapDataSource<>(), key -> encode(key, TEST_KEY), Function.identity(), Function.identity());
+        assertThat(source).isNotNull();
+        assertThat(source.get(TEST_KEY)).isNotPresent();
 
         source.put(TEST_KEY, TEST_VALUE);
         assertThat(source.get(TEST_KEY)).isPresent().hasValue(TEST_VALUE);
@@ -70,7 +77,9 @@ public class CodecSourceTest {
 
     @Test
     public void testValueTargetValueToUpValueConversion() {
-        final CodecSource<String, String, String, String> source = new CodecSource<>(new HashMapDataSource<>(), key -> encode(key, TEST_KEY), key -> encode(key, TEST_VALUE), Function.identity());
+        source = new CodecSource<>(new HashMapDataSource<>(), key -> encode(key, TEST_KEY), key -> encode(key, TEST_VALUE), Function.identity());
+        assertThat(source).isNotNull();
+        assertThat(source.get(TEST_KEY)).isNotPresent();
 
         source.put(TEST_KEY, TEST_VALUE);
         assertThat(source.get(TEST_KEY)).isPresent().hasValue(TEST_VALUE.concat(TEST_VALUE));
@@ -78,7 +87,9 @@ public class CodecSourceTest {
 
     @Test
     public void testValueUpValueToTargetValueConversion() {
-        final CodecSource<String, String, String, String> source = new CodecSource<>(new HashMapDataSource<>(), key -> encode(key, TEST_KEY), key -> encode(key, TEST_VALUE), key -> decode());
+        source = new CodecSource<>(new HashMapDataSource<>(), key -> encode(key, TEST_KEY), key -> encode(key, TEST_VALUE), key -> decode());
+        assertThat(source).isNotNull();
+        assertThat(source.get(TEST_KEY)).isNotPresent();
 
         source.put(TEST_KEY, TEST_VALUE);
         assertThat(source.get(TEST_KEY)).isPresent().hasValue("");

@@ -18,8 +18,8 @@ public class XorKeyDatabaseTest {
     private final String TEST_ENTITY_KEY = "TEST_ENTITY_KEY";
 
     @Property
-    public void createStorage(@From(HashMapDatasourceGenerator.class) DataSource<@From(EmptyBytesValueGenerator.class) BytesValue, @From(EmptyBytesValueGenerator.class) BytesValue> backingDataSource,
-                              @From(EmptyFunctionGenerator.class) Function<@From(EmptyBytesValueGenerator.class) BytesValue, @From(EmptyBytesValueGenerator.class) BytesValue> sourceNameHasher) {
+    public void testCreateStorage(@From(HashMapDatasourceGenerator.class) DataSource<@From(EmptyBytesValueGenerator.class) BytesValue, @From(EmptyBytesValueGenerator.class) BytesValue> backingDataSource,
+                                  @From(EmptyFunctionGenerator.class) Function<@From(EmptyBytesValueGenerator.class) BytesValue, @From(EmptyBytesValueGenerator.class) BytesValue> sourceNameHasher) {
 
         final XorKeyDatabase database = new XorKeyDatabase(backingDataSource, sourceNameHasher) {
             @Override
@@ -41,8 +41,8 @@ public class XorKeyDatabaseTest {
     }
 
     @Property
-    public void getBackingDataSource(@From(HashMapDatasourceGenerator.class) DataSource<@From(EmptyBytesValueGenerator.class) BytesValue, @From(EmptyBytesValueGenerator.class) BytesValue> backingDataSource,
-                                     @From(EmptyFunctionGenerator.class) Function<@From(EmptyBytesValueGenerator.class) BytesValue, @From(EmptyBytesValueGenerator.class) BytesValue> sourceNameHasher) {
+    public void testGetBackingDataSource(@From(HashMapDatasourceGenerator.class) DataSource<@From(EmptyBytesValueGenerator.class) BytesValue, @From(EmptyBytesValueGenerator.class) BytesValue> backingDataSource,
+                                         @From(EmptyFunctionGenerator.class) Function<@From(EmptyBytesValueGenerator.class) BytesValue, @From(EmptyBytesValueGenerator.class) BytesValue> sourceNameHasher) {
 
         final XorKeyDatabase actual = new XorKeyDatabase(backingDataSource, sourceNameHasher) {
             @Override

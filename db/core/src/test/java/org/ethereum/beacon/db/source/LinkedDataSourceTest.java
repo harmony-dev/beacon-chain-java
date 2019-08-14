@@ -8,7 +8,7 @@ import static org.assertj.core.api.Java6Assertions.assertThatThrownBy;
 public class LinkedDataSourceTest {
 
     @Test
-    public void setUpstream() {
+    public void testSetUpstream() {
         final LinkedDataSource<String, String, String, String> dataSource = new WriteCacheImpl<>(new HashMapDataSource<>());
         assertThatThrownBy(() -> dataSource.setUpstream(new HashMapDataSource<>())).isInstanceOf(UnsupportedOperationException.class);
     }

@@ -10,14 +10,14 @@ public class WriteCacheImplTest {
     private final String TEST_KEY = "test_key";
 
     @Test
-    public void get() {
+    public void testGet() {
         final WriteCacheImpl<String, String> dataSource = new WriteCacheImpl<>(new HashMapDataSource<>());
         assertThat(dataSource).isNotNull();
         assertThat(dataSource.get(TEST_KEY)).isEmpty();
     }
 
     @Test
-    public void getCacheEntry() {
+    public void testGetCacheEntry() {
         final WriteCacheImpl<String, String> dataSource = new WriteCacheImpl<>(new HashMapDataSource<>());
         assertThat(dataSource).isNotNull();
         assertThat(dataSource.getCacheEntry(TEST_KEY)).isEmpty();

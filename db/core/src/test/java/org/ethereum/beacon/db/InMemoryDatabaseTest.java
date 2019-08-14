@@ -11,15 +11,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 @RunWith(JUnitQuickcheck.class)
 public class InMemoryDatabaseTest {
 
-    private final String TEST_ENTITY_KEY = "TEST_ENTITY_KEY";
+    private final String TEST_KEY = "TEST_KEY";
 
     @Property
-    public void getBackingDataSource() {
+    public void testGetBackingDataSource() {
         final InMemoryDatabase database = new InMemoryDatabase();
         final DataSource<BytesValue, BytesValue> dataSource = database.getBackingDataSource();
         assertThat(dataSource).isNotNull();
 
-        final BytesValue key = BytesValue.wrap(TEST_ENTITY_KEY.getBytes());
+        final BytesValue key = BytesValue.wrap(TEST_KEY.getBytes());
         final BytesValue value = BytesValue.EMPTY;
         dataSource.put(key, value);
 
