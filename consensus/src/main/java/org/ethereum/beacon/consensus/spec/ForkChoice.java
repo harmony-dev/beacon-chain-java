@@ -24,21 +24,27 @@ public interface ForkChoice extends HelperFunction {
   /*
     def get_ancestor(store: Store, root: Hash, slot: Slot) -> Hash:
       block = store.blocks[root]
-      assert block.slot >= slot
-      return root if block.slot == slot else get_ancestor(store, block.parent_root, slot)
+      if block.slot > slot:
+          return get_ancestor(store, block.parent_root, slot)
+      elif block.slot == slot:
+          return root
+      else:
+          return Bytes32()  # root is older than queried slot: no results.
    */
   default Optional<Hash32> get_ancestor(Store store, Hash32 root, SlotNumber slot) {
     Optional<BeaconBlock> aBlock = store.getBlock(root);
     if (!aBlock.isPresent()) {
       return Optional.empty();
     }
-    if (aBlock.get().getSlot().less(slot)) {
-      return Optional.empty();
-    }
 
     BeaconBlock block = aBlock.get();
-    return block.getSlot().equals(slot) ?
-        Optional.of(root) : get_ancestor(store, block.getParentRoot(), slot);
+    if (block.getSlot().greater(slot)) {
+      return get_ancestor(store, block.getParentRoot(), slot);
+    } else if (block.getSlot().equals(slot)) {
+      return Optional.of(root);
+    } else {
+      return Optional.of(Hash32.ZERO);
+    }
   }
 
   /*
