@@ -9,8 +9,6 @@ include 'core'
 include 'crypto'
 // DB persistence core interfaces 
 include 'db:core'
-// DB made around EthereumJ client
-include 'db:ethereumj'
 // PoW (Proof of Work) interfaces etc
 include 'pow:core'
 // PoW made with EthereumJ
@@ -39,7 +37,11 @@ include 'test'
 include 'types'
 // Standalone utils without any relation to Ethereum 2.0
 include 'util'
-// Validator services
-include 'validator'
+// Base validator logic
+include 'validator:core'
+// Built-in validator services
+include 'validator:embedded'
+// Validator server-side api
+include 'validator:server'
 // Wire API mock
 include 'wire'

@@ -22,4 +22,8 @@ public class BLSSignature extends WrappingBytes96 {
     String s = super.toString();
     return s.substring(2, 6) + "..." + s.substring(190);
   }
+
+  public String toHexString() {
+    return super.toString();
+  }
 }

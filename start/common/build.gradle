@@ -7,7 +7,7 @@ dependencies {
   implementation project(':chain')
   implementation project(':pow:core')
   implementation project(':ssz')
-  implementation project(':validator')
+  implementation project(':validator:embedded')
   implementation project(':wire')
   implementation project(':util')
 

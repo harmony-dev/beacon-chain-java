@@ -1,0 +1,18 @@
+dependencies {
+  implementation project(':util')
+  implementation project(':core')
+  implementation project(':chain')
+  implementation project(':consensus')
+  implementation project(':pow:core')
+  implementation project(':crypto')
+
+  testImplementation 'org.mockito:mockito-core'
+  implementation 'io.projectreactor:reactor-core'
+
+  // Gradle does not import test sources alongside with main sources
+  // use a workaround until better solution will be found
+  testImplementation project(':chain').sourceSets.test.output
+  testImplementation project(':pow:core').sourceSets.test.output
+  testImplementation project(':core').sourceSets.test.output
+  testImplementation project(':consensus').sourceSets.test.output
+}

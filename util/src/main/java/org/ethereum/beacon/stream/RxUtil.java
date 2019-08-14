@@ -2,12 +2,27 @@ package org.ethereum.beacon.stream;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.javatuples.Pair;
+import org.javatuples.Tuple;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.util.function.Tuple2;
 
 public class RxUtil {
 
+  public interface Function3<P1, P2, P3, R> {
+    R apply(P1 p1, P2 p2, P3 p3);
+  }
+
+  public interface Function4<P1, P2, P3, P4, R> {
+    R apply(P1 p1, P2 p2, P3 p3, P4 p4);
+  }
+
+  public interface Function5<P1, P2, P3, P4, P5, R> {
+    R apply(P1 p1, P2 p2, P3 p3, P4 p4, P5 p5);
+  }
 
   public static <T> Publisher<T> join(Publisher<T> s1, Publisher<T> s2, int bufferLen) {
     throw new UnsupportedOperationException();
@@ -32,4 +47,40 @@ public class RxUtil {
     });
   }
 
+  public static <T> Mono<T> fromOptional(Optional<T> opt) {
+    return opt.map(Mono::just).orElse(Mono.empty());
+  }
+
+  public static <P1, P2, P3, R> Flux<R> combineLatest(
+      Publisher<P1> p1,
+      Publisher<P2> p2,
+      Publisher<P3> p3,
+      Function3<P1, P2, P3, R> combiner) {
+
+    return Flux.combineLatest(
+        a -> combiner.apply((P1) a[0], (P2) a[1], (P3) a[2]), p1, p2, p3);
+  }
+
+  public static <P1, P2, P3, P4, R> Flux<R> combineLatest(
+      Publisher<P1> p1,
+      Publisher<P2> p2,
+      Publisher<P3> p3,
+      Publisher<P4> p4,
+      Function4<P1, P2, P3, P4, R> combiner) {
+
+    return Flux.combineLatest(
+        a -> combiner.apply((P1) a[0], (P2) a[1], (P3) a[2], (P4) a[3]), p1, p2, p3, p4);
+  }
+
+  public static <P1, P2, P3, P4, P5, R> Flux<R> combineLatest(
+      Publisher<P1> p1,
+      Publisher<P2> p2,
+      Publisher<P3> p3,
+      Publisher<P4> p4,
+      Publisher<P5> p5,
+      Function5<P1, P2, P3, P4, P5, R> combiner) {
+
+    return Flux.combineLatest(
+        a -> combiner.apply((P1) a[0], (P2) a[1], (P3) a[2], (P4) a[3], (P5) a[4]), p1, p2, p3, p4, p5);
+  }
 }

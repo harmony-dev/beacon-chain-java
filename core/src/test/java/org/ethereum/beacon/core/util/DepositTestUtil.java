@@ -12,8 +12,6 @@ import org.ethereum.beacon.core.types.BLSSignature;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes48;
 import tech.pegasys.artemis.util.bytes.Bytes96;
-import tech.pegasys.artemis.util.collections.ReadVector;
-import tech.pegasys.artemis.util.uint.UInt64;
 
 public abstract class DepositTestUtil {
   private DepositTestUtil() {}

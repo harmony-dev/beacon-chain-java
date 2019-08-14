@@ -2,6 +2,7 @@ ext {
   cavaVersion = '1.0.0-955810-snapshot'
   jacksonVersion = '2.9.8'
   log4j2Version = '2.11.2'
+  vertxVersion = '3.5.4'
 }
 
 dependencyManagement {
@@ -18,7 +19,8 @@ dependencyManagement {
     dependency 'com.google.guava:guava:27.0.1-jre'
     dependency 'com.google.code.findbugs:jsr305:1.3.9'
 
-    dependency 'io.vertx:vertx-core:3.5.4'
+    dependency "io.vertx:vertx-core:${vertxVersion}"
+    dependency "io.vertx:vertx-web:${vertxVersion}"
     dependency 'junit:junit:4.12'
     dependency 'org.assertj:assertj-core:3.11.1'
     dependency 'org.mockito:mockito-core:2.23.4'
@@ -32,9 +34,13 @@ dependencyManagement {
 
     dependency "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:${jacksonVersion}"
     dependency "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
+    dependency "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:${jacksonVersion}"
     dependency "commons-beanutils:commons-beanutils:1.9.3"
 
     dependency "info.picocli:picocli:3.9.4"
     dependency "io.netty:netty-all:4.1.36.Final"
+
+    dependency "org.rocksdb:rocksdbjni:5.5.1"
+    dependency "com.googlecode.concurrent-locks:concurrent-locks:1.0.0"
   }
 }
