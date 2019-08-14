@@ -44,6 +44,7 @@ public class SSZBeaconChainStorageFactory implements BeaconChainStorageFactory {
         createSingleValueStorage(database, "finalized-hash", Checkpoint.class);
 
     return new BeaconChainStorageImpl(
+        database,
         blockStorage,
         new DelegateBlockHeaderStorageImpl(blockStorage, objectHasher),
         stateStorage,

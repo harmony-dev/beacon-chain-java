@@ -9,8 +9,6 @@ include 'core'
 include 'crypto'
 // DB persistence core interfaces 
 include 'db:core'
-// DB made around EthereumJ client
-include 'db:ethereumj'
 // PoW (Proof of Work) interfaces etc
 include 'pow:core'
 // PoW made with EthereumJ

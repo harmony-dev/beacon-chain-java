@@ -22,7 +22,8 @@ import org.apache.logging.log4j.ThreadContext;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
-import org.ethereum.beacon.chain.storage.impl.MemBeaconChainStorageFactory;
+import org.ethereum.beacon.chain.storage.impl.SSZBeaconChainStorageFactory;
+import org.ethereum.beacon.chain.storage.impl.SerializerFactory;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.Eth1Data;
@@ -176,9 +177,13 @@ public class NodeCommandLauncher implements Runnable {
         this.depositContract,
         credentials,
         connectionManager,
-        new MemBeaconChainStorageFactory(spec.getObjectHasher()),
+        new SSZBeaconChainStorageFactory(
+            spec.getObjectHasher(),
+            SerializerFactory.createSSZ(specConstants)),
         schedulers,
         true);
+
+    Runtime.getRuntime().addShutdownHook(new Thread(node::stop));
 
     while (true) {
       try {
@@ -322,10 +327,10 @@ public class NodeCommandLauncher implements Runnable {
         }
       }
 
-        return new NodeCommandLauncher(
-          config,
-          specBuilder,
-          logLevel);
+      return new NodeCommandLauncher(
+        config,
+        specBuilder,
+        logLevel);
     }
 
     public Builder withConfigFromFile(File file) {

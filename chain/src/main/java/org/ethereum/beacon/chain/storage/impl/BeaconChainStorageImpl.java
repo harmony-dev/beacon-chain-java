@@ -6,6 +6,7 @@ import org.ethereum.beacon.chain.storage.BeaconStateStorage;
 import org.ethereum.beacon.chain.storage.BeaconTupleStorage;
 import org.ethereum.beacon.core.BeaconBlockHeader;
 import org.ethereum.beacon.core.state.Checkpoint;
+import org.ethereum.beacon.db.Database;
 import org.ethereum.beacon.db.source.DataSource;
 import org.ethereum.beacon.db.source.SingleValueSource;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -13,6 +14,7 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 /** A default implementation of {@link BeaconChainStorage}. */
 public class BeaconChainStorageImpl implements BeaconChainStorage {
 
+  private final Database database;
   private final BeaconBlockStorage blockStorage;
   private final DataSource<Hash32, BeaconBlockHeader> blockHeaderStorage;
   private final BeaconStateStorage stateStorage;
@@ -21,12 +23,14 @@ public class BeaconChainStorageImpl implements BeaconChainStorage {
   private final SingleValueSource<Checkpoint> finalizedStorage;
 
   public BeaconChainStorageImpl(
+      Database database,
       BeaconBlockStorage blockStorage,
       DataSource<Hash32, BeaconBlockHeader> blockHeaderStorage,
       BeaconStateStorage stateStorage,
       BeaconTupleStorage tupleStorage,
       SingleValueSource<Checkpoint> justifiedStorage,
       SingleValueSource<Checkpoint> finalizedStorage) {
+    this.database = database;
     this.blockStorage = blockStorage;
     this.blockHeaderStorage = blockHeaderStorage;
     this.stateStorage = stateStorage;
@@ -68,5 +72,6 @@ public class BeaconChainStorageImpl implements BeaconChainStorage {
   @Override
   public void commit() {
     tupleStorage.flush();
+    database.commit();
   }
 }
