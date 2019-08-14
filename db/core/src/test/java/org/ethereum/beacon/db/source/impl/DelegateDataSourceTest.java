@@ -9,6 +9,7 @@ public class DelegateDataSourceTest {
 
     private final String TEST_KEY = "test_key";
     private final String TEST_VALUE = "test_value";
+    private final String TEST_FLUSH = "flush";
 
     private DelegateDataSource<String, String> delegateDataSource;
 
@@ -41,7 +42,7 @@ public class DelegateDataSourceTest {
     public void testFlush() {
         delegateDataSource = new DelegateDataSource<>(new HashMapDataSource<String, String>() {
             public void flush() {
-                store.clear();
+                store.put(TEST_FLUSH, TEST_FLUSH);
             }
         });
         assertThat(delegateDataSource).isNotNull();
@@ -50,6 +51,6 @@ public class DelegateDataSourceTest {
         assertThat(delegateDataSource.get(TEST_KEY)).isPresent().hasValue(TEST_VALUE);
 
         delegateDataSource.flush();
-        assertThat(delegateDataSource.get(TEST_KEY)).isNotPresent();
+        assertThat(delegateDataSource.get(TEST_FLUSH)).isPresent().hasValue(TEST_FLUSH);
     }
 }
