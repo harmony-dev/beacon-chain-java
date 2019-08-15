@@ -100,12 +100,16 @@ public abstract class AbstractDepositContract implements DepositContract {
   }
 
   private void tryChainStart(byte[] blockHash, long blockTimestamp) {
+    // use fake proof for initial deposits to avoid of unnecessary merklizing
+    List<Hash32> fakeProof =
+        Collections.nCopies(
+            spec.getConstants().getDepositContractTreeDepthPlusOne().getIntValue(), Hash32.ZERO);
     // instantiate initial deposits
-    List<Deposit> genesisDeposits = new ArrayList<>();
-    for (int i = 0; i < initialDeposits.size(); i++) {
-      genesisDeposits.add(
-          Deposit.create(tree.getProof(i, initialDeposits.size()), initialDeposits.get(i)));
-    }
+    List<Deposit> genesisDeposits =
+        initialDeposits.stream()
+            .map(data -> Deposit.create(fakeProof, data))
+            .collect(Collectors.toList());
+
     try {
       // check if genesis conditions met
       Eth1Data genesisEth1Data =

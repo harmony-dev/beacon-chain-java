@@ -48,6 +48,6 @@ public class InitialStateTransitionTest {
             .plus(spec.getConstants().getSecondsPerDay().times(2));
 
     assertThat(initialState.getGenesisTime()).isEqualTo(expectedTime);
-    assertThat(initialState.getEth1Data()).isEqualTo(Eth1Data.EMPTY);
+    assertThat(initialState.getEth1Data()).isEqualTo(eth1Data);
   }
 }
