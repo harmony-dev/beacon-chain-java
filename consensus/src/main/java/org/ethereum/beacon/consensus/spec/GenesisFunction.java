@@ -62,6 +62,11 @@ public interface GenesisFunction extends BlockProcessing {
             1L << getConstants().getDepositContractTreeDepth().getIntValue());
     state.setEth1Data(new Eth1Data(
         hash_tree_root(deposit_data_list), UInt64.valueOf(deposits.size()), eth1_block_hash));
+
+    // according to the spec deposits are verified before processing
+    // but this is redundant for genesis initialisation
+    // since passed deposits are created by our own code
+    // hence, we are able to avoid verification which saves us some computational resources
     deposits.forEach(deposit -> process_deposit(state, deposit));
 
     // Process activations
