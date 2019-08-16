@@ -55,18 +55,19 @@ public interface GenesisFunction extends BlockProcessing {
     state.setLatestBlockHeader(get_block_header(get_empty_block()));
 
     // Process deposits
-    for (int index = 0; index < deposits.size(); index++) {
-      Deposit deposit = deposits.get(index);
-      ReadList<Integer, DepositData> deposit_data_list =
-          ReadList.wrap(
-              deposits.stream().map(Deposit::getData).limit(index + 1).collect(Collectors.toList()),
-              Integer::new,
-              1L << getConstants().getDepositContractTreeDepth().getIntValue());
-      state.setEth1Data(new Eth1Data(
-          hash_tree_root(deposit_data_list), UInt64.valueOf(deposits.size()), eth1_block_hash));
-      verify_deposit(state, deposit);
-      process_deposit(state, deposit);
-    }
+    ReadList<Integer, DepositData> deposit_data_list =
+        ReadList.wrap(
+            deposits.stream().map(Deposit::getData).collect(Collectors.toList()),
+            Integer::new,
+            1L << getConstants().getDepositContractTreeDepth().getIntValue());
+    state.setEth1Data(new Eth1Data(
+        hash_tree_root(deposit_data_list), UInt64.valueOf(deposits.size()), eth1_block_hash));
+
+    // according to the spec deposits are verified before processing
+    // but this is redundant for genesis initialisation
+    // since passed deposits are created by our own code
+    // hence, we are able to avoid verification which saves us some computational resources
+    deposits.forEach(deposit -> process_deposit(state, deposit));
 
     // Process activations
     for (ValidatorIndex index : state.getValidators().size().iterateFromZero()) {
