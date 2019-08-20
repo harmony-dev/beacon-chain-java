@@ -1,10 +1,10 @@
-package org.ethereum.beacon.test.type.state.tmp;
+package org.ethereum.beacon.test.type.state.field;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.Map;
 
-public interface FieldLoader {
+public interface DataMapperAccessor {
   Map<String, String> getFiles();
   ObjectMapper getMapper();
 }

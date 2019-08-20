@@ -1,16 +1,18 @@
-package org.ethereum.beacon.test.type.state.tmp;
+package org.ethereum.beacon.test.type.state;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.ethereum.beacon.test.type.TestCase;
+import org.ethereum.beacon.test.type.state.field.DataMapperAccessor;
 
 import java.util.Map;
 
-public class SanitySlotsCase implements BlsSettingField, PreField, PostField, SlotsField {
-
+public abstract class DataMapperTestCase implements TestCase, DataMapperAccessor {
   final String description;
   Map<String, String> files;
   ObjectMapper objectMapper;
 
-  public SanitySlotsCase(Map<String, String> files, ObjectMapper objectMapper, String description) {
+  protected DataMapperTestCase(
+      Map<String, String> files, ObjectMapper objectMapper, String description) {
     this.files = files;
     this.objectMapper = objectMapper;
     this.description = description;
@@ -28,6 +30,6 @@ public class SanitySlotsCase implements BlsSettingField, PreField, PostField, Sl
 
   @Override
   public String toString() {
-    return "SanitySlotsCase{" + "description='" + description + '\'' + '}';
+    return "description='" + description + '\'';
   }
 }

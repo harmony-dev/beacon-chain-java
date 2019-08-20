@@ -1,16 +1,14 @@
-package org.ethereum.beacon.test.type.state.tmp;
+package org.ethereum.beacon.test.type.state.field;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.Map;
-
-public interface BlsSettingField extends FieldLoader {
+public interface BlsSettingField extends DataMapperAccessor {
   default Integer getBlsSetting() {
+    final String key = "meta.yaml";
     try {
-      for (Map.Entry<String, String> file : getFiles().entrySet()) {
-        if (file.getKey().equals("meta.yaml")) {
-          return getMapper().readValue(file.getValue(), MetaClass.class).getBlsSetting();
-        }
+      if (getFiles().containsKey(key)) {
+        return getMapper().readValue(getFiles().get(key), MetaClass.class).getBlsSetting();
       }
     } catch (Exception ex) {
       throw new RuntimeException(ex);
@@ -19,6 +17,7 @@ public interface BlsSettingField extends FieldLoader {
     return null;
   }
 
+  @JsonIgnoreProperties(ignoreUnknown = true)
   class MetaClass {
     @JsonProperty("bls_setting")
     private Integer blsSetting;
