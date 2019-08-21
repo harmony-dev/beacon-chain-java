@@ -3,9 +3,10 @@ package org.ethereum.beacon.test;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.base.Charsets;
-import com.google.common.io.CharStreams;
 import com.google.common.io.Resources;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
+import org.ethereum.beacon.core.spec.SpecConstants;
+import org.ethereum.beacon.core.spec.SpecConstantsResolver;
 import org.ethereum.beacon.emulator.config.chainspec.SpecBuilder;
 import org.ethereum.beacon.emulator.config.chainspec.SpecConstantsData;
 import org.ethereum.beacon.emulator.config.chainspec.SpecData;
@@ -13,19 +14,18 @@ import org.ethereum.beacon.emulator.config.chainspec.SpecDataUtils;
 import org.ethereum.beacon.emulator.config.chainspec.SpecHelpersData;
 import org.ethereum.beacon.schedulers.Scheduler;
 import org.ethereum.beacon.schedulers.Schedulers;
+import org.ethereum.beacon.ssz.SSZBuilder;
+import org.ethereum.beacon.ssz.SSZSerializer;
 import org.ethereum.beacon.test.type.SpecConstantsDataMerged;
 import org.ethereum.beacon.test.type.TestCase;
 import org.ethereum.beacon.test.type.state.DataMapperTestCase;
 import org.ethereum.beacon.test.type.state.field.BlsSettingField;
 import org.ethereum.beacon.util.Objects;
 import org.javatuples.Pair;
+import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.URISyntaxException;
@@ -105,7 +105,7 @@ public class TestUtils {
 
   /** Maps input yaml file to class */
   private static <V> V readYamlFile(File file, Class<? extends V> clazz) {
-    String content = readFile(file);
+    String content = new String(readFile(file).extractArray(), Charsets.UTF_8);
     return parseYamlData(content, clazz);
   }
 
@@ -121,19 +121,13 @@ public class TestUtils {
   }
 
   /** Reads file to string */
-  private static String readFile(File file) {
-    String content;
-    try (InputStream inputStream = new FileInputStream(file);
-        InputStreamReader streamReader = new InputStreamReader(inputStream, Charsets.UTF_8)) {
-      content = CharStreams.toString(streamReader);
-    } catch (FileNotFoundException e) {
-      throw new RuntimeException(String.format("File not found: %s", file.toPath().toString()), e);
+  private static BytesValue readFile(File file) {
+    try {
+      return BytesValue.wrap(Files.readAllBytes(file.toPath()));
     } catch (IOException e) {
       throw new RuntimeException(
           String.format("Error reading contents of file: %s", file.toPath().toString()), e);
     }
-
-    return content;
   }
 
   /**
@@ -241,20 +235,26 @@ public class TestUtils {
       }
       Runnable task =
           () -> {
-            int num = counter.getAndIncrement();
-            System.out.print(num + ". Running tests in " + dir.getName() + "... ");
-            Class[] paramTypes = new Class[] {Map.class, ObjectMapper.class, String.class};
-            Map<String, String> filesAndData = new HashMap<>();
-            for (File file : getFiles(dir)) {
-              String content = readFile(file);
-              filesAndData.put(file.getName(), content);
-            }
-            Object[] params = new Object[] {filesAndData, yamlMapper, dir.getName()};
             Optional<String> result;
+            int num = counter.getAndIncrement();
             try {
+              System.out.print(num + ". Running tests in " + dir.getName() + "... ");
+              Class[] paramTypes = new Class[] {Map.class, ObjectMapper.class, String.class};
+              Map<String, BytesValue> filesAndData = new HashMap<>();
+              for (File file : getFiles(dir)) {
+                BytesValue content = readFile(file);
+                filesAndData.put(file.getName(), content);
+              }
+              Object[] params = new Object[] {filesAndData, yamlMapper, dir.getName()};
               DataMapperTestCase testCase =
                   testsType.getConstructor(paramTypes).newInstance(params);
               BeaconChainSpec spec = createSpecForTest(testCase, specConstantsData);
+              SSZSerializer ssz =
+                  new SSZBuilder()
+                      .withExternalVarResolver(new SpecConstantsResolver(spec.getConstants()))
+                      .withExtraObjectCreator(SpecConstants.class, spec.getConstants())
+                      .buildSerializer();
+              testCase.setSszSerializer(ssz);
               result = runTestCase(testCase, spec, testCaseRunner);
             } catch (Exception e) {
               result = Optional.of("Cannot create testcase, exception thrown " + e);

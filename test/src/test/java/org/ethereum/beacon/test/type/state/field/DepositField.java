@@ -13,7 +13,7 @@ import tech.pegasys.artemis.util.uint.UInt64;
 import java.util.stream.Collectors;
 
 public interface DepositField extends DataMapperAccessor {
-  static Deposit fromDepositData(BlockData.BlockBodyData.DepositData depositData) {
+  static Deposit parseDepositData(BlockData.BlockBodyData.DepositData depositData) {
     Deposit deposit =
         Deposit.create(
             depositData.getProof().stream().map(Hash32::fromHexString).collect(Collectors.toList()),
@@ -27,15 +27,21 @@ public interface DepositField extends DataMapperAccessor {
   }
 
   default Deposit getDeposit() {
-    final String key = "deposit.yaml";
+    final String key = useSszWhenPossible() ? "deposit.ssz" : "deposit.yaml";
     if (!getFiles().containsKey(key)) {
       throw new RuntimeException("`deposit` not defined");
     }
 
+    // SSZ
+    if (useSszWhenPossible()) {
+      return getSszSerializer().decode(getFiles().get(key), Deposit.class);
+    }
+
+    // YAML
     try {
       BlockData.BlockBodyData.DepositData depositData =
-          getMapper().readValue(getFiles().get(key), BlockData.BlockBodyData.DepositData.class);
-      return fromDepositData(depositData);
+          getMapper().readValue(getFiles().get(key).extractArray(), BlockData.BlockBodyData.DepositData.class);
+      return parseDepositData(depositData);
     } catch (Exception ex) {
       throw new RuntimeException(ex);
     }

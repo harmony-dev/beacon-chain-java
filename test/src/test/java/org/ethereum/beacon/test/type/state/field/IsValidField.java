@@ -5,7 +5,7 @@ public interface IsValidField extends DataMapperAccessor {
     final String key = "is_valid.yaml";
     try {
       if (getFiles().containsKey(key)) {
-        return getMapper().readValue(getFiles().get(key), Boolean.class);
+        return getMapper().readValue(getFiles().get(key).extractArray(), Boolean.class);
       }
     } catch (Exception ex) {
       throw new RuntimeException(ex);

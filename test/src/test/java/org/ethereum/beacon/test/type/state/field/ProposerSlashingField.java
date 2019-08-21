@@ -8,15 +8,21 @@ import static org.ethereum.beacon.test.StateTestUtils.parseBeaconBlockHeader;
 
 public interface ProposerSlashingField extends DataMapperAccessor {
   default ProposerSlashing getProposerSlashing() {
-    final String key = "proposer_slashing.yaml";
+    final String key = useSszWhenPossible() ? "proposer_slashing.ssz" : "proposer_slashing.yaml";
     if (!getFiles().containsKey(key)) {
       throw new RuntimeException("`proposer_slashing` not defined");
     }
 
+    // SSZ
+    if (useSszWhenPossible()) {
+      return getSszSerializer().decode(getFiles().get(key), ProposerSlashing.class);
+    }
+
+    // YAML
     try {
       BlockData.BlockBodyData.ProposerSlashingData proposerSlashingData =
           getMapper()
-              .readValue(getFiles().get(key), BlockData.BlockBodyData.ProposerSlashingData.class);
+              .readValue(getFiles().get(key).extractArray(), BlockData.BlockBodyData.ProposerSlashingData.class);
       return new ProposerSlashing(
           ValidatorIndex.of(proposerSlashingData.getProposerIndex()),
           parseBeaconBlockHeader(proposerSlashingData.getHeader1()),

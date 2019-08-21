@@ -5,7 +5,7 @@ public interface SlotsField extends DataMapperAccessor {
     final String key = "slots.yaml";
     try {
       if (getFiles().containsKey(key)) {
-        return getMapper().readValue(getFiles().get(key), Integer.class);
+        return getMapper().readValue(getFiles().get(key).extractArray(), Integer.class);
       }
     } catch (Exception ex) {
       throw new RuntimeException(ex);

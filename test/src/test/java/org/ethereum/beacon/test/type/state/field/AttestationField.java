@@ -1,5 +1,6 @@
 package org.ethereum.beacon.test.type.state.field;
 
+import com.google.common.base.Charsets;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.types.BLSSignature;
@@ -12,14 +13,20 @@ import static org.ethereum.beacon.test.StateTestUtils.parseAttestationData;
 
 public interface AttestationField extends DataMapperAccessor {
   default Attestation getAttestation(SpecConstants constants) {
-    final String key = "attestation.yaml";
+    final String key = useSszWhenPossible() ? "attestation.ssz" : "attestation.yaml";
     if (!getFiles().containsKey(key)) {
       throw new RuntimeException("`attestation` not defined");
     }
 
+    // SSZ
+    if (useSszWhenPossible()) {
+      return getSszSerializer().decode(getFiles().get(key), Attestation.class);
+    }
+
+    // YAML
     try {
       BeaconStateData.AttestationData attestationData =
-          getMapper().readValue(getFiles().get(key), BeaconStateData.AttestationData.class);
+          getMapper().readValue(getFiles().get(key).extractArray(), BeaconStateData.AttestationData.class);
       BytesValue aggValue = BytesValue.fromHexString(attestationData.getAggregationBits());
       BytesValue cusValue = BytesValue.fromHexString(attestationData.getCustodyBits());
 

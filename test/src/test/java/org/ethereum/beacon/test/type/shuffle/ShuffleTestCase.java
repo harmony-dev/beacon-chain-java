@@ -2,6 +2,7 @@ package org.ethereum.beacon.test.type.shuffle;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.ethereum.beacon.test.type.state.DataMapperTestCase;
+import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import java.io.IOException;
 import java.util.List;
@@ -14,11 +15,11 @@ import java.util.Map;
 public class ShuffleTestCase extends DataMapperTestCase {
   private final Data delegate;
 
-  public ShuffleTestCase(Map<String, String> files, ObjectMapper objectMapper, String description) {
+  public ShuffleTestCase(Map<String, BytesValue> files, ObjectMapper objectMapper, String description) {
     super(files, objectMapper, description);
     assert files.size() == 1;
     try {
-      this.delegate = objectMapper.readValue(files.values().iterator().next(), Data.class);
+      this.delegate = objectMapper.readValue(files.values().iterator().next().extractArray(), Data.class);
     } catch (IOException e) {
       throw new RuntimeException("Failed to read data", e);
     }

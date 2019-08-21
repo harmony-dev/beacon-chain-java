@@ -8,7 +8,7 @@ public interface BlsSettingField extends DataMapperAccessor {
     final String key = "meta.yaml";
     try {
       if (getFiles().containsKey(key)) {
-        return getMapper().readValue(getFiles().get(key), MetaClass.class).getBlsSetting();
+        return getMapper().readValue(getFiles().get(key).extractArray(), MetaClass.class).getBlsSetting();
       }
     } catch (Exception ex) {
       throw new RuntimeException(ex);

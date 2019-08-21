@@ -5,13 +5,14 @@ import org.ethereum.beacon.test.type.state.field.BlsSettingField;
 import org.ethereum.beacon.test.type.state.field.DepositField;
 import org.ethereum.beacon.test.type.state.field.PostField;
 import org.ethereum.beacon.test.type.state.field.PreField;
+import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import java.util.Map;
 
 public class OperationDepositCase extends DataMapperTestCase
     implements BlsSettingField, PreField, PostField, DepositField {
   public OperationDepositCase(
-      Map<String, String> files, ObjectMapper objectMapper, String description) {
+      Map<String, BytesValue> files, ObjectMapper objectMapper, String description) {
     super(files, objectMapper, description);
   }
 

@@ -8,25 +8,36 @@ import org.ethereum.beacon.test.type.model.BlockData;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static org.ethereum.beacon.test.StateTestUtils.parseBlockData;
 
 public interface BlocksField extends DataMapperAccessor {
   default List<BeaconBlock> getBlocks(SpecConstants constants) {
-    final Function<Integer, String> blockKey = (n) -> String.format("blocks_%d.yaml", n);
+    final Function<Integer, String> blockKey =
+        useSszWhenPossible()
+            ? (n) -> String.format("blocks_%d.ssz", n)
+            : (n) -> String.format("blocks_%d.yaml", n);
     final String metaKey = "meta.yaml";
     try {
       if (getFiles().containsKey(metaKey)) {
-        List<BlockData> blocks = new ArrayList<>();
+        List<BeaconBlock> blocks = new ArrayList<>();
         Integer blocksCount =
-            getMapper().readValue(getFiles().get(metaKey), MetaClass.class).getBlocksCount();
+            getMapper()
+                .readValue(getFiles().get(metaKey).extractArray(), MetaClass.class)
+                .getBlocksCount();
         for (int i = 0; i < blocksCount; ++i) {
-          blocks.add(getMapper().readValue(getFiles().get(blockKey.apply(i)), BlockData.class));
+          // SSZ
+          if (useSszWhenPossible()) {
+            blocks.add(
+                getSszSerializer().decode(getFiles().get(blockKey.apply(i)), BeaconBlock.class));
+          } else { // YAML
+            BlockData blockData =
+                getMapper()
+                    .readValue(getFiles().get(blockKey.apply(i)).extractArray(), BlockData.class);
+            blocks.add(parseBlockData(blockData, constants));
+          }
         }
-        return blocks.stream()
-            .map((BlockData blockData) -> parseBlockData(blockData, constants))
-            .collect(Collectors.toList());
+        return blocks;
       }
     } catch (Exception ex) {
       throw new RuntimeException(ex);

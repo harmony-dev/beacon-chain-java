@@ -5,7 +5,7 @@ public interface Eth1TimestampField extends DataMapperAccessor {
     final String key = "eth1_timestamp.yaml";
     try {
       if (getFiles().containsKey(key)) {
-        return getMapper().readValue(getFiles().get(key), Long.class);
+        return getMapper().readValue(getFiles().get(key).extractArray(), Long.class);
       }
     } catch (Exception ex) {
       throw new RuntimeException(ex);

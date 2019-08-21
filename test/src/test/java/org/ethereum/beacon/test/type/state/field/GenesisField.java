@@ -2,17 +2,26 @@ package org.ethereum.beacon.test.type.state.field;
 
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.spec.SpecConstants;
+import org.ethereum.beacon.core.state.BeaconStateImpl;
 import org.ethereum.beacon.test.type.model.BeaconStateData;
+import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import static org.ethereum.beacon.test.StateTestUtils.parseBeaconState;
 
 public interface GenesisField extends DataMapperAccessor {
   default BeaconState getGenesis(SpecConstants constants) {
-    final String key = "genesis.yaml";
+    final String key = useSszWhenPossible() ? "genesis.ssz" : "genesis.yaml";
+
+    // SSZ
+    if (useSszWhenPossible()) {
+      return getSszSerializer().decode(getFiles().get(key), BeaconStateImpl.class);
+    }
+
+    // YAML
     try {
       if (getFiles().containsKey(key)) {
         BeaconStateData genesisData =
-            getMapper().readValue(getFiles().get(key), BeaconStateData.class);
+            getMapper().readValue(getFiles().get(key).extractArray(), BeaconStateData.class);
         return parseBeaconState(constants, genesisData);
       }
     } catch (Exception ex) {

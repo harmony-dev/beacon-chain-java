@@ -7,25 +7,38 @@ import org.ethereum.beacon.test.type.model.BlockData;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
-import java.util.stream.Collectors;
+
+import static org.ethereum.beacon.test.type.state.field.DepositField.parseDepositData;
 
 public interface DepositsField extends DataMapperAccessor {
   default List<Deposit> getDeposits() {
-    final Function<Integer, String> depositKey = (n) -> String.format("deposits_%d.yaml", n);
+    final Function<Integer, String> depositKey =
+        useSszWhenPossible()
+            ? (n) -> String.format("deposits_%d.ssz", n)
+            : (n) -> String.format("deposits_%d.yaml", n);
     final String metaKey = "meta.yaml";
     try {
       if (getFiles().containsKey(metaKey)) {
-        List<BlockData.BlockBodyData.DepositData> deposits = new ArrayList<>();
+        List<Deposit> deposits = new ArrayList<>();
         Integer depositsCount =
-            getMapper().readValue(getFiles().get(metaKey), MetaClass.class).getDepositsCount();
+            getMapper()
+                .readValue(getFiles().get(metaKey).extractArray(), MetaClass.class)
+                .getDepositsCount();
         for (int i = 0; i < depositsCount; ++i) {
-          deposits.add(
-              getMapper()
-                  .readValue(
-                      getFiles().get(depositKey.apply(i)),
-                      BlockData.BlockBodyData.DepositData.class));
+          // SSZ
+          if (useSszWhenPossible()) {
+            deposits.add(
+                getSszSerializer().decode(getFiles().get(depositKey.apply(i)), Deposit.class));
+          } else { // YAML
+            BlockData.BlockBodyData.DepositData depositData =
+                getMapper()
+                    .readValue(
+                        getFiles().get(depositKey.apply(i)).extractArray(),
+                        BlockData.BlockBodyData.DepositData.class);
+            deposits.add(parseDepositData(depositData));
+          }
         }
-        return deposits.stream().map(DepositField::fromDepositData).collect(Collectors.toList());
+        return deposits;
       }
     } catch (Exception ex) {
       throw new RuntimeException(ex);
