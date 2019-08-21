@@ -1,6 +1,7 @@
 package org.ethereum.beacon.test.type.state;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.ethereum.beacon.test.type.DataMapperTestCase;
 import org.ethereum.beacon.test.type.state.field.BlsSettingField;
 import org.ethereum.beacon.test.type.state.field.DepositField;
 import org.ethereum.beacon.test.type.state.field.PostField;

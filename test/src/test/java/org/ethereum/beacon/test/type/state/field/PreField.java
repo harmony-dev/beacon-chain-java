@@ -4,6 +4,7 @@ import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.BeaconStateImpl;
 import org.ethereum.beacon.test.StateTestUtils;
+import org.ethereum.beacon.test.type.DataMapperAccessor;
 import org.ethereum.beacon.test.type.model.BeaconStateData;
 
 public interface PreField extends DataMapperAccessor {

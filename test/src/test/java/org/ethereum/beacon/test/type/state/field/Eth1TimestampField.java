@@ -1,5 +1,7 @@
 package org.ethereum.beacon.test.type.state.field;
 
+import org.ethereum.beacon.test.type.DataMapperAccessor;
+
 public interface Eth1TimestampField extends DataMapperAccessor {
   default Long getEth1Timestamp() {
     final String key = "eth1_timestamp.yaml";

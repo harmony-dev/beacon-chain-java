@@ -3,8 +3,8 @@ package org.ethereum.beacon.test.type.state.field;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.BeaconStateImpl;
+import org.ethereum.beacon.test.type.DataMapperAccessor;
 import org.ethereum.beacon.test.type.model.BeaconStateData;
-import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import static org.ethereum.beacon.test.StateTestUtils.parseBeaconState;
 

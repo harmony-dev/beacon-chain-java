@@ -1,6 +1,7 @@
 package org.ethereum.beacon.test.type.state.field;
 
 import org.ethereum.beacon.core.operations.Transfer;
+import org.ethereum.beacon.test.type.DataMapperAccessor;
 import org.ethereum.beacon.test.type.model.BlockData;
 
 import static org.ethereum.beacon.test.StateTestUtils.parseTransfer;

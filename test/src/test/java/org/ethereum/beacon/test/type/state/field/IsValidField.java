@@ -1,5 +1,7 @@
 package org.ethereum.beacon.test.type.state.field;
 
+import org.ethereum.beacon.test.type.DataMapperAccessor;
+
 public interface IsValidField extends DataMapperAccessor {
   default Boolean isValid() {
     final String key = "is_valid.yaml";

@@ -1,9 +1,9 @@
 package org.ethereum.beacon.test.type.state.field;
 
-import com.google.common.base.Charsets;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.test.type.DataMapperAccessor;
 import org.ethereum.beacon.test.type.model.BeaconStateData;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;

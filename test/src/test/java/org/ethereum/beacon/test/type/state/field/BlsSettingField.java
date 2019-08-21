@@ -2,6 +2,7 @@ package org.ethereum.beacon.test.type.state.field;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.ethereum.beacon.test.type.DataMapperAccessor;
 
 public interface BlsSettingField extends DataMapperAccessor {
   default Integer getBlsSetting() {

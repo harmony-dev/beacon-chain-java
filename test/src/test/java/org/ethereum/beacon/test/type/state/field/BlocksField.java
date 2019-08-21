@@ -3,6 +3,7 @@ package org.ethereum.beacon.test.type.state.field;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.spec.SpecConstants;
+import org.ethereum.beacon.test.type.DataMapperAccessor;
 import org.ethereum.beacon.test.type.model.BlockData;
 
 import java.util.ArrayList;

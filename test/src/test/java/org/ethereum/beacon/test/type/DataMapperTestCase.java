@@ -1,9 +1,9 @@
-package org.ethereum.beacon.test.type.state;
+package org.ethereum.beacon.test.type;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.ethereum.beacon.ssz.SSZSerializer;
 import org.ethereum.beacon.test.type.TestCase;
-import org.ethereum.beacon.test.type.state.field.DataMapperAccessor;
+import org.ethereum.beacon.test.type.DataMapperAccessor;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import java.util.Map;

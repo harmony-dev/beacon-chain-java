@@ -1,5 +1,6 @@
 package org.ethereum.beacon.test.type.state.field;
 
+import org.ethereum.beacon.test.type.DataMapperAccessor;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 public interface Eth1BlockHashField extends DataMapperAccessor {

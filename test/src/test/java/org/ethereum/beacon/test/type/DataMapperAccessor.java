@@ -1,4 +1,4 @@
-package org.ethereum.beacon.test.type.state.field;
+package org.ethereum.beacon.test.type;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.ethereum.beacon.ssz.SSZSerializer;

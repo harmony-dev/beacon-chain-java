@@ -1,7 +1,7 @@
 package org.ethereum.beacon.test.type.shuffle;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.ethereum.beacon.test.type.state.DataMapperTestCase;
+import org.ethereum.beacon.test.type.DataMapperTestCase;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import java.io.IOException;

@@ -2,6 +2,7 @@ package org.ethereum.beacon.test.type.state.field;
 
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.spec.SpecConstants;
+import org.ethereum.beacon.test.type.DataMapperAccessor;
 import org.ethereum.beacon.test.type.model.BlockData;
 
 import static org.ethereum.beacon.test.StateTestUtils.parseSlashableAttestation;

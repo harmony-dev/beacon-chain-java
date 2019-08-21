@@ -1,5 +1,7 @@
 package org.ethereum.beacon.test.type.state.field;
 
+import org.ethereum.beacon.test.type.DataMapperAccessor;
+
 public interface SlotsField extends DataMapperAccessor {
   default Integer getSlots() {
     final String key = "slots.yaml";
