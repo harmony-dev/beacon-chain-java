@@ -35,6 +35,10 @@ public class SszUintsRunner implements Runner {
     if (!(testCase instanceof SszGenericCase)) {
       throw new RuntimeException("TestCase runner accepts only SszGenericCase.class as input!");
     }
+    if (!((SszGenericCase) testCase).getSubTypeName().startsWith("uint")) {
+      throw new RuntimeException(
+          "Type " + ((SszGenericCase) testCase).getSubTypeName() + " is not supported");
+    }
     this.testCase = (SszGenericCase) testCase;
     this.spec = spec;
     SSZBuilder builder = new SSZBuilder();
@@ -43,10 +47,6 @@ public class SszUintsRunner implements Runner {
   }
 
   private void activateSchemeMock(String type) {
-    if (!type.startsWith("uint")) {
-      throw new RuntimeException("Type " + type + " is not supported");
-    }
-
     int startSize = type.indexOf('_');
     int endSize = type.indexOf('_', startSize + 1);
     String size = type.substring(startSize + 1, endSize);

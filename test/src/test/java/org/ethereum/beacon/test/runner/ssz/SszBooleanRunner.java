@@ -34,6 +34,10 @@ public class SszBooleanRunner implements Runner {
     if (!(testCase instanceof SszGenericCase)) {
       throw new RuntimeException("TestCase runner accepts only SszGenericCase.class as input!");
     }
+    if (!((SszGenericCase) testCase).getTypeName().startsWith("bool")) {
+      throw new RuntimeException(
+          "Type " + ((SszGenericCase) testCase).getTypeName() + " is not supported");
+    }
     this.testCase = (SszGenericCase) testCase;
     this.spec = spec;
     SSZBuilder builder = new SSZBuilder();
@@ -41,10 +45,7 @@ public class SszBooleanRunner implements Runner {
     this.sszSerializer = builder.buildSerializer();
   }
 
-  private void activateSchemeMock(String type) {
-    if (!type.startsWith("bool")) {
-      throw new RuntimeException("Type " + type + " is not supported");
-    }
+  private void activateSchemeMock() {
     this.currentScheme = new SSZSchemeBuilder.SSZScheme();
     SSZField field = new SSZField(Boolean.class, null, null, null, "value", "getValue");
 
@@ -52,7 +53,7 @@ public class SszBooleanRunner implements Runner {
   }
 
   public Optional<String> run() {
-    activateSchemeMock(testCase.getTypeName());
+    activateSchemeMock();
 
     if (testCase.isValid()) {
       Boolean expected = null;
