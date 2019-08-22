@@ -3,6 +3,7 @@ package org.ethereum.beacon.test;
 import org.ethereum.beacon.test.runner.ssz.SszBitlistRunner;
 import org.ethereum.beacon.test.runner.ssz.SszBitvectorRunner;
 import org.ethereum.beacon.test.runner.ssz.SszBooleanRunner;
+import org.ethereum.beacon.test.runner.ssz.SszBasicVectorRunner;
 import org.ethereum.beacon.test.runner.ssz.SszUintsRunner;
 import org.junit.Test;
 
@@ -66,6 +67,19 @@ public class SszGenericTests extends TestUtils {
         testFileDir,
         input -> {
           SszBitlistRunner testRunner = new SszBitlistRunner(input.getValue0(), input.getValue1());
+          return testRunner.run();
+        },
+        Ignored.EMPTY,
+        false);
+  }
+
+  @Test
+  public void testSszGenericBasicVector() {
+    Path testFileDir = Paths.get(PATH_TO_TESTS, SUBDIR.toString(), "basic_vector");
+    runSszGenericTestsInResourceDir(
+        testFileDir,
+        input -> {
+          SszBasicVectorRunner testRunner = new SszBasicVectorRunner(input.getValue0(), input.getValue1());
           return testRunner.run();
         },
         Ignored.EMPTY,
