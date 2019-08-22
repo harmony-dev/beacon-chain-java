@@ -31,7 +31,7 @@ import java.util.stream.IntStream;
 import static org.ethereum.beacon.test.SilentAsserts.assertEquals;
 
 /**
- * TestRunner for Uints {@link SszGenericCase}
+ * TestRunner for vectors with basic values {@link SszGenericCase}
  *
  * <p>Test format description: <a
  * href="https://github.com/ethereum/eth2.0-specs/tree/dev/specs/test_formats/ssz_generic">https://github.com/ethereum/eth2.0-specs/tree/dev/specs/test_formats/ssz_generic</a>
