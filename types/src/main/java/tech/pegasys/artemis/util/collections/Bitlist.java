@@ -16,7 +16,7 @@ public class Bitlist extends DelegatingBytesValue {
   private final long maxSize;
 
   Bitlist(int size, BytesValue bytes, long maxSize) {
-    super(checkSize(bytes, size));
+    super(checkSize(bytes, size, maxSize));
     this.size = size;
     this.maxSize = maxSize;
   }
@@ -26,11 +26,20 @@ public class Bitlist extends DelegatingBytesValue {
     int size = (bytes.size() - 1) * 8;
     byte lastByte = bytes.get(bytes.size() - 1);
     int addon = 0;
+    boolean sizeBitFound = false;
     for (int i = 0; i < 8; ++i) {
       if (((lastByte >> i) & 1) == 1) {
         addon = i;
+        sizeBitFound = true;
       }
     }
+    if (!sizeBitFound) {
+      throw new IllegalArgumentException(
+          String.format(
+              "An attempt to initialize Bitlist/Bitvector with no size flag using value %s",
+              bytes));
+    }
+
     final BytesValue finalBlank;
     if (addon == 0) {
       finalBlank = bytes.slice(0, bytes.size() - 1); // last byte was needed only for a size
@@ -49,7 +58,7 @@ public class Bitlist extends DelegatingBytesValue {
   }
 
   public static Bitlist of(int size, List<Integer> bits, long maxSize) {
-    MutableBytesValue bytes = MutableBytesValue.create((size + 7)/ 8);
+    MutableBytesValue bytes = MutableBytesValue.create((size + 7) / 8);
     for (Integer bit : bits) {
       bytes.setBit(bit, true);
     }
@@ -69,6 +78,16 @@ public class Bitlist extends DelegatingBytesValue {
 
     int neededBytes = (size + 7) / 8;
     return new Bitlist(size, blank.toBytesValue().slice(0, neededBytes), maxSize);
+  }
+
+  private static BytesValue checkSize(BytesValue input, int size, long maxSize) {
+    if (maxSize < size) {
+      throw new IllegalArgumentException(
+          String.format(
+              "An attempt to initialize Bitlist with size %s greater than maximum size %s using value %s",
+              size, maxSize, input));
+    }
+    return checkSize(input, size);
   }
 
   private static BytesValue checkSize(BytesValue input, int size) {

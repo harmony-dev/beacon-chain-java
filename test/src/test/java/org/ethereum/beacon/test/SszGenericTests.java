@@ -1,5 +1,6 @@
 package org.ethereum.beacon.test;
 
+import org.ethereum.beacon.test.runner.ssz.SszBitlistRunner;
 import org.ethereum.beacon.test.runner.ssz.SszBitvectorRunner;
 import org.ethereum.beacon.test.runner.ssz.SszBooleanRunner;
 import org.ethereum.beacon.test.runner.ssz.SszUintsRunner;
@@ -47,15 +48,27 @@ public class SszGenericTests extends TestUtils {
               new SszBitvectorRunner(input.getValue0(), input.getValue1());
           return testRunner.run();
         },
-        Ignored
-            .filesOf( // Incorrect cases: 0-filled bits in excess of size. Doesn't matter for 0's
-                      // until overflow full bytes
-                "bitvector/invalid/bitvec_2_zero_3",
-                "bitvector/invalid/bitvec_4_zero_5",
-                "bitvector/invalid/bitvec_1_zero_2",
-                "bitvector/invalid/bitvec_3_zero_4",
-                "bitvector/invalid/bitvec_4_random_5",
-                "bitvector/invalid/bitvec_5_zero_6"),
+        Ignored.filesOf( // Incorrect cases: 0-filled bits in excess of size. Doesn't matter for 0's
+            // until overflow full bytes
+            "bitvector/invalid/bitvec_2_zero_3",
+            "bitvector/invalid/bitvec_4_zero_5",
+            "bitvector/invalid/bitvec_1_zero_2",
+            "bitvector/invalid/bitvec_3_zero_4",
+            "bitvector/invalid/bitvec_4_random_5",
+            "bitvector/invalid/bitvec_5_zero_6"),
+        false);
+  }
+
+  @Test
+  public void testSszGenericBitlist() {
+    Path testFileDir = Paths.get(PATH_TO_TESTS, SUBDIR.toString(), "bitlist");
+    runSszGenericTestsInResourceDir(
+        testFileDir,
+        input -> {
+          SszBitlistRunner testRunner = new SszBitlistRunner(input.getValue0(), input.getValue1());
+          return testRunner.run();
+        },
+        Ignored.EMPTY,
         false);
   }
 }

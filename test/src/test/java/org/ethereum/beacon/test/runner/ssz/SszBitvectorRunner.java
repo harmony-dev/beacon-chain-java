@@ -92,7 +92,6 @@ public class SszBitvectorRunner implements Runner {
       try {
         BitvectorTester actual =
             sszSerializer.decode(testCase.getSerialized(), BitvectorTester.class);
-        System.out.println("ouch");
       } catch (Exception ex) {
         return Optional.empty();
       }
@@ -116,7 +115,7 @@ public class SszBitvectorRunner implements Runner {
     }
   }
 
-  private static class SSZListMock implements SSZ {
+  public static class SSZListMock implements SSZ {
     private int vectorLength;
     private long maxSize;
 
