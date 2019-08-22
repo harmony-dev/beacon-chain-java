@@ -10,6 +10,7 @@ dependencyManagement {
 
     dependency "org.apache.logging.log4j:log4j-api:${log4j2Version}"
     dependency "org.apache.logging.log4j:log4j-core:${log4j2Version}"
+    dependency "org.apache.commons:commons-collections4:4.4"
     dependency 'org.ethereum:ethereumj-core:1+'
 
     dependency 'org.bouncycastle:bcprov-jdk15on:1.60'

@@ -225,6 +225,11 @@ public interface BlockProcessing extends HelperFunction {
   }
 
   default boolean verify_attestation(BeaconState state, Attestation attestation) {
+    return verify_attestation_impl(state, attestation, true);
+  }
+
+  default boolean verify_attestation_impl(BeaconState state, Attestation attestation,
+      boolean verify_indexed) {
     /* data = attestation.data
        assert data.crosslink.shard < SHARD_COUNT
        assert data.target.epoch in (get_previous_epoch(state), get_current_epoch(state)) */
@@ -292,6 +297,10 @@ public interface BlockProcessing extends HelperFunction {
     }
     if (!data.getCrosslink().getDataRoot().equals(Hash32.ZERO)) {
       return false;
+    }
+
+    if (!verify_indexed) {
+      return true;
     }
 
     return is_valid_indexed_attestation(state, get_indexed_attestation(state, attestation));

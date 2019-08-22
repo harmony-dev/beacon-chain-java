@@ -993,6 +993,11 @@ public interface HelperFunction extends SpecCommons {
       """
    */
   default boolean is_valid_indexed_attestation(BeaconState state, IndexedAttestation indexed_attestation) {
+    return is_valid_indexed_attestation_impl(state, indexed_attestation, true);
+  }
+
+  default boolean is_valid_indexed_attestation_impl(BeaconState state, IndexedAttestation indexed_attestation,
+      boolean verify_signature) {
     /*
       bit_0_indices = indexed_attestation.custody_bit_0_indices
       bit_1_indices = indexed_attestation.custody_bit_1_indices
@@ -1022,6 +1027,10 @@ public interface HelperFunction extends SpecCommons {
     }
     if (!Ordering.natural().isOrdered(bit_1_indices)) {
       return false;
+    }
+
+    if (!verify_signature) {
+      return true;
     }
 
     /*
