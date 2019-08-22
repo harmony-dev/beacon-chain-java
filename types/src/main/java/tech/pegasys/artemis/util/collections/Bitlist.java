@@ -72,11 +72,30 @@ public class Bitlist extends DelegatingBytesValue {
   }
 
   private static BytesValue checkSize(BytesValue input, int size) {
+    // required bytes == input bytes
     int neededBytes = (size + 7) / 8;
     if (neededBytes != input.size()) {
       throw new IllegalArgumentException(
           String.format(
               "An attempt to initialize Bitlist/Bitvector with size %s using value %s with another size",
+              size, input));
+    }
+
+    // required bits <= size (in bits)
+    int bitSize = input.size() * Byte.SIZE;
+    int i = bitSize - 1;
+    boolean found = false;
+    for (; i >= 0; --i) {
+      if (input.getBit(i)) { // first 1 bit
+        found = true;
+        break;
+      }
+    }
+    int occupiedBits = found ? i + 1 : 0;
+    if (occupiedBits > size) {
+      throw new IllegalArgumentException(
+          String.format(
+              "An attempt to initialize Bitlist/Bitvector with size %s using value %s with greater size",
               size, input));
     }
 

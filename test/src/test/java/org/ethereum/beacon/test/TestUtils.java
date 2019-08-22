@@ -19,6 +19,7 @@ import org.ethereum.beacon.ssz.SSZSerializer;
 import org.ethereum.beacon.test.type.DataMapperTestCase;
 import org.ethereum.beacon.test.type.SpecConstantsDataMerged;
 import org.ethereum.beacon.test.type.TestCase;
+import org.ethereum.beacon.test.type.ssz.SszGenericCase;
 import org.ethereum.beacon.test.type.ssz.SszStaticCase;
 import org.ethereum.beacon.test.type.state.field.BlsSettingField;
 import org.ethereum.beacon.util.Objects;
@@ -290,7 +291,8 @@ public class TestUtils {
   }
 
   /**
-   * Runs ssz tests which requires BeaconChainSpec for execution in provided resource dir
+   * Runs static type ssz tests which requires BeaconChainSpec for execution in provided resource
+   * dir
    *
    * @param rootDir Root dir from resources folder, spec constant `config.yaml` is here
    * @param subDir Sub directory with test directories, relative to rootDir
@@ -369,6 +371,91 @@ public class TestUtils {
       CompletableFuture.allOf(cfs).join();
       assertFalse(failed.get());
     }
+  }
+
+  /**
+   * Runs generic type ssz tests which requires BeaconChainSpec for execution in provided resource
+   * dir
+   *
+   * @param dir Sub directory with test directories by type
+   * @param testCaseRunner Test case runner, supports test case type
+   * @param ignored list of ignored cases
+   * @param parallel whether to run tests in parallel
+   * @param <V> Any kind of test case that uses set of file strings to load data
+   */
+  public static <V extends DataMapperTestCase> void runSszGenericTestsInResourceDir(
+      Path dir,
+      Function<Pair<TestCase, BeaconChainSpec>, Optional<String>> testCaseRunner,
+      Ignored ignored,
+      boolean parallel) {
+    boolean isCI = Boolean.parseBoolean(System.getenv("CI"));
+    Collection<String> dirNamesExclusions =
+        isCI == ignored.forCI ? ignored.fileNames : Collections.emptySet();
+    Scheduler scheduler =
+        parallel ? schedulers.cpuHeavy() : schedulers.newSingleThreadDaemon("tests");
+    AtomicBoolean failed = new AtomicBoolean(false);
+    System.out.printf("Running tests in %s with parallel execution set as %s%n", dir, parallel);
+    AtomicInteger counter = new AtomicInteger(1);
+    List<CompletableFuture> tasks = new ArrayList<>();
+    for (File caseDir : getResourceDirs(dir.toString(), 2)) {
+      AtomicBoolean inExclusions = new AtomicBoolean(false);
+      dirNamesExclusions.stream()
+          .filter(e -> caseDir.getPath().contains(e))
+          .findFirst()
+          .ifPresent(s -> inExclusions.set(true));
+      if (inExclusions.get()) {
+        System.out.println(
+            String.format(
+                "Skipping case %s/%s/%s (in exclusions)",
+                dir.getFileName(), caseDir.getParentFile().getName(), caseDir.getName()));
+        continue;
+      }
+      Runnable task =
+          () -> {
+            Optional<String> result;
+            int num = counter.getAndIncrement();
+            String description =
+                String.format(
+                    "%s/%s/%s",
+                    dir.getFileName(), caseDir.getParentFile().getName(), caseDir.getName());
+            try {
+              Map<String, BytesValue> filesAndData = new HashMap<>();
+              for (File file : getFiles(caseDir)) {
+                BytesValue content = readFile(file);
+                filesAndData.put(file.getName(), content);
+              }
+              boolean isValid = "valid".equals(caseDir.getParentFile().getName());
+              SszGenericCase testCase =
+                  new SszGenericCase(
+                      filesAndData,
+                      yamlMapper,
+                      dir.getFileName().toString(),
+                      caseDir.getName(),
+                      isValid,
+                      description);
+              SSZSerializer ssz = new SSZBuilder().buildSerializer();
+              testCase.setSszSerializer(ssz);
+              BeaconChainSpec spec = BeaconChainSpec.createWithDefaults();
+              result = runTestCase(testCase, spec, testCaseRunner);
+            } catch (Exception e) {
+              result = Optional.of("Cannot create testcase, exception thrown " + e);
+            }
+            StringBuilder output = new StringBuilder();
+            output.append(String.format("%d. Running tests in %s... ", num, description));
+            if (result.isPresent()) {
+              output.append("FAILED\n");
+              output.append(num).append(". ").append(result.get());
+              failed.set(true);
+            } else {
+              output.append("OK\n");
+            }
+            System.out.print(output.toString());
+          };
+      tasks.add(scheduler.executeR(task));
+    }
+    CompletableFuture[] cfs = tasks.toArray(new CompletableFuture[] {});
+    CompletableFuture.allOf(cfs).join();
+    assertFalse(failed.get());
   }
 
   /**
@@ -494,7 +581,11 @@ public class TestUtils {
               result = Optional.of("Cannot create testcase, exception thrown " + e);
             }
             StringBuilder output = new StringBuilder();
-            output.append(num).append(". Running tests in ").append(caseDir.getName()).append("... ");
+            output
+                .append(num)
+                .append(". Running tests in ")
+                .append(caseDir.getName())
+                .append("... ");
             if (result.isPresent()) {
               output.append("FAILED\n");
               output.append(num).append(". ").append(result.get()).append('\n');
