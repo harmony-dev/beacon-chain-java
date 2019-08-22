@@ -68,7 +68,7 @@ public class SettersObjCreator implements ObjectCreator {
         try { // Try to set using setter
           fieldSetters.get(currentField.getName()).invoke(result, values[i]);
         } catch (Exception ex) { // Cannot set the field
-          throw new SSZSchemeException(String.format("Setter net found for field %s", currentField.getName()), ex);
+          throw new SSZSchemeException(String.format("Setter not found for field %s", currentField.getName()), ex);
         }
       }
     }
