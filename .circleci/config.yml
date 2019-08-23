@@ -49,7 +49,7 @@ jobs:
 
       - run:
           name: Save commit of tests repo in env var
-          command: export TESTS_REPO_COMMIT="testtest"
+          command: echo 'export TESTS_REPO_COMMIT="testtest"' >> $BASH_ENV
 
       - run:
           name: Verify tests repo commit is saved
