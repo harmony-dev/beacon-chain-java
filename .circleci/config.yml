@@ -49,7 +49,7 @@ jobs:
 
       - run:
           name: Save commit of tests repo in env var
-          command: echo 'export TESTS_REPO_COMMIT="testtest"' >> $BASH_ENV
+          command: echo 'export TESTS_REPO_COMMIT=$(eval cd "$CIRCLE_WORKING_DIRECTORY"/test/src/test/resources/ && git submodule status eth2.0-spec-tests/ |  awk \'{print $1;}\')' >> $BASH_ENV
 
       - run:
           name: Verify tests repo commit is saved
