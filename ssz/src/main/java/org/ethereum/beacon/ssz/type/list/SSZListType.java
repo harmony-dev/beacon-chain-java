@@ -63,6 +63,10 @@ public class SSZListType implements SSZHomoCompositeType {
     return getElementType().getSize() * getVectorLength();
   }
 
+  public boolean isVector() {
+    return getVectorLength() > VARIABLE_SIZE;
+  }
+
   public long getMaxSize() {
     return maxSize;
   }

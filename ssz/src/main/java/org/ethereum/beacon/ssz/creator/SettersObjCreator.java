@@ -66,7 +66,11 @@ public class SettersObjCreator implements ObjectCreator {
         clazz.getField(currentField.getName()).set(result, values[i]);
       } catch (Exception e) {
         try { // Try to set using setter
-          fieldSetters.get(currentField.getName()).invoke(result, values[i]);
+          Method setter = fieldSetters.get(currentField.getName());
+          if (setter == null && currentField.getName().length() == 1) { // Bug in inspector with single letter fields
+            setter = fieldSetters.get(currentField.getName().toLowerCase());
+          }
+          setter.invoke(result, values[i]);
         } catch (Exception ex) { // Cannot set the field
           throw new SSZSchemeException(String.format("Setter not found for field %s", currentField.getName()), ex);
         }

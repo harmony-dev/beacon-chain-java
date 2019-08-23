@@ -13,9 +13,15 @@ public interface ReadVector<IndexType extends Number, ValueType>
     return ListImpl.wrap(new ArrayList<>(srcList), indexConverter, true);
   }
 
+  /** Wraps with verifying of length and creating new vector */
+  static <IndexType extends Number, ValueType> ReadVector<IndexType, ValueType> wrap(
+      List<ValueType> srcList, Function<Integer, IndexType> indexConverter, int vectorLength) {
+    assert srcList.size() == vectorLength;
+    return ListImpl.wrap(new ArrayList<>(srcList), indexConverter, true);
+  }
+
   default ReadVector<IndexType, ValueType> vectorCopy() {
     ReadVector<IndexType, ValueType> res = createMutableCopy();
     return res;
   }
-
 }

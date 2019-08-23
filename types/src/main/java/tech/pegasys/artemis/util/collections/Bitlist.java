@@ -11,6 +11,8 @@ import tech.pegasys.artemis.util.uint.UInt64;
 import java.util.ArrayList;
 import java.util.List;
 
+import static tech.pegasys.artemis.util.collections.ReadList.VARIABLE_SIZE;
+
 public class Bitlist extends DelegatingBytesValue {
   private final int size;
   private final long maxSize;
@@ -81,7 +83,7 @@ public class Bitlist extends DelegatingBytesValue {
   }
 
   private static BytesValue checkSize(BytesValue input, int size, long maxSize) {
-    if (maxSize < size) {
+    if (maxSize > VARIABLE_SIZE && maxSize < size) {
       throw new IllegalArgumentException(
           String.format(
               "An attempt to initialize Bitlist with size %s greater than maximum size %s using value %s",
