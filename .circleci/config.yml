@@ -95,9 +95,9 @@ jobs:
           when: always
 
       - save_cache:
-          name: Caching spec tests repo
+          name: Caching spec tests repo (hardcoding of directory required due to circleCI limitations)
           paths:
-            - $CIRCLE_WORKING_DIRECTORY/test/src/test/resources/eth2.0-spec-tests/
+            - ~/beacon-chain/test/src/test/resources/eth2.0-spec-tests
           key: v1-tests-dir-{{ checksum "/tmp/tests-version" }}
 
       - store_artifacts:
