@@ -51,6 +51,10 @@ jobs:
           name: Save commit of tests repo in env var
           command: export TESTS_REPO_COMMIT=$(eval cd "$CIRCLE_WORKING_DIRECTORY"/test/src/test/resources/ && git submodule status eth2.0-spec-tests/ |  awk '{print $1;}')
 
+      - run:
+          name: Verify tests repo commit is saved
+          command: echo $TESTS_REPO_COMMIT
+
       - restore_cache:
           name: Restoring spec tests repo
           keys:
