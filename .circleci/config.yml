@@ -25,6 +25,7 @@ jobs:
             sudo sh -c "echo 'deb http://ftp.debian.org/debian stretch-backports main' >> /etc/apt/sources.list"
             curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
             sudo apt-get update && sudo apt-get install -y git-lfs
+
       - run:
           name: Downloading dependencies
           command: ./gradlew allDependencies
@@ -45,6 +46,15 @@ jobs:
           path: ~/jars
           destination: jars
           when: always
+
+      - run:
+          name: Save commit of tests repo in env var
+          command: export TESTS_REPO_COMMIT=$(eval cd "$CIRCLE_WORKING_DIRECTORY"/test/src/test/resources/ && git submodule status eth2.0-spec-tests/ |  awk '{print $1;}')
+
+      - restore_cache:
+          name: Restoring spec tests repo
+          keys:
+            - v1-tests-dir-{{ .Environment.TESTS_REPO_COMMIT }}
 
       - run:
           name: Running tests
@@ -79,6 +89,12 @@ jobs:
                 (cd "$dir" && tar c .) | (cd ~/reports/jacoco/"$module" && tar x)
             done
           when: always
+
+      - save_cache:
+          name: Caching spec tests repo
+          paths:
+            - $CIRCLE_WORKING_DIRECTORY/test/src/test/resources/eth2.0-spec-tests/
+          key: v1-tests-dir-{{ .Environment.TESTS_REPO_COMMIT }}
 
       - store_artifacts:
           name: Uploading reports
