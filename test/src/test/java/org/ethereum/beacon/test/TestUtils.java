@@ -229,9 +229,11 @@ public class TestUtils {
       boolean parallel) {
     String subDirString = Paths.get(rootDir.toString(), subDir.toString()).toString();
     List<File> dirs = getResourceDirs(subDirString, CASE_DIR_LEVEL);
+    Collection<String> dirNamesExclusions = ignored.fileNames;
     boolean isCI = Boolean.parseBoolean(System.getenv("CI"));
-    Collection<String> dirNamesExclusions =
-        isCI == ignored.forCI ? ignored.fileNames : Collections.emptySet();
+    if (ignored.forCI && !isCI) {
+      dirNamesExclusions = Collections.emptySet();
+    }
     Scheduler scheduler =
         parallel ? schedulers.cpuHeavy() : schedulers.newSingleThreadDaemon("tests");
     AtomicBoolean failed = new AtomicBoolean(false);
@@ -309,9 +311,11 @@ public class TestUtils {
       boolean parallel) {
     String subDirString = Paths.get(rootDir.toString(), subDir.toString()).toString();
     List<File> typeDirs = getResourceDirs(subDirString, 1);
+    Collection<String> dirNamesExclusions = ignored.fileNames;
     boolean isCI = Boolean.parseBoolean(System.getenv("CI"));
-    Collection<String> dirNamesExclusions =
-        isCI == ignored.forCI ? ignored.fileNames : Collections.emptySet();
+    if (ignored.forCI && !isCI) {
+      dirNamesExclusions = Collections.emptySet();
+    }
     Scheduler scheduler =
         parallel ? schedulers.cpuHeavy() : schedulers.newSingleThreadDaemon("tests");
     AtomicBoolean failed = new AtomicBoolean(false);
@@ -388,25 +392,19 @@ public class TestUtils {
       Function<Pair<TestCase, BeaconChainSpec>, Optional<String>> testCaseRunner,
       Ignored ignored,
       boolean parallel) {
+    Collection<String> dirNamesExclusions = ignored.fileNames;
     boolean isCI = Boolean.parseBoolean(System.getenv("CI"));
-    Collection<String> dirNamesExclusions =
-        isCI == ignored.forCI ? ignored.fileNames : Collections.emptySet();
+    if (ignored.forCI && !isCI) {
+      dirNamesExclusions = Collections.emptySet();
+    }
     Scheduler scheduler =
         parallel ? schedulers.cpuHeavy() : schedulers.newSingleThreadDaemon("tests");
     AtomicBoolean failed = new AtomicBoolean(false);
     System.out.printf("Running tests in %s with parallel execution set as %s%n", dir, parallel);
     AtomicInteger counter = new AtomicInteger(1);
     List<CompletableFuture> tasks = new ArrayList<>();
-    // TODO: debug for ci, remove
-    if (!dirNamesExclusions.isEmpty()) {
-      dirNamesExclusions.forEach(e -> System.out.println("Exclude '" + e + "'"));
-    }
     for (File caseDir : getResourceDirs(dir.toString(), 2)) {
       AtomicBoolean inExclusions = new AtomicBoolean(false);
-      // TODO: debug for ci, remove
-      if (!dirNamesExclusions.isEmpty()) {
-        System.out.println("Working in path '" + caseDir.getPath() + "'");
-      }
       dirNamesExclusions.stream()
           .filter(e -> caseDir.getPath().contains(e))
           .findFirst()
