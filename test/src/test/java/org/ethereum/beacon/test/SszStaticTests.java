@@ -1,6 +1,7 @@
 package org.ethereum.beacon.test;
 
 import org.ethereum.beacon.test.runner.ssz.SszStaticRunner;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.nio.file.Path;
@@ -28,6 +29,7 @@ public class SszStaticTests {
   }
 
   @Test
+  @Ignore("Takes hours on CI")
   public void testSszStaticMainnet() {
     runSszStaticTestsInResourceDir(
         MAINNET_TESTS,
