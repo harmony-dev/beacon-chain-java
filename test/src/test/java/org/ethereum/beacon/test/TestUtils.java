@@ -397,8 +397,16 @@ public class TestUtils {
     System.out.printf("Running tests in %s with parallel execution set as %s%n", dir, parallel);
     AtomicInteger counter = new AtomicInteger(1);
     List<CompletableFuture> tasks = new ArrayList<>();
+    // TODO: debug for ci, remove
+    if (!dirNamesExclusions.isEmpty()) {
+      dirNamesExclusions.forEach(e -> System.out.println("Exclude '" + e + "'"));
+    }
     for (File caseDir : getResourceDirs(dir.toString(), 2)) {
       AtomicBoolean inExclusions = new AtomicBoolean(false);
+      // TODO: debug for ci, remove
+      if (!dirNamesExclusions.isEmpty()) {
+        System.out.println("Working in path '" + caseDir.getPath() + "'");
+      }
       dirNamesExclusions.stream()
           .filter(e -> caseDir.getPath().contains(e))
           .findFirst()
