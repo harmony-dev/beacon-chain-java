@@ -213,6 +213,31 @@ public class BLS381 {
       return new Signature(encoded);
     }
 
+    public static Signature createWithoutValidation(Bytes96 encoded) {
+      return new Signature(encoded);
+    }
+
+    public static boolean validate(Bytes96 encoded) {
+      Validator.Result result = Validator.G2.validate(encoded);
+      if (!result.isValid()) {
+        return false;
+      }
+
+      if (!Codec.G2.decode(encoded).isInfinity()) {
+        ECP2 point = G2.decode(encoded);
+        if (point.is_infinity()) {
+          return false;
+        }
+
+        ECP2 orderCheck = point.mul(ORDER);
+        if (!orderCheck.is_infinity()) {
+          return false;
+        }
+      }
+
+      return true;
+    }
+
     /**
      * Aggregates a list of signatures into a single one.
      *

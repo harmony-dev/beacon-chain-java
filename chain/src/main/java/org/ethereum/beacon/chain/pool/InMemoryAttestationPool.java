@@ -7,7 +7,7 @@ public class InMemoryAttestationPool implements AttestationPool {
 
   private final Publisher<ReceivedAttestation> inbound;
   private final AttestationVerifier lightVerifier;
-  private final AttestationProcessor knownAttestations;
+  private final AttestationProcessor processedAttestationPool;
   private final UnknownBlockPool unknownBlockPool;
   private final AttestationVerifier fullVerifier;
   private final AttestationChurn churn;
@@ -15,13 +15,13 @@ public class InMemoryAttestationPool implements AttestationPool {
   public InMemoryAttestationPool(
       Publisher<ReceivedAttestation> inbound,
       AttestationVerifier lightVerifier,
-      AttestationProcessor knownAttestations,
+      AttestationProcessor processedAttestationPool,
       UnknownBlockPool unknownBlockPool,
       AttestationVerifier fullVerifier,
       AttestationChurn churn) {
     this.inbound = inbound;
     this.lightVerifier = lightVerifier;
-    this.knownAttestations = knownAttestations;
+    this.processedAttestationPool = processedAttestationPool;
     this.unknownBlockPool = unknownBlockPool;
     this.fullVerifier = fullVerifier;
     this.churn = churn;
@@ -30,9 +30,11 @@ public class InMemoryAttestationPool implements AttestationPool {
   @Override
   public void start() {
     Flux.from(inbound).subscribe(lightVerifier::in);
-    Flux.from(lightVerifier.out()).subscribe(knownAttestations::in);
-    Flux.from(knownAttestations.out()).subscribe(unknownBlockPool::in);
-    Flux.from(unknownBlockPool.out()).subscribe(fullVerifier::in);
+    Flux.from(lightVerifier.out()).subscribe(processedAttestationPool::in);
+    Flux.from(processedAttestationPool.out()).subscribe(unknownBlockPool::in);
+    Flux.from(unknownBlockPool.out())
+        .bufferTimeout(VERIFIER_BUFFER_SIZE, VERIFIER_INTERVAL)
+        .subscribe(fullVerifier::batchIn);
     Flux.from(fullVerifier.out()).subscribe(churn::in);
   }
 

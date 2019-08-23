@@ -26,7 +26,7 @@ public class UnknownBlockPoolImpl extends AbstractProcessor implements UnknownBl
   private static final EpochNumber TRACKED_EPOCHS =
       EpochNumber.of(2).plus(AttestationPool.MAX_ATTESTATION_LOOKAHEAD);
 
-  private final Queue queue = new Queue(TRACKED_EPOCHS, AttestationPool.UNKNOWN_POOL_CAPACITY);
+  private final Queue queue = new Queue(TRACKED_EPOCHS, AttestationPool.UNKNOWN_BLOCK_POOL_SIZE);
 
   private final SimpleProcessor<ReceivedAttestation> unknownBlock;
   private final Scheduler executor;

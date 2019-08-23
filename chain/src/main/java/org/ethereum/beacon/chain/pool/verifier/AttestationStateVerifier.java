@@ -1,19 +1,20 @@
 package org.ethereum.beacon.chain.pool.verifier;
 
-import com.google.common.base.Objects;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
+import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
+
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.ethereum.beacon.chain.BeaconTuple;
 import org.ethereum.beacon.chain.pool.ReceivedAttestation;
 import org.ethereum.beacon.chain.storage.BeaconTupleStorage;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.transition.EmptySlotTransition;
 import org.ethereum.beacon.core.BeaconState;
+import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
 import org.ethereum.beacon.core.state.Checkpoint;
+import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.schedulers.RunnableEx;
 import org.ethereum.beacon.schedulers.Scheduler;
@@ -22,16 +23,16 @@ import org.ethereum.beacon.stream.SimpleProcessor;
 import org.javatuples.Pair;
 import org.reactivestreams.Publisher;
 import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.uint.UInt64;
 
 public class AttestationStateVerifier {
 
-  private final Queue queue = new Queue();
   private final Scheduler executor;
   private final BeaconTupleStorage tupleStorage;
   private final BeaconChainSpec spec;
   private final EmptySlotTransition emptySlotTransition;
 
-  private final SimpleProcessor<Pair<BeaconState, List<ReceivedAttestation>>> outbound;
+  private final SimpleProcessor<SignatureVerificationSet> valid;
   private final SimpleProcessor<ReceivedAttestation> invalid;
 
   public AttestationStateVerifier(
@@ -45,41 +46,38 @@ public class AttestationStateVerifier {
     this.spec = spec;
     this.emptySlotTransition = emptySlotTransition;
 
-    this.outbound = new SimpleProcessor<>(schedulers.events(), "AttestationStateVerifier.outbound");
+    this.valid = new SimpleProcessor<>(schedulers.events(), "AttestationStateVerifier.valid");
     this.invalid = new SimpleProcessor<>(schedulers.events(), "AttestationStateVerifier.invalid");
   }
 
-  public Publisher<Pair<BeaconState, List<ReceivedAttestation>>> outbound() {
-    return outbound;
+  public Publisher<SignatureVerificationSet> valid() {
+    return valid;
   }
 
-  public void inbound(ReceivedAttestation attestation) {
-    queue.add(attestation);
-    execute(this::nudgeQueue);
+  public Publisher<ReceivedAttestation> invalid() {
+    return invalid;
   }
 
-  private void nudgeQueue() {
-    while (queue.size() > 0) {
-      execute(
-          () -> {
-            List<ReceivedAttestation> batch = queue.take();
-            process(batch);
-          });
-    }
+  public void in(List<ReceivedAttestation> batch) {
+    execute(
+        () -> {
+          Map<Pair<Checkpoint, Hash32>, List<ReceivedAttestation>> groupedByState =
+              batch.stream()
+                  .collect(
+                      Collectors.groupingBy(
+                          attestation ->
+                              Pair.with(
+                                  attestation.getMessage().getData().getTarget(),
+                                  attestation.getMessage().getData().getBeaconBlockRoot())));
+
+          groupedByState.forEach((key, value) -> process(key.getValue0(), key.getValue1(), value));
+        });
   }
 
-  private void execute(RunnableEx routine) {
-    executor.execute(routine);
-  }
-
-  private void process(List<ReceivedAttestation> attestations) {
-    if (attestations.isEmpty()) {
-      return;
-    }
-
-    final Checkpoint target = attestations.get(0).getMessage().getData().getTarget();
-    final Hash32 beaconBlockRoot = attestations.get(0).getMessage().getData().getBeaconBlockRoot();
-
+  private void process(
+      final Checkpoint target,
+      final Hash32 beaconBlockRoot,
+      List<ReceivedAttestation> attestations) {
     Optional<BeaconTuple> rootTuple = tupleStorage.get(beaconBlockRoot);
 
     // it must be present, otherwise, attestation couldn't be here
@@ -103,19 +101,42 @@ public class AttestationStateVerifier {
       return;
     }
 
-    // compute state, there must be the same state for all attestations
+    // compute state and domain, there must be the same state for all attestations
     final BeaconState state = computeState(rootTuple.get(), target.getEpoch());
-    final List<ReceivedAttestation> validAttestations = new ArrayList<>();
+    final UInt64 domain = spec.get_domain(state, ATTESTATION, target.getEpoch());
     for (ReceivedAttestation attestation : attestations) {
-      // skip signature verification, it's handled by next processor
+      // skip signature verification, it's passed on the next processor
       if (!spec.verify_attestation_impl(state, attestation.getMessage(), false)) {
-        validAttestations.add(attestation);
-      } else {
         invalid.onNext(attestation);
+        continue;
       }
-    }
 
-    outbound.onNext(Pair.with(state, validAttestations));
+      // compute and verify indexed attestation
+      IndexedAttestation indexedAttestation =
+          spec.get_indexed_attestation(state, attestation.getMessage());
+      if (!spec.is_valid_indexed_attestation_impl(state, indexedAttestation, false)) {
+        invalid.onNext(attestation);
+        continue;
+      }
+
+      // compute data required for signature verification
+      List<BLSPubkey> bit0Keys =
+          indexedAttestation.getCustodyBit0Indices().stream()
+              .map(i -> state.getValidators().get(i).getPubKey())
+              .collect(Collectors.toList());
+      List<BLSPubkey> bit1Keys =
+          indexedAttestation.getCustodyBit1Indices().stream()
+              .map(i -> state.getValidators().get(i).getPubKey())
+              .collect(Collectors.toList());
+
+      // send them to signature verifier
+      valid.onNext(
+          new SignatureVerificationSet(
+              spec.bls_aggregate_pubkeys_no_validate(bit0Keys),
+              spec.bls_aggregate_pubkeys_no_validate(bit1Keys),
+              domain,
+              attestation));
+    }
   }
 
   private BeaconState computeState(BeaconTuple rootTuple, EpochNumber targetEpoch) {
@@ -131,68 +152,7 @@ public class AttestationStateVerifier {
         rootTuple.getState(), spec.compute_start_slot_of_epoch(targetEpoch));
   }
 
-  public Publisher<ReceivedAttestation> invalid() {
-    return invalid;
-  }
-
-  private static final class StateTuple {
-    private final Checkpoint target;
-    private final Hash32 beaconBlockRoot;
-
-    private StateTuple(Checkpoint target, Hash32 beaconBlockRoot) {
-      this.target = target;
-      this.beaconBlockRoot = beaconBlockRoot;
-    }
-
-    static StateTuple from(ReceivedAttestation attestation) {
-      return new StateTuple(
-          attestation.getMessage().getData().getTarget(),
-          attestation.getMessage().getData().getBeaconBlockRoot());
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-      StateTuple that = (StateTuple) o;
-      return Objects.equal(target, that.target)
-          && Objects.equal(beaconBlockRoot, that.beaconBlockRoot);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hashCode(target, beaconBlockRoot);
-    }
-  }
-
-  private static final class Queue {
-
-    private final LinkedHashMap<StateTuple, List<ReceivedAttestation>> queue =
-        new LinkedHashMap<>();
-
-    synchronized void add(ReceivedAttestation attestation) {
-      List<ReceivedAttestation> bucket =
-          queue.computeIfAbsent(StateTuple.from(attestation), key -> new ArrayList<>());
-      bucket.add(attestation);
-    }
-
-    synchronized List<ReceivedAttestation> take() {
-      Iterator<List<ReceivedAttestation>> it = queue.values().iterator();
-      if (it.hasNext()) {
-        List<ReceivedAttestation> ret = it.next();
-        it.remove();
-        return ret;
-      } else {
-        return Collections.emptyList();
-      }
-    }
-
-    int size() {
-      return queue.size();
-    }
+  private void execute(RunnableEx routine) {
+    executor.execute(routine);
   }
 }

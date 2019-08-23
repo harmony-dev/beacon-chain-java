@@ -10,22 +10,22 @@ import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.schedulers.Schedulers;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
-public class KnownAttestations extends AbstractProcessor implements AttestationProcessor {
+public class ProcessedAttestationPool extends AbstractProcessor implements AttestationProcessor {
 
   private static final Object ENTRY = new Object();
 
-  private final LRUMap<Hash32, Object> knownAttestationsCache =
+  private final LRUMap<Hash32, Object> processedAttestationHash =
       new LRUMap<>(AttestationPool.MAX_KNOWN_ATTESTATIONS);
   private final Function<Attestation, Hash32> hasher;
 
-  public KnownAttestations(Schedulers schedulers, Function<Attestation, Hash32> hasher) {
-    super(schedulers, "KnownAttestations");
+  public ProcessedAttestationPool(Schedulers schedulers, Function<Attestation, Hash32> hasher) {
+    super(schedulers, "ProcessedAttestationPool");
     this.hasher = hasher;
   }
 
   @Override
   public void in(ReceivedAttestation attestation) {
-    Object existed = knownAttestationsCache.put(hasher.apply(attestation.getMessage()), ENTRY);
+    Object existed = processedAttestationHash.put(hasher.apply(attestation.getMessage()), ENTRY);
     if (existed == null) {
       outbound.onNext(attestation);
     }

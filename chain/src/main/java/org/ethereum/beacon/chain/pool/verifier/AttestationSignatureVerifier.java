@@ -1,25 +1,30 @@
 package org.ethereum.beacon.chain.pool.verifier;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.ethereum.beacon.chain.pool.ReceivedAttestation;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
-import org.ethereum.beacon.core.BeaconState;
-import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
-import org.ethereum.beacon.core.state.Checkpoint;
+import org.ethereum.beacon.core.operations.attestation.AttestationData;
+import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustodyBit;
+import org.ethereum.beacon.crypto.BLS381;
+import org.ethereum.beacon.crypto.BLS381.PublicKey;
+import org.ethereum.beacon.crypto.BLS381.Signature;
+import org.ethereum.beacon.crypto.MessageParameters;
 import org.ethereum.beacon.schedulers.RunnableEx;
 import org.ethereum.beacon.schedulers.Scheduler;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.stream.SimpleProcessor;
-import org.javatuples.Pair;
 import org.reactivestreams.Publisher;
+import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.collections.Bitlist;
+import tech.pegasys.artemis.util.uint.UInt64;
 
 public class AttestationSignatureVerifier {
 
-  private final Queue queue = new Queue();
   private final Scheduler executor;
   private final BeaconChainSpec spec;
 
@@ -31,8 +36,7 @@ public class AttestationSignatureVerifier {
     this.executor = executor;
     this.spec = spec;
 
-    this.valid =
-        new SimpleProcessor<>(schedulers.events(), "AttestationSignatureVerifier.valid");
+    this.valid = new SimpleProcessor<>(schedulers.events(), "AttestationSignatureVerifier.valid");
     this.invalid =
         new SimpleProcessor<>(schedulers.events(), "AttestationSignatureVerifier.invalid");
   }
@@ -41,76 +45,124 @@ public class AttestationSignatureVerifier {
     return valid;
   }
 
-  public void inbound(Pair<BeaconState, List<ReceivedAttestation>> attestationTuple) {
-    queue.add(attestationTuple);
-    execute(this::nudgeQueue);
+  public Publisher<ReceivedAttestation> invalid() {
+    return invalid;
   }
 
-  private void nudgeQueue() {
-    while (queue.size() > 0) {
-      execute(
-          () -> {
-            Pair<BeaconState, List<ReceivedAttestation>> batch = queue.take();
-            process(batch);
-          });
+  public void in(List<SignatureVerificationSet> batch) {
+    execute(
+        () -> {
+
+          // validate signature encoding format
+          List<SignatureVerificationSet> valid = new ArrayList<>();
+          for (SignatureVerificationSet set : batch) {
+            if (BLS381.Signature.validate(set.getAttestation().getMessage().getSignature())) {
+              valid.add(set);
+            } else {
+              invalid.onNext(set.getAttestation());
+            }
+          }
+
+          Map<AttestationData, List<SignatureVerificationSet>> groupedBySignedMessage =
+              valid.stream()
+                  .collect(
+                      Collectors.groupingBy(data -> data.getAttestation().getMessage().getData()));
+
+          groupedBySignedMessage.values().forEach(this::process);
+        });
+  }
+
+  private void process(List<SignatureVerificationSet> attestations) {
+    final UInt64 domain = attestations.get(0).getDomain();
+    final AttestationData data = attestations.get(0).getAttestation().getMessage().getData();
+
+    // for aggregation sake, smaller aggregates should go first
+    attestations.sort(
+        Comparator.comparing(set -> set.getAttestation().getMessage().getAggregationBits().size()));
+
+    // try to aggregate as much as we can
+    List<SignatureVerificationSet> aggregates = new ArrayList<>();
+    List<SignatureVerificationSet> nonAggregates = new ArrayList<>();
+    AggregateVerifier verifier =
+        new AggregateVerifier(spec.getConstants().getMaxValidatorsPerCommittee().getIntValue());
+    for (SignatureVerificationSet set : attestations) {
+      if (verifier.add(set)) {
+        aggregates.add(set);
+      } else {
+        nonAggregates.add(set);
+      }
+    }
+
+    // verify aggregate and fall back to one-by-one verification if it has failed
+    if (verifier.verify(spec, data, domain)) {
+      aggregates.forEach(set -> valid.onNext(set.getAttestation()));
+    } else {
+      nonAggregates = attestations;
+    }
+
+    for (SignatureVerificationSet set : nonAggregates) {
+      if (verify(spec, set, domain)) {
+        valid.onNext(set.getAttestation());
+      } else {
+        invalid.onNext(set.getAttestation());
+      }
+    }
+  }
+
+  private boolean verify(BeaconChainSpec spec, SignatureVerificationSet set, UInt64 domain) {
+    AttestationData data = set.getAttestation().getMessage().getData();
+    Hash32 bit0Hash = spec.hash_tree_root(new AttestationDataAndCustodyBit(data, false));
+    Hash32 bit1Hash = spec.hash_tree_root(new AttestationDataAndCustodyBit(data, true));
+
+    return BLS381.verifyMultiple(
+        Arrays.asList(
+            MessageParameters.create(bit0Hash, domain), MessageParameters.create(bit1Hash, domain)),
+        Signature.createWithoutValidation(set.getAttestation().getMessage().getSignature()),
+        Arrays.asList(set.getBit0AggregateKey(), set.getBit1AggregateKey()));
+  }
+
+  private static final class AggregateVerifier {
+    List<PublicKey> bit0AggregateKeys = new ArrayList<>();
+    List<PublicKey> bit1AggregateKeys = new ArrayList<>();
+    List<BLS381.Signature> signatures = new ArrayList<>();
+    Bitlist bits;
+
+    AggregateVerifier(int maxValidatorsPerCommittee) {
+      this.bits = Bitlist.of(maxValidatorsPerCommittee);
+    }
+
+    boolean add(SignatureVerificationSet set) {
+      if (!bits.and(set.getAttestation().getMessage().getAggregationBits()).isEmpty()) {
+        return false;
+      }
+
+      bit0AggregateKeys.add(set.getBit0AggregateKey());
+      bit1AggregateKeys.add(set.getBit1AggregateKey());
+      signatures.add(
+          BLS381.Signature.createWithoutValidation(
+              set.getAttestation().getMessage().getSignature()));
+
+      return true;
+    }
+
+    boolean verify(BeaconChainSpec spec, AttestationData data, UInt64 domain) {
+      PublicKey bit0Key = PublicKey.aggregate(bit0AggregateKeys);
+      PublicKey bit1Key = PublicKey.aggregate(bit1AggregateKeys);
+      Signature signature = Signature.aggregate(signatures);
+
+      Hash32 bit0Hash = spec.hash_tree_root(new AttestationDataAndCustodyBit(data, false));
+      Hash32 bit1Hash = spec.hash_tree_root(new AttestationDataAndCustodyBit(data, true));
+
+      return BLS381.verifyMultiple(
+          Arrays.asList(
+              MessageParameters.create(bit0Hash, domain),
+              MessageParameters.create(bit1Hash, domain)),
+          signature,
+          Arrays.asList(bit0Key, bit1Key));
     }
   }
 
   private void execute(RunnableEx routine) {
     executor.execute(routine);
-  }
-
-  private void process(Pair<BeaconState, List<ReceivedAttestation>> attestationTuple) {
-    if (attestationTuple.getValue1().isEmpty()) {
-      return;
-    }
-
-    final BeaconState state = attestationTuple.getValue0();
-    for (ReceivedAttestation attestation : attestationTuple.getValue1()) {
-      IndexedAttestation indexedAttestation =
-          spec.get_indexed_attestation(state, attestation.getMessage());
-      if (spec.is_valid_indexed_attestation(state, indexedAttestation)) {
-        valid.onNext(attestation);
-      } else {
-        invalid.onNext(attestation);
-      }
-    }
-  }
-
-  public Publisher<ReceivedAttestation> invalid() {
-    return invalid;
-  }
-
-  private static final class Queue {
-
-    private final LinkedHashMap<Checkpoint, Pair<BeaconState, List<ReceivedAttestation>>> queue =
-        new LinkedHashMap<>();
-
-    synchronized void add(Pair<BeaconState, List<ReceivedAttestation>> attestationTuple) {
-      if (attestationTuple.getValue1().isEmpty()) {
-        return;
-      }
-
-      Pair<BeaconState, List<ReceivedAttestation>> bucket =
-          queue.computeIfAbsent(
-              attestationTuple.getValue1().get(0).getMessage().getData().getTarget(),
-              key -> Pair.with(attestationTuple.getValue0(), new ArrayList<>()));
-      bucket.getValue1().addAll(attestationTuple.getValue1());
-    }
-
-    synchronized Pair<BeaconState, List<ReceivedAttestation>> take() {
-      Iterator<Pair<BeaconState, List<ReceivedAttestation>>> it = queue.values().iterator();
-      if (it.hasNext()) {
-        Pair<BeaconState, List<ReceivedAttestation>> ret = it.next();
-        it.remove();
-        return ret;
-      } else {
-        return Pair.with(BeaconState.getEmpty(), Collections.emptyList());
-      }
-    }
-
-    int size() {
-      return queue.size();
-    }
   }
 }
