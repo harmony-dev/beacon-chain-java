@@ -16,6 +16,7 @@ public class SszStaticTests {
   private Path SUBDIR = Paths.get("phase0", "ssz_static");
 
   @Test
+  @Ignore("Takes hours on CI")
   public void testSszStaticMinimal() {
     runSszStaticTestsInResourceDir(
         MINIMAL_TESTS,
@@ -29,7 +30,6 @@ public class SszStaticTests {
   }
 
   @Test
-  @Ignore("Takes hours on CI")
   public void testSszStaticMainnet() {
     runSszStaticTestsInResourceDir(
         MAINNET_TESTS,
