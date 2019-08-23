@@ -49,18 +49,16 @@ jobs:
 
       - run:
           name: Save commit of tests repo in env var
-          command: |
-            echo "export TESTS_REPO_COMMIT=$(eval cd $(echo $CIRCLE_WORKING_DIRECTORY)/test/src/test/resources/ && git submodule status eth2.0-spec-tests/ |  awk '{print $1;}')" >> $BASH_ENV
-            source $BASH_ENV
+          command: eval cd $(echo $CIRCLE_WORKING_DIRECTORY)/test/src/test/resources/ && git submodule status eth2.0-spec-tests/ |  awk '{print $1;}' > /tmp/tests-version
 
       - run:
           name: Verify tests repo commit is saved
-          command: echo $TESTS_REPO_COMMIT
+          command: cat /tmp/tests-version
 
       - restore_cache:
           name: Restoring spec tests repo
           keys:
-            - v1-tests-dir-{{ .Environment.TESTS_REPO_COMMIT }}
+            - v1-tests-dir-{{ checksum "/tests-version" }}
 
       - run:
           name: Running tests
@@ -100,7 +98,7 @@ jobs:
           name: Caching spec tests repo
           paths:
             - $CIRCLE_WORKING_DIRECTORY/test/src/test/resources/eth2.0-spec-tests/
-          key: v1-tests-dir-{{ .Environment.TESTS_REPO_COMMIT }}
+          key: v1-tests-dir-{{ checksum "/tests-version" }}
 
       - store_artifacts:
           name: Uploading reports
