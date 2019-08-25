@@ -3,6 +3,7 @@ package org.ethereum.beacon.ssz.access.list;
 import org.ethereum.beacon.ssz.SSZSerializeException;
 import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.type.SSZType;
+import org.ethereum.beacon.ssz.type.list.SSZListType;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.collections.ReadVector;
 
@@ -54,7 +55,8 @@ public class ReadListAccessor extends AbstractListAccessor {
     return new SimpleInstanceBuilder() {
       @Override
       protected Object buildImpl(List<Object> children) {
-        return sszType.isFixedSize()
+        SSZListType listType = (SSZListType) sszType;
+        return listType.isVector()
             ? ReadVector.wrap(
                 children,
                 resolveIndexConverter(
@@ -62,7 +64,8 @@ public class ReadListAccessor extends AbstractListAccessor {
                         sszType
                             .getTypeDescriptor()
                             .getParametrizedType()
-                            .getActualTypeArguments()[0]))
+                            .getActualTypeArguments()[0]),
+                listType.getVectorLength())
             : ReadList.wrap(
                 children,
                 resolveIndexConverter(
@@ -70,7 +73,8 @@ public class ReadListAccessor extends AbstractListAccessor {
                         sszType
                             .getTypeDescriptor()
                             .getParametrizedType()
-                            .getActualTypeArguments()[0]));
+                            .getActualTypeArguments()[0]),
+                listType.getMaxSize());
       }
     };
   }

@@ -29,15 +29,8 @@ import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
-import org.ethereum.beacon.test.type.state.StateTestCase;
-import org.ethereum.beacon.test.type.state.StateTestCase.BeaconStateData;
-import org.ethereum.beacon.test.type.state.StateTestCase.BeaconStateData.AttestationData.AttestationDataContainer;
-import org.ethereum.beacon.test.type.state.StateTestCase.BeaconStateData.BlockHeaderData;
-import org.ethereum.beacon.test.type.state.StateTestCase.BeaconStateData.CrossLinkData;
-import org.ethereum.beacon.test.type.state.StateTestCase.BeaconStateData.ValidatorData;
-import org.ethereum.beacon.test.type.state.StateTestCase.BlockData.BlockBodyData.Eth1;
-import org.ethereum.beacon.test.type.state.StateTestCase.BlockData.BlockBodyData.IndexedAttestationData;
-import org.ethereum.beacon.test.type.state.StateTestCase.BlockData.BlockBodyData.ProposerSlashingData;
+import org.ethereum.beacon.test.type.model.BeaconStateData;
+import org.ethereum.beacon.test.type.model.BlockData;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes4;
@@ -56,12 +49,12 @@ import java.util.stream.Collectors;
 public abstract class StateTestUtils {
   private StateTestUtils() {}
 
-  public static BeaconBlock parseBlockData(StateTestCase.BlockData blockData, SpecConstants constants) {
+  public static BeaconBlock parseBlockData(BlockData blockData, SpecConstants constants) {
     Eth1Data eth1Data1 = parseEth1Data(blockData.getBody().getEth1Data());
 
     // Attestations
     List<Attestation> attestations = new ArrayList<>();
-    for (StateTestCase.BeaconStateData.AttestationData attestationData :
+    for (BeaconStateData.AttestationData attestationData :
         blockData.getBody().getAttestations()) {
       AttestationData attestationData1 = parseAttestationData(attestationData.getData());
       BytesValue aggValue = BytesValue.fromHexString(attestationData.getAggregationBits());
@@ -88,7 +81,7 @@ public abstract class StateTestUtils {
 
     // Deposits
     List<Deposit> deposits = new ArrayList<>();
-    for (StateTestCase.BlockData.BlockBodyData.DepositData depositData :
+    for (BlockData.BlockBodyData.DepositData depositData :
         blockData.getBody().getDeposits()) {
       Deposit deposit = parseDeposit(depositData);
       deposits.add(deposit);
@@ -96,7 +89,7 @@ public abstract class StateTestUtils {
 
     // Proposer slashings
     List<ProposerSlashing> proposerSlashings = new ArrayList<>();
-    for (ProposerSlashingData proposerSlashingData : blockData.getBody().getProposerSlashings()) {
+    for (BlockData.BlockBodyData.ProposerSlashingData proposerSlashingData : blockData.getBody().getProposerSlashings()) {
       BeaconBlockHeader header1 =
           new BeaconBlockHeader(
               SlotNumber.castFrom(UInt64.valueOf(proposerSlashingData.getHeader1().getSlot())),
@@ -121,7 +114,7 @@ public abstract class StateTestUtils {
 
     // Transfers
     List<Transfer> transfers = new ArrayList<>();
-    for (StateTestCase.BlockData.BlockBodyData.TransferData transferData :
+    for (BlockData.BlockBodyData.TransferData transferData :
         blockData.getBody().getTransfers()) {
       Transfer transfer = parseTransfer(transferData);
       transfers.add(transfer);
@@ -158,7 +151,7 @@ public abstract class StateTestUtils {
   }
 
   public static IndexedAttestation parseSlashableAttestation(
-      IndexedAttestationData data, SpecConstants specConstants) {
+      BlockData.BlockBodyData.IndexedAttestationData data, SpecConstants specConstants) {
     return new IndexedAttestation(
         data.getCustodyBit0Indices().stream().map(ValidatorIndex::of).collect(Collectors.toList()),
         data.getCustodyBit1Indices().stream().map(ValidatorIndex::of).collect(Collectors.toList()),
@@ -215,7 +208,7 @@ public abstract class StateTestUtils {
     return state;
   }
 
-  public static List<Crosslink> parseCrosslinks(List<CrossLinkData> data) {
+  public static List<Crosslink> parseCrosslinks(List<BeaconStateData.CrossLinkData> data) {
     return data.stream().map(StateTestUtils::parseCrosslink).collect(Collectors.toList());
   }
 
@@ -232,11 +225,11 @@ public abstract class StateTestUtils {
     return data.stream().map(b -> Gwei.castFrom(UInt64.valueOf(b))).collect(Collectors.toList());
   }
 
-  public static List<ValidatorRecord> parseValidatorRegistry(List<ValidatorData> data) {
+  public static List<ValidatorRecord> parseValidatorRegistry(List<BeaconStateData.ValidatorData> data) {
     return data.stream().map(StateTestUtils::parseValidatorRecord).collect(Collectors.toList());
   }
 
-  public static ValidatorRecord parseValidatorRecord(ValidatorData data) {
+  public static ValidatorRecord parseValidatorRecord(BeaconStateData.ValidatorData data) {
     return new ValidatorRecord(
         BLSPubkey.fromHexString(data.getPubkey()),
         Hash32.fromHexString(data.getWithdrawalCredentials()),
@@ -254,14 +247,14 @@ public abstract class StateTestUtils {
         Hash32.fromHexString(data.getRoot()));
   }
 
-  public static Eth1Data parseEth1Data(Eth1 data) {
+  public static Eth1Data parseEth1Data(BlockData.BlockBodyData.Eth1 data) {
     return new Eth1Data(
         Hash32.fromHexString(data.getDepositRoot()),
         UInt64.valueOf(data.getDepositCount()),
         Hash32.fromHexString(data.getBlockHash()));
   }
 
-  public static BeaconBlockHeader parseBeaconBlockHeader(BlockHeaderData data) {
+  public static BeaconBlockHeader parseBeaconBlockHeader(BeaconStateData.BlockHeaderData data) {
     return new BeaconBlockHeader(
         SlotNumber.castFrom(UInt64.valueOf(data.getSlot())),
         Hash32.fromHexString(data.getParentRoot()),
@@ -272,7 +265,7 @@ public abstract class StateTestUtils {
             : BLSSignature.wrap(Bytes96.fromHexString(data.getSignature())));
   }
 
-  public static Deposit parseDeposit(StateTestCase.BlockData.BlockBodyData.DepositData data) {
+  public static Deposit parseDeposit(BlockData.BlockBodyData.DepositData data) {
     return Deposit.create(
         data.getProof().stream()
             .map(Hash32::fromHexString)
@@ -291,7 +284,7 @@ public abstract class StateTestUtils {
         EpochNumber.castFrom(UInt64.valueOf(data.getEpoch())));
   }
 
-  public static Crosslink parseCrosslink(CrossLinkData data) {
+  public static Crosslink parseCrosslink(BeaconStateData.CrossLinkData data) {
     return new Crosslink(
         ShardNumber.of(data.getShard()),
         Hash32.fromHexString(data.getParentRoot()),
@@ -301,7 +294,7 @@ public abstract class StateTestUtils {
   }
 
   public static PendingAttestation parsePendingAttestation(
-      StateTestCase.BeaconStateData.AttestationData attestationData, SpecConstants constants) {
+      BeaconStateData.AttestationData attestationData, SpecConstants constants) {
     BytesValue aggValue = BytesValue.fromHexString(attestationData.getAggregationBits());
     return new PendingAttestation(
         Bitlist.of(aggValue, constants.getMaxValidatorsPerCommittee().getValue()),
@@ -311,7 +304,7 @@ public abstract class StateTestUtils {
         constants);
   }
 
-  public static AttestationData parseAttestationData(AttestationDataContainer data) {
+  public static AttestationData parseAttestationData(BeaconStateData.AttestationData.AttestationDataContainer data) {
     return new AttestationData(
         Hash32.fromHexString(data.getBeaconBlockRoot()),
         parseCheckpoint(data.getSource()),
@@ -319,7 +312,7 @@ public abstract class StateTestUtils {
         parseCrosslink(data.getCrosslink()));
   }
 
-  public static Transfer parseTransfer(StateTestCase.BlockData.BlockBodyData.TransferData data) {
+  public static Transfer parseTransfer(BlockData.BlockBodyData.TransferData data) {
     return new Transfer(
         ValidatorIndex.of(data.getSender()),
         ValidatorIndex.of(data.getRecipient()),
@@ -331,7 +324,7 @@ public abstract class StateTestUtils {
   }
 
   public static VoluntaryExit parseVoluntaryExit(
-      StateTestCase.BlockData.BlockBodyData.VoluntaryExitData data) {
+      BlockData.BlockBodyData.VoluntaryExitData data) {
     return new VoluntaryExit(
         EpochNumber.castFrom(UInt64.valueOf(data.getEpoch())),
         ValidatorIndex.of(data.getValidatorIndex()),

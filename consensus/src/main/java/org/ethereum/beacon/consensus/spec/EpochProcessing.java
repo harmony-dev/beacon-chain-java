@@ -79,7 +79,7 @@ public interface EpochProcessing extends HelperFunction {
       output = set()  # type: Set[ValidatorIndex]
       for a in attestations:
           output = output.union(get_attesting_indices(state, a.data, a.aggregation_bits))
-      return set(filter(lambda index: not state.validators[index].slashed, list(output)))
+      return set(filter(lambda index: not state.validators[index].slashed, output))
    */
   default List<ValidatorIndex> get_unslashed_attesting_indices(BeaconState state, List<PendingAttestation> attestations) {
     return attestations.stream()
@@ -102,10 +102,10 @@ public interface EpochProcessing extends HelperFunction {
                                                 epoch: Epoch,
                                                 shard: Shard) -> Tuple[Crosslink, List[ValidatorIndex]]:
       attestations = [a for a in get_matching_source_attestations(state, epoch) if a.data.crosslink.shard == shard]
-      crosslinks = list(filter(
+      crosslinks = filter(
           lambda c: hash_tree_root(state.current_crosslinks[shard]) in (c.parent_root, hash_tree_root(c)),
           [a.data.crosslink for a in attestations]
-      ))
+      )
       # Winning crosslink has the crosslink data root with the most balance voting for it (ties broken lexicographically)
       winning_crosslink = max(crosslinks, key=lambda c: (
           get_attesting_balance(state, [a for a in attestations if a.data.crosslink == c]), c.data_root
@@ -594,11 +594,6 @@ public interface EpochProcessing extends HelperFunction {
                 .build());
       }
     }
-
-    /* Update start shard
-      state.latest_start_shard = (state.latest_start_shard + get_shard_delta(state, current_epoch)) % SHARD_COUNT */
-    state.setStartShard(state.getStartShard()
-        .plusModulo(get_shard_delta(state, current_epoch), getConstants().getShardCount()));
 
     /* # Set active index root
       index_epoch = Epoch(next_epoch + ACTIVATION_EXIT_DELAY)
