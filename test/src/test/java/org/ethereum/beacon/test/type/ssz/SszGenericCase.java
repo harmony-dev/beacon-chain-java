@@ -1,59 +1,53 @@
 package org.ethereum.beacon.test.type.ssz;
 
-import org.ethereum.beacon.test.type.TestCase;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.ethereum.beacon.test.type.DataMapperTestCase;
+import org.ethereum.beacon.test.type.ssz.field.MetaField;
+import org.ethereum.beacon.test.type.ssz.field.SerializedField;
+import org.ethereum.beacon.test.type.ssz.field.ValueField;
+import tech.pegasys.artemis.util.bytes.BytesValue;
 
-import java.util.List;
+import java.util.Map;
 
 /**
- * SSZ test case
+ * SSZ generic test case
  *
  * <p>Test format description: <a
  * href="https://github.com/ethereum/eth2.0-specs/tree/dev/specs/test_formats/ssz_generic">https://github.com/ethereum/eth2.0-specs/tree/dev/specs/test_formats/ssz_generic</a>
  */
-public class SszGenericCase implements TestCase {
-  private String type;
-  private String valid;
-  private String ssz;
-  private List<String> tags;
-  private String value;
+public class SszGenericCase extends DataMapperTestCase
+    implements MetaField, SerializedField, ValueField {
+  private final String typeName;
+  private final String subTypeName;
+  private final boolean valid;
 
-  public String getType() {
-    return type;
-  }
-
-  public void setType(String type) {
-    this.type = type;
-  }
-
-  public String getValid() {
-    return valid;
-  }
-
-  public void setValid(String valid) {
+  public SszGenericCase(
+      Map<String, BytesValue> files,
+      ObjectMapper objectMapper,
+      String typeName,
+      String subTypeName,
+      boolean valid,
+      String description) {
+    super(files, objectMapper, description);
+    this.typeName = typeName;
+    this.subTypeName = subTypeName;
     this.valid = valid;
   }
 
-  public String getSsz() {
-    return ssz;
+  public String getTypeName() {
+    return typeName;
   }
 
-  public void setSsz(String ssz) {
-    this.ssz = ssz;
+  public String getSubTypeName() {
+    return subTypeName;
   }
 
-  public List<String> getTags() {
-    return tags;
+  public boolean isValid() {
+    return valid;
   }
 
-  public void setTags(List<String> tags) {
-    this.tags = tags;
-  }
-
-  public String getValue() {
-    return value;
-  }
-
-  public void setValue(String value) {
-    this.value = value;
+  @Override
+  public String toString() {
+    return "SszGenericCase{" + super.toString() + '}';
   }
 }

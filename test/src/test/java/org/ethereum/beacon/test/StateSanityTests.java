@@ -1,40 +1,41 @@
 package org.ethereum.beacon.test;
 
 import org.ethereum.beacon.test.runner.state.StateRunner;
-import org.ethereum.beacon.test.type.state.StateTest;
+import org.ethereum.beacon.test.type.state.SanityBlocksCase;
+import org.ethereum.beacon.test.type.state.SanitySlotsCase;
 import org.junit.Test;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class StateSanityTests extends TestUtils {
-
-  private String SUBDIR = "sanity";
+  private Path SUBDIR = Paths.get("phase0", "sanity");
 
   @Test
   public void testSanitySlots() {
-    final String type = "slots";
-    Path testFileDir = Paths.get(PATH_TO_TESTS, SUBDIR, type);
-    runTestsInResourceDir(
-        testFileDir,
-        StateTest.class,
+    Path subDir = Paths.get(SUBDIR.toString(), "slots");
+    runSpecTestsInResourceDirs(
+        MINIMAL_TESTS,
+        MAINNET_TESTS,
+        subDir,
+        SanitySlotsCase.class,
         input -> {
-          StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1(), type);
+          StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1());
           return testRunner.run();
         });
   }
 
   @Test
   public void testSanityBlocks() {
-    final String type = "blocks";
-    Path testFileDir = Paths.get(PATH_TO_TESTS, SUBDIR, type);
-    runTestsInResourceDir(
-        testFileDir,
-        StateTest.class,
+    Path subDir = Paths.get(SUBDIR.toString(), "blocks");
+    runSpecTestsInResourceDirs(
+        MINIMAL_TESTS,
+        MAINNET_TESTS,
+        subDir,
+        SanityBlocksCase.class,
         input -> {
-          StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1(), type);
+          StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1());
           return testRunner.run();
-        },
-        Ignored.filesOf("sanity_blocks_mainnet.yaml").forCI());
+        });
   }
 }

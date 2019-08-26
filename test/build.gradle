@@ -30,6 +30,7 @@ task activateLfs(type:Exec) {
 task submodulesUpdate(type:Exec) {
   description 'Updates (and inits) git submodules'
   dependsOn(activateLfs)
+  ignoreExitValue true // CI hack for cache use
   commandLine 'git', 'submodule', 'update', '--init', '--recursive'
   group 'Build Setup'
 }

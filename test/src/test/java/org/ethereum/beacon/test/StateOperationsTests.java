@@ -1,107 +1,116 @@
 package org.ethereum.beacon.test;
 
 import org.ethereum.beacon.test.runner.state.StateRunner;
-import org.ethereum.beacon.test.type.state.StateTest;
+import org.ethereum.beacon.test.type.state.OperationAttestationCase;
+import org.ethereum.beacon.test.type.state.OperationAttesterSlashingCase;
+import org.ethereum.beacon.test.type.state.OperationBlockHeaderCase;
+import org.ethereum.beacon.test.type.state.OperationDepositCase;
+import org.ethereum.beacon.test.type.state.OperationProposerSlashingCase;
+import org.ethereum.beacon.test.type.state.OperationTransferCase;
+import org.ethereum.beacon.test.type.state.OperationVoluntaryExitCase;
 import org.junit.Test;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class StateOperationsTests extends TestUtils {
-
-  private String SUBDIR = "operations";
+  private Path SUBDIR = Paths.get("phase0", "operations");
 
   @Test
   public void testAttestationOperations() {
-    final String type = "attestation";
-    Path testFileDir = Paths.get(PATH_TO_TESTS, SUBDIR, type);
-    runTestsInResourceDir(
-        testFileDir,
-        StateTest.class,
+    Path subDir = Paths.get(SUBDIR.toString(), "attestation");
+    runSpecTestsInResourceDirs(
+        MINIMAL_TESTS,
+        MAINNET_TESTS,
+        subDir,
+        OperationAttestationCase.class,
         input -> {
-          StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1(), type);
-          return testRunner.run();
-        },
-        Ignored.filesOf("attestation_mainnet.yaml").forCI());
-  }
-
-  @Test
-  public void testAttesterSlashingOperations() {
-    final String type = "attester_slashing";
-    Path testFileDir = Paths.get(PATH_TO_TESTS, SUBDIR, type);
-    runTestsInResourceDir(
-        testFileDir,
-        StateTest.class,
-        input -> {
-          StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1(), type);
-          return testRunner.run();
-        },
-        Ignored.filesOf("attester_slashing_mainnet.yaml").forCI());
-  }
-
-  @Test
-  public void testProposerSlashingOperations() {
-    final String type = "proposer_slashing";
-    Path testFileDir = Paths.get(PATH_TO_TESTS, SUBDIR, type);
-    runTestsInResourceDir(
-        testFileDir,
-        StateTest.class,
-        input -> {
-          StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1(), type);
+          StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1());
           return testRunner.run();
         });
   }
 
   @Test
   public void testTransferOperations() {
-    final String type = "transfer";
-    Path testFileDir = Paths.get(PATH_TO_TESTS, SUBDIR, type);
-    runTestsInResourceDir(
-        testFileDir,
-        StateTest.class,
+    Path subDir = Paths.get(SUBDIR.toString(), "transfer");
+    // No mainnet tests for `transfer`s
+    runSpecTestsInResourceDir(
+        MINIMAL_TESTS,
+        subDir,
+        OperationTransferCase.class,
         input -> {
-          StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1(), type);
-          return testRunner.run();
-        });
-  }
-
-  @Test
-  public void testVoluntaryExitOperations() {
-    final String type = "voluntary_exit";
-    Path testFileDir = Paths.get(PATH_TO_TESTS, SUBDIR, type);
-    runTestsInResourceDir(
-        testFileDir,
-        StateTest.class,
-        input -> {
-          StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1(), type);
-          return testRunner.run();
-        });
-  }
-
-  @Test
-  public void testBlockProcessing() {
-    final String type = "block_header";
-    Path testFileDir = Paths.get(PATH_TO_TESTS, SUBDIR, type);
-    runTestsInResourceDir(
-        testFileDir,
-        StateTest.class,
-        input -> {
-          StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1(), type);
+          StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1());
           return testRunner.run();
         });
   }
 
   @Test
   public void testDepositOperations() {
-    final String type = "deposit";
-    Path testFileDir = Paths.get(PATH_TO_TESTS, SUBDIR, type);
-    runTestsInResourceDir(
-        testFileDir,
-        StateTest.class,
+    Path subDir = Paths.get(SUBDIR.toString(), "deposit");
+    runSpecTestsInResourceDirs(
+        MINIMAL_TESTS,
+        MAINNET_TESTS,
+        subDir,
+        OperationDepositCase.class,
         input -> {
-          StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1(), type);
+          StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1());
           return testRunner.run();
-        },
-        Ignored.filesOf("deposit_mainnet.yaml").forCI());
+        });
+  }
+
+  @Test
+  public void testAttesterSlashingOperations() {
+    Path subDir = Paths.get(SUBDIR.toString(), "attester_slashing");
+    runSpecTestsInResourceDirs(
+        MINIMAL_TESTS,
+        MAINNET_TESTS,
+        subDir,
+        OperationAttesterSlashingCase.class,
+        input -> {
+          StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1());
+          return testRunner.run();
+        });
+  }
+
+  @Test
+  public void testProposerSlashingOperations() {
+    Path subDir = Paths.get(SUBDIR.toString(), "proposer_slashing");
+    runSpecTestsInResourceDirs(
+        MINIMAL_TESTS,
+        MAINNET_TESTS,
+        subDir,
+        OperationProposerSlashingCase.class,
+        input -> {
+          StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1());
+          return testRunner.run();
+        });
+  }
+
+  @Test
+  public void testVoluntaryExitOperations() {
+    Path subDir = Paths.get(SUBDIR.toString(), "voluntary_exit");
+    runSpecTestsInResourceDirs(
+        MINIMAL_TESTS,
+        MAINNET_TESTS,
+        subDir,
+        OperationVoluntaryExitCase.class,
+        input -> {
+          StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1());
+          return testRunner.run();
+        });
+  }
+
+  @Test
+  public void testBlockProcessing() {
+    Path subDir = Paths.get(SUBDIR.toString(), "block_header");
+    runSpecTestsInResourceDirs(
+        MINIMAL_TESTS,
+        MAINNET_TESTS,
+        subDir,
+        OperationBlockHeaderCase.class,
+        input -> {
+          StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1());
+          return testRunner.run();
+        });
   }
 }

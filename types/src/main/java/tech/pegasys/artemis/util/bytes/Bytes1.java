@@ -13,11 +13,11 @@
 
 package tech.pegasys.artemis.util.bytes;
 
-import static com.google.common.base.Preconditions.checkArgument;
-
 import tech.pegasys.artemis.util.uint.Int256;
 import tech.pegasys.artemis.util.uint.UInt256;
 import tech.pegasys.artemis.util.uint.UInt256Bytes;
+
+import static com.google.common.base.Preconditions.checkArgument;
 
 
 /**
@@ -59,6 +59,11 @@ public interface Bytes1 extends BytesValue {
   static Bytes1 wrap(byte[] bytes) {
     checkArgument(bytes.length == SIZE, "Expected %s bytes but got %s", SIZE, bytes.length);
     return new ArrayWrappingBytes1(bytes);
+  }
+
+  /** Wraps one byte */
+  static Bytes1 wrap(byte b) {
+    return new ArrayWrappingBytes1(new byte[] {b});
   }
 
   /**

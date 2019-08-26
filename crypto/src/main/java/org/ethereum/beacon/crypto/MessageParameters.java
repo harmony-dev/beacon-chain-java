@@ -1,9 +1,7 @@
 package org.ethereum.beacon.crypto;
 
 import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes8;
-import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 /**
@@ -16,6 +14,14 @@ import tech.pegasys.artemis.util.uint.UInt64;
  *     href="https://github.com/ethereum/eth2.0-specs/blob/master/specs/bls_signature.md">https://github.com/ethereum/eth2.0-specs/blob/master/specs/bls_signature.md</a>
  */
 public interface MessageParameters {
+
+  static MessageParameters create(Hash32 hash, Bytes8 domain) {
+    return new Impl(hash, domain);
+  }
+
+  static MessageParameters create(Hash32 hash, UInt64 domain) {
+    return new Impl(hash, domain.toBytes8LittleEndian());
+  }
 
   /**
    * Returns a hash of the message.
@@ -30,14 +36,6 @@ public interface MessageParameters {
    * @return domain value.
    */
   Bytes8 getDomain();
-
-  static MessageParameters create(Hash32 hash, Bytes8 domain) {
-    return new Impl(hash, domain);
-  }
-
-  static MessageParameters create(Hash32 hash, UInt64 domain) {
-    return new Impl(hash, domain.toBytesBigEndian());
-  }
 
   /** A straightforward implementation of {@link MessageParameters}. */
   class Impl implements MessageParameters {
