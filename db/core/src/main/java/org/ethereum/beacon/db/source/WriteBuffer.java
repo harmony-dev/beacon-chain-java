@@ -23,6 +23,9 @@ public class WriteBuffer<K, V> extends AbstractLinkedDataSource<K, V, K, V>
   /** A buffer. */
   private final Map<K, CacheEntry<V>> buffer = new HashMap<>();
 
+  /** A writer to the upstream. */
+  private final UpstreamWriter upstreamWriter;
+
   /** A size evaluator. */
   private final CacheSizeEvaluator<K, V> sizeEvaluator;
 
@@ -42,6 +45,7 @@ public class WriteBuffer<K, V> extends AbstractLinkedDataSource<K, V, K, V>
     Objects.requireNonNull(sizeEvaluator);
 
     this.sizeEvaluator = sizeEvaluator;
+    this.upstreamWriter = createUpstreamWriter();
   }
 
   public WriteBuffer(@Nonnull final DataSource<K, V> upstreamSource, final boolean upstreamFlush) {
@@ -88,14 +92,7 @@ public class WriteBuffer<K, V> extends AbstractLinkedDataSource<K, V, K, V>
   @Override
   public void doFlush() {
     try (AutoCloseableLock rl = updateLock.lock()) {
-      for (Map.Entry<K, CacheEntry<V>> entry : buffer.entrySet()) {
-        if (entry.getValue() == CacheEntry.REMOVED) {
-          getUpstream().remove(entry.getKey());
-        } else {
-          getUpstream().put(entry.getKey(), entry.getValue().value);
-        }
-      }
-
+      upstreamWriter.write();
       reset();
     }
   }
@@ -145,6 +142,61 @@ public class WriteBuffer<K, V> extends AbstractLinkedDataSource<K, V, K, V>
 
     private Optional<V> getValue() {
       return Optional.ofNullable(value);
+    }
+  }
+
+  private UpstreamWriter createUpstreamWriter() {
+    if (getUpstream() instanceof BatchUpdateDataSource) {
+      return new BatchWriter((BatchUpdateDataSource<K, V>) getUpstream());
+    } else {
+      return new StreamWriter(getUpstream());
+    }
+  }
+
+  /**
+   * An upstream writer interface.
+   *
+   * <p>There are two kind of implementation:
+   *
+   * <ul>
+   *   <li>One to work with general {@link DataSource} classes.
+   *   <li>One specific to {@link BatchUpdateDataSource} sources.
+   * </ul>
+   *
+   * <p><strong>Note:</strong> Instantiated by {@link #createUpstreamWriter()} depending on the type
+   * of upstream source.
+   */
+  private interface UpstreamWriter {
+    void write();
+  }
+
+  private final class StreamWriter implements UpstreamWriter {
+
+    private final DataSource<K, V> upstream;
+
+    private StreamWriter(DataSource<K, V> upstream) {
+      this.upstream = upstream;
+    }
+
+    @Override
+    public void write() {
+      buffer.forEach((key, value) -> upstream.put(key, value.value));
+    }
+  }
+
+  private final class BatchWriter implements UpstreamWriter {
+
+    private final BatchUpdateDataSource<K, V> upstream;
+
+    private BatchWriter(BatchUpdateDataSource<K, V> upstream) {
+      this.upstream = upstream;
+    }
+
+    @Override
+    public void write() {
+      Map<K, V> updates = new HashMap<>();
+      buffer.forEach((key, value) -> updates.put(key, value.value));
+      upstream.batchUpdate(updates);
     }
   }
 }
