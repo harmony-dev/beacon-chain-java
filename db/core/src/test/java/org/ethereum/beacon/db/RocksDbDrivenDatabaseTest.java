@@ -1,20 +1,18 @@
 package org.ethereum.beacon.db;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-
-import java.io.IOException;
 import org.ethereum.beacon.db.source.DataSource;
 import org.ethereum.beacon.db.util.FileUtil;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.*;
 import tech.pegasys.artemis.util.bytes.BytesValue;
+
+import java.io.IOException;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RocksDbDrivenDatabaseTest {
 
-  @After
-  @Before
+  @AfterEach
+  @BeforeEach
   public void cleanUp() throws IOException {
     FileUtil.removeRecursively("test-db");
   }
@@ -33,36 +31,36 @@ public class RocksDbDrivenDatabaseTest {
     dos.put(wrap("FOUR"), wrap("DOS_FOURTH"));
 
     db.commit();
-    assertEquals(wrap("FIRST"), uno.get(wrap("ONE")).get());
-    assertEquals(wrap("SECOND"), uno.get(wrap("TWO")).get());
-    assertEquals(wrap("SECOND"), dos.get(wrap("TWO")).get());
-    assertEquals(wrap("UNO_THIRD"), uno.get(wrap("THREE")).get());
-    assertEquals(wrap("DOS_FOURTH"), dos.get(wrap("FOUR")).get());
-    assertFalse(uno.get(wrap("FOUR")).isPresent());
-    assertFalse(dos.get(wrap("ONE")).isPresent());
-    assertFalse(dos.get(wrap("THREE")).isPresent());
-    assertFalse(uno.get(wrap("FOUR")).isPresent());
+    assertThat(wrap("FIRST")).isEqualTo(uno.get(wrap("ONE")).get());
+    assertThat(wrap("SECOND")).isEqualTo(uno.get(wrap("TWO")).get());
+    assertThat(wrap("SECOND")).isEqualTo(dos.get(wrap("TWO")).get());
+    assertThat(wrap("UNO_THIRD")).isEqualTo(uno.get(wrap("THREE")).get());
+    assertThat(wrap("DOS_FOURTH")).isEqualTo(dos.get(wrap("FOUR")).get());
+    assertThat(uno.get(wrap("FOUR"))).isNotPresent();
+    assertThat(dos.get(wrap("ONE"))).isNotPresent();
+    assertThat(dos.get(wrap("THREE"))).isNotPresent();
+    assertThat(uno.get(wrap("FOUR"))).isNotPresent();
 
     uno.remove(wrap("TWO"));
     dos.put(wrap("THREE"), wrap("DOS_THIRD"));
 
-    assertFalse(uno.get(wrap("TWO")).isPresent());
-    assertEquals(wrap("DOS_THIRD"), dos.get(wrap("THREE")).get());
-    assertEquals(wrap("UNO_THIRD"), uno.get(wrap("THREE")).get());
+    assertThat(uno.get(wrap("TWO"))).isNotPresent();
+    assertThat(wrap("DOS_THIRD")).isEqualTo(dos.get(wrap("THREE")).get());
+    assertThat(wrap("UNO_THIRD")).isEqualTo(uno.get(wrap("THREE")).get());
 
     db.commit();
-    assertFalse(uno.get(wrap("TWO")).isPresent());
-    assertEquals(wrap("DOS_THIRD"), dos.get(wrap("THREE")).get());
-    assertEquals(wrap("UNO_THIRD"), uno.get(wrap("THREE")).get());
+    assertThat(uno.get(wrap("TWO"))).isNotPresent();
+    assertThat(wrap("DOS_THIRD")).isEqualTo(dos.get(wrap("THREE")).get());
+    assertThat(wrap("UNO_THIRD")).isEqualTo(uno.get(wrap("THREE")).get());
 
     dos.remove(wrap("FOUR"));
     uno.put(wrap("FOUR"), wrap("UNO_FOURTH"));
-    assertEquals(wrap("UNO_FOURTH"), uno.get(wrap("FOUR")).get());
-    assertFalse(dos.get(wrap("FOUR")).isPresent());
+    assertThat(wrap("UNO_FOURTH")).isEqualTo(uno.get(wrap("FOUR")).get());
+    assertThat(dos.get(wrap("FOUR"))).isNotPresent();
 
     db.commit();
-    assertEquals(wrap("UNO_FOURTH"), uno.get(wrap("FOUR")).get());
-    assertFalse(dos.get(wrap("FOUR")).isPresent());
+    assertThat(wrap("UNO_FOURTH")).isEqualTo(uno.get(wrap("FOUR")).get());
+    assertThat(dos.get(wrap("FOUR"))).isNotPresent();
 
     db.close();
   }
@@ -81,9 +79,9 @@ public class RocksDbDrivenDatabaseTest {
 
     storage = db.createStorage("uno");
 
-    assertEquals(wrap("FIRST"), storage.get(wrap("ONE")).get());
-    assertEquals(wrap("SECOND"), storage.get(wrap("TWO")).get());
-    assertEquals(wrap("THIRD"), storage.get(wrap("THREE")).get());
+    assertThat(wrap("FIRST")).isEqualTo(storage.get(wrap("ONE")).get());
+    assertThat(wrap("SECOND")).isEqualTo(storage.get(wrap("TWO")).get());
+    assertThat(wrap("THIRD")).isEqualTo(storage.get(wrap("THREE")).get());
 
     db.close();
   }

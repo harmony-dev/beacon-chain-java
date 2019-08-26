@@ -1,6 +1,6 @@
 package org.ethereum.beacon.db.source;
 
-import org.junit.*;
+import org.junit.jupiter.api.*;
 
 import java.util.*;
 
@@ -16,7 +16,7 @@ public class HoleyListTest {
 
     private HoleyList<String> list;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         list = new HoleyList<String>() {
             private final Map<Long, String> store = new HashMap<>();
@@ -50,7 +50,6 @@ public class HoleyListTest {
     @Test
     public void testAddNull() {
         list.put(TEST_KEY_0, TEST_VALUE);
-        final long indexToAdd = list.size();
         list.add(null);
 
         assertThat(list.size()).isEqualTo(1);

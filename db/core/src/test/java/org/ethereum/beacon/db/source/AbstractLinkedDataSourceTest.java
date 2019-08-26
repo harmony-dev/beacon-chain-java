@@ -1,7 +1,7 @@
 package org.ethereum.beacon.db.source;
 
 import org.ethereum.beacon.db.source.impl.HashMapDataSource;
-import org.junit.*;
+import org.junit.jupiter.api.*;
 
 import javax.annotation.Nonnull;
 import java.util.Optional;
@@ -15,10 +15,9 @@ public class AbstractLinkedDataSourceTest {
     private final String TEST_FLUSH = "flush";
     private final String TEST_DO_FLUSH = "do_flush";
 
-
     private AbstractLinkedDataSource<String, String, String, String> dataSource;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         dataSource = new AbstractLinkedDataSource<String, String, String, String>(new HashMapDataSource<>()) {
             public Optional<String> get(@Nonnull String key) {
@@ -38,7 +37,7 @@ public class AbstractLinkedDataSourceTest {
     }
 
     @Test
-    public void testValidSourceCreation() {
+    public void testInvalidSourceCreation() {
         assertThatThrownBy(() -> new AbstractLinkedDataSource(null) {
             public Optional get(@Nonnull Object key) {
                 return Optional.empty();

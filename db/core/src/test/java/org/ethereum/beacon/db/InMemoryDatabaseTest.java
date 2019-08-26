@@ -1,25 +1,22 @@
 package org.ethereum.beacon.db;
 
-import com.pholser.junit.quickcheck.Property;
-import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import org.ethereum.beacon.db.source.DataSource;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@RunWith(JUnitQuickcheck.class)
 public class InMemoryDatabaseTest {
 
-    private final String TEST_KEY = "TEST_KEY";
-
-    @Property
-    public void testGetBackingDataSource() {
+    @ParameterizedTest
+    @ValueSource(strings = {"TEST_KEY"})
+    public void testGetBackingDataSource(String param) {
         final InMemoryDatabase database = new InMemoryDatabase();
         final DataSource<BytesValue, BytesValue> dataSource = database.getBackingDataSource();
         assertThat(dataSource).isNotNull();
 
-        final BytesValue key = BytesValue.wrap(TEST_KEY.getBytes());
+        final BytesValue key = BytesValue.wrap(param.getBytes());
         final BytesValue value = BytesValue.EMPTY;
         dataSource.put(key, value);
 

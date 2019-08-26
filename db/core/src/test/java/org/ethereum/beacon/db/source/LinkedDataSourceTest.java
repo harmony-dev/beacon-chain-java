@@ -1,7 +1,7 @@
 package org.ethereum.beacon.db.source;
 
 import org.ethereum.beacon.db.source.impl.HashMapDataSource;
-import org.junit.*;
+import org.junit.jupiter.api.*;
 
 import javax.annotation.Nonnull;
 import java.util.Optional;
@@ -13,7 +13,7 @@ public class LinkedDataSourceTest {
 
     private LinkedDataSource<String, String, String, String> dataSource;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         dataSource = new LinkedDataSource<String, String, String, String>() {
             public Optional<String> get(@Nonnull String key) {

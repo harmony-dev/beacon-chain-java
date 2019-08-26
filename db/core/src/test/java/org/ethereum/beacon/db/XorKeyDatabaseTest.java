@@ -1,61 +1,58 @@
 package org.ethereum.beacon.db;
 
-import com.pholser.junit.quickcheck.*;
-import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
-import org.ethereum.beacon.db.configuration.*;
 import org.ethereum.beacon.db.source.DataSource;
-import org.junit.runner.RunWith;
+import org.ethereum.beacon.db.source.impl.HashMapDataSource;
+import org.junit.jupiter.api.*;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@RunWith(JUnitQuickcheck.class)
 public class XorKeyDatabaseTest {
 
-    private final String TEST_STORAGE_NAME = "TEST_STORAGE_NAME";
-    private final String TEST_ENTITY_KEY = "TEST_ENTITY_KEY";
+  private XorKeyDatabase db;
 
-    @Property
-    public void testCreateStorage(@From(HashMapDatasourceGenerator.class) DataSource<@From(EmptyBytesValueGenerator.class) BytesValue, @From(EmptyBytesValueGenerator.class) BytesValue> backingDataSource,
-                                  @From(EmptyFunctionGenerator.class) Function<@From(EmptyBytesValueGenerator.class) BytesValue, @From(EmptyBytesValueGenerator.class) BytesValue> sourceNameHasher) {
+  @BeforeEach
+  public void setUp() {
+    final HashMapDataSource<BytesValue, BytesValue> mapds = new HashMapDataSource<>();
+    db = new XorKeyDatabase(mapds, Function.identity()) {
+      @Override
+      public void commit() {
+      }
 
-        final XorKeyDatabase database = new XorKeyDatabase(backingDataSource, sourceNameHasher) {
-            @Override
-            public void commit() {
-            }
+      @Override
+      public void close() {
+      }
+    };
+  }
 
-            @Override
-            public void close() {
-            }
-        };
+  @Test
+  public void testCreateStorage_EmptyStorage() {
+    final DataSource<BytesValue, BytesValue> storage1 = db.createStorage("Storage1");
+    storage1.put(BytesValue.of(1, 2, 3), BytesValue.of(1, 4));
+    assertThat(storage1.get(BytesValue.of(1, 2, 3))).isPresent();
+  }
 
-        final DataSource<BytesValue, BytesValue> storage = database.createStorage(TEST_STORAGE_NAME);
-        assertThat(storage).isNotNull();
+  @Test
+  public void testCreateStorage() {
+    final DataSource<BytesValue, BytesValue> storage0 = db.createStorage("Storage1");
+    storage0.put(BytesValue.of(1, 2, 3), BytesValue.of(1, 4));
+    final DataSource<BytesValue, BytesValue> storage1 = db.createStorage("Storage1");
+    assertThat(storage1.get(BytesValue.of(1, 2, 3))).isPresent();
+  }
 
-        final BytesValue key = BytesValue.wrap(TEST_ENTITY_KEY.getBytes());
-        final BytesValue value = BytesValue.EMPTY;
-        storage.put(key, value);
-        assertThat(storage.get(key)).isPresent().hasValue(value);
-    }
+  @Test
+  public void testCreateStorage_1() {
+    final DataSource<BytesValue, BytesValue> storage0 = db.createStorage("Storage1");
+    storage0.put(BytesValue.of(1, 2, 3), BytesValue.of(1, 4));
+    final DataSource<BytesValue, BytesValue> storage1 = db.createStorage("Storage2");
+    assertThat(storage1.get(BytesValue.of(1, 2, 3))).isNotPresent();
+    storage1.put(BytesValue.of(1, 2, 3), BytesValue.of(1, 4, 5));
+    assertThat(storage1.get(BytesValue.of(1, 2, 3))).isPresent();
+    assertThat(storage1.get(BytesValue.of(1, 2, 3)).get()).isEqualTo(BytesValue.of(1, 4, 5));
 
-    @Property
-    public void testGetBackingDataSource(@From(HashMapDatasourceGenerator.class) DataSource<@From(EmptyBytesValueGenerator.class) BytesValue, @From(EmptyBytesValueGenerator.class) BytesValue> backingDataSource,
-                                         @From(EmptyFunctionGenerator.class) Function<@From(EmptyBytesValueGenerator.class) BytesValue, @From(EmptyBytesValueGenerator.class) BytesValue> sourceNameHasher) {
-
-        final XorKeyDatabase actual = new XorKeyDatabase(backingDataSource, sourceNameHasher) {
-            @Override
-            public void commit() {
-            }
-
-            @Override
-            public void close() {
-            }
-        };
-
-        assertThat(actual).isNotNull();
-        assertThat(actual.getBackingDataSource()).isNotNull();
-        assertThat(actual.getBackingDataSource()).isEqualTo(backingDataSource);
-    }
+    assertThat(storage0.get(BytesValue.of(1, 2, 3))).isPresent();
+    assertThat(storage0.get(BytesValue.of(1, 2, 3)).get()).isEqualTo(BytesValue.of(1, 4));
+  }
 }

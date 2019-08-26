@@ -1,6 +1,10 @@
 package org.ethereum.beacon.db.source.impl;
 
-import org.junit.*;
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.*;
+
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Java6Assertions.assertThatThrownBy;
@@ -13,7 +17,7 @@ public class DelegateDataSourceTest {
 
     private DelegateDataSource<String, String> delegateDataSource;
 
-    @Before
+    @BeforeEach
     public void setUp() {
         delegateDataSource = new DelegateDataSource<>(new HashMapDataSource<>());
         assertThat(delegateDataSource).isNotNull();
@@ -28,14 +32,17 @@ public class DelegateDataSourceTest {
         assertThat(delegateDataSource.get(TEST_KEY)).isNotPresent();
     }
 
-    @Test
-    public void testNullKey() {
-        assertThatThrownBy(() -> delegateDataSource.put(null, TEST_VALUE)).isInstanceOf(NullPointerException.class);
+    @ParameterizedTest
+    @MethodSource("nullArgumentsProvider")
+    public void testInvalidSourceCreation(String key, String value) {
+        assertThatThrownBy(() -> delegateDataSource.put(key, value)).isInstanceOf(NullPointerException.class);
     }
 
-    @Test
-    public void testNullValue() {
-        assertThatThrownBy(() -> delegateDataSource.put(TEST_KEY, null)).isInstanceOf(NullPointerException.class);
+    private static Stream<Arguments> nullArgumentsProvider() {
+        return Stream.of(
+                Arguments.of(null, "test_value"),
+                Arguments.of("test_key", null)
+        );
     }
 
     @Test
