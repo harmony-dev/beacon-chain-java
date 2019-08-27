@@ -130,7 +130,13 @@ public class WriteBuffer<K, V> extends AbstractLinkedDataSource<K, V, K, V>
    */
   private static final class CacheEntry<V> {
 
-    /** Indicates removed value. */
+    /**
+     * Indicates removed value.
+     *
+     * <p><strong>Note:</strong> passing a {@code null} value to {@code REMOVED} entry to keep an
+     * invariant for {@link BatchUpdateDataSource#batchUpdate(Map)}: {@code null} entries are meant
+     * to be deleted by the upstream source.
+     */
     private static final CacheEntry REMOVED = CacheEntry.of(null);
 
     private V value;
