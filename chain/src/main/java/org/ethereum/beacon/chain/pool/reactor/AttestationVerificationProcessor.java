@@ -4,12 +4,8 @@ import java.util.List;
 import java.util.stream.Stream;
 import org.ethereum.beacon.chain.pool.CheckedAttestation;
 import org.ethereum.beacon.chain.pool.ReceivedAttestation;
-import org.ethereum.beacon.chain.pool.verifier.AttestationVerifier;
 import org.ethereum.beacon.chain.pool.verifier.BatchVerifier;
 import org.ethereum.beacon.chain.pool.verifier.VerificationResult;
-import org.ethereum.beacon.chain.storage.BeaconTupleStorage;
-import org.ethereum.beacon.consensus.BeaconChainSpec;
-import org.ethereum.beacon.consensus.transition.EmptySlotTransition;
 import org.ethereum.beacon.stream.AbstractDelegateProcessor;
 
 public class AttestationVerificationProcessor
@@ -17,11 +13,8 @@ public class AttestationVerificationProcessor
 
   private final BatchVerifier verifier;
 
-  public AttestationVerificationProcessor(
-      BeaconTupleStorage tupleStorage,
-      BeaconChainSpec spec,
-      EmptySlotTransition emptySlotTransition) {
-    this.verifier = new AttestationVerifier(tupleStorage, spec, emptySlotTransition);
+  public AttestationVerificationProcessor(BatchVerifier verifier) {
+    this.verifier = verifier;
   }
 
   @Override

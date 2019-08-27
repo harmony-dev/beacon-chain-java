@@ -1,5 +1,6 @@
 package org.ethereum.beacon.chain.pool;
 
+import org.ethereum.beacon.chain.pool.checker.SanityChecker;
 import org.ethereum.beacon.chain.pool.checker.SignatureEncodingChecker;
 import org.ethereum.beacon.chain.pool.churn.OffChainAggregates;
 import org.ethereum.beacon.chain.pool.reactor.AttestationChurnProcessor;
@@ -8,6 +9,8 @@ import org.ethereum.beacon.chain.pool.reactor.IdentifyProcessor;
 import org.ethereum.beacon.chain.pool.reactor.Input;
 import org.ethereum.beacon.chain.pool.reactor.SanityCheckProcessor;
 import org.ethereum.beacon.chain.pool.registry.ProcessedAttestations;
+import org.ethereum.beacon.chain.pool.registry.UnknownAttestationPool;
+import org.ethereum.beacon.chain.pool.verifier.BatchVerifier;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.types.SlotNumber;
@@ -45,24 +48,23 @@ public class InMemoryAttestationPool implements AttestationPool {
       Publisher<BeaconBlock> importedBlocks,
       Publisher<BeaconBlock> chainHeads,
       Schedulers schedulers,
-      SanityCheckProcessor sanityChecker,
+      SanityChecker sanityChecker,
       SignatureEncodingChecker encodingChecker,
       ProcessedAttestations processedFilter,
-      IdentifyProcessor identifier,
-      AttestationVerificationProcessor verifier,
-      AttestationChurnProcessor churn) {
+      UnknownAttestationPool unknownAttestationPool,
+      BatchVerifier batchVerifier) {
     this.source = source;
     this.newSlots = newSlots;
     this.finalizedCheckpoints = finalizedCheckpoints;
     this.importedBlocks = importedBlocks;
     this.chainHeads = chainHeads;
     this.schedulers = schedulers;
-    this.sanityChecker = sanityChecker;
+    this.sanityChecker = new SanityCheckProcessor(sanityChecker);
     this.encodingChecker = encodingChecker;
     this.processedFilter = processedFilter;
-    this.identifier = identifier;
-    this.verifier = verifier;
-    this.churn = churn;
+    this.identifier = new IdentifyProcessor(unknownAttestationPool);
+    this.verifier = new AttestationVerificationProcessor(batchVerifier);
+    this.churn = new AttestationChurnProcessor();
   }
 
   @Override

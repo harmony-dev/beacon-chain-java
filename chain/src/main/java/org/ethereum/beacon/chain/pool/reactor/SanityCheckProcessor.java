@@ -3,7 +3,6 @@ package org.ethereum.beacon.chain.pool.reactor;
 import org.ethereum.beacon.chain.pool.CheckedAttestation;
 import org.ethereum.beacon.chain.pool.ReceivedAttestation;
 import org.ethereum.beacon.chain.pool.checker.SanityChecker;
-import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.stream.AbstractDelegateProcessor;
@@ -12,8 +11,8 @@ public class SanityCheckProcessor extends AbstractDelegateProcessor<Input, Check
 
   private final SanityChecker checker;
 
-  public SanityCheckProcessor(BeaconChainSpec spec) {
-    this.checker = new SanityChecker(spec);
+  public SanityCheckProcessor(SanityChecker checker) {
+    this.checker = checker;
   }
 
   @Override

@@ -9,11 +9,12 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 
 public class ProcessedAttestations implements AttestationRegistry {
   private static final Object ENTRY = new Object();
-  private final LRUMap<Hash32, Object> cache = new LRUMap<>(AttestationPool.MAX_KNOWN_ATTESTATIONS);
+  private final LRUMap<Hash32, Object> cache;
   private final Function<Attestation, Hash32> hasher;
 
-  public ProcessedAttestations(Function<Attestation, Hash32> hasher) {
+  public ProcessedAttestations(Function<Attestation, Hash32> hasher, int size) {
     this.hasher = hasher;
+    this.cache = new LRUMap<>(size);
   }
 
   @Override

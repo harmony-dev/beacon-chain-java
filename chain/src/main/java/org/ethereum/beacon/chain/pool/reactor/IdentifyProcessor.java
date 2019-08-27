@@ -2,8 +2,6 @@ package org.ethereum.beacon.chain.pool.reactor;
 
 import org.ethereum.beacon.chain.pool.ReceivedAttestation;
 import org.ethereum.beacon.chain.pool.registry.UnknownAttestationPool;
-import org.ethereum.beacon.chain.storage.BeaconBlockStorage;
-import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.stream.AbstractDelegateProcessor;
@@ -16,8 +14,8 @@ public class IdentifyProcessor extends AbstractDelegateProcessor<Input, Received
   private final DirectProcessor<ReceivedAttestation> unknownAttestations = DirectProcessor.create();
   private final FluxSink<ReceivedAttestation> unknownOut = unknownAttestations.sink();
 
-  public IdentifyProcessor(BeaconBlockStorage blockStorage, BeaconChainSpec spec) {
-    this.pool = new UnknownAttestationPool(blockStorage, spec);
+  public IdentifyProcessor(UnknownAttestationPool pool) {
+    this.pool = pool;
   }
 
   @Override

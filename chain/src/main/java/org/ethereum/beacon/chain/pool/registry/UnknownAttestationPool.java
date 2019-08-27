@@ -2,7 +2,6 @@ package org.ethereum.beacon.chain.pool.registry;
 
 import java.util.Collections;
 import java.util.List;
-import org.ethereum.beacon.chain.pool.AttestationPool;
 import org.ethereum.beacon.chain.pool.ReceivedAttestation;
 import org.ethereum.beacon.chain.pool.StatefulProcessor;
 import org.ethereum.beacon.chain.storage.BeaconBlockStorage;
@@ -16,19 +15,21 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 public class UnknownAttestationPool implements AttestationRegistry, StatefulProcessor {
 
   /** prev + curr + lookahead */
-  private static final EpochNumber TRACKED_EPOCHS =
-      EpochNumber.of(2).plus(AttestationPool.MAX_ATTESTATION_LOOKAHEAD);
+  private final EpochNumber trackedEpochs;
 
-  private final Queue queue = new Queue(TRACKED_EPOCHS, AttestationPool.UNKNOWN_BLOCK_POOL_SIZE);
+  private final Queue queue;
 
   private final BeaconBlockStorage blockStorage;
   private final BeaconChainSpec spec;
 
   private EpochNumber currentBaseLine;
 
-  public UnknownAttestationPool(BeaconBlockStorage blockStorage, BeaconChainSpec spec) {
+  public UnknownAttestationPool(
+      BeaconBlockStorage blockStorage, BeaconChainSpec spec, EpochNumber lookahead, long size) {
     this.blockStorage = blockStorage;
     this.spec = spec;
+    this.trackedEpochs = EpochNumber.of(2).plus(lookahead);
+    this.queue = new Queue(trackedEpochs, size);
   }
 
   @Override
@@ -49,7 +50,7 @@ public class UnknownAttestationPool implements AttestationRegistry, StatefulProc
     EpochNumber blockEpoch = spec.compute_epoch_of_slot(block.getSlot());
     // blockEpoch < currentBaseLine || blockEpoch >= currentBaseLine + TRACKED_EPOCHS
     if (blockEpoch.less(currentBaseLine)
-        || blockEpoch.greaterEqual(currentBaseLine.plus(TRACKED_EPOCHS))) {
+        || blockEpoch.greaterEqual(currentBaseLine.plus(trackedEpochs))) {
       return Collections.emptyList();
     }
 
