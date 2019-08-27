@@ -1,4 +1,4 @@
-package org.ethereum.beacon.chain.pool.unknown;
+package org.ethereum.beacon.chain.pool.registry;
 
 import java.util.ArrayList;
 import java.util.Collections;

@@ -1,55 +1,30 @@
-package org.ethereum.beacon.chain.pool.basic;
+package org.ethereum.beacon.chain.pool.checker;
 
-import com.google.common.annotations.VisibleForTesting;
-import org.ethereum.beacon.chain.pool.AbstractVerifier;
 import org.ethereum.beacon.chain.pool.AttestationPool;
-import org.ethereum.beacon.chain.pool.AttestationVerifier;
 import org.ethereum.beacon.chain.pool.ReceivedAttestation;
+import org.ethereum.beacon.chain.pool.StatefulProcessor;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
-import org.ethereum.beacon.schedulers.Schedulers;
-import org.reactivestreams.Publisher;
-import reactor.core.publisher.Flux;
 
-public class LightVerifier extends AbstractVerifier implements AttestationVerifier {
+public class SanityChecker implements AttestationChecker, StatefulProcessor {
 
   private final BeaconChainSpec spec;
 
   private Checkpoint finalizedCheckpoint;
   private EpochNumber maxAcceptableEpoch;
 
-  public LightVerifier(
-      Schedulers schedulers,
-      Publisher<Checkpoint> finalizedCheckpoint,
-      Publisher<SlotNumber> slotClock,
-      BeaconChainSpec spec) {
-    super(schedulers, "BasicVerifier");
-
+  public SanityChecker(BeaconChainSpec spec) {
     this.spec = spec;
-    Flux.from(finalizedCheckpoint).subscribe(this::onNewFinalizedCheckpoint);
-    Flux.from(slotClock).subscribe(this::onNewSlot);
   }
 
   @Override
-  public void in(ReceivedAttestation attestation) {
-    if (!isInitialized()) {
-      return;
-    }
+  public boolean check(ReceivedAttestation attestation) {
+    assert isStateReady();
 
-    if (isValid(attestation)) {
-      valid.onNext(attestation);
-    } else {
-      invalid.onNext(attestation);
-    }
-  }
-
-  private boolean isValid(ReceivedAttestation attestation) {
     final AttestationData data = attestation.getMessage().getData();
-    final Checkpoint finalizedCheckpoint = this.finalizedCheckpoint;
-    final EpochNumber maxAcceptableEpoch = this.maxAcceptableEpoch;
 
     // sourceEpoch >= targetEpoch
     if (data.getSource().getEpoch().greaterEqual(data.getTarget().getEpoch())) {
@@ -85,24 +60,17 @@ public class LightVerifier extends AbstractVerifier implements AttestationVerifi
     return true;
   }
 
-  @VisibleForTesting
-  void onNewFinalizedCheckpoint(Checkpoint checkpoint) {
+  public void feedFinalizedCheckpoint(Checkpoint checkpoint) {
     this.finalizedCheckpoint = checkpoint;
   }
 
-  @VisibleForTesting
-  void onNewSlot(SlotNumber slot) {
+  public void feedNewSlot(SlotNumber newSlot) {
     this.maxAcceptableEpoch =
-        spec.compute_epoch_of_slot(slot).plus(AttestationPool.MAX_ATTESTATION_LOOKAHEAD);
-  }
-
-  @VisibleForTesting
-  boolean isInitialized() {
-    return finalizedCheckpoint != null && maxAcceptableEpoch != null;
+        spec.compute_epoch_of_slot(newSlot).plus(AttestationPool.MAX_ATTESTATION_LOOKAHEAD);
   }
 
   @Override
-  public Publisher<ReceivedAttestation> invalid() {
-    return invalid;
+  public boolean isStateReady() {
+    return finalizedCheckpoint != null && maxAcceptableEpoch != null;
   }
 }

@@ -1,4 +1,4 @@
-package org.ethereum.beacon.chain.pool;
+package org.ethereum.beacon.chain.pool.churn;
 
 import java.util.List;
 import org.ethereum.beacon.core.operations.Attestation;

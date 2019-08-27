@@ -1,12 +1,13 @@
 package org.ethereum.beacon.chain.pool;
 
 import java.time.Duration;
+import org.ethereum.beacon.chain.pool.churn.OffChainAggregates;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.reactivestreams.Publisher;
 
 public interface AttestationPool {
 
-  int MAX_THREADS = Runtime.getRuntime().availableProcessors();
+  int MAX_THREADS = 32;
 
   EpochNumber MAX_ATTESTATION_LOOKAHEAD = EpochNumber.of(1);
 
@@ -18,13 +19,13 @@ public interface AttestationPool {
 
   Duration VERIFIER_INTERVAL = Duration.ofMillis(50);
 
-  Publisher<ReceivedAttestation> valid();
+  Publisher<ReceivedAttestation> getValid();
 
-  Publisher<ReceivedAttestation> invalid();
+  Publisher<ReceivedAttestation> getInvalid();
 
-  Publisher<ReceivedAttestation> unknownBlock();
+  Publisher<ReceivedAttestation> getUnknownAttestations();
 
-  Publisher<OffChainAggregates> aggregates();
+  Publisher<OffChainAggregates> getAggregates();
 
   void start();
 }

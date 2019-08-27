@@ -896,7 +896,12 @@ public interface HelperFunction extends SpecCommons {
     }
 
     List<PublicKey> publicKeys = publicKeysBytes.stream().map(PublicKey::create).collect(toList());
-    return PublicKey.aggregate(publicKeys);
+
+    if (publicKeys.size() == 1) {
+      return publicKeys.get(0);
+    } else {
+      return PublicKey.aggregate(publicKeys);
+    }
   }
 
   default PublicKey bls_aggregate_pubkeys_no_validate(List<BLSPubkey> publicKeysBytes) {
@@ -906,7 +911,12 @@ public interface HelperFunction extends SpecCommons {
 
     List<PublicKey> publicKeys =
         publicKeysBytes.stream().map(PublicKey::createWithoutValidation).collect(toList());
-    return PublicKey.aggregate(publicKeys);
+
+    if (publicKeys.size() == 1) {
+      return publicKeys.get(0);
+    } else {
+      return PublicKey.aggregate(publicKeys);
+    }
   }
 
   /*
