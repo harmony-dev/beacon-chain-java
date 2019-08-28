@@ -22,7 +22,7 @@ public class SanityChecker implements AttestationChecker, StatefulProcessor {
 
   @Override
   public boolean check(ReceivedAttestation attestation) {
-    assert isStateReady();
+    assert isInitialized();
 
     final AttestationData data = attestation.getMessage().getData();
 
@@ -70,7 +70,7 @@ public class SanityChecker implements AttestationChecker, StatefulProcessor {
   }
 
   @Override
-  public boolean isStateReady() {
+  public boolean isInitialized() {
     return finalizedCheckpoint != null && maxAcceptableEpoch != null;
   }
 }

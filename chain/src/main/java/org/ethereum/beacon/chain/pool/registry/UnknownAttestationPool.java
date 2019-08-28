@@ -34,6 +34,8 @@ public class UnknownAttestationPool implements AttestationRegistry, StatefulProc
 
   @Override
   public boolean add(ReceivedAttestation attestation) {
+    assert isInitialized();
+
     AttestationData data = attestation.getMessage().getData();
 
     // beacon block has not yet been imported
@@ -69,7 +71,8 @@ public class UnknownAttestationPool implements AttestationRegistry, StatefulProc
     this.currentBaseLine = baseLine;
   }
 
-  public boolean isStateReady() {
+  @Override
+  public boolean isInitialized() {
     return currentBaseLine != null;
   }
 }

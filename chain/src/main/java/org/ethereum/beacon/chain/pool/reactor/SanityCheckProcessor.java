@@ -22,7 +22,9 @@ public class SanityCheckProcessor extends AbstractDelegateProcessor<Input, Check
     } else if (value.getType().equals(SlotNumber.class)) {
       checker.feedNewSlot(value.unbox());
     } else if (value.getType().equals(ReceivedAttestation.class)) {
-      publishOut(new CheckedAttestation(checker.check(value.unbox()), value.unbox()));
+      if (checker.isInitialized()) {
+        publishOut(new CheckedAttestation(checker.check(value.unbox()), value.unbox()));
+      }
     } else {
       throw new IllegalArgumentException(
           "Unsupported input type: " + value.getType().getSimpleName());

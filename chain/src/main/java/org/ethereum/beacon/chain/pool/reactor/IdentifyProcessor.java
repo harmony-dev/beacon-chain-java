@@ -26,12 +26,14 @@ public class IdentifyProcessor extends AbstractDelegateProcessor<Input, Received
     } else if (value.getType().equals(SlotNumber.class)) {
       pool.feedNewSlot(value.unbox());
     } else if (value.getType().equals(ReceivedAttestation.class)) {
-      if (!pool.add(value.unbox())) {
-        // forward attestations not added to the pool
-        publishOut(value.unbox());
-      } else {
-        // expose not yet identified attestations
-        unknownOut.next(value.unbox());
+      if (pool.isInitialized()) {
+        if (!pool.add(value.unbox())) {
+          // forward attestations not added to the pool
+          publishOut(value.unbox());
+        } else {
+          // expose not yet identified attestations
+          unknownOut.next(value.unbox());
+        }
       }
     } else {
       throw new IllegalArgumentException(
