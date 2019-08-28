@@ -1,5 +1,6 @@
 package org.ethereum.beacon.chain.pool;
 
+/** A simple DTO that carries an attestation and a result of some check run against it. */
 public class CheckedAttestation {
   private final boolean passed;
   private final ReceivedAttestation attestation;

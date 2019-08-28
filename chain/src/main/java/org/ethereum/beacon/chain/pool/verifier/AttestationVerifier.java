@@ -12,6 +12,7 @@ import org.ethereum.beacon.chain.BeaconTuple;
 import org.ethereum.beacon.chain.pool.ReceivedAttestation;
 import org.ethereum.beacon.chain.storage.BeaconTupleStorage;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
+import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.transition.EmptySlotTransition;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
@@ -22,10 +23,41 @@ import org.ethereum.beacon.core.types.EpochNumber;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
 
+/**
+ * An implementation of {@link BatchVerifier}.
+ *
+ * <p>There are three steps of batch verification:
+ *
+ * <ul>
+ *   <li>Group batch by beacon block root and target.
+ *   <li>Calculate state for each group and run checks against this state.
+ *   <li>Pass group onto signature verifier.
+ * </ul>
+ *
+ * <p>Current implementation relies on {@link AggregateSignatureVerifier} which is pretty efficient.
+ * {@link AggregateSignatureVerifier} tries to first aggregate attestations and then verify a
+ * signature of that aggregate in a single operation instead of verifying signature of each
+ * standalone attestation. A group succeeded with state verification is next passed onto signature
+ * verifier. A nice part of it is that aggregatable attestation groups are subsets of groups made
+ * against attestation target.
+ *
+ * <p>Verification hierarchy can be represented with a diagram:
+ *
+ * <pre>
+ *                        attestation_batch
+ *                       /                 \
+ * state:               target_1 ... target_N
+ *                     /        \
+ * signature:  aggregate_1 ... aggregate_N
+ * </pre>
+ */
 public class AttestationVerifier implements BatchVerifier {
 
+  /** A beacon tuple storage. */
   private final BeaconTupleStorage tupleStorage;
+  /** A beacon chain spec. */
   private final BeaconChainSpec spec;
+  /** An empty slot transition. */
   private final EmptySlotTransition emptySlotTransition;
 
   public AttestationVerifier(
@@ -47,6 +79,13 @@ public class AttestationVerifier implements BatchVerifier {
         .reduce(VerificationResult.EMPTY, VerificationResult::merge);
   }
 
+  /**
+   * Verifies a group of attestations with the same target.
+   *
+   * @param target a target.
+   * @param group a group.
+   * @return result of verification.
+   */
   private VerificationResult verifyGroup(AttestingTarget target, List<ReceivedAttestation> group) {
     Optional<BeaconTuple> rootTuple = tupleStorage.get(target.blockRoot);
 
@@ -71,7 +110,8 @@ public class AttestationVerifier implements BatchVerifier {
     }
 
     // compute state and domain, there must be the same state for all attestations
-    final BeaconState state = computeState(rootTuple.get(), target.checkpoint.getEpoch());
+    final BeaconState state =
+        computeState(rootTuple.get().getState(), target.checkpoint.getEpoch());
     final UInt64 domain = spec.get_domain(state, ATTESTATION, target.checkpoint.getEpoch());
     final AggregateSignatureVerifier signatureVerifier =
         new AggregateSignatureVerifier(spec, domain);
@@ -80,7 +120,7 @@ public class AttestationVerifier implements BatchVerifier {
     for (ReceivedAttestation attestation : group) {
       Optional<IndexedAttestation> result = verifyIndexed(state, attestation.getMessage());
       if (result.isPresent()) {
-        signatureVerifier.feed(state, result.get(), attestation);
+        signatureVerifier.add(state, result.get(), attestation);
       } else {
         invalid.add(attestation);
       }
@@ -90,6 +130,21 @@ public class AttestationVerifier implements BatchVerifier {
     return VerificationResult.allInvalid(invalid).merge(signatureResult);
   }
 
+  /**
+   * This method does two things:
+   *
+   * <ul>
+   *   <li>Runs main checks defined in the spec; these checks verifies attestation against a state
+   *       it's been made upon.
+   *   <li>Computes {@link IndexedAttestation} and runs checks against it omitting signature
+   *       verification.
+   * </ul>
+   *
+   * @param state a state attestation built upon.
+   * @param attestation an attestation.
+   * @return an optional filled with {@link IndexedAttestation} instance if verification passed
+   *     successfully, empty optional box is returned otherwise.
+   */
   private Optional<IndexedAttestation> verifyIndexed(BeaconState state, Attestation attestation) {
     // skip indexed attestation verification, it's explicitly done in the next step
     if (!spec.verify_attestation_impl(state, attestation, false)) {
@@ -106,19 +161,30 @@ public class AttestationVerifier implements BatchVerifier {
     return Optional.of(indexedAttestation);
   }
 
-  private BeaconState computeState(BeaconTuple rootTuple, EpochNumber targetEpoch) {
-    EpochNumber beaconBlockEpoch = spec.compute_epoch_of_slot(rootTuple.getState().getSlot());
+  /**
+   * Given epoch and beacon state computes a state that attestation built upon.
+   *
+   * @param state a state after attestation beacon block has been imported.
+   * @param targetEpoch target epoch of attestation.
+   * @return computed state.
+   */
+  private BeaconState computeState(BeaconStateEx state, EpochNumber targetEpoch) {
+    EpochNumber beaconBlockEpoch = spec.compute_epoch_of_slot(state.getSlot());
 
     // block is in the same epoch, no additional state is required to be built
     if (beaconBlockEpoch.equals(targetEpoch)) {
-      return rootTuple.getState();
+      return state;
     }
 
     // build a state at epoch boundary, it must be enough to proceed
-    return emptySlotTransition.apply(
-        rootTuple.getState(), spec.compute_start_slot_of_epoch(targetEpoch));
+    return emptySlotTransition.apply(state, spec.compute_start_slot_of_epoch(targetEpoch));
   }
 
+  /**
+   * A wrapper for attestation target checkpoint and beacon block root.
+   *
+   * <p>This is the entity which initial verification groups are built around.
+   */
   private static final class AttestingTarget {
 
     static AttestingTarget from(ReceivedAttestation attestation) {

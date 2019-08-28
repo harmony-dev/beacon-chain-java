@@ -1,7 +1,14 @@
 package org.ethereum.beacon.chain.pool.reactor;
 
+/**
+ * Facilitate an ability heterogeneous
+ *
+ */
 public class Input {
 
+  /**
+   * Wrapped value
+   */
   private final Object value;
 
   private Input(Object value) {

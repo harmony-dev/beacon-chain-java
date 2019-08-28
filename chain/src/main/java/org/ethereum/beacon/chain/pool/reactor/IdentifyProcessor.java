@@ -8,6 +8,24 @@ import org.ethereum.beacon.stream.AbstractDelegateProcessor;
 import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.FluxSink;
 
+/**
+ * Processor throttling attestations through {@link UnknownAttestationPool}.
+ *
+ * <p>Input:
+ *
+ * <ul>
+ *   <li>newly imported blocks
+ *   <li>new slots
+ *   <li>attestations
+ * </ul>
+ *
+ * <p>Output:
+ *
+ * <ul>
+ *   <li>instantly identified attestations
+ *   <li>attestations identified upon a new block come
+ * </ul>
+ */
 public class IdentifyProcessor extends AbstractDelegateProcessor<Input, ReceivedAttestation> {
 
   private final UnknownAttestationPool pool;

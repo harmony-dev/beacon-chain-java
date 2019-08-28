@@ -27,10 +27,10 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
  *       upstream processor.
  * </ul>
  *
- * <p>Attestations that haven't been identified for a certain perido of time are purged from the
- * pool. This part of the logic is based on {@link #feedNewSlot(SlotNumber)} calls. Effectively,
- * pool contains attestation which target epoch lays between {@code previous_epoch} and {@code
- * current_epoch + epoch_lookahead}.
+ * <p>Attestations that haven't been identified for a certain period of time are purged from the
+ * queue and eventually discarded. This part of the logic is based on {@link
+ * #feedNewSlot(SlotNumber)} calls. Effectively, queue contains attestation which target epoch lays
+ * between {@code previous_epoch} and {@code current_epoch + epoch_lookahead}.
  *
  * <p><strong>Note:</strong> this implementation is not thread-safe.
  */

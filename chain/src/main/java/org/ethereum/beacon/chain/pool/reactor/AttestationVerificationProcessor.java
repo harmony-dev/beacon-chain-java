@@ -8,6 +8,21 @@ import org.ethereum.beacon.chain.pool.verifier.BatchVerifier;
 import org.ethereum.beacon.chain.pool.verifier.VerificationResult;
 import org.ethereum.beacon.stream.AbstractDelegateProcessor;
 
+/**
+ * A processor that throttles attestations through {@link BatchVerifier}.
+ *
+ * <p>Input:
+ *
+ * <ul>
+ *   <li>a list of {@link ReceivedAttestation}
+ * </ul>
+ *
+ * <p>Output:
+ *
+ * <ul>
+ *   <li>attestations tagged with verification flag
+ * </ul>
+ */
 public class AttestationVerificationProcessor
     extends AbstractDelegateProcessor<List<ReceivedAttestation>, CheckedAttestation> {
 

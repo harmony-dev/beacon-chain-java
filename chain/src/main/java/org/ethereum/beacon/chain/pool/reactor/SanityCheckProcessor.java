@@ -6,6 +6,22 @@ import org.ethereum.beacon.chain.pool.checker.SanityChecker;
 import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.stream.AbstractDelegateProcessor;
 
+/**
+ * Processor throttling attestations through a {@link SanityChecker}.
+ *
+ * <p>Input:
+ *
+ * <ul>
+ *   <li>recently finalized checkpoints.
+ *   <li>attestations.
+ * </ul>
+ *
+ * <p>Output:
+ *
+ * <ul>
+ *   <li>attestations tagged with the check flag.
+ * </ul>
+ */
 public class SanityCheckProcessor extends AbstractDelegateProcessor<Input, CheckedAttestation> {
 
   private final SanityChecker checker;

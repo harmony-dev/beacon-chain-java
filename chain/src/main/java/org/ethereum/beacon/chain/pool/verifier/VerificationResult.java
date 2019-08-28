@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.List;
 import org.ethereum.beacon.chain.pool.ReceivedAttestation;
 
+/** Result of attestation batch verification. Contains a list of valid and invalid attestations. */
 public final class VerificationResult {
 
   static VerificationResult allInvalid(List<ReceivedAttestation> attestations) {

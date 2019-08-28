@@ -7,6 +7,23 @@ import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.stream.AbstractDelegateProcessor;
 
+/**
+ * Processor throttling attestations through a {@link TimeFrameFilter}.
+ *
+ * <p>Input:
+ *
+ * <ul>
+ *   <li>recently finalized checkpoints.
+ *   <li>new slots.
+ *   <li>attestations.
+ * </ul>
+ *
+ * <p>Output:
+ *
+ * <ul>
+ *   <li>attestations tagged with the check flag.
+ * </ul>
+ */
 public class TimeFrameProcessor extends AbstractDelegateProcessor<Input, CheckedAttestation> {
 
   private final TimeFrameFilter filter;

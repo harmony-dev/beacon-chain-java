@@ -12,31 +12,59 @@ import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustodyBit;
 import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
-import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.crypto.BLS381;
 import org.ethereum.beacon.crypto.BLS381.PublicKey;
 import org.ethereum.beacon.crypto.BLS381.Signature;
 import org.ethereum.beacon.crypto.MessageParameters;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.collections.Bitlist;
 import tech.pegasys.artemis.util.uint.UInt64;
 
-public class AggregateSignatureVerifier implements SignatureVerifier {
+/**
+ * An implementation of aggregate-then-verify strategy.
+ *
+ * <p>In a few words this strategy looks as follows:
+ *
+ * <ol>
+ *   <li>Aggregate as much attestation as we can.
+ *   <li>Verify aggregate signature.
+ *   <li>Verify signatures of attestations that aren't aggregated in a one-by-one fashion.
+ * </ol>
+ *
+ * <p>If second step fails verification falls back to one-by-one strategy.
+ */
+public class AggregateSignatureVerifier {
+
+  /** A beacon chain spec. */
   private final BeaconChainSpec spec;
+  /** A domain which attestation signatures has been created with. */
   private final UInt64 domain;
+  /** Verification churn. */
   private final List<VerifiableAttestation> attestations = new ArrayList<>();
 
-  public AggregateSignatureVerifier(BeaconChainSpec spec, UInt64 domain) {
+  AggregateSignatureVerifier(BeaconChainSpec spec, UInt64 domain) {
     this.spec = spec;
     this.domain = domain;
   }
 
-  @Override
-  public void feed(BeaconState state, IndexedAttestation indexed, ReceivedAttestation attestation) {
+  /**
+   * Adds an attestation to the verification churn.
+   *
+   * @param state a state attestation built upon.
+   * @param indexed an instance of corresponding {@link IndexedAttestation}.
+   * @param attestation an attestation itself.
+   */
+  void add(BeaconState state, IndexedAttestation indexed, ReceivedAttestation attestation) {
     attestations.add(VerifiableAttestation.create(spec, state, indexed, attestation));
   }
 
-  @Override
+  /**
+   * Verifies previously added attestation.
+   *
+   * <p>First, attestations are grouped by {@link AttestationData} and then each group is passed
+   * onto {@link #verifyGroup(AttestationData, List)}.
+   *
+   * @return a result of singature verification.
+   */
   public VerificationResult verify() {
     Map<AttestationData, List<VerifiableAttestation>> signedMessageGroups =
         attestations.stream().collect(Collectors.groupingBy(VerifiableAttestation::getData));
@@ -46,6 +74,13 @@ public class AggregateSignatureVerifier implements SignatureVerifier {
         .reduce(VerificationResult.EMPTY, VerificationResult::merge);
   }
 
+  /**
+   * Verifies a group of attestations signing the same {@link AttestationData}.
+   *
+   * @param data attestation data.
+   * @param group a group.
+   * @return a result of verification.
+   */
   private VerificationResult verifyGroup(AttestationData data, List<VerifiableAttestation> group) {
     final List<ReceivedAttestation> valid = new ArrayList<>();
     final List<ReceivedAttestation> invalid = new ArrayList<>();
@@ -59,10 +94,10 @@ public class AggregateSignatureVerifier implements SignatureVerifier {
     AggregateSignature aggregate = new AggregateSignature();
     for (VerifiableAttestation attestation : group) {
       if (aggregate.add(
-          attestation.aggregationBits,
-          attestation.bit0Key,
-          attestation.bit1Key,
-          attestation.signature)) {
+          attestation.getAggregationBits(),
+          attestation.getBit0Key(),
+          attestation.getBit1Key(),
+          attestation.getSignature())) {
         aggregated.add(attestation);
       } else {
         notAggregated.add(attestation);
@@ -77,16 +112,26 @@ public class AggregateSignatureVerifier implements SignatureVerifier {
     }
 
     for (VerifiableAttestation attestation : notAggregated) {
-      if (verifySignature(data, attestation.bit0Key, attestation.bit1Key, attestation.signature)) {
-        valid.add(attestation.attestation);
+      if (verifySignature(
+          data, attestation.getBit0Key(), attestation.getBit1Key(), attestation.getSignature())) {
+        valid.add(attestation.getAttestation());
       } else {
-        invalid.add(attestation.attestation);
+        invalid.add(attestation.getAttestation());
       }
     }
 
     return new VerificationResult(valid, invalid);
   }
 
+  /**
+   * Verifies single signature.
+   *
+   * @param data a data being signed.
+   * @param bit0Key a bit0 public key.
+   * @param bit1Key a bit1 public key.
+   * @param signature a signature.
+   * @return {@code true} if signature is valid, {@code false} otherwise.
+   */
   private boolean verifySignature(
       AttestationData data, PublicKey bit0Key, PublicKey bit1Key, Signature signature) {
     Hash32 bit0Hash = spec.hash_tree_root(new AttestationDataAndCustodyBit(data, false));
@@ -97,109 +142,5 @@ public class AggregateSignatureVerifier implements SignatureVerifier {
             MessageParameters.create(bit0Hash, domain), MessageParameters.create(bit1Hash, domain)),
         signature,
         Arrays.asList(bit0Key, bit1Key));
-  }
-
-  private static final class AggregateSignature {
-    private Bitlist bits;
-    private List<PublicKey> key0s = new ArrayList<>();
-    private List<PublicKey> key1s = new ArrayList<>();
-    private List<BLS381.Signature> sigs = new ArrayList<>();
-
-    boolean add(Bitlist bits, PublicKey key0, PublicKey key1, BLS381.Signature sig) {
-      // if bits has intersection it's not possible to get a viable aggregate
-      if (this.bits != null && !this.bits.and(bits).isEmpty()) {
-        return false;
-      }
-
-      if (this.bits == null) {
-        this.bits = bits;
-      } else {
-        this.bits = this.bits.or(bits);
-      }
-
-      key0s.add(key0);
-      key1s.add(key1);
-      sigs.add(sig);
-
-      return true;
-    }
-
-    PublicKey getKey0() {
-      return PublicKey.aggregate(key0s);
-    }
-
-    PublicKey getKey1() {
-      return PublicKey.aggregate(key1s);
-    }
-
-    Signature getSignature() {
-      return Signature.aggregate(sigs);
-    }
-  }
-
-  private static final class VerifiableAttestation {
-
-    static VerifiableAttestation create(
-        BeaconChainSpec spec,
-        BeaconState state,
-        IndexedAttestation indexed,
-        ReceivedAttestation attestation) {
-
-      List<BLSPubkey> bit0Keys =
-          indexed.getCustodyBit0Indices().stream()
-              .map(i -> state.getValidators().get(i).getPubKey())
-              .collect(Collectors.toList());
-      List<BLSPubkey> bit1Keys =
-          indexed.getCustodyBit1Indices().stream()
-              .map(i -> state.getValidators().get(i).getPubKey())
-              .collect(Collectors.toList());
-
-      // pre-process aggregated pubkeys
-      PublicKey bit0AggregateKey = spec.bls_aggregate_pubkeys_no_validate(bit0Keys);
-      PublicKey bit1AggregateKey = spec.bls_aggregate_pubkeys_no_validate(bit1Keys);
-
-      return new VerifiableAttestation(
-          attestation,
-          attestation.getMessage().getData(),
-          attestation.getMessage().getAggregationBits(),
-          bit0AggregateKey,
-          bit1AggregateKey,
-          BLS381.Signature.createWithoutValidation(attestation.getMessage().getSignature()));
-    }
-
-    private final ReceivedAttestation attestation;
-
-    private final AttestationData data;
-    private final Bitlist aggregationBits;
-    private final PublicKey bit0Key;
-    private final PublicKey bit1Key;
-    private final BLS381.Signature signature;
-
-    public VerifiableAttestation(
-        ReceivedAttestation attestation,
-        AttestationData data,
-        Bitlist aggregationBits,
-        PublicKey bit0Key,
-        PublicKey bit1Key,
-        Signature signature) {
-      this.attestation = attestation;
-      this.data = data;
-      this.aggregationBits = aggregationBits;
-      this.bit0Key = bit0Key;
-      this.bit1Key = bit1Key;
-      this.signature = signature;
-    }
-
-    public AttestationData getData() {
-      return data;
-    }
-
-    public Bitlist getAggregationBits() {
-      return aggregationBits;
-    }
-
-    public ReceivedAttestation getAttestation() {
-      return attestation;
-    }
   }
 }

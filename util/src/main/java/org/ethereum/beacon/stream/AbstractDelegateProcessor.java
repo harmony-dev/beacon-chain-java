@@ -4,8 +4,21 @@ import javax.annotation.Nonnull;
 import org.reactivestreams.Subscription;
 import reactor.core.CoreSubscriber;
 import reactor.core.publisher.BaseSubscriber;
+import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.FluxProcessor;
 
+/**
+ * An abstract processor built atop of reactor abstractions.
+ *
+ * <p>Delegates to {@link OutsourcePublisher} which it its turn delegates to {@link
+ * DirectProcessor}.
+ *
+ * <p><b>Note: </b> DirectProcessor does not coordinate backpressure between its Subscribers and the
+ * upstream, but consumes its upstream in an * unbounded manner.
+ *
+ * @param <IN> a kind of input data.
+ * @param <OUT> a kind of output data.
+ */
 public abstract class AbstractDelegateProcessor<IN, OUT> extends FluxProcessor<IN, OUT> {
 
   private final Subscriber subscriber;
@@ -48,8 +61,18 @@ public abstract class AbstractDelegateProcessor<IN, OUT> extends FluxProcessor<I
     }
   }
 
+  /**
+   * Called when there is a new input value.
+   *
+   * @param value a value.
+   */
   protected abstract void hookOnNext(IN value);
 
+  /**
+   * Should be called in order to publish a new value.
+   *
+   * @param value a value.
+   */
   protected void publishOut(OUT value) {
     publisher.publishOut(value);
   }
