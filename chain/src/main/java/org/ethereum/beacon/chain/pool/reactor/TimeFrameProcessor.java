@@ -2,25 +2,28 @@ package org.ethereum.beacon.chain.pool.reactor;
 
 import org.ethereum.beacon.chain.pool.CheckedAttestation;
 import org.ethereum.beacon.chain.pool.ReceivedAttestation;
-import org.ethereum.beacon.chain.pool.checker.SanityChecker;
+import org.ethereum.beacon.chain.pool.checker.TimeFrameFilter;
 import org.ethereum.beacon.core.state.Checkpoint;
+import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.stream.AbstractDelegateProcessor;
 
-public class SanityCheckProcessor extends AbstractDelegateProcessor<Input, CheckedAttestation> {
+public class TimeFrameProcessor extends AbstractDelegateProcessor<Input, CheckedAttestation> {
 
-  private final SanityChecker checker;
+  private final TimeFrameFilter filter;
 
-  public SanityCheckProcessor(SanityChecker checker) {
-    this.checker = checker;
+  public TimeFrameProcessor(TimeFrameFilter filter) {
+    this.filter = filter;
   }
 
   @Override
   protected void hookOnNext(Input value) {
     if (value.getType().equals(Checkpoint.class)) {
-      checker.feedFinalizedCheckpoint(value.unbox());
+      filter.feedFinalizedCheckpoint(value.unbox());
+    } else if (value.getType().equals(SlotNumber.class)) {
+      filter.feedNewSlot(value.unbox());
     } else if (value.getType().equals(ReceivedAttestation.class)) {
-      if (checker.isInitialized()) {
-        publishOut(new CheckedAttestation(checker.check(value.unbox()), value.unbox()));
+      if (filter.isInitialized()) {
+        publishOut(new CheckedAttestation(filter.check(value.unbox()), value.unbox()));
       }
     } else {
       throw new IllegalArgumentException(

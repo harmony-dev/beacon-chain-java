@@ -1,20 +1,25 @@
 package org.ethereum.beacon.chain.pool.checker;
 
-import org.ethereum.beacon.chain.pool.AttestationPool;
 import org.ethereum.beacon.chain.pool.ReceivedAttestation;
 import org.ethereum.beacon.chain.pool.StatefulProcessor;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.state.Checkpoint;
-import org.ethereum.beacon.core.types.EpochNumber;
-import org.ethereum.beacon.core.types.SlotNumber;
 
+/**
+ * Given attestation runs a number of sanity checks against it.
+ *
+ * <p>This is one of the first processors in attestation pool pipeline. Attestations that are not
+ * passing these checks SHOULD be considered invalid.
+ *
+ * <p><strong>Note:</strong> this implementation is not thread-safe.
+ */
 public class SanityChecker implements AttestationChecker, StatefulProcessor {
 
+  /** A beacon chain spec. */
   private final BeaconChainSpec spec;
-
+  /** Most recent finalized checkpoint. */
   private Checkpoint finalizedCheckpoint;
-  private EpochNumber maxAcceptableEpoch;
 
   public SanityChecker(BeaconChainSpec spec) {
     this.spec = spec;
@@ -28,21 +33,6 @@ public class SanityChecker implements AttestationChecker, StatefulProcessor {
 
     // sourceEpoch >= targetEpoch
     if (data.getSource().getEpoch().greaterEqual(data.getTarget().getEpoch())) {
-      return false;
-    }
-
-    // targetEpoch <= finalizedEpoch
-    if (data.getTarget().getEpoch().lessEqual(finalizedCheckpoint.getEpoch())) {
-      return false;
-    }
-
-    // sourceEpoch < finalizedEpoch
-    if (data.getSource().getEpoch().lessEqual(finalizedCheckpoint.getEpoch())) {
-      return false;
-    }
-
-    // targetEpoch > maxAcceptableEpoch
-    if (data.getTarget().getEpoch().greater(maxAcceptableEpoch)) {
       return false;
     }
 
@@ -60,17 +50,19 @@ public class SanityChecker implements AttestationChecker, StatefulProcessor {
     return true;
   }
 
+  /**
+   * Update the most recent finalized checkpoint.
+   *
+   * <p>This method should be called each time new finalized checkpoint appears.
+   *
+   * @param checkpoint finalized checkpoint.
+   */
   public void feedFinalizedCheckpoint(Checkpoint checkpoint) {
     this.finalizedCheckpoint = checkpoint;
   }
 
-  public void feedNewSlot(SlotNumber newSlot) {
-    this.maxAcceptableEpoch =
-        spec.compute_epoch_of_slot(newSlot).plus(AttestationPool.MAX_ATTESTATION_LOOKAHEAD);
-  }
-
   @Override
   public boolean isInitialized() {
-    return finalizedCheckpoint != null && maxAcceptableEpoch != null;
+    return finalizedCheckpoint != null;
   }
 }

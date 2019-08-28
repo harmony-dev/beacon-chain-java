@@ -4,6 +4,11 @@ import java.util.List;
 import org.ethereum.beacon.core.operations.Attestation;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
+/**
+ * A DTO for aggregated attestations that are not yet included on chain.
+ *
+ * <p>Beacon block proposer should be fed with this data.
+ */
 public class OffChainAggregates {
   private final Hash32 blockRoot;
   private final List<Attestation> aggregates;
