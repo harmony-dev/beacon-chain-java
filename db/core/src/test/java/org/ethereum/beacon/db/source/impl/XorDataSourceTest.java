@@ -3,14 +3,13 @@ package org.ethereum.beacon.db.source.impl;
 
 import org.junit.Test;
 import tech.pegasys.artemis.util.bytes.BytesValue;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
 
 public class XorDataSourceTest {
 
     @Test
-    public void testInvalidSourceCreation() {
+    public void testDataSourceCreation() {
         assertThatThrownBy(() -> new XorDataSource<>(null, BytesValue.EMPTY))
                 .isInstanceOf(NullPointerException.class);
 
