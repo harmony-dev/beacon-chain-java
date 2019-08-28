@@ -24,11 +24,11 @@ import org.ethereum.beacon.stream.AbstractDelegateProcessor;
  *   <li>attestations tagged with the check flag.
  * </ul>
  */
-public class TimeFrameProcessor extends AbstractDelegateProcessor<Object, CheckedAttestation> {
+public class TimeProcessor extends AbstractDelegateProcessor<Object, CheckedAttestation> {
 
   private final TimeFrameFilter filter;
 
-  public TimeFrameProcessor(TimeFrameFilter filter) {
+  public TimeProcessor(TimeFrameFilter filter) {
     this.filter = filter;
   }
 

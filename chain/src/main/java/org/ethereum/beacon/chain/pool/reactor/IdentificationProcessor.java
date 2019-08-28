@@ -26,13 +26,13 @@ import reactor.core.publisher.FluxSink;
  *   <li>attestations identified upon a new block come
  * </ul>
  */
-public class IdentifyProcessor extends AbstractDelegateProcessor<Object, ReceivedAttestation> {
+public class IdentificationProcessor extends AbstractDelegateProcessor<Object, ReceivedAttestation> {
 
   private final UnknownAttestationPool pool;
   private final DirectProcessor<ReceivedAttestation> unknownAttestations = DirectProcessor.create();
   private final FluxSink<ReceivedAttestation> unknownOut = unknownAttestations.sink();
 
-  public IdentifyProcessor(UnknownAttestationPool pool) {
+  public IdentificationProcessor(UnknownAttestationPool pool) {
     this.pool = pool;
   }
 

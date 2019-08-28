@@ -23,12 +23,12 @@ import org.ethereum.beacon.stream.AbstractDelegateProcessor;
  *   <li>attestations tagged with verification flag
  * </ul>
  */
-public class AttestationVerificationProcessor
+public class VerificationProcessor
     extends AbstractDelegateProcessor<List<ReceivedAttestation>, CheckedAttestation> {
 
   private final BatchVerifier verifier;
 
-  public AttestationVerificationProcessor(BatchVerifier verifier) {
+  public VerificationProcessor(BatchVerifier verifier) {
     this.verifier = verifier;
   }
 

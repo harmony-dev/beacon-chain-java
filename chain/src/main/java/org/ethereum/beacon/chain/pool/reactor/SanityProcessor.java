@@ -22,11 +22,11 @@ import org.ethereum.beacon.stream.AbstractDelegateProcessor;
  *   <li>attestations tagged with the check flag.
  * </ul>
  */
-public class SanityCheckProcessor extends AbstractDelegateProcessor<Object, CheckedAttestation> {
+public class SanityProcessor extends AbstractDelegateProcessor<Object, CheckedAttestation> {
 
   private final SanityChecker checker;
 
-  public SanityCheckProcessor(SanityChecker checker) {
+  public SanityProcessor(SanityChecker checker) {
     this.checker = checker;
   }
 

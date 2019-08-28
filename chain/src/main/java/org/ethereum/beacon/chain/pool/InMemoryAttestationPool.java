@@ -4,11 +4,11 @@ import org.ethereum.beacon.chain.pool.checker.SanityChecker;
 import org.ethereum.beacon.chain.pool.checker.SignatureEncodingChecker;
 import org.ethereum.beacon.chain.pool.checker.TimeFrameFilter;
 import org.ethereum.beacon.chain.pool.churn.OffChainAggregates;
-import org.ethereum.beacon.chain.pool.reactor.AttestationChurnProcessor;
-import org.ethereum.beacon.chain.pool.reactor.AttestationVerificationProcessor;
-import org.ethereum.beacon.chain.pool.reactor.IdentifyProcessor;
-import org.ethereum.beacon.chain.pool.reactor.SanityCheckProcessor;
-import org.ethereum.beacon.chain.pool.reactor.TimeFrameProcessor;
+import org.ethereum.beacon.chain.pool.reactor.ChurnProcessor;
+import org.ethereum.beacon.chain.pool.reactor.VerificationProcessor;
+import org.ethereum.beacon.chain.pool.reactor.IdentificationProcessor;
+import org.ethereum.beacon.chain.pool.reactor.SanityProcessor;
+import org.ethereum.beacon.chain.pool.reactor.TimeProcessor;
 import org.ethereum.beacon.chain.pool.registry.ProcessedAttestations;
 import org.ethereum.beacon.chain.pool.registry.UnknownAttestationPool;
 import org.ethereum.beacon.chain.pool.verifier.BatchVerifier;
@@ -32,13 +32,13 @@ public class InMemoryAttestationPool implements AttestationPool {
   private final Publisher<BeaconBlock> chainHeads;
   private final Schedulers schedulers;
 
-  private final TimeFrameProcessor timeFrameProcessor;
-  private final SanityCheckProcessor sanityChecker;
+  private final TimeProcessor timeProcessor;
+  private final SanityProcessor sanityChecker;
   private final SignatureEncodingChecker encodingChecker;
   private final ProcessedAttestations processedFilter;
-  private final IdentifyProcessor identifier;
-  private final AttestationVerificationProcessor verifier;
-  private final AttestationChurnProcessor churn;
+  private final IdentificationProcessor identifier;
+  private final VerificationProcessor verifier;
+  private final ChurnProcessor churn;
 
   private final DirectProcessor<ReceivedAttestation> invalidAttestations = DirectProcessor.create();
   private final DirectProcessor<ReceivedAttestation> validAttestations = DirectProcessor.create();
@@ -62,13 +62,13 @@ public class InMemoryAttestationPool implements AttestationPool {
     this.importedBlocks = importedBlocks;
     this.chainHeads = chainHeads;
     this.schedulers = schedulers;
-    this.timeFrameProcessor = new TimeFrameProcessor(timeFrameFilter);
-    this.sanityChecker = new SanityCheckProcessor(sanityChecker);
+    this.timeProcessor = new TimeProcessor(timeFrameFilter);
+    this.sanityChecker = new SanityProcessor(sanityChecker);
     this.encodingChecker = encodingChecker;
     this.processedFilter = processedFilter;
-    this.identifier = new IdentifyProcessor(unknownAttestationPool);
-    this.verifier = new AttestationVerificationProcessor(batchVerifier);
-    this.churn = new AttestationChurnProcessor();
+    this.identifier = new IdentificationProcessor(unknownAttestationPool);
+    this.verifier = new VerificationProcessor(batchVerifier);
+    this.churn = new ChurnProcessor();
   }
 
   @Override
@@ -84,9 +84,9 @@ public class InMemoryAttestationPool implements AttestationPool {
     Flux<?> chainHeadsFx = Flux.from(chainHeads).publishOn(executor.toReactor());
 
     // start from time frame processor
-    Flux.merge(sourceFx, newSlotsFx, finalizedCheckpointsFx).subscribe(timeFrameProcessor);
+    Flux.merge(sourceFx, newSlotsFx, finalizedCheckpointsFx).subscribe(timeProcessor);
     FluxSplit<CheckedAttestation> timeFrameOut =
-        Fluxes.split(timeFrameProcessor, CheckedAttestation::isPassed);
+        Fluxes.split(timeProcessor, CheckedAttestation::isPassed);
 
     // subscribe sanity checker
     Flux.merge(
