@@ -33,8 +33,22 @@ import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.test.StateTestUtils;
 import org.ethereum.beacon.test.runner.Runner;
 import org.ethereum.beacon.test.type.TestCase;
-import org.ethereum.beacon.test.type.state.StateTestCase;
-import org.ethereum.beacon.test.type.state.StateTestCase.BeaconStateData;
+import org.ethereum.beacon.test.type.state.CrosslinksProcessingCase;
+import org.ethereum.beacon.test.type.state.FinalUpdatesProcessingCase;
+import org.ethereum.beacon.test.type.state.FinalizationProcessingCase;
+import org.ethereum.beacon.test.type.state.OperationAttestationCase;
+import org.ethereum.beacon.test.type.state.OperationAttesterSlashingCase;
+import org.ethereum.beacon.test.type.state.OperationBlockHeaderCase;
+import org.ethereum.beacon.test.type.state.OperationDepositCase;
+import org.ethereum.beacon.test.type.state.OperationProposerSlashingCase;
+import org.ethereum.beacon.test.type.state.OperationTransferCase;
+import org.ethereum.beacon.test.type.state.OperationVoluntaryExitCase;
+import org.ethereum.beacon.test.type.state.RegistryUpdatesProcessingCase;
+import org.ethereum.beacon.test.type.state.SanityBlocksCase;
+import org.ethereum.beacon.test.type.state.SanitySlotsCase;
+import org.ethereum.beacon.test.type.state.SlashingsProcessingCase;
+import org.ethereum.beacon.test.type.state.field.PostField;
+import org.ethereum.beacon.test.type.state.field.PreField;
 import org.javatuples.Pair;
 
 import java.util.List;
@@ -42,103 +56,94 @@ import java.util.Optional;
 import java.util.function.Consumer;
 
 /**
- * TestRunner for {@link StateTestCase}
+ * TestRunner for several types of state tests including operations processing and epoch processing
  *
  * <p>Test format description: <a
  * href="https://github.com/ethereum/eth2.0-specs/tree/dev/specs/test_formats/operations">https://github.com/ethereum/eth2.0-specs/tree/dev/specs/test_formats/operations</a>
  */
 public class StateRunner implements Runner {
-  private StateTestCase testCase;
+  private TestCase testCase;
   private BeaconChainSpec spec;
-  private String handler;
 
-  public StateRunner(TestCase testCase, BeaconChainSpec spec, String handler) {
-    if (!(testCase instanceof StateTestCase)) {
-      throw new RuntimeException("TestCase runner accepts only StateTestCase.class as input!");
-    }
-    this.testCase = (StateTestCase) testCase;
+  public StateRunner(TestCase testCase, BeaconChainSpec spec) {
+    this.testCase = testCase;
     this.spec = spec;
-    this.handler = handler;
   }
 
   public Optional<String> run() {
-    BeaconState initialState = buildInitialState(spec, testCase.getPre());
-    Optional<String> err = StateComparator.compare(testCase.getPre(), initialState, spec);
-    if (err.isPresent()) {
-      return Optional.of("Initial state parsed incorrectly: " + err.get());
+    if (!(testCase instanceof PreField)) {
+      throw new RuntimeException("TestCase runner accepts only test cases with Pre field");
     }
-    BeaconState latestState = initialState;
+    BeaconState latestState = ((PreField) testCase).getPre(spec.getConstants());
     Optional<String> processingError;
 
     BeaconState stateBackup = latestState.createMutableCopy();
-    switch (handler) {
-      case "deposit":
-        processingError = processDeposit(testCase.getDepositOperation(), latestState);
-        break;
-      case "attestation":
-        processingError =
-            processAttestation(testCase.getAttestationOperation(spec.getConstants()), latestState);
-        break;
-      case "attester_slashing":
-        processingError =
-            processAttesterSlashing(testCase.getAttesterSlashingOperation(spec.getConstants()), latestState);
-        break;
-      case "proposer_slashing":
-        processingError =
-            processProposerSlashing(testCase.getProposerSlashingOperation(), latestState);
-        break;
-      case "transfer":
-        processingError = processTransfer(testCase.getTransferOperation(), latestState);
-        break;
-      case "voluntary_exit":
-        processingError = processVoluntaryExit(testCase.getVoluntaryExitOperation(), latestState);
-        break;
-      case "block_header":
-        processingError =
-            processBlockHeader(testCase.getBeaconBlock(spec.getConstants()), latestState);
-        break;
-      case "crosslinks":
-        processingError = processCrosslinks(latestState);
-        break;
-      case "registry_updates":
-        processingError = processRegistryUpdates(latestState);
-        break;
-      case "final_updates":
-        processingError = processFinalUpdates(latestState);
-        break;
-      case "justification_and_finalization":
-        processingError = processJustificationAndFinalization(latestState);
-        break;
-      case "slashings":
-        processingError = processSlashings(latestState);
-        break;
-      case "slots":
-        Pair<Optional<String>, BeaconState> processingSlots =
-            processSlots(testCase.getSlots(), latestState);
-        processingError = processingSlots.getValue0();
-        if (!processingError.isPresent()) {
-          latestState = processingSlots.getValue1();
-        }
-        break;
-      case "blocks":
-        Pair<Optional<String>, BeaconState> processingBlocks =
-            processBlocks(testCase.getBeaconBlocks(spec.getConstants()), latestState);
-        processingError = processingBlocks.getValue0();
-        if (!processingError.isPresent()) {
-          latestState = processingBlocks.getValue1();
-        }
-        break;
-      default:
-        throw new RuntimeException("This type of state test is not supported");
+    if (testCase instanceof SanitySlotsCase) {
+      Pair<Optional<String>, BeaconState> processingSlots =
+          processSlots(((SanitySlotsCase) testCase).getSlots(), latestState);
+      processingError = processingSlots.getValue0();
+      if (!processingError.isPresent()) {
+        latestState = processingSlots.getValue1();
+      }
+    } else if (testCase instanceof SanityBlocksCase) {
+      Pair<Optional<String>, BeaconState> processingBlocks =
+          processBlocks(((SanityBlocksCase) testCase).getBlocks(spec.getConstants()), latestState);
+      processingError = processingBlocks.getValue0();
+      if (!processingError.isPresent()) {
+        latestState = processingBlocks.getValue1();
+      }
+    } else if (testCase instanceof OperationAttestationCase) {
+      processingError =
+          processAttestation(
+              ((OperationAttestationCase) testCase).getAttestation(spec.getConstants()),
+              latestState);
+    } else if (testCase instanceof OperationDepositCase) {
+      processingError = processDeposit(((OperationDepositCase) testCase).getDeposit(), latestState);
+    } else if (testCase instanceof OperationAttesterSlashingCase) {
+      processingError =
+          processAttesterSlashing(
+              ((OperationAttesterSlashingCase) testCase).getAttesterSlashing(spec.getConstants()),
+              latestState);
+    } else if (testCase instanceof OperationProposerSlashingCase) {
+      processingError =
+          processProposerSlashing(
+              ((OperationProposerSlashingCase) testCase).getProposerSlashing(), latestState);
+    } else if (testCase instanceof OperationTransferCase) {
+      processingError =
+          processTransfer(((OperationTransferCase) testCase).getTransfer(), latestState);
+    } else if (testCase instanceof OperationVoluntaryExitCase) {
+      processingError =
+          processVoluntaryExit(
+              ((OperationVoluntaryExitCase) testCase).getVoluntaryExit(), latestState);
+    } else if (testCase instanceof OperationBlockHeaderCase) {
+      processingError =
+          processBlockHeader(
+              ((OperationBlockHeaderCase) testCase).getBlock(spec.getConstants()), latestState);
+    } else if (testCase instanceof CrosslinksProcessingCase) {
+      processingError = processCrosslinks(latestState);
+    } else if (testCase instanceof FinalUpdatesProcessingCase) {
+      processingError = processFinalUpdates(latestState);
+    } else if (testCase instanceof FinalizationProcessingCase) {
+      processingError = processJustificationAndFinalization(latestState);
+    } else if (testCase instanceof RegistryUpdatesProcessingCase) {
+      processingError = processRegistryUpdates(latestState);
+    } else if (testCase instanceof SlashingsProcessingCase) {
+      processingError = processSlashings(latestState);
+    } else {
+      throw new RuntimeException("This type of state test is not supported");
     }
+
     if (processingError.isPresent()) {
       latestState = stateBackup;
     }
-
-    if (testCase.getPost() == null) { // XXX: Not changed
-      return StateComparator.compare(testCase.getPre(), latestState, spec);
+    if (!(testCase instanceof PostField)) {
+      throw new RuntimeException("TestCase runner accepts only test cases with Post field");
+    }
+    if (((PostField) testCase).getPost(spec.getConstants()) == null) { // XXX: Not changed
+      return StateComparator.compare(((PreField) testCase).getPre(spec.getConstants()), latestState, spec);
     } else {
-      Optional compareResult = StateComparator.compare(testCase.getPost(), latestState, spec);
+      Optional compareResult =
+          StateComparator.compare(((PostField) testCase).getPost(spec.getConstants()), latestState, spec);
       if (!compareResult.isPresent()) {
         return Optional.empty();
       }
@@ -337,9 +342,5 @@ public class StateRunner implements Runner {
         | IndexOutOfBoundsException ex) {
       return Optional.of(ex.getMessage());
     }
-  }
-
-  private BeaconState buildInitialState(BeaconChainSpec spec, BeaconStateData stateData) {
-    return StateTestUtils.parseBeaconState(spec.getConstants(), stateData);
   }
 }

@@ -1,16 +1,20 @@
 package org.ethereum.beacon.ssz.access.basic;
 
 import net.consensys.cava.bytes.Bytes;
-import org.ethereum.beacon.ssz.visitor.SSZReader;
-import org.ethereum.beacon.ssz.visitor.SSZWriter;
 import net.consensys.cava.ssz.SSZException;
+import org.ethereum.beacon.ssz.SSZSchemeException;
 import org.ethereum.beacon.ssz.access.SSZBasicAccessor;
 import org.ethereum.beacon.ssz.access.SSZField;
-import org.ethereum.beacon.ssz.SSZSchemeException;
+import org.ethereum.beacon.ssz.visitor.SSZReader;
+import org.ethereum.beacon.ssz.visitor.SSZWriter;
 import tech.pegasys.artemis.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.uint.UInt16;
 import tech.pegasys.artemis.util.uint.UInt24;
 import tech.pegasys.artemis.util.uint.UInt256;
+import tech.pegasys.artemis.util.uint.UInt32;
 import tech.pegasys.artemis.util.uint.UInt64;
+import tech.pegasys.artemis.util.uint.UInt8;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.HashMap;
@@ -32,7 +36,10 @@ public class UIntCodec implements SSZBasicAccessor {
   private static Set<Class> supportedClassTypes = new HashSet<>();
 
   static {
+    classToNumericType.put(UInt8.class, NumericType.of(Type.LONG, 8));
+    classToNumericType.put(UInt16.class, NumericType.of(Type.LONG, 16));
     classToNumericType.put(UInt24.class, NumericType.of(Type.LONG, 24));
+    classToNumericType.put(UInt32.class, NumericType.of(Type.LONG, 32));
     classToNumericType.put(UInt64.class, NumericType.of(Type.LONG, 64));
     classToNumericType.put(UInt256.class, NumericType.of(Type.BIGINT, 256));
   }
@@ -41,7 +48,10 @@ public class UIntCodec implements SSZBasicAccessor {
   }
 
   static {
+    supportedClassTypes.add(UInt8.class);
+    supportedClassTypes.add(UInt16.class);
     supportedClassTypes.add(UInt24.class);
+    supportedClassTypes.add(UInt32.class);
     supportedClassTypes.add(UInt64.class);
     supportedClassTypes.add(UInt256.class);
   }
@@ -82,9 +92,30 @@ public class UIntCodec implements SSZBasicAccessor {
     NumericType numericType = parseFieldType(field);
 
     switch (numericType.size) {
+      case 8:
+        {
+          UInt8 uValue = (UInt8) value;
+          Bytes bytes = SSZWriter.encodeULong(uValue.getValue(), numericType.size);
+          writeBytes(bytes, result);
+          break;
+        }
+      case 16:
+        {
+          UInt16 uValue = (UInt16) value;
+          Bytes bytes = SSZWriter.encodeULong(uValue.getValue(), numericType.size);
+          writeBytes(bytes, result);
+          break;
+        }
       case 24:
         {
           UInt24 uValue = (UInt24) value;
+          Bytes bytes = SSZWriter.encodeULong(uValue.getValue(), numericType.size);
+          writeBytes(bytes, result);
+          break;
+        }
+      case 32:
+        {
+          UInt32 uValue = (UInt32) value;
           Bytes bytes = SSZWriter.encodeULong(uValue.getValue(), numericType.size);
           writeBytes(bytes, result);
           break;
@@ -129,9 +160,21 @@ public class UIntCodec implements SSZBasicAccessor {
   private Object decodeLong(NumericType type, SSZReader reader) {
     // XXX: reader.readULong is buggy
     switch (type.size) {
+      case 8:
+        {
+          return UInt8.valueOf(reader.readUnsignedBigInteger(type.size).intValue());
+        }
+      case 16:
+        {
+          return UInt16.valueOf(reader.readUnsignedBigInteger(type.size).intValue());
+        }
       case 24:
         {
           return UInt24.valueOf(reader.readUnsignedBigInteger(type.size).intValue());
+        }
+      case 32:
+        {
+          return UInt32.valueOf(reader.readUnsignedBigInteger(type.size).intValue());
         }
       case 64:
         {

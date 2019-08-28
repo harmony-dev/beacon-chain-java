@@ -1,43 +1,27 @@
 package org.ethereum.beacon.test.runner.state;
 
 import org.ethereum.beacon.consensus.BeaconChainSpec;
-import org.ethereum.beacon.core.BeaconBlockHeader;
 import org.ethereum.beacon.core.BeaconState;
-import org.ethereum.beacon.core.operations.attestation.Crosslink;
-import org.ethereum.beacon.core.state.Checkpoint;
-import org.ethereum.beacon.core.state.Eth1Data;
-import org.ethereum.beacon.core.state.PendingAttestation;
-import org.ethereum.beacon.core.state.ValidatorRecord;
-import tech.pegasys.artemis.util.collections.Bitvector;
-import org.ethereum.beacon.core.types.SlotNumber;
-import org.ethereum.beacon.test.StateTestUtils;
-import org.ethereum.beacon.test.type.state.StateTestCase;
-import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.bytes.BytesValue;
-import tech.pegasys.artemis.util.uint.UInt64;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static org.ethereum.beacon.test.SilentAsserts.assertEquals;
 import static org.ethereum.beacon.test.SilentAsserts.assertLists;
 
 public class StateComparator {
+  private BeaconState expected;
   private BeaconState actual;
-  private StateTestCase.BeaconStateData expected;
   private BeaconChainSpec spec;
 
-  private StateComparator(
-      StateTestCase.BeaconStateData expected, BeaconState actual, BeaconChainSpec spec) {
+  private StateComparator(BeaconState expected, BeaconState actual, BeaconChainSpec spec) {
     this.expected = expected;
     this.actual = actual;
     this.spec = spec;
   }
 
   public static Optional<String> compare(
-      StateTestCase.BeaconStateData expected, BeaconState actual, BeaconChainSpec spec) {
+      BeaconState expected, BeaconState actual, BeaconChainSpec spec) {
     return new StateComparator(expected, actual, spec).compare();
   }
 
@@ -47,8 +31,9 @@ public class StateComparator {
     // Validating result
     runComparison("Slot number doesn't match: ", this::compareSlotNumber, error);
     runComparison("Block roots do not match: ", this::compareBlockRoots, error);
+    runComparison("Validators do not match: ", this::compareValidators, error);
     runComparison("Validator balances do not match: ", this::compareValidatorBalances, error);
-    runComparison("Validator registries do not match: ", this::compareValidatorRegistry, error);
+    runComparison("Start shard doesn't match: ", this::compareStartShard, error);
     runComparison("Genesis time doesn't match: ", this::compareGenesisTime, error);
     runComparison(
         "Current epoch attestations do not match: ", this::compareCurrentEpochAttestations, error);
@@ -99,230 +84,115 @@ public class StateComparator {
   }
 
   private Optional<String> compareSlotNumber() {
-    if (expected.getSlot() == null) {
-      return Optional.empty();
-    }
-
-    return assertEquals(SlotNumber.castFrom(UInt64.valueOf(expected.getSlot())), actual.getSlot());
+    return assertEquals(expected.getSlot(), actual.getSlot());
   }
 
   private Optional<String> compareBlockRoots() {
-    if (expected.getBlockRoots() == null) {
-      return Optional.empty();
-    }
-
-    return assertLists(
-        StateTestUtils.parseHashes(expected.getBlockRoots()), actual.getBlockRoots().listCopy());
+    return assertLists(expected.getBlockRoots().listCopy(), actual.getBlockRoots().listCopy());
   }
 
   private Optional<String> compareValidatorBalances() {
-    if (expected.getBalances() == null) {
-      return Optional.empty();
-    }
-
-    return assertLists(
-        StateTestUtils.parseBalances(expected.getBalances()), actual.getBalances().listCopy());
+    return assertLists(expected.getBalances().listCopy(), actual.getBalances().listCopy());
   }
 
   private Optional<String> compareSlashedBalances() {
-    if (expected.getSlashings() == null) {
-      return Optional.empty();
-    }
-
-    return assertLists(
-        StateTestUtils.parseBalances(expected.getSlashings()), actual.getSlashings().listCopy());
+    return assertLists(expected.getSlashings().listCopy(), actual.getSlashings().listCopy());
   }
 
-  private Optional<String> compareValidatorRegistry() {
-    if (expected.getValidators() == null) {
-      return Optional.empty();
-    }
-
-    List<ValidatorRecord> expectedValidators =
-        StateTestUtils.parseValidatorRegistry(expected.getValidators());
-    return assertLists(expectedValidators, actual.getValidators().listCopy());
+  private Optional<String> compareValidators() {
+    return assertLists(expected.getValidators().listCopy(), actual.getValidators().listCopy());
   }
 
   private Optional<String> compareCurrentEpochAttestations() {
-    if (expected.getCurrentEpochAttestations() == null) {
-      return Optional.empty();
-    }
-
-    List<PendingAttestation> expectedAttestations =
-        StateTestUtils.parsePendingAttestations(expected.getCurrentEpochAttestations(), spec.getConstants());
-    return assertLists(expectedAttestations, actual.getCurrentEpochAttestations().listCopy());
+    return assertLists(
+        expected.getCurrentEpochAttestations().listCopy(),
+        actual.getCurrentEpochAttestations().listCopy());
   }
 
   private Optional<String> compareHistoricalRoots() {
-    if (expected.getHistoricalRoots() == null) {
-      return Optional.empty();
-    }
-
-    List<Hash32> expectedRoots = StateTestUtils.parseHashes(expected.getHistoricalRoots());
-    return assertLists(expectedRoots, actual.getHistoricalRoots().listCopy());
+    return assertLists(
+        expected.getHistoricalRoots().listCopy(), actual.getHistoricalRoots().listCopy());
   }
 
   private Optional<String> compareRandaoMixes() {
-    if (expected.getRandaoMixes() == null) {
-      return Optional.empty();
-    }
-
-    List<Hash32> expectedRandaoMixes = StateTestUtils.parseHashes(expected.getRandaoMixes());
-    return assertLists(expectedRandaoMixes, actual.getRandaoMixes().listCopy());
+    return assertLists(expected.getRandaoMixes().listCopy(), actual.getRandaoMixes().listCopy());
   }
 
   private Optional<String> compareStateRoots() {
-    if (expected.getStateRoots() == null) {
-      return Optional.empty();
-    }
-
-    List<Hash32> expectedRoots = StateTestUtils.parseHashes(expected.getStateRoots());
-    return assertLists(expectedRoots, actual.getStateRoots().listCopy());
+    return assertLists(expected.getStateRoots().listCopy(), actual.getStateRoots().listCopy());
   }
 
   private Optional<String> compareActiveIndexRoots() {
-    if (expected.getActiveIndexRoots() == null) {
-      return Optional.empty();
-    }
-
-    List<Hash32> expectedRoots = StateTestUtils.parseHashes(expected.getActiveIndexRoots());
-    return assertLists(expectedRoots, actual.getActiveIndexRoots().listCopy());
+    return assertLists(
+        expected.getActiveIndexRoots().listCopy(), actual.getActiveIndexRoots().listCopy());
   }
 
   private Optional<String> compareCompactCommitteesRoots() {
-    if (expected.getCompactCommitteesRoots() == null) {
-      return Optional.empty();
-    }
-
-    List<Hash32> expectedRoots = StateTestUtils.parseHashes(expected.getCompactCommitteesRoots());
-    return assertLists(expectedRoots, actual.getCompactCommitteesRoots().listCopy());
+    return assertLists(
+        expected.getCompactCommitteesRoots().listCopy(),
+        actual.getCompactCommitteesRoots().listCopy());
   }
 
   private Optional<String> compareCurrentCrosslinks() {
-    if (expected.getCurrentCrosslinks() == null) {
-      return Optional.empty();
-    }
-
-    List<Crosslink> expectedCrosslinks =
-        StateTestUtils.parseCrosslinks(expected.getCurrentCrosslinks());
-    return assertLists(expectedCrosslinks, actual.getCurrentCrosslinks().listCopy());
+    return assertLists(
+        expected.getCurrentCrosslinks().listCopy(), actual.getCurrentCrosslinks().listCopy());
   }
 
   private Optional<String> comparePreviousCrosslinks() {
-    if (expected.getPreviousCrosslinks() == null) {
-      return Optional.empty();
-    }
-
-    List<Crosslink> expectedCrosslinks =
-        StateTestUtils.parseCrosslinks(expected.getPreviousCrosslinks());
-    return assertLists(expectedCrosslinks, actual.getPreviousCrosslinks().listCopy());
+    return assertLists(
+        expected.getPreviousCrosslinks().listCopy(), actual.getPreviousCrosslinks().listCopy());
   }
 
   private Optional<String> comparePreviousEpochAttestations() {
-    if (expected.getPreviousEpochAttestations() == null) {
-      return Optional.empty();
-    }
-
-    List<PendingAttestation> expectedAttestations =
-        StateTestUtils.parsePendingAttestations(expected.getPreviousEpochAttestations(), spec.getConstants());
-    return assertLists(expectedAttestations, actual.getPreviousEpochAttestations().listCopy());
+    return assertLists(
+        expected.getPreviousEpochAttestations().listCopy(),
+        actual.getPreviousEpochAttestations().listCopy());
   }
 
   private Optional<String> compareCurrentJustifiedCheckpoint() {
-    if (expected.getCurrentJustifiedCheckpoint() == null) {
-      return Optional.empty();
-    }
-    Checkpoint expectedCheckpoint =
-        StateTestUtils.parseCheckpoint(expected.getCurrentJustifiedCheckpoint());
-
-    return assertEquals(expectedCheckpoint, actual.getCurrentJustifiedCheckpoint());
+    return assertEquals(
+        expected.getCurrentJustifiedCheckpoint(), actual.getCurrentJustifiedCheckpoint());
   }
 
   private Optional<String> compareGenesisTime() {
-    if (expected.getGenesisTime() == null) {
-      return Optional.empty();
-    }
+    return assertEquals(expected.getGenesisTime(), actual.getGenesisTime());
+  }
 
-    return assertEquals(expected.getGenesisTime(), actual.getGenesisTime().getValue());
+  private Optional<String> compareStartShard() {
+    return assertEquals(expected.getStartShard(), actual.getStartShard());
   }
 
   private Optional<String> comparePreviousJustifiedCheckpoint() {
-    if (expected.getPreviousJustifiedCheckpoint() == null) {
-      return Optional.empty();
-    }
-    Checkpoint expectedCheckpoint =
-        StateTestUtils.parseCheckpoint(expected.getPreviousJustifiedCheckpoint());
-
-    return assertEquals(expectedCheckpoint, actual.getPreviousJustifiedCheckpoint());
+    return assertEquals(
+        expected.getPreviousJustifiedCheckpoint(), actual.getPreviousJustifiedCheckpoint());
   }
 
   private Optional<String> compareDepositIndex() {
-    if (expected.getEth1DepositIndex() == null) {
-      return Optional.empty();
-    }
-
-    return assertEquals(expected.getEth1DepositIndex(), actual.getEth1DepositIndex().getValue());
+    return assertEquals(expected.getEth1DepositIndex(), actual.getEth1DepositIndex());
   }
 
   private Optional<String> compareEth1DataVotes() {
-    if (expected.getEth1DataVotes() == null) {
-      return Optional.empty();
-    }
-    List<Eth1Data> expectedVotes =
-        expected.getEth1DataVotes().stream()
-            .map(StateTestUtils::parseEth1Data)
-            .collect(Collectors.toList());
-
-    return assertLists(expectedVotes, actual.getEth1DataVotes().listCopy());
+    return assertLists(
+        expected.getEth1DataVotes().listCopy(), actual.getEth1DataVotes().listCopy());
   }
 
   private Optional<String> compareFinalizedCheckpoint() {
-    if (expected.getFinalizedCheckpoint() == null) {
-      return Optional.empty();
-    }
-    Checkpoint expectedCheckpoint =
-        StateTestUtils.parseCheckpoint(expected.getFinalizedCheckpoint());
-
-    return assertEquals(expectedCheckpoint, actual.getFinalizedCheckpoint());
+    return assertEquals(expected.getFinalizedCheckpoint(), actual.getFinalizedCheckpoint());
   }
 
   private Optional<String> compareFork() {
-    if (expected.getFork() == null) {
-      return Optional.empty();
-    }
-
-    return assertEquals(StateTestUtils.parseFork(expected.getFork()), actual.getFork());
+    return assertEquals(expected.getFork(), actual.getFork());
   }
 
   private Optional<String> compareJustificationBitfield() {
-    if (expected.getJustificationBits() == null) {
-      return Optional.empty();
-    }
-
-    return assertEquals(
-        Bitvector.of(
-            spec.getConstants().getJustificationBitsLength(),
-            BytesValue.fromHexString(expected.getJustificationBits())),
-        actual.getJustificationBits());
+    return assertEquals(expected.getJustificationBits(), actual.getJustificationBits());
   }
 
   private Optional<String> compareLatestBlockHeader() {
-    if (expected.getLatestBlockHeader() == null) {
-      return Optional.empty();
-    }
-
-    BeaconBlockHeader expectedHeader =
-        StateTestUtils.parseBeaconBlockHeader(expected.getLatestBlockHeader());
-
-    return assertEquals(expectedHeader, actual.getLatestBlockHeader());
+    return assertEquals(expected.getLatestBlockHeader(), actual.getLatestBlockHeader());
   }
 
   private Optional<String> compareEth1Data() {
-    if (expected.getEth1Data() == null) {
-      return Optional.empty();
-    }
-
-    Eth1Data expectedData = StateTestUtils.parseEth1Data(expected.getEth1Data());
-    return assertEquals(expectedData, actual.getEth1Data());
+    return assertEquals(expected.getEth1Data(), actual.getEth1Data());
   }
 }

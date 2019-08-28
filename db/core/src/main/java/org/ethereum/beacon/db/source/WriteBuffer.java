@@ -88,12 +88,12 @@ public class WriteBuffer<K, V> extends AbstractLinkedDataSource<K, V, K, V>
   @Override
   public void doFlush() {
     try (AutoCloseableLock rl = updateLock.lock()) {
-      for (Map.Entry<K, CacheEntry<V>> entry : buffer.entrySet()) {
-        if (entry.getValue() == CacheEntry.REMOVED) {
-          getUpstream().remove(entry.getKey());
-        } else {
-          getUpstream().put(entry.getKey(), entry.getValue().value);
-        }
+      if (getUpstream() instanceof BatchUpdateDataSource) {
+        final Map<K, V> updates = new HashMap<>();
+        buffer.forEach((key, value) -> updates.put(key, value.value));
+        ((BatchUpdateDataSource<K, V>) getUpstream()).batchUpdate(updates);
+      } else {
+        buffer.forEach((key, value) -> getUpstream().put(key, value.value));
       }
 
       reset();
@@ -130,7 +130,13 @@ public class WriteBuffer<K, V> extends AbstractLinkedDataSource<K, V, K, V>
    */
   private static final class CacheEntry<V> {
 
-    /** Indicates removed value. */
+    /**
+     * Indicates removed value.
+     *
+     * <p><strong>Note:</strong> passing a {@code null} value to {@code REMOVED} entry to keep an
+     * invariant for {@link BatchUpdateDataSource#batchUpdate(Map)}: {@code null} entries are meant
+     * to be deleted by the upstream source.
+     */
     private static final CacheEntry REMOVED = CacheEntry.of(null);
 
     private V value;

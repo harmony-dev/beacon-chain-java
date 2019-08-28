@@ -1,7 +1,11 @@
 package org.ethereum.beacon.test.type.ssz;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import org.ethereum.beacon.test.type.TestCase;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.ethereum.beacon.test.type.DataMapperTestCase;
+import org.ethereum.beacon.test.type.ssz.field.RootsField;
+import org.ethereum.beacon.test.type.ssz.field.SerializedField;
+import org.ethereum.beacon.test.type.ssz.field.ValueField;
+import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import java.util.Map;
 
@@ -11,63 +15,22 @@ import java.util.Map;
  * <p>Test format description: <a
  * href="https://github.com/ethereum/eth2.0-specs/blob/dev/specs/test_formats/ssz_static/core.md">https://github.com/ethereum/eth2.0-specs/blob/dev/specs/test_formats/ssz_static/core.md</a>
  */
-public class SszStaticCase implements TestCase {
-  private String typeName;
+public class SszStaticCase extends DataMapperTestCase
+    implements RootsField, SerializedField, ValueField {
+  private final String typeName;
 
-  private Object value;
-  private String serialized;
-  private String root;
-  private String signingRoot;
-
-  @JsonCreator
-  public SszStaticCase(Map<String, Object> map) {
-    this.typeName = (String) map.keySet().toArray()[0];
-    Map<String, Object> obj = (Map<String, Object>) map.get(typeName);
-    this.value = obj.get("value");
-    this.serialized = (String) obj.get("serialized");
-    this.root = (String) obj.get("root");
-    if (obj.containsKey("signing_root")) {
-      this.signingRoot = (String) obj.get("signing_root");
-    }
+  public SszStaticCase(
+      Map<String, BytesValue> files, ObjectMapper objectMapper, String typeName, String description) {
+    super(files, objectMapper, description);
+    this.typeName = typeName;
   }
 
   public String getTypeName() {
     return typeName;
   }
 
-  public void setTypeName(String typeName) {
-    this.typeName = typeName;
-  }
-
-  public Object getValue() {
-    return value;
-  }
-
-  public void setValue(Object value) {
-    this.value = value;
-  }
-
-  public String getSerialized() {
-    return serialized;
-  }
-
-  public void setSerialized(String serialized) {
-    this.serialized = serialized;
-  }
-
-  public String getRoot() {
-    return root;
-  }
-
-  public void setRoot(String root) {
-    this.root = root;
-  }
-
-  public String getSigningRoot() {
-    return signingRoot;
-  }
-
-  public void setSigningRoot(String signingRoot) {
-    this.signingRoot = signingRoot;
+  @Override
+  public String toString() {
+    return "SszStaticCase{" + super.toString() + '}';
   }
 }

@@ -7,7 +7,6 @@ import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.db.flush.BufferSizeObserver;
 import org.ethereum.beacon.db.flush.DatabaseFlusher;
 import org.ethereum.beacon.db.flush.InstantFlusher;
-import org.ethereum.beacon.db.source.BatchWriter;
 import org.ethereum.beacon.db.source.CacheSizeEvaluator;
 import org.ethereum.beacon.db.source.DataSource;
 import org.ethereum.beacon.db.source.StorageEngineSource;
@@ -59,10 +58,9 @@ public class EngineDrivenDatabase implements Database {
    */
   public static EngineDrivenDatabase create(
       StorageEngineSource<BytesValue> storageEngineSource, long bufferLimitInBytes) {
-    BatchWriter<BytesValue, BytesValue> batchWriter = new BatchWriter<>(storageEngineSource);
     WriteBuffer<BytesValue, BytesValue> buffer =
         new WriteBuffer<>(
-            batchWriter,
+            storageEngineSource,
             CacheSizeEvaluator.getInstance(MemSizeEvaluators.BytesValueEvaluator),
             true);
     DatabaseFlusher flusher =
