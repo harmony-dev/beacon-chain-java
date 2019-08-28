@@ -2,22 +2,24 @@ package org.ethereum.beacon.db.source;
 
 import org.ethereum.beacon.db.source.impl.HashMapDataSource;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.*;
 
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-public class SingleValueSourceTest {
+class SingleValueSourceTest {
 
-    private final String TEST_KEY = "test_key";
-    private final String TEST_VALUE = "test_value";
+    private static final String TEST_KEY = "test_key";
+    private static final String TEST_VALUE = "test_value";
     private SingleValueSource<String> source;
 
-
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         source = new SingleValueSource<String>() {
             String value;
 
@@ -41,55 +43,62 @@ public class SingleValueSourceTest {
         assertThat(source.get()).isEmpty();
     }
 
-    @Test
-    public void testInvalidFromDefaultDataSource() {
-        assertThatThrownBy(() -> SingleValueSource.fromDataSource(null, null))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> SingleValueSource.fromDataSource(null, TEST_KEY))
-                .isInstanceOf(NullPointerException.class);
+    @Tag("FIX")
+    @ParameterizedTest
+    @MethodSource("invalidFromDefaultDataSourceArgumentsProvider")
+    void testInvalidFromDefaultDataSource(DataSource ds, Object key) {
+        assertThatThrownBy(() -> SingleValueSource.fromDataSource(ds, key)).isInstanceOf(NullPointerException.class);
+    }
 
-        assertThat(SingleValueSource.fromDataSource(new HashMapDataSource<>(), null)).isNotNull();
-        assertThat(SingleValueSource.fromDataSource(new HashMapDataSource<>(), TEST_KEY)).isNotNull();
+    private static Stream<Arguments> invalidFromDefaultDataSourceArgumentsProvider() {
+        return Stream.of(
+                Arguments.of(null, null),
+                Arguments.of(null, TEST_KEY),
+                Arguments.of(new HashMapDataSource(), null)
+        );
     }
 
     @Test
-    public void testInvalidFromDataSource() {
-        assertThatThrownBy(() -> SingleValueSource.fromDataSource(null, null, null, null))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> SingleValueSource.fromDataSource(null, null, null, Function.identity()))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> SingleValueSource.fromDataSource(null, null, Function.identity(), null))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> SingleValueSource.fromDataSource(null, null, Function.identity(), Function.identity()))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> SingleValueSource.fromDataSource(new HashMapDataSource<>(), null, null, null))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> SingleValueSource.fromDataSource(new HashMapDataSource<>(), TEST_KEY, null, null))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> SingleValueSource.fromDataSource(new HashMapDataSource<>(), TEST_KEY, Function.identity(), null))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> SingleValueSource.fromDataSource(new HashMapDataSource<>(), null, Function.identity(), null))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> SingleValueSource.fromDataSource(new HashMapDataSource<>(), null, null, Function.identity()))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> SingleValueSource.fromDataSource(new HashMapDataSource<>(), TEST_KEY, null, Function.identity()))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> SingleValueSource.fromDataSource(null, TEST_KEY, Function.identity(), Function.identity()))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> SingleValueSource.fromDataSource(null, TEST_KEY, Function.identity(), null))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> SingleValueSource.fromDataSource(null, TEST_KEY, null, Function.identity()))
-                .isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> SingleValueSource.fromDataSource(null, TEST_KEY, null, null))
-                .isInstanceOf(NullPointerException.class);
+    void testValidFromDefaultDataSource() {
+        assertThat(SingleValueSource.fromDataSource(new HashMapDataSource<>(), TEST_KEY)).isNotNull();
+    }
 
 
-        assertThat(SingleValueSource.fromDataSource(new HashMapDataSource<>(), null, Function.identity(), Function.identity())).isNotNull();
+    @Tag("FIX")
+    @ParameterizedTest
+    @MethodSource("invalidFromDataSourceArgumentsProvider")
+    void testInvalidFromDataSource(DataSource ds, Object key, Function coder, Function decoder) {
+        assertThatThrownBy(() -> SingleValueSource.fromDataSource(ds, key, coder, decoder)).isInstanceOf(NullPointerException.class);
+    }
+
+    private static Stream<Arguments> invalidFromDataSourceArgumentsProvider() {
+        return Stream.of(
+                Arguments.of(null, null, null, null),
+                Arguments.of(null, null, null, Function.identity()),
+                Arguments.of(null, null, Function.identity(), null),
+                Arguments.of(null, null, Function.identity(), Function.identity()),
+                Arguments.of(new HashMapDataSource<>(), null, null, null),
+                Arguments.of(new HashMapDataSource<>(), TEST_KEY, null, null),
+                Arguments.of(new HashMapDataSource<>(), TEST_KEY, Function.identity(), null),
+                Arguments.of(new HashMapDataSource<>(), null, Function.identity(), null),
+                Arguments.of(new HashMapDataSource<>(), null, null, Function.identity()),
+                Arguments.of(new HashMapDataSource<>(), TEST_KEY, null, Function.identity()),
+                Arguments.of(null, TEST_KEY, Function.identity(), Function.identity()),
+                Arguments.of(null, TEST_KEY, Function.identity(), null),
+                Arguments.of(null, TEST_KEY, null, Function.identity()),
+                Arguments.of(null, TEST_KEY, null, null),
+                Arguments.of(new HashMapDataSource<>(), null, Function.identity(), Function.identity())
+        );
+    }
+
+
+    @Test
+    void testValidFromDataSource() {
         assertThat(SingleValueSource.fromDataSource(new HashMapDataSource<>(), TEST_KEY, Function.identity(), Function.identity())).isNotNull();
     }
 
     @Test
-    public void testGetSetRemoveSourceValue() {
+    void testGetSetRemoveSourceValue() {
         source = SingleValueSource.fromDataSource(new HashMapDataSource<>(), TEST_KEY, Function.identity(), Function.identity());
         assertThat(source).isNotNull();
         assertThat(source.get()).isNotPresent();
@@ -100,7 +109,7 @@ public class SingleValueSourceTest {
     }
 
     @Test
-    public void testGetSetRemoveWithEncode() {
+    void testGetSetRemoveWithEncode() {
         source = SingleValueSource.fromDataSource(new HashMapDataSource<>(), TEST_KEY, key -> encode(key, TEST_VALUE), Function.identity());
         source.set(TEST_VALUE);
         assertThat(source.get()).isPresent().hasValue(TEST_VALUE.concat(TEST_VALUE));
@@ -109,7 +118,7 @@ public class SingleValueSourceTest {
     }
 
     @Test
-    public void testGetSetRemoveWithEncodeDecode() {
+    void testGetSetRemoveWithEncodeDecode() {
         source = SingleValueSource.fromDataSource(new HashMapDataSource<>(), TEST_KEY, key -> encode(key, TEST_VALUE), key -> decode());
         source.set(TEST_VALUE);
         assertThat(source.get()).isPresent().hasValue("");
@@ -118,7 +127,7 @@ public class SingleValueSourceTest {
     }
 
     @Test
-    public void memSourceGetSetRemoveTest() {
+    void memSourceGetSetRemoveTest() {
         source = SingleValueSource.memSource();
         assertThat(source).isNotNull();
         assertThat(source.get()).isNotPresent();

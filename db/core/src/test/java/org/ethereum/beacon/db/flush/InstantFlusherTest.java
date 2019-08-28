@@ -83,7 +83,6 @@ class InstantFlusherTest {
         assertThat(doFlush).isFalse();
         assertThat(datasourceFlush).isFalse();
         assertThat(instantFlushed).isFalse();
-
         instantFlusher.commit();
         assertThat(doFlush).isTrue();
         assertThat(datasourceFlush).isEqualTo(upstreamFlush);
