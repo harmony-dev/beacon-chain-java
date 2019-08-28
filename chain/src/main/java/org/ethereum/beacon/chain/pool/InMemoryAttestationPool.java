@@ -5,10 +5,10 @@ import org.ethereum.beacon.chain.pool.checker.SignatureEncodingChecker;
 import org.ethereum.beacon.chain.pool.checker.TimeFrameFilter;
 import org.ethereum.beacon.chain.pool.churn.OffChainAggregates;
 import org.ethereum.beacon.chain.pool.reactor.ChurnProcessor;
-import org.ethereum.beacon.chain.pool.reactor.VerificationProcessor;
 import org.ethereum.beacon.chain.pool.reactor.IdentificationProcessor;
 import org.ethereum.beacon.chain.pool.reactor.SanityProcessor;
 import org.ethereum.beacon.chain.pool.reactor.TimeProcessor;
+import org.ethereum.beacon.chain.pool.reactor.VerificationProcessor;
 import org.ethereum.beacon.chain.pool.registry.ProcessedAttestations;
 import org.ethereum.beacon.chain.pool.registry.UnknownAttestationPool;
 import org.ethereum.beacon.chain.pool.verifier.BatchVerifier;
@@ -23,6 +23,10 @@ import org.reactivestreams.Publisher;
 import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
 
+/**
+ * An implementation of attestation pool based on <a href="https://projectreactor.io/">Reactor</a>
+ * library, one of the implementation of reactive streams.
+ */
 public class InMemoryAttestationPool implements AttestationPool {
 
   private final Publisher<ReceivedAttestation> source;
