@@ -7,7 +7,6 @@ import org.ethereum.beacon.chain.pool.churn.OffChainAggregates;
 import org.ethereum.beacon.chain.pool.reactor.AttestationChurnProcessor;
 import org.ethereum.beacon.chain.pool.reactor.AttestationVerificationProcessor;
 import org.ethereum.beacon.chain.pool.reactor.IdentifyProcessor;
-import org.ethereum.beacon.chain.pool.reactor.Input;
 import org.ethereum.beacon.chain.pool.reactor.SanityCheckProcessor;
 import org.ethereum.beacon.chain.pool.reactor.TimeFrameProcessor;
 import org.ethereum.beacon.chain.pool.registry.ProcessedAttestations;
@@ -77,14 +76,12 @@ public class InMemoryAttestationPool implements AttestationPool {
     Scheduler executor =
         schedulers.newParallelDaemon("attestation-pool-%d", AttestationPool.MAX_THREADS);
 
-    Flux<Input> sourceFx = Flux.from(source).map(Input::wrap).publishOn(executor.toReactor());
-    Flux<Input> newSlotsFx = Flux.from(newSlots).map(Input::wrap).publishOn(executor.toReactor());
-    Flux<Input> importedBlocksFx =
-        Flux.from(importedBlocks).map(Input::wrap).publishOn(executor.toReactor());
-    Flux<Input> finalizedCheckpointsFx =
-        Flux.from(finalizedCheckpoints).map(Input::wrap).publishOn(executor.toReactor());
-    Flux<Input> chainHeadsFx =
-        Flux.from(chainHeads).map(Input::wrap).publishOn(executor.toReactor());
+    Flux<?> sourceFx = Flux.from(source).publishOn(executor.toReactor());
+    Flux<?> newSlotsFx = Flux.from(newSlots).publishOn(executor.toReactor());
+    Flux<?> importedBlocksFx = Flux.from(importedBlocks).publishOn(executor.toReactor());
+    Flux<?> finalizedCheckpointsFx =
+        Flux.from(finalizedCheckpoints).publishOn(executor.toReactor());
+    Flux<?> chainHeadsFx = Flux.from(chainHeads).publishOn(executor.toReactor());
 
     // start from time frame processor
     Flux.merge(sourceFx, newSlotsFx, finalizedCheckpointsFx).subscribe(timeFrameProcessor);
@@ -93,7 +90,7 @@ public class InMemoryAttestationPool implements AttestationPool {
 
     // subscribe sanity checker
     Flux.merge(
-            timeFrameOut.getSatisfied().map(att -> Input.wrap(att.getAttestation())),
+            timeFrameOut.getSatisfied().map(CheckedAttestation::getAttestation),
             finalizedCheckpointsFx)
         .subscribe(sanityChecker);
     FluxSplit<CheckedAttestation> sanityOut =
@@ -111,8 +108,7 @@ public class InMemoryAttestationPool implements AttestationPool {
         Fluxes.split(newAttestations, encodingChecker::check);
 
     // identify attestation target
-    Flux.merge(encodingCheckOut.getSatisfied().map(Input::wrap), newSlotsFx, importedBlocksFx)
-        .subscribe(identifier);
+    Flux.merge(encodingCheckOut.getSatisfied(), newSlotsFx, importedBlocksFx).subscribe(identifier);
 
     // verify attestations
     identifier.bufferTimeout(VERIFIER_BUFFER_SIZE, VERIFIER_INTERVAL).subscribe(verifier);

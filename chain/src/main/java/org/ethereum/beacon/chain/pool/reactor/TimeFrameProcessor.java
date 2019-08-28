@@ -24,7 +24,7 @@ import org.ethereum.beacon.stream.AbstractDelegateProcessor;
  *   <li>attestations tagged with the check flag.
  * </ul>
  */
-public class TimeFrameProcessor extends AbstractDelegateProcessor<Input, CheckedAttestation> {
+public class TimeFrameProcessor extends AbstractDelegateProcessor<Object, CheckedAttestation> {
 
   private final TimeFrameFilter filter;
 
@@ -33,18 +33,19 @@ public class TimeFrameProcessor extends AbstractDelegateProcessor<Input, Checked
   }
 
   @Override
-  protected void hookOnNext(Input value) {
-    if (value.getType().equals(Checkpoint.class)) {
-      filter.feedFinalizedCheckpoint(value.unbox());
-    } else if (value.getType().equals(SlotNumber.class)) {
-      filter.feedNewSlot(value.unbox());
-    } else if (value.getType().equals(ReceivedAttestation.class)) {
+  protected void hookOnNext(Object value) {
+    if (value.getClass().equals(Checkpoint.class)) {
+      filter.feedFinalizedCheckpoint((Checkpoint) value);
+    } else if (value.getClass().equals(SlotNumber.class)) {
+      filter.feedNewSlot((SlotNumber) value);
+    } else if (value.getClass().equals(ReceivedAttestation.class)) {
       if (filter.isInitialized()) {
-        publishOut(new CheckedAttestation(filter.check(value.unbox()), value.unbox()));
+        ReceivedAttestation attestation = (ReceivedAttestation) value;
+        publishOut(new CheckedAttestation(filter.check(attestation), attestation));
       }
     } else {
       throw new IllegalArgumentException(
-          "Unsupported input type: " + value.getType().getSimpleName());
+          "Unsupported input type: " + value.getClass().getSimpleName());
     }
   }
 }

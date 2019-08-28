@@ -26,7 +26,7 @@ import reactor.core.publisher.FluxSink;
  *   <li>attestations identified upon a new block come
  * </ul>
  */
-public class IdentifyProcessor extends AbstractDelegateProcessor<Input, ReceivedAttestation> {
+public class IdentifyProcessor extends AbstractDelegateProcessor<Object, ReceivedAttestation> {
 
   private final UnknownAttestationPool pool;
   private final DirectProcessor<ReceivedAttestation> unknownAttestations = DirectProcessor.create();
@@ -37,27 +37,29 @@ public class IdentifyProcessor extends AbstractDelegateProcessor<Input, Received
   }
 
   @Override
-  protected void hookOnNext(Input value) {
-    if (value.getType().equals(BeaconBlock.class)) {
+  protected void hookOnNext(Object value) {
+    if (value.getClass().equals(BeaconBlock.class)) {
       // forward attestations identified with a new block
-      pool.feedNewImportedBlock(value.unbox()).forEach(this::publishOut);
-    } else if (value.getType().equals(SlotNumber.class)) {
-      pool.feedNewSlot(value.unbox());
-    } else if (value.getType().equals(ReceivedAttestation.class)) {
+      pool.feedNewImportedBlock((BeaconBlock) value).forEach(this::publishOut);
+    } else if (value.getClass().equals(SlotNumber.class)) {
+      pool.feedNewSlot((SlotNumber) value);
+    } else if (value.getClass().equals(ReceivedAttestation.class)) {
       if (pool.isInitialized()) {
         return;
       }
 
-      if (!pool.add(value.unbox())) {
+      ReceivedAttestation attestation = (ReceivedAttestation) value;
+
+      if (!pool.add(attestation)) {
         // forward attestations not added to the pool
-        publishOut(value.unbox());
+        publishOut(attestation);
       } else {
         // expose not yet identified attestations
-        unknownOut.next(value.unbox());
+        unknownOut.next(attestation);
       }
     } else {
       throw new IllegalArgumentException(
-          "Unsupported input type: " + value.getType().getSimpleName());
+          "Unsupported input type: " + value.getClass().getSimpleName());
     }
   }
 

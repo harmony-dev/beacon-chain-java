@@ -4,10 +4,10 @@ import org.ethereum.beacon.chain.pool.churn.OffChainAggregates;
 import org.ethereum.beacon.stream.AbstractDelegateProcessor;
 
 public class AttestationChurnProcessor
-    extends AbstractDelegateProcessor<Input, OffChainAggregates> {
+    extends AbstractDelegateProcessor<Object, OffChainAggregates> {
 
   @Override
-  protected void hookOnNext(Input value) {
+  protected void hookOnNext(Object value) {
     // TODO implement
   }
 }

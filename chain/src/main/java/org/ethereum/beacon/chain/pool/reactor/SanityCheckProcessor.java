@@ -22,7 +22,7 @@ import org.ethereum.beacon.stream.AbstractDelegateProcessor;
  *   <li>attestations tagged with the check flag.
  * </ul>
  */
-public class SanityCheckProcessor extends AbstractDelegateProcessor<Input, CheckedAttestation> {
+public class SanityCheckProcessor extends AbstractDelegateProcessor<Object, CheckedAttestation> {
 
   private final SanityChecker checker;
 
@@ -31,16 +31,17 @@ public class SanityCheckProcessor extends AbstractDelegateProcessor<Input, Check
   }
 
   @Override
-  protected void hookOnNext(Input value) {
-    if (value.getType().equals(Checkpoint.class)) {
-      checker.feedFinalizedCheckpoint(value.unbox());
-    } else if (value.getType().equals(ReceivedAttestation.class)) {
+  protected void hookOnNext(Object value) {
+    if (value.getClass().equals(Checkpoint.class)) {
+      checker.feedFinalizedCheckpoint((Checkpoint) value);
+    } else if (value.getClass().equals(ReceivedAttestation.class)) {
       if (checker.isInitialized()) {
-        publishOut(new CheckedAttestation(checker.check(value.unbox()), value.unbox()));
+        ReceivedAttestation attestation = (ReceivedAttestation) value;
+        publishOut(new CheckedAttestation(checker.check(attestation), attestation));
       }
     } else {
       throw new IllegalArgumentException(
-          "Unsupported input type: " + value.getType().getSimpleName());
+          "Unsupported input type: " + value.getClass().getSimpleName());
     }
   }
 }
