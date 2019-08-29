@@ -97,15 +97,16 @@ public class ConfigUtils {
               deposits.stream().map(Deposit::getData).collect(Collectors.toList()),
               Integer::new,
               1L << spec.getConstants().getDepositContractTreeDepth().getIntValue());
+      Hash32 blockHash =
+          eConfig.getEth1BlockHash() == null || eConfig.getEth1BlockHash().length() == 0
+              ? Hash32.random(random)
+              : Hash32.wrap(Bytes32.fromHexString(eConfig.getEth1BlockHash()));
       Eth1Data eth1Data =
           new Eth1Data(
-              spec.hash_tree_root(depositDataList),
-              UInt64.valueOf(deposits.size()),
-              Hash32.random(random));
+              spec.hash_tree_root(depositDataList), UInt64.valueOf(deposits.size()), blockHash);
       ChainStart chainStart =
           new ChainStart(Time.of(eConfig.getGenesisTime().getTime() / 1000), eth1Data, deposits);
-      SimpleDepositContract depositContract = new SimpleDepositContract(chainStart);
-      return depositContract;
+      return new SimpleDepositContract(chainStart);
     } else {
       throw new IllegalArgumentException(
           "This config class is not yet supported: " + config.getClass());
