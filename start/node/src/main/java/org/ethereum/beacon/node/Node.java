@@ -91,6 +91,13 @@ public class Node implements Runnable {
   )
   private String genesisTime;
 
+  @CommandLine.Option(
+      names = "--spec-constants",
+      paramLabel = "spec-constants",
+      description = "Path to a spec constants file in yaml format (flat format)"
+  )
+  private String specConstantsFile;
+
   public String getName() {
     return name;
   }
@@ -109,6 +116,10 @@ public class Node implements Runnable {
 
   public String getGenesisTime() {
     return genesisTime;
+  }
+
+  public String getSpecConstantsFile() {
+    return specConstantsFile;
   }
 
   public static void main(String[] args) {
