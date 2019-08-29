@@ -86,9 +86,25 @@ public class ConfigUtils {
           eConfig.getBalance() != null
               ? Gwei.ofEthers(eConfig.getBalance())
               : spec.getConstants().getMaxEffectiveBalance();
-      List<Deposit> deposits =
-          SimulateUtils.getDepositsForKeyPairs(
-              UInt64.ZERO, random, keyPairs, spec, amount, verifyProof);
+
+      List<Deposit> deposits;
+      if (eConfig.isInteropCredentials()) {
+        // depostis with mocked start credentials for interop
+        List<Hash32> withdrawalCredentials =
+            SimulateUtils.generateInteropCredentials(
+                spec.getConstants().getBlsWithdrawalPrefix(), keyPairs);
+        // keep random proofs for now
+        List<List<Hash32>> depositProofs =
+            SimulateUtils.generateRandomDepositProofs(random, keyPairs);
+        deposits =
+            SimulateUtils.getDepositsForKeyPairs(
+                keyPairs, withdrawalCredentials, amount, depositProofs, spec, verifyProof);
+      } else {
+        deposits =
+            SimulateUtils.getDepositsForKeyPairs(
+                UInt64.ZERO, random, keyPairs, spec, amount, verifyProof);
+      }
+
       ReadList<Integer, DepositData> depositDataList =
           ReadList.wrap(
               deposits.stream().map(Deposit::getData).collect(Collectors.toList()),

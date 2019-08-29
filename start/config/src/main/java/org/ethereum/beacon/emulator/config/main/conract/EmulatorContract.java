@@ -16,6 +16,7 @@ public class EmulatorContract extends Contract {
   private Integer balance;
   private List<ValidatorKeys> keys;
   private String eth1BlockHash = createInteropEth1BlockHash();
+  private boolean interopCredentials = true;
 
   /**
    * @return HEX String representation of a hash32 consisting of 32 0x42 bytes, which is the interop
@@ -58,5 +59,13 @@ public class EmulatorContract extends Contract {
 
   public void setEth1BlockHash(String eth1BlockHash) {
     this.eth1BlockHash = eth1BlockHash;
+  }
+
+  public boolean isInteropCredentials() {
+    return interopCredentials;
+  }
+
+  public void setInteropCredentials(boolean interopCredentials) {
+    this.interopCredentials = interopCredentials;
   }
 }

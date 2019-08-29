@@ -9,13 +9,12 @@ import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.crypto.BLS381;
 import org.ethereum.beacon.crypto.BLS381.PrivateKey;
+import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.crypto.MessageParameters;
 import org.javatuples.Pair;
+import org.jetbrains.annotations.NotNull;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.bytes.Bytes32;
-import tech.pegasys.artemis.util.bytes.Bytes4;
-import tech.pegasys.artemis.util.bytes.Bytes48;
-import tech.pegasys.artemis.util.bytes.Bytes96;
+import tech.pegasys.artemis.util.bytes.*;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 import java.util.ArrayList;
@@ -53,7 +52,20 @@ public class SimulateUtils {
 
   public static synchronized Deposit getDepositForKeyPair(Random rnd,
       BLS381.KeyPair keyPair, BeaconChainSpec spec, Gwei initBalance, boolean isProofVerifyEnabled) {
-    Hash32 withdrawalCredentials = Hash32.random(rnd);
+    Hash32 credentials = Hash32.random(rnd);
+    List<Hash32> depositProof = Collections.singletonList(Hash32.random(rnd));
+    return getDepositForKeyPair(
+        keyPair, credentials, initBalance, depositProof, spec, isProofVerifyEnabled);
+  }
+
+  @NotNull
+  private static Deposit getDepositForKeyPair(
+      BLS381.KeyPair keyPair,
+      Hash32 withdrawalCredentials,
+      Gwei initBalance,
+      List<Hash32> depositProof,
+      BeaconChainSpec spec,
+      boolean isProofVerifyEnabled) {
     DepositData depositDataWithoutSignature =
         new DepositData(
             BLSPubkey.wrap(Bytes48.leftPad(keyPair.getPublic().getEncodedBytes())),
@@ -73,11 +85,11 @@ public class SimulateUtils {
 
     Deposit deposit =
         Deposit.create(
-            Collections.singletonList(Hash32.random(rnd)),
+            depositProof,
             new DepositData(
-                BLSPubkey.wrap(Bytes48.leftPad(keyPair.getPublic().getEncodedBytes())),
-                withdrawalCredentials,
-                spec.getConstants().getMaxEffectiveBalance(),
+                depositDataWithoutSignature.getPubKey(),
+                depositDataWithoutSignature.getWithdrawalCredentials(),
+                depositDataWithoutSignature.getAmount(),
                 signature));
     return deposit;
   }
@@ -104,14 +116,68 @@ public class SimulateUtils {
       BeaconChainSpec spec,
       Gwei initBalance,
       boolean isProofVerifyEnabled) {
+    List<Hash32> withdrawalCredentials = generateRandomWithdrawalCredentials(rnd, keyPairs);
+    List<List<Hash32>> depositProofs = generateRandomDepositProofs(rnd, keyPairs);
+    return getDepositsForKeyPairs(
+        keyPairs, withdrawalCredentials, initBalance, depositProofs, spec, isProofVerifyEnabled);
+  }
 
+  @NotNull
+  public static List<Deposit> getDepositsForKeyPairs(
+      List<BLS381.KeyPair> keyPairs,
+      List<Hash32> withdrawalCredentials,
+      Gwei initBalance,
+      List<List<Hash32>> depositProofs,
+      BeaconChainSpec spec,
+      boolean isProofVerifyEnabled) {
     List<Deposit> deposits = new ArrayList<>();
 
-    for (BLS381.KeyPair keyPair : keyPairs) {
-      deposits.add(getDepositForKeyPair(rnd, keyPair, spec, initBalance, isProofVerifyEnabled));
+    for (int i = 0; i < keyPairs.size(); i++) {
+      BLS381.KeyPair keyPair = keyPairs.get(i);
+      Hash32 credentials = withdrawalCredentials.get(i);
+      List<Hash32> depositProof = depositProofs.get(i);
+      deposits.add(getDepositForKeyPair(
+          keyPair, credentials, initBalance, depositProof, spec, isProofVerifyEnabled));
     }
 
     return deposits;
+  }
+
+  @NotNull
+  public static List<List<Hash32>> generateRandomDepositProofs(
+      Random rnd, List<BLS381.KeyPair> keyPairs) {
+    List<List<Hash32>> depositProofs = new ArrayList<>();
+    for (BLS381.KeyPair keyPair : keyPairs) {
+      List<Hash32> depositProof = Collections.singletonList(Hash32.random(rnd));
+      depositProofs.add(depositProof);
+    }
+    return depositProofs;
+  }
+
+  @NotNull
+  public static List<Hash32> generateRandomWithdrawalCredentials(
+      Random rnd, List<BLS381.KeyPair> keyPairs) {
+    List<Hash32> withdrawalCredentials = new ArrayList<>();
+    for (BLS381.KeyPair keyPair : keyPairs) {
+      withdrawalCredentials.add(Hash32.random(rnd));
+    }
+    return withdrawalCredentials;
+  }
+
+  /**
+   * Generate withdrawal credentials according to mocked start spec.
+   * @See <a href="https://github.com/ethereum/eth2.0-pm/tree/master/interop/mocked_start#generate-deposits"/>
+   */
+  public static List<Hash32> generateInteropCredentials(
+      UInt64 blsWithdrawalPrefix, List<BLS381.KeyPair> keyPairs) {
+    List<Hash32> withdrawalCredentials = new ArrayList<>();
+    for (BLS381.KeyPair keyPair : keyPairs) {
+      MutableBytes32 credentials =
+          Hashes.sha256(keyPair.getPublic().getEncodedBytes()).mutableCopy();
+      credentials.set(0, blsWithdrawalPrefix.toBytes8().get(0));
+      withdrawalCredentials.add(Hash32.wrap(credentials.copy()));
+    }
+    return withdrawalCredentials;
   }
 
   private static synchronized Pair<List<Deposit>, List<BLS381.KeyPair>> generateRandomDeposits(
