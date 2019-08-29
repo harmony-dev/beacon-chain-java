@@ -5,7 +5,7 @@ config:
 
   validator:
     contract: !emulator
-      balance: 55
+      # balance: 55
       keys:
         - !interop
           count: 16
