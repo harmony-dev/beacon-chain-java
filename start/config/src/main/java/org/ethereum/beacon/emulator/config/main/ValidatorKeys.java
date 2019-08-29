@@ -9,6 +9,7 @@ import java.util.List;
     @JsonSubTypes.Type(value = ValidatorKeys.Generate.class, name = "generate"),
     @JsonSubTypes.Type(value = ValidatorKeys.Private.class, name = "private"),
     @JsonSubTypes.Type(value = ValidatorKeys.Public.class, name = "public"),
+    @JsonSubTypes.Type(value = ValidatorKeys.InteropKeys.class, name = "interop"),
 })
 public abstract class ValidatorKeys {
 
@@ -39,6 +40,18 @@ public abstract class ValidatorKeys {
 
     public void setStartIndex(int startIndex) {
       this.startIndex = startIndex;
+    }
+  }
+
+  public static class InteropKeys extends ValidatorKeys {
+    private int count;
+
+    public int getCount() {
+      return count;
+    }
+
+    public void setCount(int count) {
+      this.count = count;
     }
   }
 

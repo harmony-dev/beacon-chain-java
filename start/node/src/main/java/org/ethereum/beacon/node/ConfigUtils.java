@@ -1,6 +1,5 @@
 package org.ethereum.beacon.node;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
@@ -17,6 +16,7 @@ import org.ethereum.beacon.emulator.config.main.Signer;
 import org.ethereum.beacon.emulator.config.main.Signer.Insecure;
 import org.ethereum.beacon.emulator.config.main.ValidatorKeys;
 import org.ethereum.beacon.emulator.config.main.ValidatorKeys.Generate;
+import org.ethereum.beacon.emulator.config.main.ValidatorKeys.InteropKeys;
 import org.ethereum.beacon.emulator.config.main.ValidatorKeys.Private;
 import org.ethereum.beacon.emulator.config.main.ValidatorKeys.Public;
 import org.ethereum.beacon.emulator.config.main.conract.Contract;
@@ -24,6 +24,7 @@ import org.ethereum.beacon.emulator.config.main.conract.EmulatorContract;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.start.common.util.SimpleDepositContract;
 import org.ethereum.beacon.start.common.util.SimulateUtils;
+import org.ethereum.beacon.start.common.util.SimulationKeyPairGenerator;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
@@ -66,15 +67,11 @@ public class ConfigUtils {
               .collect(Collectors.toList());
     } else if (keys instanceof Generate) {
       Generate genKeys = (Generate) keys;
-      Random random = new Random(genKeys.getSeed());
-      for (int i = 0; i < genKeys.getStartIndex(); i++) {
-        Bytes32.random(random);
-      }
-      List<KeyPair> ret = new ArrayList<>();
-      for (int i = 0; i < genKeys.getCount(); i++) {
-        ret.add(KeyPair.create(PrivateKey.create(Bytes32.random(random))));
-      }
-      return ret;
+      return SimulationKeyPairGenerator.generateRandomKeys(
+          genKeys.getSeed(), genKeys.getStartIndex(), genKeys.getCount());
+    } else if (keys instanceof InteropKeys) {
+      InteropKeys interopKeys = (InteropKeys) keys;
+      return SimulationKeyPairGenerator.generateInteropKeys(interopKeys.getCount());
     } else {
       throw new IllegalArgumentException("Unknown ValidatorKeys subclass: " + keys.getClass());
     }
