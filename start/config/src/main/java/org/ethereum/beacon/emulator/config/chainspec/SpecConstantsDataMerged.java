@@ -1,7 +1,8 @@
-package org.ethereum.beacon.test.type;
+package org.ethereum.beacon.emulator.config.chainspec;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
+import org.ethereum.beacon.emulator.config.Config;
 import org.ethereum.beacon.emulator.config.chainspec.DepositContractParametersData;
 import org.ethereum.beacon.emulator.config.chainspec.GweiValuesData;
 import org.ethereum.beacon.emulator.config.chainspec.HonestValidatorParametersData;
@@ -14,7 +15,7 @@ import org.ethereum.beacon.emulator.config.chainspec.StateListLengthsData;
 import org.ethereum.beacon.emulator.config.chainspec.TimeParametersData;
 
 @JsonIgnoreProperties(ignoreUnknown = false)
-public class SpecConstantsDataMerged extends SpecConstantsData {
+public class SpecConstantsDataMerged extends SpecConstantsData implements Config {
   @JsonUnwrapped private DepositContractParametersData depositContractParameters;
   @JsonUnwrapped private HonestValidatorParametersData honestValidatorParameters;
   @JsonUnwrapped private InitialValuesData initialValues;

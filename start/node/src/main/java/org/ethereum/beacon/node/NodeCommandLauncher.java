@@ -32,6 +32,8 @@ import org.ethereum.beacon.crypto.BLS381.KeyPair;
 import org.ethereum.beacon.emulator.config.ConfigBuilder;
 import org.ethereum.beacon.emulator.config.ConfigException;
 import org.ethereum.beacon.emulator.config.chainspec.SpecBuilder;
+import org.ethereum.beacon.emulator.config.chainspec.SpecConstantsData;
+import org.ethereum.beacon.emulator.config.chainspec.SpecConstantsDataMerged;
 import org.ethereum.beacon.emulator.config.chainspec.SpecData;
 import org.ethereum.beacon.emulator.config.main.MainConfig;
 import org.ethereum.beacon.emulator.config.main.Signer.Insecure;
@@ -45,10 +47,15 @@ import org.ethereum.beacon.schedulers.Scheduler;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.start.common.NodeLauncher;
 import org.ethereum.beacon.start.common.util.MDCControlledSchedulers;
+import org.ethereum.beacon.util.Objects;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import org.ethereum.beacon.wire.net.ConnectionManager;
 import org.ethereum.beacon.wire.net.netty.NettyClient;
 import org.ethereum.beacon.wire.net.netty.NettyServer;
+import org.jetbrains.annotations.NotNull;
+
+import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Paths;
 
 public class NodeCommandLauncher implements Runnable {
   private static final Logger logger = LogManager.getLogger("node");
@@ -206,6 +213,18 @@ public class NodeCommandLauncher implements Runnable {
 
       ConfigBuilder<SpecData> specConfigBuilder =
           new ConfigBuilder<>(SpecData.class).addYamlConfigFromResources("/config/spec-constants.yml");
+
+      if (cliOptions != null
+          && cliOptions.getSpecConstantsFile() != null
+          && cliOptions.getSpecConstantsFile().length() > 0) {
+        SpecData chainSpec = config.getChainSpec();
+        SpecConstantsDataMerged specConstantsYaml =
+            loadSpecConstantsDataMerged(cliOptions.getSpecConstantsFile());
+        SpecConstantsData mergedConstants =
+            mergeSpecConstantsData(chainSpec.getSpecConstants(), specConstantsYaml);
+        chainSpec.setSpecConstants(mergedConstants);
+        config.setChainSpec(chainSpec);
+      }
       if (config.getChainSpec().isDefined()) {
         specConfigBuilder.addConfig(config.getChainSpec());
       }
@@ -331,6 +350,27 @@ public class NodeCommandLauncher implements Runnable {
         config,
         specBuilder,
         logLevel);
+    }
+
+    @NotNull
+    private static SpecConstantsData mergeSpecConstantsData(SpecConstantsData specConsts, SpecConstantsDataMerged specConstsYaml) {
+      if (specConsts == null) {
+        return specConstsYaml;
+      } else {
+        try {
+          return Objects.copyProperties(specConsts, specConstsYaml);
+        } catch (IllegalAccessException| InvocationTargetException e) {
+          throw new RuntimeException(
+              String.format("Failed to merge config %s into main config", specConsts), e);
+        }
+      }
+    }
+
+    private static SpecConstantsDataMerged loadSpecConstantsDataMerged(String specConstants) {
+      ConfigBuilder<SpecConstantsDataMerged> specConstsBuilder =
+          new ConfigBuilder<>(SpecConstantsDataMerged.class);
+      specConstsBuilder.addYamlConfig(Paths.get(specConstants).toFile());
+      return specConstsBuilder.build();
     }
 
     public Builder withConfigFromFile(File file) {
