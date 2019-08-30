@@ -1,6 +1,5 @@
 package org.ethereum.beacon.node;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
@@ -17,6 +16,7 @@ import org.ethereum.beacon.emulator.config.main.Signer;
 import org.ethereum.beacon.emulator.config.main.Signer.Insecure;
 import org.ethereum.beacon.emulator.config.main.ValidatorKeys;
 import org.ethereum.beacon.emulator.config.main.ValidatorKeys.Generate;
+import org.ethereum.beacon.emulator.config.main.ValidatorKeys.InteropKeys;
 import org.ethereum.beacon.emulator.config.main.ValidatorKeys.Private;
 import org.ethereum.beacon.emulator.config.main.ValidatorKeys.Public;
 import org.ethereum.beacon.emulator.config.main.conract.Contract;
@@ -24,6 +24,7 @@ import org.ethereum.beacon.emulator.config.main.conract.EmulatorContract;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.start.common.util.SimpleDepositContract;
 import org.ethereum.beacon.start.common.util.SimulateUtils;
+import org.ethereum.beacon.start.common.util.SimulationKeyPairGenerator;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
@@ -66,15 +67,11 @@ public class ConfigUtils {
               .collect(Collectors.toList());
     } else if (keys instanceof Generate) {
       Generate genKeys = (Generate) keys;
-      Random random = new Random(genKeys.getSeed());
-      for (int i = 0; i < genKeys.getStartIndex(); i++) {
-        Bytes32.random(random);
-      }
-      List<KeyPair> ret = new ArrayList<>();
-      for (int i = 0; i < genKeys.getCount(); i++) {
-        ret.add(KeyPair.create(PrivateKey.create(Bytes32.random(random))));
-      }
-      return ret;
+      return SimulationKeyPairGenerator.generateRandomKeys(
+          genKeys.getSeed(), genKeys.getStartIndex(), genKeys.getCount());
+    } else if (keys instanceof InteropKeys) {
+      InteropKeys interopKeys = (InteropKeys) keys;
+      return SimulationKeyPairGenerator.generateInteropKeys(interopKeys.getCount());
     } else {
       throw new IllegalArgumentException("Unknown ValidatorKeys subclass: " + keys.getClass());
     }
@@ -89,23 +86,40 @@ public class ConfigUtils {
           eConfig.getBalance() != null
               ? Gwei.ofEthers(eConfig.getBalance())
               : spec.getConstants().getMaxEffectiveBalance();
-      List<Deposit> deposits =
-          SimulateUtils.getDepositsForKeyPairs(
-              UInt64.ZERO, random, keyPairs, spec, amount, verifyProof);
+
+      List<Deposit> deposits;
+      if (eConfig.isInteropCredentials()) {
+        // depostis with mocked start credentials for interop
+        List<Hash32> withdrawalCredentials =
+            SimulateUtils.generateInteropCredentials(
+                spec.getConstants().getBlsWithdrawalPrefix(), keyPairs);
+        // keep random proofs for now
+        List<List<Hash32>> depositProofs =
+            SimulateUtils.generateRandomDepositProofs(random, keyPairs);
+        deposits =
+            SimulateUtils.getDepositsForKeyPairs(
+                keyPairs, withdrawalCredentials, amount, depositProofs, spec, verifyProof);
+      } else {
+        deposits =
+            SimulateUtils.getDepositsForKeyPairs(
+                UInt64.ZERO, random, keyPairs, spec, amount, verifyProof);
+      }
+
       ReadList<Integer, DepositData> depositDataList =
           ReadList.wrap(
               deposits.stream().map(Deposit::getData).collect(Collectors.toList()),
               Integer::new,
               1L << spec.getConstants().getDepositContractTreeDepth().getIntValue());
+      Hash32 blockHash =
+          eConfig.getEth1BlockHash() == null || eConfig.getEth1BlockHash().length() == 0
+              ? Hash32.random(random)
+              : Hash32.wrap(Bytes32.fromHexString(eConfig.getEth1BlockHash()));
       Eth1Data eth1Data =
           new Eth1Data(
-              spec.hash_tree_root(depositDataList),
-              UInt64.valueOf(deposits.size()),
-              Hash32.random(random));
+              spec.hash_tree_root(depositDataList), UInt64.valueOf(deposits.size()), blockHash);
       ChainStart chainStart =
           new ChainStart(Time.of(eConfig.getGenesisTime().getTime() / 1000), eth1Data, deposits);
-      SimpleDepositContract depositContract = new SimpleDepositContract(chainStart);
-      return depositContract;
+      return new SimpleDepositContract(chainStart);
     } else {
       throw new IllegalArgumentException(
           "This config class is not yet supported: " + config.getClass());
