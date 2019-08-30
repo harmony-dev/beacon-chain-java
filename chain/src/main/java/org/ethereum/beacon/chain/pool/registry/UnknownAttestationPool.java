@@ -78,6 +78,10 @@ public class UnknownAttestationPool implements AttestationRegistry, StatefulProc
    * @return a list of attestations that have been identified by the block.
    */
   public List<ReceivedAttestation> feedNewImportedBlock(BeaconBlock block) {
+    if (!isInitialized()) {
+      return Collections.emptyList();
+    }
+
     EpochNumber blockEpoch = spec.compute_epoch_of_slot(block.getSlot());
     // blockEpoch < currentBaseLine || blockEpoch >= currentBaseLine + TRACKED_EPOCHS
     if (blockEpoch.less(currentBaseLine)

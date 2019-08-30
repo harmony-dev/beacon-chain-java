@@ -1,51 +1,59 @@
 package org.ethereum.beacon.chain.pool.reactor;
 
-import org.ethereum.beacon.chain.pool.CheckedAttestation;
 import org.ethereum.beacon.chain.pool.ReceivedAttestation;
 import org.ethereum.beacon.chain.pool.checker.TimeFrameFilter;
 import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.types.SlotNumber;
-import org.ethereum.beacon.stream.AbstractDelegateProcessor;
+import org.ethereum.beacon.schedulers.Schedulers;
+import org.ethereum.beacon.stream.OutsourcePublisher;
+import reactor.core.CoreSubscriber;
+import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Scheduler;
 
 /**
- * Processor throttling attestations through a {@link TimeFrameFilter}.
+ * Passes attestations through a {@link TimeFrameFilter}.
  *
  * <p>Input:
  *
  * <ul>
- *   <li>recently finalized checkpoints.
- *   <li>new slots.
- *   <li>attestations.
+ *   <li>recently finalized checkpoints
+ *   <li>new slots
+ *   <li>attestations
  * </ul>
  *
  * <p>Output:
  *
  * <ul>
- *   <li>attestations tagged with the check flag.
+ *   <li>attestations satisfying time frames
  * </ul>
  */
-public class TimeProcessor extends AbstractDelegateProcessor<Object, CheckedAttestation> {
+public class TimeProcessor extends Flux<ReceivedAttestation> {
 
   private final TimeFrameFilter filter;
+  private final OutsourcePublisher<ReceivedAttestation> out = new OutsourcePublisher<>();
 
-  public TimeProcessor(TimeFrameFilter filter) {
+  public TimeProcessor(
+      TimeFrameFilter filter,
+      Schedulers schedulers,
+      Flux<ReceivedAttestation> source,
+      Flux<Checkpoint> finalizedCheckpoints,
+      Flux<SlotNumber> newSlots) {
     this.filter = filter;
+
+    Scheduler scheduler = schedulers.newSingleThreadDaemon("pool-time-frame-filter").toReactor();
+    source.publishOn(scheduler).subscribe(this::hookOnNext);
+    finalizedCheckpoints.publishOn(scheduler).subscribe(this.filter::feedFinalizedCheckpoint);
+    newSlots.publishOn(scheduler).subscribe(this.filter::feedNewSlot);
+  }
+
+  private void hookOnNext(ReceivedAttestation attestation) {
+    if (filter.isInitialized() && filter.check(attestation)) {
+      out.publishOut(attestation);
+    }
   }
 
   @Override
-  protected void hookOnNext(Object value) {
-    if (value.getClass().equals(Checkpoint.class)) {
-      filter.feedFinalizedCheckpoint((Checkpoint) value);
-    } else if (value.getClass().equals(SlotNumber.class)) {
-      filter.feedNewSlot((SlotNumber) value);
-    } else if (value.getClass().equals(ReceivedAttestation.class)) {
-      if (filter.isInitialized()) {
-        ReceivedAttestation attestation = (ReceivedAttestation) value;
-        publishOut(new CheckedAttestation(filter.check(attestation), attestation));
-      }
-    } else {
-      throw new IllegalArgumentException(
-          "Unsupported input type: " + value.getClass().getSimpleName());
-    }
+  public void subscribe(CoreSubscriber<? super ReceivedAttestation> actual) {
+    out.subscribe(actual);
   }
 }

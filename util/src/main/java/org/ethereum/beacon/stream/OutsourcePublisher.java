@@ -1,8 +1,8 @@
 package org.ethereum.beacon.stream;
 
-import org.reactivestreams.Publisher;
-import org.reactivestreams.Subscriber;
+import reactor.core.CoreSubscriber;
 import reactor.core.publisher.DirectProcessor;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 
 /**
@@ -15,7 +15,7 @@ import reactor.core.publisher.FluxSink;
  *
  * @param <T> a kind of data.
  */
-public class OutsourcePublisher<T> implements Publisher<T> {
+public class OutsourcePublisher<T> extends Flux<T> {
 
   private final DirectProcessor<T> delegate = DirectProcessor.create();
   private final FluxSink<T> out = delegate.sink();
@@ -30,7 +30,7 @@ public class OutsourcePublisher<T> implements Publisher<T> {
   }
 
   @Override
-  public void subscribe(Subscriber<? super T> s) {
-    delegate.subscribe(s);
+  public void subscribe(CoreSubscriber<? super T> actual) {
+    delegate.subscribe(actual);
   }
 }

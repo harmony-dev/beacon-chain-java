@@ -1,12 +1,15 @@
 package org.ethereum.beacon.chain.pool;
 
+import java.util.List;
 import org.ethereum.beacon.chain.pool.checker.SanityChecker;
 import org.ethereum.beacon.chain.pool.checker.SignatureEncodingChecker;
 import org.ethereum.beacon.chain.pool.checker.TimeFrameFilter;
 import org.ethereum.beacon.chain.pool.churn.OffChainAggregates;
 import org.ethereum.beacon.chain.pool.reactor.ChurnProcessor;
+import org.ethereum.beacon.chain.pool.reactor.DoubleWorkProcessor;
 import org.ethereum.beacon.chain.pool.reactor.IdentificationProcessor;
 import org.ethereum.beacon.chain.pool.reactor.SanityProcessor;
+import org.ethereum.beacon.chain.pool.reactor.SignatureEncodingProcessor;
 import org.ethereum.beacon.chain.pool.reactor.TimeProcessor;
 import org.ethereum.beacon.chain.pool.reactor.VerificationProcessor;
 import org.ethereum.beacon.chain.pool.registry.ProcessedAttestations;
@@ -15,13 +18,11 @@ import org.ethereum.beacon.chain.pool.verifier.BatchVerifier;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.types.SlotNumber;
-import org.ethereum.beacon.schedulers.Scheduler;
 import org.ethereum.beacon.schedulers.Schedulers;
-import org.ethereum.beacon.stream.Fluxes;
-import org.ethereum.beacon.stream.Fluxes.FluxSplit;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Scheduler;
 
 /**
  * An implementation of attestation pool based on <a href="https://projectreactor.io/">Reactor</a>
@@ -36,16 +37,17 @@ public class InMemoryAttestationPool implements AttestationPool {
   private final Publisher<BeaconBlock> chainHeads;
   private final Schedulers schedulers;
 
-  private final TimeProcessor timeProcessor;
-  private final SanityProcessor sanityChecker;
+  private final TimeFrameFilter timeFrameFilter;
+  private final SanityChecker sanityChecker;
   private final SignatureEncodingChecker encodingChecker;
   private final ProcessedAttestations processedFilter;
-  private final IdentificationProcessor identifier;
-  private final VerificationProcessor verifier;
-  private final ChurnProcessor churn;
+  private final UnknownAttestationPool unknownPool;
+  private final BatchVerifier verifier;
 
   private final DirectProcessor<ReceivedAttestation> invalidAttestations = DirectProcessor.create();
   private final DirectProcessor<ReceivedAttestation> validAttestations = DirectProcessor.create();
+  private final DirectProcessor<ReceivedAttestation> unknownAttestations = DirectProcessor.create();
+  private final DirectProcessor<OffChainAggregates> offChainAggregates = DirectProcessor.create();
 
   public InMemoryAttestationPool(
       Publisher<ReceivedAttestation> source,
@@ -58,7 +60,7 @@ public class InMemoryAttestationPool implements AttestationPool {
       SanityChecker sanityChecker,
       SignatureEncodingChecker encodingChecker,
       ProcessedAttestations processedFilter,
-      UnknownAttestationPool unknownAttestationPool,
+      UnknownAttestationPool unknownPool,
       BatchVerifier batchVerifier) {
     this.source = source;
     this.newSlots = newSlots;
@@ -66,74 +68,77 @@ public class InMemoryAttestationPool implements AttestationPool {
     this.importedBlocks = importedBlocks;
     this.chainHeads = chainHeads;
     this.schedulers = schedulers;
-    this.timeProcessor = new TimeProcessor(timeFrameFilter);
-    this.sanityChecker = new SanityProcessor(sanityChecker);
+    this.timeFrameFilter = timeFrameFilter;
+    this.sanityChecker = sanityChecker;
     this.encodingChecker = encodingChecker;
     this.processedFilter = processedFilter;
-    this.identifier = new IdentificationProcessor(unknownAttestationPool);
-    this.verifier = new VerificationProcessor(batchVerifier);
-    this.churn = new ChurnProcessor();
+    this.unknownPool = unknownPool;
+    this.verifier = batchVerifier;
   }
 
   @Override
   public void start() {
-    Scheduler executor =
-        schedulers.newParallelDaemon("attestation-pool-%d", AttestationPool.MAX_THREADS);
+    Scheduler parallelExecutor =
+        schedulers
+            .newParallelDaemon("attestation-pool-%d", AttestationPool.MAX_THREADS)
+            .toReactor();
 
-    Flux<?> sourceFx = Flux.from(source).publishOn(executor.toReactor());
-    Flux<?> newSlotsFx = Flux.from(newSlots).publishOn(executor.toReactor());
-    Flux<?> importedBlocksFx = Flux.from(importedBlocks).publishOn(executor.toReactor());
-    Flux<?> finalizedCheckpointsFx =
-        Flux.from(finalizedCheckpoints).publishOn(executor.toReactor());
-    Flux<?> chainHeadsFx = Flux.from(chainHeads).publishOn(executor.toReactor());
+    // create sources
+    Flux<ReceivedAttestation> sourceFx = Flux.from(source);
+    Flux<SlotNumber> newSlotsFx = Flux.from(newSlots);
+    Flux<Checkpoint> finalizedCheckpointsFx = Flux.from(finalizedCheckpoints);
+    Flux<BeaconBlock> importedBlocksFx = Flux.from(importedBlocks);
+    Flux<BeaconBlock> chainHeadsFx = Flux.from(chainHeads);
 
-    // start from time frame processor
-    Flux.merge(sourceFx, newSlotsFx, finalizedCheckpointsFx).subscribe(timeProcessor);
-    FluxSplit<CheckedAttestation> timeFrameOut =
-        Fluxes.split(timeProcessor, CheckedAttestation::isPassed);
+    // check time frames
+    TimeProcessor timeProcessor =
+        new TimeProcessor(
+            timeFrameFilter, schedulers, sourceFx, finalizedCheckpointsFx, newSlotsFx);
 
-    // subscribe sanity checker
-    Flux.merge(
-            timeFrameOut.getSatisfied().map(CheckedAttestation::getAttestation),
-            finalizedCheckpointsFx)
-        .subscribe(sanityChecker);
-    FluxSplit<CheckedAttestation> sanityOut =
-        Fluxes.split(sanityChecker, CheckedAttestation::isPassed);
+    // run sanity check
+    SanityProcessor sanityProcessor =
+        new SanityProcessor(sanityChecker, schedulers, timeProcessor, finalizedCheckpointsFx);
 
-    // filter already processed attestations
-    Flux<ReceivedAttestation> newAttestations =
-        sanityOut
-            .getSatisfied()
-            .map(CheckedAttestation::getAttestation)
-            .filter(processedFilter::add);
+    // discard already processed attestations
+    DoubleWorkProcessor doubleWorkProcessor =
+        new DoubleWorkProcessor(processedFilter, schedulers, sanityProcessor.getValid());
 
     // check signature encoding
-    FluxSplit<ReceivedAttestation> encodingCheckOut =
-        Fluxes.split(newAttestations, encodingChecker::check);
+    SignatureEncodingProcessor encodingProcessor =
+        new SignatureEncodingProcessor(
+            encodingChecker, doubleWorkProcessor.publishOn(parallelExecutor));
 
     // identify attestation target
-    Flux.merge(encodingCheckOut.getSatisfied(), newSlotsFx, importedBlocksFx).subscribe(identifier);
+    IdentificationProcessor identificationProcessor =
+        new IdentificationProcessor(
+            unknownPool, schedulers, encodingProcessor.getValid(), newSlotsFx, importedBlocksFx);
 
     // verify attestations
-    identifier.bufferTimeout(VERIFIER_BUFFER_SIZE, VERIFIER_INTERVAL).subscribe(verifier);
-    FluxSplit<CheckedAttestation> verifierOut =
-        Fluxes.split(verifier, CheckedAttestation::isPassed);
+    Flux<List<ReceivedAttestation>> verificationThrottle =
+        identificationProcessor
+            .getIdentified()
+            .publishOn(parallelExecutor)
+            .bufferTimeout(VERIFIER_BUFFER_SIZE, VERIFIER_INTERVAL);
+    VerificationProcessor verificationProcessor =
+        new VerificationProcessor(verifier, verificationThrottle);
 
     // feed churn
-    Flux.merge(
-        verifierOut.getSatisfied().map(CheckedAttestation::getAttestation),
-        newSlotsFx,
-        chainHeadsFx);
+    ChurnProcessor churnProcessor = new ChurnProcessor(schedulers, chainHeadsFx, newSlotsFx);
 
+    Scheduler outScheduler = schedulers.events().toReactor();
+    // expose valid attestations
+    verificationProcessor.getValid().publishOn(outScheduler).subscribe(validAttestations);
+    // expose not yet identified
+    identificationProcessor.getUnknown().publishOn(outScheduler).subscribe(unknownAttestations);
+    // expose aggregates
+    churnProcessor.publishOn(outScheduler).subscribe(offChainAggregates);
     // expose invalid attestations
     Flux.merge(
-            sanityOut.getUnsatisfied().map(CheckedAttestation::getAttestation),
-            encodingCheckOut.getUnsatisfied(),
-            verifierOut.getUnsatisfied().map(CheckedAttestation::getAttestation))
+            sanityProcessor.getInvalid(),
+            encodingProcessor.getInvalid(),
+            verificationProcessor.getInvalid())
+        .publishOn(outScheduler)
         .subscribe(invalidAttestations);
-
-    // expose valid attestations
-    verifierOut.getSatisfied().map(CheckedAttestation::getAttestation).subscribe(validAttestations);
   }
 
   @Override
@@ -148,11 +153,11 @@ public class InMemoryAttestationPool implements AttestationPool {
 
   @Override
   public Publisher<ReceivedAttestation> getUnknownAttestations() {
-    return identifier.getUnknownAttestations();
+    return unknownAttestations;
   }
 
   @Override
   public Publisher<OffChainAggregates> getAggregates() {
-    return churn;
+    return offChainAggregates;
   }
 }

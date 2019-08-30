@@ -4,12 +4,13 @@ import org.ethereum.beacon.chain.pool.ReceivedAttestation;
 import org.ethereum.beacon.chain.pool.registry.UnknownAttestationPool;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.types.SlotNumber;
-import org.ethereum.beacon.stream.AbstractDelegateProcessor;
-import reactor.core.publisher.DirectProcessor;
-import reactor.core.publisher.FluxSink;
+import org.ethereum.beacon.schedulers.Schedulers;
+import org.ethereum.beacon.stream.OutsourcePublisher;
+import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Scheduler;
 
 /**
- * Processor throttling attestations through {@link UnknownAttestationPool}.
+ * Passes attestations through {@link UnknownAttestationPool}.
  *
  * <p>Input:
  *
@@ -24,46 +25,49 @@ import reactor.core.publisher.FluxSink;
  * <ul>
  *   <li>instantly identified attestations
  *   <li>attestations identified upon a new block come
+ *   <li>attestations with not yet imported block
  * </ul>
  */
-public class IdentificationProcessor extends AbstractDelegateProcessor<Object, ReceivedAttestation> {
+public class IdentificationProcessor {
 
   private final UnknownAttestationPool pool;
-  private final DirectProcessor<ReceivedAttestation> unknownAttestations = DirectProcessor.create();
-  private final FluxSink<ReceivedAttestation> unknownOut = unknownAttestations.sink();
+  private final OutsourcePublisher<ReceivedAttestation> identified = new OutsourcePublisher<>();
+  private final OutsourcePublisher<ReceivedAttestation> unknown = new OutsourcePublisher<>();
 
-  public IdentificationProcessor(UnknownAttestationPool pool) {
+  public IdentificationProcessor(
+      UnknownAttestationPool pool,
+      Schedulers schedulers,
+      Flux<ReceivedAttestation> source,
+      Flux<SlotNumber> newSlots,
+      Flux<BeaconBlock> newImportedBlocks) {
     this.pool = pool;
+
+    Scheduler scheduler =
+        schedulers.newSingleThreadDaemon("pool-attestation-identifier").toReactor();
+    newSlots.publishOn(scheduler).subscribe(this.pool::feedNewSlot);
+    newImportedBlocks.publishOn(scheduler).subscribe(this::hookOnNext);
+    source.publishOn(scheduler).subscribe(this::hookOnNext);
   }
 
-  @Override
-  protected void hookOnNext(Object value) {
-    if (value.getClass().equals(BeaconBlock.class)) {
-      // forward attestations identified with a new block
-      pool.feedNewImportedBlock((BeaconBlock) value).forEach(this::publishOut);
-    } else if (value.getClass().equals(SlotNumber.class)) {
-      pool.feedNewSlot((SlotNumber) value);
-    } else if (value.getClass().equals(ReceivedAttestation.class)) {
-      if (pool.isInitialized()) {
-        return;
-      }
+  private void hookOnNext(BeaconBlock block) {
+    pool.feedNewImportedBlock(block).forEach(identified::publishOut);
+  }
 
-      ReceivedAttestation attestation = (ReceivedAttestation) value;
-
-      if (!pool.add(attestation)) {
-        // forward attestations not added to the pool
-        publishOut(attestation);
+  private void hookOnNext(ReceivedAttestation attestation) {
+    if (pool.isInitialized()) {
+      if (pool.add(attestation)) {
+        unknown.publishOut(attestation);
       } else {
-        // expose not yet identified attestations
-        unknownOut.next(attestation);
+        identified.publishOut(attestation);
       }
-    } else {
-      throw new IllegalArgumentException(
-          "Unsupported input type: " + value.getClass().getSimpleName());
     }
   }
 
-  public DirectProcessor<ReceivedAttestation> getUnknownAttestations() {
-    return unknownAttestations;
+  public OutsourcePublisher<ReceivedAttestation> getIdentified() {
+    return identified;
+  }
+
+  public OutsourcePublisher<ReceivedAttestation> getUnknown() {
+    return unknown;
   }
 }
