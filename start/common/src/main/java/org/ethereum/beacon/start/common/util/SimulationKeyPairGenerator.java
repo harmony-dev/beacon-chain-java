@@ -3,6 +3,7 @@ package org.ethereum.beacon.start.common.util;
 import com.google.common.primitives.Bytes;
 import org.ethereum.beacon.crypto.BLS381;
 import org.ethereum.beacon.crypto.Hashes;
+import org.ethereum.beacon.crypto.bls.bc.BCParameters;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
@@ -15,7 +16,7 @@ import java.util.Random;
  * Key pair generation utilities for simulation purposes.
  */
 public class SimulationKeyPairGenerator {
-  private static BigInteger CURVE_ORDER = new BigInteger("52435875175126190479447740508185965837690552500527637822603658699938581184513");
+  private static BigInteger CURVE_ORDER = BCParameters.ORDER;
 
   /**
    * Generate public/private key pairs according to mocked start spec.
