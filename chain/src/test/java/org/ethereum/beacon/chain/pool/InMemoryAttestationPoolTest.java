@@ -79,6 +79,7 @@ class InMemoryAttestationPoolTest {
     @Test
     void integrationTest() {
         final MutableBeaconChain beaconChain = createBeaconChain(spec, perSlotTransition, schedulers);
+        beaconChain.init();
         final BeaconTuple recentlyProcessed = beaconChain.getRecentlyProcessed();
         final BeaconBlock aBlock = createBlock(recentlyProcessed, spec,
                 schedulers.getCurrentTime(), perSlotTransition);
