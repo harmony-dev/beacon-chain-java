@@ -30,7 +30,6 @@ import java.util.Collections;
 
 class InMemoryAttestationPoolTest {
 
-    private Publisher<Checkpoint> finalizedCheckpoints = Flux.empty();
     private Schedulers schedulers = Schedulers.createDefault();
 
     private SpecConstants specConstants =
@@ -96,6 +95,12 @@ class InMemoryAttestationPoolTest {
         final Publisher<SlotNumber> newSlots = Flux.just(slotNumber);
         StepVerifier.create(newSlots)
                 .expectNext(slotNumber)
+                .verifyComplete();
+
+        final Checkpoint checkpoint = Checkpoint.EMPTY;
+        final Publisher<Checkpoint> finalizedCheckpoints = Flux.just(checkpoint);
+        StepVerifier.create(finalizedCheckpoints)
+                .expectNext(checkpoint)
                 .verifyComplete();
 
         final Publisher<BeaconBlock> importedBlocks = Flux.just(aBlock);
