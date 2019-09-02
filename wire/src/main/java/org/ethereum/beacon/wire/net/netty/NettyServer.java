@@ -9,22 +9,39 @@ import io.netty.channel.DefaultMessageSizeEstimator;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LoggingHandler;
-import java.util.concurrent.Executor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.wire.net.Server;
+import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
+import reactor.core.publisher.DirectProcessor;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.UnicastProcessor;
+
+import java.util.concurrent.Executor;
 
 public class NettyServer implements Server {
   private static final Logger logger = LogManager.getLogger(NettyServer.class);
 
   private UnicastProcessor<NettyChannel> channels = UnicastProcessor.create();
+  private DirectProcessor<NettyChannel> channelsDispatcher = createDispatcherProcessor(channels);
   private FluxSink<NettyChannel> channelsSink = channels.sink();
   private final int port;
   private ChannelFuture channelFuture;
   private final NioEventLoopGroup workerGroup;
+
+  /**
+   * UnicastProcessor allows single subscriber only.
+   * Work around by attaching a DirectProcessor to it.
+   */
+  @NotNull
+  private static DirectProcessor<NettyChannel> createDispatcherProcessor(
+      Publisher<NettyChannel> channels) {
+    DirectProcessor<NettyChannel> processor = DirectProcessor.create();
+    Flux.from(channels).subscribe(processor);
+    return processor;
+  }
 
   public NettyServer(int port, NioEventLoopGroup workerGroup) {
     this.port = port;
@@ -42,7 +59,7 @@ public class NettyServer implements Server {
 
   @Override
   public Publisher<NettyChannel> channelsStream() {
-    return channels;
+    return channelsDispatcher;
   }
 
   private void onChannelActive(NettyChannel channel) {

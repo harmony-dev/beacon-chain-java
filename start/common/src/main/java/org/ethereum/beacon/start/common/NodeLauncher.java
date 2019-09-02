@@ -1,10 +1,5 @@
 package org.ethereum.beacon.start.common;
 
-import static org.ethereum.beacon.chain.observer.ObservableStateProcessorImpl.DEFAULT_EMPTY_SLOT_TRANSITIONS_LIMIT;
-
-import java.nio.file.Paths;
-import java.time.Duration;
-import java.util.List;
 import org.ethereum.beacon.chain.DefaultBeaconChain;
 import org.ethereum.beacon.chain.MutableBeaconChain;
 import org.ethereum.beacon.chain.ProposedBlockProcessor;
@@ -29,14 +24,15 @@ import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.spec.SpecConstantsResolver;
 import org.ethereum.beacon.db.Database;
+import org.ethereum.beacon.node.metrics.Metrics;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.ssz.SSZBuilder;
 import org.ethereum.beacon.ssz.SSZSerializer;
 import org.ethereum.beacon.validator.BeaconChainProposer;
-import org.ethereum.beacon.validator.local.MultiValidatorService;
 import org.ethereum.beacon.validator.attester.BeaconChainAttesterImpl;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
+import org.ethereum.beacon.validator.local.MultiValidatorService;
 import org.ethereum.beacon.validator.proposer.BeaconChainProposerImpl;
 import org.ethereum.beacon.wire.Feedback;
 import org.ethereum.beacon.wire.MessageSerializer;
@@ -54,6 +50,12 @@ import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import tech.pegasys.artemis.util.uint.UInt64;
+
+import java.nio.file.Paths;
+import java.time.Duration;
+import java.util.List;
+
+import static org.ethereum.beacon.chain.observer.ObservableStateProcessorImpl.DEFAULT_EMPTY_SLOT_TRANSITIONS_LIMIT;
 
 public class NodeLauncher {
 
@@ -161,6 +163,12 @@ public class NodeLauncher {
         emptySlotTransition,
         schedulers,
         validatorCred != null ? Integer.MAX_VALUE : DEFAULT_EMPTY_SLOT_TRANSITIONS_LIMIT);
+
+    Flux.from(observableStateProcessor.getObservableStateStream())
+        .subscribe(
+            obs -> {
+              Metrics.onNewState(spec, obs);
+            });
     observableStateProcessor.start();
 
     SSZSerializer ssz = new SSZBuilder()
@@ -183,6 +191,12 @@ public class NodeLauncher {
 
     wireApiSub = peerManager.getWireApiSub();
     wireApiSyncRemote = peerManager.getWireApiSync();
+
+    Flux.from(wireApiSub.inboundAttestationsStream())
+        .subscribe(
+            a -> {
+              Metrics.attestationPropagated(a);
+            });
 
     blockTree = new BeaconBlockTree(spec.getObjectHasher());
     syncQueue = new SyncQueueImpl(blockTree);

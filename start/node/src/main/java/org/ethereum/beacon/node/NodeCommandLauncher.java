@@ -1,20 +1,6 @@
 package org.ethereum.beacon.node;
 
 import io.netty.channel.ChannelFutureListener;
-import java.io.File;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.net.URI;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Random;
-import java.util.TimeZone;
-import java.util.concurrent.ThreadFactory;
-import java.util.stream.IntStream;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -41,6 +27,7 @@ import org.ethereum.beacon.emulator.config.main.ValidatorKeys.Private;
 import org.ethereum.beacon.emulator.config.main.conract.EmulatorContract;
 import org.ethereum.beacon.emulator.config.main.network.NettyNetwork;
 import org.ethereum.beacon.emulator.config.main.network.Network;
+import org.ethereum.beacon.node.metrics.Metrics;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.schedulers.DefaultSchedulers;
 import org.ethereum.beacon.schedulers.Scheduler;
@@ -53,9 +40,24 @@ import org.ethereum.beacon.wire.net.ConnectionManager;
 import org.ethereum.beacon.wire.net.netty.NettyClient;
 import org.ethereum.beacon.wire.net.netty.NettyServer;
 import org.jetbrains.annotations.NotNull;
+import reactor.core.publisher.Flux;
 
+import java.io.File;
 import java.lang.reflect.InvocationTargetException;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.net.URI;
 import java.nio.file.Paths;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.Random;
+import java.util.TimeZone;
+import java.util.concurrent.ThreadFactory;
+import java.util.stream.IntStream;
 
 public class NodeCommandLauncher implements Runnable {
   private static final Logger logger = LogManager.getLogger("node");
@@ -174,10 +176,34 @@ public class NodeCommandLauncher implements Runnable {
         URI uri = URI.create(addr);
         tcpConnectionManager.addActivePeer(InetSocketAddress.createUnresolved(uri.getHost(), uri.getPort()));
       }
+
+      Flux.from(connectionManager.channelsStream())
+          .subscribe(
+              ch -> {
+                Metrics.peerAdded();
+                ch.getCloseFuture().thenAccept(v -> Metrics.peerRemoved());
+              });
     } else {
       throw new IllegalArgumentException(
           "This type of network is not supported yet: " + networkCfg.getClass());
     }
+
+    String metricsEndpoint = config.getConfig().getMetricsEndpoint();
+    String metricsHost;
+    int metricsPort;
+    if (metricsEndpoint == null) {
+      metricsHost = "0.0.0.0";
+      metricsPort = 8008;
+    } else {
+      String[] parts = metricsEndpoint.split(":");
+      if (parts.length != 2) {
+        throw new IllegalArgumentException(
+            "Wrong metrics endpoint format: \"" + metricsEndpoint + "\"");
+      }
+      metricsHost = parts[0];
+      metricsPort = Integer.parseInt(parts[1]);
+    }
+    Metrics.startMetricsServer(metricsHost, metricsPort);
 
     NodeLauncher node = new NodeLauncher(
         specBuilder.buildSpec(),
@@ -344,6 +370,10 @@ public class NodeCommandLauncher implements Runnable {
           logger.warn("Genesis time not specified. Default genesisTime was generated: "
                   + format.format(defaultTime) + " GMT");
         }
+      }
+
+      if (cliOptions.getMetricsEndpoint() != null) {
+        config.getConfig().setMetricsEndpoint(cliOptions.getMetricsEndpoint());
       }
 
       return new NodeCommandLauncher(
