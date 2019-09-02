@@ -83,6 +83,20 @@ class InMemoryAttestationPoolTest {
         final BeaconBlock aBlock = createBlock(recentlyProcessed, spec,
                 schedulers.getCurrentTime(), perSlotTransition);
 
+        final NodeId sender = new NodeId(new byte[100]);
+        final Attestation message = createAttestation(BytesValue.fromHexString("aa"));
+        final ReceivedAttestation attestation = new ReceivedAttestation(sender, message);
+        final Publisher<ReceivedAttestation> source = Flux.just(attestation);
+        StepVerifier.create(source)
+                .expectNext(attestation)
+                .verifyComplete();
+
+        final SlotNumber slotNumber = SlotNumber.of(100L);
+        final Publisher<SlotNumber> newSlots = Flux.just(slotNumber);
+        StepVerifier.create(newSlots)
+                .expectNext(slotNumber)
+                .verifyComplete();
+
         final Publisher<BeaconBlock> importedBlocks = Flux.just(aBlock);
         StepVerifier.create(importedBlocks)
                 .expectNext(aBlock)
@@ -91,21 +105,6 @@ class InMemoryAttestationPoolTest {
         final Publisher<BeaconBlock> chainHeads = Flux.just(aBlock);
         StepVerifier.create(chainHeads)
                 .expectNext(aBlock)
-                .verifyComplete();
-
-        final NodeId sender = new NodeId(new byte[0]);
-        final Attestation message = createAttestation(BytesValue.fromHexString("aa"));
-        final ReceivedAttestation attestation = new ReceivedAttestation(sender, message);
-        final Publisher<ReceivedAttestation> source = Flux.just(attestation);
-        StepVerifier.create(source)
-                .expectNext(attestation)
-                .verifyComplete();
-
-
-        final SlotNumber slotNumber = SlotNumber.of(100L);
-        final Publisher<SlotNumber> newSlots = Flux.just(slotNumber);
-        StepVerifier.create(newSlots)
-                .expectNext(slotNumber)
                 .verifyComplete();
 
         final AttestationPool pool = AttestationPool.create(
