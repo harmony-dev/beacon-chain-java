@@ -61,6 +61,8 @@ class InMemoryAttestationPoolTest {
                 beaconChainStorage,
                 slotTransition
         );
+
+        pool.start();
     }
 
 }
