@@ -8,23 +8,28 @@ import org.ethereum.beacon.consensus.transition.*;
 import org.ethereum.beacon.consensus.util.StateTransitionTestUtil;
 import org.ethereum.beacon.consensus.verifier.*;
 import org.ethereum.beacon.core.*;
+import org.ethereum.beacon.core.operations.Attestation;
+import org.ethereum.beacon.core.operations.attestation.*;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.*;
 import org.ethereum.beacon.core.types.*;
+import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.db.*;
 import org.ethereum.beacon.schedulers.Schedulers;
+import org.ethereum.beacon.types.p2p.NodeId;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.bytes.*;
+import tech.pegasys.artemis.util.collections.Bitlist;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 import java.util.Collections;
 
 class InMemoryAttestationPoolTest {
 
-    private Publisher<ReceivedAttestation> source = Flux.empty();
     private Publisher<SlotNumber> newSlots = Flux.empty();
     private Publisher<Checkpoint> finalizedCheckpoints = Flux.empty();
     private Schedulers schedulers = Schedulers.createDefault();
@@ -89,6 +94,14 @@ class InMemoryAttestationPoolTest {
                 .expectNext(aBlock)
                 .verifyComplete();
 
+        final NodeId sender = new NodeId(new byte[0]);
+        final Attestation message = createAttestation(BytesValue.fromHexString("aa"));
+        final ReceivedAttestation attestation = new ReceivedAttestation(sender, message);
+        final Publisher<ReceivedAttestation> source = Flux.just(attestation);
+        StepVerifier.create(source)
+                .expectNext(attestation)
+                .verifyComplete();
+
         final AttestationPool pool = AttestationPool.create(
                 source,
                 newSlots,
@@ -100,6 +113,8 @@ class InMemoryAttestationPoolTest {
                 beaconChainStorage,
                 slotTransition
         );
+
+        pool.start();
     }
 
     private MutableBeaconChain createBeaconChain(
@@ -151,5 +166,29 @@ class InMemoryAttestationPoolTest {
         BeaconState state = perSlotTransition.apply(new BeaconStateExImpl(parent.getState()));
 
         return block.withStateRoot(spec.hash_tree_root(state));
+    }
+
+    private Attestation createAttestation(BytesValue someValue) {
+        final AttestationData attestationData = createAttestationData();
+        final Attestation attestation =
+                new Attestation(
+                        Bitlist.of(someValue.size() * 8, someValue, specConstants.getMaxValidatorsPerCommittee().getValue()),
+                        attestationData,
+                        Bitlist.of(8, BytesValue.fromHexString("bb"), specConstants.getMaxValidatorsPerCommittee().getValue()),
+                        BLSSignature.wrap(Bytes96.fromHexString("cc")),
+                        specConstants);
+
+        return attestation;
+    }
+
+    public AttestationData createAttestationData() {
+        final AttestationData expected =
+                new AttestationData(
+                        Hashes.sha256(BytesValue.fromHexString("aa")),
+                        new Checkpoint(EpochNumber.ZERO, Hashes.sha256(BytesValue.fromHexString("bb"))),
+                        new Checkpoint(EpochNumber.of(123), Hashes.sha256(BytesValue.fromHexString("cc"))),
+                        Crosslink.EMPTY);
+
+        return expected;
     }
 }
