@@ -30,7 +30,6 @@ import java.util.Collections;
 
 class InMemoryAttestationPoolTest {
 
-    private Publisher<SlotNumber> newSlots = Flux.empty();
     private Publisher<Checkpoint> finalizedCheckpoints = Flux.empty();
     private Schedulers schedulers = Schedulers.createDefault();
 
@@ -100,6 +99,13 @@ class InMemoryAttestationPoolTest {
         final Publisher<ReceivedAttestation> source = Flux.just(attestation);
         StepVerifier.create(source)
                 .expectNext(attestation)
+                .verifyComplete();
+
+
+        final SlotNumber slotNumber = SlotNumber.of(100L);
+        final Publisher<SlotNumber> newSlots = Flux.just(slotNumber);
+        StepVerifier.create(newSlots)
+                .expectNext(slotNumber)
                 .verifyComplete();
 
         final AttestationPool pool = AttestationPool.create(
