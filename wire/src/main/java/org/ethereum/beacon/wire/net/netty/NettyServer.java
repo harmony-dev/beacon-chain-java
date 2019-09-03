@@ -13,10 +13,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.wire.net.Server;
 import org.jetbrains.annotations.NotNull;
+import org.reactivestreams.Processor;
 import org.reactivestreams.Publisher;
-import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
+import reactor.core.publisher.ReplayProcessor;
 import reactor.core.publisher.UnicastProcessor;
 
 import java.util.concurrent.Executor;
@@ -25,7 +26,7 @@ public class NettyServer implements Server {
   private static final Logger logger = LogManager.getLogger(NettyServer.class);
 
   private UnicastProcessor<NettyChannel> channels = UnicastProcessor.create();
-  private DirectProcessor<NettyChannel> channelsDispatcher = createDispatcherProcessor(channels);
+  private Publisher<NettyChannel> channelsDispatcher = createDispatcherProcessor(channels);
   private FluxSink<NettyChannel> channelsSink = channels.sink();
   private final int port;
   private ChannelFuture channelFuture;
@@ -36,9 +37,9 @@ public class NettyServer implements Server {
    * Work around by attaching a DirectProcessor to it.
    */
   @NotNull
-  private static DirectProcessor<NettyChannel> createDispatcherProcessor(
+  private static Publisher<NettyChannel> createDispatcherProcessor(
       Publisher<NettyChannel> channels) {
-    DirectProcessor<NettyChannel> processor = DirectProcessor.create();
+    Processor<NettyChannel,NettyChannel> processor = ReplayProcessor.create();
     Flux.from(channels).subscribe(processor);
     return processor;
   }
