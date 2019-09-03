@@ -210,6 +210,7 @@ public class NodeCommandLauncher implements Runnable {
         this.depositContract,
         credentials,
         connectionManager,
+        config.getConfig().getDb(),
         new SSZBeaconChainStorageFactory(
             spec.getObjectHasher(),
             SerializerFactory.createSSZ(specConstants)),

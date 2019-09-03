@@ -64,6 +64,7 @@ public class NodeLauncher {
   private final BeaconChainSpec spec;
   private final DepositContract depositContract;
   private final List<BLS381Credentials> validatorCred;
+  private final String dbPrefix;
   private final BeaconChainStorageFactory storageFactory;
   private final Schedulers schedulers;
 
@@ -103,6 +104,7 @@ public class NodeLauncher {
       DepositContract depositContract,
       List<BLS381Credentials> validatorCred,
       ConnectionManager<?> connectionManager,
+      String dbPrefix,
       BeaconChainStorageFactory storageFactory,
       Schedulers schedulers,
       boolean startSyncManager) {
@@ -111,6 +113,7 @@ public class NodeLauncher {
     this.depositContract = depositContract;
     this.validatorCred = validatorCred;
     this.connectionManager = connectionManager;
+    this.dbPrefix = dbPrefix;
     this.storageFactory = storageFactory;
     this.schedulers = schedulers;
     this.startSyncManager = startSyncManager;
@@ -129,7 +132,13 @@ public class NodeLauncher {
         new ExtendedSlotTransition(perEpochTransition, perSlotTransition, spec);
     emptySlotTransition = new EmptySlotTransition(extendedSlotTransition);
 
-    db = Database.rocksDB(Paths.get(computeDbName(chainStartEvent)).toString(), DB_BUFFER_SIZE);
+    if (dbPrefix == null) {
+      db = Database.inMemoryDB();
+    } else {
+      db =
+          Database.rocksDB(
+              Paths.get(computeDbName(dbPrefix, chainStartEvent)).toString(), DB_BUFFER_SIZE);
+    }
     beaconChainStorage = storageFactory.create(db);
 
     blockVerifier = BeaconBlockVerifier.createDefault(spec);
@@ -253,10 +262,12 @@ public class NodeLauncher {
 //        .subscribe(beaconChain::insert);
   }
 
-  private String computeDbName(ChainStart chainStart) {
+  private String computeDbName(String dbPrefix, ChainStart chainStart) {
     return String.format(
-        "db_start_time_%d_dep_root_%s",
-        chainStart.getTime().getValue(), chainStart.getEth1Data().getDepositRoot().toStringShort());
+        "%s_start_time_%d_dep_root_%s",
+        dbPrefix,
+        chainStart.getTime().getValue(),
+        chainStart.getEth1Data().getDepositRoot().toStringShort());
   }
 
   public void stop() {

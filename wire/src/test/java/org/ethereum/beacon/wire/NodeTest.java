@@ -91,6 +91,7 @@ public class NodeTest {
                 .map(BLS381Credentials::createWithDummySigner)
                 .collect(Collectors.toList()),
             connectionManager,
+            null,
             new MemBeaconChainStorageFactory(spec.getObjectHasher()),
             schedulers,
             false);
@@ -113,6 +114,7 @@ public class NodeTest {
             depositContract,
             null,
             slaveConnectionManager,
+            null,
             new MemBeaconChainStorageFactory(spec.getObjectHasher()),
             schedulers,
             true);
