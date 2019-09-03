@@ -1,16 +1,11 @@
 package org.ethereum.beacon.chain.pool.registry;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 import org.ethereum.beacon.chain.pool.ReceivedAttestation;
 import org.ethereum.beacon.core.types.EpochNumber;
 import tech.pegasys.artemis.ethereum.core.Hash32;
+
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Maintains attestations parked by {@link UnknownAttestationPool}.
@@ -38,6 +33,7 @@ final class Queue {
 
     this.trackedEpochs = trackedEpochs;
     this.maxSize = maxSize;
+    this.baseLine = EpochNumber.ZERO;
   }
 
   /**
