@@ -157,6 +157,7 @@ public class Metrics {
       } else if (currentSlot.less(state.getSlot())) {
         currentSlot = state.getSlot();
         currentSlotAttestations.clear();
+        PROPAGATED_ATTESTATIONS.set(0);
       }
     }
 
