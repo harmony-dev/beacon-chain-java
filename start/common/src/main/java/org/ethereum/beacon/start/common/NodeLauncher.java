@@ -1,10 +1,5 @@
 package org.ethereum.beacon.start.common;
 
-import static org.ethereum.beacon.chain.observer.ObservableStateProcessorImpl.DEFAULT_EMPTY_SLOT_TRANSITIONS_LIMIT;
-
-import java.nio.file.Paths;
-import java.time.Duration;
-import java.util.List;
 import org.ethereum.beacon.chain.DefaultBeaconChain;
 import org.ethereum.beacon.chain.MutableBeaconChain;
 import org.ethereum.beacon.chain.ProposedBlockProcessor;
@@ -29,14 +24,15 @@ import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.spec.SpecConstantsResolver;
 import org.ethereum.beacon.db.Database;
+import org.ethereum.beacon.node.metrics.Metrics;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.ssz.SSZBuilder;
 import org.ethereum.beacon.ssz.SSZSerializer;
 import org.ethereum.beacon.validator.BeaconChainProposer;
-import org.ethereum.beacon.validator.local.MultiValidatorService;
 import org.ethereum.beacon.validator.attester.BeaconChainAttesterImpl;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
+import org.ethereum.beacon.validator.local.MultiValidatorService;
 import org.ethereum.beacon.validator.proposer.BeaconChainProposerImpl;
 import org.ethereum.beacon.wire.Feedback;
 import org.ethereum.beacon.wire.MessageSerializer;
@@ -55,6 +51,12 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import tech.pegasys.artemis.util.uint.UInt64;
 
+import java.nio.file.Paths;
+import java.time.Duration;
+import java.util.List;
+
+import static org.ethereum.beacon.chain.observer.ObservableStateProcessorImpl.DEFAULT_EMPTY_SLOT_TRANSITIONS_LIMIT;
+
 public class NodeLauncher {
 
   private final static long DB_BUFFER_SIZE = 64L << 20; // 64Mb
@@ -62,6 +64,7 @@ public class NodeLauncher {
   private final BeaconChainSpec spec;
   private final DepositContract depositContract;
   private final List<BLS381Credentials> validatorCred;
+  private final String dbPrefix;
   private final BeaconChainStorageFactory storageFactory;
   private final Schedulers schedulers;
 
@@ -101,6 +104,7 @@ public class NodeLauncher {
       DepositContract depositContract,
       List<BLS381Credentials> validatorCred,
       ConnectionManager<?> connectionManager,
+      String dbPrefix,
       BeaconChainStorageFactory storageFactory,
       Schedulers schedulers,
       boolean startSyncManager) {
@@ -109,6 +113,7 @@ public class NodeLauncher {
     this.depositContract = depositContract;
     this.validatorCred = validatorCred;
     this.connectionManager = connectionManager;
+    this.dbPrefix = dbPrefix;
     this.storageFactory = storageFactory;
     this.schedulers = schedulers;
     this.startSyncManager = startSyncManager;
@@ -127,7 +132,13 @@ public class NodeLauncher {
         new ExtendedSlotTransition(perEpochTransition, perSlotTransition, spec);
     emptySlotTransition = new EmptySlotTransition(extendedSlotTransition);
 
-    db = Database.rocksDB(Paths.get(computeDbName(chainStartEvent)).toString(), DB_BUFFER_SIZE);
+    if (dbPrefix == null) {
+      db = Database.inMemoryDB();
+    } else {
+      db =
+          Database.rocksDB(
+              Paths.get(computeDbName(dbPrefix, chainStartEvent)).toString(), DB_BUFFER_SIZE);
+    }
     beaconChainStorage = storageFactory.create(db);
 
     blockVerifier = BeaconBlockVerifier.createDefault(spec);
@@ -161,6 +172,12 @@ public class NodeLauncher {
         emptySlotTransition,
         schedulers,
         validatorCred != null ? Integer.MAX_VALUE : DEFAULT_EMPTY_SLOT_TRANSITIONS_LIMIT);
+
+    Flux.from(observableStateProcessor.getObservableStateStream())
+        .subscribe(
+            obs -> {
+              Metrics.onNewState(spec, obs);
+            });
     observableStateProcessor.start();
 
     SSZSerializer ssz = new SSZBuilder()
@@ -183,6 +200,12 @@ public class NodeLauncher {
 
     wireApiSub = peerManager.getWireApiSub();
     wireApiSyncRemote = peerManager.getWireApiSync();
+
+    Flux.from(wireApiSub.inboundAttestationsStream())
+        .subscribe(
+            a -> {
+              Metrics.attestationPropagated(a);
+            });
 
     blockTree = new BeaconBlockTree(spec.getObjectHasher());
     syncQueue = new SyncQueueImpl(blockTree);
@@ -239,10 +262,12 @@ public class NodeLauncher {
 //        .subscribe(beaconChain::insert);
   }
 
-  private String computeDbName(ChainStart chainStart) {
+  private String computeDbName(String dbPrefix, ChainStart chainStart) {
     return String.format(
-        "db_start_time_%d_dep_root_%s",
-        chainStart.getTime().getValue(), chainStart.getEth1Data().getDepositRoot().toStringShort());
+        "%s_start_time_%d_dep_root_%s",
+        dbPrefix,
+        chainStart.getTime().getValue(),
+        chainStart.getEth1Data().getDepositRoot().toStringShort());
   }
 
   public void stop() {

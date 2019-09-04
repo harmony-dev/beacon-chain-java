@@ -98,6 +98,17 @@ public class Node implements Runnable {
   )
   private String specConstantsFile;
 
+  @CommandLine.Option(
+      names = "--metrics-endpoint",
+      paramLabel = "matrics-endpoint",
+      description = {
+          "Interface and port, Prometheus collection endpoint will be served from.",
+          "Should have form of interface:port.",
+          "Default endpoint is 0.0.0.0:8008."
+      }
+  )
+  private String metricsEndpoint;
+
   public String getName() {
     return name;
   }
@@ -120,6 +131,10 @@ public class Node implements Runnable {
 
   public String getSpecConstantsFile() {
     return specConstantsFile;
+  }
+
+  public String getMetricsEndpoint() {
+    return metricsEndpoint;
   }
 
   public static void main(String[] args) {

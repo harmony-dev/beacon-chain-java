@@ -1,5 +1,5 @@
 config:
-  db: file://db
+  db: db
   networks:
     - type: netty
 
