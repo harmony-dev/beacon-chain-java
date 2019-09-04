@@ -7,10 +7,15 @@ import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.core.operations.Attestation;
+import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.state.PendingAttestation;
+import org.ethereum.beacon.core.types.SlotNumber;
+import tech.pegasys.artemis.util.collections.Bitlist;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Implements (some) metrics from Beacon chain metrics specs.
@@ -83,13 +88,20 @@ public class Metrics {
           .name("beaconchain_previous_epoch_stale_blocks")
           .help("Number of blocks not included into canonical chain in the previous epoch")
           .register();
-  // not yet implemented
+  // simple implementation currently - counts attestations arrived from wire during a slot
   static Gauge PROPAGATED_ATTESTATIONS =
       Gauge.build()
           .name("beaconchain_propagated_attestations")
           .help("Number of distinct attestations to a slot received from the wire")
           .register();
   private static HTTPServer metricsServer;
+
+  private static final Object attestation_lock = new Object();
+  private static SlotNumber currentSlot = null;
+  /**
+   * Accumulates atetstations received during a slot. Cleared on a new slot.
+   */
+  private static final Map<AttestationData, Bitlist> currentSlotAttestations = new HashMap<>();
 
   // setting initial values explicitly (zeros by default)
   static {
@@ -139,6 +151,15 @@ public class Metrics {
   public static void onNewState(BeaconChainSpec spec, ObservableBeaconState obs) {
     BeaconStateEx state = obs.getLatestSlotState();
 
+    synchronized (attestation_lock) {
+      if (currentSlot == null) {
+        currentSlot = state.getSlot();
+      } else if (currentSlot.less(state.getSlot())) {
+        currentSlot = state.getSlot();
+        currentSlotAttestations.clear();
+      }
+    }
+
     CURRENT_SLOT.set(state.getSlot().doubleValue());
     CURRENT_EPOCH.set(spec.get_current_epoch(state).doubleValue());
     CURRENT_JUSTIFIED_EPOCH.set(state.getCurrentJustifiedCheckpoint().getEpoch().doubleValue());
@@ -161,7 +182,22 @@ public class Metrics {
   }
 
   public static void attestationPropagated(Attestation attestation) {
-    // dummy implementation right now
-    PROPAGATED_ATTESTATIONS.inc();
+    Bitlist aggregationBits = attestation.getAggregationBits();
+    AttestationData attestationData = attestation.getData();
+
+    int attestationCount;
+    synchronized (attestation_lock) {
+      Bitlist attestations;
+      if (!currentSlotAttestations.containsKey(attestationData)) {
+        attestations = aggregationBits.cappedCopy(aggregationBits.maxSize());
+      } else {
+        attestations = currentSlotAttestations.get(attestationData).or(aggregationBits);
+      }
+      currentSlotAttestations.put(attestationData, attestations);
+      attestationCount =
+          currentSlotAttestations.values().stream().mapToInt(bl -> bl.getBits().size()).sum();
+    }
+
+    PROPAGATED_ATTESTATIONS.set(attestationCount);
   }
 }
