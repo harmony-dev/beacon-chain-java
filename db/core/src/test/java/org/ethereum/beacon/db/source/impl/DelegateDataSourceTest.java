@@ -9,7 +9,7 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Java6Assertions.assertThatThrownBy;
 
-public class DelegateDataSourceTest {
+class DelegateDataSourceTest {
 
     private final String TEST_KEY = "test_key";
     private final String TEST_VALUE = "test_value";
@@ -18,13 +18,13 @@ public class DelegateDataSourceTest {
     private DelegateDataSource<String, String> delegateDataSource;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         delegateDataSource = new DelegateDataSource<>(new HashMapDataSource<>());
         assertThat(delegateDataSource).isNotNull();
     }
 
     @Test
-    public void testPutGetRemove() {
+    void testPutGetRemove() {
         delegateDataSource.put(TEST_KEY, TEST_VALUE);
         assertThat(delegateDataSource.get(TEST_KEY)).isPresent().hasValue(TEST_VALUE);
 
@@ -34,7 +34,7 @@ public class DelegateDataSourceTest {
 
     @ParameterizedTest
     @MethodSource("nullArgumentsProvider")
-    public void testInvalidSourceCreation(String key, String value) {
+    void testInvalidSourceCreation(String key, String value) {
         assertThatThrownBy(() -> delegateDataSource.put(key, value)).isInstanceOf(NullPointerException.class);
     }
 
@@ -46,7 +46,7 @@ public class DelegateDataSourceTest {
     }
 
     @Test
-    public void testFlush() {
+    void testFlush() {
         delegateDataSource = new DelegateDataSource<>(new HashMapDataSource<String, String>() {
             public void flush() {
                 store.put(TEST_FLUSH, TEST_FLUSH);

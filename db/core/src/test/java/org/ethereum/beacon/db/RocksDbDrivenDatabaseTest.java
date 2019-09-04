@@ -9,16 +9,16 @@ import java.io.IOException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RocksDbDrivenDatabaseTest {
+class RocksDbDrivenDatabaseTest {
 
   @AfterEach
   @BeforeEach
-  public void cleanUp() throws IOException {
+  void cleanUp() throws IOException {
     FileUtil.removeRecursively("test-db");
   }
 
   @Test
-  public void basicOperations() {
+  void basicOperations() {
     Database db = Database.rocksDB("test-db", -1);
 
     DataSource<BytesValue, BytesValue> uno = db.createStorage("uno");
@@ -66,7 +66,7 @@ public class RocksDbDrivenDatabaseTest {
   }
 
   @Test
-  public void reopenWithoutFlush() {
+  void reopenWithoutFlush() {
     Database db = Database.rocksDB("test-db", -1);
 
     DataSource<BytesValue, BytesValue> storage = db.createStorage("uno");

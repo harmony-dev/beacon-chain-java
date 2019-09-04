@@ -6,7 +6,7 @@ import java.util.*;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-public class HoleyListTest {
+class HoleyListTest {
 
     private final Long TEST_KEY_0 = 0L;
     private final Long TEST_KEY_1 = 1L;
@@ -17,7 +17,7 @@ public class HoleyListTest {
     private HoleyList<String> list;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         list = new HoleyList<String>() {
             private final Map<Long, String> store = new HashMap<>();
 
@@ -38,7 +38,7 @@ public class HoleyListTest {
     }
 
     @Test
-    public void testAdd() {
+    void testAdd() {
         list.put(TEST_KEY_0, TEST_VALUE);
         final long indexToAdd = list.size();
         list.add(TEST_VALUE);
@@ -48,7 +48,7 @@ public class HoleyListTest {
     }
 
     @Test
-    public void testAddNull() {
+    void testAddNull() {
         list.put(TEST_KEY_0, TEST_VALUE);
         list.add(null);
 
@@ -56,20 +56,20 @@ public class HoleyListTest {
     }
 
     @Test
-    public void testUpdateExistingValue() {
+    void testUpdateExistingValue() {
         list.put(TEST_KEY_0, TEST_VALUE);
         assertThat(list.update(TEST_KEY_0, key -> "")).isPresent().hasValue("");
     }
 
     @Test
-    public void testUpdateExistingValueOverIndex() {
+    void testUpdateExistingValueOverIndex() {
         list.put(TEST_KEY_0, TEST_VALUE);
         assertThat(list.update(TEST_KEY_1, key -> "")).isNotPresent();
         assertThat(list.update(TEST_KEY_LESS_ZERO, key -> "")).isNotPresent();
     }
 
     @Test
-    public void testUpdateExistingValueOrPutDefault() {
+    void testUpdateExistingValueOrPutDefault() {
         list.put(TEST_KEY_0, TEST_VALUE);
         assertThat(list.update(TEST_KEY_0, key -> "", () -> TEST_DEFAULT_VALUE)).isEqualTo("");
         assertThat(list.update(TEST_KEY_1, key -> "", () -> TEST_DEFAULT_VALUE)).isEqualTo(TEST_DEFAULT_VALUE);

@@ -1,15 +1,15 @@
 package org.ethereum.beacon.db.source.impl;
 
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import static org.assertj.core.api.Assertions.*;
 
-public class XorDataSourceTest {
+class XorDataSourceTest {
 
     @Test
-    public void testDataSourceCreation() {
+    void testDataSourceCreation() {
         assertThatThrownBy(() -> new XorDataSource<>(null, BytesValue.EMPTY))
                 .isInstanceOf(NullPointerException.class);
 

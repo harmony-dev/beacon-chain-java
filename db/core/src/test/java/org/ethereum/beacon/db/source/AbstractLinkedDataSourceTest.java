@@ -8,7 +8,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
 
-public class AbstractLinkedDataSourceTest {
+class AbstractLinkedDataSourceTest {
 
     private final String TEST_KEY = "test_key";
     private final String TEST_VALUE = "test_value";
@@ -18,7 +18,7 @@ public class AbstractLinkedDataSourceTest {
     private AbstractLinkedDataSource<String, String, String, String> dataSource;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         dataSource = new AbstractLinkedDataSource<String, String, String, String>(new HashMapDataSource<>()) {
             public Optional<String> get(@Nonnull String key) {
                 return getUpstream().get(key);
@@ -37,7 +37,7 @@ public class AbstractLinkedDataSourceTest {
     }
 
     @Test
-    public void testInvalidSourceCreation() {
+    void testInvalidSourceCreation() {
         assertThatThrownBy(() -> new AbstractLinkedDataSource(null) {
             public Optional get(@Nonnull Object key) {
                 return Optional.empty();
@@ -54,7 +54,7 @@ public class AbstractLinkedDataSourceTest {
     }
 
     @Test
-    public void testGetPutRemoveUpstreamFlush() {
+    void testGetPutRemoveUpstreamFlush() {
         dataSource = new AbstractLinkedDataSource<String, String, String, String>(new HashMapDataSource<String, String>() {
             public void flush() {
                 getStore().put(TEST_FLUSH, TEST_FLUSH);
@@ -92,7 +92,7 @@ public class AbstractLinkedDataSourceTest {
     }
 
     @Test
-    public void testFlushIsFalse() {
+    void testFlushIsFalse() {
         dataSource = new AbstractLinkedDataSource<String, String, String, String>(new HashMapDataSource<String, String>() {
             public void flush() {
                 getStore().put(TEST_FLUSH, TEST_FLUSH);
@@ -119,7 +119,7 @@ public class AbstractLinkedDataSourceTest {
     }
 
     @Test
-    public void testGetUpstream() {
+    void testGetUpstream() {
         assertThat(dataSource.getUpstream()).isNotNull();
     }
 }

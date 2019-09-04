@@ -9,12 +9,12 @@ import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class XorKeyDatabaseTest {
+class XorKeyDatabaseTest {
 
   private XorKeyDatabase db;
 
   @BeforeEach
-  public void setUp() {
+  void setUp() {
     final HashMapDataSource<BytesValue, BytesValue> mapds = new HashMapDataSource<>();
     db = new XorKeyDatabase(mapds, Function.identity()) {
       @Override
@@ -28,14 +28,14 @@ public class XorKeyDatabaseTest {
   }
 
   @Test
-  public void testCreateStorage_EmptyStorage() {
+  void testCreateStorage_EmptyStorage() {
     final DataSource<BytesValue, BytesValue> storage1 = db.createStorage("Storage1");
     storage1.put(BytesValue.of(1, 2, 3), BytesValue.of(1, 4));
     assertThat(storage1.get(BytesValue.of(1, 2, 3))).isPresent();
   }
 
   @Test
-  public void testCreateStorage() {
+  void testCreateStorage() {
     final DataSource<BytesValue, BytesValue> storage0 = db.createStorage("Storage1");
     storage0.put(BytesValue.of(1, 2, 3), BytesValue.of(1, 4));
     final DataSource<BytesValue, BytesValue> storage1 = db.createStorage("Storage1");
@@ -43,7 +43,7 @@ public class XorKeyDatabaseTest {
   }
 
   @Test
-  public void testCreateStorage_1() {
+  void testCreateStorage_1() {
     final DataSource<BytesValue, BytesValue> storage0 = db.createStorage("Storage1");
     storage0.put(BytesValue.of(1, 2, 3), BytesValue.of(1, 4));
     final DataSource<BytesValue, BytesValue> storage1 = db.createStorage("Storage2");

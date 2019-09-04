@@ -9,12 +9,12 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-public class HashMapHoleyListTest {
+class HashMapHoleyListTest {
 
     private HoleyList<String> map;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         map = new HashMapHoleyList<>();
         assertThat(map).isNotNull();
         assertThat(map.size()).isEqualTo(0L);
@@ -22,7 +22,7 @@ public class HashMapHoleyListTest {
 
     @ParameterizedTest
     @MethodSource("keyValueArgumentsProvider")
-    public void testPutSize(Long key, String value, Long size) {
+    void testPutSize(Long key, String value, Long size) {
         map.put(key, value);
         assertThat(map.size()).isEqualTo(size);
     }
@@ -36,7 +36,7 @@ public class HashMapHoleyListTest {
 
     @ParameterizedTest
     @MethodSource("keyValueGetArgumentsProvider")
-    public void testValidGet(Long key, String value) {
+    void testValidGet(Long key, String value) {
         map.put(key, value);
         assertThat(map.get(key)).isPresent().hasValue(value);
     }
@@ -49,7 +49,7 @@ public class HashMapHoleyListTest {
 
     @ParameterizedTest
     @MethodSource("invalidKeyArgumentsProvider")
-    public void testGetOverIndex(Long key, String value, Long wrongKey) {
+    void testGetOverIndex(Long key, String value, Long wrongKey) {
         map.put(key, value);
         assertThat(map.get(wrongKey)).isNotPresent();
     }
@@ -62,7 +62,7 @@ public class HashMapHoleyListTest {
     }
 
     @Test
-    public void testPutSameKey() {
+    void testPutSameKey() {
         final Long TEST_KEY = 0L;
         final Long TEST_KEY_1 = 1L;
         final String TEST_VALUE = "test_value";

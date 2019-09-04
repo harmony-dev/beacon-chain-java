@@ -2,6 +2,7 @@ dependencies {
     api(project(':types')) {
         exclude group: 'junit'
     }
+
     api project(':crypto')
 
     api "org.rocksdb:rocksdbjni"
@@ -14,4 +15,8 @@ dependencies {
             excludeTags 'FIX'
         }
     }
+}
+
+configurations {
+    testImplementation.exclude group: 'junit', module: 'junit'
 }

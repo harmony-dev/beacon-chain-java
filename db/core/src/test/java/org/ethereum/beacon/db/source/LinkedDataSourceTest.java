@@ -9,12 +9,12 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-public class LinkedDataSourceTest {
+class LinkedDataSourceTest {
 
     private LinkedDataSource<String, String, String, String> dataSource;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         dataSource = new LinkedDataSource<String, String, String, String>() {
             public Optional<String> get(@Nonnull String key) {
                 return Optional.empty();
@@ -42,17 +42,17 @@ public class LinkedDataSourceTest {
     }
 
     @Test
-    public void testSetUpstream() {
+    void testSetUpstream() {
         assertThatThrownBy(() -> dataSource.setUpstream(new HashMapDataSource<>())).isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test
-    public void testGetNullUpstream() {
+    void testGetNullUpstream() {
         assertThat(dataSource.getUpstream()).isNull();
     }
 
     @Test
-    public void testGetUpstream() {
+    void testGetUpstream() {
         dataSource = new LinkedDataSource<String, String, String, String>() {
             public Optional<String> get(@Nonnull String key) {
                 return Optional.empty();

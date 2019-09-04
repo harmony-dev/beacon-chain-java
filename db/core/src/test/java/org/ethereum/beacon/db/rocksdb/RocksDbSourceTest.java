@@ -10,16 +10,16 @@ import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class RocksDbSourceTest {
+class RocksDbSourceTest {
 
   @AfterEach
   @BeforeEach
-  public void cleanUp() throws IOException {
+  void cleanUp() throws IOException {
     FileUtil.removeRecursively("test-db");
   }
 
   @Test
-  public void basicOperations() {
+  void basicOperations() {
     RocksDbSource rocksDb = new RocksDbSource(Paths.get("test-db"));
 
     rocksDb.open();

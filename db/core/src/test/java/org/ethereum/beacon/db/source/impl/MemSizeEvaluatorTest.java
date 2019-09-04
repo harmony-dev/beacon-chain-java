@@ -5,10 +5,10 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class MemSizeEvaluatorTest {
+class MemSizeEvaluatorTest {
 
   @Test
-  public void bytesValueEvaluator() {
+  void bytesValueEvaluator() {
     long evaluatedSize =
         MemSizeEvaluators.BytesValueEvaluator.apply(BytesValue.wrap(new byte[1000]));
     System.out.println("Evaluated size: " + evaluatedSize);

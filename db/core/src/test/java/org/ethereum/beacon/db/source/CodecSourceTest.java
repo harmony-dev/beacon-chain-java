@@ -11,19 +11,19 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
-public class CodecSourceTest {
+class CodecSourceTest {
 
     private CodecSource<String, String, String, String> source;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         source = new CodecSource<>(new HashMapDataSource<>(), Function.identity(), Function.identity(), Function.identity());
         assertThat(source).isNotNull();
     }
 
     @ParameterizedTest
     @MethodSource("nullArgumentsProvider")
-    public void testInvalidSourceCreation(DataSource ds, Function f1, Function f2, Function f3) {
+    void testInvalidSourceCreation(DataSource ds, Function f1, Function f2, Function f3) {
         assertThatThrownBy(() -> new CodecSource(ds, f1, f2, f3))
                 .isInstanceOf(NullPointerException.class);
     }
@@ -39,7 +39,7 @@ public class CodecSourceTest {
 
     @ParameterizedTest
     @MethodSource("keyOnlyCodecSourceArgumentsProvider")
-    public void testInvalidKeyOnlyCreation(DataSource ds, Function f1) {
+    void testInvalidKeyOnlyCreation(DataSource ds, Function f1) {
         assertThatThrownBy(() -> new CodecSource.KeyOnly<>(ds, f1))
                 .isInstanceOf(NullPointerException.class);
     }
@@ -53,7 +53,7 @@ public class CodecSourceTest {
 
     @ParameterizedTest
     @MethodSource("valueOnlyCodecSourceArgumentsProvider")
-    public void testInvalidValueOnlyCreation(DataSource ds, Function f1, Function f2) {
+    void testInvalidValueOnlyCreation(DataSource ds, Function f1, Function f2) {
         assertThatThrownBy(() -> new CodecSource.ValueOnly<>(ds, f1, f2))
                 .isInstanceOf(NullPointerException.class);
     }
@@ -68,7 +68,7 @@ public class CodecSourceTest {
 
     @ParameterizedTest
     @MethodSource("keyValueArgumentsProvider")
-    public void testPutGetRemove(String key, String value) {
+    void testPutGetRemove(String key, String value) {
         assertThat(source.get(key)).isNotPresent();
 
         source.put(key, value);
@@ -86,7 +86,7 @@ public class CodecSourceTest {
 
     @ParameterizedTest
     @MethodSource("keyValueArgumentsProvider")
-    public void testKeyConversion(String key, String value) {
+    void testKeyConversion(String key, String value) {
         source = new CodecSource<>(new HashMapDataSource<>(), k -> encode(k, key), Function.identity(), Function.identity());
         assertThat(source).isNotNull();
         assertThat(source.get(key)).isNotPresent();
@@ -101,7 +101,7 @@ public class CodecSourceTest {
 
     @ParameterizedTest
     @MethodSource("keyValueArgumentsProvider")
-    public void testValueTargetValueToUpValueConversion(String key, String value) {
+    void testValueTargetValueToUpValueConversion(String key, String value) {
         source = new CodecSource<>(new HashMapDataSource<>(), k -> encode(k, key), k -> encode(k, value), Function.identity());
         assertThat(source).isNotNull();
         assertThat(source.get(key)).isNotPresent();
@@ -112,7 +112,7 @@ public class CodecSourceTest {
 
     @ParameterizedTest
     @MethodSource("keyValueArgumentsProvider")
-    public void testValueUpValueToTargetValueConversion(String key, String value) {
+    void testValueUpValueToTargetValueConversion(String key, String value) {
         source = new CodecSource<>(new HashMapDataSource<>(), k -> encode(k, key), k -> encode(k, value), k -> decode());
         assertThat(source).isNotNull();
         assertThat(source.get(key)).isNotPresent();

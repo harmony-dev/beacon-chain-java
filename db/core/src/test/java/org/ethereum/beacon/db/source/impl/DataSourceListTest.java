@@ -11,12 +11,12 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.*;
 
-public class DataSourceListTest {
+class DataSourceListTest {
 
     private DataSourceList<String> dataSourceList;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         dataSourceList = new DataSourceList<>(new HashMapDataSource<>(), serialize(), deserialize());
         assertThat(dataSourceList).isNotNull();
         assertThat(dataSourceList.size()).isEqualTo(0);
@@ -32,7 +32,7 @@ public class DataSourceListTest {
 
     @ParameterizedTest
     @MethodSource("nullArgumentsProvider")
-    public void testInvalidSourceCreation(DataSource ds, Function f1, Function f2) {
+    void testInvalidSourceCreation(DataSource ds, Function f1, Function f2) {
         assertThatThrownBy(() -> new DataSourceList<>(ds, f1, f2))
                 .isInstanceOf(NullPointerException.class);
     }
@@ -46,7 +46,7 @@ public class DataSourceListTest {
 
     @ParameterizedTest
     @MethodSource("putGetSizeArgumentsProvider")
-    public void testPutGetSizeSerialization(Long key, String value, int expectedSize) {
+    void testPutGetSizeSerialization(Long key, String value, int expectedSize) {
         assertThat(dataSourceList.get(key)).isNotPresent();
         dataSourceList.put(key, value);
         assertThat(dataSourceList.size()).isEqualTo(expectedSize);
@@ -61,7 +61,7 @@ public class DataSourceListTest {
     }
 
     @Test
-    public void testGetOverIndex() {
+    void testGetOverIndex() {
         final Long TEST_KEY_0 = 0L;
         final Long TEST_KEY_1 = 1L;
         final Long TEST_KEY_LESS_ZERO = -1L;

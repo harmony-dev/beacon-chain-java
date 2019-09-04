@@ -12,10 +12,10 @@ import java.util.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
-public class EngineDrivenDatabaseTest {
+class EngineDrivenDatabaseTest {
 
   @Test
-  public void generalCasesAreCorrect() {
+  void generalCasesAreCorrect() {
     TestStorageSource engineSource = new TestStorageSource();
     EngineDrivenDatabase db = EngineDrivenDatabase.createWithInstantFlusher(engineSource);
 
@@ -65,7 +65,7 @@ public class EngineDrivenDatabaseTest {
   }
 
   @Test
-  public void multipleStorageCase() {
+  void multipleStorageCase() {
     TestStorageSource engineSource = new TestStorageSource();
     EngineDrivenDatabase db = EngineDrivenDatabase.createWithInstantFlusher(engineSource);
 
@@ -111,7 +111,7 @@ public class EngineDrivenDatabaseTest {
   }
 
   @Test
-  public void checkBufferSizeFlusher() {
+  void checkBufferSizeFlusher() {
     TestStorageSource engineSource = new TestStorageSource();
     EngineDrivenDatabase db = EngineDrivenDatabase.create(engineSource, 512);
 
@@ -153,7 +153,7 @@ public class EngineDrivenDatabaseTest {
 
   @Test
   @Disabled
-  public void checkWithConcurrentAccessTake1() throws InterruptedException {
+  void checkWithConcurrentAccessTake1() throws InterruptedException {
     TestStorageSource engineSource = new TestStorageSource();
     EngineDrivenDatabase db = EngineDrivenDatabase.createWithInstantFlusher(engineSource);
 
@@ -198,7 +198,7 @@ public class EngineDrivenDatabaseTest {
 
   @Test
   @Disabled
-  public void checkWithConcurrentAccessTake2() throws InterruptedException {
+  void checkWithConcurrentAccessTake2() throws InterruptedException {
     TestStorageSource engineSource = new TestStorageSource();
     EngineDrivenDatabase db = EngineDrivenDatabase.createWithInstantFlusher(engineSource);
 

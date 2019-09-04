@@ -7,11 +7,11 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class InMemoryDatabaseTest {
+class InMemoryDatabaseTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"TEST_KEY"})
-    public void testGetBackingDataSource(String param) {
+    void testGetBackingDataSource(String param) {
         final InMemoryDatabase database = new InMemoryDatabase();
         final DataSource<BytesValue, BytesValue> dataSource = database.getBackingDataSource();
         assertThat(dataSource).isNotNull();
