@@ -27,9 +27,9 @@ public class SimulationKeyPairGenerator {
    * @param count - amount of key parirs to generate
    * @return the generated key pairs
    */
-  public static List<BLS381.KeyPair> generateInteropKeys(int count) {
+  public static List<BLS381.KeyPair> generateInteropKeys(int startIndex, int count) {
     List<BLS381.KeyPair> ret = new ArrayList<>();
-    for (int i = 0; i < count; i++) {
+    for (int i = startIndex; i < startIndex + count; i++) {
       byte[] res = BigInteger.valueOf(i).toByteArray();
       Bytes.reverse(res);
       BytesValue wrap = BytesValue.wrap(Bytes.ensureCapacity(res, 32, 0));
