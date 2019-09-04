@@ -89,29 +89,34 @@ class InMemoryAttestationPoolTest {
         final Publisher<ReceivedAttestation> source = Flux.just(attestation);
         StepVerifier.create(source)
                 .expectNext(attestation)
-                .verifyComplete();
+                .expectComplete()
+                .verify();
 
         final SlotNumber slotNumber = SlotNumber.of(100L);
         final Publisher<SlotNumber> newSlots = Flux.just(slotNumber);
         StepVerifier.create(newSlots)
                 .expectNext(slotNumber)
-                .verifyComplete();
+                .expectComplete()
+                .verify();
 
         final Checkpoint checkpoint = Checkpoint.EMPTY;
         final Publisher<Checkpoint> finalizedCheckpoints = Flux.just(checkpoint);
         StepVerifier.create(finalizedCheckpoints)
                 .expectNext(checkpoint)
-                .verifyComplete();
+                .expectComplete()
+                .verify();
 
         final Publisher<BeaconBlock> importedBlocks = Flux.just(aBlock);
         StepVerifier.create(importedBlocks)
                 .expectNext(aBlock)
-                .verifyComplete();
+                .expectComplete()
+                .verify();
 
         final Publisher<BeaconBlock> chainHeads = Flux.just(aBlock);
         StepVerifier.create(chainHeads)
                 .expectNext(aBlock)
-                .verifyComplete();
+                .expectComplete()
+                .verify();
 
         final AttestationPool pool = AttestationPool.create(
                 source,
