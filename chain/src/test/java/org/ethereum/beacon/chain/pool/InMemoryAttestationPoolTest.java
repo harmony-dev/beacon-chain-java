@@ -1,11 +1,15 @@
 package org.ethereum.beacon.chain.pool;
 
 import org.ethereum.beacon.chain.*;
+import org.ethereum.beacon.chain.pool.checker.*;
+import org.ethereum.beacon.chain.pool.registry.*;
+import org.ethereum.beacon.chain.pool.verifier.*;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.chain.storage.impl.*;
 import org.ethereum.beacon.consensus.*;
 import org.ethereum.beacon.consensus.transition.*;
 import org.ethereum.beacon.consensus.util.StateTransitionTestUtil;
+import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.consensus.verifier.*;
 import org.ethereum.beacon.core.*;
 import org.ethereum.beacon.core.operations.Attestation;
@@ -27,6 +31,8 @@ import tech.pegasys.artemis.util.collections.Bitlist;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 import java.util.Collections;
+
+import static org.ethereum.beacon.chain.pool.AttestationPool.*;
 
 class InMemoryAttestationPoolTest {
 
@@ -133,6 +139,80 @@ class InMemoryAttestationPoolTest {
         pool.start();
     }
 
+    @Test
+    void integrationTest2() {
+        final MutableBeaconChain beaconChain = createBeaconChain(spec, perSlotTransition, schedulers);
+        beaconChain.init();
+        final BeaconTuple recentlyProcessed = beaconChain.getRecentlyProcessed();
+        final BeaconBlock aBlock = createBlock(recentlyProcessed, spec,
+                schedulers.getCurrentTime(), perSlotTransition);
+
+        final NodeId sender = new NodeId(new byte[100]);
+        final Attestation message = createAttestation(BytesValue.fromHexString("aa"));
+        final ReceivedAttestation attestation = new ReceivedAttestation(sender, message);
+        final Publisher<ReceivedAttestation> source = Flux.just(attestation);
+        StepVerifier.create(source)
+                .expectNext(attestation)
+                .expectComplete()
+                .verify();
+
+        final SlotNumber slotNumber = SlotNumber.of(100L);
+        final Publisher<SlotNumber> newSlots = Flux.just(slotNumber);
+        StepVerifier.create(newSlots)
+                .expectNext(slotNumber)
+                .expectComplete()
+                .verify();
+
+        final Checkpoint checkpoint = Checkpoint.EMPTY;
+        final Publisher<Checkpoint> finalizedCheckpoints = Flux.just(checkpoint);
+        StepVerifier.create(finalizedCheckpoints)
+                .expectNext(checkpoint)
+                .expectComplete()
+                .verify();
+
+        final Publisher<BeaconBlock> importedBlocks = Flux.just(aBlock);
+        StepVerifier.create(importedBlocks)
+                .expectNext(aBlock)
+                .expectComplete()
+                .verify();
+
+        final Publisher<BeaconBlock> chainHeads = Flux.just(aBlock);
+        StepVerifier.create(chainHeads)
+                .expectNext(aBlock)
+                .expectComplete()
+                .verify();
+
+        final TimeFrameFilter timeFrameFilter = new TimeFrameFilter(spec, MAX_ATTESTATION_LOOKAHEAD);
+        timeFrameFilter.feedFinalizedCheckpoint(checkpoint);
+        timeFrameFilter.feedNewSlot(slotNumber);
+
+        final SanityChecker sanityChecker = new SanityChecker(spec);
+        final SignatureEncodingChecker encodingChecker = new SignatureEncodingChecker();
+        final ProcessedAttestations processedFilter =
+                new ProcessedAttestations(spec::hash_tree_root, MAX_PROCESSED_ATTESTATIONS);
+        final UnknownAttestationPool unknownAttestationPool =
+                new UnknownAttestationPool(
+                        beaconChainStorage.getBlockStorage(), spec, MAX_ATTESTATION_LOOKAHEAD, MAX_UNKNOWN_ATTESTATIONS);
+        final BatchVerifier batchVerifier =
+                new AttestationVerifier(beaconChainStorage.getTupleStorage(), spec, slotTransition);
+
+        final AttestationPool pool = new InMemoryAttestationPool(
+                source,
+                newSlots,
+                finalizedCheckpoints,
+                importedBlocks,
+                chainHeads,
+                schedulers,
+                timeFrameFilter,
+                sanityChecker,
+                encodingChecker,
+                processedFilter,
+                unknownAttestationPool,
+                batchVerifier);
+
+        pool.start();
+    }
+
     private MutableBeaconChain createBeaconChain(
             BeaconChainSpec spec, StateTransition<BeaconStateEx> perSlotTransition, Schedulers schedulers) {
         Time start = Time.castFrom(UInt64.valueOf(schedulers.getCurrentTime() / 1000));
@@ -201,8 +281,8 @@ class InMemoryAttestationPoolTest {
         final AttestationData expected =
                 new AttestationData(
                         Hashes.sha256(BytesValue.fromHexString("aa")),
-                        new Checkpoint(EpochNumber.ZERO, Hashes.sha256(BytesValue.fromHexString("bb"))),
-                        new Checkpoint(EpochNumber.of(123), Hashes.sha256(BytesValue.fromHexString("cc"))),
+                        new Checkpoint(EpochNumber.of(231), Hashes.sha256(BytesValue.fromHexString("bb"))),
+                        new Checkpoint(EpochNumber.of(1), Hashes.sha256(BytesValue.fromHexString("cc"))),
                         Crosslink.EMPTY);
 
         return expected;

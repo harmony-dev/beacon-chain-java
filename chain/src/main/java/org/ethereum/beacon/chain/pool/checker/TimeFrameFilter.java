@@ -1,12 +1,10 @@
 package org.ethereum.beacon.chain.pool.checker;
 
-import org.ethereum.beacon.chain.pool.ReceivedAttestation;
-import org.ethereum.beacon.chain.pool.StatefulProcessor;
+import org.ethereum.beacon.chain.pool.*;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.state.Checkpoint;
-import org.ethereum.beacon.core.types.EpochNumber;
-import org.ethereum.beacon.core.types.SlotNumber;
+import org.ethereum.beacon.core.types.*;
 
 /**
  * Filters attestations by time frame of its target and source.
@@ -62,7 +60,7 @@ public class TimeFrameFilter implements AttestationChecker, StatefulProcessor {
       return false;
     }
 
-    return false;
+    return true;
   }
 
   /**
