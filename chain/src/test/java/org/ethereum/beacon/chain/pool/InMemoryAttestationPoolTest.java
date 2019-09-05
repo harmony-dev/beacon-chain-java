@@ -30,7 +30,7 @@ import java.util.Collections;
 
 class InMemoryAttestationPoolTest {
 
-    private Schedulers schedulers = Schedulers.createDefault();
+    private Schedulers schedulers = Schedulers.createControlled();
 
     private SpecConstants specConstants =
             new SpecConstants() {
@@ -206,5 +206,10 @@ class InMemoryAttestationPoolTest {
                         Crosslink.EMPTY);
 
         return expected;
+    }
+
+    @Test
+    void testValidAttestation() {
+
     }
 }
