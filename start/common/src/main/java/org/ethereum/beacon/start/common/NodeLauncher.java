@@ -117,7 +117,9 @@ public class NodeLauncher {
     this.storageFactory = storageFactory;
     this.schedulers = schedulers;
     this.startSyncManager = startSyncManager;
+  }
 
+  public void start() {
     if (depositContract != null) {
       Mono.from(depositContract.getChainStartMono()).subscribe(this::chainStarted);
     }

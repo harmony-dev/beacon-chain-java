@@ -216,6 +216,7 @@ public class NodeCommandLauncher implements Runnable {
             SerializerFactory.createSSZ(specConstants)),
         schedulers,
         true);
+    node.start();
 
     Runtime.getRuntime().addShutdownHook(new Thread(node::stop));
 
