@@ -2,10 +2,12 @@ package org.ethereum.beacon.chain.pool;
 
 import java.time.Duration;
 import org.ethereum.beacon.chain.BeaconChain;
+import org.ethereum.beacon.chain.BeaconTuple;
 import org.ethereum.beacon.chain.pool.checker.SanityChecker;
 import org.ethereum.beacon.chain.pool.checker.SignatureEncodingChecker;
 import org.ethereum.beacon.chain.pool.checker.TimeFrameFilter;
-import org.ethereum.beacon.chain.pool.churn.OffChainAggregates;
+import org.ethereum.beacon.chain.pool.churn.AttestationChurn;
+import org.ethereum.beacon.chain.pool.churn.AttestationChurnImpl;
 import org.ethereum.beacon.chain.pool.registry.ProcessedAttestations;
 import org.ethereum.beacon.chain.pool.registry.UnknownAttestationPool;
 import org.ethereum.beacon.chain.pool.verifier.AttestationVerifier;
@@ -61,6 +63,9 @@ public interface AttestationPool {
   /** A throttling interval for verifier buffer. */
   Duration VERIFIER_INTERVAL = Duration.ofMillis(50);
 
+  /** Max number of attestations held by {@link AttestationChurn}. */
+  int ATTESTATION_CHURN_SIZE = 10_000;
+
   /**
    * Valid attestations publisher.
    *
@@ -99,9 +104,10 @@ public interface AttestationPool {
   static AttestationPool create(
       Publisher<ReceivedAttestation> source,
       Publisher<SlotNumber> newSlots,
+      Publisher<Checkpoint> justifiedCheckpoints,
       Publisher<Checkpoint> finalizedCheckpoints,
       Publisher<BeaconBlock> importedBlocks,
-      Publisher<BeaconBlock> chainHeads,
+      Publisher<BeaconTuple> chainHeads,
       Schedulers schedulers,
       BeaconChainSpec spec,
       BeaconChainStorage storage,
@@ -117,10 +123,12 @@ public interface AttestationPool {
             storage.getBlockStorage(), spec, MAX_ATTESTATION_LOOKAHEAD, MAX_UNKNOWN_ATTESTATIONS);
     BatchVerifier batchVerifier =
         new AttestationVerifier(storage.getTupleStorage(), spec, emptySlotTransition);
+    AttestationChurn attestationChurn = new AttestationChurnImpl(spec, ATTESTATION_CHURN_SIZE);
 
     return new InMemoryAttestationPool(
         source,
         newSlots,
+        justifiedCheckpoints,
         finalizedCheckpoints,
         importedBlocks,
         chainHeads,
@@ -130,6 +138,7 @@ public interface AttestationPool {
         encodingChecker,
         processedFilter,
         unknownAttestationPool,
-        batchVerifier);
+        batchVerifier,
+        attestationChurn);
   }
 }

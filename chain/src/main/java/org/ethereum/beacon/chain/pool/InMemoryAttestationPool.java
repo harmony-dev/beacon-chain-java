@@ -1,10 +1,11 @@
 package org.ethereum.beacon.chain.pool;
 
 import java.util.List;
+import org.ethereum.beacon.chain.BeaconTuple;
 import org.ethereum.beacon.chain.pool.checker.SanityChecker;
 import org.ethereum.beacon.chain.pool.checker.SignatureEncodingChecker;
 import org.ethereum.beacon.chain.pool.checker.TimeFrameFilter;
-import org.ethereum.beacon.chain.pool.churn.OffChainAggregates;
+import org.ethereum.beacon.chain.pool.churn.AttestationChurn;
 import org.ethereum.beacon.chain.pool.reactor.ChurnProcessor;
 import org.ethereum.beacon.chain.pool.reactor.DoubleWorkProcessor;
 import org.ethereum.beacon.chain.pool.reactor.IdentificationProcessor;
@@ -32,9 +33,10 @@ public class InMemoryAttestationPool implements AttestationPool {
 
   private final Publisher<ReceivedAttestation> source;
   private final Publisher<SlotNumber> newSlots;
+  private final Publisher<Checkpoint> justifiedCheckpoints;
   private final Publisher<Checkpoint> finalizedCheckpoints;
   private final Publisher<BeaconBlock> importedBlocks;
-  private final Publisher<BeaconBlock> chainHeads;
+  private final Publisher<BeaconTuple> chainHeads;
   private final Schedulers schedulers;
 
   private final TimeFrameFilter timeFrameFilter;
@@ -43,6 +45,7 @@ public class InMemoryAttestationPool implements AttestationPool {
   private final ProcessedAttestations processedFilter;
   private final UnknownAttestationPool unknownPool;
   private final BatchVerifier verifier;
+  private final AttestationChurn attestationChurn;
 
   private final DirectProcessor<ReceivedAttestation> invalidAttestations = DirectProcessor.create();
   private final DirectProcessor<ReceivedAttestation> validAttestations = DirectProcessor.create();
@@ -52,18 +55,21 @@ public class InMemoryAttestationPool implements AttestationPool {
   public InMemoryAttestationPool(
       Publisher<ReceivedAttestation> source,
       Publisher<SlotNumber> newSlots,
+      Publisher<Checkpoint> justifiedCheckpoints,
       Publisher<Checkpoint> finalizedCheckpoints,
       Publisher<BeaconBlock> importedBlocks,
-      Publisher<BeaconBlock> chainHeads,
+      Publisher<BeaconTuple> chainHeads,
       Schedulers schedulers,
       TimeFrameFilter timeFrameFilter,
       SanityChecker sanityChecker,
       SignatureEncodingChecker encodingChecker,
       ProcessedAttestations processedFilter,
       UnknownAttestationPool unknownPool,
-      BatchVerifier batchVerifier) {
+      BatchVerifier batchVerifier,
+      AttestationChurn attestationChurn) {
     this.source = source;
     this.newSlots = newSlots;
+    this.justifiedCheckpoints = justifiedCheckpoints;
     this.finalizedCheckpoints = finalizedCheckpoints;
     this.importedBlocks = importedBlocks;
     this.chainHeads = chainHeads;
@@ -74,6 +80,7 @@ public class InMemoryAttestationPool implements AttestationPool {
     this.processedFilter = processedFilter;
     this.unknownPool = unknownPool;
     this.verifier = batchVerifier;
+    this.attestationChurn = attestationChurn;
   }
 
   @Override
@@ -86,9 +93,10 @@ public class InMemoryAttestationPool implements AttestationPool {
     // create sources
     Flux<ReceivedAttestation> sourceFx = Flux.from(source);
     Flux<SlotNumber> newSlotsFx = Flux.from(newSlots);
+    Flux<Checkpoint> justifiedCheckpointsFx = Flux.from(justifiedCheckpoints);
     Flux<Checkpoint> finalizedCheckpointsFx = Flux.from(finalizedCheckpoints);
     Flux<BeaconBlock> importedBlocksFx = Flux.from(importedBlocks);
-    Flux<BeaconBlock> chainHeadsFx = Flux.from(chainHeads);
+    Flux<BeaconTuple> chainHeadsFx = Flux.from(chainHeads);
 
     // check time frames
     TimeProcessor timeProcessor =
@@ -123,7 +131,14 @@ public class InMemoryAttestationPool implements AttestationPool {
         new VerificationProcessor(verifier, verificationThrottle);
 
     // feed churn
-    ChurnProcessor churnProcessor = new ChurnProcessor(schedulers, chainHeadsFx, newSlotsFx);
+    ChurnProcessor churnProcessor =
+        new ChurnProcessor(
+            attestationChurn,
+            schedulers,
+            chainHeadsFx,
+            justifiedCheckpointsFx,
+            finalizedCheckpointsFx,
+            verificationProcessor.getValid());
 
     Scheduler outScheduler = schedulers.events().toReactor();
     // expose valid attestations

@@ -1,24 +1,57 @@
 package org.ethereum.beacon.chain.pool;
 
-import org.ethereum.beacon.chain.*;
-import org.ethereum.beacon.chain.pool.checker.*;
-import org.ethereum.beacon.chain.pool.registry.*;
-import org.ethereum.beacon.chain.pool.verifier.*;
+import static org.ethereum.beacon.chain.pool.AttestationPool.ATTESTATION_CHURN_SIZE;
+import static org.ethereum.beacon.chain.pool.AttestationPool.MAX_ATTESTATION_LOOKAHEAD;
+import static org.ethereum.beacon.chain.pool.AttestationPool.MAX_PROCESSED_ATTESTATIONS;
+import static org.ethereum.beacon.chain.pool.AttestationPool.MAX_UNKNOWN_ATTESTATIONS;
+
+import java.util.Collections;
+import org.ethereum.beacon.chain.BeaconTuple;
+import org.ethereum.beacon.chain.DefaultBeaconChain;
+import org.ethereum.beacon.chain.MutableBeaconChain;
+import org.ethereum.beacon.chain.pool.checker.SanityChecker;
+import org.ethereum.beacon.chain.pool.checker.SignatureEncodingChecker;
+import org.ethereum.beacon.chain.pool.checker.TimeFrameFilter;
+import org.ethereum.beacon.chain.pool.churn.AttestationChurn;
+import org.ethereum.beacon.chain.pool.registry.ProcessedAttestations;
+import org.ethereum.beacon.chain.pool.registry.UnknownAttestationPool;
+import org.ethereum.beacon.chain.pool.verifier.AttestationVerifier;
+import org.ethereum.beacon.chain.pool.verifier.BatchVerifier;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
-import org.ethereum.beacon.chain.storage.impl.*;
-import org.ethereum.beacon.consensus.*;
-import org.ethereum.beacon.consensus.transition.*;
+import org.ethereum.beacon.chain.storage.impl.SSZBeaconChainStorageFactory;
+import org.ethereum.beacon.chain.storage.impl.SerializerFactory;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
+import org.ethereum.beacon.consensus.BeaconStateEx;
+import org.ethereum.beacon.consensus.BlockTransition;
+import org.ethereum.beacon.consensus.ChainStart;
+import org.ethereum.beacon.consensus.StateTransition;
+import org.ethereum.beacon.consensus.transition.BeaconStateExImpl;
+import org.ethereum.beacon.consensus.transition.EmptySlotTransition;
+import org.ethereum.beacon.consensus.transition.ExtendedSlotTransition;
+import org.ethereum.beacon.consensus.transition.InitialStateTransition;
+import org.ethereum.beacon.consensus.transition.PerEpochTransition;
+import org.ethereum.beacon.consensus.transition.PerSlotTransition;
 import org.ethereum.beacon.consensus.util.StateTransitionTestUtil;
+import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
+import org.ethereum.beacon.consensus.verifier.BeaconStateVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
-import org.ethereum.beacon.consensus.verifier.*;
-import org.ethereum.beacon.core.*;
+import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.BeaconBlockBody;
+import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
-import org.ethereum.beacon.core.operations.attestation.*;
+import org.ethereum.beacon.core.operations.attestation.AttestationData;
+import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.spec.SpecConstants;
-import org.ethereum.beacon.core.state.*;
-import org.ethereum.beacon.core.types.*;
+import org.ethereum.beacon.core.state.Checkpoint;
+import org.ethereum.beacon.core.state.Eth1Data;
+import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.EpochNumber;
+import org.ethereum.beacon.core.types.ShardNumber;
+import org.ethereum.beacon.core.types.SlotNumber;
+import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.crypto.Hashes;
-import org.ethereum.beacon.db.*;
+import org.ethereum.beacon.db.Database;
+import org.ethereum.beacon.db.InMemoryDatabase;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.types.p2p.NodeId;
 import org.junit.jupiter.api.Test;
@@ -26,13 +59,10 @@ import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.bytes.*;
+import tech.pegasys.artemis.util.bytes.Bytes96;
+import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.collections.Bitlist;
 import tech.pegasys.artemis.util.uint.UInt64;
-
-import java.util.Collections;
-
-import static org.ethereum.beacon.chain.pool.AttestationPool.*;
 
 class InMemoryAttestationPoolTest {
 
@@ -86,8 +116,9 @@ class InMemoryAttestationPoolTest {
         final MutableBeaconChain beaconChain = createBeaconChain(spec, perSlotTransition, schedulers);
         beaconChain.init();
         final BeaconTuple recentlyProcessed = beaconChain.getRecentlyProcessed();
-        final BeaconBlock aBlock = createBlock(recentlyProcessed, spec,
-                schedulers.getCurrentTime(), perSlotTransition);
+        final BeaconTuple aTuple = createBlock(recentlyProcessed, spec,
+            schedulers.getCurrentTime(), perSlotTransition);
+        final BeaconBlock aBlock = aTuple.getBlock();
 
         final NodeId sender = new NodeId(new byte[100]);
         final Attestation message = createAttestation(BytesValue.fromHexString("aa"));
@@ -111,6 +142,11 @@ class InMemoryAttestationPoolTest {
                 .expectNext(checkpoint)
                 .expectComplete()
                 .verify();
+        final Publisher<Checkpoint> justifiedCheckpoints = Flux.just(checkpoint);
+        StepVerifier.create(justifiedCheckpoints)
+                .expectNext(checkpoint)
+                .expectComplete()
+                .verify();
 
         final Publisher<BeaconBlock> importedBlocks = Flux.just(aBlock);
         StepVerifier.create(importedBlocks)
@@ -118,15 +154,16 @@ class InMemoryAttestationPoolTest {
                 .expectComplete()
                 .verify();
 
-        final Publisher<BeaconBlock> chainHeads = Flux.just(aBlock);
+        final Publisher<BeaconTuple> chainHeads = Flux.just(recentlyProcessed);
         StepVerifier.create(chainHeads)
-                .expectNext(aBlock)
+                .expectNext(recentlyProcessed)
                 .expectComplete()
                 .verify();
 
         final AttestationPool pool = AttestationPool.create(
                 source,
                 newSlots,
+                justifiedCheckpoints,
                 finalizedCheckpoints,
                 importedBlocks,
                 chainHeads,
@@ -144,8 +181,9 @@ class InMemoryAttestationPoolTest {
         final MutableBeaconChain beaconChain = createBeaconChain(spec, perSlotTransition, schedulers);
         beaconChain.init();
         final BeaconTuple recentlyProcessed = beaconChain.getRecentlyProcessed();
-        final BeaconBlock aBlock = createBlock(recentlyProcessed, spec,
-                schedulers.getCurrentTime(), perSlotTransition);
+        final BeaconTuple aTuple = createBlock(recentlyProcessed, spec,
+            schedulers.getCurrentTime(), perSlotTransition);
+        final BeaconBlock aBlock = aTuple.getBlock();
 
         final NodeId sender = new NodeId(new byte[100]);
         final Attestation message = createAttestation(BytesValue.fromHexString("aa"));
@@ -170,15 +208,21 @@ class InMemoryAttestationPoolTest {
                 .expectComplete()
                 .verify();
 
+        final Publisher<Checkpoint> justifiedCheckpoints = Flux.just(checkpoint);
+        StepVerifier.create(justifiedCheckpoints)
+                .expectNext(checkpoint)
+                .expectComplete()
+                .verify();
+
         final Publisher<BeaconBlock> importedBlocks = Flux.just(aBlock);
         StepVerifier.create(importedBlocks)
                 .expectNext(aBlock)
                 .expectComplete()
                 .verify();
 
-        final Publisher<BeaconBlock> chainHeads = Flux.just(aBlock);
+        final Publisher<BeaconTuple> chainHeads = Flux.just(aTuple);
         StepVerifier.create(chainHeads)
-                .expectNext(aBlock)
+                .expectNext(aTuple)
                 .expectComplete()
                 .verify();
 
@@ -195,10 +239,12 @@ class InMemoryAttestationPoolTest {
                         beaconChainStorage.getBlockStorage(), spec, MAX_ATTESTATION_LOOKAHEAD, MAX_UNKNOWN_ATTESTATIONS);
         final BatchVerifier batchVerifier =
                 new AttestationVerifier(beaconChainStorage.getTupleStorage(), spec, slotTransition);
+        final AttestationChurn attestationChurn = AttestationChurn.create(spec, ATTESTATION_CHURN_SIZE);
 
         final AttestationPool pool = new InMemoryAttestationPool(
                 source,
                 newSlots,
+                justifiedCheckpoints,
                 finalizedCheckpoints,
                 importedBlocks,
                 chainHeads,
@@ -208,7 +254,8 @@ class InMemoryAttestationPoolTest {
                 encodingChecker,
                 processedFilter,
                 unknownAttestationPool,
-                batchVerifier);
+                batchVerifier,
+                attestationChurn);
 
         pool.start();
     }
@@ -248,7 +295,7 @@ class InMemoryAttestationPoolTest {
                 schedulers);
     }
 
-    private BeaconBlock createBlock(
+    private BeaconTuple createBlock(
             BeaconTuple parent,
             BeaconChainSpec spec, long currentTime,
             StateTransition<BeaconStateEx> perSlotTransition) {
@@ -261,7 +308,8 @@ class InMemoryAttestationPoolTest {
                         BLSSignature.ZERO);
         BeaconState state = perSlotTransition.apply(new BeaconStateExImpl(parent.getState()));
 
-        return block.withStateRoot(spec.hash_tree_root(state));
+    return BeaconTuple.of(
+        block.withStateRoot(spec.hash_tree_root(state)), new BeaconStateExImpl(state));
     }
 
     private Attestation createAttestation(BytesValue someValue) {
