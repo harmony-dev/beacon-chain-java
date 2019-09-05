@@ -46,7 +46,7 @@ public class AttestationChurnImpl implements AttestationChurn {
     // compute coverage
     Map<AttestationData, Bitlist> coverage = computeCoverage(tuple.getState());
 
-    // filter attestations by coverage
+    // check attestations against coverage and state
     List<Attestation> offChainAttestations =
         queue.stream()
             .filter(
@@ -58,6 +58,8 @@ public class AttestationChurnImpl implements AttestationChurn {
 
                   return bits.and(attestation.getAggregationBits()).isEmpty();
                 })
+            .filter(
+                attestation -> spec.verify_attestation_impl(tuple.getState(), attestation, false))
             .collect(Collectors.toList());
 
     // compute aggregates
