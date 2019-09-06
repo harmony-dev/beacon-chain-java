@@ -140,8 +140,8 @@ public class Node implements Runnable {
       description = {
           "When an initial-state is specified, but db is not empty",
           "specifies how to resolve the problem:",
-          "  force-db-clean=true - tries to clean db",
-          "  force-db-clean=true - exits with failure status.",
+          "  force-db-clean=true  - tries to clean db",
+          "  force-db-clean=false - exits with failure status.",
           "False by default."
       }
   )
