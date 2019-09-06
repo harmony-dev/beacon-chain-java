@@ -17,7 +17,6 @@ import org.ethereum.beacon.consensus.verifier.BeaconStateVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
-import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.stream.SimpleProcessor;
@@ -28,7 +27,6 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   private static final Logger logger = LogManager.getLogger(DefaultBeaconChain.class);
 
   private final BeaconChainSpec spec;
-  private final BlockTransition<BeaconStateEx> initialTransition;
   private final EmptySlotTransition preBlockTransition;
   private final BlockTransition<BeaconStateEx> blockTransition;
   private final BeaconBlockVerifier blockVerifier;
@@ -44,7 +42,6 @@ public class DefaultBeaconChain implements MutableBeaconChain {
 
   public DefaultBeaconChain(
       BeaconChainSpec spec,
-      BlockTransition<BeaconStateEx> initialTransition,
       EmptySlotTransition preBlockTransition,
       BlockTransition<BeaconStateEx> blockTransition,
       BeaconBlockVerifier blockVerifier,
@@ -52,7 +49,6 @@ public class DefaultBeaconChain implements MutableBeaconChain {
       BeaconChainStorage chainStorage,
       Schedulers schedulers) {
     this.spec = spec;
-    this.initialTransition = initialTransition;
     this.preBlockTransition = preBlockTransition;
     this.blockTransition = blockTransition;
     this.blockVerifier = blockVerifier;
@@ -67,7 +63,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   @Override
   public void init() {
     if (tupleStorage.isEmpty()) {
-      initializeStorage();
+      throw new IllegalStateException("Couldn't start from empty storage");
     }
     this.recentlyProcessed = fetchRecentTuple();
     blockStream.onNext(new BeaconTupleDetails(recentlyProcessed));
@@ -81,23 +77,6 @@ public class DefaultBeaconChain implements MutableBeaconChain {
         .get(latestBlockRoots.get(0))
         .orElseThrow(
             () -> new RuntimeException("Block with stored maxSlot not found, maxSlot: " + maxSlot));
-  }
-
-  private void initializeStorage() {
-    BeaconBlock initialGenesis = spec.get_empty_block();
-    BeaconStateEx initialState =
-        initialTransition.apply(BeaconStateEx.getEmpty(spec.getConstants()), initialGenesis);
-
-    Hash32 initialStateRoot = spec.hash_tree_root(initialState);
-    BeaconBlock genesis = initialGenesis.withStateRoot(initialStateRoot);
-    Hash32 genesisRoot = spec.signing_root(genesis);
-    BeaconTuple tuple = BeaconTuple.of(genesis, initialState);
-
-    tupleStorage.put(tuple);
-    chainStorage.getJustifiedStorage().set(
-        new Checkpoint(initialState.getCurrentJustifiedCheckpoint().getEpoch(), genesisRoot));
-    chainStorage.getFinalizedStorage().set(
-        new Checkpoint(initialState.getFinalizedCheckpoint().getEpoch(), genesisRoot));
   }
 
   @Override

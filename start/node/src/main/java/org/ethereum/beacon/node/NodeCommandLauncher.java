@@ -8,13 +8,18 @@ import org.apache.logging.log4j.ThreadContext;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
+import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.chain.storage.impl.SSZBeaconChainStorageFactory;
 import org.ethereum.beacon.chain.storage.impl.SerializerFactory;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
+import org.ethereum.beacon.consensus.BeaconStateEx;
+import org.ethereum.beacon.consensus.ChainStart;
+import org.ethereum.beacon.consensus.transition.InitialStateTransition;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.crypto.BLS381.KeyPair;
+import org.ethereum.beacon.db.Database;
 import org.ethereum.beacon.emulator.config.ConfigBuilder;
 import org.ethereum.beacon.emulator.config.ConfigException;
 import org.ethereum.beacon.emulator.config.chainspec.SpecBuilder;
@@ -34,6 +39,8 @@ import org.ethereum.beacon.schedulers.Scheduler;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.start.common.NodeLauncher;
 import org.ethereum.beacon.start.common.util.MDCControlledSchedulers;
+import org.ethereum.beacon.start.common.util.SimpleDepositContract;
+import org.ethereum.beacon.start.common.util.StorageUtils;
 import org.ethereum.beacon.util.Objects;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import org.ethereum.beacon.wire.net.ConnectionManager;
@@ -62,6 +69,8 @@ import java.util.stream.IntStream;
 public class NodeCommandLauncher implements Runnable {
   private static final Logger logger = LogManager.getLogger("node");
 
+  private final static long DB_BUFFER_SIZE = 64L << 20; // 64Mb
+
   private final MainConfig config;
   private final SpecConstants specConstants;
   private final BeaconChainSpec spec;
@@ -73,7 +82,6 @@ public class NodeCommandLauncher implements Runnable {
   private MDCControlledSchedulers controlledSchedulers;
   private List<KeyPair> keyPairs;
   private Eth1Data eth1Data;
-  private DepositContract depositContract;
 
   /**
    * Creates launcher with following settings
@@ -139,10 +147,11 @@ public class NodeCommandLauncher implements Runnable {
           }
         };
 
-    depositContract = ConfigUtils.createDepositContract(
+    ChainStart chainStart = ConfigUtils.createChainStart(
         config.getConfig().getValidator().getContract(),
         spec,
         config.getChainSpec().getSpecHelpersOptions().isBlsVerifyProofOfPossession());
+    DepositContract depositContract = new SimpleDepositContract(chainStart);
 
     List<BLS381Credentials> credentials = ConfigUtils.createCredentials(
         config.getConfig().getValidator().getSigner(),
@@ -205,15 +214,33 @@ public class NodeCommandLauncher implements Runnable {
     }
     Metrics.startMetricsServer(metricsHost, metricsPort);
 
+    SSZBeaconChainStorageFactory storageFactory =
+        new SSZBeaconChainStorageFactory(
+            spec.getObjectHasher(), SerializerFactory.createSSZ(specConstants));
+
+    String dbPrefix = config.getConfig().getDb();
+
+    Database db;
+    if (dbPrefix == null) {
+      db = Database.inMemoryDB();
+    } else {
+      db = Database.rocksDB(computeDbName(dbPrefix, chainStart), DB_BUFFER_SIZE);
+    }
+
+    BeaconChainStorage beaconChainStorage = storageFactory.create(db);
+    if (beaconChainStorage.getTupleStorage().isEmpty()) {
+      BeaconStateEx initialState =
+          new InitialStateTransition(chainStart, spec).apply(spec.get_empty_block());
+      StorageUtils.initializeStorage(beaconChainStorage, spec, initialState);
+    }
+
     NodeLauncher node = new NodeLauncher(
         specBuilder.buildSpec(),
-        this.depositContract,
+        depositContract,
         credentials,
         connectionManager,
-        config.getConfig().getDb(),
-        new SSZBeaconChainStorageFactory(
-            spec.getObjectHasher(),
-            SerializerFactory.createSSZ(specConstants)),
+        db,
+        beaconChainStorage,
         schedulers,
         true);
     node.start();
@@ -227,6 +254,14 @@ public class NodeCommandLauncher implements Runnable {
         e.printStackTrace();
       }
     }
+  }
+
+  private static String computeDbName(String dbPrefix, ChainStart chainStart) {
+    return String.format(
+        "%s_start_time_%d_dep_root_%s",
+        dbPrefix,
+        chainStart.getTime().getValue(),
+        chainStart.getEth1Data().getDepositRoot().toStringShort());
   }
 
   public static class Builder {

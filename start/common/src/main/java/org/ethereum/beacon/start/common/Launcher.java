@@ -1,6 +1,5 @@
 package org.ethereum.beacon.start.common;
 
-import java.util.List;
 import org.ethereum.beacon.bench.BenchmarkController;
 import org.ethereum.beacon.bench.BenchmarkController.BenchmarkRoutine;
 import org.ethereum.beacon.chain.DefaultBeaconChain;
@@ -30,6 +29,7 @@ import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.db.InMemoryDatabase;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.schedulers.Schedulers;
+import org.ethereum.beacon.start.common.util.StorageUtils;
 import org.ethereum.beacon.util.stats.MeasurementsCollector;
 import org.ethereum.beacon.validator.BeaconChainProposer;
 import org.ethereum.beacon.validator.attester.BeaconChainAttesterImpl;
@@ -40,6 +40,8 @@ import org.ethereum.beacon.wire.WireApiSub;
 import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+
+import java.util.List;
 
 public class Launcher {
   private final BeaconChainSpec spec;
@@ -117,6 +119,8 @@ public class Launcher {
 
     db = new InMemoryDatabase();
     beaconChainStorage = storageFactory.create(db);
+    BeaconStateEx initialState = initialTransition.apply(spec.get_empty_block());
+    StorageUtils.initializeStorage(beaconChainStorage, spec, initialState);
 
     // do not create block verifier for benchmarks, otherwise verification won't be tracked by
     // controller
@@ -129,7 +133,6 @@ public class Launcher {
     beaconChain =
         new DefaultBeaconChain(
             spec,
-            initialTransition,
             isBenchmarkMode() ? benchmarkingEmptySlotTransition(spec) : emptySlotTransition,
             isBenchmarkMode() ? benchmarkingBlockTransition(spec) : new PerBlockTransition(spec),
             blockVerifier,
