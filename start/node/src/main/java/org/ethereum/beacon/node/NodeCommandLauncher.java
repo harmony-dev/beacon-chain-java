@@ -40,6 +40,7 @@ import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.schedulers.DefaultSchedulers;
 import org.ethereum.beacon.schedulers.Scheduler;
 import org.ethereum.beacon.schedulers.Schedulers;
+import org.ethereum.beacon.start.common.DatabaseManager;
 import org.ethereum.beacon.start.common.NodeLauncher;
 import org.ethereum.beacon.start.common.util.MDCControlledSchedulers;
 import org.ethereum.beacon.start.common.util.SimpleDepositContract;
@@ -51,6 +52,7 @@ import org.ethereum.beacon.wire.net.netty.NettyClient;
 import org.ethereum.beacon.wire.net.netty.NettyServer;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Flux;
+import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import java.io.File;
@@ -260,14 +262,19 @@ public class NodeCommandLauncher implements Runnable {
     } else {
       startMode = cliOptions.getStartMode();
     }
+    boolean forceDBClean = cliOptions.isForceDBClean();
 
-    Database db;
+    DatabaseManager dbFactory;
     if (dbPrefix == null) {
-      db = Database.inMemoryDB();
+      dbFactory = DatabaseManager.createInMemoryDBFactory();
     } else {
-      db = Database.rocksDB(computeDbName(dbPrefix, chainStart), DB_BUFFER_SIZE);
+      dbFactory = DatabaseManager.createRocksDBFactory(dbPrefix, DB_BUFFER_SIZE);
     }
 
+    Time genesisTime = initialState.getGenesisTime();
+    Hash32 depositRoot = initialState.getEth1Data().getDepositRoot();
+
+    Database db = dbFactory.getOrCreateDatabase(genesisTime, depositRoot);
     BeaconChainStorage beaconChainStorage = storageFactory.create(db);
 
     boolean emptyStorage = beaconChainStorage.getTupleStorage().isEmpty();
@@ -284,13 +291,25 @@ public class NodeCommandLauncher implements Runnable {
         doInitialize = emptyStorage;
         break;
       case "initial":
-        if (!emptyStorage) {
-          throw new IllegalArgumentException("Cannot initialize non-empty storage.");
+        if (!emptyStorage && !forceDBClean) {
+          throw new IllegalArgumentException("Cannot initialize non-empty storage."
+              + " Use --force-db-clean to clean automatically");
         }
         doInitialize = true;
         break;
       default:
         throw new IllegalArgumentException("Unsupported start-mode " + startMode);
+    }
+
+    if (doInitialize && !emptyStorage && forceDBClean) {
+      db.close();
+      try{
+        dbFactory.removeDatabase(genesisTime, depositRoot);
+      } catch (RuntimeException e) {
+        throw new IllegalStateException("Cannot clean DB, remove files manually", e);
+      }
+      db = dbFactory.getOrCreateDatabase(genesisTime, depositRoot);
+      beaconChainStorage = storageFactory.create(db);
     }
 
     if (doInitialize) {
@@ -317,14 +336,6 @@ public class NodeCommandLauncher implements Runnable {
         e.printStackTrace();
       }
     }
-  }
-
-  private static String computeDbName(String dbPrefix, ChainStart chainStart) {
-    return String.format(
-        "%s_start_time_%d_dep_root_%s",
-        dbPrefix,
-        chainStart.getTime().getValue(),
-        chainStart.getEth1Data().getDepositRoot().toStringShort());
   }
 
   public static class Builder {

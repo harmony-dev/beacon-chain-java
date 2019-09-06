@@ -134,6 +134,19 @@ public class Node implements Runnable {
   )
   private String startMode;
 
+  @CommandLine.Option(
+      names = "--force-db-clean",
+      paramLabel = "force-db-clean",
+      description = {
+          "When an initial-state is specified, but db is not empty",
+          "specifies how to resolve the problem:",
+          "  force-db-clean=true - tries to clean db",
+          "  force-db-clean=true - exits with failure status.",
+          "False by default."
+      }
+  )
+  private boolean forceDBClean = false;
+
   public String getName() {
     return name;
   }
@@ -164,6 +177,10 @@ public class Node implements Runnable {
 
   public String getInitialStateFile() {
     return initialStateFile;
+  }
+
+  public boolean isForceDBClean() {
+    return forceDBClean;
   }
 
   public String getStartMode() {
