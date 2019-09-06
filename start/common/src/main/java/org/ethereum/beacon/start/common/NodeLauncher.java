@@ -5,6 +5,9 @@ import static org.ethereum.beacon.chain.observer.ObservableStateProcessorImpl.DE
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.chain.DefaultBeaconChain;
 import org.ethereum.beacon.chain.MutableBeaconChain;
 import org.ethereum.beacon.chain.ProposedBlockProcessor;
@@ -34,18 +37,16 @@ import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.ssz.SSZBuilder;
 import org.ethereum.beacon.ssz.SSZSerializer;
 import org.ethereum.beacon.validator.BeaconChainProposer;
-import org.ethereum.beacon.validator.local.MultiValidatorService;
 import org.ethereum.beacon.validator.attester.BeaconChainAttesterImpl;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
+import org.ethereum.beacon.validator.local.MultiValidatorService;
 import org.ethereum.beacon.validator.proposer.BeaconChainProposerImpl;
 import org.ethereum.beacon.wire.Feedback;
-import org.ethereum.beacon.wire.MessageSerializer;
-import org.ethereum.beacon.wire.SimplePeerManagerImpl;
+import org.ethereum.beacon.wire.PeerManager;
 import org.ethereum.beacon.wire.WireApiSub;
 import org.ethereum.beacon.wire.WireApiSync;
 import org.ethereum.beacon.wire.WireApiSyncServer;
-import org.ethereum.beacon.wire.message.SSZMessageSerializer;
-import org.ethereum.beacon.wire.net.ConnectionManager;
+import org.ethereum.beacon.wire.impl.libp2p.Libp2pLauncher;
 import org.ethereum.beacon.wire.sync.BeaconBlockTree;
 import org.ethereum.beacon.wire.sync.SyncManagerImpl;
 import org.ethereum.beacon.wire.sync.SyncQueue;
@@ -53,9 +54,11 @@ import org.ethereum.beacon.wire.sync.SyncQueueImpl;
 import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import tech.pegasys.artemis.util.bytes.Bytes4;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public class NodeLauncher {
+  private static final Logger logger = LogManager.getLogger(NodeLauncher.class);
 
   private final static long DB_BUFFER_SIZE = 64L << 20; // 64Mb
 
@@ -85,12 +88,13 @@ public class NodeLauncher {
 
   private byte networkId = 1;
   private UInt64 chainId = UInt64.valueOf(1);
+  private Bytes4 fork = Bytes4.ZERO;
   private boolean startSyncManager = false;
 
   private WireApiSub wireApiSub;
   private WireApiSync wireApiSyncRemote;
-  private final ConnectionManager<?> connectionManager;
-  private SimplePeerManagerImpl peerManager;
+  private final Libp2pLauncher networkLauncher;
+  private PeerManager peerManager;
   private BeaconBlockTree blockTree;
   private SyncQueue syncQueue;
   private SyncManagerImpl syncManager;
@@ -100,7 +104,7 @@ public class NodeLauncher {
       BeaconChainSpec spec,
       DepositContract depositContract,
       List<BLS381Credentials> validatorCred,
-      ConnectionManager<?> connectionManager,
+      Libp2pLauncher networkLauncher,
       BeaconChainStorageFactory storageFactory,
       Schedulers schedulers,
       boolean startSyncManager) {
@@ -108,7 +112,7 @@ public class NodeLauncher {
     this.spec = spec;
     this.depositContract = depositContract;
     this.validatorCred = validatorCred;
-    this.connectionManager = connectionManager;
+    this.networkLauncher = networkLauncher;
     this.storageFactory = storageFactory;
     this.schedulers = schedulers;
     this.startSyncManager = startSyncManager;
@@ -167,19 +171,17 @@ public class NodeLauncher {
         .withExternalVarResolver(new SpecConstantsResolver(spec.getConstants()))
         .withExtraObjectCreator(SpecConstants.class, spec.getConstants())
         .buildSerializer();
-    MessageSerializer messageSerializer = new SSZMessageSerializer(ssz);
     syncServer = new WireApiSyncServer(beaconChainStorage);
 
-    peerManager = new SimplePeerManagerImpl(
-        networkId,
-        chainId,
-        connectionManager.channelsStream(),
-        ssz,
-        spec,
-        messageSerializer,
-        schedulers,
-        syncServer,
-        beaconChain.getBlockStatesStream());
+    networkLauncher.setSpec(spec);
+    networkLauncher.setSszSerializer(ssz);
+    networkLauncher.setSchedulers(schedulers);
+    networkLauncher.setWireApiSyncServer(syncServer);
+    networkLauncher.setHeadStream(beaconChain.getBlockStatesStream());
+    networkLauncher.setFork(fork);
+
+    networkLauncher.init();
+    peerManager = networkLauncher.getPeerManager();
 
     wireApiSub = peerManager.getWireApiSub();
     wireApiSyncRemote = peerManager.getWireApiSync();
@@ -234,9 +236,11 @@ public class NodeLauncher {
       syncManager.start();
     }
 
-//    Flux.from(wireApiSub.inboundBlocksStream())
-//        .publishOn(schedulers.reactorEvents())
-//        .subscribe(beaconChain::insert);
+    try {
+      networkLauncher.start().get(5, TimeUnit.SECONDS);
+    } catch (Exception e) {
+      logger.error("Problem with starting network", e);
+    }
   }
 
   private String computeDbName(ChainStart chainStart) {

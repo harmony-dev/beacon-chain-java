@@ -1,17 +1,20 @@
 package org.ethereum.beacon.wire;
 
-import org.ethereum.beacon.wire.channel.Channel;
-import tech.pegasys.artemis.util.bytes.BytesValue;
+import java.util.concurrent.CompletableFuture;
+import org.ethereum.beacon.wire.impl.plain.channel.Channel;
+import org.ethereum.beacon.wire.message.payload.HelloMessage;
 
 /**
  * Represent connected peer
  */
 public interface Peer {
 
+  CompletableFuture<HelloMessage> getRemoteHelloMessage();
+
   /**
    * Returns raw bytes {@link Channel} of this peer
    */
-  Channel<BytesValue> getRawChannel();
+  PeerConnection getConnection();
 
   /**
    * Returns {@link WireApiSync} instance linked to this peer

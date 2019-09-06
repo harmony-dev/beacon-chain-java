@@ -40,5 +40,7 @@ dependencyManagement {
 
     dependency "org.rocksdb:rocksdbjni:6.2.2"
     dependency "com.googlecode.concurrent-locks:concurrent-locks:1.0.0"
+    dependency 'io.libp2p:jvm-libp2p-minimal:0.0.1-SNAPSHOT'
+
   }
 }

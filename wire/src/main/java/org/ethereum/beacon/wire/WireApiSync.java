@@ -13,9 +13,10 @@ import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.BeaconBlockHeader;
 import org.ethereum.beacon.wire.message.payload.BlockBodiesRequestMessage;
 import org.ethereum.beacon.wire.message.payload.BlockBodiesResponseMessage;
-import org.ethereum.beacon.wire.message.payload.BlockRootsRequestMessage;
-import org.ethereum.beacon.wire.message.payload.BlockHeadersResponseMessage;
 import org.ethereum.beacon.wire.message.payload.BlockHeadersRequestMessage;
+import org.ethereum.beacon.wire.message.payload.BlockHeadersResponseMessage;
+import org.ethereum.beacon.wire.message.payload.BlockRequestMessage;
+import org.ethereum.beacon.wire.message.payload.BlockRootsRequestMessage;
 import org.ethereum.beacon.wire.message.payload.BlockRootsResponseMessage;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
@@ -28,29 +29,41 @@ public interface WireApiSync {
   /**
    * Requests block roots from remote peer(s)
    */
-  CompletableFuture<BlockRootsResponseMessage> requestBlockRoots(
-      BlockRootsRequestMessage requestMessage);
+  default CompletableFuture<BlockRootsResponseMessage> requestBlockRoots(
+      BlockRootsRequestMessage requestMessage) {
+    throw new UnsupportedOperationException();
+  }
 
   /**
    * Requests block headers from remote peer(s)
    */
-  CompletableFuture<BlockHeadersResponseMessage> requestBlockHeaders(
-      BlockHeadersRequestMessage requestMessage);
+  default CompletableFuture<BlockHeadersResponseMessage> requestBlockHeaders(
+      BlockHeadersRequestMessage requestMessage) {
+    throw new UnsupportedOperationException();
+  }
 
   /**
    * Requests block bodies from remote peer(s)
    */
-  CompletableFuture<Feedback<BlockBodiesResponseMessage>> requestBlockBodies(
-      BlockBodiesRequestMessage requestMessage);
+  default CompletableFuture<Feedback<BlockBodiesResponseMessage>> requestBlockBodies(
+      BlockBodiesRequestMessage requestMessage) {
+    throw new UnsupportedOperationException();
+  }
 
   /**
    * Handy shortcut to download headers+bodies
    */
   default CompletableFuture<Feedback<List<BeaconBlock>>> requestBlocks(
-      BlockHeadersRequestMessage requestMessage, ObjectHasher<Hash32> hasher) {
+      BlockRequestMessage requestMessage, ObjectHasher<Hash32> hasher) {
 
+    BlockHeadersRequestMessage hReq = new BlockHeadersRequestMessage(
+        requestMessage.getHeadBlockRoot(),
+        requestMessage.getStartSlot(),
+        requestMessage.getCount(),
+        requestMessage.getStep()
+    );
     CompletableFuture<List<BeaconBlockHeader>> headersFuture = requestBlockHeaders(
-        requestMessage).thenApply(BlockHeadersResponseMessage::getHeaders);
+        hReq).thenApply(BlockHeadersResponseMessage::getHeaders);
 
     CompletableFuture<Feedback<List<BeaconBlockBody>>> bodiesFuture =
         headersFuture.thenCompose(
@@ -73,5 +86,10 @@ public interface WireApiSync {
                   .flatMap(optionalFlatMap(b -> b))
                   .collect(Collectors.toList()));
         });
+  }
+
+  default CompletableFuture<Feedback<List<BeaconBlock>>> requestRecentBlocks(
+      List<Hash32> blockRoots, ObjectHasher<Hash32> hasher) {
+    throw new UnsupportedOperationException();
   }
 }

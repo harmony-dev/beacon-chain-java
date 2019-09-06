@@ -2,9 +2,11 @@ package org.ethereum.beacon.node;
 
 import io.netty.channel.ChannelFutureListener;
 import java.io.File;
+import java.lang.reflect.InvocationTargetException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.URI;
+import java.nio.file.Paths;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -39,6 +41,7 @@ import org.ethereum.beacon.emulator.config.main.MainConfig;
 import org.ethereum.beacon.emulator.config.main.Signer.Insecure;
 import org.ethereum.beacon.emulator.config.main.ValidatorKeys.Private;
 import org.ethereum.beacon.emulator.config.main.conract.EmulatorContract;
+import org.ethereum.beacon.emulator.config.main.network.Libp2pNetwork;
 import org.ethereum.beacon.emulator.config.main.network.NettyNetwork;
 import org.ethereum.beacon.emulator.config.main.network.Network;
 import org.ethereum.beacon.pow.DepositContract;
@@ -49,13 +52,10 @@ import org.ethereum.beacon.start.common.NodeLauncher;
 import org.ethereum.beacon.start.common.util.MDCControlledSchedulers;
 import org.ethereum.beacon.util.Objects;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
-import org.ethereum.beacon.wire.net.ConnectionManager;
-import org.ethereum.beacon.wire.net.netty.NettyClient;
-import org.ethereum.beacon.wire.net.netty.NettyServer;
+import org.ethereum.beacon.wire.impl.plain.net.ConnectionManager;
+import org.ethereum.beacon.wire.impl.plain.net.netty.NettyClient;
+import org.ethereum.beacon.wire.impl.plain.net.netty.NettyServer;
 import org.jetbrains.annotations.NotNull;
-
-import java.lang.reflect.InvocationTargetException;
-import java.nio.file.Paths;
 
 public class NodeCommandLauncher implements Runnable {
   private static final Logger logger = LogManager.getLogger("node");
@@ -152,6 +152,7 @@ public class NodeCommandLauncher implements Runnable {
     }
     Network networkCfg = config.getConfig().getNetworks().get(0);
     if (networkCfg instanceof NettyNetwork) {
+      throw new UnsupportedOperationException("Netty network is not supported anymore");
       NettyNetwork nettyConfig = (NettyNetwork) networkCfg;
       NettyServer nettyServer = null;
       if (nettyConfig.getListenPort() != null) {
@@ -172,8 +173,11 @@ public class NodeCommandLauncher implements Runnable {
       connectionManager = tcpConnectionManager;
       for (String addr : nettyConfig.getActivePeers()) {
         URI uri = URI.create(addr);
-        tcpConnectionManager.addActivePeer(InetSocketAddress.createUnresolved(uri.getHost(), uri.getPort()));
+        tcpConnectionManager
+            .addActivePeer(InetSocketAddress.createUnresolved(uri.getHost(), uri.getPort()));
       }
+    } else if (networkCfg instanceof Libp2pNetwork) {
+
     } else {
       throw new IllegalArgumentException(
           "This type of network is not supported yet: " + networkCfg.getClass());
