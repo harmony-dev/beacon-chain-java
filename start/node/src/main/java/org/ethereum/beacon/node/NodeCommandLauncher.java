@@ -14,8 +14,11 @@ import org.ethereum.beacon.chain.storage.impl.SerializerFactory;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.ChainStart;
+import org.ethereum.beacon.consensus.TransitionType;
+import org.ethereum.beacon.consensus.transition.BeaconStateExImpl;
 import org.ethereum.beacon.consensus.transition.InitialStateTransition;
 import org.ethereum.beacon.core.spec.SpecConstants;
+import org.ethereum.beacon.core.state.BeaconStateImpl;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.crypto.BLS381.KeyPair;
@@ -48,12 +51,15 @@ import org.ethereum.beacon.wire.net.netty.NettyClient;
 import org.ethereum.beacon.wire.net.netty.NettyServer;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Flux;
+import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -76,6 +82,7 @@ public class NodeCommandLauncher implements Runnable {
   private final BeaconChainSpec spec;
   private final Level logLevel;
   private final SpecBuilder specBuilder;
+  private final Node cliOptions;
 
   private Random rnd;
   private Time genesisTime;
@@ -93,12 +100,14 @@ public class NodeCommandLauncher implements Runnable {
   public NodeCommandLauncher(
       MainConfig config,
       SpecBuilder specBuilder,
+      Node cliOptions,
       Level logLevel) {
     this.config = config;
     this.specBuilder = specBuilder;
     this.specConstants = specBuilder.buildSpecConstants();
     this.spec = specBuilder.buildSpec();
     this.logLevel = logLevel;
+    this.cliOptions = cliOptions;
 
     init();
   }
@@ -147,10 +156,31 @@ public class NodeCommandLauncher implements Runnable {
           }
         };
 
-    ChainStart chainStart = ConfigUtils.createChainStart(
-        config.getConfig().getValidator().getContract(),
-        spec,
-        config.getChainSpec().getSpecHelpersOptions().isBlsVerifyProofOfPossession());
+    String initialStateFile = cliOptions.getInitialStateFile();
+    ChainStart chainStart;
+    BeaconStateEx initialState;
+    if (initialStateFile == null) {
+      chainStart = ConfigUtils.createChainStart(
+          config.getConfig().getValidator().getContract(),
+          spec,
+          config.getChainSpec().getSpecHelpersOptions().isBlsVerifyProofOfPossession());
+      initialState = new InitialStateTransition(chainStart, spec).apply(spec.get_empty_block());
+    } else {
+      SerializerFactory serializerFactory = SerializerFactory.createSSZ(specConstants);
+      byte[] fileData;
+      try {
+        fileData = Files.readAllBytes(Paths.get(initialStateFile));
+      } catch (IOException e) {
+        throw new IllegalArgumentException("Cannot read state file " + initialStateFile, e);
+      }
+      initialState =
+          new BeaconStateExImpl(
+              serializerFactory.getDeserializer(BeaconStateImpl.class).apply(BytesValue.wrap(fileData)),
+              TransitionType.INITIAL);
+      chainStart =
+          new ChainStart(
+              initialState.getGenesisTime(), initialState.getEth1Data(), Collections.emptyList());
+    }
     DepositContract depositContract = new SimpleDepositContract(chainStart);
 
     List<BLS381Credentials> credentials = ConfigUtils.createCredentials(
@@ -219,6 +249,17 @@ public class NodeCommandLauncher implements Runnable {
             spec.getObjectHasher(), SerializerFactory.createSSZ(specConstants));
 
     String dbPrefix = config.getConfig().getDb();
+    String startMode;
+
+    if (cliOptions.getStartMode() == null) {
+      if (initialStateFile != null) {
+        startMode = "initial";
+      } else {
+        startMode = "auto";
+      }
+    } else {
+      startMode = cliOptions.getStartMode();
+    }
 
     Database db;
     if (dbPrefix == null) {
@@ -228,9 +269,31 @@ public class NodeCommandLauncher implements Runnable {
     }
 
     BeaconChainStorage beaconChainStorage = storageFactory.create(db);
-    if (beaconChainStorage.getTupleStorage().isEmpty()) {
-      BeaconStateEx initialState =
-          new InitialStateTransition(chainStart, spec).apply(spec.get_empty_block());
+
+    boolean emptyStorage = beaconChainStorage.getTupleStorage().isEmpty();
+    boolean doInitialize;
+    switch (startMode) {
+      case "storage":
+        if (emptyStorage) {
+          throw new IllegalArgumentException("Cannot start from empty storage");
+        } else {
+          doInitialize = false;
+        }
+        break;
+      case "auto":
+        doInitialize = emptyStorage;
+        break;
+      case "initial":
+        if (!emptyStorage) {
+          throw new IllegalArgumentException("Cannot initialize non-empty storage.");
+        }
+        doInitialize = true;
+        break;
+      default:
+        throw new IllegalArgumentException("Unsupported start-mode " + startMode);
+    }
+
+    if (doInitialize) {
       StorageUtils.initializeStorage(beaconChainStorage, spec, initialState);
     }
 
@@ -416,6 +479,7 @@ public class NodeCommandLauncher implements Runnable {
       return new NodeCommandLauncher(
         config,
         specBuilder,
+        cliOptions,
         logLevel);
     }
 
