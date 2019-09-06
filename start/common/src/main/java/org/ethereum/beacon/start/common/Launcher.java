@@ -29,7 +29,7 @@ import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.db.InMemoryDatabase;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.schedulers.Schedulers;
-import org.ethereum.beacon.start.common.util.StorageUtils;
+import org.ethereum.beacon.chain.storage.util.StorageUtils;
 import org.ethereum.beacon.util.stats.MeasurementsCollector;
 import org.ethereum.beacon.validator.BeaconChainProposer;
 import org.ethereum.beacon.validator.attester.BeaconChainAttesterImpl;

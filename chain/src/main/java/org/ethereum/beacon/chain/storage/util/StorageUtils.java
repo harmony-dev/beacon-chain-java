@@ -1,4 +1,4 @@
-package org.ethereum.beacon.start.common.util;
+package org.ethereum.beacon.chain.storage.util;
 
 import org.ethereum.beacon.chain.BeaconTuple;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;

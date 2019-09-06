@@ -44,7 +44,7 @@ import org.ethereum.beacon.start.common.DatabaseManager;
 import org.ethereum.beacon.start.common.NodeLauncher;
 import org.ethereum.beacon.start.common.util.MDCControlledSchedulers;
 import org.ethereum.beacon.start.common.util.SimpleDepositContract;
-import org.ethereum.beacon.start.common.util.StorageUtils;
+import org.ethereum.beacon.chain.storage.util.StorageUtils;
 import org.ethereum.beacon.util.Objects;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import org.ethereum.beacon.wire.net.ConnectionManager;
