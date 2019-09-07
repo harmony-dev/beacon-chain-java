@@ -1,11 +1,5 @@
 package org.ethereum.beacon.node;
 
-<<<<<<< HEAD
-import java.util.List;
-import java.util.Random;
-import java.util.stream.Collectors;
-=======
->>>>>>> develop
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.ChainStart;
 import org.ethereum.beacon.core.operations.Deposit;
@@ -78,12 +72,8 @@ public class ConfigUtils {
           genKeys.getSeed(), genKeys.getStartIndex(), genKeys.getCount());
     } else if (keys instanceof InteropKeys) {
       InteropKeys interopKeys = (InteropKeys) keys;
-<<<<<<< HEAD
-      return SimulationKeyPairGenerator.generateInteropKeys(interopKeys.getCount());
-=======
       return SimulationKeyPairGenerator.generateInteropKeys(
           interopKeys.getStartIndex(), interopKeys.getCount());
->>>>>>> develop
     } else {
       throw new IllegalArgumentException("Unknown ValidatorKeys subclass: " + keys.getClass());
     }
@@ -135,13 +125,7 @@ public class ConfigUtils {
       Eth1Data eth1Data =
           new Eth1Data(
               spec.hash_tree_root(depositDataList), UInt64.valueOf(deposits.size()), blockHash);
-<<<<<<< HEAD
-      ChainStart chainStart =
-          new ChainStart(Time.of(eConfig.getGenesisTime().getTime() / 1000), eth1Data, deposits);
-      return new SimpleDepositContract(chainStart);
-=======
       return new ChainStart(Time.of(eConfig.getGenesisTime().getTime() / 1000), eth1Data, deposits);
->>>>>>> develop
     } else {
       throw new IllegalArgumentException(
           "This config class is not yet supported: " + config.getClass());
