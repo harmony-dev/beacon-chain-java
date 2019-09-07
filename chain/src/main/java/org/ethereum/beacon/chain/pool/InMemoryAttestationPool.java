@@ -85,10 +85,8 @@ public class InMemoryAttestationPool implements AttestationPool {
 
   @Override
   public void start() {
-    Scheduler parallelExecutor =
-        schedulers
-            .newParallelDaemon("attestation-pool-%d", AttestationPool.MAX_THREADS)
-            .toReactor();
+    org.ethereum.beacon.schedulers.Scheduler parallelExecutor =
+        schedulers.newParallelDaemon("attestation-pool-%d", AttestationPool.MAX_THREADS);
 
     // create sources
     Flux<ReceivedAttestation> sourceFx = Flux.from(source);
@@ -113,8 +111,7 @@ public class InMemoryAttestationPool implements AttestationPool {
 
     // check signature encoding
     SignatureEncodingProcessor encodingProcessor =
-        new SignatureEncodingProcessor(
-            encodingChecker, doubleWorkProcessor.publishOn(parallelExecutor));
+        new SignatureEncodingProcessor(encodingChecker, parallelExecutor, doubleWorkProcessor);
 
     // identify attestation target
     IdentificationProcessor identificationProcessor =
@@ -123,12 +120,11 @@ public class InMemoryAttestationPool implements AttestationPool {
 
     // verify attestations
     Flux<List<ReceivedAttestation>> verificationThrottle =
-        identificationProcessor
-            .getIdentified()
-            .publishOn(parallelExecutor)
-            .bufferTimeout(VERIFIER_BUFFER_SIZE, VERIFIER_INTERVAL, parallelExecutor);
+        Flux.from(identificationProcessor.getIdentified())
+            .publishOn(parallelExecutor.toReactor())
+            .bufferTimeout(VERIFIER_BUFFER_SIZE, VERIFIER_INTERVAL, parallelExecutor.toReactor());
     VerificationProcessor verificationProcessor =
-        new VerificationProcessor(verifier, verificationThrottle);
+        new VerificationProcessor(verifier, parallelExecutor, verificationThrottle);
 
     // feed churn
     ChurnProcessor churnProcessor =
@@ -143,9 +139,13 @@ public class InMemoryAttestationPool implements AttestationPool {
 
     Scheduler outScheduler = schedulers.events().toReactor();
     // expose valid attestations
-    verificationProcessor.getValid().publishOn(outScheduler).subscribe(validAttestations);
+    Flux.from(verificationProcessor.getValid())
+        .publishOn(outScheduler)
+        .subscribe(validAttestations);
     // expose not yet identified
-    identificationProcessor.getUnknown().publishOn(outScheduler).subscribe(unknownAttestations);
+    Flux.from(identificationProcessor.getUnknown())
+        .publishOn(outScheduler)
+        .subscribe(unknownAttestations);
     // expose aggregates
     churnProcessor.publishOn(outScheduler).subscribe(offChainAggregates);
     // expose invalid attestations

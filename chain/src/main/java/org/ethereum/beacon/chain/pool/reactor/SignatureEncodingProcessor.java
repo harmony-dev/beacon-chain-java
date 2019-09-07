@@ -2,7 +2,9 @@ package org.ethereum.beacon.chain.pool.reactor;
 
 import org.ethereum.beacon.chain.pool.ReceivedAttestation;
 import org.ethereum.beacon.chain.pool.checker.SignatureEncodingChecker;
-import org.ethereum.beacon.stream.OutsourcePublisher;
+import org.ethereum.beacon.schedulers.Scheduler;
+import org.ethereum.beacon.stream.SimpleProcessor;
+import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 
 /**
@@ -24,29 +26,33 @@ import reactor.core.publisher.Flux;
 public class SignatureEncodingProcessor {
 
   private final SignatureEncodingChecker checker;
-  private final OutsourcePublisher<ReceivedAttestation> valid = new OutsourcePublisher<>();
-  private final OutsourcePublisher<ReceivedAttestation> invalid = new OutsourcePublisher<>();
+  private final SimpleProcessor<ReceivedAttestation> valid;
+  private final SimpleProcessor<ReceivedAttestation> invalid;
 
   public SignatureEncodingProcessor(
-      SignatureEncodingChecker checker, Flux<ReceivedAttestation> source) {
+      SignatureEncodingChecker checker,
+      Scheduler scheduler,
+      Publisher<ReceivedAttestation> source) {
     this.checker = checker;
 
-    source.subscribe(this::hookOnNext);
+    Flux.from(source).publishOn(scheduler.toReactor()).subscribe(this::hookOnNext);
+    valid = new SimpleProcessor<>(scheduler, "SignatureEncodingProcessor.valid");
+    invalid = new SimpleProcessor<>(scheduler, "SignatureEncodingProcessor.invalid");
   }
 
   private void hookOnNext(ReceivedAttestation attestation) {
     if (checker.check(attestation)) {
-      valid.publishOut(attestation);
+      valid.onNext(attestation);
     } else {
-      invalid.publishOut(attestation);
+      invalid.onNext(attestation);
     }
   }
 
-  public Flux<ReceivedAttestation> getValid() {
+  public Publisher<ReceivedAttestation> getValid() {
     return valid;
   }
 
-  public Flux<ReceivedAttestation> getInvalid() {
+  public Publisher<ReceivedAttestation> getInvalid() {
     return invalid;
   }
 }

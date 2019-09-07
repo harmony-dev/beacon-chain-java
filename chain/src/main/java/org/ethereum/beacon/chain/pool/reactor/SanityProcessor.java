@@ -4,7 +4,8 @@ import org.ethereum.beacon.chain.pool.ReceivedAttestation;
 import org.ethereum.beacon.chain.pool.checker.SanityChecker;
 import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.schedulers.Schedulers;
-import org.ethereum.beacon.stream.OutsourcePublisher;
+import org.ethereum.beacon.stream.SimpleProcessor;
+import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Scheduler;
 
@@ -29,19 +30,24 @@ public class SanityProcessor {
 
   private final SanityChecker checker;
 
-  private final OutsourcePublisher<ReceivedAttestation> valid = new OutsourcePublisher<>();
-  private final OutsourcePublisher<ReceivedAttestation> invalid = new OutsourcePublisher<>();
+  private final SimpleProcessor<ReceivedAttestation> valid;
+  private final SimpleProcessor<ReceivedAttestation> invalid;
 
   public SanityProcessor(
       SanityChecker checker,
       Schedulers schedulers,
-      Flux<ReceivedAttestation> source,
-      Flux<Checkpoint> finalizedCheckpoints) {
+      Publisher<ReceivedAttestation> source,
+      Publisher<Checkpoint> finalizedCheckpoints) {
     this.checker = checker;
 
-    Scheduler scheduler = schedulers.newSingleThreadDaemon("pool-sanity-checker").toReactor();
-    finalizedCheckpoints.publishOn(scheduler).subscribe(this.checker::feedFinalizedCheckpoint);
-    source.publishOn(scheduler).subscribe(this::hookOnNext);
+    Scheduler scheduler = schedulers.newSingleThreadDaemon("pool-sanity-processor").toReactor();
+    Flux.from(finalizedCheckpoints)
+        .publishOn(scheduler)
+        .subscribe(this.checker::feedFinalizedCheckpoint);
+    Flux.from(source).publishOn(scheduler).subscribe(this::hookOnNext);
+
+    valid = new SimpleProcessor<>(scheduler, "SanityProcessor.valid");
+    invalid = new SimpleProcessor<>(scheduler, "SanityProcessor.invalid");
   }
 
   private void hookOnNext(ReceivedAttestation attestation) {
@@ -50,17 +56,17 @@ public class SanityProcessor {
     }
 
     if (checker.check(attestation)) {
-      valid.publishOut(attestation);
+      valid.onNext(attestation);
     } else {
-      invalid.publishOut(attestation);
+      invalid.onNext(attestation);
     }
   }
 
-  public Flux<ReceivedAttestation> getValid() {
+  public Publisher<ReceivedAttestation> getValid() {
     return valid;
   }
 
-  public Flux<ReceivedAttestation> getInvalid() {
+  public Publisher<ReceivedAttestation> getInvalid() {
     return invalid;
   }
 }

@@ -3,7 +3,8 @@ package org.ethereum.beacon.chain.pool.reactor;
 import org.ethereum.beacon.chain.pool.ReceivedAttestation;
 import org.ethereum.beacon.chain.pool.registry.ProcessedAttestations;
 import org.ethereum.beacon.schedulers.Schedulers;
-import org.ethereum.beacon.stream.OutsourcePublisher;
+import org.ethereum.beacon.stream.SimpleProcessor;
+import org.reactivestreams.Publisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Scheduler;
@@ -26,21 +27,23 @@ import reactor.core.scheduler.Scheduler;
 public class DoubleWorkProcessor extends Flux<ReceivedAttestation> {
 
   private final ProcessedAttestations processedAttestations;
-  private final OutsourcePublisher<ReceivedAttestation> out = new OutsourcePublisher<>();
+  private final SimpleProcessor<ReceivedAttestation> out;
 
   public DoubleWorkProcessor(
       ProcessedAttestations processedAttestations,
       Schedulers schedulers,
-      Flux<ReceivedAttestation> source) {
+      Publisher<ReceivedAttestation> source) {
     this.processedAttestations = processedAttestations;
 
-    Scheduler scheduler = schedulers.newSingleThreadDaemon("pool-double-work").toReactor();
-    source.publishOn(scheduler).subscribe(this::hookOnNext);
+    Scheduler scheduler =
+        schedulers.newSingleThreadDaemon("pool-double-work-processor").toReactor();
+    out = new SimpleProcessor<>(scheduler, "DoubleWorkProcessor.out");
+    Flux.from(source).publishOn(scheduler).subscribe(this::hookOnNext);
   }
 
   private void hookOnNext(ReceivedAttestation attestation) {
     if (processedAttestations.add(attestation)) {
-      out.publishOut(attestation);
+      out.onNext(attestation);
     }
   }
 

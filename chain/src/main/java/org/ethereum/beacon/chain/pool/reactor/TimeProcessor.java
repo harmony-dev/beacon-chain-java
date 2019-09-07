@@ -6,6 +6,7 @@ import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.stream.SimpleProcessor;
+import org.reactivestreams.Publisher;
 import reactor.core.CoreSubscriber;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Scheduler;
@@ -35,16 +36,18 @@ public class TimeProcessor extends Flux<ReceivedAttestation> {
   public TimeProcessor(
       TimeFrameFilter filter,
       Schedulers schedulers,
-      Flux<ReceivedAttestation> source,
-      Flux<Checkpoint> finalizedCheckpoints,
-      Flux<SlotNumber> newSlots) {
+      Publisher<ReceivedAttestation> source,
+      Publisher<Checkpoint> finalizedCheckpoints,
+      Publisher<SlotNumber> newSlots) {
     this.filter = filter;
 
-    Scheduler scheduler = schedulers.newSingleThreadDaemon("pool-time-frame-filter").toReactor();
-    out = new SimpleProcessor<>(scheduler, "pool-time-simple-processor");
-    source.publishOn(scheduler).subscribe(this::hookOnNext);
-    finalizedCheckpoints.publishOn(scheduler).subscribe(this.filter::feedFinalizedCheckpoint);
-    newSlots.publishOn(scheduler).subscribe(this.filter::feedNewSlot);
+    Scheduler scheduler = schedulers.newSingleThreadDaemon("pool-time-processor").toReactor();
+    out = new SimpleProcessor<>(scheduler, "TimeProcessor.out");
+    Flux.from(source).publishOn(scheduler).subscribe(this::hookOnNext);
+    Flux.from(finalizedCheckpoints)
+        .publishOn(scheduler)
+        .subscribe(this.filter::feedFinalizedCheckpoint);
+    Flux.from(newSlots).publishOn(scheduler).subscribe(this.filter::feedNewSlot);
   }
 
   private void hookOnNext(ReceivedAttestation attestation) {

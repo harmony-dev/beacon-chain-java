@@ -5,7 +5,8 @@ import org.ethereum.beacon.chain.pool.registry.UnknownAttestationPool;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.schedulers.Schedulers;
-import org.ethereum.beacon.stream.OutsourcePublisher;
+import org.ethereum.beacon.stream.SimpleProcessor;
+import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Scheduler;
 
@@ -31,43 +32,46 @@ import reactor.core.scheduler.Scheduler;
 public class IdentificationProcessor {
 
   private final UnknownAttestationPool pool;
-  private final OutsourcePublisher<ReceivedAttestation> identified = new OutsourcePublisher<>();
-  private final OutsourcePublisher<ReceivedAttestation> unknown = new OutsourcePublisher<>();
+  private final SimpleProcessor<ReceivedAttestation> identified;
+  private final SimpleProcessor<ReceivedAttestation> unknown;
 
   public IdentificationProcessor(
       UnknownAttestationPool pool,
       Schedulers schedulers,
-      Flux<ReceivedAttestation> source,
-      Flux<SlotNumber> newSlots,
-      Flux<BeaconBlock> newImportedBlocks) {
+      Publisher<ReceivedAttestation> source,
+      Publisher<SlotNumber> newSlots,
+      Publisher<BeaconBlock> newImportedBlocks) {
     this.pool = pool;
 
     Scheduler scheduler =
-        schedulers.newSingleThreadDaemon("pool-attestation-identifier").toReactor();
-    newSlots.publishOn(scheduler).subscribe(this.pool::feedNewSlot);
-    newImportedBlocks.publishOn(scheduler).subscribe(this::hookOnNext);
-    source.publishOn(scheduler).subscribe(this::hookOnNext);
+        schedulers.newSingleThreadDaemon("pool-identification-processor").toReactor();
+    Flux.from(newSlots).publishOn(scheduler).subscribe(this.pool::feedNewSlot);
+    Flux.from(newImportedBlocks).publishOn(scheduler).subscribe(this::hookOnNext);
+    Flux.from(source).publishOn(scheduler).subscribe(this::hookOnNext);
+
+    identified = new SimpleProcessor<>(scheduler, "IdentificationProcessor.identified");
+    unknown = new SimpleProcessor<>(scheduler, "IdentificationProcessor.unknown");
   }
 
   private void hookOnNext(BeaconBlock block) {
-    pool.feedNewImportedBlock(block).forEach(identified::publishOut);
+    pool.feedNewImportedBlock(block).forEach(identified::onNext);
   }
 
   private void hookOnNext(ReceivedAttestation attestation) {
     if (pool.isInitialized()) {
       if (pool.add(attestation)) {
-        unknown.publishOut(attestation);
+        unknown.onNext(attestation);
       } else {
-        identified.publishOut(attestation);
+        identified.onNext(attestation);
       }
     }
   }
 
-  public OutsourcePublisher<ReceivedAttestation> getIdentified() {
+  public Publisher<ReceivedAttestation> getIdentified() {
     return identified;
   }
 
-  public OutsourcePublisher<ReceivedAttestation> getUnknown() {
+  public Publisher<ReceivedAttestation> getUnknown() {
     return unknown;
   }
 }
