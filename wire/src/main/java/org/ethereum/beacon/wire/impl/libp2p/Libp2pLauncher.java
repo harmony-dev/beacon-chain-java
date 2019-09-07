@@ -2,9 +2,12 @@ package org.ethereum.beacon.wire.impl.libp2p;
 
 import io.libp2p.core.Host;
 import io.libp2p.core.PeerId;
+import io.libp2p.core.crypto.KEY_TYPE;
+import io.libp2p.core.crypto.KeyKt;
 import io.libp2p.core.crypto.PrivKey;
 import io.libp2p.core.dsl.BuildersJKt;
 import io.libp2p.core.multiformats.Multiaddr;
+import io.libp2p.crypto.keys.Secp256k1Kt;
 import io.libp2p.mux.mplex.MplexStreamMuxer;
 import io.libp2p.protocol.Ping;
 import io.libp2p.pubsub.gossip.Gossip;
@@ -27,6 +30,7 @@ import org.ethereum.beacon.wire.impl.libp2p.encoding.SSZMessageCodec;
 import org.javatuples.Pair;
 import org.reactivestreams.Publisher;
 import tech.pegasys.artemis.util.bytes.Bytes4;
+import tech.pegasys.artemis.util.bytes.BytesValue;
 
 public class Libp2pLauncher {
   private static final Logger logger = LogManager.getLogger(Libp2pLauncher.class);
@@ -53,6 +57,9 @@ public class Libp2pLauncher {
   Host host;
 
   public void init() {
+    if (privKey == null) {
+      privKey = KeyKt.generateKeyPair(KEY_TYPE.SECP256K1).component1();
+    }
     Gossip gossip = new Gossip(); // TODO gossip params
     RpcMessageCodecFactory rpcCodecFactory = SSZMessageCodec.createFactory(sszSerializer);
     WireApiSub wireApiSub = new GossipWireApiSub(sszSerializer, gossip.getApi(), privKey);
@@ -113,8 +120,8 @@ public class Libp2pLauncher {
     this.listenPort = listenPort;
   }
 
-  public void setPrivKey(PrivKey privKey) {
-    this.privKey = privKey;
+  public void setPrivKey(BytesValue secp256k1PrivateKeyBytes) {
+    this.privKey = Secp256k1Kt.unmarshalSecp256k1PrivateKey(secp256k1PrivateKeyBytes.getArrayUnsafe());
   }
 
   public void addActivePeer(String multiaddr, String hexPeerId) {

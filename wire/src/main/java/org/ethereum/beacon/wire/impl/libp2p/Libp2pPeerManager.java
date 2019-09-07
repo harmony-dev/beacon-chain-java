@@ -42,7 +42,8 @@ public class Libp2pPeerManager extends AbstractPeerManager implements Connection
     this.wireApiSub = wireApiSub;
 
     rpcMethods = new RpcMethods(spec.getObjectHasher(), codecFactory, server, this::hello, this::goodbye);
-    Flux.from(activePeersStream()).subscribe(l ->
+
+    Flux.from(connectedPeersStream()).subscribe(l ->
         connectedPeers = l.stream().map(p -> (Libp2pPeer) p).collect(Collectors.toList()));
   }
 

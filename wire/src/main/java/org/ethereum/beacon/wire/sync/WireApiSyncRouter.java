@@ -1,11 +1,14 @@
 package org.ethereum.beacon.wire.sync;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.ethereum.beacon.consensus.hasher.ObjectHasher;
+import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.stream.RxUtil;
 import org.ethereum.beacon.util.Utils;
 import org.ethereum.beacon.wire.Feedback;
@@ -14,12 +17,14 @@ import org.ethereum.beacon.wire.message.payload.BlockBodiesRequestMessage;
 import org.ethereum.beacon.wire.message.payload.BlockBodiesResponseMessage;
 import org.ethereum.beacon.wire.message.payload.BlockHeadersRequestMessage;
 import org.ethereum.beacon.wire.message.payload.BlockHeadersResponseMessage;
+import org.ethereum.beacon.wire.message.payload.BlockRequestMessage;
 import org.ethereum.beacon.wire.message.payload.BlockRootsRequestMessage;
 import org.ethereum.beacon.wire.message.payload.BlockRootsResponseMessage;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.ReplayProcessor;
+import tech.pegasys.artemis.ethereum.core.Hash32;
 
 /**
  * Tracks and aggregates {@link WireApiSync} instances from separate peers
@@ -74,5 +79,17 @@ public class WireApiSyncRouter implements WireApiSync {
   public CompletableFuture<Feedback<BlockBodiesResponseMessage>> requestBlockBodies(
       BlockBodiesRequestMessage requestMessage) {
     return submitAsyncTask(api -> api.requestBlockBodies(requestMessage));
+  }
+
+  @Override
+  public CompletableFuture<Feedback<List<BeaconBlock>>> requestBlocks(
+      BlockRequestMessage requestMessage, ObjectHasher<Hash32> hasher) {
+    return submitAsyncTask(api -> api.requestBlocks(requestMessage, hasher));
+  }
+
+  @Override
+  public CompletableFuture<Feedback<List<BeaconBlock>>> requestRecentBlocks(List<Hash32> blockRoots,
+      ObjectHasher<Hash32> hasher) {
+    return submitAsyncTask(api -> api.requestRecentBlocks(blockRoots, hasher));
   }
 }

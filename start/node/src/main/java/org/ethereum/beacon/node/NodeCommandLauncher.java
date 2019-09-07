@@ -1,11 +1,7 @@
 package org.ethereum.beacon.node;
 
-import io.netty.channel.ChannelFutureListener;
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.net.URI;
 import java.nio.file.Paths;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -16,6 +12,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.TimeZone;
 import java.util.concurrent.ThreadFactory;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -42,20 +39,19 @@ import org.ethereum.beacon.emulator.config.main.Signer.Insecure;
 import org.ethereum.beacon.emulator.config.main.ValidatorKeys.Private;
 import org.ethereum.beacon.emulator.config.main.conract.EmulatorContract;
 import org.ethereum.beacon.emulator.config.main.network.Libp2pNetwork;
+import org.ethereum.beacon.emulator.config.main.network.Libp2pNetwork.Peer;
 import org.ethereum.beacon.emulator.config.main.network.NettyNetwork;
 import org.ethereum.beacon.emulator.config.main.network.Network;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.schedulers.DefaultSchedulers;
-import org.ethereum.beacon.schedulers.Scheduler;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.start.common.NodeLauncher;
 import org.ethereum.beacon.start.common.util.MDCControlledSchedulers;
 import org.ethereum.beacon.util.Objects;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
-import org.ethereum.beacon.wire.impl.plain.net.ConnectionManager;
-import org.ethereum.beacon.wire.impl.plain.net.netty.NettyClient;
-import org.ethereum.beacon.wire.impl.plain.net.netty.NettyServer;
+import org.ethereum.beacon.wire.impl.libp2p.Libp2pLauncher;
 import org.jetbrains.annotations.NotNull;
+import tech.pegasys.artemis.util.bytes.BytesValue;
 
 public class NodeCommandLauncher implements Runnable {
   private static final Logger logger = LogManager.getLogger("node");
@@ -146,13 +142,15 @@ public class NodeCommandLauncher implements Runnable {
         config.getConfig().getValidator().getSigner(),
         config.getChainSpec().getSpecHelpersOptions().isBlsSign());
 
-    ConnectionManager<?> connectionManager;
     if (config.getConfig().getNetworks().size() != 1) {
       throw new IllegalArgumentException("1 network should be specified in config");
     }
     Network networkCfg = config.getConfig().getNetworks().get(0);
+    Libp2pLauncher libp2pLauncher = new Libp2pLauncher();
+
     if (networkCfg instanceof NettyNetwork) {
       throw new UnsupportedOperationException("Netty network is not supported anymore");
+      /*
       NettyNetwork nettyConfig = (NettyNetwork) networkCfg;
       NettyServer nettyServer = null;
       if (nettyConfig.getListenPort() != null) {
@@ -176,7 +174,19 @@ public class NodeCommandLauncher implements Runnable {
         tcpConnectionManager
             .addActivePeer(InetSocketAddress.createUnresolved(uri.getHost(), uri.getPort()));
       }
+      */
     } else if (networkCfg instanceof Libp2pNetwork) {
+      Libp2pNetwork cfg = (Libp2pNetwork) networkCfg;
+
+      if (cfg.getListenPort() != null) {
+        libp2pLauncher.setListenPort(cfg.getListenPort());
+      }
+      for (Peer peer : cfg.getActivePeers()) {
+        libp2pLauncher.addActivePeer(peer.getAddr(), peer.getId());
+      }
+      if (cfg.getPrivateKey() != null) {
+        libp2pLauncher.setPrivKey(BytesValue.fromHexString(cfg.getPrivateKey()));
+      }
 
     } else {
       throw new IllegalArgumentException(
@@ -187,7 +197,7 @@ public class NodeCommandLauncher implements Runnable {
         specBuilder.buildSpec(),
         this.depositContract,
         credentials,
-        connectionManager,
+        libp2pLauncher, //connectionManager,
         new SSZBeaconChainStorageFactory(
             spec.getObjectHasher(),
             SerializerFactory.createSSZ(specConstants)),
@@ -243,15 +253,15 @@ public class NodeCommandLauncher implements Runnable {
 
 
       if (cliOptions.getListenPort() != null || cliOptions.getActivePeers() != null) {
-        NettyNetwork network = (NettyNetwork) config
+        Libp2pNetwork network = (Libp2pNetwork) config
                 .getConfig()
                 .getNetworks()
                 .stream()
-                .filter(n -> n instanceof NettyNetwork)
+                .filter(n -> n instanceof Libp2pNetwork)
                 .findFirst().orElse(null);
 
         if (network == null) {
-          network = new NettyNetwork();
+          network = new Libp2pNetwork();
           config.getConfig().getNetworks().add(network);
         }
 
@@ -260,7 +270,18 @@ public class NodeCommandLauncher implements Runnable {
         }
 
         if (cliOptions.getActivePeers() != null) {
-          network.setActivePeers(cliOptions.getActivePeers());
+          network.setActivePeers(
+              cliOptions
+                  .getActivePeers()
+                  .stream()
+                  .map(
+                      a -> {
+                        int idx = a.indexOf(":");
+                        if (idx < 0)
+                          throw new ConfigException("Invalid peer URL formal: '" + a + "'");
+                        return new Peer(a.substring(0, idx), a.substring(idx + 1));
+                      })
+                  .collect(Collectors.toList()));
         }
       }
 

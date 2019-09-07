@@ -1,14 +1,13 @@
 package org.ethereum.beacon.node;
 
+import java.io.File;
+import java.util.List;
 import org.ethereum.beacon.node.Node.VersionProvider;
 import org.ethereum.beacon.node.command.LogLevel;
 import org.ethereum.beacon.start.common.ClientInfo;
 import picocli.CommandLine;
 import picocli.CommandLine.IVersionProvider;
 import picocli.CommandLine.RunLast;
-
-import java.io.File;
-import java.util.List;
 
 @CommandLine.Command(
     description = "Beacon chain node",
@@ -53,7 +52,8 @@ public class Node implements Runnable {
       split = ",",
       description = {
           "Peers that node is actively connecting to.",
-          "URL format: tcp://<host>:<port>"
+          "URL format: <multiaddress>:<node id hex>",
+          "URL sample: /ip4/10.0.0.128/tcp/40001:11111111111111111111111111111111111111111111111111111111111111111111"
       }
   )
   private List<String> activePeers;

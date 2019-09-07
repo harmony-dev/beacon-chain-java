@@ -6,23 +6,28 @@ import java.util.List;
 public class Libp2pNetwork extends Network {
 
   public static class Peer {
-    private String multiaddress;
-    private String peerId;
+    private String addr;
+    private String id;
 
-    public String getMultiaddress() {
-      return multiaddress;
+    public Peer(String addr, String id) {
+      this.addr = addr;
+      this.id = id;
     }
 
-    public void setMultiaddress(String multiaddress) {
-      this.multiaddress = multiaddress;
+    public String getAddr() {
+      return addr;
     }
 
-    public String getPeerId() {
-      return peerId;
+    public void setAddr(String addr) {
+      this.addr = addr;
     }
 
-    public void setPeerId(String peerId) {
-      this.peerId = peerId;
+    public String getId() {
+      return id;
+    }
+
+    public void setId(String id) {
+      this.id = id;
     }
   }
 
@@ -102,6 +107,7 @@ public class Libp2pNetwork extends Network {
   }
 
   private Integer listenPort;
+  private String privateKey;
   private List<Peer> activePeers = new ArrayList<>();
   private GossipOptions gossipOptions;
 
@@ -129,5 +135,13 @@ public class Libp2pNetwork extends Network {
   public void setGossipOptions(
       GossipOptions gossipOptions) {
     this.gossipOptions = gossipOptions;
+  }
+
+  public String getPrivateKey() {
+    return privateKey;
+  }
+
+  public void setPrivateKey(String privateKey) {
+    this.privateKey = privateKey;
   }
 }

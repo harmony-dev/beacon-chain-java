@@ -43,7 +43,7 @@ public class GossipWireApiSub implements WireApiSub {
       BeaconBlock block = sszSerializer
           .decode(BytesValue.wrapBuffer(msg.getData()), BeaconBlock.class);
       blocksSink.next(block);
-    } else if (msg.getTopics().contains(blocksTopic)) {
+    } else if (msg.getTopics().contains(attestationsTopic)) {
       Attestation attest = sszSerializer
           .decode(BytesValue.wrapBuffer(msg.getData()), Attestation.class);
       attestationsSink.next(attest);
