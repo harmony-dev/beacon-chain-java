@@ -41,5 +41,9 @@ dependencyManagement {
 
     dependency "org.rocksdb:rocksdbjni:6.2.2"
     dependency "com.googlecode.concurrent-locks:concurrent-locks:1.0.0"
+
+    dependency "io.prometheus:simpleclient:0.6.0"
+    dependency "io.prometheus:simpleclient_hotspot:0.6.0"
+    dependency "io.prometheus:simpleclient_httpserver:0.6.0"
   }
 }

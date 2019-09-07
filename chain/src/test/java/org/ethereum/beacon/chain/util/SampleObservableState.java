@@ -11,7 +11,9 @@ import org.ethereum.beacon.chain.observer.ObservableStateProcessorImpl;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.chain.storage.impl.SSZBeaconChainStorageFactory;
 import org.ethereum.beacon.chain.storage.impl.SerializerFactory;
+import org.ethereum.beacon.chain.storage.util.StorageUtils;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
+import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.StateTransitions;
 import org.ethereum.beacon.consensus.TestUtils;
 import org.ethereum.beacon.consensus.transition.EmptySlotTransition;
@@ -93,13 +95,14 @@ public class SampleObservableState {
         new SSZBeaconChainStorageFactory(
                 spec.getObjectHasher(), SerializerFactory.createSSZ(specConstants))
             .create(db);
+    BeaconStateEx initialState = initialTransition.apply(spec.get_empty_block());
+    StorageUtils.initializeStorage(beaconChainStorage, spec, initialState);
 
     BeaconBlockVerifier blockVerifier = (block, state) -> VerificationResult.PASSED;
     BeaconStateVerifier stateVerifier = (block, state) -> VerificationResult.PASSED;
 
     beaconChain = new DefaultBeaconChain(
         spec,
-        initialTransition,
         preBlockTransition,
         blockTransition,
         blockVerifier,

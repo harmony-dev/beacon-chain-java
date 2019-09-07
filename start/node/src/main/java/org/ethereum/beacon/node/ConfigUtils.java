@@ -1,8 +1,11 @@
 package org.ethereum.beacon.node;
 
+<<<<<<< HEAD
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
+=======
+>>>>>>> develop
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.ChainStart;
 import org.ethereum.beacon.core.operations.Deposit;
@@ -30,6 +33,10 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
+
+import java.util.List;
+import java.util.Random;
+import java.util.stream.Collectors;
 
 public class ConfigUtils {
 
@@ -71,13 +78,24 @@ public class ConfigUtils {
           genKeys.getSeed(), genKeys.getStartIndex(), genKeys.getCount());
     } else if (keys instanceof InteropKeys) {
       InteropKeys interopKeys = (InteropKeys) keys;
+<<<<<<< HEAD
       return SimulationKeyPairGenerator.generateInteropKeys(interopKeys.getCount());
+=======
+      return SimulationKeyPairGenerator.generateInteropKeys(
+          interopKeys.getStartIndex(), interopKeys.getCount());
+>>>>>>> develop
     } else {
       throw new IllegalArgumentException("Unknown ValidatorKeys subclass: " + keys.getClass());
     }
   }
 
-  public static DepositContract createDepositContract(Contract config, BeaconChainSpec spec, boolean verifyProof) {
+  public static DepositContract createDepositContract(
+      Contract config, BeaconChainSpec spec, boolean verifyProof) {
+    return new SimpleDepositContract(createChainStart(config, spec, verifyProof));
+  }
+
+  public static ChainStart createChainStart(
+      Contract config, BeaconChainSpec spec, boolean verifyProof) {
     if (config instanceof EmulatorContract) {
       EmulatorContract eConfig = (EmulatorContract) config;
       List<KeyPair> keyPairs = createKeyPairs(eConfig.getKeys());
@@ -117,9 +135,13 @@ public class ConfigUtils {
       Eth1Data eth1Data =
           new Eth1Data(
               spec.hash_tree_root(depositDataList), UInt64.valueOf(deposits.size()), blockHash);
+<<<<<<< HEAD
       ChainStart chainStart =
           new ChainStart(Time.of(eConfig.getGenesisTime().getTime() / 1000), eth1Data, deposits);
       return new SimpleDepositContract(chainStart);
+=======
+      return new ChainStart(Time.of(eConfig.getGenesisTime().getTime() / 1000), eth1Data, deposits);
+>>>>>>> develop
     } else {
       throw new IllegalArgumentException(
           "This config class is not yet supported: " + config.getClass());

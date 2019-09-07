@@ -1,5 +1,5 @@
 config:
-  db: file://db
+  db: db
   networks:
     - type: netty
 
@@ -43,5 +43,5 @@ chainSpec:
     blsSign: false
     enableCache: false
     # for interop, genesis time should be overridden with the specified value, so ignore computation
-    computableGenesisTime: true
+    computableGenesisTime: false
 

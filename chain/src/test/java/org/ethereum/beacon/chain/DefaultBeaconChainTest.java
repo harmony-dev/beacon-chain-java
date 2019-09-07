@@ -2,9 +2,19 @@ package org.ethereum.beacon.chain;
 
 import org.ethereum.beacon.chain.MutableBeaconChain.ImportResult;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
-import org.ethereum.beacon.chain.storage.impl.*;
-import org.ethereum.beacon.consensus.*;
-import org.ethereum.beacon.consensus.transition.*;
+import org.ethereum.beacon.chain.storage.impl.SSZBeaconChainStorageFactory;
+import org.ethereum.beacon.chain.storage.impl.SerializerFactory;
+import org.ethereum.beacon.chain.storage.util.StorageUtils;
+import org.ethereum.beacon.consensus.BeaconChainSpec;
+import org.ethereum.beacon.consensus.BeaconStateEx;
+import org.ethereum.beacon.consensus.BlockTransition;
+import org.ethereum.beacon.consensus.ChainStart;
+import org.ethereum.beacon.consensus.StateTransition;
+import org.ethereum.beacon.consensus.transition.BeaconStateExImpl;
+import org.ethereum.beacon.consensus.transition.EmptySlotTransition;
+import org.ethereum.beacon.consensus.transition.ExtendedSlotTransition;
+import org.ethereum.beacon.consensus.transition.InitialStateTransition;
+import org.ethereum.beacon.consensus.transition.PerEpochTransition;
 import org.ethereum.beacon.consensus.util.StateTransitionTestUtil;
 import org.ethereum.beacon.consensus.verifier.*;
 import org.ethereum.beacon.core.*;
@@ -72,7 +82,7 @@ public class DefaultBeaconChainTest {
       BeaconChainSpec spec, StateTransition<BeaconStateEx> perSlotTransition, Schedulers schedulers) {
     Time start = Time.castFrom(UInt64.valueOf(schedulers.getCurrentTime() / 1000));
     ChainStart chainStart = new ChainStart(start, Eth1Data.EMPTY, Collections.emptyList());
-    BlockTransition<BeaconStateEx> initialTransition =
+    InitialStateTransition initialTransition =
         new InitialStateTransition(chainStart, spec);
     BlockTransition<BeaconStateEx> perBlockTransition =
         StateTransitionTestUtil.createPerBlockTransition();
@@ -85,10 +95,11 @@ public class DefaultBeaconChainTest {
     BeaconChainStorage chainStorage = new SSZBeaconChainStorageFactory(
             spec.getObjectHasher(), SerializerFactory.createSSZ(spec.getConstants()))
             .create(database);
+    BeaconStateEx initialState = initialTransition.apply(spec.get_empty_block());
+    StorageUtils.initializeStorage(chainStorage, spec, initialState);
 
     return new DefaultBeaconChain(
         spec,
-        initialTransition,
         new EmptySlotTransition(
             new ExtendedSlotTransition(new PerEpochTransition(spec) {
               @Override
