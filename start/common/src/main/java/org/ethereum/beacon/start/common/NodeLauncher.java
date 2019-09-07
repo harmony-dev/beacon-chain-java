@@ -182,6 +182,9 @@ public class NodeLauncher {
     networkLauncher.init();
     peerManager = networkLauncher.getPeerManager();
 
+    Flux.from(peerManager.connectedPeerStream()).subscribe(ch -> Metrics.peerAdded());
+    Flux.from(peerManager.disconnectedPeerStream()).subscribe(ch -> Metrics.peerRemoved());
+
     wireApiSub = peerManager.getWireApiSub();
     wireApiSyncRemote = peerManager.getWireApiSync();
 

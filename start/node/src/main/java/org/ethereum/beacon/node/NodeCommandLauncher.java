@@ -65,7 +65,6 @@ import org.ethereum.beacon.util.Objects;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import org.ethereum.beacon.wire.impl.libp2p.Libp2pLauncher;
 import org.jetbrains.annotations.NotNull;
-import reactor.core.publisher.Flux;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
@@ -229,14 +228,6 @@ public class NodeCommandLauncher implements Runnable {
       if (cfg.getPrivateKey() != null) {
         libp2pLauncher.setPrivKey(BytesValue.fromHexString(cfg.getPrivateKey()));
       }
-
-
-      Flux.from(connectionManager.channelsStream())
-          .subscribe(
-              ch -> {
-                Metrics.peerAdded();
-                ch.getCloseFuture().thenAccept(v -> Metrics.peerRemoved());
-              });
     } else {
       throw new IllegalArgumentException(
           "This type of network is not supported yet: " + networkCfg.getClass());
