@@ -5,6 +5,7 @@ import org.ethereum.beacon.chain.pool.StatefulProcessor;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.state.Checkpoint;
+import tech.pegasys.artemis.ethereum.core.Hash32;
 
 /**
  * Given attestation runs a number of sanity checks against it.
@@ -31,13 +32,15 @@ public class SanityChecker implements AttestationChecker, StatefulProcessor {
 
     final AttestationData data = attestation.getMessage().getData();
 
-    // sourceEpoch >= targetEpoch
-    if (data.getSource().getEpoch().greaterEqual(data.getTarget().getEpoch())) {
+    // sourceEpoch > targetEpoch
+    if (data.getSource().getEpoch().greater(data.getTarget().getEpoch())) {
       return false;
     }
 
     // finalizedEpoch == sourceEpoch && finalizedRoot != sourceRoot
-    if (data.getSource().getEpoch().equals(finalizedCheckpoint.getEpoch())
+    // do not run this check for sourceRoot == ZERO
+    if (!data.getSource().getRoot().equals(Hash32.ZERO)
+        && data.getSource().getEpoch().equals(finalizedCheckpoint.getEpoch())
         && !finalizedCheckpoint.getRoot().equals(data.getSource().getRoot())) {
       return false;
     }

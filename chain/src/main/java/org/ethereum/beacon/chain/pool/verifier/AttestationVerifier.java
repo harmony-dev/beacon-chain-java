@@ -146,11 +146,6 @@ public class AttestationVerifier implements BatchVerifier {
    *     successfully, empty optional box is returned otherwise.
    */
   private Optional<IndexedAttestation> verifyIndexed(BeaconState state, Attestation attestation) {
-    // skip indexed attestation verification, it's explicitly done in the next step
-    if (!spec.verify_attestation_impl(state, attestation, false)) {
-      return Optional.empty();
-    }
-
     // compute and verify indexed attestation
     // skip signature verification
     IndexedAttestation indexedAttestation = spec.get_indexed_attestation(state, attestation);

@@ -16,6 +16,10 @@ public class ReceivedAttestation {
     this.message = message;
   }
 
+  public ReceivedAttestation(Attestation message) {
+    this(null, message);
+  }
+
   public NodeId getSender() {
     return sender;
   }

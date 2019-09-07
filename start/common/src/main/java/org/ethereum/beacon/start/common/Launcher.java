@@ -282,6 +282,10 @@ public class Launcher {
     return extendedSlotTransition;
   }
 
+  public EmptySlotTransition getEmptySlotTransition() {
+    return emptySlotTransition;
+  }
+
   public BeaconBlockVerifier getBlockVerifier() {
     return blockVerifier;
   }

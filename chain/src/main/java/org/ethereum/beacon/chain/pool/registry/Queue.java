@@ -25,7 +25,7 @@ final class Queue {
   /** Max number of overall parked attestations. */
   private final long maxSize;
   /** A lower time frame boundary of attestation queue. */
-  private EpochNumber baseLine;
+  private EpochNumber baseLine = EpochNumber.ZERO;
 
   Queue(EpochNumber trackedEpochs, long maxSize) {
     assert maxSize > 0;
@@ -33,7 +33,6 @@ final class Queue {
 
     this.trackedEpochs = trackedEpochs;
     this.maxSize = maxSize;
-    this.baseLine = EpochNumber.ZERO;
   }
 
   /**

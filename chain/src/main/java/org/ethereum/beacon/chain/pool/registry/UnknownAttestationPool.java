@@ -45,7 +45,7 @@ public class UnknownAttestationPool implements AttestationRegistry, StatefulProc
   /** A beacon chain spec. */
   private final BeaconChainSpec spec;
   /** A lower time frame boundary of attestation queue. */
-  private EpochNumber currentBaseLine;
+  private EpochNumber currentBaseLine = EpochNumber.ZERO;
 
   public UnknownAttestationPool(
       BeaconBlockStorage blockStorage, BeaconChainSpec spec, EpochNumber lookahead, long size) {

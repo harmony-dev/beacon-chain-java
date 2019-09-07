@@ -39,7 +39,7 @@ public class DoubleWorkProcessor extends Flux<ReceivedAttestation> {
   }
 
   private void hookOnNext(ReceivedAttestation attestation) {
-    if (!processedAttestations.add(attestation)) {
+    if (processedAttestations.add(attestation)) {
       out.publishOut(attestation);
     }
   }

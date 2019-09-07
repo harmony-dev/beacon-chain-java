@@ -126,7 +126,7 @@ public class InMemoryAttestationPool implements AttestationPool {
         identificationProcessor
             .getIdentified()
             .publishOn(parallelExecutor)
-            .bufferTimeout(VERIFIER_BUFFER_SIZE, VERIFIER_INTERVAL);
+            .bufferTimeout(VERIFIER_BUFFER_SIZE, VERIFIER_INTERVAL, parallelExecutor);
     VerificationProcessor verificationProcessor =
         new VerificationProcessor(verifier, verificationThrottle);
 
@@ -135,6 +135,7 @@ public class InMemoryAttestationPool implements AttestationPool {
         new ChurnProcessor(
             attestationChurn,
             schedulers,
+            newSlotsFx,
             chainHeadsFx,
             justifiedCheckpointsFx,
             finalizedCheckpointsFx,

@@ -21,6 +21,10 @@ final class ChurnQueue {
     this.maxSize = maxSize;
   }
 
+  boolean isEmpty() {
+    return size == 0;
+  }
+
   Stream<Attestation> stream() {
     return buckets.stream().map(Bucket::getAttestations).flatMap(List::stream);
   }
@@ -45,11 +49,13 @@ final class ChurnQueue {
     assert lower.lessEqual(upper);
 
     while (buckets.size() > 0 && buckets.getFirst().epoch.less(lower)) {
-      buckets.removeFirst();
+      Bucket detached = buckets.removeFirst();
+      size -= detached.attestations.size();
     }
 
     while (buckets.size() > 0 && buckets.getLast().epoch.greater(upper)) {
-      buckets.removeLast();
+      Bucket detached = buckets.removeLast();
+      size -= detached.attestations.size();
     }
 
     this.lowerEpoch = lower;
@@ -64,7 +70,7 @@ final class ChurnQueue {
     }
 
     Bucket newBucket = new Bucket(epoch);
-    buckets.add(new Bucket(epoch));
+    buckets.add(newBucket);
     buckets.sort(Comparator.comparing(Bucket::getEpoch));
 
     return newBucket;

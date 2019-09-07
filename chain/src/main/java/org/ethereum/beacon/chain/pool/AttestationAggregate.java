@@ -22,9 +22,9 @@ public class AttestationAggregate {
         signatures);
   }
 
-  private final Bitlist aggregationBits;
+  private Bitlist aggregationBits;
+  private Bitlist custodyBits;
   private final AttestationData data;
-  private final Bitlist custodyBits;
   private final List<BLSSignature> signatures;
 
   public AttestationAggregate(
@@ -40,8 +40,8 @@ public class AttestationAggregate {
 
   public boolean add(Attestation attestation) {
     if (isAggregatable(attestation)) {
-      aggregationBits.or(attestation.getAggregationBits());
-      custodyBits.or(attestation.getCustodyBits());
+      aggregationBits = aggregationBits.or(attestation.getAggregationBits());
+      custodyBits = custodyBits.or(attestation.getCustodyBits());
       signatures.add(attestation.getSignature());
 
       return true;

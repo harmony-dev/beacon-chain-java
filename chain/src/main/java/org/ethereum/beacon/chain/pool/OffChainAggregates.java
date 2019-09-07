@@ -29,7 +29,7 @@ public class OffChainAggregates {
     return aggregates;
   }
 
-  public SlotNumber getEpoch() {
+  public SlotNumber getSlot() {
     return slot;
   }
 }

@@ -1,10 +1,12 @@
 package org.ethereum.beacon.chain.pool.checker;
 
-import org.ethereum.beacon.chain.pool.*;
+import org.ethereum.beacon.chain.pool.ReceivedAttestation;
+import org.ethereum.beacon.chain.pool.StatefulProcessor;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.state.Checkpoint;
-import org.ethereum.beacon.core.types.*;
+import org.ethereum.beacon.core.types.EpochNumber;
+import org.ethereum.beacon.core.types.SlotNumber;
 
 /**
  * Filters attestations by time frame of its target and source.
@@ -45,13 +47,13 @@ public class TimeFrameFilter implements AttestationChecker, StatefulProcessor {
 
     final AttestationData data = attestation.getMessage().getData();
 
-    // targetEpoch <= finalizedEpoch
-    if (data.getTarget().getEpoch().lessEqual(finalizedCheckpoint.getEpoch())) {
+    // targetEpoch < finalizedEpoch
+    if (data.getTarget().getEpoch().less(finalizedCheckpoint.getEpoch())) {
       return false;
     }
 
     // sourceEpoch < finalizedEpoch
-    if (data.getSource().getEpoch().lessEqual(finalizedCheckpoint.getEpoch())) {
+    if (data.getSource().getEpoch().less(finalizedCheckpoint.getEpoch())) {
       return false;
     }
 
@@ -72,6 +74,7 @@ public class TimeFrameFilter implements AttestationChecker, StatefulProcessor {
    */
   public void feedFinalizedCheckpoint(Checkpoint checkpoint) {
     this.finalizedCheckpoint = checkpoint;
+    this.maxAcceptableEpoch = checkpoint.getEpoch().plus(maxAttestationLookahead);
   }
 
   /**

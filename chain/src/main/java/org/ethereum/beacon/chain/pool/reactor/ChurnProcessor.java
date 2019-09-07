@@ -6,6 +6,7 @@ import org.ethereum.beacon.chain.pool.OffChainAggregates;
 import org.ethereum.beacon.chain.pool.ReceivedAttestation;
 import org.ethereum.beacon.chain.pool.churn.AttestationChurn;
 import org.ethereum.beacon.core.state.Checkpoint;
+import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.stream.OutsourcePublisher;
 import reactor.core.CoreSubscriber;
@@ -20,6 +21,7 @@ public class ChurnProcessor extends Flux<OffChainAggregates> {
   public ChurnProcessor(
       AttestationChurn churn,
       Schedulers schedulers,
+      Flux<SlotNumber> newSlots,
       Flux<BeaconTuple> chainHeads,
       Flux<Checkpoint> justifiedCheckpoints,
       Flux<Checkpoint> finalizedCheckpoints,
@@ -28,12 +30,14 @@ public class ChurnProcessor extends Flux<OffChainAggregates> {
 
     Scheduler scheduler = schedulers.newSingleThreadDaemon("pool-attestation-churn").toReactor();
     chainHeads.publishOn(scheduler).subscribe(this::hookOnNext);
+    newSlots.publishOn(scheduler).subscribe(this.churn::feedNewSlot);
     justifiedCheckpoints.publishOn(scheduler).subscribe(this.churn::feedJustifiedCheckpoint);
     finalizedCheckpoints.publishOn(scheduler).subscribe(this.churn::feedFinalizedCheckpoint);
     source
         .publishOn(scheduler)
         .map(ReceivedAttestation::getMessage)
-        .bufferTimeout(AttestationPool.VERIFIER_BUFFER_SIZE, AttestationPool.VERIFIER_INTERVAL)
+        .bufferTimeout(
+            AttestationPool.VERIFIER_BUFFER_SIZE, AttestationPool.VERIFIER_INTERVAL, scheduler)
         .subscribe(this.churn::add);
   }
 
