@@ -1,7 +1,9 @@
 package org.ethereum.beacon.node;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -21,13 +23,22 @@ import org.apache.logging.log4j.ThreadContext;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
+import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.chain.storage.impl.SSZBeaconChainStorageFactory;
 import org.ethereum.beacon.chain.storage.impl.SerializerFactory;
+import org.ethereum.beacon.chain.storage.util.StorageUtils;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
+import org.ethereum.beacon.consensus.BeaconStateEx;
+import org.ethereum.beacon.consensus.ChainStart;
+import org.ethereum.beacon.consensus.TransitionType;
+import org.ethereum.beacon.consensus.transition.BeaconStateExImpl;
+import org.ethereum.beacon.consensus.transition.InitialStateTransition;
 import org.ethereum.beacon.core.spec.SpecConstants;
+import org.ethereum.beacon.core.state.BeaconStateImpl;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.crypto.BLS381.KeyPair;
+import org.ethereum.beacon.db.Database;
 import org.ethereum.beacon.emulator.config.ConfigBuilder;
 import org.ethereum.beacon.emulator.config.ConfigException;
 import org.ethereum.beacon.emulator.config.chainspec.SpecBuilder;
@@ -42,32 +53,39 @@ import org.ethereum.beacon.emulator.config.main.network.Libp2pNetwork;
 import org.ethereum.beacon.emulator.config.main.network.Libp2pNetwork.Peer;
 import org.ethereum.beacon.emulator.config.main.network.NettyNetwork;
 import org.ethereum.beacon.emulator.config.main.network.Network;
+import org.ethereum.beacon.node.metrics.Metrics;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.schedulers.DefaultSchedulers;
 import org.ethereum.beacon.schedulers.Schedulers;
+import org.ethereum.beacon.start.common.DatabaseManager;
 import org.ethereum.beacon.start.common.NodeLauncher;
 import org.ethereum.beacon.start.common.util.MDCControlledSchedulers;
+import org.ethereum.beacon.start.common.util.SimpleDepositContract;
 import org.ethereum.beacon.util.Objects;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import org.ethereum.beacon.wire.impl.libp2p.Libp2pLauncher;
 import org.jetbrains.annotations.NotNull;
+import reactor.core.publisher.Flux;
+import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 public class NodeCommandLauncher implements Runnable {
   private static final Logger logger = LogManager.getLogger("node");
+
+  private final static long DB_BUFFER_SIZE = 64L << 20; // 64Mb
 
   private final MainConfig config;
   private final SpecConstants specConstants;
   private final BeaconChainSpec spec;
   private final Level logLevel;
   private final SpecBuilder specBuilder;
+  private final Node cliOptions;
 
   private Random rnd;
   private Time genesisTime;
   private MDCControlledSchedulers controlledSchedulers;
   private List<KeyPair> keyPairs;
   private Eth1Data eth1Data;
-  private DepositContract depositContract;
 
   /**
    * Creates launcher with following settings
@@ -79,12 +97,14 @@ public class NodeCommandLauncher implements Runnable {
   public NodeCommandLauncher(
       MainConfig config,
       SpecBuilder specBuilder,
+      Node cliOptions,
       Level logLevel) {
     this.config = config;
     this.specBuilder = specBuilder;
     this.specConstants = specBuilder.buildSpecConstants();
     this.spec = specBuilder.buildSpec();
     this.logLevel = logLevel;
+    this.cliOptions = cliOptions;
 
     init();
   }
@@ -133,10 +153,32 @@ public class NodeCommandLauncher implements Runnable {
           }
         };
 
-    depositContract = ConfigUtils.createDepositContract(
-        config.getConfig().getValidator().getContract(),
-        spec,
-        config.getChainSpec().getSpecHelpersOptions().isBlsVerifyProofOfPossession());
+    String initialStateFile = cliOptions.getInitialStateFile();
+    ChainStart chainStart;
+    BeaconStateEx initialState;
+    if (initialStateFile == null) {
+      chainStart = ConfigUtils.createChainStart(
+          config.getConfig().getValidator().getContract(),
+          spec,
+          config.getChainSpec().getSpecHelpersOptions().isBlsVerifyProofOfPossession());
+      initialState = new InitialStateTransition(chainStart, spec).apply(spec.get_empty_block());
+    } else {
+      SerializerFactory serializerFactory = SerializerFactory.createSSZ(specConstants);
+      byte[] fileData;
+      try {
+        fileData = Files.readAllBytes(Paths.get(initialStateFile));
+      } catch (IOException e) {
+        throw new IllegalArgumentException("Cannot read state file " + initialStateFile, e);
+      }
+      initialState =
+          new BeaconStateExImpl(
+              serializerFactory.getDeserializer(BeaconStateImpl.class).apply(BytesValue.wrap(fileData)),
+              TransitionType.INITIAL);
+      chainStart =
+          new ChainStart(
+              initialState.getGenesisTime(), initialState.getEth1Data(), Collections.emptyList());
+    }
+    DepositContract depositContract = new SimpleDepositContract(chainStart);
 
     List<BLS381Credentials> credentials = ConfigUtils.createCredentials(
         config.getConfig().getValidator().getSigner(),
@@ -188,21 +230,115 @@ public class NodeCommandLauncher implements Runnable {
         libp2pLauncher.setPrivKey(BytesValue.fromHexString(cfg.getPrivateKey()));
       }
 
+
+      Flux.from(connectionManager.channelsStream())
+          .subscribe(
+              ch -> {
+                Metrics.peerAdded();
+                ch.getCloseFuture().thenAccept(v -> Metrics.peerRemoved());
+              });
     } else {
       throw new IllegalArgumentException(
           "This type of network is not supported yet: " + networkCfg.getClass());
     }
 
+    String metricsEndpoint = config.getConfig().getMetricsEndpoint();
+    String metricsHost;
+    int metricsPort;
+    if (metricsEndpoint == null) {
+      metricsHost = "0.0.0.0";
+      metricsPort = 8008;
+    } else {
+      String[] parts = metricsEndpoint.split(":");
+      if (parts.length != 2) {
+        throw new IllegalArgumentException(
+            "Wrong metrics endpoint format: \"" + metricsEndpoint + "\"");
+      }
+      metricsHost = parts[0];
+      metricsPort = Integer.parseInt(parts[1]);
+    }
+    Metrics.startMetricsServer(metricsHost, metricsPort);
+
+    SSZBeaconChainStorageFactory storageFactory =
+        new SSZBeaconChainStorageFactory(
+            spec.getObjectHasher(), SerializerFactory.createSSZ(specConstants));
+
+    String dbPrefix = config.getConfig().getDb();
+    String startMode;
+
+    if (cliOptions.getStartMode() == null) {
+      if (initialStateFile != null) {
+        startMode = "initial";
+      } else {
+        startMode = "auto";
+      }
+    } else {
+      startMode = cliOptions.getStartMode();
+    }
+    boolean forceDBClean = cliOptions.isForceDBClean();
+
+    DatabaseManager dbFactory;
+    if (dbPrefix == null) {
+      dbFactory = DatabaseManager.createInMemoryDBFactory();
+    } else {
+      dbFactory = DatabaseManager.createRocksDBFactory(dbPrefix, DB_BUFFER_SIZE);
+    }
+
+    Time genesisTime = initialState.getGenesisTime();
+    Hash32 depositRoot = initialState.getEth1Data().getDepositRoot();
+
+    Database db = dbFactory.getOrCreateDatabase(genesisTime, depositRoot);
+    BeaconChainStorage beaconChainStorage = storageFactory.create(db);
+
+    boolean emptyStorage = beaconChainStorage.getTupleStorage().isEmpty();
+    boolean doInitialize;
+    switch (startMode) {
+      case "storage":
+        if (emptyStorage) {
+          throw new IllegalArgumentException("Cannot start from empty storage");
+        } else {
+          doInitialize = false;
+        }
+        break;
+      case "auto":
+        doInitialize = emptyStorage;
+        break;
+      case "initial":
+        if (!emptyStorage && !forceDBClean) {
+          throw new IllegalArgumentException("Cannot initialize non-empty storage."
+              + " Use --force-db-clean to clean automatically");
+        }
+        doInitialize = true;
+        break;
+      default:
+        throw new IllegalArgumentException("Unsupported start-mode " + startMode);
+    }
+
+    if (doInitialize && !emptyStorage && forceDBClean) {
+      db.close();
+      try{
+        dbFactory.removeDatabase(genesisTime, depositRoot);
+      } catch (RuntimeException e) {
+        throw new IllegalStateException("Cannot clean DB, remove files manually", e);
+      }
+      db = dbFactory.getOrCreateDatabase(genesisTime, depositRoot);
+      beaconChainStorage = storageFactory.create(db);
+    }
+
+    if (doInitialize) {
+      StorageUtils.initializeStorage(beaconChainStorage, spec, initialState);
+    }
+
     NodeLauncher node = new NodeLauncher(
         specBuilder.buildSpec(),
-        this.depositContract,
+        depositContract,
         credentials,
         libp2pLauncher, //connectionManager,
-        new SSZBeaconChainStorageFactory(
-            spec.getObjectHasher(),
-            SerializerFactory.createSSZ(specConstants)),
+        db,
+        beaconChainStorage,
         schedulers,
         true);
+    node.start();
 
     Runtime.getRuntime().addShutdownHook(new Thread(node::stop));
 
@@ -371,9 +507,14 @@ public class NodeCommandLauncher implements Runnable {
         }
       }
 
+      if (cliOptions.getMetricsEndpoint() != null) {
+        config.getConfig().setMetricsEndpoint(cliOptions.getMetricsEndpoint());
+      }
+
       return new NodeCommandLauncher(
         config,
         specBuilder,
+        cliOptions,
         logLevel);
     }
 

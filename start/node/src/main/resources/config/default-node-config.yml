@@ -1,5 +1,5 @@
 config:
-  db: file://db
+  db: db
   networks:
     # Libp2p based network conforming to spec
     - type: libp2p

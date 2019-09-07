@@ -1,16 +1,15 @@
 package org.ethereum.beacon.start.common.util;
 
 import com.google.common.primitives.Bytes;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 import org.ethereum.beacon.crypto.BLS381;
 import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.crypto.bls.bc.BCParameters;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
-
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
 
 /**
  * Key pair generation utilities for simulation purposes.
@@ -27,9 +26,9 @@ public class SimulationKeyPairGenerator {
    * @param count - amount of key parirs to generate
    * @return the generated key pairs
    */
-  public static List<BLS381.KeyPair> generateInteropKeys(int count) {
+  public static List<BLS381.KeyPair> generateInteropKeys(int startIndex, int count) {
     List<BLS381.KeyPair> ret = new ArrayList<>();
-    for (int i = 0; i < count; i++) {
+    for (int i = startIndex; i < startIndex + count; i++) {
       byte[] res = BigInteger.valueOf(i).toByteArray();
       Bytes.reverse(res);
       BytesValue wrap = BytesValue.wrap(Bytes.ensureCapacity(res, 32, 0));

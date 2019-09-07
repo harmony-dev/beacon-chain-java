@@ -1,6 +1,6 @@
 config:
   # location of database
-  db: file://db
+  db: db
 
   # the list of networks
   networks:

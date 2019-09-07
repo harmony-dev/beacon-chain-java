@@ -45,6 +45,7 @@ public abstract class ValidatorKeys {
 
   public static class InteropKeys extends ValidatorKeys {
     private int count;
+    private int startIndex = 0;
 
     public int getCount() {
       return count;
@@ -52,6 +53,14 @@ public abstract class ValidatorKeys {
 
     public void setCount(int count) {
       this.count = count;
+    }
+
+    public int getStartIndex() {
+      return startIndex;
+    }
+
+    public void setStartIndex(int startIndex) {
+      this.startIndex = startIndex;
     }
   }
 

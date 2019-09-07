@@ -71,13 +71,20 @@ public class ConfigUtils {
           genKeys.getSeed(), genKeys.getStartIndex(), genKeys.getCount());
     } else if (keys instanceof InteropKeys) {
       InteropKeys interopKeys = (InteropKeys) keys;
-      return SimulationKeyPairGenerator.generateInteropKeys(interopKeys.getCount());
+      return SimulationKeyPairGenerator.generateInteropKeys(
+          interopKeys.getStartIndex(), interopKeys.getCount());
     } else {
       throw new IllegalArgumentException("Unknown ValidatorKeys subclass: " + keys.getClass());
     }
   }
 
-  public static DepositContract createDepositContract(Contract config, BeaconChainSpec spec, boolean verifyProof) {
+  public static DepositContract createDepositContract(
+      Contract config, BeaconChainSpec spec, boolean verifyProof) {
+    return new SimpleDepositContract(createChainStart(config, spec, verifyProof));
+  }
+
+  public static ChainStart createChainStart(
+      Contract config, BeaconChainSpec spec, boolean verifyProof) {
     if (config instanceof EmulatorContract) {
       EmulatorContract eConfig = (EmulatorContract) config;
       List<KeyPair> keyPairs = createKeyPairs(eConfig.getKeys());
@@ -117,9 +124,7 @@ public class ConfigUtils {
       Eth1Data eth1Data =
           new Eth1Data(
               spec.hash_tree_root(depositDataList), UInt64.valueOf(deposits.size()), blockHash);
-      ChainStart chainStart =
-          new ChainStart(Time.of(eConfig.getGenesisTime().getTime() / 1000), eth1Data, deposits);
-      return new SimpleDepositContract(chainStart);
+      return new ChainStart(Time.of(eConfig.getGenesisTime().getTime() / 1000), eth1Data, deposits);
     } else {
       throw new IllegalArgumentException(
           "This config class is not yet supported: " + config.getClass());
