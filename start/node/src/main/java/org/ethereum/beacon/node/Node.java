@@ -109,6 +109,44 @@ public class Node implements Runnable {
   )
   private String metricsEndpoint;
 
+  @CommandLine.Option(
+      names = "--initial-state",
+      paramLabel = "initial-state",
+      description = {
+          "Path to an initial state file (SSZ format)"
+      }
+  )
+  private String initialStateFile;
+
+  @CommandLine.Option(
+      names = "--start-mode",
+      paramLabel = "start-mode",
+      description = {
+          "Specifies how to deal with the existing or absent storage. Possible modes:",
+          "  initial - starts from an empty storage only. If it's not, --force-db-clean can be specified.",
+          "  storage - starts from a previously initialized storage only,",
+          "            ignoring contract/initial-state parameters",
+          "  auto    - starts from an existing storage, if it's non empty",
+          "            initializes from contract/initial-state parameters otherwise",
+          "By default, set to auto, if no initial-state is specified,",
+          "            and to initial, if an initial-state is specified."
+      }
+  )
+  private String startMode;
+
+  @CommandLine.Option(
+      names = "--force-db-clean",
+      paramLabel = "force-db-clean",
+      description = {
+          "When an initial-state is specified, but db is not empty",
+          "specifies how to resolve the problem:",
+          "  force-db-clean=true  - tries to clean db",
+          "  force-db-clean=false - exits with failure status.",
+          "False by default."
+      }
+  )
+  private boolean forceDBClean = false;
+
   public String getName() {
     return name;
   }
@@ -135,6 +173,18 @@ public class Node implements Runnable {
 
   public String getMetricsEndpoint() {
     return metricsEndpoint;
+  }
+
+  public String getInitialStateFile() {
+    return initialStateFile;
+  }
+
+  public boolean isForceDBClean() {
+    return forceDBClean;
+  }
+
+  public String getStartMode() {
+    return startMode;
   }
 
   public static void main(String[] args) {
