@@ -42,6 +42,7 @@ import org.ethereum.beacon.wire.impl.plain.net.netty.NettyServer;
 import org.ethereum.beacon.wire.sync.SyncManager;
 import org.javatuples.Pair;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -51,6 +52,7 @@ import tech.pegasys.artemis.util.uint.UInt64;
 
 public class NodeTest {
 
+  @Ignore
   @Test
   public void test1() throws Exception {
     Random rnd = new Random();
@@ -103,7 +105,7 @@ public class NodeTest {
                 .stream()
                 .map(BLS381Credentials::createWithDummySigner)
                 .collect(Collectors.toList()),
-            connectionManager,
+            null,
             db,
             chainStorage,
             schedulers,
@@ -132,7 +134,7 @@ public class NodeTest {
             specBuilder.buildSpec(),
             depositContract,
             null,
-            slaveConnectionManager,
+            null,
             db,
             chainStorage,
             schedulers,
