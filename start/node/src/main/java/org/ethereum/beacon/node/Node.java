@@ -147,6 +147,13 @@ public class Node implements Runnable {
   )
   private boolean forceDBClean = false;
 
+  @CommandLine.Option(
+      names = "--db-prefix",
+      paramLabel = "db-prefix",
+      description = "Specifies db-prefix, used to construct db directory"
+  )
+  private String dbPrefix;
+
   public String getName() {
     return name;
   }
@@ -185,6 +192,10 @@ public class Node implements Runnable {
 
   public String getStartMode() {
     return startMode;
+  }
+
+  public String getDbPrefix() {
+    return dbPrefix;
   }
 
   public static void main(String[] args) {

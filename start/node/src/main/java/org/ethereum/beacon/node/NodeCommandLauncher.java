@@ -502,6 +502,10 @@ public class NodeCommandLauncher implements Runnable {
         config.getConfig().setMetricsEndpoint(cliOptions.getMetricsEndpoint());
       }
 
+      if (cliOptions.getDbPrefix() != null) {
+        config.getConfig().setDb(cliOptions.getDbPrefix());
+      }
+
       return new NodeCommandLauncher(
         config,
         specBuilder,
