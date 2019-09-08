@@ -163,10 +163,8 @@ class InMemoryAttestationPoolTest {
         final AttestationPool pool = AttestationPool.create(
                 source,
                 newSlots,
-                justifiedCheckpoints,
                 finalizedCheckpoints,
                 importedBlocks,
-                chainHeads,
                 schedulers,
                 spec,
                 beaconChainStorage,
@@ -239,23 +237,19 @@ class InMemoryAttestationPoolTest {
                         beaconChainStorage.getBlockStorage(), spec, MAX_ATTESTATION_LOOKAHEAD, MAX_UNKNOWN_ATTESTATIONS);
         final BatchVerifier batchVerifier =
                 new AttestationVerifier(beaconChainStorage.getTupleStorage(), spec, slotTransition);
-        final AttestationChurn attestationChurn = AttestationChurn.create(spec, ATTESTATION_CHURN_SIZE);
 
         final AttestationPool pool = new InMemoryAttestationPool(
                 source,
                 newSlots,
-                justifiedCheckpoints,
                 finalizedCheckpoints,
                 importedBlocks,
-                chainHeads,
                 schedulers,
                 timeFrameFilter,
                 sanityChecker,
                 encodingChecker,
                 processedFilter,
                 unknownAttestationPool,
-                batchVerifier,
-                attestationChurn);
+                batchVerifier);
 
         pool.start();
     }
@@ -280,7 +274,6 @@ class InMemoryAttestationPoolTest {
 
         return new DefaultBeaconChain(
                 spec,
-                initialTransition,
                 new EmptySlotTransition(
                         new ExtendedSlotTransition(new PerEpochTransition(spec) {
                             @Override

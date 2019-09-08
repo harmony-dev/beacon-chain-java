@@ -41,13 +41,13 @@ public class SanityProcessor {
     this.checker = checker;
 
     Scheduler scheduler = schedulers.newSingleThreadDaemon("pool-sanity-processor").toReactor();
+    this.valid = new SimpleProcessor<>(scheduler, "SanityProcessor.valid");
+    this.invalid = new SimpleProcessor<>(scheduler, "SanityProcessor.invalid");
+
     Flux.from(finalizedCheckpoints)
         .publishOn(scheduler)
         .subscribe(this.checker::feedFinalizedCheckpoint);
     Flux.from(source).publishOn(scheduler).subscribe(this::hookOnNext);
-
-    valid = new SimpleProcessor<>(scheduler, "SanityProcessor.valid");
-    invalid = new SimpleProcessor<>(scheduler, "SanityProcessor.invalid");
   }
 
   private void hookOnNext(ReceivedAttestation attestation) {

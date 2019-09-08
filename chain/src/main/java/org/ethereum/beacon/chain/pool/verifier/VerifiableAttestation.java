@@ -52,6 +52,7 @@ final class VerifiableAttestation {
 
     return new VerifiableAttestation(
         attestation,
+        indexed,
         attestation.getMessage().getData(),
         attestation.getMessage().getAggregationBits(),
         bit0AggregateKey,
@@ -60,6 +61,7 @@ final class VerifiableAttestation {
   }
 
   private final ReceivedAttestation attestation;
+  private final IndexedAttestation indexed;
 
   private final AttestationData data;
   private final Bitlist aggregationBits;
@@ -69,17 +71,23 @@ final class VerifiableAttestation {
 
   public VerifiableAttestation(
       ReceivedAttestation attestation,
+      IndexedAttestation indexed,
       AttestationData data,
       Bitlist aggregationBits,
       PublicKey bit0Key,
       PublicKey bit1Key,
       Signature signature) {
     this.attestation = attestation;
+    this.indexed = indexed;
     this.data = data;
     this.aggregationBits = aggregationBits;
     this.bit0Key = bit0Key;
     this.bit1Key = bit1Key;
     this.signature = signature;
+  }
+
+  public IndexedAttestation getIndexed() {
+    return indexed;
   }
 
   public AttestationData getData() {

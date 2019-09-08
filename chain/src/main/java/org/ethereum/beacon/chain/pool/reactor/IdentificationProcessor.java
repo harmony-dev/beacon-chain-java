@@ -45,12 +45,12 @@ public class IdentificationProcessor {
 
     Scheduler scheduler =
         schedulers.newSingleThreadDaemon("pool-identification-processor").toReactor();
+    this.identified = new SimpleProcessor<>(scheduler, "IdentificationProcessor.identified");
+    this.unknown = new SimpleProcessor<>(scheduler, "IdentificationProcessor.unknown");
+
     Flux.from(newSlots).publishOn(scheduler).subscribe(this.pool::feedNewSlot);
     Flux.from(newImportedBlocks).publishOn(scheduler).subscribe(this::hookOnNext);
     Flux.from(source).publishOn(scheduler).subscribe(this::hookOnNext);
-
-    identified = new SimpleProcessor<>(scheduler, "IdentificationProcessor.identified");
-    unknown = new SimpleProcessor<>(scheduler, "IdentificationProcessor.unknown");
   }
 
   private void hookOnNext(BeaconBlock block) {

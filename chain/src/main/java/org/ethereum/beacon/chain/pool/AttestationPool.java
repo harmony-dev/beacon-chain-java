@@ -2,12 +2,10 @@ package org.ethereum.beacon.chain.pool;
 
 import java.time.Duration;
 import org.ethereum.beacon.chain.BeaconChain;
-import org.ethereum.beacon.chain.BeaconTuple;
 import org.ethereum.beacon.chain.pool.checker.SanityChecker;
 import org.ethereum.beacon.chain.pool.checker.SignatureEncodingChecker;
 import org.ethereum.beacon.chain.pool.checker.TimeFrameFilter;
 import org.ethereum.beacon.chain.pool.churn.AttestationChurn;
-import org.ethereum.beacon.chain.pool.churn.AttestationChurnImpl;
 import org.ethereum.beacon.chain.pool.registry.ProcessedAttestations;
 import org.ethereum.beacon.chain.pool.registry.UnknownAttestationPool;
 import org.ethereum.beacon.chain.pool.verifier.AttestationVerifier;
@@ -16,6 +14,8 @@ import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.transition.EmptySlotTransition;
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.operations.Attestation;
+import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
 import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
@@ -73,6 +73,16 @@ public interface AttestationPool {
    */
   Publisher<ReceivedAttestation> getValid();
 
+  Publisher<Attestation> getValidUnboxed();
+
+  /**
+   * A publisher of valid indexed attestations. Publishes same attestations as {@link #getValid()}
+   * does.
+   *
+   * @return a publisher.
+   */
+  Publisher<IndexedAttestation> getValidIndexed();
+
   /**
    * Invalid attestations publisher.
    *
@@ -89,25 +99,14 @@ public interface AttestationPool {
    */
   Publisher<ReceivedAttestation> getUnknownAttestations();
 
-  /**
-   * Publishes aggregated attestations that are not yet included on chain.
-   *
-   * <p>It should be a source of attestations for block proposer.
-   *
-   * @return a publisher.
-   */
-  Publisher<OffChainAggregates> getAggregates();
-
   /** Launches the pool. */
   void start();
 
   static AttestationPool create(
       Publisher<ReceivedAttestation> source,
       Publisher<SlotNumber> newSlots,
-      Publisher<Checkpoint> justifiedCheckpoints,
       Publisher<Checkpoint> finalizedCheckpoints,
       Publisher<BeaconBlock> importedBlocks,
-      Publisher<BeaconTuple> chainHeads,
       Schedulers schedulers,
       BeaconChainSpec spec,
       BeaconChainStorage storage,
@@ -123,22 +122,18 @@ public interface AttestationPool {
             storage.getBlockStorage(), spec, MAX_ATTESTATION_LOOKAHEAD, MAX_UNKNOWN_ATTESTATIONS);
     BatchVerifier batchVerifier =
         new AttestationVerifier(storage.getTupleStorage(), spec, emptySlotTransition);
-    AttestationChurn attestationChurn = new AttestationChurnImpl(spec, ATTESTATION_CHURN_SIZE);
 
     return new InMemoryAttestationPool(
         source,
         newSlots,
-        justifiedCheckpoints,
         finalizedCheckpoints,
         importedBlocks,
-        chainHeads,
         schedulers,
         timeFrameFilter,
         sanityChecker,
         encodingChecker,
         processedFilter,
         unknownAttestationPool,
-        batchVerifier,
-        attestationChurn);
+        batchVerifier);
   }
 }

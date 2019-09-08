@@ -83,6 +83,7 @@ public class AggregateSignatureVerifier {
    */
   private VerificationResult verifyGroup(AttestationData data, List<VerifiableAttestation> group) {
     final List<ReceivedAttestation> valid = new ArrayList<>();
+    final List<IndexedAttestation> validIndexed = new ArrayList<>();
     final List<ReceivedAttestation> invalid = new ArrayList<>();
 
     // for aggregation sake, smaller aggregates should go first
@@ -106,7 +107,10 @@ public class AggregateSignatureVerifier {
 
     // verify aggregate and fall back to one-by-one verification if it has failed
     if (verifySignature(data, aggregate.getKey0(), aggregate.getKey1(), aggregate.getSignature())) {
-      aggregated.stream().map(VerifiableAttestation::getAttestation).forEach(valid::add);
+      aggregated.forEach(attestation -> {
+        valid.add(attestation.getAttestation());
+        validIndexed.add(attestation.getIndexed());
+      });
     } else {
       notAggregated = group;
     }
@@ -115,12 +119,13 @@ public class AggregateSignatureVerifier {
       if (verifySignature(
           data, attestation.getBit0Key(), attestation.getBit1Key(), attestation.getSignature())) {
         valid.add(attestation.getAttestation());
+        validIndexed.add(attestation.getIndexed());
       } else {
         invalid.add(attestation.getAttestation());
       }
     }
 
-    return new VerificationResult(valid, invalid);
+    return new VerificationResult(valid, validIndexed, invalid);
   }
 
   /**

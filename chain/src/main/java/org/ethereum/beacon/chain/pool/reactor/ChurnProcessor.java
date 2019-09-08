@@ -30,6 +30,8 @@ public class ChurnProcessor extends Flux<OffChainAggregates> {
     this.churn = churn;
 
     Scheduler scheduler = schedulers.newSingleThreadDaemon("pool-churn-processor").toReactor();
+    this.out = new SimpleProcessor<>(scheduler, "ChurnProcessor.out");
+
     Flux.from(chainHeads).publishOn(scheduler).subscribe(this::hookOnNext);
     Flux.from(newSlots).publishOn(scheduler).subscribe(this.churn::feedNewSlot);
     Flux.from(justifiedCheckpoints)
@@ -44,8 +46,6 @@ public class ChurnProcessor extends Flux<OffChainAggregates> {
         .bufferTimeout(
             AttestationPool.VERIFIER_BUFFER_SIZE, AttestationPool.VERIFIER_INTERVAL, scheduler)
         .subscribe(this.churn::add);
-
-    out = new SimpleProcessor<>(scheduler, "ChurnProcessor.out");
   }
 
   private void hookOnNext(BeaconTuple tuple) {

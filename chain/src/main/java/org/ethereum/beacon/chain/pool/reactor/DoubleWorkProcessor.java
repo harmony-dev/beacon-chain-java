@@ -37,7 +37,8 @@ public class DoubleWorkProcessor extends Flux<ReceivedAttestation> {
 
     Scheduler scheduler =
         schedulers.newSingleThreadDaemon("pool-double-work-processor").toReactor();
-    out = new SimpleProcessor<>(scheduler, "DoubleWorkProcessor.out");
+    this.out = new SimpleProcessor<>(scheduler, "DoubleWorkProcessor.out");
+
     Flux.from(source).publishOn(scheduler).subscribe(this::hookOnNext);
   }
 

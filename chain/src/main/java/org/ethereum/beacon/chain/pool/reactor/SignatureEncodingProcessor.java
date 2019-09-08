@@ -35,9 +35,10 @@ public class SignatureEncodingProcessor {
       Publisher<ReceivedAttestation> source) {
     this.checker = checker;
 
+    this.valid = new SimpleProcessor<>(scheduler, "SignatureEncodingProcessor.valid");
+    this.invalid = new SimpleProcessor<>(scheduler, "SignatureEncodingProcessor.invalid");
+
     Flux.from(source).publishOn(scheduler.toReactor()).subscribe(this::hookOnNext);
-    valid = new SimpleProcessor<>(scheduler, "SignatureEncodingProcessor.valid");
-    invalid = new SimpleProcessor<>(scheduler, "SignatureEncodingProcessor.invalid");
   }
 
   private void hookOnNext(ReceivedAttestation attestation) {

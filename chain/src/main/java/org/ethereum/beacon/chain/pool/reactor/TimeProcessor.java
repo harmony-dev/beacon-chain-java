@@ -42,7 +42,8 @@ public class TimeProcessor extends Flux<ReceivedAttestation> {
     this.filter = filter;
 
     Scheduler scheduler = schedulers.newSingleThreadDaemon("pool-time-processor").toReactor();
-    out = new SimpleProcessor<>(scheduler, "TimeProcessor.out");
+    this.out = new SimpleProcessor<>(scheduler, "TimeProcessor.out");
+
     Flux.from(source).publishOn(scheduler).subscribe(this::hookOnNext);
     Flux.from(finalizedCheckpoints)
         .publishOn(scheduler)

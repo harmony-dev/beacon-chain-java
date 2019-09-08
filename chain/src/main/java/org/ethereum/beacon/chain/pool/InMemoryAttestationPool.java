@@ -5,8 +5,6 @@ import org.ethereum.beacon.chain.BeaconTuple;
 import org.ethereum.beacon.chain.pool.checker.SanityChecker;
 import org.ethereum.beacon.chain.pool.checker.SignatureEncodingChecker;
 import org.ethereum.beacon.chain.pool.checker.TimeFrameFilter;
-import org.ethereum.beacon.chain.pool.churn.AttestationChurn;
-import org.ethereum.beacon.chain.pool.reactor.ChurnProcessor;
 import org.ethereum.beacon.chain.pool.reactor.DoubleWorkProcessor;
 import org.ethereum.beacon.chain.pool.reactor.IdentificationProcessor;
 import org.ethereum.beacon.chain.pool.reactor.SanityProcessor;
@@ -17,6 +15,8 @@ import org.ethereum.beacon.chain.pool.registry.ProcessedAttestations;
 import org.ethereum.beacon.chain.pool.registry.UnknownAttestationPool;
 import org.ethereum.beacon.chain.pool.verifier.BatchVerifier;
 import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.operations.Attestation;
+import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
 import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.schedulers.Schedulers;
@@ -33,10 +33,8 @@ public class InMemoryAttestationPool implements AttestationPool {
 
   private final Publisher<ReceivedAttestation> source;
   private final Publisher<SlotNumber> newSlots;
-  private final Publisher<Checkpoint> justifiedCheckpoints;
   private final Publisher<Checkpoint> finalizedCheckpoints;
   private final Publisher<BeaconBlock> importedBlocks;
-  private final Publisher<BeaconTuple> chainHeads;
   private final Schedulers schedulers;
 
   private final TimeFrameFilter timeFrameFilter;
@@ -45,34 +43,29 @@ public class InMemoryAttestationPool implements AttestationPool {
   private final ProcessedAttestations processedFilter;
   private final UnknownAttestationPool unknownPool;
   private final BatchVerifier verifier;
-  private final AttestationChurn attestationChurn;
 
   private final DirectProcessor<ReceivedAttestation> invalidAttestations = DirectProcessor.create();
   private final DirectProcessor<ReceivedAttestation> validAttestations = DirectProcessor.create();
+  private final DirectProcessor<IndexedAttestation> validIndexedAttestations =
+      DirectProcessor.create();
   private final DirectProcessor<ReceivedAttestation> unknownAttestations = DirectProcessor.create();
-  private final DirectProcessor<OffChainAggregates> offChainAggregates = DirectProcessor.create();
 
   public InMemoryAttestationPool(
       Publisher<ReceivedAttestation> source,
       Publisher<SlotNumber> newSlots,
-      Publisher<Checkpoint> justifiedCheckpoints,
       Publisher<Checkpoint> finalizedCheckpoints,
       Publisher<BeaconBlock> importedBlocks,
-      Publisher<BeaconTuple> chainHeads,
       Schedulers schedulers,
       TimeFrameFilter timeFrameFilter,
       SanityChecker sanityChecker,
       SignatureEncodingChecker encodingChecker,
       ProcessedAttestations processedFilter,
       UnknownAttestationPool unknownPool,
-      BatchVerifier batchVerifier,
-      AttestationChurn attestationChurn) {
+      BatchVerifier batchVerifier) {
     this.source = source;
     this.newSlots = newSlots;
-    this.justifiedCheckpoints = justifiedCheckpoints;
     this.finalizedCheckpoints = finalizedCheckpoints;
     this.importedBlocks = importedBlocks;
-    this.chainHeads = chainHeads;
     this.schedulers = schedulers;
     this.timeFrameFilter = timeFrameFilter;
     this.sanityChecker = sanityChecker;
@@ -80,7 +73,6 @@ public class InMemoryAttestationPool implements AttestationPool {
     this.processedFilter = processedFilter;
     this.unknownPool = unknownPool;
     this.verifier = batchVerifier;
-    this.attestationChurn = attestationChurn;
   }
 
   @Override
@@ -91,10 +83,8 @@ public class InMemoryAttestationPool implements AttestationPool {
     // create sources
     Flux<ReceivedAttestation> sourceFx = Flux.from(source);
     Flux<SlotNumber> newSlotsFx = Flux.from(newSlots);
-    Flux<Checkpoint> justifiedCheckpointsFx = Flux.from(justifiedCheckpoints);
     Flux<Checkpoint> finalizedCheckpointsFx = Flux.from(finalizedCheckpoints);
     Flux<BeaconBlock> importedBlocksFx = Flux.from(importedBlocks);
-    Flux<BeaconTuple> chainHeadsFx = Flux.from(chainHeads);
 
     // check time frames
     TimeProcessor timeProcessor =
@@ -126,28 +116,18 @@ public class InMemoryAttestationPool implements AttestationPool {
     VerificationProcessor verificationProcessor =
         new VerificationProcessor(verifier, parallelExecutor, verificationThrottle);
 
-    // feed churn
-    ChurnProcessor churnProcessor =
-        new ChurnProcessor(
-            attestationChurn,
-            schedulers,
-            newSlotsFx,
-            chainHeadsFx,
-            justifiedCheckpointsFx,
-            finalizedCheckpointsFx,
-            verificationProcessor.getValid());
-
     Scheduler outScheduler = schedulers.events().toReactor();
     // expose valid attestations
     Flux.from(verificationProcessor.getValid())
         .publishOn(outScheduler)
         .subscribe(validAttestations);
+    Flux.from(verificationProcessor.getValidIndexed())
+        .publishOn(outScheduler)
+        .subscribe(validIndexedAttestations);
     // expose not yet identified
     Flux.from(identificationProcessor.getUnknown())
         .publishOn(outScheduler)
         .subscribe(unknownAttestations);
-    // expose aggregates
-    churnProcessor.publishOn(outScheduler).subscribe(offChainAggregates);
     // expose invalid attestations
     Flux.merge(
             sanityProcessor.getInvalid(),
@@ -163,6 +143,16 @@ public class InMemoryAttestationPool implements AttestationPool {
   }
 
   @Override
+  public Publisher<Attestation> getValidUnboxed() {
+    return validAttestations.map(ReceivedAttestation::getMessage);
+  }
+
+  @Override
+  public Publisher<IndexedAttestation> getValidIndexed() {
+    return validIndexedAttestations;
+  }
+
+  @Override
   public Publisher<ReceivedAttestation> getInvalid() {
     return invalidAttestations;
   }
@@ -170,10 +160,5 @@ public class InMemoryAttestationPool implements AttestationPool {
   @Override
   public Publisher<ReceivedAttestation> getUnknownAttestations() {
     return unknownAttestations;
-  }
-
-  @Override
-  public Publisher<OffChainAggregates> getAggregates() {
-    return offChainAggregates;
   }
 }
