@@ -45,9 +45,9 @@ chainSpec:
       EPOCHS_PER_SLASHINGS_VECTOR: 64
 
   specHelpersOptions:
-    blsVerify: false
-    blsVerifyProofOfPossession: false
-    blsSign: false
+    blsVerify: true
+    blsVerifyProofOfPossession: true
+    blsSign: true
     enableCache: false
     # for interop, genesis time should be overridden with the specified value, so ignore computation
     computableGenesisTime: false
