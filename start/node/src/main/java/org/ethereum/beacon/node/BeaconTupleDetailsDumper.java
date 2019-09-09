@@ -49,6 +49,17 @@ public class BeaconTupleDetailsDumper {
     }
   }
 
+  public void dumpState(String fileName, BeaconState state) throws IOException {
+    Files.write(
+        Paths.get(dir, fileName + ".ssz"),
+        stateSerializer.apply(state).extractArray());
+  }
+
+  public void dumpBlock(String fileName, BeaconBlock block) throws IOException {
+    Files.write(
+        Paths.get(dir, fileName + ".ssz"), blockSerializer.apply(block).extractArray());
+  }
+
   public void dump(BeaconTupleDetails beaconTupleDetails) throws IOException {
     Optional<BeaconStateEx> preState = beaconTupleDetails.getPostSlotState();
     Optional<BeaconStateEx> postState = beaconTupleDetails.getPostBlockState();
@@ -59,14 +70,9 @@ public class BeaconTupleDetailsDumper {
       while (num.length() < 4) {
         num = "0" + num;
       }
-      Files.write(
-          Paths.get(dir, "block_" + num + ".ssz"), blockSerializer.apply(block).extractArray());
-      Files.write(
-          Paths.get(dir, "pre_state_" + num + ".ssz"),
-          stateSerializer.apply(preState.get()).extractArray());
-      Files.write(
-          Paths.get(dir, "post_state_" + num + ".ssz"),
-          stateSerializer.apply(postState.get()).extractArray());
+      dumpBlock("block_" + num, block);
+      dumpState("pre_state_" + num, preState.get());
+      dumpState("pre_state_" + num, postState.get());
     }
   }
 }

@@ -341,6 +341,12 @@ public class NodeCommandLauncher implements Runnable {
       } catch (IOException e) {
         throw new IllegalArgumentException("Couldn't initialize block dumper", e);
       }
+      // dump genesis state
+      try {
+        dumper.dumpState("genesis", initialState);
+      } catch (IOException e) {
+        logger.error("Cannot dump state", e);
+      }
       Flux.from(node.getBeaconChain().getBlockStatesStream())
           .subscribe(
               btd -> {
