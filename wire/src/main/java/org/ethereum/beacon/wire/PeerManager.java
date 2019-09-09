@@ -1,10 +1,9 @@
 package org.ethereum.beacon.wire;
 
+import java.util.List;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.stream.RxUtil;
 import org.reactivestreams.Publisher;
-
-import java.util.List;
 
 /** Manages connected peers and aggregates their `high-level` APIs */
 public interface PeerManager {
@@ -30,6 +29,10 @@ public interface PeerManager {
   /** Stream of currently active peers list */
   default Publisher<List<Peer>> activePeersStream() {
     return RxUtil.collect(activatedPeerStream(), disconnectedPeerStream());
+  }
+
+  default Publisher<List<Peer>> connectedPeersStream() {
+    return RxUtil.collect(connectedPeerStream(), disconnectedPeerStream());
   }
 
   /**

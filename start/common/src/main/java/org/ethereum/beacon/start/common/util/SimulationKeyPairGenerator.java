@@ -1,16 +1,15 @@
 package org.ethereum.beacon.start.common.util;
 
 import com.google.common.primitives.Bytes;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 import org.ethereum.beacon.crypto.BLS381;
 import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.crypto.bls.bc.BCParameters;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
-
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
 
 /**
  * Key pair generation utilities for simulation purposes.

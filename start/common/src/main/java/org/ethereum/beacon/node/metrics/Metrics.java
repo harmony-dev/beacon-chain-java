@@ -3,6 +3,10 @@ package org.ethereum.beacon.node.metrics;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.exporter.HTTPServer;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconStateEx;
@@ -11,11 +15,6 @@ import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.types.SlotNumber;
 import tech.pegasys.artemis.util.collections.Bitlist;
-
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Implements (some) metrics from Beacon chain metrics specs.

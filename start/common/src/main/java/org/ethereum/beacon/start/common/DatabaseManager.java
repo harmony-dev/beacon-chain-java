@@ -1,14 +1,13 @@
 package org.ethereum.beacon.start.common;
 
-import org.ethereum.beacon.core.types.Time;
-import org.ethereum.beacon.db.Database;
-import org.ethereum.beacon.db.InMemoryDatabase;
-import tech.pegasys.artemis.ethereum.core.Hash32;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import org.ethereum.beacon.core.types.Time;
+import org.ethereum.beacon.db.Database;
+import org.ethereum.beacon.db.InMemoryDatabase;
+import tech.pegasys.artemis.ethereum.core.Hash32;
 
 /**
  * DB Manager which incapsulates logic to create or remove/clean DB. This is probably an

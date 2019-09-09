@@ -1,7 +1,10 @@
 config:
   db: db
   networks:
-    - type: netty
+    # Libp2p based network conforming to spec
+    - type: libp2p
+      # TCP port the node should listen for incoming connections
+#      listenPort: 40001
 
   validator:
     contract: !emulator

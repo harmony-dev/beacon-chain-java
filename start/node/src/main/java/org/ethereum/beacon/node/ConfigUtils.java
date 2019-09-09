@@ -1,5 +1,8 @@
 package org.ethereum.beacon.node;
 
+import java.util.List;
+import java.util.Random;
+import java.util.stream.Collectors;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.ChainStart;
 import org.ethereum.beacon.core.operations.Deposit;
@@ -27,10 +30,6 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
-
-import java.util.List;
-import java.util.Random;
-import java.util.stream.Collectors;
 
 public class ConfigUtils {
 

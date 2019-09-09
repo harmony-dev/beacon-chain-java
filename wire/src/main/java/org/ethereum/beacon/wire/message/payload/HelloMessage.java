@@ -6,29 +6,25 @@ import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import org.ethereum.beacon.wire.message.RequestMessagePayload;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.uint.UInt64;
+import tech.pegasys.artemis.util.bytes.Bytes4;
 
 @SSZSerializable
 public class HelloMessage extends RequestMessagePayload {
   public static final int METHOD_ID = 0x0;
 
-  @SSZ(type = "uint8")
-  private final int networkId;
-  @SSZ private final UInt64 chainId;
-  @SSZ private final Hash32 latestFinalizedRoot;
-  @SSZ private final EpochNumber latestFinalizedEpoch;
-  @SSZ private final Hash32 bestRoot;
-  @SSZ private final SlotNumber bestSlot;
+  @SSZ private final Bytes4 fork;
+  @SSZ private final Hash32 finalizedRoot;
+  @SSZ private final EpochNumber finalizedEpoch;
+  @SSZ private final Hash32 headRoot;
+  @SSZ private final SlotNumber headSlot;
 
-  public HelloMessage(int networkId, UInt64 chainId,
-      Hash32 latestFinalizedRoot, EpochNumber latestFinalizedEpoch,
-      Hash32 bestRoot, SlotNumber bestSlot) {
-    this.networkId = networkId;
-    this.chainId = chainId;
-    this.latestFinalizedRoot = latestFinalizedRoot;
-    this.latestFinalizedEpoch = latestFinalizedEpoch;
-    this.bestRoot = bestRoot;
-    this.bestSlot = bestSlot;
+  public HelloMessage(Bytes4 fork, Hash32 finalizedRoot,
+      EpochNumber finalizedEpoch, Hash32 headRoot, SlotNumber headSlot) {
+    this.fork = fork;
+    this.finalizedRoot = finalizedRoot;
+    this.finalizedEpoch = finalizedEpoch;
+    this.headRoot = headRoot;
+    this.headSlot = headSlot;
   }
 
   @Override
@@ -36,39 +32,34 @@ public class HelloMessage extends RequestMessagePayload {
     return METHOD_ID;
   }
 
-  public int getNetworkId() {
-    return (byte) networkId;
+  public Bytes4 getFork() {
+    return fork;
   }
 
-  public UInt64 getChainId() {
-    return chainId;
+  public Hash32 getFinalizedRoot() {
+    return finalizedRoot;
   }
 
-  public Hash32 getLatestFinalizedRoot() {
-    return latestFinalizedRoot;
+  public EpochNumber getFinalizedEpoch() {
+    return finalizedEpoch;
   }
 
-  public EpochNumber getLatestFinalizedEpoch() {
-    return latestFinalizedEpoch;
+  public Hash32 getHeadRoot() {
+    return headRoot;
   }
 
-  public Hash32 getBestRoot() {
-    return bestRoot;
-  }
-
-  public SlotNumber getBestSlot() {
-    return bestSlot;
+  public SlotNumber getHeadSlot() {
+    return headSlot;
   }
 
   @Override
   public String toString() {
     return "HelloMessage{" +
-        "networkId=" + networkId +
-        ", chainId=" + chainId +
-        ", latestFinalizedRoot=" + latestFinalizedRoot +
-        ", latestFinalizedEpoch=" + latestFinalizedEpoch +
-        ", bestRoot=" + bestRoot +
-        ", bestSlot=" + bestSlot +
+        "fork=" + fork +
+        ", finalizedRoot=" + finalizedRoot +
+        ", finalizedEpoch=" + finalizedEpoch +
+        ", headRoot=" + headRoot +
+        ", headSlot=" + headSlot +
         '}';
   }
 }
