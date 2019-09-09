@@ -107,6 +107,10 @@ public class SSZMessageCodec<TRequest, TResponse> implements RpcMessageCodec<TRe
     }
   }
 
+  /**
+   * Encodes int as Protobuf varint
+   * Copied from https://github.com/netty/netty/blob/00afb19d7a37de21b35ce4f6cb3fa7f74809f2ab/codec/src/main/java/io/netty/handler/codec/protobuf/ProtobufVarint32LengthFieldPrepender.java#L58
+   */
   static void writeRawVarint32(ByteBuf out, int value) {
     while (true) {
       if ((value & ~0x7F) == 0) {
@@ -119,6 +123,10 @@ public class SSZMessageCodec<TRequest, TResponse> implements RpcMessageCodec<TRe
     }
   }
 
+  /**
+   * Decodes Protobuf varint
+   * Copied from: https://github.com/netty/netty/blob/00afb19d7a37de21b35ce4f6cb3fa7f74809f2ab/codec/src/main/java/io/netty/handler/codec/protobuf/ProtobufVarint32FrameDecoder.java#L73
+   */
   static int readRawVarint32(ByteBuf buffer) {
     if (!buffer.isReadable()) {
       return 0;

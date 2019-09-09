@@ -67,7 +67,7 @@ public class Libp2pPeerManager extends AbstractPeerManager implements Connection
     return connectedPeers.stream()
         .filter(p -> conn == p.connection)
         .findFirst()
-        .orElseThrow(() -> new IllegalStateException("Can't find a peer for connection: "+ conn));
+        .orElseThrow(() -> new IllegalStateException("Can't find a peer for connection: " + conn));
   }
 
   @Override
