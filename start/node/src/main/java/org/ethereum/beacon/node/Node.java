@@ -154,6 +154,24 @@ public class Node implements Runnable {
   )
   private String dbPrefix;
 
+  @CommandLine.Option(
+      names = {"--initial-deposit-count", "--validator-count"},
+      paramLabel = "initial-deposit-count",
+      description = {
+          "Specifies amount of initial deposits when constructing a genesis state."
+      }
+  )
+  private Integer initialDepositCount;
+
+  @CommandLine.Option(
+      names = "--dump-tuples",
+      paramLabel = "dump-tuples",
+      description = {
+        "Specifies whether to dump beacon tuples (state and block).",
+        "False by default"
+      })
+  private boolean dumpTuples = false;
+
   public String getName() {
     return name;
   }
@@ -196,6 +214,14 @@ public class Node implements Runnable {
 
   public String getDbPrefix() {
     return dbPrefix;
+  }
+
+  public Integer getInitialDepositCount() {
+    return initialDepositCount;
+  }
+
+  public boolean isDumpTuples() {
+    return dumpTuples;
   }
 
   public static void main(String[] args) {

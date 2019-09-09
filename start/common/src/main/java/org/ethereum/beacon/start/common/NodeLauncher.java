@@ -112,15 +112,11 @@ public class NodeLauncher {
     this.beaconChainStorage = beaconChainStorage;
     this.schedulers = schedulers;
     this.startSyncManager = startSyncManager;
+
+    createBeaconChainAndStuff();
   }
 
-  public void start() {
-    if (depositContract != null) {
-      Mono.from(depositContract.getChainStartMono()).subscribe(this::chainStarted);
-    }
-  }
-
-  void chainStarted(ChainStart chainStartEvent) {
+  private void createBeaconChainAndStuff() {
     perSlotTransition = new PerSlotTransition(spec);
     perBlockTransition = new PerBlockTransition(spec);
     perEpochTransition = new PerEpochTransition(spec);
@@ -140,6 +136,15 @@ public class NodeLauncher {
             stateVerifier,
             beaconChainStorage,
             schedulers);
+  }
+
+  public void start() {
+    if (depositContract != null) {
+      Mono.from(depositContract.getChainStartMono()).subscribe(this::chainStarted);
+    }
+  }
+
+  void chainStarted(ChainStart chainStartEvent) {
     beaconChain.init();
 
     slotTicker =

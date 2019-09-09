@@ -46,6 +46,7 @@ import org.ethereum.beacon.emulator.config.chainspec.SpecConstantsDataMerged;
 import org.ethereum.beacon.emulator.config.chainspec.SpecData;
 import org.ethereum.beacon.emulator.config.main.MainConfig;
 import org.ethereum.beacon.emulator.config.main.Signer.Insecure;
+import org.ethereum.beacon.emulator.config.main.ValidatorKeys;
 import org.ethereum.beacon.emulator.config.main.ValidatorKeys.Private;
 import org.ethereum.beacon.emulator.config.main.conract.EmulatorContract;
 import org.ethereum.beacon.emulator.config.main.network.Libp2pNetwork;
@@ -63,6 +64,7 @@ import org.ethereum.beacon.util.Objects;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import org.ethereum.beacon.wire.impl.libp2p.Libp2pLauncher;
 import org.jetbrains.annotations.NotNull;
+import reactor.core.publisher.Flux;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
@@ -153,6 +155,7 @@ public class NodeCommandLauncher implements Runnable {
     String initialStateFile = cliOptions.getInitialStateFile();
     ChainStart chainStart;
     BeaconStateEx initialState;
+    SerializerFactory serializerFactory = SerializerFactory.createSSZ(specConstants);
     if (initialStateFile == null) {
       chainStart = ConfigUtils.createChainStart(
           config.getConfig().getValidator().getContract(),
@@ -160,7 +163,6 @@ public class NodeCommandLauncher implements Runnable {
           config.getChainSpec().getSpecHelpersOptions().isBlsVerifyProofOfPossession());
       initialState = new InitialStateTransition(chainStart, spec).apply(spec.get_empty_block());
     } else {
-      SerializerFactory serializerFactory = SerializerFactory.createSSZ(specConstants);
       byte[] fileData;
       try {
         fileData = Files.readAllBytes(Paths.get(initialStateFile));
@@ -250,7 +252,7 @@ public class NodeCommandLauncher implements Runnable {
 
     SSZBeaconChainStorageFactory storageFactory =
         new SSZBeaconChainStorageFactory(
-            spec.getObjectHasher(), SerializerFactory.createSSZ(specConstants));
+            spec.getObjectHasher(), serializerFactory);
 
     String dbPrefix = config.getConfig().getDb();
     String startMode;
@@ -327,6 +329,33 @@ public class NodeCommandLauncher implements Runnable {
         beaconChainStorage,
         schedulers,
         true);
+
+    if (cliOptions.isDumpTuples()) {
+      BeaconTupleDetailsDumper dumper =
+          new BeaconTupleDetailsDumper(
+              "tuple_dump_" + config.getConfig().getName(), serializerFactory);
+      try {
+        dumper.init();
+      } catch (IOException e) {
+        throw new IllegalArgumentException("Couldn't initialize block dumper", e);
+      }
+      // dump genesis state
+      try {
+        dumper.dumpState("genesis", initialState);
+      } catch (IOException e) {
+        logger.error("Cannot dump state", e);
+      }
+      Flux.from(node.getBeaconChain().getBlockStatesStream())
+          .subscribe(
+              btd -> {
+                try {
+                  dumper.dump(btd);
+                } catch (IOException e) {
+                  logger.error("Cannot dump state", e);
+                }
+              });
+    }
+
     node.start();
 
     Runtime.getRuntime().addShutdownHook(new Thread(node::stop));
@@ -376,6 +405,14 @@ public class NodeCommandLauncher implements Runnable {
         config.getConfig().setName(cliOptions.getName());
       }
 
+      if (cliOptions.getInitialDepositCount() != null) {
+        if (config.getConfig().getValidator().getContract() instanceof EmulatorContract) {
+          EmulatorContract contract = (EmulatorContract) config.getConfig().getValidator().getContract();
+          ValidatorKeys.InteropKeys keys = new ValidatorKeys.InteropKeys();
+          keys.setCount(cliOptions.getInitialDepositCount());
+          contract.setKeys(Collections.singletonList(keys));
+        }
+      }
 
       if (cliOptions.getListenPort() != null || cliOptions.getActivePeers() != null) {
         Libp2pNetwork network = (Libp2pNetwork) config
