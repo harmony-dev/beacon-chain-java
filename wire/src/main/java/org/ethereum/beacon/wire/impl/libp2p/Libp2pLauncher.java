@@ -13,6 +13,7 @@ import io.libp2p.protocol.Ping;
 import io.libp2p.pubsub.gossip.Gossip;
 import io.libp2p.security.secio.SecIoSecureChannel;
 import io.libp2p.transport.tcp.TcpTransport;
+import io.netty.handler.logging.LogLevel;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,6 +45,13 @@ public class Libp2pLauncher {
   int gossipDLow = 2;
   int gossipDHigh = 4;
   int gossipDGossip = 3;
+
+  private boolean logWireCipher;
+  private boolean logWirePlain;
+  private boolean logMuxFrames;
+  private boolean logEthPubsub;
+  private boolean logEthRpc;
+
 
   BeaconChainSpec spec;
   Bytes4 fork;
@@ -78,6 +86,16 @@ public class Libp2pLauncher {
           b.getProtocols().add(new Ping());
           b.getProtocols().add(gossip);
           b.getProtocols().addAll(peerManager.rpcMethods.all());
+
+          if (logWireCipher) {
+            b.getDebug().getBeforeSecureHandler().setLogger(LogLevel.DEBUG, "wire.ciphered");
+          }
+          if (logWirePlain) {
+            b.getDebug().getAfterSecureHandler().setLogger(LogLevel.DEBUG, "wire.plain");
+          }
+          if (logMuxFrames) {
+            b.getDebug().getMuxFramesHandler().setLogger(LogLevel.DEBUG, "wire.mux");
+          }
 
           b.getConnectionHandlers().add(peerManager);
         });
@@ -160,5 +178,25 @@ public class Libp2pLauncher {
 
   public Host getHost() {
     return host;
+  }
+
+  public void setLogWireCipher(boolean logWireCipher) {
+    this.logWireCipher = logWireCipher;
+  }
+
+  public void setLogWirePlain(boolean logWirePlain) {
+    this.logWirePlain = logWirePlain;
+  }
+
+  public void setLogMuxFrames(boolean logMuxFrames) {
+    this.logMuxFrames = logMuxFrames;
+  }
+
+  public void setLogEthPubsub(boolean logEthPubsub) {
+    this.logEthPubsub = logEthPubsub;
+  }
+
+  public void setLogEthRpc(boolean logEthRpc) {
+    this.logEthRpc = logEthRpc;
   }
 }

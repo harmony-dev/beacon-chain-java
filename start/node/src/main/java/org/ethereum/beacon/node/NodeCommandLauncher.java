@@ -44,6 +44,7 @@ import org.ethereum.beacon.emulator.config.chainspec.SpecBuilder;
 import org.ethereum.beacon.emulator.config.chainspec.SpecConstantsData;
 import org.ethereum.beacon.emulator.config.chainspec.SpecConstantsDataMerged;
 import org.ethereum.beacon.emulator.config.chainspec.SpecData;
+import org.ethereum.beacon.emulator.config.main.Debug;
 import org.ethereum.beacon.emulator.config.main.MainConfig;
 import org.ethereum.beacon.emulator.config.main.Signer.Insecure;
 import org.ethereum.beacon.emulator.config.main.ValidatorKeys;
@@ -227,6 +228,14 @@ public class NodeCommandLauncher implements Runnable {
       }
       if (cfg.getPrivateKey() != null) {
         libp2pLauncher.setPrivKey(BytesValue.fromHexString(cfg.getPrivateKey()));
+      }
+      Debug debug = config.getConfig().getDebug();
+      if (debug != null) {
+        libp2pLauncher.setLogWireCipher(debug.isLogWireCipher());
+        libp2pLauncher.setLogWirePlain(debug.isLogWirePlain());
+        libp2pLauncher.setLogMuxFrames(debug.isLogMuxFrames());
+        libp2pLauncher.setLogEthPubsub(debug.isLogEthPubsub());
+        libp2pLauncher.setLogEthRpc(debug.isLogEthRpc());
       }
     } else {
       throw new IllegalArgumentException(
