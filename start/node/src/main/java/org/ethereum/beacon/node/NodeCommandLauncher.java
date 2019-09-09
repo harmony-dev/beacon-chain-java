@@ -47,6 +47,7 @@ import org.ethereum.beacon.emulator.config.chainspec.SpecConstantsDataMerged;
 import org.ethereum.beacon.emulator.config.chainspec.SpecData;
 import org.ethereum.beacon.emulator.config.main.MainConfig;
 import org.ethereum.beacon.emulator.config.main.Signer.Insecure;
+import org.ethereum.beacon.emulator.config.main.ValidatorKeys;
 import org.ethereum.beacon.emulator.config.main.ValidatorKeys.Private;
 import org.ethereum.beacon.emulator.config.main.conract.EmulatorContract;
 import org.ethereum.beacon.emulator.config.main.network.Libp2pNetwork;
@@ -378,6 +379,14 @@ public class NodeCommandLauncher implements Runnable {
         config.getConfig().setName(cliOptions.getName());
       }
 
+      if (cliOptions.getInitialDepositCount() != null) {
+        if (config.getConfig().getValidator().getContract() instanceof EmulatorContract) {
+          EmulatorContract contract = (EmulatorContract) config.getConfig().getValidator().getContract();
+          ValidatorKeys.InteropKeys keys = new ValidatorKeys.InteropKeys();
+          keys.setCount(cliOptions.getInitialDepositCount());
+          contract.setKeys(Collections.singletonList(keys));
+        }
+      }
 
       if (cliOptions.getListenPort() != null || cliOptions.getActivePeers() != null) {
         Libp2pNetwork network = (Libp2pNetwork) config

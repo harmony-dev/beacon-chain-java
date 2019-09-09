@@ -154,6 +154,15 @@ public class Node implements Runnable {
   )
   private String dbPrefix;
 
+  @CommandLine.Option(
+      names = {"--initial-deposit-count", "--validator-count"},
+      paramLabel = "initial-deposit-count",
+      description = {
+          "Specifies amount of initial deposits when constructing a genesis state."
+      }
+  )
+  private Integer initialDepositCount;
+
   public String getName() {
     return name;
   }
@@ -196,6 +205,10 @@ public class Node implements Runnable {
 
   public String getDbPrefix() {
     return dbPrefix;
+  }
+
+  public Integer getInitialDepositCount() {
+    return initialDepositCount;
   }
 
   public static void main(String[] args) {
