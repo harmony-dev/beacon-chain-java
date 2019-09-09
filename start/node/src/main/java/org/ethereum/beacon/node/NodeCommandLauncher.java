@@ -66,6 +66,7 @@ import org.ethereum.beacon.util.Objects;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import org.ethereum.beacon.wire.impl.libp2p.Libp2pLauncher;
 import org.jetbrains.annotations.NotNull;
+import reactor.core.publisher.Flux;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
@@ -156,6 +157,7 @@ public class NodeCommandLauncher implements Runnable {
     String initialStateFile = cliOptions.getInitialStateFile();
     ChainStart chainStart;
     BeaconStateEx initialState;
+    SerializerFactory serializerFactory = SerializerFactory.createSSZ(specConstants);
     if (initialStateFile == null) {
       chainStart = ConfigUtils.createChainStart(
           config.getConfig().getValidator().getContract(),
@@ -163,7 +165,6 @@ public class NodeCommandLauncher implements Runnable {
           config.getChainSpec().getSpecHelpersOptions().isBlsVerifyProofOfPossession());
       initialState = new InitialStateTransition(chainStart, spec).apply(spec.get_empty_block());
     } else {
-      SerializerFactory serializerFactory = SerializerFactory.createSSZ(specConstants);
       byte[] fileData;
       try {
         fileData = Files.readAllBytes(Paths.get(initialStateFile));
@@ -253,7 +254,7 @@ public class NodeCommandLauncher implements Runnable {
 
     SSZBeaconChainStorageFactory storageFactory =
         new SSZBeaconChainStorageFactory(
-            spec.getObjectHasher(), SerializerFactory.createSSZ(specConstants));
+            spec.getObjectHasher(), serializerFactory);
 
     String dbPrefix = config.getConfig().getDb();
     String startMode;
@@ -330,6 +331,27 @@ public class NodeCommandLauncher implements Runnable {
         beaconChainStorage,
         schedulers,
         true);
+
+    if (cliOptions.isDumpTuples()) {
+      BeaconTupleDetailsDumper dumper =
+          new BeaconTupleDetailsDumper(
+              "tuple_dump_" + config.getConfig().getName(), serializerFactory);
+      try {
+        dumper.init();
+      } catch (IOException e) {
+        throw new IllegalArgumentException("Couldn't initialize block dumper", e);
+      }
+      Flux.from(node.getBeaconChain().getBlockStatesStream())
+          .subscribe(
+              btd -> {
+                try {
+                  dumper.dump(btd);
+                } catch (IOException e) {
+                  logger.error("Cannot dump state", e);
+                }
+              });
+    }
+
     node.start();
 
     Runtime.getRuntime().addShutdownHook(new Thread(node::stop));

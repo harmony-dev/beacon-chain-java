@@ -163,6 +163,15 @@ public class Node implements Runnable {
   )
   private Integer initialDepositCount;
 
+  @CommandLine.Option(
+      names = "--dump-tuples",
+      paramLabel = "dump-tuples",
+      description = {
+        "Specifies whether to dump beacon tuples (state and block).",
+        "False by default"
+      })
+  private boolean dumpTuples = false;
+
   public String getName() {
     return name;
   }
@@ -209,6 +218,10 @@ public class Node implements Runnable {
 
   public Integer getInitialDepositCount() {
     return initialDepositCount;
+  }
+
+  public boolean isDumpTuples() {
+    return dumpTuples;
   }
 
   public static void main(String[] args) {
