@@ -57,6 +57,8 @@ public class Libp2pPeer implements Peer {
   final Connection connection;
   private final RpcMethods rpcMethods;
   final CompletableFuture<HelloMessage> remoteHello = new CompletableFuture<>();
+  private final Libp2pPeerConnection peerConnection = new Libp2pPeerConnection();
+  private final Libp2pWireSync wireSync = new Libp2pWireSync();
 
   public Libp2pPeer(Connection connection, RpcMethods rpcMethods) {
     this.connection = connection;
@@ -74,12 +76,12 @@ public class Libp2pPeer implements Peer {
 
   @Override
   public PeerConnection getConnection() {
-    return new Libp2pPeerConnection();
+    return peerConnection;
   }
 
   @Override
   public WireApiSync getSyncApi() {
-    return new Libp2pWireSync();
+    return wireSync;
   }
 
   @Override
