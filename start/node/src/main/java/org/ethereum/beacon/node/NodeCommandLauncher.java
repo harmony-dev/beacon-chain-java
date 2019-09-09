@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.TimeZone;
 import java.util.concurrent.ThreadFactory;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -50,7 +49,6 @@ import org.ethereum.beacon.emulator.config.main.Signer.Insecure;
 import org.ethereum.beacon.emulator.config.main.ValidatorKeys.Private;
 import org.ethereum.beacon.emulator.config.main.conract.EmulatorContract;
 import org.ethereum.beacon.emulator.config.main.network.Libp2pNetwork;
-import org.ethereum.beacon.emulator.config.main.network.Libp2pNetwork.Peer;
 import org.ethereum.beacon.emulator.config.main.network.NettyNetwork;
 import org.ethereum.beacon.emulator.config.main.network.Network;
 import org.ethereum.beacon.node.metrics.Metrics;
@@ -222,8 +220,8 @@ public class NodeCommandLauncher implements Runnable {
       if (cfg.getListenPort() != null) {
         libp2pLauncher.setListenPort(cfg.getListenPort());
       }
-      for (Peer peer : cfg.getActivePeers()) {
-        libp2pLauncher.addActivePeer(peer.getAddr(), peer.getId());
+      for (String peer : cfg.getActivePeers()) {
+        libp2pLauncher.addActivePeer(peer);
       }
       if (cfg.getPrivateKey() != null) {
         libp2pLauncher.setPrivKey(BytesValue.fromHexString(cfg.getPrivateKey()));
@@ -397,18 +395,7 @@ public class NodeCommandLauncher implements Runnable {
         }
 
         if (cliOptions.getActivePeers() != null) {
-          network.setActivePeers(
-              cliOptions
-                  .getActivePeers()
-                  .stream()
-                  .map(
-                      a -> {
-                        int idx = a.indexOf(":");
-                        if (idx < 0)
-                          throw new ConfigException("Invalid peer URL formal: '" + a + "'");
-                        return new Peer(a.substring(0, idx), a.substring(idx + 1));
-                      })
-                  .collect(Collectors.toList()));
+          network.setActivePeers(cliOptions.getActivePeers());
         }
       }
 

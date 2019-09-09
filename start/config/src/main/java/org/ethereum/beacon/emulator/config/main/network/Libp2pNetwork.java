@@ -5,32 +5,6 @@ import java.util.List;
 
 public class Libp2pNetwork extends Network {
 
-  public static class Peer {
-    private String addr;
-    private String id;
-
-    public Peer(String addr, String id) {
-      this.addr = addr;
-      this.id = id;
-    }
-
-    public String getAddr() {
-      return addr;
-    }
-
-    public void setAddr(String addr) {
-      this.addr = addr;
-    }
-
-    public String getId() {
-      return id;
-    }
-
-    public void setId(String id) {
-      this.id = id;
-    }
-  }
-
   public static class GossipOptions {
     Integer gossipD;
     Integer gossipDLow;
@@ -108,7 +82,7 @@ public class Libp2pNetwork extends Network {
 
   private Integer listenPort;
   private String privateKey;
-  private List<Peer> activePeers = new ArrayList<>();
+  private List<String> activePeers = new ArrayList<>();
   private GossipOptions gossipOptions;
 
   public Integer getListenPort() {
@@ -119,12 +93,12 @@ public class Libp2pNetwork extends Network {
     this.listenPort = listenPort;
   }
 
-  public List<Peer> getActivePeers() {
+  public List<String> getActivePeers() {
     return activePeers;
   }
 
   public void setActivePeers(
-      List<Peer> activePeers) {
+      List<String> activePeers) {
     this.activePeers = activePeers;
   }
 

@@ -27,7 +27,6 @@ import org.ethereum.beacon.wire.WireApiSub;
 import org.ethereum.beacon.wire.WireApiSync;
 import org.ethereum.beacon.wire.impl.libp2p.encoding.RpcMessageCodecFactory;
 import org.ethereum.beacon.wire.impl.libp2p.encoding.SSZMessageCodec;
-import org.javatuples.Pair;
 import org.reactivestreams.Publisher;
 import tech.pegasys.artemis.util.bytes.Bytes4;
 import tech.pegasys.artemis.util.bytes.BytesValue;
@@ -35,8 +34,8 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
 public class Libp2pLauncher {
   private static final Logger logger = LogManager.getLogger(Libp2pLauncher.class);
 
-  int listenPort = 40002;
-  List<Pair<Multiaddr, PeerId>> activePeers = new ArrayList<>();
+  Integer listenPort = null;
+  List<Multiaddr> activePeers = new ArrayList<>();
   PrivKey privKey;
   int activePeerReconnectTimeoutSec = 10;
 
@@ -72,7 +71,9 @@ public class Libp2pLauncher {
           b.getTransports().add(TcpTransport::new);
           b.getSecureChannels().add(SecIoSecureChannel::new);
           b.getMuxers().add(MplexStreamMuxer::new);
-          b.getNetwork().listen("/ip4/0.0.0.0/tcp/" + listenPort);
+          if (listenPort != null) {
+            b.getNetwork().listen("/ip4/0.0.0.0/tcp/" + listenPort);
+          }
 
           b.getProtocols().add(new Ping());
           b.getProtocols().add(gossip);
@@ -86,30 +87,30 @@ public class Libp2pLauncher {
     logger.info("Starting libp2p network...");
     CompletableFuture<Void> ret = host.start().thenApply(i -> {
       logger.info("Listening for connections on port " + listenPort + " with peerId " + PeerId
-          .fromPubKey(privKey.publicKey()).toHex());
+          .fromPubKey(privKey.publicKey()).toBase58());
       return null;
     });
 
-    for (Pair<Multiaddr, PeerId> activePeer : activePeers) {
-      connectActively(activePeer.getValue0(), activePeer.getValue1());
+    for (Multiaddr activePeer : activePeers) {
+      connectActively(activePeer);
     }
 
     return ret;
   }
 
-  void connectActively(Multiaddr addr, PeerId id) {
-    logger.info("Connecting to " + addr + " peerId: " + id.toHex());
-    host.getNetwork().connect(id, addr).whenComplete((conn, t) -> {
+  void connectActively(Multiaddr addr) {
+    logger.info("Connecting to " + addr);
+    host.getNetwork().connect(addr).whenComplete((conn, t) -> {
       if (t != null) {
         logger.info("Connection to " + addr + " failed. Will retry shortly : " + t);
         schedulers.events().executeWithDelay(Duration.ofSeconds(activePeerReconnectTimeoutSec), () -> {
-          connectActively(addr, id);
+          connectActively(addr);
         });
       } else {
         conn.closeFuture().thenAccept(ignore -> {
           logger.info("Connection to " + addr + " closed. Will retry shortly");
           schedulers.events().executeWithDelay(Duration.ofSeconds(activePeerReconnectTimeoutSec), () -> {
-            connectActively(addr, id);
+            connectActively(addr);
           });
         });
       }
@@ -124,8 +125,8 @@ public class Libp2pLauncher {
     this.privKey = Secp256k1Kt.unmarshalSecp256k1PrivateKey(secp256k1PrivateKeyBytes.getArrayUnsafe());
   }
 
-  public void addActivePeer(String multiaddr, String hexPeerId) {
-    activePeers.add(Pair.with(new Multiaddr(multiaddr), PeerId.fromHex(hexPeerId)));
+  public void addActivePeer(String multiaddr) {
+    activePeers.add(new Multiaddr(multiaddr));
   }
 
   public void setSpec(BeaconChainSpec spec) {

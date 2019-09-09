@@ -52,8 +52,8 @@ public class Node implements Runnable {
       split = ",",
       description = {
           "Peers that node is actively connecting to.",
-          "URL format: <multiaddress>:<node id hex>",
-          "URL sample: /ip4/10.0.0.128/tcp/40001:11111111111111111111111111111111111111111111111111111111111111111111"
+          "URL format: <network multiaddress>/p2p/<node id>",
+          "URL sample: /ip4/10.0.0.128/tcp/40001/p2p/16Uiu2HAmCQHi9nZQrWxaxoWVW5Hv5rvoSAkH6rqSkTi9PnPNZH4r"
       }
   )
   private List<String> activePeers;

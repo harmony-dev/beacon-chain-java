@@ -6,14 +6,14 @@ config:
   networks:
     # Libp2p based network conforming to spec
     - type: libp2p
+      privateKey: f67c4032a7ff79bbfa7a780331b235c4eb681d51a0704cb1562064fb6c4bced4
+
       # TCP port the node should listen for incoming connections
       listenPort: 40001
       # list of remote peers this peer will be actively connecting to
       activePeers:
-        - addr: /ip4/127.0.0.1/tcp/40002
-          id: 0x11111111111111111111111111111111111111111111111111111111111111111111
-        - addr: /ip4/127.0.0.1/tcp/40003
-          id: 0x22222222222222222222222222222222222222222222222222222222222222222222
+        - /ip4/127.0.0.1/tcp/40002/p2p/16Uiu2HAmCQHi9nZQrWxaxoWVW5Hv5rvoSAkH6rqSkTi9PnPNZH4r
+        - /ip4/127.0.0.1/tcp/40003/p2p/16Uiu2HAkuqGKz8D6khfrnJnDrN5VxWWCoLU8Aq4eCFJuyXmfakB5
 
   # Config for a validator service
   validator:
