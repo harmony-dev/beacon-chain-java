@@ -7,10 +7,14 @@ import io.libp2p.core.multistream.Mode;
 import io.libp2p.core.multistream.Multistream;
 import io.libp2p.core.multistream.ProtocolBinding;
 import io.libp2p.core.multistream.ProtocolMatcher;
+import io.libp2p.etc.util.netty.mux.RemoteWriteClosed;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.util.ReferenceCounted;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.ethereum.beacon.wire.exceptions.WireRpcClosedException;
 import org.ethereum.beacon.wire.exceptions.WireRpcException;
@@ -118,17 +122,37 @@ public abstract class Libp2pMethodHandler<TRequest, TResponse>
   class RequesterHandler extends AbstractHandler {
     private ChannelHandlerContext ctx;
     private CompletableFuture<TResponse> respFuture;
+    private List<ByteBuf> chunks = new ArrayList<>();
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, ByteBuf byteBuf) throws Exception {
       if (respFuture == null) {
         throw new WireRpcMalformedException("Some data received prior to request: " + byteBuf);
       }
-      Pair<TResponse, Throwable> response = responseCodec.deserialize(byteBuf);
-      if (response.getValue0() != null) {
-        respFuture.complete(response.getValue0());
-      } else {
-        respFuture.completeExceptionally(response.getValue1());
+      byteBuf.retain();
+      chunks.add(byteBuf);
+    }
+
+    @Override
+    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+      if (evt instanceof RemoteWriteClosed) {
+        flushChunks();
+      }
+    }
+
+    private void flushChunks() {
+      try {
+        ByteBuf allChunks = Unpooled.wrappedBuffer(chunks.toArray(new ByteBuf[0]));
+        Pair<TResponse, Throwable> response = responseCodec.deserialize(allChunks);
+        if (response.getValue0() != null) {
+          respFuture.complete(response.getValue0());
+        } else {
+          respFuture.completeExceptionally(response.getValue1());
+        }
+      } catch (Exception e) {
+        respFuture.completeExceptionally(e);
+      } finally {
+        chunks.forEach(ReferenceCounted::release);
       }
     }
 
