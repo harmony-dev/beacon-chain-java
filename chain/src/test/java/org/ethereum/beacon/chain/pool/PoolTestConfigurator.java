@@ -59,8 +59,10 @@ public class PoolTestConfigurator {
     protected DirectProcessor<ReceivedAttestation> source = DirectProcessor.create();
 
     protected Attestation createAttestation(BytesValue someValue) {
-        final AttestationData attestationData = createAttestationData();
+        return createAttestation(someValue, createAttestationData());
+    }
 
+    protected Attestation createAttestation(BytesValue someValue, AttestationData attestationData) {
         return new Attestation(
                 Bitlist.of(someValue.size() * 8, someValue, specConstants.getMaxValidatorsPerCommittee().getValue()),
                 attestationData,
@@ -69,12 +71,12 @@ public class PoolTestConfigurator {
                 specConstants);
     }
 
-    protected AttestationData createAttestationData() {
+    private AttestationData createAttestationData() {
 
         return new AttestationData(
                 Hashes.sha256(BytesValue.fromHexString("aa")),
                 new Checkpoint(EpochNumber.of(231), Hashes.sha256(BytesValue.fromHexString("bb"))),
-                new Checkpoint(EpochNumber.of(1), Hashes.sha256(BytesValue.fromHexString("cc"))),
+                new Checkpoint(EpochNumber.of(232), Hashes.sha256(BytesValue.fromHexString("cc"))),
                 Crosslink.EMPTY);
     }
 }
