@@ -169,6 +169,11 @@ public class NodeLauncher {
             obs -> {
               Metrics.onNewState(spec, obs);
             });
+    Flux.from(observableStateProcessor.getHeadStream())
+        .subscribe(
+            head -> {
+              Metrics.onHeadChanged(spec, head);
+            });
     observableStateProcessor.start();
 
     SSZSerializer ssz = new SSZBuilder()

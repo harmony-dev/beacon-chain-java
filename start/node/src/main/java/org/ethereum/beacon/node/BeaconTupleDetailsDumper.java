@@ -72,7 +72,7 @@ public class BeaconTupleDetailsDumper {
       }
       dumpBlock("block_" + num, block);
       dumpState("pre_state_" + num, preState.get());
-      dumpState("pre_state_" + num, postState.get());
+      dumpState("post_state_" + num, postState.get());
     }
   }
 }
