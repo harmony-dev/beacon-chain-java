@@ -7,7 +7,6 @@ import io.libp2p.core.multistream.Mode;
 import io.libp2p.core.multistream.Multistream;
 import io.libp2p.core.multistream.ProtocolBinding;
 import io.libp2p.core.multistream.ProtocolMatcher;
-import io.libp2p.etc.util.netty.mux.RemoteWriteClosed;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
@@ -22,6 +21,7 @@ import org.ethereum.beacon.wire.exceptions.WireRpcMalformedException;
 import org.ethereum.beacon.wire.impl.libp2p.Libp2pMethodHandler.Controller;
 import org.ethereum.beacon.wire.impl.libp2p.encoding.MessageCodec;
 import org.ethereum.beacon.wire.impl.libp2p.encoding.RpcMessageCodec;
+import org.ethereum.beacon.wire.impl.libp2p.encoding.SSZMessageCodec;
 import org.javatuples.Pair;
 import org.jetbrains.annotations.NotNull;
 
@@ -129,30 +129,32 @@ public abstract class Libp2pMethodHandler<TRequest, TResponse>
       if (respFuture == null) {
         throw new WireRpcMalformedException("Some data received prior to request: " + byteBuf);
       }
+
       byteBuf.retain();
       chunks.add(byteBuf);
-    }
-
-    @Override
-    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
-      if (evt instanceof RemoteWriteClosed) {
-        flushChunks();
+      Pair<TResponse, Throwable> response = tryRead();
+      if (response != null) {
+        try {
+          if (response.getValue0() != null) {
+            respFuture.complete(response.getValue0());
+          } else {
+            respFuture.completeExceptionally(response.getValue1());
+          }
+        } catch (Exception e) {
+          respFuture.completeExceptionally(e);
+        } finally {
+          chunks.forEach(ReferenceCounted::release);
+        }
       }
     }
 
-    private void flushChunks() {
-      try {
-        ByteBuf allChunks = Unpooled.wrappedBuffer(chunks.toArray(new ByteBuf[0]));
-        Pair<TResponse, Throwable> response = responseCodec.deserialize(allChunks);
-        if (response.getValue0() != null) {
-          respFuture.complete(response.getValue0());
-        } else {
-          respFuture.completeExceptionally(response.getValue1());
-        }
-      } catch (Exception e) {
-        respFuture.completeExceptionally(e);
-      } finally {
-        chunks.forEach(ReferenceCounted::release);
+    private Pair<TResponse, Throwable> tryRead() {
+      ByteBuf allChunks = Unpooled.wrappedBuffer(chunks.toArray(new ByteBuf[0]));
+      allChunks.readByte();
+      if (SSZMessageCodec.readRawVarint32(allChunks) == allChunks.readableBytes()) {
+        return responseCodec.deserialize(allChunks.readerIndex(0));
+      } else {
+        return null;
       }
     }
 
@@ -187,6 +189,7 @@ public abstract class Libp2pMethodHandler<TRequest, TResponse>
 
     @Override
     public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
+      chunks.forEach(ReferenceCounted::release);
       WireRpcClosedException exception = new WireRpcClosedException("Stream closed.");
       activeFuture.completeExceptionally(exception);
       respFuture.completeExceptionally(exception);

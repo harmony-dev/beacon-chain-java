@@ -84,6 +84,7 @@ public class WireApiSyncRouter implements WireApiSync {
   @Override
   public CompletableFuture<Feedback<List<BeaconBlock>>> requestBlocks(
       BlockRequestMessage requestMessage, ObjectHasher<Hash32> hasher) {
+    logger.info("request blocks: {}", requestMessage);
     return submitAsyncTask(api -> api.requestBlocks(requestMessage, hasher));
   }
 
