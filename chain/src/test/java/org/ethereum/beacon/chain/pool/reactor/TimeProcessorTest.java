@@ -16,17 +16,19 @@ import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.schedulers.ControlledSchedulers;
 import org.ethereum.beacon.schedulers.Schedulers;
+import org.ethereum.beacon.types.p2p.NodeId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.DirectProcessor;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
-import reactor.test.StepVerifier;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.collections.Bitlist;
 import tech.pegasys.artemis.util.uint.UInt64;
 
+import java.time.Duration;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.ethereum.beacon.chain.pool.AttestationPool.MAX_ATTESTATION_LOOKAHEAD;
 
 class TimeProcessorTest {
@@ -71,32 +73,36 @@ class TimeProcessorTest {
     private DirectProcessor<ReceivedAttestation> source = DirectProcessor.create();
     final FluxSink<ReceivedAttestation> sourceSink = source.sink();
 
-    private Flux<Checkpoint> finalizedCheckpoints = Flux.empty();
-    private Flux<SlotNumber> newSlots = Flux.empty();
+    private DirectProcessor<Checkpoint> finalizedCheckpoints = DirectProcessor.create();
+    private DirectProcessor<SlotNumber> newSlots = DirectProcessor.create();
 
     @BeforeEach
     void setUp() {
 
         final TimeFrameFilter timeFrameFilter = new TimeFrameFilter(spec, MAX_ATTESTATION_LOOKAHEAD);
-        timeFrameFilter.feedFinalizedCheckpoint(checkpoint);
-        timeFrameFilter.feedNewSlot(slotNumber);
-
-
         timeProcessor = new TimeProcessor(timeFrameFilter, schedulers, source, finalizedCheckpoints, newSlots);
-        StepVerifier.create(timeProcessor)
-                .verifyComplete();
+        finalizedCheckpoints.onNext(this.checkpoint);
+        newSlots.onNext(slotNumber);
 
-//        timeProcessor.blockFirst()
-//        sourceSink.next();
-
-//        schedulers.addTime(1);
-
+        schedulers.addTime(Duration.ofSeconds(5));
     }
-
 
     @Test
     void testValidAttestation() {
+        final NodeId sender = new NodeId(new byte[100]);
+        final Attestation message = createAttestation(BytesValue.fromHexString("aa"));
+        final ReceivedAttestation attestation = new ReceivedAttestation(sender, message);
+        source.onNext(attestation);
 
+        timeProcessor.subscribe(s -> {
+            assertThat(s.getSender())
+                    .isNotNull()
+                    .isEqualTo(sender);
+
+            assertThat(s.getMessage())
+                    .isNotNull()
+                    .isEqualTo(message);
+        });
     }
 
     private Attestation createAttestation(BytesValue someValue) {

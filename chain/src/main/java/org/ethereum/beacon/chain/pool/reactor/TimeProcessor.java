@@ -43,11 +43,18 @@ public class TimeProcessor extends Flux<ReceivedAttestation> {
 
     Scheduler scheduler = schedulers.newSingleThreadDaemon("pool-time-processor").toReactor();
     out = new SimpleProcessor<>(scheduler, "TimeProcessor.out");
-    Flux.from(source).publishOn(scheduler).subscribe(this::hookOnNext);
+
+    Flux.from(source)
+            .publishOn(scheduler)
+            .subscribe(this::hookOnNext);
+
     Flux.from(finalizedCheckpoints)
         .publishOn(scheduler)
         .subscribe(this.filter::feedFinalizedCheckpoint);
-    Flux.from(newSlots).publishOn(scheduler).subscribe(this.filter::feedNewSlot);
+
+    Flux.from(newSlots)
+            .publishOn(scheduler)
+            .subscribe(this.filter::feedNewSlot);
   }
 
   private void hookOnNext(ReceivedAttestation attestation) {

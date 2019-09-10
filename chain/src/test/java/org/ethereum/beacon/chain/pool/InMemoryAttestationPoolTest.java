@@ -1,13 +1,6 @@
 package org.ethereum.beacon.chain.pool;
 
-import static org.ethereum.beacon.chain.pool.AttestationPool.ATTESTATION_CHURN_SIZE;
-import static org.ethereum.beacon.chain.pool.AttestationPool.MAX_ATTESTATION_LOOKAHEAD;
-import static org.ethereum.beacon.chain.pool.AttestationPool.MAX_PROCESSED_ATTESTATIONS;
-import static org.ethereum.beacon.chain.pool.AttestationPool.MAX_UNKNOWN_ATTESTATIONS;
-
-import java.util.Collections;
 import org.ethereum.beacon.chain.BeaconTuple;
-import org.ethereum.beacon.chain.DefaultBeaconChain;
 import org.ethereum.beacon.chain.MutableBeaconChain;
 import org.ethereum.beacon.chain.pool.checker.SanityChecker;
 import org.ethereum.beacon.chain.pool.checker.SignatureEncodingChecker;
@@ -63,6 +56,13 @@ import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.collections.Bitlist;
 import tech.pegasys.artemis.util.uint.UInt64;
+
+import java.util.Collections;
+
+import static org.ethereum.beacon.chain.pool.AttestationPool.ATTESTATION_CHURN_SIZE;
+import static org.ethereum.beacon.chain.pool.AttestationPool.MAX_ATTESTATION_LOOKAHEAD;
+import static org.ethereum.beacon.chain.pool.AttestationPool.MAX_PROCESSED_ATTESTATIONS;
+import static org.ethereum.beacon.chain.pool.AttestationPool.MAX_UNKNOWN_ATTESTATIONS;
 
 class InMemoryAttestationPoolTest {
 
@@ -278,21 +278,23 @@ class InMemoryAttestationPoolTest {
                 spec.getObjectHasher(), SerializerFactory.createSSZ(spec.getConstants()))
                 .create(database);
 
-        return new DefaultBeaconChain(
-                spec,
-                initialTransition,
-                new EmptySlotTransition(
-                        new ExtendedSlotTransition(new PerEpochTransition(spec) {
-                            @Override
-                            public BeaconStateEx apply(BeaconStateEx stateEx) {
-                                return perEpochTransition.apply(stateEx);
-                            }
-                        }, perSlotTransition, spec)),
-                perBlockTransition,
-                blockVerifier,
-                stateVerifier,
-                chainStorage,
-                schedulers);
+//        return new DefaultBeaconChain(
+//                spec,
+//                initialTransition,
+//                new EmptySlotTransition(
+//                        new ExtendedSlotTransition(new PerEpochTransition(spec) {
+//                            @Override
+//                            public BeaconStateEx apply(BeaconStateEx stateEx) {
+//                                return perEpochTransition.apply(stateEx);
+//                            }
+//                        }, perSlotTransition, spec)),
+//                perBlockTransition,
+//                blockVerifier,
+//                stateVerifier,
+//                chainStorage,
+//                schedulers);
+
+        return null;
     }
 
     private BeaconTuple createBlock(
