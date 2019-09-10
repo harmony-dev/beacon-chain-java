@@ -189,7 +189,6 @@ public abstract class Libp2pMethodHandler<TRequest, TResponse>
 
     @Override
     public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
-      chunks.forEach(ReferenceCounted::release);
       WireRpcClosedException exception = new WireRpcClosedException("Stream closed.");
       activeFuture.completeExceptionally(exception);
       respFuture.completeExceptionally(exception);
