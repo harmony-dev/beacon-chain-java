@@ -6,7 +6,7 @@ import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import org.ethereum.beacon.wire.message.ResponseMessagePayload;
 
-@SSZSerializable
+@SSZSerializable(skipContainer = true)
 public class BlockResponseMessage extends ResponseMessagePayload {
 
   @SSZ private final List<BeaconBlock> blocks;

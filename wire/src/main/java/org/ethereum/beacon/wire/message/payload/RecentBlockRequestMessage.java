@@ -6,7 +6,7 @@ import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import org.ethereum.beacon.wire.message.RequestMessagePayload;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
-@SSZSerializable
+@SSZSerializable(skipContainer = true)
 public class RecentBlockRequestMessage extends RequestMessagePayload {
   public static final int METHOD_ID = 0x0E;
 
