@@ -8,7 +8,9 @@ config:
       privateKey: f67c4032a7ff79bbfa7a780331b235c4eb681d51a0704cb1562064fb6c4bced4
 
   debug:
-    logWireCipher: true
+    logWireCipher: false
+    logMuxFrames:  true
+    logEthPubsub:  true
 
   validator:
     contract: !emulator

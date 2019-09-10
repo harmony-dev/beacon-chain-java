@@ -22,6 +22,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.chain.BeaconTupleDetails;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
+import org.ethereum.beacon.core.BeaconBlock;
+import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.ssz.SSZSerializer;
 import org.ethereum.beacon.wire.WireApiSub;
@@ -29,6 +31,7 @@ import org.ethereum.beacon.wire.WireApiSync;
 import org.ethereum.beacon.wire.impl.libp2p.encoding.RpcMessageCodecFactory;
 import org.ethereum.beacon.wire.impl.libp2p.encoding.SSZMessageCodec;
 import org.reactivestreams.Publisher;
+import reactor.core.publisher.Flux;
 import tech.pegasys.artemis.util.bytes.Bytes4;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
@@ -69,7 +72,8 @@ public class Libp2pLauncher {
     }
     Gossip gossip = new Gossip(); // TODO gossip params
     RpcMessageCodecFactory rpcCodecFactory = SSZMessageCodec.createFactory(sszSerializer);
-    WireApiSub wireApiSub = new GossipWireApiSub(sszSerializer, gossip.getApi(), privKey);
+    GossipWireApiSub gossipSub = new GossipWireApiSub(sszSerializer, gossip.getApi(), privKey);
+    WireApiSub wireApiSub = logEthPubsub ? new DebugWireApiSub(gossipSub, spec) : gossipSub;
     peerManager = new Libp2pPeerManager(
         spec, fork, schedulers, headStream, wireApiSub, rpcCodecFactory, wireApiSyncServer);
 
@@ -198,5 +202,55 @@ public class Libp2pLauncher {
 
   public void setLogEthRpc(boolean logEthRpc) {
     this.logEthRpc = logEthRpc;
+  }
+
+  private static final class DebugWireApiSub implements WireApiSub {
+    private final WireApiSub apiSub;
+    private final BeaconChainSpec spec;
+    private final Logger logger = LogManager.getLogger("wire.pubsub");
+
+    public DebugWireApiSub(WireApiSub apiSub, BeaconChainSpec spec) {
+      this.apiSub = apiSub;
+      this.spec = spec;
+
+      Flux.from(apiSub.inboundBlocksStream())
+          .subscribe(
+              block ->
+                  logger.debug(
+                      "received block: {}",
+                      block.toString(spec.getConstants(), null, spec::signing_root)));
+
+      Flux.from(apiSub.inboundAttestationsStream())
+          .subscribe(
+              attestation ->
+                  logger.debug(
+                      "received attestation: {}",
+                      attestation.toString(spec.getConstants(), null)));
+    }
+
+    @Override
+    public void sendProposedBlock(BeaconBlock block) {
+      apiSub.sendProposedBlock(block);
+      logger.debug(
+          "gossip produced block: {}",
+          block.toString(spec.getConstants(), null, spec::signing_root));
+    }
+
+    @Override
+    public void sendAttestation(Attestation attestation) {
+      apiSub.sendAttestation(attestation);
+      logger.debug(
+          "gossip produced attestation: {}", attestation.toString(spec.getConstants(), null));
+    }
+
+    @Override
+    public Publisher<BeaconBlock> inboundBlocksStream() {
+      return apiSub.inboundBlocksStream();
+    }
+
+    @Override
+    public Publisher<Attestation> inboundAttestationsStream() {
+      return apiSub.inboundAttestationsStream();
+    }
   }
 }
