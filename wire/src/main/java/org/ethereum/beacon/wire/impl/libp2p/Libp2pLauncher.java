@@ -9,6 +9,7 @@ import io.libp2p.core.dsl.BuildersJKt;
 import io.libp2p.core.multiformats.Multiaddr;
 import io.libp2p.crypto.keys.Secp256k1Kt;
 import io.libp2p.mux.mplex.MplexStreamMuxer;
+import io.libp2p.protocol.Identify;
 import io.libp2p.protocol.Ping;
 import io.libp2p.pubsub.gossip.Gossip;
 import io.libp2p.security.secio.SecIoSecureChannel;
@@ -88,6 +89,7 @@ public class Libp2pLauncher {
           }
 
           b.getProtocols().add(new Ping());
+          b.getProtocols().add(new Identify());
           b.getProtocols().add(gossip);
           b.getProtocols().addAll(peerManager.rpcMethods.all());
 
