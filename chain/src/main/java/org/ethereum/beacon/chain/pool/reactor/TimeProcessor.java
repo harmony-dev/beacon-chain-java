@@ -48,7 +48,10 @@ public class TimeProcessor extends Flux<ReceivedAttestation> {
     Flux.from(finalizedCheckpoints)
         .publishOn(scheduler)
         .subscribe(this.filter::feedFinalizedCheckpoint);
-    Flux.from(newSlots).publishOn(scheduler).subscribe(this.filter::feedNewSlot);
+
+    Flux.from(newSlots)
+            .publishOn(scheduler)
+            .subscribe(this.filter::feedNewSlot);
   }
 
   private void hookOnNext(ReceivedAttestation attestation) {
