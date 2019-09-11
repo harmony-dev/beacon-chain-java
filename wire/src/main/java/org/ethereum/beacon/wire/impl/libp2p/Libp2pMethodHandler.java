@@ -1,5 +1,7 @@
 package org.ethereum.beacon.wire.impl.libp2p;
 
+import static io.netty.buffer.Unpooled.wrappedBuffer;
+
 import io.libp2p.core.Connection;
 import io.libp2p.core.P2PAbstractChannel;
 import io.libp2p.core.Stream;
@@ -21,7 +23,7 @@ import org.ethereum.beacon.wire.exceptions.WireRpcMalformedException;
 import org.ethereum.beacon.wire.impl.libp2p.Libp2pMethodHandler.Controller;
 import org.ethereum.beacon.wire.impl.libp2p.encoding.MessageCodec;
 import org.ethereum.beacon.wire.impl.libp2p.encoding.RpcMessageCodec;
-import org.ethereum.beacon.wire.impl.libp2p.encoding.SSZMessageCodec;
+import org.ethereum.beacon.wire.impl.libp2p.encoding.Util;
 import org.javatuples.Pair;
 import org.jetbrains.annotations.NotNull;
 
@@ -123,18 +125,36 @@ public abstract class Libp2pMethodHandler<TRequest, TResponse>
     private ChannelHandlerContext ctx;
     private CompletableFuture<TResponse> respFuture;
     private List<ByteBuf> chunks = new ArrayList<>();
+    private int remainingBytesToRead;
+    private boolean responseComplete;
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, ByteBuf byteBuf) throws Exception {
       if (respFuture == null) {
         throw new WireRpcMalformedException("Some data received prior to request: " + byteBuf);
       }
+      if (responseComplete) {
+        throw new WireRpcMalformedException("Extra message chunk");
+      }
+
+      if (chunks.isEmpty()) {
+        // the beginning of response - read the total message size
+        ByteBuf slice = byteBuf.slice().skipBytes(1);
+        int lenPrefix = Util.readRawVarint32(slice);
+        remainingBytesToRead = lenPrefix + (byteBuf.readableBytes() - slice.readableBytes());
+
+      }
 
       byteBuf.retain();
       chunks.add(byteBuf);
-      Pair<TResponse, Throwable> response = tryRead();
-      if (response != null) {
+
+      remainingBytesToRead -= byteBuf.readableBytes();
+
+      if (remainingBytesToRead <= 0) {
+        responseComplete = true;
         try {
+          Pair<TResponse, Throwable> response = responseCodec
+              .deserialize(wrappedBuffer(chunks.toArray(new ByteBuf[0])));
           if (response.getValue0() != null) {
             respFuture.complete(response.getValue0());
           } else {
@@ -145,16 +165,6 @@ public abstract class Libp2pMethodHandler<TRequest, TResponse>
         } finally {
           chunks.forEach(ReferenceCounted::release);
         }
-      }
-    }
-
-    private Pair<TResponse, Throwable> tryRead() {
-      ByteBuf allChunks = Unpooled.wrappedBuffer(chunks.toArray(new ByteBuf[0]));
-      allChunks.readByte();
-      if (SSZMessageCodec.readRawVarint32(allChunks) == allChunks.readableBytes()) {
-        return responseCodec.deserialize(allChunks.readerIndex(0));
-      } else {
-        return null;
       }
     }
 
@@ -193,6 +203,9 @@ public abstract class Libp2pMethodHandler<TRequest, TResponse>
       activeFuture.completeExceptionally(exception);
       respFuture.completeExceptionally(exception);
       ctx.channel().close();
+      if (!responseComplete) {
+        chunks.forEach(ReferenceCounted::release);
+      }
     }
   }
 }
