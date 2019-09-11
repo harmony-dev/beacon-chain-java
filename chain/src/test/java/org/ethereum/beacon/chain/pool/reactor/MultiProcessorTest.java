@@ -1,8 +1,10 @@
 package org.ethereum.beacon.chain.pool.reactor;
 
+import org.ethereum.beacon.chain.pool.AttestationPool;
 import org.ethereum.beacon.chain.pool.PoolTestConfigurator;
 import org.ethereum.beacon.chain.pool.ReceivedAttestation;
 import org.ethereum.beacon.chain.pool.checker.SanityChecker;
+import org.ethereum.beacon.chain.pool.checker.SignatureEncodingChecker;
 import org.ethereum.beacon.chain.pool.checker.TimeFrameFilter;
 import org.ethereum.beacon.chain.pool.registry.ProcessedAttestations;
 import org.ethereum.beacon.core.operations.Attestation;
@@ -30,6 +32,7 @@ class MultiProcessorTest extends PoolTestConfigurator {
     private TimeProcessor timeProcessor;
     private SanityProcessor sanityProcessor;
     private DoubleWorkProcessor doubleWorkProcessor;
+    private SignatureEncodingProcessor signatureEncodingProcessor;
 
     @BeforeEach
     void setUp() {
@@ -41,6 +44,10 @@ class MultiProcessorTest extends PoolTestConfigurator {
 
         final ProcessedAttestations processedAttestations = new ProcessedAttestations(spec::hash_tree_root, MAX_PROCESSED_ATTESTATIONS);
         doubleWorkProcessor = new DoubleWorkProcessor(processedAttestations, schedulers, source);
+
+        final SignatureEncodingChecker checker = new SignatureEncodingChecker();
+        org.ethereum.beacon.schedulers.Scheduler parallelExecutor = schedulers.newParallelDaemon("attestation-pool-%d", AttestationPool.MAX_THREADS);
+        signatureEncodingProcessor = new SignatureEncodingProcessor(checker, parallelExecutor, source);
 
         finalizedCheckpoints.onNext(this.checkpoint);
         newSlots.onNext(slotNumber);
@@ -79,5 +86,7 @@ class MultiProcessorTest extends PoolTestConfigurator {
                     .isNotNull()
                     .isEqualTo(attestation.getMessage());
         });
+
+        //TODO: add assert to signatureEncodingProcessor
     }
 }
