@@ -563,7 +563,11 @@ public class NodeCommandLauncher implements Runnable {
     private static SpecConstantsDataMerged loadSpecConstantsDataMerged(String specConstants) {
       ConfigBuilder<SpecConstantsDataMerged> specConstsBuilder =
           new ConfigBuilder<>(SpecConstantsDataMerged.class);
-      specConstsBuilder.addYamlConfig(Paths.get(specConstants).toFile());
+      if ("minimal".equals(specConstants)) {
+        specConstsBuilder.addYamlConfigFromResources("/spec/" + specConstants + ".yaml");
+      } else {
+        specConstsBuilder.addYamlConfig(Paths.get(specConstants).toFile());
+      }
       return specConstsBuilder.build();
     }
 
