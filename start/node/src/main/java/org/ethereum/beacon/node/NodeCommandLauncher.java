@@ -493,9 +493,21 @@ public class NodeCommandLauncher implements Runnable {
           }
         }
         if (time == null) {
-          throw new ConfigException(
-              "Couldn't parse --genesisTime option value: '" + cliOptions.getGenesisTime() + "'");
+          // try it as a unix timestamp
+          Long timestamp = null;
+          try {
+            timestamp = Long.valueOf(cliOptions.getGenesisTime());
+          } catch (NumberFormatException e) {
+          }
+
+          if (timestamp != null) {
+            time = new Date(timestamp * 1000);
+          } else {
+            throw new ConfigException(
+                "Couldn't parse --genesisTime option value: '" + cliOptions.getGenesisTime() + "'");
+          }
         }
+
         if (time.getYear() + 1900 == 1970) {
           Date now = new Date();
           time.setYear(now.getYear());
