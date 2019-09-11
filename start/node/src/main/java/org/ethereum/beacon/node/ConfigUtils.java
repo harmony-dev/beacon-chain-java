@@ -78,11 +78,6 @@ public class ConfigUtils {
     }
   }
 
-  public static DepositContract createDepositContract(
-      Contract config, BeaconChainSpec spec, boolean verifyProof) {
-    return new SimpleDepositContract(createChainStart(config, spec, verifyProof));
-  }
-
   public static ChainStart createChainStart(
       Contract config, BeaconChainSpec spec, boolean verifyProof) {
     if (config instanceof EmulatorContract) {

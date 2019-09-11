@@ -79,7 +79,8 @@ public class NodeTest {
 
     ChainStart chainStart =
         new ChainStart(genesisTime, eth1Data, depositPairs.getValue0());
-    SimpleDepositContract depositContract = new SimpleDepositContract(chainStart);
+    SimpleDepositContract depositContract =
+        new SimpleDepositContract(chainStart, controlledSchedulers.createNew("chainStart"));
     BeaconStateEx initialState =
         new InitialStateTransition(chainStart, spec).apply(spec.get_empty_block());
 

@@ -178,7 +178,7 @@ public class NodeCommandLauncher implements Runnable {
           new ChainStart(
               initialState.getGenesisTime(), initialState.getEth1Data(), Collections.emptyList());
     }
-    DepositContract depositContract = new SimpleDepositContract(chainStart);
+    DepositContract depositContract = new SimpleDepositContract(chainStart, schedulers);
 
     List<BLS381Credentials> credentials = ConfigUtils.createCredentials(
         config.getConfig().getValidator().getSigner(),
