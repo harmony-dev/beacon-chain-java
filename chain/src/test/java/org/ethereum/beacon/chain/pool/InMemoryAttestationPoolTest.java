@@ -32,17 +32,13 @@ import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
-import org.ethereum.beacon.core.operations.attestation.AttestationData;
-import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.BLSSignature;
-import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
-import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.db.Database;
 import org.ethereum.beacon.db.InMemoryDatabase;
 import org.ethereum.beacon.schedulers.Schedulers;
@@ -52,9 +48,7 @@ import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
-import tech.pegasys.artemis.util.collections.Bitlist;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 import java.util.Collections;
@@ -64,7 +58,7 @@ import static org.ethereum.beacon.chain.pool.AttestationPool.MAX_ATTESTATION_LOO
 import static org.ethereum.beacon.chain.pool.AttestationPool.MAX_PROCESSED_ATTESTATIONS;
 import static org.ethereum.beacon.chain.pool.AttestationPool.MAX_UNKNOWN_ATTESTATIONS;
 
-class InMemoryAttestationPoolTest {
+class InMemoryAttestationPoolTest extends PoolTestConfigurator {
 
     private Schedulers schedulers = Schedulers.createControlled();
 
@@ -305,34 +299,5 @@ class InMemoryAttestationPoolTest {
 
     return BeaconTuple.of(
         block.withStateRoot(spec.hash_tree_root(state)), new BeaconStateExImpl(state));
-    }
-
-    private Attestation createAttestation(BytesValue someValue) {
-        final AttestationData attestationData = createAttestationData();
-        final Attestation attestation =
-                new Attestation(
-                        Bitlist.of(someValue.size() * 8, someValue, specConstants.getMaxValidatorsPerCommittee().getValue()),
-                        attestationData,
-                        Bitlist.of(8, BytesValue.fromHexString("bb"), specConstants.getMaxValidatorsPerCommittee().getValue()),
-                        BLSSignature.wrap(Bytes96.fromHexString("cc")),
-                        specConstants);
-
-        return attestation;
-    }
-
-    public AttestationData createAttestationData() {
-        final AttestationData expected =
-                new AttestationData(
-                        Hashes.sha256(BytesValue.fromHexString("aa")),
-                        new Checkpoint(EpochNumber.of(231), Hashes.sha256(BytesValue.fromHexString("bb"))),
-                        new Checkpoint(EpochNumber.of(1), Hashes.sha256(BytesValue.fromHexString("cc"))),
-                        Crosslink.EMPTY);
-
-        return expected;
-    }
-
-    @Test
-    void testValidAttestation() {
-
     }
 }

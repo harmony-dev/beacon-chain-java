@@ -66,9 +66,9 @@ public class PoolTestConfigurator {
             .withCache(true)
             .build();
 
-    protected DirectProcessor<Checkpoint> finalizedCheckpoints = DirectProcessor.create();
+    protected final DirectProcessor<Checkpoint> finalizedCheckpoints = DirectProcessor.create();
     protected final ControlledSchedulers schedulers = Schedulers.createControlled();
-    protected DirectProcessor<ReceivedAttestation> source = DirectProcessor.create();
+    protected final DirectProcessor<ReceivedAttestation> source = DirectProcessor.create();
 
     protected Attestation createAttestation(BytesValue someValue) {
         return createAttestation(someValue, createAttestationData());
