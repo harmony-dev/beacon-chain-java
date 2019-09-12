@@ -75,7 +75,7 @@ do
     shift
 done
 
-/beacon-chain-java/start/node/build/distributions/
+/usr/bin/node --connect=$PEERS --initial-state=GEN_STATE --listen=$PORT
 
 trap 'trap - SIGTERM && kill 0' SIGINT SIGTERM EXIT
 
