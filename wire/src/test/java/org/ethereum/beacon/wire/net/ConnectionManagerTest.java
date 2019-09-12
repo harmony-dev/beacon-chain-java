@@ -7,13 +7,14 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.ethereum.beacon.schedulers.ControlledSchedulers;
 import org.ethereum.beacon.schedulers.Schedulers;
-import org.ethereum.beacon.wire.channel.Channel;
+import org.ethereum.beacon.wire.impl.plain.channel.Channel;
+import org.ethereum.beacon.wire.impl.plain.net.Client;
+import org.ethereum.beacon.wire.impl.plain.net.ConnectionManager;
 import org.junit.Assert;
 import org.junit.Test;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 public class ConnectionManagerTest {

@@ -4,14 +4,16 @@ config:
 
   # the list of networks
   networks:
-    # Simple proprietary protocol base on Netty TCP stack
-    - type: netty
+    # Libp2p based network conforming to spec
+    - type: libp2p
+      privateKey: f67c4032a7ff79bbfa7a780331b235c4eb681d51a0704cb1562064fb6c4bced4
+
       # TCP port the node should listen for incoming connections
       listenPort: 40001
       # list of remote peers this peer will be actively connecting to
       activePeers:
-        - tcp://localhost:40002
-        - tcp://localhost:40003
+        - /ip4/127.0.0.1/tcp/40002/p2p/16Uiu2HAmCQHi9nZQrWxaxoWVW5Hv5rvoSAkH6rqSkTi9PnPNZH4r
+        - /ip4/127.0.0.1/tcp/40003/p2p/16Uiu2HAkuqGKz8D6khfrnJnDrN5VxWWCoLU8Aq4eCFJuyXmfakB5
 
   # Config for a validator service
   validator:

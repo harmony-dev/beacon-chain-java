@@ -6,34 +6,34 @@ import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.spec.SpecConstantsResolver;
 import org.ethereum.beacon.schedulers.Schedulers;
-import org.ethereum.beacon.start.common.Launcher;
 import org.ethereum.beacon.simulator.SimulatorLauncher;
 import org.ethereum.beacon.simulator.SimulatorLauncher.Builder;
 import org.ethereum.beacon.ssz.SSZBuilder;
 import org.ethereum.beacon.ssz.SSZSerializer;
+import org.ethereum.beacon.start.common.Launcher;
 import org.ethereum.beacon.stream.SimpleProcessor;
-import org.ethereum.beacon.wire.channel.Channel;
+import org.ethereum.beacon.wire.impl.plain.SimplePeerManagerImpl;
+import org.ethereum.beacon.wire.impl.plain.channel.Channel;
+import org.ethereum.beacon.wire.impl.plain.net.ConnectionManager;
+import org.ethereum.beacon.wire.impl.plain.net.Server;
+import org.ethereum.beacon.wire.impl.plain.net.netty.NettyClient;
+import org.ethereum.beacon.wire.impl.plain.net.netty.NettyServer;
 import org.ethereum.beacon.wire.message.SSZMessageSerializer;
-import org.ethereum.beacon.wire.net.ConnectionManager;
-import org.ethereum.beacon.wire.net.netty.NettyClient;
-import org.ethereum.beacon.wire.net.netty.NettyServer;
-import org.ethereum.beacon.wire.net.Server;
 import org.ethereum.beacon.wire.sync.BeaconBlockTree;
 import org.ethereum.beacon.wire.sync.SyncManagerImpl;
 import org.ethereum.beacon.wire.sync.SyncQueue;
 import org.ethereum.beacon.wire.sync.SyncQueueImpl;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.ReplayProcessor;
 import tech.pegasys.artemis.util.bytes.BytesValue;
-import tech.pegasys.artemis.util.uint.UInt64;
 
 public class PeersTest {
 
@@ -66,6 +66,7 @@ public class PeersTest {
     sink.complete();
   }
 
+  @Ignore
   @Test
   public void test1() throws Exception {
     int slotCount = 32;
@@ -93,8 +94,6 @@ public class PeersTest {
         MessageSerializer messageSerializer = new SSZMessageSerializer(ssz);
         WireApiSyncServer syncServer = new WireApiSyncServer(peer0.getBeaconChainStorage());
         SimplePeerManagerImpl peerManager = new SimplePeerManagerImpl(
-            (byte) 1,
-            UInt64.valueOf(1),
             connectionManager.channelsStream(),
             ssz,
             peer0.getSpec(),
@@ -107,7 +106,7 @@ public class PeersTest {
             .subscribe(
                 peer -> {
                   System.out.println("Remote peer connected: " + peer);
-                  Flux.from(peer.getRawChannel().inboundMessageStream())
+                  Flux.from(((Channel)peer.getConnection()).inboundMessageStream())
                       .doOnError(e -> System.out.println("#### Error: " + e))
                       .doOnComplete(() -> System.out.println("#### Complete"))
                       .doOnNext(msg -> System.out.println("#### on message"))
@@ -131,8 +130,6 @@ public class PeersTest {
             .buildSerializer();
         MessageSerializer messageSerializer = new SSZMessageSerializer(ssz);
         SimplePeerManagerImpl peerManager = new SimplePeerManagerImpl(
-            (byte) 1,
-            UInt64.valueOf(1),
             connectionManager.channelsStream(),
             ssz,
             peer1.getSpec(),

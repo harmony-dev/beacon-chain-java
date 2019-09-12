@@ -1,6 +1,20 @@
 package org.ethereum.beacon.node;
 
-import io.netty.channel.ChannelFutureListener;
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.Random;
+import java.util.TimeZone;
+import java.util.concurrent.ThreadFactory;
+import java.util.stream.IntStream;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -11,6 +25,7 @@ import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.chain.storage.impl.SSZBeaconChainStorageFactory;
 import org.ethereum.beacon.chain.storage.impl.SerializerFactory;
+import org.ethereum.beacon.chain.storage.util.StorageUtils;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.ChainStart;
@@ -29,50 +44,30 @@ import org.ethereum.beacon.emulator.config.chainspec.SpecBuilder;
 import org.ethereum.beacon.emulator.config.chainspec.SpecConstantsData;
 import org.ethereum.beacon.emulator.config.chainspec.SpecConstantsDataMerged;
 import org.ethereum.beacon.emulator.config.chainspec.SpecData;
+import org.ethereum.beacon.emulator.config.main.Debug;
 import org.ethereum.beacon.emulator.config.main.MainConfig;
 import org.ethereum.beacon.emulator.config.main.Signer.Insecure;
+import org.ethereum.beacon.emulator.config.main.ValidatorKeys;
 import org.ethereum.beacon.emulator.config.main.ValidatorKeys.Private;
 import org.ethereum.beacon.emulator.config.main.conract.EmulatorContract;
+import org.ethereum.beacon.emulator.config.main.network.Libp2pNetwork;
 import org.ethereum.beacon.emulator.config.main.network.NettyNetwork;
 import org.ethereum.beacon.emulator.config.main.network.Network;
 import org.ethereum.beacon.node.metrics.Metrics;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.schedulers.DefaultSchedulers;
-import org.ethereum.beacon.schedulers.Scheduler;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.start.common.DatabaseManager;
 import org.ethereum.beacon.start.common.NodeLauncher;
 import org.ethereum.beacon.start.common.util.MDCControlledSchedulers;
 import org.ethereum.beacon.start.common.util.SimpleDepositContract;
-import org.ethereum.beacon.chain.storage.util.StorageUtils;
 import org.ethereum.beacon.util.Objects;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
-import org.ethereum.beacon.wire.net.ConnectionManager;
-import org.ethereum.beacon.wire.net.netty.NettyClient;
-import org.ethereum.beacon.wire.net.netty.NettyServer;
+import org.ethereum.beacon.wire.impl.libp2p.Libp2pLauncher;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Flux;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
-
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Random;
-import java.util.TimeZone;
-import java.util.concurrent.ThreadFactory;
-import java.util.stream.IntStream;
 
 public class NodeCommandLauncher implements Runnable {
   private static final Logger logger = LogManager.getLogger("node");
@@ -161,6 +156,7 @@ public class NodeCommandLauncher implements Runnable {
     String initialStateFile = cliOptions.getInitialStateFile();
     ChainStart chainStart;
     BeaconStateEx initialState;
+    SerializerFactory serializerFactory = SerializerFactory.createSSZ(specConstants);
     if (initialStateFile == null) {
       chainStart = ConfigUtils.createChainStart(
           config.getConfig().getValidator().getContract(),
@@ -168,7 +164,6 @@ public class NodeCommandLauncher implements Runnable {
           config.getChainSpec().getSpecHelpersOptions().isBlsVerifyProofOfPossession());
       initialState = new InitialStateTransition(chainStart, spec).apply(spec.get_empty_block());
     } else {
-      SerializerFactory serializerFactory = SerializerFactory.createSSZ(specConstants);
       byte[] fileData;
       try {
         fileData = Files.readAllBytes(Paths.get(initialStateFile));
@@ -183,18 +178,21 @@ public class NodeCommandLauncher implements Runnable {
           new ChainStart(
               initialState.getGenesisTime(), initialState.getEth1Data(), Collections.emptyList());
     }
-    DepositContract depositContract = new SimpleDepositContract(chainStart);
+    DepositContract depositContract = new SimpleDepositContract(chainStart, schedulers);
 
     List<BLS381Credentials> credentials = ConfigUtils.createCredentials(
         config.getConfig().getValidator().getSigner(),
         config.getChainSpec().getSpecHelpersOptions().isBlsSign());
 
-    ConnectionManager<?> connectionManager;
     if (config.getConfig().getNetworks().size() != 1) {
       throw new IllegalArgumentException("1 network should be specified in config");
     }
     Network networkCfg = config.getConfig().getNetworks().get(0);
+    Libp2pLauncher libp2pLauncher = new Libp2pLauncher();
+
     if (networkCfg instanceof NettyNetwork) {
+      throw new UnsupportedOperationException("Netty network is not supported anymore");
+      /*
       NettyNetwork nettyConfig = (NettyNetwork) networkCfg;
       NettyServer nettyServer = null;
       if (nettyConfig.getListenPort() != null) {
@@ -215,15 +213,30 @@ public class NodeCommandLauncher implements Runnable {
       connectionManager = tcpConnectionManager;
       for (String addr : nettyConfig.getActivePeers()) {
         URI uri = URI.create(addr);
-        tcpConnectionManager.addActivePeer(InetSocketAddress.createUnresolved(uri.getHost(), uri.getPort()));
+        tcpConnectionManager
+            .addActivePeer(InetSocketAddress.createUnresolved(uri.getHost(), uri.getPort()));
       }
+      */
+    } else if (networkCfg instanceof Libp2pNetwork) {
+      Libp2pNetwork cfg = (Libp2pNetwork) networkCfg;
 
-      Flux.from(connectionManager.channelsStream())
-          .subscribe(
-              ch -> {
-                Metrics.peerAdded();
-                ch.getCloseFuture().thenAccept(v -> Metrics.peerRemoved());
-              });
+      if (cfg.getListenPort() != null) {
+        libp2pLauncher.setListenPort(cfg.getListenPort());
+      }
+      for (String peer : cfg.getActivePeers()) {
+        libp2pLauncher.addActivePeer(peer);
+      }
+      if (cfg.getPrivateKey() != null) {
+        libp2pLauncher.setPrivKey(BytesValue.fromHexString(cfg.getPrivateKey()));
+      }
+      Debug debug = config.getConfig().getDebug();
+      if (debug != null) {
+        libp2pLauncher.setLogWireCipher(debug.isLogWireCipher());
+        libp2pLauncher.setLogWirePlain(debug.isLogWirePlain());
+        libp2pLauncher.setLogMuxFrames(debug.isLogMuxFrames());
+        libp2pLauncher.setLogEthPubsub(debug.isLogEthPubsub());
+        libp2pLauncher.setLogEthRpc(debug.isLogEthRpc());
+      }
     } else {
       throw new IllegalArgumentException(
           "This type of network is not supported yet: " + networkCfg.getClass());
@@ -248,7 +261,7 @@ public class NodeCommandLauncher implements Runnable {
 
     SSZBeaconChainStorageFactory storageFactory =
         new SSZBeaconChainStorageFactory(
-            spec.getObjectHasher(), SerializerFactory.createSSZ(specConstants));
+            spec.getObjectHasher(), serializerFactory);
 
     String dbPrefix = config.getConfig().getDb();
     String startMode;
@@ -320,11 +333,38 @@ public class NodeCommandLauncher implements Runnable {
         specBuilder.buildSpec(),
         depositContract,
         credentials,
-        connectionManager,
+        libp2pLauncher, //connectionManager,
         db,
         beaconChainStorage,
         schedulers,
         true);
+
+    if (cliOptions.isDumpTuples()) {
+      BeaconTupleDetailsDumper dumper =
+          new BeaconTupleDetailsDumper(
+              "tuple_dump_" + config.getConfig().getName(), serializerFactory);
+      try {
+        dumper.init();
+      } catch (IOException e) {
+        throw new IllegalArgumentException("Couldn't initialize block dumper", e);
+      }
+      // dump genesis state
+      try {
+        dumper.dumpState("genesis", initialState);
+      } catch (IOException e) {
+        logger.error("Cannot dump state", e);
+      }
+      Flux.from(node.getBeaconChain().getBlockStatesStream())
+          .subscribe(
+              btd -> {
+                try {
+                  dumper.dump(btd);
+                } catch (IOException e) {
+                  logger.error("Cannot dump state", e);
+                }
+              });
+    }
+
     node.start();
 
     Runtime.getRuntime().addShutdownHook(new Thread(node::stop));
@@ -374,17 +414,25 @@ public class NodeCommandLauncher implements Runnable {
         config.getConfig().setName(cliOptions.getName());
       }
 
+      if (cliOptions.getInitialDepositCount() != null) {
+        if (config.getConfig().getValidator().getContract() instanceof EmulatorContract) {
+          EmulatorContract contract = (EmulatorContract) config.getConfig().getValidator().getContract();
+          ValidatorKeys.InteropKeys keys = new ValidatorKeys.InteropKeys();
+          keys.setCount(cliOptions.getInitialDepositCount());
+          contract.setKeys(Collections.singletonList(keys));
+        }
+      }
 
       if (cliOptions.getListenPort() != null || cliOptions.getActivePeers() != null) {
-        NettyNetwork network = (NettyNetwork) config
+        Libp2pNetwork network = (Libp2pNetwork) config
                 .getConfig()
                 .getNetworks()
                 .stream()
-                .filter(n -> n instanceof NettyNetwork)
+                .filter(n -> n instanceof Libp2pNetwork)
                 .findFirst().orElse(null);
 
         if (network == null) {
-          network = new NettyNetwork();
+          network = new Libp2pNetwork();
           config.getConfig().getNetworks().add(network);
         }
 
@@ -445,9 +493,21 @@ public class NodeCommandLauncher implements Runnable {
           }
         }
         if (time == null) {
-          throw new ConfigException(
-              "Couldn't parse --genesisTime option value: '" + cliOptions.getGenesisTime() + "'");
+          // try it as a unix timestamp
+          Long timestamp = null;
+          try {
+            timestamp = Long.valueOf(cliOptions.getGenesisTime());
+          } catch (NumberFormatException e) {
+          }
+
+          if (timestamp != null) {
+            time = new Date(timestamp * 1000);
+          } else {
+            throw new ConfigException(
+                "Couldn't parse --genesisTime option value: '" + cliOptions.getGenesisTime() + "'");
+          }
         }
+
         if (time.getYear() + 1900 == 1970) {
           Date now = new Date();
           time.setYear(now.getYear());
@@ -487,6 +547,10 @@ public class NodeCommandLauncher implements Runnable {
         config.getConfig().setMetricsEndpoint(cliOptions.getMetricsEndpoint());
       }
 
+      if (cliOptions.getDbPrefix() != null) {
+        config.getConfig().setDb(cliOptions.getDbPrefix());
+      }
+
       return new NodeCommandLauncher(
         config,
         specBuilder,
@@ -511,7 +575,11 @@ public class NodeCommandLauncher implements Runnable {
     private static SpecConstantsDataMerged loadSpecConstantsDataMerged(String specConstants) {
       ConfigBuilder<SpecConstantsDataMerged> specConstsBuilder =
           new ConfigBuilder<>(SpecConstantsDataMerged.class);
-      specConstsBuilder.addYamlConfig(Paths.get(specConstants).toFile());
+      if ("minimal".equals(specConstants)) {
+        specConstsBuilder.addYamlConfigFromResources("/spec/" + specConstants + ".yaml");
+      } else {
+        specConstsBuilder.addYamlConfig(Paths.get(specConstants).toFile());
+      }
       return specConstsBuilder.build();
     }
 

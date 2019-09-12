@@ -1,14 +1,13 @@
 package org.ethereum.beacon.node;
 
+import java.io.File;
+import java.util.List;
 import org.ethereum.beacon.node.Node.VersionProvider;
 import org.ethereum.beacon.node.command.LogLevel;
 import org.ethereum.beacon.start.common.ClientInfo;
 import picocli.CommandLine;
 import picocli.CommandLine.IVersionProvider;
 import picocli.CommandLine.RunLast;
-
-import java.io.File;
-import java.util.List;
 
 @CommandLine.Command(
     description = "Beacon chain node",
@@ -53,7 +52,8 @@ public class Node implements Runnable {
       split = ",",
       description = {
           "Peers that node is actively connecting to.",
-          "URL format: tcp://<host>:<port>"
+          "URL format: <network multiaddress>/p2p/<node id>",
+          "URL sample: /ip4/10.0.0.128/tcp/40001/p2p/16Uiu2HAmCQHi9nZQrWxaxoWVW5Hv5rvoSAkH6rqSkTi9PnPNZH4r"
       }
   )
   private List<String> activePeers;
@@ -87,6 +87,7 @@ public class Node implements Runnable {
       description = { "Genesis time in GMT+0 timezone. In either form:",
           "  '2019-05-24 11:23'",
           "  '11:23' (current day is taken)",
+          "  '1568223274' (unix timestamp)",
           "Defaults to the beginning of the current hour." }
   )
   private String genesisTime;
@@ -94,7 +95,10 @@ public class Node implements Runnable {
   @CommandLine.Option(
       names = "--spec-constants",
       paramLabel = "spec-constants",
-      description = "Path to a spec constants file in yaml format (flat format)"
+      description = {
+          "Path to a spec constants file in yaml format (flat format)",
+          "Use 'minimal' shortcut to run with interop constants"
+      }
   )
   private String specConstantsFile;
 
@@ -147,6 +151,31 @@ public class Node implements Runnable {
   )
   private boolean forceDBClean = false;
 
+  @CommandLine.Option(
+      names = "--db-prefix",
+      paramLabel = "db-prefix",
+      description = "Specifies db-prefix, used to construct db directory"
+  )
+  private String dbPrefix;
+
+  @CommandLine.Option(
+      names = {"--initial-deposit-count", "--validator-count"},
+      paramLabel = "initial-deposit-count",
+      description = {
+          "Specifies amount of initial deposits when constructing a genesis state."
+      }
+  )
+  private Integer initialDepositCount;
+
+  @CommandLine.Option(
+      names = "--dump-tuples",
+      paramLabel = "dump-tuples",
+      description = {
+        "Specifies whether to dump beacon tuples (state and block).",
+        "False by default"
+      })
+  private boolean dumpTuples = false;
+
   public String getName() {
     return name;
   }
@@ -185,6 +214,18 @@ public class Node implements Runnable {
 
   public String getStartMode() {
     return startMode;
+  }
+
+  public String getDbPrefix() {
+    return dbPrefix;
+  }
+
+  public Integer getInitialDepositCount() {
+    return initialDepositCount;
+  }
+
+  public boolean isDumpTuples() {
+    return dumpTuples;
   }
 
   public static void main(String[] args) {

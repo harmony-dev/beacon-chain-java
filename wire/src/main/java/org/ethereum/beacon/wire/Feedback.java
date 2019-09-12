@@ -1,6 +1,7 @@
 package org.ethereum.beacon.wire;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 /**
@@ -15,6 +16,16 @@ public interface Feedback<TResult> {
 
   static <T> Feedback<T> of(T result) {
     return new Impl<>(result);
+  }
+
+  static <T> Feedback<T> of(T result, Consumer<Throwable> errorFeedbackHandler) {
+    Feedback<T> ret = of(result);
+    ret.getFeedback().whenComplete((v, t) -> {
+      if (t != null) {
+        errorFeedbackHandler.accept(t);
+      }
+    });
+    return ret;
   }
 
   /**
