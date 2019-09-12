@@ -15,7 +15,7 @@ WORKDIR /
 RUN git clone https://github.com/harmony-dev/beacon-chain-java.git
 WORKDIR /beacon-chain-java
 # TODO: switch to develop when merged
-RUN git checkout atoulme-wip-dockerfile
+RUN git checkout interop
 WORKDIR /
 
 # Building Harmony
