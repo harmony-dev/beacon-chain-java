@@ -40,6 +40,7 @@ usage() {
     echo "--port=<port>"
 }
 
+CMD_LINE_ADDON=""
 while [ "$1" != "" ];
 do
     PARAM=`echo $1 | awk -F= '{print $1}'`
@@ -48,19 +49,24 @@ do
     case $PARAM in
         --identity)
             IDENTITY=$VALUE
+            CMD_LINE_ADDON=$CMD_LINE_ADDON"--node-key=$IDENTITY "
             ;;
         --peers)
             [ ! -z "$PEERS" ] && PEERS+=","
 	    PEERS+="$VALUE"
+	          CMD_LINE_ADDON=$CMD_LINE_ADDON"--connect=$PEERS "
             ;;
         --validator-keys)
             VALIDATOR_KEYS=$VALUE
+            CMD_LINE_ADDON=$CMD_LINE_ADDON"--validators-file=$VALIDATOR_KEYS "
             ;;
         --gen-state)
             GEN_STATE=$VALUE
+            CMD_LINE_ADDON=$CMD_LINE_ADDON"--initial-state=$GEN_STATE "
             ;;
         --port)
             PORT=$VALUE
+            CMD_LINE_ADDON=$CMD_LINE_ADDON"--listen=$PORT "
             ;;
         --help)
             usage
@@ -75,7 +81,7 @@ do
     shift
 done
 
-/usr/bin/node --connect=$PEERS --initial-state=GEN_STATE --listen=$PORT
+/usr/bin/harmony default $CMD_LINE_ADDON
 
 trap 'trap - SIGTERM && kill 0' SIGINT SIGTERM EXIT
 

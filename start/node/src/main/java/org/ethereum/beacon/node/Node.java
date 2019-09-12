@@ -47,6 +47,13 @@ public class Node implements Runnable {
   private Integer listenPort;
 
   @CommandLine.Option(
+      names = {"--node-key"},
+      paramLabel = "key",
+      description = "Private key of p2p node (32 bytes)"
+  )
+  private String nodeKey;
+
+  @CommandLine.Option(
       names = {"--connect"},
       paramLabel = "URL",
       split = ",",
@@ -70,6 +77,17 @@ public class Node implements Runnable {
       }
   )
   private List<String> validators;
+
+  @CommandLine.Option(
+      names = {"--validators-file"},
+      paramLabel = "key",
+      split = ",",
+      description = {
+          "Validator registry as yaml file. Entries are pairs of privkey and pubkey",
+          "Example: --validators-file=keygen_10_validators.yaml"
+      }
+  )
+  private String validatorsFile;
 
   @CommandLine.Option(
       names = {"--name"},
@@ -184,12 +202,20 @@ public class Node implements Runnable {
     return listenPort;
   }
 
+  public String getNodeKey() {
+    return nodeKey;
+  }
+
   public List<String> getActivePeers() {
     return activePeers;
   }
 
   public List<String> getValidators() {
     return validators;
+  }
+
+  public String getValidatorsFile() {
+    return validatorsFile;
   }
 
   public String getGenesisTime() {
