@@ -87,6 +87,7 @@ public class Node implements Runnable {
       description = { "Genesis time in GMT+0 timezone. In either form:",
           "  '2019-05-24 11:23'",
           "  '11:23' (current day is taken)",
+          "  '1568223274' (unix timestamp)",
           "Defaults to the beginning of the current hour." }
   )
   private String genesisTime;
@@ -94,7 +95,10 @@ public class Node implements Runnable {
   @CommandLine.Option(
       names = "--spec-constants",
       paramLabel = "spec-constants",
-      description = "Path to a spec constants file in yaml format (flat format)"
+      description = {
+          "Path to a spec constants file in yaml format (flat format)",
+          "Use 'minimal' shortcut to run with interop constants"
+      }
   )
   private String specConstantsFile;
 
