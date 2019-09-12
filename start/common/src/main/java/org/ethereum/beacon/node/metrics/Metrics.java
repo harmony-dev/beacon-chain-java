@@ -224,16 +224,10 @@ public class Metrics {
     HEAD_SLOT.set(head.getBlock().getSlot().doubleValue());
 
     EpochNumber currentEpoch = spec.get_current_epoch(head.getState());
-    EpochNumber epoch;
-    if (spec.compute_start_slot_of_epoch(currentEpoch).equals(head.getState().getSlot())) {
-      epoch = spec.get_previous_epoch(head.getState());
-    } else {
-      epoch = currentEpoch;
-    }
-    Hash32 block_root =
-        head.getBlock().getSlot().lessEqual(SlotNumber.ZERO)
-            ? Hash32.ZERO
-            : spec.get_block_root(head.getState(), epoch);
+    SlotNumber epochBoundarySlot = spec.compute_start_slot_of_epoch(currentEpoch);
+    Hash32 block_root = epochBoundarySlot.equals(head.getState().getSlot())
+        ? spec.signing_root(head.getBlock())
+        : spec.get_block_root_at_slot(head.getState(), epochBoundarySlot);
     setRoot(
         HEAD_ROOT, block_root);
   }
