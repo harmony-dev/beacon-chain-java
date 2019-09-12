@@ -5,7 +5,6 @@ import org.ethereum.beacon.chain.MutableBeaconChain;
 import org.ethereum.beacon.chain.pool.checker.SanityChecker;
 import org.ethereum.beacon.chain.pool.checker.SignatureEncodingChecker;
 import org.ethereum.beacon.chain.pool.checker.TimeFrameFilter;
-import org.ethereum.beacon.chain.pool.churn.AttestationChurn;
 import org.ethereum.beacon.chain.pool.registry.ProcessedAttestations;
 import org.ethereum.beacon.chain.pool.registry.UnknownAttestationPool;
 import org.ethereum.beacon.chain.pool.verifier.AttestationVerifier;
@@ -53,7 +52,6 @@ import tech.pegasys.artemis.util.uint.UInt64;
 
 import java.util.Collections;
 
-import static org.ethereum.beacon.chain.pool.AttestationPool.ATTESTATION_CHURN_SIZE;
 import static org.ethereum.beacon.chain.pool.AttestationPool.MAX_ATTESTATION_LOOKAHEAD;
 import static org.ethereum.beacon.chain.pool.AttestationPool.MAX_PROCESSED_ATTESTATIONS;
 import static org.ethereum.beacon.chain.pool.AttestationPool.MAX_UNKNOWN_ATTESTATIONS;
@@ -248,7 +246,7 @@ class InMemoryAttestationPoolTest extends PoolTestConfigurator {
         pool.start();
     }
 
-    private MutableBeaconChain createBeaconChain(
+    protected MutableBeaconChain createBeaconChain(
             BeaconChainSpec spec, StateTransition<BeaconStateEx> perSlotTransition, Schedulers schedulers) {
         Time start = Time.castFrom(UInt64.valueOf(schedulers.getCurrentTime() / 1000));
         ChainStart chainStart = new ChainStart(start, Eth1Data.EMPTY, Collections.emptyList());
@@ -284,7 +282,7 @@ class InMemoryAttestationPoolTest extends PoolTestConfigurator {
         return null;
     }
 
-    private BeaconTuple createBlock(
+    protected BeaconTuple createBlock(
             BeaconTuple parent,
             BeaconChainSpec spec, long currentTime,
             StateTransition<BeaconStateEx> perSlotTransition) {
