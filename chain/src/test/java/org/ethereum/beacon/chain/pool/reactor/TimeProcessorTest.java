@@ -5,6 +5,7 @@ import org.ethereum.beacon.chain.pool.ReceivedAttestation;
 import org.ethereum.beacon.chain.pool.checker.TimeFrameFilter;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.state.Checkpoint;
+import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.types.p2p.NodeId;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,7 +16,6 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
 import java.time.Duration;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.ethereum.beacon.chain.pool.AttestationPool.MAX_ATTESTATION_LOOKAHEAD;
 
 class TimeProcessorTest extends PoolTestConfigurator {
 
@@ -28,7 +28,7 @@ class TimeProcessorTest extends PoolTestConfigurator {
     @BeforeEach
     void setUp() {
 
-        final TimeFrameFilter timeFrameFilter = new TimeFrameFilter(spec, MAX_ATTESTATION_LOOKAHEAD);
+        final TimeFrameFilter timeFrameFilter = new TimeFrameFilter(spec, EpochNumber.of(233));
         timeProcessor = new TimeProcessor(timeFrameFilter, schedulers, source, finalizedCheckpoints, newSlots);
         finalizedCheckpoints.onNext(this.checkpoint);
         newSlots.onNext(slotNumber);
