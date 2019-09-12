@@ -31,4 +31,6 @@ RUN mkdir /launch
 RUN cp /beacon-chain-java/scripts/whiteblock_start.sh /launch/start.sh
 RUN chmod +x /launch/start.sh
 
+EXPOSE 8545 8546 9000 30303 30303/udp
+
 ENTRYPOINT ["/bin/bash"]
