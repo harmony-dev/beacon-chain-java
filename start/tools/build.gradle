@@ -12,10 +12,19 @@ run.enabled = false
 
 // Call this for each Main class you want to expose with an app script
 createScript(project, 'org.ethereum.beacon.tools.bls.BlsKeyPairGeneratorTool', 'bls-generator')
+createScript(project, 'org.ethereum.beacon.tools.storage.FeedSyncTool', 'feedsync')
 
 dependencies {
   implementation project(':types')
   implementation project(':crypto')
+  implementation project(":chain")
+  implementation project(":util")
+  implementation project(':types')
+  implementation project(':db:core')
+  implementation project(':start:config')
+  implementation project(':start:common')
+  implementation project(':start:node')
 
   implementation 'info.picocli:picocli'
+  implementation 'org.apache.logging.log4j:log4j-core'
 }
