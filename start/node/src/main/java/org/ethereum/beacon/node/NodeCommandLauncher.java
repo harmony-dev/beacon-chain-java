@@ -1,20 +1,5 @@
 package org.ethereum.beacon.node;
 
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Random;
-import java.util.TimeZone;
-import java.util.concurrent.ThreadFactory;
-import java.util.stream.IntStream;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -53,6 +38,8 @@ import org.ethereum.beacon.emulator.config.main.conract.EmulatorContract;
 import org.ethereum.beacon.emulator.config.main.network.Libp2pNetwork;
 import org.ethereum.beacon.emulator.config.main.network.NettyNetwork;
 import org.ethereum.beacon.emulator.config.main.network.Network;
+import org.ethereum.beacon.emulator.config.node.KeyData;
+import org.ethereum.beacon.emulator.config.node.KeyDataReader;
 import org.ethereum.beacon.node.metrics.Metrics;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.schedulers.DefaultSchedulers;
@@ -69,10 +56,27 @@ import reactor.core.publisher.Flux;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.Random;
+import java.util.TimeZone;
+import java.util.concurrent.ThreadFactory;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
 public class NodeCommandLauncher implements Runnable {
   private static final Logger logger = LogManager.getLogger("node");
 
-  private final static long DB_BUFFER_SIZE = 64L << 20; // 64Mb
+  private static final long DB_BUFFER_SIZE = 64L << 20; // 64Mb
 
   private final MainConfig config;
   private final SpecConstants specConstants;
@@ -95,10 +99,7 @@ public class NodeCommandLauncher implements Runnable {
    * @param logLevel Log level, Apache log4j type.
    */
   public NodeCommandLauncher(
-      MainConfig config,
-      SpecBuilder specBuilder,
-      Node cliOptions,
-      Level logLevel) {
+      MainConfig config, SpecBuilder specBuilder, Node cliOptions, Level logLevel) {
     this.config = config;
     this.specBuilder = specBuilder;
     this.specConstants = specBuilder.buildSpecConstants();
@@ -112,8 +113,7 @@ public class NodeCommandLauncher implements Runnable {
   private void setupLogging() {
     // set logLevel
     if (logLevel != null) {
-      LoggerContext context =
-          (LoggerContext) LogManager.getContext(false);
+      LoggerContext context = (LoggerContext) LogManager.getContext(false);
       Configuration config = context.getConfiguration();
       LoggerConfig loggerConfig = config.getLoggerConfig("node");
       loggerConfig.setLevel(logLevel);
@@ -139,7 +139,8 @@ public class NodeCommandLauncher implements Runnable {
           @Override
           protected ThreadFactory createThreadFactory(String namePattern) {
             ThreadFactory factory =
-                createThreadFactoryBuilder((nodeName == null ? "" : nodeName + "-") + namePattern).build();
+                createThreadFactoryBuilder((nodeName == null ? "" : nodeName + "-") + namePattern)
+                    .build();
             if (nodeName == null) {
               return factory;
             } else {
@@ -158,10 +159,11 @@ public class NodeCommandLauncher implements Runnable {
     BeaconStateEx initialState;
     SerializerFactory serializerFactory = SerializerFactory.createSSZ(specConstants);
     if (initialStateFile == null) {
-      chainStart = ConfigUtils.createChainStart(
-          config.getConfig().getValidator().getContract(),
-          spec,
-          config.getChainSpec().getSpecHelpersOptions().isBlsVerifyProofOfPossession());
+      chainStart =
+          ConfigUtils.createChainStart(
+              config.getConfig().getValidator().getContract(),
+              spec,
+              config.getChainSpec().getSpecHelpersOptions().isBlsVerifyProofOfPossession());
       initialState = new InitialStateTransition(chainStart, spec).apply(spec.get_empty_block());
     } else {
       byte[] fileData;
@@ -172,7 +174,9 @@ public class NodeCommandLauncher implements Runnable {
       }
       initialState =
           new BeaconStateExImpl(
-              serializerFactory.getDeserializer(BeaconStateImpl.class).apply(BytesValue.wrap(fileData)),
+              serializerFactory
+                  .getDeserializer(BeaconStateImpl.class)
+                  .apply(BytesValue.wrap(fileData)),
               TransitionType.INITIAL);
       chainStart =
           new ChainStart(
@@ -180,9 +184,10 @@ public class NodeCommandLauncher implements Runnable {
     }
     DepositContract depositContract = new SimpleDepositContract(chainStart, schedulers);
 
-    List<BLS381Credentials> credentials = ConfigUtils.createCredentials(
-        config.getConfig().getValidator().getSigner(),
-        config.getChainSpec().getSpecHelpersOptions().isBlsSign());
+    List<BLS381Credentials> credentials =
+        ConfigUtils.createCredentials(
+            config.getConfig().getValidator().getSigner(),
+            config.getChainSpec().getSpecHelpersOptions().isBlsSign());
 
     if (config.getConfig().getNetworks().size() != 1) {
       throw new IllegalArgumentException("1 network should be specified in config");
@@ -260,8 +265,7 @@ public class NodeCommandLauncher implements Runnable {
     Metrics.startMetricsServer(metricsHost, metricsPort);
 
     SSZBeaconChainStorageFactory storageFactory =
-        new SSZBeaconChainStorageFactory(
-            spec.getObjectHasher(), serializerFactory);
+        new SSZBeaconChainStorageFactory(spec.getObjectHasher(), serializerFactory);
 
     String dbPrefix = config.getConfig().getDb();
     String startMode;
@@ -305,8 +309,9 @@ public class NodeCommandLauncher implements Runnable {
         break;
       case "initial":
         if (!emptyStorage && !forceDBClean) {
-          throw new IllegalArgumentException("Cannot initialize non-empty storage."
-              + " Use --force-db-clean to clean automatically");
+          throw new IllegalArgumentException(
+              "Cannot initialize non-empty storage."
+                  + " Use --force-db-clean to clean automatically");
         }
         doInitialize = true;
         break;
@@ -316,7 +321,7 @@ public class NodeCommandLauncher implements Runnable {
 
     if (doInitialize && !emptyStorage && forceDBClean) {
       db.close();
-      try{
+      try {
         dbFactory.removeDatabase(genesisTime, depositRoot);
       } catch (RuntimeException e) {
         throw new IllegalStateException("Cannot clean DB, remove files manually", e);
@@ -329,15 +334,16 @@ public class NodeCommandLauncher implements Runnable {
       StorageUtils.initializeStorage(beaconChainStorage, spec, initialState);
     }
 
-    NodeLauncher node = new NodeLauncher(
-        specBuilder.buildSpec(),
-        depositContract,
-        credentials,
-        libp2pLauncher, //connectionManager,
-        db,
-        beaconChainStorage,
-        schedulers,
-        true);
+    NodeLauncher node =
+        new NodeLauncher(
+            specBuilder.buildSpec(),
+            depositContract,
+            credentials,
+            libp2pLauncher, // connectionManager,
+            db,
+            beaconChainStorage,
+            schedulers,
+            true);
 
     if (cliOptions.isDumpTuples()) {
       BeaconTupleDetailsDumper dumper =
@@ -385,11 +391,38 @@ public class NodeCommandLauncher implements Runnable {
 
     public Builder() {}
 
+    @NotNull
+    private static SpecConstantsData mergeSpecConstantsData(
+        SpecConstantsData specConsts, SpecConstantsDataMerged specConstsYaml) {
+      if (specConsts == null) {
+        return specConstsYaml;
+      } else {
+        try {
+          return Objects.copyProperties(specConsts, specConstsYaml);
+        } catch (IllegalAccessException | InvocationTargetException e) {
+          throw new RuntimeException(
+              String.format("Failed to merge config %s into main config", specConsts), e);
+        }
+      }
+    }
+
+    private static SpecConstantsDataMerged loadSpecConstantsDataMerged(String specConstants) {
+      ConfigBuilder<SpecConstantsDataMerged> specConstsBuilder =
+          new ConfigBuilder<>(SpecConstantsDataMerged.class);
+      if ("minimal".equals(specConstants)) {
+        specConstsBuilder.addYamlConfigFromResources("/spec/" + specConstants + ".yaml");
+      } else {
+        specConstsBuilder.addYamlConfig(Paths.get(specConstants).toFile());
+      }
+      return specConstsBuilder.build();
+    }
+
     public NodeCommandLauncher build() {
       assert config != null;
 
       ConfigBuilder<SpecData> specConfigBuilder =
-          new ConfigBuilder<>(SpecData.class).addYamlConfigFromResources("/config/spec-constants.yml");
+          new ConfigBuilder<>(SpecData.class)
+              .addYamlConfigFromResources("/config/spec-constants.yml");
 
       if (cliOptions != null
           && cliOptions.getSpecConstantsFile() != null
@@ -416,7 +449,8 @@ public class NodeCommandLauncher implements Runnable {
 
       if (cliOptions.getInitialDepositCount() != null) {
         if (config.getConfig().getValidator().getContract() instanceof EmulatorContract) {
-          EmulatorContract contract = (EmulatorContract) config.getConfig().getValidator().getContract();
+          EmulatorContract contract =
+              (EmulatorContract) config.getConfig().getValidator().getContract();
           ValidatorKeys.InteropKeys keys = new ValidatorKeys.InteropKeys();
           keys.setCount(cliOptions.getInitialDepositCount());
           contract.setKeys(Collections.singletonList(keys));
@@ -424,12 +458,12 @@ public class NodeCommandLauncher implements Runnable {
       }
 
       if (cliOptions.getListenPort() != null || cliOptions.getActivePeers() != null) {
-        Libp2pNetwork network = (Libp2pNetwork) config
-                .getConfig()
-                .getNetworks()
-                .stream()
-                .filter(n -> n instanceof Libp2pNetwork)
-                .findFirst().orElse(null);
+        Libp2pNetwork network =
+            (Libp2pNetwork)
+                config.getConfig().getNetworks().stream()
+                    .filter(n -> n instanceof Libp2pNetwork)
+                    .findFirst()
+                    .orElse(null);
 
         if (network == null) {
           network = new Libp2pNetwork();
@@ -445,6 +479,26 @@ public class NodeCommandLauncher implements Runnable {
         }
       }
 
+      if (cliOptions.getNodeKey() != null) {
+        config.getConfig().getNetworks().stream()
+            .filter(n -> n instanceof Libp2pNetwork)
+            .forEach(n -> ((Libp2pNetwork) n).setPrivateKey(cliOptions.getNodeKey()));
+      }
+
+      if (cliOptions.getValidatorsFile() != null) {
+        if (cliOptions.getValidators() != null) {
+          throw new RuntimeException("Only one validators option could be used at time!");
+        }
+        List<KeyData> keysData =
+            new KeyDataReader(new File(cliOptions.getValidatorsFile())).readKeys();
+        Insecure signer = new Insecure();
+        signer.setKeys(
+            Collections.singletonList(
+                new Private(
+                    keysData.stream().map(KeyData::getPrivkey).collect(Collectors.toList()))));
+        config.getConfig().getValidator().setSigner(signer);
+      }
+
       if (cliOptions.getValidators() != null) {
         List<String> validatorKeys = new ArrayList<>();
         List<KeyPair> depositKeypairs = null;
@@ -453,8 +507,10 @@ public class NodeCommandLauncher implements Runnable {
             validatorKeys.add(key);
           } else {
             if (depositKeypairs == null) {
-              depositKeypairs = ConfigUtils
-                  .createKeyPairs(((EmulatorContract)config.getConfig().getValidator().getContract()).getKeys());
+              depositKeypairs =
+                  ConfigUtils.createKeyPairs(
+                      ((EmulatorContract) config.getConfig().getValidator().getContract())
+                          .getKeys());
             }
             List<KeyPair> finalDepositKeypairs = depositKeypairs;
 
@@ -468,7 +524,8 @@ public class NodeCommandLauncher implements Runnable {
               indices = IntStream.of(Integer.parseInt(key));
             }
             indices
-                .mapToObj(i -> finalDepositKeypairs.get(i).getPrivate().getEncodedBytes().toString())
+                .mapToObj(
+                    i -> finalDepositKeypairs.get(i).getPrivate().getEncodedBytes().toString())
                 .forEach(validatorKeys::add);
           }
         }
@@ -478,9 +535,10 @@ public class NodeCommandLauncher implements Runnable {
       }
 
       if (cliOptions.getGenesisTime() != null) {
-        SimpleDateFormat[]  supportedFormats = new SimpleDateFormat[] {
-            new SimpleDateFormat("yyyy-MM-dd HH:mm"),
-            new SimpleDateFormat("HH:mm")};
+        SimpleDateFormat[] supportedFormats =
+            new SimpleDateFormat[] {
+              new SimpleDateFormat("yyyy-MM-dd HH:mm"), new SimpleDateFormat("HH:mm")
+            };
 
         Date time = null;
         for (SimpleDateFormat format : supportedFormats) {
@@ -518,17 +576,18 @@ public class NodeCommandLauncher implements Runnable {
         if (!(config.getConfig().getValidator().getContract() instanceof EmulatorContract)) {
           throw new ConfigException("Genesis time can only be set for 'emulator' contract type");
         }
-        EmulatorContract contract = (EmulatorContract) config.getConfig().getValidator().getContract();
+        EmulatorContract contract =
+            (EmulatorContract) config.getConfig().getValidator().getContract();
         contract.setGenesisTime(time);
 
         SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         format.setTimeZone(TimeZone.getTimeZone("GMT"));
-        logger.info("Genesis time from cli option: "
-            + format.format(time) + " GMT");
+        logger.info("Genesis time from cli option: " + format.format(time) + " GMT");
       }
 
       if (config.getConfig().getValidator().getContract() instanceof EmulatorContract) {
-        EmulatorContract contract = (EmulatorContract) config.getConfig().getValidator().getContract();
+        EmulatorContract contract =
+            (EmulatorContract) config.getConfig().getValidator().getContract();
         if (contract.getGenesisTime() == null) {
           Date defaultTime = new Date();
           defaultTime.setMinutes(0);
@@ -538,8 +597,10 @@ public class NodeCommandLauncher implements Runnable {
 
           SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
           format.setTimeZone(TimeZone.getTimeZone("GMT"));
-          logger.warn("Genesis time not specified. Default genesisTime was generated: "
-                  + format.format(defaultTime) + " GMT");
+          logger.warn(
+              "Genesis time not specified. Default genesisTime was generated: "
+                  + format.format(defaultTime)
+                  + " GMT");
         }
       }
 
@@ -551,36 +612,7 @@ public class NodeCommandLauncher implements Runnable {
         config.getConfig().setDb(cliOptions.getDbPrefix());
       }
 
-      return new NodeCommandLauncher(
-        config,
-        specBuilder,
-        cliOptions,
-        logLevel);
-    }
-
-    @NotNull
-    private static SpecConstantsData mergeSpecConstantsData(SpecConstantsData specConsts, SpecConstantsDataMerged specConstsYaml) {
-      if (specConsts == null) {
-        return specConstsYaml;
-      } else {
-        try {
-          return Objects.copyProperties(specConsts, specConstsYaml);
-        } catch (IllegalAccessException| InvocationTargetException e) {
-          throw new RuntimeException(
-              String.format("Failed to merge config %s into main config", specConsts), e);
-        }
-      }
-    }
-
-    private static SpecConstantsDataMerged loadSpecConstantsDataMerged(String specConstants) {
-      ConfigBuilder<SpecConstantsDataMerged> specConstsBuilder =
-          new ConfigBuilder<>(SpecConstantsDataMerged.class);
-      if ("minimal".equals(specConstants)) {
-        specConstsBuilder.addYamlConfigFromResources("/spec/" + specConstants + ".yaml");
-      } else {
-        specConstsBuilder.addYamlConfig(Paths.get(specConstants).toFile());
-      }
-      return specConstsBuilder.build();
+      return new NodeCommandLauncher(config, specBuilder, cliOptions, logLevel);
     }
 
     public Builder withConfigFromFile(File file) {
@@ -590,9 +622,7 @@ public class NodeCommandLauncher implements Runnable {
 
     public Builder withConfigFromResource(String resourceName) {
       this.config =
-          new ConfigBuilder<>(MainConfig.class)
-              .addYamlConfigFromResources(resourceName)
-              .build();
+          new ConfigBuilder<>(MainConfig.class).addYamlConfigFromResources(resourceName).build();
       return this;
     }
 
