@@ -3,9 +3,13 @@ package org.ethereum.beacon.db.source;
 import org.ethereum.beacon.db.source.impl.HashMapDataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -14,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class WriteBufferTest {
 
     private WriteBuffer<String, String> buffer;
-    private CacheSizeEvaluator<String, String> evaluator;
+    private static CacheSizeEvaluator<String, String> evaluator;
     private Function<String, Long> keyValueEvaluator;
     private HashMapDataSource dataSource;
 
@@ -29,15 +33,34 @@ class WriteBufferTest {
         assertThat(buffer).isNotNull();
     }
 
-    @Test
-    void testInvalidWriteBufferCreation() {
-        assertThatThrownBy(() -> new WriteBuffer(null, null, false)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new WriteBuffer(null, null, true)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new WriteBuffer(null, evaluator, false)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new WriteBuffer(new HashMapDataSource(), null, false)).isInstanceOf(NullPointerException.class);
+    @ParameterizedTest
+    @MethodSource("invalidArgumentsProvider")
+    void testInvalidWriteBufferCreation(DataSource ds, CacheSizeEvaluator evaluator, boolean upstreamFlush) {
+        assertThatThrownBy(() -> new WriteBuffer(ds, evaluator, upstreamFlush)).isInstanceOf(NullPointerException.class);
+    }
 
-        assertThatThrownBy(() -> new WriteBuffer(null,false)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> new WriteBuffer(null,true)).isInstanceOf(NullPointerException.class);
+    private static Stream<Arguments> invalidArgumentsProvider() {
+        return Stream.of(
+                Arguments.of(null, null, false),
+                Arguments.of(null, null, true),
+                Arguments.of(null, evaluator, false),
+                Arguments.of(null, evaluator, true),
+                Arguments.of(new HashMapDataSource<>(), null, false),
+                Arguments.of(new HashMapDataSource<>(), null, true)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidArgsProvider")
+    void testInvalidArgsWriteBufferCreation(DataSource ds, boolean upstreamFlush) {
+        assertThatThrownBy(() -> new WriteBuffer(ds, upstreamFlush)).isInstanceOf(NullPointerException.class);
+    }
+
+    private static Stream<Arguments> invalidArgsProvider() {
+        return Stream.of(
+                Arguments.of(null, false),
+                Arguments.of(null, true)
+        );
     }
 
     @Test
@@ -79,12 +102,19 @@ class WriteBufferTest {
         assertThat(buffer.getUpstream().get("test_key_0")).isPresent().hasValue("test_value_0");
     }
 
-    @Test
-    void testNullValues() {
+    @ParameterizedTest
+    @MethodSource("nullArgumentsProvider")
+    void testNullValues(String key, String value) {
+        assertThatThrownBy(() -> buffer.put(key, value)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> buffer.get(null)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> buffer.put(null, null)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> buffer.put("not_null", null)).isInstanceOf(NullPointerException.class);
-        assertThatThrownBy(() -> buffer.put(null, "not_null")).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> buffer.remove(null)).isInstanceOf(NullPointerException.class);
+    }
+
+    private static Stream<Arguments> nullArgumentsProvider() {
+        return Stream.of(
+                Arguments.of(null, null),
+                Arguments.of("not_null", null),
+                Arguments.of(null, "not_null")
+        );
     }
 }

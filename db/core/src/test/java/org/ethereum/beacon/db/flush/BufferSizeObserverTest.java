@@ -5,6 +5,7 @@ import org.ethereum.beacon.db.source.impl.HashMapDataSource;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.stream.Stream;
@@ -103,14 +104,8 @@ class BufferSizeObserverTest {
         assertThat(buffer.getUpstream().get(TEST_KEY_5)).isPresent().hasValue(TEST_VALUE_5);
     }
 
-    private static Stream<Arguments> keyValueArgumentsProvider() {
-        return Stream.of(
-                Arguments.of("test_key", "test_value")
-        );
-    }
-
     @ParameterizedTest
-    @MethodSource("keyValueArgumentsProvider")
+    @CsvSource({ "test_key, test_value"})
     void testFlush(String key, String value) {
         buffer.put(key, value);
         assertThat(buffer.get(key)).isPresent().hasValue(value);
@@ -125,7 +120,7 @@ class BufferSizeObserverTest {
     }
 
     @ParameterizedTest
-    @MethodSource("keyValueArgumentsProvider")
+    @CsvSource({ "test_key, test_value"})
     void testCommit(String key, String value) {
         commitTrack.put(key, value);
         assertThat(commitTrack.get(key)).isPresent().hasValue(value);
