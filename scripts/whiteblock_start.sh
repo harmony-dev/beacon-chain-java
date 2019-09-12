@@ -81,7 +81,7 @@ do
     shift
 done
 
-/usr/bin/harmony default --spec-constants minimal $CMD_LINE_ADDON
+/usr/bin/harmony default --spec-constants=minimal $CMD_LINE_ADDON
 
 trap 'trap - SIGTERM && kill 0' SIGINT SIGTERM EXIT
 
