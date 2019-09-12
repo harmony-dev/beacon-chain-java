@@ -10,7 +10,6 @@ import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.state.PendingAttestation;
-import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.collections.Bitlist;
@@ -222,14 +221,7 @@ public class Metrics {
 
   public static void onHeadChanged(BeaconChainSpec spec, BeaconChainHead head) {
     HEAD_SLOT.set(head.getBlock().getSlot().doubleValue());
-
-    EpochNumber currentEpoch = spec.get_current_epoch(head.getState());
-    SlotNumber epochBoundarySlot = spec.compute_start_slot_of_epoch(currentEpoch);
-    Hash32 block_root = epochBoundarySlot.equals(head.getState().getSlot())
-        ? spec.signing_root(head.getBlock())
-        : spec.get_block_root_at_slot(head.getState(), epochBoundarySlot);
-    setRoot(
-        HEAD_ROOT, block_root);
+    setRoot(HEAD_ROOT, spec.signing_root(head.getBlock()));
   }
 
 
