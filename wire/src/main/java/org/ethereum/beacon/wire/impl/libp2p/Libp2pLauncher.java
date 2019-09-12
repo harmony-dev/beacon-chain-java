@@ -1,5 +1,6 @@
 package org.ethereum.beacon.wire.impl.libp2p;
 
+import identify.pb.IdentifyOuterClass;
 import io.libp2p.core.Host;
 import io.libp2p.core.PeerId;
 import io.libp2p.core.crypto.KEY_TYPE;
@@ -8,6 +9,7 @@ import io.libp2p.core.crypto.PrivKey;
 import io.libp2p.core.dsl.BuildersJKt;
 import io.libp2p.core.multiformats.Multiaddr;
 import io.libp2p.crypto.keys.Secp256k1Kt;
+import io.libp2p.etc.types.ByteArrayExtKt;
 import io.libp2p.mux.mplex.MplexStreamMuxer;
 import io.libp2p.protocol.Identify;
 import io.libp2p.protocol.Ping;
@@ -88,8 +90,24 @@ public class Libp2pLauncher {
             b.getNetwork().listen("/ip4/0.0.0.0/tcp/" + listenPort);
           }
 
+          IdentifyOuterClass.Identify identifyMsg = IdentifyOuterClass.Identify.newBuilder()
+              .setProtocolVersion("ipfs/0.1.0")
+              .setAgentVersion("jvm/0.1")
+              .setPublicKey(ByteArrayExtKt.toProtobuf(privKey.publicKey().bytes()))
+              .addListenAddrs(
+                  ByteArrayExtKt.toProtobuf(new Multiaddr("/ip4/127.0.0.1/tcp/45555").getBytes()))
+              .setObservedAddr(
+                  ByteArrayExtKt.toProtobuf(new Multiaddr("/ip4/127.0.0.1/tcp/45555").getBytes()))
+              .addProtocols("/ipfs/id/1.0.0")
+              .addProtocols("/ipfs/id/push/1.0.0")
+              .addProtocols("/ipfs/ping/1.0.0")
+              .addProtocols("/libp2p/circuit/relay/0.1.0")
+              .addProtocols("/meshsub/1.0.0")
+              .addProtocols("/floodsub/1.0.0")
+              .build();
+
           b.getProtocols().add(new Ping());
-          b.getProtocols().add(new Identify());
+          b.getProtocols().add(new Identify(identifyMsg));
           b.getProtocols().add(gossip);
           b.getProtocols().addAll(peerManager.rpcMethods.all());
 
