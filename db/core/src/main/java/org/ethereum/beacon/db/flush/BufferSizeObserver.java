@@ -30,7 +30,8 @@ public class BufferSizeObserver implements DatabaseFlusher {
     this.bufferSizeLimit = bufferSizeLimit;
   }
 
-  public static <K, V> BufferSizeObserver create(WriteBuffer<K, V> buffer, long bufferSizeLimit) {
+  public static <K, V> BufferSizeObserver create(@Nonnull WriteBuffer<K, V> buffer, long bufferSizeLimit) {
+    Objects.requireNonNull(buffer);
     WriteBuffer<K, V> commitTrack = new WriteBuffer<>(buffer, false);
     return new BufferSizeObserver(buffer, commitTrack, bufferSizeLimit);
   }
