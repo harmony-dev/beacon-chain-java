@@ -1,8 +1,11 @@
 package org.ethereum.beacon.db.source;
 
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
@@ -34,7 +37,7 @@ class HoleyListTest {
             }
         };
 
-        assertThat(list).isNotNull();
+        assertThat(list.size()).isEqualTo(0);
     }
 
     @Test

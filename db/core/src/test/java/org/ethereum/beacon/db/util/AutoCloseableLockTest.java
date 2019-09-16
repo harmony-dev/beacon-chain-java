@@ -1,15 +1,21 @@
 package org.ethereum.beacon.db.util;
 
 import org.jetbrains.annotations.NotNull;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.*;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.*;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Stream;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class AutoCloseableLockTest {
 
@@ -23,8 +29,10 @@ class AutoCloseableLockTest {
     @ParameterizedTest
     @MethodSource("creationArgumentsProvider")
     void testValidCreation(Lock lock) {
-        final AutoCloseable result = new AutoCloseableLock(lock);
-        assertThat(result).isNotNull();
+        final AutoCloseableLock result = new AutoCloseableLock(lock);
+        result
+                .lock()
+                .unlock();
     }
 
     private static Stream<Arguments> creationArgumentsProvider() {
@@ -38,8 +46,10 @@ class AutoCloseableLockTest {
     @ParameterizedTest
     @MethodSource("creationArgumentsProvider")
     void wrap(Lock lock) {
-        final AutoCloseable result = AutoCloseableLock.wrap(lock);
-        assertThat(result).isNotNull();
+        final AutoCloseableLock result = AutoCloseableLock.wrap(lock);
+        result
+                .lock()
+                .unlock();
     }
 
     private boolean locked;

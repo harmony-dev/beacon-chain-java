@@ -1,11 +1,14 @@
 package org.ethereum.beacon.db.source.impl;
 
 import org.ethereum.beacon.db.source.CacheSizeEvaluator;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 
 import java.util.function.Function;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class CacheSizeEvaluatorImplTest {
 
@@ -19,7 +22,6 @@ class CacheSizeEvaluatorImplTest {
     @BeforeEach
     void setUp() {
         cacheSizeEvaluator = new CacheSizeEvaluatorImpl<>(key -> (long) key.length(), key -> (long) key.length());
-        assertThat(cacheSizeEvaluator).isNotNull();
         createdStorageSize = cacheSizeEvaluator.getEvaluatedSize();
         assertThat(createdStorageSize).isEqualTo(EMPTY_SIZE);
     }

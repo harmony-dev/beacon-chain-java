@@ -1,12 +1,14 @@
 package org.ethereum.beacon.db.source;
 
 import org.ethereum.beacon.db.source.impl.HashMapDataSource;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import javax.annotation.Nonnull;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class AbstractLinkedDataSourceTest {
 
@@ -19,7 +21,8 @@ class AbstractLinkedDataSourceTest {
 
     @BeforeEach
     void setUp() {
-        dataSource = new AbstractLinkedDataSource<String, String, String, String>(new HashMapDataSource<>()) {
+        final HashMapDataSource<String, String> upstream = new HashMapDataSource<>();
+        dataSource = new AbstractLinkedDataSource<String, String, String, String>(upstream) {
             public Optional<String> get(@Nonnull String key) {
                 return getUpstream().get(key);
             }
@@ -33,7 +36,7 @@ class AbstractLinkedDataSourceTest {
             }
         };
 
-        assertThat(dataSource).isNotNull();
+        assertThat(dataSource.getUpstream()).isEqualTo(upstream);
     }
 
     @Test
@@ -55,11 +58,12 @@ class AbstractLinkedDataSourceTest {
 
     @Test
     void testGetPutRemoveUpstreamFlush() {
-        dataSource = new AbstractLinkedDataSource<String, String, String, String>(new HashMapDataSource<String, String>() {
+        final HashMapDataSource<String, String> upstream = new HashMapDataSource<String, String>() {
             public void flush() {
                 getStore().put(TEST_FLUSH, TEST_FLUSH);
             }
-        }, true) {
+        };
+        dataSource = new AbstractLinkedDataSource<String, String, String, String>(upstream, true) {
             public Optional<String> get(@Nonnull String key) {
                 return getUpstream().get(key);
             }
@@ -77,8 +81,7 @@ class AbstractLinkedDataSourceTest {
             }
         };
 
-        assertThat(dataSource).isNotNull();
-        assertThat(dataSource.getUpstream()).isNotNull();
+        assertThat(dataSource.getUpstream()).isEqualTo(upstream);
 
         dataSource.put(TEST_KEY, TEST_VALUE);
         assertThat(dataSource.get(TEST_KEY)).isPresent().hasValue(TEST_VALUE);
@@ -116,10 +119,5 @@ class AbstractLinkedDataSourceTest {
         dataSource.flush();
         assertThat(dataSource.get(TEST_FLUSH)).isNotPresent();
         assertThat(dataSource.get(TEST_DO_FLUSH)).isPresent().hasValue(TEST_DO_FLUSH);
-    }
-
-    @Test
-    void testGetUpstream() {
-        assertThat(dataSource.getUpstream()).isNotNull();
     }
 }

@@ -1,15 +1,18 @@
 package org.ethereum.beacon.db.source.impl;
 
 import org.ethereum.beacon.db.source.DataSource;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.*;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import java.util.function.Function;
 import java.util.stream.Stream;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class DataSourceListTest {
 
@@ -18,7 +21,6 @@ class DataSourceListTest {
     @BeforeEach
     void setUp() {
         dataSourceList = new DataSourceList<>(new HashMapDataSource<>(), serialize(), deserialize());
-        assertThat(dataSourceList).isNotNull();
         assertThat(dataSourceList.size()).isEqualTo(0);
     }
 
@@ -62,9 +64,9 @@ class DataSourceListTest {
 
     @Test
     void testGetOverIndex() {
-        final Long TEST_KEY_0 = 0L;
-        final Long TEST_KEY_1 = 1L;
-        final Long TEST_KEY_LESS_ZERO = -1L;
+        final long TEST_KEY_0 = 0L;
+        final long TEST_KEY_1 = 1L;
+        final long TEST_KEY_LESS_ZERO = -1L;
         final String TEST_VALUE = "test_value";
 
         dataSourceList.put(TEST_KEY_0, TEST_VALUE);

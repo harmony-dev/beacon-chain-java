@@ -11,7 +11,6 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.*;
 
 class BatchUpdateDataSourceTest {
 
@@ -52,14 +51,11 @@ class BatchUpdateDataSourceTest {
             }
         };
 
-        assertThat(dataSource).isNotNull();
+        assertThat(dataSource.get("something")).isNotPresent();
     }
 
     @Test
-    void testGetPutRemoveFlushBatchUpdate() {
-        assertThat(dataSource.get("test_key_0")).isNotPresent();
-        dataSource.put("test_key_0", "test_value_0");
-        assertThat(dataSource.get("test_key_0")).isPresent().hasValue("test_value_0");
+    void testBatchUpdate() {
         final Map<String, String> updates = new HashMap<>();
         updates.put("test_key_1", "test_value_1");
         updates.put("test_key_2", "test_value_2");
@@ -67,10 +63,26 @@ class BatchUpdateDataSourceTest {
         updates.put("test_key_4", "test_value_4");
         updates.put("test_key_5", "test_value_5");
         dataSource.batchUpdate(updates);
-        dataSource.remove("test_key_5");
-        assertThat(dataSource.get("test_valu_5")).isNotPresent();
+        assertThat(dataSource.get("test_key_1")).isPresent().hasValue("test_value_1");
+        assertThat(dataSource.get("test_key_2")).isPresent().hasValue("test_value_2");
+        assertThat(dataSource.get("test_key_3")).isPresent().hasValue("test_value_3");
+        assertThat(dataSource.get("test_key_4")).isPresent().hasValue("test_value_4");
+        assertThat(dataSource.get("test_key_5")).isPresent().hasValue("test_value_5");
+    }
+
+    @Test
+    void testFlush() {
         dataSource.flush();
         assertThat(dataSource.get("test_flush")).isPresent().hasValue("test_flush");
+    }
+
+    @Test
+    void testPutGetRemove() {
+        assertThat(dataSource.get("test_key_0")).isNotPresent();
+        dataSource.put("test_key_0", "test_value_0");
+        assertThat(dataSource.get("test_key_0")).isPresent().hasValue("test_value_0");
+        dataSource.remove("test_key_0");
+        assertThat(dataSource.get("test_key_0")).isNotPresent();
     }
 
     @Test

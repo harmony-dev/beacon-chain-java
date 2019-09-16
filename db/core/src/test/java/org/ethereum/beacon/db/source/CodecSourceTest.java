@@ -3,7 +3,8 @@ package org.ethereum.beacon.db.source;
 import org.ethereum.beacon.db.source.impl.HashMapDataSource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.*;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -18,7 +19,6 @@ class CodecSourceTest {
     @BeforeEach
     void setUp() {
         source = new CodecSource<>(new HashMapDataSource<>(), Function.identity(), Function.identity(), Function.identity());
-        assertThat(source).isNotNull();
     }
 
     @ParameterizedTest
@@ -88,7 +88,6 @@ class CodecSourceTest {
     @MethodSource("keyValueArgumentsProvider")
     void testKeyConversion(String key, String value) {
         source = new CodecSource<>(new HashMapDataSource<>(), k -> encode(k, key), Function.identity(), Function.identity());
-        assertThat(source).isNotNull();
         assertThat(source.get(key)).isNotPresent();
 
         source.put(key, value);
@@ -103,7 +102,6 @@ class CodecSourceTest {
     @MethodSource("keyValueArgumentsProvider")
     void testValueTargetValueToUpValueConversion(String key, String value) {
         source = new CodecSource<>(new HashMapDataSource<>(), k -> encode(k, key), k -> encode(k, value), Function.identity());
-        assertThat(source).isNotNull();
         assertThat(source.get(key)).isNotPresent();
 
         source.put(key, value);
@@ -114,7 +112,6 @@ class CodecSourceTest {
     @MethodSource("keyValueArgumentsProvider")
     void testValueUpValueToTargetValueConversion(String key, String value) {
         source = new CodecSource<>(new HashMapDataSource<>(), k -> encode(k, key), k -> encode(k, value), k -> decode());
-        assertThat(source).isNotNull();
         assertThat(source.get(key)).isNotPresent();
 
         source.put(key, value);

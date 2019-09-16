@@ -1,9 +1,12 @@
 package org.ethereum.beacon.db.source;
 
 import org.ethereum.beacon.db.source.impl.HashMapDataSource;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.*;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.Optional;
 import java.util.function.Function;
@@ -39,7 +42,6 @@ class SingleValueSourceTest {
             }
         };
 
-        assertThat(source).isNotNull();
         assertThat(source.get()).isEmpty();
     }
 
@@ -100,7 +102,6 @@ class SingleValueSourceTest {
     @Test
     void testGetSetRemoveSourceValue() {
         source = SingleValueSource.fromDataSource(new HashMapDataSource<>(), TEST_KEY, Function.identity(), Function.identity());
-        assertThat(source).isNotNull();
         assertThat(source.get()).isNotPresent();
         source.set(TEST_VALUE);
         assertThat(source.get()).isPresent().hasValue(TEST_VALUE);
@@ -129,7 +130,6 @@ class SingleValueSourceTest {
     @Test
     void memSourceGetSetRemoveTest() {
         source = SingleValueSource.memSource();
-        assertThat(source).isNotNull();
         assertThat(source.get()).isNotPresent();
         source.set(TEST_VALUE);
         assertThat(source.get()).isPresent().hasValue(TEST_VALUE);

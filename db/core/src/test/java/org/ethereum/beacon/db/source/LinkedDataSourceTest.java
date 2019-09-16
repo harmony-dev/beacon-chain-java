@@ -1,7 +1,8 @@
 package org.ethereum.beacon.db.source;
 
 import org.ethereum.beacon.db.source.impl.HashMapDataSource;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import javax.annotation.Nonnull;
 import java.util.Optional;
@@ -38,17 +39,12 @@ class LinkedDataSourceTest {
             }
         };
 
-        assertThat(dataSource).isNotNull();
+        assertThat(dataSource.getUpstream()).isNull();
     }
 
     @Test
     void testSetUpstream() {
         assertThatThrownBy(() -> dataSource.setUpstream(new HashMapDataSource<>())).isInstanceOf(UnsupportedOperationException.class);
-    }
-
-    @Test
-    void testGetNullUpstream() {
-        assertThat(dataSource.getUpstream()).isNull();
     }
 
     @Test
@@ -75,7 +71,6 @@ class LinkedDataSourceTest {
                 return new HashMapDataSource<>();
             }
         };
-        assertThat(dataSource).isNotNull();
         assertThat(dataSource.getUpstream()).isNotNull();
     }
 }

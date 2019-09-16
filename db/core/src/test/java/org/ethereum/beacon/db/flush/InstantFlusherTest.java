@@ -2,11 +2,14 @@ package org.ethereum.beacon.db.flush;
 
 import org.ethereum.beacon.db.source.WriteBuffer;
 import org.ethereum.beacon.db.source.impl.HashMapDataSource;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class InstantFlusherTest {
 
@@ -47,8 +50,6 @@ class InstantFlusherTest {
             }
         };
 
-        assertThat(instantFlusher).isNotNull();
-
         assertThat(doFlush).isFalse();
         assertThat(datasourceFlush).isFalse();
         assertThat(instantFlushed).isFalse();
@@ -77,8 +78,6 @@ class InstantFlusherTest {
                 instantFlushed = true;
             }
         };
-
-        assertThat(instantFlusher).isNotNull();
 
         assertThat(doFlush).isFalse();
         assertThat(datasourceFlush).isFalse();

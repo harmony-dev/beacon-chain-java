@@ -13,7 +13,6 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.*;
 
 class WriteBufferTest {
 
@@ -26,11 +25,10 @@ class WriteBufferTest {
     void setUp() {
         keyValueEvaluator = s -> 1L;
         evaluator = CacheSizeEvaluator.getInstance(keyValueEvaluator);
-        assertThat(keyValueEvaluator).isNotNull();
-        assertThat(evaluator).isNotNull();
         dataSource = new HashMapDataSource();
         buffer = new WriteBuffer<>(dataSource, evaluator, true);
-        assertThat(buffer).isNotNull();
+        assertThat(buffer.evaluateSize()).isEqualTo(evaluator.getEvaluatedSize());
+        assertThat(buffer.getUpstream()).isEqualTo(dataSource);
     }
 
     @ParameterizedTest

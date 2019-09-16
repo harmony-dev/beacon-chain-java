@@ -13,12 +13,11 @@ import java.util.function.Function;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.*;
 
 class CacheDataSourceTest {
 
-    private CacheDataSource<String, String> dataSource;
     private long size;
+    private CacheDataSource<String, String> dataSource;
 
     @BeforeEach
     void setUp() {
@@ -78,7 +77,11 @@ class CacheDataSourceTest {
             }
         };
 
-        assertThat(dataSource).isNotNull();
+        assertThat(dataSource.evaluateSize()).isEqualTo(size);
+    }
+
+    private Function<String, Long> getKeyValueEvaluator() {
+        return s -> 1L;
     }
 
     @Test
@@ -111,9 +114,5 @@ class CacheDataSourceTest {
         assertThatThrownBy(() -> dataSource.get(null)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> dataSource.remove(null)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> dataSource.getCacheEntry(null)).isInstanceOf(NullPointerException.class);
-    }
-
-    private Function<String, Long> getKeyValueEvaluator() {
-         return s -> 1L;
     }
 }

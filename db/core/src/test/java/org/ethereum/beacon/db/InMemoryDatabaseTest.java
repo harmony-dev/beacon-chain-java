@@ -14,12 +14,10 @@ class InMemoryDatabaseTest {
     void testGetBackingDataSource(String param) {
         final InMemoryDatabase database = new InMemoryDatabase();
         final DataSource<BytesValue, BytesValue> dataSource = database.getBackingDataSource();
-        assertThat(dataSource).isNotNull();
-
         final BytesValue key = BytesValue.wrap(param.getBytes());
         final BytesValue value = BytesValue.EMPTY;
         dataSource.put(key, value);
 
-        assertThat(dataSource.get(key)).isPresent();
+        assertThat(dataSource.get(key)).isPresent().hasValue(value);
     }
 }

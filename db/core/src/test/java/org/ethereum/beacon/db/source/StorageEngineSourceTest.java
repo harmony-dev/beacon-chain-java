@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class StorageEngineSourceTest {
 
@@ -63,8 +63,6 @@ class StorageEngineSourceTest {
                 store.put(wrap("test_flush"), "test_flush");
             }
         };
-
-        assertThat(storageEngineSource).isNotNull();
     }
 
     @Test
@@ -73,7 +71,7 @@ class StorageEngineSourceTest {
         storageEngineSource.put(wrap("key_0"), "value_0");
         assertThat(storageEngineSource.get(wrap("key_0")).get()).isEqualTo("value_0");
 
-        Map<BytesValue, String> batch = new HashMap<>();
+        final Map<BytesValue, String> batch = new HashMap<>();
         batch.put(wrap("key_2"), "value_2");
         batch.put(wrap("key_3"), "value_3");
         batch.put(wrap("key_4"), "value_4");

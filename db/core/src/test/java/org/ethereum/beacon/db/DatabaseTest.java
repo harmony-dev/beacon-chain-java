@@ -2,23 +2,21 @@ package org.ethereum.beacon.db;
 
 import org.ethereum.beacon.db.source.DataSource;
 import org.ethereum.beacon.db.source.impl.HashMapDataSource;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.*;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import java.util.stream.Stream;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DatabaseTest {
-
-    @Test
-    void inMemoryDB() {
-        final Database database = Database.inMemoryDB();
-        assertThat(database).isNotNull();
-    }
 
     @Tag("FIX")
     @ParameterizedTest

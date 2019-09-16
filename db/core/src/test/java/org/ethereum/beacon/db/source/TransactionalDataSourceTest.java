@@ -2,7 +2,6 @@ package org.ethereum.beacon.db.source;
 
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import javax.annotation.Nonnull;
@@ -10,10 +9,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-public class TransactionalDataSourceTest {
+class TransactionalDataSourceTest {
 
     private final String TEST_KEY = "test_key";
     private final String TEST_VALUE = "test_value";
@@ -23,8 +22,7 @@ public class TransactionalDataSourceTest {
     private TransactionalDataSource<TransactionalDataSource.TransactionOptions, String, String> transactionalDataSource;
 
     @BeforeEach
-    public void setUp()
-    {
+    void setUp() {
         Map<String, String> store = new ConcurrentHashMap<>();
         transaction = new TransactionalDataSource.Transaction<String, String>() {
             @Override
@@ -52,8 +50,6 @@ public class TransactionalDataSourceTest {
                 store.put(TEST_FLUSH, TEST_FLUSH);
             }
         };
-        assertThat(transaction).isNotNull();
-
 
         transactionalDataSource = new TransactionalDataSource<TransactionalDataSource.TransactionOptions, String, String>() {
             @Override
@@ -66,29 +62,22 @@ public class TransactionalDataSourceTest {
                 return transaction.get(key);
             }
         };
-
-        assertThat(transactionalDataSource).isNotNull();
     }
 
     @Test
-    public void testValidStartTransaction() {
-        assertThat((TransactionalDataSource.TransactionOptions) () -> TransactionalDataSource.IsolationLevel.Snapshot).isNotNull();
-        assertThat((TransactionalDataSource.TransactionOptions) () -> TransactionalDataSource.IsolationLevel.RepeatableReads).isNotNull();
-        assertThat((TransactionalDataSource.TransactionOptions) () -> TransactionalDataSource.IsolationLevel.ReadUncommitted).isNotNull();
-        assertThat((TransactionalDataSource.TransactionOptions) () -> TransactionalDataSource.IsolationLevel.ReadCommitted).isNotNull();
-
-        TransactionalDataSource.TransactionOptions transactionOptions = () -> TransactionalDataSource.IsolationLevel.Snapshot;
+    void testValidStartTransaction() {
+        final TransactionalDataSource.TransactionOptions transactionOptions = () -> TransactionalDataSource.IsolationLevel.Snapshot;
         assertThat(transactionalDataSource.startTransaction(transactionOptions)).isEqualTo(transaction);
         assertThat(transactionOptions.getIsolationLevel()).isIn(TransactionalDataSource.IsolationLevel.values());
     }
 
     @Test
-    public void testInvalidStartTransaction() {
-        TransactionalDataSource.TransactionOptions transactionOptions = () -> TransactionalDataSource.IsolationLevel.valueOf("illegalArgument");
-        assertThat(transactionOptions).isNotNull();
+    void testInvalidStartTransaction() {
+        final TransactionalDataSource.TransactionOptions transactionOptions = () -> TransactionalDataSource.IsolationLevel.valueOf("illegalArgument");
         assertThat(transactionalDataSource.startTransaction(transactionOptions)).isEqualTo(transaction);
         assertThat(transactionalDataSource.startTransaction(null)).isEqualTo(transaction);
-        assertThatThrownBy( () -> transactionOptions.getIsolationLevel().equals(TransactionalDataSource.IsolationLevel.Snapshot)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> transactionOptions.getIsolationLevel().equals(TransactionalDataSource.IsolationLevel.Snapshot))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -121,7 +110,7 @@ public class TransactionalDataSourceTest {
     }
 
     @Test
-    public void testException() {
+    void testException() {
         assertThat(new TransactionalDataSource.TransactionException("exception")).isNotNull();
         assertThat(new TransactionalDataSource.TransactionException("exception", new Throwable(""))).isNotNull();
     }

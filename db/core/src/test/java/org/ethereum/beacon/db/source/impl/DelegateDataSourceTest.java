@@ -1,8 +1,10 @@
 package org.ethereum.beacon.db.source.impl;
 
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.*;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.stream.Stream;
 
@@ -20,7 +22,7 @@ class DelegateDataSourceTest {
     @BeforeEach
     void setUp() {
         delegateDataSource = new DelegateDataSource<>(new HashMapDataSource<>());
-        assertThat(delegateDataSource).isNotNull();
+        assertThat(delegateDataSource.get(TEST_KEY)).isNotPresent();
     }
 
     @Test
@@ -52,11 +54,12 @@ class DelegateDataSourceTest {
                 store.put(TEST_FLUSH, TEST_FLUSH);
             }
         });
-        assertThat(delegateDataSource).isNotNull();
+        assertThat(delegateDataSource.get(TEST_KEY)).isNotPresent();
 
         delegateDataSource.put(TEST_KEY, TEST_VALUE);
         assertThat(delegateDataSource.get(TEST_KEY)).isPresent().hasValue(TEST_VALUE);
 
+        assertThat(delegateDataSource.get(TEST_FLUSH)).isNotPresent();
         delegateDataSource.flush();
         assertThat(delegateDataSource.get(TEST_FLUSH)).isPresent().hasValue(TEST_FLUSH);
     }

@@ -22,14 +22,18 @@ class ReadonlyDataSourceTest {
             return Optional.ofNullable(store.get(key));
         };
 
-        assertThat(readonlyDataSource).isNotNull();
-
         store.put("test_key_0", "test_value_0");
+        assertThat(store.get("test_key_0")).isNotNull();
     }
 
     @Test
     void testGet() {
         assertThat(readonlyDataSource.get("test_key_0")).isPresent().hasValue("test_value_0");
+    }
+
+    @Test
+    void testInvalidGet() {
+        assertThat(readonlyDataSource.get("test_key_1")).isNotPresent();
     }
 
     @Test

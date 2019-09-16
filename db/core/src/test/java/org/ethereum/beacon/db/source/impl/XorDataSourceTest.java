@@ -4,7 +4,8 @@ package org.ethereum.beacon.db.source.impl;
 import org.junit.jupiter.api.Test;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class XorDataSourceTest {
 
@@ -16,7 +17,11 @@ class XorDataSourceTest {
         assertThatThrownBy(() -> new XorDataSource<>(null, null))
                 .isInstanceOf(NullPointerException.class);
 
-        assertThat(new XorDataSource<>(new HashMapDataSource<>(), null)).isNotNull();
-        assertThat(new XorDataSource<>(new HashMapDataSource<>(), BytesValue.of(1,2,3))).isNotNull();
+        final HashMapDataSource<BytesValue, Object> upstream = new HashMapDataSource<>();
+        XorDataSource<Object> actual = new XorDataSource<>(upstream, null);
+        assertThat(actual.getUpstream()).isEqualTo(upstream);
+
+        actual = new XorDataSource<>(upstream, BytesValue.of(1, 2, 3));
+        assertThat(actual.getUpstream()).isEqualTo(upstream);
     }
 }

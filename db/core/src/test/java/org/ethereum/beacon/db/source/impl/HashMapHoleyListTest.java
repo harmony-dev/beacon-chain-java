@@ -1,9 +1,11 @@
 package org.ethereum.beacon.db.source.impl;
 
 import org.ethereum.beacon.db.source.HoleyList;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.*;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.stream.Stream;
 
@@ -16,7 +18,6 @@ class HashMapHoleyListTest {
     @BeforeEach
     void setUp() {
         map = new HashMapHoleyList<>();
-        assertThat(map).isNotNull();
         assertThat(map.size()).isEqualTo(0L);
     }
 
@@ -63,8 +64,8 @@ class HashMapHoleyListTest {
 
     @Test
     void testPutSameKey() {
-        final Long TEST_KEY = 0L;
-        final Long TEST_KEY_1 = 1L;
+        final long TEST_KEY = 0L;
+        final long TEST_KEY_1 = 1L;
         final String TEST_VALUE = "test_value";
         final String TEST_VALUE_NEW = "NewTestValue";
 
