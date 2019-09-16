@@ -9,6 +9,8 @@ include 'core'
 include 'crypto'
 // DB persistence core interfaces 
 include 'db:core'
+// Discovery v5 protocol implementation
+include 'discovery'
 // PoW (Proof of Work) interfaces etc
 include 'pow:core'
 // PoW made with EthereumJ
@@ -43,5 +45,5 @@ include 'validator:core'
 include 'validator:embedded'
 // Validator server-side api
 include 'validator:server'
-// Wire API mock
+// Wire API
 include 'wire'
