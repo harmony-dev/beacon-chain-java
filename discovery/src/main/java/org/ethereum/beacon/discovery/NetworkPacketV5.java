@@ -1,13 +1,13 @@
 package org.ethereum.beacon.discovery;
 
-import org.ethereum.beacon.discovery.enr.NodeRecord;
+import org.ethereum.beacon.discovery.enr.NodeRecordV5;
 import org.ethereum.beacon.discovery.packet.Packet;
 
-public class NetworkPacket {
+public class NetworkPacketV5 {
   private final Packet packet;
-  private final NodeRecord nodeRecord;
+  private final NodeRecordV5 nodeRecord;
 
-  public NetworkPacket(Packet packet, NodeRecord nodeRecord) {
+  public NetworkPacketV5(Packet packet, NodeRecordV5 nodeRecord) {
     this.packet = packet;
     this.nodeRecord = nodeRecord;
   }
@@ -16,7 +16,7 @@ public class NetworkPacket {
     return packet;
   }
 
-  public NodeRecord getNodeRecord() {
+  public NodeRecordV5 getNodeRecord() {
     return nodeRecord;
   }
 }

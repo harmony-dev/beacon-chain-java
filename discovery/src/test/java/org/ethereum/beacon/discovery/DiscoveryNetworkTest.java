@@ -9,7 +9,6 @@ import org.ethereum.beacon.discovery.message.DiscoveryMessage;
 import org.ethereum.beacon.discovery.message.DiscoveryV5Message;
 import org.ethereum.beacon.discovery.message.FindNodeMessage;
 import org.ethereum.beacon.discovery.message.NodesMessage;
-import org.ethereum.beacon.discovery.mock.DiscoveryManagerNoNetwork;
 import org.ethereum.beacon.discovery.packet.AuthHeaderMessagePacket;
 import org.ethereum.beacon.discovery.packet.MessagePacket;
 import org.ethereum.beacon.discovery.packet.RandomPacket;
@@ -18,7 +17,6 @@ import org.ethereum.beacon.discovery.packet.WhoAreYouPacket;
 import org.ethereum.beacon.discovery.storage.NodeTableStorage;
 import org.ethereum.beacon.discovery.storage.NodeTableStorageFactoryImpl;
 import org.ethereum.beacon.schedulers.Schedulers;
-import org.ethereum.beacon.stream.SimpleProcessor;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
 import tech.pegasys.artemis.util.bytes.BytesValue;
@@ -30,11 +28,8 @@ import java.util.concurrent.TimeUnit;
 
 import static org.ethereum.beacon.discovery.NodeContext.DEFAULT_DISTANCE;
 
-/**
- * Discovery test without real network, instead outgoing stream of each peer is connected with
- * incoming of another and vice versa
- */
-public class DiscoveryNoNetworkTest {
+/** Same as {@link DiscoveryNoNetworkTest} but using real network */
+public class DiscoveryNetworkTest {
   @Test
   public void test() throws Exception {
     // 1) start 2 nodes
@@ -49,9 +44,9 @@ public class DiscoveryNoNetworkTest {
             .build();
     NodeRecordV5 nodeRecord2 =
         NodeRecordV5.Builder.empty()
-            .withIpV4Address(BytesValue.wrap(InetAddress.getByName("192.168.0.1").getAddress()))
+            .withIpV4Address(BytesValue.wrap(InetAddress.getByName("127.0.0.1").getAddress()))
             .withSeqNumber(1L)
-            .withUdpPort(30303)
+            .withUdpPort(30304)
             .withSecp256k1(
                 BytesValue.fromHexString(
                     "7ef3502240a42891771de732f5ee6bee3eb881939edf3e6008c0d07b502756e426"))
@@ -83,24 +78,19 @@ public class DiscoveryNoNetworkTest {
                     add(nodeRecord1);
                   }
                 });
-    SimpleProcessor<UnknownPacket> from1to2 =
-        new SimpleProcessor<>(
-            Schedulers.createDefault().newSingleThreadDaemon("from1to2-thread"), "from1to2");
-    SimpleProcessor<UnknownPacket> from2to1 =
-        new SimpleProcessor<>(
-            Schedulers.createDefault().newSingleThreadDaemon("from2to1-thread"), "from2to1");
-    DiscoveryManagerNoNetwork discoveryManager1 =
-        new DiscoveryManagerNoNetwork(nodeTableStorage1.get(), nodeRecord1, from2to1);
-    DiscoveryManagerNoNetwork discoveryManager2 =
-        new DiscoveryManagerNoNetwork(nodeTableStorage2.get(), nodeRecord2, from1to2);
+    DiscoveryManagerImpl discoveryManager1 =
+        new DiscoveryManagerImpl(
+            nodeTableStorage1.get(),
+            nodeRecord1,
+            Schedulers.createDefault().newSingleThreadDaemon("server-1"));
+    DiscoveryManagerImpl discoveryManager2 =
+        new DiscoveryManagerImpl(
+            nodeTableStorage2.get(),
+            nodeRecord2,
+            Schedulers.createDefault().newSingleThreadDaemon("server-2"));
 
     discoveryManager1.start();
     discoveryManager2.start();
-    // 2) Link outgoing of each one with incoming of another
-    Flux.from(discoveryManager1.getOutgoingMessages())
-        .subscribe(t -> from1to2.onNext(new UnknownPacket(t.getPacket().getBytes())));
-    Flux.from(discoveryManager2.getOutgoingMessages())
-        .subscribe(t -> from2to1.onNext(new UnknownPacket(t.getPacket().getBytes())));
 
     // 3) Expect standard 1 => 2 dialog
     CountDownLatch randomSent1to2 = new CountDownLatch(1);
@@ -108,7 +98,8 @@ public class DiscoveryNoNetworkTest {
     CountDownLatch whoareyouSent2to1 = new CountDownLatch(1);
     CountDownLatch findNodeSent2to1 = new CountDownLatch(1);
     CountDownLatch nodesSent1to2 = new CountDownLatch(1);
-    Flux.from(from1to2)
+    Flux.from(discoveryManager1.getOutgoingMessages())
+        .map(p -> new UnknownPacket(p.getPacket().getBytes()))
         .subscribe(
             networkPacket -> {
               // 1 -> 2 random
@@ -136,7 +127,8 @@ public class DiscoveryNoNetworkTest {
                 nodesSent1to2.countDown();
               }
             });
-    Flux.from(from2to1)
+    Flux.from(discoveryManager2.getOutgoingMessages())
+        .map(p -> new UnknownPacket(p.getPacket().getBytes()))
         .subscribe(
             networkPacket -> {
               // 2 -> 1 whoareyou
