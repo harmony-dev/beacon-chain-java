@@ -14,8 +14,6 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DatabaseTest {
 
@@ -87,16 +85,15 @@ class DatabaseTest {
         };
 
         final DataSource<BytesValue, BytesValue> storage = db.createStorage(TEST_STORAGE_NAME);
-        assertThat(storage).isNotNull();
         assertThat(storage).isEqualTo(dataSource);
         assertThat(storageName).isEqualTo(TEST_STORAGE_NAME);
 
-        assertFalse(committed);
+        assertThat(committed).isFalse();
         db.commit();
-        assertTrue(committed);
+        assertThat(committed).isTrue();
 
-        assertFalse(closed);
+        assertThat(closed).isFalse();
         db.close();
-        assertTrue(closed);
+        assertThat(closed).isTrue();
     }
 }
