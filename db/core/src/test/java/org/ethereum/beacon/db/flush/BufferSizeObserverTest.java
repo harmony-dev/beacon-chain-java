@@ -13,7 +13,6 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 //TODO: need more tests
@@ -23,14 +22,32 @@ class BufferSizeObserverTest {
     private WriteBuffer<String, String> commitTrack;
     private BufferSizeObserver observer;
 
+    private boolean commitTrackDoFlush;
+    private boolean bufferFlushed;
+
     @BeforeEach
     void setUp() {
-        final HashMapDataSource<String, String> upstream = new HashMapDataSource<>();
-        buffer = new WriteBuffer<>(upstream, true);
+        commitTrackDoFlush = false;
+        bufferFlushed = false;
+
+        final HashMapDataSource<String, String> upstream = new HashMapDataSource<String, String>() {
+            @Override
+            public void flush() {
+                bufferFlushed = true;
+                super.flush();
+            }
+        };
+        buffer = new WriteBuffer<>(upstream, false);
         assertThat(buffer.getUpstream()).isEqualTo(upstream);
         assertThat(buffer.evaluateSize()).isEqualTo(0);
 
-        commitTrack = new WriteBuffer<>(upstream, true);
+        commitTrack = new WriteBuffer<String, String>(upstream, false) {
+            @Override
+            public void doFlush() {
+                commitTrackDoFlush = true;
+                super.doFlush();
+            }
+        };
         assertThat(commitTrack.getUpstream()).isEqualTo(upstream);
         assertThat(commitTrack.evaluateSize()).isEqualTo(0);
 
@@ -60,7 +77,8 @@ class BufferSizeObserverTest {
     private static Stream<Arguments> nullKeyValueArgumentsProvider() {
         return Stream.of(
                 Arguments.of(null, null),
-                Arguments.of("not_null", null)
+                Arguments.of("not_null", null),
+                Arguments.of(null, "not_null")
         );
     }
 
@@ -79,7 +97,6 @@ class BufferSizeObserverTest {
 
         assertThat(buffer.get(TEST_KEY_0)).isPresent().hasValue(TEST_VALUE_0);
         assertThat(buffer.getCacheEntry(TEST_KEY_0)).isPresent();
-        assertTrue(buffer.evaluateSize() >= Long.MIN_VALUE, "Needed db flush");
 
         observer.flush();
         assertThat(buffer.getCacheEntry(TEST_KEY_0)).isNotPresent();
@@ -111,14 +128,21 @@ class BufferSizeObserverTest {
 
     @ParameterizedTest
     @CsvSource({ "test_key, test_value"})
-    void testCommit(String key, String value) {
+    void testCommitWithoutBufferFlushing(String key, String value) {
         commitTrack.put(key, value);
         assertThat(commitTrack.get(key)).isPresent().hasValue(value);
         assertThat(commitTrack.getUpstream().get(key)).isNotPresent();
+        assertThat(buffer.getUpstream().get(key)).isNotPresent();
+        assertThat(commitTrackDoFlush).isFalse();
+        assertThat(bufferFlushed).isFalse();
 
         observer.commit();
+        assertThat(commitTrackDoFlush).isTrue();
+        assertThat(bufferFlushed).isFalse();
         assertThat(commitTrack.get(key)).isPresent().hasValue(value);
         assertThat(commitTrack.getUpstream().get(key)).isPresent().hasValue(value);
+        assertThat(buffer.get(key)).isPresent().hasValue(value);
+        assertThat(buffer.getUpstream().get(key)).isPresent().hasValue(value);
 
         commitTrack.getUpstream().remove(key);
         assertThat(commitTrack.get(key)).isNotPresent();
