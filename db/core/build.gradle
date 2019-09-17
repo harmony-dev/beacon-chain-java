@@ -1,7 +1,22 @@
 dependencies {
-    api project(':types')
+    api(project(':types')) {
+        exclude group: 'junit'
+    }
+
     api project(':crypto')
 
     api "org.rocksdb:rocksdbjni"
     api "com.googlecode.concurrent-locks:concurrent-locks"
+
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.5.1'
+
+    test {
+        useJUnitPlatform {
+            excludeTags 'FIX'
+        }
+    }
+}
+
+configurations {
+    testImplementation.exclude group: 'junit', module: 'junit'
 }
