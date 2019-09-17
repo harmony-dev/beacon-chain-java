@@ -6,6 +6,7 @@ import org.ethereum.beacon.chain.MutableBeaconChain;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.chain.storage.impl.SSZBeaconChainStorageFactory;
 import org.ethereum.beacon.chain.storage.impl.SerializerFactory;
+import org.ethereum.beacon.chain.storage.util.StorageUtils;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.BlockTransition;
@@ -127,8 +128,8 @@ public class PoolTestConfigurator {
 
         return new AttestationData(
                 Hashes.sha256(BytesValue.fromHexString("aa")),
-                new Checkpoint(EpochNumber.of(231), Hashes.sha256(BytesValue.fromHexString("bb"))),
-                new Checkpoint(EpochNumber.of(232), Hashes.sha256(BytesValue.fromHexString("cc"))),
+                new Checkpoint(EpochNumber.of(125), Hashes.sha256(BytesValue.fromHexString("bb"))),
+                new Checkpoint(EpochNumber.of(126), Hashes.sha256(BytesValue.fromHexString("cc"))),
                 Crosslink.EMPTY);
     }
 
@@ -154,7 +155,7 @@ public class PoolTestConfigurator {
         final Time start = Time.castFrom(UInt64.valueOf(schedulers.getCurrentTime() / 1000));
         final ChainStart chainStart = new ChainStart(start, Eth1Data.EMPTY, Collections.emptyList());
 
-        final BlockTransition<BeaconStateEx> initialTransition = new InitialStateTransition(chainStart, spec);
+        final InitialStateTransition initialTransition = new InitialStateTransition(chainStart, spec);
         final BlockTransition<BeaconStateEx> perBlockTransition = StateTransitionTestUtil.createPerBlockTransition();
         final StateTransition<BeaconStateEx> perEpochTransition = StateTransitionTestUtil.createStateWithNoTransition();
 
@@ -173,6 +174,9 @@ public class PoolTestConfigurator {
                         return perEpochTransition.apply(stateEx);
                     }
                 }, perSlotTransition, spec));
+
+        final BeaconStateEx initialState = initialTransition.apply(spec.get_empty_block());
+        StorageUtils.initializeStorage(chainStorage, spec, initialState);
 
         return new DefaultBeaconChain(
                 spec,
