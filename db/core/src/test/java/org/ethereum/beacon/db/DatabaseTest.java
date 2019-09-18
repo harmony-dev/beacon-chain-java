@@ -17,83 +17,79 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class DatabaseTest {
 
-    @Tag("FIX")
-    @ParameterizedTest
-    @MethodSource("invalidArgumentsProvider")
-    void testInvalidCreation(String path, long bufferLimitsInBytes) {
-        assertThatThrownBy(() -> Database.rocksDB(path, bufferLimitsInBytes)).isInstanceOf(InvalidPathException.class);
-    }
+  @Tag("FIX")
+  @ParameterizedTest
+  @MethodSource("invalidArgumentsProvider")
+  void testInvalidCreation(String path, long bufferLimitsInBytes) {
+    assertThatThrownBy(() -> Database.rocksDB(path, bufferLimitsInBytes))
+            .isInstanceOf(InvalidPathException.class);
+  }
 
-    @Test
-    void testInvalidCreationWithNull() {
-        assertThatThrownBy(() -> Database.rocksDB(null, 0)).isInstanceOf(NullPointerException.class);
-    }
+  @Test
+  void testInvalidCreationWithNull() {
+    assertThatThrownBy(() -> Database.rocksDB(null, 0)).isInstanceOf(NullPointerException.class);
+  }
 
-    private static Stream<Arguments> invalidArgumentsProvider() {
-        return Stream.of(
-                Arguments.of("null", 0),
-                Arguments.of("", 0),
-                Arguments.of("0123", 0)
-        );
-    }
+  private static Stream<Arguments> invalidArgumentsProvider() {
+    return Stream.of(Arguments.of("null", 0), Arguments.of("", 0), Arguments.of("0123", 0));
+  }
 
-    @ParameterizedTest
-    @MethodSource("validArgumentsProvider")
-    void testValidCreation(String path, long bufferLimitsInBytes) {
-        final Database database = Database.rocksDB(path, bufferLimitsInBytes);
-        assertThat(database).isNotNull();
-    }
+  @ParameterizedTest
+  @MethodSource("validArgumentsProvider")
+  void testValidCreation(String path, long bufferLimitsInBytes) {
+    final Database database = Database.rocksDB(path, bufferLimitsInBytes);
+    assertThat(database).isNotNull();
+  }
 
-    private static Stream<Arguments> validArgumentsProvider() {
-        return Stream.of(
-                Arguments.of("/tmp", 0),
-                Arguments.of("/tmp", Long.MAX_VALUE),
-                Arguments.of("/tmp", Long.MIN_VALUE)
-        );
-    }
+  private static Stream<Arguments> validArgumentsProvider() {
+    return Stream.of(
+            Arguments.of("/tmp", 0),
+            Arguments.of("/tmp", Long.MAX_VALUE),
+            Arguments.of("/tmp", Long.MIN_VALUE));
+  }
 
+  private static final String TEST_STORAGE_NAME = "TEST_STORAGE_NAME";
 
-    private static final String TEST_STORAGE_NAME = "TEST_STORAGE_NAME";
+  private boolean committed;
+  private boolean closed;
+  private String storageName;
 
-    private boolean committed;
-    private boolean closed;
-    private String storageName;
+  @Test
+  void testDatabaseCommitCloseCreateStorage() {
+    final DataSource<BytesValue, BytesValue> dataSource = new HashMapDataSource<>();
+    committed = false;
+    closed = false;
+    storageName = null;
 
-    @Test
-    void testDatabaseCommitCloseCreateStorage() {
-        final DataSource<BytesValue, BytesValue> dataSource = new HashMapDataSource<>();
-        committed = false;
-        closed = false;
-        storageName = null;
-
-        final Database db = new Database() {
-            @Override
-            public DataSource<BytesValue, BytesValue> createStorage(String name) {
+    final Database db =
+            new Database() {
+              @Override
+              public DataSource<BytesValue, BytesValue> createStorage(String name) {
                 storageName = name;
                 return dataSource;
-            }
+              }
 
-            @Override
-            public void commit() {
+              @Override
+              public void commit() {
                 committed = true;
-            }
+              }
 
-            @Override
-            public void close() {
+              @Override
+              public void close() {
                 closed = true;
-            }
+              }
         };
 
-        final DataSource<BytesValue, BytesValue> storage = db.createStorage(TEST_STORAGE_NAME);
-        assertThat(storage).isEqualTo(dataSource);
-        assertThat(storageName).isEqualTo(TEST_STORAGE_NAME);
+    final DataSource<BytesValue, BytesValue> storage = db.createStorage(TEST_STORAGE_NAME);
+    assertThat(storage).isEqualTo(dataSource);
+    assertThat(storageName).isEqualTo(TEST_STORAGE_NAME);
 
-        assertThat(committed).isFalse();
-        db.commit();
-        assertThat(committed).isTrue();
+    assertThat(committed).isFalse();
+    db.commit();
+    assertThat(committed).isTrue();
 
-        assertThat(closed).isFalse();
-        db.close();
-        assertThat(closed).isTrue();
-    }
+    assertThat(closed).isFalse();
+    db.close();
+    assertThat(closed).isTrue();
+  }
 }

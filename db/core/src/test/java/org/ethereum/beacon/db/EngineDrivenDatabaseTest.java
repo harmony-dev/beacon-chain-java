@@ -1,16 +1,28 @@
 package org.ethereum.beacon.db;
 
-import org.ethereum.beacon.db.source.*;
+import org.ethereum.beacon.db.source.DataSource;
+import org.ethereum.beacon.db.source.StorageEngineSource;
 import org.ethereum.beacon.db.source.impl.MemSizeEvaluators;
-import org.junit.jupiter.api.*;
-import tech.pegasys.artemis.util.bytes.*;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import tech.pegasys.artemis.util.bytes.Bytes32;
+import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 import javax.annotation.Nonnull;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Random;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class EngineDrivenDatabaseTest {
 
@@ -140,15 +152,13 @@ class EngineDrivenDatabaseTest {
 
     storage.put(wrap("FIVE"), Bytes32.random(rnd));
     storage.put(wrap("SIX"), Bytes32.random(rnd));
-    assertThat(
-            4 * MemSizeEvaluators.BytesValueEvaluator.apply(Bytes32.random(rnd))).isEqualTo(
-        db.getWriteBuffer().evaluateSize());
+      assertThat(4 * MemSizeEvaluators.BytesValueEvaluator.apply(Bytes32.random(rnd)))
+              .isEqualTo(db.getWriteBuffer().evaluateSize());
 
     storage.remove(wrap("FIVE"));
 
-    assertThat(
-            2 * MemSizeEvaluators.BytesValueEvaluator.apply(Bytes32.random(rnd))).isEqualTo(
-        db.getWriteBuffer().evaluateSize());
+      assertThat(2 * MemSizeEvaluators.BytesValueEvaluator.apply(Bytes32.random(rnd)))
+              .isEqualTo(db.getWriteBuffer().evaluateSize());
   }
 
   @Test
