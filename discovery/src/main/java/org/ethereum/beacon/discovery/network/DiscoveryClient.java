@@ -5,7 +5,7 @@ import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.ethereum.beacon.discovery.NetworkPacketV5;
+import org.ethereum.beacon.discovery.enr.NodeRecord;
 import org.ethereum.beacon.discovery.enr.NodeRecordV5;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
@@ -26,7 +26,7 @@ public class DiscoveryClient {
    * @param channel Netty UDP datagram channel
    * @param outgoingStream Stream of outgoing packets, client will forward them to the channel
    */
-  public DiscoveryClient(NioDatagramChannel channel, Publisher<NetworkPacketV5> outgoingStream) {
+  public DiscoveryClient(NioDatagramChannel channel, Publisher<NetworkParcel> outgoingStream) {
     this.channel = channel;
     Flux.from(outgoingStream)
         .subscribe(
@@ -34,15 +34,22 @@ public class DiscoveryClient {
                 send(networkPacket.getPacket().getBytes(), networkPacket.getNodeRecord()));
   }
 
-  private void send(BytesValue data, NodeRecordV5 nodeRecord) {
+  private void send(BytesValue data, NodeRecord recipient) {
+    if (!(recipient instanceof NodeRecordV5)) {
+      String error =
+          String.format(
+              "Accepts only V5 versions of recipient's node records. Got %s instead", recipient);
+      logger.error(error);
+      throw new RuntimeException(error);
+    }
     InetSocketAddress address;
     try {
       address =
           new InetSocketAddress(
-              InetAddress.getByAddress(nodeRecord.getIpV4address().extractArray()),
-              nodeRecord.getUdpPort());
+              InetAddress.getByAddress(((NodeRecordV5) recipient).getIpV4address().extractArray()),
+              ((NodeRecordV5) recipient).getUdpPort());
     } catch (UnknownHostException e) {
-      String error = String.format("Failed to resolve host for node record: %s", nodeRecord);
+      String error = String.format("Failed to resolve host for node record: %s", recipient);
       logger.error(error);
       throw new RuntimeException(error);
     }

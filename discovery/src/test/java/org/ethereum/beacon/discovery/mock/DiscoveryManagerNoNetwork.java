@@ -3,12 +3,13 @@ package org.ethereum.beacon.discovery.mock;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.discovery.DiscoveryManager;
-import org.ethereum.beacon.discovery.NetworkPacketV5;
 import org.ethereum.beacon.discovery.NodeContext;
 import org.ethereum.beacon.discovery.NodeTable;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
 import org.ethereum.beacon.discovery.enr.NodeRecordInfo;
 import org.ethereum.beacon.discovery.enr.NodeRecordV5;
+import org.ethereum.beacon.discovery.network.NetworkParcel;
+import org.ethereum.beacon.discovery.network.NetworkParcelV5;
 import org.ethereum.beacon.discovery.packet.UnknownPacket;
 import org.ethereum.beacon.discovery.storage.AuthTagRepository;
 import org.reactivestreams.Publisher;
@@ -30,8 +31,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class DiscoveryManagerNoNetwork implements DiscoveryManager {
   private static final Logger logger = LogManager.getLogger(DiscoveryManager.class);
-  private final ReplayProcessor<NetworkPacketV5> outgoingMessages = ReplayProcessor.cacheLast();
-  private final FluxSink<NetworkPacketV5> outgoingSink = outgoingMessages.sink();
+  private final ReplayProcessor<NetworkParcel> outgoingMessages = ReplayProcessor.cacheLast();
+  private final FluxSink<NetworkParcel> outgoingSink = outgoingMessages.sink();
   private final Bytes32 homeNodeId;
   private final NodeRecordV5 homeNodeRecord;
   private NodeTable nodeTable;
@@ -96,14 +97,14 @@ public class DiscoveryManagerNoNetwork implements DiscoveryManager {
               homeNodeRecord,
               nodeTable,
               authTagRepo,
-              packet -> outgoingSink.next(new NetworkPacketV5(packet, nodeRecord)),
+              packet -> outgoingSink.next(new NetworkParcelV5(packet, nodeRecord)),
               random);
     }
 
     return Optional.of(context);
   }
 
-  public Publisher<NetworkPacketV5> getOutgoingMessages() {
+  public Publisher<NetworkParcel> getOutgoingMessages() {
     return outgoingMessages;
   }
 }

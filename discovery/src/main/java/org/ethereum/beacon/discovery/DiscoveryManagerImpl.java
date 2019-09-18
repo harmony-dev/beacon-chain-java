@@ -9,6 +9,8 @@ import org.ethereum.beacon.discovery.enr.NodeRecordV5;
 import org.ethereum.beacon.discovery.network.DiscoveryClient;
 import org.ethereum.beacon.discovery.network.DiscoveryServer;
 import org.ethereum.beacon.discovery.network.DiscoveryServerImpl;
+import org.ethereum.beacon.discovery.network.NetworkParcel;
+import org.ethereum.beacon.discovery.network.NetworkParcelV5;
 import org.ethereum.beacon.discovery.packet.UnknownPacket;
 import org.ethereum.beacon.discovery.storage.AuthTagRepository;
 import org.ethereum.beacon.schedulers.Scheduler;
@@ -26,8 +28,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class DiscoveryManagerImpl implements DiscoveryManager {
   private static final Logger logger = LogManager.getLogger(DiscoveryManagerImpl.class);
-  private final ReplayProcessor<NetworkPacketV5> outgoingMessages = ReplayProcessor.cacheLast();
-  private final FluxSink<NetworkPacketV5> outgoingSink = outgoingMessages.sink();
+  private final ReplayProcessor<NetworkParcel> outgoingMessages = ReplayProcessor.cacheLast();
+  private final FluxSink<NetworkParcel> outgoingSink = outgoingMessages.sink();
   private final Bytes32 homeNodeId;
   private final NodeRecordV5 homeNodeRecord;
   private final NodeTable nodeTable;
@@ -109,7 +111,7 @@ public class DiscoveryManagerImpl implements DiscoveryManager {
               homeNodeRecord,
               nodeTable,
               authTagRepo,
-              packet -> outgoingSink.next(new NetworkPacketV5(packet, nodeRecord)),
+              packet -> outgoingSink.next(new NetworkParcelV5(packet, nodeRecord)),
               random);
     }
 
@@ -117,7 +119,7 @@ public class DiscoveryManagerImpl implements DiscoveryManager {
   }
 
   @VisibleForTesting
-  Publisher<NetworkPacketV5> getOutgoingMessages() {
+  Publisher<NetworkParcel> getOutgoingMessages() {
     return outgoingMessages;
   }
 }
