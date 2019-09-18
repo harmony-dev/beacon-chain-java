@@ -1,5 +1,6 @@
 package org.ethereum.beacon.db;
 
+import org.ethereum.beacon.db.util.FileUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -7,12 +8,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.rocksdb.RocksDBException;
 
 import java.io.IOException;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -41,26 +39,13 @@ class DatabaseTest {
     final Path directory = Paths.get(path);
     assertThat(Files.exists(directory)).isTrue();
 
-    Files.walkFileTree(directory, new SimpleFileVisitor<Path>() {
-
-      @Override
-      public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-        Files.delete(file);
-        return FileVisitResult.CONTINUE;
-      }
-
-      @Override
-      public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-        Files.delete(dir);
-        return FileVisitResult.CONTINUE;
-      }
-    });
+    FileUtil.removeRecursively("rocksdb");
   }
 
   private static Stream<Arguments> validArgumentsProvider() {
     return Stream.of(
-            Arguments.of("/tmp/rocksdb", 0),
-            Arguments.of("/tmp/rocksdb1", Long.MAX_VALUE),
-            Arguments.of("/tmp/rocksdb2", Long.MIN_VALUE));
+            Arguments.of("rocksdb", 0),
+            Arguments.of("rocksdb2", Long.MAX_VALUE),
+            Arguments.of("rocksdb3", Long.MIN_VALUE));
   }
 }
