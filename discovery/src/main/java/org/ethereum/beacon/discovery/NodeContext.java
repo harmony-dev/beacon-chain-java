@@ -3,6 +3,7 @@ package org.ethereum.beacon.discovery;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.discovery.enr.NodeRecordV5;
+import org.ethereum.beacon.discovery.message.DiscoveryMessage;
 import org.ethereum.beacon.discovery.message.DiscoveryV5Message;
 import org.ethereum.beacon.discovery.message.FindNodeMessage;
 import org.ethereum.beacon.discovery.message.MessageCode;
@@ -42,7 +43,7 @@ public class NodeContext {
   private Bytes32 idNonce;
   private BytesValue initiatorKey;
   private BytesValue authResponseKey;
-  private MessageHandler messageHandler = null;
+  private MessageProcessor messageProcessor = null;
   private Map<BytesValue, MessageCode> requestIdReservations = new ConcurrentHashMap<>();
 
   public NodeContext(
@@ -129,7 +130,6 @@ public class NodeContext {
                     DiscoveryV5Message.from(
                         new FindNodeMessage(
                             getNextRequestId(MessageCode.FINDNODE), DEFAULT_DISTANCE)));
-            createMessageHandler(initiatorKey, authTag);
             addOutgoingEvent(response);
             status = SessionStatus.AUTHENTICATED;
             break;
@@ -151,8 +151,7 @@ public class NodeContext {
             this.authResponseKey = hkdf.getValue2();
             authHeaderMessagePacket.decode(initiatorKey, authResponseKey);
             authHeaderMessagePacket.verify(authTagRepo.getTag(this).get(), idNonce);
-            createMessageHandler(initiatorKey, authHeaderMessagePacket.getAuthTag());
-            messageHandler.handleIncoming(authHeaderMessagePacket.getMessage(), this);
+            handleMessage(authHeaderMessagePacket.getMessage());
             status = SessionStatus.AUTHENTICATED;
             break;
           }
@@ -161,7 +160,7 @@ public class NodeContext {
             MessagePacket messagePacket = packet.getMessagePacket();
             messagePacket.decode(initiatorKey);
             messagePacket.verify(authTagRepo.getTag(this).get());
-            messageHandler.handleIncoming(messagePacket.getMessage(), this);
+            handleMessage(messagePacket.getMessage());
             break;
           }
         default:
@@ -184,8 +183,13 @@ public class NodeContext {
     }
   }
 
-  private void createMessageHandler(BytesValue initiatorKey, BytesValue authTag) {
-    this.messageHandler = new MessageHandler(new DiscoveryV5MessageHandler(homeNodeId, initiatorKey, authTag, nodeTable));
+  private void handleMessage(DiscoveryMessage message) {
+    synchronized (this) {
+      if (messageProcessor == null) {
+        this.messageProcessor = new MessageProcessor(new DiscoveryV5MessageProcessor());
+      }
+    }
+    messageProcessor.handleIncoming(message, this);
   }
 
   /** Sends random packet to start initiation of session with node */
@@ -234,6 +238,18 @@ public class NodeContext {
     authTagRepo.expire(this);
   }
 
+  public Optional<BytesValue> getAuthTag() {
+    return authTagRepo.getTag(this);
+  }
+
+  public Bytes32 getHomeNodeId() {
+    return homeNodeId;
+  }
+
+  public BytesValue getInitiatorKey() {
+    return initiatorKey;
+  }
+
   @Override
   public String toString() {
     return "NodeContext{"
@@ -253,6 +269,10 @@ public class NodeContext {
   public synchronized Optional<MessageCode> getRequestId(BytesValue requestId) {
     MessageCode messageCode = requestIdReservations.get(requestId);
     return messageCode == null ? Optional.empty() : Optional.of(messageCode);
+  }
+
+  public NodeTable getNodeTable() {
+    return nodeTable;
   }
 
   enum SessionStatus {
