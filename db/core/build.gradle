@@ -3,7 +3,9 @@ dependencies {
         exclude group: 'junit'
     }
 
-    api project(':crypto')
+    api(project(':crypto')) {
+        exclude group: 'junit'
+    }
 
     api "org.rocksdb:rocksdbjni"
     api "com.googlecode.concurrent-locks:concurrent-locks"
@@ -15,8 +17,4 @@ dependencies {
             excludeTags 'FIX'
         }
     }
-}
-
-configurations {
-    testImplementation.exclude group: 'junit', module: 'junit'
 }

@@ -9,12 +9,13 @@ dependencies {
   testImplementation project(':consensus')
   testImplementation project(':core')
   testImplementation project(':start:config')
-  testImplementation project(':db:core')
+  testImplementation(project(':db:core')) {
+    exclude group: 'org.junit.jupiter'
+  }
   testImplementation project(':chain')
   testImplementation project(':start:simulator')
   testImplementation project(':util')
   testImplementation project(':pow:core')
-  testImplementation 'junit:junit'
 }
 
 task activateLfs(type:Exec) {
