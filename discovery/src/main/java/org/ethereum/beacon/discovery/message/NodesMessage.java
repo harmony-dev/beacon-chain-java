@@ -1,7 +1,6 @@
 package org.ethereum.beacon.discovery.message;
 
 import com.google.common.base.Objects;
-import org.ethereum.beacon.discovery.MessageCode;
 import org.ethereum.beacon.discovery.enr.NodeRecordV5;
 import org.web3j.rlp.RlpEncoder;
 import org.web3j.rlp.RlpList;

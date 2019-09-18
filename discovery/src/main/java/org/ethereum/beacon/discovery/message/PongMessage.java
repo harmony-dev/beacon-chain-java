@@ -1,7 +1,6 @@
 package org.ethereum.beacon.discovery.message;
 
 import com.google.common.base.Objects;
-import org.ethereum.beacon.discovery.MessageCode;
 import org.web3j.rlp.RlpEncoder;
 import org.web3j.rlp.RlpList;
 import org.web3j.rlp.RlpString;
@@ -20,10 +19,7 @@ public class PongMessage implements V5Message {
   private final Integer recipientPort;
 
   public PongMessage(
-      BytesValue requestId,
-      Long enrSeq,
-      BytesValue recipientIp,
-      Integer recipientPort) {
+      BytesValue requestId, Long enrSeq, BytesValue recipientIp, Integer recipientPort) {
     this.requestId = requestId;
     this.enrSeq = enrSeq;
     this.recipientIp = recipientIp;

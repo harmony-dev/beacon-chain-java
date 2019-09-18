@@ -2,6 +2,8 @@ package org.ethereum.beacon.discovery;
 
 import org.ethereum.beacon.discovery.enr.NodeRecordInfo;
 import org.ethereum.beacon.discovery.enr.NodeRecordV5;
+import org.ethereum.beacon.discovery.enr.NodeStatus;
+import org.ethereum.beacon.discovery.storage.NodeTable;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 
 import java.util.List;

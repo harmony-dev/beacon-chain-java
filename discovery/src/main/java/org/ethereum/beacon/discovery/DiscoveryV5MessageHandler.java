@@ -2,9 +2,11 @@ package org.ethereum.beacon.discovery;
 
 import org.ethereum.beacon.discovery.enr.NodeRecordInfo;
 import org.ethereum.beacon.discovery.message.DiscoveryV5Message;
+import org.ethereum.beacon.discovery.message.MessageCode;
 import org.ethereum.beacon.discovery.message.NodesMessage;
 import org.ethereum.beacon.discovery.message.PongMessage;
 import org.ethereum.beacon.discovery.packet.MessagePacket;
+import org.ethereum.beacon.discovery.storage.NodeTable;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 

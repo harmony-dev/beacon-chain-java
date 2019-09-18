@@ -1,7 +1,6 @@
 package org.ethereum.beacon.discovery.enr;
 
 import com.google.common.base.Objects;
-import org.ethereum.beacon.discovery.NodeStatus;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 

@@ -6,6 +6,8 @@ import org.ethereum.beacon.db.Database;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
 import org.ethereum.beacon.discovery.enr.NodeRecordInfo;
 import org.ethereum.beacon.discovery.enr.NodeRecordV5;
+import org.ethereum.beacon.discovery.enr.NodeStatus;
+import org.ethereum.beacon.discovery.storage.NodeTableImpl;
 import org.ethereum.beacon.discovery.storage.NodeTableStorage;
 import org.ethereum.beacon.discovery.storage.NodeTableStorageFactoryImpl;
 import org.junit.Test;

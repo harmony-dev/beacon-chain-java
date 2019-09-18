@@ -14,6 +14,7 @@ import org.ethereum.beacon.discovery.network.NetworkParcel;
 import org.ethereum.beacon.discovery.network.NetworkParcelV5;
 import org.ethereum.beacon.discovery.packet.UnknownPacket;
 import org.ethereum.beacon.discovery.storage.AuthTagRepository;
+import org.ethereum.beacon.discovery.storage.NodeTable;
 import org.ethereum.beacon.schedulers.Scheduler;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;

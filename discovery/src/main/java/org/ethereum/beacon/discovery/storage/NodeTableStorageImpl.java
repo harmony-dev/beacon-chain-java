@@ -8,10 +8,7 @@ import org.ethereum.beacon.db.source.DataSource;
 import org.ethereum.beacon.db.source.HoleyList;
 import org.ethereum.beacon.db.source.SingleValueSource;
 import org.ethereum.beacon.db.source.impl.DataSourceList;
-import org.ethereum.beacon.discovery.NodeIndex;
 import org.ethereum.beacon.discovery.enr.NodeRecordInfo;
-import org.ethereum.beacon.discovery.NodeTable;
-import org.ethereum.beacon.discovery.NodeTableImpl;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 

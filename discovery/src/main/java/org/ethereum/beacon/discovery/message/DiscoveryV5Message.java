@@ -1,7 +1,6 @@
 package org.ethereum.beacon.discovery.message;
 
 import org.ethereum.beacon.discovery.IdentityScheme;
-import org.ethereum.beacon.discovery.MessageCode;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
 import org.ethereum.beacon.discovery.enr.NodeRecordV5;
 import org.web3j.rlp.RlpDecoder;
@@ -19,6 +18,10 @@ public class DiscoveryV5Message implements DiscoveryMessage {
 
   public DiscoveryV5Message(BytesValue bytes) {
     this.bytes = bytes;
+  }
+
+  public static DiscoveryV5Message from(V5Message v5Message) {
+    return new DiscoveryV5Message(v5Message.getBytes());
   }
 
   @Override
@@ -92,9 +95,5 @@ public class DiscoveryV5Message implements DiscoveryMessage {
                   "Creation of discovery V5 messages from code %s is not supported", code));
         }
     }
-  }
-
-  public static DiscoveryV5Message from(V5Message v5Message) {
-    return new DiscoveryV5Message(v5Message.getBytes());
   }
 }

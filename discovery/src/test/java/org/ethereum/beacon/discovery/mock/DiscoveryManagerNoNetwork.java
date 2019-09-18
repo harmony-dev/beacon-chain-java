@@ -4,7 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.discovery.DiscoveryManager;
 import org.ethereum.beacon.discovery.NodeContext;
-import org.ethereum.beacon.discovery.NodeTable;
+import org.ethereum.beacon.discovery.storage.NodeTable;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
 import org.ethereum.beacon.discovery.enr.NodeRecordInfo;
 import org.ethereum.beacon.discovery.enr.NodeRecordV5;

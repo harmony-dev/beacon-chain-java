@@ -1,14 +1,11 @@
-package org.ethereum.beacon.discovery;
+package org.ethereum.beacon.discovery.enr;
 
-import org.ethereum.beacon.ssz.access.SSZBasicAccessor;
 import org.ethereum.beacon.ssz.access.SSZField;
 import org.ethereum.beacon.ssz.access.basic.UIntPrimitive;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import org.ethereum.beacon.ssz.visitor.SSZReader;
-import tech.pegasys.artemis.util.bytes.Bytes4;
 
 import java.io.OutputStream;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -45,7 +42,11 @@ public enum NodeStatus {
   public static class NodeStatusAccessor extends UIntPrimitive {
     @Override
     public Set<Class> getSupportedClasses() {
-      return new HashSet<Class>() {{add(NodeStatus.class);}};
+      return new HashSet<Class>() {
+        {
+          add(NodeStatus.class);
+        }
+      };
     }
 
     @Override
@@ -56,13 +57,27 @@ public enum NodeStatus {
     @Override
     public void encode(Object value, SSZField field, OutputStream result) {
       NodeStatus nodeStatus = (NodeStatus) value;
-      SSZField overrided = new SSZField(byte.class, field.getFieldAnnotation(), "uint", 8, field.getName(), field.getGetter());
+      SSZField overrided =
+          new SSZField(
+              byte.class,
+              field.getFieldAnnotation(),
+              "uint",
+              8,
+              field.getName(),
+              field.getGetter());
       super.encode(nodeStatus.byteCode(), overrided, result);
     }
 
     @Override
     public Object decode(SSZField field, SSZReader reader) {
-      SSZField overrided = new SSZField(byte.class, field.getFieldAnnotation(), "uint", 8, field.getName(), field.getGetter());
+      SSZField overrided =
+          new SSZField(
+              byte.class,
+              field.getFieldAnnotation(),
+              "uint",
+              8,
+              field.getName(),
+              field.getGetter());
       int code = (int) super.decode(overrided, reader);
       return NodeStatus.fromNumber(code);
     }

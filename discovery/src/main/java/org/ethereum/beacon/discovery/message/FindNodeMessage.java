@@ -1,7 +1,6 @@
 package org.ethereum.beacon.discovery.message;
 
 import com.google.common.base.Objects;
-import org.ethereum.beacon.discovery.MessageCode;
 import org.web3j.rlp.RlpEncoder;
 import org.web3j.rlp.RlpList;
 import org.web3j.rlp.RlpString;
@@ -41,8 +40,7 @@ public class FindNodeMessage implements V5Message {
             BytesValue.wrap(
                 RlpEncoder.encode(
                     new RlpList(
-                        RlpString.create(requestId.extractArray()),
-                        RlpString.create(distance)))));
+                        RlpString.create(requestId.extractArray()), RlpString.create(distance)))));
   }
 
   @Override
@@ -50,8 +48,7 @@ public class FindNodeMessage implements V5Message {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     FindNodeMessage that = (FindNodeMessage) o;
-    return Objects.equal(requestId, that.requestId) &&
-        Objects.equal(distance, that.distance);
+    return Objects.equal(requestId, that.requestId) && Objects.equal(distance, that.distance);
   }
 
   @Override
@@ -61,9 +58,6 @@ public class FindNodeMessage implements V5Message {
 
   @Override
   public String toString() {
-    return "FindNodeMessage{" +
-        "requestId=" + requestId +
-        ", distance=" + distance +
-        '}';
+    return "FindNodeMessage{" + "requestId=" + requestId + ", distance=" + distance + '}';
   }
 }

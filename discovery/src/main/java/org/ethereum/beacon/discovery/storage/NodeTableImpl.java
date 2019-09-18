@@ -1,4 +1,4 @@
-package org.ethereum.beacon.discovery;
+package org.ethereum.beacon.discovery.storage;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.logging.log4j.LogManager;
@@ -6,6 +6,7 @@ import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.db.source.DataSource;
 import org.ethereum.beacon.db.source.HoleyList;
 import org.ethereum.beacon.db.source.SingleValueSource;
+import org.ethereum.beacon.discovery.Functions;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
 import org.ethereum.beacon.discovery.enr.NodeRecordInfo;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -19,6 +20,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+/**
+ * Stores Ethereum Node Records in {@link NodeRecordInfo} containers. Also stores home node as node
+ * record. Uses indexes, {@link NodeIndex} for quick access to nodes that are close to others.
+ */
 public class NodeTableImpl implements NodeTable {
   static final long NUMBER_OF_INDEXES = 256;
   private static final Logger logger = LogManager.getLogger(NodeTableImpl.class);
@@ -79,6 +84,10 @@ public class NodeTableImpl implements NodeTable {
     return nodeTable.get(Hash32.wrap(nodeId));
   }
 
+  /**
+   * Returns list of nodes including `nodeId` (if it's found) in logLimit distance from it. Uses
+   * {@link Functions#logDistance(Bytes32, Bytes32)} as distance function.
+   */
   @Override
   public List<NodeRecordInfo> findClosestNodes(Bytes32 nodeId, int logLimit) {
     long start = getNodeIndex(nodeId);

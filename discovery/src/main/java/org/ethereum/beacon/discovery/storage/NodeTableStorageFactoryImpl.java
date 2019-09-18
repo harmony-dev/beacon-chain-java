@@ -5,7 +5,6 @@ import org.ethereum.beacon.db.Database;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
 import org.ethereum.beacon.discovery.enr.NodeRecordInfo;
 import org.ethereum.beacon.discovery.enr.NodeRecordV5;
-import org.ethereum.beacon.discovery.NodeStatus;
 
 import java.util.List;
 import java.util.function.Supplier;

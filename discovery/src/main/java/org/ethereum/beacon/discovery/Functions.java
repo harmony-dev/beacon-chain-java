@@ -147,6 +147,16 @@ public class Functions {
     return new SecureRandom();
   }
 
+  /**
+   * The 'distance' between two node IDs is the bitwise XOR of the IDs, taken as the number.
+   *
+   * <p>distance(n₁, n₂) = n₁ XOR n₂
+   *
+   * <p>In many situations, the logarithmic distance (i.e. length of common prefix in bits) is used
+   * in place of the actual distance.
+   *
+   * <p>logdistance(n₁, n₂) = log2(distance(n₁, n₂))
+   */
   public static int logDistance(Bytes32 nodeId1, Bytes32 nodeId2) {
     BigInteger distance = new BigInteger(1, Bytes32s.xor(nodeId1, nodeId2).extractArray());
     return log2(distance.doubleValue());

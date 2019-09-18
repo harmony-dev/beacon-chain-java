@@ -1,4 +1,4 @@
-package org.ethereum.beacon.discovery;
+package org.ethereum.beacon.discovery.message;
 
 import java.util.HashMap;
 import java.util.Map;
