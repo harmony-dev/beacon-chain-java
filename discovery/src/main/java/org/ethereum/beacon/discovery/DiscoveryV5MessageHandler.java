@@ -7,14 +7,13 @@ import org.ethereum.beacon.discovery.message.NodesMessage;
 import org.ethereum.beacon.discovery.message.PongMessage;
 import org.ethereum.beacon.discovery.packet.MessagePacket;
 import org.ethereum.beacon.discovery.storage.NodeTable;
+import org.ethereum.beacon.util.ExpirationScheduler;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -23,17 +22,19 @@ import java.util.stream.Collectors;
 import static org.ethereum.beacon.discovery.NodeContext.DEFAULT_DISTANCE;
 
 public class DiscoveryV5MessageHandler implements DiscoveryMessageHandler<DiscoveryV5Message> {
-  public static final int CLEANUP_DELAY = 60;
+  private static final int CLEANUP_DELAY_SECONDS = 60;
   private static final int MAX_NODES_IN_MSG = 24;
   private final Bytes32 homeNodeId;
   private final BytesValue initiatorKey;
   private final BytesValue authTag;
   private final NodeTable nodeTable;
-  ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+  private ExpirationScheduler<BytesValue> nodeExpirationScheduler =
+      new ExpirationScheduler<>(CLEANUP_DELAY_SECONDS, TimeUnit.SECONDS);
   private Map<BytesValue, Integer> nodesCounters = new ConcurrentHashMap<>();
   private Map<BytesValue, ScheduledFuture> nodesExpirationTasks = new ConcurrentHashMap<>();
 
-  public DiscoveryV5MessageHandler(Bytes32 homeNodeId, BytesValue initiatorKey, BytesValue authTag, NodeTable nodeTable) {
+  public DiscoveryV5MessageHandler(
+      Bytes32 homeNodeId, BytesValue initiatorKey, BytesValue authTag, NodeTable nodeTable) {
     this.homeNodeId = homeNodeId;
     this.initiatorKey = initiatorKey;
     this.authTag = authTag;
@@ -103,12 +104,12 @@ public class DiscoveryV5MessageHandler implements DiscoveryMessageHandler<Discov
                 cleanUp(nodesMessage.getRequestId(), context);
               } else {
                 nodesCounters.put(nodesMessage.getRequestId(), counter);
-                reScheduleCleanUpDelay(nodesMessage.getRequestId(), context);
+                updateExpiration(nodesMessage.getRequestId(), context);
               }
             }
           } else if (nodesMessage.getTotal() > 1) {
             nodesCounters.put(nodesMessage.getRequestId(), nodesMessage.getTotal() - 1);
-            reScheduleCleanUpDelay(nodesMessage.getRequestId(), context);
+            updateExpiration(nodesMessage.getRequestId(), context);
           } else {
             context.clearRequestId(nodesMessage.getRequestId(), MessageCode.FINDNODE);
           }
@@ -133,21 +134,16 @@ public class DiscoveryV5MessageHandler implements DiscoveryMessageHandler<Discov
     }
   }
 
-  private synchronized void reScheduleCleanUpDelay(BytesValue requestId, NodeContext context) {
-    nodesExpirationTasks.remove(requestId).cancel(true);
-    ScheduledFuture future =
-        scheduler.schedule(
-            () -> {
-              cleanUp(requestId, context);
-            },
-            CLEANUP_DELAY,
-            TimeUnit.SECONDS);
-    nodesExpirationTasks.put(requestId, future);
+  private synchronized void updateExpiration(BytesValue requestId, NodeContext context) {
+    nodeExpirationScheduler.put(
+        requestId,
+        () -> {
+          cleanUp(requestId, context);
+        });
   }
 
   private synchronized void cleanUp(BytesValue requestId, NodeContext context) {
     nodesCounters.remove(requestId);
-    nodesExpirationTasks.remove(requestId);
     context.clearRequestId(requestId, MessageCode.FINDNODE);
   }
 }

@@ -16,6 +16,7 @@ import org.ethereum.beacon.discovery.packet.UnknownPacket;
 import org.ethereum.beacon.discovery.storage.AuthTagRepository;
 import org.ethereum.beacon.discovery.storage.NodeTable;
 import org.ethereum.beacon.schedulers.Scheduler;
+import org.ethereum.beacon.util.ExpirationScheduler;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
@@ -27,8 +28,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 public class DiscoveryManagerImpl implements DiscoveryManager {
+  private static final int CLEANUP_DELAY_SECONDS = 180;
   private static final Logger logger = LogManager.getLogger(DiscoveryManagerImpl.class);
   private final ReplayProcessor<NetworkParcel> outgoingMessages = ReplayProcessor.cacheLast();
   private final FluxSink<NetworkParcel> outgoingSink = outgoingMessages.sink();
@@ -37,6 +40,8 @@ public class DiscoveryManagerImpl implements DiscoveryManager {
   private final NodeTable nodeTable;
   private final Map<Bytes32, NodeContext> recentContexts =
       new ConcurrentHashMap<>(); // nodeId -> context
+  private ExpirationScheduler<Bytes32> contextExpirationScheduler =
+      new ExpirationScheduler<>(CLEANUP_DELAY_SECONDS, TimeUnit.SECONDS);
   private final AuthTagRepository authTagRepo;
   private final DiscoveryServer discoveryServer;
   private final CompletableFuture<Void> discoveryClientAssigned;
@@ -116,8 +121,14 @@ public class DiscoveryManagerImpl implements DiscoveryManager {
               authTagRepo,
               packet -> outgoingSink.next(new NetworkParcelV5(packet, nodeRecord)),
               random);
+      recentContexts.put(nodeId, context);
     }
 
+    final NodeContext contextBackup = context;
+    contextExpirationScheduler.put(context.getNodeRecord().getNodeId(), () -> {
+      recentContexts.remove(contextBackup.getNodeRecord().getNodeId());
+      contextBackup.cleanup();
+    });
     return Optional.of(context);
   }
 
