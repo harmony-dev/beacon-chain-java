@@ -30,7 +30,7 @@ public enum NodeStatus {
 
   private int code;
 
-  private NodeStatus(int code) {
+  NodeStatus(int code) {
     this.code = code;
   }
 
