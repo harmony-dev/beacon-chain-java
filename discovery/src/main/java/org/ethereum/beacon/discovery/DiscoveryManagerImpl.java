@@ -9,6 +9,7 @@ import org.ethereum.beacon.discovery.enr.NodeRecordV5;
 import org.ethereum.beacon.discovery.network.DiscoveryClient;
 import org.ethereum.beacon.discovery.network.DiscoveryServer;
 import org.ethereum.beacon.discovery.network.DiscoveryServerImpl;
+import org.ethereum.beacon.discovery.network.NettyDiscoveryServer;
 import org.ethereum.beacon.discovery.network.NetworkParcel;
 import org.ethereum.beacon.discovery.network.NetworkParcelV5;
 import org.ethereum.beacon.discovery.packet.UnknownPacket;
@@ -50,10 +51,11 @@ public class DiscoveryManagerImpl implements DiscoveryManager {
     this.scheduler = serverScheduler;
     this.discoveryServer =
         new DiscoveryServerImpl(homeNodeRecord.getIpV4address(), homeNodeRecord.getUdpPort());
-    discoveryClientAssigned =
-        discoveryServer.useDatagramChannel(
-            nioDatagramChannel ->
-                discoveryClient = new DiscoveryClient(nioDatagramChannel, outgoingMessages));
+    this.discoveryClientAssigned =
+        ((NettyDiscoveryServer) discoveryServer)
+            .useDatagramChannel(
+                nioDatagramChannel ->
+                    discoveryClient = new DiscoveryClient(nioDatagramChannel, outgoingMessages));
   }
 
   @Override

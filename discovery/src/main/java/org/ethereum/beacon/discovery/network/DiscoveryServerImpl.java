@@ -23,7 +23,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
-public class DiscoveryServerImpl implements DiscoveryServer {
+public class DiscoveryServerImpl implements NettyDiscoveryServer {
   private static final int RECREATION_TIMEOUT = 5000;
   private static final int STOPPING_TIMEOUT = 10000;
   private static final Logger logger = LogManager.getLogger(DiscoveryServerImpl.class);
