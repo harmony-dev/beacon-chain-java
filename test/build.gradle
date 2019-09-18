@@ -14,6 +14,7 @@ dependencies {
   testImplementation project(':start:simulator')
   testImplementation project(':util')
   testImplementation project(':pow:core')
+  testImplementation 'junit:junit'
 }
 
 task activateLfs(type:Exec) {
