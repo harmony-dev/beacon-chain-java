@@ -46,7 +46,7 @@ public class NodeTableStorageImpl implements NodeTableStorage {
             serializerFactory.getSerializer(NodeIndex.class),
             serializerFactory.getDeserializer(NodeIndex.class));
     this.homeNodeSource = SingleValueSource.fromDataSource(nodeTable, HOME_NODE_KEY);
-    this.nodeTable = new NodeTableImpl(nodeTable, nodeIndexesTable, homeNodeSource, Hashes::sha256);
+    this.nodeTable = new NodeTableImpl(nodeTable, nodeIndexesTable, homeNodeSource);
   }
 
   @Override

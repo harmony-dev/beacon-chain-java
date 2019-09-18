@@ -17,6 +17,7 @@ import org.web3j.crypto.ECDSASignature;
 import org.web3j.crypto.ECKeyPair;
 import org.web3j.crypto.Sign;
 import tech.pegasys.artemis.util.bytes.Bytes32;
+import tech.pegasys.artemis.util.bytes.Bytes32s;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import javax.crypto.Cipher;
@@ -144,5 +145,19 @@ public class Functions {
 
   public static Random getRandom() {
     return new SecureRandom();
+  }
+
+  public static int logDistance(Bytes32 nodeId1, Bytes32 nodeId2) {
+    BigInteger distance = new BigInteger(1, Bytes32s.xor(nodeId1, nodeId2).extractArray());
+    return log2(distance.doubleValue());
+  }
+
+  /**
+   * Logarithm with base 2. See <a
+   * href="https://stackoverflow.com/a/3305400">https://stackoverflow.com/a/3305400</a> for
+   * implementation details.
+   */
+  private static int log2(double x) {
+    return (int) Math.floor((Math.log(x) / Math.log(2.0) + 1e-10));
   }
 }
