@@ -13,12 +13,16 @@ import org.bouncycastle.crypto.util.PrivateKeyFactory;
 import org.bouncycastle.math.ec.ECCurve;
 import org.ethereum.beacon.crypto.Hashes;
 import org.javatuples.Triplet;
+import org.web3j.crypto.ECDSASignature;
+import org.web3j.crypto.ECKeyPair;
+import org.web3j.crypto.Sign;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import java.math.BigInteger;
 import java.security.SecureRandom;
 import java.util.Random;
 
@@ -33,8 +37,20 @@ public class Functions {
 
   /** Creates a signature of x using the given key */
   public static BytesValue sign(BytesValue key, BytesValue x) {
-    // TODO: implement
-    return x;
+    ECDSASignature signature = ECKeyPair.create(key.extractArray()).sign(x.extractArray());
+    Bytes32 r = Bytes32.wrap(signature.r.toByteArray());
+    Bytes32 s = Bytes32.wrap(signature.s.toByteArray());
+    return r.concat(s);
+  }
+
+  public static BytesValue recoverFromSignature(BytesValue signature, BytesValue x) {
+    assert 64 == signature.size();
+    BigInteger r = new BigInteger(signature.slice(0, 32).extractArray());
+    BigInteger s = new BigInteger(signature.slice(32).extractArray());
+    ECDSASignature ecdsaSignature = new ECDSASignature(r, s);
+    // FIXME: recId, which number should it use?
+    BigInteger pubKey = Sign.recoverFromSignature(0, ecdsaSignature, x.extractArray());
+    return BytesValue.wrap(pubKey.toByteArray());
   }
 
   /**
