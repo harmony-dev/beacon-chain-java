@@ -1,4 +1,4 @@
-package org.ethereum.beacon.discovery;
+package org.ethereum.beacon.discovery.storage;
 
 import org.ethereum.beacon.chain.storage.impl.SerializerFactory;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
