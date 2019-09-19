@@ -2,10 +2,9 @@ package org.ethereum.beacon.discovery;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.ethereum.beacon.discovery.enr.NodeRecord;
 import org.ethereum.beacon.discovery.enr.NodeRecordV5;
 import org.ethereum.beacon.discovery.message.DiscoveryMessage;
-import org.ethereum.beacon.discovery.message.DiscoveryV5Message;
-import org.ethereum.beacon.discovery.message.FindNodeMessage;
 import org.ethereum.beacon.discovery.message.MessageCode;
 import org.ethereum.beacon.discovery.packet.AuthHeaderMessagePacket;
 import org.ethereum.beacon.discovery.packet.MessagePacket;
@@ -13,15 +12,18 @@ import org.ethereum.beacon.discovery.packet.Packet;
 import org.ethereum.beacon.discovery.packet.RandomPacket;
 import org.ethereum.beacon.discovery.packet.UnknownPacket;
 import org.ethereum.beacon.discovery.packet.WhoAreYouPacket;
+import org.ethereum.beacon.discovery.packet.handler.AuthHeaderMessagePacketHandler;
+import org.ethereum.beacon.discovery.packet.handler.MessagePacketHandler;
+import org.ethereum.beacon.discovery.packet.handler.PacketHandler;
+import org.ethereum.beacon.discovery.packet.handler.UnknownPacketHandler;
+import org.ethereum.beacon.discovery.packet.handler.WhoAreYouPacketHandler;
 import org.ethereum.beacon.discovery.storage.AuthTagRepository;
 import org.ethereum.beacon.discovery.storage.NodeTable;
-import org.javatuples.Triplet;
-import org.web3j.crypto.ECKeyPair;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import java.security.SecureRandom;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
@@ -38,11 +40,10 @@ public class NodeContext {
   private final NodeTable nodeTable;
   private final Consumer<Packet> outgoing;
   private final Random rnd;
-  private List<Packet> incomingEvents;
+  private final Map<Class, PacketHandler> packetHandlers = new HashMap<>();
   private SessionStatus status = SessionStatus.INITIAL;
   private Bytes32 idNonce;
   private BytesValue initiatorKey;
-  private BytesValue authResponseKey;
   private MessageProcessor messageProcessor = null;
   private Map<BytesValue, MessageCode> requestIdReservations = new ConcurrentHashMap<>();
 
@@ -60,130 +61,59 @@ public class NodeContext {
     this.homeNodeRecord = homeNodeRecord;
     this.homeNodeId = homeNodeRecord.getNodeId();
     this.rnd = rnd;
+    packetHandlers.put(UnknownPacket.class, new UnknownPacketHandler(this, logger));
+    packetHandlers.put(WhoAreYouPacket.class, new WhoAreYouPacketHandler(this, logger));
+    packetHandlers.put(
+        AuthHeaderMessagePacket.class, new AuthHeaderMessagePacketHandler(this, logger));
+    packetHandlers.put(MessagePacket.class, new MessagePacketHandler(this, logger));
   }
 
   public NodeRecordV5 getNodeRecord() {
     return nodeRecord;
   }
 
-  public synchronized void addIncomingEvent(UnknownPacket packet) {
-    try {
-      logger.trace(() -> String.format("Incoming packet in context %s", this));
-      switch (status) {
-        case INITIAL:
-          {
-            // packet it either random or message packet if session is expired
-            BytesValue authTag = null;
-            try {
-              RandomPacket randomPacket = packet.getRandomPacket();
-              authTag = randomPacket.getAuthTag();
-            } catch (Exception ex) {
-              // Not fatal, 1st attempt
-            }
-            // 2nd attempt
-            if (authTag == null) {
-              MessagePacket messagePacket = packet.getMessagePacket();
-              authTag = messagePacket.getAuthTag();
-            }
-            authTagRepo.put(authTag, this);
-            byte[] idNonceBytes = new byte[32];
-            Functions.getRandom().nextBytes(idNonceBytes);
-            this.idNonce = Bytes32.wrap(idNonceBytes);
-            WhoAreYouPacket whoAreYouPacket =
-                WhoAreYouPacket.create(
-                    nodeRecord.getNodeId(), authTag, idNonce, nodeRecord.getSeqNumber());
-            addOutgoingEvent(whoAreYouPacket);
-            status = SessionStatus.WHOAREYOU_SENT;
-            break;
+  public void addIncomingEvent(UnknownPacket packet) {
+    logger.trace(() -> String.format("Incoming packet in context %s", this));
+    switch (status) {
+      case INITIAL:
+        {
+          if (packetHandlers.get(UnknownPacket.class).handle(packet)) {
+            setStatus(SessionStatus.WHOAREYOU_SENT);
           }
-        case RANDOM_PACKET_SENT:
-          {
-            WhoAreYouPacket whoAreYouPacket = packet.getWhoAreYouPacket();
-            BytesValue authTag = authTagRepo.getTag(this).get();
-            whoAreYouPacket.verify(homeNodeId, authTag);
-            whoAreYouPacket.getEnrSeq(); // FIXME: Their side enr seq. Do we need it?
-            byte[] ephemeralKeyBytes = new byte[32];
-            Functions.getRandom().nextBytes(ephemeralKeyBytes);
-            ECKeyPair ephemeralKey = ECKeyPair.create(ephemeralKeyBytes); // TODO: generate
-            Triplet<BytesValue, BytesValue, BytesValue> hkdf =
-                Functions.hkdf_expand(
-                    homeNodeId,
-                    nodeRecord.getNodeId(),
-                    BytesValue.wrap(ephemeralKey.getPrivateKey().toByteArray()),
-                    whoAreYouPacket.getIdNonce(),
-                    nodeRecord.getPublicKey());
-            BytesValue initiatorKey = hkdf.getValue0();
-            BytesValue staticNodeKey = hkdf.getValue1();
-            BytesValue authResponseKey = hkdf.getValue2();
-
-            AuthHeaderMessagePacket response =
-                AuthHeaderMessagePacket.create(
-                    homeNodeId,
-                    nodeRecord.getNodeId(),
-                    authResponseKey,
-                    whoAreYouPacket.getIdNonce(),
-                    staticNodeKey,
-                    homeNodeRecord,
-                    BytesValue.wrap(ephemeralKey.getPublicKey().toByteArray()),
-                    authTag,
-                    initiatorKey,
-                    DiscoveryV5Message.from(
-                        new FindNodeMessage(
-                            getNextRequestId(MessageCode.FINDNODE), DEFAULT_DISTANCE)));
-            addOutgoingEvent(response);
-            status = SessionStatus.AUTHENTICATED;
-            break;
+          break;
+        }
+      case RANDOM_PACKET_SENT:
+        {
+          WhoAreYouPacket whoAreYouPacket = packet.getWhoAreYouPacket();
+          if (packetHandlers.get(WhoAreYouPacket.class).handle(whoAreYouPacket)) {
+            setStatus(SessionStatus.AUTHENTICATED);
           }
-        case WHOAREYOU_SENT:
-          {
-            AuthHeaderMessagePacket authHeaderMessagePacket = packet.getAuthHeaderMessagePacket();
-            byte[] ephemeralKeyBytes = new byte[32];
-            Functions.getRandom().nextBytes(ephemeralKeyBytes);
-            ECKeyPair ephemeralKey = ECKeyPair.create(ephemeralKeyBytes);
-            Triplet<BytesValue, BytesValue, BytesValue> hkdf =
-                Functions.hkdf_expand(
-                    homeNodeId,
-                    nodeRecord.getNodeId(),
-                    BytesValue.wrap(ephemeralKey.getPrivateKey().toByteArray()),
-                    idNonce,
-                    nodeRecord.getPublicKey());
-            this.initiatorKey = hkdf.getValue0();
-            this.authResponseKey = hkdf.getValue2();
-            authHeaderMessagePacket.decode(initiatorKey, authResponseKey);
-            authHeaderMessagePacket.verify(authTagRepo.getTag(this).get(), idNonce);
-            handleMessage(authHeaderMessagePacket.getMessage());
-            status = SessionStatus.AUTHENTICATED;
-            break;
+          break;
+        }
+      case WHOAREYOU_SENT:
+        {
+          AuthHeaderMessagePacket authHeaderMessagePacket = packet.getAuthHeaderMessagePacket();
+          if (packetHandlers.get(AuthHeaderMessagePacket.class).handle(authHeaderMessagePacket)) {
+            setStatus(SessionStatus.AUTHENTICATED);
           }
-        case AUTHENTICATED:
-          {
-            MessagePacket messagePacket = packet.getMessagePacket();
-            messagePacket.decode(initiatorKey);
-            messagePacket.verify(authTagRepo.getTag(this).get());
-            handleMessage(messagePacket.getMessage());
-            break;
-          }
-        default:
-          {
-            String error =
-                String.format("Not expected status:%s from node: %s", status, nodeRecord);
-            logger.error(error);
-            throw new RuntimeException(error);
-          }
-      }
-    } catch (AssertionError ex) {
-      logger.info(
-          String.format(
-              "Verification not passed for message [%s] from node %s in status %s",
-              packet, nodeRecord, status));
-    } catch (Exception ex) {
-      logger.info(
-          String.format(
-              "Failed to read message [%s] from node %s in status %s", packet, nodeRecord, status));
+          break;
+        }
+      case AUTHENTICATED:
+        {
+          MessagePacket messagePacket = packet.getMessagePacket();
+          packetHandlers.get(MessagePacket.class).handle(messagePacket);
+          break;
+        }
+      default:
+        {
+          String error = String.format("Not expected status:%s from node: %s", status, nodeRecord);
+          logger.error(error);
+          throw new RuntimeException(error);
+        }
     }
   }
 
-  private void handleMessage(DiscoveryMessage message) {
+  public void handleMessage(DiscoveryMessage message) {
     synchronized (this) {
       if (messageProcessor == null) {
         this.messageProcessor = new MessageProcessor(new DiscoveryV5MessageProcessor());
@@ -218,16 +148,12 @@ public class NodeContext {
    *
    * <p>Request ID is reserved for `messageCode`
    */
-  private synchronized BytesValue getNextRequestId(MessageCode messageCode) {
+  public synchronized BytesValue getNextRequestId(MessageCode messageCode) {
     byte[] requestId = new byte[12];
     rnd.nextBytes(requestId);
     BytesValue wrapped = BytesValue.wrap(requestId);
     requestIdReservations.put(wrapped, messageCode);
     return wrapped;
-  }
-
-  public List<Packet> getIncomingEvents() {
-    return incomingEvents;
   }
 
   public synchronized boolean isAuthenticated() {
@@ -242,12 +168,45 @@ public class NodeContext {
     return authTagRepo.getTag(this);
   }
 
+  public void setAuthTag(BytesValue authTag) {
+    authTagRepo.put(authTag, this);
+  }
+
   public Bytes32 getHomeNodeId() {
     return homeNodeId;
   }
 
   public BytesValue getInitiatorKey() {
     return initiatorKey;
+  }
+
+  public void setInitiatorKey(BytesValue initiatorKey) {
+    this.initiatorKey = initiatorKey;
+  }
+
+  public synchronized void clearRequestId(BytesValue requestId, MessageCode messageCode) {
+    assert requestIdReservations.remove(requestId).equals(messageCode);
+  }
+
+  public synchronized Optional<MessageCode> getRequestId(BytesValue requestId) {
+    MessageCode messageCode = requestIdReservations.get(requestId);
+    return messageCode == null ? Optional.empty() : Optional.of(messageCode);
+  }
+
+  public NodeTable getNodeTable() {
+    return nodeTable;
+  }
+
+  public synchronized Bytes32 getIdNonce() {
+    return idNonce;
+  }
+
+  public synchronized void setIdNonce(Bytes32 idNonce) {
+    this.idNonce = idNonce;
+  }
+
+  public NodeRecord getHomeNodeRecord() {
+    return homeNodeRecord;
   }
 
   @Override
@@ -262,17 +221,16 @@ public class NodeContext {
         + '}';
   }
 
-  public synchronized void clearRequestId(BytesValue requestId, MessageCode messageCode) {
-    assert requestIdReservations.remove(requestId).equals(messageCode);
+  public synchronized SessionStatus getStatus() {
+    return status;
   }
 
-  public synchronized Optional<MessageCode> getRequestId(BytesValue requestId) {
-    MessageCode messageCode = requestIdReservations.get(requestId);
-    return messageCode == null ? Optional.empty() : Optional.of(messageCode);
-  }
-
-  public NodeTable getNodeTable() {
-    return nodeTable;
+  private synchronized void setStatus(SessionStatus newStatus) {
+    logger.debug(
+        () ->
+            String.format(
+                "Switching status of node %s from %s to %s", nodeRecord, status, newStatus));
+    this.status = newStatus;
   }
 
   enum SessionStatus {

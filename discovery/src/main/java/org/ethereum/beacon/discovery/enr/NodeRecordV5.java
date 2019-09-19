@@ -338,4 +338,13 @@ public class NodeRecordV5 implements NodeRecord {
       return nodeRecord;
     }
   }
+
+  @Override
+  public String toString() {
+    return "NodeRecordV5{" +
+        "publicKey=" + publicKey +
+        ", ipV4address=" + ipV4address +
+        ", udpPort=" + udpPort +
+        '}';
+  }
 }

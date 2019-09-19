@@ -59,4 +59,14 @@ public class NodeRecordInfo {
   public int hashCode() {
     return Objects.hashCode(node, lastRetry, status, retry);
   }
+
+  @Override
+  public String toString() {
+    return "NodeRecordInfo{" +
+        "node=" + node +
+        ", lastRetry=" + lastRetry +
+        ", status=" + status +
+        ", retry=" + retry +
+        '}';
+  }
 }
