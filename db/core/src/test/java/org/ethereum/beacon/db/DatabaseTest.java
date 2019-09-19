@@ -41,11 +41,13 @@ class DatabaseTest {
     final Path directory = Paths.get(path);
     assertThat(Files.exists(directory)).isTrue();
 
-    //TODO: how to test without casting
-    storage.put(BytesValue.of(123), BytesValue.of(1, 2, 3));
-    database.commit();
-    storage.remove(BytesValue.of(123));
-    database.commit();
+    final BytesValue key = BytesValue.of(123);
+    final BytesValue value = BytesValue.of(1, 2, 3);
+    storage.put(key, value);
+    assertThat(storage.get(key)).isPresent().hasValue(value);
+
+    storage.remove(key);
+    assertThat(storage.get(key)).isNotPresent();
     database.close();
 
     FileUtil.removeRecursively("rocksdb");
@@ -69,6 +71,7 @@ class DatabaseTest {
     s2.put(BytesValue.of(123), BytesValue.of(1, 2, 3));
     database.commit();
     database.close();
+
     s1.remove(BytesValue.of(123));
     s2.remove(BytesValue.of(123));
     assertThatThrownBy(database::commit).isInstanceOf(Exception.class); //TODO: should not commit after close
