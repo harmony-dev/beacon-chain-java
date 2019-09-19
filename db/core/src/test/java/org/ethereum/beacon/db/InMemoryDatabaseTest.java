@@ -5,6 +5,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
+import java.util.Optional;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 class InMemoryDatabaseTest {
@@ -18,6 +20,14 @@ class InMemoryDatabaseTest {
         final BytesValue value = BytesValue.EMPTY;
         dataSource.put(key, value);
 
-        assertThat(dataSource.get(key)).isPresent().hasValue(value);
+        final Optional<BytesValue> expected = dataSource.get(key);
+        assertThat(expected).isPresent().hasValue(value);
+        assertThat(database.getBackingDataSource().get(key)).isPresent().hasValue(expected.get());
+
+        dataSource.remove(key);
+        assertThat(dataSource.get(key)).isNotPresent();
+        assertThat(database.getBackingDataSource().get(key)).isNotPresent();
     }
+
+    //TODO: commit and close methods do nothing, is it ok?
 }
