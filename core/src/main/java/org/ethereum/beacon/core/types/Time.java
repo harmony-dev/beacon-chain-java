@@ -2,14 +2,21 @@ package org.ethereum.beacon.core.types;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.TimeZone;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 /** Time in seconds. */
 @SSZSerializable(serializeAs = UInt64.class)
 public class Time extends UInt64 implements SafeComparable<Time> {
-  private static final SimpleDateFormat SHORT_TIME_FORMAT =
-      new SimpleDateFormat("MM/dd/yy HH:mm:ss");
+  private static final SimpleDateFormat SHORT_TIME_FORMAT = createTimeFormat("MM/dd/yy HH:mm:ss");
+
+  private static SimpleDateFormat createTimeFormat(String pattern) {
+    SimpleDateFormat simpleDateFormat = new SimpleDateFormat(pattern);
+    // set GMT timezone, to avoid confusion when local TZ is not GMT
+    simpleDateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+    return simpleDateFormat;
+  }
 
   public static final Time ZERO = of(0);
 

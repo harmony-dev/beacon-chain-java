@@ -2,7 +2,9 @@ package org.ethereum.beacon.db;
 
 import org.ethereum.beacon.db.source.DataSource;
 import org.ethereum.beacon.db.util.FileUtil;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import java.io.IOException;

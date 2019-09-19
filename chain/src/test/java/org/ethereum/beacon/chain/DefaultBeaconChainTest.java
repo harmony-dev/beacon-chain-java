@@ -1,11 +1,10 @@
 package org.ethereum.beacon.chain;
 
-import java.util.Collections;
-import java.util.stream.IntStream;
 import org.ethereum.beacon.chain.MutableBeaconChain.ImportResult;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.chain.storage.impl.SSZBeaconChainStorageFactory;
 import org.ethereum.beacon.chain.storage.impl.SerializerFactory;
+import org.ethereum.beacon.chain.storage.util.StorageUtils;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.BlockTransition;
@@ -32,6 +31,9 @@ import org.junit.Assert;
 import org.junit.Test;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
+
+import java.util.Collections;
+import java.util.stream.IntStream;
 
 public class DefaultBeaconChainTest {
 
@@ -86,7 +88,7 @@ public class DefaultBeaconChainTest {
       BeaconChainSpec spec, StateTransition<BeaconStateEx> perSlotTransition, Schedulers schedulers) {
     Time start = Time.castFrom(UInt64.valueOf(schedulers.getCurrentTime() / 1000));
     ChainStart chainStart = new ChainStart(start, Eth1Data.EMPTY, Collections.emptyList());
-    BlockTransition<BeaconStateEx> initialTransition =
+    InitialStateTransition initialTransition =
         new InitialStateTransition(chainStart, spec);
     BlockTransition<BeaconStateEx> perBlockTransition =
         StateTransitionTestUtil.createPerBlockTransition();
@@ -99,10 +101,11 @@ public class DefaultBeaconChainTest {
     BeaconChainStorage chainStorage = new SSZBeaconChainStorageFactory(
             spec.getObjectHasher(), SerializerFactory.createSSZ(spec.getConstants()))
             .create(database);
+    BeaconStateEx initialState = initialTransition.apply(spec.get_empty_block());
+    StorageUtils.initializeStorage(chainStorage, spec, initialState);
 
     return new DefaultBeaconChain(
         spec,
-        initialTransition,
         new EmptySlotTransition(
             new ExtendedSlotTransition(new PerEpochTransition(spec) {
               @Override

@@ -1,15 +1,17 @@
 config:
-  db: file://db
+  db: db
   networks:
     - type: netty
 
   validator:
     contract: !emulator
-      balance: 55
+      # balance: 55
       keys:
-        - !generate
+        - !interop
           count: 16
-          seed: 0
+          # seed: 0
+      interopCredentials: true
+      # eth1BlockHash: 0x4242424242424242424242424242424242424242424242424242424242424242
 #    signer: !insecure
 #      keys:
 #        - !generate
@@ -40,4 +42,6 @@ chainSpec:
     blsVerifyProofOfPossession: false
     blsSign: false
     enableCache: false
+    # for interop, genesis time should be overridden with the specified value, so ignore computation
+    computableGenesisTime: false
 
