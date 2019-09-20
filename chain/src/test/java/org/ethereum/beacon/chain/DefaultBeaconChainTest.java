@@ -24,6 +24,7 @@ import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.db.Database;
 import org.ethereum.beacon.schedulers.ControlledSchedulers;
@@ -34,11 +35,12 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.stream.IntStream;
 
 public class DefaultBeaconChainTest {
+
+  private static final long SECONDS_PER_SLOT = 6;
 
   @Test
   public void insertAChain() {
@@ -126,7 +128,6 @@ public class DefaultBeaconChainTest {
   @Test
   public void testRejectBlocks() {
     ControlledSchedulers schedulers = Schedulers.createControlled();
-    schedulers.setCurrentTime(Instant.now().plus(1, ChronoUnit.DAYS).toEpochMilli());
 
     BeaconChainSpec spec =
             BeaconChainSpec.Builder.createWithDefaultParams()
@@ -142,6 +143,11 @@ public class DefaultBeaconChainTest {
     Assert.assertEquals(spec.getConstants().getGenesisSlot(), initialTuple.getBlock().getSlot());
 
     BeaconTuple recentlyProcessed = beaconChain.getRecentlyProcessed();
+
+    final SlotNumber currentSlot = spec.get_current_slot(recentlyProcessed.getState(), Instant.now().toEpochMilli());
+    final Time validBlockTime = recentlyProcessed.getState().getGenesisTime().plus(Time.of(currentSlot.longValue() * SECONDS_PER_SLOT)); //    pre_state.genesis_time + block.slot * SECONDS_PER_SLOT
+    schedulers.setCurrentTime(validBlockTime.increment().longValue());
+
     BeaconBlock aBlock =
             createBlock(recentlyProcessed, spec, schedulers.getCurrentTime(), perSlotTransition);
 
