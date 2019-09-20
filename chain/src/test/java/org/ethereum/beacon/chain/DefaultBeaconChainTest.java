@@ -24,16 +24,22 @@ import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.db.Database;
+import org.ethereum.beacon.schedulers.ControlledSchedulers;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.junit.Assert;
 import org.junit.Test;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
 
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.stream.IntStream;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class DefaultBeaconChainTest {
 
@@ -118,5 +124,37 @@ public class DefaultBeaconChainTest {
         stateVerifier,
         chainStorage,
         schedulers);
+  }
+
+  @Test
+  public void testRejectBlocks() {
+    ControlledSchedulers schedulers = Schedulers.createControlled();
+    long currentTime = schedulers.getCurrentTime();
+
+    BeaconChainSpec spec =
+            BeaconChainSpec.Builder.createWithDefaultParams()
+                    .withComputableGenesisTime(false)
+                    .withVerifyDepositProof(false)
+                    .build();
+
+    StateTransition<BeaconStateEx> perSlotTransition =
+            StateTransitionTestUtil.createNextSlotTransition();
+
+    MutableBeaconChain beaconChain = createBeaconChain(spec, perSlotTransition, schedulers);
+    beaconChain.init();
+    BeaconTuple parent = beaconChain.getRecentlyProcessed();
+
+    //    assert block.slot <= get_current_slot(store.time) + 1
+    schedulers.addTime(Duration.of(1, ChronoUnit.DAYS));
+    BeaconState state = perSlotTransition.apply(new BeaconStateExImpl(parent.getState()));
+    SlotNumber currentSlot = spec.get_current_slot(parent.getState(), schedulers.getCurrentTime());
+    SlotNumber nextToCurrentSlot = spec.get_current_slot(state, schedulers.getCurrentTime()).increment();
+    final boolean actual = nextToCurrentSlot.greaterEqual(currentSlot);
+
+    //    assert store.time >= pre_state.genesis_time + block.slot * SECONDS_PER_SLOT
+    final long expectedTime = parent.getState().getGenesisTime().longValue() + currentSlot.longValue() * spec.getConstants().getSecondsPerSlot().longValue();
+    final boolean expected = currentTime >= expectedTime;
+
+    assertThat(actual).isEqualTo(expected);
   }
 }
