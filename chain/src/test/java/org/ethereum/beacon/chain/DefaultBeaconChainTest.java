@@ -24,7 +24,6 @@ import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.BLSSignature;
-import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.db.Database;
 import org.ethereum.beacon.schedulers.ControlledSchedulers;
@@ -34,13 +33,12 @@ import org.junit.Test;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
 
-import java.time.Instant;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.stream.IntStream;
 
 public class DefaultBeaconChainTest {
-
-  private static final long SECONDS_PER_SLOT = 6;
 
   @Test
   public void insertAChain() {
@@ -126,7 +124,7 @@ public class DefaultBeaconChainTest {
   }
 
   @Test
-  public void testRejectBlocks() {
+  public void testRejectBlocks_future() {
     ControlledSchedulers schedulers = Schedulers.createControlled();
 
     BeaconChainSpec spec =
@@ -144,14 +142,35 @@ public class DefaultBeaconChainTest {
 
     BeaconTuple recentlyProcessed = beaconChain.getRecentlyProcessed();
 
-    final SlotNumber currentSlot = spec.get_current_slot(recentlyProcessed.getState(), Instant.now().toEpochMilli());
-    final Time validBlockTime = recentlyProcessed.getState().getGenesisTime().plus(Time.of(currentSlot.longValue() * SECONDS_PER_SLOT)); //    pre_state.genesis_time + block.slot * SECONDS_PER_SLOT
-    schedulers.setCurrentTime(validBlockTime.increment().longValue());
-
+    schedulers.addTime(Duration.of(1, ChronoUnit.DAYS));
     BeaconBlock aBlock =
             createBlock(recentlyProcessed, spec, schedulers.getCurrentTime(), perSlotTransition);
 
     Assert.assertEquals(ImportResult.ExpiredBlock, beaconChain.insert(aBlock));
-    Assert.assertEquals(aBlock, beaconChain.getRecentlyProcessed().getBlock());
+  }
+
+  @Test
+  public void testRejectBlocks_past() {
+    ControlledSchedulers schedulers = Schedulers.createControlled();
+
+    BeaconChainSpec spec =
+            BeaconChainSpec.Builder.createWithDefaultParams()
+                    .withComputableGenesisTime(false)
+                    .withVerifyDepositProof(false)
+                    .build();
+    StateTransition<BeaconStateEx> perSlotTransition =
+            StateTransitionTestUtil.createNextSlotTransition();
+    MutableBeaconChain beaconChain = createBeaconChain(spec, perSlotTransition, schedulers);
+
+    beaconChain.init();
+    BeaconTuple initialTuple = beaconChain.getRecentlyProcessed();
+    Assert.assertEquals(spec.getConstants().getGenesisSlot(), initialTuple.getBlock().getSlot());
+
+    BeaconTuple recentlyProcessed = beaconChain.getRecentlyProcessed();
+
+    BeaconBlock aBlock =
+            createBlock(recentlyProcessed, spec, schedulers.getCurrentTime() - 100_000, perSlotTransition);
+
+    Assert.assertEquals(ImportResult.ExpiredBlock, beaconChain.insert(aBlock));
   }
 }
