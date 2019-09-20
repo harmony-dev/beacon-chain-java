@@ -127,7 +127,7 @@ public class DefaultBeaconChainTest {
   }
 
   @Test
-  public void testRejectBlocks_future() {
+  public void testRejectBlocks() {
     ControlledSchedulers schedulers = Schedulers.createControlled();
     long currentTime = schedulers.getCurrentTime();
 
@@ -142,10 +142,6 @@ public class DefaultBeaconChainTest {
 
     MutableBeaconChain beaconChain = createBeaconChain(spec, perSlotTransition, schedulers);
     beaconChain.init();
-
-    BeaconTuple initialTuple = beaconChain.getRecentlyProcessed();
-    Assert.assertEquals(spec.getConstants().getGenesisSlot(), initialTuple.getBlock().getSlot());
-
     BeaconTuple parent = beaconChain.getRecentlyProcessed();
 
     //    assert block.slot <= get_current_slot(store.time) + 1
