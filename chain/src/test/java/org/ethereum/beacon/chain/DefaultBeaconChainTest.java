@@ -22,11 +22,8 @@ import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.BeaconState;
-import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.BLSSignature;
-import org.ethereum.beacon.core.types.Millis;
-import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.db.Database;
@@ -136,17 +133,6 @@ public class DefaultBeaconChainTest {
 
     BeaconChainSpec spec =
             BeaconChainSpec.Builder.createWithDefaultParams()
-                    .withConstants(new SpecConstants() {
-                      @Override
-                      public ShardNumber getShardCount() {
-                        return ShardNumber.of(16);
-                      }
-
-                      @Override
-                      public SlotNumber.EpochLength getSlotsPerEpoch() {
-                        return new SlotNumber.EpochLength(UInt64.valueOf(4));
-                      }
-                    })
                     .withComputableGenesisTime(false)
                     .withVerifyDepositProof(false)
                     .build();
@@ -162,14 +148,10 @@ public class DefaultBeaconChainTest {
 
     BeaconTuple parent = beaconChain.getRecentlyProcessed();
 
-    schedulers.addTime(Duration.of(1, ChronoUnit.DAYS));
-    BeaconBlock aBlock =
-            createBlock(parent, spec, schedulers.getCurrentTime(), perSlotTransition);
-
     //    assert block.slot <= get_current_slot(store.time) + 1
+    schedulers.addTime(Duration.of(1, ChronoUnit.DAYS));
     BeaconState state = perSlotTransition.apply(new BeaconStateExImpl(parent.getState()));
     SlotNumber currentSlot = spec.get_current_slot(parent.getState(), schedulers.getCurrentTime());
-    schedulers.addTime(Millis.BIT_SIZE);
     SlotNumber nextToCurrentSlot = spec.get_current_slot(state, schedulers.getCurrentTime()).increment();
     final boolean actual = nextToCurrentSlot.greaterEqual(currentSlot);
 
@@ -177,46 +159,6 @@ public class DefaultBeaconChainTest {
     final long expectedTime = parent.getState().getGenesisTime().longValue() + currentSlot.longValue() * spec.getConstants().getSecondsPerSlot().longValue();
     final boolean expected = currentTime >= expectedTime;
 
-    assertThat(actual).isNotEqualTo(expected);
-
-    Assert.assertEquals(ImportResult.ExpiredBlock, beaconChain.insert(aBlock));
-  }
-
-  @Test
-  public void testRejectBlocks_past() {
-    ControlledSchedulers schedulers = Schedulers.createControlled();
-    long currentTime = schedulers.getCurrentTime();
-
-    BeaconChainSpec spec =
-            BeaconChainSpec.Builder.createWithDefaultParams()
-                    .withComputableGenesisTime(false)
-                    .withVerifyDepositProof(false)
-                    .build();
-    StateTransition<BeaconStateEx> perSlotTransition =
-            StateTransitionTestUtil.createNextSlotTransition();
-    MutableBeaconChain beaconChain = createBeaconChain(spec, perSlotTransition, schedulers);
-
-    beaconChain.init();
-    BeaconTuple initialTuple = beaconChain.getRecentlyProcessed();
-    Assert.assertEquals(spec.getConstants().getGenesisSlot(), initialTuple.getBlock().getSlot());
-
-    BeaconTuple parent = beaconChain.getRecentlyProcessed();
-
-    BeaconBlock aBlock =
-            createBlock(parent, spec, schedulers.getCurrentTime() - 100_000, perSlotTransition);
-
-    //    assert block.slot <= get_current_slot(store.time) + 1
-    BeaconState state = perSlotTransition.apply(new BeaconStateExImpl(parent.getState()));
-    SlotNumber currentSlot = spec.get_current_slot(parent.getState(), schedulers.getCurrentTime());
-    SlotNumber nextToCurrentSlot = spec.get_current_slot(state, currentTime).increment();
-    final boolean actual = nextToCurrentSlot.greaterEqual(currentSlot);
-
-    //    assert store.time >= pre_state.genesis_time + block.slot * SECONDS_PER_SLOT
-    final long expectedTime = parent.getState().getGenesisTime().longValue() + currentSlot.longValue() * spec.getConstants().getSecondsPerSlot().longValue();
-    final boolean expected = currentTime >= expectedTime;
-
-    assertThat(actual).isNotEqualTo(expected);
-
-    Assert.assertEquals(ImportResult.ExpiredBlock, beaconChain.insert(aBlock));
+    assertThat(actual).isEqualTo(expected);
   }
 }
