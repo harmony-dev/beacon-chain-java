@@ -24,6 +24,7 @@ import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.db.Database;
 import org.ethereum.beacon.schedulers.ControlledSchedulers;
@@ -37,6 +38,8 @@ import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.stream.IntStream;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class DefaultBeaconChainTest {
 
@@ -126,6 +129,7 @@ public class DefaultBeaconChainTest {
   @Test
   public void testRejectBlocks_future() {
     ControlledSchedulers schedulers = Schedulers.createControlled();
+    long currentTime = schedulers.getCurrentTime();
 
     BeaconChainSpec spec =
             BeaconChainSpec.Builder.createWithDefaultParams()
@@ -140,11 +144,23 @@ public class DefaultBeaconChainTest {
     BeaconTuple initialTuple = beaconChain.getRecentlyProcessed();
     Assert.assertEquals(spec.getConstants().getGenesisSlot(), initialTuple.getBlock().getSlot());
 
-    BeaconTuple recentlyProcessed = beaconChain.getRecentlyProcessed();
+    BeaconTuple parent = beaconChain.getRecentlyProcessed();
 
     schedulers.addTime(Duration.of(1, ChronoUnit.DAYS));
     BeaconBlock aBlock =
-            createBlock(recentlyProcessed, spec, schedulers.getCurrentTime(), perSlotTransition);
+            createBlock(parent, spec, schedulers.getCurrentTime(), perSlotTransition);
+
+    //    assert block.slot <= get_current_slot(store.time) + 1
+    BeaconState state = perSlotTransition.apply(new BeaconStateExImpl(parent.getState()));
+    SlotNumber currentSlot = spec.get_current_slot(parent.getState(), schedulers.getCurrentTime());
+    SlotNumber nextToCurrentSlot = spec.get_current_slot(state, currentTime).increment();
+    final boolean actual = nextToCurrentSlot.greaterEqual(currentSlot);
+
+    //    assert store.time >= pre_state.genesis_time + block.slot * SECONDS_PER_SLOT
+    final long expectedTime = parent.getState().getGenesisTime().longValue() + currentSlot.longValue() * spec.getConstants().getSecondsPerSlot().longValue();
+    final boolean expected = currentTime >= expectedTime;
+
+    assertThat(actual).isNotEqualTo(expected);
 
     Assert.assertEquals(ImportResult.ExpiredBlock, beaconChain.insert(aBlock));
   }
@@ -152,6 +168,7 @@ public class DefaultBeaconChainTest {
   @Test
   public void testRejectBlocks_past() {
     ControlledSchedulers schedulers = Schedulers.createControlled();
+    long currentTime = schedulers.getCurrentTime();
 
     BeaconChainSpec spec =
             BeaconChainSpec.Builder.createWithDefaultParams()
@@ -166,10 +183,22 @@ public class DefaultBeaconChainTest {
     BeaconTuple initialTuple = beaconChain.getRecentlyProcessed();
     Assert.assertEquals(spec.getConstants().getGenesisSlot(), initialTuple.getBlock().getSlot());
 
-    BeaconTuple recentlyProcessed = beaconChain.getRecentlyProcessed();
+    BeaconTuple parent = beaconChain.getRecentlyProcessed();
 
     BeaconBlock aBlock =
-            createBlock(recentlyProcessed, spec, schedulers.getCurrentTime() - 100_000, perSlotTransition);
+            createBlock(parent, spec, schedulers.getCurrentTime() - 100_000, perSlotTransition);
+
+    //    assert block.slot <= get_current_slot(store.time) + 1
+    BeaconState state = perSlotTransition.apply(new BeaconStateExImpl(parent.getState()));
+    SlotNumber currentSlot = spec.get_current_slot(parent.getState(), schedulers.getCurrentTime());
+    SlotNumber nextToCurrentSlot = spec.get_current_slot(state, currentTime).increment();
+    final boolean actual = nextToCurrentSlot.greaterEqual(currentSlot);
+
+    //    assert store.time >= pre_state.genesis_time + block.slot * SECONDS_PER_SLOT
+    final long expectedTime = parent.getState().getGenesisTime().longValue() + currentSlot.longValue() * spec.getConstants().getSecondsPerSlot().longValue();
+    final boolean expected = currentTime >= expectedTime;
+
+    assertThat(actual).isNotEqualTo(expected);
 
     Assert.assertEquals(ImportResult.ExpiredBlock, beaconChain.insert(aBlock));
   }
