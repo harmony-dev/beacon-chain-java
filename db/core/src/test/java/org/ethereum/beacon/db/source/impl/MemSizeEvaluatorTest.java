@@ -1,16 +1,17 @@
 package org.ethereum.beacon.db.source.impl;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
-public class MemSizeEvaluatorTest {
+import static org.assertj.core.api.Assertions.assertThat;
+
+class MemSizeEvaluatorTest {
 
   @Test
-  public void bytesValueEvaluator() {
+  void bytesValueEvaluator() {
     long evaluatedSize =
         MemSizeEvaluators.BytesValueEvaluator.apply(BytesValue.wrap(new byte[1000]));
     System.out.println("Evaluated size: " + evaluatedSize);
-    Assert.assertTrue(evaluatedSize > 1000);
+    assertThat(evaluatedSize).isGreaterThan(1000);
   }
 }
