@@ -23,7 +23,11 @@ public class ExpirationScheduler<Key> {
   }
 
   public void put(Key key, Runnable runnable) {
-    expirationTasks.remove(key).cancel(true);
+    synchronized (this) {
+      if (expirationTasks.containsKey(key)) {
+        expirationTasks.remove(key).cancel(true);
+      }
+    }
     ScheduledFuture future =
         scheduler.schedule(
             () -> {
