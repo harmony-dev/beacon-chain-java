@@ -126,7 +126,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
 
     BeaconTuple newTuple = BeaconTuple.of(block, postBlockState);
     tupleStorage.put(newTuple);
-    updateFinality(parentState, postBlockState);
+    updateFinality(postBlockState);
 
     chainStorage.commit();
 
@@ -153,21 +153,32 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     return recentlyProcessed;
   }
 
-  private void updateFinality(BeaconState previous, BeaconState current) {
-    if (!previous.getFinalizedCheckpoint().equals(current.getFinalizedCheckpoint())) {
+  private void updateFinality(BeaconState current) {
+    boolean finalizedStorageUpdated = false;
+    boolean justifiedStorageUpdated = false;
+    if (current
+        .getFinalizedCheckpoint()
+        .getEpoch()
+        .greater(fetchFinalizedCheckpoint().getEpoch())) {
       chainStorage.getFinalizedStorage().set(current.getFinalizedCheckpoint());
+      finalizedStorageUpdated = true;
+    }
+    if (current
+        .getCurrentJustifiedCheckpoint()
+        .getEpoch()
+        .greater(fetchJustifiedCheckpoint().getEpoch())) {
+      chainStorage.getJustifiedStorage().set(current.getCurrentJustifiedCheckpoint());
+      justifiedStorageUpdated = true;
+    }
+    // publish updates after both storages have been updated
+    // the order can be important if a finalizedCheckpointStream subscriber will look
+    // into justified storage
+    // in general, it may be important to publish after commit has succeeded
+    if (finalizedStorageUpdated) {
       finalizedCheckpointStream.onNext(current.getFinalizedCheckpoint());
     }
-    if (!previous.getCurrentJustifiedCheckpoint().equals(current.getCurrentJustifiedCheckpoint())) {
-      // store new justified checkpoint if its epoch greater than previous one
-      if (current
-          .getCurrentJustifiedCheckpoint()
-          .getEpoch()
-          .greater(fetchJustifiedCheckpoint().getEpoch())) {
-        chainStorage.getJustifiedStorage().set(current.getCurrentJustifiedCheckpoint());
-      }
-
-      justifiedCheckpointStream.onNext(current.getFinalizedCheckpoint());
+    if (justifiedStorageUpdated) {
+      justifiedCheckpointStream.onNext(current.getCurrentJustifiedCheckpoint());
     }
   }
 

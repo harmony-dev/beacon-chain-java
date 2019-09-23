@@ -10,6 +10,7 @@ import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
+import org.javatuples.Pair;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
 /**
@@ -109,7 +110,7 @@ public interface ForkChoice extends HelperFunction {
       }
 
       head = children.stream()
-          .max(Comparator.comparing(root -> get_latest_attesting_balance(store, root)))
+          .max(Comparator.comparing(root -> Pair.with(get_latest_attesting_balance(store, root), root)))
           .get();
     }
   }
