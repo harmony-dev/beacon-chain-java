@@ -22,6 +22,12 @@ public class ExpirationScheduler<Key> {
     this.timeUnit = timeUnit;
   }
 
+  /**
+   * Puts scheduled task and renews (cancelling old) timeout for the task associated with the key
+   *
+   * @param key Task key
+   * @param runnable Task
+   */
   public void put(Key key, Runnable runnable) {
     synchronized (this) {
       if (expirationTasks.containsKey(key)) {
