@@ -210,6 +210,10 @@ public class Bitlist extends DelegatingBytesValue {
     return size;
   }
 
+  public boolean isEmpty() {
+    return BytesValues.countZeros(wrapped) == wrapped.size();
+  }
+
   public long maxSize() {
     return maxSize;
   }

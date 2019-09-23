@@ -106,11 +106,6 @@ public class ServiceFactory {
       public void start() {}
 
       @Override
-      public Publisher<BeaconChainHead> getHeadStream() {
-        return null;
-      }
-
-      @Override
       public Publisher<ObservableBeaconState> getObservableStateStream() {
         return Mono.just(
             new ObservableBeaconState(
@@ -124,11 +119,6 @@ public class ServiceFactory {
                 BeaconStateEx.getEmpty(),
                 new PendingOperationsState(Collections.emptyList())));
       }
-
-      @Override
-      public Publisher<PendingOperations> getPendingOperationsStream() {
-        return null;
-      }
     };
   }
 
@@ -137,11 +127,6 @@ public class ServiceFactory {
     return new ObservableStateProcessor() {
       @Override
       public void start() {}
-
-      @Override
-      public Publisher<BeaconChainHead> getHeadStream() {
-        return null;
-      }
 
       @Override
       public Publisher<ObservableBeaconState> getObservableStateStream() {
@@ -159,11 +144,6 @@ public class ServiceFactory {
                 new BeaconStateExImpl(state.createImmutable()),
                 new PendingOperationsState(Collections.emptyList())));
       }
-
-      @Override
-      public Publisher<PendingOperations> getPendingOperationsStream() {
-        return null;
-      }
     };
   }
 
@@ -172,11 +152,6 @@ public class ServiceFactory {
     return new ObservableStateProcessor() {
       @Override
       public void start() {}
-
-      @Override
-      public Publisher<BeaconChainHead> getHeadStream() {
-        return null;
-      }
 
       @Override
       public Publisher<ObservableBeaconState> getObservableStateStream() {
@@ -197,11 +172,6 @@ public class ServiceFactory {
                     .build(),
                 new BeaconStateExImpl(state.createImmutable()),
                 new PendingOperationsState(Collections.emptyList())));
-      }
-
-      @Override
-      public Publisher<PendingOperations> getPendingOperationsStream() {
-        return null;
       }
     };
   }
@@ -466,6 +436,16 @@ public class ServiceFactory {
 
       @Override
       public BeaconTuple getRecentlyProcessed() {
+        return null;
+      }
+
+      @Override
+      public Publisher<Checkpoint> getJustifiedCheckpoints() {
+        return null;
+      }
+
+      @Override
+      public Publisher<Checkpoint> getFinalizedCheckpoints() {
         return null;
       }
 

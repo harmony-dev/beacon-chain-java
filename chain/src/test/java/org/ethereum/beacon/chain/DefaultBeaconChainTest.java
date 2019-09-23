@@ -18,19 +18,13 @@ import org.ethereum.beacon.consensus.transition.ExtendedSlotTransition;
 import org.ethereum.beacon.consensus.transition.InitialStateTransition;
 import org.ethereum.beacon.consensus.transition.PerEpochTransition;
 import org.ethereum.beacon.consensus.util.StateTransitionTestUtil;
-import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
-import org.ethereum.beacon.consensus.verifier.BeaconStateVerifier;
-import org.ethereum.beacon.consensus.verifier.VerificationResult;
-import org.ethereum.beacon.core.BeaconBlock;
-import org.ethereum.beacon.core.BeaconBlockBody;
-import org.ethereum.beacon.core.BeaconState;
+import org.ethereum.beacon.consensus.verifier.*;
+import org.ethereum.beacon.core.*;
 import org.ethereum.beacon.core.state.Eth1Data;
-import org.ethereum.beacon.core.types.BLSSignature;
-import org.ethereum.beacon.core.types.Time;
+import org.ethereum.beacon.core.types.*;
 import org.ethereum.beacon.db.Database;
 import org.ethereum.beacon.schedulers.Schedulers;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.*;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
 
@@ -51,7 +45,7 @@ public class DefaultBeaconChainTest {
 
     beaconChain.init();
     BeaconTuple initialTuple = beaconChain.getRecentlyProcessed();
-    Assert.assertEquals(
+      Assertions.assertEquals(
         spec.getConstants().getGenesisSlot(), initialTuple.getBlock().getSlot());
 
     IntStream.range(0, 10)
@@ -60,8 +54,8 @@ public class DefaultBeaconChainTest {
               BeaconTuple recentlyProcessed = beaconChain.getRecentlyProcessed();
               BeaconBlock aBlock = createBlock(recentlyProcessed, spec,
                   schedulers.getCurrentTime(), perSlotTransition);
-              Assert.assertEquals(ImportResult.OK, beaconChain.insert(aBlock));
-              Assert.assertEquals(aBlock, beaconChain.getRecentlyProcessed().getBlock());
+                Assertions.assertEquals(ImportResult.OK, beaconChain.insert(aBlock));
+                Assertions.assertEquals(aBlock, beaconChain.getRecentlyProcessed().getBlock());
 
               System.out.println("Inserted block: " + (idx + 1));
             });

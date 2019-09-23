@@ -16,7 +16,6 @@ package tech.pegasys.artemis.util.bytes;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.vertx.core.buffer.Buffer;
-import net.consensys.cava.bytes.MutableBytes;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -855,6 +854,49 @@ public class BytesValueTest {
     assertThat(small.compareTo(big)).isEqualTo(-1);
 
     assertThat(small.compareTo(otherSmall)).isEqualTo(0);
+  }
+
+  @Test
+  public void testBytesValueComparator_lexicographical_order() {
+    checkOrder(h("0x00"), h("0x01"));
+    checkOrder(h("0x01"), h("0x7f"));
+    checkOrder(h("0x7f"), h("0x80"));
+    checkOrder(h("0x80"), h("0xff"));
+
+    checkOrder(h("0x0000"), h("0x0001"));
+    checkOrder(h("0x0001"), h("0x007f"));
+    checkOrder(h("0x007f"), h("0x0080"));
+    checkOrder(h("0x0080"), h("0x00ff"));
+
+    checkOrder(h("0x0000"), h("0x0100"));
+    checkOrder(h("0x0100"), h("0x7f00"));
+    checkOrder(h("0x7f00"), h("0x8000"));
+    checkOrder(h("0x8000"), h("0xff00"));
+
+    checkOrder(h("0x00"), h("0x0100"));
+    checkOrder(h("0x01"), h("0x7f00"));
+    checkOrder(h("0x7f"), h("0x8000"));
+    checkOrder(h("0x80"), h("0xff00"));
+
+    checkOrder(h("0x00"), h("0x01ff"));
+    checkOrder(h("0x01"), h("0x7fff"));
+    checkOrder(h("0x7f"), h("0x80ff"));
+    checkOrder(h("0x80"), h("0xffff"));
+
+    checkOrder(h("0x0001"), h("0x0100"));
+    checkOrder(h("0x007f"), h("0x7f00"));
+    checkOrder(h("0x0080"), h("0x8000"));
+    checkOrder(h("0x00ff"), h("0xff00"));
+
+    checkOrder(h("0x000001"), h("0x010000"));
+    checkOrder(h("0x00007f"), h("0x7f0000"));
+    checkOrder(h("0x000080"), h("0x800000"));
+    checkOrder(h("0x0000ff"), h("0xff0000"));
+  }
+
+  static void checkOrder(BytesValue lesser, BytesValue greater) {
+    assertThat(lesser).isLessThan(greater);
+    assertThat(greater).isGreaterThan(lesser);
   }
 
   @Test

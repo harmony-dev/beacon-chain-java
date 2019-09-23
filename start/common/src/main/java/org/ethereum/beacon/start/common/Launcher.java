@@ -3,13 +3,17 @@ package org.ethereum.beacon.start.common;
 import java.util.List;
 import org.ethereum.beacon.bench.BenchmarkController;
 import org.ethereum.beacon.bench.BenchmarkController.BenchmarkRoutine;
+import org.ethereum.beacon.chain.BeaconTuple;
 import org.ethereum.beacon.chain.DefaultBeaconChain;
+import org.ethereum.beacon.chain.ForkChoiceProcessor;
+import org.ethereum.beacon.chain.LMDGhostProcessor;
 import org.ethereum.beacon.chain.MutableBeaconChain;
 import org.ethereum.beacon.chain.ProposedBlockProcessor;
 import org.ethereum.beacon.chain.ProposedBlockProcessorImpl;
 import org.ethereum.beacon.chain.SlotTicker;
 import org.ethereum.beacon.chain.observer.ObservableStateProcessor;
-import org.ethereum.beacon.chain.observer.ObservableStateProcessorImpl;
+import org.ethereum.beacon.chain.pool.AttestationPool;
+import org.ethereum.beacon.chain.pool.ReceivedAttestation;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.chain.storage.BeaconChainStorageFactory;
 import org.ethereum.beacon.chain.storage.util.StorageUtils;
@@ -63,6 +67,8 @@ public class Launcher {
   private BeaconChainStorage beaconChainStorage;
   private MutableBeaconChain beaconChain;
   private SlotTicker slotTicker;
+  private AttestationPool attestationPool;
+  private ForkChoiceProcessor forkChoiceProcessor;
   private ObservableStateProcessor observableStateProcessor;
   private BeaconChainProposer beaconChainProposer;
   private BeaconChainAttesterImpl beaconChainAttester;
@@ -149,14 +155,37 @@ public class Launcher {
         .publishOn(schedulers.events().toReactor())
         .subscribe(allAttestations);
 
-    observableStateProcessor = new ObservableStateProcessorImpl(
-        beaconChainStorage,
-        slotTicker.getTickerStream(),
-        allAttestations,
-        beaconChain.getBlockStatesStream(),
-        spec,
-        emptySlotTransition,
-        schedulers);
+    attestationPool =
+        AttestationPool.create(
+            allAttestations.map(ReceivedAttestation::new),
+            slotTicker.getTickerStream(),
+            beaconChain.getFinalizedCheckpoints(),
+            Flux.from(beaconChain.getBlockStatesStream()).map(BeaconTuple::getBlock),
+            schedulers,
+            spec,
+            beaconChainStorage,
+            emptySlotTransition);
+    attestationPool.start();
+
+    forkChoiceProcessor =
+        new LMDGhostProcessor(
+            spec,
+            beaconChainStorage,
+            schedulers,
+            beaconChain.getJustifiedCheckpoints(),
+            attestationPool.getValidIndexed(),
+            beaconChain.getBlockStatesStream());
+
+    observableStateProcessor =
+        ObservableStateProcessor.createNew(
+            spec,
+            emptySlotTransition,
+            schedulers,
+            slotTicker.getTickerStream(),
+            forkChoiceProcessor.getChainHeads(),
+            beaconChain.getJustifiedCheckpoints(),
+            beaconChain.getFinalizedCheckpoints(),
+            attestationPool.getValidUnboxed());
     observableStateProcessor.start();
 
     if (validatorCred != null) {
@@ -284,6 +313,10 @@ public class Launcher {
     return extendedSlotTransition;
   }
 
+  public EmptySlotTransition getEmptySlotTransition() {
+    return emptySlotTransition;
+  }
+
   public BeaconBlockVerifier getBlockVerifier() {
     return blockVerifier;
   }
@@ -342,5 +375,13 @@ public class Launcher {
 
   public MeasurementsCollector getBlockCollector() {
     return blockCollector;
+  }
+
+  public AttestationPool getAttestationPool() {
+    return attestationPool;
+  }
+
+  public ForkChoiceProcessor getForkChoiceProcessor() {
+    return forkChoiceProcessor;
   }
 }

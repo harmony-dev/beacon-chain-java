@@ -17,6 +17,7 @@ import org.ethereum.beacon.consensus.verifier.BeaconStateVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
+import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.stream.SimpleProcessor;
@@ -36,6 +37,8 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   private final BeaconTupleStorage tupleStorage;
 
   private final SimpleProcessor<BeaconTupleDetails> blockStream;
+  private final SimpleProcessor<Checkpoint> justifiedCheckpointStream;
+  private final SimpleProcessor<Checkpoint> finalizedCheckpointStream;
   private final Schedulers schedulers;
 
   private BeaconTuple recentlyProcessed;
@@ -58,6 +61,10 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     this.schedulers = schedulers;
 
     blockStream = new SimpleProcessor<>(schedulers.events(), "DefaultBeaconChain.block");
+    justifiedCheckpointStream =
+        new SimpleProcessor<>(schedulers.events(), "DefaultBeaconChain.justifiedCheckpoint");
+    finalizedCheckpointStream =
+        new SimpleProcessor<>(schedulers.events(), "DefaultBeaconChain.finalizedCheckpoint");
   }
 
   @Override
@@ -66,6 +73,8 @@ public class DefaultBeaconChain implements MutableBeaconChain {
       throw new IllegalStateException("Couldn't start from empty storage");
     }
     this.recentlyProcessed = fetchRecentTuple();
+    justifiedCheckpointStream.onNext(fetchJustifiedCheckpoint());
+    finalizedCheckpointStream.onNext(fetchFinalizedCheckpoint());
     blockStream.onNext(new BeaconTupleDetails(recentlyProcessed));
   }
 
@@ -117,7 +126,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
 
     BeaconTuple newTuple = BeaconTuple.of(block, postBlockState);
     tupleStorage.put(newTuple);
-    updateFinality(parentState, postBlockState);
+    updateFinality(postBlockState);
 
     chainStorage.commit();
 
@@ -144,13 +153,47 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     return recentlyProcessed;
   }
 
-  private void updateFinality(BeaconState previous, BeaconState current) {
-    if (!previous.getFinalizedCheckpoint().equals(current.getFinalizedCheckpoint())) {
+  private void updateFinality(BeaconState current) {
+    boolean finalizedStorageUpdated = false;
+    boolean justifiedStorageUpdated = false;
+    if (current
+        .getFinalizedCheckpoint()
+        .getEpoch()
+        .greater(fetchFinalizedCheckpoint().getEpoch())) {
       chainStorage.getFinalizedStorage().set(current.getFinalizedCheckpoint());
+      finalizedStorageUpdated = true;
     }
-    if (!previous.getCurrentJustifiedCheckpoint().equals(current.getCurrentJustifiedCheckpoint())) {
+    if (current
+        .getCurrentJustifiedCheckpoint()
+        .getEpoch()
+        .greater(fetchJustifiedCheckpoint().getEpoch())) {
       chainStorage.getJustifiedStorage().set(current.getCurrentJustifiedCheckpoint());
+      justifiedStorageUpdated = true;
     }
+    // publish updates after both storages have been updated
+    // the order can be important if a finalizedCheckpointStream subscriber will look
+    // into justified storage
+    // in general, it may be important to publish after commit has succeeded
+    if (finalizedStorageUpdated) {
+      finalizedCheckpointStream.onNext(current.getFinalizedCheckpoint());
+    }
+    if (justifiedStorageUpdated) {
+      justifiedCheckpointStream.onNext(current.getCurrentJustifiedCheckpoint());
+    }
+  }
+
+  private Checkpoint fetchJustifiedCheckpoint() {
+    return chainStorage
+        .getJustifiedStorage()
+        .get()
+        .orElseThrow(() -> new RuntimeException("Justified checkpoint not found"));
+  }
+
+  private Checkpoint fetchFinalizedCheckpoint() {
+    return chainStorage
+        .getFinalizedStorage()
+        .get()
+        .orElseThrow(() -> new RuntimeException("Finalized checkpoint not found"));
   }
 
   private BeaconStateEx pullParentState(BeaconBlock block) {
@@ -186,5 +229,15 @@ public class DefaultBeaconChain implements MutableBeaconChain {
   @Override
   public Publisher<BeaconTupleDetails> getBlockStatesStream() {
     return blockStream;
+  }
+
+  @Override
+  public Publisher<Checkpoint> getJustifiedCheckpoints() {
+    return justifiedCheckpointStream;
+  }
+
+  @Override
+  public Publisher<Checkpoint> getFinalizedCheckpoints() {
+    return finalizedCheckpointStream;
   }
 }

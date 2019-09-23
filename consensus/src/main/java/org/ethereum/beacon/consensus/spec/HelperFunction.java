@@ -1,6 +1,17 @@
 package org.ethereum.beacon.consensus.spec;
 
+import static java.util.Collections.emptyList;
+import static java.util.stream.Collectors.toList;
+import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
+
 import com.google.common.collect.Ordering;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.BeaconBlockHeader;
@@ -36,18 +47,6 @@ import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.collections.ReadVector;
 import tech.pegasys.artemis.util.uint.UInt64;
 import tech.pegasys.artemis.util.uint.UInt64s;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static java.util.Collections.emptyList;
-import static java.util.stream.Collectors.toList;
-import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
 
 /**
  * Helper functions.
@@ -897,7 +896,27 @@ public interface HelperFunction extends SpecCommons {
     }
 
     List<PublicKey> publicKeys = publicKeysBytes.stream().map(PublicKey::create).collect(toList());
-    return PublicKey.aggregate(publicKeys);
+
+    if (publicKeys.size() == 1) {
+      return publicKeys.get(0);
+    } else {
+      return PublicKey.aggregate(publicKeys);
+    }
+  }
+
+  default PublicKey bls_aggregate_pubkeys_no_validate(List<BLSPubkey> publicKeysBytes) {
+    if (!isBlsVerify()) {
+      return PublicKey.aggregate(Collections.emptyList());
+    }
+
+    List<PublicKey> publicKeys =
+        publicKeysBytes.stream().map(PublicKey::createWithoutValidation).collect(toList());
+
+    if (publicKeys.size() == 1) {
+      return publicKeys.get(0);
+    } else {
+      return PublicKey.aggregate(publicKeys);
+    }
   }
 
   /*
@@ -993,6 +1012,11 @@ public interface HelperFunction extends SpecCommons {
       """
    */
   default boolean is_valid_indexed_attestation(BeaconState state, IndexedAttestation indexed_attestation) {
+    return is_valid_indexed_attestation_impl(state, indexed_attestation, true);
+  }
+
+  default boolean is_valid_indexed_attestation_impl(BeaconState state, IndexedAttestation indexed_attestation,
+      boolean verify_signature) {
     /*
       bit_0_indices = indexed_attestation.custody_bit_0_indices
       bit_1_indices = indexed_attestation.custody_bit_1_indices
@@ -1022,6 +1046,10 @@ public interface HelperFunction extends SpecCommons {
     }
     if (!Ordering.natural().isOrdered(bit_1_indices)) {
       return false;
+    }
+
+    if (!verify_signature) {
+      return true;
     }
 
     /*

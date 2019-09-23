@@ -1,19 +1,14 @@
 package org.ethereum.beacon.chain;
 
 import org.ethereum.beacon.consensus.BeaconChainSpec;
-import org.ethereum.beacon.core.BeaconState;
-import org.ethereum.beacon.core.MutableBeaconState;
+import org.ethereum.beacon.core.*;
 import org.ethereum.beacon.core.spec.SpecConstants;
-import org.ethereum.beacon.core.types.SlotNumber;
-import org.ethereum.beacon.core.types.Time;
+import org.ethereum.beacon.core.types.*;
 import org.ethereum.beacon.schedulers.Schedulers;
-import org.junit.Test;
+import org.junit.jupiter.api.*;
 import reactor.core.publisher.Flux;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import java.util.concurrent.*;
 
 public class SlotTickerTests {
   public static final int MILLIS_IN_SECOND = 1000;
@@ -56,16 +51,16 @@ public class SlotTickerTests {
         .subscribe(
             slotNumber -> {
               if (previousTick.greater(SlotNumber.ZERO)) {
-                assertEquals(previousTick.increment(), slotNumber);
+                  Assertions.assertEquals(previousTick.increment(), slotNumber);
                 bothAssertsRun.countDown();
               } else {
-                assertTrue(slotNumber.greater(genesisSlot)); // first tracked tick
+                  Assertions.assertTrue(slotNumber.greater(genesisSlot)); // first tracked tick
                 bothAssertsRun.countDown();
               }
               previousTick = slotNumber;
             });
-    assertTrue(
-        String.format("%s assertion(s) was not correct or not tested", bothAssertsRun.getCount()),
-        bothAssertsRun.await(4, TimeUnit.SECONDS));
+      Assertions.assertTrue(
+              (bothAssertsRun.await(4, TimeUnit.SECONDS)),
+              String.format("%s assertion(s) was not correct or not tested", bothAssertsRun.getCount()));
   }
 }

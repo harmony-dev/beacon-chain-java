@@ -14,7 +14,6 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.ethereum.beacon.chain.BeaconChainHead;
 import org.ethereum.beacon.chain.BeaconTuple;
 import org.ethereum.beacon.chain.BeaconTupleDetails;
 import org.ethereum.beacon.chain.LMDGhostHeadFunction;
@@ -68,9 +67,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   private final Map<Pair<ValidatorIndex, EpochNumber>, Attestation> attestationCache = new HashMap<>();
   private final Schedulers schedulers;
 
-  private final SimpleProcessor<BeaconChainHead> headStream;
   private final SimpleProcessor<ObservableBeaconState> observableStateStream;
-  private final SimpleProcessor<PendingOperations> pendingOperationsStream;
 
   public ObservableStateProcessorImpl(
       BeaconChainStorage chainStorage,
@@ -110,9 +107,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     this.schedulers = schedulers;
     this.maxEmptySlotTransitions = maxEmptySlotTransitions;
 
-    headStream = new SimpleProcessor<>(this.schedulers.events(), "ObservableStateProcessor.head");
     observableStateStream = new SimpleProcessor<>(this.schedulers.events(), "ObservableStateProcessor.observableState");
-    pendingOperationsStream = new SimpleProcessor<>(this.schedulers.events(), "PendingOperationsProcessor.pendingOperations");
   }
 
   @Override
@@ -230,7 +225,6 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
 
   private void newHead(BeaconTupleDetails head) {
     this.head = head;
-    headStream.onNext(new BeaconChainHead(this.head));
 
     if (latestState == null) {
       latestState = head.getFinalState();
@@ -340,17 +334,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   }
 
   @Override
-  public Publisher<BeaconChainHead> getHeadStream() {
-    return headStream;
-  }
-
-  @Override
   public Publisher<ObservableBeaconState> getObservableStateStream() {
     return observableStateStream;
-  }
-
-  @Override
-  public Publisher<PendingOperations> getPendingOperationsStream() {
-    return pendingOperationsStream;
   }
 }

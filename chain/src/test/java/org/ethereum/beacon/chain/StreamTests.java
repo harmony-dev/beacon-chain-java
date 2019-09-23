@@ -1,14 +1,12 @@
 package org.ethereum.beacon.chain;
 
-import java.time.Duration;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.*;
 import org.reactivestreams.Publisher;
 import reactor.core.Disposable;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.FluxSink;
-import reactor.core.publisher.ReplayProcessor;
+import reactor.core.publisher.*;
 import reactor.core.scheduler.Schedulers;
+
+import java.time.Duration;
 
 public class StreamTests {
 
@@ -44,7 +42,7 @@ public class StreamTests {
   }
 
   @Test
-  @Ignore
+  @Disabled
   public void intervalTest1() throws InterruptedException {
 
     long initDelay = (System.currentTimeMillis() / 10000 + 1) * 10000 - System.currentTimeMillis();
