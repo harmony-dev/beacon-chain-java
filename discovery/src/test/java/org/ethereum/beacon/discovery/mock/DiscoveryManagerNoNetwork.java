@@ -21,6 +21,7 @@ import tech.pegasys.artemis.util.bytes.Bytes32;
 import java.security.SecureRandom;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -72,12 +73,12 @@ public class DiscoveryManagerNoNetwork implements DiscoveryManager {
   @Override
   public void stop() {}
 
-  public void connect(NodeRecord nodeRecord) {
+  public CompletableFuture<Void> connect(NodeRecord nodeRecord) {
     if (!nodeTable.getNode(nodeRecord.getNodeId()).isPresent()) {
       nodeTable.save(NodeRecordInfo.createDefault(nodeRecord));
     }
     NodeContext context = getContext(nodeRecord.getNodeId()).get();
-    context.initiate();
+    return context.initiate();
   }
 
   private Optional<NodeContext> getContext(Bytes32 nodeId) {

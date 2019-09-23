@@ -93,13 +93,12 @@ public class DiscoveryManagerImpl implements DiscoveryManager {
     discoveryServer.stop();
   }
 
-  @VisibleForTesting
-  void connect(NodeRecord nodeRecord) {
+  public CompletableFuture<Void> connect(NodeRecord nodeRecord) {
     if (!nodeTable.getNode(nodeRecord.getNodeId()).isPresent()) {
       nodeTable.save(NodeRecordInfo.createDefault(nodeRecord));
     }
     NodeContext context = getContext(nodeRecord.getNodeId()).get();
-    context.initiate();
+    return context.initiate();
   }
 
   private Optional<NodeContext> getContext(Bytes32 nodeId) {

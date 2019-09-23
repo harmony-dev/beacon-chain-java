@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
@@ -46,6 +47,7 @@ public class NodeContext {
   private BytesValue initiatorKey;
   private MessageProcessor messageProcessor = null;
   private Map<BytesValue, MessageCode> requestIdReservations = new ConcurrentHashMap<>();
+  private CompletableFuture<Void> connectFuture = null;
 
   public NodeContext(
       NodeRecordV5 nodeRecord,
@@ -79,6 +81,8 @@ public class NodeContext {
         {
           if (packetHandlers.get(UnknownPacket.class).handle(packet)) {
             setStatus(SessionStatus.WHOAREYOU_SENT);
+          } else {
+            failConnectFuture();
           }
           break;
         }
@@ -87,6 +91,8 @@ public class NodeContext {
           WhoAreYouPacket whoAreYouPacket = packet.getWhoAreYouPacket();
           if (packetHandlers.get(WhoAreYouPacket.class).handle(whoAreYouPacket)) {
             setStatus(SessionStatus.AUTHENTICATED);
+          } else {
+            failConnectFuture();
           }
           break;
         }
@@ -95,13 +101,20 @@ public class NodeContext {
           AuthHeaderMessagePacket authHeaderMessagePacket = packet.getAuthHeaderMessagePacket();
           if (packetHandlers.get(AuthHeaderMessagePacket.class).handle(authHeaderMessagePacket)) {
             setStatus(SessionStatus.AUTHENTICATED);
+            completeConnectFuture();
+          } else {
+            failConnectFuture();
           }
           break;
         }
       case AUTHENTICATED:
         {
           MessagePacket messagePacket = packet.getMessagePacket();
-          packetHandlers.get(MessagePacket.class).handle(messagePacket);
+          if (packetHandlers.get(MessagePacket.class).handle(messagePacket)) {
+            completeConnectFuture();
+          } else {
+            failConnectFuture();
+          }
           break;
         }
       default:
@@ -122,8 +135,35 @@ public class NodeContext {
     messageProcessor.handleIncoming(message, this);
   }
 
+  private void completeConnectFuture() {
+    if (connectFuture != null) {
+      connectFuture.complete(null);
+      connectFuture = null;
+    }
+  }
+
+  private void failConnectFuture() {
+    if (connectFuture != null) {
+      connectFuture.completeExceptionally(
+          new RuntimeException(
+              String.format("Peer message initiation failed for %s", this.getNodeRecord())));
+      connectFuture = null;
+    }
+  }
+
   /** Sends random packet to start initiation of session with node */
-  public void initiate() {
+  public CompletableFuture<Void> initiate() {
+    CompletableFuture<Void> connectFuture = new CompletableFuture<>();
+    if (this.connectFuture != null) {
+      connectFuture.completeExceptionally(
+          new RuntimeException(
+              String.format(
+                  "Only one simultaneous handshake initiation allowed per peer. Got second for %s",
+                  this.getNodeRecord())));
+    }
+    if (status == SessionStatus.AUTHENTICATED) {
+      completeConnectFuture();
+    }
     byte[] authTagBytes = new byte[12];
     rnd.nextBytes(authTagBytes);
     BytesValue authTag = BytesValue.wrap(authTagBytes);
@@ -132,6 +172,7 @@ public class NodeContext {
     authTagRepo.put(authTag, this);
     this.addOutgoingEvent(randomPacket);
     this.status = SessionStatus.RANDOM_PACKET_SENT;
+    return connectFuture;
   }
 
   public synchronized void addOutgoingEvent(Packet packet) {
