@@ -131,7 +131,7 @@ public interface EpochProcessing extends HelperFunction {
           Gwei b2 = get_attesting_balance(state,
               attestations.stream().filter(a -> a.getData().getCrosslink().equals(c2)).collect(toList()));
           if (b1.equals(b2)) {
-            return c1.getDataRoot().toString().compareTo(c2.getDataRoot().toString());
+            return c1.getDataRoot().compareTo(c2.getDataRoot());
           } else {
             return b1.compareTo(b2);
           }
