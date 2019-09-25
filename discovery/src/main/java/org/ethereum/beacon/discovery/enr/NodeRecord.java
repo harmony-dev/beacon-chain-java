@@ -12,15 +12,13 @@ import org.web3j.rlp.RlpType;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
-import java.math.BigInteger;
 import java.util.Base64;
 import java.util.List;
-import java.util.function.Function;
 
 /**
  * Ethereum Node Record
  *
- * <p>Node record as described in <a href="https://eips.ethereum.org/EIPS/eip-778>EIP-778</a>
+ * <p>Node record as described in <a href="https://eips.ethereum.org/EIPS/eip-778">EIP-778</a>
  */
 @SSZSerializable(listAccessor = NodeRecord.NodeRecordAccessor.class)
 public interface NodeRecord {
@@ -45,48 +43,8 @@ public interface NodeRecord {
               "Unable to deserialize ENR with no id field at 2-3 records, [%s]",
               BytesValue.wrap(bytes)));
     }
+
     RlpString idVersion = (RlpString) values.get(3);
-
-    Function<List<RlpType>, NodeRecord> nodeRecordV4Creator =
-        fields -> {
-          NodeRecordV4.Builder builder =
-              NodeRecordV4.Builder.empty()
-                  .withSignature(BytesValue.fromHexString(((RlpString) values.get(0)).asString()))
-                  .withSeqNumber(
-                      new BigInteger(
-                              1,
-                              BytesValue.fromHexString(((RlpString) values.get(1)).asString())
-                                  .extractArray())
-                          .longValue());
-          for (int i = 4; i < values.size(); i += 2) {
-            builder =
-                builder.withKeyField(
-                    new String(((RlpString) values.get(i)).getBytes()),
-                    (RlpString) values.get(i + 1));
-          }
-
-          return builder.build();
-        };
-    Function<List<RlpType>, NodeRecord> nodeRecordV5Creator =
-        fields -> {
-          NodeRecordV5.Builder builder =
-              NodeRecordV5.Builder.empty()
-                  .withSignature(BytesValue.fromHexString(((RlpString) values.get(0)).asString()))
-                  .withSeqNumber(
-                      new BigInteger(
-                              1,
-                              BytesValue.fromHexString(((RlpString) values.get(1)).asString())
-                                  .extractArray())
-                          .longValue());
-          for (int i = 4; i < values.size(); i += 2) {
-            builder =
-                builder.withKeyField(
-                    new String(((RlpString) values.get(i)).getBytes()),
-                    (RlpString) values.get(i + 1));
-          }
-
-          return builder.build();
-        };
     IdentityScheme nodeIdentity = IdentityScheme.fromString(new String(idVersion.getBytes()));
     if (nodeIdentity == null) {
       throw new RuntimeException(
@@ -97,15 +55,18 @@ public interface NodeRecord {
     switch (nodeIdentity) {
       case V4:
         {
-          return nodeRecordV4Creator.apply(values);
+          return NodeRecordV4.fromRlpList(values);
         }
       case V5:
         {
-          return nodeRecordV5Creator.apply(values);
+          return NodeRecordV5.fromRlpList(values);
+        }
+      default:
+        {
+          throw new RuntimeException(
+              String.format("Builder for identity %s not found", nodeIdentity));
         }
     }
-
-    return null;
   }
 
   static NodeRecord fromBytes(BytesValue bytes) {

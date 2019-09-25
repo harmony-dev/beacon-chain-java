@@ -14,7 +14,6 @@ import tech.pegasys.artemis.util.bytes.Bytes33;
 import tech.pegasys.artemis.util.bytes.Bytes4;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -25,6 +24,21 @@ import java.util.function.Function;
 public class NodeRecordV4 implements NodeRecord {
   // id 	name of identity scheme, e.g. “v4”
   private static final IdentityScheme identityScheme = IdentityScheme.V4;
+  private static final Function<List<RlpType>, NodeRecordV4> nodeRecordV4Creator =
+      fields -> {
+        NodeRecordV4.Builder builder =
+            NodeRecordV4.Builder.empty()
+                .withSignature(BytesValue.wrap(((RlpString) fields.get(0)).getBytes()))
+                .withSeqNumber(((RlpString) fields.get(1)).asPositiveBigInteger().longValue());
+        for (int i = 4; i < fields.size(); i += 2) {
+          builder =
+              builder.withKeyField(
+                  new String(((RlpString) fields.get(i)).getBytes()),
+                  (RlpString) fields.get(i + 1));
+        }
+
+        return builder.build();
+      };
   // secp256k1 	compressed secp256k1 public key, 33 bytes
   private Bytes33 publicKey;
   // ip 	IPv4 address, 4 bytes
@@ -39,9 +53,7 @@ public class NodeRecordV4 implements NodeRecord {
   private Integer tcpV6Port;
   // udp6 	IPv6-specific UDP port, big endian integer
   private Integer udpV6Port;
-
   private Long seqNumber;
-
   private BytesValue signature;
 
   private NodeRecordV4(
@@ -73,6 +85,10 @@ public class NodeRecordV4 implements NodeRecord {
       Integer udpV6Port) {
     return new NodeRecordV4(
         publicKey, ipV4address, tcpPort, udpPort, ipV6address, tcpV6Port, udpV6Port);
+  }
+
+  public static NodeRecordV4 fromRlpList(List<RlpType> values) {
+    return nodeRecordV4Creator.apply(values);
   }
 
   public IdentityScheme getIdentityScheme() {
@@ -183,7 +199,7 @@ public class NodeRecordV4 implements NodeRecord {
 
   @Override
   public BytesValue serialize() {
-    assert  getSignature() != null;
+    assert getSignature() != null;
     assert getSeqNumber() != null;
 
     // content   = [seq, k, v, ...]
@@ -233,6 +249,18 @@ public class NodeRecordV4 implements NodeRecord {
     return Hashes.sha256(getPublicKey());
   }
 
+  @Override
+  public String toString() {
+    return "NodeRecordV4{"
+        + "publicKey="
+        + publicKey
+        + ", ipV4address="
+        + ipV4address
+        + ", udpPort="
+        + udpPort
+        + '}';
+  }
+
   public static class Builder {
     private static final Map<String, Function<Pair<Builder, RlpType>, Builder>> fieldFillersV4 =
         new HashMap<>();
@@ -243,26 +271,20 @@ public class NodeRecordV4 implements NodeRecord {
           objects ->
               objects
                   .getValue0()
-                  .withIpV4Address(
-                      BytesValue.fromHexString(((RlpString) objects.getValue1()).asString())));
+                  .withIpV4Address(BytesValue.wrap(((RlpString) objects.getValue1()).getBytes())));
       fieldFillersV4.put(
           "secp256k1",
           objects ->
               objects
                   .getValue0()
-                  .withSecp256k1(
-                      BytesValue.fromHexString(((RlpString) objects.getValue1()).asString())));
+                  .withSecp256k1(BytesValue.wrap(((RlpString) objects.getValue1()).getBytes())));
       fieldFillersV4.put(
           "udp",
           objects ->
               objects
                   .getValue0()
                   .withUdpPort(
-                      new BigInteger(
-                              1,
-                              BytesValue.fromHexString(((RlpString) objects.getValue1()).asString())
-                                  .extractArray())
-                          .intValue()));
+                      ((RlpString) objects.getValue1()).asPositiveBigInteger().intValue()));
     }
 
     private Bytes4 ipV4Address;
@@ -330,14 +352,5 @@ public class NodeRecordV4 implements NodeRecord {
       nodeRecord.setPublicKey(secp256k1);
       return nodeRecord;
     }
-  }
-
-  @Override
-  public String toString() {
-    return "NodeRecordV4{" +
-        "publicKey=" + publicKey +
-        ", ipV4address=" + ipV4address +
-        ", udpPort=" + udpPort +
-        '}';
   }
 }
