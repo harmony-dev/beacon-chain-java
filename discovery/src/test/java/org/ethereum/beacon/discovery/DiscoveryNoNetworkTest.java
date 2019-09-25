@@ -22,6 +22,7 @@ import org.ethereum.beacon.stream.SimpleProcessor;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
 import tech.pegasys.artemis.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.uint.UInt64;
 
 import java.net.InetAddress;
 import java.util.ArrayList;
@@ -41,7 +42,7 @@ public class DiscoveryNoNetworkTest {
     NodeRecordV5 nodeRecord1 =
         NodeRecordV5.Builder.empty()
             .withIpV4Address(BytesValue.wrap(InetAddress.getByName("127.0.0.1").getAddress()))
-            .withSeqNumber(1L)
+            .withSeq(UInt64.valueOf(1))
             .withUdpPort(30303)
             .withSecp256k1(
                 BytesValue.fromHexString(
@@ -50,7 +51,7 @@ public class DiscoveryNoNetworkTest {
     NodeRecordV5 nodeRecord2 =
         NodeRecordV5.Builder.empty()
             .withIpV4Address(BytesValue.wrap(InetAddress.getByName("192.168.0.1").getAddress()))
-            .withSeqNumber(1L)
+            .withSeq(UInt64.valueOf(1))
             .withUdpPort(30303)
             .withSecp256k1(
                 BytesValue.fromHexString(

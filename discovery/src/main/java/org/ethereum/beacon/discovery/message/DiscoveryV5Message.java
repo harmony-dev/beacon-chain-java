@@ -7,7 +7,9 @@ import org.web3j.rlp.RlpDecoder;
 import org.web3j.rlp.RlpList;
 import org.web3j.rlp.RlpString;
 import org.web3j.rlp.RlpType;
+import tech.pegasys.artemis.util.bytes.Bytes8;
 import tech.pegasys.artemis.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.uint.UInt64;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -66,7 +68,8 @@ public class DiscoveryV5Message implements DiscoveryMessage {
         {
           return new PongMessage(
               BytesValue.wrap(((RlpString) payload.get(0)).getBytes()),
-              ((RlpString) payload.get(1)).asPositiveBigInteger().longValueExact(),
+              UInt64.fromBytesBigEndian(
+                  Bytes8.leftPad(BytesValue.wrap(((RlpString) payload.get(1)).getBytes()))),
               BytesValue.wrap(((RlpString) payload.get(2)).getBytes()),
               ((RlpString) payload.get(3)).asPositiveBigInteger().intValueExact());
         }

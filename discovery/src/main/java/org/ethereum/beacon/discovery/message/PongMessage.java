@@ -6,20 +6,21 @@ import org.web3j.rlp.RlpList;
 import org.web3j.rlp.RlpString;
 import tech.pegasys.artemis.util.bytes.Bytes1;
 import tech.pegasys.artemis.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.uint.UInt64;
 
 /** PONG is the reply to PING {@link PingMessage} */
 public class PongMessage implements V5Message {
   // Unique request id
   private final BytesValue requestId;
   // Local ENR sequence number of sender
-  private final Long enrSeq;
+  private final UInt64 enrSeq;
   // 16 or 4 byte IP address of the intended recipient
   private final BytesValue recipientIp;
   // recipient UDP port, a 16-bit integer
   private final Integer recipientPort;
 
   public PongMessage(
-      BytesValue requestId, Long enrSeq, BytesValue recipientIp, Integer recipientPort) {
+      BytesValue requestId, UInt64 enrSeq, BytesValue recipientIp, Integer recipientPort) {
     this.requestId = requestId;
     this.enrSeq = enrSeq;
     this.recipientIp = recipientIp;
@@ -31,7 +32,7 @@ public class PongMessage implements V5Message {
     return requestId;
   }
 
-  public Long getEnrSeq() {
+  public UInt64 getEnrSeq() {
     return enrSeq;
   }
 
@@ -51,7 +52,7 @@ public class PongMessage implements V5Message {
                 RlpEncoder.encode(
                     new RlpList(
                         RlpString.create(requestId.extractArray()),
-                        RlpString.create(enrSeq),
+                        RlpString.create(enrSeq.toBI()),
                         RlpString.create(recipientIp.extractArray()),
                         RlpString.create(recipientPort)))));
   }

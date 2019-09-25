@@ -45,7 +45,7 @@ public class UnknownPacketHandler implements PacketHandler<UnknownPacket> {
               context.getNodeRecord().getNodeId(),
               authTag,
               idNonce,
-              context.getNodeRecord().getSeqNumber());
+              context.getNodeRecord().getSeq());
       context.addOutgoingEvent(whoAreYouPacket);
     } catch (AssertionError ex) {
       logger.info(

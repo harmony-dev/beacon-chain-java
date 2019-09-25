@@ -12,8 +12,10 @@ import tech.pegasys.artemis.util.bytes.Bytes16;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes33;
 import tech.pegasys.artemis.util.bytes.Bytes4;
+import tech.pegasys.artemis.util.bytes.Bytes8;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.uint.UInt64;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,7 +32,9 @@ public class NodeRecordV5 implements NodeRecord {
         NodeRecordV5.Builder builder =
             NodeRecordV5.Builder.empty()
                 .withSignature(BytesValue.wrap(((RlpString) fields.get(0)).getBytes()))
-                .withSeqNumber(((RlpString) fields.get(1)).asPositiveBigInteger().longValue());
+                .withSeq(
+                    UInt64.fromBytesBigEndian(
+                        Bytes8.leftPad(BytesValue.wrap(((RlpString) fields.get(1)).getBytes()))));
         for (int i = 4; i < fields.size(); i += 2) {
           builder =
               builder.withKeyField(
@@ -56,7 +60,10 @@ public class NodeRecordV5 implements NodeRecord {
   private Integer tcpV6Port;
   // udp6 	IPv6-specific UDP port, big endian integer
   private Integer udpV6Port;
-  private Long seqNumber;
+  // seq The sequence number, a 64-bit unsigned integer. Nodes should increase the number whenever
+  // the record changes and republish the record.
+  private UInt64 seq;
+  // Signature
   private BytesValue signature;
 
   private NodeRecordV5(
@@ -66,7 +73,9 @@ public class NodeRecordV5 implements NodeRecord {
       Integer udpPort,
       Bytes16 ipV6address,
       Integer tcpV6Port,
-      Integer udpV6Port) {
+      Integer udpV6Port,
+      UInt64 seq,
+      BytesValue signature) {
     this.publicKey = publicKey;
     this.ipV4address = ipV4address;
     this.tcpPort = tcpPort;
@@ -74,6 +83,8 @@ public class NodeRecordV5 implements NodeRecord {
     this.ipV6address = ipV6address;
     this.tcpV6Port = tcpV6Port;
     this.udpV6Port = udpV6Port;
+    this.seq = seq;
+    this.signature = signature;
   }
 
   private NodeRecordV5() {}
@@ -89,9 +100,19 @@ public class NodeRecordV5 implements NodeRecord {
       Integer udpPort,
       Bytes16 ipV6address,
       Integer tcpV6Port,
-      Integer udpV6Port) {
+      Integer udpV6Port,
+      UInt64 seq,
+      BytesValue signature) {
     return new NodeRecordV5(
-        publicKey, ipV4address, tcpPort, udpPort, ipV6address, tcpV6Port, udpV6Port);
+        publicKey,
+        ipV4address,
+        tcpPort,
+        udpPort,
+        ipV6address,
+        tcpV6Port,
+        udpV6Port,
+        seq,
+        signature);
   }
 
   public static NodeRecordV5 fromRlpList(List<RlpType> values) {
@@ -158,14 +179,16 @@ public class NodeRecordV5 implements NodeRecord {
     this.udpV6Port = udpV6Port;
   }
 
-  public Long getSeqNumber() {
-    return seqNumber;
+  @Override
+  public UInt64 getSeq() {
+    return seq;
   }
 
-  public void setSeqNumber(Long seqNumber) {
-    this.seqNumber = seqNumber;
+  public void setSeq(UInt64 seq) {
+    this.seq = seq;
   }
 
+  @Override
   public BytesValue getSignature() {
     return signature;
   }
@@ -186,7 +209,7 @@ public class NodeRecordV5 implements NodeRecord {
     } else {
       values.add(RlpString.create(Bytes96.ZERO.extractArray())); // FIXME: is it ok?
     }
-    values.add(RlpString.create(getSeqNumber()));
+    values.add(RlpString.create(getSeq().toBI()));
     values.add(RlpString.create("id"));
     values.add(RlpString.create(getIdentityScheme().stringName()));
     if (getPublicKey() != null) {
@@ -235,7 +258,7 @@ public class NodeRecordV5 implements NodeRecord {
         && Objects.equal(ipV6address, that.ipV6address)
         && Objects.equal(tcpV6Port, that.tcpV6Port)
         && Objects.equal(udpV6Port, that.udpV6Port)
-        && Objects.equal(seqNumber, that.seqNumber)
+        && Objects.equal(seq, that.seq)
         && Objects.equal(signature, that.signature);
   }
 
@@ -249,7 +272,7 @@ public class NodeRecordV5 implements NodeRecord {
         ipV6address,
         tcpV6Port,
         udpV6Port,
-        seqNumber,
+        seq,
         signature);
   }
 
@@ -300,7 +323,7 @@ public class NodeRecordV5 implements NodeRecord {
     private Bytes33 secp256k1;
     private Integer tcpPort;
     private Integer udpPort;
-    private Long seqNumber;
+    private UInt64 seqNumber;
     private BytesValue signature;
 
     private Builder() {}
@@ -329,8 +352,8 @@ public class NodeRecordV5 implements NodeRecord {
       return this;
     }
 
-    public Builder withSeqNumber(Long seqNumber) {
-      this.seqNumber = seqNumber;
+    public Builder withSeq(UInt64 seq) {
+      this.seqNumber = seq;
       return this;
     }
 
@@ -356,7 +379,7 @@ public class NodeRecordV5 implements NodeRecord {
       nodeRecord.setIpV4address(ipV4Address);
       nodeRecord.setUdpPort(udpPort);
       nodeRecord.setTcpPort(tcpPort);
-      nodeRecord.setSeqNumber(seqNumber);
+      nodeRecord.setSeq(seqNumber);
       nodeRecord.setSignature(signature);
       nodeRecord.setPublicKey(secp256k1);
       return nodeRecord;

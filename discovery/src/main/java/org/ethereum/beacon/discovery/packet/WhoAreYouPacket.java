@@ -30,14 +30,14 @@ public class WhoAreYouPacket extends AbstractPacket {
   }
 
   public static WhoAreYouPacket create(
-      Bytes32 destNodeId, BytesValue authTag, Bytes32 idNonce, Long enrSeq) {
+      Bytes32 destNodeId, BytesValue authTag, Bytes32 idNonce, UInt64 enrSeq) {
     BytesValue magic = getStartMagic(destNodeId);
     byte[] rlpListEncoded =
         RlpEncoder.encode(
             new RlpList(
                 RlpString.create(authTag.extractArray()),
                 RlpString.create(idNonce.extractArray()),
-                RlpString.create(enrSeq)));
+                RlpString.create(enrSeq.toBI())));
     return new WhoAreYouPacket(magic.concat(BytesValue.wrap(rlpListEncoded)));
   }
 

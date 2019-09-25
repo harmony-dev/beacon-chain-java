@@ -11,6 +11,7 @@ import org.web3j.rlp.RlpString;
 import org.web3j.rlp.RlpType;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.uint.UInt64;
 
 import java.util.Base64;
 import java.util.List;
@@ -73,7 +74,16 @@ public interface NodeRecord {
     return fromBytes(bytes.extractArray());
   }
 
+  /** Every {@link IdentityScheme} links with its own implementation */
   IdentityScheme getIdentityScheme();
+
+  BytesValue getSignature();
+
+  /**
+   * @return The sequence number, a 64-bit unsigned integer. Nodes should increase the number
+   *     whenever the record changes and republish the record.
+   */
+  UInt64 getSeq();
 
   BytesValue serialize();
 

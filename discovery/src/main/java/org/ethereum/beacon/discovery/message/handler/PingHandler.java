@@ -12,7 +12,7 @@ public class PingHandler implements MessageHandler<PingMessage> {
     PongMessage responseMessage =
         new PongMessage(
             message.getRequestId(),
-            context.getNodeRecord().getSeqNumber(),
+            context.getNodeRecord().getSeq(),
             context.getNodeRecord().getIpV4address(),
             context.getNodeRecord().getUdpPort());
     context.addOutgoingEvent(

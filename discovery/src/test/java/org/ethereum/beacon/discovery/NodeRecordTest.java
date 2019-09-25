@@ -6,7 +6,9 @@ import org.ethereum.beacon.discovery.enr.NodeRecordV5;
 import org.junit.Test;
 import tech.pegasys.artemis.util.bytes.Bytes33;
 import tech.pegasys.artemis.util.bytes.Bytes4;
+import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.uint.UInt64;
 
 import java.net.InetAddress;
 
@@ -26,7 +28,7 @@ public class NodeRecordTest {
     final String expectedHost = "127.0.0.1";
     final Integer expectedUdpPort = 30303;
     final Integer expectedTcpPort = null;
-    final Long expectedSeqNumber = 1L;
+    final UInt64 expectedSeqNumber = UInt64.valueOf(1);
     final Bytes33 expectedPublicKey =
         Bytes33.fromHexString("03ca634cae0d49acb401d8a4c6b6fe8c55b70d115bf400769cc1400f3258cd3138");
     final BytesValue expectedSignature =
@@ -44,7 +46,7 @@ public class NodeRecordTest {
         nodeRecordV4.getIpV4address().extractArray());
     assertEquals(expectedUdpPort, nodeRecordV4.getUdpPort());
     assertEquals(expectedTcpPort, nodeRecordV4.getTcpPort());
-    assertEquals(expectedSeqNumber, nodeRecordV4.getSeqNumber());
+    assertEquals(expectedSeqNumber, nodeRecordV4.getSeq());
     assertEquals(expectedPublicKey, nodeRecordV4.getPublicKey());
     assertEquals(expectedSignature, nodeRecordV4.getSignature());
 
@@ -59,7 +61,7 @@ public class NodeRecordTest {
         nodeRecordV4Restored.getIpV4address().extractArray());
     assertEquals(expectedUdpPort, nodeRecordV4Restored.getUdpPort());
     assertEquals(expectedTcpPort, nodeRecordV4Restored.getTcpPort());
-    assertEquals(expectedSeqNumber, nodeRecordV4Restored.getSeqNumber());
+    assertEquals(expectedSeqNumber, nodeRecordV4Restored.getSeq());
     assertEquals(expectedPublicKey, nodeRecordV4Restored.getPublicKey());
     assertEquals(expectedSignature, nodeRecordV4Restored.getSignature());
   }
@@ -69,7 +71,7 @@ public class NodeRecordTest {
     final String expectedHost = "127.0.0.1";
     final Integer expectedUdpPort = 30303;
     final Integer expectedTcpPort = null;
-    final Long expectedSeqNumber = 1L;
+    final UInt64 expectedSeqNumber = UInt64.valueOf(1);
     final Bytes33 expectedPublicKey =
         Bytes33.fromHexString("03ca634cae0d49acb401d8a4c6b6fe8c55b70d115bf400769cc1400f3258cd3138");
     final BytesValue expectedSignature =
@@ -84,8 +86,10 @@ public class NodeRecordTest {
             expectedUdpPort,
             null,
             null,
-            null);
-    nodeRecordV5.setSeqNumber(expectedSeqNumber);
+            null,
+            UInt64.valueOf(1),
+            Bytes96.ZERO);
+    nodeRecordV5.setSeq(expectedSeqNumber);
     nodeRecordV5.setSignature(expectedSignature);
 
     String enrV5 = nodeRecordV5.asBase64();
@@ -96,7 +100,7 @@ public class NodeRecordTest {
         nodeRecordV5Restored.getIpV4address().extractArray());
     assertEquals(expectedUdpPort, nodeRecordV5Restored.getUdpPort());
     assertEquals(expectedTcpPort, nodeRecordV5Restored.getTcpPort());
-    assertEquals(expectedSeqNumber, nodeRecordV5Restored.getSeqNumber());
+    assertEquals(expectedSeqNumber, nodeRecordV5Restored.getSeq());
     assertEquals(expectedPublicKey, nodeRecordV5Restored.getPublicKey());
     assertEquals(expectedSignature, nodeRecordV5Restored.getSignature());
   }
