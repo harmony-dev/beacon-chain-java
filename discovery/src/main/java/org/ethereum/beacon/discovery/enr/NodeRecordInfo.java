@@ -1,20 +1,24 @@
 package org.ethereum.beacon.discovery.enr;
 
 import com.google.common.base.Objects;
-import org.ethereum.beacon.ssz.annotation.SSZ;
-import org.ethereum.beacon.ssz.annotation.SSZSerializable;
+import org.web3j.rlp.RlpDecoder;
+import org.web3j.rlp.RlpEncoder;
+import org.web3j.rlp.RlpList;
+import org.web3j.rlp.RlpString;
+import org.web3j.rlp.RlpType;
+import tech.pegasys.artemis.util.bytes.BytesValue;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Container for {@link NodeRecord}. Also saves all necessary data about presence of this node and
  * last test of its availability
  */
-@SSZSerializable
 public class NodeRecordInfo {
-  @SSZ private final NodeRecord node;
-  @SSZ private final Long lastRetry;
-  @SSZ private final NodeStatus status;
-
-  @SSZ(type = "uint8")
+  private final NodeRecord node;
+  private final Long lastRetry;
+  private final NodeStatus status;
   private final Integer retry;
 
   public NodeRecordInfo(NodeRecord node, Long lastRetry, NodeStatus status, Integer retry) {
@@ -26,6 +30,26 @@ public class NodeRecordInfo {
 
   public static NodeRecordInfo createDefault(NodeRecord nodeRecord) {
     return new NodeRecordInfo(nodeRecord, -1L, NodeStatus.ACTIVE, 0);
+  }
+
+  public static NodeRecordInfo fromRlpBytes(BytesValue bytes) {
+    RlpList internalList = (RlpList) RlpDecoder.decode(bytes.extractArray()).getValues().get(0);
+    return new NodeRecordInfo(
+        NodeRecord.fromBytes(((RlpString)internalList.getValues().get(0)).getBytes()),
+        ((RlpString) internalList.getValues().get(1)).asPositiveBigInteger().longValue(),
+        NodeStatus.fromNumber(((RlpString) internalList.getValues().get(2)).getBytes()[0]),
+        ((RlpString) internalList.getValues().get(1)).asPositiveBigInteger().intValue()
+    );
+  }
+
+  public BytesValue toRlpBytes() {
+    List<RlpType> values = new ArrayList<>();
+    values.add(RlpString.create(getNode().serialize().extractArray()));
+    values.add(RlpString.create(getLastRetry()));
+    values.add(RlpString.create(getStatus().byteCode()));
+    values.add(RlpString.create(getRetry()));
+    byte[] bytes = RlpEncoder.encode(new RlpList(values));
+    return BytesValue.wrap(bytes);
   }
 
   public NodeRecordV5 getNode() {

@@ -1,7 +1,5 @@
 package org.ethereum.beacon.discovery.storage;
 
-import org.ethereum.beacon.chain.storage.impl.SerializerFactory;
-import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.db.Database;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
 import org.ethereum.beacon.discovery.enr.NodeRecordInfo;
@@ -20,6 +18,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 import static org.ethereum.beacon.discovery.enr.NodeRecordV5.NODE_ID_FUNCTION;
+import static org.ethereum.beacon.discovery.storage.NodeTableStorage.DEFAULT_SERIALIZER;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -48,12 +47,10 @@ public class NodeTableTest {
     NodeRecordV5 nodeRecordV5 = (NodeRecordV5) NodeRecord.fromBase64(localhostEnr);
     NodeTableStorageFactoryImpl nodeTableStorageFactory = new NodeTableStorageFactoryImpl();
     Database database = Database.inMemoryDB();
-    SerializerFactory serializerFactory =
-        SerializerFactory.createSSZ(BeaconChainSpec.DEFAULT_CONSTANTS);
     NodeTableStorage nodeTableStorage =
         nodeTableStorageFactory.create(
             database,
-            serializerFactory,
+            DEFAULT_SERIALIZER,
             homeNodeSupplier,
             () -> {
               List<NodeRecord> nodes = new ArrayList<>();
@@ -77,12 +74,10 @@ public class NodeTableTest {
     NodeRecordV5 localHostNode = (NodeRecordV5) NodeRecord.fromBase64(localhostEnr);
     NodeTableStorageFactoryImpl nodeTableStorageFactory = new NodeTableStorageFactoryImpl();
     Database database = Database.inMemoryDB();
-    SerializerFactory serializerFactory =
-        SerializerFactory.createSSZ(BeaconChainSpec.DEFAULT_CONSTANTS);
     NodeTableStorage nodeTableStorage =
         nodeTableStorageFactory.create(
             database,
-            serializerFactory,
+            DEFAULT_SERIALIZER,
             homeNodeSupplier,
             () -> {
               List<NodeRecord> nodes = new ArrayList<>();
@@ -122,8 +117,8 @@ public class NodeTableTest {
     List<NodeRecordInfo> closestNodes =
         nodeTableStorage.get().findClosestNodes(NODE_ID_FUNCTION.apply(closestNode), 252);
     assertEquals(2, closestNodes.size());
-    assertEquals(closestNodes.get(0).getNode().getPublicKey(), localHostNode.getPublicKey());
-    assertEquals(closestNodes.get(1).getNode().getPublicKey(), closestNode.getPublicKey());
+    assertEquals(closestNodes.get(1).getNode().getPublicKey(), localHostNode.getPublicKey());
+    assertEquals(closestNodes.get(0).getNode().getPublicKey(), closestNode.getPublicKey());
     List<NodeRecordInfo> farNodes =
         nodeTableStorage.get().findClosestNodes(NODE_ID_FUNCTION.apply(farNode), 1);
     assertEquals(1, farNodes.size());

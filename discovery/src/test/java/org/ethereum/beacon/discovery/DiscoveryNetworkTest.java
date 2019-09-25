@@ -1,7 +1,5 @@
 package org.ethereum.beacon.discovery;
 
-import org.ethereum.beacon.chain.storage.impl.SerializerFactory;
-import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.db.Database;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
 import org.ethereum.beacon.discovery.enr.NodeRecordV5;
@@ -28,6 +26,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import static org.ethereum.beacon.discovery.NodeContext.DEFAULT_DISTANCE;
+import static org.ethereum.beacon.discovery.storage.NodeTableStorage.DEFAULT_SERIALIZER;
 
 /** Same as {@link DiscoveryNoNetworkTest} but using real network */
 public class DiscoveryNetworkTest {
@@ -55,12 +54,10 @@ public class DiscoveryNetworkTest {
     NodeTableStorageFactoryImpl nodeTableStorageFactory = new NodeTableStorageFactoryImpl();
     Database database1 = Database.inMemoryDB();
     Database database2 = Database.inMemoryDB();
-    SerializerFactory serializerFactory =
-        SerializerFactory.createSSZ(BeaconChainSpec.DEFAULT_CONSTANTS);
     NodeTableStorage nodeTableStorage1 =
         nodeTableStorageFactory.create(
             database1,
-            serializerFactory,
+            DEFAULT_SERIALIZER,
             () -> nodeRecord1,
             () ->
                 new ArrayList<NodeRecord>() {
@@ -71,7 +68,7 @@ public class DiscoveryNetworkTest {
     NodeTableStorage nodeTableStorage2 =
         nodeTableStorageFactory.create(
             database2,
-            serializerFactory,
+            DEFAULT_SERIALIZER,
             () -> nodeRecord2,
             () ->
                 new ArrayList<NodeRecord>() {

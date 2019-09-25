@@ -1,10 +1,6 @@
 package org.ethereum.beacon.discovery.enr;
 
 import org.ethereum.beacon.discovery.IdentityScheme;
-import org.ethereum.beacon.ssz.access.SSZField;
-import org.ethereum.beacon.ssz.access.list.BytesValueAccessor;
-import org.ethereum.beacon.ssz.annotation.SSZSerializable;
-import org.ethereum.beacon.ssz.type.SSZType;
 import org.web3j.rlp.RlpDecoder;
 import org.web3j.rlp.RlpList;
 import org.web3j.rlp.RlpString;
@@ -15,14 +11,28 @@ import tech.pegasys.artemis.util.uint.UInt64;
 
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Ethereum Node Record
  *
  * <p>Node record as described in <a href="https://eips.ethereum.org/EIPS/eip-778">EIP-778</a>
  */
-@SSZSerializable(listAccessor = NodeRecord.NodeRecordAccessor.class)
 public interface NodeRecord {
+  // Compressed secp256k1 public key, 33 bytes
+  String FIELD_PKEY_SECP256K1 = "secp256k1";
+  // IPv4 address
+  String FIELD_IP_V4 = "ip";
+  // TCP port, integer
+  String FIELD_TCP_V4 = "tcp";
+  // UDP port, integer
+  String FIELD_UDP_V4 = "udp";
+  // IPv6 address
+  String FIELD_IP_V6 = "ip6";
+  // IPv6-specific TCP port
+  String FIELD_TCP_V6 = "tcp6";
+  // IPv6-specific UDP port
+  String FIELD_UDP_V6 = "udp6";
 
   static NodeRecord fromBase64(String enrBase64) {
     return fromBytes(Base64.getUrlDecoder().decode(enrBase64));
@@ -93,41 +103,9 @@ public interface NodeRecord {
 
   Bytes32 getNodeId();
 
-  class NodeRecordAccessor extends BytesValueAccessor {
-    @Override
-    public int getChildrenCount(Object value) {
-      return ((NodeRecord) value).serialize().size();
-    }
-
-    @Override
-    public Object getChildValue(Object value, int idx) {
-      return ((NodeRecord) value).serialize().get(idx);
-    }
-
-    @Override
-    public boolean isSupported(SSZField field) {
-      return NodeRecord.class.isAssignableFrom(field.getRawClass());
-    }
-
-    @Override
-    public CompositeInstanceAccessor getInstanceAccessor(SSZField compositeDescriptor) {
-      return this;
-    }
-
-    @Override
-    public ListInstanceBuilder createInstanceBuilder(SSZType sszType) {
-      return new SimpleInstanceBuilder() {
-        @Override
-        protected Object buildImpl(List<Object> children) {
-          byte[] vals = new byte[children.size()];
-          for (int i = 0; i < children.size(); i++) {
-            vals[i] = ((Number) children.get(i)).byteValue();
-          }
-          BytesValue value = BytesValue.wrap(vals);
-
-          return NodeRecord.fromBytes(value);
-        }
-      };
-    }
-  }
+  /**
+   * All optional fields, set varies by identity scheme. `id`, identity scheme is not optional. Most
+   * common field names are in constants: {@link #FIELD_IP_V4} etc. (FIELD_*)
+   */
+  Map<String, Object> getFields();
 }

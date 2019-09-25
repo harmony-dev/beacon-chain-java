@@ -15,6 +15,7 @@ import tech.pegasys.artemis.util.bytes.Bytes8;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt64;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -42,25 +43,11 @@ public class NodeRecordV4 implements NodeRecord {
 
         return builder.build();
       };
-  // secp256k1 	compressed secp256k1 public key, 33 bytes
-  private BytesValue publicKey;
-  // ip 	IPv4 address, 4 bytes
-  private Bytes4 ipV4address;
-  // tcp 	TCP port, big endian integer
-  private Integer tcpPort;
-  // udp 	UDP port, big endian integer
-  private Integer udpPort;
-  // ip6 	IPv6 address, 16 bytes
-  private Bytes16 ipV6address;
-  // tcp6 	IPv6-specific TCP port, big endian integer
-  private Integer tcpV6Port;
-  // udp6 	IPv6-specific UDP port, big endian integer
-  private Integer udpV6Port;
-  // seq The sequence number, a 64-bit unsigned integer. Nodes should increase the number whenever
-  // the record changes and republish the record.
   private UInt64 seq;
   // Signature
   private BytesValue signature;
+  // optional fields
+  private Map<String, Object> fields = new HashMap<>();
 
   private NodeRecordV4(
       BytesValue publicKey,
@@ -72,13 +59,13 @@ public class NodeRecordV4 implements NodeRecord {
       Integer udpV6Port,
       UInt64 seq,
       BytesValue signature) {
-    this.publicKey = publicKey;
-    this.ipV4address = ipV4address;
-    this.tcpPort = tcpPort;
-    this.udpPort = udpPort;
-    this.ipV6address = ipV6address;
-    this.tcpV6Port = tcpV6Port;
-    this.udpV6Port = udpV6Port;
+    fields.put(FIELD_PKEY_SECP256K1, publicKey);
+    fields.put(FIELD_IP_V4, ipV4address);
+    fields.put(FIELD_TCP_V4, tcpPort);
+    fields.put(FIELD_UDP_V4, udpPort);
+    fields.put(FIELD_IP_V6, ipV6address);
+    fields.put(FIELD_TCP_V6, tcpV6Port);
+    fields.put(FIELD_UDP_V6, udpV6Port);
     this.seq = seq;
     this.signature = signature;
   }
@@ -116,59 +103,61 @@ public class NodeRecordV4 implements NodeRecord {
   }
 
   public BytesValue getPublicKey() {
-    return publicKey;
+    return fields.containsKey(FIELD_PKEY_SECP256K1)
+        ? (BytesValue) fields.get(FIELD_PKEY_SECP256K1)
+        : null;
   }
 
   public void setPublicKey(BytesValue publicKey) {
-    this.publicKey = publicKey;
+    fields.put(FIELD_PKEY_SECP256K1, publicKey);
   }
 
   public Bytes4 getIpV4address() {
-    return ipV4address;
+    return fields.containsKey(FIELD_IP_V4) ? (Bytes4) fields.get(FIELD_IP_V4) : null;
   }
 
   public void setIpV4address(Bytes4 ipV4address) {
-    this.ipV4address = ipV4address;
+    fields.put(FIELD_IP_V4, ipV4address);
   }
 
   public Integer getTcpPort() {
-    return tcpPort;
+    return fields.containsKey(FIELD_TCP_V4) ? (Integer) fields.get(FIELD_TCP_V4) : null;
   }
 
   public void setTcpPort(Integer tcpPort) {
-    this.tcpPort = tcpPort;
+    fields.put(FIELD_TCP_V4, tcpPort);
   }
 
   public Integer getUdpPort() {
-    return udpPort;
+    return fields.containsKey(FIELD_UDP_V4) ? (Integer) fields.get(FIELD_UDP_V4) : null;
   }
 
   public void setUdpPort(Integer udpPort) {
-    this.udpPort = udpPort;
+    fields.put(FIELD_UDP_V4, udpPort);
   }
 
   public Bytes16 getIpV6address() {
-    return ipV6address;
+    return fields.containsKey(FIELD_IP_V6) ? (Bytes16) fields.get(FIELD_IP_V6) : null;
   }
 
   public void setIpV6address(Bytes16 ipV6address) {
-    this.ipV6address = ipV6address;
+    fields.put(FIELD_IP_V6, ipV6address);
   }
 
   public Integer getTcpV6Port() {
-    return tcpV6Port;
+    return fields.containsKey(FIELD_TCP_V6) ? (Integer) fields.get(FIELD_TCP_V6) : null;
   }
 
   public void setTcpV6Port(Integer tcpV6Port) {
-    this.tcpV6Port = tcpV6Port;
+    fields.put(FIELD_TCP_V6, tcpV6Port);
   }
 
   public Integer getUdpV6Port() {
-    return udpV6Port;
+    return fields.containsKey(FIELD_UDP_V6) ? (Integer) fields.get(FIELD_UDP_V6) : null;
   }
 
   public void setUdpV6Port(Integer udpV6Port) {
-    this.udpV6Port = udpV6Port;
+    fields.put(FIELD_UDP_V6, udpV6Port);
   }
 
   public UInt64 getSeq() {
@@ -189,33 +178,23 @@ public class NodeRecordV4 implements NodeRecord {
   }
 
   @Override
+  public Map<String, Object> getFields() {
+    return fields;
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     NodeRecordV4 that = (NodeRecordV4) o;
-    return Objects.equal(publicKey, that.publicKey)
-        && Objects.equal(ipV4address, that.ipV4address)
-        && Objects.equal(tcpPort, that.tcpPort)
-        && Objects.equal(udpPort, that.udpPort)
-        && Objects.equal(ipV6address, that.ipV6address)
-        && Objects.equal(tcpV6Port, that.tcpV6Port)
-        && Objects.equal(udpV6Port, that.udpV6Port)
-        && Objects.equal(seq, that.seq)
-        && Objects.equal(signature, that.signature);
+    return Objects.equal(seq, that.seq)
+        && Objects.equal(signature, that.signature)
+        && Objects.equal(fields, that.fields);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(
-        publicKey,
-        ipV4address,
-        tcpPort,
-        udpPort,
-        ipV6address,
-        tcpV6Port,
-        udpV6Port,
-        seq,
-        signature);
+    return Objects.hashCode(seq, signature, fields);
   }
 
   @Override
@@ -231,38 +210,44 @@ public class NodeRecordV4 implements NodeRecord {
     values.add(RlpString.create(getSeq().toBI()));
     values.add(RlpString.create("id"));
     values.add(RlpString.create(getIdentityScheme().stringName()));
-    if (getPublicKey() != null) {
-      values.add(RlpString.create("secp256k1"));
-      values.add(RlpString.create(getPublicKey().extractArray()));
+    for (Map.Entry<String, Object> keyPair : fields.entrySet()) {
+      if (keyPair.getValue() == null) {
+        continue;
+      }
+      values.add(RlpString.create(keyPair.getKey()));
+      if (keyPair.getValue() instanceof BytesValue) {
+        values.add(fromBytes((BytesValue) keyPair.getValue()));
+      } else if (keyPair.getValue() instanceof Number) {
+        values.add(fromNumber((Number) keyPair.getValue()));
+      } else if (keyPair.getValue() == null) {
+        values.add(RlpString.create(new byte[0]));
+      } else {
+        throw new RuntimeException(
+            String.format(
+                "Couldn't serialize node record field %s with value %s: no serializer found.",
+                keyPair.getKey(), keyPair.getValue()));
+      }
     }
-    if (getIpV4address() != null) {
-      values.add(RlpString.create("ip"));
-      values.add(RlpString.create(getIpV4address().extractArray()));
-    }
-    if (getTcpPort() != null) {
-      values.add(RlpString.create("tcp"));
-      values.add(RlpString.create(getTcpPort()));
-    }
-    if (getUdpPort() != null) {
-      values.add(RlpString.create("udp"));
-      values.add(RlpString.create(getUdpPort()));
-    }
-    if (getIpV6address() != null) {
-      values.add(RlpString.create("ip6"));
-      values.add(RlpString.create(getIpV6address().extractArray()));
-    }
-    if (getTcpV6Port() != null) {
-      values.add(RlpString.create("tcp6"));
-      values.add(RlpString.create(getTcpV6Port()));
-    }
-    if (getUdpV6Port() != null) {
-      values.add(RlpString.create("udp6"));
-      values.add(RlpString.create(getUdpV6Port()));
-    }
-
     byte[] bytes = RlpEncoder.encode(new RlpList(values));
     assert bytes.length <= 300;
     return BytesValue.wrap(bytes);
+  }
+
+  private RlpString fromNumber(Number number) {
+    if (number instanceof BigInteger) {
+      return RlpString.create((BigInteger) number);
+    } else if (number instanceof Long) {
+      return RlpString.create((Long) number);
+    } else if (number instanceof Integer) {
+      return RlpString.create((Integer) number);
+    } else {
+      throw new RuntimeException(
+          String.format("Couldn't serialize number %s : no serializer found.", number));
+    }
+  }
+
+  private RlpString fromBytes(BytesValue bytes) {
+    return RlpString.create(bytes.extractArray());
   }
 
   @Override
@@ -274,11 +259,11 @@ public class NodeRecordV4 implements NodeRecord {
   public String toString() {
     return "NodeRecordV4{"
         + "publicKey="
-        + publicKey
+        + fields.get(FIELD_PKEY_SECP256K1)
         + ", ipV4address="
-        + ipV4address
+        + fields.get(FIELD_IP_V4)
         + ", udpPort="
-        + udpPort
+        + fields.get(FIELD_UDP_V4)
         + '}';
   }
 
@@ -288,23 +273,30 @@ public class NodeRecordV4 implements NodeRecord {
 
     static {
       fieldFillersV4.put(
-          "ip",
+          FIELD_IP_V4,
           objects ->
               objects
                   .getValue0()
                   .withIpV4Address(BytesValue.wrap(((RlpString) objects.getValue1()).getBytes())));
       fieldFillersV4.put(
-          "secp256k1",
+          FIELD_PKEY_SECP256K1,
           objects ->
               objects
                   .getValue0()
                   .withSecp256k1(BytesValue.wrap(((RlpString) objects.getValue1()).getBytes())));
       fieldFillersV4.put(
-          "udp",
+          FIELD_UDP_V4,
           objects ->
               objects
                   .getValue0()
                   .withUdpPort(
+                      ((RlpString) objects.getValue1()).asPositiveBigInteger().intValue()));
+      fieldFillersV4.put(
+          FIELD_TCP_V4,
+          objects ->
+              objects
+                  .getValue0()
+                  .withTcpPort(
                       ((RlpString) objects.getValue1()).asPositiveBigInteger().intValue()));
     }
 
