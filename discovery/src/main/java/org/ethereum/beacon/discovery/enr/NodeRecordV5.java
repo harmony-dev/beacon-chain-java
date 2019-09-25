@@ -10,7 +10,6 @@ import org.web3j.rlp.RlpString;
 import org.web3j.rlp.RlpType;
 import tech.pegasys.artemis.util.bytes.Bytes16;
 import tech.pegasys.artemis.util.bytes.Bytes32;
-import tech.pegasys.artemis.util.bytes.Bytes33;
 import tech.pegasys.artemis.util.bytes.Bytes4;
 import tech.pegasys.artemis.util.bytes.Bytes8;
 import tech.pegasys.artemis.util.bytes.Bytes96;
@@ -47,7 +46,7 @@ public class NodeRecordV5 implements NodeRecord {
   public static Function<NodeRecordV5, Bytes32> NODE_ID_FUNCTION =
       nodeRecordV5 -> Hashes.sha256(nodeRecordV5.getPublicKey());
   // secp256k1 	compressed secp256k1 public key, 33 bytes
-  private Bytes33 publicKey;
+  private BytesValue publicKey;
   // ip 	IPv4 address, 4 bytes
   private Bytes4 ipV4address;
   // tcp 	TCP port, big endian integer
@@ -67,7 +66,7 @@ public class NodeRecordV5 implements NodeRecord {
   private BytesValue signature;
 
   private NodeRecordV5(
-      Bytes33 publicKey,
+      BytesValue publicKey,
       Bytes4 ipV4address,
       Integer tcpPort,
       Integer udpPort,
@@ -94,7 +93,7 @@ public class NodeRecordV5 implements NodeRecord {
   }
 
   public static NodeRecordV5 fromValues(
-      Bytes33 publicKey,
+      BytesValue publicKey,
       Bytes4 ipV4address,
       Integer tcpPort,
       Integer udpPort,
@@ -123,11 +122,11 @@ public class NodeRecordV5 implements NodeRecord {
     return identityScheme;
   }
 
-  public Bytes33 getPublicKey() {
+  public BytesValue getPublicKey() {
     return publicKey;
   }
 
-  public void setPublicKey(Bytes33 publicKey) {
+  public void setPublicKey(BytesValue publicKey) {
     this.publicKey = publicKey;
   }
 
@@ -320,7 +319,7 @@ public class NodeRecordV5 implements NodeRecord {
     }
 
     private Bytes4 ipV4Address;
-    private Bytes33 secp256k1;
+    private BytesValue secp256k1;
     private Integer tcpPort;
     private Integer udpPort;
     private UInt64 seqNumber;
@@ -348,7 +347,7 @@ public class NodeRecordV5 implements NodeRecord {
     }
 
     public Builder withSecp256k1(BytesValue bytes) {
-      this.secp256k1 = Bytes33.wrap(bytes, 0);
+      this.secp256k1 = bytes;
       return this;
     }
 

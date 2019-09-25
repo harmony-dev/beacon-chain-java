@@ -4,7 +4,6 @@ import org.ethereum.beacon.discovery.enr.NodeRecord;
 import org.ethereum.beacon.discovery.enr.NodeRecordV4;
 import org.ethereum.beacon.discovery.enr.NodeRecordV5;
 import org.junit.Test;
-import tech.pegasys.artemis.util.bytes.Bytes33;
 import tech.pegasys.artemis.util.bytes.Bytes4;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
@@ -29,8 +28,9 @@ public class NodeRecordTest {
     final Integer expectedUdpPort = 30303;
     final Integer expectedTcpPort = null;
     final UInt64 expectedSeqNumber = UInt64.valueOf(1);
-    final Bytes33 expectedPublicKey =
-        Bytes33.fromHexString("03ca634cae0d49acb401d8a4c6b6fe8c55b70d115bf400769cc1400f3258cd3138");
+    final BytesValue expectedPublicKey =
+        BytesValue.fromHexString(
+            "03ca634cae0d49acb401d8a4c6b6fe8c55b70d115bf400769cc1400f3258cd3138");
     final BytesValue expectedSignature =
         BytesValue.fromHexString(
             "7098ad865b00a582051940cb9cf36836572411a47278783077011599ed5cd16b76f2635f4e234738f30813a89eb9137e3e3df5266e3a1f11df72ecf1145ccb9c");
@@ -72,8 +72,9 @@ public class NodeRecordTest {
     final Integer expectedUdpPort = 30303;
     final Integer expectedTcpPort = null;
     final UInt64 expectedSeqNumber = UInt64.valueOf(1);
-    final Bytes33 expectedPublicKey =
-        Bytes33.fromHexString("03ca634cae0d49acb401d8a4c6b6fe8c55b70d115bf400769cc1400f3258cd3138");
+    final BytesValue expectedPublicKey =
+        BytesValue.fromHexString(
+            "03ca634cae0d49acb401d8a4c6b6fe8c55b70d115bf400769cc1400f3258cd3138");
     final BytesValue expectedSignature =
         BytesValue.fromHexString(
             "7098ad865b00a582051940cb9cf36836572411a47278783077011599ed5cd16b76f2635f4e234738f30813a89eb9137e3e3df5266e3a1f11df72ecf1145ccb9c");
