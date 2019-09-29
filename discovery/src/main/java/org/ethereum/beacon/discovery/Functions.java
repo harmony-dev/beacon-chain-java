@@ -152,22 +152,20 @@ public class Functions {
    *
    * <p>distance(n₁, n₂) = n₁ XOR n₂
    *
-   * <p>In many situations, the logarithmic distance (i.e. length of common prefix in bits) is used
-   * in place of the actual distance.
-   *
-   * <p>logdistance(n₁, n₂) = log2(distance(n₁, n₂))
+   * <p>LogDistance is reverse of length of common prefix in bits (length - number of leftmost zeros
+   * in XOR)
    */
   public static int logDistance(Bytes32 nodeId1, Bytes32 nodeId2) {
-    BigInteger distance = new BigInteger(1, Bytes32s.xor(nodeId1, nodeId2).extractArray());
-    return log2(distance.doubleValue());
-  }
-
-  /**
-   * Logarithm with base 2. See <a
-   * href="https://stackoverflow.com/a/3305400">https://stackoverflow.com/a/3305400</a> for
-   * implementation details.
-   */
-  private static int log2(double x) {
-    return (int) Math.floor((Math.log(x) / Math.log(2.0) + 1e-10));
+    BytesValue distance = Bytes32s.xor(nodeId1, nodeId2);
+    int logDistance = Byte.SIZE * distance.size(); // 256
+    final int maxLogDistance = logDistance;
+    for (int i = 0; i < maxLogDistance; ++i) {
+      if (distance.getHighBit(i)) {
+        break;
+      } else {
+        logDistance--;
+      }
+    }
+    return logDistance;
   }
 }
