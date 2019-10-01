@@ -6,7 +6,7 @@ import io.netty.channel.socket.nio.NioDatagramChannel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
-import org.ethereum.beacon.discovery.enr.NodeRecordV5;
+import org.ethereum.beacon.discovery.enr.NodeRecordV4;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import tech.pegasys.artemis.util.bytes.BytesValue;
@@ -35,7 +35,7 @@ public class DiscoveryClient {
   }
 
   private void send(BytesValue data, NodeRecord recipient) {
-    if (!(recipient instanceof NodeRecordV5)) {
+    if (!(recipient instanceof NodeRecordV4)) {
       String error =
           String.format(
               "Accepts only V5 versions of recipient's node records. Got %s instead", recipient);
@@ -46,8 +46,8 @@ public class DiscoveryClient {
     try {
       address =
           new InetSocketAddress(
-              InetAddress.getByAddress(((NodeRecordV5) recipient).getIpV4address().extractArray()),
-              ((NodeRecordV5) recipient).getUdpPort());
+              InetAddress.getByAddress(((NodeRecordV4) recipient).getIpV4address().extractArray()),
+              ((NodeRecordV4) recipient).getUdpPort());
     } catch (UnknownHostException e) {
       String error = String.format("Failed to resolve host for node record: %s", recipient);
       logger.error(error);

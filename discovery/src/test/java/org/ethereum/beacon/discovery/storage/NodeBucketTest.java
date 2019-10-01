@@ -3,7 +3,7 @@ package org.ethereum.beacon.discovery.storage;
 import org.ethereum.beacon.db.Database;
 import org.ethereum.beacon.discovery.Functions;
 import org.ethereum.beacon.discovery.enr.NodeRecordInfo;
-import org.ethereum.beacon.discovery.enr.NodeRecordV5;
+import org.ethereum.beacon.discovery.enr.NodeRecordV4;
 import org.ethereum.beacon.discovery.enr.NodeStatus;
 import org.junit.Test;
 import tech.pegasys.artemis.util.bytes.BytesValue;
@@ -26,14 +26,14 @@ public class NodeBucketTest {
     try {
       byte[] pkey = new byte[33];
       rnd.nextBytes(pkey);
-      NodeRecordV5 nodeRecordV5 =
-          NodeRecordV5.Builder.empty()
+      NodeRecordV4 nodeRecord =
+          NodeRecordV4.Builder.empty()
               .withIpV4Address(BytesValue.wrap(InetAddress.getByName("127.0.0.1").getAddress()))
               .withSeq(UInt64.valueOf(1))
               .withUdpPort(30303)
               .withSecp256k1(BytesValue.wrap(pkey))
               .build();
-      return new NodeRecordInfo(nodeRecordV5, (long) rnd.nextInt(1000), NodeStatus.ACTIVE, 0);
+      return new NodeRecordInfo(nodeRecord, (long) rnd.nextInt(1000), NodeStatus.ACTIVE, 0);
     } catch (UnknownHostException e) {
       throw new RuntimeException(e);
     }

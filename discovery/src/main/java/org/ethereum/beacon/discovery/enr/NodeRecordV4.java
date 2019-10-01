@@ -2,7 +2,6 @@ package org.ethereum.beacon.discovery.enr;
 
 import com.google.common.base.Objects;
 import org.ethereum.beacon.crypto.Hashes;
-import org.ethereum.beacon.discovery.IdentityScheme;
 import org.javatuples.Pair;
 import org.web3j.rlp.RlpEncoder;
 import org.web3j.rlp.RlpList;
@@ -18,14 +17,16 @@ import tech.pegasys.artemis.util.uint.UInt64;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
-/** Node record for V4 protocol */
+/** Node record for V4 scheme. Uses secp256k1 as signature */
 public class NodeRecordV4 implements NodeRecord {
   // id 	name of identity scheme, e.g. “v4”
-  private static final IdentityScheme identityScheme = IdentityScheme.V4;
+  private static final EnrScheme identityScheme = EnrScheme.V4;
   private static final Function<List<RlpType>, NodeRecordV4> nodeRecordV4Creator =
       fields -> {
         NodeRecordV4.Builder builder =
@@ -34,11 +35,17 @@ public class NodeRecordV4 implements NodeRecord {
                 .withSeq(
                     UInt64.fromBytesBigEndian(
                         Bytes8.leftPad(BytesValue.wrap(((RlpString) fields.get(1)).getBytes()))));
+        boolean secp256k1Found = false;
         for (int i = 4; i < fields.size(); i += 2) {
-          builder =
-              builder.withKeyField(
-                  new String(((RlpString) fields.get(i)).getBytes()),
-                  (RlpString) fields.get(i + 1));
+          String key = new String(((RlpString) fields.get(i)).getBytes());
+          if (key.equals(FIELD_PKEY_SECP256K1)) {
+            secp256k1Found = true;
+          }
+          builder = builder.withKeyField(key, (RlpString) fields.get(i + 1));
+        }
+        if (!secp256k1Found) {
+          throw new RuntimeException(
+              String.format("NodeRecord V4 requires %s field", FIELD_PKEY_SECP256K1));
         }
 
         return builder.build();
@@ -98,7 +105,7 @@ public class NodeRecordV4 implements NodeRecord {
     return nodeRecordV4Creator.apply(values);
   }
 
-  public IdentityScheme getIdentityScheme() {
+  public EnrScheme getIdentityScheme() {
     return identityScheme;
   }
 
@@ -178,8 +185,13 @@ public class NodeRecordV4 implements NodeRecord {
   }
 
   @Override
-  public Map<String, Object> getFields() {
-    return fields;
+  public Set<String> getKeys() {
+    return new HashSet<>(fields.keySet());
+  }
+
+  @Override
+  public Object getKey(String key) {
+    return fields.get(key);
   }
 
   @Override

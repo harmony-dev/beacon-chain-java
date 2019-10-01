@@ -2,7 +2,7 @@ package org.ethereum.beacon.discovery;
 
 import org.ethereum.beacon.db.Database;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
-import org.ethereum.beacon.discovery.enr.NodeRecordV5;
+import org.ethereum.beacon.discovery.enr.NodeRecordV4;
 import org.ethereum.beacon.discovery.message.DiscoveryMessage;
 import org.ethereum.beacon.discovery.message.DiscoveryV5Message;
 import org.ethereum.beacon.discovery.message.FindNodeMessage;
@@ -18,6 +18,7 @@ import org.ethereum.beacon.discovery.storage.NodeTableStorageFactoryImpl;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
+import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt64;
 
@@ -34,23 +35,25 @@ public class DiscoveryNetworkTest {
   @Test
   public void test() throws Exception {
     // 1) start 2 nodes
-    NodeRecordV5 nodeRecord1 =
-        NodeRecordV5.Builder.empty()
+    NodeRecordV4 nodeRecord1 =
+        NodeRecordV4.Builder.empty()
             .withIpV4Address(BytesValue.wrap(InetAddress.getByName("127.0.0.1").getAddress()))
             .withSeq(UInt64.valueOf(1))
             .withUdpPort(30303)
             .withSecp256k1(
                 BytesValue.fromHexString(
                     "0bfb48004b1698f05872cf18b1f278998ad8f7d4c135aa41f83744e7b850ab6b98"))
+            .withSignature(Bytes96.EMPTY)
             .build();
-    NodeRecordV5 nodeRecord2 =
-        NodeRecordV5.Builder.empty()
+    NodeRecordV4 nodeRecord2 =
+        NodeRecordV4.Builder.empty()
             .withIpV4Address(BytesValue.wrap(InetAddress.getByName("127.0.0.1").getAddress()))
             .withSeq(UInt64.valueOf(1))
             .withUdpPort(30304)
             .withSecp256k1(
                 BytesValue.fromHexString(
                     "7ef3502240a42891771de732f5ee6bee3eb881939edf3e6008c0d07b502756e426"))
+            .withSignature(Bytes96.EMPTY)
             .build();
     NodeTableStorageFactoryImpl nodeTableStorageFactory = new NodeTableStorageFactoryImpl();
     Database database1 = Database.inMemoryDB();

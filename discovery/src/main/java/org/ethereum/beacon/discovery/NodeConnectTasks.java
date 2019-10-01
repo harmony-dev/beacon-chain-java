@@ -13,8 +13,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
-import static org.ethereum.beacon.discovery.enr.NodeRecordV5.NODE_ID_FUNCTION;
-
 /**
  * Executes tasks {@link DiscoveryManager#connect(NodeRecord)} for all NodeRecords added via {@link
  * #add(NodeRecordInfo, Runnable, Runnable)}. Tasks is called failed if timeout is reached and reply
@@ -36,27 +34,27 @@ public class NodeConnectTasks {
 
   public void add(NodeRecordInfo nodeRecordInfo, Runnable successCallback, Runnable failCallback) {
     synchronized (this) {
-      if (currentTasks.contains(NODE_ID_FUNCTION.apply(nodeRecordInfo.getNode()))) {
+      if (currentTasks.contains(nodeRecordInfo.getNode().getNodeId())) {
         return;
       }
-      currentTasks.add(NODE_ID_FUNCTION.apply(nodeRecordInfo.getNode()));
+      currentTasks.add(nodeRecordInfo.getNode().getNodeId());
     }
 
     scheduler.execute(
         () -> {
           CompletableFuture<Void> retry = discoveryManager.connect(nodeRecordInfo.getNode());
           taskTimeouts.put(
-              NODE_ID_FUNCTION.apply(nodeRecordInfo.getNode()),
+              nodeRecordInfo.getNode().getNodeId(),
               () ->
                   retry.completeExceptionally(new RuntimeException("Timeout for node check task")));
           retry.whenComplete(
               (aVoid, throwable) -> {
                 if (throwable != null) {
                   failCallback.run();
-                  currentTasks.remove(NODE_ID_FUNCTION.apply(nodeRecordInfo.getNode()));
+                  currentTasks.remove(nodeRecordInfo.getNode().getNodeId());
                 } else {
                   successCallback.run();
-                  currentTasks.remove(NODE_ID_FUNCTION.apply(nodeRecordInfo.getNode()));
+                  currentTasks.remove(nodeRecordInfo.getNode().getNodeId());
                 }
               });
         });

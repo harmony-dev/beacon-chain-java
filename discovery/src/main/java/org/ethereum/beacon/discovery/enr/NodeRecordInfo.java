@@ -52,8 +52,8 @@ public class NodeRecordInfo {
     return BytesValue.wrap(bytes);
   }
 
-  public NodeRecordV5 getNode() {
-    return (NodeRecordV5) node;
+  public NodeRecordV4 getNode() {
+    return (NodeRecordV4) node;
   }
 
   public Long getLastRetry() {

@@ -1,7 +1,7 @@
 package org.ethereum.beacon.discovery;
 
 import org.ethereum.beacon.discovery.enr.NodeRecordInfo;
-import org.ethereum.beacon.discovery.enr.NodeRecordV5;
+import org.ethereum.beacon.discovery.enr.NodeRecordV4;
 import org.ethereum.beacon.discovery.enr.NodeStatus;
 import org.ethereum.beacon.discovery.storage.NodeBucketStorage;
 import org.ethereum.beacon.discovery.storage.NodeTable;
@@ -14,7 +14,6 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import static org.ethereum.beacon.discovery.NodeContext.DEFAULT_DISTANCE;
-import static org.ethereum.beacon.discovery.enr.NodeRecordV5.NODE_ID_FUNCTION;
 
 /** Manages recurrent node check task(s) */
 public class DiscoveryTaskManager {
@@ -80,13 +79,13 @@ public class DiscoveryTaskManager {
       DiscoveryManager discoveryManager,
       NodeTable nodeTable,
       NodeBucketStorage nodeBucketStorage,
-      NodeRecordV5 homeNode,
+      NodeRecordV4 homeNode,
       Scheduler scheduler,
       boolean resetDead) {
     this.scheduler = scheduler;
     this.nodeTable = nodeTable;
     this.nodeBucketStorage = nodeBucketStorage;
-    this.homeNodeId = NODE_ID_FUNCTION.apply(homeNode);
+    this.homeNodeId = homeNode.getNodeId();
     this.nodeConnectTasks =
         new NodeConnectTasks(
             discoveryManager, scheduler, Duration.ofSeconds(RETRY_TIMEOUT_SECONDS));

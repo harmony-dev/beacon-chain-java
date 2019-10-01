@@ -1,6 +1,5 @@
 package org.ethereum.beacon.discovery.enr;
 
-import org.ethereum.beacon.discovery.IdentityScheme;
 import org.web3j.rlp.RlpDecoder;
 import org.web3j.rlp.RlpList;
 import org.web3j.rlp.RlpString;
@@ -10,8 +9,10 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Ethereum Node Record
@@ -56,7 +57,7 @@ public interface NodeRecord {
     }
 
     RlpString idVersion = (RlpString) values.get(3);
-    IdentityScheme nodeIdentity = IdentityScheme.fromString(new String(idVersion.getBytes()));
+    EnrScheme nodeIdentity = EnrScheme.fromString(new String(idVersion.getBytes()));
     if (nodeIdentity == null) {
       throw new RuntimeException(
           String.format(
@@ -67,10 +68,6 @@ public interface NodeRecord {
       case V4:
         {
           return NodeRecordV4.fromRlpList(values);
-        }
-      case V5:
-        {
-          return NodeRecordV5.fromRlpList(values);
         }
       default:
         {
@@ -84,8 +81,8 @@ public interface NodeRecord {
     return fromBytes(bytes.extractArray());
   }
 
-  /** Every {@link IdentityScheme} links with its own implementation */
-  IdentityScheme getIdentityScheme();
+  /** Every {@link EnrScheme} links with its own implementation */
+  EnrScheme getIdentityScheme();
 
   BytesValue getSignature();
 
@@ -107,5 +104,37 @@ public interface NodeRecord {
    * All optional fields, set varies by identity scheme. `id`, identity scheme is not optional. Most
    * common field names are in constants: {@link #FIELD_IP_V4} etc. (FIELD_*)
    */
-  Map<String, Object> getFields();
+  Set<String> getKeys();
+
+  /**
+   * @return key value or null, if no field associated with that key. Get keys using {@link
+   *     #getKeys()}
+   */
+  Object getKey(String key);
+
+  enum EnrScheme {
+    V4("v4");
+
+    private static final Map<String, EnrScheme> nameMap = new HashMap<>();
+
+    static {
+      for (EnrScheme scheme : EnrScheme.values()) {
+        nameMap.put(scheme.name, scheme);
+      }
+    }
+
+    private String name;
+
+    private EnrScheme(String name) {
+      this.name = name;
+    }
+
+    public static EnrScheme fromString(String name) {
+      return nameMap.get(name);
+    }
+
+    public String stringName() {
+      return name;
+    }
+  }
 }

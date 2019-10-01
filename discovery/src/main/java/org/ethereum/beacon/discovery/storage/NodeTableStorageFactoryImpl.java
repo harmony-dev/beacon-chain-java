@@ -4,7 +4,7 @@ import org.ethereum.beacon.chain.storage.impl.SerializerFactory;
 import org.ethereum.beacon.db.Database;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
 import org.ethereum.beacon.discovery.enr.NodeRecordInfo;
-import org.ethereum.beacon.discovery.enr.NodeRecordV5;
+import org.ethereum.beacon.discovery.enr.NodeRecordV4;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 
 import java.util.List;
@@ -25,7 +25,7 @@ public class NodeTableStorageFactoryImpl implements NodeTableStorageFactory {
   public NodeTableStorage createTable(
       Database database,
       SerializerFactory serializerFactory,
-      Supplier<NodeRecordV5> homeNodeSupplier,
+      Supplier<NodeRecordV4> homeNodeSupplier,
       Supplier<List<NodeRecord>> bootNodesSupplier) {
     NodeTableStorage nodeTableStorage = new NodeTableStorageImpl(database, serializerFactory);
 
@@ -38,8 +38,8 @@ public class NodeTableStorageFactoryImpl implements NodeTableStorageFactory {
           .get()
           .forEach(
               nodeRecord -> {
-                if (!(nodeRecord instanceof NodeRecordV5)) {
-                  throw new RuntimeException("Only V5 node records are supported as boot nodes");
+                if (!(nodeRecord instanceof NodeRecordV4)) {
+                  throw new RuntimeException("Only V4 node records are supported as boot nodes");
                 }
                 NodeRecordInfo nodeRecordInfo = NodeRecordInfo.createDefault(nodeRecord);
                 nodeTableStorage.get().save(nodeRecordInfo);

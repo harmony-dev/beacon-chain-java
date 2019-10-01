@@ -5,7 +5,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
 import org.ethereum.beacon.discovery.enr.NodeRecordInfo;
-import org.ethereum.beacon.discovery.enr.NodeRecordV5;
+import org.ethereum.beacon.discovery.enr.NodeRecordV4;
 import org.ethereum.beacon.discovery.network.DiscoveryClient;
 import org.ethereum.beacon.discovery.network.DiscoveryServer;
 import org.ethereum.beacon.discovery.network.DiscoveryServerImpl;
@@ -37,7 +37,7 @@ public class DiscoveryManagerImpl implements DiscoveryManager {
   private final ReplayProcessor<NetworkParcel> outgoingMessages = ReplayProcessor.cacheLast();
   private final FluxSink<NetworkParcel> outgoingSink = outgoingMessages.sink();
   private final Bytes32 homeNodeId;
-  private final NodeRecordV5 homeNodeRecord;
+  private final NodeRecordV4 homeNodeRecord;
   private final NodeTable nodeTable;
   private final NodeBucketStorage nodeBucketStorage;
   private final Map<Bytes32, NodeContext> recentContexts =
@@ -53,12 +53,12 @@ public class DiscoveryManagerImpl implements DiscoveryManager {
   public DiscoveryManagerImpl(
       NodeTable nodeTable,
       NodeBucketStorage nodeBucketStorage,
-      NodeRecordV5 homeNode,
+      NodeRecordV4 homeNode,
       Scheduler serverScheduler) {
     this.nodeTable = nodeTable;
     this.nodeBucketStorage = nodeBucketStorage;
     this.homeNodeId = homeNode.getNodeId();
-    this.homeNodeRecord = (NodeRecordV5) nodeTable.getHomeNode();
+    this.homeNodeRecord = (NodeRecordV4) nodeTable.getHomeNode();
     this.authTagRepo = new AuthTagRepository();
     this.scheduler = serverScheduler;
     this.discoveryServer =
@@ -116,7 +116,7 @@ public class DiscoveryManagerImpl implements DiscoveryManager {
             () -> String.format("Couldn't find node record for nodeId %s, ignoring", nodeId));
         return Optional.empty();
       }
-      NodeRecordV5 nodeRecord = nodeOptional.get().getNode();
+      NodeRecordV4 nodeRecord = nodeOptional.get().getNode();
       SecureRandom random = new SecureRandom();
       context =
           new NodeContext(

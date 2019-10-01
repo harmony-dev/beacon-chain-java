@@ -2,7 +2,7 @@ package org.ethereum.beacon.discovery.packet;
 
 import org.ethereum.beacon.discovery.Functions;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
-import org.ethereum.beacon.discovery.enr.NodeRecordV5;
+import org.ethereum.beacon.discovery.enr.NodeRecordV4;
 import org.ethereum.beacon.discovery.message.DiscoveryMessage;
 import org.ethereum.beacon.discovery.message.DiscoveryV5Message;
 import org.web3j.rlp.RlpDecoder;
@@ -122,7 +122,7 @@ public class AuthHeaderMessagePacket extends AbstractPacket {
     return decoded.idNonceSig;
   }
 
-  public NodeRecordV5 getNodeRecord() {
+  public NodeRecordV4 getNodeRecord() {
     verifyDecode();
     return decoded.nodeRecord;
   }
@@ -165,7 +165,7 @@ public class AuthHeaderMessagePacket extends AbstractPacket {
     blank.idNonceSig =
         BytesValue.wrap(((RlpString) authResponsePtParts.getValues().get(1)).getBytes());
     blank.nodeRecord =
-        (NodeRecordV5)
+        (NodeRecordV4)
             NodeRecord.fromBytes(((RlpString) authResponsePtParts.getValues().get(2)).getBytes());
     BytesValue messageAad = blank.tag.concat(getBytes().slice(32));
     blank.message =
@@ -205,7 +205,7 @@ public class AuthHeaderMessagePacket extends AbstractPacket {
     private BytesValue idNonce;
     private BytesValue ephemeralPubkey;
     private BytesValue idNonceSig;
-    private NodeRecordV5 nodeRecord;
+    private NodeRecordV4 nodeRecord;
     private DiscoveryMessage message;
   }
 }
