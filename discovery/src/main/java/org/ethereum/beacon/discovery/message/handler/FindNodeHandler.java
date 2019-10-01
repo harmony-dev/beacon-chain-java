@@ -1,7 +1,7 @@
 package org.ethereum.beacon.discovery.message.handler;
 
 import org.ethereum.beacon.discovery.NodeContext;
-import org.ethereum.beacon.discovery.enr.NodeRecordInfo;
+import org.ethereum.beacon.discovery.NodeRecordInfo;
 import org.ethereum.beacon.discovery.message.DiscoveryV5Message;
 import org.ethereum.beacon.discovery.message.FindNodeMessage;
 import org.ethereum.beacon.discovery.message.NodesMessage;

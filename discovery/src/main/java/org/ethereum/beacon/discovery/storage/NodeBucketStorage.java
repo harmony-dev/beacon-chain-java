@@ -1,6 +1,6 @@
 package org.ethereum.beacon.discovery.storage;
 
-import org.ethereum.beacon.discovery.enr.NodeRecordInfo;
+import org.ethereum.beacon.discovery.NodeRecordInfo;
 
 import java.util.Optional;
 

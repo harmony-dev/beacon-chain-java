@@ -1,5 +1,6 @@
 package org.ethereum.beacon.discovery;
 
+import org.ethereum.beacon.discovery.enr.EnrScheme;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
 import org.ethereum.beacon.discovery.enr.NodeRecordV4;
 import org.junit.Test;
@@ -36,7 +37,7 @@ public class NodeRecordTest {
         "-IS4QHCYrYZbAKWCBRlAy5zzaDZXJBGkcnh4MHcBFZntXNFrdvJjX04jRzjzCBOonrkTfj499SZuOh8R33Ls8RRcy5wBgmlkgnY0gmlwhH8AAAGJc2VjcDI1NmsxoQPKY0yuDUmstAHYpMa2_oxVtw0RW_QAdpzBQA8yWM0xOIN1ZHCCdl8";
     NodeRecord nodeRecord = NodeRecord.fromBase64(localhostEnr);
 
-    assertEquals(NodeRecord.EnrScheme.V4, nodeRecord.getIdentityScheme());
+    assertEquals(EnrScheme.V4, nodeRecord.getIdentityScheme());
     NodeRecordV4 nodeRecordV4 = (NodeRecordV4) nodeRecord;
     assertArrayEquals(
         InetAddress.getByName(expectedHost).getAddress(),
@@ -51,7 +52,7 @@ public class NodeRecordTest {
     // The order of fields is not strict so we don't compare strings
     NodeRecord nodeRecordRestored = NodeRecord.fromBase64(localhostEnrRestored);
 
-    assertEquals(NodeRecord.EnrScheme.V4, nodeRecordRestored.getIdentityScheme());
+    assertEquals(EnrScheme.V4, nodeRecordRestored.getIdentityScheme());
     NodeRecordV4 nodeRecordV4Restored = (NodeRecordV4) nodeRecordRestored;
     assertArrayEquals(
         InetAddress.getByName(expectedHost).getAddress(),

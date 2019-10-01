@@ -1,4 +1,4 @@
-package org.ethereum.beacon.discovery.enr;
+package org.ethereum.beacon.discovery;
 
 import java.util.HashMap;
 import java.util.Map;

@@ -9,9 +9,7 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 import java.util.Base64;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -111,30 +109,4 @@ public interface NodeRecord {
    *     #getKeys()}
    */
   Object getKey(String key);
-
-  enum EnrScheme {
-    V4("v4");
-
-    private static final Map<String, EnrScheme> nameMap = new HashMap<>();
-
-    static {
-      for (EnrScheme scheme : EnrScheme.values()) {
-        nameMap.put(scheme.name, scheme);
-      }
-    }
-
-    private String name;
-
-    private EnrScheme(String name) {
-      this.name = name;
-    }
-
-    public static EnrScheme fromString(String name) {
-      return nameMap.get(name);
-    }
-
-    public String stringName() {
-      return name;
-    }
-  }
 }

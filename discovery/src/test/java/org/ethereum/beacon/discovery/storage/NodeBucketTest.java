@@ -2,9 +2,9 @@ package org.ethereum.beacon.discovery.storage;
 
 import org.ethereum.beacon.db.Database;
 import org.ethereum.beacon.discovery.Functions;
-import org.ethereum.beacon.discovery.enr.NodeRecordInfo;
+import org.ethereum.beacon.discovery.NodeRecordInfo;
 import org.ethereum.beacon.discovery.enr.NodeRecordV4;
-import org.ethereum.beacon.discovery.enr.NodeStatus;
+import org.ethereum.beacon.discovery.NodeStatus;
 import org.junit.Test;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt64;

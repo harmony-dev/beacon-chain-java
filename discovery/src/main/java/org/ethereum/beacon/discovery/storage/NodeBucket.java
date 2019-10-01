@@ -1,7 +1,7 @@
 package org.ethereum.beacon.discovery.storage;
 
-import org.ethereum.beacon.discovery.enr.NodeRecordInfo;
-import org.ethereum.beacon.discovery.enr.NodeStatus;
+import org.ethereum.beacon.discovery.NodeRecordInfo;
+import org.ethereum.beacon.discovery.NodeStatus;
 import org.web3j.rlp.RlpDecoder;
 import org.web3j.rlp.RlpEncoder;
 import org.web3j.rlp.RlpList;

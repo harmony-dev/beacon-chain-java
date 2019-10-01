@@ -2,7 +2,6 @@ package org.ethereum.beacon.discovery;
 
 import com.google.common.collect.Sets;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
-import org.ethereum.beacon.discovery.enr.NodeRecordInfo;
 import org.ethereum.beacon.schedulers.Scheduler;
 import org.ethereum.beacon.util.ExpirationScheduler;
 import tech.pegasys.artemis.util.bytes.Bytes32;

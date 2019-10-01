@@ -1,6 +1,8 @@
-package org.ethereum.beacon.discovery.enr;
+package org.ethereum.beacon.discovery;
 
 import com.google.common.base.Objects;
+import org.ethereum.beacon.discovery.enr.NodeRecord;
+import org.ethereum.beacon.discovery.enr.NodeRecordV4;
 import org.web3j.rlp.RlpDecoder;
 import org.web3j.rlp.RlpEncoder;
 import org.web3j.rlp.RlpList;

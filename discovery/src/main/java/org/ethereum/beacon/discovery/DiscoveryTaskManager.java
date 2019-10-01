@@ -1,8 +1,6 @@
 package org.ethereum.beacon.discovery;
 
-import org.ethereum.beacon.discovery.enr.NodeRecordInfo;
 import org.ethereum.beacon.discovery.enr.NodeRecordV4;
-import org.ethereum.beacon.discovery.enr.NodeStatus;
 import org.ethereum.beacon.discovery.storage.NodeBucketStorage;
 import org.ethereum.beacon.discovery.storage.NodeTable;
 import org.ethereum.beacon.schedulers.Scheduler;
