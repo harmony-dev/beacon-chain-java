@@ -13,9 +13,9 @@ import org.bouncycastle.crypto.util.PrivateKeyFactory;
 import org.bouncycastle.math.ec.ECCurve;
 import org.ethereum.beacon.crypto.Hashes;
 import org.javatuples.Triplet;
-import org.web3j.crypto.ECDSASignature;
 import org.web3j.crypto.ECKeyPair;
 import org.web3j.crypto.Sign;
+import tech.pegasys.artemis.util.bytes.Bytes1;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes32s;
 import tech.pegasys.artemis.util.bytes.BytesValue;
@@ -25,6 +25,7 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.math.BigInteger;
 import java.security.SecureRandom;
+import java.security.SignatureException;
 import java.util.Random;
 
 public class Functions {
@@ -36,22 +37,40 @@ public class Functions {
     return Hashes.sha256(value);
   }
 
-  /** Creates a signature of x using the given key */
+  /**
+   * Creates a signature of message `x` using the given key
+   *
+   * @param key private key
+   * @param x message
+   * @return ECDSA signature with properties merged together: v || r || s
+   */
   public static BytesValue sign(BytesValue key, BytesValue x) {
-    ECDSASignature signature = ECKeyPair.create(key.extractArray()).sign(x.extractArray());
-    Bytes32 r = Bytes32.wrap(signature.r.toByteArray());
-    Bytes32 s = Bytes32.wrap(signature.s.toByteArray());
-    return r.concat(s);
+    Sign.SignatureData signatureData =
+        Sign.signMessage(x.extractArray(), ECKeyPair.create(key.extractArray()));
+    Bytes1 v = Bytes1.wrap(new byte[] {signatureData.getV()});
+    Bytes32 r = Bytes32.wrap(signatureData.getR());
+    Bytes32 s = Bytes32.wrap(signatureData.getS());
+    return v.concat(r).concat(s);
   }
 
-  public static BytesValue recoverFromSignature(BytesValue signature, BytesValue x) {
-    assert 64 == signature.size();
-    BigInteger r = new BigInteger(signature.slice(0, 32).extractArray());
-    BigInteger s = new BigInteger(signature.slice(32).extractArray());
-    ECDSASignature ecdsaSignature = new ECDSASignature(r, s);
-    // FIXME: recId, which number should it use?
-    BigInteger pubKey = Sign.recoverFromSignature(0, ecdsaSignature, x.extractArray());
-    return BytesValue.wrap(pubKey.toByteArray());
+  /**
+   * Recovers public key from message and signature
+   *
+   * @param signature Signature, ECDSA
+   * @param x message
+   * @return public key
+   * @throws SignatureException when recovery is not possible
+   */
+  public static BytesValue recoverFromSignature(BytesValue signature, BytesValue x)
+      throws SignatureException {
+    BigInteger publicKey =
+        Sign.signedMessageToKey(
+            x.extractArray(),
+            new Sign.SignatureData(
+                signature.get(0),
+                signature.slice(1, 33).extractArray(),
+                signature.slice(33).extractArray()));
+    return BytesValue.wrap(publicKey.toByteArray());
   }
 
   /**
