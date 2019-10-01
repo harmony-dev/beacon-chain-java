@@ -18,6 +18,8 @@ import org.ethereum.beacon.discovery.packet.handler.PacketHandler;
 import org.ethereum.beacon.discovery.packet.handler.UnknownPacketHandler;
 import org.ethereum.beacon.discovery.packet.handler.WhoAreYouPacketHandler;
 import org.ethereum.beacon.discovery.storage.AuthTagRepository;
+import org.ethereum.beacon.discovery.storage.NodeBucket;
+import org.ethereum.beacon.discovery.storage.NodeBucketStorage;
 import org.ethereum.beacon.discovery.storage.NodeTable;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
@@ -39,6 +41,7 @@ public class NodeContext {
   private final Bytes32 homeNodeId;
   private final AuthTagRepository authTagRepo;
   private final NodeTable nodeTable;
+  private final NodeBucketStorage nodeBucketStorage;
   private final Consumer<Packet> outgoing;
   private final Random rnd;
   private final Map<Class, PacketHandler> packetHandlers = new HashMap<>();
@@ -53,6 +56,7 @@ public class NodeContext {
       NodeRecordV5 nodeRecord,
       NodeRecordV5 homeNodeRecord,
       NodeTable nodeTable,
+      NodeBucketStorage nodeBucketStorage,
       AuthTagRepository authTagRepo,
       Consumer<Packet> outgoing,
       Random rnd) {
@@ -60,6 +64,7 @@ public class NodeContext {
     this.outgoing = outgoing;
     this.authTagRepo = authTagRepo;
     this.nodeTable = nodeTable;
+    this.nodeBucketStorage = nodeBucketStorage;
     this.homeNodeRecord = homeNodeRecord;
     this.homeNodeId = homeNodeRecord.getNodeId();
     this.rnd = rnd;
@@ -236,6 +241,10 @@ public class NodeContext {
 
   public NodeTable getNodeTable() {
     return nodeTable;
+  }
+
+  public Optional<NodeBucket> getBucket(int index) {
+    return nodeBucketStorage.get(index);
   }
 
   public synchronized Bytes32 getIdNonce() {

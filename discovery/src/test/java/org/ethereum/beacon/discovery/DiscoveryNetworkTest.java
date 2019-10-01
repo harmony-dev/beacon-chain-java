@@ -12,6 +12,7 @@ import org.ethereum.beacon.discovery.packet.MessagePacket;
 import org.ethereum.beacon.discovery.packet.RandomPacket;
 import org.ethereum.beacon.discovery.packet.UnknownPacket;
 import org.ethereum.beacon.discovery.packet.WhoAreYouPacket;
+import org.ethereum.beacon.discovery.storage.NodeBucketStorage;
 import org.ethereum.beacon.discovery.storage.NodeTableStorage;
 import org.ethereum.beacon.discovery.storage.NodeTableStorageFactoryImpl;
 import org.ethereum.beacon.schedulers.Schedulers;
@@ -55,7 +56,7 @@ public class DiscoveryNetworkTest {
     Database database1 = Database.inMemoryDB();
     Database database2 = Database.inMemoryDB();
     NodeTableStorage nodeTableStorage1 =
-        nodeTableStorageFactory.create(
+        nodeTableStorageFactory.createTable(
             database1,
             DEFAULT_SERIALIZER,
             () -> nodeRecord1,
@@ -65,8 +66,11 @@ public class DiscoveryNetworkTest {
                     add(nodeRecord2);
                   }
                 });
+    NodeBucketStorage nodeBucketStorage1 =
+        nodeTableStorageFactory.createBuckets(
+            database1, DEFAULT_SERIALIZER, nodeRecord1.getNodeId());
     NodeTableStorage nodeTableStorage2 =
-        nodeTableStorageFactory.create(
+        nodeTableStorageFactory.createTable(
             database2,
             DEFAULT_SERIALIZER,
             () -> nodeRecord2,
@@ -76,14 +80,19 @@ public class DiscoveryNetworkTest {
                     add(nodeRecord1);
                   }
                 });
+    NodeBucketStorage nodeBucketStorage2 =
+        nodeTableStorageFactory.createBuckets(
+            database2, DEFAULT_SERIALIZER, nodeRecord2.getNodeId());
     DiscoveryManagerImpl discoveryManager1 =
         new DiscoveryManagerImpl(
             nodeTableStorage1.get(),
+            nodeBucketStorage1,
             nodeRecord1,
             Schedulers.createDefault().newSingleThreadDaemon("server-1"));
     DiscoveryManagerImpl discoveryManager2 =
         new DiscoveryManagerImpl(
             nodeTableStorage2.get(),
+            nodeBucketStorage2,
             nodeRecord2,
             Schedulers.createDefault().newSingleThreadDaemon("server-2"));
 

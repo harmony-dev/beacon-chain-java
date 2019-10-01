@@ -5,6 +5,7 @@ import org.ethereum.beacon.db.Database;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
 import org.ethereum.beacon.discovery.enr.NodeRecordInfo;
 import org.ethereum.beacon.discovery.enr.NodeRecordV5;
+import tech.pegasys.artemis.util.bytes.Bytes32;
 
 import java.util.List;
 import java.util.function.Supplier;
@@ -21,7 +22,7 @@ public class NodeTableStorageFactoryImpl implements NodeTableStorageFactory {
    *     Uses `serializerFactory` for node records serialization.
    */
   @Override
-  public NodeTableStorage create(
+  public NodeTableStorage createTable(
       Database database,
       SerializerFactory serializerFactory,
       Supplier<NodeRecordV5> homeNodeSupplier,
@@ -47,5 +48,11 @@ public class NodeTableStorageFactoryImpl implements NodeTableStorageFactory {
     ;
 
     return nodeTableStorage;
+  }
+
+  @Override
+  public NodeBucketStorage createBuckets(
+      Database database, SerializerFactory serializerFactory, Bytes32 homeNodeId) {
+    return new NodeBucketStorageImpl(database, serializerFactory, homeNodeId);
   }
 }

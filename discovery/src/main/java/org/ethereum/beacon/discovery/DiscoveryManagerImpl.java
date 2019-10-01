@@ -14,6 +14,7 @@ import org.ethereum.beacon.discovery.network.NetworkParcel;
 import org.ethereum.beacon.discovery.network.NetworkParcelV5;
 import org.ethereum.beacon.discovery.packet.UnknownPacket;
 import org.ethereum.beacon.discovery.storage.AuthTagRepository;
+import org.ethereum.beacon.discovery.storage.NodeBucketStorage;
 import org.ethereum.beacon.discovery.storage.NodeTable;
 import org.ethereum.beacon.schedulers.Scheduler;
 import org.ethereum.beacon.util.ExpirationScheduler;
@@ -38,19 +39,24 @@ public class DiscoveryManagerImpl implements DiscoveryManager {
   private final Bytes32 homeNodeId;
   private final NodeRecordV5 homeNodeRecord;
   private final NodeTable nodeTable;
+  private final NodeBucketStorage nodeBucketStorage;
   private final Map<Bytes32, NodeContext> recentContexts =
       new ConcurrentHashMap<>(); // nodeId -> context
-  private ExpirationScheduler<Bytes32> contextExpirationScheduler =
-      new ExpirationScheduler<>(CLEANUP_DELAY_SECONDS, TimeUnit.SECONDS);
   private final AuthTagRepository authTagRepo;
   private final DiscoveryServer discoveryServer;
   private final CompletableFuture<Void> discoveryClientAssigned;
   private final Scheduler scheduler;
+  private ExpirationScheduler<Bytes32> contextExpirationScheduler =
+      new ExpirationScheduler<>(CLEANUP_DELAY_SECONDS, TimeUnit.SECONDS);
   private DiscoveryClient discoveryClient;
 
   public DiscoveryManagerImpl(
-      NodeTable nodeTable, NodeRecordV5 homeNode, Scheduler serverScheduler) {
+      NodeTable nodeTable,
+      NodeBucketStorage nodeBucketStorage,
+      NodeRecordV5 homeNode,
+      Scheduler serverScheduler) {
     this.nodeTable = nodeTable;
+    this.nodeBucketStorage = nodeBucketStorage;
     this.homeNodeId = homeNode.getNodeId();
     this.homeNodeRecord = (NodeRecordV5) nodeTable.getHomeNode();
     this.authTagRepo = new AuthTagRepository();
@@ -117,6 +123,7 @@ public class DiscoveryManagerImpl implements DiscoveryManager {
               nodeRecord,
               homeNodeRecord,
               nodeTable,
+              nodeBucketStorage,
               authTagRepo,
               packet -> outgoingSink.next(new NetworkParcelV5(packet, nodeRecord)),
               random);
@@ -124,10 +131,12 @@ public class DiscoveryManagerImpl implements DiscoveryManager {
     }
 
     final NodeContext contextBackup = context;
-    contextExpirationScheduler.put(context.getNodeRecord().getNodeId(), () -> {
-      recentContexts.remove(contextBackup.getNodeRecord().getNodeId());
-      contextBackup.cleanup();
-    });
+    contextExpirationScheduler.put(
+        context.getNodeRecord().getNodeId(),
+        () -> {
+          recentContexts.remove(contextBackup.getNodeRecord().getNodeId());
+          contextBackup.cleanup();
+        });
     return Optional.of(context);
   }
 

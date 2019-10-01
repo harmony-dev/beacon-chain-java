@@ -13,6 +13,7 @@ import org.ethereum.beacon.discovery.packet.MessagePacket;
 import org.ethereum.beacon.discovery.packet.RandomPacket;
 import org.ethereum.beacon.discovery.packet.UnknownPacket;
 import org.ethereum.beacon.discovery.packet.WhoAreYouPacket;
+import org.ethereum.beacon.discovery.storage.NodeBucketStorage;
 import org.ethereum.beacon.discovery.storage.NodeTableStorage;
 import org.ethereum.beacon.discovery.storage.NodeTableStorageFactoryImpl;
 import org.ethereum.beacon.schedulers.Schedulers;
@@ -60,7 +61,7 @@ public class DiscoveryNoNetworkTest {
     Database database1 = Database.inMemoryDB();
     Database database2 = Database.inMemoryDB();
     NodeTableStorage nodeTableStorage1 =
-        nodeTableStorageFactory.create(
+        nodeTableStorageFactory.createTable(
             database1,
             DEFAULT_SERIALIZER,
             () -> nodeRecord1,
@@ -70,8 +71,11 @@ public class DiscoveryNoNetworkTest {
                     add(nodeRecord2);
                   }
                 });
+    NodeBucketStorage nodeBucketStorage1 =
+        nodeTableStorageFactory.createBuckets(
+            database1, DEFAULT_SERIALIZER, nodeRecord1.getNodeId());
     NodeTableStorage nodeTableStorage2 =
-        nodeTableStorageFactory.create(
+        nodeTableStorageFactory.createTable(
             database2,
             DEFAULT_SERIALIZER,
             () -> nodeRecord2,
@@ -81,6 +85,9 @@ public class DiscoveryNoNetworkTest {
                     add(nodeRecord1);
                   }
                 });
+    NodeBucketStorage nodeBucketStorage2 =
+        nodeTableStorageFactory.createBuckets(
+            database2, DEFAULT_SERIALIZER, nodeRecord2.getNodeId());
     SimpleProcessor<UnknownPacket> from1to2 =
         new SimpleProcessor<>(
             Schedulers.createDefault().newSingleThreadDaemon("from1to2-thread"), "from1to2");
@@ -88,9 +95,11 @@ public class DiscoveryNoNetworkTest {
         new SimpleProcessor<>(
             Schedulers.createDefault().newSingleThreadDaemon("from2to1-thread"), "from2to1");
     DiscoveryManagerNoNetwork discoveryManager1 =
-        new DiscoveryManagerNoNetwork(nodeTableStorage1.get(), nodeRecord1, from2to1);
+        new DiscoveryManagerNoNetwork(
+            nodeTableStorage1.get(), nodeBucketStorage1, nodeRecord1, from2to1);
     DiscoveryManagerNoNetwork discoveryManager2 =
-        new DiscoveryManagerNoNetwork(nodeTableStorage2.get(), nodeRecord2, from1to2);
+        new DiscoveryManagerNoNetwork(
+            nodeTableStorage2.get(), nodeBucketStorage2, nodeRecord2, from1to2);
 
     discoveryManager1.start();
     discoveryManager2.start();

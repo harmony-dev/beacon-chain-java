@@ -3,6 +3,7 @@ package org.ethereum.beacon.discovery;
 import org.ethereum.beacon.discovery.enr.NodeRecordInfo;
 import org.ethereum.beacon.discovery.enr.NodeRecordV5;
 import org.ethereum.beacon.discovery.enr.NodeStatus;
+import org.ethereum.beacon.discovery.storage.NodeBucketStorage;
 import org.ethereum.beacon.discovery.storage.NodeTable;
 import org.ethereum.beacon.schedulers.Scheduler;
 import tech.pegasys.artemis.util.bytes.Bytes32;
@@ -25,7 +26,8 @@ public class DiscoveryTaskManager {
   private final Scheduler scheduler;
   private final Bytes32 homeNodeId;
   private final NodeConnectTasks nodeConnectTasks;
-  private NodeTable nodeTable;
+  private final NodeTable nodeTable;
+  private final NodeBucketStorage nodeBucketStorage;
   /**
    * Checks whether {@link org.ethereum.beacon.discovery.enr.NodeRecord} is ready for alive status
    * check. Plus, marks records as DEAD if there were a lot of unsuccessful retries to get reply
@@ -49,7 +51,7 @@ public class DiscoveryTaskManager {
           return false; // no need to rediscover
         }
         if (nodeRecord.getRetry() >= MAX_RETRIES) {
-          nodeTable.save(
+          updateNode(
               new NodeRecordInfo(
                   nodeRecord.getNode(), nodeRecord.getLastRetry(), NodeStatus.DEAD, 0));
           return false;
@@ -61,11 +63,14 @@ public class DiscoveryTaskManager {
 
         return true;
       };
+
   private boolean resetDead = false;
 
   /**
    * @param discoveryManager Discovery manager
-   * @param nodeTable Ethereum node records storage
+   * @param nodeTable Ethereum node records storage, stores all found nodes
+   * @param nodeBucketStorage Node bucket storage. stores only closest nodes in ready-to-answer
+   *     format
    * @param homeNode Home node
    * @param scheduler scheduler to run recurrent tasks on
    * @param resetDead Whether to reset dead status of the nodes. If set to true, resets its status
@@ -74,13 +79,17 @@ public class DiscoveryTaskManager {
   public DiscoveryTaskManager(
       DiscoveryManager discoveryManager,
       NodeTable nodeTable,
+      NodeBucketStorage nodeBucketStorage,
       NodeRecordV5 homeNode,
       Scheduler scheduler,
       boolean resetDead) {
     this.scheduler = scheduler;
     this.nodeTable = nodeTable;
+    this.nodeBucketStorage = nodeBucketStorage;
     this.homeNodeId = NODE_ID_FUNCTION.apply(homeNode);
-    this.nodeConnectTasks = new NodeConnectTasks(discoveryManager, scheduler, Duration.ofSeconds(RETRY_TIMEOUT_SECONDS));
+    this.nodeConnectTasks =
+        new NodeConnectTasks(
+            discoveryManager, scheduler, Duration.ofSeconds(RETRY_TIMEOUT_SECONDS));
     this.resetDead = resetDead;
   }
 
@@ -110,18 +119,23 @@ public class DiscoveryTaskManager {
                 nodeConnectTasks.add(
                     nodeRecord,
                     () ->
-                        nodeTable.save(
+                        updateNode(
                             new NodeRecordInfo(
                                 nodeRecord.getNode(),
                                 System.currentTimeMillis() / MS_IN_SECOND,
                                 NodeStatus.ACTIVE,
                                 0)),
                     () ->
-                        nodeTable.save(
+                        updateNode(
                             new NodeRecordInfo(
                                 nodeRecord.getNode(),
                                 System.currentTimeMillis() / MS_IN_SECOND,
                                 NodeStatus.SLEEP,
                                 (nodeRecord.getRetry() + 1)))));
+  }
+
+  private void updateNode(NodeRecordInfo nodeRecordInfo) {
+    nodeTable.save(nodeRecordInfo);
+    nodeBucketStorage.put(nodeRecordInfo);
   }
 }

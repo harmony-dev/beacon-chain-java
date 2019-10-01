@@ -48,7 +48,7 @@ public class NodeTableTest {
     NodeTableStorageFactoryImpl nodeTableStorageFactory = new NodeTableStorageFactoryImpl();
     Database database = Database.inMemoryDB();
     NodeTableStorage nodeTableStorage =
-        nodeTableStorageFactory.create(
+        nodeTableStorageFactory.createTable(
             database,
             DEFAULT_SERIALIZER,
             homeNodeSupplier,
@@ -75,7 +75,7 @@ public class NodeTableTest {
     NodeTableStorageFactoryImpl nodeTableStorageFactory = new NodeTableStorageFactoryImpl();
     Database database = Database.inMemoryDB();
     NodeTableStorage nodeTableStorage =
-        nodeTableStorageFactory.create(
+        nodeTableStorageFactory.createTable(
             database,
             DEFAULT_SERIALIZER,
             homeNodeSupplier,
@@ -117,8 +117,8 @@ public class NodeTableTest {
     List<NodeRecordInfo> closestNodes =
         nodeTableStorage.get().findClosestNodes(NODE_ID_FUNCTION.apply(closestNode), 252);
     assertEquals(2, closestNodes.size());
-    assertEquals(closestNodes.get(1).getNode().getPublicKey(), localHostNode.getPublicKey());
-    assertEquals(closestNodes.get(0).getNode().getPublicKey(), closestNode.getPublicKey());
+    assertEquals(closestNodes.get(0).getNode().getPublicKey(), localHostNode.getPublicKey());
+    assertEquals(closestNodes.get(1).getNode().getPublicKey(), closestNode.getPublicKey());
     List<NodeRecordInfo> farNodes =
         nodeTableStorage.get().findClosestNodes(NODE_ID_FUNCTION.apply(farNode), 1);
     assertEquals(1, farNodes.size());

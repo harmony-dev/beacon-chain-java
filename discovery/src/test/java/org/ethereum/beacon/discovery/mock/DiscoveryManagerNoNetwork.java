@@ -4,7 +4,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.discovery.DiscoveryManager;
 import org.ethereum.beacon.discovery.NodeContext;
-import org.ethereum.beacon.discovery.storage.NodeTable;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
 import org.ethereum.beacon.discovery.enr.NodeRecordInfo;
 import org.ethereum.beacon.discovery.enr.NodeRecordV5;
@@ -12,6 +11,8 @@ import org.ethereum.beacon.discovery.network.NetworkParcel;
 import org.ethereum.beacon.discovery.network.NetworkParcelV5;
 import org.ethereum.beacon.discovery.packet.UnknownPacket;
 import org.ethereum.beacon.discovery.storage.AuthTagRepository;
+import org.ethereum.beacon.discovery.storage.NodeBucketStorage;
+import org.ethereum.beacon.discovery.storage.NodeTable;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
@@ -36,14 +37,19 @@ public class DiscoveryManagerNoNetwork implements DiscoveryManager {
   private final FluxSink<NetworkParcel> outgoingSink = outgoingMessages.sink();
   private final Bytes32 homeNodeId;
   private final NodeRecordV5 homeNodeRecord;
-  private NodeTable nodeTable;
+  private final NodeTable nodeTable;
+  private final NodeBucketStorage nodeBucketStorage;
   private Publisher<UnknownPacket> incomingPackets;
   private Map<Bytes32, NodeContext> recentContexts = new ConcurrentHashMap<>(); // nodeId -> context
   private AuthTagRepository authTagRepo;
 
   public DiscoveryManagerNoNetwork(
-      NodeTable nodeTable, NodeRecordV5 homeNode, Publisher<UnknownPacket> incomingPackets) {
+      NodeTable nodeTable,
+      NodeBucketStorage nodeBucketStorage,
+      NodeRecordV5 homeNode,
+      Publisher<UnknownPacket> incomingPackets) {
     this.nodeTable = nodeTable;
+    this.nodeBucketStorage = nodeBucketStorage;
     this.incomingPackets = incomingPackets;
     this.homeNodeId = homeNode.getNodeId();
     this.homeNodeRecord = (NodeRecordV5) nodeTable.getHomeNode();
@@ -97,6 +103,7 @@ public class DiscoveryManagerNoNetwork implements DiscoveryManager {
               nodeRecord,
               homeNodeRecord,
               nodeTable,
+              nodeBucketStorage,
               authTagRepo,
               packet -> outgoingSink.next(new NetworkParcelV5(packet, nodeRecord)),
               random);

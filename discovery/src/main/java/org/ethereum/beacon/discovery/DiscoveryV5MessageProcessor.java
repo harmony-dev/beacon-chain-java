@@ -12,13 +12,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class DiscoveryV5MessageProcessor implements DiscoveryMessageProcessor<DiscoveryV5Message> {
-  private static final int MAX_NODES_IN_MSG = 24;
   private final Map<MessageCode, MessageHandler> messageHandlers = new HashMap<>();
 
   public DiscoveryV5MessageProcessor() {
     messageHandlers.put(MessageCode.PING, new PingHandler());
     messageHandlers.put(MessageCode.PONG, new PongHandler());
-    messageHandlers.put(MessageCode.FINDNODE, new FindNodeHandler(MAX_NODES_IN_MSG));
+    messageHandlers.put(MessageCode.FINDNODE, new FindNodeHandler());
     messageHandlers.put(MessageCode.NODES, new NodesHandler());
   }
 
