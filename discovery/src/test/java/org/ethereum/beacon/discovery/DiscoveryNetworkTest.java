@@ -91,13 +91,15 @@ public class DiscoveryNetworkTest {
             nodeTableStorage1.get(),
             nodeBucketStorage1,
             nodeRecord1,
-            Schedulers.createDefault().newSingleThreadDaemon("server-1"));
+            Schedulers.createDefault().newSingleThreadDaemon("server-1"),
+            Schedulers.createDefault().newSingleThreadDaemon("client-1"));
     DiscoveryManagerImpl discoveryManager2 =
         new DiscoveryManagerImpl(
             nodeTableStorage2.get(),
             nodeBucketStorage2,
             nodeRecord2,
-            Schedulers.createDefault().newSingleThreadDaemon("server-2"));
+            Schedulers.createDefault().newSingleThreadDaemon("server-2"),
+            Schedulers.createDefault().newSingleThreadDaemon("client-2"));
 
     discoveryManager1.start();
     discoveryManager2.start();

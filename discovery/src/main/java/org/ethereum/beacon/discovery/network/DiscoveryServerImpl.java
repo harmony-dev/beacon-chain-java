@@ -7,7 +7,6 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.ethereum.beacon.schedulers.RunnableEx;
 import org.ethereum.beacon.schedulers.Scheduler;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.FluxSink;
@@ -17,13 +16,9 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
 
-public class DiscoveryServerImpl implements NettyDiscoveryServer {
+public class DiscoveryServerImpl implements DiscoveryServer {
   private static final int RECREATION_TIMEOUT = 5000;
   private static final int STOPPING_TIMEOUT = 10000;
   private static final Logger logger = LogManager.getLogger(DiscoveryServerImpl.class);
@@ -33,13 +28,6 @@ public class DiscoveryServerImpl implements NettyDiscoveryServer {
   private final String udpListenHost;
   private AtomicBoolean listen = new AtomicBoolean(true);
   private Channel channel;
-  private NioDatagramChannel datagramChannel;
-  private Set<Consumer<NioDatagramChannel>> datagramChannelUsageQueue = new HashSet<>();
-
-  public DiscoveryServerImpl(Scheduler scheduler, String udpListenHost, Integer udpListenPort) {
-    this.udpListenHost = udpListenHost;
-    this.udpListenPort = udpListenPort;
-  }
 
   public DiscoveryServerImpl(Bytes4 udpListenHost, Integer udpListenPort) {
     try {
@@ -53,13 +41,7 @@ public class DiscoveryServerImpl implements NettyDiscoveryServer {
   @Override
   public void start(Scheduler scheduler) {
     logger.info(String.format("Starting discovery server on UDP port %s", udpListenPort));
-    scheduler.execute(
-        new RunnableEx() {
-          @Override
-          public void run() throws Exception {
-            serverLoop();
-          }
-        });
+    scheduler.execute(this::serverLoop);
   }
 
   private void serverLoop() {
@@ -76,11 +58,6 @@ public class DiscoveryServerImpl implements NettyDiscoveryServer {
                     ch.pipeline()
                         .addLast(new DatagramToBytesValue())
                         .addLast(new IncomingMessageSink(incomingSink));
-                    synchronized (DiscoveryServerImpl.class) {
-                      datagramChannel = ch;
-                      datagramChannelUsageQueue.forEach(
-                          nioDatagramChannelConsumer -> nioDatagramChannelConsumer.accept(ch));
-                    }
                   }
                 });
 
@@ -108,23 +85,6 @@ public class DiscoveryServerImpl implements NettyDiscoveryServer {
   @Override
   public Publisher<BytesValue> getIncomingPackets() {
     return incomingPackets;
-  }
-
-  public synchronized CompletableFuture<Void> useDatagramChannel(
-      Consumer<NioDatagramChannel> consumer) {
-    CompletableFuture<Void> usage = new CompletableFuture<>();
-    if (datagramChannel != null) {
-      consumer.accept(datagramChannel);
-      usage.complete(null);
-    } else {
-      datagramChannelUsageQueue.add(
-          nioDatagramChannel -> {
-            consumer.accept(nioDatagramChannel);
-            usage.complete(null);
-          });
-    }
-
-    return usage;
   }
 
   @Override

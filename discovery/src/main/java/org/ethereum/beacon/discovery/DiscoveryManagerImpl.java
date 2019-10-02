@@ -6,9 +6,9 @@ import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
 import org.ethereum.beacon.discovery.enr.NodeRecordV4;
 import org.ethereum.beacon.discovery.network.DiscoveryClient;
+import org.ethereum.beacon.discovery.network.DiscoveryClientImpl;
 import org.ethereum.beacon.discovery.network.DiscoveryServer;
 import org.ethereum.beacon.discovery.network.DiscoveryServerImpl;
-import org.ethereum.beacon.discovery.network.NettyDiscoveryServer;
 import org.ethereum.beacon.discovery.network.NetworkParcel;
 import org.ethereum.beacon.discovery.network.NetworkParcelV5;
 import org.ethereum.beacon.discovery.packet.UnknownPacket;
@@ -43,7 +43,6 @@ public class DiscoveryManagerImpl implements DiscoveryManager {
       new ConcurrentHashMap<>(); // nodeId -> context
   private final AuthTagRepository authTagRepo;
   private final DiscoveryServer discoveryServer;
-  private final CompletableFuture<Void> discoveryClientAssigned;
   private final Scheduler scheduler;
   private ExpirationScheduler<Bytes32> contextExpirationScheduler =
       new ExpirationScheduler<>(CLEANUP_DELAY_SECONDS, TimeUnit.SECONDS);
@@ -53,7 +52,8 @@ public class DiscoveryManagerImpl implements DiscoveryManager {
       NodeTable nodeTable,
       NodeBucketStorage nodeBucketStorage,
       NodeRecordV4 homeNode,
-      Scheduler serverScheduler) {
+      Scheduler serverScheduler,
+      Scheduler clientScheduler) {
     this.nodeTable = nodeTable;
     this.nodeBucketStorage = nodeBucketStorage;
     this.homeNodeId = homeNode.getNodeId();
@@ -62,11 +62,7 @@ public class DiscoveryManagerImpl implements DiscoveryManager {
     this.scheduler = serverScheduler;
     this.discoveryServer =
         new DiscoveryServerImpl(homeNodeRecord.getIpV4address(), homeNodeRecord.getUdpPort());
-    this.discoveryClientAssigned =
-        ((NettyDiscoveryServer) discoveryServer)
-            .useDatagramChannel(
-                nioDatagramChannel ->
-                    discoveryClient = new DiscoveryClient(nioDatagramChannel, outgoingMessages));
+    this.discoveryClient = new DiscoveryClientImpl(outgoingMessages, clientScheduler);
   }
 
   @Override
@@ -90,7 +86,6 @@ public class DiscoveryManagerImpl implements DiscoveryManager {
               }
             });
     discoveryServer.start(scheduler);
-    discoveryClientAssigned.join();
   }
 
   @Override
