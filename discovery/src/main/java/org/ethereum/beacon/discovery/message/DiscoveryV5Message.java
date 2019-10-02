@@ -1,8 +1,7 @@
 package org.ethereum.beacon.discovery.message;
 
 import org.ethereum.beacon.discovery.IdentityScheme;
-import org.ethereum.beacon.discovery.enr.NodeRecord;
-import org.ethereum.beacon.discovery.enr.NodeRecordV4;
+import org.ethereum.beacon.discovery.enr.NodeRecordFactory;
 import org.web3j.rlp.RlpDecoder;
 import org.web3j.rlp.RlpList;
 import org.web3j.rlp.RlpString;
@@ -15,6 +14,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class DiscoveryV5Message implements DiscoveryMessage {
+  private static final NodeRecordFactory nodeRecordFactory = NodeRecordFactory.DEFAULT;
   private final BytesValue bytes;
   private List<RlpType> payload = null;
 
@@ -87,7 +87,7 @@ public class DiscoveryV5Message implements DiscoveryMessage {
               ((RlpString) payload.get(1)).asPositiveBigInteger().intValueExact(),
               () ->
                   nodeRecords.getValues().stream()
-                      .map(rs -> (NodeRecordV4) (NodeRecord.fromBytes(((RlpString) rs).getBytes())))
+                      .map(rs -> nodeRecordFactory.fromBytes(((RlpString) rs).getBytes()))
                       .collect(Collectors.toList()),
               nodeRecords.getValues().size());
         }

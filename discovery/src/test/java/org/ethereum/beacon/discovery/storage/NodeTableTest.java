@@ -1,12 +1,15 @@
 package org.ethereum.beacon.discovery.storage;
 
 import org.ethereum.beacon.db.Database;
-import org.ethereum.beacon.discovery.enr.NodeRecord;
 import org.ethereum.beacon.discovery.NodeRecordInfo;
-import org.ethereum.beacon.discovery.enr.NodeRecordV4;
 import org.ethereum.beacon.discovery.NodeStatus;
+import org.ethereum.beacon.discovery.enr.EnrScheme;
+import org.ethereum.beacon.discovery.enr.NodeRecord;
+import org.ethereum.beacon.discovery.enr.NodeRecordFactory;
+import org.javatuples.Pair;
 import org.junit.Test;
 import tech.pegasys.artemis.util.bytes.Bytes32;
+import tech.pegasys.artemis.util.bytes.Bytes4;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt64;
@@ -23,19 +26,29 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class NodeTableTest {
+  private static final NodeRecordFactory NODE_RECORD_FACTORY = NodeRecordFactory.DEFAULT;
 
-  private Supplier<NodeRecordV4> homeNodeSupplier =
+  private Supplier<NodeRecord> homeNodeSupplier =
       () -> {
         try {
-          return NodeRecordV4.Builder.empty()
-              .withIpV4Address(BytesValue.wrap(InetAddress.getByName("127.0.0.1").getAddress()))
-              .withSeq(UInt64.valueOf(1))
-              .withUdpPort(30303)
-              .withSecp256k1(
-                  BytesValue.fromHexString(
-                      "0bfb48004b1698f05872cf18b1f278998ad8f7d4c135aa41f83744e7b850ab6b98"))
-              .withSignature(Bytes96.EMPTY)
-              .build();
+          return NODE_RECORD_FACTORY.createFromValues(
+              EnrScheme.V4,
+              UInt64.valueOf(1),
+              Bytes96.EMPTY,
+              new ArrayList<Pair<String, Object>>() {
+                {
+                  add(
+                      Pair.with(
+                          NodeRecord.FIELD_IP_V4,
+                          Bytes4.wrap(InetAddress.getByName("127.0.0.1").getAddress())));
+                  add(Pair.with(NodeRecord.FIELD_UDP_V4, 30303));
+                  add(
+                      Pair.with(
+                          NodeRecord.FIELD_PKEY_SECP256K1,
+                          BytesValue.fromHexString(
+                              "0bfb48004b1698f05872cf18b1f278998ad8f7d4c135aa41f83744e7b850ab6b98")));
+                }
+              });
         } catch (UnknownHostException e) {
           throw new RuntimeException(e);
         }
@@ -45,7 +58,7 @@ public class NodeTableTest {
   public void testCreate() throws Exception {
     final String localhostEnr =
         "-IS4QHCYrYZbAKWCBRlAy5zzaDZXJBGkcnh4MHcBFZntXNFrdvJjX04jRzjzCBOonrkTfj499SZuOh8R33Ls8RRcy5wBgmlkgnY0gmlwhH8AAAGJc2VjcDI1NmsxoQPKY0yuDUmstAHYpMa2_oxVtw0RW_QAdpzBQA8yWM0xOIN1ZHCCdl8";
-    NodeRecordV4 nodeRecord = (NodeRecordV4) NodeRecord.fromBase64(localhostEnr);
+    NodeRecord nodeRecord = NODE_RECORD_FACTORY.fromBase64(localhostEnr);
     NodeTableStorageFactoryImpl nodeTableStorageFactory = new NodeTableStorageFactoryImpl();
     Database database = Database.inMemoryDB();
     NodeTableStorage nodeTableStorage =
@@ -58,21 +71,21 @@ public class NodeTableTest {
               nodes.add(nodeRecord);
               return nodes;
             });
-    Optional<NodeRecordInfo> extendedEnr =
-        nodeTableStorage.get().getNode(nodeRecord.getNodeId());
+    Optional<NodeRecordInfo> extendedEnr = nodeTableStorage.get().getNode(nodeRecord.getNodeId());
     assertTrue(extendedEnr.isPresent());
     NodeRecordInfo nodeRecord2 = extendedEnr.get();
-    assertEquals(nodeRecord.getPublicKey(), nodeRecord2.getNode().getPublicKey());
     assertEquals(
-        nodeTableStorage.get().getHomeNode().getNodeId(),
-        homeNodeSupplier.get().getNodeId());
+        nodeRecord.get(NodeRecord.FIELD_PKEY_SECP256K1),
+        nodeRecord2.getNode().get(NodeRecord.FIELD_PKEY_SECP256K1));
+    assertEquals(
+        nodeTableStorage.get().getHomeNode().getNodeId(), homeNodeSupplier.get().getNodeId());
   }
 
   @Test
   public void testFind() throws Exception {
     final String localhostEnr =
         "-IS4QHCYrYZbAKWCBRlAy5zzaDZXJBGkcnh4MHcBFZntXNFrdvJjX04jRzjzCBOonrkTfj499SZuOh8R33Ls8RRcy5wBgmlkgnY0gmlwhH8AAAGJc2VjcDI1NmsxoQPKY0yuDUmstAHYpMa2_oxVtw0RW_QAdpzBQA8yWM0xOIN1ZHCCdl8";
-    NodeRecordV4 localHostNode = (NodeRecordV4) NodeRecord.fromBase64(localhostEnr);
+    NodeRecord localHostNode = NODE_RECORD_FACTORY.fromBase64(localhostEnr);
     NodeTableStorageFactoryImpl nodeTableStorageFactory = new NodeTableStorageFactoryImpl();
     Database database = Database.inMemoryDB();
     NodeTableStorage nodeTableStorage =
@@ -87,16 +100,25 @@ public class NodeTableTest {
             });
 
     // node is adjusted to be close to localhostEnr
-    NodeRecordV4 closestNode =
-        NodeRecordV4.Builder.empty()
-            .withIpV4Address(BytesValue.wrap(InetAddress.getByName("127.0.0.2").getAddress()))
-            .withSeq(UInt64.valueOf(1))
-            .withUdpPort(30303)
-            .withSecp256k1(
-                BytesValue.fromHexString(
-                    "aafb48004b1698f05872cf18b1f278998ad8f7d4c135aa41f83744e7b850ab6b98"))
-            .withSignature(Bytes96.EMPTY)
-            .build();
+    NodeRecord closestNode =
+        NODE_RECORD_FACTORY.createFromValues(
+            EnrScheme.V4,
+            UInt64.valueOf(1),
+            Bytes96.EMPTY,
+            new ArrayList<Pair<String, Object>>() {
+              {
+                add(
+                    Pair.with(
+                        NodeRecord.FIELD_IP_V4,
+                        Bytes4.wrap(InetAddress.getByName("127.0.0.2").getAddress())));
+                add(Pair.with(NodeRecord.FIELD_UDP_V4, 30303));
+                add(
+                    Pair.with(
+                        NodeRecord.FIELD_PKEY_SECP256K1,
+                        BytesValue.fromHexString(
+                            "aafb48004b1698f05872cf18b1f278998ad8f7d4c135aa41f83744e7b850ab6b98")));
+              }
+            });
     nodeTableStorage.get().save(new NodeRecordInfo(closestNode, -1L, NodeStatus.ACTIVE, 0));
     assertEquals(
         nodeTableStorage
@@ -104,28 +126,42 @@ public class NodeTableTest {
             .getNode(closestNode.getNodeId())
             .get()
             .getNode()
-            .getPublicKey(),
-        closestNode.getPublicKey());
-    NodeRecordV4 farNode =
-        NodeRecordV4.Builder.empty()
-            .withIpV4Address(BytesValue.wrap(InetAddress.getByName("127.0.0.3").getAddress()))
-            .withSeq(UInt64.valueOf(1))
-            .withUdpPort(30303)
-            .withSecp256k1(
-                BytesValue.fromHexString(
-                    "bafb48004b1698f05872cf18b1f278998ad8f7d4c135aa41f83744e7b850ab6b98"))
-            .withSignature(Bytes96.EMPTY)
-            .build();
+            .get(NodeRecord.FIELD_PKEY_SECP256K1),
+        closestNode.get(NodeRecord.FIELD_PKEY_SECP256K1));
+    NodeRecord farNode =
+        NODE_RECORD_FACTORY.createFromValues(
+            EnrScheme.V4,
+            UInt64.valueOf(1),
+            Bytes96.EMPTY,
+            new ArrayList<Pair<String, Object>>() {
+              {
+                add(
+                    Pair.with(
+                        NodeRecord.FIELD_IP_V4,
+                        Bytes4.wrap(InetAddress.getByName("127.0.0.3").getAddress())));
+                add(Pair.with(NodeRecord.FIELD_UDP_V4, 30303));
+                add(
+                    Pair.with(
+                        NodeRecord.FIELD_PKEY_SECP256K1,
+                        BytesValue.fromHexString(
+                            "bafb48004b1698f05872cf18b1f278998ad8f7d4c135aa41f83744e7b850ab6b98")));
+              }
+            });
     nodeTableStorage.get().save(new NodeRecordInfo(farNode, -1L, NodeStatus.ACTIVE, 0));
     List<NodeRecordInfo> closestNodes =
         nodeTableStorage.get().findClosestNodes(closestNode.getNodeId(), 252);
     assertEquals(2, closestNodes.size());
-    assertEquals(closestNodes.get(1).getNode().getPublicKey(), localHostNode.getPublicKey());
-    assertEquals(closestNodes.get(0).getNode().getPublicKey(), closestNode.getPublicKey());
-    List<NodeRecordInfo> farNodes =
-        nodeTableStorage.get().findClosestNodes(farNode.getNodeId(), 1);
+    assertEquals(
+        closestNodes.get(0).getNode().get(NodeRecord.FIELD_PKEY_SECP256K1),
+        localHostNode.get(NodeRecord.FIELD_PKEY_SECP256K1));
+    assertEquals(
+        closestNodes.get(1).getNode().get(NodeRecord.FIELD_PKEY_SECP256K1),
+        closestNode.get(NodeRecord.FIELD_PKEY_SECP256K1));
+    List<NodeRecordInfo> farNodes = nodeTableStorage.get().findClosestNodes(farNode.getNodeId(), 1);
     assertEquals(1, farNodes.size());
-    assertEquals(farNodes.get(0).getNode().getPublicKey(), farNode.getPublicKey());
+    assertEquals(
+        farNodes.get(0).getNode().get(NodeRecord.FIELD_PKEY_SECP256K1),
+        farNode.get(NodeRecord.FIELD_PKEY_SECP256K1));
   }
 
   /**

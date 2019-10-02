@@ -2,7 +2,7 @@ package org.ethereum.beacon.discovery;
 
 import com.google.common.base.Objects;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
-import org.ethereum.beacon.discovery.enr.NodeRecordV4;
+import org.ethereum.beacon.discovery.enr.NodeRecordFactory;
 import org.web3j.rlp.RlpDecoder;
 import org.web3j.rlp.RlpEncoder;
 import org.web3j.rlp.RlpList;
@@ -18,6 +18,7 @@ import java.util.List;
  * last test of its availability
  */
 public class NodeRecordInfo {
+  private static final NodeRecordFactory nodeRecordFactory = NodeRecordFactory.DEFAULT;
   private final NodeRecord node;
   private final Long lastRetry;
   private final NodeStatus status;
@@ -37,11 +38,10 @@ public class NodeRecordInfo {
   public static NodeRecordInfo fromRlpBytes(BytesValue bytes) {
     RlpList internalList = (RlpList) RlpDecoder.decode(bytes.extractArray()).getValues().get(0);
     return new NodeRecordInfo(
-        NodeRecord.fromBytes(((RlpString)internalList.getValues().get(0)).getBytes()),
+        nodeRecordFactory.fromBytes(((RlpString) internalList.getValues().get(0)).getBytes()),
         ((RlpString) internalList.getValues().get(1)).asPositiveBigInteger().longValue(),
         NodeStatus.fromNumber(((RlpString) internalList.getValues().get(2)).getBytes()[0]),
-        ((RlpString) internalList.getValues().get(1)).asPositiveBigInteger().intValue()
-    );
+        ((RlpString) internalList.getValues().get(1)).asPositiveBigInteger().intValue());
   }
 
   public BytesValue toRlpBytes() {
@@ -54,8 +54,8 @@ public class NodeRecordInfo {
     return BytesValue.wrap(bytes);
   }
 
-  public NodeRecordV4 getNode() {
-    return (NodeRecordV4) node;
+  public NodeRecord getNode() {
+    return (NodeRecord) node;
   }
 
   public Long getLastRetry() {
@@ -88,11 +88,15 @@ public class NodeRecordInfo {
 
   @Override
   public String toString() {
-    return "NodeRecordInfo{" +
-        "node=" + node +
-        ", lastRetry=" + lastRetry +
-        ", status=" + status +
-        ", retry=" + retry +
-        '}';
+    return "NodeRecordInfo{"
+        + "node="
+        + node
+        + ", lastRetry="
+        + lastRetry
+        + ", status="
+        + status
+        + ", retry="
+        + retry
+        + '}';
   }
 }

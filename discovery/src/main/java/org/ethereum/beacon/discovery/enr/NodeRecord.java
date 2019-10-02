@@ -1,6 +1,8 @@
 package org.ethereum.beacon.discovery.enr;
 
-import org.web3j.rlp.RlpDecoder;
+import com.google.common.base.Objects;
+import org.javatuples.Pair;
+import org.web3j.rlp.RlpEncoder;
 import org.web3j.rlp.RlpList;
 import org.web3j.rlp.RlpString;
 import org.web3j.rlp.RlpType;
@@ -8,8 +10,12 @@ import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt64;
 
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -17,96 +23,153 @@ import java.util.Set;
  *
  * <p>Node record as described in <a href="https://eips.ethereum.org/EIPS/eip-778">EIP-778</a>
  */
-public interface NodeRecord {
+public class NodeRecord {
   // Compressed secp256k1 public key, 33 bytes
-  String FIELD_PKEY_SECP256K1 = "secp256k1";
+  public static String FIELD_PKEY_SECP256K1 = "secp256k1";
   // IPv4 address
-  String FIELD_IP_V4 = "ip";
+  public static String FIELD_IP_V4 = "ip";
   // TCP port, integer
-  String FIELD_TCP_V4 = "tcp";
+  public static String FIELD_TCP_V4 = "tcp";
   // UDP port, integer
-  String FIELD_UDP_V4 = "udp";
+  public static String FIELD_UDP_V4 = "udp";
   // IPv6 address
-  String FIELD_IP_V6 = "ip6";
+  public static String FIELD_IP_V6 = "ip6";
   // IPv6-specific TCP port
-  String FIELD_TCP_V6 = "tcp6";
+  public static String FIELD_TCP_V6 = "tcp6";
   // IPv6-specific UDP port
-  String FIELD_UDP_V6 = "udp6";
+  public static String FIELD_UDP_V6 = "udp6";
 
-  static NodeRecord fromBase64(String enrBase64) {
-    return fromBytes(Base64.getUrlDecoder().decode(enrBase64));
+  private UInt64 seq;
+  // Signature
+  private BytesValue signature;
+  // optional fields
+  private Map<String, Object> fields = new HashMap<>();
+
+  private EnrSchemeInterpreter enrSchemeInterpreter;
+
+  private NodeRecord(EnrSchemeInterpreter enrSchemeInterpreter, UInt64 seq, BytesValue signature) {
+    this.seq = seq;
+    this.signature = signature;
+    this.enrSchemeInterpreter = enrSchemeInterpreter;
   }
 
-  static NodeRecord fromBytes(byte[] bytes) {
-    // record    = [signature, seq, k, v, ...]
-    RlpList rlpList = (RlpList) RlpDecoder.decode(bytes).getValues().get(0);
-    List<RlpType> values = rlpList.getValues();
-    if (values.size() < 4) {
-      throw new RuntimeException(
-          String.format(
-              "Unable to deserialize ENR with less than 4 fields, [%s]", BytesValue.wrap(bytes)));
-    }
-    RlpString id = (RlpString) values.get(2);
-    if (!"id".equals(new String(id.getBytes()))) {
-      throw new RuntimeException(
-          String.format(
-              "Unable to deserialize ENR with no id field at 2-3 records, [%s]",
-              BytesValue.wrap(bytes)));
-    }
+  private NodeRecord() {}
 
-    RlpString idVersion = (RlpString) values.get(3);
-    EnrScheme nodeIdentity = EnrScheme.fromString(new String(idVersion.getBytes()));
-    if (nodeIdentity == null) {
-      throw new RuntimeException(
-          String.format(
-              "Unknown node identity scheme '%s', couldn't create node record.",
-              idVersion.asString()));
-    }
-    switch (nodeIdentity) {
-      case V4:
-        {
-          return NodeRecordV4.fromRlpList(values);
-        }
-      default:
-        {
-          throw new RuntimeException(
-              String.format("Builder for identity %s not found", nodeIdentity));
-        }
-    }
+  public static NodeRecord fromValues(
+      EnrSchemeInterpreter enrSchemeInterpreter,
+      UInt64 seq,
+      BytesValue signature,
+      List<Pair<String, Object>> fieldKeyPairs) {
+    NodeRecord nodeRecord = new NodeRecord(enrSchemeInterpreter, seq, signature);
+    fieldKeyPairs.forEach(objects -> nodeRecord.set(objects.getValue0(), objects.getValue1()));
+    return nodeRecord;
   }
 
-  static NodeRecord fromBytes(BytesValue bytes) {
-    return fromBytes(bytes.extractArray());
+  public static NodeRecord fromRawFields(
+      EnrSchemeInterpreter enrSchemeInterpreter,
+      UInt64 seq,
+      BytesValue signature,
+      List<RlpType> rawFields) {
+    NodeRecord nodeRecord = new NodeRecord(enrSchemeInterpreter, seq, signature);
+    for (int i = 0; i < rawFields.size(); i += 2) {
+      String key = new String(((RlpString) rawFields.get(i)).getBytes());
+      nodeRecord.set(key, enrSchemeInterpreter.decode(key, (RlpString) rawFields.get(i + 1)));
+    }
+    return nodeRecord;
   }
 
-  /** Every {@link EnrScheme} links with its own implementation */
-  EnrScheme getIdentityScheme();
-
-  BytesValue getSignature();
-
-  /**
-   * @return The sequence number, a 64-bit unsigned integer. Nodes should increase the number
-   *     whenever the record changes and republish the record.
-   */
-  UInt64 getSeq();
-
-  BytesValue serialize();
-
-  default String asBase64() {
+  public String asBase64() {
     return new String(Base64.getUrlEncoder().encode(serialize().extractArray()));
   }
 
-  Bytes32 getNodeId();
+  public EnrScheme getIdentityScheme() {
+    return enrSchemeInterpreter.getScheme();
+  }
 
-  /**
-   * All optional fields, set varies by identity scheme. `id`, identity scheme is not optional. Most
-   * common field names are in constants: {@link #FIELD_IP_V4} etc. (FIELD_*)
-   */
-  Set<String> getKeys();
+  public void set(String key, Object value) {
+    fields.put(key, value);
+  }
 
-  /**
-   * @return key value or null, if no field associated with that key. Get keys using {@link
-   *     #getKeys()}
-   */
-  Object getKey(String key);
+  public Object get(String key) {
+    return fields.get(key);
+  }
+
+  public UInt64 getSeq() {
+    return seq;
+  }
+
+  public void setSeq(UInt64 seq) {
+    this.seq = seq;
+  }
+
+  public BytesValue getSignature() {
+    return signature;
+  }
+
+  public void setSignature(BytesValue signature) {
+    this.signature = signature;
+  }
+
+  public Set<String> getKeys() {
+    return new HashSet<>(fields.keySet());
+  }
+
+  public Object getKey(String key) {
+    return fields.get(key);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    NodeRecord that = (NodeRecord) o;
+    return Objects.equal(seq, that.seq)
+        && Objects.equal(signature, that.signature)
+        && Objects.equal(fields, that.fields);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(seq, signature, fields);
+  }
+
+  public BytesValue serialize() {
+    assert getSignature() != null;
+    assert getSeq() != null;
+
+    // content   = [seq, k, v, ...]
+    // signature = sign(content)
+    // record    = [signature, seq, k, v, ...]
+    List<RlpType> values = new ArrayList<>();
+    values.add(RlpString.create(getSignature().extractArray()));
+    values.add(RlpString.create(getSeq().toBI()));
+    values.add(RlpString.create("id"));
+    values.add(RlpString.create(getIdentityScheme().stringName()));
+    for (Map.Entry<String, Object> keyPair : fields.entrySet()) {
+      if (keyPair.getValue() == null) {
+        continue;
+      }
+      values.add(RlpString.create(keyPair.getKey()));
+      values.add(enrSchemeInterpreter.encode(keyPair.getKey(), keyPair.getValue()));
+    }
+    byte[] bytes = RlpEncoder.encode(new RlpList(values));
+    assert bytes.length <= 300;
+    return BytesValue.wrap(bytes);
+  }
+
+  public Bytes32 getNodeId() {
+    return enrSchemeInterpreter.getNodeId(this);
+  }
+
+  @Override
+  public String toString() {
+    return "NodeRecordV4{"
+        + "publicKey="
+        + fields.get(FIELD_PKEY_SECP256K1)
+        + ", ipV4address="
+        + fields.get(FIELD_IP_V4)
+        + ", udpPort="
+        + fields.get(FIELD_UDP_V4)
+        + '}';
+  }
 }

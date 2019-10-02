@@ -3,7 +3,6 @@ package org.ethereum.beacon.discovery;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
-import org.ethereum.beacon.discovery.enr.NodeRecordV4;
 import org.ethereum.beacon.discovery.message.DiscoveryMessage;
 import org.ethereum.beacon.discovery.message.MessageCode;
 import org.ethereum.beacon.discovery.packet.AuthHeaderMessagePacket;
@@ -36,8 +35,8 @@ import java.util.function.Consumer;
 public class NodeContext {
   public static final int DEFAULT_DISTANCE = 10; // FIXME: I shouldn't be here
   private static final Logger logger = LogManager.getLogger(NodeContext.class);
-  private final NodeRecordV4 nodeRecord;
-  private final NodeRecordV4 homeNodeRecord;
+  private final NodeRecord nodeRecord;
+  private final NodeRecord homeNodeRecord;
   private final Bytes32 homeNodeId;
   private final AuthTagRepository authTagRepo;
   private final NodeTable nodeTable;
@@ -53,8 +52,8 @@ public class NodeContext {
   private CompletableFuture<Void> connectFuture = null;
 
   public NodeContext(
-      NodeRecordV4 nodeRecord,
-      NodeRecordV4 homeNodeRecord,
+      NodeRecord nodeRecord,
+      NodeRecord homeNodeRecord,
       NodeTable nodeTable,
       NodeBucketStorage nodeBucketStorage,
       AuthTagRepository authTagRepo,
@@ -75,7 +74,7 @@ public class NodeContext {
     packetHandlers.put(MessagePacket.class, new MessagePacketHandler(this, logger));
   }
 
-  public NodeRecordV4 getNodeRecord() {
+  public NodeRecord getNodeRecord() {
     return nodeRecord;
   }
 

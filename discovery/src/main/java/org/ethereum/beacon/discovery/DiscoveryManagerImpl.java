@@ -4,7 +4,6 @@ import com.google.common.annotations.VisibleForTesting;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
-import org.ethereum.beacon.discovery.enr.NodeRecordV4;
 import org.ethereum.beacon.discovery.network.DiscoveryClient;
 import org.ethereum.beacon.discovery.network.DiscoveryClientImpl;
 import org.ethereum.beacon.discovery.network.DiscoveryServer;
@@ -22,6 +21,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.ReplayProcessor;
 import tech.pegasys.artemis.util.bytes.Bytes32;
+import tech.pegasys.artemis.util.bytes.Bytes4;
 
 import java.security.SecureRandom;
 import java.util.Map;
@@ -36,7 +36,7 @@ public class DiscoveryManagerImpl implements DiscoveryManager {
   private final ReplayProcessor<NetworkParcel> outgoingMessages = ReplayProcessor.cacheLast();
   private final FluxSink<NetworkParcel> outgoingSink = outgoingMessages.sink();
   private final Bytes32 homeNodeId;
-  private final NodeRecordV4 homeNodeRecord;
+  private final NodeRecord homeNodeRecord;
   private final NodeTable nodeTable;
   private final NodeBucketStorage nodeBucketStorage;
   private final Map<Bytes32, NodeContext> recentContexts =
@@ -51,17 +51,19 @@ public class DiscoveryManagerImpl implements DiscoveryManager {
   public DiscoveryManagerImpl(
       NodeTable nodeTable,
       NodeBucketStorage nodeBucketStorage,
-      NodeRecordV4 homeNode,
+      NodeRecord homeNode,
       Scheduler serverScheduler,
       Scheduler clientScheduler) {
     this.nodeTable = nodeTable;
     this.nodeBucketStorage = nodeBucketStorage;
     this.homeNodeId = homeNode.getNodeId();
-    this.homeNodeRecord = (NodeRecordV4) nodeTable.getHomeNode();
+    this.homeNodeRecord = (NodeRecord) nodeTable.getHomeNode();
     this.authTagRepo = new AuthTagRepository();
     this.scheduler = serverScheduler;
     this.discoveryServer =
-        new DiscoveryServerImpl(homeNodeRecord.getIpV4address(), homeNodeRecord.getUdpPort());
+        new DiscoveryServerImpl(
+            ((Bytes4) homeNodeRecord.get(NodeRecord.FIELD_IP_V4)),
+            (int) homeNodeRecord.get(NodeRecord.FIELD_UDP_V4));
     this.discoveryClient = new DiscoveryClientImpl(outgoingMessages, clientScheduler);
   }
 
@@ -110,7 +112,7 @@ public class DiscoveryManagerImpl implements DiscoveryManager {
             () -> String.format("Couldn't find node record for nodeId %s, ignoring", nodeId));
         return Optional.empty();
       }
-      NodeRecordV4 nodeRecord = nodeOptional.get().getNode();
+      NodeRecord nodeRecord = nodeOptional.get().getNode();
       SecureRandom random = new SecureRandom();
       context =
           new NodeContext(

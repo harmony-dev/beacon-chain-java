@@ -6,7 +6,6 @@ import org.ethereum.beacon.discovery.DiscoveryManager;
 import org.ethereum.beacon.discovery.NodeContext;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
 import org.ethereum.beacon.discovery.NodeRecordInfo;
-import org.ethereum.beacon.discovery.enr.NodeRecordV4;
 import org.ethereum.beacon.discovery.network.NetworkParcel;
 import org.ethereum.beacon.discovery.network.NetworkParcelV5;
 import org.ethereum.beacon.discovery.packet.UnknownPacket;
@@ -36,7 +35,7 @@ public class DiscoveryManagerNoNetwork implements DiscoveryManager {
   private final ReplayProcessor<NetworkParcel> outgoingMessages = ReplayProcessor.cacheLast();
   private final FluxSink<NetworkParcel> outgoingSink = outgoingMessages.sink();
   private final Bytes32 homeNodeId;
-  private final NodeRecordV4 homeNodeRecord;
+  private final NodeRecord homeNodeRecord;
   private final NodeTable nodeTable;
   private final NodeBucketStorage nodeBucketStorage;
   private Publisher<UnknownPacket> incomingPackets;
@@ -46,13 +45,13 @@ public class DiscoveryManagerNoNetwork implements DiscoveryManager {
   public DiscoveryManagerNoNetwork(
       NodeTable nodeTable,
       NodeBucketStorage nodeBucketStorage,
-      NodeRecordV4 homeNode,
+      NodeRecord homeNode,
       Publisher<UnknownPacket> incomingPackets) {
     this.nodeTable = nodeTable;
     this.nodeBucketStorage = nodeBucketStorage;
     this.incomingPackets = incomingPackets;
     this.homeNodeId = homeNode.getNodeId();
-    this.homeNodeRecord = (NodeRecordV4) nodeTable.getHomeNode();
+    this.homeNodeRecord = (NodeRecord) nodeTable.getHomeNode();
     this.authTagRepo = new AuthTagRepository();
   }
 
@@ -96,7 +95,7 @@ public class DiscoveryManagerNoNetwork implements DiscoveryManager {
             () -> String.format("Couldn't find node record for nodeId %s, ignoring", nodeId));
         return Optional.empty();
       }
-      NodeRecordV4 nodeRecord = nodeOptional.get().getNode();
+      NodeRecord nodeRecord = nodeOptional.get().getNode();
       SecureRandom random = new SecureRandom();
       context =
           new NodeContext(

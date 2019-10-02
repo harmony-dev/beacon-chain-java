@@ -2,7 +2,7 @@ package org.ethereum.beacon.discovery.packet;
 
 import org.ethereum.beacon.discovery.Functions;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
-import org.ethereum.beacon.discovery.enr.NodeRecordV4;
+import org.ethereum.beacon.discovery.enr.NodeRecordFactory;
 import org.ethereum.beacon.discovery.message.DiscoveryMessage;
 import org.ethereum.beacon.discovery.message.DiscoveryV5Message;
 import org.web3j.rlp.RlpDecoder;
@@ -40,6 +40,7 @@ import java.math.BigInteger;
  */
 public class AuthHeaderMessagePacket extends AbstractPacket {
   public static final String AUTH_SCHEME_NAME = "gcm";
+  private static final NodeRecordFactory nodeRecordFactory = NodeRecordFactory.DEFAULT;
   private static final BytesValue DISCOVERY_ID_NONCE =
       BytesValue.wrap("discovery-id-nonce".getBytes());
   private static final BytesValue ZERO_NONCE = BytesValue.wrap(new byte[12]);
@@ -122,7 +123,7 @@ public class AuthHeaderMessagePacket extends AbstractPacket {
     return decoded.idNonceSig;
   }
 
-  public NodeRecordV4 getNodeRecord() {
+  public NodeRecord getNodeRecord() {
     verifyDecode();
     return decoded.nodeRecord;
   }
@@ -165,8 +166,8 @@ public class AuthHeaderMessagePacket extends AbstractPacket {
     blank.idNonceSig =
         BytesValue.wrap(((RlpString) authResponsePtParts.getValues().get(1)).getBytes());
     blank.nodeRecord =
-        (NodeRecordV4)
-            NodeRecord.fromBytes(((RlpString) authResponsePtParts.getValues().get(2)).getBytes());
+        nodeRecordFactory.fromBytes(
+            ((RlpString) authResponsePtParts.getValues().get(2)).getBytes());
     BytesValue messageAad = blank.tag.concat(getBytes().slice(32));
     blank.message =
         new DiscoveryV5Message(
@@ -205,7 +206,7 @@ public class AuthHeaderMessagePacket extends AbstractPacket {
     private BytesValue idNonce;
     private BytesValue ephemeralPubkey;
     private BytesValue idNonceSig;
-    private NodeRecordV4 nodeRecord;
+    private NodeRecord nodeRecord;
     private DiscoveryMessage message;
   }
 }

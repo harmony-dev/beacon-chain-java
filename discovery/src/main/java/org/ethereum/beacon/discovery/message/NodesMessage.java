@@ -1,7 +1,7 @@
 package org.ethereum.beacon.discovery.message;
 
 import com.google.common.base.Objects;
-import org.ethereum.beacon.discovery.enr.NodeRecordV4;
+import org.ethereum.beacon.discovery.enr.NodeRecord;
 import org.web3j.rlp.RlpEncoder;
 import org.web3j.rlp.RlpList;
 import org.web3j.rlp.RlpString;
@@ -22,15 +22,15 @@ public class NodesMessage implements V5Message {
   // Total number of responses to the request
   private final Integer total;
   // List of nodes upon request
-  private final Supplier<List<NodeRecordV4>> nodeRecordsSupplier;
+  private final Supplier<List<NodeRecord>> nodeRecordsSupplier;
   // Size of nodes in current response
   private final Integer nodeRecordsSize;
-  private List<NodeRecordV4> nodeRecords = null;
+  private List<NodeRecord> nodeRecords = null;
 
   public NodesMessage(
       BytesValue requestId,
       Integer total,
-      Supplier<List<NodeRecordV4>> nodeRecordsSupplier,
+      Supplier<List<NodeRecord>> nodeRecordsSupplier,
       Integer nodeRecordsSize) {
     this.requestId = requestId;
     this.total = total;
@@ -47,7 +47,7 @@ public class NodesMessage implements V5Message {
     return total;
   }
 
-  public synchronized List<NodeRecordV4> getNodeRecords() {
+  public synchronized List<NodeRecord> getNodeRecords() {
     if (nodeRecords == null) {
       this.nodeRecords = nodeRecordsSupplier.get();
     }

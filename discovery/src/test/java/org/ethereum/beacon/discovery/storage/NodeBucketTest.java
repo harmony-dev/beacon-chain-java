@@ -3,14 +3,20 @@ package org.ethereum.beacon.discovery.storage;
 import org.ethereum.beacon.db.Database;
 import org.ethereum.beacon.discovery.Functions;
 import org.ethereum.beacon.discovery.NodeRecordInfo;
-import org.ethereum.beacon.discovery.enr.NodeRecordV4;
 import org.ethereum.beacon.discovery.NodeStatus;
+import org.ethereum.beacon.discovery.enr.EnrScheme;
+import org.ethereum.beacon.discovery.enr.NodeRecord;
+import org.ethereum.beacon.discovery.enr.NodeRecordFactory;
+import org.javatuples.Pair;
 import org.junit.Test;
+import tech.pegasys.artemis.util.bytes.Bytes4;
+import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Random;
 import java.util.stream.IntStream;
 
@@ -20,19 +26,28 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class NodeBucketTest {
+  private static final NodeRecordFactory NODE_RECORD_FACTORY = NodeRecordFactory.DEFAULT;
   private final Random rnd = new Random();
 
   private NodeRecordInfo generateUniqueRecord() {
     try {
       byte[] pkey = new byte[33];
       rnd.nextBytes(pkey);
-      NodeRecordV4 nodeRecord =
-          NodeRecordV4.Builder.empty()
-              .withIpV4Address(BytesValue.wrap(InetAddress.getByName("127.0.0.1").getAddress()))
-              .withSeq(UInt64.valueOf(1))
-              .withUdpPort(30303)
-              .withSecp256k1(BytesValue.wrap(pkey))
-              .build();
+      NodeRecord nodeRecord =
+          NODE_RECORD_FACTORY.createFromValues(
+              EnrScheme.V4,
+              UInt64.valueOf(1),
+              Bytes96.EMPTY,
+              new ArrayList<Pair<String, Object>>() {
+                {
+                  add(
+                      Pair.with(
+                          NodeRecord.FIELD_IP_V4,
+                          Bytes4.wrap(InetAddress.getByName("127.0.0.1").getAddress())));
+                  add(Pair.with(NodeRecord.FIELD_UDP_V4, 30303));
+                  add(Pair.with(NodeRecord.FIELD_PKEY_SECP256K1, BytesValue.wrap(pkey)));
+                }
+              });
       return new NodeRecordInfo(nodeRecord, (long) rnd.nextInt(1000), NodeStatus.ACTIVE, 0);
     } catch (UnknownHostException e) {
       throw new RuntimeException(e);

@@ -2,7 +2,7 @@ package org.ethereum.beacon.discovery;
 
 import org.ethereum.beacon.discovery.enr.EnrScheme;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
-import org.ethereum.beacon.discovery.enr.NodeRecordV4;
+import org.ethereum.beacon.discovery.enr.NodeRecordFactory;
 import org.junit.Test;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt64;
@@ -19,6 +19,7 @@ import static org.junit.Assert.assertEquals;
  * href="https://eips.ethereum.org/EIPS/eip-778">https://eips.ethereum.org/EIPS/eip-778</a>
  */
 public class NodeRecordTest {
+  private static final NodeRecordFactory NODE_RECORD_FACTORY = NodeRecordFactory.DEFAULT;
 
   @Test
   public void testLocalhostV4() throws Exception {
@@ -35,32 +36,31 @@ public class NodeRecordTest {
 
     final String localhostEnr =
         "-IS4QHCYrYZbAKWCBRlAy5zzaDZXJBGkcnh4MHcBFZntXNFrdvJjX04jRzjzCBOonrkTfj499SZuOh8R33Ls8RRcy5wBgmlkgnY0gmlwhH8AAAGJc2VjcDI1NmsxoQPKY0yuDUmstAHYpMa2_oxVtw0RW_QAdpzBQA8yWM0xOIN1ZHCCdl8";
-    NodeRecord nodeRecord = NodeRecord.fromBase64(localhostEnr);
+    NodeRecord nodeRecord = NODE_RECORD_FACTORY.fromBase64(localhostEnr);
 
     assertEquals(EnrScheme.V4, nodeRecord.getIdentityScheme());
-    NodeRecordV4 nodeRecordV4 = (NodeRecordV4) nodeRecord;
     assertArrayEquals(
         InetAddress.getByName(expectedHost).getAddress(),
-        nodeRecordV4.getIpV4address().extractArray());
-    assertEquals(expectedUdpPort, nodeRecordV4.getUdpPort());
-    assertEquals(expectedTcpPort, nodeRecordV4.getTcpPort());
-    assertEquals(expectedSeqNumber, nodeRecordV4.getSeq());
-    assertEquals(expectedPublicKey, nodeRecordV4.getPublicKey());
-    assertEquals(expectedSignature, nodeRecordV4.getSignature());
+        ((BytesValue) nodeRecord.get(NodeRecord.FIELD_IP_V4)).extractArray());
+    assertEquals(expectedUdpPort, nodeRecord.get(NodeRecord.FIELD_UDP_V4));
+    assertEquals(expectedTcpPort, nodeRecord.get(NodeRecord.FIELD_TCP_V4));
+    assertEquals(expectedSeqNumber, nodeRecord.getSeq());
+    assertEquals(expectedPublicKey, nodeRecord.get(NodeRecord.FIELD_PKEY_SECP256K1));
+    assertEquals(expectedSignature, nodeRecord.getSignature());
 
-    String localhostEnrRestored = nodeRecordV4.asBase64();
+    String localhostEnrRestored = nodeRecord.asBase64();
     // The order of fields is not strict so we don't compare strings
-    NodeRecord nodeRecordRestored = NodeRecord.fromBase64(localhostEnrRestored);
+    NodeRecord nodeRecordRestored = NODE_RECORD_FACTORY.fromBase64(localhostEnrRestored);
 
     assertEquals(EnrScheme.V4, nodeRecordRestored.getIdentityScheme());
-    NodeRecordV4 nodeRecordV4Restored = (NodeRecordV4) nodeRecordRestored;
+    NodeRecord nodeRecordV4Restored = (NodeRecord) nodeRecordRestored;
     assertArrayEquals(
         InetAddress.getByName(expectedHost).getAddress(),
-        nodeRecordV4Restored.getIpV4address().extractArray());
-    assertEquals(expectedUdpPort, nodeRecordV4Restored.getUdpPort());
-    assertEquals(expectedTcpPort, nodeRecordV4Restored.getTcpPort());
+        ((BytesValue) nodeRecordV4Restored.get(NodeRecord.FIELD_IP_V4)).extractArray());
+    assertEquals(expectedUdpPort, nodeRecordV4Restored.get(NodeRecord.FIELD_UDP_V4));
+    assertEquals(expectedTcpPort, nodeRecordV4Restored.get(NodeRecord.FIELD_TCP_V4));
     assertEquals(expectedSeqNumber, nodeRecordV4Restored.getSeq());
-    assertEquals(expectedPublicKey, nodeRecordV4Restored.getPublicKey());
+    assertEquals(expectedPublicKey, nodeRecordV4Restored.get(NodeRecord.FIELD_PKEY_SECP256K1));
     assertEquals(expectedSignature, nodeRecordV4Restored.getSignature());
   }
 }

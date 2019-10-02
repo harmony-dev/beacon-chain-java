@@ -9,11 +9,12 @@ import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.ethereum.beacon.discovery.enr.EnrScheme;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
-import org.ethereum.beacon.discovery.enr.NodeRecordV4;
 import org.ethereum.beacon.schedulers.Scheduler;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
+import tech.pegasys.artemis.util.bytes.Bytes4;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import java.net.InetAddress;
@@ -107,10 +108,10 @@ public class DiscoveryClientImpl implements DiscoveryClient {
 
   @Override
   public void send(BytesValue data, NodeRecord recipient) {
-    if (!(recipient instanceof NodeRecordV4)) {
+    if (!(recipient.getIdentityScheme().equals(EnrScheme.V4))) {
       String error =
           String.format(
-              "Accepts only V4 versions of recipient's node records. Got %s instead", recipient);
+              "Accepts only V4 version of recipient's node records. Got %s instead", recipient);
       logger.error(error);
       throw new RuntimeException(error);
     }
@@ -118,8 +119,9 @@ public class DiscoveryClientImpl implements DiscoveryClient {
     try {
       address =
           new InetSocketAddress(
-              InetAddress.getByAddress(((NodeRecordV4) recipient).getIpV4address().extractArray()),
-              ((NodeRecordV4) recipient).getUdpPort());
+              InetAddress.getByAddress(
+                  ((Bytes4) recipient.get(NodeRecord.FIELD_IP_V4)).extractArray()),
+              (int) recipient.get(NodeRecord.FIELD_UDP_V4));
     } catch (UnknownHostException e) {
       String error = String.format("Failed to resolve host for node record: %s", recipient);
       logger.error(error);

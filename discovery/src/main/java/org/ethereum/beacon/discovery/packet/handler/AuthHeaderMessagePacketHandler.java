@@ -3,6 +3,7 @@ package org.ethereum.beacon.discovery.packet.handler;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.discovery.Functions;
 import org.ethereum.beacon.discovery.NodeContext;
+import org.ethereum.beacon.discovery.enr.NodeRecord;
 import org.ethereum.beacon.discovery.packet.AuthHeaderMessagePacket;
 import org.javatuples.Triplet;
 import org.web3j.crypto.ECKeyPair;
@@ -29,7 +30,7 @@ public class AuthHeaderMessagePacketHandler implements PacketHandler<AuthHeaderM
               context.getNodeRecord().getNodeId(),
               BytesValue.wrap(ephemeralKey.getPrivateKey().toByteArray()),
               context.getIdNonce(),
-              context.getNodeRecord().getPublicKey());
+              (BytesValue) context.getNodeRecord().get(NodeRecord.FIELD_PKEY_SECP256K1));
       BytesValue initiatorKey = hkdf.getValue0();
       context.setInitiatorKey(initiatorKey);
       BytesValue authResponseKey = hkdf.getValue2();

@@ -3,6 +3,7 @@ package org.ethereum.beacon.discovery.packet.handler;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.discovery.Functions;
 import org.ethereum.beacon.discovery.NodeContext;
+import org.ethereum.beacon.discovery.enr.NodeRecord;
 import org.ethereum.beacon.discovery.message.DiscoveryV5Message;
 import org.ethereum.beacon.discovery.message.FindNodeMessage;
 import org.ethereum.beacon.discovery.message.MessageCode;
@@ -38,7 +39,7 @@ public class WhoAreYouPacketHandler implements PacketHandler<WhoAreYouPacket> {
               context.getNodeRecord().getNodeId(),
               BytesValue.wrap(ephemeralKey.getPrivateKey().toByteArray()),
               packet.getIdNonce(),
-              context.getNodeRecord().getPublicKey());
+              (BytesValue) context.getNodeRecord().get(NodeRecord.FIELD_PKEY_SECP256K1));
       BytesValue initiatorKey = hkdf.getValue0();
       BytesValue staticNodeKey = hkdf.getValue1();
       BytesValue authResponseKey = hkdf.getValue2();

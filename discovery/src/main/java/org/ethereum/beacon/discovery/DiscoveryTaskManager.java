@@ -1,6 +1,6 @@
 package org.ethereum.beacon.discovery;
 
-import org.ethereum.beacon.discovery.enr.NodeRecordV4;
+import org.ethereum.beacon.discovery.enr.NodeRecord;
 import org.ethereum.beacon.discovery.storage.NodeBucketStorage;
 import org.ethereum.beacon.discovery.storage.NodeTable;
 import org.ethereum.beacon.schedulers.Scheduler;
@@ -77,7 +77,7 @@ public class DiscoveryTaskManager {
       DiscoveryManager discoveryManager,
       NodeTable nodeTable,
       NodeBucketStorage nodeBucketStorage,
-      NodeRecordV4 homeNode,
+      NodeRecord homeNode,
       Scheduler scheduler,
       boolean resetDead) {
     this.scheduler = scheduler;
