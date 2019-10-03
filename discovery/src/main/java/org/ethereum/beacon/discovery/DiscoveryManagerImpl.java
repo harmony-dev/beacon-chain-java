@@ -9,43 +9,41 @@ import org.ethereum.beacon.discovery.network.DiscoveryClientImpl;
 import org.ethereum.beacon.discovery.network.DiscoveryServer;
 import org.ethereum.beacon.discovery.network.DiscoveryServerImpl;
 import org.ethereum.beacon.discovery.network.NetworkParcel;
-import org.ethereum.beacon.discovery.network.NetworkParcelV5;
-import org.ethereum.beacon.discovery.packet.UnknownPacket;
+import org.ethereum.beacon.discovery.pipeline.Envelope;
+import org.ethereum.beacon.discovery.pipeline.Pipeline;
+import org.ethereum.beacon.discovery.pipeline.PipelineImpl;
+import org.ethereum.beacon.discovery.pipeline.handler.IncomingDataHandler;
+import org.ethereum.beacon.discovery.pipeline.handler.NodeIdContextHandler;
+import org.ethereum.beacon.discovery.pipeline.handler.NodeToNodeIdHandler;
+import org.ethereum.beacon.discovery.pipeline.handler.OutgoingParcelHandler;
+import org.ethereum.beacon.discovery.pipeline.handler.UnknownPacketContextHandler;
+import org.ethereum.beacon.discovery.pipeline.handler.WhoAreYouContextHandler;
+import org.ethereum.beacon.discovery.pipeline.handler.WhoAreYouHandler;
 import org.ethereum.beacon.discovery.storage.AuthTagRepository;
 import org.ethereum.beacon.discovery.storage.NodeBucketStorage;
 import org.ethereum.beacon.discovery.storage.NodeTable;
 import org.ethereum.beacon.schedulers.Scheduler;
-import org.ethereum.beacon.util.ExpirationScheduler;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.ReplayProcessor;
-import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes4;
 
-import java.security.SecureRandom;
-import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
+
+import static org.ethereum.beacon.discovery.pipeline.handler.NodeToNodeIdHandler.NODE;
+import static org.ethereum.beacon.discovery.pipeline.handler.TaskHandler.FUTURE;
+import static org.ethereum.beacon.discovery.pipeline.handler.TaskHandler.PING;
+import static org.ethereum.beacon.discovery.pipeline.handler.TaskHandler.TASK;
 
 public class DiscoveryManagerImpl implements DiscoveryManager {
-  private static final int CLEANUP_DELAY_SECONDS = 180;
   private static final Logger logger = LogManager.getLogger(DiscoveryManagerImpl.class);
   private final ReplayProcessor<NetworkParcel> outgoingMessages = ReplayProcessor.cacheLast();
   private final FluxSink<NetworkParcel> outgoingSink = outgoingMessages.sink();
-  private final Bytes32 homeNodeId;
-  private final NodeRecord homeNodeRecord;
-  private final NodeTable nodeTable;
-  private final NodeBucketStorage nodeBucketStorage;
-  private final Map<Bytes32, NodeContext> recentContexts =
-      new ConcurrentHashMap<>(); // nodeId -> context
-  private final AuthTagRepository authTagRepo;
   private final DiscoveryServer discoveryServer;
   private final Scheduler scheduler;
-  private ExpirationScheduler<Bytes32> contextExpirationScheduler =
-      new ExpirationScheduler<>(CLEANUP_DELAY_SECONDS, TimeUnit.SECONDS);
+  private final Pipeline incomingPipeline = new PipelineImpl();
+  private final Pipeline outgoingPipeline = new PipelineImpl();
   private DiscoveryClient discoveryClient;
 
   public DiscoveryManagerImpl(
@@ -54,39 +52,33 @@ public class DiscoveryManagerImpl implements DiscoveryManager {
       NodeRecord homeNode,
       Scheduler serverScheduler,
       Scheduler clientScheduler) {
-    this.nodeTable = nodeTable;
-    this.nodeBucketStorage = nodeBucketStorage;
-    this.homeNodeId = homeNode.getNodeId();
-    this.homeNodeRecord = (NodeRecord) nodeTable.getHomeNode();
-    this.authTagRepo = new AuthTagRepository();
+    AuthTagRepository authTagRepo = new AuthTagRepository();
     this.scheduler = serverScheduler;
     this.discoveryServer =
         new DiscoveryServerImpl(
-            ((Bytes4) homeNodeRecord.get(NodeRecord.FIELD_IP_V4)),
-            (int) homeNodeRecord.get(NodeRecord.FIELD_UDP_V4));
+            ((Bytes4) homeNode.get(NodeRecord.FIELD_IP_V4)),
+            (int) homeNode.get(NodeRecord.FIELD_UDP_V4));
     this.discoveryClient = new DiscoveryClientImpl(outgoingMessages, clientScheduler);
+    NodeIdContextHandler nodeIdContextHandler =
+        new NodeIdContextHandler(
+            homeNode, nodeBucketStorage, authTagRepo, nodeTable, outgoingPipeline);
+    incomingPipeline
+        .addHandler(new IncomingDataHandler())
+        .addHandler(new WhoAreYouHandler(homeNode.getNodeId()))
+        .addHandler(new WhoAreYouContextHandler(authTagRepo))
+        .addHandler(new UnknownPacketContextHandler(homeNode))
+        .addHandler(nodeIdContextHandler);
+    outgoingPipeline
+        .addHandler(new OutgoingParcelHandler(outgoingSink))
+        .addHandler(new NodeToNodeIdHandler())
+        .addHandler(nodeIdContextHandler);
   }
 
   @Override
   public void start() {
-    Flux.from(discoveryServer.getIncomingPackets())
-        .map(UnknownPacket::new)
-        .subscribe(
-            unknownPacket -> {
-              if (unknownPacket.isWhoAreYouPacket(homeNodeId)) {
-                Optional<NodeContext> nodeContextOptional =
-                    authTagRepo.get(unknownPacket.getWhoAreYouPacket().getAuthTag());
-                if (nodeContextOptional.isPresent()) {
-                  nodeContextOptional.get().addIncomingEvent(unknownPacket);
-                } else {
-                  // TODO: ban or whatever
-                }
-              } else {
-                Bytes32 fromNodeId = unknownPacket.getSourceNodeId(homeNodeId);
-                getContext(fromNodeId)
-                    .ifPresent(context -> context.addIncomingEvent(unknownPacket));
-              }
-            });
+    incomingPipeline.build();
+    outgoingPipeline.build();
+    Flux.from(discoveryServer.getIncomingPackets()).subscribe(incomingPipeline::send);
     discoveryServer.start(scheduler);
   }
 
@@ -96,44 +88,13 @@ public class DiscoveryManagerImpl implements DiscoveryManager {
   }
 
   public CompletableFuture<Void> connect(NodeRecord nodeRecord) {
-    if (!nodeTable.getNode(nodeRecord.getNodeId()).isPresent()) {
-      nodeTable.save(NodeRecordInfo.createDefault(nodeRecord));
-    }
-    NodeContext context = getContext(nodeRecord.getNodeId()).get();
-    return context.initiate();
-  }
-
-  private Optional<NodeContext> getContext(Bytes32 nodeId) {
-    NodeContext context = recentContexts.get(nodeId);
-    if (context == null) {
-      Optional<NodeRecordInfo> nodeOptional = nodeTable.getNode(nodeId);
-      if (!nodeOptional.isPresent()) {
-        logger.trace(
-            () -> String.format("Couldn't find node record for nodeId %s, ignoring", nodeId));
-        return Optional.empty();
-      }
-      NodeRecord nodeRecord = nodeOptional.get().getNode();
-      SecureRandom random = new SecureRandom();
-      context =
-          new NodeContext(
-              nodeRecord,
-              homeNodeRecord,
-              nodeTable,
-              nodeBucketStorage,
-              authTagRepo,
-              packet -> outgoingSink.next(new NetworkParcelV5(packet, nodeRecord)),
-              random);
-      recentContexts.put(nodeId, context);
-    }
-
-    final NodeContext contextBackup = context;
-    contextExpirationScheduler.put(
-        context.getNodeRecord().getNodeId(),
-        () -> {
-          recentContexts.remove(contextBackup.getNodeRecord().getNodeId());
-          contextBackup.cleanup();
-        });
-    return Optional.of(context);
+    Envelope envelope = new Envelope();
+    envelope.put(TASK, PING);
+    envelope.put(NODE, nodeRecord);
+    CompletableFuture<Void> completed = new CompletableFuture<>();
+    envelope.put(FUTURE, completed);
+    outgoingPipeline.send(envelope);
+    return completed;
   }
 
   @VisibleForTesting
