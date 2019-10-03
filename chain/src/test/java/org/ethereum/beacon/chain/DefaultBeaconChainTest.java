@@ -1,5 +1,7 @@
 package org.ethereum.beacon.chain;
 
+import java.util.Collections;
+import java.util.stream.IntStream;
 import org.ethereum.beacon.chain.MutableBeaconChain.ImportResult;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.chain.storage.impl.SSZBeaconChainStorageFactory;
@@ -31,9 +33,6 @@ import org.junit.Assert;
 import org.junit.Test;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
-
-import java.util.Collections;
-import java.util.stream.IntStream;
 
 public class DefaultBeaconChainTest {
 

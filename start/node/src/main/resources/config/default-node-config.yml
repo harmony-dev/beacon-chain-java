@@ -1,7 +1,16 @@
 config:
   db: db
   networks:
-    - type: netty
+    # Libp2p based network conforming to spec
+    - type: libp2p
+      # TCP port the node should listen for incoming connections
+#      listenPort: 40001
+      privateKey: f67c4032a7ff79bbfa7a780331b235c4eb681d51a0704cb1562064fb6c4bced4
+
+  debug:
+    logWireCipher: false
+    logMuxFrames:  true
+    logEthPubsub:  true
 
   validator:
     contract: !emulator
@@ -38,9 +47,9 @@ chainSpec:
       EPOCHS_PER_SLASHINGS_VECTOR: 64
 
   specHelpersOptions:
-    blsVerify: false
-    blsVerifyProofOfPossession: false
-    blsSign: false
+    blsVerify: true
+    blsVerifyProofOfPossession: true
+    blsSign: true
     enableCache: false
     # for interop, genesis time should be overridden with the specified value, so ignore computation
     computableGenesisTime: false

@@ -8,12 +8,13 @@ import java.util.ArrayList;
 import java.util.List;
 import net.consensys.cava.bytes.Bytes;
 import org.ethereum.beacon.ssz.access.SSZCompositeAccessor.CompositeInstanceBuilder;
+import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import org.ethereum.beacon.ssz.type.SSZBasicType;
 import org.ethereum.beacon.ssz.type.SSZCompositeType;
 import org.ethereum.beacon.ssz.type.SSZContainerType;
-import org.ethereum.beacon.ssz.type.list.SSZListType;
 import org.ethereum.beacon.ssz.type.SSZType;
 import org.ethereum.beacon.ssz.type.SSZUnionType;
+import org.ethereum.beacon.ssz.type.list.SSZListType;
 import org.javatuples.Pair;
 
 /**
@@ -49,6 +50,26 @@ public class SosDeserializer implements SSZVisitor<Object, Bytes> {
       instanceBuilder.setChild(typeIndex, decodeResult);
     }
     return instanceBuilder.build();
+  }
+
+  @Override
+  public Object visitContainer(SSZContainerType type, Bytes param,
+      ChildVisitor<Bytes, Object> childVisitor) {
+    SSZSerializable annotation = type.getTypeDescriptor().getRawClass()
+        .getAnnotation(SSZSerializable.class);
+    if (annotation != null && annotation.skipContainer()) {
+      if (type.getChildTypes().size() != 1) {
+        throw new IllegalArgumentException(
+            "Only container with a single child can be skipped: " + type);
+      }
+      CompositeInstanceBuilder instanceBuilder =
+          type.getAccessor().createInstanceBuilder(type);
+      Object child = childVisitor.apply(0, param);
+      instanceBuilder.setChild(0, child);
+      return instanceBuilder.build();
+    } else {
+      return visitComposite(type, param, childVisitor);
+    }
   }
 
   /**

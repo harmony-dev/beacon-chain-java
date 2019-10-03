@@ -56,4 +56,11 @@ public @interface SSZSerializable {
    * Specifies custom container accessor for SSZ serializable class
    */
   Class<? extends SSZContainerAccessor> containerAccessor() default VoidContainerAccessor.class;
+
+  /**
+   * Applicable to SSZ Containers with a single child only
+   * When set to true the wrapping container is not serialized, and its child
+   * is serialized the same way as if it was serialized directly
+   */
+  boolean skipContainer() default false;
 }

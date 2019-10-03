@@ -151,7 +151,8 @@ public class SimulatorLauncher implements Runnable {
     localWireHub = new LocalWireHub(s -> wire.trace(s), controlledSchedulers.createNew("wire"));
     ChainStart chainStart =
         new ChainStart(genesisTime, eth1Data, deposits);
-    depositContract = new SimpleDepositContract(chainStart);
+    depositContract =
+        new SimpleDepositContract(chainStart, controlledSchedulers.createNew("chainStart"));
   }
 
   public Launcher createPeer(String name) {

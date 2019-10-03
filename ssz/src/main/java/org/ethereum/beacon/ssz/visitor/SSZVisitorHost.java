@@ -8,9 +8,9 @@ import static org.ethereum.beacon.ssz.type.SSZType.Type.VECTOR;
 
 import org.ethereum.beacon.ssz.type.SSZBasicType;
 import org.ethereum.beacon.ssz.type.SSZContainerType;
-import org.ethereum.beacon.ssz.type.list.SSZListType;
 import org.ethereum.beacon.ssz.type.SSZType;
 import org.ethereum.beacon.ssz.type.SSZUnionType;
+import org.ethereum.beacon.ssz.type.list.SSZListType;
 
 public class SSZVisitorHost {
 
@@ -29,7 +29,7 @@ public class SSZVisitorHost {
           handleAny(unionType.getChildTypes().get(idx), param, visitor));
     } else if (type.getType() == CONTAINER) {
       SSZContainerType containerType = (SSZContainerType) type;
-      return visitor.visitComposite(containerType, value, (idx, param) ->
+      return visitor.visitContainer(containerType, value, (idx, param) ->
           handleAny(containerType.getChildTypes().get(idx), param, visitor));
     } else {
       throw new IllegalArgumentException("Unknown type: " + type);

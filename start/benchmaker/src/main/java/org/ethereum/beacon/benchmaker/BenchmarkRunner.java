@@ -98,7 +98,8 @@ public class BenchmarkRunner implements Runnable {
         new LocalWireHub(s -> {}, controlledSchedulers.createNew("wire"));
     ChainStart chainStart =
         new ChainStart(genesisTime, eth1Data, deposits);
-    DepositContract depositContract = new SimpleDepositContract(chainStart);
+    DepositContract depositContract =
+        new SimpleDepositContract(chainStart, controlledSchedulers.createNew("chainStart"));
 
     logger.info("Bootstrapping validators ...");
 

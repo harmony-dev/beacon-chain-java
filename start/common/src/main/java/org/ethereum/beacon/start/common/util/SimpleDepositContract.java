@@ -1,26 +1,45 @@
 package org.ethereum.beacon.start.common.util;
 
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.consensus.ChainStart;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.pow.DepositContract;
+import org.ethereum.beacon.schedulers.Schedulers;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Mono;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
 public class SimpleDepositContract implements DepositContract {
-  private final ChainStart chainStart;
 
-  public SimpleDepositContract(ChainStart chainStart) {
+  private final Logger logger = LogManager.getLogger();
+
+  private final ChainStart chainStart;
+  private final Schedulers schedulers;
+
+  public SimpleDepositContract(ChainStart chainStart, Schedulers schedulers) {
     this.chainStart = chainStart;
+    this.schedulers = schedulers;
   }
 
   @Override
   public Publisher<ChainStart> getChainStartMono() {
-    return Mono.just(chainStart);
+    long delay = chainStart.getTime().getMillis().getValue() - schedulers.getCurrentTime();
+    if (delay > 0) {
+      logger.info(
+          "Genesis time {} is in the future, delaying start by {}s",
+          chainStart.getTime().getValue(),
+          delay / 1000);
+      return Mono.delay(Duration.ofMillis(delay), schedulers.events().toReactor())
+          .map(d -> chainStart);
+    } else {
+      return Mono.just(chainStart);
+    }
   }
 
   @Override

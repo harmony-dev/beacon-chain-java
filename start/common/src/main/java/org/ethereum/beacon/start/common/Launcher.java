@@ -1,5 +1,6 @@
 package org.ethereum.beacon.start.common;
 
+import java.util.List;
 import org.ethereum.beacon.bench.BenchmarkController;
 import org.ethereum.beacon.bench.BenchmarkController.BenchmarkRoutine;
 import org.ethereum.beacon.chain.DefaultBeaconChain;
@@ -11,6 +12,7 @@ import org.ethereum.beacon.chain.observer.ObservableStateProcessor;
 import org.ethereum.beacon.chain.observer.ObservableStateProcessorImpl;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.chain.storage.BeaconChainStorageFactory;
+import org.ethereum.beacon.chain.storage.util.StorageUtils;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.ChainStart;
@@ -29,7 +31,6 @@ import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.db.InMemoryDatabase;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.schedulers.Schedulers;
-import org.ethereum.beacon.chain.storage.util.StorageUtils;
 import org.ethereum.beacon.util.stats.MeasurementsCollector;
 import org.ethereum.beacon.validator.BeaconChainProposer;
 import org.ethereum.beacon.validator.attester.BeaconChainAttesterImpl;
@@ -40,8 +41,6 @@ import org.ethereum.beacon.wire.WireApiSub;
 import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import java.util.List;
 
 public class Launcher {
   private final BeaconChainSpec spec;
