@@ -13,9 +13,11 @@ import org.ethereum.beacon.discovery.pipeline.Envelope;
 import org.ethereum.beacon.discovery.pipeline.Pipeline;
 import org.ethereum.beacon.discovery.pipeline.PipelineImpl;
 import org.ethereum.beacon.discovery.pipeline.handler.IncomingDataHandler;
+import org.ethereum.beacon.discovery.pipeline.handler.IncomingPacketContextHandler;
+import org.ethereum.beacon.discovery.pipeline.handler.NodeContextRequestHandler;
 import org.ethereum.beacon.discovery.pipeline.handler.NodeIdContextHandler;
-import org.ethereum.beacon.discovery.pipeline.handler.NodeToNodeIdHandler;
 import org.ethereum.beacon.discovery.pipeline.handler.OutgoingParcelHandler;
+import org.ethereum.beacon.discovery.pipeline.handler.TaskHandler;
 import org.ethereum.beacon.discovery.pipeline.handler.UnknownPacketContextHandler;
 import org.ethereum.beacon.discovery.pipeline.handler.WhoAreYouContextHandler;
 import org.ethereum.beacon.discovery.pipeline.handler.WhoAreYouHandler;
@@ -31,7 +33,7 @@ import tech.pegasys.artemis.util.bytes.Bytes4;
 
 import java.util.concurrent.CompletableFuture;
 
-import static org.ethereum.beacon.discovery.pipeline.handler.NodeToNodeIdHandler.NODE;
+import static org.ethereum.beacon.discovery.pipeline.handler.NodeContextRequestHandler.NODE;
 import static org.ethereum.beacon.discovery.pipeline.handler.TaskHandler.FUTURE;
 import static org.ethereum.beacon.discovery.pipeline.handler.TaskHandler.PING;
 import static org.ethereum.beacon.discovery.pipeline.handler.TaskHandler.TASK;
@@ -67,11 +69,13 @@ public class DiscoveryManagerImpl implements DiscoveryManager {
         .addHandler(new WhoAreYouHandler(homeNode.getNodeId()))
         .addHandler(new WhoAreYouContextHandler(authTagRepo))
         .addHandler(new UnknownPacketContextHandler(homeNode))
-        .addHandler(nodeIdContextHandler);
+        .addHandler(nodeIdContextHandler)
+        .addHandler(new IncomingPacketContextHandler());
     outgoingPipeline
         .addHandler(new OutgoingParcelHandler(outgoingSink))
-        .addHandler(new NodeToNodeIdHandler())
-        .addHandler(nodeIdContextHandler);
+        .addHandler(new NodeContextRequestHandler())
+        .addHandler(nodeIdContextHandler)
+        .addHandler(new TaskHandler());
   }
 
   @Override

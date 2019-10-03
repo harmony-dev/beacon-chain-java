@@ -1,6 +1,7 @@
 package org.ethereum.beacon.discovery.pipeline;
 
 import org.reactivestreams.Publisher;
+import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.ReplayProcessor;
@@ -15,6 +16,7 @@ public class PipelineImpl implements Pipeline {
   private final AtomicBoolean started = new AtomicBoolean(false);
   private Flux<Envelope> pipeline = ReplayProcessor.cacheLast();
   private final FluxSink<Envelope> pipelineSink = ((ReplayProcessor<Envelope>) pipeline).sink();
+  private Disposable subscription;
 
   @Override
   public synchronized Pipeline build() {
@@ -22,6 +24,7 @@ public class PipelineImpl implements Pipeline {
     for (EnvelopeHandler handler : envelopeHandlers) {
       pipeline = pipeline.doOnNext(handler::handle);
     }
+    this.subscription = Flux.from(pipeline).subscribe();
     return this;
   }
 
@@ -30,9 +33,13 @@ public class PipelineImpl implements Pipeline {
     if (!started.get()) {
       throw new RuntimeException("You should build pipeline first");
     }
-    Envelope envelope = new Envelope();
-    envelope.put(INCOMING, object);
-    pipelineSink.next(envelope);
+    if (!(object instanceof Envelope)) {
+      Envelope envelope = new Envelope();
+      envelope.put(INCOMING, object);
+      pipelineSink.next(envelope);
+    } else {
+      pipelineSink.next((Envelope) object);
+    }
   }
 
   @Override

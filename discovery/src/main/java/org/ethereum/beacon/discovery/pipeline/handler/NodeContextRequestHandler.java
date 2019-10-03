@@ -5,10 +5,9 @@ import org.ethereum.beacon.discovery.pipeline.Envelope;
 import org.ethereum.beacon.discovery.pipeline.EnvelopeHandler;
 import org.javatuples.Pair;
 
-import static org.ethereum.beacon.discovery.pipeline.PipelineImpl.INCOMING;
 import static org.ethereum.beacon.discovery.pipeline.handler.NodeIdContextHandler.NEED_CONTEXT;
 
-public class NodeToNodeIdHandler implements EnvelopeHandler {
+public class NodeContextRequestHandler implements EnvelopeHandler {
 
   public static final String NODE = "node";
 
