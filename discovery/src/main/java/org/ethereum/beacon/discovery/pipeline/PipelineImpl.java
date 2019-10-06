@@ -10,8 +10,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static org.ethereum.beacon.discovery.pipeline.Field.INCOMING;
+
 public class PipelineImpl implements Pipeline {
-  public static final String INCOMING = "raw";
   private final List<EnvelopeHandler> envelopeHandlers = new ArrayList<>();
   private final AtomicBoolean started = new AtomicBoolean(false);
   private Flux<Envelope> pipeline = ReplayProcessor.cacheLast();
@@ -29,7 +30,7 @@ public class PipelineImpl implements Pipeline {
   }
 
   @Override
-  public void send(Object object) {
+  public void push(Object object) {
     if (!started.get()) {
       throw new RuntimeException("You should build pipeline first");
     }

@@ -6,6 +6,7 @@ import org.web3j.rlp.RlpList;
 import org.web3j.rlp.RlpString;
 import tech.pegasys.artemis.util.bytes.Bytes1;
 import tech.pegasys.artemis.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.uint.UInt64;
 
 /**
  * PING checks whether the recipient is alive and informs it about the sender's ENR sequence number.
@@ -14,9 +15,9 @@ public class PingMessage implements V5Message {
   // Unique request id
   private final BytesValue requestId;
   // Local ENR sequence number of sender
-  private final Long enrSeq;
+  private final UInt64 enrSeq;
 
-  public PingMessage(BytesValue requestId, Long enrSeq) {
+  public PingMessage(BytesValue requestId, UInt64 enrSeq) {
     this.requestId = requestId;
     this.enrSeq = enrSeq;
   }
@@ -26,7 +27,7 @@ public class PingMessage implements V5Message {
     return requestId;
   }
 
-  public Long getEnrSeq() {
+  public UInt64 getEnrSeq() {
     return enrSeq;
   }
 
@@ -37,7 +38,7 @@ public class PingMessage implements V5Message {
             BytesValue.wrap(
                 RlpEncoder.encode(
                     new RlpList(
-                        RlpString.create(requestId.extractArray()), RlpString.create(enrSeq)))));
+                        RlpString.create(requestId.extractArray()), RlpString.create(enrSeq.toBI())))));
   }
 
   @Override

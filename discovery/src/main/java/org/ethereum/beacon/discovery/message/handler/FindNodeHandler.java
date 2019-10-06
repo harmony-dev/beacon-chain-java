@@ -27,7 +27,7 @@ public class FindNodeHandler implements MessageHandler<FindNodeMessage> {
             .collect(Collectors.toList());
     nodeBuckets.forEach(
         bucket ->
-            context.addOutgoingEvent(
+            context.sendOutgoing(
                 MessagePacket.create(
                     context.getHomeNodeId(),
                     context.getNodeRecord().getNodeId(),

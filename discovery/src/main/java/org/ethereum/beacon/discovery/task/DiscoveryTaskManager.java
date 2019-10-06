@@ -1,5 +1,8 @@
-package org.ethereum.beacon.discovery;
+package org.ethereum.beacon.discovery.task;
 
+import org.ethereum.beacon.discovery.DiscoveryManager;
+import org.ethereum.beacon.discovery.NodeRecordInfo;
+import org.ethereum.beacon.discovery.NodeStatus;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
 import org.ethereum.beacon.discovery.storage.NodeBucketStorage;
 import org.ethereum.beacon.discovery.storage.NodeTable;
@@ -11,18 +14,22 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-import static org.ethereum.beacon.discovery.NodeContext.DEFAULT_DISTANCE;
+import static org.ethereum.beacon.discovery.task.TaskMessageFactory.DEFAULT_DISTANCE;
 
 /** Manages recurrent node check task(s) */
 public class DiscoveryTaskManager {
+  private static final int LIVE_CHECK_DISTANCE = DEFAULT_DISTANCE;
+  private static final int RECURSIVE_LOOKUP_DISTANCE = DEFAULT_DISTANCE;
   private static final int MS_IN_SECOND = 1000;
   private static final int STATUS_EXPIRATION_SECONDS = 600;
-  private static final int TASK_INTERVAL_SECONDS = 10;
+  private static final int LIVE_CHECK_INTERVAL_SECONDS = 1;
+  private static final int RECURSIVE_LOOKUP_INTERVAL_SECONDS = 10;
   private static final int RETRY_TIMEOUT_SECONDS = 60;
   private static final int MAX_RETRIES = 10;
   private final Scheduler scheduler;
   private final Bytes32 homeNodeId;
-  private final NodeConnectTasks nodeConnectTasks;
+  private final LiveCheckTasks liveCheckTasks;
+  private final RecursiveLookupTasks recursiveLookupTasks;
   private final NodeTable nodeTable;
   private final NodeBucketStorage nodeBucketStorage;
   /**
@@ -40,7 +47,7 @@ public class DiscoveryTaskManager {
    *
    * <p>In all other cases method returns true, meaning node is ready for ping check
    */
-  private final Predicate<NodeRecordInfo> READY_FOR_PING =
+  private final Predicate<NodeRecordInfo> LIVE_CHECK_NODE_RULE =
       nodeRecord -> {
         long currentTime = System.currentTimeMillis() / MS_IN_SECOND;
         if (nodeRecord.getStatus() == NodeStatus.ACTIVE
@@ -59,6 +66,27 @@ public class DiscoveryTaskManager {
         }
 
         return true;
+      };
+
+  /**
+   * Checks whether {@link org.ethereum.beacon.discovery.enr.NodeRecord} is ready for FINDNODE query
+   * which expands the list of all known nodes.
+   *
+   * <p>Node is eligible if
+   *
+   * <ul>
+   *   <li>Node is ACTIVE and last connection retry was not too much time ago
+   * </ul>
+   */
+  private final Predicate<NodeRecordInfo> RECURSIVE_LOOKUP_NODE_RULE =
+      nodeRecord -> {
+        long currentTime = System.currentTimeMillis() / MS_IN_SECOND;
+        if (nodeRecord.getStatus() == NodeStatus.ACTIVE
+            && nodeRecord.getLastRetry() > currentTime - STATUS_EXPIRATION_SECONDS) {
+          return true;
+        }
+
+        return false;
       };
 
   private boolean resetDead = false;
@@ -84,19 +112,25 @@ public class DiscoveryTaskManager {
     this.nodeTable = nodeTable;
     this.nodeBucketStorage = nodeBucketStorage;
     this.homeNodeId = homeNode.getNodeId();
-    this.nodeConnectTasks =
-        new NodeConnectTasks(
+    this.liveCheckTasks =
+        new LiveCheckTasks(discoveryManager, scheduler, Duration.ofSeconds(RETRY_TIMEOUT_SECONDS));
+    this.recursiveLookupTasks =
+        new RecursiveLookupTasks(
             discoveryManager, scheduler, Duration.ofSeconds(RETRY_TIMEOUT_SECONDS));
     this.resetDead = resetDead;
   }
 
   public void start() {
     scheduler.executeAtFixedRate(
-        Duration.ZERO, Duration.ofSeconds(TASK_INTERVAL_SECONDS), this::recurrentTask);
+        Duration.ZERO, Duration.ofSeconds(LIVE_CHECK_INTERVAL_SECONDS), this::liveCheckTask);
+    scheduler.executeAtFixedRate(
+        Duration.ZERO,
+        Duration.ofSeconds(RECURSIVE_LOOKUP_INTERVAL_SECONDS),
+        this::recursiveLookupTask);
   }
 
-  private void recurrentTask() {
-    List<NodeRecordInfo> nodes = nodeTable.findClosestNodes(homeNodeId, DEFAULT_DISTANCE);
+  private void liveCheckTask() {
+    List<NodeRecordInfo> nodes = nodeTable.findClosestNodes(homeNodeId, LIVE_CHECK_DISTANCE);
     Stream<NodeRecordInfo> closestNodes = nodes.stream();
     if (resetDead) {
       closestNodes =
@@ -110,10 +144,10 @@ public class DiscoveryTaskManager {
       resetDead = false;
     }
     closestNodes
-        .filter(READY_FOR_PING)
+        .filter(LIVE_CHECK_NODE_RULE)
         .forEach(
             nodeRecord ->
-                nodeConnectTasks.add(
+                liveCheckTasks.add(
                     nodeRecord,
                     () ->
                         updateNode(
@@ -122,6 +156,24 @@ public class DiscoveryTaskManager {
                                 System.currentTimeMillis() / MS_IN_SECOND,
                                 NodeStatus.ACTIVE,
                                 0)),
+                    () ->
+                        updateNode(
+                            new NodeRecordInfo(
+                                nodeRecord.getNode(),
+                                System.currentTimeMillis() / MS_IN_SECOND,
+                                NodeStatus.SLEEP,
+                                (nodeRecord.getRetry() + 1)))));
+  }
+
+  private void recursiveLookupTask() {
+    List<NodeRecordInfo> nodes = nodeTable.findClosestNodes(homeNodeId, RECURSIVE_LOOKUP_DISTANCE);
+    nodes.stream()
+        .filter(RECURSIVE_LOOKUP_NODE_RULE)
+        .forEach(
+            nodeRecord ->
+                liveCheckTasks.add(
+                    nodeRecord,
+                    () -> {},
                     () ->
                         updateNode(
                             new NodeRecordInfo(

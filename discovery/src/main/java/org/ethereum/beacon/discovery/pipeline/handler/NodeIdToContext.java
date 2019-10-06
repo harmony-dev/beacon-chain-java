@@ -6,9 +6,9 @@ import org.ethereum.beacon.discovery.NodeContext;
 import org.ethereum.beacon.discovery.NodeRecordInfo;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
 import org.ethereum.beacon.discovery.network.NetworkParcelV5;
-import org.ethereum.beacon.discovery.packet.UnknownPacket;
 import org.ethereum.beacon.discovery.pipeline.Envelope;
 import org.ethereum.beacon.discovery.pipeline.EnvelopeHandler;
+import org.ethereum.beacon.discovery.pipeline.Field;
 import org.ethereum.beacon.discovery.pipeline.Pipeline;
 import org.ethereum.beacon.discovery.storage.AuthTagRepository;
 import org.ethereum.beacon.discovery.storage.NodeBucketStorage;
@@ -23,25 +23,29 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-import static org.ethereum.beacon.discovery.pipeline.handler.IncomingDataHandler.UNKNOWN;
-import static org.ethereum.beacon.discovery.pipeline.handler.WhoAreYouContextHandler.BAD_PACKET;
-import static org.ethereum.beacon.discovery.pipeline.handler.WhoAreYouContextHandler.CONTEXT;
-
-public class NodeIdContextHandler implements EnvelopeHandler {
+/**
+ * Performs {@link Field#NEED_CONTEXT} request. Looks up for Node context based on NodeId, which
+ * should be in request field and stores it in {@link Field#CONTEXT} field.
+ */
+public class NodeIdToContext implements EnvelopeHandler {
   private static final int CLEANUP_DELAY_SECONDS = 180;
-  private static final Logger logger = LogManager.getLogger(NodeIdContextHandler.class);
-  public static final String NEED_CONTEXT = "NEED_CONTEXT";
+  private static final Logger logger = LogManager.getLogger(NodeIdToContext.class);
   private final NodeRecord homeNodeRecord;
   private final NodeBucketStorage nodeBucketStorage;
   private final AuthTagRepository authTagRepo;
   private final Map<Bytes32, NodeContext> recentContexts =
       new ConcurrentHashMap<>(); // nodeId -> context
   private final NodeTable nodeTable;
+  private final Pipeline outgoingPipeline;
   private ExpirationScheduler<Bytes32> contextExpirationScheduler =
       new ExpirationScheduler<>(CLEANUP_DELAY_SECONDS, TimeUnit.SECONDS);
-  private final Pipeline outgoingPipeline;
 
-  public NodeIdContextHandler(NodeRecord homeNodeRecord, NodeBucketStorage nodeBucketStorage, AuthTagRepository authTagRepo, NodeTable nodeTable, Pipeline outgoingPipeline) {
+  public NodeIdToContext(
+      NodeRecord homeNodeRecord,
+      NodeBucketStorage nodeBucketStorage,
+      AuthTagRepository authTagRepo,
+      NodeTable nodeTable,
+      Pipeline outgoingPipeline) {
     this.homeNodeRecord = homeNodeRecord;
     this.nodeBucketStorage = nodeBucketStorage;
     this.authTagRepo = authTagRepo;
@@ -51,19 +55,24 @@ public class NodeIdContextHandler implements EnvelopeHandler {
 
   @Override
   public void handle(Envelope envelope) {
-    if (!envelope.contains(NEED_CONTEXT)) {
+    if (!envelope.contains(Field.NEED_CONTEXT)) {
       return;
     }
-    Pair<Bytes32, Runnable> contextRequest = (Pair<Bytes32, Runnable>) envelope.get(NEED_CONTEXT);
-    envelope.remove(NEED_CONTEXT);
+    Pair<Bytes32, Runnable> contextRequest =
+        (Pair<Bytes32, Runnable>) envelope.get(Field.NEED_CONTEXT);
+    envelope.remove(Field.NEED_CONTEXT);
     Optional<NodeContext> nodeContextOptional = getContext(contextRequest.getValue0());
     if (nodeContextOptional.isPresent()) {
-      envelope.put(CONTEXT, nodeContextOptional.get());
+      envelope.put(Field.CONTEXT, nodeContextOptional.get());
+      logger.trace(
+          () ->
+              String.format(
+                  "Context resolved: %s in envelope #%s",
+                  nodeContextOptional.get(), envelope.getId()));
     } else {
       contextRequest.getValue1().run();
     }
   }
-
 
   private Optional<NodeContext> getContext(Bytes32 nodeId) {
     NodeContext context = recentContexts.get(nodeId);
@@ -83,7 +92,7 @@ public class NodeIdContextHandler implements EnvelopeHandler {
               nodeTable,
               nodeBucketStorage,
               authTagRepo,
-              packet -> outgoingPipeline.send(new NetworkParcelV5(packet, nodeRecord)),
+              packet -> outgoingPipeline.push(new NetworkParcelV5(packet, nodeRecord)),
               random);
       recentContexts.put(nodeId, context);
     }

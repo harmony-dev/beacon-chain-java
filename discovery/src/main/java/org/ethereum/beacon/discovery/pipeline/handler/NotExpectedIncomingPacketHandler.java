@@ -1,5 +1,6 @@
-package org.ethereum.beacon.discovery.packet.handler;
+package org.ethereum.beacon.discovery.pipeline.handler;
 
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.discovery.Functions;
 import org.ethereum.beacon.discovery.NodeContext;
@@ -7,32 +8,38 @@ import org.ethereum.beacon.discovery.packet.MessagePacket;
 import org.ethereum.beacon.discovery.packet.RandomPacket;
 import org.ethereum.beacon.discovery.packet.UnknownPacket;
 import org.ethereum.beacon.discovery.packet.WhoAreYouPacket;
+import org.ethereum.beacon.discovery.pipeline.Envelope;
+import org.ethereum.beacon.discovery.pipeline.EnvelopeHandler;
+import org.ethereum.beacon.discovery.pipeline.Field;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
-public class UnknownPacketHandler implements PacketHandler<UnknownPacket> {
-  private final NodeContext context;
-  private final Logger logger;
-
-  public UnknownPacketHandler(NodeContext context, Logger logger) {
-    this.context = context;
-    this.logger = logger;
-  }
+/** Handles {@link UnknownPacket} from node, which is not on any stage of the handshake with us */
+public class NotExpectedIncomingPacketHandler implements EnvelopeHandler {
+  private static final Logger logger = LogManager.getLogger(NotExpectedIncomingPacketHandler.class);
 
   @Override
-  public boolean handle(UnknownPacket packet) {
+  public void handle(Envelope envelope) {
+    if (!envelope.contains(Field.PACKET_UNKNOWN)) {
+      return;
+    }
+    if (!envelope.contains(Field.CONTEXT)) {
+      return;
+    }
+    UnknownPacket unknownPacket = (UnknownPacket) envelope.get(Field.PACKET_UNKNOWN);
+    NodeContext context = (NodeContext) envelope.get(Field.CONTEXT);
     try {
       // packet it either random or message packet if session is expired
       BytesValue authTag = null;
       try {
-        RandomPacket randomPacket = packet.getRandomPacket();
+        RandomPacket randomPacket = unknownPacket.getRandomPacket();
         authTag = randomPacket.getAuthTag();
       } catch (Exception ex) {
         // Not fatal, 1st attempt
       }
       // 2nd attempt
       if (authTag == null) {
-        MessagePacket messagePacket = packet.getMessagePacket();
+        MessagePacket messagePacket = unknownPacket.getMessagePacket();
         authTag = messagePacket.getAuthTag();
       }
       context.setAuthTag(authTag);
@@ -46,20 +53,23 @@ public class UnknownPacketHandler implements PacketHandler<UnknownPacket> {
               authTag,
               idNonce,
               context.getNodeRecord().getSeq());
-      context.addOutgoingEvent(whoAreYouPacket);
+      context.sendOutgoing(whoAreYouPacket);
     } catch (AssertionError ex) {
       logger.info(
           String.format(
               "Verification not passed for message [%s] from node %s in status %s",
-              packet, context.getNodeRecord(), context.getStatus()));
+              unknownPacket, context.getNodeRecord(), context.getStatus()));
     } catch (Exception ex) {
       String error =
           String.format(
               "Failed to read message [%s] from node %s in status %s",
-              packet, context.getNodeRecord(), context.getStatus());
+              unknownPacket, context.getNodeRecord(), context.getStatus());
       logger.error(error, ex);
-      return false;
+      envelope.put(Field.BAD_PACKET, envelope.get(Field.PACKET_UNKNOWN));
+      envelope.remove(Field.PACKET_UNKNOWN);
+      return;
     }
-    return true;
+    context.setStatus(NodeContext.SessionStatus.WHOAREYOU_SENT);
+    envelope.remove(Field.PACKET_UNKNOWN);
   }
 }

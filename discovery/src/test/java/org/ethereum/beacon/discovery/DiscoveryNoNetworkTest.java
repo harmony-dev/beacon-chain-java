@@ -17,6 +17,7 @@ import org.ethereum.beacon.discovery.packet.WhoAreYouPacket;
 import org.ethereum.beacon.discovery.storage.NodeBucketStorage;
 import org.ethereum.beacon.discovery.storage.NodeTableStorage;
 import org.ethereum.beacon.discovery.storage.NodeTableStorageFactoryImpl;
+import org.ethereum.beacon.discovery.task.TaskType;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.stream.SimpleProcessor;
 import org.javatuples.Pair;
@@ -32,8 +33,8 @@ import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import static org.ethereum.beacon.discovery.NodeContext.DEFAULT_DISTANCE;
 import static org.ethereum.beacon.discovery.storage.NodeTableStorage.DEFAULT_SERIALIZER;
+import static org.ethereum.beacon.discovery.task.TaskMessageFactory.DEFAULT_DISTANCE;
 
 /**
  * Discovery test without real network, instead outgoing stream of each peer is connected with
@@ -114,10 +115,10 @@ public class DiscoveryNoNetworkTest {
     NodeBucketStorage nodeBucketStorage2 =
         nodeTableStorageFactory.createBuckets(
             database2, DEFAULT_SERIALIZER, nodeRecord2.getNodeId());
-    SimpleProcessor<UnknownPacket> from1to2 =
+    SimpleProcessor<BytesValue> from1to2 =
         new SimpleProcessor<>(
             Schedulers.createDefault().newSingleThreadDaemon("from1to2-thread"), "from1to2");
-    SimpleProcessor<UnknownPacket> from2to1 =
+    SimpleProcessor<BytesValue> from2to1 =
         new SimpleProcessor<>(
             Schedulers.createDefault().newSingleThreadDaemon("from2to1-thread"), "from2to1");
     DiscoveryManagerNoNetwork discoveryManager1 =
@@ -131,9 +132,9 @@ public class DiscoveryNoNetworkTest {
     discoveryManager2.start();
     // 2) Link outgoing of each one with incoming of another
     Flux.from(discoveryManager1.getOutgoingMessages())
-        .subscribe(t -> from1to2.onNext(new UnknownPacket(t.getPacket().getBytes())));
+        .subscribe(t -> from1to2.onNext(t.getPacket().getBytes()));
     Flux.from(discoveryManager2.getOutgoingMessages())
-        .subscribe(t -> from2to1.onNext(new UnknownPacket(t.getPacket().getBytes())));
+        .subscribe(t -> from2to1.onNext(t.getPacket().getBytes()));
 
     // 3) Expect standard 1 => 2 dialog
     CountDownLatch randomSent1to2 = new CountDownLatch(1);
@@ -142,6 +143,7 @@ public class DiscoveryNoNetworkTest {
     CountDownLatch findNodeSent2to1 = new CountDownLatch(1);
     CountDownLatch nodesSent1to2 = new CountDownLatch(1);
     Flux.from(from1to2)
+        .map(UnknownPacket::new)
         .subscribe(
             networkPacket -> {
               // 1 -> 2 random
@@ -170,6 +172,7 @@ public class DiscoveryNoNetworkTest {
               }
             });
     Flux.from(from2to1)
+        .map(UnknownPacket::new)
         .subscribe(
             networkPacket -> {
               // 2 -> 1 whoareyou
@@ -191,7 +194,7 @@ public class DiscoveryNoNetworkTest {
             });
 
     // 4) fire 1 to 2 dialog
-    discoveryManager1.connect(nodeRecord2);
+    discoveryManager1.executeTask(nodeRecord2, TaskType.FINDNODE);
 
     assert randomSent1to2.await(1, TimeUnit.SECONDS);
     assert whoareyouSent2to1.await(1, TimeUnit.SECONDS);

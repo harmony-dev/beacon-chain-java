@@ -17,7 +17,7 @@ public class PingHandler implements MessageHandler<PingMessage> {
             context.getNodeRecord().getSeq(),
             ((Bytes4) context.getNodeRecord().get(NodeRecord.FIELD_IP_V4)),
             (int) context.getNodeRecord().get(NodeRecord.FIELD_UDP_V4));
-    context.addOutgoingEvent(
+    context.sendOutgoing(
         MessagePacket.create(
             context.getHomeNodeId(),
             context.getNodeRecord().getNodeId(),

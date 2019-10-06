@@ -1,7 +1,8 @@
-package org.ethereum.beacon.discovery;
+package org.ethereum.beacon.discovery.task;
 
 import com.google.common.collect.Sets;
-import org.ethereum.beacon.discovery.enr.NodeRecord;
+import org.ethereum.beacon.discovery.DiscoveryManager;
+import org.ethereum.beacon.discovery.NodeRecordInfo;
 import org.ethereum.beacon.schedulers.Scheduler;
 import org.ethereum.beacon.util.ExpirationScheduler;
 import tech.pegasys.artemis.util.bytes.Bytes32;
@@ -13,17 +14,17 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Executes tasks {@link DiscoveryManager#connect(NodeRecord)} for all NodeRecords added via {@link
- * #add(NodeRecordInfo, Runnable, Runnable)}. Tasks is called failed if timeout is reached and reply
- * from node is not received.
+ * Sends {@link TaskType#FINDNODE} to closest NodeRecords added via {@link #add(NodeRecordInfo,
+ * Runnable, Runnable)}. Tasks is called failed if timeout is reached and reply from node is not
+ * received.
  */
-public class NodeConnectTasks {
+public class RecursiveLookupTasks {
   private final Scheduler scheduler;
   private final DiscoveryManager discoveryManager;
   private final Set<Bytes32> currentTasks = Sets.newConcurrentHashSet();
   private final ExpirationScheduler<Bytes32> taskTimeouts;
 
-  public NodeConnectTasks(
+  public RecursiveLookupTasks(
       DiscoveryManager discoveryManager, Scheduler scheduler, Duration timeout) {
     this.discoveryManager = discoveryManager;
     this.scheduler = scheduler;
@@ -41,11 +42,12 @@ public class NodeConnectTasks {
 
     scheduler.execute(
         () -> {
-          CompletableFuture<Void> retry = discoveryManager.connect(nodeRecordInfo.getNode());
+          CompletableFuture<Void> retry =
+              discoveryManager.executeTask(nodeRecordInfo.getNode(), TaskType.FINDNODE);
           taskTimeouts.put(
               nodeRecordInfo.getNode().getNodeId(),
               () ->
-                  retry.completeExceptionally(new RuntimeException("Timeout for node check task")));
+                  retry.completeExceptionally(new RuntimeException("Timeout for node recursive lookup task")));
           retry.whenComplete(
               (aVoid, throwable) -> {
                 if (throwable != null) {

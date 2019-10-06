@@ -10,17 +10,24 @@ import org.ethereum.beacon.discovery.network.DiscoveryServer;
 import org.ethereum.beacon.discovery.network.DiscoveryServerImpl;
 import org.ethereum.beacon.discovery.network.NetworkParcel;
 import org.ethereum.beacon.discovery.pipeline.Envelope;
+import org.ethereum.beacon.discovery.pipeline.Field;
 import org.ethereum.beacon.discovery.pipeline.Pipeline;
 import org.ethereum.beacon.discovery.pipeline.PipelineImpl;
-import org.ethereum.beacon.discovery.pipeline.handler.IncomingDataHandler;
-import org.ethereum.beacon.discovery.pipeline.handler.IncomingPacketContextHandler;
+import org.ethereum.beacon.discovery.pipeline.handler.AuthHeaderMessagePacketHandler;
+import org.ethereum.beacon.discovery.pipeline.handler.IncomingDataPacker;
+import org.ethereum.beacon.discovery.pipeline.handler.MessageHandler;
+import org.ethereum.beacon.discovery.pipeline.handler.MessagePacketHandler;
 import org.ethereum.beacon.discovery.pipeline.handler.NodeContextRequestHandler;
-import org.ethereum.beacon.discovery.pipeline.handler.NodeIdContextHandler;
+import org.ethereum.beacon.discovery.pipeline.handler.NodeIdToContext;
+import org.ethereum.beacon.discovery.pipeline.handler.NotExpectedIncomingPacketHandler;
 import org.ethereum.beacon.discovery.pipeline.handler.OutgoingParcelHandler;
 import org.ethereum.beacon.discovery.pipeline.handler.TaskHandler;
-import org.ethereum.beacon.discovery.pipeline.handler.UnknownPacketContextHandler;
-import org.ethereum.beacon.discovery.pipeline.handler.WhoAreYouContextHandler;
-import org.ethereum.beacon.discovery.pipeline.handler.WhoAreYouHandler;
+import org.ethereum.beacon.discovery.pipeline.handler.UnknownPacketTagToSender;
+import org.ethereum.beacon.discovery.pipeline.handler.UnknownPacketTypeByStatus;
+import org.ethereum.beacon.discovery.pipeline.handler.WhoAreYouAttempt;
+import org.ethereum.beacon.discovery.pipeline.handler.WhoAreYouContextResolver;
+import org.ethereum.beacon.discovery.pipeline.handler.WhoAreYouPacketHandler;
+import org.ethereum.beacon.discovery.task.TaskType;
 import org.ethereum.beacon.discovery.storage.AuthTagRepository;
 import org.ethereum.beacon.discovery.storage.NodeBucketStorage;
 import org.ethereum.beacon.discovery.storage.NodeTable;
@@ -31,12 +38,8 @@ import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.ReplayProcessor;
 import tech.pegasys.artemis.util.bytes.Bytes4;
 
+import java.security.SecureRandom;
 import java.util.concurrent.CompletableFuture;
-
-import static org.ethereum.beacon.discovery.pipeline.handler.NodeContextRequestHandler.NODE;
-import static org.ethereum.beacon.discovery.pipeline.handler.TaskHandler.FUTURE;
-import static org.ethereum.beacon.discovery.pipeline.handler.TaskHandler.PING;
-import static org.ethereum.beacon.discovery.pipeline.handler.TaskHandler.TASK;
 
 public class DiscoveryManagerImpl implements DiscoveryManager {
   private static final Logger logger = LogManager.getLogger(DiscoveryManagerImpl.class);
@@ -61,28 +64,32 @@ public class DiscoveryManagerImpl implements DiscoveryManager {
             ((Bytes4) homeNode.get(NodeRecord.FIELD_IP_V4)),
             (int) homeNode.get(NodeRecord.FIELD_UDP_V4));
     this.discoveryClient = new DiscoveryClientImpl(outgoingMessages, clientScheduler);
-    NodeIdContextHandler nodeIdContextHandler =
-        new NodeIdContextHandler(
-            homeNode, nodeBucketStorage, authTagRepo, nodeTable, outgoingPipeline);
+    NodeIdToContext nodeIdToContext =
+        new NodeIdToContext(homeNode, nodeBucketStorage, authTagRepo, nodeTable, outgoingPipeline);
     incomingPipeline
-        .addHandler(new IncomingDataHandler())
-        .addHandler(new WhoAreYouHandler(homeNode.getNodeId()))
-        .addHandler(new WhoAreYouContextHandler(authTagRepo))
-        .addHandler(new UnknownPacketContextHandler(homeNode))
-        .addHandler(nodeIdContextHandler)
-        .addHandler(new IncomingPacketContextHandler());
+        .addHandler(new IncomingDataPacker())
+        .addHandler(new WhoAreYouAttempt(homeNode.getNodeId()))
+        .addHandler(new WhoAreYouContextResolver(authTagRepo))
+        .addHandler(new UnknownPacketTagToSender(homeNode))
+        .addHandler(nodeIdToContext)
+        .addHandler(new UnknownPacketTypeByStatus())
+        .addHandler(new NotExpectedIncomingPacketHandler())
+        .addHandler(new WhoAreYouPacketHandler())
+        .addHandler(new AuthHeaderMessagePacketHandler())
+        .addHandler(new MessagePacketHandler())
+        .addHandler(new MessageHandler());
     outgoingPipeline
         .addHandler(new OutgoingParcelHandler(outgoingSink))
         .addHandler(new NodeContextRequestHandler())
-        .addHandler(nodeIdContextHandler)
-        .addHandler(new TaskHandler());
+        .addHandler(nodeIdToContext)
+        .addHandler(new TaskHandler(new SecureRandom()));
   }
 
   @Override
   public void start() {
     incomingPipeline.build();
     outgoingPipeline.build();
-    Flux.from(discoveryServer.getIncomingPackets()).subscribe(incomingPipeline::send);
+    Flux.from(discoveryServer.getIncomingPackets()).subscribe(incomingPipeline::push);
     discoveryServer.start(scheduler);
   }
 
@@ -91,13 +98,13 @@ public class DiscoveryManagerImpl implements DiscoveryManager {
     discoveryServer.stop();
   }
 
-  public CompletableFuture<Void> connect(NodeRecord nodeRecord) {
+  public CompletableFuture<Void> executeTask(NodeRecord nodeRecord, TaskType taskType) {
     Envelope envelope = new Envelope();
-    envelope.put(TASK, PING);
-    envelope.put(NODE, nodeRecord);
+    envelope.put(Field.TASK, taskType);
+    envelope.put(Field.NODE, nodeRecord);
     CompletableFuture<Void> completed = new CompletableFuture<>();
-    envelope.put(FUTURE, completed);
-    outgoingPipeline.send(envelope);
+    envelope.put(Field.FUTURE, completed);
+    outgoingPipeline.push(envelope);
     return completed;
   }
 

@@ -13,6 +13,7 @@ import org.ethereum.beacon.discovery.packet.MessagePacket;
 import org.ethereum.beacon.discovery.packet.RandomPacket;
 import org.ethereum.beacon.discovery.packet.UnknownPacket;
 import org.ethereum.beacon.discovery.packet.WhoAreYouPacket;
+import org.ethereum.beacon.discovery.task.TaskType;
 import org.ethereum.beacon.discovery.storage.NodeBucketStorage;
 import org.ethereum.beacon.discovery.storage.NodeTableStorage;
 import org.ethereum.beacon.discovery.storage.NodeTableStorageFactoryImpl;
@@ -30,7 +31,7 @@ import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import static org.ethereum.beacon.discovery.NodeContext.DEFAULT_DISTANCE;
+import static org.ethereum.beacon.discovery.task.TaskMessageFactory.DEFAULT_DISTANCE;
 import static org.ethereum.beacon.discovery.storage.NodeTableStorage.DEFAULT_SERIALIZER;
 
 /** Same as {@link DiscoveryNoNetworkTest} but using real network */
@@ -185,7 +186,7 @@ public class DiscoveryNetworkTest {
             });
 
     // 4) fire 1 to 2 dialog
-    discoveryManager1.connect(nodeRecord2);
+    discoveryManager1.executeTask(nodeRecord2, TaskType.FINDNODE);
 
     assert randomSent1to2.await(1, TimeUnit.SECONDS);
     assert whoareyouSent2to1.await(1, TimeUnit.SECONDS);

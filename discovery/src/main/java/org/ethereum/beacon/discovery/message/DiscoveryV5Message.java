@@ -62,7 +62,7 @@ public class DiscoveryV5Message implements DiscoveryMessage {
         {
           return new PingMessage(
               BytesValue.wrap(((RlpString) payload.get(0)).getBytes()),
-              ((RlpString) payload.get(1)).asPositiveBigInteger().longValueExact());
+              UInt64.fromBytesBigEndian(Bytes8.wrap(((RlpString) payload.get(1)).getBytes())));
         }
       case PONG:
         {

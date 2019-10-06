@@ -5,7 +5,7 @@ import org.reactivestreams.Publisher;
 public interface Pipeline {
   Pipeline build();
 
-  void send(Object object);
+  void push(Object object);
 
   Pipeline addHandler(EnvelopeHandler envelopeHandler);
 

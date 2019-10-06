@@ -1,6 +1,7 @@
 package org.ethereum.beacon.discovery;
 
 import org.ethereum.beacon.discovery.enr.NodeRecord;
+import org.ethereum.beacon.discovery.task.TaskType;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -14,11 +15,12 @@ public interface DiscoveryManager {
   void stop();
 
   /**
-   * Initiates auth handshake with node, sending some message and receiving reply.
+   * Initiates task of task type with node `nodeRecord`
    *
    * @param nodeRecord Ethereum Node record
+   * @param taskType Task type
    * @return Future which is fired when reply is received or fails in timeout/not successful
    *     handshake/bad message exchange.
    */
-  CompletableFuture<Void> connect(NodeRecord nodeRecord);
+  CompletableFuture<Void> executeTask(NodeRecord nodeRecord, TaskType taskType);
 }
