@@ -2,7 +2,7 @@ package org.ethereum.beacon.discovery.pipeline.handler;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.ethereum.beacon.discovery.NodeContext;
+import org.ethereum.beacon.discovery.NodeSession;
 import org.ethereum.beacon.discovery.NodeRecordInfo;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
 import org.ethereum.beacon.discovery.network.NetworkParcelV5;
@@ -24,23 +24,23 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Performs {@link Field#NEED_CONTEXT} request. Looks up for Node context based on NodeId, which
- * should be in request field and stores it in {@link Field#CONTEXT} field.
+ * Performs {@link Field#SESSION_LOOKUP} request. Looks up for Node session based on NodeId, which
+ * should be in request field and stores it in {@link Field#SESSION} field.
  */
-public class NodeIdToContext implements EnvelopeHandler {
+public class NodeIdToSession implements EnvelopeHandler {
   private static final int CLEANUP_DELAY_SECONDS = 180;
-  private static final Logger logger = LogManager.getLogger(NodeIdToContext.class);
+  private static final Logger logger = LogManager.getLogger(NodeIdToSession.class);
   private final NodeRecord homeNodeRecord;
   private final NodeBucketStorage nodeBucketStorage;
   private final AuthTagRepository authTagRepo;
-  private final Map<Bytes32, NodeContext> recentContexts =
-      new ConcurrentHashMap<>(); // nodeId -> context
+  private final Map<Bytes32, NodeSession> recentSessions =
+      new ConcurrentHashMap<>(); // nodeId -> session
   private final NodeTable nodeTable;
   private final Pipeline outgoingPipeline;
-  private ExpirationScheduler<Bytes32> contextExpirationScheduler =
+  private ExpirationScheduler<Bytes32> sessionExpirationScheduler =
       new ExpirationScheduler<>(CLEANUP_DELAY_SECONDS, TimeUnit.SECONDS);
 
-  public NodeIdToContext(
+  public NodeIdToSession(
       NodeRecord homeNodeRecord,
       NodeBucketStorage nodeBucketStorage,
       AuthTagRepository authTagRepo,
@@ -55,27 +55,27 @@ public class NodeIdToContext implements EnvelopeHandler {
 
   @Override
   public void handle(Envelope envelope) {
-    if (!envelope.contains(Field.NEED_CONTEXT)) {
+    if (!envelope.contains(Field.SESSION_LOOKUP)) {
       return;
     }
-    Pair<Bytes32, Runnable> contextRequest =
-        (Pair<Bytes32, Runnable>) envelope.get(Field.NEED_CONTEXT);
-    envelope.remove(Field.NEED_CONTEXT);
-    Optional<NodeContext> nodeContextOptional = getContext(contextRequest.getValue0());
-    if (nodeContextOptional.isPresent()) {
-      envelope.put(Field.CONTEXT, nodeContextOptional.get());
+    Pair<Bytes32, Runnable> sessionRequest =
+        (Pair<Bytes32, Runnable>) envelope.get(Field.SESSION_LOOKUP);
+    envelope.remove(Field.SESSION_LOOKUP);
+    Optional<NodeSession> nodeSessionOptional = getSession(sessionRequest.getValue0());
+    if (nodeSessionOptional.isPresent()) {
+      envelope.put(Field.SESSION, nodeSessionOptional.get());
       logger.trace(
           () ->
               String.format(
-                  "Context resolved: %s in envelope #%s",
-                  nodeContextOptional.get(), envelope.getId()));
+                  "Session resolved: %s in envelope #%s",
+                  nodeSessionOptional.get(), envelope.getId()));
     } else {
-      contextRequest.getValue1().run();
+      sessionRequest.getValue1().run();
     }
   }
 
-  private Optional<NodeContext> getContext(Bytes32 nodeId) {
-    NodeContext context = recentContexts.get(nodeId);
+  private Optional<NodeSession> getSession(Bytes32 nodeId) {
+    NodeSession context = recentSessions.get(nodeId);
     if (context == null) {
       Optional<NodeRecordInfo> nodeOptional = nodeTable.getNode(nodeId);
       if (!nodeOptional.isPresent()) {
@@ -86,7 +86,7 @@ public class NodeIdToContext implements EnvelopeHandler {
       NodeRecord nodeRecord = nodeOptional.get().getNode();
       SecureRandom random = new SecureRandom();
       context =
-          new NodeContext(
+          new NodeSession(
               nodeRecord,
               homeNodeRecord,
               nodeTable,
@@ -94,14 +94,14 @@ public class NodeIdToContext implements EnvelopeHandler {
               authTagRepo,
               packet -> outgoingPipeline.push(new NetworkParcelV5(packet, nodeRecord)),
               random);
-      recentContexts.put(nodeId, context);
+      recentSessions.put(nodeId, context);
     }
 
-    final NodeContext contextBackup = context;
-    contextExpirationScheduler.put(
+    final NodeSession contextBackup = context;
+    sessionExpirationScheduler.put(
         context.getNodeRecord().getNodeId(),
         () -> {
-          recentContexts.remove(contextBackup.getNodeRecord().getNodeId());
+          recentSessions.remove(contextBackup.getNodeRecord().getNodeId());
           contextBackup.cleanup();
         });
     return Optional.of(context);

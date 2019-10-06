@@ -22,7 +22,7 @@ public class IncomingMessageSink extends SimpleChannelInboundHandler<BytesValue>
 
   @Override
   protected void channelRead0(ChannelHandlerContext ctx, BytesValue msg) throws Exception {
-    logger.trace(() -> String.format("Incoming packet %s in context %s", msg, ctx));
+    logger.trace(() -> String.format("Incoming packet %s in session %s", msg, ctx));
     bytesValueSink.next(msg);
   }
 }

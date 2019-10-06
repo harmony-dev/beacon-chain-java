@@ -7,10 +7,10 @@ import org.ethereum.beacon.discovery.pipeline.Field;
 import org.javatuples.Pair;
 
 /**
- * Searches for node in {@link Field#NODE} and requests context resolving using {@link
- * Field#NEED_CONTEXT}
+ * Searches for node in {@link Field#NODE} and requests session resolving using {@link
+ * Field#SESSION_LOOKUP}
  */
-public class NodeContextRequestHandler implements EnvelopeHandler {
+public class NodeSessionRequestHandler implements EnvelopeHandler {
 
   @Override
   public void handle(Envelope envelope) {
@@ -18,7 +18,7 @@ public class NodeContextRequestHandler implements EnvelopeHandler {
       return;
     }
     envelope.put(
-        Field.NEED_CONTEXT,
+        Field.SESSION_LOOKUP,
         Pair.with(
             ((NodeRecord) envelope.get(Field.NODE)).getNodeId(),
             (Runnable)

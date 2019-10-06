@@ -1,6 +1,6 @@
 package org.ethereum.beacon.discovery.message.handler;
 
-import org.ethereum.beacon.discovery.NodeContext;
+import org.ethereum.beacon.discovery.NodeSession;
 import org.ethereum.beacon.discovery.NodeRecordInfo;
 import org.ethereum.beacon.discovery.message.DiscoveryV5Message;
 import org.ethereum.beacon.discovery.message.FindNodeMessage;
@@ -18,21 +18,21 @@ public class FindNodeHandler implements MessageHandler<FindNodeMessage> {
   public FindNodeHandler() {}
 
   @Override
-  public void handle(FindNodeMessage message, NodeContext context) {
+  public void handle(FindNodeMessage message, NodeSession session) {
     List<NodeBucket> nodeBuckets =
         IntStream.range(0, message.getDistance())
-            .mapToObj(context::getBucket)
+            .mapToObj(session::getBucket)
             .filter(Optional::isPresent)
             .map(Optional::get)
             .collect(Collectors.toList());
     nodeBuckets.forEach(
         bucket ->
-            context.sendOutgoing(
+            session.sendOutgoing(
                 MessagePacket.create(
-                    context.getHomeNodeId(),
-                    context.getNodeRecord().getNodeId(),
-                    context.getAuthTag().get(),
-                    context.getInitiatorKey(),
+                    session.getHomeNodeId(),
+                    session.getNodeRecord().getNodeId(),
+                    session.getAuthTag().get(),
+                    session.getInitiatorKey(),
                     DiscoveryV5Message.from(
                         new NodesMessage(
                             message.getRequestId(),

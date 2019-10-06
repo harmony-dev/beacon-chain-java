@@ -3,7 +3,7 @@ package org.ethereum.beacon.discovery.pipeline.handler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.discovery.Functions;
-import org.ethereum.beacon.discovery.NodeContext;
+import org.ethereum.beacon.discovery.NodeSession;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
 import org.ethereum.beacon.discovery.message.DiscoveryV5Message;
 import org.ethereum.beacon.discovery.message.V5Message;
@@ -29,62 +29,62 @@ public class WhoAreYouPacketHandler implements EnvelopeHandler {
     if (!envelope.contains(Field.PACKET_WHOAREYOU)) {
       return;
     }
-    if (!envelope.contains(Field.CONTEXT)) {
+    if (!envelope.contains(Field.SESSION)) {
       return;
     }
     WhoAreYouPacket packet = (WhoAreYouPacket) envelope.get(Field.PACKET_WHOAREYOU);
-    NodeContext context = (NodeContext) envelope.get(Field.CONTEXT);
+    NodeSession session = (NodeSession) envelope.get(Field.SESSION);
     try {
-      BytesValue authTag = context.getAuthTag().get();
-      packet.verify(context.getHomeNodeId(), authTag);
+      BytesValue authTag = session.getAuthTag().get();
+      packet.verify(session.getHomeNodeId(), authTag);
       packet.getEnrSeq(); // FIXME: Their side enr seq. Do we need it?
       byte[] ephemeralKeyBytes = new byte[32];
       Functions.getRandom().nextBytes(ephemeralKeyBytes);
       ECKeyPair ephemeralKey = ECKeyPair.create(ephemeralKeyBytes); // TODO: generate
       Triplet<BytesValue, BytesValue, BytesValue> hkdf =
           Functions.hkdf_expand(
-              context.getHomeNodeId(),
-              context.getNodeRecord().getNodeId(),
+              session.getHomeNodeId(),
+              session.getNodeRecord().getNodeId(),
               BytesValue.wrap(ephemeralKey.getPrivateKey().toByteArray()),
               packet.getIdNonce(),
-              (BytesValue) context.getNodeRecord().get(NodeRecord.FIELD_PKEY_SECP256K1));
+              (BytesValue) session.getNodeRecord().get(NodeRecord.FIELD_PKEY_SECP256K1));
       BytesValue initiatorKey = hkdf.getValue0();
       BytesValue staticNodeKey = hkdf.getValue1();
       BytesValue authResponseKey = hkdf.getValue2();
       V5Message taskMessage = null;
-      if (context.loadTask() == TaskType.PING) {
-        taskMessage = TaskMessageFactory.createPing(context);
-      } else if (context.loadTask() == TaskType.FINDNODE) {
-        taskMessage = TaskMessageFactory.createFindNode(context);
+      if (session.loadTask() == TaskType.PING) {
+        taskMessage = TaskMessageFactory.createPing(session);
+      } else if (session.loadTask() == TaskType.FINDNODE) {
+        taskMessage = TaskMessageFactory.createFindNode(session);
       } else {
         throw new RuntimeException(
             String.format(
-                "Type %s in envelope #%s is not known", context.loadTask(), envelope.getId()));
+                "Type %s in envelope #%s is not known", session.loadTask(), envelope.getId()));
       }
 
       AuthHeaderMessagePacket response =
           AuthHeaderMessagePacket.create(
-              context.getHomeNodeId(),
-              context.getNodeRecord().getNodeId(),
+              session.getHomeNodeId(),
+              session.getNodeRecord().getNodeId(),
               authResponseKey,
               packet.getIdNonce(),
               staticNodeKey,
-              context.getHomeNodeRecord(),
+              session.getHomeNodeRecord(),
               BytesValue.wrap(ephemeralKey.getPublicKey().toByteArray()),
               authTag,
               initiatorKey,
               DiscoveryV5Message.from(taskMessage));
-      context.sendOutgoing(response);
+      session.sendOutgoing(response);
     } catch (AssertionError ex) {
       logger.info(
           String.format(
               "Verification not passed for message [%s] from node %s in status %s",
-              packet, context.getNodeRecord(), context.getStatus()));
+              packet, session.getNodeRecord(), session.getStatus()));
     } catch (Exception ex) {
       String error =
           String.format(
               "Failed to read message [%s] from node %s in status %s",
-              packet, context.getNodeRecord(), context.getStatus());
+              packet, session.getNodeRecord(), session.getStatus());
       logger.error(error, ex);
       envelope.remove(Field.PACKET_WHOAREYOU);
       if (envelope.contains(Field.FUTURE)) {
@@ -93,7 +93,7 @@ public class WhoAreYouPacketHandler implements EnvelopeHandler {
       }
       return;
     }
-    context.setStatus(NodeContext.SessionStatus.AUTHENTICATED);
+    session.setStatus(NodeSession.SessionStatus.AUTHENTICATED);
     envelope.remove(Field.PACKET_WHOAREYOU);
   }
 }

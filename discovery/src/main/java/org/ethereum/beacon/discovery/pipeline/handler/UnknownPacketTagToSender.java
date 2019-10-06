@@ -10,8 +10,8 @@ import tech.pegasys.artemis.util.bytes.Bytes32;
 
 /**
  * Assuming we have some unknown packet in {@link Field#PACKET_UNKNOWN}, resolves sender node id
- * using `tag` field of the packet. Next, puts it to the {@link Field#NEED_CONTEXT} so sender
- * context could be resolved by another handler.
+ * using `tag` field of the packet. Next, puts it to the {@link Field#SESSION_LOOKUP} so sender
+ * session could be resolved by another handler.
  */
 public class UnknownPacketTagToSender implements EnvelopeHandler {
   private final Bytes32 homeNodeId;
@@ -28,7 +28,7 @@ public class UnknownPacketTagToSender implements EnvelopeHandler {
     UnknownPacket unknownPacket = (UnknownPacket) envelope.get(Field.PACKET_UNKNOWN);
     Bytes32 fromNodeId = unknownPacket.getSourceNodeId(homeNodeId);
     envelope.put(
-        Field.NEED_CONTEXT,
+        Field.SESSION_LOOKUP,
         Pair.with(
             fromNodeId,
             (Runnable)
@@ -37,7 +37,7 @@ public class UnknownPacketTagToSender implements EnvelopeHandler {
                   envelope.put(
                       Field.BAD_PACKET_EXCEPTION,
                       new RuntimeException(
-                          String.format("Context not found for nodeId %s", fromNodeId)));
+                          String.format("Session couldn't be created for nodeId %s", fromNodeId)));
                   envelope.remove(Field.PACKET_UNKNOWN);
                 }));
   }

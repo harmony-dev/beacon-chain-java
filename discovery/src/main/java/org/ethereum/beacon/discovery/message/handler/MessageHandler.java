@@ -1,7 +1,7 @@
 package org.ethereum.beacon.discovery.message.handler;
 
-import org.ethereum.beacon.discovery.NodeContext;
+import org.ethereum.beacon.discovery.NodeSession;
 
 public interface MessageHandler<Message> {
-  void handle(Message message, NodeContext context);
+  void handle(Message message, NodeSession session);
 }

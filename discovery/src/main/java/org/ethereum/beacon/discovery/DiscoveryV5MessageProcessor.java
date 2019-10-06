@@ -27,12 +27,12 @@ public class DiscoveryV5MessageProcessor implements DiscoveryMessageProcessor<Di
   }
 
   @Override
-  public void handleMessage(DiscoveryV5Message message, NodeContext context) {
+  public void handleMessage(DiscoveryV5Message message, NodeSession session) {
     MessageCode code = message.getCode();
     MessageHandler messageHandler = messageHandlers.get(code);
     if (messageHandler == null) {
       throw new RuntimeException("Not implemented yet");
     }
-    messageHandler.handle(message.create(), context);
+    messageHandler.handle(message.create(), session);
   }
 }

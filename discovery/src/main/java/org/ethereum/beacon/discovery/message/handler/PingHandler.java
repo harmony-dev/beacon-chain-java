@@ -1,6 +1,6 @@
 package org.ethereum.beacon.discovery.message.handler;
 
-import org.ethereum.beacon.discovery.NodeContext;
+import org.ethereum.beacon.discovery.NodeSession;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
 import org.ethereum.beacon.discovery.message.DiscoveryV5Message;
 import org.ethereum.beacon.discovery.message.PingMessage;
@@ -10,19 +10,19 @@ import tech.pegasys.artemis.util.bytes.Bytes4;
 
 public class PingHandler implements MessageHandler<PingMessage> {
   @Override
-  public void handle(PingMessage message, NodeContext context) {
+  public void handle(PingMessage message, NodeSession session) {
     PongMessage responseMessage =
         new PongMessage(
             message.getRequestId(),
-            context.getNodeRecord().getSeq(),
-            ((Bytes4) context.getNodeRecord().get(NodeRecord.FIELD_IP_V4)),
-            (int) context.getNodeRecord().get(NodeRecord.FIELD_UDP_V4));
-    context.sendOutgoing(
+            session.getNodeRecord().getSeq(),
+            ((Bytes4) session.getNodeRecord().get(NodeRecord.FIELD_IP_V4)),
+            (int) session.getNodeRecord().get(NodeRecord.FIELD_UDP_V4));
+    session.sendOutgoing(
         MessagePacket.create(
-            context.getHomeNodeId(),
-            context.getNodeRecord().getNodeId(),
-            context.getAuthTag().get(),
-            context.getInitiatorKey(),
+            session.getHomeNodeId(),
+            session.getNodeRecord().getNodeId(),
+            session.getAuthTag().get(),
+            session.getInitiatorKey(),
             DiscoveryV5Message.from(responseMessage)));
   }
 }

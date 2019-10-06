@@ -18,15 +18,15 @@ import org.ethereum.beacon.discovery.pipeline.handler.BadPacketLogger;
 import org.ethereum.beacon.discovery.pipeline.handler.IncomingDataPacker;
 import org.ethereum.beacon.discovery.pipeline.handler.MessageHandler;
 import org.ethereum.beacon.discovery.pipeline.handler.MessagePacketHandler;
-import org.ethereum.beacon.discovery.pipeline.handler.NodeContextRequestHandler;
-import org.ethereum.beacon.discovery.pipeline.handler.NodeIdToContext;
+import org.ethereum.beacon.discovery.pipeline.handler.NodeSessionRequestHandler;
+import org.ethereum.beacon.discovery.pipeline.handler.NodeIdToSession;
 import org.ethereum.beacon.discovery.pipeline.handler.NotExpectedIncomingPacketHandler;
 import org.ethereum.beacon.discovery.pipeline.handler.OutgoingParcelHandler;
 import org.ethereum.beacon.discovery.pipeline.handler.TaskHandler;
 import org.ethereum.beacon.discovery.pipeline.handler.UnknownPacketTagToSender;
 import org.ethereum.beacon.discovery.pipeline.handler.UnknownPacketTypeByStatus;
 import org.ethereum.beacon.discovery.pipeline.handler.WhoAreYouAttempt;
-import org.ethereum.beacon.discovery.pipeline.handler.WhoAreYouContextResolver;
+import org.ethereum.beacon.discovery.pipeline.handler.WhoAreYouSessionResolver;
 import org.ethereum.beacon.discovery.pipeline.handler.WhoAreYouPacketHandler;
 import org.ethereum.beacon.discovery.storage.AuthTagRepository;
 import org.ethereum.beacon.discovery.storage.NodeBucketStorage;
@@ -65,14 +65,14 @@ public class DiscoveryManagerImpl implements DiscoveryManager {
             ((Bytes4) homeNode.get(NodeRecord.FIELD_IP_V4)),
             (int) homeNode.get(NodeRecord.FIELD_UDP_V4));
     this.discoveryClient = new DiscoveryClientImpl(outgoingMessages, clientScheduler);
-    NodeIdToContext nodeIdToContext =
-        new NodeIdToContext(homeNode, nodeBucketStorage, authTagRepo, nodeTable, outgoingPipeline);
+    NodeIdToSession nodeIdToSession =
+        new NodeIdToSession(homeNode, nodeBucketStorage, authTagRepo, nodeTable, outgoingPipeline);
     incomingPipeline
         .addHandler(new IncomingDataPacker())
         .addHandler(new WhoAreYouAttempt(homeNode.getNodeId()))
-        .addHandler(new WhoAreYouContextResolver(authTagRepo))
+        .addHandler(new WhoAreYouSessionResolver(authTagRepo))
         .addHandler(new UnknownPacketTagToSender(homeNode))
-        .addHandler(nodeIdToContext)
+        .addHandler(nodeIdToSession)
         .addHandler(new UnknownPacketTypeByStatus())
         .addHandler(new NotExpectedIncomingPacketHandler())
         .addHandler(new WhoAreYouPacketHandler())
@@ -82,8 +82,8 @@ public class DiscoveryManagerImpl implements DiscoveryManager {
         .addHandler(new BadPacketLogger());
     outgoingPipeline
         .addHandler(new OutgoingParcelHandler(outgoingSink))
-        .addHandler(new NodeContextRequestHandler())
-        .addHandler(nodeIdToContext)
+        .addHandler(new NodeSessionRequestHandler())
+        .addHandler(nodeIdToSession)
         .addHandler(new TaskHandler(new SecureRandom()));
   }
 

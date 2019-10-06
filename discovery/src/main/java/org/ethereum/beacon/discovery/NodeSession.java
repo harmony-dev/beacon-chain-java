@@ -21,8 +21,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
-public class NodeContext {
-  private static final Logger logger = LogManager.getLogger(NodeContext.class);
+public class NodeSession {
+  private static final Logger logger = LogManager.getLogger(NodeSession.class);
   private final NodeRecord nodeRecord;
   private final NodeRecord homeNodeRecord;
   private final Bytes32 homeNodeId;
@@ -38,7 +38,7 @@ public class NodeContext {
   private CompletableFuture<Void> completableFuture = null;
   private TaskType task = null;
 
-  public NodeContext(
+  public NodeSession(
       NodeRecord nodeRecord,
       NodeRecord homeNodeRecord,
       NodeTable nodeTable,
@@ -148,7 +148,7 @@ public class NodeContext {
 
   @Override
   public String toString() {
-    return "NodeContext{"
+    return "NodeSession{"
         + "nodeRecord="
         + nodeRecord
         + ", homeNodeId="

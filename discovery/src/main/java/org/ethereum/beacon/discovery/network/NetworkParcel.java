@@ -7,7 +7,7 @@ import org.ethereum.beacon.discovery.packet.Packet;
  * Abstraction on the top of the {@link Packet}.
  *
  * <p>Stores `packet` and associated node record. Record could be a sender or recipient, depends on
- * context.
+ * session.
  */
 public interface NetworkParcel {
   Packet getPacket();

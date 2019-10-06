@@ -1,6 +1,6 @@
 package org.ethereum.beacon.discovery.pipeline.handler;
 
-import org.ethereum.beacon.discovery.NodeContext;
+import org.ethereum.beacon.discovery.NodeSession;
 import org.ethereum.beacon.discovery.packet.RandomPacket;
 import org.ethereum.beacon.discovery.pipeline.Envelope;
 import org.ethereum.beacon.discovery.pipeline.EnvelopeHandler;
@@ -26,32 +26,32 @@ public class TaskHandler implements EnvelopeHandler {
     if (!envelope.contains(Field.TASK)) {
       return;
     }
-    NodeContext context = (NodeContext) envelope.get(Field.CONTEXT);
+    NodeSession session = (NodeSession) envelope.get(Field.SESSION);
     CompletableFuture<Void> completableFuture =
         (CompletableFuture<Void>) envelope.get(Field.FUTURE);
-    if (context.getStatus().equals(NodeContext.SessionStatus.INITIAL)) {
+    if (session.getStatus().equals(NodeSession.SessionStatus.INITIAL)) {
       byte[] authTagBytes = new byte[12];
       rnd.nextBytes(authTagBytes);
       BytesValue authTag = BytesValue.wrap(authTagBytes);
       RandomPacket randomPacket =
           RandomPacket.create(
-              context.getHomeNodeId(),
-              context.getNodeRecord().getNodeId(),
+              session.getHomeNodeId(),
+              session.getNodeRecord().getNodeId(),
               authTag,
               new SecureRandom());
-      context.setAuthTag(authTag);
-      context.sendOutgoing(randomPacket);
-      context.setStatus(NodeContext.SessionStatus.RANDOM_PACKET_SENT);
-      context.saveFuture(completableFuture);
-    } else if (context.getStatus().equals(NodeContext.SessionStatus.AUTHENTICATED)) {
+      session.setAuthTag(authTag);
+      session.sendOutgoing(randomPacket);
+      session.setStatus(NodeSession.SessionStatus.RANDOM_PACKET_SENT);
+      session.saveFuture(completableFuture);
+    } else if (session.getStatus().equals(NodeSession.SessionStatus.AUTHENTICATED)) {
       if (envelope.get(Field.TASK).equals(TaskType.PING)) {
-        context.sendOutgoing(TaskMessageFactory.createPingPacket(context));
-        context.saveTask((TaskType) envelope.get(Field.TASK));
-        context.saveFuture(completableFuture);
+        session.sendOutgoing(TaskMessageFactory.createPingPacket(session));
+        session.saveTask((TaskType) envelope.get(Field.TASK));
+        session.saveFuture(completableFuture);
       } else if (envelope.get(Field.TASK).equals(TaskType.FINDNODE)) {
-        context.sendOutgoing(TaskMessageFactory.createFindNodePacket(context));
-        context.saveTask((TaskType) envelope.get(Field.TASK));
-        context.saveFuture(completableFuture);
+        session.sendOutgoing(TaskMessageFactory.createFindNodePacket(session));
+        session.saveTask((TaskType) envelope.get(Field.TASK));
+        session.saveFuture(completableFuture);
       } else {
         throw new RuntimeException(
             String.format(

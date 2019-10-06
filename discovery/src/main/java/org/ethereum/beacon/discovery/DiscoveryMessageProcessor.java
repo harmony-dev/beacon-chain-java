@@ -5,5 +5,5 @@ import org.ethereum.beacon.discovery.message.DiscoveryMessage;
 public interface DiscoveryMessageProcessor<M extends DiscoveryMessage> {
   IdentityScheme getSupportedIdentity();
 
-  void handleMessage(M message, NodeContext context);
+  void handleMessage(M message, NodeSession session);
 }

@@ -3,7 +3,7 @@ package org.ethereum.beacon.discovery.pipeline.handler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.discovery.Functions;
-import org.ethereum.beacon.discovery.NodeContext;
+import org.ethereum.beacon.discovery.NodeSession;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
 import org.ethereum.beacon.discovery.message.DiscoveryV5Message;
 import org.ethereum.beacon.discovery.message.MessageCode;
@@ -18,7 +18,7 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import java.util.concurrent.CompletableFuture;
 
-import static org.ethereum.beacon.discovery.NodeContext.SessionStatus.AUTHENTICATED;
+import static org.ethereum.beacon.discovery.NodeSession.SessionStatus.AUTHENTICATED;
 
 /** Handles {@link AuthHeaderMessagePacket} in {@link Field#PACKET_AUTH_HEADER_MESSAGE} field */
 public class AuthHeaderMessagePacketHandler implements EnvelopeHandler {
@@ -29,12 +29,12 @@ public class AuthHeaderMessagePacketHandler implements EnvelopeHandler {
     if (!envelope.contains(Field.PACKET_AUTH_HEADER_MESSAGE)) {
       return;
     }
-    if (!envelope.contains(Field.CONTEXT)) {
+    if (!envelope.contains(Field.SESSION)) {
       return;
     }
     AuthHeaderMessagePacket packet =
         (AuthHeaderMessagePacket) envelope.get(Field.PACKET_AUTH_HEADER_MESSAGE);
-    NodeContext context = (NodeContext) envelope.get(Field.CONTEXT);
+    NodeSession session = (NodeSession) envelope.get(Field.SESSION);
 
     try {
       byte[] ephemeralKeyBytes = new byte[32];
@@ -42,39 +42,39 @@ public class AuthHeaderMessagePacketHandler implements EnvelopeHandler {
       ECKeyPair ephemeralKey = ECKeyPair.create(ephemeralKeyBytes);
       Triplet<BytesValue, BytesValue, BytesValue> hkdf =
           Functions.hkdf_expand(
-              context.getHomeNodeId(),
-              context.getNodeRecord().getNodeId(),
+              session.getHomeNodeId(),
+              session.getNodeRecord().getNodeId(),
               BytesValue.wrap(ephemeralKey.getPrivateKey().toByteArray()),
-              context.getIdNonce(),
-              (BytesValue) context.getNodeRecord().get(NodeRecord.FIELD_PKEY_SECP256K1));
+              session.getIdNonce(),
+              (BytesValue) session.getNodeRecord().get(NodeRecord.FIELD_PKEY_SECP256K1));
       BytesValue initiatorKey = hkdf.getValue0();
-      context.setInitiatorKey(initiatorKey);
+      session.setInitiatorKey(initiatorKey);
       BytesValue authResponseKey = hkdf.getValue2();
       packet.decode(initiatorKey, authResponseKey);
-      packet.verify(context.getAuthTag().get(), context.getIdNonce());
+      packet.verify(session.getAuthTag().get(), session.getIdNonce());
       envelope.put(Field.MESSAGE, packet.getMessage());
     } catch (AssertionError ex) {
       logger.info(
           String.format(
               "Verification not passed for message [%s] from node %s in status %s",
-              packet, context.getNodeRecord(), context.getStatus()));
+              packet, session.getNodeRecord(), session.getStatus()));
     } catch (Exception ex) {
       String error =
           String.format(
               "Failed to read message [%s] from node %s in status %s",
-              packet, context.getNodeRecord(), context.getStatus());
+              packet, session.getNodeRecord(), session.getStatus());
       logger.error(error, ex);
       envelope.remove(Field.PACKET_AUTH_HEADER_MESSAGE);
-      if (context.loadFuture() != null) {
-        CompletableFuture<Void> future = context.loadFuture();
-        context.saveFuture(null);
+      if (session.loadFuture() != null) {
+        CompletableFuture<Void> future = session.loadFuture();
+        session.saveFuture(null);
         future.completeExceptionally(ex);
       }
       return;
     }
-    context.setStatus(AUTHENTICATED);
+    session.setStatus(AUTHENTICATED);
     envelope.remove(Field.PACKET_AUTH_HEADER_MESSAGE);
-    if (context.loadFuture() != null) {
+    if (session.loadFuture() != null) {
       boolean taskCompleted = false;
       if (envelope.get(Field.TASK).equals(TaskType.PING) && packet.getMessage() instanceof DiscoveryV5Message && ((DiscoveryV5Message) packet.getMessage()).getCode() == MessageCode.PONG) {
         taskCompleted = true;
@@ -83,9 +83,9 @@ public class AuthHeaderMessagePacketHandler implements EnvelopeHandler {
         taskCompleted = true;
       }
       if (taskCompleted) {
-        CompletableFuture<Void> future = context.loadFuture();
+        CompletableFuture<Void> future = session.loadFuture();
         future.complete(null);
-        context.saveFuture(null);
+        session.saveFuture(null);
       }
     }
   }

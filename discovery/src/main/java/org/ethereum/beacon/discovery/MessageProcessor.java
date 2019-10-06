@@ -17,17 +17,17 @@ public class MessageProcessor {
     }
   }
 
-  public void handleIncoming(DiscoveryMessage message, NodeContext context) {
+  public void handleIncoming(DiscoveryMessage message, NodeSession session) {
     IdentityScheme identityScheme = message.getIdentityScheme();
     DiscoveryMessageProcessor messageHandler = messageHandlers.get(identityScheme);
     if (messageHandler == null) {
       String error =
           String.format(
-              "Message %s with identity %s received in context %s is not supported",
-              message, identityScheme, context);
+              "Message %s with identity %s received in session %s is not supported",
+              message, identityScheme, session);
       logger.error(error);
       throw new RuntimeException(error);
     }
-    messageHandler.handleMessage(message, context);
+    messageHandler.handleMessage(message, session);
   }
 }

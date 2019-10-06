@@ -1,8 +1,8 @@
 package org.ethereum.beacon.discovery.pipeline;
 
 public enum Field {
-  NEED_CONTEXT, // Node id, requests context resolving
-  CONTEXT, // Node context
+  SESSION_LOOKUP, // Node id, requests session lookup
+  SESSION, // Node session
   INCOMING, // Raw incoming data
   PACKET_UNKNOWN, // Unknown packet
   PACKET_WHOAREYOU, // WhoAreYou packet

@@ -2,7 +2,7 @@ package org.ethereum.beacon.discovery.pipeline.handler;
 
 import org.ethereum.beacon.discovery.DiscoveryV5MessageProcessor;
 import org.ethereum.beacon.discovery.MessageProcessor;
-import org.ethereum.beacon.discovery.NodeContext;
+import org.ethereum.beacon.discovery.NodeSession;
 import org.ethereum.beacon.discovery.message.DiscoveryMessage;
 import org.ethereum.beacon.discovery.pipeline.Envelope;
 import org.ethereum.beacon.discovery.pipeline.EnvelopeHandler;
@@ -14,14 +14,14 @@ public class MessageHandler implements EnvelopeHandler {
     if (!envelope.contains(Field.MESSAGE)) {
       return;
     }
-    if (!envelope.contains(Field.CONTEXT)) {
+    if (!envelope.contains(Field.SESSION)) {
       return;
     }
 
-    NodeContext context = (NodeContext) envelope.get(Field.CONTEXT);
+    NodeSession session = (NodeSession) envelope.get(Field.SESSION);
     DiscoveryMessage message = (DiscoveryMessage) envelope.get(Field.MESSAGE);
     // TODO: optimize
     MessageProcessor messageProcessor = new MessageProcessor(new DiscoveryV5MessageProcessor());
-    messageProcessor.handleIncoming(message, context);
+    messageProcessor.handleIncoming(message, session);
   }
 }
