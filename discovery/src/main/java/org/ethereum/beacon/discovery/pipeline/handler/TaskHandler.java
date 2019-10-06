@@ -26,9 +26,6 @@ public class TaskHandler implements EnvelopeHandler {
     if (!envelope.contains(Field.TASK)) {
       return;
     }
-    if (!envelope.get(Field.TASK).equals(TaskType.PING)) {
-      return; // TODO: implement other tasks
-    }
     NodeContext context = (NodeContext) envelope.get(Field.CONTEXT);
     CompletableFuture<Void> completableFuture =
         (CompletableFuture<Void>) envelope.get(Field.FUTURE);
@@ -37,12 +34,16 @@ public class TaskHandler implements EnvelopeHandler {
       rnd.nextBytes(authTagBytes);
       BytesValue authTag = BytesValue.wrap(authTagBytes);
       RandomPacket randomPacket =
-          RandomPacket.create(context.getHomeNodeId(), context.getNodeRecord().getNodeId(), authTag, new SecureRandom());
+          RandomPacket.create(
+              context.getHomeNodeId(),
+              context.getNodeRecord().getNodeId(),
+              authTag,
+              new SecureRandom());
       context.setAuthTag(authTag);
       context.sendOutgoing(randomPacket);
       context.setStatus(NodeContext.SessionStatus.RANDOM_PACKET_SENT);
       context.saveFuture(completableFuture);
-    } else  if (context.getStatus().equals(NodeContext.SessionStatus.AUTHENTICATED)) {
+    } else if (context.getStatus().equals(NodeContext.SessionStatus.AUTHENTICATED)) {
       if (envelope.get(Field.TASK).equals(TaskType.PING)) {
         context.sendOutgoing(TaskMessageFactory.createPingPacket(context));
         context.saveTask((TaskType) envelope.get(Field.TASK));
@@ -52,7 +53,10 @@ public class TaskHandler implements EnvelopeHandler {
         context.saveTask((TaskType) envelope.get(Field.TASK));
         context.saveFuture(completableFuture);
       } else {
-        throw new RuntimeException(String.format("Task type %s handler not found in envelope %s", envelope.get(Field.TASK), envelope.getId()));
+        throw new RuntimeException(
+            String.format(
+                "Task type %s handler not found in envelope %s",
+                envelope.get(Field.TASK), envelope.getId()));
       }
     } else {
       completableFuture.completeExceptionally(new RuntimeException("Already initiating"));
