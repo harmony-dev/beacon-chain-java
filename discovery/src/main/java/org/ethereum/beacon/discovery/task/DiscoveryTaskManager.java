@@ -57,7 +57,10 @@ public class DiscoveryTaskManager {
         if (nodeRecord.getRetry() >= MAX_RETRIES) {
           updateNode(
               new NodeRecordInfo(
-                  nodeRecord.getNode(), nodeRecord.getLastRetry(), NodeStatus.DEAD, 0));
+                  nodeRecord.getNode(),
+                  System.currentTimeMillis() / MS_IN_SECOND,
+                  NodeStatus.SLEEP,
+                  1));
           return false;
         }
         if ((currentTime - nodeRecord.getLastRetry())
