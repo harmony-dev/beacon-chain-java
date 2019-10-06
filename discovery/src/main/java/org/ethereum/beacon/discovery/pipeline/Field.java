@@ -11,6 +11,7 @@ public enum Field {
   MESSAGE, // Message extracted from the packet
   NODE, // Sender/recipient node
   BAD_PACKET, // Bad, rejected packet
+  BAD_PACKET_EXCEPTION, // Stores exception for bad packet
   TASK, // Task to perform
   FUTURE, // Completable future
 

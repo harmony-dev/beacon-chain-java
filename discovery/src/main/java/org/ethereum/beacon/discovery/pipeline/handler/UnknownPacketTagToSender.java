@@ -34,6 +34,10 @@ public class UnknownPacketTagToSender implements EnvelopeHandler {
             (Runnable)
                 () -> {
                   envelope.put(Field.BAD_PACKET, envelope.get(Field.PACKET_UNKNOWN));
+                  envelope.put(
+                      Field.BAD_PACKET_EXCEPTION,
+                      new RuntimeException(
+                          String.format("Context not found for nodeId %s", fromNodeId)));
                   envelope.remove(Field.PACKET_UNKNOWN);
                 }));
   }

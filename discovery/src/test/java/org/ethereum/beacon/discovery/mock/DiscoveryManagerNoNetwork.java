@@ -11,6 +11,7 @@ import org.ethereum.beacon.discovery.pipeline.Field;
 import org.ethereum.beacon.discovery.pipeline.Pipeline;
 import org.ethereum.beacon.discovery.pipeline.PipelineImpl;
 import org.ethereum.beacon.discovery.pipeline.handler.AuthHeaderMessagePacketHandler;
+import org.ethereum.beacon.discovery.pipeline.handler.BadPacketLogger;
 import org.ethereum.beacon.discovery.pipeline.handler.IncomingDataPacker;
 import org.ethereum.beacon.discovery.pipeline.handler.MessageHandler;
 import org.ethereum.beacon.discovery.pipeline.handler.MessagePacketHandler;
@@ -71,7 +72,8 @@ public class DiscoveryManagerNoNetwork implements DiscoveryManager {
         .addHandler(new WhoAreYouPacketHandler())
         .addHandler(new AuthHeaderMessagePacketHandler())
         .addHandler(new MessagePacketHandler())
-        .addHandler(new MessageHandler());
+        .addHandler(new MessageHandler())
+        .addHandler(new BadPacketLogger());
     outgoingPipeline
         .addHandler(new OutgoingParcelHandler(outgoingSink))
         .addHandler(new NodeContextRequestHandler())

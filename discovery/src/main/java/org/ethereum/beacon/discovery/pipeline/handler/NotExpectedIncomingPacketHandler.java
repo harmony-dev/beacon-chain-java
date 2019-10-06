@@ -66,6 +66,7 @@ public class NotExpectedIncomingPacketHandler implements EnvelopeHandler {
               unknownPacket, context.getNodeRecord(), context.getStatus());
       logger.error(error, ex);
       envelope.put(Field.BAD_PACKET, envelope.get(Field.PACKET_UNKNOWN));
+      envelope.put(Field.BAD_PACKET_EXCEPTION, ex);
       envelope.remove(Field.PACKET_UNKNOWN);
       return;
     }

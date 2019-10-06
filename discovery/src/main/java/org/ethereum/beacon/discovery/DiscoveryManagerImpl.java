@@ -14,6 +14,7 @@ import org.ethereum.beacon.discovery.pipeline.Field;
 import org.ethereum.beacon.discovery.pipeline.Pipeline;
 import org.ethereum.beacon.discovery.pipeline.PipelineImpl;
 import org.ethereum.beacon.discovery.pipeline.handler.AuthHeaderMessagePacketHandler;
+import org.ethereum.beacon.discovery.pipeline.handler.BadPacketLogger;
 import org.ethereum.beacon.discovery.pipeline.handler.IncomingDataPacker;
 import org.ethereum.beacon.discovery.pipeline.handler.MessageHandler;
 import org.ethereum.beacon.discovery.pipeline.handler.MessagePacketHandler;
@@ -27,10 +28,10 @@ import org.ethereum.beacon.discovery.pipeline.handler.UnknownPacketTypeByStatus;
 import org.ethereum.beacon.discovery.pipeline.handler.WhoAreYouAttempt;
 import org.ethereum.beacon.discovery.pipeline.handler.WhoAreYouContextResolver;
 import org.ethereum.beacon.discovery.pipeline.handler.WhoAreYouPacketHandler;
-import org.ethereum.beacon.discovery.task.TaskType;
 import org.ethereum.beacon.discovery.storage.AuthTagRepository;
 import org.ethereum.beacon.discovery.storage.NodeBucketStorage;
 import org.ethereum.beacon.discovery.storage.NodeTable;
+import org.ethereum.beacon.discovery.task.TaskType;
 import org.ethereum.beacon.schedulers.Scheduler;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
@@ -77,7 +78,8 @@ public class DiscoveryManagerImpl implements DiscoveryManager {
         .addHandler(new WhoAreYouPacketHandler())
         .addHandler(new AuthHeaderMessagePacketHandler())
         .addHandler(new MessagePacketHandler())
-        .addHandler(new MessageHandler());
+        .addHandler(new MessageHandler())
+        .addHandler(new BadPacketLogger());
     outgoingPipeline
         .addHandler(new OutgoingParcelHandler(outgoingSink))
         .addHandler(new NodeContextRequestHandler())

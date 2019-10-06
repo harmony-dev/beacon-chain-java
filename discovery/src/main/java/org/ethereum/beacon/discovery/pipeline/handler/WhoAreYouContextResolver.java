@@ -47,6 +47,8 @@ public class WhoAreYouContextResolver implements EnvelopeHandler {
     } else {
       envelope.put(Field.BAD_PACKET, envelope.get(Field.PACKET_WHOAREYOU));
       envelope.remove(Field.PACKET_WHOAREYOU);
+      envelope.put(
+          Field.BAD_PACKET_EXCEPTION, new RuntimeException("Not expected WHOAREYOU packet"));
     }
   }
 }
