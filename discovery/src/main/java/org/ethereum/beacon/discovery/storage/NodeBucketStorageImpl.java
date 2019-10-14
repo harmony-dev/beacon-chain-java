@@ -19,7 +19,7 @@ import java.util.Optional;
  */
 public class NodeBucketStorageImpl implements NodeBucketStorage {
   public static final String NODE_BUCKET_STORAGE_NAME = "node-bucket-table";
-  public static final int MAXIMUM_BUCKET = 255;
+  public static final int MAXIMUM_BUCKET = 256;
   private final HoleyList<NodeBucket> nodeBucketsTable;
   private final Bytes32 homeNodeId;
 
