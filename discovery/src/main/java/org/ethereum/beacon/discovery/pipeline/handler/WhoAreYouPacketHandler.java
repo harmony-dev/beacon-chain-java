@@ -46,8 +46,8 @@ public class WhoAreYouPacketHandler implements EnvelopeHandler {
               session.getHomeNodeId(),
               session.getNodeRecord().getNodeId(),
               BytesValue.wrap(ephemeralKey.getPrivateKey().toByteArray()),
-              packet.getIdNonce(),
-              (BytesValue) session.getNodeRecord().get(NodeRecord.FIELD_PKEY_SECP256K1));
+              (BytesValue) session.getNodeRecord().get(NodeRecord.FIELD_PKEY_SECP256K1),
+              packet.getIdNonce());
       BytesValue initiatorKey = hkdf.getValue0();
       BytesValue staticNodeKey = hkdf.getValue1();
       BytesValue authResponseKey = hkdf.getValue2();

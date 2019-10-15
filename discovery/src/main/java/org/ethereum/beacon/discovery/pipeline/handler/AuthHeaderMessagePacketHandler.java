@@ -45,8 +45,8 @@ public class AuthHeaderMessagePacketHandler implements EnvelopeHandler {
               session.getHomeNodeId(),
               session.getNodeRecord().getNodeId(),
               BytesValue.wrap(ephemeralKey.getPrivateKey().toByteArray()),
-              session.getIdNonce(),
-              (BytesValue) session.getNodeRecord().get(NodeRecord.FIELD_PKEY_SECP256K1));
+              (BytesValue) session.getNodeRecord().get(NodeRecord.FIELD_PKEY_SECP256K1),
+              session.getIdNonce());
       BytesValue initiatorKey = hkdf.getValue0();
       session.setInitiatorKey(initiatorKey);
       BytesValue authResponseKey = hkdf.getValue2();
@@ -76,10 +76,14 @@ public class AuthHeaderMessagePacketHandler implements EnvelopeHandler {
     envelope.remove(Field.PACKET_AUTH_HEADER_MESSAGE);
     if (session.loadFuture() != null) {
       boolean taskCompleted = false;
-      if (envelope.get(Field.TASK).equals(TaskType.PING) && packet.getMessage() instanceof DiscoveryV5Message && ((DiscoveryV5Message) packet.getMessage()).getCode() == MessageCode.PONG) {
+      if (envelope.get(Field.TASK).equals(TaskType.PING)
+          && packet.getMessage() instanceof DiscoveryV5Message
+          && ((DiscoveryV5Message) packet.getMessage()).getCode() == MessageCode.PONG) {
         taskCompleted = true;
       }
-      if (envelope.get(Field.TASK).equals(TaskType.FINDNODE) && packet.getMessage() instanceof DiscoveryV5Message && ((DiscoveryV5Message) packet.getMessage()).getCode() == MessageCode.NODES) {
+      if (envelope.get(Field.TASK).equals(TaskType.FINDNODE)
+          && packet.getMessage() instanceof DiscoveryV5Message
+          && ((DiscoveryV5Message) packet.getMessage()).getCode() == MessageCode.NODES) {
         taskCompleted = true;
       }
       if (taskCompleted) {

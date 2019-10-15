@@ -1,16 +1,11 @@
 package org.ethereum.beacon.discovery;
 
-import org.bouncycastle.crypto.BasicAgreement;
 import org.bouncycastle.crypto.Digest;
-import org.bouncycastle.crypto.agreement.ECDHBasicAgreement;
 import org.bouncycastle.crypto.digests.SHA256Digest;
 import org.bouncycastle.crypto.generators.HKDFBytesGenerator;
 import org.bouncycastle.crypto.params.ECDomainParameters;
-import org.bouncycastle.crypto.params.ECPrivateKeyParameters;
-import org.bouncycastle.crypto.params.ECPublicKeyParameters;
 import org.bouncycastle.crypto.params.HKDFParameters;
-import org.bouncycastle.crypto.util.PrivateKeyFactory;
-import org.bouncycastle.math.ec.ECCurve;
+import org.bouncycastle.math.ec.ECPoint;
 import org.ethereum.beacon.crypto.Hashes;
 import org.javatuples.Triplet;
 import org.web3j.crypto.ECKeyPair;
@@ -28,10 +23,12 @@ import java.security.SecureRandom;
 import java.security.SignatureException;
 import java.util.Random;
 
+import static org.web3j.crypto.Sign.CURVE_PARAMS;
+
 public class Functions {
-  private static final int RECIPIENT_KEY_LENGTH = 32; // FIXME
-  private static final int INITIATOR_KEY_LENGTH = 32; // FIXME
-  private static final int AUTH_RESP_KEY_LENGTH = 32; // FIXME
+  private static final int RECIPIENT_KEY_LENGTH = 16;
+  private static final int INITIATOR_KEY_LENGTH = 16;
+  private static final int AUTH_RESP_KEY_LENGTH = 16;
 
   public static Bytes32 hash(BytesValue value) {
     return Hashes.sha256(value);
@@ -123,21 +120,23 @@ public class Functions {
   public static Triplet<BytesValue, BytesValue, BytesValue> hkdf_expand(
       BytesValue srcNodeId,
       BytesValue destNodeId,
-      BytesValue ephemeralKey,
-      BytesValue idNonce,
-      BytesValue destPubKey) {
+      BytesValue srcPrivKey,
+      BytesValue destPubKey,
+      BytesValue idNonce) {
     try {
-      Digest digest = new SHA256Digest(); // FIXME: or whatever
-      ECPrivateKeyParameters ecdhPrivateKeyParameters =
-          (ECPrivateKeyParameters) (PrivateKeyFactory.createKey(ephemeralKey.extractArray()));
-      ECDomainParameters ecDomainParameters = ecdhPrivateKeyParameters.getParameters();
-      ECCurve ecCurve = ecDomainParameters.getCurve();
-      ECPublicKeyParameters ecPublicKeyParameters =
-          new ECPublicKeyParameters(
-              ecCurve.decodePoint(destPubKey.extractArray()), ecDomainParameters);
-      BasicAgreement agree = new ECDHBasicAgreement();
-      agree.init(ecdhPrivateKeyParameters);
-      byte[] keyAgreement = agree.calculateAgreement(ecPublicKeyParameters).toByteArray();
+      ECDomainParameters CURVE =
+          new ECDomainParameters(
+              CURVE_PARAMS.getCurve(),
+              CURVE_PARAMS.getG(),
+              CURVE_PARAMS.getN(),
+              CURVE_PARAMS.getH());
+
+      byte[] destPubPointBytes = new byte[destPubKey.size() + 1];
+      destPubPointBytes[0] = 0x04; // default prefix
+      System.arraycopy(destPubKey.extractArray(), 0, destPubPointBytes, 1, destPubKey.size());
+      ECPoint pudDestPoint = CURVE.getCurve().decodePoint(destPubPointBytes);
+      ECPoint mult = pudDestPoint.multiply(new BigInteger(1, srcPrivKey.extractArray()));
+      byte[] keyAgreement = mult.getEncoded(true);
 
       BytesValue info =
           BytesValue.wrap("discovery v5 key agreement".getBytes())
@@ -145,9 +144,10 @@ public class Functions {
               .concat(destNodeId);
       HKDFParameters hkdfParameters =
           new HKDFParameters(keyAgreement, idNonce.extractArray(), info.extractArray());
+      Digest digest = new SHA256Digest();
       HKDFBytesGenerator hkdfBytesGenerator = new HKDFBytesGenerator(digest);
       hkdfBytesGenerator.init(hkdfParameters);
-      // initiator-key, recipient-key, auth-resp-key
+      // initiator-key || recipient-key || auth-resp-key
       byte[] hkdfOutputBytes =
           new byte[INITIATOR_KEY_LENGTH + RECIPIENT_KEY_LENGTH + AUTH_RESP_KEY_LENGTH];
       hkdfBytesGenerator.generateBytes(
