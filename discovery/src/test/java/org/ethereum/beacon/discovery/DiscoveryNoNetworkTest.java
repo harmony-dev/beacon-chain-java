@@ -42,6 +42,10 @@ import static org.ethereum.beacon.discovery.task.TaskMessageFactory.DEFAULT_DIST
  */
 public class DiscoveryNoNetworkTest {
   private static final NodeRecordFactory NODE_RECORD_FACTORY = NodeRecordFactory.DEFAULT;
+  private final BytesValue testKey1 =
+      BytesValue.fromHexString("eef77acb6c6a6eebc5b363a475ac583ec7eccdb42b6481424c60f59aa326547f");
+  private final BytesValue testKey2 =
+      BytesValue.fromHexString("66fb62bfbd66b9177a138c1e5cddbe4f7c30c343e94e68df8769459cb1cde628");
 
   @Test
   public void test() throws Exception {
@@ -123,10 +127,10 @@ public class DiscoveryNoNetworkTest {
             Schedulers.createDefault().newSingleThreadDaemon("from2to1-thread"), "from2to1");
     DiscoveryManagerNoNetwork discoveryManager1 =
         new DiscoveryManagerNoNetwork(
-            nodeTableStorage1.get(), nodeBucketStorage1, nodeRecord1, from2to1);
+            nodeTableStorage1.get(), nodeBucketStorage1, nodeRecord1, testKey1, from2to1);
     DiscoveryManagerNoNetwork discoveryManager2 =
         new DiscoveryManagerNoNetwork(
-            nodeTableStorage2.get(), nodeBucketStorage2, nodeRecord2, from1to2);
+            nodeTableStorage2.get(), nodeBucketStorage2, nodeRecord2, testKey2, from1to2);
 
     discoveryManager1.start();
     discoveryManager2.start();

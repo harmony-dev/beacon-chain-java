@@ -5,11 +5,11 @@ import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
 import org.ethereum.beacon.discovery.message.MessageCode;
 import org.ethereum.beacon.discovery.packet.Packet;
-import org.ethereum.beacon.discovery.task.TaskType;
 import org.ethereum.beacon.discovery.storage.AuthTagRepository;
 import org.ethereum.beacon.discovery.storage.NodeBucket;
 import org.ethereum.beacon.discovery.storage.NodeBucketStorage;
 import org.ethereum.beacon.discovery.storage.NodeTable;
+import org.ethereum.beacon.discovery.task.TaskType;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
@@ -22,6 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 public class NodeSession {
+  public static final int NONCE_SIZE = 12;
   private static final Logger logger = LogManager.getLogger(NodeSession.class);
   private final NodeRecord nodeRecord;
   private final NodeRecord homeNodeRecord;
@@ -34,13 +35,16 @@ public class NodeSession {
   private SessionStatus status = SessionStatus.INITIAL;
   private Bytes32 idNonce;
   private BytesValue initiatorKey;
+  private BytesValue recipientKey;
   private Map<BytesValue, MessageCode> requestIdReservations = new ConcurrentHashMap<>();
   private CompletableFuture<Void> completableFuture = null;
   private TaskType task = null;
+  private BytesValue staticNodeKey;
 
   public NodeSession(
       NodeRecord nodeRecord,
       NodeRecord homeNodeRecord,
+      BytesValue staticNodeKey,
       NodeTable nodeTable,
       NodeBucketStorage nodeBucketStorage,
       AuthTagRepository authTagRepo,
@@ -52,6 +56,7 @@ public class NodeSession {
     this.nodeTable = nodeTable;
     this.nodeBucketStorage = nodeBucketStorage;
     this.homeNodeRecord = homeNodeRecord;
+    this.staticNodeKey = staticNodeKey;
     this.homeNodeId = homeNodeRecord.getNodeId();
     this.rnd = rnd;
   }
@@ -89,6 +94,12 @@ public class NodeSession {
     return wrapped;
   }
 
+  public synchronized BytesValue generateNonce() {
+    byte[] nonce = new byte[NONCE_SIZE];
+    rnd.nextBytes(nonce);
+    return BytesValue.wrap(nonce);
+  }
+
   public synchronized boolean isAuthenticated() {
     return SessionStatus.AUTHENTICATED.equals(status);
   }
@@ -115,6 +126,14 @@ public class NodeSession {
 
   public void setInitiatorKey(BytesValue initiatorKey) {
     this.initiatorKey = initiatorKey;
+  }
+
+  public BytesValue getRecipientKey() {
+    return recipientKey;
+  }
+
+  public void setRecipientKey(BytesValue recipientKey) {
+    this.recipientKey = recipientKey;
   }
 
   public synchronized void clearRequestId(BytesValue requestId, MessageCode messageCode) {
@@ -184,6 +203,10 @@ public class NodeSession {
 
   public TaskType loadTask() {
     return task;
+  }
+
+  public BytesValue getStaticNodeKey() {
+    return staticNodeKey;
   }
 
   public enum SessionStatus {

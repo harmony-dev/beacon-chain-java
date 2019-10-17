@@ -6,16 +6,17 @@ import org.ethereum.beacon.discovery.message.FindNodeMessage;
 import org.ethereum.beacon.discovery.message.MessageCode;
 import org.ethereum.beacon.discovery.message.PingMessage;
 import org.ethereum.beacon.discovery.packet.MessagePacket;
+import tech.pegasys.artemis.util.bytes.BytesValue;
 
 public class TaskMessageFactory {
   public static final int DEFAULT_DISTANCE = 10;
 
-  public static MessagePacket createPingPacket(NodeSession session) {
+  public static MessagePacket createPingPacket(BytesValue authTag, NodeSession session) {
 
     return MessagePacket.create(
         session.getHomeNodeId(),
         session.getNodeRecord().getNodeId(),
-        session.getAuthTag().get(),
+        authTag,
         session.getInitiatorKey(),
         DiscoveryV5Message.from(createPing(session)));
   }
@@ -25,12 +26,12 @@ public class TaskMessageFactory {
         session.getNextRequestId(MessageCode.PING), session.getNodeRecord().getSeq());
   }
 
-  public static MessagePacket createFindNodePacket(NodeSession session) {
+  public static MessagePacket createFindNodePacket(BytesValue authTag, NodeSession session) {
     FindNodeMessage findNodeMessage = createFindNode(session);
     return MessagePacket.create(
         session.getHomeNodeId(),
         session.getNodeRecord().getNodeId(),
-        session.getAuthTag().get(),
+        authTag,
         session.getInitiatorKey(),
         DiscoveryV5Message.from(findNodeMessage));
   }

@@ -9,6 +9,7 @@ import tech.pegasys.artemis.util.bytes.Bytes8;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt64;
 
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
@@ -23,6 +24,15 @@ public class NodeRecordFactory {
     for (EnrSchemeInterpreter enrSchemeInterpreter : enrSchemeInterpreters) {
       interpreters.put(enrSchemeInterpreter.getScheme(), enrSchemeInterpreter);
     }
+  }
+
+  @SafeVarargs
+  public final NodeRecord createFromValues(
+      EnrScheme enrScheme,
+      UInt64 seq,
+      BytesValue signature,
+      Pair<String, Object>... fieldKeyPairs) {
+    return createFromValues(enrScheme, seq, signature, Arrays.asList(fieldKeyPairs));
   }
 
   public NodeRecord createFromValues(

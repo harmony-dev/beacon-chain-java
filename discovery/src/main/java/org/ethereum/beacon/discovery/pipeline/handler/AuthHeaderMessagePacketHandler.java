@@ -4,7 +4,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.discovery.Functions;
 import org.ethereum.beacon.discovery.NodeSession;
-import org.ethereum.beacon.discovery.enr.NodeRecord;
 import org.ethereum.beacon.discovery.message.DiscoveryV5Message;
 import org.ethereum.beacon.discovery.message.MessageCode;
 import org.ethereum.beacon.discovery.packet.AuthHeaderMessagePacket;
@@ -13,7 +12,6 @@ import org.ethereum.beacon.discovery.pipeline.EnvelopeHandler;
 import org.ethereum.beacon.discovery.pipeline.Field;
 import org.ethereum.beacon.discovery.task.TaskType;
 import org.javatuples.Triplet;
-import org.web3j.crypto.ECKeyPair;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import java.util.concurrent.CompletableFuture;
@@ -35,23 +33,22 @@ public class AuthHeaderMessagePacketHandler implements EnvelopeHandler {
     AuthHeaderMessagePacket packet =
         (AuthHeaderMessagePacket) envelope.get(Field.PACKET_AUTH_HEADER_MESSAGE);
     NodeSession session = (NodeSession) envelope.get(Field.SESSION);
-
     try {
-      byte[] ephemeralKeyBytes = new byte[32];
-      Functions.getRandom().nextBytes(ephemeralKeyBytes);
-      ECKeyPair ephemeralKey = ECKeyPair.create(ephemeralKeyBytes);
-      Triplet<BytesValue, BytesValue, BytesValue> hkdf =
-          Functions.hkdf_expand(
-              session.getHomeNodeId(),
-              session.getNodeRecord().getNodeId(),
-              BytesValue.wrap(ephemeralKey.getPrivateKey().toByteArray()),
-              (BytesValue) session.getNodeRecord().get(NodeRecord.FIELD_PKEY_SECP256K1),
-              session.getIdNonce());
-      BytesValue initiatorKey = hkdf.getValue0();
-      session.setInitiatorKey(initiatorKey);
-      BytesValue authResponseKey = hkdf.getValue2();
-      packet.decode(initiatorKey, authResponseKey);
-      packet.verify(session.getAuthTag().get(), session.getIdNonce());
+      // FIXME: make this logic without side-effect
+      packet.decode(
+          ephemeralPubKey -> {
+            Triplet<BytesValue, BytesValue, BytesValue> hkdf =
+                Functions.hkdf_expand(
+                    session.getNodeRecord().getNodeId(),
+                    session.getHomeNodeId(),
+                    session.getStaticNodeKey(),
+                    ephemeralPubKey,
+                    session.getIdNonce());
+            session.setInitiatorKey(hkdf.getValue0());
+            session.setRecipientKey(hkdf.getValue1());
+            return hkdf;
+          });
+      packet.verify(session.getIdNonce());
       envelope.put(Field.MESSAGE, packet.getMessage());
     } catch (AssertionError ex) {
       logger.info(

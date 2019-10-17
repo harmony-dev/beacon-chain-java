@@ -16,7 +16,7 @@ import tech.pegasys.artemis.util.bytes.Bytes32s;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import javax.crypto.Cipher;
-import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.math.BigInteger;
 import java.security.SecureRandom;
@@ -77,11 +77,11 @@ public class Functions {
   public static BytesValue aesgcm_encrypt(
       BytesValue privateKey, BytesValue nonce, BytesValue message, BytesValue aad) {
     try {
-      Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding", "BC");
+      Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
       cipher.init(
           Cipher.ENCRYPT_MODE,
           new SecretKeySpec(privateKey.extractArray(), "AES"),
-          new IvParameterSpec(nonce.extractArray()));
+          new GCMParameterSpec(128, nonce.extractArray()));
       cipher.updateAAD(aad.extractArray());
       return BytesValue.wrap(cipher.doFinal(message.extractArray()));
     } catch (Exception e) {
@@ -92,11 +92,11 @@ public class Functions {
   public static BytesValue aesgcm_decrypt(
       BytesValue privateKey, BytesValue nonce, BytesValue encoded, BytesValue aad) {
     try {
-      Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding", "BC");
+      Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
       cipher.init(
           Cipher.DECRYPT_MODE,
           new SecretKeySpec(privateKey.extractArray(), "AES"),
-          new IvParameterSpec(nonce.extractArray()));
+          new GCMParameterSpec(128, nonce.extractArray()));
       cipher.updateAAD(aad.extractArray());
       return BytesValue.wrap(cipher.doFinal(encoded.extractArray()));
     } catch (Exception e) {

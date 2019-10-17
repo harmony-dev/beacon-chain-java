@@ -20,6 +20,8 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import java.util.concurrent.CompletableFuture;
 
+import static org.ethereum.beacon.discovery.enr.NodeRecord.FIELD_PKEY_SECP256K1;
+
 /** Handles {@link WhoAreYouPacket} in {@link Field#PACKET_WHOAREYOU} field */
 public class WhoAreYouPacketHandler implements EnvelopeHandler {
   private static final Logger logger = LogManager.getLogger(WhoAreYouPacketHandler.class);
@@ -35,21 +37,26 @@ public class WhoAreYouPacketHandler implements EnvelopeHandler {
     WhoAreYouPacket packet = (WhoAreYouPacket) envelope.get(Field.PACKET_WHOAREYOU);
     NodeSession session = (NodeSession) envelope.get(Field.SESSION);
     try {
-      BytesValue authTag = session.getAuthTag().get();
-      packet.verify(session.getHomeNodeId(), authTag);
-      packet.getEnrSeq(); // FIXME: Their side enr seq. Do we need it?
+      NodeRecord respRecord = null;
+      if (packet.getEnrSeq().compareTo(session.getHomeNodeRecord().getSeq()) < 0) {
+        respRecord = session.getHomeNodeRecord();
+      }
+      BytesValue remotePubKey = (BytesValue) session.getNodeRecord().getKey(FIELD_PKEY_SECP256K1);
       byte[] ephemeralKeyBytes = new byte[32];
       Functions.getRandom().nextBytes(ephemeralKeyBytes);
-      ECKeyPair ephemeralKey = ECKeyPair.create(ephemeralKeyBytes); // TODO: generate
+      ECKeyPair ephemeralKey = ECKeyPair.create(ephemeralKeyBytes);
+
       Triplet<BytesValue, BytesValue, BytesValue> hkdf =
           Functions.hkdf_expand(
               session.getHomeNodeId(),
               session.getNodeRecord().getNodeId(),
-              BytesValue.wrap(ephemeralKey.getPrivateKey().toByteArray()),
-              (BytesValue) session.getNodeRecord().get(NodeRecord.FIELD_PKEY_SECP256K1),
+              BytesValue.wrap(ephemeralKeyBytes),
+              remotePubKey,
               packet.getIdNonce());
       BytesValue initiatorKey = hkdf.getValue0();
-      BytesValue staticNodeKey = hkdf.getValue1();
+      BytesValue recipientKey = hkdf.getValue1();
+      session.setInitiatorKey(initiatorKey);
+      session.setRecipientKey(recipientKey);
       BytesValue authResponseKey = hkdf.getValue2();
       V5Message taskMessage = null;
       if (session.loadTask() == TaskType.PING) {
@@ -62,16 +69,20 @@ public class WhoAreYouPacketHandler implements EnvelopeHandler {
                 "Type %s in envelope #%s is not known", session.loadTask(), envelope.getId()));
       }
 
+      BytesValue ephemeralPubKey = BytesValue.wrap(ephemeralKey.getPublicKey().toByteArray());
+      if (ephemeralPubKey.size() == 65) {
+        ephemeralPubKey = ephemeralPubKey.slice(1); // slice leading 00
+      }
       AuthHeaderMessagePacket response =
           AuthHeaderMessagePacket.create(
               session.getHomeNodeId(),
               session.getNodeRecord().getNodeId(),
               authResponseKey,
               packet.getIdNonce(),
-              staticNodeKey,
-              session.getHomeNodeRecord(),
-              BytesValue.wrap(ephemeralKey.getPublicKey().toByteArray()),
-              authTag,
+              session.getStaticNodeKey(),
+              respRecord,
+              ephemeralPubKey,
+              session.generateNonce(),
               initiatorKey,
               DiscoveryV5Message.from(taskMessage));
       session.sendOutgoing(response);

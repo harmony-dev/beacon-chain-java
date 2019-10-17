@@ -2,8 +2,8 @@ package org.ethereum.beacon.discovery.pipeline.handler;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.ethereum.beacon.discovery.NodeSession;
 import org.ethereum.beacon.discovery.NodeRecordInfo;
+import org.ethereum.beacon.discovery.NodeSession;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
 import org.ethereum.beacon.discovery.network.NetworkParcelV5;
 import org.ethereum.beacon.discovery.pipeline.Envelope;
@@ -16,6 +16,7 @@ import org.ethereum.beacon.discovery.storage.NodeTable;
 import org.ethereum.beacon.util.ExpirationScheduler;
 import org.javatuples.Pair;
 import tech.pegasys.artemis.util.bytes.Bytes32;
+import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import java.security.SecureRandom;
 import java.util.Map;
@@ -31,6 +32,7 @@ public class NodeIdToSession implements EnvelopeHandler {
   private static final int CLEANUP_DELAY_SECONDS = 180;
   private static final Logger logger = LogManager.getLogger(NodeIdToSession.class);
   private final NodeRecord homeNodeRecord;
+  private final BytesValue staticNodeKey;
   private final NodeBucketStorage nodeBucketStorage;
   private final AuthTagRepository authTagRepo;
   private final Map<Bytes32, NodeSession> recentSessions =
@@ -42,11 +44,13 @@ public class NodeIdToSession implements EnvelopeHandler {
 
   public NodeIdToSession(
       NodeRecord homeNodeRecord,
+      BytesValue staticNodeKey,
       NodeBucketStorage nodeBucketStorage,
       AuthTagRepository authTagRepo,
       NodeTable nodeTable,
       Pipeline outgoingPipeline) {
     this.homeNodeRecord = homeNodeRecord;
+    this.staticNodeKey = staticNodeKey;
     this.nodeBucketStorage = nodeBucketStorage;
     this.authTagRepo = authTagRepo;
     this.nodeTable = nodeTable;
@@ -89,6 +93,7 @@ public class NodeIdToSession implements EnvelopeHandler {
           new NodeSession(
               nodeRecord,
               homeNodeRecord,
+              staticNodeKey,
               nodeTable,
               nodeBucketStorage,
               authTagRepo,

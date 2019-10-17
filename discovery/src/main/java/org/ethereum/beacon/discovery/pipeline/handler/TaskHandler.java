@@ -29,10 +29,9 @@ public class TaskHandler implements EnvelopeHandler {
     NodeSession session = (NodeSession) envelope.get(Field.SESSION);
     CompletableFuture<Void> completableFuture =
         (CompletableFuture<Void>) envelope.get(Field.FUTURE);
+    // FIXME: this logic shouldbn't be here!!!!11
+    BytesValue authTag = session.generateNonce();
     if (session.getStatus().equals(NodeSession.SessionStatus.INITIAL)) {
-      byte[] authTagBytes = new byte[12];
-      rnd.nextBytes(authTagBytes);
-      BytesValue authTag = BytesValue.wrap(authTagBytes);
       RandomPacket randomPacket =
           RandomPacket.create(
               session.getHomeNodeId(),
@@ -45,11 +44,11 @@ public class TaskHandler implements EnvelopeHandler {
       session.saveFuture(completableFuture);
     } else if (session.getStatus().equals(NodeSession.SessionStatus.AUTHENTICATED)) {
       if (envelope.get(Field.TASK).equals(TaskType.PING)) {
-        session.sendOutgoing(TaskMessageFactory.createPingPacket(session));
+        session.sendOutgoing(TaskMessageFactory.createPingPacket(authTag, session));
         session.saveTask((TaskType) envelope.get(Field.TASK));
         session.saveFuture(completableFuture);
       } else if (envelope.get(Field.TASK).equals(TaskType.FINDNODE)) {
-        session.sendOutgoing(TaskMessageFactory.createFindNodePacket(session));
+        session.sendOutgoing(TaskMessageFactory.createFindNodePacket(authTag, session));
         session.saveTask((TaskType) envelope.get(Field.TASK));
         session.saveFuture(completableFuture);
       } else {

@@ -56,7 +56,7 @@ public class WhoAreYouPacket extends AbstractPacket {
     return decoded.idNonce;
   }
 
-  public Long getEnrSeq() {
+  public UInt64 getEnrSeq() {
     decode();
     return decoded.enrSeq;
   }
@@ -78,10 +78,8 @@ public class WhoAreYouPacket extends AbstractPacket {
     blank.authTag = BytesValue.wrap(((RlpString) payload.getValues().get(0)).getBytes());
     blank.idNonce = Bytes32.wrap(((RlpString) payload.getValues().get(1)).getBytes());
     blank.enrSeq =
-        UInt64.fromBytesLittleEndian(
-                Bytes8.rightPad(
-                    BytesValue.wrap(((RlpString) payload.getValues().get(2)).getBytes())))
-            .getValue();
+        UInt64.fromBytesBigEndian(
+            Bytes8.leftPad(BytesValue.wrap(((RlpString) payload.getValues().get(2)).getBytes())));
     this.decoded = blank;
   }
 
@@ -107,6 +105,6 @@ public class WhoAreYouPacket extends AbstractPacket {
     private Bytes32 magic;
     private BytesValue authTag;
     private Bytes32 idNonce;
-    private Long enrSeq;
+    private UInt64 enrSeq;
   }
 }

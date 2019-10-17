@@ -28,8 +28,8 @@ public class RandomPacket extends AbstractPacket {
   public static RandomPacket create(
       Bytes32 homeNodeId, Bytes32 destNodeId, BytesValue authTag, Random rnd) {
     BytesValue tag = Packet.createTag(homeNodeId, destNodeId);
-    byte[] authTagBytesRlp = RlpEncoder.encode(RlpString.create(authTag.extractArray()));
-    BytesValue authTagEncoded = BytesValue.wrap(authTagBytesRlp);
+    byte[] authTagRlp = RlpEncoder.encode(RlpString.create(authTag.extractArray()));
+    BytesValue authTagEncoded = BytesValue.wrap(authTagRlp);
     byte[] randomBytes = new byte[44];
     rnd.nextBytes(randomBytes); // at least 44 bytes of random data
     return new RandomPacket(tag.concat(authTagEncoded).concat(BytesValue.wrap(randomBytes)));
@@ -51,17 +51,17 @@ public class RandomPacket extends AbstractPacket {
     }
     RandomPacketDecoded blank = new RandomPacketDecoded();
     blank.tag = Bytes32.wrap(getBytes().slice(0, 32), 0);
-    blank.authTag = BytesValue.wrap(((RlpString) RlpDecoder.decode(getBytes().slice(32).extractArray()).getValues().get(0)).getBytes());
+    blank.authTag =
+        BytesValue.wrap(
+            ((RlpString) RlpDecoder.decode(getBytes().slice(32).extractArray()).getValues().get(0))
+                .getBytes());
     this.decoded = blank;
   }
 
   @Override
   public String toString() {
     if (decoded != null) {
-      return "RandomPacket{" +
-          "tag=" + decoded.tag +
-          ", authTag=" + decoded.authTag +
-          '}';
+      return "RandomPacket{" + "tag=" + decoded.tag + ", authTag=" + decoded.authTag + '}';
     } else {
       return "RandomPacket{" + getBytes() + '}';
     }

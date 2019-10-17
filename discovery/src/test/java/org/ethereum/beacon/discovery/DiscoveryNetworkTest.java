@@ -13,10 +13,10 @@ import org.ethereum.beacon.discovery.packet.MessagePacket;
 import org.ethereum.beacon.discovery.packet.RandomPacket;
 import org.ethereum.beacon.discovery.packet.UnknownPacket;
 import org.ethereum.beacon.discovery.packet.WhoAreYouPacket;
-import org.ethereum.beacon.discovery.task.TaskType;
 import org.ethereum.beacon.discovery.storage.NodeBucketStorage;
 import org.ethereum.beacon.discovery.storage.NodeTableStorage;
 import org.ethereum.beacon.discovery.storage.NodeTableStorageFactoryImpl;
+import org.ethereum.beacon.discovery.task.TaskType;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.javatuples.Pair;
 import org.junit.Test;
@@ -31,12 +31,16 @@ import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import static org.ethereum.beacon.discovery.task.TaskMessageFactory.DEFAULT_DISTANCE;
 import static org.ethereum.beacon.discovery.storage.NodeTableStorage.DEFAULT_SERIALIZER;
+import static org.ethereum.beacon.discovery.task.TaskMessageFactory.DEFAULT_DISTANCE;
 
 /** Same as {@link DiscoveryNoNetworkTest} but using real network */
 public class DiscoveryNetworkTest {
   private static final NodeRecordFactory NODE_RECORD_FACTORY = NodeRecordFactory.DEFAULT;
+  private final BytesValue testKey1 =
+      BytesValue.fromHexString("eef77acb6c6a6eebc5b363a475ac583ec7eccdb42b6481424c60f59aa326547f");
+  private final BytesValue testKey2 =
+      BytesValue.fromHexString("66fb62bfbd66b9177a138c1e5cddbe4f7c30c343e94e68df8769459cb1cde628");
 
   @Test
   public void test() throws Exception {
@@ -115,6 +119,7 @@ public class DiscoveryNetworkTest {
             nodeTableStorage1.get(),
             nodeBucketStorage1,
             nodeRecord1,
+            testKey1,
             Schedulers.createDefault().newSingleThreadDaemon("server-1"),
             Schedulers.createDefault().newSingleThreadDaemon("client-1"));
     DiscoveryManagerImpl discoveryManager2 =
@@ -122,6 +127,7 @@ public class DiscoveryNetworkTest {
             nodeTableStorage2.get(),
             nodeBucketStorage2,
             nodeRecord2,
+            testKey2,
             Schedulers.createDefault().newSingleThreadDaemon("server-2"),
             Schedulers.createDefault().newSingleThreadDaemon("client-2"));
 

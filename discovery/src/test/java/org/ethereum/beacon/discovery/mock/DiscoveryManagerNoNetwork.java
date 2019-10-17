@@ -15,16 +15,16 @@ import org.ethereum.beacon.discovery.pipeline.handler.BadPacketLogger;
 import org.ethereum.beacon.discovery.pipeline.handler.IncomingDataPacker;
 import org.ethereum.beacon.discovery.pipeline.handler.MessageHandler;
 import org.ethereum.beacon.discovery.pipeline.handler.MessagePacketHandler;
-import org.ethereum.beacon.discovery.pipeline.handler.NodeSessionRequestHandler;
 import org.ethereum.beacon.discovery.pipeline.handler.NodeIdToSession;
+import org.ethereum.beacon.discovery.pipeline.handler.NodeSessionRequestHandler;
 import org.ethereum.beacon.discovery.pipeline.handler.NotExpectedIncomingPacketHandler;
 import org.ethereum.beacon.discovery.pipeline.handler.OutgoingParcelHandler;
 import org.ethereum.beacon.discovery.pipeline.handler.TaskHandler;
 import org.ethereum.beacon.discovery.pipeline.handler.UnknownPacketTagToSender;
 import org.ethereum.beacon.discovery.pipeline.handler.UnknownPacketTypeByStatus;
 import org.ethereum.beacon.discovery.pipeline.handler.WhoAreYouAttempt;
-import org.ethereum.beacon.discovery.pipeline.handler.WhoAreYouSessionResolver;
 import org.ethereum.beacon.discovery.pipeline.handler.WhoAreYouPacketHandler;
+import org.ethereum.beacon.discovery.pipeline.handler.WhoAreYouSessionResolver;
 import org.ethereum.beacon.discovery.storage.AuthTagRepository;
 import org.ethereum.beacon.discovery.storage.NodeBucketStorage;
 import org.ethereum.beacon.discovery.storage.NodeTable;
@@ -56,11 +56,18 @@ public class DiscoveryManagerNoNetwork implements DiscoveryManager {
       NodeTable nodeTable,
       NodeBucketStorage nodeBucketStorage,
       NodeRecord homeNode,
+      BytesValue homeNodePrivateKey,
       Publisher<BytesValue> incomingPackets) {
     AuthTagRepository authTagRepo = new AuthTagRepository();
     this.incomingPackets = incomingPackets;
     NodeIdToSession nodeIdToSession =
-        new NodeIdToSession(homeNode, nodeBucketStorage, authTagRepo, nodeTable, outgoingPipeline);
+        new NodeIdToSession(
+            homeNode,
+            homeNodePrivateKey,
+            nodeBucketStorage,
+            authTagRepo,
+            nodeTable,
+            outgoingPipeline);
     incomingPipeline
         .addHandler(new IncomingDataPacker())
         .addHandler(new WhoAreYouAttempt(homeNode.getNodeId()))
