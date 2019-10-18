@@ -9,6 +9,7 @@ import org.ethereum.beacon.discovery.packet.UnknownPacket;
 import org.ethereum.beacon.discovery.pipeline.Envelope;
 import org.ethereum.beacon.discovery.pipeline.EnvelopeHandler;
 import org.ethereum.beacon.discovery.pipeline.Field;
+import org.ethereum.beacon.discovery.pipeline.HandlerUtil;
 
 /**
  * Resolves incoming packet type based on session states and places packet into the corresponding
@@ -19,12 +20,22 @@ public class UnknownPacketTypeByStatus implements EnvelopeHandler {
 
   @Override
   public void handle(Envelope envelope) {
-    if (!envelope.contains(Field.SESSION)) {
+    logger.trace(
+        () ->
+            String.format(
+                "Envelope %s in UnknownPacketTypeByStatus, checking requirements satisfaction",
+                envelope.getId()));
+    if (!HandlerUtil.requireField(Field.SESSION, envelope)) {
       return;
     }
-    if (!envelope.contains(Field.PACKET_UNKNOWN)) {
+    if (!HandlerUtil.requireField(Field.PACKET_UNKNOWN, envelope)) {
       return;
     }
+    logger.trace(
+        () ->
+            String.format(
+                "Envelope %s in UnknownPacketTypeByStatus, requirements are satisfied!", envelope.getId()));
+
     UnknownPacket unknownPacket = (UnknownPacket) envelope.get(Field.PACKET_UNKNOWN);
     NodeSession session = (NodeSession) envelope.get(Field.SESSION);
     switch (session.getStatus()) {

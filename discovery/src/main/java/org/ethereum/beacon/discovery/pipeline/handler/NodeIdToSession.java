@@ -9,6 +9,7 @@ import org.ethereum.beacon.discovery.network.NetworkParcelV5;
 import org.ethereum.beacon.discovery.pipeline.Envelope;
 import org.ethereum.beacon.discovery.pipeline.EnvelopeHandler;
 import org.ethereum.beacon.discovery.pipeline.Field;
+import org.ethereum.beacon.discovery.pipeline.HandlerUtil;
 import org.ethereum.beacon.discovery.pipeline.Pipeline;
 import org.ethereum.beacon.discovery.storage.AuthTagRepository;
 import org.ethereum.beacon.discovery.storage.NodeBucketStorage;
@@ -59,9 +60,19 @@ public class NodeIdToSession implements EnvelopeHandler {
 
   @Override
   public void handle(Envelope envelope) {
-    if (!envelope.contains(Field.SESSION_LOOKUP)) {
+    logger.trace(
+        () ->
+            String.format(
+                "Envelope %s in NodeIdToSession, checking requirements satisfaction",
+                envelope.getId()));
+    if (!HandlerUtil.requireField(Field.SESSION_LOOKUP, envelope)) {
       return;
     }
+    logger.trace(
+        () ->
+            String.format(
+                "Envelope %s in NodeIdToSession, requirements are satisfied!", envelope.getId()));
+
     Pair<Bytes32, Runnable> sessionRequest =
         (Pair<Bytes32, Runnable>) envelope.get(Field.SESSION_LOOKUP);
     envelope.remove(Field.SESSION_LOOKUP);

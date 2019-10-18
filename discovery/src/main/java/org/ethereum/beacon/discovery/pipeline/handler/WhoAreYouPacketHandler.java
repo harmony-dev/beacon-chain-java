@@ -12,6 +12,7 @@ import org.ethereum.beacon.discovery.packet.WhoAreYouPacket;
 import org.ethereum.beacon.discovery.pipeline.Envelope;
 import org.ethereum.beacon.discovery.pipeline.EnvelopeHandler;
 import org.ethereum.beacon.discovery.pipeline.Field;
+import org.ethereum.beacon.discovery.pipeline.HandlerUtil;
 import org.ethereum.beacon.discovery.task.TaskMessageFactory;
 import org.ethereum.beacon.discovery.task.TaskType;
 import org.javatuples.Triplet;
@@ -28,12 +29,23 @@ public class WhoAreYouPacketHandler implements EnvelopeHandler {
 
   @Override
   public void handle(Envelope envelope) {
-    if (!envelope.contains(Field.PACKET_WHOAREYOU)) {
+    logger.trace(
+        () ->
+            String.format(
+                "Envelope %s in WhoAreYouPacketHandler, checking requirements satisfaction",
+                envelope.getId()));
+    if (!HandlerUtil.requireField(Field.SESSION, envelope)) {
       return;
     }
-    if (!envelope.contains(Field.SESSION)) {
+    if (!HandlerUtil.requireField(Field.PACKET_WHOAREYOU, envelope)) {
       return;
     }
+    logger.trace(
+        () ->
+            String.format(
+                "Envelope %s in WhoAreYouPacketHandler, requirements are satisfied!",
+                envelope.getId()));
+
     WhoAreYouPacket packet = (WhoAreYouPacket) envelope.get(Field.PACKET_WHOAREYOU);
     NodeSession session = (NodeSession) envelope.get(Field.SESSION);
     try {

@@ -11,6 +11,7 @@ import org.ethereum.beacon.discovery.packet.WhoAreYouPacket;
 import org.ethereum.beacon.discovery.pipeline.Envelope;
 import org.ethereum.beacon.discovery.pipeline.EnvelopeHandler;
 import org.ethereum.beacon.discovery.pipeline.Field;
+import org.ethereum.beacon.discovery.pipeline.HandlerUtil;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
@@ -20,12 +21,23 @@ public class NotExpectedIncomingPacketHandler implements EnvelopeHandler {
 
   @Override
   public void handle(Envelope envelope) {
-    if (!envelope.contains(Field.PACKET_UNKNOWN)) {
+    logger.trace(
+        () ->
+            String.format(
+                "Envelope %s in NotExpectedIncomingPacketHandler, checking requirements satisfaction",
+                envelope.getId()));
+    if (!HandlerUtil.requireField(Field.PACKET_UNKNOWN, envelope)) {
       return;
     }
-    if (!envelope.contains(Field.SESSION)) {
+    if (!HandlerUtil.requireField(Field.SESSION, envelope)) {
       return;
     }
+    logger.trace(
+        () ->
+            String.format(
+                "Envelope %s in NotExpectedIncomingPacketHandler, requirements are satisfied!",
+                envelope.getId()));
+
     UnknownPacket unknownPacket = (UnknownPacket) envelope.get(Field.PACKET_UNKNOWN);
     NodeSession session = (NodeSession) envelope.get(Field.SESSION);
     try {

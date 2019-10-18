@@ -10,6 +10,7 @@ import org.ethereum.beacon.discovery.packet.AuthHeaderMessagePacket;
 import org.ethereum.beacon.discovery.pipeline.Envelope;
 import org.ethereum.beacon.discovery.pipeline.EnvelopeHandler;
 import org.ethereum.beacon.discovery.pipeline.Field;
+import org.ethereum.beacon.discovery.pipeline.HandlerUtil;
 import org.ethereum.beacon.discovery.task.TaskType;
 import org.javatuples.Triplet;
 import tech.pegasys.artemis.util.bytes.BytesValue;
@@ -24,12 +25,23 @@ public class AuthHeaderMessagePacketHandler implements EnvelopeHandler {
 
   @Override
   public void handle(Envelope envelope) {
-    if (!envelope.contains(Field.PACKET_AUTH_HEADER_MESSAGE)) {
+    logger.trace(
+        () ->
+            String.format(
+                "Envelope %s in AuthHeaderMessagePacketHandler, checking requirements satisfaction",
+                envelope.getId()));
+    if (!HandlerUtil.requireField(Field.PACKET_AUTH_HEADER_MESSAGE, envelope)) {
       return;
     }
-    if (!envelope.contains(Field.SESSION)) {
+    if (!HandlerUtil.requireField(Field.SESSION, envelope)) {
       return;
     }
+    logger.trace(
+        () ->
+            String.format(
+                "Envelope %s in AuthHeaderMessagePacketHandler, requirements are satisfied!",
+                envelope.getId()));
+
     AuthHeaderMessagePacket packet =
         (AuthHeaderMessagePacket) envelope.get(Field.PACKET_AUTH_HEADER_MESSAGE);
     NodeSession session = (NodeSession) envelope.get(Field.SESSION);

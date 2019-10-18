@@ -7,6 +7,7 @@ import org.ethereum.beacon.discovery.packet.WhoAreYouPacket;
 import org.ethereum.beacon.discovery.pipeline.Envelope;
 import org.ethereum.beacon.discovery.pipeline.EnvelopeHandler;
 import org.ethereum.beacon.discovery.pipeline.Field;
+import org.ethereum.beacon.discovery.pipeline.HandlerUtil;
 import org.ethereum.beacon.discovery.storage.AuthTagRepository;
 
 import java.util.Optional;
@@ -25,9 +26,19 @@ public class WhoAreYouSessionResolver implements EnvelopeHandler {
 
   @Override
   public void handle(Envelope envelope) {
-    if (!envelope.contains(Field.PACKET_WHOAREYOU)) {
+    logger.trace(
+        () ->
+            String.format(
+                "Envelope %s in WhoAreYouSessionResolver, checking requirements satisfaction",
+                envelope.getId()));
+    if (!HandlerUtil.requireField(Field.PACKET_WHOAREYOU, envelope)) {
       return;
     }
+    logger.trace(
+        () ->
+            String.format(
+                "Envelope %s in WhoAreYouSessionResolver, requirements are satisfied!",
+                envelope.getId()));
 
     WhoAreYouPacket whoAreYouPacket = (WhoAreYouPacket) envelope.get(Field.PACKET_WHOAREYOU);
     Optional<NodeSession> nodeSessionOptional = authTagRepo.get(whoAreYouPacket.getAuthTag());

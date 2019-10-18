@@ -5,6 +5,7 @@ import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.discovery.pipeline.Envelope;
 import org.ethereum.beacon.discovery.pipeline.EnvelopeHandler;
 import org.ethereum.beacon.discovery.pipeline.Field;
+import org.ethereum.beacon.discovery.pipeline.HandlerUtil;
 
 /** Logs all packets which are stored in {@link Field#BAD_PACKET} */
 public class BadPacketLogger implements EnvelopeHandler {
@@ -12,9 +13,19 @@ public class BadPacketLogger implements EnvelopeHandler {
 
   @Override
   public void handle(Envelope envelope) {
-    if (!envelope.contains(Field.BAD_PACKET)) {
+    logger.trace(
+        () ->
+            String.format(
+                "Envelope %s in BadPacketLogger, checking requirements satisfaction",
+                envelope.getId()));
+    if (!HandlerUtil.requireField(Field.BAD_PACKET, envelope)) {
       return;
     }
+    logger.trace(
+        () ->
+            String.format(
+                "Envelope %s in BadPacketLogger, requirements are satisfied!", envelope.getId()));
+
     logger.debug(
         () ->
             String.format(

@@ -9,6 +9,7 @@ import org.ethereum.beacon.discovery.packet.MessagePacket;
 import org.ethereum.beacon.discovery.pipeline.Envelope;
 import org.ethereum.beacon.discovery.pipeline.EnvelopeHandler;
 import org.ethereum.beacon.discovery.pipeline.Field;
+import org.ethereum.beacon.discovery.pipeline.HandlerUtil;
 import org.ethereum.beacon.discovery.task.TaskType;
 
 import java.util.concurrent.CompletableFuture;
@@ -19,12 +20,23 @@ public class MessagePacketHandler implements EnvelopeHandler {
 
   @Override
   public void handle(Envelope envelope) {
-    if (!envelope.contains(Field.PACKET_MESSAGE)) {
+    logger.trace(
+        () ->
+            String.format(
+                "Envelope %s in MessagePacketHandler, checking requirements satisfaction",
+                envelope.getId()));
+    if (!HandlerUtil.requireField(Field.PACKET_MESSAGE, envelope)) {
       return;
     }
-    if (!envelope.contains(Field.SESSION)) {
+    if (!HandlerUtil.requireField(Field.SESSION, envelope)) {
       return;
     }
+    logger.trace(
+        () ->
+            String.format(
+                "Envelope %s in MessagePacketHandler, requirements are satisfied!",
+                envelope.getId()));
+
     MessagePacket packet = (MessagePacket) envelope.get(Field.PACKET_MESSAGE);
     NodeSession session = (NodeSession) envelope.get(Field.SESSION);
 
@@ -55,10 +67,14 @@ public class MessagePacketHandler implements EnvelopeHandler {
     TaskType taskType = session.loadTask();
     if (future != null) {
       boolean taskCompleted = false;
-      if (TaskType.PING.equals(taskType) && packet.getMessage() instanceof DiscoveryV5Message && ((DiscoveryV5Message) packet.getMessage()).getCode() == MessageCode.PONG) {
+      if (TaskType.PING.equals(taskType)
+          && packet.getMessage() instanceof DiscoveryV5Message
+          && ((DiscoveryV5Message) packet.getMessage()).getCode() == MessageCode.PONG) {
         taskCompleted = true;
       }
-      if (TaskType.FINDNODE.equals(taskType) && packet.getMessage() instanceof DiscoveryV5Message && ((DiscoveryV5Message) packet.getMessage()).getCode() == MessageCode.NODES) {
+      if (TaskType.FINDNODE.equals(taskType)
+          && packet.getMessage() instanceof DiscoveryV5Message
+          && ((DiscoveryV5Message) packet.getMessage()).getCode() == MessageCode.NODES) {
         taskCompleted = true;
       }
       if (taskCompleted) {
