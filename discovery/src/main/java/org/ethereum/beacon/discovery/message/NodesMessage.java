@@ -60,7 +60,7 @@ public class NodesMessage implements V5Message {
 
   @Override
   public BytesValue getBytes() {
-    return Bytes1.intToBytes1(MessageCode.PONG.byteCode())
+    return Bytes1.intToBytes1(MessageCode.NODES.byteCode())
         .concat(
             BytesValue.wrap(
                 RlpEncoder.encode(

@@ -7,6 +7,7 @@ import org.ethereum.beacon.db.source.HoleyList;
 import org.ethereum.beacon.db.source.impl.DataSourceList;
 import org.ethereum.beacon.discovery.Functions;
 import org.ethereum.beacon.discovery.NodeRecordInfo;
+import org.ethereum.beacon.discovery.enr.NodeRecord;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
@@ -24,7 +25,7 @@ public class NodeBucketStorageImpl implements NodeBucketStorage {
   private final Bytes32 homeNodeId;
 
   public NodeBucketStorageImpl(
-      Database database, SerializerFactory serializerFactory, Bytes32 homeNodeId) {
+      Database database, SerializerFactory serializerFactory, NodeRecord homeNode) {
     DataSource<BytesValue, BytesValue> nodeBucketsSource =
         database.createStorage(NODE_BUCKET_STORAGE_NAME);
     this.nodeBucketsTable =
@@ -32,7 +33,13 @@ public class NodeBucketStorageImpl implements NodeBucketStorage {
             nodeBucketsSource,
             serializerFactory.getSerializer(NodeBucket.class),
             serializerFactory.getDeserializer(NodeBucket.class));
-    this.homeNodeId = homeNodeId;
+    this.homeNodeId = homeNode.getNodeId();
+    // Empty storage, saving home node
+    if (!nodeBucketsTable.get(0).isPresent()) {
+      NodeBucket zero = new NodeBucket();
+      zero.put(NodeRecordInfo.createDefault(homeNode));
+      nodeBucketsTable.put(0, zero);
+    }
   }
 
   @Override

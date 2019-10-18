@@ -77,7 +77,7 @@ public class AuthHeaderMessagePacket extends AbstractPacket {
                 RlpString.create(5),
                 RlpString.create(idNonceSig.extractArray()),
                 RlpString.create(
-                    nodeRecord == null ? null : nodeRecord.serialize().extractArray())));
+                    nodeRecord == null ? new byte[0] : nodeRecord.serialize().extractArray())));
     BytesValue authResponse =
         Functions.aesgcm_encrypt(
             authResponseKey, ZERO_NONCE, BytesValue.wrap(authResponsePt), BytesValue.EMPTY);

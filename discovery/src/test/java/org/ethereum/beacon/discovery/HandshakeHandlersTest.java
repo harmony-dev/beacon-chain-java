@@ -1,9 +1,7 @@
 package org.ethereum.beacon.discovery;
 
 import org.ethereum.beacon.db.Database;
-import org.ethereum.beacon.discovery.enr.EnrScheme;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
-import org.ethereum.beacon.discovery.enr.NodeRecordFactory;
 import org.ethereum.beacon.discovery.message.FindNodeMessage;
 import org.ethereum.beacon.discovery.packet.Packet;
 import org.ethereum.beacon.discovery.packet.WhoAreYouPacket;
@@ -18,14 +16,10 @@ import org.ethereum.beacon.discovery.storage.NodeTableStorageFactoryImpl;
 import org.ethereum.beacon.discovery.task.TaskType;
 import org.javatuples.Pair;
 import org.junit.Test;
-import org.web3j.crypto.ECKeyPair;
 import tech.pegasys.artemis.util.bytes.Bytes32;
-import tech.pegasys.artemis.util.bytes.Bytes4;
-import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt64;
 
-import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -39,47 +33,15 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class HandshakeHandlersTest {
-  private final BytesValue testKey1 =
-      BytesValue.fromHexString("eef77acb6c6a6eebc5b363a475ac583ec7eccdb42b6481424c60f59aa326547f");
-  private final BytesValue testKey2 =
-      BytesValue.fromHexString("66fb62bfbd66b9177a138c1e5cddbe4f7c30c343e94e68df8769459cb1cde628");
-  private Bytes32 nodeId1;
-  private Bytes32 nodeId2;
-
-  public HandshakeHandlersTest() {
-    byte[] homeNodeIdBytes = new byte[32];
-    homeNodeIdBytes[0] = 0x01;
-    byte[] destNodeIdBytes = new byte[32];
-    destNodeIdBytes[0] = 0x02;
-    this.nodeId1 = Bytes32.wrap(homeNodeIdBytes);
-    this.nodeId2 = Bytes32.wrap(destNodeIdBytes);
-  }
 
   @Test
   public void authHeaderHandlerTest() throws Exception {
     // Node1
-    NodeRecord nodeRecord1 =
-        NodeRecordFactory.DEFAULT.createFromValues(
-            EnrScheme.V4,
-            UInt64.valueOf(1),
-            Bytes96.EMPTY,
-            Pair.with(
-                NodeRecord.FIELD_IP_V4,
-                Bytes4.wrap(InetAddress.getByName("127.0.0.1").getAddress())),
-            Pair.with(NodeRecord.FIELD_UDP_V4, 30303),
-            Pair.with(NodeRecord.FIELD_PKEY_SECP256K1, BytesValue.wrap(ECKeyPair.create(testKey1.extractArray()).getPublicKey().toByteArray())));
+    Pair<BytesValue, NodeRecord> nodePair1 = TestUtil.generateNode(30303);
+    NodeRecord nodeRecord1 = nodePair1.getValue1();
     // Node2
-    NodeRecord nodeRecord2 =
-        NodeRecordFactory.DEFAULT.createFromValues(
-            EnrScheme.V4,
-            UInt64.valueOf(1),
-            Bytes96.EMPTY,
-            Pair.with(
-                NodeRecord.FIELD_IP_V4,
-                Bytes4.wrap(InetAddress.getByName("127.0.0.1").getAddress())),
-            Pair.with(NodeRecord.FIELD_UDP_V4, 30304),
-            Pair.with(NodeRecord.FIELD_PKEY_SECP256K1, BytesValue.wrap(ECKeyPair.create(testKey2.extractArray()).getPublicKey().toByteArray())));
-
+    Pair<BytesValue, NodeRecord> nodePair2 = TestUtil.generateNode(30304);
+    NodeRecord nodeRecord2 = nodePair2.getValue1();
     Random rnd = new Random();
     NodeTableStorageFactoryImpl nodeTableStorageFactory = new NodeTableStorageFactoryImpl();
     Database database1 = Database.inMemoryDB();
@@ -96,8 +58,7 @@ public class HandshakeHandlersTest {
                   }
                 });
     NodeBucketStorage nodeBucketStorage1 =
-        nodeTableStorageFactory.createBuckets(
-            database1, DEFAULT_SERIALIZER, nodeRecord1.getNodeId());
+        nodeTableStorageFactory.createBucketStorage(database1, DEFAULT_SERIALIZER, nodeRecord1);
     NodeTableStorage nodeTableStorage2 =
         nodeTableStorageFactory.createTable(
             database2,
@@ -110,8 +71,7 @@ public class HandshakeHandlersTest {
                   }
                 });
     NodeBucketStorage nodeBucketStorage2 =
-        nodeTableStorageFactory.createBuckets(
-            database2, DEFAULT_SERIALIZER, nodeRecord2.getNodeId());
+        nodeTableStorageFactory.createBucketStorage(database2, DEFAULT_SERIALIZER, nodeRecord2);
 
     // Node1 create AuthHeaderPacket
     final Packet[] authHeaderPacket = new Packet[1];
@@ -126,7 +86,7 @@ public class HandshakeHandlersTest {
         new NodeSession(
             nodeRecord2,
             nodeRecord1,
-            testKey1,
+            nodePair1.getValue0(),
             nodeTableStorage1.get(),
             nodeBucketStorage1,
             authTagRepository1,
@@ -140,7 +100,7 @@ public class HandshakeHandlersTest {
         new NodeSession(
             nodeRecord1,
             nodeRecord2,
-            testKey2,
+            nodePair2.getValue0(),
             nodeTableStorage2.get(),
             nodeBucketStorage2,
             new AuthTagRepository(),
@@ -156,7 +116,7 @@ public class HandshakeHandlersTest {
     authTagRepository1.put(authTag, nodeSessionAt1For2);
     envelopeAt1From2.put(
         Field.PACKET_WHOAREYOU,
-        WhoAreYouPacket.create(nodeId1, authTag, idNonce, UInt64.ZERO));
+        WhoAreYouPacket.create(nodePair1.getValue1().getNodeId(), authTag, idNonce, UInt64.ZERO));
     envelopeAt1From2.put(Field.SESSION, nodeSessionAt1For2);
     nodeSessionAt1For2.saveTask(TaskType.FINDNODE);
     whoAreYouPacketHandlerNode1.handle(envelopeAt1From2);

@@ -103,8 +103,7 @@ public class NodeBucketTest {
     Database database = Database.inMemoryDB();
     NodeTableStorageFactoryImpl nodeTableStorageFactory = new NodeTableStorageFactoryImpl();
     NodeBucketStorage nodeBucketStorage =
-        nodeTableStorageFactory.createBuckets(
-            database, DEFAULT_SERIALIZER, initial.getNode().getNodeId());
+        nodeTableStorageFactory.createBucketStorage(database, DEFAULT_SERIALIZER, initial.getNode());
 
     for (int i = 0; i < 20; ) {
       NodeRecordInfo nodeRecordInfo = generateUniqueRecord();

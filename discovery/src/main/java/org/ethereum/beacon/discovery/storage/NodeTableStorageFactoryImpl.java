@@ -50,8 +50,8 @@ public class NodeTableStorageFactoryImpl implements NodeTableStorageFactory {
   }
 
   @Override
-  public NodeBucketStorage createBuckets(
-      Database database, SerializerFactory serializerFactory, Bytes32 homeNodeId) {
-    return new NodeBucketStorageImpl(database, serializerFactory, homeNodeId);
+  public NodeBucketStorage createBucketStorage(
+      Database database, SerializerFactory serializerFactory, NodeRecord homeNode) {
+    return new NodeBucketStorageImpl(database, serializerFactory, homeNode);
   }
 }

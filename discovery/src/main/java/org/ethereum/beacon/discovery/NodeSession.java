@@ -73,6 +73,7 @@ public class NodeSession {
   }
 
   public synchronized void sendOutgoing(Packet packet) {
+    logger.trace(() -> String.format("Sending outgoing packet %s in session %s", packet, this));
     outgoing.accept(packet);
   }
 
@@ -147,6 +148,10 @@ public class NodeSession {
 
   public NodeTable getNodeTable() {
     return nodeTable;
+  }
+
+  public void putRecordInBucket(NodeRecordInfo nodeRecordInfo) {
+    nodeBucketStorage.put(nodeRecordInfo);
   }
 
   public Optional<NodeBucket> getBucket(int index) {

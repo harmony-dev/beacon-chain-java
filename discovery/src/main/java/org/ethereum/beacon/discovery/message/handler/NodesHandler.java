@@ -1,7 +1,9 @@
 package org.ethereum.beacon.discovery.message.handler;
 
-import org.ethereum.beacon.discovery.NodeSession;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.discovery.NodeRecordInfo;
+import org.ethereum.beacon.discovery.NodeSession;
 import org.ethereum.beacon.discovery.message.MessageCode;
 import org.ethereum.beacon.discovery.message.NodesMessage;
 import org.ethereum.beacon.util.ExpirationScheduler;
@@ -12,6 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 public class NodesHandler implements MessageHandler<NodesMessage> {
+  private static final Logger logger = LogManager.getLogger(FindNodeHandler.class);
   private static final int CLEANUP_DELAY_SECONDS = 60;
   private ExpirationScheduler<BytesValue> nodeExpirationScheduler =
       new ExpirationScheduler<>(CLEANUP_DELAY_SECONDS, TimeUnit.SECONDS);
@@ -38,17 +41,23 @@ public class NodesHandler implements MessageHandler<NodesMessage> {
     }
 
     // Parse node records
+    logger.trace(
+        () ->
+            String.format(
+                "Received %s node records in session %s. Total buckets expected: %s",
+                message.getNodeRecordsSize(), session, message.getTotal()));
     message
         .getNodeRecords()
         .forEach(
             nodeRecordV5 -> {
+              NodeRecordInfo nodeRecordInfo = NodeRecordInfo.createDefault(nodeRecordV5);
               if (!session.getNodeTable().getNode(nodeRecordV5.getNodeId()).isPresent()) {
+                session.getNodeTable().save(nodeRecordInfo);
                 // TODO: should we update-merge?
-                session.getNodeTable().save(NodeRecordInfo.createDefault(nodeRecordV5));
               }
+              session.putRecordInBucket(nodeRecordInfo);
             });
   }
-
 
   private synchronized void updateExpiration(BytesValue requestId, NodeSession session) {
     nodeExpirationScheduler.put(

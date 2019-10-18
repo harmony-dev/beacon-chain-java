@@ -99,4 +99,9 @@ public class DiscoveryV5Message implements DiscoveryMessage {
         }
     }
   }
+
+  @Override
+  public String toString() {
+    return "DiscoveryV5Message{" + "code=" + getCode() + ", bytes=" + getBytes() + '}';
+  }
 }

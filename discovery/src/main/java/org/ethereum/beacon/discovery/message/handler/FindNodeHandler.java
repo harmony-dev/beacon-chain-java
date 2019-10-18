@@ -1,7 +1,9 @@
 package org.ethereum.beacon.discovery.message.handler;
 
-import org.ethereum.beacon.discovery.NodeSession;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.discovery.NodeRecordInfo;
+import org.ethereum.beacon.discovery.NodeSession;
 import org.ethereum.beacon.discovery.message.DiscoveryV5Message;
 import org.ethereum.beacon.discovery.message.FindNodeMessage;
 import org.ethereum.beacon.discovery.message.NodesMessage;
@@ -14,6 +16,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class FindNodeHandler implements MessageHandler<FindNodeMessage> {
+  private static final Logger logger = LogManager.getLogger(FindNodeHandler.class);
 
   public FindNodeHandler() {}
 
@@ -25,6 +28,11 @@ public class FindNodeHandler implements MessageHandler<FindNodeMessage> {
             .filter(Optional::isPresent)
             .map(Optional::get)
             .collect(Collectors.toList());
+    logger.trace(
+        () ->
+            String.format(
+                "Sending %s nodeBuckets in reply to request in session %s",
+                nodeBuckets.size(), session));
     nodeBuckets.forEach(
         bucket ->
             session.sendOutgoing(

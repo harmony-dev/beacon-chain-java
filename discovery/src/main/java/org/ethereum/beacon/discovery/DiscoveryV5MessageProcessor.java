@@ -1,5 +1,7 @@
 package org.ethereum.beacon.discovery;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.discovery.message.DiscoveryV5Message;
 import org.ethereum.beacon.discovery.message.MessageCode;
 import org.ethereum.beacon.discovery.message.handler.FindNodeHandler;
@@ -12,6 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class DiscoveryV5MessageProcessor implements DiscoveryMessageProcessor<DiscoveryV5Message> {
+  private static final Logger logger = LogManager.getLogger(DiscoveryV5MessageProcessor.class);
   private final Map<MessageCode, MessageHandler> messageHandlers = new HashMap<>();
 
   public DiscoveryV5MessageProcessor() {
@@ -30,6 +33,7 @@ public class DiscoveryV5MessageProcessor implements DiscoveryMessageProcessor<Di
   public void handleMessage(DiscoveryV5Message message, NodeSession session) {
     MessageCode code = message.getCode();
     MessageHandler messageHandler = messageHandlers.get(code);
+    logger.trace(() -> String.format("Handling message %s in session %s", message, session));
     if (messageHandler == null) {
       throw new RuntimeException("Not implemented yet");
     }
