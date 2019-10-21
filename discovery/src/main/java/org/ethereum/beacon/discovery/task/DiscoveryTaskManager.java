@@ -174,7 +174,7 @@ public class DiscoveryTaskManager {
         .filter(RECURSIVE_LOOKUP_NODE_RULE)
         .forEach(
             nodeRecord ->
-                liveCheckTasks.add(
+                recursiveLookupTasks.add(
                     nodeRecord,
                     () -> {},
                     () ->
