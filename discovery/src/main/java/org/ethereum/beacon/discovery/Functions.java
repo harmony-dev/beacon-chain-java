@@ -1,5 +1,6 @@
 package org.ethereum.beacon.discovery;
 
+import com.google.common.base.Objects;
 import org.bouncycastle.crypto.Digest;
 import org.bouncycastle.crypto.digests.SHA256Digest;
 import org.bouncycastle.crypto.generators.HKDFBytesGenerator;
@@ -7,7 +8,6 @@ import org.bouncycastle.crypto.params.ECDomainParameters;
 import org.bouncycastle.crypto.params.HKDFParameters;
 import org.bouncycastle.math.ec.ECPoint;
 import org.ethereum.beacon.crypto.Hashes;
-import org.javatuples.Triplet;
 import org.web3j.crypto.ECKeyPair;
 import org.web3j.crypto.Sign;
 import tech.pegasys.artemis.util.bytes.Bytes1;
@@ -117,7 +117,7 @@ public class Functions {
    * prk = HKDF-Extract(secret, id-nonce)
    * initiator-key, recipient-key, auth-resp-key = HKDF-Expand(prk, info)</code>
    */
-  public static Triplet<BytesValue, BytesValue, BytesValue> hkdf_expand(
+  public static HKDFKeys hkdf_expand(
       BytesValue srcNodeId,
       BytesValue destNodeId,
       BytesValue srcPrivKey,
@@ -156,7 +156,7 @@ public class Functions {
       BytesValue initiatorKey = hkdfOutput.slice(0, INITIATOR_KEY_LENGTH);
       BytesValue recipientKey = hkdfOutput.slice(INITIATOR_KEY_LENGTH, RECIPIENT_KEY_LENGTH);
       BytesValue authRespKey = hkdfOutput.slice(INITIATOR_KEY_LENGTH + RECIPIENT_KEY_LENGTH);
-      return Triplet.with(initiatorKey, recipientKey, authRespKey);
+      return new HKDFKeys(initiatorKey, recipientKey, authRespKey);
     } catch (Exception ex) {
       throw new RuntimeException(ex);
     }
@@ -186,5 +186,44 @@ public class Functions {
       }
     }
     return logDistance;
+  }
+
+  public static class HKDFKeys {
+    private final BytesValue initiatorKey;
+    private final BytesValue recipientKey;
+    private final BytesValue authResponseKey;
+
+    public HKDFKeys(BytesValue initiatorKey, BytesValue recipientKey, BytesValue authResponseKey) {
+      this.initiatorKey = initiatorKey;
+      this.recipientKey = recipientKey;
+      this.authResponseKey = authResponseKey;
+    }
+
+    public BytesValue getInitiatorKey() {
+      return initiatorKey;
+    }
+
+    public BytesValue getRecipientKey() {
+      return recipientKey;
+    }
+
+    public BytesValue getAuthResponseKey() {
+      return authResponseKey;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      HKDFKeys hkdfKeys = (HKDFKeys) o;
+      return Objects.equal(initiatorKey, hkdfKeys.initiatorKey)
+          && Objects.equal(recipientKey, hkdfKeys.recipientKey)
+          && Objects.equal(authResponseKey, hkdfKeys.authResponseKey);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hashCode(initiatorKey, recipientKey, authResponseKey);
+    }
   }
 }

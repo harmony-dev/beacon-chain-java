@@ -16,7 +16,6 @@ import org.ethereum.beacon.discovery.pipeline.HandlerUtil;
 import org.ethereum.beacon.discovery.task.TaskMessageFactory;
 import org.ethereum.beacon.discovery.task.TaskType;
 import org.ethereum.beacon.util.Utils;
-import org.javatuples.Triplet;
 import org.web3j.crypto.ECKeyPair;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
@@ -59,18 +58,16 @@ public class WhoAreYouPacketHandler implements EnvelopeHandler {
       Functions.getRandom().nextBytes(ephemeralKeyBytes);
       ECKeyPair ephemeralKey = ECKeyPair.create(ephemeralKeyBytes);
 
-      Triplet<BytesValue, BytesValue, BytesValue> hkdf =
+      Functions.HKDFKeys hkdfKeys =
           Functions.hkdf_expand(
               session.getHomeNodeId(),
               session.getNodeRecord().getNodeId(),
               BytesValue.wrap(ephemeralKeyBytes),
               remotePubKey,
               packet.getIdNonce());
-      BytesValue initiatorKey = hkdf.getValue0();
-      BytesValue recipientKey = hkdf.getValue1();
-      session.setInitiatorKey(initiatorKey);
-      session.setRecipientKey(recipientKey);
-      BytesValue authResponseKey = hkdf.getValue2();
+      session.setInitiatorKey(hkdfKeys.getInitiatorKey());
+      session.setRecipientKey(hkdfKeys.getRecipientKey());
+      BytesValue authResponseKey = hkdfKeys.getAuthResponseKey();
       V5Message taskMessage = null;
       if (session.loadTask() == TaskType.PING) {
         taskMessage = TaskMessageFactory.createPing(session);
@@ -94,7 +91,7 @@ public class WhoAreYouPacketHandler implements EnvelopeHandler {
               respRecord,
               ephemeralPubKey,
               session.generateNonce(),
-              initiatorKey,
+              hkdfKeys.getInitiatorKey(),
               DiscoveryV5Message.from(taskMessage));
       session.sendOutgoing(response);
     } catch (AssertionError ex) {

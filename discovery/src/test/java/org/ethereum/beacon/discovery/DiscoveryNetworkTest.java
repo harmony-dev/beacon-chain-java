@@ -82,9 +82,6 @@ public class DiscoveryNetworkTest {
             Schedulers.createDefault().newSingleThreadDaemon("server-2"),
             Schedulers.createDefault().newSingleThreadDaemon("client-2"));
 
-    discoveryManager1.start();
-    discoveryManager2.start();
-
     // 3) Expect standard 1 => 2 dialog
     CountDownLatch randomSent1to2 = new CountDownLatch(1);
     CountDownLatch whoareyouSent2to1 = new CountDownLatch(1);
@@ -128,6 +125,8 @@ public class DiscoveryNetworkTest {
             });
 
     // 4) fire 1 to 2 dialog
+    discoveryManager1.start();
+    discoveryManager2.start();
     discoveryManager1.executeTask(nodeRecord2, TaskType.FINDNODE);
 
     assert randomSent1to2.await(1, TimeUnit.SECONDS);

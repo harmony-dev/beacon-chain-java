@@ -1,6 +1,5 @@
 package org.ethereum.beacon.discovery;
 
-import org.javatuples.Triplet;
 import org.junit.Test;
 import org.web3j.crypto.ECKeyPair;
 import tech.pegasys.artemis.util.bytes.Bytes32;
@@ -55,21 +54,21 @@ public class FunctionsTest {
   public void hkdfExpandTest() {
     BytesValue idNonce =
         Bytes32.fromHexString("68b02a985ecb99cc2d10cf188879d93ae7684c4f4707770017b078c6497c5a5d");
-    Triplet<BytesValue, BytesValue, BytesValue> sec1 =
+    Functions.HKDFKeys keys1 =
         Functions.hkdf_expand(
             nodeId1,
             nodeId2,
             testKey1,
             BytesValue.wrap(ECKeyPair.create(testKey2.extractArray()).getPublicKey().toByteArray()),
             idNonce);
-    Triplet<BytesValue, BytesValue, BytesValue> sec2 =
+    Functions.HKDFKeys keys2 =
         Functions.hkdf_expand(
             nodeId1,
             nodeId2,
             testKey2,
             BytesValue.wrap(ECKeyPair.create(testKey1.extractArray()).getPublicKey().toByteArray()),
             idNonce);
-    assertEquals(sec1, sec2);
+    assertEquals(keys1, keys2);
   }
 
   @Test

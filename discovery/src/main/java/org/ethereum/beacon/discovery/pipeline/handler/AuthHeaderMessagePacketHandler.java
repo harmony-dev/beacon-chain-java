@@ -12,7 +12,6 @@ import org.ethereum.beacon.discovery.pipeline.EnvelopeHandler;
 import org.ethereum.beacon.discovery.pipeline.Field;
 import org.ethereum.beacon.discovery.pipeline.HandlerUtil;
 import org.ethereum.beacon.discovery.task.TaskType;
-import org.javatuples.Triplet;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import java.util.concurrent.CompletableFuture;
@@ -46,20 +45,18 @@ public class AuthHeaderMessagePacketHandler implements EnvelopeHandler {
         (AuthHeaderMessagePacket) envelope.get(Field.PACKET_AUTH_HEADER_MESSAGE);
     NodeSession session = (NodeSession) envelope.get(Field.SESSION);
     try {
-      // FIXME: make this logic without side-effect
-      packet.decode(
-          ephemeralPubKey -> {
-            Triplet<BytesValue, BytesValue, BytesValue> hkdf =
-                Functions.hkdf_expand(
-                    session.getNodeRecord().getNodeId(),
-                    session.getHomeNodeId(),
-                    session.getStaticNodeKey(),
-                    ephemeralPubKey,
-                    session.getIdNonce());
-            session.setInitiatorKey(hkdf.getValue0());
-            session.setRecipientKey(hkdf.getValue1());
-            return hkdf;
-          });
+      packet.decodeEphemeralPubKey();
+      BytesValue ephemeralPubKey = packet.getEphemeralPubkey();
+      Functions.HKDFKeys keys =
+          Functions.hkdf_expand(
+              session.getNodeRecord().getNodeId(),
+              session.getHomeNodeId(),
+              session.getStaticNodeKey(),
+              ephemeralPubKey,
+              session.getIdNonce());
+      session.setInitiatorKey(keys.getInitiatorKey());
+      session.setRecipientKey(keys.getRecipientKey());
+      packet.decodeMessage(keys.getInitiatorKey(), keys.getAuthResponseKey());
       packet.verify(session.getIdNonce());
       envelope.put(Field.MESSAGE, packet.getMessage());
     } catch (AssertionError ex) {

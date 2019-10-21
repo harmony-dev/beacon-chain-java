@@ -93,8 +93,6 @@ public class DiscoveryNoNetworkTest {
             nodePair2.getValue0(),
             from1to2);
 
-    discoveryManager1.start();
-    discoveryManager2.start();
     // 2) Link outgoing of each one with incoming of another
     Flux.from(discoveryManager1.getOutgoingMessages())
         .subscribe(t -> from1to2.onNext(t.getPacket().getBytes()));
@@ -143,6 +141,8 @@ public class DiscoveryNoNetworkTest {
             });
 
     // 4) fire 1 to 2 dialog
+    discoveryManager1.start();
+    discoveryManager2.start();
     discoveryManager1.executeTask(nodeRecord2, TaskType.FINDNODE);
 
     assert randomSent1to2.await(1, TimeUnit.SECONDS);
