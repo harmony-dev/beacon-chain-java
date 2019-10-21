@@ -53,7 +53,6 @@ public class NodesHandler implements MessageHandler<NodesMessage> {
               NodeRecordInfo nodeRecordInfo = NodeRecordInfo.createDefault(nodeRecordV5);
               if (!session.getNodeTable().getNode(nodeRecordV5.getNodeId()).isPresent()) {
                 session.getNodeTable().save(nodeRecordInfo);
-                // TODO: should we update-merge?
               }
               session.putRecordInBucket(nodeRecordInfo);
             });
