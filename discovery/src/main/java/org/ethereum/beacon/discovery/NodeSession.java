@@ -23,6 +23,7 @@ import java.util.function.Consumer;
 
 public class NodeSession {
   public static final int NONCE_SIZE = 12;
+  public static final int REQUEST_ID_SIZE = 8;
   private static final Logger logger = LogManager.getLogger(NodeSession.class);
   private final NodeRecord nodeRecord;
   private final NodeRecord homeNodeRecord;
@@ -77,7 +78,6 @@ public class NodeSession {
     outgoing.accept(packet);
   }
 
-  // FIXME: size, algo
   /**
    * The value selected as request ID must allow for concurrent conversations. Using a timestamp can
    * result in parallel conversations with the same id, so this should be avoided. Request IDs also
@@ -88,7 +88,7 @@ public class NodeSession {
    * <p>Request ID is reserved for `messageCode`
    */
   public synchronized BytesValue getNextRequestId(MessageCode messageCode) {
-    byte[] requestId = new byte[12];
+    byte[] requestId = new byte[REQUEST_ID_SIZE];
     rnd.nextBytes(requestId);
     BytesValue wrapped = BytesValue.wrap(requestId);
     requestIdReservations.put(wrapped, messageCode);
