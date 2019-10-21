@@ -34,10 +34,6 @@ public class NodeSessionRequestHandler implements EnvelopeHandler {
 
     envelope.put(
         Field.SESSION_LOOKUP,
-        Pair.with(
-            ((NodeRecord) envelope.get(Field.NODE)).getNodeId(),
-            (Runnable)
-                () -> { // TODO: failure
-                }));
+        Pair.with(((NodeRecord) envelope.get(Field.NODE)).getNodeId(), (Runnable) () -> {}));
   }
 }

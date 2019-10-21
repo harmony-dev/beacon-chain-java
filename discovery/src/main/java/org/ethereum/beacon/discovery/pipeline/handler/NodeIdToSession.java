@@ -76,6 +76,11 @@ public class NodeIdToSession implements EnvelopeHandler {
     Pair<Bytes32, Runnable> sessionRequest =
         (Pair<Bytes32, Runnable>) envelope.get(Field.SESSION_LOOKUP);
     envelope.remove(Field.SESSION_LOOKUP);
+    logger.trace(
+        () ->
+            String.format(
+                "Envelope %s: Session lookup requested for nodeId %s",
+                envelope.getId(), sessionRequest.getValue0()));
     Optional<NodeSession> nodeSessionOptional = getSession(sessionRequest.getValue0());
     if (nodeSessionOptional.isPresent()) {
       envelope.put(Field.SESSION, nodeSessionOptional.get());
@@ -85,6 +90,11 @@ public class NodeIdToSession implements EnvelopeHandler {
                   "Session resolved: %s in envelope #%s",
                   nodeSessionOptional.get(), envelope.getId()));
     } else {
+      logger.debug(
+          () ->
+              String.format(
+                  "Envelope %s: Session not resolved for nodeId %s",
+                  envelope.getId(), sessionRequest.getValue0()));
       sessionRequest.getValue1().run();
     }
   }
