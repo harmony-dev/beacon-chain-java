@@ -2,7 +2,6 @@ package org.ethereum.beacon.discovery;
 
 import org.ethereum.beacon.db.Database;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
-import org.ethereum.beacon.discovery.message.FindNodeMessage;
 import org.ethereum.beacon.discovery.packet.Packet;
 import org.ethereum.beacon.discovery.packet.WhoAreYouPacket;
 import org.ethereum.beacon.discovery.pipeline.Envelope;
@@ -132,107 +131,4 @@ public class HandshakeHandlersTest {
     authHeaderMessagePacketHandlerNode2.handle(envelopeAt2From1);
     assertTrue(nodeSessionAt2For1.isAuthenticated());
   }
-  // 	net := newHandshakeTest()
-  //	defer net.close()
-  //
-  //	var (
-  //		idA       = net.nodeA.id()
-  //		addrA     = net.nodeA.addr()
-  //		challenge = &whoareyouV5{AuthTag: []byte("authresp"), RecordSeq: 0, node: net.nodeB.n()}
-  //		nonce     = make([]byte, gcmNonceSize)
-  //	)
-  //	header, _, _ := net.nodeA.c.makeAuthHeader(nonce, challenge)
-  //	challenge.node = nil // force ENR signature verification in decoder
-  //	b.ResetTimer()
-  //
-  //	for i := 0; i < b.N; i++ {
-  //		_, _, err := net.nodeB.c.decodeAuthResp(idA, addrA, header, challenge)
-  //		if err != nil {
-  //			b.Fatal(err)
-  //		}
-  //	}
-
-  @Test
-  public void testHandshake() {
-    // A -> B   RANDOM PACKET
-    FindNodeMessage findNodeMessage = new FindNodeMessage(BytesValue.fromHexString("01"), 10);
-
-    // func TestHandshakeV5(t *testing.T) {
-    //	t.Parallel()
-    //	net := newHandshakeTest()
-    //	defer net.close()
-    //
-    //	// A -> B   RANDOM PACKET
-    //	packet, _ := net.nodeA.encode(t, net.nodeB, &findnodeV5{})
-    //	resp := net.nodeB.expectDecode(t, p_unknownV5, packet)
-    //
-    //	// A <- B   WHOAREYOU
-    //	challenge := &whoareyouV5{
-    //		AuthTag:   resp.(*unknownV5).AuthTag,
-    //		IDNonce:   testIDnonce,
-    //		RecordSeq: 0,
-    //	}
-    //	whoareyou, _ := net.nodeB.encode(t, net.nodeA, challenge)
-    //	net.nodeA.expectDecode(t, p_whoareyouV5, whoareyou)
-    //
-    //	// A -> B   FINDNODE
-    //	findnode, _ := net.nodeA.encodeWithChallenge(t, net.nodeB, challenge, &findnodeV5{})
-    //	net.nodeB.expectDecode(t, p_findnodeV5, findnode)
-    //	if len(net.nodeB.c.handshakes) > 0 {
-    //		t.Fatalf("node B didn't remove handshake from challenge map")
-    //	}
-    //
-    //	// A <- B   NODES
-    //	nodes, _ := net.nodeB.encode(t, net.nodeA, &nodesV5{Total: 1})
-    //	net.nodeA.expectDecode(t, p_nodesV5, nodes)
-    //
-  }
-
-  //  private BytesValue encodeWithChallenge(V5Message v5Message, WhoAreYouPacket challenge) {
-  // Copy challenge and add destination node. This avoids sharing challenge among the two codecs.
-  //	var challenge *whoareyouV5
-  //	if c != nil {
-  //		challengeCopy := *c
-  //		challenge = &challengeCopy
-  //		challenge.node = to.n()
-  //	}
-  //	// Encode to destination.
-  //	enc, authTag, err := n.c.encode(to.id(), to.addr(), p, challenge)
-  //	if err != nil {
-  //		t.Fatal(fmt.Errorf("(%s) %v", n.ln.ID().TerminalString(), err))
-  //	}
-  //	t.Logf("(%s) -> (%s)   %s\n%s", n.ln.ID().TerminalString(), to.id().TerminalString(),
-  // p.name(), hex.Dump(enc))
-  //	return enc, authTag
-  //  }
-
-  //  private BytesValue encode(V5Message v5Message) {
-  //	// Encode to destination.
-  //	enc, authTag, err := n.c.encode(to.id(), to.addr(), p, challenge)
-  //	return enc, authTag
-
-  // // encode encodes a packet to a node. 'id' and 'addr' specify the destination node. The
-  //// 'token' parameter should be set to the token in the most recently received WHOAREYOU
-  //// packet.
-  // func (c *wireCodec) encode(id enode.ID, addr *net.UDPAddr, packet packetV5, challenge
-  // *whoareyouV5) ([]byte, []byte, error) {
-  //	if packet.kind() == p_whoareyouV5 {
-  //		p := packet.(*whoareyouV5)
-  //		enc, err := c.encodeWhoareyou(id, p)
-  //		if err == nil {
-  //			c.storeSentHandshake(id, addr, p)
-  //		}
-  //		return enc, nil, err
-  //	}
-  //	// Ensure calling code sets node if needed.
-  //	if challenge != nil && challenge.node == nil {
-  //		panic("BUG: missing challenge.node in encode")
-  //	}
-  //	_, writeKey := c.loadKeys(id, addr)
-  //	if writeKey != nil || challenge != nil {
-  //		return c.encodeEncrypted(id, addr, packet, writeKey, challenge)
-  //	}
-  //	return c.encodeRandom(id)
-  // }
-  //  }
 }
