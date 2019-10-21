@@ -21,6 +21,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
+/**
+ * Stores session status and all keys for discovery session between us (homeNode) and the other node
+ */
 public class NodeSession {
   public static final int NONCE_SIZE = 12;
   public static final int REQUEST_ID_SIZE = 8;
