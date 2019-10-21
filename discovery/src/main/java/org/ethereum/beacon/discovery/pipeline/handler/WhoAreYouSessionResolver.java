@@ -43,12 +43,17 @@ public class WhoAreYouSessionResolver implements EnvelopeHandler {
     WhoAreYouPacket whoAreYouPacket = (WhoAreYouPacket) envelope.get(Field.PACKET_WHOAREYOU);
     Optional<NodeSession> nodeSessionOptional = authTagRepo.get(whoAreYouPacket.getAuthTag());
     if (nodeSessionOptional.isPresent()
-        && nodeSessionOptional
-            .get()
-            .getStatus()
-            .equals(
-                NodeSession.SessionStatus
-                    .RANDOM_PACKET_SENT)) { // FIXME: doesn't handle session expiration
+        && (nodeSessionOptional
+                .get()
+                .getStatus()
+                .equals(
+                    NodeSession.SessionStatus.RANDOM_PACKET_SENT) // We've started handshake before
+            || nodeSessionOptional
+                .get()
+                .getStatus()
+                .equals(
+                    NodeSession.SessionStatus
+                        .AUTHENTICATED))) { // We had authenticated session but it's expired
       envelope.put(Field.SESSION, nodeSessionOptional.get());
       logger.trace(
           () ->
