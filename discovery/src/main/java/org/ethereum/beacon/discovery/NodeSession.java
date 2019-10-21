@@ -10,6 +10,7 @@ import org.ethereum.beacon.discovery.storage.NodeBucket;
 import org.ethereum.beacon.discovery.storage.NodeBucketStorage;
 import org.ethereum.beacon.discovery.storage.NodeTable;
 import org.ethereum.beacon.discovery.task.TaskType;
+import org.ethereum.beacon.util.ExpirationScheduler;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
@@ -19,6 +20,7 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 /**
@@ -28,6 +30,7 @@ public class NodeSession {
   public static final int NONCE_SIZE = 12;
   public static final int REQUEST_ID_SIZE = 8;
   private static final Logger logger = LogManager.getLogger(NodeSession.class);
+  private static final int CLEANUP_DELAY_SECONDS = 60;
   private final NodeRecord nodeRecord;
   private final NodeRecord homeNodeRecord;
   private final Bytes32 homeNodeId;
@@ -40,7 +43,9 @@ public class NodeSession {
   private Bytes32 idNonce;
   private BytesValue initiatorKey;
   private BytesValue recipientKey;
-  private Map<BytesValue, MessageCode> requestIdReservations = new ConcurrentHashMap<>();
+  private Map<BytesValue, RequestInfo> requestIdStatuses = new ConcurrentHashMap<>();
+  private ExpirationScheduler<BytesValue> requestExpirationScheduler =
+      new ExpirationScheduler<>(CLEANUP_DELAY_SECONDS, TimeUnit.SECONDS);
   private CompletableFuture<Void> completableFuture = null;
   private TaskType task = null;
   private BytesValue staticNodeKey;
@@ -94,8 +99,47 @@ public class NodeSession {
     byte[] requestId = new byte[REQUEST_ID_SIZE];
     rnd.nextBytes(requestId);
     BytesValue wrapped = BytesValue.wrap(requestId);
-    requestIdReservations.put(wrapped, messageCode);
+    RequestInfo requestInfo = new GeneralRequestInfo(messageCode);
+    requestIdStatuses.put(wrapped, requestInfo);
+    requestExpirationScheduler.put(
+        wrapped,
+        new Runnable() {
+          @Override
+          public void run() {
+            logger.debug(
+                () ->
+                    String.format(
+                        "Request %s expired for id %s in session %s: no reply",
+                        requestInfo, wrapped, this));
+            requestIdStatuses.remove(wrapped);
+          }
+        });
     return wrapped;
+  }
+
+  public synchronized void updateRequestInfo(BytesValue requestId, RequestInfo newRequestInfo) {
+    RequestInfo oldRequestInfo = requestIdStatuses.remove(requestId);
+    if (oldRequestInfo == null) {
+      logger.debug(
+          () ->
+              String.format(
+                  "An attempt to update requestId %s in session %s which does not exist",
+                  requestId, this));
+      return;
+    }
+    requestIdStatuses.put(requestId, newRequestInfo);
+    requestExpirationScheduler.put(
+        requestId,
+        new Runnable() {
+          @Override
+          public void run() {
+            logger.debug(
+                String.format(
+                    "Request %s expired for id %s in session %s: no reply",
+                    newRequestInfo, requestId, this));
+            requestIdStatuses.remove(requestId);
+          }
+        });
   }
 
   public synchronized BytesValue generateNonce() {
@@ -140,13 +184,15 @@ public class NodeSession {
     this.recipientKey = recipientKey;
   }
 
-  public synchronized void clearRequestId(BytesValue requestId, MessageCode messageCode) {
-    assert requestIdReservations.remove(requestId).equals(messageCode);
+  public synchronized void clearRequestId(BytesValue requestId, MessageCode expectedMessageCode) {
+    RequestInfo requestInfo = requestIdStatuses.remove(requestId);
+    assert expectedMessageCode.equals(requestInfo.getMessageCode());
+    requestExpirationScheduler.cancel(requestId);
   }
 
-  public synchronized Optional<MessageCode> getRequestId(BytesValue requestId) {
-    MessageCode messageCode = requestIdReservations.get(requestId);
-    return messageCode == null ? Optional.empty() : Optional.of(messageCode);
+  public synchronized Optional<RequestInfo> getRequestId(BytesValue requestId) {
+    RequestInfo requestInfo = requestIdStatuses.get(requestId);
+    return requestId == null ? Optional.empty() : Optional.of(requestInfo);
   }
 
   public NodeTable getNodeTable() {
@@ -222,5 +268,22 @@ public class NodeSession {
     WHOAREYOU_SENT, // other side is initiator, we've sent whoareyou in response
     RANDOM_PACKET_SENT, // our node is initiator, we've sent random packet
     AUTHENTICATED
+  }
+
+  public static interface RequestInfo {
+    public MessageCode getMessageCode();
+  }
+
+  public static class GeneralRequestInfo implements RequestInfo {
+    private final MessageCode messageCode;
+
+    public GeneralRequestInfo(MessageCode messageCode) {
+      this.messageCode = messageCode;
+    }
+
+    @Override
+    public MessageCode getMessageCode() {
+      return messageCode;
+    }
   }
 }

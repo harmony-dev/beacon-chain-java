@@ -17,8 +17,10 @@ import tech.pegasys.artemis.util.uint.UInt64;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Supplier;
 
 import static org.ethereum.beacon.discovery.storage.NodeTableStorage.DEFAULT_SERIALIZER;
@@ -151,12 +153,11 @@ public class NodeTableTest {
     List<NodeRecordInfo> closestNodes =
         nodeTableStorage.get().findClosestNodes(closestNode.getNodeId(), 252);
     assertEquals(2, closestNodes.size());
-    assertEquals(
-        closestNodes.get(0).getNode().get(NodeRecord.FIELD_PKEY_SECP256K1),
-        localHostNode.get(NodeRecord.FIELD_PKEY_SECP256K1));
-    assertEquals(
-        closestNodes.get(1).getNode().get(NodeRecord.FIELD_PKEY_SECP256K1),
-        closestNode.get(NodeRecord.FIELD_PKEY_SECP256K1));
+    Set<BytesValue> publicKeys = new HashSet<>();
+    closestNodes.forEach(
+        n -> publicKeys.add((BytesValue) n.getNode().get(NodeRecord.FIELD_PKEY_SECP256K1)));
+    assertTrue(publicKeys.contains(localHostNode.get(NodeRecord.FIELD_PKEY_SECP256K1)));
+    assertTrue(publicKeys.contains(closestNode.get(NodeRecord.FIELD_PKEY_SECP256K1)));
     List<NodeRecordInfo> farNodes = nodeTableStorage.get().findClosestNodes(farNode.getNodeId(), 1);
     assertEquals(1, farNodes.size());
     assertEquals(

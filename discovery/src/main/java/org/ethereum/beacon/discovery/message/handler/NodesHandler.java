@@ -6,38 +6,37 @@ import org.ethereum.beacon.discovery.NodeRecordInfo;
 import org.ethereum.beacon.discovery.NodeSession;
 import org.ethereum.beacon.discovery.message.MessageCode;
 import org.ethereum.beacon.discovery.message.NodesMessage;
-import org.ethereum.beacon.util.ExpirationScheduler;
-import tech.pegasys.artemis.util.bytes.BytesValue;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
+import java.util.Optional;
 
 public class NodesHandler implements MessageHandler<NodesMessage> {
   private static final Logger logger = LogManager.getLogger(FindNodeHandler.class);
-  private static final int CLEANUP_DELAY_SECONDS = 60;
-  private ExpirationScheduler<BytesValue> nodeExpirationScheduler =
-      new ExpirationScheduler<>(CLEANUP_DELAY_SECONDS, TimeUnit.SECONDS);
-  private Map<BytesValue, Integer> nodesCounters = new ConcurrentHashMap<>();
 
   @Override
   public void handle(NodesMessage message, NodeSession session) {
-    // NODES total count handling + cleanup schedule
-    if (nodesCounters.containsKey(message.getRequestId())) {
-      synchronized (this) {
-        int counter = nodesCounters.get(message.getRequestId()) - 1;
-        if (counter == 0) {
-          cleanUp(message.getRequestId(), session);
-        } else {
-          nodesCounters.put(message.getRequestId(), counter);
-          updateExpiration(message.getRequestId(), session);
-        }
+    // NODES total count handling
+    Optional<NodeSession.RequestInfo> requestInfoOpt = session.getRequestId(message.getRequestId());
+    if (!requestInfoOpt.isPresent()) {
+      throw new RuntimeException(
+          String.format(
+              "Request #%s not found in session %s when handling message %s",
+              message.getRequestId(), session, message));
+    }
+    NodeSession.RequestInfo requestInfo = requestInfoOpt.get();
+    if (requestInfo instanceof FindNodeRequestInfo) {
+      int newNodesCount = ((FindNodeRequestInfo) requestInfo).getRemainingNodes() - 1;
+      if (newNodesCount == 0) {
+        session.clearRequestId(message.getRequestId(), MessageCode.FINDNODE);
+      } else {
+        session.updateRequestInfo(message.getRequestId(), new FindNodeRequestInfo(newNodesCount));
       }
-    } else if (message.getTotal() > 1) {
-      nodesCounters.put(message.getRequestId(), message.getTotal() - 1);
-      updateExpiration(message.getRequestId(), session);
     } else {
-      session.clearRequestId(message.getRequestId(), MessageCode.FINDNODE);
+      if (message.getTotal() > 1) {
+        session.updateRequestInfo(
+            message.getRequestId(), new FindNodeRequestInfo(message.getTotal() - 1));
+      } else {
+        session.clearRequestId(message.getRequestId(), MessageCode.FINDNODE);
+      }
     }
 
     // Parse node records
@@ -58,16 +57,20 @@ public class NodesHandler implements MessageHandler<NodesMessage> {
             });
   }
 
-  private synchronized void updateExpiration(BytesValue requestId, NodeSession session) {
-    nodeExpirationScheduler.put(
-        requestId,
-        () -> {
-          cleanUp(requestId, session);
-        });
-  }
+  public static class FindNodeRequestInfo implements NodeSession.RequestInfo {
+    private final int remainingNodes;
 
-  private synchronized void cleanUp(BytesValue requestId, NodeSession session) {
-    nodesCounters.remove(requestId);
-    session.clearRequestId(requestId, MessageCode.FINDNODE);
+    public FindNodeRequestInfo(int remainingNodes) {
+      this.remainingNodes = remainingNodes;
+    }
+
+    @Override
+    public MessageCode getMessageCode() {
+      return MessageCode.FINDNODE;
+    }
+
+    public int getRemainingNodes() {
+      return remainingNodes;
+    }
   }
 }

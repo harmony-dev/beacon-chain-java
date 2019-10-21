@@ -37,7 +37,8 @@ public class UnknownPacketTagToSender implements EnvelopeHandler {
     logger.trace(
         () ->
             String.format(
-                "Envelope %s in UnknownPacketTagToSender, requirements are satisfied!", envelope.getId()));
+                "Envelope %s in UnknownPacketTagToSender, requirements are satisfied!",
+                envelope.getId()));
 
     if (!envelope.contains(Field.PACKET_UNKNOWN)) {
       return;
@@ -52,7 +53,7 @@ public class UnknownPacketTagToSender implements EnvelopeHandler {
                 () -> {
                   envelope.put(Field.BAD_PACKET, envelope.get(Field.PACKET_UNKNOWN));
                   envelope.put(
-                      Field.BAD_PACKET_EXCEPTION,
+                      Field.BAD_EXCEPTION,
                       new RuntimeException(
                           String.format("Session couldn't be created for nodeId %s", fromNodeId)));
                   envelope.remove(Field.PACKET_UNKNOWN);

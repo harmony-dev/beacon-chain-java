@@ -30,6 +30,6 @@ public class BadPacketLogger implements EnvelopeHandler {
         () ->
             String.format(
                 "Bad packet: %s in envelope #%s", envelope.get(Field.BAD_PACKET), envelope.getId()),
-        (Exception) envelope.get(Field.BAD_PACKET_EXCEPTION));
+        (Exception) envelope.get(Field.BAD_EXCEPTION));
   }
 }

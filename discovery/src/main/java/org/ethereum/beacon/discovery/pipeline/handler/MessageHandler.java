@@ -13,6 +13,8 @@ import org.ethereum.beacon.discovery.pipeline.HandlerUtil;
 
 public class MessageHandler implements EnvelopeHandler {
   private static final Logger logger = LogManager.getLogger(MessageHandler.class);
+  private static final MessageProcessor messageProcessor =
+      new MessageProcessor(new DiscoveryV5MessageProcessor());;
 
   @Override
   public void handle(Envelope envelope) {
@@ -34,8 +36,16 @@ public class MessageHandler implements EnvelopeHandler {
 
     NodeSession session = (NodeSession) envelope.get(Field.SESSION);
     DiscoveryMessage message = (DiscoveryMessage) envelope.get(Field.MESSAGE);
-    // TODO: optimize
-    MessageProcessor messageProcessor = new MessageProcessor(new DiscoveryV5MessageProcessor());
-    messageProcessor.handleIncoming(message, session);
+    try {
+      messageProcessor.handleIncoming(message, session);
+    } catch (Exception ex) {
+      logger.trace(
+          () ->
+              String.format(
+                  "Failed to handle message %s in envelope #%s", message, envelope.getId()));
+      envelope.put(Field.BAD_MESSAGE, message);
+      envelope.put(Field.BAD_EXCEPTION, ex);
+      envelope.remove(Field.MESSAGE);
+    }
   }
 }

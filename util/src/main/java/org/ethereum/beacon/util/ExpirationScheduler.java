@@ -29,11 +29,7 @@ public class ExpirationScheduler<Key> {
    * @param runnable Task
    */
   public void put(Key key, Runnable runnable) {
-    synchronized (this) {
-      if (expirationTasks.containsKey(key)) {
-        expirationTasks.remove(key).cancel(true);
-      }
-    }
+    cancel(key);
     ScheduledFuture future =
         scheduler.schedule(
             () -> {
@@ -43,5 +39,14 @@ public class ExpirationScheduler<Key> {
             delay,
             timeUnit);
     expirationTasks.put(key, future);
+  }
+
+  /** Cancels task for key and removes it from storage */
+  public void cancel(Key key) {
+    synchronized (this) {
+      if (expirationTasks.containsKey(key)) {
+        expirationTasks.remove(key).cancel(true);
+      }
+    }
   }
 }
