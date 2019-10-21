@@ -72,5 +72,12 @@ public class NodesHandler implements MessageHandler<NodesMessage> {
     public int getRemainingNodes() {
       return remainingNodes;
     }
+
+    @Override
+    public String toString() {
+      return "FindNodeRequestInfo{" +
+          "remainingNodes=" + remainingNodes +
+          '}';
+    }
   }
 }

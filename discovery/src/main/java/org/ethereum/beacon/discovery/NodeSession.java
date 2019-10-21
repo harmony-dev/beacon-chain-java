@@ -285,5 +285,12 @@ public class NodeSession {
     public MessageCode getMessageCode() {
       return messageCode;
     }
+
+    @Override
+    public String toString() {
+      return "GeneralRequestInfo{" +
+          "messageCode=" + messageCode +
+          '}';
+    }
   }
 }
