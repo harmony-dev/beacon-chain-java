@@ -3,6 +3,7 @@ package org.ethereum.beacon.discovery;
 import org.ethereum.beacon.discovery.enr.EnrScheme;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
 import org.ethereum.beacon.discovery.enr.NodeRecordFactory;
+import org.ethereum.beacon.util.Utils;
 import org.javatuples.Pair;
 import org.web3j.crypto.ECKeyPair;
 import tech.pegasys.artemis.util.bytes.Bytes4;
@@ -40,11 +41,8 @@ public class TestUtil {
     byte[] privateKey = new byte[32];
     rnd.nextBytes(privateKey);
     ECKeyPair ecKeyPair = ECKeyPair.create(privateKey);
-    BytesValue publicKey = BytesValue.wrap(ecKeyPair.getPublicKey().toByteArray());
-    if (publicKey.size() == 65) {
-      publicKey = publicKey.slice(1); // slice leading zero
-    }
-    final BytesValue finalPublicKey = publicKey;
+    final BytesValue pubKey =
+        BytesValue.wrap(Utils.extractBytesFromUnsignedBigInt(ecKeyPair.getPublicKey()));
     NodeRecord nodeRecord =
         NODE_RECORD_FACTORY.createFromValues(
             EnrScheme.V4,
@@ -54,7 +52,7 @@ public class TestUtil {
               {
                 add(Pair.with(NodeRecord.FIELD_IP_V4, finalLocalIp));
                 add(Pair.with(NodeRecord.FIELD_UDP_V4, port));
-                add(Pair.with(NodeRecord.FIELD_PKEY_SECP256K1, finalPublicKey));
+                add(Pair.with(NodeRecord.FIELD_PKEY_SECP256K1, pubKey));
               }
             });
     return Pair.with(BytesValue.wrap(privateKey), nodeRecord);

@@ -15,6 +15,7 @@ import org.ethereum.beacon.discovery.pipeline.Field;
 import org.ethereum.beacon.discovery.pipeline.HandlerUtil;
 import org.ethereum.beacon.discovery.task.TaskMessageFactory;
 import org.ethereum.beacon.discovery.task.TaskType;
+import org.ethereum.beacon.util.Utils;
 import org.javatuples.Triplet;
 import org.web3j.crypto.ECKeyPair;
 import tech.pegasys.artemis.util.bytes.BytesValue;
@@ -81,10 +82,8 @@ public class WhoAreYouPacketHandler implements EnvelopeHandler {
                 "Type %s in envelope #%s is not known", session.loadTask(), envelope.getId()));
       }
 
-      BytesValue ephemeralPubKey = BytesValue.wrap(ephemeralKey.getPublicKey().toByteArray());
-      if (ephemeralPubKey.size() == 65) {
-        ephemeralPubKey = ephemeralPubKey.slice(1); // slice leading 00
-      }
+      BytesValue ephemeralPubKey =
+          BytesValue.wrap(Utils.extractBytesFromUnsignedBigInt(ephemeralKey.getPublicKey()));
       AuthHeaderMessagePacket response =
           AuthHeaderMessagePacket.create(
               session.getHomeNodeId(),
