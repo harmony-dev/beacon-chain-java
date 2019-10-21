@@ -47,7 +47,6 @@ public class TaskHandler implements EnvelopeHandler {
     NodeSession session = (NodeSession) envelope.get(Field.SESSION);
     CompletableFuture<Void> completableFuture =
         (CompletableFuture<Void>) envelope.get(Field.FUTURE);
-    // FIXME: this logic shouldbn't be here!!!!11
     BytesValue authTag = session.generateNonce();
     if (session.getStatus().equals(NodeSession.SessionStatus.INITIAL)) {
       RandomPacket randomPacket =
