@@ -4,23 +4,27 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.discovery.Functions;
 import org.ethereum.beacon.discovery.NodeSession;
-import org.ethereum.beacon.discovery.message.DiscoveryV5Message;
-import org.ethereum.beacon.discovery.message.MessageCode;
 import org.ethereum.beacon.discovery.packet.AuthHeaderMessagePacket;
 import org.ethereum.beacon.discovery.pipeline.Envelope;
 import org.ethereum.beacon.discovery.pipeline.EnvelopeHandler;
 import org.ethereum.beacon.discovery.pipeline.Field;
 import org.ethereum.beacon.discovery.pipeline.HandlerUtil;
-import org.ethereum.beacon.discovery.task.TaskType;
+import org.ethereum.beacon.discovery.pipeline.Pipeline;
+import org.ethereum.beacon.schedulers.Scheduler;
 import tech.pegasys.artemis.util.bytes.BytesValue;
-
-import java.util.concurrent.CompletableFuture;
 
 import static org.ethereum.beacon.discovery.NodeSession.SessionStatus.AUTHENTICATED;
 
 /** Handles {@link AuthHeaderMessagePacket} in {@link Field#PACKET_AUTH_HEADER_MESSAGE} field */
 public class AuthHeaderMessagePacketHandler implements EnvelopeHandler {
   private static final Logger logger = LogManager.getLogger(AuthHeaderMessagePacketHandler.class);
+  private final Pipeline outgoingPipeline;
+  private final Scheduler scheduler;
+
+  public AuthHeaderMessagePacketHandler(Pipeline outgoingPipeline, Scheduler scheduler) {
+    this.outgoingPipeline = outgoingPipeline;
+    this.scheduler = scheduler;
+  }
 
   @Override
   public void handle(Envelope envelope) {
@@ -71,32 +75,11 @@ public class AuthHeaderMessagePacketHandler implements EnvelopeHandler {
               packet, session.getNodeRecord(), session.getStatus());
       logger.error(error, ex);
       envelope.remove(Field.PACKET_AUTH_HEADER_MESSAGE);
-      if (session.loadFuture() != null) {
-        CompletableFuture<Void> future = session.loadFuture();
-        session.saveFuture(null);
-        future.completeExceptionally(ex);
-      }
+      session.cancelAllRequests("Failed to handshake");
       return;
     }
     session.setStatus(AUTHENTICATED);
     envelope.remove(Field.PACKET_AUTH_HEADER_MESSAGE);
-    if (session.loadFuture() != null) {
-      boolean taskCompleted = false;
-      if (envelope.get(Field.TASK).equals(TaskType.PING)
-          && packet.getMessage() instanceof DiscoveryV5Message
-          && ((DiscoveryV5Message) packet.getMessage()).getCode() == MessageCode.PONG) {
-        taskCompleted = true;
-      }
-      if (envelope.get(Field.TASK).equals(TaskType.FINDNODE)
-          && packet.getMessage() instanceof DiscoveryV5Message
-          && ((DiscoveryV5Message) packet.getMessage()).getCode() == MessageCode.NODES) {
-        taskCompleted = true;
-      }
-      if (taskCompleted) {
-        CompletableFuture<Void> future = session.loadFuture();
-        future.complete(null);
-        session.saveFuture(null);
-      }
-    }
+    NextTaskHandler.tryToSendAwaitTaskIfAny(session, outgoingPipeline, scheduler);
   }
 }

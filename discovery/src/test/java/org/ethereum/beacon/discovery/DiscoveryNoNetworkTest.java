@@ -84,14 +84,16 @@ public class DiscoveryNoNetworkTest {
             nodeBucketStorage1,
             nodeRecord1,
             nodePair1.getValue0(),
-            from2to1);
+            from2to1,
+            Schedulers.createDefault().newSingleThreadDaemon("tasks-1"));
     DiscoveryManagerNoNetwork discoveryManager2 =
         new DiscoveryManagerNoNetwork(
             nodeTableStorage2.get(),
             nodeBucketStorage2,
             nodeRecord2,
             nodePair2.getValue0(),
-            from1to2);
+            from1to2,
+            Schedulers.createDefault().newSingleThreadDaemon("tasks-2"));
 
     // 2) Link outgoing of each one with incoming of another
     Flux.from(discoveryManager1.getOutgoingMessages())

@@ -3,25 +3,28 @@ package org.ethereum.beacon.discovery;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
-import org.ethereum.beacon.discovery.message.MessageCode;
 import org.ethereum.beacon.discovery.packet.Packet;
 import org.ethereum.beacon.discovery.storage.AuthTagRepository;
 import org.ethereum.beacon.discovery.storage.NodeBucket;
 import org.ethereum.beacon.discovery.storage.NodeBucketStorage;
 import org.ethereum.beacon.discovery.storage.NodeTable;
+import org.ethereum.beacon.discovery.task.TaskStatus;
 import org.ethereum.beacon.discovery.task.TaskType;
 import org.ethereum.beacon.util.ExpirationScheduler;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
-import javax.annotation.Nullable;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+
+import static org.ethereum.beacon.discovery.task.TaskStatus.AWAIT;
 
 /**
  * Stores session status and all keys for discovery session between us (homeNode) and the other node
@@ -47,7 +50,6 @@ public class NodeSession {
   private ExpirationScheduler<BytesValue> requestExpirationScheduler =
       new ExpirationScheduler<>(CLEANUP_DELAY_SECONDS, TimeUnit.SECONDS);
   private CompletableFuture<Void> completableFuture = null;
-  private TaskType task = null;
   private BytesValue staticNodeKey;
 
   public NodeSession(
@@ -87,22 +89,30 @@ public class NodeSession {
   }
 
   /**
-   * The value selected as request ID must allow for concurrent conversations. Using a timestamp can
-   * result in parallel conversations with the same id, so this should be avoided. Request IDs also
-   * prevent replay of responses. Using a simple counter would be fine if the implementation could
-   * ensure that restarts or even re-installs would increment the counter based on previously saved
-   * state in all circumstances. The easiest to implement is a random number.
+   * Creates object with request information: requestId etc, RequestInfo, designed to maintain
+   * request status and its changes. Also stores info in session repository to track related
+   * messages.
    *
-   * <p>Request ID is reserved for `messageCode`
+   * <p>The value selected as request ID must allow for concurrent conversations. Using a timestamp
+   * can result in parallel conversations with the same id, so this should be avoided. Request IDs
+   * also prevent replay of responses. Using a simple counter would be fine if the implementation
+   * could ensure that restarts or even re-installs would increment the counter based on previously
+   * saved state in all circumstances. The easiest to implement is a random number.
+   *
+   * @param taskType Type of task, clarifies starting and reply message types
+   * @param future Future to be fired when task is succcessfully completed or exceptionally break
+   *     when its failed
+   * @return info bundle.
    */
-  public synchronized BytesValue getNextRequestId(MessageCode messageCode) {
+  public synchronized RequestInfo createNextRequest(
+      TaskType taskType, CompletableFuture<Void> future) {
     byte[] requestId = new byte[REQUEST_ID_SIZE];
     rnd.nextBytes(requestId);
-    BytesValue wrapped = BytesValue.wrap(requestId);
-    RequestInfo requestInfo = new GeneralRequestInfo(messageCode);
-    requestIdStatuses.put(wrapped, requestInfo);
+    BytesValue wrappedId = BytesValue.wrap(requestId);
+    RequestInfo requestInfo = new GeneralRequestInfo(taskType, AWAIT, wrappedId, future);
+    requestIdStatuses.put(wrappedId, requestInfo);
     requestExpirationScheduler.put(
-        wrapped,
+        wrappedId,
         new Runnable() {
           @Override
           public void run() {
@@ -110,11 +120,11 @@ public class NodeSession {
                 () ->
                     String.format(
                         "Request %s expired for id %s in session %s: no reply",
-                        requestInfo, wrapped, this));
-            requestIdStatuses.remove(wrapped);
+                        requestInfo, wrappedId, this));
+            requestIdStatuses.remove(wrappedId);
           }
         });
-    return wrapped;
+    return requestInfo;
   }
 
   public synchronized void updateRequestInfo(BytesValue requestId, RequestInfo newRequestInfo) {
@@ -139,6 +149,21 @@ public class NodeSession {
                     newRequestInfo, requestId, this));
             requestIdStatuses.remove(requestId);
           }
+        });
+  }
+
+  public synchronized void cancelAllRequests(String message) {
+    logger.debug(() -> String.format("Cancelling all requests in session %s", this));
+    Set<BytesValue> requestIdsCopy = new HashSet<>(requestIdStatuses.keySet());
+    requestIdsCopy.forEach(
+        requestId -> {
+          RequestInfo requestInfo = clearRequestId(requestId);
+          requestInfo
+              .getFuture()
+              .completeExceptionally(
+                  new RuntimeException(
+                      String.format(
+                          "Request %s cancelled due to reason: %s", requestInfo, message)));
         });
   }
 
@@ -184,15 +209,27 @@ public class NodeSession {
     this.recipientKey = recipientKey;
   }
 
-  public synchronized void clearRequestId(BytesValue requestId, MessageCode expectedMessageCode) {
+  public synchronized void clearRequestId(BytesValue requestId, TaskType taskType) {
+    RequestInfo requestInfo = clearRequestId(requestId);
+    requestInfo.getFuture().complete(null);
+    assert taskType.equals(requestInfo.getTaskType());
+  }
+
+  private synchronized RequestInfo clearRequestId(BytesValue requestId) {
     RequestInfo requestInfo = requestIdStatuses.remove(requestId);
-    assert expectedMessageCode.equals(requestInfo.getMessageCode());
     requestExpirationScheduler.cancel(requestId);
+    return requestInfo;
   }
 
   public synchronized Optional<RequestInfo> getRequestId(BytesValue requestId) {
     RequestInfo requestInfo = requestIdStatuses.get(requestId);
     return requestId == null ? Optional.empty() : Optional.of(requestInfo);
+  }
+
+  public synchronized Optional<RequestInfo> getFirstAwaitRequestInfo() {
+    return requestIdStatuses.values().stream()
+        .filter(requestInfo -> AWAIT.equals(requestInfo.getTaskStatus()))
+        .findFirst();
   }
 
   public NodeTable getNodeTable() {
@@ -243,22 +280,6 @@ public class NodeSession {
     this.status = newStatus;
   }
 
-  public void saveFuture(@Nullable CompletableFuture<Void> completableFuture) {
-    this.completableFuture = completableFuture;
-  }
-
-  public CompletableFuture<Void> loadFuture() {
-    return completableFuture;
-  }
-
-  public void saveTask(@Nullable TaskType task) {
-    this.task = task;
-  }
-
-  public TaskType loadTask() {
-    return task;
-  }
-
   public BytesValue getStaticNodeKey() {
     return staticNodeKey;
   }
@@ -270,27 +291,63 @@ public class NodeSession {
     AUTHENTICATED
   }
 
-  public static interface RequestInfo {
-    public MessageCode getMessageCode();
+  public interface RequestInfo {
+    TaskType getTaskType();
+
+    TaskStatus getTaskStatus();
+
+    BytesValue getRequestId();
+
+    CompletableFuture<Void> getFuture();
   }
 
   public static class GeneralRequestInfo implements RequestInfo {
-    private final MessageCode messageCode;
+    private final TaskType taskType;
+    private final TaskStatus taskStatus;
+    private final BytesValue requestId;
+    private final CompletableFuture<Void> future;
 
-    public GeneralRequestInfo(MessageCode messageCode) {
-      this.messageCode = messageCode;
+    public GeneralRequestInfo(
+        TaskType taskType,
+        TaskStatus taskStatus,
+        BytesValue requestId,
+        CompletableFuture<Void> future) {
+      this.taskType = taskType;
+      this.taskStatus = taskStatus;
+      this.requestId = requestId;
+      this.future = future;
     }
 
     @Override
-    public MessageCode getMessageCode() {
-      return messageCode;
+    public TaskType getTaskType() {
+      return taskType;
+    }
+
+    @Override
+    public TaskStatus getTaskStatus() {
+      return taskStatus;
+    }
+
+    @Override
+    public BytesValue getRequestId() {
+      return requestId;
+    }
+
+    @Override
+    public CompletableFuture<Void> getFuture() {
+      return future;
     }
 
     @Override
     public String toString() {
-      return "GeneralRequestInfo{" +
-          "messageCode=" + messageCode +
-          '}';
+      return "GeneralRequestInfo{"
+          + "taskType="
+          + taskType
+          + ", taskStatus="
+          + taskStatus
+          + ", requestId="
+          + requestId
+          + '}';
     }
   }
 }

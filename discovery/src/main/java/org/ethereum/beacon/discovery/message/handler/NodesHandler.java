@@ -4,10 +4,13 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.discovery.NodeRecordInfo;
 import org.ethereum.beacon.discovery.NodeSession;
-import org.ethereum.beacon.discovery.message.MessageCode;
 import org.ethereum.beacon.discovery.message.NodesMessage;
+import org.ethereum.beacon.discovery.task.TaskStatus;
+import org.ethereum.beacon.discovery.task.TaskType;
+import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 public class NodesHandler implements MessageHandler<NodesMessage> {
   private static final Logger logger = LogManager.getLogger(FindNodeHandler.class);
@@ -26,16 +29,27 @@ public class NodesHandler implements MessageHandler<NodesMessage> {
     if (requestInfo instanceof FindNodeRequestInfo) {
       int newNodesCount = ((FindNodeRequestInfo) requestInfo).getRemainingNodes() - 1;
       if (newNodesCount == 0) {
-        session.clearRequestId(message.getRequestId(), MessageCode.FINDNODE);
+        session.clearRequestId(message.getRequestId(), TaskType.FINDNODE);
       } else {
-        session.updateRequestInfo(message.getRequestId(), new FindNodeRequestInfo(newNodesCount));
+        session.updateRequestInfo(
+            message.getRequestId(),
+            new FindNodeRequestInfo(
+                TaskStatus.IN_PROCESS,
+                message.getRequestId(),
+                requestInfo.getFuture(),
+                newNodesCount));
       }
     } else {
       if (message.getTotal() > 1) {
         session.updateRequestInfo(
-            message.getRequestId(), new FindNodeRequestInfo(message.getTotal() - 1));
+            message.getRequestId(),
+            new FindNodeRequestInfo(
+                TaskStatus.IN_PROCESS,
+                message.getRequestId(),
+                requestInfo.getFuture(),
+                message.getTotal() - 1));
       } else {
-        session.clearRequestId(message.getRequestId(), MessageCode.FINDNODE);
+        session.clearRequestId(message.getRequestId(), TaskType.FINDNODE);
       }
     }
 
@@ -57,16 +71,16 @@ public class NodesHandler implements MessageHandler<NodesMessage> {
             });
   }
 
-  public static class FindNodeRequestInfo implements NodeSession.RequestInfo {
+  public static class FindNodeRequestInfo extends NodeSession.GeneralRequestInfo {
     private final int remainingNodes;
 
-    public FindNodeRequestInfo(int remainingNodes) {
+    public FindNodeRequestInfo(
+        TaskStatus taskStatus,
+        BytesValue requestId,
+        CompletableFuture<Void> future,
+        int remainingNodes) {
+      super(TaskType.FINDNODE, taskStatus, requestId, future);
       this.remainingNodes = remainingNodes;
-    }
-
-    @Override
-    public MessageCode getMessageCode() {
-      return MessageCode.FINDNODE;
     }
 
     public int getRemainingNodes() {
@@ -75,9 +89,7 @@ public class NodesHandler implements MessageHandler<NodesMessage> {
 
     @Override
     public String toString() {
-      return "FindNodeRequestInfo{" +
-          "remainingNodes=" + remainingNodes +
-          '}';
+      return "FindNodeRequestInfo{" + "remainingNodes=" + remainingNodes + '}';
     }
   }
 }

@@ -72,7 +72,8 @@ public class DiscoveryNetworkTest {
             nodeRecord1,
             nodePair1.getValue0(),
             Schedulers.createDefault().newSingleThreadDaemon("server-1"),
-            Schedulers.createDefault().newSingleThreadDaemon("client-1"));
+            Schedulers.createDefault().newSingleThreadDaemon("client-1"),
+            Schedulers.createDefault().newSingleThreadDaemon("tasks-1"));
     DiscoveryManagerImpl discoveryManager2 =
         new DiscoveryManagerImpl(
             nodeTableStorage2.get(),
@@ -80,7 +81,8 @@ public class DiscoveryNetworkTest {
             nodeRecord2,
             nodePair2.getValue0(),
             Schedulers.createDefault().newSingleThreadDaemon("server-2"),
-            Schedulers.createDefault().newSingleThreadDaemon("client-2"));
+            Schedulers.createDefault().newSingleThreadDaemon("client-2"),
+            Schedulers.createDefault().newSingleThreadDaemon("tasks-2"));
 
     // 3) Expect standard 1 => 2 dialog
     CountDownLatch randomSent1to2 = new CountDownLatch(1);

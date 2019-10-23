@@ -15,11 +15,12 @@ import org.ethereum.beacon.discovery.pipeline.handler.BadPacketLogger;
 import org.ethereum.beacon.discovery.pipeline.handler.IncomingDataPacker;
 import org.ethereum.beacon.discovery.pipeline.handler.MessageHandler;
 import org.ethereum.beacon.discovery.pipeline.handler.MessagePacketHandler;
+import org.ethereum.beacon.discovery.pipeline.handler.NewTaskHandler;
+import org.ethereum.beacon.discovery.pipeline.handler.NextTaskHandler;
 import org.ethereum.beacon.discovery.pipeline.handler.NodeIdToSession;
 import org.ethereum.beacon.discovery.pipeline.handler.NodeSessionRequestHandler;
 import org.ethereum.beacon.discovery.pipeline.handler.NotExpectedIncomingPacketHandler;
 import org.ethereum.beacon.discovery.pipeline.handler.OutgoingParcelHandler;
-import org.ethereum.beacon.discovery.pipeline.handler.TaskHandler;
 import org.ethereum.beacon.discovery.pipeline.handler.UnknownPacketTagToSender;
 import org.ethereum.beacon.discovery.pipeline.handler.UnknownPacketTypeByStatus;
 import org.ethereum.beacon.discovery.pipeline.handler.WhoAreYouAttempt;
@@ -29,13 +30,13 @@ import org.ethereum.beacon.discovery.storage.AuthTagRepository;
 import org.ethereum.beacon.discovery.storage.NodeBucketStorage;
 import org.ethereum.beacon.discovery.storage.NodeTable;
 import org.ethereum.beacon.discovery.task.TaskType;
+import org.ethereum.beacon.schedulers.Scheduler;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.ReplayProcessor;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
-import java.security.SecureRandom;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -57,7 +58,8 @@ public class DiscoveryManagerNoNetwork implements DiscoveryManager {
       NodeBucketStorage nodeBucketStorage,
       NodeRecord homeNode,
       BytesValue homeNodePrivateKey,
-      Publisher<BytesValue> incomingPackets) {
+      Publisher<BytesValue> incomingPackets,
+      Scheduler taskScheduler) {
     AuthTagRepository authTagRepo = new AuthTagRepository();
     this.incomingPackets = incomingPackets;
     NodeIdToSession nodeIdToSession =
@@ -76,8 +78,8 @@ public class DiscoveryManagerNoNetwork implements DiscoveryManager {
         .addHandler(nodeIdToSession)
         .addHandler(new UnknownPacketTypeByStatus())
         .addHandler(new NotExpectedIncomingPacketHandler())
-        .addHandler(new WhoAreYouPacketHandler())
-        .addHandler(new AuthHeaderMessagePacketHandler())
+        .addHandler(new WhoAreYouPacketHandler(outgoingPipeline, taskScheduler))
+        .addHandler(new AuthHeaderMessagePacketHandler(outgoingPipeline, taskScheduler))
         .addHandler(new MessagePacketHandler())
         .addHandler(new MessageHandler())
         .addHandler(new BadPacketLogger());
@@ -85,7 +87,8 @@ public class DiscoveryManagerNoNetwork implements DiscoveryManager {
         .addHandler(new OutgoingParcelHandler(outgoingSink))
         .addHandler(new NodeSessionRequestHandler())
         .addHandler(nodeIdToSession)
-        .addHandler(new TaskHandler(new SecureRandom()));
+        .addHandler(new NewTaskHandler())
+        .addHandler(new NextTaskHandler(outgoingPipeline, taskScheduler));
   }
 
   @Override
@@ -100,12 +103,12 @@ public class DiscoveryManagerNoNetwork implements DiscoveryManager {
 
   public CompletableFuture<Void> executeTask(NodeRecord nodeRecord, TaskType taskType) {
     Envelope envelope = new Envelope();
-    envelope.put(Field.TASK, taskType);
     envelope.put(Field.NODE, nodeRecord);
-    CompletableFuture<Void> completed = new CompletableFuture<>();
-    envelope.put(Field.FUTURE, completed);
+    CompletableFuture<Void> future = new CompletableFuture<>();
+    envelope.put(Field.TASK, taskType);
+    envelope.put(Field.FUTURE, future);
     outgoingPipeline.push(envelope);
-    return completed;
+    return future;
   }
 
   public Publisher<NetworkParcel> getOutgoingMessages() {

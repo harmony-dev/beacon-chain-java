@@ -6,6 +6,8 @@ import org.ethereum.beacon.discovery.packet.Packet;
 import org.ethereum.beacon.discovery.packet.WhoAreYouPacket;
 import org.ethereum.beacon.discovery.pipeline.Envelope;
 import org.ethereum.beacon.discovery.pipeline.Field;
+import org.ethereum.beacon.discovery.pipeline.Pipeline;
+import org.ethereum.beacon.discovery.pipeline.PipelineImpl;
 import org.ethereum.beacon.discovery.pipeline.handler.AuthHeaderMessagePacketHandler;
 import org.ethereum.beacon.discovery.pipeline.handler.WhoAreYouPacketHandler;
 import org.ethereum.beacon.discovery.storage.AuthTagRepository;
@@ -13,6 +15,8 @@ import org.ethereum.beacon.discovery.storage.NodeBucketStorage;
 import org.ethereum.beacon.discovery.storage.NodeTableStorage;
 import org.ethereum.beacon.discovery.storage.NodeTableStorageFactoryImpl;
 import org.ethereum.beacon.discovery.task.TaskType;
+import org.ethereum.beacon.schedulers.Scheduler;
+import org.ethereum.beacon.schedulers.Schedulers;
 import org.javatuples.Pair;
 import org.junit.Test;
 import tech.pegasys.artemis.util.bytes.Bytes32;
@@ -21,6 +25,7 @@ import tech.pegasys.artemis.util.uint.UInt64;
 
 import java.util.ArrayList;
 import java.util.Random;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -105,7 +110,11 @@ public class HandshakeHandlersTest {
             new AuthTagRepository(),
             outgoingMessages2to1,
             rnd);
-    WhoAreYouPacketHandler whoAreYouPacketHandlerNode1 = new WhoAreYouPacketHandler();
+
+    Scheduler taskScheduler = Schedulers.createDefault().events();
+    Pipeline outgoingPipeline = new PipelineImpl();
+    WhoAreYouPacketHandler whoAreYouPacketHandlerNode1 =
+        new WhoAreYouPacketHandler(outgoingPipeline, taskScheduler);
     Envelope envelopeAt1From2 = new Envelope();
     byte[] idNonceBytes = new byte[32];
     Functions.getRandom().nextBytes(idNonceBytes);
@@ -117,13 +126,14 @@ public class HandshakeHandlersTest {
         Field.PACKET_WHOAREYOU,
         WhoAreYouPacket.create(nodePair1.getValue1().getNodeId(), authTag, idNonce, UInt64.ZERO));
     envelopeAt1From2.put(Field.SESSION, nodeSessionAt1For2);
-    nodeSessionAt1For2.saveTask(TaskType.FINDNODE);
+    CompletableFuture<Void> future = new CompletableFuture<>();
+    nodeSessionAt1For2.createNextRequest(TaskType.FINDNODE, future);
     whoAreYouPacketHandlerNode1.handle(envelopeAt1From2);
     authHeaderPacketLatch.await(1, TimeUnit.SECONDS);
 
     // Node2 handle AuthHeaderPacket and finish handshake
     AuthHeaderMessagePacketHandler authHeaderMessagePacketHandlerNode2 =
-        new AuthHeaderMessagePacketHandler();
+        new AuthHeaderMessagePacketHandler(outgoingPipeline, taskScheduler);
     Envelope envelopeAt2From1 = new Envelope();
     envelopeAt2From1.put(PACKET_AUTH_HEADER_MESSAGE, authHeaderPacket[0]);
     envelopeAt2From1.put(SESSION, nodeSessionAt2For1);

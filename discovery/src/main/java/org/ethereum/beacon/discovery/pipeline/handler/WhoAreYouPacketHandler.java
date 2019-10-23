@@ -13,19 +13,28 @@ import org.ethereum.beacon.discovery.pipeline.Envelope;
 import org.ethereum.beacon.discovery.pipeline.EnvelopeHandler;
 import org.ethereum.beacon.discovery.pipeline.Field;
 import org.ethereum.beacon.discovery.pipeline.HandlerUtil;
+import org.ethereum.beacon.discovery.pipeline.Pipeline;
 import org.ethereum.beacon.discovery.task.TaskMessageFactory;
-import org.ethereum.beacon.discovery.task.TaskType;
+import org.ethereum.beacon.schedulers.Scheduler;
 import org.ethereum.beacon.util.Utils;
 import org.web3j.crypto.ECKeyPair;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
-import java.util.concurrent.CompletableFuture;
+import java.util.Optional;
+import java.util.function.Supplier;
 
 import static org.ethereum.beacon.discovery.enr.NodeRecord.FIELD_PKEY_SECP256K1;
 
 /** Handles {@link WhoAreYouPacket} in {@link Field#PACKET_WHOAREYOU} field */
 public class WhoAreYouPacketHandler implements EnvelopeHandler {
   private static final Logger logger = LogManager.getLogger(WhoAreYouPacketHandler.class);
+  private final Pipeline outgoingPipeline;
+  private final Scheduler scheduler;
+
+  public WhoAreYouPacketHandler(Pipeline outgoingPipeline, Scheduler scheduler) {
+    this.outgoingPipeline = outgoingPipeline;
+    this.scheduler = scheduler;
+  }
 
   @Override
   public void handle(Envelope envelope) {
@@ -68,16 +77,17 @@ public class WhoAreYouPacketHandler implements EnvelopeHandler {
       session.setInitiatorKey(hkdfKeys.getInitiatorKey());
       session.setRecipientKey(hkdfKeys.getRecipientKey());
       BytesValue authResponseKey = hkdfKeys.getAuthResponseKey();
-      V5Message taskMessage = null;
-      if (session.loadTask() == TaskType.PING) {
-        taskMessage = TaskMessageFactory.createPing(session);
-      } else if (session.loadTask() == TaskType.FINDNODE) {
-        taskMessage = TaskMessageFactory.createFindNode(session);
-      } else {
-        throw new RuntimeException(
-            String.format(
-                "Type %s in envelope #%s is not known", session.loadTask(), envelope.getId()));
-      }
+      Optional<NodeSession.RequestInfo> requestInfoOpt = session.getFirstAwaitRequestInfo();
+      final V5Message message =
+          requestInfoOpt
+              .map(requestInfo -> TaskMessageFactory.createMessageFromRequest(requestInfo, session))
+              .orElseThrow(
+                  (Supplier<Throwable>)
+                      () ->
+                          new RuntimeException(
+                              String.format(
+                                  "Received WHOAREYOU in envelope #%s but no requests await in %s session",
+                                  envelope.getId(), session)));
 
       BytesValue ephemeralPubKey =
           BytesValue.wrap(Utils.extractBytesFromUnsignedBigInt(ephemeralKey.getPublicKey()));
@@ -92,27 +102,29 @@ public class WhoAreYouPacketHandler implements EnvelopeHandler {
               ephemeralPubKey,
               session.generateNonce(),
               hkdfKeys.getInitiatorKey(),
-              DiscoveryV5Message.from(taskMessage));
+              DiscoveryV5Message.from(message));
       session.sendOutgoing(response);
     } catch (AssertionError ex) {
-      logger.info(
+      String error =
           String.format(
               "Verification not passed for message [%s] from node %s in status %s",
-              packet, session.getNodeRecord(), session.getStatus()));
-    } catch (Exception ex) {
+              packet, session.getNodeRecord(), session.getStatus());
+      logger.error(error, ex);
+      envelope.remove(Field.PACKET_WHOAREYOU);
+      session.cancelAllRequests("Bad WHOAREYOU received from node");
+      return;
+    } catch (Throwable ex) {
       String error =
           String.format(
               "Failed to read message [%s] from node %s in status %s",
               packet, session.getNodeRecord(), session.getStatus());
       logger.error(error, ex);
       envelope.remove(Field.PACKET_WHOAREYOU);
-      if (envelope.contains(Field.FUTURE)) {
-        CompletableFuture<Void> future = (CompletableFuture<Void>) envelope.get(Field.FUTURE);
-        future.completeExceptionally(ex);
-      }
+      session.cancelAllRequests("Bad WHOAREYOU received from node");
       return;
     }
     session.setStatus(NodeSession.SessionStatus.AUTHENTICATED);
     envelope.remove(Field.PACKET_WHOAREYOU);
+    NextTaskHandler.tryToSendAwaitTaskIfAny(session, outgoingPipeline, scheduler);
   }
 }
