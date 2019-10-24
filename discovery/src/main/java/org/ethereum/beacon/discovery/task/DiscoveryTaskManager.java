@@ -102,7 +102,8 @@ public class DiscoveryTaskManager {
    * @param homeNode Home node
    * @param scheduler scheduler to run recurrent tasks on
    * @param resetDead Whether to reset dead status of the nodes on start. If set to true, resets its
-   *     status at startup and sets number of used retries to 0
+   *     status at startup and sets number of used retries to 0. Reset applies after remove, so if
+   *     remove is on, reset will be applied to 0 nodes
    * @param removeDead Whether to remove nodes that are found dead after several retries
    */
   public DiscoveryTaskManager(
@@ -137,8 +138,9 @@ public class DiscoveryTaskManager {
 
   private void liveCheckTask() {
     List<NodeRecordInfo> nodes = nodeTable.findClosestNodes(homeNodeId, LIVE_CHECK_DISTANCE);
-    Stream<NodeRecordInfo> closestNodes = nodes.stream();
-    closestNodes
+
+    // Dead nodes handling
+    nodes.stream()
         .filter(DEAD_RULE)
         .forEach(
             deadMarkedNode -> {
@@ -153,6 +155,9 @@ public class DiscoveryTaskManager {
                         deadMarkedNode.getRetry()));
               }
             });
+
+    // resets dead records
+    Stream<NodeRecordInfo> closestNodes = nodes.stream();
     if (resetDead) {
       closestNodes =
           closestNodes.map(
@@ -166,6 +171,8 @@ public class DiscoveryTaskManager {
               });
       resetDead = false;
     }
+
+    // Live check task
     closestNodes
         .filter(LIVE_CHECK_NODE_RULE)
         .forEach(
