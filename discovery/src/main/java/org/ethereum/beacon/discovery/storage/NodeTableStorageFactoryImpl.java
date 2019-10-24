@@ -2,11 +2,12 @@ package org.ethereum.beacon.discovery.storage;
 
 import org.ethereum.beacon.chain.storage.impl.SerializerFactory;
 import org.ethereum.beacon.db.Database;
-import org.ethereum.beacon.discovery.enr.NodeRecord;
 import org.ethereum.beacon.discovery.NodeRecordInfo;
-import tech.pegasys.artemis.util.bytes.Bytes32;
+import org.ethereum.beacon.discovery.enr.NodeRecord;
+import tech.pegasys.artemis.util.uint.UInt64;
 
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class NodeTableStorageFactoryImpl implements NodeTableStorageFactory {
@@ -24,15 +25,12 @@ public class NodeTableStorageFactoryImpl implements NodeTableStorageFactory {
   public NodeTableStorage createTable(
       Database database,
       SerializerFactory serializerFactory,
-      Supplier<NodeRecord> homeNodeSupplier,
+      Function<UInt64, NodeRecord> homeNodeSupplier,
       Supplier<List<NodeRecord>> bootNodesSupplier) {
     NodeTableStorage nodeTableStorage = new NodeTableStorageImpl(database, serializerFactory);
 
     // Init storage with boot nodes if its empty
     if (isStorageEmpty(nodeTableStorage)) {
-      nodeTableStorage
-          .getHomeNodeSource()
-          .set(NodeRecordInfo.createDefault(homeNodeSupplier.get()));
       bootNodesSupplier
           .get()
           .forEach(
@@ -44,7 +42,16 @@ public class NodeTableStorageFactoryImpl implements NodeTableStorageFactory {
                 nodeTableStorage.get().save(nodeRecordInfo);
               });
     }
-    ;
+    // Rewrite home node with updated sequence number on init
+    UInt64 oldSeq =
+        nodeTableStorage
+            .getHomeNodeSource()
+            .get()
+            .map(nr -> nr.getNode().getSeq())
+            .orElse(UInt64.ZERO);
+    nodeTableStorage
+        .getHomeNodeSource()
+        .set(NodeRecordInfo.createDefault(homeNodeSupplier.apply(oldSeq)));
 
     return nodeTableStorage;
   }

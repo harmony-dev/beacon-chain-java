@@ -49,7 +49,7 @@ public class DiscoveryNoNetworkTest {
         nodeTableStorageFactory.createTable(
             database1,
             DEFAULT_SERIALIZER,
-            () -> nodeRecord1,
+            (oldSeq) -> nodeRecord1,
             () ->
                 new ArrayList<NodeRecord>() {
                   {
@@ -62,7 +62,7 @@ public class DiscoveryNoNetworkTest {
         nodeTableStorageFactory.createTable(
             database2,
             DEFAULT_SERIALIZER,
-            () -> nodeRecord2,
+            (oldSeq) -> nodeRecord2,
             () ->
                 new ArrayList<NodeRecord>() {
                   {

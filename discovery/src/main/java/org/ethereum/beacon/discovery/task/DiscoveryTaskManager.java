@@ -181,6 +181,7 @@ public class DiscoveryTaskManager {
                     nodeRecord,
                     () ->
                         updateNode(
+                            nodeRecord,
                             new NodeRecordInfo(
                                 nodeRecord.getNode(),
                                 System.currentTimeMillis() / MS_IN_SECOND,
@@ -188,6 +189,7 @@ public class DiscoveryTaskManager {
                                 0)),
                     () ->
                         updateNode(
+                            nodeRecord,
                             new NodeRecordInfo(
                                 nodeRecord.getNode(),
                                 System.currentTimeMillis() / MS_IN_SECOND,
@@ -206,6 +208,7 @@ public class DiscoveryTaskManager {
                     () -> {},
                     () ->
                         updateNode(
+                            nodeRecord,
                             new NodeRecordInfo(
                                 nodeRecord.getNode(),
                                 System.currentTimeMillis() / MS_IN_SECOND,
@@ -213,8 +216,17 @@ public class DiscoveryTaskManager {
                                 (nodeRecord.getRetry() + 1)))));
   }
 
-  private void updateNode(NodeRecordInfo nodeRecordInfo) {
-    nodeTable.save(nodeRecordInfo);
-    nodeBucketStorage.put(nodeRecordInfo);
+  private void updateNode(NodeRecordInfo oldNodeRecordInfo, NodeRecordInfo newNodeRecordInfo) {
+    // use node with latest seq known
+    if (newNodeRecordInfo.getNode().getSeq().compareTo(oldNodeRecordInfo.getNode().getSeq()) < 0) {
+      newNodeRecordInfo =
+          new NodeRecordInfo(
+              oldNodeRecordInfo.getNode(),
+              newNodeRecordInfo.getLastRetry(),
+              newNodeRecordInfo.getStatus(),
+              newNodeRecordInfo.getRetry());
+    }
+    nodeTable.save(newNodeRecordInfo);
+    nodeBucketStorage.put(newNodeRecordInfo);
   }
 }

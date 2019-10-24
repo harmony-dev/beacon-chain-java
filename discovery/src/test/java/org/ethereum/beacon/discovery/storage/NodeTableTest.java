@@ -21,7 +21,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Supplier;
+import java.util.function.Function;
 
 import static org.ethereum.beacon.discovery.storage.NodeTableStorage.DEFAULT_SERIALIZER;
 import static org.junit.Assert.assertEquals;
@@ -30,8 +30,8 @@ import static org.junit.Assert.assertTrue;
 public class NodeTableTest {
   private static final NodeRecordFactory NODE_RECORD_FACTORY = NodeRecordFactory.DEFAULT;
 
-  private Supplier<NodeRecord> homeNodeSupplier =
-      () -> {
+  private Function<UInt64, NodeRecord> homeNodeSupplier =
+      (oldSeq) -> {
         try {
           return NODE_RECORD_FACTORY.createFromValues(
               EnrScheme.V4,
@@ -80,7 +80,8 @@ public class NodeTableTest {
         nodeRecord.get(NodeRecord.FIELD_PKEY_SECP256K1),
         nodeRecord2.getNode().get(NodeRecord.FIELD_PKEY_SECP256K1));
     assertEquals(
-        nodeTableStorage.get().getHomeNode().getNodeId(), homeNodeSupplier.get().getNodeId());
+        nodeTableStorage.get().getHomeNode().getNodeId(),
+        homeNodeSupplier.apply(UInt64.ZERO).getNodeId());
   }
 
   @Test

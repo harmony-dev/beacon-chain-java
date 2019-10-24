@@ -63,7 +63,7 @@ public class HandshakeHandlersTest {
         nodeTableStorageFactory.createTable(
             database1,
             DEFAULT_SERIALIZER,
-            () -> nodeRecord1,
+            (oldSeq) -> nodeRecord1,
             () ->
                 new ArrayList<NodeRecord>() {
                   {
@@ -76,7 +76,7 @@ public class HandshakeHandlersTest {
         nodeTableStorageFactory.createTable(
             database2,
             DEFAULT_SERIALIZER,
-            () -> nodeRecord2,
+            (oldSeq) -> nodeRecord2,
             () ->
                 new ArrayList<NodeRecord>() {
                   {
