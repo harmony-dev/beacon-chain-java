@@ -40,9 +40,7 @@ public class MessagePacket extends AbstractPacket {
     return new MessagePacket(tag.concat(authTagEncoded).concat(encryptedData));
   }
 
-  public void verify(BytesValue expectedAuthTag) {
-    assert expectedAuthTag.equals(getAuthTag());
-  }
+  public void verify(BytesValue expectedAuthTag) {}
 
   public Bytes32 getHomeNodeId(Bytes32 destNodeId) {
     verifyDecode();

@@ -42,7 +42,8 @@ public class MessageHandler implements EnvelopeHandler {
       logger.trace(
           () ->
               String.format(
-                  "Failed to handle message %s in envelope #%s", message, envelope.getId()));
+                  "Failed to handle message %s in envelope #%s", message, envelope.getId()),
+          ex);
       envelope.put(Field.BAD_MESSAGE, message);
       envelope.put(Field.BAD_EXCEPTION, ex);
       envelope.remove(Field.MESSAGE);

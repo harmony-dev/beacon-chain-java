@@ -37,7 +37,6 @@ public class MessagePacketHandler implements EnvelopeHandler {
 
     try {
       packet.decode(session.getInitiatorKey());
-      packet.verify(session.getAuthTag().get());
       envelope.put(Field.MESSAGE, packet.getMessage());
     } catch (AssertionError ex) {
       logger.error(

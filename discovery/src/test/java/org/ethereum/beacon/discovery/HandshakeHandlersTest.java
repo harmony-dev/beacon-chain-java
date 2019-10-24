@@ -2,6 +2,7 @@ package org.ethereum.beacon.discovery;
 
 import org.ethereum.beacon.db.Database;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
+import org.ethereum.beacon.discovery.packet.MessagePacket;
 import org.ethereum.beacon.discovery.packet.Packet;
 import org.ethereum.beacon.discovery.packet.WhoAreYouPacket;
 import org.ethereum.beacon.discovery.pipeline.Envelope;
@@ -9,11 +10,14 @@ import org.ethereum.beacon.discovery.pipeline.Field;
 import org.ethereum.beacon.discovery.pipeline.Pipeline;
 import org.ethereum.beacon.discovery.pipeline.PipelineImpl;
 import org.ethereum.beacon.discovery.pipeline.handler.AuthHeaderMessagePacketHandler;
+import org.ethereum.beacon.discovery.pipeline.handler.MessageHandler;
+import org.ethereum.beacon.discovery.pipeline.handler.MessagePacketHandler;
 import org.ethereum.beacon.discovery.pipeline.handler.WhoAreYouPacketHandler;
 import org.ethereum.beacon.discovery.storage.AuthTagRepository;
 import org.ethereum.beacon.discovery.storage.NodeBucketStorage;
 import org.ethereum.beacon.discovery.storage.NodeTableStorage;
 import org.ethereum.beacon.discovery.storage.NodeTableStorageFactoryImpl;
+import org.ethereum.beacon.discovery.task.TaskMessageFactory;
 import org.ethereum.beacon.discovery.task.TaskType;
 import org.ethereum.beacon.schedulers.Scheduler;
 import org.ethereum.beacon.schedulers.Schedulers;
@@ -26,20 +30,25 @@ import tech.pegasys.artemis.util.uint.UInt64;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+import static org.ethereum.beacon.discovery.pipeline.Field.BAD_PACKET;
+import static org.ethereum.beacon.discovery.pipeline.Field.MESSAGE;
 import static org.ethereum.beacon.discovery.pipeline.Field.PACKET_AUTH_HEADER_MESSAGE;
+import static org.ethereum.beacon.discovery.pipeline.Field.PACKET_MESSAGE;
 import static org.ethereum.beacon.discovery.pipeline.Field.SESSION;
 import static org.ethereum.beacon.discovery.storage.NodeTableStorage.DEFAULT_SERIALIZER;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class HandshakeHandlersTest {
 
   @Test
-  public void authHeaderHandlerTest() throws Exception {
+  public void authHandlerWithMessageRoundTripTest() throws Exception {
     // Node1
     Pair<BytesValue, NodeRecord> nodePair1 = TestUtil.generateNode(30303);
     NodeRecord nodeRecord1 = nodePair1.getValue1();
@@ -78,12 +87,14 @@ public class HandshakeHandlersTest {
         nodeTableStorageFactory.createBucketStorage(database2, DEFAULT_SERIALIZER, nodeRecord2);
 
     // Node1 create AuthHeaderPacket
-    final Packet[] authHeaderPacket = new Packet[1];
-    final CountDownLatch authHeaderPacketLatch = new CountDownLatch(1);
+    final Packet[] outgoing1Packets = new Packet[2];
+    final Semaphore outgoing1PacketsSemaphore = new Semaphore(2);
+    outgoing1PacketsSemaphore.acquire(2);
     final Consumer<Packet> outgoingMessages1to2 =
         packet -> {
-          authHeaderPacket[0] = packet;
-          authHeaderPacketLatch.countDown();
+          System.out.println("Outgoing packet from 1 to 2: " + packet);
+          outgoing1Packets[outgoing1PacketsSemaphore.availablePermits()] = packet;
+          outgoing1PacketsSemaphore.release(1);
         };
     AuthTagRepository authTagRepository1 = new AuthTagRepository();
     NodeSession nodeSessionAt1For2 =
@@ -112,7 +123,7 @@ public class HandshakeHandlersTest {
             rnd);
 
     Scheduler taskScheduler = Schedulers.createDefault().events();
-    Pipeline outgoingPipeline = new PipelineImpl();
+    Pipeline outgoingPipeline = new PipelineImpl().build();
     WhoAreYouPacketHandler whoAreYouPacketHandlerNode1 =
         new WhoAreYouPacketHandler(outgoingPipeline, taskScheduler);
     Envelope envelopeAt1From2 = new Envelope();
@@ -129,16 +140,49 @@ public class HandshakeHandlersTest {
     CompletableFuture<Void> future = new CompletableFuture<>();
     nodeSessionAt1For2.createNextRequest(TaskType.FINDNODE, future);
     whoAreYouPacketHandlerNode1.handle(envelopeAt1From2);
-    authHeaderPacketLatch.await(1, TimeUnit.SECONDS);
+    assert outgoing1PacketsSemaphore.tryAcquire(1, 1, TimeUnit.SECONDS);
+    outgoing1PacketsSemaphore.release();
 
     // Node2 handle AuthHeaderPacket and finish handshake
     AuthHeaderMessagePacketHandler authHeaderMessagePacketHandlerNode2 =
         new AuthHeaderMessagePacketHandler(outgoingPipeline, taskScheduler);
     Envelope envelopeAt2From1 = new Envelope();
-    envelopeAt2From1.put(PACKET_AUTH_HEADER_MESSAGE, authHeaderPacket[0]);
+    envelopeAt2From1.put(PACKET_AUTH_HEADER_MESSAGE, outgoing1Packets[0]);
     envelopeAt2From1.put(SESSION, nodeSessionAt2For1);
     assertFalse(nodeSessionAt2For1.isAuthenticated());
     authHeaderMessagePacketHandlerNode2.handle(envelopeAt2From1);
     assertTrue(nodeSessionAt2For1.isAuthenticated());
+
+    // Node 1 handles message from Node 2
+    MessagePacketHandler messagePacketHandler1 = new MessagePacketHandler();
+    Envelope envelopeAt1From2WithMessage = new Envelope();
+    BytesValue pingAuthTag = nodeSessionAt1For2.generateNonce();
+    MessagePacket pingPacketFrom2To1 =
+        TaskMessageFactory.createPingPacket(
+            pingAuthTag,
+            nodeSessionAt2For1,
+            nodeSessionAt2For1
+                .createNextRequest(TaskType.PING, new CompletableFuture<>())
+                .getRequestId());
+    envelopeAt1From2WithMessage.put(PACKET_MESSAGE, pingPacketFrom2To1);
+    envelopeAt1From2WithMessage.put(SESSION, nodeSessionAt1For2);
+    messagePacketHandler1.handle(envelopeAt1From2WithMessage);
+    assertNull(envelopeAt1From2WithMessage.get(BAD_PACKET));
+    assertNotNull(envelopeAt1From2WithMessage.get(MESSAGE));
+
+    MessageHandler messageHandler = new MessageHandler();
+    messageHandler.handle(envelopeAt1From2WithMessage);
+    assert outgoing1PacketsSemaphore.tryAcquire(2, 1, TimeUnit.SECONDS);
+
+    // Node 2 handles message from Node 1
+    MessagePacketHandler messagePacketHandler2 = new MessagePacketHandler();
+    Envelope envelopeAt2From1WithMessage = new Envelope();
+    Packet pongPacketFrom1To2 = outgoing1Packets[1];
+    MessagePacket pongMessagePacketFrom1To2 = (MessagePacket) pongPacketFrom1To2;
+    envelopeAt2From1WithMessage.put(PACKET_MESSAGE, pongMessagePacketFrom1To2);
+    envelopeAt2From1WithMessage.put(SESSION, nodeSessionAt1For2);
+    messagePacketHandler2.handle(envelopeAt2From1WithMessage);
+    assertNull(envelopeAt2From1WithMessage.get(BAD_PACKET));
+    assertNotNull(envelopeAt2From1WithMessage.get(MESSAGE));
   }
 }
