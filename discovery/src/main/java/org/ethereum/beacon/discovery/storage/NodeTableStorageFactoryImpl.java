@@ -17,6 +17,15 @@ public class NodeTableStorageFactoryImpl implements NodeTableStorageFactory {
   }
 
   /**
+   * Creates storage for nodes table
+   *
+   * @param database Database
+   * @param serializerFactory Serializer factory
+   * @param homeNodeProvider Home node provider, accepts old sequence number of home node, usually
+   *     sequence number is increased by 1 on each restart and ENR is signed with new sequence
+   *     number
+   * @param bootNodesSupplier boot nodes provider
+   *
    * @return {@link NodeTableStorage} from `database` but if it doesn't exist, creates new one with
    *     home node provided by `homeNodeSupplier` and boot nodes provided with `bootNodesSupplier`.
    *     Uses `serializerFactory` for node records serialization.
@@ -25,7 +34,7 @@ public class NodeTableStorageFactoryImpl implements NodeTableStorageFactory {
   public NodeTableStorage createTable(
       Database database,
       SerializerFactory serializerFactory,
-      Function<UInt64, NodeRecord> homeNodeSupplier,
+      Function<UInt64, NodeRecord> homeNodeProvider,
       Supplier<List<NodeRecord>> bootNodesSupplier) {
     NodeTableStorage nodeTableStorage = new NodeTableStorageImpl(database, serializerFactory);
 
@@ -51,7 +60,7 @@ public class NodeTableStorageFactoryImpl implements NodeTableStorageFactory {
             .orElse(UInt64.ZERO);
     nodeTableStorage
         .getHomeNodeSource()
-        .set(NodeRecordInfo.createDefault(homeNodeSupplier.apply(oldSeq)));
+        .set(NodeRecordInfo.createDefault(homeNodeProvider.apply(oldSeq)));
 
     return nodeTableStorage;
   }
