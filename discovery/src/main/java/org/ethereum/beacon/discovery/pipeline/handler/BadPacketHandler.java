@@ -7,9 +7,9 @@ import org.ethereum.beacon.discovery.pipeline.EnvelopeHandler;
 import org.ethereum.beacon.discovery.pipeline.Field;
 import org.ethereum.beacon.discovery.pipeline.HandlerUtil;
 
-/** Logs all packets which are stored in {@link Field#BAD_PACKET} */
-public class BadPacketLogger implements EnvelopeHandler {
-  private static final Logger logger = LogManager.getLogger(BadPacketLogger.class);
+/** Handles packet from {@link Field#BAD_PACKET}. Currently just logs it. */
+public class BadPacketHandler implements EnvelopeHandler {
+  private static final Logger logger = LogManager.getLogger(BadPacketHandler.class);
 
   @Override
   public void handle(Envelope envelope) {
@@ -30,6 +30,9 @@ public class BadPacketLogger implements EnvelopeHandler {
         () ->
             String.format(
                 "Bad packet: %s in envelope #%s", envelope.get(Field.BAD_PACKET), envelope.getId()),
-        (Exception) envelope.get(Field.BAD_EXCEPTION));
+        envelope.get(Field.BAD_EXCEPTION) == null
+            ? null
+            : (Exception) envelope.get(Field.BAD_EXCEPTION));
+    // TODO: Reputation penalty etc
   }
 }

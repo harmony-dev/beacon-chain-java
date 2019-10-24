@@ -14,7 +14,7 @@ import org.ethereum.beacon.discovery.pipeline.Field;
 import org.ethereum.beacon.discovery.pipeline.Pipeline;
 import org.ethereum.beacon.discovery.pipeline.PipelineImpl;
 import org.ethereum.beacon.discovery.pipeline.handler.AuthHeaderMessagePacketHandler;
-import org.ethereum.beacon.discovery.pipeline.handler.BadPacketLogger;
+import org.ethereum.beacon.discovery.pipeline.handler.BadPacketHandler;
 import org.ethereum.beacon.discovery.pipeline.handler.IncomingDataPacker;
 import org.ethereum.beacon.discovery.pipeline.handler.MessageHandler;
 import org.ethereum.beacon.discovery.pipeline.handler.MessagePacketHandler;
@@ -88,7 +88,7 @@ public class DiscoveryManagerImpl implements DiscoveryManager {
         .addHandler(new AuthHeaderMessagePacketHandler(outgoingPipeline, taskScheduler))
         .addHandler(new MessagePacketHandler())
         .addHandler(new MessageHandler())
-        .addHandler(new BadPacketLogger());
+        .addHandler(new BadPacketHandler());
     outgoingPipeline
         .addHandler(new OutgoingParcelHandler(outgoingSink))
         .addHandler(new NodeSessionRequestHandler())
