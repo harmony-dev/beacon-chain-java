@@ -4,9 +4,9 @@ import org.ethereum.beacon.db.Database;
 import org.ethereum.beacon.discovery.Functions;
 import org.ethereum.beacon.discovery.NodeRecordInfo;
 import org.ethereum.beacon.discovery.NodeStatus;
+import org.ethereum.beacon.discovery.TestUtil;
 import org.ethereum.beacon.discovery.enr.EnrScheme;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
-import org.ethereum.beacon.discovery.enr.NodeRecordFactory;
 import org.javatuples.Pair;
 import org.junit.Test;
 import tech.pegasys.artemis.util.bytes.Bytes4;
@@ -20,13 +20,12 @@ import java.util.ArrayList;
 import java.util.Random;
 import java.util.stream.IntStream;
 
-import static org.ethereum.beacon.discovery.storage.NodeTableStorage.DEFAULT_SERIALIZER;
+import static org.ethereum.beacon.discovery.TestUtil.TEST_SERIALIZER;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class NodeBucketTest {
-  private static final NodeRecordFactory NODE_RECORD_FACTORY = NodeRecordFactory.DEFAULT;
   private final Random rnd = new Random();
 
   private NodeRecordInfo generateUniqueRecord() {
@@ -34,7 +33,7 @@ public class NodeBucketTest {
       byte[] pkey = new byte[33];
       rnd.nextBytes(pkey);
       NodeRecord nodeRecord =
-          NODE_RECORD_FACTORY.createFromValues(
+          TestUtil.NODE_RECORD_FACTORY_NO_VERIFICATION.createFromValues(
               EnrScheme.V4,
               UInt64.valueOf(1),
               Bytes96.EMPTY,
@@ -103,7 +102,7 @@ public class NodeBucketTest {
     Database database = Database.inMemoryDB();
     NodeTableStorageFactoryImpl nodeTableStorageFactory = new NodeTableStorageFactoryImpl();
     NodeBucketStorage nodeBucketStorage =
-        nodeTableStorageFactory.createBucketStorage(database, DEFAULT_SERIALIZER, initial.getNode());
+        nodeTableStorageFactory.createBucketStorage(database, TEST_SERIALIZER, initial.getNode());
 
     for (int i = 0; i < 20; ) {
       NodeRecordInfo nodeRecordInfo = generateUniqueRecord();

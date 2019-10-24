@@ -1,6 +1,10 @@
 package org.ethereum.beacon.discovery.enr;
 
+import org.bouncycastle.util.Arrays;
 import org.ethereum.beacon.crypto.Hashes;
+import org.web3j.crypto.ECDSASignature;
+import org.web3j.crypto.Hash;
+import org.web3j.crypto.Sign;
 import org.web3j.rlp.RlpString;
 import tech.pegasys.artemis.util.bytes.Bytes16;
 import tech.pegasys.artemis.util.bytes.Bytes32;
@@ -19,6 +23,7 @@ import static org.ethereum.beacon.discovery.enr.NodeRecord.FIELD_TCP_V4;
 import static org.ethereum.beacon.discovery.enr.NodeRecord.FIELD_TCP_V6;
 import static org.ethereum.beacon.discovery.enr.NodeRecord.FIELD_UDP_V4;
 import static org.ethereum.beacon.discovery.enr.NodeRecord.FIELD_UDP_V6;
+import static org.ethereum.beacon.util.Utils.extractBytesFromUnsignedBigInt;
 
 public class EnrSchemeV4Interpreter implements EnrSchemeInterpreter {
 
@@ -37,9 +42,30 @@ public class EnrSchemeV4Interpreter implements EnrSchemeInterpreter {
   }
 
   @Override
-  public boolean verify(NodeRecord nodeRecord) {
-    return EnrSchemeInterpreter.super.verify(nodeRecord)
-        && nodeRecord.get(FIELD_PKEY_SECP256K1) != null;
+  public void verify(NodeRecord nodeRecord) {
+    EnrSchemeInterpreter.super.verify(nodeRecord);
+    if (nodeRecord.get(FIELD_PKEY_SECP256K1) == null) {
+      throw new RuntimeException(
+          String.format(
+              "Field %s not exists but required for scheme %s", FIELD_PKEY_SECP256K1, getScheme()));
+    }
+    BytesValue pubKey = (BytesValue) nodeRecord.get(FIELD_PKEY_SECP256K1);
+    ECDSASignature ecdsaSignature =
+        new ECDSASignature(
+            new BigInteger(1, nodeRecord.getSignature().slice(0, 32).extractArray()),
+            new BigInteger(1, nodeRecord.getSignature().slice(32).extractArray()));
+    byte[] msgHash = Hash.sha3(nodeRecord.serialize(false).extractArray());
+    for (int recId = 0; recId < 4; ++recId) {
+      BigInteger calculatedPubKey = Sign.recoverFromSignature(1, ecdsaSignature, msgHash);
+      if (calculatedPubKey == null) {
+        continue;
+      }
+      if (Arrays.areEqual(
+          pubKey.extractArray(), extractBytesFromUnsignedBigInt(calculatedPubKey))) {
+        return;
+      }
+    }
+    assert false;
   }
 
   @Override

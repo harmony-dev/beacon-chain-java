@@ -34,12 +34,13 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+import static org.ethereum.beacon.discovery.TestUtil.NODE_RECORD_FACTORY_NO_VERIFICATION;
+import static org.ethereum.beacon.discovery.TestUtil.TEST_SERIALIZER;
 import static org.ethereum.beacon.discovery.pipeline.Field.BAD_PACKET;
 import static org.ethereum.beacon.discovery.pipeline.Field.MESSAGE;
 import static org.ethereum.beacon.discovery.pipeline.Field.PACKET_AUTH_HEADER_MESSAGE;
 import static org.ethereum.beacon.discovery.pipeline.Field.PACKET_MESSAGE;
 import static org.ethereum.beacon.discovery.pipeline.Field.SESSION;
-import static org.ethereum.beacon.discovery.storage.NodeTableStorage.DEFAULT_SERIALIZER;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -62,7 +63,7 @@ public class HandshakeHandlersTest {
     NodeTableStorage nodeTableStorage1 =
         nodeTableStorageFactory.createTable(
             database1,
-            DEFAULT_SERIALIZER,
+            TEST_SERIALIZER,
             (oldSeq) -> nodeRecord1,
             () ->
                 new ArrayList<NodeRecord>() {
@@ -71,11 +72,11 @@ public class HandshakeHandlersTest {
                   }
                 });
     NodeBucketStorage nodeBucketStorage1 =
-        nodeTableStorageFactory.createBucketStorage(database1, DEFAULT_SERIALIZER, nodeRecord1);
+        nodeTableStorageFactory.createBucketStorage(database1, TEST_SERIALIZER, nodeRecord1);
     NodeTableStorage nodeTableStorage2 =
         nodeTableStorageFactory.createTable(
             database2,
-            DEFAULT_SERIALIZER,
+            TEST_SERIALIZER,
             (oldSeq) -> nodeRecord2,
             () ->
                 new ArrayList<NodeRecord>() {
@@ -84,7 +85,7 @@ public class HandshakeHandlersTest {
                   }
                 });
     NodeBucketStorage nodeBucketStorage2 =
-        nodeTableStorageFactory.createBucketStorage(database2, DEFAULT_SERIALIZER, nodeRecord2);
+        nodeTableStorageFactory.createBucketStorage(database2, TEST_SERIALIZER, nodeRecord2);
 
     // Node1 create AuthHeaderPacket
     final Packet[] outgoing1Packets = new Packet[2];
@@ -145,7 +146,8 @@ public class HandshakeHandlersTest {
 
     // Node2 handle AuthHeaderPacket and finish handshake
     AuthHeaderMessagePacketHandler authHeaderMessagePacketHandlerNode2 =
-        new AuthHeaderMessagePacketHandler(outgoingPipeline, taskScheduler);
+        new AuthHeaderMessagePacketHandler(
+            outgoingPipeline, taskScheduler, NODE_RECORD_FACTORY_NO_VERIFICATION);
     Envelope envelopeAt2From1 = new Envelope();
     envelopeAt2From1.put(PACKET_AUTH_HEADER_MESSAGE, outgoing1Packets[0]);
     envelopeAt2From1.put(SESSION, nodeSessionAt2For1);
@@ -170,7 +172,7 @@ public class HandshakeHandlersTest {
     assertNull(envelopeAt1From2WithMessage.get(BAD_PACKET));
     assertNotNull(envelopeAt1From2WithMessage.get(MESSAGE));
 
-    MessageHandler messageHandler = new MessageHandler();
+    MessageHandler messageHandler = new MessageHandler(NODE_RECORD_FACTORY_NO_VERIFICATION);
     messageHandler.handle(envelopeAt1From2WithMessage);
     assert outgoing1PacketsSemaphore.tryAcquire(2, 1, TimeUnit.SECONDS);
 

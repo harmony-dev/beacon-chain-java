@@ -42,7 +42,6 @@ import java.math.BigInteger;
  */
 public class AuthHeaderMessagePacket extends AbstractPacket {
   public static final String AUTH_SCHEME_NAME = "gcm";
-  private static final NodeRecordFactory nodeRecordFactory = NodeRecordFactory.DEFAULT;
   private static final BytesValue DISCOVERY_ID_NONCE =
       BytesValue.wrap("discovery-id-nonce".getBytes());
   private static final BytesValue ZERO_NONCE = BytesValue.wrap(new byte[12]);
@@ -169,7 +168,8 @@ public class AuthHeaderMessagePacket extends AbstractPacket {
   }
 
   /** Run {@link AuthHeaderMessagePacket#decodeEphemeralPubKey()} before second part */
-  public void decodeMessage(BytesValue initiatorKey, BytesValue authResponseKey) {
+  public void decodeMessage(
+      BytesValue initiatorKey, BytesValue authResponseKey, NodeRecordFactory nodeRecordFactory) {
     if (decodedEphemeralPubKeyPt == null) {
       throw new RuntimeException("Run decodeEphemeralPubKey() before");
     }

@@ -10,7 +10,6 @@ import org.bouncycastle.math.ec.ECPoint;
 import org.ethereum.beacon.crypto.Hashes;
 import org.web3j.crypto.ECKeyPair;
 import org.web3j.crypto.Sign;
-import tech.pegasys.artemis.util.bytes.Bytes1;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes32s;
 import tech.pegasys.artemis.util.bytes.BytesValue;
@@ -39,15 +38,14 @@ public class Functions {
    *
    * @param key private key
    * @param x message
-   * @return ECDSA signature with properties merged together: v || r || s
+   * @return ECDSA signature with properties merged together: r || s
    */
   public static BytesValue sign(BytesValue key, BytesValue x) {
     Sign.SignatureData signatureData =
         Sign.signMessage(x.extractArray(), ECKeyPair.create(key.extractArray()));
-    Bytes1 v = Bytes1.wrap(new byte[] {signatureData.getV()});
     Bytes32 r = Bytes32.wrap(signatureData.getR());
     Bytes32 s = Bytes32.wrap(signatureData.getS());
-    return v.concat(r).concat(s);
+    return r.concat(s);
   }
 
   /**

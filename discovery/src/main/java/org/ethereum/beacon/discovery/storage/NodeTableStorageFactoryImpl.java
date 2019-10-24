@@ -25,7 +25,6 @@ public class NodeTableStorageFactoryImpl implements NodeTableStorageFactory {
    *     sequence number is increased by 1 on each restart and ENR is signed with new sequence
    *     number
    * @param bootNodesSupplier boot nodes provider
-   *
    * @return {@link NodeTableStorage} from `database` but if it doesn't exist, creates new one with
    *     home node provided by `homeNodeSupplier` and boot nodes provided with `bootNodesSupplier`.
    *     Uses `serializerFactory` for node records serialization.
@@ -47,6 +46,7 @@ public class NodeTableStorageFactoryImpl implements NodeTableStorageFactory {
                 if (!(nodeRecord instanceof NodeRecord)) {
                   throw new RuntimeException("Only V4 node records are supported as boot nodes");
                 }
+                nodeRecord.verify();
                 NodeRecordInfo nodeRecordInfo = NodeRecordInfo.createDefault(nodeRecord);
                 nodeTableStorage.get().save(nodeRecordInfo);
               });
@@ -58,9 +58,9 @@ public class NodeTableStorageFactoryImpl implements NodeTableStorageFactory {
             .get()
             .map(nr -> nr.getNode().getSeq())
             .orElse(UInt64.ZERO);
-    nodeTableStorage
-        .getHomeNodeSource()
-        .set(NodeRecordInfo.createDefault(homeNodeProvider.apply(oldSeq)));
+    NodeRecord updatedHomeNodeRecord = homeNodeProvider.apply(oldSeq);
+    updatedHomeNodeRecord.verify();
+    nodeTableStorage.getHomeNodeSource().set(NodeRecordInfo.createDefault(updatedHomeNodeRecord));
 
     return nodeTableStorage;
   }

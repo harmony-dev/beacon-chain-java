@@ -133,15 +133,23 @@ public class NodeRecord {
     return Objects.hashCode(seq, signature, fields);
   }
 
-  public BytesValue serialize() {
-    assert getSignature() != null;
-    assert getSeq() != null;
+  public void verify() {
+    enrSchemeInterpreter.verify(this);
+  }
 
+  public BytesValue serialize() {
+    return serialize(true);
+  }
+
+  public BytesValue serialize(boolean withSignature) {
+    assert getSeq() != null;
     // content   = [seq, k, v, ...]
     // signature = sign(content)
     // record    = [signature, seq, k, v, ...]
     List<RlpType> values = new ArrayList<>();
-    values.add(RlpString.create(getSignature().extractArray()));
+    if (withSignature) {
+      values.add(RlpString.create(getSignature().extractArray()));
+    }
     values.add(RlpString.create(getSeq().toBI()));
     values.add(RlpString.create("id"));
     values.add(RlpString.create(getIdentityScheme().stringName()));

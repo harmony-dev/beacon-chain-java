@@ -2,6 +2,7 @@ package org.ethereum.beacon.discovery;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.ethereum.beacon.discovery.enr.NodeRecordFactory;
 import org.ethereum.beacon.discovery.message.DiscoveryV5Message;
 import org.ethereum.beacon.discovery.message.MessageCode;
 import org.ethereum.beacon.discovery.message.handler.FindNodeHandler;
@@ -16,12 +17,14 @@ import java.util.Map;
 public class DiscoveryV5MessageProcessor implements DiscoveryMessageProcessor<DiscoveryV5Message> {
   private static final Logger logger = LogManager.getLogger(DiscoveryV5MessageProcessor.class);
   private final Map<MessageCode, MessageHandler> messageHandlers = new HashMap<>();
+  private final NodeRecordFactory nodeRecordFactory;
 
-  public DiscoveryV5MessageProcessor() {
+  public DiscoveryV5MessageProcessor(NodeRecordFactory nodeRecordFactory) {
     messageHandlers.put(MessageCode.PING, new PingHandler());
     messageHandlers.put(MessageCode.PONG, new PongHandler());
     messageHandlers.put(MessageCode.FINDNODE, new FindNodeHandler());
     messageHandlers.put(MessageCode.NODES, new NodesHandler());
+    this.nodeRecordFactory = nodeRecordFactory;
   }
 
   @Override
@@ -37,6 +40,6 @@ public class DiscoveryV5MessageProcessor implements DiscoveryMessageProcessor<Di
     if (messageHandler == null) {
       throw new RuntimeException("Not implemented yet");
     }
-    messageHandler.handle(message.create(), session);
+    messageHandler.handle(message.create(nodeRecordFactory), session);
   }
 }

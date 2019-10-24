@@ -5,6 +5,7 @@ import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.discovery.DiscoveryV5MessageProcessor;
 import org.ethereum.beacon.discovery.MessageProcessor;
 import org.ethereum.beacon.discovery.NodeSession;
+import org.ethereum.beacon.discovery.enr.NodeRecordFactory;
 import org.ethereum.beacon.discovery.message.DiscoveryMessage;
 import org.ethereum.beacon.discovery.pipeline.Envelope;
 import org.ethereum.beacon.discovery.pipeline.EnvelopeHandler;
@@ -13,8 +14,13 @@ import org.ethereum.beacon.discovery.pipeline.HandlerUtil;
 
 public class MessageHandler implements EnvelopeHandler {
   private static final Logger logger = LogManager.getLogger(MessageHandler.class);
-  private static final MessageProcessor messageProcessor =
-      new MessageProcessor(new DiscoveryV5MessageProcessor());;
+  private final MessageProcessor messageProcessor;
+
+  public MessageHandler(NodeRecordFactory nodeRecordFactory) {
+    this.messageProcessor =
+        new MessageProcessor(new DiscoveryV5MessageProcessor(nodeRecordFactory));
+    ;
+  }
 
   @Override
   public void handle(Envelope envelope) {

@@ -18,7 +18,6 @@ import java.util.List;
  * last test of its availability
  */
 public class NodeRecordInfo {
-  private static final NodeRecordFactory nodeRecordFactory = NodeRecordFactory.DEFAULT;
   private final NodeRecord node;
   private final Long lastRetry;
   private final NodeStatus status;
@@ -35,7 +34,7 @@ public class NodeRecordInfo {
     return new NodeRecordInfo(nodeRecord, -1L, NodeStatus.ACTIVE, 0);
   }
 
-  public static NodeRecordInfo fromRlpBytes(BytesValue bytes) {
+  public static NodeRecordInfo fromRlpBytes(BytesValue bytes, NodeRecordFactory nodeRecordFactory) {
     RlpList internalList = (RlpList) RlpDecoder.decode(bytes.extractArray()).getValues().get(0);
     return new NodeRecordInfo(
         nodeRecordFactory.fromBytes(((RlpString) internalList.getValues().get(0)).getBytes()),

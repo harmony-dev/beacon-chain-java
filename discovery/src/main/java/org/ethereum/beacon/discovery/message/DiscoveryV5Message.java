@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class DiscoveryV5Message implements DiscoveryMessage {
-  private static final NodeRecordFactory nodeRecordFactory = NodeRecordFactory.DEFAULT;
   private final BytesValue bytes;
   private List<RlpType> payload = null;
 
@@ -54,7 +53,7 @@ public class DiscoveryV5Message implements DiscoveryMessage {
     return BytesValue.wrap(((RlpString) payload.get(0)).getBytes());
   }
 
-  public V5Message create() {
+  public V5Message create(NodeRecordFactory nodeRecordFactory) {
     decode();
     MessageCode code = MessageCode.fromNumber(getBytes().get(0));
     switch (code) {
@@ -62,7 +61,8 @@ public class DiscoveryV5Message implements DiscoveryMessage {
         {
           return new PingMessage(
               BytesValue.wrap(((RlpString) payload.get(0)).getBytes()),
-              UInt64.fromBytesBigEndian(Bytes8.leftPad(BytesValue.wrap(((RlpString) payload.get(1)).getBytes()))));
+              UInt64.fromBytesBigEndian(
+                  Bytes8.leftPad(BytesValue.wrap(((RlpString) payload.get(1)).getBytes()))));
         }
       case PONG:
         {

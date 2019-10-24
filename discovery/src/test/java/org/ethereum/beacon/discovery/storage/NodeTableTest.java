@@ -5,7 +5,6 @@ import org.ethereum.beacon.discovery.NodeRecordInfo;
 import org.ethereum.beacon.discovery.NodeStatus;
 import org.ethereum.beacon.discovery.enr.EnrScheme;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
-import org.ethereum.beacon.discovery.enr.NodeRecordFactory;
 import org.javatuples.Pair;
 import org.junit.Test;
 import tech.pegasys.artemis.util.bytes.Bytes32;
@@ -23,17 +22,16 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
-import static org.ethereum.beacon.discovery.storage.NodeTableStorage.DEFAULT_SERIALIZER;
+import static org.ethereum.beacon.discovery.TestUtil.NODE_RECORD_FACTORY_NO_VERIFICATION;
+import static org.ethereum.beacon.discovery.TestUtil.TEST_SERIALIZER;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class NodeTableTest {
-  private static final NodeRecordFactory NODE_RECORD_FACTORY = NodeRecordFactory.DEFAULT;
-
   private Function<UInt64, NodeRecord> homeNodeSupplier =
       (oldSeq) -> {
         try {
-          return NODE_RECORD_FACTORY.createFromValues(
+          return NODE_RECORD_FACTORY_NO_VERIFICATION.createFromValues(
               EnrScheme.V4,
               UInt64.valueOf(1),
               Bytes96.EMPTY,
@@ -60,13 +58,13 @@ public class NodeTableTest {
   public void testCreate() throws Exception {
     final String localhostEnr =
         "-IS4QHCYrYZbAKWCBRlAy5zzaDZXJBGkcnh4MHcBFZntXNFrdvJjX04jRzjzCBOonrkTfj499SZuOh8R33Ls8RRcy5wBgmlkgnY0gmlwhH8AAAGJc2VjcDI1NmsxoQPKY0yuDUmstAHYpMa2_oxVtw0RW_QAdpzBQA8yWM0xOIN1ZHCCdl8";
-    NodeRecord nodeRecord = NODE_RECORD_FACTORY.fromBase64(localhostEnr);
+    NodeRecord nodeRecord = NODE_RECORD_FACTORY_NO_VERIFICATION.fromBase64(localhostEnr);
     NodeTableStorageFactoryImpl nodeTableStorageFactory = new NodeTableStorageFactoryImpl();
     Database database = Database.inMemoryDB();
     NodeTableStorage nodeTableStorage =
         nodeTableStorageFactory.createTable(
             database,
-            DEFAULT_SERIALIZER,
+            TEST_SERIALIZER,
             homeNodeSupplier,
             () -> {
               List<NodeRecord> nodes = new ArrayList<>();
@@ -88,13 +86,13 @@ public class NodeTableTest {
   public void testFind() throws Exception {
     final String localhostEnr =
         "-IS4QHCYrYZbAKWCBRlAy5zzaDZXJBGkcnh4MHcBFZntXNFrdvJjX04jRzjzCBOonrkTfj499SZuOh8R33Ls8RRcy5wBgmlkgnY0gmlwhH8AAAGJc2VjcDI1NmsxoQPKY0yuDUmstAHYpMa2_oxVtw0RW_QAdpzBQA8yWM0xOIN1ZHCCdl8";
-    NodeRecord localHostNode = NODE_RECORD_FACTORY.fromBase64(localhostEnr);
+    NodeRecord localHostNode = NODE_RECORD_FACTORY_NO_VERIFICATION.fromBase64(localhostEnr);
     NodeTableStorageFactoryImpl nodeTableStorageFactory = new NodeTableStorageFactoryImpl();
     Database database = Database.inMemoryDB();
     NodeTableStorage nodeTableStorage =
         nodeTableStorageFactory.createTable(
             database,
-            DEFAULT_SERIALIZER,
+            TEST_SERIALIZER,
             homeNodeSupplier,
             () -> {
               List<NodeRecord> nodes = new ArrayList<>();
@@ -104,7 +102,7 @@ public class NodeTableTest {
 
     // node is adjusted to be close to localhostEnr
     NodeRecord closestNode =
-        NODE_RECORD_FACTORY.createFromValues(
+        NODE_RECORD_FACTORY_NO_VERIFICATION.createFromValues(
             EnrScheme.V4,
             UInt64.valueOf(1),
             Bytes96.EMPTY,
@@ -132,7 +130,7 @@ public class NodeTableTest {
             .get(NodeRecord.FIELD_PKEY_SECP256K1),
         closestNode.get(NodeRecord.FIELD_PKEY_SECP256K1));
     NodeRecord farNode =
-        NODE_RECORD_FACTORY.createFromValues(
+        NODE_RECORD_FACTORY_NO_VERIFICATION.createFromValues(
             EnrScheme.V4,
             UInt64.valueOf(1),
             Bytes96.EMPTY,

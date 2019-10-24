@@ -4,6 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.discovery.Functions;
 import org.ethereum.beacon.discovery.NodeSession;
+import org.ethereum.beacon.discovery.enr.NodeRecordFactory;
 import org.ethereum.beacon.discovery.packet.AuthHeaderMessagePacket;
 import org.ethereum.beacon.discovery.pipeline.Envelope;
 import org.ethereum.beacon.discovery.pipeline.EnvelopeHandler;
@@ -20,10 +21,13 @@ public class AuthHeaderMessagePacketHandler implements EnvelopeHandler {
   private static final Logger logger = LogManager.getLogger(AuthHeaderMessagePacketHandler.class);
   private final Pipeline outgoingPipeline;
   private final Scheduler scheduler;
+  private final NodeRecordFactory nodeRecordFactory;
 
-  public AuthHeaderMessagePacketHandler(Pipeline outgoingPipeline, Scheduler scheduler) {
+  public AuthHeaderMessagePacketHandler(
+      Pipeline outgoingPipeline, Scheduler scheduler, NodeRecordFactory nodeRecordFactory) {
     this.outgoingPipeline = outgoingPipeline;
     this.scheduler = scheduler;
+    this.nodeRecordFactory = nodeRecordFactory;
   }
 
   @Override
@@ -60,7 +64,7 @@ public class AuthHeaderMessagePacketHandler implements EnvelopeHandler {
               session.getIdNonce());
       session.setInitiatorKey(keys.getInitiatorKey());
       session.setRecipientKey(keys.getRecipientKey());
-      packet.decodeMessage(keys.getInitiatorKey(), keys.getAuthResponseKey());
+      packet.decodeMessage(keys.getInitiatorKey(), keys.getAuthResponseKey(), nodeRecordFactory);
       packet.verify(session.getIdNonce());
       envelope.put(Field.MESSAGE, packet.getMessage());
     } catch (AssertionError ex) {

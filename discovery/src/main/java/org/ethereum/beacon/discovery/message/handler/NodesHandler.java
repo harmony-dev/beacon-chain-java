@@ -63,6 +63,7 @@ public class NodesHandler implements MessageHandler<NodesMessage> {
         .getNodeRecords()
         .forEach(
             nodeRecordV5 -> {
+              nodeRecordV5.verify();
               NodeRecordInfo nodeRecordInfo = NodeRecordInfo.createDefault(nodeRecordV5);
               if (!session.getNodeTable().getNode(nodeRecordV5.getNodeId()).isPresent()) {
                 session.getNodeTable().save(nodeRecordInfo);

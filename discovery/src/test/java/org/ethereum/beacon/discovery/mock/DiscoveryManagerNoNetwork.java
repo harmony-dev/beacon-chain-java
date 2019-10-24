@@ -5,6 +5,7 @@ import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.discovery.DiscoveryManager;
 import org.ethereum.beacon.discovery.DiscoveryManagerImpl;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
+import org.ethereum.beacon.discovery.enr.NodeRecordFactory;
 import org.ethereum.beacon.discovery.network.NetworkParcel;
 import org.ethereum.beacon.discovery.pipeline.Envelope;
 import org.ethereum.beacon.discovery.pipeline.Field;
@@ -39,6 +40,8 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import java.util.concurrent.CompletableFuture;
 
+import static org.ethereum.beacon.discovery.TestUtil.NODE_RECORD_FACTORY_NO_VERIFICATION;
+
 /**
  * Implementation of {@link DiscoveryManager} without network as an opposite to Netty network
  * implementation {@link org.ethereum.beacon.discovery.DiscoveryManagerImpl} Outgoing packets could
@@ -52,6 +55,8 @@ public class DiscoveryManagerNoNetwork implements DiscoveryManager {
   private final Publisher<BytesValue> incomingPackets;
   private final Pipeline incomingPipeline = new PipelineImpl();
   private final Pipeline outgoingPipeline = new PipelineImpl();
+  private final NodeRecordFactory nodeRecordFactory =
+      NODE_RECORD_FACTORY_NO_VERIFICATION; // no signature verification
 
   public DiscoveryManagerNoNetwork(
       NodeTable nodeTable,
@@ -79,9 +84,10 @@ public class DiscoveryManagerNoNetwork implements DiscoveryManager {
         .addHandler(new UnknownPacketTypeByStatus())
         .addHandler(new NotExpectedIncomingPacketHandler())
         .addHandler(new WhoAreYouPacketHandler(outgoingPipeline, taskScheduler))
-        .addHandler(new AuthHeaderMessagePacketHandler(outgoingPipeline, taskScheduler))
+        .addHandler(
+            new AuthHeaderMessagePacketHandler(outgoingPipeline, taskScheduler, nodeRecordFactory))
         .addHandler(new MessagePacketHandler())
-        .addHandler(new MessageHandler())
+        .addHandler(new MessageHandler(nodeRecordFactory))
         .addHandler(new BadPacketHandler());
     outgoingPipeline
         .addHandler(new OutgoingParcelHandler(outgoingSink))

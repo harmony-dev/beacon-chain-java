@@ -4,6 +4,7 @@ import com.google.common.annotations.VisibleForTesting;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
+import org.ethereum.beacon.discovery.enr.NodeRecordFactory;
 import org.ethereum.beacon.discovery.network.DiscoveryClient;
 import org.ethereum.beacon.discovery.network.DiscoveryClientImpl;
 import org.ethereum.beacon.discovery.network.DiscoveryServer;
@@ -51,6 +52,7 @@ public class DiscoveryManagerImpl implements DiscoveryManager {
   private final Scheduler scheduler;
   private final Pipeline incomingPipeline = new PipelineImpl();
   private final Pipeline outgoingPipeline = new PipelineImpl();
+  private final NodeRecordFactory nodeRecordFactory;
   private DiscoveryClient discoveryClient;
 
   public DiscoveryManagerImpl(
@@ -58,11 +60,13 @@ public class DiscoveryManagerImpl implements DiscoveryManager {
       NodeBucketStorage nodeBucketStorage,
       NodeRecord homeNode,
       BytesValue homeNodePrivateKey,
+      NodeRecordFactory nodeRecordFactory,
       Scheduler serverScheduler,
       Scheduler clientScheduler,
       Scheduler taskScheduler) {
     AuthTagRepository authTagRepo = new AuthTagRepository();
     this.scheduler = serverScheduler;
+    this.nodeRecordFactory = nodeRecordFactory;
     this.discoveryServer =
         new DiscoveryServerImpl(
             ((Bytes4) homeNode.get(NodeRecord.FIELD_IP_V4)),
@@ -85,9 +89,10 @@ public class DiscoveryManagerImpl implements DiscoveryManager {
         .addHandler(new UnknownPacketTypeByStatus())
         .addHandler(new NotExpectedIncomingPacketHandler())
         .addHandler(new WhoAreYouPacketHandler(outgoingPipeline, taskScheduler))
-        .addHandler(new AuthHeaderMessagePacketHandler(outgoingPipeline, taskScheduler))
+        .addHandler(
+            new AuthHeaderMessagePacketHandler(outgoingPipeline, taskScheduler, nodeRecordFactory))
         .addHandler(new MessagePacketHandler())
-        .addHandler(new MessageHandler())
+        .addHandler(new MessageHandler(nodeRecordFactory))
         .addHandler(new BadPacketHandler());
     outgoingPipeline
         .addHandler(new OutgoingParcelHandler(outgoingSink))

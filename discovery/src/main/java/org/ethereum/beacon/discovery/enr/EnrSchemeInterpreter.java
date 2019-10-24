@@ -8,8 +8,10 @@ public interface EnrSchemeInterpreter {
   EnrScheme getScheme();
 
   /** Verifies that `nodeRecord` is of scheme implementation */
-  default boolean verify(NodeRecord nodeRecord) {
-    return nodeRecord.getIdentityScheme().equals(getScheme());
+  default void verify(NodeRecord nodeRecord) {
+    if (!nodeRecord.getIdentityScheme().equals(getScheme())) {
+      throw new RuntimeException("Interpreter and node record schemes do not match!");
+    }
   }
 
   /** Delivers nodeId according to identity scheme scheme */

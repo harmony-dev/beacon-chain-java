@@ -1,8 +1,11 @@
 package org.ethereum.beacon.discovery;
 
+import org.ethereum.beacon.chain.storage.impl.SerializerFactory;
 import org.ethereum.beacon.discovery.enr.EnrScheme;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
 import org.ethereum.beacon.discovery.enr.NodeRecordFactory;
+import org.ethereum.beacon.discovery.mock.EnrSchemeV4InterpreterMock;
+import org.ethereum.beacon.discovery.storage.NodeSerializerFactory;
 import org.ethereum.beacon.util.Utils;
 import org.javatuples.Pair;
 import org.web3j.crypto.ECKeyPair;
@@ -17,12 +20,15 @@ import java.util.ArrayList;
 import java.util.Random;
 
 public class TestUtil {
-  private static final NodeRecordFactory NODE_RECORD_FACTORY = NodeRecordFactory.DEFAULT;
-  private static final int SEED = 123456789;
+  public static final NodeRecordFactory NODE_RECORD_FACTORY_NO_VERIFICATION =
+      new NodeRecordFactory(new EnrSchemeV4InterpreterMock()); // doesn't verify ECDSA signature
+  public static final SerializerFactory TEST_SERIALIZER =
+      new NodeSerializerFactory(NODE_RECORD_FACTORY_NO_VERIFICATION);
+  static final int SEED = 123456789;
 
   /**
    * Generates node on 127.0.0.1 with provided port. Node key is random, but always the same for the
-   * same port
+   * same port. Signature is not valid if verified.
    *
    * @return <code><private key, node record></code>
    */
@@ -44,7 +50,7 @@ public class TestUtil {
     final BytesValue pubKey =
         BytesValue.wrap(Utils.extractBytesFromUnsignedBigInt(ecKeyPair.getPublicKey()));
     NodeRecord nodeRecord =
-        NODE_RECORD_FACTORY.createFromValues(
+        NODE_RECORD_FACTORY_NO_VERIFICATION.createFromValues(
             EnrScheme.V4,
             UInt64.valueOf(1),
             Bytes96.EMPTY,

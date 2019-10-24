@@ -22,7 +22,8 @@ import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import static org.ethereum.beacon.discovery.storage.NodeTableStorage.DEFAULT_SERIALIZER;
+import static org.ethereum.beacon.discovery.TestUtil.NODE_RECORD_FACTORY_NO_VERIFICATION;
+import static org.ethereum.beacon.discovery.TestUtil.TEST_SERIALIZER;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
@@ -42,7 +43,7 @@ public class DiscoveryNetworkTest {
     NodeTableStorage nodeTableStorage1 =
         nodeTableStorageFactory.createTable(
             database1,
-            DEFAULT_SERIALIZER,
+            TEST_SERIALIZER,
             (oldSeq) -> nodeRecord1,
             () ->
                 new ArrayList<NodeRecord>() {
@@ -51,11 +52,11 @@ public class DiscoveryNetworkTest {
                   }
                 });
     NodeBucketStorage nodeBucketStorage1 =
-        nodeTableStorageFactory.createBucketStorage(database1, DEFAULT_SERIALIZER, nodeRecord1);
+        nodeTableStorageFactory.createBucketStorage(database1, TEST_SERIALIZER, nodeRecord1);
     NodeTableStorage nodeTableStorage2 =
         nodeTableStorageFactory.createTable(
             database2,
-            DEFAULT_SERIALIZER,
+            TEST_SERIALIZER,
             (oldSeq) -> nodeRecord2,
             () ->
                 new ArrayList<NodeRecord>() {
@@ -64,13 +65,14 @@ public class DiscoveryNetworkTest {
                   }
                 });
     NodeBucketStorage nodeBucketStorage2 =
-        nodeTableStorageFactory.createBucketStorage(database2, DEFAULT_SERIALIZER, nodeRecord2);
+        nodeTableStorageFactory.createBucketStorage(database2, TEST_SERIALIZER, nodeRecord2);
     DiscoveryManagerImpl discoveryManager1 =
         new DiscoveryManagerImpl(
             nodeTableStorage1.get(),
             nodeBucketStorage1,
             nodeRecord1,
             nodePair1.getValue0(),
+            NODE_RECORD_FACTORY_NO_VERIFICATION,
             Schedulers.createDefault().newSingleThreadDaemon("server-1"),
             Schedulers.createDefault().newSingleThreadDaemon("client-1"),
             Schedulers.createDefault().newSingleThreadDaemon("tasks-1"));
@@ -80,6 +82,7 @@ public class DiscoveryNetworkTest {
             nodeBucketStorage2,
             nodeRecord2,
             nodePair2.getValue0(),
+            NODE_RECORD_FACTORY_NO_VERIFICATION,
             Schedulers.createDefault().newSingleThreadDaemon("server-2"),
             Schedulers.createDefault().newSingleThreadDaemon("client-2"),
             Schedulers.createDefault().newSingleThreadDaemon("tasks-2"));

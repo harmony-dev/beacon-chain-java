@@ -2,6 +2,7 @@ package org.ethereum.beacon.discovery.storage;
 
 import org.ethereum.beacon.discovery.NodeRecordInfo;
 import org.ethereum.beacon.discovery.NodeStatus;
+import org.ethereum.beacon.discovery.enr.NodeRecordFactory;
 import org.web3j.rlp.RlpDecoder;
 import org.web3j.rlp.RlpEncoder;
 import org.web3j.rlp.RlpList;
@@ -37,14 +38,14 @@ public class NodeBucket {
       };
   private final TreeSet<NodeRecordInfo> bucket = new TreeSet<>(COMPARATOR);
 
-  public static NodeBucket fromRlpBytes(BytesValue bytes) {
+  public static NodeBucket fromRlpBytes(BytesValue bytes, NodeRecordFactory nodeRecordFactory) {
     NodeBucket nodeBucket = new NodeBucket();
     ((RlpList) RlpDecoder.decode(bytes.extractArray()).getValues().get(0))
         .getValues().stream()
             .map(rt -> (RlpString) rt)
             .map(RlpString::getBytes)
             .map(BytesValue::wrap)
-            .map(NodeRecordInfo::fromRlpBytes)
+            .map((BytesValue bytes1) -> NodeRecordInfo.fromRlpBytes(bytes1, nodeRecordFactory))
             .forEach(nodeBucket::put);
     return nodeBucket;
   }
