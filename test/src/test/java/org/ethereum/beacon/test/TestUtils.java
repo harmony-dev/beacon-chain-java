@@ -3,30 +3,31 @@ package org.ethereum.beacon.test;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.base.Charsets;
-import com.google.common.io.CharStreams;
 import com.google.common.io.Resources;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
+import org.ethereum.beacon.core.spec.SpecConstants;
+import org.ethereum.beacon.core.spec.SpecConstantsResolver;
 import org.ethereum.beacon.emulator.config.chainspec.SpecBuilder;
 import org.ethereum.beacon.emulator.config.chainspec.SpecConstantsData;
+import org.ethereum.beacon.emulator.config.chainspec.SpecConstantsDataMerged;
 import org.ethereum.beacon.emulator.config.chainspec.SpecData;
 import org.ethereum.beacon.emulator.config.chainspec.SpecDataUtils;
 import org.ethereum.beacon.emulator.config.chainspec.SpecHelpersData;
 import org.ethereum.beacon.schedulers.Scheduler;
 import org.ethereum.beacon.schedulers.Schedulers;
-import org.ethereum.beacon.test.type.BlsSignedTestCase;
-import org.ethereum.beacon.test.type.NamedTestCase;
-import org.ethereum.beacon.test.type.SpecConstantsDataMerged;
+import org.ethereum.beacon.ssz.SSZBuilder;
+import org.ethereum.beacon.ssz.SSZSerializer;
+import org.ethereum.beacon.test.type.DataMapperTestCase;
 import org.ethereum.beacon.test.type.TestCase;
-import org.ethereum.beacon.test.type.TestSkeleton;
+import org.ethereum.beacon.test.type.ssz.SszGenericCase;
+import org.ethereum.beacon.test.type.ssz.SszStaticCase;
+import org.ethereum.beacon.test.type.state.field.BlsSettingField;
 import org.ethereum.beacon.util.Objects;
 import org.javatuples.Pair;
+import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.URISyntaxException;
@@ -37,8 +38,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -55,31 +58,54 @@ public class TestUtils {
   private static final Schedulers schedulers = Schedulers.createDefault();
   static ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
   static String PATH_TO_TESTS = "eth2.0-spec-tests/tests";
-  static String PATH_TO_CONFIGS = "eth2.0-temp-test-configs";
-  static String SPEC_CONFIG_DIR = "constant_presets";
-  static String FORK_CONFIG_DIR = "fork_timelines";
+  static Integer CASE_DIR_LEVEL = 2;
+  static Path MAINNET_TESTS = Paths.get(PATH_TO_TESTS, "mainnet");
+  static Path MINIMAL_TESTS = Paths.get(PATH_TO_TESTS, "minimal");
 
-  static File getResourceFile(String relativePath) {
+  /** List of directories exactly levelDeeper deeper from input dir */
+  private static List<File> getResourceDirs(String dir, int levelDeeper) {
+    final Path fixturesRootPath;
     try {
-      final Path filePath = Paths.get(Resources.getResource(relativePath).toURI());
-      return filePath.toFile();
-    } catch (IllegalArgumentException | URISyntaxException e) {
+      fixturesRootPath = Paths.get(Resources.getResource(dir).toURI());
+    } catch (URISyntaxException e) {
       throw new RuntimeException(
           String.format(
               "Nothing found on path `%s`.\n Maybe you need to pull tests submodule with following command:\n %s",
-              relativePath, GIT_COMMAND),
+              dir, GIT_COMMAND),
           e);
+    }
+    return getDirs(fixturesRootPath, levelDeeper);
+  }
+
+  private static List<File> getDirs(Path dir, int levelDeeper) {
+    try {
+      Set<Path> pathsOneLevelEarlier =
+          Files.walk(dir, levelDeeper - 1).filter(Files::isDirectory).collect(Collectors.toSet());
+      return Files.walk(dir, levelDeeper)
+          .filter(Files::isDirectory)
+          .filter(d -> !pathsOneLevelEarlier.contains(d))
+          .map(Path::toFile)
+          .collect(Collectors.toList());
+    } catch (IllegalArgumentException e) {
+      throw new RuntimeException(
+          String.format(
+              "Nothing found on path `%s`.\n Maybe you need to pull tests submodule with following command:\n %s",
+              dir, GIT_COMMAND),
+          e);
+    } catch (IOException e) {
+      throw new RuntimeException(
+          String.format("Failed to read directories in directory `%s`.", dir), e);
     }
   }
 
-  static List<File> getResourceFiles(String dir) {
+  /** List of all files in input directory */
+  private static List<File> getFiles(File dir) {
     try {
-      final Path fixturesRootPath = Paths.get(Resources.getResource(dir).toURI());
-      return Files.walk(fixturesRootPath)
+      return Files.walk(dir.toPath())
           .filter(Files::isRegularFile)
           .map(Path::toFile)
           .collect(Collectors.toList());
-    } catch (IllegalArgumentException | URISyntaxException e) {
+    } catch (IllegalArgumentException e) {
       throw new RuntimeException(
           String.format(
               "Nothing found on path `%s`.\n Maybe you need to pull tests submodule with following command:\n %s",
@@ -90,114 +116,40 @@ public class TestUtils {
     }
   }
 
-  static <V extends TestSkeleton> V readTest(File file, Class<? extends V> clazz) {
-    return readYamlFile(file, clazz);
+  /** Maps input yaml file to class */
+  private static <V> V readYamlFile(File file, Class<? extends V> clazz) {
+    String content = new String(readFile(file).extractArray(), Charsets.UTF_8);
+    return parseYamlData(content, clazz);
   }
 
-  private static <V> V readYamlFile(File file, Class<? extends V> clazz) {
-    String content;
-    try (InputStream inputStream = new FileInputStream(file);
-        InputStreamReader streamReader = new InputStreamReader(inputStream, Charsets.UTF_8)) {
-      content = CharStreams.toString(streamReader);
-    } catch (FileNotFoundException e) {
-      throw new RuntimeException(String.format("File not found: %s", file.toPath().toString()), e);
+  /** Maps yaml string to class */
+  private static <V> V parseYamlData(String content, Class<? extends V> clazz) {
+    try {
+      return yamlMapper.readValue(content, clazz);
+    } catch (IOException e) {
+      throw new RuntimeException(
+          String.format("Error thrown when reading stream with YAML reader:\n%s", e.getMessage()),
+          e);
+    }
+  }
+
+  /** Reads file to string */
+  private static BytesValue readFile(File file) {
+    try {
+      return BytesValue.wrap(Files.readAllBytes(file.toPath()));
     } catch (IOException e) {
       throw new RuntimeException(
           String.format("Error reading contents of file: %s", file.toPath().toString()), e);
     }
-
-    return parseYamlData(content, clazz);
   }
 
-  static <V extends TestSkeleton> Optional<String> runAllTestsInFile(
-      File file,
-      Function<Pair<TestCase, BeaconChainSpec>, Optional<String>> testCaseRunner,
-      Class<? extends V> clazz) {
-    return runAllTestsInFile(file, testCaseRunner, clazz, Collections.emptySet());
-  }
-
-  static <V extends TestSkeleton> Optional<String> runAllTestsInFile(
-      File file,
-      Function<Pair<TestCase, BeaconChainSpec>, Optional<String>> testCaseRunner,
-      Class<? extends V> clazz,
-      Collection<String> exclusions) {
-    V test = readTest(file, clazz);
-    return runAllCasesInTest(test, testCaseRunner, clazz, exclusions, null);
-  }
-
-  static <V extends TestSkeleton> Optional<String> runAllCasesInTest(
-      V test,
-      Function<Pair<TestCase, BeaconChainSpec>, Optional<String>> testCaseRunner,
-      Class<? extends V> clazz) {
-    return runAllCasesInTest(test, testCaseRunner, clazz, Collections.emptySet(), null);
-  }
-
-  static <V extends TestSkeleton> Optional<String> runAllCasesInTest(
-      V test,
-      Function<Pair<TestCase, BeaconChainSpec>, Optional<String>> testCaseRunner,
-      Class<? extends V> clazz,
-      Boolean forceBlsVerified) {
-    return runAllCasesInTest(test, testCaseRunner, clazz, Collections.emptySet(), forceBlsVerified);
-  }
-
-  static <V extends TestSkeleton> Optional<String> runAllCasesInTest(
-      V test,
-      Function<Pair<TestCase, BeaconChainSpec>, Optional<String>> testCaseRunner,
-      Class<? extends V> clazz,
-      Collection<String> exclusions,
-      Boolean forceBlsVerified) {
-    StringBuilder errors = new StringBuilder();
-    AtomicInteger failed = new AtomicInteger(0);
-    int total = 0;
-    for (TestCase testCase : test.getTestCases()) {
-      ++total;
-      String name =
-          testCase instanceof NamedTestCase
-              ? ((NamedTestCase) testCase).getName()
-              : "Test #" + (total - 1);
-      if (exclusions.contains(name)) {
-        System.out.println(String.format("[ ] %s ignored", name));
-        continue;
-      }
-
-      long s = System.nanoTime();
-      boolean isBlsVerified = false;
-      if (forceBlsVerified != null) {
-        isBlsVerified = forceBlsVerified;
-      } else if (testCase instanceof BlsSignedTestCase) {
-        Integer blsFlag = ((BlsSignedTestCase) testCase).getBlsSetting();
-        isBlsVerified = blsFlag != null && blsFlag < 2;
-      }
-      BeaconChainSpec spec = loadSpecByName(test.getConfig(), isBlsVerified);
-      Optional<String> err = runTestCase(testCase, spec, test, testCaseRunner);
-      long completionTime = System.nanoTime() - s;
-
-      if (err.isPresent()) {
-        errors.append(err.get());
-        failed.incrementAndGet();
-      }
-
-      System.out.println(
-          String.format(
-              "[%s] %s completed in %.3fs",
-              err.isPresent() ? "F" : "P", name, completionTime / 1_000_000_000d));
-    }
-
-    if (errors.length() == 0) {
-      return Optional.empty();
-    }
-    errors.append("\nTests failed: ");
-    errors.append(failed.get());
-    errors.append("\nTotal: ");
-    errors.append(total);
-
-    return Optional.of(errors.toString());
-  }
-
-  static <V extends TestSkeleton> Optional<String> runTestCase(
+  /**
+   * Runs tests case with provided spec using supplied test runner. If any errors are fired, error
+   * output is returned as readable string
+   */
+  private static Optional<String> runTestCase(
       TestCase testCase,
       BeaconChainSpec spec,
-      V test,
       Function<Pair<TestCase, BeaconChainSpec>, Optional<String>> testCaseRunner) {
     Optional<String> testCaseErrors;
     try {
@@ -214,8 +166,6 @@ public class TestUtils {
       StringBuilder errors = new StringBuilder();
       errors
           .append("FAILED TEST ")
-          .append(test)
-          .append("\n")
           .append(testCase)
           .append("\n")
           .append("ERROR: ")
@@ -228,55 +178,307 @@ public class TestUtils {
     return Optional.empty();
   }
 
-  static <V> V parseYamlData(String content, Class<? extends V> clazz) {
-    try {
-      return yamlMapper.readValue(content, clazz);
-    } catch (IOException e) {
-      throw new RuntimeException(
-          String.format("Error thrown when reading stream with YAML reader:\n%s", e.getMessage()),
-          e);
-    }
-  }
-
-  static <V extends TestSkeleton> void runTestsInResourceDir(
-      Path dir,
+  /**
+   * Just a shortcut of {@link #runSpecTestsInResourceDir(Path, Path, Class, Function)} to run pair
+   * of tests with different specs together
+   */
+  static <V extends DataMapperTestCase> void runSpecTestsInResourceDirs(
+      Path rootDir1,
+      Path rootDir2,
+      Path subDir,
       Class<? extends V> testsType,
       Function<Pair<TestCase, BeaconChainSpec>, Optional<String>> testCaseRunner) {
-    runTestsInResourceDirImpl(
-        dir, testsType, testCaseRunner, Ignored.EMPTY, false);
+    runSpecTestsInResourceDir(rootDir1, subDir, testsType, testCaseRunner, Ignored.EMPTY, false);
+    runSpecTestsInResourceDir(rootDir2, subDir, testsType, testCaseRunner, Ignored.EMPTY, false);
   }
 
-  static <V extends TestSkeleton> void runTestsInResourceDir(
-      Path dir,
+  /**
+   * Runs tests which requires BeaconChainSpec for execution in provided resource dir
+   *
+   * @param rootDir Root dir from resources folder, spec constant `config.yaml` is here
+   * @param subDir Sub directory with test directories, relative to rootDir
+   * @param testsType Test case type
+   * @param testCaseRunner Test case runner, supports test case type
+   * @param <V> Any kind of test case that uses set of file strings to load data
+   */
+  static <V extends DataMapperTestCase> void runSpecTestsInResourceDir(
+      Path rootDir,
+      Path subDir,
       Class<? extends V> testsType,
-      Function<Pair<TestCase, BeaconChainSpec>, Optional<String>> testCaseRunner,
-      boolean parallel) {
-    runTestsInResourceDirImpl(
-        dir, testsType, testCaseRunner, Ignored.EMPTY, parallel);
+      Function<Pair<TestCase, BeaconChainSpec>, Optional<String>> testCaseRunner) {
+    runSpecTestsInResourceDir(rootDir, subDir, testsType, testCaseRunner, Ignored.EMPTY, false);
   }
 
-  static <V extends TestSkeleton> void runTestsInResourceDir(
-      Path dir,
+  /**
+   * Runs tests which requires BeaconChainSpec for execution in provided resource dir
+   *
+   * @param rootDir Root dir from resources folder, spec constant `config.yaml` is here
+   * @param subDir Sub directory with test directories, relative to rootDir
+   * @param testsType Test case type
+   * @param testCaseRunner Test case runner, supports test case type
+   * @param ignored list of ignored cases
+   * @param parallel whether to run tests in parallel
+   * @param <V> Any kind of test case that uses set of file strings to load data
+   */
+  public static <V extends DataMapperTestCase> void runSpecTestsInResourceDir(
+      Path rootDir,
+      Path subDir,
       Class<? extends V> testsType,
       Function<Pair<TestCase, BeaconChainSpec>, Optional<String>> testCaseRunner,
       Ignored ignored,
       boolean parallel) {
-    runTestsInResourceDirImpl(
-        dir, testsType, testCaseRunner, ignored, parallel);
+    String subDirString = Paths.get(rootDir.toString(), subDir.toString()).toString();
+    List<File> dirs = getResourceDirs(subDirString, CASE_DIR_LEVEL);
+    Collection<String> dirNamesExclusions = ignored.fileNames;
+    boolean isCI = Boolean.parseBoolean(System.getenv("CI"));
+    if (ignored.forCI && !isCI) {
+      dirNamesExclusions = Collections.emptySet();
+    }
+    Scheduler scheduler =
+        parallel ? schedulers.cpuHeavy() : schedulers.newSingleThreadDaemon("tests");
+    AtomicBoolean failed = new AtomicBoolean(false);
+    System.out.printf(
+        "Running tests in %s with parallel execution set as %s%n", subDirString, parallel);
+    AtomicInteger counter = new AtomicInteger(1);
+    List<CompletableFuture> tasks = new ArrayList<>();
+    SpecConstantsData specConstantsData =
+        loadSpecFromResourceFile(Paths.get(rootDir.toString(), "config.yaml"));
+    for (File dir : dirs) {
+      if (dirNamesExclusions.contains(dir.getName())) {
+        System.out.println(String.format("Skipping dir %s (in exclusions)", dir.getName()));
+        continue;
+      }
+      Runnable task =
+          () -> {
+            Optional<String> result;
+            int num = counter.getAndIncrement();
+            try {
+              Class[] paramTypes = new Class[] {Map.class, ObjectMapper.class, String.class};
+              Map<String, BytesValue> filesAndData = new HashMap<>();
+              for (File file : getFiles(dir)) {
+                BytesValue content = readFile(file);
+                filesAndData.put(file.getName(), content);
+              }
+              Object[] params = new Object[] {filesAndData, yamlMapper, dir.getName()};
+              DataMapperTestCase testCase =
+                  testsType.getConstructor(paramTypes).newInstance(params);
+              BeaconChainSpec spec = createSpecForTest(testCase, specConstantsData);
+              SSZSerializer ssz =
+                  new SSZBuilder()
+                      .withExternalVarResolver(new SpecConstantsResolver(spec.getConstants()))
+                      .withExtraObjectCreator(SpecConstants.class, spec.getConstants())
+                      .buildSerializer();
+              testCase.setSszSerializer(ssz);
+              result = runTestCase(testCase, spec, testCaseRunner);
+            } catch (Exception e) {
+              result = Optional.of("Cannot create testcase, exception thrown " + e);
+            }
+            StringBuilder output = new StringBuilder();
+            output.append(num).append(". Running tests in ").append(dir.getName()).append("... ");
+            if (result.isPresent()) {
+              output.append("FAILED\n");
+              output.append(num).append(". ").append(result.get()).append('\n');
+              failed.set(true);
+            } else {
+              output.append("OK\n");
+            }
+            System.out.print(output.toString());
+          };
+      tasks.add(scheduler.executeR(task));
+    }
+
+    CompletableFuture[] cfs = tasks.toArray(new CompletableFuture[] {});
+    CompletableFuture.allOf(cfs).join();
+    assertFalse(failed.get());
   }
 
-  static <V extends TestSkeleton> void runTestsInResourceDir(
-      Path dir,
-      Class<? extends V> testsType,
+  /**
+   * Runs static type ssz tests which requires BeaconChainSpec for execution in provided resource
+   * dir
+   *
+   * @param rootDir Root dir from resources folder, spec constant `config.yaml` is here
+   * @param subDir Sub directory with test directories, relative to rootDir
+   * @param testCaseRunner Test case runner, supports test case type
+   * @param ignored list of ignored cases
+   * @param parallel whether to run tests in parallel
+   * @param <V> Any kind of test case that uses set of file strings to load data
+   */
+  public static <V extends DataMapperTestCase> void runSszStaticTestsInResourceDir(
+      Path rootDir,
+      Path subDir,
       Function<Pair<TestCase, BeaconChainSpec>, Optional<String>> testCaseRunner,
-      Ignored ignored) {
-    runTestsInResourceDirImpl(
-        dir, testsType, testCaseRunner, ignored, false);
+      Ignored ignored,
+      boolean parallel) {
+    String subDirString = Paths.get(rootDir.toString(), subDir.toString()).toString();
+    List<File> typeDirs = getResourceDirs(subDirString, 1);
+    Collection<String> dirNamesExclusions = ignored.fileNames;
+    boolean isCI = Boolean.parseBoolean(System.getenv("CI"));
+    if (ignored.forCI && !isCI) {
+      dirNamesExclusions = Collections.emptySet();
+    }
+    Scheduler scheduler =
+        parallel ? schedulers.cpuHeavy() : schedulers.newSingleThreadDaemon("tests");
+    AtomicBoolean failed = new AtomicBoolean(false);
+    System.out.printf(
+        "Running tests in %s with parallel execution set as %s%n", subDirString, parallel);
+    AtomicInteger counter = new AtomicInteger(1);
+    SpecConstantsData specConstantsData =
+        loadSpecFromResourceFile(Paths.get(rootDir.toString(), "config.yaml"));
+    for (File typeDir : typeDirs) {
+      if (dirNamesExclusions.contains(typeDir.getName())) {
+        System.out.println(String.format("Skipping dir %s (in exclusions)", typeDir.getName()));
+        continue;
+      }
+      String typeName = typeDir.getName();
+      List<CompletableFuture> tasks = new ArrayList<>();
+      for (File caseDir : getDirs(typeDir.toPath(), 2)) {
+        Runnable task =
+            () -> {
+              Optional<String> result;
+              int num = counter.getAndIncrement();
+              String description =
+                  String.format(
+                      "%s/%s/%s", typeName, caseDir.getParentFile().getName(), caseDir.getName());
+              try {
+                Map<String, BytesValue> filesAndData = new HashMap<>();
+                for (File file : getFiles(caseDir)) {
+                  BytesValue content = readFile(file);
+                  filesAndData.put(file.getName(), content);
+                }
+                SszStaticCase testCase =
+                    new SszStaticCase(filesAndData, yamlMapper, typeName, description);
+                BeaconChainSpec spec = createSpecForTest(testCase, specConstantsData);
+                SSZSerializer ssz =
+                    new SSZBuilder()
+                        .withExternalVarResolver(new SpecConstantsResolver(spec.getConstants()))
+                        .withExtraObjectCreator(SpecConstants.class, spec.getConstants())
+                        .buildSerializer();
+                testCase.setSszSerializer(ssz);
+                result = runTestCase(testCase, spec, testCaseRunner);
+              } catch (Exception e) {
+                result = Optional.of("Cannot create testcase, exception thrown " + e);
+              }
+              StringBuilder output = new StringBuilder();
+              output.append(String.format("%d. Running tests in %s... ", num, description));
+              if (result.isPresent()) {
+                output.append("FAILED\n");
+                output.append(num).append(". ").append(result.get());
+                failed.set(true);
+              } else {
+                output.append("OK\n");
+              }
+              System.out.print(output.toString());
+            };
+        tasks.add(scheduler.executeR(task));
+      }
+      CompletableFuture[] cfs = tasks.toArray(new CompletableFuture[] {});
+      CompletableFuture.allOf(cfs).join();
+      assertFalse(failed.get());
+    }
   }
 
-  static BeaconChainSpec loadSpecByName(String name, boolean isBlsVerified) {
-    Path configPath = Paths.get(PATH_TO_CONFIGS, SPEC_CONFIG_DIR, name + ".yaml");
-    File config = getResourceFile(configPath.toString());
+  /**
+   * Runs generic type ssz tests which requires BeaconChainSpec for execution in provided resource
+   * dir
+   *
+   * @param dir Sub directory with test directories by type
+   * @param testCaseRunner Test case runner, supports test case type
+   * @param ignored list of ignored cases
+   * @param parallel whether to run tests in parallel
+   * @param <V> Any kind of test case that uses set of file strings to load data
+   */
+  public static <V extends DataMapperTestCase> void runSszGenericTestsInResourceDir(
+      Path dir,
+      Function<Pair<TestCase, BeaconChainSpec>, Optional<String>> testCaseRunner,
+      Ignored ignored,
+      boolean parallel) {
+    Collection<String> dirNamesExclusions = ignored.fileNames;
+    boolean isCI = Boolean.parseBoolean(System.getenv("CI"));
+    if (ignored.forCI && !isCI) {
+      dirNamesExclusions = Collections.emptySet();
+    }
+    Scheduler scheduler =
+        parallel ? schedulers.cpuHeavy() : schedulers.newSingleThreadDaemon("tests");
+    AtomicBoolean failed = new AtomicBoolean(false);
+    System.out.printf("Running tests in %s with parallel execution set as %s%n", dir, parallel);
+    AtomicInteger counter = new AtomicInteger(1);
+    List<CompletableFuture> tasks = new ArrayList<>();
+    for (File caseDir : getResourceDirs(dir.toString(), 2)) {
+      AtomicBoolean inExclusions = new AtomicBoolean(false);
+      dirNamesExclusions.stream()
+          .filter(e -> caseDir.getPath().contains(e))
+          .findFirst()
+          .ifPresent(s -> inExclusions.set(true));
+      if (inExclusions.get()) {
+        System.out.println(
+            String.format(
+                "Skipping case %s/%s/%s (in exclusions)",
+                dir.getFileName(), caseDir.getParentFile().getName(), caseDir.getName()));
+        continue;
+      }
+      Runnable task =
+          () -> {
+            Optional<String> result;
+            int num = counter.getAndIncrement();
+            String description =
+                String.format(
+                    "%s/%s/%s",
+                    dir.getFileName(), caseDir.getParentFile().getName(), caseDir.getName());
+            try {
+              Map<String, BytesValue> filesAndData = new HashMap<>();
+              for (File file : getFiles(caseDir)) {
+                BytesValue content = readFile(file);
+                filesAndData.put(file.getName(), content);
+              }
+              boolean isValid = "valid".equals(caseDir.getParentFile().getName());
+              SszGenericCase testCase =
+                  new SszGenericCase(
+                      filesAndData,
+                      yamlMapper,
+                      dir.getFileName().toString(),
+                      caseDir.getName(),
+                      isValid,
+                      description);
+              SSZSerializer ssz = new SSZBuilder().buildSerializer();
+              testCase.setSszSerializer(ssz);
+              BeaconChainSpec spec = BeaconChainSpec.createWithDefaults();
+              result = runTestCase(testCase, spec, testCaseRunner);
+            } catch (Exception e) {
+              result = Optional.of("Cannot create testcase, exception thrown " + e);
+            }
+            StringBuilder output = new StringBuilder();
+            output.append(String.format("%d. Running tests in %s... ", num, description));
+            if (result.isPresent()) {
+              output.append("FAILED\n");
+              output.append(num).append(". ").append(result.get());
+              failed.set(true);
+            } else {
+              output.append("OK\n");
+            }
+            System.out.print(output.toString());
+          };
+      tasks.add(scheduler.executeR(task));
+    }
+    CompletableFuture[] cfs = tasks.toArray(new CompletableFuture[] {});
+    CompletableFuture.allOf(cfs).join();
+    assertFalse(failed.get());
+  }
+
+  /**
+   * Loads {@link org.ethereum.beacon.core.spec.SpecConstants} ancestor from yaml config file which
+   * is located somewhere in resource folder
+   */
+  private static SpecConstantsData loadSpecFromResourceFile(Path file) {
+    File config;
+    try {
+      config = Paths.get(Resources.getResource(file.toString()).toURI()).toFile();
+    } catch (IllegalArgumentException | URISyntaxException e) {
+      throw new RuntimeException(
+          String.format(
+              "Nothing found on path `%s`.\n Maybe you need to pull tests submodule with following command:\n %s",
+              file, GIT_COMMAND),
+          e);
+    }
 
     SpecConstantsData specConstantsDataRaw = readYamlFile(config, SpecConstantsDataMerged.class);
     SpecConstantsData specConstantsData;
@@ -289,6 +491,15 @@ public class TestUtils {
       throw new RuntimeException("Cannot merge spec constants with default settings");
     }
 
+    return specConstantsData;
+  }
+
+  /**
+   * Constructs {@link BeaconChainSpec} from {@link SpecConstantsData} with customized bls
+   * verification settings
+   */
+  private static BeaconChainSpec fromSpecConstants(
+      SpecConstantsData specConstantsData, boolean isBlsVerified) {
     SpecHelpersData specHelpersData = new SpecHelpersData();
     specHelpersData.setBlsVerify(isBlsVerified);
     specHelpersData.setVerifyDepositProof(true);
@@ -301,38 +512,94 @@ public class TestUtils {
     return new SpecBuilder().withSpec(specData).buildSpec();
   }
 
-  private static <V extends TestSkeleton> void runTestsInResourceDirImpl(
+  /**
+   * Constructs {@link BeaconChainSpec} from {@link SpecConstantsData} with customized bls
+   * verification settings tied to specific test case
+   */
+  private static BeaconChainSpec createSpecForTest(
+      DataMapperTestCase testCase, SpecConstantsData specConstantsData) {
+    boolean isBlsVerified = false;
+    if (testCase instanceof BlsSettingField) {
+      Integer blsFlag = ((BlsSettingField) testCase).getBlsSetting();
+      isBlsVerified = blsFlag != null && blsFlag < 2;
+    }
+
+    return fromSpecConstants(specConstantsData, isBlsVerified);
+  }
+
+  /**
+   * Runs general format tests in directory
+   *
+   * @param dir Resource directory
+   * @param testsType Tests class type
+   * @param testCaseRunner Runner for this type
+   * @param <V> any test case type
+   */
+  public static <V extends TestCase> void runGeneralTestsInResourceDir(
+      Path dir,
+      Class<? extends V> testsType,
+      Function<Pair<TestCase, BeaconChainSpec>, Optional<String>> testCaseRunner) {
+    runGeneralTestsInResourceDir(dir, testsType, testCaseRunner, Ignored.EMPTY, false);
+  }
+
+  /**
+   * Runs general format tests in directory
+   *
+   * @param dir Resource directory
+   * @param testsType Tests class type
+   * @param testCaseRunner Runner for this type
+   * @param ignored list of ignored cases
+   * @param parallel whether to run tests in parallel
+   * @param <V> any test case type
+   */
+  public static <V extends TestCase> void runGeneralTestsInResourceDir(
       Path dir,
       Class<? extends V> testsType,
       Function<Pair<TestCase, BeaconChainSpec>, Optional<String>> testCaseRunner,
       Ignored ignored,
       boolean parallel) {
-    List<File> files = getResourceFiles(dir.toString());
+    List<File> dirs = getResourceDirs(dir.toString(), CASE_DIR_LEVEL);
     boolean isCI = Boolean.parseBoolean(System.getenv("CI"));
-    Collection<String> fileNamesExclusions = isCI == ignored.forCI ? ignored.fileNames : Collections.emptySet();
-    Collection<String> testCaseExclusions = isCI == ignored.forCI ? ignored.testCases : Collections.emptySet();
+    Collection<String> dirNamesExclusions =
+        isCI == ignored.forCI ? ignored.fileNames : Collections.emptySet();
     Scheduler scheduler =
         parallel ? schedulers.cpuHeavy() : schedulers.newSingleThreadDaemon("tests");
     AtomicBoolean failed = new AtomicBoolean(false);
-    System.out.println("Running tests in " + dir + " with parallel execution set as " + parallel);
-    AtomicInteger counter = new AtomicInteger(0);
+    System.out.printf("Running tests in %s with parallel execution set as %s%n", dir, parallel);
+    AtomicInteger counter = new AtomicInteger(1);
     List<CompletableFuture> tasks = new ArrayList<>();
-    for (File file : files) {
-      if (fileNamesExclusions.contains(file.getName())) {
-        System.out.println(String.format("Skipping file %s (in exclusions)", file.getName()));
+    for (File caseDir : dirs) {
+      if (dirNamesExclusions.contains(caseDir.getName())) {
+        System.out.println(String.format("Skipping dir %s (in exclusions)", caseDir.getName()));
         continue;
       }
       Runnable task =
           () -> {
             int num = counter.getAndIncrement();
-            System.out.println(num + ". Running tests in " + file.getName());
-            Optional<String> result =
-                runAllTestsInFile(file, testCaseRunner, testsType, testCaseExclusions);
-            if (result.isPresent()) {
-              System.out.println(num + ". " + result.get());
-              System.out.println(num + ". \n----===----\n");
-              failed.set(true);
+            List<File> files = getFiles(caseDir);
+            assert files.size() == 1;
+            Optional<String> result;
+            try {
+              TestCase testCase = yamlMapper.readValue(files.get(0), testsType);
+              BeaconChainSpec spec = BeaconChainSpec.createWithDefaults();
+              result = runTestCase(testCase, spec, testCaseRunner);
+            } catch (Exception e) {
+              result = Optional.of("Cannot create testcase, exception thrown " + e);
             }
+            StringBuilder output = new StringBuilder();
+            output
+                .append(num)
+                .append(". Running tests in ")
+                .append(caseDir.getName())
+                .append("... ");
+            if (result.isPresent()) {
+              output.append("FAILED\n");
+              output.append(num).append(". ").append(result.get()).append('\n');
+              failed.set(true);
+            } else {
+              output.append("OK\n");
+            }
+            System.out.print(output.toString());
           };
       tasks.add(scheduler.executeR(task));
     }
@@ -343,7 +610,8 @@ public class TestUtils {
   }
 
   public static class Ignored {
-    private static Ignored EMPTY = new Ignored(Collections.emptySet(), Collections.emptySet(), false);
+    public static Ignored EMPTY =
+        new Ignored(Collections.emptySet(), Collections.emptySet(), false);
     private final Set<String> testCases;
     private final Set<String> fileNames;
     private final boolean forCI;

@@ -1,6 +1,8 @@
 package org.ethereum.beacon.db;
 
 import java.util.function.Function;
+
+import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.db.source.impl.HashMapDataSource;
 
 /**
@@ -9,7 +11,7 @@ import org.ethereum.beacon.db.source.impl.HashMapDataSource;
 public class InMemoryDatabase extends XorKeyDatabase {
 
   public InMemoryDatabase() {
-    super(new HashMapDataSource<>(), Function.identity());
+    super(new HashMapDataSource<>(), Hashes::sha256);
   }
 
   @Override

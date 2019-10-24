@@ -4,39 +4,35 @@ import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.test.runner.Runner;
 import org.ethereum.beacon.test.type.TestCase;
-import org.ethereum.beacon.test.type.state.GenesisValidityTestCase;
-import org.ethereum.beacon.test.type.state.StateTestCase;
+import org.ethereum.beacon.test.type.state.GenesisValidityCase;
 
 import java.util.Optional;
 
 import static org.ethereum.beacon.test.SilentAsserts.assertEquals;
 
 /**
- * TestRunner for {@link StateTestCase}
+ * TestRunner for {@link GenesisValidityCase}
  *
  * <p>Test format description: <a
  * href="https://github.com/ethereum/eth2.0-specs/blob/dev/specs/test_formats/genesis/validity.md">https://github.com/ethereum/eth2.0-specs/blob/dev/specs/test_formats/genesis/validity.md</a>
  */
 public class GenesisValidityRunner implements Runner {
-  private GenesisValidityTestCase testCase;
+  private GenesisValidityCase testCase;
   private BeaconChainSpec spec;
   private String handler;
 
-  public GenesisValidityRunner(TestCase testCase, BeaconChainSpec spec, String handler) {
-    if (!(testCase instanceof GenesisValidityTestCase)) {
+  public GenesisValidityRunner(TestCase testCase, BeaconChainSpec spec) {
+    if (!(testCase instanceof GenesisValidityCase)) {
       throw new RuntimeException(
-          "TestCase runner accepts only GenesisValidityTestCase.class as input!");
+          "TestCase runner accepts only GenesisValidityCase.class as input!");
     }
-    this.testCase = (GenesisValidityTestCase) testCase;
+    this.testCase = (GenesisValidityCase) testCase;
     this.spec = spec;
     this.handler = handler;
   }
 
   public Optional<String> run() {
-    if (!handler.equals("validity")) {
-      throw new RuntimeException("This type of state test is not supported");
-    }
-    boolean validity = checkValidity(testCase.getGenesisState(spec.getConstants()));
+    boolean validity = checkValidity(testCase.getGenesis(spec.getConstants()));
     return assertEquals(testCase.isValid(), validity);
   }
 

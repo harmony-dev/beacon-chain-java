@@ -1,6 +1,15 @@
 package org.ethereum.beacon.ssz;
 
+import static org.junit.Assert.assertEquals;
+
 import com.google.common.base.Objects;
+import java.math.BigInteger;
+import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.logging.Logger;
 import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.ssz.access.basic.UIntCodec;
 import org.ethereum.beacon.ssz.access.container.SSZAnnotationSchemeBuilder;
@@ -21,16 +30,6 @@ import tech.pegasys.artemis.util.collections.MutableUnion;
 import tech.pegasys.artemis.util.collections.Union.Null;
 import tech.pegasys.artemis.util.collections.UnionImpl;
 import tech.pegasys.artemis.util.uint.UInt64;
-
-import java.math.BigInteger;
-import java.security.SecureRandom;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.logging.Logger;
-
-import static org.junit.Assert.assertEquals;
 
 /** Tests of {@link SSZSerializer} */
 public class SSZSerializerTest {
@@ -614,6 +613,58 @@ public class SSZSerializerTest {
     @Override
     public int hashCode() {
       return Objects.hashCode(id, methodId, body, bytes32);
+    }
+  }
+
+  @SSZSerializable(skipContainer = true)
+  public static class SkippedContainer {
+    @SSZ private final UInt64 id;
+
+    public SkippedContainer(UInt64 id) {
+      this.id = id;
+    }
+
+    public UInt64 getId() {
+      return id;
+    }
+  }
+
+  @Test
+  public void testSkipContainer1() {
+    SkippedContainer c1 = new SkippedContainer(UInt64.valueOf(0xabcdef));
+    byte[] bb1 = sszSerializer.encode(c1);
+    Assert.assertEquals(8, bb1.length);
+    SkippedContainer c2 = sszSerializer.decode(bb1, SkippedContainer.class);
+    Assert.assertEquals(c1.getId(), c2.getId());
+  }
+
+  @SSZSerializable(skipContainer = true)
+  public static class SkippedListContainer {
+    @SSZ private final List<String> list;
+
+    public SkippedListContainer(List<String> list) {
+      this.list = list;
+    }
+
+    public List<String> getList() {
+      return list;
+    }
+  }
+
+  @Test
+  public void testSkipContainer2() {
+    {
+      SkippedListContainer c1 = new SkippedListContainer(Collections.emptyList());
+      byte[] bb1 = sszSerializer.encode(c1);
+      Assert.assertEquals(0, bb1.length);
+      SkippedListContainer c2 = sszSerializer.decode(bb1, SkippedListContainer.class);
+      Assert.assertEquals(c1.getList(), c2.getList());
+    }
+    {
+      SkippedListContainer c1 = new SkippedListContainer(Arrays.asList("aaa", "bbb", ""));
+      byte[] bb1 = sszSerializer.encode(c1);
+      SkippedListContainer c2 = sszSerializer.decode(bb1, SkippedListContainer.class);
+      Assert.assertEquals(c1.getList(), c2.getList());
     }
   }
 }

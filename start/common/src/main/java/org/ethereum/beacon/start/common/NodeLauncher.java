@@ -2,9 +2,11 @@ package org.ethereum.beacon.start.common;
 
 import static org.ethereum.beacon.chain.observer.ObservableStateProcessorImpl.DEFAULT_EMPTY_SLOT_TRANSITIONS_LIMIT;
 
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.chain.DefaultBeaconChain;
 import org.ethereum.beacon.chain.MutableBeaconChain;
 import org.ethereum.beacon.chain.ProposedBlockProcessor;
@@ -13,12 +15,10 @@ import org.ethereum.beacon.chain.SlotTicker;
 import org.ethereum.beacon.chain.observer.ObservableStateProcessor;
 import org.ethereum.beacon.chain.observer.ObservableStateProcessorImpl;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
-import org.ethereum.beacon.chain.storage.BeaconChainStorageFactory;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.ChainStart;
 import org.ethereum.beacon.consensus.transition.EmptySlotTransition;
 import org.ethereum.beacon.consensus.transition.ExtendedSlotTransition;
-import org.ethereum.beacon.consensus.transition.InitialStateTransition;
 import org.ethereum.beacon.consensus.transition.PerBlockTransition;
 import org.ethereum.beacon.consensus.transition.PerEpochTransition;
 import org.ethereum.beacon.consensus.transition.PerSlotTransition;
@@ -29,23 +29,22 @@ import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.spec.SpecConstantsResolver;
 import org.ethereum.beacon.db.Database;
+import org.ethereum.beacon.node.metrics.Metrics;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.ssz.SSZBuilder;
 import org.ethereum.beacon.ssz.SSZSerializer;
 import org.ethereum.beacon.validator.BeaconChainProposer;
-import org.ethereum.beacon.validator.local.MultiValidatorService;
 import org.ethereum.beacon.validator.attester.BeaconChainAttesterImpl;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
+import org.ethereum.beacon.validator.local.MultiValidatorService;
 import org.ethereum.beacon.validator.proposer.BeaconChainProposerImpl;
 import org.ethereum.beacon.wire.Feedback;
-import org.ethereum.beacon.wire.MessageSerializer;
-import org.ethereum.beacon.wire.SimplePeerManagerImpl;
+import org.ethereum.beacon.wire.PeerManager;
 import org.ethereum.beacon.wire.WireApiSub;
 import org.ethereum.beacon.wire.WireApiSync;
 import org.ethereum.beacon.wire.WireApiSyncServer;
-import org.ethereum.beacon.wire.message.SSZMessageSerializer;
-import org.ethereum.beacon.wire.net.ConnectionManager;
+import org.ethereum.beacon.wire.impl.libp2p.Libp2pLauncher;
 import org.ethereum.beacon.wire.sync.BeaconBlockTree;
 import org.ethereum.beacon.wire.sync.SyncManagerImpl;
 import org.ethereum.beacon.wire.sync.SyncQueue;
@@ -53,19 +52,17 @@ import org.ethereum.beacon.wire.sync.SyncQueueImpl;
 import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import tech.pegasys.artemis.util.bytes.Bytes4;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 public class NodeLauncher {
-
-  private final static long DB_BUFFER_SIZE = 64L << 20; // 64Mb
+  private static final Logger logger = LogManager.getLogger(NodeLauncher.class);
 
   private final BeaconChainSpec spec;
   private final DepositContract depositContract;
   private final List<BLS381Credentials> validatorCred;
-  private final BeaconChainStorageFactory storageFactory;
   private final Schedulers schedulers;
 
-  private InitialStateTransition initialTransition;
   private PerSlotTransition perSlotTransition;
   private PerBlockTransition perBlockTransition;
   private PerEpochTransition perEpochTransition;
@@ -85,12 +82,13 @@ public class NodeLauncher {
 
   private byte networkId = 1;
   private UInt64 chainId = UInt64.valueOf(1);
+  private Bytes4 fork = Bytes4.ZERO;
   private boolean startSyncManager = false;
 
   private WireApiSub wireApiSub;
   private WireApiSync wireApiSyncRemote;
-  private final ConnectionManager<?> connectionManager;
-  private SimplePeerManagerImpl peerManager;
+  private final Libp2pLauncher networkLauncher;
+  private PeerManager peerManager;
   private BeaconBlockTree blockTree;
   private SyncQueue syncQueue;
   private SyncManagerImpl syncManager;
@@ -100,26 +98,25 @@ public class NodeLauncher {
       BeaconChainSpec spec,
       DepositContract depositContract,
       List<BLS381Credentials> validatorCred,
-      ConnectionManager<?> connectionManager,
-      BeaconChainStorageFactory storageFactory,
+      Libp2pLauncher networkLauncher,
+      Database db,
+      BeaconChainStorage beaconChainStorage,
       Schedulers schedulers,
       boolean startSyncManager) {
 
     this.spec = spec;
     this.depositContract = depositContract;
     this.validatorCred = validatorCred;
-    this.connectionManager = connectionManager;
-    this.storageFactory = storageFactory;
+    this.networkLauncher = networkLauncher;
+    this.db = db;
+    this.beaconChainStorage = beaconChainStorage;
     this.schedulers = schedulers;
     this.startSyncManager = startSyncManager;
 
-    if (depositContract != null) {
-      Mono.from(depositContract.getChainStartMono()).subscribe(this::chainStarted);
-    }
+    createBeaconChainAndStuff();
   }
 
-  void chainStarted(ChainStart chainStartEvent) {
-    initialTransition = new InitialStateTransition(chainStartEvent, spec);
+  private void createBeaconChainAndStuff() {
     perSlotTransition = new PerSlotTransition(spec);
     perBlockTransition = new PerBlockTransition(spec);
     perEpochTransition = new PerEpochTransition(spec);
@@ -127,22 +124,27 @@ public class NodeLauncher {
         new ExtendedSlotTransition(perEpochTransition, perSlotTransition, spec);
     emptySlotTransition = new EmptySlotTransition(extendedSlotTransition);
 
-    db = Database.rocksDB(Paths.get(computeDbName(chainStartEvent)).toString(), DB_BUFFER_SIZE);
-    beaconChainStorage = storageFactory.create(db);
-
     blockVerifier = BeaconBlockVerifier.createDefault(spec);
     stateVerifier = BeaconStateVerifier.createDefault(spec);
 
     beaconChain =
         new DefaultBeaconChain(
             spec,
-            initialTransition,
             emptySlotTransition,
             perBlockTransition,
             blockVerifier,
             stateVerifier,
             beaconChainStorage,
             schedulers);
+  }
+
+  public void start() {
+    if (depositContract != null) {
+      Mono.from(depositContract.getChainStartMono()).subscribe(this::chainStarted);
+    }
+  }
+
+  void chainStarted(ChainStart chainStartEvent) {
     beaconChain.init();
 
     slotTicker =
@@ -161,28 +163,46 @@ public class NodeLauncher {
         emptySlotTransition,
         schedulers,
         validatorCred != null ? Integer.MAX_VALUE : DEFAULT_EMPTY_SLOT_TRANSITIONS_LIMIT);
+
+    Flux.from(observableStateProcessor.getObservableStateStream())
+        .subscribe(
+            obs -> {
+              Metrics.onNewState(spec, obs);
+            });
+    Flux.from(observableStateProcessor.getHeadStream())
+        .subscribe(
+            head -> {
+              Metrics.onHeadChanged(spec, head);
+            });
     observableStateProcessor.start();
 
     SSZSerializer ssz = new SSZBuilder()
         .withExternalVarResolver(new SpecConstantsResolver(spec.getConstants()))
         .withExtraObjectCreator(SpecConstants.class, spec.getConstants())
         .buildSerializer();
-    MessageSerializer messageSerializer = new SSZMessageSerializer(ssz);
     syncServer = new WireApiSyncServer(beaconChainStorage);
 
-    peerManager = new SimplePeerManagerImpl(
-        networkId,
-        chainId,
-        connectionManager.channelsStream(),
-        ssz,
-        spec,
-        messageSerializer,
-        schedulers,
-        syncServer,
-        beaconChain.getBlockStatesStream());
+    networkLauncher.setSpec(spec);
+    networkLauncher.setSszSerializer(ssz);
+    networkLauncher.setSchedulers(schedulers);
+    networkLauncher.setWireApiSyncServer(syncServer);
+    networkLauncher.setHeadStream(beaconChain.getBlockStatesStream());
+    networkLauncher.setFork(fork);
+
+    networkLauncher.init();
+    peerManager = networkLauncher.getPeerManager();
+
+    Flux.from(peerManager.connectedPeerStream()).subscribe(ch -> Metrics.peerAdded());
+    Flux.from(peerManager.disconnectedPeerStream()).subscribe(ch -> Metrics.peerRemoved());
 
     wireApiSub = peerManager.getWireApiSub();
     wireApiSyncRemote = peerManager.getWireApiSync();
+
+    Flux.from(wireApiSub.inboundAttestationsStream())
+        .subscribe(
+            a -> {
+              Metrics.attestationPropagated(a);
+            });
 
     blockTree = new BeaconBlockTree(spec.getObjectHasher());
     syncQueue = new SyncQueueImpl(blockTree);
@@ -234,15 +254,11 @@ public class NodeLauncher {
       syncManager.start();
     }
 
-//    Flux.from(wireApiSub.inboundBlocksStream())
-//        .publishOn(schedulers.reactorEvents())
-//        .subscribe(beaconChain::insert);
-  }
-
-  private String computeDbName(ChainStart chainStart) {
-    return String.format(
-        "db_start_time_%d_dep_root_%s",
-        chainStart.getTime().getValue(), chainStart.getEth1Data().getDepositRoot().toStringShort());
+    try {
+      networkLauncher.start().get(5, TimeUnit.SECONDS);
+    } catch (Exception e) {
+      logger.error("Problem with starting network", e);
+    }
   }
 
   public void stop() {
@@ -263,10 +279,6 @@ public class NodeLauncher {
 
   public WireApiSub getWireApiSub() {
     return wireApiSub;
-  }
-
-  public InitialStateTransition getInitialTransition() {
-    return initialTransition;
   }
 
   public PerSlotTransition getPerSlotTransition() {
@@ -323,10 +335,6 @@ public class NodeLauncher {
 
   public MultiValidatorService getValidatorService() {
     return beaconChainValidator;
-  }
-
-  public BeaconChainStorageFactory getStorageFactory() {
-    return storageFactory;
   }
 
   public Schedulers getSchedulers() {

@@ -178,6 +178,7 @@ public interface BeaconState extends ObservableComposite {
         && getCurrentEpochAttestations().equals(other.getCurrentEpochAttestations())
         && getPreviousJustifiedCheckpoint().equals(other.getPreviousJustifiedCheckpoint())
         && getCurrentJustifiedCheckpoint().equals(other.getCurrentJustifiedCheckpoint())
+        && getFinalizedCheckpoint().equals(other.getFinalizedCheckpoint())
         && getPreviousCrosslinks().equals(other.getPreviousCrosslinks())
         && getCurrentCrosslinks().equals(other.getCurrentCrosslinks())
         && getBlockRoots().equals(other.getBlockRoots())

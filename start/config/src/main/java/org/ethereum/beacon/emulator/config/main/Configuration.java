@@ -10,6 +10,8 @@ public class Configuration {
   private String db;
   private List<Network> networks = new ArrayList<>();
   private Validator validator;
+  private String metricsEndpoint;
+  private Debug debug;
 
   public String getName() {
     return name;
@@ -41,5 +43,21 @@ public class Configuration {
 
   public void setValidator(Validator validator) {
     this.validator = validator;
+  }
+
+  public String getMetricsEndpoint() {
+    return metricsEndpoint;
+  }
+
+  public void setMetricsEndpoint(String metricsEndpoint) {
+    this.metricsEndpoint = metricsEndpoint;
+  }
+
+  public Debug getDebug() {
+    return debug;
+  }
+
+  public void setDebug(Debug debug) {
+    this.debug = debug;
   }
 }

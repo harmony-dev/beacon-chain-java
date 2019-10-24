@@ -42,7 +42,7 @@ public class ShuffleRunner implements Runner {
             .mapToObj(ValidatorIndex::new)
             .collect(Collectors.toList());
     List<ValidatorIndex> expectedIndices =
-        testCase.getShuffled().stream().map(ValidatorIndex::new).collect(Collectors.toList());
+        testCase.getMapping().stream().map(ValidatorIndex::new).collect(Collectors.toList());
     List<ValidatorIndex> validatorIndices =
         getShuffling.apply(
             new Triplet<>(

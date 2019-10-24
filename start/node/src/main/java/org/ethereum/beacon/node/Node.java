@@ -1,14 +1,13 @@
 package org.ethereum.beacon.node;
 
+import java.io.File;
+import java.util.List;
 import org.ethereum.beacon.node.Node.VersionProvider;
 import org.ethereum.beacon.node.command.LogLevel;
 import org.ethereum.beacon.start.common.ClientInfo;
 import picocli.CommandLine;
 import picocli.CommandLine.IVersionProvider;
 import picocli.CommandLine.RunLast;
-
-import java.io.File;
-import java.util.List;
 
 @CommandLine.Command(
     description = "Beacon chain node",
@@ -48,12 +47,20 @@ public class Node implements Runnable {
   private Integer listenPort;
 
   @CommandLine.Option(
+      names = {"--node-key"},
+      paramLabel = "key",
+      description = "Private key of p2p node (32 bytes)"
+  )
+  private String nodeKey;
+
+  @CommandLine.Option(
       names = {"--connect"},
       paramLabel = "URL",
       split = ",",
       description = {
           "Peers that node is actively connecting to.",
-          "URL format: tcp://<host>:<port>"
+          "URL format: <network multiaddress>/p2p/<node id>",
+          "URL sample: /ip4/10.0.0.128/tcp/40001/p2p/16Uiu2HAmCQHi9nZQrWxaxoWVW5Hv5rvoSAkH6rqSkTi9PnPNZH4r"
       }
   )
   private List<String> activePeers;
@@ -72,6 +79,17 @@ public class Node implements Runnable {
   private List<String> validators;
 
   @CommandLine.Option(
+      names = {"--validators-file"},
+      paramLabel = "key",
+      split = ",",
+      description = {
+          "Validator registry as yaml file. Entries are pairs of privkey and pubkey",
+          "Example: --validators-file=keygen_10_validators.yaml"
+      }
+  )
+  private String validatorsFile;
+
+  @CommandLine.Option(
       names = {"--name"},
       paramLabel = "node-name",
       description = {
@@ -87,9 +105,94 @@ public class Node implements Runnable {
       description = { "Genesis time in GMT+0 timezone. In either form:",
           "  '2019-05-24 11:23'",
           "  '11:23' (current day is taken)",
+          "  '1568223274' (unix timestamp)",
           "Defaults to the beginning of the current hour." }
   )
   private String genesisTime;
+
+  @CommandLine.Option(
+      names = "--spec-constants",
+      paramLabel = "spec-constants",
+      description = {
+          "Path to a spec constants file in yaml format (flat format)",
+          "Use 'minimal' shortcut to run with interop constants"
+      }
+  )
+  private String specConstantsFile;
+
+  @CommandLine.Option(
+      names = "--metrics-endpoint",
+      paramLabel = "matrics-endpoint",
+      description = {
+          "Interface and port, Prometheus collection endpoint will be served from.",
+          "Should have form of interface:port.",
+          "Default endpoint is 0.0.0.0:8008."
+      }
+  )
+  private String metricsEndpoint;
+
+  @CommandLine.Option(
+      names = "--initial-state",
+      paramLabel = "initial-state",
+      description = {
+          "Path to an initial state file (SSZ format)"
+      }
+  )
+  private String initialStateFile;
+
+  @CommandLine.Option(
+      names = "--start-mode",
+      paramLabel = "start-mode",
+      description = {
+          "Specifies how to deal with the existing or absent storage. Possible modes:",
+          "  initial - starts from an empty storage only. If it's not, --force-db-clean can be specified.",
+          "  storage - starts from a previously initialized storage only,",
+          "            ignoring contract/initial-state parameters",
+          "  auto    - starts from an existing storage, if it's non empty",
+          "            initializes from contract/initial-state parameters otherwise",
+          "By default, set to auto, if no initial-state is specified,",
+          "            and to initial, if an initial-state is specified."
+      }
+  )
+  private String startMode;
+
+  @CommandLine.Option(
+      names = "--force-db-clean",
+      paramLabel = "force-db-clean",
+      description = {
+          "When an initial-state is specified, but db is not empty",
+          "specifies how to resolve the problem:",
+          "  force-db-clean=true  - tries to clean db",
+          "  force-db-clean=false - exits with failure status.",
+          "False by default."
+      }
+  )
+  private boolean forceDBClean = false;
+
+  @CommandLine.Option(
+      names = "--db-prefix",
+      paramLabel = "db-prefix",
+      description = "Specifies db-prefix, used to construct db directory"
+  )
+  private String dbPrefix;
+
+  @CommandLine.Option(
+      names = {"--initial-deposit-count", "--validator-count"},
+      paramLabel = "initial-deposit-count",
+      description = {
+          "Specifies amount of initial deposits when constructing a genesis state."
+      }
+  )
+  private Integer initialDepositCount;
+
+  @CommandLine.Option(
+      names = "--dump-tuples",
+      paramLabel = "dump-tuples",
+      description = {
+        "Specifies whether to dump beacon tuples (state and block).",
+        "False by default"
+      })
+  private boolean dumpTuples = false;
 
   public String getName() {
     return name;
@@ -97,6 +200,10 @@ public class Node implements Runnable {
 
   public Integer getListenPort() {
     return listenPort;
+  }
+
+  public String getNodeKey() {
+    return nodeKey;
   }
 
   public List<String> getActivePeers() {
@@ -107,8 +214,44 @@ public class Node implements Runnable {
     return validators;
   }
 
+  public String getValidatorsFile() {
+    return validatorsFile;
+  }
+
   public String getGenesisTime() {
     return genesisTime;
+  }
+
+  public String getSpecConstantsFile() {
+    return specConstantsFile;
+  }
+
+  public String getMetricsEndpoint() {
+    return metricsEndpoint;
+  }
+
+  public String getInitialStateFile() {
+    return initialStateFile;
+  }
+
+  public boolean isForceDBClean() {
+    return forceDBClean;
+  }
+
+  public String getStartMode() {
+    return startMode;
+  }
+
+  public String getDbPrefix() {
+    return dbPrefix;
+  }
+
+  public Integer getInitialDepositCount() {
+    return initialDepositCount;
+  }
+
+  public boolean isDumpTuples() {
+    return dumpTuples;
   }
 
   public static void main(String[] args) {

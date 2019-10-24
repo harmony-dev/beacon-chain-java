@@ -1,5 +1,20 @@
 package org.ethereum.beacon.wire.sync;
 
+import static java.lang.Math.max;
+import static org.ethereum.beacon.chain.MutableBeaconChain.ImportResult.ExistingBlock;
+import static org.ethereum.beacon.chain.MutableBeaconChain.ImportResult.ExpiredBlock;
+import static org.ethereum.beacon.chain.MutableBeaconChain.ImportResult.InvalidBlock;
+import static org.ethereum.beacon.chain.MutableBeaconChain.ImportResult.NoParent;
+import static org.ethereum.beacon.chain.MutableBeaconChain.ImportResult.OK;
+import static org.ethereum.beacon.chain.MutableBeaconChain.ImportResult.StateMismatch;
+import static org.ethereum.beacon.stream.RxUtil.fromOptional;
+
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.chain.BeaconTuple;
@@ -18,6 +33,7 @@ import org.ethereum.beacon.wire.Feedback;
 import org.ethereum.beacon.wire.WireApiSync;
 import org.ethereum.beacon.wire.exceptions.WireInvalidConsensusDataException;
 import org.ethereum.beacon.wire.message.payload.BlockHeadersRequestMessage;
+import org.ethereum.beacon.wire.message.payload.BlockRequestMessage;
 import org.ethereum.beacon.wire.sync.SyncQueue.BlockRequest;
 import org.reactivestreams.Publisher;
 import reactor.core.Disposable;
@@ -26,21 +42,6 @@ import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64s;
-
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-
-import static java.lang.Math.max;
-import static org.ethereum.beacon.chain.MutableBeaconChain.ImportResult.ExistingBlock;
-import static org.ethereum.beacon.chain.MutableBeaconChain.ImportResult.ExpiredBlock;
-import static org.ethereum.beacon.chain.MutableBeaconChain.ImportResult.InvalidBlock;
-import static org.ethereum.beacon.chain.MutableBeaconChain.ImportResult.NoParent;
-import static org.ethereum.beacon.chain.MutableBeaconChain.ImportResult.OK;
-import static org.ethereum.beacon.chain.MutableBeaconChain.ImportResult.StateMismatch;
-import static org.ethereum.beacon.stream.RxUtil.fromOptional;
 
 public class SyncManagerImpl implements SyncManager {
 
@@ -180,7 +181,7 @@ public class SyncManagerImpl implements SyncManager {
         blockRequestFlux
             .map(
                 req ->
-                    new BlockHeadersRequestMessage(
+                    new BlockRequestMessage(
                         req.getStartRoot().orElse(BlockHeadersRequestMessage.NULL_START_ROOT),
                         req.getStartSlot().orElse(BlockHeadersRequestMessage.NULL_START_SLOT),
                         req.getMaxCount(),
@@ -188,7 +189,10 @@ public class SyncManagerImpl implements SyncManager {
             .flatMap(
                 req -> Mono.fromFuture(syncApi.requestBlocks(req, spec.getObjectHasher())),
                 maxConcurrentBlockRequests)
-            .onErrorContinue((t, o) -> logger.warn("SyncApi exception: " + t + ", " + o));
+            .onErrorContinue((t, o) -> {
+              logger.warn("SyncApi exception: " + t + ", " + o);
+              logger.debug(t);
+            });
 
     if (newBlocks != null) {
       wireBlocksStream =

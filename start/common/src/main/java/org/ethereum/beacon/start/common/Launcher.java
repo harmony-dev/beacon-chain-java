@@ -12,6 +12,7 @@ import org.ethereum.beacon.chain.observer.ObservableStateProcessor;
 import org.ethereum.beacon.chain.observer.ObservableStateProcessorImpl;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.chain.storage.BeaconChainStorageFactory;
+import org.ethereum.beacon.chain.storage.util.StorageUtils;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.ChainStart;
@@ -117,6 +118,8 @@ public class Launcher {
 
     db = new InMemoryDatabase();
     beaconChainStorage = storageFactory.create(db);
+    BeaconStateEx initialState = initialTransition.apply(spec.get_empty_block());
+    StorageUtils.initializeStorage(beaconChainStorage, spec, initialState);
 
     // do not create block verifier for benchmarks, otherwise verification won't be tracked by
     // controller
@@ -129,7 +132,6 @@ public class Launcher {
     beaconChain =
         new DefaultBeaconChain(
             spec,
-            initialTransition,
             isBenchmarkMode() ? benchmarkingEmptySlotTransition(spec) : emptySlotTransition,
             isBenchmarkMode() ? benchmarkingBlockTransition(spec) : new PerBlockTransition(spec),
             blockVerifier,

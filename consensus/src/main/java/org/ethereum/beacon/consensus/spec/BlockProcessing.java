@@ -248,6 +248,15 @@ public interface BlockProcessing extends HelperFunction {
       return false;
     }
 
+    /* committee = get_crosslink_committee(state, data.target.epoch, data.crosslink.shard)
+    assert len(attestation.aggregation_bits) == len(attestation.custody_bits) == len(committee) */
+    List<ValidatorIndex> committee =
+        get_crosslink_committee(state, data.getTarget().getEpoch(), data.getCrosslink().getShard());
+    if (attestation.getAggregationBits().size() != attestation.getCustodyBits().size()
+        || attestation.getAggregationBits().size() != committee.size()) {
+      return false;
+    }
+
     /* if data.target.epoch == get_current_epoch(state):
          assert data.source == state.current_justified_checkpoint
        else:

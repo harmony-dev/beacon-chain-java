@@ -1,18 +1,19 @@
 package org.ethereum.beacon.ssz.visitor;
 
-import org.ethereum.beacon.ssz.access.SSZUnionAccessor.UnionInstanceAccessor;
-import org.ethereum.beacon.ssz.type.SSZBasicType;
-import org.ethereum.beacon.ssz.type.SSZCompositeType;
-import org.ethereum.beacon.ssz.type.list.SSZListType;
-import org.ethereum.beacon.ssz.type.SSZUnionType;
-import tech.pegasys.artemis.util.bytes.BytesValue;
-import tech.pegasys.artemis.util.bytes.BytesValues;
+import static org.ethereum.beacon.ssz.visitor.SosDeserializer.BYTES_PER_LENGTH_OFFSET;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.ethereum.beacon.ssz.visitor.SosDeserializer.BYTES_PER_LENGTH_OFFSET;
+import org.ethereum.beacon.ssz.access.SSZUnionAccessor.UnionInstanceAccessor;
+import org.ethereum.beacon.ssz.annotation.SSZSerializable;
+import org.ethereum.beacon.ssz.type.SSZBasicType;
+import org.ethereum.beacon.ssz.type.SSZCompositeType;
+import org.ethereum.beacon.ssz.type.SSZContainerType;
+import org.ethereum.beacon.ssz.type.SSZUnionType;
+import org.ethereum.beacon.ssz.type.list.SSZListType;
+import tech.pegasys.artemis.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.bytes.BytesValues;
 
 /** SSZ serializer with offset-based encoding of variable sized elements */
 public class SosSerializer implements SSZVisitor<SosSerializer.SerializerResult, Object> {
@@ -64,6 +65,23 @@ public class SosSerializer implements SSZVisitor<SosSerializer.SerializerResult,
   public SerializerResult visitComposite(
       SSZCompositeType type, Object rawValue, ChildVisitor<Object, SerializerResult> childVisitor) {
     return visitComposite(type, rawValue, childVisitor, 0, type.getChildrenCount(rawValue));
+  }
+
+  @Override
+  public SerializerResult visitContainer(SSZContainerType type, Object param,
+      ChildVisitor<Object, SerializerResult> childVisitor) {
+
+    SSZSerializable annotation = type.getTypeDescriptor().getRawClass()
+        .getAnnotation(SSZSerializable.class);
+    if (annotation != null && annotation.skipContainer()) {
+      if (type.getChildTypes().size() != 1) {
+        throw new IllegalArgumentException(
+            "Only container with a single child can be skipped: " + type);
+      }
+      return childVisitor.apply(0, type.getChild(param, 0));
+    } else {
+      return visitComposite(type, param, childVisitor);
+    }
   }
 
   private SerializerResult visitComposite(

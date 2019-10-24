@@ -11,9 +11,9 @@ import java.util.concurrent.ScheduledExecutorService;
 public abstract class AbstractSchedulers implements Schedulers {
   private static final int BLOCKING_THREAD_COUNT = 128;
 
-  private Scheduler cpuHeavyScheduler;
-  private Scheduler blockingScheduler;
-  private Scheduler eventsScheduler;
+  private volatile Scheduler cpuHeavyScheduler;
+  private volatile Scheduler blockingScheduler;
+  private volatile Scheduler eventsScheduler;
   private reactor.core.scheduler.Scheduler eventsReactorScheduler;
   private ScheduledExecutorService eventsExecutor;
 

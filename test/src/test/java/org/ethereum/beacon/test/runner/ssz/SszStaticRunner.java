@@ -15,7 +15,6 @@ import org.ethereum.beacon.test.runner.Runner;
 import org.ethereum.beacon.test.runner.ssz.mapper.ObjectSerializer;
 import org.ethereum.beacon.test.type.TestCase;
 import org.ethereum.beacon.test.type.ssz.SszStaticCase;
-import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -135,14 +134,18 @@ public class SszStaticRunner implements Runner {
 
   public Optional<String> run() {
     Class valueType = findSpecClassByName(testCase.getTypeName());
-    Object fromSerialized =
-        sszSerializer.decode(BytesValue.fromHexString(testCase.getSerialized()), valueType);
+    Object fromSerialized = sszSerializer.decode(testCase.getSerialized(), valueType);
     ObjectSerializer serializer = objectSerializers.get(valueType);
     if (serializer == null) {
       return Optional.of(String.format("No object mapper found for %s", testCase.getTypeName()));
     }
     Object simplified = serializer.map(fromSerialized);
-    ObjectNode expectedValue = yamlMapper.convertValue(testCase.getValue(), ObjectNode.class);
+    ObjectNode expectedValue;
+    try {
+      expectedValue = (ObjectNode) yamlMapper.readTree(testCase.getValue());
+    } catch (IOException e) {
+      throw new RuntimeException("Cannot convert `value` to object node", e);
+    }
     // XXX: expected goes second as our constructed node contains with overridden `equals` operators
     // which should be used in comparison
     assertEquals(simplified, expectedValue);

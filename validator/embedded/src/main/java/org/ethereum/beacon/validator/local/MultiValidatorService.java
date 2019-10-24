@@ -71,7 +71,7 @@ public class MultiValidatorService implements ValidatorService {
   /** Latest slot that has been processed. */
   private SlotNumber lastProcessedSlot = SlotNumber.castFrom(SlotNumber.MAX_VALUE);
   /** The most recent beacon state came from the outside. */
-  private ObservableBeaconState recentState;
+  private volatile ObservableBeaconState recentState;
 
   /** Validator task executor. */
   private final Scheduler executor;
