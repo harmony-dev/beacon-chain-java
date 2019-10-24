@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import static org.ethereum.beacon.discovery.NodeStatus.DEAD;
 import static org.ethereum.beacon.discovery.task.TaskMessageFactory.DEFAULT_DISTANCE;
 
 /** Manages recurrent node check task(s) */
@@ -41,7 +42,7 @@ public class DiscoveryTaskManager {
    *
    * <ul>
    *   <li>Node is ACTIVE and last connection retry was not too much time ago
-   *   <li>Number of unsuccessful retries exceeds settings
+   *   <li>Node is marked as {@link NodeStatus#DEAD}
    *   <li>Node is not ACTIVE but last connection retry was "seconds ago"
    * </ul>
    *
@@ -54,14 +55,8 @@ public class DiscoveryTaskManager {
             && nodeRecord.getLastRetry() > currentTime - STATUS_EXPIRATION_SECONDS) {
           return false; // no need to rediscover
         }
-        if (nodeRecord.getRetry() >= MAX_RETRIES) {
-          updateNode(
-              new NodeRecordInfo(
-                  nodeRecord.getNode(),
-                  System.currentTimeMillis() / MS_IN_SECOND,
-                  NodeStatus.SLEEP,
-                  1));
-          return false;
+        if (DEAD.equals(nodeRecord.getStatus())) {
+          return false; // node looks dead but we are keeping its records for some reason
         }
         if ((currentTime - nodeRecord.getLastRetry())
             < (nodeRecord.getRetry() * nodeRecord.getRetry())) {
@@ -92,7 +87,12 @@ public class DiscoveryTaskManager {
         return false;
       };
 
-  private boolean resetDead = false;
+  /** Checks whether node is eligible to be considered as dead */
+  private final Predicate<NodeRecordInfo> DEAD_RULE =
+      nodeRecord -> nodeRecord.getRetry() >= MAX_RETRIES;
+
+  private boolean resetDead;
+  private boolean removeDead;
 
   /**
    * @param discoveryManager Discovery manager
@@ -101,8 +101,9 @@ public class DiscoveryTaskManager {
    *     format
    * @param homeNode Home node
    * @param scheduler scheduler to run recurrent tasks on
-   * @param resetDead Whether to reset dead status of the nodes. If set to true, resets its status
-   *     at startup and sets number of used retries to 0
+   * @param resetDead Whether to reset dead status of the nodes on start. If set to true, resets its
+   *     status at startup and sets number of used retries to 0
+   * @param removeDead Whether to remove nodes that are found dead after several retries
    */
   public DiscoveryTaskManager(
       DiscoveryManager discoveryManager,
@@ -110,7 +111,8 @@ public class DiscoveryTaskManager {
       NodeBucketStorage nodeBucketStorage,
       NodeRecord homeNode,
       Scheduler scheduler,
-      boolean resetDead) {
+      boolean resetDead,
+      boolean removeDead) {
     this.scheduler = scheduler;
     this.nodeTable = nodeTable;
     this.nodeBucketStorage = nodeBucketStorage;
@@ -121,6 +123,7 @@ public class DiscoveryTaskManager {
         new RecursiveLookupTasks(
             discoveryManager, scheduler, Duration.ofSeconds(RETRY_TIMEOUT_SECONDS));
     this.resetDead = resetDead;
+    this.removeDead = removeDead;
   }
 
   public void start() {
@@ -135,15 +138,32 @@ public class DiscoveryTaskManager {
   private void liveCheckTask() {
     List<NodeRecordInfo> nodes = nodeTable.findClosestNodes(homeNodeId, LIVE_CHECK_DISTANCE);
     Stream<NodeRecordInfo> closestNodes = nodes.stream();
+    closestNodes
+        .filter(DEAD_RULE)
+        .forEach(
+            deadMarkedNode -> {
+              if (removeDead) {
+                nodeTable.remove(deadMarkedNode);
+              } else {
+                nodeTable.save(
+                    new NodeRecordInfo(
+                        deadMarkedNode.getNode(),
+                        deadMarkedNode.getLastRetry(),
+                        DEAD,
+                        deadMarkedNode.getRetry()));
+              }
+            });
     if (resetDead) {
       closestNodes =
           closestNodes.map(
-              nodeRecordInfo ->
-                  new NodeRecordInfo(
-                      nodeRecordInfo.getNode(),
-                      nodeRecordInfo.getLastRetry(),
-                      NodeStatus.SLEEP,
-                      0));
+              nodeRecordInfo -> {
+                if (DEAD.equals(nodeRecordInfo.getStatus())) {
+                  return new NodeRecordInfo(
+                      nodeRecordInfo.getNode(), nodeRecordInfo.getLastRetry(), NodeStatus.SLEEP, 0);
+                } else {
+                  return nodeRecordInfo;
+                }
+              });
       resetDead = false;
     }
     closestNodes

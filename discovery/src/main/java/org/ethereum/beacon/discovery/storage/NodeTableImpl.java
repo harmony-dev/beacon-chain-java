@@ -7,8 +7,8 @@ import org.ethereum.beacon.db.source.DataSource;
 import org.ethereum.beacon.db.source.HoleyList;
 import org.ethereum.beacon.db.source.SingleValueSource;
 import org.ethereum.beacon.discovery.Functions;
-import org.ethereum.beacon.discovery.enr.NodeRecord;
 import org.ethereum.beacon.discovery.NodeRecordInfo;
+import org.ethereum.beacon.discovery.enr.NodeRecord;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
@@ -75,6 +75,18 @@ public class NodeTableImpl implements NodeTable {
     List<Hash32> nodes = activeIndex.getEntries();
     if (!nodes.contains(nodeKey)) {
       nodes.add(nodeKey);
+      indexTable.put(getNodeIndex(nodeKey), activeIndex);
+    }
+  }
+
+  @Override
+  public void remove(NodeRecordInfo node) {
+    Hash32 nodeKey = Hash32.wrap(node.getNode().getNodeId());
+    nodeTable.remove(nodeKey);
+    NodeIndex activeIndex = indexTable.get(getNodeIndex(nodeKey)).orElseGet(NodeIndex::new);
+    List<Hash32> nodes = activeIndex.getEntries();
+    if (nodes.contains(nodeKey)) {
+      nodes.remove(nodeKey);
       indexTable.put(getNodeIndex(nodeKey), activeIndex);
     }
   }

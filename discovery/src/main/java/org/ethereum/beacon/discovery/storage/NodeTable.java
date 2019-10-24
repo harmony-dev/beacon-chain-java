@@ -1,7 +1,7 @@
 package org.ethereum.beacon.discovery.storage;
 
-import org.ethereum.beacon.discovery.enr.NodeRecord;
 import org.ethereum.beacon.discovery.NodeRecordInfo;
+import org.ethereum.beacon.discovery.enr.NodeRecord;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 
 import java.util.List;
@@ -13,6 +13,8 @@ import java.util.Optional;
  */
 public interface NodeTable {
   void save(NodeRecordInfo node);
+
+  void remove(NodeRecordInfo node);
 
   Optional<NodeRecordInfo> getNode(Bytes32 nodeId);
 
