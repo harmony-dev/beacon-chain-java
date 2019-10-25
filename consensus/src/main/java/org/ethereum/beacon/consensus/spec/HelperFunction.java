@@ -21,10 +21,6 @@ import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
-import org.ethereum.beacon.crypto.BLS381;
-import org.ethereum.beacon.crypto.BLS381.PublicKey;
-import org.ethereum.beacon.crypto.BLS381.Signature;
-import org.ethereum.beacon.crypto.MessageParameters;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes4;
@@ -56,7 +52,7 @@ import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
  *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.8.1/specs/core/0_beacon-chain.md#helper-functions">Helper
  *     functions</a> in ths spec.
  */
-public interface HelperFunction extends SpecCommons {
+public interface HelperFunction extends SpecCommons, BLSFunctions {
 
   default Hash32 hash(BytesValue data) {
     return getHashFunction().apply(data);
@@ -860,44 +856,6 @@ public interface HelperFunction extends SpecCommons {
     Hash32 active_index_root = state.getActiveIndexRoots()
         .get(epoch.modulo(getConstants().getEpochsPerHistoricalVector()));
     return hash(mix.concat(active_index_root.concat(int_to_bytes32(epoch))));
-  }
-
-  default boolean bls_verify(BLSPubkey publicKey, Hash32 message, BLSSignature signature, UInt64 domain) {
-    if (!isBlsVerify()) {
-      return true;
-    }
-
-    try {
-      PublicKey blsPublicKey = PublicKey.create(publicKey);
-      MessageParameters messageParameters = MessageParameters.create(message, domain);
-      Signature blsSignature = Signature.create(signature);
-      return BLS381.verify(messageParameters, blsSignature, blsPublicKey);
-    } catch (Exception e) {
-      return false;
-    }
-  }
-
-  default boolean bls_verify_multiple(
-      List<PublicKey> publicKeys, List<Hash32> messages, BLSSignature signature, UInt64 domain) {
-    if (!isBlsVerify()) {
-      return true;
-    }
-
-    List<MessageParameters> messageParameters =
-        messages.stream()
-            .map(hash -> MessageParameters.create(hash, domain))
-            .collect(Collectors.toList());
-    Signature blsSignature = Signature.create(signature);
-    return BLS381.verifyMultiple(messageParameters, blsSignature, publicKeys);
-  }
-
-  default PublicKey bls_aggregate_pubkeys(List<BLSPubkey> publicKeysBytes) {
-    if (!isBlsVerify()) {
-      return PublicKey.aggregate(Collections.emptyList());
-    }
-
-    List<PublicKey> publicKeys = publicKeysBytes.stream().map(PublicKey::create).collect(toList());
-    return PublicKey.aggregate(publicKeys);
   }
 
   /*

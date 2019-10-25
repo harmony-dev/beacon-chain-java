@@ -2,6 +2,7 @@ package org.ethereum.beacon.consensus;
 
 import org.ethereum.beacon.consensus.hasher.ObjectHasher;
 import org.ethereum.beacon.consensus.hasher.SSZObjectHasher;
+import org.ethereum.beacon.consensus.spec.BLSFunctions;
 import org.ethereum.beacon.consensus.spec.BlockProcessing;
 import org.ethereum.beacon.consensus.spec.EpochProcessing;
 import org.ethereum.beacon.consensus.spec.ForkChoice;
@@ -110,6 +111,7 @@ public interface BeaconChainSpec
     private Function<BytesValue, Hash32> hashFunction;
     private ObjectHasher<Hash32> hasher;
     private boolean cache = false;
+    private BLSFunctions blsFunctions = null;
     private boolean blsVerify = true;
     private boolean blsVerifyProofOfPossession = true;
     private boolean verifyDepositProof = true;
@@ -135,6 +137,11 @@ public interface BeaconChainSpec
     public Builder withHasher(
         ObjectHasher<Hash32> hasher) {
       this.hasher = hasher;
+      return this;
+    }
+
+    public Builder withBlsFunctions(BLSFunctions blsFunctions) {
+      this.blsFunctions = blsFunctions;
       return this;
     }
 
@@ -185,15 +192,28 @@ public interface BeaconChainSpec
       assert hashFunction != null;
       assert hasher != null;
 
-      return new CachingBeaconChainSpec(
-          constants,
-          hashFunction,
-          hasher,
-          blsVerify,
-          blsVerifyProofOfPossession,
-          verifyDepositProof,
-          computableGenesisTime,
-          cache);
+      if (blsFunctions != null) {
+        return new CachingBeaconChainSpec(
+            constants,
+            hashFunction,
+            hasher,
+            blsFunctions,
+            blsVerify,
+            blsVerifyProofOfPossession,
+            verifyDepositProof,
+            computableGenesisTime,
+            cache);
+      } else {
+        return new CachingBeaconChainSpec(
+            constants,
+            hashFunction,
+            hasher,
+            blsVerify,
+            blsVerifyProofOfPossession,
+            verifyDepositProof,
+            computableGenesisTime,
+            cache);
+      }
     }
   }
 }

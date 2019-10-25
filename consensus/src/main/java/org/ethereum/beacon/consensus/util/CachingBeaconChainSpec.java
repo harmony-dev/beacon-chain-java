@@ -2,6 +2,7 @@ package org.ethereum.beacon.consensus.util;
 
 import org.ethereum.beacon.consensus.BeaconChainSpecImpl;
 import org.ethereum.beacon.consensus.hasher.ObjectHasher;
+import org.ethereum.beacon.consensus.spec.BLSFunctions;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.spec.SpecConstants;
@@ -35,6 +36,7 @@ public class CachingBeaconChainSpec extends BeaconChainSpecImpl {
       SpecConstants constants,
       Function<BytesValue, Hash32> hashFunction,
       ObjectHasher<Hash32> objectHasher,
+      BLSFunctions blsFunctions,
       boolean blsVerify,
       boolean blsVerifyProofOfPossession,
       boolean verifyDepositProof,
@@ -44,6 +46,7 @@ public class CachingBeaconChainSpec extends BeaconChainSpecImpl {
         constants,
         hashFunction,
         objectHasher,
+        blsFunctions,
         blsVerify,
         blsVerifyProofOfPossession,
         verifyDepositProof,
@@ -52,6 +55,27 @@ public class CachingBeaconChainSpec extends BeaconChainSpecImpl {
 
     CacheFactory factory = CacheFactory.create(cacheEnabled);
     this.caches = new Caches(factory);
+  }
+
+  public CachingBeaconChainSpec(
+      SpecConstants constants,
+      Function<BytesValue, Hash32> hashFunction,
+      ObjectHasher<Hash32> objectHasher,
+      boolean blsVerify,
+      boolean blsVerifyProofOfPossession,
+      boolean verifyDepositProof,
+      boolean computableGenesisTime,
+      boolean cacheEnabled) {
+    this(
+        constants,
+        hashFunction,
+        objectHasher,
+        BLSFunctions.getDefaultBLSFunctions(blsVerify),
+        blsVerify,
+        blsVerifyProofOfPossession,
+        verifyDepositProof,
+        computableGenesisTime,
+        cacheEnabled);
   }
 
   public CachingBeaconChainSpec(
