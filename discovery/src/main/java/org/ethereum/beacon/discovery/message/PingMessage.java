@@ -4,9 +4,13 @@ import com.google.common.base.Objects;
 import org.web3j.rlp.RlpEncoder;
 import org.web3j.rlp.RlpList;
 import org.web3j.rlp.RlpString;
+import org.web3j.rlp.RlpType;
 import tech.pegasys.artemis.util.bytes.Bytes1;
+import tech.pegasys.artemis.util.bytes.Bytes8;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt64;
+
+import java.util.List;
 
 /**
  * PING checks whether the recipient is alive and informs it about the sender's ENR sequence number.
@@ -20,6 +24,13 @@ public class PingMessage implements V5Message {
   public PingMessage(BytesValue requestId, UInt64 enrSeq) {
     this.requestId = requestId;
     this.enrSeq = enrSeq;
+  }
+
+  public static PingMessage fromRlp(List<RlpType> rlpList) {
+    return new PingMessage(
+        BytesValue.wrap(((RlpString) rlpList.get(0)).getBytes()),
+        UInt64.fromBytesBigEndian(
+            Bytes8.leftPad(BytesValue.wrap(((RlpString) rlpList.get(1)).getBytes()))));
   }
 
   @Override
@@ -38,7 +49,8 @@ public class PingMessage implements V5Message {
             BytesValue.wrap(
                 RlpEncoder.encode(
                     new RlpList(
-                        RlpString.create(requestId.extractArray()), RlpString.create(enrSeq.toBI())))));
+                        RlpString.create(requestId.extractArray()),
+                        RlpString.create(enrSeq.toBI())))));
   }
 
   @Override

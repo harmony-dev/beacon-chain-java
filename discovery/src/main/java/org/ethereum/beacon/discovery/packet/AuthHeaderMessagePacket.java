@@ -53,6 +53,24 @@ public class AuthHeaderMessagePacket extends AbstractPacket {
   }
 
   public static AuthHeaderMessagePacket create(
+      Bytes32 tag,
+      BytesValue authResponseCipherText,
+      BytesValue idNonce,
+      BytesValue ephemeralPubkey,
+      BytesValue authTag,
+      BytesValue messageCipherText) {
+    RlpList authHeaderRlp =
+        new RlpList(
+            RlpString.create(authTag.extractArray()),
+            RlpString.create(idNonce.extractArray()),
+            RlpString.create(AUTH_SCHEME_NAME.getBytes()),
+            RlpString.create(ephemeralPubkey.extractArray()),
+            RlpString.create(authResponseCipherText.extractArray()));
+    BytesValue authHeader = BytesValue.wrap(RlpEncoder.encode(authHeaderRlp));
+    return new AuthHeaderMessagePacket(tag.concat(authHeader).concat(messageCipherText));
+  }
+
+  public static AuthHeaderMessagePacket create(
       Bytes32 homeNodeId,
       Bytes32 destNodeId,
       BytesValue authResponseKey,
@@ -63,7 +81,7 @@ public class AuthHeaderMessagePacket extends AbstractPacket {
       BytesValue authTag,
       BytesValue initiatorKey,
       DiscoveryMessage message) {
-    BytesValue tag = Packet.createTag(homeNodeId, destNodeId);
+    Bytes32 tag = Packet.createTag(homeNodeId, destNodeId);
     BytesValue idNonceSig =
         Functions.sign(
             staticNodeKey,
@@ -89,7 +107,7 @@ public class AuthHeaderMessagePacket extends AbstractPacket {
     BytesValue authHeader = BytesValue.wrap(RlpEncoder.encode(authHeaderRlp));
     BytesValue encryptedData =
         Functions.aesgcm_encrypt(initiatorKey, authTag, message.getBytes(), tag.concat(authHeader));
-    return new AuthHeaderMessagePacket(tag.concat(authHeader).concat(encryptedData));
+    return create(tag, authResponse, idNonce, ephemeralPubkey, authTag, encryptedData);
   }
 
   public void verify(BytesValue expectedIdNonce) {

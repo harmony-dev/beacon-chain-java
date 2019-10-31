@@ -6,7 +6,7 @@ import tech.pegasys.artemis.util.bytes.Bytes32s;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 public interface Packet {
-  static BytesValue createTag(Bytes32 homeNodeId, Bytes32 destNodeId) {
+  static Bytes32 createTag(Bytes32 homeNodeId, Bytes32 destNodeId) {
     return Bytes32s.xor(Functions.hash(destNodeId), homeNodeId);
   }
 

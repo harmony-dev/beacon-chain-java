@@ -2,9 +2,11 @@ package org.ethereum.beacon.discovery.message;
 
 import com.google.common.base.Objects;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
+import org.ethereum.beacon.discovery.enr.NodeRecordFactory;
 import org.web3j.rlp.RlpEncoder;
 import org.web3j.rlp.RlpList;
 import org.web3j.rlp.RlpString;
+import org.web3j.rlp.RlpType;
 import tech.pegasys.artemis.util.bytes.Bytes1;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
@@ -38,6 +40,18 @@ public class NodesMessage implements V5Message {
     this.nodeRecordsSize = nodeRecordsSize;
   }
 
+  public static NodesMessage fromRlp(List<RlpType> rlpList, NodeRecordFactory nodeRecordFactory) {
+    RlpList nodeRecords = (RlpList) rlpList.get(2);
+    return new NodesMessage(
+        BytesValue.wrap(((RlpString) rlpList.get(0)).getBytes()),
+        ((RlpString) rlpList.get(1)).asPositiveBigInteger().intValueExact(),
+        () ->
+            nodeRecords.getValues().stream()
+                .map(rl -> nodeRecordFactory.fromRlpList((RlpList) rl))
+                .collect(Collectors.toList()),
+        nodeRecords.getValues().size());
+  }
+
   @Override
   public BytesValue getRequestId() {
     return requestId;
@@ -69,7 +83,7 @@ public class NodesMessage implements V5Message {
                         RlpString.create(total),
                         new RlpList(
                             getNodeRecords().stream()
-                                .map(n -> RlpString.create(n.serialize().extractArray()))
+                                .map(NodeRecord::asRlp)
                                 .collect(Collectors.toList()))))));
   }
 

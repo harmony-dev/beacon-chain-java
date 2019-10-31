@@ -27,17 +27,22 @@ public class MessagePacket extends AbstractPacket {
   }
 
   public static MessagePacket create(
+      Bytes32 tag, BytesValue authTag, BytesValue messageCipherText) {
+    byte[] authTagBytesRlp = RlpEncoder.encode(RlpString.create(authTag.extractArray()));
+    BytesValue authTagEncoded = BytesValue.wrap(authTagBytesRlp);
+    return new MessagePacket(tag.concat(authTagEncoded).concat(messageCipherText));
+  }
+
+  public static MessagePacket create(
       Bytes32 homeNodeId,
       Bytes32 destNodeId,
       BytesValue authTag,
       BytesValue initiatorKey,
       DiscoveryMessage message) {
-    BytesValue tag = Packet.createTag(homeNodeId, destNodeId);
-    byte[] authTagBytesRlp = RlpEncoder.encode(RlpString.create(authTag.extractArray()));
-    BytesValue authTagEncoded = BytesValue.wrap(authTagBytesRlp);
+    Bytes32 tag = Packet.createTag(homeNodeId, destNodeId);
     BytesValue encryptedData =
         Functions.aesgcm_encrypt(initiatorKey, authTag, message.getBytes(), tag);
-    return new MessagePacket(tag.concat(authTagEncoded).concat(encryptedData));
+    return create(tag, authTag, encryptedData);
   }
 
   public void verify(BytesValue expectedAuthTag) {}

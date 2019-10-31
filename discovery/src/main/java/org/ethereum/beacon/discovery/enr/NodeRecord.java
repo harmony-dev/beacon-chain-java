@@ -137,11 +137,11 @@ public class NodeRecord {
     enrSchemeInterpreter.verify(this);
   }
 
-  public BytesValue serialize() {
-    return serialize(true);
+  public RlpList asRlp() {
+    return asRlp(true);
   }
 
-  public BytesValue serialize(boolean withSignature) {
+  public RlpList asRlp(boolean withSignature) {
     assert getSeq() != null;
     // content   = [seq, k, v, ...]
     // signature = sign(content)
@@ -160,7 +160,16 @@ public class NodeRecord {
       values.add(RlpString.create(keyPair.getKey()));
       values.add(enrSchemeInterpreter.encode(keyPair.getKey(), keyPair.getValue()));
     }
-    byte[] bytes = RlpEncoder.encode(new RlpList(values));
+
+    return new RlpList(values);
+  }
+
+  public BytesValue serialize() {
+    return serialize(true);
+  }
+
+  public BytesValue serialize(boolean withSignature) {
+    byte[] bytes = RlpEncoder.encode(asRlp(withSignature));
     assert bytes.length <= 300;
     return BytesValue.wrap(bytes);
   }

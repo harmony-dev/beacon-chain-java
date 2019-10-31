@@ -4,8 +4,11 @@ import com.google.common.base.Objects;
 import org.web3j.rlp.RlpEncoder;
 import org.web3j.rlp.RlpList;
 import org.web3j.rlp.RlpString;
+import org.web3j.rlp.RlpType;
 import tech.pegasys.artemis.util.bytes.Bytes1;
 import tech.pegasys.artemis.util.bytes.BytesValue;
+
+import java.util.List;
 
 /**
  * FINDNODE queries for nodes at the given logarithmic distance from the recipient's node ID. The
@@ -22,6 +25,12 @@ public class FindNodeMessage implements V5Message {
   public FindNodeMessage(BytesValue requestId, Integer distance) {
     this.requestId = requestId;
     this.distance = distance;
+  }
+
+  public static FindNodeMessage fromRlp(List<RlpType> rlpList) {
+    return new FindNodeMessage(
+        BytesValue.wrap(((RlpString) rlpList.get(0)).getBytes()),
+        ((RlpString) rlpList.get(1)).asPositiveBigInteger().intValueExact());
   }
 
   @Override

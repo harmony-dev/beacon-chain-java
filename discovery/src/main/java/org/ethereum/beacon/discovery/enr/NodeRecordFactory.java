@@ -58,21 +58,16 @@ public class NodeRecordFactory {
     return fromBytes(bytes.extractArray());
   }
 
-  public NodeRecord fromBytes(byte[] bytes) {
-    // record    = [signature, seq, k, v, ...]
-    RlpList rlpList = (RlpList) RlpDecoder.decode(bytes).getValues().get(0);
+  public NodeRecord fromRlpList(RlpList rlpList) {
     List<RlpType> values = rlpList.getValues();
     if (values.size() < 4) {
       throw new RuntimeException(
-          String.format(
-              "Unable to deserialize ENR with less than 4 fields, [%s]", BytesValue.wrap(bytes)));
+          String.format("Unable to deserialize ENR with less than 4 fields, [%s]", values));
     }
     RlpString id = (RlpString) values.get(2);
     if (!"id".equals(new String(id.getBytes()))) {
       throw new RuntimeException(
-          String.format(
-              "Unable to deserialize ENR with no id field at 2-3 records, [%s]",
-              BytesValue.wrap(bytes)));
+          String.format("Unable to deserialize ENR with no id field at 2-3 records, [%s]", values));
     }
 
     RlpString idVersion = (RlpString) values.get(3);
@@ -97,5 +92,11 @@ public class NodeRecordFactory {
             Bytes8.leftPad(BytesValue.wrap(((RlpString) values.get(1)).getBytes()))),
         BytesValue.wrap(((RlpString) values.get(0)).getBytes()),
         values.subList(4, values.size()));
+  }
+
+  public NodeRecord fromBytes(byte[] bytes) {
+    // record    = [signature, seq, k, v, ...]
+    RlpList rlpList = (RlpList) RlpDecoder.decode(bytes).getValues().get(0);
+    return fromRlpList(rlpList);
   }
 }
