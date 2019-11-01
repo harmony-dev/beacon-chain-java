@@ -45,3 +45,4 @@ include 'validator:embedded'
 include 'validator:server'
 // Wire API mock
 include 'wire'
+include 'qa'

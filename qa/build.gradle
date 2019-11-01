@@ -1,0 +1,30 @@
+plugins {
+  id "org.jetbrains.kotlin.jvm" version "1.3.50"
+}
+
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
+  kotlinOptions {
+    jvmTarget = "1.8"
+  }
+}
+
+test {
+  useJUnitPlatform()
+}
+
+dependencies {
+  implementation 'io.projectreactor:reactor-core'
+  implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-yaml'
+  implementation 'com.fasterxml.jackson.core:jackson-databind'
+  implementation 'io.kotlintest:kotlintest-runner-junit5:3.3.2'
+
+  implementation project(':chain')
+  implementation project(':pow:core')
+  implementation project(':types')
+  implementation project(':start:common')
+  implementation project(':start:config')
+  implementation project(':start:node')
+  implementation project(':validator:core')
+  implementation project(':wire')
+  implementation project(':util')
+}
