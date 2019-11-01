@@ -1,8 +1,5 @@
 package org.ethereum.beacon.node;
 
-import java.util.List;
-import java.util.Random;
-import java.util.stream.Collectors;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.ChainStart;
 import org.ethereum.beacon.core.operations.Deposit;
@@ -21,15 +18,19 @@ import org.ethereum.beacon.emulator.config.main.ValidatorKeys.Private;
 import org.ethereum.beacon.emulator.config.main.ValidatorKeys.Public;
 import org.ethereum.beacon.emulator.config.main.conract.Contract;
 import org.ethereum.beacon.emulator.config.main.conract.EmulatorContract;
-import org.ethereum.beacon.pow.DepositContract;
-import org.ethereum.beacon.start.common.util.SimpleDepositContract;
+import org.ethereum.beacon.start.common.util.BLS381MessageSignerFactory;
 import org.ethereum.beacon.start.common.util.SimulateUtils;
 import org.ethereum.beacon.start.common.util.SimulationKeyPairGenerator;
 import org.ethereum.beacon.validator.crypto.BLS381Credentials;
+import org.jetbrains.annotations.NotNull;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
+
+import java.util.List;
+import java.util.Random;
+import java.util.stream.Collectors;
 
 public class ConfigUtils {
 
@@ -80,6 +81,13 @@ public class ConfigUtils {
 
   public static ChainStart createChainStart(
       Contract config, BeaconChainSpec spec, boolean verifyProof) {
+    BLS381MessageSignerFactory signerFactory =
+        verifyProof ? BLS381MessageSignerFactory.getInsecureFactory() : null;
+    return createChainStart(config, spec, signerFactory);
+  }
+
+  @NotNull
+  public static ChainStart createChainStart(Contract config, BeaconChainSpec spec, BLS381MessageSignerFactory signerFactory) {
     if (config instanceof EmulatorContract) {
       EmulatorContract eConfig = (EmulatorContract) config;
       List<KeyPair> keyPairs = createKeyPairs(eConfig.getKeys());
@@ -100,11 +108,11 @@ public class ConfigUtils {
             SimulateUtils.generateRandomDepositProofs(random, keyPairs);
         deposits =
             SimulateUtils.getDepositsForKeyPairs(
-                keyPairs, withdrawalCredentials, amount, depositProofs, spec, verifyProof);
+                keyPairs, withdrawalCredentials, amount, depositProofs, spec, signerFactory);
       } else {
         deposits =
             SimulateUtils.getDepositsForKeyPairs(
-                UInt64.ZERO, random, keyPairs, spec, amount, verifyProof);
+                UInt64.ZERO, random, keyPairs, spec, amount, signerFactory);
       }
 
       ReadList<Integer, DepositData> depositDataList =

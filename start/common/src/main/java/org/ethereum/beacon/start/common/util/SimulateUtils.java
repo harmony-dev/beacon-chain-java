@@ -10,11 +10,14 @@ import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.crypto.BLS381;
 import org.ethereum.beacon.crypto.BLS381.PrivateKey;
 import org.ethereum.beacon.crypto.Hashes;
-import org.ethereum.beacon.crypto.MessageParameters;
 import org.javatuples.Pair;
 import org.jetbrains.annotations.NotNull;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.bytes.*;
+import tech.pegasys.artemis.util.bytes.Bytes32;
+import tech.pegasys.artemis.util.bytes.Bytes4;
+import tech.pegasys.artemis.util.bytes.Bytes48;
+import tech.pegasys.artemis.util.bytes.Bytes96;
+import tech.pegasys.artemis.util.bytes.MutableBytes32;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 import java.util.ArrayList;
@@ -29,10 +32,12 @@ public class SimulateUtils {
 
   public static synchronized Pair<List<Deposit>, List<BLS381.KeyPair>> getAnyDeposits(
       Random rnd, BeaconChainSpec spec, int count, boolean isProofVerifyEnabled) {
+    BLS381MessageSignerFactory signerFactory =
+        isProofVerifyEnabled ? BLS381MessageSignerFactory.getInsecureFactory() : null;
     if (count > cachedDeposits.getValue0().size()) {
       Pair<List<Deposit>, List<BLS381.KeyPair>> newDeposits =
           generateRandomDeposits(UInt64.valueOf(cachedDeposits.getValue0().size()), rnd, spec,
-              count - cachedDeposits.getValue0().size(), isProofVerifyEnabled);
+              count - cachedDeposits.getValue0().size(), signerFactory);
       cachedDeposits.getValue0().addAll(newDeposits.getValue0());
       cachedDeposits.getValue1().addAll(newDeposits.getValue1());
     }
@@ -42,20 +47,26 @@ public class SimulateUtils {
 
   public static Deposit getDepositForKeyPair(Random rnd,
       BLS381.KeyPair keyPair, BeaconChainSpec spec, boolean isProofVerifyEnabled) {
+    BLS381MessageSignerFactory signerFactory =
+        isProofVerifyEnabled ? BLS381MessageSignerFactory.getInsecureFactory() : null;
     return getDepositForKeyPair(
         rnd,
         keyPair,
         spec,
         spec.getConstants().getMaxEffectiveBalance(),
-        isProofVerifyEnabled);
+        signerFactory);
   }
 
-  public static synchronized Deposit getDepositForKeyPair(Random rnd,
-      BLS381.KeyPair keyPair, BeaconChainSpec spec, Gwei initBalance, boolean isProofVerifyEnabled) {
+  public static synchronized Deposit getDepositForKeyPair(
+      Random rnd,
+      BLS381.KeyPair keyPair,
+      BeaconChainSpec spec,
+      Gwei initBalance,
+      BLS381MessageSignerFactory signerFactory) {
     Hash32 credentials = Hash32.random(rnd);
     List<Hash32> depositProof = Collections.singletonList(Hash32.random(rnd));
     return getDepositForKeyPair(
-        keyPair, credentials, initBalance, depositProof, spec, isProofVerifyEnabled);
+        keyPair, credentials, initBalance, depositProof, spec, signerFactory);
   }
 
   @NotNull
@@ -65,7 +76,7 @@ public class SimulateUtils {
       Gwei initBalance,
       List<Hash32> depositProof,
       BeaconChainSpec spec,
-      boolean isProofVerifyEnabled) {
+      BLS381MessageSignerFactory signerFactory) {
     DepositData depositDataWithoutSignature =
         new DepositData(
             BLSPubkey.wrap(Bytes48.leftPad(keyPair.getPublic().getEncodedBytes())),
@@ -75,12 +86,11 @@ public class SimulateUtils {
 
     BLSSignature signature = BLSSignature.ZERO;
 
-    if (isProofVerifyEnabled) {
+    if (signerFactory != null) {
       Hash32 msgHash = spec.signing_root(depositDataWithoutSignature);
       UInt64 domain = spec.compute_domain(SignatureDomains.DEPOSIT, Bytes4.ZERO);
-      signature =
-          BLSSignature.wrap(
-              BLS381.sign(MessageParameters.create(msgHash, domain), keyPair).getEncoded());
+
+      signature = signerFactory.createSigner(keyPair).sign(msgHash, domain);
     }
 
     Deposit deposit =
@@ -99,14 +109,14 @@ public class SimulateUtils {
       Random rnd,
       List<BLS381.KeyPair> keyPairs,
       BeaconChainSpec spec,
-      boolean isProofVerifyEnabled) {
+      BLS381MessageSignerFactory signerFactory) {
     return getDepositsForKeyPairs(
         startIndex,
         rnd,
         keyPairs,
         spec,
         spec.getConstants().getMaxEffectiveBalance(),
-        isProofVerifyEnabled);
+        signerFactory);
   }
 
   public static synchronized List<Deposit> getDepositsForKeyPairs(
@@ -115,11 +125,11 @@ public class SimulateUtils {
       List<BLS381.KeyPair> keyPairs,
       BeaconChainSpec spec,
       Gwei initBalance,
-      boolean isProofVerifyEnabled) {
+      BLS381MessageSignerFactory signerFactory) {
     List<Hash32> withdrawalCredentials = generateRandomWithdrawalCredentials(rnd, keyPairs);
     List<List<Hash32>> depositProofs = generateRandomDepositProofs(rnd, keyPairs);
     return getDepositsForKeyPairs(
-        keyPairs, withdrawalCredentials, initBalance, depositProofs, spec, isProofVerifyEnabled);
+        keyPairs, withdrawalCredentials, initBalance, depositProofs, spec, signerFactory);
   }
 
   @NotNull
@@ -129,7 +139,7 @@ public class SimulateUtils {
       Gwei initBalance,
       List<List<Hash32>> depositProofs,
       BeaconChainSpec spec,
-      boolean isProofVerifyEnabled) {
+      BLS381MessageSignerFactory signerFactory) {
     List<Deposit> deposits = new ArrayList<>();
 
     for (int i = 0; i < keyPairs.size(); i++) {
@@ -137,7 +147,7 @@ public class SimulateUtils {
       Hash32 credentials = withdrawalCredentials.get(i);
       List<Hash32> depositProof = depositProofs.get(i);
       deposits.add(getDepositForKeyPair(
-          keyPair, credentials, initBalance, depositProof, spec, isProofVerifyEnabled));
+          keyPair, credentials, initBalance, depositProof, spec, signerFactory));
     }
 
     return deposits;
@@ -181,14 +191,18 @@ public class SimulateUtils {
   }
 
   private static synchronized Pair<List<Deposit>, List<BLS381.KeyPair>> generateRandomDeposits(
-      UInt64 startIndex, Random rnd, BeaconChainSpec spec, int count, boolean isProofVerifyEnabled) {
+      UInt64 startIndex,
+      Random rnd,
+      BeaconChainSpec spec,
+      int count,
+      BLS381MessageSignerFactory signerFactory) {
     List<BLS381.KeyPair> validatorsKeys = new ArrayList<>();
     for (int i = 0; i < count; i++) {
       BLS381.KeyPair keyPair = BLS381.KeyPair.create(PrivateKey.create(Bytes32.random(rnd)));
       validatorsKeys.add(keyPair);
-
     }
-    List<Deposit> deposits = getDepositsForKeyPairs(startIndex, rnd, validatorsKeys, spec, isProofVerifyEnabled);
+    List<Deposit> deposits =
+        getDepositsForKeyPairs(startIndex, rnd, validatorsKeys, spec, signerFactory);
     return Pair.with(deposits, validatorsKeys);
   }
 }
