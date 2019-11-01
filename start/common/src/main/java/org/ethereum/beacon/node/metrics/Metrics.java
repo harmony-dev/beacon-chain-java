@@ -3,10 +3,10 @@ package org.ethereum.beacon.node.metrics;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.exporter.HTTPServer;
-import org.ethereum.beacon.chain.BeaconChainHead;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconStateEx;
+import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.state.PendingAttestation;
@@ -219,9 +219,9 @@ public class Metrics {
         state.getEth1Data().getDepositCount().minus(state.getEth1DepositIndex()).doubleValue());
   }
 
-  public static void onHeadChanged(BeaconChainSpec spec, BeaconChainHead head) {
-    HEAD_SLOT.set(head.getBlock().getSlot().doubleValue());
-    setRoot(HEAD_ROOT, spec.signing_root(head.getBlock()));
+  public static void onHeadChanged(BeaconChainSpec spec, BeaconBlock head) {
+    HEAD_SLOT.set(head.getSlot().doubleValue());
+    setRoot(HEAD_ROOT, spec.signing_root(head));
   }
 
 
