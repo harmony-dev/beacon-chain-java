@@ -34,7 +34,7 @@ public class Functions {
   }
 
   /**
-   * Creates a signature of message `x` using the given key
+   * Creates a signature of message `x` using the given key.
    *
    * @param key private key
    * @param x message
@@ -42,7 +42,7 @@ public class Functions {
    */
   public static BytesValue sign(BytesValue key, BytesValue x) {
     Sign.SignatureData signatureData =
-        Sign.signMessage(x.extractArray(), ECKeyPair.create(key.extractArray()));
+        Sign.signMessage(x.extractArray(), ECKeyPair.create(key.extractArray()), false);
     Bytes32 r = Bytes32.wrap(signatureData.getR());
     Bytes32 s = Bytes32.wrap(signatureData.getS());
     return r.concat(s);
@@ -102,6 +102,20 @@ public class Functions {
     }
   }
 
+  /** Derives key agreement ECDH by multiplying private key by public */
+  public static BytesValue deriveECDHKeyAgreement(BytesValue srcPrivKey, BytesValue destPubKey) {
+    ECDomainParameters CURVE =
+        new ECDomainParameters(
+            CURVE_PARAMS.getCurve(), CURVE_PARAMS.getG(), CURVE_PARAMS.getN(), CURVE_PARAMS.getH());
+
+    byte[] destPubPointBytes = new byte[destPubKey.size() + 1];
+    destPubPointBytes[0] = 0x04; // default prefix
+    System.arraycopy(destPubKey.extractArray(), 0, destPubPointBytes, 1, destPubKey.size());
+    ECPoint pudDestPoint = CURVE.getCurve().decodePoint(destPubPointBytes);
+    ECPoint mult = pudDestPoint.multiply(new BigInteger(1, srcPrivKey.extractArray()));
+    return BytesValue.wrap(mult.getEncoded(true));
+  }
+
   /**
    * The ephemeral key is used to perform Diffie-Hellman key agreement with B's static public key
    * and the session keys are derived from it using the HKDF key derivation function.
@@ -121,27 +135,24 @@ public class Functions {
       BytesValue srcPrivKey,
       BytesValue destPubKey,
       BytesValue idNonce) {
+    BytesValue keyAgreement = deriveECDHKeyAgreement(srcPrivKey, destPubKey);
+    return hkdf_expand(srcNodeId, destNodeId, keyAgreement, idNonce);
+  }
+
+  /**
+   * {@link #hkdf_expand(BytesValue, BytesValue, BytesValue, BytesValue, BytesValue)} but with
+   * keyAgreement already derived by {@link #deriveECDHKeyAgreement(BytesValue, BytesValue)}
+   */
+  public static HKDFKeys hkdf_expand(
+      BytesValue srcNodeId, BytesValue destNodeId, BytesValue keyAgreement, BytesValue idNonce) {
     try {
-      ECDomainParameters CURVE =
-          new ECDomainParameters(
-              CURVE_PARAMS.getCurve(),
-              CURVE_PARAMS.getG(),
-              CURVE_PARAMS.getN(),
-              CURVE_PARAMS.getH());
-
-      byte[] destPubPointBytes = new byte[destPubKey.size() + 1];
-      destPubPointBytes[0] = 0x04; // default prefix
-      System.arraycopy(destPubKey.extractArray(), 0, destPubPointBytes, 1, destPubKey.size());
-      ECPoint pudDestPoint = CURVE.getCurve().decodePoint(destPubPointBytes);
-      ECPoint mult = pudDestPoint.multiply(new BigInteger(1, srcPrivKey.extractArray()));
-      byte[] keyAgreement = mult.getEncoded(true);
-
       BytesValue info =
           BytesValue.wrap("discovery v5 key agreement".getBytes())
               .concat(srcNodeId)
               .concat(destNodeId);
       HKDFParameters hkdfParameters =
-          new HKDFParameters(keyAgreement, idNonce.extractArray(), info.extractArray());
+          new HKDFParameters(
+              keyAgreement.extractArray(), idNonce.extractArray(), info.extractArray());
       Digest digest = new SHA256Digest();
       HKDFBytesGenerator hkdfBytesGenerator = new HKDFBytesGenerator(digest);
       hkdfBytesGenerator.init(hkdfParameters);

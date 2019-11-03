@@ -6,6 +6,7 @@ import org.ethereum.beacon.discovery.enr.NodeRecordFactory;
 import org.javatuples.Pair;
 import org.junit.Test;
 import org.web3j.crypto.ECKeyPair;
+import org.web3j.crypto.Hash;
 import tech.pegasys.artemis.util.bytes.Bytes4;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
@@ -96,7 +97,10 @@ public class NodeRecordTest {
             Pair.with(
                 FIELD_PKEY_SECP256K1,
                 BytesValue.wrap(extractBytesFromUnsignedBigInt(keyPair.getPublicKey()))));
-    BytesValue signature0 = Functions.sign(BytesValue.wrap(privKey), nodeRecord0.serialize(false));
+    BytesValue signature0 =
+        Functions.sign(
+            BytesValue.wrap(privKey),
+            BytesValue.wrap(Hash.sha3(nodeRecord0.serialize(false).extractArray())));
     nodeRecord0.setSignature(signature0);
     nodeRecord0.verify();
     NodeRecord nodeRecord1 =
@@ -110,7 +114,10 @@ public class NodeRecordTest {
             Pair.with(
                 FIELD_PKEY_SECP256K1,
                 BytesValue.wrap(extractBytesFromUnsignedBigInt(keyPair.getPublicKey()))));
-    BytesValue signature1 = Functions.sign(BytesValue.wrap(privKey), nodeRecord1.serialize(false));
+    BytesValue signature1 =
+        Functions.sign(
+            BytesValue.wrap(privKey),
+            BytesValue.wrap(Hash.sha3(nodeRecord1.serialize(false).extractArray())));
     nodeRecord1.setSignature(signature1);
     nodeRecord1.verify();
     assertNotEquals(nodeRecord0.serialize(), nodeRecord1.serialize());

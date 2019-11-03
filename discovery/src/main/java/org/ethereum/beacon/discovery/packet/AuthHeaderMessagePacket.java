@@ -15,6 +15,7 @@ import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes32s;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
+import javax.annotation.Nullable;
 import java.math.BigInteger;
 
 /**
@@ -42,7 +43,7 @@ import java.math.BigInteger;
  */
 public class AuthHeaderMessagePacket extends AbstractPacket {
   public static final String AUTH_SCHEME_NAME = "gcm";
-  private static final BytesValue DISCOVERY_ID_NONCE =
+  public static final BytesValue DISCOVERY_ID_NONCE =
       BytesValue.wrap("discovery-id-nonce".getBytes());
   private static final BytesValue ZERO_NONCE = BytesValue.wrap(new byte[12]);
   private EphemeralPubKeyDecoded decodedEphemeralPubKeyPt = null;
@@ -53,21 +54,40 @@ public class AuthHeaderMessagePacket extends AbstractPacket {
   }
 
   public static AuthHeaderMessagePacket create(
-      Bytes32 tag,
-      BytesValue authResponseCipherText,
-      BytesValue idNonce,
-      BytesValue ephemeralPubkey,
-      BytesValue authTag,
-      BytesValue messageCipherText) {
+      Bytes32 tag, BytesValue authHeader, BytesValue messageCipherText) {
+    return new AuthHeaderMessagePacket(tag.concat(authHeader).concat(messageCipherText));
+  }
+
+  public static BytesValue signIdNonce(
+      BytesValue idNonce, BytesValue staticNodeKey, BytesValue ephemeralPubkey) {
+    return Functions.sign(
+        staticNodeKey, Functions.hash(DISCOVERY_ID_NONCE.concat(idNonce).concat(ephemeralPubkey)));
+  }
+
+  public static byte[] createAuthMessagePt(BytesValue idNonceSig, @Nullable NodeRecord nodeRecord) {
+    return RlpEncoder.encode(
+        new RlpList(
+            RlpString.create(5),
+            RlpString.create(idNonceSig.extractArray()),
+            RlpString.create(
+                nodeRecord == null ? new byte[0] : nodeRecord.serialize().extractArray())));
+  }
+
+  public static BytesValue encodeAuthResponse(byte[] authResponsePt, BytesValue authResponseKey) {
+    return Functions.aesgcm_encrypt(
+        authResponseKey, ZERO_NONCE, BytesValue.wrap(authResponsePt), BytesValue.EMPTY);
+  }
+
+  public static BytesValue encodeAuthHeaderRlp(
+      BytesValue authTag, BytesValue idNonce, BytesValue ephemeralPubkey, BytesValue authResponse) {
     RlpList authHeaderRlp =
         new RlpList(
             RlpString.create(authTag.extractArray()),
             RlpString.create(idNonce.extractArray()),
             RlpString.create(AUTH_SCHEME_NAME.getBytes()),
             RlpString.create(ephemeralPubkey.extractArray()),
-            RlpString.create(authResponseCipherText.extractArray()));
-    BytesValue authHeader = BytesValue.wrap(RlpEncoder.encode(authHeaderRlp));
-    return new AuthHeaderMessagePacket(tag.concat(authHeader).concat(messageCipherText));
+            RlpString.create(authResponse.extractArray()));
+    return BytesValue.wrap(RlpEncoder.encode(authHeaderRlp));
   }
 
   public static AuthHeaderMessagePacket create(
@@ -76,38 +96,20 @@ public class AuthHeaderMessagePacket extends AbstractPacket {
       BytesValue authResponseKey,
       BytesValue idNonce,
       BytesValue staticNodeKey,
-      NodeRecord nodeRecord,
+      @Nullable NodeRecord nodeRecord,
       BytesValue ephemeralPubkey,
       BytesValue authTag,
       BytesValue initiatorKey,
       DiscoveryMessage message) {
     Bytes32 tag = Packet.createTag(homeNodeId, destNodeId);
-    BytesValue idNonceSig =
-        Functions.sign(
-            staticNodeKey,
-            Functions.hash(DISCOVERY_ID_NONCE.concat(idNonce).concat(ephemeralPubkey)));
+    BytesValue idNonceSig = signIdNonce(idNonce, staticNodeKey, ephemeralPubkey);
     idNonceSig = idNonceSig.slice(1); // Remove recovery id
-    byte[] authResponsePt =
-        RlpEncoder.encode(
-            new RlpList(
-                RlpString.create(5),
-                RlpString.create(idNonceSig.extractArray()),
-                RlpString.create(
-                    nodeRecord == null ? new byte[0] : nodeRecord.serialize().extractArray())));
-    BytesValue authResponse =
-        Functions.aesgcm_encrypt(
-            authResponseKey, ZERO_NONCE, BytesValue.wrap(authResponsePt), BytesValue.EMPTY);
-    RlpList authHeaderRlp =
-        new RlpList(
-            RlpString.create(authTag.extractArray()),
-            RlpString.create(idNonce.extractArray()),
-            RlpString.create(AUTH_SCHEME_NAME.getBytes()),
-            RlpString.create(ephemeralPubkey.extractArray()),
-            RlpString.create(authResponse.extractArray()));
-    BytesValue authHeader = BytesValue.wrap(RlpEncoder.encode(authHeaderRlp));
+    byte[] authResponsePt = createAuthMessagePt(idNonceSig, nodeRecord);
+    BytesValue authResponse = encodeAuthResponse(authResponsePt, authResponseKey);
+    BytesValue authHeader = encodeAuthHeaderRlp(authTag, idNonce, ephemeralPubkey, authResponse);
     BytesValue encryptedData =
-        Functions.aesgcm_encrypt(initiatorKey, authTag, message.getBytes(), tag.concat(authHeader));
-    return create(tag, authResponse, idNonce, ephemeralPubkey, authTag, encryptedData);
+        Functions.aesgcm_encrypt(initiatorKey, authTag, message.getBytes(), tag);
+    return create(tag, authHeader, encryptedData);
   }
 
   public void verify(BytesValue expectedIdNonce) {
@@ -170,7 +172,6 @@ public class AuthHeaderMessagePacket extends AbstractPacket {
     blank.tag = Bytes32.wrap(getBytes().slice(0, 32), 0);
     Pair<RlpList, BytesValue> decodeRes = RlpUtil.decodeFirstList(getBytes().slice(32));
     blank.messageEncrypted = decodeRes.getValue1();
-    int authHeaderLength = getBytes().size() - 32 - decodeRes.getValue1().size();
     RlpList authHeaderParts = (RlpList) decodeRes.getValue0().getValues().get(0);
     // [auth-tag, id-nonce, auth-scheme-name, ephemeral-pubkey, auth-response]
     blank.authTag = BytesValue.wrap(((RlpString) authHeaderParts.getValues().get(0)).getBytes());
@@ -181,7 +182,6 @@ public class AuthHeaderMessagePacket extends AbstractPacket {
         BytesValue.wrap(((RlpString) authHeaderParts.getValues().get(3)).getBytes());
     blank.authResponse =
         BytesValue.wrap(((RlpString) authHeaderParts.getValues().get(4)).getBytes());
-    blank.authHeaderRaw = getBytes().slice(32, authHeaderLength);
     this.decodedEphemeralPubKeyPt = blank;
   }
 
@@ -207,15 +207,13 @@ public class AuthHeaderMessagePacket extends AbstractPacket {
     byte[] nodeRecordBytes = ((RlpString) authResponsePtParts.getValues().get(2)).getBytes();
     blank.nodeRecord =
         nodeRecordBytes.length == 0 ? null : nodeRecordFactory.fromBytes(nodeRecordBytes);
-    BytesValue messageAad =
-        decodedEphemeralPubKeyPt.tag.concat(decodedEphemeralPubKeyPt.authHeaderRaw);
     blank.message =
         new DiscoveryV5Message(
             Functions.aesgcm_decrypt(
                 initiatorKey,
                 decodedEphemeralPubKeyPt.authTag,
                 decodedEphemeralPubKeyPt.messageEncrypted,
-                messageAad));
+                decodedEphemeralPubKeyPt.tag));
     this.decodedMessagePt = blank;
   }
 
@@ -250,7 +248,6 @@ public class AuthHeaderMessagePacket extends AbstractPacket {
     private BytesValue idNonce;
     private BytesValue ephemeralPubkey;
     private BytesValue authResponse;
-    private BytesValue authHeaderRaw;
     private BytesValue messageEncrypted;
   }
 
