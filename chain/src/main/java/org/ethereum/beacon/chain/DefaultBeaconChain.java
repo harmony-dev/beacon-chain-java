@@ -177,10 +177,9 @@ public class DefaultBeaconChain implements MutableBeaconChain {
    * @return true if block should be rejected, false otherwise.
    */
   private boolean rejectedByTime(BeaconBlock block) {
-    SlotNumber nextToCurrentSlot =
-        spec.get_current_slot(recentlyProcessed.getState(), schedulers.getCurrentTime()).increment();
-
-    return block.getSlot().greater(nextToCurrentSlot);
+    SlotNumber currentSlot =
+        spec.get_current_slot(recentlyProcessed.getState(), schedulers.getCurrentTime());
+    return block.getSlot().greater(currentSlot);
   }
 
   @Override
