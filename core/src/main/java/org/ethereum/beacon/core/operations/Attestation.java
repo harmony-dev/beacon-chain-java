@@ -45,14 +45,16 @@ public class Attestation {
       BLSSignature signature,
       SpecConstants specConstants) {
     this(
-        aggregationBits.maxSize() == VARIABLE_SIZE
-            ? aggregationBits.cappedCopy(specConstants.getMaxValidatorsPerCommittee().longValue())
-            : aggregationBits,
+        ensureMaxSize(aggregationBits, specConstants),
         data,
-        custodyBits.maxSize() == VARIABLE_SIZE
-            ? custodyBits.cappedCopy(specConstants.getMaxValidatorsPerCommittee().longValue())
-            : custodyBits,
+        ensureMaxSize(custodyBits, specConstants),
         signature);
+  }
+
+  private static Bitlist ensureMaxSize(Bitlist bits, SpecConstants specConstants) {
+    return bits.maxSize() == VARIABLE_SIZE
+        ? bits.cappedCopy(specConstants.getMaxValidatorsPerCommittee().longValue())
+        : bits;
   }
 
   private Attestation(
@@ -77,6 +79,24 @@ public class Attestation {
 
   public BLSSignature getSignature() {
     return signature;
+  }
+
+  public Attestation withAggregationBits(Bitlist aggregationBits, SpecConstants specConstants) {
+    return new Attestation(
+        ensureMaxSize(aggregationBits, specConstants), data, custodyBits, BLSSignature.ZERO);
+  }
+
+  public Attestation withData(AttestationData data) {
+    return new Attestation(aggregationBits, data, custodyBits, BLSSignature.ZERO);
+  }
+
+  public Attestation withCustodyBits(Bitlist custodyBits, SpecConstants specConstants) {
+    return new Attestation(
+        aggregationBits, data, ensureMaxSize(custodyBits, specConstants), BLSSignature.ZERO);
+  }
+
+  public Attestation withSignature(BLSSignature signature) {
+    return new Attestation(aggregationBits, data, custodyBits, signature);
   }
 
   @Override

@@ -37,11 +37,6 @@ public class BeaconAttestationSignerImpl implements BeaconAttestationSigner {
     UInt64 domain = spec.get_domain(state, ATTESTATION, attestation.getData().getTarget().getEpoch());
     BLSSignature signature = signer.sign(hash, domain);
 
-    return new Attestation(
-        attestation.getAggregationBits(),
-        attestation.getData(),
-        attestation.getCustodyBits(),
-        signature,
-        spec.getConstants());
+    return attestation.withSignature(signature);
   }
 }
