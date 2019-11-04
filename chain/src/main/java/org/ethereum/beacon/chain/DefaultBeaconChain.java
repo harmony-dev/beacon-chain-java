@@ -1,9 +1,5 @@
 package org.ethereum.beacon.chain;
 
-import static com.google.common.base.Preconditions.checkArgument;
-
-import java.util.List;
-import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
@@ -22,6 +18,11 @@ import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.stream.SimpleProcessor;
 import org.reactivestreams.Publisher;
 import tech.pegasys.artemis.ethereum.core.Hash32;
+
+import java.util.List;
+import java.util.Optional;
+
+import static com.google.common.base.Preconditions.checkArgument;
 
 public class DefaultBeaconChain implements MutableBeaconChain {
   private static final Logger logger = LogManager.getLogger(DefaultBeaconChain.class);
@@ -148,7 +149,12 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     if (!previous.getFinalizedCheckpoint().equals(current.getFinalizedCheckpoint())) {
       chainStorage.getFinalizedStorage().set(current.getFinalizedCheckpoint());
     }
-    if (!previous.getCurrentJustifiedCheckpoint().equals(current.getCurrentJustifiedCheckpoint())) {
+    if (chainStorage
+        .getJustifiedStorage()
+        .get()
+        .get()
+        .getEpoch()
+        .greater(current.getCurrentJustifiedCheckpoint().getEpoch())) {
       chainStorage.getJustifiedStorage().set(current.getCurrentJustifiedCheckpoint());
     }
   }
