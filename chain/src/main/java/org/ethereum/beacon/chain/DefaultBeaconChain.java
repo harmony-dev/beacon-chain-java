@@ -80,6 +80,24 @@ public class DefaultBeaconChain implements MutableBeaconChain {
             () -> new RuntimeException("Block with stored maxSlot not found, maxSlot: " + maxSlot));
   }
 
+  private Hash32 getAncestor(Hash32 root, SlotNumber slot) {
+    Optional<BeaconBlock> beaconBlock = chainStorage.getBlockStorage().get(root);
+    if (!beaconBlock.isPresent()) {
+      throw new IllegalArgumentException("Cannot find block " + root);
+    }
+    return getAncestor(root, beaconBlock.get(), slot);
+  }
+
+  private Hash32 getAncestor(Hash32 root, BeaconBlock block, SlotNumber slot) {
+    if (block.getSlot().greater(slot)) {
+      return getAncestor(block.getParentRoot(), slot);
+    } else if (block.getSlot().equals(slot)) {
+      return root;
+    } else {
+      return Hash32.ZERO;
+    }
+  }
+
   @Override
   public synchronized ImportResult insert(BeaconBlock block) {
     if (rejectedByTime(block)) {
@@ -95,6 +113,13 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     }
 
     long s = System.nanoTime();
+
+    Hash32 finalizedRoot = chainStorage.getFinalizedStorage().get().get().getRoot();
+    SlotNumber finalizedSlot = chainStorage.getBlockStorage().get(finalizedRoot).get().getSlot();
+    Hash32 finalizedAncestor = getAncestor(spec.signing_root(block), block, finalizedSlot);
+    if (!finalizedAncestor.equals(finalizedRoot)) {
+      return ImportResult.ExpiredBlock;
+    }
 
     BeaconStateEx parentState = pullParentState(block);
 
