@@ -79,7 +79,7 @@ public class CryptoTest {
   public void testIdNonceSigning() {
     BytesValue idNonce =
         BytesValue.fromHexString(
-            "0x02a77e3aa0c144ae7c0a3af73692b7d6e5b7a2fdc0eda16e8d5e6cb0d08e88dd04");
+            "0xa77e3aa0c144ae7c0a3af73692b7d6e5b7a2fdc0eda16e8d5e6cb0d08e88dd04");
     BytesValue ephemeralKey =
         BytesValue.fromHexString(
             "0x9961e4c2356d61bedb83052c115d311acb3a96f5777296dcf297351130266231503061ac4aaee666073d7e5bc2c80c3f5c5b500c1cb5fd0a76abbb6b675ad157");
@@ -89,7 +89,7 @@ public class CryptoTest {
 
     BytesValue expectedIdNonceSig =
         BytesValue.fromHexString(
-            "0xcf2bf743fc2273709bbc5117fd72775b0661ce1b6e9dffa01f45e2307fb138b90da16364ee7ae1705b938f6648d7725d35fe7e3f200e0ea022c1360b9b2e7385");
+            "0xc5036e702a79902ad8aa147dabfe3958b523fd6fa36cc78e2889b912d682d8d35fdea142e141f690736d86f50b39746ba2d2fc510b46f82ee08f08fd55d133a4");
     assertEquals(
         expectedIdNonceSig,
         AuthHeaderMessagePacket.signIdNonce(idNonce, localSecretKey, ephemeralKey));
