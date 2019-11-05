@@ -69,8 +69,7 @@ public class AuthHeaderMessagePacket extends AbstractPacket {
         new RlpList(
             RlpString.create(5),
             RlpString.create(idNonceSig.extractArray()),
-            RlpString.create(
-                nodeRecord == null ? new byte[0] : nodeRecord.serialize().extractArray())));
+            nodeRecord == null ? new RlpList() : nodeRecord.asRlp()));
   }
 
   public static BytesValue encodeAuthResponse(byte[] authResponsePt, BytesValue authResponseKey) {
@@ -204,9 +203,11 @@ public class AuthHeaderMessagePacket extends AbstractPacket {
         .equals(((RlpString) authResponsePtParts.getValues().get(0)).asPositiveBigInteger());
     blank.idNonceSig =
         BytesValue.wrap(((RlpString) authResponsePtParts.getValues().get(1)).getBytes());
-    byte[] nodeRecordBytes = ((RlpString) authResponsePtParts.getValues().get(2)).getBytes();
+    RlpList nodeRecordDataList = ((RlpList) authResponsePtParts.getValues().get(2));
     blank.nodeRecord =
-        nodeRecordBytes.length == 0 ? null : nodeRecordFactory.fromBytes(nodeRecordBytes);
+        nodeRecordDataList.getValues().isEmpty()
+            ? null
+            : nodeRecordFactory.fromRlpList(nodeRecordDataList);
     blank.message =
         new DiscoveryV5Message(
             Functions.aesgcm_decrypt(

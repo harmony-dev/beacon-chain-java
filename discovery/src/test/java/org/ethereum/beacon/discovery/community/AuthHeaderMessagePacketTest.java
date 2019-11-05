@@ -29,7 +29,7 @@ public class AuthHeaderMessagePacketTest {
     // enr: []
     BytesValue expectedAuthPt =
         BytesValue.fromHexString(
-            "0xf84405b840f753ac31b017536bacd0d0238a1f849e741aef03b7ad5db1d4e64d7aa80689931f21e590edcf80ee32bb2f30707fec88fb62ea8fbcd65b9272e9a0175fea976b80");
+            "0xf84405b840f753ac31b017536bacd0d0238a1f849e741aef03b7ad5db1d4e64d7aa80689931f21e590edcf80ee32bb2f30707fec88fb62ea8fbcd65b9272e9a0175fea976bc0");
     assertEquals(
         expectedAuthPt,
         BytesValue.wrap(
