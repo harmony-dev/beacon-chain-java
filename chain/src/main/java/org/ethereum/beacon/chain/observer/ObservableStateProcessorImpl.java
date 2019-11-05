@@ -15,8 +15,10 @@ import org.ethereum.beacon.consensus.spec.ForkChoice.LatestMessage;
 import org.ethereum.beacon.consensus.transition.EmptySlotTransition;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
+import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
+import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
 import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
@@ -152,12 +154,28 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     }
     List<Attestation> attestations = drainAttestations(spec.get_current_epoch(latestState));
     for (Attestation attestation : attestations) {
+      BeaconTuple tuple = tupleStorage.get(attestation.getData().getTarget().getRoot()).get();
 
-      List<ValidatorIndex> participants =
-          spec.get_attesting_indices(
-              latestState, attestation.getData(), attestation.getAggregationBits());
+      MutableBeaconState mutableState = tuple.getState().createMutableCopy();
+      spec.process_slots(
+          mutableState,
+          spec.compute_start_slot_of_epoch(attestation.getData().getTarget().getEpoch()));
+      BeaconState refState = mutableState.createImmutable();
+      try {
+        IndexedAttestation indexed_attestation =
+            spec.get_indexed_attestation(refState, attestation);
+        if (!spec.is_valid_indexed_attestation(refState, indexed_attestation)) {
+          continue;
+        }
 
-      participants.forEach(index -> addValidatorAttestation(index, attestation));
+        List<ValidatorIndex> participants =
+            spec.get_attesting_indices(
+                refState, attestation.getData(), attestation.getAggregationBits());
+
+        participants.forEach(index -> addValidatorAttestation(index, attestation));
+      } catch (RuntimeException e) {
+        continue;
+      }
     }
   }
 
