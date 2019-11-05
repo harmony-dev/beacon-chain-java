@@ -82,20 +82,24 @@ public class Attestation {
   }
 
   public Attestation withAggregationBits(Bitlist aggregationBits, SpecConstants specConstants) {
+    assert BLSSignature.ZERO.equals(signature);
     return new Attestation(
         ensureMaxSize(aggregationBits, specConstants), data, custodyBits, BLSSignature.ZERO);
   }
 
   public Attestation withData(AttestationData data) {
+    assert BLSSignature.ZERO.equals(signature);
     return new Attestation(aggregationBits, data, custodyBits, BLSSignature.ZERO);
   }
 
   public Attestation withCustodyBits(Bitlist custodyBits, SpecConstants specConstants) {
+    assert BLSSignature.ZERO.equals(signature);
     return new Attestation(
         aggregationBits, data, ensureMaxSize(custodyBits, specConstants), BLSSignature.ZERO);
   }
 
   public Attestation withSignature(BLSSignature signature) {
+    assert BLSSignature.ZERO.equals(signature);
     return new Attestation(aggregationBits, data, custodyBits, signature);
   }
 
