@@ -177,6 +177,9 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
         continue;
       }
     }
+    if (attestations.size() > 0) {
+      updateHead(latestState);
+    }
   }
 
   private synchronized void addValidatorAttestation(ValidatorIndex index, Attestation attestation) {
@@ -287,7 +290,10 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
       return;
     }
 
-    updateCurrentObservableState(head, newSlot);
+    updateHead(latestState);
+    if (newSlot.greater(latestState.getSlot())) {
+      updateCurrentObservableState(head, newSlot);
+    }
   }
 
   private void updateCurrentObservableState(BeaconTupleDetails head, SlotNumber slot) {
