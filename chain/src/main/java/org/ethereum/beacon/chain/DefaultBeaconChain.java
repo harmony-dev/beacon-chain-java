@@ -1,9 +1,5 @@
 package org.ethereum.beacon.chain;
 
-import static com.google.common.base.Preconditions.checkArgument;
-
-import java.util.List;
-import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
@@ -22,6 +18,11 @@ import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.stream.SimpleProcessor;
 import org.reactivestreams.Publisher;
 import tech.pegasys.artemis.ethereum.core.Hash32;
+
+import java.util.List;
+import java.util.Optional;
+
+import static com.google.common.base.Preconditions.checkArgument;
 
 public class DefaultBeaconChain implements MutableBeaconChain {
   private static final Logger logger = LogManager.getLogger(DefaultBeaconChain.class);
@@ -79,6 +80,24 @@ public class DefaultBeaconChain implements MutableBeaconChain {
             () -> new RuntimeException("Block with stored maxSlot not found, maxSlot: " + maxSlot));
   }
 
+  private Hash32 getAncestor(Hash32 root, SlotNumber slot) {
+    Optional<BeaconBlock> beaconBlock = chainStorage.getBlockStorage().get(root);
+    if (!beaconBlock.isPresent()) {
+      throw new IllegalArgumentException("Cannot find block " + root);
+    }
+    return getAncestor(root, beaconBlock.get(), slot);
+  }
+
+  private Hash32 getAncestor(Hash32 root, BeaconBlock block, SlotNumber slot) {
+    if (block.getSlot().greater(slot)) {
+      return getAncestor(block.getParentRoot(), slot);
+    } else if (block.getSlot().equals(slot)) {
+      return root;
+    } else {
+      return Hash32.ZERO;
+    }
+  }
+
   @Override
   public synchronized ImportResult insert(BeaconBlock block) {
     if (rejectedByTime(block)) {
@@ -94,6 +113,13 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     }
 
     long s = System.nanoTime();
+
+    Hash32 finalizedRoot = chainStorage.getFinalizedStorage().get().get().getRoot();
+    SlotNumber finalizedSlot = chainStorage.getBlockStorage().get(finalizedRoot).get().getSlot();
+    Hash32 finalizedAncestor = getAncestor(spec.signing_root(block), block, finalizedSlot);
+    if (!finalizedAncestor.equals(finalizedRoot)) {
+      return ImportResult.ExpiredBlock;
+    }
 
     BeaconStateEx parentState = pullParentState(block);
 
@@ -148,7 +174,12 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     if (!previous.getFinalizedCheckpoint().equals(current.getFinalizedCheckpoint())) {
       chainStorage.getFinalizedStorage().set(current.getFinalizedCheckpoint());
     }
-    if (!previous.getCurrentJustifiedCheckpoint().equals(current.getCurrentJustifiedCheckpoint())) {
+    if (chainStorage
+        .getJustifiedStorage()
+        .get()
+        .get()
+        .getEpoch()
+        .greater(current.getCurrentJustifiedCheckpoint().getEpoch())) {
       chainStorage.getJustifiedStorage().set(current.getCurrentJustifiedCheckpoint());
     }
   }
@@ -177,10 +208,9 @@ public class DefaultBeaconChain implements MutableBeaconChain {
    * @return true if block should be rejected, false otherwise.
    */
   private boolean rejectedByTime(BeaconBlock block) {
-    SlotNumber nextToCurrentSlot =
-        spec.get_current_slot(recentlyProcessed.getState(), schedulers.getCurrentTime()).increment();
-
-    return block.getSlot().greater(nextToCurrentSlot);
+    SlotNumber currentSlot =
+        spec.get_current_slot(recentlyProcessed.getState(), schedulers.getCurrentTime());
+    return block.getSlot().greater(currentSlot);
   }
 
   @Override
