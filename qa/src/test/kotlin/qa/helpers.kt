@@ -211,7 +211,7 @@ class TestChain(val tester: Tester) {
       for (vi in committee.committee) {
         if (vi !in validatorsSet)
           continue
-        val a = attester.attest(vi, committee.shard, currState,
+        val a = attester.attest(vi, committee.index, currState,
             tupleToAttest.block)
 
         val b = if (postProcess != null) postProcess(a) else a

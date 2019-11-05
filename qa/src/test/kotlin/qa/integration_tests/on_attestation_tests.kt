@@ -1,18 +1,14 @@
 package qa.integration_tests
 
-import io.kotlintest.matchers.collections.shouldHaveSize
-import io.kotlintest.matchers.collections.shouldNotHaveSize
 import io.kotlintest.shouldBe
 import org.ethereum.beacon.chain.BeaconTuple
 import org.ethereum.beacon.core.operations.Attestation
 import org.ethereum.beacon.core.types.BLSSignature
-import org.ethereum.beacon.core.types.ShardNumber
+import org.ethereum.beacon.core.types.CommitteeIndex
 import org.ethereum.beacon.core.types.SlotNumber
 import qa.TestChain
 import qa.Tester
 import tech.pegasys.artemis.util.collections.Bitlist
-import tech.pegasys.artemis.util.uint.UInt64
-import kotlin.reflect.KFunction1
 
 open class InvalidAttestationSpec: IntegrationSpec() {
   var genesis: BeaconTuple? = null
@@ -81,12 +77,10 @@ open class InvalidAttestationSpec: IntegrationSpec() {
 
 class BadShardTests : InvalidAttestationSpec() {
 
-  val Attestation.crosslinkShard get() = data.crosslink.shard
+  //val Attestation.crosslinkShard get() = data.crosslink.shard
 
   fun updateWithInvalidShard(a: Attestation, offset: Int) =
-      a.withData(a.data.withCrosslink(
-          a.data.crosslink.withShard(ShardNumber.of(
-              a.crosslinkShard.plus(UInt64.valueOf(offset.toLong()))))))
+      a.withData(a.data.withIndex(CommitteeIndex(a.data.index.value + offset.toLong())))
 
   fun makeAttestationWithInvalidShard(a: Attestation) = updateWithInvalidShard(a, 4)
 

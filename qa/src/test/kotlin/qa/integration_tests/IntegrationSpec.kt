@@ -4,8 +4,7 @@ import io.kotlintest.Description
 import io.kotlintest.TestCase
 import io.kotlintest.specs.AnnotationSpec
 import org.ethereum.beacon.core.operations.attestation.AttestationData
-import org.ethereum.beacon.core.operations.attestation.Crosslink
-import org.ethereum.beacon.core.types.ShardNumber
+import org.ethereum.beacon.core.types.CommitteeIndex
 import org.ethereum.beacon.emulator.config.main.ValidatorKeys
 import org.ethereum.beacon.emulator.config.main.conract.EmulatorContract
 import tech.pegasys.artemis.ethereum.core.Hash32
@@ -26,13 +25,10 @@ open class IntegrationSpec: AnnotationSpec() {
     val genesisTime = Date(2019, 8, 24, 0, 0, 0).time - 10000
 
     fun AttestationData.withBeaconBlockRoot(root: Hash32) =
-            AttestationData(root, source, target, crosslink)
+            AttestationData(slot, index, root, source, target)
 
-    fun AttestationData.withCrosslink(crosslink: Crosslink) =
-            AttestationData(beaconBlockRoot, source, target, crosslink)
-
-    fun Crosslink.withShard(shard: ShardNumber) =
-            Crosslink(shard, parentRoot, startEpoch, endEpoch, dataRoot)
+    fun AttestationData.withIndex(index: CommitteeIndex) =
+            AttestationData(slot, index, beaconBlockRoot, source, target)
 
     fun createContract(genesisTime: Long, validatorCount: Int): EmulatorContract {
         val contract = EmulatorContract()
