@@ -248,8 +248,8 @@ public class BeaconStateImpl implements MutableBeaconState {
     return randaoMixes.get();
   }
 
-  public void setRandaoMixes(
-      WriteList<EpochNumber, Hash32> randaoMixes) {
+  @Override
+  public void setRandaoMixes(Iterable<? extends Hash32> randaoMixes) {
     this.randaoMixes.get().replaceAll(randaoMixes);
   }
 

@@ -15,8 +15,9 @@ import tech.pegasys.artemis.util.uint.UInt64;
 public interface MiscParameters {
 
   ShardNumber SHARD_COUNT = ShardNumber.of(1 << 10); // 1024 shards
+  UInt64 MAX_COMMITTEES_PER_SLOT = UInt64.valueOf(1 << 6); // 64
   ValidatorIndex TARGET_COMMITTEE_SIZE = ValidatorIndex.of(1 << 7); // 128 validators
-  UInt64 MAX_VALIDATORS_PER_COMMITTEE = UInt64.valueOf(1 << 12); // 4096
+  UInt64 MAX_VALIDATORS_PER_COMMITTEE = UInt64.valueOf(1 << 11); // 2048
   UInt64 MIN_PER_EPOCH_CHURN_LIMIT = UInt64.valueOf(1 << 2); // 4
   UInt64 CHURN_LIMIT_QUOTIENT = UInt64.valueOf(1 << 16); // 65_536
   int SHUFFLE_ROUND_COUNT = 90;
@@ -27,6 +28,10 @@ public interface MiscParameters {
 
   default ShardNumber getShardCount() {
     return SHARD_COUNT;
+  }
+
+  default UInt64 getMaxCommitteesPerSlot() {
+    return MAX_COMMITTEES_PER_SLOT;
   }
 
   default ValidatorIndex getTargetCommitteeSize() {

@@ -20,6 +20,7 @@ import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
+import org.ethereum.beacon.core.spec.SignatureDomains;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.BLSPubkey;
@@ -203,7 +204,7 @@ public class BeaconChainSpecTest {
     MutableBeaconState state = initialState.createMutableCopy();
 
     System.out.println("get_committee_count() = " +
-        spec.get_committee_count(state, spec.getConstants().getGenesisEpoch()));
+        spec.get_committee_count_at_slot(state, spec.getConstants().getGenesisSlot()));
 
     for (SlotNumber slot : genesisSlot.iterateTo(genesisSlot.plus(SlotNumber.of(epochLength)))) {
       System.out.println("Slot #" + slot
@@ -216,7 +217,7 @@ public class BeaconChainSpecTest {
           + spec.get_beacon_proposer_index(state)
           + " committee: "
           + spec.get_crosslink_committees_at_slot(state, slot).stream()
-            .map(c -> c.getShard() + ": [" + c.getCommittee().size() + "]")
+            .map(c -> c.getIndex() + ": [" + c.getCommittee().size() + "]")
             .collect(Collectors.joining(","))
             );
     }
@@ -248,6 +249,8 @@ public class BeaconChainSpecTest {
 
   @Test
   public void edgeCaseWithGetSeed() {
+    UInt64 domain_type = SignatureDomains.BEACON_PROPOSER;
+
     BeaconChainSpec spec =
         BeaconChainSpec.createWithDefaultHasher(
             new SpecConstants() {
@@ -261,8 +264,8 @@ public class BeaconChainSpecTest {
     MutableBeaconState state = BeaconState.getEmpty().createMutableCopy();
 
     EpochNumber startEpoch = spec.get_current_epoch(state);
-    spec.get_seed(state, startEpoch);
-    Hash32 nextEpochSeed = spec.get_seed(state, startEpoch.increment());
+    spec.get_seed(state, startEpoch, domain_type);
+    Hash32 nextEpochSeed = spec.get_seed(state, startEpoch.increment(), domain_type);
 
     for (EpochNumber epoch = startEpoch; epoch.less(startEpoch.plus(10)); epoch = epoch.increment()) {
       BeaconBlockBody body =
@@ -273,8 +276,8 @@ public class BeaconChainSpecTest {
 
       EpochNumber currentEpoch = spec.get_current_epoch(state);
 
-      assertEquals(nextEpochSeed, spec.get_seed(state, currentEpoch));
-      nextEpochSeed = spec.get_seed(state, currentEpoch.increment());
+      assertEquals(nextEpochSeed, spec.get_seed(state, currentEpoch, domain_type));
+      nextEpochSeed = spec.get_seed(state, currentEpoch.increment(), domain_type);
     }
   }
 }

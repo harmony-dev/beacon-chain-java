@@ -8,7 +8,6 @@ import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Fork;
 import org.ethereum.beacon.core.state.ValidatorRecord;
-import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
@@ -20,6 +19,7 @@ import tech.pegasys.artemis.util.uint.UInt64s;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * On genesis part.
@@ -53,6 +53,9 @@ public interface GenesisFunction extends BlockProcessing {
     state.setGenesisTime(compute_genesis_time(eth1_timestamp));
     state.setFork(new Fork(Bytes4.ZERO, Bytes4.ZERO, getConstants().getGenesisEpoch()));
     state.setLatestBlockHeader(get_block_header(get_empty_block()));
+    // randao_mixes=[eth1_block_hash] * EPOCHS_PER_HISTORICAL_VECTOR,  # Seed RANDAO with Eth1 entropy
+    List<Hash32> randao_mixes = IntStream.range(0, getConstants().getEpochsPerHistoricalVector().intValue()).mapToObj(i -> eth1_block_hash).collect(Collectors.toList());
+    state.setRandaoMixes(randao_mixes);
 
     // Process deposits
     ReadList<Integer, DepositData> deposit_data_list =
@@ -88,17 +91,6 @@ public interface GenesisFunction extends BlockProcessing {
                 .withActivationEpoch(getConstants().getGenesisEpoch())
                 .withActivationEligibilityEpoch(getConstants().getGenesisEpoch()).build());
       }
-    }
-
-    // Populate active_index_roots and compact_committees_roots
-    ReadList<Integer, ValidatorIndex> indices_list =
-        get_active_validator_indices_list(state, getConstants().getGenesisEpoch());
-    Hash32 active_index_root = hash_tree_root(indices_list);
-    Hash32 committee_root = get_compact_committees_root(state, getConstants().getGenesisEpoch());
-
-    for (EpochNumber index : getConstants().getEpochsPerHistoricalVector().iterateFrom(EpochNumber.ZERO)) {
-      state.getActiveIndexRoots().set(index, active_index_root);
-      state.getCompactCommitteesRoots().set(index, committee_root);
     }
 
     return state.createImmutable();

@@ -124,7 +124,9 @@ public class Attestation {
     return "epoch="
         + getData().getTarget().getEpoch().toString()
         + "/"
-        + getData().getCrosslink().getShard().toString()
+        + getData().getSlot().toString()
+        + "/"
+        + getData().getIndex().toString()
         + "/"
         + getData().getBeaconBlockRoot().toStringShort()
         + "/"

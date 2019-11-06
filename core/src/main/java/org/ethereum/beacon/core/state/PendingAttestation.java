@@ -112,7 +112,9 @@ public class PendingAttestation {
         + "delay="
         + getInclusionDelay()
         + "/"
-        + getData().getCrosslink().getShard().toString()
+        + getData().getSlot().toString()
+        + "/"
+        + getData().getIndex().toString()
         + "/"
         + getData().getBeaconBlockRoot().toStringShort()
         + "/"
