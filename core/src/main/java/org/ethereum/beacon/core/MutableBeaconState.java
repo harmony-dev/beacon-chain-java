@@ -35,7 +35,7 @@ public interface MutableBeaconState extends BeaconState {
   @Override
   WriteVector<EpochNumber, Hash32> getRandaoMixes();
 
-  void setRandaoMixes(Iterable<? extends Hash32> randaoMixes);
+  void setRandaoMixes(WriteList<EpochNumber, Hash32> randaoMixes);
 
   void setStartShard(ShardNumber startShard);
 

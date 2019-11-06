@@ -8,12 +8,14 @@ import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Fork;
 import org.ethereum.beacon.core.state.ValidatorRecord;
+import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes4;
 import tech.pegasys.artemis.util.collections.ReadList;
+import tech.pegasys.artemis.util.collections.WriteList;
 import tech.pegasys.artemis.util.uint.UInt64;
 import tech.pegasys.artemis.util.uint.UInt64s;
 
@@ -55,7 +57,7 @@ public interface GenesisFunction extends BlockProcessing {
     state.setLatestBlockHeader(get_block_header(get_empty_block()));
     // randao_mixes=[eth1_block_hash] * EPOCHS_PER_HISTORICAL_VECTOR,  # Seed RANDAO with Eth1 entropy
     List<Hash32> randao_mixes = IntStream.range(0, getConstants().getEpochsPerHistoricalVector().intValue()).mapToObj(i -> eth1_block_hash).collect(Collectors.toList());
-    state.setRandaoMixes(randao_mixes);
+    state.setRandaoMixes(WriteList.wrap(randao_mixes, EpochNumber::new, true));
 
     // Process deposits
     ReadList<Integer, DepositData> deposit_data_list =
