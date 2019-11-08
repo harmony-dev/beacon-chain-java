@@ -154,14 +154,14 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     }
     List<Attestation> attestations = drainAttestations(spec.get_current_epoch(latestState));
     for (Attestation attestation : attestations) {
-      BeaconTuple tuple = tupleStorage.get(attestation.getData().getTarget().getRoot()).get();
-
-      MutableBeaconState mutableState = tuple.getState().createMutableCopy();
-      spec.process_slots(
-          mutableState,
-          spec.compute_start_slot_of_epoch(attestation.getData().getTarget().getEpoch()));
-      BeaconState refState = mutableState.createImmutable();
       try {
+        BeaconTuple tuple = tupleStorage.get(attestation.getData().getTarget().getRoot()).get();
+
+        MutableBeaconState mutableState = tuple.getState().createMutableCopy();
+        spec.process_slots(
+            mutableState,
+            spec.compute_start_slot_of_epoch(attestation.getData().getTarget().getEpoch()));
+        BeaconState refState = mutableState.createImmutable();
         IndexedAttestation indexed_attestation =
             spec.get_indexed_attestation(refState, attestation);
         if (!spec.is_valid_indexed_attestation(refState, indexed_attestation)) {
