@@ -7,6 +7,9 @@ public interface EnrSchemeInterpreter {
   /** Returns supported scheme */
   EnrScheme getScheme();
 
+  /* Signs nodeRecord, modifying it */
+  void sign(NodeRecord nodeRecord, Object signOptions);
+
   /** Verifies that `nodeRecord` is of scheme implementation */
   default void verify(NodeRecord nodeRecord) {
     if (!nodeRecord.getIdentityScheme().equals(getScheme())) {

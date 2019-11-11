@@ -1,7 +1,8 @@
 package org.ethereum.beacon.discovery.enr;
 
+import org.bouncycastle.math.ec.ECPoint;
 import org.bouncycastle.util.Arrays;
-import org.ethereum.beacon.crypto.Hashes;
+import org.ethereum.beacon.discovery.Functions;
 import org.web3j.crypto.ECDSASignature;
 import org.web3j.crypto.Hash;
 import org.web3j.crypto.Sign;
@@ -16,6 +17,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
+import static org.ethereum.beacon.discovery.enr.NodeRecord.FIELD_ID;
 import static org.ethereum.beacon.discovery.enr.NodeRecord.FIELD_IP_V4;
 import static org.ethereum.beacon.discovery.enr.NodeRecord.FIELD_IP_V6;
 import static org.ethereum.beacon.discovery.enr.NodeRecord.FIELD_PKEY_SECP256K1;
@@ -31,6 +33,7 @@ public class EnrSchemeV4Interpreter implements EnrSchemeInterpreter {
 
   public EnrSchemeV4Interpreter() {
     fieldDecoders.put(FIELD_PKEY_SECP256K1, rlpString -> BytesValue.wrap(rlpString.getBytes()));
+    fieldDecoders.put(FIELD_ID, rlpString -> EnrScheme.fromString(new String(rlpString.getBytes())));
     fieldDecoders.put(
         FIELD_IP_V4, rlpString -> Bytes4.wrap(BytesValue.wrap(rlpString.getBytes()), 0));
     fieldDecoders.put(FIELD_TCP_V4, rlpString -> rlpString.asPositiveBigInteger().intValue());
@@ -49,19 +52,21 @@ public class EnrSchemeV4Interpreter implements EnrSchemeInterpreter {
           String.format(
               "Field %s not exists but required for scheme %s", FIELD_PKEY_SECP256K1, getScheme()));
     }
-    BytesValue pubKey = (BytesValue) nodeRecord.get(FIELD_PKEY_SECP256K1);
+    BytesValue pubKey = (BytesValue) nodeRecord.get(FIELD_PKEY_SECP256K1); // compressed
+    ECPoint ecPoint = Functions.publicKeyToPoint(pubKey);
+    BytesValue pubKeyUncompressed = BytesValue.wrap(ecPoint.getEncoded(false)).slice(1);
     ECDSASignature ecdsaSignature =
         new ECDSASignature(
             new BigInteger(1, nodeRecord.getSignature().slice(0, 32).extractArray()),
             new BigInteger(1, nodeRecord.getSignature().slice(32).extractArray()));
     byte[] msgHash = Hash.sha3(nodeRecord.serialize(false).extractArray());
     for (int recId = 0; recId < 4; ++recId) {
-      BigInteger calculatedPubKey = Sign.recoverFromSignature(1, ecdsaSignature, msgHash);
+      BigInteger calculatedPubKey = Sign.recoverFromSignature(recId, ecdsaSignature, msgHash);
       if (calculatedPubKey == null) {
         continue;
       }
       if (Arrays.areEqual(
-          pubKey.extractArray(), extractBytesFromUnsignedBigInt(calculatedPubKey))) {
+          pubKeyUncompressed.extractArray(), extractBytesFromUnsignedBigInt(calculatedPubKey))) {
         return;
       }
     }
@@ -76,7 +81,13 @@ public class EnrSchemeV4Interpreter implements EnrSchemeInterpreter {
   @Override
   public Bytes32 getNodeId(NodeRecord nodeRecord) {
     verify(nodeRecord);
-    return Hashes.sha256((BytesValue) nodeRecord.getKey(FIELD_PKEY_SECP256K1));
+    BytesValue pkey = (BytesValue) nodeRecord.getKey(FIELD_PKEY_SECP256K1);
+    ECPoint pudDestPoint = Functions.publicKeyToPoint(pkey);
+    BytesValue xPart =
+        Bytes32.leftPad(BytesValue.wrap(pudDestPoint.getXCoord().toBigInteger().toByteArray()));
+    BytesValue yPart =
+        Bytes32.leftPad(BytesValue.wrap(pudDestPoint.getYCoord().toBigInteger().toByteArray()));
+    return Bytes32.wrap(Hash.sha3(xPart.concat(yPart).extractArray()));
   }
 
   @Override
@@ -89,6 +100,14 @@ public class EnrSchemeV4Interpreter implements EnrSchemeInterpreter {
   }
 
   @Override
+  public void sign(NodeRecord nodeRecord, Object signOptions) {
+    BytesValue privateKey = (BytesValue) signOptions;
+    BytesValue signature = Functions.sign(
+        privateKey,
+        BytesValue.wrap(Hash.sha3(nodeRecord.serialize(false).extractArray())));
+    nodeRecord.setSignature(signature);
+  }
+  @Override
   public RlpString encode(String key, Object object) {
     if (object instanceof BytesValue) {
       return fromBytesValue((BytesValue) object);
@@ -96,6 +115,8 @@ public class EnrSchemeV4Interpreter implements EnrSchemeInterpreter {
       return fromNumber((Number) object);
     } else if (object == null) {
       return RlpString.create(new byte[0]);
+    } else if (object instanceof EnrScheme) {
+      return RlpString.create(((EnrScheme) object).stringName());
     } else {
       throw new RuntimeException(
           String.format(
