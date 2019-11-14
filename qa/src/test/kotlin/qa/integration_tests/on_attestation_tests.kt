@@ -113,6 +113,42 @@ class BadShardTests : InvalidAttestationSpec() {
   fun attestation_bad_shard_last() {
     lastInvalidAttestationTest(::makeAttestationWithInvalidShard)
   }
+
+  fun mkNonExistingTargetRoot(a: Attestation) =
+      a.withData(a.data.withTarget(a.data.target.withRoot(tester.spec.hash_tree_root(0))))
+
+  @Test
+  fun non_existing_target_root_all() {
+    allInvalidAttestationsTest(::mkNonExistingTargetRoot)
+  }
+
+  @Test
+  fun non_existing_target_root_first() {
+    firstInvalidAttestationTest(::mkNonExistingTargetRoot)
+  }
+
+  @Test
+  fun non_existing_target_root_last() {
+    lastInvalidAttestationTest(::mkNonExistingTargetRoot)
+  }
+
+  fun mkInvalidTargetEpoch(a: Attestation) =
+      a.withData(a.data.withTarget(a.data.target.withEpoch(a.data.target.epoch.decrement())))
+
+  @Test
+  fun invalid_target_epoch_all() {
+    allInvalidAttestationsTest(::mkInvalidTargetEpoch)
+  }
+
+  @Test
+  fun invalid_target_epoch_first() {
+    firstInvalidAttestationTest(::mkInvalidTargetEpoch)
+  }
+
+  @Test
+  fun invalid_target_epoch_last() {
+    lastInvalidAttestationTest(::mkInvalidTargetEpoch)
+  }
 }
 
 class InvalidIndexedAttestation: InvalidAttestationSpec() {
