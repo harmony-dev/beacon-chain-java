@@ -19,6 +19,7 @@ import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.CommitteeIndex;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ShardNumber;
@@ -197,8 +198,9 @@ public abstract class BeaconBlockConverter {
       AttestationData data) {
     BlockData.AttestationData.AttestationDataContainer attestationData =
         new BlockData.AttestationData.AttestationDataContainer();
+    attestationData.setSlot(data.getSlot().getValue());
+    attestationData.setIndex(data.getIndex().getValue());
     attestationData.setBeaconBlockRoot(data.getBeaconBlockRoot().toString());
-    attestationData.setCrosslink(presentCrossLink(data.getCrosslink()));
     BlockData.CheckpointData source = new BlockData.CheckpointData();
     source.setEpoch(data.getSource().getEpoch().longValue());
     source.setRoot(data.getSource().getRoot().toString());
@@ -333,14 +335,15 @@ public abstract class BeaconBlockConverter {
   public static AttestationData parseAttestationData(
       BlockData.AttestationData.AttestationDataContainer data) {
     return new AttestationData(
+        SlotNumber.of(data.getSlot()),
+        CommitteeIndex.of(data.getIndex()),
         Hash32.fromHexString(data.getBeaconBlockRoot()),
         new Checkpoint(
             EpochNumber.castFrom(UInt64.valueOf(data.getSource().getEpoch())),
             Hash32.fromHexString(data.getSource().getRoot())),
         new Checkpoint(
             EpochNumber.castFrom(UInt64.valueOf(data.getTarget().getEpoch())),
-            Hash32.fromHexString(data.getTarget().getRoot())),
-        parseCrossLinkData(data.getCrosslink()));
+            Hash32.fromHexString(data.getTarget().getRoot())));
   }
 
   public static Attestation parseAttestation(

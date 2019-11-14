@@ -45,7 +45,6 @@ public class EpochTransitionSummary {
 
   boolean noFinality;
   Gwei[][] attestationDeltas = { new Gwei[0], new Gwei[0] };
-  Gwei[][] crosslinkDeltas = { new Gwei[0], new Gwei[0] };
 
   List<ValidatorIndex> ejectedValidators = new ArrayList<>();
 
@@ -88,11 +87,7 @@ public class EpochTransitionSummary {
   public Gwei[][] getAttestationDeltas() {
     return attestationDeltas;
   }
-
-  public Gwei[][] getCrosslinkDeltas() {
-    return crosslinkDeltas;
-  }
-
+  
   public List<ValidatorIndex> getEjectedValidators() {
     return ejectedValidators;
   }

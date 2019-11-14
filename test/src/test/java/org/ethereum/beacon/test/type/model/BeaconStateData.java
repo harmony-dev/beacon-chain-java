@@ -486,14 +486,16 @@ public class BeaconStateData {
     }
 
     public static class AttestationDataContainer {
+      private Long slot;
+
+      private Long index;
+
       @JsonProperty("beacon_block_root")
       private String beaconBlockRoot;
 
       private CheckpointData source;
 
       private CheckpointData target;
-
-      private CrossLinkData crosslink;
 
       public String getBeaconBlockRoot() {
         return beaconBlockRoot;
@@ -519,12 +521,20 @@ public class BeaconStateData {
         this.target = target;
       }
 
-      public CrossLinkData getCrosslink() {
-        return crosslink;
+      public Long getSlot() {
+        return slot;
       }
 
-      public void setCrosslink(CrossLinkData crosslink) {
-        this.crosslink = crosslink;
+      public void setSlot(Long slot) {
+        this.slot = slot;
+      }
+
+      public Long getIndex() {
+        return index;
+      }
+
+      public void setIndex(Long index) {
+        this.index = index;
       }
     }
   }

@@ -5,11 +5,13 @@ import org.ethereum.beacon.consensus.hasher.ObjectHasher;
 import org.ethereum.beacon.consensus.spec.BLSFunctions;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
+import org.ethereum.beacon.core.spec.SignatureDomains;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.types.BLSPubkey;
+import org.ethereum.beacon.core.types.CommitteeIndex;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
-import org.ethereum.beacon.core.types.ShardNumber;
+import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.util.cache.Cache;
@@ -125,17 +127,16 @@ public class CachingBeaconChainSpec extends BeaconChainSpecImpl {
   }
 
   @Override
-  public List<ValidatorIndex> get_crosslink_committee(
-      BeaconState state, EpochNumber epoch, ShardNumber shard) {
+  public List<ValidatorIndex> get_beacon_committee(
+      BeaconState state, SlotNumber slot, CommitteeIndex index) {
     Hash32 digest =
         getDigest(
             objectHash(state.getValidators()),
-            get_seed(state, epoch),
-            get_start_shard(state, epoch).toBytes8(),
-            epoch.toBytes8(),
-            shard.toBytes8());
+            get_seed(state, compute_epoch_of_slot(slot), SignatureDomains.ATTESTATION),
+            slot.toBytes8(),
+            index.toBytes8());
     return caches.crosslinkCommitteesCache.get(
-        digest, s -> super.get_crosslink_committee(state, epoch, shard));
+        digest, s -> super.get_beacon_committee(state, slot, index));
   }
 
   @Override
@@ -159,8 +160,8 @@ public class CachingBeaconChainSpec extends BeaconChainSpecImpl {
         getDigest(
             objectHash(state.getValidators()),
             objectHash(state.getRandaoMixes()),
-            attestation_data.getTarget().getEpoch().toBytes8(),
-            attestation_data.getCrosslink().getShard().toBytes8(),
+            attestation_data.getSlot().toBytes8(),
+            attestation_data.getIndex().toBytes8(),
             bitlist);
     return caches.attestingIndicesCache.get(
         digest, e -> super.get_attesting_indices(state, attestation_data, bitlist));

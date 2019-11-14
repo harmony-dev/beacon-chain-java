@@ -33,7 +33,7 @@ public interface ValidatorClient {
 
   /* Produce an attestation, without signature */
   BlockData.BlockBodyData.IndexedAttestationData getAttestation(
-      String validatorPubkey, Long pocBit, BigInteger slot, Integer shard);
+      String validatorPubkey, Long pocBit, BigInteger slot, Integer index);
 
   /* Publish a signed attestation */
   Response postAttestation(IndexedAttestation attestation);

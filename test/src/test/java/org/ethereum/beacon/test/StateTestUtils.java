@@ -23,6 +23,7 @@ import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.CommitteeIndex;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ShardNumber;
@@ -306,10 +307,11 @@ public abstract class StateTestUtils {
 
   public static AttestationData parseAttestationData(BeaconStateData.AttestationData.AttestationDataContainer data) {
     return new AttestationData(
+        SlotNumber.of(data.getSlot()),
+        CommitteeIndex.of(data.getIndex()),
         Hash32.fromHexString(data.getBeaconBlockRoot()),
         parseCheckpoint(data.getSource()),
-        parseCheckpoint(data.getTarget()),
-        parseCrosslink(data.getCrosslink()));
+        parseCheckpoint(data.getTarget()));
   }
 
   public static Transfer parseTransfer(BlockData.BlockBodyData.TransferData data) {

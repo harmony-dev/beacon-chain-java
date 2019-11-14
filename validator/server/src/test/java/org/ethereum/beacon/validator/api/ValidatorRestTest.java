@@ -4,12 +4,12 @@ import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
-import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.CommitteeIndex;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.validator.api.model.BlockData;
@@ -313,14 +313,14 @@ public class ValidatorRestTest {
         "0x5F1847060C89CB12A92AFF4EF140C9FC3A3F026796EC15105F1847060C89CB12A92AFF4EF140C9FC3A3F026796EC1510";
     BlockData.BlockBodyData.IndexedAttestationData response =
         client.getAttestation(pubKey, 1L, BigInteger.ONE, 14);
-    assertEquals(Long.valueOf(14), response.getData().getCrosslink().getShard());
+    assertEquals(Long.valueOf(14), response.getData().getIndex());
   }
 
   @Test
   public void testAttestationSubmitDuringSync() {
     this.server = createLongSyncServer();
     AttestationData attestationData =
-        new AttestationData(Hash32.ZERO, Checkpoint.EMPTY, Checkpoint.EMPTY, Crosslink.EMPTY);
+        new AttestationData(SlotNumber.of(0), CommitteeIndex.of(0), Hash32.ZERO, Checkpoint.EMPTY, Checkpoint.EMPTY);
     server.start();
     List<ValidatorIndex> custodyBit0Indices = new ArrayList<>();
     custodyBit0Indices.add(ValidatorIndex.of(0));
@@ -358,7 +358,7 @@ public class ValidatorRestTest {
               wireCounter.incrementAndGet();
             });
     AttestationData attestationData =
-        new AttestationData(Hash32.ZERO, Checkpoint.EMPTY, Checkpoint.EMPTY, Crosslink.EMPTY);
+        new AttestationData(SlotNumber.of(0), CommitteeIndex.of(0), Hash32.ZERO, Checkpoint.EMPTY, Checkpoint.EMPTY);
     List<ValidatorIndex> custodyBit0Indices = new ArrayList<>();
     custodyBit0Indices.add(ValidatorIndex.of(0));
     List<ValidatorIndex> custodyBit1Indices = new ArrayList<>();

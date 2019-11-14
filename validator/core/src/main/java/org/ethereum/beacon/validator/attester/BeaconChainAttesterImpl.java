@@ -9,6 +9,7 @@ import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.CommitteeIndex;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
@@ -40,15 +41,14 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
 
   @Override
   public Attestation attest(
-      ValidatorIndex validatorIndex, ShardNumber shard, BeaconState state, BeaconBlock head) {
+      ValidatorIndex validatorIndex, CommitteeIndex index, BeaconState state, BeaconBlock head) {
     Hash32 beaconBlockRoot = spec.signing_root(head);
     EpochNumber targetEpoch = spec.get_current_epoch(state);
     Checkpoint target = getTarget(state, head, targetEpoch);
     Checkpoint source = getSource(state);
-    Crosslink crosslink = getCrosslink(state, shard, targetEpoch);
-    AttestationData data = new AttestationData(beaconBlockRoot, source, target, crosslink);
+    AttestationData data = new AttestationData(state.getSlot(), index, beaconBlockRoot, source, target);
 
-    List<ValidatorIndex> committee = getCommittee(state, shard);
+    List<ValidatorIndex> committee = getCommittee(state, index);
     BytesValue participationBitfield = getParticipationBitfield(validatorIndex, committee);
     Bitlist participation =
         Bitlist.of(
@@ -69,13 +69,12 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
    * Returns a committee at a state slot for a given shard.
    *
    * @param state a state.
-   * @param shard a shard.
+   * @param index a committee index.
    * @return a committee.
    */
   @VisibleForTesting
-  List<ValidatorIndex> getCommittee(BeaconState state, ShardNumber shard) {
-    EpochNumber epoch = spec.get_current_epoch(state);
-    return spec.get_crosslink_committee(state, epoch, shard);
+  List<ValidatorIndex> getCommittee(BeaconState state, CommitteeIndex index) {
+    return spec.get_beacon_committee(state, state.getSlot(), index);
   }
 
   @VisibleForTesting

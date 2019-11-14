@@ -319,7 +319,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
                   .max(Comparator.comparing(attestation -> attestation.getData().getTarget().getEpoch()))
                   .flatMap(a -> Optional.of(
                       new LatestMessage(
-                          spec.compute_epoch_of_slot(spec.get_attestation_data_slot(state, a.getData())),
+                          spec.compute_epoch_of_slot(a.getData().getSlot()),
                           a.getData().getBeaconBlockRoot())));
             });
     if (this.head != null && this.head.getBlock().equals(newHead)) {
