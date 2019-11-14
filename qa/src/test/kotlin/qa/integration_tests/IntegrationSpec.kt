@@ -4,7 +4,10 @@ import io.kotlintest.Description
 import io.kotlintest.TestCase
 import io.kotlintest.specs.AnnotationSpec
 import org.ethereum.beacon.core.operations.attestation.AttestationData
+import org.ethereum.beacon.core.state.Checkpoint
 import org.ethereum.beacon.core.types.CommitteeIndex
+import org.ethereum.beacon.core.types.EpochNumber
+import org.ethereum.beacon.core.types.SlotNumber
 import org.ethereum.beacon.emulator.config.main.ValidatorKeys
 import org.ethereum.beacon.emulator.config.main.conract.EmulatorContract
 import tech.pegasys.artemis.ethereum.core.Hash32
@@ -27,10 +30,22 @@ open class IntegrationSpec: AnnotationSpec() {
     fun AttestationData.withBeaconBlockRoot(root: Hash32) =
             AttestationData(slot, index, root, source, target)
 
-    fun AttestationData.withIndex(index: CommitteeIndex) =
-            AttestationData(slot, index, beaconBlockRoot, source, target)
+  fun AttestationData.withSlot(slot: SlotNumber) =
+      AttestationData(slot, index, beaconBlockRoot, source, target)
 
-    fun createContract(genesisTime: Long, validatorCount: Int): EmulatorContract {
+  fun AttestationData.withIndex(index: CommitteeIndex) =
+      AttestationData(slot, index, beaconBlockRoot, source, target)
+
+  fun AttestationData.withSource(source: Checkpoint) =
+      AttestationData(slot, index, beaconBlockRoot, source, target)
+
+  fun AttestationData.withTarget(target: Checkpoint) =
+      AttestationData(slot, index, beaconBlockRoot, source, target)
+
+  fun Checkpoint.withEpoch(epoch: EpochNumber) = Checkpoint(epoch, root)
+  fun Checkpoint.withRoot(root: Hash32) = Checkpoint(epoch, root)
+
+  fun createContract(genesisTime: Long, validatorCount: Int): EmulatorContract {
         val contract = EmulatorContract()
         val interopKeys = ValidatorKeys.InteropKeys()
         interopKeys.count = validatorCount
