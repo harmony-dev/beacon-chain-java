@@ -5,6 +5,7 @@ import org.ethereum.beacon.chain.BeaconTuple
 import org.ethereum.beacon.core.operations.Attestation
 import org.ethereum.beacon.core.types.BLSSignature
 import org.ethereum.beacon.core.types.CommitteeIndex
+import org.ethereum.beacon.core.types.EpochNumber
 import org.ethereum.beacon.core.types.SlotNumber
 import qa.TestChain
 import qa.Tester
@@ -12,6 +13,7 @@ import tech.pegasys.artemis.util.collections.Bitlist
 
 open class InvalidAttestationSpec: IntegrationSpec() {
   var genesis: BeaconTuple? = null
+  var block0: BeaconTuple? = null
   var block1: BeaconTuple? = null
   var block2: BeaconTuple? = null
 
@@ -20,24 +22,35 @@ open class InvalidAttestationSpec: IntegrationSpec() {
 
   val tester get() = testChain.tester
 
-  @BeforeEach
-  fun setUp() {
+  fun setUp(startEpoch: Int? = null) {
     _testChain = TestChain(Tester(createContract(genesisTime, 16)))
     genesis = testChain.head
 
-    tester.currentSlot = SlotNumber(1)
-    block1 = testChain.proposeBlock(1, genesis)
+    val startEpochNumber = startEpoch ?: 0
+    val startSlot = tester.spec.compute_start_slot_of_epoch(EpochNumber.of(startEpochNumber)).intValue
+
+    block0 = if (startEpochNumber == 0) {
+      genesis
+    } else {
+      tester.currentSlot = SlotNumber(startSlot)
+      testChain.proposeBlock(startSlot, genesis)
+    }
+
+    tester.currentSlot = SlotNumber(startSlot+1)
+    block1 = testChain.proposeBlock(startSlot+1, block0)
     //testChain.sendAttestations(testChain.mkAttestations(block1).subList(0,2))
 
-    tester.currentSlot = SlotNumber(2)
+    tester.currentSlot = SlotNumber(startSlot+2)
     tester.testLauncher.lastObservableState.head shouldBe block1!!.block
-    block2 = testChain.proposeBlock(2, genesis)
+    block2 = testChain.proposeBlock(startSlot+2, block0)
 
     tester.testLauncher.lastObservableState.head shouldBe block1!!.block
   }
 
   fun allInvalidAttestationsTest(postProcess: ((Attestation) -> Attestation)? = null,
-                                 postSign: ((Attestation) -> Attestation)? = null) {
+                                 postSign: ((Attestation) -> Attestation)? = null,
+                                 startEpoch: Int? = null) {
+    setUp(startEpoch)
     testChain.sendAttestations(testChain.mkAttestations(block2,
         postProcess = postProcess,
         postSign = postSign))
@@ -47,7 +60,9 @@ open class InvalidAttestationSpec: IntegrationSpec() {
   }
 
   fun firstInvalidAttestationTest(postProcess: ((Attestation) -> Attestation)? = null,
-                                  postSign: ((Attestation) -> Attestation)? = null) {
+                                  postSign: ((Attestation) -> Attestation)? = null,
+                                  startEpoch: Int? = null) {
+    setUp(startEpoch)
     val attesters = testChain.getAttesters(block2)
     testChain.sendAttestations(testChain.mkAttestations(block2,
         validators = attesters.subList(0, 1),
@@ -61,7 +76,9 @@ open class InvalidAttestationSpec: IntegrationSpec() {
   }
 
   fun lastInvalidAttestationTest(postProcess: ((Attestation) -> Attestation)? = null,
-                                 postSign: ((Attestation) -> Attestation)? = null) {
+                                 postSign: ((Attestation) -> Attestation)? = null,
+                                 startEpoch: Int? = null) {
+    setUp(startEpoch)
     val attesters = testChain.getAttesters(block2)
     testChain.sendAttestations(testChain.mkAttestations(block2,
         validators = attesters.subList(0, attesters.size - 1)))
@@ -76,8 +93,6 @@ open class InvalidAttestationSpec: IntegrationSpec() {
 }
 
 class BadShardTests : InvalidAttestationSpec() {
-
-  //val Attestation.crosslinkShard get() = data.crosslink.shard
 
   fun updateWithInvalidShard(a: Attestation, offset: Int) =
       a.withData(a.data.withIndex(CommitteeIndex(a.data.index.value + offset.toLong())))
