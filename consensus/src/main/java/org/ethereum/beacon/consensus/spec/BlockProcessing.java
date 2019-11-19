@@ -26,9 +26,9 @@ import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.CommitteeIndex;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
-import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
@@ -195,25 +195,17 @@ public interface BlockProcessing extends HelperFunction {
     IndexedAttestation attestation1 = attester_slashing.getAttestation1();
     IndexedAttestation attestation2 = attester_slashing.getAttestation2();
 
-
-    /* slashed_any = False
-       attesting_indices_1 = attestation1.custody_bit_0_indices + attestation1.custody_bit_1_indices
-       attesting_indices_2 = attestation2.custody_bit_0_indices + attestation2.custody_bit_1_indices */
+    /* slashed_any = False */
     boolean slashed_any = false;
-    List<ValidatorIndex> attesting_indices_1 = new ArrayList<>();
-    attesting_indices_1.addAll(attestation1.getCustodyBit0Indices().listCopy());
-    attesting_indices_1.addAll(attestation1.getCustodyBit1Indices().listCopy());
-    List<ValidatorIndex> attesting_indices_2 = new ArrayList<>();
-    attesting_indices_2.addAll(attestation2.getCustodyBit0Indices().listCopy());
-    attesting_indices_2.addAll(attestation2.getCustodyBit1Indices().listCopy());
 
-    /*  for index in set(attesting_indices_1).intersection(attesting_indices_2):
+    /*  indices = set(attestation_1.attesting_indices).intersection(attestation_2.attesting_indices)
+        for index in sorted(indices):
         if is_slashable_validator(state.validator_registry[index], get_current_epoch(state)):
             slash_validator(state, index)
             slashed_any = True
         assert slashed_any */
-    List<ValidatorIndex> intersection = new ArrayList<>(attesting_indices_1);
-    intersection.retainAll(attesting_indices_2);
+    List<ValidatorIndex> intersection = new ArrayList<>(attestation1.getAttestingIndices().listCopy());
+    intersection.retainAll(attestation2.getAttestingIndices().listCopy());
     intersection.sort(Comparator.comparingLong(UInt64::longValue));
     for (ValidatorIndex index : intersection) {
       if (is_slashable_validator(state.getValidators().get(index), get_current_epoch(state))) {
@@ -226,10 +218,10 @@ public interface BlockProcessing extends HelperFunction {
 
   default boolean verify_attestation(BeaconState state, Attestation attestation) {
     /* data = attestation.data
-       assert data.crosslink.shard < SHARD_COUNT
+       assert data.index < get_committee_count_at_slot(state, data.slot)
        assert data.target.epoch in (get_previous_epoch(state), get_current_epoch(state)) */
     AttestationData data = attestation.getData();
-    if (!data.getCrosslink().getShard().less(getConstants().getShardCount())) {
+    if (!data.getIndex().less(new CommitteeIndex(get_committee_count_at_slot(state, data.getSlot())))) {
       return false;
     }
     if (!data.getTarget().getEpoch().equals(get_previous_epoch(state))
@@ -237,23 +229,19 @@ public interface BlockProcessing extends HelperFunction {
       return false;
     }
 
-    /* attestation_slot = get_attestation_data_slot(state, data)
-       assert attestation_slot + MIN_ATTESTATION_INCLUSION_DELAY <= state.slot <= attestation_slot + SLOTS_PER_EPOCH */
-    SlotNumber attestation_slot = get_attestation_data_slot(state, data);
-
-    if (!attestation_slot.plus(getConstants().getMinAttestationInclusionDelay()).lessEqual(state.getSlot())) {
+    /* assert data.slot + MIN_ATTESTATION_INCLUSION_DELAY <= state.slot <= data.slot + SLOTS_PER_EPOCH */
+    if (!data.getSlot().plus(getConstants().getMinAttestationInclusionDelay()).lessEqual(state.getSlot())) {
       return false;
     }
-    if (!state.getSlot().lessEqual(attestation_slot.plus(getConstants().getSlotsPerEpoch()))) {
+    if (!state.getSlot().lessEqual(data.getSlot().plus(getConstants().getSlotsPerEpoch()))) {
       return false;
     }
 
-    /* committee = get_crosslink_committee(state, data.target.epoch, data.crosslink.shard)
-    assert len(attestation.aggregation_bits) == len(attestation.custody_bits) == len(committee) */
+    /* committee = get_beacon_committee(state, data.slot, data.index)
+    assert len(attestation.aggregation_bits) == len(committee) */
     List<ValidatorIndex> committee =
-        get_crosslink_committee(state, data.getTarget().getEpoch(), data.getCrosslink().getShard());
-    if (attestation.getAggregationBits().size() != attestation.getCustodyBits().size()
-        || attestation.getAggregationBits().size() != committee.size()) {
+        get_beacon_committee(state, data.getSlot(), data.getIndex());
+    if (attestation.getAggregationBits().size() != committee.size()) {
       return false;
     }
 
@@ -265,32 +253,11 @@ public interface BlockProcessing extends HelperFunction {
     boolean is_ffg_data_correct;
     if (data.getTarget().getEpoch().equals(get_current_epoch(state))) {
       is_ffg_data_correct = data.getSource().equals(state.getCurrentJustifiedCheckpoint());
-      parent_crosslink = state.getCurrentCrosslinks().get(data.getCrosslink().getShard());
     } else {
       is_ffg_data_correct = data.getSource().equals(state.getPreviousJustifiedCheckpoint());
-      parent_crosslink = state.getPreviousCrosslinks().get(data.getCrosslink().getShard());
     }
 
     if (!is_ffg_data_correct) {
-      return false;
-    }
-
-    /*  assert data.crosslink.parent_root == hash_tree_root(parent_crosslink)
-        assert data.crosslink.start_epoch == parent_crosslink.end_epoch
-        assert data.crosslink.end_epoch == min(data.target.epoch, parent_crosslink.end_epoch + MAX_EPOCHS_PER_CROSSLINK)
-        assert data.crosslink.data_root == Hash()  # [to be removed in phase 1] */
-    if (!data.getCrosslink().getParentRoot().equals(hash_tree_root(parent_crosslink))) {
-      return false;
-    }
-    if (!data.getCrosslink().getStartEpoch().equals(parent_crosslink.getEndEpoch())) {
-      return false;
-    }
-    if (!data.getCrosslink().getEndEpoch().equals(UInt64s.min(
-        data.getTarget().getEpoch(),
-        parent_crosslink.getEndEpoch().plus(getConstants().getMaxEpochsPerCrosslink())))) {
-      return false;
-    }
-    if (!data.getCrosslink().getDataRoot().equals(Hash32.ZERO)) {
       return false;
     }
 
@@ -304,17 +271,16 @@ public interface BlockProcessing extends HelperFunction {
   */
   default void process_attestation(MutableBeaconState state, Attestation attestation) {
     AttestationData data = attestation.getData();
-    SlotNumber attestation_slot = get_attestation_data_slot(state, data);
 
     /*  pending_attestation = PendingAttestation(
         data=data,
         aggregation_bitfield=attestation.aggregation_bitfield,
-        inclusion_delay=state.slot - attestation_slot,
+        inclusion_delay=state.slot - data.slot,
         proposer_index=get_beacon_proposer_index(state)) */
     PendingAttestation pending_attestation = new PendingAttestation(
         attestation.getAggregationBits(),
         data,
-        state.getSlot().minus(attestation_slot),
+        state.getSlot().minus(data.getSlot()),
         get_beacon_proposer_index(state),
         getConstants());
     if (data.getTarget().getEpoch().equals(get_current_epoch(state))) {

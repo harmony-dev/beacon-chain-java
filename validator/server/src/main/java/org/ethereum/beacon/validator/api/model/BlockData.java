@@ -230,11 +230,8 @@ public class BlockData {
     }
 
     public static class IndexedAttestationData {
-      @JsonProperty("custody_bit_0_indices")
-      private List<Long> custodyBit0Indices;
-
-      @JsonProperty("custody_bit_1_indices")
-      private List<Long> custodyBit1Indices;
+      @JsonProperty("attesting_indices")
+      private List<Long> attestingIndices;
 
       @JsonProperty("data")
       private AttestationData.AttestationDataContainer data;
@@ -250,20 +247,12 @@ public class BlockData {
         this.signature = signature;
       }
 
-      public List<Long> getCustodyBit0Indices() {
-        return custodyBit0Indices;
+      public List<Long> getAttestingIndices() {
+        return attestingIndices;
       }
 
-      public void setCustodyBit0Indices(List<Long> custodyBit0Indices) {
-        this.custodyBit0Indices = custodyBit0Indices;
-      }
-
-      public List<Long> getCustodyBit1Indices() {
-        return custodyBit1Indices;
-      }
-
-      public void setCustodyBit1Indices(List<Long> custodyBit1Indices) {
-        this.custodyBit1Indices = custodyBit1Indices;
+      public void setAttestingIndices(List<Long> attestingIndices) {
+        this.attestingIndices = attestingIndices;
       }
 
       public AttestationData.AttestationDataContainer getData() {
@@ -487,9 +476,6 @@ public class BlockData {
 
     private AttestationDataContainer data;
 
-    @JsonProperty("custody_bits")
-    private String custodyBits;
-
     private String signature;
 
     @JsonProperty("inclusion_delay")
@@ -522,14 +508,6 @@ public class BlockData {
       this.data = data;
     }
 
-    public String getCustodyBits() {
-      return custodyBits;
-    }
-
-    public void setCustodyBits(String custodyBits) {
-      this.custodyBits = custodyBits;
-    }
-
     public String getSignature() {
       return signature;
     }
@@ -547,6 +525,10 @@ public class BlockData {
     }
 
     public static class AttestationDataContainer {
+      private Long slot;
+
+      private Long index;
+
       @JsonProperty("beacon_block_root")
       private String beaconBlockRoot;
 
@@ -554,7 +536,21 @@ public class BlockData {
 
       private CheckpointData target;
 
-      private CrossLinkData crosslink;
+      public Long getSlot() {
+        return slot;
+      }
+
+      public void setSlot(Long slot) {
+        this.slot = slot;
+      }
+
+      public Long getIndex() {
+        return index;
+      }
+
+      public void setIndex(Long index) {
+        this.index = index;
+      }
 
       public String getBeaconBlockRoot() {
         return beaconBlockRoot;
@@ -578,14 +574,6 @@ public class BlockData {
 
       public void setTarget(CheckpointData target) {
         this.target = target;
-      }
-
-      public CrossLinkData getCrosslink() {
-        return crosslink;
-      }
-
-      public void setCrosslink(CrossLinkData crosslink) {
-        this.crosslink = crosslink;
       }
     }
   }

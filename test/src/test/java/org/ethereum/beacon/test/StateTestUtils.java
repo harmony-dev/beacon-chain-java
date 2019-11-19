@@ -23,6 +23,7 @@ import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.CommitteeIndex;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ShardNumber;
@@ -58,12 +59,10 @@ public abstract class StateTestUtils {
         blockData.getBody().getAttestations()) {
       AttestationData attestationData1 = parseAttestationData(attestationData.getData());
       BytesValue aggValue = BytesValue.fromHexString(attestationData.getAggregationBits());
-      BytesValue cusValue = BytesValue.fromHexString(attestationData.getCustodyBits());
       Attestation attestation =
           new Attestation(
               Bitlist.of(aggValue, constants.getMaxValidatorsPerCommittee().longValue()),
               attestationData1,
-              Bitlist.of(cusValue, constants.getMaxValidatorsPerCommittee().longValue()),
               BLSSignature.wrap(Bytes96.fromHexString(attestationData.getSignature())),
               constants);
       attestations.add(attestation);
@@ -153,8 +152,7 @@ public abstract class StateTestUtils {
   public static IndexedAttestation parseSlashableAttestation(
       BlockData.BlockBodyData.IndexedAttestationData data, SpecConstants specConstants) {
     return new IndexedAttestation(
-        data.getCustodyBit0Indices().stream().map(ValidatorIndex::of).collect(Collectors.toList()),
-        data.getCustodyBit1Indices().stream().map(ValidatorIndex::of).collect(Collectors.toList()),
+        data.getAttestingIndices().stream().map(ValidatorIndex::of).collect(Collectors.toList()),
         parseAttestationData(data.getData()),
         data.getAggregateSignature() != null
             ? BLSSignature.wrap(Bytes96.fromHexString(data.getAggregateSignature()))
@@ -306,10 +304,11 @@ public abstract class StateTestUtils {
 
   public static AttestationData parseAttestationData(BeaconStateData.AttestationData.AttestationDataContainer data) {
     return new AttestationData(
+        SlotNumber.of(data.getSlot()),
+        CommitteeIndex.of(data.getIndex()),
         Hash32.fromHexString(data.getBeaconBlockRoot()),
         parseCheckpoint(data.getSource()),
-        parseCheckpoint(data.getTarget()),
-        parseCrosslink(data.getCrosslink()));
+        parseCheckpoint(data.getTarget()));
   }
 
   public static Transfer parseTransfer(BlockData.BlockBodyData.TransferData data) {

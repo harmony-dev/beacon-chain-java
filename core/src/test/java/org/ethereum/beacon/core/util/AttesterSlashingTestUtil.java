@@ -24,12 +24,10 @@ public abstract class AttesterSlashingTestUtil {
     return new AttesterSlashing(
         new IndexedAttestation(
             Collections.emptyList(),
-            Collections.emptyList(),
             AttestationTestUtil.createRandomAttestationData(random),
             BLSSignature.wrap(Bytes96.random(random)),
             specConstants),
         new IndexedAttestation(
-            Collections.emptyList(),
             Collections.emptyList(),
             AttestationTestUtil.createRandomAttestationData(random),
             BLSSignature.wrap(Bytes96.random(random)),

@@ -6,13 +6,10 @@ import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
-import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustodyBit;
-import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.spec.SignatureDomains;
 import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.types.BLSSignature;
-import org.ethereum.beacon.core.types.EpochNumber;
-import org.ethereum.beacon.core.types.ShardNumber;
+import org.ethereum.beacon.core.types.CommitteeIndex;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.validator.BeaconAttestationSigner;
 import org.ethereum.beacon.validator.MessageSignerTestUtil;
@@ -22,7 +19,6 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.uint.UInt64;
-import tech.pegasys.artemis.util.uint.UInt64s;
 
 import java.util.List;
 import java.util.Random;
@@ -50,8 +46,8 @@ public class BeaconChainAttesterTest {
     ValidatorIndex validatorIndex = committee.get(indexIntoCommittee);
     Hash32 targetRoot = Hash32.random(random);
     Hash32 sourceRoot = Hash32.random(random);
-    ShardNumber shard =
-        ShardNumber.of(UInt64.random(random).modulo(spec.getConstants().getShardCount()));
+    CommitteeIndex committeeIndex =
+        new CommitteeIndex(UInt64.random(random).modulo(spec.getConstants().getShardCount()));
 
     BeaconState state = initiallyObservedState.getLatestSlotState();
     Mockito.doReturn(committee).when(attester).getCommittee(any(), any());
@@ -65,30 +61,19 @@ public class BeaconChainAttesterTest {
     Attestation attestation =
         attester.attest(
             validatorIndex,
-            shard,
+            committeeIndex,
             initiallyObservedState.getLatestSlotState(),
             initiallyObservedState.getHead());
 
     AttestationData data = attestation.getData();
 
     Assert.assertEquals(spec.get_current_epoch(state), data.getTarget().getEpoch());
-    Assert.assertEquals(shard, data.getCrosslink().getShard());
+    Assert.assertEquals(committeeIndex, data.getIndex());
     Assert.assertEquals(
         spec.signing_root(initiallyObservedState.getHead()), data.getBeaconBlockRoot());
     Assert.assertEquals(
         new Checkpoint(spec.get_current_epoch(state), targetRoot), data.getTarget());
 
-    Hash32 dataRoot = Hash32.ZERO; // Note: This is a stub for phase 0.
-    Crosslink parentCrosslink = state.getCurrentCrosslinks().get(shard);
-    Hash32 parentRoot = spec.hash_tree_root(parentCrosslink);
-    EpochNumber startEpoch = parentCrosslink.getEndEpoch();
-    EpochNumber endEpoch =
-        UInt64s.min(
-            spec.compute_epoch_of_slot(state.getSlot()),
-            parentCrosslink.getEndEpoch().plus(spec.getConstants().getMaxEpochsPerCrosslink()));
-
-    Assert.assertEquals(
-        new Crosslink(shard, parentRoot, startEpoch, endEpoch, dataRoot), data.getCrosslink());
     Assert.assertEquals(
         new Checkpoint(state.getCurrentJustifiedCheckpoint().getEpoch(), sourceRoot),
         data.getSource());
@@ -96,9 +81,6 @@ public class BeaconChainAttesterTest {
     int bitfieldSize = committee.size();
 
     Assert.assertEquals(bitfieldSize, attestation.getAggregationBits().size());
-    Assert.assertEquals(bitfieldSize, attestation.getCustodyBits().size());
-
-    Assert.assertTrue(attestation.getCustodyBits().isZero());
 
     byte aByte = attestation.getAggregationBits().get(indexIntoCommittee / 8);
     Assert.assertEquals(1, ((aByte & 0xFF) >>> (indexIntoCommittee % 8)));
@@ -108,7 +90,7 @@ public class BeaconChainAttesterTest {
 
     BLSSignature expectedSignature =
         signer.sign(
-            spec.hash_tree_root(new AttestationDataAndCustodyBit(data, false)),
+            spec.hash_tree_root(data),
             spec.get_domain(state, SignatureDomains.ATTESTATION));
 
     Assert.assertEquals(expectedSignature, signedAttestation.getSignature());

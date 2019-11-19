@@ -27,6 +27,7 @@ import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.CommitteeIndex;
 import tech.pegasys.artemis.util.collections.Bitlist;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
@@ -55,10 +56,11 @@ public class TestDataFactory {
   public AttestationData createAttestationData() {
     AttestationData expected =
         new AttestationData(
+            new SlotNumber(0),
+            new CommitteeIndex(0),
             Hashes.sha256(BytesValue.fromHexString("aa")),
             new Checkpoint(EpochNumber.ZERO, Hashes.sha256(BytesValue.fromHexString("bb"))),
-            new Checkpoint(EpochNumber.of(123), Hashes.sha256(BytesValue.fromHexString("cc"))),
-            Crosslink.EMPTY);
+            new Checkpoint(EpochNumber.of(123), Hashes.sha256(BytesValue.fromHexString("cc"))));
 
     return expected;
   }
@@ -73,7 +75,6 @@ public class TestDataFactory {
         new Attestation(
             Bitlist.of(someValue.size() * 8, someValue, specConstants.getMaxValidatorsPerCommittee().getValue()),
             attestationData,
-            Bitlist.of(8, BytesValue.fromHexString("bb"),  specConstants.getMaxValidatorsPerCommittee().getValue()),
             BLSSignature.wrap(Bytes96.fromHexString("cc")),
             specConstants);
 
@@ -166,8 +167,7 @@ public class TestDataFactory {
 
   public IndexedAttestation createSlashableAttestation() {
     return new IndexedAttestation(
-        Arrays.asList(ValidatorIndex.of(234), ValidatorIndex.of(235)),
-        Arrays.asList(ValidatorIndex.of(678), ValidatorIndex.of(679)),
+        Arrays.asList(ValidatorIndex.of(234), ValidatorIndex.of(235), ValidatorIndex.of(678), ValidatorIndex.of(679)),
         createAttestationData(),
         BLSSignature.wrap(Bytes96.fromHexString("aa")),
         specConstants);

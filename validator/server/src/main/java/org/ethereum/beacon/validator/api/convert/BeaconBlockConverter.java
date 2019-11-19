@@ -19,6 +19,7 @@ import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.CommitteeIndex;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.ShardNumber;
@@ -60,7 +61,6 @@ public abstract class BeaconBlockConverter {
             a -> {
               BlockData.AttestationData attestation = new BlockData.AttestationData();
               attestation.setAggregationBits(a.getAggregationBits().toString());
-              attestation.setCustodyBits(a.getCustodyBits().toString());
               attestation.setData(presentAttestationData(a.getData()));
               attestation.setSignature(a.getSignature().toHexString());
               attestationDataList.add(attestation);
@@ -179,12 +179,8 @@ public abstract class BeaconBlockConverter {
       IndexedAttestation attestation) {
     BlockData.BlockBodyData.IndexedAttestationData indexedAttestation =
         new BlockData.BlockBodyData.IndexedAttestationData();
-    indexedAttestation.setCustodyBit0Indices(
-        attestation.getCustodyBit0Indices().stream()
-            .map(UInt64::longValue)
-            .collect(Collectors.toList()));
-    indexedAttestation.setCustodyBit1Indices(
-        attestation.getCustodyBit1Indices().stream()
+    indexedAttestation.setAttestingIndices(
+        attestation.getAttestingIndices().stream()
             .map(UInt64::longValue)
             .collect(Collectors.toList()));
     indexedAttestation.setData(presentAttestationData(attestation.getData()));
@@ -197,8 +193,9 @@ public abstract class BeaconBlockConverter {
       AttestationData data) {
     BlockData.AttestationData.AttestationDataContainer attestationData =
         new BlockData.AttestationData.AttestationDataContainer();
+    attestationData.setSlot(data.getSlot().getValue());
+    attestationData.setIndex(data.getIndex().getValue());
     attestationData.setBeaconBlockRoot(data.getBeaconBlockRoot().toString());
-    attestationData.setCrosslink(presentCrossLink(data.getCrosslink()));
     BlockData.CheckpointData source = new BlockData.CheckpointData();
     source.setEpoch(data.getSource().getEpoch().longValue());
     source.setRoot(data.getSource().getRoot().toString());
@@ -293,8 +290,7 @@ public abstract class BeaconBlockConverter {
   public static IndexedAttestation parseIndexedAttestation(
       BlockData.BlockBodyData.IndexedAttestationData data, SpecConstants constants) {
     return new IndexedAttestation(
-        data.getCustodyBit0Indices().stream().map(ValidatorIndex::of).collect(Collectors.toList()),
-        data.getCustodyBit1Indices().stream().map(ValidatorIndex::of).collect(Collectors.toList()),
+        data.getAttestingIndices().stream().map(ValidatorIndex::of).collect(Collectors.toList()),
         parseAttestationData(data.getData()),
         data.getAggregateSignature() != null
             ? BLSSignature.wrap(Bytes96.fromHexString(data.getAggregateSignature()))
@@ -333,14 +329,15 @@ public abstract class BeaconBlockConverter {
   public static AttestationData parseAttestationData(
       BlockData.AttestationData.AttestationDataContainer data) {
     return new AttestationData(
+        SlotNumber.of(data.getSlot()),
+        CommitteeIndex.of(data.getIndex()),
         Hash32.fromHexString(data.getBeaconBlockRoot()),
         new Checkpoint(
             EpochNumber.castFrom(UInt64.valueOf(data.getSource().getEpoch())),
             Hash32.fromHexString(data.getSource().getRoot())),
         new Checkpoint(
             EpochNumber.castFrom(UInt64.valueOf(data.getTarget().getEpoch())),
-            Hash32.fromHexString(data.getTarget().getRoot())),
-        parseCrossLinkData(data.getCrosslink()));
+            Hash32.fromHexString(data.getTarget().getRoot())));
   }
 
   public static Attestation parseAttestation(
@@ -348,7 +345,6 @@ public abstract class BeaconBlockConverter {
     return new Attestation(
         Bitlist.of(BytesValue.fromHexString(attestationData.getAggregationBits()), VARIABLE_SIZE),
         parseAttestationData((attestationData.getData())),
-        Bitlist.of(BytesValue.fromHexString(attestationData.getCustodyBits()), VARIABLE_SIZE),
         BLSSignature.wrap(Bytes96.fromHexString(attestationData.getSignature())),
         specConstants);
   }

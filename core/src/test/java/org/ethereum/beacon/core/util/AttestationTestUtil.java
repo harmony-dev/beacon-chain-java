@@ -3,9 +3,10 @@ package org.ethereum.beacon.core.util;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
-import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.CommitteeIndex;
+import org.ethereum.beacon.core.types.SlotNumber;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.collections.Bitlist;
@@ -28,17 +29,17 @@ public abstract class AttestationTestUtil {
     return new Attestation(
         Bitlist.of(64),
         createRandomAttestationData(random),
-        Bitlist.of(64),
         BLSSignature.wrap(Bytes96.random(random)),
         BeaconChainSpec.DEFAULT_CONSTANTS);
   }
 
   public static AttestationData createRandomAttestationData(Random random) {
     return new AttestationData(
+        new SlotNumber(0),
+        new CommitteeIndex(0),
         Hash32.random(random),
         new Checkpoint(BeaconChainSpec.DEFAULT_CONSTANTS.getGenesisEpoch(), Hash32.random(random)),
         new Checkpoint(
-            BeaconChainSpec.DEFAULT_CONSTANTS.getGenesisEpoch().increment(), Hash32.random(random)),
-        Crosslink.EMPTY);
+            BeaconChainSpec.DEFAULT_CONSTANTS.getGenesisEpoch().increment(), Hash32.random(random)));
   }
 }

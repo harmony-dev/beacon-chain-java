@@ -61,8 +61,6 @@ public class PendingOperationsState implements PendingOperations {
             .map(Attestation::getAggregationBits)
             .reduce(Bitlist::or)
             .get();
-    Bitlist custody =
-        attestations.stream().map(Attestation::getCustodyBits).reduce(Bitlist::or).get();
     BLS381.Signature aggregatedSignature =
         BLS381.Signature.aggregate(
             attestations.stream()
@@ -72,7 +70,7 @@ public class PendingOperationsState implements PendingOperations {
     BLSSignature aggSign = BLSSignature.wrap(aggregatedSignature.getEncoded());
 
     return new Attestation(
-        participants, attestations.get(0).getData(), custody, aggSign, specConstants);
+        participants, attestations.get(0).getData(), aggSign, specConstants);
   }
 
   @Override

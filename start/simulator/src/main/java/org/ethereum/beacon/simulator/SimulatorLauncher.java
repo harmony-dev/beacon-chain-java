@@ -328,11 +328,9 @@ public class SimulatorLauncher implements Runnable {
         );
         logger.info("  Validators rewarded:"
             + getValidators(" attestations: ", summary.getAttestationDeltas()[0])
-            + getValidators(" crosslinks: ", summary.getCrosslinkDeltas()[0])
         );
         logger.info("  Validators penalized:"
             + getValidators(" attestations: ", summary.getAttestationDeltas()[1])
-            + getValidators(" crosslinks: ", summary.getCrosslinkDeltas()[1])
         );
       }
 
