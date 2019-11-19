@@ -62,9 +62,8 @@ public class DiscoveryInteropTest {
 
     // 3) Expect standard 1 => 2 dialog
     CountDownLatch randomSent1to2 = new CountDownLatch(1);
-    CountDownLatch whoareyouSent2to1 = new CountDownLatch(1);
     CountDownLatch authPacketSent1to2 = new CountDownLatch(1);
-    CountDownLatch nodesSent2to1 = new CountDownLatch(1);
+    CountDownLatch nodesReceivedAt1 = new CountDownLatch(1);
 
     Flux.from(discoveryManager1.getOutgoingMessages())
         .map(p -> new UnknownPacket(p.getPacket().getBytes()))
@@ -81,8 +80,6 @@ public class DiscoveryInteropTest {
                     networkPacket.getAuthHeaderMessagePacket();
                 System.out.println("1 => 2: " + authHeaderMessagePacket);
                 authPacketSent1to2.countDown();
-              } else {
-                throw new RuntimeException("Not expected!");
               }
             });
 
@@ -90,16 +87,17 @@ public class DiscoveryInteropTest {
 
     // 4) fire 1 to 2 dialog
     discoveryManager1.start();
-    discoveryManager1.executeTask(nodeRecord2, TaskType.FINDNODE);
+    int distance = Functions.logDistance(nodeRecord1.getNodeId(), nodeRecord2.getNodeId());
+    discoveryManager1.findNodes(nodeRecord2, distance);
 
     assert randomSent1to2.await(1, TimeUnit.SECONDS);
     //    assert whoareyouSent2to1.await(1, TimeUnit.SECONDS);
     //    int distance1To2 = Functions.logDistance(nodeRecord1.getNodeId(),
     // nodeRecord2.getNodeId());
     //    assertFalse(nodeBucketStorage1.get(distance1To2).isPresent());
-    //    assert authPacketSent1to2.await(1, TimeUnit.SECONDS);
+        assert authPacketSent1to2.await(1, TimeUnit.SECONDS);
     //    assert nodesSent2to1.await(1, TimeUnit.SECONDS);
-    Thread.sleep(1500);
+    Thread.sleep(5000);
     // 1 sent findnodes to 2, received only (2) in answer, because 3 is not checked
     // 1 added 2 to its nodeBuckets, because its now checked, but not before
     //    NodeBucket bucketAt1With2 = nodeBucketStorage1.get(distance1To2).get();

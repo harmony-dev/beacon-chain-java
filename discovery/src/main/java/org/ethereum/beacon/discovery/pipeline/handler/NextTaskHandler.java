@@ -10,6 +10,8 @@ import org.ethereum.beacon.discovery.pipeline.EnvelopeHandler;
 import org.ethereum.beacon.discovery.pipeline.Field;
 import org.ethereum.beacon.discovery.pipeline.HandlerUtil;
 import org.ethereum.beacon.discovery.pipeline.Pipeline;
+import org.ethereum.beacon.discovery.pipeline.info.GeneralRequestInfo;
+import org.ethereum.beacon.discovery.pipeline.info.RequestInfo;
 import org.ethereum.beacon.discovery.task.TaskMessageFactory;
 import org.ethereum.beacon.discovery.task.TaskStatus;
 import org.ethereum.beacon.schedulers.Scheduler;
@@ -57,13 +59,13 @@ public class NextTaskHandler implements EnvelopeHandler {
                 "Envelope %s in NextTaskHandler, requirements are satisfied!", envelope.getId()));
 
     NodeSession session = (NodeSession) envelope.get(Field.SESSION);
-    Optional<NodeSession.RequestInfo> requestInfoOpt = session.getFirstAwaitRequestInfo();
+    Optional<RequestInfo> requestInfoOpt = session.getFirstAwaitRequestInfo();
     if (!requestInfoOpt.isPresent()) {
       logger.trace(() -> String.format("Envelope %s: no awaiting requests", envelope.getId()));
       return;
     }
 
-    NodeSession.RequestInfo requestInfo = requestInfoOpt.get();
+    RequestInfo requestInfo = requestInfoOpt.get();
     logger.trace(
         () ->
             String.format(
@@ -84,8 +86,8 @@ public class NextTaskHandler implements EnvelopeHandler {
       MessagePacket messagePacket =
           TaskMessageFactory.createPacketFromRequest(requestInfo, authTag, session);
       session.sendOutgoing(messagePacket);
-      NodeSession.RequestInfo sentRequestInfo =
-          new NodeSession.GeneralRequestInfo(
+      RequestInfo sentRequestInfo =
+          new GeneralRequestInfo(
               requestInfo.getTaskType(),
               TaskStatus.SENT,
               requestInfo.getRequestId(),

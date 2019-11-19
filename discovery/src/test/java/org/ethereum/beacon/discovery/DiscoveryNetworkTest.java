@@ -11,7 +11,6 @@ import org.ethereum.beacon.discovery.storage.NodeBucket;
 import org.ethereum.beacon.discovery.storage.NodeBucketStorage;
 import org.ethereum.beacon.discovery.storage.NodeTableStorage;
 import org.ethereum.beacon.discovery.storage.NodeTableStorageFactoryImpl;
-import org.ethereum.beacon.discovery.task.TaskType;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.javatuples.Pair;
 import org.junit.Test;
@@ -129,7 +128,7 @@ public class DiscoveryNetworkTest {
     // 4) fire 1 to 2 dialog
     discoveryManager1.start();
     discoveryManager2.start();
-    discoveryManager1.executeTask(nodeRecord2, TaskType.FINDNODE);
+    discoveryManager1.findNodes(nodeRecord2, 0);
 
     assert randomSent1to2.await(1, TimeUnit.SECONDS);
     assert whoareyouSent2to1.await(1, TimeUnit.SECONDS);

@@ -4,11 +4,13 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
 import org.ethereum.beacon.discovery.packet.Packet;
+import org.ethereum.beacon.discovery.pipeline.info.RequestInfo;
+import org.ethereum.beacon.discovery.pipeline.info.RequestInfoFactory;
 import org.ethereum.beacon.discovery.storage.AuthTagRepository;
 import org.ethereum.beacon.discovery.storage.NodeBucket;
 import org.ethereum.beacon.discovery.storage.NodeBucketStorage;
 import org.ethereum.beacon.discovery.storage.NodeTable;
-import org.ethereum.beacon.discovery.task.TaskStatus;
+import org.ethereum.beacon.discovery.task.TaskOptions;
 import org.ethereum.beacon.discovery.task.TaskType;
 import org.ethereum.beacon.util.ExpirationScheduler;
 import tech.pegasys.artemis.util.bytes.Bytes32;
@@ -109,16 +111,25 @@ public class NodeSession {
    * saved state in all circumstances. The easiest to implement is a random number.
    *
    * @param taskType Type of task, clarifies starting and reply message types
-   * @param future Future to be fired when task is succcessfully completed or exceptionally break
+   * @param taskOptions Task options
+   * @param future Future to be fired when task is successfully completed or exceptionally break
    *     when its failed
    * @return info bundle.
    */
   public synchronized RequestInfo createNextRequest(
-      TaskType taskType, CompletableFuture<Void> future) {
+      TaskType taskType, TaskOptions taskOptions, CompletableFuture<Void> future) {
     byte[] requestId = new byte[REQUEST_ID_SIZE];
     rnd.nextBytes(requestId);
     BytesValue wrappedId = BytesValue.wrap(requestId);
-    RequestInfo requestInfo = new GeneralRequestInfo(taskType, AWAIT, wrappedId, future);
+    if (taskOptions.isLivenessUpdate()) {
+      future.whenComplete(
+          (aVoid, throwable) -> {
+            if (throwable == null) {
+              updateLiveness();
+            }
+          });
+    }
+    RequestInfo requestInfo = RequestInfoFactory.create(taskType, wrappedId, taskOptions, future);
     requestIdStatuses.put(wrappedId, requestInfo);
     requestExpirationScheduler.put(
         wrappedId,
@@ -305,65 +316,5 @@ public class NodeSession {
     WHOAREYOU_SENT, // other side is initiator, we've sent whoareyou in response
     RANDOM_PACKET_SENT, // our node is initiator, we've sent random packet
     AUTHENTICATED
-  }
-
-  public interface RequestInfo {
-    TaskType getTaskType();
-
-    TaskStatus getTaskStatus();
-
-    BytesValue getRequestId();
-
-    CompletableFuture<Void> getFuture();
-  }
-
-  public static class GeneralRequestInfo implements RequestInfo {
-    private final TaskType taskType;
-    private final TaskStatus taskStatus;
-    private final BytesValue requestId;
-    private final CompletableFuture<Void> future;
-
-    public GeneralRequestInfo(
-        TaskType taskType,
-        TaskStatus taskStatus,
-        BytesValue requestId,
-        CompletableFuture<Void> future) {
-      this.taskType = taskType;
-      this.taskStatus = taskStatus;
-      this.requestId = requestId;
-      this.future = future;
-    }
-
-    @Override
-    public TaskType getTaskType() {
-      return taskType;
-    }
-
-    @Override
-    public TaskStatus getTaskStatus() {
-      return taskStatus;
-    }
-
-    @Override
-    public BytesValue getRequestId() {
-      return requestId;
-    }
-
-    @Override
-    public CompletableFuture<Void> getFuture() {
-      return future;
-    }
-
-    @Override
-    public String toString() {
-      return "GeneralRequestInfo{"
-          + "taskType="
-          + taskType
-          + ", taskStatus="
-          + taskStatus
-          + ", requestId="
-          + requestId
-          + '}';
-    }
   }
 }

@@ -127,26 +127,26 @@ public class DiscoveryManagerImpl implements DiscoveryManager {
     discoveryServer.stop();
   }
 
-  public CompletableFuture<Void> executeTask(NodeRecord nodeRecord, TaskType taskType) {
-    return executeTaskImpl(nodeRecord, taskType, true);
-  }
-
-  public CompletableFuture<Void> executeTaskImpl(
-      NodeRecord nodeRecord, TaskType taskType, boolean livenessUpdate) {
+  private CompletableFuture<Void> executeTaskImpl(
+      NodeRecord nodeRecord, TaskType taskType, TaskOptions taskOptions) {
     Envelope envelope = new Envelope();
     envelope.put(Field.NODE, nodeRecord);
     CompletableFuture<Void> future = new CompletableFuture<>();
     envelope.put(Field.TASK, taskType);
     envelope.put(Field.FUTURE, future);
-    envelope.put(Field.TASK_OPTIONS, new TaskOptions(livenessUpdate));
+    envelope.put(Field.TASK_OPTIONS, taskOptions);
     outgoingPipeline.push(envelope);
     return future;
   }
 
   @Override
-  public CompletableFuture<Void> executeTaskWithoutLivenessUpdate(
-      NodeRecord nodeRecord, TaskType taskType) {
-    return executeTaskImpl(nodeRecord, taskType, false);
+  public CompletableFuture<Void> findNodes(NodeRecord nodeRecord, int distance) {
+    return executeTaskImpl(nodeRecord, TaskType.FINDNODE, new TaskOptions(true, distance));
+  }
+
+  @Override
+  public CompletableFuture<Void> ping(NodeRecord nodeRecord) {
+    return executeTaskImpl(nodeRecord, TaskType.PING, new TaskOptions(true));
   }
 
   @VisibleForTesting

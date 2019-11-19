@@ -63,9 +63,10 @@ public class AuthHeaderMessagePacketHandler implements EnvelopeHandler {
               session.getStaticNodeKey(),
               ephemeralPubKey,
               session.getIdNonce());
-      session.setInitiatorKey(keys.getInitiatorKey());
-      session.setRecipientKey(keys.getRecipientKey());
-      packet.decodeMessage(keys.getInitiatorKey(), keys.getAuthResponseKey(), nodeRecordFactory);
+      // Swap keys because we are not initiator, other side is
+      session.setInitiatorKey(keys.getRecipientKey());
+      session.setRecipientKey(keys.getInitiatorKey());
+      packet.decodeMessage(session.getRecipientKey(), keys.getAuthResponseKey(), nodeRecordFactory);
       packet.verify(
           session.getIdNonce(), (BytesValue) session.getNodeRecord().get(FIELD_PKEY_SECP256K1));
       envelope.put(Field.MESSAGE, packet.getMessage());

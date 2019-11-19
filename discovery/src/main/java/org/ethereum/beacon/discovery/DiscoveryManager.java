@@ -1,7 +1,6 @@
 package org.ethereum.beacon.discovery;
 
 import org.ethereum.beacon.discovery.enr.NodeRecord;
-import org.ethereum.beacon.discovery.task.TaskType;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -15,19 +14,21 @@ public interface DiscoveryManager {
   void stop();
 
   /**
-   * Initiates task of task type with node `nodeRecord`
+   * Initiates FINDNODE with node `nodeRecord`
    *
    * @param nodeRecord Ethereum Node record
-   * @param taskType Task type
+   * @param distance Distance to search for
    * @return Future which is fired when reply is received or fails in timeout/not successful
    *     handshake/bad message exchange.
    */
-  CompletableFuture<Void> executeTask(NodeRecord nodeRecord, TaskType taskType);
+  CompletableFuture<Void> findNodes(NodeRecord nodeRecord, int distance);
 
   /**
-   * Same as {@link #executeTask(NodeRecord, TaskType)} but doesn't update node liveness status in
-   * successful case
+   * Initiates PING with node `nodeRecord`
+   *
+   * @param nodeRecord Ethereum Node record
+   * @return Future which is fired when reply is received or fails in timeout/not successful
+   *     handshake/bad message exchange.
    */
-  CompletableFuture<Void> executeTaskWithoutLivenessUpdate(
-      NodeRecord nodeRecord, TaskType taskType);
+  CompletableFuture<Void> ping(NodeRecord nodeRecord);
 }

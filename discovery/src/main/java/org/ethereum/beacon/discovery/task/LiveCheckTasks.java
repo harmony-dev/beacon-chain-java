@@ -24,8 +24,7 @@ public class LiveCheckTasks {
   private final Set<Bytes32> currentTasks = Sets.newConcurrentHashSet();
   private final ExpirationScheduler<Bytes32> taskTimeouts;
 
-  public LiveCheckTasks(
-      DiscoveryManager discoveryManager, Scheduler scheduler, Duration timeout) {
+  public LiveCheckTasks(DiscoveryManager discoveryManager, Scheduler scheduler, Duration timeout) {
     this.discoveryManager = discoveryManager;
     this.scheduler = scheduler;
     this.taskTimeouts =
@@ -42,8 +41,7 @@ public class LiveCheckTasks {
 
     scheduler.execute(
         () -> {
-          CompletableFuture<Void> retry =
-              discoveryManager.executeTaskWithoutLivenessUpdate(nodeRecordInfo.getNode(), TaskType.PING);
+          CompletableFuture<Void> retry = discoveryManager.ping(nodeRecordInfo.getNode());
           taskTimeouts.put(
               nodeRecordInfo.getNode().getNodeId(),
               () ->

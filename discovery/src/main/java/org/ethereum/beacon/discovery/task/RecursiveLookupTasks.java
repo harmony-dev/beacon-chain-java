@@ -19,6 +19,7 @@ import java.util.concurrent.TimeUnit;
  * received.
  */
 public class RecursiveLookupTasks {
+  private static final int DEFAULT_DISTANCE = 100;
   private final Scheduler scheduler;
   private final DiscoveryManager discoveryManager;
   private final Set<Bytes32> currentTasks = Sets.newConcurrentHashSet();
@@ -43,11 +44,12 @@ public class RecursiveLookupTasks {
     scheduler.execute(
         () -> {
           CompletableFuture<Void> retry =
-              discoveryManager.executeTask(nodeRecordInfo.getNode(), TaskType.FINDNODE);
+              discoveryManager.findNodes(nodeRecordInfo.getNode(), DEFAULT_DISTANCE);
           taskTimeouts.put(
               nodeRecordInfo.getNode().getNodeId(),
               () ->
-                  retry.completeExceptionally(new RuntimeException("Timeout for node recursive lookup task")));
+                  retry.completeExceptionally(
+                      new RuntimeException("Timeout for node recursive lookup task")));
           retry.whenComplete(
               (aVoid, throwable) -> {
                 if (throwable != null) {

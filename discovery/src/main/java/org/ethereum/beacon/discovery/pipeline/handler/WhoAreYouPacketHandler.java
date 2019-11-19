@@ -14,6 +14,7 @@ import org.ethereum.beacon.discovery.pipeline.EnvelopeHandler;
 import org.ethereum.beacon.discovery.pipeline.Field;
 import org.ethereum.beacon.discovery.pipeline.HandlerUtil;
 import org.ethereum.beacon.discovery.pipeline.Pipeline;
+import org.ethereum.beacon.discovery.pipeline.info.RequestInfo;
 import org.ethereum.beacon.discovery.task.TaskMessageFactory;
 import org.ethereum.beacon.schedulers.Scheduler;
 import org.ethereum.beacon.util.Utils;
@@ -78,7 +79,7 @@ public class WhoAreYouPacketHandler implements EnvelopeHandler {
       session.setInitiatorKey(hkdfKeys.getInitiatorKey());
       session.setRecipientKey(hkdfKeys.getRecipientKey());
       BytesValue authResponseKey = hkdfKeys.getAuthResponseKey();
-      Optional<NodeSession.RequestInfo> requestInfoOpt = session.getFirstAwaitRequestInfo();
+      Optional<RequestInfo> requestInfoOpt = session.getFirstAwaitRequestInfo();
       final V5Message message =
           requestInfoOpt
               .map(requestInfo -> TaskMessageFactory.createMessageFromRequest(requestInfo, session))
@@ -91,7 +92,8 @@ public class WhoAreYouPacketHandler implements EnvelopeHandler {
                                   envelope.getId(), session)));
 
       BytesValue ephemeralPubKey =
-          BytesValue.wrap(Utils.extractBytesFromUnsignedBigInt(ephemeralKey.getPublicKey(), PUBKEY_SIZE));
+          BytesValue.wrap(
+              Utils.extractBytesFromUnsignedBigInt(ephemeralKey.getPublicKey(), PUBKEY_SIZE));
       AuthHeaderMessagePacket response =
           AuthHeaderMessagePacket.create(
               session.getHomeNodeId(),

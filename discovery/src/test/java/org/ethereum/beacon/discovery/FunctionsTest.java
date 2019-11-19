@@ -112,7 +112,7 @@ public class FunctionsTest {
 
     BytesValue message =
         BytesValue.wrap("discovery-id-nonce".getBytes()).concat(nonce).concat(ephemeralKey);
-    assert Functions.verifyECDSASignature(idNonceSig, message, pubKey);
+    assert Functions.verifyECDSASignature(idNonceSig, Functions.hash(message), pubKey);
   }
 
   @Test
@@ -135,6 +135,6 @@ public class FunctionsTest {
                 .getEncoded(true));
     BytesValue idNonceSig = AuthHeaderMessagePacket.signIdNonce(idNonce, privKey, ephemeralPubkey);
     assert Functions.verifyECDSASignature(
-        idNonceSig, createIdNonceMessage(idNonce, ephemeralPubkey), pubKey);
+        idNonceSig, Functions.hash(createIdNonceMessage(idNonce, ephemeralPubkey)), pubKey);
   }
 }

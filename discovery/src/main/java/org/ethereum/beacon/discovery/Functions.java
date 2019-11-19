@@ -12,6 +12,7 @@ import org.ethereum.beacon.crypto.Hashes;
 import org.ethereum.beacon.util.Utils;
 import org.web3j.crypto.ECDSASignature;
 import org.web3j.crypto.ECKeyPair;
+import org.web3j.crypto.Hash;
 import org.web3j.crypto.Sign;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.bytes.Bytes32s;
@@ -41,17 +42,20 @@ public class Functions {
     return Hashes.sha256(value);
   }
 
+  public static Bytes32 hashKeccak(BytesValue value) {
+    return Bytes32.wrap(Hash.sha3(value.extractArray()));
+  }
+
   /**
    * Creates a signature of message `x` using the given key.
    *
    * @param key private key
-   * @param x message, not hashed
+   * @param x message, hashed
    * @return ECDSA signature with properties merged together: r || s
    */
   public static BytesValue sign(BytesValue key, BytesValue x) {
-    BytesValue hash = Functions.hash(x);
     Sign.SignatureData signatureData =
-        Sign.signMessage(hash.extractArray(), ECKeyPair.create(key.extractArray()), false);
+        Sign.signMessage(x.extractArray(), ECKeyPair.create(key.extractArray()), false);
     Bytes32 r = Bytes32.wrap(signatureData.getR());
     Bytes32 s = Bytes32.wrap(signatureData.getS());
     return r.concat(s);
@@ -61,7 +65,7 @@ public class Functions {
    * Verifies that signature is made by signer
    *
    * @param signature Signature, ECDSA
-   * @param x message, not hashed
+   * @param x message, hashed
    * @param pubKey Public key of supposed signer, compressed, 33 bytes
    * @return whether `signature` reflects message `x` signed with `pubkey`
    */
@@ -74,9 +78,9 @@ public class Functions {
         new ECDSASignature(
             new BigInteger(1, signature.slice(0, 32).extractArray()),
             new BigInteger(1, signature.slice(32).extractArray()));
-    byte[] msgHash = Functions.hash(x).extractArray();
     for (int recId = 0; recId < 4; ++recId) {
-      BigInteger calculatedPubKey = Sign.recoverFromSignature(recId, ecdsaSignature, msgHash);
+      BigInteger calculatedPubKey =
+          Sign.recoverFromSignature(recId, ecdsaSignature, x.extractArray());
       if (calculatedPubKey == null) {
         continue;
       }

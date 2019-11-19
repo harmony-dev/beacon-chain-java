@@ -17,12 +17,11 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import static org.ethereum.beacon.discovery.NodeStatus.DEAD;
-import static org.ethereum.beacon.discovery.task.TaskMessageFactory.DEFAULT_DISTANCE;
 
 /** Manages recurrent node check task(s) */
 public class DiscoveryTaskManager {
-  private static final int LIVE_CHECK_DISTANCE = DEFAULT_DISTANCE;
-  private static final int RECURSIVE_LOOKUP_DISTANCE = DEFAULT_DISTANCE;
+  private static final int LIVE_CHECK_DISTANCE = 100;
+  private static final int RECURSIVE_LOOKUP_DISTANCE = 100;
   private static final int STATUS_EXPIRATION_SECONDS = 600;
   private static final int LIVE_CHECK_INTERVAL_SECONDS = 1;
   private static final int RECURSIVE_LOOKUP_INTERVAL_SECONDS = 10;

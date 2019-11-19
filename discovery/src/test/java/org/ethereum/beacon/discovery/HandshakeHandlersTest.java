@@ -18,6 +18,7 @@ import org.ethereum.beacon.discovery.storage.NodeBucketStorage;
 import org.ethereum.beacon.discovery.storage.NodeTableStorage;
 import org.ethereum.beacon.discovery.storage.NodeTableStorageFactoryImpl;
 import org.ethereum.beacon.discovery.task.TaskMessageFactory;
+import org.ethereum.beacon.discovery.task.TaskOptions;
 import org.ethereum.beacon.discovery.task.TaskType;
 import org.ethereum.beacon.schedulers.Scheduler;
 import org.ethereum.beacon.schedulers.Schedulers;
@@ -139,7 +140,7 @@ public class HandshakeHandlersTest {
         WhoAreYouPacket.create(nodePair1.getValue1().getNodeId(), authTag, idNonce, UInt64.ZERO));
     envelopeAt1From2.put(Field.SESSION, nodeSessionAt1For2);
     CompletableFuture<Void> future = new CompletableFuture<>();
-    nodeSessionAt1For2.createNextRequest(TaskType.FINDNODE, future);
+    nodeSessionAt1For2.createNextRequest(TaskType.FINDNODE, new TaskOptions(true), future);
     whoAreYouPacketHandlerNode1.handle(envelopeAt1From2);
     assert outgoing1PacketsSemaphore.tryAcquire(1, 1, TimeUnit.SECONDS);
     outgoing1PacketsSemaphore.release();
@@ -164,7 +165,7 @@ public class HandshakeHandlersTest {
             pingAuthTag,
             nodeSessionAt2For1,
             nodeSessionAt2For1
-                .createNextRequest(TaskType.PING, new CompletableFuture<>())
+                .createNextRequest(TaskType.PING, new TaskOptions(true), new CompletableFuture<>())
                 .getRequestId());
     envelopeAt1From2WithMessage.put(PACKET_MESSAGE, pingPacketFrom2To1);
     envelopeAt1From2WithMessage.put(SESSION, nodeSessionAt1For2);
@@ -182,7 +183,7 @@ public class HandshakeHandlersTest {
     Packet pongPacketFrom1To2 = outgoing1Packets[1];
     MessagePacket pongMessagePacketFrom1To2 = (MessagePacket) pongPacketFrom1To2;
     envelopeAt2From1WithMessage.put(PACKET_MESSAGE, pongMessagePacketFrom1To2);
-    envelopeAt2From1WithMessage.put(SESSION, nodeSessionAt1For2);
+    envelopeAt2From1WithMessage.put(SESSION, nodeSessionAt2For1);
     messagePacketHandler2.handle(envelopeAt2From1WithMessage);
     assertNull(envelopeAt2From1WithMessage.get(BAD_PACKET));
     assertNotNull(envelopeAt2From1WithMessage.get(MESSAGE));

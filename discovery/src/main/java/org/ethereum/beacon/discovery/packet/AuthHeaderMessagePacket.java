@@ -66,7 +66,8 @@ public class AuthHeaderMessagePacket extends AbstractPacket {
   public static BytesValue signIdNonce(
       BytesValue idNonce, BytesValue staticNodeKey, BytesValue ephemeralPubkey) {
     BytesValue signed =
-        Functions.sign(staticNodeKey, createIdNonceMessage(idNonce, ephemeralPubkey));
+        Functions.sign(
+            staticNodeKey, Functions.hash(createIdNonceMessage(idNonce, ephemeralPubkey)));
     return signed;
   }
 
@@ -121,7 +122,7 @@ public class AuthHeaderMessagePacket extends AbstractPacket {
     assert expectedIdNonce.equals(getIdNonce());
     assert Functions.verifyECDSASignature(
         getIdNonceSig(),
-        createIdNonceMessage(getIdNonce(), getEphemeralPubkey()),
+        Functions.hash(createIdNonceMessage(getIdNonce(), getEphemeralPubkey())),
         remoteNodePubKey);
   }
 
@@ -195,7 +196,7 @@ public class AuthHeaderMessagePacket extends AbstractPacket {
 
   /** Run {@link AuthHeaderMessagePacket#decodeEphemeralPubKey()} before second part */
   public void decodeMessage(
-      BytesValue initiatorKey, BytesValue authResponseKey, NodeRecordFactory nodeRecordFactory) {
+      BytesValue readKey, BytesValue authResponseKey, NodeRecordFactory nodeRecordFactory) {
     if (decodedEphemeralPubKeyPt == null) {
       throw new RuntimeException("Run decodeEphemeralPubKey() before");
     }
@@ -220,7 +221,7 @@ public class AuthHeaderMessagePacket extends AbstractPacket {
     blank.message =
         new DiscoveryV5Message(
             Functions.aesgcm_decrypt(
-                initiatorKey,
+                readKey,
                 decodedEphemeralPubKeyPt.authTag,
                 decodedEphemeralPubKeyPt.messageEncrypted,
                 decodedEphemeralPubKeyPt.tag));

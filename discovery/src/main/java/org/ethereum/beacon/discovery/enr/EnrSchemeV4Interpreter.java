@@ -3,7 +3,6 @@ package org.ethereum.beacon.discovery.enr;
 import org.bouncycastle.math.ec.ECPoint;
 import org.ethereum.beacon.discovery.Functions;
 import org.ethereum.beacon.util.Utils;
-import org.web3j.crypto.Hash;
 import org.web3j.rlp.RlpString;
 import tech.pegasys.artemis.util.bytes.Bytes16;
 import tech.pegasys.artemis.util.bytes.Bytes32;
@@ -52,7 +51,7 @@ public class EnrSchemeV4Interpreter implements EnrSchemeInterpreter {
     }
     BytesValue pubKey = (BytesValue) nodeRecord.get(FIELD_PKEY_SECP256K1); // compressed
     assert Functions.verifyECDSASignature(
-        nodeRecord.getSignature(), nodeRecord.serialize(false), pubKey);
+        nodeRecord.getSignature(), Functions.hashKeccak(nodeRecord.serialize(false)), pubKey);
   }
 
   @Override
@@ -71,7 +70,7 @@ public class EnrSchemeV4Interpreter implements EnrSchemeInterpreter {
     BytesValue yPart =
         Bytes32.wrap(
             Utils.extractBytesFromUnsignedBigInt(pudDestPoint.getYCoord().toBigInteger(), 32));
-    return Bytes32.wrap(Hash.sha3(xPart.concat(yPart).extractArray()));
+    return Functions.hashKeccak(xPart.concat(yPart));
   }
 
   @Override
@@ -86,7 +85,8 @@ public class EnrSchemeV4Interpreter implements EnrSchemeInterpreter {
   @Override
   public void sign(NodeRecord nodeRecord, Object signOptions) {
     BytesValue privateKey = (BytesValue) signOptions;
-    BytesValue signature = Functions.sign(privateKey, nodeRecord.serialize(false));
+    BytesValue signature =
+        Functions.sign(privateKey, Functions.hashKeccak(nodeRecord.serialize(false)));
     nodeRecord.setSignature(signature);
   }
 

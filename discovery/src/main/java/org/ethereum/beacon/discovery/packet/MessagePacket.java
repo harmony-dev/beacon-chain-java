@@ -73,7 +73,7 @@ public class MessagePacket extends AbstractPacket {
     }
   }
 
-  public void decode(BytesValue initiatorKey) {
+  public void decode(BytesValue readKey) {
     if (decoded != null) {
       return;
     }
@@ -86,7 +86,7 @@ public class MessagePacket extends AbstractPacket {
                 .getBytes());
     blank.message =
         new DiscoveryV5Message(
-            Functions.aesgcm_decrypt(initiatorKey, blank.authTag, getBytes().slice(45), blank.tag));
+            Functions.aesgcm_decrypt(readKey, blank.authTag, getBytes().slice(45), blank.tag));
     this.decoded = blank;
   }
 

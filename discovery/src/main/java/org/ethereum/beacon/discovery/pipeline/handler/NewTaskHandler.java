@@ -11,7 +11,6 @@ import org.ethereum.beacon.discovery.task.TaskOptions;
 import org.ethereum.beacon.discovery.task.TaskType;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.function.BiConsumer;
 
 /** Enqueues task in session for any task found in {@link Field#TASK} */
 public class NewTaskHandler implements EnvelopeHandler {
@@ -46,19 +45,8 @@ public class NewTaskHandler implements EnvelopeHandler {
     CompletableFuture<Void> completableFuture =
         (CompletableFuture<Void>) envelope.get(Field.FUTURE);
     TaskOptions taskOptions = (TaskOptions) envelope.get(Field.TASK_OPTIONS);
-    useTaskOptions(session, completableFuture, taskOptions);
-    session.createNextRequest(task, completableFuture);
+    session.createNextRequest(task, taskOptions, completableFuture);
     envelope.remove(Field.TASK);
     envelope.remove(Field.FUTURE);
-  }
-
-  private void useTaskOptions(NodeSession nodeSession, CompletableFuture<Void> completableFuture, TaskOptions taskOptions) {
-    if (taskOptions.isLivenessUpdate()) {
-      completableFuture.whenComplete((aVoid, throwable) -> {
-        if (throwable == null) {
-          nodeSession.updateLiveness();
-        }
-      });
-    }
   }
 }
