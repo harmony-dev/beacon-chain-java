@@ -41,11 +41,15 @@ public class Attestation {
       BLSSignature signature,
       SpecConstants specConstants) {
     this(
-        aggregationBits.maxSize() == VARIABLE_SIZE
-            ? aggregationBits.cappedCopy(specConstants.getMaxValidatorsPerCommittee().longValue())
-            : aggregationBits,
+        ensureMaxSize(aggregationBits, specConstants),
         data,
         signature);
+  }
+
+  private static Bitlist ensureMaxSize(Bitlist bits, SpecConstants specConstants) {
+    return bits.maxSize() == VARIABLE_SIZE
+        ? bits.cappedCopy(specConstants.getMaxValidatorsPerCommittee().longValue())
+        : bits;
   }
 
   private Attestation(
