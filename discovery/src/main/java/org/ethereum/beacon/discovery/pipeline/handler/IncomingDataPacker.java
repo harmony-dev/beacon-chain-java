@@ -30,9 +30,20 @@ public class IncomingDataPacker implements EnvelopeHandler {
                 envelope.getId()));
 
     UnknownPacket unknownPacket = new UnknownPacket((BytesValue) envelope.get(Field.INCOMING));
-    envelope.put(Field.PACKET_UNKNOWN, unknownPacket);
-    logger.trace(
-        () -> String.format("Incoming packet %s in envelope #%s", unknownPacket, envelope.getId()));
+    try {
+      unknownPacket.verify();
+      envelope.put(Field.PACKET_UNKNOWN, unknownPacket);
+      logger.trace(
+          () ->
+              String.format("Incoming packet %s in envelope #%s", unknownPacket, envelope.getId()));
+    } catch(Exception ex) {
+      envelope.put(Field.BAD_PACKET, unknownPacket);
+      envelope.put(Field.BAD_EXCEPTION, ex);
+      envelope.put(Field.BAD_MESSAGE, "Incoming packet verification not passed");
+      logger.trace(
+          () ->
+              String.format("Bad incoming packet %s in envelope #%s", unknownPacket, envelope.getId()));
+    }
     envelope.remove(Field.INCOMING);
   }
 }

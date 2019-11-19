@@ -7,6 +7,7 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
 
 /** Default packet form until its goal is known */
 public class UnknownPacket extends AbstractPacket {
+  private static final int MAX_SIZE = 1280;
 
   public UnknownPacket(BytesValue bytes) {
     super(bytes);
@@ -43,6 +44,12 @@ public class UnknownPacket extends AbstractPacket {
     assert !isWhoAreYouPacket(destNodeId);
     BytesValue xorTag = getBytes().slice(0, 32);
     return Bytes32s.xor(Hashes.sha256(destNodeId), Bytes32.wrap(xorTag, 0));
+  }
+
+  public void verify() {
+    if (getBytes().size() > MAX_SIZE) {
+      throw new RuntimeException(String.format("Packets should not exceed %s bytes", MAX_SIZE));
+    }
   }
 
   @Override
