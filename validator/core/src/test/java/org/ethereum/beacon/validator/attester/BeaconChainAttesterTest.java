@@ -6,7 +6,6 @@ import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
-import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustodyBit;
 import org.ethereum.beacon.core.spec.SignatureDomains;
 import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.types.BLSSignature;
@@ -91,7 +90,7 @@ public class BeaconChainAttesterTest {
 
     BLSSignature expectedSignature =
         signer.sign(
-            spec.hash_tree_root(new AttestationDataAndCustodyBit(data, false)),
+            spec.hash_tree_root(data),
             spec.get_domain(state, SignatureDomains.ATTESTATION));
 
     Assert.assertEquals(expectedSignature, signedAttestation.getSignature());
