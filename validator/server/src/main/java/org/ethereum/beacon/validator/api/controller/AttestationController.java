@@ -114,7 +114,7 @@ public class AttestationController extends SyncRestController {
       Bitlist bitlist =
           Bitlist.of(
               committee.size(),
-              indexedAttestation.getCustodyBit0Indices().listCopy().stream()
+              indexedAttestation.getAttestingIndices().listCopy().stream()
                   .map(ValidatorIndex::intValue)
                   .collect(Collectors.toList()),
               spec.getConstants().getMaxValidatorsPerCommittee().intValue());
@@ -122,7 +122,6 @@ public class AttestationController extends SyncRestController {
           new Attestation(
               bitlist,
               indexedAttestation.getData(),
-              bitlist,
               indexedAttestation.getSignature(),
               spec.getConstants());
       try {

@@ -29,7 +29,6 @@ public abstract class AttestationTestUtil {
     return new Attestation(
         Bitlist.of(64),
         createRandomAttestationData(random),
-        Bitlist.of(64),
         BLSSignature.wrap(Bytes96.random(random)),
         BeaconChainSpec.DEFAULT_CONSTANTS);
   }

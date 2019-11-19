@@ -195,25 +195,17 @@ public interface BlockProcessing extends HelperFunction {
     IndexedAttestation attestation1 = attester_slashing.getAttestation1();
     IndexedAttestation attestation2 = attester_slashing.getAttestation2();
 
-
-    /* slashed_any = False
-       attesting_indices_1 = attestation1.custody_bit_0_indices + attestation1.custody_bit_1_indices
-       attesting_indices_2 = attestation2.custody_bit_0_indices + attestation2.custody_bit_1_indices */
+    /* slashed_any = False */
     boolean slashed_any = false;
-    List<ValidatorIndex> attesting_indices_1 = new ArrayList<>();
-    attesting_indices_1.addAll(attestation1.getCustodyBit0Indices().listCopy());
-    attesting_indices_1.addAll(attestation1.getCustodyBit1Indices().listCopy());
-    List<ValidatorIndex> attesting_indices_2 = new ArrayList<>();
-    attesting_indices_2.addAll(attestation2.getCustodyBit0Indices().listCopy());
-    attesting_indices_2.addAll(attestation2.getCustodyBit1Indices().listCopy());
 
-    /*  for index in set(attesting_indices_1).intersection(attesting_indices_2):
+    /*  indices = set(attestation_1.attesting_indices).intersection(attestation_2.attesting_indices)
+        for index in sorted(indices):
         if is_slashable_validator(state.validator_registry[index], get_current_epoch(state)):
             slash_validator(state, index)
             slashed_any = True
         assert slashed_any */
-    List<ValidatorIndex> intersection = new ArrayList<>(attesting_indices_1);
-    intersection.retainAll(attesting_indices_2);
+    List<ValidatorIndex> intersection = new ArrayList<>(attestation1.getAttestingIndices().listCopy());
+    intersection.retainAll(attestation2.getAttestingIndices().listCopy());
     intersection.sort(Comparator.comparingLong(UInt64::longValue));
     for (ValidatorIndex index : intersection) {
       if (is_slashable_validator(state.getValidators().get(index), get_current_epoch(state))) {
@@ -246,11 +238,10 @@ public interface BlockProcessing extends HelperFunction {
     }
 
     /* committee = get_beacon_committee(state, data.slot, data.index)
-    assert len(attestation.aggregation_bits) == len(attestation.custody_bits) == len(committee) */
+    assert len(attestation.aggregation_bits) == len(committee) */
     List<ValidatorIndex> committee =
         get_beacon_committee(state, data.getSlot(), data.getIndex());
-    if (attestation.getAggregationBits().size() != attestation.getCustodyBits().size()
-        || attestation.getAggregationBits().size() != committee.size()) {
+    if (attestation.getAggregationBits().size() != committee.size()) {
       return false;
     }
 

@@ -82,9 +82,6 @@ public class BeaconChainAttesterTest {
     int bitfieldSize = committee.size();
 
     Assert.assertEquals(bitfieldSize, attestation.getAggregationBits().size());
-    Assert.assertEquals(bitfieldSize, attestation.getCustodyBits().size());
-
-    Assert.assertTrue(attestation.getCustodyBits().isZero());
 
     byte aByte = attestation.getAggregationBits().get(indexIntoCommittee / 8);
     Assert.assertEquals(1, ((aByte & 0xFF) >>> (indexIntoCommittee % 8)));

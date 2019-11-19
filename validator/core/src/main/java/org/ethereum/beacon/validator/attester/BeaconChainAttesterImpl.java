@@ -55,14 +55,8 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
             committee.size(),
             participationBitfield,
             spec.getConstants().getMaxValidatorsPerCommittee().intValue());
-    BytesValue custodyBitfield = getCustodyBitfield(validatorIndex, committee);
-    Bitlist custody =
-        Bitlist.of(
-            committee.size(),
-            custodyBitfield,
-            spec.getConstants().getMaxValidatorsPerCommittee().intValue());
 
-    return new Attestation(participation, data, custody, BLSSignature.ZERO, spec.getConstants());
+    return new Attestation(participation, data, BLSSignature.ZERO, spec.getConstants());
   }
 
   /**
@@ -123,13 +117,5 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
     int indexIntoBitfield = indexIntoCommittee / 8;
     aggregationBitfield.set(indexIntoBitfield, (byte) ((1 << (indexIntoCommittee % 8)) & 0xFF));
     return aggregationBitfield;
-  }
-
-  /*
-   Let custody_bitfield be a byte array filled with zeros of length (len(committee) + 7) // 8.
-  */
-  private BytesValue getCustodyBitfield(ValidatorIndex index, List<ValidatorIndex> committee) {
-    int custodyBitfieldSize = (committee.size() + 7) / 8;
-    return BytesValue.wrap(new byte[custodyBitfieldSize]);
   }
 }

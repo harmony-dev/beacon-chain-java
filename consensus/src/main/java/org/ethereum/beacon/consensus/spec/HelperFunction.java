@@ -8,7 +8,6 @@ import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
-import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustodyBit;
 import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
 import org.ethereum.beacon.core.spec.SignatureDomains;
 import org.ethereum.beacon.core.state.Eth1Data;
@@ -33,7 +32,6 @@ import tech.pegasys.artemis.util.uint.UInt64;
 import tech.pegasys.artemis.util.uint.UInt64s;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -800,13 +798,9 @@ public interface HelperFunction extends SpecCommons, BLSFunctions {
       Return the indexed attestation corresponding to ``attestation``.
       """
       attesting_indices = get_attesting_indices(state, attestation.data, attestation.aggregation_bits)
-      custody_bit_1_indices = get_attesting_indices(state, attestation.data, attestation.custody_bits)
-      assert custody_bit_1_indices.issubset(attesting_indices)
-      custody_bit_0_indices = attesting_indices.difference(custody_bit_1_indices)
 
       return IndexedAttestation(
-          custody_bit_0_indices=sorted(custody_bit_0_indices),
-          custody_bit_1_indices=sorted(custody_bit_1_indices),
+          attesting_indices=sorted(attesting_indices),
           data=attestation.data,
           signature=attestation.signature,
       )
@@ -814,17 +808,11 @@ public interface HelperFunction extends SpecCommons, BLSFunctions {
   default IndexedAttestation get_indexed_attestation(BeaconState state, Attestation attestation) {
     List<ValidatorIndex> attesting_indices =
         get_attesting_indices(state, attestation.getData(), attestation.getAggregationBits());
-    List<ValidatorIndex> custody_bit_1_indices =
-        get_attesting_indices(state, attestation.getData(), attestation.getCustodyBits());
-    List<ValidatorIndex> custody_bit_0_indices = attesting_indices.stream()
-        .filter(index -> !custody_bit_1_indices.contains(index)).collect(toList());
 
-    Collections.sort(custody_bit_0_indices);
-    Collections.sort(custody_bit_1_indices);
+    Collections.sort(attesting_indices);
 
     return new IndexedAttestation(
-        custody_bit_0_indices,
-        custody_bit_1_indices,
+        attesting_indices,
         attestation.getData(),
         attestation.getSignature(),
         getConstants());
@@ -838,63 +826,37 @@ public interface HelperFunction extends SpecCommons, BLSFunctions {
    */
   default boolean is_valid_indexed_attestation(BeaconState state, IndexedAttestation indexed_attestation) {
     /*
-      bit_0_indices = indexed_attestation.custody_bit_0_indices
-      bit_1_indices = indexed_attestation.custody_bit_1_indices
+      indices = indexed_attestation.attesting_indices
      */
-    ReadList<Integer, ValidatorIndex> bit_0_indices = indexed_attestation.getCustodyBit0Indices();
-    ReadList<Integer, ValidatorIndex> bit_1_indices = indexed_attestation.getCustodyBit1Indices();
+    ReadList<Integer, ValidatorIndex> indices = indexed_attestation.getAttestingIndices();
 
-    // Verify no index has custody bit equal to 1 [to be removed in phase 1]
-    if (bit_1_indices.size() > 0) {
-      return false;
-    }
-
-    // Verify max number of indices
-    int indices_in_total = bit_0_indices.size() + bit_1_indices.size();
-    if (indices_in_total > getConstants().getMaxValidatorsPerCommittee().getIntValue()) {
-      return false;
-    }
-
-    // Verify index sets are disjoint
-    if (bit_0_indices.intersection(bit_1_indices).size() > 0) {
+    if (indices.size() > getConstants().getMaxValidatorsPerCommittee().getIntValue()) {
       return false;
     }
 
     // Verify indices are sorted
-    if (!Ordering.natural().isOrdered(bit_0_indices)) {
-      return false;
-    }
-    if (!Ordering.natural().isOrdered(bit_1_indices)) {
+    if (!Ordering.natural().isOrdered(indices)) {
       return false;
     }
 
     /*
-      return bls_verify_multiple(
-          pubkeys=[
-              bls_aggregate_pubkeys([state.validator_registry[i].pubkey for i in custody_bit_0_indices]),
-              bls_aggregate_pubkeys([state.validator_registry[i].pubkey for i in custody_bit_1_indices]),
-          ],
-          message_hashes=[
-              hash_tree_root(AttestationDataAndCustodyBit(data=indexed_attestation.data, custody_bit=0b0)),
-              hash_tree_root(AttestationDataAndCustodyBit(data=indexed_attestation.data, custody_bit=0b1)),
-          ],
-          signature=indexed_attestation.signature,
-          domain=get_domain(state, DOMAIN_ATTESTATION, compute_epoch_of_slot(indexed_attestation.data.slot)),
-      )
-     */
-    return bls_verify_multiple(
-        Arrays.asList(
-            bls_aggregate_pubkeys(bit_0_indices.stream()
-                .map(i -> state.getValidators().get(i).getPubKey()).collect(Collectors.toList())),
-            bls_aggregate_pubkeys(bit_1_indices.stream()
-                .map(i -> state.getValidators().get(i).getPubKey()).collect(Collectors.toList()))),
-        Arrays.asList(
-            hash_tree_root(new AttestationDataAndCustodyBit(indexed_attestation.getData(), false)),
-            hash_tree_root(new AttestationDataAndCustodyBit(indexed_attestation.getData(), true))
-        ),
+     return bls_verify(
+         pubkey=bls_aggregate_pubkeys([state.validators[i].pubkey for i in indices]),
+         message_hash=hash_tree_root(indexed_attestation.data),
+         signature=indexed_attestation.signature,
+         domain=get_domain(state, DOMAIN_ATTESTATION, indexed_attestation.data.target.epoch),
+     )
+    */
+    return bls_verify(
+        BLSPubkey.wrap(
+            bls_aggregate_pubkeys(
+                    indices.stream()
+                        .map(i -> state.getValidators().get(i).getPubKey())
+                        .collect(Collectors.toList()))
+                .getEncodedBytes()),
+        hash_tree_root(indexed_attestation.getData()),
         indexed_attestation.getSignature(),
-        get_domain(state, ATTESTATION, indexed_attestation.getData().getTarget().getEpoch())
-    );
+        get_domain(state, ATTESTATION, indexed_attestation.getData().getTarget().getEpoch()));
   }
 
   /*
