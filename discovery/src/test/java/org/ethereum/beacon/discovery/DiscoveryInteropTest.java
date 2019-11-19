@@ -5,10 +5,10 @@ import org.ethereum.beacon.discovery.enr.NodeRecord;
 import org.ethereum.beacon.discovery.packet.AuthHeaderMessagePacket;
 import org.ethereum.beacon.discovery.packet.RandomPacket;
 import org.ethereum.beacon.discovery.packet.UnknownPacket;
+import org.ethereum.beacon.discovery.storage.NodeBucket;
 import org.ethereum.beacon.discovery.storage.NodeBucketStorage;
 import org.ethereum.beacon.discovery.storage.NodeTableStorage;
 import org.ethereum.beacon.discovery.storage.NodeTableStorageFactoryImpl;
-import org.ethereum.beacon.discovery.task.TaskType;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.javatuples.Pair;
 import org.junit.Ignore;
@@ -22,9 +22,11 @@ import java.util.concurrent.TimeUnit;
 
 import static org.ethereum.beacon.discovery.TestUtil.NODE_RECORD_FACTORY_NO_VERIFICATION;
 import static org.ethereum.beacon.discovery.TestUtil.TEST_SERIALIZER;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
-/** Same as {@link DiscoveryNoNetworkTest} but using real network */
-@Ignore("Finish me!!!, then ignore because it takes too long and requires geth docker")
+/** Inter-operational test with Geth. Start it in docker separately */
+@Ignore("TODO: Add geth docker startup, then ignore because of long running")
 public class DiscoveryInteropTest {
   @Test
   public void test() throws Exception {
@@ -92,18 +94,15 @@ public class DiscoveryInteropTest {
 
     assert randomSent1to2.await(1, TimeUnit.SECONDS);
     //    assert whoareyouSent2to1.await(1, TimeUnit.SECONDS);
-    //    int distance1To2 = Functions.logDistance(nodeRecord1.getNodeId(),
-    // nodeRecord2.getNodeId());
-    //    assertFalse(nodeBucketStorage1.get(distance1To2).isPresent());
-        assert authPacketSent1to2.await(1, TimeUnit.SECONDS);
-    //    assert nodesSent2to1.await(1, TimeUnit.SECONDS);
-    Thread.sleep(5000);
-    // 1 sent findnodes to 2, received only (2) in answer, because 3 is not checked
+    int distance1To2 = Functions.logDistance(nodeRecord1.getNodeId(), nodeRecord2.getNodeId());
+    assertFalse(nodeBucketStorage1.get(distance1To2).isPresent());
+    assert authPacketSent1to2.await(1, TimeUnit.SECONDS);
+    Thread.sleep(1000);
+    // 1 sent findnodes to 2, received only (2) in answer
     // 1 added 2 to its nodeBuckets, because its now checked, but not before
-    //    NodeBucket bucketAt1With2 = nodeBucketStorage1.get(distance1To2).get();
-    //    assertEquals(2, bucketAt1With2.size());
-    //    assertEquals(
-    //        nodeRecord2.getNodeId(),
-    // bucketAt1With2.getNodeRecords().get(0).getNode().getNodeId());
+    NodeBucket bucketAt1With2 = nodeBucketStorage1.get(distance1To2).get();
+    assertEquals(1, bucketAt1With2.size());
+    assertEquals(
+        nodeRecord2.getNodeId(), bucketAt1With2.getNodeRecords().get(0).getNode().getNodeId());
   }
 }
