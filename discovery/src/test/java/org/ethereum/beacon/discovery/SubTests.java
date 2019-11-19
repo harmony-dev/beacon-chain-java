@@ -7,6 +7,7 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import java.math.BigInteger;
 
+import static org.ethereum.beacon.discovery.Functions.PUBKEY_SIZE;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -16,7 +17,7 @@ import static org.junit.Assert.assertEquals;
 public class SubTests {
   /**
    * Tests BigInteger to byte[]. Take a look at {@link
-   * Utils#extractBytesFromUnsignedBigInt(BigInteger)} for understanding the issue.
+   * Utils#extractBytesFromUnsignedBigInt(BigInteger, int)}  for understanding the issue.
    */
   @Test
   public void testPubKeyBadPrefix() {
@@ -24,7 +25,7 @@ public class SubTests {
         BytesValue.fromHexString(
             "0xade78b68f25611ea57532f86bf01da909cc463465ed9efce9395403ff7fc99b5");
     ECKeyPair badKey = ECKeyPair.create(privKey.extractArray());
-    byte[] pubKey = Utils.extractBytesFromUnsignedBigInt(badKey.getPublicKey());
+    byte[] pubKey = Utils.extractBytesFromUnsignedBigInt(badKey.getPublicKey(), PUBKEY_SIZE);
     assertEquals(64, pubKey.length);
   }
 }

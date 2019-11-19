@@ -30,6 +30,7 @@ import org.ethereum.beacon.discovery.pipeline.handler.WhoAreYouSessionResolver;
 import org.ethereum.beacon.discovery.storage.AuthTagRepository;
 import org.ethereum.beacon.discovery.storage.NodeBucketStorage;
 import org.ethereum.beacon.discovery.storage.NodeTable;
+import org.ethereum.beacon.discovery.task.TaskOptions;
 import org.ethereum.beacon.discovery.task.TaskType;
 import org.ethereum.beacon.schedulers.Scheduler;
 import org.reactivestreams.Publisher;
@@ -108,13 +109,25 @@ public class DiscoveryManagerNoNetwork implements DiscoveryManager {
   public void stop() {}
 
   public CompletableFuture<Void> executeTask(NodeRecord nodeRecord, TaskType taskType) {
+    return executeTaskImpl(nodeRecord, taskType, true);
+  }
+
+  public CompletableFuture<Void> executeTaskImpl(
+      NodeRecord nodeRecord, TaskType taskType, boolean livenessUpdate) {
     Envelope envelope = new Envelope();
     envelope.put(Field.NODE, nodeRecord);
     CompletableFuture<Void> future = new CompletableFuture<>();
     envelope.put(Field.TASK, taskType);
     envelope.put(Field.FUTURE, future);
+    envelope.put(Field.TASK_OPTIONS, new TaskOptions(livenessUpdate));
     outgoingPipeline.push(envelope);
     return future;
+  }
+
+  @Override
+  public CompletableFuture<Void> executeTaskWithoutLivenessUpdate(
+      NodeRecord nodeRecord, TaskType taskType) {
+    return executeTaskImpl(nodeRecord, taskType, false);
   }
 
   public Publisher<NetworkParcel> getOutgoingMessages() {

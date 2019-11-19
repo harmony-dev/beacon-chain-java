@@ -58,10 +58,16 @@ public class AuthHeaderMessagePacket extends AbstractPacket {
     return new AuthHeaderMessagePacket(tag.concat(authHeader).concat(messageCipherText));
   }
 
+  public static BytesValue createIdNonceMessage(BytesValue idNonce, BytesValue ephemeralPubkey) {
+    BytesValue message = DISCOVERY_ID_NONCE.concat(idNonce).concat(ephemeralPubkey);
+    return message;
+  }
+
   public static BytesValue signIdNonce(
       BytesValue idNonce, BytesValue staticNodeKey, BytesValue ephemeralPubkey) {
-    return Functions.sign(
-        staticNodeKey, Functions.hash(DISCOVERY_ID_NONCE.concat(idNonce).concat(ephemeralPubkey)));
+    BytesValue signed =
+        Functions.sign(staticNodeKey, createIdNonceMessage(idNonce, ephemeralPubkey));
+    return signed;
   }
 
   public static byte[] createAuthMessagePt(BytesValue idNonceSig, @Nullable NodeRecord nodeRecord) {
@@ -102,7 +108,6 @@ public class AuthHeaderMessagePacket extends AbstractPacket {
       DiscoveryMessage message) {
     Bytes32 tag = Packet.createTag(homeNodeId, destNodeId);
     BytesValue idNonceSig = signIdNonce(idNonce, staticNodeKey, ephemeralPubkey);
-    idNonceSig = idNonceSig.slice(1); // Remove recovery id
     byte[] authResponsePt = createAuthMessagePt(idNonceSig, nodeRecord);
     BytesValue authResponse = encodeAuthResponse(authResponsePt, authResponseKey);
     BytesValue authHeader = encodeAuthHeaderRlp(authTag, idNonce, ephemeralPubkey, authResponse);
@@ -111,9 +116,13 @@ public class AuthHeaderMessagePacket extends AbstractPacket {
     return create(tag, authHeader, encryptedData);
   }
 
-  public void verify(BytesValue expectedIdNonce) {
+  public void verify(BytesValue expectedIdNonce, BytesValue remoteNodePubKey) {
     verifyDecode();
     assert expectedIdNonce.equals(getIdNonce());
+    assert Functions.verifyECDSASignature(
+        getIdNonceSig(),
+        createIdNonceMessage(getIdNonce(), getEphemeralPubkey()),
+        remoteNodePubKey);
   }
 
   public Bytes32 getHomeNodeId(Bytes32 destNodeId) {

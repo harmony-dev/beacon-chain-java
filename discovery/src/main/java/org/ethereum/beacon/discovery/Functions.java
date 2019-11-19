@@ -7,7 +7,10 @@ import org.bouncycastle.crypto.generators.HKDFBytesGenerator;
 import org.bouncycastle.crypto.params.ECDomainParameters;
 import org.bouncycastle.crypto.params.HKDFParameters;
 import org.bouncycastle.math.ec.ECPoint;
+import org.bouncycastle.util.Arrays;
 import org.ethereum.beacon.crypto.Hashes;
+import org.ethereum.beacon.util.Utils;
+import org.web3j.crypto.ECDSASignature;
 import org.web3j.crypto.ECKeyPair;
 import org.web3j.crypto.Sign;
 import tech.pegasys.artemis.util.bytes.Bytes32;
@@ -19,15 +22,20 @@ import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.math.BigInteger;
 import java.security.SecureRandom;
-import java.security.SignatureException;
 import java.util.Random;
 
+import static org.ethereum.beacon.util.Utils.extractBytesFromUnsignedBigInt;
 import static org.web3j.crypto.Sign.CURVE_PARAMS;
 
 public class Functions {
+  public static final ECDomainParameters SECP256K1_CURVE =
+      new ECDomainParameters(
+          CURVE_PARAMS.getCurve(), CURVE_PARAMS.getG(), CURVE_PARAMS.getN(), CURVE_PARAMS.getH());
+  public static final int PUBKEY_SIZE = 64;
   private static final int RECIPIENT_KEY_LENGTH = 16;
   private static final int INITIATOR_KEY_LENGTH = 16;
   private static final int AUTH_RESP_KEY_LENGTH = 16;
+  private static final int MS_IN_SECOND = 1000;
 
   public static Bytes32 hash(BytesValue value) {
     return Hashes.sha256(value);
@@ -37,35 +45,48 @@ public class Functions {
    * Creates a signature of message `x` using the given key.
    *
    * @param key private key
-   * @param x message
+   * @param x message, not hashed
    * @return ECDSA signature with properties merged together: r || s
    */
   public static BytesValue sign(BytesValue key, BytesValue x) {
+    BytesValue hash = Functions.hash(x);
     Sign.SignatureData signatureData =
-        Sign.signMessage(x.extractArray(), ECKeyPair.create(key.extractArray()), false);
+        Sign.signMessage(hash.extractArray(), ECKeyPair.create(key.extractArray()), false);
     Bytes32 r = Bytes32.wrap(signatureData.getR());
     Bytes32 s = Bytes32.wrap(signatureData.getS());
     return r.concat(s);
   }
 
   /**
-   * Recovers public key from message and signature
+   * Verifies that signature is made by signer
    *
    * @param signature Signature, ECDSA
-   * @param x message
-   * @return public key
-   * @throws SignatureException when recovery is not possible
+   * @param x message, not hashed
+   * @param pubKey Public key of supposed signer, compressed, 33 bytes
+   * @return whether `signature` reflects message `x` signed with `pubkey`
    */
-  public static BytesValue recoverFromSignature(BytesValue signature, BytesValue x)
-      throws SignatureException {
-    BigInteger publicKey =
-        Sign.signedMessageToKey(
-            x.extractArray(),
-            new Sign.SignatureData(
-                signature.get(0),
-                signature.slice(1, 33).extractArray(),
-                signature.slice(33).extractArray()));
-    return BytesValue.wrap(publicKey.toByteArray());
+  public static boolean verifyECDSASignature(
+      BytesValue signature, BytesValue x, BytesValue pubKey) {
+    assert pubKey.size() == 33;
+    ECPoint ecPoint = Functions.publicKeyToPoint(pubKey);
+    BytesValue pubKeyUncompressed = BytesValue.wrap(ecPoint.getEncoded(false)).slice(1);
+    ECDSASignature ecdsaSignature =
+        new ECDSASignature(
+            new BigInteger(1, signature.slice(0, 32).extractArray()),
+            new BigInteger(1, signature.slice(32).extractArray()));
+    byte[] msgHash = Functions.hash(x).extractArray();
+    for (int recId = 0; recId < 4; ++recId) {
+      BigInteger calculatedPubKey = Sign.recoverFromSignature(recId, ecdsaSignature, msgHash);
+      if (calculatedPubKey == null) {
+        continue;
+      }
+      if (Arrays.areEqual(
+          pubKeyUncompressed.extractArray(),
+          extractBytesFromUnsignedBigInt(calculatedPubKey, PUBKEY_SIZE))) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
@@ -102,16 +123,31 @@ public class Functions {
     }
   }
 
+  public static ECPoint publicKeyToPoint(BytesValue pkey) {
+    byte[] destPubPointBytes;
+    if (pkey.size() == 64) { // uncompressed
+      destPubPointBytes = new byte[pkey.size() + 1];
+      destPubPointBytes[0] = 0x04; // default prefix
+      System.arraycopy(pkey.extractArray(), 0, destPubPointBytes, 1, pkey.size());
+    } else {
+      destPubPointBytes = pkey.extractArray();
+    }
+    return SECP256K1_CURVE.getCurve().decodePoint(destPubPointBytes);
+  }
+
+  /** Derives public key in SECP256K1, compressed */
+  public static BytesValue derivePublicKeyFromPrivate(BytesValue privateKey) {
+    ECKeyPair ecKeyPair = ECKeyPair.create(privateKey.extractArray());
+    final BytesValue pubKey =
+        BytesValue.wrap(
+            Utils.extractBytesFromUnsignedBigInt(ecKeyPair.getPublicKey(), PUBKEY_SIZE));
+    ECPoint ecPoint = Functions.publicKeyToPoint(pubKey);
+    return BytesValue.wrap(ecPoint.getEncoded(true));
+  }
+
   /** Derives key agreement ECDH by multiplying private key by public */
   public static BytesValue deriveECDHKeyAgreement(BytesValue srcPrivKey, BytesValue destPubKey) {
-    ECDomainParameters CURVE =
-        new ECDomainParameters(
-            CURVE_PARAMS.getCurve(), CURVE_PARAMS.getG(), CURVE_PARAMS.getN(), CURVE_PARAMS.getH());
-
-    byte[] destPubPointBytes = new byte[destPubKey.size() + 1];
-    destPubPointBytes[0] = 0x04; // default prefix
-    System.arraycopy(destPubKey.extractArray(), 0, destPubPointBytes, 1, destPubKey.size());
-    ECPoint pudDestPoint = CURVE.getCurve().decodePoint(destPubPointBytes);
+    ECPoint pudDestPoint = publicKeyToPoint(destPubKey);
     ECPoint mult = pudDestPoint.multiply(new BigInteger(1, srcPrivKey.extractArray()));
     return BytesValue.wrap(mult.getEncoded(true));
   }
@@ -169,6 +205,10 @@ public class Functions {
     } catch (Exception ex) {
       throw new RuntimeException(ex);
     }
+  }
+
+  public static long getTime() {
+    return System.currentTimeMillis() / MS_IN_SECOND;
   }
 
   public static Random getRandom() {

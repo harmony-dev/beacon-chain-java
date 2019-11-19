@@ -11,7 +11,6 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.List;
 import java.util.TreeSet;
 import java.util.function.Predicate;
@@ -28,15 +27,8 @@ public class NodeBucket {
 
   private static final Predicate<NodeRecordInfo> FILTER =
       nodeRecord -> nodeRecord.getStatus().equals(NodeStatus.ACTIVE);
-  private static final Comparator<NodeRecordInfo> COMPARATOR =
-      (o1, o2) -> {
-        if (o1.getNode().getNodeId().equals(o2.getNode().getNodeId())) {
-          return 0;
-        } else {
-          return Long.signum(o1.getLastRetry() - o2.getLastRetry());
-        }
-      };
-  private final TreeSet<NodeRecordInfo> bucket = new TreeSet<>(COMPARATOR);
+  private final TreeSet<NodeRecordInfo> bucket =
+      new TreeSet<>((o1, o2) -> o2.getNode().hashCode() - o1.getNode().hashCode());
 
   public static NodeBucket fromRlpBytes(BytesValue bytes, NodeRecordFactory nodeRecordFactory) {
     NodeBucket nodeBucket = new NodeBucket();
@@ -55,7 +47,15 @@ public class NodeBucket {
       if (!bucket.contains(nodeRecord)) {
         boolean modified = bucket.add(nodeRecord);
         if (bucket.size() > K) {
-          bucket.pollFirst();
+          NodeRecordInfo worst = null;
+          for (NodeRecordInfo nodeRecordInfo : bucket) {
+            if (worst == null) {
+              worst = nodeRecordInfo;
+            } else if (worst.getLastRetry() > nodeRecordInfo.getLastRetry()) {
+              worst = nodeRecordInfo;
+            }
+          }
+          bucket.remove(worst);
         }
         return modified;
       } else {

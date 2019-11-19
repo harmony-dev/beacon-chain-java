@@ -6,7 +6,6 @@ import org.ethereum.beacon.discovery.enr.NodeRecordFactory;
 import org.javatuples.Pair;
 import org.junit.Test;
 import org.web3j.crypto.ECKeyPair;
-import org.web3j.crypto.Hash;
 import tech.pegasys.artemis.util.bytes.Bytes4;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
@@ -16,7 +15,9 @@ import java.net.InetAddress;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static org.ethereum.beacon.discovery.Functions.PUBKEY_SIZE;
 import static org.ethereum.beacon.discovery.TestUtil.SEED;
+import static org.ethereum.beacon.discovery.enr.NodeRecord.FIELD_ID;
 import static org.ethereum.beacon.discovery.enr.NodeRecord.FIELD_IP_V4;
 import static org.ethereum.beacon.discovery.enr.NodeRecord.FIELD_PKEY_SECP256K1;
 import static org.ethereum.beacon.discovery.enr.NodeRecord.FIELD_TCP_V4;
@@ -68,15 +69,14 @@ public class NodeRecordTest {
     NodeRecord nodeRecordRestored = NODE_RECORD_FACTORY.fromBase64(localhostEnrRestored);
 
     assertEquals(EnrScheme.V4, nodeRecordRestored.getIdentityScheme());
-    NodeRecord nodeRecordV4Restored = (NodeRecord) nodeRecordRestored;
     assertArrayEquals(
         InetAddress.getByName(expectedHost).getAddress(),
-        ((BytesValue) nodeRecordV4Restored.get(NodeRecord.FIELD_IP_V4)).extractArray());
-    assertEquals(expectedUdpPort, nodeRecordV4Restored.get(NodeRecord.FIELD_UDP_V4));
-    assertEquals(expectedTcpPort, nodeRecordV4Restored.get(NodeRecord.FIELD_TCP_V4));
-    assertEquals(expectedSeqNumber, nodeRecordV4Restored.getSeq());
-    assertEquals(expectedPublicKey, nodeRecordV4Restored.get(NodeRecord.FIELD_PKEY_SECP256K1));
-    assertEquals(expectedSignature, nodeRecordV4Restored.getSignature());
+        ((BytesValue) nodeRecordRestored.get(NodeRecord.FIELD_IP_V4)).extractArray());
+    assertEquals(expectedUdpPort, nodeRecordRestored.get(NodeRecord.FIELD_UDP_V4));
+    assertEquals(expectedTcpPort, nodeRecordRestored.get(NodeRecord.FIELD_TCP_V4));
+    assertEquals(expectedSeqNumber, nodeRecordRestored.getSeq());
+    assertEquals(expectedPublicKey, nodeRecordRestored.get(NodeRecord.FIELD_PKEY_SECP256K1));
+    assertEquals(expectedSignature, nodeRecordRestored.getSignature());
   }
 
   @Test
@@ -84,44 +84,35 @@ public class NodeRecordTest {
     Random rnd = new Random(SEED);
     byte[] privKey = new byte[32];
     rnd.nextBytes(privKey);
-    ECKeyPair keyPair = ECKeyPair.create(privKey);
     Bytes4 localIp = Bytes4.wrap(InetAddress.getByName("127.0.0.1").getAddress());
     NodeRecord nodeRecord0 =
         NodeRecordFactory.DEFAULT.createFromValues(
-            EnrScheme.V4,
             UInt64.ZERO,
             Bytes96.ZERO,
+            Pair.with(FIELD_ID, EnrScheme.V4),
             Pair.with(FIELD_IP_V4, localIp),
             Pair.with(FIELD_TCP_V4, 30303),
             Pair.with(FIELD_UDP_V4, 30303),
             Pair.with(
                 FIELD_PKEY_SECP256K1,
-                BytesValue.wrap(extractBytesFromUnsignedBigInt(keyPair.getPublicKey()))));
-    BytesValue signature0 =
-        Functions.sign(
-            BytesValue.wrap(privKey),
-            BytesValue.wrap(Hash.sha3(nodeRecord0.serialize(false).extractArray())));
-    nodeRecord0.setSignature(signature0);
+                Functions.derivePublicKeyFromPrivate(BytesValue.wrap(privKey))));
+    nodeRecord0.sign(BytesValue.wrap(privKey));
     nodeRecord0.verify();
     NodeRecord nodeRecord1 =
         NodeRecordFactory.DEFAULT.createFromValues(
-            EnrScheme.V4,
             UInt64.valueOf(1),
             Bytes96.ZERO,
+            Pair.with(FIELD_ID, EnrScheme.V4),
             Pair.with(FIELD_IP_V4, localIp),
             Pair.with(FIELD_TCP_V4, 30303),
             Pair.with(FIELD_UDP_V4, 30303),
             Pair.with(
                 FIELD_PKEY_SECP256K1,
-                BytesValue.wrap(extractBytesFromUnsignedBigInt(keyPair.getPublicKey()))));
-    BytesValue signature1 =
-        Functions.sign(
-            BytesValue.wrap(privKey),
-            BytesValue.wrap(Hash.sha3(nodeRecord1.serialize(false).extractArray())));
-    nodeRecord1.setSignature(signature1);
+                Functions.derivePublicKeyFromPrivate(BytesValue.wrap(privKey))));
+    nodeRecord1.sign(BytesValue.wrap(privKey));
     nodeRecord1.verify();
     assertNotEquals(nodeRecord0.serialize(), nodeRecord1.serialize());
-    assertNotEquals(signature0, signature1);
+    assertNotEquals(nodeRecord0.getSignature(), nodeRecord1.getSignature());
     nodeRecord1.setSignature(nodeRecord0.getSignature());
     AtomicBoolean exceptionThrown = new AtomicBoolean(false);
     try {

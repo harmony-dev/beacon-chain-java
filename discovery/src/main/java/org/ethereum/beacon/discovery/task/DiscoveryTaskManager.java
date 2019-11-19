@@ -1,6 +1,7 @@
 package org.ethereum.beacon.discovery.task;
 
 import org.ethereum.beacon.discovery.DiscoveryManager;
+import org.ethereum.beacon.discovery.Functions;
 import org.ethereum.beacon.discovery.NodeRecordInfo;
 import org.ethereum.beacon.discovery.NodeStatus;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
@@ -11,6 +12,7 @@ import tech.pegasys.artemis.util.bytes.Bytes32;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -21,7 +23,6 @@ import static org.ethereum.beacon.discovery.task.TaskMessageFactory.DEFAULT_DIST
 public class DiscoveryTaskManager {
   private static final int LIVE_CHECK_DISTANCE = DEFAULT_DISTANCE;
   private static final int RECURSIVE_LOOKUP_DISTANCE = DEFAULT_DISTANCE;
-  private static final int MS_IN_SECOND = 1000;
   private static final int STATUS_EXPIRATION_SECONDS = 600;
   private static final int LIVE_CHECK_INTERVAL_SECONDS = 1;
   private static final int RECURSIVE_LOOKUP_INTERVAL_SECONDS = 10;
@@ -50,7 +51,7 @@ public class DiscoveryTaskManager {
    */
   private final Predicate<NodeRecordInfo> LIVE_CHECK_NODE_RULE =
       nodeRecord -> {
-        long currentTime = System.currentTimeMillis() / MS_IN_SECOND;
+        long currentTime = Functions.getTime();
         if (nodeRecord.getStatus() == NodeStatus.ACTIVE
             && nodeRecord.getLastRetry() > currentTime - STATUS_EXPIRATION_SECONDS) {
           return false; // no need to rediscover
@@ -78,7 +79,7 @@ public class DiscoveryTaskManager {
    */
   private final Predicate<NodeRecordInfo> RECURSIVE_LOOKUP_NODE_RULE =
       nodeRecord -> {
-        long currentTime = System.currentTimeMillis() / MS_IN_SECOND;
+        long currentTime = Functions.getTime();
         if (nodeRecord.getStatus() == NodeStatus.ACTIVE
             && nodeRecord.getLastRetry() > currentTime - STATUS_EXPIRATION_SECONDS) {
           return true;
@@ -91,6 +92,7 @@ public class DiscoveryTaskManager {
   private final Predicate<NodeRecordInfo> DEAD_RULE =
       nodeRecord -> nodeRecord.getRetry() >= MAX_RETRIES;
 
+  private final Consumer<NodeRecord>[] nodeRecordUpdatesConsumers;
   private boolean resetDead;
   private boolean removeDead;
 
@@ -105,6 +107,8 @@ public class DiscoveryTaskManager {
    *     status at startup and sets number of used retries to 0. Reset applies after remove, so if
    *     remove is on, reset will be applied to 0 nodes
    * @param removeDead Whether to remove nodes that are found dead after several retries
+   * @param nodeRecordUpdatesConsumers consumers are executed when nodeRecord is updated with new
+   *     sequence number, so it should be updated in nodeSession
    */
   public DiscoveryTaskManager(
       DiscoveryManager discoveryManager,
@@ -113,7 +117,8 @@ public class DiscoveryTaskManager {
       NodeRecord homeNode,
       Scheduler scheduler,
       boolean resetDead,
-      boolean removeDead) {
+      boolean removeDead,
+      Consumer<NodeRecord>... nodeRecordUpdatesConsumers) {
     this.scheduler = scheduler;
     this.nodeTable = nodeTable;
     this.nodeBucketStorage = nodeBucketStorage;
@@ -125,6 +130,7 @@ public class DiscoveryTaskManager {
             discoveryManager, scheduler, Duration.ofSeconds(RETRY_TIMEOUT_SECONDS));
     this.resetDead = resetDead;
     this.removeDead = removeDead;
+    this.nodeRecordUpdatesConsumers = nodeRecordUpdatesConsumers;
   }
 
   public void start() {
@@ -183,16 +189,13 @@ public class DiscoveryTaskManager {
                         updateNode(
                             nodeRecord,
                             new NodeRecordInfo(
-                                nodeRecord.getNode(),
-                                System.currentTimeMillis() / MS_IN_SECOND,
-                                NodeStatus.ACTIVE,
-                                0)),
+                                nodeRecord.getNode(), Functions.getTime(), NodeStatus.ACTIVE, 0)),
                     () ->
                         updateNode(
                             nodeRecord,
                             new NodeRecordInfo(
                                 nodeRecord.getNode(),
-                                System.currentTimeMillis() / MS_IN_SECOND,
+                                Functions.getTime(),
                                 NodeStatus.SLEEP,
                                 (nodeRecord.getRetry() + 1)))));
   }
@@ -211,9 +214,15 @@ public class DiscoveryTaskManager {
                             nodeRecord,
                             new NodeRecordInfo(
                                 nodeRecord.getNode(),
-                                System.currentTimeMillis() / MS_IN_SECOND,
+                                Functions.getTime(),
                                 NodeStatus.SLEEP,
                                 (nodeRecord.getRetry() + 1)))));
+  }
+
+  void onNodeRecordUpdate(NodeRecord nodeRecord) {
+    for (Consumer<NodeRecord> consumer : nodeRecordUpdatesConsumers) {
+      consumer.accept(nodeRecord);
+    }
   }
 
   private void updateNode(NodeRecordInfo oldNodeRecordInfo, NodeRecordInfo newNodeRecordInfo) {
@@ -225,6 +234,8 @@ public class DiscoveryTaskManager {
               newNodeRecordInfo.getLastRetry(),
               newNodeRecordInfo.getStatus(),
               newNodeRecordInfo.getRetry());
+    } else {
+      onNodeRecordUpdate(newNodeRecordInfo.getNode());
     }
     nodeTable.save(newNodeRecordInfo);
     nodeBucketStorage.put(newNodeRecordInfo);

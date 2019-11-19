@@ -34,7 +34,6 @@ public class NodeSession {
   public static final int REQUEST_ID_SIZE = 8;
   private static final Logger logger = LogManager.getLogger(NodeSession.class);
   private static final int CLEANUP_DELAY_SECONDS = 60;
-  private final NodeRecord nodeRecord;
   private final NodeRecord homeNodeRecord;
   private final Bytes32 homeNodeId;
   private final AuthTagRepository authTagRepo;
@@ -42,6 +41,7 @@ public class NodeSession {
   private final NodeBucketStorage nodeBucketStorage;
   private final Consumer<Packet> outgoing;
   private final Random rnd;
+  private NodeRecord nodeRecord;
   private SessionStatus status = SessionStatus.INITIAL;
   private Bytes32 idNonce;
   private BytesValue initiatorKey;
@@ -76,6 +76,15 @@ public class NodeSession {
     return nodeRecord;
   }
 
+  public synchronized void updateNodeRecord(NodeRecord nodeRecord) {
+    logger.trace(
+        () ->
+            String.format(
+                "NodeRecord updated from %s to %s in session %s",
+                this.nodeRecord, nodeRecord, this));
+    this.nodeRecord = nodeRecord;
+  }
+
   private void completeConnectFuture() {
     if (completableFuture != null) {
       completableFuture.complete(null);
@@ -83,7 +92,7 @@ public class NodeSession {
     }
   }
 
-  public synchronized void sendOutgoing(Packet packet) {
+  public void sendOutgoing(Packet packet) {
     logger.trace(() -> String.format("Sending outgoing packet %s in session %s", packet, this));
     outgoing.accept(packet);
   }
@@ -213,6 +222,13 @@ public class NodeSession {
     RequestInfo requestInfo = clearRequestId(requestId);
     requestInfo.getFuture().complete(null);
     assert taskType.equals(requestInfo.getTaskType());
+  }
+
+  public synchronized void updateLiveness() {
+    NodeRecordInfo nodeRecordInfo =
+        new NodeRecordInfo(getNodeRecord(), Functions.getTime(), NodeStatus.ACTIVE, 0);
+    nodeTable.save(nodeRecordInfo);
+    nodeBucketStorage.put(nodeRecordInfo);
   }
 
   private synchronized RequestInfo clearRequestId(BytesValue requestId) {

@@ -15,6 +15,7 @@ import org.ethereum.beacon.schedulers.Scheduler;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import static org.ethereum.beacon.discovery.NodeSession.SessionStatus.AUTHENTICATED;
+import static org.ethereum.beacon.discovery.enr.NodeRecord.FIELD_PKEY_SECP256K1;
 
 /** Handles {@link AuthHeaderMessagePacket} in {@link Field#PACKET_AUTH_HEADER_MESSAGE} field */
 public class AuthHeaderMessagePacketHandler implements EnvelopeHandler {
@@ -65,7 +66,8 @@ public class AuthHeaderMessagePacketHandler implements EnvelopeHandler {
       session.setInitiatorKey(keys.getInitiatorKey());
       session.setRecipientKey(keys.getRecipientKey());
       packet.decodeMessage(keys.getInitiatorKey(), keys.getAuthResponseKey(), nodeRecordFactory);
-      packet.verify(session.getIdNonce());
+      packet.verify(
+          session.getIdNonce(), (BytesValue) session.getNodeRecord().get(FIELD_PKEY_SECP256K1));
       envelope.put(Field.MESSAGE, packet.getMessage());
     } catch (AssertionError ex) {
       logger.info(

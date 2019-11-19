@@ -15,6 +15,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.ethereum.beacon.discovery.enr.NodeRecord.FIELD_ID;
+
 public class NodeRecordFactory {
   public static final NodeRecordFactory DEFAULT =
       new NodeRecordFactory(new EnrSchemeV4Interpreter());
@@ -28,23 +30,29 @@ public class NodeRecordFactory {
 
   @SafeVarargs
   public final NodeRecord createFromValues(
-      EnrScheme enrScheme,
-      UInt64 seq,
-      BytesValue signature,
-      Pair<String, Object>... fieldKeyPairs) {
-    return createFromValues(enrScheme, seq, signature, Arrays.asList(fieldKeyPairs));
+      UInt64 seq, BytesValue signature, Pair<String, Object>... fieldKeyPairs) {
+    return createFromValues(seq, signature, Arrays.asList(fieldKeyPairs));
   }
 
   public NodeRecord createFromValues(
-      EnrScheme enrScheme,
-      UInt64 seq,
-      BytesValue signature,
-      List<Pair<String, Object>> fieldKeyPairs) {
+      UInt64 seq, BytesValue signature, List<Pair<String, Object>> fieldKeyPairs) {
+    Pair<String, Object> schemePair = null;
+    for (Pair<String, Object> pair : fieldKeyPairs) {
+      if (FIELD_ID.equals(pair.getValue0())) {
+        schemePair = pair;
+        break;
+      }
+    }
+    if (schemePair == null) {
+      throw new RuntimeException("ENR scheme is not defined in key-value pairs");
+    }
 
-    EnrSchemeInterpreter enrSchemeInterpreter = interpreters.get(enrScheme);
+    EnrSchemeInterpreter enrSchemeInterpreter = interpreters.get(schemePair.getValue1());
     if (enrSchemeInterpreter == null) {
       throw new RuntimeException(
-          String.format("No ethereum record interpreter found for identity scheme %s", enrScheme));
+          String.format(
+              "No ethereum record interpreter found for identity scheme %s",
+              schemePair.getValue1()));
     }
 
     return NodeRecord.fromValues(enrSchemeInterpreter, seq, signature, fieldKeyPairs);
@@ -64,26 +72,36 @@ public class NodeRecordFactory {
       throw new RuntimeException(
           String.format("Unable to deserialize ENR with less than 4 fields, [%s]", values));
     }
-    RlpString id = (RlpString) values.get(2);
-    if (!"id".equals(new String(id.getBytes()))) {
-      throw new RuntimeException(
-          String.format("Unable to deserialize ENR with no id field at 2-3 records, [%s]", values));
-    }
 
-    RlpString idVersion = (RlpString) values.get(3);
-    EnrScheme nodeIdentity = EnrScheme.fromString(new String(idVersion.getBytes()));
-    if (nodeIdentity == null) {
-      throw new RuntimeException(
-          String.format(
-              "Unknown node identity scheme '%s', couldn't create node record.",
-              idVersion.asString()));
+    // TODO: repair as id is not first now
+    EnrScheme nodeIdentity = null;
+    boolean idFound = false;
+    for (int i = 2; i < values.size(); i += 2) {
+      RlpString id = (RlpString) values.get(i);
+      if (!"id".equals(new String(id.getBytes()))) {
+        continue;
+      }
+
+      RlpString idVersion = (RlpString) values.get(i + 1);
+      nodeIdentity = EnrScheme.fromString(new String(idVersion.getBytes()));
+      if (nodeIdentity == null) {  // no interpreter for such id
+        throw new RuntimeException(
+            String.format(
+                "Unknown node identity scheme '%s', couldn't create node record.",
+                idVersion.asString()));
+      }
+      idFound = true;
+      break;
+    }
+    if (!idFound) { // no `id` key-values
+      throw new RuntimeException("Unknown node identity scheme, not defined in record ");
     }
 
     EnrSchemeInterpreter enrSchemeInterpreter = interpreters.get(nodeIdentity);
     if (enrSchemeInterpreter == null) {
       throw new RuntimeException(
           String.format(
-              "No ethereum record interpreter found for identity scheme %s", nodeIdentity));
+              "No Ethereum record interpreter found for identity scheme %s", nodeIdentity));
     }
 
     return NodeRecord.fromRawFields(
@@ -91,7 +109,7 @@ public class NodeRecordFactory {
         UInt64.fromBytesBigEndian(
             Bytes8.leftPad(BytesValue.wrap(((RlpString) values.get(1)).getBytes()))),
         BytesValue.wrap(((RlpString) values.get(0)).getBytes()),
-        values.subList(4, values.size()));
+        values.subList(2, values.size()));
   }
 
   public NodeRecord fromBytes(byte[] bytes) {

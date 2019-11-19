@@ -6,9 +6,9 @@ import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
 import org.ethereum.beacon.discovery.enr.NodeRecordFactory;
 import org.ethereum.beacon.discovery.network.DiscoveryClient;
-import org.ethereum.beacon.discovery.network.DiscoveryClientImpl;
-import org.ethereum.beacon.discovery.network.DiscoveryServer;
-import org.ethereum.beacon.discovery.network.DiscoveryServerImpl;
+import org.ethereum.beacon.discovery.network.NettyDiscoveryClientImpl;
+import org.ethereum.beacon.discovery.network.NettyDiscoveryServer;
+import org.ethereum.beacon.discovery.network.NettyDiscoveryServerImpl;
 import org.ethereum.beacon.discovery.network.NetworkParcel;
 import org.ethereum.beacon.discovery.pipeline.Envelope;
 import org.ethereum.beacon.discovery.pipeline.Field;
@@ -33,6 +33,7 @@ import org.ethereum.beacon.discovery.pipeline.handler.WhoAreYouSessionResolver;
 import org.ethereum.beacon.discovery.storage.AuthTagRepository;
 import org.ethereum.beacon.discovery.storage.NodeBucketStorage;
 import org.ethereum.beacon.discovery.storage.NodeTable;
+import org.ethereum.beacon.discovery.task.TaskOptions;
 import org.ethereum.beacon.discovery.task.TaskType;
 import org.ethereum.beacon.schedulers.Scheduler;
 import org.reactivestreams.Publisher;
@@ -43,17 +44,20 @@ import tech.pegasys.artemis.util.bytes.Bytes4;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 public class DiscoveryManagerImpl implements DiscoveryManager {
   private static final Logger logger = LogManager.getLogger(DiscoveryManagerImpl.class);
   private final ReplayProcessor<NetworkParcel> outgoingMessages = ReplayProcessor.cacheLast();
   private final FluxSink<NetworkParcel> outgoingSink = outgoingMessages.sink();
-  private final DiscoveryServer discoveryServer;
+  private final NettyDiscoveryServer discoveryServer;
   private final Scheduler scheduler;
   private final Pipeline incomingPipeline = new PipelineImpl();
   private final Pipeline outgoingPipeline = new PipelineImpl();
   private final NodeRecordFactory nodeRecordFactory;
   private DiscoveryClient discoveryClient;
+  private CountDownLatch clientStarted = new CountDownLatch(1);
 
   public DiscoveryManagerImpl(
       NodeTable nodeTable,
@@ -62,16 +66,19 @@ public class DiscoveryManagerImpl implements DiscoveryManager {
       BytesValue homeNodePrivateKey,
       NodeRecordFactory nodeRecordFactory,
       Scheduler serverScheduler,
-      Scheduler clientScheduler,
       Scheduler taskScheduler) {
     AuthTagRepository authTagRepo = new AuthTagRepository();
     this.scheduler = serverScheduler;
     this.nodeRecordFactory = nodeRecordFactory;
     this.discoveryServer =
-        new DiscoveryServerImpl(
+        new NettyDiscoveryServerImpl(
             ((Bytes4) homeNode.get(NodeRecord.FIELD_IP_V4)),
             (int) homeNode.get(NodeRecord.FIELD_UDP_V4));
-    this.discoveryClient = new DiscoveryClientImpl(outgoingMessages, clientScheduler);
+    discoveryServer.useDatagramChannel(
+        channel -> {
+          discoveryClient = new NettyDiscoveryClientImpl(outgoingMessages, channel);
+          clientStarted.countDown();
+        });
     NodeIdToSession nodeIdToSession =
         new NodeIdToSession(
             homeNode,
@@ -108,6 +115,11 @@ public class DiscoveryManagerImpl implements DiscoveryManager {
     outgoingPipeline.build();
     Flux.from(discoveryServer.getIncomingPackets()).subscribe(incomingPipeline::push);
     discoveryServer.start(scheduler);
+    try {
+      clientStarted.await(2, TimeUnit.SECONDS);
+    } catch (InterruptedException e) {
+      throw new RuntimeException("Failed to start client", e);
+    }
   }
 
   @Override
@@ -116,13 +128,25 @@ public class DiscoveryManagerImpl implements DiscoveryManager {
   }
 
   public CompletableFuture<Void> executeTask(NodeRecord nodeRecord, TaskType taskType) {
+    return executeTaskImpl(nodeRecord, taskType, true);
+  }
+
+  public CompletableFuture<Void> executeTaskImpl(
+      NodeRecord nodeRecord, TaskType taskType, boolean livenessUpdate) {
     Envelope envelope = new Envelope();
     envelope.put(Field.NODE, nodeRecord);
     CompletableFuture<Void> future = new CompletableFuture<>();
     envelope.put(Field.TASK, taskType);
     envelope.put(Field.FUTURE, future);
+    envelope.put(Field.TASK_OPTIONS, new TaskOptions(livenessUpdate));
     outgoingPipeline.push(envelope);
     return future;
+  }
+
+  @Override
+  public CompletableFuture<Void> executeTaskWithoutLivenessUpdate(
+      NodeRecord nodeRecord, TaskType taskType) {
+    return executeTaskImpl(nodeRecord, taskType, false);
   }
 
   @VisibleForTesting

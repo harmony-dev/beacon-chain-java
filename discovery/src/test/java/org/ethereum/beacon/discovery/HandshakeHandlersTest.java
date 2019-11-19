@@ -51,10 +51,10 @@ public class HandshakeHandlersTest {
   @Test
   public void authHandlerWithMessageRoundTripTest() throws Exception {
     // Node1
-    Pair<BytesValue, NodeRecord> nodePair1 = TestUtil.generateNode(30303);
+    Pair<BytesValue, NodeRecord> nodePair1 = TestUtil.generateUnverifiedNode(30303);
     NodeRecord nodeRecord1 = nodePair1.getValue1();
     // Node2
-    Pair<BytesValue, NodeRecord> nodePair2 = TestUtil.generateNode(30304);
+    Pair<BytesValue, NodeRecord> nodePair2 = TestUtil.generateUnverifiedNode(30304);
     NodeRecord nodeRecord2 = nodePair2.getValue1();
     Random rnd = new Random();
     NodeTableStorageFactoryImpl nodeTableStorageFactory = new NodeTableStorageFactoryImpl();

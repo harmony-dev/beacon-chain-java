@@ -23,6 +23,7 @@ import tech.pegasys.artemis.util.bytes.BytesValue;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import static org.ethereum.beacon.discovery.Functions.PUBKEY_SIZE;
 import static org.ethereum.beacon.discovery.enr.NodeRecord.FIELD_PKEY_SECP256K1;
 
 /** Handles {@link WhoAreYouPacket} in {@link Field#PACKET_WHOAREYOU} field */
@@ -90,7 +91,7 @@ public class WhoAreYouPacketHandler implements EnvelopeHandler {
                                   envelope.getId(), session)));
 
       BytesValue ephemeralPubKey =
-          BytesValue.wrap(Utils.extractBytesFromUnsignedBigInt(ephemeralKey.getPublicKey()));
+          BytesValue.wrap(Utils.extractBytesFromUnsignedBigInt(ephemeralKey.getPublicKey(), PUBKEY_SIZE));
       AuthHeaderMessagePacket response =
           AuthHeaderMessagePacket.create(
               session.getHomeNodeId(),

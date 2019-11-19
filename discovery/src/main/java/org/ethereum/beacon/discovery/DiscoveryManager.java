@@ -23,4 +23,11 @@ public interface DiscoveryManager {
    *     handshake/bad message exchange.
    */
   CompletableFuture<Void> executeTask(NodeRecord nodeRecord, TaskType taskType);
+
+  /**
+   * Same as {@link #executeTask(NodeRecord, TaskType)} but doesn't update node liveness status in
+   * successful case
+   */
+  CompletableFuture<Void> executeTaskWithoutLivenessUpdate(
+      NodeRecord nodeRecord, TaskType taskType);
 }

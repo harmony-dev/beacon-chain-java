@@ -17,6 +17,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Ethereum Node Record
@@ -26,6 +27,8 @@ import java.util.Set;
 public class NodeRecord {
   // Compressed secp256k1 public key, 33 bytes
   public static String FIELD_PKEY_SECP256K1 = "secp256k1";
+  // Schema id
+  public static String FIELD_ID = "id";
   // IPv4 address
   public static String FIELD_IP_V4 = "ip";
   // TCP port, integer
@@ -137,6 +140,10 @@ public class NodeRecord {
     enrSchemeInterpreter.verify(this);
   }
 
+  public void sign(Object signOptions) {
+    enrSchemeInterpreter.sign(this, signOptions);
+  }
+
   public RlpList asRlp() {
     return asRlp(true);
   }
@@ -151,14 +158,13 @@ public class NodeRecord {
       values.add(RlpString.create(getSignature().extractArray()));
     }
     values.add(RlpString.create(getSeq().toBI()));
-    values.add(RlpString.create("id"));
-    values.add(RlpString.create(getIdentityScheme().stringName()));
-    for (Map.Entry<String, Object> keyPair : fields.entrySet()) {
-      if (keyPair.getValue() == null) {
+    List<String> keySortedList = fields.keySet().stream().sorted().collect(Collectors.toList());
+    for (String key : keySortedList) {
+      if (fields.get(key) == null) {
         continue;
       }
-      values.add(RlpString.create(keyPair.getKey()));
-      values.add(enrSchemeInterpreter.encode(keyPair.getKey(), keyPair.getValue()));
+      values.add(RlpString.create(key));
+      values.add(enrSchemeInterpreter.encode(key, fields.get(key)));
     }
 
     return new RlpList(values);

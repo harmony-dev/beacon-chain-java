@@ -9,7 +9,7 @@ import org.ethereum.beacon.discovery.packet.MessagePacket;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 public class TaskMessageFactory {
-  public static final int DEFAULT_DISTANCE = 10;
+  public static final int DEFAULT_DISTANCE = 100;
 
   public static MessagePacket createPacketFromRequest(
       NodeSession.RequestInfo requestInfo, BytesValue authTag, NodeSession session) {
