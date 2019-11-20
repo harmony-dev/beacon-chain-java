@@ -32,22 +32,17 @@ public class Attestation {
   private final Bitlist aggregationBits;
   /** Attestation data object. */
   @SSZ private final AttestationData data;
-  /** Proof of custody bitfield. */
-  @SSZ(maxSizeVar = "spec.MAX_VALIDATORS_PER_COMMITTEE")
-  private final Bitlist custodyBits;
   /** A product of aggregation of signatures from different validators to {@link #data}. */
   @SSZ private final BLSSignature signature;
 
   public Attestation(
       Bitlist aggregationBits,
       AttestationData data,
-      Bitlist custodyBits,
       BLSSignature signature,
       SpecConstants specConstants) {
     this(
         ensureMaxSize(aggregationBits, specConstants),
         data,
-        ensureMaxSize(custodyBits, specConstants),
         signature);
   }
 
@@ -58,10 +53,9 @@ public class Attestation {
   }
 
   private Attestation(
-      Bitlist aggregationBits, AttestationData data, Bitlist custodyBits, BLSSignature signature) {
+      Bitlist aggregationBits, AttestationData data, BLSSignature signature) {
     this.aggregationBits = aggregationBits;
     this.data = data;
-    this.custodyBits = custodyBits;
     this.signature = signature;
   }
 
@@ -71,10 +65,6 @@ public class Attestation {
 
   public Bitlist getAggregationBits() {
     return aggregationBits;
-  }
-
-  public Bitlist getCustodyBits() {
-    return custodyBits;
   }
 
   public BLSSignature getSignature() {
@@ -92,12 +82,6 @@ public class Attestation {
     return new Attestation(aggregationBits, data, custodyBits, BLSSignature.ZERO);
   }
 
-  public Attestation withCustodyBits(Bitlist custodyBits, SpecConstants specConstants) {
-    assert BLSSignature.ZERO.equals(signature);
-    return new Attestation(
-        aggregationBits, data, ensureMaxSize(custodyBits, specConstants), BLSSignature.ZERO);
-  }
-
   public Attestation withSignature(BLSSignature signature) {
     assert BLSSignature.ZERO.equals(signature);
     return new Attestation(aggregationBits, data, custodyBits, signature);
@@ -110,7 +94,6 @@ public class Attestation {
     Attestation that = (Attestation) o;
     return Objects.equal(data, that.data)
         && Objects.equal(aggregationBits, that.aggregationBits)
-        && Objects.equal(custodyBits, that.custodyBits)
         && Objects.equal(signature, that.signature);
   }
 
@@ -118,7 +101,6 @@ public class Attestation {
   public int hashCode() {
     int result = data.hashCode();
     result = 31 * result + aggregationBits.hashCode();
-    result = 31 * result + custodyBits.hashCode();
     result = 31 * result + signature.hashCode();
     return result;
   }
@@ -137,8 +119,6 @@ public class Attestation {
         + data.toString()
         + ", attesters="
         + getSignerIndices()
-        + ", custodyBits="
-        + custodyBits
         + ", sig="
         + signature
         + "]";

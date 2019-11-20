@@ -322,13 +322,12 @@ public class ValidatorRestTest {
     AttestationData attestationData =
         new AttestationData(SlotNumber.of(0), CommitteeIndex.of(0), Hash32.ZERO, Checkpoint.EMPTY, Checkpoint.EMPTY);
     server.start();
-    List<ValidatorIndex> custodyBit0Indices = new ArrayList<>();
-    custodyBit0Indices.add(ValidatorIndex.of(0));
-    List<ValidatorIndex> custodyBit1Indices = new ArrayList<>();
-    custodyBit1Indices.add(ValidatorIndex.of(1));
+    List<ValidatorIndex> attestingIndices = new ArrayList<>();
+    attestingIndices.add(ValidatorIndex.of(0));
+    attestingIndices.add(ValidatorIndex.of(1));
     IndexedAttestation indexedAttestation =
         new IndexedAttestation(
-            custodyBit0Indices, custodyBit1Indices, attestationData, BLSSignature.ZERO, CONSTANTS);
+            attestingIndices, attestationData, BLSSignature.ZERO, CONSTANTS);
     Response response = client.postAttestation(indexedAttestation);
     assertEquals(503, response.getStatus()); // Still syncing
   }
@@ -359,13 +358,12 @@ public class ValidatorRestTest {
             });
     AttestationData attestationData =
         new AttestationData(SlotNumber.of(0), CommitteeIndex.of(0), Hash32.ZERO, Checkpoint.EMPTY, Checkpoint.EMPTY);
-    List<ValidatorIndex> custodyBit0Indices = new ArrayList<>();
-    custodyBit0Indices.add(ValidatorIndex.of(0));
-    List<ValidatorIndex> custodyBit1Indices = new ArrayList<>();
-    custodyBit1Indices.add(ValidatorIndex.of(1));
+    List<ValidatorIndex> attestingIndices = new ArrayList<>();
+    attestingIndices.add(ValidatorIndex.of(0));
+    attestingIndices.add(ValidatorIndex.of(1));
     IndexedAttestation indexedAttestation =
         new IndexedAttestation(
-            custodyBit0Indices, custodyBit1Indices, attestationData, BLSSignature.ZERO, CONSTANTS);
+            attestingIndices, attestationData, BLSSignature.ZERO, CONSTANTS);
     Response response = client.postAttestation(indexedAttestation);
     assertEquals(202, response.getStatus());
     // 202 The block failed validation, but was successfully broadcast anyway. It was not integrated

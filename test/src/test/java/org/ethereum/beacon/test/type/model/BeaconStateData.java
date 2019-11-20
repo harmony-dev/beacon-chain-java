@@ -426,9 +426,6 @@ public class BeaconStateData {
 
     private AttestationDataContainer data;
 
-    @JsonProperty("custody_bits")
-    private String custodyBits;
-
     private String signature;
 
     @JsonProperty("inclusion_delay")
@@ -459,14 +456,6 @@ public class BeaconStateData {
 
     public void setData(AttestationDataContainer data) {
       this.data = data;
-    }
-
-    public String getCustodyBits() {
-      return custodyBits;
-    }
-
-    public void setCustodyBits(String custodyBits) {
-      this.custodyBits = custodyBits;
     }
 
     public String getSignature() {

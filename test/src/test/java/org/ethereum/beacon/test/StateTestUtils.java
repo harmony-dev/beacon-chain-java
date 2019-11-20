@@ -59,12 +59,10 @@ public abstract class StateTestUtils {
         blockData.getBody().getAttestations()) {
       AttestationData attestationData1 = parseAttestationData(attestationData.getData());
       BytesValue aggValue = BytesValue.fromHexString(attestationData.getAggregationBits());
-      BytesValue cusValue = BytesValue.fromHexString(attestationData.getCustodyBits());
       Attestation attestation =
           new Attestation(
               Bitlist.of(aggValue, constants.getMaxValidatorsPerCommittee().longValue()),
               attestationData1,
-              Bitlist.of(cusValue, constants.getMaxValidatorsPerCommittee().longValue()),
               BLSSignature.wrap(Bytes96.fromHexString(attestationData.getSignature())),
               constants);
       attestations.add(attestation);
@@ -154,8 +152,7 @@ public abstract class StateTestUtils {
   public static IndexedAttestation parseSlashableAttestation(
       BlockData.BlockBodyData.IndexedAttestationData data, SpecConstants specConstants) {
     return new IndexedAttestation(
-        data.getCustodyBit0Indices().stream().map(ValidatorIndex::of).collect(Collectors.toList()),
-        data.getCustodyBit1Indices().stream().map(ValidatorIndex::of).collect(Collectors.toList()),
+        data.getAttestingIndices().stream().map(ValidatorIndex::of).collect(Collectors.toList()),
         parseAttestationData(data.getData()),
         data.getAggregateSignature() != null
             ? BLSSignature.wrap(Bytes96.fromHexString(data.getAggregateSignature()))

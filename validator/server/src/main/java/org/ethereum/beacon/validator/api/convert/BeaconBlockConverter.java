@@ -61,7 +61,6 @@ public abstract class BeaconBlockConverter {
             a -> {
               BlockData.AttestationData attestation = new BlockData.AttestationData();
               attestation.setAggregationBits(a.getAggregationBits().toString());
-              attestation.setCustodyBits(a.getCustodyBits().toString());
               attestation.setData(presentAttestationData(a.getData()));
               attestation.setSignature(a.getSignature().toHexString());
               attestationDataList.add(attestation);
@@ -180,12 +179,8 @@ public abstract class BeaconBlockConverter {
       IndexedAttestation attestation) {
     BlockData.BlockBodyData.IndexedAttestationData indexedAttestation =
         new BlockData.BlockBodyData.IndexedAttestationData();
-    indexedAttestation.setCustodyBit0Indices(
-        attestation.getCustodyBit0Indices().stream()
-            .map(UInt64::longValue)
-            .collect(Collectors.toList()));
-    indexedAttestation.setCustodyBit1Indices(
-        attestation.getCustodyBit1Indices().stream()
+    indexedAttestation.setAttestingIndices(
+        attestation.getAttestingIndices().stream()
             .map(UInt64::longValue)
             .collect(Collectors.toList()));
     indexedAttestation.setData(presentAttestationData(attestation.getData()));
@@ -295,8 +290,7 @@ public abstract class BeaconBlockConverter {
   public static IndexedAttestation parseIndexedAttestation(
       BlockData.BlockBodyData.IndexedAttestationData data, SpecConstants constants) {
     return new IndexedAttestation(
-        data.getCustodyBit0Indices().stream().map(ValidatorIndex::of).collect(Collectors.toList()),
-        data.getCustodyBit1Indices().stream().map(ValidatorIndex::of).collect(Collectors.toList()),
+        data.getAttestingIndices().stream().map(ValidatorIndex::of).collect(Collectors.toList()),
         parseAttestationData(data.getData()),
         data.getAggregateSignature() != null
             ? BLSSignature.wrap(Bytes96.fromHexString(data.getAggregateSignature()))
@@ -351,7 +345,6 @@ public abstract class BeaconBlockConverter {
     return new Attestation(
         Bitlist.of(BytesValue.fromHexString(attestationData.getAggregationBits()), VARIABLE_SIZE),
         parseAttestationData((attestationData.getData())),
-        Bitlist.of(BytesValue.fromHexString(attestationData.getCustodyBits()), VARIABLE_SIZE),
         BLSSignature.wrap(Bytes96.fromHexString(attestationData.getSignature())),
         specConstants);
   }

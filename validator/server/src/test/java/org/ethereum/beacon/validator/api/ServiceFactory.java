@@ -378,7 +378,6 @@ public class ServiceFactory {
                 Hash32.ZERO,
                 Checkpoint.EMPTY,
                 Checkpoint.EMPTY),
-            Bitlist.of(0),
             BLSSignature.ZERO,
             constants);
       }

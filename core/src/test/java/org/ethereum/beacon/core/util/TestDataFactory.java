@@ -75,7 +75,6 @@ public class TestDataFactory {
         new Attestation(
             Bitlist.of(someValue.size() * 8, someValue, specConstants.getMaxValidatorsPerCommittee().getValue()),
             attestationData,
-            Bitlist.of(8, BytesValue.fromHexString("bb"),  specConstants.getMaxValidatorsPerCommittee().getValue()),
             BLSSignature.wrap(Bytes96.fromHexString("cc")),
             specConstants);
 
@@ -168,8 +167,7 @@ public class TestDataFactory {
 
   public IndexedAttestation createSlashableAttestation() {
     return new IndexedAttestation(
-        Arrays.asList(ValidatorIndex.of(234), ValidatorIndex.of(235)),
-        Arrays.asList(ValidatorIndex.of(678), ValidatorIndex.of(679)),
+        Arrays.asList(ValidatorIndex.of(234), ValidatorIndex.of(235), ValidatorIndex.of(678), ValidatorIndex.of(679)),
         createAttestationData(),
         BLSSignature.wrap(Bytes96.fromHexString("aa")),
         specConstants);

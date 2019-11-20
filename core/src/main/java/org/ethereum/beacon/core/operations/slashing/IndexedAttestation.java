@@ -21,30 +21,22 @@ import java.util.function.Function;
  */
 @SSZSerializable
 public class IndexedAttestation {
-  /** Indices with custody bit equal to 0. */
+  /** Attesting indices. */
   @SSZ(maxSizeVar = "spec.MAX_VALIDATORS_PER_COMMITTEE")
-  private final ReadList<Integer, ValidatorIndex> custodyBit0Indices;
-  /** Indices with custody bit equal to 1. */
-  @SSZ(maxSizeVar = "spec.MAX_VALIDATORS_PER_COMMITTEE")
-  private final ReadList<Integer, ValidatorIndex> custodyBit1Indices;
+  private final ReadList<Integer, ValidatorIndex> attestingIndices;
   /** Attestation data */
   @SSZ private final AttestationData data;
   /** Aggregate signature */
   @SSZ private final BLSSignature signature;
 
   public IndexedAttestation(
-      List<ValidatorIndex> custodyBit0Indices,
-      List<ValidatorIndex> custodyBit1Indices,
+      List<ValidatorIndex> attestingIndices,
       AttestationData data,
       BLSSignature signature,
       SpecConstants specConstants) {
     this(
         ReadList.wrap(
-            custodyBit0Indices,
-            Function.identity(),
-            specConstants.getMaxValidatorsPerCommittee().longValue()),
-        ReadList.wrap(
-            custodyBit1Indices,
+            attestingIndices,
             Function.identity(),
             specConstants.getMaxValidatorsPerCommittee().longValue()),
         data,
@@ -52,41 +44,30 @@ public class IndexedAttestation {
   }
 
   public IndexedAttestation(
-      ReadList<Integer, ValidatorIndex> custodyBit0Indices,
-      ReadList<Integer, ValidatorIndex> custodyBit1Indices,
+      ReadList<Integer, ValidatorIndex> attestingIndices,
       AttestationData data,
       BLSSignature signature,
       SpecConstants specConstants) {
     this(
-        custodyBit0Indices.maxSize() == ReadList.VARIABLE_SIZE
-            ? custodyBit0Indices.cappedCopy(
+        attestingIndices.maxSize() == ReadList.VARIABLE_SIZE
+            ? attestingIndices.cappedCopy(
                 specConstants.getMaxValidatorsPerCommittee().longValue())
-            : custodyBit0Indices,
-        custodyBit1Indices.maxSize() == ReadList.VARIABLE_SIZE
-            ? custodyBit1Indices.cappedCopy(
-            specConstants.getMaxValidatorsPerCommittee().longValue())
-            : custodyBit1Indices,
+            : attestingIndices,
         data,
         signature);
   }
 
   private IndexedAttestation(
-      ReadList<Integer, ValidatorIndex> custodyBit0Indices,
-      ReadList<Integer, ValidatorIndex> custodyBit1Indices,
+      ReadList<Integer, ValidatorIndex> attestingIndices,
       AttestationData data,
       BLSSignature signature) {
-    this.custodyBit0Indices = custodyBit0Indices;
-    this.custodyBit1Indices = custodyBit1Indices;
+    this.attestingIndices = attestingIndices;
     this.data = data;
     this.signature = signature;
   }
 
-  public ReadList<Integer, ValidatorIndex> getCustodyBit0Indices() {
-    return custodyBit0Indices;
-  }
-
-  public ReadList<Integer, ValidatorIndex> getCustodyBit1Indices() {
-    return custodyBit1Indices;
+  public ReadList<Integer, ValidatorIndex> getAttestingIndices() {
+    return attestingIndices;
   }
 
   public AttestationData getData() {
@@ -106,16 +87,14 @@ public class IndexedAttestation {
       return false;
     }
     IndexedAttestation that = (IndexedAttestation) o;
-    return Objects.equal(custodyBit0Indices, that.custodyBit0Indices)
-        && Objects.equal(custodyBit1Indices, that.custodyBit1Indices)
+    return Objects.equal(attestingIndices, that.attestingIndices)
         && Objects.equal(data, that.data)
         && Objects.equal(signature, that.signature);
   }
 
   @Override
   public int hashCode() {
-    int result = custodyBit0Indices.hashCode();
-    result = 31 * result + custodyBit1Indices.hashCode();
+    int result = attestingIndices.hashCode();
     result = 31 * result + data.hashCode();
     result = 31 * result + signature.hashCode();
     return result;
@@ -126,10 +105,8 @@ public class IndexedAttestation {
     return "IndexedAttestation["
         + "data="
         + data.toString()
-        + ", custodyBit0Indices="
-        + custodyBit0Indices
-        + ", custodyBit1Indices="
-        + custodyBit1Indices
+        + ", attestingIndices="
+        + attestingIndices
         + ", sig="
         + signature
         + "]";

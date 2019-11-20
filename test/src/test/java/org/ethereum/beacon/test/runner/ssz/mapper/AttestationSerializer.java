@@ -23,7 +23,6 @@ public class AttestationSerializer implements ObjectSerializer<Attestation> {
     ObjectNode attestation = mapper.createObjectNode();
     attestation.put("aggregation_bitfield", instance.getAggregationBits().toString());
     attestation.set("data", attestationDataSerializer.map(instance.getData()));
-    attestation.put("custody_bitfield", instance.getCustodyBits().toString());
     attestation.put("signature", BytesValue.wrap(instance.getSignature().getArrayUnsafe()).toString());
     return attestation;
   }

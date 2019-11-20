@@ -22,12 +22,9 @@ public class IndexedAttestationSerializer implements ObjectSerializer<IndexedAtt
   @Override
   public ObjectNode map(IndexedAttestation instance) {
     ObjectNode slashableAttestation = mapper.createObjectNode();
-    ArrayNode indices0 = mapper.createArrayNode();
-    instance.getCustodyBit0Indices().stream().map(ComparableBigIntegerNode::valueOf).forEachOrdered(indices0::add);
-    slashableAttestation.set("custody_bit_0_indices", indices0);
-    ArrayNode indices1 = mapper.createArrayNode();
-    instance.getCustodyBit1Indices().stream().map(ComparableBigIntegerNode::valueOf).forEachOrdered(indices1::add);
-    slashableAttestation.set("custody_bit_1_indices", indices1);
+    ArrayNode indices = mapper.createArrayNode();
+    instance.getAttestingIndices().stream().map(ComparableBigIntegerNode::valueOf).forEachOrdered(indices::add);
+    slashableAttestation.set("attesting_indices", indices);
     slashableAttestation.set("data", attestationDataSerializer.map(instance.getData()));
     slashableAttestation.put("signature", BytesValue.wrap(instance.getSignature().getArrayUnsafe()).toString());
     return slashableAttestation;

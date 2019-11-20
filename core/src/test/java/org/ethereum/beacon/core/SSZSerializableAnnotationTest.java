@@ -15,7 +15,6 @@ import org.ethereum.beacon.core.operations.Transfer;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
-import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustodyBit;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
@@ -117,7 +116,6 @@ public class SSZSerializableAnnotationTest {
             Arrays.asList(
                 Attestation.class,
                 AttestationData.class,
-                AttestationDataAndCustodyBit.class,
                 AttesterSlashing.class,
                 BeaconBlock.class,
                 BeaconBlockBody.class,
