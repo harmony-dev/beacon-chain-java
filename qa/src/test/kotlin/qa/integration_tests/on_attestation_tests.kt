@@ -153,7 +153,7 @@ class BadShardTests : InvalidAttestationSpec() {
 
 class InvalidIndexedAttestation: InvalidAttestationSpec() {
 
-  fun setWrongCustodyBit1(a: Attestation): Attestation {
+  /*fun setWrongCustodyBit1(a: Attestation): Attestation {
     val size = a.custodyBits.size()
     val maxSize = a.custodyBits.maxSize()
     val badCistodyBits = arrayListOf<Int>()
@@ -164,9 +164,9 @@ class InvalidIndexedAttestation: InvalidAttestationSpec() {
       }
     }
     return a.withCustodyBits(Bitlist.of(size, badCistodyBits, maxSize), tester.spec.constants)
-  }
+  }*/
 
-  fun setWrongCustodyBit2(a: Attestation): Attestation {
+  /*fun setWrongCustodyBit2(a: Attestation): Attestation {
     val size = a.custodyBits.size()
     val maxSize = a.custodyBits.maxSize()
     val badCistodyBits = arrayListOf<Int>()
@@ -177,9 +177,9 @@ class InvalidIndexedAttestation: InvalidAttestationSpec() {
       }
     }
     return a.withCustodyBits(Bitlist.of(size, badCistodyBits, maxSize), tester.spec.constants)
-  }
+  }*/
 
-  @Test
+  /*@Test
   fun all_invalid_indexed_attestation_wrong_custodybit() {
     allInvalidAttestationsTest(::setWrongCustodyBit1)
   }
@@ -207,7 +207,7 @@ class InvalidIndexedAttestation: InvalidAttestationSpec() {
   @Test
   fun last_invalid_indexed_attestation_wrong_custodybit2() {
     lastInvalidAttestationTest(::setWrongCustodyBit2)
-  }
+  }*/
 
   fun makeInvalidSignature(a:Attestation) = a.withSignature(BLSSignature.ZERO)
   @Test

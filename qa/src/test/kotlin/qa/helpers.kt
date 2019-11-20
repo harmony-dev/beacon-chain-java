@@ -12,7 +12,6 @@ import org.ethereum.beacon.core.BeaconBlock
 import org.ethereum.beacon.core.BeaconBlockBody
 import org.ethereum.beacon.core.BeaconState
 import org.ethereum.beacon.core.operations.Attestation
-import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustodyBit
 import org.ethereum.beacon.core.spec.SignatureDomains
 import org.ethereum.beacon.core.types.BLSSignature
 import org.ethereum.beacon.core.types.EpochNumber
@@ -217,7 +216,7 @@ class TestChain(val tester: Tester) {
         val b = if (postProcess != null) postProcess(a) else a
 
         val sig = createSigner(currState.validators[vi].pubKey).sign(
-            tester.spec.hash_tree_root(AttestationDataAndCustodyBit(b.data, false)),
+            tester.spec.hash_tree_root(b.data),
             tester.spec.get_domain(currState, SignatureDomains.ATTESTATION, b.data.target.epoch))
 
         val c = b.withSignature(sig)
