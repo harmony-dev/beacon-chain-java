@@ -179,7 +179,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
         .get()
         .get()
         .getEpoch()
-        .greater(current.getCurrentJustifiedCheckpoint().getEpoch())) {
+        .less(current.getCurrentJustifiedCheckpoint().getEpoch())) {
       chainStorage.getJustifiedStorage().set(current.getCurrentJustifiedCheckpoint());
     }
   }
