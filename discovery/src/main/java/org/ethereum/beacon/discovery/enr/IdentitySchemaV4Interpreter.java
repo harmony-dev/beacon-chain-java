@@ -18,7 +18,7 @@ public class IdentitySchemaV4Interpreter implements IdentitySchemaInterpreter {
     }
     BytesValue pubKey = (BytesValue) nodeRecord.get(EnrFieldV4.PKEY_SECP256K1); // compressed
     assert Functions.verifyECDSASignature(
-        nodeRecord.getSignature(), Functions.hashKeccak(nodeRecord.serialize(false)), pubKey);
+        nodeRecord.getSignature(), Functions.hashKeccak(nodeRecord.serializeNoSignature()), pubKey);
   }
 
   @Override
@@ -44,7 +44,7 @@ public class IdentitySchemaV4Interpreter implements IdentitySchemaInterpreter {
   public void sign(NodeRecord nodeRecord, Object signOptions) {
     BytesValue privateKey = (BytesValue) signOptions;
     BytesValue signature =
-        Functions.sign(privateKey, Functions.hashKeccak(nodeRecord.serialize(false)));
+        Functions.sign(privateKey, Functions.hashKeccak(nodeRecord.serializeNoSignature()));
     nodeRecord.setSignature(signature);
   }
 }

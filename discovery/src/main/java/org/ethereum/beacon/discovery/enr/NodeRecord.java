@@ -25,6 +25,12 @@ import java.util.stream.Collectors;
  * <p>Node record as described in <a href="https://eips.ethereum.org/EIPS/eip-778">EIP-778</a>
  */
 public class NodeRecord {
+  /**
+   * The canonical encoding of a node record is an RLP list of [signature, seq, k, v, ...]. The
+   * maximum encoded size of a node record is 300 bytes. Implementations should reject records
+   * larger than this size.
+   */
+  public static final int MAX_ENCODED_SIZE = 300;
   private static final EnrFieldInterpreter enrFieldInterpreter = EnrFieldInterpreterV4.DEFAULT;
   private final UInt64 seq;
   // Signature
@@ -123,10 +129,14 @@ public class NodeRecord {
   }
 
   public RlpList asRlp() {
-    return asRlp(true);
+    return asRlpImpl(true);
   }
 
-  public RlpList asRlp(boolean withSignature) {
+  public RlpList asRlpNoSignature() {
+    return asRlpImpl(false);
+  }
+
+  private RlpList asRlpImpl(boolean withSignature) {
     assert getSeq() != null;
     // content   = [seq, k, v, ...]
     // signature = sign(content)
@@ -149,12 +159,17 @@ public class NodeRecord {
   }
 
   public BytesValue serialize() {
-    return serialize(true);
+    return serializeImpl(true);
   }
 
-  public BytesValue serialize(boolean withSignature) {
-    byte[] bytes = RlpEncoder.encode(asRlp(withSignature));
-    assert bytes.length <= 300;
+  public BytesValue serializeNoSignature() {
+    return serializeImpl(false);
+  }
+
+  private BytesValue serializeImpl(boolean withSignature) {
+    RlpType rlpRecord = withSignature ? asRlp() : asRlpNoSignature();
+    byte[] bytes = RlpEncoder.encode(rlpRecord);
+    assert bytes.length <= MAX_ENCODED_SIZE;
     return BytesValue.wrap(bytes);
   }
 
