@@ -140,8 +140,8 @@ public class DiscoveryNoNetworkTest {
             });
 
     // 4) fire 1 to 2 dialog
-    discoveryManager1.start();
     discoveryManager2.start();
+    discoveryManager1.start();
     discoveryManager1.findNodes(nodeRecord2, 0);
 
     assert randomSent1to2.await(1, TimeUnit.SECONDS);
