@@ -1,10 +1,10 @@
 package org.ethereum.beacon.discovery.mock;
 
-import org.ethereum.beacon.discovery.enr.EnrSchemeV4Interpreter;
+import org.ethereum.beacon.discovery.enr.IdentitySchemaV4Interpreter;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 
-public class EnrSchemeV4InterpreterMock extends EnrSchemeV4Interpreter {
+public class IdentitySchemaV4InterpreterMock extends IdentitySchemaV4Interpreter {
   @Override
   public void verify(NodeRecord nodeRecord) {
     // Don't verify signature

@@ -1,11 +1,16 @@
 package org.ethereum.beacon.discovery;
 
+import org.ethereum.beacon.discovery.enr.IdentitySchema;
 import org.javatuples.Pair;
 import org.web3j.rlp.RlpDecoder;
 import org.web3j.rlp.RlpList;
+import org.web3j.rlp.RlpString;
 import tech.pegasys.artemis.util.bytes.Bytes8;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt64;
+
+import java.math.BigInteger;
+import java.util.function.Function;
 
 import static org.web3j.rlp.RlpDecoder.OFFSET_LONG_LIST;
 import static org.web3j.rlp.RlpDecoder.OFFSET_SHORT_LIST;
@@ -48,5 +53,36 @@ public class RlpUtil {
   public static Pair<RlpList, BytesValue> decodeFirstList(BytesValue data) {
     int len = RlpUtil.calcListLen(data);
     return Pair.with(RlpDecoder.decode(data.slice(0, len).extractArray()), data.slice(len));
+  }
+
+  public static RlpString encode(Object object, Function<Object, String> errorMessageFunction) {
+    if (object instanceof BytesValue) {
+      return fromBytesValue((BytesValue) object);
+    } else if (object instanceof Number) {
+      return fromNumber((Number) object);
+    } else if (object == null) {
+      return RlpString.create(new byte[0]);
+    } else if (object instanceof IdentitySchema) {
+      return RlpString.create(((IdentitySchema) object).stringName());
+    } else {
+      throw new RuntimeException(errorMessageFunction.apply(object));
+    }
+  }
+
+  private static RlpString fromNumber(Number number) {
+    if (number instanceof BigInteger) {
+      return RlpString.create((BigInteger) number);
+    } else if (number instanceof Long) {
+      return RlpString.create((Long) number);
+    } else if (number instanceof Integer) {
+      return RlpString.create((Integer) number);
+    } else {
+      throw new RuntimeException(
+          String.format("Couldn't serialize number %s : no serializer found.", number));
+    }
+  }
+
+  private static RlpString fromBytesValue(BytesValue bytes) {
+    return RlpString.create(bytes.extractArray());
   }
 }

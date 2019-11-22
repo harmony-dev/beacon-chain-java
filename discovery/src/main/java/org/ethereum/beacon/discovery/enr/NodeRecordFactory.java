@@ -15,16 +15,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.ethereum.beacon.discovery.enr.NodeRecord.FIELD_ID;
-
 public class NodeRecordFactory {
   public static final NodeRecordFactory DEFAULT =
-      new NodeRecordFactory(new EnrSchemeV4Interpreter());
-  Map<EnrScheme, EnrSchemeInterpreter> interpreters = new HashMap<>();
+      new NodeRecordFactory(new IdentitySchemaV4Interpreter());
+  Map<IdentitySchema, IdentitySchemaInterpreter> interpreters = new HashMap<>();
 
-  public NodeRecordFactory(EnrSchemeInterpreter... enrSchemeInterpreters) {
-    for (EnrSchemeInterpreter enrSchemeInterpreter : enrSchemeInterpreters) {
-      interpreters.put(enrSchemeInterpreter.getScheme(), enrSchemeInterpreter);
+  public NodeRecordFactory(IdentitySchemaInterpreter... identitySchemaInterpreters) {
+    for (IdentitySchemaInterpreter identitySchemaInterpreter : identitySchemaInterpreters) {
+      interpreters.put(identitySchemaInterpreter.getScheme(), identitySchemaInterpreter);
     }
   }
 
@@ -38,7 +36,7 @@ public class NodeRecordFactory {
       UInt64 seq, BytesValue signature, List<Pair<String, Object>> fieldKeyPairs) {
     Pair<String, Object> schemePair = null;
     for (Pair<String, Object> pair : fieldKeyPairs) {
-      if (FIELD_ID.equals(pair.getValue0())) {
+      if (EnrField.ID.equals(pair.getValue0())) {
         schemePair = pair;
         break;
       }
@@ -47,15 +45,15 @@ public class NodeRecordFactory {
       throw new RuntimeException("ENR scheme is not defined in key-value pairs");
     }
 
-    EnrSchemeInterpreter enrSchemeInterpreter = interpreters.get(schemePair.getValue1());
-    if (enrSchemeInterpreter == null) {
+    IdentitySchemaInterpreter identitySchemaInterpreter = interpreters.get(schemePair.getValue1());
+    if (identitySchemaInterpreter == null) {
       throw new RuntimeException(
           String.format(
               "No ethereum record interpreter found for identity scheme %s",
               schemePair.getValue1()));
     }
 
-    return NodeRecord.fromValues(enrSchemeInterpreter, seq, signature, fieldKeyPairs);
+    return NodeRecord.fromValues(identitySchemaInterpreter, seq, signature, fieldKeyPairs);
   }
 
   public NodeRecord fromBase64(String enrBase64) {
@@ -74,7 +72,7 @@ public class NodeRecordFactory {
     }
 
     // TODO: repair as id is not first now
-    EnrScheme nodeIdentity = null;
+    IdentitySchema nodeIdentity = null;
     boolean idFound = false;
     for (int i = 2; i < values.size(); i += 2) {
       RlpString id = (RlpString) values.get(i);
@@ -83,8 +81,8 @@ public class NodeRecordFactory {
       }
 
       RlpString idVersion = (RlpString) values.get(i + 1);
-      nodeIdentity = EnrScheme.fromString(new String(idVersion.getBytes()));
-      if (nodeIdentity == null) {  // no interpreter for such id
+      nodeIdentity = IdentitySchema.fromString(new String(idVersion.getBytes()));
+      if (nodeIdentity == null) { // no interpreter for such id
         throw new RuntimeException(
             String.format(
                 "Unknown node identity scheme '%s', couldn't create node record.",
@@ -97,15 +95,15 @@ public class NodeRecordFactory {
       throw new RuntimeException("Unknown node identity scheme, not defined in record ");
     }
 
-    EnrSchemeInterpreter enrSchemeInterpreter = interpreters.get(nodeIdentity);
-    if (enrSchemeInterpreter == null) {
+    IdentitySchemaInterpreter identitySchemaInterpreter = interpreters.get(nodeIdentity);
+    if (identitySchemaInterpreter == null) {
       throw new RuntimeException(
           String.format(
               "No Ethereum record interpreter found for identity scheme %s", nodeIdentity));
     }
 
     return NodeRecord.fromRawFields(
-        enrSchemeInterpreter,
+        identitySchemaInterpreter,
         UInt64.fromBytesBigEndian(
             Bytes8.leftPad(BytesValue.wrap(((RlpString) values.get(1)).getBytes()))),
         BytesValue.wrap(((RlpString) values.get(0)).getBytes()),

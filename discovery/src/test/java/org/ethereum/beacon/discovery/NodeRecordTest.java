@@ -1,11 +1,12 @@
 package org.ethereum.beacon.discovery;
 
-import org.ethereum.beacon.discovery.enr.EnrScheme;
+import org.ethereum.beacon.discovery.enr.EnrField;
+import org.ethereum.beacon.discovery.enr.EnrFieldV4;
+import org.ethereum.beacon.discovery.enr.IdentitySchema;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
 import org.ethereum.beacon.discovery.enr.NodeRecordFactory;
 import org.javatuples.Pair;
 import org.junit.Test;
-import org.web3j.crypto.ECKeyPair;
 import tech.pegasys.artemis.util.bytes.Bytes4;
 import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
@@ -15,14 +16,7 @@ import java.net.InetAddress;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.ethereum.beacon.discovery.Functions.PUBKEY_SIZE;
 import static org.ethereum.beacon.discovery.TestUtil.SEED;
-import static org.ethereum.beacon.discovery.enr.NodeRecord.FIELD_ID;
-import static org.ethereum.beacon.discovery.enr.NodeRecord.FIELD_IP_V4;
-import static org.ethereum.beacon.discovery.enr.NodeRecord.FIELD_PKEY_SECP256K1;
-import static org.ethereum.beacon.discovery.enr.NodeRecord.FIELD_TCP_V4;
-import static org.ethereum.beacon.discovery.enr.NodeRecord.FIELD_UDP_V4;
-import static org.ethereum.beacon.util.Utils.extractBytesFromUnsignedBigInt;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -54,28 +48,28 @@ public class NodeRecordTest {
         "-IS4QHCYrYZbAKWCBRlAy5zzaDZXJBGkcnh4MHcBFZntXNFrdvJjX04jRzjzCBOonrkTfj499SZuOh8R33Ls8RRcy5wBgmlkgnY0gmlwhH8AAAGJc2VjcDI1NmsxoQPKY0yuDUmstAHYpMa2_oxVtw0RW_QAdpzBQA8yWM0xOIN1ZHCCdl8";
     NodeRecord nodeRecord = NODE_RECORD_FACTORY.fromBase64(localhostEnr);
 
-    assertEquals(EnrScheme.V4, nodeRecord.getIdentityScheme());
+    assertEquals(IdentitySchema.V4, nodeRecord.getIdentityScheme());
     assertArrayEquals(
         InetAddress.getByName(expectedHost).getAddress(),
-        ((BytesValue) nodeRecord.get(NodeRecord.FIELD_IP_V4)).extractArray());
-    assertEquals(expectedUdpPort, nodeRecord.get(NodeRecord.FIELD_UDP_V4));
-    assertEquals(expectedTcpPort, nodeRecord.get(NodeRecord.FIELD_TCP_V4));
+        ((BytesValue) nodeRecord.get(EnrField.IP_V4)).extractArray());
+    assertEquals(expectedUdpPort, nodeRecord.get(EnrField.UDP_V4));
+    assertEquals(expectedTcpPort, nodeRecord.get(EnrField.TCP_V4));
     assertEquals(expectedSeqNumber, nodeRecord.getSeq());
-    assertEquals(expectedPublicKey, nodeRecord.get(NodeRecord.FIELD_PKEY_SECP256K1));
+    assertEquals(expectedPublicKey, nodeRecord.get(EnrFieldV4.PKEY_SECP256K1));
     assertEquals(expectedSignature, nodeRecord.getSignature());
 
     String localhostEnrRestored = nodeRecord.asBase64();
     // The order of fields is not strict so we don't compare strings
     NodeRecord nodeRecordRestored = NODE_RECORD_FACTORY.fromBase64(localhostEnrRestored);
 
-    assertEquals(EnrScheme.V4, nodeRecordRestored.getIdentityScheme());
+    assertEquals(IdentitySchema.V4, nodeRecordRestored.getIdentityScheme());
     assertArrayEquals(
         InetAddress.getByName(expectedHost).getAddress(),
-        ((BytesValue) nodeRecordRestored.get(NodeRecord.FIELD_IP_V4)).extractArray());
-    assertEquals(expectedUdpPort, nodeRecordRestored.get(NodeRecord.FIELD_UDP_V4));
-    assertEquals(expectedTcpPort, nodeRecordRestored.get(NodeRecord.FIELD_TCP_V4));
+        ((BytesValue) nodeRecordRestored.get(EnrField.IP_V4)).extractArray());
+    assertEquals(expectedUdpPort, nodeRecordRestored.get(EnrField.UDP_V4));
+    assertEquals(expectedTcpPort, nodeRecordRestored.get(EnrField.TCP_V4));
     assertEquals(expectedSeqNumber, nodeRecordRestored.getSeq());
-    assertEquals(expectedPublicKey, nodeRecordRestored.get(NodeRecord.FIELD_PKEY_SECP256K1));
+    assertEquals(expectedPublicKey, nodeRecordRestored.get(EnrFieldV4.PKEY_SECP256K1));
     assertEquals(expectedSignature, nodeRecordRestored.getSignature());
   }
 
@@ -89,12 +83,12 @@ public class NodeRecordTest {
         NodeRecordFactory.DEFAULT.createFromValues(
             UInt64.ZERO,
             Bytes96.ZERO,
-            Pair.with(FIELD_ID, EnrScheme.V4),
-            Pair.with(FIELD_IP_V4, localIp),
-            Pair.with(FIELD_TCP_V4, 30303),
-            Pair.with(FIELD_UDP_V4, 30303),
+            Pair.with(EnrField.ID, IdentitySchema.V4),
+            Pair.with(EnrField.IP_V4, localIp),
+            Pair.with(EnrField.TCP_V4, 30303),
+            Pair.with(EnrField.UDP_V4, 30303),
             Pair.with(
-                FIELD_PKEY_SECP256K1,
+                EnrFieldV4.PKEY_SECP256K1,
                 Functions.derivePublicKeyFromPrivate(BytesValue.wrap(privKey))));
     nodeRecord0.sign(BytesValue.wrap(privKey));
     nodeRecord0.verify();
@@ -102,12 +96,12 @@ public class NodeRecordTest {
         NodeRecordFactory.DEFAULT.createFromValues(
             UInt64.valueOf(1),
             Bytes96.ZERO,
-            Pair.with(FIELD_ID, EnrScheme.V4),
-            Pair.with(FIELD_IP_V4, localIp),
-            Pair.with(FIELD_TCP_V4, 30303),
-            Pair.with(FIELD_UDP_V4, 30303),
+            Pair.with(EnrField.ID, IdentitySchema.V4),
+            Pair.with(EnrField.IP_V4, localIp),
+            Pair.with(EnrField.TCP_V4, 30303),
+            Pair.with(EnrField.UDP_V4, 30303),
             Pair.with(
-                FIELD_PKEY_SECP256K1,
+                EnrFieldV4.PKEY_SECP256K1,
                 Functions.derivePublicKeyFromPrivate(BytesValue.wrap(privKey))));
     nodeRecord1.sign(BytesValue.wrap(privKey));
     nodeRecord1.verify();

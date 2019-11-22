@@ -5,7 +5,8 @@ import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.ethereum.beacon.discovery.enr.EnrScheme;
+import org.ethereum.beacon.discovery.enr.EnrField;
+import org.ethereum.beacon.discovery.enr.IdentitySchema;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
@@ -60,7 +61,7 @@ public class NettyDiscoveryClientImpl implements DiscoveryClient {
 
   @Override
   public void send(BytesValue data, NodeRecord recipient) {
-    if (!(recipient.getIdentityScheme().equals(EnrScheme.V4))) {
+    if (!(recipient.getIdentityScheme().equals(IdentitySchema.V4))) {
       String error =
           String.format(
               "Accepts only V4 version of recipient's node records. Got %s instead", recipient);
@@ -71,9 +72,8 @@ public class NettyDiscoveryClientImpl implements DiscoveryClient {
     try {
       address =
           new InetSocketAddress(
-              InetAddress.getByAddress(
-                  ((Bytes4) recipient.get(NodeRecord.FIELD_IP_V4)).extractArray()),
-              (int) recipient.get(NodeRecord.FIELD_UDP_V4));
+              InetAddress.getByAddress(((Bytes4) recipient.get(EnrField.IP_V4)).extractArray()),
+              (int) recipient.get(EnrField.UDP_V4));
     } catch (UnknownHostException e) {
       String error = String.format("Failed to resolve host for node record: %s", recipient);
       logger.error(error);

@@ -4,6 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.discovery.Functions;
 import org.ethereum.beacon.discovery.NodeSession;
+import org.ethereum.beacon.discovery.enr.EnrFieldV4;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
 import org.ethereum.beacon.discovery.message.DiscoveryV5Message;
 import org.ethereum.beacon.discovery.message.V5Message;
@@ -25,7 +26,6 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 import static org.ethereum.beacon.discovery.Functions.PUBKEY_SIZE;
-import static org.ethereum.beacon.discovery.enr.NodeRecord.FIELD_PKEY_SECP256K1;
 
 /** Handles {@link WhoAreYouPacket} in {@link Field#PACKET_WHOAREYOU} field */
 public class WhoAreYouPacketHandler implements EnvelopeHandler {
@@ -64,7 +64,8 @@ public class WhoAreYouPacketHandler implements EnvelopeHandler {
       if (packet.getEnrSeq().compareTo(session.getHomeNodeRecord().getSeq()) < 0) {
         respRecord = session.getHomeNodeRecord();
       }
-      BytesValue remotePubKey = (BytesValue) session.getNodeRecord().getKey(FIELD_PKEY_SECP256K1);
+      BytesValue remotePubKey =
+          (BytesValue) session.getNodeRecord().getKey(EnrFieldV4.PKEY_SECP256K1);
       byte[] ephemeralKeyBytes = new byte[32];
       Functions.getRandom().nextBytes(ephemeralKeyBytes);
       ECKeyPair ephemeralKey = ECKeyPair.create(ephemeralKeyBytes);

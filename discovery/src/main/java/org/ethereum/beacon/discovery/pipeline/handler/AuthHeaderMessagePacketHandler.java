@@ -4,6 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.discovery.Functions;
 import org.ethereum.beacon.discovery.NodeSession;
+import org.ethereum.beacon.discovery.enr.EnrFieldV4;
 import org.ethereum.beacon.discovery.enr.NodeRecordFactory;
 import org.ethereum.beacon.discovery.packet.AuthHeaderMessagePacket;
 import org.ethereum.beacon.discovery.pipeline.Envelope;
@@ -15,7 +16,6 @@ import org.ethereum.beacon.schedulers.Scheduler;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
 import static org.ethereum.beacon.discovery.NodeSession.SessionStatus.AUTHENTICATED;
-import static org.ethereum.beacon.discovery.enr.NodeRecord.FIELD_PKEY_SECP256K1;
 
 /** Handles {@link AuthHeaderMessagePacket} in {@link Field#PACKET_AUTH_HEADER_MESSAGE} field */
 public class AuthHeaderMessagePacketHandler implements EnvelopeHandler {
@@ -68,7 +68,8 @@ public class AuthHeaderMessagePacketHandler implements EnvelopeHandler {
       session.setRecipientKey(keys.getInitiatorKey());
       packet.decodeMessage(session.getRecipientKey(), keys.getAuthResponseKey(), nodeRecordFactory);
       packet.verify(
-          session.getIdNonce(), (BytesValue) session.getNodeRecord().get(FIELD_PKEY_SECP256K1));
+          session.getIdNonce(),
+          (BytesValue) session.getNodeRecord().get(EnrFieldV4.PKEY_SECP256K1));
       envelope.put(Field.MESSAGE, packet.getMessage());
     } catch (AssertionError ex) {
       logger.info(

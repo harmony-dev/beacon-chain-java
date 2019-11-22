@@ -3,6 +3,7 @@ package org.ethereum.beacon.discovery;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.ethereum.beacon.discovery.enr.EnrField;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
 import org.ethereum.beacon.discovery.enr.NodeRecordFactory;
 import org.ethereum.beacon.discovery.network.DiscoveryClient;
@@ -72,8 +73,7 @@ public class DiscoveryManagerImpl implements DiscoveryManager {
     this.nodeRecordFactory = nodeRecordFactory;
     this.discoveryServer =
         new NettyDiscoveryServerImpl(
-            ((Bytes4) homeNode.get(NodeRecord.FIELD_IP_V4)),
-            (int) homeNode.get(NodeRecord.FIELD_UDP_V4));
+            ((Bytes4) homeNode.get(EnrField.IP_V4)), (int) homeNode.get(EnrField.UDP_V4));
     discoveryServer.useDatagramChannel(
         channel -> {
           discoveryClient = new NettyDiscoveryClientImpl(outgoingMessages, channel);
