@@ -1,5 +1,6 @@
 package org.ethereum.beacon.discovery.task;
 
+/** Specific options to clarify task features */
 public class TaskOptions {
   private boolean livenessUpdate;
   private int distance;

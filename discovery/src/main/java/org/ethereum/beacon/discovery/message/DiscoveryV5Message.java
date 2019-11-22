@@ -1,6 +1,6 @@
 package org.ethereum.beacon.discovery.message;
 
-import org.ethereum.beacon.discovery.IdentityScheme;
+import org.ethereum.beacon.discovery.Protocol;
 import org.ethereum.beacon.discovery.enr.NodeRecordFactory;
 import org.web3j.rlp.RlpDecoder;
 import org.web3j.rlp.RlpList;
@@ -28,8 +28,8 @@ public class DiscoveryV5Message implements DiscoveryMessage {
   }
 
   @Override
-  public IdentityScheme getIdentityScheme() {
-    return IdentityScheme.V5;
+  public Protocol getProtocol() {
+    return Protocol.V5;
   }
 
   public MessageCode getCode() {

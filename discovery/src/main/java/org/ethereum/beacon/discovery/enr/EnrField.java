@@ -1,5 +1,8 @@
 package org.ethereum.beacon.discovery.enr;
 
+/**
+ * Fields of Ethereum Node Record
+ */
 public interface EnrField {
   // Schema id
   String ID = "id";

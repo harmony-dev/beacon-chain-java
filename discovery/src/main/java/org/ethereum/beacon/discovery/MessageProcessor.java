@@ -7,24 +7,28 @@ import org.ethereum.beacon.discovery.message.DiscoveryMessage;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Highest level processor which knows several processors for different versions of {@link
+ * DiscoveryMessage}'s.
+ */
 public class MessageProcessor {
   private static final Logger logger = LogManager.getLogger(MessageProcessor.class);
-  private final Map<IdentityScheme, DiscoveryMessageProcessor> messageHandlers = new HashMap<>();
+  private final Map<Protocol, DiscoveryMessageProcessor> messageProcessors = new HashMap<>();
 
-  public MessageProcessor(DiscoveryMessageProcessor... messageHandlers) {
-    for (int i = 0; i < messageHandlers.length; ++i) {
-      this.messageHandlers.put(messageHandlers[i].getSupportedIdentity(), messageHandlers[i]);
+  public MessageProcessor(DiscoveryMessageProcessor... messageProcessors) {
+    for (int i = 0; i < messageProcessors.length; ++i) {
+      this.messageProcessors.put(messageProcessors[i].getSupportedIdentity(), messageProcessors[i]);
     }
   }
 
   public void handleIncoming(DiscoveryMessage message, NodeSession session) {
-    IdentityScheme identityScheme = message.getIdentityScheme();
-    DiscoveryMessageProcessor messageHandler = messageHandlers.get(identityScheme);
+    Protocol protocol = message.getProtocol();
+    DiscoveryMessageProcessor messageHandler = messageProcessors.get(protocol);
     if (messageHandler == null) {
       String error =
           String.format(
               "Message %s with identity %s received in session %s is not supported",
-              message, identityScheme, session);
+              message, protocol, session);
       logger.error(error);
       throw new RuntimeException(error);
     }

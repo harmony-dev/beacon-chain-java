@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+/** Creates {@link NodeTableStorage} */
 public interface NodeTableStorageFactory {
   /**
    * Creates storage for nodes table
@@ -19,7 +20,6 @@ public interface NodeTableStorageFactory {
    *     sequence number is increased by 1 on each restart and ENR is signed with new sequence
    *     number
    * @param bootNodesSupplier boot nodes provider
-   *
    * @return {@link NodeTableStorage} from `database` but if it doesn't exist, creates new one with
    *     home node provided by `homeNodeSupplier` and boot nodes provided with `bootNodesSupplier`.
    *     Uses `serializerFactory` for node records serialization.

@@ -15,8 +15,16 @@ import java.util.function.Function;
 import static org.web3j.rlp.RlpDecoder.OFFSET_LONG_LIST;
 import static org.web3j.rlp.RlpDecoder.OFFSET_SHORT_LIST;
 
+/**
+ * Handy utilities used for RLP encoding and decoding and not fulfilled by {@link
+ * org.web3j.rlp.RlpEncoder} and {@link RlpDecoder}
+ */
 public class RlpUtil {
-  public static int calcListLen(BytesValue data) {
+  /**
+   * Calculates length of list beginning from the start of the data. So, there could everything else
+   * after first list in data, method helps to cut data in this case.
+   */
+  private static int calcListLen(BytesValue data) {
     int prefix = data.get(0) & 0xFF;
     int prefixAddon = 1;
     if (prefix >= OFFSET_SHORT_LIST && prefix <= OFFSET_LONG_LIST) {
@@ -55,6 +63,12 @@ public class RlpUtil {
     return Pair.with(RlpDecoder.decode(data.slice(0, len).extractArray()), data.slice(len));
   }
 
+  /**
+   * Encodes object to {@link RlpString}. Supports numbers, {@link BytesValue} etc.
+   *
+   * @throws RuntimeException with errorMessageFunction applied with `object` when encoding is not
+   *     possible
+   */
   public static RlpString encode(Object object, Function<Object, String> errorMessageFunction) {
     if (object instanceof BytesValue) {
       return fromBytesValue((BytesValue) object);

@@ -28,6 +28,7 @@ import java.util.Random;
 import static org.ethereum.beacon.util.Utils.extractBytesFromUnsignedBigInt;
 import static org.web3j.crypto.Sign.CURVE_PARAMS;
 
+/** Set of cryptography and utilities functions used in discovery */
 public class Functions {
   public static final ECDomainParameters SECP256K1_CURVE =
       new ECDomainParameters(
@@ -38,10 +39,12 @@ public class Functions {
   private static final int AUTH_RESP_KEY_LENGTH = 16;
   private static final int MS_IN_SECOND = 1000;
 
+  /** SHA2 (SHA256) */
   public static Bytes32 hash(BytesValue value) {
     return Hashes.sha256(value);
   }
 
+  /** SHA3 (Keccak256) */
   public static Bytes32 hashKeccak(BytesValue value) {
     return Bytes32.wrap(Hash.sha3(value.extractArray()));
   }
@@ -112,6 +115,10 @@ public class Functions {
     }
   }
 
+  /**
+   * AES-GCM decryption of `encoded` data with the given `key`, `nonce` and additional authenticated
+   * data `ad`. Size of `key` is 16 bytes (AES-128), size of `nonce` 12 bytes.
+   */
   public static BytesValue aesgcm_decrypt(
       BytesValue privateKey, BytesValue nonce, BytesValue encoded, BytesValue aad) {
     try {
@@ -127,6 +134,7 @@ public class Functions {
     }
   }
 
+  /** Maps public key to point on {@link #SECP256K1_CURVE} */
   public static ECPoint publicKeyToPoint(BytesValue pkey) {
     byte[] destPubPointBytes;
     if (pkey.size() == 64) { // uncompressed
@@ -211,10 +219,12 @@ public class Functions {
     }
   }
 
+  /** Current time in seconds */
   public static long getTime() {
     return System.currentTimeMillis() / MS_IN_SECOND;
   }
 
+  /** Random provider */
   public static Random getRandom() {
     return new SecureRandom();
   }
@@ -241,6 +251,10 @@ public class Functions {
     return logDistance;
   }
 
+  /**
+   * Stores set of keys derived by simple key derivation function (KDF) based on a hash-based
+   * message authentication code (HMAC)
+   */
   public static class HKDFKeys {
     private final BytesValue initiatorKey;
     private final BytesValue recipientKey;

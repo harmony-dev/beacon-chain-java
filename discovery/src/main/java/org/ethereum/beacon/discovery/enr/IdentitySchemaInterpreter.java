@@ -2,6 +2,15 @@ package org.ethereum.beacon.discovery.enr;
 
 import tech.pegasys.artemis.util.bytes.Bytes32;
 
+/**
+ * Interprets identity schema of ethereum node record:
+ *
+ * <ul>
+ *   <li>derives node id from node record
+ *   <li>>signs node record
+ *   <li>verifies signature of node record
+ * </ul>
+ */
 public interface IdentitySchemaInterpreter {
   /** Returns supported scheme */
   IdentitySchema getScheme();

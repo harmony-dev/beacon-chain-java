@@ -29,7 +29,8 @@ import java.util.function.Consumer;
 import static org.ethereum.beacon.discovery.task.TaskStatus.AWAIT;
 
 /**
- * Stores session status and all keys for discovery session between us (homeNode) and the other node
+ * Stores session status and all keys for discovery message exchange between us, `homeNode` and the
+ * other `node`
  */
 public class NodeSession {
   public static final int NONCE_SIZE = 12;
@@ -147,6 +148,7 @@ public class NodeSession {
     return requestInfo;
   }
 
+  /** Updates request info. Thread-safe. */
   public synchronized void updateRequestInfo(BytesValue requestId, RequestInfo newRequestInfo) {
     RequestInfo oldRequestInfo = requestIdStatuses.remove(requestId);
     if (oldRequestInfo == null) {
@@ -187,16 +189,19 @@ public class NodeSession {
         });
   }
 
+  /** Generates random nonce of {@link #NONCE_SIZE} size */
   public synchronized BytesValue generateNonce() {
     byte[] nonce = new byte[NONCE_SIZE];
     rnd.nextBytes(nonce);
     return BytesValue.wrap(nonce);
   }
 
+  /** If true indicates that handshake is complete */
   public synchronized boolean isAuthenticated() {
     return SessionStatus.AUTHENTICATED.equals(status);
   }
 
+  /** Resets stored authTags for this session making them obsolete */
   public void cleanup() {
     authTagRepo.expire(this);
   }
@@ -213,6 +218,7 @@ public class NodeSession {
     return homeNodeId;
   }
 
+  /** @return initiator key, also known as write key */
   public BytesValue getInitiatorKey() {
     return initiatorKey;
   }
@@ -221,6 +227,7 @@ public class NodeSession {
     this.initiatorKey = initiatorKey;
   }
 
+  /** @return recipient key, also known as read key */
   public BytesValue getRecipientKey() {
     return recipientKey;
   }
@@ -235,6 +242,7 @@ public class NodeSession {
     assert taskType.equals(requestInfo.getTaskType());
   }
 
+  /** Updates nodeRecord {@link NodeStatus} to ACTIVE of the node associated with this session */
   public synchronized void updateLiveness() {
     NodeRecordInfo nodeRecordInfo =
         new NodeRecordInfo(getNodeRecord(), Functions.getTime(), NodeStatus.ACTIVE, 0);
@@ -253,6 +261,10 @@ public class NodeSession {
     return requestId == null ? Optional.empty() : Optional.of(requestInfo);
   }
 
+  /**
+   * Returns any queued {@link RequestInfo} which was not started because session is not
+   * authenticated
+   */
   public synchronized Optional<RequestInfo> getFirstAwaitRequestInfo() {
     return requestIdStatuses.values().stream()
         .filter(requestInfo -> AWAIT.equals(requestInfo.getTaskStatus()))

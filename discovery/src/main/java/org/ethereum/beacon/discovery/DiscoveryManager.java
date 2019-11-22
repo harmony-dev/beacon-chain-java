@@ -9,6 +9,7 @@ import java.util.concurrent.CompletableFuture;
  * href="https://github.com/ethereum/devp2p/blob/master/discv5/discv5.md">https://github.com/ethereum/devp2p/blob/master/discv5/discv5.md</a>
  */
 public interface DiscoveryManager {
+
   void start();
 
   void stop();

@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
+/** Serializer for {@link NodeRecordInfo}, {@link NodeIndex} and {@link NodeBucket} */
 public class NodeSerializerFactory implements SerializerFactory {
   private final Map<Class, Function<BytesValue, Object>> deserializerMap = new HashMap<>();
   private final Map<Class, Function<Object, BytesValue>> serializerMap = new HashMap<>();

@@ -1,10 +1,11 @@
 package org.ethereum.beacon.discovery.message;
 
-import org.ethereum.beacon.discovery.IdentityScheme;
+import org.ethereum.beacon.discovery.Protocol;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 
+/** Discovery message */
 public interface DiscoveryMessage {
-  IdentityScheme getIdentityScheme();
+  Protocol getProtocol();
 
   BytesValue getBytes();
 }
