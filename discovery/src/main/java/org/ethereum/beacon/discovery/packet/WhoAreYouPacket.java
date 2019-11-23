@@ -29,6 +29,14 @@ public class WhoAreYouPacket extends AbstractPacket {
     super(bytes);
   }
 
+  /**
+   * Create a packet by converting {@code destNodeId} to a magic value
+   * @param destNodeId
+   * @param authTag
+   * @param idNonce
+   * @param enrSeq
+   * @return
+   */
   public static WhoAreYouPacket createFromNodeId(
       Bytes32 destNodeId, BytesValue authTag, Bytes32 idNonce, UInt64 enrSeq) {
     BytesValue magic = getStartMagic(destNodeId);
