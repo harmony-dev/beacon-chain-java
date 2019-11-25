@@ -60,7 +60,7 @@ public class NotExpectedIncomingPacketHandler implements EnvelopeHandler {
       Bytes32 idNonce = Bytes32.wrap(idNonceBytes);
       session.setIdNonce(idNonce);
       WhoAreYouPacket whoAreYouPacket =
-          WhoAreYouPacket.create(
+          WhoAreYouPacket.createFromNodeId(
               session.getNodeRecord().getNodeId(),
               authTag,
               idNonce,
