@@ -132,7 +132,7 @@ public class CachingBeaconChainSpec extends BeaconChainSpecImpl {
     Hash32 digest =
         getDigest(
             objectHash(state.getValidators()),
-            get_seed(state, compute_epoch_of_slot(slot), SignatureDomains.BEACON_ATTESTER),
+            get_seed(state, compute_epoch_at_slot(slot), SignatureDomains.BEACON_ATTESTER),
             slot.toBytes8(),
             index.toBytes8());
     return caches.crosslinkCommitteesCache.get(

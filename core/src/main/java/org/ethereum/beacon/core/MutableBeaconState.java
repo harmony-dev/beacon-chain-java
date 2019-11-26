@@ -1,6 +1,5 @@
 package org.ethereum.beacon.core;
 
-import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Fork;
@@ -9,7 +8,6 @@ import org.ethereum.beacon.core.state.ValidatorRecord;
 import tech.pegasys.artemis.util.collections.Bitvector;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
-import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
@@ -37,8 +35,6 @@ public interface MutableBeaconState extends BeaconState {
 
   void setRandaoMixes(WriteList<EpochNumber, Hash32> randaoMixes);
 
-  void setStartShard(ShardNumber startShard);
-
   void setJustificationBits(Bitvector justificationBits);
 
   void setLatestBlockHeader(BeaconBlockHeader latestBlockHeader);
@@ -53,22 +49,10 @@ public interface MutableBeaconState extends BeaconState {
   Bitvector getJustificationBits();
 
   @Override
-  WriteVector<ShardNumber, Crosslink> getPreviousCrosslinks();
-
-  @Override
-  WriteVector<ShardNumber, Crosslink> getCurrentCrosslinks();
-
-  @Override
   WriteVector<SlotNumber, Hash32> getBlockRoots();
 
   @Override
   WriteVector<SlotNumber, Hash32> getStateRoots();
-
-  @Override
-  WriteVector<EpochNumber, Hash32> getActiveIndexRoots();
-
-  @Override
-  WriteVector<EpochNumber, Hash32> getCompactCommitteesRoots();
 
   @Override
   WriteVector<EpochNumber, Gwei> getSlashings();

@@ -3,11 +3,9 @@ package org.ethereum.beacon.core.state;
 import org.ethereum.beacon.core.BeaconBlockHeader;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
-import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
-import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
@@ -51,10 +49,7 @@ public class BeaconStateImpl implements MutableBeaconState {
   private final ObsValue<WriteList<ValidatorIndex, Gwei>> balances;
 
   /* Shuffling */
-  private final ObsValue<ShardNumber> startShard;
   private final ObsValue<WriteList<EpochNumber, Hash32>> randaoMixes;
-  private final ObsValue<WriteList<EpochNumber, Hash32>> activeIndexRoots;
-  private final ObsValue<WriteList<EpochNumber, Hash32>> compactCommitteesRoots;
 
   /* Slashings */
   private final ObsValue<WriteList<EpochNumber, Gwei>> slashings;
@@ -62,11 +57,6 @@ public class BeaconStateImpl implements MutableBeaconState {
   /* Attestations */
   private final ObsValue<WriteList<Integer, PendingAttestation>> previousEpochAttestations;
   private final ObsValue<WriteList<Integer, PendingAttestation>> currentEpochAttestations;
-
-  /* Crosslinks */
-  private final ObsValue<WriteList<ShardNumber, Crosslink>> previousCrosslinks;
-  private final ObsValue<WriteList<ShardNumber, Crosslink>> currentCrosslinks;
-
 
   /* Finality */
   private final ObsValue<Bitvector> justificationBits;
@@ -109,11 +99,7 @@ public class BeaconStateImpl implements MutableBeaconState {
                 ValidatorIndex::of, specConstants.getValidatorRegistryLimit().longValue()));
 
     // Shuffling
-    this.startShard = obsHelper.newValue(ShardNumber.ZERO);
     this.randaoMixes = obsHelper.newValue(ObservableListImpl.create(EpochNumber::of, true));
-    this.activeIndexRoots = obsHelper.newValue(ObservableListImpl.create(EpochNumber::of, true));
-    this.compactCommitteesRoots =
-        obsHelper.newValue(ObservableListImpl.create(EpochNumber::of, true));
 
     // Slashings
     this.slashings = obsHelper.newValue(ObservableListImpl.create(EpochNumber::of, true));
@@ -127,10 +113,6 @@ public class BeaconStateImpl implements MutableBeaconState {
         obsHelper.newValue(
             ObservableListImpl.create(
                 Integer::valueOf, specConstants.getMaxEpochAttestations().longValue()));
-
-    // Crosslinks
-    this.previousCrosslinks = obsHelper.newValue(ObservableListImpl.create(ShardNumber::of, true));
-    this.currentCrosslinks = obsHelper.newValue(ObservableListImpl.create(ShardNumber::of, true));
 
     // Finality
     this.justificationBits = obsHelper.newValue(Bitvector.EMPTY);
@@ -157,18 +139,12 @@ public class BeaconStateImpl implements MutableBeaconState {
     validators.set(state.getValidators().createMutableCopy());
     balances.set(state.getBalances().createMutableCopy());
 
-    startShard.set(state.getStartShard());
     randaoMixes.set(state.getRandaoMixes().createMutableCopy());
-    activeIndexRoots.set(state.getActiveIndexRoots().createMutableCopy());
-    compactCommitteesRoots.set(state.getCompactCommitteesRoots().createMutableCopy());
 
     slashings.set(state.getSlashings().createMutableCopy());
 
     previousEpochAttestations.set(state.getPreviousEpochAttestations().createMutableCopy());
     currentEpochAttestations.set(state.getCurrentEpochAttestations().createMutableCopy());
-
-    previousCrosslinks.set(state.getPreviousCrosslinks().createMutableCopy());
-    currentCrosslinks.set(state.getCurrentCrosslinks().createMutableCopy());
 
     justificationBits.set(state.getJustificationBits());
     previousJustifiedCheckpoint.set(state.getPreviousJustifiedCheckpoint());
@@ -253,16 +229,6 @@ public class BeaconStateImpl implements MutableBeaconState {
     this.randaoMixes.get().replaceAll(randaoMixes);
   }
 
-  @Override
-  public ShardNumber getStartShard() {
-    return startShard.get();
-  }
-
-  @Override
-  public void setStartShard(ShardNumber startShard) {
-    this.startShard.set(startShard);
-  }
-
   public WriteList<Integer, PendingAttestation> getPreviousEpochAttestations() {
     return previousEpochAttestations.get();
   }
@@ -292,26 +258,6 @@ public class BeaconStateImpl implements MutableBeaconState {
   }
 
   @Override
-  public WriteList<ShardNumber, Crosslink> getPreviousCrosslinks() {
-    return previousCrosslinks.get();
-  }
-
-  public void setPreviousCrosslinks(
-      WriteList<ShardNumber, Crosslink> previousCrosslinks) {
-    this.previousCrosslinks.get().replaceAll(previousCrosslinks);
-  }
-
-  @Override
-  public WriteList<ShardNumber, Crosslink> getCurrentCrosslinks() {
-    return currentCrosslinks.get();
-  }
-
-  public void setCurrentCrosslinks(
-      WriteList<ShardNumber, Crosslink> currentCrosslinks) {
-    this.currentCrosslinks.get().replaceAll(currentCrosslinks);
-  }
-
-  @Override
   public WriteList<SlotNumber, Hash32> getBlockRoots() {
     return blockRoots.get();
   }
@@ -329,25 +275,6 @@ public class BeaconStateImpl implements MutableBeaconState {
   public void setStateRoots(
       WriteList<SlotNumber, Hash32> stateRoots) {
     this.stateRoots.get().replaceAll(stateRoots);
-  }
-
-  @Override
-  public WriteList<EpochNumber, Hash32> getActiveIndexRoots() {
-    return activeIndexRoots.get();
-  }
-
-  public void setActiveIndexRoots(
-      WriteList<EpochNumber, Hash32> activeIndexRoots) {
-    this.activeIndexRoots.get().replaceAll(activeIndexRoots);
-  }
-
-  @Override
-  public WriteList<EpochNumber, Hash32> getCompactCommitteesRoots() {
-    return compactCommitteesRoots.get();
-  }
-
-  public void setCompactCommitteesRoots(WriteList<EpochNumber, Hash32> compactCommitteesRoots) {
-    this.compactCommitteesRoots.get().replaceAll(compactCommitteesRoots);
   }
 
   @Override

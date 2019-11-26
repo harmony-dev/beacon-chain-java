@@ -47,7 +47,8 @@ public class BeaconChainAttesterTest {
     Hash32 targetRoot = Hash32.random(random);
     Hash32 sourceRoot = Hash32.random(random);
     CommitteeIndex committeeIndex =
-        new CommitteeIndex(UInt64.random(random).modulo(spec.getConstants().getShardCount()));
+        new CommitteeIndex(UInt64.random(random).modulo(spec.getConstants().getMaxCommitteesPerSlot()
+            .times(spec.getConstants().getSlotsPerEpoch())));
 
     BeaconState state = initiallyObservedState.getLatestSlotState();
     Mockito.doReturn(committee).when(attester).getCommittee(any(), any());

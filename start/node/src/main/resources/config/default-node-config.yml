@@ -32,7 +32,6 @@ chainSpec:
     initialValues:
       GENESIS_SLOT: 0
     miscParameters:
-      SHARD_COUNT: 4
       TARGET_COMMITTEE_SIZE: 2
     timeParameters:
       SECONDS_PER_SLOT: 12

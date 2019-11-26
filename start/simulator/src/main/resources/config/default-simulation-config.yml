@@ -13,7 +13,6 @@ plan: !simulation
 chainSpec:
   specConstants:
     miscParameters:
-      SHARD_COUNT: 4
       MAX_COMMITTEES_PER_SLOT: 64
       TARGET_COMMITTEE_SIZE: 2
     timeParameters:

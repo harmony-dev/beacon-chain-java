@@ -15,7 +15,7 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
  *
  * @see Attestation
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.9.0/specs/core/0_beacon-chain.md#attestationdata">AttestationData
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.9.2/specs/core/0_beacon-chain.md#attestationdata">AttestationData
  *     in the spec</a>
  */
 @SSZSerializable

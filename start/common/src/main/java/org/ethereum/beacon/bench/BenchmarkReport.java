@@ -349,7 +349,6 @@ public class BenchmarkReport {
         BenchmarkRoutine.EPOCH,
         new String[] {
           "process_justification_and_finalization",
-          "process_crosslinks",
           "process_rewards_and_penalties",
           "process_registry_updates",
           "process_slashings",
@@ -358,13 +357,13 @@ public class BenchmarkReport {
   }
 
   private static final String[] BLS_FUNCTIONS = {
-    "bls_aggregate_pubkeys", "bls_verify_multiple", "bls_verify"
+    "bls_aggregate_pubkeys", "bls_verify"
   };
 
   private static final String[] HELPER_FUNCTIONS = {
     "hash_tree_root",
     "signing_root",
-    "get_crosslink_committee",
+    "get_beacon_committee",
     "get_beacon_proposer_index",
     "get_active_validator_indices",
     "get_total_balance",
@@ -375,10 +374,6 @@ public class BenchmarkReport {
     "is_valid_indexed_attestation",
     "get_unslashed_attesting_indices",
     "get_seed",
-    "get_winning_crosslink_and_attesting_indices",
-    "get_shard_delta",
-    "get_start_shard",
-    "get_attestation_data_slot",
     "get_committee_count",
     "get_total_active_balance",
     "get_attesting_balance",

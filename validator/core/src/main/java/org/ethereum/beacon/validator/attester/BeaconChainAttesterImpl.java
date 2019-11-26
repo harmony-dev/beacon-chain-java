@@ -6,12 +6,10 @@ import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
-import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.CommitteeIndex;
 import org.ethereum.beacon.core.types.EpochNumber;
-import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.validator.BeaconChainAttester;
@@ -20,7 +18,6 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.bytes.MutableBytesValue;
 import tech.pegasys.artemis.util.collections.Bitlist;
-import tech.pegasys.artemis.util.uint.UInt64s;
 
 import java.util.List;
 
@@ -74,7 +71,7 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
   @VisibleForTesting
   Checkpoint getTarget(BeaconState state, BeaconBlock head, EpochNumber targetEpoch) {
     SlotNumber epochBoundarySlot =
-        spec.compute_start_slot_of_epoch(spec.compute_epoch_of_slot(state.getSlot()));
+        spec.compute_start_slot_at_epoch(spec.compute_epoch_at_slot(state.getSlot()));
     if (epochBoundarySlot.equals(state.getSlot())) {
       return new Checkpoint(targetEpoch, spec.signing_root(head));
     } else {
@@ -85,19 +82,6 @@ public class BeaconChainAttesterImpl implements BeaconChainAttester {
   @VisibleForTesting
   Checkpoint getSource(BeaconState state) {
     return state.getCurrentJustifiedCheckpoint();
-  }
-
-  private Crosslink getCrosslink(BeaconState state, ShardNumber shard, EpochNumber targetEpoch) {
-    Hash32 dataRoot = Hash32.ZERO; // Note: This is a stub for phase 0.
-    Crosslink parentCrosslink = state.getCurrentCrosslinks().get(shard);
-    Hash32 parentRoot = spec.hash_tree_root(parentCrosslink);
-    EpochNumber startEpoch = parentCrosslink.getEndEpoch();
-    EpochNumber endEpoch =
-        UInt64s.min(
-            targetEpoch,
-            parentCrosslink.getEndEpoch().plus(spec.getConstants().getMaxEpochsPerCrosslink()));
-
-    return new Crosslink(shard, parentRoot, startEpoch, endEpoch, dataRoot);
   }
 
   /*

@@ -38,7 +38,6 @@ public class BeaconBlockTestUtil {
         Collections.emptyList(),
         Collections.emptyList(),
         Collections.emptyList(),
-        Collections.emptyList(),
         constants);
   }
 }

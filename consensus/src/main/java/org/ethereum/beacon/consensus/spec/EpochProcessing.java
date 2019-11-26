@@ -59,7 +59,7 @@ public interface EpochProcessing extends HelperFunction {
     def get_matching_head_attestations(state: BeaconState, epoch: Epoch) -> List[PendingAttestation]:
       return [
           a for a in get_matching_source_attestations(state, epoch)
-          if a.data.beacon_block_root == get_block_root_at_slot(state, get_attestation_data_slot(state, a))
+          if a.data.beacon_block_root == get_block_root_at_slot(state, a.data.slot)
       ]
    */
   default List<PendingAttestation> get_matching_head_attestations(BeaconState state, EpochNumber epoch) {
@@ -270,11 +270,7 @@ public interface EpochProcessing extends HelperFunction {
           .plus(proposer_reward);
       Gwei max_attester_reward = get_base_reward(state, index).minus(proposer_reward);
       rewards[index.getIntValue()] = rewards[index.getIntValue()]
-          .plus(max_attester_reward
-              .times(getConstants().getSlotsPerEpoch()
-                  .plus(getConstants().getMinAttestationInclusionDelay()
-                      .minus(attestation.getInclusionDelay())))
-              .dividedBy(getConstants().getSlotsPerEpoch()));
+          .plus(max_attester_reward.dividedBy(attestation.getInclusionDelay()));
     }
 
     /* Inactivity penalty
@@ -506,7 +502,6 @@ public interface EpochProcessing extends HelperFunction {
     // @process_reveal_deadlines
     // @process_challenge_deadlines
     process_slashings(state);
-    //@update_period_committee
     process_final_updates(state);
     // @after_process_final_updates
   }

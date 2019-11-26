@@ -131,18 +131,13 @@ public class SpecBuilder {
       }
 
       @Override
-      public ShardNumber getShardCount() {
-        return miscParameters.getShardCount();
+      public UInt64 getMaxCommitteesPerSlot() {
+        return miscParameters.getMaxCommitteesPerSlot();
       }
 
       @Override
       public ValidatorIndex getTargetCommitteeSize() {
         return miscParameters.getTargetCommitteeSize();
-      }
-
-      @Override
-      public UInt64 getMaxCommitteesPerSlot() {
-        return miscParameters.getMaxCommitteesPerSlot();
       }
 
       @Override
@@ -231,11 +226,6 @@ public class SpecBuilder {
       }
 
       @Override
-      public EpochNumber getActivationExitDelay() {
-        return timeParameters.getActivationExitDelay();
-      }
-
-      @Override
       public EpochNumber getSlotsPerEth1VotingPeriod() {
         return timeParameters.getSlotsPerEth1VotingPeriod();
       }
@@ -248,11 +238,6 @@ public class SpecBuilder {
       @Override
       public EpochNumber getGenesisEpoch() {
         return getGenesisSlot().dividedBy(getSlotsPerEpoch());
-      }
-
-      @Override
-      public int getMaxTransfers() {
-        return maxOperationsPerBlock.getMaxTransfers();
       }
 
       @Override

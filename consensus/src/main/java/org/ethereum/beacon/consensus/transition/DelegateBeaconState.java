@@ -8,7 +8,6 @@ import org.ethereum.beacon.core.BeaconBlockHeader;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.spec.SpecConstants;
-import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Fork;
@@ -17,7 +16,6 @@ import org.ethereum.beacon.core.state.ValidatorRecord;
 import tech.pegasys.artemis.util.collections.Bitvector;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
-import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
@@ -80,11 +78,6 @@ public class DelegateBeaconState implements BeaconState {
   }
 
   @Override
-  public ShardNumber getStartShard() {
-    return delegate.getStartShard();
-  }
-
-  @Override
   public ReadList<Integer, PendingAttestation> getPreviousEpochAttestations() {
     return delegate.getPreviousEpochAttestations();
   }
@@ -95,16 +88,6 @@ public class DelegateBeaconState implements BeaconState {
   }
 
   @Override
-  public ReadVector<ShardNumber, Crosslink> getPreviousCrosslinks() {
-    return delegate.getPreviousCrosslinks();
-  }
-
-  @Override
-  public ReadVector<ShardNumber, Crosslink> getCurrentCrosslinks() {
-    return delegate.getCurrentCrosslinks();
-  }
-
-  @Override
   public ReadVector<SlotNumber, Hash32> getBlockRoots() {
     return delegate.getBlockRoots();
   }
@@ -112,11 +95,6 @@ public class DelegateBeaconState implements BeaconState {
   @Override
   public ReadVector<SlotNumber, Hash32> getStateRoots() {
     return delegate.getStateRoots();
-  }
-
-  @Override
-  public ReadVector<EpochNumber, Hash32> getActiveIndexRoots() {
-    return delegate.getActiveIndexRoots();
   }
 
   @Override
@@ -147,11 +125,6 @@ public class DelegateBeaconState implements BeaconState {
   @Override
   public UInt64 getEth1DepositIndex() {
     return delegate.getEth1DepositIndex();
-  }
-
-  @Override
-  public ReadVector<EpochNumber, Hash32> getCompactCommitteesRoots() {
-    return delegate.getCompactCommitteesRoots();
   }
 
   @Override

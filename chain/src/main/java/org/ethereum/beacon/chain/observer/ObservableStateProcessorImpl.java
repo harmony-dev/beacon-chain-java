@@ -133,7 +133,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   }
 
   private void onNewSlot(SlotNumber newSlot) {
-    EpochNumber currentEpoch = spec.compute_epoch_of_slot(newSlot);
+    EpochNumber currentEpoch = spec.compute_epoch_at_slot(newSlot);
     EpochNumber previousEpoch = currentEpoch.greater(EpochNumber.ZERO) ?
         currentEpoch.decrement() : currentEpoch;
     runTaskInSeparateThread(
@@ -319,7 +319,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
                   .max(Comparator.comparing(attestation -> attestation.getData().getTarget().getEpoch()))
                   .flatMap(a -> Optional.of(
                       new LatestMessage(
-                          spec.compute_epoch_of_slot(a.getData().getSlot()),
+                          spec.compute_epoch_at_slot(a.getData().getSlot()),
                           a.getData().getBeaconBlockRoot())));
             });
     if (this.head != null && this.head.getBlock().equals(newHead)) {

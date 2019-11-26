@@ -60,7 +60,6 @@ SLOTS_PER_EPOCH: 8
 MIN_SEED_LOOKAHEAD: 1
 # 2**2 (= 4) epochs
 MAX_SEED_LOOKAHEAD: 4
-ACTIVATION_EXIT_DELAY: 4
 # [customized] higher frequency new deposits from eth1 for testing
 SLOTS_PER_ETH1_VOTING_PERIOD: 16
 # [customized] smaller state
@@ -119,8 +118,6 @@ MAX_ATTESTATIONS: 128
 MAX_DEPOSITS: 16
 # 2**4 (= 16)
 MAX_VOLUNTARY_EXITS: 16
-# Originally 2**4 (= 16), disabled for now.
-MAX_TRANSFERS: 0
 
 
 # Signature domains

@@ -19,6 +19,7 @@ import org.ethereum.beacon.validator.api.model.ValidatorDutiesResponse;
 import org.ethereum.beacon.wire.PeerManager;
 import org.ethereum.beacon.wire.WireApiSub;
 import org.junit.After;
+import org.junit.Ignore;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
 import tech.pegasys.artemis.ethereum.core.Hash32;

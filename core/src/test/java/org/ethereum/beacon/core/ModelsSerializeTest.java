@@ -11,7 +11,6 @@ import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
-import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
@@ -158,14 +157,6 @@ public class ModelsSerializeTest {
     BeaconStateEx stateEx = new BeaconStateExImpl(expected);
     BytesValue encoded = sszSerializer.encode2(stateEx);
     BeaconState reconstructed = sszSerializer.decode(encoded, BeaconStateImpl.class);
-    assertEquals(expected, reconstructed);
-  }
-
-  @Test
-  public void crosslinkTest() {
-    Crosslink expected = dataFactory.createCrosslink();
-    BytesValue encoded = sszSerializer.encode2(expected);
-    Crosslink reconstructed = sszSerializer.decode(encoded, Crosslink.class);
     assertEquals(expected, reconstructed);
   }
 

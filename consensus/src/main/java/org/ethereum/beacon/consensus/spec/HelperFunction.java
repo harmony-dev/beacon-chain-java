@@ -67,7 +67,6 @@ public interface HelperFunction extends SpecCommons, BLSFunctions {
             emptyList(),
             emptyList(),
             emptyList(),
-            emptyList(),
             getConstants());
     return new BeaconBlock(
         getConstants().getGenesisSlot(), Hash32.ZERO, Hash32.ZERO, body, BLSSignature.ZERO);
@@ -94,7 +93,7 @@ public interface HelperFunction extends SpecCommons, BLSFunctions {
       ))
    */
   default UInt64 get_committee_count_at_slot(BeaconState state, SlotNumber slot) {
-    EpochNumber epoch = compute_epoch_of_slot(slot);
+    EpochNumber epoch = compute_epoch_at_slot(slot);
     return UInt64s.max(
         UInt64.valueOf(1),
         UInt64s.min(
@@ -452,7 +451,7 @@ public interface HelperFunction extends SpecCommons, BLSFunctions {
       )
    */
   default List<ValidatorIndex> get_beacon_committee(BeaconState state, SlotNumber slot, CommitteeIndex index) {
-    EpochNumber epoch = compute_epoch_of_slot(slot);
+    EpochNumber epoch = compute_epoch_at_slot(slot);
     UInt64 committees_per_slot = get_committee_count_at_slot(state, slot);
     return compute_committee2(
         get_active_validator_indices(state, epoch),
@@ -556,10 +555,10 @@ public interface HelperFunction extends SpecCommons, BLSFunctions {
       """
       Return the epoch during which validator activations and exits initiated in ``epoch`` take effect.
       """
-      return Epoch(epoch + 1 + ACTIVATION_EXIT_DELAY)
+      return Epoch(epoch + 1 + MAX_SEED_LOOKAHEAD)
    */
   default EpochNumber compute_activation_exit_epoch(EpochNumber epoch) {
-    return epoch.plus(1).plus(getConstants().getActivationExitDelay());
+    return epoch.plus(1).plus(getConstants().getMaxSeedLookahead());
   }
 
   /*
@@ -709,21 +708,6 @@ public interface HelperFunction extends SpecCommons, BLSFunctions {
   /** Function for hashing self-signed objects */
   default Hash32 signing_root(Object object) {
     return getObjectHasher().getHashTruncateLast(object);
-  }
-
-  /*
-    def get_active_index_root(state: BeaconState,
-                          epoch: Epoch) -> Bytes32:
-      """
-      Return the index root at a recent ``epoch``.
-      ``epoch`` expected to be between
-      (current_epoch - EPOCHS_PER_HISTORICAL_VECTOR + ACTIVATION_EXIT_DELAY, current_epoch + ACTIVATION_EXIT_DELAY].
-      """
-      return state.latest_active_index_roots[epoch % EPOCHS_PER_HISTORICAL_VECTOR]
-   */
-  default Hash32 get_active_index_root(BeaconState state, EpochNumber epoch) {
-    return state.getActiveIndexRoots().get(
-        epoch.modulo(getConstants().getEpochsPerHistoricalVector()));
   }
 
   /*
@@ -881,7 +865,7 @@ public interface HelperFunction extends SpecCommons, BLSFunctions {
       return get_block_root_at_slot(state, compute_start_slot_of_epoch(epoch))
    */
   default Hash32 get_block_root(BeaconState state, EpochNumber epoch) {
-    return get_block_root_at_slot(state, compute_start_slot_of_epoch(epoch));
+    return get_block_root_at_slot(state, compute_start_slot_at_epoch(epoch));
   }
 
   /*
@@ -939,13 +923,13 @@ public interface HelperFunction extends SpecCommons, BLSFunctions {
   }
 
   /*
-   def compute_epoch_of_slot(slot: Slot) -> Epoch:
+   def compute_epoch_at_slot(slot: Slot) -> Epoch:
       """
       Return the epoch number of ``slot``.
       """
       return Epoch(slot // SLOTS_PER_EPOCH)
   */
-  default EpochNumber compute_epoch_of_slot(SlotNumber slot) {
+  default EpochNumber compute_epoch_at_slot(SlotNumber slot) {
     return slot.dividedBy(getConstants().getSlotsPerEpoch());
   }
 
@@ -971,7 +955,7 @@ public interface HelperFunction extends SpecCommons, BLSFunctions {
       return compute_epoch_of_slot(state.slot)
   */
   default EpochNumber get_current_epoch(BeaconState state) {
-    return compute_epoch_of_slot(state.getSlot());
+    return compute_epoch_at_slot(state.getSlot());
   }
 
   /*
@@ -981,7 +965,7 @@ public interface HelperFunction extends SpecCommons, BLSFunctions {
       """
       return Slot(epoch * SLOTS_PER_EPOCH)
    */
-  default SlotNumber compute_start_slot_of_epoch(EpochNumber epoch) {
+  default SlotNumber compute_start_slot_at_epoch(EpochNumber epoch) {
     return epoch.mul(getConstants().getSlotsPerEpoch());
   }
 }
