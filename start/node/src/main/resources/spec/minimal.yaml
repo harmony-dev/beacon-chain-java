@@ -9,7 +9,7 @@ SHARD_COUNT: 8
 # [customized] unsecure, but fast
 TARGET_COMMITTEE_SIZE: 4
 # 2**12 (= 4,096)
-MAX_VALIDATORS_PER_COMMITTEE: 4096
+MAX_VALIDATORS_PER_COMMITTEE: 2048
 # 2**2 (= 4)
 MIN_PER_EPOCH_CHURN_LIMIT: 4
 # 2**16 (= 65,536)
@@ -50,8 +50,8 @@ BLS_WITHDRAWAL_PREFIX: 0x00
 
 # Time parameters
 # ---------------------------------------------------------------
-# 6 seconds 6 seconds
-SECONDS_PER_SLOT: 6
+# 12 seconds
+SECONDS_PER_SLOT: 12
 # 2**0 (= 1) slots 6 seconds
 MIN_ATTESTATION_INCLUSION_DELAY: 1
 # [customized] fast epochs
@@ -59,6 +59,7 @@ SLOTS_PER_EPOCH: 8
 # 2**0 (= 1) epochs
 MIN_SEED_LOOKAHEAD: 1
 # 2**2 (= 4) epochs
+MAX_SEED_LOOKAHEAD: 4
 ACTIVATION_EXIT_DELAY: 4
 # [customized] higher frequency new deposits from eth1 for testing
 SLOTS_PER_ETH1_VOTING_PERIOD: 16

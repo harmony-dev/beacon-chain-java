@@ -91,7 +91,7 @@ public class BeaconChainAttesterTest {
     BLSSignature expectedSignature =
         signer.sign(
             spec.hash_tree_root(data),
-            spec.get_domain(state, SignatureDomains.ATTESTATION));
+            spec.get_domain(state, SignatureDomains.BEACON_ATTESTER));
 
     Assert.assertEquals(expectedSignature, signedAttestation.getSignature());
   }

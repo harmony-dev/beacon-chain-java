@@ -21,7 +21,7 @@ public interface MiscParameters {
   UInt64 MIN_PER_EPOCH_CHURN_LIMIT = UInt64.valueOf(1 << 2); // 4
   UInt64 CHURN_LIMIT_QUOTIENT = UInt64.valueOf(1 << 16); // 65_536
   int SHUFFLE_ROUND_COUNT = 90;
-  UInt64 MIN_GENESIS_ACTIVE_VALIDATOR_COUNT = UInt64.valueOf(1 << 16); // 65_536
+  UInt64 MIN_GENESIS_ACTIVE_VALIDATOR_COUNT = UInt64.valueOf(1 << 14); // 16_384
   Time MIN_GENESIS_TIME = Time.of(1578009600L);
 
   /* Values defined in the spec. */

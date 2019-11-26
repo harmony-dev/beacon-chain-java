@@ -15,10 +15,11 @@ import tech.pegasys.artemis.util.uint.UInt64;
  */
 public interface TimeParameters {
 
-  Time SECONDS_PER_SLOT = Time.of(6); // 6 seconds
+  Time SECONDS_PER_SLOT = Time.of(12); // 12 seconds
   SlotNumber MIN_ATTESTATION_INCLUSION_DELAY = SlotNumber.of(1); // 1 slot
-  EpochLength SLOTS_PER_EPOCH = new EpochLength(UInt64.valueOf(1 << 6)); // 64 slots
+  EpochLength SLOTS_PER_EPOCH = new EpochLength(UInt64.valueOf(1 << 5)); // 32 slots
   EpochNumber MIN_SEED_LOOKAHEAD = EpochNumber.of(1);
+  EpochNumber MAX_SEED_LOOKAHEAD = EpochNumber.of(1 << 2);
   EpochNumber ACTIVATION_EXIT_DELAY = EpochNumber.of(1 << 2);
   EpochNumber SLOTS_PER_ETH1_VOTING_PERIOD = EpochNumber.of(1 << 10); // 1024
   SlotNumber SLOTS_PER_HISTORICAL_ROOT = SlotNumber.of(1 << 13); // 8,192
@@ -43,6 +44,10 @@ public interface TimeParameters {
 
   default EpochNumber getMinSeedLookahead() {
     return MIN_SEED_LOOKAHEAD;
+  }
+
+  default EpochNumber getMaxSeedLookahead() {
+    return MAX_SEED_LOOKAHEAD;
   }
 
   default EpochNumber getActivationExitDelay() {

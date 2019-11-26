@@ -14,6 +14,8 @@ public class MiscParametersData implements MiscParameters {
   private String SHARD_COUNT;
   @JsonProperty("TARGET_COMMITTEE_SIZE")
   private String TARGET_COMMITTEE_SIZE;
+  @JsonProperty("MAX_COMMITTEES_PER_SLOT")
+  private String MAX_COMMITTEES_PER_SLOT;
   @JsonProperty("MAX_VALIDATORS_PER_COMMITTEE")
   private String MAX_VALIDATORS_PER_COMMITTEE;
   @JsonProperty("MIN_PER_EPOCH_CHURN_LIMIT")
@@ -73,6 +75,12 @@ public class MiscParametersData implements MiscParameters {
   @JsonIgnore
   public Time getMinGenesisTime() {
     return Time.castFrom(UInt64.valueOf(getMIN_GENESIS_TIME()));
+  }
+
+  @Override
+  @JsonIgnore
+  public UInt64 getMaxCommitteesPerSlot() {
+    return UInt64.valueOf(getMAX_COMMITTEES_PER_SLOT());
   }
 
   @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
@@ -149,5 +157,14 @@ public class MiscParametersData implements MiscParameters {
 
   public void setMIN_GENESIS_TIME(String MIN_GENESIS_TIME) {
     this.MIN_GENESIS_TIME = MIN_GENESIS_TIME;
+  }
+
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+  public String getMAX_COMMITTEES_PER_SLOT() {
+    return MAX_COMMITTEES_PER_SLOT;
+  }
+
+  public void setMAX_COMMITTEES_PER_SLOT(String MAX_COMMITTEES_PER_SLOT) {
+    this.MAX_COMMITTEES_PER_SLOT = MAX_COMMITTEES_PER_SLOT;
   }
 }

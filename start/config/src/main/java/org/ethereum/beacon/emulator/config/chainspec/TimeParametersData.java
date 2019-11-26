@@ -21,6 +21,8 @@ public class TimeParametersData implements TimeParameters {
   private String MIN_SEED_LOOKAHEAD;
   @JsonProperty("ACTIVATION_EXIT_DELAY")
   private String ACTIVATION_EXIT_DELAY;
+  @JsonProperty("MAX_SEED_LOOKAHEAD")
+  private String MAX_SEED_LOOKAHEAD;
   @JsonProperty("SLOTS_PER_ETH1_VOTING_PERIOD")
   private String SLOTS_PER_ETH1_VOTING_PERIOD;
   @JsonProperty("SLOTS_PER_HISTORICAL_ROOT")
@@ -62,6 +64,12 @@ public class TimeParametersData implements TimeParameters {
   @JsonIgnore
   public EpochNumber getActivationExitDelay() {
     return new EpochNumber(UInt64.valueOf(getACTIVATION_EXIT_DELAY()));
+  }
+
+  @Override
+  @JsonIgnore
+  public EpochNumber getMaxSeedLookahead() {
+    return new EpochNumber(UInt64.valueOf(getMAX_SEED_LOOKAHEAD()));
   }
 
   @Override
@@ -197,5 +205,14 @@ public class TimeParametersData implements TimeParameters {
 
   public void setMIN_EPOCHS_TO_INACTIVITY_PENALTY(String MIN_EPOCHS_TO_INACTIVITY_PENALTY) {
     this.MIN_EPOCHS_TO_INACTIVITY_PENALTY = MIN_EPOCHS_TO_INACTIVITY_PENALTY;
+  }
+
+  @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+  public String getMAX_SEED_LOOKAHEAD() {
+    return MAX_SEED_LOOKAHEAD;
+  }
+
+  public void setMAX_SEED_LOOKAHEAD(String MAX_SEED_LOOKAHEAD) {
+    this.MAX_SEED_LOOKAHEAD = MAX_SEED_LOOKAHEAD;
   }
 }

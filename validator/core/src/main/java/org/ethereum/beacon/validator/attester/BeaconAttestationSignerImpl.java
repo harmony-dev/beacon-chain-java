@@ -1,6 +1,6 @@
 package org.ethereum.beacon.validator.attester;
 
-import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
+import static org.ethereum.beacon.core.spec.SignatureDomains.BEACON_ATTESTER;
 
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.BeaconState;
@@ -29,7 +29,7 @@ public class BeaconAttestationSignerImpl implements BeaconAttestationSigner {
   @Override
   public Attestation sign(Attestation attestation, BeaconState state) {
     Hash32 hash = spec.hash_tree_root(attestation.getData());
-    UInt64 domain = spec.get_domain(state, ATTESTATION, attestation.getData().getTarget().getEpoch());
+    UInt64 domain = spec.get_domain(state, BEACON_ATTESTER, attestation.getData().getTarget().getEpoch());
     BLSSignature signature = signer.sign(hash, domain);
 
     return new Attestation(

@@ -141,6 +141,11 @@ public class SpecBuilder {
       }
 
       @Override
+      public UInt64 getMaxCommitteesPerSlot() {
+        return miscParameters.getMaxCommitteesPerSlot();
+      }
+
+      @Override
       public Gwei getEjectionBalance() {
         return gweiValues.getEjectionBalance();
       }
@@ -218,6 +223,11 @@ public class SpecBuilder {
       @Override
       public EpochNumber getMinSeedLookahead() {
         return timeParameters.getMinSeedLookahead();
+      }
+
+      @Override
+      public EpochNumber getMaxSeedLookahead() {
+        return timeParameters.getMaxSeedLookahead();
       }
 
       @Override

@@ -40,7 +40,7 @@ import java.util.stream.Stream;
 
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
-import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
+import static org.ethereum.beacon.core.spec.SignatureDomains.BEACON_ATTESTER;
 
 /**
  * Helper functions.
@@ -456,7 +456,7 @@ public interface HelperFunction extends SpecCommons, BLSFunctions {
     UInt64 committees_per_slot = get_committee_count_at_slot(state, slot);
     return compute_committee2(
         get_active_validator_indices(state, epoch),
-        get_seed(state, epoch, ATTESTATION),
+        get_seed(state, epoch, BEACON_ATTESTER),
         slot.modulo(getConstants().getSlotsPerEpoch()).times(committees_per_slot).plus(index),
         committees_per_slot.times(getConstants().getSlotsPerEpoch())
     );
@@ -856,7 +856,7 @@ public interface HelperFunction extends SpecCommons, BLSFunctions {
                 .getEncodedBytes()),
         hash_tree_root(indexed_attestation.getData()),
         indexed_attestation.getSignature(),
-        get_domain(state, ATTESTATION, indexed_attestation.getData().getTarget().getEpoch()));
+        get_domain(state, BEACON_ATTESTER, indexed_attestation.getData().getTarget().getEpoch()));
   }
 
   /*
