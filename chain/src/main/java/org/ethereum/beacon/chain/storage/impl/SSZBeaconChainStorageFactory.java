@@ -40,6 +40,8 @@ public class SSZBeaconChainStorageFactory implements BeaconChainStorageFactory {
 
     SingleValueSource<Checkpoint> justifiedStorage =
         createSingleValueStorage(database, "justified-hash", Checkpoint.class);
+    SingleValueSource<Checkpoint> bestJustifiedStorage =
+        createSingleValueStorage(database, "best-justified-hash", Checkpoint.class);
     SingleValueSource<Checkpoint> finalizedStorage =
         createSingleValueStorage(database, "finalized-hash", Checkpoint.class);
 
@@ -50,6 +52,7 @@ public class SSZBeaconChainStorageFactory implements BeaconChainStorageFactory {
         stateStorage,
         tupleStorage,
         justifiedStorage,
+        bestJustifiedStorage,
         finalizedStorage);
   }
 
