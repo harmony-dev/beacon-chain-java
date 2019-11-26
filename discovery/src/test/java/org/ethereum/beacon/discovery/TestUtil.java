@@ -11,7 +11,6 @@ import org.ethereum.beacon.discovery.mock.IdentitySchemaV4InterpreterMock;
 import org.ethereum.beacon.discovery.storage.NodeSerializerFactory;
 import org.javatuples.Pair;
 import tech.pegasys.artemis.util.bytes.Bytes4;
-import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt64;
 
@@ -41,6 +40,14 @@ public class TestUtil {
     return generateNode(port, false);
   }
 
+  /** Parses string representation of IPv4. Say, `127.0.0.1` */
+  public static Bytes4 parseStringIP(String ip) {
+    try {
+      return Bytes4.wrap(InetAddress.getByName(ip).getAddress());
+    } catch (UnknownHostException e) {
+      throw new RuntimeException(e);
+    }
+  }
   /**
    * Generates node on 127.0.0.1 with provided port. Node key is random, but always the same for the
    * same port.
@@ -51,13 +58,7 @@ public class TestUtil {
    */
   public static Pair<BytesValue, NodeRecord> generateNode(int port, boolean verification) {
     final Random rnd = new Random(SEED);
-    Bytes4 localIp = null;
-    try {
-      localIp = Bytes4.wrap(InetAddress.getByName(LOCALHOST).getAddress());
-    } catch (UnknownHostException e) {
-      throw new RuntimeException(e);
-    }
-    final Bytes4 finalLocalIp = localIp;
+    final Bytes4 finalLocalIp = parseStringIP(LOCALHOST);
     for (int i = 0; i < port; ++i) {
       rnd.nextBoolean(); // skip according to input
     }
@@ -69,7 +70,6 @@ public class TestUtil {
     NodeRecord nodeRecord =
         nodeRecordFactory.createFromValues(
             UInt64.valueOf(1),
-            Bytes96.EMPTY,
             new ArrayList<Pair<String, Object>>() {
               {
                 add(Pair.with(EnrField.ID, IdentitySchema.V4));

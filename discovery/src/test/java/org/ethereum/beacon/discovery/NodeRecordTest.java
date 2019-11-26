@@ -8,7 +8,6 @@ import org.ethereum.beacon.discovery.enr.NodeRecordFactory;
 import org.javatuples.Pair;
 import org.junit.Test;
 import tech.pegasys.artemis.util.bytes.Bytes4;
-import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt64;
 
@@ -82,7 +81,6 @@ public class NodeRecordTest {
     NodeRecord nodeRecord0 =
         NodeRecordFactory.DEFAULT.createFromValues(
             UInt64.ZERO,
-            Bytes96.ZERO,
             Pair.with(EnrField.ID, IdentitySchema.V4),
             Pair.with(EnrField.IP_V4, localIp),
             Pair.with(EnrField.TCP_V4, 30303),
@@ -95,7 +93,6 @@ public class NodeRecordTest {
     NodeRecord nodeRecord1 =
         NodeRecordFactory.DEFAULT.createFromValues(
             UInt64.valueOf(1),
-            Bytes96.ZERO,
             Pair.with(EnrField.ID, IdentitySchema.V4),
             Pair.with(EnrField.IP_V4, localIp),
             Pair.with(EnrField.TCP_V4, 30303),

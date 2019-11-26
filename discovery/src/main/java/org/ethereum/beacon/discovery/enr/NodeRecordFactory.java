@@ -27,13 +27,11 @@ public class NodeRecordFactory {
   }
 
   @SafeVarargs
-  public final NodeRecord createFromValues(
-      UInt64 seq, BytesValue signature, Pair<String, Object>... fieldKeyPairs) {
-    return createFromValues(seq, signature, Arrays.asList(fieldKeyPairs));
+  public final NodeRecord createFromValues(UInt64 seq, Pair<String, Object>... fieldKeyPairs) {
+    return createFromValues(seq, Arrays.asList(fieldKeyPairs));
   }
 
-  public NodeRecord createFromValues(
-      UInt64 seq, BytesValue signature, List<Pair<String, Object>> fieldKeyPairs) {
+  public NodeRecord createFromValues(UInt64 seq, List<Pair<String, Object>> fieldKeyPairs) {
     Pair<String, Object> schemePair = null;
     for (Pair<String, Object> pair : fieldKeyPairs) {
       if (EnrField.ID.equals(pair.getValue0())) {
@@ -42,7 +40,7 @@ public class NodeRecordFactory {
       }
     }
     if (schemePair == null) {
-      throw new RuntimeException("ENR scheme is not defined in key-value pairs");
+      throw new RuntimeException("ENR scheme (ID) is not defined in key-value pairs");
     }
 
     IdentitySchemaInterpreter identitySchemaInterpreter = interpreters.get(schemePair.getValue1());
@@ -53,7 +51,7 @@ public class NodeRecordFactory {
               schemePair.getValue1()));
     }
 
-    return NodeRecord.fromValues(identitySchemaInterpreter, seq, signature, fieldKeyPairs);
+    return NodeRecord.fromValues(identitySchemaInterpreter, seq, fieldKeyPairs);
   }
 
   public NodeRecord fromBase64(String enrBase64) {

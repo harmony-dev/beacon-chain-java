@@ -1,6 +1,9 @@
 package org.ethereum.beacon.discovery;
 
 import org.ethereum.beacon.db.Database;
+import org.ethereum.beacon.discovery.enr.EnrField;
+import org.ethereum.beacon.discovery.enr.EnrFieldV4;
+import org.ethereum.beacon.discovery.enr.IdentitySchema;
 import org.ethereum.beacon.discovery.enr.NodeRecord;
 import org.ethereum.beacon.discovery.packet.AuthHeaderMessagePacket;
 import org.ethereum.beacon.discovery.packet.RandomPacket;
@@ -15,13 +18,16 @@ import org.junit.Ignore;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
 import tech.pegasys.artemis.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.uint.UInt64;
 
 import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import static org.ethereum.beacon.discovery.TestUtil.NODE_RECORD_FACTORY;
 import static org.ethereum.beacon.discovery.TestUtil.NODE_RECORD_FACTORY_NO_VERIFICATION;
 import static org.ethereum.beacon.discovery.TestUtil.TEST_SERIALIZER;
+import static org.ethereum.beacon.discovery.TestUtil.parseStringIP;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
@@ -41,15 +47,25 @@ import static org.junit.Assert.assertFalse;
  */
 @Ignore("Requires manual startup, takes a bit to start")
 public class DiscoveryInteropTest {
+  private static final BytesValue gethNodePrivKey =
+      BytesValue.fromHexString("fb757dc581730490a1d7a00deea65e9b1936924caaea8f44d476014856b68736");
+
   @Test
   public void testInterop() throws Exception {
     // 1) start 2 nodes
     Pair<BytesValue, NodeRecord> nodePair1 = TestUtil.generateNode(40412, true);
     System.out.println(String.format("Node %s started", nodePair1.getValue1().getNodeId()));
     NodeRecord nodeRecord1 = nodePair1.getValue1();
+    // Geth node
     NodeRecord nodeRecord2 =
-        NODE_RECORD_FACTORY_NO_VERIFICATION.fromBase64(
-            "-IS4QHa5-0-OmPRchyyBf9jHIWnQlZXthveUPp5_DoDnMMB0V9ChlzNq_fhFixvIr8xOQcKrYsWjjeIBoUIS8HSuWbgBgmlkgnY0gmlwhH8AAAGJc2VjcDI1NmsxoQMOLLdCQcDE_I6BZvGnmgXVsN2VgTp0sJRSnzF9XDnSNYN1ZHCCdl8"); // Geth node
+        NODE_RECORD_FACTORY.createFromValues(
+            UInt64.valueOf(1L),
+            Pair.with(EnrField.ID, IdentitySchema.V4),
+            Pair.with(EnrField.IP_V4, parseStringIP("127.0.0.1")),
+            Pair.with(EnrField.UDP_V4, 30303),
+            Pair.with(
+                EnrFieldV4.PKEY_SECP256K1, Functions.derivePublicKeyFromPrivate(gethNodePrivKey)));
+    nodeRecord2.sign(gethNodePrivKey);
     NodeTableStorageFactoryImpl nodeTableStorageFactory = new NodeTableStorageFactoryImpl();
     Database database1 = Database.inMemoryDB();
     NodeTableStorage nodeTableStorage1 =
@@ -97,8 +113,6 @@ public class DiscoveryInteropTest {
                 authPacketSent1to2.countDown();
               }
             });
-
-    // TODO: check that we receive correct nodes
 
     // 4) fire 1 to 2 dialog
     discoveryManager1.start();

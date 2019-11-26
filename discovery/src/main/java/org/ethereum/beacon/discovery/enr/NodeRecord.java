@@ -7,6 +7,7 @@ import org.web3j.rlp.RlpList;
 import org.web3j.rlp.RlpString;
 import org.web3j.rlp.RlpType;
 import tech.pegasys.artemis.util.bytes.Bytes32;
+import tech.pegasys.artemis.util.bytes.Bytes96;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.uint.UInt64;
 
@@ -46,12 +47,18 @@ public class NodeRecord {
     this.identitySchemaInterpreter = identitySchemaInterpreter;
   }
 
+  private NodeRecord(
+      IdentitySchemaInterpreter identitySchemaInterpreter, UInt64 seq) {
+    this.seq = seq;
+    this.signature = Bytes96.ZERO;
+    this.identitySchemaInterpreter = identitySchemaInterpreter;
+  }
+
   public static NodeRecord fromValues(
       IdentitySchemaInterpreter identitySchemaInterpreter,
       UInt64 seq,
-      BytesValue signature,
       List<Pair<String, Object>> fieldKeyPairs) {
-    NodeRecord nodeRecord = new NodeRecord(identitySchemaInterpreter, seq, signature);
+    NodeRecord nodeRecord = new NodeRecord(identitySchemaInterpreter, seq);
     fieldKeyPairs.forEach(objects -> nodeRecord.set(objects.getValue0(), objects.getValue1()));
     return nodeRecord;
   }
