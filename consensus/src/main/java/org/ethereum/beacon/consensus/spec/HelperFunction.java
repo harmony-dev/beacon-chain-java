@@ -968,4 +968,12 @@ public interface HelperFunction extends SpecCommons, BLSFunctions {
   default SlotNumber compute_start_slot_at_epoch(EpochNumber epoch) {
     return epoch.mul(getConstants().getSlotsPerEpoch());
   }
+
+  /*
+    def compute_slots_since_epoch_start(slot: Slot) -> int:
+      return slot - compute_start_slot_at_epoch(compute_epoch_at_slot(slot))
+   */
+  default SlotNumber compute_slots_since_epoch_start(SlotNumber slot) {
+    return slot.minus(compute_start_slot_of_epoch(compute_epoch_of_slot(slot)));
+  }
 }
