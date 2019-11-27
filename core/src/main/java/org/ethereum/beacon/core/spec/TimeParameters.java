@@ -26,6 +26,7 @@ public interface TimeParameters {
   EpochNumber PERSISTENT_COMMITTEE_PERIOD = EpochNumber.of(1 << 11); // 2,048
   EpochNumber MAX_EPOCHS_PER_CROSSLINK = EpochNumber.of(1 << 6); // 64
   EpochNumber MIN_EPOCHS_TO_INACTIVITY_PENALTY = EpochNumber.of(1 << 2); // 4
+  SlotNumber SAFE_SLOTS_TO_UPDATE_JUSTIFIED = SlotNumber.of(1 << 3); // 8 slots
 
   /* Values defined in the spec. */
 
@@ -71,5 +72,9 @@ public interface TimeParameters {
 
   default EpochNumber getMinEpochsToInactivityPenalty() {
     return MIN_EPOCHS_TO_INACTIVITY_PENALTY;
+  }
+
+  default SlotNumber getSafeSlotsToUpdateJustified() {
+    return SAFE_SLOTS_TO_UPDATE_JUSTIFIED;
   }
 }
