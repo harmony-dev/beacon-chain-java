@@ -293,8 +293,14 @@ public interface BytesValue extends Comparable<BytesValue> {
    */
   byte get(int i);
 
+  /** @return bit at `bitIndex`, with 0 index and bitIndex(0) of 0x01 == 1 */
   default boolean getBit(int bitIndex) {
     return ((get(bitIndex / 8) >> (bitIndex % 8)) & 1) == 1;
+  }
+
+  /** @return bit at `bitIndex`, with 0 index and bitIndex(7) of 0x01 == 1 */
+  default boolean getHighBit(int bitIndex) {
+    return ((get(bitIndex / 8) >> (7 - (bitIndex % 8))) & 1) == 1;
   }
 
   /**
