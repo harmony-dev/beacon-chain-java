@@ -28,6 +28,7 @@ import org.ethereum.beacon.consensus.transition.EmptySlotTransition;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
+import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
@@ -50,6 +51,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   private final int maxEmptySlotTransitions;
 
   private final BeaconTupleStorage tupleStorage;
+  private final BeaconChainStorage chainStorage;
 
   private final HeadFunction headFunction;
   private final BeaconChainSpec spec;
@@ -100,6 +102,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
       EmptySlotTransition emptySlotTransition,
       Schedulers schedulers,
       int maxEmptySlotTransitions) {
+    this.chainStorage = chainStorage;
     this.tupleStorage = chainStorage.getTupleStorage();
     this.spec = spec;
     this.emptySlotTransition = emptySlotTransition;
@@ -249,6 +252,23 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     if (newSlot.greater(head.getBlock().getSlot().plus(maxEmptySlotTransitions))) {
       logger.debug("Ignore new slot " + newSlot + " far above head block: " + head.getBlock());
       return;
+    }
+
+    /*
+      # Not a new epoch, return
+      if not (current_slot > previous_slot and compute_slots_since_epoch_start(current_slot) == 0):
+        return
+      # Update store.justified_checkpoint if a better checkpoint is known
+      if store.best_justified_checkpoint.epoch > store.justified_checkpoint.epoch:
+        store.justified_checkpoint = store.best_justified_checkpoint
+     */
+    SlotNumber currentSlot = spec.get_current_slot(latestState, schedulers.getCurrentTime());
+    if (spec.compute_slots_since_epoch_start(currentSlot).equals(SlotNumber.ZERO)) {
+      Checkpoint bestJustifiedChkpt = chainStorage.getBestJustifiedStorage().get().get();
+      Checkpoint justifiedChkpt = chainStorage.getJustifiedStorage().get().get();
+      if (bestJustifiedChkpt.getEpoch().greater(justifiedChkpt.getEpoch())) {
+        chainStorage.getJustifiedStorage().set(bestJustifiedChkpt);
+      }
     }
 
     updateCurrentObservableState(head, newSlot);
