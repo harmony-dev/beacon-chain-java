@@ -13,6 +13,7 @@ import org.ethereum.beacon.consensus.verifier.BeaconStateVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
+import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.stream.SimpleProcessor;
@@ -174,14 +175,52 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     if (!previous.getFinalizedCheckpoint().equals(current.getFinalizedCheckpoint())) {
       chainStorage.getFinalizedStorage().set(current.getFinalizedCheckpoint());
     }
-    if (chainStorage
-        .getJustifiedStorage()
-        .get()
-        .get()
-        .getEpoch()
-        .less(current.getCurrentJustifiedCheckpoint().getEpoch())) {
-      chainStorage.getJustifiedStorage().set(current.getCurrentJustifiedCheckpoint());
+    Checkpoint storeChkpt = chainStorage.getJustifiedStorage().get().get();
+    Checkpoint currentJustifiedCheckpoint = current.getCurrentJustifiedCheckpoint();
+    if (storeChkpt.getEpoch().less(currentJustifiedCheckpoint.getEpoch())) {
+      chainStorage.getBestJustifiedStorage().set(currentJustifiedCheckpoint);
+      if (shouldUpdateJustifiedCheckpoint(currentJustifiedCheckpoint)) {
+        chainStorage.getJustifiedStorage().set(currentJustifiedCheckpoint);
+      }
     }
+  }
+
+  private boolean shouldUpdateJustifiedCheckpoint(Checkpoint new_justified_checkpoint) {
+    // if compute_slots_since_epoch_start(get_current_slot(store)) < SAFE_SLOTS_TO_UPDATE_JUSTIFIED:
+    //    return True
+    SlotNumber currentSlot =
+        spec.get_current_slot(recentlyProcessed.getState(), schedulers.getCurrentTime());
+    if (spec.compute_slots_since_epoch_start(currentSlot)
+        .less(spec.getConstants().getSafeSlotsToUpdateJustified())) {
+      return true;
+    }
+
+    // new_justified_block = store.blocks[new_justified_checkpoint.root]
+    // if new_justified_block.slot <= compute_start_slot_at_epoch(store.justified_checkpoint.epoch):
+    //   return False
+    BeaconBlock new_justified_block =
+        chainStorage.getBlockStorage().get(new_justified_checkpoint.getRoot()).get();
+    Checkpoint justifiedChkpt = chainStorage.getJustifiedStorage().get().get();
+    if (new_justified_block
+        .getSlot()
+        .lessEqual(spec.compute_start_slot_of_epoch(justifiedChkpt.getEpoch()))) {
+      return false;
+    }
+
+    // if not (
+    //   get_ancestor(store, new_justified_checkpoint.root,
+    // store.blocks[store.justified_checkpoint.root].slot) ==
+    //     store.justified_checkpoint.root
+    // ):
+    //   return False
+    if (!getAncestor(
+            new_justified_checkpoint.getRoot(),
+            chainStorage.getBlockStorage().get(justifiedChkpt.getRoot()).get().getSlot())
+        .equals(justifiedChkpt.getRoot())) {
+      return false;
+    }
+    // return True
+    return true;
   }
 
   private BeaconStateEx pullParentState(BeaconBlock block) {

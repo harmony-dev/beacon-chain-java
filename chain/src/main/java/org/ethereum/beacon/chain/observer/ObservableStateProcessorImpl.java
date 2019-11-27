@@ -1,5 +1,17 @@
 package org.ethereum.beacon.chain.observer;
 
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.chain.BeaconChainHead;
@@ -17,6 +29,7 @@ import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
+import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
 import org.ethereum.beacon.core.state.PendingAttestation;
@@ -32,18 +45,6 @@ import org.javatuples.Pair;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
 public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   private static final Logger logger = LogManager.getLogger(ObservableStateProcessorImpl.class);
 
@@ -53,6 +54,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   private final int maxEmptySlotTransitions;
 
   private final BeaconTupleStorage tupleStorage;
+  private final BeaconChainStorage chainStorage;
 
   private final HeadFunction headFunction;
   private final BeaconChainSpec spec;
@@ -105,6 +107,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
       EmptySlotTransition emptySlotTransition,
       Schedulers schedulers,
       int maxEmptySlotTransitions) {
+    this.chainStorage = chainStorage;
     this.tupleStorage = chainStorage.getTupleStorage();
     this.spec = spec;
     this.emptySlotTransition = emptySlotTransition;
@@ -288,6 +291,23 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
     if (newSlot.greater(head.getBlock().getSlot().plus(maxEmptySlotTransitions))) {
       logger.debug("Ignore new slot " + newSlot + " far above head block: " + head.getBlock());
       return;
+    }
+
+    /*
+      # Not a new epoch, return
+      if not (current_slot > previous_slot and compute_slots_since_epoch_start(current_slot) == 0):
+        return
+      # Update store.justified_checkpoint if a better checkpoint is known
+      if store.best_justified_checkpoint.epoch > store.justified_checkpoint.epoch:
+        store.justified_checkpoint = store.best_justified_checkpoint
+     */
+    SlotNumber currentSlot = spec.get_current_slot(latestState, schedulers.getCurrentTime());
+    if (spec.compute_slots_since_epoch_start(currentSlot).equals(SlotNumber.ZERO)) {
+      Checkpoint bestJustifiedChkpt = chainStorage.getBestJustifiedStorage().get().get();
+      Checkpoint justifiedChkpt = chainStorage.getJustifiedStorage().get().get();
+      if (bestJustifiedChkpt.getEpoch().greater(justifiedChkpt.getEpoch())) {
+        chainStorage.getJustifiedStorage().set(bestJustifiedChkpt);
+      }
     }
 
     updateHead(latestState);

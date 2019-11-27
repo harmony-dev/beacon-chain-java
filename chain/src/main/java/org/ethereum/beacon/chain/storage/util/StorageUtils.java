@@ -33,9 +33,10 @@ public class StorageUtils {
     Hash32 genesisRoot = spec.signing_root(tuple.getBlock());
     storage.getStateStorage().put(tuple.getBlock().getStateRoot(), tuple.getState());
     storage.getBlockStorage().put(genesisRoot, tuple.getBlock());
-    storage
-        .getJustifiedStorage()
-        .set(new Checkpoint(initialState.getCurrentJustifiedCheckpoint().getEpoch(), genesisRoot));
+    Checkpoint justifiedChkpt =
+        new Checkpoint(initialState.getCurrentJustifiedCheckpoint().getEpoch(), genesisRoot);
+    storage.getJustifiedStorage().set(justifiedChkpt);
+    storage.getBestJustifiedStorage().set(justifiedChkpt);
     storage
         .getFinalizedStorage()
         .set(new Checkpoint(initialState.getFinalizedCheckpoint().getEpoch(), genesisRoot));
