@@ -39,6 +39,7 @@ import org.ethereum.beacon.test.type.state.OperationDepositCase;
 import org.ethereum.beacon.test.type.state.OperationProposerSlashingCase;
 import org.ethereum.beacon.test.type.state.OperationVoluntaryExitCase;
 import org.ethereum.beacon.test.type.state.RegistryUpdatesProcessingCase;
+import org.ethereum.beacon.test.type.state.RewardsAndPenaltiesCase;
 import org.ethereum.beacon.test.type.state.SanityBlocksCase;
 import org.ethereum.beacon.test.type.state.SanitySlotsCase;
 import org.ethereum.beacon.test.type.state.SlashingsProcessingCase;
@@ -119,6 +120,8 @@ public class StateRunner implements Runner {
       processingError = processRegistryUpdates(latestState);
     } else if (testCase instanceof SlashingsProcessingCase) {
       processingError = processSlashings(latestState);
+    } else if (testCase instanceof RewardsAndPenaltiesCase) {
+      processingError = processRewardsAndPenalties(latestState);
     } else {
       throw new RuntimeException("This type of state test is not supported");
     }
@@ -256,6 +259,15 @@ public class StateRunner implements Runner {
   private Optional<String> processSlashings(BeaconState state) {
     try {
       spec.process_slashings((MutableBeaconState) state);
+      return Optional.empty();
+    } catch (SpecCommons.SpecAssertionFailed | IllegalArgumentException ex) {
+      return Optional.of(ex.getMessage());
+    }
+  }
+
+  private Optional<String> processRewardsAndPenalties(BeaconState state) {
+    try {
+      spec.process_rewards_and_penalties((MutableBeaconState) state);
       return Optional.empty();
     } catch (SpecCommons.SpecAssertionFailed | IllegalArgumentException ex) {
       return Optional.of(ex.getMessage());

@@ -25,7 +25,7 @@ public class SszStaticTests {
           SszStaticRunner testRunner = new SszStaticRunner(input.getValue0(), input.getValue1());
           return testRunner.run();
         },
-        TestUtils.Ignored.EMPTY,
+        TestUtils.Ignored.filesOf("AggregateAndProof"),
         true);
   }
 
@@ -38,7 +38,7 @@ public class SszStaticTests {
           SszStaticRunner testRunner = new SszStaticRunner(input.getValue0(), input.getValue1());
           return testRunner.run();
         },
-        TestUtils.Ignored.EMPTY,
+        TestUtils.Ignored.filesOf("AggregateAndProof"),
         true);
   }
 }

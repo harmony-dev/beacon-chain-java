@@ -4,6 +4,7 @@ import org.ethereum.beacon.test.runner.state.StateRunner;
 import org.ethereum.beacon.test.type.state.FinalUpdatesProcessingCase;
 import org.ethereum.beacon.test.type.state.FinalizationProcessingCase;
 import org.ethereum.beacon.test.type.state.RegistryUpdatesProcessingCase;
+import org.ethereum.beacon.test.type.state.RewardsAndPenaltiesCase;
 import org.ethereum.beacon.test.type.state.SlashingsProcessingCase;
 import org.junit.Test;
 
@@ -63,6 +64,19 @@ public class StateEpochTests extends TestUtils {
         MAINNET_TESTS,
         subDir,
         SlashingsProcessingCase.class,
+        input -> {
+          StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1());
+          return testRunner.run();
+        });
+  }
+
+  @Test
+  public void testRewardsAndPenalties() {
+    Path subDir = Paths.get(SUBDIR.toString(), "rewards_and_penalties");
+    runSpecTestsInResourceDir(
+        MINIMAL_TESTS,
+        subDir,
+        RewardsAndPenaltiesCase.class,
         input -> {
           StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1());
           return testRunner.run();
