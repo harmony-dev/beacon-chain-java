@@ -30,7 +30,6 @@ import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.test.runner.Runner;
 import org.ethereum.beacon.test.type.TestCase;
-import org.ethereum.beacon.test.type.state.CrosslinksProcessingCase;
 import org.ethereum.beacon.test.type.state.FinalUpdatesProcessingCase;
 import org.ethereum.beacon.test.type.state.FinalizationProcessingCase;
 import org.ethereum.beacon.test.type.state.OperationAttestationCase;
@@ -112,8 +111,6 @@ public class StateRunner implements Runner {
       processingError =
           processBlockHeader(
               ((OperationBlockHeaderCase) testCase).getBlock(spec.getConstants()), latestState);
-    } else if (testCase instanceof CrosslinksProcessingCase) {
-      processingError = processCrosslinks(latestState);
     } else if (testCase instanceof FinalUpdatesProcessingCase) {
       processingError = processFinalUpdates(latestState);
     } else if (testCase instanceof FinalizationProcessingCase) {

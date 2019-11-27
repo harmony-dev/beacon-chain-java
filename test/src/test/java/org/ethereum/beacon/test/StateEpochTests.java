@@ -1,7 +1,6 @@
 package org.ethereum.beacon.test;
 
 import org.ethereum.beacon.test.runner.state.StateRunner;
-import org.ethereum.beacon.test.type.state.CrosslinksProcessingCase;
 import org.ethereum.beacon.test.type.state.FinalUpdatesProcessingCase;
 import org.ethereum.beacon.test.type.state.FinalizationProcessingCase;
 import org.ethereum.beacon.test.type.state.RegistryUpdatesProcessingCase;
@@ -13,20 +12,6 @@ import java.nio.file.Paths;
 
 public class StateEpochTests extends TestUtils {
   private Path SUBDIR = Paths.get("phase0", "epoch_processing");
-
-  @Test
-  public void testCrosslinksProcessing() {
-    Path subDir = Paths.get(SUBDIR.toString(), "crosslinks");
-    runSpecTestsInResourceDirs(
-        MINIMAL_TESTS,
-        MAINNET_TESTS,
-        subDir,
-        CrosslinksProcessingCase.class,
-        input -> {
-          StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1());
-          return testRunner.run();
-        });
-  }
 
   @Test
   public void testRegistryUpdates() {
