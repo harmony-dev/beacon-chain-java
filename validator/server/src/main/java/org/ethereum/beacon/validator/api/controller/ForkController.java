@@ -35,7 +35,7 @@ public class ForkController extends RestController {
                 .getFork()
                 .getPreviousVersion()
                 .toString(),
-            spec.compute_epoch_of_slot(observableBeaconStateCopy.getLatestSlotState().getSlot())
+            spec.compute_epoch_at_slot(observableBeaconStateCopy.getLatestSlotState().getSlot())
                 .longValue(),
             chainId.toBI());
     return forkResponse;

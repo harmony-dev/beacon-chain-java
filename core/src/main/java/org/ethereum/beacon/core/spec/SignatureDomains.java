@@ -13,9 +13,9 @@ public interface SignatureDomains {
 
   UInt64 BEACON_PROPOSER = UInt64.valueOf(0);
 
-  UInt64 RANDAO = UInt64.valueOf(1);
+  UInt64 BEACON_ATTESTER = UInt64.valueOf(1);
 
-  UInt64 ATTESTATION = UInt64.valueOf(2);
+  UInt64 RANDAO = UInt64.valueOf(2);
 
   UInt64 DEPOSIT = UInt64.valueOf(3);
 

@@ -12,10 +12,8 @@ import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
-import org.ethereum.beacon.core.operations.Transfer;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
-import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
@@ -141,7 +139,6 @@ public class TestDataFactory {
     deposits.add(createDeposit2());
     List<VoluntaryExit> voluntaryExits = new ArrayList<>();
     voluntaryExits.add(createExit());
-    List<Transfer> transfers = new ArrayList<>();
     BeaconBlockBody beaconBlockBody =
         new BeaconBlockBody(
             BLSSignature.ZERO,
@@ -152,7 +149,6 @@ public class TestDataFactory {
             attestations,
             deposits,
             voluntaryExits,
-            transfers,
             specConstants
         );
 
@@ -193,12 +189,6 @@ public class TestDataFactory {
     BeaconState beaconState = BeaconState.getEmpty();
 
     return beaconState;
-  }
-
-  public Crosslink createCrosslink() {
-    Crosslink crosslink = Crosslink.EMPTY;
-
-    return crosslink;
   }
 
   public Fork createFork() {

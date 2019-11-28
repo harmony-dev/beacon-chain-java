@@ -136,7 +136,6 @@ public class BeaconChainSpecTest {
             AttestationTestUtil.createRandomList(rnd, 10),
             emptyBlock.getBody().getDeposits().listCopy(),
             emptyBlock.getBody().getVoluntaryExits().listCopy(),
-            emptyBlock.getBody().getTransfers().listCopy(),
             spec.getConstants());
     BeaconBlock block =
         new BeaconBlock(
@@ -154,7 +153,7 @@ public class BeaconChainSpecTest {
   public void committeeTest1() {
     int validatorCount = 4;
     int epochLength = 4;
-    int shardCount = 8;
+    int maxCommitteesPerSlot = 8;
     int targetCommitteeSize = 2;
     SlotNumber genesisSlot = SlotNumber.of(1_000_000);
     Random rnd = new Random(1);
@@ -178,8 +177,8 @@ public class BeaconChainSpecTest {
           }
 
           @Override
-          public ShardNumber getShardCount() {
-            return ShardNumber.of(shardCount);
+          public UInt64 getMaxCommitteesPerSlot() {
+            return UInt64.valueOf(maxCommitteesPerSlot);
           }
         };
     BeaconChainSpec spec =
@@ -203,7 +202,7 @@ public class BeaconChainSpecTest {
             spec.get_empty_block());
     MutableBeaconState state = initialState.createMutableCopy();
 
-    System.out.println("get_committee_count() = " +
+    System.out.println("get_committee_count_at_slot() = " +
         spec.get_committee_count_at_slot(state, spec.getConstants().getGenesisSlot()));
 
     for (SlotNumber slot : genesisSlot.iterateTo(genesisSlot.plus(SlotNumber.of(epochLength)))) {

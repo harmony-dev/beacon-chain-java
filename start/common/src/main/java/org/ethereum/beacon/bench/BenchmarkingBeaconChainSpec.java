@@ -102,14 +102,6 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
   }
 
   @Override
-  public boolean bls_verify_multiple(
-      List<PublicKey> publicKeys, List<Hash32> messages, BLSSignature signature, UInt64 domain) {
-    return callAndTrack(
-        "bls_verify_multiple",
-        () -> super.bls_verify_multiple(publicKeys, messages, signature, domain));
-  }
-
-  @Override
   public PublicKey bls_aggregate_pubkeys(List<BLSPubkey> publicKeysBytes) {
     return callAndTrack(
         "bls_aggregate_pubkeys", () -> super.bls_aggregate_pubkeys(publicKeysBytes));

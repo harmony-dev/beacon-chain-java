@@ -6,7 +6,6 @@ import org.ethereum.beacon.test.type.state.OperationAttesterSlashingCase;
 import org.ethereum.beacon.test.type.state.OperationBlockHeaderCase;
 import org.ethereum.beacon.test.type.state.OperationDepositCase;
 import org.ethereum.beacon.test.type.state.OperationProposerSlashingCase;
-import org.ethereum.beacon.test.type.state.OperationTransferCase;
 import org.ethereum.beacon.test.type.state.OperationVoluntaryExitCase;
 import org.junit.Test;
 
@@ -24,20 +23,6 @@ public class StateOperationsTests extends TestUtils {
         MAINNET_TESTS,
         subDir,
         OperationAttestationCase.class,
-        input -> {
-          StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1());
-          return testRunner.run();
-        });
-  }
-
-  @Test
-  public void testTransferOperations() {
-    Path subDir = Paths.get(SUBDIR.toString(), "transfer");
-    // No mainnet tests for `transfer`s
-    runSpecTestsInResourceDir(
-        MINIMAL_TESTS,
-        subDir,
-        OperationTransferCase.class,
         input -> {
           StateRunner testRunner = new StateRunner(input.getValue0(), input.getValue1());
           return testRunner.run();
