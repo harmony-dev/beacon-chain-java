@@ -196,7 +196,7 @@ public class DefaultBeaconChain implements MutableBeaconChain {
     Checkpoint justifiedChkpt = chainStorage.getJustifiedStorage().get().get();
     if (new_justified_block
         .getSlot()
-        .lessEqual(spec.compute_start_slot_of_epoch(justifiedChkpt.getEpoch()))) {
+        .lessEqual(spec.compute_start_slot_at_epoch(justifiedChkpt.getEpoch()))) {
       return false;
     }
 
