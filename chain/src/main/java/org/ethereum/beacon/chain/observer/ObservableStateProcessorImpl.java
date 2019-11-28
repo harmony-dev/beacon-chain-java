@@ -163,7 +163,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
         MutableBeaconState mutableState = tuple.getState().createMutableCopy();
         spec.process_slots(
             mutableState,
-            spec.compute_start_slot_of_epoch(attestation.getData().getTarget().getEpoch()));
+            spec.compute_start_slot_at_epoch(attestation.getData().getTarget().getEpoch()));
         BeaconState refState = mutableState.createImmutable();
         IndexedAttestation indexed_attestation =
             spec.get_indexed_attestation(refState, attestation);
