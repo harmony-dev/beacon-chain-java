@@ -14,7 +14,7 @@ import tech.pegasys.artemis.util.uint.UInt64;
  * A part of spec describing Honest Validator behaviour.
  *
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.8.0/specs/validator/0_beacon-chain-validator.md">Honest
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.9.2/specs/validator/0_beacon-chain-validator.md">Honest
  *     Validator</a> in the spec.
  */
 public interface HonestValidator extends HelperFunction {
