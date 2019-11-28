@@ -5,14 +5,14 @@ import org.ethereum.beacon.core.types.ValidatorIndex;
 import java.util.List;
 
 /** Validator committee assigned to a certain shard. */
-public class ShardCommittee {
+public class BeaconCommittee {
 
   /** Validator indices. */
   private final List<ValidatorIndex> committee;
   /** Committee index. */
   private final CommitteeIndex index;
 
-  public ShardCommittee(List<ValidatorIndex> committee, CommitteeIndex index) {
+  public BeaconCommittee(List<ValidatorIndex> committee, CommitteeIndex index) {
     this.committee = committee;
     this.index = index;
   }
@@ -34,7 +34,7 @@ public class ShardCommittee {
       return false;
     }
 
-    ShardCommittee committee1 = (ShardCommittee) o;
+    BeaconCommittee committee1 = (BeaconCommittee) o;
 
     if (!committee.equals(committee1.committee)) {
       return false;

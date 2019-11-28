@@ -21,7 +21,7 @@ import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.spec.SpecConstants;
-import org.ethereum.beacon.core.state.ShardCommittee;
+import org.ethereum.beacon.core.state.BeaconCommittee;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.core.types.CommitteeIndex;
@@ -218,13 +218,14 @@ public class MultiValidatorService implements ValidatorService {
       runAsync(() -> propose(proposerIndex, observableState));
     }
 
-    // trigger attester at a halfway through the slot
-    Time startAt = spec.get_slot_middle_time(state, state.getSlot());
-    List<ShardCommittee> slotCommittees =
+    // trigger attester SECONDS_PER_SLOT/3 seconds after the start of slot.
+    Time startAt = spec.get_slot_start_time(state, state.getSlot())
+        .plus(spec.getConstants().getSecondsPerSlot().dividedBy(3));
+    List<BeaconCommittee> slotCommittees =
         spec.get_crosslink_committees_at_slot(state, state.getSlot());
-    for (ShardCommittee shardCommittee : slotCommittees) {
-      CommitteeIndex committeeIndex = shardCommittee.getIndex();
-      shardCommittee.getCommittee().stream()
+    for (BeaconCommittee beaconCommittee : slotCommittees) {
+      CommitteeIndex committeeIndex = beaconCommittee.getIndex();
+      beaconCommittee.getCommittee().stream()
           .filter(initialized::containsKey)
           .forEach(index -> schedule(startAt, () -> this.attest(index, committeeIndex)));
     }

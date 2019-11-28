@@ -11,7 +11,7 @@ import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
 import org.ethereum.beacon.core.spec.SignatureDomains;
 import org.ethereum.beacon.core.state.Eth1Data;
-import org.ethereum.beacon.core.state.ShardCommittee;
+import org.ethereum.beacon.core.state.BeaconCommittee;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
@@ -109,12 +109,12 @@ public interface HelperFunction extends SpecCommons, BLSFunctions {
    * However, it's still convenient for various log outputs, thus, it's been rewritten with usage
    * of its replacement.
    */
-  default List<ShardCommittee> get_crosslink_committees_at_slot(BeaconState state, SlotNumber slot) {
-    List<ShardCommittee> ret = new ArrayList<>();
+  default List<BeaconCommittee> get_crosslink_committees_at_slot(BeaconState state, SlotNumber slot) {
+    List<BeaconCommittee> ret = new ArrayList<>();
     for (UInt64 i : UInt64s.iterate(UInt64.ZERO, get_committee_count_at_slot(state, slot))) {
       CommitteeIndex index = new CommitteeIndex(i);
       List<ValidatorIndex> committee = get_beacon_committee(state, slot, index);
-      ret.add(new ShardCommittee(committee, index));
+      ret.add(new BeaconCommittee(committee, index));
     }
 
     return ret;

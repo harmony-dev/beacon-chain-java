@@ -8,7 +8,7 @@ import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.observer.ObservableStateProcessor;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconStateEx;
-import org.ethereum.beacon.core.state.ShardCommittee;
+import org.ethereum.beacon.core.state.BeaconCommittee;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
@@ -76,7 +76,7 @@ public class DutiesController extends SyncRestController {
       if (!epoch.lessEqual(spec.get_current_epoch(stateEx).increment())) {
         throw new NotAcceptableInputException("Couldn't provide duties for requested epoch");
       }
-      Map<SlotNumber, Pair<ValidatorIndex, List<ShardCommittee>>> validatorDuties =
+      Map<SlotNumber, Pair<ValidatorIndex, List<BeaconCommittee>>> validatorDuties =
           service.getValidatorDuties(stateEx, epoch);
 
       List<ValidatorDutiesResponse.ValidatorDuty> responseList = new ArrayList<>();
