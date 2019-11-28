@@ -27,7 +27,7 @@ open class InvalidAttestationSpec: IntegrationSpec() {
     genesis = testChain.head
 
     val startEpochNumber = startEpoch ?: 0
-    val startSlot = tester.spec.compute_start_slot_of_epoch(EpochNumber.of(startEpochNumber)).intValue
+    val startSlot = tester.spec.compute_start_slot_at_epoch(EpochNumber.of(startEpochNumber)).intValue
 
     block0 = if (startEpochNumber == 0) {
       genesis

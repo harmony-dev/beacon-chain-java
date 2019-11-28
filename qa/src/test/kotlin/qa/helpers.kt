@@ -80,7 +80,7 @@ class Tester(contract: EmulatorContract) {
     }
 
   val currentEpoch: EpochNumber
-    get() = spec.compute_epoch_of_slot(currentSlot)
+    get() = spec.compute_epoch_at_slot(currentSlot)
 
   private fun createTestLauncher(spec: BeaconChainSpec, contract: EmulatorContract, wireApi: TestWire, mdcControlledSchedulers: MDCControlledSchedulers): TestLauncher {
     val signerFactory =
@@ -217,7 +217,7 @@ class TestChain(val tester: Tester) {
 
         val sig = createSigner(currState.validators[vi].pubKey).sign(
             tester.spec.hash_tree_root(b.data),
-            tester.spec.get_domain(currState, SignatureDomains.ATTESTATION, b.data.target.epoch))
+            tester.spec.get_domain(currState, SignatureDomains.BEACON_ATTESTER, b.data.target.epoch))
 
         val c = b.withSignature(sig)
 
@@ -259,7 +259,6 @@ class TestChain(val tester: Tester) {
         ReadList.wrap(attestations, { i -> i }, spec.constants.maxAttestations.toLong()),
         emptyBody.deposits,
         emptyBody.voluntaryExits,
-        emptyBody.transfers,
         spec.constants
     )
 

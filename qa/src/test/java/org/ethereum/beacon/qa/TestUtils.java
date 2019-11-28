@@ -12,11 +12,6 @@ public class TestUtils {
     return BeaconChainSpec.Builder.createWithDefaultParams()
         .withConstants(new SpecConstants() {
           @Override
-          public ShardNumber getShardCount() {
-            return ShardNumber.of(16);
-          }
-
-          @Override
           public SlotNumber.EpochLength getSlotsPerEpoch() {
             return new SlotNumber.EpochLength(UInt64.valueOf(4));
           }
