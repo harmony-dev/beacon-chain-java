@@ -4,7 +4,6 @@ import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.verifier.block.AttestationListVerifier;
 import org.ethereum.beacon.consensus.verifier.block.AttesterSlashingListVerifier;
 import org.ethereum.beacon.consensus.verifier.block.DepositListVerifier;
-import org.ethereum.beacon.consensus.verifier.block.TransferListVerifier;
 import org.ethereum.beacon.consensus.verifier.block.VoluntaryExitListVerifier;
 import org.ethereum.beacon.consensus.verifier.block.BlockHeaderVerifier;
 import org.ethereum.beacon.consensus.verifier.block.ProposerSlashingListVerifier;
@@ -12,7 +11,6 @@ import org.ethereum.beacon.consensus.verifier.block.RandaoVerifier;
 import org.ethereum.beacon.consensus.verifier.operation.AttestationVerifier;
 import org.ethereum.beacon.consensus.verifier.operation.AttesterSlashingVerifier;
 import org.ethereum.beacon.consensus.verifier.operation.DepositVerifier;
-import org.ethereum.beacon.consensus.verifier.operation.TransferVerifier;
 import org.ethereum.beacon.consensus.verifier.operation.VoluntaryExitVerifier;
 import org.ethereum.beacon.consensus.verifier.operation.ProposerSlashingVerifier;
 import org.ethereum.beacon.core.BeaconBlock;
@@ -30,7 +28,6 @@ public interface BeaconBlockVerifier {
         .with(new AttestationListVerifier(new AttestationVerifier(spec), spec.getConstants()))
         .with(new DepositListVerifier(new DepositVerifier(spec), spec.getConstants()))
         .with(new VoluntaryExitListVerifier(new VoluntaryExitVerifier(spec), spec.getConstants()))
-        .with(new TransferListVerifier(new TransferVerifier(spec), spec))
         .build();
   }
 

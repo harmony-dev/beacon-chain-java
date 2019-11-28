@@ -6,7 +6,7 @@ import tech.pegasys.artemis.util.uint.UInt64;
 
 public interface NonConfigurableConstants {
   EpochNumber FAR_FUTURE_EPOCH = EpochNumber.castFrom(UInt64.MAX_VALUE); // (1 << 64) - 1
-  UInt64 BASE_REWARDS_PER_EPOCH = UInt64.valueOf(5);
+  UInt64 BASE_REWARDS_PER_EPOCH = UInt64.valueOf(4);
   UInt64 DEPOSIT_CONTRACT_TREE_DEPTH = UInt64.valueOf(1 << 5); // 32
   Time SECONDS_PER_DAY = Time.of(86400);
   int JUSTIFICATION_BITS_LENGTH = 4;

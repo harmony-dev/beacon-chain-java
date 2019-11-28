@@ -141,7 +141,7 @@ public class ObservableStateProcessorImpl implements ObservableStateProcessor {
   }
 
   private void onNewSlot(SlotNumber newSlot) {
-    EpochNumber currentEpoch = spec.compute_epoch_of_slot(newSlot);
+    EpochNumber currentEpoch = spec.compute_epoch_at_slot(newSlot);
     EpochNumber previousEpoch = currentEpoch.greater(EpochNumber.ZERO) ?
         currentEpoch.decrement() : currentEpoch;
     runTaskInSeparateThread(

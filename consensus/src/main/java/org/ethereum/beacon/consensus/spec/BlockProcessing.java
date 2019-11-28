@@ -15,10 +15,8 @@ import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
-import org.ethereum.beacon.core.operations.Transfer;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
-import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
 import org.ethereum.beacon.core.spec.SignatureDomains;
@@ -137,10 +135,10 @@ public interface BlockProcessing extends HelperFunction {
     checkIndexRange(state, proposer_slashing.getProposerIndex());
     ValidatorRecord proposer = state.getValidators().get(proposer_slashing.getProposerIndex());
 
-    /* Verify that the epoch is the same
-      assert compute_epoch_of_slot(proposer_slashing.header_1.slot) == compute_epoch_of_slot(proposer_slashing.header_2.slot) */
-    assertTrue(compute_epoch_of_slot(proposer_slashing.getHeader1().getSlot())
-        .equals(compute_epoch_of_slot(proposer_slashing.getHeader2().getSlot())));
+    /*    # Verify slots match
+    assert proposer_slashing.header_1.slot == proposer_slashing.header_2.slot */
+    assertTrue(proposer_slashing.getHeader1().getSlot()
+        .equals(proposer_slashing.getHeader2().getSlot()));
 
     /* But the headers are different
       assert proposer_slashing.header_1 != proposer_slashing.header_2 */
@@ -155,7 +153,7 @@ public interface BlockProcessing extends HelperFunction {
         domain = get_domain(state, DOMAIN_BEACON_PROPOSER, compute_epoch_of_slot(header.slot))
         assert bls_verify(proposer.pubkey, signing_root(header), header.signature, domain) */
     Stream.of(proposer_slashing.getHeader1(), proposer_slashing.getHeader2()).forEach(header -> {
-      UInt64 domain = get_domain(state, BEACON_PROPOSER, compute_epoch_of_slot(header.getSlot()));
+      UInt64 domain = get_domain(state, BEACON_PROPOSER, compute_epoch_at_slot(header.getSlot()));
       assertTrue(bls_verify(
           proposer.getPubKey(),
           signing_root(header),
@@ -249,7 +247,6 @@ public interface BlockProcessing extends HelperFunction {
          assert data.source == state.current_justified_checkpoint
        else:
          assert data.source == state.previous_justified_checkpoint */
-    Crosslink parent_crosslink;
     boolean is_ffg_data_correct;
     if (data.getTarget().getEpoch().equals(get_current_epoch(state))) {
       is_ffg_data_correct = data.getSource().equals(state.getCurrentJustifiedCheckpoint());
@@ -412,68 +409,6 @@ public interface BlockProcessing extends HelperFunction {
     initiate_validator_exit(state, exit.getValidatorIndex());
   }
 
-  default void verify_transfer(BeaconState state, Transfer transfer) {
-    // Verify the balance the covers amount and fee (with overflow protection)
-    assertTrue(state.getBalances().get(transfer.getSender())
-            .greaterEqual(UInt64s.max(
-                transfer.getAmount().plus(transfer.getFee()),
-                UInt64s.max(transfer.getAmount(), transfer.getFee()))));
-
-    // A transfer is valid in only one slot
-    assertTrue(state.getSlot().equals(transfer.getSlot()));
-
-    // Sender must satisfy at least one of the following:
-    assertTrue(
-        // 1) Never have been eligible for activation
-        // OR 2) Be withdrawable
-        // OR 3) Have a balance of at least MAX_EFFECTIVE_BALANCE after the transfer
-        state.getValidators().get(transfer.getSender()).getActivationEligibilityEpoch()
-            .equals(getConstants().getFarFutureEpoch())
-        || get_current_epoch(state)
-            .greaterEqual(state.getValidators().get(transfer.getSender()).getWithdrawableEpoch())
-        || state.getBalances().get(transfer.getSender())
-            .greaterEqual(transfer.getAmount().plus(transfer.getFee()).plus(getConstants().getMaxEffectiveBalance()))
-    );
-
-    // Verify that the pubkey is valid
-    assertTrue(
-        state.getValidators().get(transfer.getSender()).getWithdrawalCredentials().equals(
-            getConstants().getBlsWithdrawalPrefix().toBytes8LittleEndian().slice(0, 1)
-                .concat(hash(transfer.getPubkey()).slice(1)))
-    );
-
-    // Verify that the signature is valid
-    assertTrue(
-        bls_verify(
-            transfer.getPubkey(),
-            signing_root(transfer),
-            transfer.getSignature(),
-            get_domain(state, SignatureDomains.TRANSFER)));
-  }
-
-  /*
-    """
-    Process ``Transfer`` transaction.
-    """
-   */
-  default void process_transfer(MutableBeaconState state, Transfer transfer) {
-    /* Process the transfer
-    decrease_balance(state, transfer.sender, transfer.amount + transfer.fee)
-    increase_balance(state, transfer.recipient, transfer.amount)
-    increase_balance(state, get_beacon_proposer_index(state), transfer.fee) */
-    decrease_balance(state, transfer.getSender(), transfer.getAmount().plus(transfer.getFee()));
-    increase_balance(state, transfer.getRecipient(), transfer.getAmount());
-    increase_balance(state, get_beacon_proposer_index(state), transfer.getFee());
-
-    /* Verify balances are not dust
-    assert not (0 < state.balances[transfer.sender] < MIN_DEPOSIT_AMOUNT)
-    assert not (0 < state.balances[transfer.recipient] < MIN_DEPOSIT_AMOUNT) */
-    assertTrue(!(state.getBalances().get(transfer.getSender()).greater(Gwei.ZERO)
-        && state.getBalances().get(transfer.getSender()).less(getConstants().getMinDepositAmount())));
-    assertTrue(!(state.getBalances().get(transfer.getRecipient()).greater(Gwei.ZERO)
-        && state.getBalances().get(transfer.getRecipient()).less(getConstants().getMinDepositAmount())));
-  }
-
   /*
     def verify_block_state_root(state: BeaconState, block: BeaconBlock) -> None:
       assert block.state_root == hash_tree_root(state)
@@ -490,8 +425,6 @@ public interface BlockProcessing extends HelperFunction {
                 getConstants().getMaxDeposits(),
                 state.getEth1Data().getDepositCount().minus(state.getEth1DepositIndex()).getIntValue())
     );
-    // Verify that there are no duplicate transfers
-    assertTrue(body.getTransfers().size() == body.getTransfers().stream().distinct().count());
 
     /* for operations, function in (
         (body.proposer_slashings, process_proposer_slashing),
@@ -499,7 +432,7 @@ public interface BlockProcessing extends HelperFunction {
         (body.attestations, process_attestation),
         (body.deposits, process_deposit),
         (body.voluntary_exits, process_voluntary_exit),
-        (body.transfers, process_transfer),
+        # @process_shard_receipt_proofs
     ):
         for operation in operations:
             function(state, operation) */
@@ -529,10 +462,7 @@ public interface BlockProcessing extends HelperFunction {
       process_voluntary_exit(state, o);
     });
 
-    body.getTransfers().forEach(o -> {
-      verify_transfer(state, o);
-      process_transfer(state, o);
-    });
+    // @process_shard_receipt_proofs
   }
 
   /*

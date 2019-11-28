@@ -33,7 +33,6 @@ public class StateComparator {
     runComparison("Block roots do not match: ", this::compareBlockRoots, error);
     runComparison("Validators do not match: ", this::compareValidators, error);
     runComparison("Validator balances do not match: ", this::compareValidatorBalances, error);
-    runComparison("Start shard doesn't match: ", this::compareStartShard, error);
     runComparison("Genesis time doesn't match: ", this::compareGenesisTime, error);
     runComparison(
         "Current epoch attestations do not match: ", this::compareCurrentEpochAttestations, error);
@@ -56,12 +55,7 @@ public class StateComparator {
     runComparison("Historical roots do not match: ", this::compareHistoricalRoots, error);
     runComparison(
         "Justification bitfield doesn't match: ", this::compareJustificationBitfield, error);
-    runComparison("Active index roots do not match: ", this::compareActiveIndexRoots, error);
-    runComparison(
-        "Compact committees roots do not match: ", this::compareCompactCommitteesRoots, error);
     runComparison("Latest block header doesn't match: ", this::compareLatestBlockHeader, error);
-    runComparison("Current crosslinks do not match: ", this::compareCurrentCrosslinks, error);
-    runComparison("Previous crosslinks do not match: ", this::comparePreviousCrosslinks, error);
     runComparison("Eth1 data doesn't match: ", this::compareEth1Data, error);
     runComparison("Randao mixes do not match: ", this::compareRandaoMixes, error);
     runComparison("Slashed balances do not match: ", this::compareSlashedBalances, error);
@@ -122,27 +116,6 @@ public class StateComparator {
     return assertLists(expected.getStateRoots().listCopy(), actual.getStateRoots().listCopy());
   }
 
-  private Optional<String> compareActiveIndexRoots() {
-    return assertLists(
-        expected.getActiveIndexRoots().listCopy(), actual.getActiveIndexRoots().listCopy());
-  }
-
-  private Optional<String> compareCompactCommitteesRoots() {
-    return assertLists(
-        expected.getCompactCommitteesRoots().listCopy(),
-        actual.getCompactCommitteesRoots().listCopy());
-  }
-
-  private Optional<String> compareCurrentCrosslinks() {
-    return assertLists(
-        expected.getCurrentCrosslinks().listCopy(), actual.getCurrentCrosslinks().listCopy());
-  }
-
-  private Optional<String> comparePreviousCrosslinks() {
-    return assertLists(
-        expected.getPreviousCrosslinks().listCopy(), actual.getPreviousCrosslinks().listCopy());
-  }
-
   private Optional<String> comparePreviousEpochAttestations() {
     return assertLists(
         expected.getPreviousEpochAttestations().listCopy(),
@@ -156,10 +129,6 @@ public class StateComparator {
 
   private Optional<String> compareGenesisTime() {
     return assertEquals(expected.getGenesisTime(), actual.getGenesisTime());
-  }
-
-  private Optional<String> compareStartShard() {
-    return assertEquals(expected.getStartShard(), actual.getStartShard());
   }
 
   private Optional<String> comparePreviousJustifiedCheckpoint() {

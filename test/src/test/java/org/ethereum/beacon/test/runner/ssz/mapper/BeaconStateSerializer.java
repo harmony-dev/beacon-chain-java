@@ -10,7 +10,6 @@ public class BeaconStateSerializer implements ObjectSerializer<BeaconStateImpl> 
   private ForkSerializer forkSerializer;
   private ValidatorSerializer validatorSerializer;
   private PendingAttestationSerializer pendingAttestationSerializer;
-  private CrosslinkSerializer crosslinkSerializer;
   private BeaconBlockHeaderSerializer beaconBlockHeaderSerializer;
   private Eth1DataSerializer eth1DataSerializer;
 
@@ -19,7 +18,6 @@ public class BeaconStateSerializer implements ObjectSerializer<BeaconStateImpl> 
     this.forkSerializer = new ForkSerializer(mapper);
     this.validatorSerializer = new ValidatorSerializer(mapper);
     this.pendingAttestationSerializer = new PendingAttestationSerializer(mapper);
-    this.crosslinkSerializer = new CrosslinkSerializer(mapper);
     this.beaconBlockHeaderSerializer = new BeaconBlockHeaderSerializer(mapper);
     this.eth1DataSerializer = new Eth1DataSerializer(mapper);
   }
@@ -48,7 +46,6 @@ public class BeaconStateSerializer implements ObjectSerializer<BeaconStateImpl> 
         .map(Hash32::toString)
         .forEachOrdered(latestRandaoMixes::add);
     beaconState.set("latest_randao_mixes", latestRandaoMixes);
-    beaconState.set("latest_start_shard", ComparableBigIntegerNode.valueOf(instance.getStartShard()));
 
     ArrayNode previousEpochAttestationNode = mapper.createArrayNode();
     instance.getPreviousEpochAttestations().stream().map(o -> pendingAttestationSerializer.map(o)).forEachOrdered(previousEpochAttestationNode::add);
@@ -64,21 +61,12 @@ public class BeaconStateSerializer implements ObjectSerializer<BeaconStateImpl> 
     beaconState.set("finalized_epoch", ComparableBigIntegerNode.valueOf(instance.getFinalizedCheckpoint().getEpoch()));
     beaconState.put("finalized_root", instance.getFinalizedCheckpoint().getRoot().toString());
 
-    ArrayNode currentCrosslinksNode = mapper.createArrayNode();
-    instance.getCurrentCrosslinks().stream().map(o -> crosslinkSerializer.map(o)).forEachOrdered(currentCrosslinksNode::add);
-    beaconState.set("current_crosslinks", currentCrosslinksNode);
-    ArrayNode previousCrosslinksNode = mapper.createArrayNode();
-    instance.getPreviousCrosslinks().stream().map(o -> crosslinkSerializer.map(o)).forEachOrdered(previousCrosslinksNode::add);
-    beaconState.set("previous_crosslinks", previousCrosslinksNode);
     ArrayNode latestBlockRootsNode = mapper.createArrayNode();
     instance.getBlockRoots().stream().map(Hash32::toString).forEachOrdered(latestBlockRootsNode::add);
     beaconState.set("latest_block_roots", latestBlockRootsNode);
     ArrayNode latestStateRootsNode = mapper.createArrayNode();
     instance.getStateRoots().stream().map(Hash32::toString).forEachOrdered(latestStateRootsNode::add);
     beaconState.set("latest_state_roots", latestStateRootsNode);
-    ArrayNode latestActiveIndexRootsNode = mapper.createArrayNode();
-    instance.getActiveIndexRoots().stream().map(Hash32::toString).forEachOrdered(latestActiveIndexRootsNode::add);
-    beaconState.set("latest_active_index_roots", latestActiveIndexRootsNode);
     ArrayNode latestSlashedBalancesNode = mapper.createArrayNode();
     instance.getSlashings().stream()
         .map(ComparableBigIntegerNode::valueOf)

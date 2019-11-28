@@ -19,7 +19,6 @@ import org.ethereum.beacon.consensus.verifier.operation.AttestationVerifier;
 import org.ethereum.beacon.consensus.verifier.operation.AttesterSlashingVerifier;
 import org.ethereum.beacon.consensus.verifier.operation.DepositVerifier;
 import org.ethereum.beacon.consensus.verifier.operation.ProposerSlashingVerifier;
-import org.ethereum.beacon.consensus.verifier.operation.TransferVerifier;
 import org.ethereum.beacon.consensus.verifier.operation.VoluntaryExitVerifier;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
@@ -27,7 +26,6 @@ import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
-import org.ethereum.beacon.core.operations.Transfer;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.test.runner.Runner;
@@ -40,7 +38,6 @@ import org.ethereum.beacon.test.type.state.OperationAttesterSlashingCase;
 import org.ethereum.beacon.test.type.state.OperationBlockHeaderCase;
 import org.ethereum.beacon.test.type.state.OperationDepositCase;
 import org.ethereum.beacon.test.type.state.OperationProposerSlashingCase;
-import org.ethereum.beacon.test.type.state.OperationTransferCase;
 import org.ethereum.beacon.test.type.state.OperationVoluntaryExitCase;
 import org.ethereum.beacon.test.type.state.RegistryUpdatesProcessingCase;
 import org.ethereum.beacon.test.type.state.SanityBlocksCase;
@@ -107,9 +104,6 @@ public class StateRunner implements Runner {
       processingError =
           processProposerSlashing(
               ((OperationProposerSlashingCase) testCase).getProposerSlashing(), latestState);
-    } else if (testCase instanceof OperationTransferCase) {
-      processingError =
-          processTransfer(((OperationTransferCase) testCase).getTransfer(), latestState);
     } else if (testCase instanceof OperationVoluntaryExitCase) {
       processingError =
           processVoluntaryExit(
@@ -198,16 +192,6 @@ public class StateRunner implements Runner {
         objects ->
             spec.process_proposer_slashing(
                 (MutableBeaconState) objects.getValue1(), objects.getValue0()));
-  }
-
-  private Optional<String> processTransfer(Transfer transfer, BeaconState state) {
-    TransferVerifier verifier = new TransferVerifier(spec);
-    return processOperation(
-        transfer,
-        state,
-        verifier,
-        objects ->
-            spec.process_transfer((MutableBeaconState) objects.getValue1(), objects.getValue0()));
   }
 
   private Optional<String> processVoluntaryExit(VoluntaryExit voluntaryExit, BeaconState state) {

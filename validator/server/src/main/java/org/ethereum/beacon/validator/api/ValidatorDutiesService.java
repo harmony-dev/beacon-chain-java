@@ -71,7 +71,7 @@ public class ValidatorDutiesService {
    */
   public Map<SlotNumber, Pair<ValidatorIndex, List<ShardCommittee>>> getValidatorDuties(
       BeaconState state, EpochNumber epoch) {
-    SlotNumber startSlot = spec.compute_start_slot_of_epoch(epoch);
+    SlotNumber startSlot = spec.compute_start_slot_at_epoch(epoch);
     Map<SlotNumber, Pair<ValidatorIndex, List<ShardCommittee>>> epochCommitees = new HashMap<>();
     for (SlotNumber slot = startSlot;
         slot.less(startSlot.plus(spec.getConstants().getSlotsPerEpoch()));

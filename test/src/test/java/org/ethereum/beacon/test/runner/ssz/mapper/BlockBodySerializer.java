@@ -12,7 +12,6 @@ public class BlockBodySerializer implements ObjectSerializer<BeaconBlockBody> {
   private AttestationSerializer attestationSerializer;
   private DepositSerializer depositSerializer;
   private VoluntaryExitSerializer voluntaryExitSerializer;
-  private TransferSerializer transferSerializer;
 
   public BlockBodySerializer(com.fasterxml.jackson.databind.ObjectMapper mapper) {
     this.mapper = mapper;
@@ -22,7 +21,6 @@ public class BlockBodySerializer implements ObjectSerializer<BeaconBlockBody> {
     this.attestationSerializer = new AttestationSerializer(mapper);
     this.depositSerializer = new DepositSerializer(mapper);
     this.voluntaryExitSerializer = new VoluntaryExitSerializer(mapper);
-    this.transferSerializer = new TransferSerializer(mapper);
   }
 
   @Override
@@ -51,9 +49,6 @@ public class BlockBodySerializer implements ObjectSerializer<BeaconBlockBody> {
     ArrayNode voluntaryExitsNode = mapper.createArrayNode();
     instance.getVoluntaryExits().stream().map(o -> voluntaryExitSerializer.map(o)).forEachOrdered(voluntaryExitsNode::add);
     blockBody.set("voluntary_exits", voluntaryExitsNode);
-    ArrayNode transfersNode = mapper.createArrayNode();
-    instance.getTransfers().stream().map(o -> transferSerializer.map(o)).forEachOrdered(transfersNode::add);
-    blockBody.set("transfers", transfersNode);
     return blockBody;
   }
 }
