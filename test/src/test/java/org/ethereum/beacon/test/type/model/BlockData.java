@@ -77,8 +77,6 @@ public class BlockData {
     @JsonProperty("voluntary_exits")
     private List<VoluntaryExitData> voluntaryExits;
 
-    private List<TransferData> transfers;
-
     public String getRandaoReveal() {
       return randaoReveal;
     }
@@ -141,14 +139,6 @@ public class BlockData {
 
     public void setVoluntaryExits(List<VoluntaryExitData> voluntaryExits) {
       this.voluntaryExits = voluntaryExits;
-    }
-
-    public List<TransferData> getTransfers() {
-      return transfers;
-    }
-
-    public void setTransfers(List<TransferData> transfers) {
-      this.transfers = transfers;
     }
 
     public static class Eth1 {
@@ -222,11 +212,8 @@ public class BlockData {
     }
 
     public static class IndexedAttestationData {
-      @JsonProperty("custody_bit_0_indices")
-      private List<Long> custodyBit0Indices;
-
-      @JsonProperty("custody_bit_1_indices")
-      private List<Long> custodyBit1Indices;
+      @JsonProperty("attesting_indices")
+      private List<Long> attestingIndices;
 
       @JsonProperty("data")
       private BeaconStateData.AttestationData.AttestationDataContainer data;
@@ -242,20 +229,12 @@ public class BlockData {
         this.signature = signature;
       }
 
-      public List<Long> getCustodyBit0Indices() {
-        return custodyBit0Indices;
+      public List<Long> getAttestingIndices() {
+        return attestingIndices;
       }
 
-      public void setCustodyBit0Indices(List<Long> custodyBit0Indices) {
-        this.custodyBit0Indices = custodyBit0Indices;
-      }
-
-      public List<Long> getCustodyBit1Indices() {
-        return custodyBit1Indices;
-      }
-
-      public void setCustodyBit1Indices(List<Long> custodyBit1Indices) {
-        this.custodyBit1Indices = custodyBit1Indices;
+      public void setAttestingIndices(List<Long> attestingIndices) {
+        this.attestingIndices = attestingIndices;
       }
 
       public BeaconStateData.AttestationData.AttestationDataContainer getData() {
@@ -394,72 +373,6 @@ public class BlockData {
 
       public void setValidatorIndex(Long validatorIndex) {
         this.validatorIndex = validatorIndex;
-      }
-
-      public String getSignature() {
-        return signature;
-      }
-
-      public void setSignature(String signature) {
-        this.signature = signature;
-      }
-    }
-
-    public static class TransferData {
-      private Long sender;
-      private Long recipient;
-      private String amount;
-      private String fee;
-      private String slot;
-      private String pubkey;
-      private String signature;
-
-      public Long getSender() {
-        return sender;
-      }
-
-      public void setSender(Long sender) {
-        this.sender = sender;
-      }
-
-      public Long getRecipient() {
-        return recipient;
-      }
-
-      public void setRecipient(Long recipient) {
-        this.recipient = recipient;
-      }
-
-      public String getAmount() {
-        return amount;
-      }
-
-      public void setAmount(String amount) {
-        this.amount = amount;
-      }
-
-      public String getFee() {
-        return fee;
-      }
-
-      public void setFee(String fee) {
-        this.fee = fee;
-      }
-
-      public String getSlot() {
-        return slot;
-      }
-
-      public void setSlot(String slot) {
-        this.slot = slot;
-      }
-
-      public String getPubkey() {
-        return pubkey;
-      }
-
-      public void setPubkey(String pubkey) {
-        this.pubkey = pubkey;
       }
 
       public String getSignature() {

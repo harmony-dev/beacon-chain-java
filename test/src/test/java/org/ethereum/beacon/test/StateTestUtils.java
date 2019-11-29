@@ -8,10 +8,8 @@ import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
-import org.ethereum.beacon.core.operations.Transfer;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
-import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
@@ -23,9 +21,9 @@ import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.CommitteeIndex;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
-import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
@@ -58,12 +56,10 @@ public abstract class StateTestUtils {
         blockData.getBody().getAttestations()) {
       AttestationData attestationData1 = parseAttestationData(attestationData.getData());
       BytesValue aggValue = BytesValue.fromHexString(attestationData.getAggregationBits());
-      BytesValue cusValue = BytesValue.fromHexString(attestationData.getCustodyBits());
       Attestation attestation =
           new Attestation(
               Bitlist.of(aggValue, constants.getMaxValidatorsPerCommittee().longValue()),
               attestationData1,
-              Bitlist.of(cusValue, constants.getMaxValidatorsPerCommittee().longValue()),
               BLSSignature.wrap(Bytes96.fromHexString(attestationData.getSignature())),
               constants);
       attestations.add(attestation);
@@ -112,14 +108,6 @@ public abstract class StateTestUtils {
       proposerSlashings.add(proposerSlashing);
     }
 
-    // Transfers
-    List<Transfer> transfers = new ArrayList<>();
-    for (BlockData.BlockBodyData.TransferData transferData :
-        blockData.getBody().getTransfers()) {
-      Transfer transfer = parseTransfer(transferData);
-      transfers.add(transfer);
-    }
-
     // Voluntary exits
     List<VoluntaryExit> voluntaryExits =
         blockData.getBody().getVoluntaryExits().stream()
@@ -137,7 +125,6 @@ public abstract class StateTestUtils {
             attestations,
             deposits,
             voluntaryExits,
-            transfers,
             constants);
     BeaconBlock block =
         new BeaconBlock(
@@ -153,8 +140,7 @@ public abstract class StateTestUtils {
   public static IndexedAttestation parseSlashableAttestation(
       BlockData.BlockBodyData.IndexedAttestationData data, SpecConstants specConstants) {
     return new IndexedAttestation(
-        data.getCustodyBit0Indices().stream().map(ValidatorIndex::of).collect(Collectors.toList()),
-        data.getCustodyBit1Indices().stream().map(ValidatorIndex::of).collect(Collectors.toList()),
+        data.getAttestingIndices().stream().map(ValidatorIndex::of).collect(Collectors.toList()),
         parseAttestationData(data.getData()),
         data.getAggregateSignature() != null
             ? BLSSignature.wrap(Bytes96.fromHexString(data.getAggregateSignature()))
@@ -195,21 +181,9 @@ public abstract class StateTestUtils {
     state
         .getCurrentEpochAttestations()
         .replaceAll(parsePendingAttestations(data.getCurrentEpochAttestations(), specConstants));
-    state.getCurrentCrosslinks().setAll(parseCrosslinks(data.getCurrentCrosslinks()));
-    state.getPreviousCrosslinks().setAll(parseCrosslinks(data.getPreviousCrosslinks()));
-    state.getBlockRoots().setAll(parseHashes(data.getBlockRoots()));
-    state.getStateRoots().setAll(parseHashes(data.getStateRoots()));
-    state.getActiveIndexRoots().setAll(parseHashes(data.getActiveIndexRoots()));
-    state.getCompactCommitteesRoots().setAll(parseHashes(data.getCompactCommitteesRoots()));
-    state.getHistoricalRoots().replaceAll(parseHashes(data.getHistoricalRoots()));
     state.getSlashings().setAll(parseBalances(data.getSlashings()));
-    state.setStartShard(ShardNumber.of(UInt64.valueOf(data.getStartShard())));
 
     return state;
-  }
-
-  public static List<Crosslink> parseCrosslinks(List<BeaconStateData.CrossLinkData> data) {
-    return data.stream().map(StateTestUtils::parseCrosslink).collect(Collectors.toList());
   }
 
   public static List<PendingAttestation> parsePendingAttestations(
@@ -284,15 +258,6 @@ public abstract class StateTestUtils {
         EpochNumber.castFrom(UInt64.valueOf(data.getEpoch())));
   }
 
-  public static Crosslink parseCrosslink(BeaconStateData.CrossLinkData data) {
-    return new Crosslink(
-        ShardNumber.of(data.getShard()),
-        Hash32.fromHexString(data.getParentRoot()),
-        EpochNumber.castFrom(UInt64.valueOf(data.getStartEpoch())),
-        EpochNumber.castFrom(UInt64.valueOf(data.getEndEpoch())),
-        Hash32.fromHexString(data.getDataRoot()));
-  }
-
   public static PendingAttestation parsePendingAttestation(
       BeaconStateData.AttestationData attestationData, SpecConstants constants) {
     BytesValue aggValue = BytesValue.fromHexString(attestationData.getAggregationBits());
@@ -306,21 +271,11 @@ public abstract class StateTestUtils {
 
   public static AttestationData parseAttestationData(BeaconStateData.AttestationData.AttestationDataContainer data) {
     return new AttestationData(
+        SlotNumber.of(data.getSlot()),
+        CommitteeIndex.of(data.getIndex()),
         Hash32.fromHexString(data.getBeaconBlockRoot()),
         parseCheckpoint(data.getSource()),
-        parseCheckpoint(data.getTarget()),
-        parseCrosslink(data.getCrosslink()));
-  }
-
-  public static Transfer parseTransfer(BlockData.BlockBodyData.TransferData data) {
-    return new Transfer(
-        ValidatorIndex.of(data.getSender()),
-        ValidatorIndex.of(data.getRecipient()),
-        Gwei.castFrom(UInt64.valueOf(data.getAmount())),
-        Gwei.castFrom(UInt64.valueOf(data.getFee())),
-        SlotNumber.castFrom(UInt64.valueOf(data.getSlot())),
-        BLSPubkey.fromHexString(data.getPubkey()),
-        BLSSignature.wrap(Bytes96.fromHexString(data.getSignature())));
+        parseCheckpoint(data.getTarget()));
   }
 
   public static VoluntaryExit parseVoluntaryExit(

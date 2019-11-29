@@ -14,7 +14,7 @@ import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
 import org.ethereum.beacon.core.types.BLSPubkey;
-import org.ethereum.beacon.core.types.ShardNumber;
+import org.ethereum.beacon.core.types.CommitteeIndex;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.validator.api.InvalidInputException;
@@ -80,14 +80,14 @@ public class AttestationController extends SyncRestController {
           Long.valueOf(
               ControllerUtils.getParamString(
                   "poc_bit", params)); // XXX: Proof of custody is a stub at Phase 0
-      ShardNumber shard =
-          ShardNumber.of(UInt64.valueOf(ControllerUtils.getParamString("shard", params)));
+      CommitteeIndex committeeIndex =
+          new CommitteeIndex(UInt64.valueOf(ControllerUtils.getParamString("index", params)));
 
       ValidatorIndex validatorIndex =
           spec.get_validator_index_by_pubkey(
               observableBeaconStateCopy.getLatestSlotState().createMutableCopy(), validatorPubkey);
       Attestation attestation =
-          service.prepareAttestation(slot, validatorIndex, shard, observableBeaconStateCopy);
+          service.prepareAttestation(slot, validatorIndex, committeeIndex, observableBeaconStateCopy);
       IndexedAttestation indexedAttestation =
           spec.get_indexed_attestation(
               observableBeaconStateCopy.getLatestSlotState().createMutableCopy(), attestation);
@@ -107,14 +107,14 @@ public class AttestationController extends SyncRestController {
       // Verification
       MutableBeaconState state = observableBeaconStateCopy.getLatestSlotState().createMutableCopy();
       List<ValidatorIndex> committee =
-          spec.get_crosslink_committee(
+          spec.get_beacon_committee(
               state,
-              indexedAttestation.getData().getTarget().getEpoch(),
-              indexedAttestation.getData().getCrosslink().getShard());
+              indexedAttestation.getData().getSlot(),
+              indexedAttestation.getData().getIndex());
       Bitlist bitlist =
           Bitlist.of(
               committee.size(),
-              indexedAttestation.getCustodyBit0Indices().listCopy().stream()
+              indexedAttestation.getAttestingIndices().listCopy().stream()
                   .map(ValidatorIndex::intValue)
                   .collect(Collectors.toList()),
               spec.getConstants().getMaxValidatorsPerCommittee().intValue());
@@ -122,7 +122,6 @@ public class AttestationController extends SyncRestController {
           new Attestation(
               bitlist,
               indexedAttestation.getData(),
-              bitlist,
               indexedAttestation.getSignature(),
               spec.getConstants());
       try {

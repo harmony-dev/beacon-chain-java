@@ -20,6 +20,7 @@ public class BeaconChainStorageImpl implements BeaconChainStorage {
   private final BeaconStateStorage stateStorage;
   private final BeaconTupleStorage tupleStorage;
   private final SingleValueSource<Checkpoint> justifiedStorage;
+  private final SingleValueSource<Checkpoint> bestJustifiedStorage;
   private final SingleValueSource<Checkpoint> finalizedStorage;
 
   public BeaconChainStorageImpl(
@@ -29,6 +30,7 @@ public class BeaconChainStorageImpl implements BeaconChainStorage {
       BeaconStateStorage stateStorage,
       BeaconTupleStorage tupleStorage,
       SingleValueSource<Checkpoint> justifiedStorage,
+      SingleValueSource<Checkpoint> bestJustifiedStorage,
       SingleValueSource<Checkpoint> finalizedStorage) {
     this.database = database;
     this.blockStorage = blockStorage;
@@ -36,6 +38,7 @@ public class BeaconChainStorageImpl implements BeaconChainStorage {
     this.stateStorage = stateStorage;
     this.tupleStorage = tupleStorage;
     this.justifiedStorage = justifiedStorage;
+    this.bestJustifiedStorage = bestJustifiedStorage;
     this.finalizedStorage = finalizedStorage;
   }
 
@@ -62,6 +65,11 @@ public class BeaconChainStorageImpl implements BeaconChainStorage {
   @Override
   public SingleValueSource<Checkpoint> getJustifiedStorage() {
     return justifiedStorage;
+  }
+
+  @Override
+  public SingleValueSource<Checkpoint> getBestJustifiedStorage() {
+    return bestJustifiedStorage;
   }
 
   @Override

@@ -12,7 +12,6 @@ import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
-import org.ethereum.beacon.core.operations.Transfer;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.state.Eth1Data;
@@ -113,7 +112,6 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
             spec.getConstants().getMaxAttestations(), spec.getConstants());
     List<VoluntaryExit> voluntaryExits =
         operations.peekExits(spec.getConstants().getMaxVoluntaryExits());
-    List<Transfer> transfers = operations.peekTransfers(spec.getConstants().getMaxTransfers());
 
     Eth1Data latestProcessedDeposit = null; // TODO wait for spec update to include this to state
     List<Deposit> deposits =
@@ -134,7 +132,6 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
         attestations,
         deposits,
         voluntaryExits,
-        transfers,
         spec.getConstants());
   }
 

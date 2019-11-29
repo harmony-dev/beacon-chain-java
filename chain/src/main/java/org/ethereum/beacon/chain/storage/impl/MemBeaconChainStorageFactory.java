@@ -34,6 +34,7 @@ public class MemBeaconChainStorageFactory  implements BeaconChainStorageFactory 
         stateStorage,
         tupleStorage,
         SingleValueSource.memSource(),
+        SingleValueSource.memSource(),
         SingleValueSource.memSource());
   }
 }

@@ -11,18 +11,14 @@ import java.util.List;
 import java.util.Set;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
-import org.ethereum.beacon.core.operations.Transfer;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
-import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustodyBit;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
 import org.ethereum.beacon.core.state.BeaconStateImpl;
-import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.state.Checkpoint;
-import org.ethereum.beacon.core.state.CompactCommittee;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.state.Fork;
 import org.ethereum.beacon.core.state.HistoricalBatch;
@@ -30,6 +26,7 @@ import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.CommitteeIndex;
 import tech.pegasys.artemis.util.collections.Bitlist;
 import tech.pegasys.artemis.util.collections.Bitvector;
 import org.ethereum.beacon.core.types.EpochNumber;
@@ -117,7 +114,6 @@ public class SSZSerializableAnnotationTest {
             Arrays.asList(
                 Attestation.class,
                 AttestationData.class,
-                AttestationDataAndCustodyBit.class,
                 AttesterSlashing.class,
                 BeaconBlock.class,
                 BeaconBlockBody.class,
@@ -126,7 +122,6 @@ public class SSZSerializableAnnotationTest {
                 DepositData.class,
                 VoluntaryExit.class,
                 ProposerSlashing.class,
-                Crosslink.class,
                 Fork.class,
                 PendingAttestation.class,
                 ValidatorRecord.class,
@@ -143,11 +138,10 @@ public class SSZSerializableAnnotationTest {
                 Time.class,
                 Millis.class,
                 ValidatorIndex.class,
-                Transfer.class,
+                CommitteeIndex.class,
                 BeaconBlockHeader.class,
                 HistoricalBatch.class,
-                Checkpoint.class,
-                CompactCommittee.class));
+                Checkpoint.class));
     Class[] allClasses = getClasses("org.ethereum.beacon.core");
 
     for (Class clazz : allClasses) {

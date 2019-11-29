@@ -12,10 +12,8 @@ import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
-import org.ethereum.beacon.core.operations.Transfer;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
-import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
@@ -27,6 +25,7 @@ import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.CommitteeIndex;
 import tech.pegasys.artemis.util.collections.Bitlist;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
@@ -55,10 +54,11 @@ public class TestDataFactory {
   public AttestationData createAttestationData() {
     AttestationData expected =
         new AttestationData(
+            new SlotNumber(0),
+            new CommitteeIndex(0),
             Hashes.sha256(BytesValue.fromHexString("aa")),
             new Checkpoint(EpochNumber.ZERO, Hashes.sha256(BytesValue.fromHexString("bb"))),
-            new Checkpoint(EpochNumber.of(123), Hashes.sha256(BytesValue.fromHexString("cc"))),
-            Crosslink.EMPTY);
+            new Checkpoint(EpochNumber.of(123), Hashes.sha256(BytesValue.fromHexString("cc"))));
 
     return expected;
   }
@@ -73,7 +73,6 @@ public class TestDataFactory {
         new Attestation(
             Bitlist.of(someValue.size() * 8, someValue, specConstants.getMaxValidatorsPerCommittee().getValue()),
             attestationData,
-            Bitlist.of(8, BytesValue.fromHexString("bb"),  specConstants.getMaxValidatorsPerCommittee().getValue()),
             BLSSignature.wrap(Bytes96.fromHexString("cc")),
             specConstants);
 
@@ -140,7 +139,6 @@ public class TestDataFactory {
     deposits.add(createDeposit2());
     List<VoluntaryExit> voluntaryExits = new ArrayList<>();
     voluntaryExits.add(createExit());
-    List<Transfer> transfers = new ArrayList<>();
     BeaconBlockBody beaconBlockBody =
         new BeaconBlockBody(
             BLSSignature.ZERO,
@@ -151,7 +149,6 @@ public class TestDataFactory {
             attestations,
             deposits,
             voluntaryExits,
-            transfers,
             specConstants
         );
 
@@ -166,8 +163,7 @@ public class TestDataFactory {
 
   public IndexedAttestation createSlashableAttestation() {
     return new IndexedAttestation(
-        Arrays.asList(ValidatorIndex.of(234), ValidatorIndex.of(235)),
-        Arrays.asList(ValidatorIndex.of(678), ValidatorIndex.of(679)),
+        Arrays.asList(ValidatorIndex.of(234), ValidatorIndex.of(235), ValidatorIndex.of(678), ValidatorIndex.of(679)),
         createAttestationData(),
         BLSSignature.wrap(Bytes96.fromHexString("aa")),
         specConstants);
@@ -193,12 +189,6 @@ public class TestDataFactory {
     BeaconState beaconState = BeaconState.getEmpty();
 
     return beaconState;
-  }
-
-  public Crosslink createCrosslink() {
-    Crosslink crosslink = Crosslink.EMPTY;
-
-    return crosslink;
   }
 
   public Fork createFork() {

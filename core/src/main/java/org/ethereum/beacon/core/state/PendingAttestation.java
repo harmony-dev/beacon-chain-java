@@ -19,7 +19,7 @@ import static tech.pegasys.artemis.util.collections.ReadList.VARIABLE_SIZE;
  *
  * @see BeaconState
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.8.1/specs/core/0_beacon-chain.md#pendingattestation">PendingAttestation
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.9.2/specs/core/0_beacon-chain.md#pendingattestation">PendingAttestation
  *     in the spec</a>
  */
 @SSZSerializable
@@ -112,7 +112,9 @@ public class PendingAttestation {
         + "delay="
         + getInclusionDelay()
         + "/"
-        + getData().getCrosslink().getShard().toString()
+        + getData().getSlot().toString()
+        + "/"
+        + getData().getIndex().toString()
         + "/"
         + getData().getBeaconBlockRoot().toStringShort()
         + "/"

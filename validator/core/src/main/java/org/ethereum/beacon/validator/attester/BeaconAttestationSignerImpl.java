@@ -1,17 +1,14 @@
 package org.ethereum.beacon.validator.attester;
 
-import static org.ethereum.beacon.core.spec.SignatureDomains.ATTESTATION;
+import static org.ethereum.beacon.core.spec.SignatureDomains.BEACON_ATTESTER;
 
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
-import org.ethereum.beacon.core.operations.attestation.AttestationDataAndCustodyBit;
-import org.ethereum.beacon.core.state.Fork;
 import org.ethereum.beacon.core.types.BLSSignature;
 import org.ethereum.beacon.validator.BeaconAttestationSigner;
 import org.ethereum.beacon.validator.crypto.MessageSigner;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-import tech.pegasys.artemis.util.bytes.Bytes4;
 import tech.pegasys.artemis.util.uint.UInt64;
 
 /**
@@ -31,12 +28,14 @@ public class BeaconAttestationSignerImpl implements BeaconAttestationSigner {
 
   @Override
   public Attestation sign(Attestation attestation, BeaconState state) {
-    AttestationDataAndCustodyBit attestationDataAndCustodyBit =
-        new AttestationDataAndCustodyBit(attestation.getData(), false);
-    Hash32 hash = spec.hash_tree_root(attestationDataAndCustodyBit);
-    UInt64 domain = spec.get_domain(state, ATTESTATION, attestation.getData().getTarget().getEpoch());
+    Hash32 hash = spec.hash_tree_root(attestation.getData());
+    UInt64 domain = spec.get_domain(state, BEACON_ATTESTER, attestation.getData().getTarget().getEpoch());
     BLSSignature signature = signer.sign(hash, domain);
 
-    return attestation.withSignature(signature);
+    return new Attestation(
+        attestation.getAggregationBits(),
+        attestation.getData(),
+        signature,
+        spec.getConstants());
   }
 }

@@ -28,13 +28,11 @@ public interface AttestationField extends DataMapperAccessor {
       BeaconStateData.AttestationData attestationData =
           getMapper().readValue(getFiles().get(key).extractArray(), BeaconStateData.AttestationData.class);
       BytesValue aggValue = BytesValue.fromHexString(attestationData.getAggregationBits());
-      BytesValue cusValue = BytesValue.fromHexString(attestationData.getCustodyBits());
 
       Attestation attestation =
           new Attestation(
               Bitlist.of(aggValue, constants.getMaxValidatorsPerCommittee().getValue()),
               parseAttestationData((attestationData.getData())),
-              Bitlist.of(cusValue, constants.getMaxValidatorsPerCommittee().getValue()),
               BLSSignature.wrap(Bytes96.fromHexString(attestationData.getSignature())),
               constants);
 

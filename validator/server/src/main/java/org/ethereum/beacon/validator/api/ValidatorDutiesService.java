@@ -7,10 +7,10 @@ import org.ethereum.beacon.consensus.BlockTransition;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
-import org.ethereum.beacon.core.state.ShardCommittee;
+import org.ethereum.beacon.core.state.BeaconCommittee;
 import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.CommitteeIndex;
 import org.ethereum.beacon.core.types.EpochNumber;
-import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.pow.DepositContract;
@@ -52,11 +52,11 @@ public class ValidatorDutiesService {
   public Attestation prepareAttestation(
       SlotNumber slot,
       ValidatorIndex validatorIndex,
-      ShardNumber shard,
+      CommitteeIndex committeeIndex,
       ObservableBeaconState observableBeaconState) {
     return attester.attest(
         validatorIndex,
-        shard,
+        committeeIndex,
         observableBeaconState.getLatestSlotState(),
         observableBeaconState.getHead());
   }
@@ -69,31 +69,26 @@ public class ValidatorDutiesService {
    * @param state Beacon state
    * @return Map: Slot: Pair with [Proposer, Attesters]
    */
-  public Map<SlotNumber, Pair<ValidatorIndex, List<ShardCommittee>>> getValidatorDuties(
+  public Map<SlotNumber, Pair<ValidatorIndex, List<BeaconCommittee>>> getValidatorDuties(
       BeaconState state, EpochNumber epoch) {
-    SlotNumber epochStart = spec.compute_start_slot_of_epoch(epoch);
-    UInt64 committeesPerSlot =
-        spec.get_committee_count(state, epoch).dividedBy(spec.getConstants().getSlotsPerEpoch());
-    Map<SlotNumber, Pair<ValidatorIndex, List<ShardCommittee>>> epochCommitees = new HashMap<>();
-    for (SlotNumber slotOffset = SlotNumber.ZERO;
-        slotOffset.less(spec.getConstants().getSlotsPerEpoch());
-        slotOffset = slotOffset.increment()) {
-      List<ShardCommittee> ret = new ArrayList<>();
+    SlotNumber startSlot = spec.compute_start_slot_at_epoch(epoch);
+    Map<SlotNumber, Pair<ValidatorIndex, List<BeaconCommittee>>> epochCommitees = new HashMap<>();
+    for (SlotNumber slot = startSlot;
+        slot.less(startSlot.plus(spec.getConstants().getSlotsPerEpoch()));
+        slot = slot.increment()) {
+      List<BeaconCommittee> ret = new ArrayList<>();
       ValidatorIndex proposerIndex = null;
-      for (UInt64 offset :
+      for (UInt64 index :
           UInt64s.iterate(
-              committeesPerSlot.times(slotOffset),
-              committeesPerSlot.times(slotOffset.increment()))) {
-        ShardNumber shard =
-            spec.get_start_shard(state, epoch)
-                .plusModulo(offset, spec.getConstants().getShardCount());
-        List<ValidatorIndex> committee = spec.get_crosslink_committee(state, epoch, shard);
+              UInt64.ZERO,
+              spec.get_committee_count_at_slot(state, slot))) {
+        List<ValidatorIndex> committee = spec.get_beacon_committee(state, slot, new CommitteeIndex(index));
         if (ret.isEmpty()) { // first committee
           proposerIndex = spec.get_beacon_proposer_index(state);
         }
-        ret.add(new ShardCommittee(committee, shard));
+        ret.add(new BeaconCommittee(committee, new CommitteeIndex(index)));
       }
-      epochCommitees.put(slotOffset.plus(epochStart), Pair.with(proposerIndex, ret));
+      epochCommitees.put(slot, Pair.with(proposerIndex, ret));
     }
 
     return epochCommitees;
@@ -104,17 +99,17 @@ public class ValidatorDutiesService {
    *
    * @param validatorIndex Validator index
    * @param duties Epoch validator duties
-   * @return Block proposal slot, Attester shard, Attester slot
+   * @return Block proposal slot, Attester committee index, Attester slot
    */
   public Triplet<BigInteger, Integer, BigInteger> findDutyForValidator(
       ValidatorIndex validatorIndex,
-      Map<SlotNumber, Pair<ValidatorIndex, List<ShardCommittee>>> duties) {
+      Map<SlotNumber, Pair<ValidatorIndex, List<BeaconCommittee>>> duties) {
     BigInteger blockProposal = null;
-    Integer attesterShard = null;
+    Integer attesterCommitteeIndex = null;
     BigInteger attesterSlot = null;
     boolean attesterFound = false;
     boolean proposerFound = false;
-    for (Map.Entry<SlotNumber, Pair<ValidatorIndex, List<ShardCommittee>>> entry :
+    for (Map.Entry<SlotNumber, Pair<ValidatorIndex, List<BeaconCommittee>>> entry :
         duties.entrySet()) {
       if (!proposerFound && entry.getValue().getValue0().equals(validatorIndex)) {
         blockProposal = entry.getKey().toBI();
@@ -122,9 +117,9 @@ public class ValidatorDutiesService {
       }
 
       if (!attesterFound) {
-        for (ShardCommittee shardCommittee : entry.getValue().getValue1()) {
-          if (shardCommittee.getCommittee().contains(validatorIndex)) {
-            attesterShard = shardCommittee.getShard().intValue();
+        for (BeaconCommittee beaconCommittee : entry.getValue().getValue1()) {
+          if (beaconCommittee.getCommittee().contains(validatorIndex)) {
+            attesterCommitteeIndex = beaconCommittee.getIndex().intValue();
             attesterSlot = entry.getKey().toBI();
             attesterFound = true;
             break;
@@ -133,10 +128,10 @@ public class ValidatorDutiesService {
       }
 
       if (proposerFound && attesterFound) {
-        return Triplet.with(blockProposal, attesterShard, attesterSlot);
+        return Triplet.with(blockProposal, attesterCommitteeIndex, attesterSlot);
       }
     }
 
-    return Triplet.with(blockProposal, attesterShard, attesterSlot);
+    return Triplet.with(blockProposal, attesterCommitteeIndex, attesterSlot);
   }
 }

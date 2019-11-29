@@ -16,7 +16,7 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
  * Fork choice rule.
  *
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.8.1/specs/core/0_fork-choice.md">Beacon
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.9.2/specs/core/0_fork-choice.md">Beacon
  *     Chain Fork Choice</a> in the spec.
  */
 public interface ForkChoice extends HelperFunction {

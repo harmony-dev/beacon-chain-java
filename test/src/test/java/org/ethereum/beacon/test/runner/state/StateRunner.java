@@ -19,7 +19,6 @@ import org.ethereum.beacon.consensus.verifier.operation.AttestationVerifier;
 import org.ethereum.beacon.consensus.verifier.operation.AttesterSlashingVerifier;
 import org.ethereum.beacon.consensus.verifier.operation.DepositVerifier;
 import org.ethereum.beacon.consensus.verifier.operation.ProposerSlashingVerifier;
-import org.ethereum.beacon.consensus.verifier.operation.TransferVerifier;
 import org.ethereum.beacon.consensus.verifier.operation.VoluntaryExitVerifier;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
@@ -27,13 +26,10 @@ import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
-import org.ethereum.beacon.core.operations.Transfer;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
-import org.ethereum.beacon.test.StateTestUtils;
 import org.ethereum.beacon.test.runner.Runner;
 import org.ethereum.beacon.test.type.TestCase;
-import org.ethereum.beacon.test.type.state.CrosslinksProcessingCase;
 import org.ethereum.beacon.test.type.state.FinalUpdatesProcessingCase;
 import org.ethereum.beacon.test.type.state.FinalizationProcessingCase;
 import org.ethereum.beacon.test.type.state.OperationAttestationCase;
@@ -41,9 +37,9 @@ import org.ethereum.beacon.test.type.state.OperationAttesterSlashingCase;
 import org.ethereum.beacon.test.type.state.OperationBlockHeaderCase;
 import org.ethereum.beacon.test.type.state.OperationDepositCase;
 import org.ethereum.beacon.test.type.state.OperationProposerSlashingCase;
-import org.ethereum.beacon.test.type.state.OperationTransferCase;
 import org.ethereum.beacon.test.type.state.OperationVoluntaryExitCase;
 import org.ethereum.beacon.test.type.state.RegistryUpdatesProcessingCase;
+import org.ethereum.beacon.test.type.state.RewardsAndPenaltiesCase;
 import org.ethereum.beacon.test.type.state.SanityBlocksCase;
 import org.ethereum.beacon.test.type.state.SanitySlotsCase;
 import org.ethereum.beacon.test.type.state.SlashingsProcessingCase;
@@ -108,9 +104,6 @@ public class StateRunner implements Runner {
       processingError =
           processProposerSlashing(
               ((OperationProposerSlashingCase) testCase).getProposerSlashing(), latestState);
-    } else if (testCase instanceof OperationTransferCase) {
-      processingError =
-          processTransfer(((OperationTransferCase) testCase).getTransfer(), latestState);
     } else if (testCase instanceof OperationVoluntaryExitCase) {
       processingError =
           processVoluntaryExit(
@@ -119,8 +112,6 @@ public class StateRunner implements Runner {
       processingError =
           processBlockHeader(
               ((OperationBlockHeaderCase) testCase).getBlock(spec.getConstants()), latestState);
-    } else if (testCase instanceof CrosslinksProcessingCase) {
-      processingError = processCrosslinks(latestState);
     } else if (testCase instanceof FinalUpdatesProcessingCase) {
       processingError = processFinalUpdates(latestState);
     } else if (testCase instanceof FinalizationProcessingCase) {
@@ -129,6 +120,8 @@ public class StateRunner implements Runner {
       processingError = processRegistryUpdates(latestState);
     } else if (testCase instanceof SlashingsProcessingCase) {
       processingError = processSlashings(latestState);
+    } else if (testCase instanceof RewardsAndPenaltiesCase) {
+      processingError = processRewardsAndPenalties(latestState);
     } else {
       throw new RuntimeException("This type of state test is not supported");
     }
@@ -201,16 +194,6 @@ public class StateRunner implements Runner {
                 (MutableBeaconState) objects.getValue1(), objects.getValue0()));
   }
 
-  private Optional<String> processTransfer(Transfer transfer, BeaconState state) {
-    TransferVerifier verifier = new TransferVerifier(spec);
-    return processOperation(
-        transfer,
-        state,
-        verifier,
-        objects ->
-            spec.process_transfer((MutableBeaconState) objects.getValue1(), objects.getValue0()));
-  }
-
   private Optional<String> processVoluntaryExit(VoluntaryExit voluntaryExit, BeaconState state) {
     VoluntaryExitVerifier verifier = new VoluntaryExitVerifier(spec);
     return processOperation(
@@ -239,7 +222,7 @@ public class StateRunner implements Runner {
 
   private Optional<String> processCrosslinks(BeaconState state) {
     try {
-      spec.process_crosslinks((MutableBeaconState) state);
+      //spec.process_crosslinks((MutableBeaconState) state);
       return Optional.empty();
     } catch (SpecCommons.SpecAssertionFailed | IllegalArgumentException ex) {
       return Optional.of(ex.getMessage());
@@ -276,6 +259,15 @@ public class StateRunner implements Runner {
   private Optional<String> processSlashings(BeaconState state) {
     try {
       spec.process_slashings((MutableBeaconState) state);
+      return Optional.empty();
+    } catch (SpecCommons.SpecAssertionFailed | IllegalArgumentException ex) {
+      return Optional.of(ex.getMessage());
+    }
+  }
+
+  private Optional<String> processRewardsAndPenalties(BeaconState state) {
+    try {
+      spec.process_rewards_and_penalties((MutableBeaconState) state);
       return Optional.empty();
     } catch (SpecCommons.SpecAssertionFailed | IllegalArgumentException ex) {
       return Optional.of(ex.getMessage());

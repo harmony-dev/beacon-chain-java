@@ -9,7 +9,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
-import org.ethereum.beacon.core.operations.Transfer;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
@@ -61,8 +60,6 @@ public class PendingOperationsState implements PendingOperations {
             .map(Attestation::getAggregationBits)
             .reduce(Bitlist::or)
             .get();
-    Bitlist custody =
-        attestations.stream().map(Attestation::getCustodyBits).reduce(Bitlist::or).get();
     BLS381.Signature aggregatedSignature =
         BLS381.Signature.aggregate(
             attestations.stream()
@@ -72,16 +69,11 @@ public class PendingOperationsState implements PendingOperations {
     BLSSignature aggSign = BLSSignature.wrap(aggregatedSignature.getEncoded());
 
     return new Attestation(
-        participants, attestations.get(0).getData(), custody, aggSign, specConstants);
+        participants, attestations.get(0).getData(), aggSign, specConstants);
   }
 
   @Override
   public List<VoluntaryExit> peekExits(int maxCount) {
-    return Collections.emptyList();
-  }
-
-  @Override
-  public List<Transfer> peekTransfers(int maxCount) {
     return Collections.emptyList();
   }
 }

@@ -9,20 +9,16 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
-import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.state.HistoricalBatch;
 import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.state.ValidatorRecord;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
-import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.javatuples.Pair;
-import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.collections.Bitvector;
-import tech.pegasys.artemis.util.collections.ReadList;
 import tech.pegasys.artemis.util.uint.UInt64;
 import tech.pegasys.artemis.util.uint.UInt64s;
 
@@ -30,7 +26,7 @@ import tech.pegasys.artemis.util.uint.UInt64s;
  * Epoch processing part.
  *
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.8.1/specs/core/0_beacon-chain.md#epoch-processing">Epoch
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.9.2/specs/core/0_beacon-chain.md#epoch-processing">Epoch
  *     processing</a> in the spec.
  */
 public interface EpochProcessing extends HelperFunction {
@@ -63,13 +59,13 @@ public interface EpochProcessing extends HelperFunction {
     def get_matching_head_attestations(state: BeaconState, epoch: Epoch) -> List[PendingAttestation]:
       return [
           a for a in get_matching_source_attestations(state, epoch)
-          if a.data.beacon_block_root == get_block_root_at_slot(state, get_attestation_data_slot(state, a))
+          if a.data.beacon_block_root == get_block_root_at_slot(state, a.data.slot)
       ]
    */
   default List<PendingAttestation> get_matching_head_attestations(BeaconState state, EpochNumber epoch) {
     return get_matching_source_attestations(state, epoch).stream()
         .filter(a -> a.getData().getBeaconBlockRoot().equals(
-            get_block_root_at_slot(state, get_attestation_data_slot(state, a.getData()))))
+            get_block_root_at_slot(state, a.getData().getSlot())))
         .collect(toList());
   }
 
@@ -95,52 +91,6 @@ public interface EpochProcessing extends HelperFunction {
    */
   default Gwei get_attesting_balance(BeaconState state, List<PendingAttestation> attestations) {
     return get_total_balance(state, get_unslashed_attesting_indices(state, attestations));
-  }
-
-  /*
-    def get_winning_crosslink_and_attesting_indices(state: BeaconState,
-                                                epoch: Epoch,
-                                                shard: Shard) -> Tuple[Crosslink, List[ValidatorIndex]]:
-      attestations = [a for a in get_matching_source_attestations(state, epoch) if a.data.crosslink.shard == shard]
-      crosslinks = filter(
-          lambda c: hash_tree_root(state.current_crosslinks[shard]) in (c.parent_root, hash_tree_root(c)),
-          [a.data.crosslink for a in attestations]
-      )
-      # Winning crosslink has the crosslink data root with the most balance voting for it (ties broken lexicographically)
-      winning_crosslink = max(crosslinks, key=lambda c: (
-          get_attesting_balance(state, [a for a in attestations if a.data.crosslink == c]), c.data_root
-      ), default=Crosslink())
-      winning_attestations = [a for a in attestations if a.data.crosslink == winning_crosslink]
-      return winning_crosslink, get_unslashed_attesting_indices(state, winning_attestations)
-   */
-  default Pair<Crosslink, List<ValidatorIndex>> get_winning_crosslink_and_attesting_indices(
-      BeaconState state, EpochNumber epoch, ShardNumber shard) {
-    List<PendingAttestation> attestations = get_matching_source_attestations(state, epoch)
-        .stream().filter(a -> a.getData().getCrosslink().getShard().equals(shard)).collect(toList());
-    List<Crosslink> crosslinks = attestations.stream()
-        .map(a -> a.getData().getCrosslink())
-        .filter(c -> {
-          Hash32 root = hash_tree_root(state.getCurrentCrosslinks().get(shard));
-          return root.equals(c.getParentRoot()) || root.equals(hash_tree_root(c));
-        }).collect(toList());
-
-    Crosslink winning_crosslink = crosslinks.stream()
-        .max((c1, c2) -> {
-          Gwei b1 = get_attesting_balance(state,
-              attestations.stream().filter(a -> a.getData().getCrosslink().equals(c1)).collect(toList()));
-          Gwei b2 = get_attesting_balance(state,
-              attestations.stream().filter(a -> a.getData().getCrosslink().equals(c2)).collect(toList()));
-          if (b1.equals(b2)) {
-            return c1.getDataRoot().toString().compareTo(c2.getDataRoot().toString());
-          } else {
-            return b1.compareTo(b2);
-          }
-        }).orElse(Crosslink.EMPTY);
-    List<PendingAttestation> winning_attestations = attestations.stream()
-        .filter(a -> a.getData().getCrosslink().equals(winning_crosslink)).collect(toList());
-
-    return Pair.with(winning_crosslink,
-        get_unslashed_attesting_indices(state, winning_attestations));
   }
 
   /*
@@ -227,37 +177,6 @@ public interface EpochProcessing extends HelperFunction {
     if (bits.getValue() % 4 == 0b11
         && old_current_justified_checkpoint.getEpoch().plus(1).equals(current_epoch)) {
       state.setFinalizedCheckpoint(old_current_justified_checkpoint);
-    }
-  }
-
-  /*
-    def process_crosslinks(state: BeaconState) -> None:
-      state.previous_crosslinks = [c for c in state.current_crosslinks]
-      for epoch in (get_previous_epoch(state), get_current_epoch(state)):
-          for offset in range(get_committee_count(state, epoch)):
-              shard = (get_start_shard(state, epoch) + offset) % SHARD_COUNT
-              crosslink_committee = get_crosslink_committee(state, epoch, shard)
-              winning_crosslink, attesting_indices = get_winning_crosslink_and_attesting_indices(state, epoch, shard)
-              if 3 * get_total_balance(state, attesting_indices) >= 2 * get_total_balance(state, crosslink_committee):
-                  state.current_crosslinks[shard] = winning_crosslink
-   */
-  default void process_crosslinks(MutableBeaconState state) {
-    state.getPreviousCrosslinks().setAll(state.getCurrentCrosslinks());
-
-    for (EpochNumber epoch : get_previous_epoch(state).iterateTo(get_current_epoch(state).increment())) {
-      for (UInt64 offset : UInt64s.iterate(UInt64.ZERO, get_committee_count(state, epoch))) {
-        ShardNumber shard = get_start_shard(state, epoch)
-            .plusModulo(offset, getConstants().getShardCount());
-        List<ValidatorIndex> crosslink_committee = get_crosslink_committee(state, epoch, shard);
-        Pair<Crosslink, List<ValidatorIndex>> winner =
-            get_winning_crosslink_and_attesting_indices(state, epoch, shard);
-        Crosslink winning_crosslink = winner.getValue0();
-        List<ValidatorIndex> attesting_indices = winner.getValue1();
-        if (get_total_balance(state, attesting_indices).times(3)
-            .greaterEqual(get_total_balance(state, crosslink_committee).times(2))) {
-          state.getCurrentCrosslinks().set(shard, winning_crosslink);
-        }
-      };
     }
   }
 
@@ -351,11 +270,7 @@ public interface EpochProcessing extends HelperFunction {
           .plus(proposer_reward);
       Gwei max_attester_reward = get_base_reward(state, index).minus(proposer_reward);
       rewards[index.getIntValue()] = rewards[index.getIntValue()]
-          .plus(max_attester_reward
-              .times(getConstants().getSlotsPerEpoch()
-                  .plus(getConstants().getMinAttestationInclusionDelay()
-                      .minus(attestation.getInclusionDelay())))
-              .dividedBy(getConstants().getSlotsPerEpoch()));
+          .plus(max_attester_reward.dividedBy(attestation.getInclusionDelay()));
     }
 
     /* Inactivity penalty
@@ -384,78 +299,24 @@ public interface EpochProcessing extends HelperFunction {
   }
 
   /*
-   def get_crosslink_deltas(state: BeaconState) -> Tuple[List[Gwei], List[Gwei]]:
-    rewards = [0 for index in range(len(state.validator_registry))]
-    penalties = [0 for index in range(len(state.validator_registry))]
-    epoch = get_previous_epoch(state)
-    for offset in range(get_committee_count(state, epoch)):
-        shard = (get_start_shard(state, epoch) + offset) % SHARD_COUNT
-        crosslink_committee = get_crosslink_committee(state, epoch, shard)
-        winning_crosslink, attesting_indices = get_winning_crosslink_and_attesting_indices(state, epoch, shard)
-        attesting_balance = get_total_balance(state, attesting_indices)
-        committee_balance = get_total_balance(state, crosslink_committee)
-        for index in crosslink_committee:
-            base_reward = get_base_reward(state, index)
-            if index in attesting_indices:
-                rewards[index] += base_reward * attesting_balance // committee_balance
-            else:
-                penalties[index] += base_reward
-    return rewards, penalties
-  */
-  default Gwei[][] get_crosslink_deltas(BeaconState state) {
-    Gwei[] rewards = new Gwei[state.getValidators().size().getIntValue()];
-    Gwei[] penalties = new Gwei[state.getValidators().size().getIntValue()];
-    Arrays.fill(rewards, Gwei.ZERO);
-    Arrays.fill(penalties, Gwei.ZERO);
-
-    EpochNumber epoch = get_previous_epoch(state);
-    for (UInt64 offset : UInt64s.iterate(UInt64.ZERO, get_committee_count(state, epoch))) {
-      ShardNumber shard = get_start_shard(state, epoch)
-          .plusModulo(offset, getConstants().getShardCount());
-      List<ValidatorIndex> crosslink_committee = get_crosslink_committee(state, epoch, shard);
-      Pair<Crosslink, List<ValidatorIndex>> winner =
-          get_winning_crosslink_and_attesting_indices(state, epoch, shard);
-      List<ValidatorIndex> attesting_indices = winner.getValue1();
-      Gwei attesting_balance = get_total_balance(state, attesting_indices);
-      Gwei committee_balance = get_total_balance(state, crosslink_committee);
-      for (ValidatorIndex index : crosslink_committee) {
-        Gwei base_reward = get_base_reward(state, index);
-        if (attesting_indices.contains(index)) {
-          rewards[index.getIntValue()] = rewards[index.getIntValue()]
-              .plus(base_reward.times(attesting_balance).dividedBy(committee_balance));
-        } else {
-          penalties[index.getIntValue()] = penalties[index.getIntValue()]
-              .plus(base_reward);
-        }
-      }
-    }
-
-    return new Gwei[][] { rewards, penalties };
-  }
-
-  /*
     def process_rewards_and_penalties(state: BeaconState) -> None:
       if get_current_epoch(state) == GENESIS_EPOCH:
           return
 
-      rewards1, penalties1 = get_attestation_deltas(state)
-      rewards2, penalties2 = get_crosslink_deltas(state)
-      for i in range(len(state.validator_registry)):
-          increase_balance(state, i, rewards1[i] + rewards2[i])
-          decrease_balance(state, i, penalties1[i] + penalties2[i])
-   */
+      rewards, penalties = get_attestation_deltas(state)
+      for index in range(len(state.validators)):
+          increase_balance(state, ValidatorIndex(index), rewards[index])
+          decrease_balance(state, ValidatorIndex(index), penalties[index])   */
   default void process_rewards_and_penalties(MutableBeaconState state) {
     if (get_current_epoch(state).equals(getConstants().getGenesisEpoch())) {
       return;
     }
 
-    Gwei[][] deltas1 = get_attestation_deltas(state);
-    Gwei[] rewards1 = deltas1[0], penalties1 = deltas1[1];
-    Gwei[][] deltas2 = get_crosslink_deltas(state);
-    Gwei[] rewards2 = deltas2[0], penalties2 = deltas2[1];
+    Gwei[][] deltas = get_attestation_deltas(state);
+    Gwei[] rewards = deltas[0], penalties = deltas[1];
     for (ValidatorIndex i : state.getValidators().size()) {
-      increase_balance(state, i, rewards1[i.getIntValue()].plus(rewards2[i.getIntValue()]));
-      decrease_balance(state, i, penalties1[i.getIntValue()].plus(penalties2[i.getIntValue()]));
+      increase_balance(state, i, rewards[i.getIntValue()]);
+      decrease_balance(state, i, penalties[i.getIntValue()]);
     }
   }
 
@@ -595,22 +456,6 @@ public interface EpochProcessing extends HelperFunction {
       }
     }
 
-    /* # Set active index root
-      index_epoch = Epoch(next_epoch + ACTIVATION_EXIT_DELAY)
-      index_root_position = index_epoch % EPOCHS_PER_HISTORICAL_VECTOR
-      indices_list = List[ValidatorIndex, VALIDATOR_REGISTRY_LIMIT](get_active_validator_indices(state, index_epoch))
-      state.active_index_roots[index_root_position] = hash_tree_root(indices_list) */
-    EpochNumber index_epoch = next_epoch.plus(getConstants().getActivationExitDelay());
-    EpochNumber index_root_position = index_epoch.modulo(getConstants().getEpochsPerHistoricalVector());
-    ReadList<Integer, ValidatorIndex> indices_list = get_active_validator_indices_list(state, index_epoch);
-    state.getActiveIndexRoots().set(index_root_position, hash_tree_root(indices_list));
-
-    /* # Set committees root
-      committee_root_position = next_epoch % EPOCHS_PER_HISTORICAL_VECTOR
-      state.compact_committees_roots[committee_root_position] = get_compact_committees_root(state, next_epoch) */
-    EpochNumber committee_root_position = next_epoch.modulo(getConstants().getEpochsPerHistoricalVector());
-    state.getCompactCommitteesRoots().set(committee_root_position, get_compact_committees_root(state, next_epoch));
-
     /* # Reset slashings
       state.slashings[next_epoch % EPOCHS_PER_SLASHINGS_VECTOR] = Gwei(0) */
     state.getSlashings().set(next_epoch.modulo(getConstants().getEpochsPerSlashingsVector()), Gwei.ZERO);
@@ -631,12 +476,6 @@ public interface EpochProcessing extends HelperFunction {
       state.getHistoricalRoots().add(hash_tree_root(historical_batch));
     }
 
-    /* # Update start shard
-    state.start_shard = Shard((state.start_shard + get_shard_delta(state, current_epoch)) % SHARD_COUNT) */
-    state.setStartShard(state
-            .getStartShard()
-            .plusModulo(get_shard_delta(state, current_epoch), getConstants().getShardCount()));
-
     /* # Rotate current/previous epoch attestations
       state.previous_epoch_attestations = state.current_epoch_attestations
       state.current_epoch_attestations = [] */
@@ -647,18 +486,17 @@ public interface EpochProcessing extends HelperFunction {
   /*
     def process_epoch(state: BeaconState) -> None:
       process_justification_and_finalization(state)
-      process_crosslinks(state)
       process_rewards_and_penalties(state)
       process_registry_updates(state)
       # @process_reveal_deadlines
       # @process_challenge_deadlines
       process_slashings(state)
+      # @update_period_committee
       process_final_updates(state)
       # @after_process_final_updates
    */
   default void process_epoch(MutableBeaconState state) {
     process_justification_and_finalization(state);
-    process_crosslinks(state);
     process_rewards_and_penalties(state);
     process_registry_updates(state);
     // @process_reveal_deadlines

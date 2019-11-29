@@ -20,6 +20,7 @@ import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.deposit.DepositData;
+import org.ethereum.beacon.core.spec.SignatureDomains;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.BLSPubkey;
@@ -135,7 +136,6 @@ public class BeaconChainSpecTest {
             AttestationTestUtil.createRandomList(rnd, 10),
             emptyBlock.getBody().getDeposits().listCopy(),
             emptyBlock.getBody().getVoluntaryExits().listCopy(),
-            emptyBlock.getBody().getTransfers().listCopy(),
             spec.getConstants());
     BeaconBlock block =
         new BeaconBlock(
@@ -153,7 +153,7 @@ public class BeaconChainSpecTest {
   public void committeeTest1() {
     int validatorCount = 4;
     int epochLength = 4;
-    int shardCount = 8;
+    int maxCommitteesPerSlot = 8;
     int targetCommitteeSize = 2;
     SlotNumber genesisSlot = SlotNumber.of(1_000_000);
     Random rnd = new Random(1);
@@ -177,8 +177,8 @@ public class BeaconChainSpecTest {
           }
 
           @Override
-          public ShardNumber getShardCount() {
-            return ShardNumber.of(shardCount);
+          public UInt64 getMaxCommitteesPerSlot() {
+            return UInt64.valueOf(maxCommitteesPerSlot);
           }
         };
     BeaconChainSpec spec =
@@ -202,8 +202,8 @@ public class BeaconChainSpecTest {
             spec.get_empty_block());
     MutableBeaconState state = initialState.createMutableCopy();
 
-    System.out.println("get_committee_count() = " +
-        spec.get_committee_count(state, spec.getConstants().getGenesisEpoch()));
+    System.out.println("get_committee_count_at_slot() = " +
+        spec.get_committee_count_at_slot(state, spec.getConstants().getGenesisSlot()));
 
     for (SlotNumber slot : genesisSlot.iterateTo(genesisSlot.plus(SlotNumber.of(epochLength)))) {
       System.out.println("Slot #" + slot
@@ -216,7 +216,7 @@ public class BeaconChainSpecTest {
           + spec.get_beacon_proposer_index(state)
           + " committee: "
           + spec.get_crosslink_committees_at_slot(state, slot).stream()
-            .map(c -> c.getShard() + ": [" + c.getCommittee().size() + "]")
+            .map(c -> c.getIndex() + ": [" + c.getCommittee().size() + "]")
             .collect(Collectors.joining(","))
             );
     }
@@ -248,6 +248,8 @@ public class BeaconChainSpecTest {
 
   @Test
   public void edgeCaseWithGetSeed() {
+    UInt64 domain_type = SignatureDomains.BEACON_PROPOSER;
+
     BeaconChainSpec spec =
         BeaconChainSpec.createWithDefaultHasher(
             new SpecConstants() {
@@ -261,8 +263,8 @@ public class BeaconChainSpecTest {
     MutableBeaconState state = BeaconState.getEmpty().createMutableCopy();
 
     EpochNumber startEpoch = spec.get_current_epoch(state);
-    spec.get_seed(state, startEpoch);
-    Hash32 nextEpochSeed = spec.get_seed(state, startEpoch.increment());
+    spec.get_seed(state, startEpoch, domain_type);
+    Hash32 nextEpochSeed = spec.get_seed(state, startEpoch.increment(), domain_type);
 
     for (EpochNumber epoch = startEpoch; epoch.less(startEpoch.plus(10)); epoch = epoch.increment()) {
       BeaconBlockBody body =
@@ -273,8 +275,8 @@ public class BeaconChainSpecTest {
 
       EpochNumber currentEpoch = spec.get_current_epoch(state);
 
-      assertEquals(nextEpochSeed, spec.get_seed(state, currentEpoch));
-      nextEpochSeed = spec.get_seed(state, currentEpoch.increment());
+      assertEquals(nextEpochSeed, spec.get_seed(state, currentEpoch, domain_type));
+      nextEpochSeed = spec.get_seed(state, currentEpoch.increment(), domain_type);
     }
   }
 }

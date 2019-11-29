@@ -37,7 +37,6 @@ public abstract class SpecDataUtils {
             setMAX_ATTESTER_SLASHINGS(constants.getMaxAttesterSlashings());
             setMAX_DEPOSITS(constants.getMaxDeposits());
             setMAX_PROPOSER_SLASHINGS(constants.getMaxProposerSlashings());
-            setMAX_TRANSFERS(constants.getMaxTransfers());
             setMAX_VOLUNTARY_EXITS(constants.getMaxVoluntaryExits());
           }
         };
@@ -48,7 +47,7 @@ public abstract class SpecDataUtils {
             setMAX_VALIDATORS_PER_COMMITTEE(constants.getMaxValidatorsPerCommittee().toString());
             setMIN_PER_EPOCH_CHURN_LIMIT(constants.getMinPerEpochChurnLimit().toString());
             setCHURN_LIMIT_QUOTIENT(constants.getChurnLimitQuotient().toString());
-            setSHARD_COUNT(constants.getShardCount().toString());
+            setMAX_COMMITTEES_PER_SLOT(constants.getMaxCommitteesPerSlot().toString());
             setTARGET_COMMITTEE_SIZE(constants.getTargetCommitteeSize().toString());
             setSHUFFLE_ROUND_COUNT(constants.getShuffleRoundCount());
             setMIN_GENESIS_ACTIVE_VALIDATOR_COUNT(constants.getMinGenesisActiveValidatorCount().toString());
@@ -96,7 +95,7 @@ public abstract class SpecDataUtils {
           {
             setMIN_ATTESTATION_INCLUSION_DELAY(
                 Long.toUnsignedString(constants.getMinAttestationInclusionDelay().getValue()));
-            setACTIVATION_EXIT_DELAY(constants.getActivationExitDelay().toString());
+            setMAX_SEED_LOOKAHEAD(constants.getMaxSeedLookahead().toString());
             setSLOTS_PER_ETH1_VOTING_PERIOD(constants.getSlotsPerEth1VotingPeriod().toString());
             setMIN_SEED_LOOKAHEAD(constants.getMinSeedLookahead().toString());
             setMIN_VALIDATOR_WITHDRAWABILITY_DELAY(

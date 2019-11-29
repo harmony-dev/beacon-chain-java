@@ -4,6 +4,8 @@ import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.state.Checkpoint;
+import org.ethereum.beacon.core.types.CommitteeIndex;
+import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.ssz.annotation.SSZ;
 import org.ethereum.beacon.ssz.annotation.SSZSerializable;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -13,11 +15,14 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
  *
  * @see Attestation
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.8.1/specs/core/0_beacon-chain.md#attestationdata">AttestationData
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.9.2/specs/core/0_beacon-chain.md#attestationdata">AttestationData
  *     in the spec</a>
  */
 @SSZSerializable
 public class AttestationData {
+
+  @SSZ private final SlotNumber slot;
+  @SSZ private final CommitteeIndex index;
 
   // LMD GHOST vote:
 
@@ -29,16 +34,25 @@ public class AttestationData {
   @SSZ private final Checkpoint source;
   @SSZ private final Checkpoint target;
 
-  // Crosslink vote:
-
-  @SSZ private final Crosslink crosslink;
-
   public AttestationData(
-      Hash32 beaconBlockRoot, Checkpoint source, Checkpoint target, Crosslink crosslink) {
+      SlotNumber slot,
+      CommitteeIndex index,
+      Hash32 beaconBlockRoot,
+      Checkpoint source,
+      Checkpoint target) {
+    this.slot = slot;
+    this.index = index;
     this.beaconBlockRoot = beaconBlockRoot;
     this.source = source;
     this.target = target;
-    this.crosslink = crosslink;
+  }
+
+  public SlotNumber getSlot() {
+    return slot;
+  }
+
+  public CommitteeIndex getIndex() {
+    return index;
   }
 
   public Hash32 getBeaconBlockRoot() {
@@ -53,10 +67,6 @@ public class AttestationData {
     return target;
   }
 
-  public Crosslink getCrosslink() {
-    return crosslink;
-  }
-
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -66,21 +76,23 @@ public class AttestationData {
       return false;
     }
     AttestationData that = (AttestationData) o;
-    return Objects.equal(beaconBlockRoot, that.beaconBlockRoot)
+    return Objects.equal(slot, that.slot)
+        && Objects.equal(index, that.index)
+        && Objects.equal(beaconBlockRoot, that.beaconBlockRoot)
         && Objects.equal(source, that.source)
-        && Objects.equal(target, that.target)
-        && Objects.equal(crosslink, that.crosslink);
+        && Objects.equal(target, that.target);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(beaconBlockRoot, source, target, crosslink);
+    return Objects.hashCode(slot, index, beaconBlockRoot, source, target);
   }
 
   @Override
   public String toString() {
     return MoreObjects.toStringHelper(this)
-        .add("crosslink", crosslink)
+        .add("slot", slot)
+        .add("index", index)
         .add("beaconBlockRoot", beaconBlockRoot.toStringShort())
         .add("sourceEpoch", source.getEpoch())
         .add("sourceRoot", source.getRoot().toStringShort())

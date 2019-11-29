@@ -20,7 +20,7 @@ import org.ethereum.beacon.core.types.ValidatorIndex;
  * <p>Calls {@link BeaconChainSpec#process_epoch(MutableBeaconState)}.
  *
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.8.1/specs/core/0_beacon-chain.md#epoch-processing">Epoch
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.9.2/specs/core/0_beacon-chain.md#epoch-processing">Epoch
  *     processing</a> in the spec.
  */
 public class PerEpochTransition implements StateTransition<BeaconStateEx> {
@@ -130,11 +130,9 @@ public class PerEpochTransition implements StateTransition<BeaconStateEx> {
     }
 
     spec.process_justification_and_finalization(state);
-    spec.process_crosslinks(state);
 
     if (!spec.get_current_epoch(state).equals(spec.getConstants().getGenesisEpoch())) {
       summary.attestationDeltas = spec.get_attestation_deltas(state);
-      summary.crosslinkDeltas = spec.get_crosslink_deltas(state);
     }
 
     spec.process_rewards_and_penalties(state);

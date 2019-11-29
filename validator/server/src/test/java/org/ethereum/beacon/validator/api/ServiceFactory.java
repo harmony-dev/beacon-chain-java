@@ -19,13 +19,11 @@ import org.ethereum.beacon.core.BeaconBlockBody;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
-import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
-import org.ethereum.beacon.core.types.EpochNumber;
-import org.ethereum.beacon.core.types.ShardNumber;
+import org.ethereum.beacon.core.types.CommitteeIndex;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
@@ -370,16 +368,16 @@ public class ServiceFactory {
       public Attestation prepareAttestation(
           SlotNumber slot,
           ValidatorIndex validatorIndex,
-          ShardNumber shard,
+          CommitteeIndex committeeIndex,
           ObservableBeaconState observableBeaconState) {
         return new Attestation(
             Bitlist.of(0),
             new AttestationData(
+                SlotNumber.of(0),
+                committeeIndex,
                 Hash32.ZERO,
                 Checkpoint.EMPTY,
-                Checkpoint.EMPTY,
-                new Crosslink(shard, Hash32.ZERO, EpochNumber.ZERO, EpochNumber.ZERO, Hash32.ZERO)),
-            Bitlist.of(0),
+                Checkpoint.EMPTY),
             BLSSignature.ZERO,
             constants);
       }

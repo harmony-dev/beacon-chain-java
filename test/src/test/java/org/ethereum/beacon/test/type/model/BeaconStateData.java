@@ -20,9 +20,6 @@ public class BeaconStateData {
   @JsonProperty("randao_mixes")
   private List<String> randaoMixes;
 
-  @JsonProperty("start_shard")
-  private Long startShard;
-
   @JsonProperty("previous_epoch_attestations")
   private List<AttestationData> previousEpochAttestations;
 
@@ -40,27 +37,6 @@ public class BeaconStateData {
 
   @JsonProperty("finalized_checkpoint")
   private CheckpointData finalizedCheckpoint;
-
-  @JsonProperty("current_crosslinks")
-  private List<CrossLinkData> currentCrosslinks;
-
-  @JsonProperty("previous_crosslinks")
-  private List<CrossLinkData> previousCrosslinks;
-
-  @JsonProperty("block_roots")
-  private List<String> blockRoots;
-
-  @JsonProperty("state_roots")
-  private List<String> stateRoots;
-
-  @JsonProperty("historical_roots")
-  private List<String> historicalRoots;
-
-  @JsonProperty("active_index_roots")
-  private List<String> activeIndexRoots;
-
-  @JsonProperty("compact_committees_roots")
-  private List<String> compactCommitteesRoots;
 
   private List<String> slashings;
 
@@ -124,14 +100,6 @@ public class BeaconStateData {
     this.randaoMixes = randaoMixes;
   }
 
-  public Long getStartShard() {
-    return startShard;
-  }
-
-  public void setStartShard(Long startShard) {
-    this.startShard = startShard;
-  }
-
   public List<AttestationData> getPreviousEpochAttestations() {
     return previousEpochAttestations;
   }
@@ -180,54 +148,6 @@ public class BeaconStateData {
     this.finalizedCheckpoint = finalizedCheckpoint;
   }
 
-  public List<CrossLinkData> getCurrentCrosslinks() {
-    return currentCrosslinks;
-  }
-
-  public void setCurrentCrosslinks(List<CrossLinkData> currentCrosslinks) {
-    this.currentCrosslinks = currentCrosslinks;
-  }
-
-  public List<CrossLinkData> getPreviousCrosslinks() {
-    return previousCrosslinks;
-  }
-
-  public void setPreviousCrosslinks(List<CrossLinkData> previousCrosslinks) {
-    this.previousCrosslinks = previousCrosslinks;
-  }
-
-  public List<String> getBlockRoots() {
-    return blockRoots;
-  }
-
-  public void setBlockRoots(List<String> blockRoots) {
-    this.blockRoots = blockRoots;
-  }
-
-  public List<String> getStateRoots() {
-    return stateRoots;
-  }
-
-  public void setStateRoots(List<String> stateRoots) {
-    this.stateRoots = stateRoots;
-  }
-
-  public List<String> getActiveIndexRoots() {
-    return activeIndexRoots;
-  }
-
-  public void setActiveIndexRoots(List<String> activeIndexRoots) {
-    this.activeIndexRoots = activeIndexRoots;
-  }
-
-  public List<String> getCompactCommitteesRoots() {
-    return compactCommitteesRoots;
-  }
-
-  public void setCompactCommitteesRoots(List<String> compactCommitteesRoots) {
-    this.compactCommitteesRoots = compactCommitteesRoots;
-  }
-
   public List<String> getSlashings() {
     return slashings;
   }
@@ -242,14 +162,6 @@ public class BeaconStateData {
 
   public void setLatestBlockHeader(BlockHeaderData latestBlockHeader) {
     this.latestBlockHeader = latestBlockHeader;
-  }
-
-  public List<String> getHistoricalRoots() {
-    return historicalRoots;
-  }
-
-  public void setHistoricalRoots(List<String> historicalRoots) {
-    this.historicalRoots = historicalRoots;
   }
 
   public BlockData.BlockBodyData.Eth1 getEth1Data() {
@@ -426,9 +338,6 @@ public class BeaconStateData {
 
     private AttestationDataContainer data;
 
-    @JsonProperty("custody_bits")
-    private String custodyBits;
-
     private String signature;
 
     @JsonProperty("inclusion_delay")
@@ -461,14 +370,6 @@ public class BeaconStateData {
       this.data = data;
     }
 
-    public String getCustodyBits() {
-      return custodyBits;
-    }
-
-    public void setCustodyBits(String custodyBits) {
-      this.custodyBits = custodyBits;
-    }
-
     public String getSignature() {
       return signature;
     }
@@ -486,14 +387,16 @@ public class BeaconStateData {
     }
 
     public static class AttestationDataContainer {
+      private Long slot;
+
+      private Long index;
+
       @JsonProperty("beacon_block_root")
       private String beaconBlockRoot;
 
       private CheckpointData source;
 
       private CheckpointData target;
-
-      private CrossLinkData crosslink;
 
       public String getBeaconBlockRoot() {
         return beaconBlockRoot;
@@ -519,69 +422,21 @@ public class BeaconStateData {
         this.target = target;
       }
 
-      public CrossLinkData getCrosslink() {
-        return crosslink;
+      public Long getSlot() {
+        return slot;
       }
 
-      public void setCrosslink(CrossLinkData crosslink) {
-        this.crosslink = crosslink;
+      public void setSlot(Long slot) {
+        this.slot = slot;
       }
-    }
-  }
 
-  public static class CrossLinkData {
-    private Long shard;
+      public Long getIndex() {
+        return index;
+      }
 
-    @JsonProperty("start_epoch")
-    private String startEpoch;
-
-    @JsonProperty("end_epoch")
-    private String endEpoch;
-
-    @JsonProperty("parent_root")
-    private String parentRoot;
-
-    @JsonProperty("data_root")
-    private String dataRoot;
-
-    public Long getShard() {
-      return shard;
-    }
-
-    public void setShard(Long shard) {
-      this.shard = shard;
-    }
-
-    public String getStartEpoch() {
-      return startEpoch;
-    }
-
-    public void setStartEpoch(String startEpoch) {
-      this.startEpoch = startEpoch;
-    }
-
-    public String getEndEpoch() {
-      return endEpoch;
-    }
-
-    public void setEndEpoch(String endEpoch) {
-      this.endEpoch = endEpoch;
-    }
-
-    public String getParentRoot() {
-      return parentRoot;
-    }
-
-    public void setParentRoot(String parentRoot) {
-      this.parentRoot = parentRoot;
-    }
-
-    public String getDataRoot() {
-      return dataRoot;
-    }
-
-    public void setDataRoot(String dataRoot) {
-      this.dataRoot = dataRoot;
+      public void setIndex(Long index) {
+        this.index = index;
+      }
     }
   }
 

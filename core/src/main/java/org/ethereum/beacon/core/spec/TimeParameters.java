@@ -15,17 +15,18 @@ import tech.pegasys.artemis.util.uint.UInt64;
  */
 public interface TimeParameters {
 
-  Time SECONDS_PER_SLOT = Time.of(6); // 6 seconds
+  Time SECONDS_PER_SLOT = Time.of(12); // 12 seconds
   SlotNumber MIN_ATTESTATION_INCLUSION_DELAY = SlotNumber.of(1); // 1 slot
-  EpochLength SLOTS_PER_EPOCH = new EpochLength(UInt64.valueOf(1 << 6)); // 64 slots
+  EpochLength SLOTS_PER_EPOCH = new EpochLength(UInt64.valueOf(1 << 5)); // 32 slots
   EpochNumber MIN_SEED_LOOKAHEAD = EpochNumber.of(1);
-  EpochNumber ACTIVATION_EXIT_DELAY = EpochNumber.of(1 << 2);
+  EpochNumber MAX_SEED_LOOKAHEAD = EpochNumber.of(1 << 2);
   EpochNumber SLOTS_PER_ETH1_VOTING_PERIOD = EpochNumber.of(1 << 10); // 1024
   SlotNumber SLOTS_PER_HISTORICAL_ROOT = SlotNumber.of(1 << 13); // 8,192
   EpochNumber MIN_VALIDATOR_WITHDRAWABILITY_DELAY = EpochNumber.of(1 << 8);
   EpochNumber PERSISTENT_COMMITTEE_PERIOD = EpochNumber.of(1 << 11); // 2,048
   EpochNumber MAX_EPOCHS_PER_CROSSLINK = EpochNumber.of(1 << 6); // 64
   EpochNumber MIN_EPOCHS_TO_INACTIVITY_PENALTY = EpochNumber.of(1 << 2); // 4
+  SlotNumber SAFE_SLOTS_TO_UPDATE_JUSTIFIED = SlotNumber.of(1 << 3); // 8 slots
 
   /* Values defined in the spec. */
 
@@ -45,8 +46,8 @@ public interface TimeParameters {
     return MIN_SEED_LOOKAHEAD;
   }
 
-  default EpochNumber getActivationExitDelay() {
-    return ACTIVATION_EXIT_DELAY;
+  default EpochNumber getMaxSeedLookahead() {
+    return MAX_SEED_LOOKAHEAD;
   }
 
   default EpochNumber getSlotsPerEth1VotingPeriod() {
@@ -71,5 +72,9 @@ public interface TimeParameters {
 
   default EpochNumber getMinEpochsToInactivityPenalty() {
     return MIN_EPOCHS_TO_INACTIVITY_PENALTY;
+  }
+
+  default SlotNumber getSafeSlotsToUpdateJustified() {
+    return SAFE_SLOTS_TO_UPDATE_JUSTIFIED;
   }
 }

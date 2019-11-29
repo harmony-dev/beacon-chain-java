@@ -18,6 +18,8 @@ public interface BeaconChainStorage {
 
   SingleValueSource<Checkpoint> getJustifiedStorage();
 
+  SingleValueSource<Checkpoint> getBestJustifiedStorage();
+
   SingleValueSource<Checkpoint> getFinalizedStorage();
 
   void commit();

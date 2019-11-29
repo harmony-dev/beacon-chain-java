@@ -23,9 +23,8 @@ public class AttestationDataSerializer implements ObjectSerializer<AttestationDa
     attestationData.put("source_root", instance.getSource().getRoot().toString());
     attestationData.set("target_epoch", ComparableBigIntegerNode.valueOf(instance.getTarget().getEpoch()));
     attestationData.put("target_root", instance.getTarget().getRoot().toString());
-    attestationData.set("shard", ComparableBigIntegerNode.valueOf(instance.getCrosslink().getShard()));
-    attestationData.put("previous_crosslink_root", instance.getCrosslink().getParentRoot().toString());
-    attestationData.put("crosslink_data_root", instance.getCrosslink().getDataRoot().toString());
+    attestationData.set("slot", ComparableBigIntegerNode.valueOf(instance.getSlot()));
+    attestationData.set("index", ComparableBigIntegerNode.valueOf(instance.getIndex()));
     return attestationData;
   }
 }

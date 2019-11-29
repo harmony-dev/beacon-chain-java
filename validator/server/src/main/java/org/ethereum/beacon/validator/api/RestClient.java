@@ -89,14 +89,14 @@ public class RestClient implements ValidatorClient {
 
   @Override
   public BlockData.BlockBodyData.IndexedAttestationData getAttestation(
-      String validatorPubkey, Long pocBit, BigInteger slot, Integer shard) {
+      String validatorPubkey, Long pocBit, BigInteger slot, Integer index) {
     return client
         .target(url)
         .path("/validator/attestation")
         .queryParam("validator_pubkey", validatorPubkey)
         .queryParam("poc_bit", pocBit)
         .queryParam("slot", slot)
-        .queryParam("shard", shard)
+        .queryParam("index", index)
         .request(MediaType.APPLICATION_JSON)
         .get(BlockData.BlockBodyData.IndexedAttestationData.class);
   }

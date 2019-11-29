@@ -14,7 +14,7 @@ import tech.pegasys.artemis.util.uint.UInt64;
  * A part of spec describing Honest Validator behaviour.
  *
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.8.0/specs/validator/0_beacon-chain-validator.md">Honest
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.9.2/specs/validator/0_beacon-chain-validator.md">Honest
  *     Validator</a> in the spec.
  */
 public interface HonestValidator extends HelperFunction {
@@ -24,11 +24,13 @@ public interface HonestValidator extends HelperFunction {
       new_eth1_data = [get_eth1_data(distance) for distance in range(ETH1_FOLLOW_DISTANCE, 2 * ETH1_FOLLOW_DISTANCE)]
       all_eth1_data = [get_eth1_data(distance) for distance in range(ETH1_FOLLOW_DISTANCE, previous_eth1_distance)]
 
-      valid_votes = []
-      for slot, vote in enumerate(state.eth1_data_votes):
-          period_tail = slot % SLOTS_PER_ETH1_VOTING_PERIOD >= integer_squareroot(SLOTS_PER_ETH1_VOTING_PERIOD)
-          if vote in new_eth1_data or (period_tail and vote in all_eth1_data):
-              valid_votes.append(vote)
+      period_tail = state.slot % SLOTS_PER_ETH1_VOTING_PERIOD >= integer_squareroot(SLOTS_PER_ETH1_VOTING_PERIOD)
+      if period_tail:
+          votes_to_consider = all_eth1_data
+      else:
+          votes_to_consider = new_eth1_data
+
+      valid_votes = [vote for vote in state.eth1_data_votes if vote in votes_to_consider]
 
       return max(
           valid_votes,
@@ -48,16 +50,17 @@ public interface HonestValidator extends HelperFunction {
             .mapToObj(get_eth1_data::apply)
             .collect(Collectors.toList());
 
-    List<Eth1Data> valid_votes = new ArrayList<>();
-    for (int slotNumber = 0; slotNumber < state.getEth1DataVotes().size(); slotNumber++) {
-      SlotNumber slot = SlotNumber.of(slotNumber);
-      Eth1Data vote = state.getEth1DataVotes().get(slotNumber);
-      boolean period_tail = slot.modulo(getConstants().getSlotsPerEth1VotingPeriod())
-          .compareTo(integer_squareroot(getConstants().getSlotsPerEth1VotingPeriod())) >= 0;
-      if (new_eth1_data.contains(vote) || (period_tail && all_eth1_data.contains(vote))) {
-        valid_votes.add(vote);
-      }
+    boolean period_tail = state.getSlot().modulo(getConstants().getSlotsPerEth1VotingPeriod())
+        .compareTo(integer_squareroot(getConstants().getSlotsPerEth1VotingPeriod())) >= 0;
+    List<Eth1Data> votes_to_consider;
+    if (period_tail) {
+      votes_to_consider = all_eth1_data;
+    } else {
+      votes_to_consider = new_eth1_data;
     }
+
+    List<Eth1Data> valid_votes = state.getEth1DataVotes().stream()
+        .filter(votes_to_consider::contains).collect(Collectors.toList());
 
     return valid_votes.stream().max((v1, v2) -> {
       long c1 = valid_votes.stream().filter(v1::equals).count();

@@ -15,17 +15,19 @@ import org.ethereum.beacon.core.types.ValidatorIndex;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes4;
 import tech.pegasys.artemis.util.collections.ReadList;
+import tech.pegasys.artemis.util.collections.WriteList;
 import tech.pegasys.artemis.util.uint.UInt64;
 import tech.pegasys.artemis.util.uint.UInt64s;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * On genesis part.
  *
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.8.1/specs/core/0_beacon-chain.md#genesis">Genesis</a>
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.9.2/specs/core/0_beacon-chain.md#genesis">Genesis</a>
  *     in the spec.
  */
 public interface GenesisFunction extends BlockProcessing {
@@ -53,6 +55,9 @@ public interface GenesisFunction extends BlockProcessing {
     state.setGenesisTime(compute_genesis_time(eth1_timestamp));
     state.setFork(new Fork(Bytes4.ZERO, Bytes4.ZERO, getConstants().getGenesisEpoch()));
     state.setLatestBlockHeader(get_block_header(get_empty_block()));
+    // randao_mixes=[eth1_block_hash] * EPOCHS_PER_HISTORICAL_VECTOR,  # Seed RANDAO with Eth1 entropy
+    List<Hash32> randao_mixes = IntStream.range(0, getConstants().getEpochsPerHistoricalVector().intValue()).mapToObj(i -> eth1_block_hash).collect(Collectors.toList());
+    state.setRandaoMixes(WriteList.wrap(randao_mixes, EpochNumber::new, true));
 
     // Process deposits
     ReadList<Integer, DepositData> deposit_data_list =
@@ -88,17 +93,6 @@ public interface GenesisFunction extends BlockProcessing {
                 .withActivationEpoch(getConstants().getGenesisEpoch())
                 .withActivationEligibilityEpoch(getConstants().getGenesisEpoch()).build());
       }
-    }
-
-    // Populate active_index_roots and compact_committees_roots
-    ReadList<Integer, ValidatorIndex> indices_list =
-        get_active_validator_indices_list(state, getConstants().getGenesisEpoch());
-    Hash32 active_index_root = hash_tree_root(indices_list);
-    Hash32 committee_root = get_compact_committees_root(state, getConstants().getGenesisEpoch());
-
-    for (EpochNumber index : getConstants().getEpochsPerHistoricalVector().iterateFrom(EpochNumber.ZERO)) {
-      state.getActiveIndexRoots().set(index, active_index_root);
-      state.getCompactCommitteesRoots().set(index, committee_root);
     }
 
     return state.createImmutable();

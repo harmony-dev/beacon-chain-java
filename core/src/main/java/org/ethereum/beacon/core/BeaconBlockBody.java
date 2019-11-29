@@ -4,7 +4,6 @@ import com.google.common.base.Objects;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.Deposit;
 import org.ethereum.beacon.core.operations.ProposerSlashing;
-import org.ethereum.beacon.core.operations.Transfer;
 import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.spec.SpecConstants;
@@ -26,7 +25,7 @@ import static java.util.Collections.emptyList;
  *
  * @see BeaconBlock
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.8.1/specs/core/0_beacon-chain.md#beaconblockbody">BeaconBlockBody
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.9.2/specs/core/0_beacon-chain.md#beaconblockbody">BeaconBlockBody
  *     in the spec</a>
  */
 @SSZSerializable
@@ -53,9 +52,6 @@ public class BeaconBlockBody {
   /** A list of validator exits. */
   @SSZ(maxSizeVar = "spec.MAX_VOLUNTARY_EXITS")
   private final ReadList<Integer, VoluntaryExit> voluntaryExits;
-  /** A list of transfers. */
-  @SSZ(maxSizeVar = "spec.MAX_TRANSFERS")
-  private final ReadList<Integer, Transfer> transfers;
 
   public BeaconBlockBody(
       BLSSignature randaoReveal,
@@ -66,7 +62,6 @@ public class BeaconBlockBody {
       ReadList<Integer, Attestation> attestations,
       ReadList<Integer, Deposit> deposits,
       ReadList<Integer, VoluntaryExit> voluntaryExits,
-      ReadList<Integer, Transfer> transfers,
       SpecConstants specConstants) {
     this.randaoReveal = randaoReveal;
     this.eth1Data = eth1Data;
@@ -91,10 +86,6 @@ public class BeaconBlockBody {
         voluntaryExits.maxSize() == ReadList.VARIABLE_SIZE
             ? voluntaryExits.cappedCopy(specConstants.getMaxVoluntaryExits())
             : voluntaryExits;
-    this.transfers =
-        transfers.maxSize() == ReadList.VARIABLE_SIZE
-            ? transfers.cappedCopy(specConstants.getMaxTransfers())
-            : transfers;
   }
 
   public BeaconBlockBody(
@@ -106,7 +97,6 @@ public class BeaconBlockBody {
       List<Attestation> attestations,
       List<Deposit> deposits,
       List<VoluntaryExit> voluntaryExits,
-      List<Transfer> transfers,
       SpecConstants specConstants) {
     this(
         randaoReveal,
@@ -117,7 +107,6 @@ public class BeaconBlockBody {
         ReadList.wrap(attestations, Integer::new, specConstants.getMaxAttestations()),
         ReadList.wrap(deposits, Integer::new, specConstants.getMaxDeposits()),
         ReadList.wrap(voluntaryExits, Integer::new, specConstants.getMaxVoluntaryExits()),
-        ReadList.wrap(transfers, Integer::new, specConstants.getMaxTransfers()),
         specConstants);
   }
 
@@ -127,7 +116,6 @@ public class BeaconBlockBody {
         BLSSignature.ZERO,
         Eth1Data.EMPTY,
         Bytes32.ZERO,
-        emptyList(),
         emptyList(),
         emptyList(),
         emptyList(),
@@ -168,10 +156,6 @@ public class BeaconBlockBody {
     return voluntaryExits;
   }
 
-  public ReadList<Integer, Transfer> getTransfers() {
-    return transfers;
-  }
-
   @Override
   public boolean equals(Object object) {
     if (this == object) {
@@ -188,8 +172,7 @@ public class BeaconBlockBody {
         && Objects.equal(attesterSlashings, blockBody.attesterSlashings)
         && Objects.equal(attestations, blockBody.attestations)
         && Objects.equal(deposits, blockBody.deposits)
-        && Objects.equal(voluntaryExits, blockBody.voluntaryExits)
-        && Objects.equal(transfers, blockBody.transfers);
+        && Objects.equal(voluntaryExits, blockBody.voluntaryExits);
   }
 
   @Override
@@ -202,7 +185,6 @@ public class BeaconBlockBody {
         attesterSlashings,
         attestations,
         deposits,
-        voluntaryExits,
-        transfers);
+        voluntaryExits);
   }
 }

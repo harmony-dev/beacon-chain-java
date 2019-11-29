@@ -1,30 +1,28 @@
 package org.ethereum.beacon.core.state;
 
-import org.ethereum.beacon.core.types.ShardNumber;
+import org.ethereum.beacon.core.types.CommitteeIndex;
 import org.ethereum.beacon.core.types.ValidatorIndex;
-import tech.pegasys.artemis.util.uint.UInt24;
-import tech.pegasys.artemis.util.uint.UInt64;
 import java.util.List;
 
 /** Validator committee assigned to a certain shard. */
-public class ShardCommittee {
+public class BeaconCommittee {
 
   /** Validator indices. */
   private final List<ValidatorIndex> committee;
-  /** Shard number. */
-  private final ShardNumber shard;
+  /** Committee index. */
+  private final CommitteeIndex index;
 
-  public ShardCommittee(List<ValidatorIndex> committee, ShardNumber shard) {
+  public BeaconCommittee(List<ValidatorIndex> committee, CommitteeIndex index) {
     this.committee = committee;
-    this.shard = shard;
+    this.index = index;
   }
 
   public List<ValidatorIndex> getCommittee() {
     return committee;
   }
 
-  public ShardNumber getShard() {
-    return shard;
+  public CommitteeIndex getIndex() {
+    return index;
   }
 
   @Override
@@ -36,23 +34,23 @@ public class ShardCommittee {
       return false;
     }
 
-    ShardCommittee committee1 = (ShardCommittee) o;
+    BeaconCommittee committee1 = (BeaconCommittee) o;
 
     if (!committee.equals(committee1.committee)) {
       return false;
     }
-    return shard.equals(committee1.shard);
+    return index.equals(committee1.index);
   }
 
   @Override
   public int hashCode() {
     int result = committee.hashCode();
-    result = 31 * result + shard.hashCode();
+    result = 31 * result + index.hashCode();
     return result;
   }
 
   @Override
   public String toString() {
-    return "ShardCommittee[" + shard + ": " + committee + "]";
+    return "ShardCommittee[" + index + ": " + committee + "]";
   }
 }

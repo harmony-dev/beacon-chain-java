@@ -16,21 +16,19 @@ import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.operations.attestation.AttestationData;
-import org.ethereum.beacon.core.operations.attestation.Crosslink;
 import org.ethereum.beacon.core.operations.slashing.IndexedAttestation;
 import org.ethereum.beacon.core.spec.SpecConstants;
 import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.types.BLSPubkey;
 import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.CommitteeIndex;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
-import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import org.ethereum.beacon.crypto.BLS381.PublicKey;
 import org.ethereum.beacon.util.stats.MeasurementsCollector;
 import org.ethereum.beacon.util.stats.TimeCollector;
-import org.javatuples.Pair;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.collections.Bitlist;
@@ -104,14 +102,6 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
   }
 
   @Override
-  public boolean bls_verify_multiple(
-      List<PublicKey> publicKeys, List<Hash32> messages, BLSSignature signature, UInt64 domain) {
-    return callAndTrack(
-        "bls_verify_multiple",
-        () -> super.bls_verify_multiple(publicKeys, messages, signature, domain));
-  }
-
-  @Override
   public PublicKey bls_aggregate_pubkeys(List<BLSPubkey> publicKeysBytes) {
     return callAndTrack(
         "bls_aggregate_pubkeys", () -> super.bls_aggregate_pubkeys(publicKeysBytes));
@@ -129,10 +119,10 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
   }
 
   @Override
-  public List<ValidatorIndex> get_crosslink_committee(
-      BeaconState state, EpochNumber epoch, ShardNumber shard) {
+  public List<ValidatorIndex> get_beacon_committee(
+      BeaconState state, SlotNumber slot, CommitteeIndex index) {
     return callAndTrack(
-        "get_crosslink_committee", () -> super.get_crosslink_committee(state, epoch, shard));
+        "get_beacon_committee", () -> super.get_beacon_committee(state, slot, index));
   }
 
   @Override
@@ -194,37 +184,14 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
   }
 
   @Override
-  public Hash32 get_seed(BeaconState state, EpochNumber epoch) {
-    return callAndTrack("get_seed", () -> super.get_seed(state, epoch));
+  public Hash32 get_seed(BeaconState state, EpochNumber epoch, UInt64 domain_type) {
+    return callAndTrack("get_seed", () -> super.get_seed(state, epoch, domain_type));
   }
 
   @Override
-  public Pair<Crosslink, List<ValidatorIndex>> get_winning_crosslink_and_attesting_indices(
-      BeaconState state, EpochNumber epoch, ShardNumber shard) {
+  public UInt64 get_committee_count_at_slot(BeaconState state, SlotNumber slot) {
     return callAndTrack(
-        "get_winning_crosslink_and_attesting_indices",
-        () -> super.get_winning_crosslink_and_attesting_indices(state, epoch, shard));
-  }
-
-  @Override
-  public UInt64 get_shard_delta(BeaconState state, EpochNumber epoch) {
-    return callAndTrack("get_shard_delta", () -> super.get_shard_delta(state, epoch));
-  }
-
-  @Override
-  public ShardNumber get_start_shard(BeaconState state, EpochNumber epoch) {
-    return callAndTrack("get_start_shard", () -> super.get_start_shard(state, epoch));
-  }
-
-  @Override
-  public SlotNumber get_attestation_data_slot(BeaconState state, AttestationData data) {
-    return callAndTrack("get_attestation_data_slot", () -> super.get_attestation_data_slot(state, data));
-  }
-
-  @Override
-  public UInt64 get_committee_count(BeaconState state, EpochNumber epoch) {
-    return callAndTrack(
-        "get_committee_count", () -> super.get_committee_count(state, epoch));
+        "get_committee_count_at_slot", () -> super.get_committee_count_at_slot(state, slot));
   }
 
   @Override
@@ -250,11 +217,6 @@ public class BenchmarkingBeaconChainSpec extends CachingBeaconChainSpec {
     callAndTrack(
         "process_justification_and_finalization",
         () -> super.process_justification_and_finalization(state));
-  }
-
-  @Override
-  public void process_crosslinks(MutableBeaconState state) {
-    callAndTrack("process_crosslinks", () -> super.process_crosslinks(state));
   }
 
   @Override
