@@ -181,9 +181,6 @@ public abstract class StateTestUtils {
     state
         .getCurrentEpochAttestations()
         .replaceAll(parsePendingAttestations(data.getCurrentEpochAttestations(), specConstants));
-    state.getBlockRoots().setAll(parseHashes(data.getBlockRoots()));
-    state.getStateRoots().setAll(parseHashes(data.getStateRoots()));
-    state.getHistoricalRoots().replaceAll(parseHashes(data.getHistoricalRoots()));
     state.getSlashings().setAll(parseBalances(data.getSlashings()));
 
     return state;

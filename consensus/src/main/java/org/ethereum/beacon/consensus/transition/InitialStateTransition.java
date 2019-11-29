@@ -17,7 +17,7 @@ import org.ethereum.beacon.core.BeaconState;
  * Preferred input for {@code state} parameter is {@link BeaconState#getEmpty()}.
  *
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.8.1/specs/core/0_beacon-chain.md#genesis-state">Genesis
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.9.2/specs/core/0_beacon-chain.md#genesis-state">Genesis
  *     state</a> in the spec.
  */
 public class InitialStateTransition implements BlockTransition<BeaconStateEx> {

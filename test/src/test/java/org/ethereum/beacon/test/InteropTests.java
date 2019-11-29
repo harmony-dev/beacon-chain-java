@@ -19,6 +19,7 @@ import org.ethereum.beacon.test.type.state.SanityBlocksCase;
 import org.ethereum.beacon.test.type.state.field.PostField;
 import org.ethereum.beacon.test.type.state.field.PreField;
 import org.javatuples.Pair;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.nio.file.Paths;
@@ -30,6 +31,7 @@ import java.util.Optional;
  * href="https://github.com/djrtwo/interop-test-cases">https://github.com/djrtwo/interop-test-cases</A>
  * for more details.
  */
+@Ignore("It's been merged into a main suite https://github.com/ethereum/eth2.0-specs/pull/1411")
 public class InteropTests extends TestUtils {
 
   /**
