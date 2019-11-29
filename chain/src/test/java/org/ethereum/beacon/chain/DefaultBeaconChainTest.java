@@ -43,7 +43,7 @@ public class DefaultBeaconChainTest {
 
   @Test
   public void insertAChain() {
-    Schedulers schedulers = Schedulers.createDefault();
+    ControlledSchedulers schedulers = Schedulers.createControlled();
 
     BeaconChainSpec spec =
         BeaconChainSpec.Builder.createWithDefaultParams()
@@ -63,8 +63,12 @@ public class DefaultBeaconChainTest {
         .forEach(
             (idx) -> {
               BeaconTuple recentlyProcessed = beaconChain.getRecentlyProcessed();
-              BeaconBlock aBlock = createBlock(recentlyProcessed, spec,
-                  schedulers.getCurrentTime(), perSlotTransition);
+              schedulers.setCurrentTime(
+                  spec.get_slot_start_time(recentlyProcessed.getState(),
+                      recentlyProcessed.getBlock().getSlot().increment()).getValue()*1000);
+              BeaconBlock aBlock =
+                  createBlock(
+                      recentlyProcessed, spec, schedulers.getCurrentTime(), perSlotTransition);
               Assert.assertEquals(ImportResult.OK, beaconChain.insert(aBlock));
               Assert.assertEquals(aBlock, beaconChain.getRecentlyProcessed().getBlock());
 
