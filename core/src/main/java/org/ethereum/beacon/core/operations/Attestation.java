@@ -71,6 +71,22 @@ public class Attestation {
     return signature;
   }
 
+  public Attestation withAggregationBits(Bitlist aggregationBits, SpecConstants specConstants) {
+    assert BLSSignature.ZERO.equals(signature);
+    return new Attestation(
+        ensureMaxSize(aggregationBits, specConstants), data, BLSSignature.ZERO);
+  }
+
+  public Attestation withData(AttestationData data) {
+    assert BLSSignature.ZERO.equals(signature);
+    return new Attestation(aggregationBits, data, BLSSignature.ZERO);
+  }
+
+  public Attestation withSignature(BLSSignature signature) {
+    assert BLSSignature.ZERO.equals(signature);
+    return new Attestation(aggregationBits, data, signature);
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;

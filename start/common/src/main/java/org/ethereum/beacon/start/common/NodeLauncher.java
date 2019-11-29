@@ -1,10 +1,5 @@
 package org.ethereum.beacon.start.common;
 
-import static org.ethereum.beacon.chain.observer.ObservableStateProcessorImpl.DEFAULT_EMPTY_SLOT_TRANSITIONS_LIMIT;
-
-import java.time.Duration;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.chain.DefaultBeaconChain;
@@ -54,6 +49,12 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import tech.pegasys.artemis.util.bytes.Bytes4;
 import tech.pegasys.artemis.util.uint.UInt64;
+
+import java.time.Duration;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import static org.ethereum.beacon.chain.observer.ObservableStateProcessorImpl.DEFAULT_EMPTY_SLOT_TRANSITIONS_LIMIT;
 
 public class NodeLauncher {
   private static final Logger logger = LogManager.getLogger(NodeLauncher.class);
@@ -165,15 +166,9 @@ public class NodeLauncher {
         validatorCred != null ? Integer.MAX_VALUE : DEFAULT_EMPTY_SLOT_TRANSITIONS_LIMIT);
 
     Flux.from(observableStateProcessor.getObservableStateStream())
-        .subscribe(
-            obs -> {
-              Metrics.onNewState(spec, obs);
-            });
-    Flux.from(observableStateProcessor.getHeadStream())
-        .subscribe(
-            head -> {
-              Metrics.onHeadChanged(spec, head);
-            });
+        .subscribe(obs -> Metrics.onNewState(spec, obs));
+    Flux.from(observableStateProcessor.getObservableStateStream())
+        .subscribe(obs -> Metrics.onHeadChanged(spec, obs.getHead()));
     observableStateProcessor.start();
 
     SSZSerializer ssz = new SSZBuilder()
