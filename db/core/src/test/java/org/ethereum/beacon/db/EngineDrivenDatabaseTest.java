@@ -1,9 +1,15 @@
 package org.ethereum.beacon.db;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import org.ethereum.beacon.db.source.DataSource;
+import org.ethereum.beacon.db.source.StorageEngineSource;
+import org.ethereum.beacon.db.source.impl.MemSizeEvaluators;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import tech.pegasys.artemis.util.bytes.Bytes32;
+import tech.pegasys.artemis.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.uint.UInt64;
 
+import javax.annotation.Nonnull;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -13,20 +19,15 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
-import javax.annotation.Nonnull;
-import org.ethereum.beacon.db.source.DataSource;
-import org.ethereum.beacon.db.source.StorageEngineSource;
-import org.ethereum.beacon.db.source.impl.MemSizeEvaluators;
-import org.junit.Ignore;
-import org.junit.Test;
-import tech.pegasys.artemis.util.bytes.Bytes32;
-import tech.pegasys.artemis.util.bytes.BytesValue;
-import tech.pegasys.artemis.util.uint.UInt64;
 
-public class EngineDrivenDatabaseTest {
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+class EngineDrivenDatabaseTest {
 
   @Test
-  public void generalCasesAreCorrect() {
+  void generalCasesAreCorrect() {
     TestStorageSource engineSource = new TestStorageSource();
     EngineDrivenDatabase db = EngineDrivenDatabase.createWithInstantFlusher(engineSource);
 
@@ -36,21 +37,21 @@ public class EngineDrivenDatabaseTest {
     storage.put(wrap("TWO"), wrap("SECOND"));
 
     assertTrue(engineSource.source.isEmpty());
-    assertEquals(wrap("FIRST"), storage.get(wrap("ONE")).get());
-    assertEquals(wrap("SECOND"), storage.get(wrap("TWO")).get());
-    assertFalse(storage.get(wrap("THREE")).isPresent());
+    assertThat(wrap("FIRST")).isEqualTo(storage.get(wrap("ONE")).get());
+    assertThat(wrap("SECOND")).isEqualTo(storage.get(wrap("TWO")).get());
+    assertThat(storage.get(wrap("THREE"))).isNotPresent();
 
     db.commit();
 
-    assertFalse(db.getWriteBuffer().getCacheEntry(wrap("ONE")).isPresent());
-    assertFalse(db.getWriteBuffer().getCacheEntry(wrap("TWO")).isPresent());
-    assertEquals(0L, db.getWriteBuffer().evaluateSize());
+    assertThat(db.getWriteBuffer().getCacheEntry(wrap("ONE"))).isNotPresent();
+    assertThat(db.getWriteBuffer().getCacheEntry(wrap("TWO"))).isNotPresent();
+    assertThat(0L).isEqualTo(db.getWriteBuffer().evaluateSize());
 
     assertTrue(engineSource.source.containsValue(wrap("FIRST")));
     assertTrue(engineSource.source.containsValue(wrap("SECOND")));
-    assertEquals(wrap("FIRST"), storage.get(wrap("ONE")).get());
-    assertEquals(wrap("SECOND"), storage.get(wrap("TWO")).get());
-    assertFalse(storage.get(wrap("THREE")).isPresent());
+    assertThat(wrap("FIRST")).isEqualTo(storage.get(wrap("ONE")).get());
+    assertThat(wrap("SECOND")).isEqualTo(storage.get(wrap("TWO")).get());
+    assertThat(storage.get(wrap("THREE"))).isNotPresent();
 
     storage.remove(wrap("SECOND"));
     storage.put(wrap("THREE"), wrap("THIRD"));
@@ -60,9 +61,9 @@ public class EngineDrivenDatabaseTest {
     assertTrue(engineSource.source.containsValue(wrap("SECOND")));
     assertFalse(engineSource.source.containsValue(wrap("THIRD")));
 
-    assertEquals(wrap("FIRST"), storage.get(wrap("ONE")).get());
-    assertFalse(storage.get(wrap("TWO")).isPresent());
-    assertEquals(wrap("THIRD"), storage.get(wrap("THREE")).get());
+    assertThat(wrap("FIRST")).isEqualTo(storage.get(wrap("ONE")).get());
+    assertThat(storage.get(wrap("TWO"))).isNotPresent();
+    assertThat(wrap("THIRD")).isEqualTo(storage.get(wrap("THREE")).get());
 
     db.commit();
 
@@ -70,13 +71,13 @@ public class EngineDrivenDatabaseTest {
     assertFalse(engineSource.source.containsValue(wrap("SECOND")));
     assertTrue(engineSource.source.containsValue(wrap("THIRD")));
 
-    assertEquals(wrap("FIRST"), storage.get(wrap("ONE")).get());
-    assertFalse(storage.get(wrap("TWO")).isPresent());
-    assertEquals(wrap("THIRD"), storage.get(wrap("THREE")).get());
+    assertThat(wrap("FIRST")).isEqualTo(storage.get(wrap("ONE")).get());
+    assertThat(storage.get(wrap("TWO"))).isNotPresent();
+    assertThat(wrap("THIRD")).isEqualTo(storage.get(wrap("THREE")).get());
   }
 
   @Test
-  public void multipleStorageCase() {
+  void multipleStorageCase() {
     TestStorageSource engineSource = new TestStorageSource();
     EngineDrivenDatabase db = EngineDrivenDatabase.createWithInstantFlusher(engineSource);
 
@@ -90,39 +91,39 @@ public class EngineDrivenDatabaseTest {
     dos.put(wrap("FOUR"), wrap("DOS_FOURTH"));
 
     db.commit();
-    assertEquals(wrap("FIRST"), uno.get(wrap("ONE")).get());
-    assertEquals(wrap("SECOND"), uno.get(wrap("TWO")).get());
-    assertEquals(wrap("SECOND"), dos.get(wrap("TWO")).get());
-    assertEquals(wrap("UNO_THIRD"), uno.get(wrap("THREE")).get());
-    assertEquals(wrap("DOS_FOURTH"), dos.get(wrap("FOUR")).get());
-    assertFalse(uno.get(wrap("FOUR")).isPresent());
-    assertFalse(dos.get(wrap("ONE")).isPresent());
-    assertFalse(dos.get(wrap("THREE")).isPresent());
+    assertThat(wrap("FIRST")).isEqualTo(uno.get(wrap("ONE")).get());
+    assertThat(wrap("SECOND")).isEqualTo(uno.get(wrap("TWO")).get());
+    assertThat(wrap("SECOND")).isEqualTo(dos.get(wrap("TWO")).get());
+    assertThat(wrap("UNO_THIRD")).isEqualTo(uno.get(wrap("THREE")).get());
+    assertThat(wrap("DOS_FOURTH")).isEqualTo(dos.get(wrap("FOUR")).get());
+    assertThat(uno.get(wrap("FOUR"))).isNotPresent();
+    assertThat(dos.get(wrap("ONE"))).isNotPresent();
+    assertThat(dos.get(wrap("THREE"))).isNotPresent();
 
     uno.remove(wrap("TWO"));
     dos.put(wrap("THREE"), wrap("DOS_THIRD"));
 
-    assertFalse(uno.get(wrap("TWO")).isPresent());
-    assertEquals(wrap("DOS_THIRD"), dos.get(wrap("THREE")).get());
-    assertEquals(wrap("UNO_THIRD"), uno.get(wrap("THREE")).get());
+    assertThat(uno.get(wrap("TWO"))).isNotPresent();
+    assertThat(wrap("DOS_THIRD")).isEqualTo(dos.get(wrap("THREE")).get());
+    assertThat(wrap("UNO_THIRD")).isEqualTo(uno.get(wrap("THREE")).get());
 
     db.commit();
-    assertFalse(uno.get(wrap("TWO")).isPresent());
-    assertEquals(wrap("DOS_THIRD"), dos.get(wrap("THREE")).get());
-    assertEquals(wrap("UNO_THIRD"), uno.get(wrap("THREE")).get());
+    assertThat(uno.get(wrap("TWO"))).isNotPresent();
+    assertThat(wrap("DOS_THIRD")).isEqualTo(dos.get(wrap("THREE")).get());
+    assertThat(wrap("UNO_THIRD")).isEqualTo(uno.get(wrap("THREE")).get());
 
     dos.remove(wrap("FOUR"));
     uno.put(wrap("FOUR"), wrap("UNO_FOURTH"));
-    assertEquals(wrap("UNO_FOURTH"), uno.get(wrap("FOUR")).get());
-    assertFalse(dos.get(wrap("FOUR")).isPresent());
+    assertThat(wrap("UNO_FOURTH")).isEqualTo(uno.get(wrap("FOUR")).get());
+    assertThat(dos.get(wrap("FOUR"))).isNotPresent();
 
     db.commit();
-    assertEquals(wrap("UNO_FOURTH"), uno.get(wrap("FOUR")).get());
-    assertFalse(dos.get(wrap("FOUR")).isPresent());
+    assertThat(wrap("UNO_FOURTH")).isEqualTo(uno.get(wrap("FOUR")).get());
+    assertThat(dos.get(wrap("FOUR"))).isNotPresent();
   }
 
   @Test
-  public void checkBufferSizeFlusher() {
+  void checkBufferSizeFlusher() {
     TestStorageSource engineSource = new TestStorageSource();
     EngineDrivenDatabase db = EngineDrivenDatabase.create(engineSource, 512);
 
@@ -142,29 +143,27 @@ public class EngineDrivenDatabaseTest {
 
     // should be flushed now
     db.commit();
-    assertEquals(4, engineSource.source.size());
-    assertEquals(0L, db.getWriteBuffer().evaluateSize());
-    assertFalse(db.getWriteBuffer().getCacheEntry(wrap("ONE")).isPresent());
-    assertFalse(db.getWriteBuffer().getCacheEntry(wrap("TWO")).isPresent());
-    assertFalse(db.getWriteBuffer().getCacheEntry(wrap("THREE")).isPresent());
-    assertFalse(db.getWriteBuffer().getCacheEntry(wrap("FOUR")).isPresent());
+    assertThat(4).isEqualTo(engineSource.source.size());
+    assertThat(0L).isEqualTo(db.getWriteBuffer().evaluateSize());
+    assertThat(db.getWriteBuffer().getCacheEntry(wrap("ONE"))).isNotPresent();
+    assertThat(db.getWriteBuffer().getCacheEntry(wrap("TWO"))).isNotPresent();
+    assertThat(db.getWriteBuffer().getCacheEntry(wrap("THREE"))).isNotPresent();
+    assertThat(db.getWriteBuffer().getCacheEntry(wrap("FOUR"))).isNotPresent();
 
     storage.put(wrap("FIVE"), Bytes32.random(rnd));
     storage.put(wrap("SIX"), Bytes32.random(rnd));
-    assertEquals(
-        4 * MemSizeEvaluators.BytesValueEvaluator.apply(Bytes32.random(rnd)),
-        db.getWriteBuffer().evaluateSize());
+      assertThat(4 * MemSizeEvaluators.BytesValueEvaluator.apply(Bytes32.random(rnd)))
+              .isEqualTo(db.getWriteBuffer().evaluateSize());
 
     storage.remove(wrap("FIVE"));
 
-    assertEquals(
-        2 * MemSizeEvaluators.BytesValueEvaluator.apply(Bytes32.random(rnd)),
-        db.getWriteBuffer().evaluateSize());
+      assertThat(2 * MemSizeEvaluators.BytesValueEvaluator.apply(Bytes32.random(rnd)))
+              .isEqualTo(db.getWriteBuffer().evaluateSize());
   }
 
   @Test
-  @Ignore
-  public void checkWithConcurrentAccessTake1() throws InterruptedException {
+  @Disabled
+  void checkWithConcurrentAccessTake1() throws InterruptedException {
     TestStorageSource engineSource = new TestStorageSource();
     EngineDrivenDatabase db = EngineDrivenDatabase.createWithInstantFlusher(engineSource);
 
@@ -204,12 +203,12 @@ public class EngineDrivenDatabaseTest {
     Set<BytesValue> expectedValues = new HashSet<>(writtenToOne.values());
     expectedValues.addAll(writtenToTwo.values());
 
-    assertEquals(expectedValues, sourceValues);
+    assertThat(expectedValues).isEqualTo(sourceValues);
   }
 
   @Test
-  @Ignore
-  public void checkWithConcurrentAccessTake2() throws InterruptedException {
+  @Disabled
+  void checkWithConcurrentAccessTake2() throws InterruptedException {
     TestStorageSource engineSource = new TestStorageSource();
     EngineDrivenDatabase db = EngineDrivenDatabase.createWithInstantFlusher(engineSource);
 
