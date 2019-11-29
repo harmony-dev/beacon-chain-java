@@ -374,7 +374,7 @@ public class ServiceFactory {
             Bitlist.of(0),
             new AttestationData(
                 SlotNumber.of(0),
-                CommitteeIndex.of(0),
+                committeeIndex,
                 Hash32.ZERO,
                 Checkpoint.EMPTY,
                 Checkpoint.EMPTY),

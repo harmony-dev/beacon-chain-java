@@ -1,0 +1,135 @@
+package org.ethereum.beacon.discovery;
+
+import org.ethereum.beacon.db.Database;
+import org.ethereum.beacon.discovery.enr.EnrField;
+import org.ethereum.beacon.discovery.enr.EnrFieldV4;
+import org.ethereum.beacon.discovery.enr.IdentitySchema;
+import org.ethereum.beacon.discovery.enr.NodeRecord;
+import org.ethereum.beacon.discovery.packet.AuthHeaderMessagePacket;
+import org.ethereum.beacon.discovery.packet.RandomPacket;
+import org.ethereum.beacon.discovery.packet.UnknownPacket;
+import org.ethereum.beacon.discovery.storage.NodeBucket;
+import org.ethereum.beacon.discovery.storage.NodeBucketStorage;
+import org.ethereum.beacon.discovery.storage.NodeTableStorage;
+import org.ethereum.beacon.discovery.storage.NodeTableStorageFactoryImpl;
+import org.ethereum.beacon.schedulers.Schedulers;
+import org.javatuples.Pair;
+import org.junit.Ignore;
+import org.junit.Test;
+import reactor.core.publisher.Flux;
+import tech.pegasys.artemis.util.bytes.BytesValue;
+import tech.pegasys.artemis.util.uint.UInt64;
+
+import java.util.ArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
+import static org.ethereum.beacon.discovery.TestUtil.NODE_RECORD_FACTORY;
+import static org.ethereum.beacon.discovery.TestUtil.NODE_RECORD_FACTORY_NO_VERIFICATION;
+import static org.ethereum.beacon.discovery.TestUtil.TEST_SERIALIZER;
+import static org.ethereum.beacon.discovery.TestUtil.parseStringIP;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+
+/**
+ * Inter-operational test with Geth. Start it in docker separately
+ *
+ * <p>You need to build and run Geth discv5 test to interact with. Configure Geth running time in
+ * test.sh located in `resources/geth`, after that build docker and run it: <code>
+ *   cd discovery/src/test/resources/geth
+ *   docker build -t gethv5:1.0 . && docker run --network host -d gethv5:1.0
+ * </code>
+ *
+ * <p>After container starts, fire this test to fall in Geth's side running time and it should pass!
+ * You could check Geth test logs by following command:<code>
+ *   docker logs <container-id/>
+ * </code>
+ */
+@Ignore("Requires manual startup, takes a bit to start")
+public class DiscoveryInteropTest {
+  private static final BytesValue gethNodePrivKey =
+      BytesValue.fromHexString("fb757dc581730490a1d7a00deea65e9b1936924caaea8f44d476014856b68736");
+
+  @Test
+  public void testInterop() throws Exception {
+    // 1) start 2 nodes
+    Pair<BytesValue, NodeRecord> nodePair1 = TestUtil.generateNode(40412, true);
+    System.out.println(String.format("Node %s started", nodePair1.getValue1().getNodeId()));
+    NodeRecord nodeRecord1 = nodePair1.getValue1();
+    // Geth node
+    NodeRecord nodeRecord2 =
+        NODE_RECORD_FACTORY.createFromValues(
+            UInt64.valueOf(1L),
+            Pair.with(EnrField.ID, IdentitySchema.V4),
+            Pair.with(EnrField.IP_V4, parseStringIP("127.0.0.1")),
+            Pair.with(EnrField.UDP_V4, 30303),
+            Pair.with(
+                EnrFieldV4.PKEY_SECP256K1, Functions.derivePublicKeyFromPrivate(gethNodePrivKey)));
+    nodeRecord2.sign(gethNodePrivKey);
+    NodeTableStorageFactoryImpl nodeTableStorageFactory = new NodeTableStorageFactoryImpl();
+    Database database1 = Database.inMemoryDB();
+    NodeTableStorage nodeTableStorage1 =
+        nodeTableStorageFactory.createTable(
+            database1,
+            TEST_SERIALIZER,
+            (oldSeq) -> nodeRecord1,
+            () ->
+                new ArrayList<NodeRecord>() {
+                  {
+                    add(nodeRecord2);
+                  }
+                });
+    NodeBucketStorage nodeBucketStorage1 =
+        nodeTableStorageFactory.createBucketStorage(database1, TEST_SERIALIZER, nodeRecord1);
+    DiscoveryManagerImpl discoveryManager1 =
+        new DiscoveryManagerImpl(
+            nodeTableStorage1.get(),
+            nodeBucketStorage1,
+            nodeRecord1,
+            nodePair1.getValue0(),
+            NODE_RECORD_FACTORY_NO_VERIFICATION,
+            Schedulers.createDefault().newSingleThreadDaemon("server-1"),
+            Schedulers.createDefault().newSingleThreadDaemon("tasks-1"));
+
+    // 3) Expect standard 1 => 2 dialog
+    CountDownLatch randomSent1to2 = new CountDownLatch(1);
+    CountDownLatch authPacketSent1to2 = new CountDownLatch(1);
+    CountDownLatch nodesReceivedAt1 = new CountDownLatch(1);
+
+    Flux.from(discoveryManager1.getOutgoingMessages())
+        .map(p -> new UnknownPacket(p.getPacket().getBytes()))
+        .subscribe(
+            networkPacket -> {
+              // 1 -> 2 random
+              if (randomSent1to2.getCount() != 0) {
+                RandomPacket randomPacket = networkPacket.getRandomPacket();
+                System.out.println("1 => 2: " + randomPacket);
+                randomSent1to2.countDown();
+              } else if (authPacketSent1to2.getCount() != 0) {
+                // 1 -> 2 auth packet with FINDNODES
+                AuthHeaderMessagePacket authHeaderMessagePacket =
+                    networkPacket.getAuthHeaderMessagePacket();
+                System.out.println("1 => 2: " + authHeaderMessagePacket);
+                authPacketSent1to2.countDown();
+              }
+            });
+
+    // 4) fire 1 to 2 dialog
+    discoveryManager1.start();
+    int distance = Functions.logDistance(nodeRecord1.getNodeId(), nodeRecord2.getNodeId());
+    discoveryManager1.findNodes(nodeRecord2, distance);
+
+    assert randomSent1to2.await(1, TimeUnit.SECONDS);
+    //    assert whoareyouSent2to1.await(1, TimeUnit.SECONDS);
+    int distance1To2 = Functions.logDistance(nodeRecord1.getNodeId(), nodeRecord2.getNodeId());
+    assertFalse(nodeBucketStorage1.get(distance1To2).isPresent());
+    assert authPacketSent1to2.await(1, TimeUnit.SECONDS);
+    Thread.sleep(1000);
+    // 1 sent findnodes to 2, received only (2) in answer
+    // 1 added 2 to its nodeBuckets, because its now checked, but not before
+    NodeBucket bucketAt1With2 = nodeBucketStorage1.get(distance1To2).get();
+    assertEquals(1, bucketAt1With2.size());
+    assertEquals(
+        nodeRecord2.getNodeId(), bucketAt1With2.getNodeRecords().get(0).getNode().getNodeId());
+  }
+}

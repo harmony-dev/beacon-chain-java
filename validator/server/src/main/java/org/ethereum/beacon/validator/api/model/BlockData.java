@@ -85,8 +85,6 @@ public class BlockData {
     @JsonProperty("voluntary_exits")
     private List<VoluntaryExitData> voluntaryExits;
 
-    private List<TransferData> transfers;
-
     public String getRandaoReveal() {
       return randaoReveal;
     }
@@ -149,14 +147,6 @@ public class BlockData {
 
     public void setVoluntaryExits(List<VoluntaryExitData> voluntaryExits) {
       this.voluntaryExits = voluntaryExits;
-    }
-
-    public List<TransferData> getTransfers() {
-      return transfers;
-    }
-
-    public void setTransfers(List<TransferData> transfers) {
-      this.transfers = transfers;
     }
 
     public static class Eth1 {
@@ -401,72 +391,6 @@ public class BlockData {
         this.signature = signature;
       }
     }
-
-    public static class TransferData {
-      private Long sender;
-      private Long recipient;
-      private String amount;
-      private String fee;
-      private String slot;
-      private String pubkey;
-      private String signature;
-
-      public Long getSender() {
-        return sender;
-      }
-
-      public void setSender(Long sender) {
-        this.sender = sender;
-      }
-
-      public Long getRecipient() {
-        return recipient;
-      }
-
-      public void setRecipient(Long recipient) {
-        this.recipient = recipient;
-      }
-
-      public String getAmount() {
-        return amount;
-      }
-
-      public void setAmount(String amount) {
-        this.amount = amount;
-      }
-
-      public String getFee() {
-        return fee;
-      }
-
-      public void setFee(String fee) {
-        this.fee = fee;
-      }
-
-      public String getSlot() {
-        return slot;
-      }
-
-      public void setSlot(String slot) {
-        this.slot = slot;
-      }
-
-      public String getPubkey() {
-        return pubkey;
-      }
-
-      public void setPubkey(String pubkey) {
-        this.pubkey = pubkey;
-      }
-
-      public String getSignature() {
-        return signature;
-      }
-
-      public void setSignature(String signature) {
-        this.signature = signature;
-      }
-    }
   }
 
   @JsonIgnoreProperties(ignoreUnknown = true)
@@ -575,62 +499,6 @@ public class BlockData {
       public void setTarget(CheckpointData target) {
         this.target = target;
       }
-    }
-  }
-
-  public static class CrossLinkData {
-    private Long shard;
-
-    @JsonProperty("start_epoch")
-    private String startEpoch;
-
-    @JsonProperty("end_epoch")
-    private String endEpoch;
-
-    @JsonProperty("parent_root")
-    private String parentRoot;
-
-    @JsonProperty("data_root")
-    private String dataRoot;
-
-    public Long getShard() {
-      return shard;
-    }
-
-    public void setShard(Long shard) {
-      this.shard = shard;
-    }
-
-    public String getStartEpoch() {
-      return startEpoch;
-    }
-
-    public void setStartEpoch(String startEpoch) {
-      this.startEpoch = startEpoch;
-    }
-
-    public String getEndEpoch() {
-      return endEpoch;
-    }
-
-    public void setEndEpoch(String endEpoch) {
-      this.endEpoch = endEpoch;
-    }
-
-    public String getParentRoot() {
-      return parentRoot;
-    }
-
-    public void setParentRoot(String parentRoot) {
-      this.parentRoot = parentRoot;
-    }
-
-    public String getDataRoot() {
-      return dataRoot;
-    }
-
-    public void setDataRoot(String dataRoot) {
-      this.dataRoot = dataRoot;
     }
   }
 

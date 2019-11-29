@@ -10,7 +10,7 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
  * Checkpoint type.
  *
  * @see <a
- *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.8.0/specs/core/0_beacon-chain.md#checkpoint">Checkpoint</a>
+ *     href="https://github.com/ethereum/eth2.0-specs/blob/v0.9.2/specs/core/0_beacon-chain.md#checkpoint">Checkpoint</a>
  *     in the spec.
  */
 @SSZSerializable
