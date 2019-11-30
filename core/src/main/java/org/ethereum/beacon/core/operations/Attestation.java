@@ -83,7 +83,6 @@ public class Attestation {
   }
 
   public Attestation withSignature(BLSSignature signature) {
-    assert BLSSignature.ZERO.equals(signature);
     return new Attestation(aggregationBits, data, signature);
   }
 
