@@ -368,9 +368,16 @@ public interface ForkChoice extends HelperFunction, SpecStateTransition {
     # Cannot calculate the current shuffling if have not seen the target
     assert target.root in store.blocks
 
+    # Attestations target be for a known block. If target block is unknown, delay consideration until the block is found
+    assert target.root in store.blocks
     # Attestations cannot be from future epochs. If they are, delay consideration until the epoch arrives
     base_state = store.block_states[target.root].copy()
     assert store.time >= base_state.genesis_time + compute_start_slot_at_epoch(target.epoch) * SECONDS_PER_SLOT
+
+    # Attestations must be for a known block. If block is unknown, delay consideration until the block is found
+    assert attestation.data.beacon_block_root in store.blocks
+    # Attestations must not be for blocks in the future. If not, the attestation should not be considered
+    assert store.blocks[attestation.data.beacon_block_root].slot <= attestation.data.slot
 
     # Store target checkpoint state if not yet seen
     if target not in store.checkpoint_states:
@@ -424,6 +431,15 @@ public interface ForkChoice extends HelperFunction, SpecStateTransition {
                         getConstants()
                             .getSecondsPerSlot()
                             .times(compute_start_slot_at_epoch(target.getEpoch())))));
+    // # Attestations must be for a known block. If block is unknown, delay consideration until the
+    // block is found
+    // assert attestation.data.beacon_block_root in store.blocks
+    Optional<BeaconBlock> block = store.getBlock(attestation.getData().getBeaconBlockRoot());
+    assertTrue(block.isPresent());
+    // # Attestations must not be for blocks in the future. If not, the attestation should not be
+    // considered
+    // assert store.blocks[attestation.data.beacon_block_root].slot <= attestation.data.slot
+    assertTrue(block.get().getSlot().lessEqual(attestation.getData().getSlot()));
     // # Store target checkpoint state if not yet seen
     // if target not in store.checkpoint_states:
     //   process_slots(base_state, compute_start_slot_at_epoch(target.epoch))
