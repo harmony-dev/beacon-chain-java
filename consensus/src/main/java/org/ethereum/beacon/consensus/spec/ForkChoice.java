@@ -225,7 +225,7 @@ public interface ForkChoice extends HelperFunction, SpecStateTransition {
     BeaconBlock new_justified_block = store.getBlock(new_justified_checkpoint.getRoot()).get();
     if (new_justified_block
         .getSlot()
-        .lessEqual(compute_start_slot_of_epoch(store.getJustifiedCheckpoint().getEpoch()))) {
+        .lessEqual(compute_start_slot_at_epoch(store.getJustifiedCheckpoint().getEpoch()))) {
       return false;
     }
 
@@ -330,7 +330,7 @@ public interface ForkChoice extends HelperFunction, SpecStateTransition {
     assertTrue(
         block
             .getSlot()
-            .greater(compute_start_slot_of_epoch(store.getFinalizedCheckpoint().getEpoch())));
+            .greater(compute_start_slot_at_epoch(store.getFinalizedCheckpoint().getEpoch())));
     // # Check the block is valid and compute the post-state
     BeaconState state = state_transition(pre_state, block, true).createImmutable();
     // # Add new state for this block to the store
@@ -396,7 +396,7 @@ public interface ForkChoice extends HelperFunction, SpecStateTransition {
     Checkpoint target = attestation.getData().getTarget();
     // # Attestations must be from the current or previous epoch
     // current_epoch = compute_epoch_at_slot(get_current_slot(store))
-    EpochNumber current_epoch = compute_epoch_of_slot(get_current_slot(store));
+    EpochNumber current_epoch = compute_epoch_at_slot(get_current_slot(store));
     // # Use GENESIS_EPOCH for previous when genesis to avoid underflow
     // previous_epoch = current_epoch - 1 if current_epoch > GENESIS_EPOCH else GENESIS_EPOCH
     EpochNumber previous_epoch =
@@ -423,14 +423,14 @@ public interface ForkChoice extends HelperFunction, SpecStateTransition {
                     .plus(
                         getConstants()
                             .getSecondsPerSlot()
-                            .times(compute_start_slot_of_epoch(target.getEpoch())))));
+                            .times(compute_start_slot_at_epoch(target.getEpoch())))));
     // # Store target checkpoint state if not yet seen
     // if target not in store.checkpoint_states:
     //   process_slots(base_state, compute_start_slot_at_epoch(target.epoch))
     //   store.checkpoint_states[target] = base_state
     // target_state = store.checkpoint_states[target]
     if (!store.getCheckpointState(target).isPresent()) {
-      process_slots(base_state, compute_start_slot_of_epoch(target.getEpoch()));
+      process_slots(base_state, compute_start_slot_at_epoch(target.getEpoch()));
       store.setCheckpointState(target, base_state);
     }
     BeaconState target_state = store.getCheckpointState(target).get();
