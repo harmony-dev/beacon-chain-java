@@ -1,16 +1,18 @@
 package org.ethereum.beacon.consensus.spec;
 
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.state.Checkpoint;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.core.types.SlotNumber;
+import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import tech.pegasys.artemis.ethereum.core.Hash32;
+
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
 
 /**
  * Fork choice rule.
@@ -133,13 +135,31 @@ public interface ForkChoice extends HelperFunction {
   }
 
   interface Store {
+    Time getTime();
+
+    void setTime(Time time);
+
+    Time getGenesisTime();
+
     Checkpoint getJustifiedCheckpoint();
+
+    void setJustifiedCheckpoint(Checkpoint checkpoint);
+
+    Checkpoint getBestJustifiedCheckpoint();
+
+    void setBestJustifiedCheckpoint(Checkpoint checkpoint);
 
     Checkpoint getFinalizedCheckpoint();
 
+    void setFinalizedCheckpoint(Checkpoint checkpoint);
+
     Optional<BeaconBlock> getBlock(Hash32 root);
 
+    void setBlock(Hash32 root, BeaconBlock block);
+
     Optional<BeaconState> getState(Hash32 root);
+
+    void setState(Hash32 root, BeaconState state);
 
     default Optional<BeaconState> getCheckpointState(Checkpoint checkpoint) {
       Optional<BeaconBlock> block = getBlock(checkpoint.getRoot());
@@ -147,7 +167,11 @@ public interface ForkChoice extends HelperFunction {
       return root.flatMap(this::getState);
     }
 
+    void setCheckpointState(Checkpoint checkpoint, BeaconState state);
+
     Optional<LatestMessage> getLatestMessage(ValidatorIndex index);
+
+    void setLatestMessage(ValidatorIndex index, LatestMessage message);
 
     List<Hash32> getChildren(Hash32 root);
   }
