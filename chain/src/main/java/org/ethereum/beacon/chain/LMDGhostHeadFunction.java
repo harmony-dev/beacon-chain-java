@@ -54,8 +54,38 @@ public class LMDGhostHeadFunction implements HeadFunction {
     Hash32 headRoot = spec.get_head(new Store() {
 
       @Override
+      public Time getTime() {
+        throw new UnsupportedOperationException("not yet implemented");
+      }
+
+      @Override
+      public void setTime(Time time) {
+        throw new UnsupportedOperationException("not yet implemented");
+      }
+
+      @Override
+      public Time getGenesisTime() {
+        throw new UnsupportedOperationException("not yet implemented");
+      }
+
+      @Override
       public Checkpoint getJustifiedCheckpoint() {
         return chainStorage.getJustifiedStorage().get().get();
+      }
+
+      @Override
+      public void setJustifiedCheckpoint(Checkpoint checkpoint) {
+        chainStorage.getBestJustifiedStorage().set(checkpoint);
+      }
+
+      @Override
+      public Checkpoint getBestJustifiedCheckpoint() {
+        return chainStorage.getBestJustifiedStorage().get().get();
+      }
+
+      @Override
+      public void setBestJustifiedCheckpoint(Checkpoint checkpoint) {
+        chainStorage.getBestJustifiedStorage().set(checkpoint);
       }
 
       @Override
@@ -64,8 +94,28 @@ public class LMDGhostHeadFunction implements HeadFunction {
       }
 
       @Override
+      public void setFinalizedCheckpoint(Checkpoint checkpoint) {
+        chainStorage.getFinalizedStorage().set(checkpoint);
+      }
+
+      @Override
+      public Optional<BeaconState> getCheckpointState(Checkpoint checkpoint) {
+        throw new UnsupportedOperationException("not yet implemented");
+      }
+
+      @Override
+      public void setCheckpointState(Checkpoint checkpoint, BeaconState state) {
+        throw new UnsupportedOperationException("not yet implemented");
+      }
+
+      @Override
       public Optional<BeaconBlock> getBlock(Hash32 root) {
         return chainStorage.getBlockStorage().get(root);
+      }
+
+      @Override
+      public void setBlock(Hash32 root, BeaconBlock block) {
+        throw new UnsupportedOperationException("not yet implemented");
       }
 
       @Override
@@ -74,8 +124,18 @@ public class LMDGhostHeadFunction implements HeadFunction {
       }
 
       @Override
+      public void setState(Hash32 root, BeaconState state) {
+        throw new UnsupportedOperationException("not yet implemented");
+      }
+
+      @Override
       public Optional<LatestMessage> getLatestMessage(ValidatorIndex index) {
         return latestAttestationStorage.apply(index);
+      }
+
+      @Override
+      public void setLatestMessage(ValidatorIndex index, LatestMessage message) {
+        throw new UnsupportedOperationException("not yet implemented");
       }
 
       @Override
