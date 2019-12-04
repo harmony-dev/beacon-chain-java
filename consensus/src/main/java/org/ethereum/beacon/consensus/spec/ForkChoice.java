@@ -27,6 +27,41 @@ import java.util.Optional;
 public interface ForkChoice extends HelperFunction, SpecStateTransition {
 
   /*
+    def get_genesis_store(genesis_state: BeaconState) -> Store:
+      genesis_block = BeaconBlock(state_root=hash_tree_root(genesis_state))
+      root = signing_root(genesis_block)
+      justified_checkpoint = Checkpoint(epoch=GENESIS_EPOCH, root=root)
+      finalized_checkpoint = Checkpoint(epoch=GENESIS_EPOCH, root=root)
+      return Store(
+          time=genesis_state.genesis_time,
+          genesis_time=genesis_state.genesis_time,
+          justified_checkpoint=justified_checkpoint,
+          finalized_checkpoint=finalized_checkpoint,
+          best_justified_checkpoint=justified_checkpoint,
+          blocks={root: genesis_block},
+          block_states={root: genesis_state.copy()},
+          checkpoint_states={justified_checkpoint: genesis_state.copy()},
+      )
+   */
+  default Store get_genesis_store(BeaconState genesisState, Store store) {
+    BeaconBlock genesisBlock = get_empty_block().withStateRoot(hash_tree_root(genesisState));
+    Hash32 root = signing_root(genesisBlock);
+    Checkpoint justifiedCheckpoint = new Checkpoint(getConstants().getGenesisEpoch(), root);
+    Checkpoint finalizedCheckpoint = new Checkpoint(getConstants().getGenesisEpoch(), root);
+
+    store.setTime(genesisState.getGenesisTime());
+    store.setGenesisTime(genesisState.getGenesisTime());
+    store.setJustifiedCheckpoint(justifiedCheckpoint);
+    store.setFinalizedCheckpoint(finalizedCheckpoint);
+    store.setBestJustifiedCheckpoint(justifiedCheckpoint);
+    store.setBlock(root, genesisBlock);
+    store.setState(root, genesisState);
+    store.setCheckpointState(justifiedCheckpoint, genesisState);
+
+    return store;
+  }
+
+  /*
     def get_ancestor(store: Store, root: Hash, slot: Slot) -> Hash:
       block = store.blocks[root]
       if block.slot > slot:
@@ -144,6 +179,8 @@ public interface ForkChoice extends HelperFunction, SpecStateTransition {
 
     Time getGenesisTime();
 
+    void setGenesisTime(Time time);
+
     Checkpoint getJustifiedCheckpoint();
 
     void setJustifiedCheckpoint(Checkpoint checkpoint);
@@ -254,9 +291,9 @@ public interface ForkChoice extends HelperFunction, SpecStateTransition {
      if store.best_justified_checkpoint.epoch > store.justified_checkpoint.epoch:
        store.justified_checkpoint = store.best_justified_checkpoint
   */
-  default void on_tick(Store store, long time) {
+  default void on_tick(Store store, Time time) {
     SlotNumber previous_slot = get_current_slot(store);
-    store.setTime(Time.of(time));
+    store.setTime(time);
     SlotNumber current_slot = get_current_slot(store);
     if (!(current_slot.greater(previous_slot)
         && compute_slots_since_epoch_start(current_slot).equals(SlotNumber.ZERO))) {

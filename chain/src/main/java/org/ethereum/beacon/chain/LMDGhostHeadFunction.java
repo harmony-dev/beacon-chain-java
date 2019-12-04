@@ -69,6 +69,11 @@ public class LMDGhostHeadFunction implements HeadFunction {
       }
 
       @Override
+      public void setGenesisTime(Time time) {
+        throw new UnsupportedOperationException("not yet implemented");
+      }
+
+      @Override
       public Checkpoint getJustifiedCheckpoint() {
         return chainStorage.getJustifiedStorage().get().get();
       }
