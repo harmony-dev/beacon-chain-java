@@ -91,8 +91,9 @@ public class InMemoryStore implements TransactionalStore {
   @Override
   public void setBlock(Hash32 root, BeaconBlock block) {
     blocks.put(root, block);
-    children.computeIfAbsent(
-        block.getParentRoot(), parent -> new ArrayList<>(Collections.singleton(root)));
+    List<Hash32> children =
+        this.children.computeIfAbsent(block.getParentRoot(), parent -> new ArrayList<>());
+    children.add(root);
   }
 
   @Override

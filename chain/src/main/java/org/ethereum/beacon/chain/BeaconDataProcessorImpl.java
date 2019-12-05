@@ -1,6 +1,6 @@
 package org.ethereum.beacon.chain;
 
-import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import org.ethereum.beacon.chain.TransactionalStore.StoreTx;
@@ -22,6 +22,7 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
   private final BeaconChainSpec forkChoice;
   private final BeaconChainSpec stateTransition;
   private final TransactionalStore store;
+  private final AttestationPool attestationPool;
 
   private Consumer<ObservableBeaconState> stateSubscriber;
 
@@ -29,6 +30,8 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
     this.forkChoice = spec;
     this.stateTransition = spec;
     this.store = store;
+    this.attestationPool =
+        new AttestationPoolImpl(spec, spec.compute_epoch_at_slot(spec.get_current_slot(store)));
   }
 
   @Override
@@ -48,6 +51,8 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
   }
 
   void onTick(SlotNumber slot) {
+    attestationPool.onTick(slot);
+
     if (stateSubscriber != null) {
       Hash32 root = forkChoice.get_head(store);
       Optional<BeaconBlock> block = store.getBlock(root);
@@ -58,10 +63,11 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
       MutableBeaconState mutableState = state.get().createMutableCopy();
       stateTransition.process_slots(mutableState, slot);
       BeaconStateEx finalState = new BeaconStateExImpl(mutableState.createImmutable());
+      List<Attestation> attestations = attestationPool.getOffChainAttestations(finalState);
 
       ObservableBeaconState observableState =
           new ObservableBeaconState(
-              block.get(), finalState, new PendingOperationsState(Collections.emptyList()));
+              block.get(), finalState, new PendingOperationsState(attestations));
 
       stateSubscriber.accept(observableState);
     }
@@ -82,6 +88,8 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
     forkChoice.on_attestation(storeTx, attestation);
 
     storeTx.commit();
+
+    attestationPool.onAttestation(attestation);
   }
 
   @Override

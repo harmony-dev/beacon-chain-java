@@ -161,6 +161,27 @@ public class Bitlist extends DelegatingBytesValue {
     return Bitlist.of(size, BytesValues.or(this.wrapped, other.wrapped), maxSize());
   }
 
+  public Bitlist xor(Bitlist other) {
+    assert this.maxSize == other.maxSize;
+
+    int len = Math.max(this.byteSize(), other.byteSize());
+    byte[] res = new byte[len];
+    boolean thisBigger = this.size() >= other.size();
+    byte[] otherBytes;
+    if (thisBigger) {
+      System.arraycopy(this.getArrayUnsafe(), 0, res, 0, len);
+      otherBytes = other.getArrayUnsafe();
+    } else {
+      System.arraycopy(other.getArrayUnsafe(), 0, res, 0, len);
+      otherBytes = this.getArrayUnsafe();
+    }
+    for (int i = 0; i < Math.min(this.byteSize(), other.byteSize()); ++i) {
+      res[i] ^= otherBytes[i];
+    }
+
+    return Bitlist.of(BytesValue.wrap(res), maxSize);
+  }
+
   public Bitlist shl(int i) {
     List<Integer> oldSet = getBits();
     MutableBytesValue mutableBytes = MutableBytesValue.create(byteSize());
