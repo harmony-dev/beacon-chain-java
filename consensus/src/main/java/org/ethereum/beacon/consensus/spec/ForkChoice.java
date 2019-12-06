@@ -380,7 +380,7 @@ public interface ForkChoice extends HelperFunction, SpecStateTransition {
 
     # Attestations can only affect the fork choice of subsequent slots.
     # Delay consideration in the fork choice until their slot is in the past.
-    assert store.time >= (attestation.data.slot + 1) * SECONDS_PER_SLOT
+    assert store.time >= target_state.genesis_time + (attestation.data.slot + 1) * SECONDS_PER_SLOT
 
     # Get state at the `target` to validate attestation and calculate the committees
     indexed_attestation = get_indexed_attestation(target_state, attestation)
@@ -436,14 +436,17 @@ public interface ForkChoice extends HelperFunction, SpecStateTransition {
     BeaconState target_state = store.getCheckpointState(target).get();
     // # Attestations can only affect the fork choice of subsequent slots.
     // # Delay consideration in the fork choice until their slot is in the past.
-    // assert store.time >= (attestation.data.slot + 1) * SECONDS_PER_SLOT
+    // assert store.time >= target_state.genesis_time + (attestation.data.slot + 1) * SECONDS_PER_SLOT
     assertTrue(
         store
             .getTime()
             .greaterEqual(
-                getConstants()
-                    .getSecondsPerSlot()
-                    .times(attestation.getData().getSlot().increment())));
+                target_state
+                    .getGenesisTime()
+                    .plus(
+                        getConstants()
+                            .getSecondsPerSlot()
+                            .times(attestation.getData().getSlot().increment()))));
     // # Get state at the `target` to validate attestation and calculate the committees
     // indexed_attestation = get_indexed_attestation(target_state, attestation)
     // assert is_valid_indexed_attestation(target_state, indexed_attestation)
