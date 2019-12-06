@@ -310,7 +310,7 @@ public interface ForkChoice extends HelperFunction, SpecStateTransition {
     assertTrue(
         store
             .getTime()
-            .greater(
+            .greaterEqual(
                 pre_state
                     .getGenesisTime()
                     .plus(getConstants().getSecondsPerSlot().times(block.getSlot()))));
@@ -424,7 +424,7 @@ public interface ForkChoice extends HelperFunction, SpecStateTransition {
     assertTrue(
         store
             .getTime()
-            .greater(
+            .greaterEqual(
                 base_state
                     .getGenesisTime()
                     .plus(
@@ -456,7 +456,7 @@ public interface ForkChoice extends HelperFunction, SpecStateTransition {
     assertTrue(
         store
             .getTime()
-            .greater(
+            .greaterEqual(
                 getConstants()
                     .getSecondsPerSlot()
                     .times(attestation.getData().getSlot().increment())));
