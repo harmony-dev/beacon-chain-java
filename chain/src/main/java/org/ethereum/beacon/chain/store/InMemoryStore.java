@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import org.ethereum.beacon.chain.TransactionalStore;
 import org.ethereum.beacon.consensus.spec.ForkChoice.LatestMessage;
 import org.ethereum.beacon.consensus.spec.ForkChoice.Store;
 import org.ethereum.beacon.core.BeaconBlock;

@@ -32,6 +32,9 @@ public class RunSimulation implements Runnable {
       simulationBuilder.withConfigFromFile(new File(config));
     }
 
-    simulationBuilder.build().run();
+    simulationBuilder
+        .withNewDataProcessor(true)
+        .build()
+        .run();
   }
 }

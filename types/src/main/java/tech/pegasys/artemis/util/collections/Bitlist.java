@@ -1,17 +1,17 @@
 package tech.pegasys.artemis.util.collections;
 
+import static tech.pegasys.artemis.util.collections.ReadList.VARIABLE_SIZE;
+
 import com.google.common.base.Objects;
+import java.util.ArrayList;
+import java.util.BitSet;
+import java.util.List;
 import tech.pegasys.artemis.util.bytes.Bytes8;
 import tech.pegasys.artemis.util.bytes.BytesValue;
 import tech.pegasys.artemis.util.bytes.BytesValues;
 import tech.pegasys.artemis.util.bytes.DelegatingBytesValue;
 import tech.pegasys.artemis.util.bytes.MutableBytesValue;
 import tech.pegasys.artemis.util.uint.UInt64;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import static tech.pegasys.artemis.util.collections.ReadList.VARIABLE_SIZE;
 
 public class Bitlist extends DelegatingBytesValue {
   private final int size;
@@ -161,27 +161,6 @@ public class Bitlist extends DelegatingBytesValue {
     return Bitlist.of(size, BytesValues.or(this.wrapped, other.wrapped), maxSize());
   }
 
-  public Bitlist xor(Bitlist other) {
-    assert this.maxSize == other.maxSize;
-
-    int len = Math.max(this.byteSize(), other.byteSize());
-    byte[] res = new byte[len];
-    boolean thisBigger = this.size() >= other.size();
-    byte[] otherBytes;
-    if (thisBigger) {
-      System.arraycopy(this.getArrayUnsafe(), 0, res, 0, len);
-      otherBytes = other.getArrayUnsafe();
-    } else {
-      System.arraycopy(other.getArrayUnsafe(), 0, res, 0, len);
-      otherBytes = this.getArrayUnsafe();
-    }
-    for (int i = 0; i < Math.min(this.byteSize(), other.byteSize()); ++i) {
-      res[i] ^= otherBytes[i];
-    }
-
-    return Bitlist.of(BytesValue.wrap(res), maxSize);
-  }
-
   public Bitlist shl(int i) {
     List<Integer> oldSet = getBits();
     MutableBytesValue mutableBytes = MutableBytesValue.create(byteSize());
@@ -193,6 +172,12 @@ public class Bitlist extends DelegatingBytesValue {
     }
 
     return new Bitlist(size, mutableBytes.copy(), maxSize());
+  }
+
+  public BitSet toBitSet() {
+    byte[] bytes = new byte[this.byteSize()];
+    System.arraycopy(this.getArrayUnsafe(), 0, bytes, 0, this.byteSize());
+    return BitSet.valueOf(bytes);
   }
 
   @Override

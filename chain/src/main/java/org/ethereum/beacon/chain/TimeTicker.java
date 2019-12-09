@@ -5,6 +5,7 @@ import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.stream.SimpleProcessor;
 import org.reactivestreams.Publisher;
+import reactor.core.publisher.Flux;
 
 public class TimeTicker implements Ticker<Time> {
 
@@ -19,11 +20,14 @@ public class TimeTicker implements Ticker<Time> {
   @Override
   public void start() {
     long currentTime = schedulers.getCurrentTime();
-    schedulers.newSingleThreadDaemon("time-ticker").executeAtFixedRate(
-        Duration.ofMillis(currentTime - currentTime % 1000 + 1000),
-        Duration.ofSeconds(1),
-        () -> timeStream.onNext(Time.of(schedulers.getCurrentTime()))
-    );
+    long startTime = currentTime - currentTime % 1000 + 1000;
+    Time start = Time.of(startTime / 1000);
+    Flux.interval(
+            Duration.ofMillis(startTime - currentTime),
+            Duration.ofSeconds(1),
+            schedulers.events().toReactor())
+        .map(start::plus)
+        .subscribe(timeStream::onNext);
   }
 
   @Override

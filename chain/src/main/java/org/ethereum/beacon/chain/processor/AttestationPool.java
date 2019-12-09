@@ -1,4 +1,4 @@
-package org.ethereum.beacon.chain;
+package org.ethereum.beacon.chain.processor;
 
 import java.util.List;
 import org.ethereum.beacon.core.BeaconState;

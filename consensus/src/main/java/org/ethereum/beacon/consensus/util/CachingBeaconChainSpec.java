@@ -106,11 +106,6 @@ public class CachingBeaconChainSpec extends BeaconChainSpecImpl {
   }
 
   @Override
-  public Hash32 hash_tree_root(Object object) {
-    return caches.hashTreeRootCache.get(object, super::hash_tree_root);
-  }
-
-  @Override
   public ValidatorIndex get_validator_index_by_pubkey(BeaconState state, BLSPubkey pubkey) {
     if (!cacheEnabled) {
       return super.get_validator_index_by_pubkey(state, pubkey);
@@ -193,7 +188,6 @@ public class CachingBeaconChainSpec extends BeaconChainSpecImpl {
   private static class Caches {
     private final Map<BLSPubkey, ValidatorIndex> pubkeyToIndexCache = new ConcurrentHashMap<>();
     private Cache<Pair<List<? extends UInt64>, Bytes32>, List<UInt64>> shufflerCache;
-    private Cache<Object, Hash32> hashTreeRootCache;
     private Cache<Hash32, List<ValidatorIndex>> activeValidatorsCache;
     private Cache<Hash32, List<ValidatorIndex>> crosslinkCommitteesCache;
     private Cache<Hash32, Gwei> totalActiveBalanceCache;
@@ -202,7 +196,6 @@ public class CachingBeaconChainSpec extends BeaconChainSpecImpl {
 
     private Caches(CacheFactory factory) {
       this.shufflerCache = factory.createLRUCache(128);
-      this.hashTreeRootCache = factory.createLRUCache(32);
       this.crosslinkCommitteesCache = factory.createLRUCache(128);
       this.activeValidatorsCache = factory.createLRUCache(32);
       this.totalActiveBalanceCache = factory.createLRUCache(32);

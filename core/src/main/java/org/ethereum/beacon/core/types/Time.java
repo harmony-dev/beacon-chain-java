@@ -36,6 +36,10 @@ public class Time extends UInt64 implements SafeComparable<Time> {
     return new Time(super.plus(addend));
   }
 
+  public Time plus(long addend) {
+    return new Time(super.plus(addend));
+  }
+
   public Time minus(Time subtrahend) {
     return new Time(super.minus(subtrahend));
   }

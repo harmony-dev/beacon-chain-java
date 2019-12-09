@@ -1,5 +1,6 @@
-package org.ethereum.beacon.chain;
+package org.ethereum.beacon.chain.processor;
 
+import java.util.BitSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -11,8 +12,6 @@ import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
-import tech.pegasys.artemis.util.bytes.BytesValue;
-import tech.pegasys.artemis.util.collections.Bitlist;
 
 public class AttestationPoolImpl implements AttestationPool {
 
@@ -50,9 +49,6 @@ public class AttestationPoolImpl implements AttestationPool {
 
   @Override
   public List<Attestation> getOffChainAttestations(BeaconState state) {
-    final int MAX_AGGREGATION_BITS =
-        spec.getConstants().getMaxValidatorsPerCommittee().getIntValue();
-
     Set<Attestation> attestationChurn = new HashSet<>();
     epochs.values().forEach(attestationChurn::addAll);
 
@@ -65,17 +61,20 @@ public class AttestationPoolImpl implements AttestationPool {
         // sort out on chain attestations
         .filter(
             attestation -> {
-              Bitlist onChainBits =
+              BitSet offChainBits =
                   onChainAttestations.stream()
                       .filter(pendingAtt -> pendingAtt.getData().equals(attestation.getData()))
-                      .map(PendingAttestation::getAggregationBits)
+                      .map(pendingAtt -> pendingAtt.getAggregationBits().toBitSet())
                       .reduce(
-                          Bitlist.of(
-                              BytesValue.wrap(new byte[MAX_AGGREGATION_BITS / 8]),
-                              MAX_AGGREGATION_BITS),
-                          Bitlist::or);
+                          new BitSet(),
+                          (s1, s2) -> {
+                            BitSet res = new BitSet();
+                            res.or(s1);
+                            res.or(s2);
+                            return res;
+                          });
 
-              return !onChainBits.xor(attestation.getAggregationBits()).isZero();
+              return !offChainBits.intersects(attestation.getAggregationBits().toBitSet());
             })
 
         // sort out attestations not applicable to provided state

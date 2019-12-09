@@ -16,6 +16,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.logging.log4j.core.config.LoggerConfig;
+import org.ethereum.beacon.bench.BenchmarkController;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.storage.impl.MemBeaconChainStorageFactory;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
@@ -65,6 +66,7 @@ public class SimulatorLauncher implements Runnable {
   private final BeaconChainSpec spec;
   private final Level logLevel;
   private final SpecBuilder specBuilder;
+  private final boolean newDataProcessor;
 
   private Random rnd;
   private Time genesisTime;
@@ -90,7 +92,8 @@ public class SimulatorLauncher implements Runnable {
       SpecBuilder specBuilder,
       List<PeersConfig> validators,
       List<PeersConfig> observers,
-      Level logLevel) {
+      Level logLevel,
+      boolean newDataProcessor) {
     this.config = config;
     this.simulationPlan = (SimulationPlan) config.getPlan();
     this.specBuilder = specBuilder;
@@ -99,6 +102,7 @@ public class SimulatorLauncher implements Runnable {
     this.validators = validators;
     this.observers = observers;
     this.logLevel = logLevel;
+    this.newDataProcessor = newDataProcessor;
 
     init();
   }
@@ -178,7 +182,9 @@ public class SimulatorLauncher implements Runnable {
             bls == null ? null : Collections.singletonList(bls),
             wireApi,
             new MemBeaconChainStorageFactory(spec.getObjectHasher()),
-            schedulers);
+            schedulers,
+            BenchmarkController.NO_BENCHES,
+            newDataProcessor);
   }
 
   public void run() {
@@ -221,16 +227,16 @@ public class SimulatorLauncher implements Runnable {
       Launcher launcher = peers.get(i);
 
       int finalI = i;
-      Flux.from(launcher.getSlotTicker().getTickerStream()).subscribe(slot ->
+      Flux.from(launcher.getSlotStream()).subscribe(slot ->
           logger.trace("New slot: " + slot.toString(this.specConstants, genesisTime)));
-      Flux.from(launcher.getObservableStateProcessor().getObservableStateStream())
+      Flux.from(launcher.getObservableStateStream())
           .subscribe(os -> {
             latestStates.put(finalI, os);
             logger.trace("New observable state: " + os.toString(spec));
           });
-      Flux.from(launcher.getBeaconChain().getBlockStatesStream())
-          .subscribe(blockState -> logger.trace("Block imported: "
-              + blockState.getBlock().toString(this.specConstants, genesisTime, spec::signing_root)));
+      Flux.from(launcher.getImportedBlockStream())
+          .subscribe(block -> logger.trace("Block imported: "
+              + block.toString(this.specConstants, genesisTime, spec::signing_root)));
       if (launcher.getValidatorService() != null) {
         Flux.from(launcher.getValidatorService().getProposedBlocksStream())
             .subscribe(block -> logger.debug("New block created: "
@@ -250,13 +256,13 @@ public class SimulatorLauncher implements Runnable {
     List<BeaconBlock> blocks = new ArrayList<>();
     List<ObservableBeaconState> states = new ArrayList<>();
 
-    Flux.from(observer.getSlotTicker().getTickerStream()).subscribe(slot -> {
+    Flux.from(observer.getSlotStream()).subscribe(slot -> {
       slots.add(slot);
       logger.debug("New slot: " + slot.toString(specConstants, genesisTime));
     });
-    Flux.from(observer.getObservableStateProcessor().getObservableStateStream())
+    Flux.from(observer.getObservableStateStream())
         .subscribe(os -> {
-          latestStates.put(peers.size(), os);
+          latestStates.put(peers.size() - 1, os);
           states.add(os);
           logger.debug("New observable state: " + os.toString(spec));
         });
@@ -266,11 +272,11 @@ public class SimulatorLauncher implements Runnable {
           attestations.add(att);
           logger.debug("New attestation received: " + att.toStringShort(specConstants));
         });
-    Flux.from(observer.getBeaconChain().getBlockStatesStream())
-        .subscribe(blockState -> {
-          blocks.add(blockState.getBlock());
+    Flux.from(observer.getImportedBlockStream())
+        .subscribe(block -> {
+          blocks.add(block);
           logger.debug("Block imported: "
-              + blockState.getBlock().toString(specConstants, genesisTime, spec::signing_root));
+              + block.toString(specConstants, genesisTime, spec::signing_root));
         });
 
     logger.info("Time starts running ...");
@@ -384,6 +390,7 @@ public class SimulatorLauncher implements Runnable {
   public static class Builder {
     private MainConfig config;
     private Level logLevel = Level.INFO;
+    private boolean newDataProcessor = false;
 
     public Builder() {}
 
@@ -414,7 +421,13 @@ public class SimulatorLauncher implements Runnable {
           specBuilder,
           peers.stream().filter(PeersConfig::isValidator).collect(Collectors.toList()),
           peers.stream().filter(config -> !config.isValidator()).collect(Collectors.toList()),
-          logLevel);
+          logLevel,
+          newDataProcessor);
+    }
+
+    public Builder withNewDataProcessor(boolean newDataProcessor) {
+      this.newDataProcessor = newDataProcessor;
+      return this;
     }
 
     public Builder withConfigFromFile(File file) {

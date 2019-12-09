@@ -1,14 +1,12 @@
 package org.ethereum.beacon.consensus.spec;
 
+import java.util.function.Function;
 import org.ethereum.beacon.consensus.hasher.ObjectHasher;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.spec.SpecConstants;
-import org.ethereum.beacon.core.types.ShardNumber;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.BytesValue;
-
-import java.util.function.Function;
 
 /**
  * A common part of the spec that is shared by all its components.
@@ -29,10 +27,20 @@ public interface SpecCommons {
 
   boolean isComputableGenesisTime();
 
-  default void assertTrue(boolean assertion) {
+  default <T extends SpecAssertionFailed> void assertThat(boolean assertion, Class<T> type) {
     if (!assertion) {
-      throw new SpecAssertionFailed();
+      T exception;
+      try {
+        exception = type.newInstance();
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+      throw exception;
     }
+  }
+
+  default void assertTrue(boolean assertion) {
+    assertThat(assertion, SpecAssertionFailed.class);
   }
 
   default void checkIndexRange(BeaconState state, ValidatorIndex index) {
@@ -47,9 +55,23 @@ public interface SpecCommons {
 
     @Override
     public String toString() {
-      return String.format(
-          "SpecAssertionFailed{%s}",
-          getStackTrace().length > 1 ? getStackTrace()[1].toString() : "");
+      for (int i = getStackTrace().length - 1; i >= 0; i--) {
+        if (getStackTrace()[i].getClassName().equals(SpecCommons.class.getName())) {
+          if (i + 1 < getStackTrace().length) {
+            return String.format(
+                "%s {%s}", this.getClass().getSimpleName(), getStackTrace()[i + 1].toString());
+          }
+          break;
+        }
+      }
+
+      return "";
     }
   }
+
+  class BlockIsInTheFutureException extends SpecAssertionFailed {}
+
+  class NoParentBlockException extends SpecAssertionFailed {}
+
+  class EarlyForkChoiceConsiderationException extends SpecAssertionFailed {}
 }

@@ -10,9 +10,11 @@ public interface BeaconDataProcessor {
 
   void onTick(Time time);
 
-  void onBlock(BeaconBlock block);
+  boolean onBlock(BeaconBlock block);
 
   void onAttestation(Attestation attestation);
 
-  void subscribe(Consumer<ObservableBeaconState> subscriber);
+  void subscribeToStates(Consumer<ObservableBeaconState> subscriber);
+
+  void subscribeToBlocks(Consumer<BeaconBlock> subscriber);
 }

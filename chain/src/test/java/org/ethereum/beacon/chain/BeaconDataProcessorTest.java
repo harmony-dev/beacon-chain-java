@@ -6,6 +6,7 @@ import static org.junit.Assert.assertNull;
 
 import java.util.Collections;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
+import org.ethereum.beacon.chain.store.TransactionalStore;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.types.SlotNumber;
@@ -27,13 +28,13 @@ public class BeaconDataProcessorTest {
 
     BeaconState genesisState =
         spec.initialize_beacon_state_from_eth1(Hash32.ZERO, Time.of(0), Collections.emptyList());
-    TransactionalStore store = TransactionalStore.inMemoryStore();
-    spec.get_genesis_store(genesisState, store);
+    TransactionalStore store =
+        spec.get_genesis_store(genesisState, TransactionalStore.inMemoryStore());
 
     BeaconDataProcessor processor = new BeaconDataProcessorImpl(spec, store);
 
     ObservableStateHolder recentState = new ObservableStateHolder();
-    processor.subscribe(recentState::set);
+    processor.subscribeToStates(recentState::set);
 
     processor.onTick(Time.of(2));
     assertNull(recentState.state);

@@ -1,5 +1,8 @@
 package org.ethereum.beacon.consensus.spec;
 
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.MutableBeaconState;
@@ -12,10 +15,6 @@ import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.core.types.ValidatorIndex;
 import tech.pegasys.artemis.ethereum.core.Hash32;
-
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
 
 /**
  * Fork choice rule.
@@ -43,7 +42,7 @@ public interface ForkChoice extends HelperFunction, SpecStateTransition {
           checkpoint_states={justified_checkpoint: genesis_state.copy()},
       )
    */
-  default Store get_genesis_store(BeaconState genesisState, Store store) {
+  default <T extends Store> T get_genesis_store(BeaconState genesisState, T store) {
     BeaconBlock genesisBlock = get_empty_block().withStateRoot(hash_tree_root(genesisState));
     Hash32 root = signing_root(genesisBlock);
     Checkpoint justifiedCheckpoint = new Checkpoint(getConstants().getGenesisEpoch(), root);
@@ -340,17 +339,18 @@ public interface ForkChoice extends HelperFunction, SpecStateTransition {
    */
   default void on_block(Store store, BeaconBlock block) {
     // # Make a copy of the state to avoid mutability issues
-    assertTrue(store.getBlock(block.getParentRoot()).isPresent());
+    assertThat(store.getBlock(block.getParentRoot()).isPresent(), NoParentBlockException.class);
     MutableBeaconState pre_state = store.getState(block.getParentRoot()).get().createMutableCopy();
     // # Blocks cannot be in the future. If they are, their consideration must be delayed until the
     // are in the past.
-    assertTrue(
+    assertThat(
         store
             .getTime()
-            .greater(
+            .greaterEqual(
                 pre_state
                     .getGenesisTime()
-                    .plus(getConstants().getSecondsPerSlot().times(block.getSlot()))));
+                    .plus(getConstants().getSecondsPerSlot().times(block.getSlot()))),
+        BlockIsInTheFutureException.class);
 
     // # Add new block to the store
     store.setBlock(signing_root(block), block);
@@ -461,7 +461,7 @@ public interface ForkChoice extends HelperFunction, SpecStateTransition {
     assertTrue(
         store
             .getTime()
-            .greater(
+            .greaterEqual(
                 base_state
                     .getGenesisTime()
                     .plus(
@@ -490,13 +490,17 @@ public interface ForkChoice extends HelperFunction, SpecStateTransition {
     // # Attestations can only affect the fork choice of subsequent slots.
     // # Delay consideration in the fork choice until their slot is in the past.
     // assert store.time >= (attestation.data.slot + 1) * SECONDS_PER_SLOT
-    assertTrue(
+    assertThat(
         store
             .getTime()
-            .greater(
-                getConstants()
-                    .getSecondsPerSlot()
-                    .times(attestation.getData().getSlot().increment())));
+            .greaterEqual(
+                base_state
+                    .getGenesisTime()
+                    .plus(
+                        getConstants()
+                            .getSecondsPerSlot()
+                            .times(attestation.getData().getSlot().increment()))),
+        EarlyForkChoiceConsiderationException.class);
     // # Get state at the `target` to validate attestation and calculate the committees
     // indexed_attestation = get_indexed_attestation(target_state, attestation)
     // assert is_valid_indexed_attestation(target_state, indexed_attestation)
