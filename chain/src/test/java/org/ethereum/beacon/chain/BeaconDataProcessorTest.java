@@ -5,12 +5,17 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
 import java.util.Collections;
+import org.ethereum.beacon.chain.eventbus.EventBus;
+import org.ethereum.beacon.chain.eventbus.events.ObservableStateUpdated;
+import org.ethereum.beacon.chain.eventbus.events.TimeTick;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.store.TransactionalStore;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
+import org.ethereum.beacon.schedulers.ControlledSchedulers;
+import org.ethereum.beacon.schedulers.Schedulers;
 import org.junit.Test;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 
@@ -31,15 +36,20 @@ public class BeaconDataProcessorTest {
     TransactionalStore store =
         spec.get_genesis_store(genesisState, TransactionalStore.inMemoryStore());
 
-    BeaconDataProcessor processor = new BeaconDataProcessorImpl(spec, store);
+    ControlledSchedulers schedulers = Schedulers.createControlled();
+    EventBus eventBus = EventBus.create(schedulers);
+    BeaconDataProcessor processor = new BeaconDataProcessorImpl(spec, store, eventBus);
 
     ObservableStateHolder recentState = new ObservableStateHolder();
-    processor.subscribeToStates(recentState::set);
+    eventBus.subscribe(ObservableStateUpdated.class, recentState::set);
 
-    processor.onTick(Time.of(2));
+    eventBus.publish(TimeTick.wrap(Time.of(2)));
+    schedulers.addTime(1);
+
     assertNull(recentState.state);
 
-    processor.onTick(spec.getConstants().getSecondsPerSlot());
+    eventBus.publish(TimeTick.wrap(spec.getConstants().getSecondsPerSlot()));
+    schedulers.addTime(1);
 
     assertNotNull(recentState.state);
     assertEquals(SlotNumber.of(1), recentState.state.getLatestSlotState().getSlot());

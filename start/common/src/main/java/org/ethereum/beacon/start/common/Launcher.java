@@ -12,13 +12,22 @@ import org.ethereum.beacon.chain.ProposedBlockProcessor;
 import org.ethereum.beacon.chain.ProposedBlockProcessorImpl;
 import org.ethereum.beacon.chain.SlotTicker;
 import org.ethereum.beacon.chain.TimeTicker;
-import org.ethereum.beacon.chain.store.TransactionalStore;
+import org.ethereum.beacon.chain.eventbus.EventBus;
+import org.ethereum.beacon.chain.eventbus.events.AttestationProduced;
+import org.ethereum.beacon.chain.eventbus.events.AttestationReceived;
+import org.ethereum.beacon.chain.eventbus.events.BlockImported;
+import org.ethereum.beacon.chain.eventbus.events.BlockProposed;
+import org.ethereum.beacon.chain.eventbus.events.BlockReceived;
+import org.ethereum.beacon.chain.eventbus.events.ObservableStateUpdated;
+import org.ethereum.beacon.chain.eventbus.events.ProposedBlockImported;
+import org.ethereum.beacon.chain.eventbus.events.TimeTick;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.observer.ObservableStateProcessor;
 import org.ethereum.beacon.chain.observer.ObservableStateProcessorImpl;
 import org.ethereum.beacon.chain.storage.BeaconChainStorage;
 import org.ethereum.beacon.chain.storage.BeaconChainStorageFactory;
 import org.ethereum.beacon.chain.storage.util.StorageUtils;
+import org.ethereum.beacon.chain.store.TransactionalStore;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.ChainStart;
@@ -37,6 +46,7 @@ import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.db.InMemoryDatabase;
 import org.ethereum.beacon.pow.DepositContract;
+import org.ethereum.beacon.schedulers.Scheduler;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.util.stats.MeasurementsCollector;
 import org.ethereum.beacon.validator.BeaconChainProposer;
@@ -235,7 +245,8 @@ public class Launcher {
     timeTicker = new TimeTicker(schedulers);
     timeTicker.start();
     store = spec.get_genesis_store(genesisState, TransactionalStore.inMemoryStore());
-    beaconDataProcessor = new BeaconDataProcessorImpl(spec, store);
+    EventBus eventBus = EventBus.create(schedulers);
+    beaconDataProcessor = new BeaconDataProcessorImpl(spec, store, eventBus);
 
     slotStream =
         Flux.from(timeTicker.getTickerStream())
@@ -260,11 +271,6 @@ public class Launcher {
     extendedSlotTransition =
         new ExtendedSlotTransition(perEpochTransition, perSlotTransition, spec);
 
-    DirectProcessor<Attestation> allAttestations = DirectProcessor.create();
-    Flux.from(wireApi.inboundAttestationsStream())
-        .publishOn(schedulers.events().toReactor())
-        .subscribe(allAttestations);
-
     DirectProcessor<ObservableBeaconState> stateFlux = DirectProcessor.create();
     stateFlux.publishOn(schedulers.events().toReactor());
     DirectProcessor<BeaconBlock> importedBlockFlux = DirectProcessor.create();
@@ -273,8 +279,8 @@ public class Launcher {
     observableStateStream = stateFlux;
     importedBlockStream = importedBlockFlux;
 
-    beaconDataProcessor.subscribeToStates(stateFlux::onNext);
-    beaconDataProcessor.subscribeToBlocks(importedBlockFlux::onNext);
+    eventBus.subscribe(ObservableStateUpdated.class, stateFlux::onNext);
+    eventBus.subscribe(BlockImported.class, importedBlockFlux::onNext);
 
     if (validatorCred != null) {
       beaconChainProposer = new BeaconChainProposerImpl(spec, perBlockTransition, depositContract);
@@ -290,26 +296,34 @@ public class Launcher {
       beaconChainValidator.start();
 
       Flux.from(beaconChainValidator.getProposedBlocksStream())
-          .map(block -> Pair.with(block, beaconDataProcessor.onBlock(block)))
-          .filter(Pair::getValue1)
-          .subscribeOn(schedulers.events().toReactor())
-          .subscribe(pair -> wireApi.sendProposedBlock(pair.getValue0()));
+          .map(BlockProposed::wrap)
+          .publishOn(schedulers.events().toReactor())
+          .subscribe(eventBus::publish);
+      eventBus.subscribe(ProposedBlockImported.class, wireApi::sendProposedBlock);
 
-      Flux.from(beaconChainValidator.getAttestationsStream()).subscribe(wireApi::sendAttestation);
-      Flux.from(beaconChainValidator.getAttestationsStream()).subscribe(allAttestations);
+      Flux.from(beaconChainValidator.getAttestationsStream())
+          .publishOn(schedulers.events().toReactor())
+          .subscribe(wireApi::sendAttestation);
+      Flux.from(beaconChainValidator.getAttestationsStream())
+          .map(AttestationProduced::wrap)
+          .publishOn(schedulers.events().toReactor())
+          .subscribe(eventBus::publish);
     }
 
     Flux.from(wireApi.inboundBlocksStream())
+        .map(BlockReceived::wrap)
         .publishOn(schedulers.events().toReactor())
-        .subscribe(beaconDataProcessor::onBlock);
+        .subscribe(eventBus::publish);
 
-    Flux.from(allAttestations)
+    Flux.from(wireApi.inboundAttestationsStream())
+        .map(AttestationReceived::wrap)
         .publishOn(schedulers.events().toReactor())
-        .subscribe(beaconDataProcessor::onAttestation);
+        .subscribe(eventBus::publish);
 
     Flux.from(timeTicker.getTickerStream())
+        .map(TimeTick::wrap)
         .publishOn(schedulers.events().toReactor())
-        .subscribe(beaconDataProcessor::onTick);
+        .subscribe(eventBus::publish);
   }
 
   private EmptySlotTransition benchmarkingEmptySlotTransition(BeaconChainSpec spec) {

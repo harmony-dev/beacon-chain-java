@@ -4,22 +4,27 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.function.Consumer;
+import org.ethereum.beacon.chain.eventbus.EventBus;
+import org.ethereum.beacon.chain.eventbus.events.BlockUnparked;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.types.SlotNumber;
 
 public class DelayedBlockQueueImpl implements DelayedBlockQueue {
 
+  private final EventBus eventBus;
+
   private final TreeMap<SlotNumber, List<BeaconBlock>> blocks = new TreeMap<>();
 
-  private Consumer<BeaconBlock> subscriber;
+  public DelayedBlockQueueImpl(EventBus eventBus) {
+    this.eventBus = eventBus;
+  }
 
   @Override
   public void onTick(SlotNumber slot) {
     SortedMap<SlotNumber, List<BeaconBlock>> pastBlocks = blocks.headMap(slot, true);
-    if (subscriber != null) {
-      pastBlocks.values().forEach(slotBucket -> slotBucket.forEach(subscriber));
-    }
+    pastBlocks
+        .values()
+        .forEach(slotBucket -> slotBucket.forEach(b -> eventBus.publish(BlockUnparked.wrap(b))));
     blocks.keySet().removeAll(pastBlocks.keySet());
   }
 
@@ -28,10 +33,5 @@ public class DelayedBlockQueueImpl implements DelayedBlockQueue {
     List<BeaconBlock> slotBucket =
         blocks.computeIfAbsent(block.getSlot(), slot -> new ArrayList<>());
     slotBucket.add(block);
-  }
-
-  @Override
-  public void subscribe(Consumer<BeaconBlock> subscriber) {
-    this.subscriber = subscriber;
   }
 }
