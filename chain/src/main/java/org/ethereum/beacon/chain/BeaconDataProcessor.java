@@ -8,7 +8,7 @@ public interface BeaconDataProcessor {
 
   void onTick(Time time);
 
-  boolean onBlock(BeaconBlock block);
+  void onBlock(BeaconBlock block);
 
   void onAttestation(Attestation attestation);
 }

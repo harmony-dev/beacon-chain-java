@@ -149,7 +149,11 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
   }
 
   @Override
-  public boolean onBlock(BeaconBlock block) {
+  public void onBlock(BeaconBlock block) {
+    onBlockImpl(block);
+  }
+
+  boolean onBlockImpl(BeaconBlock block) {
     logger.trace(
         "On before block: " + block.toString(spec.getConstants(), null, spec::signing_root));
 
@@ -185,8 +189,8 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
     return newlyImported;
   }
 
-  private void onBlockProposed(BeaconBlock block) {
-    if (onBlock(block)) {
+  void onBlockProposed(BeaconBlock block) {
+    if (onBlockImpl(block)) {
       eventBus.publish(ProposedBlockImported.wrap(block));
     }
   }
