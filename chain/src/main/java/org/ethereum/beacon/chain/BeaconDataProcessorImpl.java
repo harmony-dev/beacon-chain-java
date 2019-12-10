@@ -56,14 +56,12 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
   private final BeaconChainSpec forkChoice;
   private final BeaconChainSpec stateTransition;
   private final TransactionalStore store;
+  private final EventBus eventBus;
+
   private final AttestationPool attestationPool;
   private final DelayedBlockQueue delayedBlockQueue;
   private final DelayedAttestationQueue delayedAttestationQueue;
   private final NoParentBlockQueue noParentBlockQueue;
-
-  private SlotNumber currentSlot;
-
-  private EventBus eventBus;
 
   public BeaconDataProcessorImpl(
       BeaconChainSpec spec, TransactionalStore store, EventBus eventBus) {
@@ -73,14 +71,12 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
     this.stateTransition = spec;
     this.store = store;
     this.eventBus = eventBus;
+
     this.attestationPool =
         new AttestationPoolImpl(spec, spec.compute_epoch_at_slot(spec.get_current_slot(store)));
-
     this.delayedBlockQueue = new DelayedBlockQueueImpl(this.eventBus);
     this.delayedAttestationQueue = new DelayedAttestationQueueImpl(this.eventBus);
     this.noParentBlockQueue = new NoParentBlockQueueImpl(this.eventBus, this.spec);
-
-    this.currentSlot = forkChoice.get_current_slot(store);
 
     this.eventBus.subscribe(TimeTick.class, this::onTick);
     this.eventBus.subscribe(BlockReceived.class, this::onBlock);
@@ -125,12 +121,21 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
   }
 
   void onTick(SlotNumber slot) {
-    this.currentSlot = slot;
     eventBus.publish(SlotTick.wrap(slot));
-    yieldObservableState(slot, TransitionType.SLOT);
+    yieldObservableState(TransitionType.SLOT);
   }
 
-  private void yieldObservableState(SlotNumber slot, TransitionType transitionType) {
+  private void yieldObservableState(TransitionType transitionType) {
+    ObservableBeaconState observableState = computeObservableState(transitionType);
+    eventBus.publish(ObservableStateUpdated.wrap(observableState));
+    logger.trace(
+        "Observable state: "
+            + observableState
+                .getLatestSlotState()
+                .toString(spec.getConstants(), spec::signing_root));
+  }
+
+  ObservableBeaconState computeObservableState(TransitionType transitionType) {
     Hash32 root = forkChoice.get_head(store);
     Optional<BeaconBlock> block = store.getBlock(root);
     Optional<BeaconState> state = store.getState(root);
@@ -138,22 +143,13 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
     assert block.isPresent() && state.isPresent();
 
     MutableBeaconState mutableState = state.get().createMutableCopy();
-    stateTransition.process_slots(mutableState, slot);
+    stateTransition.process_slots(mutableState, forkChoice.get_current_slot(store));
     BeaconStateEx finalState =
         new BeaconStateExImpl(mutableState.createImmutable(), transitionType);
     List<Attestation> attestations = attestationPool.getOffChainAttestations(finalState);
 
-    ObservableBeaconState observableState =
-        new ObservableBeaconState(
-            block.get(), finalState, new PendingOperationsState(attestations));
-
-    eventBus.publish(ObservableStateUpdated.wrap(observableState));
-
-    logger.trace(
-        "Observable state: "
-            + observableState
-                .getLatestSlotState()
-                .toString(spec.getConstants(), spec::signing_root));
+    return new ObservableBeaconState(
+        block.get(), finalState, new PendingOperationsState(attestations));
   }
 
   @Override
@@ -174,7 +170,7 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
       boolean newlyImported = !beforeImport.isPresent() && afterImport.isPresent();
       if (newlyImported) {
         eventBus.publish(BlockImported.wrap(block));
-        yieldObservableState(currentSlot, TransitionType.BLOCK);
+        yieldObservableState(TransitionType.BLOCK);
 
         logger.info(
             "Imported block: " + block.toString(spec.getConstants(), null, spec::signing_root));
@@ -215,7 +211,7 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
       storeTx.commit();
 
       // FIXME suboptimal, no need to compute observable state on each attestation
-      yieldObservableState(currentSlot, TransitionType.UNKNOWN);
+      yieldObservableState(TransitionType.UNKNOWN);
 
       logger.info("Processed attestation: " + attestation);
     } catch (EarlyForkChoiceConsiderationException e) {
