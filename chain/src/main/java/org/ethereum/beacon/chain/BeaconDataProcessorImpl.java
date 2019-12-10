@@ -79,6 +79,7 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
     this.noParentBlockQueue = new NoParentBlockQueueImpl(this.eventBus, this.spec);
 
     this.eventBus.subscribe(TimeTick.class, this::onTick);
+    this.eventBus.subscribe(SlotTick.class, slot -> this.yieldObservableState(TransitionType.SLOT));
     this.eventBus.subscribe(BlockReceived.class, this::onBlock);
     this.eventBus.subscribe(BlockUnparked.class, this::onBlock);
     this.eventBus.subscribe(BlockProposed.class, this::onBlockProposed);
@@ -122,10 +123,9 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
 
   void onTick(SlotNumber slot) {
     eventBus.publish(SlotTick.wrap(slot));
-    yieldObservableState(TransitionType.SLOT);
   }
 
-  private void yieldObservableState(TransitionType transitionType) {
+  void yieldObservableState(TransitionType transitionType) {
     ObservableBeaconState observableState = computeObservableState(transitionType);
     eventBus.publish(ObservableStateUpdated.wrap(observableState));
     logger.trace(
