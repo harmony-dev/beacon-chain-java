@@ -6,7 +6,7 @@ import static org.junit.Assert.assertNull;
 
 import java.util.Collections;
 import org.ethereum.beacon.chain.eventbus.EventBus;
-import org.ethereum.beacon.chain.eventbus.events.ObservableStateUpdated;
+import org.ethereum.beacon.chain.eventbus.events.ProposerStateUpdated;
 import org.ethereum.beacon.chain.eventbus.events.TimeTick;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.store.TransactionalStore;
@@ -41,7 +41,7 @@ public class BeaconDataProcessorTest {
     BeaconDataProcessor processor = new BeaconDataProcessorImpl(spec, store, eventBus);
 
     ObservableStateHolder recentState = new ObservableStateHolder();
-    eventBus.subscribe(ObservableStateUpdated.class, recentState::set);
+    eventBus.subscribe(ProposerStateUpdated.class, recentState::set);
 
     eventBus.publish(TimeTick.wrap(Time.of(2)));
     schedulers.addTime(1);

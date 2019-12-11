@@ -15,11 +15,12 @@ import org.ethereum.beacon.chain.TimeTicker;
 import org.ethereum.beacon.chain.eventbus.EventBus;
 import org.ethereum.beacon.chain.eventbus.events.AttestationProduced;
 import org.ethereum.beacon.chain.eventbus.events.AttestationReceived;
+import org.ethereum.beacon.chain.eventbus.events.AttesterStateUpdated;
 import org.ethereum.beacon.chain.eventbus.events.BlockImported;
 import org.ethereum.beacon.chain.eventbus.events.BlockProposed;
 import org.ethereum.beacon.chain.eventbus.events.BlockReceived;
-import org.ethereum.beacon.chain.eventbus.events.ObservableStateUpdated;
 import org.ethereum.beacon.chain.eventbus.events.ProposedBlockImported;
+import org.ethereum.beacon.chain.eventbus.events.ProposerStateUpdated;
 import org.ethereum.beacon.chain.eventbus.events.TimeTick;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.observer.ObservableStateProcessor;
@@ -46,7 +47,6 @@ import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.db.InMemoryDatabase;
 import org.ethereum.beacon.pow.DepositContract;
-import org.ethereum.beacon.schedulers.Scheduler;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.ethereum.beacon.util.stats.MeasurementsCollector;
 import org.ethereum.beacon.validator.BeaconChainProposer;
@@ -55,7 +55,6 @@ import org.ethereum.beacon.validator.crypto.BLS381Credentials;
 import org.ethereum.beacon.validator.local.MultiValidatorService;
 import org.ethereum.beacon.validator.proposer.BeaconChainProposerImpl;
 import org.ethereum.beacon.wire.WireApiSub;
-import org.javatuples.Pair;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
@@ -279,7 +278,8 @@ public class Launcher {
     observableStateStream = stateFlux;
     importedBlockStream = importedBlockFlux;
 
-    eventBus.subscribe(ObservableStateUpdated.class, stateFlux::onNext);
+    eventBus.subscribe(ProposerStateUpdated.class, stateFlux::onNext);
+    eventBus.subscribe(AttesterStateUpdated.class, stateFlux::onNext);
     eventBus.subscribe(BlockImported.class, importedBlockFlux::onNext);
 
     if (validatorCred != null) {
