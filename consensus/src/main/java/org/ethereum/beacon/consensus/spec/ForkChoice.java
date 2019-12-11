@@ -26,22 +26,22 @@ import tech.pegasys.artemis.ethereum.core.Hash32;
 public interface ForkChoice extends HelperFunction, SpecStateTransition {
 
   /*
-    def get_genesis_store(genesis_state: BeaconState) -> Store:
-      genesis_block = BeaconBlock(state_root=hash_tree_root(genesis_state))
-      root = signing_root(genesis_block)
-      justified_checkpoint = Checkpoint(epoch=GENESIS_EPOCH, root=root)
-      finalized_checkpoint = Checkpoint(epoch=GENESIS_EPOCH, root=root)
-      return Store(
-          time=genesis_state.genesis_time,
-          genesis_time=genesis_state.genesis_time,
-          justified_checkpoint=justified_checkpoint,
-          finalized_checkpoint=finalized_checkpoint,
-          best_justified_checkpoint=justified_checkpoint,
-          blocks={root: genesis_block},
-          block_states={root: genesis_state.copy()},
-          checkpoint_states={justified_checkpoint: genesis_state.copy()},
-      )
-   */
+   def get_genesis_store(genesis_state: BeaconState) -> Store:
+     genesis_block = BeaconBlock(state_root=hash_tree_root(genesis_state))
+     root = signing_root(genesis_block)
+     justified_checkpoint = Checkpoint(epoch=GENESIS_EPOCH, root=root)
+     finalized_checkpoint = Checkpoint(epoch=GENESIS_EPOCH, root=root)
+     return Store(
+         time=genesis_state.genesis_time,
+         genesis_time=genesis_state.genesis_time,
+         justified_checkpoint=justified_checkpoint,
+         finalized_checkpoint=finalized_checkpoint,
+         best_justified_checkpoint=justified_checkpoint,
+         blocks={root: genesis_block},
+         block_states={root: genesis_state.copy()},
+         checkpoint_states={justified_checkpoint: genesis_state.copy()},
+     )
+  */
   default <T extends Store> T get_genesis_store(BeaconState genesisState, T store) {
     BeaconBlock genesisBlock = get_empty_block().withStateRoot(hash_tree_root(genesisState));
     Hash32 root = signing_root(genesisBlock);
@@ -61,15 +61,15 @@ public interface ForkChoice extends HelperFunction, SpecStateTransition {
   }
 
   /*
-    def get_ancestor(store: Store, root: Hash, slot: Slot) -> Hash:
-      block = store.blocks[root]
-      if block.slot > slot:
-          return get_ancestor(store, block.parent_root, slot)
-      elif block.slot == slot:
-          return root
-      else:
-          return Bytes32()  # root is older than queried slot: no results.
-   */
+   def get_ancestor(store: Store, root: Hash, slot: Slot) -> Hash:
+     block = store.blocks[root]
+     if block.slot > slot:
+         return get_ancestor(store, block.parent_root, slot)
+     elif block.slot == slot:
+         return root
+     else:
+         return Bytes32()  # root is older than queried slot: no results.
+  */
   default Optional<Hash32> get_ancestor(Store store, Hash32 root, SlotNumber slot) {
     Optional<BeaconBlock> aBlock = store.getBlock(root);
     if (!aBlock.isPresent()) {
@@ -87,15 +87,15 @@ public interface ForkChoice extends HelperFunction, SpecStateTransition {
   }
 
   /*
-    def get_latest_attesting_balance(store: Store, root: Hash) -> Gwei:
-      state = store.checkpoint_states[store.justified_checkpoint]
-      active_indices = get_active_validator_indices(state, get_current_epoch(state))
-      return Gwei(sum(
-          state.validators[i].effective_balance for i in active_indices
-          if (i in store.latest_messages
-              and get_ancestor(store, store.latest_messages[i].root, store.blocks[root].slot) == root)
-      ))
-   */
+   def get_latest_attesting_balance(store: Store, root: Hash) -> Gwei:
+     state = store.checkpoint_states[store.justified_checkpoint]
+     active_indices = get_active_validator_indices(state, get_current_epoch(state))
+     return Gwei(sum(
+         state.validators[i].effective_balance for i in active_indices
+         if (i in store.latest_messages
+             and get_ancestor(store, store.latest_messages[i].root, store.blocks[root].slot) == root)
+     ))
+  */
   default Gwei get_latest_attesting_balance(Store store, Hash32 root) {
     Optional<BeaconState> state = store.getCheckpointState(store.getJustifiedCheckpoint());
     if (!state.isPresent()) {
@@ -106,38 +106,39 @@ public interface ForkChoice extends HelperFunction, SpecStateTransition {
         get_active_validator_indices(state.get(), get_current_epoch(state.get()));
 
     return active_indices.stream()
-        .filter(i -> {
-          Optional<LatestMessage> latest_message = store.getLatestMessage(i);
-          Optional<BeaconBlock> block = store.getBlock(root);
+        .filter(
+            i -> {
+              Optional<LatestMessage> latest_message = store.getLatestMessage(i);
+              Optional<BeaconBlock> block = store.getBlock(root);
 
-          if (!latest_message.isPresent() || !block.isPresent()) {
-            return false;
-          }
+              if (!latest_message.isPresent() || !block.isPresent()) {
+                return false;
+              }
 
-          Optional<Hash32> ancestor =
-              get_ancestor(store, latest_message.get().root, block.get().getSlot());
+              Optional<Hash32> ancestor =
+                  get_ancestor(store, latest_message.get().root, block.get().getSlot());
 
-          return ancestor.map(hash32 -> hash32.equals(root)).orElse(false);
-        })
+              return ancestor.map(hash32 -> hash32.equals(root)).orElse(false);
+            })
         .map(i -> state.get().getValidators().get(i).getEffectiveBalance())
         .reduce(Gwei.ZERO, Gwei::plus);
   }
 
   /*
-    def get_head(store: Store) -> Hash:
-      # Execute the LMD-GHOST fork choice
-      head = store.justified_checkpoint.root
-      justified_slot = compute_start_slot_of_epoch(store.justified_checkpoint.epoch)
-      while True:
-          children = [
-              root for root in store.blocks.keys()
-              if store.blocks[root].parent_root == head and store.blocks[root].slot > justified_slot
-          ]
-          if len(children) == 0:
-              return head
-          # Sort by latest attesting balance with ties broken lexicographically
-          head = max(children, key=lambda root: (get_latest_attesting_balance(store, root), root))
-   */
+   def get_head(store: Store) -> Hash:
+     # Execute the LMD-GHOST fork choice
+     head = store.justified_checkpoint.root
+     justified_slot = compute_start_slot_of_epoch(store.justified_checkpoint.epoch)
+     while True:
+         children = [
+             root for root in store.blocks.keys()
+             if store.blocks[root].parent_root == head and store.blocks[root].slot > justified_slot
+         ]
+         if len(children) == 0:
+             return head
+         # Sort by latest attesting balance with ties broken lexicographically
+         head = max(children, key=lambda root: (get_latest_attesting_balance(store, root), root))
+  */
   default Hash32 get_head(Store store) {
     // Execute the LMD-GHOST fork choice
     Hash32 head = store.getJustifiedCheckpoint().getRoot();
@@ -147,9 +148,10 @@ public interface ForkChoice extends HelperFunction, SpecStateTransition {
         return head;
       }
 
-      head = children.stream()
-          .max(Comparator.comparing(root -> get_latest_attesting_balance(store, root)))
-          .get();
+      head =
+          children.stream()
+              .max(Comparator.comparing(root -> get_latest_attesting_balance(store, root)))
+              .get();
     }
   }
 
@@ -451,14 +453,14 @@ public interface ForkChoice extends HelperFunction, SpecStateTransition {
     assertTrue(target.getEpoch().equals(current_epoch) || target.getEpoch().equals(previous_epoch));
     // # Cannot calculate the current shuffling if have not seen the target
     // assert target.root in store.blocks
-    assertTrue(store.getBlock(target.getRoot()).isPresent());
+    assertThat(store.getBlock(target.getRoot()).isPresent(), NoTargetRootException.class);
     // # Attestations cannot be from future epochs. If they are, delay consideration until the epoch
     // arrives
     // base_state = store.block_states[target.root].copy()
     MutableBeaconState base_state = store.getState(target.getRoot()).get().createMutableCopy();
     // assert store.time >= base_state.genesis_time + compute_start_slot_at_epoch(target.epoch) *
     // SECONDS_PER_SLOT
-    assertTrue(
+    assertThat(
         store
             .getTime()
             .greaterEqual(
@@ -467,12 +469,13 @@ public interface ForkChoice extends HelperFunction, SpecStateTransition {
                     .plus(
                         getConstants()
                             .getSecondsPerSlot()
-                            .times(compute_start_slot_at_epoch(target.getEpoch())))));
+                            .times(compute_start_slot_at_epoch(target.getEpoch())))),
+        TargetEpochIsInTheFutureException.class);
     // # Attestations must be for a known block. If block is unknown, delay consideration until the
     // block is found
     // assert attestation.data.beacon_block_root in store.blocks
     Optional<BeaconBlock> block = store.getBlock(attestation.getData().getBeaconBlockRoot());
-    assertTrue(block.isPresent());
+    assertThat(block.isPresent(), NoBlockRootException.class);
     // # Attestations must not be for blocks in the future. If not, the attestation should not be
     // considered
     // assert store.blocks[attestation.data.beacon_block_root].slot <= attestation.data.slot
@@ -520,4 +523,16 @@ public interface ForkChoice extends HelperFunction, SpecStateTransition {
       }
     }
   }
+
+  class BlockIsInTheFutureException extends SpecAssertionFailed {}
+
+  class NoParentBlockException extends SpecAssertionFailed {}
+
+  class EarlyForkChoiceConsiderationException extends SpecAssertionFailed {}
+
+  class NoTargetRootException extends SpecAssertionFailed {}
+
+  class TargetEpochIsInTheFutureException extends SpecAssertionFailed {}
+
+  class NoBlockRootException extends SpecAssertionFailed {}
 }

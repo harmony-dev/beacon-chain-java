@@ -68,10 +68,4 @@ public interface SpecCommons {
       return "";
     }
   }
-
-  class BlockIsInTheFutureException extends SpecAssertionFailed {}
-
-  class NoParentBlockException extends SpecAssertionFailed {}
-
-  class EarlyForkChoiceConsiderationException extends SpecAssertionFailed {}
 }

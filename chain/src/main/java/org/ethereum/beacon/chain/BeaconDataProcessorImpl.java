@@ -6,15 +6,18 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.chain.eventbus.EventBus;
 import org.ethereum.beacon.chain.eventbus.events.AttestationConsiderationDelayed;
+import org.ethereum.beacon.chain.eventbus.events.AttestationDequeued;
+import org.ethereum.beacon.chain.eventbus.events.AttestationMetNoBlockRoot;
+import org.ethereum.beacon.chain.eventbus.events.AttestationMetNoTargetRoot;
 import org.ethereum.beacon.chain.eventbus.events.AttestationProduced;
 import org.ethereum.beacon.chain.eventbus.events.AttestationReceived;
-import org.ethereum.beacon.chain.eventbus.events.AttestationUnparked;
+import org.ethereum.beacon.chain.eventbus.events.AttestationTargetEpochHasNotCome;
 import org.ethereum.beacon.chain.eventbus.events.BlockConsiderationDelayed;
+import org.ethereum.beacon.chain.eventbus.events.BlockDequeued;
 import org.ethereum.beacon.chain.eventbus.events.BlockImported;
 import org.ethereum.beacon.chain.eventbus.events.BlockMetNoParent;
 import org.ethereum.beacon.chain.eventbus.events.BlockProposed;
 import org.ethereum.beacon.chain.eventbus.events.BlockReceived;
-import org.ethereum.beacon.chain.eventbus.events.BlockUnparked;
 import org.ethereum.beacon.chain.eventbus.events.ObservableStateUpdated;
 import org.ethereum.beacon.chain.eventbus.events.ProposedBlockImported;
 import org.ethereum.beacon.chain.eventbus.events.SlotTick;
@@ -27,16 +30,25 @@ import org.ethereum.beacon.chain.processor.DelayedAttestationQueue;
 import org.ethereum.beacon.chain.processor.DelayedAttestationQueueImpl;
 import org.ethereum.beacon.chain.processor.DelayedBlockQueue;
 import org.ethereum.beacon.chain.processor.DelayedBlockQueueImpl;
+import org.ethereum.beacon.chain.processor.DelayedUntilTargetEpochQueue;
+import org.ethereum.beacon.chain.processor.DelayedUntilTargetEpochQueueImpl;
+import org.ethereum.beacon.chain.processor.NoBlockRootAttestationQueue;
+import org.ethereum.beacon.chain.processor.NoBlockRootAttestationQueueImpl;
 import org.ethereum.beacon.chain.processor.NoParentBlockQueue;
 import org.ethereum.beacon.chain.processor.NoParentBlockQueueImpl;
+import org.ethereum.beacon.chain.processor.NoTargetRootAttestationQueue;
+import org.ethereum.beacon.chain.processor.NoTargetRootAttestationQueueImpl;
 import org.ethereum.beacon.chain.store.TransactionalStore;
 import org.ethereum.beacon.chain.store.TransactionalStore.StoreTx;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconStateEx;
 import org.ethereum.beacon.consensus.TransitionType;
-import org.ethereum.beacon.consensus.spec.SpecCommons.BlockIsInTheFutureException;
-import org.ethereum.beacon.consensus.spec.SpecCommons.EarlyForkChoiceConsiderationException;
-import org.ethereum.beacon.consensus.spec.SpecCommons.NoParentBlockException;
+import org.ethereum.beacon.consensus.spec.ForkChoice.BlockIsInTheFutureException;
+import org.ethereum.beacon.consensus.spec.ForkChoice.EarlyForkChoiceConsiderationException;
+import org.ethereum.beacon.consensus.spec.ForkChoice.NoBlockRootException;
+import org.ethereum.beacon.consensus.spec.ForkChoice.NoParentBlockException;
+import org.ethereum.beacon.consensus.spec.ForkChoice.NoTargetRootException;
+import org.ethereum.beacon.consensus.spec.ForkChoice.TargetEpochIsInTheFutureException;
 import org.ethereum.beacon.consensus.spec.SpecCommons.SpecAssertionFailed;
 import org.ethereum.beacon.consensus.transition.BeaconStateExImpl;
 import org.ethereum.beacon.core.BeaconBlock;
@@ -62,6 +74,9 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
   private final DelayedBlockQueue delayedBlockQueue;
   private final DelayedAttestationQueue delayedAttestationQueue;
   private final NoParentBlockQueue noParentBlockQueue;
+  private final NoTargetRootAttestationQueue noTargetRootAttestationQueue;
+  private final NoBlockRootAttestationQueue noBlockRootAttestationQueue;
+  private final DelayedUntilTargetEpochQueue delayedUntilTargetEpochQueue;
 
   public BeaconDataProcessorImpl(
       BeaconChainSpec spec, TransactionalStore store, EventBus eventBus) {
@@ -77,14 +92,20 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
     this.delayedBlockQueue = new DelayedBlockQueueImpl(this.eventBus);
     this.delayedAttestationQueue = new DelayedAttestationQueueImpl(this.eventBus);
     this.noParentBlockQueue = new NoParentBlockQueueImpl(this.eventBus, this.spec);
+    this.noTargetRootAttestationQueue =
+        new NoTargetRootAttestationQueueImpl(this.eventBus, this.spec);
+    this.noBlockRootAttestationQueue =
+        new NoBlockRootAttestationQueueImpl(this.eventBus, this.spec);
+    this.delayedUntilTargetEpochQueue =
+        new DelayedUntilTargetEpochQueueImpl(this.eventBus, this.spec);
 
     this.eventBus.subscribe(TimeTick.class, this::onTick);
     this.eventBus.subscribe(SlotTick.class, slot -> this.yieldObservableState(TransitionType.SLOT));
     this.eventBus.subscribe(BlockReceived.class, this::onBlock);
-    this.eventBus.subscribe(BlockUnparked.class, this::onBlock);
+    this.eventBus.subscribe(BlockDequeued.class, this::onBlock);
     this.eventBus.subscribe(BlockProposed.class, this::onBlockProposed);
     this.eventBus.subscribe(AttestationReceived.class, this::onAttestation);
-    this.eventBus.subscribe(AttestationUnparked.class, this::onAttestation);
+    this.eventBus.subscribe(AttestationDequeued.class, this::onAttestation);
     this.eventBus.subscribe(AttestationProduced.class, this::onAttestation);
 
     this.eventBus.subscribe(SlotTick.class, attestationPool::onTick);
@@ -99,6 +120,18 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
     this.eventBus.subscribe(BlockConsiderationDelayed.class, delayedBlockQueue::onBlock);
 
     this.eventBus.subscribe(BlockMetNoParent.class, noParentBlockQueue::onBlockWithNoParent);
+
+    this.eventBus.subscribe(
+        AttestationMetNoTargetRoot.class, noTargetRootAttestationQueue::onAttestation);
+    this.eventBus.subscribe(BlockImported.class, noTargetRootAttestationQueue::onBlock);
+
+    this.eventBus.subscribe(
+        AttestationMetNoBlockRoot.class, noBlockRootAttestationQueue::onAttestation);
+    this.eventBus.subscribe(BlockImported.class, noBlockRootAttestationQueue::onBlock);
+
+    this.eventBus.subscribe(
+        AttestationTargetEpochHasNotCome.class, delayedUntilTargetEpochQueue::onAttestation);
+    this.eventBus.subscribe(SlotTick.class, delayedUntilTargetEpochQueue::onTick);
   }
 
   @Override
@@ -218,6 +251,15 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
       // delay attestation consideration
       eventBus.publish(AttestationConsiderationDelayed.wrap(attestation));
       logger.debug("Delay attestation: " + attestation);
+    } catch (NoTargetRootException e) {
+      eventBus.publish(AttestationMetNoTargetRoot.wrap(attestation));
+      logger.info("No target root found for attestation: " + attestation);
+    } catch (TargetEpochIsInTheFutureException e) {
+      eventBus.publish(AttestationTargetEpochHasNotCome.wrap(attestation));
+      logger.info("Target epoch has not yet come: " + attestation);
+    } catch (NoBlockRootException e) {
+      eventBus.publish(AttestationMetNoBlockRoot.wrap(attestation));
+      logger.info("No block root found for attestation: " + attestation);
     }
   }
 }
