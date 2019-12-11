@@ -1,11 +1,13 @@
 package org.ethereum.beacon.chain.processor;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 import org.ethereum.beacon.chain.eventbus.EventBus;
-import org.ethereum.beacon.chain.eventbus.events.BlockDequeued;
+import org.ethereum.beacon.chain.eventbus.events.BlockBatchDequeued;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.types.SlotNumber;
 
@@ -22,9 +24,9 @@ public class DelayedBlockQueueImpl implements DelayedBlockQueue {
   @Override
   public void onTick(SlotNumber slot) {
     SortedMap<SlotNumber, Set<BeaconBlock>> pastBlocks = blocks.headMap(slot, true);
-    pastBlocks
-        .values()
-        .forEach(slotBucket -> slotBucket.forEach(b -> eventBus.publish(BlockDequeued.wrap(b))));
+    Set<BeaconBlock> blocksDequeued =
+        pastBlocks.values().stream().flatMap(Collection::stream).collect(Collectors.toSet());
+    eventBus.publish(BlockBatchDequeued.wrap(blocksDequeued));
     blocks.keySet().removeAll(pastBlocks.keySet());
   }
 

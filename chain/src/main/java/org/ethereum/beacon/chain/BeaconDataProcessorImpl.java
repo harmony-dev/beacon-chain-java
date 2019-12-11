@@ -1,19 +1,21 @@
 package org.ethereum.beacon.chain;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.ethereum.beacon.chain.eventbus.EventBus;
+import org.ethereum.beacon.chain.eventbus.events.AttestationBatchDequeued;
+import org.ethereum.beacon.chain.eventbus.events.AttestationBatchReceived;
 import org.ethereum.beacon.chain.eventbus.events.AttestationConsiderationDelayed;
-import org.ethereum.beacon.chain.eventbus.events.AttestationDequeued;
 import org.ethereum.beacon.chain.eventbus.events.AttestationMetNoBlockRoot;
 import org.ethereum.beacon.chain.eventbus.events.AttestationMetNoTargetRoot;
 import org.ethereum.beacon.chain.eventbus.events.AttestationProduced;
 import org.ethereum.beacon.chain.eventbus.events.AttestationReceived;
 import org.ethereum.beacon.chain.eventbus.events.AttestationTargetEpochHasNotCome;
+import org.ethereum.beacon.chain.eventbus.events.BlockBatchDequeued;
 import org.ethereum.beacon.chain.eventbus.events.BlockConsiderationDelayed;
-import org.ethereum.beacon.chain.eventbus.events.BlockDequeued;
 import org.ethereum.beacon.chain.eventbus.events.BlockImported;
 import org.ethereum.beacon.chain.eventbus.events.BlockMetNoParent;
 import org.ethereum.beacon.chain.eventbus.events.BlockProposed;
@@ -102,11 +104,12 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
     this.eventBus.subscribe(TimeTick.class, this::onTick);
     this.eventBus.subscribe(SlotTick.class, slot -> this.yieldObservableState(TransitionType.SLOT));
     this.eventBus.subscribe(BlockReceived.class, this::onBlock);
-    this.eventBus.subscribe(BlockDequeued.class, this::onBlock);
     this.eventBus.subscribe(BlockProposed.class, this::onBlockProposed);
+    this.eventBus.subscribe(BlockBatchDequeued.class, this::onBlocksDequeued);
     this.eventBus.subscribe(AttestationReceived.class, this::onAttestation);
-    this.eventBus.subscribe(AttestationDequeued.class, this::onAttestation);
     this.eventBus.subscribe(AttestationProduced.class, this::onAttestation);
+    this.eventBus.subscribe(AttestationBatchReceived.class, this::onAttestations);
+    this.eventBus.subscribe(AttestationBatchDequeued.class, this::onAttestations);
 
     this.eventBus.subscribe(SlotTick.class, attestationPool::onTick);
     this.eventBus.subscribe(AttestationReceived.class, attestationPool::onAttestation);
@@ -188,10 +191,7 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
   @Override
   public void onBlock(BeaconBlock block) {
     // first of all, put all attestation to event bus in order to get them processed later
-    block
-        .getBody()
-        .getAttestations()
-        .forEach(attestation -> eventBus.publish(AttestationReceived.wrap(attestation)));
+    eventBus.publish(AttestationBatchReceived.wrap(block.getBody().getAttestations().listCopy()));
     onBlockImpl(block);
   }
 
@@ -240,33 +240,57 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
     }
   }
 
+  void onBlocksDequeued(Collection<BeaconBlock> blocks) {
+    boolean atLeastOneWasImported =
+        blocks.stream().map(this::onBlockImpl).reduce(false, Boolean::logicalOr);
+    if (atLeastOneWasImported) {
+      yieldObservableState(TransitionType.BLOCK);
+    }
+  }
+
   @Override
   public void onAttestation(Attestation attestation) {
+    if (onAttestationImpl(attestation)) {
+      yieldObservableState(TransitionType.UNKNOWN);
+    }
+  }
+
+  void onAttestations(Collection<Attestation> attestations) {
+    boolean atLeastOneWasApplied =
+        attestations.stream().map(this::onAttestationImpl).reduce(false, Boolean::logicalOr);
+    if (atLeastOneWasApplied) {
+      yieldObservableState(TransitionType.UNKNOWN);
+    }
+  }
+
+  boolean onAttestationImpl(Attestation attestation) {
     StoreTx storeTx = store.newTx();
 
     try {
       forkChoice.on_attestation(storeTx, attestation);
       storeTx.commit();
-
-      // FIXME suboptimal, no need to compute observable state on each attestation
-      yieldObservableState(TransitionType.UNKNOWN);
-
       logger.info("Processed attestation: " + attestation);
+      return true;
     } catch (EarlyForkChoiceConsiderationException e) {
       // delay attestation consideration
       eventBus.publish(AttestationConsiderationDelayed.wrap(attestation));
       logger.debug("Delay attestation: " + attestation);
+      return false;
     } catch (NoTargetRootException e) {
       eventBus.publish(AttestationMetNoTargetRoot.wrap(attestation));
       logger.info("No target root found for attestation: " + attestation);
+      return false;
     } catch (TargetEpochIsInTheFutureException e) {
       eventBus.publish(AttestationTargetEpochHasNotCome.wrap(attestation));
       logger.info("Target epoch has not yet come: " + attestation);
+      return false;
     } catch (NoBlockRootException e) {
       eventBus.publish(AttestationMetNoBlockRoot.wrap(attestation));
       logger.info("No block root found for attestation: " + attestation);
+      return false;
     } catch (SpecAssertionFailed e) {
       logger.error("Failed to process an attestation: " + attestation, e);
+      return false;
     }
   }
 }

@@ -5,7 +5,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.ethereum.beacon.chain.eventbus.EventBus;
-import org.ethereum.beacon.chain.eventbus.events.BlockDequeued;
+import org.ethereum.beacon.chain.eventbus.events.BlockBatchDequeued;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.BeaconBlock;
 import tech.pegasys.artemis.ethereum.core.Hash32;
@@ -33,7 +33,7 @@ public class NoParentBlockQueueImpl implements NoParentBlockQueue {
   public void onImportedBlock(BeaconBlock parent) {
     Set<BeaconBlock> bucket = blocks.remove(spec.signing_root(parent));
     if (bucket != null) {
-      bucket.forEach(block -> eventBus.publish(BlockDequeued.wrap(block)));
+      eventBus.publish(BlockBatchDequeued.wrap(bucket));
     }
   }
 }

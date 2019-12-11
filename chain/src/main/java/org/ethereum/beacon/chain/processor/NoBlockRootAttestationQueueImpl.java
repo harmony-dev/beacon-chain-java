@@ -5,7 +5,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.ethereum.beacon.chain.eventbus.EventBus;
-import org.ethereum.beacon.chain.eventbus.events.AttestationDequeued;
+import org.ethereum.beacon.chain.eventbus.events.AttestationBatchDequeued;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.BeaconBlock;
 import org.ethereum.beacon.core.operations.Attestation;
@@ -27,7 +27,7 @@ public class NoBlockRootAttestationQueueImpl implements NoBlockRootAttestationQu
   public void onBlock(BeaconBlock block) {
     Set<Attestation> bucket = attestations.remove(spec.signing_root(block));
     if (bucket != null) {
-      bucket.forEach(attestation -> eventBus.publish(AttestationDequeued.wrap(attestation)));
+      eventBus.publish(AttestationBatchDequeued.wrap(bucket));
     }
   }
 

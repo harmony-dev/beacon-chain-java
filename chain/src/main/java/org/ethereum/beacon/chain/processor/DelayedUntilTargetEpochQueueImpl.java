@@ -5,7 +5,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.ethereum.beacon.chain.eventbus.EventBus;
-import org.ethereum.beacon.chain.eventbus.events.AttestationDequeued;
+import org.ethereum.beacon.chain.eventbus.events.AttestationBatchDequeued;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.types.SlotNumber;
@@ -26,7 +26,7 @@ public class DelayedUntilTargetEpochQueueImpl implements DelayedUntilTargetEpoch
   public void onTick(SlotNumber slot) {
     Set<Attestation> bucket = attestations.remove(slot);
     if (bucket != null) {
-      bucket.forEach(attestation -> eventBus.publish(AttestationDequeued.wrap(attestation)));
+      eventBus.publish(AttestationBatchDequeued.wrap(bucket));
     }
   }
 
