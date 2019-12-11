@@ -1,6 +1,8 @@
 package org.ethereum.beacon.chain;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -28,11 +30,17 @@ public class LMDGhostHeadFunction implements HeadFunction {
 
   private final BeaconChainStorage chainStorage;
   private final BeaconChainSpec spec;
+  private final Map<Checkpoint, BeaconState> checkpointStorage = new HashMap<>();
   private final int SEARCH_LIMIT = Integer.MAX_VALUE;
 
   public LMDGhostHeadFunction(BeaconChainStorage chainStorage, BeaconChainSpec spec) {
     this.chainStorage = chainStorage;
     this.spec = spec;
+
+    Checkpoint justifiedCheckpoint = chainStorage.getJustifiedStorage().get().get();
+    checkpointStorage.put(
+        justifiedCheckpoint,
+        chainStorage.getTupleStorage().get(justifiedCheckpoint.getRoot()).get().getState());
   }
 
   @Override
@@ -100,12 +108,12 @@ public class LMDGhostHeadFunction implements HeadFunction {
 
       @Override
       public Optional<BeaconState> getCheckpointState(Checkpoint checkpoint) {
-        throw new UnsupportedOperationException("not yet implemented");
+        return Optional.ofNullable(checkpointStorage.getOrDefault(checkpoint, null));
       }
 
       @Override
       public void setCheckpointState(Checkpoint checkpoint, BeaconState state) {
-        throw new UnsupportedOperationException("not yet implemented");
+        checkpointStorage.put(checkpoint, state);
       }
 
       @Override
@@ -120,7 +128,7 @@ public class LMDGhostHeadFunction implements HeadFunction {
 
       @Override
       public Optional<BeaconState> getState(Hash32 root) {
-        return chainStorage.getStateStorage().get(root);
+        return chainStorage.getTupleStorage().get(root).map(BeaconTuple::getState);
       }
 
       @Override
