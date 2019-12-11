@@ -227,7 +227,7 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
       return false;
     } catch (SpecAssertionFailed e) {
       logger.error(
-          "Fail to import a block: "
+          "Failed to import a block: "
               + block.toStringFull(spec.getConstants(), Time.ZERO, spec::signing_root),
           e);
       return false;
@@ -265,6 +265,8 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
     } catch (NoBlockRootException e) {
       eventBus.publish(AttestationMetNoBlockRoot.wrap(attestation));
       logger.info("No block root found for attestation: " + attestation);
+    } catch (SpecAssertionFailed e) {
+      logger.error("Failed to process an attestation: " + attestation, e);
     }
   }
 }
