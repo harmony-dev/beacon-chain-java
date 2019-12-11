@@ -187,6 +187,11 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
 
   @Override
   public void onBlock(BeaconBlock block) {
+    // first of all, put all attestation to event bus in order to get them processed later
+    block
+        .getBody()
+        .getAttestations()
+        .forEach(attestation -> eventBus.publish(AttestationReceived.wrap(attestation)));
     onBlockImpl(block);
   }
 
