@@ -104,7 +104,7 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
         new DelayedUntilTargetEpochQueueImpl(this.eventBus, this.spec);
 
     this.eventBus.subscribe(TimeTick.class, this::onTick);
-    this.eventBus.subscribe(SlotTick.class, slot -> this.yieldProposerState());
+    this.eventBus.subscribe(SlotTick.class, this::onTick);
     this.eventBus.subscribe(BlockReceived.class, this::onBlock);
     this.eventBus.subscribe(BlockProposed.class, this::onBlockProposed);
     this.eventBus.subscribe(BlockBatchDequeued.class, this::onBlocksDequeued);
@@ -151,16 +151,21 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
     storeTx.commit();
 
     SlotNumber currentSlot = forkChoice.get_current_slot(store);
-    // tick on new slot
-    if (currentSlot.greater(previousSlot)) {
-      onTick(currentSlot);
+    // publish slot upon a genesis time
+    // and each time it's been updated
+    if (store.getGenesisTime().equals(store.getTime()) || currentSlot.greater(previousSlot)) {
+      eventBus.publish(SlotTick.wrap(currentSlot));
     }
 
     logger.trace("On after tick: " + time);
   }
 
   void onTick(SlotNumber slot) {
-    eventBus.publish(SlotTick.wrap(slot));
+    if (slot.greater(spec.getConstants().getGenesisSlot())) {
+      yieldProposerState();
+    } else {
+      yieldAttesterState();
+    }
   }
 
   void yieldProposerState() {

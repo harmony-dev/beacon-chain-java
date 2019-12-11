@@ -2,10 +2,10 @@ package org.ethereum.beacon.chain;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 
 import java.util.Collections;
 import org.ethereum.beacon.chain.eventbus.EventBus;
+import org.ethereum.beacon.chain.eventbus.events.AttesterStateUpdated;
 import org.ethereum.beacon.chain.eventbus.events.ProposerStateUpdated;
 import org.ethereum.beacon.chain.eventbus.events.TimeTick;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
@@ -31,33 +31,41 @@ public class BeaconDataProcessorTest {
             .withComputableGenesisTime(false)
             .build();
 
+    Time genesisTime = Time.of(1);
     BeaconState genesisState =
-        spec.initialize_beacon_state_from_eth1(Hash32.ZERO, Time.of(0), Collections.emptyList());
+        spec.initialize_beacon_state_from_eth1(Hash32.ZERO, genesisTime, Collections.emptyList());
     TransactionalStore store =
         spec.get_genesis_store(genesisState, TransactionalStore.inMemoryStore());
 
     ControlledSchedulers schedulers = Schedulers.createControlled();
+    schedulers.setCurrentTime(0);
     EventBus eventBus = EventBus.create(schedulers);
     BeaconDataProcessor processor = new BeaconDataProcessorImpl(spec, store, eventBus);
 
     ObservableStateHolder recentState = new ObservableStateHolder();
+    eventBus.subscribe(AttesterStateUpdated.class, recentState::set);
     eventBus.subscribe(ProposerStateUpdated.class, recentState::set);
 
-    eventBus.publish(TimeTick.wrap(Time.of(2)));
-    schedulers.addTime(1);
-
-    assertNull(recentState.state);
-
-    eventBus.publish(TimeTick.wrap(spec.getConstants().getSecondsPerSlot()));
+    eventBus.publish(TimeTick.wrap(genesisTime));
     schedulers.addTime(1);
 
     assertNotNull(recentState.state);
-    assertEquals(SlotNumber.of(1), recentState.state.getLatestSlotState().getSlot());
-  }
+    assertEquals(
+        SlotNumber.of(0).plus(spec.getConstants().getGenesisSlot()),
+        recentState.state.getLatestSlotState().getSlot());
 
+    eventBus.publish(TimeTick.wrap(genesisTime.plus(spec.getConstants().getSecondsPerSlot())));
+    schedulers.addTime(1);
+
+    assertNotNull(recentState.state);
+    assertEquals(
+        SlotNumber.of(1).plus(spec.getConstants().getGenesisSlot()),
+        recentState.state.getLatestSlotState().getSlot());
+  }
 
   private static class ObservableStateHolder {
     private ObservableBeaconState state;
+
     private void set(ObservableBeaconState state) {
       this.state = state;
     }
