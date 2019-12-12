@@ -1,8 +1,6 @@
 package org.ethereum.beacon.chain;
 
 import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -15,7 +13,6 @@ import org.ethereum.beacon.chain.eventbus.events.AttestationMetNoTargetRoot;
 import org.ethereum.beacon.chain.eventbus.events.AttestationProduced;
 import org.ethereum.beacon.chain.eventbus.events.AttestationReceived;
 import org.ethereum.beacon.chain.eventbus.events.AttestationTargetEpochHasNotCome;
-import org.ethereum.beacon.chain.eventbus.events.AttesterStateUpdated;
 import org.ethereum.beacon.chain.eventbus.events.BlockBatchDequeued;
 import org.ethereum.beacon.chain.eventbus.events.BlockConsiderationDelayed;
 import org.ethereum.beacon.chain.eventbus.events.BlockImported;
@@ -24,13 +21,13 @@ import org.ethereum.beacon.chain.eventbus.events.BlockProposed;
 import org.ethereum.beacon.chain.eventbus.events.BlockReceived;
 import org.ethereum.beacon.chain.eventbus.events.ChainStarted;
 import org.ethereum.beacon.chain.eventbus.events.ProposedBlockImported;
-import org.ethereum.beacon.chain.eventbus.events.ProposerStateUpdated;
 import org.ethereum.beacon.chain.eventbus.events.SlotTick;
+import org.ethereum.beacon.chain.eventbus.events.StateAtTheBeginningOfSlotYielded;
+import org.ethereum.beacon.chain.eventbus.events.StateThroughoutSlotYielded;
 import org.ethereum.beacon.chain.eventbus.events.TimeTick;
-import org.ethereum.beacon.chain.observer.ObservableBeaconState;
-import org.ethereum.beacon.chain.observer.PendingOperationsState;
 import org.ethereum.beacon.chain.processor.AttestationPool;
 import org.ethereum.beacon.chain.processor.AttestationPoolImpl;
+import org.ethereum.beacon.chain.processor.BeaconStateAtTheTip;
 import org.ethereum.beacon.chain.processor.DelayedAttestationQueue;
 import org.ethereum.beacon.chain.processor.DelayedAttestationQueueImpl;
 import org.ethereum.beacon.chain.processor.DelayedBlockQueue;
@@ -93,7 +90,7 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
     this.store = store;
     this.eventBus = eventBus;
 
-    this.attestationPool = new AttestationPoolImpl(spec);
+    this.attestationPool = new AttestationPoolImpl(this.eventBus, this.spec);
     this.delayedBlockQueue = new DelayedBlockQueueImpl(this.eventBus);
     this.delayedAttestationQueue = new DelayedAttestationQueueImpl(this.eventBus);
     this.noParentBlockQueue = new NoParentBlockQueueImpl(this.eventBus, this.spec);
@@ -118,6 +115,8 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
     this.eventBus.subscribe(SlotTick.class, attestationPool::onTick);
     this.eventBus.subscribe(AttestationReceived.class, attestationPool::onAttestation);
     this.eventBus.subscribe(AttestationProduced.class, attestationPool::onAttestation);
+    this.eventBus.subscribe(
+        StateAtTheBeginningOfSlotYielded.class, attestationPool::onStateAtTheBeginningOfSlot);
 
     this.eventBus.subscribe(SlotTick.class, delayedAttestationQueue::onTick);
     this.eventBus.subscribe(
@@ -185,43 +184,28 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
   }
 
   void onTick(SlotNumber slot) {
-    if (slot.greater(spec.getConstants().getGenesisSlot())) {
-      yieldProposerState();
-    } else {
-      yieldAttesterState();
-    }
+    yieldStateAtTheBeginningOfSlot();
   }
 
-  void yieldProposerState() {
-    ObservableBeaconState observableState = computeObservableState(TransitionType.SLOT);
-    List<Attestation> attestations =
-        attestationPool.getOffChainAttestations(observableState.getLatestSlotState());
-    ObservableBeaconState withAttestations =
-        new ObservableBeaconState(
-            observableState.getHead(),
-            observableState.getLatestSlotState(),
-            new PendingOperationsState(attestations));
-    eventBus.publish(ProposerStateUpdated.wrap(withAttestations));
+  void yieldStateAtTheBeginningOfSlot() {
+    BeaconStateAtTheTip stateAtTheTip = computeStateAtTheTip(TransitionType.SLOT);
+    eventBus.publish(StateAtTheBeginningOfSlotYielded.wrap(stateAtTheTip));
 
     logger.trace(
-        "Proposer state updated: "
-            + observableState
-                .getLatestSlotState()
-                .toString(spec.getConstants(), spec::signing_root));
+        "Yield state at the beginning of slot: "
+            + stateAtTheTip.getLatestSlotState().toString(spec.getConstants(), spec::signing_root));
   }
 
-  void yieldAttesterState() {
-    ObservableBeaconState observableState = computeObservableState(TransitionType.UNKNOWN);
-    eventBus.publish(AttesterStateUpdated.wrap(observableState));
+  void yieldStateThroughoutSlot() {
+    BeaconStateAtTheTip stateAtTheTip = computeStateAtTheTip(TransitionType.UNKNOWN);
+    eventBus.publish(StateThroughoutSlotYielded.wrap(stateAtTheTip));
 
     logger.trace(
-        "Attester state updated: "
-            + observableState
-                .getLatestSlotState()
-                .toString(spec.getConstants(), spec::signing_root));
+        "Yield state throughout a slot: "
+            + stateAtTheTip.getLatestSlotState().toString(spec.getConstants(), spec::signing_root));
   }
 
-  ObservableBeaconState computeObservableState(TransitionType transitionType) {
+  BeaconStateAtTheTip computeStateAtTheTip(TransitionType transitionType) {
     Hash32 root = forkChoice.get_head(store);
     Optional<BeaconBlock> block = store.getBlock(root);
     Optional<BeaconState> state = store.getState(root);
@@ -233,8 +217,7 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
     BeaconStateEx finalState =
         new BeaconStateExImpl(mutableState.createImmutable(), transitionType);
 
-    return new ObservableBeaconState(
-        block.get(), finalState, new PendingOperationsState(Collections.emptyList()));
+    return new BeaconStateAtTheTip(block.get(), finalState);
   }
 
   @Override
@@ -257,7 +240,7 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
       boolean newlyImported = !beforeImport.isPresent() && afterImport.isPresent();
       if (newlyImported) {
         eventBus.publish(BlockImported.wrap(block));
-        yieldAttesterState();
+        yieldStateThroughoutSlot();
 
         logger.info(
             "Imported block: " + block.toString(spec.getConstants(), null, spec::signing_root));
@@ -293,14 +276,14 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
     boolean atLeastOneWasImported =
         blocks.stream().map(this::onBlockImpl).reduce(false, Boolean::logicalOr);
     if (atLeastOneWasImported) {
-      yieldAttesterState();
+      yieldStateThroughoutSlot();
     }
   }
 
   @Override
   public void onAttestation(Attestation attestation) {
     if (onAttestationImpl(attestation)) {
-      yieldAttesterState();
+      yieldStateThroughoutSlot();
     }
   }
 
@@ -308,7 +291,7 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
     boolean atLeastOneWasApplied =
         attestations.stream().map(this::onAttestationImpl).reduce(false, Boolean::logicalOr);
     if (atLeastOneWasApplied) {
-      yieldAttesterState();
+      yieldStateThroughoutSlot();
     }
   }
 

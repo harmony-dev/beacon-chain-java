@@ -5,15 +5,14 @@ import static org.junit.Assert.assertNotNull;
 
 import java.util.Collections;
 import org.ethereum.beacon.chain.eventbus.EventBus;
-import org.ethereum.beacon.chain.eventbus.events.AttesterStateUpdated;
+import org.ethereum.beacon.chain.eventbus.events.StateThroughoutSlotYielded;
 import org.ethereum.beacon.chain.eventbus.events.ChainStarted;
-import org.ethereum.beacon.chain.eventbus.events.ProposerStateUpdated;
+import org.ethereum.beacon.chain.eventbus.events.ProposerStateYielded;
 import org.ethereum.beacon.chain.eventbus.events.TimeTick;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.store.TransactionalStore;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.ChainStart;
-import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
@@ -44,8 +43,8 @@ public class BeaconDataProcessorTest {
     BeaconDataProcessor processor = new BeaconDataProcessorImpl(spec, store, eventBus);
 
     ObservableStateHolder recentState = new ObservableStateHolder();
-    eventBus.subscribe(AttesterStateUpdated.class, recentState::set);
-    eventBus.subscribe(ProposerStateUpdated.class, recentState::set);
+    eventBus.subscribe(StateThroughoutSlotYielded.class, recentState::set);
+    eventBus.subscribe(ProposerStateYielded.class, recentState::set);
 
     eventBus.publish(
         ChainStarted.wrap(

@@ -15,13 +15,13 @@ import org.ethereum.beacon.chain.TimeTicker;
 import org.ethereum.beacon.chain.eventbus.EventBus;
 import org.ethereum.beacon.chain.eventbus.events.AttestationProduced;
 import org.ethereum.beacon.chain.eventbus.events.AttestationReceived;
-import org.ethereum.beacon.chain.eventbus.events.AttesterStateUpdated;
+import org.ethereum.beacon.chain.eventbus.events.StateThroughoutSlotYielded;
 import org.ethereum.beacon.chain.eventbus.events.BlockImported;
 import org.ethereum.beacon.chain.eventbus.events.BlockProposed;
 import org.ethereum.beacon.chain.eventbus.events.BlockReceived;
 import org.ethereum.beacon.chain.eventbus.events.ChainStarted;
 import org.ethereum.beacon.chain.eventbus.events.ProposedBlockImported;
-import org.ethereum.beacon.chain.eventbus.events.ProposerStateUpdated;
+import org.ethereum.beacon.chain.eventbus.events.ProposerStateYielded;
 import org.ethereum.beacon.chain.eventbus.events.SlotTick;
 import org.ethereum.beacon.chain.eventbus.events.TimeTick;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
@@ -44,7 +44,6 @@ import org.ethereum.beacon.consensus.verifier.BeaconBlockVerifier;
 import org.ethereum.beacon.consensus.verifier.BeaconStateVerifier;
 import org.ethereum.beacon.consensus.verifier.VerificationResult;
 import org.ethereum.beacon.core.BeaconBlock;
-import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.db.InMemoryDatabase;
@@ -60,10 +59,8 @@ import org.ethereum.beacon.wire.WireApiSub;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.FluxProcessor;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
-import tech.pegasys.artemis.util.uint.UInt64;
 
 public class Launcher {
   private final BeaconChainSpec spec;
@@ -267,8 +264,8 @@ public class Launcher {
     observableStateStream = stateFlux;
     importedBlockStream = importedBlockFlux;
 
-    eventBus.subscribe(ProposerStateUpdated.class, stateFlux::onNext);
-    eventBus.subscribe(AttesterStateUpdated.class, stateFlux::onNext);
+    eventBus.subscribe(ProposerStateYielded.class, stateFlux::onNext);
+    eventBus.subscribe(StateThroughoutSlotYielded.class, stateFlux::onNext);
     eventBus.subscribe(BlockImported.class, importedBlockFlux::onNext);
 
     if (validatorCred != null) {

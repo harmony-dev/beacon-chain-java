@@ -6,6 +6,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
+import org.ethereum.beacon.chain.eventbus.EventBus;
+import org.ethereum.beacon.chain.eventbus.events.ProposerStateYielded;
+import org.ethereum.beacon.chain.observer.ObservableBeaconState;
+import org.ethereum.beacon.chain.observer.PendingOperationsState;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
@@ -17,12 +21,14 @@ public class AttestationPoolImpl implements AttestationPool {
 
   private static final EpochNumber HISTORIC_EPOCHS = EpochNumber.of(1);
 
+  private final EventBus eventBus;
   private final BeaconChainSpec spec;
   private final TreeMap<EpochNumber, Set<Attestation>> epochs = new TreeMap<>();
 
   private EpochNumber currentEpoch;
 
-  public AttestationPoolImpl(BeaconChainSpec spec) {
+  public AttestationPoolImpl(EventBus eventBus, BeaconChainSpec spec) {
+    this.eventBus = eventBus;
     this.spec = spec;
   }
 
@@ -55,7 +61,18 @@ public class AttestationPoolImpl implements AttestationPool {
   }
 
   @Override
-  public List<Attestation> getOffChainAttestations(BeaconState state) {
+  public void onStateAtTheBeginningOfSlot(BeaconStateAtTheTip stateAtTheTip) {
+    List<Attestation> attestations = getOffChainAttestations(stateAtTheTip.getLatestSlotState());
+    ObservableBeaconState withAttestations =
+        new ObservableBeaconState(
+            stateAtTheTip.getHead(),
+            stateAtTheTip.getLatestSlotState(),
+            new PendingOperationsState(attestations));
+
+    eventBus.publish(ProposerStateYielded.wrap(withAttestations));
+  }
+
+  List<Attestation> getOffChainAttestations(BeaconState state) {
     Set<Attestation> attestationChurn = new HashSet<>();
     epochs.values().forEach(attestationChurn::addAll);
 

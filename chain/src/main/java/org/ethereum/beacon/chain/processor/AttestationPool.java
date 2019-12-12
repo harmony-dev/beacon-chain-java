@@ -1,7 +1,5 @@
 package org.ethereum.beacon.chain.processor;
 
-import java.util.List;
-import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
 import org.ethereum.beacon.core.types.SlotNumber;
 
@@ -11,5 +9,5 @@ public interface AttestationPool {
 
   void onAttestation(Attestation attestation);
 
-  List<Attestation> getOffChainAttestations(BeaconState state);
+  void onStateAtTheBeginningOfSlot(BeaconStateAtTheTip stateAtTheTip);
 }
