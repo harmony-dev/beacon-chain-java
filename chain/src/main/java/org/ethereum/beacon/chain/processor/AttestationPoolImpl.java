@@ -61,7 +61,7 @@ public class AttestationPoolImpl implements AttestationPool {
   }
 
   @Override
-  public void onStateAtTheBeginningOfSlot(BeaconStateAtTheTip stateAtTheTip) {
+  public void onStateAtTheBeginningOfSlot(ObservableBeaconState stateAtTheTip) {
     List<Attestation> attestations = getOffChainAttestations(stateAtTheTip.getLatestSlotState());
     ObservableBeaconState withAttestations =
         new ObservableBeaconState(

@@ -1,6 +1,7 @@
 package org.ethereum.beacon.chain;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Optional;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -25,9 +26,10 @@ import org.ethereum.beacon.chain.eventbus.events.SlotTick;
 import org.ethereum.beacon.chain.eventbus.events.StateAtTheBeginningOfSlotYielded;
 import org.ethereum.beacon.chain.eventbus.events.StateThroughoutSlotYielded;
 import org.ethereum.beacon.chain.eventbus.events.TimeTick;
+import org.ethereum.beacon.chain.observer.ObservableBeaconState;
+import org.ethereum.beacon.chain.observer.PendingOperationsState;
 import org.ethereum.beacon.chain.processor.AttestationPool;
 import org.ethereum.beacon.chain.processor.AttestationPoolImpl;
-import org.ethereum.beacon.chain.processor.BeaconStateAtTheTip;
 import org.ethereum.beacon.chain.processor.DelayedAttestationQueue;
 import org.ethereum.beacon.chain.processor.DelayedAttestationQueueImpl;
 import org.ethereum.beacon.chain.processor.DelayedBlockQueue;
@@ -188,7 +190,7 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
   }
 
   void yieldStateAtTheBeginningOfSlot() {
-    BeaconStateAtTheTip stateAtTheTip = computeStateAtTheTip(TransitionType.SLOT);
+    ObservableBeaconState stateAtTheTip = computeStateAtTheTip(TransitionType.SLOT);
     eventBus.publish(StateAtTheBeginningOfSlotYielded.wrap(stateAtTheTip));
 
     logger.trace(
@@ -197,7 +199,7 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
   }
 
   void yieldStateThroughoutSlot() {
-    BeaconStateAtTheTip stateAtTheTip = computeStateAtTheTip(TransitionType.UNKNOWN);
+    ObservableBeaconState stateAtTheTip = computeStateAtTheTip(TransitionType.UNKNOWN);
     eventBus.publish(StateThroughoutSlotYielded.wrap(stateAtTheTip));
 
     logger.trace(
@@ -205,7 +207,7 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
             + stateAtTheTip.getLatestSlotState().toString(spec.getConstants(), spec::signing_root));
   }
 
-  BeaconStateAtTheTip computeStateAtTheTip(TransitionType transitionType) {
+  ObservableBeaconState computeStateAtTheTip(TransitionType transitionType) {
     Hash32 root = forkChoice.get_head(store);
     Optional<BeaconBlock> block = store.getBlock(root);
     Optional<BeaconState> state = store.getState(root);
@@ -217,7 +219,8 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
     BeaconStateEx finalState =
         new BeaconStateExImpl(mutableState.createImmutable(), transitionType);
 
-    return new BeaconStateAtTheTip(block.get(), finalState);
+    return new ObservableBeaconState(
+        block.get(), finalState, new PendingOperationsState(Collections.emptyList()));
   }
 
   @Override
