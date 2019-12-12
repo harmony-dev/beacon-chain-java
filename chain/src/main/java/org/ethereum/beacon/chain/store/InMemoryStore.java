@@ -131,6 +131,11 @@ public class InMemoryStore implements TransactionalStore {
   }
 
   @Override
+  public boolean isInitialized() {
+    return genesisTime != null;
+  }
+
+  @Override
   public StoreTx newTx() {
     return new StoreTxImpl(this);
   }

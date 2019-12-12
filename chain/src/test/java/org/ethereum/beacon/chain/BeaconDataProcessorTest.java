@@ -6,18 +6,22 @@ import static org.junit.Assert.assertNotNull;
 import java.util.Collections;
 import org.ethereum.beacon.chain.eventbus.EventBus;
 import org.ethereum.beacon.chain.eventbus.events.AttesterStateUpdated;
+import org.ethereum.beacon.chain.eventbus.events.ChainStarted;
 import org.ethereum.beacon.chain.eventbus.events.ProposerStateUpdated;
 import org.ethereum.beacon.chain.eventbus.events.TimeTick;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.store.TransactionalStore;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
+import org.ethereum.beacon.consensus.ChainStart;
 import org.ethereum.beacon.core.BeaconState;
+import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.SlotNumber;
 import org.ethereum.beacon.core.types.Time;
 import org.ethereum.beacon.schedulers.ControlledSchedulers;
 import org.ethereum.beacon.schedulers.Schedulers;
 import org.junit.Test;
 import tech.pegasys.artemis.ethereum.core.Hash32;
+import tech.pegasys.artemis.util.uint.UInt64;
 
 public class BeaconDataProcessorTest {
 
@@ -32,10 +36,7 @@ public class BeaconDataProcessorTest {
             .build();
 
     Time genesisTime = Time.of(1);
-    BeaconState genesisState =
-        spec.initialize_beacon_state_from_eth1(Hash32.ZERO, genesisTime, Collections.emptyList());
-    TransactionalStore store =
-        spec.get_genesis_store(genesisState, TransactionalStore.inMemoryStore());
+    TransactionalStore store = TransactionalStore.inMemoryStore();
 
     ControlledSchedulers schedulers = Schedulers.createControlled();
     schedulers.setCurrentTime(0);
@@ -46,7 +47,12 @@ public class BeaconDataProcessorTest {
     eventBus.subscribe(AttesterStateUpdated.class, recentState::set);
     eventBus.subscribe(ProposerStateUpdated.class, recentState::set);
 
-    eventBus.publish(TimeTick.wrap(genesisTime));
+    eventBus.publish(
+        ChainStarted.wrap(
+            new ChainStart(
+                genesisTime,
+                new Eth1Data(Hash32.ZERO, UInt64.ZERO, Hash32.ZERO),
+                Collections.emptyList())));
     schedulers.addTime(1);
 
     assertNotNull(recentState.state);

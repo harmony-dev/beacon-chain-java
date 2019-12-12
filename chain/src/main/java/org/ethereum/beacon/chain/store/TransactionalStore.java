@@ -8,6 +8,8 @@ public interface TransactionalStore extends Store {
     return new InMemoryStore();
   }
 
+  boolean isInitialized();
+
   StoreTx newTx();
 
   interface StoreTx extends Store {

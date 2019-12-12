@@ -22,6 +22,7 @@ import org.ethereum.beacon.chain.eventbus.events.BlockImported;
 import org.ethereum.beacon.chain.eventbus.events.BlockMetNoParent;
 import org.ethereum.beacon.chain.eventbus.events.BlockProposed;
 import org.ethereum.beacon.chain.eventbus.events.BlockReceived;
+import org.ethereum.beacon.chain.eventbus.events.ChainStarted;
 import org.ethereum.beacon.chain.eventbus.events.ProposedBlockImported;
 import org.ethereum.beacon.chain.eventbus.events.ProposerStateUpdated;
 import org.ethereum.beacon.chain.eventbus.events.SlotTick;
@@ -46,6 +47,7 @@ import org.ethereum.beacon.chain.store.TransactionalStore;
 import org.ethereum.beacon.chain.store.TransactionalStore.StoreTx;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.consensus.BeaconStateEx;
+import org.ethereum.beacon.consensus.ChainStart;
 import org.ethereum.beacon.consensus.TransitionType;
 import org.ethereum.beacon.consensus.spec.ForkChoice.BlockIsInTheFutureException;
 import org.ethereum.beacon.consensus.spec.ForkChoice.EarlyForkChoiceConsiderationException;
@@ -71,7 +73,7 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
   private final BeaconChainSpec helperFunctions;
   private final BeaconChainSpec forkChoice;
   private final BeaconChainSpec stateTransition;
-  private final TransactionalStore store;
+  private TransactionalStore store;
   private final EventBus eventBus;
 
   private final AttestationPool attestationPool;
@@ -91,8 +93,7 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
     this.store = store;
     this.eventBus = eventBus;
 
-    this.attestationPool =
-        new AttestationPoolImpl(spec, spec.compute_epoch_at_slot(spec.get_current_slot(store)));
+    this.attestationPool = new AttestationPoolImpl(spec);
     this.delayedBlockQueue = new DelayedBlockQueueImpl(this.eventBus);
     this.delayedAttestationQueue = new DelayedAttestationQueueImpl(this.eventBus);
     this.noParentBlockQueue = new NoParentBlockQueueImpl(this.eventBus, this.spec);
@@ -103,6 +104,7 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
     this.delayedUntilTargetEpochQueue =
         new DelayedUntilTargetEpochQueueImpl(this.eventBus, this.spec);
 
+    this.eventBus.subscribe(ChainStarted.class, this::onChainStart);
     this.eventBus.subscribe(TimeTick.class, this::onTick);
     this.eventBus.subscribe(SlotTick.class, this::onTick);
     this.eventBus.subscribe(BlockReceived.class, this::onBlock);
@@ -143,6 +145,16 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
   public void onTick(Time time) {
     logger.trace("On before tick: " + time);
 
+    // do not process tick if store is not yet initialized
+    if (!store.isInitialized()) {
+      return;
+    }
+
+    // do not process tick at genesis time
+    if (time.equals(store.getGenesisTime())) {
+      return;
+    }
+
     SlotNumber previousSlot = forkChoice.get_current_slot(store);
 
     StoreTx storeTx = store.newTx();
@@ -151,13 +163,25 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
     storeTx.commit();
 
     SlotNumber currentSlot = forkChoice.get_current_slot(store);
-    // publish slot upon a genesis time
-    // and each time it's been updated
-    if (store.getGenesisTime().equals(store.getTime()) || currentSlot.greater(previousSlot)) {
+    if (currentSlot.greater(previousSlot)) {
       eventBus.publish(SlotTick.wrap(currentSlot));
     }
 
     logger.trace("On after tick: " + time);
+  }
+
+  void onChainStart(ChainStart chainStart) {
+    assert !store.isInitialized();
+
+    BeaconState genesisState =
+        spec.initialize_beacon_state_from_eth1(
+            chainStart.getEth1Data().getBlockHash(),
+            chainStart.getTime(),
+            chainStart.getInitialDeposits());
+    store = spec.get_genesis_store(genesisState, store);
+
+    // tick on genesis slot
+    eventBus.publish(SlotTick.wrap(genesisState.getSlot()));
   }
 
   void onTick(SlotNumber slot) {

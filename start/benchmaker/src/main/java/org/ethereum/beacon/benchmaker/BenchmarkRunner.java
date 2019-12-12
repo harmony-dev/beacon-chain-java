@@ -90,7 +90,7 @@ public class BenchmarkRunner implements Runnable {
     List<KeyPair> keyPairs = validatorDeposits.getValue1();
 
     MDCControlledSchedulers controlledSchedulers = new MDCControlledSchedulers();
-    controlledSchedulers.setCurrentTime(genesisTime.getMillis().getValue() + 1000);
+    controlledSchedulers.setCurrentTime(genesisTime.getMillis().getValue() - 1000);
 
     Eth1Data eth1Data = new Eth1Data(Hash32.ZERO, UInt64.valueOf(deposits.size()), Hash32.ZERO);
 

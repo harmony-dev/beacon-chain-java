@@ -19,8 +19,10 @@ import org.ethereum.beacon.chain.eventbus.events.AttesterStateUpdated;
 import org.ethereum.beacon.chain.eventbus.events.BlockImported;
 import org.ethereum.beacon.chain.eventbus.events.BlockProposed;
 import org.ethereum.beacon.chain.eventbus.events.BlockReceived;
+import org.ethereum.beacon.chain.eventbus.events.ChainStarted;
 import org.ethereum.beacon.chain.eventbus.events.ProposedBlockImported;
 import org.ethereum.beacon.chain.eventbus.events.ProposerStateUpdated;
+import org.ethereum.beacon.chain.eventbus.events.SlotTick;
 import org.ethereum.beacon.chain.eventbus.events.TimeTick;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.observer.ObservableStateProcessor;
@@ -58,6 +60,8 @@ import org.ethereum.beacon.wire.WireApiSub;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxProcessor;
+import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 import tech.pegasys.artemis.util.uint.UInt64;
 
@@ -99,6 +103,7 @@ public class Launcher {
   private TimeTicker timeTicker;
   private TransactionalStore store;
   private BeaconDataProcessor beaconDataProcessor;
+  private EventBus eventBus;
 
   public Launcher(
       BeaconChainSpec spec,
@@ -143,7 +148,9 @@ public class Launcher {
 
     if (depositContract != null) {
       if (newDataProcessor) {
-        Mono.from(depositContract.getChainStartMono()).subscribe(this::chainStarted2);
+        init();
+        Mono.from(depositContract.getChainStartMono())
+            .subscribe(chainStart -> eventBus.publish(ChainStarted.wrap(chainStart)));
       } else {
         Mono.from(depositContract.getChainStartMono()).subscribe(this::chainStarted);
       }
@@ -234,36 +241,18 @@ public class Launcher {
         .subscribe(beaconChain::insert);
   }
 
-  void chainStarted2(ChainStart chainStartEvent) {
-    BeaconState genesisState =
-        spec.initialize_beacon_state_from_eth1(
-            chainStartEvent.getEth1Data().getBlockHash(),
-            chainStartEvent.getTime(),
-            chainStartEvent.getInitialDeposits());
-
+  void init() {
     timeTicker = new TimeTicker(schedulers);
     timeTicker.start();
-    store = spec.get_genesis_store(genesisState, TransactionalStore.inMemoryStore());
-    EventBus eventBus = EventBus.create(schedulers);
+    store = TransactionalStore.inMemoryStore();
+    eventBus = EventBus.create(schedulers);
     beaconDataProcessor = new BeaconDataProcessorImpl(spec, store, eventBus);
 
-    slotStream =
-        Flux.from(timeTicker.getTickerStream())
-            .filter(time -> time.greaterEqual(store.getGenesisTime()))
-            .filter(
-                time ->
-                    time.minus(store.getGenesisTime())
-                        .modulo(spec.getConstants().getSecondsPerSlot())
-                        .equals(UInt64.ZERO))
-            .map(
-                time ->
-                    SlotNumber.castFrom(
-                            time.minus(store.getGenesisTime())
-                                .dividedBy(spec.getConstants().getSecondsPerSlot()))
-                        .plus(spec.getConstants().getGenesisSlot()))
-            .subscribeOn(schedulers.events().toReactor());
+    DirectProcessor<SlotNumber> slotStreamProcessor = DirectProcessor.create();
+    FluxSink<SlotNumber> slotSink = slotStreamProcessor.sink();
+    slotStream = slotStreamProcessor;
+    eventBus.subscribe(SlotTick.class, slotSink::next);
 
-    initialTransition = new InitialStateTransition(chainStartEvent, spec);
     perSlotTransition = new PerSlotTransition(spec);
     perBlockTransition = new PerBlockTransition(spec);
     perEpochTransition = new PerEpochTransition(spec);

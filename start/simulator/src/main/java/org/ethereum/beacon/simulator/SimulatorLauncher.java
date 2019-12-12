@@ -148,7 +148,11 @@ public class SimulatorLauncher implements Runnable {
     genesisTime = Time.of(simulationPlan.getGenesisTime());
 
     controlledSchedulers = new MDCControlledSchedulers();
-    controlledSchedulers.setCurrentTime(genesisTime.getMillis().getValue() + 1000);
+    long currentTime =
+        newDataProcessor
+            ? genesisTime.getMillis().getValue() - 1000
+            : genesisTime.getMillis().getValue() + 1000;
+    controlledSchedulers.setCurrentTime(currentTime);
 
     eth1Data = new Eth1Data(Hash32.random(rnd), UInt64.valueOf(deposits.size()), Hash32.random(rnd));
 

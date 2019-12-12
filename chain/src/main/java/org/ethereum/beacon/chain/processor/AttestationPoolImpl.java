@@ -22,23 +22,30 @@ public class AttestationPoolImpl implements AttestationPool {
 
   private EpochNumber currentEpoch;
 
-  public AttestationPoolImpl(BeaconChainSpec spec, EpochNumber currentEpoch) {
+  public AttestationPoolImpl(BeaconChainSpec spec) {
     this.spec = spec;
-    this.currentEpoch = currentEpoch;
   }
 
   @Override
   public void onTick(SlotNumber slot) {
-    EpochNumber newEpoch = spec.compute_epoch_at_slot(slot);
-    if (newEpoch.greater(currentEpoch)) {
-      currentEpoch = newEpoch;
-      EpochNumber threshold = historyThreshold(currentEpoch);
-      epochs.keySet().removeAll(epochs.headMap(threshold).keySet());
+    if (currentEpoch != null) {
+      EpochNumber newEpoch = spec.compute_epoch_at_slot(slot);
+      if (newEpoch.greater(currentEpoch)) {
+        currentEpoch = newEpoch;
+        EpochNumber threshold = historyThreshold(currentEpoch);
+        epochs.keySet().removeAll(epochs.headMap(threshold).keySet());
+      }
+    } else {
+      currentEpoch = spec.compute_epoch_at_slot(slot);
     }
   }
 
   @Override
   public void onAttestation(Attestation attestation) {
+    if (currentEpoch == null) {
+      return;
+    }
+
     EpochNumber threshold = historyThreshold(currentEpoch);
     EpochNumber targetEpoch = attestation.getData().getTarget().getEpoch();
     if (targetEpoch.greaterEqual(threshold)) {
