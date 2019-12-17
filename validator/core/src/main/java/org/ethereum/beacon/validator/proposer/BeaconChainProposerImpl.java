@@ -1,5 +1,11 @@
 package org.ethereum.beacon.validator.proposer;
 
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.List;
+import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
 import org.ethereum.beacon.chain.observer.PendingOperations;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
@@ -16,16 +22,15 @@ import org.ethereum.beacon.core.operations.VoluntaryExit;
 import org.ethereum.beacon.core.operations.slashing.AttesterSlashing;
 import org.ethereum.beacon.core.state.Eth1Data;
 import org.ethereum.beacon.core.types.BLSSignature;
+import org.ethereum.beacon.core.types.Gwei;
 import org.ethereum.beacon.pow.DepositContract;
 import org.ethereum.beacon.pow.DepositContract.DepositInfo;
 import org.ethereum.beacon.validator.BeaconChainProposer;
 import org.ethereum.beacon.validator.ValidatorService;
+import org.javatuples.Pair;
 import tech.pegasys.artemis.ethereum.core.Hash32;
 import tech.pegasys.artemis.util.bytes.Bytes32;
 import tech.pegasys.artemis.util.uint.UInt64;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * An implementation of beacon chain proposer.
@@ -41,6 +46,9 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
   /** Eth1 deposit contract. */
   private DepositContract depositContract;
 
+  private final Function<Collection<Attestation>, List<Attestation>> aggregator;
+  private final BiFunction<Attestation, BeaconState, Gwei> profitEvaluator;
+
   public BeaconChainProposerImpl(
       BeaconChainSpec spec,
       BlockTransition<BeaconStateEx> perBlockTransition,
@@ -48,6 +56,8 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
     this.spec = spec;
     this.perBlockTransition = perBlockTransition;
     this.depositContract = depositContract;
+    this.aggregator = new SequentialAggregator(spec);
+    this.profitEvaluator = new ProfitEvaluator(spec);
   }
 
   @Override
@@ -107,9 +117,22 @@ public class BeaconChainProposerImpl implements BeaconChainProposer {
         operations.peekProposerSlashings(spec.getConstants().getMaxProposerSlashings());
     List<AttesterSlashing> attesterSlashings =
         operations.peekAttesterSlashings(spec.getConstants().getMaxAttesterSlashings());
-    List<Attestation> attestations =
-        operations.peekAggregateAttestations(
-            spec.getConstants().getMaxAttestations(), spec.getConstants());
+
+    List<Attestation> aggregates = aggregator.apply(operations.getAttestations());
+    List<Attestation> attestations;
+    // include most profitable aggregates beyond block limit
+    if (aggregates.size() <= spec.getConstants().getMaxAttestations()) {
+      attestations = aggregates;
+    } else {
+      attestations =
+          aggregates.stream()
+              .map(attestation -> Pair.with(profitEvaluator.apply(attestation, state), attestation))
+              .sorted(
+                  Comparator.<Pair<Gwei, Attestation>, Gwei>comparing(Pair::getValue0).reversed())
+              .map(Pair::getValue1)
+              .collect(Collectors.toList());
+    }
+
     List<VoluntaryExit> voluntaryExits =
         operations.peekExits(spec.getConstants().getMaxVoluntaryExits());
 

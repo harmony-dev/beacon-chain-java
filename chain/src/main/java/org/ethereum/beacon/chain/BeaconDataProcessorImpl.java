@@ -276,8 +276,7 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
   }
 
   void onBlocksDequeued(Collection<BeaconBlock> blocks) {
-    boolean atLeastOneWasImported =
-        blocks.stream().map(this::onBlockImpl).reduce(false, Boolean::logicalOr);
+    boolean atLeastOneWasImported = blocks.stream().anyMatch(this::onBlockImpl);
     if (atLeastOneWasImported) {
       yieldStateThroughoutSlot();
     }
@@ -291,8 +290,7 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
   }
 
   void onAttestations(Collection<Attestation> attestations) {
-    boolean atLeastOneWasApplied =
-        attestations.stream().map(this::onAttestationImpl).reduce(false, Boolean::logicalOr);
+    boolean atLeastOneWasApplied = attestations.stream().anyMatch(this::onAttestationImpl);
     if (atLeastOneWasApplied) {
       yieldStateThroughoutSlot();
     }

@@ -1,6 +1,7 @@
 package org.ethereum.beacon.chain.processor;
 
 import java.util.BitSet;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -8,12 +9,12 @@ import java.util.TreeMap;
 import java.util.stream.Collectors;
 import org.ethereum.beacon.chain.eventbus.EventBus;
 import org.ethereum.beacon.chain.eventbus.events.ProposerStateYielded;
+import org.ethereum.beacon.chain.observer.NaivePendingOperations;
 import org.ethereum.beacon.chain.observer.ObservableBeaconState;
-import org.ethereum.beacon.chain.observer.PendingOperationsState;
+import org.ethereum.beacon.chain.processor.attestation.AttestationHelper;
 import org.ethereum.beacon.consensus.BeaconChainSpec;
 import org.ethereum.beacon.core.BeaconState;
 import org.ethereum.beacon.core.operations.Attestation;
-import org.ethereum.beacon.core.state.PendingAttestation;
 import org.ethereum.beacon.core.types.EpochNumber;
 import org.ethereum.beacon.core.types.SlotNumber;
 
@@ -62,48 +63,33 @@ public class AttestationPoolImpl implements AttestationPool {
 
   @Override
   public void onStateAtTheBeginningOfSlot(ObservableBeaconState stateAtTheTip) {
-    List<Attestation> attestations = getOffChainAttestations(stateAtTheTip.getLatestSlotState());
+    BeaconState state = stateAtTheTip.getLatestSlotState();
+    List<Attestation> offChainAttestations =
+        getChurn().stream()
+            // sort out on chain attestations
+            .filter(
+                attestation -> {
+                  BitSet onChainBits =
+                      AttestationHelper.getOnChainBits(state, attestation.getData());
+                  BitSet complement = BitSet.valueOf(onChainBits.toLongArray());
+                  complement.or(attestation.getAggregationBits().toBitSet());
+                  return !onChainBits.equals(complement);
+                })
+            // sort out attestations not applicable to provided state
+            .filter(attestation -> spec.verify_attestation(state, attestation))
+            .collect(Collectors.toList());
+
     ObservableBeaconState withAttestations =
         new ObservableBeaconState(
             stateAtTheTip.getHead(),
             stateAtTheTip.getLatestSlotState(),
-            new PendingOperationsState(attestations));
+            new NaivePendingOperations(offChainAttestations));
 
     eventBus.publish(ProposerStateYielded.wrap(withAttestations));
   }
 
-  List<Attestation> getOffChainAttestations(BeaconState state) {
-    Set<Attestation> attestationChurn = new HashSet<>();
-    epochs.values().forEach(attestationChurn::addAll);
-
-    Set<PendingAttestation> onChainAttestations = new HashSet<>();
-    onChainAttestations.addAll(state.getPreviousEpochAttestations().listCopy());
-    onChainAttestations.addAll(state.getCurrentEpochAttestations().listCopy());
-
-    return attestationChurn.stream()
-
-        // sort out on chain attestations
-        .filter(
-            attestation -> {
-              BitSet offChainBits =
-                  onChainAttestations.stream()
-                      .filter(pendingAtt -> pendingAtt.getData().equals(attestation.getData()))
-                      .map(pendingAtt -> pendingAtt.getAggregationBits().toBitSet())
-                      .reduce(
-                          new BitSet(),
-                          (s1, s2) -> {
-                            BitSet res = new BitSet();
-                            res.or(s1);
-                            res.or(s2);
-                            return res;
-                          });
-
-              return !offChainBits.intersects(attestation.getAggregationBits().toBitSet());
-            })
-
-        // sort out attestations not applicable to provided state
-        .filter(attestation -> spec.verify_attestation(state, attestation))
-        .collect(Collectors.toList());
+  Set<Attestation> getChurn() {
+    return epochs.values().stream().flatMap(Collection::stream).collect(Collectors.toSet());
   }
 
   private EpochNumber historyThreshold(EpochNumber currentEpoch) {

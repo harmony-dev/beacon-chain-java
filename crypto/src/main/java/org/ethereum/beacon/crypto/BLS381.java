@@ -214,6 +214,19 @@ public class BLS381 {
     }
 
     /**
+     * Instantiates signature from encoded <code>G<sub>2</sub></code> point.
+     *
+     * <p><strong>Note:</strong> opposite to {@link #create(Bytes96)} does not run format
+     * validation.
+     *
+     * @param encoded an encoded point.
+     * @return an instance of signature.
+     */
+    public static Signature createWithoutValidation(Bytes96 encoded) {
+      return new Signature(encoded);
+    }
+
+    /**
      * Aggregates a list of signatures into a single one.
      *
      * <p>Signature aggregation in {@code BLS12-381} is a matter of calculating a sum of points
