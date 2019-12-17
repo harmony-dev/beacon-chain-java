@@ -128,6 +128,7 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
     this.eventBus.subscribe(BlockConsiderationDelayed.class, delayedBlockQueue::onBlock);
 
     this.eventBus.subscribe(BlockMetNoParent.class, noParentBlockQueue::onBlockWithNoParent);
+    this.eventBus.subscribe(BlockImported.class, noParentBlockQueue::onImportedBlock);
 
     this.eventBus.subscribe(
         AttestationMetNoTargetRoot.class, noTargetRootAttestationQueue::onAttestation);
