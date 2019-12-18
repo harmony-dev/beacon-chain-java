@@ -325,6 +325,9 @@ public class BeaconDataProcessorImpl implements BeaconDataProcessor {
     } catch (SpecAssertionFailed e) {
       logger.error("Failed to process an attestation: " + attestation, e);
       return false;
+    } catch (RuntimeException e) {
+      logger.error("Failed to process an attestation: " + attestation, e);
+      return false;
     }
   }
 }
