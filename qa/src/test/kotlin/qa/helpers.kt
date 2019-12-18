@@ -1,7 +1,12 @@
 package qa
 
+import org.ethereum.beacon.bench.BenchmarkController
 import org.ethereum.beacon.chain.BeaconTuple
+import org.ethereum.beacon.chain.observer.ObservableBeaconState
+import org.ethereum.beacon.chain.storage.BeaconBlockStorage
 import org.ethereum.beacon.chain.storage.BeaconChainStorage
+import org.ethereum.beacon.chain.storage.BeaconStateStorage
+import org.ethereum.beacon.chain.storage.BeaconTupleStorage
 import org.ethereum.beacon.chain.storage.impl.SSZBeaconChainStorageFactory
 import org.ethereum.beacon.chain.storage.impl.SerializerFactory
 import org.ethereum.beacon.consensus.BeaconChainSpec
@@ -10,18 +15,22 @@ import org.ethereum.beacon.consensus.transition.BeaconStateExImpl
 import org.ethereum.beacon.consensus.util.PseudoBLSFunctions.pseudoSign
 import org.ethereum.beacon.core.BeaconBlock
 import org.ethereum.beacon.core.BeaconBlockBody
+import org.ethereum.beacon.core.BeaconBlockHeader
 import org.ethereum.beacon.core.BeaconState
 import org.ethereum.beacon.core.operations.Attestation
 import org.ethereum.beacon.core.spec.SignatureDomains
+import org.ethereum.beacon.core.state.Checkpoint
 import org.ethereum.beacon.core.types.BLSSignature
 import org.ethereum.beacon.core.types.EpochNumber
 import org.ethereum.beacon.core.types.SlotNumber
 import org.ethereum.beacon.core.types.ValidatorIndex
+import org.ethereum.beacon.db.source.DataSource
+import org.ethereum.beacon.db.source.SingleValueSource
 import org.ethereum.beacon.emulator.config.main.Signer
 import org.ethereum.beacon.emulator.config.main.conract.EmulatorContract
 import org.ethereum.beacon.node.ConfigUtils
 import org.ethereum.beacon.qa.TestUtils
-import org.ethereum.beacon.start.common.TestLauncher
+import org.ethereum.beacon.start.common.Launcher
 import org.ethereum.beacon.start.common.util.BLS381MessageSignerFactory
 import org.ethereum.beacon.start.common.util.MDCControlledSchedulers
 import org.ethereum.beacon.start.common.util.SimpleDepositContract
@@ -32,9 +41,11 @@ import org.ethereum.beacon.validator.crypto.BLS381MessageSigner
 import org.ethereum.beacon.wire.WireApiSub
 import org.reactivestreams.Publisher
 import reactor.core.publisher.DirectProcessor
+import reactor.core.publisher.Flux
 import tech.pegasys.artemis.ethereum.core.Hash32
 import tech.pegasys.artemis.util.bytes.Bytes48
 import tech.pegasys.artemis.util.collections.ReadList
+import java.lang.IllegalStateException
 import java.util.Optional
 import java.util.Collections
 import kotlin.collections.ArrayList
@@ -61,28 +72,138 @@ class TestWire() : WireApiSub {
   }
 }
 
+object ObservableStates {
+  val data = hashMapOf<Launcher,ObservableBeaconState>()
+}
+
 class Tester(contract: EmulatorContract) {
   val spec = TestUtils.getBeaconChainSpec()
   val mdcControlledSchedulers = MDCControlledSchedulers()
 
   init {
-    mdcControlledSchedulers.currentTime = contract.genesisTime.time
+    mdcControlledSchedulers.currentTime = contract.genesisTime.time - 1000
   }
 
   val wireApi = TestWire()
   var testLauncher = createTestLauncher(spec, contract, wireApi, mdcControlledSchedulers)
 
+  private val baseState: BeaconState?
+    get() = ObservableStates.data[testLauncher]?.latestSlotState
+
   var currentSlot: SlotNumber
-    get() = spec.get_current_slot(testLauncher.beaconChain.recentlyProcessed.state, mdcControlledSchedulers.currentTime)
+    get() = spec.get_current_slot(baseState, mdcControlledSchedulers.currentTime)
     set(value) {
       mdcControlledSchedulers.currentTime = spec.get_slot_start_time(
-          testLauncher.beaconChain.recentlyProcessed.state, value).millis.value
+          baseState, value).millis.value
     }
 
   val currentEpoch: EpochNumber
     get() = spec.compute_epoch_at_slot(currentSlot)
 
-  private fun createTestLauncher(spec: BeaconChainSpec, contract: EmulatorContract, wireApi: TestWire, mdcControlledSchedulers: MDCControlledSchedulers): TestLauncher {
+  val chainStorage: BeaconChainStorage
+    get() {
+      if (testLauncher.beaconChainStorage != null)
+        return testLauncher.beaconChainStorage
+      else
+        return object: BeaconChainStorage {
+          override fun getJustifiedStorage(): SingleValueSource<Checkpoint> {
+            return object : SingleValueSource<Checkpoint> {
+              override fun get(): Optional<Checkpoint> {
+                return Optional.ofNullable(testLauncher.store.justifiedCheckpoint)
+              }
+
+              override fun set(value: Checkpoint?) {
+                testLauncher.store.justifiedCheckpoint = value
+              }
+
+              override fun remove() {
+                testLauncher.store.justifiedCheckpoint = null
+              }
+
+            }
+          }
+
+          override fun getFinalizedStorage(): SingleValueSource<Checkpoint> {
+            return object : SingleValueSource<Checkpoint> {
+              override fun get(): Optional<Checkpoint> {
+                return Optional.ofNullable(testLauncher.store.finalizedCheckpoint)
+              }
+
+              override fun set(value: Checkpoint?) {
+                testLauncher.store.finalizedCheckpoint = value
+              }
+
+              override fun remove() {
+                testLauncher.store.finalizedCheckpoint = null
+              }
+
+            }
+          }
+
+          override fun getBlockStorage(): BeaconBlockStorage {
+            return object : BeaconBlockStorage {
+              override fun getSlotBlocks(slot: SlotNumber?): MutableList<Hash32> {
+                TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+              }
+
+              override fun getMaxSlot(): SlotNumber {
+                TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+              }
+
+              override fun put(item: BeaconBlock?) {
+                TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+              }
+
+              override fun put(key: Hash32, value: BeaconBlock) {
+                TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+              }
+
+              override fun getChildren(parent: Hash32?, limit: Int): MutableList<BeaconBlock> {
+                TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+              }
+
+              override fun remove(key: Hash32) {
+                TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+              }
+
+              override fun get(key: Hash32): Optional<BeaconBlock> {
+                return testLauncher.store.getBlock(key)
+              }
+
+              override fun flush() {
+                TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+              }
+
+            }
+          }
+
+          override fun getStateStorage(): BeaconStateStorage {
+            TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+          }
+
+          override fun getTupleStorage(): BeaconTupleStorage {
+            TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+          }
+
+          override fun getBestJustifiedStorage(): SingleValueSource<Checkpoint> {
+            TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+          }
+
+          override fun commit() {
+            TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+          }
+
+          override fun getBlockHeaderStorage(): DataSource<Hash32, BeaconBlockHeader> {
+            TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+          }
+
+        }
+    }
+  val blockStorage get() = chainStorage.blockStorage
+  val stateStorage get() = chainStorage.stateStorage
+  fun root(a: Any?): Hash32 = spec.signing_root(a)
+
+  private fun createTestLauncher(spec: BeaconChainSpec, contract: EmulatorContract, wireApi: TestWire, mdcControlledSchedulers: MDCControlledSchedulers): Launcher {
     val signerFactory =
         if (spec.isBlsVerifyProofOfPossession)
           BLS381MessageSignerFactory {
@@ -97,13 +218,22 @@ class Tester(contract: EmulatorContract) {
     val credentials = ConfigUtils.createCredentials(signer, false)
 
     val schedulers = mdcControlledSchedulers.createNew("val1")
-    return TestLauncher(
+    val launcher = Launcher(
         spec,
         SimpleDepositContract(chainStart, schedulers),
         null,
         wireApi,
         storageFactory,
-        schedulers)
+        schedulers,
+        BenchmarkController.NO_BENCHES,
+        true)
+    Flux.from(launcher.observableStateStream)
+        .publishOn(schedulers.events().toReactor())
+        .subscribe {
+          ObservableStates.data[launcher] = it
+        }
+    mdcControlledSchedulers.currentTime = chainStart.time.millis.value
+    return launcher
   }
 }
 
@@ -139,7 +269,13 @@ class TestChain(val tester: Tester) {
   val attester = BeaconChainAttesterImpl(tester.spec)
 
   val head: BeaconTuple
-    get() = tester.testLauncher.beaconChain.recentlyProcessed
+    get() {
+      val state = ObservableStates.data[tester.testLauncher] //tester.testLauncher.beaconChain.recentlyProcessed
+      if (state != null)
+        return BeaconTuple.of(state.head, state.latestSlotState)
+      else
+        throw IllegalStateException("No state")
+    }
 
   fun mkBlock(slot: Int, parent: BeaconTuple? = null, attestations: List<Attestation>? = null,
               postProcess: ((BeaconBlock) -> BeaconBlock)? = null): BeaconTuple {

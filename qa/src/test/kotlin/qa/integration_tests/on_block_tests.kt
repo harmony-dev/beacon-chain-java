@@ -38,12 +38,12 @@ class OnBlockTests: IntegrationSpec() {
             fork2 = testChain.head
             testChain.gatherAttestations(fork2)
         }
-        val justifiedChkpt = tester.testLauncher.beaconChainStorage.justifiedStorage.get().get()
+        val justifiedChkpt = tester.chainStorage.justifiedStorage.get().get()
 
 
         testChain.proposeBlock(12, parent = fork0, attestations = emptyList())
 
-        tester.testLauncher.beaconChainStorage.justifiedStorage.get().get().epoch.intValue shouldBe justifiedChkpt.epoch.intValue
+        tester.chainStorage.justifiedStorage.get().get().epoch.intValue shouldBe justifiedChkpt.epoch.intValue
     }
 
     @Test
@@ -58,7 +58,6 @@ class OnBlockTests: IntegrationSpec() {
             testChain.proposeBlock(i)
             testChain.gatherAttestations()
         }
-        tester.testLauncher.insertResults.clear()
 
         tester.currentSlot = SlotNumber(17)
         val pBlock = testChain.mkBlock(17, parent = genesis, attestations = emptyList())
@@ -66,12 +65,11 @@ class OnBlockTests: IntegrationSpec() {
         checkNoFinalizedAncestor(testChain, pBlock)
 
         testChain.sendBlock(pBlock.block)
-        tester.testLauncher.insertResults shouldHaveSize 1
-        tester.testLauncher.insertResults[0] shouldNotBe MutableBeaconChain.ImportResult.OK
+        tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe false
     }
 
     private fun checkNoFinalizedAncestor(testChain: TestChain, pBlock: BeaconTuple) {
-        val storage = testChain.tester.testLauncher.beaconChainStorage
+        val storage = testChain.tester.chainStorage
         val store = Store(storage)
         val finRoot = storage.finalizedStorage.get().get().root
 
@@ -103,9 +101,8 @@ class OnBlockTests: IntegrationSpec() {
             tester.currentSlot = SlotNumber(i)
             val pBlock = testChain.proposeBlock(i, parent = head)
             testChain.gatherAttestations(pBlock)
-            head = tester.testLauncher.beaconChain.recentlyProcessed
+            head = testChain.head
         }
-        tester.testLauncher.insertResults.clear()
 
         tester.currentSlot = SlotNumber(17)
         val pBlock = testChain.mkBlock(17, parent = blockNonFin, attestations = emptyList())
@@ -113,8 +110,7 @@ class OnBlockTests: IntegrationSpec() {
         checkNoFinalizedAncestor(testChain, pBlock)
 
         tester.wireApi.blockProcSink.next(pBlock.block)
-        tester.testLauncher.insertResults shouldHaveSize 1
-        tester.testLauncher.insertResults[0] shouldNotBe MutableBeaconChain.ImportResult.OK
+        tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe false
     }
 
     @Test
@@ -129,15 +125,14 @@ class OnBlockTests: IntegrationSpec() {
             testChain.proposeBlock(i)
             testChain.gatherAttestations()
         }
-        var head = tester.testLauncher.beaconChain.recentlyProcessed
+        var head = testChain.head
         val blockNonFin = testChain.proposeBlock(14, parent = genesis, attestations = emptyList())
         for(i in 15 .. 16) {
             tester.currentSlot = SlotNumber(i)
             val pBlock = testChain.proposeBlock(i, parent = head)
             testChain.gatherAttestations(pBlock)
-            head = tester.testLauncher.beaconChain.recentlyProcessed
+            head = testChain.head
         }
-        tester.testLauncher.insertResults.clear()
 
         tester.currentSlot = SlotNumber(17)
         val pBlock = testChain.mkBlock(17, parent = blockNonFin, attestations = emptyList())
@@ -145,8 +140,7 @@ class OnBlockTests: IntegrationSpec() {
         checkNoFinalizedAncestor(testChain, pBlock)
 
         tester.wireApi.blockProcSink.next(pBlock.block)
-        tester.testLauncher.insertResults shouldHaveSize 1
-        tester.testLauncher.insertResults[0] shouldNotBe MutableBeaconChain.ImportResult.OK
+        tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe false
     }
 
     @Test
@@ -157,8 +151,8 @@ class OnBlockTests: IntegrationSpec() {
         val pBlock = testChain.mkBlock(1)
 
         tester.currentSlot = SlotNumber(2)
-        tester.wireApi.blockProcSink.next(pBlock.block)
-        tester.testLauncher.insertResults shouldHaveSingleElement MutableBeaconChain.ImportResult.OK
+        testChain.sendBlock(pBlock.block)
+        tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe  true
     }
 
     @Test
@@ -169,8 +163,8 @@ class OnBlockTests: IntegrationSpec() {
         val pBlock = testChain.mkBlock(2)
 
         tester.currentSlot = SlotNumber(2)
-        tester.wireApi.blockProcSink.next(pBlock.block)
-        tester.testLauncher.insertResults shouldHaveSingleElement MutableBeaconChain.ImportResult.OK
+        testChain.sendBlock(pBlock.block)
+        tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe  true
     }
 
     @Test
@@ -181,11 +175,10 @@ class OnBlockTests: IntegrationSpec() {
         val pBlock = testChain.mkBlock(2)
 
         tester.currentSlot = SlotNumber(2)
-        tester.wireApi.blockProcSink.next(pBlock.block)
-        tester.testLauncher.insertResults shouldHaveSingleElement MutableBeaconChain.ImportResult.OK
-        tester.testLauncher.insertResults.clear()
-        tester.wireApi.blockProcSink.next(pBlock.block)
-        tester.testLauncher.insertResults shouldHaveSingleElement MutableBeaconChain.ImportResult.ExistingBlock
+        testChain.sendBlock(pBlock.block)
+        tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe  true
+        testChain.sendBlock(pBlock.block)
+        tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe  true
     }
 
     @Test
@@ -196,13 +189,13 @@ class OnBlockTests: IntegrationSpec() {
         val pBlock = testChain.mkBlock(2)
 
         tester.currentSlot = SlotNumber(2)
-        tester.wireApi.blockProcSink.next(pBlock.block)
-        tester.testLauncher.insertResults shouldHaveSingleElement MutableBeaconChain.ImportResult.OK
+        testChain.sendBlock(pBlock.block)
+        tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe  true
         tester.currentSlot = SlotNumber(3)
-        tester.wireApi.blockProcSink.next(pBlock.block)
-        tester.testLauncher.insertResults.clear()
-        tester.wireApi.blockProcSink.next(pBlock.block)
-        tester.testLauncher.insertResults shouldHaveSingleElement MutableBeaconChain.ImportResult.ExistingBlock
+        testChain.sendBlock(pBlock.block)
+        tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe  true
+        testChain.sendBlock(pBlock.block)
+        tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe  true
     }
 
     @Test
@@ -213,9 +206,11 @@ class OnBlockTests: IntegrationSpec() {
         val pBlock = testChain.mkBlock(3)
 
         tester.currentSlot = SlotNumber(2)
-        tester.wireApi.blockProcSink.next(pBlock.block)
-        tester.testLauncher.insertResults shouldHaveSize 1
-        tester.testLauncher.insertResults[0] shouldBe MutableBeaconChain.ImportResult.ExpiredBlock
+        testChain.sendBlock(pBlock.block)
+        tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe  false
+
+        tester.currentSlot = SlotNumber(3)
+        tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe  true
     }
 
     @Test
@@ -226,8 +221,14 @@ class OnBlockTests: IntegrationSpec() {
         val pBlock = testChain.mkBlock(4)
 
         tester.currentSlot = SlotNumber(2)
-        tester.wireApi.blockProcSink.next(pBlock.block)
-        tester.testLauncher.insertResults shouldHaveSingleElement MutableBeaconChain.ImportResult.ExpiredBlock
+        testChain.sendBlock(pBlock.block)
+        tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe  false
+
+        tester.currentSlot = SlotNumber(3)
+        tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe  false
+
+        tester.currentSlot = SlotNumber(4)
+        tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe  true
     }
 
     @Test
@@ -240,9 +241,8 @@ class OnBlockTests: IntegrationSpec() {
         })
 
         tester.currentSlot = SlotNumber(2)
-        tester.wireApi.blockProcSink.next(pBlock.block)
-        tester.testLauncher.insertResults shouldHaveSize 1
-        tester.testLauncher.insertResults[0] shouldBe MutableBeaconChain.ImportResult.NoParent
+        testChain.sendBlock(pBlock.block)
+        tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe  false
     }
 
     @Test
@@ -255,9 +255,8 @@ class OnBlockTests: IntegrationSpec() {
         })
 
         tester.currentSlot = SlotNumber(2)
-        tester.wireApi.blockProcSink.next(pBlock.block)
-        tester.testLauncher.insertResults shouldHaveSize 1
-        tester.testLauncher.insertResults[0] shouldBe MutableBeaconChain.ImportResult.StateMismatch
+        testChain.sendBlock(pBlock.block)
+        tester.blockStorage[tester.root(pBlock.block)].isPresent shouldBe  false
     }
 
     @Test
@@ -270,9 +269,8 @@ class OnBlockTests: IntegrationSpec() {
         val block = BeaconBlock.Builder.fromBlock(pBlock.block).withSignature(BLSSignature.ZERO).build()
 
         tester.currentSlot = SlotNumber(2)
-        tester.wireApi.blockProcSink.next(block)
-        tester.testLauncher.insertResults shouldHaveSize 1
-        tester.testLauncher.insertResults[0] shouldBe MutableBeaconChain.ImportResult.InvalidBlock
+        testChain.sendBlock(block)
+        tester.blockStorage[tester.root(block)].isPresent shouldBe  false
     }
 
 }
