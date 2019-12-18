@@ -9,7 +9,6 @@ import org.ethereum.beacon.core.types.EpochNumber
 import org.ethereum.beacon.core.types.SlotNumber
 import qa.TestChain
 import qa.Tester
-import tech.pegasys.artemis.util.collections.Bitlist
 
 open class InvalidAttestationSpec: IntegrationSpec() {
   var genesis: BeaconTuple? = null
@@ -54,7 +53,7 @@ open class InvalidAttestationSpec: IntegrationSpec() {
     testChain.sendAttestations(testChain.mkAttestations(block2,
         postProcess = postProcess,
         postSign = postSign))
-    tester.mdcControlledSchedulers.addTime(1000)
+    tester.currentSlot = tester.currentSlot.increment()
 
     tester.testLauncher.lastObservableState.head shouldBe block1!!.block
   }
@@ -70,7 +69,7 @@ open class InvalidAttestationSpec: IntegrationSpec() {
         postSign = postSign))
     testChain.sendAttestations(testChain.mkAttestations(block2,
         validators = attesters.subList(1, attesters.size)))
-    tester.mdcControlledSchedulers.addTime(1000)
+    tester.currentSlot = tester.currentSlot.increment()
 
     tester.testLauncher.lastObservableState.head shouldBe block2!!.block
   }
@@ -86,7 +85,7 @@ open class InvalidAttestationSpec: IntegrationSpec() {
         validators = attesters.subList(attesters.size - 1, attesters.size),
         postProcess = postProcess,
         postSign = postSign))
-    tester.mdcControlledSchedulers.addTime(1000)
+    tester.currentSlot = tester.currentSlot.increment()
 
     tester.testLauncher.lastObservableState.head shouldBe block2!!.block
   }
@@ -267,7 +266,7 @@ class OnAttestationTests : IntegrationSpec() {
     val block2 = testChain.mkBlock(2, genesis)
 
     testChain.sendAttestations(testChain.mkAttestations(block2))
-    tester.mdcControlledSchedulers.addTime(1000);
+    tester.currentSlot = SlotNumber(3)
     tester.testLauncher.lastObservableState.head shouldBe block1.block
 
     testChain.sendBlock(block2.block)
@@ -354,6 +353,7 @@ class OnAttestationTests : IntegrationSpec() {
     tester.currentSlot = SlotNumber(5)
     val block3 = testChain.proposeBlock(5)
 
+    tester.testLauncher.lastObservableState.head shouldBe block3.block
     tester.spec.signing_root(tester.testLauncher.lastObservableState.head) shouldBe tester.spec.signing_root(block3.block)
   }
 
@@ -482,7 +482,7 @@ class OnAttestationTests : IntegrationSpec() {
 
     val atts = testChain.mkAttestations(nonHeadTuple)
     testChain.sendAttestations(atts)
-    tester.mdcControlledSchedulers.addTime(1000)
+    tester.currentSlot = SlotNumber(5)
 
     tester.testLauncher.lastObservableState.head shouldBe nonHeadTuple.block
 

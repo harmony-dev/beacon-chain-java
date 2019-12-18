@@ -10,6 +10,8 @@ import org.ethereum.beacon.core.types.EpochNumber
 import org.ethereum.beacon.core.types.SlotNumber
 import org.ethereum.beacon.emulator.config.main.ValidatorKeys
 import org.ethereum.beacon.emulator.config.main.conract.EmulatorContract
+import org.ethereum.beacon.start.common.Launcher
+import qa.ObservableStates
 import tech.pegasys.artemis.ethereum.core.Hash32
 import java.util.*
 
@@ -25,7 +27,7 @@ open class IntegrationSpec: AnnotationSpec() {
             }
         }
     }
-    val genesisTime = Date(2019, 8, 24, 0, 0, 0).time - 10000
+    val genesisTime = Date(2019, 8, 24, 0, 0, 0).time
 
     fun AttestationData.withBeaconBlockRoot(root: Hash32) =
             AttestationData(slot, index, root, source, target)
@@ -53,4 +55,6 @@ open class IntegrationSpec: AnnotationSpec() {
         contract.genesisTime = Date(genesisTime)
         return contract
     }
+
+  val Launcher.lastObservableState get() = ObservableStates.data[this]!!
 }
